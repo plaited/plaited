@@ -28,6 +28,15 @@ A combobox is an input widget that has an associated popup. The popup enables us
 - Date/time pickers
 - Multi-column data selection (grid popup)
 
+## Pattern Philosophy
+
+This pattern is **training data** for the Plaited agent. The examples below train the agent's understanding of how to implement this pattern correctly.
+
+- bElements/FunctionalTemplates are defined locally in stories (NOT exported)
+- Only stories are exported (required for testing/training)
+- Styles are always in separate `*.css.ts` files
+- Use spread syntax `{...styles.x}` for applying styles
+
 ## Implementation
 
 ### Vanilla JavaScript
@@ -44,7 +53,7 @@ A combobox is an input widget that has an associated popup. The popup enables us
 </ul>
 
 <!-- Editable combobox -->
-<input 
+<input
   type="text"
   role="combobox"
   aria-expanded="false"
@@ -59,44 +68,48 @@ A combobox is an input widget that has an associated popup. The popup enables us
 
 ### Plaited Adaptation
 
-**Important**: In Plaited, comboboxes are implemented as **bElements** because they require:
+**File Structure:**
 
-- Complex state management (open/closed, selected option, input value)
-- Focus management with `aria-activedescendant`
-- Keyboard navigation (arrow keys, Enter, Escape)
-- Popup positioning and visibility
-- Form association (optional)
+```
+combobox/
+  combobox.css.ts        # Styles (createStyles) - ALWAYS separate
+  combobox.stories.tsx   # bElement + stories (imports from css.ts)
+```
 
-#### Select-Only Combobox (bElement)
+#### combobox.css.ts
 
 ```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
+// combobox.css.ts
+import { createStyles, createHostStyles } from 'plaited'
 
-const comboboxStyles = createStyles({
+export const hostStyles = createHostStyles({
+  display: 'inline-block',
+  position: 'relative',
+})
+
+export const styles = createStyles({
   combobox: {
     position: 'relative',
     display: 'inline-flex',
     inlineSize: '100%',
-    maxInlineSize: '300px',
   },
   input: {
     flex: 1,
     padding: '0.5rem',
     border: '1px solid #ccc',
-    borderStartStartRadius: '4px',
-    borderStartEndRadius: '0',
-    borderEndEndRadius: '0',
-    borderEndStartRadius: '4px',
+    borderRadius: '4px',
+    fontSize: '1rem',
+  },
+  inputWithButton: {
+    borderStartEndRadius: 0,
+    borderEndEndRadius: 0,
   },
   button: {
     padding: '0.5rem',
     border: '1px solid #ccc',
     borderInlineStart: 'none',
-    borderStartStartRadius: '0',
     borderStartEndRadius: '4px',
     borderEndEndRadius: '4px',
-    borderEndStartRadius: '0',
     background: 'white',
     cursor: 'pointer',
   },
@@ -113,85 +126,96 @@ const comboboxStyles = createStyles({
     overflowY: 'auto',
     listStyle: 'none',
     padding: 0,
+    margin: 0,
     zIndex: 1000,
-    display: {
-      $default: 'none',
-      '[data-open="true"]': 'block',
-    },
+    display: 'none',
+  },
+  listboxOpen: {
+    display: 'block',
   },
   option: {
     padding: '0.5rem',
     cursor: 'pointer',
-    backgroundColor: {
-      $default: 'transparent',
-      '[aria-selected="true"]': '#007bff',
-      ':hover': '#f0f0f0',
-    },
+  },
+  optionSelected: {
+    backgroundColor: '#007bff',
+    color: 'white',
+  },
+  optionHover: {
+    backgroundColor: '#f0f0f0',
   },
 })
+```
 
-type ComboboxEvents = {
-  select: { value: string; index: number }
-  change: { value: string }
-}
+#### combobox.stories.tsx
 
-export const SelectCombobox = bElement<ComboboxEvents>({
-  tag: 'select-combobox',
+```typescript
+// combobox.stories.tsx
+import { bElement } from 'plaited/ui'
+import { story } from 'plaited/testing'
+import { styles, hostStyles } from './combobox.css.ts'
+
+// bElement for select-only combobox - defined locally, NOT exported
+const SelectCombobox = bElement({
+  tag: 'pattern-select-combobox',
   observedAttributes: ['value'],
   formAssociated: true,
+  hostStyles,
   shadowDom: (
-    <div
-      p-target='combobox'
-      role='combobox'
-      aria-expanded='false'
-      aria-controls='listbox'
-      aria-haspopup='listbox'
-      {...comboboxStyles.combobox}
-    >
+    <div p-target="wrapper" {...styles.combobox}>
       <input
-        type='text'
-        p-target='input'
+        type="text"
+        p-target="input"
         readonly
-        aria-label='Select option'
-        {...comboboxStyles.input}
-        p-trigger={{ keydown: 'handleInputKeydown', focus: 'handleFocus' }}
+        aria-label="Select option"
+        role="combobox"
+        aria-expanded="false"
+        aria-controls="listbox"
+        aria-haspopup="listbox"
+        p-trigger={{ click: 'togglePopup', keydown: 'handleInputKeydown', focus: 'openPopup' }}
+        {...styles.input}
+        {...styles.inputWithButton}
       />
       <button
-        type='button'
-        p-target='toggle-button'
-        aria-label='Open options'
-        {...comboboxStyles.button}
+        type="button"
+        p-target="toggle-button"
+        aria-label="Open options"
+        tabIndex={-1}
         p-trigger={{ click: 'togglePopup' }}
+        {...styles.button}
       >
         ▼
       </button>
       <ul
-        p-target='listbox'
-        role='listbox'
-        id='listbox'
-        data-open='false'
-        {...comboboxStyles.listbox}
-        p-trigger={{ keydown: 'handleListboxKeydown' }}
+        p-target="listbox"
+        role="listbox"
+        id="listbox"
+        {...styles.listbox}
       >
-        <slot name='options'></slot>
+        <slot p-target="slot"></slot>
       </ul>
     </div>
   ),
-  bProgram({ $, host, internals, emit, root }) {
-    const combobox = $('combobox')[0]
+  bProgram({ $, host, internals, emit }) {
     const input = $<HTMLInputElement>('input')[0]
     const listbox = $('listbox')[0]
-    let options: HTMLElement[] = []
+
+    let options: Element[] = []
     let selectedIndex = -1
     let isOpen = false
 
+    const getOptions = () => {
+      const slot = listbox?.root.querySelector('slot') as HTMLSlotElement
+      if (!slot) return []
+      return slot.assignedElements().filter((el) => el.getAttribute('role') === 'option')
+    }
+
     const openPopup = () => {
+      if (isOpen) return
       isOpen = true
-      combobox?.attr('aria-expanded', 'true')
-      listbox?.attr('data-open', 'true')
-      listbox?.attr('hidden', null)
-      
-      // Focus first option if none selected
+      input?.attr('aria-expanded', 'true')
+      listbox?.attr('class', `${styles.listbox.classNames.join(' ')} ${styles.listboxOpen.classNames.join(' ')}`)
+
       if (selectedIndex === -1 && options.length > 0) {
         selectedIndex = 0
         updateActiveOption()
@@ -199,56 +223,56 @@ export const SelectCombobox = bElement<ComboboxEvents>({
     }
 
     const closePopup = () => {
+      if (!isOpen) return
       isOpen = false
-      combobox?.attr('aria-expanded', 'false')
-      listbox?.attr('data-open', 'false')
-      listbox?.attr('hidden', '')
-      combobox?.attr('aria-activedescendant', null)
+      input?.attr('aria-expanded', 'false')
+      listbox?.attr('class', styles.listbox.classNames.join(' '))
+      input?.attr('aria-activedescendant', null)
     }
 
     const updateActiveOption = () => {
       options.forEach((option, index) => {
+        const el = option as HTMLElement
         const isSelected = index === selectedIndex
-        option.attr('aria-selected', isSelected ? 'true' : 'false')
-        option.attr('id', `option-${index}`)
+        el.setAttribute('aria-selected', isSelected ? 'true' : 'false')
+        el.id = `option-${index}`
+
+        if (isSelected) {
+          el.classList.add(...styles.optionSelected.classNames)
+        } else {
+          el.classList.remove(...styles.optionSelected.classNames)
+        }
       })
-      
+
       if (selectedIndex >= 0 && options[selectedIndex]) {
-        combobox?.attr('aria-activedescendant', `option-${selectedIndex}`)
-        // Scroll into view
-        options[selectedIndex]?.scrollIntoView({ block: 'nearest' })
+        input?.attr('aria-activedescendant', `option-${selectedIndex}`)
+        ;(options[selectedIndex] as HTMLElement).scrollIntoView({ block: 'nearest' })
       }
     }
 
     const selectOption = (index: number) => {
       if (index < 0 || index >= options.length) return
-      
+
       selectedIndex = index
-      const option = options[index]
+      const option = options[index] as HTMLElement
       const value = option.textContent?.trim() || ''
-      
+
       input?.attr('value', value)
       host.setAttribute('value', value)
       internals.setFormValue(value)
-      
+
       closePopup()
-      input?.focus()
-      
-      emit({ type: 'select', detail: { value, index } })
-      emit({ type: 'change', detail: { value } })
+      input?.root.focus()
+
+      emit({ type: 'change', detail: { value, index } })
     }
 
     return {
+      openPopup,
       togglePopup() {
         if (isOpen) {
           closePopup()
         } else {
-          openPopup()
-        }
-      },
-      handleFocus() {
-        // Open on focus for select-only
-        if (!isOpen) {
           openPopup()
         }
       },
@@ -278,165 +302,86 @@ export const SelectCombobox = bElement<ComboboxEvents>({
             break
           case 'Escape':
             event.preventDefault()
-            if (isOpen) {
-              closePopup()
+            closePopup()
+            break
+          case ' ':
+            event.preventDefault()
+            if (!isOpen) {
+              openPopup()
             }
             break
         }
       },
-      handleListboxKeydown(event: KeyboardEvent) {
-        switch (event.key) {
-          case 'ArrowDown':
-            event.preventDefault()
-            selectedIndex = Math.min(selectedIndex + 1, options.length - 1)
-            updateActiveOption()
-            break
-          case 'ArrowUp':
-            event.preventDefault()
-            selectedIndex = Math.max(selectedIndex - 1, 0)
-            updateActiveOption()
-            break
-          case 'Enter':
-            event.preventDefault()
-            if (selectedIndex >= 0) {
-              selectOption(selectedIndex)
-            }
-            break
-          case 'Escape':
-            event.preventDefault()
-            closePopup()
-            input?.focus()
-            break
+      selectOptionClick(event: { target: HTMLElement }) {
+        const option = event.target.closest('[role="option"]') as HTMLElement
+        if (option) {
+          const index = options.indexOf(option)
+          if (index >= 0) {
+            selectOption(index)
+          }
         }
       },
       onConnected() {
-        // Initialize options from slot
-        const slot = listbox?.querySelector('slot[name="options"]') as HTMLSlotElement
-        if (slot) {
-          const assignedNodes = slot.assignedElements()
-          options = assignedNodes.filter((node) => 
-            node.hasAttribute('role') && node.getAttribute('role') === 'option'
-          ) as HTMLElement[]
-          
-          // Set up option click handlers
-          options.forEach((option, index) => {
-            option.setAttribute('p-trigger', JSON.stringify({ click: 'selectOptionClick' }))
-            option.setAttribute('data-index', String(index))
+        options = getOptions()
+
+        // Add click handlers to options
+        options.forEach((option, index) => {
+          ;(option as HTMLElement).addEventListener('click', () => {
+            selectOption(index)
           })
-        }
-        
-        // Initialize value from attribute
+        })
+
+        // Initialize from value attribute
         const value = host.getAttribute('value')
         if (value && input) {
           input.attr('value', value)
+          const matchingIndex = options.findIndex((o) => o.textContent?.trim() === value)
+          if (matchingIndex >= 0) {
+            selectedIndex = matchingIndex
+          }
         }
       },
     }
   },
 })
-```
 
-#### Editable Combobox with List Autocomplete (bElement)
-
-```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
-
-const editableComboboxStyles = createStyles({
-  combobox: {
-    position: 'relative',
-    display: 'inline-flex',
-    inlineSize: '100%',
-    maxInlineSize: '300px',
-  },
-  input: {
-    flex: 1,
-    padding: '0.5rem',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-  },
-  listbox: {
-    position: 'absolute',
-    insetBlockStart: '100%',
-    insetInlineStart: 0,
-    insetInlineEnd: 0,
-    marginBlockStart: '0.25rem',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-    background: 'white',
-    maxBlockSize: '200px',
-    overflowY: 'auto',
-    listStyle: 'none',
-    padding: 0,
-    zIndex: 1000,
-    display: {
-      $default: 'none',
-      '[data-open="true"]': 'block',
-    },
-  },
-  option: {
-    padding: '0.5rem',
-    cursor: 'pointer',
-    backgroundColor: {
-      $default: 'transparent',
-      '[aria-selected="true"]': '#007bff',
-      ':hover': '#f0f0f0',
-    },
-  },
-})
-
-type EditableComboboxEvents = {
-  input: { value: string }
-  select: { value: string; index: number }
-  change: { value: string }
-}
-
-export const EditableCombobox = bElement<EditableComboboxEvents>({
-  tag: 'editable-combobox',
-  observedAttributes: ['value', 'aria-autocomplete'],
+// bElement for editable combobox - defined locally, NOT exported
+const EditableCombobox = bElement({
+  tag: 'pattern-editable-combobox',
+  observedAttributes: ['value', 'options'],
   formAssociated: true,
+  hostStyles,
   shadowDom: (
-    <div
-      p-target='combobox'
-      role='combobox'
-      aria-expanded='false'
-      aria-controls='listbox'
-      aria-autocomplete='list'
-      {...editableComboboxStyles.combobox}
-    >
+    <div p-target="wrapper" {...styles.combobox}>
       <input
-        type='text'
-        p-target='input'
-        aria-label='Search'
-        {...editableComboboxStyles.input}
-        p-trigger={{ 
-          input: 'handleInput',
-          keydown: 'handleInputKeydown',
-          focus: 'handleFocus',
-          blur: 'handleBlur'
-        }}
+        type="text"
+        p-target="input"
+        aria-label="Search"
+        role="combobox"
+        aria-expanded="false"
+        aria-controls="listbox"
+        aria-autocomplete="list"
+        p-trigger={{ input: 'handleInput', keydown: 'handleInputKeydown', focus: 'handleFocus', blur: 'handleBlur' }}
+        {...styles.input}
       />
       <ul
-        p-target='listbox'
-        role='listbox'
-        id='listbox'
-        data-open='false'
-        {...editableComboboxStyles.listbox}
+        p-target="listbox"
+        role="listbox"
+        id="listbox"
+        {...styles.listbox}
       >
-        {/* Options will be dynamically rendered */}
+        {/* Options rendered dynamically */}
       </ul>
     </div>
   ),
-  bProgram({ $, host, internals, emit, root }) {
-    const combobox = $('combobox')[0]
+  bProgram({ $, host, internals, emit }) {
     const input = $<HTMLInputElement>('input')[0]
     const listbox = $('listbox')[0]
-    
+
     let allOptions: string[] = []
     let filteredOptions: string[] = []
     let selectedIndex = -1
     let isOpen = false
-    let inputValue = ''
 
     const filterOptions = (query: string) => {
       if (!query.trim()) {
@@ -451,108 +396,87 @@ export const EditableCombobox = bElement<EditableComboboxEvents>({
 
     const renderOptions = () => {
       if (!listbox) return
-      
+
       listbox.render(
         ...filteredOptions.map((option, index) => (
           <li
             key={index}
-            role='option'
+            role="option"
             aria-selected={index === selectedIndex ? 'true' : 'false'}
             id={`option-${index}`}
-            data-value={option}
-            p-trigger={{ click: 'selectOptionClick', mouseenter: 'handleOptionHover' }}
-            {...editableComboboxStyles.option}
+            data-index={String(index)}
+            p-trigger={{ click: 'selectOptionClick' }}
+            {...styles.option}
+            {...(index === selectedIndex ? styles.optionSelected : {})}
           >
             {option}
           </li>
         ))
       )
-      
-      updateActiveOption()
+    }
+
+    const openPopup = () => {
+      if (isOpen || filteredOptions.length === 0) return
+      isOpen = true
+      input?.attr('aria-expanded', 'true')
+      listbox?.attr('class', `${styles.listbox.classNames.join(' ')} ${styles.listboxOpen.classNames.join(' ')}`)
+    }
+
+    const closePopup = () => {
+      if (!isOpen) return
+      isOpen = false
+      input?.attr('aria-expanded', 'false')
+      listbox?.attr('class', styles.listbox.classNames.join(' '))
+      input?.attr('aria-activedescendant', null)
+      selectedIndex = -1
     }
 
     const updateActiveOption = () => {
       if (selectedIndex >= 0 && selectedIndex < filteredOptions.length) {
-        combobox?.attr('aria-activedescendant', `option-${selectedIndex}`)
-        const optionElement = listbox?.querySelector(`#option-${selectedIndex}`)
-        optionElement?.scrollIntoView({ block: 'nearest' })
-      } else {
-        combobox?.attr('aria-activedescendant', null)
+        input?.attr('aria-activedescendant', `option-${selectedIndex}`)
+        renderOptions()
       }
-    }
-
-    const openPopup = () => {
-      if (filteredOptions.length === 0) return
-      
-      isOpen = true
-      combobox?.attr('aria-expanded', 'true')
-      listbox?.attr('data-open', 'true')
-      listbox?.attr('hidden', null)
-      
-      // Auto-select first option if aria-autocomplete includes automatic selection
-      const autocomplete = host.getAttribute('aria-autocomplete')
-      if (autocomplete === 'list' || autocomplete === 'both') {
-        selectedIndex = 0
-        updateActiveOption()
-      }
-    }
-
-    const closePopup = () => {
-      isOpen = false
-      combobox?.attr('aria-expanded', 'false')
-      listbox?.attr('data-open', 'false')
-      listbox?.attr('hidden', '')
-      combobox?.attr('aria-activedescendant', null)
-      selectedIndex = -1
     }
 
     const selectOption = (index: number) => {
       if (index < 0 || index >= filteredOptions.length) return
-      
+
       const value = filteredOptions[index]
-      inputValue = value
       input?.attr('value', value)
       host.setAttribute('value', value)
       internals.setFormValue(value)
-      
+
       closePopup()
-      input?.focus()
-      
-      emit({ type: 'select', detail: { value, index } })
-      emit({ type: 'change', detail: { value } })
+      input?.root.focus()
+
+      emit({ type: 'change', detail: { value, index } })
     }
 
     return {
       handleInput(event: Event) {
         const target = event.target as HTMLInputElement
-        inputValue = target.value
-        filterOptions(inputValue)
-        
-        if (filteredOptions.length > 0 && inputValue.length > 0) {
+        const query = target.value
+        filterOptions(query)
+
+        if (filteredOptions.length > 0 && query.length > 0) {
           openPopup()
+          selectedIndex = 0
+          updateActiveOption()
         } else {
           closePopup()
         }
-        
-        emit({ type: 'input', detail: { value: inputValue } })
+
+        emit({ type: 'input', detail: { value: query } })
       },
       handleFocus() {
-        // Open popup on focus if there are suggestions
+        filterOptions(input?.root.value || '')
         if (filteredOptions.length > 0) {
           openPopup()
         }
       },
       handleBlur() {
-        // Close popup on blur
-        // In automatic selection mode, accept selected value
-        const autocomplete = host.getAttribute('aria-autocomplete')
-        if (autocomplete === 'list' || autocomplete === 'both') {
-          if (selectedIndex >= 0 && selectedIndex < filteredOptions.length) {
-            selectOption(selectedIndex)
-          }
-        } else {
-          closePopup()
-        }
+        // Delay to allow click on option
+        setTimeout(() => closePopup(), 150)
       },
       handleInputKeydown(event: KeyboardEvent) {
         switch (event.key) {
@@ -560,10 +484,11 @@ export const EditableCombobox = bElement<EditableComboboxEvents>({
             event.preventDefault()
             if (!isOpen && filteredOptions.length > 0) {
               openPopup()
+              selectedIndex = 0
             } else if (isOpen) {
               selectedIndex = Math.min(selectedIndex + 1, filteredOptions.length - 1)
-              updateActiveOption()
             }
+            updateActiveOption()
             break
           case 'ArrowUp':
             event.preventDefault()
@@ -584,42 +509,128 @@ export const EditableCombobox = bElement<EditableComboboxEvents>({
             break
         }
       },
-      handleOptionHover(event: { target: HTMLElement }) {
-        const option = event.target
-        const index = parseInt(option.getAttribute('data-index') || '-1', 10)
-        if (index >= 0) {
-          selectedIndex = index
-          updateActiveOption()
-        }
-      },
       selectOptionClick(event: { target: HTMLElement }) {
-        const option = event.target
-        const index = parseInt(option.getAttribute('data-index') || '-1', 10)
+        const index = parseInt(event.target.getAttribute('data-index') || '-1', 10)
         if (index >= 0) {
           selectOption(index)
         }
       },
       onConnected() {
-        // Initialize options (could come from attribute, slot, or external source)
+        // Initialize options from attribute
         const optionsAttr = host.getAttribute('options')
         if (optionsAttr) {
           try {
             allOptions = JSON.parse(optionsAttr)
+            filteredOptions = allOptions
+          } catch {
+            // Invalid JSON
+          }
+        }
+
+        // Initialize value
+        const value = host.getAttribute('value')
+        if (value && input) {
+          input.attr('value', value)
+        }
+      },
+      onAttributeChanged({ name, newValue }) {
+        if (name === 'options' && newValue) {
+          try {
+            allOptions = JSON.parse(newValue)
             filteredOptions = allOptions
             renderOptions()
           } catch {
             // Invalid JSON
           }
         }
-        
-        // Initialize value
-        const value = host.getAttribute('value')
-        if (value && input) {
-          input.attr('value', value)
-          inputValue = value
-        }
       },
     }
+  },
+})
+
+// Stories - EXPORTED for testing/training
+export const selectOnlyCombobox = story({
+  intent: 'Select-only combobox similar to native select element',
+  template: () => (
+    <SelectCombobox>
+      <li role="option">Apple</li>
+      <li role="option">Banana</li>
+      <li role="option">Cherry</li>
+      <li role="option">Date</li>
+      <li role="option">Elderberry</li>
+    </SelectCombobox>
+  ),
+  play: async ({ findByAttribute, assert, fireEvent }) => {
+    const input = await findByAttribute('p-target', 'input')
+
+    assert({
+      given: 'select combobox is rendered',
+      should: 'have aria-expanded="false" initially',
+      actual: input?.getAttribute('aria-expanded'),
+      expected: 'false',
+    })
+
+    if (input) await fireEvent(input, 'click')
+
+    assert({
+      given: 'input is clicked',
+      should: 'expand the listbox',
+      actual: input?.getAttribute('aria-expanded'),
+      expected: 'true',
+    })
+  },
+})
+
+export const editableCombobox = story({
+  intent: 'Editable combobox with autocomplete filtering',
+  template: () => (
+    <EditableCombobox
+      options={JSON.stringify(['Apple', 'Apricot', 'Banana', 'Blueberry', 'Cherry', 'Cranberry'])}
+    />
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const input = await findByAttribute('p-target', 'input')
+
+    assert({
+      given: 'editable combobox is rendered',
+      should: 'have aria-autocomplete="list"',
+      actual: input?.getAttribute('aria-autocomplete'),
+      expected: 'list',
+    })
+  },
+})
+
+export const preselectedCombobox = story({
+  intent: 'Combobox with initial value pre-selected',
+  template: () => (
+    <SelectCombobox value="Cherry">
+      <li role="option">Apple</li>
+      <li role="option">Banana</li>
+      <li role="option">Cherry</li>
+    </SelectCombobox>
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const input = await findByAttribute('p-target', 'input')
+
+    assert({
+      given: 'combobox has value attribute',
+      should: 'display the selected value',
+      actual: input?.getAttribute('value'),
+      expected: 'Cherry',
+    })
+  },
+})
+
+export const searchCombobox = story({
+  intent: 'Search field with suggestions from previous searches',
+  template: () => (
+    <EditableCombobox
+      aria-label="Search"
+      options={JSON.stringify(['Recent: plaited documentation', 'Recent: bElement examples', 'Recent: CSS-in-JS'])}
+    />
+  ),
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
   },
 })
 ```
@@ -627,89 +638,60 @@ export const EditableCombobox = bElement<EditableComboboxEvents>({
 ## Plaited Integration
 
 - **Works with Shadow DOM**: Yes - comboboxes are bElements with Shadow DOM
-- **Uses bElement built-ins**: 
-  - `p-trigger` for input events, keyboard events, clicks
-  - `p-target` for element selection with `$()`
-  - `render()` helper for dynamic option rendering
-  - `attr()` helper for managing ARIA attributes and focus
-  - `observedAttributes` for reactive updates
-  - `formAssociated: true` for form integration (optional)
-  - `internals` for ElementInternals API
-- **Requires external web API**: 
-  - Focus management APIs (`focus()`, `aria-activedescendant`)
-  - Keyboard event handling
-  - Popup positioning (CSS or JavaScript)
-- **Cleanup required**: No - standard DOM elements handle their own lifecycle
+- **Uses bElement built-ins**: `$`, `p-trigger`, `p-target`, `emit`, `render`, `attr`, `internals`
+- **Requires external web API**: Focus management APIs
+- **Cleanup required**: No
 
 ## Keyboard Interaction
 
 ### Combobox Input
 
-- **Tab**: Moves focus to next element
 - **Arrow Down**: Opens popup or moves to next option
 - **Arrow Up**: Moves to previous option (if open)
 - **Enter**: Accepts selected option
 - **Escape**: Closes popup
-- **Printable characters**: Types in editable combobox, filters options
-- **(Alt/Opt) + Down Arrow**: Opens popup without moving focus
-- **(Alt/Opt) + Up Arrow**: Closes popup, returns focus
+- **Space**: Opens popup (select-only)
+- **Printable characters**: Types in editable combobox
 
 ### Listbox Popup
 
-- **Arrow Down/Up**: Moves focus and selection
+- **Arrow Down/Up**: Moves selection
 - **Enter**: Accepts option, closes popup
-- **Escape**: Closes popup, returns focus
-- **Home/End**: First/last option
-- **Printable characters**: Returns focus to input (editable) or moves to matching option
+- **Escape**: Closes popup
 
 ## WAI-ARIA Roles, States, and Properties
 
 ### Required
 
-- **role="combobox"**: On the input/container element
-- **aria-expanded**: `"true"` when popup is open, `"false"` when closed
+- **role="combobox"**: On the input element
+- **aria-expanded**: `"true"` when popup is open
 - **aria-controls**: ID reference to popup element
-- **aria-haspopup**: Popup type (`listbox`, `grid`, `tree`, `dialog`) - `listbox` is implicit
-- **role="listbox"**: On popup container (or `grid`, `tree`, `dialog`)
+- **aria-haspopup**: Popup type (default: `listbox`)
+- **role="listbox"**: On popup container
 - **role="option"**: On each option element
 
 ### Optional
 
 - **aria-autocomplete**: `"none"`, `"list"`, or `"both"`
-- **aria-activedescendant**: ID reference to active option in popup
+- **aria-activedescendant**: ID of active option
 - **aria-selected**: `"true"` on selected option
-- **aria-label** or **aria-labelledby**: Accessible label for combobox
-- **aria-required**: `"true"` if value is required
 
 ## Best Practices
 
-1. **Use bElement** - Comboboxes require complex state and focus management
-2. **Maintain DOM focus on combobox** - Use `aria-activedescendant` for popup navigation
-3. **Handle all keyboard interactions** - Arrow keys, Enter, Escape, printable characters
-4. **Filter options dynamically** - For editable comboboxes with autocomplete
-5. **Auto-select first option** - For automatic selection modes
-6. **Close on blur** - Or accept selected value in automatic mode
-7. **Scroll active option into view** - Ensure visibility during keyboard navigation
-8. **Support form association** - Use `formAssociated: true` for native form integration
-9. **Provide clear labels** - Use `aria-label` or `aria-labelledby`
+1. **Use bElements** - Comboboxes require complex state management
+2. **Use `aria-activedescendant`** for popup navigation
+3. **Handle all keyboard interactions** - Arrow keys, Enter, Escape
+4. **Filter options dynamically** for editable comboboxes
+5. **Use spread syntax** - `{...styles.x}` for applying styles
+6. **Use `$()` with `p-target`** - never use `querySelector` directly
+7. **Use `formAssociated: true`** for form integration
 
 ## Accessibility Considerations
 
-- Screen readers announce combobox role, label, value, and expanded state
+- Screen readers announce combobox role, label, and expanded state
 - Keyboard users can navigate options without mouse
-- Focus management ensures predictable navigation
 - `aria-activedescendant` enables screen reader navigation in popup
-- Selected options are clearly indicated visually and programmatically
-- Popup positioning should not obscure content
-
-## Autocomplete Behaviors
-
-| Type | aria-autocomplete | Behavior |
-|------|-------------------|----------|
-| None | `"none"` | Same suggestions regardless of input |
-| List (manual) | `"list"` | Suggestions filter, user must select |
-| List (automatic) | `"list"` | First suggestion auto-selected, becomes value on blur |
-| Both | `"both"` | Automatic + inline completion string |
+- Selected options are clearly indicated
 
 ## Browser Compatibility
 
@@ -720,11 +702,8 @@ export const EditableCombobox = bElement<EditableComboboxEvents>({
 | Safari | Full support |
 | Edge | Full support |
 
-**Note**: ARIA combobox pattern and `aria-activedescendant` have universal support in modern browsers with assistive technology.
-
 ## References
 
 - Source: [W3C ARIA Authoring Practices Guide - Combobox Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/)
-- Related: [Listbox Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/)
 - MDN: [ARIA combobox role](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/combobox_role)
 - MDN: [aria-activedescendant](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Attributes/aria-activedescendant)

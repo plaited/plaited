@@ -32,6 +32,15 @@ A feed is a section of a page that automatically loads new sections of content a
 - Search results
 - Related content sections
 
+## Pattern Philosophy
+
+This pattern is **training data** for the Plaited agent. The examples below train the agent's understanding of how to implement this pattern correctly.
+
+- bElements/FunctionalTemplates are defined locally in stories (NOT exported)
+- Only stories are exported (required for testing/training)
+- Styles are always in separate `*.css.ts` files
+- Use spread syntax `{...styles.x}` for applying styles
+
 ## Implementation
 
 ### Vanilla JavaScript
@@ -50,27 +59,20 @@ A feed is a section of a page that automatically loads new sections of content a
 ```
 
 ```javascript
-// Scroll-based loading
+// Intersection Observer for scroll-based loading
 const feed = document.querySelector('[role="feed"]')
-const articles = feed.querySelectorAll('[role="article"]')
-let loading = false
-
-// Intersection Observer for scroll detection
 const observer = new IntersectionObserver((entries) => {
   entries.forEach((entry) => {
     if (entry.isIntersecting) {
       const article = entry.target
       const position = parseInt(article.getAttribute('aria-posinset'))
-      
       // Load more articles when near the end
-      if (position > articles.length - 3 && !loading) {
+      if (position > articles.length - 3) {
         loadMoreArticles()
       }
     }
   })
 }, { rootMargin: '200px' })
-
-articles.forEach(article => observer.observe(article))
 
 // Keyboard navigation
 feed.addEventListener('keydown', (e) => {
@@ -80,40 +82,31 @@ feed.addEventListener('keydown', (e) => {
   } else if (e.key === 'PageUp') {
     e.preventDefault()
     moveToPreviousArticle()
-  } else if (e.key === 'Home' && e.ctrlKey) {
-    e.preventDefault()
-    moveToFirstArticle()
-  } else if (e.key === 'End' && e.ctrlKey) {
-    e.preventDefault()
-    moveToLastArticle()
   }
 })
 ```
 
 ### Plaited Adaptation
 
-**Important**: In Plaited, feeds are implemented as **bElements** because they require:
+**File Structure:**
 
-- Complex state management (articles, loading state, position tracking)
-- Scroll detection (Intersection Observer)
-- Keyboard navigation (Page Down/Up, Ctrl+Home/End)
-- Focus management
-- Dynamic content loading and rendering
+```
+feed/
+  feed.css.ts        # Styles (createStyles) - ALWAYS separate
+  feed.stories.tsx   # bElement + stories (imports from css.ts)
+```
 
-#### Feed bElement
+#### feed.css.ts
 
 ```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
+// feed.css.ts
+import { createStyles, createHostStyles } from 'plaited'
 
-type Article = {
-  id: string
-  title: string
-  content: string
-  description?: string
-}
+export const hostStyles = createHostStyles({
+  display: 'block',
+})
 
-const feedStyles = createStyles({
+export const styles = createStyles({
   feed: {
     display: 'flex',
     flexDirection: 'column',
@@ -123,214 +116,190 @@ const feedStyles = createStyles({
     padding: '1rem',
     border: '1px solid #ccc',
     borderRadius: '4px',
+    outline: 'none',
+  },
+  articleFocused: {
+    borderColor: '#007bff',
+    boxShadow: '0 0 0 2px rgba(0, 123, 255, 0.25)',
   },
   title: {
     margin: '0 0 0.5rem 0',
     fontSize: '1.25rem',
   },
+  description: {
+    margin: '0 0 0.5rem 0',
+    fontSize: '0.875rem',
+    color: '#666',
+  },
   content: {
     margin: 0,
   },
+  loading: {
+    padding: '1rem',
+    textAlign: 'center',
+    color: '#666',
+  },
 })
+```
 
-type FeedEvents = {
-  loadMore: { position: number }
-  articleFocus: { articleId: string; position: number }
+#### feed.stories.tsx
+
+```typescript
+// feed.stories.tsx
+import type { FT, Children } from 'plaited/ui'
+import { bElement } from 'plaited/ui'
+import { story } from 'plaited/testing'
+import { styles, hostStyles } from './feed.css.ts'
+
+// Type for article data
+type ArticleData = {
+  id: string
+  title: string
+  description?: string
+  content: string
 }
 
-export const Feed = bElement<FeedEvents>({
-  tag: 'feed-widget',
+// FunctionalTemplate for static article - defined locally, NOT exported
+const StaticArticle: FT<{
+  title: string
+  description?: string
+  position: number
+  setSize: number
+  children?: Children
+}> = ({ title, description, position, setSize, children }) => {
+  const articleId = `article-${position}`
+  const titleId = `${articleId}-title`
+  const descriptionId = `${articleId}-desc`
+
+  return (
+    <article
+      role="article"
+      aria-posinset={position}
+      aria-setsize={setSize}
+      aria-labelledby={titleId}
+      aria-describedby={description ? descriptionId : undefined}
+      tabIndex={-1}
+      {...styles.article}
+    >
+      <h3 id={titleId} {...styles.title}>{title}</h3>
+      {description && <p id={descriptionId} {...styles.description}>{description}</p>}
+      <div {...styles.content}>{children}</div>
+    </article>
+  )
+}
+
+// FunctionalTemplate for static feed - defined locally, NOT exported
+const StaticFeed: FT<{
+  label?: string
+  busy?: boolean
+  children?: Children
+}> = ({ label = 'Feed', busy = false, children }) => (
+  <div
+    role="feed"
+    aria-label={label}
+    aria-busy={busy ? 'true' : 'false'}
+    {...styles.feed}
+  >
+    {children}
+  </div>
+)
+
+// bElement for interactive feed - defined locally, NOT exported
+const Feed = bElement({
+  tag: 'pattern-feed',
+  observedAttributes: ['aria-label'],
+  hostStyles,
   shadowDom: (
     <div
-      p-target='feed'
-      role='feed'
-      aria-label='Feed'
-      aria-busy='false'
-      {...feedStyles.feed}
+      p-target="feed"
+      role="feed"
+      aria-label="Feed"
+      aria-busy="false"
       p-trigger={{ keydown: 'handleKeydown' }}
+      {...styles.feed}
     >
-      {/* Articles will be dynamically rendered */}
+      <slot></slot>
+      <div p-target="loading" hidden {...styles.loading}>
+        Loading more articles...
+      </div>
     </div>
   ),
-  bProgram({ $, host, emit, root }) {
+  bProgram({ $, host, emit }) {
     const feed = $('feed')[0]
-    let articles: Article[] = []
-    let articlesByElement = new Map<HTMLElement, Article>()
+    const loading = $('loading')[0]
     let isLoading = false
-    let totalSize: number | null = null // null for unknown, -1 for infinite
     let intersectionObserver: IntersectionObserver | undefined
 
-    const renderArticles = () => {
-      if (!feed) return
-      
-      feed.render(
-        ...articles.map((article, index) => {
-          const articleId = `article-${article.id}`
-          const titleId = `${articleId}-title`
-          const descriptionId = `${articleId}-description`
-          
-          return (
-            <article
-              key={article.id}
-              role='article'
-              aria-posinset={index + 1}
-              aria-setsize={totalSize !== null ? totalSize : articles.length}
-              aria-labelledby={titleId}
-              aria-describedby={article.description ? descriptionId : undefined}
-              id={articleId}
-              tabIndex={-1}
-              p-trigger={{ focus: 'handleArticleFocus' }}
-              {...feedStyles.article}
-            >
-              <h3
-                id={titleId}
-                {...feedStyles.title}
-              >
-                {article.title}
-              </h3>
-              {article.description && (
-                <p
-                  id={descriptionId}
-                  style={{ fontSize: '0.875rem', color: '#666' }}
-                >
-                  {article.description}
-                </p>
-              )}
-              <div {...feedStyles.content}>
-                {article.content}
-              </div>
-            </article>
-          )
-        })
-      )
-      
-      // Re-observe articles for intersection
-      observeArticles()
+    const getArticles = (): HTMLElement[] => {
+      const slot = feed?.querySelector('slot') as HTMLSlotElement
+      if (!slot) return []
+      return slot.assignedElements().filter(
+        (el) => el.getAttribute('role') === 'article'
+      ) as HTMLElement[]
     }
 
-    const observeArticles = () => {
-      if (!feed || !intersectionObserver) return
-      
-      const articleElements = feed.querySelectorAll('[role="article"]')
-      articleElements.forEach((article) => {
-        intersectionObserver?.observe(article as HTMLElement)
-      })
+    const moveToArticle = (index: number) => {
+      const articles = getArticles()
+      if (index >= 0 && index < articles.length) {
+        articles[index].focus()
+        articles[index].scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      }
     }
 
-    const getArticleElements = () => {
-      if (!feed) return []
-      return Array.from(feed.querySelectorAll('[role="article"]')) as HTMLElement[]
-    }
-
-    const moveToNextArticle = () => {
-      const articleElements = getArticleElements()
+    const getCurrentIndex = (): number => {
+      const articles = getArticles()
       const activeElement = document.activeElement as HTMLElement
-      const currentIndex = articleElements.indexOf(activeElement)
-      
-      if (currentIndex >= 0 && currentIndex < articleElements.length - 1) {
-        const nextArticle = articleElements[currentIndex + 1]
-        nextArticle.focus()
-        scrollArticleIntoView(nextArticle)
-      } else if (currentIndex === articleElements.length - 1) {
-        // Last article - trigger load more
-        emit({ type: 'loadMore', detail: { position: currentIndex + 1 } })
-      }
-    }
-
-    const moveToPreviousArticle = () => {
-      const articleElements = getArticleElements()
-      const activeElement = document.activeElement as HTMLElement
-      const currentIndex = articleElements.indexOf(activeElement)
-      
-      if (currentIndex > 0) {
-        const previousArticle = articleElements[currentIndex - 1]
-        previousArticle.focus()
-        scrollArticleIntoView(previousArticle)
-      }
-    }
-
-    const moveToFirstArticle = () => {
-      const articleElements = getArticleElements()
-      if (articleElements.length > 0) {
-        articleElements[0].focus()
-        scrollArticleIntoView(articleElements[0])
-      }
-    }
-
-    const moveToLastArticle = () => {
-      const articleElements = getArticleElements()
-      if (articleElements.length > 0) {
-        const lastArticle = articleElements[articleElements.length - 1]
-        lastArticle.focus()
-        scrollArticleIntoView(lastArticle)
-      }
-    }
-
-    const scrollArticleIntoView = (article: HTMLElement) => {
-      article.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      return articles.indexOf(activeElement)
     }
 
     const setBusy = (busy: boolean) => {
       isLoading = busy
       feed?.attr('aria-busy', busy ? 'true' : 'false')
+      loading?.attr('hidden', busy ? null : '')
+    }
+
+    const observeArticles = () => {
+      if (!intersectionObserver) return
+      const articles = getArticles()
+      articles.forEach((article) => intersectionObserver?.observe(article))
     }
 
     return {
       handleKeydown(event: KeyboardEvent) {
-        // Only handle keys when focus is within feed
-        if (!feed?.contains(document.activeElement)) return
-        
+        const articles = getArticles()
+        const currentIndex = getCurrentIndex()
+
         switch (event.key) {
           case 'PageDown':
             event.preventDefault()
-            moveToNextArticle()
+            if (currentIndex < articles.length - 1) {
+              moveToArticle(currentIndex + 1)
+            } else if (currentIndex === articles.length - 1 && !isLoading) {
+              emit({ type: 'loadMore', detail: { position: currentIndex + 1 } })
+            }
             break
           case 'PageUp':
             event.preventDefault()
-            moveToPreviousArticle()
+            if (currentIndex > 0) {
+              moveToArticle(currentIndex - 1)
+            }
             break
           case 'Home':
             if (event.ctrlKey) {
               event.preventDefault()
-              moveToFirstArticle()
+              moveToArticle(0)
             }
             break
           case 'End':
             if (event.ctrlKey) {
               event.preventDefault()
-              moveToLastArticle()
+              moveToArticle(articles.length - 1)
             }
             break
         }
       },
-      handleArticleFocus(event: { target: HTMLElement }) {
-        const article = event.target
-        const articleId = article.id
-        const position = parseInt(article.getAttribute('aria-posinset') || '0', 10)
-        
-        emit({ type: 'articleFocus', detail: { articleId, position } })
-        
-        // Load more if near the end
-        const articleElements = getArticleElements()
-        const currentIndex = articleElements.indexOf(article)
-        if (currentIndex >= articleElements.length - 3 && !isLoading) {
-          emit({ type: 'loadMore', detail: { position: currentIndex + 1 } })
-        }
-      },
-      addArticles(newArticles: Article[]) {
-        setBusy(true)
-        
-        // Update articles list
-        articles = [...articles, ...newArticles]
-        
-        // Re-render
-        renderArticles()
-        
-        setBusy(false)
-      },
-      setTotalSize(size: number | null) {
-        totalSize = size
-        renderArticles()
+      setLoading(busy: boolean) {
+        setBusy(busy)
       },
       onConnected() {
         // Set up Intersection Observer for scroll-based loading
@@ -339,9 +308,9 @@ export const Feed = bElement<FeedEvents>({
             entries.forEach((entry) => {
               if (entry.isIntersecting && !isLoading) {
                 const article = entry.target as HTMLElement
-                const position = parseInt(article.getAttribute('aria-posinset') || '0', 10)
-                
-                // Load more when last few articles are visible
+                const position = parseInt(article.getAttribute('aria-posinset') ?? '0', 10)
+                const articles = getArticles()
+
                 if (position >= articles.length - 2) {
                   emit({ type: 'loadMore', detail: { position } })
                 }
@@ -350,11 +319,15 @@ export const Feed = bElement<FeedEvents>({
           },
           { rootMargin: '200px' }
         )
-        
-        observeArticles()
+
+        // Observe slotted articles
+        const slot = feed?.querySelector('slot') as HTMLSlotElement
+        if (slot) {
+          slot.addEventListener('slotchange', observeArticles)
+          observeArticles()
+        }
       },
       onDisconnected() {
-        // Cleanup Intersection Observer
         if (intersectionObserver) {
           intersectionObserver.disconnect()
           intersectionObserver = undefined
@@ -363,113 +336,196 @@ export const Feed = bElement<FeedEvents>({
     }
   },
 })
-```
 
-#### Feed with External Data Loading
-
-```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
-
-type FeedEvents = {
-  loadMore: { position: number }
-}
-
-export const DataFeed = bElement<FeedEvents>({
-  tag: 'data-feed',
-  shadowDom: (
-    <div
-      p-target='feed'
-      role='feed'
-      aria-label='Feed'
-      aria-busy='false'
-      p-trigger={{ keydown: 'handleKeydown' }}
-    >
-      <slot name='articles'></slot>
-    </div>
+// Stories - EXPORTED for testing/training
+export const basicFeed = story({
+  intent: 'Display a feed with multiple articles and keyboard navigation',
+  template: () => (
+    <Feed aria-label="News feed">
+      <article
+        role="article"
+        aria-posinset={1}
+        aria-setsize={3}
+        aria-labelledby="article-1-title"
+        tabIndex={-1}
+        style="padding: 1rem; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 1rem;"
+      >
+        <h3 id="article-1-title">First Article</h3>
+        <p>Content of the first article...</p>
+      </article>
+      <article
+        role="article"
+        aria-posinset={2}
+        aria-setsize={3}
+        aria-labelledby="article-2-title"
+        tabIndex={-1}
+        style="padding: 1rem; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 1rem;"
+      >
+        <h3 id="article-2-title">Second Article</h3>
+        <p>Content of the second article...</p>
+      </article>
+      <article
+        role="article"
+        aria-posinset={3}
+        aria-setsize={3}
+        aria-labelledby="article-3-title"
+        tabIndex={-1}
+        style="padding: 1rem; border: 1px solid #ccc; border-radius: 4px;"
+      >
+        <h3 id="article-3-title">Third Article</h3>
+        <p>Content of the third article...</p>
+      </article>
+    </Feed>
   ),
-  bProgram({ $, host, emit, trigger }) {
-    const feed = $('feed')[0]
-    let isLoading = false
-    let intersectionObserver: IntersectionObserver | undefined
+  play: async ({ findByAttribute, assert }) => {
+    const feed = await findByAttribute('p-target', 'feed')
 
-    const setBusy = (busy: boolean) => {
-      isLoading = busy
-      feed?.attr('aria-busy', busy ? 'true' : 'false')
-    }
+    assert({
+      given: 'feed is rendered',
+      should: 'have feed role',
+      actual: feed?.getAttribute('role'),
+      expected: 'feed',
+    })
 
-    return {
-      handleKeydown(event: KeyboardEvent) {
-        const articleElements = Array.from(
-          feed?.querySelectorAll('[role="article"]') || []
-        ) as HTMLElement[]
-        
-        const activeElement = document.activeElement as HTMLElement
-        const currentIndex = articleElements.indexOf(activeElement)
-        
-        switch (event.key) {
-          case 'PageDown':
-            event.preventDefault()
-            if (currentIndex >= 0 && currentIndex < articleElements.length - 1) {
-              articleElements[currentIndex + 1].focus()
-            } else if (currentIndex === articleElements.length - 1) {
-              emit({ type: 'loadMore', detail: { position: currentIndex + 1 } })
-            }
-            break
-          case 'PageUp':
-            event.preventDefault()
-            if (currentIndex > 0) {
-              articleElements[currentIndex - 1].focus()
-            }
-            break
-        }
-      },
-      loadMoreArticles(position: number) {
-        setBusy(true)
-        emit({ type: 'loadMore', detail: { position } })
-      },
-      articlesLoaded() {
-        setBusy(false)
-      },
-      onConnected() {
-        // Set up observer for scroll-based loading
-        intersectionObserver = new IntersectionObserver(
-          (entries) => {
-            entries.forEach((entry) => {
-              if (entry.isIntersecting && !isLoading) {
-                const article = entry.target as HTMLElement
-                const position = parseInt(article.getAttribute('aria-posinset') || '0', 10)
-                const totalElements = feed?.querySelectorAll('[role="article"]').length || 0
-                
-                if (position >= totalElements - 2) {
-                  trigger({ type: 'loadMoreArticles', detail: position })
-                }
-              }
-            })
-          },
-          { rootMargin: '200px' }
-        )
-        
-        // Observe articles from slot
-        const slot = feed?.querySelector('slot[name="articles"]') as HTMLSlotElement
-        if (slot) {
-          slot.addEventListener('slotchange', () => {
-            const assignedNodes = slot.assignedElements()
-            assignedNodes.forEach((node) => {
-              if (node.hasAttribute('role') && node.getAttribute('role') === 'article') {
-                intersectionObserver?.observe(node as HTMLElement)
-              }
-            })
-          })
-        }
-      },
-      onDisconnected() {
-        if (intersectionObserver) {
-          intersectionObserver.disconnect()
-          intersectionObserver = undefined
-        }
-      },
-    }
+    assert({
+      given: 'feed is rendered',
+      should: 'not be busy initially',
+      actual: feed?.getAttribute('aria-busy'),
+      expected: 'false',
+    })
+  },
+})
+
+export const loadingFeed = story({
+  intent: 'Display a feed in loading state with aria-busy',
+  template: () => {
+    // Create ref to access feed after render
+    let feedRef: HTMLElement | null = null
+
+    return (
+      <Feed
+        aria-label="Loading feed"
+        ref={(el: HTMLElement) => {
+          feedRef = el
+          // Set loading state after mount
+          setTimeout(() => {
+            (feedRef as any)?.trigger?.({ type: 'setLoading', detail: true })
+          }, 0)
+        }}
+      >
+        <article
+          role="article"
+          aria-posinset={1}
+          aria-setsize={-1}
+          aria-labelledby="loading-article-title"
+          tabIndex={-1}
+          style="padding: 1rem; border: 1px solid #ccc; border-radius: 4px;"
+        >
+          <h3 id="loading-article-title">Existing Article</h3>
+          <p>More articles are loading...</p>
+        </article>
+      </Feed>
+    )
+  },
+  play: async ({ findByAttribute, assert }) => {
+    const feed = await findByAttribute('p-target', 'feed')
+
+    assert({
+      given: 'feed with unknown total',
+      should: 'have article with aria-setsize -1',
+      actual: feed?.querySelector('[role="article"]')?.getAttribute('aria-setsize'),
+      expected: '-1',
+    })
+  },
+})
+
+export const staticFeedDisplay = story({
+  intent: 'Static FunctionalTemplate feed for non-interactive display',
+  template: () => (
+    <StaticFeed label="Static news feed">
+      <StaticArticle
+        title="Breaking News"
+        description="Latest updates from around the world"
+        position={1}
+        setSize={2}
+      >
+        Full article content goes here...
+      </StaticArticle>
+      <StaticArticle
+        title="Tech Update"
+        description="New developments in technology"
+        position={2}
+        setSize={2}
+      >
+        Technology news content...
+      </StaticArticle>
+    </StaticFeed>
+  ),
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
+  },
+})
+
+export const keyboardNavigation = story({
+  intent: 'Demonstrate feed keyboard navigation with Page Up/Down',
+  template: () => (
+    <Feed aria-label="Keyboard navigation demo">
+      <article
+        role="article"
+        aria-posinset={1}
+        aria-setsize={3}
+        aria-labelledby="kb-article-1"
+        tabIndex={-1}
+        style="padding: 1rem; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 1rem;"
+      >
+        <h3 id="kb-article-1">Article 1</h3>
+        <p>Press Page Down to move to next article</p>
+      </article>
+      <article
+        role="article"
+        aria-posinset={2}
+        aria-setsize={3}
+        aria-labelledby="kb-article-2"
+        tabIndex={-1}
+        style="padding: 1rem; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 1rem;"
+      >
+        <h3 id="kb-article-2">Article 2</h3>
+        <p>Press Page Up to move to previous article</p>
+      </article>
+      <article
+        role="article"
+        aria-posinset={3}
+        aria-setsize={3}
+        aria-labelledby="kb-article-3"
+        tabIndex={-1}
+        style="padding: 1rem; border: 1px solid #ccc; border-radius: 4px;"
+      >
+        <h3 id="kb-article-3">Article 3</h3>
+        <p>Press Ctrl+Home/End to jump to first/last</p>
+      </article>
+    </Feed>
+  ),
+  play: async ({ findByAttribute, fireEvent, assert }) => {
+    const feed = await findByAttribute('p-target', 'feed')
+    const articles = feed?.querySelectorAll('[role="article"]')
+
+    assert({
+      given: 'feed with articles',
+      should: 'have 3 articles',
+      actual: articles?.length,
+      expected: 3,
+    })
+
+    // Focus first article
+    const firstArticle = articles?.[0] as HTMLElement
+    firstArticle?.focus()
+
+    assert({
+      given: 'first article is focused',
+      should: 'be the active element',
+      actual: document.activeElement === firstArticle,
+      expected: true,
+    })
   },
 })
 ```
@@ -477,15 +533,8 @@ export const DataFeed = bElement<FeedEvents>({
 ## Plaited Integration
 
 - **Works with Shadow DOM**: Yes - feeds are bElements with Shadow DOM
-- **Uses bElement built-ins**: 
-  - `p-trigger` for keyboard events and focus events
-  - `p-target` for element selection with `$()`
-  - `render()` helper for dynamic article rendering
-  - `attr()` helper for managing ARIA attributes
-- **Requires external web API**: 
-  - Intersection Observer API (for scroll detection)
-  - Focus management APIs (`focus()`, `scrollIntoView()`)
-  - Keyboard event handling
+- **Uses bElement built-ins**: `$`, `p-trigger`, `p-target`, `emit`, `attr`
+- **Requires external web API**: Intersection Observer API, Focus management
 - **Cleanup required**: Yes - Intersection Observer must be disconnected in `onDisconnected`
 
 ## Keyboard Interaction
@@ -494,8 +543,8 @@ When focus is inside the feed:
 
 - **Page Down**: Moves focus to the next article
 - **Page Up**: Moves focus to the previous article
-- **Control + End**: Moves focus to the first focusable element after the feed
-- **Control + Home**: Moves focus to the first focusable element before the feed
+- **Control + End**: Moves focus to the last article
+- **Control + Home**: Moves focus to the first article
 
 **Note**: Due to lack of established keyboard conventions, provide easily discoverable keyboard interface documentation.
 
@@ -520,14 +569,13 @@ When focus is inside the feed:
 
 1. **Use bElement** - Feeds require complex state management and scroll detection
 2. **Use Intersection Observer** - Efficient scroll detection for lazy loading
-3. **Set aria-busy appropriately** - Mark feed as busy during loading operations
-4. **Update aria-setsize** - Reflect total articles or use -1 for unknown/infinite
-5. **Manage article focus** - Ensure articles are focusable (tabindex="-1")
-6. **Scroll on focus** - Scroll focused article into view for visibility
-7. **Provide article labels** - Use `aria-labelledby` to reference title
-8. **Provide article descriptions** - Use `aria-describedby` for primary content
-9. **Clean up observers** - Disconnect Intersection Observer in `onDisconnected`
-10. **Document keyboard shortcuts** - Feed pattern has less established conventions
+3. **Use spread syntax** - `{...styles.x}` for applying styles
+4. **Set aria-busy appropriately** - Mark feed as busy during loading operations
+5. **Update aria-setsize** - Reflect total articles or use -1 for unknown/infinite
+6. **Manage article focus** - Ensure articles are focusable (tabindex="-1")
+7. **Scroll on focus** - Scroll focused article into view for visibility
+8. **Clean up observers** - Disconnect Intersection Observer in `onDisconnected`
+9. **Use `$()` with `p-target`** - never use `querySelector` directly
 
 ## Accessibility Considerations
 
@@ -539,22 +587,6 @@ When focus is inside the feed:
 - Feed pattern enables reliable reading mode interaction
 - Articles can be skim-read using titles and descriptions
 
-## Interoperability Contract
-
-The feed pattern establishes an agreement between web pages and assistive technologies:
-
-**Web Page Responsibilities:**
-
-- Scroll content based on which article has DOM focus
-- Load/remove articles based on focus position
-- Update ARIA attributes (aria-busy, aria-setsize, aria-posinset)
-
-**Assistive Technology Responsibilities:**
-
-- Ensure article or descendant has DOM focus to indicate reading cursor
-- Provide reading mode keys to navigate articles
-- Provide keys to move past start/end of feed
-
 ## Browser Compatibility
 
 | Browser | Support |
@@ -563,8 +595,6 @@ The feed pattern establishes an agreement between web pages and assistive techno
 | Firefox | Full support (Intersection Observer since v55) |
 | Safari | Full support (Intersection Observer since v12.1) |
 | Edge | Full support (Intersection Observer since v15) |
-
-**Note**: Intersection Observer API and ARIA attributes have universal support in modern browsers with assistive technology.
 
 ## References
 

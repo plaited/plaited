@@ -17,6 +17,15 @@ A button is a widget that enables users to trigger an action or event, such as s
 - Form submission
 - Navigation actions that aren't links
 
+## Pattern Philosophy
+
+This pattern is **training data** for the Plaited agent. The examples below train the agent's understanding of how to implement this pattern correctly.
+
+- bElements/FunctionalTemplates are defined locally in stories (NOT exported)
+- Only stories are exported (required for testing/training)
+- Styles are always in separate `*.css.ts` files
+- Use spread syntax `{...styles.x}` for applying styles
+
 ## Implementation
 
 ### Vanilla JavaScript
@@ -39,215 +48,309 @@ button.addEventListener('click', () => {
   button.setAttribute('aria-pressed', String(!pressed))
 })
 
-// Keyboard support
-button.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' || e.key === ' ') {
-    e.preventDefault()
-    button.click()
-  }
-})
+// Note: Native <button> handles Enter/Space automatically
+// No additional keyboard handlers needed
 ```
 
 ### Plaited Adaptation
 
-**Important**: In Plaited, buttons are implemented as **Functional Templates (FT)** in stories files, not as bElements. They use native `<button>` elements without Shadow DOM. Buttons can be used inside bElements' shadowDom, but the button templates themselves are simple functional components.
+**Native HTML First:** Buttons should use native `<button>` elements which provide built-in keyboard support (Enter/Space), focus management, and semantics. Avoid custom keyboard handlers for basic button functionality.
 
-#### Command Button
+**File Structure:**
+
+```
+button/
+  button.css.ts        # Styles (createStyles) - ALWAYS separate
+  button.stories.tsx   # FT + stories (imports from css.ts)
+```
+
+#### button.css.ts
 
 ```typescript
-import type { FT } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { buttonStyles } from './button.css.ts'
+// button.css.ts
+import { createStyles } from 'plaited'
 
+export const styles = createStyles({
+  btn: {
+    padding: '0.5rem 1rem',
+    border: '1px solid transparent',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '1rem',
+    fontFamily: 'inherit',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem',
+  },
+  primary: {
+    backgroundColor: '#0066cc',
+    color: 'white',
+    borderColor: '#0066cc',
+  },
+  secondary: {
+    backgroundColor: 'transparent',
+    color: '#0066cc',
+    borderColor: '#0066cc',
+  },
+  outline: {
+    backgroundColor: 'transparent',
+    color: '#333',
+    borderColor: '#ccc',
+  },
+  toggle: {
+    backgroundColor: '#f0f0f0',
+    color: '#333',
+    borderColor: '#ccc',
+  },
+  togglePressed: {
+    backgroundColor: '#0066cc',
+    color: 'white',
+    borderColor: '#0066cc',
+  },
+  icon: {
+    padding: '0.5rem',
+    minInlineSize: '2.5rem',
+    minBlockSize: '2.5rem',
+  },
+  disabled: {
+    opacity: 0.5,
+    cursor: 'not-allowed',
+  },
+  description: {
+    fontSize: '0.875rem',
+    color: '#666',
+    marginBlockStart: '0.25rem',
+  },
+})
+```
+
+#### button.stories.tsx
+
+```typescript
+// button.stories.tsx
+import type { FT, Children } from 'plaited/ui'
+import { bElement } from 'plaited/ui'
+import { story } from 'plaited/testing'
+import { styles } from './button.css.ts'
+
+// FunctionalTemplate - defined locally, NOT exported
 const PrimaryButton: FT<{ disabled?: boolean; children?: Children }> = ({
   disabled,
   children,
   ...attrs
 }) => (
   <button
-    type='button'
+    type="button"
     {...attrs}
-    {...joinStyles(buttonStyles.btn, buttonStyles.primary)}
+    {...styles.btn}
+    {...styles.primary}
+    {...(disabled ? styles.disabled : {})}
     disabled={disabled}
   >
     {children}
   </button>
 )
-```
 
-#### Toggle Button
+const SecondaryButton: FT<{ disabled?: boolean; children?: Children }> = ({
+  disabled,
+  children,
+  ...attrs
+}) => (
+  <button
+    type="button"
+    {...attrs}
+    {...styles.btn}
+    {...styles.secondary}
+    {...(disabled ? styles.disabled : {})}
+    disabled={disabled}
+  >
+    {children}
+  </button>
+)
 
-```typescript
-import type { FT } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { buttonStyles } from './button.css.ts'
+const OutlineButton: FT<{ disabled?: boolean; children?: Children }> = ({
+  disabled,
+  children,
+  ...attrs
+}) => (
+  <button
+    type="button"
+    {...attrs}
+    {...styles.btn}
+    {...styles.outline}
+    {...(disabled ? styles.disabled : {})}
+    disabled={disabled}
+  >
+    {children}
+  </button>
+)
 
-const ToggleButton: FT<{
-  'aria-pressed': 'true' | 'false'
+const IconButton: FT<{
+  disabled?: boolean
   'aria-label': string
   children?: Children
-}> = ({ 'aria-pressed': ariaPressed, 'aria-label': ariaLabel, children, ...attrs }) => (
+}> = ({ disabled, 'aria-label': ariaLabel, children, ...attrs }) => (
   <button
-    type='button'
+    type="button"
     {...attrs}
-    {...joinStyles(buttonStyles.btn, buttonStyles.toggle)}
-    aria-pressed={ariaPressed}
+    {...styles.btn}
+    {...styles.icon}
+    {...styles.primary}
+    {...(disabled ? styles.disabled : {})}
+    disabled={disabled}
     aria-label={ariaLabel}
   >
     {children}
   </button>
 )
 
-// Usage in story - state managed externally
-export const toggleButtonStory = story({
-  intent: 'Toggle button with aria-pressed state',
-  template: () => <ToggleButton aria-pressed='false' aria-label='Mute'>Mute</ToggleButton>,
-})
-```
-
-**Note**: For toggle buttons with dynamic state, the parent bElement manages the state and updates the `aria-pressed` attribute using `attr()` helper:
-
-```typescript
-// Inside a bElement's shadowDom and bProgram
-bElement({
-  tag: 'audio-controls',
+// bElement for toggle button with state management - defined locally, NOT exported
+const ToggleButton = bElement({
+  tag: 'pattern-toggle-button',
+  observedAttributes: ['aria-pressed'],
   shadowDom: (
-    <ToggleButton
-      p-target='mute-button'
-      aria-pressed='false'
-      aria-label='Mute'
-      p-trigger={{ click: 'toggleMute' }}
+    <button
+      type="button"
+      p-target="button"
+      p-trigger={{ click: 'toggle' }}
+      aria-pressed="false"
+      {...styles.btn}
+      {...styles.toggle}
     >
-      Mute
-    </ToggleButton>
+      <slot></slot>
+    </button>
   ),
-  bProgram({ $ }) {
-    const muteBtn = $('mute-button')[0]
-    let muted = false
+  bProgram({ $, emit, host }) {
+    const button = $('button')[0]
 
     return {
-      toggleMute() {
-        muted = !muted
-        muteBtn?.attr('aria-pressed', muted ? 'true' : 'false')
+      toggle() {
+        const isPressed = button?.attr('aria-pressed') === 'true'
+        const newPressed = !isPressed
+        button?.attr('aria-pressed', newPressed ? 'true' : 'false')
+
+        // Update visual state
+        if (newPressed) {
+          button?.attr('class', `${styles.btn.classNames.join(' ')} ${styles.togglePressed.classNames.join(' ')}`)
+        } else {
+          button?.attr('class', `${styles.btn.classNames.join(' ')} ${styles.toggle.classNames.join(' ')}`)
+        }
+
+        emit({ type: 'toggle', detail: { pressed: newPressed } })
+      },
+      onAttributeChanged({ name, newValue }) {
+        if (name === 'aria-pressed') {
+          button?.attr('aria-pressed', newValue ?? 'false')
+        }
       },
     }
   },
 })
-```
 
-#### Disabled Button
-
-```typescript
-import type { FT } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { buttonStyles } from './button.css.ts'
-
-const DisabledButton: FT<{ children?: Children }> = ({ children, ...attrs }) => (
-  <button
-    type='button'
-    {...attrs}
-    {...joinStyles(buttonStyles.btn)}
-    disabled
-    aria-disabled='true'
-  >
-    {children}
-  </button>
-)
-```
-
-#### Icon Button
-
-```typescript
-import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { buttonStyles } from './button.css.ts'
-
-const IconButton: FT<{
-  disabled?: boolean
-  variant?: 'primary' | 'secondary' | 'outline'
-  'aria-label': string
-  children?: Children
-}> = ({
-  disabled,
-  variant = 'primary',
-  'aria-label': ariaLabel,
-  children,
-  ...attrs
-}) => (
-  <button
-    type='button'
-    {...attrs}
-    {...joinStyles(
-      buttonStyles.btn,
-      buttonStyles.icon,
-      buttonStyles[variant]
-    )}
-    disabled={disabled}
-    aria-label={ariaLabel}
-  >
-    {children}
-  </button>
-)
-```
-
-#### Button with Description
-
-```typescript
-import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { buttonStyles } from './button.css.ts'
-
-const DescribedButton: FT<{ children?: Children; description: string }> = ({
-  children,
-  description,
-  ...attrs
-}) => (
-  <>
-    <button
-      type='button'
-      {...attrs}
-      {...joinStyles(buttonStyles.btn)}
-      aria-describedby='button-description'
-    >
-      {children}
-    </button>
-    <span
-      id='button-description'
-      {...joinStyles(buttonStyles.description)}
-    >
-      {description}
-    </span>
-  </>
-)
-```
-
-#### Story Examples
-
-```typescript
-import { story } from 'plaited/testing'
-
+// Stories - EXPORTED for testing/training
 export const primaryButton = story({
-  intent: 'Create a primary button with hover and focus states',
+  intent: 'Primary action button with filled background for main actions',
   template: () => <PrimaryButton>Click Me</PrimaryButton>,
+  play: async ({ findByRole, assert, accessibilityCheck }) => {
+    const button = await findByRole('button')
+
+    assert({
+      given: 'primary button is rendered',
+      should: 'have type="button"',
+      actual: button?.getAttribute('type'),
+      expected: 'button',
+    })
+
+    await accessibilityCheck({})
+  },
+})
+
+export const secondaryButton = story({
+  intent: 'Secondary action button with outline style for less prominent actions',
+  template: () => <SecondaryButton>Secondary Action</SecondaryButton>,
   play: async ({ accessibilityCheck }) => {
     await accessibilityCheck({})
   },
 })
 
-export const primaryButtonDisabled = story({
-  intent: 'Create a disabled primary button',
-  template: () => <PrimaryButton disabled>Disabled</PrimaryButton>,
+export const outlineButton = story({
+  intent: 'Outline button with subtle border for tertiary actions',
+  template: () => <OutlineButton>Outline Button</OutlineButton>,
   play: async ({ accessibilityCheck }) => {
     await accessibilityCheck({})
+  },
+})
+
+export const disabledButton = story({
+  intent: 'Disabled button that prevents user interaction',
+  template: () => <PrimaryButton disabled>Disabled</PrimaryButton>,
+  play: async ({ findByRole, assert }) => {
+    const button = await findByRole('button')
+
+    assert({
+      given: 'disabled button is rendered',
+      should: 'have disabled attribute',
+      actual: button?.hasAttribute('disabled'),
+      expected: true,
+    })
   },
 })
 
 export const iconButton = story({
-  intent: 'Create an accessible icon button',
+  intent: 'Icon-only button with aria-label for accessibility',
   template: () => (
-    <IconButton aria-label='Close dialog'>
-      <CloseIcon />
+    <IconButton aria-label="Close dialog">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M4 4l8 8M4 12l8-8" stroke="currentColor" stroke-width="2" />
+      </svg>
     </IconButton>
+  ),
+  play: async ({ findByRole, assert }) => {
+    const button = await findByRole('button')
+
+    assert({
+      given: 'icon button is rendered',
+      should: 'have aria-label',
+      actual: button?.getAttribute('aria-label'),
+      expected: 'Close dialog',
+    })
+  },
+})
+
+export const toggleButton = story({
+  intent: 'Toggle button with aria-pressed state management',
+  template: () => <ToggleButton aria-label="Mute">Mute</ToggleButton>,
+  play: async ({ findByAttribute, assert, fireEvent }) => {
+    const button = await findByAttribute('p-target', 'button')
+
+    assert({
+      given: 'toggle button is rendered',
+      should: 'have aria-pressed="false" initially',
+      actual: button?.getAttribute('aria-pressed'),
+      expected: 'false',
+    })
+
+    if (button) await fireEvent(button, 'click')
+
+    assert({
+      given: 'toggle button is clicked',
+      should: 'have aria-pressed="true"',
+      actual: button?.getAttribute('aria-pressed'),
+      expected: 'true',
+    })
+  },
+})
+
+export const toggleButtonInBElement = story({
+  intent: 'Toggle button used inside a parent bElement with state coordination',
+  template: () => (
+    <div>
+      <p>Click the mute button to toggle audio state:</p>
+      <ToggleButton aria-label="Mute audio">
+        🔊 Mute
+      </ToggleButton>
+    </div>
   ),
   play: async ({ accessibilityCheck }) => {
     await accessibilityCheck({})
@@ -257,30 +360,29 @@ export const iconButton = story({
 
 ## Plaited Integration
 
-- **Works with Shadow DOM**: No - buttons are Functional Templates that render native `<button>` elements directly
-- **Uses bElement built-ins**: 
-  - Buttons are FT, not bElements
-  - When used inside bElements' shadowDom, can use `p-trigger` and `p-target`
-  - Parent bElement can manage button state using `attr()` helper
-- **Requires external web API**: No - uses standard HTML button element
-- **Cleanup required**: No - button element handles its own lifecycle
-- **Pattern**: Buttons are defined in `*.stories.tsx` files as Functional Templates
+- **Works with Shadow DOM**: Optional - buttons can be FT (no Shadow DOM) or bElements (with Shadow DOM for toggle state)
+- **Uses bElement built-ins**: `$`, `p-trigger`, `p-target`, `emit`, `attr`
+- **Requires external web API**: No
+- **Cleanup required**: No
 
 ## Keyboard Interaction
 
 When the button has focus:
+
 - **Space**: Activates the button
 - **Enter**: Activates the button
 
-**Note**: Native `<button>` elements handle Space and Enter automatically. No additional keyboard handlers are needed for functional template buttons.
+**Note**: Native `<button>` elements handle Space and Enter automatically. No additional keyboard handlers are needed for FunctionalTemplate buttons.
 
 ## WAI-ARIA Roles, States, and Properties
 
 ### Required
+
 - **role**: `button` (implicit on `<button>` element)
 - **Accessible label**: Provided via text content, `aria-label`, or `aria-labelledby`
 
 ### Optional
+
 - **aria-disabled**: Set to `true` when button action is unavailable
 - **aria-pressed**: For toggle buttons - `true` when pressed, `false` when not pressed
 - **aria-describedby**: ID reference to element containing button description
@@ -289,13 +391,13 @@ When the button has focus:
 ## Best Practices
 
 1. **Use native `<button>` elements** - they provide built-in keyboard support and semantics
-2. **Define buttons as Functional Templates** in `*.stories.tsx` files, not as bElements
-3. **Apply styles using `joinStyles`** from `*.css.ts` files
-4. **Maintain consistent labels** for toggle buttons - don't change "Mute" to "Unmute", use `aria-pressed` instead
-5. **Manage toggle state in parent bElement** - use `p-target` and `attr()` to update `aria-pressed` dynamically
+2. **Use FunctionalTemplates** for stateless buttons
+3. **Use bElements** for toggle buttons that need state management
+4. **Use spread syntax** - `{...styles.x}` for applying styles
+5. **Maintain consistent labels** for toggle buttons - don't change "Mute" to "Unmute", use `aria-pressed` instead
 6. **Provide visual feedback** for disabled states using `disabled` attribute and CSS
 7. **Use `aria-describedby`** for additional context that doesn't fit in the label
-8. **Spread props with `...attrs`** to allow additional attributes and event handlers
+8. **Use `$()` with `p-target`** - never use `querySelector` directly
 
 ## Accessibility Considerations
 

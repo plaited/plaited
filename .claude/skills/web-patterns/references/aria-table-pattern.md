@@ -31,6 +31,15 @@ Like an HTML `table` element, a WAI-ARIA table is a static tabular structure con
 - Comparison tables
 - Schedule/timetable displays
 
+## Pattern Philosophy
+
+This pattern is **training data** for the Plaited agent. The examples below train the agent's understanding of how to implement this pattern correctly.
+
+- bElements/FunctionalTemplates are defined locally in stories (NOT exported)
+- Only stories are exported (required for testing/training)
+- Styles are always in separate `*.css.ts` files
+- Use spread syntax `{...styles.x}` for applying styles
+
 ## Implementation
 
 ### Vanilla JavaScript
@@ -77,26 +86,6 @@ Like an HTML `table` element, a WAI-ARIA table is a static tabular structure con
     </div>
   </div>
 </div>
-
-<!-- Sortable table -->
-<table>
-  <thead>
-    <tr>
-      <th scope="col" aria-sort="ascending">
-        <button>Name</button>
-      </th>
-      <th scope="col" aria-sort="none">
-        <button>Price</button>
-      </th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>Product A</td>
-      <td>$10.00</td>
-    </tr>
-  </tbody>
-</table>
 ```
 
 ```javascript
@@ -104,17 +93,17 @@ Like an HTML `table` element, a WAI-ARIA table is a static tabular structure con
 function sortTable(columnIndex, direction) {
   const tbody = document.querySelector('tbody')
   const rows = Array.from(tbody.querySelectorAll('tr'))
-  
+
   rows.sort((a, b) => {
     const aValue = a.cells[columnIndex].textContent
     const bValue = b.cells[columnIndex].textContent
-    return direction === 'ascending' 
+    return direction === 'ascending'
       ? aValue.localeCompare(bValue)
       : bValue.localeCompare(aValue)
   })
-  
+
   rows.forEach(row => tbody.appendChild(row))
-  
+
   // Update aria-sort on headers
   document.querySelectorAll('th').forEach((th, idx) => {
     if (idx === columnIndex) {
@@ -133,14 +122,74 @@ function sortTable(columnIndex, direction) {
 2. **bElements** for dynamic tables that need sorting, filtering, or data updates
 3. **Native HTML `<table>`** when possible (strongly preferred)
 
-#### Static Table (Functional Template)
+**File Structure:**
+
+```
+table/
+  table.css.ts        # Styles (createStyles) - ALWAYS separate
+  table.stories.tsx   # FT/bElement + stories (imports from css.ts)
+```
+
+#### table.css.ts
+
+```typescript
+// table.css.ts
+import { createStyles } from 'plaited'
+
+export const styles = createStyles({
+  table: {
+    inlineSize: '100%',
+    borderCollapse: 'collapse',
+    border: '1px solid #ccc',
+  },
+  caption: {
+    fontSize: '1.125rem',
+    fontWeight: 'bold',
+    marginBlockEnd: '0.5rem',
+    textAlign: 'start',
+    captionSide: 'top',
+  },
+  thead: {
+    backgroundColor: '#f0f0f0',
+  },
+  tbody: {
+    backgroundColor: '#fff',
+  },
+  tr: {
+    borderBlockEnd: '1px solid #e0e0e0',
+  },
+  th: {
+    padding: '0.75rem',
+    textAlign: 'start',
+    fontWeight: 'bold',
+    borderInlineEnd: '1px solid #e0e0e0',
+  },
+  td: {
+    padding: '0.75rem',
+    borderInlineEnd: '1px solid #e0e0e0',
+  },
+  sortButton: {
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    padding: '0.25rem',
+    fontWeight: 'inherit',
+    textAlign: 'inherit',
+    inlineSize: '100%',
+  },
+})
+```
+
+#### table.stories.tsx
 
 ```typescript
 // table.stories.tsx
 import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { tableStyles } from './table.css.ts'
+import { bElement } from 'plaited/ui'
+import { story } from 'plaited/testing'
+import { styles } from './table.css.ts'
 
+// Types - defined locally
 type TableCell = {
   content: Children
   header?: boolean
@@ -160,6 +209,7 @@ type TableProps = {
   rows: TableRow[]
 }
 
+// FunctionalTemplate for static table - defined locally, NOT exported
 const Table: FT<TableProps> = ({
   caption,
   'aria-label': ariaLabel,
@@ -167,15 +217,11 @@ const Table: FT<TableProps> = ({
   rows,
   ...attrs
 }) => (
-  <table
-    aria-label={ariaLabel}
-    {...attrs}
-    {...joinStyles(tableStyles.table)}
-  >
-    {caption && <caption {...tableStyles.caption}>{caption}</caption>}
+  <table aria-label={ariaLabel} {...attrs} {...styles.table}>
+    {caption && <caption {...styles.caption}>{caption}</caption>}
     {headers && (
-      <thead {...tableStyles.thead}>
-        <tr {...tableStyles.tr}>
+      <thead {...styles.thead}>
+        <tr {...styles.tr}>
           {headers.cells.map((cell, idx) =>
             cell.header ? (
               <th
@@ -183,7 +229,7 @@ const Table: FT<TableProps> = ({
                 scope={cell.scope || 'col'}
                 colSpan={cell.colspan}
                 rowSpan={cell.rowspan}
-                {...tableStyles.th}
+                {...styles.th}
               >
                 {cell.content}
               </th>
@@ -192,7 +238,7 @@ const Table: FT<TableProps> = ({
                 key={idx}
                 colSpan={cell.colspan}
                 rowSpan={cell.rowspan}
-                {...tableStyles.td}
+                {...styles.td}
               >
                 {cell.content}
               </td>
@@ -201,9 +247,9 @@ const Table: FT<TableProps> = ({
         </tr>
       </thead>
     )}
-    <tbody {...tableStyles.tbody}>
+    <tbody {...styles.tbody}>
       {rows.map((row, rowIdx) => (
-        <tr key={rowIdx} {...tableStyles.tr}>
+        <tr key={rowIdx} {...styles.tr}>
           {row.cells.map((cell, cellIdx) =>
             cell.header ? (
               <th
@@ -211,7 +257,7 @@ const Table: FT<TableProps> = ({
                 scope={cell.scope || 'row'}
                 colSpan={cell.colspan}
                 rowSpan={cell.rowspan}
-                {...tableStyles.th}
+                {...styles.th}
               >
                 {cell.content}
               </th>
@@ -220,7 +266,7 @@ const Table: FT<TableProps> = ({
                 key={cellIdx}
                 colSpan={cell.colspan}
                 rowSpan={cell.rowspan}
-                {...tableStyles.td}
+                {...styles.td}
               >
                 {cell.content}
               </td>
@@ -232,8 +278,9 @@ const Table: FT<TableProps> = ({
   </table>
 )
 
+// Stories - EXPORTED for testing/training
 export const productTable = story({
-  intent: 'Product inventory table',
+  intent: 'Product inventory table with row headers',
   template: () => (
     <Table
       caption='Product Inventory'
@@ -262,375 +309,83 @@ export const productTable = story({
       ]}
     />
   ),
-})
-```
+  play: async ({ findByRole, assert }) => {
+    const table = await findByRole('table')
 
-#### Dynamic Table (bElement)
-
-```typescript
-import { bElement, useTemplate, type FT } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
-
-const tableStyles = createStyles({
-  table: {
-    inlineSize: '100%',
-    borderCollapse: 'collapse',
-    border: '1px solid #ccc',
-  },
-  caption: {
-    fontSize: '1.125rem',
-    fontWeight: 'bold',
-    marginBottom: '0.5rem',
-    textAlign: 'left',
-  },
-  thead: {
-    backgroundColor: '#f0f0f0',
-  },
-  tbody: {
-    // Styles
-  },
-  tr: {
-    borderBottom: '1px solid #e0e0e0',
-    '&:hover': {
-      backgroundColor: '#f9f9f9',
-    },
-  },
-  th: {
-    padding: '0.75rem',
-    textAlign: 'left',
-    fontWeight: 'bold',
-    borderRight: '1px solid #e0e0e0',
-  },
-  td: {
-    padding: '0.75rem',
-    borderRight: '1px solid #e0e0e0',
-  },
-  sortButton: {
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    padding: '0.25rem',
-    fontWeight: 'inherit',
-    textAlign: 'inherit',
-    inlineSize: '100%',
-    '&:hover': {
-      backgroundColor: '#e0e0e0',
-    },
+    assert({
+      given: 'table is rendered',
+      should: 'have accessible name from caption',
+      actual: table?.querySelector('caption')?.textContent,
+      expected: 'Product Inventory',
+    })
   },
 })
 
-type TableData = {
-  id: string
-  [key: string]: string | number | unknown
-}
-
-type TableColumn = {
-  key: string
-  label: string
-  sortable?: boolean
-}
-
-type TableEvents = {
-  sort: { column: string; direction: 'ascending' | 'descending' }
-  rowClick: { row: TableData; index: number }
-}
-
-const RowTemplate: FT<{ data: TableData; columns: TableColumn[] }> = ({
-  data,
-  columns,
-}) => (
-  <tr>
-    {columns.map((col, idx) => (
-      <td key={idx} p-target={`cell-${col.key}`}>
-        {String(data[col.key] || '')}
-      </td>
-    ))}
-  </tr>
-)
-
-export const DataTable = bElement<TableEvents>({
-  tag: 'data-table',
-  observedAttributes: ['data', 'columns', 'aria-label'],
-  shadowDom: (
-    <table
-      p-target='table'
-      {...tableStyles.table}
-    >
-      <caption p-target='caption'></caption>
-      <thead p-target='thead' {...tableStyles.thead}>
-        <tr p-target='header-row' {...tableStyles.tr}></tr>
-      </thead>
-      <tbody p-target='tbody' {...tableStyles.tbody}></tbody>
-      <template p-target='row-template'>
-        <RowTemplate data={{}} columns={[]} />
-      </template>
-    </table>
-  ),
-  bProgram({ $, host, emit, root }) {
-    const table = $('table')[0]
-    const caption = $('caption')[0]
-    const thead = $('thead')[0]
-    const headerRow = $('header-row')[0]
-    const tbody = $('tbody')[0]
-    const rowTemplate = $<HTMLTemplateElement>('row-template')[0]
-    
-    let columns: TableColumn[] = []
-    let data: TableData[] = []
-    let sortColumn: string | null = null
-    let sortDirection: 'ascending' | 'descending' = 'ascending'
-    
-    const renderHeaders = () => {
-      if (!headerRow || columns.length === 0) return
-      
-      const headers = columns.map((col, idx) => (
-        <th
-          key={idx}
-          scope='col'
-          aria-sort={col.sortable && sortColumn === col.key ? sortDirection : 'none'}
-          {...tableStyles.th}
-        >
-          {col.sortable ? (
-            <button
-              p-target={`sort-${col.key}`}
-              {...tableStyles.sortButton}
-              p-trigger={{ click: 'handleSort' }}
-              data-column={col.key}
-            >
-              {col.label}
-            </button>
-          ) : (
-            col.label
-          )}
-        </th>
-      ))
-      
-      headerRow.render(...headers)
-    }
-    
-    const renderRows = () => {
-      if (!tbody || !rowTemplate || data.length === 0) return
-      
-      const createRow = useTemplate(rowTemplate, ($, rowData: TableData) => {
-        columns.forEach(col => {
-          const cell = $(`cell-${col.key}`)[0]
-          cell?.render(String(rowData[col.key] || ''))
-        })
-      })
-      
-      const rows = data.map(createRow)
-      tbody.render(...rows)
-    }
-    
-    const sortData = (columnKey: string, direction: 'ascending' | 'descending') => {
-      const column = columns.find(c => c.key === columnKey)
-      if (!column) return
-      
-      data.sort((a, b) => {
-        const aValue = a[columnKey]
-        const bValue = b[columnKey]
-        
-        if (typeof aValue === 'number' && typeof bValue === 'number') {
-          return direction === 'ascending' ? aValue - bValue : bValue - aValue
-        }
-        
-        const aStr = String(aValue || '')
-        const bStr = String(bValue || '')
-        return direction === 'ascending'
-          ? aStr.localeCompare(bStr)
-          : bStr.localeCompare(aStr)
-      })
-      
-      sortColumn = columnKey
-      sortDirection = direction
-      renderHeaders()
-      renderRows()
-      
-      emit({ type: 'sort', detail: { column: columnKey, direction } })
-    }
-    
-    return {
-      handleSort(event: { target: HTMLElement }) {
-        const columnKey = event.target.getAttribute('data-column')
-        if (!columnKey) return
-        
-        const newDirection =
-          sortColumn === columnKey && sortDirection === 'ascending'
-            ? 'descending'
-            : 'ascending'
-        
-        sortData(columnKey, newDirection)
-      },
-      
-      onConnected() {
-        const dataAttr = host.getAttribute('data')
-        const columnsAttr = host.getAttribute('columns')
-        const ariaLabel = host.getAttribute('aria-label')
-        const captionText = host.getAttribute('caption')
-        
-        if (columnsAttr) {
-          try {
-            columns = JSON.parse(columnsAttr)
-            renderHeaders()
-          } catch {
-            // Invalid JSON
-          }
-        }
-        
-        if (dataAttr) {
-          try {
-            data = JSON.parse(dataAttr)
-            renderRows()
-          } catch {
-            // Invalid JSON
-          }
-        }
-        
-        if (ariaLabel) {
-          table?.setAttribute('aria-label', ariaLabel)
-        }
-        
-        if (captionText) {
-          caption?.render(captionText)
-        }
-      },
-      
-      onAttributeChanged({ name, newValue }) {
-        if (name === 'data' && newValue) {
-          try {
-            data = JSON.parse(newValue)
-            renderRows()
-          } catch {
-            // Invalid JSON
-          }
-        } else if (name === 'columns' && newValue) {
-          try {
-            columns = JSON.parse(newValue)
-            renderHeaders()
-            renderRows()
-          } catch {
-            // Invalid JSON
-          }
-        } else if (name === 'aria-label') {
-          table?.setAttribute('aria-label', newValue || '')
-        } else if (name === 'caption') {
-          caption?.render(newValue || '')
-        }
-      },
-    }
-  },
-})
-```
-
-#### Sortable Table Example
-
-```typescript
-export const sortableTable = story({
-  intent: 'Sortable data table',
+export const simpleTable = story({
+  intent: 'Simple data table without row headers',
   template: () => (
-    <DataTable
-      caption='Product Inventory'
-      aria-label='Product inventory with sortable columns'
-      columns={JSON.stringify([
-        { key: 'name', label: 'Product', sortable: true },
-        { key: 'price', label: 'Price', sortable: true },
-        { key: 'stock', label: 'Stock', sortable: true },
-      ])}
-      data={JSON.stringify([
-        { id: '1', name: 'Widget A', price: 10, stock: 50 },
-        { id: '2', name: 'Widget B', price: 15, stock: 30 },
-        { id: '3', name: 'Widget C', price: 20, stock: 75 },
-      ])}
+    <Table
+      aria-label='User List'
+      headers={{
+        cells: [
+          { content: 'Name', header: true, scope: 'col' },
+          { content: 'Email', header: true, scope: 'col' },
+          { content: 'Role', header: true, scope: 'col' },
+        ],
+      }}
+      rows={[
+        {
+          cells: [
+            { content: 'Alice' },
+            { content: 'alice@example.com' },
+            { content: 'Admin' },
+          ],
+        },
+        {
+          cells: [
+            { content: 'Bob' },
+            { content: 'bob@example.com' },
+            { content: 'User' },
+          ],
+        },
+      ]}
     />
   ),
+  play: async ({ findByRole, assert }) => {
+    const table = await findByRole('table')
+
+    assert({
+      given: 'table is rendered',
+      should: 'have aria-label',
+      actual: table?.getAttribute('aria-label'),
+      expected: 'User List',
+    })
+  },
 })
-```
 
-#### Table with Interactive Widgets
-
-```typescript
-export const TableWithActions = bElement<{
-  edit: { row: TableData; index: number }
-  delete: { row: TableData; index: number }
-}>({
-  tag: 'table-with-actions',
-  observedAttributes: ['data'],
-  shadowDom: (
-    <table p-target='table' {...tableStyles.table}>
-      <thead p-target='thead' {...tableStyles.thead}>
-        <tr>
-          <th scope='col'>Name</th>
-          <th scope='col'>Price</th>
-          <th scope='col'>Actions</th>
-        </tr>
-      </thead>
-      <tbody p-target='tbody' {...tableStyles.tbody}></tbody>
-    </table>
+export const tableAccessibility = story({
+  intent: 'Verify table accessibility structure',
+  template: () => (
+    <Table
+      caption='Accessibility Test Table'
+      headers={{
+        cells: [
+          { content: 'Header 1', header: true, scope: 'col' },
+          { content: 'Header 2', header: true, scope: 'col' },
+        ],
+      }}
+      rows={[
+        {
+          cells: [
+            { content: 'Row 1', header: true, scope: 'row' },
+            { content: 'Data 1' },
+          ],
+        },
+      ]}
+    />
   ),
-  bProgram({ $, host, emit, root }) {
-    const tbody = $('tbody')[0]
-    let data: TableData[] = []
-    
-    const renderRows = () => {
-      if (!tbody) return
-      
-      const rows = data.map((row, index) => (
-        <tr key={row.id}>
-          <td>{row.name}</td>
-          <td>${row.price}</td>
-          <td>
-            <button
-              p-trigger={{ click: 'handleEdit' }}
-              data-index={String(index)}
-            >
-              Edit
-            </button>
-            <button
-              p-trigger={{ click: 'handleDelete' }}
-              data-index={String(index)}
-            >
-              Delete
-            </button>
-          </td>
-        </tr>
-      ))
-      
-      tbody.render(...rows)
-    }
-    
-    return {
-      handleEdit(event: { target: HTMLElement }) {
-        const index = Number(event.target.getAttribute('data-index'))
-        emit({ type: 'edit', detail: { row: data[index], index } })
-      },
-      
-      handleDelete(event: { target: HTMLElement }) {
-        const index = Number(event.target.getAttribute('data-index'))
-        emit({ type: 'delete', detail: { row: data[index], index } })
-      },
-      
-      onConnected() {
-        const dataAttr = host.getAttribute('data')
-        if (dataAttr) {
-          try {
-            data = JSON.parse(dataAttr)
-            renderRows()
-          } catch {
-            // Invalid JSON
-          }
-        }
-      },
-      
-      onAttributeChanged({ name, newValue }) {
-        if (name === 'data' && newValue) {
-          try {
-            data = JSON.parse(newValue)
-            renderRows()
-          } catch {
-            // Invalid JSON
-          }
-        }
-      },
-    }
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
   },
 })
 ```
@@ -638,7 +393,7 @@ export const TableWithActions = bElement<{
 ## Plaited Integration
 
 - **Works with Shadow DOM**: Yes - tables can be used in bElement shadowDom
-- **Uses bElement built-ins**: Yes - `$` for querying, `render()` for dynamic content, `useTemplate()` for efficient row rendering
+- **Uses bElement built-ins**: `$`, `render()`, `p-trigger` for dynamic tables
 - **Requires external web API**: No - uses standard DOM APIs
 - **Cleanup required**: No - standard DOM elements handle their own lifecycle
 
@@ -662,82 +417,24 @@ export const TableWithActions = bElement<{
 - **role="rowheader"**: Header cell for row (or use native `<th scope="row">`)
 - **role="rowgroup"**: Group of rows (or use native `<thead>`, `<tbody>`, `<tfoot>`)
 - **aria-label** or **aria-labelledby**: Accessible name for table
-- **aria-describedby**: References element providing description
 - **aria-sort**: `ascending`, `descending`, or `none` on sortable column headers
-- **aria-colcount**: Total number of columns (when some hidden)
-- **aria-rowcount**: Total number of rows (when some hidden)
-- **aria-colindex**: Column position (when using aria-colcount)
-- **aria-rowindex**: Row position (when using aria-rowcount)
-- **aria-rowspan**: Number of rows spanned by cell
-- **aria-colspan**: Number of columns spanned by cell
-
-### Native HTML Table Elements
-
-- **`<table>`**: Table container
-- **`<caption>`**: Table caption
-- **`<thead>`**: Header row group
-- **`<tbody>`**: Body row group
-- **`<tfoot>`**: Footer row group
-- **`<tr>`**: Table row
-- **`<th>`**: Header cell (with `scope="col"` or `scope="row"`)
-- **`<td>`**: Data cell
-- **`colspan`**: Number of columns spanned
-- **`rowspan`**: Number of rows spanned
 
 ## Best Practices
 
 1. **Use native `<table>`** - Strongly preferred over ARIA roles
-2. **Functional Templates** - Use FT for static tables in stories
-3. **bElement for dynamic** - Use bElement for sortable, filterable, or data-driven tables
-4. **Proper headers** - Use `<th>` with `scope` attribute
-5. **Caption or label** - Always provide `<caption>` or `aria-label`
-6. **Sortable columns** - Use `aria-sort` on sortable headers
-7. **Row groups** - Use `<thead>`, `<tbody>`, `<tfoot>` for structure
-8. **Consider Grid** - Use Grid pattern if table has many interactive widgets
-9. **Cell spanning** - Use `colspan` and `rowspan` appropriately
-10. **Accessible names** - Provide labels for table and headers
+2. **Use FunctionalTemplates** for static tables in stories
+3. **Use bElement** for sortable, filterable, or data-driven tables
+4. **Use spread syntax** - `{...styles.x}` for applying styles
+5. **Proper headers** - Use `<th>` with `scope` attribute
+6. **Caption or label** - Always provide `<caption>` or `aria-label`
+7. **Use `$()` with `p-target`** - never use `querySelector` directly
 
 ## Accessibility Considerations
 
 - Screen readers announce table structure and relationships
 - Headers help users understand cell relationships
 - Caption or label helps users understand table purpose
-- Sortable columns should indicate sort state
-- Interactive widgets within cells are separate tab stops
-- Tables with many interactive widgets may benefit from Grid pattern
 - Proper use of `scope` attribute helps screen readers understand structure
-
-## Table Variants
-
-### Static Table
-- Simple data presentation
-- No interactivity
-- Use Functional Template
-
-### Sortable Table
-- Clickable column headers
-- `aria-sort` indicates sort state
-- Use bElement for state management
-
-### Table with Actions
-- Contains buttons/links in cells
-- Each widget is separate tab stop
-- Consider Grid if many widgets
-
-### Responsive Table
-- Adapts to screen size
-- May stack on mobile
-- Maintains accessibility
-
-## Table vs. Grid
-
-| Feature | Table | Grid |
-|---------|-------|------|
-| **Type** | Static structure | Interactive widget |
-| **Tab stops** | All interactive elements | Single tab stop |
-| **Keyboard** | None (static) | Arrow keys, Home, End |
-| **Focus** | On interactive widgets | On cells |
-| **Use case** | Data presentation | Interactive data editing |
 
 ## Browser Compatibility
 
@@ -748,12 +445,9 @@ export const TableWithActions = bElement<{
 | Safari | Full support (native `<table>`) |
 | Edge | Full support (native `<table>`) |
 
-**Note**: Native HTML `<table>` element has universal support. ARIA `role="table"` is a newer feature (ARIA 1.1) and should be tested thoroughly with assistive technologies.
-
 ## References
 
 - Source: [W3C ARIA Authoring Practices Guide - Table Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/table/)
 - MDN: [HTML table element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/table)
 - MDN: [ARIA table role](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/table_role)
 - Related: [Grid Pattern](./aria-grid-pattern.md) - For interactive tabular data
-- Related: [Grid and Table Properties Practice](https://www.w3.org/WAI/ARIA/apg/practices/grid-and-table-properties/)

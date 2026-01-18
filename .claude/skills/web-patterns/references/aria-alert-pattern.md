@@ -21,6 +21,15 @@ An alert is an element that displays a brief, important message in a way that at
 - Warning messages
 - Information updates
 
+## Pattern Philosophy
+
+This pattern is **training data** for the Plaited agent. The examples below train the agent's understanding of how to implement this pattern correctly.
+
+- bElements/FunctionalTemplates are defined locally in stories (NOT exported)
+- Only stories are exported (required for testing/training)
+- Styles are always in separate `*.css.ts` files
+- Use spread syntax `{...styles.x}` for applying styles
+
 ## Implementation
 
 ### Vanilla JavaScript
@@ -45,11 +54,11 @@ function showAlert(message, type = 'info') {
   alert.setAttribute('role', 'alert')
   alert.textContent = message
   alert.className = `alert alert-${type}`
-  
+
   // Clear existing alerts if needed
   container.innerHTML = ''
   container.appendChild(alert)
-  
+
   // Screen reader will automatically announce
   // Do NOT focus the alert
 }
@@ -62,138 +71,21 @@ function dismissAlert(alertElement) {
 
 ### Plaited Adaptation
 
-**Important**: In Plaited, alerts can be implemented as either:
+**File Structure:**
 
-1. **Functional Templates (FT)** for static alerts in stories
-2. **bElements** for dynamic alerts that need to be announced by screen readers
-
-#### Static Alert (Functional Template)
-
-```typescript
-// alert.stories.tsx
-import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { alertStyles } from './alert.css.ts'
-
-const Alert: FT<{
-  variant?: 'info' | 'success' | 'warning' | 'error'
-  children?: Children
-}> = ({ variant = 'info', children, ...attrs }) => (
-  <div
-    role='alert'
-    {...attrs}
-    {...joinStyles(alertStyles.alert, alertStyles[variant])}
-  >
-    {children}
-  </div>
-)
-
-export const infoAlert = story({
-  intent: 'Display an informational alert message',
-  template: () => (
-    <Alert variant='info'>
-      Your changes have been saved successfully.
-    </Alert>
-  ),
-  play: async ({ accessibilityCheck }) => {
-    await accessibilityCheck({})
-  },
-})
+```
+alert/
+  alert.css.ts        # Styles (createStyles) - ALWAYS separate
+  alert.stories.tsx   # FT/bElement + stories (imports from css.ts)
 ```
 
-#### Dynamic Alert Container (bElement)
+#### alert.css.ts
 
 ```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
-import { Alert } from './alert.stories.tsx'
+// alert.css.ts
+import { createStyles } from 'plaited'
 
-const alertContainerStyles = createStyles({
-  container: {
-    position: 'fixed',
-    insetBlockStart: '1rem',
-    insetInlineEnd: '1rem',
-    maxInlineSize: '400px',
-    zIndex: 1000,
-  },
-  alert: {
-    marginBlockEnd: '0.5rem',
-    padding: '1rem',
-    borderRadius: '4px',
-    border: '1px solid',
-  },
-})
-
-type AlertContainerEvents = {
-  show: { message: string; variant?: 'info' | 'success' | 'warning' | 'error' }
-  dismiss: { alertId: string }
-}
-
-export const AlertContainer = bElement<AlertContainerEvents>({
-  tag: 'alert-container',
-  shadowDom: (
-    <div
-      p-target='container'
-      role='alert'
-      aria-live='assertive'
-      aria-atomic='true'
-      {...alertContainerStyles.container}
-    >
-      {/* Alerts will be dynamically inserted here */}
-    </div>
-  ),
-  bProgram({ $, root }) {
-    const container = $('container')[0]
-    let alertIdCounter = 0
-
-    return {
-      show({ message, variant = 'info' }) {
-        if (!container) return
-
-        const alertId = `alert-${alertIdCounter++}`
-        const alertElement = (
-          <div
-            p-target={alertId}
-            role='alert'
-            data-variant={variant}
-            {...alertContainerStyles.alert}
-          >
-            <span>{message}</span>
-            <button
-              type='button'
-              p-trigger={{ click: 'dismissAlert' }}
-              aria-label='Dismiss alert'
-            >
-              ×
-            </button>
-          </div>
-        )
-
-        // Insert new alert at the beginning
-        container.insert('afterbegin', alertElement)
-
-        // Screen reader will automatically announce due to role="alert"
-        // Do NOT focus the alert
-      },
-      dismissAlert(event: { target: HTMLButtonElement }) {
-        const button = event.target
-        const alert = button.closest('[role="alert"]')
-        if (alert && alert !== container) {
-          alert.remove()
-        }
-      },
-    }
-  },
-})
-```
-
-#### Alert with Auto-Dismiss (User-Controlled)
-
-```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
-
-const alertStyles = createStyles({
+export const styles = createStyles({
   alert: {
     padding: '1rem',
     borderRadius: '4px',
@@ -202,6 +94,26 @@ const alertStyles = createStyles({
     alignItems: 'center',
     marginBlockEnd: '0.5rem',
   },
+  info: {
+    backgroundColor: '#e3f2fd',
+    borderColor: '#2196f3',
+    color: '#1565c0',
+  },
+  success: {
+    backgroundColor: '#e8f5e9',
+    borderColor: '#4caf50',
+    color: '#2e7d32',
+  },
+  warning: {
+    backgroundColor: '#fff3e0',
+    borderColor: '#ff9800',
+    color: '#e65100',
+  },
+  error: {
+    backgroundColor: '#ffebee',
+    borderColor: '#f44336',
+    color: '#c62828',
+  },
   dismissButton: {
     marginInlineStart: '1rem',
     padding: '0.25rem 0.5rem',
@@ -209,27 +121,58 @@ const alertStyles = createStyles({
     background: 'transparent',
     cursor: 'pointer',
   },
+  container: {
+    position: 'fixed',
+    insetBlockStart: '1rem',
+    insetInlineEnd: '1rem',
+    maxInlineSize: '400px',
+    zIndex: 1000,
+  },
 })
+```
 
-type AlertEvents = {
-  dismiss: undefined
-}
+#### alert.stories.tsx
 
-export const DismissibleAlert = bElement<AlertEvents>({
-  tag: 'dismissible-alert',
+```typescript
+// alert.stories.tsx
+import type { FT, Children } from 'plaited/ui'
+import { bElement } from 'plaited/ui'
+import { story } from 'plaited/testing'
+import { styles } from './alert.css.ts'
+
+// FunctionalTemplate - defined locally, NOT exported
+const Alert: FT<{
+  variant?: 'info' | 'success' | 'warning' | 'error'
+  children?: Children
+}> = ({ variant = 'info', children, ...attrs }) => (
+  <div
+    role="alert"
+    {...attrs}
+    {...styles.alert}
+    {...styles[variant]}
+  >
+    {children}
+  </div>
+)
+
+// bElement for dismissible alerts - defined locally, NOT exported
+const DismissibleAlert = bElement({
+  tag: 'pattern-dismissible-alert',
+  observedAttributes: ['variant'],
   shadowDom: (
     <div
-      p-target='alert'
-      role='alert'
-      {...alertStyles.alert}
+      p-target="alert"
+      role="alert"
+      {...styles.alert}
+      {...styles.info}
     >
       <slot></slot>
       <button
-        type='button'
-        p-target='dismiss-button'
+        type="button"
+        p-target="dismiss-button"
         p-trigger={{ click: 'dismiss' }}
-        aria-label='Dismiss alert'
-        {...alertStyles.dismissButton}
+        aria-label="Dismiss alert"
+        {...styles.dismissButton}
       >
         ×
       </button>
@@ -239,140 +182,188 @@ export const DismissibleAlert = bElement<AlertEvents>({
     const alert = $('alert')[0]
 
     return {
-      handleKeydown(event: KeyboardEvent) {
-        const alert = event.target as HTMLAlertElement
-        if (!alert) return
-
-        switch (event.key) {
-          case 'Esc':
-            event.preventDefault()
-            dismiss()
-            break
-        }
-      },
       dismiss() {
         emit({ type: 'dismiss' })
-        // Parent can remove the element
-        // Or hide it: alert?.attr('hidden', '')
+        host.remove()
+      },
+      onAttributeChanged({ name, newValue }) {
+        if (name === 'variant' && newValue) {
+          // Update variant styling
+          const validVariants = ['info', 'success', 'warning', 'error'] as const
+          if (validVariants.includes(newValue as typeof validVariants[number])) {
+            // Apply new variant class
+          }
+        }
       },
     }
   },
 })
-```
 
-#### Alert Manager (Global Alert System)
-
-```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
-import { useSignal } from 'plaited'
-
-type Alert = {
-  id: string
-  message: string
-  variant: 'info' | 'success' | 'warning' | 'error'
-}
-
-const alertManagerStyles = createStyles({
-  container: {
-    position: 'fixed',
-    insetBlockStart: '1rem',
-    insetInlineEnd: '1rem',
-    maxInlineSize: '400px',
-    zIndex: 1000,
-  },
-  alert: {
-    padding: '1rem',
-    marginBlockEnd: '0.5rem',
-    borderRadius: '4px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-})
-
-// Global signal for alert state
-const alertSignal = useSignal<Alert[]>([])
-
-export const AlertManager = bElement({
-  tag: 'alert-manager',
+// bElement for alert container - defined locally, NOT exported
+const AlertContainer = bElement({
+  tag: 'pattern-alert-container',
   shadowDom: (
     <div
-      p-target='container'
-      role='alert'
-      aria-live='assertive'
-      aria-atomic='false'
-      {...alertManagerStyles.container}
+      p-target="container"
+      role="alert"
+      aria-live="assertive"
+      aria-atomic="true"
+      {...styles.container}
     >
-      {/* Alerts rendered dynamically */}
+      <slot></slot>
     </div>
   ),
-  bProgram({ $, trigger }) {
+  bProgram({ $ }) {
     const container = $('container')[0]
 
-    // Subscribe to alert signal changes
-    alertSignal.listen('alert-update', trigger, true)
-
     return {
-      'alert-update'(alerts: Alert[]) {
+      showAlert({ message, variant = 'info' }: { message: string; variant?: string }) {
         if (!container) return
 
-        // Clear and re-render all alerts
-        container.render(
-          ...alerts.map((alert) => (
-            <div
-              key={alert.id}
-              role='alert'
-              data-variant={alert.variant}
-              {...alertManagerStyles.alert}
+        const alertId = `alert-${Date.now()}`
+        container.insert(
+          'afterbegin',
+          <div
+            p-target={alertId}
+            role="alert"
+            data-variant={variant}
+            {...styles.alert}
+            {...styles[variant as keyof typeof styles]}
+          >
+            <span>{message}</span>
+            <button
+              type="button"
+              p-trigger={{ click: 'dismissAlert' }}
+              data-alert-id={alertId}
+              aria-label="Dismiss alert"
+              {...styles.dismissButton}
             >
-              <span>{alert.message}</span>
-              <button
-                type='button'
-                p-trigger={{ click: 'dismissAlert' }}
-                data-alert-id={alert.id}
-                aria-label='Dismiss alert'
-              >
-                ×
-              </button>
-            </div>
-          ))
+              ×
+            </button>
+          </div>
         )
       },
       dismissAlert(event: { target: HTMLButtonElement }) {
         const alertId = event.target.getAttribute('data-alert-id')
         if (!alertId) return
 
-        const current = alertSignal.get()
-        alertSignal.set(current.filter((a) => a.id !== alertId))
+        const alertElement = $(alertId)[0]
+        alertElement?.root.remove()
       },
     }
   },
 })
 
-// Utility function to show alerts
-export const showAlert = (message: string, variant: Alert['variant'] = 'info') => {
-  const alerts = alertSignal.get()
-  const newAlert: Alert = {
-    id: `alert-${Date.now()}-${Math.random()}`,
-    message,
-    variant,
-  }
-  alertSignal.set([...alerts, newAlert])
-}
+// Stories - EXPORTED for testing/training
+export const infoAlert = story({
+  intent: 'Display an informational alert message that does not interrupt workflow',
+  template: () => (
+    <Alert variant="info">
+      Your changes have been saved successfully.
+    </Alert>
+  ),
+  play: async ({ findByAttribute, assert, accessibilityCheck }) => {
+    const alert = await findByAttribute('role', 'alert')
+
+    assert({
+      given: 'info alert is rendered',
+      should: 'have role="alert"',
+      actual: alert?.getAttribute('role'),
+      expected: 'alert',
+    })
+
+    await accessibilityCheck({})
+  },
+})
+
+export const successAlert = story({
+  intent: 'Display a success alert for completed actions',
+  template: () => (
+    <Alert variant="success">
+      File uploaded successfully!
+    </Alert>
+  ),
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
+  },
+})
+
+export const warningAlert = story({
+  intent: 'Display a warning alert for cautionary messages',
+  template: () => (
+    <Alert variant="warning">
+      Your session will expire in 5 minutes.
+    </Alert>
+  ),
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
+  },
+})
+
+export const errorAlert = story({
+  intent: 'Display an error alert for validation or system errors',
+  template: () => (
+    <Alert variant="error">
+      Failed to save changes. Please try again.
+    </Alert>
+  ),
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
+  },
+})
+
+export const dismissibleAlert = story({
+  intent: 'Display an alert with user-controlled dismiss button',
+  template: () => (
+    <DismissibleAlert variant="info">
+      This alert can be dismissed by clicking the X button.
+    </DismissibleAlert>
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const dismissButton = await findByAttribute('p-target', 'dismiss-button')
+
+    assert({
+      given: 'dismissible alert is rendered',
+      should: 'have a dismiss button',
+      actual: dismissButton !== null,
+      expected: true,
+    })
+
+    assert({
+      given: 'dismiss button exists',
+      should: 'have accessible label',
+      actual: dismissButton?.getAttribute('aria-label'),
+      expected: 'Dismiss alert',
+    })
+  },
+})
+
+export const alertContainer = story({
+  intent: 'Container for dynamically added alerts using aria-live region',
+  template: () => (
+    <AlertContainer>
+      <Alert variant="info">Initial alert in container.</Alert>
+    </AlertContainer>
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const container = await findByAttribute('p-target', 'container')
+
+    assert({
+      given: 'alert container is rendered',
+      should: 'have aria-live="assertive"',
+      actual: container?.getAttribute('aria-live'),
+      expected: 'assertive',
+    })
+  },
+})
 ```
 
 ## Plaited Integration
 
 - **Works with Shadow DOM**: Yes - alert containers are bElements with Shadow DOM
-- **Uses bElement built-ins**: 
-  - `p-trigger` for dismiss button clicks
-  - `p-target` for element selection with `$()`
-  - `render()` and `insert()` helpers for dynamic alert insertion
-  - `attr()` helper for managing alert state
-  - Signals for global alert management (optional)
-- **Requires external web API**: No - uses standard HTML elements and ARIA
-- **Cleanup required**: No - standard DOM elements handle their own lifecycle
+- **Uses bElement built-ins**: `$`, `p-trigger`, `p-target`, `emit`, `insert`, `attr`
+- **Requires external web API**: No
+- **Cleanup required**: No
 
 ## Keyboard Interaction
 
@@ -398,9 +389,8 @@ export const showAlert = (message: string, variant: Alert['variant'] = 'info') =
 4. **Use appropriate variants** - Distinguish between info, success, warning, and error visually
 5. **Limit frequency** - Avoid showing multiple alerts rapidly (violates WCAG 2.2.4)
 6. **Use role="alert" sparingly** - Only for truly important messages that need immediate attention
-7. **Consider aria-live regions** - For less urgent updates, use `aria-live="polite"` instead
-8. **Static alerts** - Use Functional Templates for alerts present in initial page load
-9. **Dynamic alerts** - Use bElements for alerts that appear after user actions or system events
+7. **Use static `p-trigger`** in templates - never add event handlers dynamically
+8. **Use `$()` with `p-target`** - never use `querySelector` directly
 
 ## Accessibility Considerations
 
@@ -425,8 +415,6 @@ export const showAlert = (message: string, variant: Alert['variant'] = 'info') =
 | Firefox | Full support |
 | Safari | Full support |
 | Edge | Full support |
-
-**Note**: `role="alert"` and ARIA live regions have universal support in modern browsers with assistive technology.
 
 ## References
 

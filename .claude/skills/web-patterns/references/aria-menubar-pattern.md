@@ -27,6 +27,15 @@ A menu that is visually persistent is a menubar. A menubar is typically horizont
 - Editor formatting menus
 - Command palettes
 
+## Pattern Philosophy
+
+This pattern is **training data** for the Plaited agent. The examples below train the agent's understanding of how to implement this pattern correctly.
+
+- bElements/FunctionalTemplates are defined locally in stories (NOT exported)
+- Only stories are exported (required for testing/training)
+- Styles are always in separate `*.css.ts` files
+- Use spread syntax `{...styles.x}` for applying styles
+
 ## Implementation
 
 ### Vanilla JavaScript
@@ -64,7 +73,7 @@ A menu that is visually persistent is a menubar. A menubar is typically horizont
 menubar.addEventListener('keydown', (e) => {
   const items = Array.from(menubar.querySelectorAll('[role="menuitem"]'))
   const currentIndex = items.findIndex(item => item === document.activeElement)
-  
+
   switch(e.key) {
     case 'ArrowRight':
       e.preventDefault()
@@ -89,44 +98,31 @@ menubar.addEventListener('keydown', (e) => {
 
 ### Plaited Adaptation
 
-**Important**: In Plaited, menus and menubars are implemented as **bElements** because they require:
-- Complex state management (open/closed menus, submenus, focus)
-- Keyboard navigation (arrow keys, Tab, Enter, Space, Escape, type-ahead)
-- Focus management with `aria-activedescendant`
-- Submenu positioning and visibility
-- Menu item state management (checkboxes, radio groups)
+**File Structure:**
 
-#### Menubar (bElement)
+```
+menu/
+  menu.css.ts        # Styles (createStyles) - ALWAYS separate
+  menu.stories.tsx   # FT/bElement + stories (imports from css.ts)
+```
+
+#### menu.css.ts
 
 ```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
+// menu.css.ts
+import { createStyles, createHostStyles } from 'plaited'
 
-const menubarStyles = createStyles({
+export const hostStyles = createHostStyles({
+  display: 'block',
+})
+
+export const styles = createStyles({
   menubar: {
     display: 'flex',
     gap: '0.25rem',
     padding: '0.5rem',
     backgroundColor: '#f0f0f0',
-    borderBottom: '1px solid #ccc',
-  },
-  menuitem: {
-    padding: '0.5rem 1rem',
-    border: 'none',
-    background: 'transparent',
-    cursor: 'pointer',
-    borderRadius: '4px',
-    backgroundColor: {
-      $default: 'transparent',
-      '[data-focused="true"]': '#007bff',
-      '[aria-expanded="true"]': '#007bff',
-      ':hover': '#e0e0e0',
-    },
-    color: {
-      $default: 'inherit',
-      '[data-focused="true"]': 'white',
-      '[aria-expanded="true"]': 'white',
-    },
+    borderBlockEnd: '1px solid #ccc',
   },
   menu: {
     position: 'absolute',
@@ -140,14 +136,31 @@ const menubarStyles = createStyles({
     listStyle: 'none',
     padding: '0.25rem',
     margin: 0,
-    display: {
-      $default: 'none',
-      '[data-open="true"]': 'block',
-    },
     zIndex: 1000,
   },
-  submenuItem: {
-    position: 'relative',
+  menuHidden: {
+    display: 'none',
+  },
+  menuVisible: {
+    display: 'block',
+  },
+  menuitem: {
+    padding: '0.5rem 1rem',
+    border: 'none',
+    background: 'transparent',
+    cursor: 'pointer',
+    borderRadius: '4px',
+    display: 'block',
+    inlineSize: '100%',
+    textAlign: 'start',
+  },
+  menuitemFocused: {
+    backgroundColor: '#007bff',
+    color: 'white',
+  },
+  menuitemExpanded: {
+    backgroundColor: '#007bff',
+    color: 'white',
   },
   separator: {
     blockSize: '1px',
@@ -155,25 +168,90 @@ const menubarStyles = createStyles({
     marginBlock: '0.25rem',
     border: 'none',
   },
+  submenuItem: {
+    position: 'relative',
+  },
 })
+```
 
-type MenubarEvents = {
-  select: { value: string; item: HTMLElement }
-  activate: { value: string; item: HTMLElement }
-}
+#### menu.stories.tsx
 
-export const Menubar = bElement<MenubarEvents>({
-  tag: 'accessible-menubar',
+```typescript
+// menu.stories.tsx
+import type { FT, Children } from 'plaited/ui'
+import { bElement } from 'plaited/ui'
+import { story } from 'plaited/testing'
+import { styles, hostStyles } from './menu.css.ts'
+
+// MenuItem FunctionalTemplate - defined locally, NOT exported
+const MenuItem: FT<{
+  'aria-haspopup'?: 'true' | 'false' | 'menu'
+  'aria-expanded'?: 'true' | 'false'
+  children?: Children
+}> = ({ 'aria-haspopup': ariaHasPopup, 'aria-expanded': ariaExpanded, children, ...attrs }) => (
+  <button
+    role="menuitem"
+    aria-haspopup={ariaHasPopup}
+    aria-expanded={ariaExpanded}
+    tabIndex={-1}
+    {...attrs}
+    {...styles.menuitem}
+  >
+    {children}
+  </button>
+)
+
+// MenuItemCheckbox FunctionalTemplate - defined locally, NOT exported
+const MenuItemCheckbox: FT<{
+  'aria-checked': 'true' | 'false'
+  children?: Children
+}> = ({ 'aria-checked': ariaChecked, children, ...attrs }) => (
+  <div
+    role="menuitemcheckbox"
+    aria-checked={ariaChecked}
+    tabIndex={-1}
+    {...attrs}
+    {...styles.menuitem}
+  >
+    {ariaChecked === 'true' ? '✓ ' : ''}{children}
+  </div>
+)
+
+// MenuItemRadio FunctionalTemplate - defined locally, NOT exported
+const MenuItemRadio: FT<{
+  'aria-checked': 'true' | 'false'
+  children?: Children
+}> = ({ 'aria-checked': ariaChecked, children, ...attrs }) => (
+  <div
+    role="menuitemradio"
+    aria-checked={ariaChecked}
+    tabIndex={-1}
+    {...attrs}
+    {...styles.menuitem}
+  >
+    {ariaChecked === 'true' ? '● ' : '○ '}{children}
+  </div>
+)
+
+// MenuSeparator FunctionalTemplate - defined locally, NOT exported
+const MenuSeparator: FT = () => (
+  <li role="separator" aria-orientation="horizontal" {...styles.separator}></li>
+)
+
+// Menubar bElement - defined locally, NOT exported
+const Menubar = bElement({
+  tag: 'pattern-menubar',
   observedAttributes: ['aria-label', 'aria-orientation'],
+  hostStyles,
   shadowDom: (
     <nav
-      p-target='menubar'
-      role='menubar'
+      p-target="menubar"
+      role="menubar"
       tabIndex={0}
-      {...menubarStyles.menubar}
+      {...styles.menubar}
       p-trigger={{ keydown: 'handleKeydown', focus: 'handleFocus', blur: 'handleBlur' }}
     >
-      <slot name='items'></slot>
+      <slot></slot>
     </nav>
   ),
   bProgram({ $, host, emit, root }) {
@@ -183,7 +261,7 @@ export const Menubar = bElement<MenubarEvents>({
     let openSubmenuIndex = -1
     let typeAheadBuffer = ''
     let typeAheadTimeout: ReturnType<typeof setTimeout> | undefined
-    const isVertical = host.getAttribute('aria-orientation') === 'vertical'
+    const isVertical = () => host.getAttribute('aria-orientation') === 'vertical'
 
     const getItems = (): HTMLElement[] => {
       return Array.from(
@@ -192,7 +270,6 @@ export const Menubar = bElement<MenubarEvents>({
     }
 
     const getSubmenu = (item: HTMLElement): HTMLElement | null => {
-      // Submenu is the next sibling with role="menu"
       let next = item.nextElementSibling
       while (next) {
         if (next.getAttribute('role') === 'menu') {
@@ -204,11 +281,12 @@ export const Menubar = bElement<MenubarEvents>({
     }
 
     const closeAllSubmenus = () => {
-      items.forEach((item, index) => {
+      items.forEach(item => {
         const submenu = getSubmenu(item)
         if (submenu) {
-          item.attr('aria-expanded', 'false')
-          submenu.setAttribute('data-open', 'false')
+          item.setAttribute('aria-expanded', 'false')
+          item.setAttribute('class', styles.menuitem.classNames.join(' '))
+          submenu.setAttribute('class', `${styles.menu.classNames.join(' ')} ${styles.menuHidden.classNames.join(' ')}`)
           submenu.setAttribute('hidden', '')
         }
       })
@@ -217,25 +295,21 @@ export const Menubar = bElement<MenubarEvents>({
 
     const openSubmenu = (index: number) => {
       if (index < 0 || index >= items.length) return
-      
+
       const item = items[index]
       const submenu = getSubmenu(item)
-      
       if (!submenu) return
-      
-      // Close other submenus
+
       closeAllSubmenus()
-      
-      // Open this submenu
-      item.attr('aria-expanded', 'true')
-      submenu.setAttribute('data-open', 'true')
+
+      item.setAttribute('aria-expanded', 'true')
+      item.setAttribute('class', `${styles.menuitem.classNames.join(' ')} ${styles.menuitemExpanded.classNames.join(' ')}`)
+      submenu.setAttribute('class', `${styles.menu.classNames.join(' ')} ${styles.menuVisible.classNames.join(' ')}`)
       submenu.removeAttribute('hidden')
       openSubmenuIndex = index
-      
-      // Focus first item in submenu
+
       const submenuItems = Array.from(submenu.querySelectorAll('[role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]')) as HTMLElement[]
       if (submenuItems.length > 0) {
-        // Use aria-activedescendant for submenu
         const firstItem = submenuItems[0]
         const id = firstItem.id || `submenu-item-${index}-0`
         if (!firstItem.id) firstItem.id = id
@@ -245,31 +319,29 @@ export const Menubar = bElement<MenubarEvents>({
     }
 
     const updateActiveDescendant = () => {
+      items.forEach((item, idx) => {
+        item.removeAttribute('data-focused')
+        if (idx !== focusedIndex) {
+          item.setAttribute('class', styles.menuitem.classNames.join(' '))
+        }
+      })
+
       if (focusedIndex >= 0 && focusedIndex < items.length) {
         const focusedItem = items[focusedIndex]
         const id = focusedItem.id || `menuitem-${focusedIndex}`
-        if (!focusedItem.id) {
-          focusedItem.id = id
-        }
+        if (!focusedItem.id) focusedItem.id = id
         menubar?.attr('aria-activedescendant', id)
         focusedItem.setAttribute('data-focused', 'true')
+        focusedItem.setAttribute('class', `${styles.menuitem.classNames.join(' ')} ${styles.menuitemFocused.classNames.join(' ')}`)
       } else {
         menubar?.attr('aria-activedescendant', null)
       }
-      
-      // Remove focus from other items
-      items.forEach((item, idx) => {
-        if (idx !== focusedIndex) {
-          item.removeAttribute('data-focused')
-        }
-      })
     }
 
     const moveFocus = (direction: 'next' | 'prev' | 'first' | 'last') => {
       if (items.length === 0) return
-      
+
       let newIndex = focusedIndex
-      
       switch (direction) {
         case 'next':
           newIndex = (focusedIndex + 1) % items.length
@@ -284,61 +356,48 @@ export const Menubar = bElement<MenubarEvents>({
           newIndex = items.length - 1
           break
       }
-      
+
       focusedIndex = newIndex
       updateActiveDescendant()
     }
 
     const activateItem = (index: number) => {
       if (index < 0 || index >= items.length) return
-      
+
       const item = items[index]
       const role = item.getAttribute('role')
       const hasSubmenu = item.getAttribute('aria-haspopup') === 'true' || item.getAttribute('aria-haspopup') === 'menu'
-      
+
       if (hasSubmenu) {
-        // Open submenu
-        if (isVertical) {
-          openSubmenu(index)
-        } else {
-          // Horizontal: ArrowDown opens submenu
-          openSubmenu(index)
-        }
+        openSubmenu(index)
       } else {
-        // Activate item
         if (role === 'menuitemcheckbox') {
           const checked = item.getAttribute('aria-checked') === 'true'
-          item.attr('aria-checked', checked ? 'false' : 'true')
+          item.setAttribute('aria-checked', checked ? 'false' : 'true')
         } else if (role === 'menuitemradio') {
-          // Uncheck others in same group
           const group = item.closest('[role="menu"]')
           if (group) {
             Array.from(group.querySelectorAll('[role="menuitemradio"]')).forEach(radio => {
               radio.setAttribute('aria-checked', 'false')
             })
           }
-          item.attr('aria-checked', 'true')
+          item.setAttribute('aria-checked', 'true')
         }
-        
+
         const value = item.getAttribute('data-value') || item.textContent || ''
         emit({ type: 'activate', detail: { value, item } })
         emit({ type: 'select', detail: { value, item } })
-        
-        // Close all menus
         closeAllSubmenus()
       }
     }
 
     const handleTypeAhead = (char: string) => {
       typeAheadBuffer += char.toLowerCase()
-      
-      if (typeAheadTimeout) {
-        clearTimeout(typeAheadTimeout)
-      }
-      
+      if (typeAheadTimeout) clearTimeout(typeAheadTimeout)
+
       const startIndex = (focusedIndex + 1) % items.length
       let foundIndex = -1
-      
+
       for (let i = startIndex; i < items.length; i++) {
         const text = (items[i].textContent || '').toLowerCase()
         if (text.startsWith(typeAheadBuffer)) {
@@ -346,7 +405,7 @@ export const Menubar = bElement<MenubarEvents>({
           break
         }
       }
-      
+
       if (foundIndex === -1) {
         for (let i = 0; i < startIndex; i++) {
           const text = (items[i].textContent || '').toLowerCase()
@@ -356,12 +415,12 @@ export const Menubar = bElement<MenubarEvents>({
           }
         }
       }
-      
+
       if (foundIndex >= 0) {
         focusedIndex = foundIndex
         updateActiveDescendant()
       }
-      
+
       typeAheadTimeout = setTimeout(() => {
         typeAheadBuffer = ''
       }, 1000)
@@ -370,21 +429,20 @@ export const Menubar = bElement<MenubarEvents>({
     return {
       handleKeydown(event: KeyboardEvent) {
         if (items.length === 0) return
-        
+
         switch (event.key) {
-          case isVertical ? 'ArrowDown' : 'ArrowRight':
+          case isVertical() ? 'ArrowDown' : 'ArrowRight':
             event.preventDefault()
             moveFocus('next')
             break
-            
-          case isVertical ? 'ArrowUp' : 'ArrowLeft':
+
+          case isVertical() ? 'ArrowUp' : 'ArrowLeft':
             event.preventDefault()
             moveFocus('prev')
             break
-            
-          case isVertical ? 'ArrowRight' : 'ArrowDown':
+
+          case isVertical() ? 'ArrowRight' : 'ArrowDown':
             event.preventDefault()
-            // Open submenu if exists
             if (focusedIndex >= 0) {
               const item = items[focusedIndex]
               const hasSubmenu = item.getAttribute('aria-haspopup') === 'true' || item.getAttribute('aria-haspopup') === 'menu'
@@ -393,7 +451,7 @@ export const Menubar = bElement<MenubarEvents>({
               }
             }
             break
-            
+
           case 'Enter':
           case ' ':
             event.preventDefault()
@@ -401,29 +459,27 @@ export const Menubar = bElement<MenubarEvents>({
               activateItem(focusedIndex)
             }
             break
-            
+
           case 'Home':
             event.preventDefault()
             moveFocus('first')
             break
-            
+
           case 'End':
             event.preventDefault()
             moveFocus('last')
             break
-            
+
           case 'Escape':
             event.preventDefault()
             closeAllSubmenus()
             break
-            
+
           case 'Tab':
-            // Tab moves focus out of menubar
             closeAllSubmenus()
             break
-            
+
           default:
-            // Type-ahead
             if (event.key.length === 1 && !event.ctrlKey && !event.metaKey) {
               event.preventDefault()
               handleTypeAhead(event.key)
@@ -431,18 +487,17 @@ export const Menubar = bElement<MenubarEvents>({
             break
         }
       },
-      
+
       handleFocus() {
         items = getItems()
         if (items.length === 0) return
-        
-        // Focus first item or last focused item
+
         if (focusedIndex < 0) {
           focusedIndex = 0
         }
         updateActiveDescendant()
       },
-      
+
       handleBlur() {
         if (typeAheadTimeout) {
           clearTimeout(typeAheadTimeout)
@@ -450,11 +505,10 @@ export const Menubar = bElement<MenubarEvents>({
         }
         typeAheadBuffer = ''
       },
-      
+
       onConnected() {
         items = getItems()
-        
-        // Set tabindex on items
+
         items.forEach((item, index) => {
           if (index === 0) {
             item.setAttribute('tabindex', '0')
@@ -462,19 +516,17 @@ export const Menubar = bElement<MenubarEvents>({
             item.setAttribute('tabindex', '-1')
           }
         })
-        
-        // Set aria-label if provided
+
         const ariaLabel = host.getAttribute('aria-label')
         if (ariaLabel) {
           menubar?.attr('aria-label', ariaLabel)
         }
-        
-        // Set orientation
-        if (isVertical) {
+
+        if (isVertical()) {
           menubar?.attr('aria-orientation', 'vertical')
         }
       },
-      
+
       onDisconnected() {
         if (typeAheadTimeout) {
           clearTimeout(typeAheadTimeout)
@@ -483,76 +535,25 @@ export const Menubar = bElement<MenubarEvents>({
     }
   },
 })
-```
 
-#### Menu (Popup Menu) (bElement)
-
-```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
-
-const menuStyles = createStyles({
-  menu: {
-    position: 'absolute',
-    minWidth: '200px',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-    backgroundColor: 'white',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-    listStyle: 'none',
-    padding: '0.25rem',
-    margin: 0,
-    outline: 'none',
-    zIndex: 1000,
-    display: {
-      $default: 'none',
-      '[data-open="true"]': 'block',
-    },
-  },
-  menuitem: {
-    padding: '0.5rem 1rem',
-    cursor: 'pointer',
-    borderRadius: '4px',
-    backgroundColor: {
-      $default: 'transparent',
-      '[data-focused="true"]': '#007bff',
-      ':hover': '#f0f0f0',
-    },
-    color: {
-      $default: 'inherit',
-      '[data-focused="true"]': 'white',
-    },
-  },
-  separator: {
-    blockSize: '1px',
-    backgroundColor: '#ccc',
-    marginBlock: '0.25rem',
-    marginInline: 0,
-    border: 'none',
-  },
-})
-
-type MenuEvents = {
-  select: { value: string; item: HTMLElement }
-  activate: { value: string; item: HTMLElement }
-}
-
-export const Menu = bElement<MenuEvents>({
-  tag: 'accessible-menu',
+// Menu (Popup) bElement - defined locally, NOT exported
+const Menu = bElement({
+  tag: 'pattern-menu',
   observedAttributes: ['open', 'aria-label'],
+  hostStyles,
   shadowDom: (
     <ul
-      p-target='menu'
-      role='menu'
+      p-target="menu"
+      role="menu"
       tabIndex={-1}
-      {...menuStyles.menu}
-      data-open='false'
+      {...styles.menu}
+      {...styles.menuHidden}
       p-trigger={{ keydown: 'handleKeydown', focus: 'handleFocus' }}
     >
-      <slot name='items'></slot>
+      <slot></slot>
     </ul>
   ),
-  bProgram({ $, host, emit, root }) {
+  bProgram({ $, host, emit }) {
     const menu = $('menu')[0]
     let items: HTMLElement[] = []
     let focusedIndex = -1
@@ -561,33 +562,33 @@ export const Menu = bElement<MenuEvents>({
 
     const getItems = (): HTMLElement[] => {
       return Array.from(
-        root.querySelectorAll('[role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]')
+        menu?.querySelectorAll('[role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]') || []
       ) as HTMLElement[]
     }
 
     const updateActiveDescendant = () => {
+      items.forEach((item, idx) => {
+        item.removeAttribute('data-focused')
+        if (idx !== focusedIndex) {
+          item.setAttribute('class', styles.menuitem.classNames.join(' '))
+        }
+      })
+
       if (focusedIndex >= 0 && focusedIndex < items.length) {
         const focusedItem = items[focusedIndex]
         const id = focusedItem.id || `menuitem-${focusedIndex}`
-        if (!focusedItem.id) {
-          focusedItem.id = id
-        }
+        if (!focusedItem.id) focusedItem.id = id
         menu?.attr('aria-activedescendant', id)
         focusedItem.setAttribute('data-focused', 'true')
+        focusedItem.setAttribute('class', `${styles.menuitem.classNames.join(' ')} ${styles.menuitemFocused.classNames.join(' ')}`)
       } else {
         menu?.attr('aria-activedescendant', null)
       }
-      
-      items.forEach((item, idx) => {
-        if (idx !== focusedIndex) {
-          item.removeAttribute('data-focused')
-        }
-      })
     }
 
     const moveFocus = (direction: 'next' | 'prev' | 'first' | 'last') => {
       if (items.length === 0) return
-      
+
       let newIndex = focusedIndex
       switch (direction) {
         case 'next':
@@ -603,7 +604,7 @@ export const Menu = bElement<MenuEvents>({
           newIndex = items.length - 1
           break
       }
-      
+
       focusedIndex = newIndex
       updateActiveDescendant()
       items[focusedIndex]?.scrollIntoView({ block: 'nearest' })
@@ -611,41 +612,29 @@ export const Menu = bElement<MenuEvents>({
 
     const activateItem = (index: number) => {
       if (index < 0 || index >= items.length) return
-      
+
       const item = items[index]
       const role = item.getAttribute('role')
-      const hasSubmenu = item.getAttribute('aria-haspopup') === 'true' || item.getAttribute('aria-haspopup') === 'menu'
-      
-      if (hasSubmenu) {
-        // Open submenu (handled by parent)
-        // This would need coordination with parent menu/menubar
-      } else {
-        if (role === 'menuitemcheckbox') {
-          const checked = item.getAttribute('aria-checked') === 'true'
-          item.attr('aria-checked', checked ? 'false' : 'true')
-        } else if (role === 'menuitemradio') {
-          const group = item.closest('[role="menu"]')
-          if (group) {
-            Array.from(group.querySelectorAll('[role="menuitemradio"]')).forEach(radio => {
-              radio.setAttribute('aria-checked', 'false')
-            })
-          }
-          item.attr('aria-checked', 'true')
-        }
-        
-        const value = item.getAttribute('data-value') || item.textContent || ''
-        emit({ type: 'activate', detail: { value, item } })
-        emit({ type: 'select', detail: { value, item } })
-        
-        // Close menu
-        closeMenu()
+
+      if (role === 'menuitemcheckbox') {
+        const checked = item.getAttribute('aria-checked') === 'true'
+        item.setAttribute('aria-checked', checked ? 'false' : 'true')
+      } else if (role === 'menuitemradio') {
+        items.filter(i => i.getAttribute('role') === 'menuitemradio').forEach(radio => {
+          radio.setAttribute('aria-checked', 'false')
+        })
+        item.setAttribute('aria-checked', 'true')
       }
+
+      const value = item.getAttribute('data-value') || item.textContent || ''
+      emit({ type: 'activate', detail: { value, item } })
+      emit({ type: 'select', detail: { value, item } })
+      closeMenu()
     }
 
     const openMenu = () => {
-      menu?.setAttribute('data-open', 'true')
+      menu?.setAttribute('class', `${styles.menu.classNames.join(' ')} ${styles.menuVisible.classNames.join(' ')}`)
       menu?.removeAttribute('hidden')
-      menu?.focus()
       items = getItems()
       if (items.length > 0) {
         focusedIndex = 0
@@ -654,7 +643,7 @@ export const Menu = bElement<MenuEvents>({
     }
 
     const closeMenu = () => {
-      menu?.setAttribute('data-open', 'false')
+      menu?.setAttribute('class', `${styles.menu.classNames.join(' ')} ${styles.menuHidden.classNames.join(' ')}`)
       menu?.setAttribute('hidden', '')
       menu?.attr('aria-activedescendant', null)
     }
@@ -662,35 +651,18 @@ export const Menu = bElement<MenuEvents>({
     return {
       handleKeydown(event: KeyboardEvent) {
         if (items.length === 0) return
-        
+
         switch (event.key) {
           case 'ArrowDown':
             event.preventDefault()
             moveFocus('next')
             break
-            
+
           case 'ArrowUp':
             event.preventDefault()
             moveFocus('prev')
             break
-            
-          case 'ArrowRight':
-            event.preventDefault()
-            // Open submenu if exists
-            if (focusedIndex >= 0) {
-              const item = items[focusedIndex]
-              const hasSubmenu = item.getAttribute('aria-haspopup') === 'true' || item.getAttribute('aria-haspopup') === 'menu'
-              if (hasSubmenu) {
-                // Trigger submenu open (would need parent coordination)
-              }
-            }
-            break
-            
-          case 'ArrowLeft':
-            event.preventDefault()
-            // Close submenu and return to parent (would need parent coordination)
-            break
-            
+
           case 'Enter':
           case ' ':
             event.preventDefault()
@@ -698,25 +670,24 @@ export const Menu = bElement<MenuEvents>({
               activateItem(focusedIndex)
             }
             break
-            
+
           case 'Home':
             event.preventDefault()
             moveFocus('first')
             break
-            
+
           case 'End':
             event.preventDefault()
             moveFocus('last')
             break
-            
+
           case 'Escape':
             event.preventDefault()
             closeMenu()
-            // Return focus to trigger element (would need parent coordination)
             break
         }
       },
-      
+
       handleFocus() {
         items = getItems()
         if (items.length > 0 && focusedIndex < 0) {
@@ -724,7 +695,7 @@ export const Menu = bElement<MenuEvents>({
           updateActiveDescendant()
         }
       },
-      
+
       onAttributeChanged({ name, newValue }) {
         if (name === 'open') {
           if (newValue !== null) {
@@ -736,7 +707,7 @@ export const Menu = bElement<MenuEvents>({
           menu?.attr('aria-label', newValue || null)
         }
       },
-      
+
       onDisconnected() {
         if (typeAheadTimeout) {
           clearTimeout(typeAheadTimeout)
@@ -745,75 +716,113 @@ export const Menu = bElement<MenuEvents>({
     }
   },
 })
-```
 
-#### Menu Item Components (Functional Templates)
+// Stories - EXPORTED for testing/training
+export const simpleMenubar = story({
+  intent: 'Display a simple horizontal menubar with menu items',
+  template: () => (
+    <Menubar aria-label="File actions">
+      <MenuItem>New</MenuItem>
+      <MenuItem>Open</MenuItem>
+      <MenuItem>Save</MenuItem>
+    </Menubar>
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const menubar = await findByAttribute('role', 'menubar')
 
-```typescript
-import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
+    assert({
+      given: 'menubar is rendered',
+      should: 'have menubar role',
+      actual: menubar?.getAttribute('role'),
+      expected: 'menubar',
+    })
+  },
+})
 
-// Regular menu item
-const MenuItem: FT<{
-  'aria-haspopup'?: 'true' | 'false' | 'menu'
-  'aria-expanded'?: 'true' | 'false'
-  children?: Children
-}> = ({ 'aria-haspopup': ariaHasPopup, 'aria-expanded': ariaExpanded, children, ...attrs }) => (
-  <button
-    role='menuitem'
-    aria-haspopup={ariaHasPopup}
-    aria-expanded={ariaExpanded}
-    tabIndex={-1}
-    {...attrs}
-    {...joinStyles(menuStyles.menuitem)}
-  >
-    {children}
-  </button>
-)
+export const menuWithSeparator = story({
+  intent: 'Display a menu with separator between item groups',
+  template: () => (
+    <Menu open aria-label="File menu">
+      <MenuItem>New</MenuItem>
+      <MenuItem>Open</MenuItem>
+      <MenuSeparator />
+      <MenuItem>Exit</MenuItem>
+    </Menu>
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const separator = await findByAttribute('role', 'separator')
 
-// Menu item checkbox
-const MenuItemCheckbox: FT<{
-  'aria-checked': 'true' | 'false'
-  children?: Children
-}> = ({ 'aria-checked': ariaChecked, children, ...attrs }) => (
-  <div
-    role='menuitemcheckbox'
-    aria-checked={ariaChecked}
-    tabIndex={0}
-    {...attrs}
-    {...joinStyles(menuStyles.menuitem)}
-  >
-    {ariaChecked === 'true' ? '✓ ' : ''}{children}
-  </div>
-)
+    assert({
+      given: 'menu has separator',
+      should: 'have separator role',
+      actual: separator?.getAttribute('role'),
+      expected: 'separator',
+    })
+  },
+})
 
-// Menu item radio
-const MenuItemRadio: FT<{
-  'aria-checked': 'true' | 'false'
-  children?: Children
-}> = ({ 'aria-checked': ariaChecked, children, ...attrs }) => (
-  <div
-    role='menuitemradio'
-    aria-checked={ariaChecked}
-    tabIndex={0}
-    {...attrs}
-    {...joinStyles(menuStyles.menuitem)}
-  >
-    {ariaChecked === 'true' ? '● ' : '○ '}{children}
-  </div>
-)
+export const menuWithCheckboxItems = story({
+  intent: 'Display a menu with checkbox items for toggle options',
+  template: () => (
+    <Menu open aria-label="View options">
+      <MenuItemCheckbox aria-checked="true">Show grid</MenuItemCheckbox>
+      <MenuItemCheckbox aria-checked="false">Show rulers</MenuItemCheckbox>
+      <MenuItemCheckbox aria-checked="true">Show guides</MenuItemCheckbox>
+    </Menu>
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const checkbox = await findByAttribute('role', 'menuitemcheckbox')
 
-// Separator
-const MenuSeparator: FT = () => (
-  <li role='separator' aria-orientation='horizontal' {...menuStyles.separator}></li>
-)
+    assert({
+      given: 'menu has checkbox items',
+      should: 'have menuitemcheckbox role',
+      actual: checkbox?.getAttribute('role'),
+      expected: 'menuitemcheckbox',
+    })
+  },
+})
+
+export const menuWithRadioItems = story({
+  intent: 'Display a menu with radio items for exclusive selection',
+  template: () => (
+    <Menu open aria-label="Alignment">
+      <MenuItemRadio aria-checked="true">Left</MenuItemRadio>
+      <MenuItemRadio aria-checked="false">Center</MenuItemRadio>
+      <MenuItemRadio aria-checked="false">Right</MenuItemRadio>
+    </Menu>
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const radio = await findByAttribute('role', 'menuitemradio')
+
+    assert({
+      given: 'menu has radio items',
+      should: 'have menuitemradio role',
+      actual: radio?.getAttribute('role'),
+      expected: 'menuitemradio',
+    })
+  },
+})
+
+export const accessibilityTest = story({
+  intent: 'Verify menu accessibility requirements',
+  template: () => (
+    <Menubar aria-label="Test menubar">
+      <MenuItem>Item 1</MenuItem>
+      <MenuItem>Item 2</MenuItem>
+      <MenuItem>Item 3</MenuItem>
+    </Menubar>
+  ),
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
+  },
+})
 ```
 
 ## Plaited Integration
 
 - **Works with Shadow DOM**: Yes - menus use Shadow DOM
-- **Uses bElement built-ins**: Yes - `$` for querying, `attr()` for attributes, `p-trigger` for events
-- **Requires external web API**: No - uses standard DOM APIs
+- **Uses bElement built-ins**: `$`, `p-trigger`, `p-target`, `emit`, `attr`
+- **Requires external web API**: No
 - **Cleanup required**: Yes - type-ahead timeout cleanup in `onDisconnected`
 
 ## Keyboard Interaction
@@ -870,15 +879,15 @@ const MenuSeparator: FT = () => (
 ## Best Practices
 
 1. **Use bElement** - Menus require complex state and keyboard handling
-2. **Virtual focus** - Use `aria-activedescendant` instead of moving DOM focus
-3. **Submenu positioning** - Position submenus relative to parent item
-4. **Escape handling** - Return focus to trigger element when menu closes
-5. **Separators** - Use for grouping related items
-6. **Ellipsis convention** - Use "…" for items that open dialogs
-7. **Type-ahead** - Implement for better keyboard navigation
-8. **Menu labels** - Always provide accessible names
-9. **Disabled items** - Keep focusable but prevent activation
-10. **Submenu coordination** - Close other submenus when opening a new one
+2. **Use FunctionalTemplates** - for static menu item rendering
+3. **Virtual focus** - Use `aria-activedescendant` instead of moving DOM focus
+4. **Use spread syntax** - `{...styles.x}` for applying styles
+5. **Submenu positioning** - Position submenus relative to parent item
+6. **Escape handling** - Return focus to trigger element when menu closes
+7. **Separators** - Use for grouping related items
+8. **Ellipsis convention** - Use "…" for items that open dialogs
+9. **Type-ahead** - Implement for better keyboard navigation
+10. **Use `$()` with `p-target`** - never use `querySelector` directly
 
 ## Accessibility Considerations
 
@@ -890,25 +899,6 @@ const MenuSeparator: FT = () => (
 - Separators help organize menu structure
 - Virtual focus (`aria-activedescendant`) keeps DOM focus on container
 
-## Menu Variants
-
-### Menubar
-- Visually persistent
-- Typically horizontal
-- Application navigation
-- Quick access to commands
-
-### Popup Menu
-- Appears on demand
-- Typically vertical
-- Context menus
-- Action menus
-
-### Submenu
-- Nested menu from parent item
-- Opens on ArrowRight or Enter
-- Closes on ArrowLeft or Escape
-
 ## Browser Compatibility
 
 | Browser | Support |
@@ -917,8 +907,6 @@ const MenuSeparator: FT = () => (
 | Firefox | Full support |
 | Safari | Full support |
 | Edge | Full support |
-
-**Note**: ARIA menu pattern has universal support in modern browsers with assistive technology.
 
 ## References
 

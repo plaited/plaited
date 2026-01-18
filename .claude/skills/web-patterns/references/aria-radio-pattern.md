@@ -26,6 +26,15 @@ A radio group is a set of checkable buttons, known as radio buttons, where no mo
 - Navigation options
 - Payment method selection
 
+## Pattern Philosophy
+
+This pattern is **training data** for the Plaited agent. The examples below train the agent's understanding of how to implement this pattern correctly.
+
+- bElements/FunctionalTemplates are defined locally in stories (NOT exported)
+- Only stories are exported (required for testing/training)
+- Styles are always in separate `*.css.ts` files
+- Use spread syntax `{...styles.x}` for applying styles
+
 ## Implementation
 
 ### Vanilla JavaScript
@@ -55,7 +64,7 @@ A radio group is a set of checkable buttons, known as radio buttons, where no mo
 radiogroup.addEventListener('keydown', (e) => {
   const radios = Array.from(radiogroup.querySelectorAll('[role="radio"]'))
   const currentIndex = radios.findIndex(r => r === document.activeElement)
-  
+
   switch(e.key) {
     case 'ArrowRight':
     case 'ArrowDown':
@@ -86,23 +95,33 @@ radiogroup.addEventListener('keydown', (e) => {
 
 ### Plaited Adaptation
 
-**Important**: In Plaited, radio groups are implemented as **bElements** because they require:
-- Complex state management (coordinated checked state across buttons)
-- Keyboard navigation (Tab, Space, Arrow keys)
-- Form association (optional)
-- Two interaction modes (standalone vs. toolbar)
+**File Structure:**
 
-#### Radio Group (bElement)
+```
+radio-group/
+  radio-group.css.ts       # Styles (createStyles) - ALWAYS separate
+  radio-group.stories.tsx  # FT/bElement + stories (imports from css.ts)
+```
+
+#### radio-group.css.ts
 
 ```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
+// radio-group.css.ts
+import { createStyles, createHostStyles } from 'plaited'
 
-const radioGroupStyles = createStyles({
+export const hostStyles = createHostStyles({
+  display: 'block',
+})
+
+export const styles = createStyles({
   radiogroup: {
     display: 'flex',
     flexDirection: 'column',
     gap: '0.5rem',
+  },
+  radiogroupHorizontal: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   radio: {
     display: 'inline-flex',
@@ -111,11 +130,12 @@ const radioGroupStyles = createStyles({
     cursor: 'pointer',
     padding: '0.5rem',
     borderRadius: '4px',
-    backgroundColor: {
-      $default: 'transparent',
-      '[data-focused="true"]': '#f0f0f0',
-      '[aria-checked="true"]': '#e3f2fd',
-    },
+  },
+  radioFocused: {
+    backgroundColor: '#f0f0f0',
+  },
+  radioChecked: {
+    backgroundColor: '#e3f2fd',
   },
   symbol: {
     inlineSize: '18px',
@@ -125,41 +145,81 @@ const radioGroupStyles = createStyles({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: {
-      $default: 'transparent',
-      '[aria-checked="true"]': '#007bff',
-    },
+    flexShrink: 0,
+  },
+  symbolChecked: {
+    backgroundColor: '#007bff',
+    borderColor: '#007bff',
   },
   dot: {
     inlineSize: '8px',
     blockSize: '8px',
     borderRadius: '50%',
     backgroundColor: 'white',
-    display: {
-      $default: 'none',
-      '[aria-checked="true"]': 'block',
-    },
+    display: 'none',
+  },
+  dotVisible: {
+    display: 'block',
+  },
+  label: {
+    userSelect: 'none',
   },
 })
+```
 
-type RadioGroupEvents = {
-  change: { value: string; checked: HTMLElement }
-  select: { value: string; index: number }
-}
+#### radio-group.stories.tsx
 
-export const RadioGroup = bElement<RadioGroupEvents>({
-  tag: 'radio-group',
-  observedAttributes: ['value', 'aria-label', 'in-toolbar'],
+```typescript
+// radio-group.stories.tsx
+import type { FT, Children } from 'plaited/ui'
+import { bElement } from 'plaited/ui'
+import { story } from 'plaited/testing'
+import { styles, hostStyles } from './radio-group.css.ts'
+
+// RadioButton FunctionalTemplate - defined locally, NOT exported
+const RadioButton: FT<{
+  value?: string
+  'aria-checked'?: 'true' | 'false'
+  children?: Children
+}> = ({ value, 'aria-checked': ariaChecked = 'false', children, ...attrs }) => (
+  <div
+    role="radio"
+    data-value={value}
+    aria-checked={ariaChecked}
+    tabIndex={-1}
+    {...attrs}
+    {...styles.radio}
+    {...(ariaChecked === 'true' ? styles.radioChecked : {})}
+  >
+    <div
+      {...styles.symbol}
+      {...(ariaChecked === 'true' ? styles.symbolChecked : {})}
+      aria-hidden="true"
+    >
+      <div
+        {...styles.dot}
+        {...(ariaChecked === 'true' ? styles.dotVisible : {})}
+      ></div>
+    </div>
+    <span {...styles.label}>{children}</span>
+  </div>
+)
+
+// RadioGroup bElement - defined locally, NOT exported
+const RadioGroup = bElement({
+  tag: 'pattern-radio-group',
+  observedAttributes: ['value', 'aria-label', 'in-toolbar', 'orientation'],
   formAssociated: true,
+  hostStyles,
   shadowDom: (
     <div
-      p-target='radiogroup'
-      role='radiogroup'
+      p-target="radiogroup"
+      role="radiogroup"
       tabIndex={0}
-      {...radioGroupStyles.radiogroup}
+      {...styles.radiogroup}
       p-trigger={{ keydown: 'handleKeydown', focus: 'handleFocus', blur: 'handleBlur' }}
     >
-      <slot name='radios'></slot>
+      <slot></slot>
     </div>
   ),
   bProgram({ $, host, internals, emit, root }) {
@@ -167,51 +227,74 @@ export const RadioGroup = bElement<RadioGroupEvents>({
     let radios: HTMLElement[] = []
     let checkedIndex = -1
     let focusedIndex = -1
-    const inToolbar = host.getAttribute('in-toolbar') !== null
+    const inToolbar = () => host.getAttribute('in-toolbar') !== null
 
     const getRadios = (): HTMLElement[] => {
-      return Array.from(
-        root.querySelectorAll('[role="radio"]')
-      ) as HTMLElement[]
+      return Array.from(root.querySelectorAll('[role="radio"]')) as HTMLElement[]
+    }
+
+    const updateVisualState = () => {
+      radios.forEach((radio, idx) => {
+        const isChecked = radio.getAttribute('aria-checked') === 'true'
+        const isFocused = idx === focusedIndex
+
+        const baseClasses = styles.radio.classNames.join(' ')
+        let classes = baseClasses
+        if (isChecked) {
+          classes = `${baseClasses} ${styles.radioChecked.classNames.join(' ')}`
+        } else if (isFocused) {
+          classes = `${baseClasses} ${styles.radioFocused.classNames.join(' ')}`
+        }
+        radio.setAttribute('class', classes)
+
+        // Update symbol
+        const symbol = radio.querySelector('[aria-hidden="true"]') as HTMLElement
+        if (symbol) {
+          symbol.setAttribute('class', isChecked
+            ? `${styles.symbol.classNames.join(' ')} ${styles.symbolChecked.classNames.join(' ')}`
+            : styles.symbol.classNames.join(' ')
+          )
+        }
+
+        // Update dot
+        const dot = radio.querySelector('[aria-hidden="true"] > div') as HTMLElement
+        if (dot) {
+          dot.setAttribute('class', isChecked
+            ? `${styles.dot.classNames.join(' ')} ${styles.dotVisible.classNames.join(' ')}`
+            : styles.dot.classNames.join(' ')
+          )
+        }
+      })
     }
 
     const updateCheckedState = (index: number) => {
       if (index < 0 || index >= radios.length) return
-      
-      // Uncheck all radios
+
       radios.forEach(radio => {
         radio.setAttribute('aria-checked', 'false')
         radio.setAttribute('tabindex', '-1')
       })
-      
-      // Check selected radio
+
       const checkedRadio = radios[index]
       checkedRadio.setAttribute('aria-checked', 'true')
       checkedRadio.setAttribute('tabindex', '0')
-      
+
       checkedIndex = index
       focusedIndex = index
-      
-      // Update form value
+
       const value = checkedRadio.getAttribute('data-value') || checkedRadio.textContent || ''
       internals.setFormValue(value)
       host.setAttribute('value', value)
-      
-      emit({
-        type: 'change',
-        detail: { value, checked: checkedRadio },
-      })
-      emit({
-        type: 'select',
-        detail: { value, index },
-      })
+
+      updateVisualState()
+
+      emit({ type: 'change', detail: { value, checked: checkedRadio } })
     }
 
     const moveFocus = (direction: 'next' | 'prev' | 'first' | 'last') => {
       if (radios.length === 0) return
-      
+
       let newIndex = focusedIndex
-      
       switch (direction) {
         case 'next':
           newIndex = (focusedIndex + 1) % radios.length
@@ -226,114 +309,91 @@ export const RadioGroup = bElement<RadioGroupEvents>({
           newIndex = radios.length - 1
           break
       }
-      
+
       focusedIndex = newIndex
-      
-      // Update tabindex
+
       radios.forEach((radio, idx) => {
         radio.setAttribute('tabindex', idx === focusedIndex ? '0' : '-1')
-        radio.setAttribute('data-focused', idx === focusedIndex ? 'true' : 'false')
       })
-      
-      // Focus the radio
+
       radios[focusedIndex].focus()
-      
-      // In standalone mode, selection follows focus
-      if (!inToolbar) {
+
+      if (!inToolbar()) {
         updateCheckedState(focusedIndex)
+      } else {
+        updateVisualState()
       }
     }
 
     return {
       handleKeydown(event: KeyboardEvent) {
         if (radios.length === 0) return
-        
+
         switch (event.key) {
           case 'ArrowRight':
           case 'ArrowDown':
             event.preventDefault()
-            if (inToolbar) {
-              // In toolbar: just move focus, don't change selection
-              moveFocus('next')
-            } else {
-              // Standalone: move focus and change selection
-              moveFocus('next')
-            }
+            moveFocus('next')
             break
-            
+
           case 'ArrowLeft':
           case 'ArrowUp':
             event.preventDefault()
-            if (inToolbar) {
-              moveFocus('prev')
-            } else {
-              moveFocus('prev')
-            }
+            moveFocus('prev')
             break
-            
+
           case ' ':
             event.preventDefault()
-            if (inToolbar) {
-              // In toolbar: Space changes selection if not already checked
-              if (focusedIndex >= 0 && focusedIndex < radios.length) {
-                const focusedRadio = radios[focusedIndex]
-                if (focusedRadio.getAttribute('aria-checked') !== 'true') {
-                  updateCheckedState(focusedIndex)
-                }
+            if (inToolbar()) {
+              if (focusedIndex >= 0 && radios[focusedIndex].getAttribute('aria-checked') !== 'true') {
+                updateCheckedState(focusedIndex)
               }
             } else {
-              // Standalone: Space checks focused radio
-              if (focusedIndex >= 0 && focusedIndex < radios.length) {
+              if (focusedIndex >= 0) {
                 updateCheckedState(focusedIndex)
               }
             }
             break
-            
+
           case 'Enter':
-            if (inToolbar) {
+            if (inToolbar()) {
               event.preventDefault()
-              if (focusedIndex >= 0 && focusedIndex < radios.length) {
-                const focusedRadio = radios[focusedIndex]
-                if (focusedRadio.getAttribute('aria-checked') !== 'true') {
-                  updateCheckedState(focusedIndex)
-                }
+              if (focusedIndex >= 0 && radios[focusedIndex].getAttribute('aria-checked') !== 'true') {
+                updateCheckedState(focusedIndex)
               }
             }
             break
         }
       },
-      
+
       handleFocus() {
         radios = getRadios()
         if (radios.length === 0) return
-        
-        // Set initial focus
+
         if (checkedIndex >= 0) {
           focusedIndex = checkedIndex
         } else {
           focusedIndex = 0
         }
-        
-        // Update tabindex
+
         radios.forEach((radio, idx) => {
           radio.setAttribute('tabindex', idx === focusedIndex ? '0' : '-1')
-          radio.setAttribute('data-focused', idx === focusedIndex ? 'true' : 'false')
         })
-        
+
         radios[focusedIndex].focus()
+        updateVisualState()
       },
-      
+
       handleBlur() {
-        // Remove focus indicators
         radios.forEach(radio => {
           radio.removeAttribute('data-focused')
         })
+        updateVisualState()
       },
-      
+
       onConnected() {
         radios = getRadios()
-        
-        // Initialize from value attribute
+
         const value = host.getAttribute('value')
         if (value) {
           radios.forEach((radio, idx) => {
@@ -343,28 +403,32 @@ export const RadioGroup = bElement<RadioGroupEvents>({
             }
           })
         } else {
-          // No initial value - all unchecked
           radios.forEach((radio, idx) => {
             radio.setAttribute('aria-checked', 'false')
             radio.setAttribute('tabindex', idx === 0 ? '0' : '-1')
           })
           focusedIndex = 0
         }
-        
-        // Set aria-label if provided
+
         const ariaLabel = host.getAttribute('aria-label')
         if (ariaLabel) {
           radiogroup?.setAttribute('aria-label', ariaLabel)
         }
-        
-        // Handle radio clicks
+
+        const orientation = host.getAttribute('orientation')
+        if (orientation === 'horizontal') {
+          radiogroup?.attr('class', `${styles.radiogroup.classNames.join(' ')} ${styles.radiogroupHorizontal.classNames.join(' ')}`)
+        }
+
         radios.forEach((radio, idx) => {
           radio.addEventListener('click', () => {
             updateCheckedState(idx)
           })
         })
+
+        updateVisualState()
       },
-      
+
       onAttributeChanged({ name, newValue }) {
         if (name === 'value' && newValue) {
           radios = getRadios()
@@ -381,206 +445,105 @@ export const RadioGroup = bElement<RadioGroupEvents>({
     }
   },
 })
-```
 
-#### Radio Button Component (Functional Template)
-
-```typescript
-import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-
-const RadioButton: FT<{
-  value?: string
-  'aria-checked': 'true' | 'false'
-  children?: Children
-}> = ({ value, 'aria-checked': ariaChecked, children, ...attrs }) => (
-  <div
-    role='radio'
-    data-value={value}
-    aria-checked={ariaChecked}
-    tabIndex={-1}
-    {...attrs}
-    {...joinStyles(radioGroupStyles.radio)}
-    p-trigger={{ click: 'selectRadio' }}
-  >
-    <div {...radioGroupStyles.symbol} aria-hidden='true'>
-      <div {...radioGroupStyles.dot}></div>
-    </div>
-    {children}
-  </div>
-)
-
-// Usage in story
+// Stories - EXPORTED for testing/training
 export const colorRadioGroup = story({
-  intent: 'Radio group for color selection',
+  intent: 'Display a radio group for color selection',
   template: () => (
-    <RadioGroup aria-label='Choose a color'>
-      <RadioButton slot='radios' value='red' aria-checked='false'>Red</RadioButton>
-      <RadioButton slot='radios' value='blue' aria-checked='true'>Blue</RadioButton>
-      <RadioButton slot='radios' value='green' aria-checked='false'>Green</RadioButton>
+    <RadioGroup aria-label="Choose a color">
+      <RadioButton value="red">Red</RadioButton>
+      <RadioButton value="blue" aria-checked="true">Blue</RadioButton>
+      <RadioButton value="green">Green</RadioButton>
     </RadioGroup>
   ),
-})
-```
+  play: async ({ findByAttribute, assert }) => {
+    const radiogroup = await findByAttribute('role', 'radiogroup')
 
-#### Form-Associated Radio Group
-
-```typescript
-export const FormRadioGroup = bElement<RadioGroupEvents>({
-  tag: 'form-radio-group',
-  observedAttributes: ['name', 'value', 'required'],
-  formAssociated: true,
-  shadowDom: (
-    <div
-      p-target='radiogroup'
-      role='radiogroup'
-      tabIndex={0}
-      {...radioGroupStyles.radiogroup}
-      p-trigger={{ keydown: 'handleKeydown', focus: 'handleFocus' }}
-    >
-      <slot name='radios'></slot>
-    </div>
-  ),
-  bProgram({ $, host, internals, emit, root }) {
-    const radiogroup = $('radiogroup')[0]
-    let radios: HTMLElement[] = []
-    let checkedIndex = -1
-    let focusedIndex = -1
-    
-    const updateCheckedState = (index: number) => {
-      if (index < 0 || index >= radios.length) return
-      
-      radios.forEach(radio => {
-        radio.setAttribute('aria-checked', 'false')
-      })
-      
-      const checkedRadio = radios[index]
-      checkedRadio.setAttribute('aria-checked', 'true')
-      checkedIndex = index
-      
-      const value = checkedRadio.getAttribute('data-value') || checkedRadio.textContent || ''
-      internals.setFormValue(value)
-      host.setAttribute('value', value)
-      
-      // Validation
-      if (host.hasAttribute('required') && !value) {
-        internals.setValidity({ valueMissing: true }, 'Please select an option')
-      } else {
-        internals.setValidity({})
-      }
-      
-      emit({ type: 'change', detail: { value, checked: checkedRadio } })
-    }
-    
-    // ... rest of implementation similar to RadioGroup above
-    
-    return {
-      // ... handlers
-      onConnected() {
-        // Set form name
-        const name = host.getAttribute('name')
-        if (name) {
-          internals.setFormValue('', name) // Empty value, but set name
-        }
-        
-        // ... rest of initialization
-      },
-    }
+    assert({
+      given: 'radio group is rendered',
+      should: 'have radiogroup role',
+      actual: radiogroup?.getAttribute('role'),
+      expected: 'radiogroup',
+    })
   },
 })
-```
 
-#### Radio Group in Toolbar
-
-```typescript
-export const ToolbarRadioGroup = bElement<RadioGroupEvents>({
-  tag: 'toolbar-radio-group',
-  observedAttributes: ['value', 'aria-label'],
-  shadowDom: (
-    <div
-      p-target='radiogroup'
-      role='radiogroup'
-      {...radioGroupStyles.radiogroup}
-      p-trigger={{ keydown: 'handleKeydown' }}
-    >
-      <slot name='radios'></slot>
-    </div>
+export const horizontalRadioGroup = story({
+  intent: 'Display a horizontal radio group',
+  template: () => (
+    <RadioGroup aria-label="Choose a size" orientation="horizontal">
+      <RadioButton value="sm">Small</RadioButton>
+      <RadioButton value="md" aria-checked="true">Medium</RadioButton>
+      <RadioButton value="lg">Large</RadioButton>
+    </RadioGroup>
   ),
-  bProgram({ $, host, emit, root }) {
-    // Similar to RadioGroup but with inToolbar = true behavior
-    // Arrow keys move focus but don't change selection
-    // Space/Enter change selection
-    // ...
+  play: async ({ findByAttribute, assert }) => {
+    const checkedRadio = await findByAttribute('aria-checked', 'true')
+
+    assert({
+      given: 'radio group has checked item',
+      should: 'have checked radio',
+      actual: checkedRadio?.getAttribute('data-value'),
+      expected: 'md',
+    })
   },
 })
-```
 
-#### Rating Radio Group Example
-
-```typescript
-export const RatingRadioGroup = bElement<RadioGroupEvents>({
-  tag: 'rating-radio-group',
-  observedAttributes: ['value', 'max'],
-  formAssociated: true,
-  shadowDom: (
-    <div
-      p-target='radiogroup'
-      role='radiogroup'
-      aria-label='Rating'
-      tabIndex={0}
-      {...radioGroupStyles.radiogroup}
-      p-trigger={{ keydown: 'handleKeydown', focus: 'handleFocus' }}
-    >
-      <slot name='radios'></slot>
-    </div>
+export const uncheckedRadioGroup = story({
+  intent: 'Display a radio group with no initial selection',
+  template: () => (
+    <RadioGroup aria-label="Choose an option">
+      <RadioButton value="opt1">Option 1</RadioButton>
+      <RadioButton value="opt2">Option 2</RadioButton>
+      <RadioButton value="opt3">Option 3</RadioButton>
+    </RadioGroup>
   ),
-  bProgram({ $, host, internals, emit, root }) {
-    const radiogroup = $('radiogroup')[0]
-    let radios: HTMLElement[] = []
-    let checkedIndex = -1
-    let maxRating = 5
-    
-    const renderRadios = () => {
-      const container = radiogroup
-      const radioElements = []
-      
-      for (let i = 1; i <= maxRating; i++) {
-        radioElements.push(
-          <div
-            role='radio'
-            data-value={String(i)}
-            aria-checked={i === checkedIndex + 1 ? 'true' : 'false'}
-            tabIndex={i === checkedIndex + 1 ? 0 : -1}
-            {...radioGroupStyles.radio}
-            p-trigger={{ click: 'selectRating' }}
-          >
-            <div {...radioGroupStyles.symbol} aria-hidden='true'>
-              <div {...radioGroupStyles.dot}></div>
-            </div>
-            {i <= (checkedIndex + 1) ? '★' : '☆'}
-          </div>
-        )
-      }
-      
-      container?.render(...radioElements)
-      radios = getRadios()
-    }
-    
-    return {
-      selectRating(event: { target: HTMLElement }) {
-        const value = event.target.getAttribute('data-value')
-        const index = radios.findIndex(r => r.getAttribute('data-value') === value)
-        if (index >= 0) {
-          updateCheckedState(index)
-        }
-      },
-      // ... other handlers
-      onConnected() {
-        const maxAttr = host.getAttribute('max')
-        if (maxAttr) maxRating = Number(maxAttr)
-        renderRadios()
-      },
-    }
+  play: async ({ findByAttribute, assert }) => {
+    const checkedRadio = await findByAttribute('aria-checked', 'true')
+
+    assert({
+      given: 'no initial selection',
+      should: 'have no checked radio',
+      actual: checkedRadio,
+      expected: null,
+    })
+  },
+})
+
+export const formRadioGroup = story({
+  intent: 'Display a form-associated radio group',
+  template: () => (
+    <form>
+      <RadioGroup aria-label="Payment method" value="credit">
+        <RadioButton value="credit" aria-checked="true">Credit Card</RadioButton>
+        <RadioButton value="debit">Debit Card</RadioButton>
+        <RadioButton value="paypal">PayPal</RadioButton>
+      </RadioGroup>
+    </form>
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const checkedRadio = await findByAttribute('aria-checked', 'true')
+
+    assert({
+      given: 'form radio group',
+      should: 'have pre-selected value',
+      actual: checkedRadio?.getAttribute('data-value'),
+      expected: 'credit',
+    })
+  },
+})
+
+export const accessibilityTest = story({
+  intent: 'Verify radio group accessibility requirements',
+  template: () => (
+    <RadioGroup aria-label="Test radio group">
+      <RadioButton value="a">Option A</RadioButton>
+      <RadioButton value="b">Option B</RadioButton>
+      <RadioButton value="c">Option C</RadioButton>
+    </RadioGroup>
+  ),
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
   },
 })
 ```
@@ -588,8 +551,8 @@ export const RatingRadioGroup = bElement<RadioGroupEvents>({
 ## Plaited Integration
 
 - **Works with Shadow DOM**: Yes - radio groups use Shadow DOM
-- **Uses bElement built-ins**: Yes - `$` for querying, `attr()` for attributes, `render()` for dynamic radios
-- **Requires external web API**: No - uses standard DOM APIs
+- **Uses bElement built-ins**: `$`, `p-trigger`, `p-target`, `emit`, `attr`, `internals`
+- **Requires external web API**: No
 - **Cleanup required**: No - standard DOM elements handle their own lifecycle
 
 ## Keyboard Interaction
@@ -627,15 +590,15 @@ export const RatingRadioGroup = bElement<RadioGroupEvents>({
 ## Best Practices
 
 1. **Use bElement** - Radio groups require coordinated state management
-2. **Roving tabindex** - Use tabindex management for keyboard navigation
-3. **Selection follows focus** - In standalone mode, arrow keys change selection
-4. **Toolbar mode** - Different behavior when in toolbar (arrow keys don't change selection)
-5. **Form association** - Use `formAssociated: true` for form integration
-6. **Initial state** - Can initialize with all radios unchecked
-7. **Accessible labels** - Always provide labels for group and radios
-8. **Native alternative** - Consider native `<input type="radio">` with `<fieldset>`
-9. **Visual feedback** - Clear indication of checked and focused states
-10. **Keyboard shortcuts** - Support all required keyboard interactions
+2. **Use FunctionalTemplates** - for static radio button rendering
+3. **Roving tabindex** - Use tabindex management for keyboard navigation
+4. **Use spread syntax** - `{...styles.x}` for applying styles
+5. **Selection follows focus** - In standalone mode, arrow keys change selection
+6. **Toolbar mode** - Different behavior when in toolbar (arrow keys don't change selection)
+7. **Form association** - Use `formAssociated: true` for form integration
+8. **Initial state** - Can initialize with all radios unchecked
+9. **Accessible labels** - Always provide labels for group and radios
+10. **Use `$()` with `p-target`** - never use `querySelector` directly
 
 ## Accessibility Considerations
 
@@ -647,24 +610,6 @@ export const RatingRadioGroup = bElement<RadioGroupEvents>({
 - Roving tabindex keeps only one radio focusable at a time
 - Toolbar mode prevents accidental selection changes during navigation
 
-## Radio Group Variants
-
-### Standalone Radio Group
-- Standard form input
-- Selection follows focus
-- Arrow keys change both focus and selection
-
-### Toolbar Radio Group
-- Nested in toolbar
-- Arrow keys only move focus
-- Space/Enter change selection
-- Prevents accidental selection changes
-
-### Rating Radio Group
-- Star or numeric rating
-- Visual representation (stars, numbers)
-- Same keyboard behavior as standard group
-
 ## Browser Compatibility
 
 | Browser | Support |
@@ -673,8 +618,6 @@ export const RatingRadioGroup = bElement<RadioGroupEvents>({
 | Firefox | Full support |
 | Safari | Full support |
 | Edge | Full support |
-
-**Note**: ARIA radio group pattern has universal support in modern browsers with assistive technology. Native HTML radio inputs also have universal support.
 
 ## References
 

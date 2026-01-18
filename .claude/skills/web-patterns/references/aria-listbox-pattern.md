@@ -28,6 +28,15 @@ A listbox widget presents a list of options and allows a user to select one or m
 - Settings/preference selectors
 - Data visualization filters
 
+## Pattern Philosophy
+
+This pattern is **training data** for the Plaited agent. The examples below train the agent's understanding of how to implement this pattern correctly.
+
+- bElements/FunctionalTemplates are defined locally in stories (NOT exported)
+- Only stories are exported (required for testing/training)
+- Styles are always in separate `*.css.ts` files
+- Use spread syntax `{...styles.x}` for applying styles
+
 ## Implementation
 
 ### Vanilla JavaScript
@@ -69,7 +78,7 @@ A listbox widget presents a list of options and allows a user to select one or m
 listbox.addEventListener('keydown', (e) => {
   const options = Array.from(listbox.querySelectorAll('[role="option"]'))
   const currentIndex = options.findIndex(opt => opt === document.activeElement)
-  
+
   switch(e.key) {
     case 'ArrowDown':
       e.preventDefault()
@@ -109,24 +118,29 @@ function selectOption(option, isMultiSelect) {
 
 ### Plaited Adaptation
 
-**Important**: In Plaited, listboxes are implemented as **bElements** because they require:
-- Complex state management (selected options, focused option)
-- Keyboard navigation (arrow keys, Home, End, type-ahead)
-- Focus management with `aria-activedescendant`
-- Form association (optional)
-- Dynamic option rendering
+**File Structure:**
 
-#### Single-Select Listbox (bElement)
+```
+listbox/
+  listbox.css.ts       # Styles (createStyles) - ALWAYS separate
+  listbox.stories.tsx  # FT/bElement + stories (imports from css.ts)
+```
+
+#### listbox.css.ts
 
 ```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
+// listbox.css.ts
+import { createStyles, createHostStyles } from 'plaited'
 
-const listboxStyles = createStyles({
+export const hostStyles = createHostStyles({
+  display: 'block',
+})
+
+export const styles = createStyles({
   listbox: {
     border: '1px solid #ccc',
     borderRadius: '4px',
-    maxHeight: '200px',
+    maxBlockSize: '200px',
     overflowY: 'auto',
     listStyle: 'none',
     padding: 0,
@@ -136,16 +150,13 @@ const listboxStyles = createStyles({
   option: {
     padding: '0.5rem 1rem',
     cursor: 'pointer',
-    backgroundColor: {
-      $default: 'transparent',
-      '[aria-selected="true"]': '#007bff',
-      '[data-focused="true"]': '#f0f0f0',
-      ':hover': '#f0f0f0',
-    },
-    color: {
-      $default: 'inherit',
-      '[aria-selected="true"]': 'white',
-    },
+  },
+  optionFocused: {
+    backgroundColor: '#f0f0f0',
+  },
+  optionSelected: {
+    backgroundColor: '#007bff',
+    color: 'white',
   },
   group: {
     padding: '0.5rem 0',
@@ -157,25 +168,64 @@ const listboxStyles = createStyles({
     color: '#666',
   },
 })
+```
 
-type ListboxEvents = {
-  select: { value: string; index: number; option: HTMLElement }
-  change: { value: string | string[] }
-}
+#### listbox.stories.tsx
 
-export const Listbox = bElement<ListboxEvents>({
-  tag: 'accessible-listbox',
-  observedAttributes: ['value', 'multiselectable', 'aria-label'],
+```typescript
+// listbox.stories.tsx
+import type { FT, Children } from 'plaited/ui'
+import { bElement } from 'plaited/ui'
+import { story } from 'plaited/testing'
+import { styles, hostStyles } from './listbox.css.ts'
+
+// Option FunctionalTemplate - defined locally, NOT exported
+const Option: FT<{
+  value?: string
+  'aria-selected'?: 'true' | 'false'
+  children?: Children
+}> = ({ value, 'aria-selected': ariaSelected = 'false', children, ...attrs }) => (
+  <li
+    role="option"
+    data-value={value}
+    aria-selected={ariaSelected}
+    tabIndex={-1}
+    {...attrs}
+    {...styles.option}
+    {...(ariaSelected === 'true' ? styles.optionSelected : {})}
+  >
+    {children}
+  </li>
+)
+
+// OptionGroup FunctionalTemplate - defined locally, NOT exported
+const OptionGroup: FT<{
+  'aria-label': string
+  children?: Children
+}> = ({ 'aria-label': ariaLabel, children, ...attrs }) => (
+  <li role="group" aria-label={ariaLabel} {...attrs} {...styles.group}>
+    <div {...styles.groupLabel}>{ariaLabel}</div>
+    <ul style={{ listStyle: 'none', padding: '0', margin: '0' }}>
+      {children}
+    </ul>
+  </li>
+)
+
+// Listbox bElement - defined locally, NOT exported
+const Listbox = bElement({
+  tag: 'pattern-listbox',
+  observedAttributes: ['value', 'aria-multiselectable', 'aria-label'],
   formAssociated: true,
+  hostStyles,
   shadowDom: (
     <ul
-      p-target='listbox'
-      role='listbox'
+      p-target="listbox"
+      role="listbox"
       tabIndex={0}
-      {...listboxStyles.listbox}
+      {...styles.listbox}
       p-trigger={{ keydown: 'handleKeydown', focus: 'handleFocus', blur: 'handleBlur' }}
     >
-      <slot name='options'></slot>
+      <slot></slot>
     </ul>
   ),
   bProgram({ $, host, internals, emit, root }) {
@@ -185,72 +235,71 @@ export const Listbox = bElement<ListboxEvents>({
     let focusedIndex = -1
     let typeAheadBuffer = ''
     let typeAheadTimeout: ReturnType<typeof setTimeout> | undefined
-    const isMultiSelect = host.getAttribute('aria-multiselectable') === 'true'
+    const isMultiSelect = () => host.getAttribute('aria-multiselectable') === 'true'
 
     const getOptions = (): HTMLElement[] => {
-      return Array.from(
-        root.querySelectorAll('[role="option"]')
-      ) as HTMLElement[]
+      return Array.from(root.querySelectorAll('[role="option"]')) as HTMLElement[]
     }
 
     const updateActiveDescendant = () => {
+      // Remove focus from all options
+      options.forEach((opt, idx) => {
+        opt.removeAttribute('data-focused')
+        const baseClasses = styles.option.classNames.join(' ')
+        const isSelected = opt.getAttribute('aria-selected') === 'true'
+        opt.setAttribute('class', isSelected
+          ? `${baseClasses} ${styles.optionSelected.classNames.join(' ')}`
+          : baseClasses
+        )
+      })
+
       if (focusedIndex >= 0 && focusedIndex < options.length) {
         const focusedOption = options[focusedIndex]
         const id = focusedOption.id || `option-${focusedIndex}`
-        if (!focusedOption.id) {
-          focusedOption.id = id
-        }
+        if (!focusedOption.id) focusedOption.id = id
         listbox?.attr('aria-activedescendant', id)
         focusedOption.setAttribute('data-focused', 'true')
+
+        const baseClasses = styles.option.classNames.join(' ')
+        const isSelected = focusedOption.getAttribute('aria-selected') === 'true'
+        focusedOption.setAttribute('class', isSelected
+          ? `${baseClasses} ${styles.optionSelected.classNames.join(' ')}`
+          : `${baseClasses} ${styles.optionFocused.classNames.join(' ')}`
+        )
       } else {
         listbox?.attr('aria-activedescendant', null)
       }
-      
-      // Remove focus from other options
-      options.forEach((opt, idx) => {
-        if (idx !== focusedIndex) {
-          opt.removeAttribute('data-focused')
-        }
-      })
     }
 
     const selectOption = (index: number, toggle = false) => {
       if (index < 0 || index >= options.length) return
-      
+
       const option = options[index]
       const value = option.getAttribute('data-value') || option.textContent || ''
-      
-      if (isMultiSelect) {
+
+      if (isMultiSelect()) {
         if (toggle) {
           const currentlySelected = option.getAttribute('aria-selected') === 'true'
-          option.attr('aria-selected', currentlySelected ? 'false' : 'true')
+          option.setAttribute('aria-selected', currentlySelected ? 'false' : 'true')
         } else {
-          option.attr('aria-selected', 'true')
+          option.setAttribute('aria-selected', 'true')
         }
       } else {
-        // Single-select: unselect all others
-        options.forEach(opt => opt.attr('aria-selected', 'false'))
-        option.attr('aria-selected', 'true')
+        options.forEach(opt => opt.setAttribute('aria-selected', 'false'))
+        option.setAttribute('aria-selected', 'true')
         selectedIndex = index
       }
-      
-      emit({
-        type: 'select',
-        detail: { value, index, option },
-      })
-      
+
+      updateActiveDescendant()
       updateFormValue()
+      emit({ type: 'select', detail: { value, index, option } })
     }
 
     const updateFormValue = () => {
-      const selectedOptions = options.filter(
-        opt => opt.getAttribute('aria-selected') === 'true'
-      )
-      const values = selectedOptions.map(
-        opt => opt.getAttribute('data-value') || opt.textContent || ''
-      )
-      
-      if (isMultiSelect) {
+      const selectedOptions = options.filter(opt => opt.getAttribute('aria-selected') === 'true')
+      const values = selectedOptions.map(opt => opt.getAttribute('data-value') || opt.textContent || '')
+
+      if (isMultiSelect()) {
         internals.setFormValue(JSON.stringify(values))
         emit({ type: 'change', detail: { value: values } })
       } else {
@@ -262,9 +311,8 @@ export const Listbox = bElement<ListboxEvents>({
 
     const moveFocus = (direction: 'next' | 'prev' | 'first' | 'last') => {
       if (options.length === 0) return
-      
+
       let newIndex = focusedIndex
-      
       switch (direction) {
         case 'next':
           newIndex = (focusedIndex + 1) % options.length
@@ -279,27 +327,19 @@ export const Listbox = bElement<ListboxEvents>({
           newIndex = options.length - 1
           break
       }
-      
+
       focusedIndex = newIndex
       updateActiveDescendant()
-      
-      // Scroll into view
       options[focusedIndex]?.scrollIntoView({ block: 'nearest' })
     }
 
     const handleTypeAhead = (char: string) => {
       typeAheadBuffer += char.toLowerCase()
-      
-      // Clear timeout
-      if (typeAheadTimeout) {
-        clearTimeout(typeAheadTimeout)
-      }
-      
-      // Find next option starting with buffer
+      if (typeAheadTimeout) clearTimeout(typeAheadTimeout)
+
       const startIndex = (focusedIndex + 1) % options.length
       let foundIndex = -1
-      
-      // Search from current position to end
+
       for (let i = startIndex; i < options.length; i++) {
         const text = (options[i].textContent || '').toLowerCase()
         if (text.startsWith(typeAheadBuffer)) {
@@ -307,8 +347,7 @@ export const Listbox = bElement<ListboxEvents>({
           break
         }
       }
-      
-      // If not found, search from beginning
+
       if (foundIndex === -1) {
         for (let i = 0; i < startIndex; i++) {
           const text = (options[i].textContent || '').toLowerCase()
@@ -318,14 +357,13 @@ export const Listbox = bElement<ListboxEvents>({
           }
         }
       }
-      
+
       if (foundIndex >= 0) {
         focusedIndex = foundIndex
         updateActiveDescendant()
         options[focusedIndex]?.scrollIntoView({ block: 'nearest' })
       }
-      
-      // Clear buffer after delay
+
       typeAheadTimeout = setTimeout(() => {
         typeAheadBuffer = ''
       }, 1000)
@@ -334,59 +372,45 @@ export const Listbox = bElement<ListboxEvents>({
     return {
       handleKeydown(event: KeyboardEvent) {
         if (options.length === 0) return
-        
+
         switch (event.key) {
           case 'ArrowDown':
             event.preventDefault()
             moveFocus('next')
-            if (!isMultiSelect) {
-              // Selection follows focus in single-select
-              selectOption(focusedIndex, false)
-            }
+            if (!isMultiSelect()) selectOption(focusedIndex, false)
             break
-            
+
           case 'ArrowUp':
             event.preventDefault()
             moveFocus('prev')
-            if (!isMultiSelect) {
-              selectOption(focusedIndex, false)
-            }
+            if (!isMultiSelect()) selectOption(focusedIndex, false)
             break
-            
+
           case 'Home':
             event.preventDefault()
             moveFocus('first')
-            if (!isMultiSelect) {
-              selectOption(focusedIndex, false)
-            }
+            if (!isMultiSelect()) selectOption(focusedIndex, false)
             break
-            
+
           case 'End':
             event.preventDefault()
             moveFocus('last')
-            if (!isMultiSelect) {
-              selectOption(focusedIndex, false)
-            }
+            if (!isMultiSelect()) selectOption(focusedIndex, false)
             break
-            
-          case ' ': // Space
-            if (isMultiSelect) {
+
+          case ' ':
+            if (isMultiSelect()) {
               event.preventDefault()
               selectOption(focusedIndex, true)
             }
             break
-            
+
           case 'Enter':
             event.preventDefault()
-            if (isMultiSelect) {
-              selectOption(focusedIndex, true)
-            } else {
-              selectOption(focusedIndex, false)
-            }
+            selectOption(focusedIndex, isMultiSelect())
             break
-            
+
           default:
-            // Type-ahead: single character
             if (event.key.length === 1 && !event.ctrlKey && !event.metaKey) {
               event.preventDefault()
               handleTypeAhead(event.key)
@@ -394,44 +418,39 @@ export const Listbox = bElement<ListboxEvents>({
             break
         }
       },
-      
+
       handleFocus() {
         options = getOptions()
-        
         if (options.length === 0) return
-        
-        // If no option is selected, focus first option
+
         if (selectedIndex < 0) {
           focusedIndex = 0
         } else {
           focusedIndex = selectedIndex
         }
-        
         updateActiveDescendant()
       },
-      
+
       handleBlur() {
-        // Clear type-ahead buffer
         if (typeAheadTimeout) {
           clearTimeout(typeAheadTimeout)
           typeAheadTimeout = undefined
         }
         typeAheadBuffer = ''
       },
-      
+
       onConnected() {
         options = getOptions()
-        
-        // Initialize from value attribute
+
         const value = host.getAttribute('value')
         if (value) {
-          if (isMultiSelect) {
+          if (isMultiSelect()) {
             try {
               const values = JSON.parse(value)
               options.forEach((opt, idx) => {
                 const optValue = opt.getAttribute('data-value') || opt.textContent || ''
                 if (values.includes(optValue)) {
-                  opt.attr('aria-selected', 'true')
+                  opt.setAttribute('aria-selected', 'true')
                   if (selectedIndex < 0) selectedIndex = idx
                 }
               })
@@ -442,50 +461,23 @@ export const Listbox = bElement<ListboxEvents>({
             options.forEach((opt, idx) => {
               const optValue = opt.getAttribute('data-value') || opt.textContent || ''
               if (optValue === value) {
-                opt.attr('aria-selected', 'true')
+                opt.setAttribute('aria-selected', 'true')
                 selectedIndex = idx
               }
             })
           }
         }
-        
-        // Set aria-multiselectable
-        if (isMultiSelect) {
+
+        if (isMultiSelect()) {
           listbox?.attr('aria-multiselectable', 'true')
         }
-        
-        // Set aria-label if provided
+
         const ariaLabel = host.getAttribute('aria-label')
         if (ariaLabel) {
           listbox?.attr('aria-label', ariaLabel)
         }
       },
-      
-      onAttributeChanged({ name, newValue }) {
-        if (name === 'value' && newValue) {
-          options = getOptions()
-          if (isMultiSelect) {
-            try {
-              const values = JSON.parse(newValue)
-              options.forEach(opt => {
-                const optValue = opt.getAttribute('data-value') || opt.textContent || ''
-                opt.attr('aria-selected', values.includes(optValue) ? 'true' : 'false')
-              })
-            } catch {
-              // Invalid JSON
-            }
-          } else {
-            options.forEach(opt => {
-              const optValue = opt.getAttribute('data-value') || opt.textContent || ''
-              opt.attr('aria-selected', optValue === newValue ? 'true' : 'false')
-            })
-          }
-          updateFormValue()
-        } else if (name === 'aria-label') {
-          listbox?.attr('aria-label', newValue || null)
-        }
-      },
-      
+
       onDisconnected() {
         if (typeAheadTimeout) {
           clearTimeout(typeAheadTimeout)
@@ -494,146 +486,117 @@ export const Listbox = bElement<ListboxEvents>({
     }
   },
 })
-```
 
-#### Multi-Select Listbox (bElement)
+// Stories - EXPORTED for testing/training
+export const singleSelectListbox = story({
+  intent: 'Display a single-select listbox for choosing one option',
+  template: () => (
+    <Listbox aria-label="Choose a country">
+      <Option value="us">United States</Option>
+      <Option value="ca">Canada</Option>
+      <Option value="mx">Mexico</Option>
+    </Listbox>
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const listbox = await findByAttribute('role', 'listbox')
 
-The same `Listbox` bElement supports multi-select when `aria-multiselectable="true"` is set:
+    assert({
+      given: 'listbox is rendered',
+      should: 'have listbox role',
+      actual: listbox?.getAttribute('role'),
+      expected: 'listbox',
+    })
+  },
+})
 
-```typescript
-// Usage in story
 export const multiSelectListbox = story({
-  intent: 'Multi-select listbox',
+  intent: 'Display a multi-select listbox allowing multiple selections',
   template: () => (
-    <Listbox aria-multiselectable='true' aria-label='Choose countries'>
-      <li slot='options' role='option' data-value='us' aria-selected='false'>
-        United States
-      </li>
-      <li slot='options' role='option' data-value='ca' aria-selected='true'>
-        Canada
-      </li>
-      <li slot='options' role='option' data-value='mx' aria-selected='true'>
-        Mexico
-      </li>
+    <Listbox aria-multiselectable="true" aria-label="Choose countries">
+      <Option value="us">United States</Option>
+      <Option value="ca" aria-selected="true">Canada</Option>
+      <Option value="mx" aria-selected="true">Mexico</Option>
     </Listbox>
   ),
+  play: async ({ findByAttribute, assert }) => {
+    const listbox = await findByAttribute('role', 'listbox')
+
+    assert({
+      given: 'multi-select listbox is rendered',
+      should: 'have aria-multiselectable true',
+      actual: listbox?.getAttribute('aria-multiselectable'),
+      expected: 'true',
+    })
+  },
 })
-```
 
-#### Listbox with Grouped Options
-
-```typescript
-// Option Group Component (Functional Template)
-import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-
-const OptionGroup: FT<{
-  'aria-label': string
-  children?: Children
-}> = ({ 'aria-label': ariaLabel, children, ...attrs }) => (
-  <li role='group' aria-label={ariaLabel} {...attrs} {...joinStyles(listboxStyles.group)}>
-    <div {...listboxStyles.groupLabel}>{ariaLabel}</div>
-    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-      {children}
-    </ul>
-  </li>
-)
-
-// Usage
 export const groupedListbox = story({
-  intent: 'Listbox with grouped options',
+  intent: 'Display a listbox with grouped options',
   template: () => (
-    <Listbox aria-label='Choose a city'>
-      <OptionGroup aria-label='North America' slot='options'>
-        <li role='option' data-value='ny' aria-selected='false'>New York</li>
-        <li role='option' data-value='toronto' aria-selected='false'>Toronto</li>
+    <Listbox aria-label="Choose a city">
+      <OptionGroup aria-label="North America">
+        <Option value="ny">New York</Option>
+        <Option value="toronto">Toronto</Option>
       </OptionGroup>
-      <OptionGroup aria-label='Europe' slot='options'>
-        <li role='option' data-value='london' aria-selected='false'>London</li>
-        <li role='option' data-value='paris' aria-selected='false'>Paris</li>
+      <OptionGroup aria-label="Europe">
+        <Option value="london">London</Option>
+        <Option value="paris">Paris</Option>
       </OptionGroup>
     </Listbox>
   ),
+  play: async ({ findByAttribute, assert }) => {
+    const group = await findByAttribute('role', 'group')
+
+    assert({
+      given: 'grouped listbox is rendered',
+      should: 'have group role',
+      actual: group?.getAttribute('role'),
+      expected: 'group',
+    })
+  },
 })
-```
 
-#### Option Component (Functional Template)
-
-```typescript
-import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-
-const Option: FT<{
-  value?: string
-  'aria-selected': 'true' | 'false'
-  children?: Children
-}> = ({ value, 'aria-selected': ariaSelected, children, ...attrs }) => (
-  <li
-    role='option'
-    data-value={value}
-    aria-selected={ariaSelected}
-    {...attrs}
-    {...joinStyles(listboxStyles.option)}
-    p-trigger={{ click: 'selectOptionClick' }}
-  >
-    {children}
-  </li>
-)
-
-// Usage in bElement
-bElement({
-  tag: 'listbox-with-options',
-  shadowDom: (
-    <Listbox p-target='listbox' aria-label='Choose an option'>
-      <Option slot='options' value='opt1' aria-selected='false'>Option 1</Option>
-      <Option slot='options' value='opt2' aria-selected='false'>Option 2</Option>
+export const preselectedListbox = story({
+  intent: 'Display a listbox with a pre-selected option',
+  template: () => (
+    <Listbox aria-label="Choose a color" value="green">
+      <Option value="red">Red</Option>
+      <Option value="green" aria-selected="true">Green</Option>
+      <Option value="blue">Blue</Option>
     </Listbox>
   ),
-  bProgram({ $, trigger }) {
-    const listbox = $('listbox')[0]
-    
-    return {
-      selectOptionClick(event: { target: HTMLElement }) {
-        // Option clicked - listbox will handle selection via event
-        const option = event.target.closest('[role="option"]') as HTMLElement
-        if (option) {
-          // Trigger selection in listbox
-          const index = Array.from(
-            listbox?.querySelectorAll('[role="option"]') || []
-          ).indexOf(option)
-          if (index >= 0) {
-            // Dispatch custom event or use listbox's internal method
-            option.click() // Native click will be handled by listbox
-          }
-        }
-      },
-    }
-  },
-})
-```
+  play: async ({ findByAttribute, assert }) => {
+    const selectedOption = await findByAttribute('aria-selected', 'true')
 
-#### Scrollable Listbox
-
-```typescript
-// Add scroll styles
-const scrollableListboxStyles = createStyles({
-  listbox: {
-    ...listboxStyles.listbox,
-    maxHeight: '200px',
-    overflowY: 'auto',
-    overflowX: 'hidden',
+    assert({
+      given: 'listbox has pre-selected option',
+      should: 'have selected option',
+      actual: selectedOption?.getAttribute('data-value'),
+      expected: 'green',
+    })
   },
 })
 
-// The listbox automatically scrolls focused options into view
-// using scrollIntoView({ block: 'nearest' })
+export const accessibilityTest = story({
+  intent: 'Verify listbox accessibility requirements',
+  template: () => (
+    <Listbox aria-label="Test listbox">
+      <Option value="opt1">Option 1</Option>
+      <Option value="opt2">Option 2</Option>
+      <Option value="opt3">Option 3</Option>
+    </Listbox>
+  ),
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
+  },
+})
 ```
 
 ## Plaited Integration
 
 - **Works with Shadow DOM**: Yes - listbox uses Shadow DOM
-- **Uses bElement built-ins**: Yes - `$` for querying, `attr()` for attributes, `p-trigger` for events
-- **Requires external web API**: No - uses standard DOM APIs
+- **Uses bElement built-ins**: `$`, `p-trigger`, `p-target`, `emit`, `attr`, `internals`
+- **Requires external web API**: No
 - **Cleanup required**: Yes - type-ahead timeout cleanup in `onDisconnected`
 
 ## Keyboard Interaction
@@ -656,8 +619,6 @@ const scrollableListboxStyles = createStyles({
 - **Space**: Toggles selection state of focused option
 - **Enter**: Toggles selection state of focused option
 - **Type-ahead**: Type character(s) to jump to option starting with that text
-
-**Note**: The implementation above uses the recommended model where modifier keys are not required. For the alternative model (requiring Shift/Control), additional keyboard handlers would be needed.
 
 ## WAI-ARIA Roles, States, and Properties
 
@@ -687,15 +648,15 @@ const scrollableListboxStyles = createStyles({
 ## Best Practices
 
 1. **Use bElement** - Listboxes require complex state and keyboard handling
-2. **Virtual focus** - Use `aria-activedescendant` instead of moving DOM focus
-3. **Type-ahead** - Implement for lists with more than 7 options
-4. **Short option names** - Avoid very long option text
-5. **Unique prefixes** - Avoid options starting with same word/phrase
-6. **Scroll into view** - Ensure focused options are visible
-7. **Form association** - Use `formAssociated: true` for form integration
-8. **Group labels** - Always provide `aria-label` for option groups
-9. **Selection feedback** - Clear visual indication of selected options
-10. **Keyboard shortcuts** - Support Home/End for lists with 5+ options
+2. **Use FunctionalTemplates** - for static option rendering
+3. **Virtual focus** - Use `aria-activedescendant` instead of moving DOM focus
+4. **Use spread syntax** - `{...styles.x}` for applying styles
+5. **Type-ahead** - Implement for lists with more than 7 options
+6. **Short option names** - Avoid very long option text
+7. **Unique prefixes** - Avoid options starting with same word/phrase
+8. **Scroll into view** - Ensure focused options are visible
+9. **Form association** - Use `formAssociated: true` for form integration
+10. **Use `$()` with `p-target`** - never use `querySelector` directly
 
 ## Accessibility Considerations
 
@@ -707,30 +668,6 @@ const scrollableListboxStyles = createStyles({
 - Grouped options help organize related choices
 - Virtual focus (`aria-activedescendant`) keeps DOM focus on listbox container
 
-## Listbox Variants
-
-### Single-Select
-- Only one option selected at a time
-- Selection follows focus (optional)
-- Use `aria-selected` for selection state
-
-### Multi-Select
-- Multiple options can be selected
-- Selection independent of focus
-- Use `aria-selected` or `aria-checked`
-- Space/Enter toggles selection
-
-### Grouped Options
-- Options organized into groups
-- Groups have accessible names
-- Helps organize related options
-- Similar to HTML `<optgroup>`
-
-### Scrollable Listbox
-- Fixed height with scroll
-- Similar to HTML `<select size>`
-- Auto-scrolls focused option into view
-
 ## Browser Compatibility
 
 | Browser | Support |
@@ -739,8 +676,6 @@ const scrollableListboxStyles = createStyles({
 | Firefox | Full support |
 | Safari | Full support |
 | Edge | Full support |
-
-**Note**: ARIA listbox pattern has universal support in modern browsers with assistive technology.
 
 ## References
 

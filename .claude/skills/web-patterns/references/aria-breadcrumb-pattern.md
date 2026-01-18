@@ -20,6 +20,15 @@ A breadcrumb consists of a list of links to the parent pages of the current page
 - Category/product navigation in e-commerce
 - Multi-level navigation context
 
+## Pattern Philosophy
+
+This pattern is **training data** for the Plaited agent. The examples below train the agent's understanding of how to implement this pattern correctly.
+
+- bElements/FunctionalTemplates are defined locally in stories (NOT exported)
+- Only stories are exported (required for testing/training)
+- Styles are always in separate `*.css.ts` files
+- Use spread syntax `{...styles.x}` for applying styles
+
 ## Implementation
 
 ### Vanilla JavaScript
@@ -65,101 +74,23 @@ A breadcrumb consists of a list of links to the parent pages of the current page
 
 ### Plaited Adaptation
 
-**Important**: In Plaited, breadcrumbs can be implemented as:
+**File Structure:**
 
-1. **Functional Templates (FT)** for static breadcrumbs in stories
-2. **bElements** for dynamic breadcrumbs that need route-based state management
-
-#### Static Breadcrumb (Functional Template)
-
-```typescript
-// breadcrumb.stories.tsx
-import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { breadcrumbStyles } from './breadcrumb.css.ts'
-
-type BreadcrumbItem = {
-  label: string
-  href: string
-  current?: boolean
-}
-
-type BreadcrumbProps = {
-  items: BreadcrumbItem[]
-  'aria-label'?: string
-}
-
-const Breadcrumb: FT<BreadcrumbProps> = ({ items, 'aria-label': ariaLabel = 'Breadcrumb', ...attrs }) => (
-  <nav
-    aria-label={ariaLabel}
-    {...attrs}
-    {...joinStyles(breadcrumbStyles.nav)}
-  >
-    <ol {...breadcrumbStyles.list}>
-      {items.map((item, index) => (
-        <li key={index} {...breadcrumbStyles.item}>
-          {item.current ? (
-            <span
-              aria-current='page'
-              {...breadcrumbStyles.current}
-            >
-              {item.label}
-            </span>
-          ) : (
-            <a
-              href={item.href}
-              {...breadcrumbStyles.link}
-            >
-              {item.label}
-            </a>
-          )}
-          {index < items.length - 1 && (
-            <span
-              aria-hidden='true'
-              {...breadcrumbStyles.separator}
-            >
-              /
-            </span>
-          )}
-        </li>
-      ))}
-    </ol>
-  </nav>
-)
-
-export const breadcrumbStory = story({
-  intent: 'Display a breadcrumb navigation trail',
-  template: () => (
-    <Breadcrumb
-      items={[
-        { label: 'Home', href: '/' },
-        { label: 'Products', href: '/products' },
-        { label: 'Electronics', href: '/products/electronics' },
-        { label: 'Smartphones', href: '/products/electronics/smartphones', current: true },
-      ]}
-    />
-  ),
-  play: async ({ accessibilityCheck }) => {
-    await accessibilityCheck({})
-  },
-})
+```
+breadcrumb/
+  breadcrumb.css.ts        # Styles (createStyles) - ALWAYS separate
+  breadcrumb.stories.tsx   # FT/bElement + stories (imports from css.ts)
 ```
 
-#### Dynamic Breadcrumb (bElement)
+#### breadcrumb.css.ts
 
 ```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
+// breadcrumb.css.ts
+import { createStyles } from 'plaited'
 
-type BreadcrumbItem = {
-  label: string
-  href: string
-  current?: boolean
-}
-
-const breadcrumbStyles = createStyles({
+export const styles = createStyles({
   nav: {
-    marginBottom: '1rem',
+    marginBlockEnd: '1rem',
   },
   list: {
     display: 'flex',
@@ -168,6 +99,7 @@ const breadcrumbStyles = createStyles({
     margin: 0,
     gap: '0.5rem',
     alignItems: 'center',
+    flexWrap: 'wrap',
   },
   item: {
     display: 'inline-flex',
@@ -175,11 +107,11 @@ const breadcrumbStyles = createStyles({
     gap: '0.5rem',
   },
   link: {
-    color: 'blue',
-    textDecoration: {
-      $default: 'none',
-      ':hover': 'underline',
-    },
+    color: '#0066cc',
+    textDecoration: 'none',
+  },
+  linkHover: {
+    textDecoration: 'underline',
   },
   current: {
     color: 'inherit',
@@ -190,69 +122,143 @@ const breadcrumbStyles = createStyles({
     userSelect: 'none',
   },
 })
+```
 
-type BreadcrumbEvents = {
-  navigate: { href: string }
+#### breadcrumb.stories.tsx
+
+```typescript
+// breadcrumb.stories.tsx
+import type { FT, Children } from 'plaited/ui'
+import { bElement } from 'plaited/ui'
+import { story } from 'plaited/testing'
+import { styles } from './breadcrumb.css.ts'
+
+type BreadcrumbItem = {
+  label: string
+  href: string
+  current?: boolean
 }
 
-export const Breadcrumb = bElement<BreadcrumbEvents>({
-  tag: 'breadcrumb-nav',
+// FunctionalTemplate - defined locally, NOT exported
+const Breadcrumb: FT<{
+  items: BreadcrumbItem[]
+  'aria-label'?: string
+}> = ({ items, 'aria-label': ariaLabel = 'Breadcrumb', ...attrs }) => (
+  <nav aria-label={ariaLabel} {...attrs} {...styles.nav}>
+    <ol {...styles.list}>
+      {items.map((item, index) => (
+        <li key={index} {...styles.item}>
+          {item.current ? (
+            <span aria-current="page" {...styles.current}>
+              {item.label}
+            </span>
+          ) : (
+            <a href={item.href} {...styles.link}>
+              {item.label}
+            </a>
+          )}
+          {index < items.length - 1 && (
+            <span aria-hidden="true" {...styles.separator}>
+              /
+            </span>
+          )}
+        </li>
+      ))}
+    </ol>
+  </nav>
+)
+
+// Composable breadcrumb components - defined locally, NOT exported
+const BreadcrumbNav: FT<{ 'aria-label'?: string; children?: Children }> = ({
+  'aria-label': ariaLabel = 'Breadcrumb',
+  children,
+  ...attrs
+}) => (
+  <nav aria-label={ariaLabel} {...attrs} {...styles.nav}>
+    <ol {...styles.list}>{children}</ol>
+  </nav>
+)
+
+const BreadcrumbItem: FT<{
+  href?: string
+  current?: boolean
+  children?: Children
+}> = ({ href, current, children, ...attrs }) => (
+  <li {...styles.item}>
+    {current ? (
+      <span aria-current="page" {...styles.current} {...attrs}>
+        {children}
+      </span>
+    ) : (
+      <a href={href} {...styles.link} {...attrs}>
+        {children}
+      </a>
+    )}
+  </li>
+)
+
+const BreadcrumbSeparator: FT = () => (
+  <span aria-hidden="true" {...styles.separator}>
+    /
+  </span>
+)
+
+// bElement for dynamic breadcrumbs - defined locally, NOT exported
+const DynamicBreadcrumb = bElement({
+  tag: 'pattern-breadcrumb',
   observedAttributes: ['items'],
   shadowDom: (
-    <nav
-      p-target='nav'
-      aria-label='Breadcrumb'
-      {...breadcrumbStyles.nav}
-    >
-      <ol
-        p-target='list'
-        {...breadcrumbStyles.list}
-      >
-        {/* Items will be dynamically rendered */}
+    <nav p-target="nav" aria-label="Breadcrumb" {...styles.nav}>
+      <ol p-target="list" {...styles.list}>
+        {/* Items rendered dynamically */}
       </ol>
     </nav>
   ),
-  bProgram({ $, host, emit, root }) {
+  bProgram({ $, host, emit }) {
     const list = $('list')[0]
 
     const renderItems = (items: BreadcrumbItem[]) => {
       if (!list) return
 
       list.render(
-        ...items.map((item, index) => (
-          <li key={index} {...breadcrumbStyles.item}>
-            {item.current ? (
-              <span
-                aria-current='page'
-                {...breadcrumbStyles.current}
-              >
-                {item.label}
-              </span>
-            ) : (
-              <a
-                href={item.href}
-                p-trigger={{ click: 'handleNavigate' }}
-                data-href={item.href}
-                {...breadcrumbStyles.link}
-              >
-                {item.label}
-              </a>
-            )}
-            {index < items.length - 1 && (
-              <span
-                aria-hidden='true'
-                {...breadcrumbStyles.separator}
-              >
-                /
-              </span>
-            )}
-          </li>
-        ))
+        ...items.flatMap((item, index) => {
+          const elements = [
+            <li key={`item-${index}`} {...styles.item}>
+              {item.current ? (
+                <span aria-current="page" {...styles.current}>
+                  {item.label}
+                </span>
+              ) : (
+                <a
+                  href={item.href}
+                  p-trigger={{ click: 'handleNavigate' }}
+                  data-href={item.href}
+                  {...styles.link}
+                >
+                  {item.label}
+                </a>
+              )}
+            </li>,
+          ]
+
+          if (index < items.length - 1) {
+            elements.push(
+              <li key={`sep-${index}`} {...styles.item}>
+                <span aria-hidden="true" {...styles.separator}>
+                  /
+                </span>
+              </li>
+            )
+          }
+
+          return elements
+        })
       )
     }
 
     return {
       handleNavigate(event: { target: HTMLAnchorElement }) {
+        event.target.closest('a')?.getAttribute('data-href')
         const href = event.target.getAttribute('data-href')
         if (href) {
           emit({ type: 'navigate', detail: { href } })
@@ -282,89 +288,105 @@ export const Breadcrumb = bElement<BreadcrumbEvents>({
     }
   },
 })
-```
 
-#### Breadcrumb with Slot Content
+// Stories - EXPORTED for testing/training
+export const staticBreadcrumb = story({
+  intent: 'Display a static breadcrumb navigation trail using FunctionalTemplate',
+  template: () => (
+    <Breadcrumb
+      items={[
+        { label: 'Home', href: '/' },
+        { label: 'Products', href: '/products' },
+        { label: 'Electronics', href: '/products/electronics' },
+        { label: 'Smartphones', href: '/products/electronics/smartphones', current: true },
+      ]}
+    />
+  ),
+  play: async ({ findByAttribute, assert, accessibilityCheck }) => {
+    const currentPage = await findByAttribute('aria-current', 'page')
 
-```typescript
-import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { breadcrumbStyles } from './breadcrumb.css.ts'
+    assert({
+      given: 'breadcrumb is rendered',
+      should: 'have current page marked with aria-current',
+      actual: currentPage?.textContent,
+      expected: 'Smartphones',
+    })
 
-const Breadcrumb: FT<{ 'aria-label'?: string; children?: Children }> = ({
-  'aria-label': ariaLabel = 'Breadcrumb',
-  children,
-  ...attrs
-}) => (
-  <nav
-    aria-label={ariaLabel}
-    {...attrs}
-    {...joinStyles(breadcrumbStyles.nav)}
-  >
-    <ol {...breadcrumbStyles.list}>
-      {children}
-    </ol>
-  </nav>
-)
+    await accessibilityCheck({})
+  },
+})
 
-const BreadcrumbItem: FT<{
-  href?: string
-  current?: boolean
-  children?: Children
-}> = ({ href, current, children, ...attrs }) => (
-  <li {...breadcrumbStyles.item}>
-    {current ? (
-      <span
-        aria-current='page'
-        {...breadcrumbStyles.current}
-        {...attrs}
-      >
-        {children}
-      </span>
-    ) : (
-      <a
-        href={href}
-        {...breadcrumbStyles.link}
-        {...attrs}
-      >
-        {children}
-      </a>
-    )}
-  </li>
-)
+export const composableBreadcrumb = story({
+  intent: 'Composable breadcrumb using individual FunctionalTemplate elements',
+  template: () => (
+    <BreadcrumbNav>
+      <BreadcrumbItem href="/">Home</BreadcrumbItem>
+      <BreadcrumbSeparator />
+      <BreadcrumbItem href="/docs">Documentation</BreadcrumbItem>
+      <BreadcrumbSeparator />
+      <BreadcrumbItem href="/docs/components">Components</BreadcrumbItem>
+      <BreadcrumbSeparator />
+      <BreadcrumbItem current>Breadcrumb</BreadcrumbItem>
+    </BreadcrumbNav>
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const nav = await findByAttribute('aria-label', 'Breadcrumb')
 
-const BreadcrumbSeparator: FT = () => (
-  <span
-    aria-hidden='true'
-    {...breadcrumbStyles.separator}
-  >
-    /
-  </span>
-)
+    assert({
+      given: 'composable breadcrumb is rendered',
+      should: 'have nav with aria-label',
+      actual: nav?.tagName.toLowerCase(),
+      expected: 'nav',
+    })
+  },
+})
 
-// Usage
-<Breadcrumb>
-  <BreadcrumbItem href='/'>Home</BreadcrumbItem>
-  <BreadcrumbSeparator />
-  <BreadcrumbItem href='/products'>Products</BreadcrumbItem>
-  <BreadcrumbSeparator />
-  <BreadcrumbItem href='/products/electronics'>Electronics</BreadcrumbItem>
-  <BreadcrumbSeparator />
-  <BreadcrumbItem current>Smartphones</BreadcrumbItem>
-</Breadcrumb>
+export const dynamicBreadcrumb = story({
+  intent: 'Dynamic breadcrumb bElement that updates from JSON attribute',
+  template: () => (
+    <DynamicBreadcrumb
+      items={JSON.stringify([
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Settings', href: '/dashboard/settings' },
+        { label: 'Profile', href: '/dashboard/settings/profile', current: true },
+      ])}
+    />
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const nav = await findByAttribute('p-target', 'nav')
+
+    assert({
+      given: 'dynamic breadcrumb is rendered',
+      should: 'have nav element with aria-label',
+      actual: nav?.getAttribute('aria-label'),
+      expected: 'Breadcrumb',
+    })
+  },
+})
+
+export const customSeparatorBreadcrumb = story({
+  intent: 'Breadcrumb with chevron separators instead of slashes',
+  template: () => (
+    <BreadcrumbNav>
+      <BreadcrumbItem href="/">Home</BreadcrumbItem>
+      <span aria-hidden="true" {...styles.separator}>›</span>
+      <BreadcrumbItem href="/category">Category</BreadcrumbItem>
+      <span aria-hidden="true" {...styles.separator}>›</span>
+      <BreadcrumbItem current>Current Page</BreadcrumbItem>
+    </BreadcrumbNav>
+  ),
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
+  },
+})
 ```
 
 ## Plaited Integration
 
 - **Works with Shadow DOM**: Optional - breadcrumbs can be FT (no Shadow DOM) or bElements (with Shadow DOM)
-- **Uses bElement built-ins** (if using bElement):
-  - `p-trigger` for link click handling
-  - `p-target` for element selection with `$()`
-  - `render()` helper for dynamic item rendering
-  - `attr()` helper for managing attributes
-  - `observedAttributes` for reactive updates
-- **Requires external web API**: No - uses standard HTML elements and ARIA
-- **Cleanup required**: No - standard DOM elements handle their own lifecycle
+- **Uses bElement built-ins**: `$`, `p-trigger`, `p-target`, `emit`, `render`, `attr`
+- **Requires external web API**: No
+- **Cleanup required**: No
 
 ## Keyboard Interaction
 
@@ -389,15 +411,14 @@ const BreadcrumbSeparator: FT = () => (
 
 ## Best Practices
 
-1. **Use Functional Templates** for static breadcrumbs in stories
-2. **Use bElements** for dynamic breadcrumbs that need route-based state
+1. **Use FunctionalTemplates** for static breadcrumbs
+2. **Use bElements** for dynamic breadcrumbs with route-based state
 3. **Use semantic HTML** - `<nav>`, `<ol>`, `<li>`, and `<a>` elements
-4. **Label the navigation** - Always provide `aria-label` or `aria-labelledby`
-5. **Indicate current page** - Use `aria-current="page"` on current page element
-6. **Hide visual separators from screen readers** - Use `aria-hidden="true"` on separators
-7. **Keep hierarchy clear** - List items in order from top-level to current page
-8. **Provide meaningful link text** - Use descriptive labels for each level
-9. **Support both link and span** - Current page can be link or non-link element
+4. **Label the navigation** - always provide `aria-label` or `aria-labelledby`
+5. **Indicate current page** - use `aria-current="page"` on current page element
+6. **Hide visual separators** - use `aria-hidden="true"` on separators
+7. **Use spread syntax** - `{...styles.x}` for applying styles
+8. **Use `$()` with `p-target`** - never use `querySelector` directly
 
 ## Accessibility Considerations
 
@@ -428,8 +449,6 @@ All visual separators should have `aria-hidden="true"` to prevent screen reader 
 | Firefox | Full support |
 | Safari | Full support |
 | Edge | Full support |
-
-**Note**: Native HTML elements and ARIA attributes have universal support in modern browsers with assistive technology.
 
 ## References
 

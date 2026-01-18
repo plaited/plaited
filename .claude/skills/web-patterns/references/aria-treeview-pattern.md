@@ -26,7 +26,6 @@ A tree view widget presents a hierarchical list. Any item in the hierarchy may h
 - In single-select trees, selection may optionally follow focus
 - In multi-select trees, selection is always independent of focus
 - Visual design must distinguish between focused and selected items
-- Type-ahead helps users quickly navigate large trees
 
 ## Use Cases
 
@@ -38,6 +37,15 @@ A tree view widget presents a hierarchical list. Any item in the hierarchy may h
 - Settings panels with nested options
 - Organizational charts
 - Product catalogs with categories
+
+## Pattern Philosophy
+
+This pattern is **training data** for the Plaited agent. The examples below train the agent's understanding of how to implement this pattern correctly.
+
+- bElements/FunctionalTemplates are defined locally in stories (NOT exported)
+- Only stories are exported (required for testing/training)
+- Styles are always in separate `*.css.ts` files
+- Use spread syntax `{...styles.x}` for applying styles
 
 ## Implementation
 
@@ -66,39 +74,8 @@ A tree view widget presents a hierarchical list. Any item in the hierarchy may h
 // Tree View implementation
 const tree = document.querySelector('[role="tree"]')
 let focusedNode = null
-let selectedNodes = new Set()
 
-// Flatten tree for navigation
-function getFlattenedNodes() {
-  const nodes: HTMLElement[] = []
-  const walker = (node: HTMLElement) => {
-    if (node.getAttribute('role') === 'treeitem' && !node.hidden) {
-      nodes.push(node)
-    }
-    const group = node.querySelector('[role="group"]')
-    if (group && !group.hidden) {
-      Array.from(group.querySelectorAll('[role="treeitem"]')).forEach(walker)
-    }
-  }
-  Array.from(tree.querySelectorAll('[role="treeitem"]')).forEach(walker)
-  return nodes
-}
-
-// Get next/previous visible node
-function getNextNode(current: HTMLElement): HTMLElement | null {
-  const nodes = getFlattenedNodes()
-  const index = nodes.indexOf(current)
-  return index >= 0 && index < nodes.length - 1 ? nodes[index + 1] : null
-}
-
-function getPreviousNode(current: HTMLElement): HTMLElement | null {
-  const nodes = getFlattenedNodes()
-  const index = nodes.indexOf(current)
-  return index > 0 ? nodes[index - 1] : null
-}
-
-// Expand/collapse node
-function toggleNode(node: HTMLElement) {
+function toggleNode(node) {
   const isExpanded = node.getAttribute('aria-expanded') === 'true'
   const group = node.querySelector('[role="group"]')
   if (group) {
@@ -107,97 +84,64 @@ function toggleNode(node: HTMLElement) {
   }
 }
 
-// Keyboard navigation
 tree.addEventListener('keydown', (e) => {
   if (!focusedNode) return
-  
+
   switch (e.key) {
     case 'ArrowRight':
       e.preventDefault()
       const isExpanded = focusedNode.getAttribute('aria-expanded') === 'true'
       const hasChildren = focusedNode.querySelector('[role="group"]') !== null
-      
+
       if (hasChildren && !isExpanded) {
-        // Open closed node
         toggleNode(focusedNode)
       } else if (hasChildren && isExpanded) {
-        // Move to first child
-        const group = focusedNode.querySelector('[role="group"]')
-        const firstChild = group?.querySelector('[role="treeitem"]') as HTMLElement
-        if (firstChild) {
-          setFocus(firstChild)
-        }
+        const firstChild = focusedNode.querySelector('[role="treeitem"]')
+        if (firstChild) setFocus(firstChild)
       }
       break
-      
+
     case 'ArrowLeft':
       e.preventDefault()
       const isExpanded2 = focusedNode.getAttribute('aria-expanded') === 'true'
       const hasChildren2 = focusedNode.querySelector('[role="group"]') !== null
-      const parent = focusedNode.closest('[role="group"]')?.parentElement
-      
+
       if (hasChildren2 && isExpanded2) {
-        // Close open node
         toggleNode(focusedNode)
-      } else if (parent && parent.getAttribute('role') === 'treeitem') {
-        // Move to parent
-        setFocus(parent as HTMLElement)
+      } else {
+        const parent = focusedNode.closest('[role="group"]')?.parentElement
+        if (parent?.getAttribute('role') === 'treeitem') {
+          setFocus(parent)
+        }
       }
-      break
-      
-    case 'ArrowDown':
-      e.preventDefault()
-      const next = getNextNode(focusedNode)
-      if (next) setFocus(next)
-      break
-      
-    case 'ArrowUp':
-      e.preventDefault()
-      const prev = getPreviousNode(focusedNode)
-      if (prev) setFocus(prev)
-      break
-      
-    case 'Home':
-      e.preventDefault()
-      const first = getFlattenedNodes()[0]
-      if (first) setFocus(first)
-      break
-      
-    case 'End':
-      e.preventDefault()
-      const nodes = getFlattenedNodes()
-      if (nodes.length > 0) setFocus(nodes[nodes.length - 1])
-      break
-      
-    case 'Enter':
-      e.preventDefault()
-      activateNode(focusedNode)
       break
   }
 })
-
-function setFocus(node: HTMLElement) {
-  if (focusedNode) {
-    focusedNode.removeAttribute('data-focused')
-  }
-  focusedNode = node
-  node.setAttribute('data-focused', 'true')
-  node.focus()
-  tree.setAttribute('aria-activedescendant', node.id || '')
-}
 ```
 
 ### Plaited Adaptation
 
 **Important**: In Plaited, tree views are implemented as **bElements** because they require complex state management (hierarchical structure, expand/collapse, focus, selection, keyboard navigation).
 
-#### Tree View (bElement)
+**File Structure:**
+
+```
+treeview/
+  treeview.css.ts        # Styles (createStyles) - ALWAYS separate
+  treeview.stories.tsx   # bElement + stories (imports from css.ts)
+```
+
+#### treeview.css.ts
 
 ```typescript
-import { bElement, useTemplate } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
+// treeview.css.ts
+import { createStyles, createHostStyles } from 'plaited'
 
-const treeStyles = createStyles({
+export const hostStyles = createHostStyles({
+  display: 'block',
+})
+
+export const styles = createStyles({
   tree: {
     listStyle: 'none',
     padding: 0,
@@ -206,13 +150,13 @@ const treeStyles = createStyles({
   treeitem: {
     padding: '0.25rem 0',
     cursor: 'pointer',
-    '&[data-focused="true"]': {
-      backgroundColor: '#e0e0e0',
-      outline: '2px solid #007bff',
-    },
-    '&[aria-selected="true"]': {
-      backgroundColor: '#b3d9ff',
-    },
+  },
+  treeitemFocused: {
+    backgroundColor: '#e0e0e0',
+    outline: '2px solid #007bff',
+  },
+  treeitemSelected: {
+    backgroundColor: '#b3d9ff',
   },
   treeitemContent: {
     display: 'flex',
@@ -226,11 +170,22 @@ const treeStyles = createStyles({
   },
   group: {
     listStyle: 'none',
-    paddingLeft: '1.5rem',
+    paddingInlineStart: '1.5rem',
     margin: 0,
   },
 })
+```
 
+#### treeview.stories.tsx
+
+```typescript
+// treeview.stories.tsx
+import type { FT } from 'plaited/ui'
+import { bElement } from 'plaited/ui'
+import { story } from 'plaited/testing'
+import { styles, hostStyles } from './treeview.css.ts'
+
+// Types - defined locally
 type TreeNode = {
   id: string
   label: string
@@ -239,104 +194,58 @@ type TreeNode = {
 
 type TreeEvents = {
   select: { node: TreeNode; selected: boolean }
-  activate: { node: TreeNode }
   expand: { node: TreeNode; expanded: boolean }
 }
 
-export const TreeView = bElement<TreeEvents>({
-  tag: 'accessible-treeview',
-  observedAttributes: ['data', 'aria-label', 'aria-multiselectable', 'selection-follows-focus'],
-  formAssociated: true,
+// bElement for tree view - defined locally, NOT exported
+const TreeView = bElement<TreeEvents>({
+  tag: 'pattern-treeview',
+  observedAttributes: ['data', 'aria-label', 'aria-multiselectable'],
+  hostStyles,
   shadowDom: (
     <ul
       p-target='tree'
       role='tree'
       tabIndex={0}
-      {...treeStyles.tree}
-      p-trigger={{ keydown: 'handleKeydown', focus: 'handleFocus', blur: 'handleBlur', click: 'handleNodeClick' }}
-    >
-      <slot name='nodes'></slot>
-    </ul>
+      {...styles.tree}
+      p-trigger={{ keydown: 'handleKeydown', focus: 'handleFocus', click: 'handleClick' }}
+    ></ul>
   ),
-  bProgram({ $, host, internals, emit, root }) {
+  bProgram({ $, host, emit }) {
     const tree = $('tree')[0]
-    let nodes: HTMLElement[] = []
     let focusedIndex = -1
     let selectedIndices = new Set<number>()
     let expandedNodes = new Set<string>()
     let treeData: TreeNode[] = []
     const isMultiSelect = host.getAttribute('aria-multiselectable') === 'true'
-    const selectionFollowsFocus = host.hasAttribute('selection-follows-focus')
-    let typeAheadBuffer = ''
-    let typeAheadTimeout: ReturnType<typeof setTimeout> | undefined
-    
-    const getNodes = (): HTMLElement[] => {
-      return Array.from(tree?.querySelectorAll('[role="treeitem"]') || []) as HTMLElement[]
-    }
-    
+
     const getFlattenedNodes = (): HTMLElement[] => {
-      const flattened: HTMLElement[] = []
-      const walker = (node: HTMLElement) => {
-        if (node.getAttribute('role') === 'treeitem' && !node.hidden) {
-          flattened.push(node)
-        }
-        const group = node.querySelector('[role="group"]')
-        if (group && !group.hidden) {
-          Array.from(group.querySelectorAll('[role="treeitem"]')).forEach(child => {
-            walker(child as HTMLElement)
-          })
-        }
-      }
-      nodes.forEach(walker)
-      return flattened
+      return Array.from(tree?.querySelectorAll('[role="treeitem"]:not([hidden])') || []) as HTMLElement[]
     }
-    
+
+    const hasChildren = (node: HTMLElement): boolean => {
+      return node.hasAttribute('aria-expanded')
+    }
+
     const isNodeExpanded = (node: HTMLElement): boolean => {
       return node.getAttribute('aria-expanded') === 'true'
     }
-    
-    const hasChildren = (node: HTMLElement): boolean => {
-      return node.querySelector('[role="group"]') !== null
-    }
-    
-    const expandNode = (node: HTMLElement) => {
-      const group = node.querySelector('[role="group"]')
-      if (group) {
-        node.attr('aria-expanded', 'true')
-        group.removeAttribute('hidden')
-        const nodeId = node.getAttribute('data-node-id') || ''
-        expandedNodes.add(nodeId)
-        
-        const nodeData = findNodeData(nodeId)
-        if (nodeData) {
-          emit({ type: 'expand', detail: { node: nodeData, expanded: true } })
-        }
-      }
-    }
-    
-    const collapseNode = (node: HTMLElement) => {
-      const group = node.querySelector('[role="group"]')
-      if (group) {
-        node.attr('aria-expanded', 'false')
-        group.setAttribute('hidden', '')
-        const nodeId = node.getAttribute('data-node-id') || ''
+
+    const toggleNode = (node: HTMLElement, nodeId: string) => {
+      const expanded = isNodeExpanded(node)
+      if (expanded) {
         expandedNodes.delete(nodeId)
-        
-        const nodeData = findNodeData(nodeId)
-        if (nodeData) {
-          emit({ type: 'expand', detail: { node: nodeData, expanded: false } })
-        }
-      }
-    }
-    
-    const toggleNode = (node: HTMLElement) => {
-      if (isNodeExpanded(node)) {
-        collapseNode(node)
       } else {
-        expandNode(node)
+        expandedNodes.add(nodeId)
+      }
+      renderTree()
+
+      const nodeData = findNodeData(nodeId)
+      if (nodeData) {
+        emit({ type: 'expand', detail: { node: nodeData, expanded: !expanded } })
       }
     }
-    
+
     const findNodeData = (nodeId: string): TreeNode | null => {
       const find = (items: TreeNode[]): TreeNode | null => {
         for (const item of items) {
@@ -350,404 +259,222 @@ export const TreeView = bElement<TreeEvents>({
       }
       return find(treeData)
     }
-    
-    const updateActiveDescendant = () => {
+
+    const updateFocus = () => {
       const flattened = getFlattenedNodes()
       if (focusedIndex >= 0 && focusedIndex < flattened.length) {
-        const focusedNode = flattened[focusedIndex]
-        const id = focusedNode.id || `treeitem-${focusedIndex}`
-        if (!focusedNode.id) {
-          focusedNode.id = id
-        }
-        tree?.attr('aria-activedescendant', id)
-        focusedNode.setAttribute('data-focused', 'true')
-        
-        // Remove focus from other nodes
         flattened.forEach((node, idx) => {
-          if (idx !== focusedIndex) {
-            node.removeAttribute('data-focused')
+          if (idx === focusedIndex) {
+            node.setAttribute('class', `${styles.treeitem.classNames.join(' ')} ${styles.treeitemFocused.classNames.join(' ')}`)
+            node.setAttribute('tabindex', '0')
+          } else {
+            node.setAttribute('class', styles.treeitem.classNames.join(' '))
+            node.setAttribute('tabindex', '-1')
           }
         })
-        
-        // Scroll into view
-        focusedNode.scrollIntoView({ block: 'nearest' })
-      } else {
-        tree?.attr('aria-activedescendant', null)
+        flattened[focusedIndex]?.focus()
       }
     }
-    
-    const moveFocus = (direction: 'next' | 'prev' | 'first' | 'last' | 'parent' | 'firstChild') => {
-      const flattened = getFlattenedNodes()
-      if (flattened.length === 0) return
-      
-      let newIndex = focusedIndex
-      
-      switch (direction) {
-        case 'next':
-          newIndex = focusedIndex < flattened.length - 1 ? focusedIndex + 1 : focusedIndex
-          break
-        case 'prev':
-          newIndex = focusedIndex > 0 ? focusedIndex - 1 : focusedIndex
-          break
-        case 'first':
-          newIndex = 0
-          break
-        case 'last':
-          newIndex = flattened.length - 1
-          break
-        case 'parent': {
-          const current = flattened[focusedIndex]
-          const parent = current.closest('[role="group"]')?.parentElement
-          if (parent && parent.getAttribute('role') === 'treeitem') {
-            const parentIndex = flattened.indexOf(parent as HTMLElement)
-            if (parentIndex >= 0) {
-              newIndex = parentIndex
-            }
-          }
-          break
-        }
-        case 'firstChild': {
-          const current = flattened[focusedIndex]
-          if (isNodeExpanded(current)) {
-            const group = current.querySelector('[role="group"]')
-            const firstChild = group?.querySelector('[role="treeitem"]') as HTMLElement
-            if (firstChild) {
-              const childIndex = flattened.indexOf(firstChild)
-              if (childIndex >= 0) {
-                newIndex = childIndex
-              }
-            }
-          }
-          break
-        }
-      }
-      
-      if (newIndex !== focusedIndex && newIndex >= 0 && newIndex < flattened.length) {
-        focusedIndex = newIndex
-        updateActiveDescendant()
-        
-        // Selection follows focus in single-select mode
-        if (selectionFollowsFocus && !isMultiSelect) {
-          selectNode(focusedIndex, false)
-        }
-      }
-    }
-    
+
     const selectNode = (index: number, toggle = false) => {
       const flattened = getFlattenedNodes()
       if (index < 0 || index >= flattened.length) return
-      
+
       const node = flattened[index]
       const nodeId = node.getAttribute('data-node-id') || ''
       const nodeData = findNodeData(nodeId)
-      
-      if (isMultiSelect) {
-        if (toggle) {
-          const isSelected = selectedIndices.has(index)
-          if (isSelected) {
-            selectedIndices.delete(index)
-            node.attr('aria-selected', 'false')
-          } else {
-            selectedIndices.add(index)
-            node.attr('aria-selected', 'true')
-          }
+
+      if (isMultiSelect && toggle) {
+        if (selectedIndices.has(index)) {
+          selectedIndices.delete(index)
+          node.setAttribute('aria-selected', 'false')
         } else {
           selectedIndices.add(index)
-          node.attr('aria-selected', 'true')
+          node.setAttribute('aria-selected', 'true')
         }
       } else {
-        // Single-select: unselect all others
-        selectedIndices.forEach(idx => {
-          const otherNode = flattened[idx]
-          if (otherNode) {
-            otherNode.attr('aria-selected', 'false')
-          }
+        selectedIndices.forEach((idx) => {
+          flattened[idx]?.setAttribute('aria-selected', 'false')
         })
         selectedIndices.clear()
         selectedIndices.add(index)
-        node.attr('aria-selected', 'true')
+        node.setAttribute('aria-selected', 'true')
       }
-      
+
       if (nodeData) {
         emit({
           type: 'select',
           detail: { node: nodeData, selected: selectedIndices.has(index) },
         })
       }
-      
-      updateFormValue()
     }
-    
-    const activateNode = (index: number) => {
-      const flattened = getFlattenedNodes()
-      if (index < 0 || index >= flattened.length) return
-      
-      const node = flattened[index]
-      const nodeId = node.getAttribute('data-node-id') || ''
-      const nodeData = findNodeData(nodeId)
-      
-      if (hasChildren(node)) {
-        toggleNode(node)
-      }
-      
-      if (nodeData) {
-        emit({ type: 'activate', detail: { node: nodeData } })
-      }
-    }
-    
-    const updateFormValue = () => {
-      const flattened = getFlattenedNodes()
-      const selectedNodes = Array.from(selectedIndices)
-        .map(idx => flattened[idx])
-        .filter(Boolean)
-        .map(node => node.getAttribute('data-node-id') || '')
-      
-      if (isMultiSelect) {
-        internals.setFormValue(JSON.stringify(selectedNodes))
-      } else {
-        internals.setFormValue(selectedNodes[0] || '')
-      }
-    }
-    
-    const handleTypeAhead = (char: string) => {
-      typeAheadBuffer += char.toLowerCase()
-      
-      if (typeAheadTimeout) {
-        clearTimeout(typeAheadTimeout)
-      }
-      
-      const flattened = getFlattenedNodes()
-      const startIndex = (focusedIndex + 1) % flattened.length
-      let foundIndex = -1
-      
-      // Search from current position to end
-      for (let i = startIndex; i < flattened.length; i++) {
-        const text = (flattened[i].textContent || '').toLowerCase().trim()
-        if (text.startsWith(typeAheadBuffer)) {
-          foundIndex = i
-          break
-        }
-      }
-      
-      // If not found, search from beginning
-      if (foundIndex === -1) {
-        for (let i = 0; i < startIndex; i++) {
-          const text = (flattened[i].textContent || '').toLowerCase().trim()
-          if (text.startsWith(typeAheadBuffer)) {
-            foundIndex = i
-            break
-          }
-        }
-      }
-      
-      if (foundIndex >= 0) {
-        focusedIndex = foundIndex
-        updateActiveDescendant()
-        
-        if (selectionFollowsFocus && !isMultiSelect) {
-          selectNode(focusedIndex, false)
-        }
-      }
-      
-      typeAheadTimeout = setTimeout(() => {
-        typeAheadBuffer = ''
-      }, 1000)
-    }
-    
+
     const renderTree = () => {
       if (!tree) return
-      
+
       const renderNode = (nodeData: TreeNode, level = 1): HTMLElement => {
-        const hasChildren = nodeData.children && nodeData.children.length > 0
+        const hasChildNodes = nodeData.children && nodeData.children.length > 0
         const isExpanded = expandedNodes.has(nodeData.id)
-        
+
         const node = (
           <li
             role='treeitem'
             data-node-id={nodeData.id}
             aria-level={level}
-            {...treeStyles.treeitem}
+            tabIndex={-1}
+            {...styles.treeitem}
           >
-            <div {...treeStyles.treeitemContent}>
-              {hasChildren && (
-                <span {...treeStyles.expandIcon} aria-hidden='true'>
+            <div {...styles.treeitemContent}>
+              {hasChildNodes && (
+                <span {...styles.expandIcon} aria-hidden='true'>
                   {isExpanded ? '▼' : '▶'}
                 </span>
               )}
-              {!hasChildren && <span {...treeStyles.expandIcon} aria-hidden='true'></span>}
+              {!hasChildNodes && <span {...styles.expandIcon} aria-hidden='true'></span>}
               <span>{nodeData.label}</span>
             </div>
-            {hasChildren && (
-              <ul
-                role='group'
-                {...treeStyles.group}
-                hidden={!isExpanded}
-              >
-                {nodeData.children?.map(child => renderNode(child, level + 1))}
+            {hasChildNodes && (
+              <ul role='group' {...styles.group} hidden={!isExpanded}>
+                {nodeData.children?.map((child) => renderNode(child, level + 1))}
               </ul>
             )}
           </li>
         ) as HTMLElement
-        
-        if (hasChildren) {
+
+        if (hasChildNodes) {
           node.setAttribute('aria-expanded', isExpanded ? 'true' : 'false')
         }
-        
+
         return node
       }
-      
-      const treeNodes = treeData.map(node => renderNode(node))
+
+      const treeNodes = treeData.map((node) => renderNode(node))
       tree.render(...treeNodes)
-      nodes = getNodes()
     }
-    
+
     return {
       handleKeydown(event: KeyboardEvent) {
         const flattened = getFlattenedNodes()
         if (flattened.length === 0) return
-        
+
         const current = flattened[focusedIndex]
         if (!current) return
-        
+
+        const nodeId = current.getAttribute('data-node-id') || ''
+
         switch (event.key) {
           case 'ArrowRight':
             event.preventDefault()
             if (hasChildren(current)) {
               if (!isNodeExpanded(current)) {
-                expandNode(current)
+                toggleNode(current, nodeId)
               } else {
-                moveFocus('firstChild')
+                focusedIndex = Math.min(focusedIndex + 1, flattened.length - 1)
+                updateFocus()
               }
             }
             break
-            
+
           case 'ArrowLeft':
             event.preventDefault()
             if (hasChildren(current) && isNodeExpanded(current)) {
-              collapseNode(current)
-            } else {
-              moveFocus('parent')
+              toggleNode(current, nodeId)
+            } else if (focusedIndex > 0) {
+              // Move to parent
+              const parentGroup = current.closest('[role="group"]')
+              const parent = parentGroup?.parentElement
+              if (parent?.getAttribute('role') === 'treeitem') {
+                const parentIndex = flattened.indexOf(parent as HTMLElement)
+                if (parentIndex >= 0) {
+                  focusedIndex = parentIndex
+                  updateFocus()
+                }
+              }
             }
             break
-            
+
           case 'ArrowDown':
             event.preventDefault()
-            moveFocus('next')
+            if (focusedIndex < flattened.length - 1) {
+              focusedIndex++
+              updateFocus()
+            }
             break
-            
+
           case 'ArrowUp':
             event.preventDefault()
-            moveFocus('prev')
+            if (focusedIndex > 0) {
+              focusedIndex--
+              updateFocus()
+            }
             break
-            
+
           case 'Home':
             event.preventDefault()
-            moveFocus('first')
+            focusedIndex = 0
+            updateFocus()
             break
-            
+
           case 'End':
             event.preventDefault()
-            moveFocus('last')
+            focusedIndex = flattened.length - 1
+            updateFocus()
             break
-            
+
           case 'Enter':
             event.preventDefault()
-            activateNode(focusedIndex)
-            break
-            
-          case ' ': // Space
-            if (isMultiSelect) {
-              event.preventDefault()
-              selectNode(focusedIndex, true)
+            if (hasChildren(current)) {
+              toggleNode(current, nodeId)
             } else {
-              activateNode(focusedIndex)
+              selectNode(focusedIndex, false)
             }
             break
-            
-          case '*':
+
+          case ' ':
             event.preventDefault()
-            // Expand all siblings at same level
-            const parent = current.closest('[role="group"]')?.parentElement
-            if (parent) {
-              const siblings = Array.from(parent.querySelectorAll('[role="treeitem"]')) as HTMLElement[]
-              siblings.forEach(sibling => {
-                if (hasChildren(sibling) && !isNodeExpanded(sibling)) {
-                  expandNode(sibling)
-                }
-              })
-            }
-            break
-            
-          default:
-            // Type-ahead
-            if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
-              event.preventDefault()
-              handleTypeAhead(event.key)
-            }
+            selectNode(focusedIndex, isMultiSelect)
             break
         }
       },
-      
-      handleNodeClick(event: { target: HTMLElement }) {
+
+      handleFocus() {
+        if (focusedIndex < 0) {
+          focusedIndex = 0
+        }
+        updateFocus()
+      },
+
+      handleClick(event: { target: HTMLElement }) {
         const node = event.target.closest('[role="treeitem"]') as HTMLElement
         if (!node) return
-        
+
         const flattened = getFlattenedNodes()
         const index = flattened.indexOf(node)
         if (index >= 0) {
           focusedIndex = index
-          updateActiveDescendant()
-          
+          updateFocus()
+
+          const nodeId = node.getAttribute('data-node-id') || ''
           if (hasChildren(node)) {
-            toggleNode(node)
+            toggleNode(node, nodeId)
           } else {
             selectNode(index, isMultiSelect)
           }
         }
       },
-      
-      handleFocus() {
-        nodes = getNodes()
-        const flattened = getFlattenedNodes()
-        
-        if (flattened.length === 0) return
-        
-        // Set focus to first node or first selected node
-        if (selectedIndices.size > 0) {
-          const firstSelected = Math.min(...Array.from(selectedIndices))
-          if (firstSelected >= 0 && firstSelected < flattened.length) {
-            focusedIndex = firstSelected
-          } else {
-            focusedIndex = 0
-          }
-        } else {
-          focusedIndex = 0
-        }
-        
-        updateActiveDescendant()
-      },
-      
-      handleBlur() {
-        // Remove focus indicators
-        const flattened = getFlattenedNodes()
-        flattened.forEach(node => {
-          node.removeAttribute('data-focused')
-        })
-        tree?.attr('aria-activedescendant', null)
-      },
-      
+
       onConnected() {
         const dataAttr = host.getAttribute('data')
         const ariaLabel = host.getAttribute('aria-label')
-        
+
         if (ariaLabel) {
           tree?.setAttribute('aria-label', ariaLabel)
         }
-        
+
         if (isMultiSelect) {
           tree?.setAttribute('aria-multiselectable', 'true')
         }
-        
+
         if (dataAttr) {
           try {
             treeData = JSON.parse(dataAttr)
@@ -757,7 +484,7 @@ export const TreeView = bElement<TreeEvents>({
           }
         }
       },
-      
+
       onAttributeChanged({ name, newValue }) {
         if (name === 'data' && newValue) {
           try {
@@ -768,22 +495,88 @@ export const TreeView = bElement<TreeEvents>({
           }
         } else if (name === 'aria-label') {
           tree?.setAttribute('aria-label', newValue || '')
-        } else if (name === 'aria-multiselectable') {
-          const isMulti = newValue === 'true'
-          if (isMulti) {
-            tree?.setAttribute('aria-multiselectable', 'true')
-          } else {
-            tree?.removeAttribute('aria-multiselectable')
-          }
-        }
-      },
-      
-      onDisconnected() {
-        if (typeAheadTimeout) {
-          clearTimeout(typeAheadTimeout)
         }
       },
     }
+  },
+})
+
+// Stories - EXPORTED for testing/training
+export const fileExplorer = story({
+  intent: 'File system tree view with folders and files',
+  template: () => (
+    <TreeView
+      aria-label='File Explorer'
+      data={JSON.stringify([
+        {
+          id: 'documents',
+          label: 'Documents',
+          children: [
+            { id: 'file1', label: 'File1.txt' },
+            {
+              id: 'projects',
+              label: 'Projects',
+              children: [
+                { id: 'project1', label: 'Project1' },
+                { id: 'project2', label: 'Project2' },
+              ],
+            },
+          ],
+        },
+        { id: 'downloads', label: 'Downloads' },
+      ])}
+    />
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const tree = await findByAttribute('role', 'tree')
+
+    assert({
+      given: 'tree is rendered',
+      should: 'have accessible label',
+      actual: tree?.getAttribute('aria-label'),
+      expected: 'File Explorer',
+    })
+  },
+})
+
+export const multiSelectTree = story({
+  intent: 'Multi-select tree view for selecting multiple items',
+  template: () => (
+    <TreeView
+      aria-label='Select Items'
+      aria-multiselectable='true'
+      data={JSON.stringify([
+        { id: 'item1', label: 'Item 1' },
+        { id: 'item2', label: 'Item 2' },
+        { id: 'item3', label: 'Item 3' },
+      ])}
+    />
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const tree = await findByAttribute('role', 'tree')
+
+    assert({
+      given: 'multi-select tree',
+      should: 'have aria-multiselectable',
+      actual: tree?.getAttribute('aria-multiselectable'),
+      expected: 'true',
+    })
+  },
+})
+
+export const treeviewAccessibility = story({
+  intent: 'Verify tree view accessibility structure',
+  template: () => (
+    <TreeView
+      aria-label='Test Tree'
+      data={JSON.stringify([
+        { id: '1', label: 'Node 1' },
+        { id: '2', label: 'Node 2' },
+      ])}
+    />
+  ),
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
   },
 })
 ```
@@ -791,48 +584,23 @@ export const TreeView = bElement<TreeEvents>({
 ## Plaited Integration
 
 - **Works with Shadow DOM**: Yes - tree views can be used in bElement shadowDom
-- **Uses bElement built-ins**: Yes - `$` for querying, `render()` for dynamic content, `attr()` for attribute management, `p-trigger` for event handling
+- **Uses bElement built-ins**: `$`, `p-trigger`, `p-target`, `emit`, `render`, `attr`
 - **Requires external web API**: No - uses standard DOM APIs
-- **Cleanup required**: Yes - type-ahead timeout must be cleaned up in `onDisconnected`
+- **Cleanup required**: No - standard DOM elements handle their own lifecycle
 
 ## Keyboard Interaction
 
-### Focus Management
-
-- **When tree receives focus**:
-  - Single-select: Focus on first node, or selected node if one exists
-  - Multi-select: Focus on first node, or first selected node if any exist
-
 ### Navigation
 
-- **Right Arrow**:
-  - Closed node: Opens the node (focus stays)
-  - Open node: Moves focus to first child node
-  - End node: Does nothing
-- **Left Arrow**:
-  - Open node: Closes the node (focus stays)
-  - Child node: Moves focus to parent node
-  - Root end node: Does nothing
+- **Right Arrow**: Closed node: Opens the node. Open node: Moves focus to first child
+- **Left Arrow**: Open node: Closes the node. Child node: Moves focus to parent
 - **Down Arrow**: Moves focus to next visible node
 - **Up Arrow**: Moves focus to previous visible node
 - **Home**: Moves focus to first node
 - **End**: Moves focus to last visible node
 - **Enter**: Activates the focused node (performs default action)
-- **Space**: 
-  - Multi-select: Toggles selection of focused node
-  - Single-select: Activates the focused node
-- **Type-ahead**: Type characters to move focus to next node starting with those characters
-- **\*** (Optional): Expands all siblings at the same level as the current node
-
-### Multi-Select (Recommended Model)
-
-- **Space**: Toggles selection of focused node
-- **Shift + Down Arrow** (Optional): Moves focus and toggles selection
-- **Shift + Up Arrow** (Optional): Moves focus and toggles selection
-- **Shift + Space** (Optional): Selects contiguous nodes from last selected to current
-- **Control + Shift + Home** (Optional): Selects from first node to current
-- **Control + Shift + End** (Optional): Selects from current to last node
-- **Control + A** (Optional): Selects all nodes
+- **Space**: Multi-select: Toggles selection. Single-select: Activates the node
+- **Type-ahead**: Type characters to move focus to next matching node
 
 ## WAI-ARIA Roles, States, and Properties
 
@@ -845,27 +613,18 @@ export const TreeView = bElement<TreeEvents>({
 ### Optional
 
 - **aria-label** or **aria-labelledby**: Accessible name for tree
-- **aria-multiselectable**: `true` for multi-select trees (default is `false`)
+- **aria-multiselectable**: `true` for multi-select trees
 - **aria-expanded**: `true`/`false` on parent nodes (not on end nodes)
-- **aria-selected** or **aria-checked**: Selection state (use one consistently)
+- **aria-selected**: Selection state
 - **aria-level**: Level of node in hierarchy (1-based)
-- **aria-posinset**: Position of node within its set of siblings
-- **aria-setsize**: Total number of siblings in the set
-- **aria-activedescendant**: ID of currently focused node (for virtual focus)
-- **aria-orientation**: `horizontal` for horizontal trees (default is `vertical`)
 
 ## Best Practices
 
-1. **Type-ahead** - Implement type-ahead for trees with more than 7 root nodes
-2. **Focus vs Selection** - Clearly distinguish between focus and selection visually
-3. **Selection follows focus** - Consider this for single-select trees when appropriate
-4. **Expand/collapse** - Provide clear visual indicators for expandable nodes
-5. **Level indicators** - Use `aria-level` to communicate hierarchy
-6. **Accessible names** - Always provide labels for trees
-7. **Consistent selection** - Use either `aria-selected` or `aria-checked` consistently
-8. **Virtual focus** - Use `aria-activedescendant` for better performance in large trees
-9. **Keyboard shortcuts** - Support all standard keyboard interactions
-10. **Visual feedback** - Provide clear visual feedback for focus and selection states
+1. **Use bElement** - Tree views require complex state coordination
+2. **Use spread syntax** - `{...styles.x}` for applying styles
+3. **Type-ahead** - Implement for trees with more than 7 root nodes
+4. **Focus vs Selection** - Clearly distinguish visually
+5. **Use `$()` with `p-target`** - never use `querySelector` directly
 
 ## Accessibility Considerations
 
@@ -873,31 +632,6 @@ export const TreeView = bElement<TreeEvents>({
 - Keyboard navigation enables efficient tree traversal
 - Focus management ensures logical navigation flow
 - Selection state is clearly communicated
-- Type-ahead helps users navigate large trees quickly
-- Proper ARIA attributes communicate structure and state
-- Visual design distinguishes focus from selection
-
-## Tree View Variants
-
-### Single-Select Tree
-- Only one node can be selected
-- Selection may follow focus
-- Common for navigation
-
-### Multi-Select Tree
-- Multiple nodes can be selected
-- Selection independent of focus
-- Common for file selection
-
-### File System Tree
-- Hierarchical file/folder structure
-- Expand/collapse folders
-- Select files for actions
-
-### Navigation Tree
-- Site navigation structure
-- Expand/collapse sections
-- Navigate to pages
 
 ## Browser Compatibility
 
@@ -908,12 +642,9 @@ export const TreeView = bElement<TreeEvents>({
 | Safari | Full support |
 | Edge | Full support |
 
-**Note**: ARIA tree view pattern has universal support. Ensure proper keyboard navigation implementation for all browsers.
-
 ## References
 
 - Source: [W3C ARIA Authoring Practices Guide - Tree View Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/treeview/)
 - MDN: [ARIA tree role](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/tree_role)
 - MDN: [ARIA treeitem role](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/treeitem_role)
 - Related: [Listbox Pattern](./aria-listbox-pattern.md) - Similar selection patterns
-- Related: [Menu Pattern](./aria-menubar-pattern.md) - Similar hierarchical navigation

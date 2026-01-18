@@ -2,7 +2,7 @@
 
 ## Overview
 
-Landmarks are a set of eight roles that identify the major sections of a page. Each landmark role enables assistive technology users to perceive the high-level page structure of a page layout that is usually conveyed visually with placement, spacing, color, or borders. In addition to conveying structure, landmarks enable browsers and assistive technologies to facilitate efficient keyboard navigation among sections of a page.
+Landmarks are a set of eight roles that identify the major sections of a page. Each landmark role enables assistive technology users to perceive the high-level page structure that is usually conveyed visually with placement, spacing, color, or borders.
 
 **Key Characteristics:**
 
@@ -23,6 +23,8 @@ Landmarks are a set of eight roles that identify the major sections of a page. E
 7. **form** - Form region (`<form>` or `role="form"`)
 8. **region** - Generic section (`<section>` with `aria-label` or `role="region"`)
 
+**Native HTML First:** Prefer semantic HTML elements (`<header>`, `<nav>`, `<main>`, `<aside>`, `<footer>`, `<search>`) over ARIA roles. They provide automatic landmark roles.
+
 ## Use Cases
 
 - Page structure organization
@@ -33,6 +35,15 @@ Landmarks are a set of eight roles that identify the major sections of a page. E
 - Search functionality
 - Form sections
 - Generic content regions
+
+## Pattern Philosophy
+
+This pattern is **training data** for the Plaited agent. The examples below train the agent's understanding of how to implement this pattern correctly.
+
+- bElements/FunctionalTemplates are defined locally in stories (NOT exported)
+- Only stories are exported (required for testing/training)
+- Styles are always in separate `*.css.ts` files
+- Use spread syntax `{...styles.x}` for applying styles
 
 ## Implementation
 
@@ -58,9 +69,6 @@ Landmarks are a set of eight roles that identify the major sections of a page. E
 
 <aside role="complementary" aria-label="Related articles">
   <h3>Related</h3>
-  <ul>
-    <li><a href="/article1">Article 1</a></li>
-  </ul>
 </aside>
 
 <footer role="contentinfo">
@@ -74,236 +82,348 @@ Landmarks are a set of eight roles that identify the major sections of a page. E
     <button type="submit">Search</button>
   </form>
 </div>
-
-<div role="region" aria-label="Featured products">
-  <h2>Featured Products</h2>
-  <!-- Product content -->
-</div>
 ```
 
 ### Plaited Adaptation
 
-**Important**: In Plaited, landmarks are typically implemented as:
+**File Structure:**
 
-1. **Semantic HTML elements** directly in templates (preferred)
-2. **Functional Templates (FT)** for reusable landmark containers
-3. **Within bElements** as structural elements in shadowDom
-
-Landmarks don't require complex state management, so they're usually simple structural elements rather than bElements themselves.
-
-#### Page Layout with Landmarks (Functional Template)
-
-```typescript
-// layout.stories.tsx
-import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { layoutStyles } from './layout.css.ts'
-
-const PageLayout: FT<{ children?: Children }> = ({ children, ...attrs }) => (
-  <div {...joinStyles(layoutStyles.page)} {...attrs}>
-    <header role='banner' {...layoutStyles.header}>
-      <slot name='header'></slot>
-    </header>
-    
-    <nav aria-label='Main navigation' {...layoutStyles.nav}>
-      <slot name='navigation'></slot>
-    </nav>
-    
-    <main {...layoutStyles.main}>
-      {children}
-    </main>
-    
-    <aside role='complementary' aria-label='Sidebar' {...layoutStyles.aside}>
-      <slot name='sidebar'></slot>
-    </aside>
-    
-    <footer role='contentinfo' {...layoutStyles.footer}>
-      <slot name='footer'></slot>
-    </footer>
-  </div>
-)
-
-export const pageLayoutStory = story({
-  intent: 'Display a page layout with all landmark regions',
-  template: () => (
-    <PageLayout>
-      <h1 slot='header'>Site Title</h1>
-      <nav slot='navigation'>
-        <a href='/'>Home</a>
-        <a href='/about'>About</a>
-      </nav>
-      <h2>Page Content</h2>
-      <p>Main content goes here...</p>
-      <div slot='sidebar'>
-        <h3>Related</h3>
-        <p>Sidebar content</p>
-      </div>
-      <p slot='footer'>&copy; 2024</p>
-    </PageLayout>
-  ),
-})
+```
+layout/
+  layout.css.ts        # Styles (createStyles) - ALWAYS separate
+  layout.stories.tsx   # FT/bElement + stories (imports from css.ts)
 ```
 
-#### Navigation Landmark (Functional Template)
+#### layout.css.ts
 
 ```typescript
-// navigation.stories.tsx
-import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { navStyles } from './navigation.css.ts'
+// layout.css.ts
+import { createStyles, createHostStyles } from 'plaited'
 
-const Navigation: FT<{
-  'aria-label'?: string
-  children?: Children
-}> = ({ 'aria-label': ariaLabel = 'Main navigation', children, ...attrs }) => (
-  <nav
-    aria-label={ariaLabel}
-    {...attrs}
-    {...joinStyles(navStyles.nav)}
-  >
-    {children}
-  </nav>
-)
-
-export const mainNavigation = story({
-  intent: 'Display main site navigation',
-  template: () => (
-    <Navigation aria-label='Main navigation'>
-      <ul>
-        <li><a href='/'>Home</a></li>
-        <li><a href='/products'>Products</a></li>
-        <li><a href='/about'>About</a></li>
-      </ul>
-    </Navigation>
-  ),
+export const hostStyles = createHostStyles({
+  display: 'block',
 })
-```
 
-#### Search Landmark (Functional Template)
-
-```typescript
-// search.stories.tsx
-import type { FT } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { searchStyles } from './search.css.ts'
-
-const Search: FT<{
-  'aria-label'?: string
-  placeholder?: string
-}> = ({ 'aria-label': ariaLabel = 'Search', placeholder = 'Search...', ...attrs }) => (
-  <div
-    role='search'
-    aria-label={ariaLabel}
-    {...attrs}
-    {...joinStyles(searchStyles.search)}
-  >
-    <form {...searchStyles.form}>
-      <input
-        type='search'
-        placeholder={placeholder}
-        aria-label='Search query'
-        {...searchStyles.input}
-      />
-      <button type='submit' aria-label='Submit search' {...searchStyles.button}>
-        Search
-      </button>
-    </form>
-  </div>
-)
-
-export const searchLandmark = story({
-  intent: 'Display search landmark',
-  template: () => <Search aria-label='Site search' />,
-})
-```
-
-#### Region Landmark (Functional Template)
-
-```typescript
-// region.stories.tsx
-import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { regionStyles } from './region.css.ts'
-
-const Region: FT<{
-  'aria-label': string
-  children?: Children
-}> = ({ 'aria-label': ariaLabel, children, ...attrs }) => (
-  <section
-    role='region'
-    aria-label={ariaLabel}
-    {...attrs}
-    {...joinStyles(regionStyles.region)}
-  >
-    {children}
-  </section>
-)
-
-export const featuredRegion = story({
-  intent: 'Display a region landmark',
-  template: () => (
-    <Region aria-label='Featured products'>
-      <h2>Featured Products</h2>
-      <p>Product content...</p>
-    </Region>
-  ),
-})
-```
-
-#### Landmarks in bElement shadowDom
-
-```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
-
-const appStyles = createStyles({
-  container: {
+export const styles = createStyles({
+  page: {
     display: 'grid',
-    gridTemplateAreas: '"header" "nav" "main" "footer"',
-    gridTemplateRows: 'auto auto 1fr auto',
-    minHeight: '100vh',
+    gridTemplateAreas: '"header" "nav" "main" "aside" "footer"',
+    gridTemplateRows: 'auto auto 1fr auto auto',
+    minBlockSize: '100vh',
   },
   header: {
     gridArea: 'header',
     padding: '1rem',
+    backgroundColor: '#f8f9fa',
+    borderBlockEnd: '1px solid #dee2e6',
   },
   nav: {
     gridArea: 'nav',
     padding: '1rem',
+    backgroundColor: '#e9ecef',
   },
   main: {
     gridArea: 'main',
     padding: '1rem',
   },
+  aside: {
+    gridArea: 'aside',
+    padding: '1rem',
+    backgroundColor: '#f8f9fa',
+  },
   footer: {
     gridArea: 'footer',
     padding: '1rem',
+    backgroundColor: '#343a40',
+    color: 'white',
   },
 })
 
-export const AppLayout = bElement({
-  tag: 'app-layout',
+export const navStyles = createStyles({
+  nav: {
+    display: 'flex',
+    gap: '1rem',
+    listStyle: 'none',
+    margin: 0,
+    padding: 0,
+  },
+  link: {
+    color: '#007bff',
+    textDecoration: 'none',
+  },
+})
+
+export const searchStyles = createStyles({
+  search: {
+    display: 'flex',
+    gap: '0.5rem',
+  },
+  input: {
+    padding: '0.5rem',
+    border: '1px solid #ccc',
+    borderRadius: '4px',
+  },
+  button: {
+    padding: '0.5rem 1rem',
+    backgroundColor: '#007bff',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+  },
+})
+
+export const regionStyles = createStyles({
+  region: {
+    padding: '1rem',
+    border: '1px solid #dee2e6',
+    borderRadius: '4px',
+    marginBlockEnd: '1rem',
+  },
+})
+```
+
+#### layout.stories.tsx
+
+```typescript
+// layout.stories.tsx
+import type { FT, Children } from 'plaited/ui'
+import { bElement } from 'plaited/ui'
+import { story } from 'plaited/testing'
+import { styles, navStyles, searchStyles, regionStyles, hostStyles } from './layout.css.ts'
+
+// FunctionalTemplate for page layout - defined locally, NOT exported
+const PageLayout: FT<{ children?: Children }> = ({ children }) => (
+  <div {...styles.page}>
+    <header role="banner" {...styles.header}>
+      <slot name="header"></slot>
+    </header>
+
+    <nav aria-label="Main navigation" {...styles.nav}>
+      <slot name="navigation"></slot>
+    </nav>
+
+    <main {...styles.main}>
+      {children}
+    </main>
+
+    <aside role="complementary" aria-label="Sidebar" {...styles.aside}>
+      <slot name="sidebar"></slot>
+    </aside>
+
+    <footer role="contentinfo" {...styles.footer}>
+      <slot name="footer"></slot>
+    </footer>
+  </div>
+)
+
+// FunctionalTemplate for navigation - defined locally, NOT exported
+const Navigation: FT<{
+  'aria-label'?: string
+  children?: Children
+}> = ({ 'aria-label': ariaLabel = 'Main navigation', children }) => (
+  <nav aria-label={ariaLabel} {...navStyles.nav}>
+    {children}
+  </nav>
+)
+
+// FunctionalTemplate for search - defined locally, NOT exported
+const Search: FT<{
+  'aria-label'?: string
+  placeholder?: string
+}> = ({ 'aria-label': ariaLabel = 'Search', placeholder = 'Search...' }) => (
+  <div role="search" aria-label={ariaLabel} {...searchStyles.search}>
+    <input
+      type="search"
+      placeholder={placeholder}
+      aria-label="Search query"
+      {...searchStyles.input}
+    />
+    <button type="submit" aria-label="Submit search" {...searchStyles.button}>
+      Search
+    </button>
+  </div>
+)
+
+// FunctionalTemplate for region - defined locally, NOT exported
+const Region: FT<{
+  'aria-label': string
+  children?: Children
+}> = ({ 'aria-label': ariaLabel, children }) => (
+  <section role="region" aria-label={ariaLabel} {...regionStyles.region}>
+    {children}
+  </section>
+)
+
+// bElement for app layout - defined locally, NOT exported
+const AppLayout = bElement({
+  tag: 'pattern-app-layout',
+  hostStyles,
   shadowDom: (
-    <div {...appStyles.container}>
-      <header role='banner' {...appStyles.header}>
-        <slot name='header'></slot>
+    <div {...styles.page}>
+      <header role="banner" {...styles.header}>
+        <slot name="header"></slot>
       </header>
-      
-      <nav aria-label='Main navigation' {...appStyles.nav}>
-        <slot name='navigation'></slot>
+
+      <nav aria-label="Main navigation" {...styles.nav}>
+        <slot name="navigation"></slot>
       </nav>
-      
-      <main {...appStyles.main}>
+
+      <main {...styles.main}>
         <slot></slot>
       </main>
-      
-      <footer role='contentinfo' {...appStyles.footer}>
-        <slot name='footer'></slot>
+
+      <footer role="contentinfo" {...styles.footer}>
+        <slot name="footer"></slot>
       </footer>
     </div>
   ),
   bProgram() {
     return {}
+  },
+})
+
+// Stories - EXPORTED for testing/training
+export const fullPageLayout = story({
+  intent: 'Display a complete page layout with all landmark regions',
+  template: () => (
+    <AppLayout>
+      <h1 slot="header">Site Title</h1>
+      <ul slot="navigation" style="display: flex; gap: 1rem; list-style: none; margin: 0; padding: 0;">
+        <li><a href="/">Home</a></li>
+        <li><a href="/about">About</a></li>
+        <li><a href="/contact">Contact</a></li>
+      </ul>
+      <h2>Main Content</h2>
+      <p>This is the main content area of the page.</p>
+      <p slot="footer">&copy; 2024 Company Name</p>
+    </AppLayout>
+  ),
+  play: async ({ findByRole, assert }) => {
+    const main = await findByRole('main')
+    const banner = await findByRole('banner')
+    const contentinfo = await findByRole('contentinfo')
+    const nav = await findByRole('navigation')
+
+    assert({
+      given: 'page layout is rendered',
+      should: 'have main landmark',
+      actual: main !== null,
+      expected: true,
+    })
+
+    assert({
+      given: 'page layout is rendered',
+      should: 'have banner landmark',
+      actual: banner !== null,
+      expected: true,
+    })
+
+    assert({
+      given: 'page layout is rendered',
+      should: 'have contentinfo landmark',
+      actual: contentinfo !== null,
+      expected: true,
+    })
+
+    assert({
+      given: 'page layout is rendered',
+      should: 'have navigation landmark',
+      actual: nav !== null,
+      expected: true,
+    })
+  },
+})
+
+export const navigationLandmark = story({
+  intent: 'Display a navigation landmark with links',
+  template: () => (
+    <Navigation aria-label="Main navigation">
+      <a href="/" style="color: #007bff; text-decoration: none;">Home</a>
+      <a href="/products" style="color: #007bff; text-decoration: none;">Products</a>
+      <a href="/about" style="color: #007bff; text-decoration: none;">About</a>
+      <a href="/contact" style="color: #007bff; text-decoration: none;">Contact</a>
+    </Navigation>
+  ),
+  play: async ({ findByRole, assert }) => {
+    const nav = await findByRole('navigation')
+
+    assert({
+      given: 'navigation is rendered',
+      should: 'have aria-label',
+      actual: nav?.getAttribute('aria-label'),
+      expected: 'Main navigation',
+    })
+  },
+})
+
+export const searchLandmark = story({
+  intent: 'Display a search landmark for site-wide search',
+  template: () => (
+    <Search aria-label="Site search" placeholder="Search the site..." />
+  ),
+  play: async ({ findByRole, assert }) => {
+    const search = await findByRole('search')
+
+    assert({
+      given: 'search landmark is rendered',
+      should: 'have search role',
+      actual: search?.getAttribute('role'),
+      expected: 'search',
+    })
+
+    assert({
+      given: 'search landmark is rendered',
+      should: 'have aria-label',
+      actual: search?.getAttribute('aria-label'),
+      expected: 'Site search',
+    })
+  },
+})
+
+export const regionLandmark = story({
+  intent: 'Display a generic region landmark with accessible label',
+  template: () => (
+    <Region aria-label="Featured products">
+      <h2>Featured Products</h2>
+      <p>Check out our latest featured products...</p>
+    </Region>
+  ),
+  play: async ({ findByRole, assert }) => {
+    const region = await findByRole('region')
+
+    assert({
+      given: 'region is rendered',
+      should: 'have aria-label',
+      actual: region?.getAttribute('aria-label'),
+      expected: 'Featured products',
+    })
+  },
+})
+
+export const multipleLandmarks = story({
+  intent: 'Display multiple navigation landmarks with distinct labels',
+  template: () => (
+    <div>
+      <Navigation aria-label="Main navigation">
+        <a href="/">Home</a>
+        <a href="/products">Products</a>
+      </Navigation>
+      <Navigation aria-label="Footer navigation">
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+      </Navigation>
+    </div>
+  ),
+  play: async ({ findAllByRole, assert }) => {
+    const navs = await findAllByRole('navigation')
+
+    assert({
+      given: 'multiple navigations are rendered',
+      should: 'have 2 navigation landmarks',
+      actual: navs?.length,
+      expected: 2,
+    })
   },
 })
 ```
@@ -313,11 +433,11 @@ export const AppLayout = bElement({
 - **Works with Shadow DOM**: Yes - landmarks can be used in bElement shadowDom
 - **Uses bElement built-ins**: Not typically - landmarks are structural elements
 - **Requires external web API**: No - uses standard HTML elements and ARIA
-- **Cleanup required**: No - standard DOM elements handle their own lifecycle
+- **Cleanup required**: No
 
 ## Keyboard Interaction
 
-**Not applicable** - Landmarks don't have keyboard interaction themselves. However, assistive technologies provide keyboard shortcuts to navigate between landmarks (e.g., screen reader landmark navigation).
+**Not applicable** - Landmarks don't have keyboard interaction themselves. However, assistive technologies provide keyboard shortcuts to navigate between landmarks.
 
 ## WAI-ARIA Roles, States, and Properties
 
@@ -331,35 +451,22 @@ export const AppLayout = bElement({
 | `<aside>` | `complementary` | Always creates complementary landmark |
 | `<footer>` | `contentinfo` | If not descendant of `<article>` or `<section>` |
 | `<form>` | `form` | If has accessible name |
-| `<section>` | `region` | If has accessible name (`aria-label` or `aria-labelledby`) |
+| `<section>` | `region` | If has accessible name |
 | `<search>` | `search` | Always creates search landmark |
-
-### Explicit ARIA Roles
-
-When HTML elements don't exist or don't create the desired landmark:
-
-- **role="banner"**: Site header
-- **role="navigation"**: Navigation region
-- **role="main"**: Main content
-- **role="complementary"**: Sidebar/aside
-- **role="contentinfo"**: Footer
-- **role="search"**: Search functionality
-- **role="form"**: Form region
-- **role="region"**: Generic section
 
 ### Required Properties
 
-- **aria-label** or **aria-labelledby**: Required for `role="region"` and recommended for other landmarks when label isn't obvious
+- **aria-label** or **aria-labelledby**: Required for `role="region"` and recommended for multiple same-type landmarks
 
 ## Best Practices
 
-1. **Prefer semantic HTML** - Use native elements (`<main>`, `<nav>`, etc.) when possible
-2. **Use Functional Templates** - For reusable landmark containers in stories
-3. **Label appropriately** - Provide `aria-label` or `aria-labelledby` for clarity
-4. **Limit landmarks** - Aim for 7 or fewer landmarks per page
-5. **Cover all content** - Ensure all content is within an appropriate landmark
-6. **Avoid redundancy** - Don't use both HTML element and ARIA role
-7. **Use region sparingly** - Only use `role="region"` when semantic HTML isn't appropriate
+1. **Prefer semantic HTML** - Use native elements (`<main>`, `<nav>`, etc.)
+2. **Use FunctionalTemplates** - For reusable landmark containers in stories
+3. **Use spread syntax** - `{...styles.x}` for applying styles
+4. **Label appropriately** - Provide `aria-label` or `aria-labelledby` for clarity
+5. **Limit landmarks** - Aim for 7 or fewer landmarks per page
+6. **Cover all content** - Ensure all content is within an appropriate landmark
+7. **Avoid redundancy** - Don't use both HTML element and ARIA role
 8. **Multiple navigation** - Label multiple `<nav>` elements with `aria-label`
 
 ## Accessibility Considerations
@@ -371,48 +478,6 @@ When HTML elements don't exist or don't create the desired landmark:
 - All content should be within landmarks
 - Landmarks enable efficient page navigation
 
-## Landmark Types and Usage
-
-### Banner (role="banner" or `<header>`)
-- Site header, typically at top of page
-- Usually contains site title/logo
-- Only one per page (unless nested in article/section)
-
-### Navigation (role="navigation" or `<nav>`)
-- Navigation links
-- Can have multiple if labeled differently
-- Use `aria-label` to distinguish multiple nav regions
-
-### Main (role="main" or `<main>`)
-- Primary content of the page
-- Only one per page
-- Should contain the main topic/content
-
-### Complementary (role="complementary" or `<aside>`)
-- Sidebar content, related but not essential
-- Can have multiple if labeled differently
-- Use `aria-label` to distinguish
-
-### Contentinfo (role="contentinfo" or `<footer>`)
-- Footer information (copyright, links, etc.)
-- Usually at bottom of page
-- Only one per page (unless nested)
-
-### Search (role="search" or `<search>`)
-- Search functionality
-- Can have multiple if labeled differently
-- Contains search form
-
-### Form (role="form" or `<form>`)
-- Form region (only if has accessible name)
-- Use when form is a major page section
-- Not needed for every form
-
-### Region (role="region" or `<section>` with label)
-- Generic content section
-- Must have accessible name
-- Use when no other landmark is appropriate
-
 ## Browser Compatibility
 
 | Browser | Support |
@@ -422,8 +487,6 @@ When HTML elements don't exist or don't create the desired landmark:
 | Safari | Full support |
 | Edge | Full support |
 
-**Note**: Semantic HTML elements and ARIA landmark roles have universal support in modern browsers with assistive technology.
-
 ## References
 
 - Source: [W3C ARIA Authoring Practices Guide - Landmarks Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/landmarks/)
@@ -432,5 +495,3 @@ When HTML elements don't exist or don't create the desired landmark:
 - MDN: [HTML nav element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/nav)
 - MDN: [HTML header element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/header)
 - MDN: [HTML footer element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/footer)
-- MDN: [HTML aside element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/aside)
-- MDN: [HTML search element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/search)

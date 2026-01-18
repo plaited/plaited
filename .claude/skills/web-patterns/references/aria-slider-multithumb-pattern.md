@@ -30,6 +30,15 @@ A multi-thumb slider implements the Slider Pattern but includes two or more thum
 - Multi-value color pickers (RGB, HSL)
 - Independent parameter controls (multiple unrelated values)
 
+## Pattern Philosophy
+
+This pattern is **training data** for the Plaited agent. The examples below train the agent's understanding of how to implement this pattern correctly.
+
+- bElements/FunctionalTemplates are defined locally in stories (NOT exported)
+- Only stories are exported (required for testing/training)
+- Styles are always in separate `*.css.ts` files
+- Use spread syntax `{...styles.x}` for applying styles
+
 ## Implementation
 
 ### Vanilla JavaScript
@@ -37,7 +46,7 @@ A multi-thumb slider implements the Slider Pattern but includes two or more thum
 ```html
 <!-- Two-thumb price range slider -->
 <div role="group" aria-label="Price range">
-  <div 
+  <div
     role="slider"
     aria-valuenow="50"
     aria-valuemin="0"
@@ -51,7 +60,7 @@ A multi-thumb slider implements the Slider Pattern but includes two or more thum
       <div class="thumb-max" style="inset-inline-start: 75%"></div>
     </div>
   </div>
-  <div 
+  <div
     role="slider"
     aria-valuenow="150"
     aria-valuemin="50"
@@ -93,7 +102,7 @@ function updateMaxValue(newValue) {
 minThumb.addEventListener('keydown', (e) => {
   const step = 10
   let newValue = minValue
-  
+
   switch(e.key) {
     case 'ArrowRight':
     case 'ArrowUp':
@@ -114,7 +123,7 @@ minThumb.addEventListener('keydown', (e) => {
       newValue = maxValue - 1
       break
   }
-  
+
   if (newValue !== minValue) {
     updateMinValue(newValue)
   }
@@ -130,13 +139,26 @@ minThumb.addEventListener('keydown', (e) => {
 - Form association with FormData for multiple values
 - Tab order management
 
-#### Two-Thumb Range Slider (bElement)
+**File Structure:**
+
+```
+range-slider/
+  range-slider.css.ts        # Styles (createStyles) - ALWAYS separate
+  range-slider.stories.tsx   # bElement + stories (imports from css.ts)
+```
+
+#### range-slider.css.ts
 
 ```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
+// range-slider.css.ts
+import { createStyles, createHostStyles } from 'plaited'
 
-const rangeSliderStyles = createStyles({
+export const hostStyles = createHostStyles({
+  display: 'block',
+  inlineSize: '100%',
+})
+
+export const styles = createStyles({
   container: {
     position: 'relative',
     inlineSize: '100%',
@@ -157,7 +179,6 @@ const rangeSliderStyles = createStyles({
     blockSize: '100%',
     backgroundColor: '#007bff',
     borderRadius: '4px',
-    transition: 'insetInlineStart 0.1s ease, inlineSize 0.1s ease',
   },
   thumb: {
     position: 'absolute',
@@ -170,54 +191,65 @@ const rangeSliderStyles = createStyles({
     cursor: 'grab',
     border: '2px solid white',
     boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-    zIndex: {
-      $default: 2,
-      '[data-focused="true"]': 3,
-    },
-    transition: {
-      $default: 'transform 0.1s ease',
-      ':active': 'transform 0.1s ease, scale(1.2)',
-    },
+    zIndex: 2,
+  },
+  thumbFocused: {
+    zIndex: 3,
+    outline: '2px solid #0056b3',
+    outlineOffset: '2px',
   },
   label: {
     fontSize: '0.875em',
     color: '#666',
-    marginBottom: '0.5rem',
+    marginBlockEnd: '0.5rem',
   },
   value: {
     fontSize: '0.875em',
     fontWeight: 'bold',
-    marginTop: '0.5rem',
+    marginBlockStart: '0.5rem',
   },
 })
+```
 
+#### range-slider.stories.tsx
+
+```typescript
+// range-slider.stories.tsx
+import type { FT } from 'plaited/ui'
+import { bElement } from 'plaited/ui'
+import { story } from 'plaited/testing'
+import { styles, hostStyles } from './range-slider.css.ts'
+
+// Type for events - defined locally
 type RangeSliderEvents = {
   input: { min: number; max: number }
   change: { min: number; max: number }
 }
 
-export const RangeSlider = bElement<RangeSliderEvents>({
-  tag: 'range-slider',
+// bElement for range slider - defined locally, NOT exported
+const RangeSlider = bElement<RangeSliderEvents>({
+  tag: 'pattern-range-slider',
   observedAttributes: ['min', 'max', 'min-value', 'max-value', 'step', 'aria-label'],
   formAssociated: true,
+  hostStyles,
   shadowDom: (
-    <div {...rangeSliderStyles.container}>
-      <div p-target='label' {...rangeSliderStyles.label}>
+    <div {...styles.container}>
+      <div p-target='label' {...styles.label}>
         <slot name='label'></slot>
       </div>
       <div
         p-target='track'
-        {...rangeSliderStyles.track}
+        {...styles.track}
         aria-hidden='true'
         p-trigger={{ click: 'handleTrackClick' }}
       >
-        <div p-target='fill' {...rangeSliderStyles.fill}></div>
+        <div p-target='fill' {...styles.fill}></div>
         <div
           p-target='min-thumb'
           role='slider'
           data-thumb='min'
           tabIndex={0}
-          {...rangeSliderStyles.thumb}
+          {...styles.thumb}
           p-trigger={{ keydown: 'handleMinKeydown', mousedown: 'handleMinMouseDown', focus: 'handleMinFocus', blur: 'handleMinBlur' }}
         ></div>
         <div
@@ -225,20 +257,20 @@ export const RangeSlider = bElement<RangeSliderEvents>({
           role='slider'
           data-thumb='max'
           tabIndex={0}
-          {...rangeSliderStyles.thumb}
+          {...styles.thumb}
           p-trigger={{ keydown: 'handleMaxKeydown', mousedown: 'handleMaxMouseDown', focus: 'handleMaxFocus', blur: 'handleMaxBlur' }}
         ></div>
       </div>
-      <div p-target='value' {...rangeSliderStyles.value}></div>
+      <div p-target='value' {...styles.value}></div>
     </div>
   ),
-  bProgram({ $, host, internals, emit, root }) {
+  bProgram({ $, host, internals, emit }) {
     const track = $('track')[0]
     const fill = $('fill')[0]
     const minThumb = $('min-thumb')[0]
     const maxThumb = $('max-thumb')[0]
     const valueDisplay = $('value')[0]
-    
+
     let absoluteMin = 0
     let absoluteMax = 100
     let minValue = 20
@@ -246,98 +278,93 @@ export const RangeSlider = bElement<RangeSliderEvents>({
     let step = 1
     let isDragging = false
     let draggingThumb: 'min' | 'max' | null = null
-    
+
     const getPercentage = (value: number): number => {
       return ((value - absoluteMin) / (absoluteMax - absoluteMin)) * 100
     }
-    
+
     const getValueFromPosition = (clientX: number): number => {
       const rect = track?.getBoundingClientRect()
       if (!rect) return minValue
-      
+
       const x = clientX - rect.left
       const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100))
       const rawValue = absoluteMin + (percentage / 100) * (absoluteMax - absoluteMin)
-      
-      // Snap to step
+
       return Math.round(rawValue / step) * step
     }
-    
+
     const updateMinValue = (newValue: number, emitEvent = true) => {
-      // Constraint: min cannot exceed max - step
       minValue = Math.max(absoluteMin, Math.min(maxValue - step, newValue))
       const percentage = getPercentage(minValue)
-      
-      minThumb?.setAttribute('style', `inset-inline-start: ${percentage}%`)
-      minThumb?.setAttribute('aria-valuenow', String(minValue))
-      minThumb?.setAttribute('aria-valuemin', String(absoluteMin))
-      minThumb?.setAttribute('aria-valuemax', String(maxValue - step))
-      
-      // Update fill position
+
+      minThumb?.attr('style', `inset-inline-start: ${percentage}%`)
+      minThumb?.attr('aria-valuenow', String(minValue))
+      minThumb?.attr('aria-valuemin', String(absoluteMin))
+      minThumb?.attr('aria-valuemax', String(maxValue - step))
+
       const minPercent = getPercentage(minValue)
       const maxPercent = getPercentage(maxValue)
-      fill?.setAttribute('style', `inset-inline-start: ${minPercent}%; inline-size: ${maxPercent - minPercent}%`)
-      
+      fill?.attr('style', `inset-inline-start: ${minPercent}%; inline-size: ${maxPercent - minPercent}%`)
+
       updateFormValue()
       updateValueDisplay()
-      
+
       if (emitEvent) {
         emit({ type: 'input', detail: { min: minValue, max: maxValue } })
       }
     }
-    
+
     const updateMaxValue = (newValue: number, emitEvent = true) => {
-      // Constraint: max cannot be less than min + step
       maxValue = Math.min(absoluteMax, Math.max(minValue + step, newValue))
       const percentage = getPercentage(maxValue)
-      
-      maxThumb?.setAttribute('style', `inset-inline-start: ${percentage}%`)
-      maxThumb?.setAttribute('aria-valuenow', String(maxValue))
-      maxThumb?.setAttribute('aria-valuemin', String(minValue + step))
-      maxThumb?.setAttribute('aria-valuemax', String(absoluteMax))
-      
-      // Update fill position
+
+      maxThumb?.attr('style', `inset-inline-start: ${percentage}%`)
+      maxThumb?.attr('aria-valuenow', String(maxValue))
+      maxThumb?.attr('aria-valuemin', String(minValue + step))
+      maxThumb?.attr('aria-valuemax', String(absoluteMax))
+
       const minPercent = getPercentage(minValue)
       const maxPercent = getPercentage(maxValue)
-      fill?.setAttribute('style', `inset-inline-start: ${minPercent}%; inline-size: ${maxPercent - minPercent}%`)
-      
+      fill?.attr('style', `inset-inline-start: ${minPercent}%; inline-size: ${maxPercent - minPercent}%`)
+
       updateFormValue()
       updateValueDisplay()
-      
+
       if (emitEvent) {
         emit({ type: 'input', detail: { min: minValue, max: maxValue } })
       }
     }
-    
+
     const updateFormValue = () => {
       const formData = new FormData()
       const name = host.getAttribute('name') || 'range'
-      
+
       formData.append(`${name}[min]`, String(minValue))
       formData.append(`${name}[max]`, String(maxValue))
-      
+
       internals.setFormValue(formData)
       host.setAttribute('min-value', String(minValue))
       host.setAttribute('max-value', String(maxValue))
     }
-    
+
     const updateValueDisplay = () => {
       const ariaLabel = host.getAttribute('aria-label') || 'Range'
       valueDisplay?.render(`${ariaLabel}: $${minValue} - $${maxValue}`)
     }
-    
+
     const handleMouseMove = (event: MouseEvent) => {
       if (!isDragging || !draggingThumb) return
-      
+
       const newValue = getValueFromPosition(event.clientX)
-      
+
       if (draggingThumb === 'min') {
         updateMinValue(newValue)
       } else {
         updateMaxValue(newValue)
       }
     }
-    
+
     const handleMouseUp = () => {
       if (isDragging) {
         isDragging = false
@@ -347,153 +374,120 @@ export const RangeSlider = bElement<RangeSliderEvents>({
         draggingThumb = null
       }
     }
-    
+
     return {
       handleMinKeydown(event: KeyboardEvent) {
         let newValue = minValue
-        
+
         switch (event.key) {
           case 'ArrowRight':
           case 'ArrowUp':
             event.preventDefault()
             newValue = Math.min(maxValue - step, minValue + step)
             break
-            
           case 'ArrowLeft':
           case 'ArrowDown':
             event.preventDefault()
             newValue = Math.max(absoluteMin, minValue - step)
             break
-            
           case 'Home':
             event.preventDefault()
             newValue = absoluteMin
             break
-            
           case 'End':
             event.preventDefault()
             newValue = maxValue - step
             break
-            
-          case 'PageUp':
-            event.preventDefault()
-            newValue = Math.min(maxValue - step, minValue + (step * 10))
-            break
-            
-          case 'PageDown':
-            event.preventDefault()
-            newValue = Math.max(absoluteMin, minValue - (step * 10))
-            break
         }
-        
+
         if (newValue !== minValue) {
           updateMinValue(newValue)
           emit({ type: 'change', detail: { min: minValue, max: maxValue } })
         }
       },
-      
+
       handleMaxKeydown(event: KeyboardEvent) {
         let newValue = maxValue
-        
+
         switch (event.key) {
           case 'ArrowRight':
           case 'ArrowUp':
             event.preventDefault()
             newValue = Math.min(absoluteMax, maxValue + step)
             break
-            
           case 'ArrowLeft':
           case 'ArrowDown':
             event.preventDefault()
             newValue = Math.max(minValue + step, maxValue - step)
             break
-            
           case 'Home':
             event.preventDefault()
             newValue = minValue + step
             break
-            
           case 'End':
             event.preventDefault()
             newValue = absoluteMax
             break
-            
-          case 'PageUp':
-            event.preventDefault()
-            newValue = Math.min(absoluteMax, maxValue + (step * 10))
-            break
-            
-          case 'PageDown':
-            event.preventDefault()
-            newValue = Math.max(minValue + step, maxValue - (step * 10))
-            break
         }
-        
+
         if (newValue !== maxValue) {
           updateMaxValue(newValue)
           emit({ type: 'change', detail: { min: minValue, max: maxValue } })
         }
       },
-      
+
       handleMinMouseDown(event: MouseEvent) {
         event.preventDefault()
         isDragging = true
         draggingThumb = 'min'
-        const newValue = getValueFromPosition(event.clientX)
-        updateMinValue(newValue)
         document.addEventListener('mousemove', handleMouseMove)
         document.addEventListener('mouseup', handleMouseUp)
       },
-      
+
       handleMaxMouseDown(event: MouseEvent) {
         event.preventDefault()
         isDragging = true
         draggingThumb = 'max'
-        const newValue = getValueFromPosition(event.clientX)
-        updateMaxValue(newValue)
         document.addEventListener('mousemove', handleMouseMove)
         document.addEventListener('mouseup', handleMouseUp)
       },
-      
+
       handleTrackClick(event: MouseEvent) {
         if (isDragging) return
-        
+
         const newValue = getValueFromPosition(event.clientX)
         const minPercent = getPercentage(minValue)
         const maxPercent = getPercentage(maxValue)
         const clickPercent = getPercentage(newValue)
-        
-        // Determine which thumb to move (closest one)
+
         const distToMin = Math.abs(clickPercent - minPercent)
         const distToMax = Math.abs(clickPercent - maxPercent)
-        
+
         if (distToMin < distToMax) {
           updateMinValue(newValue)
         } else {
           updateMaxValue(newValue)
         }
-        
+
         emit({ type: 'change', detail: { min: minValue, max: maxValue } })
       },
-      
+
       handleMinFocus() {
-        minThumb?.setAttribute('data-focused', 'true')
-        maxThumb?.setAttribute('data-focused', 'false')
+        minThumb?.attr('class', `${styles.thumb.classNames.join(' ')} ${styles.thumbFocused.classNames.join(' ')}`)
       },
-      
+
       handleMaxFocus() {
-        maxThumb?.setAttribute('data-focused', 'true')
-        minThumb?.setAttribute('data-focused', 'false')
+        maxThumb?.attr('class', `${styles.thumb.classNames.join(' ')} ${styles.thumbFocused.classNames.join(' ')}`)
       },
-      
+
       handleMinBlur() {
-        minThumb?.removeAttribute('data-focused')
+        minThumb?.attr('class', styles.thumb.classNames.join(' '))
       },
-      
+
       handleMaxBlur() {
-        maxThumb?.removeAttribute('data-focused')
+        maxThumb?.attr('class', styles.thumb.classNames.join(' '))
       },
-      
+
       onConnected() {
         const minAttr = host.getAttribute('min')
         const maxAttr = host.getAttribute('max')
@@ -501,50 +495,28 @@ export const RangeSlider = bElement<RangeSliderEvents>({
         const maxValueAttr = host.getAttribute('max-value')
         const stepAttr = host.getAttribute('step')
         const ariaLabel = host.getAttribute('aria-label')
-        
+
         if (minAttr) absoluteMin = Number(minAttr)
         if (maxAttr) absoluteMax = Number(maxAttr)
         if (minValueAttr) minValue = Number(minValueAttr)
         if (maxValueAttr) maxValue = Number(maxValueAttr)
         if (stepAttr) step = Number(stepAttr)
-        
-        // Ensure constraints
+
         minValue = Math.max(absoluteMin, Math.min(maxValue - step, minValue))
         maxValue = Math.min(absoluteMax, Math.max(minValue + step, maxValue))
-        
-        // Set ARIA labels
+
         if (ariaLabel) {
-          minThumb?.setAttribute('aria-label', `Minimum ${ariaLabel}`)
-          maxThumb?.setAttribute('aria-label', `Maximum ${ariaLabel}`)
+          minThumb?.attr('aria-label', `Minimum ${ariaLabel}`)
+          maxThumb?.attr('aria-label', `Maximum ${ariaLabel}`)
         } else {
-          minThumb?.setAttribute('aria-label', 'Minimum value')
-          maxThumb?.setAttribute('aria-label', 'Maximum value')
+          minThumb?.attr('aria-label', 'Minimum value')
+          maxThumb?.attr('aria-label', 'Maximum value')
         }
-        
-        // Initialize visual state
+
         updateMinValue(minValue, false)
         updateMaxValue(maxValue, false)
       },
-      
-      onAttributeChanged({ name, newValue }) {
-        if (name === 'min' && newValue) {
-          absoluteMin = Number(newValue)
-          updateMinValue(minValue)
-        } else if (name === 'max' && newValue) {
-          absoluteMax = Number(newValue)
-          updateMaxValue(maxValue)
-        } else if (name === 'min-value' && newValue) {
-          updateMinValue(Number(newValue))
-        } else if (name === 'max-value' && newValue) {
-          updateMaxValue(Number(newValue))
-        } else if (name === 'step' && newValue) {
-          step = Number(newValue)
-        } else if (name === 'aria-label') {
-          minThumb?.setAttribute('aria-label', `Minimum ${newValue || 'value'}`)
-          maxThumb?.setAttribute('aria-label', `Maximum ${newValue || 'value'}`)
-        }
-      },
-      
+
       onDisconnected() {
         document.removeEventListener('mousemove', handleMouseMove)
         document.removeEventListener('mouseup', handleMouseUp)
@@ -552,13 +524,10 @@ export const RangeSlider = bElement<RangeSliderEvents>({
     }
   },
 })
-```
 
-#### Price Range Slider Example
-
-```typescript
+// Stories - EXPORTED for testing/training
 export const priceRangeSlider = story({
-  intent: 'Price range slider for filtering',
+  intent: 'Price range slider for filtering products by price',
   template: () => (
     <RangeSlider
       min='0'
@@ -572,76 +541,42 @@ export const priceRangeSlider = story({
       <span slot='label'>Price Range</span>
     </RangeSlider>
   ),
+  play: async ({ findByAttribute, assert }) => {
+    const minThumb = await findByAttribute('data-thumb', 'min')
+    const maxThumb = await findByAttribute('data-thumb', 'max')
+
+    assert({
+      given: 'range slider is rendered',
+      should: 'have min thumb with correct initial value',
+      actual: minThumb?.getAttribute('aria-valuenow'),
+      expected: '100',
+    })
+
+    assert({
+      given: 'range slider is rendered',
+      should: 'have max thumb with correct initial value',
+      actual: maxThumb?.getAttribute('aria-valuenow'),
+      expected: '500',
+    })
+  },
 })
-```
 
-#### Independent Multi-Thumb Slider
-
-```typescript
-export const IndependentMultiSlider = bElement<{
-  input: { values: number[] }
-  change: { values: number[] }
-}>({
-  tag: 'independent-multi-slider',
-  observedAttributes: ['values', 'min', 'max', 'step'],
-  formAssociated: true,
-  shadowDom: (
-    <div p-target='container' {...rangeSliderStyles.container}>
-      <div
-        p-target='track'
-        {...rangeSliderStyles.track}
-        aria-hidden='true'
-      >
-        <slot name='thumbs'></slot>
-      </div>
-    </div>
+export const defaultRangeSlider = story({
+  intent: 'Range slider with default values',
+  template: () => (
+    <RangeSlider aria-label='Value range'>
+      <span slot='label'>Select Range</span>
+    </RangeSlider>
   ),
-  bProgram({ $, host, internals, emit, root }) {
-    const track = $('track')[0]
-    let values: number[] = []
-    let absoluteMin = 0
-    let absoluteMax = 100
-    let step = 1
-    let thumbs: HTMLElement[] = []
-    
-    const getThumbs = (): HTMLElement[] => {
-      return Array.from(
-        root.querySelectorAll('[role="slider"]')
-      ) as HTMLElement[]
-    }
-    
-    const updateThumb = (index: number, newValue: number) => {
-      if (index < 0 || index >= values.length) return
-      
-      values[index] = Math.max(absoluteMin, Math.min(absoluteMax, newValue))
-      const thumb = thumbs[index]
-      const percentage = ((values[index] - absoluteMin) / (absoluteMax - absoluteMin)) * 100
-      
-      thumb?.setAttribute('style', `inset-inline-start: ${percentage}%`)
-      thumb?.setAttribute('aria-valuenow', String(values[index]))
-      thumb?.setAttribute('aria-valuemin', String(absoluteMin))
-      thumb?.setAttribute('aria-valuemax', String(absoluteMax))
-      
-      updateFormValue()
-      emit({ type: 'input', detail: { values: [...values] } })
-    }
-    
-    const updateFormValue = () => {
-      const formData = new FormData()
-      const name = host.getAttribute('name') || 'values'
-      
-      values.forEach((value, index) => {
-        formData.append(`${name}[${index}]`, String(value))
-      })
-      
-      internals.setFormValue(formData)
-    }
-    
-    return {
-      // Keyboard handlers for each thumb (similar to RangeSlider)
-      // Mouse handlers for each thumb
-      // ...
-    }
+  play: async ({ findByAttribute, assert }) => {
+    const minThumb = await findByAttribute('data-thumb', 'min')
+
+    assert({
+      given: 'range slider with defaults',
+      should: 'use default min value of 20',
+      actual: minThumb?.getAttribute('aria-valuenow'),
+      expected: '20',
+    })
   },
 })
 ```
@@ -649,7 +584,7 @@ export const IndependentMultiSlider = bElement<{
 ## Plaited Integration
 
 - **Works with Shadow DOM**: Yes - multi-thumb sliders use Shadow DOM
-- **Uses bElement built-ins**: Yes - `$` for querying, `attr()` for attributes, `render()` for updates
+- **Uses bElement built-ins**: `$`, `p-trigger`, `p-target`, `emit`, `attr`, `internals`
 - **Requires external web API**: No - uses standard DOM APIs (mouse events)
 - **Cleanup required**: Yes - mouse event listeners cleanup in `onDisconnected`
 
@@ -664,7 +599,7 @@ Each thumb is in the page tab sequence and has the keyboard interactions describ
 - **PageUp** (Optional): Increase by larger step
 - **PageDown** (Optional): Decrease by larger step
 
-**Important**: The tab order remains constant regardless of thumb value and visual position within the slider. For example, if the value of a thumb changes such that it moves past one of the other thumbs, the tab order does not change.
+**Important**: The tab order remains constant regardless of thumb value and visual position within the slider.
 
 ## WAI-ARIA Roles, States, and Properties
 
@@ -682,25 +617,15 @@ Each thumb is in the page tab sequence and has the keyboard interactions describ
 - **aria-orientation**: `vertical` for vertical slider (default: `horizontal`)
 - **role="group"**: Container for related sliders (optional)
 
-### Dynamic Constraints
-
-When the range of one slider is dependent on the current value of another slider:
-- Update `aria-valuemin` or `aria-valuemax` of dependent sliders when values change
-- Example: In a range slider, min thumb's `aria-valuemax` = max thumb's `aria-valuenow - step`
-- Example: In a range slider, max thumb's `aria-valuemin` = min thumb's `aria-valuenow + step`
-
 ## Best Practices
 
 1. **Use bElement** - Multi-thumb sliders require complex state coordination
-2. **Tab order** - Keep tab order constant regardless of visual position
-3. **Constraints** - Implement proper min/max constraints between thumbs
-4. **Form association** - Use FormData for multiple values
-5. **Keyboard support** - Each thumb must have full keyboard support
-6. **Visual feedback** - Clear indication of which thumb is focused
-7. **Value text** - Use `aria-valuetext` for user-friendly descriptions
-8. **Labels** - Provide distinct labels for each thumb
-9. **Touch testing** - Test with touch-based assistive technologies
-10. **Fill visualization** - Show range between thumbs (for range sliders)
+2. **Use FunctionalTemplates** for static display only
+3. **Use spread syntax** - `{...styles.x}` for applying styles
+4. **Tab order** - Keep tab order constant regardless of visual position
+5. **Constraints** - Implement proper min/max constraints between thumbs
+6. **Use `$()` with `p-target`** - never use `querySelector` directly
+7. **Form association** - Use FormData for multiple values
 
 ## Accessibility Considerations
 
@@ -709,29 +634,6 @@ When the range of one slider is dependent on the current value of another slider
 - Focus indicators must be visible on the active thumb
 - Tab order remains constant for predictable navigation
 - Dynamic constraints are announced when values change
-- Touch-based assistive technologies may have limitations
-- Visual representation should match announced values
-- Ensure sufficient color contrast for thumbs and track
-
-## Multi-Thumb Slider Variants
-
-### Range Slider (Two Thumbs)
-- Min/max value selection
-- Thumbs cannot pass each other
-- Common for price, date, size ranges
-- Fill shows selected range
-
-### Independent Multi-Thumb
-- Each thumb sets independent value
-- Thumbs can pass each other
-- Common for multi-parameter controls
-- No fill visualization
-
-### Dependent Multi-Thumb
-- Values depend on other thumbs
-- Complex constraint relationships
-- Common for advanced filters
-- Dynamic min/max updates
 
 ## Browser Compatibility
 
@@ -742,11 +644,8 @@ When the range of one slider is dependent on the current value of another slider
 | Safari | Full support |
 | Edge | Full support |
 
-**Note**: ARIA multi-thumb slider pattern has universal support in modern browsers with assistive technology. However, touch-based assistive technologies may have limitations.
-
 ## References
 
 - Source: [W3C ARIA Authoring Practices Guide - Slider (Multi-Thumb) Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slider-multithumb/)
 - Related: [Slider Pattern](./aria-slider-pattern.md) - Single-thumb slider implementation
 - MDN: [ARIA slider role](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/slider_role)
-- Related: See **ui-patterns** skill for Form-Associated Elements (FormData usage)

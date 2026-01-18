@@ -38,6 +38,15 @@ A treegrid widget presents a hierarchical data grid consisting of tabular inform
 - Comment threads with nested replies
 - Budget tracking with category/subcategory breakdowns
 
+## Pattern Philosophy
+
+This pattern is **training data** for the Plaited agent. The examples below train the agent's understanding of how to implement this pattern correctly.
+
+- bElements/FunctionalTemplates are defined locally in stories (NOT exported)
+- Only stories are exported (required for testing/training)
+- Styles are always in separate `*.css.ts` files
+- Use spread syntax `{...styles.x}` for applying styles
+
 ## Implementation
 
 ### Vanilla JavaScript
@@ -72,20 +81,16 @@ A treegrid widget presents a hierarchical data grid consisting of tabular inform
 const treegrid = document.querySelector('[role="treegrid"]')
 let focusedRow = 0
 let focusedCol = 0
-let selectedCells = new Set()
 
-// Get all visible rows
 function getVisibleRows() {
-  return Array.from(treegrid.querySelectorAll('[role="row"]:not([hidden])')) as HTMLElement[]
+  return Array.from(treegrid.querySelectorAll('[role="row"]:not([hidden])'))
 }
 
-// Get cells in a row
-function getCellsInRow(row: HTMLElement) {
-  return Array.from(row.querySelectorAll('[role="gridcell"], [role="rowheader"]')) as HTMLElement[]
+function getCellsInRow(row) {
+  return Array.from(row.querySelectorAll('[role="gridcell"], [role="rowheader"]'))
 }
 
-// Expand/collapse row
-function toggleRow(row: HTMLElement) {
+function toggleRow(row) {
   const isExpanded = row.getAttribute('aria-expanded') === 'true'
   const childRows = getChildRows(row)
   childRows.forEach(child => {
@@ -94,33 +99,11 @@ function toggleRow(row: HTMLElement) {
   row.setAttribute('aria-expanded', !isExpanded)
 }
 
-// Get child rows
-function getChildRows(parentRow: HTMLElement) {
-  const parentLevel = parseInt(parentRow.getAttribute('aria-level') || '1', 10)
-  const rows = getVisibleRows()
-  const parentIndex = rows.indexOf(parentRow)
-  const children: HTMLElement[] = []
-  
-  for (let i = parentIndex + 1; i < rows.length; i++) {
-    const row = rows[i]
-    const level = parseInt(row.getAttribute('aria-level') || '1', 10)
-    if (level > parentLevel) {
-      children.push(row)
-    } else {
-      break
-    }
-  }
-  
-  return children
-}
-
-// Keyboard navigation
 treegrid.addEventListener('keydown', (e) => {
   const rows = getVisibleRows()
   const currentRow = rows[focusedRow]
   const cells = getCellsInRow(currentRow)
-  const currentCell = cells[focusedCol]
-  
+
   switch (e.key) {
     case 'ArrowRight':
       e.preventDefault()
@@ -131,7 +114,7 @@ treegrid.addEventListener('keydown', (e) => {
         updateFocus()
       }
       break
-      
+
     case 'ArrowLeft':
       e.preventDefault()
       if (currentRow.getAttribute('aria-expanded') === 'true') {
@@ -141,95 +124,101 @@ treegrid.addEventListener('keydown', (e) => {
         updateFocus()
       }
       break
-      
+
     case 'ArrowDown':
       e.preventDefault()
       if (focusedRow < rows.length - 1) {
         focusedRow++
-        if (focusedCol >= getCellsInRow(rows[focusedRow]).length) {
-          focusedCol = getCellsInRow(rows[focusedRow]).length - 1
-        }
         updateFocus()
       }
       break
-      
+
     case 'ArrowUp':
       e.preventDefault()
       if (focusedRow > 0) {
         focusedRow--
-        if (focusedCol >= getCellsInRow(rows[focusedRow]).length) {
-          focusedCol = getCellsInRow(rows[focusedRow]).length - 1
-        }
         updateFocus()
       }
       break
   }
 })
-
-function updateFocus() {
-  const rows = getVisibleRows()
-  const cells = getCellsInRow(rows[focusedRow])
-  
-  // Remove tabindex from all cells
-  treegrid.querySelectorAll('[role="gridcell"], [role="rowheader"]').forEach(cell => {
-    (cell as HTMLElement).setAttribute('tabindex', '-1')
-  })
-  
-  // Set tabindex on focused cell
-  if (cells[focusedCol]) {
-    cells[focusedCol].setAttribute('tabindex', '0')
-    cells[focusedCol].focus()
-  }
-}
 ```
 
 ### Plaited Adaptation
 
 **Important**: In Plaited, treegrids are implemented as **bElements** because they require complex state management (hierarchical structure, expand/collapse, focus on rows/cells, selection, keyboard navigation).
 
-#### Treegrid (bElement)
+**File Structure:**
+
+```
+treegrid/
+  treegrid.css.ts        # Styles (createStyles) - ALWAYS separate
+  treegrid.stories.tsx   # bElement + stories (imports from css.ts)
+```
+
+#### treegrid.css.ts
 
 ```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
+// treegrid.css.ts
+import { createStyles, createHostStyles } from 'plaited'
 
-const treegridStyles = createStyles({
+export const hostStyles = createHostStyles({
+  display: 'block',
+  inlineSize: '100%',
+})
+
+export const styles = createStyles({
   treegrid: {
     display: 'table',
-    inline-size: '100%',
+    inlineSize: '100%',
     borderCollapse: 'collapse',
     border: '1px solid #ccc',
   },
   row: {
     display: 'table-row',
-    '&[data-focused="true"]': {
-      backgroundColor: '#e0e0e0',
-      outline: '2px solid #007bff',
-    },
-    '&[aria-selected="true"]': {
-      backgroundColor: '#b3d9ff',
-    },
+  },
+  rowFocused: {
+    backgroundColor: '#e0e0e0',
+    outline: '2px solid #007bff',
+  },
+  rowSelected: {
+    backgroundColor: '#b3d9ff',
   },
   cell: {
     display: 'table-cell',
     padding: '0.5rem',
     border: '1px solid #e0e0e0',
-    '&[data-focused="true"]': {
-      outline: '2px solid #007bff',
-    },
-    '&[aria-selected="true"]': {
-      backgroundColor: '#d0e8ff',
-    },
+  },
+  cellFocused: {
+    outline: '2px solid #007bff',
   },
   expandIcon: {
     display: 'inline-block',
     inlineSize: '1rem',
     textAlign: 'center',
-    marginRight: '0.5rem',
+    marginInlineEnd: '0.5rem',
     userSelect: 'none',
   },
+  header: {
+    display: 'table-cell',
+    padding: '0.5rem',
+    fontWeight: 'bold',
+    backgroundColor: '#f0f0f0',
+    border: '1px solid #e0e0e0',
+  },
 })
+```
 
+#### treegrid.stories.tsx
+
+```typescript
+// treegrid.stories.tsx
+import type { FT } from 'plaited/ui'
+import { bElement } from 'plaited/ui'
+import { story } from 'plaited/testing'
+import { styles, hostStyles } from './treegrid.css.ts'
+
+// Types - defined locally
 type TreegridRow = {
   id: string
   cells: (string | number)[]
@@ -238,21 +227,21 @@ type TreegridRow = {
 
 type TreegridEvents = {
   cellFocus: { row: number; col: number; value: unknown }
-  rowSelect: { row: number; selected: boolean }
   rowExpand: { row: number; expanded: boolean }
 }
 
-export const Treegrid = bElement<TreegridEvents>({
-  tag: 'accessible-treegrid',
-  observedAttributes: ['data', 'aria-label', 'aria-multiselectable', 'navigation-mode'],
-  formAssociated: true,
+// bElement for treegrid - defined locally, NOT exported
+const Treegrid = bElement<TreegridEvents>({
+  tag: 'pattern-treegrid',
+  observedAttributes: ['data', 'aria-label'],
+  hostStyles,
   shadowDom: (
     <table
       p-target='treegrid'
       role='treegrid'
       tabIndex={0}
-      {...treegridStyles.treegrid}
-      p-trigger={{ keydown: 'handleKeydown', focus: 'handleFocus', blur: 'handleBlur' }}
+      {...styles.treegrid}
+      p-trigger={{ keydown: 'handleKeydown', focus: 'handleFocus' }}
     >
       <thead p-target='thead'>
         <slot name='headers'></slot>
@@ -260,324 +249,183 @@ export const Treegrid = bElement<TreegridEvents>({
       <tbody p-target='tbody'></tbody>
     </table>
   ),
-  bProgram({ $, host, internals, emit, root }) {
+  bProgram({ $, host, emit }) {
     const treegrid = $('treegrid')[0]
-    const thead = $('thead')[0]
     const tbody = $('tbody')[0]
-    let rows: HTMLElement[] = []
     let focusedRow = 0
     let focusedCol = 0
-    let selectedRows = new Set<number>()
-    let expandedRows = new Set<number>()
+    let expandedRows = new Set<string>()
     let treegridData: TreegridRow[] = []
-    const isMultiSelect = host.getAttribute('aria-multiselectable') === 'true'
-    const navigationMode = host.getAttribute('navigation-mode') || 'cells-only' // 'rows-first', 'cells-first', 'cells-only'
-    
+
     const getVisibleRows = (): HTMLElement[] => {
       return Array.from(tbody?.querySelectorAll('[role="row"]:not([hidden])') || []) as HTMLElement[]
     }
-    
+
     const getCellsInRow = (row: HTMLElement): HTMLElement[] => {
       return Array.from(row.querySelectorAll('[role="gridcell"], [role="rowheader"]')) as HTMLElement[]
     }
-    
-    const getChildRows = (parentIndex: number): number[] => {
-      const visibleRows = getVisibleRows()
-      if (parentIndex < 0 || parentIndex >= visibleRows.length) return []
-      
-      const parentRow = visibleRows[parentIndex]
-      const parentLevel = parseInt(parentRow.getAttribute('aria-level') || '1', 10)
-      const children: number[] = []
-      
-      for (let i = parentIndex + 1; i < visibleRows.length; i++) {
-        const row = visibleRows[i]
-        const level = parseInt(row.getAttribute('aria-level') || '1', 10)
-        if (level > parentLevel) {
-          children.push(i)
-        } else {
-          break
-        }
-      }
-      
-      return children
+
+    const hasChildren = (row: HTMLElement): boolean => {
+      return row.hasAttribute('aria-expanded')
     }
-    
-    const isRowExpanded = (rowIndex: number): boolean => {
-      return expandedRows.has(rowIndex)
+
+    const isRowExpanded = (row: HTMLElement): boolean => {
+      return row.getAttribute('aria-expanded') === 'true'
     }
-    
-    const hasChildren = (rowIndex: number): boolean => {
-      return getChildRows(rowIndex).length > 0
-    }
-    
-    const expandRow = (rowIndex: number) => {
-      const childRows = getChildRows(rowIndex)
-      const visibleRows = getVisibleRows()
-      
-      childRows.forEach(childIndex => {
-        visibleRows[childIndex].removeAttribute('hidden')
-      })
-      
-      expandedRows.add(rowIndex)
-      visibleRows[rowIndex].setAttribute('aria-expanded', 'true')
-      
-      emit({ type: 'rowExpand', detail: { row: rowIndex, expanded: true } })
-    }
-    
-    const collapseRow = (rowIndex: number) => {
-      const childRows = getChildRows(rowIndex)
-      const visibleRows = getVisibleRows()
-      
-      childRows.forEach(childIndex => {
-        visibleRows[childIndex].setAttribute('hidden', '')
-      })
-      
-      expandedRows.delete(rowIndex)
-      visibleRows[rowIndex].setAttribute('aria-expanded', 'false')
-      
-      emit({ type: 'rowExpand', detail: { row: rowIndex, expanded: false } })
-    }
-    
-    const toggleRow = (rowIndex: number) => {
-      if (isRowExpanded(rowIndex)) {
-        collapseRow(rowIndex)
+
+    const toggleRow = (row: HTMLElement, rowId: string) => {
+      const expanded = isRowExpanded(row)
+      if (expanded) {
+        expandedRows.delete(rowId)
       } else {
-        expandRow(rowIndex)
+        expandedRows.add(rowId)
       }
+      renderTreegrid()
+      emit({ type: 'rowExpand', detail: { row: focusedRow, expanded: !expanded } })
     }
-    
+
     const updateFocus = () => {
       const visibleRows = getVisibleRows()
       if (visibleRows.length === 0) return
-      
-      // Clamp focused row/col
+
       if (focusedRow >= visibleRows.length) {
         focusedRow = visibleRows.length - 1
       }
-      
+
       const cells = getCellsInRow(visibleRows[focusedRow])
       if (cells.length === 0) return
-      
+
       if (focusedCol >= cells.length) {
         focusedCol = cells.length - 1
       }
-      
-      // Remove tabindex from all cells
-      tbody?.querySelectorAll('[role="gridcell"], [role="rowheader"]').forEach(cell => {
-        (cell as HTMLElement).setAttribute('tabindex', '-1')
-        cell.removeAttribute('data-focused')
+
+      tbody?.querySelectorAll('[role="gridcell"], [role="rowheader"]').forEach((cell) => {
+        cell.setAttribute('tabindex', '-1')
+        cell.setAttribute('class', styles.cell.classNames.join(' '))
       })
-      
-      // Set focus on target cell
+
       const targetCell = cells[focusedCol]
       if (targetCell) {
         targetCell.setAttribute('tabindex', '0')
-        targetCell.setAttribute('data-focused', 'true')
+        targetCell.setAttribute('class', `${styles.cell.classNames.join(' ')} ${styles.cellFocused.classNames.join(' ')}`)
         targetCell.focus()
-        
-        // Also mark row as focused
-        visibleRows.forEach((row, idx) => {
-          row.setAttribute('data-focused', idx === focusedRow ? 'true' : 'false')
-        })
-        
-        const rowData = findRowData(focusedRow)
-        if (rowData) {
-          emit({
-            type: 'cellFocus',
-            detail: {
-              row: focusedRow,
-              col: focusedCol,
-              value: rowData.cells[focusedCol],
-            },
-          })
-        }
       }
     }
-    
-    const findRowData = (rowIndex: number): TreegridRow | null => {
-      // This would need to map visible row index to actual data
-      // Simplified for example
-      return treegridData[rowIndex] || null
-    }
-    
-    const selectRow = (rowIndex: number, toggle = false) => {
-      const visibleRows = getVisibleRows()
-      if (rowIndex < 0 || rowIndex >= visibleRows.length) return
-      
-      const row = visibleRows[rowIndex]
-      
-      if (isMultiSelect) {
-        if (toggle) {
-          if (selectedRows.has(rowIndex)) {
-            selectedRows.delete(rowIndex)
-            row.setAttribute('aria-selected', 'false')
-          } else {
-            selectedRows.add(rowIndex)
-            row.setAttribute('aria-selected', 'true')
-          }
-        } else {
-          selectedRows.add(rowIndex)
-          row.setAttribute('aria-selected', 'true')
-        }
-      } else {
-        // Single-select: unselect all others
-        selectedRows.forEach(idx => {
-          visibleRows[idx].setAttribute('aria-selected', 'false')
-        })
-        selectedRows.clear()
-        selectedRows.add(rowIndex)
-        row.setAttribute('aria-selected', 'true')
-      }
-      
-      emit({
-        type: 'rowSelect',
-        detail: { row: rowIndex, selected: selectedRows.has(rowIndex) },
-      })
-      
-      updateFormValue()
-    }
-    
-    const updateFormValue = () => {
-      const selected = Array.from(selectedRows)
-      if (isMultiSelect) {
-        internals.setFormValue(JSON.stringify(selected))
-      } else {
-        internals.setFormValue(selected[0]?.toString() || '')
-      }
-    }
-    
+
     const renderTreegrid = () => {
       if (!tbody) return
-      
-      const allRows: HTMLElement[] = []
-      const parentExpandedStack: boolean[] = [] // Track parent expansion state by level
-      
-      const renderRow = (rowData: TreegridRow, level = 1, rowIndex = 0): number => {
-        const hasChildren = rowData.children && rowData.children.length > 0
-        const isExpanded = expandedRows.has(rowIndex)
-        const isParentExpanded = level === 1 || parentExpandedStack[level - 2] === true
-        const isHidden = level > 1 && !isParentExpanded
-        
-        // Update parent expansion stack
-        parentExpandedStack[level - 1] = isExpanded
-        
+
+      const renderRow = (rowData: TreegridRow, level = 1): HTMLElement => {
+        const hasChildRows = rowData.children && rowData.children.length > 0
+        const isExpanded = expandedRows.has(rowData.id)
+
+        const cells = rowData.cells.map((cellValue, colIndex) => {
+          const isFirstCell = colIndex === 0
+
+          return (
+            <td
+              key={colIndex}
+              role={isFirstCell ? 'rowheader' : 'gridcell'}
+              tabIndex={-1}
+              {...styles.cell}
+            >
+              {isFirstCell && hasChildRows && (
+                <span {...styles.expandIcon} aria-hidden='true'>
+                  {isExpanded ? '▼' : '▶'}
+                </span>
+              )}
+              {!hasChildRows && isFirstCell && (
+                <span {...styles.expandIcon} aria-hidden='true'></span>
+              )}
+              {String(cellValue)}
+            </td>
+          )
+        })
+
         const row = (
           <tr
             role='row'
             aria-level={level}
-            data-row-index={rowIndex}
-            hidden={isHidden}
-            {...treegridStyles.row}
-            p-trigger={{ click: 'handleRowClick' }}
+            data-row-id={rowData.id}
+            {...styles.row}
           >
-            {rowData.cells.map((cellValue, colIndex) => {
-              const isFirstCell = colIndex === 0
-              const isFocused = rowIndex === focusedRow && colIndex === focusedCol
-              
-              return (
-                <td
-                  key={colIndex}
-                  role={isFirstCell ? 'rowheader' : 'gridcell'}
-                  aria-colindex={colIndex + 1}
-                  tabIndex={isFocused ? 0 : -1}
-                  data-focused={isFocused ? 'true' : 'false'}
-                  {...treegridStyles.cell}
-                  p-trigger={{ focus: 'handleCellFocus', click: 'handleCellClick' }}
-                >
-                  {isFirstCell && hasChildren && (
-                    <span {...treegridStyles.expandIcon} aria-hidden='true'>
-                      {isExpanded ? '▼' : '▶'}
-                    </span>
-                  )}
-                  {String(cellValue)}
-                </td>
-              )
-            })}
+            {cells}
           </tr>
         ) as HTMLElement
-        
-        if (hasChildren) {
+
+        if (hasChildRows) {
           row.setAttribute('aria-expanded', isExpanded ? 'true' : 'false')
         }
-        
-        allRows.push(row)
-        let currentIndex = rowIndex + 1
-        
-        // Render children if expanded
-        if (hasChildren && isExpanded && rowData.children) {
-          rowData.children.forEach((child) => {
-            currentIndex = renderRow(child, level + 1, currentIndex)
-          })
-        }
-        
-        // Clean up parent expansion stack for this level
-        parentExpandedStack[level - 1] = undefined
-        
-        return currentIndex
+
+        return row
       }
-      
-      let currentIndex = 0
-      treegridData.forEach(rowData => {
-        currentIndex = renderRow(rowData, 1, currentIndex)
-      })
-      
+
+      const allRows: HTMLElement[] = []
+      const walkTree = (rows: TreegridRow[], level = 1, parentExpanded = true) => {
+        rows.forEach((rowData) => {
+          const row = renderRow(rowData, level)
+          if (!parentExpanded) {
+            row.setAttribute('hidden', '')
+          }
+          allRows.push(row)
+
+          if (rowData.children && rowData.children.length > 0) {
+            const isExpanded = expandedRows.has(rowData.id)
+            walkTree(rowData.children, level + 1, parentExpanded && isExpanded)
+          }
+        })
+      }
+
+      walkTree(treegridData)
       tbody.render(...allRows)
-      rows = getVisibleRows()
     }
-    
+
     return {
       handleKeydown(event: KeyboardEvent) {
         const visibleRows = getVisibleRows()
         if (visibleRows.length === 0) return
-        
+
         const currentRow = visibleRows[focusedRow]
         const cells = getCellsInRow(currentRow)
-        
+        const rowId = currentRow.getAttribute('data-row-id') || ''
+
         switch (event.key) {
           case 'ArrowRight':
             event.preventDefault()
-            if (hasChildren(focusedRow) && !isRowExpanded(focusedRow)) {
-              expandRow(focusedRow)
+            if (hasChildren(currentRow) && !isRowExpanded(currentRow)) {
+              toggleRow(currentRow, rowId)
             } else if (focusedCol < cells.length - 1) {
               focusedCol++
               updateFocus()
             }
             break
-            
+
           case 'ArrowLeft':
             event.preventDefault()
-            if (hasChildren(focusedRow) && isRowExpanded(focusedRow)) {
-              collapseRow(focusedRow)
+            if (hasChildren(currentRow) && isRowExpanded(currentRow)) {
+              toggleRow(currentRow, rowId)
             } else if (focusedCol > 0) {
               focusedCol--
               updateFocus()
             }
             break
-            
+
           case 'ArrowDown':
             event.preventDefault()
             if (focusedRow < visibleRows.length - 1) {
               focusedRow++
-              const newCells = getCellsInRow(visibleRows[focusedRow])
-              if (focusedCol >= newCells.length) {
-                focusedCol = newCells.length - 1
-              }
               updateFocus()
             }
             break
-            
+
           case 'ArrowUp':
             event.preventDefault()
             if (focusedRow > 0) {
               focusedRow--
-              const newCells = getCellsInRow(visibleRows[focusedRow])
-              if (focusedCol >= newCells.length) {
-                focusedCol = newCells.length - 1
-              }
               updateFocus()
             }
             break
-            
+
           case 'Home':
             event.preventDefault()
             if (event.ctrlKey) {
@@ -587,148 +435,40 @@ export const Treegrid = bElement<TreegridEvents>({
             }
             updateFocus()
             break
-            
+
           case 'End':
             event.preventDefault()
             if (event.ctrlKey) {
               focusedRow = visibleRows.length - 1
             } else {
-              const cells = getCellsInRow(visibleRows[focusedRow])
               focusedCol = cells.length - 1
             }
             updateFocus()
             break
-            
-          case 'PageDown':
-            event.preventDefault()
-            focusedRow = Math.min(focusedRow + 10, visibleRows.length - 1)
-            updateFocus()
-            break
-            
-          case 'PageUp':
-            event.preventDefault()
-            focusedRow = Math.max(focusedRow - 10, 0)
-            updateFocus()
-            break
-            
+
           case 'Enter':
             event.preventDefault()
-            if (hasChildren(focusedRow)) {
-              toggleRow(focusedRow)
-            }
-            break
-            
-          case ' ': // Space
-            if (event.shiftKey) {
-              event.preventDefault()
-              selectRow(focusedRow, false)
-            } else if (event.ctrlKey) {
-              event.preventDefault()
-              // Select column (if supported)
-            } else {
-              event.preventDefault()
-              selectRow(focusedRow, isMultiSelect)
+            if (hasChildren(currentRow)) {
+              toggleRow(currentRow, rowId)
             }
             break
         }
       },
-      
-      handleRowClick(event: { target: HTMLElement }) {
-        const row = event.target.closest('[role="row"]') as HTMLElement
-        if (!row) return
-        
-        const rowIndex = parseInt(row.getAttribute('data-row-index') || '0', 10)
-        const visibleRows = getVisibleRows()
-        const index = visibleRows.indexOf(row)
-        
-        if (index >= 0) {
-          focusedRow = index
-          focusedCol = 0
-          updateFocus()
-          
-          if (hasChildren(index)) {
-            toggleRow(index)
-          } else {
-            selectRow(index, isMultiSelect)
-          }
-        }
-      },
-      
-      handleCellFocus(event: { target: HTMLElement }) {
-        const cell = event.target
-        const row = cell.closest('[role="row"]') as HTMLElement
-        if (!row) return
-        
-        const visibleRows = getVisibleRows()
-        const rowIndex = visibleRows.indexOf(row)
-        const cells = getCellsInRow(row)
-        const colIndex = cells.indexOf(cell)
-        
-        if (rowIndex >= 0 && colIndex >= 0) {
-          focusedRow = rowIndex
-          focusedCol = colIndex
-        }
-      },
-      
-      handleCellClick(event: { target: HTMLElement }) {
-        const cell = event.target
-        const row = cell.closest('[role="row"]') as HTMLElement
-        if (!row) return
-        
-        const visibleRows = getVisibleRows()
-        const rowIndex = visibleRows.indexOf(row)
-        const cells = getCellsInRow(row)
-        const colIndex = cells.indexOf(cell)
-        
-        if (rowIndex >= 0 && colIndex >= 0) {
-          focusedRow = rowIndex
-          focusedCol = colIndex
-          updateFocus()
-        }
-      },
-      
+
       handleFocus() {
-        const visibleRows = getVisibleRows()
-        if (visibleRows.length === 0) return
-        
-        // Focus first cell or first selected row
-        if (selectedRows.size > 0) {
-          const firstSelected = Math.min(...Array.from(selectedRows))
-          if (firstSelected >= 0 && firstSelected < visibleRows.length) {
-            focusedRow = firstSelected
-          } else {
-            focusedRow = 0
-          }
-        } else {
-          focusedRow = 0
-        }
-        
+        focusedRow = 0
         focusedCol = 0
         updateFocus()
       },
-      
-      handleBlur() {
-        // Remove focus indicators
-        tbody?.querySelectorAll('[role="gridcell"], [role="rowheader"]').forEach(cell => {
-          cell.removeAttribute('data-focused')
-        })
-        tbody?.querySelectorAll('[role="row"]').forEach(row => {
-          row.removeAttribute('data-focused')
-        })
-      },
-      
+
       onConnected() {
         const dataAttr = host.getAttribute('data')
         const ariaLabel = host.getAttribute('aria-label')
-        
+
         if (ariaLabel) {
           treegrid?.setAttribute('aria-label', ariaLabel)
         }
-        
-        if (isMultiSelect) {
-          treegrid?.setAttribute('aria-multiselectable', 'true')
-        }
-        
+
         if (dataAttr) {
           try {
             treegridData = JSON.parse(dataAttr)
@@ -738,7 +478,7 @@ export const Treegrid = bElement<TreegridEvents>({
           }
         }
       },
-      
+
       onAttributeChanged({ name, newValue }) {
         if (name === 'data' && newValue) {
           try {
@@ -749,16 +489,70 @@ export const Treegrid = bElement<TreegridEvents>({
           }
         } else if (name === 'aria-label') {
           treegrid?.setAttribute('aria-label', newValue || '')
-        } else if (name === 'aria-multiselectable') {
-          const isMulti = newValue === 'true'
-          if (isMulti) {
-            treegrid?.setAttribute('aria-multiselectable', 'true')
-          } else {
-            treegrid?.removeAttribute('aria-multiselectable')
-          }
         }
       },
     }
+  },
+})
+
+// Stories - EXPORTED for testing/training
+export const emailInbox = story({
+  intent: 'E-mail inbox treegrid with threaded conversations',
+  template: () => (
+    <Treegrid
+      aria-label='E-mail Inbox'
+      data={JSON.stringify([
+        {
+          id: '1',
+          cells: ['Project Update', 'john@example.com', '2024-01-15'],
+          children: [
+            { id: '1-1', cells: ['Re: Project Update', 'jane@example.com', '2024-01-16'] },
+            { id: '1-2', cells: ['Re: Project Update', 'bob@example.com', '2024-01-17'] },
+          ],
+        },
+        {
+          id: '2',
+          cells: ['Meeting Notes', 'alice@example.com', '2024-01-14'],
+        },
+      ])}
+    >
+      <tr slot='headers' role='row'>
+        <th role='columnheader'>Subject</th>
+        <th role='columnheader'>From</th>
+        <th role='columnheader'>Date</th>
+      </tr>
+    </Treegrid>
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const treegrid = await findByAttribute('role', 'treegrid')
+
+    assert({
+      given: 'treegrid is rendered',
+      should: 'have accessible label',
+      actual: treegrid?.getAttribute('aria-label'),
+      expected: 'E-mail Inbox',
+    })
+  },
+})
+
+export const treegridAccessibility = story({
+  intent: 'Verify treegrid accessibility structure',
+  template: () => (
+    <Treegrid
+      aria-label='Test Treegrid'
+      data={JSON.stringify([
+        { id: '1', cells: ['Item 1', 'Value 1'] },
+        { id: '2', cells: ['Item 2', 'Value 2'] },
+      ])}
+    >
+      <tr slot='headers' role='row'>
+        <th role='columnheader'>Name</th>
+        <th role='columnheader'>Value</th>
+      </tr>
+    </Treegrid>
+  ),
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
   },
 })
 ```
@@ -766,7 +560,7 @@ export const Treegrid = bElement<TreegridEvents>({
 ## Plaited Integration
 
 - **Works with Shadow DOM**: Yes - treegrids can be used in bElement shadowDom
-- **Uses bElement built-ins**: Yes - `$` for querying, `render()` for dynamic content, `attr()` for attribute management, `p-trigger` for event handling
+- **Uses bElement built-ins**: `$`, `p-trigger`, `p-target`, `emit`, `render`, `attr`
 - **Requires external web API**: No - uses standard DOM APIs
 - **Cleanup required**: No - standard DOM elements handle their own lifecycle
 
@@ -774,47 +568,15 @@ export const Treegrid = bElement<TreegridEvents>({
 
 ### Navigation
 
-- **Enter**: 
-  - If focus is on first cell with `aria-expanded`, opens/closes child rows
-  - Otherwise, performs default action for the cell
-- **Tab**: Moves focus to next focusable element in row, or out of treegrid if last
-- **Right Arrow**:
-  - Collapsed row: Expands the row
-  - Expanded row or no children: Moves focus to first cell in row
-  - Right-most cell: Focus does not move
-  - Other cells: Moves focus one cell to the right
-- **Left Arrow**:
-  - Expanded row: Collapses the row
-  - Collapsed row or no children: Focus does not move
-  - First cell (if row focus supported): Moves focus to row
-  - Other cells: Moves focus one cell to the left
-- **Down Arrow**:
-  - Row focus: Moves focus one row down
-  - Cell focus: Moves focus one cell down
-- **Up Arrow**:
-  - Row focus: Moves focus one row up
-  - Cell focus: Moves focus one cell up
-- **Page Down**: Moves focus down multiple rows/cells
-- **Page Up**: Moves focus up multiple rows/cells
-- **Home**: 
-  - Row focus: Moves to first row
-  - Cell focus: Moves to first cell in row
-- **End**: 
-  - Row focus: Moves to last row
-  - Cell focus: Moves to last cell in row
+- **Enter**: If focus is on first cell with `aria-expanded`, opens/closes child rows
+- **Right Arrow**: Collapsed row: Expands the row. Expanded row: Moves focus to first cell
+- **Left Arrow**: Expanded row: Collapses the row. First cell: Focus does not move
+- **Down Arrow**: Moves focus one row/cell down
+- **Up Arrow**: Moves focus one row/cell up
+- **Home**: Moves to first row or first cell in row
+- **End**: Moves to last row or last cell in row
 - **Control + Home**: Moves to first row or first cell in column
 - **Control + End**: Moves to last row or last cell in column
-
-### Selection
-
-- **Control + Space**: 
-  - Row focus: Selects all cells in row
-  - Cell focus: Selects column
-- **Shift + Space**: 
-  - Row focus: Selects the row
-  - Cell focus: Selects the row
-- **Control + A**: Selects all cells
-- **Shift + Arrow keys**: Extends selection
 
 ## WAI-ARIA Roles, States, and Properties
 
@@ -829,30 +591,18 @@ export const Treegrid = bElement<TreegridEvents>({
 ### Optional
 
 - **aria-label** or **aria-labelledby**: Accessible name for treegrid
-- **aria-describedby**: References element providing description
-- **aria-multiselectable**: `true` for multi-select treegrids
 - **aria-expanded**: `true`/`false` on parent rows (not on end rows)
-- **aria-selected**: Selection state on rows or cells
 - **aria-level**: Level of row in hierarchy (1-based)
-- **aria-posinset**: Position of row within its set of siblings
-- **aria-setsize**: Total number of siblings in the set
-- **aria-colindex**: Column position
-- **aria-rowindex**: Row position
-- **aria-readonly**: `true` on cells or treegrid where editing is disabled
-- **aria-sort**: Sort state on column headers
+- **aria-selected**: Selection state on rows or cells
 
 ## Best Practices
 
-1. **Focusable cells** - All cells must be focusable or contain focusable elements
-2. **Navigation modes** - Support rows-first, cells-first, or cells-only modes
-3. **Expand/collapse** - Provide clear visual indicators for expandable rows
+1. **Use bElement** - Treegrids require complex state coordination
+2. **Use spread syntax** - `{...styles.x}` for applying styles
+3. **Focusable cells** - All cells must be focusable or contain focusable elements
 4. **Focus vs Selection** - Clearly distinguish between focus and selection visually
 5. **Level indicators** - Use `aria-level` to communicate hierarchy
-6. **Accessible names** - Always provide labels for treegrids
-7. **Selection model** - Use consistent selection attributes (`aria-selected`)
-8. **Keyboard shortcuts** - Support all standard keyboard interactions
-9. **Visual feedback** - Provide clear visual feedback for focus and selection states
-10. **Screen reader mode** - Ensure all important content is focusable (screen readers use application mode)
+6. **Use `$()` with `p-target`** - never use `querySelector` directly
 
 ## Accessibility Considerations
 
@@ -860,31 +610,6 @@ export const Treegrid = bElement<TreegridEvents>({
 - All cells must be focusable or contain focusable elements
 - Focus and selection must be visually distinct
 - Keyboard navigation enables efficient grid traversal
-- Proper ARIA attributes communicate structure and state
-- Expand/collapse state must be clearly communicated
-- Hierarchical structure must be clear to screen reader users
-
-## Treegrid Variants
-
-### Single-Select Treegrid
-- Only one row can be selected
-- Selection may follow focus
-- Common for navigation
-
-### Multi-Select Treegrid
-- Multiple rows can be selected
-- Selection independent of focus
-- Common for bulk actions
-
-### E-mail Thread Treegrid
-- Hierarchical message threads
-- Expand/collapse conversations
-- Select messages for actions
-
-### File System Treegrid
-- Hierarchical file structure
-- File details (size, date, type)
-- Expand/collapse folders
 
 ## Browser Compatibility
 
@@ -895,12 +620,9 @@ export const Treegrid = bElement<TreegridEvents>({
 | Safari | Full support |
 | Edge | Full support |
 
-**Note**: ARIA treegrid pattern has universal support. Ensure proper keyboard navigation implementation for all browsers.
-
 ## References
 
 - Source: [W3C ARIA Authoring Practices Guide - Treegrid Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/treegrid/)
 - MDN: [ARIA treegrid role](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/treegrid_role)
 - Related: [Tree View Pattern](./aria-treeview-pattern.md) - Similar hierarchical structure
 - Related: [Grid Pattern](./aria-grid-pattern.md) - Similar tabular structure
-- Related: [Table Pattern](./aria-table-pattern.md) - Static tabular structure

@@ -38,6 +38,15 @@ A tooltip is a popup that displays information related to an element when the el
 - Status information
 - Field validation messages
 
+## Pattern Philosophy
+
+This pattern is **training data** for the Plaited agent. The examples below train the agent's understanding of how to implement this pattern correctly.
+
+- bElements/FunctionalTemplates are defined locally in stories (NOT exported)
+- Only stories are exported (required for testing/training)
+- Styles are always in separate `*.css.ts` files
+- Use spread syntax `{...styles.x}` for applying styles
+
 ## Implementation
 
 ### Vanilla JavaScript
@@ -63,35 +72,27 @@ A tooltip is a popup that displays information related to an element when the el
 >
   Save your changes
 </div>
-
-<!-- Using Popover API (modern) -->
-<button type="button" popovertarget="save-tooltip">
-  💾
-</button>
-<div id="save-tooltip" popover role="tooltip">
-  Save your changes
-</div>
 ```
 
 ```javascript
 // ARIA Tooltip implementation
 const trigger = document.getElementById('save-button')
 const tooltip = document.getElementById('save-tooltip')
-let showTimeout: ReturnType<typeof setTimeout> | undefined
-let hideTimeout: ReturnType<typeof setTimeout> | undefined
+let showTimeout
+let hideTimeout
 
 function showTooltip() {
   if (hideTimeout) {
     clearTimeout(hideTimeout)
     hideTimeout = undefined
   }
-  
+
   if (showTimeout) return
-  
+
   showTimeout = setTimeout(() => {
     tooltip.hidden = false
     showTimeout = undefined
-  }, 500) // 500ms delay
+  }, 500)
 }
 
 function hideTooltip() {
@@ -99,39 +100,24 @@ function hideTooltip() {
     clearTimeout(showTimeout)
     showTimeout = undefined
   }
-  
-  if (hideTimeout) return
-  
+
   hideTimeout = setTimeout(() => {
     tooltip.hidden = true
     hideTimeout = undefined
-  }, 100) // Small delay to allow moving to tooltip
+  }, 100)
 }
 
-// Show on hover
 trigger.addEventListener('mouseenter', showTooltip)
 trigger.addEventListener('mouseleave', hideTooltip)
-
-// Show on focus
 trigger.addEventListener('focus', showTooltip)
 trigger.addEventListener('blur', hideTooltip)
 
-// Hide on Escape
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !tooltip.hidden) {
     hideTooltip()
     trigger.focus()
   }
 })
-
-// Keep tooltip visible when hovering over it
-tooltip.addEventListener('mouseenter', () => {
-  if (hideTimeout) {
-    clearTimeout(hideTimeout)
-    hideTimeout = undefined
-  }
-})
-tooltip.addEventListener('mouseleave', hideTooltip)
 ```
 
 ### Plaited Adaptation
@@ -140,44 +126,27 @@ tooltip.addEventListener('mouseleave', hideTooltip)
 
 1. **Native HTML `title` attribute** for simple cases (Functional Template)
 2. **bElement** for ARIA tooltips with timing and positioning
-3. **Native Popover API** with bElement wrapper for modern browsers
 
-#### Simple Tooltip (Native title attribute - Functional Template)
+**File Structure:**
 
-```typescript
-// tooltip.stories.tsx
-import type { FT, Children } from 'plaited/ui'
-
-const TooltipButton: FT<{
-  title: string
-  children?: Children
-}> = ({ title, children, ...attrs }) => (
-  <button
-    type='button'
-    title={title}
-    {...attrs}
-  >
-    {children}
-  </button>
-)
-
-export const simpleTooltip = story({
-  intent: 'Button with native tooltip',
-  template: () => (
-    <TooltipButton title='Save your changes'>
-      💾
-    </TooltipButton>
-  ),
-})
+```
+tooltip/
+  tooltip.css.ts        # Styles (createStyles) - ALWAYS separate
+  tooltip.stories.tsx   # FT/bElement + stories (imports from css.ts)
 ```
 
-#### ARIA Tooltip (bElement)
+#### tooltip.css.ts
 
 ```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
+// tooltip.css.ts
+import { createStyles, createHostStyles } from 'plaited'
 
-const tooltipStyles = createStyles({
+export const hostStyles = createHostStyles({
+  display: 'inline-block',
+  position: 'relative',
+})
+
+export const styles = createStyles({
   container: {
     position: 'relative',
     display: 'inline-block',
@@ -196,46 +165,70 @@ const tooltipStyles = createStyles({
     whiteSpace: 'nowrap',
     zIndex: 1000,
     pointerEvents: 'none',
-    opacity: {
-      $default: 0,
-      '[data-visible="true"]': 1,
-    },
-    visibility: {
-      $default: 'hidden',
-      '[data-visible="true"]': 'visible',
-    },
-    transition: 'opacity 0.2s, visibility 0.2s',
-    '&::after': {
-      content: '""',
-      position: 'absolute',
-      insetBlockStart: '100%',
-      insetInlineStart: '50%',
-      transform: 'translateX(-50%)',
-      border: '6px solid transparent',
-      borderTopColor: '#333',
-    },
+  },
+  tooltipHidden: {
+    opacity: 0,
+    visibility: 'hidden',
+  },
+  tooltipVisible: {
+    opacity: 1,
+    visibility: 'visible',
+  },
+  arrow: {
+    position: 'absolute',
+    insetBlockStart: '100%',
+    insetInlineStart: '50%',
+    transform: 'translateX(-50%)',
+    border: '6px solid transparent',
+    borderBlockStartColor: '#333',
   },
 })
+```
 
+#### tooltip.stories.tsx
+
+```typescript
+// tooltip.stories.tsx
+import type { FT, Children } from 'plaited/ui'
+import { bElement } from 'plaited/ui'
+import { story } from 'plaited/testing'
+import { styles, hostStyles } from './tooltip.css.ts'
+
+// Types - defined locally
 type TooltipEvents = {
   show: { trigger: HTMLElement }
   hide: { trigger: HTMLElement }
 }
 
-export const Tooltip = bElement<TooltipEvents>({
-  tag: 'accessible-tooltip',
-  observedAttributes: ['delay', 'position'],
+// FunctionalTemplate for simple tooltip - defined locally, NOT exported
+const SimpleTooltipButton: FT<{
+  title: string
+  children?: Children
+}> = ({ title, children, ...attrs }) => (
+  <button type='button' title={title} {...attrs}>
+    {children}
+  </button>
+)
+
+// bElement for ARIA tooltip - defined locally, NOT exported
+const Tooltip = bElement<TooltipEvents>({
+  tag: 'pattern-tooltip',
+  observedAttributes: ['delay'],
+  hostStyles,
   shadowDom: (
-    <div {...tooltipStyles.container}>
-      <slot name='trigger'></slot>
+    <div {...styles.container}>
+      <slot
+        name='trigger'
+        p-trigger={{ mouseenter: 'handleMouseEnter', mouseleave: 'handleMouseLeave', focus: 'handleFocus', blur: 'handleBlur' }}
+      ></slot>
       <div
         p-target='tooltip'
         role='tooltip'
-        data-visible='false'
-        hidden
-        {...tooltipStyles.tooltip}
+        {...styles.tooltip}
+        {...styles.tooltipHidden}
       >
         <slot name='content'></slot>
+        <span {...styles.arrow}></span>
       </div>
     </div>
   ),
@@ -245,11 +238,11 @@ export const Tooltip = bElement<TooltipEvents>({
     let showTimeout: ReturnType<typeof setTimeout> | undefined
     let hideTimeout: ReturnType<typeof setTimeout> | undefined
     let delay = 500
-    
+
     const getTrigger = (): HTMLElement | null => {
       const slot = root.querySelector('slot[name="trigger"]') as HTMLSlotElement
       if (!slot) return null
-      
+
       const assignedNodes = slot.assignedNodes()
       for (const node of assignedNodes) {
         if (node.nodeType === Node.ELEMENT_NODE) {
@@ -258,120 +251,95 @@ export const Tooltip = bElement<TooltipEvents>({
       }
       return null
     }
-    
+
     const showTooltip = () => {
       if (!tooltip || !trigger) return
-      
+
       if (hideTimeout) {
         clearTimeout(hideTimeout)
         hideTimeout = undefined
       }
-      
+
       if (showTimeout) return
-      
+
       showTimeout = setTimeout(() => {
         if (!tooltip || !trigger) return
-        
-        // Set aria-describedby on trigger
+
         const tooltipId = tooltip.id || `tooltip-${Math.random().toString(36).substr(2, 9)}`
         if (!tooltip.id) {
           tooltip.id = tooltipId
         }
         trigger.setAttribute('aria-describedby', tooltipId)
-        
-        tooltip.attr('hidden', null)
-        tooltip.attr('data-visible', 'true')
-        
+
+        tooltip.attr('class', `${styles.tooltip.classNames.join(' ')} ${styles.tooltipVisible.classNames.join(' ')}`)
+
         emit({ type: 'show', detail: { trigger } })
-        
+
         showTimeout = undefined
       }, delay)
     }
-    
+
     const hideTooltip = () => {
       if (!tooltip || !trigger) return
-      
+
       if (showTimeout) {
         clearTimeout(showTimeout)
         showTimeout = undefined
       }
-      
+
       if (hideTimeout) return
-      
+
       hideTimeout = setTimeout(() => {
         if (!tooltip || !trigger) return
-        
-        tooltip.attr('hidden', '')
-        tooltip.attr('data-visible', 'false')
+
+        tooltip.attr('class', `${styles.tooltip.classNames.join(' ')} ${styles.tooltipHidden.classNames.join(' ')}`)
         trigger.removeAttribute('aria-describedby')
-        
+
         emit({ type: 'hide', detail: { trigger } })
-        
+
         hideTimeout = undefined
       }, 100)
     }
-    
-    const handleTriggerMouseEnter = () => {
-      showTooltip()
-    }
-    
-    const handleTriggerMouseLeave = () => {
-      hideTooltip()
-    }
-    
-    const handleTriggerFocus = () => {
-      showTooltip()
-    }
-    
-    const handleTriggerBlur = () => {
-      hideTooltip()
-    }
-    
-    const handleTooltipMouseEnter = () => {
-      // Keep tooltip visible when hovering over it
-      if (hideTimeout) {
-        clearTimeout(hideTimeout)
-        hideTimeout = undefined
-      }
-    }
-    
-    const handleTooltipMouseLeave = () => {
-      hideTooltip()
-    }
-    
+
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && tooltip?.attr('data-visible') === 'true') {
-        hideTooltip()
-        trigger?.focus()
+      if (event.key === 'Escape') {
+        const tooltipClass = tooltip?.attr('class') || ''
+        if (tooltipClass.includes(styles.tooltipVisible.classNames[0])) {
+          hideTooltip()
+          trigger?.focus()
+        }
       }
     }
-    
+
     return {
+      handleMouseEnter() {
+        showTooltip()
+      },
+
+      handleMouseLeave() {
+        hideTooltip()
+      },
+
+      handleFocus() {
+        showTooltip()
+      },
+
+      handleBlur() {
+        hideTooltip()
+      },
+
       onConnected() {
         trigger = getTrigger()
         if (!trigger) return
-        
+
         const delayAttr = host.getAttribute('delay')
         if (delayAttr) {
           delay = Number(delayAttr) || 500
         }
-        
-        // Set up event listeners on trigger
-        trigger.addEventListener('mouseenter', handleTriggerMouseEnter)
-        trigger.addEventListener('mouseleave', handleTriggerMouseLeave)
-        trigger.addEventListener('focus', handleTriggerFocus)
-        trigger.addEventListener('blur', handleTriggerBlur)
-        
-        // Set up event listeners on tooltip
-        if (tooltip) {
-          tooltip.addEventListener('mouseenter', handleTooltipMouseEnter)
-          tooltip.addEventListener('mouseleave', handleTooltipMouseLeave)
-        }
-        
-        // Global Escape key handler
+
         document.addEventListener('keydown', handleEscape)
       },
-      
+
       onDisconnected() {
         if (showTimeout) {
           clearTimeout(showTimeout)
@@ -379,22 +347,10 @@ export const Tooltip = bElement<TooltipEvents>({
         if (hideTimeout) {
           clearTimeout(hideTimeout)
         }
-        
-        if (trigger) {
-          trigger.removeEventListener('mouseenter', handleTriggerMouseEnter)
-          trigger.removeEventListener('mouseleave', handleTriggerMouseLeave)
-          trigger.removeEventListener('focus', handleTriggerFocus)
-          trigger.removeEventListener('blur', handleTriggerBlur)
-        }
-        
-        if (tooltip) {
-          tooltip.removeEventListener('mouseenter', handleTooltipMouseEnter)
-          tooltip.removeEventListener('mouseleave', handleTooltipMouseLeave)
-        }
-        
+
         document.removeEventListener('keydown', handleEscape)
       },
-      
+
       onAttributeChanged({ name, newValue }) {
         if (name === 'delay') {
           delay = newValue ? Number(newValue) || 500 : 500
@@ -403,153 +359,27 @@ export const Tooltip = bElement<TooltipEvents>({
     }
   },
 })
-```
 
-#### Tooltip with Native Popover API (bElement)
-
-```typescript
-export const PopoverTooltip = bElement<TooltipEvents>({
-  tag: 'popover-tooltip',
-  observedAttributes: ['delay'],
-  shadowDom: (
-    <div {...tooltipStyles.container}>
-      <slot name='trigger'></slot>
-      <div
-        p-target='tooltip'
-        popover='auto'
-        role='tooltip'
-        {...tooltipStyles.tooltip}
-      >
-        <slot name='content'></slot>
-      </div>
-    </div>
+// Stories - EXPORTED for testing/training
+export const simpleTooltip = story({
+  intent: 'Button with native title tooltip',
+  template: () => (
+    <SimpleTooltipButton title='Save your changes'>💾</SimpleTooltipButton>
   ),
-  bProgram({ $, host, root }) {
-    const tooltip = $<HTMLElement>('tooltip')[0]
-    let trigger: HTMLElement | null = null
-    let showTimeout: ReturnType<typeof setTimeout> | undefined
-    let delay = 500
-    
-    const getTrigger = (): HTMLElement | null => {
-      const slot = root.querySelector('slot[name="trigger"]') as HTMLSlotElement
-      if (!slot) return null
-      
-      const assignedNodes = slot.assignedNodes()
-      for (const node of assignedNodes) {
-        if (node.nodeType === Node.ELEMENT_NODE) {
-          return node as HTMLElement
-        }
-      }
-      return null
-    }
-    
-    const showTooltip = () => {
-      if (!tooltip || !trigger) return
-      
-      if (showTimeout) return
-      
-      showTimeout = setTimeout(() => {
-        if (!tooltip || !trigger) return
-        
-        const tooltipId = tooltip.id || `tooltip-${Math.random().toString(36).substr(2, 9)}`
-        if (!tooltip.id) {
-          tooltip.id = tooltipId
-        }
-        trigger.setAttribute('aria-describedby', tooltipId)
-        trigger.setAttribute('popovertarget', tooltipId)
-        
-        tooltip.showPopover()
-        
-        showTimeout = undefined
-      }, delay)
-    }
-    
-    const hideTooltip = () => {
-      if (!tooltip || !trigger) return
-      
-      if (showTimeout) {
-        clearTimeout(showTimeout)
-        showTimeout = undefined
-      }
-      
-      tooltip.hidePopover()
-      trigger.removeAttribute('aria-describedby')
-      trigger.removeAttribute('popovertarget')
-    }
-    
-    const handleTriggerMouseEnter = () => {
-      showTooltip()
-    }
-    
-    const handleTriggerMouseLeave = () => {
-      hideTooltip()
-    }
-    
-    const handleTriggerFocus = () => {
-      showTooltip()
-    }
-    
-    const handleTriggerBlur = () => {
-      hideTooltip()
-    }
-    
-    const handlePopoverToggle = (event: Event) => {
-      const e = event as ToggleEvent
-      if (e.newState === 'closed') {
-        trigger?.removeAttribute('aria-describedby')
-        trigger?.removeAttribute('popovertarget')
-      }
-    }
-    
-    return {
-      onConnected() {
-        trigger = getTrigger()
-        if (!trigger) return
-        
-        const delayAttr = host.getAttribute('delay')
-        if (delayAttr) {
-          delay = Number(delayAttr) || 500
-        }
-        
-        trigger.addEventListener('mouseenter', handleTriggerMouseEnter)
-        trigger.addEventListener('mouseleave', handleTriggerMouseLeave)
-        trigger.addEventListener('focus', handleTriggerFocus)
-        trigger.addEventListener('blur', handleTriggerBlur)
-        
-        // Handle popover dismiss events
-        tooltip?.addEventListener('beforetoggle', handlePopoverToggle)
-      },
-      
-      onDisconnected() {
-        if (showTimeout) {
-          clearTimeout(showTimeout)
-        }
-        
-        if (trigger) {
-          trigger.removeEventListener('mouseenter', handleTriggerMouseEnter)
-          trigger.removeEventListener('mouseleave', handleTriggerMouseLeave)
-          trigger.removeEventListener('focus', handleTriggerFocus)
-          trigger.removeEventListener('blur', handleTriggerBlur)
-        }
-        
-        tooltip?.removeEventListener('beforetoggle', handlePopoverToggle)
-      },
-      
-      onAttributeChanged({ name, newValue }) {
-        if (name === 'delay') {
-          delay = newValue ? Number(newValue) || 500 : 500
-        }
-      },
-    }
+  play: async ({ findByRole, assert }) => {
+    const button = await findByRole('button')
+
+    assert({
+      given: 'button with title',
+      should: 'have title attribute',
+      actual: button?.getAttribute('title'),
+      expected: 'Save your changes',
+    })
   },
 })
-```
 
-#### Tooltip Example Usage
-
-```typescript
-export const tooltipExample = story({
-  intent: 'Icon button with tooltip',
+export const ariaTooltip = story({
+  intent: 'Icon button with ARIA tooltip',
   template: () => (
     <Tooltip delay='500'>
       <button slot='trigger' type='button' aria-label='Save'>
@@ -558,34 +388,39 @@ export const tooltipExample = story({
       <span slot='content'>Save your changes</span>
     </Tooltip>
   ),
+  play: async ({ findByAttribute, assert }) => {
+    const tooltip = await findByAttribute('role', 'tooltip')
+
+    assert({
+      given: 'tooltip is rendered',
+      should: 'have tooltip role',
+      actual: tooltip?.getAttribute('role'),
+      expected: 'tooltip',
+    })
+  },
 })
 
-export const formFieldTooltip = story({
-  intent: 'Form field with help text tooltip',
+export const tooltipAccessibility = story({
+  intent: 'Verify tooltip accessibility structure',
   template: () => (
-    <div>
-      <label htmlFor='username'>Username</label>
-      <Tooltip delay='300'>
-        <input
-          slot='trigger'
-          id='username'
-          type='text'
-          aria-describedby='username-tooltip'
-        />
-        <span slot='content' id='username-tooltip'>
-          Username must be 3-20 characters and contain only letters, numbers, and underscores.
-        </span>
-      </Tooltip>
-    </div>
+    <Tooltip delay='300'>
+      <button slot='trigger' type='button' aria-label='Help'>
+        ?
+      </button>
+      <span slot='content'>Click for help</span>
+    </Tooltip>
   ),
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
+  },
 })
 ```
 
 ## Plaited Integration
 
 - **Works with Shadow DOM**: Yes - tooltips can be used in bElement shadowDom
-- **Uses bElement built-ins**: Yes - `$` for querying, `attr()` for attribute management
-- **Requires external web API**: No - uses standard DOM APIs (or Popover API for modern browsers)
+- **Uses bElement built-ins**: `$`, `p-trigger`, `p-target`, `emit`, `attr`
+- **Requires external web API**: No - uses standard DOM APIs
 - **Cleanup required**: Yes - timers and event listeners must be cleaned up in `onDisconnected`
 
 ## Keyboard Interaction
@@ -611,23 +446,15 @@ export const formFieldTooltip = story({
 - **id**: Tooltip element should have an ID for `aria-describedby` reference
 - **hidden**: Tooltip should be hidden when not visible
 
-### Native HTML
-
-- **title attribute**: Provides basic tooltip functionality (limited styling and control)
-- **popover attribute**: Modern browsers support native popover API for tooltips
-
 ## Best Practices
 
-1. **Delay appearance** - Show tooltip after a small delay (300-500ms) to avoid accidental triggers
-2. **Quick dismissal** - Hide tooltip quickly when mouse leaves or focus is lost
-3. **Escape key** - Always support Escape to dismiss tooltip
-4. **Positioning** - Position tooltip near trigger without obscuring content
-5. **Accessible names** - Ensure trigger has accessible name (aria-label or visible text)
-6. **No focusable content** - Don't include focusable elements in tooltips
-7. **Native title** - Consider native `title` attribute for simple cases
-8. **Popover API** - Use native Popover API when browser support allows
-9. **Cleanup** - Always cleanup timers and event listeners
-10. **Contextual information** - Keep tooltip text concise and relevant
+1. **Use FunctionalTemplates** for simple tooltips (native `title`)
+2. **Use bElement** for ARIA tooltips with custom behavior
+3. **Use spread syntax** - `{...styles.x}` for applying styles
+4. **Delay appearance** - Show tooltip after a small delay (300-500ms)
+5. **Quick dismissal** - Hide tooltip quickly when mouse leaves or focus is lost
+6. **Escape key** - Always support Escape to dismiss tooltip
+7. **Use `$()` with `p-target`** - never use `querySelector` directly
 
 ## Accessibility Considerations
 
@@ -635,56 +462,18 @@ export const formFieldTooltip = story({
 - Keyboard users can access tooltips via focus
 - Escape key provides quick dismissal
 - Focus management ensures focus stays on trigger
-- Tooltips don't interfere with page navigation
-- Native `title` attribute works with screen readers but has limitations
-- Popover API provides better accessibility features
-
-## Tooltip Variants
-
-### Simple Tooltip
-
-- Native `title` attribute
-- Basic functionality
-- Limited styling control
-
-### ARIA Tooltip
-
-- Full control over appearance and behavior
-- Customizable delay and positioning
-- Better accessibility support
-
-### Popover Tooltip
-
-- Uses native Popover API
-- Modern browser support
-- Built-in accessibility features
-
-### Form Field Tooltip
-
-- Help text for form inputs
-- Validation messages
-- Contextual guidance
 
 ## Browser Compatibility
 
-| Browser | Native title | ARIA Tooltip | Popover API |
-|---------|--------------|--------------|-------------|
-| Chrome | Full support | Full support | 114+ |
-| Firefox | Full support | Full support | 114+ |
-| Safari | Full support | Full support | 17+ |
-| Edge | Full support | Full support | 114+ |
-
-**Note**:
-
-- Native `title` attribute has universal support
-- ARIA tooltip pattern has universal support
-- Popover API has broad support as of 2025
+| Browser | Native title | ARIA Tooltip |
+|---------|--------------|--------------|
+| Chrome | Full support | Full support |
+| Firefox | Full support | Full support |
+| Safari | Full support | Full support |
+| Edge | Full support | Full support |
 
 ## References
 
 - Source: [W3C ARIA Authoring Practices Guide - Tooltip Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tooltip/)
 - MDN: [ARIA tooltip role](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/tooltip_role)
 - MDN: [HTML title attribute](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/title)
-- MDN: [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API)
-- Related: [Dialog Pattern](./aria-dialog-modal-pattern.md) - For tooltips with focusable content
-- Related: [Popover Pattern](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API) - Modern alternative

@@ -2,7 +2,7 @@
 
 ## Overview
 
-A link provides an interactive reference to a resource. The target resource can be either external or local i.e., either outside or within the current page or application.
+A link provides an interactive reference to a resource. The target resource can be either external or local, i.e., either outside or within the current page or application.
 
 **Key Characteristics:**
 
@@ -13,7 +13,7 @@ A link provides an interactive reference to a resource. The target resource can 
 - Can contain text or graphics
 - Supports various link types (navigation, download, external, etc.)
 
-**Important Note**: Authors are strongly encouraged to use a native host link element, `<a>` element with an `href` attribute. Applying the `link` role to an element will not cause browsers to enhance the element with standard link behaviors, such as navigation to the link target or context menu actions. When using the `link` role, providing these features is the author's responsibility.
+**Native HTML First:** Authors are strongly encouraged to use a native `<a>` element with an `href` attribute. Applying the `link` role to an element will not cause browsers to enhance the element with standard link behaviors. When using the `link` role, providing these features is the author's responsibility.
 
 ## Use Cases
 
@@ -27,6 +27,15 @@ A link provides an interactive reference to a resource. The target resource can 
 - Skip navigation links
 - Breadcrumb navigation
 - Related content links
+
+## Pattern Philosophy
+
+This pattern is **training data** for the Plaited agent. The examples below train the agent's understanding of how to implement this pattern correctly.
+
+- bElements/FunctionalTemplates are defined locally in stories (NOT exported)
+- Only stories are exported (required for testing/training)
+- Styles are always in separate `*.css.ts` files
+- Use spread syntax `{...styles.x}` for applying styles
 
 ## Implementation
 
@@ -47,11 +56,6 @@ A link provides an interactive reference to a resource. The target resource can 
 
 <!-- Email link -->
 <a href="mailto:contact@example.com">Contact Us</a>
-
-<!-- Link with ARIA role (only when native <a> cannot be used) -->
-<span role="link" tabindex="0" onclick="window.location.href='/page'">
-  Custom Link
-</span>
 ```
 
 ```javascript
@@ -70,256 +74,59 @@ customLink.addEventListener('keydown', (e) => {
 
 ### Plaited Adaptation
 
-**Important**: In Plaited, links are implemented as **Functional Templates (FT)** in stories files, not as bElements. They use native `<a>` elements without Shadow DOM. Links can be used inside bElements' shadowDom, but the link templates themselves are simple functional components.
+**File Structure:**
 
-#### Basic Link
-
-```typescript
-// link.stories.tsx
-import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { linkStyles } from './link.css.ts'
-
-const Link: FT<{
-  href: string
-  children?: Children
-}> = ({ href, children, ...attrs }) => (
-  <a
-    href={href}
-    {...attrs}
-    {...joinStyles(linkStyles.link)}
-  >
-    {children}
-  </a>
-)
-
-export const basicLink = story({
-  intent: 'Basic navigation link',
-  template: () => <Link href='/about'>About Us</Link>,
-})
+```
+link/
+  link.css.ts        # Styles (createStyles) - ALWAYS separate
+  link.stories.tsx   # FT + stories (imports from css.ts)
 ```
 
-#### External Link
-
-```typescript
-import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { linkStyles } from './link.css.ts'
-
-const ExternalLink: FT<{
-  href: string
-  children?: Children
-  'aria-label'?: string
-}> = ({ href, children, 'aria-label': ariaLabel, ...attrs }) => (
-  <a
-    href={href}
-    target='_blank'
-    rel='noopener noreferrer'
-    aria-label={ariaLabel}
-    {...attrs}
-    {...joinStyles(linkStyles.link, linkStyles.external)}
-  >
-    {children}
-    <span aria-hidden='true' {...linkStyles.externalIndicator}>
-      {' '}(opens in new tab)
-    </span>
-  </a>
-)
-
-export const externalLink = story({
-  intent: 'External link with new tab indicator',
-  template: () => (
-    <ExternalLink href='https://example.com' aria-label='Example website (opens in new tab)'>
-      Visit Example
-    </ExternalLink>
-  ),
-})
-```
-
-#### Download Link
-
-```typescript
-import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { linkStyles } from './link.css.ts'
-
-const DownloadLink: FT<{
-  href: string
-  download?: string | boolean
-  children?: Children
-}> = ({ href, download, children, ...attrs }) => (
-  <a
-    href={href}
-    download={download}
-    {...attrs}
-    {...joinStyles(linkStyles.link, linkStyles.download)}
-  >
-    {children}
-  </a>
-)
-
-export const downloadLink = story({
-  intent: 'Download link',
-  template: () => (
-    <DownloadLink href='/document.pdf' download>
-      Download PDF
-    </DownloadLink>
-  ),
-})
-```
-
-#### Email Link
-
-```typescript
-import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { linkStyles } from './link.css.ts'
-
-const EmailLink: FT<{
-  email: string
-  subject?: string
-  body?: string
-  children?: Children
-}> = ({ email, subject, body, children, ...attrs }) => {
-  const params = new URLSearchParams()
-  if (subject) params.set('subject', subject)
-  if (body) params.set('body', body)
-  const href = `mailto:${email}${params.toString() ? `?${params.toString()}` : ''}`
-  
-  return (
-    <a
-      href={href}
-      {...attrs}
-      {...joinStyles(linkStyles.link)}
-    >
-      {children || email}
-    </a>
-  )
-}
-
-export const emailLink = story({
-  intent: 'Email link with subject',
-  template: () => (
-    <EmailLink email='contact@example.com' subject='Inquiry'>
-      Contact Us
-    </EmailLink>
-  ),
-})
-```
-
-#### Skip Navigation Link
-
-```typescript
-import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { linkStyles } from './link.css.ts'
-
-const SkipLink: FT<{
-  href: string
-  children?: Children
-}> = ({ href, children = 'Skip to main content', ...attrs }) => (
-  <a
-    href={href}
-    {...attrs}
-    {...joinStyles(linkStyles.skipLink)}
-  >
-    {children}
-  </a>
-)
-
-export const skipLink = story({
-  intent: 'Skip navigation link for accessibility',
-  template: () => <SkipLink href='#main-content' />,
-})
-```
-
-#### Link with Icon
-
-```typescript
-import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { linkStyles } from './link.css.ts'
-
-const LinkWithIcon: FT<{
-  href: string
-  icon?: Children
-  children?: Children
-  'aria-label'?: string
-}> = ({ href, icon, children, 'aria-label': ariaLabel, ...attrs }) => (
-  <a
-    href={href}
-    aria-label={ariaLabel}
-    {...attrs}
-    {...joinStyles(linkStyles.link, linkStyles.withIcon)}
-  >
-    {icon && <span aria-hidden='true' {...linkStyles.icon}>{icon}</span>}
-    {children}
-  </a>
-)
-
-export const linkWithIcon = story({
-  intent: 'Link with icon',
-  template: () => (
-    <LinkWithIcon href='/settings' icon='⚙️' aria-label='Settings'>
-      Settings
-    </LinkWithIcon>
-  ),
-})
-```
-
-#### Link Styling Example
+#### link.css.ts
 
 ```typescript
 // link.css.ts
-import { createStyles } from 'plaited/ui'
+import { createStyles } from 'plaited'
 
-export const linkStyles = createStyles({
+export const styles = createStyles({
   link: {
-    color: {
-      $default: 'blue',
-      ':hover': 'darkblue',
-      ':visited': 'purple',
-      ':focus': 'darkblue',
-      ':active': 'red',
-    },
-    textDecoration: {
-      $default: 'none',
-      ':hover': 'underline',
-      ':focus': 'underline',
-    },
-    outline: {
-      $default: 'none',
-      ':focus': '2px solid blue',
-      ':focus-visible': '2px solid blue',
-    },
+    color: '#007bff',
+    textDecoration: 'none',
+    cursor: 'pointer',
+  },
+  linkHover: {
+    textDecoration: 'underline',
+  },
+  linkVisited: {
+    color: '#6c757d',
   },
   external: {
-    '&::after': {
-      content: '↗',
-      marginLeft: '0.25em',
-    },
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.25em',
   },
   externalIndicator: {
-    fontSize: '0.875em',
-    color: 'gray',
+    fontSize: '0.75em',
+    color: '#6c757d',
   },
   download: {
-    '&::before': {
-      content: '⬇ ',
-    },
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.25em',
   },
   skipLink: {
     position: 'absolute',
     insetBlockStart: '-40px',
     insetInlineStart: '0',
-    backgroundColor: 'blue',
+    backgroundColor: '#007bff',
     color: 'white',
-    padding: '8px',
+    padding: '8px 16px',
     textDecoration: 'none',
     zIndex: 100,
-    ':focus': {
-      insetBlockStart: '0',
-    },
+    borderRadius: '0 0 4px 0',
+  },
+  skipLinkFocused: {
+    insetBlockStart: '0',
   },
   withIcon: {
     display: 'inline-flex',
@@ -332,94 +139,249 @@ export const linkStyles = createStyles({
 })
 ```
 
-#### Links in bElement shadowDom
-
-Links can be used within bElements' shadowDom templates:
+#### link.stories.tsx
 
 ```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
-import { Link } from './link.stories.tsx'
-
-const navStyles = createStyles({
-  nav: {
-    display: 'flex',
-    gap: '1rem',
-    padding: '1rem',
-  },
-})
-
-export const Navigation = bElement({
-  tag: 'site-navigation',
-  shadowDom: (
-    <nav aria-label='Main navigation' {...navStyles.nav}>
-      <Link href='/'>Home</Link>
-      <Link href='/about'>About</Link>
-      <Link href='/contact'>Contact</Link>
-    </nav>
-  ),
-  bProgram() {
-    return {}
-  },
-})
-```
-
-#### Custom Link with Role (Not Recommended)
-
-**Note**: Only use `role="link"` when a native `<a>` element cannot be used. This requires manual keyboard handling and navigation logic.
-
-```typescript
+// link.stories.tsx
 import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { linkStyles } from './link.css.ts'
+import { story } from 'plaited/testing'
+import { styles } from './link.css.ts'
 
-const CustomLink: FT<{
+// FunctionalTemplate for basic link - defined locally, NOT exported
+const Link: FT<{
+  href: string
+  children?: Children
+}> = ({ href, children, ...attrs }) => (
+  <a href={href} {...attrs} {...styles.link}>
+    {children}
+  </a>
+)
+
+// FunctionalTemplate for external link - defined locally, NOT exported
+const ExternalLink: FT<{
   href: string
   children?: Children
   'aria-label'?: string
 }> = ({ href, children, 'aria-label': ariaLabel, ...attrs }) => (
-  <span
-    role='link'
-    tabIndex={0}
-    data-href={href}
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
     aria-label={ariaLabel}
     {...attrs}
-    {...joinStyles(linkStyles.link, linkStyles.custom)}
-    p-trigger={{ click: 'navigate', keydown: 'handleKeydown' }}
+    {...styles.link}
+    {...styles.external}
   >
     {children}
-  </span>
+    <span aria-hidden="true" {...styles.externalIndicator}>
+      (opens in new tab)
+    </span>
+  </a>
 )
 
-// Usage in bElement
-bElement({
-  tag: 'custom-link-wrapper',
-  shadowDom: (
-    <CustomLink
-      p-target='link'
-      href='/page'
-      p-trigger={{ click: 'navigate', keydown: 'handleKeydown' }}
+// FunctionalTemplate for download link - defined locally, NOT exported
+const DownloadLink: FT<{
+  href: string
+  download?: string | boolean
+  children?: Children
+}> = ({ href, download = true, children, ...attrs }) => (
+  <a href={href} download={download} {...attrs} {...styles.link} {...styles.download}>
+    <span aria-hidden="true">⬇</span>
+    {children}
+  </a>
+)
+
+// FunctionalTemplate for email link - defined locally, NOT exported
+const EmailLink: FT<{
+  email: string
+  subject?: string
+  body?: string
+  children?: Children
+}> = ({ email, subject, body, children, ...attrs }) => {
+  const params = new URLSearchParams()
+  if (subject) params.set('subject', subject)
+  if (body) params.set('body', body)
+  const href = `mailto:${email}${params.toString() ? `?${params.toString()}` : ''}`
+
+  return (
+    <a href={href} {...attrs} {...styles.link}>
+      {children ?? email}
+    </a>
+  )
+}
+
+// FunctionalTemplate for skip link - defined locally, NOT exported
+const SkipLink: FT<{
+  href: string
+  children?: Children
+}> = ({ href, children = 'Skip to main content', ...attrs }) => (
+  <a href={href} {...attrs} {...styles.skipLink}>
+    {children}
+  </a>
+)
+
+// FunctionalTemplate for link with icon - defined locally, NOT exported
+const LinkWithIcon: FT<{
+  href: string
+  icon?: Children
+  children?: Children
+  'aria-label'?: string
+}> = ({ href, icon, children, 'aria-label': ariaLabel, ...attrs }) => (
+  <a href={href} aria-label={ariaLabel} {...attrs} {...styles.link} {...styles.withIcon}>
+    {icon && <span aria-hidden="true" {...styles.icon}>{icon}</span>}
+    {children}
+  </a>
+)
+
+// Stories - EXPORTED for testing/training
+export const basicLink = story({
+  intent: 'Display a basic navigation link',
+  template: () => <Link href="/about">About Us</Link>,
+  play: async ({ findByRole, assert }) => {
+    const link = await findByRole('link')
+
+    assert({
+      given: 'basic link is rendered',
+      should: 'have href attribute',
+      actual: link?.getAttribute('href'),
+      expected: '/about',
+    })
+
+    assert({
+      given: 'basic link is rendered',
+      should: 'have link text',
+      actual: link?.textContent?.trim(),
+      expected: 'About Us',
+    })
+  },
+})
+
+export const externalLink = story({
+  intent: 'Display an external link with new tab indicator',
+  template: () => (
+    <ExternalLink
+      href="https://example.com"
+      aria-label="Example website (opens in new tab)"
     >
-      Custom Link
-    </CustomLink>
+      Visit Example
+    </ExternalLink>
   ),
-  bProgram({ $, host }) {
-    const link = $('link')[0]
-    
-    return {
-      navigate() {
-        const href = link?.getAttribute('data-href')
-        if (href) {
-          window.location.href = href
-        }
-      },
-      handleKeydown(event: KeyboardEvent) {
-        if (event.key === 'Enter') {
-          event.preventDefault()
-          this.navigate()
-        }
-      },
-    }
+  play: async ({ findByRole, assert }) => {
+    const link = await findByRole('link')
+
+    assert({
+      given: 'external link is rendered',
+      should: 'have target _blank',
+      actual: link?.getAttribute('target'),
+      expected: '_blank',
+    })
+
+    assert({
+      given: 'external link is rendered',
+      should: 'have rel noopener noreferrer',
+      actual: link?.getAttribute('rel'),
+      expected: 'noopener noreferrer',
+    })
+  },
+})
+
+export const downloadLink = story({
+  intent: 'Display a download link for file downloads',
+  template: () => (
+    <DownloadLink href="/document.pdf" download="report.pdf">
+      Download Report
+    </DownloadLink>
+  ),
+  play: async ({ findByRole, assert }) => {
+    const link = await findByRole('link')
+
+    assert({
+      given: 'download link is rendered',
+      should: 'have download attribute',
+      actual: link?.hasAttribute('download'),
+      expected: true,
+    })
+  },
+})
+
+export const emailLink = story({
+  intent: 'Display an email link with subject',
+  template: () => (
+    <EmailLink email="contact@example.com" subject="Inquiry">
+      Contact Us
+    </EmailLink>
+  ),
+  play: async ({ findByRole, assert }) => {
+    const link = await findByRole('link')
+
+    assert({
+      given: 'email link is rendered',
+      should: 'have mailto href',
+      actual: link?.getAttribute('href')?.startsWith('mailto:'),
+      expected: true,
+    })
+  },
+})
+
+export const skipNavigationLink = story({
+  intent: 'Display a skip navigation link for accessibility',
+  template: () => (
+    <div>
+      <SkipLink href="#main-content" />
+      <nav style="padding: 1rem; background: #f0f0f0;">
+        <a href="/">Home</a> | <a href="/about">About</a>
+      </nav>
+      <main id="main-content" style="padding: 1rem;">
+        <h1>Main Content</h1>
+        <p>Focus the skip link by pressing Tab from the top of the page.</p>
+      </main>
+    </div>
+  ),
+  play: async ({ findByRole, assert }) => {
+    const link = await findByRole('link', { name: 'Skip to main content' })
+
+    assert({
+      given: 'skip link is rendered',
+      should: 'have fragment href',
+      actual: link?.getAttribute('href'),
+      expected: '#main-content',
+    })
+  },
+})
+
+export const linkWithIcon = story({
+  intent: 'Display a link with an icon',
+  template: () => (
+    <LinkWithIcon href="/settings" icon="⚙️" aria-label="Settings">
+      Settings
+    </LinkWithIcon>
+  ),
+  play: async ({ findByRole, assert }) => {
+    const link = await findByRole('link')
+
+    assert({
+      given: 'link with icon is rendered',
+      should: 'have accessible label',
+      actual: link?.getAttribute('aria-label'),
+      expected: 'Settings',
+    })
+  },
+})
+
+export const linkVariants = story({
+  intent: 'Display various link types for reference',
+  template: () => (
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
+      <Link href="/page">Internal Link</Link>
+      <ExternalLink href="https://example.com">External Link</ExternalLink>
+      <DownloadLink href="/file.pdf">Download Link</DownloadLink>
+      <EmailLink email="test@example.com">Email Link</EmailLink>
+      <a href="tel:+1234567890" {...styles.link}>Phone Link: +1 (234) 567-890</a>
+      <a href="#section" {...styles.link}>Fragment Link (#section)</a>
+    </div>
+  ),
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
   },
 })
 ```
@@ -429,7 +391,7 @@ bElement({
 - **Works with Shadow DOM**: Yes - links can be used in bElement shadowDom
 - **Uses bElement built-ins**: Not typically - links are simple presentational elements
 - **Requires external web API**: No - uses native HTML `<a>` element
-- **Cleanup required**: No - standard DOM elements handle their own lifecycle
+- **Cleanup required**: No
 
 ## Keyboard Interaction
 
@@ -438,7 +400,7 @@ bElement({
 - **Tab**: Moves focus to the next focusable element
 - **Shift + Tab**: Moves focus to the previous focusable element
 
-**Note**: Native `<a>` elements handle keyboard interaction automatically. Custom links with `role="link"` require manual keyboard handling.
+**Note**: Native `<a>` elements handle keyboard interaction automatically.
 
 ## WAI-ARIA Roles, States, and Properties
 
@@ -450,13 +412,13 @@ bElement({
 
 - **aria-label**: Provides accessible name when link text is not descriptive
 - **aria-describedby**: References element that provides additional description
-- **aria-current**: Indicates current page/location (e.g., `aria-current="page"` in breadcrumbs)
-- **aria-disabled**: Indicates link is disabled (use with caution - disabled links are generally not recommended)
+- **aria-current**: Indicates current page/location (e.g., `aria-current="page"`)
+- **aria-disabled**: Indicates link is disabled (use with caution)
 
 ### HTML Attributes
 
-- **href**: Required for navigation (or `href="#"` for JavaScript-only links)
-- **target**: Where to display the linked URL (`_blank`, `_parent`, `_top`, `_self`, `_unfencedTop`)
+- **href**: Required for navigation
+- **target**: Where to display the linked URL (`_blank`, `_self`, etc.)
 - **rel**: Link relationship (`noopener`, `noreferrer`, `nofollow`, etc.)
 - **download**: Indicates link should download resource
 - **hreflang**: Language of linked resource
@@ -465,15 +427,15 @@ bElement({
 ## Best Practices
 
 1. **Use native `<a>` elements** - Strongly preferred over `role="link"`
-2. **Functional Templates** - Implement links as FTs in stories
-3. **Descriptive link text** - Avoid "click here" or "read more"
-4. **External link indicators** - Clearly indicate when links open in new tabs
-5. **Security** - Use `rel="noopener noreferrer"` for external links with `target="_blank"`
-6. **Skip links** - Provide skip navigation links for keyboard users
-7. **Focus styles** - Ensure visible focus indicators for keyboard navigation
-8. **Current page indication** - Use `aria-current="page"` in navigation
-9. **Download links** - Use `download` attribute for file downloads
-10. **Email/Phone links** - Use appropriate protocols (`mailto:`, `tel:`)
+2. **Use FunctionalTemplates** - Implement links as FTs in stories
+3. **Use spread syntax** - `{...styles.x}` for applying styles
+4. **Descriptive link text** - Avoid "click here" or "read more"
+5. **External link indicators** - Clearly indicate when links open in new tabs
+6. **Security** - Use `rel="noopener noreferrer"` for external links with `target="_blank"`
+7. **Skip links** - Provide skip navigation links for keyboard users
+8. **Focus styles** - Ensure visible focus indicators for keyboard navigation
+9. **Current page indication** - Use `aria-current="page"` in navigation
+10. **Download links** - Use `download` attribute for file downloads
 
 ## Accessibility Considerations
 
@@ -482,51 +444,8 @@ bElement({
 - Focus indicators must be visible for keyboard navigation
 - Link text should be descriptive out of context
 - External links should be clearly indicated
-- Disabled links are generally not recommended (use buttons or remove links)
 - Skip navigation links improve keyboard accessibility
 - Links in navigation should indicate current page
-
-## Link Types and Usage
-
-### Navigation Links
-
-- Standard page navigation
-- Use in main navigation, breadcrumbs, pagination
-- Can use `aria-current="page"` for current page
-
-### External Links
-
-- Links to other websites
-- Should include `rel="noopener noreferrer"`
-- Should indicate "opens in new tab" visually and in aria-label
-
-### Download Links
-
-- Links that download files
-- Use `download` attribute
-- Can specify filename: `download="filename.pdf"`
-
-### Fragment Links
-
-- Links to sections within same page
-- Use `href="#section-id"`
-- Smooth scrolling can be added with CSS
-
-### Email Links
-
-- Use `mailto:` protocol
-- Can include subject and body: `mailto:email?subject=Hello&body=Message`
-
-### Telephone Links
-
-- Use `tel:` protocol
-- Format: `tel:+1234567890`
-
-### JavaScript Links
-
-- Links that trigger JavaScript actions
-- Use `href="#"` or `href="javascript:void(0)"`
-- Consider using buttons instead for actions
 
 ## Browser Compatibility
 
@@ -537,12 +456,9 @@ bElement({
 | Safari | Full support |
 | Edge | Full support |
 
-**Note**: Native HTML `<a>` elements have universal support. Custom links with `role="link"` require JavaScript for functionality.
-
 ## References
 
 - Source: [W3C ARIA Authoring Practices Guide - Link Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/link/)
 - MDN: [HTML a element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/a)
 - MDN: [ARIA link role](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/link_role)
 - WCAG: [Link Purpose (In Context)](https://www.w3.org/WAI/WCAG21/Understanding/link-purpose-in-context.html)
-- WCAG: [Link Purpose (Link Only)](https://www.w3.org/WAI/WCAG21/Understanding/link-purpose-link-only.html)

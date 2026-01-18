@@ -11,11 +11,7 @@ There are two types of checkboxes: dual-state checkboxes toggle between two choi
 - **Keyboard interaction**: Space key toggles state
 - **Form association**: Can be form-associated for native form integration
 
-**Common Use Cases for Tri-State:**
-
-- Software installers with grouped options
-- Select all/none controls
-- Hierarchical selection (parent/child relationships)
+**Native HTML First:** Consider using native `<input type="checkbox">` which provides built-in keyboard support and form integration. Use custom checkboxes only when you need tri-state or custom styling beyond CSS capabilities.
 
 ## Use Cases
 
@@ -26,24 +22,33 @@ There are two types of checkboxes: dual-state checkboxes toggle between two choi
 - Grouped options with parent control
 - Filter controls
 
+## Pattern Philosophy
+
+This pattern is **training data** for the Plaited agent. The examples below train the agent's understanding of how to implement this pattern correctly.
+
+- bElements/FunctionalTemplates are defined locally in stories (NOT exported)
+- Only stories are exported (required for testing/training)
+- Styles are always in separate `*.css.ts` files
+- Use spread syntax `{...styles.x}` for applying styles
+
 ## Implementation
 
 ### Vanilla JavaScript
 
 ```html
-<!-- Dual-state checkbox -->
+<!-- Native checkbox (preferred) -->
+<input type="checkbox" id="terms" aria-label="Accept terms">
+<label for="terms">Accept terms and conditions</label>
+
+<!-- Custom dual-state checkbox -->
 <div role="checkbox" aria-checked="false" tabindex="0" aria-label="Accept terms">
   Accept terms and conditions
 </div>
 
 <!-- Tri-state checkbox -->
-<div role="checkbox" aria-checked="mixed" tabindex="0" aria-label="Select all options">
+<div role="checkbox" aria-checked="mixed" tabindex="0" aria-label="Select all">
   Select all
 </div>
-
-<!-- Native checkbox -->
-<input type="checkbox" id="terms" aria-label="Accept terms">
-<label for="terms">Accept terms and conditions</label>
 ```
 
 ```javascript
@@ -61,319 +66,265 @@ checkbox.addEventListener('keydown', (e) => {
     toggleCheckbox(e.target)
   }
 })
-
-// Tri-state toggle
-function toggleTriState(checkbox) {
-  const currentState = checkbox.getAttribute('aria-checked')
-  let newState
-  if (currentState === 'true') {
-    newState = 'false'
-  } else if (currentState === 'mixed') {
-    newState = 'true'
-  } else {
-    newState = 'mixed'
-  }
-  checkbox.setAttribute('aria-checked', newState)
-}
 ```
 
 ### Plaited Adaptation
 
-**Important**: In Plaited, checkboxes can be implemented as:
+**File Structure:**
 
-1. **Functional Templates (FT)** for static checkboxes in stories
-2. **bElements** for form-associated checkboxes that need form integration
-3. **bElements** for tri-state checkboxes that need complex state management
-
-#### Static Checkbox (Functional Template)
-
-```typescript
-// checkbox.stories.tsx
-import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { checkboxStyles } from './checkbox.css.ts'
-
-const Checkbox: FT<{
-  'aria-checked': 'true' | 'false' | 'mixed'
-  'aria-label'?: string
-  disabled?: boolean
-  children?: Children
-}> = ({
-  'aria-checked': ariaChecked,
-  'aria-label': ariaLabel,
-  disabled,
-  children,
-  ...attrs
-}) => (
-  <div
-    role='checkbox'
-    aria-checked={ariaChecked}
-    aria-label={ariaLabel}
-    tabIndex={disabled ? -1 : 0}
-    {...attrs}
-    {...joinStyles(
-      checkboxStyles.checkbox,
-      ariaChecked === 'true' && checkboxStyles.checked,
-      ariaChecked === 'mixed' && checkboxStyles.mixed,
-      disabled && checkboxStyles.disabled
-    )}
-  >
-    {children}
-  </div>
-)
-
-export const checkboxStory = story({
-  intent: 'Display a checkbox in checked state',
-  template: () => (
-    <Checkbox aria-checked='true' aria-label='Accept terms'>
-      Accept terms and conditions
-    </Checkbox>
-  ),
-  play: async ({ accessibilityCheck }) => {
-    await accessibilityCheck({})
-  },
-})
+```
+checkbox/
+  checkbox.css.ts        # Styles (createStyles) - ALWAYS separate
+  checkbox.stories.tsx   # FT/bElement + stories (imports from css.ts)
 ```
 
-#### Form-Associated Checkbox (bElement)
+#### checkbox.css.ts
 
 ```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles, createHostStyles } from 'plaited/ui'
-import { isTypeOf } from 'plaited/utils'
+// checkbox.css.ts
+import { createStyles, createHostStyles } from 'plaited'
 
-const checkboxStyles = createStyles({
+export const hostStyles = createHostStyles({
+  display: 'inline-block',
+})
+
+export const styles = createStyles({
   checkbox: {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '0.5rem',
     cursor: 'pointer',
-    padding: '0.5rem',
+    padding: '0.25rem',
+  },
+  checkboxDisabled: {
+    cursor: 'not-allowed',
+    opacity: 0.5,
   },
   symbol: {
-    inlineSize: '16px',
-    blockSize: '16px',
+    inlineSize: '18px',
+    blockSize: '18px',
     border: '2px solid #333',
     borderRadius: '3px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: {
-      $default: 'transparent',
-      '[aria-checked="true"]': '#007bff',
-      '[aria-checked="mixed"]': '#007bff',
-    },
+    backgroundColor: 'transparent',
+    flexShrink: 0,
+  },
+  symbolChecked: {
+    backgroundColor: '#007bff',
+    borderColor: '#007bff',
+  },
+  symbolMixed: {
+    backgroundColor: '#007bff',
+    borderColor: '#007bff',
   },
   checkmark: {
-    display: {
-      $default: 'none',
-      '[aria-checked="true"]': 'block',
-    },
     color: 'white',
     fontSize: '12px',
+    display: 'none',
+  },
+  checkmarkVisible: {
+    display: 'block',
   },
   minus: {
-    display: {
-      $default: 'none',
-      '[aria-checked="mixed"]': 'block',
-    },
     color: 'white',
     fontSize: '12px',
+    display: 'none',
+  },
+  minusVisible: {
+    display: 'block',
+  },
+  label: {
+    userSelect: 'none',
   },
 })
+```
 
-const hostStyles = createHostStyles({
-  display: 'inline-block',
-})
+#### checkbox.stories.tsx
 
-type CheckboxEvents = {
-  checked: boolean
-  change: { checked: boolean; value: string | null }
+```typescript
+// checkbox.stories.tsx
+import type { FT, Children } from 'plaited/ui'
+import { bElement } from 'plaited/ui'
+import { story } from 'plaited/testing'
+import { styles, hostStyles } from './checkbox.css.ts'
+
+// FunctionalTemplate for static checkbox - defined locally, NOT exported
+const StaticCheckbox: FT<{
+  checked?: boolean
+  mixed?: boolean
+  disabled?: boolean
+  'aria-label'?: string
+  children?: Children
+}> = ({
+  checked,
+  mixed,
+  disabled,
+  'aria-label': ariaLabel,
+  children,
+  ...attrs
+}) => {
+  const ariaChecked = mixed ? 'mixed' : checked ? 'true' : 'false'
+
+  return (
+    <div
+      role="checkbox"
+      aria-checked={ariaChecked}
+      aria-label={ariaLabel}
+      aria-disabled={disabled ? 'true' : undefined}
+      tabIndex={disabled ? -1 : 0}
+      {...attrs}
+      {...styles.checkbox}
+      {...(disabled ? styles.checkboxDisabled : {})}
+    >
+      <span
+        {...styles.symbol}
+        {...(checked ? styles.symbolChecked : {})}
+        {...(mixed ? styles.symbolMixed : {})}
+      >
+        <span {...styles.checkmark} {...(checked && !mixed ? styles.checkmarkVisible : {})}>✓</span>
+        <span {...styles.minus} {...(mixed ? styles.minusVisible : {})}>−</span>
+      </span>
+      <span {...styles.label}>{children}</span>
+    </div>
+  )
 }
 
-export const FormCheckbox = bElement<CheckboxEvents>({
-  tag: 'form-checkbox',
-  observedAttributes: ['checked', 'disabled', 'value'],
+// bElement for interactive checkbox - defined locally, NOT exported
+const Checkbox = bElement({
+  tag: 'pattern-checkbox',
+  observedAttributes: ['checked', 'disabled'],
   formAssociated: true,
   hostStyles,
   shadowDom: (
     <div
-      p-target='checkbox'
-      role='checkbox'
-      aria-checked='false'
+      p-target="checkbox"
+      role="checkbox"
+      aria-checked="false"
       tabIndex={0}
-      {...checkboxStyles.checkbox}
       p-trigger={{ click: 'toggle', keydown: 'handleKeydown' }}
+      {...styles.checkbox}
     >
-      <div
-        p-target='symbol'
-        {...checkboxStyles.symbol}
-      >
-        <span {...checkboxStyles.checkmark}>✓</span>
-        <span {...checkboxStyles.minus}>−</span>
-      </div>
-      <slot></slot>
+      <span p-target="symbol" {...styles.symbol}>
+        <span p-target="checkmark" {...styles.checkmark}>✓</span>
+      </span>
+      <span {...styles.label}>
+        <slot></slot>
+      </span>
     </div>
   ),
-  bProgram({ $, host, internals, root, trigger, emit }) {
+  bProgram({ $, host, internals, emit }) {
     const checkbox = $('checkbox')[0]
     const symbol = $('symbol')[0]
+    const checkmark = $('checkmark')[0]
     let checked = false
 
     const updateState = (newChecked: boolean) => {
       checked = newChecked
       checkbox?.attr('aria-checked', checked ? 'true' : 'false')
-      symbol?.attr('aria-checked', checked ? 'true' : 'false')
-      
-      // Update form value
+
+      // Update visual state
       if (checked) {
-        internals.setFormValue('on', host.getAttribute('value') || 'checked')
-        internals.states.add('checked')
+        symbol?.attr('class', `${styles.symbol.classNames.join(' ')} ${styles.symbolChecked.classNames.join(' ')}`)
+        checkmark?.attr('class', `${styles.checkmark.classNames.join(' ')} ${styles.checkmarkVisible.classNames.join(' ')}`)
       } else {
-        internals.setFormValue('off')
-        internals.states.delete('checked')
+        symbol?.attr('class', styles.symbol.classNames.join(' '))
+        checkmark?.attr('class', styles.checkmark.classNames.join(' '))
       }
-      
-      // Update host attribute
+
+      // Update form value
+      internals.setFormValue(checked ? 'on' : null)
       host.toggleAttribute('checked', checked)
-      
-      trigger({ type: 'checked', detail: checked })
-      emit({
-        type: 'change',
-        detail: {
-          checked,
-          value: host.getAttribute('value'),
-        },
-      })
+
+      emit({ type: 'change', detail: { checked } })
     }
 
     return {
       toggle() {
-        if (internals.states.has('disabled')) return
+        if (host.hasAttribute('disabled')) return
         updateState(!checked)
       },
       handleKeydown(event: KeyboardEvent) {
-        if (event.key === ' ' && !internals.states.has('disabled')) {
+        if (event.key === ' ' && !host.hasAttribute('disabled')) {
           event.preventDefault()
-          checkbox?.click()
+          updateState(!checked)
         }
       },
       onAttributeChanged({ name, newValue }) {
         if (name === 'checked') {
-          const isChecked = isTypeOf<string>(newValue, 'string')
+          const isChecked = newValue !== null
           if (isChecked !== checked) {
             updateState(isChecked)
           }
         }
         if (name === 'disabled') {
-          const isDisabled = isTypeOf<string>(newValue, 'string')
-          if (isDisabled) {
-            internals.states.add('disabled')
-            checkbox?.attr('tabIndex', '-1')
-          } else {
-            internals.states.delete('disabled')
-            checkbox?.attr('tabIndex', '0')
-          }
+          const isDisabled = newValue !== null
+          checkbox?.attr('tabIndex', isDisabled ? '-1' : '0')
+          checkbox?.attr('class', isDisabled
+            ? `${styles.checkbox.classNames.join(' ')} ${styles.checkboxDisabled.classNames.join(' ')}`
+            : styles.checkbox.classNames.join(' ')
+          )
         }
       },
       onConnected() {
-        // Initialize from attributes
         if (host.hasAttribute('checked')) {
-          checked = true
           updateState(true)
         }
-        if (host.hasAttribute('disabled')) {
-          internals.states.add('disabled')
-          checkbox?.attr('tabIndex', '-1')
-        }
-        
-        // Set accessible label from slot content or aria-label
-        const label = host.getAttribute('aria-label') || 
-                     host.textContent?.trim() || 
-                     'Checkbox'
-        checkbox?.attr('aria-label', label)
       },
     }
   },
 })
-```
 
-#### Tri-State Checkbox (bElement)
-
-```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
-
-const triStateStyles = createStyles({
-  checkbox: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    cursor: 'pointer',
-  },
-  symbol: {
-    inlineSize: '16px',
-    blockSize: '16px',
-    border: '2px solid #333',
-    borderRadius: '3px',
-    backgroundColor: {
-      $default: 'transparent',
-      '[aria-checked="true"]': '#007bff',
-      '[aria-checked="mixed"]': '#007bff',
-    },
-  },
-  checkmark: {
-    display: {
-      $default: 'none',
-      '[aria-checked="true"]': 'block',
-    },
-  },
-  minus: {
-    display: {
-      $default: 'none',
-      '[aria-checked="mixed"]': 'block',
-    },
-  },
-})
-
-type TriStateCheckboxEvents = {
-  stateChange: { state: 'true' | 'false' | 'mixed' }
-}
-
-export const TriStateCheckbox = bElement<TriStateCheckboxEvents>({
-  tag: 'tri-state-checkbox',
+// bElement for tri-state checkbox - defined locally, NOT exported
+const TriStateCheckbox = bElement({
+  tag: 'pattern-tri-state-checkbox',
   observedAttributes: ['aria-checked'],
+  hostStyles,
   shadowDom: (
     <div
-      p-target='checkbox'
-      role='checkbox'
-      aria-checked='false'
+      p-target="checkbox"
+      role="checkbox"
+      aria-checked="false"
       tabIndex={0}
       p-trigger={{ click: 'toggle', keydown: 'handleKeydown' }}
-      {...triStateStyles.checkbox}
+      {...styles.checkbox}
     >
-      <div
-        p-target='symbol'
-        {...triStateStyles.symbol}
-      >
-        <span {...triStateStyles.checkmark}>✓</span>
-        <span {...triStateStyles.minus}>−</span>
-      </div>
-      <slot></slot>
+      <span p-target="symbol" {...styles.symbol}>
+        <span p-target="checkmark" {...styles.checkmark}>✓</span>
+        <span p-target="minus" {...styles.minus}>−</span>
+      </span>
+      <span {...styles.label}>
+        <slot></slot>
+      </span>
     </div>
   ),
-  bProgram({ $, host, trigger, emit }) {
+  bProgram({ $, host, emit }) {
     const checkbox = $('checkbox')[0]
     const symbol = $('symbol')[0]
+    const checkmark = $('checkmark')[0]
+    const minus = $('minus')[0]
     let state: 'true' | 'false' | 'mixed' = 'false'
 
     const updateState = (newState: 'true' | 'false' | 'mixed') => {
       state = newState
       checkbox?.attr('aria-checked', state)
-      symbol?.attr('aria-checked', state)
       host.setAttribute('aria-checked', state)
-      
-      trigger({ type: 'stateChange', detail: { state } })
+
+      // Reset visual states
+      symbol?.attr('class', styles.symbol.classNames.join(' '))
+      checkmark?.attr('class', styles.checkmark.classNames.join(' '))
+      minus?.attr('class', styles.minus.classNames.join(' '))
+
+      // Apply new visual state
+      if (state === 'true') {
+        symbol?.attr('class', `${styles.symbol.classNames.join(' ')} ${styles.symbolChecked.classNames.join(' ')}`)
+        checkmark?.attr('class', `${styles.checkmark.classNames.join(' ')} ${styles.checkmarkVisible.classNames.join(' ')}`)
+      } else if (state === 'mixed') {
+        symbol?.attr('class', `${styles.symbol.classNames.join(' ')} ${styles.symbolMixed.classNames.join(' ')}`)
+        minus?.attr('class', `${styles.minus.classNames.join(' ')} ${styles.minusVisible.classNames.join(' ')}`)
+      }
+
       emit({ type: 'stateChange', detail: { state } })
     }
 
@@ -381,9 +332,9 @@ export const TriStateCheckbox = bElement<TriStateCheckboxEvents>({
       if (state === 'false') {
         updateState('true')
       } else if (state === 'true') {
-        updateState('mixed')
-      } else {
         updateState('false')
+      } else {
+        updateState('true')
       }
     }
 
@@ -399,160 +350,138 @@ export const TriStateCheckbox = bElement<TriStateCheckboxEvents>({
       },
       onAttributeChanged({ name, newValue }) {
         if (name === 'aria-checked' && newValue) {
-          const newState = newValue as 'true' | 'false' | 'mixed'
-          if (newState !== state) {
-            updateState(newState)
+          const validStates = ['true', 'false', 'mixed'] as const
+          if (validStates.includes(newValue as typeof validStates[number])) {
+            updateState(newValue as 'true' | 'false' | 'mixed')
           }
         }
       },
       onConnected() {
-        const attrValue = host.getAttribute('aria-checked')
-        if (attrValue === 'true' || attrValue === 'mixed') {
-          updateState(attrValue as 'true' | 'mixed')
+        const initialState = host.getAttribute('aria-checked')
+        if (initialState === 'true' || initialState === 'mixed') {
+          updateState(initialState)
         }
       },
     }
   },
 })
-```
 
-#### Checkbox Group with Tri-State Parent
+// Stories - EXPORTED for testing/training
+export const uncheckedCheckbox = story({
+  intent: 'Display an unchecked checkbox in its default state',
+  template: () => (
+    <Checkbox>Accept terms and conditions</Checkbox>
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const checkbox = await findByAttribute('p-target', 'checkbox')
 
-```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
-import { FormCheckbox } from './form-checkbox'
-
-const groupStyles = createStyles({
-  group: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.5rem',
-    padding: '1rem',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-  },
-  label: {
-    fontWeight: 'bold',
-    marginBottom: '0.5rem',
+    assert({
+      given: 'checkbox is rendered',
+      should: 'be unchecked initially',
+      actual: checkbox?.getAttribute('aria-checked'),
+      expected: 'false',
+    })
   },
 })
 
-type CheckboxGroupEvents = {
-  groupChange: { allChecked: boolean; someChecked: boolean; checkedCount: number }
-}
+export const checkedCheckbox = story({
+  intent: 'Display a checkbox in its checked state',
+  template: () => (
+    <Checkbox checked>Remember me</Checkbox>
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const checkbox = await findByAttribute('p-target', 'checkbox')
 
-export const CheckboxGroup = bElement<CheckboxGroupEvents>({
-  tag: 'checkbox-group',
-  shadowDom: (
-    <div
-      p-target='group'
-      role='group'
-      aria-labelledby='group-label'
-      {...groupStyles.group}
-    >
-      <div
-        p-target='label'
-        id='group-label'
-        {...groupStyles.label}
-      >
-        <slot name='label'>Install Options</slot>
-      </div>
-      <TriStateCheckbox
-        p-target='select-all'
-        p-trigger={{ stateChange: 'handleSelectAllChange' }}
-      >
-        <slot name='select-all-label'>Select all</slot>
-      </TriStateCheckbox>
-      <slot name='checkboxes'></slot>
+    assert({
+      given: 'checkbox has checked attribute',
+      should: 'be checked',
+      actual: checkbox?.getAttribute('aria-checked'),
+      expected: 'true',
+    })
+  },
+})
+
+export const disabledCheckbox = story({
+  intent: 'Display a disabled checkbox that cannot be toggled',
+  template: () => (
+    <Checkbox disabled>Unavailable option</Checkbox>
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const checkbox = await findByAttribute('p-target', 'checkbox')
+
+    assert({
+      given: 'checkbox is disabled',
+      should: 'have tabIndex -1',
+      actual: checkbox?.getAttribute('tabIndex'),
+      expected: '-1',
+    })
+  },
+})
+
+export const toggleCheckbox = story({
+  intent: 'Demonstrate checkbox toggle behavior with click interaction',
+  template: () => (
+    <Checkbox>Click to toggle</Checkbox>
+  ),
+  play: async ({ findByAttribute, assert, fireEvent }) => {
+    const checkbox = await findByAttribute('p-target', 'checkbox')
+
+    assert({
+      given: 'checkbox is rendered',
+      should: 'be unchecked initially',
+      actual: checkbox?.getAttribute('aria-checked'),
+      expected: 'false',
+    })
+
+    if (checkbox) await fireEvent(checkbox, 'click')
+
+    assert({
+      given: 'checkbox is clicked',
+      should: 'become checked',
+      actual: checkbox?.getAttribute('aria-checked'),
+      expected: 'true',
+    })
+
+    if (checkbox) await fireEvent(checkbox, 'click')
+
+    assert({
+      given: 'checkbox is clicked again',
+      should: 'become unchecked',
+      actual: checkbox?.getAttribute('aria-checked'),
+      expected: 'false',
+    })
+  },
+})
+
+export const triStateCheckbox = story({
+  intent: 'Tri-state checkbox for select-all functionality with mixed state',
+  template: () => (
+    <TriStateCheckbox aria-checked="mixed">Select all items</TriStateCheckbox>
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const checkbox = await findByAttribute('p-target', 'checkbox')
+
+    assert({
+      given: 'tri-state checkbox is rendered with mixed',
+      should: 'have aria-checked="mixed"',
+      actual: checkbox?.getAttribute('aria-checked'),
+      expected: 'mixed',
+    })
+  },
+})
+
+export const staticCheckboxes = story({
+  intent: 'Static FunctionalTemplate checkboxes for non-interactive display',
+  template: () => (
+    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+      <StaticCheckbox checked={false}>Unchecked</StaticCheckbox>
+      <StaticCheckbox checked>Checked</StaticCheckbox>
+      <StaticCheckbox mixed>Mixed (partial selection)</StaticCheckbox>
+      <StaticCheckbox disabled>Disabled</StaticCheckbox>
     </div>
   ),
-  bProgram({ $, emit }) {
-    const group = $('group')[0]
-    const selectAll = $('select-all')[0]
-    let checkboxes: HTMLElement[] = []
-
-    const getCheckboxStates = () => {
-      const states = checkboxes.map((cb) => 
-        cb.getAttribute('aria-checked') === 'true'
-      )
-      const checkedCount = states.filter(Boolean).length
-      const allChecked = checkedCount === checkboxes.length
-      const someChecked = checkedCount > 0 && checkedCount < checkboxes.length
-      
-      return { allChecked, someChecked, checkedCount }
-    }
-
-    const updateSelectAllState = () => {
-      const { allChecked, someChecked } = getCheckboxStates()
-      let newState: 'true' | 'false' | 'mixed' = 'false'
-      
-      if (allChecked) {
-        newState = 'true'
-      } else if (someChecked) {
-        newState = 'mixed'
-      }
-      
-      selectAll?.attr('aria-checked', newState)
-    }
-
-    const setAllCheckboxes = (checked: boolean) => {
-      checkboxes.forEach((cb) => {
-        cb.setAttribute('aria-checked', checked ? 'true' : 'false')
-        // Trigger change event on each checkbox
-        cb.dispatchEvent(new CustomEvent('change', { detail: { checked } }))
-      })
-      updateSelectAllState()
-    }
-
-    return {
-      handleSelectAllChange(event: CustomEvent) {
-        const state = event.detail.state as 'true' | 'false' | 'mixed'
-        
-        if (state === 'true') {
-          setAllCheckboxes(true)
-        } else if (state === 'false') {
-          setAllCheckboxes(false)
-        } else if (state === 'mixed') {
-          // In some implementations, restore previous partial state
-          // For simplicity, this example checks all
-          setAllCheckboxes(true)
-        }
-        
-        const { allChecked, someChecked, checkedCount } = getCheckboxStates()
-        emit({
-          type: 'groupChange',
-          detail: { allChecked, someChecked, checkedCount },
-        })
-      },
-      handleCheckboxChange() {
-        updateSelectAllState()
-        const { allChecked, someChecked, checkedCount } = getCheckboxStates()
-        emit({
-          type: 'groupChange',
-          detail: { allChecked, someChecked, checkedCount },
-        })
-      },
-      onConnected() {
-        // Get checkboxes from slot
-        const slot = group?.querySelector('slot[name="checkboxes"]') as HTMLSlotElement
-        if (slot) {
-          const assignedNodes = slot.assignedElements()
-          checkboxes = assignedNodes.filter((node) => 
-            node.hasAttribute('role') && node.getAttribute('role') === 'checkbox'
-          ) as HTMLElement[]
-          
-          // Listen for changes on individual checkboxes
-          checkboxes.forEach((cb) => {
-            cb.addEventListener('change', () => {
-              // Handle checkbox change
-            })
-          })
-          
-          updateSelectAllState()
-        }
-      },
-    }
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
   },
 })
 ```
@@ -560,67 +489,49 @@ export const CheckboxGroup = bElement<CheckboxGroupEvents>({
 ## Plaited Integration
 
 - **Works with Shadow DOM**: Yes - form-associated checkboxes are bElements with Shadow DOM
-- **Uses bElement built-ins**:
-  - `p-trigger` for click and keyboard events
-  - `p-target` for element selection with `$()`
-  - `attr()` helper for managing ARIA attributes
-  - `observedAttributes` for reactive updates
-  - `formAssociated: true` for form integration
-  - `internals` for ElementInternals API (form values, states)
-- **Requires external web API**: No - uses standard HTML elements and ARIA
-- **Cleanup required**: No - standard DOM elements handle their own lifecycle
+- **Uses bElement built-ins**: `$`, `p-trigger`, `p-target`, `emit`, `attr`, `internals`
+- **Requires external web API**: No
+- **Cleanup required**: No
 
 ## Keyboard Interaction
 
-- **Space**: Toggles checkbox state (checked ↔ unchecked)
-- **Tri-state**: Cycles through false → true → mixed → false
+- **Space**: Toggles checkbox state
 - **Tab**: Moves focus to next focusable element
 - **Shift + Tab**: Moves focus to previous focusable element
+
+**Note**: Native `<input type="checkbox">` handles Space automatically.
 
 ## WAI-ARIA Roles, States, and Properties
 
 ### Required
 
 - **role="checkbox"**: Identifies the element as a checkbox
-- **aria-checked**: Set to `"true"` when checked, `"false"` when unchecked, `"mixed"` for tri-state
-- **Accessible label**: Provided via text content, `aria-label`, or `aria-labelledby`
+- **aria-checked**: `"true"`, `"false"`, or `"mixed"`
+- **Accessible label**: Via text content, `aria-label`, or `aria-labelledby`
 
 ### Optional
 
-- **role="group"**: Container for checkbox groups with visible label
-- **aria-labelledby**: On group container, references the label element
-- **aria-describedby**: References element containing additional description
-- **tabindex="0"**: For custom checkbox elements (native checkboxes don't need this)
+- **aria-disabled**: `"true"` when checkbox is disabled
+- **tabindex="0"**: For custom checkbox elements
+- **role="group"**: Container for checkbox groups
 
 ## Best Practices
 
-1. **Use native `<input type="checkbox">`** when possible - provides built-in accessibility
-2. **Use Functional Templates** for static checkboxes in stories
-3. **Use bElements** for form-associated checkboxes that need form integration
-4. **Use bElements** for tri-state checkboxes that need complex state management
-5. **Provide clear labels** - use descriptive text or `aria-label`
-6. **Group related checkboxes** - use `role="group"` with `aria-labelledby`
-7. **Handle Space key** - essential for keyboard accessibility
-8. **Update tri-state based on group** - reflect group state accurately
-9. **Use form association** - enable `formAssociated: true` for native form integration
+1. **Use native `<input type="checkbox">`** when possible
+2. **Use FunctionalTemplates** for static display
+3. **Use bElements** for interactive or form-associated checkboxes
+4. **Use spread syntax** - `{...styles.x}` for applying styles
+5. **Handle Space key** - essential for keyboard accessibility
+6. **Use `$()` with `p-target`** - never use `querySelector` directly
+7. **Use `formAssociated: true`** for form integration
 
 ## Accessibility Considerations
 
-- Screen readers announce checkbox role, label, and checked state
+- Screen readers announce checkbox role, label, and state
 - Keyboard users can toggle with Space key
-- Tri-state checkboxes announce "partially checked" or "mixed" state
-- Checkbox groups should have clear labels
+- Tri-state checkboxes announce "partially checked" or "mixed"
 - Focus indicators must be visible
 - Disabled checkboxes should be clearly distinguishable
-
-## Differences: Native vs Custom
-
-| Feature | Native `<input type="checkbox">` | Custom with `role="checkbox"` |
-|---------|----------------------------------|-------------------------------|
-| Form integration | Automatic | Requires `formAssociated: true` |
-| Keyboard support | Built-in | Must implement Space key handler |
-| Styling | Limited | Full control |
-| Tri-state | No (only true/false) | Yes (supports mixed) |
 
 ## Browser Compatibility
 
@@ -630,8 +541,6 @@ export const CheckboxGroup = bElement<CheckboxGroupEvents>({
 | Firefox | Full support |
 | Safari | Full support |
 | Edge | Full support |
-
-**Note**: Native HTML checkboxes and ARIA attributes have universal support in modern browsers with assistive technology.
 
 ## References
 

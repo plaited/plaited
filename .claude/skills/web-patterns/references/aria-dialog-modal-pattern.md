@@ -26,12 +26,21 @@ A dialog is a window overlaid on either the primary window or another dialog win
 - File upload dialogs
 - Settings panels
 
+## Pattern Philosophy
+
+This pattern is **training data** for the Plaited agent. The examples below train the agent's understanding of how to implement this pattern correctly.
+
+- bElements/FunctionalTemplates are defined locally in stories (NOT exported)
+- Only stories are exported (required for testing/training)
+- Styles are always in separate `*.css.ts` files
+- Use spread syntax `{...styles.x}` for applying styles
+
 ## Implementation
 
 ### Vanilla JavaScript
 
 ```html
-<div 
+<div
   role="dialog"
   aria-modal="true"
   aria-labelledby="dialog-title"
@@ -49,21 +58,21 @@ A dialog is a window overlaid on either the primary window or another dialog win
 function showDialog(dialog, triggerElement) {
   // Store trigger for focus return
   dialog.dataset.triggerId = triggerElement.id
-  
+
   // Show dialog
   dialog.hidden = false
   dialog.setAttribute('aria-modal', 'true')
-  
+
   // Trap focus - get all focusable elements
   const focusableElements = dialog.querySelectorAll(
     'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
   )
   const firstFocusable = focusableElements[0]
   const lastFocusable = focusableElements[focusableElements.length - 1]
-  
+
   // Focus first element
   firstFocusable?.focus()
-  
+
   // Handle Tab trapping
   dialog.addEventListener('keydown', (e) => {
     if (e.key === 'Tab') {
@@ -88,7 +97,7 @@ function showDialog(dialog, triggerElement) {
 // Close dialog
 function closeDialog(dialog) {
   dialog.hidden = true
-  
+
   // Return focus to trigger
   const triggerId = dialog.dataset.triggerId
   const trigger = document.getElementById(triggerId)
@@ -98,40 +107,45 @@ function closeDialog(dialog) {
 
 ### Plaited Adaptation
 
-**Important**: In Plaited, modal dialogs are implemented as **bElements** because they require:
-- Complex state management (open/closed)
-- Focus trapping
-- Keyboard event handling (Tab, Escape)
-- Modal overlay management
-- Return focus to trigger element
+**File Structure:**
 
-#### Modal Dialog bElement (Custom Implementation)
+```
+dialog/
+  dialog.css.ts       # Styles (createStyles) - ALWAYS separate
+  dialog.stories.tsx  # FT/bElement + stories (imports from css.ts)
+```
+
+#### dialog.css.ts
 
 ```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles, createHostStyles } from 'plaited/ui'
+// dialog.css.ts
+import { createStyles, createHostStyles } from 'plaited'
 
-const dialogStyles = createStyles({
+export const hostStyles = createHostStyles({
+  display: 'block',
+})
+
+export const styles = createStyles({
   overlay: {
     position: 'fixed',
     inset: 0,
     inlineSize: '100%',
     blockSize: '100%',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    display: {
-      $default: 'none',
-      '[data-open="true"]': 'flex',
-    },
+    display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1000,
+  },
+  overlayHidden: {
+    display: 'none',
   },
   dialog: {
     backgroundColor: 'white',
     padding: '1.5rem',
     borderRadius: '8px',
     maxInlineSize: '600px',
-    inline-size: '90%',
+    inlineSize: '90%',
     maxBlockSize: '90vh',
     overflowY: 'auto',
     boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
@@ -155,56 +169,64 @@ const dialogStyles = createStyles({
     borderRadius: '4px',
     cursor: 'pointer',
   },
+  buttonPrimary: {
+    backgroundColor: '#007bff',
+    color: 'white',
+    border: 'none',
+  },
 })
+```
 
-const dialogHostStyles = createHostStyles({
-  display: 'block',
-})
+#### dialog.stories.tsx
 
-type ModalDialogEvents = {
-  close: undefined
-  open: undefined
-}
+```typescript
+// dialog.stories.tsx
+import type { FT, Children } from 'plaited/ui'
+import { bElement } from 'plaited/ui'
+import { story } from 'plaited/testing'
+import { styles, hostStyles } from './dialog.css.ts'
 
-export const ModalDialog = bElement<ModalDialogEvents>({
-  tag: 'modal-dialog',
+// ModalDialog bElement - defined locally, NOT exported
+const ModalDialog = bElement({
+  tag: 'pattern-modal-dialog',
   observedAttributes: ['open'],
-  hostStyles: dialogHostStyles,
+  hostStyles,
   shadowDom: (
     <div
-      p-target='overlay'
-      {...dialogStyles.overlay}
-      data-open='false'
+      p-target="overlay"
+      {...styles.overlay}
+      {...styles.overlayHidden}
       p-trigger={{ click: 'handleOverlayClick', keydown: 'handleKeydown' }}
     >
       <div
-        p-target='dialog'
-        role='dialog'
-        aria-modal='true'
-        {...dialogStyles.dialog}
+        p-target="dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dialog-title"
+        {...styles.dialog}
         p-trigger={{ click: 'handleDialogClick' }}
       >
         <h2
-          p-target='title'
-          id='dialog-title'
-          {...dialogStyles.title}
+          p-target="title"
+          id="dialog-title"
+          {...styles.title}
         >
-          <slot name='title'>Dialog Title</slot>
+          <slot name="title">Dialog Title</slot>
         </h2>
         <div
-          p-target='content'
-          id='dialog-description'
-          {...dialogStyles.content}
+          p-target="content"
+          id="dialog-description"
+          {...styles.content}
         >
-          <slot name='content'></slot>
+          <slot name="content"></slot>
         </div>
-        <div {...dialogStyles.footer}>
-          <slot name='footer'>
+        <div {...styles.footer}>
+          <slot name="footer">
             <button
-              type='button'
-              p-target='close-button'
+              type="button"
+              p-target="close-button"
               p-trigger={{ click: 'close' }}
-              {...dialogStyles.button}
+              {...styles.button}
             >
               Close
             </button>
@@ -213,43 +235,39 @@ export const ModalDialog = bElement<ModalDialogEvents>({
       </div>
     </div>
   ),
-  bProgram({ $, host, emit, root }) {
+  bProgram({ $, host, emit }) {
     const overlay = $('overlay')[0]
     const dialog = $('dialog')[0]
     const title = $('title')[0]
-    const content = $('content')[0]
-    
+
     let previousActiveElement: HTMLElement | null = null
     let focusableElements: HTMLElement[] = []
     let escapeHandler: ((e: KeyboardEvent) => void) | undefined
 
     const getFocusableElements = () => {
       if (!dialog) return []
-      
       const selector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       return Array.from(dialog.querySelectorAll(selector)) as HTMLElement[]
     }
 
     const trapFocus = (event: KeyboardEvent) => {
       if (event.key !== 'Tab') return
-      
+
       if (focusableElements.length === 0) {
         event.preventDefault()
         return
       }
-      
+
       const firstElement = focusableElements[0]
       const lastElement = focusableElements[focusableElements.length - 1]
       const activeElement = document.activeElement as HTMLElement
-      
+
       if (event.shiftKey) {
-        // Shift + Tab
         if (activeElement === firstElement) {
           event.preventDefault()
           lastElement.focus()
         }
       } else {
-        // Tab
         if (activeElement === lastElement) {
           event.preventDefault()
           firstElement.focus()
@@ -258,36 +276,21 @@ export const ModalDialog = bElement<ModalDialogEvents>({
     }
 
     const openDialog = () => {
-      // Store element that had focus before opening
       previousActiveElement = document.activeElement as HTMLElement
-      
-      // Show dialog
-      overlay?.attr('data-open', 'true')
+
+      overlay?.attr('class', styles.overlay.classNames.join(' '))
       host.setAttribute('open', '')
-      
-      // Set ARIA attributes
       dialog?.attr('aria-modal', 'true')
-      if (title) {
-        dialog?.attr('aria-labelledby', 'dialog-title')
-      }
-      if (content) {
-        dialog?.attr('aria-describedby', 'dialog-description')
-      }
-      
-      // Get focusable elements
+
       focusableElements = getFocusableElements()
-      
-      // Set initial focus
-      // Option 1: Focus first focusable element
+
       if (focusableElements.length > 0) {
         focusableElements[0].focus()
       } else if (title) {
-        // Option 2: Focus title if no focusable elements
         title.setAttribute('tabindex', '-1')
         title.focus()
       }
-      
-      // Handle Escape key
+
       escapeHandler = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
           e.preventDefault()
@@ -295,24 +298,22 @@ export const ModalDialog = bElement<ModalDialogEvents>({
         }
       }
       document.addEventListener('keydown', escapeHandler)
-      
+
       emit({ type: 'open' })
     }
 
     const closeDialog = () => {
-      overlay?.attr('data-open', 'false')
+      overlay?.attr('class', `${styles.overlay.classNames.join(' ')} ${styles.overlayHidden.classNames.join(' ')}`)
       host.removeAttribute('open')
-      
-      // Remove escape handler
+
       if (escapeHandler) {
         document.removeEventListener('keydown', escapeHandler)
         escapeHandler = undefined
       }
-      
-      // Return focus to previous element
+
       previousActiveElement?.focus()
       previousActiveElement = null
-      
+
       emit({ type: 'close' })
     }
 
@@ -321,29 +322,21 @@ export const ModalDialog = bElement<ModalDialogEvents>({
         closeDialog()
       },
       handleOverlayClick(event: MouseEvent) {
-        // Close if clicking overlay (not dialog content)
         if (event.target === overlay) {
           closeDialog()
         }
       },
       handleDialogClick(event: MouseEvent) {
-        // Prevent clicks inside dialog from closing
         event.stopPropagation()
       },
       handleKeydown(event: KeyboardEvent) {
         trapFocus(event)
       },
       onConnected() {
-        // Initialize ARIA attributes
-        if (title) {
-          dialog?.attr('aria-labelledby', 'dialog-title')
-        }
-        if (content) {
-          dialog?.attr('aria-describedby', 'dialog-description')
-        }
+        dialog?.attr('aria-labelledby', 'dialog-title')
+        dialog?.attr('aria-describedby', 'dialog-description')
       },
       onDisconnected() {
-        // Cleanup escape handler
         if (escapeHandler) {
           document.removeEventListener('keydown', escapeHandler)
           escapeHandler = undefined
@@ -361,69 +354,33 @@ export const ModalDialog = bElement<ModalDialogEvents>({
     }
   },
 })
-```
 
-#### Using Native `<dialog>` Element
-
-```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
-
-const dialogStyles = createStyles({
-  dialog: {
-    padding: '1.5rem',
-    borderRadius: '8px',
-    border: 'none',
-    maxInlineSize: '600px',
-    inlineSize: '90%',
-    maxBlockSize: '90vh',
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-  },
-  backdrop: {
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  title: {
-    marginBlockEnd: '1rem',
-    fontSize: '1.25rem',
-    fontWeight: 'bold',
-  },
-})
-
-type ModalDialogEvents = {
-  close: undefined
-  open: undefined
-}
-
-export const NativeModalDialog = bElement<ModalDialogEvents>({
-  tag: 'native-modal-dialog',
+// NativeDialog bElement using <dialog> element - defined locally, NOT exported
+const NativeDialog = bElement({
+  tag: 'pattern-native-dialog',
   observedAttributes: ['open'],
+  hostStyles,
   shadowDom: (
     <dialog
-      p-target='dialog'
-      role='dialog'
-      aria-modal='true'
-      aria-labelledby='dialog-title'
-      {...dialogStyles.dialog}
+      p-target="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="dialog-title"
+      {...styles.dialog}
     >
-      <h2
-        p-target='title'
-        id='dialog-title'
-        {...dialogStyles.title}
-      >
-        <slot name='title'>Dialog Title</slot>
+      <h2 p-target="title" id="dialog-title" {...styles.title}>
+        <slot name="title">Dialog Title</slot>
       </h2>
-      <div
-        p-target='content'
-        id='dialog-description'
-      >
-        <slot name='content'></slot>
+      <div p-target="content" id="dialog-description" {...styles.content}>
+        <slot name="content"></slot>
       </div>
-      <div>
-        <slot name='footer'>
+      <div {...styles.footer}>
+        <slot name="footer">
           <button
-            type='button'
-            p-target='close-button'
+            type="button"
+            p-target="close-button"
             p-trigger={{ click: 'close' }}
+            {...styles.button}
           >
             Close
           </button>
@@ -455,25 +412,12 @@ export const NativeModalDialog = bElement<ModalDialogEvents>({
         closeDialog()
       },
       onConnected() {
-        // Handle native dialog close (Escape key, backdrop click)
         dialog?.addEventListener('close', () => {
           host.removeAttribute('open')
           previousActiveElement?.focus()
           previousActiveElement = null
           emit({ type: 'close' })
         })
-        
-        // Style backdrop
-        if (dialog) {
-          // Backdrop styling via CSS
-          const style = document.createElement('style')
-          style.textContent = `
-            dialog::backdrop {
-              background-color: rgba(0, 0, 0, 0.5);
-            }
-          `
-          dialog.appendChild(style)
-        }
       },
       onAttributeChanged({ name, newValue }) {
         if (name === 'open') {
@@ -487,49 +431,120 @@ export const NativeModalDialog = bElement<ModalDialogEvents>({
     }
   },
 })
-```
 
-#### Dialog with Initial Focus on Title
+// DialogTrigger FunctionalTemplate - defined locally, NOT exported
+const DialogTrigger: FT<{
+  dialogId: string
+  children?: Children
+}> = ({ dialogId, children, ...attrs }) => (
+  <button
+    type="button"
+    aria-haspopup="dialog"
+    aria-controls={dialogId}
+    {...attrs}
+    {...styles.button}
+    {...styles.buttonPrimary}
+  >
+    {children}
+  </button>
+)
 
-```typescript
-// For dialogs with complex content that needs to be read first
-export const ContentDialog = bElement({
-  tag: 'content-dialog',
-  observedAttributes: ['open'],
-  shadowDom: (
-    <div
-      p-target='overlay'
-      role='dialog'
-      aria-modal='true'
-      aria-labelledby='dialog-title'
-    >
-      <h2
-        p-target='title'
-        id='dialog-title'
-        tabIndex={-1}
-      >
-        <slot name='title'></slot>
-      </h2>
-      <div
-        p-target='content'
-        id='dialog-description'
-      >
-        <slot name='content'></slot>
+// Stories - EXPORTED for testing/training
+export const basicDialog = story({
+  intent: 'Display a basic modal dialog with custom content',
+  template: () => (
+    <ModalDialog>
+      <span slot="title">Confirm Action</span>
+      <div slot="content">
+        <p>Are you sure you want to proceed with this action?</p>
       </div>
-      <slot name='footer'></slot>
-    </div>
+      <div slot="footer">
+        <button type="button" {...styles.button}>Cancel</button>
+        <button type="button" {...styles.button} {...styles.buttonPrimary}>Confirm</button>
+      </div>
+    </ModalDialog>
   ),
-  bProgram({ $ }) {
-    const title = $('title')[0]
-    
-    return {
-      onAttributeChanged({ name, newValue }) {
-        if (name === 'open' && newValue !== null) {
-          // Focus title first for screen readers
-          title?.focus()
-        }
-      },
-    }
+  play: async ({ findByAttribute, assert }) => {
+    const dialog = await findByAttribute('role', 'dialog')
+
+    assert({
+      given: 'modal dialog is rendered',
+      should: 'have dialog role',
+      actual: dialog?.getAttribute('role'),
+      expected: 'dialog',
+    })
+  },
+})
+
+export const nativeDialog = story({
+  intent: 'Display a dialog using native HTML dialog element',
+  template: () => (
+    <NativeDialog>
+      <span slot="title">Native Dialog</span>
+      <div slot="content">
+        <p>This dialog uses the native HTML dialog element.</p>
+      </div>
+    </NativeDialog>
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const dialog = await findByAttribute('role', 'dialog')
+
+    assert({
+      given: 'native dialog is rendered',
+      should: 'have aria-modal true',
+      actual: dialog?.getAttribute('aria-modal'),
+      expected: 'true',
+    })
+  },
+})
+
+export const formDialog = story({
+  intent: 'Display a dialog with form content',
+  template: () => (
+    <ModalDialog>
+      <span slot="title">Sign In</span>
+      <div slot="content">
+        <form>
+          <div style={{ marginBlockEnd: '1rem' }}>
+            <label for="email" style={{ display: 'block', marginBlockEnd: '0.25rem' }}>Email</label>
+            <input type="email" id="email" style={{ inlineSize: '100%', padding: '0.5rem' }} />
+          </div>
+          <div style={{ marginBlockEnd: '1rem' }}>
+            <label for="password" style={{ display: 'block', marginBlockEnd: '0.25rem' }}>Password</label>
+            <input type="password" id="password" style={{ inlineSize: '100%', padding: '0.5rem' }} />
+          </div>
+        </form>
+      </div>
+      <div slot="footer">
+        <button type="button" {...styles.button}>Cancel</button>
+        <button type="submit" {...styles.button} {...styles.buttonPrimary}>Sign In</button>
+      </div>
+    </ModalDialog>
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const dialog = await findByAttribute('role', 'dialog')
+
+    assert({
+      given: 'form dialog is rendered',
+      should: 'have aria-labelledby',
+      actual: dialog?.getAttribute('aria-labelledby'),
+      expected: 'dialog-title',
+    })
+  },
+})
+
+export const accessibilityTest = story({
+  intent: 'Verify dialog accessibility requirements',
+  template: () => (
+    <ModalDialog>
+      <span slot="title">Accessibility Test</span>
+      <div slot="content">
+        <p>Testing dialog accessibility.</p>
+      </div>
+    </ModalDialog>
+  ),
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
   },
 })
 ```
@@ -537,17 +552,9 @@ export const ContentDialog = bElement({
 ## Plaited Integration
 
 - **Works with Shadow DOM**: Yes - dialogs are bElements with Shadow DOM
-- **Uses bElement built-ins**: 
-  - `p-trigger` for button clicks, keyboard events, overlay clicks
-  - `p-target` for element selection with `$()`
-  - `attr()` helper for managing ARIA attributes and visibility
-  - `observedAttributes` for reactive open/close state
-  - Native `<dialog>` element support (optional)
-- **Requires external web API**: 
-  - Native `<dialog>` element (if using native implementation)
-  - Focus management APIs (focus(), activeElement)
-  - Keyboard event handling
-- **Cleanup required**: Yes - remove event listeners in `onDisconnected` if using custom implementation
+- **Uses bElement built-ins**: `$`, `p-trigger`, `p-target`, `emit`, `attr`
+- **Requires external web API**: Native `<dialog>` element (optional), focus management APIs
+- **Cleanup required**: Yes - remove event listeners in `onDisconnected`
 
 ## Keyboard Interaction
 
@@ -578,14 +585,11 @@ export const ContentDialog = bElement({
 3. **Store previous focus** - Always return focus to the element that triggered the dialog
 4. **Trap focus** - Keep keyboard focus within the dialog when open
 5. **Handle Escape key** - Allow users to close the dialog with Escape
-6. **Set appropriate initial focus**:
-   - First focusable element (most common)
-   - Dialog title (for complex content that needs reading)
-   - Least destructive action (for critical dialogs)
+6. **Use spread syntax** - `{...styles.x}` for applying styles
 7. **Provide close button** - Include a visible close button in the dialog
 8. **Handle overlay clicks** - Optionally close when clicking outside dialog
 9. **Clean up event listeners** - Remove keyboard handlers when dialog closes
-10. **Use semantic HTML** - Use heading elements for titles, proper structure
+10. **Use `$()` with `p-target`** - never use `querySelector` directly
 
 ## Initial Focus Placement
 
@@ -609,16 +613,6 @@ The most appropriate initial focus depends on dialog content:
 - Modal backdrop prevents interaction with page content
 - `aria-modal="true"` informs assistive technologies that content outside is inert
 
-## Differences from Alert Dialog
-
-| Feature | Modal Dialog | Alert Dialog |
-|---------|--------------|--------------|
-| Role | `dialog` | `alertdialog` |
-| Use case | General-purpose dialogs | Critical alerts requiring response |
-| System alert sound | No | May trigger |
-| Focus placement | Flexible | Usually first action button |
-| aria-describedby | Optional | Required |
-
 ## Browser Compatibility
 
 | Browser | Support |
@@ -628,11 +622,9 @@ The most appropriate initial focus depends on dialog content:
 | Safari | Full support (native `<dialog>` since v15.4) |
 | Edge | Full support (native `<dialog>` since v79) |
 
-**Note**: Native `<dialog>` element has excellent support in modern browsers. For older browsers, use the custom implementation with proper ARIA attributes and focus trapping.
-
 ## References
 
 - Source: [W3C ARIA Authoring Practices Guide - Dialog (Modal) Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)
-- Related: [Alert Dialog Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/alertdialog/)
+- Related: [Alert Dialog Pattern](./aria-alertdialog-pattern.md)
 - MDN: [ARIA dialog role](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/dialog_role)
 - MDN: [HTML dialog element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog)

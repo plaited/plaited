@@ -11,12 +11,21 @@ An accordion is a vertically stacked set of interactive headings. Each contain a
 
 ## Use Cases
 
-- Organizing form sections when only one section should be shown at a time.
+- Organizing form sections when only one section should be shown at a time
 - FAQ sections with expandable answers
 - Navigation menus with collapsible sections
 - Content organization to reduce scrolling
 - Settings panels with grouped options
 - Multi-step wizards or processes
+
+## Pattern Philosophy
+
+This pattern is **training data** for the Plaited agent. The examples below train the agent's understanding of how to implement this pattern correctly.
+
+- bElements/FunctionalTemplates are defined locally in stories (NOT exported)
+- Only stories are exported (required for testing/training)
+- Styles are always in separate `*.css.ts` files
+- Use spread syntax `{...styles.x}` for applying styles
 
 ## Implementation
 
@@ -25,7 +34,7 @@ An accordion is a vertically stacked set of interactive headings. Each contain a
 ```html
 <div class="accordion">
   <h3>
-    <button 
+    <button
       type="button"
       aria-expanded="false"
       aria-controls="panel-1"
@@ -34,7 +43,7 @@ An accordion is a vertically stacked set of interactive headings. Each contain a
       Section 1
     </button>
   </h3>
-  <div 
+  <div
     id="panel-1"
     role="region"
     aria-labelledby="header-1"
@@ -42,9 +51,9 @@ An accordion is a vertically stacked set of interactive headings. Each contain a
   >
     Content for section 1
   </div>
-  
+
   <h3>
-    <button 
+    <button
       type="button"
       aria-expanded="true"
       aria-controls="panel-2"
@@ -53,7 +62,7 @@ An accordion is a vertically stacked set of interactive headings. Each contain a
       Section 2
     </button>
   </h3>
-  <div 
+  <div
     id="panel-2"
     role="region"
     aria-labelledby="header-2"
@@ -69,7 +78,7 @@ function togglePanel(button, panel) {
   const isExpanded = button.getAttribute('aria-expanded') === 'true'
   button.setAttribute('aria-expanded', !isExpanded)
   panel.hidden = isExpanded
-  
+
   // If single-expand mode, close other panels
   if (!isExpanded && accordion.dataset.singleExpand === 'true') {
     closeOtherPanels(button)
@@ -80,7 +89,7 @@ function togglePanel(button, panel) {
 accordion.addEventListener('keydown', (e) => {
   const header = e.target.closest('[role="button"]')
   if (!header) return
-  
+
   switch (e.key) {
     case 'ArrowDown':
       e.preventDefault()
@@ -104,215 +113,29 @@ accordion.addEventListener('keydown', (e) => {
 
 ### Plaited Adaptation
 
-**Important**: In Plaited, accordions are implemented as **bElements** because they require complex state management. Accordion headers use button **Functional Templates (FT)** as defined in stories, but the accordion container itself is a bElement that manages panel state and keyboard navigation.
+**File Structure:**
 
-#### Accordion Header Button (Functional Template)
-
-```typescript
-// button.stories.tsx
-import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { buttonStyles } from './button.css.ts'
-
-const AccordionHeaderButton: FT<{
-  'aria-expanded': 'true' | 'false'
-  'aria-controls': string
-  id: string
-  children?: Children
-}> = ({
-  'aria-expanded': ariaExpanded,
-  'aria-controls': ariaControls,
-  id,
-  children,
-  ...attrs
-}) => (
-  <button
-    type='button'
-    aria-expanded={ariaExpanded}
-    aria-controls={ariaControls}
-    id={id}
-    {...attrs}
-    {...joinStyles(buttonStyles.accordionHeader)}
-  >
-    {children}
-  </button>
-)
+```
+accordion/
+  accordion.css.ts        # Styles (createStyles) - ALWAYS separate
+  accordion.stories.tsx   # bElement + stories (imports from css.ts)
 ```
 
-#### Accordion bElement
+#### accordion.css.ts
 
 ```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
-import { AccordionHeaderButton } from './button.stories.tsx'
+// accordion.css.ts
+import { createStyles } from 'plaited'
 
-const accordionStyles = createStyles({
-  accordion: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.5rem',
-  },
-  header: {
-    margin: 0,
-  },
-  panel: {
-    padding: '1rem',
-    display: {
-      $default: 'none',
-      '[aria-expanded="true"] + &': 'block',
-    },
-  },
-  panelHidden: {
-    display: 'none',
-  },
-})
-
-type AccordionEvents = {
-  toggle: { panelId: string; expanded: boolean }
-}
-
-export const Accordion = bElement<AccordionEvents>({
-  tag: 'accessible-accordion',
-  observedAttributes: ['single-expand'],
-  shadowDom: (
-    <div {...accordionStyles.accordion}>
-      <slot name='panels'></slot>
-    </div>
-  ),
-  bProgram({ $, host, emit }) {
-    const accordion = $('accordion')[0]
-    let headers: HTMLButtonElement[] = []
-    let panels: HTMLElement[] = []
-    const singleExpand = host.hasAttribute('single-expand')
-
-    const updatePanelVisibility = (header: HTMLButtonElement, panel: HTMLElement, expanded: boolean) => {
-      header.attr('aria-expanded', expanded ? 'true' : 'false')
-      if (expanded) {
-        panel.attr('hidden', null)
-      } else {
-        panel.attr('hidden', '')
-      }
-    }
-
-    const closeOtherPanels = (currentHeader: HTMLButtonElement) => {
-      headers.forEach((header) => {
-        if (header !== currentHeader) {
-          const panelId = header.attr('aria-controls')
-          const panel = panels.find((p) => p.id === panelId)
-          if (panel) {
-            updatePanelVisibility(header, panel, false)
-          }
-        }
-      })
-    }
-
-    const focusNextHeader = (currentHeader: HTMLButtonElement) => {
-      const currentIndex = headers.indexOf(currentHeader)
-      const nextIndex = (currentIndex + 1) % headers.length
-      headers[nextIndex]?.focus()
-    }
-
-    const focusPreviousHeader = (currentHeader: HTMLButtonElement) => {
-      const currentIndex = headers.indexOf(currentHeader)
-      const prevIndex = currentIndex === 0 ? headers.length - 1 : currentIndex - 1
-      headers[prevIndex]?.focus()
-    }
-
-    const focusFirstHeader = () => {
-      headers[0]?.focus()
-    }
-
-    const focusLastHeader = () => {
-      headers[headers.length - 1]?.focus()
-    }
-
-    return {
-      togglePanel(event: { type: string; target: HTMLButtonElement }) {
-        const header = event.target
-        const panelId = header.attr('aria-controls')
-        const panel = panels.find((p) => p.id === panelId)
-        if (!panel) return
-
-        const isExpanded = header.attr('aria-expanded') === 'true'
-        const newExpanded = !isExpanded
-
-        // If single-expand mode and expanding, close others first
-        if (newExpanded && singleExpand) {
-          closeOtherPanels(header)
-        }
-
-        updatePanelVisibility(header, panel, newExpanded)
-        emit({ type: 'toggle', detail: { panelId, expanded: newExpanded } })
-      },
-      handleKeydown(event: KeyboardEvent) {
-        const header = event.target as HTMLButtonElement
-        if (!headers.includes(header)) return
-
-        switch (event.key) {
-          case 'ArrowDown':
-            event.preventDefault()
-            focusNextHeader(header)
-            break
-          case 'ArrowUp':
-            event.preventDefault()
-            focusPreviousHeader(header)
-            break
-          case 'Home':
-            event.preventDefault()
-            focusFirstHeader()
-            break
-          case 'End':
-            event.preventDefault()
-            focusLastHeader()
-            break
-        }
-      },
-      onConnected() {
-        // Initialize headers and panels from slotted content
-        const slot = accordion?.querySelector('slot[name="panels"]') as HTMLSlotElement
-        if (!slot) return
-
-        const assignedNodes = slot.assignedNodes()
-        headers = []
-        panels = []
-
-        assignedNodes.forEach((node) => {
-          if (node.nodeType === Node.ELEMENT_NODE) {
-            const element = node as HTMLElement
-            const header = element.querySelector('button[aria-expanded]')
-            const panel = element.querySelector('[role="region"]') || element.querySelector('[id]')
-            
-            if (header && panel) {
-              headers.push(header as HTMLButtonElement)
-              panels.push(panel as HTMLElement)
-              
-              // Set up click handler
-              header.setAttribute('p-trigger', JSON.stringify({ click: 'togglePanel' }))
-              header.setAttribute('p-target', `header-${headers.length - 1}`)
-            }
-          }
-        })
-      },
-    }
-  },
-})
-```
-
-#### Simplified Accordion with Slots
-
-```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
-
-const accordionStyles = createStyles({
+export const styles = createStyles({
   accordion: {
     display: 'flex',
     flexDirection: 'column',
   },
-  panel: {
+  item: {
     borderBlockEnd: '1px solid #ccc',
   },
-  headerButton: {
+  header: {
     inlineSize: '100%',
     padding: '1rem',
     textAlign: 'left',
@@ -325,161 +148,213 @@ const accordionStyles = createStyles({
   },
   content: {
     padding: '0 1rem 1rem',
-    display: {
-      $default: 'none',
-      '[aria-expanded="true"] + &': 'block',
-    },
   },
-})
-
-type AccordionItemEvents = {
-  toggle: { expanded: boolean }
-}
-
-export const AccordionItem = bElement<AccordionItemEvents>({
-  tag: 'accordion-item',
-  shadowDom: (
-    <div {...accordionStyles.panel}>
-      <button
-        type='button'
-        p-target='header'
-        p-trigger={{ click: 'toggle', keydown: 'handleKeydown' }}
-        aria-expanded='false'
-        aria-controls='panel-content'
-        {...accordionStyles.headerButton}
-      >
-        <slot name='header'></slot>
-        <span aria-hidden='true'>▼</span>
-      </button>
-      <div
-        p-target='content'
-        id='panel-content'
-        role='region'
-        hidden
-        {...accordionStyles.content}
-      >
-        <slot name='content'></slot>
-      </div>
-    </div>
-  ),
-  bProgram({ $, emit }) {
-    const header = $<HTMLButtonElement>('header')[0]
-    const content = $('content')[0]
-    let expanded = false
-
-    return {
-      toggle() {
-        expanded = !expanded
-        header?.attr('aria-expanded', expanded ? 'true' : 'false')
-        if (expanded) {
-          content?.attr('hidden', null)
-        } else {
-          content?.attr('hidden', '')
-        }
-        emit({ type: 'toggle', detail: { expanded } })
-      },
-      handleKeydown(event: KeyboardEvent) {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          header?.click()
-        }
-      },
-    }
+  icon: {
+    transition: 'transform 0.2s',
   },
-})
-
-// Container accordion for coordinating multiple items
-export const Accordion = bElement({
-  tag: 'accessible-accordion',
-  observedAttributes: ['single-expand'],
-  shadowDom: (
-    <div {...accordionStyles.accordion}>
-      <slot></slot>
-    </div>
-  ),
-  bProgram({ $, host }) {
-    const accordion = $('accordion')[0]
-    let items: HTMLElement[] = []
-    const singleExpand = host.hasAttribute('single-expand')
-
-    return {
-      itemToggled(event: CustomEvent) {
-        if (!singleExpand) return
-
-        const expanded = event.detail.expanded
-        if (expanded) {
-          // Close other items
-          items.forEach((item) => {
-            if (item !== event.target) {
-              const itemElement = item as any
-              const header = itemElement.shadowRoot?.querySelector('button[aria-expanded="true"]')
-              if (header) {
-                header.click()
-              }
-            }
-          })
-        }
-      },
-      onConnected() {
-        // Listen for toggle events from accordion items
-        const slot = accordion?.querySelector('slot') as HTMLSlotElement
-        if (!slot) return
-
-        slot.addEventListener('slotchange', () => {
-          const assignedNodes = slot.assignedElements()
-          items = assignedNodes.filter((node) => node.tagName === 'ACCORDION-ITEM')
-          
-          items.forEach((item) => {
-            item.addEventListener('toggle', (e) => {
-              // Handle single-expand coordination
-            })
-          })
-        })
-      },
-    }
+  iconExpanded: {
+    transform: 'rotate(180deg)',
   },
 })
 ```
 
-#### Usage Example
+#### accordion.stories.tsx
 
 ```typescript
-// In a story or template
-<Accordion single-expand>
-  <AccordionItem>
-    <span slot='header'>Section 1</span>
-    <div slot='content'>Content for section 1</div>
-  </AccordionItem>
-  <AccordionItem>
-    <span slot='header'>Section 2</span>
-    <div slot='content'>Content for section 2</div>
-  </AccordionItem>
-  <AccordionItem>
-    <span slot='header'>Section 3</span>
-    <div slot='content'>Content for section 3</div>
-  </AccordionItem>
-</Accordion>
+// accordion.stories.tsx
+import { bElement } from 'plaited/ui'
+import { story } from 'plaited/testing'
+import { styles } from './accordion.css.ts'
+
+// bElement - defined locally, NOT exported
+const AccordionItem = bElement({
+  tag: 'pattern-accordion-item',
+  shadowDom: (
+    <div p-target="item" {...styles.item}>
+      <button
+        type="button"
+        p-target="header"
+        p-trigger={{ click: 'toggle' }}
+        aria-expanded="false"
+        aria-controls="panel-content"
+        {...styles.header}
+      >
+        <slot name="header"></slot>
+        <span p-target="icon" aria-hidden="true" {...styles.icon}>▼</span>
+      </button>
+      <div
+        p-target="content"
+        id="panel-content"
+        role="region"
+        hidden
+        {...styles.content}
+      >
+        <slot name="content"></slot>
+      </div>
+    </div>
+  ),
+  bProgram({ $, emit }) {
+    return {
+      toggle() {
+        const header = $('header')[0]
+        const content = $('content')[0]
+        const icon = $('icon')[0]
+
+        const isExpanded = header?.attr('aria-expanded') === 'true'
+        const newExpanded = !isExpanded
+
+        header?.attr('aria-expanded', newExpanded ? 'true' : 'false')
+        content?.attr('hidden', newExpanded ? null : '')
+
+        // Visual feedback for icon rotation
+        if (newExpanded) {
+          icon?.attr('class', `${styles.icon.classNames.join(' ')} ${styles.iconExpanded.classNames.join(' ')}`)
+        } else {
+          icon?.attr('class', styles.icon.classNames.join(' '))
+        }
+
+        emit({ type: 'toggle', detail: { expanded: newExpanded } })
+      },
+    }
+  },
+})
+
+// Container accordion for coordinating multiple items (single-expand mode)
+const Accordion = bElement({
+  tag: 'pattern-accordion',
+  observedAttributes: ['single-expand'],
+  shadowDom: (
+    <div p-target="accordion" {...styles.accordion}>
+      <slot p-target="slot"></slot>
+    </div>
+  ),
+  bProgram({ $, host, trigger }) {
+    const singleExpand = host.hasAttribute('single-expand')
+
+    return {
+      onConnected() {
+        if (!singleExpand) return
+
+        // Listen for toggle events from accordion items
+        const slot = $('slot')[0]
+        const slotElement = slot?.root.querySelector('slot') as HTMLSlotElement
+        if (!slotElement) return
+
+        slotElement.addEventListener('slotchange', () => {
+          const items = slotElement.assignedElements()
+
+          items.forEach((item) => {
+            item.addEventListener('toggle', ((e: CustomEvent) => {
+              if (e.detail.expanded) {
+                // Close other items by triggering their collapse
+                items.forEach((otherItem) => {
+                  if (otherItem !== item) {
+                    trigger({ type: 'collapseItem', detail: { item: otherItem } })
+                  }
+                })
+              }
+            }) as EventListener)
+          })
+        })
+      },
+      collapseItem({ detail }: { detail: { item: Element } }) {
+        // Use emit to communicate with child - child listens and collapses if expanded
+        const item = detail.item as HTMLElement
+        item.dispatchEvent(new CustomEvent('requestCollapse'))
+      },
+    }
+  },
+})
+
+// Stories - EXPORTED for testing/training
+export const defaultAccordion = story({
+  intent: 'Demonstrates basic accordion with multiple expandable sections',
+  template: () => (
+    <Accordion>
+      <AccordionItem>
+        <span slot="header">Section 1</span>
+        <div slot="content">Content for section 1. This panel can be expanded independently.</div>
+      </AccordionItem>
+      <AccordionItem>
+        <span slot="header">Section 2</span>
+        <div slot="content">Content for section 2. Multiple panels can be open at once.</div>
+      </AccordionItem>
+      <AccordionItem>
+        <span slot="header">Section 3</span>
+        <div slot="content">Content for section 3. Click any header to toggle its panel.</div>
+      </AccordionItem>
+    </Accordion>
+  ),
+  play: async ({ findByAttribute, assert, fireEvent }) => {
+    const header1 = await findByAttribute('p-target', 'header')
+    const content1 = await findByAttribute('p-target', 'content')
+
+    assert({
+      given: 'accordion is rendered',
+      should: 'have first panel collapsed initially',
+      actual: content1?.hasAttribute('hidden'),
+      expected: true,
+    })
+
+    assert({
+      given: 'accordion is rendered',
+      should: 'have aria-expanded set to false',
+      actual: header1?.getAttribute('aria-expanded'),
+      expected: 'false',
+    })
+
+    if (header1) await fireEvent(header1, 'click')
+
+    assert({
+      given: 'header is clicked',
+      should: 'expand the panel',
+      actual: content1?.hasAttribute('hidden'),
+      expected: false,
+    })
+
+    assert({
+      given: 'header is clicked',
+      should: 'update aria-expanded to true',
+      actual: header1?.getAttribute('aria-expanded'),
+      expected: 'true',
+    })
+  },
+})
+
+export const singleExpandAccordion = story({
+  intent: 'Demonstrates accordion with single-expand mode where only one panel can be open',
+  template: () => (
+    <Accordion single-expand>
+      <AccordionItem>
+        <span slot="header">FAQ Question 1</span>
+        <div slot="content">Answer to question 1. When you open another section, this one closes.</div>
+      </AccordionItem>
+      <AccordionItem>
+        <span slot="header">FAQ Question 2</span>
+        <div slot="content">Answer to question 2. Only one panel can be open at a time.</div>
+      </AccordionItem>
+      <AccordionItem>
+        <span slot="header">FAQ Question 3</span>
+        <div slot="content">Answer to question 3. This is useful for FAQ sections.</div>
+      </AccordionItem>
+    </Accordion>
+  ),
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
+  },
+})
 ```
 
 ## Plaited Integration
 
 - **Works with Shadow DOM**: Yes - accordion is a bElement with Shadow DOM
-- **Uses bElement built-ins**: 
-  - `p-trigger` for declarative event binding (click, keydown)
-  - `p-target` for element selection with `$()`
-  - `attr()` helper for ARIA attribute management
-  - `observedAttributes` for reactive attribute changes (single-expand mode)
-  - Slots for content distribution
-- **Requires external web API**: No - uses standard HTML elements and ARIA
-- **Cleanup required**: No - standard DOM elements handle their own lifecycle
+- **Uses bElement built-ins**: `$`, `p-trigger`, `p-target`, `emit`, `trigger`, `attr`
+- **Requires external web API**: No
+- **Cleanup required**: No
 
 ## Keyboard Interaction
 
-- **Enter or Space**:
-
-  - When focus is on a collapsed panel header, expands the associated panel
-  - When focus is on an expanded panel header, collapses the panel (if collapse is supported)
-  - In single-expand mode, collapses other expanded panels when expanding a new one
+- **Enter or Space**: When focus is on a collapsed panel header, expands the associated panel. When focus is on an expanded panel header, collapses the panel.
 - **Tab**: Moves focus to the next focusable element
 - **Shift + Tab**: Moves focus to the previous focusable element
 - **Down Arrow** (Optional): Moves focus to the next accordion header
@@ -487,12 +362,13 @@ export const Accordion = bElement({
 - **Home** (Optional): Moves focus to the first accordion header
 - **End** (Optional): Moves focus to the last accordion header
 
+**Note**: Native `<button>` elements handle Enter and Space automatically. No additional keyboard handlers needed for toggle functionality.
+
 ## WAI-ARIA Roles, States, and Properties
 
 ### Required
 
 - **role="button"**: Accordion header button (implicit on `<button>` element)
-- **role="heading"**: Wrapper around accordion header button with appropriate `aria-level`
 - **aria-expanded**: Set to `true` when panel is visible, `false` when hidden
 - **aria-controls**: ID reference to the element containing the accordion panel content
 
@@ -500,19 +376,16 @@ export const Accordion = bElement({
 
 - **role="region"**: On panel container (use sparingly to avoid landmark proliferation)
 - **aria-labelledby**: On panel container, references the button that controls it
-- **aria-disabled**: Set to `true` on header button if panel cannot be collapsed (when one panel must always be expanded)
-- **aria-level**: On heading element wrapping the button (appropriate for page structure)
+- **aria-disabled**: Set to `true` on header button if panel cannot be collapsed
 
 ## Best Practices
 
 1. **Use native `<button>` elements** for accordion headers - they provide built-in keyboard support
-2. **Implement as bElement** - accordions require complex state management for panel visibility and keyboard navigation
-3. **Support single-expand mode** - allow attribute `single-expand` to enforce only one panel open at a time
-4. **Use semantic HTML** - wrap buttons in heading elements with appropriate `aria-level`
-5. **Provide visual indicators** - show expanded/collapsed state with icons or styling
-6. **Handle focus management** - ensure keyboard navigation works smoothly between headers
-7. **Use slots for content** - allow flexible content distribution via named slots
-8. **Avoid excessive regions** - only use `role="region"` when panels contain headings or nested structures
+2. **Use static `p-trigger`** in the template - never add p-trigger dynamically
+3. **Use `emit()` for parent communication** - never reach into child shadowRoot
+4. **Support single-expand mode** via `single-expand` attribute
+5. **Use slots for content** - allow flexible content distribution
+6. **Use `$()` with `p-target`** - never use `querySelector` directly
 
 ## Accessibility Considerations
 
@@ -521,7 +394,6 @@ export const Accordion = bElement({
 - Focus indicators must be visible on accordion headers
 - Visual state (expanded/collapsed) should be clear and consistent
 - Panel content should be properly associated with headers via `aria-controls`
-- In single-expand mode, screen readers should announce when other panels close
 
 ## Browser Compatibility
 
@@ -531,8 +403,6 @@ export const Accordion = bElement({
 | Firefox | Full support |
 | Safari | Full support |
 | Edge | Full support |
-
-**Note**: Native HTML elements and ARIA attributes have universal support in modern browsers with assistive technology.
 
 ## References
 

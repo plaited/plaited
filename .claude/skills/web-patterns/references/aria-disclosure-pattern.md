@@ -2,7 +2,7 @@
 
 ## Overview
 
-A disclosure is a widget that enables content to be either collapsed (hidden) or expanded (visible). It has two elements, a disclosure button and a section of content whose visibility is controlled by the button. When the controlled content is hidden the button is often styled as a typical push button with a right-pointing arrow or triangle to hint that activating the button will display additional content. When the content is visible, the arrow or triangle typically points down.
+A disclosure is a widget that enables content to be either collapsed (hidden) or expanded (visible). It has two elements: a disclosure button and a section of content whose visibility is controlled by the button.
 
 **Key Characteristics:**
 
@@ -10,6 +10,8 @@ A disclosure is a widget that enables content to be either collapsed (hidden) or
 - **Two states**: Expanded (visible) or collapsed (hidden)
 - **Visual indicator**: Arrow/triangle changes direction based on state
 - **Keyboard accessible**: Enter and Space activate the button
+
+**Native HTML First:** Consider using the native `<details>` and `<summary>` elements which provide built-in keyboard support and accessibility. Use custom disclosures only when you need styling or behavior beyond CSS capabilities.
 
 **Differences from Accordion:**
 
@@ -28,12 +30,21 @@ A disclosure is a widget that enables content to be either collapsed (hidden) or
 - Help text or tooltips
 - Collapsible form sections
 
+## Pattern Philosophy
+
+This pattern is **training data** for the Plaited agent. The examples below train the agent's understanding of how to implement this pattern correctly.
+
+- bElements/FunctionalTemplates are defined locally in stories (NOT exported)
+- Only stories are exported (required for testing/training)
+- Styles are always in separate `*.css.ts` files
+- Use spread syntax `{...styles.x}` for applying styles
+
 ## Implementation
 
 ### Vanilla JavaScript
 
 ```html
-<button 
+<button
   type="button"
   aria-expanded="false"
   aria-controls="disclosure-content"
@@ -42,10 +53,7 @@ A disclosure is a widget that enables content to be either collapsed (hidden) or
   Show Details
   <span aria-hidden="true">▶</span>
 </button>
-<div 
-  id="disclosure-content"
-  hidden
->
+<div id="disclosure-content" hidden>
   Additional content that can be shown or hidden.
 </div>
 ```
@@ -55,122 +63,37 @@ A disclosure is a widget that enables content to be either collapsed (hidden) or
 function toggleDisclosure(button, content) {
   const isExpanded = button.getAttribute('aria-expanded') === 'true'
   const newExpanded = !isExpanded
-  
+
   button.setAttribute('aria-expanded', newExpanded)
   content.hidden = !newExpanded
-  
+
   // Update arrow indicator
   const arrow = button.querySelector('[aria-hidden="true"]')
   arrow.textContent = newExpanded ? '▼' : '▶'
 }
-
-// Handle keyboard
-button.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' || e.key === ' ') {
-    e.preventDefault()
-    toggleDisclosure(button, content)
-  }
-})
 ```
 
 ### Plaited Adaptation
 
-**Important**: In Plaited, disclosures can be implemented as:
+**File Structure:**
 
-1. **Functional Templates (FT)** for static disclosures in stories
-2. **bElements** for dynamic disclosures that need state management
-
-#### Static Disclosure (Functional Template)
-
-```typescript
-// disclosure.stories.tsx
-import type { FT, Children } from 'plaited/ui'
-import { joinStyles } from 'plaited/ui'
-import { disclosureStyles } from './disclosure.css.ts'
-
-const DisclosureButton: FT<{
-  'aria-expanded': 'true' | 'false'
-  'aria-controls': string
-  id: string
-  children?: Children
-}> = ({
-  'aria-expanded': ariaExpanded,
-  'aria-controls': ariaControls,
-  id,
-  children,
-  ...attrs
-}) => (
-  <button
-    type='button'
-    {...attrs}
-    {...joinStyles(
-      disclosureStyles.button,
-      ariaExpanded === 'true' && disclosureStyles.expanded
-    )}
-    aria-expanded={ariaExpanded}
-    aria-controls={ariaControls}
-    id={id}
-  >
-    {children}
-    <span
-      aria-hidden='true'
-      {...disclosureStyles.arrow}
-    >
-      {ariaExpanded === 'true' ? '▼' : '▶'}
-    </span>
-  </button>
-)
-
-const DisclosureContent: FT<{
-  id: string
-  hidden?: boolean
-  children?: Children
-}> = ({ id, hidden, children, ...attrs }) => (
-  <div
-    id={id}
-    hidden={hidden}
-    {...attrs}
-    {...joinStyles(disclosureStyles.content)}
-  >
-    {children}
-  </div>
-)
-
-export const disclosureStory = story({
-  intent: 'Display a disclosure with expandable content',
-  template: () => (
-    <>
-      <DisclosureButton
-        id='disclosure-button'
-        aria-expanded='false'
-        aria-controls='disclosure-content'
-      >
-        Show Details
-      </DisclosureButton>
-      <DisclosureContent
-        id='disclosure-content'
-        hidden
-      >
-        This is the additional content that can be shown or hidden.
-      </DisclosureContent>
-    </>
-  ),
-  play: async ({ accessibilityCheck }) => {
-    await accessibilityCheck({})
-  },
-})
+```
+disclosure/
+  disclosure.css.ts        # Styles (createStyles) - ALWAYS separate
+  disclosure.stories.tsx   # FT/bElement + stories (imports from css.ts)
 ```
 
-#### Dynamic Disclosure (bElement)
+#### disclosure.css.ts
 
 ```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
+// disclosure.css.ts
+import { createStyles, createHostStyles } from 'plaited'
 
-const disclosureStyles = createStyles({
-  disclosure: {
-    display: 'block',
-  },
+export const hostStyles = createHostStyles({
+  display: 'block',
+})
+
+export const styles = createStyles({
   button: {
     inlineSize: '100%',
     padding: '0.75rem',
@@ -184,69 +107,129 @@ const disclosureStyles = createStyles({
     alignItems: 'center',
     gap: '0.5rem',
   },
+  buttonExpanded: {
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
   arrow: {
     fontSize: '0.75rem',
     transition: 'transform 0.2s',
-    transform: {
-      $default: 'rotate(0deg)',
-      '[aria-expanded="true"] + * &': 'rotate(90deg)',
-    },
+  },
+  arrowExpanded: {
+    transform: 'rotate(90deg)',
   },
   content: {
     padding: '1rem',
-    marginTop: '0.5rem',
     border: '1px solid #ccc',
-    borderRadius: '4px',
-    display: {
-      $default: 'none',
-      '[data-expanded="true"]': 'block',
-    },
+    borderTop: 'none',
+    borderRadius: '0 0 4px 4px',
+  },
+  label: {
+    userSelect: 'none',
   },
 })
 
-type DisclosureEvents = {
-  toggle: { expanded: boolean }
-}
+// Native details element styles
+export const detailsStyles = createStyles({
+  details: {
+    display: 'block',
+  },
+  summary: {
+    padding: '0.75rem',
+    cursor: 'pointer',
+    listStyle: 'none',
+    userSelect: 'none',
+    border: '1px solid #ccc',
+    borderRadius: '4px',
+  },
+  summaryOpen: {
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+  content: {
+    padding: '1rem',
+    border: '1px solid #ccc',
+    borderTop: 'none',
+    borderRadius: '0 0 4px 4px',
+  },
+})
+```
 
-export const Disclosure = bElement<DisclosureEvents>({
-  tag: 'disclosure-widget',
-  observedAttributes: ['expanded'],
-  shadowDom: (
-    <div
-      p-target='disclosure'
-      {...disclosureStyles.disclosure}
+#### disclosure.stories.tsx
+
+```typescript
+// disclosure.stories.tsx
+import type { FT, Children } from 'plaited/ui'
+import { bElement } from 'plaited/ui'
+import { story } from 'plaited/testing'
+import { styles, detailsStyles, hostStyles } from './disclosure.css.ts'
+
+// FunctionalTemplate for static disclosure - defined locally, NOT exported
+const StaticDisclosure: FT<{
+  expanded?: boolean
+  buttonLabel?: string
+  children?: Children
+}> = ({ expanded = false, buttonLabel = 'Show Details', children }) => (
+  <>
+    <button
+      type="button"
+      aria-expanded={expanded ? 'true' : 'false'}
+      aria-controls="disclosure-content"
+      {...styles.button}
+      {...(expanded ? styles.buttonExpanded : {})}
     >
-      <button
-        type='button'
-        p-target='button'
-        aria-expanded='false'
-        aria-controls='disclosure-content'
-        {...disclosureStyles.button}
-        p-trigger={{ click: 'toggle', keydown: 'handleKeydown' }}
+      <span {...styles.label}>{buttonLabel}</span>
+      <span
+        aria-hidden="true"
+        {...styles.arrow}
+        {...(expanded ? styles.arrowExpanded : {})}
       >
-        <span>
-          <slot name='button-label'>Show Details</slot>
+        ▶
+      </span>
+    </button>
+    <div
+      id="disclosure-content"
+      hidden={!expanded}
+      {...(expanded ? styles.content : {})}
+    >
+      {children}
+    </div>
+  </>
+)
+
+// bElement for interactive disclosure - defined locally, NOT exported
+const Disclosure = bElement({
+  tag: 'pattern-disclosure',
+  observedAttributes: ['expanded'],
+  hostStyles,
+  shadowDom: (
+    <div p-target="disclosure">
+      <button
+        type="button"
+        p-target="button"
+        aria-expanded="false"
+        aria-controls="disclosure-content"
+        p-trigger={{ click: 'toggle', keydown: 'handleKeydown' }}
+        {...styles.button}
+      >
+        <span {...styles.label}>
+          <slot name="label">Show Details</slot>
         </span>
-        <span
-          p-target='arrow'
-          aria-hidden='true'
-          {...disclosureStyles.arrow}
-        >
-          ▶
-        </span>
+        <span p-target="arrow" aria-hidden="true" {...styles.arrow}>▶</span>
       </button>
       <div
-        p-target='content'
-        id='disclosure-content'
-        data-expanded='false'
-        {...disclosureStyles.content}
+        p-target="content"
+        id="disclosure-content"
+        hidden
       >
-        <slot name='content'></slot>
+        <div {...styles.content}>
+          <slot></slot>
+        </div>
       </div>
     </div>
   ),
   bProgram({ $, host, emit }) {
-    const button = $<HTMLButtonElement>('button')[0]
+    const button = $('button')[0]
     const content = $('content')[0]
     const arrow = $('arrow')[0]
     let expanded = false
@@ -254,21 +237,18 @@ export const Disclosure = bElement<DisclosureEvents>({
     const updateState = (newExpanded: boolean) => {
       expanded = newExpanded
       button?.attr('aria-expanded', expanded ? 'true' : 'false')
-      content?.attr('data-expanded', expanded ? 'true' : 'false')
       content?.attr('hidden', expanded ? null : '')
-      
-      // Update arrow
-      if (arrow) {
-        arrow.render(expanded ? '▼' : '▶')
-      }
-      
-      // Update host attribute
+
+      // Update visual state
       if (expanded) {
-        host.setAttribute('expanded', '')
+        button?.attr('class', `${styles.button.classNames.join(' ')} ${styles.buttonExpanded.classNames.join(' ')}`)
+        arrow?.attr('class', `${styles.arrow.classNames.join(' ')} ${styles.arrowExpanded.classNames.join(' ')}`)
       } else {
-        host.removeAttribute('expanded')
+        button?.attr('class', styles.button.classNames.join(' '))
+        arrow?.attr('class', styles.arrow.classNames.join(' '))
       }
-      
+
+      host.toggleAttribute('expanded', expanded)
       emit({ type: 'toggle', detail: { expanded } })
     }
 
@@ -279,14 +259,7 @@ export const Disclosure = bElement<DisclosureEvents>({
       handleKeydown(event: KeyboardEvent) {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault()
-          button?.click()
-        }
-      },
-      onConnected() {
-        // Initialize from attribute
-        if (host.hasAttribute('expanded')) {
-          expanded = true
-          updateState(true)
+          updateState(!expanded)
         }
       },
       onAttributeChanged({ name, newValue }) {
@@ -297,166 +270,192 @@ export const Disclosure = bElement<DisclosureEvents>({
           }
         }
       },
+      onConnected() {
+        if (host.hasAttribute('expanded')) {
+          updateState(true)
+        }
+      },
     }
   },
 })
-```
 
-#### Disclosure with Native `<details>` Element
-
-```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
-
-const detailsStyles = createStyles({
-  details: {
-    display: 'block',
-  },
-  summary: {
-    padding: '0.75rem',
-    cursor: 'pointer',
-    listStyle: 'none',
-    userSelect: 'none',
-  },
-  content: {
-    padding: '1rem',
-    marginTop: '0.5rem',
-  },
-})
-
-type DetailsDisclosureEvents = {
-  toggle: { open: boolean }
-}
-
-export const DetailsDisclosure = bElement<DetailsDisclosureEvents>({
-  tag: 'details-disclosure',
+// bElement using native <details> - defined locally, NOT exported
+const DetailsDisclosure = bElement({
+  tag: 'pattern-details-disclosure',
   observedAttributes: ['open'],
+  hostStyles,
   shadowDom: (
     <details
-      p-target='details'
-      {...detailsStyles.details}
+      p-target="details"
       p-trigger={{ toggle: 'handleToggle' }}
+      {...detailsStyles.details}
     >
-      <summary
-        p-target='summary'
-        {...detailsStyles.summary}
-      >
-        <slot name='summary'>Show Details</slot>
+      <summary p-target="summary" {...detailsStyles.summary}>
+        <slot name="summary">Show Details</slot>
       </summary>
-      <div
-        p-target='content'
-        {...detailsStyles.content}
-      >
-        <slot name='content'></slot>
+      <div {...detailsStyles.content}>
+        <slot></slot>
       </div>
     </details>
   ),
   bProgram({ $, host, emit }) {
     const details = $<HTMLDetailsElement>('details')[0]
+    const summary = $('summary')[0]
+
+    const updateSummaryStyle = (isOpen: boolean) => {
+      if (isOpen) {
+        summary?.attr('class', `${detailsStyles.summary.classNames.join(' ')} ${detailsStyles.summaryOpen.classNames.join(' ')}`)
+      } else {
+        summary?.attr('class', detailsStyles.summary.classNames.join(' '))
+      }
+    }
 
     return {
       handleToggle() {
-        const isOpen = details?.open || false
-        if (isOpen) {
-          host.setAttribute('open', '')
-        } else {
-          host.removeAttribute('open')
-        }
+        const isOpen = details?.open ?? false
+        host.toggleAttribute('open', isOpen)
+        updateSummaryStyle(isOpen)
         emit({ type: 'toggle', detail: { open: isOpen } })
       },
       onAttributeChanged({ name, newValue }) {
         if (name === 'open' && details) {
           details.open = newValue !== null
+          updateSummaryStyle(details.open)
         }
       },
       onConnected() {
-        // Initialize from attribute
         if (host.hasAttribute('open') && details) {
           details.open = true
+          updateSummaryStyle(true)
         }
       },
     }
   },
 })
-```
 
-#### Disclosure Group (Multiple Disclosures)
+// Stories - EXPORTED for testing/training
+export const collapsedDisclosure = story({
+  intent: 'Display a disclosure in its collapsed default state',
+  template: () => (
+    <Disclosure>
+      <span slot="label">Show Details</span>
+      This is the additional content that can be shown or hidden.
+    </Disclosure>
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const button = await findByAttribute('p-target', 'button')
 
-```typescript
-import { bElement } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
-import { Disclosure } from './disclosure'
-
-const groupStyles = createStyles({
-  group: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '1rem',
+    assert({
+      given: 'disclosure is rendered',
+      should: 'be collapsed initially',
+      actual: button?.getAttribute('aria-expanded'),
+      expected: 'false',
+    })
   },
 })
 
-type DisclosureGroupEvents = {
-  itemToggle: { id: string; expanded: boolean }
-}
+export const expandedDisclosure = story({
+  intent: 'Display a disclosure in its expanded state',
+  template: () => (
+    <Disclosure expanded>
+      <span slot="label">Hide Details</span>
+      This content is visible because the disclosure is expanded.
+    </Disclosure>
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const button = await findByAttribute('p-target', 'button')
 
-export const DisclosureGroup = bElement<DisclosureGroupEvents>({
-  tag: 'disclosure-group',
-  shadowDom: (
-    <div
-      p-target='group'
-      {...groupStyles.group}
-    >
-      <slot></slot>
+    assert({
+      given: 'disclosure has expanded attribute',
+      should: 'be expanded',
+      actual: button?.getAttribute('aria-expanded'),
+      expected: 'true',
+    })
+  },
+})
+
+export const toggleDisclosure = story({
+  intent: 'Demonstrate disclosure toggle behavior with click interaction',
+  template: () => (
+    <Disclosure>
+      <span slot="label">Toggle Me</span>
+      Click the button to show or hide this content.
+    </Disclosure>
+  ),
+  play: async ({ findByAttribute, assert, fireEvent }) => {
+    const button = await findByAttribute('p-target', 'button')
+
+    assert({
+      given: 'disclosure is rendered',
+      should: 'be collapsed initially',
+      actual: button?.getAttribute('aria-expanded'),
+      expected: 'false',
+    })
+
+    if (button) await fireEvent(button, 'click')
+
+    assert({
+      given: 'disclosure button is clicked',
+      should: 'become expanded',
+      actual: button?.getAttribute('aria-expanded'),
+      expected: 'true',
+    })
+
+    if (button) await fireEvent(button, 'click')
+
+    assert({
+      given: 'disclosure button is clicked again',
+      should: 'become collapsed',
+      actual: button?.getAttribute('aria-expanded'),
+      expected: 'false',
+    })
+  },
+})
+
+export const nativeDetailsDisclosure = story({
+  intent: 'Disclosure using native <details> element for built-in accessibility',
+  template: () => (
+    <DetailsDisclosure>
+      <span slot="summary">Click to reveal</span>
+      This disclosure uses the native &lt;details&gt; element for built-in keyboard support.
+    </DetailsDisclosure>
+  ),
+  play: async ({ findByAttribute, assert }) => {
+    const details = await findByAttribute('p-target', 'details')
+
+    assert({
+      given: 'native details disclosure is rendered',
+      should: 'be closed initially',
+      actual: (details as HTMLDetailsElement)?.open,
+      expected: false,
+    })
+  },
+})
+
+export const staticDisclosures = story({
+  intent: 'Static FunctionalTemplate disclosures for non-interactive display',
+  template: () => (
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
+      <StaticDisclosure buttonLabel="Collapsed State">
+        This content is hidden.
+      </StaticDisclosure>
+      <StaticDisclosure expanded buttonLabel="Expanded State">
+        This content is visible because expanded is true.
+      </StaticDisclosure>
     </div>
   ),
-  bProgram({ $, emit }) {
-    const group = $('group')[0]
-
-    return {
-      handleItemToggle(event: CustomEvent) {
-        // Forward toggle events from child disclosures
-        emit({
-          type: 'itemToggle',
-          detail: {
-            id: (event.target as HTMLElement).id,
-            expanded: event.detail.expanded,
-          },
-        })
-      },
-      onConnected() {
-        // Listen for toggle events from child disclosures
-        const slot = group?.querySelector('slot') as HTMLSlotElement
-        if (slot) {
-          slot.addEventListener('slotchange', () => {
-            const assignedNodes = slot.assignedElements()
-            assignedNodes.forEach((node) => {
-              if (node.tagName === 'DISCLOSURE-WIDGET') {
-                node.addEventListener('toggle', (e) => {
-                  // Handle child disclosure toggle
-                })
-              }
-            })
-          })
-        }
-      },
-    }
+  play: async ({ accessibilityCheck }) => {
+    await accessibilityCheck({})
   },
 })
 ```
 
 ## Plaited Integration
 
-- **Works with Shadow DOM**: Optional - disclosures can be FT (no Shadow DOM) or bElements (with Shadow DOM)
-- **Uses bElement built-ins** (if using bElement):
-  - `p-trigger` for button clicks and keyboard events
-  - `p-target` for element selection with `$()`
-  - `attr()` helper for managing ARIA attributes and visibility
-  - `render()` helper for updating arrow indicator
-  - `observedAttributes` for reactive updates
-- **Requires external web API**: 
-  - Native `<details>` element (if using native implementation)
-  - Keyboard event handling
-- **Cleanup required**: No - standard DOM elements handle their own lifecycle
+- **Works with Shadow DOM**: Yes - interactive disclosures are bElements with Shadow DOM
+- **Uses bElement built-ins**: `$`, `p-trigger`, `p-target`, `emit`, `attr`
+- **Requires external web API**: Native `<details>` element (if using native implementation)
+- **Cleanup required**: No
 
 ## Keyboard Interaction
 
@@ -465,7 +464,7 @@ export const DisclosureGroup = bElement<DisclosureGroupEvents>({
 - **Tab**: Moves focus to next focusable element
 - **Shift + Tab**: Moves focus to previous focusable element
 
-**Note**: Native `<button>` elements handle Enter and Space automatically. The `handleKeydown` handler is only needed for additional keyboard logic or custom elements.
+**Note**: Native `<button>` elements handle Enter and Space automatically.
 
 ## WAI-ARIA Roles, States, and Properties
 
@@ -481,15 +480,13 @@ export const DisclosureGroup = bElement<DisclosureGroupEvents>({
 
 ## Best Practices
 
-1. **Use Functional Templates** for static disclosures in stories
-2. **Use bElements** for dynamic disclosures that need state management
-3. **Consider native `<details>`** - Provides built-in disclosure behavior
-4. **Provide visual indicators** - Use arrows or icons that change with state
-5. **Hide decorative elements** - Use `aria-hidden="true"` on arrows/icons
-6. **Use semantic HTML** - Prefer native `<details>` and `<summary>` when possible
-7. **Label clearly** - Button text should indicate what will be shown/hidden
-8. **Update button text** - Optionally change button label based on state (e.g., "Show" → "Hide")
-9. **Animate transitions** - Use CSS transitions for smooth expand/collapse
+1. **Use native `<details>`** when possible - provides built-in accessibility
+2. **Use FunctionalTemplates** for static display
+3. **Use bElements** for dynamic disclosures that need state management
+4. **Use spread syntax** - `{...styles.x}` for applying styles
+5. **Provide visual indicators** - Use arrows or icons that change with state
+6. **Hide decorative elements** - Use `aria-hidden="true"` on arrows/icons
+7. **Use `$()` with `p-target`** - never use `querySelector` directly
 
 ## Accessibility Considerations
 
@@ -500,40 +497,6 @@ export const DisclosureGroup = bElement<DisclosureGroupEvents>({
 - Content should be properly associated with button via `aria-controls`
 - Hidden content is not announced by screen readers until expanded
 
-## Differences from Accordion
-
-| Feature | Disclosure | Accordion |
-|---------|------------|-----------|
-| Number of items | Single | Multiple |
-| Keyboard navigation | Tab only | Arrow keys, Home, End |
-| State management | Simple toggle | Multiple panels, single-expand mode |
-| Use case | Single expandable section | Grouped related sections |
-| Complexity | Simple | More complex |
-
-## Native `<details>` Element
-
-The native HTML `<details>` element provides built-in disclosure behavior:
-
-```html
-<details>
-  <summary>Show Details</summary>
-  <p>Content that can be shown or hidden.</p>
-</details>
-```
-
-**Advantages:**
-
-- Built-in keyboard support
-- No JavaScript required
-- Automatic ARIA attributes
-- Browser-native behavior
-
-**Considerations:**
-
-- Less styling control
-- Limited customization options
-- May not work in all use cases
-
 ## Browser Compatibility
 
 | Browser | Support |
@@ -542,8 +505,6 @@ The native HTML `<details>` element provides built-in disclosure behavior:
 | Firefox | Full support (native `<details>` since v49) |
 | Safari | Full support (native `<details>` since v6) |
 | Edge | Full support (native `<details>` since v79) |
-
-**Note**: Native HTML elements and ARIA attributes have universal support in modern browsers with assistive technology.
 
 ## References
 
