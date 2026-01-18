@@ -46,19 +46,25 @@ jobs:
         run: |
           bun install
 
-      - name: Check for API or Skills changes
+      - name: Check for TypeScript or Skills changes
         id: check-changes
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Get list of changed files
-          CHANGED_FILES=$(gh pr diff ${{ github.event.pull_request.number }} --name-only)
+          # Get list of changed files using gh pr view (handles large PRs better than gh pr diff)
+          CHANGED_FILES=$(gh pr view ${{ github.event.pull_request.number }} --json files --jq '.files[].path')
 
-          # Check for API changes (src/*/index.ts exports, public APIs)
-          if echo "$CHANGED_FILES" | grep -qE '^src/.*/index\.ts$|^src/[^/]+\.ts$'; then
-            echo "api_changed=true" >> $GITHUB_OUTPUT
+          # Check for TypeScript changes (any .ts or .tsx file)
+          TS_FILES=$(echo "$CHANGED_FILES" | grep -E '\.(ts|tsx)$' || true)
+          if [ -n "$TS_FILES" ]; then
+            echo "typescript_changed=true" >> $GITHUB_OUTPUT
+            # Store the list of changed TypeScript files (newline-separated)
+            echo "typescript_files<<EOF" >> $GITHUB_OUTPUT
+            echo "$TS_FILES" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           else
-            echo "api_changed=false" >> $GITHUB_OUTPUT
+            echo "typescript_changed=false" >> $GITHUB_OUTPUT
+            echo "typescript_files=" >> $GITHUB_OUTPUT
           fi
 
           # Check for skills changes
@@ -94,7 +100,9 @@ jobs:
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
-            API_CHANGED: ${{ steps.check-changes.outputs.api_changed }}
+            TYPESCRIPT_CHANGED: ${{ steps.check-changes.outputs.typescript_changed }}
+            TYPESCRIPT_FILES: |
+              ${{ steps.check-changes.outputs.typescript_files }}
             SKILLS_CHANGED: ${{ steps.check-changes.outputs.skills_changed }}
 
             ## Task 1: Review Pull Request
@@ -118,23 +126,22 @@ jobs:
                - Any breaking changes
                - Testing notes
 
-            2. **Leave approval comment**: Use `gh pr comment` with your review summary.
-
-            ## Task 3: Documentation Sync (if API_CHANGED=true or SKILLS_CHANGED=true)
-
-            If API or skills files changed:
-
-            1. **Check affected files** for missing or outdated TSDoc comments
-            2. **Update documentation** using the code-documentation@plaited_development-skills skill patterns:
+            2. **TSDoc Sync** (only if TYPESCRIPT_CHANGED=true):
+               After approving, check ALL files listed in TYPESCRIPT_FILES for missing or outdated TSDoc comments.
+               These are ALL TypeScript files changed in this PR (across all commits):
+               - Read each file in TYPESCRIPT_FILES
                - Add missing TSDoc for new public exports
                - Update existing TSDoc if signatures changed
                - Use `@internal` for non-public APIs
-            3. **Commit changes** to this PR branch with message:
-               ```
-               docs: sync API documentation
+               - Use the code-documentation@plaited_development-skills skill patterns
+               - Commit ALL TSDoc changes together with message:
+                 ```
+                 docs: sync TSDoc comments
 
-               Co-Authored-By: Claude <noreply@anthropic.com>
-               ```
+                 Co-Authored-By: Claude <noreply@anthropic.com>
+                 ```
+
+            3. **Leave approval comment**: Use `gh pr comment` with your review summary.
 
             Be constructive and helpful in your feedback.
 
