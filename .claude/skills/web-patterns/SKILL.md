@@ -1,40 +1,219 @@
 ---
-name: plaited-web-patterns
+name: web-patterns
 description: Default Web API patterns for bElement architecture, including modern HTML features, performance optimizations, and Shadow DOM compatible patterns.
 license: ISC
 compatibility: Requires bun
 allowed-tools: WebFetch, Write, Read, Glob, mcp__chrome-devtools__*
 ---
 
-# Plaited Web Patterns
+# Web Patterns
 
-Extract modern HTML and Web API patterns from external sources and adapt them for Plaited's bElement architecture.
+Foundation web patterns that train the Plaited agent's world model for generating UI code.
 
 ## Purpose
 
-This skill activates when:
+This skill provides **training data** for the Plaited agent—patterns that establish the agent's understanding of web APIs, accessibility requirements, and Plaited integration. These patterns are NOT reusable templates; they are knowledge that informs code generation.
+
+**Use this when:**
 - Extracting patterns from web articles (web.dev, MDN, etc.)
 - Analyzing Web API documentation for Plaited integration
-- Adapting web APIs to work with bElement
+- Understanding accessibility patterns (ARIA)
 - Creating new web pattern documentation
 
-## Pattern Extraction
+**Training Pipeline:**
+```mermaid
+flowchart LR
+    A[Web Patterns] --> B[Agent World Model]
+    C[User Design Inputs] --> B
+    B --> D[Generated Stories]
+    D --> E[Human Feedback]
+    E --> B
+```
 
-### Target Patterns
+## Native HTML First
 
-- Modern HTML features (dialog, popover, invokers, command pattern)
-- Web APIs (Intersection Observer, Resize Observer, View Transitions)
-- Performance optimizations (preconnect, fetchpriority, priority hints)
-- Accessibility improvements (ARIA patterns, semantic HTML)
-- Shadow DOM compatible patterns
+**CRITICAL**: Before creating a bElement, check if native HTML elements solve the problem.
 
-### Extraction Workflow
+| Need | Native Solution | When to Use bElement |
+|------|-----------------|----------------------|
+| Collapsible content | `<details>/<summary>` | Custom animation, complex state |
+| Modal dialog | `<dialog>` | Custom backdrop, multiple dialogs |
+| Tooltip/popup | Popover API | Custom positioning logic |
+| Button actions | Invoker Commands API | Complex multi-step actions |
+| Form controls | Native `<input>`, `<select>` | Custom styling, complex validation |
 
-1. Fetch URL with WebFetch tool
-2. Identify patterns matching target criteria
-3. Apply framework-first adaptation (see below)
-4. Format using output template
-5. Save to references/ directory
+### Popover API
+
+Native popup behavior without JavaScript:
+
+```html
+<!-- Declarative popover -->
+<button popovertarget="my-popup">Open</button>
+<div id="my-popup" popover>Popup content</div>
+
+<!-- With explicit actions -->
+<button popovertarget="menu" popovertargetaction="show">Show</button>
+<button popovertarget="menu" popovertargetaction="hide">Hide</button>
+<button popovertarget="menu" popovertargetaction="toggle">Toggle</button>
+```
+
+### Invoker Commands API
+
+Declarative button-to-element control (experimental):
+
+```html
+<!-- Dialog control -->
+<button commandfor="dialog" command="showModal">Open Dialog</button>
+<dialog id="dialog">Content</dialog>
+
+<!-- Popover control -->
+<button commandfor="popup" command="togglePopover">Toggle</button>
+<div id="popup" popover>Popup</div>
+
+<!-- Details control -->
+<button commandfor="details" command="toggle">Toggle</button>
+<details id="details"><summary>Summary</summary>Content</details>
+```
+
+## Pattern Philosophy
+
+### Patterns Are Training Data
+
+Patterns in this skill train the agent's world model. They are NOT:
+- Reusable templates to import
+- Published packages
+- Shared across projects
+
+They ARE:
+- Knowledge for the agent to learn from
+- Self-contained examples demonstrating best practices
+- Training material that improves generation quality
+
+### Pattern File Structure
+
+Each pattern follows this structure:
+
+```
+pattern/
+  accordion.css.ts        # Styles (createStyles) - ALWAYS separate
+  accordion.tokens.ts     # Design tokens (optional)
+  accordion.stories.tsx   # bElement/FT + stories (imports from css.ts)
+```
+
+**Key principles:**
+1. **Styles in `*.css.ts`** - createStyles always in separate file
+2. **bElement or FunctionalTemplate is local** - Defined in stories, NOT exported
+3. **Stories ARE exported** - Required for testing and training
+4. **Tokens in `*.tokens.ts`** - Design system values when needed
+
+### Self-Contained Stories Example
+
+```typescript
+// accordion.css.ts
+import { createStyles } from 'plaited'
+
+export const styles = createStyles({
+  accordion: {
+    border: '1px solid #ccc',
+    borderRadius: '4px',
+  },
+  header: {
+    padding: '1rem',
+    cursor: 'pointer',
+  },
+  content: {
+    padding: '1rem',
+  },
+})
+```
+
+```typescript
+// accordion.stories.tsx
+import { bElement } from 'plaited/ui'
+import { story } from 'plaited/testing'
+import { styles } from './accordion.css.ts'
+
+// bElement - defined locally, NOT exported
+const Accordion = bElement({
+  tag: 'pattern-accordion',
+  shadowDom: (
+    <div p-target="accordion" {...styles.accordion}>
+      <button p-target="header" p-trigger={{ click: 'toggle' }} {...styles.header}>
+        <slot name="header">Header</slot>
+      </button>
+      <div p-target="content" {...styles.content} hidden>
+        <slot>Content</slot>
+      </div>
+    </div>
+  ),
+  bProgram({ $ }) {
+    return {
+      toggle() {
+        const content = $('content')[0]
+        const isHidden = content?.attr('hidden') !== null
+        content?.attr('hidden', isHidden ? null : '')
+      },
+    }
+  },
+})
+
+// Stories - EXPORTED for testing/training
+export const defaultAccordion = story({
+  intent: 'Demonstrates basic accordion expand/collapse behavior',
+  template: () => (
+    <Accordion>
+      <span slot="header">Click to expand</span>
+      <p>Accordion content goes here.</p>
+    </Accordion>
+  ),
+  play: async ({ findByAttribute, assert, fireEvent }) => {
+    const header = await findByAttribute('p-target', 'header')
+    const content = await findByAttribute('p-target', 'content')
+
+    assert({
+      given: 'accordion is rendered',
+      should: 'have content hidden initially',
+      actual: content?.hasAttribute('hidden'),
+      expected: true,
+    })
+
+    if (header) await fireEvent(header, 'click')
+
+    assert({
+      given: 'header is clicked',
+      should: 'show content',
+      actual: content?.hasAttribute('hidden'),
+      expected: false,
+    })
+  },
+})
+
+export const multipleAccordions = story({
+  intent: 'Shows multiple independent accordions',
+  template: () => (
+    <>
+      <Accordion>
+        <span slot="header">Section 1</span>
+        <p>Content 1</p>
+      </Accordion>
+      <Accordion>
+        <span slot="header">Section 2</span>
+        <p>Content 2</p>
+      </Accordion>
+    </>
+  ),
+})
+```
+
+### Pattern Precedence
+
+User-defined patterns **always supersede** foundation patterns from this skill.
+
+**Precedence order:**
+1. **User patterns** (extracted by user) → Highest priority
+2. **Foundation patterns** (from web-patterns) → Defaults
+
+When generating code, the agent checks user patterns first. If no user pattern exists, foundation patterns provide the baseline.
 
 ## Framework-First Adaptation
 
@@ -106,7 +285,7 @@ Save extracted patterns to:
 
 ## Pattern Output Template
 
-```markdown
+````markdown
 # [Pattern Name]
 
 ## Overview
@@ -119,27 +298,51 @@ Brief description of what this pattern does.
 ## Implementation
 
 ### Vanilla JavaScript
+```javascript
 // Standard web API usage
+```
 
 ### Plaited Adaptation
-import { bElement } from 'plaited/ui'
 
-export const Example = bElement({
+```typescript
+// [pattern-name].css.ts
+import { createStyles } from 'plaited'
+
+export const styles = createStyles({
+  // Style definitions
+})
+```
+
+```typescript
+// [pattern-name].stories.tsx
+import { bElement } from 'plaited/ui'
+import { story } from 'plaited/testing'
+import { styles } from './[pattern-name].css.ts'
+
+// bElement or FunctionalTemplate - local, NOT exported
+const Example = bElement({
   tag: 'example-element',
   shadowDom: (
-    // Template with p-trigger and p-target
+    <div {...styles.container}>
+      {/* Template with p-trigger and p-target */}
+    </div>
   ),
-  bProgram({ $, host }) {
+  bProgram({ $ }) {
     return {
-      onConnected() {
-        // Setup if web API needed
-      },
-      onDisconnected() {
-        // Cleanup required for web APIs
-      }
+      // Event handlers
     }
   }
 })
+
+// Stories - EXPORTED (intent is required)
+export const defaultExample = story({
+  intent: 'Describes what this story demonstrates',
+  template: () => <Example />,
+  play: async ({ findByAttribute, assert, fireEvent }) => {
+    // Test assertions
+  },
+})
+```
 
 ## Plaited Integration
 - Works with Shadow DOM: [yes/no]
@@ -162,12 +365,12 @@ export const Example = bElement({
 ## References
 - Source: [Article URL]
 - MDN: [MDN link]
-```
+````
 
 ## Adding New Patterns
 
 When you add a new pattern to the `references/` directory, tell Claude to re-read the skill:
-- "Re-read the plaited-web-patterns skill to see the new pattern"
+- "Re-read the web-patterns skill to see the new pattern"
 - Claude will use the Read tool to load the updated content
 
 ## Pattern References
@@ -176,7 +379,7 @@ When you add a new pattern to the `references/` directory, tell Claude to re-rea
 
 - **[form-structure-pattern.md](references/form-structure-pattern.md)** - Best practices for structuring web forms with semantic HTML, field organization, validation, and UX considerations. Covers proper form elements, logical grouping, accessibility, and mobile-friendly patterns.
 
-- **[css-logical-properties-pattern.md](references/css-logical-properties-pattern.md)** - CSS logical properties for building internationalized components that adapt to different writing directions (LTR, RTL, vertical). Ensures layouts work correctly across languages and writing modes.
+- **[css-logical-properties-pattern.md](references/css-logical-properties-pattern.md)** - CSS logical properties for building internationalized elements that adapt to different writing directions (LTR, RTL, vertical). Ensures layouts work correctly across languages and writing modes.
 
 - **[aria-landmarks-pattern.md](references/aria-landmarks-pattern.md)** - Eight landmark roles that identify major page sections for assistive technology users. Facilitates efficient keyboard navigation and helps users perceive page structure (banner, navigation, main, complementary, contentinfo, search, form, region).
 
@@ -241,6 +444,7 @@ When you add a new pattern to the `references/` directory, tell Claude to re-rea
 - **[aria-windowsplitter-pattern.md](references/aria-windowsplitter-pattern.md)** - Control that divides a container into resizable panels. Users can adjust panel sizes using keyboard or mouse, with proper ARIA attributes for accessibility.
 
 ## Related Skills
-- plaited-ui-patterns - bElement patterns and styling
-- plaited-standards - Code conventions
-- typescript-lsp@plaited_development-skills - Type verification for bElement APIs
+
+- **ui-patterns** - bElement patterns and styling
+- **standards** - Code conventions
+- **typescript-lsp@plaited_development-skills** - Type verification for bElement APIs

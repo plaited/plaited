@@ -1,5 +1,5 @@
 ---
-name: plaited-standards
+name: standards
 description: Plaited code conventions and development standards. Use when writing or editing TypeScript code in Plaited projects, following code conventions (type system, function style, imports), generating code, or verifying code quality.
 license: ISC
 compatibility: Requires bun
@@ -104,7 +104,7 @@ Plaited is a **template-driven** framework:
 
 ## Related Skills
 
-- **plaited-behavioral-core** - BP coordination patterns
-- **plaited-ui-patterns** - Templates, bElements, styling
+- **behavioral-core** - BP coordination patterns
+- **ui-patterns** - Templates, bElements, styling
 - **typescript-lsp@plaited_development-skills** - Type verification and symbol discovery
 - **code-documentation@plaited_development-skills** - TSDoc writing standards

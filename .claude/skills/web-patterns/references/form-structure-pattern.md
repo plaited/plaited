@@ -1136,8 +1136,7 @@ export const formStory = story({
 - **MDN**: [How to structure a web form](https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms/How_to_structure_a_web_form)
 - **MDN**: [HTML Forms](https://developer.mozilla.org/en-US/docs/Learn/Forms)
 - **WAI-ARIA**: [Form Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/form/)
-- **Plaited**: [Form-Associated Elements](../plaited-ui-patterns/references/form-associated-elements.md)
-- **Plaited**: [bElement Documentation](../plaited-ui-patterns/references/b-element.md)
+- **Plaited**: See **ui-patterns** skill for Form-Associated Elements and bElement documentation
 
 ## Summary
 

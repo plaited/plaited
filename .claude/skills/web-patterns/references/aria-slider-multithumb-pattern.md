@@ -749,4 +749,4 @@ When the range of one slider is dependent on the current value of another slider
 - Source: [W3C ARIA Authoring Practices Guide - Slider (Multi-Thumb) Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slider-multithumb/)
 - Related: [Slider Pattern](./aria-slider-pattern.md) - Single-thumb slider implementation
 - MDN: [ARIA slider role](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/slider_role)
-- Related: [Form-Associated Elements](../plaited-ui-patterns/references/form-associated-elements.md) - FormData usage
+- Related: See **ui-patterns** skill for Form-Associated Elements (FormData usage)
