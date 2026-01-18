@@ -1,154 +1,111 @@
-# GitHub Integration
+# GitHub CLI
 
-## Prefer GitHub CLI Over Web Fetch
+Prefer the `gh` CLI for GitHub operations over API calls or WebFetch.
 
-When given GitHub URLs (PRs, issues, repos), use the `gh` CLI instead of WebFetch for more reliable and complete data access.
+## Why Use gh CLI
 
-### PR Information
+1. **Authentication**: Uses existing GitHub credentials
+2. **Pagination**: Handles large result sets automatically
+3. **Type safety**: Structured JSON output with `--json`
+4. **Simpler**: No URL construction or token management
+
+## Pull Requests
 
 ```bash
-# Get PR details with comments and reviews (comprehensive)
-gh pr view <number> --repo <owner>/<repo> --json title,body,comments,reviews,reviewRequests,state,author,additions,deletions,changedFiles
+# Create PR
+gh pr create --title "feat: add auth" --body "Description here"
 
-# Get PR diff
-gh pr diff <number> --repo <owner>/<repo>
+# Create PR with template
+gh pr create --title "feat: add auth" --body "$(cat <<'EOF'
+## Summary
+Brief description
 
-# Get PR files changed
-gh pr view <number> --repo <owner>/<repo> --json files
+## Test Plan
+- [ ] Unit tests pass
+- [ ] Manual testing done
+EOF
+)"
 
-# Get PR checks status
-gh pr checks <number> --repo <owner>/<repo>
+# List PRs
+gh pr list
+gh pr list --state open --author @me
+
+# View PR details
+gh pr view 123
+gh pr view 123 --json title,body,reviews
+
+# Review PR
+gh pr review 123 --approve
+gh pr review 123 --request-changes --body "Please fix X"
+
+# Checkout PR locally
+gh pr checkout 123
 ```
 
-### Complete PR Evaluation Workflow
-
-When asked to evaluate PR feedback, you MUST fetch **all** feedback sources. Do not just fetch comments/reviews - also check security alerts and inline code comments.
-
-**Step 1: Fetch PR comments and reviews**
-```bash
-gh pr view <number> --repo <owner>/<repo> --json title,body,comments,reviews,state
-```
-
-**Step 2: Fetch code scanning alerts (security vulnerabilities)**
-```bash
-gh api repos/<owner>/<repo>/code-scanning/alerts --jq '
-  .[] | select(.state == "open") | {
-    number: .number,
-    rule: .rule.description,
-    severity: .rule.severity,
-    file: .most_recent_instance.location.path,
-    line: .most_recent_instance.location.start_line
-  }
-'
-```
-
-**Step 3: Fetch inline review comments (code quality, suggestions)**
-```bash
-gh api repos/<owner>/<repo>/pulls/<number>/comments --jq '
-  .[] | {
-    id: .id,
-    user: .user.login,
-    file: .path,
-    line: .line,
-    body: .body
-  }
-'
-```
-
-**Step 4: Address ALL feedback**
-Create a checklist and address each item:
-- [ ] Human reviewer comments
-- [ ] Claude Code review comments
-- [ ] GitHub Advanced Security alerts (ReDoS, injection, etc.)
-- [ ] GitHub Code Quality comments (dead code, useless assignments)
-- [ ] Inline review suggestions
-
-### Comment Sources
-
-| Source | API/Location | Description |
-|--------|--------------|-------------|
-| Human reviewers | `gh pr view --json reviews` | Code owners, team members |
-| Claude Code | `gh pr view --json comments` | AI-generated review (login: `claude`) |
-| GitHub Advanced Security | `gh api .../code-scanning/alerts` | Security vulnerabilities (ReDoS, injection) |
-| GitHub Code Quality | `gh api .../pulls/.../comments` | Code quality issues (login: `github-code-quality[bot]`) |
-| Inline suggestions | `gh api .../pulls/.../comments` | Line-specific review comments |
-
-### Filtering by Author
+## Issues
 
 ```bash
-# Get all automated reviews from PR
-gh pr view <number> --repo <owner>/<repo> --json reviews --jq '
-  .reviews[] | select(.author.login | test("github-|claude")) | {author: .author.login, state: .state}
-'
-
-# Get specific inline comment by ID
-gh api repos/<owner>/<repo>/pulls/<number>/comments --jq '
-  .[] | select(.id == <comment_id>)
-'
-```
-
-### URL Patterns for Specific Feedback
-
-| URL Pattern | How to Fetch |
-|-------------|--------------|
-| `.../pull/<n>#issuecomment-<id>` | `gh pr view <n> --json comments` |
-| `.../pull/<n>#discussion_r<id>` | `gh api repos/.../pulls/<n>/comments` |
-| `.../security/code-scanning/<id>` | `gh api repos/.../code-scanning/alerts/<id>` |
-
-### Review States
-- `APPROVED` - Reviewer approved changes
-- `CHANGES_REQUESTED` - Reviewer requested changes
-- `COMMENTED` - Review with comments only
-- `PENDING` - Review not yet submitted
-
-### Issue Information
-
-```bash
-# Get issue details
-gh issue view <number> --repo <owner>/<repo> --json title,body,comments,state,author
+# Create issue
+gh issue create --title "Bug: X fails" --body "Steps to reproduce..."
 
 # List issues
-gh issue list --repo <owner>/<repo> --json number,title,state
+gh issue list
+gh issue list --label bug --state open
+
+# View issue
+gh issue view 456
+gh issue view 456 --json title,body,comments
+
+# Close issue
+gh issue close 456 --comment "Fixed in #123"
 ```
 
-### Repository Information
+## JSON Output Fields
+
+Common `--json` fields for structured output:
 
 ```bash
-# Get repo info
-gh repo view <owner>/<repo> --json name,description,url
+# PR fields
+gh pr view 123 --json number,title,body,state,author,reviews,commits,files
 
-# List workflows
-gh workflow list --repo <owner>/<repo>
+# Issue fields
+gh issue view 456 --json number,title,body,state,author,labels,comments
 
-# View run logs
-gh run view <run-id> --repo <owner>/<repo> --log
+# List with specific fields
+gh pr list --json number,title,author --jq '.[] | "\(.number): \(.title)"'
 ```
 
-### URL Parsing
+## Repository Operations
 
-When given a GitHub URL, extract the components:
+```bash
+# Clone repository
+gh repo clone owner/repo
 
-| URL Pattern | Command |
-|-------------|---------|
-| `github.com/<owner>/<repo>/pull/<number>` | `gh pr view <number> --repo <owner>/<repo>` |
-| `github.com/<owner>/<repo>/issues/<number>` | `gh issue view <number> --repo <owner>/<repo>` |
-| `github.com/<owner>/<repo>` | `gh repo view <owner>/<repo>` |
-| `github.com/<owner>/<repo>/actions/runs/<id>` | `gh run view <id> --repo <owner>/<repo>` |
+# View repo info
+gh repo view
+gh repo view --json name,description,url
 
-### JSON Output Fields
+# Create repo
+gh repo create my-project --public --clone
+```
 
-Common useful JSON fields for PRs:
-- `title`, `body`, `state`, `author`
-- `comments` - PR comments
-- `reviews` - Review comments and approvals
-- `additions`, `deletions`, `changedFiles`
-- `files` - List of changed files
-- `commits` - Commit history
+## Actions and Checks
 
-### Benefits Over WebFetch
+```bash
+# View workflow runs
+gh run list
+gh run view 12345
 
-1. **Complete data** - Access to all comments, reviews, and metadata
-2. **Authentication** - Uses configured GitHub credentials
-3. **Structured output** - JSON format for reliable parsing
-4. **No rate limiting issues** - Authenticated requests have higher limits
-5. **Access to private repos** - Works with repos you have access to
+# View check status on PR
+gh pr checks 123
+
+# Re-run failed jobs
+gh run rerun 12345 --failed
+```
+
+## Best Practices
+
+1. **Use `--json`** for parsing: Avoid regex on human-readable output
+2. **Use `--jq`** for filtering: Combine with JSON output for precise data
+3. **Check exit codes**: `gh` returns non-zero on errors
+4. **Prefer specific commands**: Use `gh pr` over raw API calls

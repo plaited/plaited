@@ -47,5 +47,4 @@ yarn.lock
 
 # Claude
 .claude/settings.local.json
-.mcp.json
 notes.md
