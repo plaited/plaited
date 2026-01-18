@@ -66,6 +66,6 @@ Only after confirming the feature isn't built into bElement:
 ## Related Resources
 
 - **[code-conventions.md](code-conventions.md)**: Plaited-specific patterns for users
-- **code-documentation skill**: Complete TSDoc workflow and templates
+- **code-documentation@plaited_development-skills skill**: Complete TSDoc workflow and templates
 - **accuracy.md rule**: 95% confidence threshold and verification protocol
 - **code-review.md rule**: Internal style conventions for contributors
