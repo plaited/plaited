@@ -19,7 +19,6 @@ import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 import { useDevCommand } from './workshop/use-dev-command.ts'
 import { useTestCommand } from './workshop/use-test-command.ts'
-import { useValidateSkillCommand } from './workshop/validate-skill.ts'
 
 console.log('🎭 Starting Plaited workshop')
 
@@ -148,4 +147,3 @@ if (subcommand === 'dev') {
   useDevCommand({ port, cwd, colorScheme: devColorScheme, paths })
 }
 if (subcommand === 'test') useTestCommand({ port, cwd, colorScheme, paths, recordVideo })
-if (subcommand === 'validate-skill') useValidateSkillCommand({ cwd, paths, json: values.json })
