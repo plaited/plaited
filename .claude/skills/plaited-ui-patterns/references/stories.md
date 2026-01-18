@@ -61,9 +61,7 @@ export const example = story({ ... })
 
 #### `intent` (Required)
 
-Natural language description of what the story demonstrates or tests. This field serves dual purposes:
-1. **Test documentation** - Describes the scenario being tested
-2. **Training data** - Provides intent for world agent training (see `world-agent` skill)
+Natural language description of what the story demonstrates or tests. This field serves as **test documentation** - describing the scenario being tested.
 
 ```typescript
 export const basicCard = story({
