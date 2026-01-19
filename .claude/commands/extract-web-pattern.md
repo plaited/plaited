@@ -48,7 +48,15 @@ From the source content, extract:
 
 Transform vanilla JavaScript examples to Plaited patterns:
 
-**Check bElement built-ins first:**
+**Check native HTML first:**
+| Need | Native Solution | When to Use bElement |
+|------|-----------------|----------------------|
+| Collapsible content | `<details>/<summary>` | Custom animation, complex state |
+| Modal dialog | `<dialog>` | Custom backdrop, multiple dialogs |
+| Tooltip/popup | Popover API | Custom positioning logic |
+| Button actions | Invoker Commands API | Complex multi-step actions |
+
+**Check bElement built-ins:**
 | Need | bElement Provides | Don't Use |
 |------|-------------------|-----------|
 | Query Shadow DOM | `$` with p-target | root.querySelector() |
@@ -94,6 +102,21 @@ Tell the user:
 
 ---
 
+## Pattern Precedence
+
+User-defined patterns **always supersede** foundation patterns from the `web-patterns` skill.
+
+**Precedence order:**
+1. **User patterns** (extracted by user) → Highest priority
+2. **Foundation patterns** (from web-patterns) → Defaults
+
+When generating code, the agent checks user patterns first. If no user pattern exists, foundation patterns provide the baseline. This allows users to:
+- Override default ARIA patterns with custom implementations
+- Add project-specific patterns not in the foundation
+- Customize accessibility approaches for their needs
+
+---
+
 ## Creating Pattern Skill
 
 If no pattern skill exists, create one:
@@ -113,7 +136,6 @@ Create the following files:
 ---
 name: [skill-name]
 description: Web API patterns adapted for Plaited bElement architecture. Use when implementing modern HTML features, Web APIs, or accessibility patterns.
-license: ISC
 compatibility: Requires bun
 allowed-tools: WebFetch, Write, Read, Glob
 ---
@@ -148,8 +170,8 @@ Use the `/extract-web-pattern` command to add new patterns:
 Or ask Claude to fetch a URL and extract patterns.
 
 ## Related Skills
-- plaited-ui-patterns - bElement patterns and styling
-- plaited-standards - Code conventions
+- ui-patterns - bElement patterns and styling
+- standards - Code conventions
 - typescript-lsp@plaited_development-skills - Type verification
 ```
 
@@ -170,7 +192,7 @@ Tell the user:
 
 ## Output Template
 
-```markdown
+````markdown
 # [Pattern Name]
 
 ## Overview
@@ -188,24 +210,46 @@ Brief description of what this pattern does.
 ```
 
 ### Plaited Adaptation
-```typescript
-import { bElement } from 'plaited/ui'
 
-export const Example = bElement({
+```typescript
+// [pattern-name].css.ts
+import { createStyles } from 'plaited'
+
+export const styles = createStyles({
+  container: {
+    // Style definitions
+  },
+})
+```
+
+```typescript
+// [pattern-name].stories.tsx
+import { bElement } from 'plaited/ui'
+import { story } from 'plaited/testing'
+import { styles } from './[pattern-name].css.ts'
+
+// bElement or FunctionalTemplate - defined locally, NOT exported
+const Example = bElement({
   tag: 'example-element',
   shadowDom: (
-    // Template with p-trigger and p-target
+    <div {...styles.container}>
+      {/* Template with p-trigger and p-target */}
+    </div>
   ),
-  bProgram({ $, host }) {
+  bProgram({ $ }) {
     return {
-      onConnected() {
-        // Setup if web API needed
-      },
-      onDisconnected() {
-        // Cleanup required for web APIs
-      }
+      // Event handlers
     }
   }
+})
+
+// Stories - EXPORTED (intent is REQUIRED)
+export const defaultExample = story({
+  intent: 'Describes what this story demonstrates',
+  template: () => <Example />,
+  play: async ({ findByAttribute, assert, fireEvent }) => {
+    // Test assertions
+  },
 })
 ```
 
@@ -230,10 +274,10 @@ export const Example = bElement({
 ## References
 - Source: [Article URL or "User provided"]
 - MDN: [MDN link if applicable]
-```
+````
 
 ## Related Skills
-- plaited-ui-patterns - bElement patterns and styling
-- plaited-standards - Code conventions
+- ui-patterns - bElement patterns and styling
+- standards - Code conventions
 - typescript-lsp@plaited_development-skills - Type verification
 - validate-skill@plaited_development-skills - Skill validation

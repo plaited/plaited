@@ -27,9 +27,9 @@ const ButtonComponent = () => <button>Click me</button>
 When verifying implementation details in Plaited projects:
 
 1. **Plaited Skills First**: Check what the Plaited framework provides before consulting external sources:
-   - `plaited-behavioral-core` - BP patterns, behavioral programs
-   - `plaited-ui-patterns` - Templates, bElements, styling
-   - `plaited-standards` - Code conventions
+   - `behavioral-core` - BP patterns, behavioral programs
+   - `ui-patterns` - Templates, bElements, styling
+   - `standards` - Code conventions
 
 2. **TypeScript LSP**: Use `typescript-lsp@plaited_development-skills` skill for type verification:
    - `lsp-hover` to verify type signatures

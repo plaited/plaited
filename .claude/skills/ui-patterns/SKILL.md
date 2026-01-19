@@ -1,5 +1,5 @@
 ---
-name: plaited-ui-patterns
+name: ui-patterns
 description: Plaited UI patterns for templates, behavioral elements, and styling. Use when creating bElements or FunctionalTemplates, writing stories for testing, using createStyles, building form controls, or coordinating cross-island communication.
 license: ISC
 compatibility: Requires bun
@@ -9,7 +9,7 @@ compatibility: Requires bun
 
 ## Purpose
 
-This skill provides documentation for building Plaited user interfaces using behavioral elements, templates, and islands architecture. UI is one application domain of Plaited's behavioral programming paradigm.
+This skill provides **training data** for the Plaited agent—patterns that establish the agent's understanding of UI architecture, styling systems, and element coordination. These patterns inform code generation for user interfaces.
 
 **Use this when:**
 - Creating templates with bElement or FunctionalTemplate
@@ -19,7 +19,54 @@ This skill provides documentation for building Plaited user interfaces using beh
 - Writing stories for testing (`.stories.tsx`)
 - Offloading computation to web workers
 
-**For core BP patterns** (event selection, rule composition, useBehavioral), see **plaited-behavioral-core** skill.
+**For core BP patterns** (event selection, rule composition, useBehavioral), see **behavioral-core** skill.
+
+## Training Philosophy
+
+### Patterns Are Training Data
+
+All patterns in this skill train the Plaited agent's world model. They are NOT:
+- Reusable templates to import directly
+- Published packages
+- Shared across projects
+
+They ARE:
+- Knowledge for the agent to learn from
+- Self-contained examples demonstrating best practices
+- Training material that improves generation quality
+
+### Training Pipeline
+
+```mermaid
+flowchart LR
+    A[UI Patterns] --> B[Agent World Model]
+    C[Web Patterns] --> B
+    D[User Design Inputs] --> B
+    B --> E[Generated Stories]
+    E --> F[Human Feedback]
+    F --> B
+```
+
+**User Design Inputs include:**
+- Color palettes and brand colors
+- Type scales (font sizes, weights, line heights)
+- Spacing scales
+- Border radii, shadows
+- Existing design tokens
+
+The agent uses `createTokens`, `createStyles`, `createHostStyles`, `createKeyframes`, and `joinStyles` to translate these inputs into the Plaited styling system.
+
+### Human-on-the-Loop
+
+The agent generates patterns, but humans provide feedback and can edit:
+
+1. **Agent generates** → Stories with bElements, styles, tokens
+2. **Human reviews** → Runs stories, checks visual output
+3. **Human provides feedback** → "Make the button larger", "Use different colors"
+4. **Agent adjusts** → Regenerates based on feedback
+5. **Human can edit** → Developers can modify generated code directly
+
+This is a **collaborative** workflow, not fully autonomous.
 
 ## Quick Reference
 
@@ -28,6 +75,25 @@ This skill provides documentation for building Plaited user interfaces using beh
 **Testing**: UI templates are tested with stories (`.stories.tsx`) using browser automation via the workshop CLI.
 
 **TypeScript LSP**: Use the `typescript-lsp@plaited_development-skills` skill for type inference from `plaited` package imports.
+
+## CSS-in-JS API
+
+**createStyles** returns objects with `classNames: string[]` and `stylesheets: string[]`:
+
+```typescript
+// button.css.ts
+import { createStyles } from 'plaited'
+
+export const styles = createStyles({
+  button: {
+    padding: '0.5rem 1rem',
+    borderRadius: '4px',
+  },
+})
+
+// Usage in JSX - spread syntax
+<button {...styles.button}>Click me</button>
+```
 
 ## Pattern Categories
 
@@ -41,7 +107,8 @@ Use for:
 - Atomic CSS with createStyles
 - Host styling with createHostStyles
 - Design tokens with createTokens
-- Keyframes animation
+- Keyframes animation with createKeyframes
+- Style composition with joinStyles
 
 ### Behavioral Elements
 
@@ -138,27 +205,54 @@ flowchart TD
 
 ## File Organization
 
-### For Simple Elements (FunctionalTemplate):
+### Pattern File Structure
+
+Each pattern follows this structure:
+
 ```
-element/
-  button.css.ts          # Styles (createStyles)
-  button.tokens.ts       # Design tokens (optional)
-  button.stories.tsx     # FT defined + stories
+pattern/
+  accordion.css.ts        # Styles (createStyles) - ALWAYS separate
+  accordion.tokens.ts     # Design tokens (optional)
+  accordion.stories.tsx   # bElement/FT + stories (imports from css.ts)
 ```
 
-### For Complex Elements (bElement):
-```
-element/
-  toggle-input.css.ts         # Styles + hostStyles
-  fills.tokens.ts             # Tokens (optional)
-  toggle-input.ts             # bElement definition
-  toggle-input.stories.tsx    # Import bElement + stories
-```
+**Key principles:**
+1. **Styles in `*.css.ts`** - createStyles always in separate file
+2. **bElement or FunctionalTemplate is local** - Defined in stories, NOT exported
+3. **Stories ARE exported** - Required for testing and training
+4. **Tokens in `*.tokens.ts`** - Design system values when needed
 
-### Naming Conventions:
+### For Generated Applications
+
+When the agent generates code for an actual application, file structure is determined collaboratively between the agent and developer based on project needs.
+
+### Naming Conventions
 - **bElement-specific styles**: Export as `styles` and `hostStyles`
 - **Reusable pattern styles**: Export with descriptive names (e.g., `buttonStyles`)
 - **Token files**: Use `*.tokens.ts` extension
+
+## Story API
+
+Every story **requires an `intent` property** describing what it demonstrates:
+
+```typescript
+// Interaction story (with play function)
+export const defaultButton = story({
+  intent: 'Demonstrates button click handling',
+  template: () => <Button>Click me</Button>,
+  play: async ({ findByAttribute, assert, fireEvent }) => {
+    const button = await findByAttribute('p-target', 'button')
+    if (button) await fireEvent(button, 'click')
+    // assertions...
+  },
+})
+
+// Snapshot story (no play function)
+export const disabledButton = story({
+  intent: 'Shows disabled button appearance',
+  template: () => <Button disabled>Disabled</Button>,
+})
+```
 
 ## Best Practices
 
@@ -205,13 +299,14 @@ Complete working examples in `assets/`:
 
 ## Code Standards
 
-For code conventions, standards, and verification workflow, see the **plaited-standards** skill:
+For code conventions, standards, and verification workflow, see the **standards** skill:
 - `code-conventions.md` - Type system, function style, imports
 - `standards.md` - 95% confidence threshold, documentation, Bun APIs
 - `verification-workflow.md` - Code generation workflow
 
 ## Related Skills
 
-- **plaited-standards** - Code conventions, development standards, verification workflow
-- **plaited-behavioral-core** - Core BP patterns (foundation)
+- **standards** - Code conventions, development standards, verification workflow
+- **behavioral-core** - Core BP patterns (foundation)
+- **web-patterns** - Web API patterns for bElement architecture
 - **typescript-lsp@plaited_development-skills** - Type verification and symbol discovery
