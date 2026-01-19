@@ -28,9 +28,9 @@ This project uses `.claude/rules/` for project-specific guidance:
 - **Accuracy**: @.claude/rules/accuracy.md - Confidence thresholds
 
 For Plaited patterns, see these skills in `.claude/skills/`:
-- **plaited-standards** - Code conventions, development standards, verification workflow
-- **plaited-behavioral-core** - Behavioral programming patterns, neuro-symbolic reasoning
-- **plaited-ui-patterns** - Templates, bElements, styling, forms, stories
+- **standards** - Code conventions, development standards, verification workflow
+- **behavioral-core** - Behavioral programming patterns, neuro-symbolic reasoning
+- **ui-patterns** - Templates, bElements, styling, forms, stories
 
 For TSDoc workflow and templates, see the **code-documentation@plaited_development-skills** skill.
 
@@ -50,8 +50,8 @@ Plaited is a behavioral programming framework for reactive custom elements. Key 
 3. CSS-in-JS System
 
 For architectural patterns and implementation details:
-- **plaited-behavioral-core** - `.claude/skills/plaited-behavioral-core/references/behavioral-programs.md`
-- **plaited-ui-patterns** - `.claude/skills/plaited-ui-patterns/references/b-element.md`, `styling.md`
+- **behavioral-core** - `.claude/skills/behavioral-core/references/behavioral-programs.md`
+- **ui-patterns** - `.claude/skills/ui-patterns/references/b-element.md`, `styling.md`
 
 ### Code Style Essentials
 
@@ -62,7 +62,7 @@ For architectural patterns and implementation details:
 - JSX syntax only (not `h()` or `createTemplate()`)
 - Object parameters for functions with 2+ parameters
 
-For complete conventions, see the **plaited-standards** skill: `.claude/skills/plaited-standards/references/code-conventions.md`
+For complete conventions, see the **standards** skill: `.claude/skills/standards/references/code-conventions.md`
 
 ### Documentation
 
@@ -73,7 +73,7 @@ For complete conventions, see the **plaited-standards** skill: `.claude/skills/p
 - Use Mermaid diagrams only (not ASCII art)
 - In SKILL.md files, use markdown links `[name](path)` not `@path` references
 
-See the **plaited-standards** skill (`.claude/skills/plaited-standards/references/standards.md`) and the **code-documentation@plaited_development-skills** skill for complete guidelines.
+See the **standards** skill (`.claude/skills/standards/references/standards.md`) and the **code-documentation@plaited_development-skills** skill for complete guidelines.
 
 ## Important Constraints
 
@@ -86,9 +86,9 @@ See the **plaited-standards** skill (`.claude/skills/plaited-standards/reference
 ## Additional Resources
 
 **Plaited Skills** (`.claude/skills/`):
-- **plaited-standards** - Code conventions, development standards, verification workflow
-- **plaited-behavioral-core** - Behavioral programming patterns, neuro-symbolic reasoning
-- **plaited-ui-patterns** - Templates, bElements, styling, forms, stories
+- **standards** - Code conventions, development standards, verification workflow
+- **behavioral-core** - Behavioral programming patterns, neuro-symbolic reasoning
+- **ui-patterns** - Templates, bElements, styling, forms, stories
 
 **Development Skills** (from `@plaited/development-skills`):
 - **code-documentation@plaited_development-skills** - TSDoc workflow and templates

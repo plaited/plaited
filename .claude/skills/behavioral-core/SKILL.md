@@ -1,5 +1,5 @@
 ---
-name: plaited-behavioral-core
+name: behavioral-core
 description: Plaited behavioral programming patterns for event-driven coordination and symbolic reasoning. Use when implementing behavioral programs with behavioral()/useBehavioral, designing rule composition with bThread/bSync, orchestrating test runners or workflows, or building neuro-symbolic reasoning layers.
 license: ISC
 compatibility: Requires bun
@@ -260,6 +260,6 @@ const createOrchestrator = useBehavioral({
 
 ## Related Skills
 
-- **plaited-standards** - Code conventions, development standards, verification workflow
-- **plaited-ui-patterns** - UI application of BP (bElements, templates, styling)
+- **standards** - Code conventions, development standards, verification workflow
+- **ui-patterns** - UI application of BP (bElements, templates, styling)
 - **typescript-lsp@plaited_development-skills** - Type verification and symbol discovery
