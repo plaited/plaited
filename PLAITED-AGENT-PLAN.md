@@ -25,7 +25,7 @@ flowchart TB
         Discovery["tool-discovery<br/>skill-discovery"]
         Utils["embedder<br/>semantic-cache<br/>relation-store"]
         FileOps["file-ops<br/>search<br/>bash-exec"]
-        AgentsDisc["agents-discovery"]
+        SchemaUtils["schema-utils"]
     end
 
     subgraph Skill["SKILL LAYER"]
@@ -45,6 +45,7 @@ flowchart TB
     subgraph Infra["INFRASTRUCTURE"]
         StartServer["start-server"]
         Sandbox["code-sandbox"]
+        RulesDisc["rules-discovery"]
     end
 
     Calls --> Tool
@@ -107,14 +108,20 @@ Plain functions that FunctionGemma can call. Not behavioral programs.
 |--------|---------|---------|-------|
 | `relation-store` | DAG for plans, files, agents | Map + callback | Multi-parent, LLM context |
 
-### To Build (🔲)
+### Built (Phase 2) ✅
 
 | Module | Purpose | Storage | Notes |
 |--------|---------|---------|-------|
 | `file-ops` | read, write, edit | N/A | Bun.file(), Bun.write() |
-| `search` | glob + grep | N/A | Bun.Glob, Bun.$ rg |
-| `bash-exec` | terminal commands | N/A | Bun.$ |
-| `agents-discovery` | AGENTS.md + refs | uses relation-store | Hierarchical file refs |
+| `search` | glob + grep | N/A | Bun.Glob, ripgrep |
+| `bash-exec` | terminal commands | N/A | Bun.spawn + AbortController |
+| `schema-utils` | Zod → ToolSchema | N/A | `zodToToolSchema()` |
+
+### To Build (🔲)
+
+| Module | Purpose | Storage | Notes |
+|--------|---------|---------|-------|
+| `rules-discovery` | AGENTS.md + refs | SQLite + FTS5 | Progressive loading |
 
 ---
 
@@ -233,12 +240,138 @@ await store.persist()
 
 ---
 
+## rules-discovery
+
+Progressive loading of AGENTS.md files and their markdown references. Renamed from `agents-discovery` to better reflect its purpose: loading rules and instructions for agent behavior.
+
+### Context Budget
+
+FunctionGemma has **37K token context** - more than initially assumed. This allows a hybrid approach:
+- Root rules always loaded (universal instructions)
+- Progressive loading for specifics (semantic search on intent)
+- Spatial locality for nested rules (directory-scoped)
+
+### Three-Tier Progressive Loading
+
+```mermaid
+flowchart TB
+    subgraph Tier1["Tier 1: Always Loaded"]
+        Root["Root AGENTS.md"]
+        Root -->|"universal rules"| Context["Agent Context"]
+    end
+
+    subgraph Tier2["Tier 2: Semantic Search"]
+        Links["Markdown Links<br/>[text](path)"]
+        Links -->|"indexed + embedded"| FTS["FTS5 + Vector"]
+        FTS -->|"match intent"| Context
+    end
+
+    subgraph Tier3["Tier 3: Spatial Locality"]
+        Nested["Nested AGENTS.md<br/>(subdirectories)"]
+        FileOps["File Operations<br/>(cwd detection)"]
+        FileOps -->|"targets subtree"| Nested
+        Nested --> Context
+    end
+```
+
+### Loading Strategy
+
+| Tier | Trigger | Content | Rationale |
+|------|---------|---------|-----------|
+| **1. Always** | Agent startup | Root `AGENTS.md` | Universal rules apply to all tasks |
+| **2. Semantic** | Intent matches | `[text](path)` links | Load specific refs when relevant |
+| **3. Spatial** | File ops in subtree | Nested `AGENTS.md` | Directory-specific conventions |
+
+### Markdown Link Parsing
+
+**Critical insight**: `skill-discovery.ts` does NOT currently parse markdown links `[text](path)` as structured references. It chunks the entire body text including markdown syntax.
+
+For `rules-discovery`, we need to:
+1. **Extract markdown links** - Parse `[display text](relative/path)` from AGENTS.md
+2. **Index link text** - The display text is the semantic key for search
+3. **Resolve paths** - Convert relative paths to absolute for loading
+4. **Chunk content** - Index the referenced file content for semantic search
+
+### Types
+
+```typescript
+type RuleReference = {
+  displayText: string      // "[text]" portion - semantic key
+  relativePath: string     // "(path)" portion - file location
+  absolutePath: string     // Resolved from AGENTS.md location
+  source: string           // Which AGENTS.md contains this link
+}
+
+type RulesDiscoveryConfig = {
+  /** Root AGENTS.md path */
+  rootPath: string
+  /** SQLite database path */
+  dbPath: string
+  /** Embedder instance for semantic search */
+  embedder: Embedder
+  /** Current working directory for spatial locality */
+  cwd?: string
+}
+
+type RulesDiscovery = {
+  /** Get rules for an intent (Tier 2 semantic search) */
+  getRulesForIntent: (intent: string) => Promise<string[]>
+  /** Get rules for a file path (Tier 3 spatial locality) */
+  getRulesForPath: (filePath: string) => Promise<string[]>
+  /** Get root rules (Tier 1 always loaded) */
+  getRootRules: () => string
+  /** Refresh index (re-scan AGENTS.md files) */
+  refresh: () => Promise<void>
+  /** Close database connection */
+  close: () => void
+}
+```
+
+### Future: Enhance skill-discovery with Same Pattern
+
+Skill SKILL.md files have the same structure as AGENTS.md:
+```
+.claude/skills/loom/
+├── SKILL.md                          # Main skill (always loaded on match)
+│   ├── [templates](references/patterns/templates.md)
+│   ├── [stories](references/patterns/stories.md)
+│   └── [tool-layer](references/weaving/tool-layer.md)
+└── references/
+    ├── patterns/
+    │   ├── templates.md              # Loaded when "templates" matches intent
+    │   └── stories.md
+    └── weaving/
+        └── tool-layer.md
+```
+
+**Progressive skill reference loading:**
+1. **SKILL.md always loaded** when skill matches intent
+2. **References indexed** with display text as semantic key
+3. **References loaded progressively** when deeper intent matches
+
+This would reduce context bloat when loading skills - currently `getBody()` returns the entire SKILL.md body, but references could be loaded on-demand.
+
+**Implementation notes:**
+- Same markdown link parsing as rules-discovery
+- Share `extractMarkdownLinks()` utility between both modules
+- Add `searchReferences(skillName, intent)` to skill-discovery API
+
+---
+
 ## Infrastructure
 
 | Module | Purpose | Status |
 |--------|---------|--------|
 | `start-server` | Workshop subprocess | ✅ |
 | `code-sandbox` | @anthropic-ai/sandbox-runtime | 🔲 port from old branch |
+| `rules-discovery` | AGENTS.md context management | 🔲 |
+
+**Why rules-discovery is infrastructure, not a tool:**
+- Model doesn't call it directly (unlike tool-discovery, skill-discovery)
+- Orchestrator uses it to manage context before/after tool calls
+- Intercepts file operations to load spatial rules
+- Loads root AGENTS.md at startup
+- Provides context, not actions
 
 ---
 
@@ -289,14 +422,27 @@ await store.persist()
 
 ### Phase 3: Discovery & Integration
 
-8. **Create `agents-discovery.ts`**
-   - Parse AGENTS.md and referenced files
-   - Build hierarchy using relation-store
-   - Extract rules, skills, patterns
+8. **Create `rules-discovery.ts`**
+   - Three-tier progressive loading (Always → Semantic → Spatial)
+   - Parse markdown links `[text](path)` as structured references
+   - SQLite + FTS5 for hybrid search (like skill-discovery)
+   - Tier 1: Root AGENTS.md always in context
+   - Tier 2: Indexed references loaded on semantic match
+   - Tier 3: Nested AGENTS.md loaded for directory-scoped ops
 
 9. **Port `code-sandbox.ts`**
    - From old branch
    - @anthropic-ai/sandbox-runtime integration
+
+10. **Create shared `markdown-links.ts` utility**
+    - `extractMarkdownLinks(content)` → `{ displayText, relativePath }[]`
+    - Used by both rules-discovery and skill-discovery
+    - Enables progressive loading pattern for both
+
+11. **(Future) Enhance `skill-discovery.ts`**
+    - Add markdown link parsing using shared utility
+    - Add `searchReferences(skillName, intent)` API
+    - Progressive loading of skill reference files
 
 ### Phase 4: Symbolic Layer
 
@@ -323,7 +469,8 @@ await store.persist()
 - [x] Create `file-ops.ts`
 - [x] Create `search.ts`
 - [x] Create `bash-exec.ts`
-- [ ] Create `agents-discovery.ts`
+- [x] Create `schema-utils.ts`
+- [ ] Create `rules-discovery.ts` (renamed from agents-discovery)
 - [ ] Port `code-sandbox.ts`
 
 ---
@@ -363,11 +510,38 @@ await store.persist()
 - Tool Layer Docs: `.claude/skills/loom/references/weaving/tool-layer.md`
 - Existing Zod patterns: `src/workshop/workshop.schemas.ts`, `src/testing/testing.schemas.ts`
 - Old code-sandbox: `github.com/plaited/plaited/blob/c76bd81.../src/agent/code-sandbox.ts`
+- skill-discovery.ts: Pattern for SQLite + FTS5 hybrid search
+
+**Architecture Decision (rules-discovery):**
+- Renamed from `agents-discovery` to `rules-discovery` (better reflects purpose)
+- FunctionGemma has 37K context (not 4K-8K as initially assumed)
+- Three-tier progressive loading:
+  1. **Always**: Root AGENTS.md in context
+  2. **Semantic**: Markdown links `[text](path)` indexed + loaded on intent match
+  3. **Spatial**: Nested AGENTS.md loaded when file ops target that subtree
+
+**Critical Gap Confirmed:**
+`skill-discovery.ts` does NOT parse markdown links as structured references:
+```typescript
+// skill-discovery.ts lines 669-670
+const body = extractBody(content)  // Raw markdown including [text](path) syntax
+const chunks = chunkText(body, chunkSize, chunkOverlap)  // Chunked as-is
+```
+- ❌ Can't semantically search "testing rules" → get referenced file
+- ❌ Can't load linked files progressively
+- ✅ Does match keywords in raw markdown (e.g., "testing.md" as text)
+
+This pattern (markdown link extraction) should be implemented for `rules-discovery` and potentially backported to `skill-discovery`.
 
 **Start Next Session With:**
 ```
 Read PLAITED-AGENT-PLAN.md and continue Phase 3:
-1. Create agents-discovery.ts (parse AGENTS.md + refs, build hierarchy with relation-store)
+1. Create rules-discovery.ts with three-tier progressive loading
+   - Parse markdown links [text](path) as structured references
+   - SQLite + FTS5 for hybrid search (follow skill-discovery pattern)
+   - Tier 1: Root AGENTS.md always loaded
+   - Tier 2: References indexed, loaded on semantic match
+   - Tier 3: Nested AGENTS.md loaded for directory-scoped ops
 2. Port code-sandbox.ts from old branch
 3. Tests and commit
 ```
