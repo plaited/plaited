@@ -20,7 +20,7 @@
  * Uses GGUF models loaded in-process via llama.cpp bindings.
  * Models are auto-downloaded from Hugging Face on first use.
  *
- * Default model: `all-MiniLM-L6-v2` (Q8_0 quantization, ~25MB, 384 dimensions)
+ * Default model: `embeddinggemma-300M` (Q8_0 quantization, 256 dimensions)
  *
  * If model loading fails, vector search is gracefully disabled
  * and FTS5 keyword search is used instead.
@@ -30,10 +30,10 @@ export type EmbedderConfig = {
    * Hugging Face model URI or local path to GGUF file.
    *
    * Supports:
-   * - HF shorthand: `hf:LLukas22/all-MiniLM-L6-v2-GGUF:Q8_0`
-   * - Local path: `./models/all-minilm.gguf`
+   * - HF shorthand: `hf:ggml-org/embeddinggemma-300M-GGUF:Q8_0`
+   * - Local path: `./models/embeddinggemma.gguf`
    *
-   * @defaultValue `'hf:LLukas22/all-MiniLM-L6-v2-GGUF:Q8_0'`
+   * @defaultValue `'hf:ggml-org/embeddinggemma-300M-GGUF:Q8_0'`
    */
   modelUri?: string
   /**

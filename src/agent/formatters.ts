@@ -309,3 +309,124 @@ export const toolSchemaToDefinition = (schema: ToolSchema): ToolDefinition => {
     parameters,
   }
 }
+
+// ============================================================================
+// Relation Context Formatting
+// ============================================================================
+
+/**
+ * Formats relation nodes for FunctionGemma context.
+ *
+ * @param nodes - Array of relation nodes to format
+ * @param options - Formatting options
+ * @returns Formatted string for LLM context
+ *
+ * @remarks
+ * Generates a tree-style representation of relation nodes with status indicators.
+ * Useful for providing plan/step context to the model.
+ *
+ * Output format:
+ * ```
+ * plan: Implement authentication [in_progress]
+ *   step: Create user model [done]
+ *   step: Add login endpoint [pending] (depends on: step-1)
+ * ```
+ */
+export const formatRelationsForContext = (
+  nodes: Array<{
+    id: string
+    parents: string[]
+    edgeType: string
+    context: { description: string; status?: string; [key: string]: unknown }
+  }>,
+  options: {
+    /** Include parent references (default: true) */
+    showParents?: boolean
+    /** Include status indicators (default: true) */
+    showStatus?: boolean
+    /** Indent string (default: '  ') */
+    indent?: string
+    /** Maximum depth to traverse (default: unlimited) */
+    maxDepth?: number
+  } = {},
+): string => {
+  const { showParents = true, showStatus = true, indent = '  ', maxDepth } = options
+
+  // Build a map for quick lookup
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]))
+
+  // Find roots (nodes with no parents or parents not in the provided set)
+  const roots = nodes.filter((n) => n.parents.length === 0 || n.parents.every((p) => !nodeMap.has(p)))
+
+  // Track visited to avoid infinite loops in case of bad data
+  const visited = new Set<string>()
+
+  const lines: string[] = []
+
+  const formatNode = (node: (typeof nodes)[0], depth: number): void => {
+    if (visited.has(node.id)) return
+    if (maxDepth !== undefined && depth > maxDepth) return
+
+    visited.add(node.id)
+
+    const prefix = indent.repeat(depth)
+    const status = showStatus && node.context.status ? ` [${node.context.status}]` : ''
+
+    // Show parents that are in the node set
+    const parentRefs =
+      showParents && node.parents.length > 0
+        ? ` (depends on: ${node.parents.filter((p) => nodeMap.has(p)).join(', ')})`
+        : ''
+
+    lines.push(`${prefix}${node.edgeType}: ${node.context.description}${status}${parentRefs}`)
+
+    // Find and format children
+    const children = nodes.filter((n) => n.parents.includes(node.id))
+    for (const child of children) {
+      formatNode(child, depth + 1)
+    }
+  }
+
+  // Format from roots
+  for (const root of roots) {
+    formatNode(root, 0)
+  }
+
+  return lines.join('\n')
+}
+
+/**
+ * Formats a plan with its steps for FunctionGemma context.
+ *
+ * @param plan - Plan node
+ * @param steps - Step nodes belonging to this plan
+ * @returns Formatted string for LLM context
+ *
+ * @remarks
+ * Convenience wrapper for formatRelationsForContext focused on plans.
+ */
+export const formatPlanContext = (
+  plan: {
+    id: string
+    context: { description: string; status?: string }
+  },
+  steps: Array<{
+    id: string
+    parents: string[]
+    context: { description: string; status?: string; [key: string]: unknown }
+  }>,
+): string => {
+  const planNode = {
+    id: plan.id,
+    parents: [] as string[],
+    edgeType: 'plan',
+    context: plan.context,
+  }
+
+  const stepNodes = steps.map((s) => ({
+    ...s,
+    edgeType: 'step',
+  }))
+
+  return formatRelationsForContext([planNode, ...stepNodes])
+}

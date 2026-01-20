@@ -8,9 +8,9 @@
  * **Benefits:**
  * - Reduces API costs by serving cached responses for similar queries
  * - Improves latency for common query patterns
- * - Works across sessions with persistent storage
  * - Cross-platform: works on macOS, Linux, and Windows
  * - No external daemon required (runs in-process)
+ * - Pluggable persistence via `onPersist` callback
  *
  * **Model Management:**
  * - Models auto-download from Hugging Face on first use
@@ -24,7 +24,6 @@
  * @module
  */
 
-import { Database } from 'bun:sqlite'
 import type { EmbedderConfig } from './agent.types.ts'
 import { cosineSimilarity, createEmbedder } from './embedder.ts'
 
@@ -33,11 +32,47 @@ import { cosineSimilarity, createEmbedder } from './embedder.ts'
 // ============================================================================
 
 /**
+ * Internal cache entry with embedding.
+ *
+ * @internal
+ */
+type InternalCacheEntry = {
+  /** Unique identifier */
+  id: number
+  /** Original query text */
+  query: string
+  /** Cached response */
+  response: string
+  /** Timestamp when cached */
+  cachedAt: number
+  /** Number of times this cache entry was hit */
+  hitCount: number
+  /** Query embedding vector */
+  embedding: readonly number[]
+}
+
+/**
+ * Serializable cache entry for persistence.
+ */
+export type SerializableCacheEntry = {
+  /** Unique identifier */
+  id: number
+  /** Original query text */
+  query: string
+  /** Cached response */
+  response: string
+  /** Timestamp when cached */
+  cachedAt: number
+  /** Number of times this cache entry was hit */
+  hitCount: number
+  /** Query embedding vector */
+  embedding: number[]
+}
+
+/**
  * Semantic cache configuration.
  */
 export type SemanticCacheConfig = {
-  /** Path to SQLite database (default: ':memory:') */
-  dbPath?: string
   /** Embedder configuration */
   embedder?: EmbedderConfig
   /** Similarity threshold for cache hits (default: 0.85) */
@@ -46,10 +81,25 @@ export type SemanticCacheConfig = {
   maxEntries?: number
   /** TTL in milliseconds (default: 24 hours) */
   ttlMs?: number
+  /**
+   * Called when persist() is invoked.
+   * Receives the full cache snapshot - user decides where/how to store.
+   */
+  onPersist?: (entries: SerializableCacheEntry[]) => void | Promise<void>
+  /**
+   * Initial entries to hydrate the cache.
+   * User loads from wherever (file, API, DB) before creating cache.
+   */
+  initialEntries?: SerializableCacheEntry[]
+  /**
+   * If true, calls onPersist after every mutation.
+   * @defaultValue false
+   */
+  autoPersist?: boolean
 }
 
 /**
- * Cached entry metadata.
+ * Cached entry metadata (returned in lookup results).
  */
 export type CacheEntry = {
   /** Original query text */
@@ -108,6 +158,8 @@ export type SemanticCache = {
   clear: () => void
   /** Clear expired entries */
   clearExpired: () => number
+  /** Persist current state via onPersist callback */
+  persist: () => void | Promise<void>
   /** Close the cache */
   close: () => void
 }
@@ -123,8 +175,8 @@ export type SemanticCache = {
  * @returns Promise resolving to a semantic cache instance, or `undefined` if embedder unavailable
  *
  * @remarks
- * Uses SQLite for metadata persistence and in-memory Map for vector storage.
- * Vector similarity is computed using cosine similarity.
+ * Uses in-memory Map for all storage. Vector similarity is computed using cosine similarity.
+ * Persistence is pluggable via `onPersist` callback.
  *
  * **Requirements:** Model must be downloadable/loadable for semantic caching.
  * If model loading fails, returns `undefined` instead of throwing.
@@ -135,11 +187,13 @@ export type SemanticCache = {
  */
 export const createSemanticCache = async (config: SemanticCacheConfig = {}): Promise<SemanticCache | undefined> => {
   const {
-    dbPath = ':memory:',
     embedder: embedderConfig,
     similarityThreshold = 0.85,
     maxEntries = 1000,
     ttlMs = 24 * 60 * 60 * 1000,
+    onPersist,
+    initialEntries = [],
+    autoPersist = false,
   } = config
 
   // Initialize embedder - returns undefined if unavailable
@@ -148,82 +202,87 @@ export const createSemanticCache = async (config: SemanticCacheConfig = {}): Pro
     return undefined
   }
 
-  const db = new Database(dbPath)
+  // In-memory storage: id -> entry with embedding
+  const entries = new Map<number, InternalCacheEntry>()
 
-  // In-memory vector storage: id -> embedding
-  const embeddings = new Map<number, readonly number[]>()
+  // Auto-incrementing ID counter
+  let nextId = 1
 
-  // Create main cache entries table
-  db.run(`
-    CREATE TABLE IF NOT EXISTS cache_entries (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      query TEXT NOT NULL,
-      response TEXT NOT NULL,
-      cached_at INTEGER NOT NULL,
-      hit_count INTEGER DEFAULT 0
-    )
-  `)
-
-  db.run(`CREATE INDEX IF NOT EXISTS idx_cached_at ON cache_entries(cached_at)`)
+  // Hydrate from initial entries
+  for (const entry of initialEntries) {
+    entries.set(entry.id, {
+      ...entry,
+      embedding: entry.embedding,
+    })
+    if (entry.id >= nextId) {
+      nextId = entry.id + 1
+    }
+  }
 
   // Statistics
   let totalHits = 0
   let totalMisses = 0
   let totalSimilarity = 0
 
-  // Prepared statements
-  const insertEntryStmt = db.prepare(`
-    INSERT INTO cache_entries (query, response, cached_at, hit_count)
-    VALUES ($query, $response, $cachedAt, 0)
-  `)
-
-  const getByIdStmt = db.prepare<CacheEntry & { id: number }, { $id: number }>(`
-    SELECT id, query, response, cached_at as cachedAt, hit_count as hitCount
-    FROM cache_entries WHERE id = $id
-  `)
-
-  const incrementHitStmt = db.prepare(`UPDATE cache_entries SET hit_count = hit_count + 1 WHERE id = $id`)
-
-  const deleteOldestStmt = db.prepare(`
-    DELETE FROM cache_entries WHERE id IN (
-      SELECT id FROM cache_entries ORDER BY cached_at ASC LIMIT $count
-    )
-  `)
-
-  const getOldestIdsStmt = db.prepare<{ id: number }, { $count: number }>(`
-    SELECT id FROM cache_entries ORDER BY cached_at ASC LIMIT $count
-  `)
-
-  const deleteExpiredStmt = db.prepare<{ id: number }, { $expiredBefore: number }>(`
-    SELECT id FROM cache_entries WHERE cached_at < $expiredBefore
-  `)
-
-  const deleteByIdsStmt = db.prepare(`DELETE FROM cache_entries WHERE cached_at < $expiredBefore`)
-
-  const countStmt = db.prepare<{ count: number }, []>(`SELECT COUNT(*) as count FROM cache_entries`)
+  /**
+   * Triggers persistence if configured.
+   * @internal
+   */
+  const maybePersist = async (): Promise<void> => {
+    if (autoPersist && onPersist) {
+      const snapshot = [...entries.values()].map((e) => ({
+        id: e.id,
+        query: e.query,
+        response: e.response,
+        cachedAt: e.cachedAt,
+        hitCount: e.hitCount,
+        embedding: [...e.embedding],
+      }))
+      await onPersist(snapshot)
+    }
+  }
 
   /**
    * Finds the most similar embedding using linear search.
    *
    * @internal
    */
-  const findMostSimilar = (queryEmbedding: readonly number[]): { id: number; similarity: number } | undefined => {
-    let bestId: number | undefined
+  const findMostSimilar = (
+    queryEmbedding: readonly number[],
+  ): { entry: InternalCacheEntry; similarity: number } | undefined => {
+    let bestEntry: InternalCacheEntry | undefined
     let bestSimilarity = -Infinity
 
-    for (const [id, embedding] of embeddings) {
-      const similarity = cosineSimilarity(queryEmbedding, embedding)
+    for (const entry of entries.values()) {
+      const similarity = cosineSimilarity(queryEmbedding, entry.embedding)
       if (similarity > bestSimilarity) {
         bestSimilarity = similarity
-        bestId = id
+        bestEntry = entry
       }
     }
 
-    if (bestId !== undefined && bestSimilarity >= similarityThreshold) {
-      return { id: bestId, similarity: bestSimilarity }
+    if (bestEntry !== undefined && bestSimilarity >= similarityThreshold) {
+      return { entry: bestEntry, similarity: bestSimilarity }
     }
 
     return undefined
+  }
+
+  /**
+   * Removes oldest entries to enforce max entries limit.
+   *
+   * @internal
+   */
+  const enforceMaxEntries = (): void => {
+    if (entries.size >= maxEntries) {
+      // Find oldest entries
+      const sorted = [...entries.values()].sort((a, b) => a.cachedAt - b.cachedAt)
+      const toRemove = sorted.slice(0, entries.size - maxEntries + 1)
+
+      for (const entry of toRemove) {
+        entries.delete(entry.id)
+      }
+    }
   }
 
   const cache: SemanticCache = {
@@ -239,22 +298,23 @@ export const createSemanticCache = async (config: SemanticCacheConfig = {}): Pro
       const lookupMs = performance.now() - startTime
 
       if (match) {
-        const entry = getByIdStmt.get({ $id: match.id })
         const now = Date.now()
 
         // Check TTL
-        if (entry && now - entry.cachedAt < ttlMs) {
-          incrementHitStmt.run({ $id: match.id })
+        if (now - match.entry.cachedAt < ttlMs) {
+          match.entry.hitCount++
           totalHits++
           totalSimilarity += match.similarity
+
+          void maybePersist()
 
           return {
             hit: true,
             entry: {
-              query: entry.query,
-              response: entry.response,
-              cachedAt: entry.cachedAt,
-              hitCount: entry.hitCount + 1,
+              query: match.entry.query,
+              response: match.entry.response,
+              cachedAt: match.entry.cachedAt,
+              hitCount: match.entry.hitCount,
               similarity: match.similarity,
             },
             lookupMs,
@@ -271,29 +331,21 @@ export const createSemanticCache = async (config: SemanticCacheConfig = {}): Pro
       const embedding = await embedder.embed(query)
 
       // Enforce max entries
-      const { count } = countStmt.get()!
-      if (count >= maxEntries) {
-        const toDelete = count - maxEntries + 1
-        // Get IDs to delete from memory
-        const oldestIds = getOldestIdsStmt.all({ $count: toDelete })
-        for (const { id } of oldestIds) {
-          embeddings.delete(id)
-        }
-        deleteOldestStmt.run({ $count: toDelete })
+      enforceMaxEntries()
+
+      // Create new entry
+      const id = nextId++
+      const entry: InternalCacheEntry = {
+        id,
+        query,
+        response,
+        cachedAt: Date.now(),
+        hitCount: 0,
+        embedding,
       }
 
-      // Insert new entry
-      insertEntryStmt.run({
-        $query: query,
-        $response: response,
-        $cachedAt: Date.now(),
-      })
-
-      // Get the inserted row ID
-      const lastId = db.query<{ id: number }, []>(`SELECT last_insert_rowid() as id`).get()!.id
-
-      // Store embedding in memory
-      embeddings.set(lastId, embedding)
+      entries.set(id, entry)
+      void maybePersist()
     },
 
     async getOrCompute(query: string, compute: () => Promise<string>): Promise<{ response: string; cached: boolean }> {
@@ -309,11 +361,10 @@ export const createSemanticCache = async (config: SemanticCacheConfig = {}): Pro
     },
 
     stats(): CacheStats {
-      const { count: totalEntries } = countStmt.get()!
       const total = totalHits + totalMisses
 
       return {
-        totalEntries,
+        totalEntries: entries.size,
         totalHits,
         totalMisses,
         hitRate: total > 0 ? totalHits / total : 0,
@@ -322,31 +373,47 @@ export const createSemanticCache = async (config: SemanticCacheConfig = {}): Pro
     },
 
     clear(): void {
-      embeddings.clear()
-      db.run(`DELETE FROM cache_entries`)
+      entries.clear()
       totalHits = 0
       totalMisses = 0
       totalSimilarity = 0
+      void maybePersist()
     },
 
     clearExpired(): number {
       const expiredBefore = Date.now() - ttlMs
-      const expiredIds = deleteExpiredStmt.all({ $expiredBefore: expiredBefore })
+      let removed = 0
 
-      // Remove from memory
-      for (const { id } of expiredIds) {
-        embeddings.delete(id)
+      for (const [id, entry] of entries) {
+        if (entry.cachedAt < expiredBefore) {
+          entries.delete(id)
+          removed++
+        }
       }
 
-      // Remove from database
-      deleteByIdsStmt.run({ $expiredBefore: expiredBefore })
+      if (removed > 0) {
+        void maybePersist()
+      }
 
-      return expiredIds.length
+      return removed
+    },
+
+    async persist(): Promise<void> {
+      if (onPersist) {
+        const snapshot = [...entries.values()].map((e) => ({
+          id: e.id,
+          query: e.query,
+          response: e.response,
+          cachedAt: e.cachedAt,
+          hitCount: e.hitCount,
+          embedding: [...e.embedding],
+        }))
+        await onPersist(snapshot)
+      }
     },
 
     close(): void {
-      embeddings.clear()
-      db.close()
+      entries.clear()
       // Note: embedder.dispose() is async but close() is sync for API compat
       // The model will be garbage collected
     },

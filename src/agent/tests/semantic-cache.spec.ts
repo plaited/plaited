@@ -233,6 +233,130 @@ describe('semantic cache (getOrCompute)', () => {
 })
 
 // ============================================================================
+// Persistence Tests
+// ============================================================================
+
+describe('semantic cache (persistence)', () => {
+  test('calls onPersist when persist() is invoked', async () => {
+    let persistedEntries: unknown[] = []
+
+    const cache = await createSemanticCache({
+      onPersist: (entries) => {
+        persistedEntries = entries
+      },
+    })
+    expect(cache).toBeDefined()
+
+    await cache!.store('Query 1', 'Response 1')
+    await cache!.store('Query 2', 'Response 2')
+    await cache!.persist()
+
+    expect(persistedEntries).toHaveLength(2)
+    cache!.close()
+  })
+
+  test('hydrates from initialEntries', async () => {
+    // First create a cache and get its persisted state
+    let savedEntries: unknown[] = []
+
+    const firstCache = await createSemanticCache({
+      onPersist: (entries) => {
+        savedEntries = entries
+      },
+    })
+    expect(firstCache).toBeDefined()
+
+    await firstCache!.store('Hydration test query', 'Hydration test response')
+    await firstCache!.persist()
+    firstCache!.close()
+
+    // Now create a new cache with those entries
+    const secondCache = await createSemanticCache({
+      initialEntries: savedEntries as Parameters<typeof createSemanticCache>[0]['initialEntries'],
+    })
+    expect(secondCache).toBeDefined()
+
+    // Should be able to lookup without storing again
+    const result = await secondCache!.lookup('Hydration test query')
+
+    expect(result.hit).toBe(true)
+    expect(result.entry?.response).toBe('Hydration test response')
+    secondCache!.close()
+  })
+
+  test('auto-persists on store when configured', async () => {
+    let persistCount = 0
+
+    const cache = await createSemanticCache({
+      autoPersist: true,
+      onPersist: () => {
+        persistCount++
+      },
+    })
+    expect(cache).toBeDefined()
+
+    await cache!.store('Auto-persist query', 'Auto-persist response')
+    // Allow async to settle
+    await new Promise((r) => setTimeout(r, 10))
+
+    expect(persistCount).toBeGreaterThanOrEqual(1)
+    cache!.close()
+  })
+
+  test('auto-persists on clear when configured', async () => {
+    let persistCount = 0
+
+    const cache = await createSemanticCache({
+      autoPersist: true,
+      onPersist: () => {
+        persistCount++
+      },
+    })
+    expect(cache).toBeDefined()
+
+    await cache!.store('Query', 'Response')
+    await new Promise((r) => setTimeout(r, 10))
+    const countAfterStore = persistCount
+
+    cache!.clear()
+    await new Promise((r) => setTimeout(r, 10))
+
+    expect(persistCount).toBeGreaterThan(countAfterStore)
+    cache!.close()
+  })
+
+  test('does nothing if no onPersist configured', async () => {
+    const cache = await createSemanticCache()
+    expect(cache).toBeDefined()
+
+    await cache!.store('Query', 'Response')
+
+    // Should not throw
+    await cache!.persist()
+
+    cache!.close()
+  })
+
+  test('supports async onPersist', async () => {
+    let persisted = false
+
+    const cache = await createSemanticCache({
+      onPersist: async () => {
+        await new Promise((r) => setTimeout(r, 10))
+        persisted = true
+      },
+    })
+    expect(cache).toBeDefined()
+
+    await cache!.store('Query', 'Response')
+    await cache!.persist()
+
+    expect(persisted).toBe(true)
+    cache!.close()
+  })
+})
+
+// ============================================================================
 // Edge Cases
 // ============================================================================
 

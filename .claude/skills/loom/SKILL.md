@@ -89,6 +89,7 @@ bun ./scripts/query-structural.ts channels levers loops  # Multiple topics
 
 ### Weaving (Agent Architecture)
 
+- [tool-layer.md](references/weaving/tool-layer.md) - Discovery, caching, and relations
 - [custom-adapters.md](references/weaving/custom-adapters.md) - Building protocol adapters
 - [orchestrator.md](references/weaving/orchestrator.md) - Wiring agents and adapters via signals
 - [world-agent.md](references/weaving/world-agent.md) - The useWorldAgent core interface

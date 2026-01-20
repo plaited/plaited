@@ -23,7 +23,7 @@ flowchart TB
 
     subgraph Tool["TOOL LAYER (plain functions)"]
         Discovery["tool-discovery<br/>skill-discovery"]
-        Utils["embedder<br/>semantic-cache<br/>relation-graph<br/>plan-store"]
+        Utils["embedder<br/>semantic-cache<br/>relation-store"]
         FileOps["file-ops<br/>search<br/>bash-exec"]
         AgentsDisc["agents-discovery"]
     end
@@ -57,70 +57,179 @@ flowchart TB
 
 ---
 
+## Storage Strategy: Right Tool for the Job
+
+Different modules need different storage patterns. Use the simplest tool that meets the requirements.
+
+| Need | Tool | Rationale |
+|------|------|-----------|
+| **Full-text search with ranking** | SQLite + FTS5 | BM25, prefix matching, tokenization built-in |
+| **Simple key-value with TTL** | In-memory Map | No query complexity needed |
+| **Graph traversal (DAG)** | In-memory Map | Traversal, not search |
+| **Structured queries with joins** | SQLite | Relational data with FK constraints |
+
+### Persistence Philosophy
+
+Modules that don't need SQLite use pluggable persistence:
+- **Initial data** - User loads from wherever (file, API, DB) and passes JSON
+- **Persist callback** - User provides function to save; module calls it with current state
+
+This decouples storage concerns and supports remote stores, cloud storage, or custom serialization.
+
+### Module Storage Assignments
+
+| Module | Storage | Persistence | Rationale |
+|--------|---------|-------------|-----------|
+| `tool-discovery` | SQLite + FTS5 | `dbPath` config | FTS5 for hybrid search |
+| `skill-discovery` | SQLite + FTS5 | `dbPath` config | FTS5 + mtime cache |
+| `semantic-cache` | In-memory Map | `onPersist` callback | Simple TTL key-value |
+| `relation-store` | In-memory Map | `onPersist` callback | DAG traversal |
+
+---
+
 ## Tool Layer
 
 Plain functions that FunctionGemma can call. Not behavioral programs.
 
 ### Existing (✅)
 
-| Module | Purpose | Notes |
-|--------|---------|-------|
-| `tool-discovery` | FTS5 + vector search for tools | Hybrid RRF scoring |
-| `skill-discovery` | FTS5 + vector search for skills | Persistent SQLite cache |
-| `embedder` | node-llama-cpp GGUF embeddings | EmbeddingGemma-300m default |
-| `semantic-cache` | Reuse responses for similar queries | Vector similarity |
-| `formatters` | Tools → FunctionGemma tokens | Control tokens + parsing |
+| Module | Purpose | Storage | Notes |
+|--------|---------|---------|-------|
+| `tool-discovery` | FTS5 + vector search for tools | SQLite | Hybrid RRF scoring |
+| `skill-discovery` | FTS5 + vector search for skills | SQLite | Persistent cache + mtime |
+| `embedder` | node-llama-cpp GGUF embeddings | N/A | Shared by all modules |
+| `semantic-cache` | Reuse responses for similar queries | Map + callback ✅ | Vector similarity |
+| `formatters` | Tools → FunctionGemma tokens | N/A | Control tokens + parsing |
+
+### Built (✅)
+
+| Module | Purpose | Storage | Notes |
+|--------|---------|---------|-------|
+| `relation-store` | DAG for plans, files, agents | Map + callback | Multi-parent, LLM context |
 
 ### To Build (🔲)
 
-| Module | Purpose | Notes |
-|--------|---------|-------|
-| `file-ops` | read, write, edit | Bun.file(), Bun.write() |
-| `search` | glob + grep | Bun.Glob, Bun.$ rg |
-| `bash-exec` | terminal commands | Bun.$ |
-| `relation-graph` | edge store + recursive CTE | generic, any domain |
-| `plan-store` | multi-step plans | works with relation-graph |
-| `agents-discovery` | AGENTS.md + refs | hierarchical, uses relation-graph |
+| Module | Purpose | Storage | Notes |
+|--------|---------|---------|-------|
+| `file-ops` | read, write, edit | N/A | Bun.file(), Bun.write() |
+| `search` | glob + grep | N/A | Bun.Glob, Bun.$ rg |
+| `bash-exec` | terminal commands | N/A | Bun.$ |
+| `agents-discovery` | AGENTS.md + refs | uses relation-store | Hierarchical file refs |
 
-### relation-graph
+---
 
-```mermaid
-flowchart LR
-    subgraph API
-        Add["add(from, to, edgeType)"]
-        Remove["remove(nodeId)"]
-        Deps["dependenciesOf(nodeId)"]
-        Dependents["dependentsOf(nodeId)"]
-        Cycle["hasCycle(from, to)"]
-    end
+## relation-store
 
-    subgraph UseCases["Use Cases"]
-        Agents["AGENTS.md hierarchy"]
-        TS["TypeScript symbols"]
-        Plans["Plan dependencies"]
-        Domain["Any domain"]
-    end
+Unified DAG for plans, file relationships, agent hierarchies, and any domain.
 
-    API --> UseCases
+### Design Principles
+
+1. **Multi-parent DAG** - Nodes can have multiple parents (not a tree)
+2. **LLM-friendly context** - `NodeContext` is structured for model consumption
+3. **In-memory first** - Fast traversal without SQLite overhead
+4. **Pluggable persistence** - User provides `onPersist` callback
+5. **Plans are just nodes** - No separate plan-store; use `edgeType: 'plan'` / `'step'`
+
+### Types
+
+```typescript
+type NodeContext = {
+  description: string
+  status?: 'pending' | 'in_progress' | 'done' | 'failed'
+  [key: string]: unknown  // Extensible
+}
+
+type RelationNode = {
+  id: string
+  parents: string[]       // DAG: multiple parents allowed
+  edgeType: string        // 'plan', 'step', 'file', 'agent', etc.
+  context: NodeContext
+  createdAt: number
+}
+
+type RelationStoreConfig = {
+  /** Called on persist() - user handles storage */
+  onPersist?: (nodes: RelationNode[]) => void | Promise<void>
+  /** Initial data - user already loaded it */
+  initialNodes?: RelationNode[]
+  /** Auto-persist on mutation (default: false) */
+  autoPersist?: boolean
+}
 ```
 
-### plan-store
+### API
 
-External context management for FunctionGemma's 32K limit.
+```typescript
+type RelationStore = {
+  // Core CRUD
+  add: (node: Omit<RelationNode, 'createdAt'>) => void
+  update: (id: string, updates: Partial<NodeContext>) => void
+  remove: (id: string) => void
+  get: (id: string) => RelationNode | undefined
+  has: (id: string) => boolean
 
-```mermaid
-flowchart LR
-    FG["FunctionGemma"] -->|"createPlan()"| Store["plan-store"]
-    FG -->|"getNextStep()"| Store
-    FG -->|"markDone()"| Store
-    Store -->|"step dependencies"| RG["relation-graph"]
+  // Traversal
+  ancestors: (id: string) => RelationNode[]
+  descendants: (id: string) => RelationNode[]
+  parents: (id: string) => RelationNode[]
+  children: (id: string) => RelationNode[]
+  roots: () => RelationNode[]
+  leaves: () => RelationNode[]
+
+  // Filtering
+  byEdgeType: (edgeType: string) => RelationNode[]
+  byStatus: (status: NodeContext['status']) => RelationNode[]
+
+  // DAG Safety
+  wouldCreateCycle: (from: string, toParents: string[]) => boolean
+
+  // LLM Integration
+  toContext: (ids: string[]) => string
+
+  // Persistence
+  persist: () => void | Promise<void>
+
+  // Utilities
+  all: () => RelationNode[]
+  clear: () => void
+  size: () => number
+}
 ```
 
-### SQLite Strategy
+### Usage Example
 
-- Each module accepts optional `sqlite?: { db?: Database, dbPath?: string }`
-- Defaults to `:memory:`
-- User can share DB across modules when needed
+```typescript
+// User loads data however they want
+const savedData = await loadFromSomewhere()
+
+const store = createRelationStore({
+  initialNodes: savedData,
+  onPersist: (nodes) => saveToSomewhere(nodes)
+})
+
+// Create a plan with steps
+store.add({
+  id: 'plan-auth',
+  parents: [],
+  edgeType: 'plan',
+  context: { description: 'Implement auth', status: 'in_progress' }
+})
+
+store.add({
+  id: 'step-1',
+  parents: ['plan-auth'],
+  edgeType: 'step',
+  context: { description: 'Create User model', status: 'pending' }
+})
+
+// Query
+store.children('plan-auth')     // → [step-1]
+store.byStatus('pending')       // → [step-1]
+store.toContext(['plan-auth'])  // → formatted for FunctionGemma
+
+// Persist when ready
+await store.persist()
+```
 
 ---
 
@@ -135,56 +244,117 @@ flowchart LR
 
 ## Refactor Notes
 
-| File | Action |
-|------|--------|
-| `agent.types.ts` | Fix stale comment - says MiniLM but uses EmbeddingGemma |
+| File | Action | Status |
+|------|--------|--------|
+| `agent.types.ts` | Fix stale comment - says MiniLM but uses EmbeddingGemma | ✅ |
+| `semantic-cache.ts` | Refactor from SQLite to Map + onPersist callback | ✅ |
 
 ---
 
 ## Next Steps
 
-### Immediate (Next Session)
+### Phase 1: Core Infrastructure (Current)
 
-1. **Create `relation-graph.ts`**
-   - SQLite table: `edges (from_node, to_node, edge_type, metadata)`
-   - Recursive CTE for dependenciesOf/dependentsOf
-   - Cycle detection before insert
-   - Tests in `tests/relation-graph.spec.ts`
+1. **Simplify `semantic-cache.ts`**
+   - Remove SQLite dependency
+   - Use in-memory Map for entries + embeddings
+   - Add `onPersist` callback, `initialEntries` config
+   - Keep same public API
 
-2. **Create `plan-store.ts`**
-   - Tables: `plans`, `steps`
-   - Steps reference edges via relation-graph
-   - Tests in `tests/plan-store.spec.ts`
+2. **Create `relation-store.ts`**
+   - In-memory Map<string, RelationNode>
+   - Multi-parent DAG with cycle detection
+   - `onPersist` callback for pluggable persistence
+   - Tests in `tests/relation-store.spec.ts`
+
+3. **Add `formatRelationsForContext()` to `formatters.ts`**
+   - Format DAG nodes for FunctionGemma
+   - Tree-style indentation with status
+
+4. **Fix `agent.types.ts` stale comment**
+
+### Phase 2: File Operations
+
+5. **Create `file-ops.ts`**
+   - `readFile()`, `writeFile()`, `editFile()`
+   - Uses Bun.file(), Bun.write()
+
+6. **Create `search.ts`**
+   - `glob()`, `grep()`
+   - Uses Bun.Glob, ripgrep via Bun.$
+
+7. **Create `bash-exec.ts`**
+   - `exec()` with timeout, cwd options
+   - Uses Bun.$
+
+### Phase 3: Discovery & Integration
+
+8. **Create `agents-discovery.ts`**
+   - Parse AGENTS.md and referenced files
+   - Build hierarchy using relation-store
+   - Extract rules, skills, patterns
+
+9. **Port `code-sandbox.ts`**
+   - From old branch
+   - @anthropic-ai/sandbox-runtime integration
+
+### Phase 4: Symbolic Layer
+
+10. **Symbolic Layer** - bThreads for Structural IA constraints
+11. **World Agent factory**
+12. **Adapters** (ACP, A2A, MCP)
+
+---
+
+## Task Checklist
+
+### Immediate (This Session)
+
+- [x] Update PLAITED-AGENT-PLAN.md
+- [x] Simplify `semantic-cache.ts` → Map + onPersist
+- [x] Create `relation-store.ts`
+- [x] Create `tests/relation-store.spec.ts`
+- [x] Add `formatRelationsForContext()` to formatters.ts
+- [x] Fix `agent.types.ts` stale comment
+- [x] Add tool-layer.md reference to loom skill
 
 ### Following Sessions
 
-3. Port `code-sandbox.ts` from old branch
-4. Create `file-ops.ts`, `search.ts`, `bash-exec.ts`
-5. Create `agents-discovery.ts`
-
-### Later
-
-6. Symbolic Layer - bThreads for Structural IA constraints
-7. World Agent factory
-8. Adapters (ACP, A2A, MCP)
+- [ ] Create `file-ops.ts`
+- [ ] Create `search.ts`
+- [ ] Create `bash-exec.ts`
+- [ ] Create `agents-discovery.ts`
+- [ ] Port `code-sandbox.ts`
 
 ---
 
 ## Session Pickup Notes
 
-**Last Session Context:**
-- Verified 121 tests passing in src/agent/
-- Installed node-llama-cpp dependency
-- Tool layer = plain functions, not behavioral
-- relation-graph is generic (not tied to specific domain)
-- SQLite sharing via optional config
+**Completed in Tool Layer Session:**
+- ✅ Created `relation-store.ts` with multi-parent DAG, cycle detection, traversal
+- ✅ Created `tests/relation-store.spec.ts` (41 tests passing)
+- ✅ Refactored `semantic-cache.ts` from SQLite to Map + onPersist (21 tests passing)
+- ✅ Added `formatRelationsForContext()` and `formatPlanContext()` to formatters.ts
+- ✅ Fixed stale comment in `agent.types.ts` (MiniLM → embeddinggemma-300M)
+- ✅ Added `tool-layer.md` reference to loom skill
+- ✅ All tool layer tests passing (162 total)
+
+**Key Design Decisions:**
+- SQLite + FTS5 for search (tool-discovery, skill-discovery)
+- In-memory Map + callback persistence for everything else
+- LLM-first: context strings meaningful to model
+- Loose ODM inspiration: minimal schema, maximum flexibility
+- I/O decoupled: modules don't read/write files directly
+- Plans are just relation nodes with `edgeType: 'plan'` / `'step'`
 
 **Key References:**
+- Tool Layer Docs: `.claude/skills/loom/references/weaving/tool-layer.md`
 - Structural IA: `.claude/skills/loom/references/structural/`
 - Behavioral Core: `.claude/skills/behavioral-core/`
 - Old code-sandbox: `github.com/plaited/plaited/blob/c76bd81.../src/agent/code-sandbox.ts`
+- ODM article: `https://dev.to/ecarriou/creating-an-odm-with-javascript--523p`
 
 **Start Next Session With:**
 ```
-Read PLAITED-AGENT-PLAN.md and continue from "Next Steps > Immediate"
+Read PLAITED-AGENT-PLAN.md and continue from "Next Steps > Phase 2"
 ```
