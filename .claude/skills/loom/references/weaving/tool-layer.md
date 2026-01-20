@@ -4,7 +4,7 @@
 
 ## Overview
 
-The Tool Layer provides the foundational capabilities that FunctionGemma (or other LLMs) can invoke. These are pure functions, not behavioral programs. They handle discovery, search, caching, and relationship tracking.
+The Tool Layer provides the foundational capabilities that FunctionGemma (or other LLMs) can invoke. These are pure functions, not behavioral programs. They handle discovery, search, caching, file operations, and relationship tracking.
 
 ```mermaid
 flowchart TB
@@ -15,27 +15,41 @@ flowchart TB
     end
 
     subgraph Tool["Tool Layer"]
-        subgraph Search["Search & Discovery"]
+        subgraph Discovery["Discovery"]
             ToolDisc["tool-discovery"]
-            SkillDisc["skill-discovery"]
+            SkillDisc["skill-discovery<br/>+ searchReferences"]
         end
 
         subgraph Utils["Utilities"]
             Embedder["embedder"]
             Cache["semantic-cache"]
             Relations["relation-store"]
+            MdLinks["markdown-links"]
         end
 
-        subgraph Format["Formatting"]
+        subgraph FileTools["File Operations"]
+            FileOps["file-ops"]
+            Search["search (glob+grep)"]
+            BashExec["bash-exec"]
+        end
+
+        subgraph Schema["Schema"]
+            SchemaUtils["schema-utils<br/>zodToToolSchema"]
             Formatters["formatters"]
         end
     end
 
-    Calls --> Search
-    Calls --> Utils
-    Calls --> Format
-    Search --> Embedder
+    subgraph Infra["Infrastructure (not called by model)"]
+        RulesDisc["rules-discovery"]
+        StartServer["start-server"]
+    end
+
+    Calls --> Discovery
+    Calls --> FileTools
+    Calls --> Schema
+    Discovery --> Embedder
     Utils --> Embedder
+    Infra -.->|"context"| Tool
 ```
 
 ## Storage Strategy
@@ -99,24 +113,33 @@ const results = await discovery.search('file operations', { limit: 5 })
 
 ### skill-discovery
 
-FTS5 + vector search for AgentSkills directories with mtime caching.
+FTS5 + vector search for AgentSkills directories with mtime caching and progressive reference loading.
 
 | Property | Value |
 |----------|-------|
 | **Storage** | SQLite + FTS5 |
 | **Persistence** | `dbPath` config |
 | **Caching** | Persistent mtime cache |
+| **Progressive Loading** | `searchReferences()`, `getReferenceContent()` |
 
 ```typescript
 import { createSkillDiscovery } from 'plaited/agent'
 
 const skills = await createSkillDiscovery({
   dbPath: './skills.db',
-  skillsDirs: ['.claude/skills', '.plaited/skills'],
+  skillsRoot: '.claude/skills',
+  embedder: true,  // Enable vector search
 })
 
 // Search skills by semantic similarity
 const matches = await skills.search('behavioral programming')
+
+// Progressive loading: search markdown link references
+const refs = await skills.searchReferences('testing patterns')
+for (const { reference, similarity } of refs) {
+  const content = await skills.getReferenceContent(reference)
+  // Load content on-demand
+}
 ```
 
 ### embedder
@@ -130,14 +153,20 @@ GGUF embeddings via node-llama-cpp. Shared by discovery and cache modules.
 | **Runtime** | In-process (no daemon) |
 
 ```typescript
-import { createEmbedder, cosineSimilarity } from 'plaited/agent'
+import { createEmbedder, findTopSimilar } from 'plaited/agent'
 
 const embedder = await createEmbedder({
   modelUri: 'hf:ggml-org/embeddinggemma-300M-GGUF:Q8_0',
 })
 
 const embedding = await embedder.embed('search query')
-const similarity = cosineSimilarity(embedding1, embedding2)
+
+// Find top similar from a map of embeddings
+const matches = findTopSimilar({
+  query: embedding,
+  embeddings: embeddingsMap,
+  limit: 5,
+})
 ```
 
 ### semantic-cache
@@ -211,6 +240,118 @@ store.toContext(['plan-auth'])
 // → "plan: Implement authentication [in_progress]\n  step: Create User model [pending]"
 ```
 
+### file-ops
+
+File system operations using Bun's native APIs.
+
+| Property | Value |
+|----------|-------|
+| **Storage** | N/A (filesystem) |
+| **Schemas** | Zod schemas in `file-ops.schemas.ts` |
+
+```typescript
+import { readFile, writeFile, editFile } from 'plaited/agent/file-ops'
+
+// Read file
+const { content, exists } = await readFile({ path: './config.json' })
+
+// Write file
+await writeFile({ path: './output.txt', content: 'Hello, world!' })
+
+// Edit file (find and replace)
+const { success, content: newContent } = await editFile({
+  path: './config.json',
+  oldText: '"debug": false',
+  newText: '"debug": true',
+})
+```
+
+### search
+
+File and content search using Bun.Glob and ripgrep.
+
+| Property | Value |
+|----------|-------|
+| **Glob** | Bun.Glob for file patterns |
+| **Grep** | ripgrep via Bun.$ |
+| **Schemas** | Zod schemas in `search.schemas.ts` |
+
+```typescript
+import { glob, grep } from 'plaited/agent/search'
+
+// Find files by pattern
+const files = await glob({ pattern: '**/*.ts', cwd: './src' })
+
+// Search file contents
+const matches = await grep({
+  pattern: 'createEmbedder',
+  path: './src',
+  type: 'ts',
+})
+```
+
+### bash-exec
+
+Shell command execution with timeout support.
+
+| Property | Value |
+|----------|-------|
+| **Runtime** | Bun.spawn |
+| **Timeout** | AbortController |
+| **Schemas** | Zod schemas in `bash-exec.schemas.ts` |
+
+```typescript
+import { exec } from 'plaited/agent/bash-exec'
+
+const result = await exec({
+  command: 'git status',
+  cwd: process.cwd(),
+  timeout: 30000,
+})
+
+if (result.exitCode === 0) {
+  console.log(result.stdout)
+}
+```
+
+### schema-utils
+
+Convert Zod schemas to ToolSchema format for model consumption.
+
+```typescript
+import { zodToToolSchema } from 'plaited/agent/schema-utils'
+import { z } from 'zod'
+
+const inputSchema = z.object({
+  path: z.string().describe('File path to read'),
+  encoding: z.string().optional().describe('File encoding'),
+})
+
+const toolSchema = zodToToolSchema({
+  name: 'readFile',
+  description: 'Read contents of a file',
+  schema: inputSchema,
+})
+// → { name, description, parameters: { type: 'object', properties: {...}, required: [...] } }
+```
+
+### markdown-links
+
+Shared utility for extracting `[text](path)` patterns from markdown content.
+
+```typescript
+import { extractMarkdownLinks, isExternalLink, getExtension } from 'plaited/agent/markdown-links'
+
+const links = extractMarkdownLinks(markdownContent, {
+  extensions: ['.md'],  // Only .md files
+  includeExternal: false,  // Exclude http:// https://
+})
+
+for (const { displayText, relativePath, lineNumber } of links) {
+  console.log(`[${displayText}](${relativePath}) at line ${lineNumber}`)
+}
+```
+
 ### formatters
 
 Convert tools and relations to FunctionGemma's token format.
@@ -238,16 +379,58 @@ const context = formatRelationsForContext(nodes, {
 })
 ```
 
+## Infrastructure Modules
+
+These modules are NOT called directly by the model. The orchestrator uses them to manage context.
+
+### rules-discovery
+
+Three-tier progressive loading for AGENTS.md files and references.
+
+| Property | Value |
+|----------|-------|
+| **Storage** | SQLite + FTS5 |
+| **Tier 1** | Root AGENTS.md always loaded |
+| **Tier 2** | References indexed, loaded on semantic match |
+| **Tier 3** | Nested AGENTS.md loaded for directory-scoped ops |
+
+```typescript
+import { createRulesDiscovery } from 'plaited/agent/rules-discovery'
+
+const rules = await createRulesDiscovery({
+  rootDir: process.cwd(),
+  dbPath: './rules.db',
+  embedder: true,
+})
+
+// Tier 1: Always available
+const rootRules = rules.getRootRules()
+
+// Tier 2: Semantic search on references
+const refs = await rules.searchReferences('testing patterns')
+const content = await rules.getReferenceContent(refs[0].reference)
+
+// Tier 3: Spatial locality for file operations
+const pathRules = rules.getRulesForPath('./src/auth/login.ts')
+// Returns all AGENTS.md content from ancestors
+```
+
 ## Module Summary
 
-| Module | Storage | Search | Persistence |
-|--------|---------|--------|-------------|
-| `tool-discovery` | SQLite + FTS5 | Hybrid (FTS5 + vector) | `dbPath` |
-| `skill-discovery` | SQLite + FTS5 | Hybrid (FTS5 + vector) | `dbPath` |
-| `semantic-cache` | Map | Cosine similarity | `onPersist` |
-| `relation-store` | Map | Traversal only | `onPersist` |
-| `embedder` | N/A | N/A | N/A |
-| `formatters` | N/A | N/A | N/A |
+| Module | Storage | Search | Persistence | Tests |
+|--------|---------|--------|-------------|-------|
+| `tool-discovery` | SQLite + FTS5 | Hybrid (FTS5 + vector) | `dbPath` | 31 |
+| `skill-discovery` | SQLite + FTS5 | Hybrid + references | `dbPath` | 50 |
+| `semantic-cache` | Map | Cosine similarity | `onPersist` | 27 |
+| `relation-store` | Map | Traversal only | `onPersist` | 41 |
+| `file-ops` | N/A | N/A | N/A | 13 |
+| `search` | N/A | N/A | N/A | 11 |
+| `bash-exec` | N/A | N/A | N/A | 11 |
+| `schema-utils` | N/A | N/A | N/A | 6 |
+| `markdown-links` | N/A | N/A | N/A | 25 |
+| `formatters` | N/A | N/A | N/A | 22 |
+| `embedder` | N/A | N/A | N/A | - |
+| `rules-discovery` | SQLite + FTS5 | Hybrid + spatial | `dbPath` | 25 |
 
 ## Key Principles
 
@@ -256,6 +439,8 @@ const context = formatRelationsForContext(nodes, {
 3. **Pluggable I/O** - Modules don't dictate where you store data
 4. **Graceful degradation** - Vector search is optional; falls back to FTS5
 5. **In-process** - No external daemons for embeddings
+6. **Progressive loading** - Load content on-demand based on intent or spatial locality
+7. **Zod schemas** - Runtime validation with `zodToToolSchema()` conversion
 
 ## Related
 
