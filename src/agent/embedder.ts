@@ -75,16 +75,21 @@ export const cosineSimilarity = (a: readonly number[], b: readonly number[]): nu
 /**
  * Finds top-k most similar vectors using linear search.
  *
- * @param query - Query embedding vector
- * @param embeddings - Map of rowid to embedding vectors
- * @param limit - Maximum number of results
+ * @param options - Search options
  * @returns Array of matches sorted by similarity descending
  */
-export const findTopSimilar = (
-  query: readonly number[],
-  embeddings: Map<number, readonly number[]>,
-  limit: number,
-): Array<{ rowid: number; similarity: number }> => {
+export const findTopSimilar = ({
+  query,
+  embeddings,
+  limit,
+}: {
+  /** Query embedding vector */
+  query: readonly number[]
+  /** Map of rowid to embedding vectors */
+  embeddings: Map<number, readonly number[]>
+  /** Maximum number of results */
+  limit: number
+}): Array<{ rowid: number; similarity: number }> => {
   const results: Array<{ rowid: number; similarity: number }> = []
 
   for (const [rowid, embedding] of embeddings) {

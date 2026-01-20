@@ -358,7 +358,7 @@ export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Pro
       if (enableVectorSearch && embedder && embeddings.size > 0) {
         const queryVec = await embedder.embed(intent)
 
-        const topMatches = findTopSimilar(queryVec, embeddings, limit * 2)
+        const topMatches = findTopSimilar({ query: queryVec, embeddings, limit: limit * 2 })
 
         for (const match of topMatches) {
           const nameResult = getNameByRowidStmt.get({ $rowid: match.rowid })

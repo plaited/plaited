@@ -330,31 +330,80 @@ await store.persist()
 
 ## Session Pickup Notes
 
-**Completed in Tool Layer Session:**
+**Completed in Phase 1 (Tool Layer Core):**
 - ✅ Created `relation-store.ts` with multi-parent DAG, cycle detection, traversal
 - ✅ Created `tests/relation-store.spec.ts` (41 tests passing)
-- ✅ Refactored `semantic-cache.ts` from SQLite to Map + onPersist (21 tests passing)
+- ✅ Refactored `semantic-cache.ts` from SQLite to Map + onPersist (27 tests passing)
 - ✅ Added `formatRelationsForContext()` and `formatPlanContext()` to formatters.ts
 - ✅ Fixed stale comment in `agent.types.ts` (MiniLM → embeddinggemma-300M)
 - ✅ Added `tool-layer.md` reference to loom skill
-- ✅ All tool layer tests passing (162 total)
+- ✅ Committed: `232acfe feat(agent): complete tool layer with relation-store and semantic-cache refactor`
+
+**In Progress (Parameter Style Fixes):**
+- ✅ Fixed `findTopSimilar` in embedder.ts (3 params → object pattern)
+- ✅ Updated call sites in tool-discovery.ts and skill-discovery.ts
+- 🔲 Fix `schemaToIndexedTool` in tool-discovery.ts:508 (3 params → object)
+- 🔲 Fix `filterToolsByIntent` in tool-discovery.ts:549 (4 params → object)
+- 🔲 Update ~20 call sites in tool-discovery.spec.ts
+
+**Phase 2 Architecture Decision: Zod Schemas**
+
+Zod 4.x has `z.toJSONSchema()` built-in! Use this pattern:
+
+```typescript
+// file-ops.schemas.ts
+import { z } from 'zod'
+
+export const ReadFileInputSchema = z.object({
+  path: z.string().describe('File path to read'),
+  startLine: z.number().optional().describe('Starting line (1-indexed)'),
+})
+export type ReadFileInput = z.infer<typeof ReadFileInputSchema>
+
+// file-ops.ts
+export const readFile = async (input: ReadFileInput) => {
+  const { path, startLine } = ReadFileInputSchema.parse(input)
+  // ... implementation
+}
+
+// schema-utils.ts - Convert Zod → ToolSchema for FunctionGemma
+export const zodToToolSchema = (name: string, description: string, schema: z.ZodObject<any>): ToolSchema
+```
+
+**Phase 2 File Structure:**
+```
+src/agent/
+├── schema-utils.ts          # zodToToolSchema() helper
+├── file-ops.schemas.ts      # Zod schemas
+├── file-ops.ts              # Implementation
+├── search.schemas.ts
+├── search.ts
+├── bash-exec.schemas.ts
+├── bash-exec.ts
+└── tests/
+    ├── file-ops.spec.ts
+    ├── search.spec.ts
+    └── bash-exec.spec.ts
+```
 
 **Key Design Decisions:**
 - SQLite + FTS5 for search (tool-discovery, skill-discovery)
 - In-memory Map + callback persistence for everything else
-- LLM-first: context strings meaningful to model
-- Loose ODM inspiration: minimal schema, maximum flexibility
-- I/O decoupled: modules don't read/write files directly
+- **Zod for tool schemas**: Runtime validation + `z.toJSONSchema()` → ToolSchema
+- CLI entry points: `args: string[]` (shell provides strings)
+- Internal APIs: Object pattern for 3+ params (typed values)
 - Plans are just relation nodes with `edgeType: 'plan'` / `'step'`
 
 **Key References:**
 - Tool Layer Docs: `.claude/skills/loom/references/weaving/tool-layer.md`
-- Structural IA: `.claude/skills/loom/references/structural/`
-- Behavioral Core: `.claude/skills/behavioral-core/`
+- Existing Zod patterns: `src/workshop/workshop.schemas.ts`, `src/testing/testing.schemas.ts`
 - Old code-sandbox: `github.com/plaited/plaited/blob/c76bd81.../src/agent/code-sandbox.ts`
-- ODM article: `https://dev.to/ecarriou/creating-an-odm-with-javascript--523p`
 
 **Start Next Session With:**
 ```
-Read PLAITED-AGENT-PLAN.md and continue from "Next Steps > Phase 2"
+Read PLAITED-AGENT-PLAN.md and continue Phase 2:
+1. Finish parameter style fixes (schemaToIndexedTool, filterToolsByIntent + call sites)
+2. Create schema-utils.ts with zodToToolSchema
+3. Create file-ops, search, bash-exec with Zod schemas
+4. Tests and commit
 ```

@@ -804,7 +804,7 @@ export const createSkillDiscovery = async (config: SkillDiscoveryConfig = {}): P
       // Vector search
       if (enableVectorSearch && embedder && skillEmbeddings.size > 0) {
         const queryVec = await embedder.embed(intent)
-        const topMatches = findTopSimilar(queryVec, skillEmbeddings, limit * 2)
+        const topMatches = findTopSimilar({ query: queryVec, embeddings: skillEmbeddings, limit: limit * 2 })
 
         for (const match of topMatches) {
           const nameResult = getSkillNameByRowidStmt.get({ $rowid: match.rowid })
@@ -870,7 +870,7 @@ export const createSkillDiscovery = async (config: SkillDiscoveryConfig = {}): P
       }
 
       const queryVec = await embedder.embed(intent)
-      const topMatches = findTopSimilar(queryVec, chunkEmbeddings, limit)
+      const topMatches = findTopSimilar({ query: queryVec, embeddings: chunkEmbeddings, limit })
 
       const results: ChunkMatch[] = []
       for (const match of topMatches) {
