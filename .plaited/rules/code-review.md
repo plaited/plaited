@@ -110,6 +110,8 @@ const createClient = (
 ): ACPClient => { /* ... */ }
 ```
 
+**Exception - CLI Entry Points:** CLI functions take `args: string[]` because that's what the shell provides—parsing happens inside the function. This rule applies to internal APIs where callers pass typed values directly.
+
 ## TypeScript Comment Directives
 
 ### `@ts-ignore` Requires Description

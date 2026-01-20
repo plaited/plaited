@@ -6,8 +6,8 @@
       "name": "plaited",
       "dependencies": {
         "@anthropic-ai/sandbox-runtime": "0.0.28",
-        "@plaited/acp-harness": "0.3.2",
-        "@plaited/development-skills": "0.6.2",
+        "@plaited/acp-harness": "0.3.3",
+        "@plaited/development-skills": "0.6.3",
         "node-llama-cpp": "3.15.0",
       },
       "devDependencies": {
@@ -246,9 +246,9 @@
 
     "@pkgjs/parseargs": ["@pkgjs/parseargs@0.11.0", "", {}, "sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg=="],
 
-    "@plaited/acp-harness": ["@plaited/acp-harness@0.3.2", "", { "dependencies": { "@plaited/development-skills": "0.6.2", "zod": "^4.3.5" }, "peerDependencies": { "@agentclientprotocol/sdk": "^0.13.0", "typescript-language-server": "^5.1.3" }, "bin": { "acp-harness": "bin/cli.ts" } }, "sha512-WxVkoyDBGz38ZkGKRs+v4VVHn1UjeunvlSKIVD2fTJeEms0cHY0Ug2Vof75tYUd+W0Gco5/2iFSBixaSoPJmfA=="],
+    "@plaited/acp-harness": ["@plaited/acp-harness@0.3.3", "", { "dependencies": { "@plaited/development-skills": "0.6.3", "zod": "^4.3.5" }, "peerDependencies": { "@agentclientprotocol/sdk": "^0.13.0", "typescript-language-server": "^5.1.3" }, "bin": { "acp-harness": "bin/cli.ts" } }, "sha512-dXWwMacj7IBFYH6GmM+XlhcjCM/FvOe1Sr67LA16jeu6O55shh4RpGhxq7pJVbL4l3fy/gckNudg4kn+O6aaYg=="],
 
-    "@plaited/development-skills": ["@plaited/development-skills@0.6.2", "", { "peerDependencies": { "typescript-language-server": "^5.1.3" }, "bin": { "development-skills": "bin/cli.ts" } }, "sha512-9XZqdbQOT4EYhzYkIhVntCtFhFNZmrEOy8WbQwpjHZekU/ewjjIP09lw/cDxNuYvm/0i/L55t6prg1KwX16Lug=="],
+    "@plaited/development-skills": ["@plaited/development-skills@0.6.3", "", { "peerDependencies": { "typescript-language-server": "^5.1.3" }, "bin": { "development-skills": "bin/cli.ts" } }, "sha512-HjK0bqdKPKIqpyDvq/DJtRCAc+Um8iqx7RXfIrIwrMrnvTfjrNWDZ/qzwXx8SgXYoJ/daD0oqmrBFbyDmK29qQ=="],
 
     "@playwright/mcp": ["@playwright/mcp@0.0.56", "", { "dependencies": { "playwright": "1.58.0-alpha-2026-01-16", "playwright-core": "1.58.0-alpha-2026-01-16" }, "bin": { "mcp-server-playwright": "cli.js" } }, "sha512-hNQUF8uHgNOhklqTyRcjtZ0yVAgEkUhCuvS0Iv65ddveHrD7U2NIZ0bgZJ8F6GeXzNr4oPhjvvpBvW0QSHC7HQ=="],
 
