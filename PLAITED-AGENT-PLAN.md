@@ -320,9 +320,9 @@ await store.persist()
 
 ### Following Sessions
 
-- [ ] Create `file-ops.ts`
-- [ ] Create `search.ts`
-- [ ] Create `bash-exec.ts`
+- [x] Create `file-ops.ts`
+- [x] Create `search.ts`
+- [x] Create `bash-exec.ts`
 - [ ] Create `agents-discovery.ts`
 - [ ] Port `code-sandbox.ts`
 
@@ -339,59 +339,24 @@ await store.persist()
 - ✅ Added `tool-layer.md` reference to loom skill
 - ✅ Committed: `232acfe feat(agent): complete tool layer with relation-store and semantic-cache refactor`
 
-**In Progress (Parameter Style Fixes):**
-- ✅ Fixed `findTopSimilar` in embedder.ts (3 params → object pattern)
-- ✅ Updated call sites in tool-discovery.ts and skill-discovery.ts
-- 🔲 Fix `schemaToIndexedTool` in tool-discovery.ts:508 (3 params → object)
-- 🔲 Fix `filterToolsByIntent` in tool-discovery.ts:549 (4 params → object)
-- 🔲 Update ~20 call sites in tool-discovery.spec.ts
-
-**Phase 2 Architecture Decision: Zod Schemas**
-
-Zod 4.x has `z.toJSONSchema()` built-in! Use this pattern:
-
-```typescript
-// file-ops.schemas.ts
-import { z } from 'zod'
-
-export const ReadFileInputSchema = z.object({
-  path: z.string().describe('File path to read'),
-  startLine: z.number().optional().describe('Starting line (1-indexed)'),
-})
-export type ReadFileInput = z.infer<typeof ReadFileInputSchema>
-
-// file-ops.ts
-export const readFile = async (input: ReadFileInput) => {
-  const { path, startLine } = ReadFileInputSchema.parse(input)
-  // ... implementation
-}
-
-// schema-utils.ts - Convert Zod → ToolSchema for FunctionGemma
-export const zodToToolSchema = (name: string, description: string, schema: z.ZodObject<any>): ToolSchema
-```
-
-**Phase 2 File Structure:**
-```
-src/agent/
-├── schema-utils.ts          # zodToToolSchema() helper
-├── file-ops.schemas.ts      # Zod schemas
-├── file-ops.ts              # Implementation
-├── search.schemas.ts
-├── search.ts
-├── bash-exec.schemas.ts
-├── bash-exec.ts
-└── tests/
-    ├── file-ops.spec.ts
-    ├── search.spec.ts
-    └── bash-exec.spec.ts
-```
+**Completed in Phase 2 (File Operations):**
+- ✅ Fixed `schemaToIndexedTool` (3 params → object pattern with `SchemaToIndexedToolOptions`)
+- ✅ Fixed `filterToolsByIntent` (4 params → object pattern with `FilterToolsByIntentOptions`)
+- ✅ Updated ~20 call sites in tool-discovery.spec.ts
+- ✅ Created `schema-utils.ts` with `zodToToolSchema()` for Zod→ToolSchema conversion
+- ✅ Created `file-ops.ts` with `readFile`, `writeFile`, `editFile` using Bun.file()
+- ✅ Created `search.ts` with `glob` (Bun.Glob) and `grep` (ripgrep)
+- ✅ Created `bash-exec.ts` with `exec` using Bun.spawn + timeout
+- ✅ All tools have Zod schemas (`.schemas.ts` files) with descriptions
+- ✅ 41 new tests passing (schema-utils: 7, file-ops: 11, search: 12, bash-exec: 11)
+- ✅ Committed: `c6e9afe feat(agent): add tool layer modules with Zod schemas`
 
 **Key Design Decisions:**
 - SQLite + FTS5 for search (tool-discovery, skill-discovery)
 - In-memory Map + callback persistence for everything else
 - **Zod for tool schemas**: Runtime validation + `z.toJSONSchema()` → ToolSchema
 - CLI entry points: `args: string[]` (shell provides strings)
-- Internal APIs: Object pattern for 3+ params (typed values)
+- Internal APIs: Object pattern for 2+ params (typed values)
 - Plans are just relation nodes with `edgeType: 'plan'` / `'step'`
 
 **Key References:**
@@ -401,9 +366,8 @@ src/agent/
 
 **Start Next Session With:**
 ```
-Read PLAITED-AGENT-PLAN.md and continue Phase 2:
-1. Finish parameter style fixes (schemaToIndexedTool, filterToolsByIntent + call sites)
-2. Create schema-utils.ts with zodToToolSchema
-3. Create file-ops, search, bash-exec with Zod schemas
-4. Tests and commit
+Read PLAITED-AGENT-PLAN.md and continue Phase 3:
+1. Create agents-discovery.ts (parse AGENTS.md + refs, build hierarchy with relation-store)
+2. Port code-sandbox.ts from old branch
+3. Tests and commit
 ```
