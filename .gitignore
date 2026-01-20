@@ -25,7 +25,6 @@ yarn.lock
 **/test-results/
 **/playwright-report/
 **/playwright/.cache/
-**/.plaited
 **/test-videos
 **/playwright-report
 
