@@ -73,6 +73,7 @@
     ]
   },
   "dependencies": {
+    "@anthropic-ai/sandbox-runtime": "^0.0.28",
     "@plaited/acp-harness": "0.3.2",
     "@plaited/development-skills": "0.6.2",
     "node-llama-cpp": "^3.15.0"
