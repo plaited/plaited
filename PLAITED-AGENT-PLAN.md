@@ -22,10 +22,27 @@ flowchart TB
     end
 
     subgraph Tool["TOOL LAYER (plain functions)"]
-        Discovery["tool-discovery<br/>skill-discovery"]
-        Utils["embedder<br/>semantic-cache<br/>relation-store"]
-        FileOps["file-ops<br/>search<br/>bash-exec"]
-        SchemaUtils["schema-utils"]
+        subgraph Discovery["Discovery"]
+            ToolDisc["tool-discovery"]
+            SkillDisc["skill-discovery<br/>+ searchReferences"]
+        end
+
+        subgraph Utils["Utilities"]
+            Embedder["embedder"]
+            Cache["semantic-cache"]
+            Relations["relation-store"]
+            MdLinks["markdown-links"]
+        end
+
+        subgraph FileTools["File Operations"]
+            FileOps["file-ops"]
+            Search["search (glob+grep)"]
+            BashExec["bash-exec"]
+        end
+
+        subgraph Schema["Schema"]
+            SchemaUtils["schema-utils<br/>zodToToolSchema"]
+        end
     end
 
     subgraph Skill["SKILL LAYER"]
@@ -43,9 +60,9 @@ flowchart TB
     end
 
     subgraph Infra["INFRASTRUCTURE"]
-        StartServer["start-server"]
-        Sandbox["code-sandbox"]
-        RulesDisc["rules-discovery"]
+        StartServer["start-server ✅"]
+        Sandbox["code-sandbox 🔲"]
+        RulesDisc["rules-discovery 🔲"]
     end
 
     Calls --> Tool
@@ -54,6 +71,7 @@ flowchart TB
     Skill --> Symbolic
     Symbolic --> World
     Infra -.-> World
+    Infra -.-> Tool
 ```
 
 ---
@@ -92,36 +110,21 @@ This decouples storage concerns and supports remote stores, cloud storage, or cu
 
 Plain functions that FunctionGemma can call. Not behavioral programs.
 
-### Existing (✅)
+### Complete (✅)
 
-| Module | Purpose | Storage | Notes |
-|--------|---------|---------|-------|
-| `tool-discovery` | FTS5 + vector search for tools | SQLite | Hybrid RRF scoring |
-| `skill-discovery` | FTS5 + vector search for skills | SQLite | Persistent cache + mtime |
-| `embedder` | node-llama-cpp GGUF embeddings | N/A | Shared by all modules |
-| `semantic-cache` | Reuse responses for similar queries | Map + callback ✅ | Vector similarity |
-| `formatters` | Tools → FunctionGemma tokens | N/A | Control tokens + parsing |
-
-### Built (✅)
-
-| Module | Purpose | Storage | Notes |
-|--------|---------|---------|-------|
-| `relation-store` | DAG for plans, files, agents | Map + callback | Multi-parent, LLM context |
-
-### Built (Phase 2) ✅
-
-| Module | Purpose | Storage | Notes |
-|--------|---------|---------|-------|
-| `file-ops` | read, write, edit | N/A | Bun.file(), Bun.write() |
-| `search` | glob + grep | N/A | Bun.Glob, ripgrep |
-| `bash-exec` | terminal commands | N/A | Bun.spawn + AbortController |
-| `schema-utils` | Zod → ToolSchema | N/A | `zodToToolSchema()` |
-
-### To Build (🔲)
-
-| Module | Purpose | Storage | Notes |
-|--------|---------|---------|-------|
-| `rules-discovery` | AGENTS.md + refs | SQLite + FTS5 | Progressive loading |
+| Module | Purpose | Storage | Status |
+|--------|---------|---------|--------|
+| `tool-discovery` | FTS5 + vector search for tools | SQLite | ✅ Hybrid RRF scoring |
+| `skill-discovery` | FTS5 + vector search for skills | SQLite | ✅ + progressive references |
+| `embedder` | node-llama-cpp GGUF embeddings | N/A | ✅ Shared by all modules |
+| `semantic-cache` | Reuse responses for similar queries | Map + callback | ✅ Vector similarity |
+| `formatters` | Tools → FunctionGemma tokens | N/A | ✅ Control tokens + parsing |
+| `relation-store` | DAG for plans, files, agents | Map + callback | ✅ Multi-parent, LLM context |
+| `file-ops` | read, write, edit | N/A | ✅ Bun.file(), Bun.write() |
+| `search` | glob + grep | N/A | ✅ Bun.Glob, ripgrep |
+| `bash-exec` | terminal commands | N/A | ✅ Bun.spawn + AbortController |
+| `schema-utils` | Zod → ToolSchema | N/A | ✅ `zodToToolSchema()` |
+| `markdown-links` | Extract `[text](path)` patterns | N/A | ✅ Shared utility |
 
 ---
 
@@ -399,7 +402,7 @@ export const extractMarkdownLinks = (content: string): MarkdownLink[]
 | Module | Purpose | Status |
 |--------|---------|--------|
 | `start-server` | Workshop subprocess | ✅ |
-| `code-sandbox` | @anthropic-ai/sandbox-runtime | 🔲 port from old branch |
+| `code-sandbox` | @anthropic-ai/sandbox-runtime | 🔲 |
 | `rules-discovery` | AGENTS.md context management | 🔲 |
 
 **Why rules-discovery is infrastructure, not a tool:**
@@ -408,6 +411,214 @@ export const extractMarkdownLinks = (content: string): MarkdownLink[]
 - Intercepts file operations to load spatial rules
 - Loads root AGENTS.md at startup
 - Provides context, not actions
+
+---
+
+## Detailed Infrastructure Specifications
+
+### rules-discovery.ts
+
+Three-tier progressive loading for AGENTS.md and markdown references.
+
+```mermaid
+flowchart TB
+    subgraph Tier1["Tier 1: Always Loaded (startup)"]
+        RootAgents["Root AGENTS.md"]
+        RootRefs["Root References"]
+    end
+
+    subgraph Tier2["Tier 2: Semantic Match (on intent)"]
+        LinkIndex["Link Index<br/>[displayText] → path"]
+        RefContent["Referenced File Content"]
+        LinkIndex -->|"search(intent)"| RefContent
+    end
+
+    subgraph Tier3["Tier 3: Spatial Locality (on file ops)"]
+        NestedAgents["Nested AGENTS.md<br/>src/auth/AGENTS.md"]
+        CwdDetect["CWD Detection"]
+        CwdDetect -->|"file op in subtree"| NestedAgents
+    end
+
+    RootAgents --> Context["Agent Context"]
+    RefContent --> Context
+    NestedAgents --> Context
+```
+
+#### Types
+
+```typescript
+type RuleReference = {
+  /** Display text from `[text]` - semantic key */
+  displayText: string
+  /** Relative path from `(path)` */
+  relativePath: string
+  /** Resolved absolute path */
+  absolutePath: string
+  /** Source AGENTS.md that contains this link */
+  source: string
+  /** 1-indexed line number */
+  lineNumber: number
+}
+
+type RulesDiscoveryConfig = {
+  /** Root directory to scan for AGENTS.md */
+  rootDir: string
+  /** SQLite database path */
+  dbPath?: string
+  /** Embedder for semantic search (optional) */
+  embedder?: Embedder
+  /** Current working directory for spatial locality */
+  cwd?: string
+}
+
+type RulesDiscovery = {
+  /** Get root rules (Tier 1 - always loaded) */
+  getRootRules: () => string
+
+  /** Search references by intent (Tier 2 - semantic) */
+  searchReferences: (intent: string, options?: { limit?: number }) => Promise<ReferenceMatch[]>
+
+  /** Load reference content */
+  getReferenceContent: (ref: RuleReference) => Promise<string | undefined>
+
+  /** Get rules for a file path (Tier 3 - spatial) */
+  getRulesForPath: (filePath: string) => string[]
+
+  /** Refresh index */
+  refresh: () => Promise<void>
+
+  /** Get statistics */
+  stats: () => RulesDiscoveryStats
+
+  /** Close resources */
+  close: () => Promise<void>
+}
+```
+
+#### Database Schema
+
+```sql
+-- AGENTS.md files
+CREATE TABLE IF NOT EXISTS rules (
+  rowid INTEGER PRIMARY KEY AUTOINCREMENT,
+  path TEXT UNIQUE NOT NULL,        -- Absolute path to AGENTS.md
+  content TEXT NOT NULL,            -- Full content (for Tier 1/3)
+  mtime INTEGER NOT NULL            -- File modification time
+);
+
+-- Markdown link references
+CREATE TABLE IF NOT EXISTS rule_references (
+  rowid INTEGER PRIMARY KEY AUTOINCREMENT,
+  source_path TEXT NOT NULL,        -- Which AGENTS.md contains this
+  display_text TEXT NOT NULL,       -- Semantic key for search
+  relative_path TEXT NOT NULL,
+  absolute_path TEXT NOT NULL,
+  line_number INTEGER NOT NULL,
+  FOREIGN KEY (source_path) REFERENCES rules(path) ON DELETE CASCADE
+);
+
+-- FTS5 for text search
+CREATE VIRTUAL TABLE IF NOT EXISTS rules_fts USING fts5(
+  display_text,
+  content
+);
+
+CREATE INDEX IF NOT EXISTS idx_refs_source ON rule_references(source_path);
+```
+
+#### Implementation Notes
+
+1. **Tier 1 (Always)**: Load root `AGENTS.md` at startup, cache in memory
+2. **Tier 2 (Semantic)**: Index `[text](path)` links, embed displayText for search
+3. **Tier 3 (Spatial)**: When file-ops targets a path, check for `AGENTS.md` in ancestors
+
+**Spatial Loading Algorithm:**
+```typescript
+const getRulesForPath = (filePath: string): string[] => {
+  const rules: string[] = []
+  let dir = dirname(filePath)
+
+  // Walk up to root, collecting AGENTS.md
+  while (dir !== rootDir && !dir.endsWith('/')) {
+    const agentsPath = join(dir, 'AGENTS.md')
+    if (rulesCache.has(agentsPath)) {
+      rules.unshift(rulesCache.get(agentsPath)!)
+    }
+    dir = dirname(dir)
+  }
+
+  return rules
+}
+```
+
+---
+
+### code-sandbox.ts
+
+Secure code execution via @anthropic-ai/sandbox-runtime.
+
+#### Purpose
+
+Execute generated code in an isolated environment with:
+- File system isolation
+- Network restrictions
+- Timeout enforcement
+- Resource limits
+
+#### Types
+
+```typescript
+type SandboxConfig = {
+  /** Timeout in milliseconds (default: 30000) */
+  timeout?: number
+  /** Memory limit in bytes (default: 512MB) */
+  memoryLimit?: number
+  /** Allowed environment variables */
+  env?: Record<string, string>
+  /** Working directory inside sandbox */
+  cwd?: string
+}
+
+type SandboxResult = {
+  /** Exit code (0 = success) */
+  exitCode: number
+  /** Standard output */
+  stdout: string
+  /** Standard error */
+  stderr: string
+  /** Execution time in ms */
+  duration: number
+  /** Whether execution timed out */
+  timedOut: boolean
+}
+
+type CodeSandbox = {
+  /** Execute code in sandbox */
+  execute: (code: string, config?: SandboxConfig) => Promise<SandboxResult>
+
+  /** Execute a file in sandbox */
+  executeFile: (filePath: string, config?: SandboxConfig) => Promise<SandboxResult>
+
+  /** Check if sandbox runtime is available */
+  isAvailable: () => boolean
+}
+```
+
+#### Implementation Notes
+
+1. **Runtime Detection**: Check if `@anthropic-ai/sandbox-runtime` is installed
+2. **Graceful Fallback**: If not available, warn and use restricted Bun.spawn
+3. **Resource Cleanup**: Ensure sandbox resources are released on timeout
+
+**Old Branch Reference:**
+```
+github.com/plaited/plaited/blob/c76bd81.../src/agent/code-sandbox.ts
+```
+
+Key patterns to preserve:
+- AbortController for timeout
+- Stream handling for stdout/stderr
+- Error normalization
 
 ---
 
@@ -458,29 +669,31 @@ export const extractMarkdownLinks = (content: string): MarkdownLink[]
 
 ### Phase 3: Progressive Loading Infrastructure
 
-8. **Create `markdown-links.ts`** (shared utility)
+8. **Create `markdown-links.ts`** (shared utility) ✅
    - `extractMarkdownLinks(content)` → `MarkdownLink[]`
-   - Regex: `/\[([^\]]+)\]\(([^)]+)\)/g`
+   - Regex: `/(?<!!)\\[([^\\]]+)\\]\\(([^)]+)\\)/g` (excludes images)
    - Returns `{ displayText, relativePath, lineNumber }`
-   - Used by skill-discovery, rules-discovery, and future modules
+   - Options: `pathPattern`, `extensions`, `includeExternal`
+   - Commit: `628e35e`
 
-9. **Enhance `skill-discovery.ts`** with progressive references
-   - Index markdown links from SKILL.md body
-   - Add `searchReferences(skillName, intent)` API
-   - Store reference embeddings separately from body chunks
-   - Load referenced files on-demand
+9. **Enhance `skill-discovery.ts`** with progressive references ✅
+   - Index markdown links from SKILL.md body (`.md` files only)
+   - Add `searchReferences(intent, options)` → vector search on displayText
+   - Add `getReferences(skillName)` → cached references
+   - Add `getReferenceContent(ref)` → load from disk
+   - Store reference embeddings separately (referenceEmbeddings Map)
+   - Commit: `4429e4b`
 
-10. **Create `rules-discovery.ts`** (infrastructure)
+10. **Create `rules-discovery.ts`** (infrastructure) 🔲
     - Three-tier progressive loading (Always → Semantic → Spatial)
     - Uses shared markdown-links.ts
-    - SQLite + FTS5 for hybrid search (like skill-discovery)
-    - Tier 1: Root AGENTS.md always in context
-    - Tier 2: Indexed references loaded on semantic match
-    - Tier 3: Nested AGENTS.md loaded for directory-scoped ops
+    - SQLite + FTS5 for hybrid search (follow skill-discovery pattern)
+    - See detailed spec below
 
-11. **Port `code-sandbox.ts`**
-    - From old branch
+11. **Port `code-sandbox.ts`** 🔲
+    - From old branch: `github.com/plaited/plaited/blob/c76bd81.../src/agent/code-sandbox.ts`
     - @anthropic-ai/sandbox-runtime integration
+    - See detailed spec below
 
 **Note:** Scripts handled by bash-exec (no special infra). Assets deferred (no plan).
 
@@ -494,9 +707,8 @@ export const extractMarkdownLinks = (content: string): MarkdownLink[]
 
 ## Task Checklist
 
-### Immediate (This Session)
+### Phase 1: Core Infrastructure ✅
 
-- [x] Update PLAITED-AGENT-PLAN.md
 - [x] Simplify `semantic-cache.ts` → Map + onPersist
 - [x] Create `relation-store.ts`
 - [x] Create `tests/relation-store.spec.ts`
@@ -504,84 +716,106 @@ export const extractMarkdownLinks = (content: string): MarkdownLink[]
 - [x] Fix `agent.types.ts` stale comment
 - [x] Add tool-layer.md reference to loom skill
 
-### Following Sessions
+### Phase 2: File Operations ✅
 
-- [x] Create `file-ops.ts`
-- [x] Create `search.ts`
-- [x] Create `bash-exec.ts`
-- [x] Create `schema-utils.ts`
-- [ ] Create `rules-discovery.ts` (renamed from agents-discovery)
-- [ ] Port `code-sandbox.ts`
+- [x] Create `file-ops.ts` with Zod schemas
+- [x] Create `search.ts` (glob + grep)
+- [x] Create `bash-exec.ts` with timeout
+- [x] Create `schema-utils.ts` (zodToToolSchema)
+
+### Phase 3: Progressive Loading ✅ (partial)
+
+- [x] Create `markdown-links.ts` (shared utility)
+- [x] Enhance `skill-discovery.ts` with searchReferences, getReferences, getReferenceContent
+- [ ] Create `rules-discovery.ts` (infrastructure)
+- [ ] Port `code-sandbox.ts` (infrastructure)
+
+### Phase 4: Symbolic Layer (Future)
+
+- [ ] Symbolic Layer - bThreads for Structural IA constraints
+- [ ] World Agent factory
+- [ ] Adapters (ACP, A2A, MCP)
 
 ---
 
 ## Session Pickup Notes
 
-**Completed in Phase 1 (Tool Layer Core):**
-- ✅ Created `relation-store.ts` with multi-parent DAG, cycle detection, traversal
-- ✅ Created `tests/relation-store.spec.ts` (41 tests passing)
-- ✅ Refactored `semantic-cache.ts` from SQLite to Map + onPersist (27 tests passing)
-- ✅ Added `formatRelationsForContext()` and `formatPlanContext()` to formatters.ts
-- ✅ Fixed stale comment in `agent.types.ts` (MiniLM → embeddinggemma-300M)
-- ✅ Added `tool-layer.md` reference to loom skill
-- ✅ Committed: `232acfe feat(agent): complete tool layer with relation-store and semantic-cache refactor`
+### Phase 1 Complete ✅
+- `relation-store.ts` - Multi-parent DAG with cycle detection (41 tests)
+- `semantic-cache.ts` - Refactored SQLite → Map + onPersist (27 tests)
+- `formatters.ts` - Added `formatRelationsForContext()`, `formatPlanContext()`
+- Commit: `232acfe`
 
-**Completed in Phase 2 (File Operations):**
-- ✅ Fixed `schemaToIndexedTool` (3 params → object pattern with `SchemaToIndexedToolOptions`)
-- ✅ Fixed `filterToolsByIntent` (4 params → object pattern with `FilterToolsByIntentOptions`)
-- ✅ Updated ~20 call sites in tool-discovery.spec.ts
-- ✅ Created `schema-utils.ts` with `zodToToolSchema()` for Zod→ToolSchema conversion
-- ✅ Created `file-ops.ts` with `readFile`, `writeFile`, `editFile` using Bun.file()
-- ✅ Created `search.ts` with `glob` (Bun.Glob) and `grep` (ripgrep)
-- ✅ Created `bash-exec.ts` with `exec` using Bun.spawn + timeout
-- ✅ All tools have Zod schemas (`.schemas.ts` files) with descriptions
-- ✅ 41 new tests passing (schema-utils: 7, file-ops: 11, search: 12, bash-exec: 11)
-- ✅ Committed: `c6e9afe feat(agent): add tool layer modules with Zod schemas`
+### Phase 2 Complete ✅
+- `file-ops.ts` + schemas - readFile, writeFile, editFile (11 tests)
+- `search.ts` + schemas - glob (Bun.Glob) + grep (ripgrep) (12 tests)
+- `bash-exec.ts` + schemas - exec with timeout (11 tests)
+- `schema-utils.ts` - zodToToolSchema() (7 tests)
+- Commit: `c6e9afe`
 
-**Key Design Decisions:**
-- SQLite + FTS5 for search (tool-discovery, skill-discovery)
-- In-memory Map + callback persistence for everything else
-- **Zod for tool schemas**: Runtime validation + `z.toJSONSchema()` → ToolSchema
-- CLI entry points: `args: string[]` (shell provides strings)
-- Internal APIs: Object pattern for 2+ params (typed values)
+### Phase 3 In Progress
+- ✅ `markdown-links.ts` - extractMarkdownLinks(), isExternalLink(), getExtension() (25 tests)
+  - Commit: `628e35e`
+- ✅ `skill-discovery.ts` enhanced with progressive references
+  - Added: searchReferences(), getReferences(), getReferenceContent()
+  - Added: SkillReference, ReferenceMatch types
+  - Added: skill_references table, referenceEmbeddings Map
+  - Commit: `4429e4b`
+- 🔲 `rules-discovery.ts` - See detailed spec above
+- 🔲 `code-sandbox.ts` - See detailed spec above
+
+### Key Design Decisions
+- SQLite + FTS5 for search (tool-discovery, skill-discovery, rules-discovery)
+- In-memory Map + callback persistence for semantic-cache, relation-store
+- Zod for tool schemas: Runtime validation + `z.toJSONSchema()` → ToolSchema
+- Object pattern for 2+ params (typed values)
 - Plans are just relation nodes with `edgeType: 'plan'` / `'step'`
+- **Progressive loading**: displayText as semantic key, absolutePath resolved at index time
 
-**Key References:**
+### Key References
 - Tool Layer Docs: `.claude/skills/loom/references/weaving/tool-layer.md`
-- Existing Zod patterns: `src/workshop/workshop.schemas.ts`, `src/testing/testing.schemas.ts`
+- skill-discovery.ts: Pattern for SQLite + FTS5 + progressive references
 - Old code-sandbox: `github.com/plaited/plaited/blob/c76bd81.../src/agent/code-sandbox.ts`
-- skill-discovery.ts: Pattern for SQLite + FTS5 hybrid search
 
-**Architecture Decision (rules-discovery):**
-- Renamed from `agents-discovery` to `rules-discovery` (better reflects purpose)
-- FunctionGemma has 37K context (not 4K-8K as initially assumed)
-- Three-tier progressive loading:
-  1. **Always**: Root AGENTS.md in context
-  2. **Semantic**: Markdown links `[text](path)` indexed + loaded on intent match
-  3. **Spatial**: Nested AGENTS.md loaded when file ops target that subtree
+### Current Module Inventory
 
-**Critical Gap Confirmed:**
-`skill-discovery.ts` does NOT parse markdown links as structured references:
-```typescript
-// skill-discovery.ts lines 669-670
-const body = extractBody(content)  // Raw markdown including [text](path) syntax
-const chunks = chunkText(body, chunkSize, chunkOverlap)  // Chunked as-is
 ```
-- ❌ Can't semantically search "testing rules" → get referenced file
-- ❌ Can't load linked files progressively
-- ✅ Does match keywords in raw markdown (e.g., "testing.md" as text)
-
-This pattern (markdown link extraction) should be implemented for `rules-discovery` and potentially backported to `skill-discovery`.
-
-**Start Next Session With:**
+src/agent/
+├── agent.types.ts           # Shared types
+├── embedder.ts              # GGUF embeddings
+├── tool-discovery.ts        # FTS5 + vector for tools
+├── skill-discovery.ts       # FTS5 + vector + progressive refs for skills
+├── semantic-cache.ts        # Map + onPersist for LLM responses
+├── relation-store.ts        # DAG for plans, files, agents
+├── formatters.ts            # FunctionGemma token formatting
+├── file-ops.ts              # read, write, edit
+├── file-ops.schemas.ts
+├── search.ts                # glob + grep
+├── search.schemas.ts
+├── bash-exec.ts             # shell commands
+├── bash-exec.schemas.ts
+├── schema-utils.ts          # Zod → ToolSchema
+├── markdown-links.ts        # [text](path) extraction (shared)
+├── start-server.ts          # Infrastructure: workshop subprocess
+├── rules-discovery.ts       # 🔲 Infrastructure: AGENTS.md context
+└── code-sandbox.ts          # 🔲 Infrastructure: secure execution
 ```
-Read PLAITED-AGENT-PLAN.md and continue Phase 3:
-1. Create rules-discovery.ts with three-tier progressive loading
-   - Parse markdown links [text](path) as structured references
-   - SQLite + FTS5 for hybrid search (follow skill-discovery pattern)
-   - Tier 1: Root AGENTS.md always loaded
-   - Tier 2: References indexed, loaded on semantic match
-   - Tier 3: Nested AGENTS.md loaded for directory-scoped ops
-2. Port code-sandbox.ts from old branch
-3. Tests and commit
+
+### Start Next Session With
+
+```
+Read PLAITED-AGENT-PLAN.md and continue with infrastructure:
+
+1. Create rules-discovery.ts
+   - Follow skill-discovery pattern (SQLite + FTS5)
+   - Three-tier progressive loading
+   - Use markdown-links.ts for link extraction
+   - Tests in tests/rules-discovery.spec.ts
+
+2. Port code-sandbox.ts
+   - From old branch
+   - @anthropic-ai/sandbox-runtime integration
+   - Graceful fallback to Bun.spawn if not available
+
+3. Update loom skill's tool-layer.md if needed
 ```
