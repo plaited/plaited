@@ -327,34 +327,70 @@ type RulesDiscovery = {
 }
 ```
 
-### Future: Enhance skill-discovery with Same Pattern
+### AgentSkills Spec: Full Structure
 
-Skill SKILL.md files have the same structure as AGENTS.md:
+The AgentSkills specification defines three optional directories beyond SKILL.md:
+
+```
+skill-name/
+├── SKILL.md          # Required - metadata + instructions
+├── scripts/          # Optional - executable code (already implemented ✅)
+├── references/       # Optional - additional documentation (needs progressive loading)
+└── assets/           # Optional - static resources (needs discovery)
+```
+
+**Reference implementation (skills-ref) is minimal:**
+- Only parses frontmatter from SKILL.md
+- Does NOT discover scripts, assets, or references
+- Our `skill-discovery.ts` already exceeds this by discovering scripts
+
+### Resource Handling Strategy
+
+| Resource | Approach | Rationale |
+|----------|----------|-----------|
+| **SKILL.md body** | Progressive via markdown links | Reduce context bloat |
+| **scripts/** | Agent parses body + calls bash-exec | Simple, no special infra |
+| **references/** | Progressive loading by intent | Semantic search on display text |
+| **assets/** | Deferred (no plan yet) | Low priority |
+
+**Scripts are simple:**
+1. `skill-discovery.ts` discovers scripts (metadata in DB)
+2. Agent reads SKILL.md body → sees script documentation
+3. Agent calls `bun scripts/foo.ts` via bash-exec
+4. No caching or special handling needed
+
+**References need progressive loading:**
 ```
 .claude/skills/loom/
-├── SKILL.md                          # Main skill (always loaded on match)
-│   ├── [templates](references/patterns/templates.md)
-│   ├── [stories](references/patterns/stories.md)
+├── SKILL.md                          # Tier 1: Always loaded on skill match
+│   ├── [templates](references/patterns/templates.md)   # Tier 2: Indexed
 │   └── [tool-layer](references/weaving/tool-layer.md)
 └── references/
     ├── patterns/
-    │   ├── templates.md              # Loaded when "templates" matches intent
-    │   └── stories.md
+    │   └── templates.md              # Loaded when "templates" matches intent
     └── weaving/
         └── tool-layer.md
 ```
 
-**Progressive skill reference loading:**
-1. **SKILL.md always loaded** when skill matches intent
-2. **References indexed** with display text as semantic key
-3. **References loaded progressively** when deeper intent matches
+### Shared Utility
 
-This would reduce context bloat when loading skills - currently `getBody()` returns the entire SKILL.md body, but references could be loaded on-demand.
+```typescript
+// markdown-links.ts - shared by skill-discovery and rules-discovery
+type MarkdownLink = {
+  displayText: string   // "[text]" portion - semantic key
+  relativePath: string  // "(path)" portion - file location
+  lineNumber: number    // Location in source file
+}
 
-**Implementation notes:**
-- Same markdown link parsing as rules-discovery
-- Share `extractMarkdownLinks()` utility between both modules
-- Add `searchReferences(skillName, intent)` to skill-discovery API
+export const extractMarkdownLinks = (content: string): MarkdownLink[]
+```
+
+### Implementation Priority
+
+1. **markdown-links.ts** - Shared link extraction
+2. **Enhance skill-discovery** - Add `searchReferences()` API
+3. **rules-discovery** - Uses same patterns for AGENTS.md
+4. **(Deferred) asset-discovery** - No immediate plan
 
 ---
 
@@ -420,29 +456,33 @@ This would reduce context bloat when loading skills - currently `getBody()` retu
    - `exec()` with timeout, cwd options
    - Uses Bun.$
 
-### Phase 3: Discovery & Integration
+### Phase 3: Progressive Loading Infrastructure
 
-8. **Create `rules-discovery.ts`**
-   - Three-tier progressive loading (Always → Semantic → Spatial)
-   - Parse markdown links `[text](path)` as structured references
-   - SQLite + FTS5 for hybrid search (like skill-discovery)
-   - Tier 1: Root AGENTS.md always in context
-   - Tier 2: Indexed references loaded on semantic match
-   - Tier 3: Nested AGENTS.md loaded for directory-scoped ops
+8. **Create `markdown-links.ts`** (shared utility)
+   - `extractMarkdownLinks(content)` → `MarkdownLink[]`
+   - Regex: `/\[([^\]]+)\]\(([^)]+)\)/g`
+   - Returns `{ displayText, relativePath, lineNumber }`
+   - Used by skill-discovery, rules-discovery, and future modules
 
-9. **Port `code-sandbox.ts`**
-   - From old branch
-   - @anthropic-ai/sandbox-runtime integration
+9. **Enhance `skill-discovery.ts`** with progressive references
+   - Index markdown links from SKILL.md body
+   - Add `searchReferences(skillName, intent)` API
+   - Store reference embeddings separately from body chunks
+   - Load referenced files on-demand
 
-10. **Create shared `markdown-links.ts` utility**
-    - `extractMarkdownLinks(content)` → `{ displayText, relativePath }[]`
-    - Used by both rules-discovery and skill-discovery
-    - Enables progressive loading pattern for both
+10. **Create `rules-discovery.ts`** (infrastructure)
+    - Three-tier progressive loading (Always → Semantic → Spatial)
+    - Uses shared markdown-links.ts
+    - SQLite + FTS5 for hybrid search (like skill-discovery)
+    - Tier 1: Root AGENTS.md always in context
+    - Tier 2: Indexed references loaded on semantic match
+    - Tier 3: Nested AGENTS.md loaded for directory-scoped ops
 
-11. **(Future) Enhance `skill-discovery.ts`**
-    - Add markdown link parsing using shared utility
-    - Add `searchReferences(skillName, intent)` API
-    - Progressive loading of skill reference files
+11. **Port `code-sandbox.ts`**
+    - From old branch
+    - @anthropic-ai/sandbox-runtime integration
+
+**Note:** Scripts handled by bash-exec (no special infra). Assets deferred (no plan).
 
 ### Phase 4: Symbolic Layer
 
