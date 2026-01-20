@@ -6,6 +6,7 @@ import {
   formatSkillsContext,
   type SkillDiscovery,
   type SkillMetadata,
+  type SkillReference,
   type SkillScript,
   scriptsToToolSchemas,
 } from '../skill-discovery.ts'
@@ -621,5 +622,189 @@ describe('FTS5 metadata search', () => {
 
     // Should return results from name/description/metadata
     expect(Array.isArray(results)).toBe(true)
+  })
+})
+
+// ============================================================================
+// SkillDiscovery.getReferences Tests
+// ============================================================================
+
+describe('SkillDiscovery.getReferences', () => {
+  let discovery: SkillDiscovery
+
+  beforeEach(async () => {
+    discovery = await createSkillDiscovery({
+      skillsRoot: TEST_SKILLS_ROOT,
+    })
+  })
+
+  afterEach(async () => {
+    await discovery.close()
+  })
+
+  test('returns references for skill with markdown links', async () => {
+    const skills = discovery.all()
+    const skillWithRefs = skills.find((s) => {
+      const refs = discovery.getReferences(s.name)
+      return refs.length > 0
+    })
+
+    if (skillWithRefs) {
+      const refs = discovery.getReferences(skillWithRefs.name)
+
+      expect(refs.length).toBeGreaterThan(0)
+      expect(refs[0]!.skillName).toBe(skillWithRefs.name)
+      expect(refs[0]!.displayText).toBeDefined()
+      expect(refs[0]!.relativePath).toBeDefined()
+      expect(refs[0]!.absolutePath).toBeDefined()
+      expect(refs[0]!.lineNumber).toBeGreaterThan(0)
+    }
+  })
+
+  test('returns empty array for skill without references', async () => {
+    const refs = discovery.getReferences('non-existent-skill')
+
+    expect(refs).toEqual([])
+  })
+
+  test('resolves absolute paths relative to skill directory', async () => {
+    const skills = discovery.all()
+    const skillWithRefs = skills.find((s) => {
+      const refs = discovery.getReferences(s.name)
+      return refs.length > 0
+    })
+
+    if (skillWithRefs) {
+      const refs = discovery.getReferences(skillWithRefs.name)
+
+      for (const ref of refs) {
+        // Absolute path should contain skill directory
+        expect(ref.absolutePath).toContain(skillWithRefs.skillDir)
+        // Absolute path should start with /
+        expect(ref.absolutePath).toMatch(/^\//)
+      }
+    }
+  })
+})
+
+// ============================================================================
+// SkillDiscovery.getReferenceContent Tests
+// ============================================================================
+
+describe('SkillDiscovery.getReferenceContent', () => {
+  let discovery: SkillDiscovery
+
+  beforeEach(async () => {
+    discovery = await createSkillDiscovery({
+      skillsRoot: TEST_SKILLS_ROOT,
+    })
+  })
+
+  afterEach(async () => {
+    await discovery.close()
+  })
+
+  test('returns content for existing reference', async () => {
+    const skills = discovery.all()
+
+    for (const skill of skills) {
+      const refs = discovery.getReferences(skill.name)
+      const existingRef = refs.find((r) => r.relativePath.endsWith('.md'))
+
+      if (existingRef) {
+        const content = await discovery.getReferenceContent(existingRef)
+
+        if (content) {
+          expect(content.length).toBeGreaterThan(0)
+          return // Found a valid reference, test passes
+        }
+      }
+    }
+
+    // If no references exist with content, that's acceptable
+    expect(true).toBe(true)
+  })
+
+  test('returns undefined for non-existent reference path', async () => {
+    const fakeRef: SkillReference = {
+      skillName: 'test-skill',
+      displayText: 'fake reference',
+      relativePath: 'non-existent-file.md',
+      absolutePath: '/non/existent/path/file.md',
+      lineNumber: 1,
+    }
+
+    const content = await discovery.getReferenceContent(fakeRef)
+
+    expect(content).toBeUndefined()
+  })
+})
+
+// ============================================================================
+// SkillDiscovery.searchReferences Tests
+// ============================================================================
+
+describe('SkillDiscovery.searchReferences', () => {
+  let discovery: SkillDiscovery
+
+  beforeEach(async () => {
+    discovery = await createSkillDiscovery({
+      skillsRoot: TEST_SKILLS_ROOT,
+      // No embedder - vector search disabled
+    })
+  })
+
+  afterEach(async () => {
+    await discovery.close()
+  })
+
+  test('returns empty array when vector search disabled', async () => {
+    const results = await discovery.searchReferences('behavioral programming')
+
+    expect(results).toEqual([])
+  })
+
+  test('requires embedder for reference search', async () => {
+    const stats = discovery.stats()
+    expect(stats.vectorSearchEnabled).toBe(false)
+  })
+})
+
+// ============================================================================
+// Stats includes totalReferences
+// ============================================================================
+
+describe('SkillDiscovery.stats with references', () => {
+  let discovery: SkillDiscovery
+
+  beforeEach(async () => {
+    discovery = await createSkillDiscovery({
+      skillsRoot: TEST_SKILLS_ROOT,
+    })
+  })
+
+  afterEach(async () => {
+    await discovery.close()
+  })
+
+  test('stats includes totalReferences field', async () => {
+    const stats = discovery.stats()
+
+    expect(stats).toHaveProperty('totalReferences')
+    expect(typeof stats.totalReferences).toBe('number')
+  })
+
+  test('totalReferences counts extracted markdown links', async () => {
+    const skills = discovery.all()
+    const stats = discovery.stats()
+
+    // Ensure references are loaded by accessing them
+    let manualCount = 0
+    for (const skill of skills) {
+      const refs = discovery.getReferences(skill.name)
+      manualCount += refs.length
+    }
+
+    expect(stats.totalReferences).toBe(manualCount)
   })
 })

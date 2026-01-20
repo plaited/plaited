@@ -25,6 +25,7 @@ import { Database } from 'bun:sqlite'
 import { basename, dirname, extname, join } from 'node:path'
 import type { EmbedderConfig, ToolSchema } from './agent.types.ts'
 import { createEmbedder, type Embedder, findTopSimilar } from './embedder.ts'
+import { extractMarkdownLinks } from './markdown-links.ts'
 
 // ============================================================================
 // Types
@@ -145,6 +146,36 @@ export type ChunkMatch = {
 }
 
 /**
+ * A markdown link reference extracted from SKILL.md.
+ *
+ * @remarks
+ * References are indexed by displayText for semantic search.
+ * The absolutePath is resolved relative to SKILL.md location.
+ */
+export type SkillReference = {
+  /** Parent skill name */
+  skillName: string
+  /** Display text from `[text]` - used as semantic key */
+  displayText: string
+  /** Relative path from `(path)` */
+  relativePath: string
+  /** Resolved absolute path */
+  absolutePath: string
+  /** 1-indexed line number in SKILL.md */
+  lineNumber: number
+}
+
+/**
+ * Reference match result for progressive loading.
+ */
+export type ReferenceMatch = {
+  /** The matched reference */
+  reference: SkillReference
+  /** Vector similarity score (0-1) */
+  similarity: number
+}
+
+/**
  * Search options for skill discovery.
  */
 export type SkillSearchOptions = {
@@ -165,6 +196,7 @@ export type SkillDiscoveryStats = {
   totalSkills: number
   totalScripts: number
   totalChunks: number
+  totalReferences: number
   vectorSearchEnabled: boolean
 }
 
@@ -178,12 +210,18 @@ export type SkillDiscovery = {
   search: (intent: string, options?: SkillSearchOptions) => Promise<SkillMatch[]>
   /** Search skill body chunks by intent (for small-context models) */
   searchChunks: (intent: string, options?: SkillSearchOptions) => Promise<ChunkMatch[]>
+  /** Search skill references by intent (for progressive loading) */
+  searchReferences: (intent: string, options?: SkillSearchOptions) => Promise<ReferenceMatch[]>
   /** Get all cached skills */
   all: () => SkillMetadata[]
   /** Get skill body content (loads from disk) */
   getBody: (name: string) => Promise<string | undefined>
+  /** Get reference content (loads from disk) */
+  getReferenceContent: (ref: SkillReference) => Promise<string | undefined>
   /** Get scripts for a skill */
   getScripts: (skillName: string) => SkillScript[]
+  /** Get references for a skill */
+  getReferences: (skillName: string) => SkillReference[]
   /** Get discovery statistics */
   stats: () => SkillDiscoveryStats
   /** Close the discovery registry */
@@ -427,8 +465,22 @@ const createSchema = (db: Database) => {
     )
   `)
 
+  // References table for markdown links
+  db.run(`
+    CREATE TABLE IF NOT EXISTS skill_references (
+      rowid INTEGER PRIMARY KEY AUTOINCREMENT,
+      skill_name TEXT NOT NULL,
+      display_text TEXT NOT NULL,
+      relative_path TEXT NOT NULL,
+      absolute_path TEXT NOT NULL,
+      line_number INTEGER NOT NULL,
+      FOREIGN KEY (skill_name) REFERENCES skills(name) ON DELETE CASCADE
+    )
+  `)
+
   db.run(`CREATE INDEX IF NOT EXISTS idx_chunks_skill ON skill_chunks(skill_name)`)
   db.run(`CREATE INDEX IF NOT EXISTS idx_scripts_skill ON skill_scripts(skill_name)`)
+  db.run(`CREATE INDEX IF NOT EXISTS idx_references_skill ON skill_references(skill_name)`)
 }
 
 // ============================================================================
@@ -516,10 +568,12 @@ export const createSkillDiscovery = async (config: SkillDiscoveryConfig = {}): P
   // In-memory caches
   const skillCache = new Map<string, SkillMetadata>()
   const scriptCache = new Map<string, SkillScript[]>()
+  const referenceCache = new Map<string, SkillReference[]>()
 
   // In-memory embeddings (rowid -> vector)
   const skillEmbeddings = new Map<number, readonly number[]>()
   const chunkEmbeddings = new Map<number, readonly number[]>()
+  const referenceEmbeddings = new Map<number, readonly number[]>()
 
   // Prepared statements
   const insertSkillStmt = db.prepare(`
@@ -547,6 +601,31 @@ export const createSkillDiscovery = async (config: SkillDiscoveryConfig = {}): P
   `)
 
   const deleteScriptsStmt = db.prepare(`DELETE FROM skill_scripts WHERE skill_name = $skillName`)
+
+  const insertReferenceStmt = db.prepare(`
+    INSERT INTO skill_references (skill_name, display_text, relative_path, absolute_path, line_number)
+    VALUES ($skillName, $displayText, $relativePath, $absolutePath, $lineNumber)
+  `)
+
+  const deleteReferencesStmt = db.prepare(`DELETE FROM skill_references WHERE skill_name = $skillName`)
+
+  const getReferenceRowidsStmt = db.prepare<{ rowid: number }, { $skillName: string }>(`
+    SELECT rowid FROM skill_references WHERE skill_name = $skillName
+  `)
+
+  const getReferenceByRowidStmt = db.prepare<
+    { skill_name: string; display_text: string; relative_path: string; absolute_path: string; line_number: number },
+    { $rowid: number }
+  >(`
+    SELECT skill_name, display_text, relative_path, absolute_path, line_number FROM skill_references WHERE rowid = $rowid
+  `)
+
+  const getAllReferencesStmt = db.prepare<
+    { skill_name: string; display_text: string; relative_path: string; absolute_path: string; line_number: number },
+    { $skillName: string }
+  >(`
+    SELECT skill_name, display_text, relative_path, absolute_path, line_number FROM skill_references WHERE skill_name = $skillName
+  `)
 
   const getSkillMtimeStmt = db.prepare<{ mtime: number }, { $name: string }>(`
     SELECT mtime FROM skills WHERE name = $name
@@ -630,9 +709,15 @@ export const createSkillDiscovery = async (config: SkillDiscoveryConfig = {}): P
       for (const { rowid } of chunkRowids) {
         chunkEmbeddings.delete(rowid)
       }
+      // Delete reference embeddings
+      const refRowids = getReferenceRowidsStmt.all({ $skillName: skill.name })
+      for (const { rowid } of refRowids) {
+        referenceEmbeddings.delete(rowid)
+      }
       deleteFtsStmt.run({ $name: skill.name })
       deleteChunksStmt.run({ $skillName: skill.name })
       deleteScriptsStmt.run({ $skillName: skill.name })
+      deleteReferencesStmt.run({ $skillName: skill.name })
     }
 
     // Insert skill
@@ -700,8 +785,44 @@ export const createSkillDiscovery = async (config: SkillDiscoveryConfig = {}): P
       })
     }
 
+    // Index references (markdown links)
+    const markdownLinks = extractMarkdownLinks(body, { extensions: ['.md'] })
+    const references: SkillReference[] = []
+
+    for (const link of markdownLinks) {
+      const absolutePath = join(skillDir, link.relativePath)
+      const ref: SkillReference = {
+        skillName: skill.name,
+        displayText: link.displayText,
+        relativePath: link.relativePath,
+        absolutePath,
+        lineNumber: link.lineNumber,
+      }
+
+      insertReferenceStmt.run({
+        $skillName: skill.name,
+        $displayText: ref.displayText,
+        $relativePath: ref.relativePath,
+        $absolutePath: ref.absolutePath,
+        $lineNumber: ref.lineNumber,
+      })
+
+      references.push(ref)
+    }
+
+    // Compute reference embeddings if enabled
+    if (enableVectorSearch && embedder && references.length > 0) {
+      const refRowids = getReferenceRowidsStmt.all({ $skillName: skill.name })
+      for (let i = 0; i < refRowids.length; i++) {
+        // Embed display text as semantic key
+        const embedding = await embedder.embed(references[i]!.displayText)
+        referenceEmbeddings.set(refRowids[i]!.rowid, embedding)
+      }
+    }
+
     skillCache.set(skill.name, skill)
     scriptCache.set(skill.name, scripts)
+    referenceCache.set(skill.name, references)
 
     return skill
   }
@@ -888,6 +1009,36 @@ export const createSkillDiscovery = async (config: SkillDiscoveryConfig = {}): P
       return results
     },
 
+    async searchReferences(intent: string, options: SkillSearchOptions = {}): Promise<ReferenceMatch[]> {
+      const { limit = 5 } = options
+
+      if (!enableVectorSearch || !embedder || referenceEmbeddings.size === 0) {
+        return []
+      }
+
+      const queryVec = await embedder.embed(intent)
+      const topMatches = findTopSimilar({ query: queryVec, embeddings: referenceEmbeddings, limit })
+
+      const results: ReferenceMatch[] = []
+      for (const match of topMatches) {
+        const row = getReferenceByRowidStmt.get({ $rowid: match.rowid })
+        if (row) {
+          results.push({
+            reference: {
+              skillName: row.skill_name,
+              displayText: row.display_text,
+              relativePath: row.relative_path,
+              absolutePath: row.absolute_path,
+              lineNumber: row.line_number,
+            },
+            similarity: match.similarity,
+          })
+        }
+      }
+
+      return results
+    },
+
     all(): SkillMetadata[] {
       return [...skillCache.values()]
     },
@@ -899,6 +1050,16 @@ export const createSkillDiscovery = async (config: SkillDiscoveryConfig = {}): P
       try {
         const content = await Bun.file(skill.location).text()
         return extractBody(content)
+      } catch {
+        return undefined
+      }
+    },
+
+    async getReferenceContent(ref: SkillReference): Promise<string | undefined> {
+      try {
+        const file = Bun.file(ref.absolutePath)
+        if (!(await file.exists())) return undefined
+        return await file.text()
       } catch {
         return undefined
       }
@@ -925,17 +1086,41 @@ export const createSkillDiscovery = async (config: SkillDiscoveryConfig = {}): P
       return scripts
     },
 
+    getReferences(skillName: string): SkillReference[] {
+      // Try memory cache first
+      const cached = referenceCache.get(skillName)
+      if (cached) return cached
+
+      // Load from DB
+      const rows = getAllReferencesStmt.all({ $skillName: skillName })
+      const references: SkillReference[] = rows.map((row) => ({
+        skillName: row.skill_name,
+        displayText: row.display_text,
+        relativePath: row.relative_path,
+        absolutePath: row.absolute_path,
+        lineNumber: row.line_number,
+      }))
+
+      referenceCache.set(skillName, references)
+      return references
+    },
+
     stats(): SkillDiscoveryStats {
       const skillCount = skillCache.size
       let scriptCount = 0
       for (const scripts of scriptCache.values()) {
         scriptCount += scripts.length
       }
+      let referenceCount = 0
+      for (const refs of referenceCache.values()) {
+        referenceCount += refs.length
+      }
 
       return {
         totalSkills: skillCount,
         totalScripts: scriptCount,
         totalChunks: chunkEmbeddings.size,
+        totalReferences: referenceCount,
         vectorSearchEnabled: enableVectorSearch,
       }
     },
@@ -943,8 +1128,10 @@ export const createSkillDiscovery = async (config: SkillDiscoveryConfig = {}): P
     async close(): Promise<void> {
       skillEmbeddings.clear()
       chunkEmbeddings.clear()
+      referenceEmbeddings.clear()
       skillCache.clear()
       scriptCache.clear()
+      referenceCache.clear()
       db.close()
       if (embedder) {
         await embedder.dispose()
