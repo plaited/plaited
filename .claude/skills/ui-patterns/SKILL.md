@@ -95,6 +95,22 @@ export const styles = createStyles({
 <button {...styles.button}>Click me</button>
 ```
 
+## CSS Logical Properties Requirement
+
+**CRITICAL**: All CSS properties in `createStyles` and `createHostStyles` MUST use logical properties, not physical properties.
+
+**Why**: Logical properties ensure templates work correctly in LTR, RTL, and vertical writing modes, supporting internationalization.
+
+**Quick Reference**:
+- Use `inline-size` / `block-size` instead of `width` / `height`
+- Use `padding-block` / `padding-inline` instead of `padding-top/bottom` / `padding-left/right`
+- Use `margin-inline: auto` instead of `margin-left: auto; margin-right: auto`
+- Use `inset` instead of `top/right/bottom/left`
+
+**See**: [css-logical-properties-pattern.md](../web-patterns/references/css-logical-properties-pattern.md) for complete mapping and examples.
+
+**Enforcement**: This is a required convention. See [code-conventions.md](../standards/references/code-conventions.md#css-logical-properties) for the complete rule.
+
 ## Pattern Categories
 
 ### Templates & Styling

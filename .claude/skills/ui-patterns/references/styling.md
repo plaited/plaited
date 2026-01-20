@@ -454,8 +454,8 @@ import { fills } from './fills.tokens.ts'
 
 export const styles = createStyles({
   symbol: {
-    height: '16px',
-    width: '16px',
+    block-size: '16px',
+    inline-size: '16px',
     backgroundColor: {
       $default: fills.fill.default,
       ':host(:state(checked))': fills.fill.checked,
@@ -824,8 +824,8 @@ import { fills } from './fills.tokens.ts'
 
 export const styles = createStyles({
   symbol: {
-    height: '16px',
-    width: '16px',
+    block-size: '16px',
+    inline-size: '16px',
     backgroundColor: {
       $default: fills.fill.default,
       ':host(:state(checked))': fills.fill.checked,
@@ -1557,10 +1557,10 @@ const decoratedStyles = createStyles({
     '::before': {
       content: '""',
       position: 'absolute',
-      top: '0',
-      left: '0',
-      width: '4px',
-      height: '100%',
+      inset-block-start: '0',
+      inset-inline-start: '0',
+      inline-size: '4px',
+      block-size: '100%',
       backgroundColor: 'blue',
     }
   }

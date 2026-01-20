@@ -1,5 +1,15 @@
 # CSS Logical Properties and Values Pattern
 
+## ⚠️ REQUIRED FOR ALL PLAITED STYLES
+
+**This is not optional.** All CSS properties in Plaited templates MUST use logical properties. Physical properties (`width`, `height`, `margin-top`, `padding-left`, etc.) are forbidden except for properties without logical equivalents.
+
+**Enforcement**: This pattern is enforced across all Plaited code generation. When creating styles with `createStyles` or `createHostStyles`, always prefer logical properties.
+
+**See Also**:
+- [code-conventions.md](../../standards/references/code-conventions.md#css-logical-properties) - Required convention in standards
+- [ui-patterns/SKILL.md](../../ui-patterns/SKILL.md#css-logical-properties-requirement) - Quick reference
+
 ## Overview
 
 CSS logical properties define layout properties relative to the content's writing direction rather than physical direction (left, right, top, bottom). This ensures templates adapt correctly when localized to work with content and languages using different writing modes (LTR, RTL, vertical).

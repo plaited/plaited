@@ -123,3 +123,43 @@ const [slot] = $<HTMLSlotElement>('slot')
 ```
 
 **Rationale:** Non-null assertions express confidence in element presence when structurally guaranteed. Optional chaining provides runtime safety for uncertain cases. Indexed access is cleaner than destructuring for single elements.
+
+## CSS Logical Properties
+
+**CRITICAL**: Always use CSS logical properties instead of physical properties for all layout, spacing, sizing, and positioning in `createStyles` and `createHostStyles`.
+
+### Required Logical Properties
+
+| ❌ Physical (Avoid) | ✅ Logical (Use) |
+|---------------------|------------------|
+| `width`, `height` | `inline-size`, `block-size` |
+| `margin-top`, `margin-bottom` | `margin-block-start`, `margin-block-end` |
+| `margin-left`, `margin-right` | `margin-inline-start`, `margin-inline-end` |
+| `padding-top`, `padding-bottom` | `padding-block-start`, `padding-block-end` |
+| `padding-left`, `padding-right` | `padding-inline-start`, `padding-inline-end` |
+| `top`, `bottom`, `left`, `right` | `inset-block-start`, `inset-block-end`, `inset-inline-start`, `inset-inline-end` |
+| `border-top`, `border-bottom` | `border-block-start`, `border-block-end` |
+| `border-left`, `border-right` | `border-inline-start`, `border-inline-end` |
+
+### Shorthand Properties
+
+```typescript
+// ✅ Good: Logical shorthand
+padding: '0'  // Can use shorthand for single values
+padding-block: '1rem'
+padding-inline: '2rem'
+margin-inline: 'auto'  // Center horizontally
+
+// ❌ Avoid: Physical properties
+paddingTop: '1rem'
+paddingLeft: '2rem'
+marginLeft: 'auto'
+```
+
+### Rationale
+
+Logical properties ensure templates adapt correctly to different writing directions (LTR, RTL, vertical) and support internationalization. This is a **required convention** for all Plaited styles.
+
+**Exception**: Properties without logical equivalents (e.g., `border-radius`, `outline-offset`, `text-align`) can use physical properties.
+
+**See**: [css-logical-properties-pattern.md](../../web-patterns/references/css-logical-properties-pattern.md) for complete reference and examples.
