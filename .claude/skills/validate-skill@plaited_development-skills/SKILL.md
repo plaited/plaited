@@ -13,7 +13,7 @@ allowed-tools: Bash
 This skill validates skill directories against the [AgentSkills specification](https://agentskills.io/specification). Use it to ensure your skills have proper frontmatter, required fields, and follow naming conventions.
 
 **Use when:**
-- Creating new skills in `.claude/skills/`
+- Creating new skills in any agent's skills directory (`.claude/skills/`, `.cursor/skills/`, etc.)
 - Reviewing PRs that modify skills
 - Validating skill structure before publishing
 
@@ -28,7 +28,7 @@ bunx @plaited/development-skills validate-skill [paths...]
 ```
 
 **Arguments:**
-- `paths`: Optional paths to validate (default: `.claude/skills/`)
+- `paths`: Paths to validate (defaults to current agent's skills directory)
 
 **Options:**
 - `--json`: Output results as JSON
@@ -36,14 +36,17 @@ bunx @plaited/development-skills validate-skill [paths...]
 **Examples:**
 
 ```bash
-# Validate all skills in .claude/skills/
-bunx @plaited/development-skills validate-skill
+# Validate skills in current directory's .claude/skills/
+bunx @plaited/development-skills validate-skill .claude/skills
+
+# Validate Cursor skills
+bunx @plaited/development-skills validate-skill .cursor/skills
 
 # Validate a specific skill
 bunx @plaited/development-skills validate-skill .claude/skills/typescript-lsp
 
 # Validate multiple paths with JSON output
-bunx @plaited/development-skills validate-skill .claude/skills/typescript-lsp .claude/skills/code-documentation --json
+bunx @plaited/development-skills validate-skill .claude/skills .cursor/skills --json
 ```
 
 ## Validation Rules
@@ -75,7 +78,7 @@ bunx @plaited/development-skills validate-skill .claude/skills/typescript-lsp .c
 
 ```
 ✓ .claude/skills/typescript-lsp
-✓ .claude/skills/code-documentation
+✓ .cursor/skills/my-skill
 ✗ .claude/skills/invalid-skill
   ERROR: Missing required field in frontmatter: 'description'
 
@@ -88,11 +91,11 @@ bunx @plaited/development-skills validate-skill .claude/skills/typescript-lsp .c
 [
   {
     "valid": true,
-    "path": ".claude/skills/typescript-lsp",
+    "path": ".cursor/skills/my-skill",
     "errors": [],
     "warnings": [],
     "properties": {
-      "name": "typescript-lsp",
+      "name": "my-skill",
       "description": "..."
     }
   }
