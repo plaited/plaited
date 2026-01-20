@@ -97,7 +97,7 @@ describe('extractKeywords', () => {
 describe('schemaToIndexedTool', () => {
   test('converts schema to indexed tool with defaults', () => {
     const schema = createTestSchema('writeTemplate', 'Write a template')
-    const indexed = schemaToIndexedTool(schema)
+    const indexed = schemaToIndexedTool({ schema })
 
     expect(indexed.name).toBe('writeTemplate')
     expect(indexed.description).toBe('Write a template')
@@ -109,7 +109,7 @@ describe('schemaToIndexedTool', () => {
 
   test('accepts source and sourceUrl', () => {
     const schema = createTestSchema('remoteTool', 'A remote tool')
-    const indexed = schemaToIndexedTool(schema, 'mcp', 'https://example.com/mcp')
+    const indexed = schemaToIndexedTool({ schema, source: 'mcp', sourceUrl: 'https://example.com/mcp' })
 
     expect(indexed.source).toBe('mcp')
     expect(indexed.sourceUrl).toBe('https://example.com/mcp')
@@ -142,7 +142,7 @@ describe('createToolDiscovery (FTS5 only)', () => {
   })
 
   test('indexes a tool', async () => {
-    const tool = schemaToIndexedTool(testSchemas[0]!)
+    const tool = schemaToIndexedTool({ schema: testSchemas[0]! })
     await discovery.index(tool)
 
     const stats = discovery.stats()
@@ -151,7 +151,7 @@ describe('createToolDiscovery (FTS5 only)', () => {
   })
 
   test('indexes multiple tools in batch', async () => {
-    const tools = testSchemas.map((s) => schemaToIndexedTool(s))
+    const tools = testSchemas.map((schema) => schemaToIndexedTool({ schema }))
     await discovery.indexBatch(tools)
 
     const stats = discovery.stats()
@@ -159,7 +159,7 @@ describe('createToolDiscovery (FTS5 only)', () => {
   })
 
   test('retrieves all tools', async () => {
-    const tools = testSchemas.map((s) => schemaToIndexedTool(s))
+    const tools = testSchemas.map((schema) => schemaToIndexedTool({ schema }))
     await discovery.indexBatch(tools)
 
     const all = discovery.all()
@@ -167,9 +167,13 @@ describe('createToolDiscovery (FTS5 only)', () => {
   })
 
   test('filters by source', async () => {
-    await discovery.index(schemaToIndexedTool(testSchemas[0]!, 'local'))
-    await discovery.index(schemaToIndexedTool(testSchemas[1]!, 'mcp', 'https://mcp.example.com'))
-    await discovery.index(schemaToIndexedTool(testSchemas[2]!, 'a2a', 'https://a2a.example.com'))
+    await discovery.index(schemaToIndexedTool({ schema: testSchemas[0]!, source: 'local' }))
+    await discovery.index(
+      schemaToIndexedTool({ schema: testSchemas[1]!, source: 'mcp', sourceUrl: 'https://mcp.example.com' }),
+    )
+    await discovery.index(
+      schemaToIndexedTool({ schema: testSchemas[2]!, source: 'a2a', sourceUrl: 'https://a2a.example.com' }),
+    )
 
     expect(discovery.bySource('local')).toHaveLength(1)
     expect(discovery.bySource('mcp')).toHaveLength(1)
@@ -177,7 +181,7 @@ describe('createToolDiscovery (FTS5 only)', () => {
   })
 
   test('removes a tool', async () => {
-    const tools = testSchemas.map((s) => schemaToIndexedTool(s))
+    const tools = testSchemas.map((schema) => schemaToIndexedTool({ schema }))
     await discovery.indexBatch(tools)
 
     discovery.remove('writeTemplate')
@@ -187,9 +191,9 @@ describe('createToolDiscovery (FTS5 only)', () => {
   })
 
   test('clears tools by source', async () => {
-    await discovery.index(schemaToIndexedTool(testSchemas[0]!, 'local'))
-    await discovery.index(schemaToIndexedTool(testSchemas[1]!, 'mcp'))
-    await discovery.index(schemaToIndexedTool(testSchemas[2]!, 'mcp'))
+    await discovery.index(schemaToIndexedTool({ schema: testSchemas[0]!, source: 'local' }))
+    await discovery.index(schemaToIndexedTool({ schema: testSchemas[1]!, source: 'mcp' }))
+    await discovery.index(schemaToIndexedTool({ schema: testSchemas[2]!, source: 'mcp' }))
 
     discovery.clearSource('mcp')
 
@@ -208,7 +212,7 @@ describe('FTS5 search', () => {
 
   beforeEach(async () => {
     discovery = await createToolDiscovery()
-    const tools = testSchemas.map((s) => schemaToIndexedTool(s))
+    const tools = testSchemas.map((schema) => schemaToIndexedTool({ schema }))
     await discovery.indexBatch(tools)
   })
 
@@ -246,8 +250,8 @@ describe('FTS5 search', () => {
 
   test('filters by source', async () => {
     discovery.clearSource('local')
-    await discovery.index(schemaToIndexedTool(testSchemas[0]!, 'local'))
-    await discovery.index(schemaToIndexedTool(testSchemas[1]!, 'mcp'))
+    await discovery.index(schemaToIndexedTool({ schema: testSchemas[0]!, source: 'local' }))
+    await discovery.index(schemaToIndexedTool({ schema: testSchemas[1]!, source: 'mcp' }))
 
     const localResults = await discovery.search('write', { source: 'local' })
     const mcpResults = await discovery.search('write', { source: 'mcp' })
@@ -284,7 +288,7 @@ describe('filterToolsByIntent', () => {
 
   beforeEach(async () => {
     discovery = await createToolDiscovery()
-    const tools = testSchemas.map((s) => schemaToIndexedTool(s))
+    const tools = testSchemas.map((schema) => schemaToIndexedTool({ schema }))
     await discovery.indexBatch(tools)
   })
 
@@ -293,14 +297,14 @@ describe('filterToolsByIntent', () => {
   })
 
   test('returns schemas for matching tools', async () => {
-    const schemas = await filterToolsByIntent(discovery, 'write a template', testSchemas)
+    const schemas = await filterToolsByIntent({ discovery, intent: 'write a template', allSchemas: testSchemas })
 
     expect(schemas.length).toBeGreaterThan(0)
     expect(schemas[0]!.name).toBe('writeTemplate')
   })
 
   test('falls back to discovery tools when no match', async () => {
-    const schemas = await filterToolsByIntent(discovery, 'xyz123nonexistent', testSchemas)
+    const schemas = await filterToolsByIntent({ discovery, intent: 'xyz123nonexistent', allSchemas: testSchemas })
 
     // Should return tools with 'list' or 'search' in name
     const names = schemas.map((s) => s.name)
@@ -309,7 +313,12 @@ describe('filterToolsByIntent', () => {
   })
 
   test('respects options', async () => {
-    const schemas = await filterToolsByIntent(discovery, 'write', testSchemas, { limit: 1 })
+    const schemas = await filterToolsByIntent({
+      discovery,
+      intent: 'write',
+      allSchemas: testSchemas,
+      searchOptions: { limit: 1 },
+    })
 
     expect(schemas).toHaveLength(1)
   })
@@ -328,7 +337,7 @@ describe('edge cases', () => {
 
   test('handles special characters in query', async () => {
     const discovery = await createToolDiscovery()
-    const tools = testSchemas.map((s) => schemaToIndexedTool(s))
+    const tools = testSchemas.map((schema) => schemaToIndexedTool({ schema }))
     await discovery.indexBatch(tools)
 
     // Should not throw
@@ -341,8 +350,8 @@ describe('edge cases', () => {
   test('handles duplicate tool names', async () => {
     const discovery = await createToolDiscovery()
 
-    await discovery.index(schemaToIndexedTool(testSchemas[0]!))
-    await discovery.index(schemaToIndexedTool(testSchemas[0]!)) // Same tool again
+    await discovery.index(schemaToIndexedTool({ schema: testSchemas[0]! }))
+    await discovery.index(schemaToIndexedTool({ schema: testSchemas[0]! })) // Same tool again
 
     expect(discovery.stats().totalTools).toBe(1) // Should replace, not duplicate
 
@@ -351,7 +360,7 @@ describe('edge cases', () => {
 
   test('handles empty intent', async () => {
     const discovery = await createToolDiscovery()
-    const tools = testSchemas.map((s) => schemaToIndexedTool(s))
+    const tools = testSchemas.map((schema) => schemaToIndexedTool({ schema }))
     await discovery.indexBatch(tools)
 
     const results = await discovery.search('')
@@ -389,7 +398,7 @@ describe('hybrid search (vector + FTS5)', () => {
   beforeAll(async () => {
     discovery = await createToolDiscovery({ embedder: true })
     expect(discovery.stats().vectorSearchEnabled).toBe(true)
-    const tools = testSchemas.map((s) => schemaToIndexedTool(s))
+    const tools = testSchemas.map((schema) => schemaToIndexedTool({ schema }))
     await discovery.indexBatch(tools)
   }, 120000) // 2 min timeout for model loading
 

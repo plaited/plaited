@@ -503,13 +503,25 @@ export const extractKeywords = (schema: ToolSchema): string[] => {
 }
 
 /**
+ * Options for converting a ToolSchema to IndexedTool.
+ */
+export type SchemaToIndexedToolOptions = {
+  /** The tool schema to convert */
+  schema: ToolSchema
+  /** Source identifier (default: 'local') */
+  source?: ToolSource
+  /** URL for remote tools (MCP/A2A) */
+  sourceUrl?: string
+}
+
+/**
  * Converts a ToolSchema to an IndexedTool.
  */
-export const schemaToIndexedTool = (
-  schema: ToolSchema,
-  source: ToolSource = 'local',
-  sourceUrl?: string,
-): IndexedTool => ({
+export const schemaToIndexedTool = ({
+  schema,
+  source = 'local',
+  sourceUrl,
+}: SchemaToIndexedToolOptions): IndexedTool => ({
   name: schema.name,
   description: schema.description,
   keywords: extractKeywords(schema),
@@ -533,26 +545,34 @@ const sanitizeFtsQuery = (query: string): string =>
     .join(' OR ')
 
 /**
+ * Options for filtering tools by intent.
+ */
+export type FilterToolsByIntentOptions = {
+  /** Tool discovery registry */
+  discovery: ToolDiscovery
+  /** User intent to match against */
+  intent: string
+  /** All available tool schemas */
+  allSchemas: ToolSchema[]
+  /** Search options */
+  searchOptions?: SearchOptions
+}
+
+/**
  * Filters tool schemas based on intent using discovery.
- *
- * @param discovery - Tool discovery registry
- * @param intent - User intent
- * @param allSchemas - All available tool schemas
- * @param options - Search options
- * @returns Filtered tool schemas relevant to the intent
  *
  * @remarks
  * Main entry point for progressive tool discovery.
  * Returns only tools relevant to the current intent,
  * reducing token costs for model context.
  */
-export const filterToolsByIntent = async (
-  discovery: ToolDiscovery,
-  intent: string,
-  allSchemas: ToolSchema[],
-  options?: SearchOptions,
-): Promise<ToolSchema[]> => {
-  const matches = await discovery.search(intent, options)
+export const filterToolsByIntent = async ({
+  discovery,
+  intent,
+  allSchemas,
+  searchOptions,
+}: FilterToolsByIntentOptions): Promise<ToolSchema[]> => {
+  const matches = await discovery.search(intent, searchOptions)
 
   if (matches.length === 0) {
     // Fallback: return discovery/general tools
