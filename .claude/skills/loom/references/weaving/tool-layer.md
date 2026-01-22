@@ -8,49 +8,73 @@ The Tool Layer provides the foundational capabilities that FunctionGemma (or oth
 
 ```mermaid
 flowchart TB
-    subgraph Neural["Neural Layer"]
-        Model["FunctionGemma"]
-        Calls["Tool Calls"]
-        Model --> Calls
+    subgraph Config["Configuration"]
+        ConfigFile[".plaited/config.ts"]
     end
 
-    subgraph Tool["Tool Layer"]
-        subgraph Discovery["Discovery"]
-            ToolDisc["tool-discovery"]
-            SkillDisc["skill-discovery<br/>+ searchReferences"]
-        end
+    subgraph Adapters["Adapter Layer"]
+        ACPAdapter["ACP Adapter<br/>(default)"]
+        SandboxAdapter["Sandbox Adapter<br/>(optional)"]
+    end
 
-        subgraph Utils["Utilities"]
-            Embedder["embedder"]
-            Cache["semantic-cache"]
-            Relations["relation-store"]
-            MdLinks["markdown-links"]
-        end
-
-        subgraph FileTools["File Operations"]
-            FileOps["file-ops"]
-            Search["search (glob+grep)"]
-            BashExec["bash-exec"]
-        end
-
-        subgraph Schema["Schema"]
-            SchemaUtils["schema-utils<br/>zodToToolSchema"]
+    subgraph Agent["Agent Core"]
+        subgraph Neural["Neural Layer"]
+            Model["FunctionGemma"]
             Formatters["formatters"]
         end
+
+        subgraph Tool["Tool Layer"]
+            subgraph Discovery["Discovery"]
+                ToolDisc["tool-discovery"]
+                SkillDisc["skill-discovery"]
+            end
+
+            subgraph Utils["Utilities"]
+                Embedder["embedder"]
+                Cache["semantic-cache"]
+                Relations["relation-store"]
+                MdLinks["markdown-links"]
+            end
+
+            subgraph FileTools["File Operations"]
+                FileOps["file-ops"]
+                Search["search (glob+grep)"]
+                BashExec["bash-exec"]
+            end
+        end
     end
 
-    subgraph Infra["Infrastructure (not called by model)"]
+    subgraph MCP["MCP Layer"]
+        MCPRegistry["MCP Registry<br/>(tools + resources + prompts)"]
+        MCPClients["MCP Clients"]
+    end
+
+    subgraph Infra["Infrastructure"]
         RulesDisc["rules-discovery"]
         StartServer["start-server"]
     end
 
-    Calls --> Discovery
-    Calls --> FileTools
-    Calls --> Schema
-    Discovery --> Embedder
-    Utils --> Embedder
-    Infra -.->|"context"| Tool
+    Config --> Agent
+    ACPAdapter --> SandboxAdapter
+    SandboxAdapter --> Agent
+    Agent --> MCPRegistry
+    MCPRegistry --> MCPClients
+    Infra -.->|"context"| Agent
 ```
+
+### Protocol Stack
+
+| Protocol | Direction | Purpose |
+|----------|-----------|---------|
+| **ACP** | Client ↔ Agent | Session, prompts, responses |
+| **MCP** | Agent ↔ Tools | Tools, resources, prompts |
+| **A2A** | Agent ↔ Agent | Multi-agent (future) |
+
+**Key architectural decisions:**
+- ACP is the default adapter (Gemini CLI compatible)
+- Sandbox wraps the entire agent (not a tool inside)
+- MCP Registry unifies tools, resources, and prompts
+- A2A is a separate adapter layer, NOT a tool source
 
 ## Storage Strategy
 
@@ -417,9 +441,11 @@ const pathRules = rules.getRulesForPath('./src/auth/login.ts')
 
 ## Module Summary
 
+### Tool Layer (Complete)
+
 | Module | Storage | Search | Persistence | Tests |
 |--------|---------|--------|-------------|-------|
-| `tool-discovery` | SQLite + FTS5 | Hybrid (FTS5 + vector) | `dbPath` | 31 |
+| `tool-discovery` | SQLite + FTS5 | Hybrid (FTS5 + vector) | `dbPath` | 37 |
 | `skill-discovery` | SQLite + FTS5 | Hybrid + references | `dbPath` | 50 |
 | `semantic-cache` | Map | Cosine similarity | `onPersist` | 27 |
 | `relation-store` | Map | Traversal only | `onPersist` | 41 |
@@ -431,6 +457,16 @@ const pathRules = rules.getRulesForPath('./src/auth/login.ts')
 | `formatters` | N/A | N/A | N/A | 22 |
 | `embedder` | N/A | N/A | N/A | - |
 | `rules-discovery` | SQLite + FTS5 | Hybrid + spatial | `dbPath` | 25 |
+
+### Protocol Layer (Planned)
+
+| Module | Purpose | Status |
+|--------|---------|--------|
+| `mcp-registry` | Unified tools + resources + prompts | 🔲 |
+| `mcp-client` | One client per MCP server | 🔲 |
+| `acp-adapter` | Default ACP adapter | 🔲 |
+| `sandbox-adapter` | Optional OS-level isolation | 🔲 |
+| `config-loader` | Load `.plaited/config.ts` | 🔲 |
 
 ## Key Principles
 

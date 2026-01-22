@@ -96,7 +96,7 @@ export type ToolDiscoveryStats = {
   totalTools: number
   localTools: number
   mcpTools: number
-  a2aTools: number
+  skillTools: number
   vectorSearchEnabled: boolean
 }
 
@@ -456,7 +456,7 @@ export const createToolDiscovery = async (config: ToolDiscoveryConfig = {}): Pro
         totalTools: toolCache.size,
         localTools: discovery.bySource('local').length,
         mcpTools: discovery.bySource('mcp').length,
-        a2aTools: discovery.bySource('a2a').length,
+        skillTools: discovery.bySource('skill').length,
         vectorSearchEnabled: enableVectorSearch,
       }
     },
@@ -510,7 +510,7 @@ export type SchemaToIndexedToolOptions = {
   schema: ToolSchema
   /** Source identifier (default: 'local') */
   source?: ToolSource
-  /** URL for remote tools (MCP/A2A) */
+  /** URL for remote MCP tools */
   sourceUrl?: string
 }
 

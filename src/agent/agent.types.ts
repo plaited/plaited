@@ -75,7 +75,9 @@ export type ToolSchema = {
  * Used to categorize tools by their origin:
  * - `local` - Built-in tools defined in the application
  * - `mcp` - Tools from Model Context Protocol servers
- * - `a2a` - Tools from Agent-to-Agent protocol peers
  * - `skill` - Tools from AgentSkills scripts
+ *
+ * Note: A2A (Agent-to-Agent) is a separate adapter layer, not a tool source.
+ * A2A agents expose their capabilities as MCP tools when collaborating.
  */
-export type ToolSource = 'local' | 'mcp' | 'a2a' | 'skill'
+export type ToolSource = 'local' | 'mcp' | 'skill'

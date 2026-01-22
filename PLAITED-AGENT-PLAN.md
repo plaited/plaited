@@ -6,6 +6,8 @@ This plan implements a neuro-symbolic world agent architecture combining:
 - **Browser as World Model** - Stories execute in browser; play() validates exploration
 - **Tiered Symbolic Analysis** - Static → Model-as-judge → Browser execution
 - **Structural Vocabulary** - Objects, Channels, Levers, Loops, Blocks
+- **Protocol Layers** - ACP (client), MCP (tools), A2A (future agents)
+- **Adapter Pattern** - Agent wrappable by sandbox, ACP, A2A adapters
 
 ---
 
@@ -13,66 +15,78 @@ This plan implements a neuro-symbolic world agent architecture combining:
 
 ```mermaid
 flowchart TB
-    subgraph Neural["NEURAL LAYER (FunctionGemma)"]
-        Intent["Intent"]
-        Formatters["formatters"]
-        Model["Model"]
-        Calls["Tool/Skill Calls"]
-        Intent --> Formatters --> Model --> Calls
+    subgraph Config["CONFIGURATION"]
+        ConfigFile[".plaited/config.ts"]
     end
 
-    subgraph Tool["TOOL LAYER (plain functions)"]
-        subgraph Discovery["Discovery"]
-            ToolDisc["tool-discovery"]
-            SkillDisc["skill-discovery<br/>+ searchReferences"]
+    subgraph Client["CLIENT LAYER"]
+        ACPClient["ACP Client<br/>(IDE, CLI, Web)"]
+    end
+
+    subgraph Adapters["ADAPTER LAYER"]
+        ACPAdapter["ACP Adapter<br/>(default, built-in)"]
+        SandboxAdapter["Sandbox Adapter<br/>(optional isolation)"]
+        CustomAdapter["Custom Adapter<br/>(flag to load)"]
+    end
+
+    subgraph Agent["AGENT CORE"]
+        subgraph Neural["Neural Layer"]
+            Model["FunctionGemma"]
+            Formatters["formatters"]
         end
 
-        subgraph Utils["Utilities"]
-            Embedder["embedder"]
-            Cache["semantic-cache"]
-            Relations["relation-store"]
-            MdLinks["markdown-links"]
+        subgraph Tool["Tool Layer"]
+            Discovery["Discovery<br/>(tool, skill, rules)"]
+            FileTools["File Ops<br/>(file-ops, search, bash)"]
+            Utils["Utils<br/>(embedder, cache, relations)"]
         end
 
-        subgraph FileTools["File Operations"]
-            FileOps["file-ops"]
-            Search["search (glob+grep)"]
-            BashExec["bash-exec"]
-        end
-
-        subgraph Schema["Schema"]
-            SchemaUtils["schema-utils<br/>zodToToolSchema"]
+        subgraph Symbolic["Symbolic Layer"]
+            BThreads["bThreads"]
         end
     end
 
-    subgraph Skill["SKILL LAYER"]
-        Skills["typescript-lsp<br/>behavioral-core<br/>ui-patterns<br/>loom<br/>standards"]
+    subgraph MCP["MCP LAYER"]
+        MCPRegistry["MCP Registry<br/>(tools + resources + prompts)"]
+        MCPClients["MCP Clients<br/>(one per server)"]
+        LocalMCP["Local Tools<br/>(file-ops, search, bash)"]
+        RemoteMCP["Remote MCP Servers<br/>(HTTP transport)"]
     end
 
-    subgraph Symbolic["SYMBOLIC LAYER (bThreads)"]
-        Constraints["Structural IA Constraints<br/>Objects, Channels, Levers, Loops, Blocks"]
+    subgraph World["WORLD LAYER"]
+        Browser["Browser<br/>(Stories + play())"]
     end
 
-    subgraph World["WORLD LAYER (Browser)"]
-        Stories["Stories + play()"]
-        Inspector["Inspector Snapshots"]
-        Assertions["Assertions → Rewards"]
-    end
-
-    subgraph Infra["INFRASTRUCTURE"]
-        StartServer["start-server ✅"]
-        Sandbox["code-sandbox 🔲"]
-        RulesDisc["rules-discovery 🔲"]
-    end
-
-    Calls --> Tool
-    Calls --> Skill
-    Tool --> Symbolic
-    Skill --> Symbolic
-    Symbolic --> World
-    Infra -.-> World
-    Infra -.-> Tool
+    Config --> Agent
+    Config --> MCPRegistry
+    ACPClient -->|"ACP"| ACPAdapter
+    ACPAdapter --> SandboxAdapter
+    SandboxAdapter --> Agent
+    CustomAdapter -.->|"alternative"| Agent
+    Agent --> MCPRegistry
+    MCPRegistry --> MCPClients
+    MCPClients --> LocalMCP
+    MCPClients --> RemoteMCP
+    Agent --> Symbolic --> World
 ```
+
+### Protocol Stack
+
+| Protocol | Direction | Purpose | Status |
+|----------|-----------|---------|--------|
+| **ACP** | Client ↔ Agent | Session, prompts, responses | Default adapter |
+| **MCP** | Agent ↔ Tools | Tools, resources, prompts | Unified registry |
+| **A2A** | Agent ↔ Agent | Multi-agent collaboration | Future (separate layer) |
+
+### Key Architectural Decisions
+
+1. **ACP as default adapter** - Built-in, with flag to load custom adapters
+2. **Sandbox wraps agent** - Not a tool, an adapter layer
+3. **One MCP client per server** - Dynamic provisioning based on config
+4. **MCP Registry** - Unified for tools + resources + prompts with FTS5 + embeddings
+5. **Remote MCP first** - HTTP transport, stdio later
+6. **A2A is NOT a ToolSource** - Separate collaboration layer (future)
+7. **Config file** - `.plaited/config.ts` for local development
 
 ---
 
@@ -402,8 +416,7 @@ export const extractMarkdownLinks = (content: string): MarkdownLink[]
 | Module | Purpose | Status |
 |--------|---------|--------|
 | `start-server` | Workshop subprocess | ✅ |
-| `code-sandbox` | @anthropic-ai/sandbox-runtime | 🔲 |
-| `rules-discovery` | AGENTS.md context management | 🔲 |
+| `rules-discovery` | AGENTS.md context management | ✅ |
 
 **Why rules-discovery is infrastructure, not a tool:**
 - Model doesn't call it directly (unlike tool-discovery, skill-discovery)
@@ -411,6 +424,343 @@ export const extractMarkdownLinks = (content: string): MarkdownLink[]
 - Intercepts file operations to load spatial rules
 - Loads root AGENTS.md at startup
 - Provides context, not actions
+
+---
+
+## Protocol Layer
+
+### ACP (Agent Client Protocol)
+
+ACP is the **default adapter** for client-to-agent communication. Gemini CLI has built-in ACP support.
+
+```typescript
+// ACP Adapter interface
+type ACPAdapter = {
+  name: 'acp'
+  wrap: (agent: Agent, config: ACPConfig) => ACPServer
+}
+
+type ACPConfig = {
+  transport: 'stdio' | 'http'
+  port?: number
+  // MCP servers can come from ACP session/new OR config file
+  mcpServers?: MCPServerConfig[]
+}
+
+// Custom adapters can be loaded via flag
+// --adapter=./my-adapter.ts
+type AdapterModule = {
+  default: AgentAdapter
+}
+```
+
+**Key features:**
+- Default built-in adapter
+- Flag to load custom adapters: `--adapter=./path/to/adapter.ts`
+- MCP config can come from ACP `session/new` OR `.plaited/config.ts` (merged)
+
+### MCP (Model Context Protocol)
+
+MCP handles agent-to-tools communication with **three primitives**: Tools, Resources, Prompts.
+
+```typescript
+// Unified MCP Registry using FTS5 + embeddings (like tool-discovery)
+type MCPRegistry = {
+  // === Tools ===
+  tools: {
+    search: (query: string, options?: SearchOptions) => Promise<ToolMatch[]>
+    register: (tool: MCPTool, serverId: string) => Promise<void>
+    execute: (name: string, args: unknown, serverId: string) => Promise<ToolResult>
+  }
+
+  // === Resources ===
+  resources: {
+    search: (query: string, options?: SearchOptions) => Promise<ResourceMatch[]>
+    register: (resource: MCPResource, serverId: string) => Promise<void>
+    read: (uri: string, serverId: string) => Promise<ResourceContent>
+    subscribe?: (uri: string, serverId: string) => AsyncIterable<ResourceUpdate>
+  }
+
+  // === Prompts ===
+  prompts: {
+    search: (query: string, options?: SearchOptions) => Promise<PromptMatch[]>
+    register: (prompt: MCPPrompt, serverId: string) => Promise<void>
+    get: (name: string, args?: unknown, serverId: string) => Promise<PromptContent>
+  }
+
+  // === Context Optimization ===
+  // Uses FTS5 + embeddings to minimize context usage for FunctionGemma
+  discoverRelevant: (intent: string, options?: DiscoveryOptions) => Promise<{
+    tools: ToolMatch[]
+    resources: ResourceMatch[]
+    prompts: PromptMatch[]
+  }>
+
+  // === Server Management ===
+  servers: {
+    add: (config: MCPServerConfig) => Promise<MCPClient>
+    remove: (serverId: string) => Promise<void>
+    list: () => MCPServerConfig[]
+    get: (serverId: string) => MCPClient | undefined
+  }
+}
+
+// One MCP client per server (dynamically provisioned)
+type MCPServerConfig = {
+  id: string
+  name: string
+  transport: 'http' | 'stdio'  // HTTP first, stdio supported
+  url?: string                  // For HTTP
+  command?: string[]            // For stdio
+  auth?: AuthConfig
+}
+```
+
+**MCP Client Middleware/Hooks:**
+
+```typescript
+type MCPClientConfig = {
+  server: MCPServerConfig
+
+  // Hooks for extensibility (for auth, logging, pagination)
+  hooks?: {
+    // Auth (OAuth, bearer token)
+    onAuth?: () => Promise<AuthToken>
+    onAuthRefresh?: (expired: AuthToken) => Promise<AuthToken>
+
+    // Request/Response
+    onRequest?: (req: MCPRequest) => MCPRequest | Promise<MCPRequest>
+    onResponse?: (res: MCPResponse) => MCPResponse | Promise<MCPResponse>
+
+    // Logging
+    onLog?: (log: MCPLog) => void
+
+    // Pagination
+    onPaginate?: (cursor: string) => Promise<boolean>
+  }
+
+  // Features
+  features?: {
+    completions?: boolean
+    logging?: boolean
+    sampling?: boolean
+  }
+}
+```
+
+**Implementation uses Anthropic MCP v2 SDK internally:**
+
+```typescript
+// Abstract interface (our stable API)
+type MCPClient = { /* ... */ }
+
+// Implementation uses @modelcontextprotocol/sdk v2
+import { Client } from '@modelcontextprotocol/sdk'  // v2, no SSE
+```
+
+### A2A (Agent-to-Agent) - Future
+
+A2A is a **separate layer** (like sandbox), NOT a ToolSource. Planned for multi-agent collaboration.
+
+```typescript
+// Future: A2A wraps agent like sandbox does
+type A2AAdapter = {
+  name: 'a2a'
+  wrap: (agent: Agent, config: A2AConfig) => A2APeer
+}
+
+// ToolSource does NOT include 'a2a'
+type ToolSource = 'local' | 'mcp' | 'skill'  // No 'a2a'
+```
+
+---
+
+## Configuration
+
+### `.plaited/config.ts`
+
+```typescript
+// .plaited/config.ts
+
+import { defineConfig } from 'plaited/agent'
+
+export default defineConfig({
+  // Agent settings
+  agent: {
+    name: 'my-project-agent',
+    model: 'functiongemma',
+  },
+
+  // MCP servers (merged with ACP session/new config)
+  mcp: {
+    servers: [
+      {
+        id: 'github',
+        name: 'GitHub MCP',
+        transport: 'http',
+        url: 'https://mcp.github.com',
+        auth: { type: 'oauth', clientId: process.env.GITHUB_CLIENT_ID },
+      },
+      {
+        id: 'local-db',
+        name: 'Local Database',
+        transport: 'http',
+        url: 'http://localhost:3001',
+      },
+    ],
+    hooks: {
+      onLog: (log) => console.log('[MCP]', log),
+    },
+  },
+
+  // Skills (path relative to project root)
+  skills: {
+    root: '.plaited/skills',  // Default
+  },
+
+  // Rules
+  rules: {
+    root: 'AGENTS.md',
+  },
+
+  // Adapters
+  adapters: {
+    // Default: ACP
+    acp: {
+      transport: 'stdio',
+    },
+    // Optional: Sandbox (wraps agent)
+    sandbox: {
+      enabled: process.env.NODE_ENV === 'production',
+      security: {
+        allowWrite: ['./output'],
+        denyRead: ['~/.ssh', '~/.aws', '.env'],
+        allowedDomains: [],
+      },
+    },
+  },
+
+  // Scripts (promoted code - future)
+  scripts: {
+    persistence: 'file',
+    path: '.plaited/scripts.json',
+    expirationDays: 30,
+  },
+})
+```
+
+### Config Schema
+
+```typescript
+import { z } from 'zod'
+
+const MCPServerSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  transport: z.enum(['http', 'stdio']),
+  url: z.string().optional(),
+  command: z.array(z.string()).optional(),
+  auth: z.object({
+    type: z.enum(['oauth', 'bearer', 'none']),
+    clientId: z.string().optional(),
+    token: z.string().optional(),
+  }).optional(),
+})
+
+const ConfigSchema = z.object({
+  agent: z.object({
+    name: z.string(),
+    model: z.string().default('functiongemma'),
+  }),
+  mcp: z.object({
+    servers: z.array(MCPServerSchema).default([]),
+    hooks: z.object({}).passthrough().optional(),
+  }).optional(),
+  skills: z.object({
+    root: z.string().default('.plaited/skills'),
+  }).optional(),
+  rules: z.object({
+    root: z.string().default('AGENTS.md'),
+  }).optional(),
+  adapters: z.object({
+    acp: z.object({
+      transport: z.enum(['stdio', 'http']).default('stdio'),
+      port: z.number().optional(),
+    }).optional(),
+    sandbox: z.object({
+      enabled: z.boolean().default(false),
+      security: z.object({
+        allowWrite: z.array(z.string()).default([]),
+        denyRead: z.array(z.string()).default(['~/.ssh', '~/.aws', '.env']),
+        allowedDomains: z.array(z.string()).default([]),
+      }).optional(),
+    }).optional(),
+  }).optional(),
+  scripts: z.object({
+    persistence: z.enum(['file', 'callback']).default('file'),
+    path: z.string().optional(),
+    expirationDays: z.number().default(30),
+  }).optional(),
+})
+
+export type PlaitedConfig = z.infer<typeof ConfigSchema>
+```
+
+---
+
+## Adapter Pattern
+
+Adapters wrap the agent to expose it via different protocols or add capabilities.
+
+```typescript
+// Core agent interface (protocol-agnostic)
+type Agent = {
+  /** Process input, yield outputs */
+  process: (input: AgentInput) => AsyncIterable<AgentOutput>
+
+  /** Capabilities for discovery */
+  capabilities: () => Capability[]
+
+  /** MCP registry for tools/resources/prompts */
+  mcp: MCPRegistry
+
+  /** Lifecycle */
+  start: () => Promise<void>
+  stop: () => Promise<void>
+}
+
+// Adapter interface
+type AgentAdapter<TConfig = unknown, TWrapped = unknown> = {
+  name: string
+  wrap: (agent: Agent, config: TConfig) => TWrapped
+}
+
+// Built-in adapters
+const sandboxAdapter: AgentAdapter<SandboxConfig, SandboxedAgent>
+const acpAdapter: AgentAdapter<ACPConfig, ACPServer>
+
+// Future adapters
+const a2aAdapter: AgentAdapter<A2AConfig, A2APeer>
+const httpAdapter: AgentAdapter<HTTPConfig, HTTPServer>
+```
+
+### Composition
+
+```typescript
+// Local development
+const agent = await createAgent(config)
+const server = acpAdapter.wrap(agent, { transport: 'stdio' })
+
+// Production (sandboxed)
+const agent = await createAgent(config)
+const sandboxed = sandboxAdapter.wrap(agent, sandboxConfig)
+const server = acpAdapter.wrap(sandboxed, { transport: 'http', port: 3000 })
+
+// Custom adapter via flag
+// bun run agent --adapter=./my-adapter.ts
+const customAdapter = await import(adapterPath)
+const server = customAdapter.default.wrap(agent, customConfig)
+```
 
 ---
 
@@ -553,72 +903,110 @@ const getRulesForPath = (filePath: string): string[] => {
 
 ---
 
-### code-sandbox.ts
+### sandbox-adapter.ts
 
-Secure code execution via @anthropic-ai/sandbox-runtime.
+**Sandbox wraps the entire agent**, providing OS-level isolation for all operations.
 
 #### Purpose
 
-Execute generated code in an isolated environment with:
-- File system isolation
-- Network restrictions
-- Timeout enforcement
-- Resource limits
+Wrap the agent in `@anthropic-ai/sandbox-runtime` for:
+- File system isolation (all file-ops run inside sandbox)
+- Network restrictions (controlled domains only)
+- Resource limits (memory, CPU)
+- Process isolation (agent can't escape)
+
+#### Architecture
+
+```mermaid
+flowchart TB
+    subgraph Outside["Host System"]
+        ACP["ACP Client"]
+    end
+
+    subgraph Sandbox["Sandbox (isolated process)"]
+        Agent["Agent Core"]
+        Tools["Tool Layer"]
+        MCP["MCP Clients"]
+        Agent --> Tools
+        Agent --> MCP
+    end
+
+    ACP -->|"ACP protocol"| Sandbox
+```
 
 #### Types
 
 ```typescript
 type SandboxConfig = {
-  /** Timeout in milliseconds (default: 30000) */
-  timeout?: number
-  /** Memory limit in bytes (default: 512MB) */
-  memoryLimit?: number
-  /** Allowed environment variables */
-  env?: Record<string, string>
-  /** Working directory inside sandbox */
-  cwd?: string
+  /** Enable sandbox (default: false in dev, true in production) */
+  enabled: boolean
+  /** Security settings */
+  security?: {
+    /** Allowed write paths (default: ['./output']) */
+    allowWrite?: string[]
+    /** Denied read paths (default: ['~/.ssh', '~/.aws', '.env']) */
+    denyRead?: string[]
+    /** Allowed network domains (default: []) */
+    allowedDomains?: string[]
+  }
+  /** Resource limits */
+  limits?: {
+    /** Memory in bytes (default: 512MB) */
+    memory?: number
+    /** Timeout in ms (default: 300000) */
+    timeout?: number
+  }
 }
 
-type SandboxResult = {
-  /** Exit code (0 = success) */
-  exitCode: number
-  /** Standard output */
-  stdout: string
-  /** Standard error */
-  stderr: string
-  /** Execution time in ms */
-  duration: number
-  /** Whether execution timed out */
-  timedOut: boolean
+type SandboxedAgent = Agent & {
+  /** Get sandbox status */
+  sandboxStatus: () => { isolated: boolean; pid?: number }
 }
 
-type CodeSandbox = {
-  /** Execute code in sandbox */
-  execute: (code: string, config?: SandboxConfig) => Promise<SandboxResult>
-
-  /** Execute a file in sandbox */
-  executeFile: (filePath: string, config?: SandboxConfig) => Promise<SandboxResult>
-
-  /** Check if sandbox runtime is available */
-  isAvailable: () => boolean
+/** Adapter interface */
+const sandboxAdapter: AgentAdapter<SandboxConfig, SandboxedAgent> = {
+  name: 'sandbox',
+  wrap: (agent, config) => { /* ... */ }
 }
+```
+
+#### Composition with ACP
+
+```typescript
+// Development (no sandbox)
+const agent = await createAgent(config)
+const server = acpAdapter.wrap(agent, { transport: 'stdio' })
+
+// Production (sandboxed)
+const agent = await createAgent(config)
+const sandboxed = sandboxAdapter.wrap(agent, {
+  enabled: true,
+  security: {
+    allowWrite: ['./output'],
+    denyRead: ['~/.ssh', '~/.aws', '.env'],
+    allowedDomains: ['api.github.com'],
+  },
+})
+const server = acpAdapter.wrap(sandboxed, { transport: 'http', port: 3000 })
 ```
 
 #### Implementation Notes
 
 1. **Runtime Detection**: Check if `@anthropic-ai/sandbox-runtime` is installed
-2. **Graceful Fallback**: If not available, warn and use restricted Bun.spawn
-3. **Resource Cleanup**: Ensure sandbox resources are released on timeout
+2. **Graceful Fallback**: If not available in dev, warn; in production, fail
+3. **Process Communication**: ACP messages pass through sandbox boundary
+4. **MCP Inside Sandbox**: MCP clients run inside sandbox, subject to network rules
 
-**Old Branch Reference:**
+**Old Branch Reference (for patterns):**
 ```
 github.com/plaited/plaited/blob/c76bd81.../src/agent/code-sandbox.ts
 ```
 
-Key patterns to preserve:
+Key patterns to adapt:
 - AbortController for timeout
 - Stream handling for stdout/stderr
 - Error normalization
+- Security policy enforcement
 
 ---
 
@@ -667,7 +1055,7 @@ Key patterns to preserve:
    - `exec()` with timeout, cwd options
    - Uses Bun.$
 
-### Phase 3: Progressive Loading Infrastructure
+### Phase 3: Progressive Loading Infrastructure ✅
 
 8. **Create `markdown-links.ts`** (shared utility) ✅
    - `extractMarkdownLinks(content)` → `MarkdownLink[]`
@@ -684,24 +1072,50 @@ Key patterns to preserve:
    - Store reference embeddings separately (referenceEmbeddings Map)
    - Commit: `4429e4b`
 
-10. **Create `rules-discovery.ts`** (infrastructure) 🔲
+10. **Create `rules-discovery.ts`** (infrastructure) ✅
     - Three-tier progressive loading (Always → Semantic → Spatial)
     - Uses shared markdown-links.ts
     - SQLite + FTS5 for hybrid search (follow skill-discovery pattern)
-    - See detailed spec below
-
-11. **Port `code-sandbox.ts`** 🔲
-    - From old branch: `github.com/plaited/plaited/blob/c76bd81.../src/agent/code-sandbox.ts`
-    - @anthropic-ai/sandbox-runtime integration
-    - See detailed spec below
+    - Commit: `b805be5`
 
 **Note:** Scripts handled by bash-exec (no special infra). Assets deferred (no plan).
 
-### Phase 4: Symbolic Layer
+### Phase 4: Protocol Layer
 
-10. **Symbolic Layer** - bThreads for Structural IA constraints
-11. **World Agent factory**
-12. **Adapters** (ACP, A2A, MCP)
+11. **Remove 'a2a' from ToolSource**
+    - A2A is a separate adapter layer, not a tool source
+    - Update `agent.types.ts` and `tool-discovery.ts`
+
+12. **Create `mcp-registry.ts`** (unified registry)
+    - FTS5 + embeddings for all three MCP primitives
+    - Tools, Resources, Prompts with search/register/execute methods
+    - `discoverRelevant(intent)` for context optimization
+
+13. **Create `mcp-client.ts`** (one per server)
+    - Dynamic provisioning based on config
+    - Middleware/hooks for auth, logging, pagination
+    - HTTP transport first, stdio supported
+    - Uses `@modelcontextprotocol/sdk` v2 internally
+
+14. **Create `acp-adapter.ts`** (default adapter)
+    - Built-in ACP adapter
+    - Wraps Agent → ACPServer
+    - Support `--adapter=./path.ts` flag for custom adapters
+
+15. **Create `sandbox-adapter.ts`** (optional wrapper)
+    - Wraps agent in `@anthropic-ai/sandbox-runtime`
+    - OS-level isolation for all agent operations
+    - See detailed spec below
+
+16. **Create `config-loader.ts`**
+    - Load and validate `.plaited/config.ts`
+    - Merge with ACP session/new config
+
+### Phase 5: Symbolic Layer
+
+17. **Symbolic Layer** - bThreads for Structural IA constraints
+18. **World Agent factory**
+19. **A2A adapter** (future multi-agent collaboration)
 
 ---
 
@@ -723,18 +1137,26 @@ Key patterns to preserve:
 - [x] Create `bash-exec.ts` with timeout
 - [x] Create `schema-utils.ts` (zodToToolSchema)
 
-### Phase 3: Progressive Loading ✅ (partial)
+### Phase 3: Progressive Loading ✅
 
 - [x] Create `markdown-links.ts` (shared utility)
 - [x] Enhance `skill-discovery.ts` with searchReferences, getReferences, getReferenceContent
-- [ ] Create `rules-discovery.ts` (infrastructure)
-- [ ] Port `code-sandbox.ts` (infrastructure)
+- [x] Create `rules-discovery.ts` (infrastructure)
 
-### Phase 4: Symbolic Layer (Future)
+### Phase 4: Protocol Layer
+
+- [ ] Create `mcp-registry.ts` (unified registry for tools + resources + prompts)
+- [ ] Create `mcp-client.ts` (one per server, middleware/hooks support)
+- [ ] Create `acp-adapter.ts` (default built-in adapter)
+- [ ] Create `sandbox-adapter.ts` (optional, wraps agent)
+- [ ] Create `config-loader.ts` (loads `.plaited/config.ts`)
+- [ ] Create `agent.ts` (core protocol-agnostic agent)
+
+### Phase 5: Symbolic Layer (Future)
 
 - [ ] Symbolic Layer - bThreads for Structural IA constraints
 - [ ] World Agent factory
-- [ ] Adapters (ACP, A2A, MCP)
+- [ ] A2A adapter (future multi-agent collaboration)
 
 ---
 
@@ -753,7 +1175,7 @@ Key patterns to preserve:
 - `schema-utils.ts` - zodToToolSchema() (7 tests)
 - Commit: `c6e9afe`
 
-### Phase 3 In Progress
+### Phase 3 Complete ✅
 - ✅ `markdown-links.ts` - extractMarkdownLinks(), isExternalLink(), getExtension() (25 tests)
   - Commit: `628e35e`
 - ✅ `skill-discovery.ts` enhanced with progressive references
@@ -761,8 +1183,18 @@ Key patterns to preserve:
   - Added: SkillReference, ReferenceMatch types
   - Added: skill_references table, referenceEmbeddings Map
   - Commit: `4429e4b`
-- 🔲 `rules-discovery.ts` - See detailed spec above
-- 🔲 `code-sandbox.ts` - See detailed spec above
+- ✅ `rules-discovery.ts` - Three-tier progressive loading (25 tests)
+  - Commit: `b805be5`
+
+### New Architectural Decisions (Phase 4 Planning)
+
+- **ACP as default adapter**: Built-in adapter, with `--adapter=` flag for custom adapters
+- **Sandbox wraps agent**: Not a tool inside agent, an adapter layer providing OS-level isolation
+- **Unified MCP Registry**: Tools + Resources + Prompts with FTS5 + embeddings (like tool-discovery)
+- **One MCP client per server**: Dynamic provisioning based on config
+- **HTTP transport first**: For MCP, stdio supported but secondary
+- **A2A is NOT a ToolSource**: Separate layer (like sandbox), not `'a2a'` in ToolSource union
+- **Config file**: `.plaited/config.ts` for local development settings
 
 ### Key Design Decisions
 - SQLite + FTS5 for search (tool-discovery, skill-discovery, rules-discovery)
@@ -781,41 +1213,97 @@ Key patterns to preserve:
 
 ```
 src/agent/
-├── agent.types.ts           # Shared types
-├── embedder.ts              # GGUF embeddings
-├── tool-discovery.ts        # FTS5 + vector for tools
-├── skill-discovery.ts       # FTS5 + vector + progressive refs for skills
-├── semantic-cache.ts        # Map + onPersist for LLM responses
-├── relation-store.ts        # DAG for plans, files, agents
-├── formatters.ts            # FunctionGemma token formatting
-├── file-ops.ts              # read, write, edit
-├── file-ops.schemas.ts
-├── search.ts                # glob + grep
-├── search.schemas.ts
-├── bash-exec.ts             # shell commands
-├── bash-exec.schemas.ts
-├── schema-utils.ts          # Zod → ToolSchema
-├── markdown-links.ts        # [text](path) extraction (shared)
-├── start-server.ts          # Infrastructure: workshop subprocess
-├── rules-discovery.ts       # 🔲 Infrastructure: AGENTS.md context
-└── code-sandbox.ts          # 🔲 Infrastructure: secure execution
+├── agent.types.ts           # ✅ Shared types (ToolSource: 'local' | 'mcp' | 'skill')
+├── embedder.ts              # ✅ GGUF embeddings
+├── formatters.ts            # ✅ FunctionGemma token formatting
+├── schema-utils.ts          # ✅ Zod → ToolSchema
+├── markdown-links.ts        # ✅ [text](path) extraction (shared)
+│
+├── discovery/               # Discovery modules
+│   ├── tool-discovery.ts    # ✅ FTS5 + vector for tools
+│   ├── skill-discovery.ts   # ✅ FTS5 + vector + progressive refs
+│   └── rules-discovery.ts   # ✅ AGENTS.md context management
+│
+├── storage/                 # Storage modules
+│   ├── semantic-cache.ts    # ✅ Map + onPersist for LLM responses
+│   └── relation-store.ts    # ✅ DAG for plans, files, agents
+│
+├── tools/                   # Tool implementations
+│   ├── file-ops.ts          # ✅ read, write, edit
+│   ├── file-ops.schemas.ts
+│   ├── search.ts            # ✅ glob + grep
+│   ├── search.schemas.ts
+│   ├── bash-exec.ts         # ✅ shell commands
+│   └── bash-exec.schemas.ts
+│
+├── mcp/                     # 🔲 MCP layer (Phase 4)
+│   ├── mcp.types.ts         # MCP types
+│   ├── mcp-registry.ts      # Unified registry (tools + resources + prompts)
+│   └── mcp-client.ts        # One client per server
+│
+├── adapters/                # 🔲 Protocol adapters (Phase 4)
+│   ├── acp-adapter.ts       # Default ACP adapter
+│   └── sandbox-adapter.ts   # Optional OS-level isolation
+│
+├── config/                  # 🔲 Configuration (Phase 4)
+│   └── config-loader.ts     # Loads .plaited/config.ts
+│
+├── infrastructure/          # Infrastructure (not called by model)
+│   └── start-server.ts      # ✅ Workshop subprocess
+│
+└── agent.ts                 # 🔲 Core protocol-agnostic agent (Phase 4)
 ```
 
 ### Start Next Session With
 
 ```
-Read PLAITED-AGENT-PLAN.md and continue with infrastructure:
+Read PLAITED-AGENT-PLAN.md and implement Phase 4 - Protocol Layer.
 
-1. Create rules-discovery.ts
-   - Follow skill-discovery pattern (SQLite + FTS5)
-   - Three-tier progressive loading
-   - Use markdown-links.ts for link extraction
-   - Tests in tests/rules-discovery.spec.ts
+COMPLETED THIS SESSION:
+- ✅ Removed 'a2a' from ToolSource (agent.types.ts, tool-discovery.ts, tests)
+- ✅ Updated tool-layer.md with new architecture
+- ✅ Updated folder structure (1-level subfolders)
+- ✅ Config uses singular skills.root defaulting to '.plaited/skills'
 
-2. Port code-sandbox.ts
-   - From old branch
-   - @anthropic-ai/sandbox-runtime integration
-   - Graceful fallback to Bun.spawn if not available
+PHASE 4 IMPLEMENTATION ORDER:
 
-3. Update loom skill's tool-layer.md if needed
+1. Create folder structure
+   - mkdir -p src/agent/{discovery,storage,tools,mcp,adapters,config,infrastructure}
+   - Move existing files into subfolders
+   - Update imports
+
+2. Create src/agent/config/config-loader.ts
+   - Load and validate .plaited/config.ts
+   - Export defineConfig() helper
+   - Zod schema validation
+
+3. Create src/agent/mcp/mcp.types.ts
+   - MCPRegistry, MCPClient, MCPServerConfig types
+   - Tool, Resource, Prompt primitives
+
+4. Create src/agent/mcp/mcp-client.ts
+   - One client per server
+   - Middleware/hooks for auth, logging
+   - HTTP transport first, stdio supported
+   - Uses @modelcontextprotocol/sdk internally
+
+5. Create src/agent/mcp/mcp-registry.ts
+   - Unified registry for tools + resources + prompts
+   - FTS5 + embeddings (follow tool-discovery pattern)
+   - discoverRelevant(intent) for context optimization
+
+6. Create src/agent/adapters/acp-adapter.ts
+   - Default built-in adapter
+   - Wraps Agent → ACPServer
+
+7. Create src/agent/adapters/sandbox-adapter.ts
+   - Optional OS-level isolation wrapper
+   - Uses @anthropic-ai/sandbox-runtime
+
+KEY ARCHITECTURAL DECISIONS:
+- ACP is default adapter (Gemini CLI compatible)
+- Sandbox wraps entire agent (not a tool)
+- A2A is separate layer (future), NOT a ToolSource
+- MCP Registry unifies tools + resources + prompts
+- Config at .plaited/config.ts, skills at .plaited/skills
 ```

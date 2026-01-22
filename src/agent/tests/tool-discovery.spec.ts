@@ -137,7 +137,7 @@ describe('createToolDiscovery (FTS5 only)', () => {
     expect(stats.totalTools).toBe(0)
     expect(stats.localTools).toBe(0)
     expect(stats.mcpTools).toBe(0)
-    expect(stats.a2aTools).toBe(0)
+    expect(stats.skillTools).toBe(0)
     expect(stats.vectorSearchEnabled).toBe(false)
   })
 
@@ -171,13 +171,11 @@ describe('createToolDiscovery (FTS5 only)', () => {
     await discovery.index(
       schemaToIndexedTool({ schema: testSchemas[1]!, source: 'mcp', sourceUrl: 'https://mcp.example.com' }),
     )
-    await discovery.index(
-      schemaToIndexedTool({ schema: testSchemas[2]!, source: 'a2a', sourceUrl: 'https://a2a.example.com' }),
-    )
+    await discovery.index(schemaToIndexedTool({ schema: testSchemas[2]!, source: 'skill' }))
 
     expect(discovery.bySource('local')).toHaveLength(1)
     expect(discovery.bySource('mcp')).toHaveLength(1)
-    expect(discovery.bySource('a2a')).toHaveLength(1)
+    expect(discovery.bySource('skill')).toHaveLength(1)
   })
 
   test('removes a tool', async () => {
