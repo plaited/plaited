@@ -76,9 +76,9 @@
     "node-llama-cpp"
   ],
   "dependencies": {
-    "@anthropic-ai/sandbox-runtime": "0.0.28",
-    "@plaited/acp-harness": "0.3.3",
-    "@plaited/development-skills": "0.6.3",
+    "@anthropic-ai/sandbox-runtime": "0.0.32",
+    "@plaited/agent-eval-harness": "0.6.2",
+    "@plaited/development-skills": "0.6.5",
     "node-llama-cpp": "3.15.0"
   },
   "devDependencies": {
