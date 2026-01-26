@@ -471,7 +471,43 @@ with open('results.jsonl') as f:
 
 Graders provide semantic pass/fail scoring for captured trajectories. The harness supports graders written in **any language**.
 
-### TypeScript Grader
+### Git-Based Grading (Recommended for Coding Tasks)
+
+**Grade outcomes, not paths.** Use the optional `cwd` parameter to detect environmental changes with git:
+
+```typescript
+// git-grader.ts
+import type { Grader } from '@plaited/agent-eval-harness/schemas'
+
+export const grade: Grader = async ({ output, hint, cwd }) => {
+  if (!cwd) return { pass: false, score: 0, reasoning: 'No cwd' }
+  
+  // Detect file changes
+  const status = await Bun.$`git -C ${cwd} status --porcelain`.text()
+  const filesCreated = status
+    .split('\n')
+    .filter(line => line.startsWith('??'))
+    .map(line => line.slice(3).trim())
+  
+  // Verify tests pass
+  const testResult = await Bun.$`cd ${cwd} && bun test`.nothrow()
+  
+  return {
+    pass: filesCreated.length > 0 && testResult.exitCode === 0,
+    score: testResult.exitCode === 0 ? 1 : 0,
+    reasoning: `Files: ${filesCreated.join(', ')}. Tests: ${testResult.exitCode === 0 ? 'pass' : 'fail'}`,
+    outcome: {  // Optional: structured data for analysis
+      filesCreated,
+      testsPassed: testResult.exitCode === 0,
+      type: 'file_creation_with_tests'
+    }
+  }
+}
+```
+
+See [inline-graders.md](references/inline-graders.md#git-based-outcome-grading) for comprehensive git-based grading patterns.
+
+### Output-Based Grading (General Purpose)
 
 ```typescript
 // my-grader.ts
