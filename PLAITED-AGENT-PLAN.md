@@ -1,13 +1,18 @@
-# Neuro-Symbolic World Agent Implementation Plan (V6)
+# Neuro-Symbolic World Agent Implementation Plan (V7)
 
-> **Architecture**: V6 Neuro-Symbolic (No PESO)
-> **Session Resume**: `/Users/eirby/.claude/plans/dreamy-noodling-manatee.md`
+> **Architecture**: V7 Neuro-Symbolic with Unified Capability Host
+> **Last Updated**: 2026-02-02 (Capability Host + Rules Architecture session)
 
 This plan implements a **neuro-symbolic world agent** that:
-- Acts as a **full MCP host** (all primitives: tools, resources, prompts, sampling, roots, notifications)
+- Uses **Unified Capability Host** for MCP servers AND Agent Skills (same level)
+- Uses **Federated Discovery Pools** with provenance tagging
 - Generates **TypeScript code** that orchestrates MCP servers, skills, and tools
 - Executes via **bash/Bun.$** (Unix philosophy)
 - Uses **BP constraints** as symbolic reasoning layer (ratchet: can add, cannot remove)
+- Uses **BP snapshots** for audit (no separate audit system)
+- Supports **AGENTS.md-only** rules with hierarchical override semantics
+- Uses **agent-generated indexing** for rules (no special syntax required)
+- Supports **hot-reload** via event-driven capability management (no restart needed)
 - Includes **world model** for sim(o,a) prediction before execution
 - Trains via **SFT → GRPO** cycles
 - Future: exposes itself as **MCP server** (after SDK v2)
@@ -26,21 +31,27 @@ flowchart TB
         Identity --> Credentials --> Policy
     end
 
-    subgraph MCPHost["MCP Host Layer (full spec)"]
-        Tools["Tools"]
-        Resources["Resources"]
-        Prompts["Prompts"]
-        Sampling["Sampling"]
-        Roots["Roots"]
-        Notifications["Notifications"]
+    subgraph CapabilityHost["Capability Host Layer (BP-orchestrated)"]
+        subgraph Providers["Capability Providers"]
+            MCPServers["MCP Servers<br/>(external, protocol-based)"]
+            AgentSkills["Agent Skills<br/>(.plaited/skills/, local)"]
+        end
+        CapRegistry["Capability Registry<br/>(event-driven, hot-reload)"]
+        ConfigSource["ConfigSource<br/>(pluggable: file, DB, API, env)"]
+        MCPServers & AgentSkills --> CapRegistry
+        ConfigSource --> CapRegistry
     end
 
-    subgraph Discovery["Discovery Layer"]
-        ToolDisc["tool-discovery"]
-        ResourceDisc["resource-discovery"]
-        PromptDisc["prompt-discovery"]
-        SkillDisc["skill-discovery"]
-        RulesDisc["rules-discovery"]
+    subgraph Discovery["Discovery Layer (Federated Pools)"]
+        subgraph MCPPool["MCP Pool (provenance tagged)"]
+            ToolDisc["tool-discovery"]
+            ResourceDisc["resource-discovery"]
+            PromptDisc["prompt-discovery"]
+        end
+        subgraph SkillPool["Skill Pool (trust-level tagged)"]
+            SkillDisc["skill-discovery"]
+        end
+        RulesDisc["rules-discovery<br/>(AGENTS.md, agent-indexed)"]
     end
 
     subgraph Prediction["Prediction Layer"]
@@ -53,6 +64,7 @@ flowchart TB
 
     subgraph BP["BP Constraint Layer (symbolic reasoning)"]
         BThreads["bThreads filter<br/>(ratchet: can add, cannot remove)"]
+        Snapshots["Snapshots = audit trail"]
     end
 
     subgraph Execution["Execution Layer"]
@@ -65,8 +77,8 @@ flowchart TB
         Grader --> Harness
     end
 
-    Security --> MCPHost
-    MCPHost --> Discovery
+    Security --> CapabilityHost
+    CapabilityHost --> Discovery
     Discovery --> Prediction
     Prediction --> WorldModel
     WorldModel --> BP
@@ -85,6 +97,16 @@ flowchart TB
 | World model | Phase 1, not optional | sim(o,a) before execution |
 | MCP role | Full host now, server later | Complete spec compliance |
 | Security | Interfaces now, implementations later | Future-proof for OAuth/DID/VC/ABAC |
+| **Capability hosting** | Unified Capability Host (MCP + Skills) | Both are capability providers, same level |
+| **Discovery pools** | Federated with provenance | Track source (MCP server vs skill), enable trust filtering |
+| **Skill trust** | Tiered (certified, scanned, user, agent-generated) | Security without blocking ecosystem growth |
+| **Skill diffing** | Git-based (`git diff`) | Leverage existing tooling, agent-analyzable |
+| **Rules architecture** | AGENTS.md-only, hierarchical | Single spec, nested can override parent |
+| **Rules indexing** | Agent-generated metadata | No special syntax, model derives structure |
+| **Index triggers** | Event-driven (generation, session start, /refresh) | Sub-Variant B2: predictable latency, no stale results |
+| **Capability lifecycle** | Event-driven registry + BP orchestration | Hot-reload without restart, /refresh command |
+| **Configuration** | Pluggable ConfigSource interface | Deployment-flexible (file, DB, API, env) |
+| **Audit** | BP snapshots | No separate audit system needed |
 
 ---
 
@@ -157,6 +179,147 @@ This aligns with FunctionGemma's Unix philosophy and Anthropic's code execution 
 
 ---
 
+## Capability Host Layer
+
+The Capability Host Layer manages both MCP servers (external, protocol-based) and Agent Skills (local, filesystem-based) as unified capability providers.
+
+### Unified Capability Host
+
+MCP servers and Agent Skills are both "capability providers" at the same architectural level:
+
+```mermaid
+flowchart TB
+    subgraph CapabilityHost["Capability Host Layer"]
+        subgraph Providers["Capability Providers"]
+            MCP["MCP Servers<br/>(external protocol)"]
+            Skills["Agent Skills<br/>(.plaited/skills/)"]
+        end
+
+        Registry["Capability Registry<br/>(BP-orchestrated)"]
+        Source["ConfigSource<br/>(pluggable)"]
+
+        MCP & Skills --> Registry
+        Source --> Registry
+    end
+
+    subgraph Events["BP Events"]
+        Add["capability:added"]
+        Remove["capability:removed"]
+        Update["capability:updated"]
+    end
+
+    Registry --> Events
+```
+
+### Federated Discovery Pools
+
+Skills and MCP contribute to separate pools with provenance tagging:
+
+```typescript
+type DiscoveryPools = {
+  // MCP pool - tagged with serverId
+  mcp: {
+    tools: ToolEntry[]      // { ...tool, serverId, provenance: 'mcp' }
+    resources: ResourceEntry[]
+    prompts: PromptEntry[]
+  }
+
+  // Skill pool - tagged with skillId and trust level
+  skills: {
+    tools: ToolEntry[]      // { ...tool, skillId, trustLevel, provenance: 'skill' }
+    resources: ResourceEntry[]
+    prompts: PromptEntry[]
+  }
+
+  // Federated search returns results from both pools
+  search: (query: string) => Promise<{
+    results: (ToolEntry | ResourceEntry | PromptEntry)[]
+    // Results tagged with provenance for trust filtering
+  }>
+}
+```
+
+**Key insight**: Provenance is preserved—know where each capability came from for trust decisions.
+
+### Skill Trust Model
+
+Tiered trust with scan-on-install for non-certified skills:
+
+```typescript
+type SkillTrust =
+  | { level: 'certified'; source: 'plaited/*' }
+  | { level: 'scanned'; scanResult: ScanResult; approvedAt: Date }
+  | { level: 'user-authored'; path: string }
+  | { level: 'agent-generated'; generatedBy: string; reviewedAt?: Date }
+
+type ScanResult = {
+  permissions: string[]        // What capabilities does it request?
+  dependencies: string[]       // MCP servers, external APIs
+  codeAnalysis: {
+    hasNetworkCalls: boolean
+    hasFileSystemAccess: boolean
+    hasShellExecution: boolean
+  }
+  aiAssessment?: string        // LLM analysis of implications
+  webResearch?: string[]       // Links to package reputation
+}
+```
+
+**Skill diffing**: Use `git diff` on skill repos to analyze changes before updates. Agent can run `git fetch && git diff HEAD..origin/main` to see incoming changes.
+
+### Event-Driven Capability Lifecycle
+
+BP orchestrates capability lifecycle with hot-reload (no restart needed):
+
+```typescript
+type CapabilityRegistry = {
+  // Lifecycle (all emit BP events)
+  register: (source: CapabilitySource) => Promise<void>
+  unregister: (sourceId: string) => Promise<void>
+  refresh: (sourceId?: string) => Promise<void>  // undefined = refresh all
+
+  // Query
+  list: () => CapabilitySource[]
+  get: (sourceId: string) => CapabilitySource | undefined
+}
+
+type CapabilitySource =
+  | { type: 'mcp'; serverId: string; config: MCPServerConfig }
+  | { type: 'skill'; skillId: string; path: string; trust: TrustLevel }
+  | { type: 'rules'; path: string }
+
+type CapabilityEvent =
+  | { type: 'session-start'; source: ConfigSource }
+  | { type: 'mcp-add'; config: MCPServerConfig }
+  | { type: 'mcp-remove'; serverId: string }
+  | { type: 'skill-add'; path: string; trustLevel: TrustLevel }
+  | { type: 'skill-remove'; skillId: string }
+  | { type: 'rules-reindex'; paths: string[] }
+  | { type: 'refresh-all' }
+```
+
+### Pluggable ConfigSource
+
+Configuration source is abstracted for deployment flexibility:
+
+```typescript
+type ConfigSource = {
+  load: () => Promise<AgentConfig>
+  save?: (config: AgentConfig) => Promise<void>  // Optional persistence
+  watch?: () => AsyncIterable<ConfigChange>      // Optional watching
+}
+
+// Implementations for different deployments
+const localFileSource: ConfigSource = { /* .plaited/config.json */ }
+const databaseSource: ConfigSource = { /* tenant DB lookup */ }
+const apiSource: ConfigSource = { /* fetch from /agent/config */ }
+const envSource: ConfigSource = { /* parse from env vars */ }
+```
+
+**Audit via BP snapshots**: No separate audit system needed—BP snapshots at each bSync capture the complete capability state.
+
+---
+
 ## Storage Strategy
 
 Different modules need different storage patterns. Use the simplest tool that meets requirements.
@@ -188,6 +351,128 @@ This decouples storage concerns and supports remote stores, cloud storage, or cu
 
 ---
 
+## Rules Architecture (AGENTS.md-Only)
+
+Rules use AGENTS.md files exclusively with hierarchical discovery and agent-generated indexing.
+
+### AGENTS.md Hierarchy
+
+```
+project-root/
+├── AGENTS.md                    # Project root (primary)
+├── src/
+│   └── feature/
+│       └── AGENTS.md            # Feature-specific (additive/override)
+└── .plaited/
+    └── skills/
+        └── my-skill/
+            └── AGENTS.md        # Skill-specific (loaded when skill active)
+```
+
+**Resolution order** (nested can override parent):
+1. `/AGENTS.md` (always loaded)
+2. `/src/AGENTS.md` (if working in /src)
+3. `/src/feature/AGENTS.md` (if working in /src/feature)
+
+### Agent-Generated Indexing
+
+AGENTS.md files remain natural language—no special syntax required. Agent analyzes content and generates structured index:
+
+```typescript
+type GeneratedRuleIndex = {
+  id: string
+  source: string              // Path to AGENTS.md
+  section: string             // Extracted section heading
+  content: string             // Original text
+
+  // Agent-generated metadata (no special syntax in source)
+  actionTypes: ActionType[]   // ['file-write', 'shell-exec', ...]
+  constraint: {
+    type: 'must' | 'must-not' | 'should' | 'may'
+    description: string
+  }
+  keywords: string[]          // For FTS
+  embedding: number[]         // For semantic search
+}
+
+type ActionType =
+  | 'file-read' | 'file-write'
+  | 'shell-exec'
+  | 'mcp-call'
+  | 'skill-invoke'
+  | 'code-generation'
+  | 'testing'
+  | 'documentation'
+```
+
+### Event-Driven Indexing (Sub-Variant B2)
+
+Index triggers ensure predictable search latency with no stale results:
+
+```mermaid
+flowchart TB
+    subgraph Triggers["Index Triggers"]
+        AgentGen["Agent generates AGENTS.md<br/>(inline indexing)"]
+        SessionStart["Session start<br/>(check mtime vs index)"]
+        UserRefresh["User: /refresh-rules"]
+    end
+
+    subgraph Index["Indexing Pipeline"]
+        Diff["Diff sections<br/>(git-based if available)"]
+        Analyze["Agent analyzes<br/>changed sections"]
+        Store["Update SQLite<br/>FTS5 + embeddings"]
+    end
+
+    Triggers --> Diff --> Analyze --> Store
+```
+
+**Key behaviors**:
+1. **On generation**: Index immediately (user is waiting anyway)
+2. **On session start**: Compare file mtime vs index timestamp
+3. **On /refresh-rules**: Force full reindex
+4. **No stale results**: Always search fresh index
+
+### Rules Discovery Integration
+
+```typescript
+type RulesDiscovery = {
+  // Index management
+  indexAfterGeneration: (path: string) => Promise<void>
+  ensureFreshOnSessionStart: () => Promise<void>
+  refreshAll: () => Promise<void>
+
+  // Search (assumes index is fresh)
+  searchByIntent: (intent: string) => Promise<RuleMatch[]>
+  searchByAction: (action: ActionType) => Promise<RuleMatch[]>
+
+  // BP integration - convert retrieved rules to constraints
+  toBThreads: (rules: RuleMatch[]) => BThread[]
+}
+```
+
+### Integration with World Model + BP
+
+Rules become inputs to the BP layer, not just context decoration:
+
+```mermaid
+flowchart TB
+    Prompt["User Prompt"] --> Intent["Intent Analysis"]
+    Intent --> Search1["rules-discovery.searchByIntent"]
+    Search1 --> Context["Working Context"]
+
+    Context --> Prediction["Agent Prediction<br/>(generates TS code)"]
+    Prediction --> WorldModel["World Model<br/>sim(o,a)"]
+
+    WorldModel --> Search2["rules-discovery.searchByAction<br/>for each predicted action"]
+    Search2 --> BP["BP Constraint Check<br/>bThreads + retrieved rules"]
+
+    BP -->|Allowed| Execute["Execute"]
+    BP -->|Blocked| Feedback["Feedback to Agent"]
+    Feedback --> Prediction
+```
+
+---
+
 ## Completed Infrastructure (311 tests)
 
 These modules form the foundation for Phase 4+. They will be refined as memory features later.
@@ -196,7 +481,7 @@ These modules form the foundation for Phase 4+. They will be refined as memory f
 |--------|---------|--------|
 | `tool-discovery` | FTS5 + vector search for tools | Discovery Layer |
 | `skill-discovery` | FTS5 + vector + progressive refs | Discovery Layer |
-| `rules-discovery` | Three-tier AGENTS.md loading | Discovery Layer |
+| `rules-discovery` | AGENTS.md-only with agent-generated indexing | Discovery Layer |
 | `embedder` | node-llama-cpp GGUF embeddings | Memory/Search |
 | `semantic-cache` | Reuse responses for similar queries | Memory |
 | `relation-store` | DAG for plans, files, agents | Memory/Planning |
@@ -242,11 +527,41 @@ flowchart LR
 
 ---
 
-## Phase 4: MCP Host Layer
+## Phase 4: Capability Host Layer
 
-The agent must be a **full MCP host** supporting all primitives, not just tools.
+The agent uses a **Unified Capability Host** that manages both MCP servers and Agent Skills as capability providers. See [Capability Host Layer](#capability-host-layer) section above for architecture details.
 
-### MCP Primitives
+### Implementation Order
+
+1. **Capability Types** (`src/agent/capability-host/capability.types.ts`)
+   - CapabilitySource, CapabilityEvent, CapabilityRegistry interfaces
+   - ConfigSource interface for pluggable configuration
+
+2. **Config Source** (`src/agent/capability-host/config-source.ts`)
+   - ConfigSource interface
+   - File-based implementation (`config-source-file.ts`)
+
+3. **Skill Trust** (`src/agent/capability-host/skill-trust.ts`)
+   - Tiered trust model (certified, scanned, user-authored, agent-generated)
+   - ScanResult type for skill scanning
+   - Git-based diffing utilities
+
+4. **Capability Registry** (`src/agent/capability-host/capability-registry.ts`)
+   - BP-orchestrated lifecycle management
+   - Event emission (capability:added, capability:removed, capability:updated)
+   - Hot-reload support via /refresh
+
+5. **Rules Discovery Refactor** (`src/agent/discovery/rules-discovery.ts`)
+   - AGENTS.md-only with hierarchical override
+   - Agent-generated indexing (no special syntax)
+   - Event-driven triggers (Sub-Variant B2)
+   - searchByIntent + searchByAction methods
+
+6. **MCP Provider** (`src/agent/mcp/mcp-provider.ts`)
+   - MCP as capability provider (integrates with registry)
+   - Full MCP primitives (tools, resources, prompts, sampling)
+
+### MCP Primitives (via MCP Provider)
 
 | Primitive | Direction | Status | Purpose |
 |-----------|-----------|--------|---------|
@@ -255,25 +570,14 @@ The agent must be a **full MCP host** supporting all primitives, not just tools.
 | **Prompts** | Server → Host | ❌ Need discovery | Reusable templates |
 | **Sampling** | Server ← Host | ❌ Need | Host provides LLM to servers |
 | **Roots** | Host → Server | ❌ Need | Workspace context |
-| **Logging** | Bidirectional | ❌ Need | Debug/audit trail |
+| **Logging** | Bidirectional | ❌ Need | Debug/audit trail (via BP snapshots) |
 | **Notifications** | Bidirectional | ❌ Need | Resource updates, status |
 
-### MCP Host Types
+### MCP Provider Types
 
 ```typescript
-type MCPHost = {
-  // === Primitives ===
-  tools: MCPToolRegistry
-  resources: MCPResourceRegistry
-  prompts: MCPPromptRegistry
-
-  // === Host Capabilities ===
-  sampling: MCPSamplingProvider
-  roots: MCPRootsProvider
-  logging: MCPLoggingHandler
-
-  // === Notifications ===
-  notifications: MCPNotificationHandler
+type MCPProvider = {
+  type: 'mcp'
 
   // === Server Management ===
   servers: {
@@ -282,12 +586,14 @@ type MCPHost = {
     list: () => MCPServerConfig[]
   }
 
-  // === Context Optimization ===
-  discoverRelevant: (intent: string) => Promise<{
-    tools: ToolMatch[]
-    resources: ResourceMatch[]
-    prompts: PromptMatch[]
-  }>
+  // === Primitives (feed into federated discovery pools) ===
+  tools: MCPToolRegistry
+  resources: MCPResourceRegistry
+  prompts: MCPPromptRegistry
+
+  // === Host Capabilities ===
+  sampling: MCPSamplingProvider
+  roots: MCPRootsProvider
 }
 
 type MCPToolRegistry = {
@@ -314,24 +620,6 @@ type MCPSamplingProvider = {
   createMessage: (request: SamplingRequest) => Promise<SamplingResponse>
 }
 ```
-
-### Implementation Order
-
-1. **Resource Discovery** (`src/agent/mcp/resource-discovery.ts`)
-   - FTS5 + vector search for MCP resources
-   - Mirrors tool-discovery pattern
-
-2. **Prompt Discovery** (`src/agent/mcp/prompt-discovery.ts`)
-   - FTS5 + vector search for MCP prompts
-   - Mirrors tool-discovery pattern
-
-3. **MCP Host** (`src/agent/mcp/mcp-host.ts`)
-   - Full spec implementation
-   - Orchestrates all registries
-
-4. **Sampling Provider** (`src/agent/mcp/sampling-provider.ts`)
-   - Host provides LLM to servers
-   - Uses agent's model
 
 ---
 
@@ -867,7 +1155,7 @@ type AgentAsMCPServer = {
 
 | Phase | Components | Priority | Effort |
 |-------|------------|----------|--------|
-| 4 | MCP Host (full spec) | High | High |
+| 4 | Capability Host (MCP + Skills + Rules refactor) | High | High |
 | 5 | World Model | High | High |
 | 6 | BP-Agent Wiring | High | Medium |
 | 7 | Agent Loop | High | High |
@@ -888,10 +1176,17 @@ src/agent/
 ├── schema-utils.ts             # ✅ Zod → ToolSchema
 ├── markdown-links.ts           # ✅ Link extraction
 │
-├── discovery/                  # Discovery Layer
+├── capability-host/            # Capability Host Layer (NEW)
+│   ├── capability.types.ts     # 🔲 CapabilitySource, CapabilityEvent
+│   ├── capability-registry.ts  # 🔲 BP-orchestrated registry
+│   ├── config-source.ts        # 🔲 Pluggable ConfigSource interface
+│   ├── config-source-file.ts   # 🔲 File-based implementation
+│   └── skill-trust.ts          # 🔲 Tiered trust, scan-on-install
+│
+├── discovery/                  # Discovery Layer (Federated Pools)
 │   ├── tool-discovery.ts       # ✅ FTS5 + vector for tools
 │   ├── skill-discovery.ts      # ✅ FTS5 + vector + refs
-│   ├── rules-discovery.ts      # ✅ AGENTS.md loading
+│   ├── rules-discovery.ts      # 🔄 AGENTS.md-only, agent-indexed
 │   ├── resource-discovery.ts   # 🔲 MCP resources
 │   └── prompt-discovery.ts     # 🔲 MCP prompts
 │
@@ -904,12 +1199,11 @@ src/agent/
 │   ├── search.ts               # ✅ glob + grep
 │   └── bash-exec.ts            # ✅ shell commands
 │
-├── mcp/                        # MCP Host Layer
+├── mcp/                        # MCP Provider (under Capability Host)
 │   ├── mcp.types.ts            # 🔲 MCP types
-│   ├── mcp-host.ts             # 🔲 Full host
 │   ├── mcp-client.ts           # 🔲 Per-server client
 │   ├── sampling-provider.ts    # 🔲 LLM for servers
-│   └── mcp-registry.ts         # 🔲 Unified registry
+│   └── mcp-provider.ts         # 🔲 MCP as capability provider
 │
 ├── world-model/                # World Model Layer
 │   ├── world-model.types.ts    # 🔲 Prediction types
@@ -933,6 +1227,17 @@ src/agent/
 └── transports/                 # Transport Layer
     ├── stdio.ts                # 🔲 NDJSON
     └── http-sse.ts             # 🔲 HTTP/SSE
+
+.plaited/                       # Agent Configuration Directory
+├── skills/                     # Installed skills
+│   ├── certified/              # From plaited/development-skills
+│   ├── third-party/            # Scanned and approved
+│   │   └── some-skill/
+│   │       └── .trust.json     # Scan result + approval timestamp
+│   ├── user/                   # User-authored (implicit trust)
+│   └── generated/              # Agent-generated (needs review)
+└── cache/                      # Indexes, embeddings, etc.
+    └── rules-index.db          # Agent-generated rule index
 ```
 
 ---
@@ -965,49 +1270,66 @@ bunx @plaited/agent-eval-harness capture test-prompts.jsonl \
 
 ## Session Pickup Notes
 
-### V6 Architecture Key Changes
+### V7 Architecture Key Changes (from V6)
 
-| Removed | Added |
-|---------|-------|
-| PESO adapter stack | BP handles adaptation symbolically |
-| "TS mode vs bash mode" | TS orchestrates, bash executes |
-| Three-layer bThread registry | bThreads are runtime-additive (ratchet) |
-| Optional world model | Phase 1, required |
-| Tools-only MCP | Full MCP host (all primitives) |
-| No security considerations | Security interfaces (future-proof) |
+| V6 | V7 |
+|----|-----|
+| Separate MCP Host Layer | Unified Capability Host (MCP + Skills) |
+| Single discovery pool | Federated pools with provenance |
+| `.plaited/rules/` directory | AGENTS.md-only with hierarchy |
+| Manual rule tagging | Agent-generated indexing |
+| Restart for config changes | Hot-reload via /refresh |
+| config.json dependency | Pluggable ConfigSource |
+| Separate audit system | BP snapshots = audit |
+
+### V6 → V7 Migration Notes
+
+1. **Rules migration**: Merge `.plaited/rules/*.md` INTO root `AGENTS.md`
+2. **No backward compatibility**: Clean break when switching to new agent
+3. **Skill trust**: Existing certified skills retain trust, new skills need scan
 
 ### Start Next Session With
 
 ```
-Read PLAITED-AGENT-PLAN.md and implement Phase 4 - MCP Host Layer.
+Read PLAITED-AGENT-PLAN.md and implement the Capability Host Layer.
 
 IMPLEMENTATION ORDER:
 
-1. src/agent/mcp/mcp.types.ts
-   - MCPHost, MCPToolRegistry, MCPResourceRegistry, MCPPromptRegistry
-   - MCPSamplingProvider, MCPServerConfig
+1. src/agent/capability-host/capability.types.ts
+   - CapabilitySource, CapabilityEvent, CapabilityRegistry
+   - ConfigSource interface
 
-2. src/agent/discovery/resource-discovery.ts
-   - FTS5 + vector search for MCP resources
-   - Mirrors tool-discovery pattern
+2. src/agent/capability-host/config-source.ts
+   - ConfigSource interface
+   - config-source-file.ts (file-based implementation)
 
-3. src/agent/discovery/prompt-discovery.ts
-   - FTS5 + vector search for MCP prompts
-   - Mirrors tool-discovery pattern
+3. src/agent/capability-host/skill-trust.ts
+   - SkillTrust types (certified, scanned, user-authored, agent-generated)
+   - ScanResult type
+   - Git-based diffing utilities
 
-4. src/agent/mcp/mcp-client.ts
-   - One client per MCP server
-   - HTTP/stdio transports
+4. src/agent/capability-host/capability-registry.ts
+   - BP-orchestrated registry
+   - Event emission for add/remove/update
+   - Hot-reload support
 
-5. src/agent/mcp/mcp-host.ts
-   - Full spec implementation
-   - Orchestrates all registries
+5. src/agent/discovery/rules-discovery.ts (REFACTOR)
+   - AGENTS.md-only discovery
+   - Agent-generated indexing
+   - Event-driven index triggers (Sub-Variant B2)
+   - searchByIntent + searchByAction
+
+6. src/agent/mcp/mcp-provider.ts
+   - MCP as capability provider (not standalone host)
+   - Integrates with capability-registry
 
 KEY PATTERNS:
-- Use tool-discovery as reference implementation
-- FTS5 + vector for all discovery modules
-- Pluggable persistence (onPersist callback)
-- Full MCP spec compliance
+- BP orchestrates capability lifecycle
+- BP snapshots provide audit trail
+- ConfigSource is pluggable (file, DB, API, env)
+- Federated discovery pools preserve provenance
+- Agent-generated rule indexing (no special syntax)
+- Event-driven: generation, session-start, /refresh
 ```
 
 ---
@@ -1023,3 +1345,13 @@ KEY PATTERNS:
 - 2024: Need full MCP host support (all primitives)
 - 2024: Security interfaces defined now, implementations later (future-proof)
 - 2024: Agent as MCP server waits for SDK v2
+- 2026-02: MCP servers and Agent Skills are both "capability providers" - same architectural level
+- 2026-02: Federated discovery pools preserve provenance (know where capability came from)
+- 2026-02: Skill trust should be tiered: certified → scanned → user-authored → agent-generated
+- 2026-02: Git diff is ideal for skill diffing (skills are repos, leverage existing tooling)
+- 2026-02: AGENTS.md-only simplifies rules architecture (single spec, hierarchical override)
+- 2026-02: Agent-generated indexing removes need for special syntax in AGENTS.md
+- 2026-02: Event-driven indexing (Sub-Variant B2) ensures predictable latency, no stale results
+- 2026-02: config.json is filesystem-centric; deployed agents need pluggable ConfigSource
+- 2026-02: BP snapshots ARE the audit trail - no separate audit system needed
+- 2026-02: Hot-reload via /refresh is unique UX advantage (most agents require restart)
