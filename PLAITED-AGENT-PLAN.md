@@ -107,6 +107,62 @@ flowchart TB
 | **Capability lifecycle** | Event-driven registry + BP orchestration | Hot-reload without restart, /refresh command |
 | **Configuration** | Pluggable ConfigSource interface | Deployment-flexible (file, DB, API, env) |
 | **Audit** | BP snapshots | No separate audit system needed |
+| **Model architecture** | Edge + Remote | FunctionGemma (edge) + Falcon-H1R (remote) |
+| **Deployment modes** | AI-Assisted Design + Generative UI Production | Different requirements per phase |
+| **Training pairs** | Three-source preference pairs | Success/Fail + Frontier/Yours + Allowed/Blocked |
+| **Constraint learning** | Two-tier approval | Dev approval (design) + User deletable (production) |
+
+---
+
+## Model Architecture
+
+The agent uses a dual-model architecture optimized for different deployment phases.
+
+### Model Stack
+
+| Layer | Model | Role | Training |
+|-------|-------|------|----------|
+| Edge | FunctionGemma | Fast local inference, common patterns | Distilled from Remote |
+| Remote | Falcon-H1R | Complex reasoning, handles edge cases | GRPO with 3-source pairs |
+| Frontier | Claude/GPT (via OpenCode/Cursor) | Reference trajectories (AI-Assisted Design only) | Frozen (oracle) |
+
+### Deployment Modes
+
+```mermaid
+flowchart TB
+    subgraph AIAssisted["AI-Assisted Design Phase"]
+        direction TB
+        LocalDev["Option A: Both models local<br/>(MacBook Pro capable)"]
+        ColocatedDev["Option B: Both models colocated<br/>(server + client UI)"]
+
+        FrontierCompare["Frontier agents for comparison<br/>(Claude Code, Cursor)"]
+        HarnessTraining["agent-eval-harness captures trajectories"]
+    end
+
+    subgraph Production["Generative UI Production"]
+        EdgeProd["FunctionGemma (edge)<br/>Low latency, common patterns"]
+        RemoteProd["Falcon-H1R (remote)<br/>Complex reasoning"]
+        NoFrontier["No frontier dependency<br/>(cost controlled)"]
+
+        EdgeProd <--> RemoteProd
+    end
+
+    AIAssisted -->|"deploy"| Production
+```
+
+**AI-Assisted Design**: Both models run together (locally on MacBook Pro or colocated on server). Frontier agents used for comparison/training via harness.
+
+**Generative UI Production**: Edge handles fast, common patterns. Remote handles complex reasoning. No frontier dependency (cost control).
+
+### Pattern Mixing Philosophy
+
+| Pattern | Component | Role |
+|---------|-----------|------|
+| **Deterministic** | Grader (tsc, biome, tests) | Ground truth, no ambiguity |
+| **Symbolic** | BP constraints (bThreads) | Verifiable safety, explicit reasoning |
+| **Generative** | LLMs (FunctionGemma, Falcon-H1R) | Flexibility, natural language understanding |
+
+This follows proven patterns from compiler design (parse → type-check → generate) and databases (query → plan → execute).
 
 ---
 
@@ -780,6 +836,50 @@ const checkConstraints = async (
 }
 ```
 
+### Learning Constraints from Blocks
+
+BP blocks aren't just safety—they're training signal:
+
+1. **Block capture**: Every BP block logged with context
+2. **Pattern detection**: Cluster similar blocks
+3. **bThread proposal**: Auto-generate constraints from recurring patterns
+4. **Validation**: Ensure proposed constraints don't over-constrain
+
+```typescript
+type BThreadProposal = {
+  id: string
+  pattern: {
+    actionType: string
+    conditions: Record<string, unknown>
+    frequency: number
+    avgScoreLoss: number
+  }
+  proposedBThread: {
+    block: string  // Condition expression
+    reason: string
+  }
+  confidence: number
+}
+```
+
+### Two-Tier Constraint Approval
+
+| Phase | Who Approves | Mechanism | Can Delete? |
+|-------|--------------|-----------|-------------|
+| **AI-Assisted Design** | Dev/Designer | Explicit approval of proposed bThreads | Yes (full control) |
+| **Generative UI Production** | End User | Can delete threads generated from their intent | User-generated only |
+
+```typescript
+type BThreadMetadata = {
+  source: 'core' | 'org' | 'agent-proposed' | 'user-intent'
+  approvedBy?: string
+  createdAt: Date
+  deletable: boolean  // Only user-intent threads deletable in production
+}
+```
+
+**Key insight**: Users don't need to understand the code—they can delete threads based on outcomes they don't like. This is implicit preference feedback.
+
 ---
 
 ## Phase 7: Agent Loop
@@ -910,7 +1010,39 @@ const grade: Grader = async ({ prediction, executionResult, cwd }) => {
 
 ## Phase 9: Training Pipeline
 
-Training follows SFT → GRPO cycles, validated by DeepSeek-R1.
+Training follows SFT → GRPO cycles, validated by DeepSeek-R1. The key innovation is **three-source preference pairs** for GRPO training.
+
+### Three-Source Preference Pairs
+
+GRPO requires `(preferred, dispreferred)` pairs. We generate from THREE sources:
+
+| Source | When Generated | Preferred | Dispreferred | What It Teaches |
+|--------|----------------|-----------|--------------|-----------------|
+| **Success/Fail** | During trials (k=5 runs per prompt) | Run that passed grader | Run that failed grader | Basic competence |
+| **Frontier/Yours** | AI-Assisted Design phase only | Frontier trajectory (when better) | Your agent trajectory | Quality ceiling |
+| **Allowed/Blocked** | Any execution with BP | Action that executed | Action that BP blocked | Constraint compliance |
+
+The **Allowed/Blocked** source is novel—BP blocks provide clean negative examples with explicit symbolic reasoning attached.
+
+```typescript
+type PreferencePair = {
+  id: string
+  input: string | string[]
+  preferred: {
+    trajectory: unknown[]
+    output: string
+    score: number
+    source: 'successful' | 'frontier' | 'allowed'
+  }
+  dispreferred: {
+    trajectory: unknown[]
+    output: string
+    score: number
+    source: 'failed' | 'yours' | 'blocked'
+  }
+  margin: number  // Score difference (for GRPO weighting)
+}
+```
 
 ### Training Instance
 
@@ -1141,6 +1273,57 @@ type AgentAsMCPServer = {
 
 ---
 
+## Foundation Product Model
+
+This agent is a **foundation** that organizations extend—similar to Ramp's Inspect pattern but with BP safety instead of trusting model intelligence.
+
+### What You Ship (Foundation)
+
+| Component | Description |
+|-----------|-------------|
+| Model stack | FunctionGemma (edge) + Falcon-H1R (remote) |
+| BP runtime | Core bThreads + ratchet property |
+| Training loop | agent-eval-harness + GRPO with 3-source pairs |
+| Skill protocol | AgentSkills spec |
+| Grader | tsc + biome + tests + stories |
+
+### What Orgs Add (Extensions)
+
+| Component | Description |
+|-----------|-------------|
+| Org skills | "How we ship at [OrgName]" |
+| Org bThreads | Compliance, security, workflow rules |
+| Org MCPs | Internal tool integrations |
+| Custom graders | Domain-specific verification |
+
+### Differentiation from Ramp Inspect
+
+| Aspect | Ramp Inspect | Your Foundation |
+|--------|--------------|-----------------|
+| Base | Built on OpenCode | Own agent (no external dependency) |
+| Safety | "Frontier models are smart enough to contain themselves" | BP constraints (verifiable, symbolic) |
+| Models | Frozen frontier models | Trainable models (FunctionGemma, Falcon-H1R) |
+| Customization | Skills only | Skills + BP rules + custom graders |
+| Training | None | agent-eval-harness + GRPO |
+
+### Org Training Pattern
+
+Organizations can rapidly train new models using the harness:
+
+```mermaid
+flowchart LR
+    OldAgent["Old Agent<br/>(your models)"] -->|"trajectories"| Harness["agent-eval-harness"]
+    NewModels["New Models<br/>(org's choice)"] -->|"trajectories"| Harness
+    Harness --> Compare["Compare"]
+    Compare --> Pairs["Preference Pairs"]
+    Pairs --> GRPO["GRPO"]
+    GRPO --> NewAgent["New Agent<br/>(org's models + your BP)"]
+```
+
+Reference: [Ramp Engineering Blog](https://engineering.ramp.com/post/why-we-built-our-background-agent)
+
+---
+
 ## Implementation Phases Summary
 
 ### Phase 1-3: Complete ✅
@@ -1355,3 +1538,14 @@ KEY PATTERNS:
 - 2026-02: config.json is filesystem-centric; deployed agents need pluggable ConfigSource
 - 2026-02: BP snapshots ARE the audit trail - no separate audit system needed
 - 2026-02: Hot-reload via /refresh is unique UX advantage (most agents require restart)
+- 2026-02: Edge-remote model architecture (FunctionGemma + Falcon-H1R) enables fast local + powerful remote
+- 2026-02: Two deployment modes: AI-Assisted Design (both models together) vs Generative UI Production (edge-remote split)
+- 2026-02: Three-source preference pairs for GRPO: Success/Fail + Frontier/Yours + Allowed/Blocked (novel)
+- 2026-02: Allowed/Blocked pairs provide training signal with explicit symbolic reasoning—unexplored in literature
+- 2026-02: Frontier agents (Claude Code, Cursor) used only during AI-Assisted Design, not production (cost control)
+- 2026-02: Two-tier constraint approval: dev approval (design phase) + user-deletable threads (production)
+- 2026-02: User-deletable threads = implicit RLHF (preference feedback without explicit labeling)
+- 2026-02: Learning constraints from own failures differs from ICRL (which learns from expert demos)
+- 2026-02: Pattern mixing: Deterministic (grader) + Symbolic (BP) + Generative (LLMs) follows compiler/database patterns
+- 2026-02: Foundation product model: orgs extend with skills + BP rules + custom graders
+- 2026-02: agent-eval-harness enables model-agnostic training—swap models and re-run comparison
