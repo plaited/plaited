@@ -46,10 +46,11 @@ Uses bootstrap sampling to compute confidence intervals and flag statistically s
 
 ### How It Works
 
-1. Resample scores with replacement (1000 iterations)
+1. Resample scores with replacement (1000 iterations by default)
 2. Compute mean of each resample
-3. Calculate 95% confidence interval from percentiles
-4. If winner's lower CI > second's upper CI → statistically significant
+3. Calculate 95% confidence interval from percentiles (2.5th and 97.5th)
+4. Return median of bootstrap means as central estimate
+5. If winner's lower CI > second's upper CI → statistically significant
 
 ### Configuration
 
@@ -63,10 +64,69 @@ COMPARE_BOOTSTRAP_ITERATIONS=5000 \
 - Rigorous A/B testing
 - Publishing results (need significance claims)
 - Small sample sizes where noise matters
+- When you need uncertainty bounds on metrics
 
 ### Output
 
-The reasoning field indicates significance:
+The statistical strategy adds `confidenceIntervals` to quality and performance metrics:
+
+**CaptureResult format:**
+```json
+{
+  "quality": {
+    "run-a": {
+      "avgScore": 0.85,
+      "passRate": 0.90,
+      "confidenceIntervals": {
+        "avgScore": [0.82, 0.88],
+        "passRate": [0.87, 0.93]
+      }
+    }
+  },
+  "performance": {
+    "run-a": {
+      "latency": { "mean": 1200 },
+      "confidenceIntervals": {
+        "latencyMean": [1100, 1300]
+      }
+    }
+  }
+}
+```
+
+**TrialResult format:**
+```json
+{
+  "capability": {
+    "run-a": {
+      "avgPassAtK": 0.92,
+      "confidenceIntervals": {
+        "avgPassAtK": [0.88, 0.95]
+      }
+    }
+  },
+  "reliability": {
+    "run-a": {
+      "type": "trial",
+      "avgPassExpK": 0.78,
+      "confidenceIntervals": {
+        "avgPassExpK": [0.72, 0.84]
+      }
+    }
+  }
+}
+```
+
+**Markdown output** includes 95% CI columns when using statistical strategy:
+
+```markdown
+## Quality
+| Run | Avg Score | 95% CI | Pass Rate | 95% CI | Pass | Fail |
+|-----|-----------|--------|-----------|--------|------|------|
+| run-a | 0.850 | [0.820, 0.880] | 90.0% | [0.870, 0.930] | 45 | 5 |
+```
+
+The per-prompt reasoning indicates significance:
 
 ```json
 {

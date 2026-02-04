@@ -77,7 +77,7 @@
   ],
   "dependencies": {
     "@anthropic-ai/sandbox-runtime": "0.0.32",
-    "@plaited/agent-eval-harness": "0.7.0",
+    "@plaited/agent-eval-harness": "0.9.0",
     "@plaited/development-skills": "0.6.5",
     "node-llama-cpp": "3.15.0"
   },
