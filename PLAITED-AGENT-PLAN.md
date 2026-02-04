@@ -1,7 +1,8 @@
 # Neuro-Symbolic World Agent Implementation Plan (V7)
 
 > **Architecture**: V7 Neuro-Symbolic with Unified Capability Host
-> **Last Updated**: 2026-02-02 (Capability Host + Rules Architecture session)
+> **Last Updated**: 2026-02-03 (BP-GRPO Training Architecture session)
+> **Research Notes**: [Notion - BP-GRPO Research](https://www.notion.so/plaited/Research-notes-ideas-2fd978090ff1800e8b0ec5548cdacaa6) (paper drafting, session logs, related work)
 
 This plan implements a **neuro-symbolic world agent** that:
 - Uses **Unified Capability Host** for MCP servers AND Agent Skills (same level)
