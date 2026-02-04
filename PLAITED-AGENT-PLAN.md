@@ -548,7 +548,7 @@ These modules form the foundation for Phase 4+. They will be refined as memory f
 | `schema-utils` | Zod → ToolSchema | Tooling |
 | `markdown-links` | Extract `[text](path)` patterns | Discovery Layer |
 
-### How Existing Work Serves V6
+### How Existing Work Serves V7
 
 ```mermaid
 flowchart LR
@@ -564,7 +564,7 @@ flowchart LR
         BA[bash-exec]
     end
 
-    subgraph V6Layers["V6 Architecture Layers"]
+    subgraph V7Layers["V7 Architecture Layers"]
         Disc["Discovery Layer"]
         Mem["Memory Features"]
         Exec["Execution Layer"]
