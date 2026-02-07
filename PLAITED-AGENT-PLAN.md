@@ -1,23 +1,36 @@
-# Neuro-Symbolic World Agent Implementation Plan (V7)
+# Generative UI Client + Modnet Architecture (V8)
 
-> **Architecture**: V7 Neuro-Symbolic with Unified Capability Host
-> **Last Updated**: 2026-02-03 (BP-GRPO Training Architecture session)
-> **Research Notes**: [Notion - BP-GRPO Research](https://www.notion.so/plaited/Research-notes-ideas-2fd978090ff1800e8b0ec5548cdacaa6) (paper drafting, session logs, related work)
+> **Architecture**: V8 Generative UI Client + OpenCode Server + Modnet
+> **Last Updated**: 2026-02-07 (Modnet Architecture session)
+> **Evolved From**: V7 Neuro-Symbolic with Unified Capability Host
+> **Research Notes**: [Notion - BP-GRPO Research](https://www.notion.so/plaited/Research-notes-ideas-2fd978090ff1800e8b0ec5548cdacaa6)
 
-This plan implements a **neuro-symbolic world agent** that:
-- Uses **Unified Capability Host** for MCP servers AND Agent Skills (same level)
-- Uses **Federated Discovery Pools** with provenance tagging
-- Generates **TypeScript code** that orchestrates MCP servers, skills, and tools
-- Executes via **bash/Bun.$** (Unix philosophy)
-- Uses **BP constraints** as symbolic reasoning layer (ratchet: can add, cannot remove)
-- Uses **BP snapshots** for audit (no separate audit system)
-- Supports **AGENTS.md-only** rules with hierarchical override semantics
-- Uses **agent-generated indexing** for rules (no special syntax required)
-- Supports **hot-reload** via event-driven capability management (no restart needed)
-- Includes **world model** for sim(o,a) prediction before execution
+This plan implements a **generative UI client** that:
+- **Specializes** in generating user-owned UI modules (not a general-purpose coding agent)
+- **Delegates** general coding to an **OpenCode server** via HTTP API/SDK
+- **Facilitates modnets** (modular networks) where modules compose into crowd-sourced networks
+- Uses **A2A protocol** for module-to-module communication
+- Uses **AT Protocol OAuth (DIDs)** for decentralized identity
+- Uses **x402** for monetizing module data via micropayments
+- Uses **BP constraints** as symbolic reasoning layer for boundary enforcement + payment authorization
+- Uses **browser world model** for sim(o,a) prediction before execution
 - Trains via **SFT → GRPO** cycles
-- Future: exposes itself as **MCP server** (after SDK v2)
-- Future: supports **OAuth, DID, VC, ABAC** via clean interfaces
+- Preserves user **data ownership** — data lives on user's agent, not a central service
+
+---
+
+## Architectural Shift: V7 → V8
+
+| V7 (Standalone Agent) | V8 (Client + Server + Modnet) |
+|---|---|
+| General-purpose coding agent | Specialized generative UI client |
+| Builds own file-ops, search, bash-exec | Delegates to OpenCode server |
+| MCP host for everything | MCP stays in OpenCode; A2A for modnet |
+| Generic security interfaces (future) | AT Protocol OAuth + x402 (concrete) |
+| Agent as MCP server (future) | Agent as A2A server (modnet participant) |
+| Unified Capability Host | OpenCode handles capability management |
+| Federated discovery pools | OpenCode handles tool discovery |
+| No module ownership concept | User-owned modules, ephemeral networks |
 
 ---
 
@@ -25,93 +38,371 @@ This plan implements a **neuro-symbolic world agent** that:
 
 ```mermaid
 flowchart TB
-    subgraph Security["Security Layer (interfaces defined, implementations later)"]
-        Identity["Identity"]
-        Credentials["Credentials"]
-        Policy["Policy (ABAC)"]
-        Identity --> Credentials --> Policy
-    end
-
-    subgraph CapabilityHost["Capability Host Layer (BP-orchestrated)"]
-        subgraph Providers["Capability Providers"]
-            MCPServers["MCP Servers<br/>(external, protocol-based)"]
-            AgentSkills["Agent Skills<br/>(.plaited/skills/, local)"]
+    subgraph User["User's Agent (Client + Server)"]
+        subgraph Client["Plaited Client (Generative UI)"]
+            BP["BP Constraints<br/>(symbolic reasoning)"]
+            WorldModel["Browser World Model<br/>(stories + play())"]
+            StructVocab["Structural Vocabulary<br/>(objects, channels, levers, loops, blocks)"]
+            UIGen["UI Generation<br/>(template composition)"]
+            Training["Training Pipeline<br/>(trajectory capture)"]
         end
-        CapRegistry["Capability Registry<br/>(event-driven, hot-reload)"]
-        ConfigSource["ConfigSource<br/>(pluggable: file, DB, API, env)"]
-        MCPServers & AgentSkills --> CapRegistry
-        ConfigSource --> CapRegistry
-    end
 
-    subgraph Discovery["Discovery Layer (Federated Pools)"]
-        subgraph MCPPool["MCP Pool (provenance tagged)"]
-            ToolDisc["tool-discovery"]
-            ResourceDisc["resource-discovery"]
-            PromptDisc["prompt-discovery"]
+        subgraph Server["OpenCode Server (General Compute)"]
+            FileOps["File Operations"]
+            Search["Search (glob + grep)"]
+            BashExec["Bash Execution"]
+            MCPHost["MCP Host<br/>(tool servers)"]
+            Skills["Skills + Plugins"]
+            Models["Model Hosting"]
         end
-        subgraph SkillPool["Skill Pool (trust-level tagged)"]
-            SkillDisc["skill-discovery"]
-        end
-        RulesDisc["rules-discovery<br/>(AGENTS.md, agent-indexed)"]
+
+        Client -->|"HTTP API / SDK"| Server
     end
 
-    subgraph Prediction["Prediction Layer"]
-        Agent["Agent generates TypeScript<br/>orchestration code"]
+    subgraph Modnet["Modular Network"]
+        OtherAgent1["Other User's Agent"]
+        OtherAgent2["Another Agent"]
     end
 
-    subgraph WorldModel["World Model Layer"]
-        Sim["sim(o,a) → predicted outcome<br/>before execution"]
+    subgraph Protocols["Protocol Stack"]
+        A2A["A2A<br/>(module ↔ module)"]
+        ATP["AT Protocol OAuth<br/>(DIDs)"]
+        X402["x402<br/>(payments)"]
     end
 
-    subgraph BP["BP Constraint Layer (symbolic reasoning)"]
-        BThreads["bThreads filter<br/>(ratchet: can add, cannot remove)"]
-        Snapshots["Snapshots = audit trail"]
-    end
-
-    subgraph Execution["Execution Layer"]
-        BashExec["bash/Bun.$ executes<br/>generated TS code"]
-    end
-
-    subgraph Verification["Verification Layer"]
-        Grader["Grader"]
-        Harness["Harness"]
-        Grader --> Harness
-    end
-
-    Security --> CapabilityHost
-    CapabilityHost --> Discovery
-    Discovery --> Prediction
-    Prediction --> WorldModel
-    WorldModel --> BP
-    BP --> Execution
-    Execution --> Verification
+    Client <-->|"A2A"| OtherAgent1
+    Client <-->|"A2A"| OtherAgent2
+    ATP --> Client
+    X402 --> A2A
 ```
 
 ### Core Decisions
 
 | Decision | Choice | Rationale |
-|----------|--------|-----------|
+|---|---|---|
+| Agent role | Generative UI client | Specialization > generalization |
+| General coding | OpenCode server | Don't rebuild what exists (Unix philosophy) |
+| Module communication | A2A protocol | Peer-to-peer, not client-server |
+| Identity | AT Protocol OAuth (DIDs) | Decentralized, portable across servers |
+| Payments | x402 (HTTP 402) | HTTP-native, stablecoin micropayments |
+| Constraints | BP as symbolic overlay | Boundaries, payment auth, modnet rules |
+| World model | Browser (stories + play()) | Ground truth for UI validation |
 | Training approach | SFT → GRPO cycles | DeepSeek-R1 validated |
-| Personalization | BP bThreads (symbolic, not PESO) | Instant adaptation, interpretable |
-| Execution model | TS code → bash/Bun.$ | FunctionGemma Unix philosophy |
-| Constraints | BP as symbolic overlay | Ratchet: can add, cannot remove |
-| World model | Phase 1, not optional | sim(o,a) before execution |
-| MCP role | Full host now, server later | Complete spec compliance |
-| Security | Interfaces now, implementations later | Future-proof for OAuth/DID/VC/ABAC |
-| **Capability hosting** | Unified Capability Host (MCP + Skills) | Both are capability providers, same level |
-| **Discovery pools** | Federated with provenance | Track source (MCP server vs skill), enable trust filtering |
-| **Skill trust** | Tiered (certified, scanned, user, agent-generated) | Security without blocking ecosystem growth |
-| **Skill diffing** | Git-based (`git diff`) | Leverage existing tooling, agent-analyzable |
-| **Rules architecture** | AGENTS.md-only, hierarchical | Single spec, nested can override parent |
-| **Rules indexing** | Agent-generated metadata | No special syntax, model derives structure |
-| **Index triggers** | Event-driven (generation, session start, /refresh) | Sub-Variant B2: predictable latency, no stale results |
-| **Capability lifecycle** | Event-driven registry + BP orchestration | Hot-reload without restart, /refresh command |
-| **Configuration** | Pluggable ConfigSource interface | Deployment-flexible (file, DB, API, env) |
-| **Audit** | BP snapshots | No separate audit system needed |
-| **Model architecture** | Edge + Remote | FunctionGemma (edge) + Falcon-H1R (remote) |
-| **Deployment modes** | AI-Assisted Design + Generative UI Production | Different requirements per phase |
-| **Training pairs** | Three-source preference pairs | Success/Fail + Frontier/Yours + Allowed/Blocked |
-| **Constraint learning** | Two-tier approval | Dev approval (design) + User deletable (production) |
+| Personalization | BP bThreads (symbolic) | Instant adaptation, interpretable |
+| Data ownership | User's agent owns data | Ephemeral networks, disconnect = gone |
+| Modnet unlock | Agent generates modules from intent | Removes "who builds?" barrier |
+
+---
+
+## Protocol Stack
+
+| Layer | Technology | Purpose |
+|---|---|---|
+| **Identity** | AT Protocol OAuth (DIDs) | Decentralized identity, no central authority |
+| **Communication** | A2A (Agent-to-Agent) | Module ↔ module: tasks, skills, push notifications |
+| **Payment** | x402 (HTTP 402 headers) | Monetize module data, stablecoin micropayments |
+| **Constraints** | BP (bThreads) | Boundary enforcement, payment authorization |
+| **UI Generation** | Plaited Agent (client) | Compose resources into live interfaces |
+| **Compute** | OpenCode Server | Code execution, skills, MCP integrations |
+| **Tool Access** | MCP (inside OpenCode) | Server ↔ tool servers (filesystem, DB, etc.) |
+
+### Protocol Responsibilities
+
+```mermaid
+flowchart LR
+    subgraph ClientProtos["Plaited Client Protocols"]
+        A2A["A2A<br/>(modnet peers)"]
+        ACP["ACP<br/>(IDE integration)"]
+    end
+
+    subgraph ServerProtos["OpenCode Server Protocols"]
+        MCP["MCP<br/>(tool servers)"]
+        HTTP["HTTP API<br/>(client ↔ server)"]
+    end
+
+    subgraph CrossCutting["Cross-Cutting"]
+        ATP["AT Protocol OAuth<br/>(identity everywhere)"]
+        X402["x402<br/>(payment on A2A)"]
+    end
+
+    A2A --- X402
+    ATP --- A2A
+    ATP --- ACP
+    ATP --- HTTP
+```
+
+**Key boundary**: MCP is an OpenCode concern. The Plaited client never hosts MCP servers directly — it sends generation requests to OpenCode, which orchestrates MCP tools.
+
+### A2A for Modnet Communication
+
+A2A provides the peer-to-peer protocol for modnet:
+
+```typescript
+type ModuleAgentCard = {
+  name: string
+  description: string
+  url: string // Agent's A2A endpoint
+  did: string // AT Protocol DID
+  skills: ModuleSkill[]
+  capabilities: {
+    streaming: boolean
+    pushNotifications: boolean
+    x402: boolean // Supports paid access
+  }
+  boundary: ModuleBoundary
+}
+
+type ModuleSkill = {
+  id: string
+  name: string
+  description: string
+  contentType: string // Template tag / element name
+  structuralVocab: string[] // objects, channels, levers, loops, blocks
+  price?: X402Price // Cost to access this skill's data
+}
+
+type ModuleBoundary = {
+  search: 'all' | 'none' | 'ask' // Who can discover this module
+  participation: 'all' | 'none' | 'ask' // Who can interact
+}
+```
+
+### x402 Payment Flow
+
+x402 layers directly on HTTP — no protocol bridge needed:
+
+```mermaid
+sequenceDiagram
+    participant Requester as Requester Agent
+    participant BP as BP Constraints
+    participant Target as Target Agent
+
+    Requester->>Target: A2A request (GET /skill/data)
+    Target-->>Requester: 402 Payment Required + x402 headers
+    Requester->>BP: Check budget constraints
+    BP-->>Requester: Allowed (within budget)
+    Requester->>Target: Retry with payment proof
+    Target-->>Requester: 200 OK + data
+```
+
+BP decides payment authorization — bThreads check budget constraints before paying:
+
+```typescript
+bThreads.set({
+  budgetGuard: bThread([
+    bSync({
+      block: ({ type, detail }) =>
+        type === 'x402-payment' && detail.amount > remainingBudget
+    })
+  ], true),
+
+  maxPerTransaction: bThread([
+    bSync({
+      block: ({ type, detail }) =>
+        type === 'x402-payment' && detail.amount > MAX_SINGLE_PAYMENT
+    })
+  ], true)
+})
+```
+
+---
+
+## Modnet Architecture
+
+### The Modnet Concept
+
+Modnets (modular networks) are crowd-sourced networks where user-owned modules compose into larger structures. Each module has:
+
+| Modnet Tag | Plaited Equivalent | Description |
+|---|---|---|
+| **Content type** | Template tag / element name | What kind of module this is |
+| **Structure** | Structural vocabulary | How information is organized (objects, channels, levers, loops, blocks) |
+| **Mechanics** | bThreads | Cross-cutting composable behaviors |
+| **Boundary** | Shadow DOM + publicEvents + A2A capability negotiation | What's exposed vs private |
+| **Scale** | Template composition via slots (S1–S8) | From singular objects to super-structures |
+
+### The Modnet Unlock
+
+**Before**: Modnets required people to manually build UIs and templates.
+**After**: The agent generates modules from user intent, then saves and constrains them.
+
+```mermaid
+flowchart LR
+    Intent["User Intent<br/>'I want a recipe tracker'"] --> Agent["Plaited Agent<br/>generates UI module"]
+    Agent --> Module["User-Owned Module<br/>(template + bThreads + boundary)"]
+    Module --> Modnet["Joins Modnet<br/>(via A2A + DID)"]
+    Modnet --> Others["Others discover + compose<br/>(via A2A, pay via x402)"]
+```
+
+### Module Lifecycle
+
+```mermaid
+flowchart TB
+    Generate["1. GENERATE<br/>Agent creates UI from intent"]
+    Save["2. SAVE<br/>Module stored on user's agent"]
+    Constrain["3. CONSTRAIN<br/>BP bThreads enforce boundaries"]
+    Share["4. SHARE<br/>A2A Agent Card declares module"]
+    Monetize["5. MONETIZE<br/>x402 enables paid data access"]
+    Compose["6. COMPOSE<br/>Others integrate into their UIs"]
+
+    Generate --> Save --> Constrain --> Share --> Monetize --> Compose
+```
+
+### Ephemeral Networks
+
+Modnet connections are ephemeral — disconnect and your data disappears from others' views:
+
+```typescript
+// When user disconnects, their A2A server stops
+// Other agents' subscriptions fail gracefully
+// No data residue on other agents
+```
+
+This is enforced by the A2A protocol: agents subscribe to live resources. No subscription = no access.
+
+### Scale System (S1–S8)
+
+From Rachel Jaffe's modnet theory, mapped to template composition:
+
+| Scale | Name | Template Mapping |
+|---|---|---|
+| S1 | Singular Object | Single element (button, input) |
+| S2 | Object Pair | Two related elements |
+| S3 | Group | Named slot with children |
+| S4 | Array | Repeated pattern (list items) |
+| S5 | Stack | Vertical composition |
+| S6 | Grid | 2D layout |
+| S7 | Page | Full surface |
+| S8 | Super-structure | Multi-page / multi-surface |
+
+---
+
+## OpenCode Integration
+
+### Agent as Client to OpenCode
+
+The Plaited agent connects to OpenCode as a web client via its HTTP API:
+
+```mermaid
+flowchart LR
+    subgraph PlaitedClient["Plaited Client"]
+        UIGen["UI Generation"]
+        BPLayer["BP Constraints"]
+    end
+
+    subgraph OpenCodeServer["OpenCode Server"]
+        Sessions["Session Management"]
+        Assistants["Assistant (LLM)"]
+        MCPTools["MCP Tool Servers"]
+        FileSystem["File System"]
+    end
+
+    PlaitedClient -->|"HTTP API / SDK"| Sessions
+    Sessions --> Assistants
+    Assistants --> MCPTools
+    Assistants --> FileSystem
+```
+
+### OpenCode SDK Usage
+
+```typescript
+import { OpenCode } from '@opencode-ai/sdk'
+
+const client = new OpenCode({ baseURL: 'http://localhost:3000' })
+
+// Create session
+const session = await client.session.create()
+
+// Send generation request (OpenCode handles file-ops, MCP, etc.)
+const response = await client.chat.create(session.id, {
+  messages: [{ role: 'user', content: generatePrompt }],
+})
+
+// Stream events
+for await (const event of response) {
+  switch (event.type) {
+    case 'text':
+      // Model reasoning
+      break
+    case 'tool_call':
+      // OpenCode executing tools (file write, search, etc.)
+      break
+    case 'result':
+      // Final generated code
+      break
+  }
+}
+```
+
+### What Agent Keeps (Client-Side)
+
+| Capability | Why Client-Side |
+|---|---|
+| BP constraints | Symbolic validation, boundary enforcement, payment auth |
+| Browser world model | Stories + play() for UI validation |
+| Structural vocabulary | Modnet design language |
+| UI generation logic | Template composition from intent |
+| Training pipeline | Trajectory capture for SFT/GRPO |
+| A2A adapter | Modnet peer communication |
+| AT Protocol auth | DID-based identity |
+| x402 payment logic | Budget management, payment proof |
+
+### What Agent Drops (Server Handles)
+
+| Capability | Why Server-Side |
+|---|---|
+| file-ops (read, write, edit) | OpenCode has native file operations |
+| search (glob + grep) | OpenCode has search tools |
+| bash-exec | OpenCode has shell execution |
+| MCP host infrastructure | OpenCode hosts MCP servers |
+| Tool/skill discovery | OpenCode manages its own tools |
+| Embedder | Not needed at client level |
+| Semantic cache | Server caches its own responses |
+
+---
+
+## Observable / Affectable Taxonomy
+
+Updated for the client + server + modnet architecture:
+
+```mermaid
+flowchart TB
+    subgraph Observable["OBSERVABLE"]
+        direction TB
+        subgraph ViaServer["Via OpenCode Server"]
+            FileState["File system state"]
+            ToolResults["Tool execution results"]
+            MCPData["MCP resource data"]
+        end
+        subgraph ViaBrowser["Via Browser World Model"]
+            Stories["Story play() outcomes"]
+            A11y["Accessibility audit results"]
+            Snapshots["Inspector snapshots"]
+        end
+        subgraph ViaModnet["Via Modnet (A2A)"]
+            PeerModules["Peer module Agent Cards"]
+            SharedData["Shared module data (subscribed)"]
+            PaymentState["x402 payment state"]
+        end
+    end
+
+    subgraph Affectable["AFFECTABLE"]
+        direction TB
+        subgraph FullControl["FULL CONTROL"]
+            Generated["Generated UI modules"]
+            ModuleConfig["Module boundary configuration"]
+            A2ACard["A2A Agent Card"]
+        end
+        subgraph Additive["ADDITIVE ONLY (ratchet)"]
+            NewBT["bThreads (can ADD, cannot REMOVE)"]
+        end
+        subgraph ReadOnly["READ-ONLY"]
+            DevConstraints["Developer-set constraints"]
+            DID["AT Protocol DID"]
+            CoreBoundaries["Core boundary rules"]
+        end
+    end
+```
 
 ---
 
@@ -122,10 +413,10 @@ The agent uses a dual-model architecture optimized for different deployment phas
 ### Model Stack
 
 | Layer | Model | Role | Training |
-|-------|-------|------|----------|
-| Edge | FunctionGemma | Fast local inference, common patterns | Distilled from Remote |
-| Remote | Falcon-H1R | Complex reasoning, handles edge cases | GRPO with 3-source pairs |
-| Frontier | Claude/GPT (via OpenCode/Cursor) | Reference trajectories (AI-Assisted Design only) | Frozen (oracle) |
+|---|---|---|---|
+| Edge | FunctionGemma | Fast local inference, common UI patterns | Distilled from Remote |
+| Remote | Falcon-H1R | Complex reasoning, novel compositions | GRPO with 3-source pairs |
+| Frontier | Claude/GPT (via OpenCode) | Reference trajectories (AI-Assisted Design only) | Frozen (oracle) |
 
 ### Deployment Modes
 
@@ -133,17 +424,15 @@ The agent uses a dual-model architecture optimized for different deployment phas
 flowchart TB
     subgraph AIAssisted["AI-Assisted Design Phase"]
         direction TB
-        LocalDev["Option A: Both models local<br/>(MacBook Pro capable)"]
-        ColocatedDev["Option B: Both models colocated<br/>(server + client UI)"]
-
-        FrontierCompare["Frontier agents for comparison<br/>(Claude Code, Cursor)"]
+        LocalDev["Both models local or colocated"]
+        FrontierCompare["Frontier via OpenCode for comparison"]
         HarnessTraining["agent-eval-harness captures trajectories"]
     end
 
     subgraph Production["Generative UI Production"]
-        EdgeProd["FunctionGemma (edge)<br/>Low latency, common patterns"]
-        RemoteProd["Falcon-H1R (remote)<br/>Complex reasoning"]
-        NoFrontier["No frontier dependency<br/>(cost controlled)"]
+        EdgeProd["FunctionGemma (edge)<br/>Common UI patterns"]
+        RemoteProd["Falcon-H1R (remote)<br/>Novel compositions"]
+        ModnetProd["Modnet participation<br/>(A2A + x402)"]
 
         EdgeProd <--> RemoteProd
     end
@@ -151,619 +440,22 @@ flowchart TB
     AIAssisted -->|"deploy"| Production
 ```
 
-**AI-Assisted Design**: Both models run together (locally on MacBook Pro or colocated on server). Frontier agents used for comparison/training via harness.
-
-**Generative UI Production**: Edge handles fast, common patterns. Remote handles complex reasoning. No frontier dependency (cost control).
-
 ### Pattern Mixing Philosophy
 
-| Pattern | Component | Role |
-|---------|-----------|------|
-| **Deterministic** | Grader (tsc, biome, tests) | Ground truth, no ambiguity |
-| **Symbolic** | BP constraints (bThreads) | Verifiable safety, explicit reasoning |
-| **Generative** | LLMs (FunctionGemma, Falcon-H1R) | Flexibility, natural language understanding |
-
-This follows proven patterns from compiler design (parse → type-check → generate) and databases (query → plan → execute).
+| Pattern | Layer | Role |
+|---|---|---|
+| **Deterministic** | Grader (tsc, biome, stories) | Ground truth, no ambiguity |
+| **Symbolic** | BP constraints (bThreads) | Verifiable safety, boundary enforcement |
+| **Generative** | LLMs (FunctionGemma, Falcon-H1R) | Flexibility, intent understanding |
 
 ---
 
-## Observable / Affectable Taxonomy
-
-Understanding what the agent can observe vs affect is foundational to the architecture.
-
-```mermaid
-flowchart TB
-    subgraph Observable["OBSERVABLE"]
-        direction TB
-        subgraph ViaExec["Via Execution"]
-            Tests["Test results (pass/fail)"]
-            Stories["Story play() outcomes"]
-        end
-        subgraph ViaDisc["Via Discovery"]
-            MCPTools["MCP Tools"]
-            MCPResources["MCP Resources"]
-            MCPPrompts["MCP Prompts"]
-            Skills["Skills"]
-            Rules["Rules"]
-            ActiveBT["Active bThreads"]
-        end
-        subgraph ViaExt["Via External"]
-            APIs["API responses"]
-            FS["File system state"]
-        end
-    end
-
-    subgraph Affectable["AFFECTABLE"]
-        direction TB
-        subgraph Full["FULL CONTROL"]
-            Files["Files (read/write/delete)"]
-            EnvVars["Environment variables"]
-            Memory["Memory (agent-layer tools)"]
-            Code["Generated code files"]
-        end
-        subgraph Additive["ADDITIVE ONLY (ratchet)"]
-            NewBT["bThreads (can ADD, cannot REMOVE)"]
-        end
-        subgraph ReadOnly["READ-ONLY"]
-            DevConstraints["Developer-set constraints"]
-            Permissions["Permissions"]
-        end
-    end
-```
-
-**Key Insight**: The ratchet property (can add bThreads, cannot remove) provides a safety mechanism where constraints accumulate but never disappear without developer intervention.
-
----
-
-## Execution Model
-
-The agent generates TypeScript that orchestrates, executed via shell:
-
-```
-Agent predicts → TypeScript code that:
-                   ├── Calls MCP servers
-                   ├── Uses skill scripts
-                   ├── Leverages discovered tools/resources/prompts
-                   └── Composes via Unix patterns
-                            ↓
-              Executed via: bash / Bun.$ shell commands
-```
-
-**Not**: "TS mode vs bash mode" as separate execution paths
-**Actually**: TS orchestrates everything, shell executes the orchestration
-
-This aligns with FunctionGemma's Unix philosophy and Anthropic's code execution with MCP pattern.
-
----
-
-## Capability Host Layer
-
-The Capability Host Layer manages both MCP servers (external, protocol-based) and Agent Skills (local, filesystem-based) as unified capability providers.
-
-### Unified Capability Host
-
-MCP servers and Agent Skills are both "capability providers" at the same architectural level:
-
-```mermaid
-flowchart TB
-    subgraph CapabilityHost["Capability Host Layer"]
-        subgraph Providers["Capability Providers"]
-            MCP["MCP Servers<br/>(external protocol)"]
-            Skills["Agent Skills<br/>(.plaited/skills/)"]
-        end
-
-        Registry["Capability Registry<br/>(BP-orchestrated)"]
-        Source["ConfigSource<br/>(pluggable)"]
-
-        MCP & Skills --> Registry
-        Source --> Registry
-    end
-
-    subgraph Events["BP Events"]
-        Add["capability:added"]
-        Remove["capability:removed"]
-        Update["capability:updated"]
-    end
-
-    Registry --> Events
-```
-
-### Federated Discovery Pools
-
-Skills and MCP contribute to separate pools with provenance tagging:
-
-```typescript
-type DiscoveryPools = {
-  // MCP pool - tagged with serverId
-  mcp: {
-    tools: ToolEntry[]      // { ...tool, serverId, provenance: 'mcp' }
-    resources: ResourceEntry[]
-    prompts: PromptEntry[]
-  }
-
-  // Skill pool - tagged with skillId and trust level
-  skills: {
-    tools: ToolEntry[]      // { ...tool, skillId, trustLevel, provenance: 'skill' }
-    resources: ResourceEntry[]
-    prompts: PromptEntry[]
-  }
-
-  // Federated search returns results from both pools
-  search: (query: string) => Promise<{
-    results: (ToolEntry | ResourceEntry | PromptEntry)[]
-    // Results tagged with provenance for trust filtering
-  }>
-}
-```
-
-**Key insight**: Provenance is preserved—know where each capability came from for trust decisions.
-
-### Skill Trust Model
-
-Tiered trust with scan-on-install for non-certified skills:
-
-```typescript
-type SkillTrust =
-  | { level: 'certified'; source: 'plaited/*' }
-  | { level: 'scanned'; scanResult: ScanResult; approvedAt: Date }
-  | { level: 'user-authored'; path: string }
-  | { level: 'agent-generated'; generatedBy: string; reviewedAt?: Date }
-
-type ScanResult = {
-  permissions: string[]        // What capabilities does it request?
-  dependencies: string[]       // MCP servers, external APIs
-  codeAnalysis: {
-    hasNetworkCalls: boolean
-    hasFileSystemAccess: boolean
-    hasShellExecution: boolean
-  }
-  aiAssessment?: string        // LLM analysis of implications
-  webResearch?: string[]       // Links to package reputation
-}
-```
-
-**Skill diffing**: Use `git diff` on skill repos to analyze changes before updates. Agent can run `git fetch && git diff HEAD..origin/main` to see incoming changes.
-
-### Event-Driven Capability Lifecycle
-
-BP orchestrates capability lifecycle with hot-reload (no restart needed):
-
-```typescript
-type CapabilityRegistry = {
-  // Lifecycle (all emit BP events)
-  register: (source: CapabilitySource) => Promise<void>
-  unregister: (sourceId: string) => Promise<void>
-  refresh: (sourceId?: string) => Promise<void>  // undefined = refresh all
-
-  // Query
-  list: () => CapabilitySource[]
-  get: (sourceId: string) => CapabilitySource | undefined
-}
-
-type CapabilitySource =
-  | { type: 'mcp'; serverId: string; config: MCPServerConfig }
-  | { type: 'skill'; skillId: string; path: string; trust: TrustLevel }
-  | { type: 'rules'; path: string }
-
-type CapabilityEvent =
-  | { type: 'session-start'; source: ConfigSource }
-  | { type: 'mcp-add'; config: MCPServerConfig }
-  | { type: 'mcp-remove'; serverId: string }
-  | { type: 'skill-add'; path: string; trustLevel: TrustLevel }
-  | { type: 'skill-remove'; skillId: string }
-  | { type: 'rules-reindex'; paths: string[] }
-  | { type: 'refresh-all' }
-```
-
-### Pluggable ConfigSource
-
-Configuration source is abstracted for deployment flexibility:
-
-```typescript
-type ConfigSource = {
-  load: () => Promise<AgentConfig>
-  save?: (config: AgentConfig) => Promise<void>  // Optional persistence
-  watch?: () => AsyncIterable<ConfigChange>      // Optional watching
-}
-
-// Implementations for different deployments
-const localFileSource: ConfigSource = { /* .plaited/config.json */ }
-const databaseSource: ConfigSource = { /* tenant DB lookup */ }
-const apiSource: ConfigSource = { /* fetch from /agent/config */ }
-const envSource: ConfigSource = { /* parse from env vars */ }
-```
-
-**Audit via BP snapshots**: No separate audit system needed—BP snapshots at each bSync capture the complete capability state.
-
----
-
-## Storage Strategy
-
-Different modules need different storage patterns. Use the simplest tool that meets requirements.
-
-| Need | Tool | Rationale |
-|------|------|-----------|
-| **Full-text search with ranking** | SQLite + FTS5 | BM25, prefix matching, tokenization |
-| **Simple key-value with TTL** | In-memory Map | No query complexity needed |
-| **Graph traversal (DAG)** | In-memory Map | Traversal, not search |
-| **Structured queries with joins** | SQLite | Relational data with FK constraints |
-
-### Persistence Philosophy
-
-Modules that don't need SQLite use pluggable persistence:
-- **Initial data** - User loads from wherever and passes JSON
-- **Persist callback** - User provides function; module calls with current state
-
-This decouples storage concerns and supports remote stores, cloud storage, or custom serialization.
-
-### Module Storage Assignments
-
-| Module | Storage | Persistence | Status |
-|--------|---------|-------------|--------|
-| `tool-discovery` | SQLite + FTS5 | `dbPath` config | ✅ 45 tests |
-| `skill-discovery` | SQLite + FTS5 | `dbPath` config | ✅ 62 tests |
-| `rules-discovery` | SQLite + FTS5 | `dbPath` config | ✅ 25 tests |
-| `semantic-cache` | In-memory Map | `onPersist` callback | ✅ 27 tests |
-| `relation-store` | In-memory Map | `onPersist` callback | ✅ 41 tests |
-
----
-
-## Rules Architecture (AGENTS.md-Only)
-
-Rules use AGENTS.md files exclusively with hierarchical discovery and agent-generated indexing.
-
-### AGENTS.md Hierarchy
-
-```
-project-root/
-├── AGENTS.md                    # Project root (primary)
-├── src/
-│   └── feature/
-│       └── AGENTS.md            # Feature-specific (additive/override)
-└── .plaited/
-    └── skills/
-        └── my-skill/
-            └── AGENTS.md        # Skill-specific (loaded when skill active)
-```
-
-**Resolution order** (nested can override parent):
-1. `/AGENTS.md` (always loaded)
-2. `/src/AGENTS.md` (if working in /src)
-3. `/src/feature/AGENTS.md` (if working in /src/feature)
-
-### Agent-Generated Indexing
-
-AGENTS.md files remain natural language—no special syntax required. Agent analyzes content and generates structured index:
-
-```typescript
-type GeneratedRuleIndex = {
-  id: string
-  source: string              // Path to AGENTS.md
-  section: string             // Extracted section heading
-  content: string             // Original text
-
-  // Agent-generated metadata (no special syntax in source)
-  actionTypes: ActionType[]   // ['file-write', 'shell-exec', ...]
-  constraint: {
-    type: 'must' | 'must-not' | 'should' | 'may'
-    description: string
-  }
-  keywords: string[]          // For FTS
-  embedding: number[]         // For semantic search
-}
-
-type ActionType =
-  | 'file-read' | 'file-write'
-  | 'shell-exec'
-  | 'mcp-call'
-  | 'skill-invoke'
-  | 'code-generation'
-  | 'testing'
-  | 'documentation'
-```
-
-### Event-Driven Indexing (Sub-Variant B2)
-
-Index triggers ensure predictable search latency with no stale results:
-
-```mermaid
-flowchart TB
-    subgraph Triggers["Index Triggers"]
-        AgentGen["Agent generates AGENTS.md<br/>(inline indexing)"]
-        SessionStart["Session start<br/>(check mtime vs index)"]
-        UserRefresh["User: /refresh-rules"]
-    end
-
-    subgraph Index["Indexing Pipeline"]
-        Diff["Diff sections<br/>(git-based if available)"]
-        Analyze["Agent analyzes<br/>changed sections"]
-        Store["Update SQLite<br/>FTS5 + embeddings"]
-    end
-
-    Triggers --> Diff --> Analyze --> Store
-```
-
-**Key behaviors**:
-1. **On generation**: Index immediately (user is waiting anyway)
-2. **On session start**: Compare file mtime vs index timestamp
-3. **On /refresh-rules**: Force full reindex
-4. **No stale results**: Always search fresh index
-
-### Rules Discovery Integration
-
-```typescript
-type RulesDiscovery = {
-  // Index management
-  indexAfterGeneration: (path: string) => Promise<void>
-  ensureFreshOnSessionStart: () => Promise<void>
-  refreshAll: () => Promise<void>
-
-  // Search (assumes index is fresh)
-  searchByIntent: (intent: string) => Promise<RuleMatch[]>
-  searchByAction: (action: ActionType) => Promise<RuleMatch[]>
-
-  // BP integration - convert retrieved rules to constraints
-  toBThreads: (rules: RuleMatch[]) => BThread[]
-}
-```
-
-### Integration with World Model + BP
-
-Rules become inputs to the BP layer, not just context decoration:
-
-```mermaid
-flowchart TB
-    Prompt["User Prompt"] --> Intent["Intent Analysis"]
-    Intent --> Search1["rules-discovery.searchByIntent"]
-    Search1 --> Context["Working Context"]
-
-    Context --> Prediction["Agent Prediction<br/>(generates TS code)"]
-    Prediction --> WorldModel["World Model<br/>sim(o,a)"]
-
-    WorldModel --> Search2["rules-discovery.searchByAction<br/>for each predicted action"]
-    Search2 --> BP["BP Constraint Check<br/>bThreads + retrieved rules"]
-
-    BP -->|Allowed| Execute["Execute"]
-    BP -->|Blocked| Feedback["Feedback to Agent"]
-    Feedback --> Prediction
-```
-
----
-
-## Completed Infrastructure (311 tests)
-
-These modules form the foundation for Phase 4+. They will be refined as memory features later.
-
-| Module | Purpose | Serves |
-|--------|---------|--------|
-| `tool-discovery` | FTS5 + vector search for tools | Discovery Layer |
-| `skill-discovery` | FTS5 + vector + progressive refs | Discovery Layer |
-| `rules-discovery` | AGENTS.md-only with agent-generated indexing | Discovery Layer |
-| `embedder` | node-llama-cpp GGUF embeddings | Memory/Search |
-| `semantic-cache` | Reuse responses for similar queries | Memory |
-| `relation-store` | DAG for plans, files, agents | Memory/Planning |
-| `formatters` | Tools → FunctionGemma tokens | Prediction Layer |
-| `file-ops` | read, write, edit | Execution Layer |
-| `search` | glob + grep | Execution Layer |
-| `bash-exec` | terminal commands | Execution Layer |
-| `schema-utils` | Zod → ToolSchema | Tooling |
-| `markdown-links` | Extract `[text](path)` patterns | Discovery Layer |
-
-### How Existing Work Serves V7
-
-```mermaid
-flowchart LR
-    subgraph Completed["Completed (Phase 1-3)"]
-        TD[tool-discovery]
-        SD[skill-discovery]
-        RD[rules-discovery]
-        EM[embedder]
-        SC[semantic-cache]
-        RS[relation-store]
-        FO[file-ops]
-        SE[search]
-        BA[bash-exec]
-    end
-
-    subgraph V7Layers["V7 Architecture Layers"]
-        Disc["Discovery Layer"]
-        Mem["Memory Features"]
-        Exec["Execution Layer"]
-    end
-
-    TD --> Disc
-    SD --> Disc
-    RD --> Disc
-    EM --> Mem
-    SC --> Mem
-    RS --> Mem
-    FO --> Exec
-    SE --> Exec
-    BA --> Exec
-```
-
----
-
-## Phase 4: Capability Host Layer
-
-The agent uses a **Unified Capability Host** that manages both MCP servers and Agent Skills as capability providers. See [Capability Host Layer](#capability-host-layer) section above for architecture details.
-
-### Implementation Order
-
-1. **Capability Types** (`src/agent/capability-host/capability.types.ts`)
-   - CapabilitySource, CapabilityEvent, CapabilityRegistry interfaces
-   - ConfigSource interface for pluggable configuration
-
-2. **Config Source** (`src/agent/capability-host/config-source.ts`)
-   - ConfigSource interface
-   - File-based implementation (`config-source-file.ts`)
-
-3. **Skill Trust** (`src/agent/capability-host/skill-trust.ts`)
-   - Tiered trust model (certified, scanned, user-authored, agent-generated)
-   - ScanResult type for skill scanning
-   - Git-based diffing utilities
-
-4. **Capability Registry** (`src/agent/capability-host/capability-registry.ts`)
-   - BP-orchestrated lifecycle management
-   - Event emission (capability:added, capability:removed, capability:updated)
-   - Hot-reload support via /refresh
-
-5. **Rules Discovery Refactor** (`src/agent/discovery/rules-discovery.ts`)
-   - AGENTS.md-only with hierarchical override
-   - Agent-generated indexing (no special syntax)
-   - Event-driven triggers (Sub-Variant B2)
-   - searchByIntent + searchByAction methods
-
-6. **MCP Provider** (`src/agent/mcp/mcp-provider.ts`)
-   - MCP as capability provider (integrates with registry)
-   - Full MCP primitives (tools, resources, prompts, sampling)
-
-### MCP Primitives (via MCP Provider)
-
-| Primitive | Direction | Status | Purpose |
-|-----------|-----------|--------|---------|
-| **Tools** | Server → Host | ✅ Have discovery | Callable functions |
-| **Resources** | Server → Host | ❌ Need discovery | Data access (files, APIs, DBs) |
-| **Prompts** | Server → Host | ❌ Need discovery | Reusable templates |
-| **Sampling** | Server ← Host | ❌ Need | Host provides LLM to servers |
-| **Roots** | Host → Server | ❌ Need | Workspace context |
-| **Logging** | Bidirectional | ❌ Need | Debug/audit trail (via BP snapshots) |
-| **Notifications** | Bidirectional | ❌ Need | Resource updates, status |
-
-### MCP Provider Types
-
-```typescript
-type MCPProvider = {
-  type: 'mcp'
-
-  // === Server Management ===
-  servers: {
-    add: (config: MCPServerConfig) => Promise<MCPClient>
-    remove: (serverId: string) => Promise<void>
-    list: () => MCPServerConfig[]
-  }
-
-  // === Primitives (feed into federated discovery pools) ===
-  tools: MCPToolRegistry
-  resources: MCPResourceRegistry
-  prompts: MCPPromptRegistry
-
-  // === Host Capabilities ===
-  sampling: MCPSamplingProvider
-  roots: MCPRootsProvider
-}
-
-type MCPToolRegistry = {
-  search: (query: string, options?: SearchOptions) => Promise<ToolMatch[]>
-  register: (tool: MCPTool, serverId: string) => Promise<void>
-  execute: (name: string, args: unknown, serverId: string) => Promise<ToolResult>
-}
-
-type MCPResourceRegistry = {
-  search: (query: string, options?: SearchOptions) => Promise<ResourceMatch[]>
-  register: (resource: MCPResource, serverId: string) => Promise<void>
-  read: (uri: string, serverId: string) => Promise<ResourceContent>
-  subscribe?: (uri: string, serverId: string) => AsyncIterable<ResourceUpdate>
-}
-
-type MCPPromptRegistry = {
-  search: (query: string, options?: SearchOptions) => Promise<PromptMatch[]>
-  register: (prompt: MCPPrompt, serverId: string) => Promise<void>
-  get: (name: string, args?: unknown, serverId: string) => Promise<PromptContent>
-}
-
-type MCPSamplingProvider = {
-  /** Host provides LLM to MCP servers that request sampling */
-  createMessage: (request: SamplingRequest) => Promise<SamplingResponse>
-}
-```
-
----
-
-## Phase 5: World Model Layer
-
-The world model predicts outcomes **before** execution. This is Phase 1 priority, not optional.
-
-### Purpose
-
-```
-sim(o,a) → predicted outcome
-
-Where:
-  o = current observation (state)
-  a = proposed action (generated TS code)
-  → = world model prediction
-```
-
-### World Model Interface
-
-```typescript
-type WorldModel = {
-  /** Predict outcome of action given current state */
-  predict: (params: {
-    observation: Observation
-    action: ExecutablePrediction
-  }) => Promise<WorldModelPrediction>
-
-  /** Update model based on actual outcome */
-  learn?: (params: {
-    prediction: WorldModelPrediction
-    actual: ExecutionResult
-  }) => Promise<void>
-}
-
-type Observation = {
-  /** Current file system state (relevant files) */
-  files: FileState[]
-  /** Active MCP servers and capabilities */
-  mcpState: MCPState
-  /** Recent conversation context */
-  context: Message[]
-  /** Active bThreads */
-  constraints: string[]
-}
-
-type WorldModelPrediction = {
-  /** Predicted outcome type */
-  predictedOutcome: {
-    type: 'success' | 'failure' | 'partial'
-    changes: PredictedChange[]
-    sideEffects: PredictedSideEffect[]
-  }
-  /** Confidence in prediction (0-1) */
-  confidence: number
-  /** Reasoning for prediction */
-  reasoning: string
-  /** Predicted constraint violations */
-  constraintViolations?: string[]
-}
-```
-
-### Research Backing
-
-| Paper | Key Insight | Application |
-|-------|-------------|-------------|
-| WMPO | World model + GRPO for on-policy RL | Simulate before execute |
-| RLVR-World | Train world model WITH RL | Task-aligned predictions |
-| Better World Models | Explicit state prediction → better GRPO | Invest in representations |
-
-### Integration with BP
-
-The world model predictions feed into BP constraint checking:
-
-```mermaid
-flowchart LR
-    Pred["Agent Prediction<br/>(TS code)"] --> WM["World Model<br/>sim(o,a)"]
-    WM --> BP["BP Constraints<br/>bThreads filter"]
-    BP -->|Allowed| Exec["Execute"]
-    BP -->|Blocked| Learn["Learn from block"]
-```
-
----
-
-## Phase 6: BP Constraint Layer
-
-BP provides the **symbolic reasoning layer**. Constraints are additive (ratchet property).
+## BP Constraint Layer
+
+BP provides the **symbolic reasoning layer**. In V8, constraints serve three roles:
+1. **Safety** — block unsafe actions (ratchet: can add, cannot remove)
+2. **Boundary enforcement** — modnet boundary rules (search + participation)
+3. **Payment authorization** — x402 budget management
 
 ### Ratchet Property
 
@@ -772,134 +464,185 @@ BP provides the **symbolic reasoning layer**. Constraints are additive (ratchet 
 bThreads.set({
   newConstraint: bThread([
     bSync({ block: ({ type, detail }) =>
-      type === 'file-write' && isSensitivePath(detail.path)
+      type === 'generate' && violatesModnetBoundary(detail)
     })
   ], true)
 })
 
 // Agent CANNOT remove existing bThreads
-// (behavioral.ts warns and skips if thread already exists)
 ```
 
-### BP Constraint Examples
+### Modnet Boundary Enforcement
 
 ```typescript
 bThreads.set({
-  // Block unsafe MCP calls
-  mcpGuard: bThread([
+  // Enforce module boundary (search visibility)
+  searchBoundary: bThread([
     bSync({ block: ({ type, detail }) =>
-      type === 'mcp-call' && !isAllowedServer(detail.server)
+      type === 'a2a-respond' &&
+      detail.skill.boundary.search === 'none' &&
+      !isAuthorizedPeer(detail.requester)
     })
   ], true),
 
-  // Block file ops outside workspace
-  fileGuard: bThread([
+  // Enforce participation boundary
+  participationBoundary: bThread([
     bSync({ block: ({ type, detail }) =>
-      type === 'file-write' && !isInWorkspace(detail.path)
+      type === 'a2a-task' &&
+      detail.skill.boundary.participation === 'ask' &&
+      !hasUserApproval(detail.requester)
     })
   ], true),
 
-  // Require world model confidence above threshold
-  confidenceGuard: bThread([
+  // Budget guard for x402 payments
+  budgetGuard: bThread([
     bSync({ block: ({ type, detail }) =>
-      type === 'execute' && detail.worldModelConfidence < 0.7
+      type === 'x402-payment' && detail.amount > remainingBudget
+    })
+  ], true),
+
+  // Block generation that violates structural vocabulary
+  structuralGuard: bThread([
+    bSync({ block: ({ type, detail }) =>
+      type === 'generate' && !isValidStructure(detail.structure)
     })
   ], true)
 })
 ```
 
-### BP-Agent Integration
+### Two-Tier Constraint Approval
 
-```typescript
-type BPDecision = {
-  prediction: ExecutablePrediction
-  allowed: boolean
-  blockingThread?: string
-  reason?: string
-}
+| Phase | Who Approves | Mechanism | Can Delete? |
+|---|---|---|---|
+| **AI-Assisted Design** | Dev/Designer | Explicit approval of proposed bThreads | Yes (full control) |
+| **Generative UI Production** | End User | Can delete threads generated from their intent | User-generated only |
 
-const checkConstraints = async (
-  prediction: ExecutablePrediction,
-  bThreads: BThreadRegistry
-): Promise<BPDecision> => {
-  // Check if any bThread would block this action
-  for (const [name, thread] of bThreads) {
-    if (thread.wouldBlock(prediction)) {
-      return {
-        prediction,
-        allowed: false,
-        blockingThread: name,
-        reason: `Blocked by constraint: ${name}`
-      }
-    }
-  }
-  return { prediction, allowed: true }
-}
-```
+**Key insight**: Users don't need to understand the code—they can delete threads based on outcomes they don't like. This is implicit preference feedback.
 
 ### Learning Constraints from Blocks
 
-BP blocks aren't just safety—they're training signal:
+BP blocks are training signal:
 
 1. **Block capture**: Every BP block logged with context
 2. **Pattern detection**: Cluster similar blocks
 3. **bThread proposal**: Auto-generate constraints from recurring patterns
 4. **Validation**: Ensure proposed constraints don't over-constrain
 
+---
+
+## World Model Layer
+
+The world model predicts outcomes **before** execution. For V8, this is specifically the **browser as world model**.
+
+### Browser IS the World
+
+```mermaid
+flowchart TB
+    subgraph Browser["Browser (World Model)"]
+        Stories["Stories + play()"]
+        Inspector["Inspector Snapshots"]
+        Assertions["Assertions"]
+    end
+
+    subgraph Symbolic["Tiered Symbolic Analysis"]
+        Static["Tier 1: Static Analysis<br/>(tsc, biome — free)"]
+        Judge["Tier 2: Model-as-Judge<br/>(selective)"]
+        BrowserExec["Tier 3: Browser Execution<br/>(ground truth)"]
+    end
+
+    subgraph Agent["Agent"]
+        Workflow["Workflow bThreads"]
+        Tools["Tool Execution"]
+    end
+
+    Agent -->|"Generate"| Static
+    Static -->|"Pass"| Judge
+    Judge -->|"Pass"| BrowserExec
+    BrowserExec --> Stories
+    Stories --> Inspector
+    Inspector -->|"Observations"| Agent
+    Assertions -->|"Reward Signal"| Agent
+```
+
+### World Model Interface
+
 ```typescript
-type BThreadProposal = {
-  id: string
-  pattern: {
-    actionType: string
-    conditions: Record<string, unknown>
-    frequency: number
-    avgScoreLoss: number
-  }
-  proposedBThread: {
-    block: string  // Condition expression
-    reason: string
+type WorldModel = {
+  /** Predict outcome of UI generation action */
+  predict: (params: {
+    observation: UIObservation
+    action: GenerationAction
+  }) => Promise<WorldModelPrediction>
+
+  /** Update model based on actual browser outcome */
+  learn?: (params: {
+    prediction: WorldModelPrediction
+    actual: StoryResult
+  }) => Promise<void>
+}
+
+type UIObservation = {
+  /** Current template state */
+  templates: TemplateState[]
+  /** Active structural vocabulary */
+  structuralContext: StructuralContext
+  /** Active bThreads */
+  constraints: string[]
+  /** Modnet context (what peers expose) */
+  modnetContext?: ModnetContext
+}
+
+type WorldModelPrediction = {
+  predictedOutcome: {
+    type: 'success' | 'failure' | 'partial'
+    changes: PredictedChange[]
+    accessibilityIssues?: string[]
   }
   confidence: number
+  reasoning: string
+  constraintViolations?: string[]
 }
 ```
-
-### Two-Tier Constraint Approval
-
-| Phase | Who Approves | Mechanism | Can Delete? |
-|-------|--------------|-----------|-------------|
-| **AI-Assisted Design** | Dev/Designer | Explicit approval of proposed bThreads | Yes (full control) |
-| **Generative UI Production** | End User | Can delete threads generated from their intent | User-generated only |
-
-```typescript
-type BThreadMetadata = {
-  source: 'core' | 'org' | 'agent-proposed' | 'user-intent'
-  approvedBy?: string
-  createdAt: Date
-  deletable: boolean  // Only user-intent threads deletable in production
-}
-```
-
-**Key insight**: Users don't need to understand the code—they can delete threads based on outcomes they don't like. This is implicit preference feedback.
 
 ---
 
-## Phase 7: Agent Loop
+## Agent Loop
 
-The agent loop orchestrates the full flow: discovery → prediction → world model → BP → execution → grading.
+The agent loop orchestrates: intent → generation → world model → BP → execution → grading.
+
+### Agent Loop Flow
+
+```mermaid
+flowchart TB
+    Intent["User Intent"] --> Structure["1. Structural Analysis<br/>(map intent to vocabulary)"]
+    Structure --> Generate["2. Generate<br/>(create template code)"]
+    Generate --> WorldModel["3. World Model<br/>sim(o,a) — predict outcome"]
+    WorldModel --> BP["4. BP Check<br/>(boundary + payment + safety)"]
+    BP -->|Blocked| Learn["Learn from block"]
+    Learn --> Generate
+    BP -->|Allowed| Execute["5. Execute via OpenCode<br/>(write files, run tools)"]
+    Execute --> Grade["6. Grade<br/>(static + stories + a11y)"]
+    Grade --> Capture["7. Capture<br/>(trajectory)"]
+    Capture -->|Not done| Generate
+    Capture -->|Done| Save["8. Save Module<br/>(A2A Card + boundary)"]
+```
 
 ### Agent Loop Types
 
 ```typescript
-type ExecutablePrediction = {
-  /** TypeScript orchestration code */
-  code: string
-  /** Dependencies required */
-  dependencies: {
-    mcpServers: string[]
-    skills: string[]
-    resources: string[]
-    tools: string[]
+type GenerationAction = {
+  /** Intent mapped to structural vocabulary */
+  structure: {
+    objects: string[]
+    channels: string[]
+    levers: string[]
+    loops: string[]
+    blocks: string[]
   }
+  /** Generated template code */
+  code: string
+  /** Dependencies (templates, styles, tokens) */
+  dependencies: string[]
   /** Expected outcome for verification */
   expectedOutcome: {
     type: string
@@ -907,75 +650,46 @@ type ExecutablePrediction = {
   }
 }
 
-type AgentLoopConfig = {
-  /** MCP host instance */
-  mcpHost: MCPHost
-  /** World model for prediction */
-  worldModel: WorldModel
-  /** BP program for constraints */
-  bProgram: BehavioralProgram
-  /** Grader for verification */
-  grader: Grader
-  /** Working directory */
-  cwd: string
-}
-
 type AgentEvent =
-  | { type: 'discovery'; tools: number; resources: number; prompts: number }
-  | { type: 'prediction'; code: string; confidence: number }
+  | { type: 'structural_analysis'; structure: StructuralContext }
+  | { type: 'generation'; code: string; confidence: number }
   | { type: 'world_model'; prediction: WorldModelPrediction }
   | { type: 'bp_check'; allowed: boolean; reason?: string }
-  | { type: 'execution'; result: ExecutionResult }
+  | { type: 'opencode_execution'; result: OpenCodeResult }
   | { type: 'grading'; result: GraderResult }
+  | { type: 'module_saved'; card: ModuleAgentCard }
   | { type: 'trajectory_step'; step: TrajectoryStep }
   | { type: 'done'; success: boolean; iterations: number }
 ```
 
-### Agent Loop Flow
-
-```mermaid
-flowchart TB
-    Start["Prompt"] --> Discover["1. Discovery<br/>(tools, resources, prompts, skills, rules)"]
-    Discover --> Predict["2. Prediction<br/>(generate TS code)"]
-    Predict --> WorldModel["3. World Model<br/>sim(o,a)"]
-    WorldModel --> BP["4. BP Check<br/>(constraints)"]
-    BP -->|Blocked| Learn["Learn from block"]
-    Learn --> Predict
-    BP -->|Allowed| Execute["5. Execute<br/>(bash/Bun.$)"]
-    Execute --> Grade["6. Grade<br/>(tsc + biome + tests + stories)"]
-    Grade --> Capture["7. Capture<br/>(trajectory)"]
-    Capture -->|Not done| Predict
-    Capture -->|Done| End["Complete"]
-```
-
 ---
 
-## Phase 8: Grader
+## Grader
 
-The grader provides reward signals for training. Multi-tier approach for comprehensive evaluation.
+Updated for UI-focused verification. Multi-tier approach:
 
 ### Grader Interface
 
 ```typescript
 type Grader = (params: {
-  prediction: ExecutablePrediction
-  executionResult: ExecutionResult
+  action: GenerationAction
+  executionResult: OpenCodeResult
   cwd: string
 }) => Promise<GraderResult>
 
 type GraderResult = {
   pass: boolean
-  score: number  // 0-1
+  score: number // 0-1
   reasoning: string
   outcome: {
-    tier1: boolean  // Static (tsc + biome)
-    tier2: boolean  // Functional (tests + stories)
+    tier1: boolean // Static (tsc + biome)
+    tier2: boolean // Functional (stories + a11y)
   }
   details?: {
     tsc: { exitCode: number; errors?: string[] }
     biome: { exitCode: number; errors?: string[] }
-    tests: { exitCode: number; passed: number; failed: number }
     stories: { exitCode: number; passed: number; failed: number }
+    a11y: { passed: boolean; violations?: string[] }
   }
 }
 ```
@@ -983,25 +697,25 @@ type GraderResult = {
 ### Grader Implementation
 
 ```typescript
-const grade: Grader = async ({ prediction, executionResult, cwd }) => {
+const grade: Grader = async ({ action, executionResult, cwd }) => {
   // Tier 1: Static Analysis
-  const tsc = await Bun.$`cd ${cwd} && tsc --noEmit`.nothrow()
-  const biome = await Bun.$`cd ${cwd} && biome check`.nothrow()
+  const tsc = await opencode.exec(session, 'tsc --noEmit')
+  const biome = await opencode.exec(session, 'biome check')
 
-  // Tier 2: Functional Testing
-  const tests = await Bun.$`cd ${cwd} && bun test`.nothrow()
-  const stories = await Bun.$`cd ${cwd} && bun plaited test`.nothrow()
+  // Tier 2: Functional (UI-specific)
+  const stories = await opencode.exec(session, 'bun plaited test')
+  const a11y = runAccessibilityAudit(executionResult.output)
 
-  const results = [tsc, biome, tests, stories]
-  const score = results.filter(r => r.exitCode === 0).length / 4
+  const results = [tsc, biome, stories, a11y]
+  const score = results.filter(r => r.passed).length / 4
 
   return {
     pass: score >= 0.75,
     score,
-    reasoning: `tsc:${tsc.exitCode} biome:${biome.exitCode} tests:${tests.exitCode} stories:${stories.exitCode}`,
+    reasoning: `tsc:${tsc.exitCode} biome:${biome.exitCode} stories:${stories.exitCode} a11y:${a11y.passed}`,
     outcome: {
       tier1: tsc.exitCode === 0 && biome.exitCode === 0,
-      tier2: tests.exitCode === 0 && stories.exitCode === 0
+      tier2: stories.exitCode === 0 && a11y.passed
     }
   }
 }
@@ -1009,106 +723,52 @@ const grade: Grader = async ({ prediction, executionResult, cwd }) => {
 
 ---
 
-## Phase 9: Training Pipeline
+## Training Pipeline
 
-Training follows SFT → GRPO cycles, validated by DeepSeek-R1. The key innovation is **three-source preference pairs** for GRPO training.
+Training follows SFT → GRPO cycles. The three-source preference pair innovation carries forward from V7.
 
 ### Three-Source Preference Pairs
 
-GRPO requires `(preferred, dispreferred)` pairs. We generate from THREE sources:
-
 | Source | When Generated | Preferred | Dispreferred | What It Teaches |
-|--------|----------------|-----------|--------------|-----------------|
-| **Success/Fail** | During trials (k=5 runs per prompt) | Run that passed grader | Run that failed grader | Basic competence |
-| **Frontier/Yours** | AI-Assisted Design phase only | Frontier trajectory (when better) | Your agent trajectory | Quality ceiling |
-| **Allowed/Blocked** | Any execution with BP | Action that executed | Action that BP blocked | Constraint compliance |
+|---|---|---|---|---|
+| **Success/Fail** | During trials (k=5 per prompt) | Run that passed grader | Run that failed grader | Basic UI competence |
+| **Frontier/Yours** | AI-Assisted Design only | Frontier trajectory (when better) | Your agent trajectory | Quality ceiling |
+| **Allowed/Blocked** | Any execution with BP | Action that executed | Action that BP blocked | Constraint compliance + boundaries |
 
-The **Allowed/Blocked** source is novel—BP blocks provide clean negative examples with explicit symbolic reasoning attached.
-
-```typescript
-type PreferencePair = {
-  id: string
-  input: string | string[]
-  preferred: {
-    trajectory: unknown[]
-    output: string
-    score: number
-    source: 'successful' | 'frontier' | 'allowed'
-  }
-  dispreferred: {
-    trajectory: unknown[]
-    output: string
-    score: number
-    source: 'failed' | 'yours' | 'blocked'
-  }
-  margin: number  // Score difference (for GRPO weighting)
-}
-```
-
-### Training Instance
-
-```typescript
-type TrainingInstance = {
-  id: string
-  prompt: string
-  context: DiscoveryContext
-  prediction: ExecutablePrediction
-  worldModelPrediction: WorldModelPrediction
-  bpDecision: BPDecision
-  executionResult?: ExecutionResult
-  graderResult: GraderResult
-  trajectory: TrajectoryStep[]
-}
-
-type TrajectoryStep = {
-  timestamp: number
-  type: 'thought' | 'tool_call' | 'message' | 'bp_block' | 'error'
-  content: string
-  metadata?: Record<string, unknown>
-}
-```
+The **Allowed/Blocked** source is especially valuable for modnet boundary learning — BP blocks on boundary violations provide clean negative examples.
 
 ### Training Phases
 
 ```mermaid
 flowchart TB
     subgraph Phase1["Phase 1: Data Collection"]
-        Exec["Agent executes within BP constraints"]
+        Exec["Agent generates UI within BP constraints"]
         WM["World model predicts outcomes"]
-        Ground["Actual execution provides ground truth"]
-        Grade["Grader scores"]
+        Browser["Browser execution provides ground truth"]
+        Grade["Grader scores (static + stories + a11y)"]
         Capture["Harness captures trajectories"]
-        Exec --> WM --> Ground --> Grade --> Capture
+        Exec --> WM --> Browser --> Grade --> Capture
     end
 
     subgraph Phase2["Phase 2: SFT Cold Start"]
-        Learn1["Learn basics from passing trajectories"]
-        Learn2["Learn constraint avoidance from blocks"]
-        Learn3["Learn outcome prediction (world model)"]
+        Learn1["Learn basic UI patterns"]
+        Learn2["Learn boundary avoidance"]
+        Learn3["Learn structural vocabulary usage"]
     end
 
     subgraph Phase3["Phase 3: GRPO Exploration"]
         Explore["Explore within BP-constrained space"]
-        Reward["Grader reward + blocked feedback"]
+        Reward["Grader reward + boundary feedback"]
     end
 
-    subgraph Phase4["Phase 4: SFT Refinement"]
-        Clean["Clean up GRPO discoveries"]
-    end
-
-    subgraph Phase5["Phase 5: GRPO Polish"]
-        Edge["Edge cases, robustness"]
-    end
-
-    Phase1 --> Phase2 --> Phase3 --> Phase4 --> Phase5
+    Phase1 --> Phase2 --> Phase3
+    Phase3 -->|"cycle"| Phase1
 ```
 
 ### Integration with agent-eval-harness
 
-The `@plaited/agent-eval-harness` captures trajectories for training:
-
 ```bash
-# Capture trajectories from prompts
+# Capture UI generation trajectories
 bunx @plaited/agent-eval-harness capture prompts.jsonl \
   --schema ./agent-headless.json \
   --grader ./grader.ts \
@@ -1124,229 +784,330 @@ bunx @plaited/agent-eval-harness trials prompts.jsonl \
 
 ---
 
-## Phase 10: Security Interfaces (Future)
+## Completed Infrastructure (311 tests)
 
-Define interfaces now, implement later. Future-proofs for OAuth, DID, Verifiable Credentials, ABAC.
+These modules form the foundation. In V8, some shift roles:
 
-### Identity Layer
+| Module | V7 Role | V8 Role | Tests |
+|---|---|---|---|
+| `tool-discovery` | Discovery Layer | **Training data** — index UI tools for trajectory generation | 45 |
+| `skill-discovery` | Discovery Layer | **Training data** — index skills for trajectory generation | 62 |
+| `rules-discovery` | Discovery Layer | **Client-side** — index modnet rules + structural vocabulary | 25 |
+| `embedder` | Memory/Search | **Training** — embeddings for semantic similarity | - |
+| `semantic-cache` | Memory | **Training** — cache generation patterns | 27 |
+| `relation-store` | Memory/Planning | **Client-side** — DAG for module relationships | 41 |
+| `formatters` | Prediction Layer | **Client-side** — format tools for model | 22 |
+| `file-ops` | Execution Layer | **Drops** — OpenCode handles | 13 |
+| `search` | Execution Layer | **Drops** — OpenCode handles | 11 |
+| `bash-exec` | Execution Layer | **Drops** — OpenCode handles | 11 |
+| `schema-utils` | Tooling | **Client-side** — Zod → ToolSchema for A2A | 6 |
+| `markdown-links` | Discovery Layer | **Client-side** — extract references | 25 |
 
-```typescript
-type Identity = {
-  id: string
-  type: 'oauth' | 'did' | 'api-key' | 'anonymous'
-  attributes: Record<string, unknown>
-  raw?: unknown  // Original token/credential
-}
+**Note**: Modules marked "Drops" aren't deleted — they remain available but the agent no longer invokes them directly. OpenCode provides equivalent functionality.
 
-type IdentityResolver = {
-  resolve: (token: string) => Promise<Identity | undefined>
-}
-```
+---
 
-### Credential Layer
+## Phase 4: OpenCode Client Adapter
 
-```typescript
-type Credential = {
-  type: 'vc' | 'oauth-scope' | 'role' | 'capability'
-  issuer: string
-  subject: string
-  claims: Record<string, unknown>
-  expiresAt?: Date
-  proof?: unknown  // Cryptographic proof
-}
+Connect the Plaited agent to OpenCode as its general-purpose coding backend.
 
-type CredentialVerifier = {
-  verify: (credential: Credential) => Promise<{
-    valid: boolean
-    reason?: string
-  }>
-}
-```
+### Implementation Order
 
-### Policy Layer (ABAC)
+1. **OpenCode Types** (`src/agent/opencode/opencode.types.ts`)
+   - Session, message, tool call, and event types
+   - OpenCode SDK wrapper interface
 
-```typescript
-type PolicySubject = {
-  identity: Identity
-  credentials: Credential[]
-  attributes: Record<string, unknown>
-}
+2. **OpenCode Adapter** (`src/agent/opencode/opencode-adapter.ts`)
+   - useBehavioral-based adapter (follows custom-adapters pattern)
+   - HTTP API / SDK connection management
+   - Session lifecycle (create, resume, disconnect)
+   - Event streaming (SSE)
 
-type PolicyAction = {
-  type: 'tool-call' | 'resource-read' | 'resource-write' | 'prompt' | 'sampling'
-  name: string
-  parameters?: Record<string, unknown>
-}
+3. **Code Executor** (`src/agent/opencode/code-executor.ts`)
+   - Bridge between agent generation and OpenCode execution
+   - Send generated template code to OpenCode for file writing
+   - Receive execution results
 
-type PolicyResource = {
-  uri: string
-  type: string
-  owner?: string
-  sensitivity?: 'public' | 'internal' | 'confidential' | 'restricted'
-  attributes: Record<string, unknown>
-}
-
-type PolicyContext = {
-  timestamp: Date
-  environment: Record<string, unknown>
-  requestId: string
-}
-
-type PolicyObligation = {
-  type: string
-  parameters: Record<string, unknown>
-}
-
-type PolicyDecision = {
-  allowed: boolean
-  reason?: string
-  obligations?: PolicyObligation[]
-  advice?: string[]
-}
-
-type PolicyEvaluator = {
-  evaluate: (
-    subject: PolicySubject,
-    action: PolicyAction,
-    resource: PolicyResource,
-    context: PolicyContext
-  ) => Promise<PolicyDecision>
-}
-```
-
-### Security Integration Point
+### OpenCode Adapter Skeleton
 
 ```typescript
-type SecureAgent = {
-  /** Security layer wraps all agent operations */
-  security: {
-    identity: IdentityResolver
-    credentials: CredentialVerifier
-    policy: PolicyEvaluator
-  }
+const createOpenCodeAdapter = (config: { baseURL: string }) => {
+  return useBehavioral<OpenCodeEvents, OpenCodeContext>({
+    publicEvents: ['execute', 'disconnect'],
 
-  /** All MCP operations go through policy check */
-  mcp: SecureMCPHost
+    async bProgram({ outbound, disconnect }) {
+      const client = new OpenCode({ baseURL: config.baseURL })
+      const session = await client.session.create()
+
+      return {
+        async execute({ code, intent }) {
+          // Send to OpenCode for execution
+          const stream = await client.chat.create(session.id, {
+            messages: [{ role: 'user', content: code }],
+          })
+
+          for await (const event of stream) {
+            outbound.set({ kind: 'opencode_event', event })
+          }
+        },
+        disconnect() {
+          session.close()
+          disconnect()
+        },
+      }
+    },
+  })
 }
 ```
 
 ---
 
-## Phase 11: Agent as MCP Server (Future - SDK v2)
+## Phase 5: A2A Adapter + Modnet
 
-After SDK v2 releases, expose the agent itself as an MCP server.
+Implement A2A protocol support for modnet participation.
 
-### Agent Server Interface
+### Implementation Order
+
+1. **A2A Types** (`src/agent/a2a/a2a.types.ts`)
+   - Agent Card, Task, Skill, Message types
+   - x402 payment types
+
+2. **A2A Server** (`src/agent/a2a/a2a-server.ts`)
+   - HTTP server exposing `/.well-known/agent.json` (Agent Card)
+   - Task submission, status, streaming endpoints
+   - x402 payment header handling
+
+3. **A2A Client** (`src/agent/a2a/a2a-client.ts`)
+   - Discover peer agents via Agent Cards
+   - Submit tasks to peers
+   - Subscribe to peer resources
+
+4. **A2A Adapter** (`src/agent/a2a/a2a-adapter.ts`)
+   - useBehavioral-based adapter
+   - Bidirectional signal wiring (same orchestrator pattern)
+   - BP integration for boundary enforcement
+
+5. **Module Manager** (`src/agent/modnet/module-manager.ts`)
+   - Generate → Save → Constrain → Share lifecycle
+   - Agent Card generation from module metadata
+   - Boundary configuration
+
+### A2A Adapter Skeleton
 
 ```typescript
-type AgentAsMCPServer = {
-  /** Expose agent capabilities as MCP tools */
-  tools: {
-    run_prompt: {
-      description: 'Execute agent with prompt'
-      inputSchema: { prompt: string; mode?: 'structured' | 'autonomous' }
-    }
-    query_memory: {
-      description: 'Query agent memory/relations'
-      inputSchema: { query: string }
-    }
-    add_constraint: {
-      description: 'Add BP constraint (ratchet)'
-      inputSchema: { constraint: BThreadDefinition }
-    }
-  }
+const createA2AAdapter = (config: {
+  port: number
+  did: string
+  skills: ModuleSkill[]
+}) => {
+  return useBehavioral<A2AEvents, A2AContext>({
+    publicEvents: ['task', 'disconnect'],
 
-  /** Expose agent state as MCP resources */
-  resources: {
-    'agent://memory/*': 'Relation store nodes'
-    'agent://constraints/*': 'Active bThreads'
-    'agent://trajectory/*': 'Execution history'
-  }
+    async bProgram({ outbound, disconnect }) {
+      // Serve Agent Card at /.well-known/agent.json
+      const server = createA2AServer({
+        card: buildAgentCard(config),
+        onTask: (task) => {
+          outbound.set({ type: 'a2a_task', detail: task })
+        },
+      })
 
-  /** Expose agent prompts */
-  prompts: {
-    code_review: 'Review code changes'
-    generate_tests: 'Generate tests for file'
-    // ... skill-defined prompts
-  }
+      await server.listen(config.port)
+
+      return {
+        task({ taskId, skill, input }) {
+          // Handle incoming A2A task
+          // BP checks boundary before responding
+        },
+        disconnect() {
+          server.close()
+          disconnect()
+        },
+      }
+    },
+  })
 }
 ```
+
+---
+
+## Phase 6: AT Protocol + x402 Integration
+
+### Implementation Order
+
+1. **AT Protocol Auth** (`src/agent/identity/atproto-auth.ts`)
+   - DID resolution (did:plc:, did:web:)
+   - OAuth flow for AT Protocol
+   - Token management
+
+2. **x402 Payment** (`src/agent/payment/x402.ts`)
+   - Payment header parsing (402 responses)
+   - Payment proof generation
+   - Budget tracking
+
+3. **BP Payment Constraints** (`src/agent/payment/payment-constraints.ts`)
+   - Budget guard bThreads
+   - Per-transaction limits
+   - Payment logging via BP snapshots
+
+### Identity Types
+
+```typescript
+type AgentIdentity = {
+  did: string // e.g., did:plc:abc123 or did:web:agent.example.com
+  handle: string // e.g., @user.bsky.social
+  type: 'atproto'
+}
+
+type IdentityResolver = {
+  resolve: (did: string) => Promise<AgentIdentity | undefined>
+  authenticate: (token: string) => Promise<AgentIdentity>
+}
+```
+
+### x402 Types
+
+```typescript
+type X402Price = {
+  amount: string // In smallest unit (e.g., cents)
+  currency: string // e.g., 'USDC'
+  network: string // e.g., 'base'
+}
+
+type X402PaymentProof = {
+  scheme: 'exact'
+  payload: string // Signed payment proof
+}
+
+type X402Config = {
+  wallet: WalletConfig
+  maxPerTransaction: number
+  dailyBudget: number
+  requireApproval: boolean // Ask user for payments above threshold
+}
+```
+
+---
+
+## Phase 7: World Model + BP Wiring
+
+Connect the browser world model to the BP constraint layer and OpenCode execution.
+
+### Implementation (same as V7, adjusted for UI focus)
+
+1. **World Model Types** (`src/agent/world-model/world-model.types.ts`)
+2. **World Model** (`src/agent/world-model/world-model.ts`)
+3. **BP-Agent Wiring** (`src/agent/core/agent-loop.ts`)
+
+---
+
+## Phase 8: Agent Loop + Grader
+
+Full agent loop: intent → structural analysis → generation → world model → BP → execute via OpenCode → grade → capture trajectory.
+
+### Implementation
+
+1. **Agent Core** (`src/agent/core/agent.ts`) — createWorldAgent with modnet context
+2. **Grader** (`src/agent/grader/grader.ts`) — tsc + biome + stories + a11y
+3. **Trajectory Capture** — integration with agent-eval-harness
+
+---
+
+## Phase 9: Training Pipeline
+
+Same SFT → GRPO approach from V7, now with modnet-specific training signal:
+
+- **UI pattern competence** — generate correct templates
+- **Structural vocabulary usage** — appropriate objects/channels/levers/loops/blocks
+- **Boundary compliance** — respect module boundaries
+- **Payment authorization** — handle x402 correctly
+- **Modnet composition** — compose peer modules effectively
+
+---
+
+## Phase 10: Orchestrator Wiring
+
+Wire all adapters together via the orchestrator pattern:
+
+```mermaid
+flowchart TB
+    subgraph Agent["createWorldAgent"]
+        BP["bProgram"]
+        Handlers["Handlers"]
+        BThreads["Workflow bThreads"]
+    end
+
+    Agent -->|"signals"| ACP["acpAdapter<br/>(IDE ↔ Agent)"]
+    Agent -->|"signals"| A2A["a2aAdapter<br/>(Agent ↔ Agent / Modnet)"]
+    Agent -->|"signals"| OpenCode["openCodeAdapter<br/>(Agent → OpenCode Server)"]
+```
+
+Each adapter is a separate useBehavioral program wired via the orchestrator's bidirectional signals.
 
 ---
 
 ## Foundation Product Model
 
-This agent is a **foundation** that organizations extend—similar to Ramp's Inspect pattern but with BP safety instead of trusting model intelligence.
+This agent is a **modnet foundation** — users extend it with their own modules, constraints, and peer connections.
 
 ### What You Ship (Foundation)
 
-| Component | Description |
-|-----------|-------------|
+| Layer | Description |
+|---|---|
 | Model stack | FunctionGemma (edge) + Falcon-H1R (remote) |
-| BP runtime | Core bThreads + ratchet property |
+| BP runtime | Core bThreads + ratchet + boundary enforcement |
 | Training loop | agent-eval-harness + GRPO with 3-source pairs |
-| Skill protocol | AgentSkills spec |
-| Grader | tsc + biome + tests + stories |
+| Structural vocabulary | Objects, channels, levers, loops, blocks |
+| A2A adapter | Modnet peer communication |
+| AT Protocol auth | Decentralized identity |
+| x402 payment | Micropayment infrastructure |
+| Grader | tsc + biome + stories + a11y |
 
-### What Orgs Add (Extensions)
+### What Users Add (Extensions)
 
-| Component | Description |
-|-----------|-------------|
-| Org skills | "How we ship at [OrgName]" |
-| Org bThreads | Compliance, security, workflow rules |
-| Org MCPs | Internal tool integrations |
-| Custom graders | Domain-specific verification |
+| Layer | Description |
+|---|---|
+| Modules | Generated UI modules from their intents |
+| Boundaries | Custom search/participation rules per module |
+| bThreads | Personal constraints (budget, content, access) |
+| Peers | A2A connections to other users' agents |
+| Monetization | x402 pricing on their module data |
 
-### Differentiation from Ramp Inspect
+### Differentiation
 
-| Aspect | Ramp Inspect | Your Foundation |
-|--------|--------------|-----------------|
-| Base | Built on OpenCode | Own agent (no external dependency) |
-| Safety | "Frontier models are smart enough to contain themselves" | BP constraints (verifiable, symbolic) |
-| Models | Frozen frontier models | Trainable models (FunctionGemma, Falcon-H1R) |
-| Customization | Skills only | Skills + BP rules + custom graders |
-| Training | None | agent-eval-harness + GRPO |
-
-### Org Training Pattern
-
-Organizations can rapidly train new models using the harness:
-
-```mermaid
-flowchart LR
-    OldAgent["Old Agent<br/>(your models)"] -->|"trajectories"| Harness["agent-eval-harness"]
-    NewModels["New Models<br/>(org's choice)"] -->|"trajectories"| Harness
-    Harness --> Compare["Compare"]
-    Compare --> Pairs["Preference Pairs"]
-    Pairs --> GRPO["GRPO"]
-    GRPO --> NewAgent["New Agent<br/>(org's models + your BP)"]
-```
-
-Reference: [Ramp Engineering Blog](https://engineering.ramp.com/post/why-we-built-our-background-agent)
+| Aspect | General Coding Agents | Your Foundation |
+|---|---|---|
+| Scope | Everything | UI generation + modnet orchestration |
+| Coding | Built-in | Delegated to OpenCode |
+| Data | Central service | User-owned (on their agent) |
+| Network | Isolated | Modnet (peer-to-peer via A2A) |
+| Identity | Platform accounts | Decentralized (AT Protocol DIDs) |
+| Monetization | None | x402 micropayments |
+| Safety | Model intelligence | BP constraints (verifiable, symbolic) |
 
 ---
 
 ## Implementation Phases Summary
 
-### Phase 1-3: Complete ✅
+### Phase 1–3: Complete ✅
 
 | Phase | Components | Tests | Status |
-|-------|------------|-------|--------|
+|---|---|---|---|
 | 1 | semantic-cache, relation-store | 68 | ✅ |
-| 2 | file-ops, search, bash-exec | 34 | ✅ |
+| 2 | file-ops, search, bash-exec | 34 | ✅ (OpenCode concern in V8) |
 | 3 | skill-discovery refs, rules-discovery | 87 | ✅ |
 
-### Phase 4-11: Planned
+### Phase 4–10: Planned
 
 | Phase | Components | Priority | Effort |
-|-------|------------|----------|--------|
-| 4 | Capability Host (MCP + Skills + Rules refactor) | High | High |
-| 5 | World Model | High | High |
-| 6 | BP-Agent Wiring | High | Medium |
-| 7 | Agent Loop | High | High |
-| 8 | Grader | Medium | Medium |
+|---|---|---|---|
+| 4 | OpenCode Client Adapter | High | Medium |
+| 5 | A2A Adapter + Modnet | High | High |
+| 6 | AT Protocol + x402 | High | High |
+| 7 | World Model + BP Wiring | High | High |
+| 8 | Agent Loop + Grader | High | High |
 | 9 | Training Pipeline | Medium | High |
-| 10 | Security Interfaces | Low | Low (types only) |
-| 11 | Agent as MCP Server | Future | High |
+| 10 | Orchestrator Wiring | Medium | Medium |
 
 ---
 
@@ -1355,73 +1116,64 @@ Reference: [Ramp Engineering Blog](https://engineering.ramp.com/post/why-we-buil
 ```
 src/agent/
 ├── agent.types.ts              # ✅ Shared types
-├── embedder.ts                 # ✅ GGUF embeddings
 ├── formatters.ts               # ✅ Token formatting
 ├── schema-utils.ts             # ✅ Zod → ToolSchema
 ├── markdown-links.ts           # ✅ Link extraction
 │
-├── capability-host/            # Capability Host Layer (NEW)
-│   ├── capability.types.ts     # 🔲 CapabilitySource, CapabilityEvent
-│   ├── capability-registry.ts  # 🔲 BP-orchestrated registry
-│   ├── config-source.ts        # 🔲 Pluggable ConfigSource interface
-│   ├── config-source-file.ts   # 🔲 File-based implementation
-│   └── skill-trust.ts          # 🔲 Tiered trust, scan-on-install
+├── opencode/                   # OpenCode Client (NEW)
+│   ├── opencode.types.ts       # 🔲 Session, message, event types
+│   ├── opencode-adapter.ts     # 🔲 useBehavioral adapter
+│   └── code-executor.ts        # 🔲 Generation → execution bridge
 │
-├── discovery/                  # Discovery Layer (Federated Pools)
+├── a2a/                        # A2A Protocol (NEW)
+│   ├── a2a.types.ts            # 🔲 Agent Card, Task, Skill
+│   ├── a2a-server.ts           # 🔲 HTTP server + Agent Card
+│   ├── a2a-client.ts           # 🔲 Discover + connect to peers
+│   └── a2a-adapter.ts          # 🔲 useBehavioral adapter
+│
+├── identity/                   # AT Protocol (NEW)
+│   ├── identity.types.ts       # 🔲 DID, AgentIdentity
+│   └── atproto-auth.ts         # 🔲 OAuth flow, token mgmt
+│
+├── payment/                    # x402 (NEW)
+│   ├── x402.types.ts           # 🔲 Price, PaymentProof
+│   ├── x402.ts                 # 🔲 Payment header handling
+│   └── payment-constraints.ts  # 🔲 BP budget guards
+│
+├── modnet/                     # Modnet (NEW)
+│   ├── modnet.types.ts         # 🔲 Module, Boundary, Scale
+│   ├── module-manager.ts       # 🔲 Lifecycle: generate → share
+│   └── structural-vocab.ts     # 🔲 Objects, channels, levers, loops, blocks
+│
+├── discovery/                  # Discovery Layer (retained)
 │   ├── tool-discovery.ts       # ✅ FTS5 + vector for tools
 │   ├── skill-discovery.ts      # ✅ FTS5 + vector + refs
-│   ├── rules-discovery.ts      # 🔄 AGENTS.md-only, agent-indexed
-│   ├── resource-discovery.ts   # 🔲 MCP resources
-│   └── prompt-discovery.ts     # 🔲 MCP prompts
+│   └── rules-discovery.ts      # ✅ AGENTS.md-only, agent-indexed
 │
-├── storage/                    # Memory Features
+├── storage/                    # Memory (retained)
 │   ├── semantic-cache.ts       # ✅ LLM response cache
-│   └── relation-store.ts       # ✅ DAG for plans
+│   └── relation-store.ts       # ✅ DAG for module relationships
 │
-├── tools/                      # Execution Layer
-│   ├── file-ops.ts             # ✅ read, write, edit
-│   ├── search.ts               # ✅ glob + grep
-│   └── bash-exec.ts            # ✅ shell commands
-│
-├── mcp/                        # MCP Provider (under Capability Host)
-│   ├── mcp.types.ts            # 🔲 MCP types
-│   ├── mcp-client.ts           # 🔲 Per-server client
-│   ├── sampling-provider.ts    # 🔲 LLM for servers
-│   └── mcp-provider.ts         # 🔲 MCP as capability provider
-│
-├── world-model/                # World Model Layer
-│   ├── world-model.types.ts    # 🔲 Prediction types
-│   └── world-model.ts          # 🔲 sim(o,a)
+├── world-model/                # World Model
+│   ├── world-model.types.ts    # 🔲 UIObservation, prediction
+│   └── world-model.ts          # 🔲 Browser-based sim(o,a)
 │
 ├── core/                       # Agent Core
 │   ├── agent.types.ts          # 🔲 AgentEvent, AgentConfig
 │   ├── agent-loop.ts           # 🔲 BP orchestration
-│   ├── agent.ts                # 🔲 createAgent()
+│   ├── agent.ts                # 🔲 createWorldAgent()
 │   └── agent.spec.ts           # 🔲 Tests
 │
-├── grader/                     # Verification Layer
-│   ├── grader.types.ts         # 🔲 GraderResult
-│   └── grader.ts               # 🔲 tsc + biome + tests
+├── grader/                     # Verification
+│   ├── grader.types.ts         # 🔲 GraderResult (UI-focused)
+│   └── grader.ts               # 🔲 tsc + biome + stories + a11y
 │
-├── security/                   # Security Layer (interfaces only)
-│   ├── identity.types.ts       # 🔲 Identity, IdentityResolver
-│   ├── credential.types.ts     # 🔲 Credential, CredentialVerifier
-│   └── policy.types.ts         # 🔲 ABAC types
+├── embedder.ts                 # ✅ GGUF embeddings (training use)
 │
-└── transports/                 # Transport Layer
-    ├── stdio.ts                # 🔲 NDJSON
-    └── http-sse.ts             # 🔲 HTTP/SSE
-
-.plaited/                       # Agent Configuration Directory
-├── skills/                     # Installed skills
-│   ├── certified/              # From plaited/development-skills
-│   ├── third-party/            # Scanned and approved
-│   │   └── some-skill/
-│   │       └── .trust.json     # Scan result + approval timestamp
-│   ├── user/                   # User-authored (implicit trust)
-│   └── generated/              # Agent-generated (needs review)
-└── cache/                      # Indexes, embeddings, etc.
-    └── rules-index.db          # Agent-generated rule index
+└── tools/                      # Retained but OpenCode-delegated
+    ├── file-ops.ts             # ✅ (available, OpenCode preferred)
+    ├── search.ts               # ✅ (available, OpenCode preferred)
+    └── bash-exec.ts            # ✅ (available, OpenCode preferred)
 ```
 
 ---
@@ -1429,11 +1181,17 @@ src/agent/
 ## Verification
 
 ```bash
-# Discovery tests
+# Discovery tests (retained modules)
 bun test src/agent/discovery
 
-# MCP host compliance
-bun test src/agent/mcp
+# A2A adapter compliance
+bun test src/agent/a2a
+
+# OpenCode adapter
+bun test src/agent/opencode
+
+# x402 payment logic
+bun test src/agent/payment
 
 # World model predictions
 bun test src/agent/world-model
@@ -1441,7 +1199,7 @@ bun test src/agent/world-model
 # BP integration
 bun test src/agent/core
 
-# Grader accuracy
+# Grader accuracy (UI-focused)
 bun test src/agent/grader
 
 # End-to-end trajectory capture
@@ -1454,99 +1212,108 @@ bunx @plaited/agent-eval-harness capture test-prompts.jsonl \
 
 ## Session Pickup Notes
 
-### V7 Architecture Key Changes (from V6)
+### V8 Architecture Key Changes (from V7)
 
-| V6 | V7 |
-|----|-----|
-| Separate MCP Host Layer | Unified Capability Host (MCP + Skills) |
-| Single discovery pool | Federated pools with provenance |
-| `.plaited/rules/` directory | AGENTS.md-only with hierarchy |
-| Manual rule tagging | Agent-generated indexing |
-| Restart for config changes | Hot-reload via /refresh |
-| config.json dependency | Pluggable ConfigSource |
-| Separate audit system | BP snapshots = audit |
-
-### V6 → V7 Migration Notes
-
-1. **Rules migration**: Merge `.plaited/rules/*.md` INTO root `AGENTS.md`
-2. **No backward compatibility**: Clean break when switching to new agent
-3. **Skill trust**: Existing certified skills retain trust, new skills need scan
+| V7 | V8 |
+|---|---|
+| Standalone general-purpose agent | Specialized generative UI client |
+| Builds own file-ops, search, bash-exec | Delegates to OpenCode server |
+| Unified Capability Host (MCP + Skills) | OpenCode handles capability management |
+| Federated discovery pools | OpenCode handles tool discovery |
+| MCP for all communication | A2A for modnet, MCP stays in OpenCode |
+| Generic security interfaces (future) | AT Protocol OAuth + x402 (concrete) |
+| Agent as MCP server (future) | Agent as A2A server (modnet participant) |
+| No module ownership concept | User-owned modules, ephemeral networks |
+| No payment infrastructure | x402 micropayments with BP budget guards |
 
 ### Start Next Session With
 
 ```
-Read PLAITED-AGENT-PLAN.md and implement the Capability Host Layer.
+Read PLAITED-AGENT-PLAN.md and implement the OpenCode Client Adapter.
 
 IMPLEMENTATION ORDER:
 
-1. src/agent/capability-host/capability.types.ts
-   - CapabilitySource, CapabilityEvent, CapabilityRegistry
-   - ConfigSource interface
+1. src/agent/opencode/opencode.types.ts
+   - Session, message, tool call types
+   - OpenCode SDK wrapper interface
 
-2. src/agent/capability-host/config-source.ts
-   - ConfigSource interface
-   - config-source-file.ts (file-based implementation)
+2. src/agent/opencode/opencode-adapter.ts
+   - useBehavioral adapter following custom-adapters pattern
+   - HTTP API connection, session lifecycle
+   - Event streaming (SSE)
 
-3. src/agent/capability-host/skill-trust.ts
-   - SkillTrust types (certified, scanned, user-authored, agent-generated)
-   - ScanResult type
-   - Git-based diffing utilities
-
-4. src/agent/capability-host/capability-registry.ts
-   - BP-orchestrated registry
-   - Event emission for add/remove/update
-   - Hot-reload support
-
-5. src/agent/discovery/rules-discovery.ts (REFACTOR)
-   - AGENTS.md-only discovery
-   - Agent-generated indexing
-   - Event-driven index triggers (Sub-Variant B2)
-   - searchByIntent + searchByAction
-
-6. src/agent/mcp/mcp-provider.ts
-   - MCP as capability provider (not standalone host)
-   - Integrates with capability-registry
+3. src/agent/opencode/code-executor.ts
+   - Bridge: agent generation → OpenCode execution
+   - Template code → file writing via OpenCode
 
 KEY PATTERNS:
-- BP orchestrates capability lifecycle
-- BP snapshots provide audit trail
-- ConfigSource is pluggable (file, DB, API, env)
-- Federated discovery pools preserve provenance
-- Agent-generated rule indexing (no special syntax)
-- Event-driven: generation, session-start, /refresh
+- useBehavioral for adapter (same as ACP, A2A adapters)
+- Bidirectional signals via orchestrator
+- BP constraints check before forwarding to OpenCode
+- Session management (create, resume, disconnect)
+- OpenCode SDK: @opencode-ai/sdk
 ```
+
+---
+
+## Open Threads
+
+- How does module discovery work? (mDNS, registry, AT Protocol relay?)
+- How do ephemeral/proximity-based connections map to A2A transport?
+- Training pipeline: how to capture trajectories from both client (UI decisions) and server (coding actions)?
+- How does the structural vocabulary inform A2A Agent Card schema design?
+- What's the minimum viable Agent Card for modnet participation?
+- How do x402 payments integrate with AT Protocol identity for receipts?
+
+---
+
+## References
+
+| Resource | Description |
+|---|---|
+| [Modnet concept](assets/Modnet.md) | Rachel Jaffe — modular network theory |
+| [OpenCode server API](https://opencode.ai/docs/server/) | HTTP API + SSE, SDK: @opencode-ai/sdk |
+| [x402](https://www.x402.org/) | HTTP 402 Payment Required protocol |
+| [AT Protocol OAuth](https://atproto.com/specs/oauth) | Decentralized identity via DIDs |
+| [A2A Protocol](https://google.github.io/A2A/) | Agent-to-Agent communication |
+| [a2a-x402](https://github.com/google-agentic-commerce/a2a-x402) | A2A + x402 integration reference |
+| [System design](https://gist.github.com/EdwardIrby/9e06d246fd9a8150cb408f95b9365e54) | Multi-client server architecture |
+| [qmd multi-surface](https://github.com/tobi/qmd) | CLI + MCP + plugin + skill pattern |
+| [subtask2](https://github.com/spoons-and-mirrors/subtask2) | OpenCode orchestration plugin |
 
 ---
 
 ## Learnings
 
+### From V7 (retained)
 - 2024: World model = prediction before execution, not execution itself
 - 2024: BP constraints should be overlay on ALL execution
 - 2024: SFT→GRPO cycles validated by DeepSeek-R1
 - 2024: bThreads can be ADDED at runtime but not REMOVED (ratchet)
-- 2024: Agent generates TS code, executed via bash/Bun.$ (Unix philosophy)
 - 2024: PESO is for continual learning, not world model prediction (removed)
-- 2024: Need full MCP host support (all primitives)
 - 2024: Security interfaces defined now, implementations later (future-proof)
-- 2024: Agent as MCP server waits for SDK v2
-- 2026-02: MCP servers and Agent Skills are both "capability providers" - same architectural level
-- 2026-02: Federated discovery pools preserve provenance (know where capability came from)
-- 2026-02: Skill trust should be tiered: certified → scanned → user-authored → agent-generated
-- 2026-02: Git diff is ideal for skill diffing (skills are repos, leverage existing tooling)
-- 2026-02: AGENTS.md-only simplifies rules architecture (single spec, hierarchical override)
-- 2026-02: Agent-generated indexing removes need for special syntax in AGENTS.md
-- 2026-02: Event-driven indexing (Sub-Variant B2) ensures predictable latency, no stale results
-- 2026-02: config.json is filesystem-centric; deployed agents need pluggable ConfigSource
-- 2026-02: BP snapshots ARE the audit trail - no separate audit system needed
-- 2026-02: Hot-reload via /refresh is unique UX advantage (most agents require restart)
-- 2026-02: Edge-remote model architecture (FunctionGemma + Falcon-H1R) enables fast local + powerful remote
-- 2026-02: Two deployment modes: AI-Assisted Design (both models together) vs Generative UI Production (edge-remote split)
-- 2026-02: Three-source preference pairs for GRPO: Success/Fail + Frontier/Yours + Allowed/Blocked (novel)
-- 2026-02: Allowed/Blocked pairs provide training signal with explicit symbolic reasoning—unexplored in literature
-- 2026-02: Frontier agents (Claude Code, Cursor) used only during AI-Assisted Design, not production (cost control)
-- 2026-02: Two-tier constraint approval: dev approval (design phase) + user-deletable threads (production)
-- 2026-02: User-deletable threads = implicit RLHF (preference feedback without explicit labeling)
-- 2026-02: Learning constraints from own failures differs from ICRL (which learns from expert demos)
-- 2026-02: Pattern mixing: Deterministic (grader) + Symbolic (BP) + Generative (LLMs) follows compiler/database patterns
-- 2026-02: Foundation product model: orgs extend with skills + BP rules + custom graders
-- 2026-02: agent-eval-harness enables model-agnostic training—swap models and re-run comparison
+- 2026-02: Edge-remote model architecture (FunctionGemma + Falcon-H1R)
+- 2026-02: Three-source preference pairs for GRPO (novel)
+- 2026-02: Allowed/Blocked pairs provide training signal with explicit symbolic reasoning
+- 2026-02: Two-tier constraint approval: dev approval + user-deletable threads
+- 2026-02: User-deletable threads = implicit RLHF
+- 2026-02: Pattern mixing: Deterministic + Symbolic + Generative follows compiler/database patterns
+- 2026-02: agent-eval-harness enables model-agnostic training
+
+### From V8 (new)
+- 2026-02: Agent scope drifted to general-purpose — refocused on generative UI specialization
+- 2026-02: Don't rebuild what exists — delegate general coding to OpenCode
+- 2026-02: MCP is a server concern (OpenCode), not a client concern (Plaited agent)
+- 2026-02: A2A is the right protocol for peer-to-peer modnet communication
+- 2026-02: x402 layers directly on HTTP — no protocol bridge needed for payments
+- 2026-02: AT Protocol DIDs give decentralized identity without central authority
+- 2026-02: BP decides payment authorization — bThreads check budget constraints
+- 2026-02: Modnet unlock: agent removes "who builds the modules?" barrier by generating from intent
+- 2026-02: Ephemeral networks via A2A subscriptions — disconnect = data disappears
+- 2026-02: Structural vocabulary (objects, channels, levers, loops, blocks) IS the modnet design language
+- 2026-02: Rachel Jaffe's structural vocabulary already exists in loom skill — modnet was always implicit
+- 2026-02: A2A Agent Card = module declaration format (skills, boundaries, pricing)
+- 2026-02: User's data lives ON their agent (client + server combo)
+- 2026-02: Agent is both A2A server (exposes module data) and A2A client (consumes peer modules)
+- 2026-02: OpenCode SDK pattern: create session → stream chat → receive tool_call events
+- 2026-02: Foundation model shifts: orgs → users. Users extend with modules, boundaries, peers
