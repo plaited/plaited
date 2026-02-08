@@ -9,7 +9,6 @@ import type {
   BThreads,
   Disconnect,
   EventDetails,
-  Handlers,
   PlaitedTrigger,
   Trigger,
   UseFeedback,
@@ -20,37 +19,22 @@ import { usePublicTrigger } from '../main/use-public-trigger.ts'
 import { canUseDOM } from '../utils.ts'
 import { BEHAVIORAL_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './b-element.constants.ts'
 import type {
+  BElementConfig,
   BehavioralElement,
   BehavioralElementCallbackDetails,
   BehavioralTemplate,
   Bindings,
   BoundElement,
-  BProgramArgs,
   Inspector,
   SelectorMatch,
 } from './b-element.types.ts'
-import { assignHelpers, getBindings, getDocumentFragment } from './b-element.utils.ts'
+import { assignHelpers, getBindings, getDocumentFragment, updateShadowRootStyles } from './b-element.utils.ts'
 import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from './create-template.constants.ts'
 import { createTemplate } from './create-template.ts'
-import type { Attrs, CustomElementTag, TemplateObject } from './create-template.types.ts'
-import type { HostStylesObject } from './css.types.ts'
+import type { Attrs } from './create-template.types.ts'
 import { DelegatedListener, delegates } from './delegated-listener.ts'
 import { getInspector } from './inspector.ts'
 import { type Emit, useEmit } from './use-emit.ts'
-
-/**
- * @internal
- * Type for lifecycle callback functions with optional detail payload.
- */
-type Callback<T> = T extends void ? () => void | Promise<void> : (detail: T) => void | Promise<void>
-
-/**
- * @internal
- * Type mapping for behavioral element lifecycle callbacks.
- */
-type BehavioralElementCallbackHandlers = {
-  [K in keyof BehavioralElementCallbackDetails]?: Callback<BehavioralElementCallbackDetails[K]>
-}
 
 /**
  * @internal
@@ -148,18 +132,7 @@ export const bElement = <A extends EventDetails>({
   observedAttributes = [],
   formAssociated,
   bProgram: callback,
-}: {
-  tag: CustomElementTag
-  shadowDom: TemplateObject
-  delegatesFocus?: boolean
-  mode?: 'open' | 'closed'
-  slotAssignment?: 'named' | 'manual'
-  observedAttributes?: string[]
-  publicEvents?: string[]
-  hostStyles?: HostStylesObject
-  formAssociated?: true
-  bProgram?: (this: BehavioralElement, args: BProgramArgs) => Handlers<A> & BehavioralElementCallbackHandlers
-}): BehavioralTemplate => {
+}: BElementConfig<A>): BehavioralTemplate => {
   if (canUseDOM() && !customElements.get(tag)) {
     customElements.define(
       tag,
@@ -185,9 +158,18 @@ export const bElement = <A extends EventDetails>({
         constructor() {
           super()
           this.#internals = this.attachInternals()
-          this.attachShadow({ mode, delegatesFocus, slotAssignment })
-          const frag = getDocumentFragment({ hostStyles, shadowRoot: this.#root, templateObject: shadowDom })
-          this.#root.replaceChildren(frag)
+          // Declarative Shadow DOM detection:
+          // If the server rendered a <template shadowrootmode="open">, the browser
+          // has already created a shadow root. We adopt it rather than re-creating.
+          if (this.#internals.shadowRoot) {
+            // Adopt styles only — DOM content already exists from server
+            hostStyles && void updateShadowRootStyles(this.#root, hostStyles.stylesheets)
+            shadowDom.stylesheets.length && void updateShadowRootStyles(this.#root, shadowDom.stylesheets)
+          } else {
+            this.attachShadow({ mode, delegatesFocus, slotAssignment })
+            const frag = getDocumentFragment({ hostStyles, shadowRoot: this.#root, templateObject: shadowDom })
+            this.#root.replaceChildren(frag)
+          }
           const { trigger, useFeedback, useSnapshot, bThreads } = behavioral()
           this.#inspector = getInspector({ useSnapshot, disconnectSet: this.#disconnectSet, element: tag })
           this.#trigger = usePlaitedTrigger(trigger, this.#disconnectSet)
@@ -222,6 +204,7 @@ export const bElement = <A extends EventDetails>({
               },
             })
           }
+
           if (callback) {
             const bindings = getBindings(this.#root)
             this.#addListeners(this.#root.querySelectorAll<Element>(`[${P_TRIGGER}]`))
@@ -291,9 +274,11 @@ export const bElement = <A extends EventDetails>({
                 el,
                 new DelegatedListener((event) => {
                   const type = el.getAttribute(P_TRIGGER) && getTriggerType(event, el)
-                  type
-                    ? this.#trigger?.({ type, detail: event })
-                    : el.removeEventListener(event.type, delegates.get(el))
+                  if (type) {
+                    this.#trigger?.({ type, detail: event })
+                  } else {
+                    el.removeEventListener(event.type, delegates.get(el))
+                  }
                 }),
               )
             for (const [event] of getTriggerMap(el)) {
