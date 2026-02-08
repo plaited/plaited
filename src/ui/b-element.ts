@@ -33,6 +33,7 @@ import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from './create-template.constants.
 import { createTemplate } from './create-template.ts'
 import type { Attrs } from './create-template.types.ts'
 import { DelegatedListener, delegates } from './delegated-listener.ts'
+import { getFetchSwapBinder } from './fetch-swap.registry.ts'
 import { getInspector } from './inspector.ts'
 import { type Emit, useEmit } from './use-emit.ts'
 
@@ -209,6 +210,8 @@ export const bElement = <A extends EventDetails>({
             const bindings = getBindings(this.#root)
             this.#addListeners(this.#root.querySelectorAll<Element>(`[${P_TRIGGER}]`))
             assignHelpers(bindings, this.#root.querySelectorAll<Element>(`[${P_TARGET}]`))
+            const fetchSwapBinder = getFetchSwapBinder()
+            if (fetchSwapBinder) this.#disconnectSet.add(fetchSwapBinder(this.#root))
             this.#shadowObserver = this.#getShadowObserver(bindings)
 
             const handlers = callback.bind(this)({

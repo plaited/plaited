@@ -110,4 +110,26 @@ describe('fetch-swap runtime utilities', () => {
     const { createFetchSwapRuntime } = await import('plaited/ui/fetch-swap.ts')
     expect(typeof createFetchSwapRuntime).toBe('function')
   })
+
+  test('bindShadowFetchSwap export exists', async () => {
+    const { bindShadowFetchSwap } = await import('plaited/ui/fetch-swap.ts')
+    expect(typeof bindShadowFetchSwap).toBe('function')
+  })
+})
+
+describe('fetch-swap registry', () => {
+  test('importing fetch-swap.ts registers the binder', async () => {
+    const { getFetchSwapBinder } = await import('plaited/ui/fetch-swap.registry.ts')
+    // Import fetch-swap to trigger auto-registration
+    await import('plaited/ui/fetch-swap.ts')
+    const binder = getFetchSwapBinder()
+    expect(binder).toBeDefined()
+    expect(typeof binder).toBe('function')
+  })
+
+  test('registered binder is bindShadowFetchSwap', async () => {
+    const { bindShadowFetchSwap } = await import('plaited/ui/fetch-swap.ts')
+    const { getFetchSwapBinder } = await import('plaited/ui/fetch-swap.registry.ts')
+    expect(getFetchSwapBinder()).toBe(bindShadowFetchSwap)
+  })
 })

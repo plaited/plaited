@@ -35,6 +35,7 @@ import {
   P_VALS,
 } from './create-template.constants.ts'
 import type { SwapStrategy } from './create-template.types.ts'
+import { setFetchSwapBinder } from './fetch-swap.registry.ts'
 import type { FetchSwapConfig, HttpMethod } from './fetch-swap.types.ts'
 
 /** Set of p-* HTTP method attribute names for detection */
@@ -316,3 +317,92 @@ export const hasHttpAttr = (el: Element): boolean => {
   }
   return false
 }
+
+/** CSS selector matching any element with an HTTP method attribute */
+const HTTP_ATTR_SELECTOR = `[${P_GET}],[${P_POST}],[${P_PUT}],[${P_DELETE}],[${P_PATCH}]`
+
+/**
+ * Returns the default DOM event name that should trigger a fetch-swap cycle
+ * for the given element, mirroring HTMX conventions.
+ *
+ * @param el - The element to determine the trigger event for
+ * @returns The event name (e.g. 'click', 'submit', 'change')
+ */
+const getDefaultTriggerEvent = (el: Element): string => {
+  const tag = el.tagName
+  if (tag === 'FORM') return 'submit'
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return 'change'
+  return 'click'
+}
+
+/**
+ * Binds fetch-swap behavior to all HTTP-attributed elements within a shadow root.
+ * Creates a standalone behavioral program runtime, attaches event listeners,
+ * and observes for dynamically added elements.
+ *
+ * @param root - The ShadowRoot (or Document) to scan and observe
+ * @returns A disconnect function that tears down the runtime and observers
+ *
+ * @remarks
+ * This is the primary integration point for bElement's Shadow DOM.
+ * bElement lazily imports this function only when HTTP attributes are detected,
+ * keeping the main UI bundle under the size threshold.
+ *
+ * **What it does:**
+ * 1. Creates a `createFetchSwapRuntime()` instance scoped to the root
+ * 2. Scans existing elements for `p-get`/`p-post`/etc. and binds trigger events
+ * 3. Sets up a MutationObserver to auto-bind dynamically added elements
+ * 4. Returns a cleanup function for disconnectedCallback
+ *
+ * **Event binding follows HTMX conventions:**
+ * - `<form>` elements trigger on `submit`
+ * - `<input>`, `<select>`, `<textarea>` trigger on `change`
+ * - All other elements trigger on `click`
+ *
+ * @see {@link createFetchSwapRuntime} for the behavioral program lifecycle
+ */
+export const bindShadowFetchSwap = (root: ShadowRoot | Document): (() => void) => {
+  const runtime = createFetchSwapRuntime()
+  const boundElements = new WeakSet<Element>()
+
+  const handleEvent = (event: Event) => {
+    const el = event.currentTarget as Element
+    if (!el) return
+    if (el.tagName === 'FORM') event.preventDefault()
+    const config = getRequestConfig(el, root)
+    if (config) runtime.initRequest(config)
+  }
+
+  const bindElement = (el: Element) => {
+    if (boundElements.has(el)) return
+    boundElements.add(el)
+    el.addEventListener(getDefaultTriggerEvent(el), handleEvent)
+  }
+
+  // Scan existing HTTP-attributed elements
+  const existing = root.querySelectorAll(HTTP_ATTR_SELECTOR)
+  for (let i = 0; i < existing.length; i++) bindElement(existing[i]!)
+
+  // Observe for dynamically added elements
+  const mo = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.type !== 'childList') continue
+      for (let i = 0; i < mutation.addedNodes.length; i++) {
+        const node = mutation.addedNodes[i]!
+        if (node.nodeType !== 1) continue
+        const el = node as Element
+        if (hasHttpAttr(el)) bindElement(el)
+        el.querySelectorAll(HTTP_ATTR_SELECTOR).forEach(bindElement)
+      }
+    }
+  })
+  mo.observe(root, { childList: true, subtree: true })
+
+  return () => {
+    mo.disconnect()
+    runtime.disconnect()
+  }
+}
+
+/** Auto-register with bElement when this module is imported */
+setFetchSwapBinder(bindShadowFetchSwap)
