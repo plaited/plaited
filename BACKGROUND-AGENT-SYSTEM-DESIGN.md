@@ -25,7 +25,8 @@
 | **Orchestration** | Rivet Actor (Singleton) | Session lifecycle, client streaming, SSH CA. |
 | **UI Agent** | Plaited Agent (in Sandbox) | Generative UI, BP constraints, grading, structural vocabulary. |
 | **Coding Agent** | OpenCode (in Sandbox) | File ops, search, bash exec, LLM-driven code generation. |
-| **Compute** | Persistent Sandbox (Docker/Firecracker) | Container running Plaited Agent + OpenCode + SSHD + sync daemon. |
+| **UI Delivery** | Bun Server (in Sandbox) | SSR of Plaited templates, WebSocket UI streaming. |
+| **Compute** | Persistent Sandbox (Docker/Firecracker) | Container running Plaited Agent + OpenCode + Bun Server + SSHD + sync daemon. |
 | **State** | SQLite/JSON | Chat history, memory, preferences, module registry. |
 
 ## System Architecture
@@ -56,6 +57,7 @@ graph TB
                 PAgent["Plaited Agent<br/>(UI generation + BP + grading)"]
                 OpenCode["OpenCode<br/>(coding runtime)"]
             end
+            BunServer["Bun Server<br/>(SSR + WebSocket UI)"]
             StoryServer["Story Server<br/>(port-forwarded to dev)"]
             SSHD["SSHD (Port 22)"]
             Sync["Sync Daemon"]
@@ -74,6 +76,11 @@ graph TB
     %% Request Flow: Rivet → Plaited Agent → OpenCode
     Agent_Logic <-->|"WebSocket streaming"| PAgent
     PAgent -->|"delegates coding"| OpenCode
+
+    %% UI Delivery: Bun Server SSR + WebSocket
+    Agent_Logic <-->|"reverse proxy<br/>(HTTP + WS)"| BunServer
+    PAgent -->|"generates templates"| BunServer
+    BunServer -->|"SSR HTML + WS updates"| Agent_Logic
 
     %% Dev can also invoke Plaited Agent directly via CLI
     SSHD -.->|"plaited generate (CLI)"| PAgent
@@ -121,7 +128,8 @@ The Rivet Actor is a **Singleton** — the "Always On" process for the personal 
 **Responsibilities:**
 
 - **Gateway:** It runs the HTTP server and WebSocket endpoint.
-- **Sentinel:** It performs the AT Proto DID check on every WebSocket connection.
+- **Reverse Proxy:** After authentication, it proxies HTTP requests and WebSocket connections to the Sandbox's Bun Server. The browser never connects to the Sandbox directly.
+- **Sentinel:** It performs the AT Proto DID check on every connection — HTTP and WebSocket.
 - **Sandbox Manager:** It ensures the Sandbox Docker container is running. If the container crashes, the Actor restarts it.
 - **SSH Certificate Authority:** It holds the CA private key and signs short-lived SSH certificates for authenticated users.
 
@@ -187,7 +195,24 @@ When a dev SSHs in, the Plaited Agent exposes a **Story Server** on a port-forwa
 - Grading and verification (Plaited Agent)
 - Structural vocabulary mapping (Plaited Agent)
 
-#### 2c. Infrastructure Services
+#### 2c. Bun Server (UI Delivery)
+
+The Bun Server runs inside the Sandbox, co-located with the Plaited runtime, generated templates, and `/workspace` filesystem. It is the rendering engine for the Control Center and all generated UI.
+
+**How it works:**
+
+- **SSR:** The Bun Server renders Plaited templates server-side, interpolating state data into HTML before sending it to the browser. Templates live in `/workspace` — the same files the Plaited Agent generates and OpenCode writes.
+- **WebSocket UI Streaming:** When state changes (e.g., agent finishes a task, new chat message, file updated), the Bun Server pushes UI updates to the browser over a WebSocket connection. The browser patches the DOM incrementally — no full-page reload.
+- **Rivet Actor as Reverse Proxy:** The browser connects to the Rivet Actor's public URL. After authentication, the Actor proxies HTTP and WebSocket traffic to the Bun Server inside the Sandbox. This keeps the Sandbox unexposed to the internet (except SSH).
+
+**Why in the Sandbox (not the Rivet Actor):**
+
+- Templates and state live in `/workspace` — no need to sync files to another process.
+- The Plaited runtime (for SSR) is already installed in the Sandbox image.
+- Hot-reload is trivial: when the Plaited Agent generates a new template, the Bun Server picks it up immediately from the filesystem.
+- The Rivet Actor stays thin — auth, proxy, and sandbox lifecycle only.
+
+#### 2d. Infrastructure Services
 
 - **SSHD:** CA certificate auth. The owner can SSH in alongside both agents — all three work on the same `/workspace` filesystem.
 - **Sync Daemon:** Watches `/workspace` for file changes (from OpenCode, Plaited Agent, or SSH users) and pushes updates to the Rivet Actor for Web Client sync.
@@ -200,19 +225,26 @@ When a dev SSHs in, the Plaited Agent exposes a **Story Server** on a port-forwa
 - **SSH Access:** The Sandbox's `sshd` trusts the Rivet Actor's CA key via `TrustedUserCAKeys`. No `authorized_keys` management needed.
 - **OpenCode Config:** Configured via `opencode.json`. Skills and tools are pre-installed in the image.
 
-**Communication chain:**
+**Communication chains:**
 
-The Rivet Actor streams user prompts to the Plaited Agent over an internal WebSocket connection. The Plaited Agent processes intent, applies BP constraints, then delegates code-writing tasks to OpenCode via its SDK. OpenCode executes tools and writes files. Results stream back through the chain: OpenCode → Plaited Agent → Rivet Actor → Web Client.
+- **Prompt flow:** Browser → Rivet Actor (auth) → Plaited Agent (intent + BP) → OpenCode (code writing) → `/workspace` filesystem.
+- **UI delivery flow:** Plaited Agent generates templates → Bun Server SSR's with state → Rivet Actor proxies → Browser. WebSocket pushes incremental UI updates through the same path.
+- **State flow:** Rivet Actor pushes state updates (chat messages, memories) to the Bun Server. The Bun Server re-renders affected templates and streams UI patches to the browser.
 
 ### 3. The Web Client (Control Center)
 
-The Control Center is itself a Plaited-generated UI — built and maintained by the Plaited Agent using its own template system. Hosted by the Rivet Actor.
+The Control Center is itself a Plaited-generated UI — built and maintained by the Plaited Agent using its own template system. Served by the Bun Server inside the Sandbox, proxied through the Rivet Actor.
+
+**Delivery model:**
+
+- **Initial load:** Browser requests the Control Center URL. Rivet Actor authenticates, then reverse-proxies to the Bun Server. The Bun Server SSR's the Control Center template with current state (chat history, file tree, agent status) and returns HTML.
+- **Live updates:** After initial load, the browser opens a WebSocket through the Rivet Actor to the Bun Server. State changes (new messages, task progress, file edits) push incremental UI updates to the browser — no polling, no full reloads.
 
 **Features:**
 
-- **Chat Interface:** Talk to the agent ("Run the tests", "Deploy this").
+- **Chat Interface:** Talk to the agent ("Run the tests", "Deploy this"). Messages stream in real-time via WebSocket.
 - **SSH Status:** Shows certificate validity and the `plaited login` command for terminal setup.
-- **File Explorer:** View files currently in the Sandbox.
+- **File Explorer:** View files currently in the Sandbox. Updates live as the agent writes files.
 
 ### 4. SSH Security: Certificate Authority + CLI Login
 
@@ -297,7 +329,8 @@ Host sandbox
 7. **Plaited Agent:** Runs grading — tsc, biome, `bun plaited test` (headless), a11y audit.
 8. **Plaited Agent:** If grading fails, feeds errors back to OpenCode for another iteration.
 9. **Plaited Agent:** Streams progress and results back to Rivet Actor.
-10. **Rivet Actor:** Relays streaming output to Web Client.
+10. **Bun Server:** Picks up the new template from `/workspace`, SSR's it with current state.
+11. **Bun Server → Rivet Actor → Browser:** Pushes UI update via WebSocket. The new module appears live in the Control Center.
 
 ### Flow B: Web User → Code Fix
 
@@ -306,7 +339,7 @@ Host sandbox
 1. **User (Web):** "Run the linter and fix errors."
 2. **Rivet Actor:** Streams prompt to Plaited Agent.
 3. **Plaited Agent:** Recognizes this as a general coding task, delegates directly to OpenCode.
-4. **OpenCode:** Reads codebase, runs `npm run lint`, generates a code patch, applies file edits.
+4. **OpenCode:** Reads codebase, runs `bun run lint`, generates a code patch, applies file edits.
 5. **OpenCode:** Streams results back through Plaited Agent → Rivet Actor → Web Client.
 
 ### Flow C: SSH Dev → AI-Assisted Design
