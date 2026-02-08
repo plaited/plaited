@@ -6,13 +6,14 @@
 
 **Architecture Foundation:** A single-tenant, self-hosted personal AI computer.
 
-**Core Philosophy:** "One User, One Brain, One Computer." Deployed by an individual for their exclusive use. It uses AT Protocol (Bluesky) for identity, ensuring that only the owner controls the agent.
+**Core Philosophy:** "One User, One Brain, One Computer." Deployed by an individual for their exclusive use. It uses AT Protocol (Bluesky) for identity, ensuring that only the owner controls the agent. Each agent is a **modnet node** — a user-owned unit in a modular network where modules compose peer-to-peer.
 
 ### Key Design Principles
 
 - ✅ **Single Tenancy:** 1 User : 1 Agent instance.
 - ✅ **Identity via AT Protocol:** Authentication relies on decentralized identity (DID) via OAuth.
-- ✅ **Persistent State:** State is local and persistent.
+- ✅ **Modnet Node:** Each agent is a node in a modular network. Modules are user-owned, peer-to-peer via A2A, monetized via x402.
+- ✅ **Persistent State:** State is local and persistent. User data lives on their agent — nowhere else.
 - ✅ **Dual Interface:**
   - **Web Client:** A dedicated "Control Center" for chatting with the agent.
   - **SSH:** Direct root access to the underlying sandbox for coding.
@@ -26,6 +27,8 @@
 | **UI Agent** | Plaited Agent (in Sandbox) | Generative UI, BP constraints, grading, structural vocabulary. |
 | **Coding Agent** | OpenCode (in Sandbox) | File ops, search, bash exec, LLM-driven code generation. |
 | **UI Delivery** | Bun Server (in Sandbox) | SSR of Plaited templates, WebSocket UI streaming. |
+| **Modnet** | A2A Protocol | Peer-to-peer module communication between agents. |
+| **Payments** | x402 (HTTP 402) | Micropayments for module data access between nodes. |
 | **Compute** | Persistent Sandbox (Docker/Firecracker) | Container running Plaited Agent + OpenCode + Bun Server + SSHD + sync daemon. |
 | **State** | SQLite/JSON | Chat history, memory, preferences, module registry. |
 
@@ -58,10 +61,16 @@ graph TB
                 OpenCode["OpenCode<br/>(coding runtime)"]
             end
             BunServer["Bun Server<br/>(SSR + WebSocket UI)"]
+            A2AEndpoint["A2A Server<br/>(modnet endpoint)"]
             StoryServer["Story Server<br/>(port-forwarded to dev)"]
             SSHD["SSHD (Port 22)"]
             Sync["Sync Daemon"]
         end
+    end
+
+    subgraph MODNET["Modnet (Peer Agents)"]
+        PeerA["Peer Agent A<br/>(did:plc:...)"]
+        PeerB["Peer Agent B<br/>(did:plc:...)"]
     end
 
     %% Auth Flow
@@ -82,6 +91,11 @@ graph TB
     PAgent -->|"generates templates"| BunServer
     BunServer -->|"SSR HTML + WS updates"| Agent_Logic
 
+    %% Modnet: A2A peer-to-peer
+    Agent_Logic <-->|"proxies A2A"| A2AEndpoint
+    A2AEndpoint <-->|"A2A + x402"| PeerA
+    A2AEndpoint <-->|"A2A + x402"| PeerB
+
     %% Dev can also invoke Plaited Agent directly via CLI
     SSHD -.->|"plaited generate (CLI)"| PAgent
 
@@ -91,6 +105,7 @@ graph TB
     style OWNER fill:#e1f5ff
     style PERSONAL_CLOUD fill:#f3e5f5
     style MUSCLE fill:#fff9c4
+    style MODNET fill:#e8f5e9
 ```
 
 ## Authentication: AT Protocol Integration
@@ -353,6 +368,201 @@ Host sandbox
 5. **Plaited Agent:** Iterates — updates template, re-runs grading, refreshes preview.
 6. **Sync Daemon:** Pushes file changes to Rivet Actor → Web Client sees updates too.
 
+### Flow D: Modnet → Module Composition
+
+**Scenario:** A peer agent discovers and composes a module from this agent.
+
+1. **Peer Agent:** Discovers this agent's A2A endpoint (via AT Protocol social graph, QR code, or direct URL).
+2. **Peer Agent:** Fetches `/.well-known/agent.json` — reads Agent Card with skills, boundary, scale, and pricing.
+3. **Peer Agent:** Requests recipe data: `GET /skill/recipes`.
+4. **A2A Server (Sandbox):** Returns `402 Payment Required` with x402 headers (price: 0.01 USDC).
+5. **Peer Agent:** BP checks budget constraints. Allowed. Sends payment proof.
+6. **A2A Server:** Verifies payment, checks boundary (search: all, participation: ask). Owner has pre-approved this peer's DID.
+7. **A2A Server:** Returns recipe data. Peer agent composes it into their own UI.
+8. **Ongoing:** Peer subscribes to updates. When this agent's owner adds a new recipe, the peer's UI updates via A2A push.
+9. **Disconnect:** Owner revokes peer's access (or goes offline). Peer's subscription fails. Recipe data disappears from peer's UI.
+
+## Modnet Architecture
+
+### One Agent = One Modnet Node
+
+Each personal agent deployment is a **modnet node** — a user-owned unit in a modular network. Rachel Jaffe's [modnet concept](assets/Modnet.md) describes a world where individuals own discrete modules composed of front-end and back-end, separate from any platform. These modules connect peer-to-peer to form crowd-sourced networks (modnets) that exist only as long as participants stay connected.
+
+In this architecture, the agent IS the modnet node:
+
+| Modnet Concept | System Mapping |
+|---|---|
+| **Module** | Generated UI module (template + bThreads + boundary) stored in `/workspace` |
+| **Module owner** | The agent's `OWNER_DID` — decentralized identity via AT Protocol |
+| **Module host** | The Sandbox (persistent container with Bun Server) |
+| **Network connection** | A2A protocol between agents |
+| **Data residency** | User's data lives ON their agent — nowhere else |
+| **Disconnect** | Agent offline or connection revoked → data disappears from peers |
+
+### Structural Vocabulary
+
+The Plaited Agent's base model is trained on Rachel Jaffe's [structural information architecture](assets/Structural-IA.md) — a functional design language for digital systems. This vocabulary is the **shared language** between modnet nodes and the constraint language for BP bThreads.
+
+**Core vocabulary (functional units, not visual components):**
+
+| Element | Description | Role in Agent |
+|---|---|---|
+| **Objects** | Anything conceived as one unit | Base model understands what constitutes "one thing" in a UI |
+| **Channels** | Connections that exchange information between objects | Model understands information flow between elements |
+| **Levers** | Tools that change energy demand or alter energy inputs | Model understands affordances, mechanics, engagement |
+| **Loops** | Two connected dynamics — action and response | Model understands feedback patterns |
+| **Blocks** | Multiple modules organized to create emergent interactions | Model understands composition (pools, streams, walls, threads) |
+
+**Three-layer approach:**
+
+1. **Training data** — Base model is trained on structural IA patterns (desk, bedroom, marketplace, carnival, etc.) so it understands what functional patterns exist in digital spaces.
+2. **BP constraints** — bThreads use the vocabulary (objects, channels, levers, loops, blocks) + scale + boundary to constrain generation. The vocabulary is the language constraints speak.
+3. **Template generation** — The actual Plaited templates are the output. The model chooses templates based on its understanding of patterns. The mapping from vocabulary to templates is **learned** (emergent from training), not hardcoded.
+
+**Why functional, not visual:** Jaffe distinguishes Alexander's physical patterns (what things *look like*) from Wurman's functionalism (what things *do*). The structural vocabulary describes function — "this module needs a channel between these two objects" — not form. The agent decides what Plaited templates to render; the vocabulary ensures the interaction design is correct.
+
+### Scale (S1–S8)
+
+Scale defines how modules compose into larger structures in the modnet — not a mapping to specific UI elements:
+
+| Scale | Name | Modnet Role |
+|---|---|---|
+| S1 | Singular Object | Atomic data (a price, a name, a photo) |
+| S2 | Object Group | Related objects (a product listing, a step sequence) |
+| S3 | Block | Composed modules (a pool, a stream, a thread) |
+| S4 | Block Group | A room — related blocks forming a section |
+| S5 | Module | A complete user-owned unit (a recipe tracker, a portfolio) |
+| S6 | Module Group | Multiple modules from one or more agents |
+| S7 | Platform Structure | A neighborhood — emergent structure from connected modules |
+| S8 | Super-structure | A city — cross-cutting modnet spanning many agents |
+
+When a module declares its scale in its A2A Agent Card, it tells peer agents how it can be composed. BP bThreads enforce scale compatibility — a S1 object cannot claim to be a S7 platform.
+
+### Discovery
+
+The A2A Agent Card URL (`/.well-known/agent.json`) is the universal connection point. How you discover it is orthogonal:
+
+| Mechanism | How It Works |
+|---|---|
+| **AT Protocol social graph** | Follow someone on Bluesky → their agent is discoverable. The handle resolves to a DID, the DID resolves to their agent's A2A endpoint. |
+| **Direct URL share** | Send someone your agent URL (paste, email, DM). |
+| **QR code** | Scan a QR code at an event → opens the agent's `.well-known/agent.json`. Physical proximity creates the connection. |
+| **Bluetooth / NFC** | Mobile app broadcasts A2A Agent Card via Bluetooth or NFC. Walk near someone → discover their modules. |
+| **Web link** | Agent URL embedded in a website, email signature, blog post. |
+
+This maps to Jaffe's vision: the farmer shows up at the market square with their stall module. The *proximity* creates the connection, the *module standard* (A2A Agent Card) makes it composable.
+
+### Ephemeral Networks
+
+Modnet connections are ephemeral — two mechanisms enforce this:
+
+**1. Agent offline = gone:**
+When the Sandbox is down (stopped, crashed, sleeping), the A2A endpoint is unreachable. Peers' subscriptions fail gracefully. No data residue — the agent's modules simply become undiscoverable. Come back online = rejoin.
+
+**2. Explicit disconnect:**
+The owner can revoke individual A2A connections while the agent stays online. BP bThreads enforce boundary rules — the agent can withdraw modules from specific peers or networks without going offline.
+
+**Why this matters:** Unlike platforms where your data persists after you leave, modnet data lives ON the agent. There is no copy on a central server. Disconnect and your contribution to the network vanishes. This is Jaffe's core insight — value is captured at the individual level and lasts only as long as people choose to stay connected.
+
+### Module Lifecycle
+
+```mermaid
+flowchart LR
+    Intent["User Intent<br/>'build me a recipe tracker'"]
+    Generate["1. GENERATE<br/>Agent creates UI from intent"]
+    Save["2. SAVE<br/>Module stored in /workspace"]
+    Constrain["3. CONSTRAIN<br/>BP bThreads enforce boundaries"]
+    Share["4. SHARE<br/>A2A Agent Card declares module"]
+    Monetize["5. MONETIZE<br/>x402 enables paid data access"]
+    Compose["6. COMPOSE<br/>Peers integrate into their UIs"]
+
+    Intent --> Generate --> Save --> Constrain --> Share --> Monetize --> Compose
+```
+
+- **Generate:** The Plaited Agent translates user intent into structural vocabulary, delegates code writing to OpenCode. This is the modnet unlock — the agent removes the "who builds?" barrier.
+- **Save:** Module (template + styles + stories + bThreads) persists in `/workspace`.
+- **Constrain:** BP bThreads enforce boundary rules. The ratchet property applies — constraints can be added, not removed.
+- **Share:** An A2A Agent Card is generated declaring the module's skills, boundary, and scale.
+- **Monetize:** If the owner sets a price, x402 headers are added to the module's A2A endpoint.
+- **Compose:** Peer agents discover the module and integrate it into their own UIs via A2A.
+
+### A2A Agent Card (Module Declaration)
+
+Each module is declared via an A2A Agent Card — the modnet's standard for discoverability and composition:
+
+```
+/.well-known/agent.json
+{
+  "name": "Alice's Recipe Tracker",
+  "description": "Seasonal recipes with ingredient lists and prep steps",
+  "url": "https://alice-agent.railway.app",
+  "did": "did:plc:alice123...",
+  "skills": [
+    {
+      "id": "recipes",
+      "name": "Recipe Collection",
+      "contentType": "recipe-tracker",
+      "structuralVocab": ["objects", "channels", "loops"],
+      "scale": "S5",
+      "price": { "amount": "0.01", "currency": "USDC", "network": "base" }
+    }
+  ],
+  "boundary": {
+    "search": "all",
+    "participation": "ask"
+  }
+}
+```
+
+The card declares: what the module does (content type), how it's structured (vocabulary + scale), who can find it (search boundary), who can interact (participation boundary), and what it costs (x402 price).
+
+## x402 Micropayments
+
+### Payment Between Modnet Nodes
+
+x402 layers directly on HTTP — no protocol bridge needed. When a peer agent requests data from a module with a price set, the flow is:
+
+```mermaid
+sequenceDiagram
+    participant Requester as Peer Agent
+    participant BP as Owner's BP Constraints
+    participant A2A as Owner's A2A Server
+    participant x402 as x402 Payment
+
+    Requester->>A2A: A2A request (GET /skill/recipes)
+    A2A-->>Requester: 402 Payment Required + x402 headers
+    Note over Requester: Peer's BP checks budget
+    Requester->>x402: Payment proof (USDC on Base)
+    x402-->>A2A: Payment verified
+    A2A-->>Requester: 200 OK + recipe data
+    Note over A2A: Owner's BP logs payment received
+```
+
+### BP Budget Authorization
+
+BP bThreads authorize payments on both sides — the requester checks budget before paying, the owner enforces pricing:
+
+**Requester side (outgoing payments):**
+- Budget guard — block payments exceeding remaining budget
+- Per-transaction limit — block single payments above threshold
+- User approval — require owner confirmation for large payments
+
+**Owner side (incoming payments):**
+- Pricing enforcement — ensure correct amount received before serving data
+- Boundary check — verify requester's DID is allowed to participate
+- Payment logging — record all transactions via BP snapshots
+
+### Why x402 + Modnet
+
+x402 is the economic layer that makes modnets sustainable. Without monetization, modules are charity. With x402:
+
+- A farmer's stall module can charge for real-time produce data
+- An artist's portfolio can charge for high-resolution access
+- A researcher's dataset can charge per-query
+- BP constraints make payments **programmable** — the agent autonomously handles micropayments within owner-set budgets
+
+This maps to Jaffe's vision: "value is captured at a smaller scale and lasts only as long as people decide to keep their modules connected to a network."
+
 ## Deployment Guide (Self-Hosted)
 
 This architecture is designed to be deployed via `docker-compose` on a VPS (DigitalOcean, Hetzner) or a PaaS (Railway, Render).
@@ -403,3 +613,12 @@ Since this agent has SSH access and web control, if anyone compromises the `OWNE
 The SSH port (`2222`) is open to the internet.
 
 **Mitigation:** Fail2Ban on the host, or use a VPN (Tailscale) to access the SSH port instead of exposing it publicly.
+
+## Open Questions
+
+- **Scale-to-template mapping:** The base model is trained on structural IA concepts and S1–S8 scale, but should there be explicit mappings from scale levels to Plaited template constructs (e.g., "S3 block = a stream template"), or should the mapping remain emergent (learned by the model during training)? BP constraints shape generation using the vocabulary — but how tightly coupled should vocabulary be to specific templates?
+- **Emergent network assembly:** Jaffe describes networks that self-assemble from simple rules as modules connect. How does this translate to A2A? When enough agents connect, does a higher-order structure emerge automatically, or does someone need to host a "block" pattern?
+- **Mobile discovery:** QR codes and Bluetooth A2A Card sharing need a mobile app. What's the minimum viable mobile client for modnet participation?
+- **Subscription model for A2A:** How do peer agents subscribe to live updates? WebSocket push? Polling? AT Protocol event streams?
+- **x402 wallet integration:** Which wallet provider? How does the agent manage keys? Does the Rivet Actor hold the wallet, or the Sandbox?
+- **BP constraint portability:** When a module is composed into a peer's UI, do the original BP constraints travel with it? Or does the peer's agent apply its own constraints?
