@@ -45,7 +45,7 @@ graph TB
 
         subgraph BRAIN["Rivet Actor (The Brain)"]
             Agent_Logic["Node.js Agent Logic"]
-            Key_Mgr["Ephemeral Key Manager"]
+            SSH_CA["SSH Certificate Authority"]
             State_DB["SQLite (Memories)"]
         end
 
@@ -60,13 +60,13 @@ graph TB
     Browser -->|"1. Login via Bluesky"| OAuth_Guard
     OAuth_Guard --"2. Verify DID == OWNER_DID"--> Agent_Logic
 
-    %% SSH Handshake
-    Browser -->|"3. Request SSH Access"| Key_Mgr
-    Key_Mgr --"4. Inject Temp Public Key"--> Runtime
-    Key_Mgr --"5. Return Temp Private Key"--> Browser
+    %% CLI Login + SSH CA Flow
+    IDE -->|"3. plaited login (AT Proto OAuth)"| OAuth_Guard
+    OAuth_Guard --"4. Sign SSH Certificate"--> SSH_CA
+    SSH_CA --"5. Return short-lived cert"--> IDE
 
-    %% SSH Flow
-    IDE -->|"6. Connect with Temp Key"| SSHD
+    %% SSH Flow (cert-based, no authorized_keys)
+    IDE -->|"6. SSH with certificate"| SSHD
 
     style OWNER fill:#e1f5ff
     style PERSONAL_CLOUD fill:#f3e5f5
@@ -110,7 +110,7 @@ The Rivet Actor is a **Singleton** — the "Always On" process for the personal 
 - **Gateway:** It runs the HTTP server and WebSocket endpoint.
 - **Sentinel:** It performs the AT Proto DID check on every WebSocket connection.
 - **Sandbox Manager:** It ensures the Sandbox Docker container is running. If the container crashes, the Actor restarts it.
-- **Key Authority:** It manages the `authorized_keys` file inside the Sandbox.
+- **SSH Certificate Authority:** It holds the CA private key and signs short-lived SSH certificates for authenticated users.
 
 ### 2. The Sandbox Agent (Persistent Muscle)
 
@@ -120,7 +120,7 @@ The Sandbox is a **long-lived container** with persistent storage.
 
 - **Image:** `plaited/sandbox-agent:latest`
 - **Volume:** `/workspace` is mounted to a persistent disk. This means if you restart the agent, your code files remain.
-- **SSH Access:** Managed dynamically by the Rivet Actor (see section 4).
+- **SSH Access:** The Sandbox's `sshd` trusts the Rivet Actor's CA key via `TrustedUserCAKeys`. No `authorized_keys` management needed.
 
 ### 3. The Web Client (Control Center)
 
@@ -129,22 +129,76 @@ A dedicated single-page application (SPA) hosted by the Rivet Actor.
 **Features:**
 
 - **Chat Interface:** Talk to the agent ("Run the tests", "Deploy this").
-- **SSH Manager:** A button to "Connect via SSH" which triggers the Ephemeral Handshake.
+- **SSH Status:** Shows certificate validity and the `plaited login` command for terminal setup.
 - **File Explorer:** View files currently in the Sandbox.
 
-### 4. SSH Security: The "Ephemeral Handshake"
+### 4. SSH Security: Certificate Authority + CLI Login
 
-Instead of burning a static SSH key into the container, we piggyback on the secure AT Protocol session to generate keys on the fly.
+Instead of managing `authorized_keys`, the Rivet Actor acts as an SSH Certificate Authority. A local CLI command bridges AT Protocol identity into SSH credentials.
 
-**The Workflow:**
+**Setup (one-time):**
 
-1. **Web Auth:** User logs into Web Client via Bluesky (AT Proto).
-2. **Request:** User clicks "Connect via Terminal" in the UI.
-3. **Generation:** The Rivet Actor generates a new RSA Key Pair (2048-bit).
-4. **Injection:** The Rivet Actor writes the Public Key to `~/.ssh/authorized_keys` inside the Sandbox (via Docker Volume or Exec).
-5. **Delivery:** The Rivet Actor sends the Private Key to the Web Client over the secure WebSocket.
-6. **Connection:** The Web Client displays the key or auto-configures a web-based terminal. The user can also download it for VS Code.
-7. **Expiry:** The Rivet Actor deletes the key from `authorized_keys` after 24 hours.
+The Rivet Actor generates a CA key pair on first boot. The CA public key is written to the Sandbox's `sshd_config`:
+
+```
+# /etc/ssh/sshd_config (inside Sandbox)
+TrustedUserCAKeys /etc/ssh/ca.pub
+AuthorizedPrincipalsFile /etc/ssh/auth_principals/%u
+```
+
+**The CLI Login Flow:**
+
+```bash
+$ plaited login --agent https://my-agent.railway.app
+
+# 1. CLI opens browser → Bluesky OAuth (PKCE + DPoP)
+# 2. User authenticates with their PDS
+# 3. PDS redirects to CLI's localhost callback
+# 4. CLI receives AT Proto token, verifies DID
+# 5. CLI generates a local SSH key pair
+# 6. CLI sends public key + token to Agent: POST /api/ssh/cert
+# 7. Agent verifies: authenticated_did === OWNER_DID
+# 8. Agent signs the public key → short-lived certificate (24h)
+# 9. CLI writes cert + key to ~/.ssh/plaited-*
+# 10. CLI updates ~/.ssh/config
+
+✓ Logged in as did:plc:z72i... (cert valid for 24h)
+✓ SSH configured: ssh sandbox
+```
+
+**Generated `~/.ssh/config`:**
+
+```
+Host sandbox
+    HostName my-agent.railway.app
+    Port 2222
+    User root
+    IdentityFile ~/.ssh/plaited-key
+    CertificateFile ~/.ssh/plaited-key-cert.pub
+```
+
+**After login, any IDE works immediately:**
+
+- `ssh sandbox` from terminal
+- VS Code → Remote-SSH → `sandbox`
+- Cursor → Remote-SSH → `sandbox`
+- Zed → Remote Development → `sandbox`
+
+**Certificate properties:**
+
+- **Validity:** 24 hours (no revocation infrastructure needed — certs simply expire)
+- **Principals:** `[OWNER_DID, "root"]` — embedded in the certificate
+- **Key ID:** `OWNER_DID` — logged by `sshd` for audit trail
+- **Extensions:** `permit-pty`, `permit-port-forwarding` enabled
+
+**Renewal:** When the certificate expires, the user runs `plaited login` again. The flow is the same — browser opens, Bluesky auth, new cert signed.
+
+**Why SSH CA over `authorized_keys`:**
+
+- No file injection/cleanup inside the Sandbox container
+- Certificates expire automatically — no dangling keys
+- `sshd` logs the certificate's `key_id` (the DID) for audit
+- Adding the CA key to `sshd_config` is a one-time setup; no per-login changes to the Sandbox
 
 ## Data Flow: "The Personal Loop"
 
@@ -192,7 +246,7 @@ services:
     image: plaited/sandbox-agent:latest
     environment:
       - ACTOR_URL=http://personal-agent:3000
-      # Note: No static PUBLIC_KEY needed. Keys are injected dynamically.
+      # sshd trusts the Actor's CA key (mounted via volume)
     volumes:
       - ./workspace:/workspace  # Persist your code
     ports:
