@@ -35,7 +35,7 @@
 ```mermaid
 graph TB
     subgraph OWNER["The Owner"]
-        Browser["Web Control Center<br/>(React App)"]
+        Browser["Web Control Center<br/>(Plaited-generated UI)"]
         IDE["VS Code / Terminal<br/>(SSH)"]
     end
 
@@ -206,7 +206,7 @@ The Rivet Actor streams user prompts to the Plaited Agent over an internal WebSo
 
 ### 3. The Web Client (Control Center)
 
-A dedicated single-page application (SPA) hosted by the Rivet Actor.
+The Control Center is itself a Plaited-generated UI — built and maintained by the Plaited Agent using its own template system. Hosted by the Rivet Actor.
 
 **Features:**
 
