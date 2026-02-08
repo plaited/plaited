@@ -1,13 +1,14 @@
-# Generative UI Client + Modnet Architecture (V8)
+# Generative UI Agent + Modnet Architecture (V8)
 
-> **Architecture**: V8 Generative UI Client + OpenCode Server + Modnet
-> **Last Updated**: 2026-02-07 (Modnet Architecture session)
+> **Architecture**: V8 Generative UI Agent + Sprites/Turso/Fly.io + Modnet
+> **Last Updated**: 2026-02-07 (Infrastructure revision — Sprites + Turso + Fly.io)
 > **Evolved From**: V7 Neuro-Symbolic with Unified Capability Host
 > **Research Notes**: [Notion - BP-GRPO Research](https://www.notion.so/plaited/Research-notes-ideas-2fd978090ff1800e8b0ec5548cdacaa6)
 
-This plan implements a **generative UI client** that:
+This plan implements a **generative UI agent** that:
 - **Specializes** in generating user-owned UI modules (not a general-purpose coding agent)
-- **Delegates** general coding to an **OpenCode server** via HTTP API/SDK
+- **Runs remotely** on **Sprites** (Fly.io Firecracker VMs) with **Turso** for per-user state
+- **Self-hosts** its own tools (file-ops, search, bash-exec) and model inference (Falcon-H1R via llama.cpp)
 - **Facilitates modnets** (modular networks) where modules compose into crowd-sourced networks
 - Uses **A2A protocol** for module-to-module communication
 - Uses **AT Protocol OAuth (DIDs)** for decentralized identity
@@ -21,15 +22,16 @@ This plan implements a **generative UI client** that:
 
 ## Architectural Shift: V7 → V8
 
-| V7 (Standalone Agent) | V8 (Client + Server + Modnet) |
+| V7 (Standalone Agent) | V8 (Self-Hosted Agent + Modnet) |
 |---|---|
-| General-purpose coding agent | Specialized generative UI client |
-| Builds own file-ops, search, bash-exec | Delegates to OpenCode server |
-| MCP host for everything | MCP stays in OpenCode; A2A for modnet |
+| General-purpose coding agent | Specialized generative UI agent |
+| Local machine execution | Remote execution on Sprites (Fly.io) |
+| No persistent state strategy | Turso per-user SQLite (edge-distributed) |
+| MCP host for everything | A2A for modnet; tools self-hosted in Sprite |
 | Generic security interfaces (future) | AT Protocol OAuth + x402 (concrete) |
-| Agent as MCP server (future) | Agent as A2A server (modnet participant) |
-| Unified Capability Host | OpenCode handles capability management |
-| Federated discovery pools | OpenCode handles tool discovery |
+| Agent as MCP server (future) | Agent as A2A server (Sprite HTTP endpoint) |
+| Unified Capability Host | Agent self-hosts tools + model inference |
+| Federated discovery pools | Agent-local tool/skill discovery |
 | No module ownership concept | User-owned modules, ephemeral networks |
 
 ---
@@ -38,8 +40,8 @@ This plan implements a **generative UI client** that:
 
 ```mermaid
 flowchart TB
-    subgraph User["User's Agent (Client + Server)"]
-        subgraph Client["Plaited Client (Generative UI)"]
+    subgraph Sprite["User's Sprite (Fly.io Firecracker VM)"]
+        subgraph Agent["Plaited Agent"]
             BP["BP Constraints<br/>(symbolic reasoning)"]
             WorldModel["Browser World Model<br/>(stories + play())"]
             StructVocab["Structural Vocabulary<br/>(objects, channels, levers, loops, blocks)"]
@@ -47,21 +49,31 @@ flowchart TB
             Training["Training Pipeline<br/>(trajectory capture)"]
         end
 
-        subgraph Server["OpenCode Server (General Compute)"]
-            FileOps["File Operations"]
-            Search["Search (glob + grep)"]
-            BashExec["Bash Execution"]
-            MCPHost["MCP Host<br/>(tool servers)"]
-            Skills["Skills + Plugins"]
-            Models["Model Hosting"]
+        subgraph Tools["Self-Hosted Tools"]
+            FileOps["file-ops"]
+            Search["search (glob + grep)"]
+            BashExec["bash-exec"]
+            Discovery["tool + skill discovery"]
         end
 
-        Client -->|"HTTP API / SDK"| Server
+        subgraph Model["Model Inference (llama.cpp)"]
+            Edge["FunctionGemma (CPU)"]
+            Remote["Falcon-H1R (GPU via Fly Machine)"]
+        end
+
+        A2AServer["A2A Server<br/>(Sprite HTTP endpoint)"]
+    end
+
+    subgraph Turso["Turso (Per-User SQLite)"]
+        ModuleDB["Module Registry"]
+        CacheDB["Semantic Cache"]
+        RelationDB["Relation Store"]
+        TrainingDB["Trajectories"]
     end
 
     subgraph Modnet["Modular Network"]
-        OtherAgent1["Other User's Agent"]
-        OtherAgent2["Another Agent"]
+        OtherAgent1["Other User's Sprite"]
+        OtherAgent2["Another Sprite"]
     end
 
     subgraph Protocols["Protocol Stack"]
@@ -70,9 +82,12 @@ flowchart TB
         X402["x402<br/>(payments)"]
     end
 
-    Client <-->|"A2A"| OtherAgent1
-    Client <-->|"A2A"| OtherAgent2
-    ATP --> Client
+    Agent --> Tools
+    Agent --> Model
+    Agent --> Turso
+    A2AServer <-->|"A2A"| OtherAgent1
+    A2AServer <-->|"A2A"| OtherAgent2
+    ATP --> Agent
     X402 --> A2A
 ```
 
@@ -80,8 +95,9 @@ flowchart TB
 
 | Decision | Choice | Rationale |
 |---|---|---|
-| Agent role | Generative UI client | Specialization > generalization |
-| General coding | OpenCode server | Don't rebuild what exists (Unix philosophy) |
+| Agent role | Generative UI agent | Specialization > generalization |
+| Execution | Self-hosted in Sprite (Fly.io) | User-owned remote VM, persistent state |
+| State | Turso per-user SQLite | Edge-distributed, embedded replicas, vector search |
 | Module communication | A2A protocol | Peer-to-peer, not client-server |
 | Identity | AT Protocol OAuth (DIDs) | Decentralized, portable across servers |
 | Payments | x402 (HTTP 402) | HTTP-native, stablecoin micropayments |
@@ -102,22 +118,23 @@ flowchart TB
 | **Communication** | A2A (Agent-to-Agent) | Module ↔ module: tasks, skills, push notifications |
 | **Payment** | x402 (HTTP 402 headers) | Monetize module data, stablecoin micropayments |
 | **Constraints** | BP (bThreads) | Boundary enforcement, payment authorization |
-| **UI Generation** | Plaited Agent (client) | Compose resources into live interfaces |
-| **Compute** | OpenCode Server | Code execution, skills, MCP integrations |
-| **Tool Access** | MCP (inside OpenCode) | Server ↔ tool servers (filesystem, DB, etc.) |
+| **UI Generation** | Plaited Agent | Compose resources into live interfaces |
+| **Compute** | Sprites (Fly.io) | Persistent Firecracker VMs, checkpoint/restore |
+| **State** | Turso | Per-user SQLite, edge replicas, vector search |
+| **Tool Access** | Self-hosted (file-ops, search, bash-exec) | Agent runs its own tools in Sprite |
 
 ### Protocol Responsibilities
 
 ```mermaid
 flowchart LR
-    subgraph ClientProtos["Plaited Client Protocols"]
+    subgraph AgentProtos["Plaited Agent Protocols"]
         A2A["A2A<br/>(modnet peers)"]
         ACP["ACP<br/>(IDE integration)"]
     end
 
-    subgraph ServerProtos["OpenCode Server Protocols"]
-        MCP["MCP<br/>(tool servers)"]
-        HTTP["HTTP API<br/>(client ↔ server)"]
+    subgraph InfraProtos["Infrastructure"]
+        SpriteHTTP["Sprite HTTP<br/>(A2A endpoint)"]
+        TursoDB["Turso<br/>(per-user state)"]
     end
 
     subgraph CrossCutting["Cross-Cutting"]
@@ -126,12 +143,12 @@ flowchart LR
     end
 
     A2A --- X402
+    A2A --- SpriteHTTP
     ATP --- A2A
     ATP --- ACP
-    ATP --- HTTP
 ```
 
-**Key boundary**: MCP is an OpenCode concern. The Plaited client never hosts MCP servers directly — it sends generation requests to OpenCode, which orchestrates MCP tools.
+**Key boundary**: The agent self-hosts its tools (file-ops, search, bash-exec) inside its Sprite. The Sprite's HTTP endpoint serves as the A2A server. Turso provides persistent state across Sprite sleep/wake cycles.
 
 ### A2A for Modnet Communication
 
@@ -277,102 +294,124 @@ From Rachel Jaffe's modnet theory, mapped to template composition:
 
 ---
 
-## OpenCode Integration
+## Infrastructure (Sprites + Turso + Fly.io)
 
-### Agent as Client to OpenCode
+Each user's agent runs as a persistent Firecracker VM on Fly.io via Sprites, with per-user SQLite state in Turso.
 
-The Plaited agent connects to OpenCode as a web client via its HTTP API:
+### Why This Stack
+
+| Concern | Org-Level Solution | User-Level Solution (V8) |
+|---|---|---|
+| Compute | Modal VMs (ephemeral, multi-tenant) | **Sprites** (persistent, user-owned Firecracker VMs) |
+| State | Cloudflare Durable Objects (org-scoped) | **Turso** (per-user SQLite, edge replicas) |
+| Multiplayer | Central server broadcasts | **A2A** (peer-to-peer between Sprites) |
+| Auth | GitHub SSO (org membership) | **AT Protocol DIDs** (decentralized) |
+| Model inference | External API routing | **llama.cpp in Sprite** (self-hosted) |
+
+### Sprites = Agent Host
+
+Each user gets a Sprite — a persistent Firecracker VM that survives sleep/wake cycles:
 
 ```mermaid
-flowchart LR
-    subgraph PlaitedClient["Plaited Client"]
-        UIGen["UI Generation"]
-        BPLayer["BP Constraints"]
+flowchart TB
+    subgraph Sprite["User's Sprite"]
+        Agent["Plaited Agent<br/>(BP + UI Gen + Tools)"]
+        LlamaCpp["llama.cpp<br/>(Falcon-H1R)"]
+        A2AEndpoint["A2A Server<br/>(Sprite HTTP URL)"]
     end
 
-    subgraph OpenCodeServer["OpenCode Server"]
-        Sessions["Session Management"]
-        Assistants["Assistant (LLM)"]
-        MCPTools["MCP Tool Servers"]
-        FileSystem["File System"]
+    subgraph Lifecycle["Sprite Lifecycle"]
+        Create["Create → persistent VM"]
+        Sleep["Idle → auto-sleep"]
+        Wake["HTTP request → auto-wake"]
+        Checkpoint["Checkpoint → snapshot state"]
     end
 
-    PlaitedClient -->|"HTTP API / SDK"| Sessions
-    Sessions --> Assistants
-    Assistants --> MCPTools
-    Assistants --> FileSystem
+    Create --> Sleep
+    Sleep -->|"A2A task arrives"| Wake
+    Wake --> Sleep
+    Checkpoint -->|"migrate / restore"| Create
 ```
 
-### OpenCode SDK Usage
+- **Sprite HTTP URL** = A2A endpoint (`https://{sprite}.sprites.dev/.well-known/agent.json`)
+- **Auto-wake on HTTP** = modnet presence (peer sends task → Sprite wakes → responds → sleeps)
+- **Persistent filesystem** = model weights, generated modules, bThreads survive sleep
+- **Checkpoint/restore** = snapshot agent state for migration or rollback
+
+### Sprites SDK Usage
 
 ```typescript
-import { OpenCode } from '@opencode-ai/sdk'
+import { SpritesClient } from '@fly/sprites'
 
-const client = new OpenCode({ baseURL: 'http://localhost:3000' })
+const client = new SpritesClient(process.env.SPRITE_TOKEN)
 
-// Create session
-const session = await client.session.create()
+// Create user's agent Sprite
+const sprite = await client.createSprite('agent-{did}')
 
-// Send generation request (OpenCode handles file-ops, MCP, etc.)
-const response = await client.chat.create(session.id, {
-  messages: [{ role: 'user', content: generatePrompt }],
-})
+// Execute agent tools inside Sprite
+const result = await sprite.execFile('bun', ['run', 'agent', '--headless'])
 
-// Stream events
-for await (const event of response) {
-  switch (event.type) {
-    case 'text':
-      // Model reasoning
-      break
-    case 'tool_call':
-      // OpenCode executing tools (file write, search, etc.)
-      break
-    case 'result':
-      // Final generated code
-      break
-  }
+// Stream long-running agent output
+const cmd = sprite.spawn('bun', ['run', 'agent', '--serve-a2a'])
+for await (const line of cmd.stdout) {
+  process.stdout.write(line)
 }
 ```
 
-### What Agent Keeps (Client-Side)
+### Turso = Agent State
 
-| Capability | Why Client-Side |
+Per-user SQLite replaces centralized state management:
+
+| Agent Need | Turso Feature |
 |---|---|
-| BP constraints | Symbolic validation, boundary enforcement, payment auth |
-| Browser world model | Stories + play() for UI validation |
-| Structural vocabulary | Modnet design language |
-| UI generation logic | Template composition from intent |
-| Training pipeline | Trajectory capture for SFT/GRPO |
-| A2A adapter | Modnet peer communication |
-| AT Protocol auth | DID-based identity |
-| x402 payment logic | Budget management, payment proof |
+| Module registry | SQLite tables (maps to `relation-store`) |
+| Semantic cache | SQLite + vector search (maps to `semantic-cache`) |
+| Tool/skill index | FTS5 (maps to `tool-discovery`, `skill-discovery`) |
+| Training trajectories | JSONL stored in SQLite rows |
+| bThread state | SQLite snapshots |
+| Session history | Message tables |
 
-### What Agent Drops (Server Handles)
+Turso features that map to modnet:
+- **Embedded replicas** — sync state to edge for fast reads from anywhere
+- **Copy-on-write branching** — experiment with module changes without risk
+- **Vector search** — semantic similarity for tool/skill discovery (no separate embedder needed)
+- **Per-user databases** — each user's data is fully isolated
 
-| Capability | Why Server-Side |
-|---|---|
-| file-ops (read, write, edit) | OpenCode has native file operations |
-| search (glob + grep) | OpenCode has search tools |
-| bash-exec | OpenCode has shell execution |
-| MCP host infrastructure | OpenCode hosts MCP servers |
-| Tool/skill discovery | OpenCode manages its own tools |
-| Embedder | Not needed at client level |
-| Semantic cache | Server caches its own responses |
+### Fly.io GPU Machines
+
+For model inference requiring GPU:
+
+| Model | Compute | Notes |
+|---|---|---|
+| FunctionGemma (edge) | Sprite CPU | Small model, CPU inference sufficient |
+| Falcon-H1R (remote) | Fly GPU Machine (A10/L40S) | Sprite calls via Fly internal network (`.internal` DNS) |
+| Frontier (training only) | External API | Claude/GPT via API during AI-Assisted Design phase |
+
+### Ephemeral Presence via Sprites
+
+Sprite sleep/wake maps directly to modnet presence:
+
+| State | Sprite | Modnet |
+|---|---|---|
+| **Online** | Running | A2A requests served, modules discoverable |
+| **Idle** | Sleeping | Auto-wakes on A2A request (transparent to peers) |
+| **Offline** | Destroyed | Data gone, modules undiscoverable |
+| **Migrating** | Checkpoint → restore on new Sprite | Same DID, new endpoint |
 
 ---
 
 ## Observable / Affectable Taxonomy
 
-Updated for the client + server + modnet architecture:
+Updated for the self-hosted agent + modnet architecture:
 
 ```mermaid
 flowchart TB
     subgraph Observable["OBSERVABLE"]
         direction TB
-        subgraph ViaServer["Via OpenCode Server"]
+        subgraph ViaTools["Via Agent Tools (in Sprite)"]
             FileState["File system state"]
             ToolResults["Tool execution results"]
-            MCPData["MCP resource data"]
+            TursoData["Turso query results"]
         end
         subgraph ViaBrowser["Via Browser World Model"]
             Stories["Story play() outcomes"]
@@ -416,7 +455,7 @@ The agent uses a dual-model architecture optimized for different deployment phas
 |---|---|---|---|
 | Edge | FunctionGemma | Fast local inference, common UI patterns | Distilled from Remote |
 | Remote | Falcon-H1R | Complex reasoning, novel compositions | GRPO with 3-source pairs |
-| Frontier | Claude/GPT (via OpenCode) | Reference trajectories (AI-Assisted Design only) | Frozen (oracle) |
+| Frontier | Claude/GPT (via API) | Reference trajectories (AI-Assisted Design only) | Frozen (oracle) |
 
 ### Deployment Modes
 
@@ -424,8 +463,8 @@ The agent uses a dual-model architecture optimized for different deployment phas
 flowchart TB
     subgraph AIAssisted["AI-Assisted Design Phase"]
         direction TB
-        LocalDev["Both models local or colocated"]
-        FrontierCompare["Frontier via OpenCode for comparison"]
+        LocalDev["Both models in Sprite or colocated Fly Machine"]
+        FrontierCompare["Frontier via API for comparison"]
         HarnessTraining["agent-eval-harness captures trajectories"]
     end
 
@@ -620,7 +659,7 @@ flowchart TB
     WorldModel --> BP["4. BP Check<br/>(boundary + payment + safety)"]
     BP -->|Blocked| Learn["Learn from block"]
     Learn --> Generate
-    BP -->|Allowed| Execute["5. Execute via OpenCode<br/>(write files, run tools)"]
+    BP -->|Allowed| Execute["5. Execute<br/>(write files, run tools in Sprite)"]
     Execute --> Grade["6. Grade<br/>(static + stories + a11y)"]
     Grade --> Capture["7. Capture<br/>(trajectory)"]
     Capture -->|Not done| Generate
@@ -655,7 +694,7 @@ type AgentEvent =
   | { type: 'generation'; code: string; confidence: number }
   | { type: 'world_model'; prediction: WorldModelPrediction }
   | { type: 'bp_check'; allowed: boolean; reason?: string }
-  | { type: 'opencode_execution'; result: OpenCodeResult }
+  | { type: 'tool_execution'; result: ToolExecutionResult }
   | { type: 'grading'; result: GraderResult }
   | { type: 'module_saved'; card: ModuleAgentCard }
   | { type: 'trajectory_step'; step: TrajectoryStep }
@@ -673,7 +712,7 @@ Updated for UI-focused verification. Multi-tier approach:
 ```typescript
 type Grader = (params: {
   action: GenerationAction
-  executionResult: OpenCodeResult
+  executionResult: ToolExecutionResult
   cwd: string
 }) => Promise<GraderResult>
 
@@ -698,12 +737,12 @@ type GraderResult = {
 
 ```typescript
 const grade: Grader = async ({ action, executionResult, cwd }) => {
-  // Tier 1: Static Analysis
-  const tsc = await opencode.exec(session, 'tsc --noEmit')
-  const biome = await opencode.exec(session, 'biome check')
+  // Tier 1: Static Analysis (runs in Sprite via bash-exec)
+  const tsc = await bashExec({ command: 'tsc --noEmit', cwd })
+  const biome = await bashExec({ command: 'biome check', cwd })
 
   // Tier 2: Functional (UI-specific)
-  const stories = await opencode.exec(session, 'bun plaited test')
+  const stories = await bashExec({ command: 'bun plaited test', cwd })
   const a11y = runAccessibilityAudit(executionResult.output)
 
   const results = [tsc, biome, stories, a11y]
@@ -786,72 +825,95 @@ bunx @plaited/agent-eval-harness trials prompts.jsonl \
 
 ## Completed Infrastructure (311 tests)
 
-These modules form the foundation. In V8, some shift roles:
+These modules form the foundation. All modules are retained — the agent self-hosts everything in its Sprite:
 
 | Module | V7 Role | V8 Role | Tests |
 |---|---|---|---|
-| `tool-discovery` | Discovery Layer | **Training data** — index UI tools for trajectory generation | 45 |
-| `skill-discovery` | Discovery Layer | **Training data** — index skills for trajectory generation | 62 |
-| `rules-discovery` | Discovery Layer | **Client-side** — index modnet rules + structural vocabulary | 25 |
-| `embedder` | Memory/Search | **Training** — embeddings for semantic similarity | - |
-| `semantic-cache` | Memory | **Training** — cache generation patterns | 27 |
-| `relation-store` | Memory/Planning | **Client-side** — DAG for module relationships | 41 |
-| `formatters` | Prediction Layer | **Client-side** — format tools for model | 22 |
-| `file-ops` | Execution Layer | **Drops** — OpenCode handles | 13 |
-| `search` | Execution Layer | **Drops** — OpenCode handles | 11 |
-| `bash-exec` | Execution Layer | **Drops** — OpenCode handles | 11 |
-| `schema-utils` | Tooling | **Client-side** — Zod → ToolSchema for A2A | 6 |
-| `markdown-links` | Discovery Layer | **Client-side** — extract references | 25 |
+| `tool-discovery` | Discovery Layer | **Active** — index agent's tools for runtime discovery | 45 |
+| `skill-discovery` | Discovery Layer | **Active** — index skills for runtime discovery | 62 |
+| `rules-discovery` | Discovery Layer | **Active** — index modnet rules + structural vocabulary | 25 |
+| `embedder` | Memory/Search | **Active** — embeddings for semantic similarity (Turso vector search alternative) | - |
+| `semantic-cache` | Memory | **Active** — cache generation patterns (backed by Turso) | 27 |
+| `relation-store` | Memory/Planning | **Active** — DAG for module relationships (backed by Turso) | 41 |
+| `formatters` | Prediction Layer | **Active** — format tools for model | 22 |
+| `file-ops` | Execution Layer | **Active** — file operations in Sprite filesystem | 13 |
+| `search` | Execution Layer | **Active** — search in Sprite filesystem | 11 |
+| `bash-exec` | Execution Layer | **Active** — bash execution in Sprite | 11 |
+| `schema-utils` | Tooling | **Active** — Zod → ToolSchema for A2A | 6 |
+| `markdown-links` | Discovery Layer | **Active** — extract references | 25 |
 
-**Note**: Modules marked "Drops" aren't deleted — they remain available but the agent no longer invokes them directly. OpenCode provides equivalent functionality.
+**Note**: All 311 tests remain valid. The agent uses these modules directly — no external delegation.
 
 ---
 
-## Phase 4: OpenCode Client Adapter
+## Phase 4: Infrastructure Bootstrap (Sprites + Turso)
 
-Connect the Plaited agent to OpenCode as its general-purpose coding backend.
+Set up the remote execution environment and per-user state.
 
 ### Implementation Order
 
-1. **OpenCode Types** (`src/agent/opencode/opencode.types.ts`)
-   - Session, message, tool call, and event types
-   - OpenCode SDK wrapper interface
+1. **Infrastructure Types** (`src/agent/infrastructure/infrastructure.types.ts`)
+   - Sprite lifecycle types (create, sleep, wake, checkpoint, destroy)
+   - Turso connection types (per-user DB, embedded replicas)
+   - Agent bootstrap configuration
 
-2. **OpenCode Adapter** (`src/agent/opencode/opencode-adapter.ts`)
-   - useBehavioral-based adapter (follows custom-adapters pattern)
-   - HTTP API / SDK connection management
-   - Session lifecycle (create, resume, disconnect)
-   - Event streaming (SSE)
+2. **Sprite Manager** (`src/agent/infrastructure/sprite-manager.ts`)
+   - Create/destroy user Sprites via `@fly/sprites` SDK
+   - Checkpoint/restore for migration
+   - Health monitoring (sleep/wake state)
+   - A2A endpoint URL management
 
-3. **Code Executor** (`src/agent/opencode/code-executor.ts`)
-   - Bridge between agent generation and OpenCode execution
-   - Send generated template code to OpenCode for file writing
-   - Receive execution results
+3. **Turso Adapter** (`src/agent/infrastructure/turso-adapter.ts`)
+   - Per-user database creation
+   - Embedded replica sync
+   - Migration from existing SQLite modules (semantic-cache, relation-store, tool/skill-discovery)
+   - Vector search configuration
 
-### OpenCode Adapter Skeleton
+4. **Agent Bootstrap** (`src/agent/infrastructure/agent-bootstrap.ts`)
+   - Initialize Sprite with model weights, tools, and agent runtime
+   - Connect to Turso for persistent state
+   - Start A2A server on Sprite HTTP endpoint
+   - Register llama.cpp process for model inference
+
+### Sprite Manager Skeleton
 
 ```typescript
-const createOpenCodeAdapter = (config: { baseURL: string }) => {
-  return useBehavioral<OpenCodeEvents, OpenCodeContext>({
-    publicEvents: ['execute', 'disconnect'],
+const createSpriteManager = (config: {
+  token: string
+  did: string
+}) => {
+  return useBehavioral<SpriteEvents, SpriteContext>({
+    publicEvents: ['bootstrap', 'checkpoint', 'destroy'],
 
     async bProgram({ outbound, disconnect }) {
-      const client = new OpenCode({ baseURL: config.baseURL })
-      const session = await client.session.create()
+      const client = new SpritesClient(config.token)
+      const spriteName = `agent-${config.did}`
+      const sprite = await client.createSprite(spriteName)
 
       return {
-        async execute({ code, intent }) {
-          // Send to OpenCode for execution
-          const stream = await client.chat.create(session.id, {
-            messages: [{ role: 'user', content: code }],
-          })
+        async bootstrap({ modelPath, agentConfig }) {
+          // Install agent runtime in Sprite
+          await sprite.execFile('bun', ['install'])
 
-          for await (const event of stream) {
-            outbound.set({ kind: 'opencode_event', event })
-          }
+          // Start llama.cpp with model weights
+          const llama = sprite.spawn('llama-server', [
+            '-m', modelPath,
+            '--port', '8081',
+          ])
+
+          // Start A2A server on Sprite HTTP endpoint
+          const a2a = sprite.spawn('bun', [
+            'run', 'agent', '--serve-a2a',
+          ])
+
+          outbound.set({ type: 'sprite_ready', url: sprite.url })
         },
-        disconnect() {
-          session.close()
+        async checkpoint() {
+          // Snapshot Sprite state for migration/rollback
+          outbound.set({ type: 'checkpoint_created' })
+        },
+        destroy() {
+          client.deleteSprite(spriteName)
           disconnect()
         },
       }
@@ -991,7 +1053,7 @@ type X402Config = {
 
 ## Phase 7: World Model + BP Wiring
 
-Connect the browser world model to the BP constraint layer and OpenCode execution.
+Connect the browser world model to the BP constraint layer and tool execution.
 
 ### Implementation (same as V7, adjusted for UI focus)
 
@@ -1003,7 +1065,7 @@ Connect the browser world model to the BP constraint layer and OpenCode executio
 
 ## Phase 8: Agent Loop + Grader
 
-Full agent loop: intent → structural analysis → generation → world model → BP → execute via OpenCode → grade → capture trajectory.
+Full agent loop: intent → structural analysis → generation → world model → BP → execute (tools in Sprite) → grade → capture trajectory.
 
 ### Implementation
 
@@ -1039,10 +1101,11 @@ flowchart TB
 
     Agent -->|"signals"| ACP["acpAdapter<br/>(IDE ↔ Agent)"]
     Agent -->|"signals"| A2A["a2aAdapter<br/>(Agent ↔ Agent / Modnet)"]
-    Agent -->|"signals"| OpenCode["openCodeAdapter<br/>(Agent → OpenCode Server)"]
+    Agent -->|"signals"| Sprite["spriteManager<br/>(Agent → Sprite lifecycle)"]
+    Agent -->|"signals"| Turso["tursoAdapter<br/>(Agent → Turso state)"]
 ```
 
-Each adapter is a separate useBehavioral program wired via the orchestrator's bidirectional signals.
+Each adapter is a separate useBehavioral program wired via the orchestrator's bidirectional signals. The agent self-hosts its tools (file-ops, search, bash-exec) — no external coding server adapter needed.
 
 ---
 
@@ -1054,7 +1117,8 @@ This agent is a **modnet foundation** — users extend it with their own modules
 
 | Layer | Description |
 |---|---|
-| Model stack | FunctionGemma (edge) + Falcon-H1R (remote) |
+| Infrastructure | Sprites (Fly.io) + Turso (per-user SQLite) + Fly GPU Machines |
+| Model stack | FunctionGemma (edge) + Falcon-H1R (remote via llama.cpp) |
 | BP runtime | Core bThreads + ratchet + boundary enforcement |
 | Training loop | agent-eval-harness + GRPO with 3-source pairs |
 | Structural vocabulary | Objects, channels, levers, loops, blocks |
@@ -1078,7 +1142,7 @@ This agent is a **modnet foundation** — users extend it with their own modules
 | Aspect | General Coding Agents | Your Foundation |
 |---|---|---|
 | Scope | Everything | UI generation + modnet orchestration |
-| Coding | Built-in | Delegated to OpenCode |
+| Coding | Built-in | Self-hosted in Sprite (file-ops, search, bash-exec) |
 | Data | Central service | User-owned (on their agent) |
 | Network | Isolated | Modnet (peer-to-peer via A2A) |
 | Identity | Platform accounts | Decentralized (AT Protocol DIDs) |
@@ -1094,14 +1158,14 @@ This agent is a **modnet foundation** — users extend it with their own modules
 | Phase | Components | Tests | Status |
 |---|---|---|---|
 | 1 | semantic-cache, relation-store | 68 | ✅ |
-| 2 | file-ops, search, bash-exec | 34 | ✅ (OpenCode concern in V8) |
+| 2 | file-ops, search, bash-exec | 34 | ✅ (self-hosted in Sprite) |
 | 3 | skill-discovery refs, rules-discovery | 87 | ✅ |
 
 ### Phase 4–10: Planned
 
 | Phase | Components | Priority | Effort |
 |---|---|---|---|
-| 4 | OpenCode Client Adapter | High | Medium |
+| 4 | Infrastructure Bootstrap (Sprites + Turso) | High | Medium |
 | 5 | A2A Adapter + Modnet | High | High |
 | 6 | AT Protocol + x402 | High | High |
 | 7 | World Model + BP Wiring | High | High |
@@ -1120,10 +1184,11 @@ src/agent/
 ├── schema-utils.ts             # ✅ Zod → ToolSchema
 ├── markdown-links.ts           # ✅ Link extraction
 │
-├── opencode/                   # OpenCode Client (NEW)
-│   ├── opencode.types.ts       # 🔲 Session, message, event types
-│   ├── opencode-adapter.ts     # 🔲 useBehavioral adapter
-│   └── code-executor.ts        # 🔲 Generation → execution bridge
+├── infrastructure/              # Sprites + Turso (NEW)
+│   ├── infrastructure.types.ts # 🔲 Sprite lifecycle, Turso connection types
+│   ├── sprite-manager.ts       # 🔲 Create/destroy/checkpoint Sprites
+│   ├── turso-adapter.ts        # 🔲 Per-user DB, embedded replicas
+│   └── agent-bootstrap.ts      # 🔲 Initialize Sprite with agent runtime
 │
 ├── a2a/                        # A2A Protocol (NEW)
 │   ├── a2a.types.ts            # 🔲 Agent Card, Task, Skill
@@ -1170,10 +1235,10 @@ src/agent/
 │
 ├── embedder.ts                 # ✅ GGUF embeddings (training use)
 │
-└── tools/                      # Retained but OpenCode-delegated
-    ├── file-ops.ts             # ✅ (available, OpenCode preferred)
-    ├── search.ts               # ✅ (available, OpenCode preferred)
-    └── bash-exec.ts            # ✅ (available, OpenCode preferred)
+└── tools/                      # Self-hosted in Sprite (active)
+    ├── file-ops.ts             # ✅ File operations in Sprite filesystem
+    ├── search.ts               # ✅ Search in Sprite filesystem
+    └── bash-exec.ts            # ✅ Bash execution in Sprite
 ```
 
 ---
@@ -1187,8 +1252,11 @@ bun test src/agent/discovery
 # A2A adapter compliance
 bun test src/agent/a2a
 
-# OpenCode adapter
-bun test src/agent/opencode
+# Infrastructure (Sprites + Turso)
+bun test src/agent/infrastructure
+
+# Tool execution (self-hosted)
+bun test src/agent/tools
 
 # x402 payment logic
 bun test src/agent/payment
@@ -1216,42 +1284,54 @@ bunx @plaited/agent-eval-harness capture test-prompts.jsonl \
 
 | V7 | V8 |
 |---|---|
-| Standalone general-purpose agent | Specialized generative UI client |
-| Builds own file-ops, search, bash-exec | Delegates to OpenCode server |
-| Unified Capability Host (MCP + Skills) | OpenCode handles capability management |
-| Federated discovery pools | OpenCode handles tool discovery |
-| MCP for all communication | A2A for modnet, MCP stays in OpenCode |
+| Standalone general-purpose agent | Specialized generative UI agent |
+| Local machine execution | Remote execution on Sprites (Fly.io) |
+| No persistent state strategy | Turso per-user SQLite (edge-distributed) |
+| Unified Capability Host (MCP + Skills) | Self-hosted tools + A2A for modnet |
+| Federated discovery pools | Agent-local tool/skill discovery |
+| MCP for all communication | A2A for modnet; tools self-hosted in Sprite |
 | Generic security interfaces (future) | AT Protocol OAuth + x402 (concrete) |
-| Agent as MCP server (future) | Agent as A2A server (modnet participant) |
+| Agent as MCP server (future) | Agent as A2A server (Sprite HTTP endpoint) |
 | No module ownership concept | User-owned modules, ephemeral networks |
 | No payment infrastructure | x402 micropayments with BP budget guards |
 
 ### Start Next Session With
 
 ```
-Read PLAITED-AGENT-PLAN.md and implement the OpenCode Client Adapter.
+Read PLAITED-AGENT-PLAN.md and implement the Infrastructure Bootstrap.
 
 IMPLEMENTATION ORDER:
 
-1. src/agent/opencode/opencode.types.ts
-   - Session, message, tool call types
-   - OpenCode SDK wrapper interface
+1. src/agent/infrastructure/infrastructure.types.ts
+   - Sprite lifecycle types (create, sleep, wake, checkpoint, destroy)
+   - Turso connection types (per-user DB, embedded replicas)
+   - Agent bootstrap configuration
 
-2. src/agent/opencode/opencode-adapter.ts
-   - useBehavioral adapter following custom-adapters pattern
-   - HTTP API connection, session lifecycle
-   - Event streaming (SSE)
+2. src/agent/infrastructure/sprite-manager.ts
+   - Create/destroy user Sprites via @fly/sprites SDK
+   - Checkpoint/restore for migration
+   - Health monitoring (sleep/wake state)
+   - A2A endpoint URL management
 
-3. src/agent/opencode/code-executor.ts
-   - Bridge: agent generation → OpenCode execution
-   - Template code → file writing via OpenCode
+3. src/agent/infrastructure/turso-adapter.ts
+   - Per-user database creation
+   - Embedded replica sync
+   - Migration from existing SQLite modules
+   - Vector search configuration
+
+4. src/agent/infrastructure/agent-bootstrap.ts
+   - Initialize Sprite with model weights + tools + agent runtime
+   - Connect to Turso for persistent state
+   - Start A2A server on Sprite HTTP endpoint
+   - Register llama.cpp process for Falcon-H1R inference
 
 KEY PATTERNS:
-- useBehavioral for adapter (same as ACP, A2A adapters)
+- useBehavioral for sprite-manager adapter
 - Bidirectional signals via orchestrator
-- BP constraints check before forwarding to OpenCode
-- Session management (create, resume, disconnect)
-- OpenCode SDK: @opencode-ai/sdk
+- Sprite HTTP URL = A2A endpoint
+- Auto-wake on A2A request = modnet presence
+- All 311 tests from Phase 1-3 modules remain active
+- SDKs: @fly/sprites, @libsql/client (Turso)
 ```
 
 ---
@@ -1260,7 +1340,8 @@ KEY PATTERNS:
 
 - How does module discovery work? (mDNS, registry, AT Protocol relay?)
 - How do ephemeral/proximity-based connections map to A2A transport?
-- Training pipeline: how to capture trajectories from both client (UI decisions) and server (coding actions)?
+- Training pipeline: how to capture trajectories from agent's tool execution in Sprite?
+- Can Sprites get GPU access directly, or does Falcon-H1R need a separate Fly GPU Machine?
 - How does the structural vocabulary inform A2A Agent Card schema design?
 - What's the minimum viable Agent Card for modnet participation?
 - How do x402 payments integrate with AT Protocol identity for receipts?
@@ -1272,14 +1353,16 @@ KEY PATTERNS:
 | Resource | Description |
 |---|---|
 | [Modnet concept](assets/Modnet.md) | Rachel Jaffe — modular network theory |
-| [OpenCode server API](https://opencode.ai/docs/server/) | HTTP API + SSE, SDK: @opencode-ai/sdk |
 | [x402](https://www.x402.org/) | HTTP 402 Payment Required protocol |
 | [AT Protocol OAuth](https://atproto.com/specs/oauth) | Decentralized identity via DIDs |
 | [A2A Protocol](https://google.github.io/A2A/) | Agent-to-Agent communication |
 | [a2a-x402](https://github.com/google-agentic-commerce/a2a-x402) | A2A + x402 integration reference |
-| [System design](https://gist.github.com/EdwardIrby/9e06d246fd9a8150cb408f95b9365e54) | Multi-client server architecture |
+| [Sprites](https://sprites.dev/) | Persistent Firecracker VMs (Fly.io) — agent execution host |
+| [Sprites SDK](https://docs.sprites.dev/quickstart/) | `@fly/sprites` — create, exec, spawn, checkpoint |
+| [Turso](https://turso.tech/) | Per-user distributed SQLite — agent state |
+| [Fly.io GPUs](https://fly.io/docs/gpus/) | A10/L40S/A100 for model inference |
+| [Org agent design (gist)](https://gist.github.com/EdwardIrby/9e06d246fd9a8150cb408f95b9365e54) | Reference: multi-client org architecture (contrast with user-owned) |
 | [qmd multi-surface](https://github.com/tobi/qmd) | CLI + MCP + plugin + skill pattern |
-| [subtask2](https://github.com/spoons-and-mirrors/subtask2) | OpenCode orchestration plugin |
 
 ---
 
@@ -1302,8 +1385,6 @@ KEY PATTERNS:
 
 ### From V8 (new)
 - 2026-02: Agent scope drifted to general-purpose — refocused on generative UI specialization
-- 2026-02: Don't rebuild what exists — delegate general coding to OpenCode
-- 2026-02: MCP is a server concern (OpenCode), not a client concern (Plaited agent)
 - 2026-02: A2A is the right protocol for peer-to-peer modnet communication
 - 2026-02: x402 layers directly on HTTP — no protocol bridge needed for payments
 - 2026-02: AT Protocol DIDs give decentralized identity without central authority
@@ -1313,7 +1394,21 @@ KEY PATTERNS:
 - 2026-02: Structural vocabulary (objects, channels, levers, loops, blocks) IS the modnet design language
 - 2026-02: Rachel Jaffe's structural vocabulary already exists in loom skill — modnet was always implicit
 - 2026-02: A2A Agent Card = module declaration format (skills, boundaries, pricing)
-- 2026-02: User's data lives ON their agent (client + server combo)
+- 2026-02: User's data lives ON their agent (Sprite + Turso)
 - 2026-02: Agent is both A2A server (exposes module data) and A2A client (consumes peer modules)
-- 2026-02: OpenCode SDK pattern: create session → stream chat → receive tool_call events
 - 2026-02: Foundation model shifts: orgs → users. Users extend with modules, boundaries, peers
+
+### From Infrastructure Revision (new)
+- 2026-02: Org agent needs heavy infra (Modal + Cloudflare DO + SSH gateway) — user agent doesn't
+- 2026-02: User-owned agent = one Sprite per user, not shared multi-tenant infrastructure
+- 2026-02: Sprites auto-wake on HTTP = A2A presence model for free (task arrives → wake → respond → sleep)
+- 2026-02: Sprites persistent filesystem means model weights, modules, bThreads survive sleep cycles
+- 2026-02: Turso per-user SQLite replaces Cloudflare Durable Objects — same isolation, simpler model
+- 2026-02: Turso embedded replicas = edge-distributed reads, same pattern as DO but user-scoped
+- 2026-02: Turso vector search eliminates need for separate embedder in production
+- 2026-02: Turso copy-on-write branching = safe experimentation with module changes
+- 2026-02: All 311 Phase 1-3 tests remain active — agent self-hosts its tools, no delegation
+- 2026-02: Multiplayer is A2A peer-to-peer (Sprite ↔ Sprite), not central server broadcasting
+- 2026-02: Gemini CLI headless evaluated but rejected — JSONL streaming fits but locks to Gemini models
+- 2026-02: The "who needs a coding server?" answer: orgs do (hotel model), users don't (neighborhood model)
+- 2026-02: Fly GPU Machines (A10/L40S) available for Falcon-H1R inference alongside Sprite

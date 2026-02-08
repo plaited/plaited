@@ -22,8 +22,9 @@
 | Component | Stack | Function |
 | --- | --- | --- |
 | **Identity** | AT Protocol OAuth | Verifies the user is the owner (`did:plc:...`). |
-| **Orchestration** | Rivet Actor (Singleton) | Manages the session and sandbox lifecycle. |
-| **Compute** | Persistent Sandbox (Docker/Firecracker) | Docker container with persistent volume mounts. |
+| **Orchestration** | Rivet Actor (Singleton) | Manages session lifecycle, client streaming, SSH CA. |
+| **Coding Agent** | OpenCode (in Sandbox) | File ops, search, bash exec, LLM-driven code generation. |
+| **Compute** | Persistent Sandbox (Docker/Firecracker) | Container running OpenCode + SSHD + sync daemon. |
 | **State** | SQLite/JSON | Stores chat history, memory, and preferences. |
 
 ## System Architecture
@@ -50,6 +51,7 @@ graph TB
         end
 
         subgraph MUSCLE["Sandbox Agent (The Computer)"]
+            OpenCode["OpenCode Agent<br/>(coding runtime)"]
             Runtime["Docker Container"]
             SSHD["SSHD (Port 22)"]
             Sync["Sync Daemon"]
@@ -64,6 +66,9 @@ graph TB
     IDE -->|"3. plaited login (AT Proto OAuth)"| OAuth_Guard
     OAuth_Guard --"4. Sign SSH Certificate"--> SSH_CA
     SSH_CA --"5. Return short-lived cert"--> IDE
+
+    %% Rivet ↔ OpenCode (inside Sandbox)
+    Agent_Logic <-->|"WebSocket streaming"| OpenCode
 
     %% SSH Flow (cert-based, no authorized_keys)
     IDE -->|"6. SSH with certificate"| SSHD
@@ -114,13 +119,31 @@ The Rivet Actor is a **Singleton** — the "Always On" process for the personal 
 
 ### 2. The Sandbox Agent (Persistent Muscle)
 
-The Sandbox is a **long-lived container** with persistent storage.
+The Sandbox is a **long-lived container** with persistent storage. Inspired by [Ramp's background agent architecture](https://engineering.ramp.com/post/why-we-built-our-background-agent), we run [OpenCode](https://opencode.ai) inside the Sandbox as the coding agent runtime.
+
+**Why OpenCode (from Ramp's evaluation):**
+
+- **Server-first architecture** — designed for headless operation with pluggable clients
+- **Fully typed SDK** — extensible via plugins (`tool.execute.before`, lifecycle hooks)
+- **Source-accessible** — the agent can read its own source, reducing hallucination
+- **Plugin system** — the Rivet Actor integrates via OpenCode plugins for file-edit gating, streaming, and session control
+
+**What runs inside the Sandbox:**
+
+- **OpenCode Agent:** Handles file operations, search, bash execution, and LLM-driven code generation. When the Rivet Actor receives a user request ("fix the linter errors"), it streams the prompt to OpenCode inside the Sandbox via WebSocket. OpenCode executes tools, generates code, and streams results back.
+- **SSHD:** CA certificate auth. The owner can SSH in alongside OpenCode — both work on the same `/workspace` filesystem.
+- **Sync Daemon:** Watches `/workspace` for file changes (from OpenCode or SSH users) and pushes updates to the Rivet Actor for Web Client sync.
 
 **Configuration:**
 
 - **Image:** `plaited/sandbox-agent:latest`
-- **Volume:** `/workspace` is mounted to a persistent disk. This means if you restart the agent, your code files remain.
+- **Volume:** `/workspace` is mounted to a persistent disk. Code files persist across restarts.
 - **SSH Access:** The Sandbox's `sshd` trusts the Rivet Actor's CA key via `TrustedUserCAKeys`. No `authorized_keys` management needed.
+- **OpenCode Config:** Configured via `opencode.json` with the Rivet Actor as its coordination point. Skills and tools are pre-installed in the image.
+
+**Rivet Actor ↔ OpenCode communication:**
+
+The Rivet Actor streams prompts and receives tool execution results from OpenCode over an internal WebSocket connection. This follows Ramp's pattern where the orchestrator (Durable Objects in their case, Rivet Actor in ours) manages session lifecycle and client streaming, while the coding agent inside the sandbox handles the actual work.
 
 ### 3. The Web Client (Control Center)
 
@@ -205,16 +228,15 @@ Host sandbox
 **Scenario:** User asks Agent to fix a bug.
 
 1. **User (Web):** "Run the linter and fix errors."
-2. **Rivet Actor:** Receives request. Checks `OWNER_DID`. Authenticated.
-3. **Rivet Actor:** Sends command to Sandbox via internal Docker network: `npm run lint`.
-4. **Sandbox:** Executes command. Linter finds errors.
-5. **Sandbox:** Streams output back to Rivet Actor.
-6. **Rivet Actor:** Feeds output to LLM (e.g., OpenAI/Anthropic/Local LLM).
-7. **Rivet Actor:** Generates a code patch.
-8. **Rivet Actor:** Sends patch to Sandbox.
-9. **Sandbox:** Applies patch. `sync-daemon` notifies Rivet Actor of file change.
-10. **Rivet Actor:** Pushes "File Updated" notification to Web Client.
-11. **User (SSH):** Logs in via VS Code to verify the fix manually.
+2. **Rivet Actor:** Receives request via WebSocket. Checks `OWNER_DID`. Authenticated.
+3. **Rivet Actor:** Streams prompt to OpenCode inside Sandbox via internal WebSocket.
+4. **OpenCode:** Reads codebase, runs `npm run lint` via bash-exec tool. Linter finds errors.
+5. **OpenCode:** Feeds lint output to LLM, generates a code patch, applies file edits.
+6. **OpenCode:** Streams tool execution results and token output back to Rivet Actor.
+7. **Rivet Actor:** Relays streaming output to all connected Web Clients.
+8. **Sync Daemon:** Detects file changes in `/workspace`, pushes "File Updated" to Rivet Actor.
+9. **Rivet Actor:** Broadcasts file change notifications to Web Client.
+10. **User (SSH):** Logs in via VS Code to verify the fix manually.
 
 ## Deployment Guide (Self-Hosted)
 
