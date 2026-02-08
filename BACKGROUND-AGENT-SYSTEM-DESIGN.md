@@ -23,15 +23,14 @@
 | Component | Stack | Function |
 | --- | --- | --- |
 | **Identity** | AT Protocol OAuth | Verifies the user is the owner (`did:plc:...`). |
-| **Orchestration** | Rivet Actor (Singleton) | Session lifecycle, event persistence, client streaming, SSH CA. |
-| **Sandbox Control** | [Sandbox Agent SDK](https://sandboxagent.dev) | HTTP/SSE API to control coding agents inside the sandbox. Daemon runs in sandbox. |
+| **Orchestration** | Rivet Actor (Singleton) | Session lifecycle, client streaming, SSH CA. |
 | **UI Agent** | Plaited Agent (in Sandbox) | Generative UI, BP constraints, grading, structural vocabulary. |
-| **Coding Agent** | OpenCode (via sandbox-agent) | File ops, search, bash exec, LLM-driven code generation. |
+| **Coding Agent** | OpenCode (in Sandbox) | File ops, search, bash exec, LLM-driven code generation. |
 | **UI Delivery** | Bun Server (in Sandbox) | SSR of Plaited templates, WebSocket UI streaming. |
 | **Modnet** | A2A Protocol | Peer-to-peer module communication between agents. |
 | **Payments** | x402 (HTTP 402) | Micropayments for module data access between nodes. |
-| **Compute** | Persistent Sandbox (E2B / Daytona / Docker) | Container running sandbox-agent daemon + Bun Server + SSHD. |
-| **State** | Rivet Actor (SQLite) | Event persistence, chat history, memory, preferences, module registry. |
+| **Compute** | Persistent Sandbox (Docker/Firecracker) | Container running Plaited Agent + OpenCode + Bun Server + SSHD + sync daemon. |
+| **State** | SQLite/JSON | Chat history, memory, preferences, module registry. |
 
 ## System Architecture
 
@@ -57,8 +56,7 @@ graph TB
         end
 
         subgraph MUSCLE["Sandbox (The Computer)"]
-            SBAgent["sandbox-agent daemon<br/>(HTTP/SSE on :2468)"]
-            subgraph AGENTS["Agent Processes (managed by sandbox-agent)"]
+            subgraph AGENTS["Agent Stack"]
                 PAgent["Plaited Agent<br/>(UI generation + BP + grading)"]
                 OpenCode["OpenCode<br/>(coding runtime)"]
             end
@@ -66,6 +64,7 @@ graph TB
             A2AEndpoint["A2A Server<br/>(modnet endpoint)"]
             StoryServer["Story Server<br/>(port-forwarded to dev)"]
             SSHD["SSHD (Port 22)"]
+            Sync["Sync Daemon"]
         end
     end
 
@@ -83,10 +82,8 @@ graph TB
     OAuth_Guard --"4. Sign SSH Certificate"--> SSH_CA
     SSH_CA --"5. Return short-lived cert"--> IDE
 
-    %% Sandbox Agent SDK: Rivet Actor → sandbox-agent daemon
-    Agent_Logic <-->|"HTTP/SSE<br/>(sandbox-agent SDK)"| SBAgent
-    SBAgent -->|"manages processes"| PAgent
-    SBAgent -->|"manages processes"| OpenCode
+    %% Request Flow: Rivet → Plaited Agent → OpenCode
+    Agent_Logic <-->|"WebSocket streaming"| PAgent
     PAgent -->|"delegates coding"| OpenCode
 
     %% UI Delivery: Bun Server SSR + WebSocket
@@ -141,74 +138,35 @@ ENV PUBLIC_URL="https://my-agent.railway.app"
 
 ### 1. The Rivet Actor (Singleton Brain)
 
-The Rivet Actor is a **Singleton** — the "Always On" process for the personal agent. It uses the [Sandbox Agent TypeScript SDK](https://sandboxagent.dev) to control coding agents inside the Sandbox over HTTP/SSE.
+The Rivet Actor is a **Singleton** — the "Always On" process for the personal agent.
 
 **Responsibilities:**
 
-- **Gateway:** It runs the HTTP server and WebSocket endpoint for the browser.
-- **Sandbox Agent Client:** It uses the `sandbox-agent` TypeScript SDK to create sessions, post messages, stream events (SSE), and handle tool approvals inside the Sandbox. This replaces custom WebSocket communication.
-- **Event Persistence:** It persists the Universal Event stream from sandbox-agent to its SQLite database. Sessions survive sandbox restarts — the Rivet Actor is the source of truth for all agent transcripts.
-- **Reverse Proxy:** After authentication, it proxies HTTP and WebSocket connections to the Sandbox's Bun Server. The browser never connects to the Sandbox directly.
+- **Gateway:** It runs the HTTP server and WebSocket endpoint.
+- **Reverse Proxy:** After authentication, it proxies HTTP requests and WebSocket connections to the Sandbox's Bun Server. The browser never connects to the Sandbox directly.
 - **Sentinel:** It performs the AT Proto DID check on every connection — HTTP and WebSocket.
-- **Sandbox Manager:** It ensures the Sandbox container is running with the `sandbox-agent` daemon started. If the container crashes, the Actor restarts it.
+- **Sandbox Manager:** It ensures the Sandbox Docker container is running. If the container crashes, the Actor restarts it.
 - **SSH Certificate Authority:** It holds the CA private key and signs short-lived SSH certificates for authenticated users.
 
 ### 2. The Sandbox (Persistent Muscle)
 
-The Sandbox is a **long-lived container** with persistent storage. Inspired by [Ramp's background agent architecture](https://engineering.ramp.com/post/why-we-built-our-background-agent), it runs the [Sandbox Agent SDK](https://sandboxagent.dev) daemon — a lightweight Rust binary that manages coding agent processes and exposes them over HTTP/SSE.
+The Sandbox is a **long-lived container** with persistent storage. Inspired by [Ramp's background agent architecture](https://engineering.ramp.com/post/why-we-built-our-background-agent), it runs two agent processes: the **Plaited Agent** (generative UI) and **[OpenCode](https://opencode.ai)** (general-purpose coding).
 
-**Agent Stack:**
+**Agent Stack (two processes):**
 
 ```
 Rivet Actor (outside)
-    ↕ HTTP/SSE (sandbox-agent TypeScript SDK)
-sandbox-agent daemon (:2468)
-    ↕ manages agent processes
-Plaited Agent (session) + OpenCode (session)
+    ↕ WebSocket
+Plaited Agent (daemon + CLI)
+    ↕ OpenCode SDK/API
+OpenCode (headless coding runtime)
     ↕ tools
 /workspace filesystem
 ```
 
-**Why sandbox-agent (Ramp → Rivet):**
-
-Ramp's background agent architecture proved the pattern: a sandbox running coding agents, controlled remotely, with event persistence outside the sandbox. Rivet productized this as the Sandbox Agent SDK:
-
-| Ramp's Stack | Our Stack |
-|---|---|
-| Modal (sandbox VMs) | E2B / Daytona / Docker (sandbox containers) |
-| Cloudflare Durable Objects (state) | Rivet Actor (event persistence) |
-| Cloudflare Agents SDK (streaming) | sandbox-agent SDK (HTTP/SSE) |
-| OpenCode (coding agent) | OpenCode + Plaited Agent (via sandbox-agent) |
-
-#### 2a. sandbox-agent Daemon
-
-The `sandbox-agent` daemon is a ~15MB static Rust binary with zero runtime dependencies. It runs inside the Sandbox on port 2468 and provides a [Universal Event Schema](https://sandboxagent.dev) that normalizes different agent APIs into a single HTTP/SSE interface.
-
-**What it provides:**
-
-- **Session management:** Create, terminate, and list agent sessions via HTTP.
-- **Universal Event Stream:** All agent activity (messages, tool calls, file edits, permissions) normalized into a single SSE stream with monotonic sequence numbers.
-- **Tool approval over HTTP:** When an agent needs permission (file write, bash exec), the daemon emits a `permission.requested` event. The Rivet Actor can approve/deny via `POST /permissions/{id}/reply`.
-- **Multi-agent support:** Can run sessions for OpenCode, Claude Code, Codex, or Amp — swap agents via configuration.
-- **Offset-based reconnection:** If the Rivet Actor disconnects, it resumes from the last event sequence number. No data loss.
-
-**Key API endpoints (from [OpenAPI spec](https://sandboxagent.dev/docs)):**
-
-| Endpoint | Purpose |
-|---|---|
-| `POST /v1/sessions/{id}` | Create agent session (agent type, model, mode) |
-| `POST /v1/sessions/{id}/messages` | Post prompt to agent |
-| `GET /v1/sessions/{id}/events/sse` | Stream Universal Events (SSE) |
-| `POST /v1/sessions/{id}/permissions/{id}/reply` | Approve/deny tool execution |
-| `POST /v1/sessions/{id}/terminate` | End session |
-
-**Sessions are ephemeral in the daemon** — in-memory only. The Rivet Actor persists the Universal Event stream to its SQLite database. This means agent transcripts survive sandbox restarts.
-
-#### 2b. Plaited Agent (UI Intelligence)
+#### 2a. Plaited Agent (UI Intelligence)
 
 The Plaited Agent is the **primary intelligence layer** — all user requests flow through it. It understands Plaited's structural vocabulary (objects, channels, levers, loops, blocks), applies BP constraints, runs grading, and generates UI modules. It delegates actual code writing to OpenCode.
-
-The Plaited Agent runs as a session managed by the sandbox-agent daemon. The Rivet Actor creates a Plaited Agent session and streams prompts to it via the sandbox-agent HTTP API.
 
 **Responsibilities:**
 
@@ -220,16 +178,16 @@ The Plaited Agent runs as a session managed by the sandbox-agent daemon. The Riv
 
 **Two modes:**
 
-- **Session mode:** Managed by sandbox-agent. Receives prompts from Rivet Actor via HTTP, streams results back as Universal Events.
+- **Daemon mode:** Always running. Receives prompts from Rivet Actor via WebSocket, streams results back. Serves web app users.
 - **CLI mode:** Dev SSHs in and runs `plaited generate 'recipe tracker'` directly. Same agent, invoked on-demand.
 
 **AI-Assisted Design (SSH dev):**
 
 When a dev SSHs in, the Plaited Agent exposes a **Story Server** on a port-forwarded URL. The dev sees live story previews in their browser while the agent iterates on templates — enabling the human-in-the-loop AI-assisted design workflow from the [PLAITED-AGENT-PLAN](PLAITED-AGENT-PLAN.md).
 
-#### 2c. OpenCode (Coding Runtime)
+#### 2b. OpenCode (Coding Runtime)
 
-[OpenCode](https://opencode.ai) runs as a session managed by the sandbox-agent daemon. The Plaited Agent delegates all file operations and code generation to it. The sandbox-agent SDK provides an [OpenCode compatibility layer](https://sandboxagent.dev/docs) — the Plaited Agent can use the OpenCode SDK/API directly, or route through sandbox-agent's normalized API.
+[OpenCode](https://opencode.ai) runs headless inside the Sandbox. The Plaited Agent delegates all file operations and code generation to it.
 
 **Why OpenCode (from Ramp's evaluation):**
 
@@ -237,7 +195,6 @@ When a dev SSHs in, the Plaited Agent exposes a **Story Server** on a port-forwa
 - **Fully typed SDK** — extensible via plugins (`tool.execute.before`, lifecycle hooks)
 - **Source-accessible** — the agent can read its own source, reducing hallucination
 - **Plugin system** — Plaited Agent integrates via OpenCode plugins for file-edit gating, streaming, and session control
-- **sandbox-agent native support** — OpenCode is a first-class agent in the Sandbox Agent SDK
 
 **What OpenCode handles:**
 
@@ -253,7 +210,7 @@ When a dev SSHs in, the Plaited Agent exposes a **Story Server** on a port-forwa
 - Grading and verification (Plaited Agent)
 - Structural vocabulary mapping (Plaited Agent)
 
-#### 2d. Bun Server (UI Delivery)
+#### 2c. Bun Server (UI Delivery)
 
 The Bun Server runs inside the Sandbox, co-located with the Plaited runtime, generated templates, and `/workspace` filesystem. It is the rendering engine for the Control Center and all generated UI.
 
@@ -270,26 +227,24 @@ The Bun Server runs inside the Sandbox, co-located with the Plaited runtime, gen
 - Hot-reload is trivial: when the Plaited Agent generates a new template, the Bun Server picks it up immediately from the filesystem.
 - The Rivet Actor stays thin — auth, proxy, and sandbox lifecycle only.
 
-#### 2e. Infrastructure Services
+#### 2d. Infrastructure Services
 
 - **SSHD:** CA certificate auth. The owner can SSH in alongside both agents — all three work on the same `/workspace` filesystem.
+- **Sync Daemon:** Watches `/workspace` for file changes (from OpenCode, Plaited Agent, or SSH users) and pushes updates to the Rivet Actor for Web Client sync.
 - **Story Server:** Runs during AI-assisted design sessions. Serves live template previews on a port-forwarded URL for the SSH dev.
-- **Inspector UI:** The sandbox-agent daemon serves a built-in web inspector at `/ui/` for debugging sessions and viewing event streams.
 
 **Configuration:**
 
-- **Image:** `plaited/sandbox:latest` (pre-installs sandbox-agent binary, OpenCode, Bun, SSHD)
+- **Image:** `plaited/sandbox-agent:latest`
 - **Volume:** `/workspace` is mounted to a persistent disk. Code files persist across restarts.
-- **sandbox-agent:** Starts on boot: `sandbox-agent server --host 0.0.0.0 --port 2468 --token $SANDBOX_TOKEN`
 - **SSH Access:** The Sandbox's `sshd` trusts the Rivet Actor's CA key via `TrustedUserCAKeys`. No `authorized_keys` management needed.
 - **OpenCode Config:** Configured via `opencode.json`. Skills and tools are pre-installed in the image.
 
 **Communication chains:**
 
-- **Prompt flow:** Browser → Rivet Actor (auth) → sandbox-agent daemon (HTTP) → Plaited Agent (intent + BP) → OpenCode (code writing) → `/workspace` filesystem.
-- **Event flow:** Agent activity streams as Universal Events (SSE) from sandbox-agent → Rivet Actor persists to SQLite → Rivet Actor streams to browser via WebSocket.
+- **Prompt flow:** Browser → Rivet Actor (auth) → Plaited Agent (intent + BP) → OpenCode (code writing) → `/workspace` filesystem.
 - **UI delivery flow:** Plaited Agent generates templates → Bun Server SSR's with state → Rivet Actor proxies → Browser. WebSocket pushes incremental UI updates through the same path.
-- **Tool approval flow:** Agent requests permission → sandbox-agent emits `permission.requested` event → Rivet Actor streams to browser → user approves/denies → Rivet Actor posts reply to sandbox-agent → agent proceeds.
+- **State flow:** Rivet Actor pushes state updates (chat messages, memories) to the Bun Server. The Bun Server re-renders affected templates and streams UI patches to the browser.
 
 ### 3. The Web Client (Control Center)
 
@@ -382,26 +337,25 @@ Host sandbox
 
 1. **User (Web):** "Build me a recipe tracker with ingredient lists."
 2. **Rivet Actor:** Receives request via WebSocket. Checks `OWNER_DID`. Authenticated.
-3. **Rivet Actor:** Posts message to Plaited Agent session via sandbox-agent SDK: `POST /v1/sessions/{id}/messages`.
-4. **sandbox-agent:** Streams Universal Events (SSE) back to Rivet Actor — `item.started`, `item.delta`, `tool_call`, `permission.requested`.
-5. **Plaited Agent:** Maps intent to structural vocabulary (objects, channels, levers). Checks BP constraints.
-6. **Plaited Agent:** Delegates to OpenCode session: "Create a Plaited bElement with these template specs."
-7. **OpenCode:** Writes template files, styles, and story tests to `/workspace`. Tool calls stream as `file_ref` events.
-8. **Plaited Agent:** Runs grading — tsc, biome, `bun plaited test` (headless), a11y audit.
-9. **Plaited Agent:** If grading fails, feeds errors back to OpenCode for another iteration.
-10. **Rivet Actor:** Persists all Universal Events to SQLite. Streams progress to browser via WebSocket.
-11. **Bun Server:** Picks up the new template from `/workspace`, SSR's it with current state.
-12. **Bun Server → Rivet Actor → Browser:** Pushes UI update via WebSocket. The new module appears live in the Control Center.
+3. **Rivet Actor:** Streams prompt to Plaited Agent inside Sandbox.
+4. **Plaited Agent:** Maps intent to structural vocabulary (objects, channels, levers). Checks BP constraints.
+5. **Plaited Agent:** Delegates to OpenCode: "Create a Plaited bElement with these template specs."
+6. **OpenCode:** Writes template files, styles, and story tests to `/workspace`.
+7. **Plaited Agent:** Runs grading — tsc, biome, `bun plaited test` (headless), a11y audit.
+8. **Plaited Agent:** If grading fails, feeds errors back to OpenCode for another iteration.
+9. **Plaited Agent:** Streams progress and results back to Rivet Actor.
+10. **Bun Server:** Picks up the new template from `/workspace`, SSR's it with current state.
+11. **Bun Server → Rivet Actor → Browser:** Pushes UI update via WebSocket. The new module appears live in the Control Center.
 
 ### Flow B: Web User → Code Fix
 
 **Scenario:** User asks for a bug fix (non-UI task).
 
 1. **User (Web):** "Run the linter and fix errors."
-2. **Rivet Actor:** Posts message to Plaited Agent session via sandbox-agent SDK.
-3. **Plaited Agent:** Recognizes this as a general coding task, delegates directly to OpenCode session.
-4. **OpenCode:** Reads codebase, runs `bun run lint`, generates a code patch, applies file edits. All tool calls stream as Universal Events.
-5. **Rivet Actor:** Persists events, streams to browser. If OpenCode requests permission for a file write, the browser shows approve/deny — Rivet Actor relays the reply via `POST /permissions/{id}/reply`.
+2. **Rivet Actor:** Streams prompt to Plaited Agent.
+3. **Plaited Agent:** Recognizes this as a general coding task, delegates directly to OpenCode.
+4. **OpenCode:** Reads codebase, runs `bun run lint`, generates a code patch, applies file edits.
+5. **OpenCode:** Streams results back through Plaited Agent → Rivet Actor → Web Client.
 
 ### Flow C: SSH Dev → AI-Assisted Design
 
@@ -619,7 +573,7 @@ This architecture is designed to be deployed via `docker-compose` on a VPS (Digi
 version: '3.8'
 
 services:
-  # The Brain (Rivet Actor)
+  # The Brain (Rivet)
   personal-agent:
     image: my-personal-agent:latest
     ports:
@@ -627,26 +581,23 @@ services:
     environment:
       - OWNER_DID=did:plc:1234...  # <--- SECURITY LOCK
       - ATPROTO_SERVICE=https://bsky.social
-      - SANDBOX_URL=http://sandbox:2468  # sandbox-agent daemon
-      - SANDBOX_TOKEN=${SANDBOX_TOKEN}   # Auth token for sandbox-agent
+      - OPENAI_API_KEY=sk-...
+      - SANDBOX_HOST=sandbox
     volumes:
-      - ./agent-data:/data  # Persist event stream + memories
+      - ./agent-data:/data  # Persist memory/chat logs
     depends_on:
       - sandbox
 
-  # The Muscle (Sandbox + sandbox-agent daemon)
+  # The Muscle (Sandbox)
   sandbox:
-    image: plaited/sandbox:latest
-    # Entrypoint starts: sandbox-agent server + sshd + bun server
+    image: plaited/sandbox-agent:latest
     environment:
-      - SANDBOX_TOKEN=${SANDBOX_TOKEN}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}  # For Claude Code / Plaited Agent
+      - ACTOR_URL=http://personal-agent:3000
       # sshd trusts the Actor's CA key (mounted via volume)
     volumes:
       - ./workspace:/workspace  # Persist your code
     ports:
       - "2222:22"  # SSH Port Mapping
-    # sandbox-agent on :2468 (internal only, not exposed)
 ```
 
 ## Security Considerations
@@ -671,5 +622,3 @@ The SSH port (`2222`) is open to the internet.
 - **Subscription model for A2A:** How do peer agents subscribe to live updates? WebSocket push? Polling? AT Protocol event streams?
 - **x402 wallet integration:** Which wallet provider? How does the agent manage keys? Does the Rivet Actor hold the wallet, or the Sandbox?
 - **BP constraint portability:** When a module is composed into a peer's UI, do the original BP constraints travel with it? Or does the peer's agent apply its own constraints?
-- **Plaited Agent as sandbox-agent adapter:** The sandbox-agent SDK supports Claude Code, Codex, OpenCode, and Amp natively. The Plaited Agent is a custom agent — should it be registered as a custom adapter in the sandbox-agent system, or run as a separate process that uses the sandbox-agent API to manage OpenCode sessions?
-- **Sandbox provider selection:** E2B, Daytona, and Docker are all supported by sandbox-agent. Which provider best fits the single-tenant self-hosted model? E2B for managed, Daytona for dev environments, Docker for raw self-hosting?
