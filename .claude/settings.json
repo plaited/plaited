@@ -51,5 +51,9 @@
       }
     ]
   },
-  "enableAllProjectMcpServers": true
+  "enableAllProjectMcpServers": true,
+  "enabledPlugins": {
+    "ralph-loop@claude-plugins-official": true
+  },
+  "outputStyle": "Explanatory"
 }
