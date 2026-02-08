@@ -6,25 +6,25 @@
 
 **Architecture Foundation:** A single-tenant, self-hosted personal AI computer.
 
-**Core Philosophy:** "One User, One Brain, One Computer." Unlike the previous multi-tenant designs, this variant is deployed by an individual for their exclusive use. It uses AT Protocol (Bluesky) for identity, ensuring that only the owner controls the agent.
+**Core Philosophy:** "One User, One Brain, One Computer." Deployed by an individual for their exclusive use. It uses AT Protocol (Bluesky) for identity, ensuring that only the owner controls the agent.
 
 ### Key Design Principles
 
-- ✅ **Single Tenancy:** 1 User : 1 Agent instance. No data bleed, no complex routing.
-- ✅ **Identity via AT Protocol:** Authentication relies on decentralized identity (DID) via OAuth, replacing centralized IDPs like Descope.
-- ✅ **Simplified State:** State is local and persistent. No need for multiplayer conflict resolution.
+- ✅ **Single Tenancy:** 1 User : 1 Agent instance.
+- ✅ **Identity via AT Protocol:** Authentication relies on decentralized identity (DID) via OAuth.
+- ✅ **Persistent State:** State is local and persistent.
 - ✅ **Dual Interface:**
   - **Web Client:** A dedicated "Control Center" for chatting with the agent.
   - **SSH:** Direct root access to the underlying sandbox for coding.
 
 ### Infrastructure Components
 
-| Component | Multi-Tenant Stack | Personal Stack | Function |
-| --- | --- | --- | --- |
-| **Identity** | Descope / Auth0 | AT Protocol OAuth | Verifies the user is the owner (`did:plc:...`). |
-| **Orchestration** | Rivet Matchmaker | Rivet Actor (Singleton) | Manages the single session and sandbox lifecycle. |
-| **Compute** | Dynamic Sandboxes | Persistent Sandbox | Docker container with persistent volume mounts. |
-| **State** | Per-Session SQLite | Personal SQLite/JSON | Stores chat history, memory, and preferences. |
+| Component | Stack | Function |
+| --- | --- | --- |
+| **Identity** | AT Protocol OAuth | Verifies the user is the owner (`did:plc:...`). |
+| **Orchestration** | Rivet Actor (Singleton) | Manages the session and sandbox lifecycle. |
+| **Compute** | Persistent Sandbox (Docker/Firecracker) | Docker container with persistent volume mounts. |
+| **State** | SQLite/JSON | Stores chat history, memory, and preferences. |
 
 ## System Architecture
 
@@ -103,7 +103,7 @@ ENV PUBLIC_URL="https://my-agent.railway.app"
 
 ### 1. The Rivet Actor (Singleton Brain)
 
-In the multi-tenant version, Rivet spun up actors dynamically. Here, the Rivet Actor is a **Singleton**. It is the "Always On" process.
+The Rivet Actor is a **Singleton** — the "Always On" process for the personal agent.
 
 **Responsibilities:**
 
@@ -114,7 +114,7 @@ In the multi-tenant version, Rivet spun up actors dynamically. Here, the Rivet A
 
 ### 2. The Sandbox Agent (Persistent Muscle)
 
-Since this is a personal agent, we don't need to destroy the sandbox aggressively to save money. It can be a **long-lived container**.
+The Sandbox is a **long-lived container** with persistent storage.
 
 **Configuration:**
 
@@ -198,16 +198,6 @@ services:
     ports:
       - "2222:22"  # SSH Port Mapping
 ```
-
-## Comparison: Personal vs. Multi-Tenant
-
-| Feature | Multi-Tenant (SaaS) | Personal (Self-Hosted) |
-| --- | --- | --- |
-| **Billing** | Per-minute usage | Fixed VPS cost |
-| **Privacy** | Trusted Third Party | Total Ownership |
-| **Persistence** | Ephemeral (Session-based) | Long-lived |
-| **Access Control** | Org/Team Membership | DID Whitelist (Owner) |
-| **Compute** | Isolated VM per session | Single Shared Container |
 
 ## Security Considerations
 
