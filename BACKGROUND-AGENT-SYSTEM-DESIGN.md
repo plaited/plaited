@@ -22,10 +22,11 @@
 | Component | Stack | Function |
 | --- | --- | --- |
 | **Identity** | AT Protocol OAuth | Verifies the user is the owner (`did:plc:...`). |
-| **Orchestration** | Rivet Actor (Singleton) | Manages session lifecycle, client streaming, SSH CA. |
+| **Orchestration** | Rivet Actor (Singleton) | Session lifecycle, client streaming, SSH CA. |
+| **UI Agent** | Plaited Agent (in Sandbox) | Generative UI, BP constraints, grading, structural vocabulary. |
 | **Coding Agent** | OpenCode (in Sandbox) | File ops, search, bash exec, LLM-driven code generation. |
-| **Compute** | Persistent Sandbox (Docker/Firecracker) | Container running OpenCode + SSHD + sync daemon. |
-| **State** | SQLite/JSON | Stores chat history, memory, and preferences. |
+| **Compute** | Persistent Sandbox (Docker/Firecracker) | Container running Plaited Agent + OpenCode + SSHD + sync daemon. |
+| **State** | SQLite/JSON | Chat history, memory, preferences, module registry. |
 
 ## System Architecture
 
@@ -50,9 +51,12 @@ graph TB
             State_DB["SQLite (Memories)"]
         end
 
-        subgraph MUSCLE["Sandbox Agent (The Computer)"]
-            OpenCode["OpenCode Agent<br/>(coding runtime)"]
-            Runtime["Docker Container"]
+        subgraph MUSCLE["Sandbox (The Computer)"]
+            subgraph AGENTS["Agent Stack"]
+                PAgent["Plaited Agent<br/>(UI generation + BP + grading)"]
+                OpenCode["OpenCode<br/>(coding runtime)"]
+            end
+            StoryServer["Story Server<br/>(port-forwarded to dev)"]
             SSHD["SSHD (Port 22)"]
             Sync["Sync Daemon"]
         end
@@ -67,8 +71,12 @@ graph TB
     OAuth_Guard --"4. Sign SSH Certificate"--> SSH_CA
     SSH_CA --"5. Return short-lived cert"--> IDE
 
-    %% Rivet ↔ OpenCode (inside Sandbox)
-    Agent_Logic <-->|"WebSocket streaming"| OpenCode
+    %% Request Flow: Rivet → Plaited Agent → OpenCode
+    Agent_Logic <-->|"WebSocket streaming"| PAgent
+    PAgent -->|"delegates coding"| OpenCode
+
+    %% Dev can also invoke Plaited Agent directly via CLI
+    SSHD -.->|"plaited generate (CLI)"| PAgent
 
     %% SSH Flow (cert-based, no authorized_keys)
     IDE -->|"6. SSH with certificate"| SSHD
@@ -117,33 +125,84 @@ The Rivet Actor is a **Singleton** — the "Always On" process for the personal 
 - **Sandbox Manager:** It ensures the Sandbox Docker container is running. If the container crashes, the Actor restarts it.
 - **SSH Certificate Authority:** It holds the CA private key and signs short-lived SSH certificates for authenticated users.
 
-### 2. The Sandbox Agent (Persistent Muscle)
+### 2. The Sandbox (Persistent Muscle)
 
-The Sandbox is a **long-lived container** with persistent storage. Inspired by [Ramp's background agent architecture](https://engineering.ramp.com/post/why-we-built-our-background-agent), we run [OpenCode](https://opencode.ai) inside the Sandbox as the coding agent runtime.
+The Sandbox is a **long-lived container** with persistent storage. Inspired by [Ramp's background agent architecture](https://engineering.ramp.com/post/why-we-built-our-background-agent), it runs two agent processes: the **Plaited Agent** (generative UI) and **[OpenCode](https://opencode.ai)** (general-purpose coding).
+
+**Agent Stack (two processes):**
+
+```
+Rivet Actor (outside)
+    ↕ WebSocket
+Plaited Agent (daemon + CLI)
+    ↕ OpenCode SDK/API
+OpenCode (headless coding runtime)
+    ↕ tools
+/workspace filesystem
+```
+
+#### 2a. Plaited Agent (UI Intelligence)
+
+The Plaited Agent is the **primary intelligence layer** — all user requests flow through it. It understands Plaited's structural vocabulary (objects, channels, levers, loops, blocks), applies BP constraints, runs grading, and generates UI modules. It delegates actual code writing to OpenCode.
+
+**Responsibilities:**
+
+- **UI Generation:** Translates user intent ("build me a dashboard") into Plaited templates, bElements, and styles.
+- **BP Constraints:** Enforces safety, boundary, and budget rules via bThreads (ratchet — can add, cannot remove).
+- **Grading:** Runs multi-tier verification — tsc, biome, `bun plaited test` (headless), accessibility audits.
+- **Control Center UI:** Generates and maintains the web Control Center that users interact with.
+- **Module Lifecycle:** Generate → Save → Constrain → Share (via A2A Agent Cards).
+
+**Two modes:**
+
+- **Daemon mode:** Always running. Receives prompts from Rivet Actor via WebSocket, streams results back. Serves web app users.
+- **CLI mode:** Dev SSHs in and runs `plaited generate 'recipe tracker'` directly. Same agent, invoked on-demand.
+
+**AI-Assisted Design (SSH dev):**
+
+When a dev SSHs in, the Plaited Agent exposes a **Story Server** on a port-forwarded URL. The dev sees live story previews in their browser while the agent iterates on templates — enabling the human-in-the-loop AI-assisted design workflow from the [PLAITED-AGENT-PLAN](PLAITED-AGENT-PLAN.md).
+
+#### 2b. OpenCode (Coding Runtime)
+
+[OpenCode](https://opencode.ai) runs headless inside the Sandbox. The Plaited Agent delegates all file operations and code generation to it.
 
 **Why OpenCode (from Ramp's evaluation):**
 
 - **Server-first architecture** — designed for headless operation with pluggable clients
 - **Fully typed SDK** — extensible via plugins (`tool.execute.before`, lifecycle hooks)
 - **Source-accessible** — the agent can read its own source, reducing hallucination
-- **Plugin system** — the Rivet Actor integrates via OpenCode plugins for file-edit gating, streaming, and session control
+- **Plugin system** — Plaited Agent integrates via OpenCode plugins for file-edit gating, streaming, and session control
 
-**What runs inside the Sandbox:**
+**What OpenCode handles:**
 
-- **OpenCode Agent:** Handles file operations, search, bash execution, and LLM-driven code generation. When the Rivet Actor receives a user request ("fix the linter errors"), it streams the prompt to OpenCode inside the Sandbox via WebSocket. OpenCode executes tools, generates code, and streams results back.
-- **SSHD:** CA certificate auth. The owner can SSH in alongside OpenCode — both work on the same `/workspace` filesystem.
-- **Sync Daemon:** Watches `/workspace` for file changes (from OpenCode or SSH users) and pushes updates to the Rivet Actor for Web Client sync.
+- File operations (read, write, edit)
+- Search (glob, grep)
+- Bash execution
+- LLM-driven code generation (the "hands" that write code)
+
+**What OpenCode does NOT handle:**
+
+- UI design decisions (Plaited Agent)
+- BP constraint enforcement (Plaited Agent)
+- Grading and verification (Plaited Agent)
+- Structural vocabulary mapping (Plaited Agent)
+
+#### 2c. Infrastructure Services
+
+- **SSHD:** CA certificate auth. The owner can SSH in alongside both agents — all three work on the same `/workspace` filesystem.
+- **Sync Daemon:** Watches `/workspace` for file changes (from OpenCode, Plaited Agent, or SSH users) and pushes updates to the Rivet Actor for Web Client sync.
+- **Story Server:** Runs during AI-assisted design sessions. Serves live template previews on a port-forwarded URL for the SSH dev.
 
 **Configuration:**
 
 - **Image:** `plaited/sandbox-agent:latest`
 - **Volume:** `/workspace` is mounted to a persistent disk. Code files persist across restarts.
 - **SSH Access:** The Sandbox's `sshd` trusts the Rivet Actor's CA key via `TrustedUserCAKeys`. No `authorized_keys` management needed.
-- **OpenCode Config:** Configured via `opencode.json` with the Rivet Actor as its coordination point. Skills and tools are pre-installed in the image.
+- **OpenCode Config:** Configured via `opencode.json`. Skills and tools are pre-installed in the image.
 
-**Rivet Actor ↔ OpenCode communication:**
+**Communication chain:**
 
-The Rivet Actor streams prompts and receives tool execution results from OpenCode over an internal WebSocket connection. This follows Ramp's pattern where the orchestrator (Durable Objects in their case, Rivet Actor in ours) manages session lifecycle and client streaming, while the coding agent inside the sandbox handles the actual work.
+The Rivet Actor streams user prompts to the Plaited Agent over an internal WebSocket connection. The Plaited Agent processes intent, applies BP constraints, then delegates code-writing tasks to OpenCode via its SDK. OpenCode executes tools and writes files. Results stream back through the chain: OpenCode → Plaited Agent → Rivet Actor → Web Client.
 
 ### 3. The Web Client (Control Center)
 
@@ -223,20 +282,43 @@ Host sandbox
 - `sshd` logs the certificate's `key_id` (the DID) for audit
 - Adding the CA key to `sshd_config` is a one-time setup; no per-login changes to the Sandbox
 
-## Data Flow: "The Personal Loop"
+## Data Flows
 
-**Scenario:** User asks Agent to fix a bug.
+### Flow A: Web User → UI Generation
+
+**Scenario:** User asks for a new UI module.
+
+1. **User (Web):** "Build me a recipe tracker with ingredient lists."
+2. **Rivet Actor:** Receives request via WebSocket. Checks `OWNER_DID`. Authenticated.
+3. **Rivet Actor:** Streams prompt to Plaited Agent inside Sandbox.
+4. **Plaited Agent:** Maps intent to structural vocabulary (objects, channels, levers). Checks BP constraints.
+5. **Plaited Agent:** Delegates to OpenCode: "Create a Plaited bElement with these template specs."
+6. **OpenCode:** Writes template files, styles, and story tests to `/workspace`.
+7. **Plaited Agent:** Runs grading — tsc, biome, `bun plaited test` (headless), a11y audit.
+8. **Plaited Agent:** If grading fails, feeds errors back to OpenCode for another iteration.
+9. **Plaited Agent:** Streams progress and results back to Rivet Actor.
+10. **Rivet Actor:** Relays streaming output to Web Client.
+
+### Flow B: Web User → Code Fix
+
+**Scenario:** User asks for a bug fix (non-UI task).
 
 1. **User (Web):** "Run the linter and fix errors."
-2. **Rivet Actor:** Receives request via WebSocket. Checks `OWNER_DID`. Authenticated.
-3. **Rivet Actor:** Streams prompt to OpenCode inside Sandbox via internal WebSocket.
-4. **OpenCode:** Reads codebase, runs `npm run lint` via bash-exec tool. Linter finds errors.
-5. **OpenCode:** Feeds lint output to LLM, generates a code patch, applies file edits.
-6. **OpenCode:** Streams tool execution results and token output back to Rivet Actor.
-7. **Rivet Actor:** Relays streaming output to all connected Web Clients.
-8. **Sync Daemon:** Detects file changes in `/workspace`, pushes "File Updated" to Rivet Actor.
-9. **Rivet Actor:** Broadcasts file change notifications to Web Client.
-10. **User (SSH):** Logs in via VS Code to verify the fix manually.
+2. **Rivet Actor:** Streams prompt to Plaited Agent.
+3. **Plaited Agent:** Recognizes this as a general coding task, delegates directly to OpenCode.
+4. **OpenCode:** Reads codebase, runs `npm run lint`, generates a code patch, applies file edits.
+5. **OpenCode:** Streams results back through Plaited Agent → Rivet Actor → Web Client.
+
+### Flow C: SSH Dev → AI-Assisted Design
+
+**Scenario:** Developer SSHs in to iterate on a template with live preview.
+
+1. **Dev (SSH):** `plaited generate 'recipe tracker' --interactive`
+2. **Plaited Agent (CLI mode):** Starts Story Server, exposes preview URL (port-forwarded to dev's browser).
+3. **Plaited Agent:** Generates initial template, delegates code writing to OpenCode.
+4. **Dev:** Views live stories in browser, provides feedback ("make the ingredient list sortable").
+5. **Plaited Agent:** Iterates — updates template, re-runs grading, refreshes preview.
+6. **Sync Daemon:** Pushes file changes to Rivet Actor → Web Client sees updates too.
 
 ## Deployment Guide (Self-Hosted)
 
