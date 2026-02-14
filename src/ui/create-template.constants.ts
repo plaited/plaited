@@ -31,6 +31,48 @@ export const P_TARGET = 'p-target'
  * space-separated pairs of `event:action` (e.g., "click:doSomething focus:notify").
  */
 export const P_TRIGGER = 'p-trigger'
+
+/**
+ * HTTP method attributes for HTMX-like server-first interactions.
+ * When present on an element, the runtime intercepts the triggering event
+ * and initiates an HTTP request to the specified URL.
+ */
+export const P_GET = 'p-get'
+export const P_POST = 'p-post'
+export const P_PUT = 'p-put'
+export const P_DELETE = 'p-delete'
+export const P_PATCH = 'p-patch'
+
+/**
+ * Defines how the server response HTML fragment is swapped into the DOM.
+ * Supports Position values ('beforebegin', 'afterbegin', 'beforeend', 'afterend'),
+ * 'innerHTML' (replace children), 'outerHTML' (replace element), 'delete' (remove target),
+ * and 'none' (no swap, useful for side-effect-only requests).
+ */
+export const P_SWAP = 'p-swap'
+
+/**
+ * CSS selector or p-target value identifying which element receives the swapped content.
+ * Defaults to the element that triggered the request.
+ */
+export const P_SWAP_TARGET = 'p-swap-target'
+
+/**
+ * CSS selector or p-target value identifying an element shown during request loading.
+ */
+export const P_INDICATOR = 'p-indicator'
+
+/**
+ * Confirmation message shown before the request is sent.
+ * If the user cancels, the request is aborted.
+ */
+export const P_CONFIRM = 'p-confirm'
+
+/**
+ * JSON-encoded object of additional values to include in the request body or query string.
+ */
+export const P_VALS = 'p-vals'
+
 /**
  * A Set containing HTML and SVG tag names that are considered "void elements".
  * Void elements cannot have any content (neither HTML nor text nodes) and are

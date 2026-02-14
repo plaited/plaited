@@ -51,7 +51,7 @@ const cssCache = new WeakMap<ShadowRoot, Set<string>>()
  * - Rendering continues even if some styles fail
  * - Invalid CSS will produce console errors but not crash
  */
-const updateShadowRootStyles = async (root: ShadowRoot, stylesheets: string[]) => {
+export const updateShadowRootStyles = async (root: ShadowRoot, stylesheets: string[]) => {
   const instanceStyles = cssCache.get(root) ?? cssCache.set(root, new Set()).get(root)
   const newStyleSheets: CSSStyleSheet[] = []
   await Promise.all(

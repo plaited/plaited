@@ -1,4 +1,18 @@
-import { P_TARGET, P_TRIGGER, type TEMPLATE_OBJECT_IDENTIFIER } from './create-template.constants.ts'
+import {
+  P_CONFIRM,
+  P_DELETE,
+  P_GET,
+  P_INDICATOR,
+  P_PATCH,
+  P_POST,
+  P_PUT,
+  P_SWAP,
+  P_SWAP_TARGET,
+  P_TARGET,
+  P_TRIGGER,
+  P_VALS,
+  type TEMPLATE_OBJECT_IDENTIFIER,
+} from './create-template.constants.ts'
 import type { CSSProperties } from './css.types.ts'
 
 type Booleanish = boolean | 'true' | 'false'
@@ -39,6 +53,22 @@ export type Children = Child[] | Child
  * @property trusted - If `true`, disables HTML escaping for the element's attributes and children that are not TemplateObject's. Use with extreme caution, only with sanitized or known-safe content.
  * @property style - Accepts a `CSSProperties` object (similar to React) for inline styles.
  */
+/**
+ * Swap strategy for server response HTML fragment insertion.
+ * Includes insertion positions ('beforebegin', 'afterbegin', 'beforeend', 'afterend'),
+ * plus 'innerHTML' (replace children), 'outerHTML' (replace element),
+ * 'delete' (remove target), and 'none' (no swap).
+ */
+export type SwapStrategy =
+  | 'beforebegin'
+  | 'afterbegin'
+  | 'beforeend'
+  | 'afterend'
+  | 'innerHTML'
+  | 'outerHTML'
+  | 'delete'
+  | 'none'
+
 export type PlaitedAttributes = {
   class?: string
   children?: Children
@@ -49,6 +79,27 @@ export type PlaitedAttributes = {
   /** setting trusted to true will disable all escaping security policy measures for this element template */
   trusted?: boolean
   style?: CSSProperties
+
+  /** URL for HTTP GET request triggered by the element's event */
+  [P_GET]?: string
+  /** URL for HTTP POST request triggered by the element's event */
+  [P_POST]?: string
+  /** URL for HTTP PUT request triggered by the element's event */
+  [P_PUT]?: string
+  /** URL for HTTP DELETE request triggered by the element's event */
+  [P_DELETE]?: string
+  /** URL for HTTP PATCH request triggered by the element's event */
+  [P_PATCH]?: string
+  /** How to swap the response HTML into the DOM */
+  [P_SWAP]?: SwapStrategy
+  /** p-target value or CSS selector identifying swap target element */
+  [P_SWAP_TARGET]?: string
+  /** p-target value or CSS selector for loading indicator element */
+  [P_INDICATOR]?: string
+  /** Confirmation message to display before sending request */
+  [P_CONFIRM]?: string
+  /** JSON string of additional values to include in the request */
+  [P_VALS]?: string
 }
 
 /** Defines WAI-ARIA attributes for accessibility. */

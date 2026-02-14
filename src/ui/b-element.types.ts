@@ -1,4 +1,13 @@
-import type { BSync, BThread, BThreads, PlaitedTrigger, SnapshotMessage, Trigger } from '../main/behavioral.types.ts'
+import type {
+  BSync,
+  BThread,
+  BThreads,
+  EventDetails,
+  Handlers,
+  PlaitedTrigger,
+  SnapshotMessage,
+  Trigger,
+} from '../main/behavioral.types.ts'
 import { type BEHAVIORAL_TEMPLATE_IDENTIFIER, ELEMENT_CALLBACKS } from './b-element.constants.ts'
 import type { CustomElementTag, FunctionTemplate, TemplateObject } from './create-template.types.ts'
 import type { DesignTokenReference, HostStylesObject } from './css.types.ts'
@@ -196,23 +205,33 @@ export type Inspector = {
  * Context and utilities provided to the behavioral program of a BehavioralElement.
  * Contains DOM access, lifecycle hooks, and behavioral programming primitives.
  *
- * @property $ - Query selector scoped to shadow root using p-target attributes
- * @property root - BehavioralElement's shadowRoot reference
- * @property host - Custom element instance
- * @property internals - ElementInternals API for form association and states
- * @property trigger - Event dispatcher with automatic cleanup
- * @property bThreads - Behavioral thread management
- * @property inspector - Debugging inspector for observing program state
- * @property emit - Custom event dispatcher for BehavioralElement communication
- * @property bThread - Thread creation utility
- * @property bSync - Synchronization point utility
+ * @remarks
+ * **Progressive Enhancement Levels:**
+ * - **Level 2** (Server-first): Use `$`, `trigger`, `attr()` on bound elements
+ * - **Level 2.5** (Client reactions): Add `$`, `trigger`, `attr()` for toggles
+ * - **Level 3** (Complex choreography): Use `bThreads`, `bThread`, `bSync`, `internals`
+ *
+ * **Core API** (recommended):
+ * - `$` — Query selector scoped to shadow root using p-target attributes
+ * - `trigger` — Event dispatcher with automatic cleanup
+ * - `internals` — ElementInternals API for form association and states
+ * - `bThreads` — Behavioral thread management
+ * - `bThread` — Thread creation utility
+ * - `bSync` — Synchronization point utility
+ * - `inspector` — Debugging inspector for observing program state
+ *
+ * **Escape hatch** (for advanced use cases):
+ * - `root` — Direct shadowRoot reference
+ * - `host` — Custom element instance
+ * - `emit` — Custom event dispatcher for cross-island communication
  *
  * @see {@link bElement} for BehavioralElement creation
- * @see {@link BoundElement} for element helper methods
+ * @see {@link BoundElement} for element helper methods (render, insert, replace, attr)
  * @see {@link useEmit} for emit function details
  * @see {@link Inspector} for inspector usage
  */
 export type BProgramArgs = {
+  /** Query selector scoped to shadow root using p-target attributes */
   $: <E extends Element = Element>(
     target: string,
     /**
@@ -222,14 +241,35 @@ export type BProgramArgs = {
      */
     match?: SelectorMatch,
   ) => NodeListOf<BoundElement<E>>
+  /**
+   * Direct reference to the BehavioralElement's shadowRoot.
+   * Prefer using `$()` for scoped queries instead of accessing root directly.
+   * @see {@link $} for the recommended query API
+   */
   root: ShadowRoot
+  /**
+   * Direct reference to the custom element instance.
+   * Prefer using `trigger` and `emit` for communication instead of accessing host directly.
+   */
   host: BehavioralElement
+  /** ElementInternals API for form association, accessibility states, and custom states */
   internals: ElementInternals
+  /** Event dispatcher with automatic cleanup for injecting events into the behavioral program */
   trigger: PlaitedTrigger
+  /** Behavioral thread management for adding and checking thread status */
   bThreads: BThreads
+  /** Debugging inspector for observing behavioral program state snapshots */
   inspector: Inspector
+  /**
+   * Custom event dispatcher for outbound BehavioralElement communication.
+   * Used in Pattern B (child → parent) to dispatch events that cross shadow DOM boundaries.
+   *
+   * @see {@link useEmit} for emit function details
+   */
   emit: Emit
+  /** Thread creation utility for composing synchronization steps */
   bThread: BThread
+  /** Synchronization point utility for declaring behavioral intentions */
   bSync: BSync
 }
 
@@ -246,6 +286,55 @@ export type BProgramArgs = {
  * @property onFormReset - Called when associated form is reset (requires formAssociated: true)
  * @property onFormStateRestore - Called when browser restores element state (requires formAssociated: true)
  */
+/**
+ * Configuration object for creating a BehavioralElement with `bElement()`.
+ * Defines the custom element tag, Shadow DOM template, behavioral program, and options.
+ *
+ * @template A Event details type map for element-specific events, enabling type-safe handlers
+ *
+ * @property tag - Custom element tag name (must contain a hyphen, e.g., 'my-element')
+ * @property shadowDom - Template object defining the Shadow DOM content, created via JSX
+ * @property mode - Shadow DOM mode ('open' or 'closed'). Defaults to 'open'
+ * @property delegatesFocus - Whether focus is delegated to shadow content. Defaults to true
+ * @property slotAssignment - Slot assignment mode ('named' or 'manual'). Defaults to 'named'
+ * @property observedAttributes - Attribute names to observe for changes via attributeChangedCallback
+ * @property publicEvents - Event types that can be triggered externally via the element's trigger method
+ * @property hostStyles - Styles applied to the host element itself
+ * @property formAssociated - Set to true to make the element form-associated (enables ElementInternals form APIs)
+ * @property bProgram - Behavioral program function that defines the element's interactive logic
+ *
+ * @see {@link bElement} for creating BehavioralElements
+ * @see {@link BProgramArgs} for behavioral program arguments
+ * @see src/ui/tests/hydration.stories.tsx for declarative shadow DOM usage
+ * @see src/ui/tests/form-associated.stories.tsx for form association patterns
+ */
+export type BElementConfig<A extends EventDetails> = {
+  tag: CustomElementTag
+  shadowDom: TemplateObject
+  delegatesFocus?: boolean
+  mode?: 'open' | 'closed'
+  slotAssignment?: 'named' | 'manual'
+  observedAttributes?: string[]
+  publicEvents?: string[]
+  hostStyles?: HostStylesObject
+  formAssociated?: true
+  bProgram?: (this: BehavioralElement, args: BProgramArgs) => Handlers<A> & BehavioralElementCallbackHandlers
+}
+
+/**
+ * @internal
+ * Type mapping for behavioral element lifecycle callbacks.
+ */
+type BehavioralElementCallbackHandlers = {
+  [K in keyof BehavioralElementCallbackDetails]?: Callback<BehavioralElementCallbackDetails[K]>
+}
+
+/**
+ * @internal
+ * Type for lifecycle callback functions with optional detail payload.
+ */
+type Callback<T> = T extends void ? () => void | Promise<void> : (detail: T) => void | Promise<void>
+
 export type BehavioralElementCallbackDetails = {
   [ELEMENT_CALLBACKS.onAdopted]: undefined
   [ELEMENT_CALLBACKS.onAttributeChanged]: {
