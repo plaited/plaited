@@ -115,10 +115,6 @@ jobs:
           npm version --no-git-tag-version "$VERSION"
           bun run copy-css-types
 
-          # Update plugin.json version
-          jq --arg v "$VERSION" '.version = $v' .claude/.claude-plugin/plugin.json > .claude/.claude-plugin/plugin.json.tmp
-          mv .claude/.claude-plugin/plugin.json.tmp .claude/.claude-plugin/plugin.json
-
           git add -A
           git commit -m "ci: publish [skip ci]"
           git push
