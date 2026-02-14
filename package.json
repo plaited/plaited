@@ -35,9 +35,7 @@
     "./utils/*.tsx": "./src/utils/*.tsx",
     "./workshop": "./src/workshop.ts",
     "./workshop/*.ts": "./src/workshop/*.ts",
-    "./workshop/*.tsx": "./src/workshop/*.tsx",
-    "./agent": "./src/agent.ts",
-    "./agent/*.ts": "./src/agent/*.ts"
+    "./workshop/*.tsx": "./src/workshop/*.tsx"
   },
   "files": [
     "./.bin/**",
@@ -76,35 +74,29 @@
     "node-llama-cpp"
   ],
   "dependencies": {
-    "@anthropic-ai/sandbox-runtime": "0.0.32",
-    "@plaited/agent-eval-harness": "0.9.0",
-    "@plaited/development-skills": "0.6.5",
-    "node-llama-cpp": "3.15.0"
+    "@plaited/agent-eval-harness": "0.12.2",
+    "@plaited/development-skills": "0.8.1"
   },
   "devDependencies": {
-    "@agentclientprotocol/sdk": "0.13.0",
-    "@anthropic-ai/claude-agent-sdk": "0.2.12",
-    "@biomejs/biome": "2.3.11",
-    "@commitlint/cli": "20.3.1",
-    "@commitlint/config-conventional": "20.3.1",
-    "@modelcontextprotocol/sdk": "1.25.2",
-    "@playwright/mcp": "0.0.56",
-    "@playwright/test": "1.57.0",
+    "@biomejs/biome": "2.3.15",
+    "@commitlint/cli": "20.4.1",
+    "@commitlint/config-conventional": "20.4.1",
+    "@modelcontextprotocol/sdk": "1.26.0",
+    "@playwright/test": "1.58.2",
     "@types/beautify": "0.0.3",
-    "@types/bun": "1.3.6",
-    "@types/node": "25.0.9",
+    "@types/bun": "1.3.9",
+    "@types/node": "25.2.3",
     "@types/sinon": "21.0.0",
     "axe-core": "4.11.1",
     "beautify": "0.0.8",
-    "@zed-industries/claude-code-acp": "0.13.1",
     "csstype": "3.2.3",
     "cz-conventional-changelog": "3.3.0",
     "format-package": "7.0.0",
     "lint-staged": "16.2.7",
-    "playwright": "1.57.0",
+    "playwright": "1.58.2",
     "sinon": "21.0.1",
     "typescript": "5.9.3",
     "typescript-language-server": "5.1.3",
-    "zod": "4.3.5"
+    "zod": "4.3.6"
   }
 }
