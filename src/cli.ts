@@ -46,9 +46,6 @@ const { values, positionals } = parseArgs({
       type: 'string',
       short: 'd',
     },
-    json: {
-      type: 'boolean',
-    },
     'record-video': {
       type: 'string',
     },
@@ -72,23 +69,20 @@ if (!subcommand) {
   console.log('Commands:')
   console.log('  test            Run story tests')
   console.log('  dev             Start development server with hot reload')
-  console.log('  validate-skill  Validate skill directories against AgentSkills spec')
   console.log('Options:')
   console.log('  -p, --port <number>       Port for test server (default: 0 - auto-assign)')
   console.log('  -d, --dir <path>          Working directory (default: process.cwd())')
   console.log('  -c, --color-scheme <mode> Color scheme for test browser (light|dark|both, default: light)')
   console.log('  --record-video <dir>      Directory for video recordings (test command only)')
   console.log('  --width <number>          Video width (default: 1280)')
-  console.log('  --height <number>         Video height (default: 720)')
-  console.log('  --json                    Output as JSON (validate-skill only)\n')
+  console.log('  --height <number>         Video height (default: 720)\n')
 }
 
-if (!['test', 'dev', 'validate-skill'].includes(subcommand ?? '')) {
+if (!['test', 'dev'].includes(subcommand ?? '')) {
   console.error(`🚩 Error: Unknown subcommand '${subcommand}'\n`)
   console.log('Available commands:')
   console.log('  test            Run story tests')
   console.log('  dev             Start development server with hot reload')
-  console.log('  validate-skill  Validate skill directories against AgentSkills spec')
   process.exit(1)
 }
 
@@ -134,7 +128,7 @@ const recordVideo = recordVideoDir
 // Get paths from positionals
 let paths = positionals.slice(3)
 
-if (paths.length === 0 && subcommand !== 'validate-skill') {
+if (paths.length === 0) {
   console.log('\n🔍 No paths provided - will discover all stories in working directory\n')
   paths = [process.cwd()]
 }

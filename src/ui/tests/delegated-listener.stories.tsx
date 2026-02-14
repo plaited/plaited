@@ -12,8 +12,8 @@ export const delegatedListenerBinding = story({
       click me
     </button>
   ),
-  play: async ({ findByAttribute, fireEvent, assert }) => {
-    const btn = await findByAttribute<HTMLButtonElement>('data-testid', 'button')
+  play: async ({ findByTestId, fireEvent, assert }) => {
+    const btn = await findByTestId<HTMLButtonElement>('button')
     let count = 0
     const callback = () => {
       count++

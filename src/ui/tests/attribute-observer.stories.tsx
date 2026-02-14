@@ -11,12 +11,12 @@ export const attributeSync = story({
       <input type='checkbox' />
     </AttributeObserver>
   ),
-  async play({ findByAttribute, assert }) {
+  async play({ findByAttribute, findByTarget, assert }) {
     const checkbox = await findByAttribute<HTMLInputElement>('type', 'checkbox')
     checkbox?.toggleAttribute('disabled')
     let name = await findByAttribute<HTMLSpanElement>('p-target', 'name')
-    let oldValue = await findByAttribute<HTMLSpanElement>('p-target', 'oldValue')
-    let newValue = await findByAttribute<HTMLSpanElement>('p-target', 'newValue')
+    let oldValue = await findByTarget<HTMLSpanElement>('oldValue')
+    let newValue = await findByTarget<HTMLSpanElement>('newValue')
     assert({
       given: 'setting disabled on input',
       should: 'name should have text content',
@@ -42,9 +42,9 @@ export const attributeSync = story({
       expected: true,
     })
     checkbox?.toggleAttribute('disabled')
-    name = await findByAttribute<HTMLSpanElement>('p-target', 'name')
-    oldValue = await findByAttribute<HTMLSpanElement>('p-target', 'oldValue')
-    newValue = await findByAttribute<HTMLSpanElement>('p-target', 'newValue')
+    name = await findByTarget<HTMLSpanElement>('name')
+    oldValue = await findByTarget<HTMLSpanElement>('oldValue')
+    newValue = await findByTarget<HTMLSpanElement>('newValue')
     assert({
       given: 'setting disabled on input',
       should: 'name should have text content',
@@ -64,9 +64,9 @@ export const attributeSync = story({
       expected: 'null',
     })
     checkbox?.setAttribute('value', 'hello world')
-    name = await findByAttribute<HTMLSpanElement>('p-target', 'name')
-    oldValue = await findByAttribute<HTMLSpanElement>('p-target', 'oldValue')
-    newValue = await findByAttribute<HTMLSpanElement>('p-target', 'newValue')
+    name = await findByTarget<HTMLSpanElement>('name')
+    oldValue = await findByTarget<HTMLSpanElement>('oldValue')
+    newValue = await findByTarget<HTMLSpanElement>('newValue')
     assert({
       given: 'setting value on input',
       should: 'name should have text content',

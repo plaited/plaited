@@ -85,6 +85,13 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT }}
 
+      - name: Setup Node.js (for NPM OIDC)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          registry-url: https://registry.npmjs.org
+          check-latest: true
+
       - uses: oven-sh/setup-bun@v1
 
       - name: Setup
@@ -107,6 +114,7 @@ jobs:
         run: |
           npm version --no-git-tag-version "$VERSION"
           bun run copy-css-types
+
           git add -A
           git commit -m "ci: publish [skip ci]"
           git push
@@ -118,18 +126,14 @@ jobs:
             gh release create "v$VERSION" --generate-notes
           fi
 
-      - name: Publish
+      - name: Publish to NPM (Trusted Publishing)
         env:
-          NPM_TOKEN: ${{ secrets.NPM_PAT }}
           IS_PRERELEASE: ${{ steps.set_version.outputs.is_prerelease }}
         run: |
-          echo "@plaited:registry=https://registry.npmjs.org/" > .npmrc
-          echo "registry=https://registry.npmjs.org/" >> .npmrc
-          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> .npmrc
-          npm whoami
-          npm config set registry https://registry.npmjs.org/
+          # NPM trusted publishing uses OIDC token automatically
+          # Provenance attestations are generated automatically (npm >=11.5.1)
+          # No NPM_TOKEN secret needed - authentication via GitHub OIDC
 
-          # Publish with appropriate tag
           if [[ "$IS_PRERELEASE" == "true" ]]; then
             echo "Publishing as next (prerelease)"
             npm publish --access public --tag next
