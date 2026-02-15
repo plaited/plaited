@@ -158,13 +158,60 @@ EmbeddingGemma handles queries that keyword search can't resolve — "find a too
 
 ## Memory Architecture
 
-The agent's externalized memory is backed by SQLite. All three discovery mechanisms (FTS5, dependency graph, semantic search) operate over the same store. Memory is organized into four categories, each serving a different temporal need:
+The agent's memory is built on a single principle from *Designing Data-Intensive Applications*: **the event log is the source of truth.** Everything else — plans, semantic cache, relation store, session history — is a materialized view derived from the log.
+
+### Event Log — Source of Truth
+
+An append-only log in SQLite records every BP decision. The log is populated via `useSnapshot`, which fires after event selection but before `useFeedback` handlers execute side effects:
+
+```typescript
+const disconnect = useSnapshot(async (candidates: SnapshotMessage) => {
+  const selected = candidates.find(c => c.selected)
+  if (!selected) return
+
+  await appendToLog({
+    ts: Date.now(),
+    project: currentProject,
+    type: selected.type,
+    detail: selected.detail,
+    priority: selected.priority,
+    thread: selected.thread,
+    blockedBy: selected.blockedBy,
+    trigger: selected.trigger,
+  })
+})
+```
+
+**Why `useSnapshot`, not `useFeedback`:**
+- `useSnapshot` fires AFTER event selection but BEFORE side effects — the log captures the BP *decision*, not the outcome
+- `SnapshotMessage` contains ALL candidates with blocking/interruption relationships — the log can record not just what was selected, but what was blocked and why
+- The listener supports async — log writes don't block the BP event loop
+- `useSnapshot` is lazily initialized — zero overhead when no listener is registered
+
+The log is **partitioned by project key.** Each project's events are independent. Recovery, replay, and materialized view rebuilds operate per-partition.
+
+### Materialized Views
+
+The four memory categories from the discovery layer are views materialized from the event log:
+
+| View | Source Events | Rebuild Strategy |
+|---|---|---|
+| **Plans** | `save_plan`, `task_complete`, `task_fail` | Replay plan lifecycle events; reconstruct success/failure metadata |
+| **Semantic Cache** | `dream_response` + `tool_result` pairs | Re-embed cached responses; skip if embedding model changed |
+| **Relation Store** | `tool_use`, `skill_invoke`, `module_import` | Rebuild DAG from structural events |
+| **Session History** | All events in chronological order | Direct projection — the log IS the history |
+
+**Benefits of log-first architecture:**
+- **Recovery**: Replay the log to rebuild any materialized view. No separate backup needed for agent state.
+- **Debugging**: The full decision history is preserved — every selected event, every blocked candidate, every gate rejection.
+- **Training**: Trajectories are log slices. SFT/GRPO training data is a query over the event log, not a separate export pipeline.
+- **Migration**: When the schema for a materialized view changes, rebuild from the log. The log schema is stable (it's just BP events + timestamps).
 
 ### Plans — Reusable Task Knowledge
 
-Plans are **first-class memory artifacts**, not transient context. When the Dreamer produces a plan and the Actuator saves it via `save_plan`, the plan and its task breakdown are persisted to SQLite with metadata: outcome (success/failure), tools used, skills invoked, gate rejections encountered, and timestamps.
+Plans remain first-class memory artifacts. When the Dreamer produces a plan and the Actuator saves it via `save_plan`, the plan and its task breakdown are persisted with metadata: outcome (success/failure), tools used, skills invoked, gate rejections encountered.
 
-Stored plans are discoverable via all three mechanisms:
+Stored plans are discoverable via all three discovery mechanisms:
 
 | Mechanism | What It Finds | Example |
 |---|---|---|
@@ -172,48 +219,97 @@ Stored plans are discoverable via all three mechanisms:
 | **Dependency Graph** | Structural relationships — which tools each task needed, task ordering, skill dependencies | "Task 3 depended on Tasks 1 and 2, invoked `ui-patterns` skill" |
 | **Semantic Search** | Similar plans by intent, even if they used different tools | "find a plan similar to 'refactor the export structure'" |
 
-When a new task arrives, the discovery layer surfaces proven plans for similar work. The Dreamer adapts from a plan that already succeeded rather than inventing from scratch. BP can use the stored plan's structure to pre-select constraints before the first dream fires.
-
-Task breakdowns create natural DAG entries in the dependency graph:
-
-```
-Plan: "Add validation to form component"
-  ├── Task 1: read current component (tools: read_file)
-  ├── Task 2: check existing patterns (skills: ui-patterns)
-  ├── Task 3: write validation bThread (tools: write_file, depends: 1, 2)
-  └── Task 4: run tests (tools: bash_exec, depends: 3)
-```
-
-**Success/failure metadata feeds the training flywheel:**
-- Successful plans → higher retrieval weight → surface more often for similar tasks
-- Failed plans → stored with failure context (gate rejection, error output) → the Dreamer learns what doesn't work
-- Recurring plan patterns → candidates for bThread crystallization
-
-### Semantic Cache — Response Reuse
-
-LLM responses are cached with their embedding. When a new query is semantically similar to a cached one (cosine similarity above threshold), the cached response is returned without invoking the Dreamer. The cache is backed by SQLite with vector search. Cache entries expire based on staleness heuristics — file modification timestamps, dependency graph changes, or explicit invalidation.
-
-### Relation Store — Structural Knowledge
-
-The in-memory DAG that powers the dependency graph discovery mechanism doubles as the relation store. It tracks module relationships, tool-to-skill mappings, plan-to-task-to-tool chains, and import graphs. The DAG is persisted to SQLite for session recovery and rebuilt into memory on startup.
-
-### Session History — Conversation State
-
-Conversation turns, tool results, gate rejections, and plan revisions are stored as sequential events in SQLite. History provides the raw material for context assembly — BP selects relevant history entries based on the current plan step. Older history entries remain queryable via FTS5 and semantic search even after they leave the active context window.
+When a new task arrives, the discovery layer surfaces proven plans for similar work. The Dreamer adapts from a plan that already succeeded rather than inventing from scratch.
 
 ### Memory and the Training Flywheel
 
-All four memory categories feed the training pipeline:
+The event log feeds the training pipeline directly:
 
 ```
-Plans (success/failure) ─┐
-Semantic cache (hits)    ─┼→ Trajectories → SFT/GRPO → Better models
-Session history          ─┤
-Gate rejections          ─┘
-                           → Recurring patterns → bThread candidates → Owner approval
+Event log slices (by project, time range, outcome)
+  → Filter: successful plan trajectories → SFT data
+  → Filter: failed plans + corrections → GRPO preference pairs
+  → Filter: recurring blocking patterns → bThread candidates → Owner approval
 ```
 
-Memory is the bridge between the per-session agent loop and the cross-session training flywheel. Plans are the richest signal — they capture not just what the agent did, but what it intended to do, how it adapted, and whether the outcome was successful.
+Memory is the bridge between the per-session agent loop and the cross-session training flywheel. The event log is the richest signal — it captures not just what the agent did, but the full BP decision state at each step.
+
+## Project Isolation
+
+A single agent may work across multiple projects — separate git repositories, different codebases, distinct security contexts. These need **hard process boundaries**, not logical partitioning.
+
+### Architecture: Orchestrator + Project Subprocesses
+
+```mermaid
+graph TD
+    subgraph Orchestrator["Orchestrator (useBehavioral)"]
+        ROUTE["Route by project key"]
+        CONST["Constitution bThreads<br/>(immutable, loaded at spawn)"]
+        LOG["Event log<br/>(append-only, partitioned)"]
+    end
+
+    subgraph P1["Project A (Bun.spawn)"]
+        REF1["Reflex loop<br/>Dreamer → Actuator → Gate → Execute"]
+        MEM1["Project memory<br/>(materialized views)"]
+    end
+
+    subgraph P2["Project B (Bun.spawn)"]
+        REF2["Reflex loop<br/>Dreamer → Actuator → Gate → Execute"]
+        MEM2["Project memory<br/>(materialized views)"]
+    end
+
+    ROUTE -->|IPC| P1
+    ROUTE -->|IPC| P2
+    P1 -->|IPC events| LOG
+    P2 -->|IPC events| LOG
+```
+
+### Bun IPC Trigger Bridge
+
+Each project subprocess is a `Bun.spawn()` with `ipc: true`. BP events `{ type, detail }` are natively compatible with `structuredClone` serialization — no marshalling layer needed:
+
+```typescript
+// Orchestrator → Project subprocess
+const project = Bun.spawn(['bun', 'run', projectEntry], {
+  ipc(message) {
+    // Events from subprocess flow back via trigger()
+    const event = BPEventSchema.safeParse(message)
+    if (event.success) trigger(event.data)
+  }
+})
+
+// Send task to project
+project.send({ type: 'task', detail: { prompt, context } })
+
+// Project subprocess side
+process.on('message', (message) => {
+  const event = BPEventSchema.safeParse(message)
+  if (event.success) trigger(event.data)
+})
+
+// Results back to orchestrator
+useFeedback({
+  tool_result({ detail }) {
+    process.send!({ type: 'tool_result', detail })
+  }
+})
+```
+
+This pattern is proven — `src/workshop/get-server.ts` uses the same `Bun.spawn()` + IPC + `BPEventSchema.safeParse()` approach for bidirectional BP events between parent and child processes.
+
+### What Isolation Provides
+
+| Concern | Solution |
+|---|---|
+| **Memory isolation** | Each subprocess has its own address space. Project A's memory cannot leak to Project B. |
+| **Crash containment** | A failing project subprocess doesn't take down the orchestrator or other projects. |
+| **Security boundaries** | Each subprocess runs with its own sandbox profile (Layer 2). Different projects can have different capability restrictions. |
+| **Independent lifecycle** | Projects can be started, stopped, and restarted independently. The orchestrator manages lifecycle via IPC. |
+| **Event log partitioning** | Each subprocess's `useSnapshot` callbacks tag events with their project key. The event log is naturally partitioned. |
+
+### Constitution Loading
+
+The constitution is loaded at subprocess spawn time and is **immutable for the lifetime of that process.** The orchestrator passes constitution bThreads as part of the spawn configuration. The subprocess cannot modify its own constitution — this is the MAC layer in action.
 
 ## Training: Both Models Evolve
 
@@ -231,7 +327,7 @@ The framework ships with base-trained checkpoints for generative UI and general-
 - **Pluggable Models:** Dreamer, Actuator, and Indexer are interfaces. Implementations swap freely — self-hosted small models, frontier APIs, or anything in between.
 - **BP-Orchestrated:** One central `useBehavioral` coordinates the entire agent loop. Context assembly, gate evaluation, lifecycle management — all BP. No actors, no workers, no external signal stores. bThread closures hold state.
 - **Plan-Driven Context:** The Dreamer's plan provides the optimization signal for context assembly. BP consumes the plan's structure deterministically. Neural produces, symbolic consumes.
-- **Defense in Depth:** Layer 0 (BP-orchestrated context assembly) → Layer 1 (BP hard gate) → Layer 2 (OS sandbox) → Layer 3 (git rollback). Four independent layers, four different stack levels.
+- **Defense in Depth:** Layer 0 (BP-orchestrated context assembly) → Layer 1 (BP hard gate) → Layer 2 (OS sandbox) → Layer 3 (event log recovery). Four independent layers, four different stack levels.
 - **Three-Axis Risk Awareness:** Capability × Autonomy × Authority. Risk grows geometrically when all three scale simultaneously. BP constraints cap each axis independently.
 
 ## Safety & Risk Model
@@ -260,7 +356,7 @@ BP bThreads compose additively — adding a constraint on one axis doesn't affec
 
 ### Defense in Depth (Four Layers)
 
-No single safety mechanism is sufficient. Neural models are probabilistic — they can violate any instruction. OS sandboxes have kernel vulnerabilities. Git history can be corrupted. The system is safe because **four independent layers** must all fail simultaneously for harm to occur:
+No single safety mechanism is sufficient. Neural models are probabilistic — they can violate any instruction. OS sandboxes have kernel vulnerabilities. Event logs can be corrupted. The system is safe because **four independent layers** must all fail simultaneously for harm to occur:
 
 ```mermaid
 graph TD
@@ -276,8 +372,8 @@ graph TD
         SB["Linux namespaces + seccomp<br/>restrict subprocess capabilities"]
     end
 
-    subgraph L3["Layer 3: Git Rollback"]
-        GIT["Auto-commit before each change<br/>push to remote backup"]
+    subgraph L3["Layer 3: Event Log Recovery"]
+        GIT["useSnapshot → append-only log<br/>per-project partitioning"]
     end
 
     L0 --> L1 --> L2 --> L3
@@ -321,13 +417,19 @@ Tool execution runs in a sandboxed `Bun.spawn()` subprocess with OS-level restri
 
 **Failure mode:** Kernel vulnerability allows namespace escape. This is a known OS-level risk, mitigated by keeping the kernel patched and the seccomp profile tight.
 
-#### Layer 3 — Git Rollback (Recovery)
+#### Layer 3 — Event Log Recovery (Audit & Replay)
 
-`/workspace` is a git repository. Every file write is auto-committed before execution. Changes are pushed to a remote backup. If all three prior layers fail and the agent writes harmful code, the owner can roll back to any prior commit.
+The event log (populated via `useSnapshot`) records every BP decision with timestamps and project keys. If all three prior layers fail and the agent takes harmful action, the owner has:
 
-**What it catches:** Any damage that makes it past Layers 0–2. The audit trail is immutable (remote git history cannot be rewritten by the agent).
+- **Complete audit trail** — every event selection, every blocked candidate, every gate rejection
+- **Replay capability** — rebuild any materialized view from the log
+- **Per-project isolation** — damage in one project's subprocess doesn't affect another's log partition
 
-**Failure mode:** Owner doesn't notice the damage before retention expires. Mitigated by the audit memory (SQLite event log) which records every action for review.
+Workspace backup (snapshotting the actual file system) is **deployment infrastructure**, not framework responsibility. The framework provides the event log for agent state recovery. Skills or external tooling handle workspace-level backup — rsync, cloud snapshots, or whatever the deployment tier supports.
+
+**What it catches:** Any damage that makes it past Layers 0–2. The audit trail is append-only and lives outside the sandbox — the subprocess cannot modify its own log.
+
+**Failure mode:** Owner doesn't review the audit log. Mitigated by the event log's queryability — materialized views surface anomalies, and the training flywheel flags unusual patterns.
 
 ### Independence Guarantee
 
@@ -338,7 +440,7 @@ Each layer operates on a different level of the stack and uses a different mecha
 | 0 | Application logic | BP-orchestrated context assembly | Model ignoring instructions |
 | 1 | Application logic | Deterministic BP block predicates | Novel attack patterns predicates don't cover |
 | 2 | Operating system | Kernel namespaces + BPF | Kernel vulnerability |
-| 3 | Version control | Git history + remote backup | Physical data loss |
+| 3 | Data layer | Append-only event log + `useSnapshot` | Log corruption or physical data loss |
 
 No single attack vector compromises more than one layer. A prompt injection bypasses Layer 0 but hits Layer 1. A novel tool call bypasses Layer 1 but hits Layer 2. A namespace escape bypasses Layer 2 but the damage is recoverable via Layer 3.
 
@@ -530,5 +632,7 @@ The framework is not prescriptive about deployment. Three tiers are viable:
 | **API-backed** | MiniMax, OpenRouter, any OpenAI-compatible endpoint | Pay per use. No GPU needed. No fine-tuning (unless provider supports it). |
 
 The pluggable model interfaces make tier selection a deployment decision, not an architectural one. A consumer can start API-backed, move to cloud, and eventually self-host — swapping model implementations without changing their bThreads, tools, or application logic.
+
+**Workspace backup** is a deployment concern, not a framework concern. The framework provides the event log for agent state recovery. Workspace-level backup (file system snapshots, remote git mirrors, cloud storage sync) is infrastructure that varies by tier — a local deployment might use Time Machine, a cloud deployment might use volume snapshots, an API-backed deployment might use nothing at all. Skills can provide backup tooling, but it lives outside the agent's core architecture.
 
 Deployment guides and cost analysis belong in skills, not in this document.
