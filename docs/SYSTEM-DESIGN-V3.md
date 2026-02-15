@@ -127,13 +127,14 @@ trigger('task', { prompt })
 
 ### Plan Schema
 
-The plan is a structured artifact produced by the Actuator from the Dreamer's natural language reasoning. It must carry enough structural metadata for BP predicates to match on, while being simple enough for a 270M model to reliably produce.
+The plan is a structured artifact produced by the Actuator from the Dreamer's natural language reasoning. It carries structural metadata for BP predicates while remaining simple enough for a 270M model to reliably produce.
 
 ```typescript
 interface PlanStep {
+  id: string            // stable identity — the partition key
   intent: string        // natural language — for Dreamer context, not for BP
   tools: string[]       // which tools this step will use — the predicate signal
-  depends?: number[]    // step indices this depends on
+  depends?: string[]    // step IDs this depends on
 }
 
 interface Plan {
@@ -142,79 +143,90 @@ interface Plan {
 }
 ```
 
-The Dreamer says: *"First I should read src/ui/form.tsx, then check existing validation patterns, then write a validation bThread, then run tests."* The Actuator translates:
+#### Steps as Memory Units
 
-```json
-{
-  "tool": "save_plan",
-  "args": {
-    "goal": "Add validation to form component",
-    "steps": [
-      { "intent": "Read component to understand structure", "tools": ["read_file"] },
-      { "intent": "Check existing validation patterns", "tools": ["read_file", "search"] },
-      { "intent": "Write validation bThread", "tools": ["write_file"], "depends": [0, 1] },
-      { "intent": "Run tests", "tools": ["bash_exec"], "depends": [2] }
-    ]
+Plans are not consumed linearly. An agent may activate step 3, discover it needs context from step 1, revisit it, then skip step 2 entirely. Storing a plan as a single JSON blob with a linear index forces sequential consumption. Instead, each step is stored as an individual row — a **memory unit** — with its own status and identity:
+
+```sql
+CREATE TABLE plan_steps (
+  task_id   TEXT NOT NULL,
+  step_id   TEXT NOT NULL,
+  intent    TEXT NOT NULL,
+  tools     TEXT NOT NULL,   -- JSON array
+  depends   TEXT,            -- JSON array of step_ids
+  status    TEXT NOT NULL DEFAULT 'pending',  -- pending | active | complete | skipped
+  PRIMARY KEY (task_id, step_id)
+);
+```
+
+Navigation happens through Gate tool calls — `activate_step`, `complete_step`, `skip_step` — which update individual row status. Multiple steps can be active simultaneously. During context assembly, BP injects a compact summary of the full plan (IDs, intents, statuses) plus the full detail of only the currently active steps. The Dreamer sees the map without carrying every detail.
+
+#### Dynamic bThreads per Step Activation
+
+When a step is activated, the handler generates one-shot bThreads scoped to that step's tools — the same pattern used in the tic-tac-toe example where one bThread is generated per board square with the identity closure-captured (see `src/main/tests/tic-tac-toe.spec.ts`):
+
+```typescript
+activate_step({ detail }) {
+  const { taskId, stepId } = detail
+  db.run(
+    `UPDATE plan_steps SET status = 'active' WHERE task_id = ? AND step_id = ?`,
+    [taskId, stepId]
+  )
+
+  // Read active step's tools
+  const row = db.query(
+    'SELECT tools FROM plan_steps WHERE task_id = ? AND step_id = ?'
+  ).get(taskId, stepId)
+  const tools: string[] = JSON.parse(row.tools)
+
+  // Generate one-shot bThreads — taskId and tool closure-captured
+  const stepThreads: Record<string, RulesFunction> = {}
+  for (const tool of tools) {
+    stepThreads[`${taskId}:${stepId}:${tool}`] = bThread([
+      bSync({
+        waitFor: ({ type, detail: d }) =>
+          type === 'context_assembly' && d.taskId === taskId
+      }),
+      bSync({
+        request: { type: 'apply_tool_context', detail: { taskId, tool } }
+      })
+    ])  // no looping — consumed after one context_assembly cycle
   }
+  bThreads.set(stepThreads)
 }
 ```
 
-#### Storage and Access
+Each bThread waits for `context_assembly` matching its task, then requests `apply_tool_context` naming the tool scope. A `useFeedback` handler for `apply_tool_context` looks up and injects the relevant constraints — the bThread coordinates, the handler does the work. Once the request fires, the thread is consumed and gone from the program. When a step completes or is skipped, any unconsumed threads can be cleaned up via `bThreads.delete()`.
 
-Plans are stored in a SQLite materialized view, keyed by task ID. All events carry a `taskId` in their detail — this is the partition key for concurrent plans.
+#### Dependency Enforcement
 
-The `useFeedback` handler stores the plan (side effect). bThread predicates read it via synchronous `bun:sqlite` lookups:
+A static looping bThread enforces step dependencies by blocking `activate_step` when prerequisites aren't met:
 
 ```typescript
-// Handler: side effect — store the plan
-return {
-  save_plan({ detail }) {
-    db.run(
-      'INSERT OR REPLACE INTO plans (task_id, plan_json, step_index) VALUES (?, ?, 0)',
-      [detail.taskId, JSON.stringify(detail.plan)]
-    )
-  }
-}
-
-// bThread: orchestration — select constraints based on current step's tools
 bThreads.set({
-  writeGuard: bThread([
+  depEnforcement: bThread([
     bSync({
-      waitFor: ({ type, detail }) => {
-        if (type !== 'context_assembly') return false
+      block: ({ type, detail }) => {
+        if (type !== 'activate_step') return false
         const row = db.query(
-          'SELECT plan_json, step_index FROM plans WHERE task_id = ?'
-        ).get(detail.taskId)
-        if (!row) return false
-        const step = JSON.parse(row.plan_json).steps[row.step_index]
-        return step.tools.includes('write_file')
+          'SELECT depends FROM plan_steps WHERE task_id = ? AND step_id = ?'
+        ).get(detail.taskId, detail.stepId)
+        if (!row?.depends) return false
+        const depIds: string[] = JSON.parse(row.depends)
+        if (depIds.length === 0) return false
+        const incomplete = db.query(
+          `SELECT COUNT(*) as n FROM plan_steps
+           WHERE task_id = ? AND step_id IN (${depIds.map(() => '?').join(',')})
+           AND status != 'complete'`
+        ).get(detail.taskId, ...depIds)
+        return incomplete.n > 0
       }
-    }),
-    bSync({
-      request: { type: 'inject_constraints', detail: { constraints: writeConstraints } }
     })
-  ], true),
-
-  bashGuard: bThread([
-    bSync({
-      waitFor: ({ type, detail }) => {
-        if (type !== 'context_assembly') return false
-        const row = db.query(
-          'SELECT plan_json, step_index FROM plans WHERE task_id = ?'
-        ).get(detail.taskId)
-        if (!row) return false
-        const step = JSON.parse(row.plan_json).steps[row.step_index]
-        return step.tools.includes('bash_exec')
-      }
-    }),
-    bSync({
-      request: { type: 'inject_constraints', detail: { constraints: bashConstraints } }
-    })
-  ], true),
+  ], true)  // looping — always active
 })
 ```
 
-Each constraint domain is a separate bThread — adding a new domain (e.g., `networkGuard` for A2A) means adding a new bThread with zero changes to existing code. This is BP's additive composition: handlers store, bThreads orchestrate.
+This is the one bThread that loops. It evaluates every `activate_step` event and blocks those whose dependencies aren't complete. Unlike the per-step tool context threads, dependency enforcement is a global invariant.
 
 #### Plan as Optimization, Not Security
 
@@ -222,7 +234,7 @@ The plan is an optimization signal for Layer 0 (context assembly). It is not a s
 
 | Layer | Depends on Plan? | What It Uses Instead |
 |---|---|---|
-| **0 — Context Assembly** | Yes — selects constraints by `step.tools` | — |
+| **0 — Context Assembly** | Yes — selects tool context by active step | — |
 | **1 — Hard Gate** | No — constitution bThreads evaluate independently | Tool call structure, file paths, command content |
 | **2 — OS Sandbox** | No — kernel enforces capabilities | Namespace restrictions, seccomp profile |
 | **3 — Event Log** | No — records everything | `useSnapshot` captures all BP decisions |
