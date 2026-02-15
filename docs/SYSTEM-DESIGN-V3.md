@@ -117,13 +117,117 @@ trigger('task', { prompt })
 - Assembles context dynamically via trigger → super-step → useFeedback chains
 - Evaluates every tool call via deterministic `block` predicates (Layer 1 hard gate)
 - Selects relevant constraints per plan step via structural predicate matching
-- Tracks loop state (plan, step index, accumulated context) in bThread closures
+- Reads plan state from SQLite materialized view (synchronous `bun:sqlite` lookups in predicates)
 - Manages lifecycle (when to stop, when to ask for human confirmation)
 
 **What BP does NOT do:**
 - Interpret dream content — symbolic cannot do semantic analysis
 - Judge plan quality — bad plans produce bad tool calls, which the Gate catches
 - Monitor token streams — unnecessary overhead; Defense in Depth handles safety
+
+### Plan Schema
+
+The plan is a structured artifact produced by the Actuator from the Dreamer's natural language reasoning. It must carry enough structural metadata for BP predicates to match on, while being simple enough for a 270M model to reliably produce.
+
+```typescript
+interface PlanStep {
+  intent: string        // natural language — for Dreamer context, not for BP
+  tools: string[]       // which tools this step will use — the predicate signal
+  depends?: number[]    // step indices this depends on
+}
+
+interface Plan {
+  goal: string          // natural language — for Dreamer context
+  steps: PlanStep[]     // ordered steps
+}
+```
+
+The Dreamer says: *"First I should read src/ui/form.tsx, then check existing validation patterns, then write a validation bThread, then run tests."* The Actuator translates:
+
+```json
+{
+  "tool": "save_plan",
+  "args": {
+    "goal": "Add validation to form component",
+    "steps": [
+      { "intent": "Read component to understand structure", "tools": ["read_file"] },
+      { "intent": "Check existing validation patterns", "tools": ["read_file", "search"] },
+      { "intent": "Write validation bThread", "tools": ["write_file"], "depends": [0, 1] },
+      { "intent": "Run tests", "tools": ["bash_exec"], "depends": [2] }
+    ]
+  }
+}
+```
+
+#### Storage and Access
+
+Plans are stored in a SQLite materialized view, keyed by task ID. All events carry a `taskId` in their detail — this is the partition key for concurrent plans.
+
+The `useFeedback` handler stores the plan (side effect). bThread predicates read it via synchronous `bun:sqlite` lookups:
+
+```typescript
+// Handler: side effect — store the plan
+return {
+  save_plan({ detail }) {
+    db.run(
+      'INSERT OR REPLACE INTO plans (task_id, plan_json, step_index) VALUES (?, ?, 0)',
+      [detail.taskId, JSON.stringify(detail.plan)]
+    )
+  }
+}
+
+// bThread: orchestration — select constraints based on current step's tools
+bThreads.set({
+  writeGuard: bThread([
+    bSync({
+      waitFor: ({ type, detail }) => {
+        if (type !== 'context_assembly') return false
+        const row = db.query(
+          'SELECT plan_json, step_index FROM plans WHERE task_id = ?'
+        ).get(detail.taskId)
+        if (!row) return false
+        const step = JSON.parse(row.plan_json).steps[row.step_index]
+        return step.tools.includes('write_file')
+      }
+    }),
+    bSync({
+      request: { type: 'inject_constraints', detail: { constraints: writeConstraints } }
+    })
+  ], true),
+
+  bashGuard: bThread([
+    bSync({
+      waitFor: ({ type, detail }) => {
+        if (type !== 'context_assembly') return false
+        const row = db.query(
+          'SELECT plan_json, step_index FROM plans WHERE task_id = ?'
+        ).get(detail.taskId)
+        if (!row) return false
+        const step = JSON.parse(row.plan_json).steps[row.step_index]
+        return step.tools.includes('bash_exec')
+      }
+    }),
+    bSync({
+      request: { type: 'inject_constraints', detail: { constraints: bashConstraints } }
+    })
+  ], true),
+})
+```
+
+Each constraint domain is a separate bThread — adding a new domain (e.g., `networkGuard` for A2A) means adding a new bThread with zero changes to existing code. This is BP's additive composition: handlers store, bThreads orchestrate.
+
+#### Plan as Optimization, Not Security
+
+The plan is an optimization signal for Layer 0 (context assembly). It is not a security boundary:
+
+| Layer | Depends on Plan? | What It Uses Instead |
+|---|---|---|
+| **0 — Context Assembly** | Yes — selects constraints by `step.tools` | — |
+| **1 — Hard Gate** | No — constitution bThreads evaluate independently | Tool call structure, file paths, command content |
+| **2 — OS Sandbox** | No — kernel enforces capabilities | Namespace restrictions, seccomp profile |
+| **3 — Event Log** | No — records everything | `useSnapshot` captures all BP decisions |
+
+A "dishonest" plan (wrong tool declarations) produces worse context assembly — the Dreamer sees irrelevant constraints or misses relevant ones. But safety doesn't degrade because Layers 1–3 are plan-independent.
 
 ### Why Two Models, Not One
 
