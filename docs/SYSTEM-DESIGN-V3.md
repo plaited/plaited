@@ -551,6 +551,7 @@ This pattern is proven — `src/workshop/get-server.ts` uses the same `Bun.spawn
 | **Memory isolation** | Each subprocess has its own address space. Project A's memory cannot leak to Project B. |
 | **Crash containment** | A failing project subprocess doesn't take down the orchestrator or other projects. |
 | **Security boundaries** | Each subprocess runs with its own sandbox profile (Layer 2). Different projects can have different capability restrictions. |
+| **Network proxy** | Subprocesses have no outbound network access. All network requests (A2A, external APIs) are IPC events to the orchestrator, which proxies them after BP gate approval. Per-project permissions control which projects can make which outbound calls. |
 | **Independent lifecycle** | Projects can be started, stopped, and restarted independently. The orchestrator manages lifecycle via IPC. |
 | **Event log partitioning** | Each subprocess's `useSnapshot` callbacks tag events with their project key. The event log is naturally partitioned. |
 
