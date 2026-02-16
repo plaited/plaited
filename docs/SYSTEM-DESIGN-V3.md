@@ -757,7 +757,25 @@ The autonomy axis is not binary. It's a spectrum the owner tunes through the con
 
 ## Constitution
 
-The framework ships with a set of foundational bThreads — the **constitution** — encoding two bodies of work as deterministic constraints:
+The framework ships with a set of foundational bThreads — the **constitution** — encoding documented principles as deterministic constraints.
+
+### Authoring Model
+
+Constitution bThreads follow the same pattern as the rest of the framework's design artifacts:
+
+| Layer | What | Example |
+|---|---|---|
+| **Reference document** (`docs/`) | Describes principles and rationale | `docs/Structural-IA.md`, `docs/Modnet.md` |
+| **bThread code** (TypeScript) | Encodes principles as `block` predicates | Constitution bThreads shipped with `plaited/agent` |
+
+The reference document is the source of truth for *intent*. The bThread code is the source of truth for *enforcement*. Both are versioned in git and distributed via npm.
+
+- **Authored** as TypeScript — bThreads with `block` predicates, no DSL or config format
+- **Versioned** in git — tracked like any other code
+- **Distributed** via npm — shipped with `plaited/agent`
+- **Flywheel additions** — when recurring patterns suggest a new constraint, the proposed bThread requires owner approval before merging
+
+The constitution's safety principles reference document is forthcoming. The structural and modnet principles below are derived from their existing reference documents.
 
 ### Structural Information Architecture
 
