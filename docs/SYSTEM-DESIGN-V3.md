@@ -327,6 +327,28 @@ const disconnect = useSnapshot(async (candidates: SnapshotMessage) => {
 
 The log is **partitioned by project key.** Each project's events are independent. Recovery, replay, and materialized view rebuilds operate per-partition.
 
+### Log Retention
+
+The event log is append-only. It grows forever. The fix is **rotation** — moving old events out of the hot database into compressed files. No data loss, no merging, no summarization.
+
+```
+Old events → export to .jsonl.gz per project partition
+  → DELETE from SQLite → VACUUM reclaims space
+  → compressed files available for replay if needed
+```
+
+| Tier | Storage | Purpose |
+|---|---|---|
+| **Hot** | SQLite | Recent events — active plans, current session, configurable window (time-based or size-based per project) |
+| **Archive** | `.jsonl.gz` files | Rotated events — still replayable for view rebuilds or training extraction |
+| **Training artifacts** | Extracted before rotation | SFT trajectories, GRPO preference pairs — kept as separate files |
+
+**Materialized views are already the "compacted" form.** A plan's final status, a semantic cache entry, a relation graph edge — these views persist in their own tables and don't need the raw events to function. The raw events are only needed for rebuilding views or extracting training data.
+
+**Rebuild guarantee:** If a materialized view is corrupted or the schema changes, replay the hot window first. If insufficient, decompress and replay archives. Full recovery is always possible — it just gets slower for older data.
+
+**What triggers rotation:** Time-based (daily/weekly), size-based (per-project partition exceeds threshold), or user-triggered. The framework provides the mechanism; the deployment decides the schedule.
+
 ### Materialized Views
 
 The four memory categories from the discovery layer are views materialized from the event log:
@@ -370,6 +392,37 @@ Event log slices (by project, time range, outcome)
 ```
 
 Memory is the bridge between the per-session agent loop and the cross-session training flywheel. The event log is the richest signal — it captures not just what the agent did, but the full BP decision state at each step.
+
+### Cross-Project Knowledge
+
+Project subprocesses have hard process boundaries — Project A's memory cannot leak to Project B. But patterns learned in one project are valuable in another. The resolution: **the model is the cross-project knowledge channel.**
+
+The training pipeline operates above the isolation boundary. It reads event logs from all project partitions (with user consent), extracts trajectories, and trains the model. The model's updated weights carry generalized patterns into every project:
+
+```
+Project A events  ──┐
+                    ├──→ Training pipeline (reads all partitions)
+Project B events  ──┘        │
+                             ↓
+                    Updated model weights
+                             │
+                    ┌────────┴────────┐
+                    ↓                 ↓
+              Project A            Project B
+           (subprocess)         (subprocess)
+         sees improved model   sees improved model
+```
+
+No subprocess reads another's memory. Knowledge transfer happens through weights, not data sharing. This is how human developers work — patterns learned on one codebase carry over in your head, not by copying files between repos.
+
+For *explicit* sharing — tool configurations, skills, style preferences — the global layer handles it:
+
+| What | Mechanism |
+|---|---|
+| Shared tool configs | `~/.agents/mcp.json` (user installs globally) |
+| Shared skills | `~/.agents/skills/` (user installs globally) |
+| Style and patterns | Model weights (training flywheel) |
+| Project-specific knowledge | Per-project memory only (never crosses boundary) |
 
 ## Project Isolation
 
