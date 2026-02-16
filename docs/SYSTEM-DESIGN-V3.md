@@ -375,6 +375,63 @@ Memory is the bridge between the per-session agent loop and the cross-session tr
 
 A single agent may work across multiple projects — separate git repositories, different codebases, distinct security contexts. These need **hard process boundaries**, not logical partitioning.
 
+### Project Registry
+
+A project is a git repository. The project key is the absolute path to the git root. No complex routing — the orchestrator looks up the path in a SQLite table:
+
+```sql
+CREATE TABLE projects (
+  path        TEXT PRIMARY KEY,   -- absolute path to git root
+  name        TEXT,               -- from package.json, Cargo.toml, go.mod, directory name
+  description TEXT,               -- from README, package.json description, or user-provided
+  last_active INTEGER,            -- epoch ms — for cleanup/ordering
+  created_at  INTEGER NOT NULL    -- when the agent first saw this project
+);
+```
+
+Projects are indexed on first encounter — when a task arrives with a `cwd` path, the orchestrator derives the git root and registers it if new. Metadata is extracted from what the repo already carries (package manifest, README). No registration ceremony.
+
+**Routing:** A task arrives with a path. The orchestrator resolves the git root, looks up the project, spawns (or reuses) a subprocess for it, and forwards the task via IPC.
+
+### Tool Layers
+
+Tools are assembled from three layers using the `.agents/` convention:
+
+| Layer | Location | Scope | Discovery |
+|---|---|---|---|
+| **Framework built-ins** | Shipped with `plaited/agent` | All projects | Always available |
+| **Global user config** | `~/.agents/skills/`, `~/.agents/mcp.json` | All projects | Loaded at subprocess spawn |
+| **Project-local** | `.agents/skills/`, `.agents/mcp.json` | This repo only | Discovered from repo at spawn |
+
+OS PATH binaries and project-local binaries (`node_modules/.bin/`, etc.) are discovered but subject to approval constraints.
+
+**Approval model** — mapped to the authority axis of the risk model:
+
+| Tool source | Authority level | Approval |
+|---|---|---|
+| Framework built-ins | N/A | Always available, no approval needed |
+| Global skills / MCP | User-configured | User installs explicitly |
+| Project skills / MCP | Project-scoped | Discovered from repo, available within project |
+| Project-local CLIs | Low (scoped to repo) | Auto-install if user opts in — reversible via `git checkout` |
+| OS PATH / global CLIs | High (affects all projects) | Always requires user approval |
+| Global CLI upgrades | High | Requires approval + dependency scanning + testing |
+
+Global CLI approval is enforced by a looping bThread that blocks `install_global_tool` and `upgrade_global_tool` events until a `user_confirm` event arrives.
+
+**Subprocess tool assembly at spawn:**
+
+```
+Framework built-ins (read_file, write_file, bash, save_plan, etc.)
+  + ~/.agents/skills/*          → global skills
+  + ~/.agents/mcp.json servers  → global MCP tools
+  + .agents/skills/*            → project skills
+  + .agents/mcp.json servers    → project MCP tools
+  + OS PATH binaries            → discovered, approval-gated
+  + project-local binaries      → node_modules/.bin/, etc.
+  → FTS5 indexes all tool descriptions for this project
+  → model sees available tools in context
+```
+
 ### Architecture: Orchestrator + Project Subprocesses
 
 ```mermaid
