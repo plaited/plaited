@@ -951,6 +951,53 @@ bSync({
 })
 ```
 
+### Payment (x402)
+
+Payment is an essential feature of the modnet. Approval contingent on payment is normal for any content on the web — the modnet simply makes it machine-negotiable.
+
+[x402](https://github.com/coinbase/x402) layers directly on HTTP via the `402 Payment Required` status code. Since A2A uses HTTP as its transport, x402 composes without a protocol bridge:
+
+```
+Agent A sends A2A request to Agent B
+  → B evaluates access control (DAC + MAC + ABAC)
+  → B determines this service requires payment
+  → B returns HTTP 402 with x402 payment requirements header
+  → A receives 402 → trigger({ type: 'payment_required', detail })
+  → A's BP blocks until owner confirms payment
+  → Owner approves → payment executes on-chain
+  → A retries request with payment proof header
+  → B verifies payment → processes request → returns result
+```
+
+**Payment is bidirectional.** A node can both charge for its services (selling) and pay for others' services (buying). The same agent that charges for module generation might pay another agent for specialized training data or domain knowledge.
+
+**Payment as ABAC attribute.** In the access control model, payment status becomes another attribute the ABAC layer evaluates:
+
+```typescript
+bSync({
+  block: ({ type, detail }) => {
+    if (type !== 'share_module') return false
+    const mod = getModule(detail.moduleId)
+
+    // ABAC: module requires payment and payment not verified
+    if (mod.boundary === 'paid' && !detail.paymentVerified) return true
+
+    return false
+  }
+})
+```
+
+The boundary taxonomy extends naturally:
+
+| Boundary | Meaning |
+|---|---|
+| `all` | Share freely |
+| `ask` | Evaluate requester attributes |
+| `paid` | Requires verified x402 payment |
+| `none` | Never share |
+
+**Owner approval maps to existing patterns.** The `payment_required` event follows the same human-in-the-loop flow as any other BP-gated action. The owner sees what's being requested, the price, and approves or denies. No new approval mechanism needed — it's the same `trigger()` → bThread → owner confirmation flow used everywhere else.
+
 ### Inter-Agent Task Flow
 
 When Agent A wants to work with Agent B's module:
@@ -974,6 +1021,7 @@ For **module transfer** (sending the module itself, not just output) — a highe
 | **Composition** | Platform APIs, vendor lock-in | A2A protocol, agent-to-agent |
 | **Training data** | Platform captures trajectories | User owns their trajectories |
 | **Access control** | Platform-defined RBAC | Owner DAC + constitution MAC + BP ABAC |
+| **Payment** | Platform billing (subscriptions, metered) | Per-request x402 between nodes (bidirectional) |
 
 The framework ships primitives for building modnet nodes. It does not operate a modnet. Consumers deploy their own agents, publish their own Agent Cards, and connect to whichever peers they choose.
 
