@@ -4,11 +4,11 @@
 
 Three axioms drive every decision in this architecture:
 
-1. **Decouple logic from syntax.** Reasoning and structured output are different cognitive tasks. One model thinks in natural language. A separate model translates thoughts into tool calls. Neither does the other's job.
+1. **Decouple reasoning from action.** The inference server separates deliberation (`<think>...</think>` blocks) from final response at the protocol level. The framework consumes this separation — thinking feeds observability and training; the response feeds the tool-call pipeline. The agent never parses raw output to find the boundary.
 
-2. **Symbolic persists, neural evolves.** Behavioral programs (bThreads) encode safety constraints and domain knowledge as deterministic code. They survive model upgrades, hardware changes, and architecture pivots. The neural layer — whichever models fill the Cortex and Actuator roles — is replaceable.
+2. **Symbolic persists, neural evolves.** Behavioral programs (bThreads) encode safety constraints and domain knowledge as deterministic code. They survive model upgrades, hardware changes, and architecture pivots. The neural layer — whichever model fills the Model role — is replaceable.
 
-3. **Architecture outlives models.** Today's Cortex is Falcon-H1R 7B. Today's Actuator is FunctionGemma 270M. Tomorrow's may be different. The interfaces, the constraint engine, the memory taxonomy, and the safety layers are designed to remain stable across model generations.
+3. **Architecture outlives models.** Today's model is Falcon-H1R 7B. Tomorrow's may be different. The interfaces, the constraint engine, the memory taxonomy, and the safety layers are designed to remain stable across model generations.
 
 ## Overview
 
@@ -16,49 +16,50 @@ Plaited's agent layer is a **framework** — composable primitives shipped as a 
 
 The framework provides:
 
-- **Interfaces** for three model roles (Cortex, Actuator, Indexer)
+- **Interfaces** for two model roles (Model, Indexer)
 - **BP orchestration** for the agent loop, safety constraints, and context assembly
 - **Discovery and memory primitives** for tool indexing, semantic cache, and relation tracking
 - **A constitution** encoding Structural-IA and Modnet concepts as bThreads
 
-The framework is **not prescriptive** about inference backend. Consumers choose how to serve models — vLLM, llama.cpp, Ollama, cloud APIs, or any OpenAI-compatible endpoint. Code ships via npm (`plaited`). Base-trained models ship via Hugging Face ([huggingface.co/plaited](https://huggingface.co/plaited)).
+The framework is **not prescriptive** about inference backend. Consumers choose how to serve models — vLLM, llama.cpp, Ollama, cloud APIs, or any OpenAI-compatible endpoint. All three backends support separating `<think>` reasoning from response content at the server level (vLLM via `--reasoning-parser`, Ollama via `"think": true`, llama-server via `--reasoning-format`). Code ships via npm (`plaited`). Base-trained models ship via Hugging Face ([huggingface.co/plaited](https://huggingface.co/plaited)).
 
 ### Reference Model Stack
 
-The architecture is designed around three specialized roles. The reference implementation uses small, fine-tunable models that fit together on modest hardware:
+The architecture is designed around two specialized roles. The reference implementation uses small, fine-tunable models that fit together on modest hardware:
 
 | Role | Reference Model | Params | Function |
 |---|---|---|---|
-| **Cortex** | Falcon-H1R 7B (Mamba/SSM hybrid) | 7B | Reasons in natural language. Reads constraints, history, and tool descriptions. Produces English-language plans and decisions. Never writes JSON. |
-| **Actuator** | FunctionGemma (Gemma 3 270M base) | 270M | Foundation model for function calling. Fine-tuned on the agent's tool schemas. Translates the Cortex's natural language into structured tool calls. Not a dialogue model — translates, never reasons. |
-| **Indexer** | EmbeddingGemma (Gemma 3 300M base) | 300M | 768-dim embeddings (Matryoshka truncation to 512/256/128). Powers semantic similarity in the discovery layer. 2K token context. Not part of the Reflex loop — part of the memory layer. |
+| **Model** | Falcon-H1R 7B (Mamba/SSM hybrid) | 7B | Reasons in `<think>` blocks (separated by inference server). Produces structured tool calls in the response. Fine-tuned via distillation from frontier agents (Claude Code, Gemini CLI) using the eval harness. |
+| **Indexer** | EmbeddingGemma (Gemma 3 300M base) | 300M | 768-dim embeddings (Matryoshka truncation to 512/256/128). Powers semantic similarity for natural language content (TSDoc, documentation, conversation history). 2K token context. Not part of the agent loop — part of the discovery layer. |
 
-**Reference total: ~7.6B parameters (~15GB at fp16).** Any model that satisfies the Cortex, Actuator, or Indexer interface can be substituted — including frontier API models for consumers who prefer pay-per-use over self-hosting.
+**Reference total: ~7.3B parameters (~14.6GB at fp16).** Any model that satisfies the Model or Indexer interface can be substituted — including frontier API models for consumers who prefer pay-per-use over self-hosting.
 
 ### Pluggable Models
 
-The Cortex, Actuator, and Indexer are interfaces, not implementations:
+The Model and Indexer are interfaces, not implementations:
 
 ```typescript
-interface Cortex {
-  reason(context: CortexContext): AsyncIterable<string>
+interface ModelResponse {
+  thinking: string    // from <think>...</think> — observability + training signal
+  toolCall: ToolCall  // structured tool call from post-</think> response
 }
 
-interface Actuator {
-  fire(reasoning: string, tools: ToolSchema[]): Promise<ToolCall>
+interface Model {
+  reason(context: ModelContext): Promise<ModelResponse>
 }
 
 interface Indexer {
   embed(text: string): Promise<Float32Array>
-  search(params:{query: string, corpus: string[], topK: number}): Promise<SearchResult[]>
 }
 ```
 
-The reference models (Falcon-H1R, FunctionGemma, EmbeddingGemma) ship as base-trained checkpoints from `huggingface.co/plaited`. Consumers fine-tune for their own tool schemas and usage patterns. The symbolic layer (BP + bThreads) persists across every model swap.
+The Indexer's sole responsibility is turning text into vectors. Searching those vectors (cosine similarity over stored embeddings) is a SQLite operation in the discovery layer — not a model concern.
 
-## The Reflex Architecture
+The reference model (Falcon-H1R) ships as a base-trained checkpoint from `huggingface.co/plaited`, fine-tuned via distillation from frontier agents. Consumers can further fine-tune for their own tool schemas and usage patterns. The symbolic layer (BP + bThreads) persists across every model swap.
 
-The cognitive split between Cortex and Actuator is called the **Reflex Architecture**. The name reflects the biological metaphor: the Cortex is deliberation, the Actuator is the reflex arc (fast, mechanical translation).
+## The Agent Loop
+
+The model handles both deliberation (in `<think>` blocks) and action selection (structured tool calls in the response). The inference server separates these two outputs at the protocol level — the framework never parses raw text to find the boundary.
 
 One central `useBehavioral` program orchestrates the entire loop. There are no actors, no workers, no separate signal stores. BP manages state through bThread closures and coordinates compute via `Bun.spawn()` subprocesses for inference and sandboxed execution.
 
@@ -66,15 +67,13 @@ One central `useBehavioral` program orchestrates the entire loop. There are no a
 graph LR
     subgraph BP["useBehavioral — Central Orchestrator"]
         CTX["1. Context<br/>plan + constraints + history + tools"]
-        REASON["2. Reason<br/>Bun.spawn() → Cortex"]
-        FIRE["3. Fire<br/>Bun.spawn() → Actuator"]
-        GATE["4. Gate<br/>bThread block predicates"]
-        EXEC["5. Execute<br/>Bun.spawn() → sandboxed subprocess"]
+        REASON["2. Reason<br/>Bun.spawn() → Model<br/>(thinking + tool call)"]
+        GATE["3. Gate<br/>bThread block predicates"]
+        EXEC["4. Execute<br/>Bun.spawn() → sandboxed subprocess"]
     end
 
     CTX --> REASON
-    REASON --> FIRE
-    FIRE --> GATE
+    REASON --> GATE
 
     GATE -- "approved" --> EXEC
     EXEC -- "tool result → trigger()" --> CTX
@@ -84,34 +83,33 @@ graph LR
 
 ### The Loop
 
-1. **Context** — BP assembles the Cortex's prompt via trigger → super-step → useFeedback chains: the current plan (if one exists), active constraints from the plan's current step, conversation history, relevant tool descriptions, and any prior gate rejections.
-2. **Reason** — Cortex reasons in natural language: *"I should read src/index.ts to understand the entry point. Then I'll check the exports."* On the first cycle for a new task, the Cortex produces a plan. On subsequent cycles, it adjusts the plan based on tool results.
-3. **Fire** — Actuator translates the reasoning into a structured tool call: `{ "tool": "read_file", "args": { "path": "src/index.ts" } }`. If the reasoning is a plan, the Actuator translates it into a `save_plan` tool call — the plan enters the pipeline like any other tool result.
-4. **Gate** — BP evaluates the tool call via `block` predicates. Deterministic: if any bThread blocks the event, the action is denied. The rejection reason feeds back to step 1 as context. The Cortex re-plans around the constraint.
-5. **Execute** — Approved tool call runs in a sandboxed `Bun.spawn()` subprocess restricted to `/workspace`. Output returns via `trigger()` as new context. Loop continues.
+1. **Context** — BP assembles the model's prompt via trigger → super-step → useFeedback chains: the current plan (if one exists), active constraints from the plan's current step, conversation history, relevant tool descriptions, and any prior gate rejections.
+2. **Reason** — The model produces two outputs separated by the inference server: `<think>` blocks containing natural language reasoning (*"I should read src/index.ts to understand the entry point."*), and a structured tool call in the response (`{ "tool": "read_file", "args": { "path": "src/index.ts" } }`). On the first cycle for a new task, the tool call is a `save_plan` call — the plan enters the pipeline like any other tool result. On subsequent cycles, the model adjusts the plan based on tool results.
+3. **Gate** — BP evaluates the tool call via `block` predicates. Deterministic: if any bThread blocks the event, the action is denied. The rejection reason feeds back to step 1 as context. The model re-plans around the constraint.
+4. **Execute** — Approved tool call runs in a sandboxed `Bun.spawn()` subprocess restricted to `/workspace`. Output returns via `trigger()` as new context. Loop continues.
 
 ### Plan-Driven Context Assembly
 
-The Cortex's plan is the key to efficient context assembly. Rather than BP guessing what context to include (wasteful) or always including everything (expensive), the plan provides a **neural-generated, symbolically-consumed** optimization signal:
+The model's plan is the key to efficient context assembly. Rather than BP guessing what context to include (wasteful) or always including everything (expensive), the plan provides a **neural-generated, symbolically-consumed** optimization signal:
 
 ```
 trigger('task', { prompt })
   → bThread: initial context assembly (constraints + prompt + discovery)
-  → Cortex produces plan
-  → Actuator fires save_plan tool call
-  → Gate approves → plan saved → trigger('tool_result', { plan })
+  → model produces plan (in response) with reasoning (in <think>)
+  → save_plan tool call flows through Gate → Execute → plan saved
+  → trigger('tool_result', { plan })
 
   loop:
     → plan + last tool result are already in history
     → BP selects constraints relevant to current plan step
        (deterministic: step involves "bash" → bash constraints,
         step involves "write" → file write constraints)
-    → Cortex sees: current plan + last result + relevant constraints
-    → Cortex adjusts plan if needed, proposes next action
-    → Actuator → Gate → Execute → loop
+    → model sees: current plan + last result + relevant constraints
+    → model adjusts plan if needed, proposes next action
+    → Gate → Execute → loop
 ```
 
-**Why this works:** The plan is just another tool result. It flows through the exact same Actuator → Gate → Execute pipeline. No special machinery. BP reads the plan's structure — not its meaning. Deterministic predicates match on step metadata (read-only vs. write, which tools are referenced) to select which constraints to inject. The neural layer produces the signal; the symbolic layer consumes it mechanically.
+**Why this works:** The plan is just another tool result. It flows through the exact same Gate → Execute pipeline. No special machinery. BP reads the plan's structure — not its meaning. Deterministic predicates match on step metadata (read-only vs. write, which tools are referenced) to select which constraints to inject. The neural layer produces the signal; the symbolic layer consumes it mechanically.
 
 **What BP does:**
 - Assembles context dynamically via trigger → super-step → useFeedback chains
@@ -127,18 +125,18 @@ trigger('task', { prompt })
 
 ### Plan Schema
 
-The plan is a structured artifact produced by the Actuator from the Cortex's natural language reasoning. It carries structural metadata for BP predicates while remaining simple enough for a 270M model to reliably produce.
+The plan is a structured artifact produced by the model as a `save_plan` tool call. It carries structural metadata for BP predicates while remaining simple enough for a fine-tuned model to reliably produce.
 
 ```typescript
 interface PlanStep {
   id: string            // stable identity — the partition key
-  intent: string        // natural language — for Cortex context, not for BP
+  intent: string        // natural language — for model context, not for BP
   tools: string[]       // which tools this step will use — the predicate signal
   depends?: string[]    // step IDs this depends on
 }
 
 interface Plan {
-  goal: string          // natural language — for Cortex context
+  goal: string          // natural language — for model context
   steps: PlanStep[]     // ordered steps
 }
 ```
@@ -159,7 +157,7 @@ CREATE TABLE plan_steps (
 );
 ```
 
-Navigation happens through Gate tool calls — `activate_step`, `complete_step`, `skip_step` — which update individual row status. Multiple steps can be active simultaneously. During context assembly, BP injects a compact summary of the full plan (IDs, intents, statuses) plus the full detail of only the currently active steps. The Cortex sees the map without carrying every detail.
+Navigation happens through Gate tool calls — `activate_step`, `complete_step`, `skip_step` — which update individual row status. Multiple steps can be active simultaneously. During context assembly, BP injects a compact summary of the full plan (IDs, intents, statuses) plus the full detail of only the currently active steps. The model sees the map without carrying every detail.
 
 #### Dynamic bThreads per Step Activation
 
@@ -239,38 +237,61 @@ The plan is an optimization signal for Layer 0 (context assembly). It is not a s
 | **2 — OS Sandbox** | No — kernel enforces capabilities | Namespace restrictions, seccomp profile |
 | **3 — Event Log** | No — records everything | `useSnapshot` captures all BP decisions |
 
-A "dishonest" plan (wrong tool declarations) produces worse context assembly — the Cortex sees irrelevant constraints or misses relevant ones. But safety doesn't degrade because Layers 1–3 are plan-independent.
+A "dishonest" plan (wrong tool declarations) produces worse context assembly — the model sees irrelevant constraints or misses relevant ones. But safety doesn't degrade because Layers 1–3 are plan-independent.
 
-### Why Two Models, Not One
+### Why Distillation, Not a Pre-trained Tool-Calling Model
 
-A single model that both reasons and generates structured output must constantly context-switch between natural language thinking and JSON formatting. This creates two failure modes:
+The reference model (Falcon-H1R 7B) is a reasoning model, not a pre-trained tool-calling model. It was not explicitly optimized for agentic workflows or structured JSON output. Rather than relying on generic tool-calling benchmarks, the framework uses **distillation** from frontier agents to teach the model the specific tool schemas it needs:
 
-- **Reasoning contaminated by syntax:** The model spends tokens on brace-matching and schema compliance instead of thinking about the problem.
-- **Structure contaminated by reasoning:** The model injects commentary into JSON, breaks schemas, or hallucinates field names.
+1. **Teacher capture** — The existing eval harness + headless adapters run the same tasks through frontier agents (Claude Code, Gemini CLI). Full trajectories are captured as structured JSONL.
+2. **Student capture** — The same tasks run through the model. Trajectories are captured in the same format.
+3. **Comparison grading** — The eval harness `compare` command grades student vs. teacher trajectories, producing quality/reliability metrics.
+4. **SFT** — Successful teacher trajectories become supervised fine-tuning data, teaching the model the tool-call format and decision patterns.
+5. **GRPO** — Comparison signals (teacher-preferred vs. student-generated) become preference pairs for Group Relative Policy Optimization.
 
-The Reflex Architecture eliminates both. The Cortex never sees JSON. The Actuator never decides what to do. Each model operates in its native modality.
+This approach has three advantages over using a pre-trained tool-calling model:
+
+- **Schema-specific** — The model learns the exact tool schemas it will use, not generic function-calling patterns.
+- **Continuously improving** — As the eval harness captures more trajectories, the training data grows. The model gets better at the specific tasks its owner needs.
+- **Verifiable** — The eval harness provides pass@k, pass^k, and comparison metrics. The model's capabilities are measured, not assumed.
+
+The distillation pipeline reuses existing skills (`agent-eval-harness`, `headless-adapters`) — no new infrastructure is needed. Fine-tuning runs via Unsloth with ~5GB VRAM (LoRA).
 
 ## Discovery Layer
 
-The discovery layer uses **three independent mechanisms**, each suited to a different kind of lookup:
+The discovery layer uses **three mechanisms as a pipeline**, each suited to a different kind of content:
 
-| Mechanism | Backing | What It Finds | Speed |
-|---|---|---|---|
-| **FTS5** | SQLite full-text search | Tools by name/description, skills by keyword, rules by content | Fast, no model |
-| **Dependency Graph** | In-memory DAG (persisted to SQLite) | Module relationships, structural dependencies, import chains | Fast, no model |
-| **Semantic Search** | EmbeddingGemma (768-dim vectors) | Similar tools by intent, cached responses by semantic proximity | Slower, requires Indexer |
+| Mechanism | Backing | What It Finds | Content Type | Speed |
+|---|---|---|---|---|
+| **FTS5** | SQLite full-text search | Tools by name/description, skills by keyword, rules by content, TSDoc by term | All content | Fast, no model |
+| **LSP-Powered Code Graph** | TypeScript Language Server + SQLite | Module relationships, symbol dependencies, import chains, type signatures, all references | Code only | Fast, no model |
+| **Semantic Search** | Cosine similarity over pre-computed embeddings | Similar tools by intent, cached responses by semantic proximity, related documentation | Natural language only | Fast at query time (pre-computed vectors) |
+
+All three mechanisms operate without model inference at query time. The Indexer (EmbeddingGemma) is invoked only when new content is indexed — at startup and when new documents arrive. After that, semantic search is cosine similarity over stored vectors in SQLite.
 
 ### FTS5 — Keyword Search
 
-SQLite's FTS5 extension provides fast, exact keyword matching. Tool descriptions, skill manifests, and rule content are indexed at startup. Most discovery queries resolve here without touching the Indexer.
+SQLite's FTS5 extension provides fast, exact keyword matching. Tool descriptions, skill manifests, rule content, and TSDoc comments are indexed at startup. Most discovery queries resolve here — keyword matching on tool names, file paths, and error types.
 
-### Dependency Graph — Structural Relations
+### LSP-Powered Code Graph — Structural Relations
 
-An in-memory directed acyclic graph (DAG) tracks module relationships: which modules import which, which tools belong to which skills, which rules apply to which contexts. The graph is built from static analysis and persisted to SQLite for session recovery. Traversal is O(edges) with no model inference.
+The TypeScript Language Server provides exact structural relationships for code — no embeddings needed. The LSP tools (`lsp-analyze --exports`, `lsp-refs`, `lsp-find`, `lsp-hover`) produce dependency graphs, symbol references, and type signatures that are stored in SQLite for session recovery.
+
+**Why LSP instead of embeddings for code:** Code is non-sequential, cross-referential content. A function's meaning depends on its imports, callers, type constraints, and module context — relationships that embeddings collapse into a single vector. LSP preserves the structural graph: which modules import which, which symbols reference which, which types constrain which. Traversal is O(edges) with no model inference.
 
 ### Semantic Search — Similarity by Embedding
 
-EmbeddingGemma handles queries that keyword search can't resolve — "find a tool that does something like X." Uses task-prefix format (`task: code retrieval | query: ...`) to produce context-appropriate embeddings. Matryoshka truncation (768 → 512 → 256 → 128 dims) allows trading precision for speed.
+Pre-computed embeddings from the Indexer (EmbeddingGemma) handle queries that keyword search and structural navigation can't resolve — "find a tool that does something like X" or "what documentation discusses this concept?" At query time, the query text is embedded (one Indexer call), then cosine similarity ranks stored vectors in SQLite. Uses task-prefix format (`task: code retrieval | query: ...`) to produce context-appropriate embeddings. Matryoshka truncation (768 → 512 → 256 → 128 dims) allows trading precision for speed.
+
+**Scope:** Natural language content only — TSDoc comments, documentation files, conversation history, plan intents. Code is never embedded; the LSP code graph handles structural code discovery.
+
+### Pipeline Behavior
+
+The three mechanisms feed each other rather than operating independently:
+
+1. **FTS5** resolves most queries directly (keyword match on tool names, file paths, error types)
+2. **LSP Code Graph** is consulted when FTS5 finds code symbols — expanding the result with structural context (callers, dependencies, type signatures)
+3. **Semantic Search** handles queries that neither keyword nor structure can resolve — intent-based similarity across natural language content
 
 ## Memory Architecture
 
@@ -313,7 +334,7 @@ The four memory categories from the discovery layer are views materialized from 
 | View | Source Events | Rebuild Strategy |
 |---|---|---|
 | **Plans** | `save_plan`, `task_complete`, `task_fail` | Replay plan lifecycle events; reconstruct success/failure metadata |
-| **Semantic Cache** | `cortex_response` + `tool_result` pairs | Re-embed cached responses; skip if embedding model changed |
+| **Semantic Cache** | `model_response` + `tool_result` pairs | Re-embed cached responses; skip if embedding model changed |
 | **Relation Store** | `tool_use`, `skill_invoke`, `module_import` | Rebuild DAG from structural events |
 | **Session History** | All events in chronological order | Direct projection — the log IS the history |
 
@@ -325,17 +346,17 @@ The four memory categories from the discovery layer are views materialized from 
 
 ### Plans — Reusable Task Knowledge
 
-Plans remain first-class memory artifacts. When the Cortex produces a plan and the Actuator saves it via `save_plan`, the plan and its task breakdown are persisted with metadata: outcome (success/failure), tools used, skills invoked, gate rejections encountered.
+Plans remain first-class memory artifacts. When the model produces a `save_plan` tool call, the plan and its task breakdown are persisted with metadata: outcome (success/failure), tools used, skills invoked, gate rejections encountered.
 
 Stored plans are discoverable via all three discovery mechanisms:
 
 | Mechanism | What It Finds | Example |
 |---|---|---|
 | **FTS5** | Plans by keyword — tool names, file paths, error types | "plans that used `write_file` on `src/ui/`" |
-| **Dependency Graph** | Structural relationships — which tools each task needed, task ordering, skill dependencies | "Task 3 depended on Tasks 1 and 2, invoked `ui-patterns` skill" |
+| **LSP Code Graph** | Structural relationships — which modules each task touched, symbol dependencies | "Task 3 modified `useRunner` which is referenced by 5 other modules" |
 | **Semantic Search** | Similar plans by intent, even if they used different tools | "find a plan similar to 'refactor the export structure'" |
 
-When a new task arrives, the discovery layer surfaces proven plans for similar work. The Cortex adapts from a plan that already succeeded rather than inventing from scratch.
+When a new task arrives, the discovery layer surfaces proven plans for similar work. The model adapts from a plan that already succeeded rather than inventing from scratch.
 
 ### Memory and the Training Flywheel
 
@@ -365,12 +386,12 @@ graph TD
     end
 
     subgraph P1["Project A (Bun.spawn)"]
-        REF1["Reflex loop<br/>Cortex → Actuator → Gate → Execute"]
+        REF1["Agent loop<br/>Model → Gate → Execute"]
         MEM1["Project memory<br/>(materialized views)"]
     end
 
     subgraph P2["Project B (Bun.spawn)"]
-        REF2["Reflex loop<br/>Cortex → Actuator → Gate → Execute"]
+        REF2["Agent loop<br/>Model → Gate → Execute"]
         MEM2["Project memory<br/>(materialized views)"]
     end
 
@@ -427,7 +448,7 @@ This pattern is proven — `src/workshop/get-server.ts` uses the same `Bun.spawn
 
 The constitution is loaded at subprocess spawn time and is **immutable for the lifetime of that process.** The orchestrator passes constitution bThreads as part of the spawn configuration. The subprocess cannot modify its own constitution — this is the MAC layer in action.
 
-## Training: Both Models Evolve
+## Training: Distillation from Frontier Agents
 
 The framework ships with base-trained checkpoints for generative UI and general-purpose coding tasks. New deployments start useful. Over time, real-world usage generates training data from four signal tiers:
 
@@ -438,18 +459,44 @@ The framework ships with base-trained checkpoints for generative UI and general-
 | **Test pass + user rejects** | Client interface | Agent output → rejected, user correction → chosen. Richest preference signal. | Yes |
 | **Test pass + user approves** | Client interface | Gold SFT data — correct by user's standards | Yes |
 
-- **Actuator fine-tuning:** FunctionGemma's base accuracy on function calling is ~58%. Fine-tuned on a deployment's specific tool schemas, it reaches 85%+. Each deployment fine-tunes for its owner's tools — the Actuator becomes a specialist.
-- **Cortex fine-tuning:** Falcon-H1R is trained via SFT and GRPO on task trajectories. The Cortex learns the owner's coding style, preferred patterns, and constraint landscape. Mamba's persistent state accelerates this — recurring patterns reinforce in state without explicit retraining. User feedback through the client interface provides preference signals that automated tests cannot capture — code style, approach selection, output quality.
-- **The flywheel:** Usage → trajectories → SFT/GRPO → better models → better usage → more trajectories. Recurring patterns crystallize into explicit bThreads, growing the symbolic layer monotonically. The neural layer gets smarter; the symbolic layer gets stricter. Both improve together.
-- **bThread approval:** When the flywheel proposes a new bThread (crystallized from recurring patterns), the owner must explicitly approve it before it's added to the constraint engine. The symbolic layer never grows without human consent.
+### Distillation Pipeline
+
+The model is trained via distillation from frontier agents using the existing eval harness and headless adapters — no new infrastructure required:
+
+```
+Task prompts (prompts.jsonl)
+  → eval harness capture (teacher: Claude/Gemini via headless adapter)
+  → eval harness capture (student: model via headless adapter)
+  → eval harness compare (teacher vs. student trajectories)
+  → Successful teacher trajectories → SFT fine-tuning data
+  → Comparison signal (teacher-preferred vs. student-generated) → GRPO preference pairs
+  → Fine-tune model via Unsloth (LoRA, ~5GB VRAM)
+  → Re-evaluate → repeat
+```
+
+This pipeline is orchestrated as a skill, reusing `agent-eval-harness` for capture/compare and `headless-adapters` for schema-driven agent interaction. The eval harness provides pass@k, pass^k, and comparison metrics — the model's improvement is measured, not assumed.
+
+### Model Fine-Tuning
+
+Falcon-H1R is trained via SFT and GRPO on task trajectories from three sources:
+
+1. **Distillation** — Frontier agent trajectories provide the initial training signal. The model learns tool-call format, decision patterns, and reasoning structure from models that already excel at these tasks.
+2. **Deployment usage** — Real-world usage generates trajectories that capture the owner's specific tool schemas, coding style, and constraint landscape. Mamba's persistent state accelerates this — recurring patterns reinforce in state without explicit retraining.
+3. **User feedback** — Through the client interface, users provide preference signals that automated tests cannot capture — code style, approach selection, output quality.
+
+### The Flywheel
+
+Usage → trajectories → SFT/GRPO → better model → better usage → more trajectories. Recurring patterns crystallize into explicit bThreads, growing the symbolic layer monotonically. The neural layer gets smarter; the symbolic layer gets stricter. Both improve together.
+
+**bThread approval:** When the flywheel proposes a new bThread (crystallized from recurring patterns), the owner must explicitly approve it before it's added to the constraint engine. The symbolic layer never grows without human consent.
 
 ## Key Design Principles
 
 - **Framework, Not Platform:** Plaited ships composable primitives. Code via npm, models via Hugging Face. Platforms are built with it, not by it.
 - **Single Tenancy:** 1 User : 1 Agent instance. User data lives on their agent — nowhere else.
-- **Pluggable Models:** Cortex, Actuator, and Indexer are interfaces. Implementations swap freely — self-hosted small models, frontier APIs, or anything in between.
+- **Pluggable Models:** Model and Indexer are interfaces. Implementations swap freely — self-hosted small models, frontier APIs, or anything in between.
 - **BP-Orchestrated:** One central `useBehavioral` coordinates the entire agent loop. Context assembly, gate evaluation, lifecycle management — all BP. No actors, no workers, no external signal stores. bThread closures hold state.
-- **Plan-Driven Context:** The Cortex's plan provides the optimization signal for context assembly. BP consumes the plan's structure deterministically. Neural produces, symbolic consumes.
+- **Plan-Driven Context:** The model's plan provides the optimization signal for context assembly. BP consumes the plan's structure deterministically. Neural produces, symbolic consumes.
 - **Defense in Depth:** Layer 0 (BP-orchestrated context assembly) → Layer 1 (BP hard gate) → Layer 2 (OS sandbox) → Layer 3 (event log recovery). Four independent layers, four different stack levels.
 - **Three-Axis Risk Awareness:** Capability × Autonomy × Authority. Risk grows geometrically when all three scale simultaneously. BP constraints cap each axis independently.
 
@@ -509,17 +556,17 @@ graph TD
 
 #### Layer 0 — BP Context Assembly (Soft Pre-Filter)
 
-BP orchestrates context assembly dynamically via trigger → super-step → useFeedback chains — the same pattern used throughout Plaited (UI elements, workshop test runner). Active constraints are selected based on the current plan step's structure and injected into the Cortex's context as natural language. The Cortex plans *around* constraints rather than into them.
+BP orchestrates context assembly dynamically via trigger → super-step → useFeedback chains — the same pattern used throughout Plaited (UI elements, workshop test runner). Active constraints are selected based on the current plan step's structure and injected into the model's context as natural language. The model plans *around* constraints rather than into them.
 
 This is not a static snapshot. Each loop iteration assembles context fresh, with BP selecting which constraints are relevant to the current plan step via deterministic predicates. The plan itself — saved through the normal tool call pipeline — provides the signal for what constraints to include.
 
-**What it catches:** Most constraint violations, before they're even proposed. The Cortex learns the constraint landscape through experience — and through Mamba's persistent state, across sessions.
+**What it catches:** Most constraint violations, before they're even proposed. The model learns the constraint landscape through experience — and through Mamba's persistent state, across sessions.
 
-**Failure mode:** The Cortex is a neural model. It may ignore or misinterpret constraints. This layer is probabilistic, not deterministic. That's why Layer 1 exists.
+**Failure mode:** The model is neural. It may ignore or misinterpret constraints. This layer is probabilistic, not deterministic. That's why Layer 1 exists.
 
 #### Layer 1 — BP Hard Gate (Deterministic)
 
-Every structured tool call from the Actuator is evaluated by BP `block` predicates before execution. `trigger()` creates a temporary thread with priority 0. The super-step runs synchronously. If any bThread blocks the event, the action is denied. The rejection reason feeds back to the Cortex as context for re-planning.
+Every structured tool call from the model is evaluated by BP `block` predicates before execution. `trigger()` creates a temporary thread with priority 0. The super-step runs synchronously. If any bThread blocks the event, the action is denied. The rejection reason feeds back to the model as context for re-planning.
 
 **What it catches:** Everything that Layer 0 misses. Any tool call that violates a constraint is blocked deterministically — no probability, no hallucination, no prompt injection can bypass a `block` predicate.
 
@@ -571,11 +618,11 @@ No single attack vector compromises more than one layer. A prompt injection bypa
 
 The four layers form a coupled system where each makes the others more effective:
 
-**Environmental hardening** (Layers 1–2) creates hard boundaries. The Cortex encounters these boundaries as blocked actions and restricted capabilities. Over time, through the feedback loop and Mamba's persistent state, the Cortex internalizes the constraint landscape. It stops proposing actions that will be blocked — not because it was told to, but because it learned through experience.
+**Environmental hardening** (Layers 1–2) creates hard boundaries. The model encounters these boundaries as blocked actions and restricted capabilities. Over time, through the feedback loop and Mamba's persistent state, the model internalizes the constraint landscape. It stops proposing actions that will be blocked — not because it was told to, but because it learned through experience.
 
-**Behavioral alignment** (Layer 0) is the result. The Cortex's behavior aligns with the constraints not through instruction-following (fragile) but through accumulated experience (robust). Each Layer 1 rejection is a training signal that strengthens Layer 0. The hard gate fires less and less — not because constraints relaxed, but because the Cortex learned to navigate them.
+**Behavioral alignment** (Layer 0) is the result. The model's behavior aligns with the constraints not through instruction-following (fragile) but through accumulated experience (robust). Each Layer 1 rejection is a training signal that strengthens Layer 0. The hard gate fires less and less — not because constraints relaxed, but because the model learned to navigate them.
 
-This is the neuro-symbolic coupling at work: the symbolic layer (BP) creates terrain; the neural layer (Cortex + Mamba state) learns to read it. The symbolic layer grows monotonically (ratchet principle — constraints only add, never remove). The neural layer adapts continuously. Together they produce an agent that is both capable and constrained — and becomes more of both over time.
+This is the neuro-symbolic coupling at work: the symbolic layer (BP) creates terrain; the neural layer (model + Mamba state) learns to read it. The symbolic layer grows monotonically (ratchet principle — constraints only add, never remove). The neural layer adapts continuously. Together they produce an agent that is both capable and constrained — and becomes more of both over time.
 
 ### Human in the Loop
 
@@ -601,7 +648,7 @@ Rachel Jaffe's structural vocabulary defines the primitives that digital environ
 - **Loops** — feedback mechanisms that reinforce or dampen behavior
 - **Blocks** — constraints that prevent certain interactions
 
-These are not guidelines the Cortex "follows." They are `block` predicates that prevent the agent from generating structures that violate the vocabulary. A module without a defined boundary is blocked. A channel without source and destination is blocked. The symbolic layer enforces structural coherence that neural models cannot guarantee alone.
+These are not guidelines the model "follows." They are `block` predicates that prevent the agent from generating structures that violate the vocabulary. A module without a defined boundary is blocked. A channel without source and destination is blocked. The symbolic layer enforces structural coherence that neural models cannot guarantee alone.
 
 ### Modnet Concepts
 
@@ -620,7 +667,7 @@ A **modnet** (modular network) is a network of user-owned nodes connected peer-t
 
 ### Topology: 1 Node : 1 User
 
-- Each **node** is a Plaited agent instance (Reflex loop + modules + memory + constitution)
+- Each **node** is a Plaited agent instance (agent loop + modules + memory + constitution)
 - Each node is **owned and controlled** by one user — their data lives on their node, nowhere else
 - Nodes connect to other nodes via A2A — no intermediary, no aggregator
 - A node going offline means its data disappears from the network, not from the owner
@@ -644,7 +691,7 @@ A2A is a transport-agnostic protocol for agent-to-agent communication with three
 
 **Streaming** uses SSE framing (`text/event-stream`) over POST — not GET. The browser's `EventSource` API cannot be used; streaming requires `fetch()` with `ReadableStream`. Each SSE `data:` line contains a JSON-RPC 2.0 response wrapping one of: `task`, `message`, `statusUpdate`, or `artifactUpdate`.
 
-**A2A maps naturally to BP's event model.** Request-response maps to `trigger` → `waitFor`. Streaming maps to SSE events → `trigger()` per event. Push notifications map to inbound webhook → `trigger()`. No separate adapter layer — A2A calls are tool calls flowing through the same Actuator → Gate → Execute pipeline.
+**A2A maps naturally to BP's event model.** Request-response maps to `trigger` → `waitFor`. Streaming maps to SSE events → `trigger()` per event. Push notifications map to inbound webhook → `trigger()`. No separate adapter layer — A2A calls are tool calls flowing through the same Gate → Execute pipeline.
 
 ### Module Discovery: Three Tiers
 
