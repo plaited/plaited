@@ -832,6 +832,53 @@ A2A is a transport-agnostic protocol for agent-to-agent communication with three
 
 **A2A maps naturally to BP's event model.** Request-response maps to `trigger` → `waitFor`. Streaming maps to SSE events → `trigger()` per event. Push notifications map to inbound webhook → `trigger()`. No separate adapter layer — A2A calls are tool calls flowing through the same Gate → Execute pipeline.
 
+### Identity & Authentication
+
+The framework does not define its own identity system. A2A handles authentication at the protocol layer via standard web security mechanisms. The framework adds a **trust layer** on top.
+
+**What A2A provides:**
+
+| Mechanism | What it does |
+|---|---|
+| **Agent Card signing (JWS)** | Card is signed with the node's private key. Any peer can verify the card is authentic and untampered. |
+| **Security schemes** | Each card declares its required auth via `securitySchemes` — mTLS, OAuth 2.0, API key, HTTP Bearer, or OpenID Connect. Peers read the card to discover what's required. |
+| **Extended Agent Card** | Authenticated peers call `get-extended-agent-card` to see additional capabilities. The public card shows broad strokes; the extended card shows detail. |
+
+**What the framework adds:**
+
+| Mechanism | What it does |
+|---|---|
+| **Known-peers table** | Local trust store — records which peers the owner has approved. Trust-on-first-use (TOFU), like SSH `known_hosts`. |
+| **Owner approval** | First connection to a new peer requires owner confirmation (human in the loop). Subsequent connections verify automatically against stored keys. |
+| **Access control** | After authentication, BP evaluates every request via DAC + MAC + ABAC (see Access Control below). |
+
+**Known-peers table:**
+
+```sql
+CREATE TABLE known_peers (
+  public_key  TEXT PRIMARY KEY,   -- the peer's public key (from their Agent Card)
+  card_url    TEXT,               -- where to fetch their Agent Card
+  name        TEXT,               -- human-readable label
+  trust_level TEXT NOT NULL,      -- 'tofu' | 'verified' | 'blocked'
+  first_seen  INTEGER NOT NULL,   -- when we first connected
+  last_seen   INTEGER             -- last successful interaction
+);
+```
+
+**First connection flow:**
+
+```
+Node B fetches Node A's Agent Card from well-known URL
+  → Verifies JWS signature (card is authentic)
+  → Reads securitySchemes (e.g., mTLS required)
+  → Node B's owner sees: "New peer: Node A. Approve?"
+  → Owner approves → public key stored in known-peers
+  → mTLS handshake completes (both sides verified)
+  → Subsequent connections verify automatically
+```
+
+For sovereign nodes in a modnet, **mTLS is the natural fit** — both sides prove identity, no third party needed. For team deployments behind a shared auth server, OAuth 2.0 works. The framework is auth-scheme-agnostic — it reads whatever the peer's card declares.
+
 ### Module Discovery: Three Tiers
 
 Module discovery uses the same three-tier model for both local and inter-agent contexts:
