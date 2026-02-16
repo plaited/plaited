@@ -234,7 +234,7 @@ The plan is an optimization signal for Layer 0 (context assembly). It is not a s
 |---|---|---|
 | **0 — Context Assembly** | Yes — selects tool context by active step | — |
 | **1 — Hard Gate** | No — constitution bThreads evaluate independently | Tool call structure, file paths, command content |
-| **2 — OS Sandbox** | No — kernel enforces capabilities | Namespace restrictions, seccomp profile |
+| **2 — Sandbox** | No — sandbox enforces capabilities | Pluggable backend restrictions |
 | **3 — Event Log** | No — records everything | `useSnapshot` captures all BP decisions |
 
 A "dishonest" plan (wrong tool declarations) produces worse context assembly — the model sees irrelevant constraints or misses relevant ones. But safety doesn't degrade because Layers 1–3 are plan-independent.
@@ -607,7 +607,7 @@ Usage → trajectories → SFT/GRPO → better model → better usage → more t
 - **Pluggable Models:** Model and Indexer are interfaces. Implementations swap freely — self-hosted small models, frontier APIs, or anything in between.
 - **BP-Orchestrated:** One central `useBehavioral` coordinates the entire agent loop. Context assembly, gate evaluation, lifecycle management — all BP. No actors, no workers, no external signal stores. bThread closures hold state.
 - **Plan-Driven Context:** The model's plan provides the optimization signal for context assembly. BP consumes the plan's structure deterministically. Neural produces, symbolic consumes.
-- **Defense in Depth:** Layer 0 (BP-orchestrated context assembly) → Layer 1 (BP hard gate) → Layer 2 (OS sandbox) → Layer 3 (event log recovery). Four independent layers, four different stack levels.
+- **Defense in Depth:** Layer 0 (BP-orchestrated context assembly) → Layer 1 (BP hard gate) → Layer 2 (pluggable sandbox) → Layer 3 (event log recovery). Four independent layers, four different stack levels.
 - **Three-Axis Risk Awareness:** Capability × Autonomy × Authority. Risk grows geometrically when all three scale simultaneously. BP constraints cap each axis independently.
 
 ## Safety & Risk Model
@@ -648,8 +648,8 @@ graph TD
         GATE["block predicates evaluate<br/>every tool call before execution"]
     end
 
-    subgraph L2["Layer 2: OS Sandbox"]
-        SB["Linux namespaces + seccomp<br/>restrict subprocess capabilities"]
+    subgraph L2["Layer 2: Sandbox"]
+        SB["Pluggable sandbox backend<br/>restricts subprocess capabilities"]
     end
 
     subgraph L3["Layer 3: Event Log Recovery"]
@@ -682,20 +682,30 @@ Every structured tool call from the model is evaluated by BP `block` predicates 
 
 **Failure mode:** The BP engine runs in userspace JavaScript. If the LLM crafts a tool call that embeds a shell escape (e.g., `bash -c "cat /data/ca_key"`), the BP check evaluates the stated command, not what the command does internally. Novel attack patterns the predicates don't cover can slip through.
 
-#### Layer 2 — OS Sandbox (Capability Restriction)
+#### Layer 2 — Sandbox (Capability Restriction)
 
-Tool execution runs in a sandboxed `Bun.spawn()` subprocess with OS-level restrictions:
+Tool execution runs in a sandboxed subprocess with capability restrictions. The framework defines the **security contract** — what the sandbox must enforce — not the mechanism:
 
-| Mechanism | What It Restricts |
+| Requirement | What it means |
 |---|---|
-| **User namespace** | Subprocess runs as mapped UID, access only to `/workspace` |
-| **Mount namespace** | Bind-mount `/workspace` as root — cannot see `/data`, CA keys, or SQLite |
-| **seccomp profile** | BPF filter blocks `mount`, `ptrace`, `reboot`, `clone`, raw sockets |
+| **File restriction** | Subprocess can only read/write within the project workspace |
 | **Network isolation** | Subprocess cannot make outbound HTTP — only the main process can |
+| **No privilege escalation** | Subprocess cannot gain capabilities beyond what it was spawned with |
+| **Process isolation** | Subprocess cannot inspect or signal other processes |
 
-**What it catches:** Any attempt to access protected resources, regardless of how the tool call was constructed. Even if Layers 0 and 1 both fail, the subprocess literally cannot read `/data` or escalate privileges.
+The enforcement mechanism is pluggable — the user brings their own sandbox backend:
 
-**Failure mode:** Kernel vulnerability allows namespace escape. This is a known OS-level risk, mitigated by keeping the kernel patched and the seccomp profile tight.
+| Backend | Mechanism | Strength |
+|---|---|---|
+| **Linux namespaces + seccomp** | User/mount namespaces, BPF syscall filter | Strongest — native kernel isolation |
+| **macOS Seatbelt** | `sandbox-exec` with `.sb` profile | Partial — file + network restriction, no mount isolation |
+| **Docker / OCI** | Container isolation | Strong — cross-platform, well-understood |
+| **Dedicated sandbox runtime** | Purpose-built agent sandboxes (e.g., Anthropic's `sandbox-runtime`) | Designed for agent tool execution |
+| **Cloud VM** | Hypervisor isolation | Strongest — hardware-level boundary |
+
+**What it catches:** Any attempt to access protected resources, regardless of how the tool call was constructed. Even if Layers 0 and 1 both fail, the subprocess cannot read protected data or escalate privileges.
+
+**Failure mode:** Depends on backend — kernel vulnerability (Linux), profile bypass (macOS), container escape (Docker). Defense in depth means a weaker Layer 2 (e.g., macOS Seatbelt for local development) is acceptable when Layers 0, 1, and 3 are at full strength. For high-security deployments, Linux namespaces + seccomp or a dedicated sandbox runtime is recommended.
 
 #### Layer 3 — Event Log Recovery (Audit & Replay)
 
@@ -719,7 +729,7 @@ Each layer operates on a different level of the stack and uses a different mecha
 |---|---|---|---|
 | 0 | Application logic | BP-orchestrated context assembly | Model ignoring instructions |
 | 1 | Application logic | Deterministic BP block predicates | Novel attack patterns predicates don't cover |
-| 2 | Operating system | Kernel namespaces + BPF | Kernel vulnerability |
+| 2 | Operating system | Pluggable sandbox (namespaces, Seatbelt, containers, dedicated runtime) | Backend-specific escape (kernel vuln, profile bypass, container escape) |
 | 3 | Data layer | Append-only event log + `useSnapshot` | Log corruption or physical data loss |
 
 No single attack vector compromises more than one layer. A prompt injection bypasses Layer 0 but hits Layer 1. A novel tool call bypasses Layer 1 but hits Layer 2. A namespace escape bypasses Layer 2 but the damage is recoverable via Layer 3.
