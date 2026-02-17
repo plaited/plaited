@@ -372,7 +372,11 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
     const disconnect = actionPublisher.subscribe((data: BPEvent) => {
       const { type, detail } = data
       if (Object.hasOwn(handlers, type)) {
-        void handlers[type]!(detail)
+        try {
+          void handlers[type]!(detail)
+        } catch (_) {
+          // What should we do here? should we push it into eventlog os useSnapshot
+        }
       }
     })
     return disconnect
