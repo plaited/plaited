@@ -69,24 +69,52 @@ graph LR
         CTX["1. Context<br/>plan + constraints + history + tools"]
         REASON["2. Reason<br/>Bun.spawn() → Model<br/>(thinking + tool call)"]
         GATE["3. Gate<br/>bThread block predicates"]
-        EXEC["4. Execute<br/>Bun.spawn() → sandboxed subprocess"]
+        SIM["4. Simulate (Dreamer)<br/>Bun.spawn() → Model<br/>(State Transition Prompt)"]
+        EVAL["5. Evaluate (Judge)<br/>5a: BP symbolic gate<br/>5b: Model neural scorer"]
+        EXEC["6. Execute<br/>Bun.spawn() → sandboxed subprocess"]
     end
 
     CTX --> REASON
     REASON --> GATE
 
-    GATE -- "approved" --> EXEC
-    EXEC -- "tool result → trigger()" --> CTX
-
     GATE -- "blocked + reason → trigger()" --> CTX
+    GATE -- "approved (read-only)" --> EXEC
+    GATE -- "approved (has side effects)" --> SIM
+    SIM --> EVAL
+
+    EVAL -- "rejected + reason → trigger()" --> CTX
+    EVAL -- "approved" --> EXEC
+    EXEC -- "tool result → trigger()" --> CTX
 ```
 
 ### The Loop
 
 1. **Context** — BP assembles the model's prompt via trigger → super-step → useFeedback chains: the current plan (if one exists), active constraints from the plan's current step, conversation history, relevant tool descriptions, and any prior gate rejections.
 2. **Reason** — The model produces two outputs separated by the inference server: `<think>` blocks containing natural language reasoning (*"I should read src/index.ts to understand the entry point."*), and a structured tool call in the response (`{ "tool": "read_file", "args": { "path": "src/index.ts" } }`). On the first cycle for a new task, the tool call is a `save_plan` call — the plan enters the pipeline like any other tool result. On subsequent cycles, the model adjusts the plan based on tool results.
-3. **Gate** — BP evaluates the tool call via `block` predicates. Deterministic: if any bThread blocks the event, the action is denied. The rejection reason feeds back to step 1 as context. The model re-plans around the constraint.
-4. **Execute** — Approved tool call runs in a sandboxed `Bun.spawn()` subprocess restricted to `/workspace`. Output returns via `trigger()` as new context. Loop continues.
+3. **Gate** — BP evaluates the tool call via `block` predicates. Deterministic: if any bThread blocks the event, the action is denied. The rejection reason feeds back to step 1 as context. The model re-plans around the constraint. For read-only actions (file reads, searches, LSP queries), approved calls skip directly to step 6 — no side effects means no simulation needed.
+4. **Simulate (The Dreamer)** — For actions with side effects, the same model is called again with a **State Transition Prompt** adapted from [WebDreamer](https://arxiv.org/abs/2411.06559) (Appendix A.3). The prompt instructs the model to act as a world model — given the current state (file contents, terminal output) and the proposed tool call, predict *only the state changes*. The constraint "directly output state changes — do not output trivial details" filters noise (unchanged context) and focuses the prediction on consequences: predicted stdout, error messages, or file diffs. Falcon-H1R's [hybrid Transformer-Mamba architecture](https://arxiv.org/abs/2601.02346) — ~1,500 tok/s at batch 64, roughly 2× pure Transformer throughput — keeps the simulation tax low. DeepConf parallel generation can produce multiple state-change predictions with confidence-aware pruning at roughly the cost of one sequential generation on a slower model.
+5. **Evaluate (The Judge)** — Two layers assess the simulated output:
+   - **Layer 5a — Symbolic Gate (fast, deterministic):** BP `block` predicates evaluate the Dreamer's *text output* via regex or keyword matching. If the simulation predicts "Deleting database," "Permission denied," or "fatal error," BP blocks immediately — deterministic safety without a second inference call.
+   - **Layer 5b — Neural Scorer (slow, optional):** Only triggered for high-ambiguity actions as determined by the risk profile. The same model is called with a **Reward Prompt** adapted from WebDreamer (Appendix A.4) to score the simulated state on progress toward the goal: complete (1.0), on track (0.5), or incorrect (0). Actions scoring below threshold are rejected with the score and reasoning fed back as context.
+6. **Execute** — Execution occurs **only** if the Gate (step 3), the symbolic gate (5a), and the neural scorer (5b, if active) all approve. The approved tool call runs in a sandboxed `Bun.spawn()` subprocess restricted to `/workspace`. Output returns via `trigger()` as new context. Loop continues.
+
+The simulation serves as a **sandbox for the sandbox** — allowing the BP layer to reject dangerous actions based on their *predicted consequences* rather than just their *syntax*.
+
+#### Selective Simulation
+
+Not every action needs simulation. BP classifies actions at the Gate (step 3) and routes accordingly:
+
+| Risk Class | Actions | Path |
+|---|---|---|
+| **Read-only** | File read, search, LSP query, plan navigation | Gate → Execute (skip simulation) |
+| **Side effects** | File write, bash command, file creation/deletion | Gate → Simulate → 5a symbolic gate → Execute |
+| **High ambiguity** | Network calls, payment, system config, destructive ops | Gate → Simulate → 5a + 5b neural scorer → Execute |
+
+This is a stronger, deterministic version of WebDreamer's "Self-Refinement" filtering — the BP layer provides exact risk classification rather than heuristic action filtering.
+
+#### `<think>` as Lightweight Simulation
+
+The model's `<think>` block is itself a first layer of prediction. Reasoning like *"if I overwrite server.ts, the existing tests will break"* surfaces consequences before the tool call is even formed. BP can read this structural signal at the Gate (step 3) — if the thinking already predicts a violation, the Gate blocks without invoking the Dreamer. The Dreamer (step 4) handles cases where the `<think>` block didn't surface the risk.
 
 ### Plan-Driven Context Assembly
 
@@ -106,22 +134,27 @@ trigger('task', { prompt })
         step involves "write" → file write constraints)
     → model sees: current plan + last result + relevant constraints
     → model adjusts plan if needed, proposes next action
-    → Gate → Execute → loop
+    → Gate classifies risk:
+       read-only → Execute directly
+       side effects → Simulate → Evaluate → Execute
+    → loop
 ```
 
-**Why this works:** The plan is just another tool result. It flows through the exact same Gate → Execute pipeline. No special machinery. BP reads the plan's structure — not its meaning. Deterministic predicates match on step metadata (read-only vs. write, which tools are referenced) to select which constraints to inject. The neural layer produces the signal; the symbolic layer consumes it mechanically.
+**Why this works:** The plan is just another tool result. It flows through the exact same Gate → Simulate → Evaluate → Execute pipeline. No special machinery. BP reads the plan's structure — not its meaning. Deterministic predicates match on step metadata (read-only vs. write, which tools are referenced) to select which constraints to inject and whether simulation is needed. The neural layer produces the signal; the symbolic layer consumes it mechanically.
 
 **What BP does:**
 - Assembles context dynamically via trigger → super-step → useFeedback chains
 - Evaluates every tool call via deterministic `block` predicates (Layer 1 hard gate)
+- Classifies action risk at the Gate — routes read-only actions directly to Execute, side-effect actions through the Dreamer
+- Evaluates simulated output via symbolic `block` predicates (Layer 5a) — regex/keyword matching on predicted consequences
 - Selects relevant constraints per plan step via structural predicate matching
 - Reads plan state from SQLite materialized view (synchronous `bun:sqlite` lookups in predicates)
 - Manages lifecycle (when to stop, when to ask for human confirmation)
 
 **What BP does NOT do:**
-- Interpret reasoning output — symbolic cannot do semantic analysis
+- Interpret reasoning output semantically — symbolic cannot do semantic analysis (but CAN match structural patterns in `<think>` blocks)
 - Judge plan quality — bad plans produce bad tool calls, which the Gate catches
-- Monitor token streams — unnecessary overhead; Defense in Depth handles safety
+- Score ambiguity — the neural scorer (Layer 5b) handles soft evaluation when BP's deterministic predicates are insufficient
 
 ### Plan Schema
 
@@ -234,10 +267,13 @@ The plan is an optimization signal for Layer 0 (context assembly). It is not a s
 |---|---|---|
 | **0 — Context Assembly** | Yes — selects tool context by active step | — |
 | **1 — Hard Gate** | No — constitution bThreads evaluate independently | Tool call structure, file paths, command content |
-| **2 — Sandbox** | No — sandbox enforces capabilities | Pluggable backend restrictions |
-| **3 — Event Log** | No — records everything | `useSnapshot` captures all BP decisions |
+| **4 — Simulation** | No — simulates any gated tool call | Current state + proposed tool call |
+| **5a — Symbolic Gate** | No — evaluates simulated text | Regex/keyword matching on predicted consequences |
+| **5b — Neural Scorer** | No — scores simulated state | Progress toward goal (0/0.5/1.0) |
+| **Layer 2 — Sandbox** | No — sandbox enforces capabilities | Pluggable backend restrictions |
+| **Layer 3 — Event Log** | No — records everything | `useSnapshot` captures all BP decisions |
 
-A "dishonest" plan (wrong tool declarations) produces worse context assembly — the model sees irrelevant constraints or misses relevant ones. But safety doesn't degrade because Layers 1–3 are plan-independent.
+A "dishonest" plan (wrong tool declarations) produces worse context assembly — the model sees irrelevant constraints or misses relevant ones. But safety doesn't degrade because Layers 1–5 and the sandbox/log are plan-independent.
 
 ### Why Distillation, Not a Pre-trained Tool-Calling Model
 
@@ -581,19 +617,53 @@ Task prompts (prompts.jsonl)
   → eval harness compare (teacher vs. student trajectories)
   → Successful teacher trajectories → SFT fine-tuning data
   → Comparison signal (teacher-preferred vs. student-generated) → GRPO preference pairs
-  → Fine-tune model via Unsloth (LoRA, ~5GB VRAM)
+  → Fine-tune model (full-parameter or LoRA — both ship as skills)
   → Re-evaluate → repeat
 ```
 
 This pipeline is orchestrated as a skill, reusing `agent-eval-harness` for capture/compare and `headless-adapters` for schema-driven agent interaction. The eval harness provides pass@k, pass^k, and comparison metrics — the model's improvement is measured, not assumed.
 
-### Model Fine-Tuning
+### Training Tiers
 
-Falcon-H1R is trained via SFT and GRPO on task trajectories from three sources:
+The framework ships training skills for two tiers. Both use the same distillation pipeline — they differ in method, hardware, and how much of the model they can reach:
 
-1. **Distillation** — Frontier agent trajectories provide the initial training signal. The model learns tool-call format, decision patterns, and reasoning structure from models that already excel at these tasks.
-2. **Deployment usage** — Real-world usage generates trajectories that capture the owner's specific tool schemas, coding style, and constraint landscape. Mamba's persistent state accelerates this — recurring patterns reinforce in state without explicit retraining.
-3. **User feedback** — Through the client interface, users provide preference signals that automated tests cannot capture — code style, approach selection, output quality.
+| Tier | Skill | Hardware | Method | What Gets Trained |
+|---|---|---|---|---|
+| **Consumer** | `training/lora` | Consumer GPU (RTX 4090 24GB, Mac with Metal) | LoRA on attention layers via Unsloth (~5GB VRAM) | Attention heads (12/layer). SSM heads remain at checkpoint weights. Meaningful but partial adaptation. |
+| **Enterprise** | `training/full-parameter` | DGX Spark (128GB unified) or cloud cluster (4–8× A100 80GB) | Full-parameter SFT + GRPO | All parameters — attention heads + Mamba-2 SSM heads (24/layer, d_state=256) + embeddings. Complete adaptation. |
+
+The framework's own shipped checkpoints are produced using the enterprise skill. Enterprise users continue building on framework checkpoints with the same tooling.
+
+#### SFT Data Mix
+
+Both tiers draw from the same three data categories:
+
+1. **Reasoning traces** — Step-by-step tool-call trajectories distilled from frontier agents (Claude Code, Gemini CLI). The model learns tool-call format, decision patterns, and `<think>` reasoning structure.
+2. **State transition pairs (Dreamer training)** — Trajectory replay data synthesized from the event log. Each pair is `(Context + Tool Call) → (Real Tool Output)`, formatted with the State Transition Prompt as the system message. This teaches the Dreamer capability — how `ls -la` behaves, how a compiler returns errors, how `write_file` changes directory state, how `bun test` reports failures. No new infrastructure required — the event log already captures every tool call and its result via `useSnapshot`.
+3. **Deployment usage + user feedback** — Real-world trajectories and user preference signals. Successful trajectories become SFT data; failed + corrected trajectories become GRPO preference pairs.
+
+The model learns to switch behavior based on prompt context — reasoning prompt produces `<think>` + tool calls, State Transition Prompt produces state-change predictions, Reward Prompt produces progress scores — the same way Falcon-H1R already switches between reasoning and tool-calling modes.
+
+#### Enterprise: Full-Parameter Training
+
+Full-parameter SFT + GRPO following the [Falcon-H1R methodology](https://arxiv.org/abs/2601.02346). Trains all parameters including Mamba-2 SSM heads, which means the persistent state properties that make Falcon-H1R efficient at inference also get specialized for the enterprise's tools and environment.
+
+**Memory budget on DGX Spark (128GB unified):**
+
+```
+Model weights (fp16):     ~14GB
+Optimizer states (AdamW):  ~28GB
+Gradients:                 ~14GB
+Activations (grad ckpt):   ~10-30GB
+─────────────────────────────────
+Total:                     ~66-86GB of 128GB available
+```
+
+GRPO rollouts fit in remaining memory with reduced group size (4–8 rollouts vs. TII's 16). Training runs take days to weeks on a single DGX Spark. On a cloud cluster (4–8× A100), the same runs complete in hours to days. The data never leaves the enterprise's infrastructure in either case.
+
+#### Consumer: LoRA Fine-Tuning
+
+LoRA on attention layers with a quantized base model (~5GB VRAM). Cannot directly update Mamba-2 SSM parameters, but the attention layers learn to produce representations tuned to the consumer's environment — the SSM processes these using its framework-trained weights. Mamba's persistent state further accelerates adaptation — recurring patterns reinforce in state across sessions without explicit retraining.
 
 ### The Flywheel
 
@@ -608,7 +678,7 @@ Usage → trajectories → SFT/GRPO → better model → better usage → more t
 - **Pluggable Models:** Model and Indexer are interfaces. Implementations swap freely — self-hosted small models, frontier APIs, or anything in between.
 - **BP-Orchestrated:** One central `useBehavioral` coordinates the entire agent loop. Context assembly, gate evaluation, lifecycle management — all BP. No actors, no workers, no external signal stores. bThread closures hold state.
 - **Plan-Driven Context:** The model's plan provides the optimization signal for context assembly. BP consumes the plan's structure deterministically. Neural produces, symbolic consumes.
-- **Defense in Depth:** Layer 0 (BP-orchestrated context assembly) → Layer 1 (BP hard gate) → Layer 2 (pluggable sandbox) → Layer 3 (event log recovery). Four independent layers, four different stack levels.
+- **Defense in Depth:** Layer 0 (BP-orchestrated context assembly) → Layer 1 (BP hard gate) → Layer 4 (Dreamer simulation) → Layer 5 (Judge: 5a symbolic gate + 5b neural scorer) → Layer 2 (pluggable sandbox) → Layer 3 (event log recovery). Six independent layers across three stack levels.
 - **Three-Axis Risk Awareness:** Capability × Autonomy × Authority. Risk grows geometrically when all three scale simultaneously. BP constraints cap each axis independently.
 
 ## Safety & Risk Model
@@ -635,9 +705,9 @@ Risk grows **geometrically** when all three axes scale simultaneously. An agent 
 
 BP bThreads compose additively — adding a constraint on one axis doesn't affect the others. The owner tunes each axis to their comfort level, and the constraint landscape evolves as trust is established.
 
-### Defense in Depth (Four Layers)
+### Defense in Depth (Six Layers)
 
-No single safety mechanism is sufficient. Neural models are probabilistic — they can violate any instruction. OS sandboxes have kernel vulnerabilities. Event logs can be corrupted. The system is safe because **four independent layers** must all fail simultaneously for harm to occur:
+No single safety mechanism is sufficient. Neural models are probabilistic — they can violate any instruction. OS sandboxes have kernel vulnerabilities. Event logs can be corrupted. The system is safe because **six independent layers** must all fail simultaneously for harm to occur:
 
 ```mermaid
 graph TD
@@ -649,6 +719,15 @@ graph TD
         GATE["block predicates evaluate<br/>every tool call before execution"]
     end
 
+    subgraph L4["Layer 4: Simulation (Dreamer)"]
+        SIM["Model predicts state changes<br/>via State Transition Prompt"]
+    end
+
+    subgraph L5["Layer 5: Evaluation (Judge)"]
+        L5A["5a: BP symbolic gate on<br/>simulated output (deterministic)"]
+        L5B["5b: Model neural scorer<br/>(optional, risk-gated)"]
+    end
+
     subgraph L2["Layer 2: Sandbox"]
         SB["Pluggable sandbox backend<br/>restricts subprocess capabilities"]
     end
@@ -657,10 +736,12 @@ graph TD
         GIT["useSnapshot → append-only log<br/>per-project partitioning"]
     end
 
-    L0 --> L1 --> L2 --> L3
+    L0 --> L1 --> L4 --> L5 --> L2 --> L3
 
     style L0 fill:#e8f5e9
     style L1 fill:#fff3e0
+    style L4 fill:#f3e5f5
+    style L5 fill:#fff9c4
     style L2 fill:#fce4ec
     style L3 fill:#e3f2fd
 ```
@@ -681,7 +762,25 @@ Every structured tool call from the model is evaluated by BP `block` predicates 
 
 **What it catches:** Everything that Layer 0 misses. Any tool call that violates a constraint is blocked deterministically — no probability, no hallucination, no prompt injection can bypass a `block` predicate.
 
-**Failure mode:** The BP engine runs in userspace JavaScript. If the LLM crafts a tool call that embeds a shell escape (e.g., `bash -c "cat /data/ca_key"`), the BP check evaluates the stated command, not what the command does internally. Novel attack patterns the predicates don't cover can slip through.
+**Failure mode:** The BP engine runs in userspace JavaScript. If the LLM crafts a tool call that embeds a shell escape (e.g., `bash -c "cat /data/ca_key"`), the BP check evaluates the stated command, not what the command does internally. Novel attack patterns the predicates don't cover can slip through. That's why Layer 4 exists — it predicts what the command *actually does*.
+
+#### Layer 4 — Simulation / Dreamer (Predicted Consequences)
+
+For actions with side effects that pass the Gate, the model is called with the State Transition Prompt to predict the outcome. This turns Layer 1's limitation — evaluating syntax, not semantics — into a strength of the combined system: Layer 1 catches structurally dangerous commands; Layer 4 catches semantically dangerous ones.
+
+**What it catches:** Commands that look safe syntactically but have dangerous consequences. `bash -c "rm -rf $(pwd)"` passes a naive path check, but the Dreamer predicts "all files in current directory deleted" — which Layer 5a blocks on keyword match.
+
+**Failure mode:** The model's prediction is wrong — it fails to predict a dangerous outcome, or hallucinates a false positive. This is probabilistic, not deterministic. False negatives pass through to the sandbox (Layer 2). False positives waste a loop iteration but cause no harm — the model re-plans.
+
+#### Layer 5 — Evaluation / Judge (Simulated Output Assessment)
+
+**5a — Symbolic Gate:** BP `block` predicates evaluate the Dreamer's text output via regex/keyword matching. Deterministic — if the simulated output contains blocked patterns ("permission denied," "database deleted," "fatal error"), the action is rejected immediately.
+
+**5b — Neural Scorer:** For high-ambiguity actions where symbolic patterns are insufficient, the model scores the simulated state on progress toward the goal (complete/on-track/incorrect). This is the only soft layer in the evaluation pipeline — it provides a gradient signal where BP provides binary pass/fail.
+
+**What it catches:** Consequences that Layer 1 cannot evaluate (it only sees tool call structure) and that the sandbox cannot prevent (the action is technically permitted but operationally harmful).
+
+**Failure mode:** 5a misses patterns not in its predicate set (same failure mode as Layer 1, but operating on richer input — predicted output vs. tool call syntax). 5b's scoring is neural and probabilistic. Both are mitigated by the sandbox (Layer 2) which enforces hard capability restrictions regardless of simulation accuracy.
 
 #### Layer 2 — Sandbox (Capability Restriction)
 
@@ -704,13 +803,13 @@ The enforcement mechanism is pluggable — the user brings their own sandbox bac
 | **Dedicated sandbox runtime** | Purpose-built agent sandboxes (e.g., Anthropic's `sandbox-runtime`) | Designed for agent tool execution |
 | **Cloud VM** | Hypervisor isolation | Strongest — hardware-level boundary |
 
-**What it catches:** Any attempt to access protected resources, regardless of how the tool call was constructed. Even if Layers 0 and 1 both fail, the subprocess cannot read protected data or escalate privileges.
+**What it catches:** Any attempt to access protected resources, regardless of how the tool call was constructed. Even if Layers 0, 1, 4, and 5 all fail, the subprocess cannot read protected data or escalate privileges.
 
 **Failure mode:** Depends on backend — kernel vulnerability (Linux), profile bypass (macOS), container escape (Docker). Defense in depth means a weaker Layer 2 (e.g., macOS Seatbelt for local development) is acceptable when Layers 0, 1, and 3 are at full strength. For high-security deployments, Linux namespaces + seccomp or a dedicated sandbox runtime is recommended.
 
 #### Layer 3 — Event Log Recovery (Audit & Replay)
 
-The event log (populated via `useSnapshot`) records every BP decision with timestamps and project keys. If all three prior layers fail and the agent takes harmful action, the owner has:
+The event log (populated via `useSnapshot`) records every BP decision with timestamps and project keys. If all five prior layers fail and the agent takes harmful action, the owner has:
 
 - **Complete audit trail** — every event selection, every blocked candidate, every gate rejection
 - **Replay capability** — rebuild any materialized view from the log
@@ -718,7 +817,7 @@ The event log (populated via `useSnapshot`) records every BP decision with times
 
 Workspace backup (snapshotting the actual file system) is **deployment infrastructure**, not framework responsibility. The framework provides the event log for agent state recovery. Skills or external tooling handle workspace-level backup — rsync, cloud snapshots, or whatever the deployment tier supports.
 
-**What it catches:** Any damage that makes it past Layers 0–2. The audit trail is append-only and lives outside the sandbox — the subprocess cannot modify its own log.
+**What it catches:** Any damage that makes it past Layers 0–5 and the sandbox. The audit trail is append-only and lives outside the sandbox — the subprocess cannot modify its own log.
 
 **Failure mode:** Owner doesn't review the audit log. Mitigated by the event log's queryability — materialized views surface anomalies, and the training flywheel flags unusual patterns.
 
@@ -729,19 +828,22 @@ Each layer operates on a different level of the stack and uses a different mecha
 | Layer | Stack Level | Mechanism | Can Be Bypassed By |
 |---|---|---|---|
 | 0 | Application logic | BP-orchestrated context assembly | Model ignoring instructions |
-| 1 | Application logic | Deterministic BP block predicates | Novel attack patterns predicates don't cover |
+| 1 | Application logic | Deterministic BP block predicates on tool call syntax | Novel attack patterns predicates don't cover |
+| 4 | Application logic | Model predicts consequences (State Transition Prompt) | Inaccurate prediction (hallucination) |
+| 5a | Application logic | Deterministic BP block predicates on simulated output | Patterns not in predicate set |
+| 5b | Application logic | Model scores simulated state (Reward Prompt) | Inaccurate scoring (neural, probabilistic) |
 | 2 | Operating system | Pluggable sandbox (namespaces, Seatbelt, containers, dedicated runtime) | Backend-specific escape (kernel vuln, profile bypass, container escape) |
 | 3 | Data layer | Append-only event log + `useSnapshot` | Log corruption or physical data loss |
 
-No single attack vector compromises more than one layer. A prompt injection bypasses Layer 0 but hits Layer 1. A novel tool call bypasses Layer 1 but hits Layer 2. A namespace escape bypasses Layer 2 but the damage is recoverable via Layer 3.
+No single attack vector compromises more than one layer. A prompt injection bypasses Layer 0 but hits Layer 1. A syntactically valid but semantically dangerous tool call bypasses Layer 1 but hits Layer 4 (the Dreamer predicts the consequence). A missed simulation prediction hits Layer 5a's keyword matching. A subtle harmful outcome slips past 5a but hits 5b's neural scoring. Everything that passes all evaluation layers hits the sandbox (Layer 2). Sandbox escapes are recoverable via Layer 3.
 
 ### Environmental Hardening + Behavioral Alignment
 
-The four layers form a coupled system where each makes the others more effective:
+The six layers form a coupled system where each makes the others more effective:
 
-**Environmental hardening** (Layers 1–2) creates hard boundaries. The model encounters these boundaries as blocked actions and restricted capabilities. Over time, through the feedback loop and Mamba's persistent state, the model internalizes the constraint landscape. It stops proposing actions that will be blocked — not because it was told to, but because it learned through experience.
+**Environmental hardening** (Layers 1, 4–5, 2) creates hard boundaries. The model encounters these boundaries as blocked actions, rejected simulations, and restricted capabilities. Over time, through the feedback loop and Mamba's persistent state, the model internalizes the constraint landscape. It stops proposing actions that will be blocked — not because it was told to, but because it learned through experience.
 
-**Behavioral alignment** (Layer 0) is the result. The model's behavior aligns with the constraints not through instruction-following (fragile) but through accumulated experience (robust). Each Layer 1 rejection is a training signal that strengthens Layer 0. The hard gate fires less and less — not because constraints relaxed, but because the model learned to navigate them.
+**Behavioral alignment** (Layer 0) is the result. The model's behavior aligns with the constraints not through instruction-following (fragile) but through accumulated experience (robust). Each Gate rejection (Layer 1) and simulation rejection (Layers 4–5) is a training signal that strengthens Layer 0. The hard gates fire less and less — not because constraints relaxed, but because the model learned to navigate them.
 
 This is the neuro-symbolic coupling at work: the symbolic layer (BP) creates terrain; the neural layer (model + Mamba state) learns to read it. The symbolic layer grows monotonically (ratchet principle — constraints only add, never remove). The neural layer adapts continuously. Together they produce an agent that is both capable and constrained — and becomes more of both over time.
 
@@ -1029,11 +1131,11 @@ The framework ships primitives for building modnet nodes. It does not operate a 
 
 The framework is not prescriptive about deployment. Three tiers are viable:
 
-| Tier | Example | Trade-off |
-|---|---|---|
-| **Local** | Mac Mini, DGX Spark, any box with sufficient RAM/VRAM | Zero ongoing cost. Full data sovereignty. Requires hardware. |
-| **Cloud GPU** | RunPod, Lambda, Fly.io GPU Machines | Pay monthly. No hardware to maintain. Provider has physical access. |
-| **API-backed** | MiniMax, OpenRouter, any OpenAI-compatible endpoint | Pay per use. No GPU needed. No fine-tuning (unless provider supports it). |
+| Tier | Example | Inference | Training | Trade-off |
+|---|---|---|---|---|
+| **Local** | Mac Mini, DGX Spark, any box with sufficient RAM/VRAM | Yes | DGX Spark: full-parameter (128GB unified). Consumer GPU: LoRA only. | Zero ongoing cost. Full data sovereignty. Requires hardware. |
+| **Cloud GPU** | RunPod, Lambda, Fly.io GPU Machines | Yes | Full-parameter on 4–8× A100 80GB cluster | Pay monthly. No hardware to maintain. Provider has physical access. |
+| **API-backed** | MiniMax, OpenRouter, any OpenAI-compatible endpoint | Yes | No (unless provider supports fine-tuning) | Pay per use. No GPU needed. Dreamer/training not available. |
 
 The pluggable model interfaces make tier selection a deployment decision, not an architectural one. A consumer can start API-backed, move to cloud, and eventually self-host — swapping model implementations without changing their bThreads, tools, or application logic.
 
