@@ -33,6 +33,9 @@
     "./utils": "./src/utils.ts",
     "./utils/*.ts": "./src/utils/*.ts",
     "./utils/*.tsx": "./src/utils/*.tsx",
+    "./agent": "./src/agent.ts",
+    "./agent/*.ts": "./src/agent/*.ts",
+    "./agent/*.tsx": "./src/agent/*.tsx",
     "./workshop": "./src/workshop.ts",
     "./workshop/*.ts": "./src/workshop/*.ts",
     "./workshop/*.tsx": "./src/workshop/*.tsx"
@@ -70,9 +73,6 @@
       "format-package -w"
     ]
   },
-  "trustedDependencies": [
-    "node-llama-cpp"
-  ],
   "dependencies": {
     "@plaited/agent-eval-harness": "0.12.2",
     "@plaited/development-skills": "0.8.1"
