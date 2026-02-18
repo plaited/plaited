@@ -1,28 +1,27 @@
 /**
  * UI entry point for the Plaited framework.
- * Exports the UI-specific APIs for building reactive custom elements with Shadow DOM.
+ * Exports primitives for server-rendered generative web UI.
  *
  * @remarks
  * This module provides access to:
- * - **BehavioralElement**: {@link bElement} - Custom element creation with behavioral programming integration
+ * - **Rendering**: {@link ssr}, {@link declarativeElement} - Server-side rendering and declarative Shadow DOM
  * - **Styling**: {@link createStyles}, {@link createHostStyles}, {@link createKeyframes}, {@link createTokens}, {@link joinStyles} - CSS-in-JS utilities
- * - **Templates**: {@link ssr}, {@link useTemplate} - Server-side rendering and template utilities
- * - **Utilities**: {@link useAttributesObserver} - Attribute observation
+ * - **Protocol**: {@link ServerMessageSchema}, {@link ClientMessageSchema} - Server ↔ client message schemas
+ * - **Event Delegation**: {@link DelegatedListener} - Delegated event handling for p-trigger
+ * - **Style Tracking**: {@link createStyleTracker} - Per-connection style deduplication
  *
- * @see {@link https://github.com/plaited/plaited} for framework documentation
- * @since 1.0.0
+ * @public
  */
 
-export * from './ui/b-element.guards.ts'
-export * from './ui/b-element.ts'
-export type * from './ui/b-element.types.ts'
 export * from './ui/create-host-styles.ts'
 export * from './ui/create-keyframes.ts'
+export * from './ui/create-style-tracker.ts'
 export * from './ui/create-styles.ts'
 export type * from './ui/create-template.types.ts'
 export * from './ui/create-tokens.ts'
 export type * from './ui/css.types.ts'
+export * from './ui/declarative-element.ts'
+export * from './ui/delegated-listener.ts'
 export * from './ui/join-styles.ts'
+export * from './ui/protocol.schema.ts'
 export * from './ui/ssr.ts'
-export * from './ui/use-attributes-observer.ts'
-export * from './ui/use-template.ts'

@@ -56,7 +56,12 @@ const formatHostStatement = ({
     }
   } else {
     const isToken = isTokenReference(value)
-    isToken && styles.push(...value.stylesheets)
+    isToken &&
+      styles.push(
+        ...value.stylesheets.map((sheet) =>
+          sheet.replaceAll(/:root\{/g, ':host{').replaceAll(/:root\(([^)]+)\)/g, ':host'),
+        ),
+      )
     const arr = selectors.map((str) => `${str}{`)
     styles.push(`${host}{${arr.join('')}${getRule(prop, isToken ? value() : value)}${'}'.repeat(arr.length)}}`)
   }
