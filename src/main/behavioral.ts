@@ -1,4 +1,5 @@
 import { isTypeOf } from '../utils.ts'
+import { SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
 import type {
   Behavioral,
   BPEvent,
@@ -9,7 +10,8 @@ import type {
   EventDetails,
   PendingBid,
   RunningBid,
-  SnapshotFormatter,
+  SelectionBid,
+  SelectionFormatter,
   SnapshotMessage,
   Trigger,
   UseFeedback,
@@ -103,7 +105,7 @@ const isPendingRequest = (selectedEvent: CandidateBid, event: BPEvent | BPEventT
  * which event was selected, and creates a comprehensive view of the current execution step.
  * The resulting array is sorted by priority to show higher priority events first.
  */
-const snapshotFormatter: SnapshotFormatter = ({ candidates, selectedEvent, pending }) => {
+const snapshotFormatter: SelectionFormatter = ({ candidates, selectedEvent, pending }) => {
   const blockingThreads = [...pending].flatMap(([thread, { block }]) =>
     block && Array.isArray(block)
       ? block.map((listener) => ({ block: listener, thread }))
@@ -133,7 +135,7 @@ const snapshotFormatter: SnapshotFormatter = ({ candidates, selectedEvent, pendi
     const blockedBy = blockingThreads.find(({ block }) => isListeningFor(bid)(block))?.thread
     const interrupts = interruptedThreads.find(({ interrupt }) => isListeningFor(bid)(interrupt))?.thread
     const thread = bid.thread
-    const message: SnapshotMessage[number] = {
+    const message: SelectionBid = {
       thread: isTypeOf<symbol>(thread, 'symbol') ? thread?.toString() : thread,
       trigger: bid.trigger ?? false,
       type: bid.type,
@@ -145,7 +147,10 @@ const snapshotFormatter: SnapshotFormatter = ({ candidates, selectedEvent, pendi
     }
     ruleSets.push(message)
   }
-  return ruleSets.sort((a, b) => a.priority - b.priority)
+  return {
+    kind: SNAPSHOT_MESSAGE_KINDS.selection,
+    bids: ruleSets.sort((a, b) => a.priority - b.priority),
+  }
 }
 /**
  * Creates and manages a behavioral program instance, orchestrating the execution of b-threads.
@@ -374,8 +379,13 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
       if (Object.hasOwn(handlers, type)) {
         try {
           void handlers[type]!(detail)
-        } catch (_) {
-          // What should we do here? should we push it into eventlog os useSnapshot
+        } catch (error) {
+          snapshotPublisher?.({
+            kind: SNAPSHOT_MESSAGE_KINDS.feedback_error,
+            type,
+            detail,
+            error: error instanceof Error ? error.message : String(error),
+          })
         }
       }
     })

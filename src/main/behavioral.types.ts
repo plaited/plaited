@@ -1,3 +1,5 @@
+import type { SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
+
 /**
  * @internal
  * Defines the repetition behavior for a `bThread`.
@@ -210,7 +212,7 @@ export type Disconnect = () => void | Promise<void>
  * @see {@link UseSnapshot} for subscribing to snapshots
  * @see {@link SnapshotListener} for handling snapshots
  */
-export type SnapshotMessage = {
+export type SelectionBid = {
   /** The unique identifier of the thread associated with this bid (stringified if this bid originated from an external `trigger()` as they use a Symbol identifier). */
   thread: string
   /** Indicates if this bid originated from an external `trigger()` call (`true`) rather than a thread's `request` (`false`). */
@@ -227,7 +229,48 @@ export type SnapshotMessage = {
   blockedBy?: string
   /** If the event interrupts another thread when selected, contains the identifier of the interrupted thread; otherwise, undefined. */
   interrupts?: string
-}[]
+}
+
+/**
+ * A snapshot of all bids considered during one event
+selection step.
+ * Wraps the existing bid data in a discriminated
+envelope.
+ *
+ * @see {@link UseSnapshot} for subscribing to snapshots
+ * @see {@link SnapshotMessage} for the full union
+ */
+export type SelectionSnapshot = {
+  kind: typeof SNAPSHOT_MESSAGE_KINDS.selection
+  bids: SelectionBid[]
+}
+
+/**
+ * A useFeedback handler threw during side-effect
+execution.
+ * Published after the selection snapshot for this
+super-step has already been emitted.
+ *
+ * @see {@link UseSnapshot} for subscribing to snapshots
+ * @see {@link SnapshotMessage} for the full union
+ */
+export type FeedbackError = {
+  kind: typeof SNAPSHOT_MESSAGE_KINDS.feedback_error
+  type: string
+  detail?: unknown
+  error: string
+}
+
+/**
+   * Discriminated union of all observable moments from the
+  BP engine.
+   * Consumers narrow by the `kind` field.
+   *
+   * @see {@link SelectionSnapshot} for event selection
+  observations
+   * @see {@link FeedbackError} for feedback handler errors
+   */
+export type SnapshotMessage = SelectionSnapshot | FeedbackError
 
 /**
  * @internal
@@ -239,14 +282,14 @@ export type SnapshotMessage = {
  * The formatter analyzes the relationships between threads (who blocks whom, who interrupts whom),
  * determines which event was selected, and creates a comprehensive view of the current execution step.
  */
-export type SnapshotFormatter = (args: {
+export type SelectionFormatter = (args: {
   /** Map of threads currently in a pending state (yielded), containing their synchronization declarations. */
   pending: Map<string | symbol, PendingBid>
   /** The event candidate that was selected for execution in the current step. */
   selectedEvent: CandidateBid
   /** All event candidates that were considered for selection in the current step. */
   candidates: CandidateBid[]
-}) => SnapshotMessage
+}) => SelectionSnapshot
 
 /**
  * A callback function invoked with a snapshot (`SnapshotMessage`) of the behavioral program's state
