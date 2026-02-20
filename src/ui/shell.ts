@@ -23,30 +23,8 @@ import { useBehavioral } from '../main/use-behavioral.ts'
 import type { BPEvent } from '../main.ts'
 import { BOOLEAN_ATTRS, P_TRIGGER } from './create-template.constants.ts'
 import { DelegatedListener, delegates } from './delegated-listener.ts'
-import type { AttrsDetail, RenderDetail, StreamDetail, SwapMode } from './protocol.schema.ts'
-import { BPEventSchema } from './protocol.schema.ts'
 import { SHELL_EVENTS } from './shell.constants.ts'
-
-/**
- * Feedback handler contract for the shell behavioral program.
- *
- * @remarks
- * Maps event type names to their detail payloads.
- * Server events (render, attrs, stream) arrive via WebSocket.
- * DOM events (user_action) arrive via p-trigger bindings.
- * Internal events (rendered) are triggered by handlers.
- * Lifecycle events (disconnect) tear down the shell and close the socket.
- *
- * @public
- */
-export type ShellHandlers = {
-  [SHELL_EVENTS.render]: RenderDetail
-  [SHELL_EVENTS.attrs]: AttrsDetail
-  [SHELL_EVENTS.stream]: StreamDetail
-  [SHELL_EVENTS.user_action]: { action: string; domEvent: string }
-  [SHELL_EVENTS.rendered]: string
-  [SHELL_EVENTS.disconnect]: void
-}
+import { BPEventSchema, type ShellHandlers, type StreamMessage, type SwapMode } from './shell.schema.ts'
 
 /**
  * Context required to initialize the shell behavioral program.
@@ -91,13 +69,10 @@ const bindTriggers = (subtree: DocumentFragment, trigger: (event: { type: string
     for (const pair of pairs) {
       const [domEvent, action] = pair.split(':')
       if (!domEvent || !action) continue
-      const listener = new DelegatedListener((evt: Event) => {
+      const listener = new DelegatedListener((_: Event) => {
         trigger({
           type: SHELL_EVENTS.user_action,
-          detail: {
-            action,
-            domEvent,
-          },
+          detail: action,
         })
       })
       delegates.set(el, listener)
@@ -193,7 +168,7 @@ const updateAttributes = ({
  */
 export const createShell = useBehavioral<ShellHandlers, ShellContext>({
   bProgram({ trigger, url, root, disconnect }) {
-    const pendingChunks: StreamDetail[] = []
+    const pendingChunks: StreamMessage['detail'][] = []
     let flushScheduled = false
 
     // ─── WebSocket lifecycle ───────────────────────────────────────────

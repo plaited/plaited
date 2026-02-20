@@ -11,3 +11,5 @@ export const SHELL_EVENTS = keyMirror(
   'stream_element_not_found',
   'disconnect',
 )
+
+export const SWAP_MODES = keyMirror('innerHTML', 'outerHTML', 'beforebegin', 'afterbegin', 'beforeend', 'afterend')
