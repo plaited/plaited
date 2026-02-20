@@ -113,6 +113,15 @@ export const RenderedMessageSchema = z.object({
 /** @public */
 export type RenderedMessage = z.infer<typeof RenderedMessageSchema>
 
+/**
+ * Schema for disconnect messages sent from server to client
+ *
+ * @remarks
+ * The server sends a disconnect message to tear down the shell,
+ * close the WebSocket, and clean up the behavioral program.
+ *
+ * @public
+ */
 export const DisconnectMessageSchema = z.object({
   type: z.literal(SHELL_EVENTS.disconnect),
   detail: z.undefined(),
@@ -121,6 +130,25 @@ export const DisconnectMessageSchema = z.object({
 /** @public */
 export type DisconnectMessage = z.infer<typeof DisconnectMessageSchema>
 
+export const AddBThreadsMessageSchema = z.object({
+  type: z.literal(SHELL_EVENTS.add_b_threads),
+  detail: z.object({
+    src: z.httpUrl(),
+    modules: z.array(z.string()),
+  }),
+})
+
+/** @public */
+export type AddBThreadsMessage = z.infer<typeof AddBThreadsMessageSchema>
+
+export const BThreadsAddedMessageSchema = z.object({
+  type: z.literal(SHELL_EVENTS.b_threads_added),
+  detail: AddBThreadsMessageSchema.shape.detail,
+})
+
+/** @public */
+export type BThreadAddedMessage = z.infer<typeof BThreadsAddedMessageSchema>
+
 type ShellMessage =
   | RenderMessage
   | AttrsMessage
@@ -128,6 +156,7 @@ type ShellMessage =
   | UserActionMessage
   | RenderedMessage
   | DisconnectMessage
+  | AddBThreadsMessage
 
 export type ShellHandlers = {
   [M in ShellMessage as M['type']]: M['detail']

@@ -4,6 +4,7 @@
  * Provides bThread, bSync factories and helpers for non-deterministic scenarios.
  */
 import { isTypeOf } from '../utils.ts'
+import { RULES_FUNCTION_IDENTIFIER } from './behavioral.constants.ts'
 import type { BPEvent, BSync, BThread, PlaitedTrigger, RulesFunction, Trigger } from './behavioral.types.ts'
 
 /**
@@ -126,22 +127,28 @@ export const isBPEvent = (data: unknown): data is BPEvent => {
  * @see {@link RulesFunction} for the generator type
  */
 export const bThread: BThread = (rules, repeat) => {
-  return repeat
-    ? function* () {
-        while (isTypeOf<boolean>(repeat, 'boolean') ? repeat : repeat()) {
+  return Object.assign(
+    repeat
+      ? function* () {
+          while (isTypeOf<boolean>(repeat, 'boolean') ? repeat : repeat()) {
+            const length = rules.length
+            for (let i = 0; i < length; i++) {
+              yield* rules[i]!()
+            }
+          }
+        }
+      : function* () {
           const length = rules.length
           for (let i = 0; i < length; i++) {
             yield* rules[i]!()
           }
-        }
-      }
-    : function* () {
-        const length = rules.length
-        for (let i = 0; i < length; i++) {
-          yield* rules[i]!()
-        }
-      }
+        },
+    { $: RULES_FUNCTION_IDENTIFIER } as const,
+  )
 }
+
+export const isRulesFunction = (obj: unknown): obj is BThread =>
+  isTypeOf<object>(obj, 'function') && RULES_FUNCTION_IDENTIFIER in obj
 
 /**
  * Creates a single synchronization point for a b-thread.

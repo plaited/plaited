@@ -20,11 +20,19 @@
  */
 
 import { useBehavioral } from '../main/use-behavioral.ts'
-import type { BPEvent } from '../main.ts'
+import { type BPEvent, isRulesFunction, type RulesFunction } from '../main.ts'
 import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from './create-template.constants.ts'
 import { DelegatedListener, delegates } from './delegated-listener.ts'
 import { CONSOLE_ERRORS, SHELL_EVENTS, SWAP_MODES } from './shell.constants.ts'
-import { BPEventSchema, type ShellHandlers, type StreamMessage, type SwapMode } from './shell.schema.ts'
+import {
+  BPEventSchema,
+  type BThreadAddedMessage,
+  type RenderedMessage,
+  type ShellHandlers,
+  type StreamMessage,
+  type SwapMode,
+  type UserActionMessage,
+} from './shell.schema.ts'
 
 /**
  * Context required to initialize the shell behavioral program.
@@ -160,14 +168,14 @@ const updateAttributes = ({
  * The shell creates its own WebSocket connection with exponential backoff reconnection.
  *
  * All events originate internally — WebSocket messages and DOM events both use the
- * internal trigger. The `rendered` acknowledgment and `disconnect` lifecycle event
- * are triggered by handlers. No `publicEvents` are defined — the returned trigger
- * rejects all external calls.
+ * internal trigger. The `rendered` acknowledgment is triggered after a render completes.
+ * `disconnect` arrives from the server via WebSocket to tear down the shell.
+ * No `publicEvents` are defined — the returned trigger rejects all external calls.
  *
  * @public
  */
 export const createShell = useBehavioral<ShellHandlers, ShellContext>({
-  bProgram({ trigger, url, root, disconnect }) {
+  bProgram({ trigger, url, root, disconnect, bThreads }) {
     const pendingChunks: StreamMessage['detail'][] = []
     let flushScheduled = false
 
@@ -213,7 +221,7 @@ export const createShell = useBehavioral<ShellHandlers, ShellContext>({
 
     ws.connect()
 
-    const send = (message: BPEvent) => {
+    const send = <T extends BPEvent>(message: T) => {
       const fallback = () => {
         send(message)
         socket?.removeEventListener('open', fallback)
@@ -270,11 +278,29 @@ export const createShell = useBehavioral<ShellHandlers, ShellContext>({
       },
 
       [SHELL_EVENTS.user_action](detail) {
-        send({ type: SHELL_EVENTS.user_action, detail })
+        send<UserActionMessage>({ type: SHELL_EVENTS.user_action, detail })
       },
 
       [SHELL_EVENTS.rendered](detail) {
-        send({ type: SHELL_EVENTS.rendered, detail })
+        send<RenderedMessage>({ type: SHELL_EVENTS.rendered, detail })
+      },
+      async [SHELL_EVENTS.add_b_threads](detail) {
+        try {
+          const modules = await import(detail.src)
+          const threads: Record<string, RulesFunction> = {}
+          for (const name of detail.modules) {
+            const module = modules[name]
+            if (isRulesFunction(module)) {
+              Object.assign(threads, { [name]: module })
+            } else {
+              console.error(CONSOLE_ERRORS.add_b_threads_invalid_b_thread, name)
+            }
+          }
+          bThreads.set(threads)
+          send<BThreadAddedMessage>({ type: SHELL_EVENTS.b_threads_added, detail })
+        } catch (error) {
+          console.error(CONSOLE_ERRORS.add_b_threads_error, error)
+        }
       },
     }
   },

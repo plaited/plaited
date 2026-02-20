@@ -52,11 +52,11 @@ These files stay but are no longer the primary rendering path. They're escalatio
 | `use-emit.ts` | Custom event dispatcher | Keep for bElement cross-shadow communication |
 | `use-attributes-observer.ts` | MutationObserver for slotted elements | Keep for bElement slot patterns |
 
-### Remove or Relocate
+### Removed
 
-| File | Current Role | Fate | Reason |
-|---|---|---|---|
-| `inspector.ts` | Debug observer for BP state | Relocate to `src/agent/` or remove | Inspector concept moves to the agent loop's `useSnapshot`. The web UI doesn't need its own inspector — the event log IS the inspector. |
+| File | Fate |
+|---|---|
+| `inspector.ts` | Removed. Inspector concept moved to the agent loop's `useSnapshot`. |
 
 ## New Files Needed
 
@@ -87,9 +87,8 @@ export const createStyleTracker = () => {
 
 Zod schemas are the single source of truth for the server ↔ client protocol. All types are derived via `z.infer`. Event type literals come from `SHELL_EVENTS` constants.
 
-**Server → Client**: `RenderMessageSchema`, `AttrsMessageSchema`, `StreamMessageSchema`
+**Server → Client**: `RenderMessageSchema`, `AttrsMessageSchema`, `StreamMessageSchema`, `DisconnectMessageSchema`
 **Client → Server**: `UserActionMessageSchema` (detail: action name string), `RenderedMessageSchema` (detail: target string)
-**Internal**: `DisconnectMessageSchema` (detail: undefined)
 
 `ShellHandlers` is derived automatically via a mapped type over the `ShellMessage` union.
 

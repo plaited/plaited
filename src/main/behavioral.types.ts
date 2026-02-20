@@ -1,4 +1,4 @@
-import type { SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
+import type { RULES_FUNCTION_IDENTIFIER, SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
 
 /**
  * @internal
@@ -103,7 +103,10 @@ export type Idioms = {
  * @see {@link bThread} for creating threads from rules
  * @see {@link Idioms} for synchronization declarations
  */
-export type RulesFunction = () => Generator<Idioms, void, undefined>
+export type RulesFunction = {
+  (): Generator<Idioms, void, undefined>
+  $: typeof RULES_FUNCTION_IDENTIFIER
+}
 
 /**
  * A factory function that creates a single synchronization step (a `RulesFunction`) for a b-thread.
