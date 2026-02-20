@@ -5,7 +5,7 @@
  * @remarks
  * The shell is the only client-side JS beyond Level 2+ thread modules.
  * It manages its own WebSocket connection (with reconnection), receives
- * server messages (render/patch/stream), applies them to the DOM via
+ * server messages (render/attrs/stream), applies them to the DOM via
  * `setHTMLUnsafe`, and forwards user actions back to the server.
  *
  * Uses `setHTMLUnsafe` for DOM insertion because:
@@ -21,9 +21,9 @@
 
 import { useBehavioral } from '../main/use-behavioral.ts'
 import type { BPEvent } from '../main.ts'
-import { BOOLEAN_ATTRS, P_TRIGGER } from './create-template.constants.ts'
+import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from './create-template.constants.ts'
 import { DelegatedListener, delegates } from './delegated-listener.ts'
-import { SHELL_EVENTS } from './shell.constants.ts'
+import { CONSOLE_ERRORS, SHELL_EVENTS, SWAP_MODES } from './shell.constants.ts'
 import { BPEventSchema, type ShellHandlers, type StreamMessage, type SwapMode } from './shell.schema.ts'
 
 /**
@@ -109,23 +109,23 @@ const performSwap = ({
   const content = template.content
   bindTriggers(content, trigger)
   switch (swap) {
-    case 'innerHTML':
-      el.replaceChildren(content)
-      break
-    case 'outerHTML':
-      el.replaceWith(content)
-      break
-    case 'beforebegin':
-      el.before(content)
-      break
-    case 'afterbegin':
+    case SWAP_MODES.afterbegin:
       el.prepend(content)
       break
-    case 'beforeend':
+    case SWAP_MODES.afterend:
+      el.after(content)
+      break
+    case SWAP_MODES.beforebegin:
+      el.before(content)
+      break
+    case SWAP_MODES.beforeend:
       el.append(content)
       break
-    case 'afterend':
-      el.after(content)
+    case SWAP_MODES.innerHTML:
+      el.replaceChildren(content)
+      break
+    case SWAP_MODES.outerHTML:
+      el.replaceWith(content)
       break
   }
 }
@@ -180,7 +180,7 @@ export const createShell = useBehavioral<ShellHandlers, ShellContext>({
         if (evt instanceof MessageEvent) {
           const result = BPEventSchema.safeParse(JSON.parse(evt.data))
           if (result.success) trigger(result.data)
-          else console.error('Shell: invalid message', result.error)
+          else console.error(CONSOLE_ERRORS.ws_invalid_message, result.error)
         }
         if (evt.type === 'open') {
           retryCount = 0
@@ -189,7 +189,7 @@ export const createShell = useBehavioral<ShellHandlers, ShellContext>({
           ws.retry()
         }
         if (evt.type === 'error') {
-          console.error('Shell WebSocket error:', evt)
+          console.error(CONSOLE_ERRORS.ws_error_message, evt)
         }
       },
       connect() {
@@ -232,15 +232,15 @@ export const createShell = useBehavioral<ShellHandlers, ShellContext>({
         socket?.close()
       },
       [SHELL_EVENTS.render](detail) {
-        const el = root.querySelector(`[p-target="${detail.target}"]`)
+        const el = root.querySelector(`[${P_TARGET}="${detail.target}"]`)
         if (!el) return
-        performSwap({ el, html: detail.html, swap: detail.swap ?? 'innerHTML', trigger })
+        performSwap({ el, html: detail.html, swap: detail.swap ?? SWAP_MODES.innerHTML, trigger })
         trigger({ type: SHELL_EVENTS.rendered, detail: detail.target })
       },
 
       [SHELL_EVENTS.attrs]({ target, attr }) {
-        const element = root.querySelector(`[p-target="${target}"]`)
-        if (!element) return trigger({ type: SHELL_EVENTS.attrs_element_not_found, detail: target })
+        const element = root.querySelector(`[${P_TARGET}="${target}"]`)
+        if (!element) return console.error(CONSOLE_ERRORS.attrs_element_not_found, target)
         for (const key in attr) {
           updateAttributes({
             element,
@@ -256,12 +256,12 @@ export const createShell = useBehavioral<ShellHandlers, ShellContext>({
           flushScheduled = true
           requestAnimationFrame(() => {
             for (const chunk of pendingChunks) {
-              const el = root.querySelector(`[p-target="${chunk.target}"]`)
+              const el = root.querySelector(`[${P_TARGET}="${chunk.target}"]`)
               if (!el) {
-                trigger({ type: SHELL_EVENTS.stream_element_not_found, detail: chunk.target })
+                console.error(CONSOLE_ERRORS.stream_element_not_found, chunk.target)
                 continue
               }
-              performSwap({ el, html: chunk.content, swap: 'beforeend', trigger })
+              performSwap({ el, html: chunk.content, swap: SWAP_MODES.beforeend, trigger })
             }
             pendingChunks.length = 0
             flushScheduled = false

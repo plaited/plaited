@@ -81,53 +81,17 @@ export const createStyleTracker = () => {
 }
 ```
 
-### Message Protocol Types
+### Message Protocol — Implemented
 
-**`src/ui/protocol.types.ts`**
+**`src/ui/shell.schema.ts`**
 
-Typed message protocol for server ↔ client communication.
+Zod schemas are the single source of truth for the server ↔ client protocol. All types are derived via `z.infer`. Event type literals come from `SHELL_EVENTS` constants.
 
-```typescript
-// Server → Client
-type SwapMode = 'innerHTML' | 'outerHTML' | 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend'
+**Server → Client**: `RenderMessageSchema`, `AttrsMessageSchema`, `StreamMessageSchema`
+**Client → Server**: `UserActionMessageSchema` (detail: action name string), `RenderedMessageSchema` (detail: target string)
+**Internal**: `DisconnectMessageSchema` (detail: undefined)
 
-type RenderMessage = {
-  type: 'render'
-  detail: { target: string; html: string; swap?: SwapMode }
-}
-type PatchMessage = {
-  type: 'patch'
-  detail: { target: string; attr?: Record<string, string | null>; html?: string }
-}
-type StreamMessage = {
-  type: 'stream'
-  detail: { target: string; content: string }
-}
-
-type ServerMessage = RenderMessage | PatchMessage | StreamMessage
-
-// Client → Server
-type UserActionMessage = {
-  type: 'userAction'
-  detail: { action: string; detail: unknown }
-}
-type RenderedMessage = {
-  type: 'rendered'
-  detail: { target: string }
-}
-type InputMessage = {
-  type: 'input'
-  detail: { value: string; source: string }
-}
-type ConfirmedMessage = {
-  type: 'confirmed'
-  detail: { value: boolean; source: string }
-}
-
-type ClientMessage = UserActionMessage | RenderedMessage | InputMessage | ConfirmedMessage
-```
-
-All messages are `{ type, detail }` — the same BP event shape used throughout V3.
+`ShellHandlers` is derived automatically via a mapped type over the `ShellMessage` union.
 
 #### Streaming Protocol
 
@@ -137,12 +101,6 @@ Cortex output streams token-by-token:
 2. Each token → sends `stream` message with content fragment
 3. Shell BP accumulates chunks, flushes on `requestAnimationFrame`
 4. Inference complete → sends `render` replacing the stream region with final content
-
-### Message Protocol Schemas
-
-**`src/ui/protocol.schemas.ts`**
-
-Zod schemas for runtime validation of WebSocket messages.
 
 ### Client Shell — Complete
 
