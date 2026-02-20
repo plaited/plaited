@@ -1,5 +1,100 @@
 import { z } from 'zod'
 
+import { type BPEvent, isBPEvent } from '../main.ts'
+
+/**
+ * Schema for validating BPEvent objects.
+ * Uses the framework's `isBPEvent` type guard for runtime validation.
+ *
+ * @public
+ */
+export const BPEventSchema = z.custom<BPEvent>(isBPEvent)
+
+// ─── Server → Client Message Schemas ────────────────────────────────────────
+
+/**
+ * Schema for DOM insertion position values
+ *
+ * @remarks
+ * Maps to the standard `insertAdjacentHTML` positions plus
+ * `innerHTML` and `outerHTML` for full content replacement.
+ *
+ * @public
+ */
+export const SwapModeSchema = z.enum(['innerHTML', 'outerHTML', 'beforebegin', 'afterbegin', 'beforeend', 'afterend'])
+
+/** @public */
+export type SwapMode = z.infer<typeof SwapModeSchema>
+
+/**
+ * Schema for render messages that insert or replace DOM content
+ *
+ * @remarks
+ * The server sends render messages to place HTML at a target element.
+ * The optional `swap` field controls insertion position, defaulting
+ * to `innerHTML` when omitted.
+ *
+ * @public
+ */
+export const RenderMessageSchema = z.object({
+  type: z.literal('render'),
+  detail: z.object({
+    target: z.string(),
+    html: z.string(),
+    swap: SwapModeSchema.optional(),
+  }),
+})
+
+/** @public */
+export type RenderMessage = z.infer<typeof RenderMessageSchema>
+/** @public */
+export type RenderDetail = RenderMessage['detail']
+
+/**
+ * Schema for attrs messages that update element attributes
+ *
+ * @remarks
+ * Attrs messages allow surgical attribute updates to a target element —
+ * setting or removing attributes (null values remove the attribute).
+ * For HTML content replacement, use a render message instead.
+ *
+ * @public
+ */
+export const AttrsMessageSchema = z.object({
+  type: z.literal('attrs'),
+  detail: z.object({
+    target: z.string(),
+    attr: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]).nullable()),
+  }),
+})
+
+/** @public */
+export type AttrsMessage = z.infer<typeof AttrsMessageSchema>
+/** @public */
+export type AttrsDetail = AttrsMessage['detail']
+
+/**
+ * Schema for stream messages that append content incrementally
+ *
+ * @remarks
+ * Used for streaming responses (e.g. LLM output) where content
+ * arrives in chunks and is appended to the target element.
+ *
+ * @public
+ */
+export const StreamMessageSchema = z.object({
+  type: z.literal('stream'),
+  detail: z.object({
+    target: z.string(),
+    content: z.string(),
+  }),
+})
+
+/** @public */
+export type StreamMessage = z.infer<typeof StreamMessageSchema>
+/** @public */
+export type StreamDetail = StreamMessage['detail']
+
 /**
  * Schema for CSS property values in design tokens
  * @internal
@@ -89,7 +184,7 @@ export const TriggerMessageSchema = z.object({
  *
  * @internal
  */
-export const QueryBindingsSchema = z.record(z.string(), z.array(z.instanceof(Element)))
+// export const QueryBindingsSchema = z.record(z.string(), z.array(z.instanceof(Element)))
 
 /**
  * Schema for shadow DOM configuration options
@@ -149,74 +244,6 @@ export const ElementDefinitionSchema = z.object({
  */
 export const StyleRegistrySchema = z.map(z.string(), z.instanceof(CSSStyleSheet))
 
-// ─── Server → Client Message Schemas ────────────────────────────────────────
-
-/**
- * Schema for DOM insertion position values
- *
- * @remarks
- * Maps to the standard `insertAdjacentHTML` positions plus
- * `innerHTML` and `outerHTML` for full content replacement.
- *
- * @public
- */
-export const SwapModeSchema = z.enum(['innerHTML', 'outerHTML', 'beforebegin', 'afterbegin', 'beforeend', 'afterend'])
-
-/**
- * Schema for render messages that insert or replace DOM content
- *
- * @remarks
- * The server sends render messages to place HTML at a target element.
- * The optional `swap` field controls insertion position, defaulting
- * to `innerHTML` when omitted.
- *
- * @public
- */
-export const RenderMessageSchema = z.object({
-  type: z.literal('render'),
-  detail: z.object({
-    target: z.string(),
-    html: z.string(),
-    swap: SwapModeSchema.optional(),
-  }),
-})
-
-/**
- * Schema for patch messages that update attributes or inner HTML
- *
- * @remarks
- * Patches allow surgical updates to a target element — setting or
- * removing attributes via `attr` (null values remove the attribute)
- * and optionally replacing inner HTML.
- *
- * @public
- */
-export const PatchMessageSchema = z.object({
-  type: z.literal('patch'),
-  detail: z.object({
-    target: z.string(),
-    attr: z.record(z.string(), z.string().nullable()).optional(),
-    html: z.string().optional(),
-  }),
-})
-
-/**
- * Schema for stream messages that append content incrementally
- *
- * @remarks
- * Used for streaming responses (e.g. LLM output) where content
- * arrives in chunks and is appended to the target element.
- *
- * @public
- */
-export const StreamMessageSchema = z.object({
-  type: z.literal('stream'),
-  detail: z.object({
-    target: z.string(),
-    content: z.string(),
-  }),
-})
-
 /**
  * Schema for the discriminated union of all server-to-client messages
  *
@@ -227,9 +254,12 @@ export const StreamMessageSchema = z.object({
  */
 export const ServerMessageSchema = z.discriminatedUnion('type', [
   RenderMessageSchema,
-  PatchMessageSchema,
+  AttrsMessageSchema,
   StreamMessageSchema,
 ])
+
+/** @public */
+export type ServerMessage = z.infer<typeof ServerMessageSchema>
 
 // ─── Client → Server Message Schemas ────────────────────────────────────────
 
@@ -237,9 +267,8 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
  * Schema for user action messages dispatched from UI interactions
  *
  * @remarks
- * Sent when a user interacts with an element that has a bound action.
- * The `action` field identifies the handler; `detail` carries arbitrary
- * event data.
+ * Sent when a user interacts with an element that has a bound p-trigger action.
+ * The `action` field identifies the handler; `domEvent` names the DOM event that fired.
  *
  * @public
  */
@@ -247,25 +276,30 @@ export const UserActionMessageSchema = z.object({
   type: z.literal('userAction'),
   detail: z.object({
     action: z.string(),
-    detail: z.unknown(),
+    domEvent: z.string(),
   }),
 })
+
+/** @public */
+export type UserActionMessage = z.infer<typeof UserActionMessageSchema>
 
 /**
  * Schema for rendered acknowledgement messages
  *
  * @remarks
  * Sent by the client after a render message has been applied to the DOM,
- * confirming that the target element is now visible.
+ * confirming that the target element is now visible. The detail is the
+ * target string identifier.
  *
  * @public
  */
 export const RenderedMessageSchema = z.object({
   type: z.literal('rendered'),
-  detail: z.object({
-    target: z.string(),
-  }),
+  detail: z.string(),
 })
+
+/** @public */
+export type RenderedMessage = z.infer<typeof RenderedMessageSchema>
 
 /**
  * Schema for input value messages from form elements
@@ -284,6 +318,9 @@ export const InputMessageSchema = z.object({
   }),
 })
 
+/** @public */
+export type InputMessage = z.infer<typeof InputMessageSchema>
+
 /**
  * Schema for confirmation messages (boolean responses)
  *
@@ -301,6 +338,9 @@ export const ConfirmedMessageSchema = z.object({
   }),
 })
 
+/** @public */
+export type ConfirmedMessage = z.infer<typeof ConfirmedMessageSchema>
+
 /**
  * Schema for the discriminated union of all client-to-server messages
  *
@@ -316,32 +356,5 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   ConfirmedMessageSchema,
 ])
 
-// ─── Server ↔ Client Derived Types ──────────────────────────────────────────
-
-/** @public */
-export type SwapMode = z.infer<typeof SwapModeSchema>
-/** @public */
-export type RenderMessage = z.infer<typeof RenderMessageSchema>
-/** @public */
-export type PatchMessage = z.infer<typeof PatchMessageSchema>
-/** @public */
-export type StreamMessage = z.infer<typeof StreamMessageSchema>
-/** @public */
-export type ServerMessage = z.infer<typeof ServerMessageSchema>
-/** @public */
-export type UserActionMessage = z.infer<typeof UserActionMessageSchema>
-/** @public */
-export type RenderedMessage = z.infer<typeof RenderedMessageSchema>
-/** @public */
-export type InputMessage = z.infer<typeof InputMessageSchema>
-/** @public */
-export type ConfirmedMessage = z.infer<typeof ConfirmedMessageSchema>
 /** @public */
 export type ClientMessage = z.infer<typeof ClientMessageSchema>
-
-/** @public */
-export type RenderDetail = RenderMessage['detail']
-/** @public */
-export type PatchDetail = PatchMessage['detail']
-/** @public */
-export type StreamDetail = StreamMessage['detail']

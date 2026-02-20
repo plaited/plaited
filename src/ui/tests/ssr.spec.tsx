@@ -3,9 +3,9 @@ import { expect, test } from 'bun:test'
 import beautify from 'beautify'
 import { Fragment, h } from 'plaited/jsx-runtime'
 import {
-  bElement,
   createHostStyles,
   createStyles,
+  declarativeElement,
   type FunctionTemplate,
   joinStyles,
   ssr,
@@ -214,7 +214,7 @@ const styles = createStyles({
   },
 })
 
-const NestedCustomElement = bElement({
+const NestedCustomElement = declarativeElement({
   tag: 'nested-element',
   shadowDom: (
     <>
@@ -252,7 +252,7 @@ test('ssr: CustomElement with styled slotted element', () => {
   }).toMatchSnapshot()
 })
 
-const TopCustomElement = bElement({
+const TopCustomElement = declarativeElement({
   tag: 'top-element',
   shadowDom: (
     <NestedCustomElement {...styles.slottedParagraph}>

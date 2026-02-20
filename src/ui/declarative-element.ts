@@ -33,8 +33,12 @@ export const declarativeElement = ({
   formAssociated?: true
 }): DeclarativeElementTemplate => {
   const registry = new Set<string>([...shadowDom.registry, tag])
-  shadowDom.stylesheets.length &&
-    shadowDom.html.unshift(`<style>${[...new Set(shadowDom.stylesheets)].join('')}</style>`)
+  if (shadowDom.stylesheets.length) {
+    const styles = `<style>${[...new Set(shadowDom.stylesheets)].join('')}</style>`
+      .replaceAll(/:root\{/g, ':host{')
+      .replaceAll(/:root\(([^)]+)\)/g, ':host')
+    shadowDom.html.unshift(styles)
+  }
   const ft = ({ children = [], ...attrs }: Attrs) =>
     createTemplate(tag, {
       ...attrs,
