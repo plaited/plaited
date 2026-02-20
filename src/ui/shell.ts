@@ -20,43 +20,33 @@
  */
 
 import { useBehavioral } from '../main/use-behavioral.ts'
-import { type BPEvent, isRulesFunction, type RulesFunction } from '../main.ts'
+import { isRulesFunction, type RulesFunction } from '../main.ts'
 import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from './create-template.constants.ts'
 import { DelegatedListener, delegates } from './delegated-listener.ts'
 import { CONSOLE_ERRORS, SHELL_EVENTS, SWAP_MODES } from './shell.constants.ts'
-import {
-  BPEventSchema,
-  type BThreadAddedMessage,
-  type RenderedMessage,
-  type ShellHandlers,
-  type StreamMessage,
-  type SwapMode,
-  type UserActionMessage,
+import type {
+  BThreadAddedMessage,
+  RenderedMessage,
+  ShellHandlers,
+  StreamMessage,
+  SwapMode,
+  UserActionMessage,
 } from './shell.schema.ts'
+import { useWebSocket } from './use-web-socket.ts'
 
 /**
  * Context required to initialize the shell behavioral program.
  *
  * @remarks
- * The shell creates and manages its own WebSocket connection from the provided URL,
- * including reconnection with exponential backoff.
  * Pass `document` for light DOM or a `ShadowRoot` for shadow-scoped shells.
  * Both implement `ParentNode`, so `querySelector` scopes correctly.
+ * The WebSocket connection is derived from `self.location.origin` via `useWebSocket`.
  *
  * @public
  */
 export type ShellContext = {
-  /** WebSocket endpoint URL for the server connection */
-  url: string
-  /** DOM scope for querySelector — `document` for light DOM, `ShadowRoot` for shadow-scoped */
   root: Document | ShadowRoot
 }
-
-/** @internal Retry status codes that warrant reconnection attempts. */
-const RETRY_STATUS_CODES = new Set([1006, 1012, 1013])
-
-/** @internal Maximum number of reconnection attempts before giving up. */
-const MAX_RETRIES = 3
 
 /**
  * @internal
@@ -175,77 +165,20 @@ const updateAttributes = ({
  * @public
  */
 export const createShell = useBehavioral<ShellHandlers, ShellContext>({
-  bProgram({ trigger, url, root, disconnect, bThreads }) {
+  bProgram({ trigger, root, disconnect, bThreads }) {
     const pendingChunks: StreamMessage['detail'][] = []
     let flushScheduled = false
-
-    // ─── WebSocket lifecycle ───────────────────────────────────────────
-    let socket: WebSocket | undefined
-    let retryCount = 0
-
-    const ws = {
-      callback(evt: CloseEvent | MessageEvent) {
-        if (evt instanceof MessageEvent) {
-          const result = BPEventSchema.safeParse(JSON.parse(evt.data))
-          if (result.success) trigger(result.data)
-          else console.error(CONSOLE_ERRORS.ws_invalid_message, result.error)
-        }
-        if (evt.type === 'open') {
-          retryCount = 0
-        }
-        if (evt instanceof CloseEvent && RETRY_STATUS_CODES.has(evt.code)) {
-          ws.retry()
-        }
-        if (evt.type === 'error') {
-          console.error(CONSOLE_ERRORS.ws_error_message, evt)
-        }
-      },
-      connect() {
-        socket = new WebSocket(url)
-        const listener = new DelegatedListener(ws.callback)
-        delegates.set(socket, listener)
-        socket.addEventListener('open', listener)
-        socket.addEventListener('message', listener)
-        socket.addEventListener('error', listener)
-        socket.addEventListener('close', listener)
-      },
-      retry() {
-        socket = undefined
-        if (retryCount < MAX_RETRIES) {
-          const max = Math.min(9999, 1000 * 2 ** retryCount)
-          setTimeout(ws.connect, Math.floor(Math.random() * max))
-          retryCount++
-        }
-      },
-    }
-
-    ws.connect()
-
-    const send = <T extends BPEvent>(message: T) => {
-      const fallback = () => {
-        send(message)
-        socket?.removeEventListener('open', fallback)
-      }
-      if (socket?.readyState === WebSocket.OPEN) {
-        return socket.send(JSON.stringify(message))
-      }
-      if (!socket) ws.connect()
-      socket?.addEventListener('open', fallback)
-    }
-
+    const host = root instanceof ShadowRoot ? root.host : root
+    const send = useWebSocket(trigger, host)
     // ─── Feedback handlers ─────────────────────────────────────────────
     return {
-      [SHELL_EVENTS.disconnect]() {
-        disconnect()
-        socket?.close()
-      },
+      disconnect,
       [SHELL_EVENTS.render](detail) {
         const el = root.querySelector(`[${P_TARGET}="${detail.target}"]`)
         if (!el) return
         performSwap({ el, html: detail.html, swap: detail.swap ?? SWAP_MODES.innerHTML, trigger })
         trigger({ type: SHELL_EVENTS.rendered, detail: detail.target })
       },
-
       [SHELL_EVENTS.attrs]({ target, attr }) {
         const element = root.querySelector(`[${P_TARGET}="${target}"]`)
         if (!element) return console.error(CONSOLE_ERRORS.attrs_element_not_found, target)
@@ -257,7 +190,6 @@ export const createShell = useBehavioral<ShellHandlers, ShellContext>({
           })
         }
       },
-
       [SHELL_EVENTS.stream](detail) {
         pendingChunks.push(detail)
         if (!flushScheduled) {
@@ -276,11 +208,9 @@ export const createShell = useBehavioral<ShellHandlers, ShellContext>({
           })
         }
       },
-
       [SHELL_EVENTS.user_action](detail) {
         send<UserActionMessage>({ type: SHELL_EVENTS.user_action, detail })
       },
-
       [SHELL_EVENTS.rendered](detail) {
         send<RenderedMessage>({ type: SHELL_EVENTS.rendered, detail })
       },
