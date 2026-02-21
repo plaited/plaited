@@ -7,13 +7,13 @@
  * - **Rendering**: {@link createSSR} - Server-side rendering with per-connection style deduplication
  * - **Styling**: {@link createStyles}, {@link createHostStyles}, {@link createKeyframes}, {@link createTokens}, {@link joinStyles} - CSS-in-JS utilities
  * - **Controller Protocol**: {@link controller} schemas, constants, and message types for server ↔ client communication
- * - **Custom Elements**: {@link controlElements}, {@link decorateElements} - Custom element lifecycle coordination
+ * - **Custom Elements**: {@link controlIsland}, {@link decorateElements} - Custom element lifecycle coordination
  *
  * @public
  */
 
 export * from './ui/control-document.ts'
-export * from './ui/control-elements.ts'
+export * from './ui/control-island.ts'
 export * from './ui/controller.constants.ts'
 export * from './ui/controller.schemas.ts'
 export * from './ui/create-host-styles.ts'

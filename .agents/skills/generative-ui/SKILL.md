@@ -1,6 +1,6 @@
 ---
 name: generative-ui
-description: Server-driven generative UI with Plaited. Use when building agent-generated HTML interfaces, implementing the controller protocol (render/attrs/update_behavioral), composing createSSR + decorateElements + controlElements for server-side rendering, or designing dynamic behavioral code loading via WebSocket.
+description: Server-driven generative UI with Plaited. Use when building agent-generated HTML interfaces, implementing the controller protocol (render/attrs/update_behavioral), composing createSSR + decorateElements + controlIsland for server-side rendering, or designing dynamic behavioral code loading via WebSocket.
 license: ISC
 compatibility: Requires bun
 ---
@@ -14,7 +14,7 @@ This skill guides AI agents and developers through Plaited's **server-driven gen
 **Use this when:**
 - Building an agent that generates and streams UI to a browser
 - Implementing server → client rendering via the controller protocol
-- Composing `createSSR`, `decorateElements`, and `controlElements`
+- Composing `createSSR`, `decorateElements`, and `controlIsland`
 - Designing `update_behavioral` flows for dynamic client-side code loading
 - Understanding the full message lifecycle (render, attrs, user_action, snapshot)
 
@@ -27,7 +27,7 @@ This skill guides AI agents and developers through Plaited's **server-driven gen
 | Render HTML | `createSSR().render(template)` | `controller()` handles `render` messages |
 | Style scoping | `createStyles()`, `createHostStyles()` | Styles injected via `<style>` in rendered HTML |
 | Shadow DOM | `decorateElements({ tag, shadowDom })` | Declarative shadow DOM via `<template shadowrootmode>` |
-| Interactive elements | `controlElements({ tag })` | Registers custom element with BP engine |
+| Interactive elements | `controlIsland({ tag })` | Registers custom element with BP engine |
 | Dynamic behavior | Send `update_behavioral` message with URL | `import(url)` → register threads + handlers |
 | User events | Receive `user_action` messages | `p-trigger` attribute binds DOM events |
 | Attribute updates | Send `attrs` message | `controller()` handles attribute mutations |
@@ -77,7 +77,7 @@ flowchart TB
 Plaited uses JSX with two special attributes for server ↔ client coordination:
 
 ```typescript
-import { createSSR, createStyles, controlElements, decorateElements } from 'plaited/ui'
+import { createSSR, createStyles, controlIsland, decorateElements } from 'plaited/ui'
 
 // p-target: marks elements the server can update later
 // p-trigger: binds DOM events to actions sent to server
@@ -131,12 +131,12 @@ ws.send(JSON.stringify({
 
 ## Custom Elements
 
-### controlElements (Interactive)
+### controlIsland (Interactive Island)
 
-For elements that need a WebSocket connection and behavioral program:
+For elements that create an isolated island of control — a custom element with its own BP engine, WebSocket controller, and scoped DOM update surface:
 
 ```typescript
-const AppShell = controlElements({
+const AppShell = controlIsland({
   tag: 'app-shell',
   observedAttributes: ['theme'],
 })

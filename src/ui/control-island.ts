@@ -99,7 +99,7 @@ export type ControllerTemplate = FunctionTemplate & {
   $: typeof CONTROLLER_TEMPLATE_IDENTIFIER
 }
 
-export const controlElements = ({
+export const controlIsland = ({
   tag,
   observedAttributes = [],
   formAssociated,
