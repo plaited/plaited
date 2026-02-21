@@ -4,16 +4,21 @@
  *
  * @remarks
  * This module provides access to:
- * - **Rendering**: {@link ssr}, {@link declarativeElement} - Server-side rendering and declarative Shadow DOM
+ * - **Rendering**: {@link ssr} - Server-side rendering
  * - **Styling**: {@link createStyles}, {@link createHostStyles}, {@link createKeyframes}, {@link createTokens}, {@link joinStyles} - CSS-in-JS utilities
- * - **Protocol**: {@link ServerMessageSchema}, {@link ClientMessageSchema} - Server ↔ client message schemas
- * - **Event Delegation**: {@link DelegatedListener} - Delegated event handling for p-trigger
  * - **Style Tracking**: {@link createStyleTracker} - Per-connection style deduplication
+ * - **Controller Protocol**: {@link controller} schemas, constants, and message types for server ↔ client communication
+ * - **Custom Elements**: {@link controlElements}, {@link decorateElements} - Custom element lifecycle coordination
  *
  * @public
  */
 
+export * from './ui/control-document.ts'
+export * from './ui/control-elements.constants.ts'
+export * from './ui/control-elements.schemas.ts'
 export * from './ui/control-elements.ts'
+export * from './ui/controller.constants.ts'
+export * from './ui/controller.schemas.ts'
 export * from './ui/create-host-styles.ts'
 export * from './ui/create-keyframes.ts'
 export * from './ui/create-root-styles.ts'
@@ -25,4 +30,3 @@ export type * from './ui/css.types.ts'
 export * from './ui/decorate-elements.ts'
 export * from './ui/join-styles.ts'
 export * from './ui/ssr.ts'
-export * from './ui/wire.ts'

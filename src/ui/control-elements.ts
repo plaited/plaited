@@ -11,11 +11,11 @@ import type {
   OnFormDisabledMessage,
   OnFormResetMessage,
   OnFormStateRestoreMessage,
-} from './control-elements.schema.ts'
+} from './control-elements.schemas.ts'
+import { controller } from './controller.ts'
 import { BOOLEAN_ATTRS } from './create-template.constants.ts'
 import { createTemplate, Fragment } from './create-template.ts'
 import type { Attrs, CustomElementTag, FunctionTemplate } from './create-template.types.ts'
-import { wire } from './wire.ts'
 
 export const CONTROLLER_TEMPLATE_IDENTIFIER = '🎛️' as const
 
@@ -75,14 +75,14 @@ export const controlElements = ({
               },
             })
           }
-          wire({
+          controller({
             root: this,
             trigger: this.#trigger,
             bThreads: this.#bThreads,
             useFeedback: this.#useFeedback,
             disconnectSet: this.#disconnectSet,
             useRestrictedTrigger: this.#useRestrictedTrigger,
-            useSnapShot: this.#useSnapshot,
+            useSnapshot: this.#useSnapshot,
           })
           this.#trigger<OnConnectedMessage>({ type: ELEMENT_CALLBACKS.on_connected })
         }

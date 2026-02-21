@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { type DefaultHandlers, isRulesFunction, type RulesFunction, SnapshotMessageSchema } from '../main.ts'
 import { isTypeOf, trueTypeOf } from '../utils.ts'
-import { SHELL_EVENTS, SWAP_MODES } from './wire.constants.ts'
+import { CONTROLLER_EVENTS, SWAP_MODES } from './controller.constants.ts'
 
 // ─── Server → Client Message Schemas ────────────────────────────────────────
 
@@ -38,7 +38,7 @@ export type SwapMode = z.infer<typeof SwapModeSchema>
  * @public
  */
 export const RenderMessageSchema = z.object({
-  type: z.literal(SHELL_EVENTS.render),
+  type: z.literal(CONTROLLER_EVENTS.render),
   detail: z.object({
     target: z.string(),
     html: z.string(),
@@ -60,7 +60,7 @@ export type RenderMessage = z.infer<typeof RenderMessageSchema>
  * @public
  */
 export const AttrsMessageSchema = z.object({
-  type: z.literal(SHELL_EVENTS.attrs),
+  type: z.literal(CONTROLLER_EVENTS.attrs),
   detail: z.object({
     target: z.string(),
     attr: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]).nullable()),
@@ -80,7 +80,7 @@ export type AttrsMessage = z.infer<typeof AttrsMessageSchema>
  * @public
  */
 export const StreamMessageSchema = z.object({
-  type: z.literal(SHELL_EVENTS.stream),
+  type: z.literal(CONTROLLER_EVENTS.stream),
   detail: z.object({
     target: z.string(),
     content: z.string(),
@@ -90,8 +90,17 @@ export const StreamMessageSchema = z.object({
 /** @public */
 export type StreamMessage = z.infer<typeof StreamMessageSchema>
 
+/** @public */
+export type UserAction = {
+  type: typeof CONTROLLER_EVENTS.user_action
+  detail: {
+    type: string
+    event: Event
+  }
+}
+
 export const UserActionMessageSchema = z.object({
-  type: z.literal(SHELL_EVENTS.user_action),
+  type: z.literal(CONTROLLER_EVENTS.user_action),
   detail: z.string(),
 })
 
@@ -99,7 +108,7 @@ export const UserActionMessageSchema = z.object({
 export type UserActionMessage = z.infer<typeof UserActionMessageSchema>
 
 export const RootConnectedMessageSchema = z.object({
-  type: z.literal(SHELL_EVENTS.root_connected),
+  type: z.literal(CONTROLLER_EVENTS.root_connected),
   detail: z.string(),
 })
 
@@ -116,7 +125,7 @@ export type RootConnectedMessage = z.infer<typeof RootConnectedMessageSchema>
  * @public
  */
 export const DisconnectMessageSchema = z.object({
-  type: z.literal(SHELL_EVENTS.disconnect),
+  type: z.literal(CONTROLLER_EVENTS.disconnect),
   detail: z.undefined().optional(),
 })
 
@@ -124,7 +133,7 @@ export const DisconnectMessageSchema = z.object({
 export type DisconnectMessage = z.infer<typeof DisconnectMessageSchema>
 
 export const UpdateBehavioralMessageSchema = z.object({
-  type: z.literal(SHELL_EVENTS.update_behavioral),
+  type: z.literal(CONTROLLER_EVENTS.update_behavioral),
   detail: z.httpUrl(),
 })
 
@@ -132,7 +141,7 @@ export const UpdateBehavioralMessageSchema = z.object({
 export type AddBThreadsMessage = z.infer<typeof UpdateBehavioralMessageSchema>
 
 export const BehavioralUpdatedMessageSchema = z.object({
-  type: z.literal(SHELL_EVENTS.behavioral_updated),
+  type: z.literal(CONTROLLER_EVENTS.behavioral_updated),
   detail: z.object({
     src: z.httpUrl(),
     threads: z.array(z.string()).optional(),
@@ -154,20 +163,14 @@ export type BThreadAddedMessage = z.infer<typeof BehavioralUpdatedMessageSchema>
  * @public
  */
 export const SnapshotEventSchema = z.object({
-  type: z.literal(SHELL_EVENTS.snapshot),
+  type: z.literal(CONTROLLER_EVENTS.snapshot),
   detail: SnapshotMessageSchema,
 })
 
 /** @public */
 export type SnapshotEvent = z.infer<typeof SnapshotEventSchema>
 
-type ShellMessage =
-  | RenderMessage
-  | AttrsMessage
-  | StreamMessage
-  | UserActionMessage
-  | DisconnectMessage
-  | AddBThreadsMessage
+type ShellMessage = RenderMessage | AttrsMessage | StreamMessage | UserAction | DisconnectMessage | AddBThreadsMessage
 
 export type ShellHandlers = {
   [M in ShellMessage as M['type']]: M['detail']

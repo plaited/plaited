@@ -1,6 +1,6 @@
 import { keyMirror } from '../utils.ts'
 
-export const SHELL_EVENTS = keyMirror(
+export const CONTROLLER_EVENTS = keyMirror(
   // Server → Client
   'attrs',
   'disconnect',
@@ -18,23 +18,26 @@ export const SHELL_EVENTS = keyMirror(
   'on_ws_error',
   'on_ws_message',
   'on_ws_open',
+  //Document lifecycle
+  'on_pagereveal',
+  'on_pageswap',
 )
 
 export const ALLOWED_EVENTS = [
-  SHELL_EVENTS.attrs,
-  SHELL_EVENTS.disconnect,
-  SHELL_EVENTS.render,
-  SHELL_EVENTS.stream,
-  SHELL_EVENTS.update_behavioral,
+  CONTROLLER_EVENTS.attrs,
+  CONTROLLER_EVENTS.disconnect,
+  CONTROLLER_EVENTS.render,
+  CONTROLLER_EVENTS.stream,
+  CONTROLLER_EVENTS.update_behavioral,
 ] as const
 
 export const SWAP_MODES = keyMirror('afterbegin', 'afterend', 'beforebegin', 'beforeend', 'innerHTML', 'outerHTML')
 
 export const CONSOLE_ERRORS = keyMirror(
-  `${SHELL_EVENTS.attrs}_element_not_found`,
-  `${SHELL_EVENTS.stream}_element_not_found`,
-  `${SHELL_EVENTS.update_behavioral}_error`,
-  `${SHELL_EVENTS.update_behavioral}_invalid_b_thread`,
+  `${CONTROLLER_EVENTS.attrs}_element_not_found`,
+  `${CONTROLLER_EVENTS.stream}_element_not_found`,
+  `${CONTROLLER_EVENTS.update_behavioral}_error`,
+  `${CONTROLLER_EVENTS.update_behavioral}_invalid_b_thread`,
   'ws_error_message',
   'ws_invalid_message',
 )

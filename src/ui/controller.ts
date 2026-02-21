@@ -29,9 +29,7 @@ import type {
   UseSnapshot,
 } from '../main.ts'
 import { BPEventSchema } from '../main.ts'
-import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from './create-template.constants.ts'
-import { DelegatedListener, delegates } from './delegated-listener.ts'
-import { CONSOLE_ERRORS, SHELL_EVENTS, SWAP_MODES } from './wire.constants.ts'
+import { CONSOLE_ERRORS, CONTROLLER_EVENTS, SWAP_MODES } from './controller.constants.ts'
 import type {
   BThreadAddedMessage,
   RootConnectedMessage,
@@ -40,8 +38,10 @@ import type {
   StreamMessage,
   SwapMode,
   UserActionMessage,
-} from './wire.schema.ts'
-import { UpdateBehavioralModuleSchema } from './wire.schema.ts'
+} from './controller.schemas.ts'
+import { UpdateBehavioralModuleSchema } from './controller.schemas.ts'
+import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from './create-template.constants.ts'
+import { DelegatedListener, delegates } from './delegated-listener.ts'
 
 /** @internal Retry status codes that warrant reconnection attempts. */
 const RETRY_STATUS_CODES = new Set([1006, 1012, 1013])
@@ -66,12 +66,15 @@ const bindTriggers = (subtree: DocumentFragment, trigger: (event: { type: string
     if (!raw) continue
     const pairs = raw.split(' ')
     for (const pair of pairs) {
-      const [domEvent, action] = pair.split(':')
-      if (!domEvent || !action) continue
-      const listener = new DelegatedListener((_: Event) => {
+      const [domEvent, type] = pair.split(':')
+      if (!domEvent || !type) continue
+      const listener = new DelegatedListener((event: Event) => {
         trigger({
-          type: SHELL_EVENTS.user_action,
-          detail: action,
+          type: CONTROLLER_EVENTS.user_action,
+          detail: {
+            type,
+            event,
+          },
         })
       })
       delegates.set(el, listener)
@@ -165,14 +168,14 @@ const updateAttributes = ({
  *
  * @public
  */
-export const wire = ({
+export const controller = ({
   trigger,
   root,
   bThreads,
   useFeedback,
   disconnectSet,
   useRestrictedTrigger,
-  useSnapShot,
+  useSnapshot,
 }: {
   trigger: Trigger
   root: Document | Element
@@ -180,7 +183,7 @@ export const wire = ({
   useFeedback: UseFeedback
   disconnectSet: Set<Disconnect>
   useRestrictedTrigger: UseRestrictedTrigger
-  useSnapShot: UseSnapshot
+  useSnapshot: UseSnapshot
 }) => {
   const pendingChunks: StreamMessage['detail'][] = []
   let flushScheduled = false
@@ -189,11 +192,11 @@ export const wire = ({
   let retryCount = 0
 
   const restrictedTrigger = useRestrictedTrigger([
-    SHELL_EVENTS.attrs,
-    SHELL_EVENTS.disconnect,
-    SHELL_EVENTS.render,
-    SHELL_EVENTS.stream,
-    SHELL_EVENTS.update_behavioral,
+    CONTROLLER_EVENTS.attrs,
+    CONTROLLER_EVENTS.disconnect,
+    CONTROLLER_EVENTS.render,
+    CONTROLLER_EVENTS.stream,
+    CONTROLLER_EVENTS.update_behavioral,
   ])
 
   const send = <T extends BPEvent>(message: T) => {
@@ -204,43 +207,43 @@ export const wire = ({
     if (socket?.readyState === WebSocket.OPEN) {
       return socket.send(JSON.stringify(message))
     }
-    !socket && trigger({ type: SHELL_EVENTS.connect })
+    !socket && trigger({ type: CONTROLLER_EVENTS.connect })
     socket?.addEventListener('open', fallback)
   }
 
   const callback = (evt: CloseEvent | MessageEvent) => {
-    evt instanceof MessageEvent && trigger({ type: SHELL_EVENTS.on_ws_message, detail: evt })
-    evt.type === 'open' && trigger({ type: SHELL_EVENTS.on_ws_open })
-    evt instanceof CloseEvent && RETRY_STATUS_CODES.has(evt.code) && trigger({ type: SHELL_EVENTS.retry })
-    evt.type === 'error' && trigger({ type: SHELL_EVENTS.on_ws_error, detail: evt })
+    evt instanceof MessageEvent && trigger({ type: CONTROLLER_EVENTS.on_ws_message, detail: evt })
+    evt.type === 'open' && trigger({ type: CONTROLLER_EVENTS.on_ws_open })
+    evt instanceof CloseEvent && RETRY_STATUS_CODES.has(evt.code) && trigger({ type: CONTROLLER_EVENTS.retry })
+    evt.type === 'error' && trigger({ type: CONTROLLER_EVENTS.on_ws_error, detail: evt })
   }
 
   disconnectSet.add(
-    useSnapShot((detail) =>
+    useSnapshot((detail) =>
       send<SnapshotEvent>({
-        type: SHELL_EVENTS.snapshot,
+        type: CONTROLLER_EVENTS.snapshot,
         detail,
       }),
     ),
   )
   // ─── Feedback handlers ─────────────────────────────────────────────
   const handlers: Handlers<ShellHandlers> = {
-    [SHELL_EVENTS.on_ws_error](evt: Event) {
+    [CONTROLLER_EVENTS.on_ws_error](evt: Event) {
       const target = evt.target as WebSocket
       throw new Error(`WebSocket error on ${target.url} (readyState: ${target.readyState})`)
     },
-    [SHELL_EVENTS.on_ws_message](evt: MessageEvent) {
+    [CONTROLLER_EVENTS.on_ws_message](evt: MessageEvent) {
       const result = BPEventSchema.parse(JSON.parse(evt.data))
       restrictedTrigger(result)
     },
-    [SHELL_EVENTS.on_ws_open]() {
+    [CONTROLLER_EVENTS.on_ws_open]() {
       retryCount = 0
       send<RootConnectedMessage>({
-        type: SHELL_EVENTS.root_connected,
+        type: CONTROLLER_EVENTS.root_connected,
         detail: root instanceof HTMLElement ? root.tagName.toLowerCase() : 'document',
       })
     },
-    [SHELL_EVENTS.connect]() {
+    [CONTROLLER_EVENTS.connect]() {
       socket = new WebSocket(self.location.origin.replace(/^http/, 'ws'))
       const listener = new DelegatedListener(callback)
       delegates.set(socket, listener)
@@ -249,23 +252,23 @@ export const wire = ({
       socket.addEventListener('error', listener)
       socket.addEventListener('close', listener)
     },
-    [SHELL_EVENTS.retry]() {
+    [CONTROLLER_EVENTS.retry]() {
       socket = undefined
       if (retryCount < MAX_RETRIES) {
         const max = Math.min(9999, 1000 * 2 ** retryCount)
-        setTimeout(() => trigger({ type: SHELL_EVENTS.connect }), Math.floor(Math.random() * max))
+        setTimeout(() => trigger({ type: CONTROLLER_EVENTS.connect }), Math.floor(Math.random() * max))
         retryCount++
       }
     },
-    [SHELL_EVENTS.disconnect]() {
+    [CONTROLLER_EVENTS.disconnect]() {
       socket?.close()
     },
-    [SHELL_EVENTS.render](detail) {
+    [CONTROLLER_EVENTS.render](detail) {
       const el = root.querySelector(`[${P_TARGET}="${detail.target}"]`)
       if (!el) return
       performSwap({ el, html: detail.html, swap: detail.swap ?? SWAP_MODES.innerHTML, trigger })
     },
-    [SHELL_EVENTS.attrs]({ target, attr }) {
+    [CONTROLLER_EVENTS.attrs]({ target, attr }) {
       const element = root.querySelector(`[${P_TARGET}="${target}"]`)
       if (!element) return console.error(CONSOLE_ERRORS.attrs_element_not_found, target)
       for (const key in attr) {
@@ -276,7 +279,7 @@ export const wire = ({
         })
       }
     },
-    [SHELL_EVENTS.stream](detail) {
+    [CONTROLLER_EVENTS.stream](detail) {
       pendingChunks.push(detail)
       if (!flushScheduled) {
         flushScheduled = true
@@ -294,16 +297,22 @@ export const wire = ({
         })
       }
     },
-    [SHELL_EVENTS.user_action](detail) {
-      send<UserActionMessage>({ type: SHELL_EVENTS.user_action, detail })
+    [CONTROLLER_EVENTS.user_action]({ type, event }) {
+      if (bThreads.has(type)) {
+        trigger({
+          type,
+          detail: event,
+        })
+      }
+      send<UserActionMessage>({ type: CONTROLLER_EVENTS.user_action, detail: type })
     },
-    async [SHELL_EVENTS.update_behavioral](detail) {
+    async [CONTROLLER_EVENTS.update_behavioral](detail) {
       const { default: module } = await import(detail)
       const { threads, handlers } = UpdateBehavioralModuleSchema.parse(module)
       threads && bThreads.set(threads)
       handlers && disconnectSet.add(useFeedback(handlers))
       send<BThreadAddedMessage>({
-        type: SHELL_EVENTS.behavioral_updated,
+        type: CONTROLLER_EVENTS.behavioral_updated,
         detail: {
           src: detail,
           threads: threads ? Object.keys(threads) : undefined,
@@ -314,5 +323,5 @@ export const wire = ({
   }
   disconnectSet.add(useFeedback(handlers))
 
-  trigger({ type: SHELL_EVENTS.connect })
+  trigger({ type: CONTROLLER_EVENTS.connect })
 }
