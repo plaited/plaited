@@ -1,6 +1,12 @@
-import { z } from 'zod'
+import * as z from 'zod'
 
-import { type DefaultHandlers, isRulesFunction, type RulesFunction, SnapshotMessageSchema } from '../main.ts'
+import {
+  type DefaultHandlers,
+  isRulesFunction,
+  type RulesFunction,
+  SnapshotMessageSchema,
+  type Trigger,
+} from '../behavioral.ts'
 import { isTypeOf, trueTypeOf } from '../utils.ts'
 import { CONTROLLER_EVENTS, SWAP_MODES } from './controller.constants.ts'
 
@@ -69,26 +75,6 @@ export const AttrsMessageSchema = z.object({
 
 /** @public */
 export type AttrsMessage = z.infer<typeof AttrsMessageSchema>
-
-/**
- * Schema for stream messages that append content incrementally
- *
- * @remarks
- * Used for streaming responses (e.g. LLM output) where content
- * arrives in chunks and is appended to the target element.
- *
- * @public
- */
-export const StreamMessageSchema = z.object({
-  type: z.literal(CONTROLLER_EVENTS.stream),
-  detail: z.object({
-    target: z.string(),
-    content: z.string(),
-  }),
-})
-
-/** @public */
-export type StreamMessage = z.infer<typeof StreamMessageSchema>
 
 /** @public */
 export type UserAction = {
@@ -170,23 +156,21 @@ export const SnapshotEventSchema = z.object({
 /** @public */
 export type SnapshotEvent = z.infer<typeof SnapshotEventSchema>
 
-type ShellMessage = RenderMessage | AttrsMessage | StreamMessage | UserAction | DisconnectMessage | AddBThreadsMessage
+type ShellMessage = RenderMessage | AttrsMessage | UserAction | DisconnectMessage | AddBThreadsMessage
 
 export type ShellHandlers = {
   [M in ShellMessage as M['type']]: M['detail']
 }
 
 /**
- * Schema for validating dynamically imported behavioral modules.
+ * Schema for the return value of a dynamically imported behavioral module.
  *
  * @remarks
- * After the client fetches a module URL from an `update_behavioral` message,
- * it `import()`s the module and validates its shape against this schema.
  * Both fields are optional — a module may provide only threads, only handlers, or both.
  *
  * @public
  */
-export const UpdateBehavioralModuleSchema = z.object({
+export const UpdateBehavioralResultSchema = z.object({
   threads: z.record(z.string(), z.custom<RulesFunction>(isRulesFunction)).optional(),
   handlers: z
     .custom<DefaultHandlers>((obj) => {
@@ -199,6 +183,24 @@ export const UpdateBehavioralModuleSchema = z.object({
       return true
     })
     .optional(),
+})
+
+/** @public */
+export type UpdateBehavioralResult = z.infer<typeof UpdateBehavioralResultSchema>
+
+/**
+ * Schema for validating dynamically imported behavioral modules.
+ *
+ * @remarks
+ * After the client fetches a module URL from an `update_behavioral` message,
+ * it `import()`s the module and validates its default export. The default
+ * export must be a function that receives {@link Trigger} and returns
+ * `{ threads?, handlers? }`.
+ *
+ * @public
+ */
+export const UpdateBehavioralModuleSchema = z.object({
+  default: z.custom<(trigger: Trigger) => UpdateBehavioralResult>((val) => trueTypeOf(val) === 'function'),
 })
 
 /** @public */

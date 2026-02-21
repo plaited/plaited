@@ -1,11 +1,11 @@
 /**
  * Client-side behavioral shell for the generative web UI.
- * Coordinates rendering, user input, streaming, and WebSocket lifecycle.
+ * Coordinates rendering, user input, and WebSocket lifecycle.
  *
  * @remarks
  * The shell is the only client-side JS beyond Level 2+ thread modules.
  * It manages its own WebSocket connection (with reconnection), receives
- * server messages (render/attrs/stream), applies them to the DOM via
+ * server messages (render/attrs), applies them to the DOM via
  * `setHTMLUnsafe`, and forwards user actions back to the server.
  *
  * Uses `setHTMLUnsafe` for DOM insertion because:
@@ -13,33 +13,20 @@
  * - Declarative shadow DOM (`<template shadowrootmode>`) must be parsed
  * - Safety is enforced server-side by `createTemplate`'s trusted gate
  *
- * Stream chunks are batched via `requestAnimationFrame` — multiple chunks arriving
- * within the same frame are flushed in a single DOM write.
- *
  * @public
  */
-import type {
-  BPEvent,
-  BThreads,
-  Disconnect,
-  Handlers,
-  Trigger,
-  UseFeedback,
-  UseRestrictedTrigger,
-  UseSnapshot,
-} from '../main.ts'
-import { BPEventSchema } from '../main.ts'
-import { CONSOLE_ERRORS, CONTROLLER_EVENTS, SWAP_MODES } from './controller.constants.ts'
+import type { BPEvent, BThreads, Disconnect, Handlers, Trigger, UseFeedback, UseSnapshot } from '../behavioral.ts'
+import { BPEventSchema } from '../behavioral.ts'
+import { CONTROLLER_ERRORS, CONTROLLER_EVENTS, SWAP_MODES } from './controller.constants.ts'
 import type {
   BThreadAddedMessage,
   RootConnectedMessage,
   ShellHandlers,
   SnapshotEvent,
-  StreamMessage,
   SwapMode,
   UserActionMessage,
 } from './controller.schemas.ts'
-import { UpdateBehavioralModuleSchema } from './controller.schemas.ts'
+import { UpdateBehavioralModuleSchema, UpdateBehavioralResultSchema } from './controller.schemas.ts'
 import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from './create-template.constants.ts'
 import { DelegatedListener, delegates } from './delegated-listener.ts'
 
@@ -158,7 +145,7 @@ const updateAttributes = ({
  * Factory for creating the client-side behavioral shell.
  *
  * @remarks
- * Wires up WebSocket lifecycle, DOM rendering, streaming, and user action forwarding.
+ * Wires up WebSocket lifecycle, DOM rendering, and user action forwarding.
  * The shell creates its own WebSocket connection with exponential backoff reconnection.
  *
  * All events originate internally — WebSocket messages and DOM events both use the
@@ -174,7 +161,7 @@ export const controller = ({
   bThreads,
   useFeedback,
   disconnectSet,
-  useRestrictedTrigger,
+  restrictedTrigger,
   useSnapshot,
 }: {
   trigger: Trigger
@@ -182,22 +169,12 @@ export const controller = ({
   bThreads: BThreads
   useFeedback: UseFeedback
   disconnectSet: Set<Disconnect>
-  useRestrictedTrigger: UseRestrictedTrigger
+  restrictedTrigger: Trigger
   useSnapshot: UseSnapshot
 }) => {
-  const pendingChunks: StreamMessage['detail'][] = []
-  let flushScheduled = false
   // ─── WebSocket lifecycle ───────────────────────────────────────────
   let socket: WebSocket | undefined
   let retryCount = 0
-
-  const restrictedTrigger = useRestrictedTrigger([
-    CONTROLLER_EVENTS.attrs,
-    CONTROLLER_EVENTS.disconnect,
-    CONTROLLER_EVENTS.render,
-    CONTROLLER_EVENTS.stream,
-    CONTROLLER_EVENTS.update_behavioral,
-  ])
 
   const send = <T extends BPEvent>(message: T) => {
     const fallback = () => {
@@ -270,30 +247,12 @@ export const controller = ({
     },
     [CONTROLLER_EVENTS.attrs]({ target, attr }) {
       const element = root.querySelector(`[${P_TARGET}="${target}"]`)
-      if (!element) return console.error(CONSOLE_ERRORS.attrs_element_not_found, target)
+      if (!element) return console.error(CONTROLLER_ERRORS.attrs_element_not_found, target)
       for (const key in attr) {
         updateAttributes({
           element,
           attr: key,
           val: attr[key]!,
-        })
-      }
-    },
-    [CONTROLLER_EVENTS.stream](detail) {
-      pendingChunks.push(detail)
-      if (!flushScheduled) {
-        flushScheduled = true
-        requestAnimationFrame(() => {
-          for (const chunk of pendingChunks) {
-            const el = root.querySelector(`[${P_TARGET}="${chunk.target}"]`)
-            if (!el) {
-              console.error(CONSOLE_ERRORS.stream_element_not_found, chunk.target)
-              continue
-            }
-            performSwap({ el, html: chunk.content, swap: SWAP_MODES.beforeend, trigger })
-          }
-          pendingChunks.length = 0
-          flushScheduled = false
         })
       }
     },
@@ -307,8 +266,9 @@ export const controller = ({
       send<UserActionMessage>({ type: CONTROLLER_EVENTS.user_action, detail: type })
     },
     async [CONTROLLER_EVENTS.update_behavioral](detail) {
-      const { default: module } = await import(detail)
-      const { threads, handlers } = UpdateBehavioralModuleSchema.parse(module)
+      const module = await import(detail)
+      const { default: factory } = UpdateBehavioralModuleSchema.parse(module)
+      const { threads, handlers } = UpdateBehavioralResultSchema.parse(factory(restrictedTrigger))
       threads && bThreads.set(threads)
       handlers && disconnectSet.add(useFeedback(handlers))
       send<BThreadAddedMessage>({

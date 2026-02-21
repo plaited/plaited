@@ -1,21 +1,95 @@
-import type { BThreads, Disconnect, Trigger, UseFeedback, UseRestrictedTrigger, UseSnapshot } from '../main.ts'
-import { behavioral } from '../main.ts'
-import { canUseDOM } from '../utils.ts'
-import { ELEMENT_CALLBACKS } from './control-elements.constants.ts'
-import type {
-  OnAdoptedMessage,
-  OnAttributeChangedMessage,
-  OnConnectedMessage,
-  OnDisconnectedMessage,
-  OnFormAssociatedMessage,
-  OnFormDisabledMessage,
-  OnFormResetMessage,
-  OnFormStateRestoreMessage,
-} from './control-elements.schemas.ts'
+import type { BThreads, Disconnect, Trigger, UseFeedback, UseSnapshot } from '../behavioral.ts'
+import { behavioral } from '../behavioral.ts'
+import { canUseDOM, keyMirror } from '../utils.ts'
+import { RESTRICTED_EVENTS } from './controller.constants.ts'
 import { controller } from './controller.ts'
 import { BOOLEAN_ATTRS } from './create-template.constants.ts'
 import { createTemplate, Fragment } from './create-template.ts'
 import type { Attrs, CustomElementTag, FunctionTemplate } from './create-template.types.ts'
+
+export const ELEMENT_CALLBACKS = keyMirror(
+  'on_adopted',
+  'on_attribute_changed',
+  'on_connected',
+  'on_disconnected',
+  'on_form_associated',
+  'on_form_disabled',
+  'on_form_reset',
+  'on_form_state_restore',
+)
+
+// ─── Element Callback Message Types ─────────────────────────────────────────
+
+/** @public */
+export type OnAdoptedMessage = {
+  type: typeof ELEMENT_CALLBACKS.on_adopted
+  detail?: undefined
+}
+
+/** @public */
+export type OnAttributeChangedMessage = {
+  type: typeof ELEMENT_CALLBACKS.on_attribute_changed
+  detail: {
+    name: string
+    oldValue: string | null
+    newValue: string | null
+  }
+}
+
+/** @public */
+export type OnConnectedMessage = {
+  type: typeof ELEMENT_CALLBACKS.on_connected
+  detail?: undefined
+}
+
+/** @public */
+export type OnDisconnectedMessage = {
+  type: typeof ELEMENT_CALLBACKS.on_disconnected
+  detail?: undefined
+}
+
+/** @public */
+export type OnFormAssociatedMessage = {
+  type: typeof ELEMENT_CALLBACKS.on_form_associated
+  detail: HTMLFormElement
+}
+
+/** @public */
+export type OnFormDisabledMessage = {
+  type: typeof ELEMENT_CALLBACKS.on_form_disabled
+  detail: boolean
+}
+
+/** @public */
+export type OnFormResetMessage = {
+  type: typeof ELEMENT_CALLBACKS.on_form_reset
+  detail?: undefined
+}
+
+/** @public */
+export type OnFormStateRestoreMessage = {
+  type: typeof ELEMENT_CALLBACKS.on_form_state_restore
+  detail: {
+    state: unknown
+    reason: 'autocomplete' | 'restore'
+  }
+}
+
+// ─── Derived Handler Type ───────────────────────────────────────────────────
+
+type ElementCallbackMessage =
+  | OnAdoptedMessage
+  | OnAttributeChangedMessage
+  | OnConnectedMessage
+  | OnDisconnectedMessage
+  | OnFormAssociatedMessage
+  | OnFormDisabledMessage
+  | OnFormResetMessage
+  | OnFormStateRestoreMessage
+
+export type BehavioralElementCallbackDetails = {
+  [M in ElementCallbackMessage as M['type']]: M['detail']
+}
 
 export const CONTROLLER_TEMPLATE_IDENTIFIER = '🎛️' as const
 
@@ -44,7 +118,7 @@ export const controlElements = ({
         #trigger: Trigger
         #useFeedback: UseFeedback
         #bThreads: BThreads
-        #useRestrictedTrigger: UseRestrictedTrigger
+        #restrictedTrigger: Trigger
         #useSnapshot: UseSnapshot
         constructor() {
           super()
@@ -52,7 +126,10 @@ export const controlElements = ({
           this.#trigger = trigger
           this.#useFeedback = useFeedback
           this.#bThreads = bThreads
-          this.#useRestrictedTrigger = useRestrictedTrigger
+          this.#restrictedTrigger = useRestrictedTrigger(
+            ...Object.values(RESTRICTED_EVENTS),
+            ...Object.values(ELEMENT_CALLBACKS),
+          )
           this.#useSnapshot = useSnapshot
         }
         attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
@@ -75,13 +152,14 @@ export const controlElements = ({
               },
             })
           }
+
           controller({
             root: this,
             trigger: this.#trigger,
             bThreads: this.#bThreads,
             useFeedback: this.#useFeedback,
             disconnectSet: this.#disconnectSet,
-            useRestrictedTrigger: this.#useRestrictedTrigger,
+            restrictedTrigger: this.#restrictedTrigger,
             useSnapshot: this.#useSnapshot,
           })
           this.#trigger<OnConnectedMessage>({ type: ELEMENT_CALLBACKS.on_connected })

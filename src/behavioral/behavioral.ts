@@ -453,22 +453,23 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
    * Creates a trigger scoped to a fixed set of allowed event types.
    *
    * @remarks
-   * Events not in the allowed set are rejected with a
+   * Events in the restricted set are rejected with a
    * `restricted_trigger_error` snapshot message — they never reach the BP engine.
+   * All other events pass through normally.
    * Uses Set for O(1) lookup. The returned trigger has the same signature
    * as the unbound {@link Trigger}.
    *
-   * @param allowed - Event type strings this trigger may dispatch
+   * @param restricted - Event type strings this trigger must reject
    * @returns A restricted {@link Trigger} function
    */
-  const useRestrictedTrigger: UseRestrictedTrigger = (allowed) => {
-    const set = new Set(allowed)
+  const useRestrictedTrigger: UseRestrictedTrigger = (...restricted) => {
+    const set = new Set(restricted)
     return <T extends BPEvent>(args: T) => {
-      if (!set.has(args.type as string)) {
+      if (set.has(args.type as string)) {
         const message = {
           ...args,
           kind: SNAPSHOT_MESSAGE_KINDS.restricted_trigger_error,
-          error: `Event type "${String(args.type)}" is not in the allowed set: [${[...set].join(', ')}]`,
+          error: `Event type "${String(args.type)}" is in the restricted set: [${[...set].join(', ')}]`,
         }
         snapshotPublisher?.(message)
         return

@@ -5,7 +5,7 @@
  */
 import { isTypeOf } from '../utils.ts'
 import { RULES_FUNCTION_IDENTIFIER } from './behavioral.constants.ts'
-import type { BPEvent, BSync, BThread, PlaitedTrigger, RulesFunction, Trigger } from './behavioral.types.ts'
+import type { BPEvent, BSync, BThread, RulesFunction } from './behavioral.types.ts'
 
 /**
  * Creates an event template function that randomly selects from provided events.
@@ -172,14 +172,3 @@ export const bSync: BSync = (syncPoint) =>
     },
     { $: RULES_FUNCTION_IDENTIFIER } as const,
   )
-
-/* @param trigger - The trigger function to check
- * @returns True if the trigger includes disconnect callback support
- *
- * Implementation notes:
- * - Uses Object.hasOwn for robust property checking (not affected by prototype)
- * - Critical for conditional cleanup registration in utilities
- * - Allows graceful handling of both trigger types in the codebase
- */
-export const isPlaitedTrigger = (trigger: Trigger): trigger is PlaitedTrigger =>
-  Object.hasOwn(trigger, 'addDisconnectCallback')

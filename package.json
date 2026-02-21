@@ -17,9 +17,9 @@
     "plaited": "./src/cli.ts"
   },
   "type": "module",
-  "main": "./src/main.ts",
+  "main": "./src/behavioral.ts",
   "exports": {
-    ".": "./src/main.ts",
+    ".": "./src/behavioral.ts",
     "./*.ts": "./src/*.ts",
     "./*.tsx": "./src/*.tsx",
     "./ui": "./src/ui.ts",

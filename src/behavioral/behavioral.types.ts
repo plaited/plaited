@@ -373,21 +373,22 @@ export type BThreads = {
 export type Trigger = <T extends BPEvent>(args: T) => void
 
 /**
- * Factory that creates a {@link Trigger} scoped to a fixed set of allowed event types.
- * Events not in the set are rejected with a snapshot error and never reach the BP engine.
+ * Factory that creates a {@link Trigger} that blocks a fixed set of restricted event types.
+ * Events in the restricted set are rejected with a snapshot error and never reach the BP engine.
+ * All other events pass through normally.
  *
- * @param allowed - Event type strings this trigger may dispatch
+ * @param restricted - Event type strings this trigger must reject
  * @returns A restricted {@link Trigger} function
  *
  * @remarks
- * Uses Set for O(1) lookup. Rejected events produce a `trigger_error`
+ * Uses Set for O(1) lookup. Rejected events produce a `restricted_trigger_error`
  * snapshot message for observability via {@link UseSnapshot}.
  *
  * @see {@link Trigger} for the base trigger type
  *
  * @public
  */
-export type UseRestrictedTrigger = (allowed: string[]) => Trigger
+export type UseRestrictedTrigger = (...restricted: string[]) => Trigger
 
 /**
  * Factory function that creates and initializes a new behavioral program instance.
@@ -417,46 +418,3 @@ export type Behavioral = <Details extends EventDetails = EventDetails>() => Read
   useSnapshot: UseSnapshot
   useRestrictedTrigger: UseRestrictedTrigger
 }>
-
-/* This allows resources or subscriptions initiated via the trigger's context
- * to be properly cleaned up when the context is destroyed.
- **/
-export type PlaitedTrigger = Trigger & {
-  addDisconnectCallback: (disconnect: Disconnect) => void
-}
-
-/**
- * Type definition for signal subscription function.
- * Enables event-based monitoring of signal value changes.
-
- */
-export type Listen = (eventType: string, trigger: Trigger | PlaitedTrigger, getLVC?: boolean) => Disconnect
-
-/**
- * @internal
- * Signal type for values that must have an initial value.
- * Guarantees get() never returns undefined.
- */
-export type SignalWithInitialValue<T> = {
-  set(value: T): void
-  listen: Listen
-  get(): T
-}
-
-/**
- * @internal
- * Signal type for optional values that may start undefined.
- * Useful for async data or optional state.
- */
-export type SignalWithoutInitialValue<T> = {
-  set(value?: T): void
-  listen: Listen
-  get(): T | undefined
-}
-
-/**
- * @internal
- * Union type for all signal variants.
- * Type system ensures correct usage based on initialization.
- */
-export type Signal<T> = SignalWithInitialValue<T> | SignalWithoutInitialValue<T>

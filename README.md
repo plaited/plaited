@@ -88,7 +88,7 @@ The vertical integration is reflected in the package structure:
 
 | Export | Description |
 |--------|-------------|
-| `plaited` | Core behavioral programming — `useBehavioral`, `useSignal`, `useWorker` |
+| `plaited` | Core behavioral programming — `useBehavioral`, `useSignal` |
 | `plaited/ui` | UI framework — templates, `bElement`, `createStyles` |
 | `plaited/utils` | Utility functions — type guards, helpers |
 | `plaited/testing` | Test utilities — `story` factory, Playwright integration |
