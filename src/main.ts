@@ -13,6 +13,7 @@
  */
 
 export * from './main/b-worker.ts'
+export * from './main/behavioral.schemas.ts'
 export * from './main/behavioral.ts'
 export type * from './main/behavioral.types.ts'
 export * from './main/behavioral.utils.ts'

@@ -822,6 +822,7 @@ type DetailedTableHTMLAttributes = DetailedHTMLAttributes & {
 type DetailedTemplateHTMLAttributes = DetailedHTMLAttributes & {
   shadowrootmode?: 'open' | 'closed'
   shadowrootdelegatesfocus?: boolean
+  shadowrootclonable?: boolean
 }
 
 /** Detailed attributes specific to the `<textarea>` element. */

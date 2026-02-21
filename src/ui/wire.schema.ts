@@ -1,15 +1,8 @@
 import { z } from 'zod'
 
-import { type BPEvent, isBPEvent } from '../main.ts'
-import { SHELL_EVENTS, SWAP_MODES } from './shell.constants.ts'
-
-/**
- * Schema for validating BPEvent objects.
- * Uses the framework's `isBPEvent` type guard for runtime validation.
- *
- * @public
- */
-export const BPEventSchema = z.custom<BPEvent>(isBPEvent)
+import { type DefaultHandlers, isRulesFunction, type RulesFunction, SnapshotMessageSchema } from '../main.ts'
+import { isTypeOf, trueTypeOf } from '../utils.ts'
+import { SHELL_EVENTS, SWAP_MODES } from './wire.constants.ts'
 
 // ─── Server → Client Message Schemas ────────────────────────────────────────
 
@@ -105,13 +98,13 @@ export const UserActionMessageSchema = z.object({
 /** @public */
 export type UserActionMessage = z.infer<typeof UserActionMessageSchema>
 
-export const RenderedMessageSchema = z.object({
-  type: z.literal(SHELL_EVENTS.rendered),
+export const RootConnectedMessageSchema = z.object({
+  type: z.literal(SHELL_EVENTS.root_connected),
   detail: z.string(),
 })
 
 /** @public */
-export type RenderedMessage = z.infer<typeof RenderedMessageSchema>
+export type RootConnectedMessage = z.infer<typeof RootConnectedMessageSchema>
 
 /**
  * Schema for disconnect messages sent from server to client
@@ -124,40 +117,86 @@ export type RenderedMessage = z.infer<typeof RenderedMessageSchema>
  */
 export const DisconnectMessageSchema = z.object({
   type: z.literal(SHELL_EVENTS.disconnect),
-  detail: z.undefined(),
+  detail: z.undefined().optional(),
 })
 
 /** @public */
 export type DisconnectMessage = z.infer<typeof DisconnectMessageSchema>
 
-export const AddBThreadsMessageSchema = z.object({
-  type: z.literal(SHELL_EVENTS.add_b_threads),
+export const UpdateBehavioralMessageSchema = z.object({
+  type: z.literal(SHELL_EVENTS.update_behavioral),
+  detail: z.httpUrl(),
+})
+
+/** @public */
+export type AddBThreadsMessage = z.infer<typeof UpdateBehavioralMessageSchema>
+
+export const BehavioralUpdatedMessageSchema = z.object({
+  type: z.literal(SHELL_EVENTS.behavioral_updated),
   detail: z.object({
     src: z.httpUrl(),
-    modules: z.array(z.string()),
+    threads: z.array(z.string()).optional(),
+    handlers: z.array(z.string()).optional(),
   }),
 })
 
 /** @public */
-export type AddBThreadsMessage = z.infer<typeof AddBThreadsMessageSchema>
+export type BThreadAddedMessage = z.infer<typeof BehavioralUpdatedMessageSchema>
 
-export const BThreadsAddedMessageSchema = z.object({
-  type: z.literal(SHELL_EVENTS.b_threads_added),
-  detail: AddBThreadsMessageSchema.shape.detail,
+/**
+ * Schema for snapshot messages sent from client to server.
+ *
+ * @remarks
+ * The shell forwards all BP engine snapshot observations (selection bids,
+ * feedback errors, restricted trigger rejections, b-thread warnings)
+ * to the server over WebSocket for server-side observability.
+ *
+ * @public
+ */
+export const SnapshotEventSchema = z.object({
+  type: z.literal(SHELL_EVENTS.snapshot),
+  detail: SnapshotMessageSchema,
 })
 
 /** @public */
-export type BThreadAddedMessage = z.infer<typeof BThreadsAddedMessageSchema>
+export type SnapshotEvent = z.infer<typeof SnapshotEventSchema>
 
 type ShellMessage =
   | RenderMessage
   | AttrsMessage
   | StreamMessage
   | UserActionMessage
-  | RenderedMessage
   | DisconnectMessage
   | AddBThreadsMessage
 
 export type ShellHandlers = {
   [M in ShellMessage as M['type']]: M['detail']
 }
+
+/**
+ * Schema for validating dynamically imported behavioral modules.
+ *
+ * @remarks
+ * After the client fetches a module URL from an `update_behavioral` message,
+ * it `import()`s the module and validates its shape against this schema.
+ * Both fields are optional — a module may provide only threads, only handlers, or both.
+ *
+ * @public
+ */
+export const UpdateBehavioralModuleSchema = z.object({
+  threads: z.record(z.string(), z.custom<RulesFunction>(isRulesFunction)).optional(),
+  handlers: z
+    .custom<DefaultHandlers>((obj) => {
+      const isObject = isTypeOf<Record<string, unknown>>(obj, 'object')
+      if (!isObject) return false
+      for (const val of Object.values(obj)) {
+        if (trueTypeOf(val) === 'function' || trueTypeOf(val) === 'asyncfunction') continue
+        return false
+      }
+      return true
+    })
+    .optional(),
+})
+
+/** @public */
+export type UpdateBehavioralModule = z.infer<typeof UpdateBehavioralModuleSchema>

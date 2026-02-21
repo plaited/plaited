@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { behavioral, bSync, bThread, type SnapshotMessage } from 'plaited'
+import { behavioral, bSync, bThread, type FeedbackError, type SnapshotMessage } from 'plaited'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
 
 /**
@@ -80,7 +80,7 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
     })
     trigger({ type: 'start' })
 
-    const errors = snapshots.filter((s) => s.kind === SNAPSHOT_MESSAGE_KINDS.feedback_error)
+    const errors = snapshots.filter((s): s is FeedbackError => s.kind === SNAPSHOT_MESSAGE_KINDS.feedback_error)
     expect(errors).toHaveLength(1)
     expect(errors[0]!.error).toBe('string error')
   })

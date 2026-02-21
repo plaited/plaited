@@ -1,5 +1,6 @@
 import { isTypeOf } from '../utils.ts'
 import { SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
+import type { SelectionBid, SnapshotMessage } from './behavioral.schemas.ts'
 import type {
   Behavioral,
   BPEvent,
@@ -10,11 +11,10 @@ import type {
   EventDetails,
   PendingBid,
   RunningBid,
-  SelectionBid,
   SelectionFormatter,
-  SnapshotMessage,
   Trigger,
   UseFeedback,
+  UseRestrictedTrigger,
   UseSnapshot,
 } from './behavioral.types.ts'
 
@@ -366,26 +366,33 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
    * @internal
    * Implementation of the public `useFeedback` hook.
    *
-   * This subscribes the provided handlers to the action publisher, which will
-   * invoke the appropriate handler whenever a matching event is selected.
-   * It returns a disconnect function that removes the subscription when called.
+   * Subscribes the provided handlers to the action publisher, invoking the
+   * appropriate handler whenever a matching event is selected.
+   * Returns a disconnect function that removes the subscription when called.
+   *
+   * @remarks
+   * The subscriber is async so both sync and async handlers are caught by
+   * the try/catch. Errors are published as `feedback_error` snapshot messages
+   * and logged to console. The publisher still fire-and-forgets the returned
+   * promise via `void cb(value)`, so the BP engine loop is never blocked.
    *
    * The generic type parameter `Details` enables type-safe handler mapping,
    * where each handler receives its correctly-typed detail payload.
    */
   const useFeedback: UseFeedback<Details> = (handlers) => {
-    const disconnect = actionPublisher.subscribe((data: BPEvent) => {
+    const disconnect = actionPublisher.subscribe(async (data: BPEvent) => {
       const { type, detail } = data
       if (Object.hasOwn(handlers, type)) {
         try {
-          void handlers[type]!(detail)
+          await handlers[type]!(detail)
         } catch (error) {
-          snapshotPublisher?.({
+          const message = {
             kind: SNAPSHOT_MESSAGE_KINDS.feedback_error,
             type,
             detail,
             error: error instanceof Error ? error.message : String(error),
-          })
+          }
+          snapshotPublisher?.(message)
         }
       }
     })
@@ -403,9 +410,13 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
     set: (threads) => {
       for (const thread in threads) {
         if (running.has(thread) || pending.has(thread)) {
-          console.warn(
-            `Thread "${thread}" already exists and cannot be replaced.  \nUse the 'interrupt' idiom to terminate threads explicitly.`,
-          )
+          const message = {
+            kind: SNAPSHOT_MESSAGE_KINDS.bthreads_warning,
+            thread,
+            warning: `Thread "${thread}" already exists and cannot be replaced. Use the 'interrupt' idiom to terminate threads explicitly.`,
+          }
+          snapshotPublisher?.(message)
+          console.warn(message)
           continue
         }
         running.set(thread, {
@@ -439,6 +450,35 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
 
   /**
    * @internal
+   * Creates a trigger scoped to a fixed set of allowed event types.
+   *
+   * @remarks
+   * Events not in the allowed set are rejected with a
+   * `restricted_trigger_error` snapshot message — they never reach the BP engine.
+   * Uses Set for O(1) lookup. The returned trigger has the same signature
+   * as the unbound {@link Trigger}.
+   *
+   * @param allowed - Event type strings this trigger may dispatch
+   * @returns A restricted {@link Trigger} function
+   */
+  const useRestrictedTrigger: UseRestrictedTrigger = (allowed) => {
+    const set = new Set(allowed)
+    return <T extends BPEvent>(args: T) => {
+      if (!set.has(args.type as string)) {
+        const message = {
+          ...args,
+          kind: SNAPSHOT_MESSAGE_KINDS.restricted_trigger_error,
+          error: `Event type "${String(args.type)}" is not in the allowed set: [${[...set].join(', ')}]`,
+        }
+        snapshotPublisher?.(message)
+        return
+      }
+      trigger(args)
+    }
+  }
+
+  /**
+   * @internal
    * Return the frozen public API object.
    *
    * Object.freeze ensures the API surface is immutable, preventing accidental
@@ -454,5 +494,8 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
     useFeedback,
     /** Hook to subscribe to internal state snapshots for monitoring/debugging. */
     useSnapshot,
+
+    /** Factory to create a trigger scoped to a fixed set of allowed event types. */
+    useRestrictedTrigger,
   })
 }

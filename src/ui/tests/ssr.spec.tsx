@@ -5,7 +5,7 @@ import { Fragment, h } from 'plaited/jsx-runtime'
 import {
   createHostStyles,
   createStyles,
-  declarativeElement,
+  decorateElements,
   type FunctionTemplate,
   joinStyles,
   ssr,
@@ -214,7 +214,7 @@ const styles = createStyles({
   },
 })
 
-const NestedCustomElement = declarativeElement({
+const NestedCustomElement = decorateElements({
   tag: 'nested-element',
   shadowDom: (
     <>
@@ -252,7 +252,7 @@ test('ssr: CustomElement with styled slotted element', () => {
   }).toMatchSnapshot()
 })
 
-const TopCustomElement = declarativeElement({
+const TopCustomElement = decorateElements({
   tag: 'top-element',
   shadowDom: (
     <NestedCustomElement {...styles.slottedParagraph}>

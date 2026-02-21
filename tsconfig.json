@@ -1,5 +1,5 @@
 {
-  "include": ["src", "scripts", "training"],
+  "include": ["src", "scripts"],
   "compilerOptions": {
     // Enable latest features
     "lib": ["ESNext", "DOM", "dom.iterable"],

@@ -166,9 +166,12 @@ export const isRulesFunction = (obj: unknown): obj is BThread =>
  * @see {@link Idioms} for synchronization options
  */
 export const bSync: BSync = (syncPoint) =>
-  function* () {
-    yield syncPoint
-  }
+  Object.assign(
+    function* () {
+      yield syncPoint
+    },
+    { $: RULES_FUNCTION_IDENTIFIER } as const,
+  )
 
 /* @param trigger - The trigger function to check
  * @returns True if the trigger includes disconnect callback support

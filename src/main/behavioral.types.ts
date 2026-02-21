@@ -1,4 +1,5 @@
-import type { RULES_FUNCTION_IDENTIFIER, SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
+import type { RULES_FUNCTION_IDENTIFIER } from './behavioral.constants.ts'
+import type { SelectionSnapshot, SnapshotMessage } from './behavioral.schemas.ts'
 
 /**
  * @internal
@@ -119,7 +120,10 @@ export type RulesFunction = {
  *
  * @see bSync The implementation of this type that creates reusable synchronization steps.
  */
-export type BSync = (arg: Idioms) => () => Generator<Idioms, void, unknown>
+export type BSync = (arg: Idioms) => {
+  (): Generator<Idioms, void, unknown>
+  $: typeof RULES_FUNCTION_IDENTIFIER
+}
 
 /**
  * A factory function that constructs a complete b-thread (`RulesFunction`) by composing multiple synchronization steps.
@@ -193,87 +197,6 @@ export type CandidateBid = {
  * @see {@link UseSnapshot} for snapshot listener cleanup
  */
 export type Disconnect = () => void | Promise<void>
-
-/**
- * Represents a snapshot of the behavioral program's state at a specific super-step.
- * Each element describes an active b-thread or event candidate.
- *
- * @property thread - Thread identifier (stringified if from trigger)
- * @property trigger - Whether bid originated from external trigger
- * @property selected - Whether this bid was selected for execution
- * @property type - Event type being requested or waited for
- * @property detail - Optional event payload data
- * @property priority - Priority level (lower = higher priority)
- * @property blockedBy - ID of blocking thread if blocked
- * @property interrupts - ID of interrupted thread if interrupting
- *
- * @remarks
- * - Array is sorted by priority
- * - Useful for debugging and visualization
- * - Shows complete program state per step
- *
- * @see {@link UseSnapshot} for subscribing to snapshots
- * @see {@link SnapshotListener} for handling snapshots
- */
-export type SelectionBid = {
-  /** The unique identifier of the thread associated with this bid (stringified if this bid originated from an external `trigger()` as they use a Symbol identifier). */
-  thread: string
-  /** Indicates if this bid originated from an external `trigger()` call (`true`) rather than a thread's `request` (`false`). */
-  trigger: boolean
-  /** Indicates if this specific bid (request) was the one selected for execution in the current step. */
-  selected: boolean
-  /** The type of event the thread is requesting or waiting for. */
-  type: string
-  /** Optional data payload associated with the event. */
-  detail?: unknown
-  /** The priority level assigned to the thread's bid. Lower numbers indicate higher priority. */
-  priority: number
-  /** If the event is blocked, contains the identifier of the thread that blocked it; otherwise, undefined. */
-  blockedBy?: string
-  /** If the event interrupts another thread when selected, contains the identifier of the interrupted thread; otherwise, undefined. */
-  interrupts?: string
-}
-
-/**
- * A snapshot of all bids considered during one event
-selection step.
- * Wraps the existing bid data in a discriminated
-envelope.
- *
- * @see {@link UseSnapshot} for subscribing to snapshots
- * @see {@link SnapshotMessage} for the full union
- */
-export type SelectionSnapshot = {
-  kind: typeof SNAPSHOT_MESSAGE_KINDS.selection
-  bids: SelectionBid[]
-}
-
-/**
- * A useFeedback handler threw during side-effect
-execution.
- * Published after the selection snapshot for this
-super-step has already been emitted.
- *
- * @see {@link UseSnapshot} for subscribing to snapshots
- * @see {@link SnapshotMessage} for the full union
- */
-export type FeedbackError = {
-  kind: typeof SNAPSHOT_MESSAGE_KINDS.feedback_error
-  type: string
-  detail?: unknown
-  error: string
-}
-
-/**
-   * Discriminated union of all observable moments from the
-  BP engine.
-   * Consumers narrow by the `kind` field.
-   *
-   * @see {@link SelectionSnapshot} for event selection
-  observations
-   * @see {@link FeedbackError} for feedback handler errors
-   */
-export type SnapshotMessage = SelectionSnapshot | FeedbackError
 
 /**
  * @internal
@@ -450,6 +373,23 @@ export type BThreads = {
 export type Trigger = <T extends BPEvent>(args: T) => void
 
 /**
+ * Factory that creates a {@link Trigger} scoped to a fixed set of allowed event types.
+ * Events not in the set are rejected with a snapshot error and never reach the BP engine.
+ *
+ * @param allowed - Event type strings this trigger may dispatch
+ * @returns A restricted {@link Trigger} function
+ *
+ * @remarks
+ * Uses Set for O(1) lookup. Rejected events produce a `trigger_error`
+ * snapshot message for observability via {@link UseSnapshot}.
+ *
+ * @see {@link Trigger} for the base trigger type
+ *
+ * @public
+ */
+export type UseRestrictedTrigger = (allowed: string[]) => Trigger
+
+/**
  * Factory function that creates and initializes a new behavioral program instance.
  * Returns an immutable API for thread management, event handling, and state monitoring.
  *
@@ -468,12 +408,14 @@ export type Trigger = <T extends BPEvent>(args: T) => void
  * @see {@link Trigger} for event injection
  * @see {@link UseFeedback} for event handling
  * @see {@link UseSnapshot} for state monitoring
+ * @see {@link UseRestrictedTrigger} for scoped triggers
  */
 export type Behavioral = <Details extends EventDetails = EventDetails>() => Readonly<{
   bThreads: BThreads
   trigger: Trigger
   useFeedback: UseFeedback<Details>
   useSnapshot: UseSnapshot
+  useRestrictedTrigger: UseRestrictedTrigger
 }>
 
 /* This allows resources or subscriptions initiated via the trigger's context
