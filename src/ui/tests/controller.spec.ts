@@ -190,6 +190,113 @@ describe('controller: mock diagnostics', () => {
   })
 })
 
+describe('controller: pipeline diagnostics', () => {
+  beforeEach(() => {
+    MockWebSocket.reset()
+    document.body.innerHTML = ''
+    Object.defineProperty(self, 'location', {
+      value: { origin: 'http://localhost:3457' },
+      writable: true,
+      configurable: true,
+    })
+  })
+
+  test('behavioral useFeedback handler fires on trigger', async () => {
+    // Isolates the BP engine pipeline — does trigger → useFeedback work at all?
+    const { trigger, useFeedback } = behavioral()
+    let handlerFired = false
+    useFeedback({
+      test_event: () => {
+        handlerFired = true
+      },
+    })
+    trigger({ type: 'test_event' })
+    await new Promise((r) => setTimeout(r, 50))
+    expect(handlerFired).toBe(true)
+  })
+
+  test('useFeedback handler can create MockWebSocket', async () => {
+    // Can a feedback handler create a MockWebSocket via the global?
+    const { trigger, useFeedback } = behavioral()
+    useFeedback({
+      create_ws: () => {
+        const ws = new WebSocket('ws://from-feedback')
+        // Log for CI visibility
+        console.log('[DIAG] WebSocket created in feedback handler, instances:', MockWebSocket.instances.length)
+        console.log('[DIAG] ws instanceof MockWebSocket:', ws instanceof (MockWebSocket as unknown as typeof WebSocket))
+      },
+    })
+    trigger({ type: 'create_ws' })
+    await new Promise((r) => setTimeout(r, 50))
+    expect(MockWebSocket.instances.length).toBe(1)
+    expect(MockWebSocket.instances[0]!.url).toBe('ws://from-feedback')
+  })
+
+  test('controller connect handler fires and creates WebSocket', async () => {
+    // Full controller pipeline with error capture via useSnapshot
+    const root = createTestRoot()
+    const { trigger, useFeedback, bThreads, useRestrictedTrigger, useSnapshot } = behavioral()
+    const disconnectSet = new Set<Disconnect>()
+    const restrictedTrigger = useRestrictedTrigger(
+      ...[
+        CONTROLLER_EVENTS.behavioral_updated,
+        CONTROLLER_EVENTS.root_connected,
+        CONTROLLER_EVENTS.user_action,
+        CONTROLLER_EVENTS.snapshot,
+        CONTROLLER_EVENTS.connect,
+        CONTROLLER_EVENTS.retry,
+        CONTROLLER_EVENTS.on_ws_error,
+        CONTROLLER_EVENTS.on_ws_message,
+        CONTROLLER_EVENTS.on_ws_open,
+      ],
+    )
+
+    // Spy: register BEFORE controller to observe the connect event
+    let connectEventPublished = false
+    useFeedback({
+      [CONTROLLER_EVENTS.connect]() {
+        connectEventPublished = true
+        console.log('[DIAG] connect event reached action publisher')
+        console.log(
+          '[DIAG] WebSocket global is MockWebSocket:',
+          WebSocket === (MockWebSocket as unknown as typeof WebSocket),
+        )
+        console.log('[DIAG] self.location.origin:', self.location.origin)
+      },
+    })
+
+    // Capture feedback errors from the snapshot publisher
+    const feedbackErrors: unknown[] = []
+    useSnapshot((detail) => {
+      const d = detail as Record<string, unknown>
+      if (d.kind === 'feedback_error') {
+        feedbackErrors.push(d)
+        console.error('[DIAG] FEEDBACK ERROR:', JSON.stringify(d))
+      }
+    })
+
+    controller({
+      trigger,
+      root,
+      bThreads,
+      useFeedback,
+      disconnectSet,
+      restrictedTrigger,
+      useSnapshot,
+    })
+
+    await new Promise((r) => setTimeout(r, 50))
+
+    console.log('[DIAG] connectEventPublished:', connectEventPublished)
+    console.log('[DIAG] feedbackErrors:', feedbackErrors.length)
+    console.log('[DIAG] MockWebSocket.instances:', MockWebSocket.instances.length)
+
+    expect(connectEventPublished).toBe(true)
+    expect(feedbackErrors.length).toBe(0)
+    expect(MockWebSocket.instances.length).toBeGreaterThanOrEqual(1)
+  })
+})
+
 describe('controller: WebSocket lifecycle', () => {
   beforeEach(() => {
     MockWebSocket.reset()
