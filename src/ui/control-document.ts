@@ -5,6 +5,15 @@ import { RESTRICTED_EVENTS } from './controller.constants.ts'
 import { controller } from './controller.ts'
 import { DelegatedListener, delegates } from './delegated-listener.ts'
 
+/**
+ * Document-level view transition event types exposed as BP event types.
+ *
+ * @remarks
+ * Fired by `controlDocument` when the browser dispatches `pagereveal`
+ * or `pageswap` during MPA view transitions.
+ *
+ * @public
+ */
 export const DOCUMENT_EVENTS = keyMirror('on_pagereveal', 'on_pageswap')
 
 // ─── Document Event Message Types ───────────────────────────────────────────

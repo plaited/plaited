@@ -147,6 +147,18 @@ export const bThread: BThread = (rules, repeat) => {
   )
 }
 
+/**
+ * Type guard that checks whether an unknown value is a `RulesFunction` (b-thread or b-sync).
+ *
+ * @remarks
+ * Returns `true` only for generator functions branded with `RULES_FUNCTION_IDENTIFIER`.
+ * Plain generator functions created outside `bThread`/`bSync` return `false`.
+ *
+ * @param obj - The value to test
+ * @returns `true` if `obj` is a branded `RulesFunction`
+ *
+ * @public
+ */
 export const isRulesFunction = (obj: unknown): obj is BThread =>
   isTypeOf<object>(obj, 'generatorfunction') && '$' in obj && obj.$ === RULES_FUNCTION_IDENTIFIER
 

@@ -13,6 +13,16 @@ const styles = createStyles({
   controller: { display: 'contents' },
 })
 
+/**
+ * Custom element lifecycle callback event types, exposed as BP event types.
+ *
+ * @remarks
+ * Each callback maps to a `BPEvent.type` that `controlIsland` fires into
+ * its behavioral program when the corresponding Custom Element lifecycle
+ * method is invoked by the browser.
+ *
+ * @public
+ */
 export const ELEMENT_CALLBACKS = keyMirror(
   'on_adopted',
   'on_attribute_changed',
@@ -93,18 +103,64 @@ type ElementCallbackMessage =
   | OnFormResetMessage
   | OnFormStateRestoreMessage
 
+/**
+ * Maps element callback event types to their detail payloads.
+ *
+ * @remarks
+ * Use as the `Details` type parameter for `behavioral<BehavioralElementCallbackDetails>()`
+ * to get type-safe handler signatures for all lifecycle callbacks.
+ *
+ * @public
+ */
 export type BehavioralElementCallbackDetails = {
   [M in ElementCallbackMessage as M['type']]: M['detail']
 }
 
+/**
+ * Brand identifier stamped onto `ControllerTemplate` function objects.
+ *
+ * @remarks
+ * Used at runtime to distinguish controller template functions from
+ * plain `FunctionTemplate` instances.
+ *
+ * @public
+ */
 export const CONTROLLER_TEMPLATE_IDENTIFIER = '🎛️' as const
 
+/**
+ * A template function branded as a controller island entry point.
+ *
+ * @remarks
+ * Returned by `controlIsland()`. Carries `tag`, `observedAttributes`, and
+ * the `$` brand so consumers can identify it as a controller template.
+ *
+ * @public
+ */
 export type ControllerTemplate = FunctionTemplate<ElementAttributeList['controlIsland']> & {
   tag: CustomElementTag
   observedAttributes: string[]
   $: typeof CONTROLLER_TEMPLATE_IDENTIFIER
 }
 
+/**
+ * Defines and registers a Custom Element that hosts a behavioral program.
+ *
+ * @remarks
+ * On first call (in a DOM environment), registers the custom element via
+ * `customElements.define()`. The element constructor creates a `behavioral()`
+ * instance and exposes a `restrictedTrigger` that blocks internal events
+ * (`RESTRICTED_EVENTS` + `ELEMENT_CALLBACKS`) from external callers.
+ *
+ * Lifecycle callbacks (`connectedCallback`, `attributeChangedCallback`, etc.)
+ * are forwarded as typed BP events into the element's behavioral program.
+ *
+ * @param options.tag - Custom element tag name (must contain a hyphen)
+ * @param options.observedAttributes - Attribute names to observe for changes
+ * @param options.formAssociated - If `true`, associates the element with a form
+ * @returns A branded `ControllerTemplate` function for use in SSR templates
+ *
+ * @public
+ */
 export const controlIsland = ({
   tag,
   observedAttributes = [],
