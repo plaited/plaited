@@ -76,7 +76,15 @@ export const AttrsMessageSchema = z.object({
 /** @public */
 export type AttrsMessage = z.infer<typeof AttrsMessageSchema>
 
-/** @public */
+/**
+ * Internal message shape for user actions forwarded from the DOM into the BP engine.
+ *
+ * @remarks
+ * Created by the `bindTriggers` helper when a p-trigger-bound element fires a DOM event.
+ * The `event` is the raw DOM event and `type` is the BP event type string.
+ *
+ * @internal
+ */
 export type UserAction = {
   type: typeof CONTROLLER_EVENTS.user_action
   detail: {
@@ -85,6 +93,15 @@ export type UserAction = {
   }
 }
 
+/**
+ * Schema for user action messages sent from client to server.
+ *
+ * @remarks
+ * When a p-trigger-bound DOM event fires, the shell serialises the action
+ * type string and sends it to the server for routing.
+ *
+ * @public
+ */
 export const UserActionMessageSchema = z.object({
   type: z.literal(CONTROLLER_EVENTS.user_action),
   detail: z.string(),
@@ -93,6 +110,16 @@ export const UserActionMessageSchema = z.object({
 /** @public */
 export type UserActionMessage = z.infer<typeof UserActionMessageSchema>
 
+/**
+ * Schema for the initial handshake message sent from client to server.
+ *
+ * @remarks
+ * Sent immediately after the WebSocket opens. The `detail` is the
+ * lowercase tag name of the root element (or `'document'` for
+ * `controlDocument`), allowing the server to identify which island connected.
+ *
+ * @public
+ */
 export const RootConnectedMessageSchema = z.object({
   type: z.literal(CONTROLLER_EVENTS.root_connected),
   detail: z.string(),
@@ -118,6 +145,16 @@ export const DisconnectMessageSchema = z.object({
 /** @public */
 export type DisconnectMessage = z.infer<typeof DisconnectMessageSchema>
 
+/**
+ * Schema for `update_behavioral` messages sent from server to client.
+ *
+ * @remarks
+ * The server sends this message to instruct the client to dynamically import
+ * a behavioral module from the given HTTP URL. The URL is validated with
+ * `z.httpUrl()` to prevent local file imports.
+ *
+ * @public
+ */
 export const UpdateBehavioralMessageSchema = z.object({
   type: z.literal(CONTROLLER_EVENTS.update_behavioral),
   detail: z.httpUrl(),
@@ -126,6 +163,14 @@ export const UpdateBehavioralMessageSchema = z.object({
 /** @public */
 export type AddBThreadsMessage = z.infer<typeof UpdateBehavioralMessageSchema>
 
+/**
+ * Schema for the acknowledgment sent from client to server after a behavioral module loads.
+ *
+ * @remarks
+ * Confirms which thread names and handler keys were registered from the module.
+ *
+ * @public
+ */
 export const BehavioralUpdatedMessageSchema = z.object({
   type: z.literal(CONTROLLER_EVENTS.behavioral_updated),
   detail: z.object({
@@ -158,6 +203,15 @@ export type SnapshotEvent = z.infer<typeof SnapshotEventSchema>
 
 type ShellMessage = RenderMessage | AttrsMessage | UserAction | DisconnectMessage | AddBThreadsMessage
 
+/**
+ * Maps shell message event types to their detail payloads.
+ *
+ * @remarks
+ * Used to type the `handlers` object inside `controller()`. Each key is a
+ * `CONTROLLER_EVENTS` string and each value is the corresponding detail type.
+ *
+ * @internal
+ */
 export type ShellHandlers = {
   [M in ShellMessage as M['type']]: M['detail']
 }

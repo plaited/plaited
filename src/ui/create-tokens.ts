@@ -99,26 +99,6 @@ const createTokenRef = (cssVar: `--${string}`, token: DesignToken): DesignTokenR
  * @returns Object mapping the identifier to token reference functions. Destructure to extract:
  *   `const { colors } = createTokens('colors', {...})`. Each token is a function returning CSS var() expressions.
  *
- * @example
- * ```typescript
- * // Simple tokens
- * const { colors } = createTokens('colors', {
- *   primary: { $value: '#007bff' },
- *   secondary: { $value: '#6c757d' },
- * })
- * colors.primary()  // 'var(--colors-primary)'
- *
- * // Nested scales
- * const { sizes } = createTokens('sizes', {
- *   icon: {
- *     sm: { $value: '16px' },
- *     md: { $value: '24px' },
- *     lg: { $value: '32px' },
- *   },
- * })
- * sizes.icon.sm()  // 'var(--sizes-icon-sm)'
- * ```
- *
  * @remarks
  * - Token names are converted to kebab-case CSS variable names (e.g., `primaryColor` → `--ident-primary-color`)
  * - Each token returns a function that outputs `var(--css-variable-name)`
