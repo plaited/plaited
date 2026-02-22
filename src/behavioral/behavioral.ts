@@ -48,6 +48,7 @@ const createPublisher = <T>() => {
       listeners.delete(listener)
     }
   }
+  publisher.size = () => listeners.size
   return publisher
 }
 
@@ -230,6 +231,7 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
     | {
         (value: SnapshotMessage): void
         subscribe(listener: (msg: SnapshotMessage) => void | Promise<void>): () => void
+        size(): number
       }
     | undefined
 
@@ -444,7 +446,7 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
     const unsubscribe = snapshotPublisher.subscribe(listener)
     return () => {
       unsubscribe()
-      snapshotPublisher = undefined
+      if (snapshotPublisher?.size() === 0) snapshotPublisher = undefined
     }
   }
 
