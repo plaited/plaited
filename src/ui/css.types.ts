@@ -107,6 +107,15 @@ export type CreateHostParams = {
 }
 
 /**
+ * Defines the parameter structure for css.host().
+ * Extends CSS properties with support for nested statements, custom properties,
+ * and compound selectors for conditional host styling.
+ */
+export type CreateRootParams = {
+  [key in keyof CSSProperties]: CSSProperties[key] | DesignTokenReference | NestedStatements
+}
+
+/**
  * Defines the structure for CSS `@keyframes` animations.
  * Allows specifying styles for different stages ('from', 'to', or percentage offsets) of an animation.
  */

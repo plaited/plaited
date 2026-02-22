@@ -81,7 +81,7 @@ const getTokenRule = ({
  */
 const createTokenRef = (cssVar: `--${string}`, token: DesignToken): DesignTokenReference => {
   const styles: string[] = []
-  styles.push(`:host{${getTokenRule({ cssVar, token, styles })}}`)
+  styles.push(`:root{${getTokenRule({ cssVar, token, styles })}}`)
   const getRef = (): `var(--${string})` => `var(${cssVar})`
   getRef.stylesheets = styles
   return getRef
@@ -124,7 +124,7 @@ const createTokenRef = (cssVar: `--${string}`, token: DesignToken): DesignTokenR
  * - Each token returns a function that outputs `var(--css-variable-name)`
  * - The returned function has a `stylesheets` property containing all required CSS declarations
  * - Token references can be composed to build complex design systems
- * - CSS custom properties are scoped to the `:host` selector for Shadow DOM encapsulation
+ * - CSS custom properties are scoped to the `:root` selector for Shadow DOM encapsulation
  *
  * @see {@link DesignTokenGroup} for the input type structure
  * @see {@link DesignTokenReferences} for the return type structure
