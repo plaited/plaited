@@ -54,10 +54,11 @@
     "check:package": "format-package --check",
     "check:types": "tsc --noEmit",
     "check:write": "biome check --write && format-package --write",
-    "copy-css-types": "bash scripts/copy-css-types.sh",
+    "copy:css-types": "bash scripts/copy-css-types.sh",
+    "copy:testing-assets": "cp src/ui/tests/controller-browser.spec.ts skills/ui-testing/assets/ && cp src/ui/tests/fixtures/serve.ts skills/ui-testing/assets/ && cp src/ui/tests/control-island.spec.ts skills/ui-testing/assets/ && cp src/ui/tests/controller.schemas.spec.ts skills/ui-testing/assets/",
     "dev": "bun --hot src/cli.ts dev src/ui",
     "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .hooks || true",
-    "test": "bun run test:stories src/ui && bun test",
+    "test": "bun run test:stories src/ui && bun test src/",
     "test:playwright": "bunx playwright test",
     "test:stories": "bun src/cli.ts test",
     "test:stories-ui": "bun run test:stories src/ui"

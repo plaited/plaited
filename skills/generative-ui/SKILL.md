@@ -351,5 +351,6 @@ const html = render(<div {...styles.card}><h2 {...styles.title}>Hello</h2></div>
 ## Related Skills
 
 - **behavioral-core** - BP fundamentals (bThread, bSync, event selection)
+- **ui-testing** - Three-layer test strategy for UI components and controller protocol
 - **typescript-lsp** - Type verification for protocol schemas
 - **code-documentation** - TSDoc standards for generated code

@@ -8,7 +8,7 @@
  */
 import { bSync, bThread } from '../../../behavioral.ts'
 
-const factory = (trigger: (event: { type: string; detail?: unknown }) => void) => {
+const factory = (_trigger: (event: { type: string; detail?: unknown }) => void) => {
   ;(globalThis as Record<string, unknown>).__behavioralModuleLoaded = true
   return {
     threads: {
