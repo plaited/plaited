@@ -172,11 +172,29 @@ const Card = decorateElements({
 // <ui-card><template shadowrootmode="open">...</template>children</ui-card>
 ```
 
+## Script Execution in Dynamic Renders
+
+**Inline `<script>` tags in `render` messages do NOT execute.** This is a browser spec limitation, not a Plaited design choice.
+
+The HTML specification marks scripts inserted via any fragment parsing API (`innerHTML`, `setHTMLUnsafe`, `DOMParser`) as "parser-inserted" and suppresses execution. This applies to ALL content delivered via `render` messages — the controller uses `template.setHTMLUnsafe(html)` → `DocumentFragment` → DOM insertion.
+
+| Method | Script in DOM? | Executes? |
+|--------|---------------|-----------|
+| `render` message (setHTMLUnsafe) | Yes | **No** |
+| `innerHTML` | Yes | **No** |
+| `document.createElement('script')` + append | Yes | Yes |
+| Initial page load `<script>` | Yes | Yes |
+
+**Implications for agents:**
+- `<script>` tags can be included in the **initial HTML page** served over HTTP (they execute normally during page parse)
+- For dynamic client-side code after initial load, use `update_behavioral` + `import(url)` — this is the **only** supported path
+- Inline event handlers (`onclick`, `onerror`) DO work in rendered HTML, but `p-trigger` is the preferred pattern
+
 ## Dynamic Behavioral Code Loading
 
 **[update-behavioral.md](references/update-behavioral.md)** - Complete dynamic loading documentation
 
-This is the key to **generative UI** — the server can command the client to load behavioral code at runtime.
+This is the key to **generative UI** — the server can command the client to load behavioral code at runtime. Because inline `<script>` tags in render messages are inert (see above), `update_behavioral` is the only mechanism for adding client-side logic after initial page load.
 
 ### Server Sends Module URL
 

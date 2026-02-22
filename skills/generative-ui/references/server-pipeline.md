@@ -175,6 +175,9 @@ const page = render(
 | Protection | Mechanism |
 |-----------|-----------|
 | XSS in text content | Automatic `htmlEscape()` |
-| Script injection | `<script>` requires `trusted` attribute |
+| Script in SSR templates | `<script>` requires `trusted` attribute to bypass escaping |
+| Script in dynamic renders | Inline `<script>` tags are inert (browser spec); use `update_behavioral` |
 | Event handler injection | `on*` attributes throw; use `p-trigger` |
 | Attribute injection | Only primitive values allowed |
+
+**Note:** The `trusted` attribute on `<script>` controls SSR template escaping — it tells `createTemplate` to allow the script content without HTML-escaping. However, scripts in the initial page load execute normally because they are parsed by the browser's HTML parser. Scripts delivered via `render` messages (which use `setHTMLUnsafe`) do NOT execute regardless of `trusted`, because the HTML spec marks fragment-parsed scripts as "parser-inserted" and suppresses execution.
