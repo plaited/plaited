@@ -2,6 +2,42 @@ import type { AGENT_EVENTS } from './agent.constants.ts'
 import type { AgentPlan, AgentToolCall, GateDecision, ToolResult, TrajectoryStep } from './agent.schemas.ts'
 
 // ============================================================================
+// Tool Context + Handler — used by tool executor implementations
+// ============================================================================
+
+/** Context passed to tool handlers */
+export type ToolContext = {
+  workspace: string
+}
+
+/**
+ * A tool implementation that executes a specific tool.
+ *
+ * @remarks
+ * Receives parsed arguments and a workspace context.
+ * Returned value becomes the `output` field of a `ToolResult`.
+ *
+ * @public
+ */
+export type ToolHandler = (args: Record<string, unknown>, ctx: ToolContext) => Promise<unknown>
+
+// ============================================================================
+// Gate Check — pluggable gate evaluation
+// ============================================================================
+
+/**
+ * Gate evaluation function — decides whether a tool call is approved.
+ *
+ * @remarks
+ * Returned by `createGateCheck()`. The agent loop calls this for each
+ * proposed tool call. Returns a `GateDecision` with approval status
+ * and risk classification.
+ *
+ * @public
+ */
+export type GateCheck = (toolCall: AgentToolCall) => GateDecision
+
+// ============================================================================
 // Inference Call — testing seam for model interaction
 // ============================================================================
 

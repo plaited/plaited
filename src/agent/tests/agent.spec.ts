@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test'
-import { TOOL_STATUS } from '../agent.constants.ts'
+import { RISK_CLASS, TOOL_STATUS } from '../agent.constants.ts'
 import type { AgentToolCall, ToolResult } from '../agent.schemas.ts'
 import { TrajectoryStepSchema } from '../agent.schemas.ts'
 import { createAgentLoop } from '../agent.ts'
-import type { InferenceCall } from '../agent.types.ts'
+import type { GateCheck, InferenceCall } from '../agent.types.ts'
 
 // ============================================================================
 // Test helpers
@@ -47,6 +47,15 @@ const messageResponse = (content: string) => ({ content })
 const thinkingResponse = (thinking: string, content: string) => ({
   reasoning_content: thinking,
   content,
+})
+
+/** Shorthand for a multi-tool_calls response */
+const multiToolCallResponse = (...calls: Array<[id: string, name: string, args?: Record<string, unknown>]>) => ({
+  tool_calls: calls.map(([id, name, args = {}]) => ({
+    id,
+    type: 'function' as const,
+    function: { name, arguments: JSON.stringify(args) },
+  })),
 })
 
 // ============================================================================
@@ -397,6 +406,200 @@ describe('createAgentLoop', () => {
       expect(step.timestamp).toBeGreaterThanOrEqual(before)
       expect(step.timestamp).toBeLessThanOrEqual(after)
     }
+
+    loop.destroy()
+  })
+})
+
+// ============================================================================
+// Gate Check Integration
+// ============================================================================
+
+describe('createAgentLoop — gateCheck integration', () => {
+  test('rejection triggers gate_rejected and re-invokes inference', async () => {
+    const rejectAll: GateCheck = (tc) => ({
+      approved: false,
+      riskClass: RISK_CLASS.high_ambiguity,
+      reason: `Blocked: ${tc.name}`,
+    })
+
+    const inference = createMockInference([
+      toolCallResponse('tc-1', 'bash', { command: 'echo hi' }),
+      // After rejection, model responds with a message
+      messageResponse('I cannot run bash commands.'),
+    ])
+    const toolExecutor = createMockToolExecutor({})
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      gateCheck: rejectAll,
+    })
+
+    const result = await loop.run('Run echo hi')
+    expect(result.output).toBe('I cannot run bash commands.')
+
+    // No tool_call steps in trajectory (rejected before execution)
+    const toolCalls = result.trajectory.filter((s) => s.type === 'tool_call')
+    expect(toolCalls).toHaveLength(0)
+
+    loop.destroy()
+  })
+
+  test('defaults to approve-all when gateCheck not provided', async () => {
+    const inference = createMockInference([
+      toolCallResponse('tc-1', 'read_file', { path: 'file.ts' }),
+      messageResponse('File contents here.'),
+    ])
+    const toolExecutor = createMockToolExecutor({ read_file: 'contents' })
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      // No gateCheck — should default to approve-all
+    })
+
+    const result = await loop.run('Read file')
+    expect(result.output).toBe('File contents here.')
+
+    const toolCalls = result.trajectory.filter((s) => s.type === 'tool_call')
+    expect(toolCalls).toHaveLength(1)
+
+    loop.destroy()
+  })
+})
+
+// ============================================================================
+// Multi-Tool Support
+// ============================================================================
+
+describe('createAgentLoop — multi-tool', () => {
+  test('processes all tool calls sequentially', async () => {
+    const executedTools: string[] = []
+    const toolExecutor = async (toolCall: AgentToolCall): Promise<ToolResult> => {
+      executedTools.push(toolCall.name)
+      return {
+        toolCallId: toolCall.id,
+        name: toolCall.name,
+        status: TOOL_STATUS.completed,
+        output: `Result for ${toolCall.name}`,
+      }
+    }
+
+    const inference = createMockInference([
+      // Single response with 3 tool calls
+      multiToolCallResponse(
+        ['tc-1', 'read_file', { path: '/a.ts' }],
+        ['tc-2', 'read_file', { path: '/b.ts' }],
+        ['tc-3', 'write_file', { path: '/c.ts', content: 'merged' }],
+      ),
+      // After all 3 processed, final message
+      messageResponse('Merged successfully.'),
+    ])
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+    })
+
+    const result = await loop.run('Merge files')
+    expect(result.output).toBe('Merged successfully.')
+
+    // All 3 tools should have been executed
+    expect(executedTools).toEqual(['read_file', 'read_file', 'write_file'])
+
+    const toolCalls = result.trajectory.filter((s) => s.type === 'tool_call')
+    expect(toolCalls).toHaveLength(3)
+
+    loop.destroy()
+  })
+
+  test('gate rejection skips to next tool call', async () => {
+    const executedTools: string[] = []
+    const toolExecutor = async (toolCall: AgentToolCall): Promise<ToolResult> => {
+      executedTools.push(toolCall.name)
+      return {
+        toolCallId: toolCall.id,
+        name: toolCall.name,
+        status: TOOL_STATUS.completed,
+        output: `Result for ${toolCall.name}`,
+      }
+    }
+
+    // Gate that only rejects bash
+    const gateCheck: GateCheck = (tc) => {
+      if (tc.name === 'bash') {
+        return { approved: false, riskClass: RISK_CLASS.high_ambiguity, reason: 'Bash blocked' }
+      }
+      return { approved: true, riskClass: RISK_CLASS.read_only }
+    }
+
+    const inference = createMockInference([
+      // Response with bash (blocked) + read_file (allowed)
+      multiToolCallResponse(['tc-1', 'bash', { command: 'rm stuff' }], ['tc-2', 'read_file', { path: '/safe.ts' }]),
+      // After processing both, final message
+      messageResponse('Completed with one rejection.'),
+    ])
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      gateCheck,
+    })
+
+    const result = await loop.run('Run bash and read file')
+    expect(result.output).toBe('Completed with one rejection.')
+
+    // Only read_file should have been executed (bash was rejected)
+    expect(executedTools).toEqual(['read_file'])
+
+    const toolCalls = result.trajectory.filter((s) => s.type === 'tool_call')
+    expect(toolCalls).toHaveLength(1)
+
+    loop.destroy()
+  })
+
+  test('re-invokes inference after all tool calls processed', async () => {
+    let inferenceCallCount = 0
+    const inference: InferenceCall = async () => {
+      inferenceCallCount++
+      if (inferenceCallCount === 1) {
+        // First call: return 2 tool calls
+        return {
+          choices: [
+            {
+              message: {
+                tool_calls: [
+                  { id: 'tc-1', type: 'function', function: { name: 'read_file', arguments: '{"path":"a.ts"}' } },
+                  { id: 'tc-2', type: 'function', function: { name: 'read_file', arguments: '{"path":"b.ts"}' } },
+                ],
+              },
+            },
+          ],
+        }
+      }
+      // Second call (after both tools processed): final message
+      return { choices: [{ message: { content: 'Done reading both files.' } }] }
+    }
+
+    const toolExecutor = createMockToolExecutor({ read_file: 'file contents' })
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+    })
+
+    const result = await loop.run('Read both files')
+    expect(result.output).toBe('Done reading both files.')
+
+    // Inference should have been called exactly 2 times:
+    // 1st: returns 2 tool calls, 2nd: returns final message
+    expect(inferenceCallCount).toBe(2)
 
     loop.destroy()
   })

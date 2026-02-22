@@ -45,3 +45,14 @@ export const RISK_CLASS = keyMirror('read_only', 'side_effects', 'high_ambiguity
  * @public
  */
 export const TOOL_STATUS = keyMirror('pending', 'completed', 'failed')
+
+/**
+ * Built-in tool names provided by the agent framework.
+ *
+ * @remarks
+ * These tools have default implementations in `createToolExecutor()`.
+ * Custom tool handlers with the same name override the built-in ones.
+ *
+ * @public
+ */
+export const BUILT_IN_TOOLS = keyMirror('read_file', 'write_file', 'list_files', 'bash')

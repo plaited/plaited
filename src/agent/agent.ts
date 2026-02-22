@@ -3,7 +3,14 @@ import { bSync, bThread } from '../behavioral/behavioral.utils.ts'
 import { AGENT_EVENTS, RISK_CLASS, TOOL_STATUS } from './agent.constants.ts'
 import type { AgentPlan, AgentToolCall, TrajectoryStep } from './agent.schemas.ts'
 import { AgentConfigSchema } from './agent.schemas.ts'
-import type { AgentEventDetails, AgentLoop, ChatMessage, InferenceCall, ToolExecutor } from './agent.types.ts'
+import type {
+  AgentEventDetails,
+  AgentLoop,
+  ChatMessage,
+  GateCheck,
+  InferenceCall,
+  ToolExecutor,
+} from './agent.types.ts'
 import { buildContextMessages, createTrajectoryRecorder, parseModelResponse } from './agent.utils.ts'
 
 const SAVE_PLAN_TOOL = 'save_plan'
@@ -13,14 +20,15 @@ const SAVE_PLAN_TOOL = 'save_plan'
  * Context → Reason → Gate → Simulate → Evaluate → Execute.
  *
  * @remarks
- * - **Gate** is stubbed to approve-all with `read_only` risk class
+ * - **Gate** uses provided `gateCheck` or defaults to approve-all with `read_only` risk class
  * - **Simulate/Evaluate** events are defined but not handled (deferred)
  * - **maxIterations** safety is a bThread that blocks `execute` after the limit
- * - **Multi-tool** is deferred — only the first tool call per response is processed
+ * - **Multi-tool** processes all tool calls per response sequentially through the gate
  *
  * @param options.config - Agent configuration (model, baseUrl, tools, etc.)
  * @param options.inferenceCall - Testing seam for model inference
  * @param options.toolExecutor - Testing seam for tool execution
+ * @param options.gateCheck - Optional gate evaluation function (defaults to approve-all)
  * @returns An `AgentLoop` with `run(prompt)` and `destroy()` methods
  *
  * @public
@@ -29,6 +37,7 @@ export const createAgentLoop = ({
   config: rawConfig,
   inferenceCall,
   toolExecutor,
+  gateCheck,
 }: {
   config: {
     model: string
@@ -40,6 +49,7 @@ export const createAgentLoop = ({
   }
   inferenceCall: InferenceCall
   toolExecutor: ToolExecutor
+  gateCheck?: GateCheck
 }): AgentLoop => {
   // Parse config to apply defaults (maxIterations: 50, temperature: 0)
   const { model, tools, systemPrompt, maxIterations, temperature } = AgentConfigSchema.parse(rawConfig)
@@ -54,6 +64,30 @@ export const createAgentLoop = ({
   const history: ChatMessage[] = []
   let currentPlan: AgentPlan | null = null
   let rejections: Array<{ toolCall: AgentToolCall; reason: string }> = []
+
+  // Multi-tool: pending queue for sequential processing of tool calls
+  let pendingToolCalls: AgentToolCall[] = []
+
+  // ---------------------------------------------------------------------------
+  // Helper: process next pending tool call or re-invoke inference
+  // ---------------------------------------------------------------------------
+  const processNextOrInfer = async () => {
+    if (done) return
+    if (pendingToolCalls.length > 0) {
+      const next = pendingToolCalls.shift()!
+      trigger({ type: AGENT_EVENTS.proposed_action, detail: { toolCall: next } })
+    } else {
+      rejections = []
+      try {
+        const response = await callInference()
+        if (done) return
+        trigger({ type: AGENT_EVENTS.model_response, detail: { parsed: parseModelResponse(response), raw: response } })
+      } catch (error) {
+        if (done) return
+        handleInferenceError(error)
+      }
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // Helper: call inference with current context
@@ -137,34 +171,52 @@ export const createAgentLoop = ({
       }
       history.push(assistantMsg)
 
-      // Route: first tool call only (multi-tool deferred)
-      const firstToolCall = parsed.toolCalls[0]
-      if (firstToolCall) {
-        if (firstToolCall.name === SAVE_PLAN_TOOL) {
-          const plan = firstToolCall.arguments as unknown as AgentPlan
-          // Add synthetic tool result for save_plan to keep history balanced
-          history.push({
-            role: 'tool',
-            content: JSON.stringify({ saved: true, goal: plan.goal }),
-            tool_call_id: firstToolCall.id,
-          })
-          trigger({ type: AGENT_EVENTS.save_plan, detail: { plan } })
+      // Separate save_plan calls from action calls
+      const savePlanCalls: AgentToolCall[] = []
+      const actionCalls: AgentToolCall[] = []
+      for (const tc of parsed.toolCalls) {
+        if (tc.name === SAVE_PLAN_TOOL) {
+          savePlanCalls.push(tc)
         } else {
-          trigger({ type: AGENT_EVENTS.proposed_action, detail: { toolCall: firstToolCall } })
+          actionCalls.push(tc)
         }
-      } else if (parsed.message) {
-        trigger({ type: AGENT_EVENTS.message, detail: { content: parsed.message } })
-      } else {
-        // Empty response — terminate with empty output
-        trigger({ type: AGENT_EVENTS.message, detail: { content: '' } })
       }
+
+      // Handle save_plan calls immediately (synthetic tool results)
+      for (const tc of savePlanCalls) {
+        const plan = tc.arguments as unknown as AgentPlan
+        history.push({
+          role: 'tool',
+          content: JSON.stringify({ saved: true, goal: plan.goal }),
+          tool_call_id: tc.id,
+        })
+        trigger({ type: AGENT_EVENTS.save_plan, detail: { plan } })
+      }
+
+      // Queue action calls and start processing
+      if (actionCalls.length > 0) {
+        pendingToolCalls = actionCalls.slice(1)
+        trigger({ type: AGENT_EVENTS.proposed_action, detail: { toolCall: actionCalls[0]! } })
+      } else if (savePlanCalls.length === 0) {
+        // No tool calls at all — route by message content
+        if (parsed.message) {
+          trigger({ type: AGENT_EVENTS.message, detail: { content: parsed.message } })
+        } else {
+          trigger({ type: AGENT_EVENTS.message, detail: { content: '' } })
+        }
+      }
+      // If only save_plan calls, plan_saved handler will re-invoke inference
     },
 
-    // Step 3: Gate — evaluate proposed tool call (stub: approve all)
+    // Step 3: Gate — evaluate proposed tool call
     [AGENT_EVENTS.proposed_action]: (detail) => {
       if (done) return
-      const decision = { approved: true, riskClass: RISK_CLASS.read_only }
-      trigger({ type: AGENT_EVENTS.gate_approved, detail: { toolCall: detail.toolCall, decision } })
+      const decision = gateCheck?.(detail.toolCall) ?? { approved: true, riskClass: RISK_CLASS.read_only }
+      if (decision.approved) {
+        trigger({ type: AGENT_EVENTS.gate_approved, detail: { toolCall: detail.toolCall, decision } })
+      } else {
+        trigger({ type: AGENT_EVENTS.gate_rejected, detail: { toolCall: detail.toolCall, decision } })
+      }
     },
 
     [AGENT_EVENTS.gate_approved]: (detail) => {
@@ -177,15 +229,15 @@ export const createAgentLoop = ({
 
     [AGENT_EVENTS.gate_rejected]: async (detail) => {
       if (done) return
-      rejections.push({ toolCall: detail.toolCall, reason: detail.decision.reason ?? 'Rejected' })
-      try {
-        const response = await callInference()
-        if (done) return
-        trigger({ type: AGENT_EVENTS.model_response, detail: { parsed: parseModelResponse(response), raw: response } })
-      } catch (error) {
-        if (done) return
-        handleInferenceError(error)
-      }
+      const reason = detail.decision.reason ?? 'Rejected'
+      rejections.push({ toolCall: detail.toolCall, reason })
+      // Add synthetic tool result to history so the model sees the rejection
+      history.push({
+        role: 'tool',
+        content: JSON.stringify({ error: `Rejected: ${reason}` }),
+        tool_call_id: detail.toolCall.id,
+      })
+      await processNextOrInfer()
     },
 
     // Step 6: Execute — run the tool, record trajectory
@@ -241,18 +293,9 @@ export const createAgentLoop = ({
       }
     },
 
-    // After tool result: re-invoke inference for next step
+    // After tool result: process next pending or re-invoke inference
     [AGENT_EVENTS.tool_result]: async () => {
-      if (done) return
-      rejections = []
-      try {
-        const response = await callInference()
-        if (done) return
-        trigger({ type: AGENT_EVENTS.model_response, detail: { parsed: parseModelResponse(response), raw: response } })
-      } catch (error) {
-        if (done) return
-        handleInferenceError(error)
-      }
+      await processNextOrInfer()
     },
 
     // Plan management
@@ -298,6 +341,7 @@ export const createAgentLoop = ({
       history.length = 0
       currentPlan = null
       rejections = []
+      pendingToolCalls = []
       done = false
 
       return new Promise((resolve) => {
