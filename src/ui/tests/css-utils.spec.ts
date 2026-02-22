@@ -1,6 +1,23 @@
 import { expect, test } from 'bun:test'
 import { createHostStyles, createStyles, joinStyles } from 'plaited/ui'
-import { isElementStylesObject, isHostStylesObject, isStylesObject } from '../css.utils.ts'
+import { createHash, isElementStylesObject, isHostStylesObject, isStylesObject } from '../css.utils.ts'
+
+test('createHash: produces consistent hash from strings', () => {
+  const a = createHash('color', 'blue')
+  const b = createHash('color', 'blue')
+  expect(a).toBe(b)
+})
+
+test('createHash: produces different hashes for different inputs', () => {
+  const a = createHash('color', 'blue')
+  const b = createHash('color', 'red')
+  expect(a).not.toBe(b)
+})
+
+test('createHash: result starts with underscore', () => {
+  const hash = createHash('test')
+  expect(hash?.startsWith('_')).toBe(true)
+})
 
 test('isElementStylesObject: returns true for valid ElementStylesObject', () => {
   const elementStyles = createStyles({

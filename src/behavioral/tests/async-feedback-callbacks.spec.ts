@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test'
 import { behavioral, bSync } from 'plaited'
-import { wait } from 'plaited/utils'
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
  * Test suite for verifying the behavior of asynchronous feedback callbacks

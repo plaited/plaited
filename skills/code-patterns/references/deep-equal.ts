@@ -10,24 +10,10 @@
  * @remarks
  * Supports: primitives, objects, arrays, Date, RegExp, Map, Set, TypedArrays.
  * Uses Object.is() for NaN and +0/-0 handling.
- *
- * @see {@link isTypeOf} for type checking
  */
 export const deepEqual = (objA: unknown, objB: unknown, map = new WeakMap()) => {
-  /**
-   * @internal
-   * First-level filtering using Object.is for primitive equality.
-   * Handles NaN === NaN (true) and +0 !== -0 (false) correctly.
-   */
   if (Object.is(objA, objB)) return true
 
-  /**
-   * @internal
-   * Special handling for Date and RegExp before generic object check.
-   * These types have internal state that requires specific comparison.
-   * - Date: Compare timestamps for semantic equality
-   * - RegExp: Compare string representation (includes flags)
-   */
   if (objA instanceof Date && objB instanceof Date) {
     return objA.getTime() === objB.getTime()
   }
@@ -35,29 +21,13 @@ export const deepEqual = (objA: unknown, objB: unknown, map = new WeakMap()) => 
     return objA.toString() === objB.toString()
   }
 
-  /**
-   * @internal
-   * Guard clause ensures both values are objects.
-   * After this point, we know both are non-null objects.
-   */
   if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
     return false
   }
 
-  /**
-   * @internal
-   * Circular reference detection using WeakMap.
-   * If we've already compared objA to objB, assume equal to break cycle.
-   * WeakMap ensures no memory leaks as objects can be GC'd.
-   */
   if (map.get(objA) === objB) return true
   map.set(objA, objB)
 
-  /**
-   * @internal
-   * Array comparison with length check for early exit.
-   * Backwards iteration for potential performance benefit.
-   */
   if (Array.isArray(objA) && Array.isArray(objB)) {
     if (objA.length !== objB.length) return false
     for (let i = objA.length; i-- !== 0; ) {
@@ -66,13 +36,6 @@ export const deepEqual = (objA: unknown, objB: unknown, map = new WeakMap()) => 
     return true
   }
 
-  /**
-   * @internal
-   * Map comparison requires two passes:
-   * 1. Check all keys exist in both maps
-   * 2. Deep compare all values
-   * Size check provides early exit optimization.
-   */
   if (objA instanceof Map && objB instanceof Map) {
     if (objA.size !== objB.size) return false
     for (const i of objA.entries()) {
@@ -84,12 +47,6 @@ export const deepEqual = (objA: unknown, objB: unknown, map = new WeakMap()) => 
     return true
   }
 
-  /**
-   * @internal
-   * Set comparison by converting to arrays.
-   * Note: This assumes iteration order is consistent,
-   * which is true for Sets in ES6+ but may fail for custom equality.
-   */
   if (objA instanceof Set && objB instanceof Set) {
     if (objA.size !== objB.size) return false
     const arrA = [...objA.values()]
@@ -100,35 +57,19 @@ export const deepEqual = (objA: unknown, objB: unknown, map = new WeakMap()) => 
     return true
   }
 
-  /**
-   * @internal
-   * ArrayBuffer and TypedArray comparison at byte level.
-   * Converts to Int8Array for uniform byte-by-byte comparison.
-   * Extra block scope is vestigial but preserved.
-   */
   if (
     (objA instanceof ArrayBuffer && objB instanceof ArrayBuffer) ||
     (ArrayBuffer.isView(objA) && ArrayBuffer.isView(objB))
   ) {
-    {
-      if (objA.byteLength !== objB.byteLength) return false
-      const dv1 = new Int8Array(objA as ArrayBuffer)
-      const dv2 = new Int8Array(objB as ArrayBuffer)
-      for (let i = 0; i !== objA.byteLength; i++) {
-        if (dv1[i] !== dv2[i]) return false
-      }
-      return true
+    if (objA.byteLength !== objB.byteLength) return false
+    const dv1 = new Int8Array(objA as ArrayBuffer)
+    const dv2 = new Int8Array(objB as ArrayBuffer)
+    for (let i = 0; i !== objA.byteLength; i++) {
+      if (dv1[i] !== dv2[i]) return false
     }
+    return true
   }
 
-  /**
-   * @internal
-   * Generic object comparison using Reflect API.
-   * - Reflect.ownKeys includes string keys, numeric keys, and symbols
-   * - More thorough than Object.keys which misses symbols
-   * - Length check provides early exit
-   * - Reflect.has checks for key existence before deep comparison
-   */
   const keysA = Reflect.ownKeys(objA)
   const keysB = Reflect.ownKeys(objB)
 

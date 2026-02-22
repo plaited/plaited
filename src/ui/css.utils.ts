@@ -1,5 +1,25 @@
-import { hashString, isTypeOf, kebabCase } from '../utils.ts'
+import { isTypeOf, kebabCase } from '../utils.ts'
 import type { DesignTokenReference, ElementStylesObject, HostStylesObject, StylesObject } from './css.types.ts'
+
+/**
+ * Fast non-cryptographic string hashing using djb2 algorithm.
+ * Returns consistent 32-bit hash for caching and comparison.
+ *
+ * @param str - String to hash
+ * @returns 32-bit hash or null for empty string
+ *
+ * @remarks
+ * - Uses djb2: `hash = ((hash << 5) + hash) + char`
+ * - Seed value: 5381 (djb2 magic constant)
+ * - Returns null for empty strings to differentiate from valid hashes
+ * - Deterministic: same input always produces same output
+ *
+ * @internal
+ */
+const hashString = (str: string) => {
+  const hash = [...str].reduce<number>((acc, cur) => (acc << 5) + acc + cur.charCodeAt(0), 5381)
+  return hash === 5381 ? null : hash
+}
 
 /**
  * @internal

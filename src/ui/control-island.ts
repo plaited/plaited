@@ -1,6 +1,7 @@
 import type { BThreads, Disconnect, Trigger, UseFeedback, UseSnapshot } from '../behavioral.ts'
 import { behavioral } from '../behavioral.ts'
-import { canUseDOM, keyMirror } from '../utils.ts'
+import { keyMirror } from '../utils.ts'
+import { canUseDOM } from './can-use-dom.ts'
 import { RESTRICTED_EVENTS } from './controller.constants.ts'
 import { controller } from './controller.ts'
 import { BOOLEAN_ATTRS } from './create-template.constants.ts'
