@@ -4,11 +4,25 @@ import type * as CSS from './types/css.js'
 /**
  * Represents CSS properties with string or number values.
  * Extends standard CSS properties to allow for custom properties (e.g., CSS variables).
+ *
+ * @public
  */
 export type CSSProperties = CSS.Properties & {
   [key: string]: string | number
 }
 
+/**
+ * A callable reference to a CSS custom property created by `createTokens`.
+ * When called, returns the `var(--css-variable-name)` expression.
+ * The `stylesheets` array holds the `:root{}` declarations that define the variable.
+ *
+ * @remarks
+ * Compose token references into styles by passing them to `createStyles`,
+ * `createHostStyles`, or `joinStyles`. The style deduplication in `createSSR`
+ * ensures each declaration is emitted only once per connection.
+ *
+ * @public
+ */
 export type DesignTokenReference = {
   (): `var(--${string})`
   stylesheets: string[]
@@ -148,10 +162,22 @@ export type StyleFunctionKeyframe = {
   id: string
 }
 
+/**
+ * Primitive value type accepted by design tokens — string or number.
+ *
+ * @public
+ */
 export type PrimitiveTokenValue = string | number
 
+/** @internal Argument type for CSS function tokens. */
 type FunctionTokenArguments = PrimitiveTokenValue | DesignTokenReference
 
+/**
+ * A CSS function-based token value (e.g., `calc()`, `rgb()`, `clamp()`).
+ * Specifies the function name, arguments, and whether arguments are comma-separated.
+ *
+ * @public
+ */
 export type FunctionTokenValue =
   | {
       $function: string
@@ -164,10 +190,17 @@ export type FunctionTokenValue =
       $csv: boolean
     }
 
+/**
+ * Union of all valid value types for a design token.
+ *
+ * @public
+ */
 export type DesignTokenValue = PrimitiveTokenValue | FunctionTokenValue | DesignTokenReference
 
 /**
  * A design token with a single value or array of values.
+ *
+ * @public
  */
 export type DesignToken =
   | {
