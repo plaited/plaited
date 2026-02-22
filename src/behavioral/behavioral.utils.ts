@@ -148,7 +148,7 @@ export const bThread: BThread = (rules, repeat) => {
 }
 
 export const isRulesFunction = (obj: unknown): obj is BThread =>
-  isTypeOf<object>(obj, 'generatorfunction') && '$' in obj && (obj as { $: unknown }).$ === RULES_FUNCTION_IDENTIFIER
+  isTypeOf<object>(obj, 'generatorfunction') && '$' in obj && obj.$ === RULES_FUNCTION_IDENTIFIER
 
 /**
  * Creates a single synchronization point for a b-thread.
