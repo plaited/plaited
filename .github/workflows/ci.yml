@@ -22,6 +22,7 @@ jobs:
         run: |
           bun install
           bunx playwright install chromium --with-deps
+          bunx @playwright/cli install-browser
       - name: Run check
         run: |
           bun run check
