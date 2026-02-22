@@ -159,7 +159,7 @@ export const bThread: BThread = (rules, repeat) => {
  *
  * @public
  */
-export const isRulesFunction = (obj: unknown): obj is BThread =>
+export const isRulesFunction = (obj: unknown): obj is RulesFunction =>
   isTypeOf<object>(obj, 'generatorfunction') && '$' in obj && obj.$ === RULES_FUNCTION_IDENTIFIER
 
 /**
