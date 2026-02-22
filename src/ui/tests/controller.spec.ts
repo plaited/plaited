@@ -232,6 +232,26 @@ describe('controller: pipeline diagnostics', () => {
     expect(MockWebSocket.instances[0]!.url).toBe('ws://from-feedback')
   })
 
+  test('useSnapshot + useFeedback + trigger work together', async () => {
+    // Does adding useSnapshot to the mix break the pipeline?
+    // This is the KEY difference between test 1 (pass) and test 3 (fail).
+    const { trigger, useFeedback, useSnapshot } = behavioral()
+    let handlerFired = false
+    const snapshots: unknown[] = []
+    useSnapshot((detail) => {
+      snapshots.push(detail)
+    })
+    useFeedback({
+      test_event: () => {
+        handlerFired = true
+      },
+    })
+    trigger({ type: 'test_event' })
+    await new Promise((r) => setTimeout(r, 50))
+    console.log('[DIAG] useSnapshot+useFeedback: handlerFired:', handlerFired, 'snapshots:', snapshots.length)
+    expect(handlerFired).toBe(true)
+  })
+
   test('controller connect handler fires and creates WebSocket', async () => {
     // Full controller pipeline with error capture via useSnapshot
     const root = createTestRoot()
@@ -257,17 +277,14 @@ describe('controller: pipeline diagnostics', () => {
       [CONTROLLER_EVENTS.connect]() {
         connectEventPublished = true
         console.log('[DIAG] connect event reached action publisher')
-        console.log(
-          '[DIAG] WebSocket global is MockWebSocket:',
-          WebSocket === (MockWebSocket as unknown as typeof WebSocket),
-        )
-        console.log('[DIAG] self.location.origin:', self.location.origin)
       },
     })
 
-    // Capture feedback errors from the snapshot publisher
+    // Capture feedback errors AND all snapshots
     const feedbackErrors: unknown[] = []
+    const allSnapshots: unknown[] = []
     useSnapshot((detail) => {
+      allSnapshots.push(detail)
       const d = detail as Record<string, unknown>
       if (d.kind === 'feedback_error') {
         feedbackErrors.push(d)
@@ -275,22 +292,32 @@ describe('controller: pipeline diagnostics', () => {
       }
     })
 
-    controller({
-      trigger,
-      root,
-      bThreads,
-      useFeedback,
-      disconnectSet,
-      restrictedTrigger,
-      useSnapshot,
-    })
+    // Wrap controller in try/catch to surface synchronous errors
+    let controllerError: unknown
+    try {
+      controller({
+        trigger,
+        root,
+        bThreads,
+        useFeedback,
+        disconnectSet,
+        restrictedTrigger,
+        useSnapshot,
+      })
+    } catch (e) {
+      controllerError = e
+      console.error('[DIAG] CONTROLLER THREW:', e)
+    }
 
     await new Promise((r) => setTimeout(r, 50))
 
+    console.log('[DIAG] controllerError:', controllerError)
     console.log('[DIAG] connectEventPublished:', connectEventPublished)
     console.log('[DIAG] feedbackErrors:', feedbackErrors.length)
+    console.log('[DIAG] allSnapshots:', allSnapshots.length)
     console.log('[DIAG] MockWebSocket.instances:', MockWebSocket.instances.length)
 
+    expect(controllerError).toBeUndefined()
     expect(connectEventPublished).toBe(true)
     expect(feedbackErrors.length).toBe(0)
     expect(MockWebSocket.instances.length).toBeGreaterThanOrEqual(1)
