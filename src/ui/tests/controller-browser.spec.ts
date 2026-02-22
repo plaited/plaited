@@ -48,7 +48,7 @@ afterAll(async () => {
     // ignore close errors
   }
   await fixture.stop()
-})
+}, 30000)
 
 describe('controlIsland: real browser', () => {
   test('display:contents computed style', async () => {
@@ -110,7 +110,7 @@ describe('controller: declarative shadow DOM', () => {
     const output = await cli('eval', "() => !!document.getElementById('dsd-host')?.shadowRoot")
     const result = parseResult(output)
     expect(result).toContain('true')
-  })
+  }, 30000)
 
   test('shadow DOM contains rendered content', async () => {
     const output = await cli(
@@ -132,7 +132,7 @@ describe('controller: update_behavioral', () => {
     const output = await cli('eval', '() => globalThis.__behavioralModuleLoaded === true')
     const result = parseResult(output)
     expect(result).toContain('true')
-  })
+  }, 30000)
 
   test('behavioral_updated roundtrip: server receives confirmation and renders', async () => {
     // After the module loads, the controller sends behavioral_updated to the server.

@@ -163,6 +163,32 @@ const setupController = (root: Element) => {
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
+describe('controller: mock diagnostics', () => {
+  test('globalThis.WebSocket is MockWebSocket', () => {
+    expect(globalThis.WebSocket).toBe(MockWebSocket as unknown as typeof WebSocket)
+  })
+
+  test('bare WebSocket resolves to MockWebSocket', () => {
+    expect(WebSocket).toBe(MockWebSocket as unknown as typeof WebSocket)
+  })
+
+  test('self.location.origin is mocked', () => {
+    expect(self.location.origin).toBe('http://localhost:3457')
+  })
+
+  test('new WebSocket() creates MockWebSocket instance', () => {
+    MockWebSocket.reset()
+    const ws = new WebSocket('ws://test')
+    expect(ws).toBeInstanceOf(MockWebSocket as unknown as typeof WebSocket)
+    expect(MockWebSocket.instances.length).toBe(1)
+    MockWebSocket.reset()
+  })
+
+  test('self === globalThis after happy-dom registration', () => {
+    expect(self).toBe(globalThis)
+  })
+})
+
 describe('controller: WebSocket lifecycle', () => {
   beforeEach(() => {
     MockWebSocket.reset()
