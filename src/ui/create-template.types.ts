@@ -1134,6 +1134,11 @@ type DetailedWebViewHTMLAttributes = DetailedHTMLAttributes & {
   enableblinkfeatures?: string
   disableblinkfeatures?: string
 }
+
+type DetailedControlIslandHTMLAttributes = DetailedHTMLAttributes & {
+  stylesheets?: never
+  classNames?: never
+}
 /**
  * A comprehensive mapping of intrinsic HTML and SVG element tag names
  * to their corresponding detailed attribute types (`Detailed*HTMLAttributes` or `DetailedSVGAttributes`).
@@ -1316,7 +1321,7 @@ export type ElementAttributeList = {
   tspan: DetailedSVGAttributes
   use: DetailedSVGAttributes
   view: DetailedSVGAttributes
-  [key: string]: DetailedHTMLAttributes // Allows custom element tags
+  controlIsland: DetailedControlIslandHTMLAttributes
 }
 /**
  * Generic type for template attributes.

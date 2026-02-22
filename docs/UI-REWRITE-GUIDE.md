@@ -8,9 +8,10 @@ Status report on the generative web UI framework. Documents what `plaited` and `
 
 1. **Server-push, not component-library.** The agent generates JSX; the server calls `createSSR().render()`; the client is a thin behavioral controller.
 2. **`controlIsland` is escalation, not default.** Most generative UI is server-rendered HTML + `p-trigger` bindings. Islands exist for isolated interactivity with their own BP engine and WebSocket.
-3. **`behavioral()` is the only primitive.** `useBehavioral` was removed — it was too prescriptive. Direct `behavioral()` + `useFeedback` is the single coordination pattern. A new skill (distinct from the old `behavioral-core`) is needed to teach agents the genome approach for composing BP programs directly.
-4. **Atomic CSS eliminates Shadow DOM's style value.** `createStyles` hash-based class names prevent collision without encapsulation. Shadow DOM is only for `decorateElements` presentational wrappers.
-5. **Errors are already observable.** The `useSnapshot` listener in `controller.ts` captures all BP engine errors and sends them to the server as `snapshot` messages. No separate error protocol is needed.
+3. **`controlIsland` never affects document flow.** A controller island always renders with `display: contents` — it is invisible to layout. The custom element is a behavioral boundary, not a visual one. Query selector scoping still works (`p-target`/`p-trigger` within the element), but the element itself contributes zero boxes to the flow. A controller should never disrupt the layout of the document it lives in.
+4. **`behavioral()` is the only primitive.** `useBehavioral` was removed — it was too prescriptive. Direct `behavioral()` + `useFeedback` is the single coordination pattern. A new skill (distinct from the old `behavioral-core`) is needed to teach agents the genome approach for composing BP programs directly.
+5. **Atomic CSS eliminates Shadow DOM's style value.** `createStyles` hash-based class names prevent collision without encapsulation. Shadow DOM is only for `decorateElements` presentational wrappers.
+6. **Errors are already observable.** The `useSnapshot` listener in `controller.ts` captures all BP engine errors and sends them to the server as `snapshot` messages. No separate error protocol is needed.
 
 ## What the Framework Provides
 
@@ -58,7 +59,7 @@ Status report on the generative web UI framework. Documents what `plaited` and `
 
 | Export | Source | Purpose |
 |--------|--------|---------|
-| `controlIsland` | `control-island.ts` | Island of control: own BP engine, WebSocket, scoped DOM. Returns a template the agent can render with or without `decorateElements` for encapsulated styling. |
+| `controlIsland` | `control-island.ts` | Island of control: own BP engine, WebSocket, scoped DOM. Always `display: contents` — invisible to layout, never affects document flow. Query selector scoping works but the element itself contributes no boxes. Returns a template the agent can render with or without `decorateElements` for encapsulated styling. |
 | `decorateElements` | `decorate-elements.ts` | Presentational wrapper: shadow DOM + slots, no BP engine. Encapsulates styling and reduces DOM node concerns. Can wrap `controlIsland` output or stand alone. |
 | `controlDocument` | `control-document.ts` | Document-level BP engine for MPA view transitions. Optional `onPageReveal` factory. |
 
@@ -140,6 +141,14 @@ These three cover all of bElement's use cases without the monolithic abstraction
 | `use-attributes-observer.ts` | MutationObserver for slotted elements was bElement-specific |
 | `inspector.ts` | Inspector replaced by `useSnapshot` on the BP engine |
 | `use-web-socket.ts` | WebSocket client moved into `controller.ts` |
+| `noop.ts` | Unused — no production consumers |
+| `ueid.ts` | Unused — replaced by `crypto.randomUUID()` when needed |
+| `value-of.type.ts` | Unused `ValueOf` type — no consumers |
+| `deep-equal.ts` | Unused in framework — preserved in `code-patterns` skill as agent reference |
+| `wait.ts` | Unused in production — inlined into the single test that used it, preserved in `code-patterns` skill |
+| `hash-string.ts` | Moved into `css.utils.ts` as private `hashString` — its only consumer |
+| `can-use-dom.ts` | Moved from `src/utils/` to `src/ui/` — only used by `controlDocument` and `controlIsland` |
+| `create-document-fragment.ts` | Removed — no consumers |
 
 ## `src/ui/` File Inventory (Current)
 
@@ -164,7 +173,7 @@ These three cover all of bElement's use cases without the monolithic abstraction
 | `join-styles.ts` | `joinStyles` | Merge style objects |
 | `css.types.ts` | 20 type exports | CSS type definitions |
 | `css.constants.ts` | (internal) | CSS reserved keys |
-| `css.utils.ts` | (internal) | Hash generation, rule creation, type guards |
+| `css.utils.ts` | (internal) | Hash generation (djb2 `hashString` inlined here), rule creation, type guards |
 
 ### Core — Client Controller
 
@@ -179,7 +188,8 @@ These three cover all of bElement's use cases without the monolithic abstraction
 
 | File | Export | Role |
 |------|--------|------|
-| `control-island.ts` | `controlIsland` + 13 callback type exports | Interactive island with BP engine + WebSocket |
+| `can-use-dom.ts` | (internal) | DOM availability detection — guards `customElements.define` in `controlIsland` and `controlDocument` |
+| `control-island.ts` | `controlIsland` + 13 callback type exports | Interactive island with BP engine + WebSocket (`display: contents`) |
 | `control-document.ts` | `controlDocument` + 7 event type exports | Document-level controller for MPA view transitions |
 | `decorate-elements.ts` | `decorateElements` + 2 identifier exports | Presentational shadow DOM wrapper |
 
@@ -345,9 +355,9 @@ ws.send(JSON.stringify({
 
 ### Level 3: controlIsland + decorateElements
 
-For regions that need their own BP engine and WebSocket, use `controlIsland`. It returns a template the agent renders. Optionally wrap with `decorateElements` for encapsulated styling that reduces DOM node concerns.
+For regions that need their own BP engine and WebSocket, use `controlIsland`. It returns a template the agent renders. The custom element is always `display: contents` — it creates a behavioral boundary without affecting document flow. Children render as if the custom element weren't there. Optionally wrap with `decorateElements` for encapsulated styling that reduces DOM node concerns.
 
-**controlIsland** — interactive island with own BP engine:
+**controlIsland** — interactive island with own BP engine (`display: contents`):
 
 ```typescript
 import { controlIsland } from 'plaited/ui'
@@ -637,7 +647,7 @@ const timer = setInterval(flush, 50)
 |------|-----------|--------|
 | JSX factory | `create-template.spec.ts` | Exists |
 | SSR rendering | `create-ssr.spec.tsx` | Exists (renamed from `ssr.spec.tsx`) |
-| CSS utilities | Split into `create-styles.spec.tsx`, `create-host-styles.spec.tsx`, `create-keyframes.spec.ts`, `create-tokens.spec.ts`, `join-styles.spec.ts`, `css-utils.spec.ts` | Pending (see test split plan) |
+| CSS utilities | Split into `create-styles.spec.tsx`, `create-host-styles.spec.tsx`, `create-keyframes.spec.ts`, `create-tokens.spec.ts`, `join-styles.spec.ts`, `css-utils.spec.ts` | Done (CSS tests split, `createHash` tests added to `css-utils.spec.ts`) |
 | Protocol schemas | `controller.schemas.spec.ts` | Needed |
 | Controller logic | `controller.spec.ts` (with happy-dom) | Needed |
 | `controlIsland` | `control-island.spec.ts` (with happy-dom) | Needed |
@@ -668,6 +678,13 @@ Playwright-based validation of rendered output in a real browser.
 - [x] Add `update_behavioral` protocol for dynamic code loading
 - [x] Export typed message types (`OnPageRevealMessage`, `OnPageSwapMessage`, element callback types)
 - [x] Create generative-ui skill documentation
+- [x] Prune unused utils (`noop`, `ueid`, `ValueOf`, `deepEqual`, `wait`)
+- [x] Co-locate `hashString` into `css.utils.ts` (its only consumer)
+- [x] Move `canUseDOM` from `src/utils/` to `src/ui/` (used only by `controlIsland`/`controlDocument`)
+- [x] Create `code-patterns` skill with `deep-equal` and `wait` as genome references
+- [x] Move `generative-ui` skill from `.agents/skills/` to `skills/` (external skill convention)
+- [x] Enforce `display: contents` on `controlIsland` — controller never affects document flow
+- [x] Split CSS test file (tests split across individual spec files, `createHash` tests in `css-utils.spec.ts`)
 
 ### Remaining
 
@@ -678,6 +695,5 @@ Playwright-based validation of rendered output in a real browser.
 - [ ] Decide streaming protocol (Q5 above: A, B, or C)
 - [ ] Implement server-side WebSocket handler with `Bun.serve()`
 - [ ] Add missing test files (controller, schemas, controlIsland, controlDocument)
-- [ ] Split CSS test file (see test split plan)
 - [ ] Update `package.json` exports
 - [ ] Update README with current API surface

@@ -4,9 +4,14 @@ import { keyMirror } from '../utils.ts'
 import { canUseDOM } from './can-use-dom.ts'
 import { RESTRICTED_EVENTS } from './controller.constants.ts'
 import { controller } from './controller.ts'
+import { createStyles } from './create-styles.ts'
 import { BOOLEAN_ATTRS } from './create-template.constants.ts'
 import { createTemplate, Fragment } from './create-template.ts'
-import type { Attrs, CustomElementTag, FunctionTemplate } from './create-template.types.ts'
+import type { CustomElementTag, ElementAttributeList, FunctionTemplate } from './create-template.types.ts'
+
+const styles = createStyles({
+  controller: { display: 'contents' },
+})
 
 export const ELEMENT_CALLBACKS = keyMirror(
   'on_adopted',
@@ -94,7 +99,7 @@ export type BehavioralElementCallbackDetails = {
 
 export const CONTROLLER_TEMPLATE_IDENTIFIER = '🎛️' as const
 
-export type ControllerTemplate = FunctionTemplate & {
+export type ControllerTemplate = FunctionTemplate<ElementAttributeList['controlIsland']> & {
   tag: CustomElementTag
   observedAttributes: string[]
   $: typeof CONTROLLER_TEMPLATE_IDENTIFIER
@@ -194,10 +199,10 @@ export const controlIsland = ({
       },
     )
   }
-  const ft = ({ children = [], ...attrs }: Attrs) => {
+  const ft: ControllerTemplate = ({ children = [], ...attrs }) => {
     const tpl = Fragment({ children })
     tpl.registry.push(tag)
-    return createTemplate(tag, { ...attrs, children: tpl })
+    return createTemplate(tag, { ...attrs, ...styles.controller, children: tpl })
   }
   ft.tag = tag
   ft.$ = CONTROLLER_TEMPLATE_IDENTIFIER

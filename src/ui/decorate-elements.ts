@@ -31,7 +31,7 @@ export const decorateElements = ({
       .replaceAll(/:root\(([^)]+)\)/g, ':host')
     shadowDom.html.unshift(styles)
   }
-  const ft = ({ children = [], ...attrs }: Attrs) =>
+  const ft: DecoratorTemplate = ({ children = [], ...attrs }: Attrs) =>
     createTemplate(tag, {
       ...attrs,
       children: [
