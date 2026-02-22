@@ -4,12 +4,10 @@
  * - display:contents computed style
  * - customElements.get() registration
  *
- * Note: WebSocket roundtrip and declarative shadow DOM tests are skipped because
- * of a known bug in controller.ts: the useSnapshot → send → trigger(connect) cycle
- * causes infinite recursion. The BP engine fires snapshotPublisher synchronously
- * before actionPublisher (where the connect handler creates the socket), so send()
- * always finds socket === undefined and re-triggers connect. This causes a
- * RangeError in connectedCallback before any WebSocket communication can occur.
+ * WebSocket roundtrip and declarative shadow DOM tests are not yet implemented.
+ * The useSnapshot → send → connect recursion bug has been fixed (snapshot callback
+ * now bypasses send() and writes directly when socket is open), so these can be
+ * added when needed.
  */
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { type FixtureServer, startServer } from './fixtures/serve.ts'
@@ -84,13 +82,5 @@ describe('controlIsland: real browser', () => {
   })
 })
 
-// WebSocket roundtrip and DSD tests are blocked by the useSnapshot → send → connect
-// infinite recursion bug. Uncomment when the bug is fixed:
-//
-// describe('controller: WebSocket roundtrip', () => {
-//   test('server renders content via WebSocket', async () => { ... })
-// })
-//
-// describe('controller: declarative shadow DOM', () => {
-//   test('setHTMLUnsafe parses declarative shadow DOM', async () => { ... })
-// })
+// TODO: Add WebSocket roundtrip and declarative shadow DOM browser tests.
+// The useSnapshot recursion bug is fixed — these can now be implemented.

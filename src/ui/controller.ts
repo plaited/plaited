@@ -22,7 +22,6 @@ import type {
   BThreadAddedMessage,
   RootConnectedMessage,
   ShellHandlers,
-  SnapshotEvent,
   SwapMode,
   UserActionMessage,
 } from './controller.schemas.ts'
@@ -196,12 +195,11 @@ export const controller = ({
   }
 
   disconnectSet.add(
-    useSnapshot((detail) =>
-      send<SnapshotEvent>({
-        type: CONTROLLER_EVENTS.snapshot,
-        detail,
-      }),
-    ),
+    useSnapshot((detail) => {
+      if (socket?.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: CONTROLLER_EVENTS.snapshot, detail }))
+      }
+    }),
   )
   // ─── Feedback handlers ─────────────────────────────────────────────
   const handlers: Handlers<ShellHandlers> = {

@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
-import type { Disconnect, UseSnapshot } from '../../behavioral.ts'
+import type { Disconnect } from '../../behavioral.ts'
 import { behavioral } from '../../behavioral.ts'
 import { CONTROLLER_EVENTS, SWAP_MODES } from '../controller.constants.ts'
 import { controller } from '../controller.ts'
@@ -29,11 +29,15 @@ class MockWebSocket {
   constructor(url: string) {
     this.url = url
     MockWebSocket.instances.push(this)
-    // Auto-fire open event on next microtask
-    queueMicrotask(() => {
-      this.readyState = MockWebSocket.OPEN
-      this.#dispatch('open', { type: 'open', target: this } as unknown as Event)
-    })
+    // Auto-fire open event on next microtask (unless disabled for retry testing)
+    if (MockWebSocket.autoOpen) {
+      queueMicrotask(() => {
+        if (this.readyState === MockWebSocket.CONNECTING) {
+          this.readyState = MockWebSocket.OPEN
+          this.#dispatch('open', { type: 'open', target: this } as unknown as Event)
+        }
+      })
+    }
   }
 
   addEventListener(type: string, handler: EventHandler) {
@@ -76,8 +80,10 @@ class MockWebSocket {
   }
 
   static instances: MockWebSocket[] = []
+  static autoOpen = true
   static reset() {
     MockWebSocket.instances = []
+    MockWebSocket.autoOpen = true
   }
 }
 
@@ -123,7 +129,7 @@ const createTestRoot = () => {
 }
 
 const setupController = (root: Element) => {
-  const { trigger, useFeedback, bThreads, useRestrictedTrigger } = behavioral()
+  const { trigger, useFeedback, bThreads, useRestrictedTrigger, useSnapshot } = behavioral()
   const disconnectSet = new Set<Disconnect>()
   const restrictedTrigger = useRestrictedTrigger(
     ...[
@@ -138,11 +144,6 @@ const setupController = (root: Element) => {
       CONTROLLER_EVENTS.on_ws_open,
     ],
   )
-  // No-op useSnapshot prevents the snapshot → send → connect recursion.
-  // The BP engine fires snapshotPublisher before actionPublisher in the super-step,
-  // so the snapshot callback calls send() before the connect handler creates the socket,
-  // which causes send() to trigger another connect — infinite recursion.
-  const safeUseSnapshot: UseSnapshot = () => () => {}
   controller({
     trigger,
     root,
@@ -150,7 +151,7 @@ const setupController = (root: Element) => {
     useFeedback,
     disconnectSet,
     restrictedTrigger,
-    useSnapshot: safeUseSnapshot,
+    useSnapshot,
   })
   return { trigger, useFeedback, bThreads, disconnectSet, restrictedTrigger }
 }
@@ -246,22 +247,29 @@ describe('controller: WebSocket lifecycle', () => {
     const root = createTestRoot()
     setupController(root)
 
+    // Let initial socket open normally
     await new Promise((r) => setTimeout(r, 50))
+    expect(MockWebSocket.instances.length).toBe(1)
 
-    // Simulate 3 retry cycles via close events + wait for reconnect
+    // Disable auto-open so retried sockets never fire on_ws_open,
+    // which would reset retryCount to 0 and defeat the accumulation test.
+    MockWebSocket.autoOpen = false
+
+    // Simulate 3 consecutive failures — retryCount accumulates 0→1→2→3
     for (let i = 0; i < 3; i++) {
       const ws = MockWebSocket.instances.at(-1)!
       ws.simulateClose(1006)
-      // Wait enough time for the exponential backoff at this level
-      await new Promise((r) => setTimeout(r, Math.min(9999, 1000 * 2 ** i) + 100))
+      // Wait for exponential backoff delay + new socket creation
+      await new Promise((r) => setTimeout(r, Math.min(9999, 1000 * 2 ** i) + 200))
+      // Verify a new socket was created by the retry
+      expect(MockWebSocket.instances.length).toBe(2 + i)
     }
 
+    // retryCount is now 3 (=== MAX_RETRIES). One more close should NOT retry.
     const countAfterRetries = MockWebSocket.instances.length
-
-    // 4th close should NOT create another WebSocket
     const ws = MockWebSocket.instances.at(-1)!
     ws.simulateClose(1006)
-    await new Promise((r) => setTimeout(r, 200))
+    await new Promise((r) => setTimeout(r, 1200))
 
     expect(MockWebSocket.instances.length).toBe(countAfterRetries)
   }, 30000)
@@ -277,6 +285,34 @@ describe('controller: WebSocket lifecycle', () => {
     trigger({ type: CONTROLLER_EVENTS.disconnect })
     await new Promise((r) => setTimeout(r, 50))
     expect(ws.readyState).toBe(MockWebSocket.CLOSED)
+  })
+
+  test('snapshots are sent over WebSocket when socket is open', async () => {
+    const root = createTestRoot()
+    setupController(root)
+
+    await new Promise((r) => setTimeout(r, 50))
+    const ws = MockWebSocket.instances[0]!
+
+    // Trigger an event to generate a snapshot (any BP event produces one)
+    ws.simulateMessage({
+      type: CONTROLLER_EVENTS.render,
+      detail: { target: 'main', html: '<span>snap</span>' },
+    })
+    await new Promise((r) => setTimeout(r, 50))
+
+    const sent = ws.sent.map((s) => JSON.parse(s))
+    const snapshots = sent.filter((m: { type: string }) => m.type === CONTROLLER_EVENTS.snapshot)
+    expect(snapshots.length).toBeGreaterThan(0)
+  })
+
+  test('no recursion when useSnapshot fires before socket exists', () => {
+    // This test verifies the fix for the snapshot → send → connect recursion.
+    // Before the fix, calling controller() would throw RangeError (stack overflow)
+    // because useSnapshot fired during the first super-step before the connect
+    // handler created the socket, and send() would re-trigger connect.
+    const root = createTestRoot()
+    expect(() => setupController(root)).not.toThrow()
   })
 })
 
