@@ -33,7 +33,6 @@ export const createAgentLoop = ({
   config: {
     model: string
     baseUrl: string
-    apiKey?: string
     tools?: Record<string, unknown>[]
     systemPrompt?: string
     maxIterations?: number

@@ -185,8 +185,8 @@ export type GateDecision = z.infer<typeof GateDecisionSchema>
  * Configuration for creating an agent loop.
  *
  * @remarks
- * - `model`: Model identifier (e.g., 'qwen3-8b', 'claude-sonnet-4-20250514')
- * - `baseUrl`: OpenAI-compatible inference endpoint base URL
+ * - `model`: Model identifier (e.g., 'falcon-h1r-7b')
+ * - `baseUrl`: Local or service-internal inference endpoint (e.g., 'http://localhost:8080')
  * - `tools`: OpenAI-format tool definitions passed to the model
  * - `maxIterations`: Safety limit on tool call rounds (default 50)
  * - `temperature`: Sampling temperature (default 0 for deterministic)
@@ -196,7 +196,6 @@ export type GateDecision = z.infer<typeof GateDecisionSchema>
 export const AgentConfigSchema = z.object({
   model: z.string(),
   baseUrl: z.string(),
-  apiKey: z.string().optional(),
   tools: z.array(z.record(z.string(), z.unknown())).optional(),
   systemPrompt: z.string().optional(),
   maxIterations: z.number().default(50),

@@ -8,21 +8,23 @@ import type { ChatMessage, InferenceCall, ParsedModelResponse } from './agent.ty
 /**
  * Creates an `InferenceCall` that calls an OpenAI-compatible chat completions endpoint.
  *
+ * @remarks
+ * Auth is a hosting/infrastructure concern, not a framework concern.
+ * The agent runtime calls local or service-internal endpoints that are
+ * already behind the data plane's auth layer.
+ *
  * @param baseUrl - Base URL of the inference server (e.g., 'http://localhost:8080')
- * @param apiKey - Optional API key for Authorization header
  * @returns An `InferenceCall` function
  *
  * @public
  */
-export const createInferenceCall = (baseUrl: string, apiKey?: string): InferenceCall => {
+export const createInferenceCall = (baseUrl: string): InferenceCall => {
   const url = `${baseUrl}/v1/chat/completions`
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  if (apiKey) headers.Authorization = `Bearer ${apiKey}`
 
   return async (request) => {
     const response = await fetch(url, {
       method: 'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
     })
     if (!response.ok) {

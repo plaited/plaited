@@ -355,7 +355,6 @@ describe('AgentConfigSchema', () => {
     const result = AgentConfigSchema.safeParse({
       model: 'qwen3-8b',
       baseUrl: 'http://localhost:8080',
-      apiKey: 'sk-test',
       tools: [{ type: 'function', function: { name: 'read_file' } }],
       systemPrompt: 'You are a helpful assistant.',
       maxIterations: 10,
