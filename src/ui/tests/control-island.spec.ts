@@ -53,6 +53,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
+  mock.restore()
   const { GlobalRegistrator } = await import('@happy-dom/global-registrator')
   await GlobalRegistrator.unregister()
 })
