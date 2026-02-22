@@ -213,7 +213,7 @@ export const startServer = (port = 0): FixtureServer => {
 
   return {
     server,
-    port: server.port,
+    port: server.port!,
     get lastBehavioralUpdated() {
       return state.lastBehavioralUpdated
     },

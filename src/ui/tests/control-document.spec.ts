@@ -56,7 +56,7 @@ describe('controlDocument: initialization guard', () => {
   test('calling controlDocument with onPageReveal does not throw', () => {
     const factory = (_trigger: unknown) => (_detail: unknown) => {}
     expect(() =>
-      controlDocument({ onPageReveal: factory as Parameters<typeof controlDocument>[0]['onPageReveal'] }),
+      controlDocument({ onPageReveal: factory as NonNullable<Parameters<typeof controlDocument>[0]>['onPageReveal'] }),
     ).not.toThrow()
   })
 })
@@ -78,7 +78,7 @@ describe('controlDocument: pagereveal event', () => {
       called = true
     }
 
-    controlDocument({ onPageReveal: factory as Parameters<typeof controlDocument>[0]['onPageReveal'] })
+    controlDocument({ onPageReveal: factory as NonNullable<Parameters<typeof controlDocument>[0]>['onPageReveal'] })
     await new Promise((r) => setTimeout(r, 50))
 
     window.dispatchEvent(new MockPageRevealEvent())

@@ -21,7 +21,7 @@ class MockWebSocket {
   CLOSING = 2 as const
   CLOSED = 3 as const
 
-  readyState = MockWebSocket.CONNECTING
+  readyState: number = MockWebSocket.CONNECTING
   url: string
   sent: string[] = []
   #listeners = new Map<string, Set<EventHandler>>()
@@ -107,13 +107,11 @@ beforeAll(async () => {
   originalWebSocket = globalThis.WebSocket
   originalLocation = globalThis.location
 
-  // @ts-expect-error - mock WebSocket
   globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket
 })
 
 afterAll(async () => {
   globalThis.WebSocket = originalWebSocket
-  // @ts-expect-error - restore location
   globalThis.location = originalLocation
   const { GlobalRegistrator } = await import('@happy-dom/global-registrator')
   await GlobalRegistrator.unregister()

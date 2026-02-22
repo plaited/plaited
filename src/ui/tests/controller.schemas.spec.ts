@@ -207,7 +207,7 @@ describe('SnapshotEventSchema', () => {
     const msg = {
       type: CONTROLLER_EVENTS.snapshot,
       detail: {
-        kind: 'selection',
+        kind: 'selection' as const,
         bids: [
           {
             thread: 'test',
@@ -226,7 +226,7 @@ describe('SnapshotEventSchema', () => {
     const msg = {
       type: CONTROLLER_EVENTS.snapshot,
       detail: {
-        kind: 'feedback_error',
+        kind: 'feedback_error' as const,
         type: 'some_event',
         error: 'handler threw',
       },
@@ -268,7 +268,7 @@ describe('UpdateBehavioralResultSchema', () => {
   })
 
   test('accepts threads with real bThread/bSync output (generator function with $ identifier)', () => {
-    const rulesFunction = Object.assign(function* () {}, { $: '🪢' })
+    const rulesFunction = Object.assign(function* () {}, { $: '🪢' } as const)
     const result = UpdateBehavioralResultSchema.parse({
       threads: { myThread: rulesFunction },
     })

@@ -23,7 +23,7 @@ class MockWebSocket extends EventTarget {
   CLOSING = 2 as const
   CLOSED = 3 as const
 
-  readyState = MockWebSocket.CONNECTING
+  readyState: number = MockWebSocket.CONNECTING
   url: string
 
   constructor(url: string) {
@@ -43,7 +43,6 @@ beforeAll(async () => {
   const { GlobalRegistrator } = await import('@happy-dom/global-registrator')
   await GlobalRegistrator.register()
 
-  // @ts-expect-error - mock WebSocket for happy-dom environment
   globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket
 
   Object.defineProperty(self, 'location', {
