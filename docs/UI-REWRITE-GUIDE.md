@@ -1,234 +1,298 @@
 # UI Rewrite Guide
 
-Practical guide for rewriting `src/ui/`, `src/testing/`, and `src/workshop/` to support the generative web UI architecture defined in [UI.md](UI.md).
+Status report on the generative web UI framework. Documents what `plaited` and `plaited/ui` provide today, what was removed and why, and what open questions remain before server integration.
+
+**Audience:** This framework is designed for an agent, not a human. The agent generates files, the server serves them. Some files are prebuilt, some are generated on-the-fly.
 
 ## Guiding Principles
 
-1. **Server-push, not component-library.** The agent generates JSX; the server calls `ssr()`; the client is a thin behavioral shell.
-2. **bElement is escalation, not default.** Most generative UI is Level 0–2. bElement exists for Level 3–4 (form association, true encapsulation).
-3. **`src/testing/` is fully deleted.** Testing moves to `bun test` (primitives) + eval harness (agent trajectories) + V5 layered pipeline (generated UI validation). Bun's built-in `expect()` replaces custom assertion helpers. Playwright MCP / Chrome DevTools MCP replace DOM query/interaction utilities.
-4. **Atomic CSS eliminates Shadow DOM's style value.** `createStyles` hash-based class names prevent collision without encapsulation.
+1. **Server-push, not component-library.** The agent generates JSX; the server calls `createSSR().render()`; the client is a thin behavioral controller.
+2. **`controlIsland` is escalation, not default.** Most generative UI is server-rendered HTML + `p-trigger` bindings. Islands exist for isolated interactivity with their own BP engine and WebSocket.
+3. **`behavioral()` is the only primitive.** `useBehavioral` was removed — it was too prescriptive. Direct `behavioral()` + `useFeedback` is the single coordination pattern. A new skill (distinct from the old `behavioral-core`) is needed to teach agents the genome approach for composing BP programs directly.
+4. **Atomic CSS eliminates Shadow DOM's style value.** `createStyles` hash-based class names prevent collision without encapsulation. Shadow DOM is only for `decorateElements` presentational wrappers.
+5. **Errors are already observable.** The `useSnapshot` listener in `controller.ts` captures all BP engine errors and sends them to the server as `snapshot` messages. No separate error protocol is needed.
 
-## `src/ui/` File Inventory
+## What the Framework Provides
 
-### Keep — Core Primitives
+### `plaited` — Behavioral Programming (45 exports)
 
-These files power the generative web UI rendering pipeline. They stay, possibly with modifications.
+| Concern | Key Exports | Purpose |
+|---------|-------------|---------|
+| Engine | `behavioral()` | Creates `{ trigger, bThreads, useFeedback, useRestrictedTrigger, useSnapshot }` |
+| Composition | `bThread`, `bSync` | Thread sequences and synchronization idioms |
+| Guards | `isBPEvent`, `isRulesFunction` | Runtime type validation |
+| Utilities | `useRandomEvent`, `shuffleSyncs` | Randomization for BP |
+| Schemas | `BPEventSchema`, `SelectionBidSchema`, `SnapshotMessageSchema` + inferred types | Zod runtime validation |
+| Types | `Trigger`, `BThreads`, `UseFeedback`, `Handlers`, `Disconnect`, `UseRestrictedTrigger`, etc. (23 types) | Full type surface for the BP engine |
 
-| File | Role | Changes Needed |
-|---|---|---|
-| `create-template.ts` | JSX factory (`h`, `Fragment`) | None — this IS the generation pipeline |
-| `create-template.types.ts` | `TemplateObject`, `FunctionTemplate`, HTML/ARIA/SVG attribute types | None |
-| `create-template.constants.ts` | `P_TARGET`, `P_TRIGGER`, `VOID_TAGS`, `BOOLEAN_ATTRS` | None |
-| `ssr.ts` | Server-side rendering `TemplateObject` → HTML string | Modify: style collection needs to work with style deduplication tracker (see new files) |
-| `create-styles.ts` | Atomic CSS with hash-based class names | Review: ensure it works in light DOM context (no Shadow DOM adoption needed for L0-L2) |
-| `create-tokens.ts` | Design tokens as CSS custom properties | Review: tokens should scope to `:root` or document, not `:host` |
-| `create-keyframes.ts` | `@keyframes` animation generation | None |
-| `css.types.ts` | CSS type definitions | Keep — may need to add types for style deduplication |
-| `css.constants.ts` | CSS reserved keys | None |
-| `css.utils.ts` | Hash generation, rule creation, type guards | None |
-| `join-styles.ts` | Combine multiple style objects | None |
-| `delegated-listener.ts` | Event listener class for delegation | Keep — used by shell BP for `p-trigger` handling |
+### `plaited/ui` — Generative Web UI (96 exports)
 
-### Modify — Scope Changes
+#### Server-Side Rendering
 
-| File | Current Role | New Role | What Changes |
-|---|---|---|---|
-| `create-host-styles.ts` | `:host` styles for Shadow DOM | Keep but not primary path | Only used for Level 3–4 (bElement). L0–L2 use `createStyles` with light DOM. |
-| `create-tokens.ts` | Tokens scoped to `:host` | Tokens scoped to `:root` or document | Default scope changes from Shadow DOM host to document root. Server pushes token sets via `patch` message. |
+| Export | Source | Purpose |
+|--------|--------|---------|
+| `createSSR` | `create-ssr.ts` | Per-connection renderer: `{ render, clearStyles }`. Style dedup built-in. `:host{` -> `:root{` replacement for SSR. |
 
-### Keep — bElement (Level 3–4 Only)
+#### CSS-in-JS
 
-These files stay but are no longer the primary rendering path. They're escalation for form association and true encapsulation.
+| Export | Source | Purpose |
+|--------|--------|---------|
+| `createStyles` | `create-styles.ts` | Hash-based class names, light DOM (primary path) |
+| `createHostStyles` | `create-host-styles.ts` | `:host` styles for shadow DOM (`decorateElements` only) |
+| `createRootStyles` | `create-root-styles.ts` | `:root` styles for document-level styling |
+| `createKeyframes` | `create-keyframes.ts` | `@keyframes` animation generation |
+| `createTokens` | `create-tokens.ts` | Design tokens as CSS custom properties |
+| `joinStyles` | `join-styles.ts` | Merge multiple style objects |
 
-| File | Role | Notes |
-|---|---|---|
-| `b-element.ts` | Custom element factory with BP | Level 3–4 only |
-| `b-element.types.ts` | Type definitions | Keep for bElement consumers |
-| `b-element.constants.ts` | Callback names, template identifier | Keep |
-| `b-element.guards.ts` | `isBehavioralElement()`, `isBehavioralTemplate()` | Keep for runtime detection |
-| `b-element.utils.ts` | DOM binding, template cloning | Keep for bElement internals |
-| `use-template.ts` | Template factory for dynamic content | Keep — useful for bElement contexts |
-| `use-emit.ts` | Custom event dispatcher | Keep for bElement cross-shadow communication |
-| `use-attributes-observer.ts` | MutationObserver for slotted elements | Keep for bElement slot patterns |
+#### Template Types (JSX)
 
-### Removed
+| Export | Source | Purpose |
+|--------|--------|---------|
+| `FT` | `create-template.types.ts` | Function template generic — `FT<Props>` |
+| `TemplateObject` | `create-template.types.ts` | What JSX produces (tag, attrs, children, stylesheets, registry) |
+| `FunctionTemplate` | `create-template.types.ts` | Callable template with `.tag` |
+| `Attrs`, `CustomElementTag` | `create-template.types.ts` | Attribute types and tag-name constraint |
+| + 6 detailed attribute types | `create-template.types.ts` | HTML/SVG/ARIA attribute unions |
 
-| File | Fate |
-|---|---|
-| `inspector.ts` | Removed. Inspector concept moved to the agent loop's `useSnapshot`. |
+#### Custom Elements
 
-## New Files Needed
+| Export | Source | Purpose |
+|--------|--------|---------|
+| `controlIsland` | `control-island.ts` | Island of control: own BP engine, WebSocket, scoped DOM. Returns a template the agent can render with or without `decorateElements` for encapsulated styling. |
+| `decorateElements` | `decorate-elements.ts` | Presentational wrapper: shadow DOM + slots, no BP engine. Encapsulates styling and reduces DOM node concerns. Can wrap `controlIsland` output or stand alone. |
+| `controlDocument` | `control-document.ts` | Document-level BP engine for MPA view transitions. Optional `onPageReveal` factory. |
 
-### Style Deduplication Tracker
+#### Controller Protocol (Server <-> Client)
 
-**`src/ui/create-style-tracker.ts`**
+| Export | Source | Purpose |
+|--------|--------|---------|
+| `CONTROLLER_EVENTS` | `controller.constants.ts` | All event type strings (`render`, `attrs`, `update_behavioral`, `disconnect`, `user_action`, etc.) |
+| `RESTRICTED_EVENTS` | `controller.constants.ts` | Events allowed through `restrictedTrigger` (trust boundary) |
+| `SWAP_MODES` | `controller.constants.ts` | DOM insertion modes (`innerHTML`, `outerHTML`, `afterbegin`, etc.) |
+| `RenderMessageSchema`, `AttrsMessageSchema`, etc. | `controller.schemas.ts` | Zod schemas for protocol validation |
+| `UpdateBehavioralModuleSchema`, `UpdateBehavioralResultSchema` | `controller.schemas.ts` | Dynamic code loading contract |
+| `ShellHandlers` | `controller.schemas.ts` | Mapped handler type for all controller events |
 
-Tracks which stylesheets have been sent to each WebSocket connection. First render sends all styles; subsequent renders only send new ones.
+#### Document Event Types
 
-```typescript
-// Per-connection style tracker
-export const createStyleTracker = () => {
-  const sent = new Set<string>()
-  return {
-    dedup: (stylesheets: string[]): string => {
-      const fresh = stylesheets.filter(s => !sent.has(s))
-      for (const s of fresh) sent.add(s)
-      return fresh.length ? `<style>${fresh.join('')}</style>` : ''
-    },
-    reset: () => sent.clear(),
-  }
-}
-```
+| Export | Source | Purpose |
+|--------|--------|---------|
+| `DOCUMENT_EVENTS` | `control-document.ts` | `on_pagereveal`, `on_pageswap` event strings |
+| `OnPageRevealMessage`, `OnPageSwapMessage` | `control-document.ts` | Message types with `detail: ViewTransition` |
+| `BehavioralDocumentEventDetails` | `control-document.ts` | Mapped type for handler detail inference |
+| `PageRevealFactory` | `control-document.ts` | `(trigger: Trigger) => (detail: ViewTransition) => void` |
 
-### Message Protocol — Implemented
+#### Element Callback Types
 
-**`src/ui/shell.schema.ts`**
+| Export | Source | Purpose |
+|--------|--------|---------|
+| `ELEMENT_CALLBACKS` | `control-island.ts` | `on_connected`, `on_disconnected`, `on_attribute_changed`, etc. |
+| `OnConnectedMessage`, `OnAttributeChangedMessage`, etc. (8 types) | `control-island.ts` | Message types with typed details |
+| `BehavioralElementCallbackDetails` | `control-island.ts` | Mapped type for handler detail inference |
 
-Zod schemas are the single source of truth for the server ↔ client protocol. All types are derived via `z.infer`. Event type literals come from `SHELL_EVENTS` constants.
+## What Was Removed and Why
 
-**Server → Client**: `RenderMessageSchema`, `AttrsMessageSchema`, `StreamMessageSchema`, `DisconnectMessageSchema`
-**Client → Server**: `UserActionMessageSchema` (detail: action name string), `RenderedMessageSchema` (detail: target string)
+### `useBehavioral` (from `plaited`)
 
-`ShellHandlers` is derived automatically via a mapped type over the `ShellMessage` union.
+**Was:** Factory pattern with `publicEvents` whitelist, `bProgram` callback, automatic `disconnect()`.
 
-#### Streaming Protocol
+**Why removed:** Too prescriptive. It combined BP setup, event filtering, and lifecycle management into one opinionated pattern. For generative UI, the server agent needs direct access to `behavioral()` primitives — it composes `bThreads.set()`, `useFeedback()`, and `useRestrictedTrigger()` in whatever configuration the task demands. A factory with a fixed callback signature doesn't accommodate the variety of server-side orchestration patterns.
 
-Cortex output streams token-by-token:
+**Replace with:** `behavioral()` directly. The caller manages lifecycle. `useRestrictedTrigger()` handles the trust boundary that `publicEvents` used to provide.
 
-1. Server starts inference → sends `render` with a stream target region
-2. Each token → sends `stream` message with content fragment
-3. Shell BP accumulates chunks, flushes on `requestAnimationFrame`
-4. Inference complete → sends `render` replacing the stream region with final content
+**Skill note:** A new agent skill is needed that pulls the useful parts from `behavioral-core` (event selection, thread composition, synchronization idioms) but teaches the genome approach — agents compose `behavioral()` directly rather than reaching for a prescriptive factory.
 
-### Client Shell — Complete
+### `bElement` family (from `plaited/ui`)
 
-**`src/ui/shell.ts`** — Implemented. Uses `useBehavioral` with feedback handlers for render, attrs, stream, user_action, rendered, and disconnect. See source for details.
+**Was:** `b-element.ts`, `b-element.types.ts`, `b-element.constants.ts`, `b-element.guards.ts`, `b-element.utils.ts` — a custom element factory that bundled BP engine, shadow DOM, template cloning, event delegation, and attribute observation into one abstraction.
+
+**Why removed:** The generative UI architecture splits that concern into composable primitives:
+- **`controlIsland`** handles BP + WebSocket + custom element registration for interactive islands
+- **`decorateElements`** handles shadow DOM + declarative shadow root for presentational wrappers
+- **`update_behavioral`** handles dynamic client-side behavior loading
+
+These three cover all of bElement's use cases without the monolithic abstraction.
+
+### `useWorker` (from `plaited`)
+
+**Was:** Web Worker wrapper with structured clone messaging.
+
+**Why removed:** `update_behavioral` replaces the need for workers. The server sends a module URL, the client `import()`s it within the BP engine's trust boundary (`restrictedTrigger`). No worker overhead, same isolation guarantees.
+
+### `ssr()` function
+
+**Was:** Standalone `ssr(template)` that returned HTML string.
+
+**Why replaced:** Needed per-connection style deduplication. `createSSR()` returns `{ render, clearStyles }` — the `render` function tracks which stylesheets have been sent and only emits new ones. `clearStyles()` resets on reconnection.
+
+### `shell.ts` / `shell.schema.ts` / `shell.constants.ts`
+
+**Was:** Client-side behavioral shell using `useBehavioral`.
+
+**Why renamed:** Renamed to `controller.ts` / `controller.schemas.ts` / `controller.constants.ts`. The "shell" metaphor was confusing — it's a controller that manages WebSocket lifecycle, DOM updates, and user action forwarding. The rename also dropped `useBehavioral` dependency in favor of direct `behavioral()`.
+
+### Support utilities
+
+| Removed | Reason |
+|---------|--------|
+| `use-template.ts` | Template factory was bElement-specific |
+| `use-emit.ts` | Custom event dispatch was for cross-shadow communication in bElement |
+| `use-attributes-observer.ts` | MutationObserver for slotted elements was bElement-specific |
+| `inspector.ts` | Inspector replaced by `useSnapshot` on the BP engine |
+| `use-web-socket.ts` | WebSocket client moved into `controller.ts` |
+
+## `src/ui/` File Inventory (Current)
+
+### Core — Server Rendering
+
+| File | Export | Role |
+|------|--------|------|
+| `create-template.ts` | (JSX factory, not re-exported directly) | `h()` and `Fragment` — produces `TemplateObject` |
+| `create-template.types.ts` | 11 type exports | JSX type surface |
+| `create-template.constants.ts` | (internal) | `P_TARGET`, `P_TRIGGER`, `VOID_TAGS`, `BOOLEAN_ATTRS` |
+| `create-ssr.ts` | `createSSR` | Per-connection renderer with style dedup |
+
+### Core — CSS-in-JS
+
+| File | Export | Role |
+|------|--------|------|
+| `create-styles.ts` | `createStyles` | Hash-based class names (primary path) |
+| `create-host-styles.ts` | `createHostStyles` | `:host` styles for shadow DOM |
+| `create-root-styles.ts` | `createRootStyles` | `:root` document-level styles |
+| `create-keyframes.ts` | `createKeyframes` | `@keyframes` animations |
+| `create-tokens.ts` | `createTokens` | Design tokens as custom properties |
+| `join-styles.ts` | `joinStyles` | Merge style objects |
+| `css.types.ts` | 20 type exports | CSS type definitions |
+| `css.constants.ts` | (internal) | CSS reserved keys |
+| `css.utils.ts` | (internal) | Hash generation, rule creation, type guards |
+
+### Core — Client Controller
+
+| File | Export | Role |
+|------|--------|------|
+| `controller.ts` | (internal, called by controlIsland/controlDocument) | WebSocket lifecycle, DOM rendering, user action forwarding, `update_behavioral` loading |
+| `controller.constants.ts` | `CONTROLLER_EVENTS`, `RESTRICTED_EVENTS`, `SWAP_MODES` | Protocol event types and swap modes |
+| `controller.schemas.ts` | 24 exports (schemas + inferred types) | Protocol validation |
+| `delegated-listener.ts` | (internal) | Event delegation for `p-trigger` bindings |
+
+### Core — Custom Elements
+
+| File | Export | Role |
+|------|--------|------|
+| `control-island.ts` | `controlIsland` + 13 callback type exports | Interactive island with BP engine + WebSocket |
+| `control-document.ts` | `controlDocument` + 7 event type exports | Document-level controller for MPA view transitions |
+| `decorate-elements.ts` | `decorateElements` + 2 identifier exports | Presentational shadow DOM wrapper |
 
 ## Server Render Pipeline
 
-The agent generates UI through a tool-call pipeline:
+The agent generates UI through this flow:
 
+```mermaid
+flowchart LR
+    Agent["Agent Logic"] --> JSX["JSX Template"]
+    JSX --> SSR["createSSR().render()"]
+    SSR --> WS["WebSocket send"]
+    WS --> Controller["controller()"]
+    Controller --> DOM["DOM Update"]
 ```
-Cortex reasons → Actuator emits render tool call → useFeedback handler → JSX → ssr() → WebSocket
-```
-
-The server-side rendering uses Plaited's type-safe JSX throughout. Templates are `FT<Props>` functions that produce `TemplateObject`s — never raw HTML strings.
-
-Type safety flows end-to-end: `FT<Props>` validates prop types at compile time, `h()` produces typed `TemplateObject`s, `ssr()` converts to HTML strings. Invalid attributes, wrong prop types, and bad nesting are caught by the TypeScript compiler — feeding back into the agent loop as gate rejections.
-
-### Level 2+ Bundling
-
-For interactive UI (Level 2+), the server bundles typed thread modules via `Bun.build()`:
 
 ```typescript
-import { ssr } from 'plaited/ui'
+import { createSSR, createStyles } from 'plaited/ui'
+import type { FT } from 'plaited/ui'
 
-// In the render tool call handler
-const template = FormWizard({ steps })
-const html = ssr(template)
-const styleTag = styleTracker.dedup(template.stylesheets)
+// Per-connection — create once per WebSocket open
+const { render, clearStyles } = createSSR()
 
-// Bundle the typed thread module
-const bundle = await Bun.build({
-  entrypoints: [generatedThreadModulePath],
-  external: ['plaited'],
-  minify: true,
+// Agent generates a template
+const styles = createStyles({
+  card: { padding: '16px', borderRadius: '8px' },
 })
-const bundleHash = Bun.hash(await bundle.outputs[0]!.text())
-serveBundleAtPath(`/gen/${bundleHash}.js`, bundle.outputs[0]!)
 
-// Send HTML + script tag
+const Card: FT<{ title: string }> = ({ title, children }) => (
+  <div p-target="card" {...styles.card}>
+    <h2>{title}</h2>
+    {children}
+  </div>
+)
+
+// Render and send
+const html = render(<Card title="Result">Content here</Card>)
 ws.send(JSON.stringify({
   type: 'render',
-  detail: {
-    target: 'main',
-    html: `${styleTag}${html}<script type="module" src="/gen/${bundleHash}.js"></script>`,
-    swap: 'innerHTML',
-  },
+  detail: { target: 'main', html, swap: 'innerHTML' },
 }))
 ```
 
-Because thread modules are TypeScript with typed imports, the compiler catches errors before the agent's code reaches the client. Invalid `bSync` arguments, wrong event types, missing imports — all caught at build time and fed back to the Cortex as gate rejections.
+### Dynamic Behavior Loading
 
-### Tool Call Format
-
-The agent's Actuator makes tool calls. UI generation is a tool call like any other, processed through the same Actuator → Gate → Execute pipeline:
+For interactive UI, the server sends an `update_behavioral` message instead of `<script>` tags:
 
 ```typescript
-// Level 0 — static plan view
-{ tool: 'render_ui', args: { view: 'plan', data: { steps: [...] } } }
+// Server: after rendering the form UI
+ws.send(JSON.stringify({
+  type: 'update_behavioral',
+  detail: 'https://example.com/gen/form-validation.js',
+}))
 
-// Level 2 — interactive form wizard with behavioral threads
-{ tool: 'render_ui', args: { view: 'form_wizard', data: { steps: [...] }, interactive: true } }
-
-// Level 3 — custom element with form association
-{ tool: 'render_ui', args: { view: 'custom_toggle', data: { ... }, formAssociated: true } }
+// Client controller automatically:
+// 1. import(url) — fetches the module
+// 2. Validates: must have default export (factory function)
+// 3. Calls factory(restrictedTrigger)
+// 4. Registers { threads, handlers } into BP engine
+// 5. Sends behavioral_updated confirmation
 ```
 
-The server-side `useFeedback` handler interprets these:
+### Module Contract
 
-1. Generates or selects JSX (`FT` templates) for the requested view
-2. If `interactive`, generates a typed behavioral thread module
-3. If `formAssociated`, generates a typed custom element class
-4. Type-checks and bundles any client JS via `Bun.build()`
-5. Calls `ssr()` to produce HTML from `TemplateObject`
-6. Deduplicates styles against the connection's sent set
-7. Pushes over WebSocket
+```typescript
+// form-validation.js — served by the server
+import type { Trigger } from 'plaited'
+import type { UpdateBehavioralResult } from 'plaited/ui'
+import { bThread, bSync } from 'plaited'
 
-## Lifecycle & Recovery
+const factory = (trigger: Trigger): UpdateBehavioralResult => ({
+  threads: {
+    validation: bThread([
+      bSync({ waitFor: 'user_action' }),
+      bSync({ request: { type: 'validate' } }),
+    ], true),
+  },
+  handlers: {
+    validate(detail) {
+      // Validation logic
+      trigger({ type: 'user_action', detail: { type: 'validated' } })
+    },
+  },
+})
 
-### Connection
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Browser
-    participant Shell as Shell BP
-    participant WS as WebSocket
-    participant Bun as Bun Orchestrator
-
-    User->>Browser: Navigates to agent URL
-    Browser->>Bun: HTTP GET / (initial page shell)
-    Bun-->>Browser: Minimal HTML + shell.js
-    Browser->>Shell: behavioral() initialized
-    Shell->>WS: Connect /agent
-    WS->>Bun: Connection established
-    Bun->>WS: render message (initial UI from materialized view)
-    WS->>Shell: trigger(renderEvent)
-    Shell->>Browser: swap HTML into DOM
+export default factory
 ```
 
-### Reconnection
+## Protocol Message Reference
 
-```mermaid
-sequenceDiagram
-    participant Shell as Shell BP
-    participant WS as WebSocket
-    participant Bun as Bun Orchestrator
+### Server -> Client
 
-    Note over WS: Connection lost
-    Shell->>WS: Reconnect attempt
-    WS->>Bun: New connection
-    Shell->>WS: sync message with lastEventTs
-    Bun->>WS: Missed render events since timestamp
-    WS->>Shell: Replay events to reconstruct UI
-    Note over Shell: Event-sourced islands replay from server-stored logs
-```
+| Message | Schema | Detail | Purpose |
+|---------|--------|--------|---------|
+| `render` | `RenderMessageSchema` | `{ target, html, swap? }` | Insert/replace DOM content |
+| `attrs` | `AttrsMessageSchema` | `{ target, attr: Record<string, string\|number\|boolean\|null> }` | Update element attributes |
+| `update_behavioral` | `UpdateBehavioralMessageSchema` | `httpUrl` | Load behavioral module |
+| `disconnect` | `DisconnectMessageSchema` | `undefined` | Tear down controller |
 
-### Crash Recovery
+### Client -> Server
 
-- **Browser refresh:** Shell reconnects. Server re-renders current state from materialized views. Event-sourced islands restore from server-stored event logs.
-- **Server restart:** Event log persists in SQLite. Materialized views rebuild. WebSocket reconnects. Fresh render sent.
-- **Both crash:** On next connection, event log replays. Agent resumes from last recorded decision.
+| Message | Schema | Detail | Purpose |
+|---------|--------|--------|---------|
+| `root_connected` | `RootConnectedMessageSchema` | `string` (element tag) | Report root element type |
+| `user_action` | `UserActionMessageSchema` | `string` (action type) | User triggered an action |
+| `behavioral_updated` | `BehavioralUpdatedMessageSchema` | `{ src, threads?, handlers? }` | Module loaded confirmation |
+| `snapshot` | `SnapshotEventSchema` | `SnapshotMessage` | BP engine observability (includes errors) |
 
-## Generation Spectrum — Reference Examples
+## Generation Spectrum
 
-The agent generates UI at any point on this spectrum. These examples show what flows through the server render pipeline at each level.
+### Level 0-1: Server-Rendered JSX
 
-### Level 0–1: Server-Rendered JSX
-
-Zero client JS beyond the shell. Native HTML interactivity provides instant feedback: `<details>` expands/collapses, `<dialog>` manages focus trapping, CSS `:checked` + sibling selectors toggle visual state — all without JS or server round-trips.
+Zero client JS beyond the controller. Native HTML interactivity: `<details>`, `<dialog>`, CSS `:checked` + sibling selectors.
 
 ```typescript
 import type { FT } from 'plaited/ui'
@@ -236,11 +300,10 @@ import { createStyles } from 'plaited/ui'
 
 const styles = createStyles({
   toolOutput: { fontFamily: 'monospace', fontSize: '0.875rem' },
-  confirmDialog: { padding: '1.5rem', maxWidth: '24rem' },
   actions: { display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' },
 })
 
-// Expandable tool output — Level 1, no JS, no round-trip
+// No JS, no round-trip — <details> provides expand/collapse
 const ToolOutput: FT<{ command: string; output: string }> = ({ command, output }) => (
   <details>
     <summary {...styles.toolOutput}>{command}</summary>
@@ -248,9 +311,9 @@ const ToolOutput: FT<{ command: string; output: string }> = ({ command, output }
   </details>
 )
 
-// Confirmation dialog — Level 1, native <dialog>, accessible
+// p-trigger sends user_action to server — server decides what happens
 const ConfirmDialog: FT<{ prompt: string; action: string }> = ({ prompt, action }) => (
-  <dialog p-target="confirm-dialog" open {...styles.confirmDialog}>
+  <dialog p-target="confirm-dialog" open>
     <p>{prompt}</p>
     <div {...styles.actions}>
       <button p-trigger={{ click: `${action}:approve` }}>Approve</button>
@@ -260,396 +323,361 @@ const ConfirmDialog: FT<{ prompt: string; action: string }> = ({ prompt, action 
 )
 ```
 
-### Level 2: JSX + Behavioral Threads
+### Level 2: Server JSX + Dynamic Behavioral Threads
 
-When the agent needs client-side coordination that native HTML can't provide, it generates behavioral thread modules as standalone ES modules served at a URL. The server sends an `add_b_threads` message and the shell dynamically imports and validates them — no bundling step, no `<script>` tags.
-
-**Constraint**: Level 2 threads use pure BP coordination only — `bThread`/`bSync` with no DOM APIs. This makes them safe to load via `import()` rather than script execution.
-
-#### Protocol
-
-The server sends an `add_b_threads` message specifying the module URL and which named exports to load:
-
-```json
-{
-  "type": "add_b_threads",
-  "detail": {
-    "src": "https://example.com/wizard-threads.js",
-    "modules": ["wizardValidation", "wizardProgress", "wizardSync"]
-  }
-}
-```
-
-The shell handler (`shell.ts`):
-1. Dynamically imports the `src` URL
-2. Validates each named export with `isRulesFunction` (checks the `RULES_FUNCTION_IDENTIFIER` brand)
-3. Calls `bThreads.set()` with the validated threads
-4. Acks with a `b_threads_added` message echoing the original detail
-
-See `AddBThreadsMessageSchema` and `BThreadsAddedMessageSchema` in `src/ui/shell.schema.ts`.
-
-#### Agent-Generated Thread Module
+When native HTML can't provide the coordination, the server loads behavioral modules via `update_behavioral`. Threads use pure BP — `bThread`/`bSync` with no DOM APIs.
 
 ```typescript
-// wizard-threads.ts — served as ES module at a URL
-import { bThread, bSync } from 'plaited'
+// Server renders the wizard UI
+ws.send(JSON.stringify({
+  type: 'render',
+  detail: { target: 'main', html: render(<FormWizard steps={steps} />), swap: 'innerHTML' },
+}))
 
-export const wizardValidation = bThread([
-  bSync({
-    waitFor: ({ type }) => type === 'wizard:next',
-    block: ({ type, detail }) =>
-      type === 'wizard:advance' && !(detail as { valid: boolean }).valid,
-  }),
-  bSync({ request: { type: 'wizard:showErrors' } }),
-], true)
+// Server loads the validation behavior
+ws.send(JSON.stringify({
+  type: 'update_behavioral',
+  detail: 'https://example.com/gen/wizard-validation.js',
+}))
 
-export const wizardProgress = bThread([
-  bSync({ waitFor: 'wizard:advance' }),
-  bSync({ request: { type: 'wizard:renderStep' } }),
-], true)
-
-export const wizardSync = bThread([
-  bSync({ waitFor: 'wizard:advance' }),
-  bSync({ request: { type: 'sendToServer' } }),
-], true)
+// Server waits for behavioral_updated before accepting form submissions
 ```
 
-Each export is a `RulesFunction` — a generator function branded with `RULES_FUNCTION_IDENTIFIER` by `bThread()`. The shell rejects any export that fails the `isRulesFunction` guard.
+### Level 3: controlIsland + decorateElements
 
-#### Corresponding JSX Template
+For regions that need their own BP engine and WebSocket, use `controlIsland`. It returns a template the agent renders. Optionally wrap with `decorateElements` for encapsulated styling that reduces DOM node concerns.
 
-The template is still Level 1 JSX — `p-trigger` bindings fire shell events that the Level 2 threads coordinate:
+**controlIsland** — interactive island with own BP engine:
 
 ```typescript
-import type { FT } from 'plaited/ui'
-import { createStyles } from 'plaited/ui'
+import { controlIsland } from 'plaited/ui'
 
-const styles = createStyles({
-  wizard: { display: 'flex', flexDirection: 'column', gap: '1rem' },
-  stepIndicator: { display: 'flex', gap: '0.5rem' },
+const ChatWidget = controlIsland({
+  tag: 'chat-widget',
+  observedAttributes: ['session-id'],
 })
 
-type WizardStep = { label: string; fields: FT[] }
-
-const FormWizard: FT<{ steps: WizardStep[] }> = ({ steps }) => (
-  <div p-target="wizard" {...styles.wizard}>
-    <nav {...styles.stepIndicator}>
-      {steps.map((s, i) => (
-        <span data-step={i}>{s.label}</span>
-      ))}
-    </nav>
-    <div p-target="wizard-content">{steps[0]?.fields}</div>
-    <button p-trigger={{ click: 'wizard:next' }}>Next</button>
-  </div>
+// Server renders the island
+const html = render(
+  <ChatWidget session-id="abc123">
+    <div p-target="messages">Loading...</div>
+    <input p-trigger={{ keydown: 'chat:send' }} />
+  </ChatWidget>
 )
 ```
 
-### Level 3–4: Custom Elements
-
-Custom elements are used when the platform demands them — form association via `ElementInternals`, true DOM encapsulation, or slot-based composition.
+**decorateElements** — presentational shadow DOM for style encapsulation:
 
 ```typescript
-// Level 3 — custom element for form association, no behavioral needed
-import { createStyles } from 'plaited/ui'
+import { decorateElements, createHostStyles } from 'plaited/ui'
 
-const styles = createStyles({
-  track: {
-    width: '2.5rem',
-    height: '1.25rem',
-    borderRadius: '0.625rem',
-    backgroundColor: 'var(--surface-2)',
-    transition: 'background-color 150ms',
-    cursor: 'pointer',
-  },
-  thumb: {
-    width: '1rem',
-    height: '1rem',
-    borderRadius: '50%',
-    backgroundColor: 'var(--surface-1)',
-    transition: 'transform 150ms',
+const Card = decorateElements({
+  tag: 'ui-card',
+  shadowDom: (
+    <>
+      <div class={styles.wrapper}>
+        <slot name="header" />
+        <slot />
+      </div>
+    </>
+  ),
+  hostStyles: createHostStyles({ display: 'block' }),
+})
+```
+
+`decorateElements` can also wrap a `controlIsland` to add style encapsulation to an interactive island.
+
+## Open Design Questions
+
+These are unresolved architectural decisions. See also [WEBSOCKET-ARCHITECTURE.md](WEBSOCKET-ARCHITECTURE.md) for WebSocket-specific decisions (including WebSocket-to-island mapping and MPA session management).
+
+### 1. Server-Side BP Orchestration
+
+**Resolved direction:** Favor `behavioral()` directly. The agent composes `bThreads.set()`, `useFeedback()`, and `useRestrictedTrigger()` in whatever configuration the task demands. No prescriptive factory.
+
+**Remaining work:** Create a new agent skill (distinct from `behavioral-core`) that teaches the genome approach — how agents compose BP programs directly for server-side coordination. Should pull useful parts from `behavioral-core` (event selection, thread composition, synchronization idioms) but frame them for agent-centric building rather than human developer patterns.
+
+### 2. Module Serving Strategy for `update_behavioral`
+
+The protocol sends an HTTP(S) URL for `import()`. The agent generates files and the server serves them. Some modules are prebuilt, some are generated on-the-fly.
+
+**Prior art:** The old workshop used `Bun.build()` with `splitting: true` at startup, producing a `Record<string, Response>` passed to `Bun.serve({ routes })`. Each entry became a pre-built `Response` with content-type headers. `Bun.serve`'s static `routes` map handles these with zero per-request overhead.
+
+**Recommendations:**
+
+#### A. Hybrid Static + Dynamic Routes
+
+Pre-build known modules at server startup with `Bun.build({ splitting: true })` into the static `routes` map. Agent-generated modules go through the `fetch` fallback with content-hash URLs for cache busting:
+
+```typescript
+const staticRoutes = await buildKnownModules(entrypoints) // Record<string, Response>
+
+Bun.serve({
+  routes: staticRoutes,
+  async fetch(req, server) {
+    const { pathname } = new URL(req.url)
+    // Agent-generated modules served from in-memory map
+    const generated = generatedModules.get(pathname)
+    if (generated) return generated
+    // WebSocket upgrade, 404, etc.
   },
 })
-
-class CustomToggle extends HTMLElement {
-  static formAssociated = true
-  #internals: ElementInternals
-
-  constructor() {
-    super()
-    this.#internals = this.attachInternals()
-  }
-
-  connectedCallback() {
-    if (this.hasAttribute('checked')) {
-      this.#internals.states.add('checked')
-      this.#internals.setFormValue('on', this.getAttribute('value') ?? 'checked')
-    }
-    this.addEventListener('click', this.#handleClick)
-  }
-
-  disconnectedCallback() {
-    this.removeEventListener('click', this.#handleClick)
-  }
-
-  #handleClick = () => {
-    if (this.#internals.states.has('disabled')) return
-    const checked = !this.#internals.states.has('checked')
-    this.#internals.states.toggle('checked')
-    this.#internals.setFormValue(checked ? 'on' : 'off')
-    this.dispatchEvent(new Event('change', { bubbles: true }))
-  }
-}
 ```
 
-For Level 4 (custom element + behavioral coordination), the element uses `bElement` from `plaited/ui` when it needs the full BP toolkit — blocking, thread composition, `useSnapshot` observability.
+#### B. All-Dynamic with Bun.build Per-Request
 
-### Event-Sourced State (Complex Elements)
-
-For elements with state worth preserving — code editors, multi-step workflows, drag-and-drop builders — the agent generates event-sourced behavioral programs. State is derived from an event log, never directly mutated. `useSnapshot()` captures every BP decision. Undo is log replay.
+Skip the static `routes` map entirely. Every `update_behavioral` URL triggers `Bun.build()` on demand, cached by content hash. Simpler startup, but first-request latency per module:
 
 ```typescript
-import { behavioral, bThread, bSync } from 'plaited'
-import type { BPEvent, Trigger } from 'plaited'
+const moduleCache = new Map<string, Response>()
 
-type EditorState = {
-  content: string
-  cursor: number
-  selections: Array<{ start: number; end: number }>
+// When agent generates a behavioral module:
+const hash = Bun.hash(source).toString(36)
+const path = `/gen/${hash}.js`
+if (!moduleCache.has(path)) {
+  const { outputs } = await Bun.build({ entrypoints: [tempFile], minify: true })
+  moduleCache.set(path, new Response(await outputs[0].text(), {
+    headers: { 'content-type': 'text/javascript' },
+  }))
 }
+// Send update_behavioral with the hash URL
+```
 
-const createEditor = (el: HTMLElement, shellTrigger: Trigger) => {
-  const { trigger, bThreads, useFeedback, useSnapshot } = behavioral()
+#### C. Write-to-Disk + Static Serve
 
-  const eventLog: BPEvent[] = []
-  let state: EditorState = { content: '', cursor: 0, selections: [] }
+Agent writes `.ts` files to a `gen/` directory. A file watcher (or explicit trigger) runs `Bun.build()` and the output goes to a static directory served by `Bun.serve({ routes })` or `Bun.file()`:
 
-  // Every BP decision is logged — state is derived, not mutated
-  useSnapshot((candidates) => {
-    const selected = candidates.find(c => c.selected)
-    if (selected) {
-      eventLog.push(selected)
-      state = reduceEditorState(state, selected)
+```typescript
+// Agent writes source
+await Bun.write(`gen/src/${name}.ts`, source)
+// Build to servable JS
+await Bun.build({ entrypoints: [`gen/src/${name}.ts`], outdir: 'gen/dist', minify: true })
+// Serve from gen/dist/ via fetch handler
+```
+
+### 3. `createSSR` + Route Lifecycle
+
+`createSSR()` returns `{ render, clearStyles }` — one per connection. The server uses Bun route functions for HTTP and `server.upgrade()` for WebSocket.
+
+**Recommendations:**
+
+#### A. Per-WebSocket-Connection Ownership
+
+Create `createSSR()` in the WebSocket `open` handler. The instance lives in `ws.data` alongside session state. `clearStyles()` on close, discard on disconnect:
+
+```typescript
+Bun.serve({
+  async fetch(req, server) {
+    const sessionId = getSessionCookie(req)
+    server.upgrade(req, { data: { sessionId } })
+  },
+  websocket: {
+    open(ws) {
+      ws.data.ssr = createSSR()
+    },
+    message(ws, message) {
+      const html = ws.data.ssr.render(<Component />)
+      ws.send(JSON.stringify({ type: 'render', detail: { target: 'main', html } }))
+    },
+    close(ws) {
+      ws.data.ssr.clearStyles()
+    },
+  },
+})
+```
+
+#### B. Per-Session with Reconnection Reuse
+
+Maintain a `Map<sessionId, { ssr, state }>`. WebSocket `open` looks up or creates. On reconnect (same session, new socket), reuse the existing `ssr` instance — styles already sent don't need re-sending:
+
+```typescript
+const sessions = new Map<string, { ssr: ReturnType<typeof createSSR>, state: unknown }>()
+
+websocket: {
+  open(ws) {
+    const { sessionId } = ws.data
+    if (!sessions.has(sessionId)) {
+      sessions.set(sessionId, { ssr: createSSR(), state: {} })
     }
-  })
-
-  bThreads.set({
-    edit: bThread([
-      bSync({ waitFor: 'keystroke' }),
-      bSync({
-        request: ({ detail }) => ({
-          type: 'applyEdit',
-          detail: computeEdit(state, detail as KeyboardEvent),
-        }),
-      }),
-    ], true),
-
-    undoRedo: bThread([
-      bSync({ waitFor: ({ type }: BPEvent) => type === 'undo' || type === 'redo' }),
-      bSync({
-        request: ({ type }: BPEvent) => {
-          if (type === 'undo') {
-            const withoutLast = eventLog.filter(e => e.type === 'applyEdit').slice(0, -1)
-            return { type: 'restoreState', detail: replayLog(withoutLast) }
-          }
-          return { type: 'noop' }
-        },
-      }),
-    ], true),
-
-    periodicSync: bThread([
-      bSync({ waitFor: 'applyEdit' }),
-      bSync({ request: { type: 'syncToServer' } }),
-    ], true),
-  })
-
-  useFeedback({
-    applyEdit() { renderEditor(el, state) },
-    restoreState({ detail }: { detail: EditorState }) {
-      state = detail
-      renderEditor(el, state)
-    },
-    syncToServer() {
-      shellTrigger({
-        type: 'islandEvent',
-        detail: { islandId: el.id, event: { type: 'editorSync', detail: state } },
-      })
-    },
-  })
-
-  return {
-    trigger,
-    // Restore from server-provided event log — crash recovery
-    restore(events: BPEvent[]) {
-      for (const e of events) {
-        eventLog.push(e)
-        state = reduceEditorState(state, e)
-      }
-      renderEditor(el, state)
-    },
-  }
+    // Reuse existing ssr — client still has previously-sent styles
+  },
 }
 ```
 
-| Use Case | Event-Sourced? | Reason |
-|----------|---------------|--------|
-| Code editor | Yes | Undo/redo, crash recovery, collaborative potential |
-| Multi-step form wizard | Maybe | Undo is valuable; crash recovery depends on session length |
-| Drag-and-drop reorder | Yes | Undoable, state is complex |
-| Toggle / checkbox | No | Trivial state, no undo needed |
-| Confirmation dialog | No | Stateless — appears, user responds, gone |
-| Streaming text | No | Ephemeral — replaced by final render |
+#### C. Route Function Creates, WebSocket Consumes
 
-## `src/testing/` — Fully Deleted
+HTTP route renders the initial page (full HTML with `<head>` styles). WebSocket takes over for incremental updates. The route function creates `createSSR()`, renders the shell, then hands the instance to the WebSocket via session state:
 
-The entire `src/testing/` module is removed. Every file:
+```typescript
+Bun.serve({
+  routes: {
+    '/app': async (req, server) => {
+      const ssr = createSSR()
+      const sessionId = getSessionCookie(req)
+      const html = ssr.render(<AppShell />)
+      sessions.set(sessionId, { ssr })
+      return new Response(`<!DOCTYPE html>\n${html}`, {
+        headers: { 'content-type': 'text/html;charset=utf-8' },
+      })
+    },
+  },
+  async fetch(req, server) {
+    // WebSocket upgrade picks up the existing ssr from sessions
+    server.upgrade(req, { data: { sessionId: getSessionCookie(req) } })
+  },
+})
+```
 
-| File | Reason for Deletion |
-|---|---|
-| `story.tsx` | Story factory — stories removed |
-| `plaited-fixture.tsx` | bElement test harness — stories removed |
-| `plaited-header.tsx` | Workshop UI chrome — stories removed |
-| `plaited-mask.tsx` | Workshop overlay — stories removed |
-| `plaited-orchestrator.tsx` | Browser test orchestrator — replaced by eval harness |
-| `use-interact.ts` | DOM interaction bridge — coupled to fixture architecture, replaced by Playwright MCP |
-| `use-messenger.ts` | WebSocket fixture communication — stories removed |
-| `use-web-socket.ts` | WebSocket client for test runner — stories removed |
-| `testing.utils.ts` | Custom `assert`/`match`/`throws`/`findBy*`/`fireEvent`/`accessibilityCheck` — all replaced by Bun's `expect()`, standard DOM APIs, Playwright MCP, and eval harness graders |
-| `testing.types.ts` | Types for story testing API — stories removed |
-| `testing.schemas.ts` | Zod schemas for fixture ↔ runner protocol — stories removed |
-| `testing.constants.ts` | Event types and fixture constants — stories removed |
-| `testing.errors.ts` | Custom error classes for story failures — stories removed |
-| All `.stories.tsx` files | Stories removed |
-| All test fixtures | Coupled to story infrastructure |
+### 4. Render Acknowledgment
 
-**`src/testing.ts` barrel file** — deleted entirely.
+Current protocol is fire-and-forget: the server sends `render` and the client applies it. Should the controller send a success message back?
 
-**`package.json` exports** — remove `"./testing"` and `"./testing/*.ts"` and `"./testing/*.tsx"` subpath exports.
+**Context:** Session IDs and island IDs could play a role in correlating acknowledgments. The `snapshot` listener already sends all BP engine decisions and errors to the server.
 
-## `src/workshop/` — What Stays, What Goes
+**Recommendations:**
 
-### Keep
+#### A. Fire-and-Forget (Current)
 
-| File | New Role |
-|---|---|
-| `get-server.ts` | Web adapter dev server — serves the generative web UI preview. Modify for WebSocket message protocol. |
-| `use-dev-command.ts` | Dev command for the design workstation (ACP + web preview loop) |
-| `workshop.types.ts` | Update for new server patterns |
+No acknowledgment. The server sequences via `behavioral_updated` (for code loading) and `user_action` (for interactions). DOM rendering is assumed synchronous and reliable. The `snapshot` stream provides observability if needed.
 
-### Delete
+**Pro:** Simplest. No protocol addition. Server doesn't block on render.
+**Con:** Server can't sequence render-dependent actions (e.g., "render form, then load validation").
 
-| File | Reason |
-|---|---|
-| `collect-stories.ts` | Story discovery — stories removed |
-| `collect-behavioral-templates.ts` | BehavioralTemplate discovery for workshop — not needed |
-| `get-paths.ts` | Story URL routing — stories removed |
-| `get-entry-routes.ts` | Story JS bundling — stories removed |
-| `get-html-routes.tsx` | Story HTML pages — stories removed |
-| `get-root.ts` | Common root for story paths — stories removed |
-| `use-runner.ts` | Playwright test orchestrator — replaced by eval harness |
-| `use-test-command.ts` | Test command — rewritten or removed |
-| `check-playwright.ts` | Playwright availability check — Playwright managed differently now |
-| `workshop.schemas.ts` | Schemas for story runner protocol — stories removed |
-| `workshop.utils.ts` | Story/template discovery utilities — stories removed |
+#### B. Implicit via `user_action` Sequencing
 
-## Barrel File Changes
+No new message type. The server knows rendering is complete when the next `user_action` arrives from a `p-trigger` binding in the newly-rendered content. For render-then-load sequences, use `behavioral_updated` as the gate:
 
-### `src/ui.ts`
+```typescript
+// Server sends render, then update_behavioral
+// behavioral_updated confirms both render AND code loading completed
+ws.send(JSON.stringify({ type: 'render', detail: { target: 'main', html } }))
+ws.send(JSON.stringify({ type: 'update_behavioral', detail: moduleUrl }))
+// Wait for behavioral_updated — this implies render succeeded
+```
 
-**Add exports:**
-- `./ui/create-style-tracker.ts`
-- `./ui/protocol.types.ts`
-- `./ui/protocol.schemas.ts`
-- `./ui/shell.ts`
-- `./ui/thread-region-tracker.ts`
+**Pro:** No new message type. Works for the most common sequence.
+**Con:** No confirmation for render-only messages.
 
-**Keep all existing exports** — the core primitives don't change.
+#### C. Explicit `rendered` Message with Correlation ID
 
-### `src/testing.ts`
+Add a `rendered` client-to-server message. The server includes an optional `id` in render messages; the client echoes it back. Session ID or island ID scopes the acknowledgment:
 
-**Delete entirely.**
+```typescript
+// Server -> Client
+{ type: 'render', detail: { target: 'main', html, id: 'r1' } }
 
-### `src/workshop.ts`
+// Client -> Server (after DOM update)
+{ type: 'rendered', detail: { id: 'r1' } }
+```
 
-**Rewrite** — remove story collection/routing exports, keep server and dev command exports.
+**Pro:** Server can precisely sequence render-dependent actions.
+**Con:** Protocol complexity. Most renders don't need acknowledgment.
 
-### `package.json`
+### 5. Streaming Protocol
 
-Remove testing subpath exports. Keep workshop exports (narrowed).
+The old guide described `stream` messages for token-by-token output. Current protocol doesn't include this.
+
+**Recommendations:**
+
+#### A. Multiple `render` Messages with `beforeend` Swap
+
+Use the existing protocol. Server sends incremental `render` messages with `swap: 'beforeend'` to append fragments. No new message type:
+
+```typescript
+// Server streams tokens by appending to a container
+for await (const chunk of llmStream) {
+  ws.send(JSON.stringify({
+    type: 'render',
+    detail: { target: 'stream-output', html: chunk, swap: 'beforeend' },
+  }))
+}
+```
+
+**Pro:** Zero protocol changes. Works today.
+**Con:** One WebSocket message per chunk. No client-side batching.
+
+#### B. New `stream` Message with Client-Side RAF Batching
+
+Add a `stream` message type. The controller buffers incoming chunks and flushes via `requestAnimationFrame` for smooth rendering:
+
+```typescript
+// Server -> Client
+{ type: 'stream', detail: { target: 'stream-output', chunk: 'partial text...' } }
+{ type: 'stream', detail: { target: 'stream-output', chunk: ' more text', done: true } }
+```
+
+**Pro:** Optimized rendering. Server controls granularity.
+**Con:** New protocol message. Client needs buffering logic.
+
+#### C. Server-Side Buffering
+
+Server batches tokens on a timer (e.g., 50ms) and sends periodic `render` messages. Client sees normal renders at a human-perceivable rate:
+
+```typescript
+const buffer: string[] = []
+const flush = () => {
+  if (buffer.length === 0) return
+  ws.send(JSON.stringify({
+    type: 'render',
+    detail: { target: 'stream-output', html: buffer.join(''), swap: 'beforeend' },
+  }))
+  buffer.length = 0
+}
+const timer = setInterval(flush, 50)
+```
+
+**Pro:** No protocol changes. Client is simple. Controllable frequency.
+**Con:** Fixed latency floor. Server manages timer lifecycle.
 
 ## Testing Strategy
 
 ### Tier 1: `bun test` — Primitives
 
-Unit tests for the UI primitives using Bun's built-in `expect()`.
-
-| What | Test File | What to Assert |
-|---|---|---|
-| JSX factory (`h`, `Fragment`) | `create-template.spec.ts` (exists) | Template objects, escaping, attributes, children |
-| `ssr()` | `ssr.spec.tsx` (exists) | HTML output, style collection, content escaping |
-| `createStyles` | `css.spec.tsx` (exists) | Hash determinism, class name generation, rule output |
-| `createTokens` | `css.spec.tsx` (exists) | Custom property generation, nesting, `:root` scoping |
-| `createKeyframes` | `css.spec.tsx` (exists) | Animation rule output |
-| `joinStyles` | New spec | Style merging, deduplication |
-| `createStyleTracker` | New spec | Dedup logic, reset, first-render vs subsequent |
-| Protocol schemas | New spec | Zod parse/reject for each message type |
-| `DelegatedListener` | New spec | Event delegation, sync/async callbacks |
-| Shell BP threads | New spec (with happy-dom) | Input protection, stream batching, render ack |
-| bElement | New spec (with happy-dom) | Level 3–4 custom element lifecycle, form association |
+| What | Test File | Status |
+|------|-----------|--------|
+| JSX factory | `create-template.spec.ts` | Exists |
+| SSR rendering | `create-ssr.spec.tsx` | Exists (renamed from `ssr.spec.tsx`) |
+| CSS utilities | Split into `create-styles.spec.tsx`, `create-host-styles.spec.tsx`, `create-keyframes.spec.ts`, `create-tokens.spec.ts`, `join-styles.spec.ts`, `css-utils.spec.ts` | Pending (see test split plan) |
+| Protocol schemas | `controller.schemas.spec.ts` | Needed |
+| Controller logic | `controller.spec.ts` (with happy-dom) | Needed |
+| `controlIsland` | `control-island.spec.ts` (with happy-dom) | Needed |
+| `controlDocument` | `control-document.spec.ts` (with happy-dom) | Needed |
 
 ### Tier 2: Eval Harness — Agent UI Generation
 
-Design tasks with graders that validate the agent's ability to generate correct UI.
+Design tasks with graders that validate the agent's ability to generate correct UI via the protocol.
 
-```jsonl
-{"id":"gen-nav","input":"Generate a responsive navigation bar","hint":"nav element, responsive breakpoints, keyboard navigable"}
-{"id":"gen-form","input":"Generate an accessible login form","hint":"labels, ARIA, error states, form validation"}
-{"id":"gen-table","input":"Generate a sortable data table","hint":"table element, sort controls, ARIA sort attributes"}
-```
+### Tier 3: End-to-End — Generated UI Validation
 
-Graders validate: semantic HTML, accessibility (axe-core), style token usage, bThread correctness.
+Playwright-based validation of rendered output in a real browser.
 
-### Tier 3: V5 Pipeline — Generated UI Validation
+## Migration Status
 
-The three-layer pipeline from [UI.md](UI.md#v5-layered-validation-pipeline):
+### Done
 
-1. **Constitution Gate** — bThread block predicates validate Structural-IA/Modnet compliance
-2. **Agent Self-Exercise** — Agent uses Playwright MCP / Chrome DevTools MCP on its own generated UI
-3. **Human Critique** — Engineer feedback via design workstation
+- [x] Combine `ssr.ts` + `create-style-tracker.ts` into `createSSR`
+- [x] Rename `shell.*` to `controller.*`
+- [x] Rename `controlElements` to `controlIsland`
+- [x] Remove `useBehavioral` (source + test)
+- [x] Remove `useWorker`
+- [x] Remove `bElement` family
+- [x] Remove `use-template.ts`, `use-emit.ts`, `use-attributes-observer.ts`
+- [x] Remove `inspector.ts`
+- [x] Add `controlDocument` with `pageswap`/`pagereveal` view transition support
+- [x] Add `decorateElements` for presentational shadow DOM
+- [x] Add `update_behavioral` protocol for dynamic code loading
+- [x] Export typed message types (`OnPageRevealMessage`, `OnPageSwapMessage`, element callback types)
+- [x] Create generative-ui skill documentation
 
-## Migration Order
+### Remaining
 
-### Phase 1: Core Primitives (No Breaking Changes)
-
-1. Add `src/ui/create-style-tracker.ts` + spec
-2. Add `src/ui/protocol.types.ts`
-3. Add `src/ui/protocol.schemas.ts` + spec
-4. Review `create-tokens.ts` for `:root` scoping (currently `:host`)
-5. Review `create-styles.ts` for light DOM context
-6. Ensure all existing `bun test` specs pass
-
-### Phase 2: Client Shell
-
-1. Add `src/ui/shell.ts` — behavioral shell with core threads (see [Client Shell](#client-shell) above)
-2. Add `src/ui/thread-region-tracker.ts`
-3. Write shell spec with happy-dom
-
-### Phase 3: Server Integration
-
-1. Modify `src/workshop/get-server.ts` for WebSocket message protocol
-2. Update `src/workshop/use-dev-command.ts` for design workstation
-3. Wire `ssr()` + style tracker + WebSocket push (see [Server Render Pipeline](#server-render-pipeline) above)
-
-### Phase 4: Delete Legacy
-
-1. Delete `src/testing/` entirely
-2. Delete `src/testing.ts` barrel
-3. Delete all `.stories.tsx` files
-4. Delete story infrastructure from `src/workshop/`
-5. Update `package.json` exports
-6. Update `src/workshop.ts` barrel
-
-### Phase 5: ACP + CLI
-
-1. Define CLI JSON interface (capability surface)
-2. Implement ACP adapter as flag (`plaited acp`) using `@agentclientprotocol/sdk`
-3. Create headless adapter schema for the plaited CLI
+- [ ] Create new agent-centric behavioral skill (genome approach, distinct from `behavioral-core`)
+- [ ] Decide module serving strategy (Q2 above: A, B, or C)
+- [ ] Decide `createSSR` + route lifecycle (Q3 above: A, B, or C)
+- [ ] Decide render acknowledgment pattern (Q4 above: A, B, or C)
+- [ ] Decide streaming protocol (Q5 above: A, B, or C)
+- [ ] Implement server-side WebSocket handler with `Bun.serve()`
+- [ ] Add missing test files (controller, schemas, controlIsland, controlDocument)
+- [ ] Split CSS test file (see test split plan)
+- [ ] Update `package.json` exports
+- [ ] Update README with current API surface
