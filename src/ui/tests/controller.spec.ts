@@ -108,6 +108,13 @@ beforeAll(async () => {
   originalLocation = globalThis.location
 
   globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket
+
+  // Mock self.location.origin — happy-dom defaults to about:blank where origin is 'null'
+  Object.defineProperty(self, 'location', {
+    value: { origin: 'http://localhost:3457' },
+    writable: true,
+    configurable: true,
+  })
 })
 
 afterAll(async () => {
