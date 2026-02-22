@@ -92,7 +92,6 @@
     "cz-conventional-changelog": "3.3.0",
     "format-package": "7.0.0",
     "lint-staged": "16.2.7",
-    "playwright": "1.58.2",
     "sinon": "21.0.1",
     "typescript": "5.9.3",
     "typescript-language-server": "5.1.3"
