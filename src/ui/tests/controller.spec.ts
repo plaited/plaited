@@ -185,7 +185,8 @@ describe('controller: mock diagnostics', () => {
   })
 
   test('self === globalThis after happy-dom registration', () => {
-    expect(self).toBe(globalThis)
+    // self may be a getter returning BrowserWindow after happy-dom registers
+    expect(self === globalThis).toBe(true)
   })
 })
 
