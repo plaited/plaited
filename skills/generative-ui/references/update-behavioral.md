@@ -4,6 +4,8 @@
 
 The `update_behavioral` protocol message enables **generative UI** — the server agent can command the client browser to dynamically load and execute behavioral programming modules at runtime. This is how an agent goes beyond generating HTML to also generating the client-side logic that powers interactive behavior.
 
+**This is the only path for dynamic code loading.** Inline `<script>` tags in `render` messages are inert — the HTML spec marks scripts inserted via fragment parsing APIs (`setHTMLUnsafe`, `innerHTML`) as "parser-inserted" and suppresses execution. Scripts only execute during initial page parse or via `document.createElement('script')` + append. The `update_behavioral` protocol uses `import(url)`, which correctly fetches and evaluates ES modules at runtime.
+
 ## Flow
 
 ```mermaid

@@ -3,11 +3,9 @@
  * Tests DOM behaviors that happy-dom cannot simulate:
  * - display:contents computed style
  * - customElements.get() registration
- *
- * WebSocket roundtrip and declarative shadow DOM tests are not yet implemented.
- * The useSnapshot → send → connect recursion bug has been fixed (snapshot callback
- * now bypasses send() and writes directly when socket is open), so these can be
- * added when needed.
+ * - WebSocket roundtrip (server → render → DOM)
+ * - setHTMLUnsafe with declarative shadow DOM
+ * - update_behavioral dynamic import() roundtrip
  */
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { type FixtureServer, startServer } from './fixtures/serve.ts'
@@ -38,9 +36,8 @@ beforeAll(async () => {
   await cli('open')
   // Navigate to the control island fixture
   await cli('goto', `http://localhost:${fixture.port}/control-island.html`)
-  // Wait for the page to load and the custom element to register.
-  // The script will throw a stack overflow in connectedCallback (known bug),
-  // but element registration and CSS still work.
+  // Wait for page load, custom element registration, WebSocket connect,
+  // and server render response (root_connected → RENDER_MESSAGE).
   await new Promise((r) => setTimeout(r, 3000))
 }, 30000)
 
@@ -75,12 +72,81 @@ describe('controlIsland: real browser', () => {
     expect(result).toContain('TEST-ISLAND')
   })
 
-  test('p-target attribute is present on element', async () => {
-    const output = await cli('eval', "() => document.querySelector('test-island')?.getAttribute('p-target')")
+  test('p-target attribute is present on descendant', async () => {
+    const output = await cli('eval', "() => document.querySelector('test-island [p-target]')?.getAttribute('p-target')")
     const result = parseResult(output)
     expect(result).toContain('main')
   })
+
+  test('WebSocket roundtrip renders server content into DOM', async () => {
+    // The fixture server responds to root_connected with RENDER_MESSAGE:
+    // { type: 'render', detail: { target: 'main', html: '<div id="ws-rendered">Hello from WebSocket</div>' } }
+    const output = await cli('eval', "() => document.getElementById('ws-rendered')?.textContent")
+    const result = parseResult(output)
+    expect(result).toContain('Hello from WebSocket')
+  })
+
+  test('setHTMLUnsafe does NOT execute inline scripts (browser limitation)', async () => {
+    // Scripts inserted via setHTMLUnsafe, innerHTML, or any DOM parsing API are marked
+    // "parser-inserted" by the HTML spec and will NOT execute. Only scripts created via
+    // document.createElement('script') execute on append.
+    // This confirms that update_behavioral + import(url) is the only path for dynamic
+    // code loading — inline <script> tags in render messages are inert.
+    const output = await cli(
+      'eval',
+      "() => { const t = document.createElement('template'); t.setHTMLUnsafe('<script>window.__inlineScriptRan = true</script>'); document.body.append(t.content); return window.__inlineScriptRan === true; }",
+    )
+    const result = parseResult(output)
+    expect(result).toContain('false')
+  })
 })
 
-// TODO: Add WebSocket roundtrip and declarative shadow DOM browser tests.
-// The useSnapshot recursion bug is fixed — these can now be implemented.
+describe('controller: declarative shadow DOM', () => {
+  test('setHTMLUnsafe parses <template shadowrootmode> into shadowRoot', async () => {
+    // Navigate to the swap fixture page — server sends DSD_RENDER_MESSAGE on root_connected
+    await cli('goto', `http://localhost:${fixture.port}/swap-fixture.html`)
+    await new Promise((r) => setTimeout(r, 3000))
+
+    const output = await cli('eval', "() => !!document.getElementById('dsd-host')?.shadowRoot")
+    const result = parseResult(output)
+    expect(result).toContain('true')
+  })
+
+  test('shadow DOM contains rendered content', async () => {
+    const output = await cli(
+      'eval',
+      "() => document.getElementById('dsd-host')?.shadowRoot?.querySelector('p')?.textContent",
+    )
+    const result = parseResult(output)
+    expect(result).toContain('shadow content')
+  })
+})
+
+describe('controller: update_behavioral', () => {
+  test('dynamic import() loads module and factory runs', async () => {
+    // Navigate to behavioral fixture — server sends update_behavioral after root_connected
+    await cli('goto', `http://localhost:${fixture.port}/behavioral-fixture.html`)
+    await new Promise((r) => setTimeout(r, 3000))
+
+    // The module sets window.__behavioralModuleLoaded = true in the factory
+    const output = await cli('eval', '() => globalThis.__behavioralModuleLoaded === true')
+    const result = parseResult(output)
+    expect(result).toContain('true')
+  })
+
+  test('behavioral_updated roundtrip: server receives confirmation and renders', async () => {
+    // After the module loads, the controller sends behavioral_updated to the server.
+    // The server responds with BEHAVIORAL_CONFIRMED_MESSAGE (render with id="behavioral-confirmed").
+    const output = await cli('eval', "() => document.getElementById('behavioral-confirmed')?.textContent")
+    const result = parseResult(output)
+    expect(result).toContain('Module loaded successfully')
+  })
+
+  test('server received behavioral_updated with thread and handler names', () => {
+    // Verify the server-side state captured the behavioral_updated message
+    expect(fixture.lastBehavioralUpdated).toBeDefined()
+    const detail = (fixture.lastBehavioralUpdated as Record<string, unknown>).detail as Record<string, unknown>
+    expect(detail.threads).toContain('test_thread')
+    expect(detail.handlers).toContain('test_handler')
+  })
+})

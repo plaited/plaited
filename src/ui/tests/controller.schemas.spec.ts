@@ -267,17 +267,13 @@ describe('UpdateBehavioralResultSchema', () => {
     ).toThrow()
   })
 
-  test('threads validation: isRulesFunction rejects generator functions (known limitation)', () => {
-    // isRulesFunction checks trueTypeOf(obj) === 'function' but generator functions
-    // return 'generatorfunction', and also checks RULES_FUNCTION_IDENTIFIER as a key
-    // but bSync/bThread assign it as { $: '🪢' } (key is $, not 🪢).
-    // This means threads validation currently cannot pass with real bSync/bThread output.
+  test('accepts threads with real bThread/bSync output (generator function with $ identifier)', () => {
     const rulesFunction = Object.assign(function* () {}, { $: '🪢' })
-    expect(() =>
-      UpdateBehavioralResultSchema.parse({
-        threads: { myThread: rulesFunction },
-      }),
-    ).toThrow()
+    const result = UpdateBehavioralResultSchema.parse({
+      threads: { myThread: rulesFunction },
+    })
+    expect(result.threads).toBeDefined()
+    expect(result.threads!.myThread).toBe(rulesFunction)
   })
 })
 

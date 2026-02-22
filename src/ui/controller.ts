@@ -9,9 +9,12 @@
  * `setHTMLUnsafe`, and forwards user actions back to the server.
  *
  * Uses `setHTMLUnsafe` for DOM insertion because:
- * - Script tags (Level 2+ thread modules) must execute on insertion
  * - Declarative shadow DOM (`<template shadowrootmode>`) must be parsed
  * - Safety is enforced server-side by `createTemplate`'s trusted gate
+ *
+ * Note: Inline `<script>` tags in rendered HTML will NOT execute — the HTML spec
+ * marks scripts inserted via parsing APIs as "parser-inserted" and suppresses
+ * execution. Use `update_behavioral` + `import(url)` for dynamic code loading.
  *
  * @public
  */
