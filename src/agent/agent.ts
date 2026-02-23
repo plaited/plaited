@@ -1,7 +1,7 @@
 import { behavioral } from '../behavioral/behavioral.ts'
 import { bSync, bThread } from '../behavioral/behavioral.utils.ts'
 import { AGENT_EVENTS, RISK_CLASS, TOOL_STATUS } from './agent.constants.ts'
-import type { AgentPlan, AgentToolCall, TrajectoryStep } from './agent.schemas.ts'
+import type { AgentPlan, AgentToolCall, ToolDefinition, TrajectoryStep } from './agent.schemas.ts'
 import { AgentConfigSchema } from './agent.schemas.ts'
 import type {
   AgentEventDetails,
@@ -12,8 +12,6 @@ import type {
   ToolExecutor,
 } from './agent.types.ts'
 import { buildContextMessages, createTrajectoryRecorder, parseModelResponse } from './agent.utils.ts'
-
-const SAVE_PLAN_TOOL = 'save_plan'
 
 /**
  * Creates an agent loop wired on `behavioral()` implementing the 6-step cycle:
@@ -42,7 +40,7 @@ export const createAgentLoop = ({
   config: {
     model: string
     baseUrl: string
-    tools?: Record<string, unknown>[]
+    tools?: ToolDefinition[]
     systemPrompt?: string
     maxIterations?: number
     temperature?: number
@@ -175,7 +173,7 @@ export const createAgentLoop = ({
       const savePlanCalls: AgentToolCall[] = []
       const actionCalls: AgentToolCall[] = []
       for (const tc of parsed.toolCalls) {
-        if (tc.name === SAVE_PLAN_TOOL) {
+        if (tc.name === AGENT_EVENTS.save_plan) {
           savePlanCalls.push(tc)
         } else {
           actionCalls.push(tc)

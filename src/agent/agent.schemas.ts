@@ -2,81 +2,6 @@ import { z } from 'zod'
 import { RISK_CLASS, TOOL_STATUS } from './agent.constants.ts'
 
 // ============================================================================
-// Trajectory Step Schemas (canonical source — eval harness will import these)
-// ============================================================================
-
-/**
- * Thought trajectory step — captures model reasoning/thinking.
- *
- * @public
- */
-export const ThoughtStepSchema = z.object({
-  type: z.literal('thought'),
-  content: z.string(),
-  timestamp: z.number(),
-  stepId: z.string().optional(),
-})
-
-/**
- * Message trajectory step — user-facing model output.
- *
- * @public
- */
-export const MessageStepSchema = z.object({
-  type: z.literal('message'),
-  content: z.string(),
-  timestamp: z.number(),
-  stepId: z.string().optional(),
-})
-
-/**
- * Tool call trajectory step — records tool invocation and result.
- *
- * @public
- */
-export const ToolCallStepSchema = z.object({
-  type: z.literal('tool_call'),
-  name: z.string(),
-  status: z.string(),
-  input: z.unknown().optional(),
-  output: z.unknown().optional(),
-  duration: z.number().optional(),
-  timestamp: z.number(),
-  stepId: z.string().optional(),
-})
-
-/**
- * Plan trajectory step — records a plan proposed by the model.
- *
- * @public
- */
-export const PlanStepSchema = z.object({
-  type: z.literal('plan'),
-  entries: z.array(z.unknown()),
-  timestamp: z.number(),
-  stepId: z.string().optional(),
-})
-
-/**
- * Discriminated union of all trajectory step types.
- *
- * @remarks
- * Canonical definition — structurally identical to the eval harness version.
- * The eval harness will later import from `plaited/agent`.
- *
- * @public
- */
-export const TrajectoryStepSchema = z.discriminatedUnion('type', [
-  ThoughtStepSchema,
-  MessageStepSchema,
-  ToolCallStepSchema,
-  PlanStepSchema,
-])
-
-/** Trajectory step type */
-export type TrajectoryStep = z.infer<typeof TrajectoryStepSchema>
-
-// ============================================================================
 // Agent Tool Call Schemas
 // ============================================================================
 
@@ -131,10 +56,85 @@ export const AgentPlanSchema = z.object({
 export type AgentPlan = z.infer<typeof AgentPlanSchema>
 
 // ============================================================================
+// Trajectory Step Schemas (canonical source — eval harness will import these)
+// ============================================================================
+
+/**
+ * Thought trajectory step — captures model reasoning/thinking.
+ *
+ * @public
+ */
+export const ThoughtStepSchema = z.object({
+  type: z.literal('thought'),
+  content: z.string(),
+  timestamp: z.number(),
+  stepId: z.string().optional(),
+})
+
+/**
+ * Message trajectory step — user-facing model output.
+ *
+ * @public
+ */
+export const MessageStepSchema = z.object({
+  type: z.literal('message'),
+  content: z.string(),
+  timestamp: z.number(),
+  stepId: z.string().optional(),
+})
+
+/**
+ * Tool call trajectory step — records tool invocation and result.
+ *
+ * @public
+ */
+export const ToolCallStepSchema = z.object({
+  type: z.literal('tool_call'),
+  name: z.string(),
+  status: z.string(),
+  input: z.unknown().optional(),
+  output: z.unknown().optional(),
+  duration: z.number().optional(),
+  timestamp: z.number(),
+  stepId: z.string().optional(),
+})
+
+/**
+ * Plan trajectory step — records a plan proposed by the model.
+ *
+ * @public
+ */
+export const PlanStepSchema = z.object({
+  type: z.literal('plan'),
+  entries: z.array(AgentPlanStepSchema),
+  timestamp: z.number(),
+  stepId: z.string().optional(),
+})
+
+/**
+ * Discriminated union of all trajectory step types.
+ *
+ * @remarks
+ * Canonical definition — structurally identical to the eval harness version.
+ * The eval harness will later import from `plaited/agent`.
+ *
+ * @public
+ */
+export const TrajectoryStepSchema = z.discriminatedUnion('type', [
+  ThoughtStepSchema,
+  MessageStepSchema,
+  ToolCallStepSchema,
+  PlanStepSchema,
+])
+
+/** Trajectory step type */
+export type TrajectoryStep = z.infer<typeof TrajectoryStepSchema>
+
+// ============================================================================
 // Tool Result Schema
 // ============================================================================
 
-const toolStatusValues = Object.values(TOOL_STATUS) as [string, ...string[]]
+const toolStatusValues = Object.values(TOOL_STATUS)
 
 /**
  * Result of a tool execution.
@@ -157,7 +157,7 @@ export type ToolResult = z.infer<typeof ToolResultSchema>
 // Gate Decision Schema
 // ============================================================================
 
-const riskClassValues = Object.values(RISK_CLASS) as [string, ...string[]]
+const riskClassValues = Object.values(RISK_CLASS)
 
 /**
  * Gate evaluation decision for a proposed tool call.
@@ -178,6 +178,49 @@ export const GateDecisionSchema = z.object({
 export type GateDecision = z.infer<typeof GateDecisionSchema>
 
 // ============================================================================
+// Tool Definition Schema (OpenAI function-calling format)
+// ============================================================================
+
+/**
+ * JSON Schema parameters subset for tool definitions.
+ *
+ * @remarks
+ * Validates the outer structure (`type: 'object'`, `properties`, `required`)
+ * while allowing arbitrary JSON Schema keywords via `.passthrough()`.
+ *
+ * @internal
+ */
+const ToolParametersSchema = z
+  .object({
+    type: z.literal('object'),
+    properties: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),
+    required: z.array(z.string()).optional(),
+  })
+  .passthrough()
+
+/**
+ * OpenAI function-calling tool definition.
+ *
+ * @remarks
+ * Validates the `{ type: 'function', function: { name, description?, parameters? } }`
+ * shape used by OpenAI-compatible inference APIs. The `parameters` field accepts
+ * any valid JSON Schema object — only the outer envelope is strictly validated.
+ *
+ * @public
+ */
+export const ToolDefinitionSchema = z.object({
+  type: z.literal('function'),
+  function: z.object({
+    name: z.string(),
+    description: z.string().optional(),
+    parameters: ToolParametersSchema.optional(),
+  }),
+})
+
+/** OpenAI function-calling tool definition */
+export type ToolDefinition = z.infer<typeof ToolDefinitionSchema>
+
+// ============================================================================
 // Agent Config Schema
 // ============================================================================
 
@@ -196,7 +239,7 @@ export type GateDecision = z.infer<typeof GateDecisionSchema>
 export const AgentConfigSchema = z.object({
   model: z.string(),
   baseUrl: z.string(),
-  tools: z.array(z.record(z.string(), z.unknown())).optional(),
+  tools: z.array(ToolDefinitionSchema).optional(),
   systemPrompt: z.string().optional(),
   maxIterations: z.number().default(50),
   temperature: z.number().default(0),

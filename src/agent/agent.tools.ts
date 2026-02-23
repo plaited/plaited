@@ -1,7 +1,6 @@
 import { resolve } from 'node:path'
 import { TOOL_STATUS } from './agent.constants.ts'
-import { isDangerousCommand, isPathSafe } from './agent.constitution.ts'
-import type { AgentToolCall, ToolResult } from './agent.schemas.ts'
+import type { AgentToolCall, ToolDefinition, ToolResult } from './agent.schemas.ts'
 import type { ToolContext, ToolExecutor, ToolHandler } from './agent.types.ts'
 
 // ============================================================================
@@ -18,7 +17,7 @@ import type { ToolContext, ToolExecutor, ToolHandler } from './agent.types.ts'
  *
  * @public
  */
-export const builtInToolSchemas: Record<string, unknown>[] = [
+export const builtInToolSchemas: ToolDefinition[] = [
   {
     type: 'function',
     function: {
@@ -50,7 +49,8 @@ export const builtInToolSchemas: Record<string, unknown>[] = [
     type: 'function',
     function: {
       name: 'list_files',
-      description: 'List files matching a glob pattern in the workspace',
+      description:
+        'List files and directories matching a glob pattern. Returns entries with path, type (file or directory), and size in bytes for files.',
       parameters: {
         type: 'object',
         properties: {
@@ -82,9 +82,6 @@ export const builtInToolSchemas: Record<string, unknown>[] = [
 const readFile: ToolHandler = async (args, ctx) => {
   const path = args.path as string
   const resolved = resolve(ctx.workspace, path)
-  if (!isPathSafe(resolved, ctx.workspace)) {
-    throw new Error(`Path "${path}" resolves outside workspace`)
-  }
   return await Bun.file(resolved).text()
 }
 
@@ -92,9 +89,6 @@ const writeFile: ToolHandler = async (args, ctx) => {
   const path = args.path as string
   const content = args.content as string
   const resolved = resolve(ctx.workspace, path)
-  if (!isPathSafe(resolved, ctx.workspace)) {
-    throw new Error(`Path "${path}" resolves outside workspace`)
-  }
   await Bun.write(resolved, content)
   return { written: path, bytes: content.length }
 }
@@ -102,18 +96,18 @@ const writeFile: ToolHandler = async (args, ctx) => {
 const listFiles: ToolHandler = async (args, ctx) => {
   const pattern = (args.pattern as string) ?? '**/*'
   const glob = new Bun.Glob(pattern)
-  const paths: string[] = []
-  for await (const entry of glob.scan({ cwd: ctx.workspace })) {
-    paths.push(entry)
+  const entries: Array<{ path: string; type: 'file' | 'directory'; size?: number }> = []
+  for await (const path of glob.scan({ cwd: ctx.workspace, onlyFiles: false })) {
+    const resolved = resolve(ctx.workspace, path)
+    const ref = Bun.file(resolved)
+    const isFile = await ref.exists()
+    entries.push(isFile ? { path, type: 'file', size: ref.size } : { path, type: 'directory' })
   }
-  return paths
+  return entries
 }
 
 const bash: ToolHandler = async (args, ctx) => {
   const command = args.command as string
-  if (isDangerousCommand(command)) {
-    throw new Error(`Dangerous command blocked: "${command}"`)
-  }
   const proc = Bun.spawn(['sh', '-c', command], {
     cwd: ctx.workspace,
     stdout: 'pipe',
@@ -147,7 +141,8 @@ const builtInHandlers: Record<string, ToolHandler> = {
  * - Merges custom tools over built-in tools (custom overrides built-in)
  * - Unknown tools return a `failed` ToolResult (not an exception)
  * - Each tool call is timed (duration in ms)
- * - Path safety is enforced inside each built-in tool handler via `isPathSafe()`
+ * - Filesystem/network containment is enforced by the deployment sandbox,
+ *   not by the tool handlers themselves
  *
  * @param options.workspace - The workspace root directory for tool execution
  * @param options.tools - Optional custom tool handlers that override built-ins

@@ -266,7 +266,7 @@ The plan is an optimization signal for Layer 0 (context assembly). It is not a s
 | Layer | Depends on Plan? | What It Uses Instead |
 |---|---|---|
 | **0 — Context Assembly** | Yes — selects tool context by active step | — |
-| **1 — Hard Gate** | No — constitution bThreads evaluate independently | Tool call structure, file paths, command content |
+| **1 — Hard Gate** | No — constitution evaluates independently | Risk classification + domain-specific custom checks |
 | **4 — Simulation** | No — simulates any gated tool call | Current state + proposed tool call |
 | **5a — Symbolic Gate** | No — evaluates simulated text | Regex/keyword matching on predicted consequences |
 | **5b — Neural Scorer** | No — scores simulated state | Progress toward goal (0/0.5/1.0) |
@@ -760,13 +760,18 @@ This is not a static snapshot. Each loop iteration assembles context fresh, with
 
 **Failure mode:** The model is neural. It may ignore or misinterpret constraints. This layer is probabilistic, not deterministic. That's why Layer 1 exists.
 
-#### Layer 1 — BP Hard Gate (Deterministic)
+#### Layer 1 — Hard Gate (Classification + Domain Checks)
 
-Every structured tool call from the model is evaluated by BP `block` predicates before execution. `trigger()` creates a temporary thread with priority 0. The super-step runs synchronously. If any bThread blocks the event, the action is denied. The rejection reason feeds back to the model as context for re-planning.
+Every structured tool call from the model is evaluated before execution. The gate has two responsibilities:
 
-**What it catches:** Everything that Layer 0 misses. Any tool call that violates a constraint is blocked deterministically — no probability, no hallucination, no prompt injection can bypass a `block` predicate.
+1. **Risk classification** — `classifyRisk()` categorizes each tool call as `read_only`, `side_effects`, or `high_ambiguity`, determining the path through the loop (skip simulation, simulate, or simulate + neural score).
+2. **Domain-specific checks** — Custom `block` predicates or `customChecks` enforce semantic rules ("require approval for database migrations", "block production config deletes"). These are domain-specific, not containment-oriented — they encode intent constraints a sandbox cannot express.
 
-**Failure mode:** The BP engine runs in userspace JavaScript. If the LLM crafts a tool call that embeds a shell escape (e.g., `bash -c "cat /data/ca_key"`), the BP check evaluates the stated command, not what the command does internally. Novel attack patterns the predicates don't cover can slip through. That's why Layer 4 exists — it predicts what the command *actually does*.
+Containment (filesystem boundaries, network isolation, dangerous command blocking) is delegated to Layer 2 (Sandbox). The gate does not validate file paths or command patterns — the deployment sandbox enforces those at the OS level.
+
+**What it catches:** Structural risk misclassification and domain-specific policy violations. Custom checks provide fast feedback — rejection reasons feed back to the model as context for re-planning, which is more useful than a cryptic sandbox error.
+
+**Failure mode:** Risk classification is based on tool name sets — a novel tool not in any set defaults to `high_ambiguity` (conservative). Custom domain checks are userspace predicates and may have gaps. That's why Layer 4 exists — it predicts what the command *actually does*.
 
 #### Layer 4 — Simulation / Dreamer (Predicted Consequences)
 
@@ -788,7 +793,7 @@ For actions with side effects that pass the Gate, the model is called with the S
 
 #### Layer 2 — Sandbox (Capability Restriction)
 
-Tool execution runs in a sandboxed subprocess with capability restrictions. The framework defines the **security contract** — what the sandbox must enforce — not the mechanism:
+Tool execution runs in a sandboxed subprocess with capability restrictions. The framework defines the **security contract** — what the sandbox must enforce — not the mechanism. The sandbox is the **primary containment boundary** — all filesystem, network, and process isolation is enforced here, not in the gate (Layer 1).
 
 | Requirement | What it means |
 |---|---|
@@ -797,19 +802,22 @@ Tool execution runs in a sandboxed subprocess with capability restrictions. The 
 | **No privilege escalation** | Subprocess cannot gain capabilities beyond what it was spawned with |
 | **Process isolation** | Subprocess cannot inspect or signal other processes |
 
-The enforcement mechanism is pluggable — the user brings their own sandbox backend:
+The enforcement mechanism is pluggable and **deployment-specific** — the genome generates the appropriate sandbox configuration based on the deployment target:
 
-| Backend | Mechanism | Strength |
-|---|---|---|
-| **Linux namespaces + seccomp** | User/mount namespaces, BPF syscall filter | Strongest — native kernel isolation |
-| **macOS Seatbelt** | `sandbox-exec` with `.sb` profile | Partial — file + network restriction, no mount isolation |
-| **Docker / OCI** | Container isolation | Strong — cross-platform, well-understood |
-| **Dedicated sandbox runtime** | Purpose-built agent sandboxes (e.g., Anthropic's `sandbox-runtime`) | Designed for agent tool execution |
-| **Cloud VM** | Hypervisor isolation | Strongest — hardware-level boundary |
+| Environment | Per-Tool Isolation | Session Isolation | Key Mechanism |
+|---|---|---|---|
+| **macOS local** | `sandbox-exec` via srt (Seatbelt kernel profiles) | Host OS | Deny-default profile, selective file/network allow |
+| **Linux local** | `bubblewrap` + `seccomp` via srt | Host OS | Mount/PID/network namespaces, BPF syscall filter |
+| **Modal** | Landlock LSM via `landrun` | Modal Sandbox (gVisor) | VFS-layer filesystem + TCP restriction, works unprivileged inside gVisor |
+| **Firecracker** | `bubblewrap` + `seccomp` via srt | Firecracker microVM | Full namespace isolation inside VM |
+
+**Two-tier isolation on Modal:** Modal's gVisor runtime blocks bubblewrap's namespace syscalls, but Landlock LSM operates at the VFS layer and works unprivileged inside any container. This enables **per-tool filesystem restriction** (read_file gets `--ro`, bash gets `--rw workspace --connect-tcp 0`) inside the broader Modal Sandbox container.
+
+**Git worktrees** provide a universal rollback layer across all environments — not a security boundary, but a recoverability mechanism. Before side-effect tools execute, the workspace state is captured via git. Failed or rejected tool results can be rolled back cheaply.
 
 **What it catches:** Any attempt to access protected resources, regardless of how the tool call was constructed. Even if Layers 0, 1, 4, and 5 all fail, the subprocess cannot read protected data or escalate privileges.
 
-**Failure mode:** Depends on backend — kernel vulnerability (Linux), profile bypass (macOS), container escape (Docker). Defense in depth means a weaker Layer 2 (e.g., macOS Seatbelt for local development) is acceptable when Layers 0, 1, and 3 are at full strength. For high-security deployments, Linux namespaces + seccomp or a dedicated sandbox runtime is recommended.
+**Failure mode:** Depends on backend — kernel vulnerability (Linux), profile bypass (macOS), gVisor escape (Modal). Defense in depth means a weaker Layer 2 (e.g., macOS Seatbelt for local development) is acceptable when Layers 0, 1, and 3 are at full strength. For high-security deployments, Modal gVisor + Landlock or Firecracker + bubblewrap is recommended.
 
 #### Layer 3 — Event Log Recovery (Audit & Replay)
 
@@ -832,7 +840,7 @@ Each layer operates on a different level of the stack and uses a different mecha
 | Layer | Stack Level | Mechanism | Can Be Bypassed By |
 |---|---|---|---|
 | 0 | Application logic | BP-orchestrated context assembly | Model ignoring instructions |
-| 1 | Application logic | Deterministic BP block predicates on tool call syntax | Novel attack patterns predicates don't cover |
+| 1 | Application logic | Risk classification + domain-specific custom checks | Novel tools default to conservative classification; custom check gaps |
 | 4 | Application logic | Model predicts consequences (State Transition Prompt) | Inaccurate prediction (hallucination) |
 | 5a | Application logic | Deterministic BP block predicates on simulated output | Patterns not in predicate set |
 | 5b | Application logic | Model scores simulated state (Reward Prompt) | Inaccurate scoring (neural, probabilistic) |

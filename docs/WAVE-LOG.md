@@ -21,10 +21,10 @@ The agent loop foundation (`src/agent/`) was complete — the 6-step BP cycle wo
 
 | Built-in Tool | Implementation | Safety |
 |---------------|---------------|--------|
-| `read_file` | `Bun.file(resolved).text()` | Path must resolve within workspace |
-| `write_file` | `Bun.write(resolved, content)` | Path must resolve within workspace |
+| `read_file` | `Bun.file(resolved).text()` | Sandbox enforces workspace boundary |
+| `write_file` | `Bun.write(resolved, content)` | Sandbox enforces workspace boundary |
 | `list_files` | `new Bun.Glob(pattern).scan({ cwd })` | Pattern scoped to workspace cwd |
-| `bash` | `Bun.spawn(['sh', '-c', cmd], { cwd })` | Dangerous command check via constitution |
+| `bash` | `Bun.spawn(['sh', '-c', cmd], { cwd })` | Sandbox enforces filesystem + network + process isolation |
 
 - Custom tools merge over built-ins (override semantics)
 - Unknown tools produce `failed` ToolResult (not exceptions)
@@ -33,13 +33,10 @@ The agent loop foundation (`src/agent/`) was complete — the 6-step BP cycle wo
 
 #### 2. Constitution (`agent.constitution.ts`)
 
-All exports are **pure functions** — no bThreads in Wave 1.
+**Thin constitution** — routing only, no containment logic. Filesystem, network, and process isolation is delegated to the deployment sandbox (srt, Landlock, Modal gVisor), which the genome generates per deployment target.
 
-- **`classifyRisk(toolCall)`** — Returns `read_only` / `side_effects` / `high_ambiguity`
-- **`isPathSafe(resolvedPath, workspace)`** — Prevents path traversal and escapes
-- **`isDangerousCommand(command)`** — Pattern-based detection of dangerous bash commands
-- **`checkSafety(toolCall, { workspace })`** — Combined file path + command validation
-- **`createGateCheck({ workspace, customChecks? })`** — Composable factory returning a `GateCheck`
+- **`classifyRisk(toolCall)`** — Returns `read_only` / `side_effects` / `high_ambiguity`. Determines the path through the agent loop (skip simulation, simulate, or simulate + neural score).
+- **`createGateCheck({ customChecks? })`** — Composable factory returning a `GateCheck`. Custom checks are the extension point for domain-specific semantic rules. No `workspace` parameter — containment is the sandbox's job.
 
 #### 3. Gate Wiring + Multi-Tool (`agent.ts`)
 
@@ -58,37 +55,37 @@ All exports are **pure functions** — no bThreads in Wave 1.
 | File | Action | Purpose |
 |------|--------|---------|
 | `src/agent/agent.tools.ts` | NEW | Tool executor factory + built-in tools + schemas |
-| `src/agent/agent.constitution.ts` | NEW | Risk classification + safety predicates |
+| `src/agent/agent.constitution.ts` | NEW | Risk classification + gate routing |
 | `src/agent/agent.types.ts` | MODIFIED | Added ToolContext, ToolHandler, GateCheck |
 | `src/agent/agent.constants.ts` | MODIFIED | Added BUILT_IN_TOOLS |
 | `src/agent/agent.ts` | MODIFIED | Gate wiring + multi-tool queue |
 | `src/agent.ts` | MODIFIED | Re-exports for new modules |
 | `src/agent/tests/agent.tools.spec.ts` | NEW | 14 tests (real temp directory) |
-| `src/agent/tests/agent.constitution.spec.ts` | NEW | 24 tests (pure function assertions) |
+| `src/agent/tests/agent.constitution.spec.ts` | NEW | 13 tests (classification + gate routing) |
 | `src/agent/tests/agent.spec.ts` | MODIFIED | 5 new integration tests (gate + multi-tool) |
 
 ### Verification
 
-- **110 tests pass** across 4 files (74ms)
+- **86 tests pass** across 4 files (51ms)
 - **0 type errors** in `src/agent/`
 - **0 lint errors** via biome
 
 ### Design Decisions
 
-1. **Pure functions over bThreads for constitution.** bThreads need the behavioral engine's event selection to provide feedback when they block events. Without Simulate/Evaluate layers (Wave 2), blocked triggers would silently drop — invisible failures. Pure functions give the same classification logic and compose cleanly into `createGateCheck`.
+1. **Thin constitution — routing only, no containment.** The gate classifies risk level (determining the path through the agent loop) and runs domain-specific custom checks. Filesystem/network/process containment is delegated to the deployment sandbox. The genome generates the appropriate sandbox configuration per deployment target (srt for local, Landlock for Modal, bubblewrap for Firecracker). This keeps the framework surface area minimal and avoids duplicating what the OS already enforces.
 
 2. **Pending queue with single-pop semantics for multi-tool.** Each tool call goes through the full gate -> execute -> result cycle individually, preserving the behavioral engine's event-by-event reasoning. The queue drains before re-invoking inference, so one model response with N tool calls = 1 inference call.
 
 3. **Failed ToolResults, not exceptions, for unknown tools.** Keeps the agent loop stable and lets the model see the error in conversation history to self-correct.
 
-4. **Path safety inside tool handlers, not just at gate level.** Defense in depth — even if a custom gate approves everything, the built-in tools still enforce workspace boundaries.
+4. **Tool handlers trust the sandbox.** Built-in tool handlers (`read_file`, `write_file`, `bash`) do not validate paths or commands. The deployment sandbox enforces workspace boundaries at the OS level. This avoids redundant userspace checks and keeps handlers simple.
 
 ### What's NOT in Wave 1
 
 | Deferred | Reason |
 |----------|--------|
 | Constitution bThreads | Needs Simulate/Evaluate feedback channels (Wave 2) |
-| Subprocess isolation | Tool handlers run in-process; sandbox layer is infrastructure |
+| Sandbox integration | Framework defines contract; genome generates sandbox config per deployment target |
 | SQLite plan_steps | Memory layer (Wave 3) |
 | Simulate (Dreamer) | Wave 2 |
 | Evaluate (Judge) | Wave 2 |

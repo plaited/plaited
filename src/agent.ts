@@ -6,7 +6,7 @@
  * This module provides access to:
  * - **Agent Loop**: {@link createAgentLoop} - Creates a 6-step agent loop (Context → Reason → Gate → Simulate → Evaluate → Execute)
  * - **Tool Executor**: {@link createToolExecutor} - Factory for tool execution with built-in tools
- * - **Constitution**: {@link createGateCheck} - Gate check factory with risk classification and safety predicates
+ * - **Constitution**: {@link createGateCheck} - Gate check factory with risk classification and domain-specific custom checks
  * - **Schemas**: Trajectory, tool call, plan, config, and gate decision schemas
  * - **Constants**: Event names, risk classes, tool status, built-in tool names
  * - **Utilities**: Inference call factory, response parser, trajectory recorder, context builder

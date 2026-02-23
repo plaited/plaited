@@ -1,4 +1,4 @@
-import type { AgentToolCall, TrajectoryStep } from './agent.schemas.ts'
+import type { AgentPlan, AgentPlanStep, AgentToolCall, TrajectoryStep } from './agent.schemas.ts'
 import type { ChatMessage, InferenceCall, ParsedModelResponse } from './agent.types.ts'
 
 // ============================================================================
@@ -148,7 +148,7 @@ export const createTrajectoryRecorder = () => {
     })
   }
 
-  const addPlan = (entries: unknown[], stepId?: string) => {
+  const addPlan = (entries: AgentPlanStep[], stepId?: string) => {
     steps.push({ type: 'plan', entries, timestamp: Date.now(), ...(stepId && { stepId }) })
   }
 
@@ -157,7 +157,7 @@ export const createTrajectoryRecorder = () => {
     addMessage,
     addToolCall,
     addPlan,
-    getSteps: () => [...steps],
+    getSteps: () => structuredClone(steps),
     reset: () => {
       steps = []
     },
@@ -184,7 +184,7 @@ export const buildContextMessages = ({
 }: {
   systemPrompt?: string
   history: ChatMessage[]
-  plan?: { goal: string; steps: Array<{ id: string; intent: string; tools: string[] }> }
+  plan?: AgentPlan
   rejections?: Array<{ toolCall: AgentToolCall; reason: string }>
 }): ChatMessage[] => {
   const messages: ChatMessage[] = []

@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { TOOL_STATUS } from '../agent.constants.ts'
-import type { AgentToolCall } from '../agent.schemas.ts'
+import { type AgentToolCall, ToolDefinitionSchema } from '../agent.schemas.ts'
 import { builtInToolSchemas, createToolExecutor } from '../agent.tools.ts'
 import type { ToolHandler } from '../agent.types.ts'
 
@@ -89,13 +89,6 @@ describe('read_file', () => {
     expect(result.output).toBe('export const app = true')
   })
 
-  test('rejects path outside workspace', async () => {
-    const executor = createToolExecutor({ workspace })
-    const result = await executor(makeToolCall('read_file', { path: '../../../etc/passwd' }))
-    expect(result.status).toBe(TOOL_STATUS.failed)
-    expect(result.error).toContain('outside workspace')
-  })
-
   test('returns failed for missing file', async () => {
     const executor = createToolExecutor({ workspace })
     const result = await executor(makeToolCall('read_file', { path: 'nonexistent.txt' }))
@@ -118,35 +111,55 @@ describe('write_file', () => {
     const content = await Bun.file(join(workspace, 'output.txt')).text()
     expect(content).toBe('written data')
   })
-
-  test('rejects path outside workspace', async () => {
-    const executor = createToolExecutor({ workspace })
-    const result = await executor(makeToolCall('write_file', { path: '../../../tmp/evil.txt', content: 'bad' }))
-    expect(result.status).toBe(TOOL_STATUS.failed)
-    expect(result.error).toContain('outside workspace')
-  })
 })
 
 // ============================================================================
 // Built-in tools: list_files
 // ============================================================================
 
+type FileEntry = { path: string; type: 'file' | 'directory'; size?: number }
+
 describe('list_files', () => {
-  test('returns matching paths', async () => {
+  test('returns entries with metadata', async () => {
     const executor = createToolExecutor({ workspace })
     const result = await executor(makeToolCall('list_files', { pattern: '*.txt' }))
     expect(result.status).toBe(TOOL_STATUS.completed)
-    const paths = result.output as string[]
-    expect(paths).toContain('hello.txt')
+    const entries = result.output as FileEntry[]
+    const hello = entries.find((e) => e.path === 'hello.txt')
+    expect(hello).toBeDefined()
+    expect(hello!.type).toBe('file')
+    expect(hello!.size).toBe(13) // 'Hello, world!' is 13 bytes
   })
 
   test('defaults to **/* when no pattern', async () => {
     const executor = createToolExecutor({ workspace })
     const result = await executor(makeToolCall('list_files', {}))
     expect(result.status).toBe(TOOL_STATUS.completed)
-    const paths = result.output as string[]
-    expect(paths.length).toBeGreaterThanOrEqual(2)
+    const entries = result.output as FileEntry[]
+    expect(entries.length).toBeGreaterThanOrEqual(2)
+    const paths = entries.map((e) => e.path)
     expect(paths).toContain('hello.txt')
+  })
+
+  test('includes directories when scanning with onlyFiles false', async () => {
+    const executor = createToolExecutor({ workspace })
+    const result = await executor(makeToolCall('list_files', { pattern: '**/*' }))
+    expect(result.status).toBe(TOOL_STATUS.completed)
+    const entries = result.output as FileEntry[]
+    const srcDir = entries.find((e) => e.path === 'src' && e.type === 'directory')
+    expect(srcDir).toBeDefined()
+    expect(srcDir!.size).toBeUndefined()
+  })
+
+  test('file entries include size in bytes', async () => {
+    const executor = createToolExecutor({ workspace })
+    const result = await executor(makeToolCall('list_files', { pattern: 'src/**' }))
+    expect(result.status).toBe(TOOL_STATUS.completed)
+    const entries = result.output as FileEntry[]
+    const appFile = entries.find((e) => e.path === 'src/app.ts')
+    expect(appFile).toBeDefined()
+    expect(appFile!.type).toBe('file')
+    expect(appFile!.size).toBe(23) // 'export const app = true' is 23 bytes
   })
 })
 
@@ -162,13 +175,6 @@ describe('bash', () => {
     expect(result.output).toBe('hello')
   })
 
-  test('rejects dangerous commands', async () => {
-    const executor = createToolExecutor({ workspace })
-    const result = await executor(makeToolCall('bash', { command: 'sudo rm -rf /' }))
-    expect(result.status).toBe(TOOL_STATUS.failed)
-    expect(result.error).toContain('Dangerous command')
-  })
-
   test('captures stderr on failure', async () => {
     const executor = createToolExecutor({ workspace })
     const result = await executor(makeToolCall('bash', { command: 'ls /nonexistent_dir_12345' }))
@@ -182,22 +188,18 @@ describe('bash', () => {
 // ============================================================================
 
 describe('builtInToolSchemas', () => {
-  test('has correct structure', () => {
+  test('each definition validates against ToolDefinitionSchema', () => {
     expect(builtInToolSchemas).toBeArray()
     expect(builtInToolSchemas.length).toBe(4)
 
-    for (const schema of builtInToolSchemas) {
-      expect(schema).toHaveProperty('type', 'function')
-      expect(schema).toHaveProperty('function')
-      const fn = schema.function as Record<string, unknown>
-      expect(fn).toHaveProperty('name')
-      expect(fn).toHaveProperty('description')
-      expect(fn).toHaveProperty('parameters')
+    for (const def of builtInToolSchemas) {
+      const result = ToolDefinitionSchema.safeParse(def)
+      expect(result.success).toBe(true)
     }
   })
 
   test('includes all built-in tool names', () => {
-    const names = builtInToolSchemas.map((s) => (s.function as Record<string, unknown>).name)
+    const names = builtInToolSchemas.map((s) => s.function.name)
     expect(names).toContain('read_file')
     expect(names).toContain('write_file')
     expect(names).toContain('list_files')

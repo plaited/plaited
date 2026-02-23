@@ -1,5 +1,12 @@
-import type { AGENT_EVENTS } from './agent.constants.ts'
-import type { AgentPlan, AgentToolCall, GateDecision, ToolResult, TrajectoryStep } from './agent.schemas.ts'
+import { AGENT_EVENTS } from './agent.constants.ts'
+import type {
+  AgentPlan,
+  AgentToolCall,
+  GateDecision,
+  ToolDefinition,
+  ToolResult,
+  TrajectoryStep,
+} from './agent.schemas.ts'
 
 // ============================================================================
 // Tool Context + Handler — used by tool executor implementations
@@ -53,7 +60,7 @@ export type ChatMessage = {
 export type InferenceRequest = {
   model: string
   messages: ChatMessage[]
-  tools?: unknown[]
+  tools?: ToolDefinition[]
   temperature?: number
 }
 
@@ -171,37 +178,22 @@ export type MessageDetail = {
  * @public
  */
 export type AgentEventDetails = {
-  [K in (typeof AGENT_EVENTS)['task']]: TaskDetail
-} & {
-  [K in (typeof AGENT_EVENTS)['context_ready']]: undefined
-} & {
-  [K in (typeof AGENT_EVENTS)['model_response']]: ModelResponseDetail
-} & {
-  [K in (typeof AGENT_EVENTS)['proposed_action']]: ProposedActionDetail
-} & {
-  [K in (typeof AGENT_EVENTS)['gate_approved']]: GateResultDetail
-} & {
-  [K in (typeof AGENT_EVENTS)['gate_rejected']]: GateResultDetail
-} & {
-  [K in (typeof AGENT_EVENTS)['simulate_request']]: ProposedActionDetail
-} & {
-  [K in (typeof AGENT_EVENTS)['simulation_result']]: unknown
-} & {
-  [K in (typeof AGENT_EVENTS)['eval_approved']]: unknown
-} & {
-  [K in (typeof AGENT_EVENTS)['eval_rejected']]: unknown
-} & {
-  [K in (typeof AGENT_EVENTS)['execute']]: ExecuteDetail
-} & {
-  [K in (typeof AGENT_EVENTS)['tool_result']]: ToolResultDetail
-} & {
-  [K in (typeof AGENT_EVENTS)['save_plan']]: SavePlanDetail
-} & {
-  [K in (typeof AGENT_EVENTS)['plan_saved']]: PlanSavedDetail
-} & {
-  [K in (typeof AGENT_EVENTS)['message']]: MessageDetail
-} & {
-  [K in (typeof AGENT_EVENTS)['loop_complete']]: undefined
+  [AGENT_EVENTS.task]: TaskDetail
+  [AGENT_EVENTS.context_ready]: undefined
+  [AGENT_EVENTS.model_response]: ModelResponseDetail
+  [AGENT_EVENTS.proposed_action]: ProposedActionDetail
+  [AGENT_EVENTS.gate_approved]: GateResultDetail
+  [AGENT_EVENTS.gate_rejected]: GateResultDetail
+  [AGENT_EVENTS.simulate_request]: ProposedActionDetail
+  [AGENT_EVENTS.simulation_result]: unknown
+  [AGENT_EVENTS.eval_approved]: unknown
+  [AGENT_EVENTS.eval_rejected]: unknown
+  [AGENT_EVENTS.execute]: ExecuteDetail
+  [AGENT_EVENTS.tool_result]: ToolResultDetail
+  [AGENT_EVENTS.save_plan]: SavePlanDetail
+  [AGENT_EVENTS.plan_saved]: PlanSavedDetail
+  [AGENT_EVENTS.message]: MessageDetail
+  [AGENT_EVENTS.loop_complete]: undefined
 }
 
 // ============================================================================

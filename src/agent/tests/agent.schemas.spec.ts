@@ -120,7 +120,7 @@ describe('PlanStepSchema', () => {
   test('accepts valid plan step', () => {
     const result = PlanStepSchema.safeParse({
       type: 'plan',
-      entries: [{ id: 'step-1', intent: 'read file' }],
+      entries: [{ id: 'step-1', intent: 'read file', tools: ['read_file'] }],
       timestamp: Date.now(),
     })
     expect(result.success).toBe(true)
@@ -439,7 +439,11 @@ describe('eval harness structural compatibility', () => {
   })
 
   test('PlanStep is accepted by eval harness schema', () => {
-    const step = PlanStepSchema.parse({ type: 'plan', entries: [{ id: 's1' }], timestamp: now })
+    const step = PlanStepSchema.parse({
+      type: 'plan',
+      entries: [{ id: 's1', intent: 'read file', tools: ['read_file'] }],
+      timestamp: now,
+    })
     const evalResult = EvalPlanStepSchema.safeParse(step)
     expect(evalResult.success).toBe(true)
   })
