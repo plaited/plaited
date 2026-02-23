@@ -323,6 +323,239 @@ describe('createMemoryDb', () => {
       expect(results).toHaveLength(0)
     })
   })
+
+  // ============================================================================
+  // Event Log
+  // ============================================================================
+
+  describe('event log', () => {
+    let memory: MemoryDb
+
+    afterEach(() => {
+      memory.close()
+    })
+
+    test('saveEventLog inserts row with all fields', () => {
+      memory = createInMemoryDb()
+      const sessionId = memory.createSession('Test')
+      memory.saveEventLog({
+        sessionId,
+        eventType: 'proposed_action',
+        thread: 'taskGate',
+        selected: true,
+        trigger: false,
+        priority: 1,
+        blockedBy: 'maxIterations',
+        interrupts: 'message',
+        detail: { toolCall: { id: 'tc-1', name: 'bash' } },
+      })
+      const rows = memory.getEventLog(sessionId)
+      expect(rows).toHaveLength(1)
+      expect(rows[0]!.event_type).toBe('proposed_action')
+      expect(rows[0]!.thread).toBe('taskGate')
+      expect(rows[0]!.selected).toBe(1)
+      expect(rows[0]!.trigger).toBe(0)
+      expect(rows[0]!.priority).toBe(1)
+      expect(rows[0]!.blocked_by).toBe('maxIterations')
+      expect(rows[0]!.interrupts).toBe('message')
+      expect(rows[0]!.detail).toBe(JSON.stringify({ toolCall: { id: 'tc-1', name: 'bash' } }))
+      expect(rows[0]!.created_at).toBeDefined()
+    })
+
+    test('saveEventLog handles nullable fields (no blockedBy/interrupts/detail)', () => {
+      memory = createInMemoryDb()
+      const sessionId = memory.createSession('Test')
+      memory.saveEventLog({
+        sessionId,
+        eventType: 'task',
+        thread: 'trigger',
+        selected: true,
+        trigger: true,
+        priority: 0,
+      })
+      const rows = memory.getEventLog(sessionId)
+      expect(rows).toHaveLength(1)
+      expect(rows[0]!.blocked_by).toBeNull()
+      expect(rows[0]!.interrupts).toBeNull()
+      expect(rows[0]!.detail).toBeNull()
+    })
+
+    test('getEventLog returns entries ordered by id', () => {
+      memory = createInMemoryDb()
+      const sessionId = memory.createSession('Test')
+      memory.saveEventLog({
+        sessionId,
+        eventType: 'task',
+        thread: 'trigger',
+        selected: true,
+        trigger: true,
+        priority: 0,
+      })
+      memory.saveEventLog({
+        sessionId,
+        eventType: 'invoke_inference',
+        thread: 'taskGate',
+        selected: true,
+        trigger: false,
+        priority: 1,
+      })
+      memory.saveEventLog({
+        sessionId,
+        eventType: 'model_response',
+        thread: 'taskGate',
+        selected: true,
+        trigger: false,
+        priority: 1,
+      })
+      const rows = memory.getEventLog(sessionId)
+      expect(rows).toHaveLength(3)
+      expect(rows[0]!.id).toBeLessThan(rows[1]!.id)
+      expect(rows[1]!.id).toBeLessThan(rows[2]!.id)
+      expect(rows[0]!.event_type).toBe('task')
+      expect(rows[1]!.event_type).toBe('invoke_inference')
+      expect(rows[2]!.event_type).toBe('model_response')
+    })
+
+    test('getEventLog scoped to session', () => {
+      memory = createInMemoryDb()
+      const session1 = memory.createSession('Task 1')
+      const session2 = memory.createSession('Task 2')
+      memory.saveEventLog({
+        sessionId: session1,
+        eventType: 'task',
+        thread: 'trigger',
+        selected: true,
+        trigger: true,
+        priority: 0,
+      })
+      memory.saveEventLog({
+        sessionId: session2,
+        eventType: 'task',
+        thread: 'trigger',
+        selected: true,
+        trigger: true,
+        priority: 0,
+      })
+      const rows1 = memory.getEventLog(session1)
+      const rows2 = memory.getEventLog(session2)
+      expect(rows1).toHaveLength(1)
+      expect(rows2).toHaveLength(1)
+      expect(rows1[0]!.session_id).toBe(session1)
+      expect(rows2[0]!.session_id).toBe(session2)
+    })
+
+    test('getEventLog returns empty array for no entries', () => {
+      memory = createInMemoryDb()
+      const sessionId = memory.createSession('Test')
+      const rows = memory.getEventLog(sessionId)
+      expect(rows).toHaveLength(0)
+    })
+
+    test('getEventLog respects limit parameter', () => {
+      memory = createInMemoryDb()
+      const sessionId = memory.createSession('Test')
+      for (let i = 0; i < 10; i++) {
+        memory.saveEventLog({
+          sessionId,
+          eventType: `event_${i}`,
+          thread: 'trigger',
+          selected: true,
+          trigger: true,
+          priority: i,
+        })
+      }
+      const rows = memory.getEventLog(sessionId, 3)
+      expect(rows).toHaveLength(3)
+      expect(rows[0]!.event_type).toBe('event_0')
+      expect(rows[2]!.event_type).toBe('event_2')
+    })
+
+    test('saveEventLog serializes detail as JSON', () => {
+      memory = createInMemoryDb()
+      const sessionId = memory.createSession('Test')
+      const detail = { nested: { array: [1, 2, 3], flag: true } }
+      memory.saveEventLog({
+        sessionId,
+        eventType: 'execute',
+        thread: 'simulationGuard',
+        selected: false,
+        trigger: false,
+        priority: 2,
+        detail,
+      })
+      const rows = memory.getEventLog(sessionId)
+      expect(rows[0]!.detail).toBe(JSON.stringify(detail))
+      expect(JSON.parse(rows[0]!.detail!)).toEqual(detail)
+    })
+
+    test('saveEventLog stores selected as integer 0/1', () => {
+      memory = createInMemoryDb()
+      const sessionId = memory.createSession('Test')
+      memory.saveEventLog({
+        sessionId,
+        eventType: 'event_a',
+        thread: 't1',
+        selected: true,
+        trigger: false,
+        priority: 0,
+      })
+      memory.saveEventLog({
+        sessionId,
+        eventType: 'event_b',
+        thread: 't2',
+        selected: false,
+        trigger: false,
+        priority: 0,
+      })
+      const rows = memory.getEventLog(sessionId)
+      expect(rows[0]!.selected).toBe(1)
+      expect(rows[1]!.selected).toBe(0)
+    })
+
+    test('saveEventLog stores trigger as integer 0/1', () => {
+      memory = createInMemoryDb()
+      const sessionId = memory.createSession('Test')
+      memory.saveEventLog({
+        sessionId,
+        eventType: 'task',
+        thread: 'ext',
+        selected: true,
+        trigger: true,
+        priority: 0,
+      })
+      memory.saveEventLog({
+        sessionId,
+        eventType: 'invoke_inference',
+        thread: 'taskGate',
+        selected: true,
+        trigger: false,
+        priority: 1,
+      })
+      const rows = memory.getEventLog(sessionId)
+      expect(rows[0]!.trigger).toBe(1)
+      expect(rows[1]!.trigger).toBe(0)
+    })
+
+    test('event_log table created alongside sessions and messages', () => {
+      memory = createInMemoryDb()
+      // Verify by saving to event_log after creating a session
+      const sessionId = memory.createSession('Test')
+      memory.saveEventLog({
+        sessionId,
+        eventType: 'task',
+        thread: 'trigger',
+        selected: true,
+        trigger: true,
+        priority: 0,
+      })
+      const rows = memory.getEventLog(sessionId)
+      expect(rows).toHaveLength(1)
+      // Also verify session and messages still work
+      memory.saveMessage({ sessionId, role: 'user', content: 'hello' })
+      const msgs = memory.getMessages(sessionId)
+      expect(msgs).toHaveLength(1)
+    })
+  })
 })
 
 // ============================================================================

@@ -1,6 +1,14 @@
 import { Database } from 'bun:sqlite'
 import { relative } from 'node:path'
-import type { MemoryDb, MemoryDbOptions, MessageRow, SearchResultRow, SessionRow } from './agent.memory.types.ts'
+import type {
+  EventLogEntry,
+  EventLogRow,
+  MemoryDb,
+  MemoryDbOptions,
+  MessageRow,
+  SearchResultRow,
+  SessionRow,
+} from './agent.memory.types.ts'
 import type { ToolDefinition } from './agent.schemas.ts'
 import type { ToolHandler } from './agent.types.ts'
 
@@ -31,6 +39,21 @@ CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id);
 CREATE VIRTUAL TABLE IF NOT EXISTS file_index USING fts5(
   path, content, tokenize='porter unicode61'
 );
+
+CREATE TABLE IF NOT EXISTS event_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id TEXT NOT NULL REFERENCES sessions(id),
+  event_type TEXT NOT NULL,
+  thread TEXT NOT NULL,
+  selected INTEGER NOT NULL DEFAULT 0,
+  trigger INTEGER NOT NULL DEFAULT 0,
+  priority INTEGER NOT NULL,
+  blocked_by TEXT,
+  interrupts TEXT,
+  detail TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_event_log_session ON event_log(session_id);
 `
 
 // ============================================================================
@@ -98,6 +121,15 @@ export const createMemoryDb = ({ path, workspace }: MemoryDbOptions): MemoryDb =
     `SELECT path, snippet(file_index, 1, '<mark>', '</mark>', '...', 32) as snippet, rank
      FROM file_index WHERE file_index MATCH $query
      ORDER BY rank LIMIT $limit`,
+  )
+
+  const insertEventLog = db.prepare(
+    `INSERT INTO event_log (session_id, event_type, thread, selected, trigger, priority, blocked_by, interrupts, detail)
+     VALUES ($sessionId, $eventType, $thread, $selected, $trigger, $priority, $blockedBy, $interrupts, $detail)`,
+  )
+
+  const selectEventLog = db.prepare<EventLogRow, { $sessionId: string; $limit: number }>(
+    'SELECT id, session_id, event_type, thread, selected, trigger, priority, blocked_by, interrupts, detail, created_at FROM event_log WHERE session_id = $sessionId ORDER BY id LIMIT $limit',
   )
 
   // ---------------------------------------------------------------------------
@@ -193,6 +225,24 @@ export const createMemoryDb = ({ path, workspace }: MemoryDbOptions): MemoryDb =
 
   const isIndexed = (): boolean => indexed
 
+  const saveEventLog = (entry: EventLogEntry): void => {
+    insertEventLog.run({
+      $sessionId: entry.sessionId,
+      $eventType: entry.eventType,
+      $thread: entry.thread,
+      $selected: entry.selected ? 1 : 0,
+      $trigger: entry.trigger ? 1 : 0,
+      $priority: entry.priority,
+      $blockedBy: entry.blockedBy ?? null,
+      $interrupts: entry.interrupts ?? null,
+      $detail: entry.detail !== undefined ? JSON.stringify(entry.detail) : null,
+    })
+  }
+
+  const getEventLog = (sessionId: string, limit = 500): EventLogRow[] => {
+    return selectEventLog.all({ $sessionId: sessionId, $limit: limit })
+  }
+
   const close = (): void => {
     db.close()
   }
@@ -207,6 +257,8 @@ export const createMemoryDb = ({ path, workspace }: MemoryDbOptions): MemoryDb =
     indexWorkspace,
     search,
     isIndexed,
+    saveEventLog,
+    getEventLog,
     close,
   }
 }

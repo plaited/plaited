@@ -2,6 +2,34 @@
 // Memory Database Types
 // ============================================================================
 
+/** Arguments for inserting an event log entry */
+export type EventLogEntry = {
+  sessionId: string
+  eventType: string
+  thread: string
+  selected: boolean
+  trigger: boolean
+  priority: number
+  blockedBy?: string
+  interrupts?: string
+  detail?: unknown
+}
+
+/** A persisted event log row */
+export type EventLogRow = {
+  id: number
+  session_id: string
+  event_type: string
+  thread: string
+  selected: number // SQLite boolean: 0 or 1
+  trigger: number // SQLite boolean: 0 or 1
+  priority: number
+  blocked_by: string | null
+  interrupts: string | null
+  detail: string | null
+  created_at: string
+}
+
 /** Options for creating a memory database */
 export type MemoryDbOptions = {
   path: string
@@ -60,5 +88,7 @@ export type MemoryDb = {
   indexWorkspace: () => Promise<void>
   search: (query: string, limit?: number) => SearchResultRow[]
   isIndexed: () => boolean
+  saveEventLog: (entry: EventLogEntry) => void
+  getEventLog: (sessionId: string, limit?: number) => EventLogRow[]
   close: () => void
 }

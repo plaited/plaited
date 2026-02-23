@@ -94,7 +94,7 @@ export const createAgentLoop = ({
   // Parse config to apply defaults (maxIterations: 50, temperature: 0)
   const { model, tools, systemPrompt, maxIterations, temperature } = AgentConfigSchema.parse(rawConfig)
 
-  const { bThreads, trigger, useFeedback } = behavioral<AgentEventDetails>()
+  const { bThreads, trigger, useFeedback, useSnapshot } = behavioral<AgentEventDetails>()
   const recorder = createTrajectoryRecorder()
 
   let resolveRun: ((value: { output: string; trajectory: TrajectoryStep[] }) => void) | null = null
@@ -131,18 +131,22 @@ export const createAgentLoop = ({
   // ---------------------------------------------------------------------------
   // Helper: call inference with current context
   // ---------------------------------------------------------------------------
-  const callInference = () =>
-    inferenceCall({
+  const callInference = () => {
+    const eventLog = sessionId && memory ? memory.getEventLog(sessionId).filter((e) => e.blocked_by) : undefined
+
+    return inferenceCall({
       model,
       messages: buildContextMessages({
         systemPrompt,
         history,
         plan: currentPlan ? { goal: currentPlan.goal, steps: currentPlan.steps } : undefined,
         rejections: rejections.length ? rejections : undefined,
+        eventLog: eventLog?.length ? eventLog : undefined,
       }),
       tools,
       temperature,
     })
+  }
 
   // ---------------------------------------------------------------------------
   // Helper: handle inference error by resolving with error message
@@ -531,6 +535,31 @@ export const createAgentLoop = ({
     [AGENT_EVENTS.loop_complete]: () => {},
   })
 
+  // ---------------------------------------------------------------------------
+  // Snapshot listener: log every BP selection decision to SQLite
+  // ---------------------------------------------------------------------------
+  let disconnectSnapshot: (() => void) | null = null
+
+  if (memory) {
+    disconnectSnapshot = useSnapshot((snapshot) => {
+      if (snapshot.kind !== 'selection') return
+      if (!sessionId) return
+      for (const bid of snapshot.bids) {
+        memory.saveEventLog({
+          sessionId: sessionId!,
+          eventType: bid.type,
+          thread: bid.thread,
+          selected: bid.selected,
+          trigger: bid.trigger,
+          priority: bid.priority,
+          blockedBy: bid.blockedBy,
+          interrupts: bid.interrupts,
+          detail: bid.detail,
+        })
+      }
+    })
+  }
+
   return {
     run: (prompt) => {
       recorder.reset()
@@ -549,6 +578,7 @@ export const createAgentLoop = ({
     },
     destroy: () => {
       disconnectFeedback()
+      disconnectSnapshot?.()
       resolveRun?.({ output: '', trajectory: recorder.getSteps() })
       resolveRun = null
     },

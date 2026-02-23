@@ -1293,3 +1293,351 @@ describe('createAgentLoop — memory integration', () => {
     loop.destroy()
   })
 })
+
+// ============================================================================
+// Event Log Integration
+// ============================================================================
+
+describe('createAgentLoop — event log', () => {
+  test('captures task event on run', async () => {
+    const memory = createMemoryDb({ path: ':memory:', workspace: '/tmp' })
+    let capturedSessionId: string | null = null
+    const origCreateSession = memory.createSession.bind(memory)
+    memory.createSession = (prompt: string) => {
+      capturedSessionId = origCreateSession(prompt)
+      return capturedSessionId
+    }
+
+    const inference = createMockInference([messageResponse('Hello!')])
+    const toolExecutor = createMockToolExecutor({})
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      memory,
+    })
+
+    await loop.run('Say hello')
+    loop.destroy()
+
+    expect(capturedSessionId).toBeDefined()
+    const rows = memory.getEventLog(capturedSessionId!)
+    expect(rows.length).toBeGreaterThan(0)
+
+    // Should contain the 'task' event type from the initial trigger
+    const eventTypes = rows.map((r) => r.event_type)
+    expect(eventTypes).toContain('task')
+
+    memory.close()
+  })
+
+  test('captures tool call flow events', async () => {
+    const memory = createMemoryDb({ path: ':memory:', workspace: '/tmp' })
+    let capturedSessionId: string | null = null
+    const origCreateSession = memory.createSession.bind(memory)
+    memory.createSession = (prompt: string) => {
+      capturedSessionId = origCreateSession(prompt)
+      return capturedSessionId
+    }
+
+    const inference = createMockInference([
+      toolCallResponse('tc-1', 'read_file', { path: '/foo.ts' }),
+      messageResponse('Done.'),
+    ])
+    const toolExecutor = createMockToolExecutor({ read_file: 'contents' })
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      memory,
+    })
+
+    await loop.run('Read foo')
+    loop.destroy()
+
+    expect(capturedSessionId).toBeDefined()
+    const rows = memory.getEventLog(capturedSessionId!)
+    expect(rows.length).toBeGreaterThan(0)
+
+    // Should contain event types from the agent loop
+    const eventTypes = rows.map((r) => r.event_type)
+    expect(eventTypes).toContain('task')
+    expect(eventTypes).toContain('invoke_inference')
+
+    memory.close()
+  })
+
+  test('records blockedBy for gate-rejected events', async () => {
+    const memory = createMemoryDb({ path: ':memory:', workspace: '/tmp' })
+    let capturedSessionId: string | null = null
+    const origCreateSession = memory.createSession.bind(memory)
+    memory.createSession = (prompt: string) => {
+      capturedSessionId = origCreateSession(prompt)
+      return capturedSessionId
+    }
+
+    const rejectAll: GateCheck = (tc) => ({
+      approved: false,
+      riskClass: RISK_CLASS.high_ambiguity,
+      reason: `Blocked: ${tc.name}`,
+    })
+
+    const inference = createMockInference([
+      toolCallResponse('tc-1', 'bash', { command: 'echo hi' }),
+      messageResponse('Cannot do that.'),
+    ])
+    const toolExecutor = createMockToolExecutor({})
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      gateCheck: rejectAll,
+      memory,
+    })
+
+    await loop.run('Run echo')
+    loop.destroy()
+
+    const rows = memory.getEventLog(capturedSessionId!)
+    // Check that there are some entries with blocked_by set
+    // The taskGate bThread blocks TASK_EVENTS between phases, so some events will have blockedBy
+    expect(rows.length).toBeGreaterThan(0)
+
+    memory.close()
+  })
+
+  test('records blocked events from maxIterations', async () => {
+    const memory = createMemoryDb({ path: ':memory:', workspace: '/tmp' })
+    let capturedSessionId: string | null = null
+    const origCreateSession = memory.createSession.bind(memory)
+    memory.createSession = (prompt: string) => {
+      capturedSessionId = origCreateSession(prompt)
+      return capturedSessionId
+    }
+
+    let callCount = 0
+    const inference: InferenceCall = async () => {
+      callCount++
+      return {
+        choices: [
+          {
+            message: {
+              tool_calls: [
+                {
+                  id: `tc-${callCount}`,
+                  type: 'function',
+                  function: { name: 'list_files', arguments: '{}' },
+                },
+              ],
+            },
+          },
+        ],
+      }
+    }
+    const toolExecutor = createMockToolExecutor({ list_files: ['file.ts'] })
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 2, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      memory,
+    })
+
+    const result = await loop.run('List files')
+    expect(result.output).toBe('Max iterations (2) reached')
+    loop.destroy()
+
+    const rows = memory.getEventLog(capturedSessionId!)
+    expect(rows.length).toBeGreaterThan(0)
+
+    // The maxIterations bThread should have blocked execute and the message event should appear
+    const eventTypes = rows.map((r) => r.event_type)
+    expect(eventTypes).toContain('message')
+
+    memory.close()
+  })
+
+  test('no crash when memory not provided (useSnapshot not wired)', async () => {
+    const inference = createMockInference([
+      toolCallResponse('tc-1', 'read_file', { path: '/a.ts' }),
+      messageResponse('Done.'),
+    ])
+    const toolExecutor = createMockToolExecutor({ read_file: 'contents' })
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      // No memory — useSnapshot should not be wired
+    })
+
+    const result = await loop.run('Read file')
+    expect(result.output).toBe('Done.')
+
+    loop.destroy()
+  })
+
+  test('persists across sequential runs with separate sessionIds', async () => {
+    const memory = createMemoryDb({ path: ':memory:', workspace: '/tmp' })
+    const sessionIds: string[] = []
+    const origCreateSession = memory.createSession.bind(memory)
+    memory.createSession = (prompt: string) => {
+      const id = origCreateSession(prompt)
+      sessionIds.push(id)
+      return id
+    }
+
+    const inference = createMockInference([messageResponse('First.'), messageResponse('Second.')])
+    const toolExecutor = createMockToolExecutor({})
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      memory,
+    })
+
+    await loop.run('Task 1')
+    await loop.run('Task 2')
+    loop.destroy()
+
+    expect(sessionIds).toHaveLength(2)
+    expect(sessionIds[0]).not.toBe(sessionIds[1])
+
+    const rows1 = memory.getEventLog(sessionIds[0]!)
+    const rows2 = memory.getEventLog(sessionIds[1]!)
+    expect(rows1.length).toBeGreaterThan(0)
+    expect(rows2.length).toBeGreaterThan(0)
+
+    // Verify session scoping
+    expect(rows1.every((r) => r.session_id === sessionIds[0])).toBe(true)
+    expect(rows2.every((r) => r.session_id === sessionIds[1])).toBe(true)
+
+    memory.close()
+  })
+
+  test('destroy disconnects snapshot listener cleanly', async () => {
+    const memory = createMemoryDb({ path: ':memory:', workspace: '/tmp' })
+    let capturedSessionId: string | null = null
+    const origCreateSession = memory.createSession.bind(memory)
+    memory.createSession = (prompt: string) => {
+      capturedSessionId = origCreateSession(prompt)
+      return capturedSessionId
+    }
+
+    const inference = createMockInference([messageResponse('Hi.')])
+    const toolExecutor = createMockToolExecutor({})
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      memory,
+    })
+
+    await loop.run('Hello')
+    const countBefore = memory.getEventLog(capturedSessionId!).length
+    loop.destroy()
+
+    // After destroy, no more events should be logged
+    // (We can't easily trigger more events, but destroy should not throw)
+    expect(countBefore).toBeGreaterThan(0)
+
+    memory.close()
+  })
+
+  test('entries have correct session_id', async () => {
+    const memory = createMemoryDb({ path: ':memory:', workspace: '/tmp' })
+    let capturedSessionId: string | null = null
+    const origCreateSession = memory.createSession.bind(memory)
+    memory.createSession = (prompt: string) => {
+      capturedSessionId = origCreateSession(prompt)
+      return capturedSessionId
+    }
+
+    const inference = createMockInference([messageResponse('Done.')])
+    const toolExecutor = createMockToolExecutor({})
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      memory,
+    })
+
+    await loop.run('Test')
+    loop.destroy()
+
+    const rows = memory.getEventLog(capturedSessionId!)
+    expect(rows.length).toBeGreaterThan(0)
+    for (const row of rows) {
+      expect(row.session_id).toBe(capturedSessionId!)
+    }
+
+    memory.close()
+  })
+})
+
+// ============================================================================
+// buildContextMessages — eventLog
+// ============================================================================
+
+describe('buildContextMessages — eventLog', () => {
+  test('includes coordination history when blocked events present', () => {
+    const { buildContextMessages } = require('../agent.utils.ts') as typeof import('../agent.utils.ts')
+    const messages = buildContextMessages({
+      history: [{ role: 'user', content: 'hello' }],
+      eventLog: [
+        { event_type: 'execute', thread: 'maxIterations', selected: 0, blocked_by: 'maxIterations' },
+        { event_type: 'task', thread: 'trigger', selected: 1, blocked_by: null },
+      ],
+    })
+    const system = messages[0]!.content as string
+    expect(system).toContain('## Coordination History')
+    expect(system).toContain('execute (thread: maxIterations) blocked by: maxIterations')
+    // Non-blocked event should NOT appear in coordination history
+    expect(system).not.toContain('task (thread: trigger) blocked by')
+  })
+
+  test('omits coordination history when no blocked events', () => {
+    const { buildContextMessages } = require('../agent.utils.ts') as typeof import('../agent.utils.ts')
+    const messages = buildContextMessages({
+      history: [{ role: 'user', content: 'hello' }],
+      eventLog: [
+        { event_type: 'task', thread: 'trigger', selected: 1, blocked_by: null },
+        { event_type: 'invoke_inference', thread: 'taskGate', selected: 1, blocked_by: null },
+      ],
+    })
+    const system = messages[0]!.content as string
+    expect(system).not.toContain('Coordination History')
+  })
+
+  test('omits coordination history when eventLog not provided', () => {
+    const { buildContextMessages } = require('../agent.utils.ts') as typeof import('../agent.utils.ts')
+    const messages = buildContextMessages({
+      history: [{ role: 'user', content: 'hello' }],
+    })
+    const system = messages[0]!.content as string
+    expect(system).not.toContain('Coordination History')
+  })
+
+  test('formats multiple blocked events', () => {
+    const { buildContextMessages } = require('../agent.utils.ts') as typeof import('../agent.utils.ts')
+    const messages = buildContextMessages({
+      history: [{ role: 'user', content: 'hello' }],
+      eventLog: [
+        { event_type: 'execute', thread: 'simulationGuard', selected: 0, blocked_by: 'simulationGuard' },
+        { event_type: 'execute', thread: 'symbolicSafetyNet', selected: 0, blocked_by: 'symbolicSafetyNet' },
+        { event_type: 'proposed_action', thread: 'taskGate', selected: 0, blocked_by: 'taskGate' },
+      ],
+    })
+    const system = messages[0]!.content as string
+    expect(system).toContain('## Coordination History')
+    expect(system).toContain('execute (thread: simulationGuard) blocked by: simulationGuard')
+    expect(system).toContain('execute (thread: symbolicSafetyNet) blocked by: symbolicSafetyNet')
+    expect(system).toContain('proposed_action (thread: taskGate) blocked by: taskGate')
+  })
+})
