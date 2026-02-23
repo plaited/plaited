@@ -18,6 +18,7 @@
 
 export * from './agent/agent.constants.ts'
 export * from './agent/agent.constitution.ts'
+export type * from './agent/agent.constitution.types.ts'
 export * from './agent/agent.evaluate.ts'
 export * from './agent/agent.memory.ts'
 export type * from './agent/agent.memory.types.ts'

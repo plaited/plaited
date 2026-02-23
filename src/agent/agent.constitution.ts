@@ -1,4 +1,6 @@
-import { RISK_CLASS } from './agent.constants.ts'
+import { bSync, bThread } from '../behavioral/behavioral.utils.ts'
+import { AGENT_EVENTS, RISK_CLASS } from './agent.constants.ts'
+import type { Constitution, ConstitutionRule, ConstitutionRuleConfig } from './agent.constitution.types.ts'
 import type { AgentToolCall, GateDecision } from './agent.schemas.ts'
 import type { GateCheck } from './agent.types.ts'
 
@@ -80,5 +82,101 @@ export const createGateCheck = ({
     }
 
     return { approved: true, riskClass }
+  }
+}
+
+// ============================================================================
+// Constitution Factory — dual-layer safety (bThreads + imperative gateCheck)
+// ============================================================================
+
+/**
+ * Creates a constitution from an array of rules — dual-layer safety:
+ *
+ * @remarks
+ * **Layer 1 — bThreads (defense-in-depth):** Each rule becomes a
+ * `constitution_{name}` bThread with `repeat: true` that blocks
+ * `execute` events matching its predicate. Consistent with the
+ * existing `symbolicSafetyNet` pattern.
+ *
+ * **Layer 2 — imperative gateCheck (feedback):** Returns a `GateCheck`
+ * function that runs the same rules. Called in the `proposed_action`
+ * handler, routes violations to `gate_rejected` which provides
+ * feedback to the model (pushes rejection reason to history).
+ *
+ * @param rules - Array of constitution rules (test returns true = BLOCKED)
+ * @returns `{ threads, gateCheck }` — threads for `bThreads.set()`, gateCheck for `proposed_action`
+ *
+ * @public
+ */
+export const createConstitution = (rules: ConstitutionRule[]): Constitution => {
+  // Layer 1: bThreads — block execute as safety net
+  const threads: Constitution['threads'] = {}
+  for (const rule of rules) {
+    threads[`constitution_${rule.name}`] = bThread(
+      [
+        bSync({
+          block: (event) => {
+            if (event.type !== AGENT_EVENTS.execute) return false
+            return rule.test(event.detail?.toolCall)
+          },
+        }),
+      ],
+      true,
+    )
+  }
+
+  // Layer 2: imperative gateCheck — for feedback via gate_rejected
+  const gateCheck: GateCheck = (toolCall) => {
+    const riskClass = classifyRisk(toolCall)
+    for (const rule of rules) {
+      if (rule.test(toolCall)) {
+        return { approved: false, riskClass, reason: rule.description ?? `Blocked by rule: ${rule.name}` }
+      }
+    }
+    return { approved: true, riskClass }
+  }
+
+  return { threads, gateCheck }
+}
+
+// ============================================================================
+// Config-Driven Rule Utility
+// ============================================================================
+
+/**
+ * Converts a JSON-serializable config into a `ConstitutionRule`.
+ *
+ * @remarks
+ * Supports three config fields, combined with OR logic:
+ * - `blockedTools` — exact tool name match
+ * - `pathPattern` — regex against `arguments.path`
+ * - `argPattern` — regex against `arguments[key]`
+ *
+ * @param config - JSON-serializable rule definition
+ * @returns A `ConstitutionRule` with a compiled test predicate
+ *
+ * @public
+ */
+export const constitutionRule = (config: ConstitutionRuleConfig): ConstitutionRule => {
+  const checks: Array<(tc: AgentToolCall) => boolean> = []
+
+  if (config.blockedTools?.length) {
+    const tools = new Set(config.blockedTools)
+    checks.push((tc) => tools.has(tc.name))
+  }
+  if (config.pathPattern) {
+    const re = new RegExp(config.pathPattern)
+    checks.push((tc) => re.test(String(tc.arguments.path ?? '')))
+  }
+  if (config.argPattern) {
+    const re = new RegExp(config.argPattern.pattern)
+    const key = config.argPattern.key
+    checks.push((tc) => re.test(String(tc.arguments[key] ?? '')))
+  }
+
+  return {
+    name: config.name,
+    description: config.description,
+    test: (tc) => checks.some((check) => check(tc)),
   }
 }

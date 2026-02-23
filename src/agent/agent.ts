@@ -1,6 +1,8 @@
 import { behavioral } from '../behavioral/behavioral.ts'
 import { bSync, bThread } from '../behavioral/behavioral.utils.ts'
 import { AGENT_EVENTS, RISK_CLASS, TOOL_STATUS } from './agent.constants.ts'
+import { createConstitution } from './agent.constitution.ts'
+import type { ConstitutionRule } from './agent.constitution.types.ts'
 import { checkSymbolicGate } from './agent.evaluate.ts'
 import type { MemoryDb } from './agent.memory.types.ts'
 import type { AgentPlan, AgentToolCall, ToolDefinition, TrajectoryStep } from './agent.schemas.ts'
@@ -21,7 +23,7 @@ import { buildContextMessages, createTrajectoryRecorder, parseModelResponse } fr
 // TASK_EVENTS: the set of events blocked by taskGate between tasks.
 // 'task' and 'message' are excluded — they are the gate transition events.
 // ---------------------------------------------------------------------------
-const TASK_EVENTS = new Set([
+const TASK_EVENTS = new Set<string>([
   AGENT_EVENTS.invoke_inference,
   AGENT_EVENTS.model_response,
   AGENT_EVENTS.proposed_action,
@@ -56,6 +58,7 @@ const TASK_EVENTS = new Set([
  * @param options.config - Agent configuration (model, baseUrl, tools, etc.)
  * @param options.inferenceCall - Testing seam for model inference
  * @param options.toolExecutor - Testing seam for tool execution
+ * @param options.constitution - Optional constitution rules (dual-layer: bThreads + imperative gateCheck)
  * @param options.gateCheck - Optional gate evaluation function (defaults to approve-all)
  * @param options.simulate - Optional Dreamer simulation function
  * @param options.evaluate - Optional Judge evaluation function
@@ -69,6 +72,7 @@ export const createAgentLoop = ({
   config: rawConfig,
   inferenceCall,
   toolExecutor,
+  constitution,
   gateCheck,
   simulate,
   evaluate,
@@ -85,6 +89,7 @@ export const createAgentLoop = ({
   }
   inferenceCall: InferenceCall
   toolExecutor: ToolExecutor
+  constitution?: ConstitutionRule[]
   gateCheck?: GateCheck
   simulate?: Simulate
   evaluate?: Evaluate
@@ -96,6 +101,21 @@ export const createAgentLoop = ({
 
   const { bThreads, trigger, useFeedback, useSnapshot } = behavioral<AgentEventDetails>()
   const recorder = createTrajectoryRecorder()
+
+  // Build constitution if provided — dual-layer: bThreads + imperative gateCheck
+  const constitutionResult = constitution?.length ? createConstitution(constitution) : null
+
+  // Compose: constitution gateCheck → custom gateCheck (short-circuit on rejection)
+  const composedGateCheck: GateCheck | undefined = (() => {
+    if (constitutionResult && gateCheck) {
+      return (toolCall: AgentToolCall) => {
+        const decision = constitutionResult.gateCheck(toolCall)
+        if (!decision.approved) return decision
+        return gateCheck(toolCall)
+      }
+    }
+    return constitutionResult?.gateCheck ?? gateCheck
+  })()
 
   let resolveRun: ((value: { output: string; trajectory: TrajectoryStep[] }) => void) | null = null
 
@@ -199,6 +219,9 @@ export const createAgentLoop = ({
       ],
       true,
     ),
+
+    // Constitution bThreads — additive safety rules (defense-in-depth)
+    ...constitutionResult?.threads,
   })
 
   // ---------------------------------------------------------------------------
@@ -311,9 +334,9 @@ export const createAgentLoop = ({
       // If only save_plan calls, plan_saved handler will re-invoke inference
     },
 
-    // Step 3: Gate — evaluate proposed tool call
+    // Step 3: Gate — evaluate proposed tool call (constitution + custom gateCheck)
     [AGENT_EVENTS.proposed_action]: (detail) => {
-      const decision = gateCheck?.(detail.toolCall) ?? { approved: true, riskClass: RISK_CLASS.read_only }
+      const decision = composedGateCheck?.(detail.toolCall) ?? { approved: true, riskClass: RISK_CLASS.read_only }
       if (decision.approved) {
         trigger({ type: AGENT_EVENTS.gate_approved, detail: { toolCall: detail.toolCall, decision } })
       } else {
