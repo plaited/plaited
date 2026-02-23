@@ -12,6 +12,7 @@ import { keyMirror } from '../utils/key-mirror.ts'
 export const AGENT_EVENTS = keyMirror(
   'task',
   'context_ready',
+  'invoke_inference',
   'model_response',
   'proposed_action',
   'gate_approved',
@@ -55,4 +56,4 @@ export const TOOL_STATUS = keyMirror('pending', 'completed', 'failed')
  *
  * @public
  */
-export const BUILT_IN_TOOLS = keyMirror('read_file', 'write_file', 'list_files', 'bash')
+export const BUILT_IN_TOOLS = keyMirror('read_file', 'write_file', 'list_files', 'bash', 'search')

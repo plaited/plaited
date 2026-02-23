@@ -7,7 +7,7 @@ import type { GateCheck } from './agent.types.ts'
 // ============================================================================
 
 /** Read-only tool names that have no side effects */
-const READ_ONLY_TOOLS = new Set(['read_file', 'list_files', 'save_plan'])
+const READ_ONLY_TOOLS = new Set(['read_file', 'list_files', 'save_plan', 'search'])
 
 /** Tools that modify state but within controlled boundaries */
 const SIDE_EFFECT_TOOLS = new Set(['write_file'])

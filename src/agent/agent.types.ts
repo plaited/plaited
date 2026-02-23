@@ -87,6 +87,54 @@ export type InferenceResponse = {
 export type InferenceCall = (request: InferenceRequest) => Promise<InferenceResponse>
 
 // ============================================================================
+// Simulate — testing seam for Dreamer prediction
+// ============================================================================
+
+/**
+ * Testing seam for simulation (Dreamer).
+ *
+ * @remarks
+ * Given a proposed tool call and conversation context, returns a
+ * natural-language prediction of the tool's outcome. Mock in tests;
+ * use `createSimulate()` or `createSubAgentSimulate()` in production.
+ *
+ * @public
+ */
+export type Simulate = (args: {
+  toolCall: AgentToolCall
+  history: ChatMessage[]
+  plan: AgentPlan | null
+}) => Promise<string>
+
+// ============================================================================
+// Evaluate — testing seam for Judge scoring
+// ============================================================================
+
+/** Decision returned by the Judge after evaluating a simulation prediction */
+export type EvalDecision = {
+  approved: boolean
+  reason?: string
+  score?: number
+}
+
+/**
+ * Testing seam for evaluation (Judge).
+ *
+ * @remarks
+ * Runs symbolic gate and optional neural scorer on a Dreamer prediction.
+ * Mock in tests; use `createEvaluate()` in production.
+ *
+ * @public
+ */
+export type Evaluate = (args: {
+  toolCall: AgentToolCall
+  prediction: string
+  riskClass: string
+  history: ChatMessage[]
+  goal?: string
+}) => Promise<EvalDecision>
+
+// ============================================================================
 // Tool Executor — testing seam for tool execution
 // ============================================================================
 
@@ -163,6 +211,33 @@ export type PlanSavedDetail = {
   plan: AgentPlan
 }
 
+/** Detail payload for the `simulate_request` event */
+export type SimulateRequestDetail = {
+  toolCall: AgentToolCall
+  decision: GateDecision
+}
+
+/** Detail payload for the `simulation_result` event */
+export type SimulationResultDetail = {
+  toolCall: AgentToolCall
+  prediction: string
+  riskClass: string
+}
+
+/** Detail payload for the `eval_approved` event */
+export type EvalApprovedDetail = {
+  toolCall: AgentToolCall
+  riskClass: string
+  score?: number
+}
+
+/** Detail payload for the `eval_rejected` event */
+export type EvalRejectedDetail = {
+  toolCall: AgentToolCall
+  reason: string
+  score?: number
+}
+
 /** Detail payload for the `message` event */
 export type MessageDetail = {
   content: string
@@ -180,14 +255,15 @@ export type MessageDetail = {
 export type AgentEventDetails = {
   [AGENT_EVENTS.task]: TaskDetail
   [AGENT_EVENTS.context_ready]: undefined
+  [AGENT_EVENTS.invoke_inference]: undefined
   [AGENT_EVENTS.model_response]: ModelResponseDetail
   [AGENT_EVENTS.proposed_action]: ProposedActionDetail
   [AGENT_EVENTS.gate_approved]: GateResultDetail
   [AGENT_EVENTS.gate_rejected]: GateResultDetail
-  [AGENT_EVENTS.simulate_request]: ProposedActionDetail
-  [AGENT_EVENTS.simulation_result]: unknown
-  [AGENT_EVENTS.eval_approved]: unknown
-  [AGENT_EVENTS.eval_rejected]: unknown
+  [AGENT_EVENTS.simulate_request]: SimulateRequestDetail
+  [AGENT_EVENTS.simulation_result]: SimulationResultDetail
+  [AGENT_EVENTS.eval_approved]: EvalApprovedDetail
+  [AGENT_EVENTS.eval_rejected]: EvalRejectedDetail
   [AGENT_EVENTS.execute]: ExecuteDetail
   [AGENT_EVENTS.tool_result]: ToolResultDetail
   [AGENT_EVENTS.save_plan]: SavePlanDetail

@@ -1,9 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import { RISK_CLASS, TOOL_STATUS } from '../agent.constants.ts'
+import { createMemoryDb } from '../agent.memory.ts'
 import type { AgentToolCall, ToolResult } from '../agent.schemas.ts'
 import { TrajectoryStepSchema } from '../agent.schemas.ts'
 import { createAgentLoop } from '../agent.ts'
-import type { GateCheck, InferenceCall } from '../agent.types.ts'
+import type { Evaluate, GateCheck, InferenceCall, Simulate } from '../agent.types.ts'
 
 // ============================================================================
 // Test helpers
@@ -600,6 +601,694 @@ describe('createAgentLoop — multi-tool', () => {
     // Inference should have been called exactly 2 times:
     // 1st: returns 2 tool calls, 2nd: returns final message
     expect(inferenceCallCount).toBe(2)
+
+    loop.destroy()
+  })
+})
+
+// ============================================================================
+// Simulate / Evaluate Integration
+// ============================================================================
+
+describe('createAgentLoop — simulate/evaluate', () => {
+  test('read_only skips simulation even with simulate provided', async () => {
+    let simulateCalled = false
+    const simulate: Simulate = async () => {
+      simulateCalled = true
+      return 'prediction'
+    }
+
+    // Gate classifies read_file as read_only
+    const gateCheck: GateCheck = (tc) => ({
+      approved: true,
+      riskClass: tc.name === 'read_file' ? RISK_CLASS.read_only : RISK_CLASS.side_effects,
+    })
+
+    const inference = createMockInference([
+      toolCallResponse('tc-1', 'read_file', { path: '/foo.ts' }),
+      messageResponse('Done.'),
+    ])
+    const toolExecutor = createMockToolExecutor({ read_file: 'contents' })
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      gateCheck,
+      simulate,
+    })
+
+    const result = await loop.run('Read a file')
+    expect(result.output).toBe('Done.')
+    expect(simulateCalled).toBe(false)
+
+    loop.destroy()
+  })
+
+  test('side_effects triggers simulation', async () => {
+    let simulateCalled = false
+    const simulate: Simulate = async () => {
+      simulateCalled = true
+      return 'File written successfully.'
+    }
+
+    const gateCheck: GateCheck = (tc) => ({
+      approved: true,
+      riskClass: tc.name === 'write_file' ? RISK_CLASS.side_effects : RISK_CLASS.read_only,
+    })
+
+    const inference = createMockInference([
+      toolCallResponse('tc-1', 'write_file', { path: '/app.ts', content: 'hi' }),
+      messageResponse('Written.'),
+    ])
+    const toolExecutor = createMockToolExecutor({ write_file: 'ok' })
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      gateCheck,
+      simulate,
+    })
+
+    const result = await loop.run('Write a file')
+    expect(result.output).toBe('Written.')
+    expect(simulateCalled).toBe(true)
+
+    loop.destroy()
+  })
+
+  test('simulate not provided preserves Wave 1 behavior', async () => {
+    const gateCheck: GateCheck = () => ({
+      approved: true,
+      riskClass: RISK_CLASS.side_effects,
+    })
+
+    const inference = createMockInference([
+      toolCallResponse('tc-1', 'write_file', { path: '/x.ts', content: 'y' }),
+      messageResponse('Done without simulation.'),
+    ])
+    const toolExecutor = createMockToolExecutor({ write_file: 'ok' })
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      gateCheck,
+      // No simulate — should execute directly
+    })
+
+    const result = await loop.run('Write file')
+    expect(result.output).toBe('Done without simulation.')
+
+    const toolCalls = result.trajectory.filter((s) => s.type === 'tool_call')
+    expect(toolCalls).toHaveLength(1)
+
+    loop.destroy()
+  })
+
+  test('simulation → evaluation end-to-end', async () => {
+    const simulate: Simulate = async () => 'File will be written successfully.'
+    const evaluate: Evaluate = async () => ({ approved: true, score: 0.9 })
+
+    const gateCheck: GateCheck = () => ({
+      approved: true,
+      riskClass: RISK_CLASS.side_effects,
+    })
+
+    const inference = createMockInference([
+      toolCallResponse('tc-1', 'write_file', { path: '/app.ts', content: 'data' }),
+      messageResponse('All done.'),
+    ])
+    const toolExecutor = createMockToolExecutor({ write_file: 'ok' })
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      gateCheck,
+      simulate,
+      evaluate,
+    })
+
+    const result = await loop.run('Write file')
+    expect(result.output).toBe('All done.')
+
+    const toolCalls = result.trajectory.filter((s) => s.type === 'tool_call')
+    expect(toolCalls).toHaveLength(1)
+
+    loop.destroy()
+  })
+
+  test('eval_approved leads to execution', async () => {
+    const executedTools: string[] = []
+    const toolExecutor = async (toolCall: AgentToolCall): Promise<ToolResult> => {
+      executedTools.push(toolCall.name)
+      return { toolCallId: toolCall.id, name: toolCall.name, status: TOOL_STATUS.completed, output: 'ok' }
+    }
+
+    const simulate: Simulate = async () => 'Safe prediction.'
+    const evaluate: Evaluate = async () => ({ approved: true })
+
+    const gateCheck: GateCheck = () => ({
+      approved: true,
+      riskClass: RISK_CLASS.high_ambiguity,
+    })
+
+    const inference = createMockInference([
+      toolCallResponse('tc-1', 'bash', { command: 'echo hi' }),
+      messageResponse('Done.'),
+    ])
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      gateCheck,
+      simulate,
+      evaluate,
+    })
+
+    const result = await loop.run('Run echo')
+    expect(result.output).toBe('Done.')
+    expect(executedTools).toEqual(['bash'])
+
+    loop.destroy()
+  })
+
+  test('eval_rejected produces synthetic tool result', async () => {
+    const executedTools: string[] = []
+    const toolExecutor = async (toolCall: AgentToolCall): Promise<ToolResult> => {
+      executedTools.push(toolCall.name)
+      return { toolCallId: toolCall.id, name: toolCall.name, status: TOOL_STATUS.completed, output: 'ok' }
+    }
+
+    const simulate: Simulate = async () => 'Safe text here.'
+    const evaluate: Evaluate = async () => ({ approved: false, reason: 'Score too low', score: 0.1 })
+
+    const gateCheck: GateCheck = () => ({
+      approved: true,
+      riskClass: RISK_CLASS.high_ambiguity,
+    })
+
+    const inference = createMockInference([
+      toolCallResponse('tc-1', 'bash', { command: 'dangerous cmd' }),
+      messageResponse('I will try a different approach.'),
+    ])
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      gateCheck,
+      simulate,
+      evaluate,
+    })
+
+    const result = await loop.run('Do something')
+    expect(result.output).toBe('I will try a different approach.')
+    // Tool should NOT have been executed (eval rejected)
+    expect(executedTools).toHaveLength(0)
+
+    loop.destroy()
+  })
+
+  test('simulate error fails open — executes anyway', async () => {
+    const executedTools: string[] = []
+    const toolExecutor = async (toolCall: AgentToolCall): Promise<ToolResult> => {
+      executedTools.push(toolCall.name)
+      return { toolCallId: toolCall.id, name: toolCall.name, status: TOOL_STATUS.completed, output: 'ok' }
+    }
+
+    const simulate: Simulate = async () => {
+      throw new Error('Dreamer crashed')
+    }
+
+    const gateCheck: GateCheck = () => ({
+      approved: true,
+      riskClass: RISK_CLASS.side_effects,
+    })
+
+    const inference = createMockInference([
+      toolCallResponse('tc-1', 'write_file', { path: '/x.ts', content: 'y' }),
+      messageResponse('Done despite simulation failure.'),
+    ])
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      gateCheck,
+      simulate,
+    })
+
+    const result = await loop.run('Write file')
+    expect(result.output).toBe('Done despite simulation failure.')
+    expect(executedTools).toEqual(['write_file'])
+
+    loop.destroy()
+  })
+
+  test('evaluate error fails open — executes anyway', async () => {
+    const executedTools: string[] = []
+    const toolExecutor = async (toolCall: AgentToolCall): Promise<ToolResult> => {
+      executedTools.push(toolCall.name)
+      return { toolCallId: toolCall.id, name: toolCall.name, status: TOOL_STATUS.completed, output: 'ok' }
+    }
+
+    const simulate: Simulate = async () => 'Safe prediction.'
+    const evaluate: Evaluate = async () => {
+      throw new Error('Judge crashed')
+    }
+
+    const gateCheck: GateCheck = () => ({
+      approved: true,
+      riskClass: RISK_CLASS.high_ambiguity,
+    })
+
+    const inference = createMockInference([
+      toolCallResponse('tc-1', 'bash', { command: 'echo hi' }),
+      messageResponse('Done despite judge failure.'),
+    ])
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      gateCheck,
+      simulate,
+      evaluate,
+    })
+
+    const result = await loop.run('Run echo')
+    expect(result.output).toBe('Done despite judge failure.')
+    expect(executedTools).toEqual(['bash'])
+
+    loop.destroy()
+  })
+
+  test('symbolicSafetyNet bThread blocks execute on dangerous prediction', async () => {
+    const executedTools: string[] = []
+    const toolExecutor = async (toolCall: AgentToolCall): Promise<ToolResult> => {
+      executedTools.push(toolCall.name)
+      return { toolCallId: toolCall.id, name: toolCall.name, status: TOOL_STATUS.completed, output: 'ok' }
+    }
+
+    // Simulate returns a dangerous prediction
+    const simulate: Simulate = async () => 'This will cause data loss in the database.'
+    // No evaluate — symbolic gate in simulation_result handler catches it
+
+    const gateCheck: GateCheck = () => ({
+      approved: true,
+      riskClass: RISK_CLASS.side_effects,
+    })
+
+    const inference = createMockInference([
+      toolCallResponse('tc-1', 'write_file', { path: '/danger.ts', content: 'bad' }),
+      messageResponse('Blocked by safety net.'),
+    ])
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      gateCheck,
+      simulate,
+    })
+
+    const result = await loop.run('Write dangerous file')
+    expect(result.output).toBe('Blocked by safety net.')
+    // Tool should NOT have been executed (symbolic gate blocked)
+    expect(executedTools).toHaveLength(0)
+
+    loop.destroy()
+  })
+
+  test('multi-tool parallel: reads execute while side-effects simulate', async () => {
+    const executionOrder: string[] = []
+    const toolExecutor = async (toolCall: AgentToolCall): Promise<ToolResult> => {
+      executionOrder.push(toolCall.name)
+      return {
+        toolCallId: toolCall.id,
+        name: toolCall.name,
+        status: TOOL_STATUS.completed,
+        output: `result-${toolCall.name}`,
+      }
+    }
+
+    const simulate: Simulate = async () => 'File will be written.'
+
+    const gateCheck: GateCheck = (tc) => ({
+      approved: true,
+      riskClass: tc.name === 'read_file' ? RISK_CLASS.read_only : RISK_CLASS.side_effects,
+    })
+
+    const inference = createMockInference([
+      // Single response with mixed risk classes
+      multiToolCallResponse(
+        ['tc-1', 'read_file', { path: '/a.ts' }],
+        ['tc-2', 'write_file', { path: '/b.ts', content: 'x' }],
+        ['tc-3', 'read_file', { path: '/c.ts' }],
+      ),
+      messageResponse('All processed.'),
+    ])
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      gateCheck,
+      simulate,
+    })
+
+    const result = await loop.run('Read and write')
+    expect(result.output).toBe('All processed.')
+
+    // All 3 tools should have been executed (reads directly, write after simulation)
+    expect(executionOrder).toHaveLength(3)
+    expect(executionOrder).toContain('read_file')
+    expect(executionOrder).toContain('write_file')
+
+    loop.destroy()
+  })
+
+  test('pendingToolCallCount reaches 0 before re-invoking inference', async () => {
+    let inferenceCallCount = 0
+    const inference: InferenceCall = async () => {
+      inferenceCallCount++
+      if (inferenceCallCount === 1) {
+        return {
+          choices: [
+            {
+              message: {
+                tool_calls: [
+                  { id: 'tc-1', type: 'function', function: { name: 'read_file', arguments: '{"path":"a.ts"}' } },
+                  {
+                    id: 'tc-2',
+                    type: 'function',
+                    function: { name: 'write_file', arguments: '{"path":"b.ts","content":"x"}' },
+                  },
+                ],
+              },
+            },
+          ],
+        }
+      }
+      return { choices: [{ message: { content: 'All done.' } }] }
+    }
+
+    const simulate: Simulate = async () => 'File written.'
+    const gateCheck: GateCheck = (tc) => ({
+      approved: true,
+      riskClass: tc.name === 'read_file' ? RISK_CLASS.read_only : RISK_CLASS.side_effects,
+    })
+    const toolExecutor = createMockToolExecutor({ read_file: 'contents', write_file: 'ok' })
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      gateCheck,
+      simulate,
+    })
+
+    const result = await loop.run('Process both')
+    expect(result.output).toBe('All done.')
+    // Inference: 1st = tool calls, 2nd = final message (both complete before re-invoke)
+    expect(inferenceCallCount).toBe(2)
+
+    loop.destroy()
+  })
+
+  test('multi-tool with mixed risk classes: all results collected', async () => {
+    const simulate: Simulate = async () => 'Prediction text.'
+    const evaluate: Evaluate = async () => ({ approved: true, score: 0.8 })
+
+    const gateCheck: GateCheck = (tc) => {
+      if (tc.name === 'read_file') return { approved: true, riskClass: RISK_CLASS.read_only }
+      if (tc.name === 'write_file') return { approved: true, riskClass: RISK_CLASS.side_effects }
+      return { approved: true, riskClass: RISK_CLASS.high_ambiguity }
+    }
+
+    const executedTools: string[] = []
+    const toolExecutor = async (toolCall: AgentToolCall): Promise<ToolResult> => {
+      executedTools.push(toolCall.name)
+      return { toolCallId: toolCall.id, name: toolCall.name, status: TOOL_STATUS.completed, output: 'ok' }
+    }
+
+    const inference = createMockInference([
+      multiToolCallResponse(
+        ['tc-1', 'read_file', { path: '/a.ts' }],
+        ['tc-2', 'write_file', { path: '/b.ts', content: 'x' }],
+        ['tc-3', 'bash', { command: 'echo test' }],
+      ),
+      messageResponse('All three completed.'),
+    ])
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      gateCheck,
+      simulate,
+      evaluate,
+    })
+
+    const result = await loop.run('Mixed operations')
+    expect(result.output).toBe('All three completed.')
+
+    // All 3 should execute: read_file (direct), write_file (simulated), bash (simulated + evaluated)
+    expect(executedTools).toHaveLength(3)
+    expect(executedTools).toContain('read_file')
+    expect(executedTools).toContain('write_file')
+    expect(executedTools).toContain('bash')
+
+    loop.destroy()
+  })
+})
+
+// ============================================================================
+// Task Gate + Multi-Run (BP refactor)
+// ============================================================================
+
+describe('createAgentLoop — taskGate and multi-run', () => {
+  test('multiple sequential run() calls on same loop return correct results', async () => {
+    const inference = createMockInference([
+      // Run 1: immediate message
+      messageResponse('First response.'),
+      // Run 2: immediate message
+      messageResponse('Second response.'),
+    ])
+    const toolExecutor = createMockToolExecutor({})
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+    })
+
+    const first = await loop.run('First prompt')
+    expect(first.output).toBe('First response.')
+    expect(first.trajectory).toHaveLength(1)
+    expect(first.trajectory[0]?.type).toBe('message')
+
+    const second = await loop.run('Second prompt')
+    expect(second.output).toBe('Second response.')
+    expect(second.trajectory).toHaveLength(1)
+    expect(second.trajectory[0]?.type).toBe('message')
+
+    loop.destroy()
+  })
+
+  test('sequential runs with tool calls: per-task maxIterations resets', async () => {
+    const inference = createMockInference([
+      // Run 1: tool call then message
+      toolCallResponse('tc-1', 'read_file', { path: '/a.ts' }),
+      messageResponse('First done.'),
+      // Run 2: tool call then message
+      toolCallResponse('tc-2', 'read_file', { path: '/b.ts' }),
+      messageResponse('Second done.'),
+    ])
+    const toolExecutor = createMockToolExecutor({ read_file: 'contents' })
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+    })
+
+    const first = await loop.run('First task')
+    expect(first.output).toBe('First done.')
+    const firstToolCalls = first.trajectory.filter((s) => s.type === 'tool_call')
+    expect(firstToolCalls).toHaveLength(1)
+
+    const second = await loop.run('Second task')
+    expect(second.output).toBe('Second done.')
+    const secondToolCalls = second.trajectory.filter((s) => s.type === 'tool_call')
+    expect(secondToolCalls).toHaveLength(1)
+
+    loop.destroy()
+  })
+
+  test('maxIterations resets between runs: early message frees thread for reuse', async () => {
+    // Run 1 completes after 1 tool call (message interrupts maxIterations mid-sequence).
+    // Run 2 must get a fresh maxIterations thread — if it wasn't freed, it would be
+    // partially consumed and the counter would be wrong.
+    let callCount = 0
+    const inference: InferenceCall = async () => {
+      callCount++
+      // Run 1: 1 tool call, then message
+      if (callCount === 1) return { choices: [{ message: toolCallResponse('tc-1', 'read_file', { path: '/a.ts' }) }] }
+      if (callCount === 2) return { choices: [{ message: messageResponse('Done early.') }] }
+      // Run 2: always returns tool calls — should hit maxIterations=3
+      return {
+        choices: [
+          {
+            message: {
+              tool_calls: [
+                {
+                  id: `tc-r2-${callCount}`,
+                  type: 'function',
+                  function: { name: 'list_files', arguments: '{}' },
+                },
+              ],
+            },
+          },
+        ],
+      }
+    }
+    const toolExecutor = createMockToolExecutor({ read_file: 'contents', list_files: ['file.ts'] })
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 3, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+    })
+
+    // Run 1: completes early (1 tool call, then message)
+    const first = await loop.run('Quick task')
+    expect(first.output).toBe('Done early.')
+
+    // Run 2: should have fresh maxIterations (3), hits the limit
+    const second = await loop.run('Long task')
+    expect(second.output).toBe('Max iterations (3) reached')
+    expect(second.trajectory.filter((s) => s.type === 'tool_call')).toHaveLength(3)
+
+    loop.destroy()
+  })
+})
+
+// ============================================================================
+// Memory Integration
+// ============================================================================
+
+describe('createAgentLoop — memory integration', () => {
+  test('persists session on run completion', async () => {
+    const tmpDb = `/tmp/agent-memory-session-${Date.now()}.db`
+    const memory = createMemoryDb({ path: tmpDb, workspace: '/tmp' })
+    const inference = createMockInference([messageResponse('Hello!')])
+    const toolExecutor = createMockToolExecutor({})
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      memory,
+    })
+
+    const result = await loop.run('Say hello')
+    expect(result.output).toBe('Hello!')
+    loop.destroy()
+    memory.close()
+
+    // Verify session was persisted
+    const { Database } = require('bun:sqlite')
+    const db = new Database(tmpDb, { readonly: true })
+    const sessions = db.prepare('SELECT * FROM sessions').all() as Array<{
+      prompt: string
+      output: string | null
+    }>
+    expect(sessions).toHaveLength(1)
+    expect(sessions[0]!.prompt).toBe('Say hello')
+    expect(sessions[0]!.output).toBe('Hello!')
+    db.close()
+
+    const { unlink } = require('node:fs/promises')
+    await unlink(tmpDb).catch(() => {})
+    await unlink(`${tmpDb}-wal`).catch(() => {})
+    await unlink(`${tmpDb}-shm`).catch(() => {})
+  })
+
+  test('persists messages during tool call loop', async () => {
+    const tmpDb = `/tmp/agent-memory-msgs-${Date.now()}.db`
+    const memory = createMemoryDb({ path: tmpDb, workspace: '/tmp' })
+
+    const inference = createMockInference([
+      toolCallResponse('tc-1', 'read_file', { path: '/foo.ts' }),
+      messageResponse('Done reading.'),
+    ])
+    const toolExecutor = createMockToolExecutor({ read_file: 'file contents' })
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      memory,
+    })
+
+    await loop.run('Read foo.ts')
+    loop.destroy()
+    memory.close()
+
+    // Re-open DB to verify persistence
+    const { Database } = require('bun:sqlite')
+    const db = new Database(tmpDb, { readonly: true })
+    const sessions = db.prepare('SELECT * FROM sessions').all() as Array<{
+      prompt: string
+      output: string
+    }>
+    expect(sessions).toHaveLength(1)
+    expect(sessions[0]!.prompt).toBe('Read foo.ts')
+    expect(sessions[0]!.output).toBe('Done reading.')
+
+    const messages = db.prepare('SELECT * FROM messages ORDER BY id').all() as Array<{
+      role: string
+      content: string | null
+      tool_call_id: string | null
+    }>
+    // Expected: user, assistant (with tool_call), tool (result), assistant (final message)
+    expect(messages.length).toBeGreaterThanOrEqual(4)
+    expect(messages[0]!.role).toBe('user')
+    expect(messages[0]!.content).toBe('Read foo.ts')
+    expect(messages[1]!.role).toBe('assistant')
+    expect(messages[2]!.role).toBe('tool')
+    expect(messages[2]!.tool_call_id).toBe('tc-1')
+
+    const lastMsg = messages[messages.length - 1]!
+    expect(lastMsg.role).toBe('assistant')
+    expect(lastMsg.content).toBe('Done reading.')
+
+    db.close()
+
+    const { unlink } = require('node:fs/promises')
+    await unlink(tmpDb).catch(() => {})
+    await unlink(`${tmpDb}-wal`).catch(() => {})
+    await unlink(`${tmpDb}-shm`).catch(() => {})
+  })
+
+  test('memory is optional — loop works without it', async () => {
+    const inference = createMockInference([messageResponse('Works fine!')])
+    const toolExecutor = createMockToolExecutor({})
+
+    const loop = createAgentLoop({
+      config: { model: 'test', baseUrl: 'http://test', maxIterations: 10, temperature: 0 },
+      inferenceCall: inference,
+      toolExecutor,
+      // No memory — should work exactly as before
+    })
+
+    const result = await loop.run('Test')
+    expect(result.output).toBe('Works fine!')
 
     loop.destroy()
   })

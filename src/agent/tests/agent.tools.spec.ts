@@ -3,6 +3,8 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { TOOL_STATUS } from '../agent.constants.ts'
+import { createMemoryDb, createSearchHandler, searchToolSchema } from '../agent.memory.ts'
+import type { MemoryDb } from '../agent.memory.types.ts'
 import { type AgentToolCall, ToolDefinitionSchema } from '../agent.schemas.ts'
 import { builtInToolSchemas, createToolExecutor } from '../agent.tools.ts'
 import type { ToolHandler } from '../agent.types.ts'
@@ -204,5 +206,63 @@ describe('builtInToolSchemas', () => {
     expect(names).toContain('write_file')
     expect(names).toContain('list_files')
     expect(names).toContain('bash')
+  })
+})
+
+// ============================================================================
+// searchToolSchema
+// ============================================================================
+
+describe('searchToolSchema', () => {
+  test('validates against ToolDefinitionSchema', () => {
+    const result = ToolDefinitionSchema.safeParse(searchToolSchema)
+    expect(result.success).toBe(true)
+  })
+
+  test('has correct name', () => {
+    expect(searchToolSchema.function.name).toBe('search')
+  })
+})
+
+// ============================================================================
+// search tool — integration with createToolExecutor
+// ============================================================================
+
+describe('search tool — integration', () => {
+  let searchWorkspace: string
+  let memory: MemoryDb
+
+  beforeAll(async () => {
+    searchWorkspace = await mkdtemp(join(tmpdir(), 'search-tool-test-'))
+    await Bun.write(join(searchWorkspace, 'src/auth.ts'), 'export const authenticate = (user: string) => true')
+    await Bun.write(join(searchWorkspace, 'src/db.ts'), 'export const connectDatabase = () => new Pool()')
+  })
+
+  afterAll(async () => {
+    memory?.close()
+    await rm(searchWorkspace, { recursive: true, force: true })
+  })
+
+  test('search tool works through createToolExecutor', async () => {
+    memory = createMemoryDb({ path: ':memory:', workspace: searchWorkspace })
+    const handler = createSearchHandler(memory)
+    const executor = createToolExecutor({ workspace: searchWorkspace, tools: { search: handler } })
+
+    const result = await executor(makeToolCall('search', { query: 'authenticate' }))
+    expect(result.status).toBe(TOOL_STATUS.completed)
+    const output = result.output as { query: string; count: number; results: unknown[] }
+    expect(output.count).toBe(1)
+    expect(output.results).toHaveLength(1)
+  })
+
+  test('search tool returns no results gracefully', async () => {
+    memory = createMemoryDb({ path: ':memory:', workspace: searchWorkspace })
+    const handler = createSearchHandler(memory)
+    const executor = createToolExecutor({ workspace: searchWorkspace, tools: { search: handler } })
+
+    const result = await executor(makeToolCall('search', { query: 'zzz_nonexistent_term' }))
+    expect(result.status).toBe(TOOL_STATUS.completed)
+    const output = result.output as { message: string; results: unknown[] }
+    expect(output.message).toBe('No results found')
   })
 })
