@@ -1,5 +1,25 @@
-import { hashString, isTypeOf, kebabCase } from '../utils.ts'
+import { isTypeOf, kebabCase } from '../utils.ts'
 import type { DesignTokenReference, ElementStylesObject, HostStylesObject, StylesObject } from './css.types.ts'
+
+/**
+ * Fast non-cryptographic string hashing using djb2 algorithm.
+ * Returns consistent 32-bit hash for caching and comparison.
+ *
+ * @param str - String to hash
+ * @returns 32-bit hash or null for empty string
+ *
+ * @remarks
+ * - Uses djb2: `hash = ((hash << 5) + hash) + char`
+ * - Seed value: 5381 (djb2 magic constant)
+ * - Returns null for empty strings to differentiate from valid hashes
+ * - Deterministic: same input always produces same output
+ *
+ * @internal
+ */
+const hashString = (str: string) => {
+  const hash = [...str].reduce<number>((acc, cur) => (acc << 5) + acc + cur.charCodeAt(0), 5381)
+  return hash === 5381 ? null : hash
+}
 
 /**
  * @internal
@@ -15,8 +35,10 @@ export const createHash = (...args: (string | number)[]) => {
 
 const caseProp = (prop: string) => (prop.startsWith('--') ? prop : kebabCase(prop))
 
+/** @internal Formats a single CSS property-value pair as `prop:value;`. */
 export const getRule = (prop: string, value: string | number) => `${caseProp(prop)}:${value};`
 
+/** @internal Type guard: returns true if `ref` is a `DesignTokenReference` function. */
 export const isTokenReference = (ref: unknown): ref is DesignTokenReference =>
   isTypeOf<DesignTokenReference>(ref, 'function')
 
@@ -30,6 +52,8 @@ export const isTokenReference = (ref: unknown): ref is DesignTokenReference =>
  * - Validates both structure and property types
  * - Used to distinguish element styles from host styles
  * - ElementStylesObject always has classNames array
+ *
+ * @internal
  */
 export const isElementStylesObject = (obj: unknown): obj is ElementStylesObject => {
   /**
@@ -61,6 +85,8 @@ export const isElementStylesObject = (obj: unknown): obj is ElementStylesObject 
  * - Validates that classNames property is absent
  * - Used for host element styling (`:host` selector)
  * - Host styles never have classNames
+ *
+ * @internal
  */
 export const isHostStylesObject = (obj: unknown): obj is HostStylesObject => {
   /**
@@ -90,6 +116,8 @@ export const isHostStylesObject = (obj: unknown): obj is HostStylesObject => {
  * - Union type guard combining both element and host checks
  * - Useful when processing style objects of unknown type
  * - Delegates to specific guards for validation
+ *
+ * @internal
  */
 export const isStylesObject = (obj: unknown): obj is StylesObject => {
   /**

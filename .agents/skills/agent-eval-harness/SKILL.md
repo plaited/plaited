@@ -649,17 +649,17 @@ import type { Grader } from '@plaited/agent-eval-harness/schemas'
 
 export const grade: Grader = async ({ output, hint, cwd }) => {
   if (!cwd) return { pass: false, score: 0, reasoning: 'No cwd' }
-  
+
   // Detect file changes
   const status = await Bun.$`git -C ${cwd} status --porcelain`.text()
   const filesCreated = status
     .split('\n')
     .filter(line => line.startsWith('??'))
     .map(line => line.slice(3).trim())
-  
+
   // Verify tests pass
   const testResult = await Bun.$`cd ${cwd} && bun test`.nothrow()
-  
+
   return {
     pass: filesCreated.length > 0 && testResult.exitCode === 0,
     score: testResult.exitCode === 0 ? 1 : 0,

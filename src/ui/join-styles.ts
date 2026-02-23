@@ -22,7 +22,7 @@ import { isTokenReference } from './css.utils.ts'
  */
 export const joinStyles = <T extends (StylesObject | DesignTokenReference | undefined | false)[]>(
   ...styleObjects: T
-): T[number] => {
+) => {
   const cls: string[] = []
   const style: string[] = []
   for (const styleObject of styleObjects) {

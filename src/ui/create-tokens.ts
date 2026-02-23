@@ -81,7 +81,7 @@ const getTokenRule = ({
  */
 const createTokenRef = (cssVar: `--${string}`, token: DesignToken): DesignTokenReference => {
   const styles: string[] = []
-  styles.push(`:host{${getTokenRule({ cssVar, token, styles })}}`)
+  styles.push(`:root{${getTokenRule({ cssVar, token, styles })}}`)
   const getRef = (): `var(--${string})` => `var(${cssVar})`
   getRef.stylesheets = styles
   return getRef
@@ -99,32 +99,12 @@ const createTokenRef = (cssVar: `--${string}`, token: DesignToken): DesignTokenR
  * @returns Object mapping the identifier to token reference functions. Destructure to extract:
  *   `const { colors } = createTokens('colors', {...})`. Each token is a function returning CSS var() expressions.
  *
- * @example
- * ```typescript
- * // Simple tokens
- * const { colors } = createTokens('colors', {
- *   primary: { $value: '#007bff' },
- *   secondary: { $value: '#6c757d' },
- * })
- * colors.primary()  // 'var(--colors-primary)'
- *
- * // Nested scales
- * const { sizes } = createTokens('sizes', {
- *   icon: {
- *     sm: { $value: '16px' },
- *     md: { $value: '24px' },
- *     lg: { $value: '32px' },
- *   },
- * })
- * sizes.icon.sm()  // 'var(--sizes-icon-sm)'
- * ```
- *
  * @remarks
  * - Token names are converted to kebab-case CSS variable names (e.g., `primaryColor` → `--ident-primary-color`)
  * - Each token returns a function that outputs `var(--css-variable-name)`
  * - The returned function has a `stylesheets` property containing all required CSS declarations
  * - Token references can be composed to build complex design systems
- * - CSS custom properties are scoped to the `:host` selector for Shadow DOM encapsulation
+ * - CSS custom properties are scoped to the `:root` selector for Shadow DOM encapsulation
  *
  * @see {@link DesignTokenGroup} for the input type structure
  * @see {@link DesignTokenReferences} for the return type structure

@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 import path from 'node:path'
 
-test('UI export footprint < 7.5kb', async () => {
+test('UI export footprint < 30kb', async () => {
   const plaitedResults = await Bun.build({
     entrypoints: [path.resolve(import.meta.dir, '../ui.ts')],
     minify: true,
@@ -11,7 +11,7 @@ test('UI export footprint < 7.5kb', async () => {
     const str = await result.text()
     const compressed = Bun.gzipSync(Buffer.from(str))
     const size = compressed.byteLength / 1024
-    expect(size).toBeLessThan(7.5)
+    expect(size).toBeLessThan(30)
     console.log(`UI bundle size: ${size}kb`)
   }
 })

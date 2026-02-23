@@ -61,11 +61,11 @@ The reference model (Falcon-H1R) ships as a base-trained checkpoint from `huggin
 
 The model handles both deliberation (in `<think>` blocks) and action selection (structured tool calls in the response). The inference server separates these two outputs at the protocol level — the framework never parses raw text to find the boundary.
 
-One central `useBehavioral` program orchestrates the entire loop. There are no actors, no workers, no separate signal stores. BP manages state through bThread closures and coordinates compute via `Bun.spawn()` subprocesses for inference and sandboxed execution.
+One central `behavioral()` program orchestrates the entire loop. There are no actors, no workers, no separate signal stores. BP manages state through bThread closures and coordinates compute via `Bun.spawn()` subprocesses for inference and sandboxed execution.
 
 ```mermaid
 graph LR
-    subgraph BP["useBehavioral — Central Orchestrator"]
+    subgraph BP["behavioral() — Central Orchestrator"]
         CTX["1. Context<br/>plan + constraints + history + tools"]
         REASON["2. Reason<br/>Bun.spawn() → Model<br/>(thinking + tool call)"]
         GATE["3. Gate<br/>bThread block predicates"]
@@ -457,7 +457,7 @@ For *explicit* sharing — tool configurations, skills, style preferences — th
 |---|---|
 | Shared tool configs | `~/.agents/mcp.json` (user installs globally) |
 | Shared skills | `~/.agents/skills/` (user installs globally) |
-| Style and patterns | Model weights (training flywheel) |
+| Style and patterns | Model weights (training flywheel) + code-pattern skills (reference implementations as genomes) |
 | Project-specific knowledge | Per-project memory only (never crosses boundary) |
 
 ## Project Isolation
@@ -484,13 +484,16 @@ Projects are indexed on first encounter — when a task arrives with a `cwd` pat
 
 ### Tool Layers
 
-Tools are assembled from three layers using the `.agents/` convention:
+Tools are assembled from four layers. Project-level skills use a two-tier convention — **external** (`skills/`) for portable skills versioned with the repo, and **internal** (`.agents/skills/`) for agent-specific skills. Each agent runtime (`.claude/`, `.cursor/`, etc.) discovers skills via symlinks into its own `skills/` directory:
 
 | Layer | Location | Scope | Discovery |
 |---|---|---|---|
 | **Framework built-ins** | Shipped with `plaited/agent` | All projects | Always available |
 | **Global user config** | `~/.agents/skills/`, `~/.agents/mcp.json` | All projects | Loaded at subprocess spawn |
-| **Project-local** | `.agents/skills/`, `.agents/mcp.json` | This repo only | Discovered from repo at spawn |
+| **Project external** | `skills/*` | This repo, all agents | Symlinked from agent runtime dirs (e.g., `.claude/skills/foo → ../../skills/foo`) |
+| **Project internal** | `.agents/skills/*`, `.agents/mcp.json` | This repo, all agents | Symlinked from agent runtime dirs (e.g., `.claude/skills/bar → ../../.agents/skills/bar`) |
+
+**External vs. internal skills:** External skills (`skills/`) are portable — they can be published, shared across repos, or installed from a registry. Code-pattern skills (reference implementations that teach agents preferred coding conventions) are a canonical example. Internal skills (`.agents/skills/`) contain agent-specific tooling like eval harnesses and headless adapters that are tightly coupled to the project's development workflow.
 
 OS PATH binaries and project-local binaries (`node_modules/.bin/`, etc.) are discovered but subject to approval constraints.
 
@@ -500,7 +503,7 @@ OS PATH binaries and project-local binaries (`node_modules/.bin/`, etc.) are dis
 |---|---|---|
 | Framework built-ins | N/A | Always available, no approval needed |
 | Global skills / MCP | User-configured | User installs explicitly |
-| Project skills / MCP | Project-scoped | Discovered from repo, available within project |
+| Project skills (external + internal) / MCP | Project-scoped | Discovered from repo, available within project |
 | Project-local CLIs | Low (scoped to repo) | Auto-install if user opts in — reversible via `git checkout` |
 | OS PATH / global CLIs | High (affects all projects) | Always requires user approval |
 | Global CLI upgrades | High | Requires approval + dependency scanning + testing |
@@ -513,7 +516,8 @@ Global CLI approval is enforced by a looping bThread that blocks `install_global
 Framework built-ins (read_file, write_file, bash, save_plan, etc.)
   + ~/.agents/skills/*          → global skills
   + ~/.agents/mcp.json servers  → global MCP tools
-  + .agents/skills/*            → project skills
+  + skills/*                    → project external skills (via symlinks)
+  + .agents/skills/*            → project internal skills (via symlinks)
   + .agents/mcp.json servers    → project MCP tools
   + OS PATH binaries            → discovered, approval-gated
   + project-local binaries      → node_modules/.bin/, etc.
@@ -525,7 +529,7 @@ Framework built-ins (read_file, write_file, bash, save_plan, etc.)
 
 ```mermaid
 graph TD
-    subgraph Orchestrator["Orchestrator (useBehavioral)"]
+    subgraph Orchestrator["Orchestrator (behavioral())"]
         ROUTE["Route by project key"]
         CONST["Constitution bThreads<br/>(immutable, loaded at spawn)"]
         LOG["Event log<br/>(append-only, partitioned)"]
@@ -676,7 +680,7 @@ Usage → trajectories → SFT/GRPO → better model → better usage → more t
 - **Framework, Not Platform:** Plaited ships composable primitives. Code via npm, models via Hugging Face. Platforms are built with it, not by it.
 - **Single Tenancy:** 1 User : 1 Agent instance. User data lives on their agent — nowhere else.
 - **Pluggable Models:** Model and Indexer are interfaces. Implementations swap freely — self-hosted small models, frontier APIs, or anything in between.
-- **BP-Orchestrated:** One central `useBehavioral` coordinates the entire agent loop. Context assembly, gate evaluation, lifecycle management — all BP. No actors, no workers, no external signal stores. bThread closures hold state.
+- **BP-Orchestrated:** One central `behavioral()` program coordinates the entire agent loop. Context assembly, gate evaluation, lifecycle management — all BP. No actors, no workers, no external signal stores. bThread closures hold state.
 - **Plan-Driven Context:** The model's plan provides the optimization signal for context assembly. BP consumes the plan's structure deterministically. Neural produces, symbolic consumes.
 - **Defense in Depth:** Layer 0 (BP-orchestrated context assembly) → Layer 1 (BP hard gate) → Layer 4 (Dreamer simulation) → Layer 5 (Judge: 5a symbolic gate + 5b neural scorer) → Layer 2 (pluggable sandbox) → Layer 3 (event log recovery). Six independent layers across three stack levels.
 - **Three-Axis Risk Awareness:** Capability × Autonomy × Authority. Risk grows geometrically when all three scale simultaneously. BP constraints cap each axis independently.
