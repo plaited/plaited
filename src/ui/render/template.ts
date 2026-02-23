@@ -17,7 +17,7 @@
  * @see {@link createStyles} for style creation
  */
 
-import { htmlEscape, isTypeOf, kebabCase, trueTypeOf } from '../utils.ts'
+import { htmlEscape, isTypeOf, kebabCase, trueTypeOf } from '../../utils.ts'
 import {
   BOOLEAN_ATTRS,
   P_TRIGGER,
@@ -25,7 +25,7 @@ import {
   TEMPLATE_OBJECT_IDENTIFIER,
   VALID_PRIMITIVE_CHILDREN,
   VOID_TAGS,
-} from './create-template.constants.ts'
+} from './template.constants.ts'
 import type {
   Attrs,
   CustomElementTag,
@@ -33,7 +33,7 @@ import type {
   ElementAttributeList,
   FunctionTemplate,
   TemplateObject,
-} from './create-template.types.ts'
+} from './template.types.ts'
 
 /**
  * @internal

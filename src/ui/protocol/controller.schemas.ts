@@ -6,8 +6,8 @@ import {
   type RulesFunction,
   SnapshotMessageSchema,
   type Trigger,
-} from '../behavioral.ts'
-import { isTypeOf, trueTypeOf } from '../utils.ts'
+} from '../../behavioral.ts'
+import { isTypeOf, trueTypeOf } from '../../utils.ts'
 import { CONTROLLER_EVENTS, SWAP_MODES } from './controller.constants.ts'
 
 // ─── Server → Client Message Schemas ────────────────────────────────────────
@@ -97,7 +97,7 @@ export type UserAction = {
  * Schema for user action messages sent from client to server.
  *
  * @remarks
- * When a p-trigger-bound DOM event fires, the shell serialises the action
+ * When a p-trigger-bound DOM event fires, the controller serialises the action
  * type string and sends it to the server for routing.
  *
  * @public
@@ -132,7 +132,7 @@ export type RootConnectedMessage = z.infer<typeof RootConnectedMessageSchema>
  * Schema for disconnect messages sent from server to client
  *
  * @remarks
- * The server sends a disconnect message to tear down the shell,
+ * The server sends a disconnect message to tear down the controller,
  * close the WebSocket, and clean up the behavioral program.
  *
  * @public
@@ -187,7 +187,7 @@ export type BThreadAddedMessage = z.infer<typeof BehavioralUpdatedMessageSchema>
  * Schema for snapshot messages sent from client to server.
  *
  * @remarks
- * The shell forwards all BP engine snapshot observations (selection bids,
+ * The controller forwards all BP engine snapshot observations (selection bids,
  * feedback errors, restricted trigger rejections, b-thread warnings)
  * to the server over WebSocket for server-side observability.
  *
@@ -201,10 +201,10 @@ export const SnapshotEventSchema = z.object({
 /** @public */
 export type SnapshotEvent = z.infer<typeof SnapshotEventSchema>
 
-type ShellMessage = RenderMessage | AttrsMessage | UserAction | DisconnectMessage | AddBThreadsMessage
+type ControllerMessage = RenderMessage | AttrsMessage | UserAction | DisconnectMessage | AddBThreadsMessage
 
 /**
- * Maps shell message event types to their detail payloads.
+ * Maps controller message event types to their detail payloads.
  *
  * @remarks
  * Used to type the `handlers` object inside `controller()`. Each key is a
@@ -212,8 +212,8 @@ type ShellMessage = RenderMessage | AttrsMessage | UserAction | DisconnectMessag
  *
  * @internal
  */
-export type ShellHandlers = {
-  [M in ShellMessage as M['type']]: M['detail']
+export type ControllerHandlers = {
+  [M in ControllerMessage as M['type']]: M['detail']
 }
 
 /**

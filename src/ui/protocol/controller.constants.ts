@@ -1,4 +1,4 @@
-import { keyMirror } from '../utils.ts'
+import { keyMirror } from '../../utils.ts'
 
 /**
  * Event type constants for the generative UI controller protocol.

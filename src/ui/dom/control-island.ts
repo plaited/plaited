@@ -1,13 +1,13 @@
-import type { BThreads, Disconnect, Trigger, UseFeedback, UseSnapshot } from '../behavioral.ts'
-import { behavioral } from '../behavioral.ts'
-import { keyMirror } from '../utils.ts'
-import { canUseDOM } from './can-use-dom.ts'
-import { RESTRICTED_EVENTS } from './controller.constants.ts'
-import { controller } from './controller.ts'
-import { createStyles } from './create-styles.ts'
-import { BOOLEAN_ATTRS } from './create-template.constants.ts'
-import { createTemplate, Fragment } from './create-template.ts'
-import type { CustomElementTag, ElementAttributeList, FunctionTemplate } from './create-template.types.ts'
+import type { BThreads, Disconnect, Trigger, UseFeedback, UseSnapshot } from '../../behavioral.ts'
+import { behavioral } from '../../behavioral.ts'
+import { keyMirror } from '../../utils.ts'
+import { createStyles } from '../css/styles.ts'
+import { RESTRICTED_EVENTS } from '../protocol/controller.constants.ts'
+import { controller } from '../protocol/controller.ts'
+import { canUseDOM } from '../render/can-use-dom.ts'
+import { BOOLEAN_ATTRS } from '../render/template.constants.ts'
+import { createTemplate, Fragment } from '../render/template.ts'
+import type { CustomElementTag, ElementAttributeList, FunctionTemplate } from '../render/template.types.ts'
 
 const styles = createStyles({
   controller: { display: 'contents' },

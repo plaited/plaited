@@ -2,7 +2,7 @@
  * Browser entry point for controlIsland tests.
  * Bundled by Bun.build() and served as a script in the HTML fixture.
  */
-import { controlIsland } from '../../control-island.ts'
+import { controlIsland } from '../../../dom/control-island.ts'
 
 const TestIsland = controlIsland({
   tag: 'test-island',

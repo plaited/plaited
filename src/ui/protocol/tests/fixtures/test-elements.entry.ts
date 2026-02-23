@@ -3,7 +3,7 @@
  * Registers multiple test elements, each designed for a specific test category.
  * The fixture server dispatches different WebSocket messages based on element tag.
  */
-import { controlIsland } from '../../control-island.ts'
+import { controlIsland } from '../../../dom/control-island.ts'
 
 // Swap mode tests — server sends all 6 swap modes after root_connected
 controlIsland({ tag: 'swap-test', observedAttributes: [] })

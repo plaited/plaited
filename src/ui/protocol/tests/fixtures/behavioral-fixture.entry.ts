@@ -3,7 +3,7 @@
  * The server sends an update_behavioral message after root_connected,
  * the controller imports the module and sends behavioral_updated.
  */
-import { controlIsland } from '../../control-island.ts'
+import { controlIsland } from '../../../dom/control-island.ts'
 
 controlIsland({
   tag: 'behavioral-fixture',

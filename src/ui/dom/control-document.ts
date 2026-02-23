@@ -1,8 +1,8 @@
-import { behavioral, type DefaultHandlers, type Disconnect, type Trigger } from '../behavioral.ts'
-import { keyMirror } from '../utils.ts'
-import { canUseDOM } from './can-use-dom.ts'
-import { RESTRICTED_EVENTS } from './controller.constants.ts'
-import { controller } from './controller.ts'
+import { behavioral, type DefaultHandlers, type Disconnect, type Trigger } from '../../behavioral.ts'
+import { keyMirror } from '../../utils.ts'
+import { RESTRICTED_EVENTS } from '../protocol/controller.constants.ts'
+import { controller } from '../protocol/controller.ts'
+import { canUseDOM } from '../render/can-use-dom.ts'
 import { DelegatedListener, delegates } from './delegated-listener.ts'
 
 /**

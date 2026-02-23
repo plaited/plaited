@@ -1,7 +1,7 @@
-import { createTemplate } from './create-template.ts'
-import type { Attrs, CustomElementTag, FunctionTemplate, TemplateObject } from './create-template.types.ts'
-import type { DesignTokenReference, HostStylesObject } from './css.types.ts'
-import { joinStyles } from './join-styles.ts'
+import type { DesignTokenReference, HostStylesObject } from '../css/css.types.ts'
+import { joinStyles } from '../css/join-styles.ts'
+import { createTemplate } from '../render/template.ts'
+import type { Attrs, CustomElementTag, FunctionTemplate, TemplateObject } from '../render/template.types.ts'
 
 /**
  * Brand identifier stamped onto `DecoratorTemplate` function objects.

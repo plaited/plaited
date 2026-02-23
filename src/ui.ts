@@ -12,17 +12,22 @@
  * @public
  */
 
-export * from './ui/control-document.ts'
-export * from './ui/control-island.ts'
-export * from './ui/controller.constants.ts'
-export * from './ui/controller.schemas.ts'
-export * from './ui/create-host-styles.ts'
-export * from './ui/create-keyframes.ts'
-export * from './ui/create-root-styles.ts'
-export * from './ui/create-ssr.ts'
-export * from './ui/create-styles.ts'
-export type * from './ui/create-template.types.ts'
-export * from './ui/create-tokens.ts'
-export type { CSSProperties, DesignTokenGroup, DesignTokenReference, DesignTokenReferences } from './ui/css.types.ts'
-export * from './ui/decorate-elements.ts'
-export * from './ui/join-styles.ts'
+export type {
+  CSSProperties,
+  DesignTokenGroup,
+  DesignTokenReference,
+  DesignTokenReferences,
+} from './ui/css/css.types.ts'
+export * from './ui/css/host-styles.ts'
+export * from './ui/css/join-styles.ts'
+export * from './ui/css/keyframes.ts'
+export * from './ui/css/root-styles.ts'
+export * from './ui/css/styles.ts'
+export * from './ui/css/tokens.ts'
+export * from './ui/dom/control-document.ts'
+export * from './ui/dom/control-island.ts'
+export * from './ui/dom/decorate-elements.ts'
+export * from './ui/protocol/controller.constants.ts'
+export * from './ui/protocol/controller.schemas.ts'
+export * from './ui/render/ssr.ts'
+export type * from './ui/render/template.types.ts'

@@ -6,7 +6,7 @@
  * - Sets window.__behavioralModuleLoaded to confirm the factory ran
  * - Returns threads (via bThread/bSync) and handlers
  */
-import { bSync, bThread } from '../../../behavioral.ts'
+import { bSync, bThread } from '../../../../behavioral.ts'
 
 const factory = (_trigger: (event: { type: string; detail?: unknown }) => void) => {
   ;(globalThis as Record<string, unknown>).__behavioralModuleLoaded = true

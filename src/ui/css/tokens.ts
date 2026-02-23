@@ -1,4 +1,4 @@
-import { isTypeOf, kebabCase } from '../utils.ts'
+import { isTypeOf, kebabCase } from '../../utils.ts'
 import type {
   DesignToken,
   DesignTokenGroup,

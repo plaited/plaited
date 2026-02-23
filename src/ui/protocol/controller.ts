@@ -1,9 +1,9 @@
 /**
- * Client-side behavioral shell for the generative web UI.
+ * Client-side behavioral controller for the generative web UI.
  * Coordinates rendering, user input, and WebSocket lifecycle.
  *
  * @remarks
- * The shell is the only client-side JS beyond Level 2+ thread modules.
+ * The controller is the only client-side JS beyond Level 2+ thread modules.
  * It manages its own WebSocket connection (with reconnection), receives
  * server messages (render/attrs), applies them to the DOM via
  * `setHTMLUnsafe`, and forwards user actions back to the server.
@@ -18,19 +18,19 @@
  *
  * @public
  */
-import type { BPEvent, BThreads, Disconnect, Handlers, Trigger, UseFeedback, UseSnapshot } from '../behavioral.ts'
-import { BPEventSchema } from '../behavioral.ts'
+import type { BPEvent, BThreads, Disconnect, Handlers, Trigger, UseFeedback, UseSnapshot } from '../../behavioral.ts'
+import { BPEventSchema } from '../../behavioral.ts'
+import { DelegatedListener, delegates } from '../dom/delegated-listener.ts'
+import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from '../render/template.constants.ts'
 import { CONTROLLER_ERRORS, CONTROLLER_EVENTS, SWAP_MODES } from './controller.constants.ts'
 import type {
   BThreadAddedMessage,
+  ControllerHandlers,
   RootConnectedMessage,
-  ShellHandlers,
   SwapMode,
   UserActionMessage,
 } from './controller.schemas.ts'
 import { UpdateBehavioralModuleSchema, UpdateBehavioralResultSchema } from './controller.schemas.ts'
-import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from './create-template.constants.ts'
-import { DelegatedListener, delegates } from './delegated-listener.ts'
 
 /** @internal Retry status codes that warrant reconnection attempts. */
 const RETRY_STATUS_CODES = new Set([1006, 1012, 1013])
@@ -42,11 +42,11 @@ const MAX_RETRIES = 3
  * @internal
  * Sets up delegated event listeners on elements with p-trigger attributes
  * within a given subtree. Parses the p-trigger value to bind DOM events
- * to the shell's trigger function as userAction events.
+ * to the controller's trigger function as userAction events.
  * Called on DocumentFragment before DOM insertion so listeners survive the move.
  *
  * @param subtree - DOM subtree to scan (DocumentFragment)
- * @param trigger - Shell's trigger function for forwarding user actions
+ * @param trigger - Controller's trigger function for forwarding user actions
  */
 const bindTriggers = (subtree: DocumentFragment, trigger: (event: { type: string; detail?: unknown }) => void) => {
   const els = subtree.querySelectorAll(`[${P_TRIGGER}]`)
@@ -82,7 +82,7 @@ const bindTriggers = (subtree: DocumentFragment, trigger: (event: { type: string
  * @param options.el - Target DOM element
  * @param options.html - Trusted HTML string from the server render pipeline
  * @param options.swap - Insertion mode
- * @param options.trigger - Shell trigger for binding p-trigger elements before DOM insertion
+ * @param options.trigger - Controller trigger for binding p-trigger elements before DOM insertion
  */
 const performSwap = ({
   el,
@@ -144,15 +144,15 @@ const updateAttributes = ({
 }
 
 /**
- * Factory for creating the client-side behavioral shell.
+ * Factory for creating the client-side behavioral controller.
  *
  * @remarks
  * Wires up WebSocket lifecycle, DOM rendering, and user action forwarding.
- * The shell creates its own WebSocket connection with exponential backoff reconnection.
+ * The controller creates its own WebSocket connection with exponential backoff reconnection.
  *
  * All events originate internally — WebSocket messages and DOM events both use the
  * internal trigger. The `rendered` acknowledgment is triggered after a render completes.
- * `disconnect` arrives from the server via WebSocket to tear down the shell.
+ * `disconnect` arrives from the server via WebSocket to tear down the controller.
  * No `publicEvents` are defined — the returned trigger rejects all external calls.
  *
  * @public
@@ -205,7 +205,7 @@ export const controller = ({
     }),
   )
   // ─── Feedback handlers ─────────────────────────────────────────────
-  const handlers: Handlers<ShellHandlers> = {
+  const handlers: Handlers<ControllerHandlers> = {
     [CONTROLLER_EVENTS.on_ws_error](evt: Event) {
       const target = evt.target as WebSocket
       throw new Error(`WebSocket error on ${target.url} (readyState: ${target.readyState})`)

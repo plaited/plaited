@@ -15,9 +15,9 @@
  * - No source maps for debugging generated HTML
  * - Shadow DOM polyfills not included
  */
-import { htmlEscape, isTypeOf } from '../utils.ts'
-import { TEMPLATE_OBJECT_IDENTIFIER, VALID_PRIMITIVE_CHILDREN } from './create-template.constants.ts'
-import type { TemplateObject } from './create-template.types.ts'
+import { htmlEscape, isTypeOf } from '../../utils.ts'
+import { TEMPLATE_OBJECT_IDENTIFIER, VALID_PRIMITIVE_CHILDREN } from './template.constants.ts'
+import type { TemplateObject } from './template.types.ts'
 
 /**
  * @internal

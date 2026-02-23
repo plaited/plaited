@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { TEMPLATE_OBJECT_IDENTIFIER } from '../../render/template.constants.ts'
 import { CONTROLLER_TEMPLATE_IDENTIFIER, controlIsland } from '../control-island.ts'
-import { TEMPLATE_OBJECT_IDENTIFIER } from '../create-template.constants.ts'
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
 // happy-dom provides customElements.define() for registration tests.

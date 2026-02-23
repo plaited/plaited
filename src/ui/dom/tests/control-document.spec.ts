@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test'
 
 // Mock controller to prevent the useSnapshot → send → connect recursion.
 // controlDocument creates its own behavioral() engine and calls controller() internally.
-mock.module('../controller.ts', () => ({
+mock.module('../../protocol/controller.ts', () => ({
   controller: () => {},
 }))
 

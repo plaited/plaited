@@ -1,7 +1,7 @@
-import { isTypeOf } from '../utils.ts'
+import { isTypeOf } from '../../utils.ts'
 import { CSS_RESERVED_KEYS } from './css.constants.ts'
 import type {
-  CreateRootParams,
+  CreateHostParams,
   CSSProperties,
   DesignTokenReference,
   HostStylesObject,
@@ -18,85 +18,102 @@ const isPrimitive = (val: string | number | unknown): val is string | number =>
 
 /**
  * @internal
- * Recursively processes CSS properties to generate `:root` selector rules.
+ * Recursively processes host element CSS properties to generate :host selector rules.
  * Handles nested statements, compound selectors, and design token references.
  */
-const formatRootStatement = ({
+const formatHostStatement = ({
   styles,
   prop,
   value,
   selectors = [],
+  host,
 }: {
   styles: string[]
   prop: string
   value: CSSProperties[keyof CSSProperties] | NestedStatements | DesignTokenReference
   selectors?: string[]
+  host: string
 }) => {
   if (isTypeOf<NestedStatements>(value, 'object')) {
     for (const [key, val] of Object.entries(value)) {
       if (key === CSS_RESERVED_KEYS.$default) {
-        formatRootStatement({
+        formatHostStatement({
           styles,
           prop,
           value: val,
           selectors,
+          host,
         })
         continue
       }
-      formatRootStatement({
+      formatHostStatement({
         styles,
         prop,
         value: val,
         selectors: [...selectors, key],
+        host,
       })
     }
   } else {
     const isToken = isTokenReference(value)
     isToken && styles.push(...value.stylesheets)
     const arr = selectors.map((str) => `${str}{`)
-    styles.push(`:root{${arr.join('')}${getRule(prop, isToken ? value() : value)}${'}'.repeat(arr.length)}}`)
+    styles.push(`${host}{${arr.join('')}${getRule(prop, isToken ? value() : value)}${'}'.repeat(arr.length)}}`)
   }
 }
 
 /**
- * Creates CSS styles scoped to the `:root` selector for the light DOM.
+ * Creates CSS styles for the Shadow DOM host element using the `:host` selector.
  * Supports nested rules, compound selectors, and design token references.
- * Unlike `createStyles` which generates class-based rules, this function
- * targets the document root for global properties like custom properties and resets.
+ * Unlike `createStyles`, this function generates styles for the host element itself rather than children.
  *
- * @param props - CSS properties to apply to `:root`
- * @returns Object containing only stylesheets (no classNames, as root styles don't use classes)
+ * @param props - CSS properties to apply to the host element
+ * @returns Object containing only stylesheets (no classNames, as host styles don't use classes)
  *
  * @remarks
- * - Generates `:root{ ... }` rules for the light DOM
- * - Use `$compoundSelectors` to nest rules within media queries, pseudo-classes, etc.
- * - Design token references are automatically resolved and their stylesheets included
+ * - Host styles apply to the custom element itself, not its Shadow DOM children
+ * - Use `$compoundSelectors` to apply styles based on host element classes or attributes
+ * - Supports all nested statement features (media queries, pseudo-classes, etc.)
+ * - Design token references are automatically resolved
  * - Returns only `stylesheets` array (no `classNames` property)
  *
- * @see {@link CreateRootParams} for the input type structure
+ * @see {@link CreateHostParams} for the input type structure
  * @see {@link HostStylesObject} for the return type
- * @see {@link createStyles} for class-based element styling
+ * @see {@link createStyles} for styling Shadow DOM children
  * @see {@link createTokens} for design token creation
- *
- * @public
  */
-export const createRootStyles = (props: CreateRootParams): HostStylesObject => {
+export const createHostStyles = (props: CreateHostParams): HostStylesObject => {
   const styles: string[] = []
   for (const [prop, value] of Object.entries(props)) {
     if (isPrimitive(value) || isTokenReference(value)) {
-      formatRootStatement({
+      formatHostStatement({
         styles,
         prop,
         value,
+        host: ':host',
       })
       continue
     }
-    if (Object.keys(value).length) {
-      formatRootStatement({
+
+    const { $compoundSelectors, ...rest } = value
+    if (Object.keys(rest).length) {
+      formatHostStatement({
         styles,
         prop,
-        value,
+        value: rest,
+        host: ':host',
       })
+    }
+
+    if ($compoundSelectors) {
+      for (const [selector, value] of Object.entries($compoundSelectors)) {
+        formatHostStatement({
+          styles,
+          prop,
+          value,
+          host: `:host(${selector})`,
+        })
+      }
     }
   }
 
