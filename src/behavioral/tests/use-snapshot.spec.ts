@@ -46,7 +46,7 @@ describe('useSnapshot', () => {
     expect(snapshotsB.length).toBeGreaterThan(countB)
   })
 
-  test('publisher is cleaned up when all listeners disconnect', () => {
+  test('re-subscribing after full disconnect still works', () => {
     const snapshotsA: SnapshotMessage[] = []
     const snapshotsB: SnapshotMessage[] = []
     const { bThreads, trigger, useSnapshot } = behavioral()
@@ -71,7 +71,7 @@ describe('useSnapshot', () => {
     disconnectA()
     disconnectB()
 
-    // Re-subscribe — should work (publisher re-created lazily)
+    // Re-subscribe — publisher is always available
     const snapshotsC: SnapshotMessage[] = []
     useSnapshot((msg: SnapshotMessage) => {
       snapshotsC.push(msg)

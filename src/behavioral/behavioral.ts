@@ -48,7 +48,6 @@ const createPublisher = <T>() => {
       listeners.delete(listener)
     }
   }
-  publisher.size = () => listeners.size
   return publisher
 }
 
@@ -224,16 +223,10 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
 
   /**
    * @internal
-   * Publisher for state snapshots, consumed by `useSnapshot`. Lazily initialized.
-   * This is only created when a snapshot listener is registered, to avoid unnecessary overhead.
+   * Publisher for state snapshots, consumed by `useSnapshot`.
+   * Always exists — subscribers are added/removed via `useSnapshot` which delegates to `subscribe`.
    */
-  let snapshotPublisher:
-    | {
-        (value: SnapshotMessage): void
-        subscribe(listener: (msg: SnapshotMessage) => void | Promise<void>): () => void
-        size(): number
-      }
-    | undefined
+  const snapshotPublisher = createPublisher<SnapshotMessage>()
 
   /**
    * @internal
@@ -271,7 +264,7 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
    * 2. Collects all request declarations as candidate events
    * 3. Filters out candidates that are blocked
    * 4. Selects the highest priority remaining candidate
-   * 5. If an event is selected and there is a defined snapshot publisher, publishes a snapshot and proceeds to the next step
+   * 5. If an event is selected, publishes a snapshot and proceeds to the next step
    * 6. If no event is selected, the super-step ends (program pauses until external trigger)
    */
   function selectNextEvent() {
@@ -300,7 +293,7 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
       ({ priority: priorityA }, { priority: priorityB }) => priorityA - priorityB,
     )[0]
     if (selectedEvent) {
-      snapshotPublisher?.(snapshotFormatter({ candidates, selectedEvent, pending }))
+      snapshotPublisher(snapshotFormatter({ candidates, selectedEvent, pending }))
       nextStep(selectedEvent)
     }
   }
@@ -394,7 +387,7 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
             detail,
             error: error instanceof Error ? error.message : String(error),
           }
-          snapshotPublisher?.(message)
+          snapshotPublisher(message)
         }
       }
     })
@@ -417,7 +410,7 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
             thread,
             warning: `Thread "${thread}" already exists and cannot be replaced. Use the 'interrupt' idiom to terminate threads explicitly.`,
           }
-          snapshotPublisher?.(message)
+          snapshotPublisher(message)
           console.warn(message)
           continue
         }
@@ -436,19 +429,9 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
   /**
    * @internal
    * Implementation of the public `useSnapshot` hook.
-   *
-   * This lazily initializes the snapshot publisher if needed, then
-   * subscribes the provided listener to receive state snapshots.
-   * It returns a disconnect function that removes the subscription when called.
+   * Delegates directly to the snapshot publisher's subscribe method.
    */
-  const useSnapshot: UseSnapshot = (listener) => {
-    if (snapshotPublisher === undefined) snapshotPublisher = createPublisher<SnapshotMessage>()
-    const unsubscribe = snapshotPublisher.subscribe(listener)
-    return () => {
-      unsubscribe()
-      if (snapshotPublisher?.size() === 0) snapshotPublisher = undefined
-    }
-  }
+  const useSnapshot: UseSnapshot = (listener) => snapshotPublisher.subscribe(listener)
 
   /**
    * @internal
@@ -473,7 +456,7 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
           kind: SNAPSHOT_MESSAGE_KINDS.restricted_trigger_error,
           error: `Event type "${String(args.type)}" is in the restricted set: [${[...set].join(', ')}]`,
         }
-        snapshotPublisher?.(message)
+        snapshotPublisher(message)
         return
       }
       trigger(args)
