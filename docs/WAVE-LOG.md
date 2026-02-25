@@ -2,6 +2,113 @@
 
 Incremental implementation log for the Plaited agent layer. Each wave is a self-contained increment that leaves all tests green.
 
+**Current total: 322 tests passing** (219 agent + 103 behavioral) across 25 files.
+
+---
+
+## Outstanding Issues
+
+Issues identified after all 6 waves shipped. None are blockers — the framework is functionally complete.
+
+### Stale TSDoc Comments
+
+| File | Line | Issue |
+|------|------|-------|
+| `agent.schemas.ts:37` | `RISK_CLASS` TSDoc says "Foundation stubs all calls as `read_only`. Constitution bThreads will later classify..." | `classifyRisk()` already does full classification — comment is stale |
+| `agent.schemas.ts:167` | `GateDecision` TSDoc says "Constitution bThreads will later provide real classification." | Constitution bThreads are implemented — comment is stale |
+| `agent.schemas.ts:119` | `TrajectoryStep` TSDoc says "The eval harness will later import from `plaited/agent`." | Eval harness integration not yet wired — still accurate but deferred |
+
+### Deferred Features
+
+| Feature | Deferred From | Notes |
+|---------|--------------|-------|
+| **Eval harness canonical imports** | Wave 2 | `TrajectoryStepSchema` is the canonical source; eval harness still uses its own copy |
+| **LSP → semantic search pipeline** | Wave 3 | Memory has FTS5 search; LSP and semantic search layers never built |
+| **`searchGate` bThread** | Wave 3 | Planned to block search results during active tool execution; not implemented |
+| **Runtime constitution rule addition via public API** | Wave 6 | `bThreads.set()` works directly for power users; no convenience method on `AgentLoop` |
+| **JSON/TOML config file loading for constitution** | Wave 6 | `constitutionRule()` accepts programmatic config objects; file loading deferred |
+| **Subprocess sandboxing** | Wave 1 | Tool execution is in-process; sandbox is a deployment concern (srt, Landlock, gVisor) |
+
+### Code Quality Notes
+
+| Issue | Severity | Location |
+|-------|----------|----------|
+| Orchestrator IPC handler replacement is fragile | Medium | `agent.orchestrator.ts` `getOrSpawnProcess()` — `onMessage()` replacement acknowledged as complex in comments |
+| `createInferenceCall` not unit tested | Low | `agent.utils.ts` — thin fetch wrapper, tested indirectly via all agent tests |
+| `createSubAgentSimulate` not unit tested | Low | `agent.simulate.ts` — requires subprocess spawning; tested via orchestrator integration |
+| `parseModelResponse` not unit tested | Low | `agent.utils.ts` — tested indirectly through agent loop integration tests |
+| `createTrajectoryRecorder` not unit tested | Low | `agent.utils.ts` — tested indirectly through trajectory schema validation |
+
+---
+
+## Wave 6: Constitution as bThreads
+
+**Branch:** `feat/agent-loop-build`
+**Date:** 2026-02-23
+**Commit:** `5049d09`
+
+### Context
+
+Waves 1–5 built a complete agent loop with orchestration (309 tests). The constitution (`createGateCheck`) was purely imperative — a synchronous function that iterates `customChecks` and short-circuits on rejection. Wave 6 converts safety rules into independent bThreads that compose additively via BP's blocking mechanism.
+
+### What Shipped
+
+#### 1. Constitution Types (`agent.constitution.types.ts`)
+
+- **`ConstitutionRule`** — Predicate-based rule: `{ name, description?, test: (toolCall) => boolean }`. Test returns `true` = BLOCKED.
+- **`ConstitutionRuleConfig`** — JSON-serializable config: `{ name, blockedTools?, pathPattern?, argPattern? }`. Converted to `ConstitutionRule` via `constitutionRule()`.
+- **`Constitution`** — Return type of `createConstitution()`: `{ threads: Record<string, RulesFunction>, gateCheck: GateCheck }`.
+
+#### 2. Constitution Factory (`agent.constitution.ts`)
+
+**`createConstitution(rules)`** — dual-layer safety:
+
+- **Layer 1 — bThreads (defense-in-depth):** Each rule becomes a `constitution_{name}` bThread with `repeat: true` that blocks `execute` events matching its predicate. Consistent with existing `symbolicSafetyNet` pattern.
+- **Layer 2 — imperative gateCheck (feedback):** Returns a `GateCheck` function that runs the same rules. Called in `proposed_action` handler, routes violations to `gate_rejected` which provides feedback to the model.
+
+**`constitutionRule(config)`** — converts JSON-serializable config into a `ConstitutionRule`. Supports three fields combined with OR logic: `blockedTools` (exact name match), `pathPattern` (regex on `arguments.path`), `argPattern` (regex on `arguments[key]`).
+
+#### 3. Agent Loop Integration (`agent.ts`)
+
+- `createAgentLoop` accepts optional `constitution: ConstitutionRule[]` parameter
+- Constitution gateCheck composes with custom gateCheck (constitution runs first, short-circuits on rejection)
+- Constitution bThreads spread into `bThreads.set()` alongside existing threads
+- `proposed_action` handler uses `composedGateCheck` (constitution + custom)
+
+### File Inventory
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `src/agent/agent.constitution.types.ts` | NEW | ConstitutionRule, ConstitutionRuleConfig, Constitution types |
+| `src/agent/agent.constitution.ts` | MODIFIED | Added createConstitution + constitutionRule (+100 lines) |
+| `src/agent/agent.ts` | MODIFIED | constitution param, gate composition, thread spread (+29 lines) |
+| `src/agent/tests/agent.constitution.spec.ts` | MODIFIED | +19 tests (factory, config utility, BP integration) |
+| `src/agent.ts` | MODIFIED | Added type re-export for constitution types |
+
+### Verification
+
+- **322 tests pass** across 25 files (884ms)
+- **0 new type errors** (2 pre-existing in `node_modules/@plaited/agent-eval-harness`)
+- **0 new lint errors** (1 pre-existing `console.log` warning in `skills/ui-testing/`)
+
+### Design Decisions
+
+1. **Dual-layer safety mirrors `symbolicSafetyNet`.** The bThread layer blocks `execute` events as defense-in-depth (even if the imperative check is somehow bypassed). The imperative layer provides feedback to the model via `gate_rejected` → synthetic tool result → conversation history. Without the imperative layer, the model would never know why its tool call was silently dropped.
+
+2. **Constitution runs before custom gateCheck.** Constitution rules are fundamental safety constraints; custom checks are domain-specific. Short-circuiting on constitution rejection avoids running custom logic on already-blocked calls.
+
+3. **OR logic for config fields.** Each field in `ConstitutionRuleConfig` represents a different dimension of restriction (`blockedTools`, `pathPattern`, `argPattern`). A rule like `{ blockedTools: ['bash'], pathPattern: '/etc/' }` means "block if it's a bash call OR if the path targets /etc/". For AND logic, write a custom `test` predicate.
+
+4. **No runtime addition via public API.** Power users can call `bThreads.set()` directly with `createConstitution()` output. A convenience method on `AgentLoop` would require exposing `bThreads` — deferred until there's a clear use case.
+
+### What's NOT in Wave 6
+
+| Deferred | Reason |
+|----------|--------|
+| Runtime rule addition via `AgentLoop` API | `bThreads.set()` works directly for power users |
+| JSON/TOML config file loading | Configs are programmatic objects; file loading is an integration concern |
+| Constitution rule priorities / ordering | Rules are independent blocking threads; BP's blocking semantics handle composition |
+
 ---
 
 ## Wave 1: Tool Executor + Gate Check

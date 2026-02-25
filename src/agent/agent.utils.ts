@@ -180,13 +180,11 @@ export const buildContextMessages = ({
   systemPrompt,
   history,
   plan,
-  rejections,
   eventLog,
 }: {
   systemPrompt?: string
   history: ChatMessage[]
   plan?: AgentPlan
-  rejections?: Array<{ toolCall: AgentToolCall; reason: string }>
   eventLog?: Array<{ event_type: string; thread: string; selected: number; blocked_by: string | null }>
 }): ChatMessage[] => {
   const messages: ChatMessage[] = []
@@ -195,9 +193,6 @@ export const buildContextMessages = ({
   let system = systemPrompt ?? 'You are a helpful assistant.'
   if (plan) {
     system += `\n\n## Current Plan\nGoal: ${plan.goal}\nSteps:\n${plan.steps.map((s) => `- [${s.id}] ${s.intent} (tools: ${s.tools.join(', ')})`).join('\n')}`
-  }
-  if (rejections?.length) {
-    system += `\n\n## Gate Rejections\nThe following tool calls were rejected. Choose a different approach:\n${rejections.map((r) => `- ${r.toolCall.name}(${JSON.stringify(r.toolCall.arguments)}): ${r.reason}`).join('\n')}`
   }
   if (eventLog?.length) {
     const blocked = eventLog.filter((e) => e.blocked_by)

@@ -7,14 +7,14 @@ description: Development skill for building the neuro-symbolic agent framework. 
 
 ## Purpose
 
-This is the **development context** for building the agent framework across Waves 1–6. It captures research insights, architectural decisions, and coordination patterns that must survive context compaction. Activate this skill before any agent module work.
+This is the **development context** for the agent framework — all 6 waves are complete. It captures research insights, architectural decisions, and coordination patterns that must survive context compaction. Activate this skill before any agent module work.
 
 **Use this when:**
 - Implementing or modifying `src/agent/` files
-- Planning wave features (memory, event log, orchestrator, constitution)
 - Resuming work after context compaction
 - Writing tests for agent behavior
 - Designing bThread coordination for the agent loop
+- Addressing outstanding issues (see below)
 
 ## Architecture Overview
 
@@ -26,7 +26,7 @@ Context → Reason → Gate → Simulate → Evaluate → Execute
 
 Each step is a BP event. The loop is driven by async feedback handlers calling `trigger()` — the BP engine is synchronous, async work happens in handlers.
 
-### Event Flow (Current — Post-Refactor)
+### Event Flow
 
 ```mermaid
 graph TD
@@ -35,7 +35,7 @@ graph TD
     INV --> INF[async: callInference]
     INF --> MR[model_response]
     MR --> PA[proposed_action — per tool call]
-    PA --> GATE{gateCheck}
+    PA --> GATE{composedGateCheck}
     GATE -->|approved, read_only| EXEC[execute]
     GATE -->|approved, side_effects| SIM[simulate_request]
     GATE -->|rejected| GR[gate_rejected → onToolComplete]
@@ -52,6 +52,8 @@ graph TD
     MSG -->|taskGate loops| TASK
 ```
 
+Note: `composedGateCheck` = constitution gateCheck → custom gateCheck (short-circuits on rejection).
+
 ### Event Vocabulary
 
 All events defined in `agent.constants.ts`:
@@ -61,7 +63,7 @@ All events defined in `agent.constants.ts`:
 | `task` | 1 | Add per-task maxIterations bThread, push prompt, trigger invoke_inference |
 | `invoke_inference` | 1 | Async: callInference → trigger model_response (centralized, single call site) |
 | `model_response` | 2 | Parse response, dispatch tool calls in parallel |
-| `proposed_action` | 3 | Run gateCheck, route to approved/rejected |
+| `proposed_action` | 3 | Run composedGateCheck, route to approved/rejected |
 | `gate_approved` | 3 | Route by risk class: read_only→execute, else→simulate |
 | `gate_rejected` | 3 | Synthetic tool result, onToolComplete |
 | `simulate_request` | 4 | Call simulate seam (async), route to simulation_result |
@@ -74,7 +76,7 @@ All events defined in `agent.constants.ts`:
 | `plan_saved` | — | Trigger invoke_inference |
 | `message` | — | Resolve run() promise (taskGate loops back to blocking) |
 
-### Current bThreads (Post-Refactor)
+### Current bThreads
 
 ```typescript
 // Session-level threads (set once at creation)
@@ -98,6 +100,10 @@ bThreads.set({
       return pred ? checkSymbolicGate(pred, patterns).blocked : false
     } }),
   ], true),
+
+  // Constitution bThreads — one per rule, additive blocking (defense-in-depth)
+  ...constitutionResult?.threads,
+  // Each constitution_{name} thread: bThread([bSync({ block: predicate })], true)
 })
 
 // Per-task thread (added dynamically in 'task' handler, interrupted by 'message')
@@ -138,24 +144,62 @@ bThreads.set({
 - Decrements counter, triggers invoke_inference at 0
 - No await boundary = no stale-state risk
 
+**constitution dual-layer safety** (Wave 6):
+- bThread layer: blocks `execute` events as defense-in-depth (mirrors `symbolicSafetyNet`)
+- Imperative layer: runs same rules in `composedGateCheck`, routes violations to `gate_rejected` for model feedback
+- Constitution runs before custom gateCheck (short-circuits on rejection)
+
 ### Module Map
 
-| File | Purpose | Lines |
-|------|---------|-------|
-| `agent.ts` | Main loop: bThreads + feedback handlers + run/destroy | ~515 |
-| `agent.types.ts` | All type definitions: seams, events, detail types | ~292 |
-| `agent.schemas.ts` | Zod schemas: AgentToolCall, AgentPlan, GateDecision, etc. | ~180 |
-| `agent.constants.ts` | Event constants (AGENT_EVENTS), risk classes, tool status | ~59 |
-| `agent.utils.ts` | parseModelResponse, buildContextMessages, trajectory recorder | ~170 |
-| `agent.constitution.ts` | classifyRisk + createGateCheck with customChecks | ~80 |
-| `agent.tools.ts` | createToolExecutor with built-in tools (read/write/list/bash) | ~160 |
-| `agent.simulate.ts` | Dreamer: buildStateTransitionPrompt, createSimulate, createSubAgentSimulate | ~150 |
-| `agent.evaluate.ts` | Judge: checkSymbolicGate, buildRewardPrompt, createEvaluate | ~170 |
-| `agent.simulate-worker.ts` | Sub-agent entry point for IPC-based simulation | ~30 |
+| File | Purpose |
+|------|---------|
+| `agent.ts` | Main loop: bThreads + feedback handlers + run/destroy |
+| `agent.types.ts` | All type definitions: seams, events, detail types |
+| `agent.schemas.ts` | Zod schemas: AgentToolCall, AgentPlan, GateDecision, etc. |
+| `agent.constants.ts` | Event constants (AGENT_EVENTS), risk classes, tool status |
+| `agent.utils.ts` | parseModelResponse, buildContextMessages, trajectory recorder |
+| `agent.constitution.ts` | classifyRisk, createGateCheck, createConstitution, constitutionRule |
+| `agent.constitution.types.ts` | ConstitutionRule, ConstitutionRuleConfig, Constitution types |
+| `agent.tools.ts` | createToolExecutor with built-in tools (read/write/list/bash) |
+| `agent.simulate.ts` | Dreamer: buildStateTransitionPrompt, createSimulate, createSubAgentSimulate |
+| `agent.evaluate.ts` | Judge: checkSymbolicGate, buildRewardPrompt, createEvaluate |
+| `agent.simulate-worker.ts` | Sub-agent entry point for IPC-based simulation |
+| `agent.memory.ts` | SQLite persistence: sessions, messages, event log, FTS5 search |
+| `agent.memory.types.ts` | MemoryDb type definitions |
+| `agent.orchestrator.ts` | Multi-project coordination: process pool, IPC bridge, oneAtATime |
+| `agent.orchestrator.types.ts` | Orchestrator type definitions |
+| `agent.orchestrator.constants.ts` | Orchestrator event constants |
+| `agent.orchestrator-worker.ts` | Worker entry point for orchestrator subprocesses |
+
+## Wave Completion Summary
+
+| Wave | Focus | Status | Key BP Patterns |
+|------|-------|--------|----------------|
+| 1 | Tool executor, gate, multi-tool | Done | maxIterations bThread |
+| 2–3 | Simulate, evaluate, memory, search | Done | simulationGuard, symbolicSafetyNet, taskGate, invoke_inference |
+| 4 | Event log persistence + context injection | Done | useSnapshot → SQLite append |
+| 5 | Orchestrator (multi-project) | Done | oneAtATime phase-transition, IPC bridge |
+| 6 | Constitution as bThreads | Done | Additive blocking rules, dual-layer safety |
+
+**322 total tests** (219 agent + 103 behavioral) across 25 files.
+
+## Outstanding Issues
+
+See `docs/WAVE-LOG.md` for full details.
+
+| Issue | Severity | Notes |
+|-------|----------|-------|
+| Stale TSDoc in `agent.schemas.ts` | Low | 3 comments reference "later" for work that is now complete |
+| Orchestrator IPC handler fragility | Medium | `getOrSpawnProcess()` handler replacement acknowledged as complex |
+| LSP semantic search pipeline not built | Low | Wave 3 partial — FTS5 search works, LSP/semantic layers deferred |
+| `searchGate` bThread not implemented | Low | Planned for Wave 3, never built |
+| Eval harness canonical imports | Low | `TrajectoryStepSchema` is canonical; eval harness still uses its own copy |
+| Some exported functions lack unit tests | Low | `createInferenceCall`, `createSubAgentSimulate`, `parseModelResponse`, `createTrajectoryRecorder` — all covered by integration |
+| Runtime constitution via public API | Low | Deferred — `bThreads.set()` works directly for power users |
 
 ## BP Refactor — Completed (Task #13)
 
-The `done` flag and 26 `if (done) return` guards were replaced with structural BP coordination. Key changes:
+The `done` flag and 26 `if (done) return` guards were replaced with structural BP coordination:
 
 | Before | After |
 |--------|-------|
@@ -164,62 +208,24 @@ The `done` flag and 26 `if (done) return` guards were replaced with structural B
 | `async checkComplete()` (3 `if(done)` guards) | Sync `onToolComplete()` → `trigger(invoke_inference)` |
 | 3 separate `callInference()` call sites | Single `invoke_inference` async handler |
 | `done = true` in message handler | taskGate loops back to blocking automatically |
-| `done = true/false` in run/destroy | Not needed — structural coordination |
 
 ### Key Discoveries from Exploration Tests
 
 **Ephemeral vs Persistent Blocks** (agent-patterns.spec.ts):
 - A sync point with `block + request` loses its block after the request fires
 - maxIterations' block on `execute` is EPHEMERAL — after `message` fires, the thread ends and the block vanishes
-- For permanent blocking after a sequence, compose with a persistent thread (doneGuard) or use the taskGate pattern
 
 **Phase-Transition > Shared State** (agent-orchestration.spec.ts):
-- Using thread position for coordination is more reliable than shared-state predicates
-- The orchestrator routing test failed when using `activeProject !== null` because the handler set state before triggering — the block predicate saw stale timing
-- Fix: two-phase bThread (waitFor → block → loop) makes sequencing structural
+- Thread position for coordination is more reliable than shared-state predicates
+- Two-phase bThread (waitFor → block → loop) makes sequencing structural
 
 **Blocked Events Are Silently Dropped**:
-- BP does NOT queue blocked events. If `trigger()` fires something that a bThread blocks, it disappears
-- The caller must retry after the block lifts
+- BP does NOT queue blocked events — they disappear
 - The taskGate test proves stale async triggers are silently dropped between tasks
 
 **Infinite Super-Step Anti-Pattern**:
 - `repeat: true` + continuous `request` = stack overflow
-- Agent events must enter via `trigger()` from async handlers, breaking the synchronous chain
-
-## Wave Roadmap
-
-| Wave | Focus | Status | Key BP Patterns |
-|------|-------|--------|----------------|
-| 1 | Tool executor, gate, multi-tool | Done (86 tests) | maxIterations bThread |
-| 2 | Simulate + Evaluate | Done (140 tests) | simulationGuard, symbolicSafetyNet, taskGate, invoke_inference |
-| 3 | Memory (SQLite + discovery) | Next | Discovery gating (searchGate bThread) |
-| 4 | Event log + persistence | Planned | useSnapshot → SQLite append |
-| 5 | Orchestrator (multi-project) | Planned | Phase-transition routing, dynamic project threads |
-| 6 | Constitution as bThreads | Planned | Config-driven additive rules |
-
-### Wave 3: Memory & Discovery
-- SQLite for conversation history, plan steps, event log
-- Discovery pipeline: FTS5 → LSP → semantic search
-- `searchGate` bThread blocks search results during active tool execution
-
-### Wave 4: Event Log
-- `useSnapshot()` captures every BP decision
-- Projection: snapshot → structured log entries with `blockedBy` info
-- SQLite append-only event log
-- Model sees its own coordination history in context
-
-### Wave 5: Orchestrator
-- Central BP program routes tasks to project subprocesses
-- Phase-transition `oneAtATime` bThread enforces sequential projects
-- Dynamic `project_{name}` threads per active project (interrupted by shutdown)
-- IPC trigger bridge: `Bun.spawn()` subprocess ↔ `trigger()` via IPC
-
-### Wave 6: Constitution as bThreads
-- Each safety rule = independent blocking bThread
-- Rules compose additively (block takes precedence)
-- Config-driven: JSON/TOML → bThread factories
-- Runtime rule addition without modifying existing threads
+- Agent events must enter via `trigger()` from async handlers
 
 ## Testing Seam Pattern
 
@@ -229,10 +235,12 @@ All external dependencies are injected as function parameters:
 createAgentLoop({
   inferenceCall,  // mock in tests
   toolExecutor,   // mock in tests
+  constitution,   // optional, ConstitutionRule[] → dual-layer safety
   gateCheck,      // optional, defaults to approve-all
-  simulate,       // optional, Wave 2
-  evaluate,       // optional, Wave 2
+  simulate,       // optional, Dreamer prediction
+  evaluate,       // optional, Judge scoring
   patterns,       // optional, custom symbolic gate patterns
+  memory,         // optional, SQLite persistence
 })
 ```
 
@@ -247,8 +255,6 @@ These tests validate BP mechanisms before applying them to agent.ts:
 | agent-patterns.spec.ts | 14 | `src/behavioral/tests/` |
 | agent-lifecycle.spec.ts | 5 | `src/behavioral/tests/` |
 | agent-orchestration.spec.ts | 10 | `src/behavioral/tests/` |
-
-**Total: 29 exploration tests + 103 behavioral tests + 140 agent tests = 272 total**
 
 ## Related Skills
 

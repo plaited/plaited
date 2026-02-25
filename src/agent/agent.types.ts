@@ -204,6 +204,7 @@ export type ToolResultDetail = {
 /** Detail payload for the `save_plan` event */
 export type SavePlanDetail = {
   plan: AgentPlan
+  toolCallId?: string
 }
 
 /** Detail payload for the `plan_saved` event */
@@ -260,6 +261,9 @@ export type AgentEventDetails = {
   [AGENT_EVENTS.proposed_action]: ProposedActionDetail
   [AGENT_EVENTS.gate_approved]: GateResultDetail
   [AGENT_EVENTS.gate_rejected]: GateResultDetail
+  [AGENT_EVENTS.route_read_only]: GateResultDetail
+  [AGENT_EVENTS.route_side_effects]: GateResultDetail
+  [AGENT_EVENTS.route_high_ambiguity]: GateResultDetail
   [AGENT_EVENTS.simulate_request]: SimulateRequestDetail
   [AGENT_EVENTS.simulation_result]: SimulationResultDetail
   [AGENT_EVENTS.eval_approved]: EvalApprovedDetail
