@@ -63,7 +63,7 @@ describe('TrialsConfig configuration', () => {
 
 describe('trials CLI', () => {
   test('displays help with --help flag', async () => {
-    const proc = Bun.spawn(['bun', './bin/cli.ts', 'trials', '--help'], {
+    const proc = Bun.spawn(['bun', './src/cli.ts', 'trials', '--help'], {
       stdout: 'pipe',
       stderr: 'pipe',
     })
@@ -88,7 +88,7 @@ describe('trials CLI', () => {
 
   test('shows error for --stdin with positional file', async () => {
     const proc = Bun.spawn(
-      ['bun', './bin/cli.ts', 'trials', '/tmp/prompts.jsonl', '--stdin', '-s', '/tmp/schema.json'],
+      ['bun', './src/cli.ts', 'trials', '/tmp/prompts.jsonl', '--stdin', '-s', '/tmp/schema.json'],
       {
         stdout: 'pipe',
         stderr: 'pipe',
@@ -103,7 +103,7 @@ describe('trials CLI', () => {
   })
 
   test('shows error for missing prompts file argument', async () => {
-    const proc = Bun.spawn(['bun', './bin/cli.ts', 'trials'], {
+    const proc = Bun.spawn(['bun', './src/cli.ts', 'trials'], {
       stdout: 'pipe',
       stderr: 'pipe',
     })
@@ -116,7 +116,7 @@ describe('trials CLI', () => {
   })
 
   test('shows error for missing schema argument', async () => {
-    const proc = Bun.spawn(['bun', './bin/cli.ts', 'trials', '/tmp/prompts.jsonl'], {
+    const proc = Bun.spawn(['bun', './src/cli.ts', 'trials', '/tmp/prompts.jsonl'], {
       stdout: 'pipe',
       stderr: 'pipe',
     })
@@ -130,7 +130,7 @@ describe('trials CLI', () => {
 
   test('shows error for invalid concurrency value', async () => {
     const proc = Bun.spawn(
-      ['bun', './bin/cli.ts', 'trials', '/tmp/prompts.jsonl', '-s', '/tmp/schema.json', '-j', 'abc'],
+      ['bun', './src/cli.ts', 'trials', '/tmp/prompts.jsonl', '-s', '/tmp/schema.json', '-j', 'abc'],
       {
         stdout: 'pipe',
         stderr: 'pipe',
@@ -146,7 +146,7 @@ describe('trials CLI', () => {
 
   test('shows error for zero concurrency', async () => {
     const proc = Bun.spawn(
-      ['bun', './bin/cli.ts', 'trials', '/tmp/prompts.jsonl', '-s', '/tmp/schema.json', '-j', '0'],
+      ['bun', './src/cli.ts', 'trials', '/tmp/prompts.jsonl', '-s', '/tmp/schema.json', '-j', '0'],
       {
         stdout: 'pipe',
         stderr: 'pipe',
@@ -167,7 +167,7 @@ describe('trials CLI', () => {
 
 describe('schemas CLI', () => {
   test('displays help with --help flag', async () => {
-    const proc = Bun.spawn(['bun', './bin/cli.ts', 'schemas', '--help'], {
+    const proc = Bun.spawn(['bun', './src/cli.ts', 'schemas', '--help'], {
       stdout: 'pipe',
       stderr: 'pipe',
     })
@@ -184,7 +184,7 @@ describe('schemas CLI', () => {
   })
 
   test('lists schemas with --list flag', async () => {
-    const proc = Bun.spawn(['bun', './bin/cli.ts', 'schemas', '--list'], {
+    const proc = Bun.spawn(['bun', './src/cli.ts', 'schemas', '--list'], {
       stdout: 'pipe',
       stderr: 'pipe',
     })
@@ -199,7 +199,7 @@ describe('schemas CLI', () => {
   })
 
   test('exports schema as JSON', async () => {
-    const proc = Bun.spawn(['bun', './bin/cli.ts', 'schemas', 'PromptCase', '--json'], {
+    const proc = Bun.spawn(['bun', './src/cli.ts', 'schemas', 'PromptCase', '--json'], {
       stdout: 'pipe',
       stderr: 'pipe',
     })

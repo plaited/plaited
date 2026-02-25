@@ -91,7 +91,7 @@ describe('HeadlessAdapterSchema', () => {
   })
 
   describe('validates schema files from disk', () => {
-    const fixturesDir = 'src/headless/tests/fixtures'
+    const fixturesDir = 'src/tools/eval/headless/tests/fixtures'
 
     test('validates claude-headless.json from disk', async () => {
       const content = await Bun.file(`${fixturesDir}/claude-headless.json`).json()

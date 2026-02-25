@@ -19,11 +19,11 @@ export { calibrate, runCalibrate } from './commands/calibrate.ts'
 // Capture command
 export type { CaptureConfig } from './commands/capture.ts'
 export { capture, runCapture } from './commands/capture.ts'
-
+// Eval command (unified capture + trials)
+export { evalConfigSchema, evalRun, runEval } from './commands/eval-run.ts'
 // Summarize command
 export type { SummarizeConfig } from './commands/summarize.ts'
 export { runSummarize, summarize } from './commands/summarize.ts'
-
 // Trials command
 export type { TrialsConfig } from './commands/trials.ts'
 export { runTrials, trials } from './commands/trials.ts'

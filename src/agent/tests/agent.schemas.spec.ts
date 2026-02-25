@@ -5,7 +5,7 @@ import {
   ThoughtStepSchema as EvalThoughtStepSchema,
   ToolCallStepSchema as EvalToolCallStepSchema,
   TrajectoryStepSchema as EvalTrajectoryStepSchema,
-} from '@plaited/agent-eval-harness/schemas'
+} from '../../tools/eval/schemas/schemas.ts'
 import {
   AgentConfigSchema,
   AgentPlanSchema,

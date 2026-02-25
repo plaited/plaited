@@ -160,7 +160,7 @@ describe('runCapture configuration', () => {
 
 describe('capture CLI', () => {
   test('displays help with --help flag', async () => {
-    const proc = Bun.spawn(['bun', './bin/cli.ts', 'capture', '--help'], {
+    const proc = Bun.spawn(['bun', './src/cli.ts', 'capture', '--help'], {
       stdout: 'pipe',
       stderr: 'pipe',
     })
@@ -183,7 +183,7 @@ describe('capture CLI', () => {
 
   test('shows error for --stdin with positional file', async () => {
     const proc = Bun.spawn(
-      ['bun', './bin/cli.ts', 'capture', '/tmp/prompts.jsonl', '--stdin', '-s', '/tmp/schema.json'],
+      ['bun', './src/cli.ts', 'capture', '/tmp/prompts.jsonl', '--stdin', '-s', '/tmp/schema.json'],
       {
         stdout: 'pipe',
         stderr: 'pipe',
@@ -198,7 +198,7 @@ describe('capture CLI', () => {
   })
 
   test('shows error for missing prompts file argument', async () => {
-    const proc = Bun.spawn(['bun', './bin/cli.ts', 'capture'], {
+    const proc = Bun.spawn(['bun', './src/cli.ts', 'capture'], {
       stdout: 'pipe',
       stderr: 'pipe',
     })
@@ -211,7 +211,7 @@ describe('capture CLI', () => {
   })
 
   test('shows error for missing schema argument', async () => {
-    const proc = Bun.spawn(['bun', './bin/cli.ts', 'capture', '/tmp/prompts.jsonl'], {
+    const proc = Bun.spawn(['bun', './src/cli.ts', 'capture', '/tmp/prompts.jsonl'], {
       stdout: 'pipe',
       stderr: 'pipe',
     })
@@ -225,7 +225,7 @@ describe('capture CLI', () => {
 
   test('shows error for invalid concurrency value', async () => {
     const proc = Bun.spawn(
-      ['bun', './bin/cli.ts', 'capture', '/tmp/prompts.jsonl', '-s', '/tmp/schema.json', '-j', 'abc'],
+      ['bun', './src/cli.ts', 'capture', '/tmp/prompts.jsonl', '-s', '/tmp/schema.json', '-j', 'abc'],
       {
         stdout: 'pipe',
         stderr: 'pipe',
@@ -241,7 +241,7 @@ describe('capture CLI', () => {
 
   test('shows error for zero concurrency', async () => {
     const proc = Bun.spawn(
-      ['bun', './bin/cli.ts', 'capture', '/tmp/prompts.jsonl', '-s', '/tmp/schema.json', '-j', '0'],
+      ['bun', './src/cli.ts', 'capture', '/tmp/prompts.jsonl', '-s', '/tmp/schema.json', '-j', '0'],
       {
         stdout: 'pipe',
         stderr: 'pipe',
@@ -258,7 +258,7 @@ describe('capture CLI', () => {
   test('shows error for negative concurrency', async () => {
     // Note: Using --concurrency=-1 format because -j -1 is ambiguous to parseArgs
     const proc = Bun.spawn(
-      ['bun', './bin/cli.ts', 'capture', '/tmp/prompts.jsonl', '-s', '/tmp/schema.json', '--concurrency=-1'],
+      ['bun', './src/cli.ts', 'capture', '/tmp/prompts.jsonl', '-s', '/tmp/schema.json', '--concurrency=-1'],
       {
         stdout: 'pipe',
         stderr: 'pipe',

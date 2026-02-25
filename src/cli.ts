@@ -1,143 +1,150 @@
-// #!/usr/bin/env bun
+#!/usr/bin/env bun
 
-// /**
-//  * @internal
-//  * @module cli
-//  *
-//  * CLI entry point for Plaited workshop test runner.
-//  * Provides test and dev commands with Playwright integration.
-//  *
-//  * @remarks
-//  * Supports Bun's --hot flag for automatic module hot reload.
-//  *
+/**
+ * Agent-facing CLI router for the Plaited toolbox.
+ *
+ * @remarks
+ * Agents discover capabilities via `plaited --schema` and invoke
+ * commands via `plaited <command> --json '{...}'`. Each command
+ * follows the tool genome: configSchema + runner + CLI handler.
+ *
+ * @internal
+ */
 
-//  *   bun plaited test -d ./my-project                    # Custom working directory
-//  *   bun --hot plaited test                              # Enable hot reload
-//  */
+import { classifyRiskCli } from './tools/constitution/constitution.ts'
+// Agent tools (CRUD)
+import { bashCli, listFilesCli, readFileCli, writeFileCli } from './tools/crud/crud.ts'
+import { balance } from './tools/eval/commands/balance.ts'
+import { calibrate } from './tools/eval/commands/calibrate.ts'
+import { capture } from './tools/eval/commands/capture.ts'
+// Eval harness
+import { evalRun } from './tools/eval/commands/eval-run.ts'
+import { summarize } from './tools/eval/commands/summarize.ts'
+import { trials } from './tools/eval/commands/trials.ts'
+import { validateRefs } from './tools/eval/commands/validate-refs.ts'
+import { headless } from './tools/eval/headless/headless-cli.ts'
+import { compare } from './tools/eval/pipeline/compare.ts'
+import { extract } from './tools/eval/pipeline/extract.ts'
+import { format } from './tools/eval/pipeline/format.ts'
+import { grade } from './tools/eval/pipeline/grade.ts'
+// Pipeline commands
+import { run } from './tools/eval/pipeline/run.ts'
+import { schemasCli } from './tools/eval/schemas/schemas-cli.ts'
+import { evaluateCli } from './tools/evaluate/evaluate.ts'
+// Agent services
+import { searchCli } from './tools/memory/memory.ts'
+// Development tools
+import { scaffoldRules } from './tools/scaffold-rules/scaffold-rules.ts'
+import { simulateCli } from './tools/simulate/simulate.ts'
+import { lspAnalyze } from './tools/typescript-lsp/lsp-analyze.ts'
+import { lspFind } from './tools/typescript-lsp/lsp-find.ts'
+import { lspHover } from './tools/typescript-lsp/lsp-hover.ts'
+import { lspRefs } from './tools/typescript-lsp/lsp-references.ts'
+import { lspSymbols } from './tools/typescript-lsp/lsp-symbols.ts'
+import { validateSkill } from './tools/validate-skill/validate-skill.ts'
 
-// import { resolve } from 'node:path'
-// import { parseArgs } from 'node:util'
-// import { useDevCommand } from './workshop/use-dev-command.ts'
-// import { useTestCommand } from './workshop/use-test-command.ts'
+// ============================================================================
+// Command Registry
+// ============================================================================
 
-// console.log('🎭 Starting Plaited workshop')
+const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
+  // Agent tools (CRUD)
+  'read-file': readFileCli,
+  'write-file': writeFileCli,
+  'list-files': listFilesCli,
+  bash: bashCli,
+  // Agent services
+  search: searchCli,
+  'classify-risk': classifyRiskCli,
+  simulate: simulateCli,
+  evaluate: evaluateCli,
+  // Eval harness
+  eval: evalRun,
+  capture,
+  trials,
+  summarize,
+  calibrate,
+  balance,
+  'validate-refs': validateRefs,
+  schemas: schemasCli,
+  headless,
+  // Pipeline commands
+  run,
+  extract,
+  grade,
+  format,
+  compare,
+  // Development tools
+  'scaffold-rules': scaffoldRules,
+  'validate-skill': validateSkill,
+  'lsp-find': lspFind,
+  'lsp-hover': lspHover,
+  'lsp-refs': lspRefs,
+  'lsp-symbols': lspSymbols,
+  'lsp-analyze': lspAnalyze,
+}
 
-// // Verify Bun runtime
-// if (typeof Bun === 'undefined') {
-//   console.error('🚩 Error: Plaited CLI requires Bun runtime')
-//   console.error('   Install Bun: https://bun.sh')
-//   console.error('   Then run: bun plaited test')
-//   process.exit(1)
-// }
+// ============================================================================
+// Top-level --schema: Command manifest
+// ============================================================================
 
-// // Parse CLI arguments
-// const { values, positionals } = parseArgs({
-//   args: Bun.argv,
-//   options: {
-//     port: {
-//       type: 'string',
-//       short: 'p',
-//     },
-//     'color-scheme': {
-//       type: 'string',
-//       short: 'c',
-//     },
-//     dir: {
-//       type: 'string',
-//       short: 'd',
-//     },
-//     'record-video': {
-//       type: 'string',
-//     },
-//     width: {
-//       type: 'string',
-//     },
-//     height: {
-//       type: 'string',
-//     },
-//   },
-//   strict: true,
-//   allowPositionals: true,
-// })
-// // Extract subcommand (skip bun executable and script path)
-// const subcommand = positionals[2]
+const printCommandManifest = () => {
+  const manifest = {
+    name: 'plaited',
+    description: 'Agent-facing CLI toolbox for the Plaited framework',
+    commands: Object.keys(COMMANDS).sort(),
+    usage: "plaited <command> --schema | --json '{...}'",
+    discovery: 'plaited --schema',
+  }
+  console.log(JSON.stringify(manifest, null, 2))
+}
 
-// // Validate subcommand
-// if (!subcommand) {
-//   console.error('🚩 Error: Missing subcommand\n')
-//   console.log('Usage: plaited <command> [options] [args...]\n')
-//   console.log('Commands:')
-//   console.log('  test            Run story tests')
-//   console.log('  dev             Start development server with hot reload')
-//   console.log('Options:')
-//   console.log('  -p, --port <number>       Port for test server (default: 0 - auto-assign)')
-//   console.log('  -d, --dir <path>          Working directory (default: process.cwd())')
-//   console.log('  -c, --color-scheme <mode> Color scheme for test browser (light|dark|both, default: light)')
-//   console.log('  --record-video <dir>      Directory for video recordings (test command only)')
-//   console.log('  --width <number>          Video width (default: 1280)')
-//   console.log('  --height <number>         Video height (default: 720)\n')
-// }
+// ============================================================================
+// Router
+// ============================================================================
 
-// if (!['test', 'dev'].includes(subcommand ?? '')) {
-//   console.error(`🚩 Error: Unknown subcommand '${subcommand}'\n`)
-//   console.log('Available commands:')
-//   console.log('  test            Run story tests')
-//   console.log('  dev             Start development server with hot reload')
-//   process.exit(1)
-// }
+const command = Bun.argv[2]
+const args = Bun.argv.slice(3)
 
-// const hasValidColorScheme = (colorScheme?: string): colorScheme is 'light' | 'dark' | 'both' | undefined => {
-//   if (colorScheme === undefined) return true
-//   return colorScheme === 'light' || colorScheme === 'dark' || colorScheme === 'both'
-// }
+if (!command || command === '--help' || command === '-h') {
+  console.error(`Usage: plaited <command> [options]
+       plaited <command> --schema     # Discover command schema
+       plaited <command> --json '{}'  # Structured input
+       plaited --schema               # List all commands
 
-// if (!hasValidColorScheme(values['color-scheme'])) {
-//   console.error(`🚩 Error: Invalid color-scheme '${values['color-scheme']}'\n`)
-//   console.log('Valid values: light, dark, both')
-//   process.exit(1)
-// }
-// // Parse dev-specific args (port, dir, color-scheme)
-// const port = values.port ? parseInt(values.port, 10) : undefined
+Commands:
+  Agent Tools:
+    read-file, write-file, list-files, bash
 
-// if (port && (Number.isNaN(port) || port < 0 || port > 65535)) {
-//   throw new Error(`ERROR: Invalid port number: ${values.port}. Must be between 0-65535`)
-// }
+  Agent Services:
+    search, classify-risk, simulate, evaluate
 
-// const { 'color-scheme': colorScheme } = values
+  Eval Harness:
+    eval, capture, trials, summarize, calibrate,
+    balance, validate-refs, schemas, headless
 
-// // Parse video recording options (test command only)
-// const recordVideoDir = values['record-video']
-// const videoWidth = values.width ? parseInt(values.width, 10) : 1280
-// const videoHeight = values.height ? parseInt(values.height, 10) : 720
+  Pipeline:
+    run, extract, grade, format, compare
 
-// if (values.width && (Number.isNaN(videoWidth) || videoWidth <= 0)) {
-//   console.error(`🚩 Error: Invalid width '${values.width}'. Must be a positive number.`)
-//   process.exit(1)
-// }
+  Development:
+    scaffold-rules, validate-skill,
+    lsp-find, lsp-hover, lsp-refs, lsp-symbols, lsp-analyze`)
+  process.exit(command ? 0 : 1)
+}
 
-// if (values.height && (Number.isNaN(videoHeight) || videoHeight <= 0)) {
-//   console.error(`🚩 Error: Invalid height '${values.height}'. Must be a positive number.`)
-//   process.exit(1)
-// }
+if (command === '--schema') {
+  printCommandManifest()
+  process.exit(0)
+}
 
-// // Build recordVideo config if directory provided
-// const recordVideo = recordVideoDir
-//   ? { dir: resolve(process.cwd(), recordVideoDir), size: { width: videoWidth, height: videoHeight } }
-//   : undefined
+const handler = COMMANDS[command]
+if (!handler) {
+  console.error(`Unknown command: ${command}`)
+  console.error(`Run 'plaited --help' to see available commands`)
+  process.exit(1)
+}
 
-// // Get paths from positionals
-// let paths = positionals.slice(3)
-
-// if (paths.length === 0) {
-//   console.log('\n🔍 No paths provided - will discover all stories in working directory\n')
-//   paths = [process.cwd()]
-// }
-
-// const cwd = values.dir ? resolve(process.cwd(), values.dir) : process.cwd()
-
-// // Handle dev command (doesn't support 'both' - use 'light' as default)
-// if (subcommand === 'dev') {
-//   const devColorScheme = colorScheme === 'both' ? 'light' : colorScheme
-//   useDevCommand({ port, cwd, colorScheme: devColorScheme, paths })
-// }
-// if (subcommand === 'test') useTestCommand({ port, cwd, colorScheme, paths, recordVideo })
+handler(args).catch((error: unknown) => {
+  console.error(error instanceof Error ? error.message : String(error))
+  process.exit(1)
+})

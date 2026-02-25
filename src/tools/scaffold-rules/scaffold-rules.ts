@@ -33,7 +33,7 @@ export const scaffoldRules = async (args: string[]): Promise<void> => {
   const dryRun = values['dry-run'] as boolean | undefined
   const listOnly = values.list as boolean | undefined
 
-  const sourceRules = join(import.meta.dir, '../rules')
+  const sourceRules = join(import.meta.dir, './rules')
   const cwd = process.cwd()
 
   // Get available rules
@@ -42,6 +42,7 @@ export const scaffoldRules = async (args: string[]): Promise<void> => {
 
   // --list: just output available rules
   if (listOnly) {
+    // biome-ignore lint/suspicious/noConsole: CLI stdout output
     console.log(JSON.stringify({ rules: rules.map((f) => f.replace('.md', '')) }))
     return
   }
@@ -101,6 +102,7 @@ export const scaffoldRules = async (args: string[]): Promise<void> => {
     }
   }
 
+  // biome-ignore lint/suspicious/noConsole: CLI stdout output
   console.log(JSON.stringify({ dryRun: !!dryRun, actions }, null, 2))
 }
 

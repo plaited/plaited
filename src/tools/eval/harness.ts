@@ -33,6 +33,8 @@ export {
   loadPrompts,
   runCapture,
 } from './commands/capture.ts'
+// Eval command (unified capture + trials)
+export { evalConfigSchema, evalRun, runEval } from './commands/eval-run.ts'
 export type { SummarizeConfig } from './commands/summarize.ts'
 export { runSummarize, summarize } from './commands/summarize.ts'
 export type { TrialsConfig } from './commands/trials.ts'

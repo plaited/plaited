@@ -35,7 +35,9 @@
     "./agent/*.tsx": "./src/agent/*.tsx",
     "./workshop": "./src/workshop.ts",
     "./workshop/*.ts": "./src/workshop/*.ts",
-    "./workshop/*.tsx": "./src/workshop/*.tsx"
+    "./workshop/*.tsx": "./src/workshop/*.tsx",
+    "./tools": "./src/tools.ts",
+    "./tools/*.ts": "./src/tools/*.ts"
   },
   "files": [
     "./.bin/**",
@@ -61,7 +63,8 @@
     "test": "bun run test:stories src/ui && bun test src/",
     "test:playwright": "bunx playwright test",
     "test:stories": "bun src/cli.ts test",
-    "test:stories-ui": "bun run test:stories src/ui"
+    "test:stories-ui": "bun run test:stories src/ui",
+    "test:tools": "bun test src/tools/"
   },
   "lint-staged": {
     "*.{js,cjs,jsx,tsx,ts}": [
@@ -72,8 +75,6 @@
     ]
   },
   "dependencies": {
-    "@plaited/agent-eval-harness": "0.13.0",
-    "@plaited/development-skills": "0.8.1",
     "zod": "4.3.6"
   },
   "devDependencies": {
