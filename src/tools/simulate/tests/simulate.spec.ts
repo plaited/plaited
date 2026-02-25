@@ -1,7 +1,7 @@
 import { describe, expect, mock, test } from 'bun:test'
-import type { AgentToolCall } from '../agent.schemas.ts'
-import { buildStateTransitionPrompt, createSimulate, parseSimulationResponse } from '../agent.simulate.ts'
-import type { ChatMessage, InferenceCall } from '../agent.types.ts'
+import type { AgentToolCall } from '../../../agent/agent.schemas.ts'
+import type { ChatMessage, InferenceCall } from '../../../agent/agent.types.ts'
+import { buildStateTransitionPrompt, createSimulate, parseSimulationResponse } from '../simulate.ts'
 
 // ============================================================================
 // Test helpers

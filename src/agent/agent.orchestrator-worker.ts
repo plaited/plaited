@@ -13,8 +13,8 @@
  * @internal
  */
 
+import { createToolExecutor } from '../tools/crud/crud.ts'
 import type { WorkerInboundMessage } from './agent.orchestrator.types.ts'
-import { createToolExecutor } from './agent.tools.ts'
 import { createAgentLoop } from './agent.ts'
 import type { AgentLoop } from './agent.types.ts'
 import { createInferenceCall } from './agent.utils.ts'

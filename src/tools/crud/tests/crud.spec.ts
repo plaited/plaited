@@ -2,12 +2,12 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { TOOL_STATUS } from '../agent.constants.ts'
-import { createMemoryDb, createSearchHandler, searchToolSchema } from '../agent.memory.ts'
-import type { MemoryDb } from '../agent.memory.types.ts'
-import { type AgentToolCall, ToolDefinitionSchema } from '../agent.schemas.ts'
-import { builtInToolSchemas, createToolExecutor } from '../agent.tools.ts'
-import type { ToolHandler } from '../agent.types.ts'
+import { TOOL_STATUS } from '../../../agent/agent.constants.ts'
+import { type AgentToolCall, ToolDefinitionSchema } from '../../../agent/agent.schemas.ts'
+import type { ToolHandler } from '../../../agent/agent.types.ts'
+import { createMemoryDb, createSearchHandler, searchToolSchema } from '../../memory/memory.ts'
+import type { MemoryDb } from '../../memory/memory.types.ts'
+import { builtInToolSchemas, createToolExecutor } from '../crud.ts'
 
 // ============================================================================
 // Temp workspace setup

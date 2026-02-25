@@ -16,18 +16,21 @@
  * @public
  */
 
+// Agent core (stays in src/agent/)
 export * from './agent/agent.constants.ts'
-export * from './agent/agent.constitution.ts'
-export type * from './agent/agent.constitution.types.ts'
-export * from './agent/agent.evaluate.ts'
-export * from './agent/agent.memory.ts'
-export type * from './agent/agent.memory.types.ts'
 export * from './agent/agent.orchestrator.constants.ts'
 export * from './agent/agent.orchestrator.ts'
 export type * from './agent/agent.orchestrator.types.ts'
 export * from './agent/agent.schemas.ts'
-export * from './agent/agent.simulate.ts'
-export * from './agent/agent.tools.ts'
 export * from './agent/agent.ts'
 export type * from './agent/agent.types.ts'
 export * from './agent/agent.utils.ts'
+
+// Tools (re-exported from src/tools/)
+export * from './tools/constitution/constitution.ts'
+export type * from './tools/constitution/constitution.types.ts'
+export * from './tools/crud/crud.ts'
+export * from './tools/evaluate/evaluate.ts'
+export * from './tools/memory/memory.ts'
+export type * from './tools/memory/memory.types.ts'
+export * from './tools/simulate/simulate.ts'

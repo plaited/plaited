@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
+import { createMemoryDb } from '../../tools/memory/memory.ts'
 import { RISK_CLASS, TOOL_STATUS } from '../agent.constants.ts'
-import { createMemoryDb } from '../agent.memory.ts'
 import type { AgentToolCall, ToolResult } from '../agent.schemas.ts'
 import { TrajectoryStepSchema } from '../agent.schemas.ts'
 import { createAgentLoop } from '../agent.ts'

@@ -1,14 +1,14 @@
 import { describe, expect, mock, test } from 'bun:test'
-import { RISK_CLASS } from '../agent.constants.ts'
+import { RISK_CLASS } from '../../../agent/agent.constants.ts'
+import type { AgentToolCall } from '../../../agent/agent.schemas.ts'
+import type { InferenceCall } from '../../../agent/agent.types.ts'
 import {
   buildRewardPrompt,
   checkSymbolicGate,
   createEvaluate,
   DANGEROUS_PREDICTION_PATTERNS,
   parseRewardScore,
-} from '../agent.evaluate.ts'
-import type { AgentToolCall } from '../agent.schemas.ts'
-import type { InferenceCall } from '../agent.types.ts'
+} from '../evaluate.ts'
 
 // ============================================================================
 // Test helpers

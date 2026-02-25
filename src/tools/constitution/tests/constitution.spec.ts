@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test'
-import { behavioral } from '../../behavioral/behavioral.ts'
-import { AGENT_EVENTS, RISK_CLASS } from '../agent.constants.ts'
-import { classifyRisk, constitutionRule, createConstitution, createGateCheck } from '../agent.constitution.ts'
-import type { ConstitutionRule } from '../agent.constitution.types.ts'
-import type { AgentToolCall } from '../agent.schemas.ts'
+import { AGENT_EVENTS, RISK_CLASS } from '../../../agent/agent.constants.ts'
+import type { AgentToolCall } from '../../../agent/agent.schemas.ts'
+import { behavioral } from '../../../behavioral/behavioral.ts'
+import { classifyRisk, constitutionRule, createConstitution, createGateCheck } from '../constitution.ts'
+import type { ConstitutionRule } from '../constitution.types.ts'
 
 // ============================================================================
 // Helpers
