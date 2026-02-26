@@ -4,7 +4,7 @@ import { createConstitution } from '../tools/constitution/constitution.ts'
 import type { ConstitutionRule } from '../tools/constitution/constitution.types.ts'
 import { checkSymbolicGate } from '../tools/evaluate/evaluate.ts'
 import type { MemoryDb } from '../tools/memory/memory.types.ts'
-import { AGENT_EVENTS, RISK_CLASS, TOOL_STATUS } from './agent.constants.ts'
+import { AGENT_EVENTS, RISK_CLASS } from './agent.constants.ts'
 import type { AgentPlan, AgentToolCall, ToolDefinition, TrajectoryStep } from './agent.schemas.ts'
 import { AgentConfigSchema } from './agent.schemas.ts'
 import type {
@@ -17,7 +17,7 @@ import type {
   Simulate,
   ToolExecutor,
 } from './agent.types.ts'
-import { buildContextMessages, createTrajectoryRecorder, parseModelResponse } from './agent.utils.ts'
+import { buildContextMessages, createTrajectoryRecorder, parseModelResponse, toToolResult } from './agent.utils.ts'
 
 // ---------------------------------------------------------------------------
 // TASK_EVENTS: the set of events blocked by taskGate between tasks.
@@ -26,7 +26,6 @@ import { buildContextMessages, createTrajectoryRecorder, parseModelResponse } fr
 const TASK_EVENTS = new Set<string>([
   AGENT_EVENTS.invoke_inference,
   AGENT_EVENTS.model_response,
-  AGENT_EVENTS.proposed_action,
   AGENT_EVENTS.gate_rejected,
   AGENT_EVENTS.gate_read_only,
   AGENT_EVENTS.gate_side_effects,
@@ -128,9 +127,6 @@ export const createAgentLoop = ({
   let currentPlan: AgentPlan | null = null
   let sessionId: string | null = null
 
-  // Shared state for handler-level symbolic safety check (eval_approved)
-  const simulationPredictions = new Map<string, string>()
-
   // In-memory diagnostic buffer for non-selection snapshot messages
   const diagnostics: DiagnosticEntry[] = []
   const MAX_DIAGNOSTICS = 50
@@ -183,7 +179,7 @@ export const createAgentLoop = ({
     ...constitutionResult?.threads,
   })
 
-  // Risk class → gate event mapping (proposed_action produces one of these directly)
+  // Risk class → gate event mapping (context_ready handler produces one of these)
   const GATE_EVENTS: Record<string, string> = {
     [RISK_CLASS.read_only]: AGENT_EVENTS.gate_read_only,
     [RISK_CLASS.side_effects]: AGENT_EVENTS.gate_side_effects,
@@ -240,7 +236,6 @@ export const createAgentLoop = ({
 
     // Centralized async inference invocation
     [AGENT_EVENTS.invoke_inference]: async () => {
-      simulationPredictions.clear()
       try {
         const response = await callInference()
         trigger({
@@ -252,7 +247,7 @@ export const createAgentLoop = ({
       }
     },
 
-    // Step 2: Reason — parse model output, dispatch all tool calls in parallel
+    // Step 2: Reason — transform model output, dispatch per-tool-call events
     [AGENT_EVENTS.model_response]: (detail) => {
       const { parsed } = detail
 
@@ -274,26 +269,21 @@ export const createAgentLoop = ({
       const savePlanCalls: AgentToolCall[] = []
       const actionCalls: AgentToolCall[] = []
       for (const tc of parsed.toolCalls) {
-        if (tc.name === AGENT_EVENTS.save_plan) {
-          savePlanCalls.push(tc)
-        } else {
-          actionCalls.push(tc)
-        }
+        tc.name === AGENT_EVENTS.save_plan ? savePlanCalls.push(tc) : actionCalls.push(tc)
       }
 
-      // Handle save_plan calls immediately (synthetic tool results)
+      // Handle save_plan calls (synthetic tool results — not action pipeline)
       for (const tc of savePlanCalls) {
         const plan = tc.arguments as unknown as AgentPlan
-        const planContent = JSON.stringify({ saved: true, goal: plan.goal })
         history.push({
           role: 'tool',
-          content: planContent,
+          content: JSON.stringify({ saved: true, goal: plan.goal }),
           tool_call_id: tc.id,
         })
         trigger({ type: AGENT_EVENTS.save_plan, detail: { plan, toolCallId: tc.id } })
       }
 
-      // Dispatch all action calls at once (parallel processing)
+      // Per-tool-call dispatch: generate bThreads, THEN trigger events
       if (actionCalls.length > 0) {
         const isCompletion = (e: { type: string }) =>
           e.type === AGENT_EVENTS.tool_result ||
@@ -311,31 +301,29 @@ export const createAgentLoop = ({
             }),
           ]),
         })
+
+        // Each tool call becomes an independent scenario
         for (const tc of actionCalls) {
-          trigger({ type: AGENT_EVENTS.proposed_action, detail: { toolCall: tc } })
+          trigger({ type: AGENT_EVENTS.context_ready, detail: { toolCall: tc } })
         }
       } else if (savePlanCalls.length === 0) {
-        // No tool calls at all — route by message content
-        if (parsed.message) {
-          trigger({ type: AGENT_EVENTS.message, detail: { content: parsed.message } })
-        } else {
-          trigger({ type: AGENT_EVENTS.message, detail: { content: '' } })
-        }
+        trigger({ type: AGENT_EVENTS.message, detail: { content: parsed.message ?? '' } })
       }
       // If only save_plan calls, plan_saved handler will re-invoke inference
     },
 
-    // Step 3: Gate — evaluate proposed tool call, produce risk-class event directly
-    [AGENT_EVENTS.proposed_action]: (detail) => {
-      const decision = composedGateCheck?.(detail.toolCall) ?? { approved: true, riskClass: RISK_CLASS.read_only }
+    // Step 3: Gate — per-tool-call gate sensor, produces risk-class event
+    [AGENT_EVENTS.context_ready]: (detail) => {
+      const { toolCall } = detail
+      const decision = composedGateCheck?.(toolCall) ?? { approved: true, riskClass: RISK_CLASS.read_only }
       if (!decision.approved) {
-        trigger({ type: AGENT_EVENTS.gate_rejected, detail: { toolCall: detail.toolCall, decision } })
+        trigger({ type: AGENT_EVENTS.gate_rejected, detail: { toolCall, decision } })
         return
       }
       const riskClass = decision.riskClass ?? RISK_CLASS.read_only
       trigger({
         type: GATE_EVENTS[riskClass] ?? AGENT_EVENTS.gate_high_ambiguity,
-        detail: { toolCall: detail.toolCall },
+        detail: { toolCall },
       })
     },
 
@@ -362,95 +350,66 @@ export const createAgentLoop = ({
       })
     },
 
-    // Step 4: Simulate — call Dreamer prediction or pass through
+    // Step 4: Simulate — call Dreamer prediction (single-path sensor pattern)
     // sim_guard_{id} bThread blocks execute until simulation_result interrupts it
     [AGENT_EVENTS.simulate_request]: async (detail) => {
-      const { riskClass } = detail
+      const { toolCall, riskClass } = detail
+      const prediction = (await simulate?.({ toolCall, history, plan: currentPlan }).catch(() => '')) ?? ''
 
-      // No simulate seam → pass through to evaluation pipeline
-      if (!simulate) {
-        trigger({
-          type: AGENT_EVENTS.simulation_result,
-          detail: { toolCall: detail.toolCall, prediction: '', riskClass },
-        })
-        return
-      }
-
-      try {
-        const prediction = await simulate({ toolCall: detail.toolCall, history, plan: currentPlan })
-        simulationPredictions.set(detail.toolCall.id, prediction)
-
-        // If dangerous, add per-call safety thread (defense-in-depth alongside eval_approved handler)
-        if (checkSymbolicGate(prediction, patterns).blocked) {
-          const tcId = detail.toolCall.id
-          bThreads.set({
-            [`safety_${tcId}`]: bThread([
-              bSync({
-                block: (e) => e.type === AGENT_EVENTS.execute && e.detail?.toolCall?.id === tcId,
-                interrupt: [
-                  (e) =>
-                    (e.type === AGENT_EVENTS.eval_rejected && e.detail?.toolCall?.id === tcId) ||
-                    (e.type === AGENT_EVENTS.tool_result && e.detail?.result?.toolCallId === tcId),
-                ],
-              }),
-            ]),
-          })
-        }
-
-        trigger({
-          type: AGENT_EVENTS.simulation_result,
-          detail: { toolCall: detail.toolCall, prediction, riskClass },
-        })
-      } catch {
-        // Fail-open: simulation error → pass through with empty prediction
-        trigger({
-          type: AGENT_EVENTS.simulation_result,
-          detail: { toolCall: detail.toolCall, prediction: '', riskClass },
+      // Defense-in-depth: safety_{id} blocks execute on dangerous prediction
+      // The handler-level check in eval_approved produces the workflow event (eval_rejected)
+      // The bThread blocks execute as defense-in-depth (blocked events don't produce workflow events)
+      if (prediction && checkSymbolicGate(prediction, patterns).blocked) {
+        bThreads.set({
+          [`safety_${toolCall.id}`]: bThread([
+            bSync({
+              block: (e) => e.type === AGENT_EVENTS.execute && e.detail?.toolCall?.id === toolCall.id,
+              interrupt: [
+                (e) =>
+                  (e.type === AGENT_EVENTS.eval_rejected && e.detail?.toolCall?.id === toolCall.id) ||
+                  (e.type === AGENT_EVENTS.tool_result && e.detail?.result?.toolCallId === toolCall.id),
+              ],
+            }),
+          ]),
         })
       }
+
+      trigger({ type: AGENT_EVENTS.simulation_result, detail: { toolCall, prediction, riskClass } })
     },
 
-    // Step 5: Evaluate — call Judge scoring or pass through
-    // Note: symbolic safety net is handled by the symbolicSafetyNet bThread
-    // which blocks dangerous `execute` events — no duplicate check needed here.
+    // Step 5: Evaluate — call Judge scoring (single-path sensor pattern)
+    // safety_{id} bThread handles dangerous predictions via request + block
     [AGENT_EVENTS.simulation_result]: async (detail) => {
       const { toolCall, riskClass } = detail
-
-      // No evaluate seam → approve
-      if (!evaluate) {
-        trigger({ type: AGENT_EVENTS.eval_approved, detail: { toolCall, riskClass } })
-        return
-      }
-
-      try {
-        const decision = await evaluate({
+      const approved = { approved: true } as { approved: boolean; reason?: string; score?: number }
+      const decision =
+        (await evaluate?.({
           toolCall,
           prediction: detail.prediction,
           riskClass,
           history,
           goal: currentPlan?.goal,
+        }).catch(() => approved)) ?? approved
+
+      if (decision.approved) {
+        trigger({
+          type: AGENT_EVENTS.eval_approved,
+          detail: { toolCall, riskClass, score: decision.score, prediction: detail.prediction },
         })
-        if (decision.approved) {
-          trigger({ type: AGENT_EVENTS.eval_approved, detail: { toolCall, riskClass, score: decision.score } })
-        } else {
-          trigger({
-            type: AGENT_EVENTS.eval_rejected,
-            detail: { toolCall, reason: decision.reason ?? 'Evaluation rejected', score: decision.score },
-          })
-        }
-      } catch {
-        // Fail-open: evaluation error → approve
-        trigger({ type: AGENT_EVENTS.eval_approved, detail: { toolCall, riskClass } })
+      } else {
+        trigger({
+          type: AGENT_EVENTS.eval_rejected,
+          detail: { toolCall, reason: decision.reason ?? 'Evaluation rejected', score: decision.score },
+        })
       }
     },
 
     // Eval approved → symbolic safety check → execute
-    // Dual-layer: handler routes rejection for model feedback,
-    // symbolicSafetyNet bThread blocks as defense-in-depth
+    // Three-layer: handler produces workflow event (eval_rejected for batchCompletion),
+    // safety_{id} bThread blocks execute (defense-in-depth)
     [AGENT_EVENTS.eval_approved]: (detail) => {
-      const prediction = simulationPredictions.get(detail.toolCall.id)
-      if (prediction) {
-        const symbolic = checkSymbolicGate(prediction, patterns)
+      if (detail.prediction) {
+        const symbolic = checkSymbolicGate(detail.prediction, patterns)
         if (symbolic.blocked) {
           trigger({
             type: AGENT_EVENTS.eval_rejected,
@@ -479,53 +438,29 @@ export const createAgentLoop = ({
     // Step 6: Execute — run the tool, record trajectory
     [AGENT_EVENTS.execute]: async (detail) => {
       const startTime = Date.now()
+      let result: Awaited<ReturnType<typeof toolExecutor>>
       try {
-        const result = await toolExecutor(detail.toolCall)
-        const duration = Date.now() - startTime
-        recorder.addToolCall({
-          name: detail.toolCall.name,
-          status: result.status,
-          input: detail.toolCall.arguments,
-          output: result.output ?? result.error,
-          duration,
-        })
-        const toolContent =
-          typeof result.output === 'string' ? result.output : JSON.stringify(result.output ?? result.error ?? '')
-        history.push({
-          role: 'tool',
-          content: toolContent,
-          tool_call_id: result.toolCallId,
-        })
-        trigger({ type: AGENT_EVENTS.tool_result, detail: { result } })
+        result = await toolExecutor(detail.toolCall)
       } catch (error) {
-        const duration = Date.now() - startTime
-        const errorMsg = error instanceof Error ? error.message : String(error)
-        recorder.addToolCall({
-          name: detail.toolCall.name,
-          status: TOOL_STATUS.failed,
-          input: detail.toolCall.arguments,
-          output: errorMsg,
-          duration,
-        })
-        const errorContent = JSON.stringify({ error: errorMsg })
-        history.push({
-          role: 'tool',
-          content: errorContent,
-          tool_call_id: detail.toolCall.id,
-        })
-        trigger({
-          type: AGENT_EVENTS.tool_result,
-          detail: {
-            result: {
-              toolCallId: detail.toolCall.id,
-              name: detail.toolCall.name,
-              status: TOOL_STATUS.failed,
-              error: errorMsg,
-              duration,
-            },
-          },
-        })
+        result = toToolResult(detail.toolCall, error, Date.now() - startTime)
       }
+      if (!result.duration) result = { ...result, duration: Date.now() - startTime }
+
+      recorder.addToolCall({
+        name: detail.toolCall.name,
+        status: result.status,
+        input: detail.toolCall.arguments,
+        output: result.output ?? result.error,
+        duration: result.duration,
+      })
+      const content =
+        result.output !== undefined
+          ? typeof result.output === 'string'
+            ? result.output
+            : JSON.stringify(result.output)
+          : JSON.stringify({ error: result.error ?? '' })
+      history.push({ role: 'tool', content, tool_call_id: result.toolCallId })
+      trigger({ type: AGENT_EVENTS.tool_result, detail: { result } })
     },
 
     // Plan management
@@ -547,68 +482,9 @@ export const createAgentLoop = ({
   })
 
   // ---------------------------------------------------------------------------
-  // Observer: persistence layer (only when memory exists)
+  // Observer: persistence layer (registered per-run when memory exists)
   // ---------------------------------------------------------------------------
   let disconnectObserver: (() => void) | null = null
-
-  if (memory) {
-    disconnectObserver = useFeedback({
-      [AGENT_EVENTS.task]: (detail) => {
-        if (!sessionId) return
-        memory.saveMessage({ sessionId, role: 'user', content: detail.prompt })
-      },
-      [AGENT_EVENTS.model_response]: (detail) => {
-        if (!sessionId) return
-        const { parsed } = detail
-        const toolCalls = parsed.toolCalls.length
-          ? parsed.toolCalls.map((tc: AgentToolCall) => ({
-              id: tc.id,
-              type: 'function',
-              function: { name: tc.name, arguments: JSON.stringify(tc.arguments) },
-            }))
-          : undefined
-        memory.saveMessage({
-          sessionId,
-          role: 'assistant',
-          content: parsed.message,
-          toolCalls: toolCalls as unknown[] | undefined,
-        })
-      },
-      [AGENT_EVENTS.save_plan]: (detail) => {
-        if (!sessionId) return
-        const planContent = JSON.stringify({ saved: true, goal: detail.plan.goal })
-        memory.saveMessage({ sessionId, role: 'tool', content: planContent, toolCallId: detail.toolCallId })
-      },
-      [AGENT_EVENTS.gate_rejected]: (detail) => {
-        if (!sessionId) return
-        const reason = detail.decision.reason ?? 'Rejected'
-        const rejectContent = JSON.stringify({ error: `Rejected: ${reason}` })
-        memory.saveMessage({ sessionId, role: 'tool', content: rejectContent, toolCallId: detail.toolCall.id })
-      },
-      [AGENT_EVENTS.eval_rejected]: (detail) => {
-        if (!sessionId) return
-        const reason = detail.reason ?? 'Evaluation rejected'
-        const evalContent = JSON.stringify({ error: `Eval rejected: ${reason}` })
-        memory.saveMessage({ sessionId, role: 'tool', content: evalContent, toolCallId: detail.toolCall.id })
-      },
-      [AGENT_EVENTS.tool_result]: (detail) => {
-        if (!sessionId) return
-        const result = detail.result
-        const content =
-          result.output !== undefined
-            ? typeof result.output === 'string'
-              ? result.output
-              : JSON.stringify(result.output ?? result.error ?? '')
-            : JSON.stringify({ error: result.error ?? '' })
-        memory.saveMessage({ sessionId, role: 'tool', content, toolCallId: result.toolCallId })
-      },
-      [AGENT_EVENTS.message]: (detail) => {
-        if (!sessionId) return
-        memory.saveMessage({ sessionId, role: 'assistant', content: detail.content })
-        memory.completeSession(sessionId, detail.content)
-      },
-    })
-  }
 
   // ---------------------------------------------------------------------------
   // Snapshot listener: persist selections to SQLite, capture diagnostics in-memory
@@ -671,9 +547,77 @@ export const createAgentLoop = ({
       recorder.reset()
       history.length = 0
       currentPlan = null
-      simulationPredictions.clear()
       diagnostics.length = 0
       sessionId = memory?.createSession(prompt) ?? null
+
+      // Register observer per-run when memory exists (sessionId guaranteed non-null)
+      if (memory && sessionId) {
+        disconnectObserver?.()
+        disconnectObserver = useFeedback({
+          [AGENT_EVENTS.task]: (detail) => {
+            memory.saveMessage({ sessionId: sessionId!, role: 'user', content: detail.prompt })
+          },
+          [AGENT_EVENTS.model_response]: (detail) => {
+            const { parsed } = detail
+            const toolCalls = parsed.toolCalls.length
+              ? parsed.toolCalls.map((tc: AgentToolCall) => ({
+                  id: tc.id,
+                  type: 'function',
+                  function: { name: tc.name, arguments: JSON.stringify(tc.arguments) },
+                }))
+              : undefined
+            memory.saveMessage({
+              sessionId: sessionId!,
+              role: 'assistant',
+              content: parsed.message,
+              toolCalls: toolCalls as unknown[] | undefined,
+            })
+          },
+          [AGENT_EVENTS.save_plan]: (detail) => {
+            const planContent = JSON.stringify({ saved: true, goal: detail.plan.goal })
+            memory.saveMessage({
+              sessionId: sessionId!,
+              role: 'tool',
+              content: planContent,
+              toolCallId: detail.toolCallId,
+            })
+          },
+          [AGENT_EVENTS.gate_rejected]: (detail) => {
+            const reason = detail.decision.reason ?? 'Rejected'
+            const rejectContent = JSON.stringify({ error: `Rejected: ${reason}` })
+            memory.saveMessage({
+              sessionId: sessionId!,
+              role: 'tool',
+              content: rejectContent,
+              toolCallId: detail.toolCall.id,
+            })
+          },
+          [AGENT_EVENTS.eval_rejected]: (detail) => {
+            const reason = detail.reason ?? 'Evaluation rejected'
+            const evalContent = JSON.stringify({ error: `Eval rejected: ${reason}` })
+            memory.saveMessage({
+              sessionId: sessionId!,
+              role: 'tool',
+              content: evalContent,
+              toolCallId: detail.toolCall.id,
+            })
+          },
+          [AGENT_EVENTS.tool_result]: (detail) => {
+            const result = detail.result
+            const content =
+              result.output !== undefined
+                ? typeof result.output === 'string'
+                  ? result.output
+                  : JSON.stringify(result.output ?? result.error ?? '')
+                : JSON.stringify({ error: result.error ?? '' })
+            memory.saveMessage({ sessionId: sessionId!, role: 'tool', content, toolCallId: result.toolCallId })
+          },
+          [AGENT_EVENTS.message]: (detail) => {
+            memory.saveMessage({ sessionId: sessionId!, role: 'assistant', content: detail.content })
+            memory.completeSession(sessionId!, detail.content)
+          },
+        })
+      }
 
       return new Promise((resolve) => {
         resolveRun = resolve

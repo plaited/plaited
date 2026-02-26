@@ -1650,12 +1650,12 @@ describe('buildContextMessages — eventLog', () => {
       eventLog: [
         row({ event_type: 'execute', thread: 'simulationGuard', selected: 0, blocked_by: 'simulationGuard' }),
         row({ event_type: 'execute', thread: 'symbolicSafetyNet', selected: 0, blocked_by: 'symbolicSafetyNet' }),
-        row({ event_type: 'proposed_action', thread: 'taskGate', selected: 1, priority: 0 }),
+        row({ event_type: 'context_ready', thread: 'taskGate', selected: 1, priority: 0 }),
       ],
     })
     const system = messages[0]!.content as string
     expect(system).toContain('## BP Selection History')
-    expect(system).toContain('**Selected:** proposed_action (thread: taskGate')
+    expect(system).toContain('**Selected:** context_ready (thread: taskGate')
     expect(system).toContain('Blocked: execute (thread: simulationGuard) by simulationGuard')
     expect(system).toContain('Blocked: execute (thread: symbolicSafetyNet) by symbolicSafetyNet')
   })

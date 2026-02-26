@@ -34,16 +34,16 @@ graph TD
     DYN --> INV[invoke_inference]
     INV --> INF[async: callInference]
     INF --> MR[model_response]
-    MR --> PA[proposed_action — per tool call]
-    PA --> GATE{composedGateCheck}
+    MR -->|per tool call| CR[context_ready]
+    CR --> GATE{composedGateCheck}
     GATE -->|gate_read_only| EXEC[execute]
     GATE -->|gate_side_effects| SIM[simulate_request]
     GATE -->|gate_high_ambiguity| SIM
     GATE -->|gate_rejected| GR[gate_rejected]
     SIM --> SR[simulation_result]
-    SR --> EA_CHECK[eval_approved — symbolic check]
-    EA_CHECK -->|safe| EXEC[execute]
-    EA_CHECK -->|dangerous| ER[eval_rejected]
+    SR --> EA[eval_approved — symbolic check]
+    EA -->|safe| EXEC[execute]
+    EA -->|dangerous| ER[eval_rejected]
     EXEC --> TR[tool_result]
     GR --> BC{batchCompletion}
     ER --> BC
@@ -53,27 +53,29 @@ graph TD
     MSG -->|taskGate loops| TASK
 ```
 
-**Pipeline principle:** Events always flow through the full simulate → evaluate → execute pipeline. Handlers pass through when seams are absent — no conditionals at the routing level.
+**Narrow World View (CACM paper):** Each tool call is an independent scenario. `model_response` triggers one `context_ready` event per tool call, each flowing through its own pipeline. `batchCompletion` waits for all N to resolve, then re-invokes inference.
+
+**Pipeline principle:** Events always flow through the full simulate → evaluate → execute pipeline. Handlers pass through when seams are absent — single-path with optional chaining, no conditional routing.
 
 ### Event Vocabulary
 
 All events defined in `agent.constants.ts`:
 
-| Event | Step | Handler Behavior |
-|-------|------|-----------------|
-| `task` | 1 | Add per-task maxIterations bThread, push prompt, trigger invoke_inference |
-| `invoke_inference` | 1 | Async: callInference → trigger model_response (centralized, single call site) |
-| `model_response` | 2 | Parse response, dispatch tool calls in parallel via batchCompletion |
-| `proposed_action` | 3 | Run composedGateCheck, produce risk-class event directly |
-| `gate_read_only` | 3 | Trigger execute directly (no simulation needed) |
-| `gate_side_effects` | 3 | Add sim_guard, trigger simulate_request |
-| `gate_high_ambiguity` | 3 | Add sim_guard, trigger simulate_request |
-| `gate_rejected` | 3 | Synthetic tool result (batchCompletion counts this) |
-| `simulate_request` | 4 | Call simulate seam or pass through with empty prediction |
-| `simulation_result` | 5 | Call evaluate seam or trigger eval_approved |
-| `eval_approved` | 5 | Symbolic safety check → execute or eval_rejected |
-| `eval_rejected` | 5 | Synthetic tool result (batchCompletion counts this) |
-| `execute` | 6 | Call toolExecutor (async), record trajectory |
+| Event | Step | Handler Role |
+|-------|------|-------------|
+| `task` | 1 | Sensor: add per-task maxIterations bThread, push prompt, trigger invoke_inference |
+| `invoke_inference` | 1 | Actuator: async callInference → trigger model_response |
+| `model_response` | 2 | Transform: parse response, add batchCompletion, trigger context_ready per tool call |
+| `context_ready` | 3 | Sensor: run composedGateCheck, report risk-class event |
+| `gate_read_only` | 3 | Actuator: trigger execute directly (no simulation needed) |
+| `gate_side_effects` | 3 | Actuator: add sim_guard, trigger simulate_request |
+| `gate_high_ambiguity` | 3 | Actuator: add sim_guard, trigger simulate_request |
+| `gate_rejected` | 3 | Actuator: synthetic tool result (batchCompletion counts this) |
+| `simulate_request` | 4 | Sensor: call simulate seam via optional chaining, add safety_{id} if dangerous |
+| `simulation_result` | 5 | Sensor: call evaluate seam via optional chaining, report approved/rejected |
+| `eval_approved` | 5 | Actuator: symbolic safety check on prediction → execute or eval_rejected |
+| `eval_rejected` | 5 | Actuator: synthetic tool result (batchCompletion counts this) |
+| `execute` | 6 | Actuator: call toolExecutor (async), record trajectory via toToolResult |
 | `tool_result` | 6 | batchCompletion counts this |
 | `save_plan` | — | Store plan, trigger plan_saved |
 | `plan_saved` | — | Trigger invoke_inference |
@@ -114,7 +116,7 @@ batchCompletion: bThread([
   bSync({ request: { type: 'invoke_inference' }, interrupt: ['message'] }),
 ])
 
-// Per-call simulation guard (added in triggerSimulate, one per tool call)
+// Per-call simulation guard (added in gate_side_effects/gate_high_ambiguity, one per tool call)
 [`sim_guard_${id}`]: bThread([
   bSync({
     block: (e) => e.type === 'execute' && e.detail?.toolCall?.id === id,
@@ -122,7 +124,8 @@ batchCompletion: bThread([
   }),
 ])
 
-// Per-call symbolic safety (added in simulate_request handler, only when dangerous)
+// Per-call symbolic safety (added in simulate_request, only when prediction is dangerous)
+// Block-only — does NOT request eval_rejected (see Key Discovery: Interrupted Thread Timing)
 [`safety_${id}`]: bThread([
   bSync({
     block: (e) => e.type === 'execute' && e.detail?.toolCall?.id === id,
@@ -151,6 +154,8 @@ Every safety constraint uses three non-substitutable layers:
 | **bThread** | Structural safety — defense-in-depth | Blocks execute, observable but doesn't produce workflow events |
 
 **Why all three?** A blocked event doesn't produce a workflow event. If `batchCompletion` counts N completions and one is blocked, the batch deadlocks. The handler produces the rejection event. The bThread catches anything the handler misses. The snapshot makes it all visible to the model.
+
+**Why bThreads can't `request` workflow events for this pattern:** Interrupted sibling threads cause a bonus super-step where `selectNextEvent()` can prematurely select a safety thread's `request` before the async handler resumes. See Key Discovery: "Interrupted Thread Timing".
 
 #### 2. Per-Call Dynamic Threads with Predicate Interrupt
 
@@ -198,16 +203,24 @@ Thread position IS the coordination state — no external variables:
 
 Each interrupt is observable via `SelectionBid.interrupts` in snapshots.
 
-#### 6. Thin Handlers, Structural Coordination
+#### 6. Handlers as Sensors and Actuators
 
-Handlers do ONE thing. Routing and lifecycle belong in bThreads:
+From BP's Sensor/Actuator pattern (BPC Scaling Paper): handlers bridge async I/O. Sensors read external input and report via `trigger()`. Actuators perform external actions. Neither makes coordination decisions — that belongs in bThreads.
+
+| Handler Role | Examples | What They Do |
+|-------------|----------|-------------|
+| **Sensor** | `context_ready`, `simulate_request`, `simulation_result` | Read seam result, report as event type |
+| **Actuator** | `gate_*`, `eval_approved`, `execute` | Perform action (add guard, call executor), trigger result |
+| **Transform** | `model_response` | Parse data, add structural bThreads, dispatch per-call events |
+
+**Sensor reporting is OK in handlers.** A gate check handler that calls `composedGateCheck()` and reports "approved" or "rejected" is like a thermometer reporting "hot" vs "cold" — the `if/else` translates the seam's answer into the right event type, not routing logic.
 
 | DO in handlers | DON'T in handlers |
 |----------------|-------------------|
-| Call seams (inference, simulate, evaluate, execute) | Route between pipeline stages conditionally |
-| Parse/format data | Check if seams exist to decide routing |
-| Push to history | Maintain lifecycle state (done flags) |
-| Produce rejection events for model feedback | Read shared mutable state for blocking decisions |
+| Call seams via optional chaining | Route between pipeline stages conditionally |
+| Report seam results as typed events | Check if seams exist to decide routing |
+| Push to history, record trajectory | Maintain lifecycle state (done flags, shared Maps) |
+| Produce rejection events for workflow | Read shared mutable state for blocking decisions |
 
 ### Module Map
 
@@ -217,7 +230,7 @@ Handlers do ONE thing. Routing and lifecycle belong in bThreads:
 | `agent.types.ts` | Type definitions: seams, events, detail types, AgentEventDetails (reference) |
 | `agent.schemas.ts` | Zod schemas: AgentToolCall, AgentPlan, GateDecision, etc. |
 | `agent.constants.ts` | Event constants (AGENT_EVENTS), risk classes, tool status |
-| `agent.utils.ts` | parseModelResponse, buildContextMessages (with snapshot context), trajectory recorder |
+| `agent.utils.ts` | parseModelResponse, buildContextMessages (with snapshot context), trajectory recorder, toToolResult |
 | `agent.tools.ts` | createToolExecutor with built-in tools (read/write/list/bash) |
 | `agent.simulate.ts` | Dreamer: buildStateTransitionPrompt, createSimulate, createSubAgentSimulate |
 | `agent.evaluate.ts` | Judge: checkSymbolicGate, buildRewardPrompt, createEvaluate |
@@ -235,10 +248,28 @@ Handlers do ONE thing. Routing and lifecycle belong in bThreads:
 | 6 | Constitution as bThreads | Done | Additive blocking rules, dual-layer safety |
 | 7 | BP-first architecture + snapshot context | Done | Pipeline pass-through, unparameterized behavioral(), three-layer architecture |
 | 8 | Per-call dynamic threads + snapshot observability | Done | Predicate interrupt lifecycle, per-call guards, eliminated shared mutable state |
+| 9 | Per-tool-call dispatch + Narrow World View | Done | context_ready per call, eliminated proposed_action + simulationPredictions, single-path handlers, prediction via event chain |
 
 **1151 total tests** (all passing) across 79 files.
 
 ## Key Discoveries (Accumulated)
+
+**Interrupted Thread Timing — bThread `request` Cannot Produce Workflow Events** (Wave 9):
+- When a thread is interrupted, it moves to the `running` set (terminated). After `actionPublisher` fires the async handler, `running.size && step()` triggers a bonus super-step with `selectNextEvent()`
+- If a sibling thread (e.g., `safety_{id}`) has a pending `request`, that request can be selected prematurely — before the async handler resumes and triggers the expected event
+- **Consequence:** `safety_{id}` must be block-only (no `request` for `eval_rejected`). The handler (`eval_approved`) must produce the workflow event. This validates the three-layer architecture: handlers produce workflow events, bThreads block as defense-in-depth
+- **The prediction flows through the event chain** instead of shared mutable state: `simulation_result` → `eval_approved` detail carries `prediction`, eliminating the `simulationPredictions` Map
+
+**Narrow World View — Per-Tool-Call Dispatch** (Wave 9):
+- Each tool call triggers its own `context_ready` event, flowing through an independent pipeline
+- `model_response` is a thin transform: parse response, add `batchCompletion`, trigger `context_ready` per call
+- `context_ready` is a gate sensor: reads gate decision, reports result as risk-class event (sensor reporting, not routing)
+- Eliminated `proposed_action` event — subsumed by `context_ready` with per-call dispatch
+
+**Single-Path Handlers via Optional Chaining** (Wave 9):
+- `simulate?.().catch(() => '') ?? ''` — one code path whether or not the seam exists
+- `evaluate?.().catch(() => approved) ?? approved` — same pattern
+- Eliminates `if (!seam)` pass-through branches entirely
 
 **Blocks and Interrupts Are Observable** (Wave 8):
 - `SelectionBid.blockedBy` records the blocking thread; `SelectionBid.interrupts` records the interrupted thread

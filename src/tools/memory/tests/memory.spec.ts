@@ -340,7 +340,7 @@ describe('createMemoryDb', () => {
       const sessionId = memory.createSession('Test')
       memory.saveEventLog({
         sessionId,
-        eventType: 'proposed_action',
+        eventType: 'context_ready',
         thread: 'taskGate',
         selected: true,
         trigger: false,
@@ -351,7 +351,7 @@ describe('createMemoryDb', () => {
       })
       const rows = memory.getEventLog(sessionId)
       expect(rows).toHaveLength(1)
-      expect(rows[0]!.event_type).toBe('proposed_action')
+      expect(rows[0]!.event_type).toBe('context_ready')
       expect(rows[0]!.thread).toBe('taskGate')
       expect(rows[0]!.selected).toBe(1)
       expect(rows[0]!.trigger).toBe(0)

@@ -1,6 +1,33 @@
 import type { EventLogRow } from '../tools/memory/memory.types.ts'
-import type { AgentPlan, AgentPlanStep, AgentToolCall, TrajectoryStep } from './agent.schemas.ts'
+import { TOOL_STATUS } from './agent.constants.ts'
+import type { AgentPlan, AgentPlanStep, AgentToolCall, ToolResult, TrajectoryStep } from './agent.schemas.ts'
 import type { ChatMessage, DiagnosticEntry, InferenceCall, ParsedModelResponse } from './agent.types.ts'
+
+// ============================================================================
+// toToolResult — normalize tool execution result or error into ToolResult
+// ============================================================================
+
+/**
+ * Normalizes a tool execution result or caught error into a `ToolResult`.
+ *
+ * @param toolCall - The tool call that was executed
+ * @param resultOrError - Either a successful `ToolResult` or a caught error
+ * @param duration - Execution duration in milliseconds
+ * @returns A complete `ToolResult` with duration
+ *
+ * @internal
+ */
+export const toToolResult = (
+  toolCall: AgentToolCall,
+  resultOrError: ToolResult | Error | unknown,
+  duration: number,
+): ToolResult => {
+  if (resultOrError && typeof resultOrError === 'object' && 'toolCallId' in resultOrError) {
+    return { ...(resultOrError as ToolResult), duration }
+  }
+  const errorMsg = resultOrError instanceof Error ? resultOrError.message : String(resultOrError)
+  return { toolCallId: toolCall.id, name: toolCall.name, status: TOOL_STATUS.failed, error: errorMsg, duration }
+}
 
 // ============================================================================
 // createInferenceCall — fetch wrapper for OpenAI-compatible endpoints

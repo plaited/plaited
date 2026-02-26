@@ -179,8 +179,8 @@ export type ModelResponseDetail = {
   raw: InferenceResponse
 }
 
-/** Detail payload for the `proposed_action` event */
-export type ProposedActionDetail = {
+/** Detail payload for the `context_ready` event (per-tool-call gate dispatch) */
+export type ContextReadyDetail = {
   toolCall: AgentToolCall
 }
 
@@ -261,10 +261,9 @@ export type MessageDetail = {
  */
 export type AgentEventDetails = {
   [AGENT_EVENTS.task]: TaskDetail
-  [AGENT_EVENTS.context_ready]: undefined
+  [AGENT_EVENTS.context_ready]: ContextReadyDetail
   [AGENT_EVENTS.invoke_inference]: undefined
   [AGENT_EVENTS.model_response]: ModelResponseDetail
-  [AGENT_EVENTS.proposed_action]: ProposedActionDetail
   [AGENT_EVENTS.gate_rejected]: GateRejectedDetail
   [AGENT_EVENTS.gate_read_only]: GateApprovedDetail
   [AGENT_EVENTS.gate_side_effects]: GateApprovedDetail

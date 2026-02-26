@@ -14,7 +14,6 @@ export const AGENT_EVENTS = keyMirror(
   'context_ready',
   'invoke_inference',
   'model_response',
-  'proposed_action',
   'gate_rejected',
   'gate_read_only',
   'gate_side_effects',

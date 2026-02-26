@@ -173,7 +173,7 @@ describe('per-task lifecycle', () => {
 describe('task gate', () => {
   test('blocks task-related events between tasks', () => {
     const log: string[] = []
-    const TASK_EVENTS = new Set(['model_response', 'execute', 'tool_result', 'proposed_action'])
+    const TASK_EVENTS = new Set(['model_response', 'execute', 'tool_result', 'context_ready'])
 
     const { bThreads, trigger, useFeedback } = behavioral()
 

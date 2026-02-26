@@ -18,7 +18,7 @@ export type ConstitutionRuleConfig = {
   argPattern?: { key: string; pattern: string }
 }
 
-/** Return type of createConstitution() — threads for bThreads.set(), gateCheck for proposed_action */
+/** Return type of createConstitution() — threads for bThreads.set(), gateCheck for context_ready */
 export type Constitution = {
   threads: Record<string, RulesFunction>
   gateCheck: GateCheck

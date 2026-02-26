@@ -101,12 +101,12 @@ export const createGateCheck = ({
  * existing `symbolicSafetyNet` pattern.
  *
  * **Layer 2 — imperative gateCheck (feedback):** Returns a `GateCheck`
- * function that runs the same rules. Called in the `proposed_action`
+ * function that runs the same rules. Called in the `context_ready`
  * handler, routes violations to `gate_rejected` which provides
  * feedback to the model (pushes rejection reason to history).
  *
  * @param rules - Array of constitution rules (test returns true = BLOCKED)
- * @returns `{ threads, gateCheck }` — threads for `bThreads.set()`, gateCheck for `proposed_action`
+ * @returns `{ threads, gateCheck }` — threads for `bThreads.set()`, gateCheck for `context_ready`
  *
  * @public
  */

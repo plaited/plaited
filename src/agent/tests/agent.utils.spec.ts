@@ -352,13 +352,13 @@ describe('buildContextMessages — snapshot context', () => {
     const eventLog = [
       row({ event_type: 'execute', thread: 'simulationGuard', selected: 0, blocked_by: 'simulationGuard' }),
       row({ event_type: 'execute', thread: 'symbolicSafetyNet', selected: 0, blocked_by: 'symbolicSafetyNet' }),
-      row({ event_type: 'proposed_action', thread: 'main', selected: 1, priority: 1 }),
+      row({ event_type: 'context_ready', thread: 'main', selected: 1, priority: 1 }),
     ]
 
     const messages = buildContextMessages({ history: [], eventLog })
     const system = messages[0]!.content as string
 
-    expect(system).toContain('**Selected:** proposed_action (thread: main, priority: 1)')
+    expect(system).toContain('**Selected:** context_ready (thread: main, priority: 1)')
     expect(system).toContain('Blocked: execute (thread: simulationGuard) by simulationGuard')
     expect(system).toContain('Blocked: execute (thread: symbolicSafetyNet) by symbolicSafetyNet')
   })
