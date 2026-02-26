@@ -27,11 +27,10 @@ const TASK_EVENTS = new Set<string>([
   AGENT_EVENTS.invoke_inference,
   AGENT_EVENTS.model_response,
   AGENT_EVENTS.proposed_action,
-  AGENT_EVENTS.gate_approved,
   AGENT_EVENTS.gate_rejected,
-  AGENT_EVENTS.route_read_only,
-  AGENT_EVENTS.route_side_effects,
-  AGENT_EVENTS.route_high_ambiguity,
+  AGENT_EVENTS.gate_read_only,
+  AGENT_EVENTS.gate_side_effects,
+  AGENT_EVENTS.gate_high_ambiguity,
   AGENT_EVENTS.simulate_request,
   AGENT_EVENTS.simulation_result,
   AGENT_EVENTS.eval_approved,
@@ -184,25 +183,19 @@ export const createAgentLoop = ({
     ...constitutionResult?.threads,
   })
 
-  // ---------------------------------------------------------------------------
-  // Risk class → route event mapping
-  // ---------------------------------------------------------------------------
-  const ROUTE_EVENTS: Record<string, string> = {
-    [RISK_CLASS.read_only]: AGENT_EVENTS.route_read_only,
-    [RISK_CLASS.side_effects]: AGENT_EVENTS.route_side_effects,
-    [RISK_CLASS.high_ambiguity]: AGENT_EVENTS.route_high_ambiguity,
+  // Risk class → gate event mapping (proposed_action produces one of these directly)
+  const GATE_EVENTS: Record<string, string> = {
+    [RISK_CLASS.read_only]: AGENT_EVENTS.gate_read_only,
+    [RISK_CLASS.side_effects]: AGENT_EVENTS.gate_side_effects,
+    [RISK_CLASS.high_ambiguity]: AGENT_EVENTS.gate_high_ambiguity,
   }
 
-  // Uniform routing: side_effects and high_ambiguity always flow through
-  // simulate → evaluate → execute pipeline. Handlers pass through when seams
-  // are absent — no conditionals needed at the routing level.
-  //
-  // Per-call dynamic threads replace persistent shared-state guards:
+  // Per-call dynamic threads for simulation coordination:
   // - sim_guard_{id}: blocks execute while simulation is pending, interrupted by simulation_result
   // - Both block and interrupt use predicate listeners scoped to the specific tool call ID
   // - Observable via snapshot: SelectionBid.blockedBy / SelectionBid.interrupts
-  const triggerSimulate = (detail: { toolCall: AgentToolCall; decision: { riskClass?: string } }) => {
-    const id = detail.toolCall.id
+  const triggerSimulate = (toolCall: AgentToolCall, riskClass: string) => {
+    const id = toolCall.id
 
     // Per-call simulation guard: blocks execute until simulation completes
     bThreads.set({
@@ -216,7 +209,7 @@ export const createAgentLoop = ({
 
     trigger({
       type: AGENT_EVENTS.simulate_request,
-      detail: { toolCall: detail.toolCall, decision: detail.decision },
+      detail: { toolCall, riskClass },
     })
   }
 
@@ -332,28 +325,30 @@ export const createAgentLoop = ({
       // If only save_plan calls, plan_saved handler will re-invoke inference
     },
 
-    // Step 3: Gate — evaluate proposed tool call (constitution + custom gateCheck)
+    // Step 3: Gate — evaluate proposed tool call, produce risk-class event directly
     [AGENT_EVENTS.proposed_action]: (detail) => {
       const decision = composedGateCheck?.(detail.toolCall) ?? { approved: true, riskClass: RISK_CLASS.read_only }
-      if (decision.approved) {
-        trigger({ type: AGENT_EVENTS.gate_approved, detail: { toolCall: detail.toolCall, decision } })
-      } else {
+      if (!decision.approved) {
         trigger({ type: AGENT_EVENTS.gate_rejected, detail: { toolCall: detail.toolCall, decision } })
+        return
       }
+      const riskClass = decision.riskClass ?? RISK_CLASS.read_only
+      trigger({
+        type: GATE_EVENTS[riskClass] ?? AGENT_EVENTS.gate_high_ambiguity,
+        detail: { toolCall: detail.toolCall },
+      })
     },
 
-    // Gate approved: dispatch to risk-class-specific route event
-    [AGENT_EVENTS.gate_approved]: (detail) => {
-      const riskClass = detail.decision.riskClass ?? RISK_CLASS.read_only
-      trigger({ type: ROUTE_EVENTS[riskClass] ?? AGENT_EVENTS.route_high_ambiguity, detail })
-    },
-
-    // Route handlers — risk-class-specific execution paths
-    [AGENT_EVENTS.route_read_only]: (detail) => {
+    // Gate results — one handler per risk class, each does one thing
+    [AGENT_EVENTS.gate_read_only]: (detail) => {
       trigger({ type: AGENT_EVENTS.execute, detail: { toolCall: detail.toolCall, riskClass: RISK_CLASS.read_only } })
     },
-    [AGENT_EVENTS.route_side_effects]: triggerSimulate,
-    [AGENT_EVENTS.route_high_ambiguity]: triggerSimulate,
+    [AGENT_EVENTS.gate_side_effects]: (detail) => {
+      triggerSimulate(detail.toolCall, RISK_CLASS.side_effects)
+    },
+    [AGENT_EVENTS.gate_high_ambiguity]: (detail) => {
+      triggerSimulate(detail.toolCall, RISK_CLASS.high_ambiguity)
+    },
 
     // Gate rejected: record rejection and check completion
     [AGENT_EVENTS.gate_rejected]: (detail) => {
@@ -370,7 +365,7 @@ export const createAgentLoop = ({
     // Step 4: Simulate — call Dreamer prediction or pass through
     // sim_guard_{id} bThread blocks execute until simulation_result interrupts it
     [AGENT_EVENTS.simulate_request]: async (detail) => {
-      const riskClass = detail.decision.riskClass ?? RISK_CLASS.side_effects
+      const { riskClass } = detail
 
       // No simulate seam → pass through to evaluation pipeline
       if (!simulate) {

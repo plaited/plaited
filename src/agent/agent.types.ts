@@ -184,10 +184,15 @@ export type ProposedActionDetail = {
   toolCall: AgentToolCall
 }
 
-/** Detail payload for gate decision events */
-export type GateResultDetail = {
+/** Detail payload for the `gate_rejected` event */
+export type GateRejectedDetail = {
   toolCall: AgentToolCall
   decision: GateDecision
+}
+
+/** Detail payload for gate-approved events (`gate_read_only`, `gate_side_effects`, `gate_high_ambiguity`) */
+export type GateApprovedDetail = {
+  toolCall: AgentToolCall
 }
 
 /** Detail payload for the `execute` event */
@@ -215,7 +220,7 @@ export type PlanSavedDetail = {
 /** Detail payload for the `simulate_request` event */
 export type SimulateRequestDetail = {
   toolCall: AgentToolCall
-  decision: GateDecision
+  riskClass: string
 }
 
 /** Detail payload for the `simulation_result` event */
@@ -260,11 +265,10 @@ export type AgentEventDetails = {
   [AGENT_EVENTS.invoke_inference]: undefined
   [AGENT_EVENTS.model_response]: ModelResponseDetail
   [AGENT_EVENTS.proposed_action]: ProposedActionDetail
-  [AGENT_EVENTS.gate_approved]: GateResultDetail
-  [AGENT_EVENTS.gate_rejected]: GateResultDetail
-  [AGENT_EVENTS.route_read_only]: GateResultDetail
-  [AGENT_EVENTS.route_side_effects]: GateResultDetail
-  [AGENT_EVENTS.route_high_ambiguity]: GateResultDetail
+  [AGENT_EVENTS.gate_rejected]: GateRejectedDetail
+  [AGENT_EVENTS.gate_read_only]: GateApprovedDetail
+  [AGENT_EVENTS.gate_side_effects]: GateApprovedDetail
+  [AGENT_EVENTS.gate_high_ambiguity]: GateApprovedDetail
   [AGENT_EVENTS.simulate_request]: SimulateRequestDetail
   [AGENT_EVENTS.simulation_result]: SimulationResultDetail
   [AGENT_EVENTS.eval_approved]: EvalApprovedDetail

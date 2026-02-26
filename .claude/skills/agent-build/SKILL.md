@@ -36,9 +36,10 @@ graph TD
     INF --> MR[model_response]
     MR --> PA[proposed_action — per tool call]
     PA --> GATE{composedGateCheck}
-    GATE -->|approved, read_only| EXEC[execute]
-    GATE -->|approved, side_effects/high_ambiguity| SIM[simulate_request]
-    GATE -->|rejected| GR[gate_rejected]
+    GATE -->|gate_read_only| EXEC[execute]
+    GATE -->|gate_side_effects| SIM[simulate_request]
+    GATE -->|gate_high_ambiguity| SIM
+    GATE -->|gate_rejected| GR[gate_rejected]
     SIM --> SR[simulation_result]
     SR --> EA_CHECK[eval_approved — symbolic check]
     EA_CHECK -->|safe| EXEC[execute]
@@ -63,8 +64,10 @@ All events defined in `agent.constants.ts`:
 | `task` | 1 | Add per-task maxIterations bThread, push prompt, trigger invoke_inference |
 | `invoke_inference` | 1 | Async: callInference → trigger model_response (centralized, single call site) |
 | `model_response` | 2 | Parse response, dispatch tool calls in parallel via batchCompletion |
-| `proposed_action` | 3 | Run composedGateCheck, route to approved/rejected |
-| `gate_approved` | 3 | Route by risk class: read_only→execute, side_effects/high_ambiguity→simulate_request |
+| `proposed_action` | 3 | Run composedGateCheck, produce risk-class event directly |
+| `gate_read_only` | 3 | Trigger execute directly (no simulation needed) |
+| `gate_side_effects` | 3 | Add sim_guard, trigger simulate_request |
+| `gate_high_ambiguity` | 3 | Add sim_guard, trigger simulate_request |
 | `gate_rejected` | 3 | Synthetic tool result (batchCompletion counts this) |
 | `simulate_request` | 4 | Call simulate seam or pass through with empty prediction |
 | `simulation_result` | 5 | Call evaluate seam or trigger eval_approved |
@@ -165,7 +168,7 @@ Instead of persistent threads reading shared mutable state, each tool call gets 
 Events flow through the full simulate → evaluate → execute pipeline regardless of which seams are present:
 
 ```
-gate_approved → simulate_request → simulation_result → eval_approved → execute
+gate_side_effects / gate_high_ambiguity → simulate_request → simulation_result → eval_approved → execute
 ```
 
 When a seam is absent, the handler passes through:

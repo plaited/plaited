@@ -57,7 +57,8 @@ After Wave 6, a review of `agent.ts` revealed over-reliance on imperative condit
 
 Replaced `routeToSimulate` conditional closure (checked `simulate` seam at creation time) with uniform `triggerSimulate` that always routes through the pipeline:
 
-- `route_side_effects` and `route_high_ambiguity` → always trigger `simulate_request`
+- `gate_side_effects` and `gate_high_ambiguity` → call `triggerSimulate` which adds `sim_guard_{id}` and triggers `simulate_request`
+- `gate_read_only` → triggers `execute` directly (no simulation needed)
 - `simulate_request` handler: calls simulate seam or passes through with empty prediction
 - `simulation_result` handler: calls evaluate seam or triggers `eval_approved`
 - Events flow through the full pipeline — handlers pass through when seams are absent

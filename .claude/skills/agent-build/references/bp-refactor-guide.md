@@ -72,7 +72,9 @@ bThreads.set({
 const TASK_EVENTS = new Set([
   AGENT_EVENTS.model_response,
   AGENT_EVENTS.proposed_action,
-  AGENT_EVENTS.gate_approved,
+  AGENT_EVENTS.gate_read_only,
+  AGENT_EVENTS.gate_side_effects,
+  AGENT_EVENTS.gate_high_ambiguity,
   AGENT_EVENTS.gate_rejected,
   AGENT_EVENTS.simulate_request,
   AGENT_EVENTS.simulation_result,
