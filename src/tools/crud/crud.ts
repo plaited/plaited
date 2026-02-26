@@ -31,11 +31,12 @@ const parseCli = <T extends z.ZodSchema>(args: string[], schema: T, name: string
     return null
   }
   const jsonIdx = args.indexOf('--json')
-  if (jsonIdx === -1 || !args[jsonIdx + 1]) {
+  const jsonArg = args[jsonIdx + 1]
+  if (jsonIdx === -1 || !jsonArg) {
     console.error(`Usage: plaited ${name} --json '{...}' | --schema`)
     process.exit(1)
   }
-  const parsed = schema.safeParse(JSON.parse(args[jsonIdx + 1]))
+  const parsed = schema.safeParse(JSON.parse(jsonArg))
   if (!parsed.success) {
     console.error(JSON.stringify(parsed.error.issues, null, 2))
     process.exit(1)

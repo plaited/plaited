@@ -190,11 +190,12 @@ export const simulateCli = async (args: string[]): Promise<void> => {
     return
   }
   const jsonIdx = args.indexOf('--json')
-  if (jsonIdx === -1 || !args[jsonIdx + 1]) {
+  const jsonArg = args[jsonIdx + 1]
+  if (jsonIdx === -1 || !jsonArg) {
     console.error("Usage: plaited simulate --json '{...}' | --schema")
     process.exit(1)
   }
-  const parsed = SimulateConfigSchema.safeParse(JSON.parse(args[jsonIdx + 1]))
+  const parsed = SimulateConfigSchema.safeParse(JSON.parse(jsonArg))
   if (!parsed.success) {
     console.error(JSON.stringify(parsed.error.issues, null, 2))
     process.exit(1)

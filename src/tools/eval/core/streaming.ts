@@ -46,7 +46,7 @@ export async function* streamJsonl<T>(path: string, schema?: ZodSchema<T>): Asyn
     return schema ? schema.parse(parsed) : (parsed as T)
   }
 
-  for await (const chunk of stream) {
+  for await (const chunk of stream as unknown as AsyncIterable<Uint8Array>) {
     buffer += decoder.decode(chunk, { stream: true })
 
     let newlineIndex = buffer.indexOf('\n')
@@ -152,7 +152,7 @@ export const countLinesStreaming = async (path: string): Promise<number> => {
   let count = 0
   let buffer = ''
 
-  for await (const chunk of stream) {
+  for await (const chunk of stream as unknown as AsyncIterable<Uint8Array>) {
     buffer += decoder.decode(chunk, { stream: true })
 
     let newlineIndex = buffer.indexOf('\n')

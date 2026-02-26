@@ -90,8 +90,9 @@ export const evalRun = async (args: string[]): Promise<void> => {
 
   // Check for --json flag (tool genome)
   const jsonIdx = args.indexOf('--json')
-  if (jsonIdx !== -1 && args[jsonIdx + 1]) {
-    const parsed = evalConfigSchema.safeParse(JSON.parse(args[jsonIdx + 1]))
+  const jsonArg = args[jsonIdx + 1]
+  if (jsonIdx !== -1 && jsonArg) {
+    const parsed = evalConfigSchema.safeParse(JSON.parse(jsonArg))
     if (!parsed.success) {
       console.error(JSON.stringify(parsed.error.issues, null, 2))
       process.exit(1)
