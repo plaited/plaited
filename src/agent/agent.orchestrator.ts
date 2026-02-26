@@ -114,33 +114,6 @@ export const createOrchestrator = ({
     ),
   })
 
-  // -- IPC bridge: convert worker messages into BP triggers --
-  const wireIpcBridge = (projectName: string, proc: ManagedProcess) => {
-    proc.onMessage((msg) => {
-      if (msg.type === 'result') {
-        trigger({
-          type: ORCHESTRATOR_EVENTS.project_result,
-          detail: {
-            project: projectName,
-            taskId: msg.taskId,
-            output: msg.output,
-            trajectory: msg.trajectory,
-          },
-        })
-      } else if (msg.type === 'error') {
-        trigger({
-          type: ORCHESTRATOR_EVENTS.project_error,
-          detail: {
-            project: projectName,
-            taskId: msg.taskId,
-            error: msg.error,
-          },
-        })
-      }
-      // 'ready' is handled separately in getOrSpawnProcess
-    })
-  }
-
   // -- Lazy process spawning with ready handshake --
   const getOrSpawnProcess = (projectName: string): { proc: ManagedProcess; ready: Promise<void> } => {
     const existing = processes.get(projectName)
@@ -151,25 +124,42 @@ export const createOrchestrator = ({
     const config = projectConfigs.get(projectName)!
     const proc = processManager.spawn(projectName, config)
 
-    // Ready handshake — resolve when child sends 'ready'
+    // Single permanent handler — two internal phases via bridgeActive flag.
+    // Eliminates the handler replacement race that existed when wireIpcBridge
+    // called proc.onMessage() a second time after the ready handshake.
     const ready = new Promise<void>((resolve) => {
-      const originalOnMessage = proc.onMessage
-      let resolved = false
+      let bridgeActive = false
       proc.onMessage((msg) => {
-        if (!resolved && msg.type === 'ready') {
-          resolved = true
-          // Re-wire to the IPC bridge after ready
-          wireIpcBridge(projectName, proc)
-          resolve()
+        if (!bridgeActive) {
+          if (msg.type === 'ready') {
+            bridgeActive = true
+            resolve()
+          }
+          // Messages before ready are intentionally dropped
           return
         }
-        // If already resolved, this is handled by the IPC bridge
+        // Bridge phase: convert IPC messages to BP triggers
+        if (msg.type === 'result') {
+          trigger({
+            type: ORCHESTRATOR_EVENTS.project_result,
+            detail: {
+              project: projectName,
+              taskId: msg.taskId,
+              output: msg.output,
+              trajectory: msg.trajectory,
+            },
+          })
+        } else if (msg.type === 'error') {
+          trigger({
+            type: ORCHESTRATOR_EVENTS.project_error,
+            detail: {
+              project: projectName,
+              taskId: msg.taskId,
+              error: msg.error,
+            },
+          })
+        }
       })
-      // We need to wire the bridge after ready, but onMessage only takes one handler.
-      // The approach: first handler catches 'ready', then calls wireIpcBridge
-      // which replaces the handler. But we need the bridge to also handle
-      // messages that arrive before onMessage is replaced.
-      void originalOnMessage // consumed by the initial handler above
     })
 
     processes.set(projectName, proc)

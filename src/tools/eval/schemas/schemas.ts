@@ -21,6 +21,9 @@
  */
 
 import { z } from 'zod'
+import { MessageStepSchema, ThoughtStepSchema, ToolCallStepSchema } from '../../../agent/agent.schemas.ts'
+
+export { ThoughtStepSchema, MessageStepSchema, ToolCallStepSchema }
 
 // ============================================================================
 // Session Types
@@ -261,35 +264,7 @@ export const ToolInputSchema = z
 /** Tool input type */
 export type ToolInput = z.infer<typeof ToolInputSchema>
 
-/** Thought trajectory step */
-export const ThoughtStepSchema = z.object({
-  type: z.literal('thought'),
-  content: z.string(),
-  timestamp: z.number(),
-  stepId: z.string().optional(),
-})
-
-/** Message trajectory step */
-export const MessageStepSchema = z.object({
-  type: z.literal('message'),
-  content: z.string(),
-  timestamp: z.number(),
-  stepId: z.string().optional(),
-})
-
-/** Tool call trajectory step */
-export const ToolCallStepSchema = z.object({
-  type: z.literal('tool_call'),
-  name: z.string(),
-  status: z.string(),
-  input: z.unknown().optional(),
-  output: z.unknown().optional(),
-  duration: z.number().optional(),
-  timestamp: z.number(),
-  stepId: z.string().optional(),
-})
-
-/** Plan trajectory step */
+/** Plan trajectory step (intentionally permissive — accepts any adapter output) */
 export const PlanStepSchema = z.object({
   type: z.literal('plan'),
   entries: z.array(z.unknown()),

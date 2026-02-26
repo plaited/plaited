@@ -1,9 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import {
-  MessageStepSchema as EvalMessageStepSchema,
   PlanStepSchema as EvalPlanStepSchema,
-  ThoughtStepSchema as EvalThoughtStepSchema,
-  ToolCallStepSchema as EvalToolCallStepSchema,
   TrajectoryStepSchema as EvalTrajectoryStepSchema,
 } from '../../tools/eval/schemas/schemas.ts'
 import {
@@ -412,33 +409,7 @@ describe('AgentConfigSchema', () => {
 describe('eval harness structural compatibility', () => {
   const now = Date.now()
 
-  test('ThoughtStep is accepted by eval harness schema', () => {
-    const step = ThoughtStepSchema.parse({ type: 'thought', content: 'thinking', timestamp: now })
-    const evalResult = EvalThoughtStepSchema.safeParse(step)
-    expect(evalResult.success).toBe(true)
-  })
-
-  test('MessageStep is accepted by eval harness schema', () => {
-    const step = MessageStepSchema.parse({ type: 'message', content: 'hello', timestamp: now })
-    const evalResult = EvalMessageStepSchema.safeParse(step)
-    expect(evalResult.success).toBe(true)
-  })
-
-  test('ToolCallStep is accepted by eval harness schema', () => {
-    const step = ToolCallStepSchema.parse({
-      type: 'tool_call',
-      name: 'read_file',
-      status: 'completed',
-      input: { path: '/foo' },
-      output: 'contents',
-      duration: 100,
-      timestamp: now,
-    })
-    const evalResult = EvalToolCallStepSchema.safeParse(step)
-    expect(evalResult.success).toBe(true)
-  })
-
-  test('PlanStep is accepted by eval harness schema', () => {
+  test('PlanStep is accepted by eval harness schema (schemas intentionally diverge)', () => {
     const step = PlanStepSchema.parse({
       type: 'plan',
       entries: [{ id: 's1', intent: 'read file', tools: ['read_file'] }],

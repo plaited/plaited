@@ -115,8 +115,10 @@ export const PlanStepSchema = z.object({
  * Discriminated union of all trajectory step types.
  *
  * @remarks
- * Canonical definition — structurally identical to the eval harness version.
- * The eval harness will later import from `plaited/agent`.
+ * Canonical definition. `ThoughtStepSchema`, `MessageStepSchema`, and
+ * `ToolCallStepSchema` are imported by the eval harness schemas module.
+ * `PlanStepSchema` intentionally diverges in the eval harness
+ * (`entries: z.array(z.unknown())`) to accept arbitrary adapter outputs.
  *
  * @public
  */
@@ -163,8 +165,9 @@ const riskClassValues = Object.values(RISK_CLASS)
  * Gate evaluation decision for a proposed tool call.
  *
  * @remarks
- * Foundation stubs approve all with `read_only` risk class.
- * Constitution bThreads will later provide real classification.
+ * Produced by `createGateCheck()` and constitution bThreads. The `riskClass`
+ * field reflects `classifyRisk()` output — `read_only`, `side_effects`,
+ * or `high_ambiguity` — which determines the agent loop routing path.
  *
  * @public
  */

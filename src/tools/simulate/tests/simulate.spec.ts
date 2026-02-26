@@ -1,7 +1,12 @@
-import { describe, expect, mock, test } from 'bun:test'
+import { afterEach, describe, expect, mock, test } from 'bun:test'
 import type { AgentToolCall } from '../../../agent/agent.schemas.ts'
 import type { ChatMessage, InferenceCall } from '../../../agent/agent.types.ts'
-import { buildStateTransitionPrompt, createSimulate, parseSimulationResponse } from '../simulate.ts'
+import {
+  buildStateTransitionPrompt,
+  createSimulate,
+  createSubAgentSimulate,
+  parseSimulationResponse,
+} from '../simulate.ts'
 
 // ============================================================================
 // Test helpers
@@ -198,5 +203,93 @@ describe('createSimulate', () => {
       tools?: unknown
     }
     expect(call.tools).toBeUndefined()
+  })
+})
+
+// ============================================================================
+// createSubAgentSimulate
+// ============================================================================
+
+describe('createSubAgentSimulate', () => {
+  const originalSpawn = Bun.spawn
+
+  afterEach(() => {
+    Bun.spawn = originalSpawn
+  })
+
+  const makeSpawnMock = () => {
+    let capturedIpc: ((msg: unknown) => void) | undefined
+    const sendMock = mock(() => {})
+    const killMock = mock(() => {})
+    const spawnMock = mock((_args: unknown, opts: { ipc: (msg: unknown) => void }) => {
+      capturedIpc = opts.ipc
+      return { send: sendMock, kill: killMock }
+    })
+    // @ts-expect-error - mock stub for Bun.spawn
+    Bun.spawn = spawnMock
+    return { spawnMock, sendMock, killMock, getIpc: () => capturedIpc }
+  }
+
+  test('resolves with prediction from worker', async () => {
+    const { getIpc } = makeSpawnMock()
+    const simulate = createSubAgentSimulate({
+      workerPath: '/worker.ts',
+      inferenceConfig: { baseUrl: 'http://localhost:8080', model: 'test' },
+    })
+
+    const promise = simulate({ toolCall: makeToolCall(), history: [], plan: null })
+    queueMicrotask(() => getIpc()?.({ prediction: 'directory listing' }))
+    expect(await promise).toBe('directory listing')
+  })
+
+  test('resolves to empty string when prediction is undefined', async () => {
+    const { getIpc } = makeSpawnMock()
+    const simulate = createSubAgentSimulate({
+      workerPath: '/worker.ts',
+      inferenceConfig: { baseUrl: 'http://localhost:8080', model: 'test' },
+    })
+
+    const promise = simulate({ toolCall: makeToolCall(), history: [], plan: null })
+    queueMicrotask(() => getIpc()?.({ prediction: undefined }))
+    expect(await promise).toBe('')
+  })
+
+  test('rejects when worker sends error', async () => {
+    const { getIpc } = makeSpawnMock()
+    const simulate = createSubAgentSimulate({
+      workerPath: '/worker.ts',
+      inferenceConfig: { baseUrl: 'http://localhost:8080', model: 'test' },
+    })
+
+    const promise = simulate({ toolCall: makeToolCall(), history: [], plan: null })
+    queueMicrotask(() => getIpc()?.({ error: 'inference failed' }))
+    await expect(promise).rejects.toThrow('inference failed')
+  })
+
+  test('kills process on both success and error', async () => {
+    const { getIpc, killMock } = makeSpawnMock()
+    const simulate = createSubAgentSimulate({
+      workerPath: '/worker.ts',
+      inferenceConfig: { baseUrl: 'http://localhost:8080', model: 'test' },
+    })
+
+    const p1 = simulate({ toolCall: makeToolCall(), history: [], plan: null })
+    queueMicrotask(() => getIpc()?.({ prediction: 'ok' }))
+    await p1
+    expect(killMock).toHaveBeenCalledTimes(1)
+  })
+
+  test('spawns with correct bun run args', async () => {
+    const { spawnMock, getIpc } = makeSpawnMock()
+    const simulate = createSubAgentSimulate({
+      workerPath: '/my/worker.ts',
+      inferenceConfig: { baseUrl: 'http://localhost:9000', model: 'gpt-4' },
+    })
+
+    const promise = simulate({ toolCall: makeToolCall(), history: [], plan: null })
+    queueMicrotask(() => getIpc()?.({ prediction: 'ok' }))
+    await promise
+
+    expect(spawnMock.mock.calls[0]![0]).toEqual(['bun', 'run', '/my/worker.ts'])
   })
 })

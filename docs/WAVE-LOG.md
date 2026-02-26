@@ -2,7 +2,7 @@
 
 Incremental implementation log for the Plaited agent layer. Each wave is a self-contained increment that leaves all tests green.
 
-**Current total: 322 tests passing** (219 agent + 103 behavioral) across 25 files.
+**Current total: 345 tests passing** (242 agent + 103 behavioral) across 27 files.
 
 ---
 
@@ -12,17 +12,13 @@ Issues identified after all 6 waves shipped. None are blockers — the framework
 
 ### Stale TSDoc Comments
 
-| File | Line | Issue |
-|------|------|-------|
-| `agent.schemas.ts:37` | `RISK_CLASS` TSDoc says "Foundation stubs all calls as `read_only`. Constitution bThreads will later classify..." | `classifyRisk()` already does full classification — comment is stale |
-| `agent.schemas.ts:167` | `GateDecision` TSDoc says "Constitution bThreads will later provide real classification." | Constitution bThreads are implemented — comment is stale |
-| `agent.schemas.ts:119` | `TrajectoryStep` TSDoc says "The eval harness will later import from `plaited/agent`." | Eval harness integration not yet wired — still accurate but deferred |
+All resolved. `GateDecision`, `RISK_CLASS`, and `TrajectoryStep` TSDoc updated to reflect current implementation.
 
 ### Deferred Features
 
 | Feature | Deferred From | Notes |
 |---------|--------------|-------|
-| **Eval harness canonical imports** | Wave 2 | `TrajectoryStepSchema` is the canonical source; eval harness still uses its own copy |
+| ~~**Eval harness canonical imports**~~ | Wave 2 | Resolved — eval harness now imports `ThoughtStepSchema`, `MessageStepSchema`, `ToolCallStepSchema` from agent; `PlanStepSchema` intentionally diverges |
 | **LSP → semantic search pipeline** | Wave 3 | Memory has FTS5 search; LSP and semantic search layers never built |
 | **`searchGate` bThread** | Wave 3 | Planned to block search results during active tool execution; not implemented |
 | **Runtime constitution rule addition via public API** | Wave 6 | `bThreads.set()` works directly for power users; no convenience method on `AgentLoop` |
@@ -31,13 +27,10 @@ Issues identified after all 6 waves shipped. None are blockers — the framework
 
 ### Code Quality Notes
 
-| Issue | Severity | Location |
-|-------|----------|----------|
-| Orchestrator IPC handler replacement is fragile | Medium | `agent.orchestrator.ts` `getOrSpawnProcess()` — `onMessage()` replacement acknowledged as complex in comments |
-| `createInferenceCall` not unit tested | Low | `agent.utils.ts` — thin fetch wrapper, tested indirectly via all agent tests |
-| `createSubAgentSimulate` not unit tested | Low | `agent.simulate.ts` — requires subprocess spawning; tested via orchestrator integration |
-| `parseModelResponse` not unit tested | Low | `agent.utils.ts` — tested indirectly through agent loop integration tests |
-| `createTrajectoryRecorder` not unit tested | Low | `agent.utils.ts` — tested indirectly through trajectory schema validation |
+All resolved:
+
+- **Orchestrator IPC handler** — Replaced `wireIpcBridge()` handler replacement with single permanent handler using `bridgeActive` flag. Eliminates the last-writer-wins race window.
+- **Unit tests** — Added 24 tests in `agent.utils.spec.ts` (`createInferenceCall`, `parseModelResponse`, `createTrajectoryRecorder`) and 5 tests in `simulate.spec.ts` (`createSubAgentSimulate`).
 
 ---
 

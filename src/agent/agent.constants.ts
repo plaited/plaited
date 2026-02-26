@@ -36,8 +36,11 @@ export const AGENT_EVENTS = keyMirror(
  * Risk classification for tool calls evaluated by the gate.
  *
  * @remarks
- * Foundation stubs all calls as `read_only`. Constitution bThreads
- * will later classify `side_effects` and `high_ambiguity`.
+ * Returned by `classifyRisk()` in `agent.constitution.ts`. Determines
+ * the routing path through the agent loop:
+ * - `read_only` — skip simulation, execute directly
+ * - `side_effects` — run Dreamer simulation before execution
+ * - `high_ambiguity` — run simulation and neural Judge scoring
  *
  * @public
  */
