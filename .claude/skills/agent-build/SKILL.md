@@ -7,14 +7,14 @@ description: Development skill for building the neuro-symbolic agent framework. 
 
 ## Purpose
 
-This is the **development context** for the agent framework — all 6 waves are complete. It captures research insights, architectural decisions, and coordination patterns that must survive context compaction. Activate this skill before any agent module work.
+This is the **development context** for the agent framework — actively evolving through successive waves. This is **greenfield code with zero external consumers** — no backward compatibility needed. Each wave refines the architecture toward BP-first coordination. Activate this skill before any agent module work.
 
 **Use this when:**
 - Implementing or modifying `src/agent/` files
 - Resuming work after context compaction
 - Writing tests for agent behavior
 - Designing bThread coordination for the agent loop
-- Addressing outstanding issues (see below)
+- Planning the next wave
 
 ## Architecture Overview
 
@@ -37,22 +37,22 @@ graph TD
     MR --> PA[proposed_action — per tool call]
     PA --> GATE{composedGateCheck}
     GATE -->|approved, read_only| EXEC[execute]
-    GATE -->|approved, side_effects| SIM[simulate_request]
-    GATE -->|rejected| GR[gate_rejected → onToolComplete]
+    GATE -->|approved, side_effects/high_ambiguity| SIM[simulate_request]
+    GATE -->|rejected| GR[gate_rejected]
     SIM --> SR[simulation_result]
-    SR --> EVAL{evaluate}
-    EVAL -->|approved| EA[eval_approved → execute]
-    EVAL -->|rejected| ER[eval_rejected → onToolComplete]
-    EXEC --> TR[tool_result → onToolComplete]
-    GR --> OTC{onToolComplete}
-    ER --> OTC
-    TR --> OTC
-    OTC -->|count = 0| INV
+    SR --> EA_CHECK[eval_approved — symbolic check]
+    EA_CHECK -->|safe| EXEC[execute]
+    EA_CHECK -->|dangerous| ER[eval_rejected]
+    EXEC --> TR[tool_result]
+    GR --> BC{batchCompletion}
+    ER --> BC
+    TR --> BC
+    BC -->|count = 0| INV
     MR -->|no tools, has message| MSG[message → resolve promise]
     MSG -->|taskGate loops| TASK
 ```
 
-Note: `composedGateCheck` = constitution gateCheck → custom gateCheck (short-circuits on rejection).
+**Pipeline principle:** Events always flow through the full simulate → evaluate → execute pipeline. Handlers pass through when seams are absent — no conditionals at the routing level.
 
 ### Event Vocabulary
 
@@ -62,16 +62,16 @@ All events defined in `agent.constants.ts`:
 |-------|------|-----------------|
 | `task` | 1 | Add per-task maxIterations bThread, push prompt, trigger invoke_inference |
 | `invoke_inference` | 1 | Async: callInference → trigger model_response (centralized, single call site) |
-| `model_response` | 2 | Parse response, dispatch tool calls in parallel |
+| `model_response` | 2 | Parse response, dispatch tool calls in parallel via batchCompletion |
 | `proposed_action` | 3 | Run composedGateCheck, route to approved/rejected |
-| `gate_approved` | 3 | Route by risk class: read_only→execute, else→simulate |
-| `gate_rejected` | 3 | Synthetic tool result, onToolComplete |
-| `simulate_request` | 4 | Call simulate seam (async), route to simulation_result |
-| `simulation_result` | 5 | checkSymbolicGate + optional evaluate seam |
-| `eval_approved` | 5 | Trigger execute |
-| `eval_rejected` | 5 | Synthetic tool result, onToolComplete |
+| `gate_approved` | 3 | Route by risk class: read_only→execute, side_effects/high_ambiguity→simulate_request |
+| `gate_rejected` | 3 | Synthetic tool result (batchCompletion counts this) |
+| `simulate_request` | 4 | Call simulate seam or pass through with empty prediction |
+| `simulation_result` | 5 | Call evaluate seam or trigger eval_approved |
+| `eval_approved` | 5 | Symbolic safety check → execute or eval_rejected |
+| `eval_rejected` | 5 | Synthetic tool result (batchCompletion counts this) |
 | `execute` | 6 | Call toolExecutor (async), record trajectory |
-| `tool_result` | 6 | Clean up simulation state, onToolComplete |
+| `tool_result` | 6 | batchCompletion counts this |
 | `save_plan` | — | Store plan, trigger plan_saved |
 | `plan_saved` | — | Trigger invoke_inference |
 | `message` | — | Resolve run() promise (taskGate loops back to blocking) |
@@ -87,141 +87,190 @@ bThreads.set({
     bSync({ waitFor: 'message' }),
   ], true),
 
-  // Blocks execute for tool calls with pending simulations
-  simulationGuard: bThread([
-    bSync({ block: (e) => e.type === 'execute' && simulatingIds.has(e.detail?.toolCall?.id) }),
-  ], true),
-
-  // Blocks execute if prediction matches dangerous patterns
-  symbolicSafetyNet: bThread([
-    bSync({ block: (e) => {
-      if (e.type !== 'execute') return false
-      const pred = simulationPredictions.get(e.detail?.toolCall?.id)
-      return pred ? checkSymbolicGate(pred, patterns).blocked : false
-    } }),
-  ], true),
-
   // Constitution bThreads — one per rule, additive blocking (defense-in-depth)
   ...constitutionResult?.threads,
-  // Each constitution_{name} thread: bThread([bSync({ block: predicate })], true)
 })
 
 // Per-task thread (added dynamically in 'task' handler, interrupted by 'message')
-bThreads.set({
-  maxIterations: bThread([
-    ...Array.from({ length: N }, () =>
-      bSync({ waitFor: 'tool_result', interrupt: ['message'] })
-    ),
-    bSync({
-      block: 'execute',
-      request: { type: 'message', detail: { content: '...' } },
-      interrupt: ['message'],
-    }),
-  ]),
-})
+maxIterations: bThread([
+  ...Array.from({ length: N }, () =>
+    bSync({ waitFor: 'tool_result', interrupt: ['message'] })
+  ),
+  bSync({
+    block: 'execute',
+    request: { type: 'message', detail: { content: '...' } },
+    interrupt: ['message'],
+  }),
+])
+
+// Per-response thread (added dynamically in 'model_response' handler)
+batchCompletion: bThread([
+  ...Array.from({ length: actionCalls.length }, () =>
+    bSync({ waitFor: isCompletion, interrupt: ['message'] })
+  ),
+  bSync({ request: { type: 'invoke_inference' }, interrupt: ['message'] }),
+])
+
+// Per-call simulation guard (added in triggerSimulate, one per tool call)
+[`sim_guard_${id}`]: bThread([
+  bSync({
+    block: (e) => e.type === 'execute' && e.detail?.toolCall?.id === id,
+    interrupt: [(e) => e.type === 'simulation_result' && e.detail?.toolCall?.id === id],
+  }),
+])
+
+// Per-call symbolic safety (added in simulate_request handler, only when dangerous)
+[`safety_${id}`]: bThread([
+  bSync({
+    block: (e) => e.type === 'execute' && e.detail?.toolCall?.id === id,
+    interrupt: [(e) =>
+      (e.type === 'eval_rejected' && e.detail?.toolCall?.id === id) ||
+      (e.type === 'tool_result' && e.detail?.result?.toolCallId === id)
+    ],
+  }),
+])
 ```
 
-### Key Coordination Patterns
+### Unparameterized `behavioral()`
 
-**taskGate** eliminates the `done` flag entirely:
+`behavioral()` is called without the `AgentEventDetails` generic. Handlers receive `any` for detail and self-validate where needed. This aligns with BP's additive composition — wire up what you need, ignore the rest. The `AgentEventDetails` type is kept as documentation only.
+
+### Key Design Patterns
+
+#### 1. Three-Layer Architecture (Snapshot + Handler + bThread)
+
+Every safety constraint uses three non-substitutable layers:
+
+| Layer | Purpose | Mechanism |
+|-------|---------|-----------|
+| **Snapshot** | Observability — model sees who blocked/interrupted what | `SelectionBid.blockedBy`, `SelectionBid.interrupts` → SQLite → system prompt |
+| **Handler** | Workflow coordination — produce events for counting threads | Routes to rejection event (batchCompletion counts) |
+| **bThread** | Structural safety — defense-in-depth | Blocks execute, observable but doesn't produce workflow events |
+
+**Why all three?** A blocked event doesn't produce a workflow event. If `batchCompletion` counts N completions and one is blocked, the batch deadlocks. The handler produces the rejection event. The bThread catches anything the handler misses. The snapshot makes it all visible to the model.
+
+#### 2. Per-Call Dynamic Threads with Predicate Interrupt
+
+Instead of persistent threads reading shared mutable state, each tool call gets its own guard thread:
+
+- `sim_guard_{id}`: blocks execute while simulation is pending, interrupted by `simulation_result`
+- `safety_{id}`: blocks execute for dangerous predictions, interrupted by resolution
+- Block and interrupt both use **predicate listeners** scoped to the specific tool call ID
+- Self-terminating via interrupt — no cleanup needed
+
+**Observable lifecycle:** `SelectionBid.blockedBy: "sim_guard_tc-1"` and `SelectionBid.interrupts: "sim_guard_tc-1"` appear in snapshots, are persisted to SQLite, and fed to the model's system prompt.
+
+#### 3. Pipeline Pass-Through
+
+Events flow through the full simulate → evaluate → execute pipeline regardless of which seams are present:
+
+```
+gate_approved → simulate_request → simulation_result → eval_approved → execute
+```
+
+When a seam is absent, the handler passes through:
+- No `simulate` → `simulate_request` triggers `simulation_result` with empty prediction
+- No `evaluate` → `simulation_result` triggers `eval_approved`
+
+This eliminates conditional routing. Adding/removing seams is a handler-level concern, not a routing change.
+
+#### 4. Phase-Transition Gate (taskGate)
+
+Thread position IS the coordination state — no external variables:
 - Phase 1: blocks all TASK_EVENTS, waits for `task`
 - Phase 2: allows all events, waits for `message`
 - Loops: `message` → back to phase 1 (blocking)
-- Stale async triggers after `message` are silently dropped by the block predicate
+- Stale async triggers are silently dropped by the block predicate
 
-**Per-task maxIterations** solves the multi-run bug:
-- Added fresh in each `task` handler (thread name freed after interrupt)
-- Each bSync has `interrupt: [message]` — killed when task ends
-- Next `run()` gets a clean counter
+#### 5. Interrupt as Structural Lifecycle
 
-**invoke_inference** centralizes 3 former call sites:
-- `task` handler → `trigger(invoke_inference)`
-- `plan_saved` handler → `trigger(invoke_inference)`
-- `onToolComplete()` (count=0) → `trigger(invoke_inference)`
-- Single async handler with one try/catch
+`interrupt` is a general lifecycle management tool, not just for task-end cleanup:
 
-**onToolComplete()** is sync (replaces async checkComplete):
-- Decrements counter, triggers invoke_inference at 0
-- No await boundary = no stale-state risk
+| Thread | Interrupt Trigger | Lifecycle Meaning |
+|--------|------------------|-------------------|
+| `maxIterations` | `message` | Task ended |
+| `batchCompletion` | `message` | Task ended mid-batch |
+| `sim_guard_{id}` | `simulation_result` (predicate) | Simulation completed for this call |
+| `safety_{id}` | `eval_rejected` or `tool_result` (predicate) | Tool call resolved |
 
-**constitution dual-layer safety** (Wave 6):
-- bThread layer: blocks `execute` events as defense-in-depth (mirrors `symbolicSafetyNet`)
-- Imperative layer: runs same rules in `composedGateCheck`, routes violations to `gate_rejected` for model feedback
-- Constitution runs before custom gateCheck (short-circuits on rejection)
+Each interrupt is observable via `SelectionBid.interrupts` in snapshots.
+
+#### 6. Thin Handlers, Structural Coordination
+
+Handlers do ONE thing. Routing and lifecycle belong in bThreads:
+
+| DO in handlers | DON'T in handlers |
+|----------------|-------------------|
+| Call seams (inference, simulate, evaluate, execute) | Route between pipeline stages conditionally |
+| Parse/format data | Check if seams exist to decide routing |
+| Push to history | Maintain lifecycle state (done flags) |
+| Produce rejection events for model feedback | Read shared mutable state for blocking decisions |
 
 ### Module Map
 
 | File | Purpose |
 |------|---------|
 | `agent.ts` | Main loop: bThreads + feedback handlers + run/destroy |
-| `agent.types.ts` | All type definitions: seams, events, detail types |
+| `agent.types.ts` | Type definitions: seams, events, detail types, AgentEventDetails (reference) |
 | `agent.schemas.ts` | Zod schemas: AgentToolCall, AgentPlan, GateDecision, etc. |
 | `agent.constants.ts` | Event constants (AGENT_EVENTS), risk classes, tool status |
-| `agent.utils.ts` | parseModelResponse, buildContextMessages, trajectory recorder |
-| `agent.constitution.ts` | classifyRisk, createGateCheck, createConstitution, constitutionRule |
-| `agent.constitution.types.ts` | ConstitutionRule, ConstitutionRuleConfig, Constitution types |
+| `agent.utils.ts` | parseModelResponse, buildContextMessages (with snapshot context), trajectory recorder |
 | `agent.tools.ts` | createToolExecutor with built-in tools (read/write/list/bash) |
 | `agent.simulate.ts` | Dreamer: buildStateTransitionPrompt, createSimulate, createSubAgentSimulate |
 | `agent.evaluate.ts` | Judge: checkSymbolicGate, buildRewardPrompt, createEvaluate |
-| `agent.simulate-worker.ts` | Sub-agent entry point for IPC-based simulation |
 | `agent.memory.ts` | SQLite persistence: sessions, messages, event log, FTS5 search |
-| `agent.memory.types.ts` | MemoryDb type definitions |
 | `agent.orchestrator.ts` | Multi-project coordination: process pool, IPC bridge, oneAtATime |
-| `agent.orchestrator.types.ts` | Orchestrator type definitions |
-| `agent.orchestrator.constants.ts` | Orchestrator event constants |
-| `agent.orchestrator-worker.ts` | Worker entry point for orchestrator subprocesses |
 
 ## Wave Completion Summary
 
 | Wave | Focus | Status | Key BP Patterns |
 |------|-------|--------|----------------|
 | 1 | Tool executor, gate, multi-tool | Done | maxIterations bThread |
-| 2–3 | Simulate, evaluate, memory, search | Done | simulationGuard, symbolicSafetyNet, taskGate, invoke_inference |
+| 2–3 | Simulate, evaluate, memory, search | Done | taskGate, invoke_inference, simulation coordination |
 | 4 | Event log persistence + context injection | Done | useSnapshot → SQLite append |
 | 5 | Orchestrator (multi-project) | Done | oneAtATime phase-transition, IPC bridge |
 | 6 | Constitution as bThreads | Done | Additive blocking rules, dual-layer safety |
+| 7 | BP-first architecture + snapshot context | Done | Pipeline pass-through, unparameterized behavioral(), three-layer architecture |
+| 8 | Per-call dynamic threads + snapshot observability | Done | Predicate interrupt lifecycle, per-call guards, eliminated shared mutable state |
 
-**322 total tests** (219 agent + 103 behavioral) across 25 files.
+**1151 total tests** (all passing) across 79 files.
 
-## Outstanding Issues
+## Key Discoveries (Accumulated)
 
-See `docs/WAVE-LOG.md` for full details.
+**Blocks and Interrupts Are Observable** (Wave 8):
+- `SelectionBid.blockedBy` records the blocking thread; `SelectionBid.interrupts` records the interrupted thread
+- Snapshots are persisted to SQLite via `useSnapshot` and fed to model context via `formatSelectionContext`
+- The model literally sees "Blocked: execute (thread: sim_guard_tc-1) by sim_guard_tc-1" in its system prompt
 
-| Issue | Severity | Notes |
-|-------|----------|-------|
-| Stale TSDoc in `agent.schemas.ts` | Low | 3 comments reference "later" for work that is now complete |
-| Orchestrator IPC handler fragility | Medium | `getOrSpawnProcess()` handler replacement acknowledged as complex |
-| LSP semantic search pipeline not built | Low | Wave 3 partial — FTS5 search works, LSP/semantic layers deferred |
-| `searchGate` bThread not implemented | Low | Planned for Wave 3, never built |
-| Eval harness canonical imports | Low | `TrajectoryStepSchema` is canonical; eval harness still uses its own copy |
-| Some exported functions lack unit tests | Low | `createInferenceCall`, `createSubAgentSimulate`, `parseModelResponse`, `createTrajectoryRecorder` — all covered by integration |
-| Runtime constitution via public API | Low | Deferred — `bThreads.set()` works directly for power users |
+**Per-Call Threads > Persistent Shared-State Threads** (Wave 8):
+- Instead of one persistent thread reading a mutable Set/Map, each tool call gets its own guard thread
+- Predicate interrupts (`interrupt: [(e) => e.type === X && e.detail?.id === id]`) scope lifecycle to specific calls
+- Thread self-terminates via interrupt — no cleanup, no shared state
 
-## BP Refactor — Completed (Task #13)
+**Three Non-Substitutable Layers** (Wave 7→8):
+- Snapshot observes (model sees blocks/interrupts in context)
+- Handler produces events (workflow coordination for batchCompletion counting)
+- bThread prevents events (structural safety, defense-in-depth)
+- You can't replace a handler with a bThread (blocked events don't produce workflow events)
+- You can't rely on snapshot alone (passive observation, not coordination)
 
-The `done` flag and 26 `if (done) return` guards were replaced with structural BP coordination:
+**Pipeline Pass-Through > Conditional Bypass** (Wave 7):
+- Instead of `if (!seam) shortCircuit()`, events flow through the full pipeline
+- Each handler does its single job or passes through
+- Adding/removing seams doesn't change routing logic
 
-| Before | After |
-|--------|-------|
-| `let done = false` + 26 guards | `taskGate` bThread (phase-transition) |
-| Session-level `maxIterations` (consumed once) | Per-task `maxIterations` with `interrupt: [message]` |
-| `async checkComplete()` (3 `if(done)` guards) | Sync `onToolComplete()` → `trigger(invoke_inference)` |
-| 3 separate `callInference()` call sites | Single `invoke_inference` async handler |
-| `done = true` in message handler | taskGate loops back to blocking automatically |
+**Exhaustive Type Maps Fight Additive Composition** (Wave 7):
+- `Handlers<T>` mapped type requires every key — forces noop stubs
+- Unparameterized `behavioral()` with `DefaultHandlers` aligns with BP's philosophy
+- Self-validate with Zod at boundaries, not exhaustive type maps
 
-### Key Discoveries from Exploration Tests
-
-**Ephemeral vs Persistent Blocks** (agent-patterns.spec.ts):
+**Ephemeral vs Persistent Blocks** (Wave 2):
 - A sync point with `block + request` loses its block after the request fires
-- maxIterations' block on `execute` is EPHEMERAL — after `message` fires, the thread ends and the block vanishes
+- maxIterations' block on `execute` is EPHEMERAL — after `message` fires, the thread ends
 
-**Phase-Transition > Shared State** (agent-orchestration.spec.ts):
+**Phase-Transition > Shared State** (Wave 2):
 - Thread position for coordination is more reliable than shared-state predicates
 - Two-phase bThread (waitFor → block → loop) makes sequencing structural
-
-**Blocked Events Are Silently Dropped**:
-- BP does NOT queue blocked events — they disappear
-- The taskGate test proves stale async triggers are silently dropped between tasks
 
 **Infinite Super-Step Anti-Pattern**:
 - `repeat: true` + continuous `request` = stack overflow
@@ -246,15 +295,16 @@ createAgentLoop({
 
 Tests use mock implementations that return controlled responses. See `agent.spec.ts` for patterns.
 
-## Exploration Test Files
+## Outstanding Issues
 
-These tests validate BP mechanisms before applying them to agent.ts:
+See `docs/WAVE-LOG.md` for full details.
 
-| File | Tests | Location |
-|------|-------|----------|
-| agent-patterns.spec.ts | 14 | `src/behavioral/tests/` |
-| agent-lifecycle.spec.ts | 5 | `src/behavioral/tests/` |
-| agent-orchestration.spec.ts | 10 | `src/behavioral/tests/` |
+| Issue | Severity | Notes |
+|-------|----------|-------|
+| Orchestrator IPC handler fragility | Medium | `getOrSpawnProcess()` handler replacement acknowledged as complex |
+| LSP semantic search pipeline not built | Low | FTS5 search works; LSP and semantic layers deferred |
+| `searchGate` bThread not implemented | Low | Planned for Wave 3, never built |
+| Runtime constitution via public API | Low | Deferred — `bThreads.set()` works directly for power users |
 
 ## Related Skills
 

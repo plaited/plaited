@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { createMemoryDb } from '../../tools/memory/memory.ts'
+import type { EventLogRow } from '../../tools/memory/memory.types.ts'
 import { RISK_CLASS, TOOL_STATUS } from '../agent.constants.ts'
 import type { AgentToolCall, ToolResult } from '../agent.schemas.ts'
 import { TrajectoryStepSchema } from '../agent.schemas.ts'
@@ -896,7 +897,7 @@ describe('createAgentLoop — simulate/evaluate', () => {
 
     // Simulate returns a dangerous prediction
     const simulate: Simulate = async () => 'This will cause data loss in the database.'
-    // No evaluate — symbolic gate in simulation_result handler catches it
+    // No evaluate — symbolic gate in eval_approved handler + bThread blocks execute
 
     const gateCheck: GateCheck = () => ({
       approved: true,
@@ -1582,62 +1583,80 @@ describe('createAgentLoop — event log', () => {
 })
 
 // ============================================================================
-// buildContextMessages — eventLog
+// buildContextMessages — eventLog (full snapshot context)
 // ============================================================================
 
 describe('buildContextMessages — eventLog', () => {
-  test('includes coordination history when blocked events present', () => {
+  /** Minimal EventLogRow stub for testing — only fields used by formatSelectionContext */
+  const row = (fields: Partial<EventLogRow>): EventLogRow =>
+    ({
+      id: 0,
+      session_id: 'test',
+      event_type: '',
+      thread: '',
+      selected: 0,
+      trigger: 0,
+      priority: 0,
+      blocked_by: null,
+      interrupts: null,
+      detail: null,
+      created_at: '',
+      ...fields,
+    }) as EventLogRow
+
+  test('includes selection history when event log has selected events', () => {
     const { buildContextMessages } = require('../agent.utils.ts') as typeof import('../agent.utils.ts')
     const messages = buildContextMessages({
       history: [{ role: 'user', content: 'hello' }],
       eventLog: [
-        { event_type: 'execute', thread: 'maxIterations', selected: 0, blocked_by: 'maxIterations' },
-        { event_type: 'task', thread: 'trigger', selected: 1, blocked_by: null },
+        row({ event_type: 'execute', thread: 'maxIterations', selected: 0, blocked_by: 'maxIterations' }),
+        row({ event_type: 'task', thread: 'trigger', selected: 1, priority: 0 }),
       ],
     })
     const system = messages[0]!.content as string
-    expect(system).toContain('## Coordination History')
-    expect(system).toContain('execute (thread: maxIterations) blocked by: maxIterations')
-    // Non-blocked event should NOT appear in coordination history
-    expect(system).not.toContain('task (thread: trigger) blocked by')
+    expect(system).toContain('## BP Selection History')
+    expect(system).toContain('**Selected:** task (thread: trigger')
+    expect(system).toContain('Blocked: execute (thread: maxIterations) by maxIterations')
   })
 
-  test('omits coordination history when no blocked events', () => {
+  test('shows selection history for all events (not just blocked)', () => {
     const { buildContextMessages } = require('../agent.utils.ts') as typeof import('../agent.utils.ts')
     const messages = buildContextMessages({
       history: [{ role: 'user', content: 'hello' }],
       eventLog: [
-        { event_type: 'task', thread: 'trigger', selected: 1, blocked_by: null },
-        { event_type: 'invoke_inference', thread: 'taskGate', selected: 1, blocked_by: null },
+        row({ event_type: 'task', thread: 'trigger', selected: 1, priority: 0 }),
+        row({ event_type: 'invoke_inference', thread: 'taskGate', selected: 1, priority: 0 }),
       ],
     })
     const system = messages[0]!.content as string
-    expect(system).not.toContain('Coordination History')
+    expect(system).toContain('## BP Selection History')
+    expect(system).toContain('**Selected:** task')
+    expect(system).toContain('**Selected:** invoke_inference')
   })
 
-  test('omits coordination history when eventLog not provided', () => {
+  test('omits selection history when eventLog not provided', () => {
     const { buildContextMessages } = require('../agent.utils.ts') as typeof import('../agent.utils.ts')
     const messages = buildContextMessages({
       history: [{ role: 'user', content: 'hello' }],
     })
     const system = messages[0]!.content as string
-    expect(system).not.toContain('Coordination History')
+    expect(system).not.toContain('BP Selection History')
   })
 
-  test('formats multiple blocked events', () => {
+  test('shows blocked bids alongside selected events', () => {
     const { buildContextMessages } = require('../agent.utils.ts') as typeof import('../agent.utils.ts')
     const messages = buildContextMessages({
       history: [{ role: 'user', content: 'hello' }],
       eventLog: [
-        { event_type: 'execute', thread: 'simulationGuard', selected: 0, blocked_by: 'simulationGuard' },
-        { event_type: 'execute', thread: 'symbolicSafetyNet', selected: 0, blocked_by: 'symbolicSafetyNet' },
-        { event_type: 'proposed_action', thread: 'taskGate', selected: 0, blocked_by: 'taskGate' },
+        row({ event_type: 'execute', thread: 'simulationGuard', selected: 0, blocked_by: 'simulationGuard' }),
+        row({ event_type: 'execute', thread: 'symbolicSafetyNet', selected: 0, blocked_by: 'symbolicSafetyNet' }),
+        row({ event_type: 'proposed_action', thread: 'taskGate', selected: 1, priority: 0 }),
       ],
     })
     const system = messages[0]!.content as string
-    expect(system).toContain('## Coordination History')
-    expect(system).toContain('execute (thread: simulationGuard) blocked by: simulationGuard')
-    expect(system).toContain('execute (thread: symbolicSafetyNet) blocked by: symbolicSafetyNet')
-    expect(system).toContain('proposed_action (thread: taskGate) blocked by: taskGate')
+    expect(system).toContain('## BP Selection History')
+    expect(system).toContain('**Selected:** proposed_action (thread: taskGate')
+    expect(system).toContain('Blocked: execute (thread: simulationGuard) by simulationGuard')
+    expect(system).toContain('Blocked: execute (thread: symbolicSafetyNet) by symbolicSafetyNet')
   })
 })

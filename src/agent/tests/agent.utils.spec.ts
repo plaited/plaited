@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
-import { createInferenceCall, createTrajectoryRecorder, parseModelResponse } from '../agent.utils.ts'
+import type { EventLogRow } from '../../tools/memory/memory.types.ts'
+import type { DiagnosticEntry } from '../agent.types.ts'
+import {
+  buildContextMessages,
+  createInferenceCall,
+  createTrajectoryRecorder,
+  parseModelResponse,
+} from '../agent.utils.ts'
 
 // ============================================================================
 // createInferenceCall
@@ -285,5 +292,154 @@ describe('createTrajectoryRecorder', () => {
     expect(steps[1]!.type).toBe('message')
     expect(steps[2]!.type).toBe('tool_call')
     expect(steps[3]!.type).toBe('plan')
+  })
+})
+
+// ============================================================================
+// buildContextMessages — snapshot context (formatSelectionContext + formatDiagnostics)
+// ============================================================================
+
+describe('buildContextMessages — snapshot context', () => {
+  /** Minimal EventLogRow stub — only fields used by formatSelectionContext */
+  const row = (fields: Partial<EventLogRow>): EventLogRow =>
+    ({
+      id: 0,
+      session_id: 'test',
+      event_type: '',
+      thread: '',
+      selected: 0,
+      trigger: 0,
+      priority: 0,
+      blocked_by: null,
+      interrupts: null,
+      detail: null,
+      created_at: '',
+      ...fields,
+    }) as EventLogRow
+
+  // ---------- formatSelectionContext (via buildContextMessages) ----------
+
+  test('windows to last 10 selection steps', () => {
+    // Build 12 selection steps — each step has one selected row
+    const eventLog: EventLogRow[] = Array.from({ length: 12 }, (_, i) =>
+      row({ event_type: `event_${i}`, thread: `t_${i}`, selected: 1, priority: i }),
+    )
+
+    const messages = buildContextMessages({ history: [], eventLog })
+    const system = messages[0]!.content as string
+
+    expect(system).toContain('(2 earlier selection steps omitted)')
+    // event_0 and event_1 are in the first 2 steps (omitted)
+    expect(system).not.toContain('thread: t_0')
+    expect(system).not.toContain('thread: t_1,')
+    // event_2 through event_11 are in the last 10 (kept)
+    expect(system).toContain('event_2')
+    expect(system).toContain('event_11')
+  })
+
+  test('no omission notice when <= 10 steps', () => {
+    const eventLog = [row({ event_type: 'task', thread: 'trigger', selected: 1, priority: 0 })]
+
+    const messages = buildContextMessages({ history: [], eventLog })
+    const system = messages[0]!.content as string
+
+    expect(system).toContain('## BP Selection History')
+    expect(system).not.toContain('omitted')
+  })
+
+  test('groups blocked bids into their selection step', () => {
+    // Two blocked bids followed by one selected — all form one step
+    const eventLog = [
+      row({ event_type: 'execute', thread: 'simulationGuard', selected: 0, blocked_by: 'simulationGuard' }),
+      row({ event_type: 'execute', thread: 'symbolicSafetyNet', selected: 0, blocked_by: 'symbolicSafetyNet' }),
+      row({ event_type: 'proposed_action', thread: 'main', selected: 1, priority: 1 }),
+    ]
+
+    const messages = buildContextMessages({ history: [], eventLog })
+    const system = messages[0]!.content as string
+
+    expect(system).toContain('**Selected:** proposed_action (thread: main, priority: 1)')
+    expect(system).toContain('Blocked: execute (thread: simulationGuard) by simulationGuard')
+    expect(system).toContain('Blocked: execute (thread: symbolicSafetyNet) by symbolicSafetyNet')
+  })
+
+  test('handles empty eventLog without adding section', () => {
+    const messages = buildContextMessages({ history: [], eventLog: [] })
+    const system = messages[0]!.content as string
+
+    expect(system).not.toContain('BP Selection History')
+  })
+
+  // ---------- formatDiagnostics (via buildContextMessages) ----------
+
+  test('formats feedback_error diagnostics', () => {
+    const diagnostics: DiagnosticEntry[] = [
+      { kind: 'feedback_error', type: 'execute', error: 'Handler threw TypeError', timestamp: 1 },
+    ]
+
+    const messages = buildContextMessages({ history: [], diagnostics })
+    const system = messages[0]!.content as string
+
+    expect(system).toContain('## BP Diagnostics')
+    expect(system).toContain('ERROR: handler for "execute" threw: Handler threw TypeError')
+  })
+
+  test('formats restricted_trigger_error diagnostics', () => {
+    const diagnostics: DiagnosticEntry[] = [
+      { kind: 'restricted_trigger_error', type: 'task', error: 'Event restricted by public API', timestamp: 1 },
+    ]
+
+    const messages = buildContextMessages({ history: [], diagnostics })
+    const system = messages[0]!.content as string
+
+    expect(system).toContain('REJECTED: trigger for "task" — Event restricted by public API')
+  })
+
+  test('formats bthreads_warning diagnostics', () => {
+    const diagnostics: DiagnosticEntry[] = [
+      { kind: 'bthreads_warning', thread: 'maxIterations', warning: 'Thread already exists', timestamp: 1 },
+    ]
+
+    const messages = buildContextMessages({ history: [], diagnostics })
+    const system = messages[0]!.content as string
+
+    expect(system).toContain('WARNING: thread "maxIterations" — Thread already exists')
+  })
+
+  test('formats multiple diagnostics of mixed kinds', () => {
+    const diagnostics: DiagnosticEntry[] = [
+      { kind: 'feedback_error', type: 'simulate_request', error: 'Network timeout', timestamp: 1 },
+      { kind: 'bthreads_warning', thread: 'taskGate', warning: 'Duplicate thread', timestamp: 2 },
+      { kind: 'restricted_trigger_error', type: 'execute', error: 'Not in public events', timestamp: 3 },
+    ]
+
+    const messages = buildContextMessages({ history: [], diagnostics })
+    const system = messages[0]!.content as string
+
+    expect(system).toContain('ERROR: handler for "simulate_request" threw: Network timeout')
+    expect(system).toContain('WARNING: thread "taskGate" — Duplicate thread')
+    expect(system).toContain('REJECTED: trigger for "execute" — Not in public events')
+  })
+
+  test('empty diagnostics array does not add section', () => {
+    const messages = buildContextMessages({ history: [], diagnostics: [] })
+    const system = messages[0]!.content as string
+
+    expect(system).not.toContain('BP Diagnostics')
+  })
+
+  // ---------- Combined: eventLog + diagnostics ----------
+
+  test('includes both selection history and diagnostics when both provided', () => {
+    const eventLog = [row({ event_type: 'task', thread: 'trigger', selected: 1, priority: 0 })]
+    const diagnostics: DiagnosticEntry[] = [{ kind: 'feedback_error', type: 'execute', error: 'Boom', timestamp: 1 }]
+
+    const messages = buildContextMessages({ history: [], eventLog, diagnostics })
+    const system = messages[0]!.content as string
+
+    expect(system).toContain('## BP Selection History')
+    expect(system).toContain('**Selected:** task')
+    expect(system).toContain('## BP Diagnostics')
+    expect(system).toContain('ERROR: handler for "execute" threw: Boom')
   })
 })

@@ -145,34 +145,74 @@ bThreads.set({
 
 **Config-driven:** Rules can be loaded from arrays/JSON — each entry becomes a bThread with `repeat: true`.
 
-### Pattern 4: Shared State + Block Predicates
+### Pattern 4: Per-Call Dynamic Threads with Predicate Interrupt
 
-Handlers modify state; block predicates read it. Works because `actionPublisher()` fires BEFORE `step()`:
+Instead of persistent threads reading shared mutable state, each scoped operation gets its own guard thread that self-terminates via predicate interrupt:
 
 ```typescript
-const simulatingIds = new Set<string>()
-
-bThreads.set({
-  simulationGuard: bThread([
-    bSync({
-      block: (event) => {
-        if (event.type !== 'execute') return false
-        return simulatingIds.has(event.detail?.id)
-      },
-    }),
-  ], true),
-})
-
 useFeedback({
   simulate(detail) {
-    simulatingIds.add(detail.id)  // handler modifies state
-    // ... async work ...
-    // simulatingIds.delete(detail.id)  // cleared when done
+    const id = detail.toolCall.id
+
+    // Per-call guard: blocks execute until simulation completes
+    bThreads.set({
+      [`sim_guard_${id}`]: bThread([
+        bSync({
+          block: (e) => e.type === 'execute' && e.detail?.toolCall?.id === id,
+          interrupt: [(e) => e.type === 'simulation_result' && e.detail?.toolCall?.id === id],
+        }),
+      ]),
+    })
+
+    // ... async simulation work ...
+    trigger({ type: 'simulation_result', detail: { toolCall: detail.toolCall, prediction } })
+    // sim_guard_{id} is interrupted (killed) by the simulation_result event
   },
 })
 ```
 
-### Pattern 5: Async Handler Bridging
+**Key mechanics:**
+- Block and interrupt both use **predicate listeners** scoped to a specific ID
+- Thread self-terminates via interrupt — no shared state cleanup needed
+- Thread name is unique per call → no collisions
+- Observable: `SelectionBid.blockedBy: "sim_guard_tc-1"` and `SelectionBid.interrupts: "sim_guard_tc-1"` in snapshots
+
+**Prefer over shared state pattern.** Persistent threads reading from mutable Sets/Maps create implicit coupling. Per-call threads make lifecycle explicit and observable.
+
+### Pattern 5: Snapshot Observability
+
+All BP decisions are observable via `useSnapshot`. `SelectionBid` records:
+- `blockedBy: string` — which thread blocked this event
+- `interrupts: string` — which thread was interrupted when this event was selected
+- `selected: boolean` — whether this bid was the winning event
+- `thread: string` — which thread proposed this bid
+
+```typescript
+// Persist snapshots → SQLite → model system prompt
+useSnapshot((snapshot) => {
+  if (snapshot.kind === 'selection') {
+    for (const bid of snapshot.bids) {
+      memory.saveEventLog({
+        sessionId,
+        eventType: bid.type,
+        thread: bid.thread,
+        selected: bid.selected,
+        trigger: bid.trigger,
+        priority: bid.priority,
+        blockedBy: bid.blockedBy,     // "sim_guard_tc-1"
+        interrupts: bid.interrupts,   // "sim_guard_tc-1"
+        detail: bid.detail,
+      })
+    }
+  }
+})
+// The model sees: "Blocked: execute (thread: sim_guard_tc-1) by sim_guard_tc-1"
+// in its system prompt via formatSelectionContext()
+```
+
+**Blocks are NOT silent** — they are fully observable via snapshot. Persist snapshots to storage and feed them to the agent's context for full visibility into BP decisions.
+
+### Pattern 6: Async Handler Bridging
 
 The BP engine is synchronous. Async work (inference, I/O) happens in feedback handlers. The handler's `trigger()` after `await` starts a NEW super-step:
 
@@ -222,9 +262,11 @@ Events must enter via `trigger()` from handlers or external calls, breaking the 
 | `true` | Infinite loop: thread never terminates | Safety constraints, persistent gates |
 | `() => boolean` | Conditional: repeats while predicate returns `true` | Task-scoped threads that self-terminate |
 
-### Blocked Events Are Silently Dropped
+### Blocked Events Don't Produce Workflow Events
 
-Blocked events are NOT queued. If `trigger()` fires an event that a bThread blocks, the event disappears. The caller must retry after the block lifts.
+Blocked events are NOT queued — they don't fire. However, blocks ARE observable: `SelectionBid.blockedBy` records exactly which thread blocked which event. The event doesn't produce workflow side-effects (handlers don't fire), but the snapshot captures the decision.
+
+**Implication for counting threads:** If a thread like `batchCompletion` counts N completion events and one is blocked, the batch deadlocks. Pair blocking bThreads with handler-level checks that produce rejection events for workflow coordination.
 
 ## Related Skills
 

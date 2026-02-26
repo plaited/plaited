@@ -5,7 +5,7 @@ import { keyMirror } from '../utils/key-mirror.ts'
  *
  * @remarks
  * Maps to the 6-step loop: Context → Reason → Gate → Simulate → Evaluate → Execute.
- * Each constant is used as a `BPEvent.type` in `behavioral<AgentEventDetails>()`.
+ * Each constant is used as a `BPEvent.type` in the agent loop's `behavioral()` instance.
  *
  * @public
  */

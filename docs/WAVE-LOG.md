@@ -2,7 +2,7 @@
 
 Incremental implementation log for the Plaited agent layer. Each wave is a self-contained increment that leaves all tests green.
 
-**Current total: 345 tests passing** (242 agent + 103 behavioral) across 27 files.
+**Current total: 1151 tests passing** across 79 files.
 
 ---
 
@@ -31,6 +31,195 @@ All resolved:
 
 - **Orchestrator IPC handler** — Replaced `wireIpcBridge()` handler replacement with single permanent handler using `bridgeActive` flag. Eliminates the last-writer-wins race window.
 - **Unit tests** — Added 24 tests in `agent.utils.spec.ts` (`createInferenceCall`, `parseModelResponse`, `createTrajectoryRecorder`) and 5 tests in `simulate.spec.ts` (`createSubAgentSimulate`).
+
+---
+
+## Wave 7: BP-First Architecture + Full Snapshot Context
+
+**Branch:** `feat/agent-loop-build`
+**Date:** 2026-02-26
+
+### Context
+
+After Wave 6, a review of `agent.ts` revealed over-reliance on imperative conditionals in feedback handlers instead of using BP's structural coordination. The `SnapshotContextLevel` three-level approach was backward-compatibility engineering for greenfield code with zero consumers. Wave 7 simplifies the architecture: drop unnecessary generics, flatten conditional routing into uniform pipelines, and let handlers do one thing each.
+
+### What Shipped
+
+#### 1. Dropped `AgentEventDetails` Generic
+
+`behavioral<AgentEventDetails>()` → `behavioral()`. The mapped type `Handlers<AgentEventDetails>` required exhaustive handler coverage (every event key = required property), which forced 15 noop stubs like `[AGENT_EVENTS.context_ready]: () => {}`. At runtime, `useFeedback` uses `Object.hasOwn(handlers, type)` and skips missing handlers — the stubs were pure noise.
+
+- Removed `AgentEventDetails` from generic parameter (kept as reference documentation type)
+- Removed 15 noop stubs across primary + observer handlers (~30 lines)
+- Handlers self-validate where detail shape matters; `DefaultHandlers` accepts any string key
+
+#### 2. Uniform Simulate → Evaluate → Execute Pipeline
+
+Replaced `routeToSimulate` conditional closure (checked `simulate` seam at creation time) with uniform `triggerSimulate` that always routes through the pipeline:
+
+- `route_side_effects` and `route_high_ambiguity` → always trigger `simulate_request`
+- `simulate_request` handler: calls simulate seam or passes through with empty prediction
+- `simulation_result` handler: calls evaluate seam or triggers `eval_approved`
+- Events flow through the full pipeline — handlers pass through when seams are absent
+
+#### 3. Dual-Layer Symbolic Safety
+
+Moved `checkSymbolicGate` from `simulation_result` handler to `eval_approved` handler. The old placement was a duplicate of the `symbolicSafetyNet` bThread's blocking logic, but at the wrong stage — it couldn't produce a feedback event when blocking.
+
+New dual-layer design:
+- **Handler layer** (`eval_approved`): checks prediction, routes to `eval_rejected` for model feedback
+- **bThread layer** (`symbolicSafetyNet`): blocks `execute` as defense-in-depth
+
+This mirrors the constitution dual-layer pattern. Blocked events are silently dropped in BP — without the handler layer, the model never learns why its tool call disappeared, and `batchCompletion` hangs waiting for a completion event that never fires.
+
+#### 4. Always-Full Snapshot Context
+
+Removed `SnapshotContextLevel` three-level approach. `buildContextMessages` always provides:
+- **Selection history** — last 10 BP selection steps (who won, who was blocked, priorities)
+- **Diagnostics** — feedback errors, restricted trigger rejections, thread warnings (ring buffer, cap 50)
+
+#### 5. Snapshot Context Test Coverage
+
+10 new tests in `agent.utils.spec.ts`:
+- `formatSelectionContext`: windowing (>10 steps with omission notice), grouping blocked bids, empty eventLog
+- `formatDiagnostics`: all 3 diagnostic kinds (`feedback_error`, `restricted_trigger_error`, `bthreads_warning`), mixed kinds, empty array
+- Combined: both selection history + diagnostics in single system prompt
+
+### File Inventory
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `src/agent/agent.ts` | MODIFIED | Drop generic, remove noops, flatten routing, dual-layer symbolic safety |
+| `src/agent/agent.types.ts` | MODIFIED | Update `AgentEventDetails` TSDoc (reference-only, not generic param) |
+| `src/agent/agent.constants.ts` | MODIFIED | Update TSDoc comment |
+| `src/agent/agent.utils.ts` | MODIFIED | Remove `SnapshotContextLevel`, always-full `buildContextMessages` |
+| `src/agent/tests/agent.spec.ts` | MODIFIED | Update symbolic safety test comment |
+| `src/agent/tests/agent.utils.spec.ts` | MODIFIED | +10 snapshot context tests |
+
+### Verification
+
+- **132 agent tests pass** across 4 files (213ms)
+- **0 type errors** (`tsc --noEmit` clean)
+
+### Design Decisions
+
+1. **Unparameterized `behavioral()` over type assertions.** Instead of `as Handlers<AgentEventDetails>` to work around the exhaustive-key requirement, we removed the generic entirely. `DefaultHandlers` (`Record<string, (detail: any) => void>`) accepts partial handler objects naturally. Handlers self-validate with Zod where detail shape matters. This is simpler, loses no runtime safety, and aligns with BP's additive composition (wire up what you need, ignore the rest).
+
+2. **Pipeline pass-through over conditional bypass.** Instead of `if (!simulate) trigger(execute)` at the routing level, events always flow through simulate → evaluate → execute. Each handler does its single job (call seam or pass through). This eliminates 3 conditionals and makes the event flow uniform — adding/removing seams doesn't change routing logic.
+
+3. **`eval_approved` is the symbolic checkpoint, not `simulation_result`.** The symbolic gate check belongs at the last handler before `execute` — the natural gatekeeper position. `simulation_result`'s job is to call the evaluate seam, not to re-check what a bThread already blocks. The dual-layer pattern (handler for feedback, bThread for defense-in-depth) is consistent with constitution design.
+
+4. **Blocked events need feedback partners.** Pure blocking bThreads (like `symbolicSafetyNet`) silently drop events — BP doesn't queue or notify. When the blocked event is counted by another thread (like `batchCompletion`), the system hangs. The pattern: pair every blocking bThread with a handler-level check that produces a rejection event. The bThread is defense-in-depth; the handler is the primary routing mechanism.
+
+### Key Pattern Discovered: Three-Layer Architecture
+
+Blocks and interrupts are **fully observable** via `useSnapshot` — `SelectionBid.blockedBy` and `SelectionBid.interrupts` record exactly which thread blocked or interrupted which event. The snapshot is persisted to SQLite and fed to the model's system prompt via `formatSelectionContext`. Three distinct layers, each non-substitutable:
+
+| Layer | Purpose | Mechanism |
+|-------|---------|-----------|
+| **Snapshot** | Observability — model sees who blocked/interrupted what | `SelectionBid.blockedBy`, `SelectionBid.interrupts` → SQLite → system prompt |
+| **Handler** | Workflow coordination — produce events for counting threads | Routes to rejection event (batchCompletion counts) |
+| **bThread** | Structural safety — defense-in-depth | Blocks execute, observable but doesn't produce workflow events |
+
+**Why handlers can't be replaced by bThreads alone:** A blocked event doesn't produce a workflow event. If `batchCompletion` is counting N completions and one is blocked, the batch deadlocks. The handler produces the rejection event that batchCompletion counts. The bThread catches anything the handler misses.
+
+---
+
+## Wave 8: Per-Call Dynamic Threads + Snapshot Observability
+
+**Branch:** `feat/ui-layer`
+**Date:** 2026-02-26
+
+### Context
+
+Wave 7 introduced the dual-layer safety pattern but framed blocks as "silent." Review revealed this was wrong — blocks and interrupts are fully observable via `SelectionBid.blockedBy` and `SelectionBid.interrupts` in snapshots. Additionally, `simulationGuard` and `symbolicSafetyNet` relied on shared mutable state (`simulatingIds` Set, `simulationPredictions` Map) read by persistent block predicates. Wave 8 replaces these with per-call dynamic threads using predicate interrupts — following the same pattern as `maxIterations` and `batchCompletion`.
+
+### What Shipped
+
+#### 1. Per-Call Simulation Guard (`sim_guard_{id}`)
+
+Replaced persistent `simulationGuard` bThread (reading from shared `simulatingIds` Set) with per-call dynamic threads:
+
+```typescript
+// Added in triggerSimulate(), scoped to specific tool call ID
+bThreads.set({
+  [`sim_guard_${id}`]: bThread([
+    bSync({
+      block: (e) => e.type === 'execute' && e.detail?.toolCall?.id === id,
+      interrupt: [(e) => e.type === 'simulation_result' && e.detail?.toolCall?.id === id],
+    }),
+  ]),
+})
+```
+
+- Block prevents execution while simulation is pending
+- Predicate interrupt terminates thread when this specific tool call's `simulation_result` fires
+- Eliminates `simulatingIds` shared mutable state entirely
+- Observable: `SelectionBid.blockedBy: "sim_guard_tc-1"` and `SelectionBid.interrupts: "sim_guard_tc-1"`
+
+#### 2. Per-Call Symbolic Safety (`safety_{id}`)
+
+Replaced persistent `symbolicSafetyNet` bThread (reading from shared `simulationPredictions` Map) with per-call dynamic threads:
+
+```typescript
+// Added in simulate_request handler, only when prediction is dangerous
+if (checkSymbolicGate(prediction, patterns).blocked) {
+  bThreads.set({
+    [`safety_${tcId}`]: bThread([
+      bSync({
+        block: (e) => e.type === 'execute' && e.detail?.toolCall?.id === tcId,
+        interrupt: [(e) =>
+          (e.type === 'eval_rejected' && e.detail?.toolCall?.id === tcId) ||
+          (e.type === 'tool_result' && e.detail?.result?.toolCallId === tcId)
+        ],
+      }),
+    ]),
+  })
+}
+```
+
+- Only created when prediction IS dangerous (not for every tool call)
+- Interrupted when the tool call resolves (rejected or executed)
+- Defense-in-depth alongside `eval_approved` handler's `checkSymbolicGate`
+
+#### 3. Eliminated Shared Mutable State from Block Predicates
+
+- Removed `simulatingIds` Set entirely
+- `simulationPredictions` Map retained only for handler-level check in `eval_approved` (not read by any bThread predicate)
+
+### File Inventory
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `src/agent/agent.ts` | MODIFIED | Per-call threads, remove simulatingIds, per-call safety threads |
+
+### Verification
+
+- **1151 tests pass** across 79 files (68.61s)
+- **0 type errors** (`tsc --noEmit` clean)
+
+### Design Decisions
+
+1. **Per-call dynamic threads over persistent shared-state threads.** Instead of a single persistent thread reading from a mutable `Set`/`Map`, each tool call gets its own guard thread. The thread is scoped by ID and self-terminates via predicate interrupt. This follows the same pattern as `maxIterations` and `batchCompletion` — dynamic, per-scope threads with explicit interrupt-based lifecycle.
+
+2. **Predicate interrupts for lifecycle management.** `interrupt: [(e) => e.type === 'simulation_result' && e.detail?.toolCall?.id === id]` — the interrupt idiom accepts `BPListener` predicates, not just string event types. This allows scoping interrupt to a specific tool call, eliminating the need for shared state to track which calls are in-flight.
+
+3. **Safety threads created conditionally.** `safety_{id}` threads are only added when `checkSymbolicGate` reports the prediction is dangerous. Non-dangerous predictions don't get a safety thread — no unnecessary overhead.
+
+4. **Snapshot observability corrects the "silent block" framing.** Blocks are not silent — `SelectionBid.blockedBy` records the blocking thread, persisted to SQLite, shown in model context. The handler layer exists for workflow coordination (producing events batchCompletion counts), not for observability.
+
+### Key Pattern: Interrupt as Structural Lifecycle
+
+`interrupt` is not just for task-end cleanup (`message` kills `maxIterations`). It's a general lifecycle management tool:
+
+| Thread | Interrupt Trigger | Lifecycle Meaning |
+|--------|------------------|-------------------|
+| `maxIterations` | `message` | Task ended |
+| `batchCompletion` | `message` | Task ended mid-batch |
+| `sim_guard_{id}` | `simulation_result` (predicate) | Simulation completed for this call |
+| `safety_{id}` | `eval_rejected` or `tool_result` (predicate) | Tool call resolved |
+
+Each interrupt is observable via `SelectionBid.interrupts` in snapshots.
 
 ---
 

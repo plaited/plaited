@@ -8,12 +8,11 @@ import { AGENT_EVENTS, RISK_CLASS, TOOL_STATUS } from './agent.constants.ts'
 import type { AgentPlan, AgentToolCall, ToolDefinition, TrajectoryStep } from './agent.schemas.ts'
 import { AgentConfigSchema } from './agent.schemas.ts'
 import type {
-  AgentEventDetails,
   AgentLoop,
   ChatMessage,
+  DiagnosticEntry,
   Evaluate,
   GateCheck,
-  GateResultDetail,
   InferenceCall,
   Simulate,
   ToolExecutor,
@@ -55,8 +54,8 @@ const TASK_EVENTS = new Set<string>([
  * - **Evaluate** (optional) runs Judge scoring on simulated calls; skipped when not provided
  * - **taskGate** bThread blocks task-related events between tasks, replacing the `done` flag
  * - **maxIterations** safety is a per-task bThread that blocks `execute` after the limit
- * - **simulationGuard** bThread blocks `execute` while a tool call is being simulated
- * - **symbolicSafetyNet** bThread blocks `execute` if stored prediction matches dangerous patterns
+ * - **sim_guard_{id}** per-call bThread blocks `execute` while simulation is pending, interrupted by `simulation_result`
+ * - **safety_{id}** per-call bThread blocks `execute` for dangerous predictions, interrupted by resolution
  * - **batchCompletion** bThread waits for N completion events then re-invokes inference
  * - **Observer** layer (second `useFeedback`) handles all persistence when `memory` is provided
  * - **Event-type routing** dispatches gate-approved calls to risk-class-specific events
@@ -105,7 +104,7 @@ export const createAgentLoop = ({
   // Parse config to apply defaults (maxIterations: 50, temperature: 0)
   const { model, tools, systemPrompt, maxIterations, temperature } = AgentConfigSchema.parse(rawConfig)
 
-  const { bThreads, trigger, useFeedback, useSnapshot } = behavioral<AgentEventDetails>()
+  const { bThreads, trigger, useFeedback, useSnapshot } = behavioral()
   const recorder = createTrajectoryRecorder()
 
   // Build constitution if provided — dual-layer: bThreads + imperative gateCheck
@@ -130,15 +129,18 @@ export const createAgentLoop = ({
   let currentPlan: AgentPlan | null = null
   let sessionId: string | null = null
 
-  // Shared state for bThread predicates (simulation coordination)
-  const simulatingIds = new Set<string>()
+  // Shared state for handler-level symbolic safety check (eval_approved)
   const simulationPredictions = new Map<string, string>()
+
+  // In-memory diagnostic buffer for non-selection snapshot messages
+  const diagnostics: DiagnosticEntry[] = []
+  const MAX_DIAGNOSTICS = 50
 
   // ---------------------------------------------------------------------------
   // Helper: call inference with current context
   // ---------------------------------------------------------------------------
   const callInference = () => {
-    const eventLog = sessionId && memory ? memory.getEventLog(sessionId).filter((e) => e.blocked_by) : undefined
+    const eventLog = sessionId && memory ? memory.getEventLog(sessionId) : undefined
 
     return inferenceCall({
       model,
@@ -147,6 +149,7 @@ export const createAgentLoop = ({
         history,
         plan: currentPlan ? { goal: currentPlan.goal, steps: currentPlan.steps } : undefined,
         eventLog: eventLog?.length ? eventLog : undefined,
+        diagnostics: diagnostics.length ? [...diagnostics] : undefined,
       }),
       tools,
       temperature,
@@ -177,34 +180,6 @@ export const createAgentLoop = ({
       true,
     ),
 
-    // Blocks execute for any tool call that has a pending simulation
-    simulationGuard: bThread(
-      [
-        bSync({
-          block: (event) => {
-            if (event.type !== AGENT_EVENTS.execute) return false
-            return simulatingIds.has(event.detail?.toolCall?.id)
-          },
-        }),
-      ],
-      true,
-    ),
-
-    // Blocks execute if the stored prediction matches dangerous patterns
-    symbolicSafetyNet: bThread(
-      [
-        bSync({
-          block: (event) => {
-            if (event.type !== AGENT_EVENTS.execute) return false
-            const prediction = simulationPredictions.get(event.detail?.toolCall?.id)
-            if (!prediction) return false
-            return checkSymbolicGate(prediction, patterns).blocked
-          },
-        }),
-      ],
-      true,
-    ),
-
     // Constitution bThreads — additive safety rules (defense-in-depth)
     ...constitutionResult?.threads,
   })
@@ -218,20 +193,32 @@ export const createAgentLoop = ({
     [RISK_CLASS.high_ambiguity]: AGENT_EVENTS.route_high_ambiguity,
   }
 
-  const routeToSimulate = simulate
-    ? (detail: GateResultDetail) => {
-        simulatingIds.add(detail.toolCall.id)
-        trigger({
-          type: AGENT_EVENTS.simulate_request,
-          detail: { toolCall: detail.toolCall, decision: detail.decision },
-        })
-      }
-    : (detail: GateResultDetail) => {
-        trigger({
-          type: AGENT_EVENTS.execute,
-          detail: { toolCall: detail.toolCall, riskClass: detail.decision.riskClass ?? RISK_CLASS.read_only },
-        })
-      }
+  // Uniform routing: side_effects and high_ambiguity always flow through
+  // simulate → evaluate → execute pipeline. Handlers pass through when seams
+  // are absent — no conditionals needed at the routing level.
+  //
+  // Per-call dynamic threads replace persistent shared-state guards:
+  // - sim_guard_{id}: blocks execute while simulation is pending, interrupted by simulation_result
+  // - Both block and interrupt use predicate listeners scoped to the specific tool call ID
+  // - Observable via snapshot: SelectionBid.blockedBy / SelectionBid.interrupts
+  const triggerSimulate = (detail: { toolCall: AgentToolCall; decision: { riskClass?: string } }) => {
+    const id = detail.toolCall.id
+
+    // Per-call simulation guard: blocks execute until simulation completes
+    bThreads.set({
+      [`sim_guard_${id}`]: bThread([
+        bSync({
+          block: (e) => e.type === AGENT_EVENTS.execute && e.detail?.toolCall?.id === id,
+          interrupt: [(e) => e.type === AGENT_EVENTS.simulation_result && e.detail?.toolCall?.id === id],
+        }),
+      ]),
+    })
+
+    trigger({
+      type: AGENT_EVENTS.simulate_request,
+      detail: { toolCall: detail.toolCall, decision: detail.decision },
+    })
+  }
 
   // ---------------------------------------------------------------------------
   // Feedback handlers — the async handlers ARE the loop
@@ -260,7 +247,6 @@ export const createAgentLoop = ({
 
     // Centralized async inference invocation
     [AGENT_EVENTS.invoke_inference]: async () => {
-      simulatingIds.clear()
       simulationPredictions.clear()
       try {
         const response = await callInference()
@@ -283,7 +269,7 @@ export const createAgentLoop = ({
       // Append assistant turn to conversation history
       const assistantMsg: ChatMessage = { role: 'assistant', content: parsed.message }
       if (parsed.toolCalls.length) {
-        assistantMsg.tool_calls = parsed.toolCalls.map((tc) => ({
+        assistantMsg.tool_calls = parsed.toolCalls.map((tc: AgentToolCall) => ({
           id: tc.id,
           type: 'function',
           function: { name: tc.name, arguments: JSON.stringify(tc.arguments) },
@@ -366,8 +352,8 @@ export const createAgentLoop = ({
     [AGENT_EVENTS.route_read_only]: (detail) => {
       trigger({ type: AGENT_EVENTS.execute, detail: { toolCall: detail.toolCall, riskClass: RISK_CLASS.read_only } })
     },
-    [AGENT_EVENTS.route_side_effects]: routeToSimulate,
-    [AGENT_EVENTS.route_high_ambiguity]: routeToSimulate,
+    [AGENT_EVENTS.route_side_effects]: triggerSimulate,
+    [AGENT_EVENTS.route_high_ambiguity]: triggerSimulate,
 
     // Gate rejected: record rejection and check completion
     [AGENT_EVENTS.gate_rejected]: (detail) => {
@@ -381,52 +367,70 @@ export const createAgentLoop = ({
       })
     },
 
-    // Step 4: Simulate — spawn Dreamer prediction
+    // Step 4: Simulate — call Dreamer prediction or pass through
+    // sim_guard_{id} bThread blocks execute until simulation_result interrupts it
     [AGENT_EVENTS.simulate_request]: async (detail) => {
       const riskClass = detail.decision.riskClass ?? RISK_CLASS.side_effects
+
+      // No simulate seam → pass through to evaluation pipeline
+      if (!simulate) {
+        trigger({
+          type: AGENT_EVENTS.simulation_result,
+          detail: { toolCall: detail.toolCall, prediction: '', riskClass },
+        })
+        return
+      }
+
       try {
-        const prediction = await simulate!({ toolCall: detail.toolCall, history, plan: currentPlan })
-        simulatingIds.delete(detail.toolCall.id)
+        const prediction = await simulate({ toolCall: detail.toolCall, history, plan: currentPlan })
         simulationPredictions.set(detail.toolCall.id, prediction)
+
+        // If dangerous, add per-call safety thread (defense-in-depth alongside eval_approved handler)
+        if (checkSymbolicGate(prediction, patterns).blocked) {
+          const tcId = detail.toolCall.id
+          bThreads.set({
+            [`safety_${tcId}`]: bThread([
+              bSync({
+                block: (e) => e.type === AGENT_EVENTS.execute && e.detail?.toolCall?.id === tcId,
+                interrupt: [
+                  (e) =>
+                    (e.type === AGENT_EVENTS.eval_rejected && e.detail?.toolCall?.id === tcId) ||
+                    (e.type === AGENT_EVENTS.tool_result && e.detail?.result?.toolCallId === tcId),
+                ],
+              }),
+            ]),
+          })
+        }
+
         trigger({
           type: AGENT_EVENTS.simulation_result,
           detail: { toolCall: detail.toolCall, prediction, riskClass },
         })
       } catch {
-        // Fail-open: simulation error → execute directly (gate already approved)
-        simulatingIds.delete(detail.toolCall.id)
+        // Fail-open: simulation error → pass through with empty prediction
         trigger({
-          type: AGENT_EVENTS.execute,
-          detail: { toolCall: detail.toolCall, riskClass },
+          type: AGENT_EVENTS.simulation_result,
+          detail: { toolCall: detail.toolCall, prediction: '', riskClass },
         })
       }
     },
 
-    // Step 5: Evaluate — run Judge on simulation result
+    // Step 5: Evaluate — call Judge scoring or pass through
+    // Note: symbolic safety net is handled by the symbolicSafetyNet bThread
+    // which blocks dangerous `execute` events — no duplicate check needed here.
     [AGENT_EVENTS.simulation_result]: async (detail) => {
-      const { toolCall, prediction, riskClass } = detail
+      const { toolCall, riskClass } = detail
 
-      // 5a: Symbolic gate check (deterministic, fast)
-      const symbolicResult = checkSymbolicGate(prediction, patterns)
-      if (symbolicResult.blocked) {
-        trigger({
-          type: AGENT_EVENTS.eval_rejected,
-          detail: { toolCall, reason: symbolicResult.reason ?? 'Dangerous prediction' },
-        })
-        return
-      }
-
-      // If no evaluate seam → approve
+      // No evaluate seam → approve
       if (!evaluate) {
         trigger({ type: AGENT_EVENTS.eval_approved, detail: { toolCall, riskClass } })
         return
       }
 
-      // 5b: Neural scorer for high_ambiguity with goal
       try {
         const decision = await evaluate({
           toolCall,
-          prediction,
+          prediction: detail.prediction,
           riskClass,
           history,
           goal: currentPlan?.goal,
@@ -440,13 +444,26 @@ export const createAgentLoop = ({
           })
         }
       } catch {
-        // Fail-open: evaluation error → approve (gate already approved, simulation passed symbolic)
+        // Fail-open: evaluation error → approve
         trigger({ type: AGENT_EVENTS.eval_approved, detail: { toolCall, riskClass } })
       }
     },
 
-    // Eval approved → execute
+    // Eval approved → symbolic safety check → execute
+    // Dual-layer: handler routes rejection for model feedback,
+    // symbolicSafetyNet bThread blocks as defense-in-depth
     [AGENT_EVENTS.eval_approved]: (detail) => {
+      const prediction = simulationPredictions.get(detail.toolCall.id)
+      if (prediction) {
+        const symbolic = checkSymbolicGate(prediction, patterns)
+        if (symbolic.blocked) {
+          trigger({
+            type: AGENT_EVENTS.eval_rejected,
+            detail: { toolCall: detail.toolCall, reason: symbolic.reason ?? 'Dangerous prediction', score: 0 },
+          })
+          return
+        }
+      }
       trigger({
         type: AGENT_EVENTS.execute,
         detail: { toolCall: detail.toolCall, riskClass: detail.riskClass },
@@ -516,8 +533,6 @@ export const createAgentLoop = ({
       }
     },
 
-    [AGENT_EVENTS.tool_result]: () => {},
-
     // Plan management
     [AGENT_EVENTS.save_plan]: (detail) => {
       currentPlan = detail.plan
@@ -534,10 +549,6 @@ export const createAgentLoop = ({
       recorder.addMessage(detail.content)
       resolveRun?.({ output: detail.content, trajectory: recorder.getSteps() })
     },
-
-    // Stub handlers for events without explicit logic
-    [AGENT_EVENTS.context_ready]: () => {},
-    [AGENT_EVENTS.loop_complete]: () => {},
   })
 
   // ---------------------------------------------------------------------------
@@ -555,7 +566,7 @@ export const createAgentLoop = ({
         if (!sessionId) return
         const { parsed } = detail
         const toolCalls = parsed.toolCalls.length
-          ? parsed.toolCalls.map((tc) => ({
+          ? parsed.toolCalls.map((tc: AgentToolCall) => ({
               id: tc.id,
               type: 'function',
               function: { name: tc.name, arguments: JSON.stringify(tc.arguments) },
@@ -601,55 +612,72 @@ export const createAgentLoop = ({
         memory.saveMessage({ sessionId, role: 'assistant', content: detail.content })
         memory.completeSession(sessionId, detail.content)
       },
-      // Noop stubs for events without persistence concerns
-      [AGENT_EVENTS.context_ready]: () => {},
-      [AGENT_EVENTS.invoke_inference]: () => {},
-      [AGENT_EVENTS.proposed_action]: () => {},
-      [AGENT_EVENTS.gate_approved]: () => {},
-      [AGENT_EVENTS.route_read_only]: () => {},
-      [AGENT_EVENTS.route_side_effects]: () => {},
-      [AGENT_EVENTS.route_high_ambiguity]: () => {},
-      [AGENT_EVENTS.simulate_request]: () => {},
-      [AGENT_EVENTS.simulation_result]: () => {},
-      [AGENT_EVENTS.eval_approved]: () => {},
-      [AGENT_EVENTS.execute]: () => {},
-      [AGENT_EVENTS.plan_saved]: () => {},
-      [AGENT_EVENTS.loop_complete]: () => {},
     })
   }
 
   // ---------------------------------------------------------------------------
-  // Snapshot listener: log every BP selection decision to SQLite
+  // Snapshot listener: persist selections to SQLite, capture diagnostics in-memory
   // ---------------------------------------------------------------------------
-  let disconnectSnapshot: (() => void) | null = null
+  const disconnectSnapshot = useSnapshot((snapshot) => {
+    if (!sessionId) return
 
-  if (memory) {
-    disconnectSnapshot = useSnapshot((snapshot) => {
-      if (snapshot.kind !== 'selection') return
-      if (!sessionId) return
-      for (const bid of snapshot.bids) {
-        memory.saveEventLog({
-          sessionId: sessionId!,
-          eventType: bid.type,
-          thread: bid.thread,
-          selected: bid.selected,
-          trigger: bid.trigger,
-          priority: bid.priority,
-          blockedBy: bid.blockedBy,
-          interrupts: bid.interrupts,
-          detail: bid.detail,
+    switch (snapshot.kind) {
+      case 'selection':
+        if (memory) {
+          for (const bid of snapshot.bids) {
+            memory.saveEventLog({
+              sessionId: sessionId!,
+              eventType: bid.type,
+              thread: bid.thread,
+              selected: bid.selected,
+              trigger: bid.trigger,
+              priority: bid.priority,
+              blockedBy: bid.blockedBy,
+              interrupts: bid.interrupts,
+              detail: bid.detail,
+            })
+          }
+        }
+        break
+      case 'feedback_error':
+        if (diagnostics.length >= MAX_DIAGNOSTICS) diagnostics.shift()
+        diagnostics.push({
+          kind: 'feedback_error',
+          type: snapshot.type,
+          detail: snapshot.detail,
+          error: snapshot.error,
+          timestamp: Date.now(),
         })
-      }
-    })
-  }
+        break
+      case 'restricted_trigger_error':
+        if (diagnostics.length >= MAX_DIAGNOSTICS) diagnostics.shift()
+        diagnostics.push({
+          kind: 'restricted_trigger_error',
+          type: snapshot.type,
+          detail: snapshot.detail,
+          error: snapshot.error,
+          timestamp: Date.now(),
+        })
+        break
+      case 'bthreads_warning':
+        if (diagnostics.length >= MAX_DIAGNOSTICS) diagnostics.shift()
+        diagnostics.push({
+          kind: 'bthreads_warning',
+          thread: snapshot.thread,
+          warning: snapshot.warning,
+          timestamp: Date.now(),
+        })
+        break
+    }
+  })
 
   return {
     run: (prompt) => {
       recorder.reset()
       history.length = 0
       currentPlan = null
-      simulatingIds.clear()
       simulationPredictions.clear()
+      diagnostics.length = 0
       sessionId = memory?.createSession(prompt) ?? null
 
       return new Promise((resolve) => {
@@ -660,7 +688,7 @@ export const createAgentLoop = ({
     destroy: () => {
       disconnectFeedback()
       disconnectObserver?.()
-      disconnectSnapshot?.()
+      disconnectSnapshot()
       resolveRun?.({ output: '', trajectory: recorder.getSteps() })
       resolveRun = null
     },

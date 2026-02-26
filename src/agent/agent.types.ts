@@ -165,7 +165,7 @@ export type ParsedModelResponse = {
 }
 
 // ============================================================================
-// Agent Event Details — type map for behavioral<AgentEventDetails>()
+// Agent Event Details — documents the event vocabulary and detail shapes
 // ============================================================================
 
 /** Detail payload for the `task` event */
@@ -245,11 +245,12 @@ export type MessageDetail = {
 }
 
 /**
- * Type-safe event detail map for `behavioral<AgentEventDetails>()`.
+ * Documents the event vocabulary and expected detail shapes.
  *
  * @remarks
- * Each key matches an `AGENT_EVENTS` constant. The behavioral engine uses this
- * to infer handler parameter types in `useFeedback()`.
+ * Each key matches an `AGENT_EVENTS` constant. Not used as a generic parameter —
+ * `behavioral()` is unparameterized and handlers self-validate with Zod where needed.
+ * Kept as a reference type for documentation and test authoring.
  *
  * @public
  */
@@ -293,3 +294,21 @@ export type AgentLoop = {
   run: (prompt: string) => Promise<{ output: string; trajectory: TrajectoryStep[] }>
   destroy: () => void
 }
+
+// ============================================================================
+// Diagnostic Entry — non-selection snapshot messages
+// ============================================================================
+
+/**
+ * A diagnostic entry captured from non-selection snapshot messages.
+ *
+ * @remarks
+ * Stored in an in-memory ring buffer (not SQLite). Includes feedback handler
+ * errors, restricted trigger rejections, and duplicate thread warnings.
+ *
+ * @public
+ */
+export type DiagnosticEntry =
+  | { kind: 'feedback_error'; type: string; detail?: unknown; error: string; timestamp: number }
+  | { kind: 'restricted_trigger_error'; type: string; detail?: unknown; error: string; timestamp: number }
+  | { kind: 'bthreads_warning'; thread: string; warning: string; timestamp: number }
