@@ -6,7 +6,7 @@ import { keyMirror } from '../../utils.ts'
  * @remarks
  * Partitioned by direction:
  * - **Server → Client**: `render`, `attrs`, `update_behavioral`, `disconnect`
- * - **Client → Server**: `root_connected`, `user_action`, `behavioral_updated`, `snapshot`
+ * - **Client → Server**: `client_connected`, `user_action`, `snapshot`
  * - **WebSocket lifecycle**: `connect`, `retry`, `on_ws_open`, `on_ws_message`, `on_ws_error`
  *
  * @public
@@ -18,8 +18,7 @@ export const CONTROLLER_EVENTS = keyMirror(
   'render',
   'update_behavioral',
   // Client → Server
-  'behavioral_updated',
-  'root_connected',
+  'client_connected',
   'user_action',
   'snapshot',
   // WebSocket lifecycle
@@ -36,15 +35,14 @@ export const CONTROLLER_EVENTS = keyMirror(
  * @remarks
  * Server messages arrive via WebSocket, parsed, and dispatched through
  * `restrictedTrigger`. Internal lifecycle events (`connect`, `retry`, etc.)
- * and client-to-server events (`root_connected`, `user_action`, etc.) are
+ * and client-to-server events (`client_connected`, `user_action`, etc.) are
  * in this set to prevent server-side messages from triggering internal state.
  *
  * @public
  */
 export const RESTRICTED_EVENTS = keyMirror(
   // Client → Server
-  CONTROLLER_EVENTS.behavioral_updated,
-  CONTROLLER_EVENTS.root_connected,
+  CONTROLLER_EVENTS.client_connected,
   CONTROLLER_EVENTS.user_action,
   CONTROLLER_EVENTS.snapshot,
   // WebSocket lifecycle

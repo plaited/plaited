@@ -2,7 +2,7 @@
  * Real browser tests using @playwright/cli.
  * Tests DOM behaviors through actual Chromium with a real WebSocket fixture server.
  *
- * The fixture server (serve.ts) acts as the agent — it responds to root_connected
+ * The fixture server (serve.ts) acts as the agent — it responds to client_connected
  * with scripted WebSocket conversations tailored to each test element tag.
  */
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
@@ -82,7 +82,7 @@ describe('controlIsland: real browser', () => {
   })
 
   test('WebSocket roundtrip renders server content into DOM', async () => {
-    // The fixture server responds to root_connected with RENDER_MESSAGE:
+    // The fixture server responds to client_connected with RENDER_MESSAGE:
     // { type: 'render', detail: { target: 'main', html: '<div id="ws-rendered">Hello from WebSocket</div>' } }
     const output = await cli('eval', "() => document.getElementById('ws-rendered')?.textContent")
     const result = parseResult(output)
@@ -181,7 +181,7 @@ describe('controller: swap modes', () => {
 
 describe('controller: declarative shadow DOM', () => {
   test('setHTMLUnsafe parses <template shadowrootmode> into shadowRoot', async () => {
-    // Navigate to the swap fixture page — server sends DSD_RENDER_MESSAGE on root_connected
+    // Navigate to the swap fixture page — server sends DSD_RENDER_MESSAGE on client_connected
     await gotoTest('/swap-fixture.html')
 
     const output = await cli('eval', "() => !!document.getElementById('dsd-host')?.shadowRoot")
@@ -203,7 +203,7 @@ describe('controller: declarative shadow DOM', () => {
 
 describe('controller: attrs handler', () => {
   test('sets string, removes null, and toggles boolean attributes', async () => {
-    // Navigate to attrs-test page — server sends attrs messages after root_connected
+    // Navigate to attrs-test page — server sends attrs messages after client_connected
     await gotoTest('/test/attrs-test')
 
     // String attribute: class = 'active'
@@ -252,9 +252,11 @@ describe('controller: user_action', () => {
     expect(result).toContain('Action received')
   }, 30000)
 
-  test('server received the user_action message', () => {
+  test('server received the user_action message with { id, msg } envelope', () => {
     expect(fixture.lastUserAction).toBeDefined()
-    expect((fixture.lastUserAction as Record<string, unknown>).detail).toBe('test_click')
+    const detail = (fixture.lastUserAction as Record<string, unknown>).detail as Record<string, unknown>
+    expect(detail.msg).toBe('test_click')
+    expect(typeof detail.id).toBe('string')
   })
 })
 
@@ -276,7 +278,7 @@ describe('controller: WebSocket retry', () => {
 
 describe('controller: update_behavioral', () => {
   test('dynamic import() loads module and factory runs', async () => {
-    // Navigate to behavioral fixture — server sends update_behavioral after root_connected
+    // Navigate to behavioral fixture — server sends update_behavioral after client_connected
     await gotoTest('/behavioral-fixture.html')
 
     // The module sets window.__behavioralModuleLoaded = true in the factory
@@ -284,20 +286,4 @@ describe('controller: update_behavioral', () => {
     const result = parseResult(output)
     expect(result).toContain('true')
   }, 30000)
-
-  test('behavioral_updated roundtrip: server receives confirmation and renders', async () => {
-    // After the module loads, the controller sends behavioral_updated to the server.
-    // The server responds with BEHAVIORAL_CONFIRMED_MESSAGE (render with id="behavioral-confirmed").
-    const output = await cli('eval', "() => document.getElementById('behavioral-confirmed')?.textContent")
-    const result = parseResult(output)
-    expect(result).toContain('Module loaded successfully')
-  })
-
-  test('server received behavioral_updated with thread and handler names', () => {
-    // Verify the server-side state captured the behavioral_updated message
-    expect(fixture.lastBehavioralUpdated).toBeDefined()
-    const detail = (fixture.lastBehavioralUpdated as Record<string, unknown>).detail as Record<string, unknown>
-    expect(detail.threads).toContain('test_thread')
-    expect(detail.handlers).toContain('test_handler')
-  })
 })

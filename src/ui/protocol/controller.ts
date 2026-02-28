@@ -20,16 +20,11 @@
  */
 import type { BPEvent, BThreads, Disconnect, Handlers, Trigger, UseFeedback, UseSnapshot } from '../../behavioral.ts'
 import { BPEventSchema } from '../../behavioral.ts'
+import { ueid } from '../../utils.ts'
 import { DelegatedListener, delegates } from '../dom/delegated-listener.ts'
 import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from '../render/template.constants.ts'
 import { CONTROLLER_ERRORS, CONTROLLER_EVENTS, SWAP_MODES } from './controller.constants.ts'
-import type {
-  BThreadAddedMessage,
-  ControllerHandlers,
-  RootConnectedMessage,
-  SwapMode,
-  UserActionMessage,
-} from './controller.schemas.ts'
+import type { ControllerHandlers, SwapMode } from './controller.schemas.ts'
 import { UpdateBehavioralModuleSchema, UpdateBehavioralResultSchema } from './controller.schemas.ts'
 
 /** @internal Retry status codes that warrant reconnection attempts. */
@@ -178,7 +173,7 @@ export const controller = ({
   let socket: WebSocket | undefined
   let retryCount = 0
 
-  const send = <T extends BPEvent>(message: T) => {
+  const send = (message: BPEvent) => {
     const fallback = () => {
       send(message)
       socket?.removeEventListener('open', fallback)
@@ -200,7 +195,7 @@ export const controller = ({
   disconnectSet.add(
     useSnapshot((detail) => {
       if (socket?.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: CONTROLLER_EVENTS.snapshot, detail }))
+        socket.send(JSON.stringify({ type: CONTROLLER_EVENTS.snapshot, detail: { id: ueid(), msg: detail } }))
       }
     }),
   )
@@ -216,9 +211,9 @@ export const controller = ({
     },
     [CONTROLLER_EVENTS.on_ws_open]() {
       retryCount = 0
-      send<RootConnectedMessage>({
-        type: CONTROLLER_EVENTS.root_connected,
-        detail: root instanceof HTMLElement ? root.tagName.toLowerCase() : 'document',
+      send({
+        type: CONTROLLER_EVENTS.client_connected,
+        detail: { id: ueid(), msg: root instanceof HTMLElement ? root.tagName.toLowerCase() : 'document' },
       })
     },
     [CONTROLLER_EVENTS.connect]() {
@@ -264,7 +259,7 @@ export const controller = ({
           detail: event,
         })
       }
-      send<UserActionMessage>({ type: CONTROLLER_EVENTS.user_action, detail: type })
+      send({ type: CONTROLLER_EVENTS.user_action, detail: { id: ueid(), msg: type } })
     },
     async [CONTROLLER_EVENTS.update_behavioral](detail) {
       const module = await import(detail)
@@ -272,14 +267,6 @@ export const controller = ({
       const { threads, handlers } = UpdateBehavioralResultSchema.parse(factory(restrictedTrigger))
       threads && bThreads.set(threads)
       handlers && disconnectSet.add(useFeedback(handlers))
-      send<BThreadAddedMessage>({
-        type: CONTROLLER_EVENTS.behavioral_updated,
-        detail: {
-          src: detail,
-          threads: threads ? Object.keys(threads) : undefined,
-          handlers: handlers ? Object.keys(handlers) : undefined,
-        },
-      })
     },
   }
   disconnectSet.add(useFeedback(handlers))

@@ -2,10 +2,9 @@ import { describe, expect, test } from 'bun:test'
 import { CONTROLLER_EVENTS, SWAP_MODES } from '../controller.constants.ts'
 import {
   AttrsMessageSchema,
-  BehavioralUpdatedMessageSchema,
+  ClientConnectedMessageSchema,
   DisconnectMessageSchema,
   RenderMessageSchema,
-  RootConnectedMessageSchema,
   SnapshotEventSchema,
   SwapModeSchema,
   UpdateBehavioralModuleSchema,
@@ -114,37 +113,73 @@ describe('AttrsMessageSchema', () => {
 })
 
 describe('UserActionMessageSchema', () => {
-  test('accepts valid user action message', () => {
-    const msg = { type: CONTROLLER_EVENTS.user_action, detail: 'click_button' }
+  test('accepts valid user action message with { id, msg } envelope', () => {
+    const msg = {
+      type: CONTROLLER_EVENTS.user_action,
+      detail: { id: 'abc123', msg: 'click_button' },
+    }
     expect(UserActionMessageSchema.parse(msg)).toEqual(msg)
   })
 
-  test('rejects non-string detail', () => {
+  test('rejects detail without id', () => {
     expect(() =>
       UserActionMessageSchema.parse({
         type: CONTROLLER_EVENTS.user_action,
-        detail: { nested: true },
+        detail: { msg: 'click' },
+      }),
+    ).toThrow()
+  })
+
+  test('rejects detail without msg', () => {
+    expect(() =>
+      UserActionMessageSchema.parse({
+        type: CONTROLLER_EVENTS.user_action,
+        detail: { id: 'abc123' },
+      }),
+    ).toThrow()
+  })
+
+  test('rejects flat string detail (old format)', () => {
+    expect(() =>
+      UserActionMessageSchema.parse({
+        type: CONTROLLER_EVENTS.user_action,
+        detail: 'click_button',
       }),
     ).toThrow()
   })
 })
 
-describe('RootConnectedMessageSchema', () => {
-  test('accepts valid root_connected message', () => {
-    const msg = { type: CONTROLLER_EVENTS.root_connected, detail: 'test-island' }
-    expect(RootConnectedMessageSchema.parse(msg)).toEqual(msg)
+describe('ClientConnectedMessageSchema', () => {
+  test('accepts valid client_connected message with { id, msg } envelope', () => {
+    const msg = {
+      type: CONTROLLER_EVENTS.client_connected,
+      detail: { id: 'abc123', msg: 'test-island' },
+    }
+    expect(ClientConnectedMessageSchema.parse(msg)).toEqual(msg)
   })
 
-  test('accepts document as detail', () => {
-    const msg = { type: CONTROLLER_EVENTS.root_connected, detail: 'document' }
-    expect(RootConnectedMessageSchema.parse(msg)).toEqual(msg)
+  test('accepts document as client value', () => {
+    const msg = {
+      type: CONTROLLER_EVENTS.client_connected,
+      detail: { id: 'def456', msg: 'document' },
+    }
+    expect(ClientConnectedMessageSchema.parse(msg)).toEqual(msg)
   })
 
-  test('rejects non-string detail', () => {
+  test('rejects detail without id', () => {
     expect(() =>
-      RootConnectedMessageSchema.parse({
-        type: CONTROLLER_EVENTS.root_connected,
-        detail: 42,
+      ClientConnectedMessageSchema.parse({
+        type: CONTROLLER_EVENTS.client_connected,
+        detail: { msg: 'test-island' },
+      }),
+    ).toThrow()
+  })
+
+  test('rejects flat string detail (old format)', () => {
+    expect(() =>
+      ClientConnectedMessageSchema.parse({
+        type: CONTROLLER_EVENTS.client_connected,
+        detail: 'test-island',
       }),
     ).toThrow()
   })
@@ -171,52 +206,24 @@ describe('DisconnectMessageSchema', () => {
   })
 })
 
-describe('BehavioralUpdatedMessageSchema', () => {
-  test('accepts valid behavioral_updated message', () => {
-    const msg = {
-      type: CONTROLLER_EVENTS.behavioral_updated,
-      detail: {
-        src: 'https://example.com/module.js',
-        threads: ['thread1', 'thread2'],
-        handlers: ['handler1'],
-      },
-    }
-    expect(BehavioralUpdatedMessageSchema.parse(msg)).toEqual(msg)
-  })
-
-  test('accepts message with optional fields omitted', () => {
-    const msg = {
-      type: CONTROLLER_EVENTS.behavioral_updated,
-      detail: { src: 'https://example.com/module.js' },
-    }
-    expect(BehavioralUpdatedMessageSchema.parse(msg)).toEqual(msg)
-  })
-
-  test('rejects non-URL src', () => {
-    expect(() =>
-      BehavioralUpdatedMessageSchema.parse({
-        type: CONTROLLER_EVENTS.behavioral_updated,
-        detail: { src: 'not-a-url' },
-      }),
-    ).toThrow()
-  })
-})
-
 describe('SnapshotEventSchema', () => {
-  test('accepts valid snapshot event with selection kind', () => {
+  test('accepts valid snapshot event with { id, msg } envelope', () => {
     const msg = {
       type: CONTROLLER_EVENTS.snapshot,
       detail: {
-        kind: 'selection' as const,
-        bids: [
-          {
-            thread: 'test',
-            trigger: false,
-            selected: true,
-            type: 'event',
-            priority: 0,
-          },
-        ],
+        id: 'abc123',
+        msg: {
+          kind: 'selection' as const,
+          bids: [
+            {
+              thread: 'test',
+              trigger: false,
+              selected: true,
+              type: 'event',
+              priority: 0,
+            },
+          ],
+        },
       },
     }
     expect(SnapshotEventSchema.parse(msg)).toEqual(msg)
@@ -226,12 +233,29 @@ describe('SnapshotEventSchema', () => {
     const msg = {
       type: CONTROLLER_EVENTS.snapshot,
       detail: {
-        kind: 'feedback_error' as const,
-        type: 'some_event',
-        error: 'handler threw',
+        id: 'def456',
+        msg: {
+          kind: 'feedback_error' as const,
+          type: 'some_event',
+          error: 'handler threw',
+        },
       },
     }
     expect(SnapshotEventSchema.parse(msg)).toEqual(msg)
+  })
+
+  test('rejects detail without id', () => {
+    expect(() =>
+      SnapshotEventSchema.parse({
+        type: CONTROLLER_EVENTS.snapshot,
+        detail: {
+          msg: {
+            kind: 'selection' as const,
+            bids: [],
+          },
+        },
+      }),
+    ).toThrow()
   })
 })
 

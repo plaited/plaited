@@ -1,7 +1,7 @@
 /**
  * Fixture server for browser tests.
  * Builds entry files with Bun.build(), serves static HTML/JS,
- * and provides a WebSocket that responds to root_connected with render messages.
+ * and provides a WebSocket that responds to client_connected with render messages.
  */
 import { join } from 'node:path'
 import type { ServerWebSocket } from 'bun'
@@ -157,15 +157,6 @@ const BEHAVIORAL_RENDER_MESSAGE = JSON.stringify({
   },
 })
 
-const BEHAVIORAL_CONFIRMED_MESSAGE = JSON.stringify({
-  type: 'render',
-  detail: {
-    target: 'main',
-    html: '<div id="behavioral-confirmed">Module loaded successfully</div>',
-    swap: 'innerHTML',
-  },
-})
-
 // ─── WebSocket message handlers for test elements ─────────────────────────────
 
 const sendSwapTestMessages = (ws: ServerWebSocket<unknown>) => {
@@ -267,19 +258,15 @@ export type FixtureServer = {
   server: ReturnType<typeof Bun.serve>
   port: number
   stop: () => Promise<void>
-  /** Last behavioral_updated message received from the client */
-  lastBehavioralUpdated: Record<string, unknown> | undefined
   /** Last user_action message received from the client */
   lastUserAction: Record<string, unknown> | undefined
 }
 
 export const startServer = (port = 0): FixtureServer => {
   const state: {
-    lastBehavioralUpdated: Record<string, unknown> | undefined
     lastUserAction: Record<string, unknown> | undefined
     retryTestConnections: number
   } = {
-    lastBehavioralUpdated: undefined,
     lastUserAction: undefined,
     retryTestConnections: 0,
   }
@@ -315,9 +302,10 @@ export const startServer = (port = 0): FixtureServer => {
       },
       message(ws, message) {
         const data = JSON.parse(String(message))
-        if (data.type === 'root_connected') {
-          // Decide which render/flow based on the element tag
-          switch (data.detail) {
+        if (data.type === 'client_connected') {
+          // detail uses { id, msg } envelope — msg is the client tag string
+          const client = data.detail?.msg
+          switch (client) {
             case 'swap-fixture':
               ws.send(DSD_RENDER_MESSAGE)
               break
@@ -365,14 +353,10 @@ export const startServer = (port = 0): FixtureServer => {
               ws.send(RENDER_MESSAGE)
           }
         }
-        if (data.type === 'behavioral_updated') {
-          state.lastBehavioralUpdated = data
-          // Confirm with a render so the browser test can verify the roundtrip
-          ws.send(BEHAVIORAL_CONFIRMED_MESSAGE)
-        }
         if (data.type === 'user_action') {
           state.lastUserAction = data
-          if (data.detail === 'test_click') {
+          // detail uses { id, msg } envelope — msg is the action type string
+          if (data.detail?.msg === 'test_click') {
             ws.send(
               JSON.stringify({
                 type: 'render',
@@ -419,9 +403,6 @@ export const startServer = (port = 0): FixtureServer => {
   return {
     server,
     port: server.port!,
-    get lastBehavioralUpdated() {
-      return state.lastBehavioralUpdated
-    },
     get lastUserAction() {
       return state.lastUserAction
     },

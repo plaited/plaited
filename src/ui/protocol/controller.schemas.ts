@@ -104,7 +104,10 @@ export type UserAction = {
  */
 export const UserActionMessageSchema = z.object({
   type: z.literal(CONTROLLER_EVENTS.user_action),
-  detail: z.string(),
+  detail: z.object({
+    id: z.string(),
+    msg: z.string(),
+  }),
 })
 
 /** @public */
@@ -116,17 +119,21 @@ export type UserActionMessage = z.infer<typeof UserActionMessageSchema>
  * @remarks
  * Sent immediately after the WebSocket opens. The `detail` is the
  * lowercase tag name of the root element (or `'document'` for
- * `controlDocument`), allowing the server to identify which island connected.
+ * `controlDocument`, or `'cli'` for CLI clients), allowing the server
+ * to identify which client connected.
  *
  * @public
  */
-export const RootConnectedMessageSchema = z.object({
-  type: z.literal(CONTROLLER_EVENTS.root_connected),
-  detail: z.string(),
+export const ClientConnectedMessageSchema = z.object({
+  type: z.literal(CONTROLLER_EVENTS.client_connected),
+  detail: z.object({
+    id: z.string(),
+    msg: z.string(),
+  }),
 })
 
 /** @public */
-export type RootConnectedMessage = z.infer<typeof RootConnectedMessageSchema>
+export type ClientConnectedMessage = z.infer<typeof ClientConnectedMessageSchema>
 
 /**
  * Schema for disconnect messages sent from server to client
@@ -161,27 +168,7 @@ export const UpdateBehavioralMessageSchema = z.object({
 })
 
 /** @public */
-export type AddBThreadsMessage = z.infer<typeof UpdateBehavioralMessageSchema>
-
-/**
- * Schema for the acknowledgment sent from client to server after a behavioral module loads.
- *
- * @remarks
- * Confirms which thread names and handler keys were registered from the module.
- *
- * @public
- */
-export const BehavioralUpdatedMessageSchema = z.object({
-  type: z.literal(CONTROLLER_EVENTS.behavioral_updated),
-  detail: z.object({
-    src: z.httpUrl(),
-    threads: z.array(z.string()).optional(),
-    handlers: z.array(z.string()).optional(),
-  }),
-})
-
-/** @public */
-export type BThreadAddedMessage = z.infer<typeof BehavioralUpdatedMessageSchema>
+export type UpdateBehavioralMessage = z.infer<typeof UpdateBehavioralMessageSchema>
 
 /**
  * Schema for snapshot messages sent from client to server.
@@ -195,13 +182,16 @@ export type BThreadAddedMessage = z.infer<typeof BehavioralUpdatedMessageSchema>
  */
 export const SnapshotEventSchema = z.object({
   type: z.literal(CONTROLLER_EVENTS.snapshot),
-  detail: SnapshotMessageSchema,
+  detail: z.object({
+    id: z.string(),
+    msg: SnapshotMessageSchema,
+  }),
 })
 
 /** @public */
 export type SnapshotEvent = z.infer<typeof SnapshotEventSchema>
 
-type ControllerMessage = RenderMessage | AttrsMessage | UserAction | DisconnectMessage | AddBThreadsMessage
+type ControllerMessage = RenderMessage | AttrsMessage | UserAction | DisconnectMessage
 
 /**
  * Maps controller message event types to their detail payloads.

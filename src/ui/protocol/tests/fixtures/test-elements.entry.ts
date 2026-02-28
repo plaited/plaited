@@ -5,7 +5,7 @@
  */
 import { controlIsland } from '../../../dom/control-island.ts'
 
-// Swap mode tests — server sends all 6 swap modes after root_connected
+// Swap mode tests — server sends all 6 swap modes after client_connected
 controlIsland({ tag: 'swap-test', observedAttributes: [] })
 
 // Attribute handler tests — server sends attrs messages

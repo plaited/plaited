@@ -1,7 +1,7 @@
 /**
  * Browser entry point for testing update_behavioral.
- * The server sends an update_behavioral message after root_connected,
- * the controller imports the module and sends behavioral_updated.
+ * The server sends an update_behavioral message after client_connected,
+ * the controller imports the module and registers threads/handlers.
  */
 import { controlIsland } from '../../../dom/control-island.ts'
 
