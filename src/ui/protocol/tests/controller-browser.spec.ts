@@ -252,10 +252,11 @@ describe('controller: user_action', () => {
     expect(result).toContain('Action received')
   }, 30000)
 
-  test('server received the user_action message with { id, msg } envelope', () => {
+  test('server received the user_action message with { id, source, msg } envelope', () => {
     expect(fixture.lastUserAction).toBeDefined()
     const detail = (fixture.lastUserAction as Record<string, unknown>).detail as Record<string, unknown>
     expect(detail.msg).toBe('test_click')
+    expect(detail.source).toBe('action-test')
     expect(typeof detail.id).toBe('string')
   })
 })

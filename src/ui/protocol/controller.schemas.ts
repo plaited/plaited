@@ -106,6 +106,7 @@ export const UserActionMessageSchema = z.object({
   type: z.literal(CONTROLLER_EVENTS.user_action),
   detail: z.object({
     id: z.string(),
+    source: z.string(),
     msg: z.string(),
   }),
 })
@@ -128,7 +129,8 @@ export const ClientConnectedMessageSchema = z.object({
   type: z.literal(CONTROLLER_EVENTS.client_connected),
   detail: z.object({
     id: z.string(),
-    msg: z.string(),
+    source: z.string(),
+    msg: z.literal('connected'),
   }),
 })
 
@@ -184,6 +186,7 @@ export const SnapshotEventSchema = z.object({
   type: z.literal(CONTROLLER_EVENTS.snapshot),
   detail: z.object({
     id: z.string(),
+    source: z.string(),
     msg: SnapshotMessageSchema,
   }),
 })

@@ -113,10 +113,10 @@ describe('AttrsMessageSchema', () => {
 })
 
 describe('UserActionMessageSchema', () => {
-  test('accepts valid user action message with { id, msg } envelope', () => {
+  test('accepts valid user action message with { id, source, msg } envelope', () => {
     const msg = {
       type: CONTROLLER_EVENTS.user_action,
-      detail: { id: 'abc123', msg: 'click_button' },
+      detail: { id: 'abc123', source: 'test-island', msg: 'click_button' },
     }
     expect(UserActionMessageSchema.parse(msg)).toEqual(msg)
   })
@@ -125,7 +125,16 @@ describe('UserActionMessageSchema', () => {
     expect(() =>
       UserActionMessageSchema.parse({
         type: CONTROLLER_EVENTS.user_action,
-        detail: { msg: 'click' },
+        detail: { source: 'test-island', msg: 'click' },
+      }),
+    ).toThrow()
+  })
+
+  test('rejects detail without source', () => {
+    expect(() =>
+      UserActionMessageSchema.parse({
+        type: CONTROLLER_EVENTS.user_action,
+        detail: { id: 'abc123', msg: 'click' },
       }),
     ).toThrow()
   })
@@ -134,7 +143,7 @@ describe('UserActionMessageSchema', () => {
     expect(() =>
       UserActionMessageSchema.parse({
         type: CONTROLLER_EVENTS.user_action,
-        detail: { id: 'abc123' },
+        detail: { id: 'abc123', source: 'test-island' },
       }),
     ).toThrow()
   })
@@ -150,27 +159,36 @@ describe('UserActionMessageSchema', () => {
 })
 
 describe('ClientConnectedMessageSchema', () => {
-  test('accepts valid client_connected message with { id, msg } envelope', () => {
+  test('accepts valid client_connected message with { id, source, msg } envelope', () => {
     const msg = {
       type: CONTROLLER_EVENTS.client_connected,
-      detail: { id: 'abc123', msg: 'test-island' },
+      detail: { id: 'abc123', source: 'test-island', msg: 'connected' as const },
     }
     expect(ClientConnectedMessageSchema.parse(msg)).toEqual(msg)
   })
 
-  test('accepts document as client value', () => {
+  test('accepts document as source value', () => {
     const msg = {
       type: CONTROLLER_EVENTS.client_connected,
-      detail: { id: 'def456', msg: 'document' },
+      detail: { id: 'def456', source: 'document', msg: 'connected' as const },
     }
     expect(ClientConnectedMessageSchema.parse(msg)).toEqual(msg)
   })
 
-  test('rejects detail without id', () => {
+  test('rejects detail without source', () => {
     expect(() =>
       ClientConnectedMessageSchema.parse({
         type: CONTROLLER_EVENTS.client_connected,
-        detail: { msg: 'test-island' },
+        detail: { id: 'abc123', msg: 'connected' },
+      }),
+    ).toThrow()
+  })
+
+  test('rejects msg other than connected', () => {
+    expect(() =>
+      ClientConnectedMessageSchema.parse({
+        type: CONTROLLER_EVENTS.client_connected,
+        detail: { id: 'abc123', source: 'test-island', msg: 'test-island' },
       }),
     ).toThrow()
   })
@@ -207,11 +225,12 @@ describe('DisconnectMessageSchema', () => {
 })
 
 describe('SnapshotEventSchema', () => {
-  test('accepts valid snapshot event with { id, msg } envelope', () => {
+  test('accepts valid snapshot event with { id, source, msg } envelope', () => {
     const msg = {
       type: CONTROLLER_EVENTS.snapshot,
       detail: {
         id: 'abc123',
+        source: 'test-island',
         msg: {
           kind: 'selection' as const,
           bids: [
@@ -234,6 +253,7 @@ describe('SnapshotEventSchema', () => {
       type: CONTROLLER_EVENTS.snapshot,
       detail: {
         id: 'def456',
+        source: 'document',
         msg: {
           kind: 'feedback_error' as const,
           type: 'some_event',
@@ -249,6 +269,22 @@ describe('SnapshotEventSchema', () => {
       SnapshotEventSchema.parse({
         type: CONTROLLER_EVENTS.snapshot,
         detail: {
+          source: 'test-island',
+          msg: {
+            kind: 'selection' as const,
+            bids: [],
+          },
+        },
+      }),
+    ).toThrow()
+  })
+
+  test('rejects detail without source', () => {
+    expect(() =>
+      SnapshotEventSchema.parse({
+        type: CONTROLLER_EVENTS.snapshot,
+        detail: {
+          id: 'abc123',
           msg: {
             kind: 'selection' as const,
             bids: [],

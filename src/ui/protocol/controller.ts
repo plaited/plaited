@@ -169,6 +169,8 @@ export const controller = ({
   restrictedTrigger: Trigger
   useSnapshot: UseSnapshot
 }) => {
+  const source = root instanceof HTMLElement ? root.tagName.toLowerCase() : 'document'
+
   // ─── WebSocket lifecycle ───────────────────────────────────────────
   let socket: WebSocket | undefined
   let retryCount = 0
@@ -195,7 +197,7 @@ export const controller = ({
   disconnectSet.add(
     useSnapshot((detail) => {
       if (socket?.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: CONTROLLER_EVENTS.snapshot, detail: { id: ueid(), msg: detail } }))
+        socket.send(JSON.stringify({ type: CONTROLLER_EVENTS.snapshot, detail: { id: ueid(), source, msg: detail } }))
       }
     }),
   )
@@ -213,11 +215,11 @@ export const controller = ({
       retryCount = 0
       send({
         type: CONTROLLER_EVENTS.client_connected,
-        detail: { id: ueid(), msg: root instanceof HTMLElement ? root.tagName.toLowerCase() : 'document' },
+        detail: { id: ueid(), source, msg: 'connected' as const },
       })
     },
     [CONTROLLER_EVENTS.connect]() {
-      socket = new WebSocket(self.location.origin.replace(/^http/, 'ws'))
+      socket = new WebSocket(`${self.location.origin.replace(/^http/, 'ws')}/ws`)
       const listener = new DelegatedListener(callback)
       delegates.set(socket, listener)
       socket.addEventListener('open', listener)
@@ -259,7 +261,7 @@ export const controller = ({
           detail: event,
         })
       }
-      send({ type: CONTROLLER_EVENTS.user_action, detail: { id: ueid(), msg: type } })
+      send({ type: CONTROLLER_EVENTS.user_action, detail: { id: ueid(), source, msg: type } })
     },
     async [CONTROLLER_EVENTS.update_behavioral](detail) {
       const module = await import(detail)

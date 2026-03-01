@@ -303,8 +303,8 @@ export const startServer = (port = 0): FixtureServer => {
       message(ws, message) {
         const data = JSON.parse(String(message))
         if (data.type === 'client_connected') {
-          // detail uses { id, msg } envelope — msg is the client tag string
-          const client = data.detail?.msg
+          // detail uses { id, source, msg } envelope — source is the client tag string
+          const client = data.detail?.source
           switch (client) {
             case 'swap-fixture':
               ws.send(DSD_RENDER_MESSAGE)
@@ -355,7 +355,7 @@ export const startServer = (port = 0): FixtureServer => {
         }
         if (data.type === 'user_action') {
           state.lastUserAction = data
-          // detail uses { id, msg } envelope — msg is the action type string
+          // detail uses { id, source, msg } envelope — msg is the action type string
           if (data.detail?.msg === 'test_click') {
             ws.send(
               JSON.stringify({
@@ -375,8 +375,7 @@ export const startServer = (port = 0): FixtureServer => {
       },
     },
     fetch(req, server) {
-      // Upgrade WebSocket requests (must be in fetch, not routes,
-      // so '/' path WebSocket upgrades are not intercepted by static routes)
+      // Upgrade WebSocket requests on any path (client connects to /ws)
       if (req.headers.get('upgrade')?.toLowerCase() === 'websocket') {
         if (server.upgrade(req)) return undefined
         return new Response('WebSocket upgrade failed', { status: 400 })
