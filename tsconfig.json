@@ -1,8 +1,7 @@
 {
-  "include": ["src", "scripts"],
   "compilerOptions": {
     // Enable latest features
-    "lib": ["ESNext", "DOM", "dom.iterable"],
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "target": "ESNext",
     "module": "Preserve",
     "moduleDetection": "force",
@@ -32,5 +31,5 @@
 
     "jsxImportSource": "plaited"
   },
-  "exclude": ["src/ui/types/css.d.ts", "playwright.config.ts", "**/*.playwright.ts"]
+  "exclude": ["skills"]
 }
