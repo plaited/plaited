@@ -1,12 +1,6 @@
+import type { DefaultHandlers, Disconnect, SnapshotListener, Trigger } from '../behavioral/behavioral.types.ts'
 import { AGENT_EVENTS } from './agent.constants.ts'
-import type {
-  AgentPlan,
-  AgentToolCall,
-  GateDecision,
-  ToolDefinition,
-  ToolResult,
-  TrajectoryStep,
-} from './agent.schemas.ts'
+import type { AgentPlan, AgentToolCall, GateDecision, ToolDefinition, ToolResult } from './agent.schemas.ts'
 
 // ============================================================================
 // Tool Context + Handler — used by tool executor implementations
@@ -249,6 +243,12 @@ export type MessageDetail = {
   content: string
 }
 
+/** Detail payload for the `client_connected` event */
+export type ClientConnectedDetail = undefined
+
+/** Detail payload for the `disconnected` event */
+export type DisconnectedDetail = undefined
+
 /**
  * Documents the event vocabulary and expected detail shapes.
  *
@@ -278,23 +278,34 @@ export type AgentEventDetails = {
   [AGENT_EVENTS.plan_saved]: PlanSavedDetail
   [AGENT_EVENTS.message]: MessageDetail
   [AGENT_EVENTS.loop_complete]: undefined
+  [AGENT_EVENTS.client_connected]: ClientConnectedDetail
+  [AGENT_EVENTS.disconnected]: DisconnectedDetail
 }
 
 // ============================================================================
-// Agent Loop — public return type
+// Agent Node — public return type (adapter-facing BP primitives)
 // ============================================================================
 
 /**
  * Return type of `createAgentLoop`.
  *
  * @remarks
- * - `run(prompt)` executes a full agent loop and resolves with output + trajectory
- * - `destroy()` cleans up all event subscriptions
+ * Exposes BP primitives for adapter consumption. Adapters connect via
+ * `subscribe` (event handlers) and inject lifecycle events via a restricted
+ * `trigger`. The agent loop coordinates the pipeline internally; adapters
+ * build their own views (trajectory recording, persistence, streaming).
+ *
+ * - `trigger` — restricted to `task`, `client_connected`, `disconnected`
+ * - `subscribe` — register fire-and-forget event handlers, returns disconnect
+ * - `snapshot` — observe BP engine decisions (selection, blocking, interrupts)
+ * - `destroy` — tear down all subscriptions
  *
  * @public
  */
-export type AgentLoop = {
-  run: (prompt: string) => Promise<{ output: string; trajectory: TrajectoryStep[] }>
+export type AgentNode = {
+  trigger: Trigger
+  subscribe: (handlers: DefaultHandlers) => Disconnect
+  snapshot: (listener: SnapshotListener) => Disconnect
   destroy: () => void
 }
 

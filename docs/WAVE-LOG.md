@@ -21,7 +21,7 @@ All resolved. `GateDecision`, `RISK_CLASS`, and `TrajectoryStep` TSDoc updated t
 | ~~**Eval harness canonical imports**~~ | Wave 2 | Resolved — eval harness now imports `ThoughtStepSchema`, `MessageStepSchema`, `ToolCallStepSchema` from agent; `PlanStepSchema` intentionally diverges |
 | **LSP → semantic search pipeline** | Wave 3 | Memory has FTS5 search; LSP and semantic search layers never built |
 | **`searchGate` bThread** | Wave 3 | Planned to block search results during active tool execution; not implemented |
-| **Runtime constitution rule addition via public API** | Wave 6 | `bThreads.set()` works directly for power users; no convenience method on `AgentLoop` |
+| **Runtime constitution rule addition via public API** | Wave 6 | `bThreads.set()` works directly for power users; no convenience method on `AgentNode` |
 | **JSON/TOML config file loading for constitution** | Wave 6 | `constitutionRule()` accepts programmatic config objects; file loading deferred |
 | **Subprocess sandboxing** | Wave 1 | Tool execution is in-process; sandbox is a deployment concern (srt, Landlock, gVisor) |
 
@@ -253,7 +253,7 @@ Waves 1–5 built a complete agent loop with orchestration (309 tests). The cons
 
 #### 3. Agent Loop Integration (`agent.ts`)
 
-- `createAgentLoop` accepts optional `constitution: ConstitutionRule[]` parameter
+- `createAgentNode` accepts optional `constitution: ConstitutionRule[]` parameter
 - Constitution gateCheck composes with custom gateCheck (constitution runs first, short-circuits on rejection)
 - Constitution bThreads spread into `bThreads.set()` alongside existing threads
 - `proposed_action` handler uses `composedGateCheck` (constitution + custom)
@@ -282,13 +282,13 @@ Waves 1–5 built a complete agent loop with orchestration (309 tests). The cons
 
 3. **OR logic for config fields.** Each field in `ConstitutionRuleConfig` represents a different dimension of restriction (`blockedTools`, `pathPattern`, `argPattern`). A rule like `{ blockedTools: ['bash'], pathPattern: '/etc/' }` means "block if it's a bash call OR if the path targets /etc/". For AND logic, write a custom `test` predicate.
 
-4. **No runtime addition via public API.** Power users can call `bThreads.set()` directly with `createConstitution()` output. A convenience method on `AgentLoop` would require exposing `bThreads` — deferred until there's a clear use case.
+4. **No runtime addition via public API.** Power users can call `bThreads.set()` directly with `createConstitution()` output. A convenience method on `AgentNode` would require exposing `bThreads` — deferred until there's a clear use case.
 
 ### What's NOT in Wave 6
 
 | Deferred | Reason |
 |----------|--------|
-| Runtime rule addition via `AgentLoop` API | `bThreads.set()` works directly for power users |
+| Runtime rule addition via `AgentNode` API | `bThreads.set()` works directly for power users |
 | JSON/TOML config file loading | Configs are programmatic objects; file loading is an integration concern |
 | Constitution rule priorities / ordering | Rules are independent blocking threads; BP's blocking semantics handle composition |
 
@@ -330,7 +330,7 @@ The agent loop foundation (`src/agent/`) was complete — the 6-step BP cycle wo
 
 #### 3. Gate Wiring + Multi-Tool (`agent.ts`)
 
-- `createAgentLoop` accepts optional `gateCheck` param (defaults to approve-all for backward compat)
+- `createAgentNode` accepts optional `gateCheck` param (defaults to approve-all for backward compat)
 - `proposed_action` handler now delegates to `gateCheck()` and routes to `gate_approved` / `gate_rejected`
 - `gate_rejected` adds synthetic tool result to conversation history so the model sees the rejection
 - Multi-tool: `pendingToolCalls` queue processes all tool calls from a single model response sequentially through the gate before re-invoking inference

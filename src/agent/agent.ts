@@ -5,10 +5,10 @@ import type { ConstitutionRule } from '../tools/constitution/constitution.types.
 import { checkSymbolicGate } from '../tools/evaluate/evaluate.ts'
 import type { MemoryDb } from '../tools/memory/memory.types.ts'
 import { AGENT_EVENTS, RISK_CLASS } from './agent.constants.ts'
-import type { AgentPlan, AgentToolCall, ToolDefinition, TrajectoryStep } from './agent.schemas.ts'
+import type { AgentPlan, AgentToolCall, ToolDefinition } from './agent.schemas.ts'
 import { AgentConfigSchema } from './agent.schemas.ts'
 import type {
-  AgentLoop,
+  AgentNode,
   ChatMessage,
   DiagnosticEntry,
   Evaluate,
@@ -17,7 +17,7 @@ import type {
   Simulate,
   ToolExecutor,
 } from './agent.types.ts'
-import { buildContextMessages, createTrajectoryRecorder, parseModelResponse, toToolResult } from './agent.utils.ts'
+import { buildContextMessages, parseModelResponse, toToolResult } from './agent.utils.ts'
 
 // ---------------------------------------------------------------------------
 // TASK_EVENTS: the set of events blocked by taskGate between tasks.
@@ -39,7 +39,6 @@ const TASK_EVENTS = new Set<string>([
   AGENT_EVENTS.save_plan,
   AGENT_EVENTS.plan_saved,
   AGENT_EVENTS.context_ready,
-  AGENT_EVENTS.loop_complete,
 ])
 
 /**
@@ -67,7 +66,7 @@ const TASK_EVENTS = new Set<string>([
  * @param options.evaluate - Optional Judge evaluation function
  * @param options.patterns - Optional custom patterns for symbolic safety net bThread
  * @param options.memory - Optional SQLite memory database for session/message persistence
- * @returns An `AgentLoop` with `run(prompt)` and `destroy()` methods
+ * @returns An `AgentNode` with BP primitives: `trigger`, `subscribe`, `snapshot`, `destroy`
  *
  * @public
  */
@@ -98,12 +97,11 @@ export const createAgentLoop = ({
   evaluate?: Evaluate
   patterns?: RegExp[]
   memory?: MemoryDb
-}): AgentLoop => {
+}): AgentNode => {
   // Parse config to apply defaults (maxIterations: 50, temperature: 0)
   const { model, tools, systemPrompt, maxIterations, temperature } = AgentConfigSchema.parse(rawConfig)
 
-  const { bThreads, trigger, useFeedback, useSnapshot } = behavioral()
-  const recorder = createTrajectoryRecorder()
+  const { bThreads, trigger, useFeedback, useSnapshot, useRestrictedTrigger } = behavioral()
 
   // Build constitution if provided — dual-layer: bThreads + imperative gateCheck
   const constitutionResult = constitution?.length ? createConstitution(constitution) : null
@@ -120,8 +118,6 @@ export const createAgentLoop = ({
     return constitutionResult?.gateCheck ?? gateCheck
   })()
 
-  let resolveRun: ((value: { output: string; trajectory: TrajectoryStep[] }) => void) | null = null
-
   // Conversation history in OpenAI chat format
   const history: ChatMessage[] = []
   let currentPlan: AgentPlan | null = null
@@ -134,22 +130,18 @@ export const createAgentLoop = ({
   // ---------------------------------------------------------------------------
   // Helper: call inference with current context
   // ---------------------------------------------------------------------------
-  const callInference = () => {
-    const eventLog = sessionId && memory ? memory.getEventLog(sessionId) : undefined
-
-    return inferenceCall({
+  const callInference = () =>
+    inferenceCall({
       model,
       messages: buildContextMessages({
         systemPrompt,
         history,
         plan: currentPlan ? { goal: currentPlan.goal, steps: currentPlan.steps } : undefined,
-        eventLog: eventLog?.length ? eventLog : undefined,
         diagnostics: diagnostics.length ? [...diagnostics] : undefined,
       }),
       tools,
       temperature,
     })
-  }
 
   // ---------------------------------------------------------------------------
   // Helper: handle inference error by resolving with error message
@@ -163,14 +155,32 @@ export const createAgentLoop = ({
   // bThreads — taskGate + simulation coordination + symbolic safety net
   // ---------------------------------------------------------------------------
   bThreads.set({
+    // Session gate: blocks task/pipeline events before client_connected
+    sessionGate: bThread(
+      [
+        bSync({
+          waitFor: AGENT_EVENTS.client_connected,
+          block: (event) =>
+            event.type === AGENT_EVENTS.task || event.type === AGENT_EVENTS.disconnected || TASK_EVENTS.has(event.type),
+        }),
+        bSync({ waitFor: AGENT_EVENTS.disconnected }),
+      ],
+      true,
+    ),
+
     // Phase-transition thread: blocks task-related events between tasks
+    // disconnected interrupts mid-task, resetting the gate
     taskGate: bThread(
       [
         bSync({
           waitFor: AGENT_EVENTS.task,
           block: (event) => TASK_EVENTS.has(event.type),
+          interrupt: [AGENT_EVENTS.disconnected],
         }),
-        bSync({ waitFor: AGENT_EVENTS.message }),
+        bSync({
+          waitFor: AGENT_EVENTS.message,
+          interrupt: [AGENT_EVENTS.disconnected],
+        }),
       ],
       true,
     ),
@@ -210,11 +220,86 @@ export const createAgentLoop = ({
   }
 
   // ---------------------------------------------------------------------------
+  // Observer: persistence layer (registered per-task when memory exists)
+  // ---------------------------------------------------------------------------
+  let disconnectObserver: (() => void) | null = null
+
+  // ---------------------------------------------------------------------------
   // Feedback handlers — the async handlers ARE the loop
   // ---------------------------------------------------------------------------
   const disconnectFeedback = useFeedback({
     // Step 1: Context — receive task, add per-task maxIterations, invoke inference
     [AGENT_EVENTS.task]: (detail) => {
+      // Create session on first task if memory is provided
+      if (memory && !sessionId) {
+        sessionId = memory.createSession(detail.prompt)
+        disconnectObserver?.()
+        disconnectObserver = useFeedback({
+          [AGENT_EVENTS.task]: (d) => {
+            memory.saveMessage({ sessionId: sessionId!, role: 'user', content: d.prompt })
+          },
+          [AGENT_EVENTS.model_response]: (d) => {
+            const { parsed } = d
+            const toolCalls = parsed.toolCalls.length
+              ? parsed.toolCalls.map((tc: AgentToolCall) => ({
+                  id: tc.id,
+                  type: 'function',
+                  function: { name: tc.name, arguments: JSON.stringify(tc.arguments) },
+                }))
+              : undefined
+            memory.saveMessage({
+              sessionId: sessionId!,
+              role: 'assistant',
+              content: parsed.message,
+              toolCalls: toolCalls as unknown[] | undefined,
+            })
+          },
+          [AGENT_EVENTS.save_plan]: (d) => {
+            const planContent = JSON.stringify({ saved: true, goal: d.plan.goal })
+            memory.saveMessage({
+              sessionId: sessionId!,
+              role: 'tool',
+              content: planContent,
+              toolCallId: d.toolCallId,
+            })
+          },
+          [AGENT_EVENTS.gate_rejected]: (d) => {
+            const reason = d.decision.reason ?? 'Rejected'
+            const rejectContent = JSON.stringify({ error: `Rejected: ${reason}` })
+            memory.saveMessage({
+              sessionId: sessionId!,
+              role: 'tool',
+              content: rejectContent,
+              toolCallId: d.toolCall.id,
+            })
+          },
+          [AGENT_EVENTS.eval_rejected]: (d) => {
+            const reason = d.reason ?? 'Evaluation rejected'
+            const evalContent = JSON.stringify({ error: `Eval rejected: ${reason}` })
+            memory.saveMessage({
+              sessionId: sessionId!,
+              role: 'tool',
+              content: evalContent,
+              toolCallId: d.toolCall.id,
+            })
+          },
+          [AGENT_EVENTS.tool_result]: (d) => {
+            const result = d.result
+            const content =
+              result.output !== undefined
+                ? typeof result.output === 'string'
+                  ? result.output
+                  : JSON.stringify(result.output ?? result.error ?? '')
+                : JSON.stringify({ error: result.error ?? '' })
+            memory.saveMessage({ sessionId: sessionId!, role: 'tool', content, toolCallId: result.toolCallId })
+          },
+          [AGENT_EVENTS.message]: (d) => {
+            memory.saveMessage({ sessionId: sessionId!, role: 'assistant', content: d.content })
+            memory.completeSession(sessionId!, d.content)
+          },
+        })
+      }
+
       bThreads.set({
         maxIterations: bThread([
           ...Array.from({ length: maxIterations }, () =>
@@ -250,9 +335,6 @@ export const createAgentLoop = ({
     // Step 2: Reason — transform model output, dispatch per-tool-call events
     [AGENT_EVENTS.model_response]: (detail) => {
       const { parsed } = detail
-
-      // Record thinking in trajectory
-      if (parsed.thinking) recorder.addThought(parsed.thinking)
 
       // Append assistant turn to conversation history
       const assistantMsg: ChatMessage = { role: 'assistant', content: parsed.message }
@@ -446,13 +528,6 @@ export const createAgentLoop = ({
       }
       if (!result.duration) result = { ...result, duration: Date.now() - startTime }
 
-      recorder.addToolCall({
-        name: detail.toolCall.name,
-        status: result.status,
-        input: detail.toolCall.arguments,
-        output: result.output ?? result.error,
-        duration: result.duration,
-      })
       const content =
         result.output !== undefined
           ? typeof result.output === 'string'
@@ -466,7 +541,6 @@ export const createAgentLoop = ({
     // Plan management
     [AGENT_EVENTS.save_plan]: (detail) => {
       currentPlan = detail.plan
-      recorder.addPlan(detail.plan.steps)
       trigger({ type: AGENT_EVENTS.plan_saved, detail: { plan: detail.plan } })
     },
 
@@ -474,17 +548,22 @@ export const createAgentLoop = ({
       trigger({ type: AGENT_EVENTS.invoke_inference })
     },
 
-    // Terminal: resolve run() promise
-    [AGENT_EVENTS.message]: (detail) => {
-      recorder.addMessage(detail.content)
-      resolveRun?.({ output: detail.content, trajectory: recorder.getSteps() })
+    // Lifecycle — adapter connection management
+    [AGENT_EVENTS.client_connected]: () => {
+      history.length = 0
+      currentPlan = null
+      diagnostics.length = 0
+      sessionId = null
+      disconnectObserver?.()
+      disconnectObserver = null
+    },
+
+    [AGENT_EVENTS.disconnected]: () => {
+      disconnectObserver?.()
+      disconnectObserver = null
+      sessionId = null
     },
   })
-
-  // ---------------------------------------------------------------------------
-  // Observer: persistence layer (registered per-run when memory exists)
-  // ---------------------------------------------------------------------------
-  let disconnectObserver: (() => void) | null = null
 
   // ---------------------------------------------------------------------------
   // Snapshot listener: persist selections to SQLite, capture diagnostics in-memory
@@ -542,94 +621,37 @@ export const createAgentLoop = ({
     }
   })
 
+  // ---------------------------------------------------------------------------
+  // Restricted trigger — adapters can only inject lifecycle events
+  // ---------------------------------------------------------------------------
+  const restrictedTrigger = useRestrictedTrigger(
+    AGENT_EVENTS.invoke_inference,
+    AGENT_EVENTS.model_response,
+    AGENT_EVENTS.context_ready,
+    AGENT_EVENTS.gate_rejected,
+    AGENT_EVENTS.gate_read_only,
+    AGENT_EVENTS.gate_side_effects,
+    AGENT_EVENTS.gate_high_ambiguity,
+    AGENT_EVENTS.simulate_request,
+    AGENT_EVENTS.simulation_result,
+    AGENT_EVENTS.eval_approved,
+    AGENT_EVENTS.eval_rejected,
+    AGENT_EVENTS.execute,
+    AGENT_EVENTS.tool_result,
+    AGENT_EVENTS.save_plan,
+    AGENT_EVENTS.plan_saved,
+    AGENT_EVENTS.message,
+    AGENT_EVENTS.loop_complete,
+  )
+
   return {
-    run: (prompt) => {
-      recorder.reset()
-      history.length = 0
-      currentPlan = null
-      diagnostics.length = 0
-      sessionId = memory?.createSession(prompt) ?? null
-
-      // Register observer per-run when memory exists (sessionId guaranteed non-null)
-      if (memory && sessionId) {
-        disconnectObserver?.()
-        disconnectObserver = useFeedback({
-          [AGENT_EVENTS.task]: (detail) => {
-            memory.saveMessage({ sessionId: sessionId!, role: 'user', content: detail.prompt })
-          },
-          [AGENT_EVENTS.model_response]: (detail) => {
-            const { parsed } = detail
-            const toolCalls = parsed.toolCalls.length
-              ? parsed.toolCalls.map((tc: AgentToolCall) => ({
-                  id: tc.id,
-                  type: 'function',
-                  function: { name: tc.name, arguments: JSON.stringify(tc.arguments) },
-                }))
-              : undefined
-            memory.saveMessage({
-              sessionId: sessionId!,
-              role: 'assistant',
-              content: parsed.message,
-              toolCalls: toolCalls as unknown[] | undefined,
-            })
-          },
-          [AGENT_EVENTS.save_plan]: (detail) => {
-            const planContent = JSON.stringify({ saved: true, goal: detail.plan.goal })
-            memory.saveMessage({
-              sessionId: sessionId!,
-              role: 'tool',
-              content: planContent,
-              toolCallId: detail.toolCallId,
-            })
-          },
-          [AGENT_EVENTS.gate_rejected]: (detail) => {
-            const reason = detail.decision.reason ?? 'Rejected'
-            const rejectContent = JSON.stringify({ error: `Rejected: ${reason}` })
-            memory.saveMessage({
-              sessionId: sessionId!,
-              role: 'tool',
-              content: rejectContent,
-              toolCallId: detail.toolCall.id,
-            })
-          },
-          [AGENT_EVENTS.eval_rejected]: (detail) => {
-            const reason = detail.reason ?? 'Evaluation rejected'
-            const evalContent = JSON.stringify({ error: `Eval rejected: ${reason}` })
-            memory.saveMessage({
-              sessionId: sessionId!,
-              role: 'tool',
-              content: evalContent,
-              toolCallId: detail.toolCall.id,
-            })
-          },
-          [AGENT_EVENTS.tool_result]: (detail) => {
-            const result = detail.result
-            const content =
-              result.output !== undefined
-                ? typeof result.output === 'string'
-                  ? result.output
-                  : JSON.stringify(result.output ?? result.error ?? '')
-                : JSON.stringify({ error: result.error ?? '' })
-            memory.saveMessage({ sessionId: sessionId!, role: 'tool', content, toolCallId: result.toolCallId })
-          },
-          [AGENT_EVENTS.message]: (detail) => {
-            memory.saveMessage({ sessionId: sessionId!, role: 'assistant', content: detail.content })
-            memory.completeSession(sessionId!, detail.content)
-          },
-        })
-      }
-
-      return new Promise((resolve) => {
-        resolveRun = resolve
-        trigger({ type: AGENT_EVENTS.task, detail: { prompt } })
-      })
-    },
+    trigger: restrictedTrigger,
+    subscribe: useFeedback,
+    snapshot: useSnapshot,
     destroy: () => {
       disconnectFeedback()
       disconnectObserver?.()
       disconnectSnapshot()
-      resolveRun?.({ output: '', trajectory: recorder.getSteps() })
-      resolveRun = null
     },
   }
 }

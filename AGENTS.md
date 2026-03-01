@@ -46,7 +46,7 @@
 
 ## GitHub CLI
 
-**Use `gh` over WebFetch** - Better data access, auth, private repos
+**Always use `gh` for GitHub URLs** - When given any `github.com` link, use `gh api` or `gh` subcommands. Never use WebFetch for GitHub content. `gh api repos/<owner>/<repo>/contents/<path>` for files, `gh pr view` for PRs, etc.
 
 **PR evaluation** - Fetch ALL sources:
 ```bash
@@ -233,8 +233,12 @@ See rules/testing.md for verification in test contexts.
 
 **No @example** - Tests are living examples  
 **Use @internal** - Mark non-public APIs  
-**Mermaid only** - No ASCII box-drawing diagrams  
+**Mermaid only** - No ASCII box-drawing diagrams
 *Verify:* `grep '[┌│└─]' *.md`
+
+**Validate Mermaid diagrams** - All `.md` mermaid blocks must render without errors
+*Verify:* `bunx @mermaid-js/mermaid-cli -i diagram.mmd -o /tmp/out.svg`
+*Fix:* No code syntax in `stateDiagram-v2` notes (`=>`, `{}`, `||`, `&&` break parser). No `{}` in sequence diagram messages. Keep inner-state transitions inside composite state braces.
 
 
 # Core Conventions

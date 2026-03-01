@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 import { createMemoryDb } from '../../tools/memory/memory.ts'
-import type { EventLogRow } from '../../tools/memory/memory.types.ts'
-import { RISK_CLASS, TOOL_STATUS } from '../agent.constants.ts'
-import type { AgentToolCall, ToolResult } from '../agent.schemas.ts'
+import { AGENT_EVENTS, RISK_CLASS, TOOL_STATUS } from '../agent.constants.ts'
+import type { AgentToolCall, ToolResult, TrajectoryStep } from '../agent.schemas.ts'
 import { TrajectoryStepSchema } from '../agent.schemas.ts'
 import { createAgentLoop } from '../agent.ts'
-import type { Evaluate, GateCheck, InferenceCall, Simulate } from '../agent.types.ts'
+import type { AgentNode, Evaluate, GateCheck, InferenceCall, Simulate } from '../agent.types.ts'
+import { createTrajectoryRecorder } from '../agent.utils.ts'
 
 // ============================================================================
 // Test helpers
@@ -60,6 +60,47 @@ const multiToolCallResponse = (...calls: Array<[id: string, name: string, args?:
   })),
 })
 
+/**
+ * Adapter helper that recreates the old `run()` behavior from exposed BP primitives.
+ * Validates the public API is sufficient for adapter consumption.
+ */
+const runOnce = (node: AgentNode, prompt: string): Promise<{ output: string; trajectory: TrajectoryStep[] }> => {
+  const recorder = createTrajectoryRecorder()
+  return new Promise((resolve) => {
+    const disconnect = node.subscribe({
+      [AGENT_EVENTS.model_response]: (detail) => {
+        if (detail.parsed.thinking) recorder.addThought(detail.parsed.thinking)
+      },
+      [AGENT_EVENTS.tool_result]: (detail) => {
+        recorder.addToolCall({
+          name: detail.result.name,
+          status: detail.result.status,
+          output: detail.result.output ?? detail.result.error,
+          duration: detail.result.duration,
+        })
+      },
+      [AGENT_EVENTS.save_plan]: (detail) => {
+        recorder.addPlan(detail.plan.steps)
+      },
+      [AGENT_EVENTS.message]: (detail) => {
+        recorder.addMessage(detail.content)
+        // Defer to microtask — allows current synchronous dispatch to complete so:
+        // 1. Adapter's model_response handler records thinking (outer dispatch)
+        // 2. Observer's message handler persists to SQLite (same dispatch)
+        // Only then: snapshot trajectory, disconnect, and resolve
+        const content = detail.content
+        queueMicrotask(() => {
+          disconnect()
+          node.trigger({ type: AGENT_EVENTS.disconnected })
+          resolve({ output: content, trajectory: recorder.getSteps() })
+        })
+      },
+    })
+    node.trigger({ type: AGENT_EVENTS.client_connected })
+    node.trigger({ type: AGENT_EVENTS.task, detail: { prompt } })
+  })
+}
+
 // ============================================================================
 // Loop Tests
 // ============================================================================
@@ -80,7 +121,7 @@ describe('createAgentLoop', () => {
       toolExecutor,
     })
 
-    const result = await loop.run('Read /foo.ts')
+    const result = await runOnce(loop, 'Read /foo.ts')
 
     expect(result.output).toBe('The file contains a function.')
     expect(result.trajectory.length).toBeGreaterThanOrEqual(3)
@@ -117,7 +158,7 @@ describe('createAgentLoop', () => {
       toolExecutor,
     })
 
-    const result = await loop.run('Hello')
+    const result = await runOnce(loop, 'Hello')
 
     expect(result.output).toBe('Hello! How can I help?')
     expect(result.trajectory).toHaveLength(1)
@@ -137,7 +178,7 @@ describe('createAgentLoop', () => {
       toolExecutor,
     })
 
-    const result = await loop.run('What is the answer?')
+    const result = await runOnce(loop, 'What is the answer?')
 
     expect(result.output).toBe('The answer is 42.')
     const thoughtStep = result.trajectory.find((s) => s.type === 'thought')
@@ -161,7 +202,7 @@ describe('createAgentLoop', () => {
       toolExecutor,
     })
 
-    const result = await loop.run('Analyze this')
+    const result = await runOnce(loop, 'Analyze this')
 
     expect(result.output).toBe('The result is positive.')
     const thoughtStep = result.trajectory.find((s) => s.type === 'thought')
@@ -205,7 +246,7 @@ describe('createAgentLoop', () => {
       toolExecutor,
     })
 
-    const result = await loop.run('Update the config')
+    const result = await runOnce(loop, 'Update the config')
 
     expect(result.output).toBe('Config has been updated.')
 
@@ -253,7 +294,7 @@ describe('createAgentLoop', () => {
       toolExecutor,
     })
 
-    const result = await loop.run('List all files recursively')
+    const result = await runOnce(loop, 'List all files recursively')
 
     expect(result.output).toBe('Max iterations (3) reached')
 
@@ -287,7 +328,7 @@ describe('createAgentLoop', () => {
       toolExecutor,
     })
 
-    const result = await loop.run('Merge files a.ts, b.ts into c.ts')
+    const result = await runOnce(loop, 'Merge files a.ts, b.ts into c.ts')
 
     expect(result.output).toBe('Done! Merged 3 files.')
 
@@ -301,7 +342,7 @@ describe('createAgentLoop', () => {
     loop.destroy()
   })
 
-  test('destroy cleanup: resolves pending promise', async () => {
+  test('destroy cleanup: does not throw during active task', () => {
     // Mock that never responds (hangs forever)
     const inference: InferenceCall = () => new Promise(() => {})
     const toolExecutor = createMockToolExecutor({})
@@ -312,15 +353,12 @@ describe('createAgentLoop', () => {
       toolExecutor,
     })
 
-    // Start run (won't complete because inference hangs)
-    const runPromise = loop.run('Hello')
+    // Start a task mid-flight (inference will hang)
+    loop.trigger({ type: AGENT_EVENTS.client_connected })
+    loop.trigger({ type: AGENT_EVENTS.task, detail: { prompt: 'Hello' } })
 
-    // Destroy should resolve the pending promise
-    loop.destroy()
-
-    const result = await runPromise
-    expect(result.output).toBe('')
-    expect(result.trajectory).toHaveLength(0)
+    // Destroy should not throw
+    expect(() => loop.destroy()).not.toThrow()
   })
 
   test('inference error is handled gracefully', async () => {
@@ -335,7 +373,7 @@ describe('createAgentLoop', () => {
       toolExecutor,
     })
 
-    const result = await loop.run('Hello')
+    const result = await runOnce(loop, 'Hello')
 
     expect(result.output).toContain('Error: Connection refused')
 
@@ -357,7 +395,7 @@ describe('createAgentLoop', () => {
       toolExecutor,
     })
 
-    const result = await loop.run('Do something dangerous')
+    const result = await runOnce(loop, 'Do something dangerous')
 
     expect(result.output).toBe('Tool failed, here is what happened.')
 
@@ -378,7 +416,7 @@ describe('createAgentLoop', () => {
       toolExecutor,
     })
 
-    const result = await loop.run('Hello')
+    const result = await runOnce(loop, 'Hello')
 
     expect(result.output).toBe('')
     expect(result.trajectory).toHaveLength(1)
@@ -401,7 +439,7 @@ describe('createAgentLoop', () => {
       toolExecutor,
     })
 
-    const result = await loop.run('Test timestamps')
+    const result = await runOnce(loop, 'Test timestamps')
     const after = Date.now()
 
     for (const step of result.trajectory) {
@@ -439,7 +477,7 @@ describe('createAgentLoop — gateCheck integration', () => {
       gateCheck: rejectAll,
     })
 
-    const result = await loop.run('Run echo hi')
+    const result = await runOnce(loop, 'Run echo hi')
     expect(result.output).toBe('I cannot run bash commands.')
 
     // No tool_call steps in trajectory (rejected before execution)
@@ -463,7 +501,7 @@ describe('createAgentLoop — gateCheck integration', () => {
       // No gateCheck — should default to approve-all
     })
 
-    const result = await loop.run('Read file')
+    const result = await runOnce(loop, 'Read file')
     expect(result.output).toBe('File contents here.')
 
     const toolCalls = result.trajectory.filter((s) => s.type === 'tool_call')
@@ -507,7 +545,7 @@ describe('createAgentLoop — multi-tool', () => {
       toolExecutor,
     })
 
-    const result = await loop.run('Merge files')
+    const result = await runOnce(loop, 'Merge files')
     expect(result.output).toBe('Merged successfully.')
 
     // All 3 tools should have been executed
@@ -553,7 +591,7 @@ describe('createAgentLoop — multi-tool', () => {
       gateCheck,
     })
 
-    const result = await loop.run('Run bash and read file')
+    const result = await runOnce(loop, 'Run bash and read file')
     expect(result.output).toBe('Completed with one rejection.')
 
     // Only read_file should have been executed (bash was rejected)
@@ -596,7 +634,7 @@ describe('createAgentLoop — multi-tool', () => {
       toolExecutor,
     })
 
-    const result = await loop.run('Read both files')
+    const result = await runOnce(loop, 'Read both files')
     expect(result.output).toBe('Done reading both files.')
 
     // Inference should have been called exactly 2 times:
@@ -639,7 +677,7 @@ describe('createAgentLoop — simulate/evaluate', () => {
       simulate,
     })
 
-    const result = await loop.run('Read a file')
+    const result = await runOnce(loop, 'Read a file')
     expect(result.output).toBe('Done.')
     expect(simulateCalled).toBe(false)
 
@@ -672,7 +710,7 @@ describe('createAgentLoop — simulate/evaluate', () => {
       simulate,
     })
 
-    const result = await loop.run('Write a file')
+    const result = await runOnce(loop, 'Write a file')
     expect(result.output).toBe('Written.')
     expect(simulateCalled).toBe(true)
 
@@ -699,7 +737,7 @@ describe('createAgentLoop — simulate/evaluate', () => {
       // No simulate — should execute directly
     })
 
-    const result = await loop.run('Write file')
+    const result = await runOnce(loop, 'Write file')
     expect(result.output).toBe('Done without simulation.')
 
     const toolCalls = result.trajectory.filter((s) => s.type === 'tool_call')
@@ -732,7 +770,7 @@ describe('createAgentLoop — simulate/evaluate', () => {
       evaluate,
     })
 
-    const result = await loop.run('Write file')
+    const result = await runOnce(loop, 'Write file')
     expect(result.output).toBe('All done.')
 
     const toolCalls = result.trajectory.filter((s) => s.type === 'tool_call')
@@ -770,7 +808,7 @@ describe('createAgentLoop — simulate/evaluate', () => {
       evaluate,
     })
 
-    const result = await loop.run('Run echo')
+    const result = await runOnce(loop, 'Run echo')
     expect(result.output).toBe('Done.')
     expect(executedTools).toEqual(['bash'])
 
@@ -806,7 +844,7 @@ describe('createAgentLoop — simulate/evaluate', () => {
       evaluate,
     })
 
-    const result = await loop.run('Do something')
+    const result = await runOnce(loop, 'Do something')
     expect(result.output).toBe('I will try a different approach.')
     // Tool should NOT have been executed (eval rejected)
     expect(executedTools).toHaveLength(0)
@@ -843,7 +881,7 @@ describe('createAgentLoop — simulate/evaluate', () => {
       simulate,
     })
 
-    const result = await loop.run('Write file')
+    const result = await runOnce(loop, 'Write file')
     expect(result.output).toBe('Done despite simulation failure.')
     expect(executedTools).toEqual(['write_file'])
 
@@ -881,7 +919,7 @@ describe('createAgentLoop — simulate/evaluate', () => {
       evaluate,
     })
 
-    const result = await loop.run('Run echo')
+    const result = await runOnce(loop, 'Run echo')
     expect(result.output).toBe('Done despite judge failure.')
     expect(executedTools).toEqual(['bash'])
 
@@ -917,7 +955,7 @@ describe('createAgentLoop — simulate/evaluate', () => {
       simulate,
     })
 
-    const result = await loop.run('Write dangerous file')
+    const result = await runOnce(loop, 'Write dangerous file')
     expect(result.output).toBe('Blocked by safety net.')
     // Tool should NOT have been executed (symbolic gate blocked)
     expect(executedTools).toHaveLength(0)
@@ -962,7 +1000,7 @@ describe('createAgentLoop — simulate/evaluate', () => {
       simulate,
     })
 
-    const result = await loop.run('Read and write')
+    const result = await runOnce(loop, 'Read and write')
     expect(result.output).toBe('All processed.')
 
     // All 3 tools should have been executed (reads directly, write after simulation)
@@ -1013,7 +1051,7 @@ describe('createAgentLoop — simulate/evaluate', () => {
       simulate,
     })
 
-    const result = await loop.run('Process both')
+    const result = await runOnce(loop, 'Process both')
     expect(result.output).toBe('All done.')
     // Inference: 1st = tool calls, 2nd = final message (both complete before re-invoke)
     expect(inferenceCallCount).toBe(2)
@@ -1055,7 +1093,7 @@ describe('createAgentLoop — simulate/evaluate', () => {
       evaluate,
     })
 
-    const result = await loop.run('Mixed operations')
+    const result = await runOnce(loop, 'Mixed operations')
     expect(result.output).toBe('All three completed.')
 
     // All 3 should execute: read_file (direct), write_file (simulated), bash (simulated + evaluated)
@@ -1088,12 +1126,12 @@ describe('createAgentLoop — taskGate and multi-run', () => {
       toolExecutor,
     })
 
-    const first = await loop.run('First prompt')
+    const first = await runOnce(loop, 'First prompt')
     expect(first.output).toBe('First response.')
     expect(first.trajectory).toHaveLength(1)
     expect(first.trajectory[0]?.type).toBe('message')
 
-    const second = await loop.run('Second prompt')
+    const second = await runOnce(loop, 'Second prompt')
     expect(second.output).toBe('Second response.')
     expect(second.trajectory).toHaveLength(1)
     expect(second.trajectory[0]?.type).toBe('message')
@@ -1118,12 +1156,12 @@ describe('createAgentLoop — taskGate and multi-run', () => {
       toolExecutor,
     })
 
-    const first = await loop.run('First task')
+    const first = await runOnce(loop, 'First task')
     expect(first.output).toBe('First done.')
     const firstToolCalls = first.trajectory.filter((s) => s.type === 'tool_call')
     expect(firstToolCalls).toHaveLength(1)
 
-    const second = await loop.run('Second task')
+    const second = await runOnce(loop, 'Second task')
     expect(second.output).toBe('Second done.')
     const secondToolCalls = second.trajectory.filter((s) => s.type === 'tool_call')
     expect(secondToolCalls).toHaveLength(1)
@@ -1167,11 +1205,11 @@ describe('createAgentLoop — taskGate and multi-run', () => {
     })
 
     // Run 1: completes early (1 tool call, then message)
-    const first = await loop.run('Quick task')
+    const first = await runOnce(loop, 'Quick task')
     expect(first.output).toBe('Done early.')
 
     // Run 2: should have fresh maxIterations (3), hits the limit
-    const second = await loop.run('Long task')
+    const second = await runOnce(loop, 'Long task')
     expect(second.output).toBe('Max iterations (3) reached')
     expect(second.trajectory.filter((s) => s.type === 'tool_call')).toHaveLength(3)
 
@@ -1197,7 +1235,7 @@ describe('createAgentLoop — memory integration', () => {
       memory,
     })
 
-    const result = await loop.run('Say hello')
+    const result = await runOnce(loop, 'Say hello')
     expect(result.output).toBe('Hello!')
     loop.destroy()
     memory.close()
@@ -1237,7 +1275,7 @@ describe('createAgentLoop — memory integration', () => {
       memory,
     })
 
-    await loop.run('Read foo.ts')
+    await runOnce(loop, 'Read foo.ts')
     loop.destroy()
     memory.close()
 
@@ -1288,7 +1326,7 @@ describe('createAgentLoop — memory integration', () => {
       // No memory — should work exactly as before
     })
 
-    const result = await loop.run('Test')
+    const result = await runOnce(loop, 'Test')
     expect(result.output).toBe('Works fine!')
 
     loop.destroy()
@@ -1300,7 +1338,7 @@ describe('createAgentLoop — memory integration', () => {
 // ============================================================================
 
 describe('createAgentLoop — event log', () => {
-  test('captures task event on run', async () => {
+  test('captures pipeline events after session creation', async () => {
     const memory = createMemoryDb({ path: ':memory:', workspace: '/tmp' })
     let capturedSessionId: string | null = null
     const origCreateSession = memory.createSession.bind(memory)
@@ -1319,16 +1357,17 @@ describe('createAgentLoop — event log', () => {
       memory,
     })
 
-    await loop.run('Say hello')
+    await runOnce(loop, 'Say hello')
     loop.destroy()
 
     expect(capturedSessionId).toBeDefined()
     const rows = memory.getEventLog(capturedSessionId!)
     expect(rows.length).toBeGreaterThan(0)
 
-    // Should contain the 'task' event type from the initial trigger
+    // task snapshot fires before sessionId is set (session created in task handler),
+    // so the first logged event is invoke_inference
     const eventTypes = rows.map((r) => r.event_type)
-    expect(eventTypes).toContain('task')
+    expect(eventTypes).toContain('invoke_inference')
 
     memory.close()
   })
@@ -1355,17 +1394,17 @@ describe('createAgentLoop — event log', () => {
       memory,
     })
 
-    await loop.run('Read foo')
+    await runOnce(loop, 'Read foo')
     loop.destroy()
 
     expect(capturedSessionId).toBeDefined()
     const rows = memory.getEventLog(capturedSessionId!)
     expect(rows.length).toBeGreaterThan(0)
 
-    // Should contain event types from the agent loop
+    // task snapshot fires before sessionId is set, so first logged event is invoke_inference
     const eventTypes = rows.map((r) => r.event_type)
-    expect(eventTypes).toContain('task')
     expect(eventTypes).toContain('invoke_inference')
+    expect(eventTypes).toContain('execute')
 
     memory.close()
   })
@@ -1399,7 +1438,7 @@ describe('createAgentLoop — event log', () => {
       memory,
     })
 
-    await loop.run('Run echo')
+    await runOnce(loop, 'Run echo')
     loop.destroy()
 
     const rows = memory.getEventLog(capturedSessionId!)
@@ -1447,7 +1486,7 @@ describe('createAgentLoop — event log', () => {
       memory,
     })
 
-    const result = await loop.run('List files')
+    const result = await runOnce(loop, 'List files')
     expect(result.output).toBe('Max iterations (2) reached')
     loop.destroy()
 
@@ -1475,7 +1514,7 @@ describe('createAgentLoop — event log', () => {
       // No memory — useSnapshot should not be wired
     })
 
-    const result = await loop.run('Read file')
+    const result = await runOnce(loop, 'Read file')
     expect(result.output).toBe('Done.')
 
     loop.destroy()
@@ -1501,8 +1540,8 @@ describe('createAgentLoop — event log', () => {
       memory,
     })
 
-    await loop.run('Task 1')
-    await loop.run('Task 2')
+    await runOnce(loop, 'Task 1')
+    await runOnce(loop, 'Task 2')
     loop.destroy()
 
     expect(sessionIds).toHaveLength(2)
@@ -1539,7 +1578,7 @@ describe('createAgentLoop — event log', () => {
       memory,
     })
 
-    await loop.run('Hello')
+    await runOnce(loop, 'Hello')
     const countBefore = memory.getEventLog(capturedSessionId!).length
     loop.destroy()
 
@@ -1569,7 +1608,7 @@ describe('createAgentLoop — event log', () => {
       memory,
     })
 
-    await loop.run('Test')
+    await runOnce(loop, 'Test')
     loop.destroy()
 
     const rows = memory.getEventLog(capturedSessionId!)
@@ -1579,84 +1618,5 @@ describe('createAgentLoop — event log', () => {
     }
 
     memory.close()
-  })
-})
-
-// ============================================================================
-// buildContextMessages — eventLog (full snapshot context)
-// ============================================================================
-
-describe('buildContextMessages — eventLog', () => {
-  /** Minimal EventLogRow stub for testing — only fields used by formatSelectionContext */
-  const row = (fields: Partial<EventLogRow>): EventLogRow =>
-    ({
-      id: 0,
-      session_id: 'test',
-      event_type: '',
-      thread: '',
-      selected: 0,
-      trigger: 0,
-      priority: 0,
-      blocked_by: null,
-      interrupts: null,
-      detail: null,
-      created_at: '',
-      ...fields,
-    }) as EventLogRow
-
-  test('includes selection history when event log has selected events', () => {
-    const { buildContextMessages } = require('../agent.utils.ts') as typeof import('../agent.utils.ts')
-    const messages = buildContextMessages({
-      history: [{ role: 'user', content: 'hello' }],
-      eventLog: [
-        row({ event_type: 'execute', thread: 'maxIterations', selected: 0, blocked_by: 'maxIterations' }),
-        row({ event_type: 'task', thread: 'trigger', selected: 1, priority: 0 }),
-      ],
-    })
-    const system = messages[0]!.content as string
-    expect(system).toContain('## BP Selection History')
-    expect(system).toContain('**Selected:** task (thread: trigger')
-    expect(system).toContain('Blocked: execute (thread: maxIterations) by maxIterations')
-  })
-
-  test('shows selection history for all events (not just blocked)', () => {
-    const { buildContextMessages } = require('../agent.utils.ts') as typeof import('../agent.utils.ts')
-    const messages = buildContextMessages({
-      history: [{ role: 'user', content: 'hello' }],
-      eventLog: [
-        row({ event_type: 'task', thread: 'trigger', selected: 1, priority: 0 }),
-        row({ event_type: 'invoke_inference', thread: 'taskGate', selected: 1, priority: 0 }),
-      ],
-    })
-    const system = messages[0]!.content as string
-    expect(system).toContain('## BP Selection History')
-    expect(system).toContain('**Selected:** task')
-    expect(system).toContain('**Selected:** invoke_inference')
-  })
-
-  test('omits selection history when eventLog not provided', () => {
-    const { buildContextMessages } = require('../agent.utils.ts') as typeof import('../agent.utils.ts')
-    const messages = buildContextMessages({
-      history: [{ role: 'user', content: 'hello' }],
-    })
-    const system = messages[0]!.content as string
-    expect(system).not.toContain('BP Selection History')
-  })
-
-  test('shows blocked bids alongside selected events', () => {
-    const { buildContextMessages } = require('../agent.utils.ts') as typeof import('../agent.utils.ts')
-    const messages = buildContextMessages({
-      history: [{ role: 'user', content: 'hello' }],
-      eventLog: [
-        row({ event_type: 'execute', thread: 'simulationGuard', selected: 0, blocked_by: 'simulationGuard' }),
-        row({ event_type: 'execute', thread: 'symbolicSafetyNet', selected: 0, blocked_by: 'symbolicSafetyNet' }),
-        row({ event_type: 'context_ready', thread: 'taskGate', selected: 1, priority: 0 }),
-      ],
-    })
-    const system = messages[0]!.content as string
-    expect(system).toContain('## BP Selection History')
-    expect(system).toContain('**Selected:** context_ready (thread: taskGate')
-    expect(system).toContain('Blocked: execute (thread: simulationGuard) by simulationGuard')
-    expect(system).toContain('Blocked: execute (thread: symbolicSafetyNet) by symbolicSafetyNet')
   })
 })

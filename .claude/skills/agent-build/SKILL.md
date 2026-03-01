@@ -49,7 +49,7 @@ graph TD
     ER --> BC
     TR --> BC
     BC -->|count = 0| INV
-    MR -->|no tools, has message| MSG[message → resolve promise]
+    MR -->|no tools, has message| MSG[message — terminal event]
     MSG -->|taskGate loops| TASK
 ```
 
@@ -79,17 +79,38 @@ All events defined in `agent.constants.ts`:
 | `tool_result` | 6 | batchCompletion counts this |
 | `save_plan` | — | Store plan, trigger plan_saved |
 | `plan_saved` | — | Trigger invoke_inference |
-| `message` | — | Resolve run() promise (taskGate loops back to blocking) |
+| `message` | — | Terminal event (taskGate loops back to blocking) |
+| `client_connected` | — | Lifecycle: reset state, prepare for new task |
+| `disconnected` | — | Lifecycle: cleanup, interrupt taskGate |
 
 ### Current bThreads
 
 ```typescript
 // Session-level threads (set once at creation)
 bThreads.set({
-  // Phase-transition: blocks TASK_EVENTS between tasks
+  // Outer lifecycle gate: blocks everything until client connects
+  sessionGate: bThread([
+    bSync({
+      waitFor: 'client_connected',
+      block: (e) =>
+        e.type === 'task' ||
+        e.type === 'disconnected' ||
+        TASK_EVENTS.has(e.type),
+    }),
+    bSync({ waitFor: 'disconnected' }),
+  ], true),
+
+  // Phase-transition: blocks TASK_EVENTS between tasks, resets on disconnect
   taskGate: bThread([
-    bSync({ waitFor: 'task', block: (e) => TASK_EVENTS.has(e.type) }),
-    bSync({ waitFor: 'message' }),
+    bSync({
+      waitFor: 'task',
+      block: (e) => TASK_EVENTS.has(e.type),
+      interrupt: ['disconnected'],
+    }),
+    bSync({
+      waitFor: 'message',
+      interrupt: ['disconnected'],
+    }),
   ], true),
 
   // Constitution bThreads — one per rule, additive blocking (defense-in-depth)
@@ -182,13 +203,22 @@ When a seam is absent, the handler passes through:
 
 This eliminates conditional routing. Adding/removing seams is a handler-level concern, not a routing change.
 
-#### 4. Phase-Transition Gate (taskGate)
+#### 4. Two-Level Lifecycle Gating (sessionGate + taskGate)
 
 Thread position IS the coordination state — no external variables:
-- Phase 1: blocks all TASK_EVENTS, waits for `task`
-- Phase 2: allows all events, waits for `message`
+
+**sessionGate** (outer):
+- Phase 1: blocks `task`, `disconnected`, and all TASK_EVENTS; waits for `client_connected`
+- Phase 2: allows everything; waits for `disconnected`
+- Loops: `disconnected` → back to phase 1 (blocking)
+
+**taskGate** (inner):
+- Phase 1: blocks all TASK_EVENTS, waits for `task`; interrupted by `disconnected`
+- Phase 2: allows all events, waits for `message`; interrupted by `disconnected`
 - Loops: `message` → back to phase 1 (blocking)
-- Stale async triggers are silently dropped by the block predicate
+- `disconnected` interrupt resets taskGate to phase 1 mid-task
+
+Stale async triggers are silently dropped by the block predicates.
 
 #### 5. Interrupt as Structural Lifecycle
 
@@ -196,6 +226,7 @@ Thread position IS the coordination state — no external variables:
 
 | Thread | Interrupt Trigger | Lifecycle Meaning |
 |--------|------------------|-------------------|
+| `taskGate` | `disconnected` | Client disconnected mid-task, reset to phase 1 |
 | `maxIterations` | `message` | Task ended |
 | `batchCompletion` | `message` | Task ended mid-batch |
 | `sim_guard_{id}` | `simulation_result` (predicate) | Simulation completed for this call |
@@ -226,7 +257,7 @@ From BP's Sensor/Actuator pattern (BPC Scaling Paper): handlers bridge async I/O
 
 | File | Purpose |
 |------|---------|
-| `agent.ts` | Main loop: bThreads + feedback handlers + run/destroy |
+| `agent.ts` | Main loop: bThreads + feedback handlers, returns AgentNode (trigger/subscribe/snapshot/destroy) |
 | `agent.types.ts` | Type definitions: seams, events, detail types, AgentEventDetails (reference) |
 | `agent.schemas.ts` | Zod schemas: AgentToolCall, AgentPlan, GateDecision, etc. |
 | `agent.constants.ts` | Event constants (AGENT_EVENTS), risk classes, tool status |
@@ -249,10 +280,25 @@ From BP's Sensor/Actuator pattern (BPC Scaling Paper): handlers bridge async I/O
 | 7 | BP-first architecture + snapshot context | Done | Pipeline pass-through, unparameterized behavioral(), three-layer architecture |
 | 8 | Per-call dynamic threads + snapshot observability | Done | Predicate interrupt lifecycle, per-call guards, eliminated shared mutable state |
 | 9 | Per-tool-call dispatch + Narrow World View | Done | context_ready per call, eliminated proposed_action + simulationPredictions, single-path handlers, prediction via event chain |
+| 10 | Drop run(), expose AgentNode | Done | sessionGate + taskGate lifecycle, restricted trigger, adapter-based subscribe, queueMicrotask for nested dispatch |
 
-**1151 total tests** (all passing) across 79 files.
+**1128 total tests** (all passing) across 80 files.
 
 ## Key Discoveries (Accumulated)
+
+**Nested Synchronous Dispatch Requires queueMicrotask** (Wave 10):
+- When a sync handler calls `trigger()`, BP dispatches the new event within the same call stack (nested dispatch)
+- Calling `disconnect()` during nested dispatch removes subscribers before the outer dispatch reaches them
+- Example: `message` fires inside `model_response` dispatch. If the adapter's `message` handler calls `disconnect()` synchronously, the adapter's `model_response` handler never fires — thinking is lost
+- Similarly, `resolve()` calling `structuredClone(recorder.getSteps())` during nested dispatch snapshots trajectory before all handlers have contributed
+- **Fix:** Defer cleanup and resolution to `queueMicrotask()`. The microtask fires after the full synchronous dispatch completes, ensuring all subscribers see all events
+
+**AgentNode Adapter Pattern — Subscribe, Don't Own** (Wave 10):
+- `createAgentLoop` returns `AgentNode` — `{ trigger, subscribe, snapshot, destroy }`
+- Trajectory recording moved from core to adapter concern — adapters import `createTrajectoryRecorder` and build their own view via `subscribe`
+- `useRestrictedTrigger` blocks internal pipeline events from external callers — only `task`, `client_connected`, `disconnected` are externally triggerable
+- Session creation (memory) absorbed into `task` handler — observer connects/disconnects per session lifecycle
+- Multiple adapters can `subscribe` independently (ACP, GUI, orchestrator, test helper)
 
 **Interrupted Thread Timing — bThread `request` Cannot Produce Workflow Events** (Wave 9):
 - When a thread is interrupted, it moves to the `running` set (terminated). After `actionPublisher` fires the async handler, `running.size && step()` triggers a bonus super-step with `selectNextEvent()`
@@ -315,7 +361,7 @@ From BP's Sensor/Actuator pattern (BPC Scaling Paper): handlers bridge async I/O
 All external dependencies are injected as function parameters:
 
 ```typescript
-createAgentLoop({
+const node: AgentNode = createAgentLoop({
   inferenceCall,  // mock in tests
   toolExecutor,   // mock in tests
   constitution,   // optional, ConstitutionRule[] → dual-layer safety
@@ -326,6 +372,39 @@ createAgentLoop({
   memory,         // optional, SQLite persistence
 })
 ```
+
+Returns an `AgentNode` — `{ trigger, subscribe, snapshot, destroy }`. Adapters build their own view by subscribing to events. Tests use a `runOnce` helper that demonstrates the adapter pattern:
+
+```typescript
+const runOnce = (node: AgentNode, prompt: string): Promise<{ output: string; trajectory: TrajectoryStep[] }> => {
+  const recorder = createTrajectoryRecorder()
+  return new Promise((resolve) => {
+    const disconnect = node.subscribe({
+      [AGENT_EVENTS.model_response]: (detail) => {
+        if (detail.parsed.thinking) recorder.addThought(detail.parsed.thinking)
+      },
+      [AGENT_EVENTS.tool_result]: (detail) => {
+        recorder.addToolCall({ name: detail.result.name, status: detail.result.status,
+          output: detail.result.output ?? detail.result.error, duration: detail.result.duration })
+      },
+      [AGENT_EVENTS.save_plan]: (detail) => { recorder.addPlan(detail.plan.steps) },
+      [AGENT_EVENTS.message]: (detail) => {
+        recorder.addMessage(detail.content)
+        const content = detail.content
+        queueMicrotask(() => {
+          disconnect()
+          node.trigger({ type: AGENT_EVENTS.disconnected })
+          resolve({ output: content, trajectory: recorder.getSteps() })
+        })
+      },
+    })
+    node.trigger({ type: AGENT_EVENTS.client_connected })
+    node.trigger({ type: AGENT_EVENTS.task, detail: { prompt } })
+  })
+}
+```
+
+**`queueMicrotask` is critical** — `message` fires during nested synchronous dispatch from `model_response`. Calling `disconnect()` or `resolve()` synchronously would remove the subscriber before the outer dispatch completes, causing missed events (e.g., thinking not captured). Deferring to microtask lets the full dispatch finish first.
 
 Tests use mock implementations that return controlled responses. See `agent.spec.ts` for patterns.
 

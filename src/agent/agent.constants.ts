@@ -28,6 +28,9 @@ export const AGENT_EVENTS = keyMirror(
   'plan_saved',
   'message',
   'loop_complete',
+  // Lifecycle — adapter connection management
+  'client_connected',
+  'disconnected',
 )
 
 /**

@@ -1,4 +1,3 @@
-import type { EventLogRow } from '../tools/memory/memory.types.ts'
 import { TOOL_STATUS } from './agent.constants.ts'
 import type { AgentPlan, AgentPlanStep, AgentToolCall, ToolResult, TrajectoryStep } from './agent.schemas.ts'
 import type { ChatMessage, DiagnosticEntry, InferenceCall, ParsedModelResponse } from './agent.types.ts'
@@ -196,55 +195,6 @@ export const createTrajectoryRecorder = () => {
 // buildContextMessages — assembles the messages array for inference
 // ============================================================================
 
-const SELECTION_WINDOW = 10
-
-/**
- * Groups event log rows into selection steps and formats the last N.
- *
- * @remarks
- * A "selection step" is a contiguous group of rows where exactly one has
- * `selected=1`. Windows to the last {@link SELECTION_WINDOW} steps.
- *
- * @internal
- */
-const formatSelectionContext = (eventLog: EventLogRow[]): string => {
-  // Group rows into selection steps
-  const steps: EventLogRow[][] = []
-  let current: EventLogRow[] = []
-
-  for (const row of eventLog) {
-    current.push(row)
-    if (row.selected) {
-      steps.push(current)
-      current = []
-    }
-  }
-  if (current.length) steps.push(current)
-
-  const totalSteps = steps.length
-  const windowedSteps = steps.slice(-SELECTION_WINDOW)
-  const omitted = totalSteps - windowedSteps.length
-
-  let section = '\n\n## BP Selection History'
-  if (omitted > 0) {
-    section += `\n(${omitted} earlier selection steps omitted)`
-  }
-
-  for (const step of windowedSteps) {
-    const selected = step.find((r) => r.selected)
-    const blocked = step.filter((r) => r.blocked_by)
-
-    if (selected) {
-      section += `\n\n**Selected:** ${selected.event_type} (thread: ${selected.thread}, priority: ${selected.priority})`
-    }
-    for (const b of blocked) {
-      section += `\n  - Blocked: ${b.event_type} (thread: ${b.thread}) by ${b.blocked_by}`
-    }
-  }
-
-  return section
-}
-
 /**
  * Formats diagnostic entries (errors and warnings) for the model.
  *
@@ -274,9 +224,10 @@ const formatDiagnostics = (diagnostics: DiagnosticEntry[]): string => {
  * Builds the messages array for an inference call.
  *
  * @remarks
- * Always provides full BP snapshot context to the model:
- * - Selection history (who won, who was blocked, priorities)
- * - Diagnostics (feedback errors, restricted trigger rejections, thread warnings)
+ * BP snapshot data reaches the model as events flowing through conversation
+ * history, not via SQLite re-reads. Diagnostics (feedback errors, restricted
+ * trigger rejections, thread warnings) are still appended to the system prompt
+ * from the in-memory buffer.
  *
  * @param options - Context assembly options
  * @returns Array of chat messages in OpenAI format
@@ -287,13 +238,11 @@ export const buildContextMessages = ({
   systemPrompt,
   history,
   plan,
-  eventLog,
   diagnostics,
 }: {
   systemPrompt?: string
   history: ChatMessage[]
   plan?: AgentPlan
-  eventLog?: EventLogRow[]
   diagnostics?: DiagnosticEntry[]
 }): ChatMessage[] => {
   const messages: ChatMessage[] = []
@@ -302,11 +251,6 @@ export const buildContextMessages = ({
   let system = systemPrompt ?? 'You are a helpful assistant.'
   if (plan) {
     system += `\n\n## Current Plan\nGoal: ${plan.goal}\nSteps:\n${plan.steps.map((s) => `- [${s.id}] ${s.intent} (tools: ${s.tools.join(', ')})`).join('\n')}`
-  }
-
-  // Full BP snapshot context: selections + diagnostics
-  if (eventLog?.length) {
-    system += formatSelectionContext(eventLog)
   }
 
   if (diagnostics?.length) {
