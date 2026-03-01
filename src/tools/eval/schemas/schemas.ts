@@ -21,7 +21,7 @@
  */
 
 import { z } from 'zod'
-import { MessageStepSchema, ThoughtStepSchema, ToolCallStepSchema } from '../../../agent/agent.schemas.ts'
+import { MessageStepSchema, ThoughtStepSchema, ToolCallStepSchema } from '../../../reference/agent.schemas.ts'
 
 export { ThoughtStepSchema, MessageStepSchema, ToolCallStepSchema }
 

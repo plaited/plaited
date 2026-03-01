@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import type { AgentPlan, AgentToolCall } from '../../agent/agent.schemas.ts'
-import type { ChatMessage, InferenceCall, Simulate } from '../../agent/agent.types.ts'
+import type { AgentPlan, AgentToolCall } from '../../reference/agent.schemas.ts'
+import type { ChatMessage, InferenceCall, Simulate } from '../../reference/agent.types.ts'
 import { SimulateConfigSchema } from './simulate.schemas.ts'
 
 // ============================================================================
@@ -203,7 +203,7 @@ export const simulateCli = async (args: string[]): Promise<void> => {
   // CLI mode returns the prompt that would be sent to inference
   const messages = buildStateTransitionPrompt({
     toolCall: parsed.data.toolCall,
-    history: parsed.data.history as import('../../agent/agent.types.ts').ChatMessage[],
+    history: parsed.data.history as import('../../reference/agent.types.ts').ChatMessage[],
     plan: parsed.data.plan ?? null,
   })
   // biome-ignore lint/suspicious/noConsole: CLI stdout output

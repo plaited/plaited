@@ -1,6 +1,6 @@
-import type { AgentToolCall } from '../../agent/agent.schemas.ts'
-import type { GateCheck } from '../../agent/agent.types.ts'
 import type { RulesFunction } from '../../behavioral/behavioral.types.ts'
+import type { AgentToolCall } from '../../reference/agent.schemas.ts'
+import type { GateCheck } from '../../reference/agent.types.ts'
 
 /** A constitution rule that can block tool calls. test returns true = BLOCKED. */
 export type ConstitutionRule = {

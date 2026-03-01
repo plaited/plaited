@@ -8,9 +8,9 @@
  *
  * @internal
  */
-import type { AgentPlan, AgentToolCall } from '../../agent/agent.schemas.ts'
-import type { ChatMessage } from '../../agent/agent.types.ts'
-import { createInferenceCall } from '../../agent/agent.utils.ts'
+import type { AgentPlan, AgentToolCall } from '../../reference/agent.schemas.ts'
+import type { ChatMessage } from '../../reference/agent.types.ts'
+import { createInferenceCall } from '../../reference/agent.utils.ts'
 import { buildStateTransitionPrompt, parseSimulationResponse } from './simulate.ts'
 
 type SimulationRequest = {

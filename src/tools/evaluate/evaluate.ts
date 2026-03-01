@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { RISK_CLASS } from '../../agent/agent.constants.ts'
-import type { AgentToolCall } from '../../agent/agent.schemas.ts'
-import type { ChatMessage, Evaluate, InferenceCall } from '../../agent/agent.types.ts'
+import { RISK_CLASS } from '../../reference/agent.constants.ts'
+import type { AgentToolCall } from '../../reference/agent.schemas.ts'
+import type { ChatMessage, Evaluate, InferenceCall } from '../../reference/agent.types.ts'
 import { EvaluateConfigSchema } from './evaluate.schemas.ts'
 
 // ============================================================================

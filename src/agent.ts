@@ -17,14 +17,14 @@
  */
 
 // Agent core (stays in src/agent/)
-export * from './agent/agent.constants.ts'
-export * from './agent/agent.orchestrator.constants.ts'
-export * from './agent/agent.orchestrator.ts'
-export type * from './agent/agent.orchestrator.types.ts'
-export * from './agent/agent.schemas.ts'
-export * from './agent/agent.ts'
-export type * from './agent/agent.types.ts'
-export * from './agent/agent.utils.ts'
+export * from './reference/agent.constants.ts'
+export * from './reference/agent.orchestrator.constants.ts'
+export * from './reference/agent.orchestrator.ts'
+export type * from './reference/agent.orchestrator.types.ts'
+export * from './reference/agent.schemas.ts'
+export * from './reference/agent.ts'
+export type * from './reference/agent.types.ts'
+export * from './reference/agent.utils.ts'
 
 // Tools (re-exported from src/tools/)
 export * from './tools/constitution/constitution.ts'

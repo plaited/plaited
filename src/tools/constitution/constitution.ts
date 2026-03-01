@@ -1,8 +1,8 @@
 import { z } from 'zod'
-import { AGENT_EVENTS, RISK_CLASS } from '../../agent/agent.constants.ts'
-import type { AgentToolCall, GateDecision } from '../../agent/agent.schemas.ts'
-import type { GateCheck } from '../../agent/agent.types.ts'
 import { bSync, bThread } from '../../behavioral/behavioral.utils.ts'
+import { AGENT_EVENTS, RISK_CLASS } from '../../reference/agent.constants.ts'
+import type { AgentToolCall, GateDecision } from '../../reference/agent.schemas.ts'
+import type { GateCheck } from '../../reference/agent.types.ts'
 import { ClassifyRiskConfigSchema } from './constitution.schemas.ts'
 import type { Constitution, ConstitutionRule, ConstitutionRuleConfig } from './constitution.types.ts'
 

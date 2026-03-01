@@ -1,8 +1,8 @@
 import { resolve } from 'node:path'
 import { z } from 'zod'
-import { TOOL_STATUS } from '../../agent/agent.constants.ts'
-import type { AgentToolCall, ToolDefinition, ToolResult } from '../../agent/agent.schemas.ts'
-import type { ToolContext, ToolExecutor, ToolHandler } from '../../agent/agent.types.ts'
+import { TOOL_STATUS } from '../../reference/agent.constants.ts'
+import type { AgentToolCall, ToolDefinition, ToolResult } from '../../reference/agent.schemas.ts'
+import type { ToolContext, ToolExecutor, ToolHandler } from '../../reference/agent.types.ts'
 import { BashConfigSchema, ListFilesConfigSchema, ReadFileConfigSchema, WriteFileConfigSchema } from './crud.schemas.ts'
 
 // ============================================================================

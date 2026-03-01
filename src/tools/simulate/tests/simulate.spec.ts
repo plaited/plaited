@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test'
-import type { AgentToolCall } from '../../../agent/agent.schemas.ts'
-import type { ChatMessage, InferenceCall } from '../../../agent/agent.types.ts'
+import type { AgentToolCall } from '../../../reference/agent.schemas.ts'
+import type { ChatMessage, InferenceCall } from '../../../reference/agent.types.ts'
 import {
   buildStateTransitionPrompt,
   createSimulate,

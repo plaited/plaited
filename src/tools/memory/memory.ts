@@ -1,8 +1,8 @@
 import { Database } from 'bun:sqlite'
 import { relative } from 'node:path'
 import { z } from 'zod'
-import type { ToolDefinition } from '../../agent/agent.schemas.ts'
-import type { ToolHandler } from '../../agent/agent.types.ts'
+import type { ToolDefinition } from '../../reference/agent.schemas.ts'
+import type { ToolHandler } from '../../reference/agent.types.ts'
 import { SearchConfigSchema } from './memory.schemas.ts'
 import type {
   EventLogEntry,

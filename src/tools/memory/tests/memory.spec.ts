@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { ToolDefinitionSchema } from '../../../agent/agent.schemas.ts'
+import { ToolDefinitionSchema } from '../../../reference/agent.schemas.ts'
 import { createMemoryDb, createSearchHandler, searchToolSchema } from '../memory.ts'
 import type { MemoryDb } from '../memory.types.ts'
 
