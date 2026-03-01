@@ -90,6 +90,9 @@ The rendered HTML string is scanned for injection points:
 
 ## Per-Connection Lifecycle
 
+<!-- NOTE: This example shows createSSR's API contract but the server-side
+     connection handling pattern will likely change once Modnet module routing is designed. -->
+
 ```typescript
 // Server handler for each WebSocket connection
 const handleConnection = (ws: WebSocket) => {

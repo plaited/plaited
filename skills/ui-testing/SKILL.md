@@ -133,7 +133,7 @@ describe('controlIsland: factory', () => {
 
 ## Fixture Server Pattern
 
-Layer 3 tests require a real HTTP + WebSocket server that acts as the agent — responding to `root_connected` with scripted message sequences.
+Layer 3 tests require a real HTTP + WebSocket server that acts as the agent — responding to `client_connected` with scripted message sequences.
 
 **Exemplar:** [assets/serve.ts](assets/serve.ts)
 
@@ -155,7 +155,7 @@ sequenceDiagram
     Browser->>Server: GET /page.html
     Server-->>Browser: HTML + <script src="/dist/entry.js">
     Browser->>Server: WebSocket upgrade
-    Browser->>Server: root_connected { detail: 'tag-name' }
+    Browser->>Server: client_connected { id, msg: 'tag-name' }
     Server->>Browser: Scripted messages (render, attrs, etc.)
 
     Test->>Browser: cli('eval', '() => ...')
@@ -182,9 +182,7 @@ controlIsland({ tag: 'test-island', observedAttributes: ['value', 'label'] })
 
 **Dynamic test pages** — `generateTestPage(tag)` creates HTML on demand for `/test/<tag>` routes, reusing a single entry file for multiple test scenarios.
 
-**WebSocket routing** — The server switches on `data.detail` (the element tag) in the `root_connected` handler to send test-specific message sequences.
-
-**Server state** — Exposes getters (`lastUserAction`, `lastBehavioralUpdated`) for server-side assertions in tests.
+<!-- TODO: WebSocket routing and server state patterns depend on src/server/ design -->
 
 ## @playwright/cli Test Pattern
 

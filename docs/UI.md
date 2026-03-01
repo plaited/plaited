@@ -1,198 +1,215 @@
-# UI Architecture — Channel Adapters & AI-Assisted Design
+# UI Architecture
 
-Three runtime interfaces serve the deployed agent node. Each is designed for a different consumer; all wrap the same internal capability surface.
+## Overview
 
-## Runtime Interfaces
+`src/ui/` provides the rendering and protocol primitives for a generative web UI. An agent generates HTML on the server, streams it to the browser over WebSocket, and optionally injects client-side behavioral logic at runtime. All client-side coordination uses behavioral programming (BP) — the same engine that orchestrates the agent loop.
 
-```mermaid
-flowchart TD
-    subgraph Interfaces["Runtime Interfaces"]
-        WebUI["Web UI<br/>(human-first)"]
-        ACP["ACP<br/>(machine-first)"]
-        CLI["CLI<br/>(machine-first)"]
-    end
+The full stack — agent + UI — is a Modnet node. Modules are generated for nodes, composed from the rendering and protocol primitives documented here.
 
-    Owner["Owner"] -->|"browser"| WebUI
-    Engineer["Engineer"] -->|"Zed / ACP client"| ACP
-    Engineer -->|"Claude Code / Codex"| CLI
-
-    Node["Deployed Node"]
-    WebUI --- Node
-    ACP --- Node
-    CLI --- Node
-    Node -->|"A2A"| OtherNodes["Other Nodes"]
-```
-
-| Interface | Designed For | Human Uses It Via | Transport | Purpose |
-|---|---|---|---|---|
-| **Web UI** | Humans directly | Browser | WebSocket (`Bun.serve`) | Daily use, generated Modnet interfaces |
-| **ACP** | Machines (JSON-RPC) | Zed, other ACP clients | stdio (JSON-RPC 2.0) | Debugging, auditing, training, AI-assisted design |
-| **CLI** | Machines (schema-driven JSON) | Coding agents (Claude Code, Codex, OpenCode) | stdin/stdout (JSON/JSONL) | Debugging, inspection, exposed as a skill |
-
-**A2A** is the inter-node protocol (not an adapter) — defined in [SYSTEM-DESIGN-V3.md](SYSTEM-DESIGN-V3.md#modnet--a2a).
-
-### Layering
-
-The CLI defines the **capability surface** — what the node can do. ACP and Web UI are protocol/rendering wrappers over the same capabilities.
-
-```mermaid
-flowchart LR
-    subgraph Capability["CLI — Capability Layer"]
-        Commands["Structured JSON commands"]
-        Schema["Schema-discoverable (--schema)"]
-    end
-
-    subgraph Protocol["ACP — Protocol Layer"]
-        JSONRPC["JSON-RPC 2.0 framing"]
-        Sessions["Session management"]
-        Updates["Streaming notifications"]
-    end
-
-    subgraph Rendering["Web UI — Rendering Layer"]
-        JSX["JSX → ssr() → HTML"]
-        WS["WebSocket push"]
-        Shell["Client shell BP"]
-    end
-
-    Protocol -->|"wraps"| Capability
-    Rendering -->|"wraps"| Capability
-```
-
-ACP sits on top of CLI output. The `@agentclientprotocol/sdk` provides JSON-RPC framing; the CLI provides the structured data. A flag activates ACP mode:
-
-```bash
-plaited acp          # ACP mode — JSON-RPC over stdio
-plaited acp --cwd .  # ACP with working directory
-```
-
-Reference: [OpenCode's ACP implementation](https://opencode.ai/docs/acp/) follows this same pattern — `opencode acp` wraps the internal SDK in JSON-RPC.
-
-### CLI Design
-
-The CLI follows the [`@youdotcom-oss/api`](https://www.npmjs.com/package/@youdotcom-oss/api) pattern:
-
-- Schema-driven JSON input (`--json '{"query":"..."}'`)
-- Structured JSON/JSONL output (bash-pipeable, jq-friendly)
-- `--schema` flag for parameter discovery
-- Dual interface: CLI for agents, programmatic API for code
-- Not designed for direct human consumption — coding agents interpret the output
-
-The CLI exists at runtime. Engineers use it through their coding agent to debug, inspect, and configure the deployed node.
-
-## Web UI — Generative Interface
-
-Key points:
-
-- **Server-push** — JSX → `ssr()` → WebSocket. Server generates everything; client is a thin shell.
-- **Behavioral shell** — A single `behavioral()` instance on the client coordinates rendering, input protection, event forwarding, and stream batching.
-- **Generation spectrum** — The agent generates UI at Levels 0–4, from pure HTML to full bElement + BP coordination.
-- **Atomic CSS** — `createStyles` produces hash-based class names. No Shadow DOM needed for style isolation.
-- **Style deduplication** — Server tracks sent styles per connection, only ships deltas.
-
-### Generation Spectrum
+## Directory Structure
 
 ```
-Level 0  JSX → HTML + CSS                     Zero client JS. Native elements only.
-Level 1  JSX → HTML + CSS + native behavior    <details>, <dialog>, :checked, CSS states
-Level 2  JSX → HTML + CSS + behavioral threads Agent generates typed thread modules
-Level 3  JSX → HTML + CSS + Custom Element     Form association, true encapsulation
-Level 4  JSX → HTML + CSS + bElement + BP      Full behavioral coordination
+src/ui/
+  css/         Atomic CSS-in-JS: createStyles, createTokens, createHostStyles, createKeyframes, joinStyles
+  dom/         Custom elements: controlIsland, controlDocument, decorateElements, DelegatedListener
+  protocol/    Controller protocol: constants, Zod schemas, client-side behavioral controller
+  render/      JSX factory (h/createTemplate), Fragment, SSR renderer (createSSR), template types
 ```
 
-**bElement is Level 3–4 escalation only** — used when the platform demands it (form association via `ElementInternals`, true DOM encapsulation, slot-based composition). Most generative UI is Level 0–2.
+Public API is re-exported through `src/ui.ts`.
 
-## ACP — Engineering Interface
+## Rendering Pipeline
 
-ACP (Agent Client Protocol) replaces the TUI adapter (`docs/GENERATIVE-TUI.md` is deleted).
+### JSX Factory — `createTemplate` / `h`
 
-ACP serves the engineering use case:
-- **Debugging** — Inspect node state, event logs, BP decisions
-- **Auditing** — Review tool call history, gate rejections
-- **Training** — Capture trajectories, provide feedback, run eval harness
-- **AI-assisted design** — The design workstation workflow (see below)
+`src/ui/render/template.ts`
 
-Protocol: JSON-RPC 2.0 over stdio. Methods follow the ACP spec:
-- `initialize` — capability negotiation
-- `session/new`, `session/load` — session lifecycle
-- `session/prompt` — send user messages
-- `session/update` — streaming notifications (thought chunks, tool calls, plan updates)
-- `session/cancel` — abort in-flight requests
+The JSX factory converts JSX calls into `TemplateObject` — a data structure of HTML string arrays, collected stylesheets, and a custom element registry. Security is enforced at creation time:
 
-## AI-Assisted Design — The Design Workstation
+- **`<script>` without `trusted={true}`** throws `UntrustedScriptError`
+- **`on*` event handler attributes** throw `EventHandlerAttributeError` — all events use `p-trigger`
+- **Non-primitive attribute values** throw `InvalidAttributeTypeError`
+- All content is HTML-escaped by default; `trusted` opts out per element
 
-ACP + Web UI work together as a design workstation for training the model to generate interfaces.
+Two special attributes coordinate server ↔ client:
+- **`p-target`** — marks elements the server can address for later `render` or `attrs` messages
+- **`p-trigger`** — binds DOM events to BP events: `p-trigger={{ click: 'submit' }}` serializes to `p-trigger="click:submit"`
 
-```mermaid
-sequenceDiagram
-    participant E as Engineer (Zed via ACP)
-    participant A as Agent
-    participant B as Browser (Web UI preview)
+`Fragment` groups children without a wrapper element.
 
-    E->>A: "Create a login form with email validation"
-    A->>B: Generates JSX + styles + bThreads → ssr() → WebSocket
-    B-->>E: Engineer sees preview in browser
-    E->>A: "Button too small, add forgot-password link"
-    A->>B: Revised generation → WebSocket
-    B-->>E: Updated preview
-    E->>A: "Approved"
-    Note over A: Full trajectory captured:<br/>intent → attempts → feedback → approval
+### SSR Renderer — `createSSR`
+
+`src/ui/render/ssr.ts`
+
+Stateful per-connection renderer with style deduplication:
+
+```typescript
+const { render, clearStyles } = createSSR()
+
+// First render: emits <style>...</style> + HTML
+const html = render(template)
+
+// Same styles again: HTML only (styles already sent on this connection)
+const html2 = render(anotherTemplate)
+
+// Connection closed: reset the dedup tracker
+clearStyles()
 ```
 
-**Output of the design workstation:**
-- Base styles and reusable templates for the agent's generative UI process
-- SFT/GRPO training data from the full conversation trajectory
-- The model learns to generate UI that matches the engineer's preferences
+- Deduplication via a `Set<string>` — each stylesheet string is sent at most once per connection
+- `:host{}` → `:root{}` rewriting for light DOM compatibility
+- Style injection before `</head>` or after `<body>` tag
 
-## V5 Layered Validation Pipeline
+### CSS System
 
-Generated UI is validated through three layers, each catching different classes of issues. Cheaper layers run first.
+`src/ui/css/`
 
-```mermaid
-flowchart TD
-    Generate["Agent generates UI"] --> L1["Layer 1: Constitution Gate<br/>(~1ms, no browser)"]
-    L1 -->|Block| Reject1["Structural violation → regenerate"]
-    L1 -->|Pass| L2["Layer 2: Agent Self-Exercise<br/>(Playwright MCP / Chrome DevTools MCP, ~5-30s)"]
-    L2 -->|Fail| Reject2["Runtime/interaction failure → iterate"]
-    L2 -->|Pass| L3["Layer 3: Engineer Preview<br/>(ACP + Web UI, human time)"]
-    L3 -->|Critique| Feedback["Feedback → iterate"]
-    L3 -->|Approve| Gold["Gold trajectory"]
+- **`createStyles`** — atomic CSS from style objects. Each property generates a hashed class name for deduplication and reuse. Supports nested media queries, pseudo-classes, and attribute selectors.
+- **`createTokens`** — design token system using CSS custom properties. Token names are kebab-cased into `--ident-prop` vars. Each token is a function returning `var(--...)` with a `stylesheets` property containing the `:root{}` declarations.
+- **`createHostStyles`** — host-element-scoped styles for Shadow DOM
+- **`createKeyframes`** — `@keyframes` generation
+- **`joinStyles`** — combines host styles with stylesheet arrays
 
-    Reject1 -->|"Tier 1: gate rejection"| T["Training Data"]
-    Reject2 -->|"Tier 2: test failure"| T
-    Feedback -->|"Tier 3: user rejection"| T
-    Gold -->|"Tier 4: user approval"| T
+## Custom Elements
+
+### `controlIsland` — Interactive Island
+
+`src/ui/dom/control-island.ts`
+
+Creates a custom element with its own `behavioral()` instance. Each island is an independent BP engine with WebSocket controller, scoped DOM update surface, and lifecycle event forwarding.
+
+```typescript
+const Shell = controlIsland({ tag: 'app-shell', observedAttributes: ['theme'] })
 ```
 
-| Layer | What It Validates | Training Tier | Mechanism |
-|---|---|---|---|
-| **L1: Constitution Gate** | Structural-IA compliance, Modnet MSS tags, bThread correctness | Tier 1 (gate rejection) | bThread block predicates on template AST |
-| **L2: Agent Self-Exercise** | Runtime behavior, interaction correctness, accessibility | Tier 2 (test failure) | Agent uses Playwright MCP / Chrome DevTools MCP on its own generated UI |
-| **L3: Human Critique** | Style, taste, usability, design coherence | Tier 3-4 (rejection/approval) | Engineer feedback via design workstation |
+On `connectedCallback`:
+1. Property accessors are defined for each observed attribute (boolean attrs use `toggleAttribute`, others use `getAttribute`/`setAttribute`)
+2. `controller()` is initialized with the element as root — this opens a WebSocket immediately
+3. `on_connected` BP event fires
 
-Maps directly to the [V3 four-tier training hierarchy](SYSTEM-DESIGN-V3.md#training-distillation-from-frontier-agents).
+Eight lifecycle callbacks are forwarded as typed BP events (`ELEMENT_CALLBACKS`): `on_adopted`, `on_attribute_changed`, `on_connected`, `on_disconnected`, `on_form_associated`, `on_form_disabled`, `on_form_reset`, `on_form_state_restore`.
 
-## Base Model Training
+The element uses `display: contents` so it doesn't create a layout box. A `restrictedTrigger` blocks `RESTRICTED_EVENTS` + `ELEMENT_CALLBACKS` from external callers — dynamically loaded modules cannot fire lifecycle or internal events.
 
-The base model ships trained to:
-- **Generate Modnet-compliant interfaces** using Structural-IA as the design grammar
-- **Handle Modnet patterns** — modules with bridge-code tags, boundary-aware composition
-- **Understand Structural-IA vocabulary** — objects, channels, levers, loops, blocks
-- **Use the UI primitives** — `h`/JSX, `ssr`, `createStyles`, `createTokens`, `behavioral()`
+Renders with brand `🎛️` (`CONTROLLER_TEMPLATE_IDENTIFIER`).
 
-Framework users extend from this base. They don't teach the model Modnet or Structural-IA from scratch — they fine-tune for their domain via the design workstation and eval harness.
+### `decorateElements` — Shadow DOM Decorator
 
-### The UI Primitives Dual Role
+`src/ui/dom/decorate-elements.ts`
 
-The UI primitives (`h`/JSX, `ssr`, `createStyles`, `createTokens`) are both **infrastructure** and **training subject**:
+Moves nodes out of the main DOM to reduce node count, captures styles and layouts, and leverages slots via declarative Shadow DOM. Wraps content in `<template shadowrootmode>` for SSR-compatible shadow roots.
 
-- As infrastructure: they power the generative web UI rendering pipeline
-- As training subject: the model learns to use them to generate interfaces
-- The training loop: eval harness captures agent using primitives → grader validates output → SFT/GRPO improves generation
+```typescript
+const Card = decorateElements({
+  tag: 'ui-card',
+  shadowDom: (
+    <>
+      <div {...styles.wrapper}>
+        <slot name="header" />
+        <slot />
+      </div>
+    </>
+  ),
+  hostStyles: cardHostStyles,
+})
+```
 
-## Relationship to Other Documents
+- `:root{}` → `:host{}` rewriting (inverse of SSR's `:host{}` → `:root{}`)
+- Defaults: `mode: 'open'`, `delegatesFocus: true`, `cloneable: true`
+- Renders with brand `🎨` (`DECORATOR_TEMPLATE_IDENTIFIER`)
 
-| Document | Scope |
-|---|---|
-| **This document (UI.md)** | Architecture — three interfaces, layering, training, validation |
-| **[SYSTEM-DESIGN-V3.md](SYSTEM-DESIGN-V3.md)** | System design — agent loop, safety, constitution, modnet |
-| **[UI-REWRITE-GUIDE.md](UI-REWRITE-GUIDE.md)** | Implementation — rewriting `src/ui/`, spec detail (protocol, shell BP, generation levels), and testing strategy |
+### `controlDocument` — Document-Level Controller
+
+`src/ui/dom/control-document.ts`
+
+Document-scoped behavioral controller for MPA view transitions. Creates a BP engine on `document`, wires up the WebSocket controller, and listens for `pageswap`/`pagereveal` events on `window`.
+
+- `pageswap` always tears down the disconnect set (cleanup on navigation)
+- Optional `onPageReveal` factory receives `restrictedTrigger` and returns the handler
+- `DOCUMENT_EVENTS`: `on_pagereveal`, `on_pageswap`
+
+### `DelegatedListener`
+
+`src/ui/dom/delegated-listener.ts`
+
+Minimal `EventListener` implementation with a `WeakMap`-based delegate registry. Elements and WebSockets are stored as weak keys — when the target is GC'd, the listener reference is automatically cleaned up.
+
+## Controller Protocol
+
+`src/ui/protocol/`
+
+### Event Constants
+
+`CONTROLLER_EVENTS` (14 events):
+
+| Direction | Events |
+|-----------|--------|
+| Server → Client | `render`, `attrs`, `update_behavioral`, `disconnect` |
+| Client → Server | `client_connected`, `user_action`, `snapshot` |
+| WebSocket lifecycle | `connect`, `retry`, `on_ws_open`, `on_ws_message`, `on_ws_error` |
+
+### Message Envelope
+
+Client → Server messages use `{ id: string, msg: ... }` envelope format:
+- `client_connected` — `{ id, msg: tagName }` (e.g., `'app-shell'` or `'document'`)
+- `user_action` — `{ id, msg: actionType }` (the `p-trigger` action string)
+- `snapshot` — `{ id, msg: SnapshotMessage }` (BP engine observation)
+
+Server → Client messages are bare `BPEvent` objects parsed with `BPEventSchema`.
+
+### Message Schemas (Zod)
+
+All schemas in `controller.schemas.ts`:
+
+| Schema | Direction | Detail |
+|--------|-----------|--------|
+| `RenderMessageSchema` | S→C | `{ target, html, swap? }` |
+| `AttrsMessageSchema` | S→C | `{ target, attr: Record<string, string\|number\|boolean\|null> }` |
+| `UpdateBehavioralMessageSchema` | S→C | `z.httpUrl()` — URL to import |
+| `DisconnectMessageSchema` | S→C | `undefined` |
+| `ClientConnectedMessageSchema` | C→S | `{ id, msg }` envelope |
+| `UserActionMessageSchema` | C→S | `{ id, msg }` envelope |
+| `SnapshotEventSchema` | C→S | `{ id, msg: SnapshotMessage }` |
+
+### Restricted Trigger
+
+`RESTRICTED_EVENTS` blocks client→server events + WebSocket lifecycle events from the `restrictedTrigger`. This means:
+- Server messages parsed from WebSocket dispatch through `restrictedTrigger` — they can fire `render`, `attrs`, `update_behavioral`, `disconnect`
+- Dynamically loaded modules and external callers cannot fire `client_connected`, `user_action`, `snapshot`, `connect`, `retry`, or WebSocket lifecycle events
+
+### Controller Lifecycle
+
+`src/ui/protocol/controller.ts`
+
+1. **Immediate connect** — `controller()` calls `trigger({ type: 'connect' })` synchronously at the end of initialization
+2. **WebSocket created** — `connect` handler opens `ws://` to `self.location.origin`
+3. **Handshake** — `on_ws_open` sends `client_connected` with `{ id, msg: tagName }`
+4. **Message dispatch** — `on_ws_message` parses incoming JSON with `BPEventSchema` and forwards through `restrictedTrigger`
+5. **Render** — `render` handler finds `[p-target="..."]`, creates `DocumentFragment` via `template.setHTMLUnsafe(html)`, binds `p-trigger` listeners, then calls `performSwap`
+6. **User action** — `p-trigger` listener fires `user_action` into BP engine locally (if a bThread listens for that action type), then sends to server via `{ id, msg }` envelope
+7. **Dynamic code** — `update_behavioral` imports URL, validates with `UpdateBehavioralModuleSchema`, calls `factory(restrictedTrigger)`, merges returned `{ threads?, handlers? }` into BP engine
+8. **Reconnection** — exponential backoff on close codes 1006/1012/1013, max 3 retries
+9. **Teardown** — `disconnect` message closes WebSocket; `disconnectedCallback` calls all disconnect functions
+
+### Swap Modes
+
+Six DOM insertion modes for `render` messages: `innerHTML` (default), `outerHTML`, `afterbegin`, `beforeend`, `beforebegin`, `afterend`.
+
+### Script Execution
+
+Inline `<script>` tags in `render` messages do NOT execute. The HTML spec marks scripts inserted via fragment parsing APIs (`setHTMLUnsafe`, `innerHTML`) as parser-inserted and suppresses execution. The only path for dynamic client-side code after initial page load is `update_behavioral` + `import(url)`.
+
+## Modnet Integration
+
+The Modnet vocabulary maps directly to these UI primitives:
+
+| Modnet Concept | UI Primitive |
+|----------------|-------------|
+| **Module** (front+back-end unit) | `controlIsland` — each island is an independent behavioral program with its own WebSocket |
+| **Content Type** (MSS tag) | Template content generated by the agent via `createTemplate`/`h` |
+| **Structure** (MSS tag) | `decorateElements` for DOM organization + slots; `p-target` addressing for server updates |
+| **Mechanics** (MSS tag) | `update_behavioral` — agent generates and loads behavioral code at runtime |
+| **Boundary** (MSS tag) | `restrictedTrigger` enforces what dynamically loaded code can do |
+| **Scale** (MSS tag) | `createTokens` design token system; `controlDocument` for document-level coordination |
+
+Modules are generated by the agent for nodes. The agent produces both the HTML structure (via SSR) and the behavioral logic (via `update_behavioral`), composing them into Modnet modules that are delivered to the client over WebSocket.

@@ -6,34 +6,39 @@
 
 ## Greenfield Mindset
 
-This is **greenfield code with zero external consumers**. There are no backward-compatibility concerns. Each wave refines the architecture — don't preserve patterns or APIs "just in case." If something is unused, delete it. If a simpler approach exists, use it. The only constraint is not modifying `src/behavioral/` or `src/ui/` without explicit approval.
+This is **greenfield code with zero external consumers**. There are no backward-compatibility concerns. Don't preserve patterns or APIs "just in case." If something is unused, delete it. If a simpler approach exists, use it.
 
 ## BP-First Architecture Principles
 
-When working on `src/agent/`, these patterns were hard-won across 7 waves:
+These patterns apply to all BP-orchestrated code (`src/behavioral/`, `src/ui/`, and new server/agent code):
 
-1. **Silent block ≠ coordination.** A blocked event vanishes in BP. If another thread counts that event (e.g., `batchCompletion`), the system deadlocks. Always pair blocking bThreads with handler-level checks that produce rejection events. bThread = defense-in-depth, handler = workflow coordination + model feedback.
+1. **Blocking prevents handler execution, not observability.** A blocked event won't fire its handler, but `useSnapshot` captures all BP engine decisions — selections, blocks, interrupts. The controller sends every snapshot to the server (`controller.ts:196-200`). The server sees everything. If you need a side effect for a blocked event (like a rejection message), the handler must check and produce it — don't rely on the block alone.
 
-2. **Pipeline pass-through > conditional bypass.** Events should flow through the full simulate → evaluate → execute pipeline. When a seam is absent, the handler passes through — don't short-circuit routing with `if (!seam)` conditionals. Adding/removing seams shouldn't change routing logic.
+2. **Pipeline pass-through > conditional bypass.** Events should flow through the full pipeline. When a seam is absent, the handler passes through — don't short-circuit with conditionals.
 
-3. **Thin handlers, structural coordination.** Handlers do ONE thing (call a seam, parse data, push to history). Routing and lifecycle belong in bThreads. If you're writing `if/else` in a handler to decide which event to trigger next, consider whether a bThread should handle that coordination.
+3. **Thin handlers, structural coordination.** Handlers do ONE thing. Routing and lifecycle belong in bThreads.
 
-4. **Exhaustive type maps fight additive composition.** `Handlers<T>` mapped types force noop stubs for unused events. Use unparameterized `behavioral()` — handlers self-validate with Zod at boundaries. BP is additive: wire up what you need, ignore the rest.
+4. **Additive composition.** Use unparameterized `behavioral()` — handlers self-validate with Zod at boundaries. Wire up what you need, ignore the rest.
 
-5. **No backward compatibility for greenfield.** Don't create abstraction layers, feature flags, or three-level approaches for hypothetical future consumers. Always-full is simpler than configurable.
+5. **No backward compatibility for greenfield.** Always-full is simpler than configurable.
 
 ## Active Work Context
 
-### Agent Framework Build (feat/agent-loop-build branch)
+### Generative UI Node (feat/agent-loop-build branch)
 
-When working on `src/agent/` files, activate the **agent-build** skill — it contains the wave architecture, BP coordination patterns, event flow, and implementation context.
+Building top-down: UI → WebSocket server → agent loop. The full stack (agent + UI) is a Modnet node. Modules are generated for nodes.
 
-**Current status — 7 waves complete:**
-- Waves 1–6: Tool executor, gate, simulate, evaluate, memory, orchestrator, constitution
-- Wave 7: BP-first architecture (unparameterized behavioral(), pipeline pass-through, dual-layer symbolic safety, full snapshot context)
+**Key docs:**
+- `docs/UI.md` — current `src/ui/` architecture (rendering, protocol, custom elements)
+- `docs/WEBSOCKET-ARCHITECTURE.md` — open design questions for the WebSocket server layer
+- `docs/Modnet.md` — Modnet design standards (MSS bridge-code tags, module structure)
+- `docs/Structural-IA.md` — design grammar (objects, channels, levers, loops, modules, blocks)
 
-**1151 total tests passing** across 79 files.
+**Reference code:** `src/reference/` contains 10 waves of agent loop implementation using behavioral programming. Use as a learning reference for BP coordination patterns, not as active code.
 
-**Outstanding issues** (see `docs/WAVE-LOG.md` for details):
-- Orchestrator IPC handler replacement is fragile (`agent.orchestrator.ts`)
-- LSP semantic search pipeline + `searchGate` bThread never built (Wave 3 partial)
+**What exists:**
+- `src/behavioral/` — BP engine (`behavioral()`, `bThread`, `bSync`, `trigger`, `useFeedback`, `useSnapshot`)
+- `src/ui/` — rendering pipeline, controller protocol, custom elements (see `docs/UI.md`)
+- `src/reference/` — agent loop reference (10 waves: tool executor, gate, simulate, evaluate, memory, orchestrator, constitution, BP-first, per-tool dispatch, AgentNode primitives)
+
+**What's next:** `src/server/` — the server side of the controller protocol (WebSocket management, SSR orchestration, message routing via `Bun.serve()`).
