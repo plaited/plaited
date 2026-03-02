@@ -70,6 +70,20 @@ Building top-down: UI → WebSocket server → agent loop. The full stack (agent
 - Log retention: hot SQLite → archived `.jsonl.gz` outside workspace → training extraction
 - LSP code graph and semantic search deferred — FTS5 + bash covers 80% case
 
+**Constitution & governance** (decided, see `docs/SYSTEM-DESIGN-V3.md` § Constitution):
+- Constitution rules are **governance factory functions** — same contract as `update_behavioral`: `(trigger) => { threads?, handlers? }`
+- Branded with `$: '🏛️'` (GOVERNANCE_FACTORY_IDENTIFIER) — extends existing brand pattern (`🦄` template, `🪢` rules, `🎛️` controller, `🎨` decorator)
+- **MAC** (mandatory) factories loaded at spawn, immutable. **DAC** (discretionary) factories loaded with user approval at runtime.
+- Neuro-symbolic split: structural/syntactic checks in bThread block predicates (Gate, synchronous), contextual/semantic checks in async handlers feeding Simulate→Evaluate pipeline
+- `protectGovernance` bThread queries sidecar db for MAC paths, blocks modifications
+
+**Package sidecar** (decided, see `docs/SYSTEM-DESIGN-V3.md` § Package Sidecar):
+- Per-package `.meta.db` (SQLite, committed to git) — indexes branded objects and string constants
+- Workspace `.workspace.db` (gitignored, rebuilt via ATTACH) — cross-package queries
+- Collector tool (`collect_metadata`) scans source files for branded `$` identifiers, upserts sidecar
+- Engine-agnostic query interface — SQLite initial, door open for columnar engines if analytical workloads emerge
+- String constants in db (not hardcoded in templates) — eliminates injection vector, enables future encryption
+
 ## TODO
 Modify Server this code is pretty slim so the question is it just another tools?
 const agent = createAgentLoop({ inferenceCall, toolExecutor })

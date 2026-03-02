@@ -305,6 +305,8 @@ The agent discovers context through the tools it already has. The workspace is a
 | Find past work | `bash` | `git log --grep="validation"` |
 | Test results | `bash` | `bun test modules/farm-stand/` |
 | Skill metadata | `read_file` | Read skill frontmatter directly |
+| Branded objects / governance | sidecar db | `SELECT path, layer FROM branded_objects WHERE identifier = '🏛️'` |
+| Module metadata (cross-package) | workspace db | `SELECT * FROM branded_objects WHERE package = 'farm-stand'` |
 
 Every tool call flows through the BP pipeline (Gate → Execute → tool_result), so all discovery actions are captured in the event log with full observability.
 
@@ -872,6 +874,42 @@ The autonomy axis is not binary. It's a spectrum the owner tunes through the con
 
 The framework ships with a set of foundational bThreads — the **constitution** — encoding documented principles as deterministic constraints.
 
+### Governance Factories
+
+Constitution rules are authored as **governance factory functions** — the same contract used by the client-side `update_behavioral` handler (`controller.ts:266-272`):
+
+```typescript
+type GovernanceFactory = {
+  (trigger: Trigger): { threads?: Record<string, RulesFunction>; handlers?: DefaultHandlers }
+  $: typeof GOVERNANCE_FACTORY_IDENTIFIER  // '🏛️'
+  name: string
+  layer: 'mac' | 'dac'
+}
+```
+
+This extends the codebase's existing `$` brand pattern (`🦄` for templates, `🪢` for RulesFunction, `🎛️` for ControllerTemplate, `🎨` for DecoratorTemplate). A `createGovernanceFactory` helper brands the function and validates the return shape via `UpdateBehavioralResultSchema`.
+
+**MAC vs DAC factories:**
+- `layer: 'mac'` — Mandatory Access Control. Loaded at spawn. Immutable. The owner cannot override these. Shipped with `plaited/agent`.
+- `layer: 'dac'` — Discretionary Access Control. Loaded with user approval at runtime. The owner can add, modify, or remove these.
+
+Both use the same contract. The distinction is lifecycle, not shape.
+
+### Neuro-Symbolic Split
+
+Claude's constitution is baked into model weights via Constitutional AI training (critique/revision + RLAIF). With 100B+ parameters, the model can internalize nuanced judgment. Our 7B reference model cannot reliably internalize complex constraints through training alone. The symbolic layer (BP) provides at runtime what training cannot guarantee in small models.
+
+Constitutional knowledge splits across the existing pipeline stages:
+
+| Kind | Mechanism | Pipeline Stage | Example |
+|---|---|---|---|
+| **Structural / syntactic** | `block` predicates in bThreads | Gate (synchronous) | "Does this module have all 5 bridge-code tags?" |
+| **Contextual / semantic** | Async handlers → inference calls | Simulate → Evaluate (async) | "What happens if this `rm -rf` executes?" |
+
+Factory functions encode both: `threads` for structural checks (synchronous block predicates), `handlers` for contextual checks that call `trigger()` to advance the pipeline (feeding into simulate → evaluate). The handlers don't bypass the pipeline — they feed into it.
+
+The feedback loop makes this genuinely neuro-symbolic: `useSnapshot` captures every BP decision (blocks, selections, interrupts) and feeds them into the model's context via `formatSelectionContext`. The model sees *why* it was blocked, *which thread* blocked it, and reasons about how to proceed differently. The symbolic layer shapes what the neural layer sees; the neural layer informs what the symbolic layer decides.
+
 ### Authoring Model
 
 Constitution bThreads follow the same pattern as the rest of the framework's design artifacts:
@@ -879,20 +917,19 @@ Constitution bThreads follow the same pattern as the rest of the framework's des
 | Layer | What | Example |
 |---|---|---|
 | **Reference document** (`docs/`) | Describes principles and rationale | `docs/Structural-IA.md`, `docs/Modnet.md` |
-| **bThread code** (TypeScript) | Encodes principles as `block` predicates | Constitution bThreads shipped with `plaited/agent` |
+| **Governance factory** (TypeScript) | Encodes principles as `block` predicates + pipeline handlers | `.ts` files branded with `$: '🏛️'` |
 
-The reference document is the source of truth for *intent*. The bThread code is the source of truth for *enforcement*. Both are versioned in git and distributed via npm.
+The reference document is the source of truth for *intent*. The governance factory is the source of truth for *enforcement*. Both are versioned in git.
 
-- **Authored** as TypeScript — bThreads with `block` predicates, no DSL or config format
+- **Authored** as TypeScript — governance factories returning `{ threads?, handlers? }`
+- **Branded** with `$: '🏛️'` — discoverable by the collector tool and the agent's sidecar db
 - **Versioned** in git — tracked like any other code
-- **Distributed** via npm — shipped with `plaited/agent`
-- **Flywheel additions** — when recurring patterns suggest a new constraint, the proposed bThread requires owner approval before merging
-
-The constitution's safety principles reference document is forthcoming. The structural and modnet principles below are derived from their existing reference documents.
+- **Distributed** via npm — MAC factories shipped with `plaited/agent`
+- **Flywheel additions** — when recurring patterns suggest a new constraint, the proposed factory requires owner approval before merging
 
 ### Structural Information Architecture
 
-Rachel Jaffe's structural vocabulary defines the primitives that digital environments are built from. The constitution encodes these as bThreads that constrain how the agent generates and modifies modules:
+Rachel Jaffe's structural vocabulary defines the primitives that digital environments are built from. The constitution encodes these as governance factories that constrain how the agent generates and modifies modules:
 
 - **Objects** — discrete data containers with defined boundaries
 - **Channels** — pathways for information flow between objects
@@ -911,7 +948,23 @@ Jaffe's modular network architecture defines how user-owned modules compose into
 - **Transportability** — modules must be self-contained. The agent cannot generate modules with hard dependencies on a specific platform's APIs.
 - **A2A compatibility** — module interfaces must be expressible as A2A Agent Cards. The agent cannot generate interfaces that A2A cannot describe.
 
-The constitution is **additive and append-only** (ratchet principle). New bThreads can be added to the constitution; existing ones cannot be removed or weakened. The symbolic layer grows monotonically.
+### Governance Protection
+
+Governance factories live in the workspace but are protected by the pipeline, not filesystem permissions. A `protectGovernance` bThread blocks modifications to paths indexed as `layer: 'mac'` in the sidecar db:
+
+```typescript
+// protectGovernance — blocks execute if the tool call modifies a MAC governance file
+bSync({
+  block: (e) => {
+    if (e.type !== 'execute') return false
+    return modifiesGovernancePath(e.detail?.toolCall)  // queries sidecar db
+  }
+})
+```
+
+When blocked, the handler routes to simulation — the Dreamer predicts consequences ("deleting this file removes the rule that prevents sharing credentials"), generative UI explains to the user, the user decides. Danger is contextual (same `rm` command, different paths = different consequences), so the full pipeline handles it — not a syntactic check.
+
+The constitution is **additive and append-only** (ratchet principle). New factories can be added; existing MAC factories cannot be removed or weakened. The symbolic layer grows monotonically.
 
 ## Modnet & A2A
 
@@ -945,15 +998,18 @@ workspace/                          ← git repo, sandboxed working directory
   bunfig.toml                       ← registry config, security scanner, isolated installs
   bun.lock                          ← human-readable, git-diffable lockfile
   tsconfig.json
+  .workspace.db                     ← gitignored, rebuilt from sidecars via ATTACH
   modules/
     apple-block/
       package.json                  ← name: "@node/apple-block", "modnet": { MSS tags }
+      .meta.db                      ← per-package sidecar, committed to git
       apple.ts
       apple.types.ts
       data/
         varieties.json
     farm-stand/
       package.json                  ← depends on "@node/apple-block": "workspace:*"
+      .meta.db                      ← per-package sidecar, committed to git
       farm-stand.ts
       farm-stand.template.tsx
       farm-stand.behavior.ts        ← only this compiles for browser
@@ -1021,6 +1077,76 @@ isolation = "isolated"
 ```
 
 Isolated installs prevent phantom dependencies — each module package can only import what it declares in its own `package.json`. This is critical for module transportability and for the agent to reason about dependency graphs.
+
+#### Package Sidecar (`.meta.db`)
+
+Each module package contains a `.meta.db` SQLite sidecar — a small database committed to git alongside the code it describes. The sidecar is populated by a collector tool that scans source files for branded objects (`$` identifiers) and indexes them for fast lookup.
+
+**Why per-package sidecars (not a central db):**
+
+- **Data ownership aligns with module ownership** — the sidecar travels with the package. When a module is transported to another node, its metadata comes with it.
+- **No rebuild-from-source** — the sidecar is pre-indexed. The agent queries it directly without re-scanning source files.
+- **Git-diffable provenance** — changes to branded objects produce visible diffs in the sidecar, auditable in git history.
+- **No coordination** — each package's sidecar is independent. No lock contention, no merge conflicts across packages.
+
+**Sidecar schema:**
+
+```sql
+-- Branded objects discovered by the collector tool
+CREATE TABLE branded_objects (
+  path       TEXT NOT NULL,           -- relative path within package
+  identifier TEXT NOT NULL,           -- brand emoji: 🦄 🪢 🎛️ 🎨 🏛️
+  name       TEXT NOT NULL,           -- export name or factory name
+  layer      TEXT,                    -- 'mac' | 'dac' (governance factories only)
+  metadata   TEXT,                    -- JSON blob for brand-specific fields
+  PRIMARY KEY (path, name)
+);
+
+-- String constants extracted from source (not hardcoded in templates)
+CREATE TABLE constants (
+  key        TEXT PRIMARY KEY,        -- constant identifier
+  value      TEXT NOT NULL,           -- the string value
+  source     TEXT NOT NULL            -- file path where defined
+);
+```
+
+The `constants` table isolates string values that would otherwise be hardcoded in templates — event type strings, attribute names, error messages. This eliminates an injection vector (the agent cannot redefine constants by editing source) and enables future encryption of sensitive values.
+
+**Workspace-level view (`.workspace.db`):**
+
+A gitignored `.workspace.db` at the workspace root provides cross-package queries by attaching all sidecars:
+
+```sql
+-- Rebuilt on workspace init or after package changes
+ATTACH 'modules/apple-block/.meta.db' AS apple_block;
+ATTACH 'modules/farm-stand/.meta.db' AS farm_stand;
+
+-- Cross-package query: find all governance factories
+SELECT * FROM apple_block.branded_objects WHERE identifier = '🏛️'
+UNION ALL
+SELECT * FROM farm_stand.branded_objects WHERE identifier = '🏛️';
+```
+
+The workspace db is ephemeral — it is rebuilt from sidecars, never the other way around. If deleted, it regenerates. If a sidecar is modified, the workspace view reflects the change on next attach.
+
+**Collector tool:**
+
+The collector scans a package's source files, identifies branded objects by their `$` property, and upserts the sidecar. It runs:
+- On package creation (agent generates a new module)
+- On governance factory changes (new rules added or modified)
+- On demand (agent tool call)
+
+The collector is a built-in agent tool — `collect_metadata` — that takes a package path and updates its `.meta.db`. No background daemon, no watch process.
+
+**Engine-agnostic interface:**
+
+SQLite is the initial engine — it's Bun-native (`bun:sqlite`), single-file, zero-config, and matches the access pattern (point queries, single writer, hundreds of rows). The query interface is designed to be engine-agnostic:
+
+- Queries return plain objects, not SQLite-specific cursors
+- Schema is simple enough to port to any relational or document store
+- If analytical workloads emerge (event log analysis, training data extraction), a columnar engine (DuckDB, chDB) can serve those queries without replacing SQLite for point lookups
+
+The decision on additional engines is deferred until real workload data reveals the need. Start with what's free and boring.
 
 #### Asset Management: Symlinks Over Git LFS
 
