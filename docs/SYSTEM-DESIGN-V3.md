@@ -18,7 +18,7 @@ The framework provides:
 
 - **Interfaces** for two model roles (Model, Indexer)
 - **BP orchestration** for the agent loop, safety constraints, and context assembly
-- **Discovery and memory primitives** for tool indexing, semantic cache, and relation tracking
+- **Memory via event log** — BP decisions and tool results as the single source of truth, with FTS5 for keyword search
 - **A constitution** encoding Structural-IA and Modnet concepts as bThreads
 
 The framework is **not prescriptive** about inference backend. Consumers choose how to serve models — vLLM, llama.cpp, Ollama, cloud APIs, or any OpenAI-compatible endpoint. All three backends support separating `<think>` reasoning from response content at the server level (vLLM via `--reasoning-parser`, Ollama via `"think": true`, llama-server via `--reasoning-format`). Code ships via npm (`plaited`). Base-trained models ship via Hugging Face ([huggingface.co/plaited](https://huggingface.co/plaited)).
@@ -30,9 +30,9 @@ The architecture is designed around two specialized roles. The reference impleme
 | Role | Reference Model | Params | Function |
 |---|---|---|---|
 | **Model** | Falcon-H1R 7B (Mamba/SSM hybrid) | 7B | Reasons in `<think>` blocks (separated by inference server). Produces structured tool calls in the response. Fine-tuned via distillation from frontier agents (Claude Code, Gemini CLI) using the eval harness. |
-| **Indexer** | EmbeddingGemma (Gemma 3 300M base) | 300M | 768-dim embeddings (Matryoshka truncation to 512/256/128). Powers semantic similarity for natural language content (TSDoc, documentation, conversation history). 2K token context. Not part of the agent loop — part of the discovery layer. |
+| **Indexer** *(deferred)* | EmbeddingGemma (Gemma 3 300M base) | 300M | 768-dim embeddings (Matryoshka truncation to 512/256/128). Semantic similarity for natural language content. 2K token context. Not part of the agent loop. **Deferred** — FTS5 + bash + git covers the 80% case; semantic search adds value when the workspace outgrows keyword matching. |
 
-**Reference total: ~7.3B parameters (~14.6GB at fp16).** Any model that satisfies the Model or Indexer interface can be substituted — including frontier API models for consumers who prefer pay-per-use over self-hosting.
+**Reference total: ~7B parameters (~14GB at fp16) initially (Model only).** The Indexer adds ~300M when semantic search is enabled. Any model that satisfies the Model or Indexer interface can be substituted — including frontier API models for consumers who prefer pay-per-use over self-hosting.
 
 ### Pluggable Models
 
@@ -53,7 +53,7 @@ interface Indexer {
 }
 ```
 
-The Indexer's sole responsibility is turning text into vectors. Searching those vectors (cosine similarity over stored embeddings) is a SQLite operation in the discovery layer — not a model concern.
+The Indexer's sole responsibility is turning text into vectors. Searching those vectors (cosine similarity over stored embeddings) is a SQLite operation — not a model concern. The Indexer is deferred at launch; FTS5 keyword search and the agent's bash + git access handle discovery initially.
 
 The reference model (Falcon-H1R) ships as a base-trained checkpoint from `huggingface.co/plaited`, fine-tuned via distillation from frontier agents. Consumers can further fine-tune for their own tool schemas and usage patterns. The symbolic layer (BP + bThreads) persists across every model swap.
 
@@ -148,7 +148,7 @@ trigger('task', { prompt })
 - Classifies action risk at the Gate — routes read-only actions directly to Execute, side-effect actions through the Dreamer
 - Evaluates simulated output via symbolic `block` predicates (Layer 5a) — regex/keyword matching on predicted consequences
 - Selects relevant constraints per plan step via structural predicate matching
-- Reads plan state from SQLite materialized view (synchronous `bun:sqlite` lookups in predicates)
+- Reads plan state from SQLite `plan_steps` table (synchronous `bun:sqlite` lookups in predicates)
 - Manages lifecycle (when to stop, when to ask for human confirmation)
 
 **What BP does NOT do:**
@@ -293,47 +293,57 @@ This approach has three advantages over using a pre-trained tool-calling model:
 
 The distillation pipeline reuses existing skills (`agent-eval-harness`, `headless-adapters`) — no new infrastructure is needed. Fine-tuning runs via Unsloth with ~5GB VRAM (LoRA).
 
-## Discovery Layer
+## Discovery
 
-The discovery layer uses **three mechanisms as a pipeline**, each suited to a different kind of content:
+The agent discovers context through the tools it already has. The workspace is a git repo. Modules are Bun packages with `package.json` manifests. The agent has `bash`, `read_file`, `write_file`, and `grep` as built-in tools. No specialized discovery infrastructure is needed for most queries:
 
-| Mechanism | Backing | What It Finds | Content Type | Speed |
-|---|---|---|---|---|
-| **FTS5** | SQLite full-text search | Tools by name/description, skills by keyword, rules by content, TSDoc by term | All content | Fast, no model |
-| **LSP-Powered Code Graph** | TypeScript Language Server + SQLite | Module relationships, symbol dependencies, import chains, type signatures, all references | Code only | Fast, no model |
-| **Semantic Search** | Cosine similarity over pre-computed embeddings | Similar tools by intent, cached responses by semantic proximity, related documentation | Natural language only | Fast at query time (pre-computed vectors) |
+| Need | Tool | Example |
+|---|---|---|
+| Module dependency graph | `bash` | `cat modules/*/package.json \| jq '.dependencies'` |
+| File change history | `bash` | `git log --oneline modules/farm-stand/` |
+| Code relationships | `bash` / `grep` | `grep -r "import.*from" modules/farm-stand/` |
+| Find past work | `bash` | `git log --grep="validation"` |
+| Test results | `bash` | `bun test modules/farm-stand/` |
+| Skill metadata | `read_file` | Read skill frontmatter directly |
 
-All three mechanisms operate without model inference at query time. The Indexer (EmbeddingGemma) is invoked only when new content is indexed — at startup and when new documents arrive. After that, semantic search is cosine similarity over stored vectors in SQLite.
+Every tool call flows through the BP pipeline (Gate → Execute → tool_result), so all discovery actions are captured in the event log with full observability.
 
-### FTS5 — Keyword Search
+### FTS5 Index
 
-SQLite's FTS5 extension provides fast, exact keyword matching. Tool descriptions, skill manifests, rule content, and TSDoc comments are indexed at startup. Most discovery queries resolve here — keyword matching on tool names, file paths, and error types.
+SQLite's FTS5 extension provides the one discovery mechanism that bash alone cannot efficiently replace: fast keyword search across large content sets. FTS5 indexes:
 
-### LSP-Powered Code Graph — Structural Relations
+- **Skill frontmatter** — extracted from skill files at startup, indexed for keyword search
+- **Module manifests** — `package.json` `"modnet"` fields indexed for bridge-code tag queries
+- **Plan intents** — plan step descriptions indexed for reuse discovery
 
-The TypeScript Language Server provides exact structural relationships for code — no embeddings needed. The LSP tools (`lsp-analyze --exports`, `lsp-refs`, `lsp-find`, `lsp-hover`) produce dependency graphs, symbol references, and type signatures that are stored in SQLite for session recovery.
+FTS5 content is populated from event log entries. When the agent reads a skill file (`tool_result` with `read_file` output), a handler extracts frontmatter and indexes it. When a plan is saved (`save_plan` event), step intents are indexed. No separate indexing pipeline — the event log drives everything.
 
-**Why LSP instead of embeddings for code:** Code is non-sequential, cross-referential content. A function's meaning depends on its imports, callers, type constraints, and module context — relationships that embeddings collapse into a single vector. LSP preserves the structural graph: which modules import which, which symbols reference which, which types constrain which. Traversal is O(edges) with no model inference.
+### Deferred: LSP Code Graph and Semantic Search
 
-### Semantic Search — Similarity by Embedding
+**LSP-powered code graph** (TypeScript Language Server for structural relationships) and **semantic search** (cosine similarity over embeddings) are architecturally sound but deferred. The agent has `bash` + `git` + `grep` for structural queries and FTS5 for keyword search. These cover the 80% case for a workspace the agent built itself. LSP and semantic search become valuable when the workspace grows beyond what grep can efficiently traverse or when intent-based similarity ("find something like X") is demonstrably needed.
 
-Pre-computed embeddings from the Indexer (EmbeddingGemma) handle queries that keyword search and structural navigation can't resolve — "find a tool that does something like X" or "what documentation discusses this concept?" At query time, the query text is embedded (one Indexer call), then cosine similarity ranks stored vectors in SQLite. Uses task-prefix format (`task: code retrieval | query: ...`) to produce context-appropriate embeddings. Matryoshka truncation (768 → 512 → 256 → 128 dims) allows trading precision for speed.
-
-**Scope:** Natural language content only — TSDoc comments, documentation files, conversation history, plan intents. Code is never embedded; the LSP code graph handles structural code discovery.
-
-### Pipeline Behavior
-
-The three mechanisms feed each other rather than operating independently:
-
-1. **FTS5** resolves most queries directly (keyword match on tool names, file paths, error types)
-2. **LSP Code Graph** is consulted when FTS5 finds code symbols — expanding the result with structural context (callers, dependencies, type signatures)
-3. **Semantic Search** handles queries that neither keyword nor structure can resolve — intent-based similarity across natural language content
+The interfaces remain in the design — the Indexer role (EmbeddingGemma) and the discovery pipeline slots are unchanged. Implementation starts with FTS5 only.
 
 ## Memory Architecture
 
-The agent's memory is built on a single principle from *Designing Data-Intensive Applications*: **the event log is the source of truth.** Everything else — plans, semantic cache, relation store, session history — is a materialized view derived from the log.
+The agent's memory is built on a single principle: **the event log IS the memory.** Not a source of truth for materialized views — the log itself, queried directly and fed back into context. Nothing happens outside BP. Every tool call, every bash command, every test run flows through the pipeline and produces a `tool_result` event captured by `useSnapshot`. The event log is the complete record of everything the agent has done, seen, and decided.
 
-### Event Log — Source of Truth
+### Why the Event Log Is Sufficient
+
+The agent has full bash access to a git-versioned workspace. This eliminates the need for separate memory primitives:
+
+| Traditional Memory Concern | Event Log + Workspace Solution |
+|---|---|
+| "What did I learn about this module?" | Query `tool_result` events scoped to `modules/farm-stand/` |
+| "What tests passed last time?" | Re-run `bun test` (bash tool) or query `tool_result` where tool = `bash` and args contain `test` |
+| "What was the git history?" | `git log` via bash — already a `tool_result` in the log |
+| "What files changed?" | `git diff` via bash — already a `tool_result` in the log |
+| "What skills are available?" | Skill frontmatter indexed in FTS5 from `read_file` events |
+| "What plans worked before?" | Query `save_plan` events with outcome metadata |
+
+No curated memory files needed. No semantic cache. No relation store. The raw trajectory — tool calls and their outputs — is the richest signal. The workspace itself (git history, module manifests, test suites) is the durable structural knowledge.
+
+### Event Log — The Memory
 
 An append-only log in SQLite records every BP decision. The log is populated via `useSnapshot`, which fires after event selection but before `useFeedback` handlers execute side effects:
 
@@ -357,11 +367,33 @@ const disconnect = useSnapshot(async (candidates: SnapshotMessage) => {
 
 **Why `useSnapshot`, not `useFeedback`:**
 - `useSnapshot` fires AFTER event selection but BEFORE side effects — the log captures the BP *decision*, not the outcome
-- `SnapshotMessage` contains ALL candidates with blocking/interruption relationships — the log can record not just what was selected, but what was blocked and why
+- `SnapshotMessage` contains ALL candidates with blocking/interruption relationships — the log records not just what was selected, but what was blocked and why
 - The listener supports async — log writes don't block the BP event loop
 - `useSnapshot` is lazily initialized — zero overhead when no listener is registered
 
-The log is **partitioned by project key.** Each project's events are independent. Recovery, replay, and materialized view rebuilds operate per-partition.
+The log is **partitioned by project key.** Each project's events are independent. Recovery, replay, and queries operate per-partition.
+
+**What the log captures that files cannot:** Full BP decision state per super-step — `SelectionBid` with `blockedBy`, `interrupts`, `thread`, `priority`. The model sees "Blocked: execute (thread: sim_guard_tc-1) by sim_guard_tc-1" in snapshot context. This is the three-layer architecture's observability layer — it feeds both real-time context and training data extraction. Git diffs cannot express this.
+
+### Plans — The Only Materialized View
+
+Plans are the one structure that earns its own SQLite table. The plan schema (steps with status, tools, dependencies) is queried synchronously by BP predicates during context assembly — `depEnforcement` checks step dependencies, `activate_step` generates per-tool bThreads. This is a hot-path synchronous lookup that must be in SQLite, not reconstructed from log queries.
+
+```sql
+CREATE TABLE plan_steps (
+  task_id   TEXT NOT NULL,
+  step_id   TEXT NOT NULL,
+  intent    TEXT NOT NULL,
+  tools     TEXT NOT NULL,   -- JSON array
+  depends   TEXT,            -- JSON array of step_ids
+  status    TEXT NOT NULL DEFAULT 'pending',
+  PRIMARY KEY (task_id, step_id)
+);
+```
+
+Plans are discoverable via FTS5 (keyword match on step intents and tool names). When a new task arrives, the agent can query past plans and adapt from one that already succeeded.
+
+Everything else that was previously a materialized view — semantic cache, relation store, session history — is either directly queryable from the event log or available through the workspace (git history, module manifests, bash).
 
 ### Log Retention
 
@@ -370,51 +402,18 @@ The event log is append-only. It grows forever. The fix is **rotation** — movi
 ```
 Old events → export to .jsonl.gz per project partition
   → DELETE from SQLite → VACUUM reclaims space
-  → compressed files available for replay if needed
+  → compressed files available for replay or training
 ```
 
 | Tier | Storage | Purpose |
 |---|---|---|
 | **Hot** | SQLite | Recent events — active plans, current session, configurable window (time-based or size-based per project) |
-| **Archive** | `.jsonl.gz` files | Rotated events — still replayable for view rebuilds or training extraction |
+| **Archive** | `.jsonl.gz` files (outside workspace) | Rotated events — replayable for training extraction or plan rebuilds |
 | **Training artifacts** | Extracted before rotation | SFT trajectories, GRPO preference pairs — kept as separate files |
 
-**Materialized views are already the "compacted" form.** A plan's final status, a semantic cache entry, a relation graph edge — these views persist in their own tables and don't need the raw events to function. The raw events are only needed for rebuilding views or extracting training data.
-
-**Rebuild guarantee:** If a materialized view is corrupted or the schema changes, replay the hot window first. If insufficient, decompress and replay archives. Full recovery is always possible — it just gets slower for older data.
+**Rebuild guarantee:** If the plan_steps table is corrupted or the schema changes, replay `save_plan` events from the hot window. If insufficient, decompress and replay archives. Full recovery is always possible.
 
 **What triggers rotation:** Time-based (daily/weekly), size-based (per-project partition exceeds threshold), or user-triggered. The framework provides the mechanism; the deployment decides the schedule.
-
-### Materialized Views
-
-The four memory categories from the discovery layer are views materialized from the event log:
-
-| View | Source Events | Rebuild Strategy |
-|---|---|---|
-| **Plans** | `save_plan`, `task_complete`, `task_fail` | Replay plan lifecycle events; reconstruct success/failure metadata |
-| **Semantic Cache** | `model_response` + `tool_result` pairs | Re-embed cached responses; skip if embedding model changed |
-| **Relation Store** | `tool_use`, `skill_invoke`, `module_import` | Rebuild DAG from structural events |
-| **Session History** | All events in chronological order | Direct projection — the log IS the history |
-
-**Benefits of log-first architecture:**
-- **Recovery**: Replay the log to rebuild any materialized view. No separate backup needed for agent state.
-- **Debugging**: The full decision history is preserved — every selected event, every blocked candidate, every gate rejection.
-- **Training**: Trajectories are log slices. SFT/GRPO training data is a query over the event log, not a separate export pipeline.
-- **Migration**: When the schema for a materialized view changes, rebuild from the log. The log schema is stable (it's just BP events + timestamps).
-
-### Plans — Reusable Task Knowledge
-
-Plans remain first-class memory artifacts. When the model produces a `save_plan` tool call, the plan and its task breakdown are persisted with metadata: outcome (success/failure), tools used, skills invoked, gate rejections encountered.
-
-Stored plans are discoverable via all three discovery mechanisms:
-
-| Mechanism | What It Finds | Example |
-|---|---|---|
-| **FTS5** | Plans by keyword — tool names, file paths, error types | "plans that used `write_file` on `src/ui/`" |
-| **LSP Code Graph** | Structural relationships — which modules each task touched, symbol dependencies | "Task 3 modified `useRunner` which is referenced by 5 other modules" |
-| **Semantic Search** | Similar plans by intent, even if they used different tools | "find a plan similar to 'refactor the export structure'" |
-
-When a new task arrives, the discovery layer surfaces proven plans for similar work. The model adapts from a plan that already succeeded rather than inventing from scratch.
 
 ### Memory and the Training Flywheel
 
@@ -422,12 +421,12 @@ The event log feeds the training pipeline directly:
 
 ```
 Event log slices (by project, time range, outcome)
-  → Filter: successful plan trajectories → SFT data
-  → Filter: failed plans + corrections → GRPO preference pairs
+  → Filter: successful task trajectories → SFT data
+  → Filter: failed tasks + corrections → GRPO preference pairs
   → Filter: recurring blocking patterns → bThread candidates → Owner approval
 ```
 
-Memory is the bridge between the per-session agent loop and the cross-session training flywheel. The event log is the richest signal — it captures not just what the agent did, but the full BP decision state at each step.
+The event log is the richest training signal — it captures not just what the agent did (tool calls and outputs), but the full BP decision state at each step (what was blocked, interrupted, and why). Trajectories are log slices. Training data extraction is a query over the event log, not a separate export pipeline.
 
 ### Cross-Project Knowledge
 
@@ -458,7 +457,7 @@ For *explicit* sharing — tool configurations, skills, style preferences — th
 | Shared tool configs | `~/.agents/mcp.json` (user installs globally) |
 | Shared skills | `~/.agents/skills/` (user installs globally) |
 | Style and patterns | Model weights (training flywheel) + code-pattern skills (reference implementations as genomes) |
-| Project-specific knowledge | Per-project memory only (never crosses boundary) |
+| Project-specific knowledge | Per-project event log only (never crosses boundary) |
 
 ## Project Isolation
 
@@ -537,12 +536,12 @@ graph TD
 
     subgraph P1["Project A (Bun.spawn)"]
         REF1["Agent loop<br/>Model → Gate → Execute"]
-        MEM1["Project memory<br/>(materialized views)"]
+        MEM1["Event log + plans<br/>(SQLite, partitioned)"]
     end
 
     subgraph P2["Project B (Bun.spawn)"]
         REF2["Agent loop<br/>Model → Gate → Execute"]
-        MEM2["Project memory<br/>(materialized views)"]
+        MEM2["Event log + plans<br/>(SQLite, partitioned)"]
     end
 
     ROUTE -->|IPC| P1
@@ -824,14 +823,14 @@ The enforcement mechanism is pluggable and **deployment-specific** — the genom
 The event log (populated via `useSnapshot`) records every BP decision with timestamps and project keys. If all five prior layers fail and the agent takes harmful action, the owner has:
 
 - **Complete audit trail** — every event selection, every blocked candidate, every gate rejection
-- **Replay capability** — rebuild any materialized view from the log
+- **Replay capability** — rebuild plan state from the log, extract training data
 - **Per-project isolation** — damage in one project's subprocess doesn't affect another's log partition
 
 Workspace backup (snapshotting the actual file system) is **deployment infrastructure**, not framework responsibility. The framework provides the event log for agent state recovery. Skills or external tooling handle workspace-level backup — rsync, cloud snapshots, or whatever the deployment tier supports.
 
 **What it catches:** Any damage that makes it past Layers 0–5 and the sandbox. The audit trail is append-only and lives outside the sandbox — the subprocess cannot modify its own log.
 
-**Failure mode:** Owner doesn't review the audit log. Mitigated by the event log's queryability — materialized views surface anomalies, and the training flywheel flags unusual patterns.
+**Failure mode:** Owner doesn't review the audit log. Mitigated by the event log's queryability — FTS5 search over event details surfaces anomalies, and the training flywheel flags unusual patterns.
 
 ### Independence Guarantee
 

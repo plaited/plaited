@@ -34,7 +34,7 @@ Building top-down: UI → WebSocket server → agent loop. The full stack (agent
 - `docs/Modnet.md` — Modnet design standards (MSS bridge-code tags, module structure)
 - `docs/Structural-IA.md` — design grammar (objects, channels, levers, loops, modules, blocks)
 
-**Reference code:** `src/reference/` contains 10 waves of agent loop implementation using behavioral programming. Use as a learning reference for BP coordination patterns, not as active code.
+**Reference code:** `src/reference/` contains 10 waves of agent loop implementation using behavioral programming. Use as a learning reference for BP coordination patterns, not as active code. **Do not read, modify, or run tests in `src/reference/`** — the agent-build skill already documents the patterns. Only read these files if explicitly asked to.
 
 **What exists:**
 - `src/behavioral/` — BP engine (`behavioral()`, `bThread`, `bSync`, `trigger`, `useFeedback`, `useSnapshot`)
@@ -60,6 +60,15 @@ Building top-down: UI → WebSocket server → agent loop. The full stack (agent
 - Code vs data split: `src/` never leaves node, `data/` can cross A2A gated by `boundary` tag
 - Large assets symlinked from outside workspace (not git LFS) — requires constitution bThread for symlink integrity
 - **Future migration:** If workspace grows too large, switch `@node` scope to local npm registry (Verdaccio) via `bunfig.toml` scoped registries. No code changes — only resolution changes.
+
+**Memory architecture** (decided, see `docs/SYSTEM-DESIGN-V3.md` § Memory Architecture):
+- **Event log IS the memory** — no separate memory files, no semantic cache, no relation store
+- SQLite event log via `useSnapshot` captures every BP decision (selections, blocks, interrupts) + every tool result
+- Only materialized view: `plan_steps` table (hot-path BP predicate queries for step dependencies)
+- Agent uses bash + git + grep for structural queries against its own workspace — no specialized discovery layer
+- FTS5 indexes skill frontmatter and module manifests (populated from event log entries)
+- Log retention: hot SQLite → archived `.jsonl.gz` outside workspace → training extraction
+- LSP code graph and semantic search deferred — FTS5 + bash covers 80% case
 
 ## TODO
 Modify Server this code is pretty slim so the question is it just another tools?
