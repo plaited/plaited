@@ -934,6 +934,155 @@ A module is an internal artifact — code, data, tools, skills, bThreads — liv
 
 The Agent Card is the node's **public entry point** — a projection of capabilities, not an inventory of internals.
 
+### Module Architecture: Bun Workspace Packages
+
+Modules are standard npm packages in a Bun workspace. No custom module format, no compilation step (Bun runs TypeScript natively), no specialized loader. The package manager is the module system.
+
+#### Workspace Structure
+
+```
+workspace/                          ← git repo, sandboxed working directory
+  package.json                      ← "workspaces": ["modules/*"], "private": true
+  bunfig.toml                       ← registry config, security scanner, isolated installs
+  bun.lock                          ← human-readable, git-diffable lockfile
+  tsconfig.json
+  modules/
+    apple-block/
+      package.json                  ← name: "@node/apple-block", "modnet": { MSS tags }
+      apple.ts
+      apple.types.ts
+      data/
+        varieties.json
+    farm-stand/
+      package.json                  ← depends on "@node/apple-block": "workspace:*"
+      farm-stand.ts
+      farm-stand.template.tsx
+      farm-stand.behavior.ts        ← only this compiles for browser
+      data/
+        inventory.json
+```
+
+#### Package.json as Module Manifest
+
+MSS bridge-code tags live in a custom `"modnet"` field in `package.json`:
+
+```json
+{
+  "name": "@node/farm-stand",
+  "version": "1.0.0",
+  "dependencies": {
+    "@node/apple-block": "workspace:*"
+  },
+  "modnet": {
+    "contentType": "produce",
+    "structure": "list",
+    "mechanics": ["sort", "filter"],
+    "boundary": "ask",
+    "scale": 3
+  }
+}
+```
+
+The `@node` scope is the agent's identity scope. All module packages within a workspace share this scope. The `workspace:*` protocol resolves inter-module imports via Bun's symlink-based workspace resolution — standard TypeScript imports, no custom loader.
+
+#### Scale Mapping
+
+Scale determines module complexity:
+
+| Scale | Structure | Example |
+|---|---|---|
+| S1 | JSON data + template | Single `data.json` + one JSX template |
+| S2 | Structured data + list rendering | Multiple data files + list component |
+| S3 | Multiple files + behavioral code + streams | Full package with `src/`, `data/`, behavioral modules |
+| S4+ | Full package with dependencies | Package depending on other workspace packages |
+
+#### Code vs. Data Boundary
+
+Each module package separates code from data:
+
+- **`src/`** (or root `.ts` files) — code, bThreads, templates, behavioral modules. Never leaves the node.
+- **`data/`** — JSON, assets, structured content. Can cross A2A boundaries, gated by the module's `boundary` tag.
+
+A constitution MAC bThread blocks code from crossing A2A boundaries. When another node requests data from a module with `boundary: "all"` or `boundary: "ask"`, only the `data/` contents are eligible for sharing. The module's code stays internal — the receiving agent generates its own code to process the data.
+
+#### Browser Compilation
+
+Bun runs TypeScript natively — no compilation needed for server-side module code. The only compilation step is `Bun.build({ target: 'browser' })` for behavioral modules sent to the client via `update_behavioral`. These are `.behavior.ts` files that the agent compiles on-demand when rendering generative UI.
+
+#### Dependency Isolation
+
+`bunfig.toml` enables isolated installs (pnpm-style):
+
+```toml
+[install]
+isolation = "isolated"
+
+[install.scopes]
+"@node" = { url = "https://registry.npmjs.org" }
+```
+
+Isolated installs prevent phantom dependencies — each module package can only import what it declares in its own `package.json`. This is critical for module transportability and for the agent to reason about dependency graphs.
+
+#### Asset Management: Symlinks Over Git LFS
+
+Large assets (images, models, datasets) live outside the workspace and are symlinked in. This avoids git repository bloat without the complexity of git LFS:
+
+```
+~/assets/                           ← outside workspace, not in git
+  farm-photos/
+    apple-red.jpg
+    apple-green.jpg
+
+workspace/modules/farm-stand/data/
+  photos -> ~/assets/farm-photos    ← symlink
+```
+
+A constitution bThread enforces symlink integrity:
+
+```typescript
+// Asset symlink guard — blocks execute if symlink targets are missing or outside allowed paths
+bSync({
+  block: ({ type, detail }) => {
+    if (type !== 'execute') return false
+    // Block tool calls that create symlinks to disallowed paths
+    // Block tool calls that follow symlinks outside the asset root
+    return isSymlinkViolation(detail)
+  }
+})
+```
+
+The bThread ensures the agent cannot create symlinks to arbitrary filesystem locations (a security concern in a sandboxed environment). Only symlinks from `data/` directories to the configured asset root are permitted.
+
+#### Future: Local Registry Migration
+
+When a workspace grows beyond practical limits for Bun workspaces (hundreds of packages, deeply nested dependency graphs), the migration path is a local npm registry:
+
+1. Deploy a local registry (e.g., Verdaccio) on the node
+2. Update `bunfig.toml` to point `@node` scope at the local registry
+3. Publish packages via `bun publish` instead of `workspace:*` resolution
+4. No code changes — imports stay the same, only resolution changes
+
+This is a deployment concern, not an architecture change. The `bunfig.toml` scoped registry configuration makes the switch transparent:
+
+```toml
+[install.scopes]
+"@node" = { url = "http://localhost:4873" }
+```
+
+#### Modules vs. Projects
+
+Modules and projects are distinct concepts with different isolation models:
+
+| Concern | Module | Project |
+|---|---|---|
+| **What** | Internal package within the node's workspace | External codebase (user's repo) |
+| **Git** | One git repo for the entire workspace | Separate git repo per project |
+| **Isolation** | Bun workspace dependency isolation | Process isolation (Bun.spawn + IPC) |
+| **Scope** | `@node/` scope, workspace:* resolution | Independent, orchestrator-routed |
+| **Lifecycle** | Created/modified by agent as workspace packages | Registered on encounter, independent subprocess |
+
+The orchestrator (see Project Isolation above) manages projects as separate subprocesses. Modules are packages within the node's own workspace — they don't need process isolation because they're the agent's own code.
+
 ### A2A Protocol
 
 A2A is a transport-agnostic protocol for agent-to-agent communication with three layers:

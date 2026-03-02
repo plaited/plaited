@@ -39,6 +39,30 @@ Building top-down: UI → WebSocket server → agent loop. The full stack (agent
 **What exists:**
 - `src/behavioral/` — BP engine (`behavioral()`, `bThread`, `bSync`, `trigger`, `useFeedback`, `useSnapshot`)
 - `src/ui/` — rendering pipeline, controller protocol, custom elements (see `docs/UI.md`)
+- `src/server/` — thin I/O server node via `createServer()` (routes, WebSocket, pub/sub, hot reload). Auth routes (`/auth/register`, `/auth/verify`) return 501 stubs — WebAuthn implementation is next.
 - `src/reference/` — agent loop reference (10 waves: tool executor, gate, simulate, evaluate, memory, orchestrator, constitution, BP-first, per-tool dispatch, AgentNode primitives)
 
-**What's next:** `src/server/` — the server side of the controller protocol (WebSocket management, SSR orchestration, message routing via `Bun.serve()`).
+**What's next:** WebAuthn auth (passkey registration/verification via SimpleWebAuthn) → then agent loop (`src/agent/`).
+
+**Server architecture notes** (implemented in `src/server/server.ts`):
+- Server has no BP of its own — it's a stateless connector between browser and agent BP
+- Routes use `BunRequest` (has `req.cookies` with auto-apply); `fetch` fallback uses `Request` (needs `new Bun.CookieMap()`)
+- WebSocket data typed via `data: {} as WebSocketData` pattern on websocket config
+- Pub/sub topics: `sessionId` (document-level) and `sessionId:tagName` (island-level)
+- `server.reload()` merges new routes with existing ones for hot-swap
+
+**Module architecture** (decided, see `docs/SYSTEM-DESIGN-V3.md` § Module Architecture):
+- Modules are Bun workspace packages in `modules/` — standard `package.json`, no custom format
+- MSS bridge-code tags in `package.json` `"modnet"` field (`contentType`, `structure`, `mechanics`, `boundary`, `scale`)
+- `@node` scope for agent identity, `workspace:*` protocol for inter-module imports
+- No TypeScript compilation — Bun runs TS natively. Only `Bun.build({ target: 'browser' })` for `.behavior.ts` files sent via `update_behavioral`
+- Isolated installs via `bunfig.toml` (`isolation = "isolated"`) — prevents phantom dependencies
+- Code vs data split: `src/` never leaves node, `data/` can cross A2A gated by `boundary` tag
+- Large assets symlinked from outside workspace (not git LFS) — requires constitution bThread for symlink integrity
+- **Future migration:** If workspace grows too large, switch `@node` scope to local npm registry (Verdaccio) via `bunfig.toml` scoped registries. No code changes — only resolution changes.
+
+## TODO
+Modify Server this code is pretty slim so the question is it just another tools?
+const agent = createAgentLoop({ inferenceCall, toolExecutor })
+const server = createServer({ port: 3000, tls, allowedOrigins, trigger: agent.trigger, initalRoutes })
+Also we  need to integrate https://simplewebauthn.dev/docs/
