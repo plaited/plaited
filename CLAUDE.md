@@ -52,14 +52,14 @@ Building top-down: UI → WebSocket server → agent loop. The full stack (agent
 - `server.reload()` merges new routes with existing ones for hot-swap
 
 **Module architecture** (decided, see `docs/SYSTEM-DESIGN-V3.md` § Module Architecture):
-- Modules are Bun workspace packages in `modules/` — standard `package.json`, no custom format
+- `node/` is a plain directory (not a git repo) — OS-level backup. Each module in `modules/` is its own git repo.
+- Bun workspace: `package.json` at node root with `"workspaces": ["modules/*"]`, `workspace:*` for inter-module imports
 - MSS bridge-code tags in `package.json` `"modnet"` field (`contentType`, `structure`, `mechanics`, `boundary`, `scale`)
-- `@node` scope for agent identity, `workspace:*` protocol for inter-module imports
+- `@node` scope for agent identity
 - No TypeScript compilation — Bun runs TS natively. Only `Bun.build({ target: 'browser' })` for `.behavior.ts` files sent via `update_behavioral`
-- Isolated installs via `bunfig.toml` (`isolation = "isolated"`) — prevents phantom dependencies
 - Code vs data split: `src/` never leaves node, `data/` can cross A2A gated by `boundary` tag
 - Large assets symlinked from outside workspace (not git LFS) — requires constitution bThread for symlink integrity
-- **Future migration:** If workspace grows too large, switch `@node` scope to local npm registry (Verdaccio) via `bunfig.toml` scoped registries. No code changes — only resolution changes.
+- **Future migration:** If workspace grows too large, add `bunfig.toml` to switch `@node` scope to local npm registry (Verdaccio). No code changes — only resolution changes.
 
 **Memory architecture** (decided, see `docs/SYSTEM-DESIGN-V3.md` § Memory Architecture):
 - **Event log IS the memory** — no separate memory files, no semantic cache, no relation store
@@ -77,9 +77,9 @@ Building top-down: UI → WebSocket server → agent loop. The full stack (agent
 - Neuro-symbolic split: structural/syntactic checks in bThread block predicates (Gate, synchronous), contextual/semantic checks in async handlers feeding Simulate→Evaluate pipeline
 - `protectGovernance` bThread queries sidecar db for MAC paths, blocks modifications
 
-**Package sidecar** (decided, see `docs/SYSTEM-DESIGN-V3.md` § Package Sidecar):
-- Per-package `.meta.db` (SQLite, committed to git) — indexes branded objects and string constants
-- Workspace `.workspace.db` (gitignored, rebuilt via ATTACH) — cross-package queries
+**Module sidecar** (decided, see `docs/SYSTEM-DESIGN-V3.md` § Package Sidecar):
+- Per-module `.meta.db` (SQLite, committed to module's git repo) — indexes branded objects and string constants
+- Node-level `.workspace.db` (rebuilt via ATTACH) — cross-module queries
 - Collector tool (`collect_metadata`) scans source files for branded `$` identifiers, upserts sidecar
 - Engine-agnostic query interface — SQLite initial, door open for columnar engines if analytical workloads emerge
 - String constants in db (not hardcoded in templates) — eliminates injection vector, enables future encryption

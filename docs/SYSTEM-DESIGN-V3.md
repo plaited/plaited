@@ -295,7 +295,7 @@ The distillation pipeline reuses existing skills (`agent-eval-harness`, `headles
 
 ## Discovery
 
-The agent discovers context through the tools it already has. The workspace is a git repo. Modules are Bun packages with `package.json` manifests. The agent has `bash`, `read_file`, `write_file`, and `grep` as built-in tools. No specialized discovery infrastructure is needed for most queries:
+The agent discovers context through the tools it already has. Each module is a git repo with a `package.json` manifest. The agent has `bash`, `read_file`, `write_file`, and `grep` as built-in tools. No specialized discovery infrastructure is needed for most queries:
 
 | Need | Tool | Example |
 |---|---|---|
@@ -306,7 +306,7 @@ The agent discovers context through the tools it already has. The workspace is a
 | Test results | `bash` | `bun test modules/farm-stand/` |
 | Skill metadata | `read_file` | Read skill frontmatter directly |
 | Branded objects / governance | sidecar db | `SELECT path, layer FROM branded_objects WHERE identifier = '🏛️'` |
-| Module metadata (cross-package) | workspace db | `SELECT * FROM branded_objects WHERE package = 'farm-stand'` |
+| Module metadata (cross-module) | workspace db | Query via ATTACH — see Package Sidecar section |
 
 Every tool call flows through the BP pipeline (Gate → Execute → tool_result), so all discovery actions are captured in the event log with full observability.
 
@@ -986,30 +986,31 @@ A module is an internal artifact — code, data, tools, skills, bThreads — liv
 
 The Agent Card is the node's **public entry point** — a projection of capabilities, not an inventory of internals.
 
-### Module Architecture: Bun Workspace Packages
+### Module Architecture: Module-Per-Repo
 
-Modules are standard npm packages in a Bun workspace. No custom module format, no compilation step (Bun runs TypeScript natively), no specialized loader. The package manager is the module system.
+Each module is its own git repository inside a Bun workspace. The node directory is **not** a git repo — full-system backup is at the OS/machine level. Modules get independent version history and transportability. Bun workspace resolution (`workspace:*`) works regardless of whether subdirectories have `.git/`.
 
-#### Workspace Structure
+#### Node Structure
 
 ```
-workspace/                          ← git repo, sandboxed working directory
+node/                               ← plain directory (not a git repo)
   package.json                      ← "workspaces": ["modules/*"], "private": true
-  bunfig.toml                       ← registry config, security scanner, isolated installs
-  bun.lock                          ← human-readable, git-diffable lockfile
+  bun.lock                          ← human-readable lockfile
   tsconfig.json
-  .workspace.db                     ← gitignored, rebuilt from sidecars via ATTACH
+  .workspace.db                     ← rebuilt from sidecars via ATTACH
   modules/
-    apple-block/
+    apple-block/                    ← git repo
+      .git/
       package.json                  ← name: "@node/apple-block", "modnet": { MSS tags }
-      .meta.db                      ← per-package sidecar, committed to git
+      .meta.db                      ← per-module sidecar, committed to module repo
       apple.ts
       apple.types.ts
       data/
         varieties.json
-    farm-stand/
+    farm-stand/                     ← git repo
+      .git/
       package.json                  ← depends on "@node/apple-block": "workspace:*"
-      .meta.db                      ← per-package sidecar, committed to git
+      .meta.db                      ← per-module sidecar, committed to module repo
       farm-stand.ts
       farm-stand.template.tsx
       farm-stand.behavior.ts        ← only this compiles for browser
@@ -1038,7 +1039,7 @@ MSS bridge-code tags live in a custom `"modnet"` field in `package.json`:
 }
 ```
 
-The `@node` scope is the agent's identity scope. All module packages within a workspace share this scope. The `workspace:*` protocol resolves inter-module imports via Bun's symlink-based workspace resolution — standard TypeScript imports, no custom loader.
+The `@node` scope is the agent's identity scope. All module packages share this scope. The `workspace:*` protocol resolves inter-module imports via Bun's workspace resolution — standard TypeScript imports, no custom loader.
 
 #### Scale Mapping
 
@@ -1066,25 +1067,15 @@ Bun runs TypeScript natively — no compilation needed for server-side module co
 
 #### Dependency Isolation
 
-`bunfig.toml` enables isolated installs (pnpm-style):
-
-```toml
-[install]
-isolation = "isolated"
-
-[install.scopes]
-"@node" = { url = "https://registry.npmjs.org" }
-```
-
-Isolated installs prevent phantom dependencies — each module package can only import what it declares in its own `package.json`. This is critical for module transportability and for the agent to reason about dependency graphs.
+Bun workspace resolution handles inter-module imports via symlinks. Each module declares its dependencies in `package.json` and can only import what it declares — standard npm semantics. The single `bun.lock` at the node root tracks the full dependency tree.
 
 #### Package Sidecar (`.meta.db`)
 
-Each module package contains a `.meta.db` SQLite sidecar — a small database committed to git alongside the code it describes. The sidecar is populated by a collector tool that scans source files for branded objects (`$` identifiers) and indexes them for fast lookup.
+Each module contains a `.meta.db` SQLite sidecar — a small database committed to the module's git repo alongside the code it describes. The sidecar is populated by a collector tool that scans source files for branded objects (`$` identifiers) and indexes them for fast lookup.
 
-**Why per-package sidecars (not a central db):**
+**Why per-module sidecars (not a central db):**
 
-- **Data ownership aligns with module ownership** — the sidecar travels with the package. When a module is transported to another node, its metadata comes with it.
+- **Data ownership aligns with module ownership** — the sidecar travels with the module. When a module is transported to another node, its metadata comes with it.
 - **No rebuild-from-source** — the sidecar is pre-indexed. The agent queries it directly without re-scanning source files.
 - **Git-diffable provenance** — changes to branded objects produce visible diffs in the sidecar, auditable in git history.
 - **No coordination** — each package's sidecar is independent. No lock contention, no merge conflicts across packages.
@@ -1114,7 +1105,7 @@ The `constants` table isolates string values that would otherwise be hardcoded i
 
 **Workspace-level view (`.workspace.db`):**
 
-A gitignored `.workspace.db` at the workspace root provides cross-package queries by attaching all sidecars:
+A `.workspace.db` at the node root provides cross-module queries by attaching all sidecars:
 
 ```sql
 -- Rebuilt on workspace init or after package changes
@@ -1183,7 +1174,7 @@ The bThread ensures the agent cannot create symlinks to arbitrary filesystem loc
 When a workspace grows beyond practical limits for Bun workspaces (hundreds of packages, deeply nested dependency graphs), the migration path is a local npm registry:
 
 1. Deploy a local registry (e.g., Verdaccio) on the node
-2. Update `bunfig.toml` to point `@node` scope at the local registry
+2. Add a `bunfig.toml` at the node root to point `@node` scope at the local registry
 3. Publish packages via `bun publish` instead of `workspace:*` resolution
 4. No code changes — imports stay the same, only resolution changes
 
@@ -1201,7 +1192,7 @@ Modules and projects are distinct concepts with different isolation models:
 | Concern | Module | Project |
 |---|---|---|
 | **What** | Internal package within the node's workspace | External codebase (user's repo) |
-| **Git** | One git repo for the entire workspace | Separate git repo per project |
+| **Git** | Own git repo within `modules/` | Separate git repo, external |
 | **Isolation** | Bun workspace dependency isolation | Process isolation (Bun.spawn + IPC) |
 | **Scope** | `@node/` scope, workspace:* resolution | Independent, orchestrator-routed |
 | **Lifecycle** | Created/modified by agent as workspace packages | Registered on encounter, independent subprocess |
