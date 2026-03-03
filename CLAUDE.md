@@ -33,6 +33,7 @@ Building top-down: UI → WebSocket server → agent loop. The full stack (agent
 - `docs/WEBSOCKET-ARCHITECTURE.md` — open design questions for the WebSocket server layer
 - `docs/Modnet.md` — Modnet design standards (MSS bridge-code tags, module structure)
 - `docs/Structural-IA.md` — design grammar (objects, channels, levers, loops, modules, blocks)
+- `docs/SKILLS-RESTRUCTURING.md` — **DEFERRED** genome architecture for skills (seeds/tools/eval split, CONTRACT frontmatter, wave ordering)
 
 **Reference code:** `src/reference/` contains 10 waves of agent loop implementation using behavioral programming. Use as a learning reference for BP coordination patterns, not as active code. **Do not read, modify, or run tests in `src/reference/`** — the agent-build skill already documents the patterns. Only read these files if explicitly asked to.
 
