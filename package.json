@@ -17,35 +17,22 @@
     "plaited": "./src/cli.ts"
   },
   "type": "module",
-  "main": "./src/behavioral.ts",
   "exports": {
-    ".": "./src/behavioral.ts",
-    "./*.ts": "./src/*.ts",
-    "./*.tsx": "./src/*.tsx",
-    "./ui": "./src/ui.ts",
-    "./ui/*.ts": "./src/ui/*.ts",
-    "./ui/*.tsx": "./src/ui/*.tsx",
+    "./agent": "./src/agent.ts",
+    "./behavioral": "./src/behavioral.ts",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
     "./jsx-runtime": "./src/jsx-runtime.ts",
-    "./utils": "./src/utils.ts",
-    "./utils/*.ts": "./src/utils/*.ts",
-    "./utils/*.tsx": "./src/utils/*.tsx",
-    "./agent": "./src/agent.ts",
-    "./agent/*.ts": "./src/reference/*.ts",
-    "./agent/*.tsx": "./src/reference/*.tsx",
-    "./workshop": "./src/workshop.ts",
-    "./workshop/*.ts": "./src/workshop/*.ts",
-    "./workshop/*.tsx": "./src/workshop/*.tsx",
+    "./server": "./src/server.ts",
     "./tools": "./src/tools.ts",
-    "./tools/*.ts": "./src/tools/*.ts"
+    "./ui": "./src/ui.ts",
+    "./utils": "./src/utils.ts"
   },
   "files": [
     "./.bin/**",
     "./.plaited.ts",
     "./src/**",
     "!./src/**/tests/*",
-    "!./src/**/*.spec.@(tsx|ts)",
-    "!./src/**/*.stories.@(tsx|ts)"
+    "!./src/**/*.spec.@(tsx|ts)"
   ],
   "publishConfig": {
     "access": "public"
