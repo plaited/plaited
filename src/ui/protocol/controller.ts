@@ -189,7 +189,7 @@ export const controller = ({
 
   const callback = (evt: CloseEvent | MessageEvent) => {
     evt instanceof MessageEvent && trigger({ type: CONTROLLER_EVENTS.on_ws_message, detail: evt })
-    evt.type === 'open' && trigger({ type: CONTROLLER_EVENTS.on_ws_open })
+    if (evt.type === 'open') retryCount = 0
     evt instanceof CloseEvent && RETRY_STATUS_CODES.has(evt.code) && trigger({ type: CONTROLLER_EVENTS.retry })
     evt.type === 'error' && trigger({ type: CONTROLLER_EVENTS.on_ws_error, detail: evt })
   }
@@ -211,15 +211,8 @@ export const controller = ({
       const result = BPEventSchema.parse(JSON.parse(evt.data))
       restrictedTrigger(result)
     },
-    [CONTROLLER_EVENTS.on_ws_open]() {
-      retryCount = 0
-      send({
-        type: CONTROLLER_EVENTS.client_connected,
-        detail: { id: ueid(), source, msg: 'connected' as const },
-      })
-    },
     [CONTROLLER_EVENTS.connect]() {
-      socket = new WebSocket(`${self.location.origin.replace(/^http/, 'ws')}/ws`)
+      socket = new WebSocket(`${self.location.origin.replace(/^http/, 'ws')}/ws`, source)
       const listener = new DelegatedListener(callback)
       delegates.set(socket, listener)
       socket.addEventListener('open', listener)

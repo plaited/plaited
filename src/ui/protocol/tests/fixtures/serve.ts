@@ -1,7 +1,8 @@
 /**
  * Fixture server for browser tests.
  * Builds entry files with Bun.build(), serves static HTML/JS,
- * and provides a WebSocket that responds to client_connected with render messages.
+ * and provides a WebSocket that dispatches test messages on open
+ * using the subprotocol as source identity.
  */
 import { join } from 'node:path'
 import type { ServerWebSocket } from 'bun'
@@ -159,7 +160,7 @@ const BEHAVIORAL_RENDER_MESSAGE = JSON.stringify({
 
 // ─── WebSocket message handlers for test elements ─────────────────────────────
 
-const sendSwapTestMessages = (ws: ServerWebSocket<unknown>) => {
+const sendSwapTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
   // Step 1: innerHTML — replace children of 'main'
   ws.send(
     JSON.stringify({
@@ -208,7 +209,7 @@ const sendSwapTestMessages = (ws: ServerWebSocket<unknown>) => {
   )
 }
 
-const sendAttrsTestMessages = (ws: ServerWebSocket<unknown>) => {
+const sendAttrsTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
   // Set string attribute
   ws.send(
     JSON.stringify({
@@ -239,7 +240,7 @@ const sendAttrsTestMessages = (ws: ServerWebSocket<unknown>) => {
   )
 }
 
-const sendActionTestInitialRender = (ws: ServerWebSocket<unknown>) => {
+const sendActionTestInitialRender = (ws: ServerWebSocket<{ source: string }>) => {
   ws.send(
     JSON.stringify({
       type: 'render',
@@ -297,62 +298,60 @@ export const startServer = (port = 0): FixtureServer => {
       },
     },
     websocket: {
-      open(_ws) {
-        // nothing on open
+      data: {} as { source: string },
+
+      open(ws) {
+        const client = ws.data.source
+        switch (client) {
+          case 'swap-fixture':
+            ws.send(DSD_RENDER_MESSAGE)
+            break
+          case 'behavioral-fixture':
+            // Send initial render, then update_behavioral with the module URL
+            ws.send(BEHAVIORAL_RENDER_MESSAGE)
+            ws.send(
+              JSON.stringify({
+                type: 'update_behavioral',
+                detail: `http://localhost:${server.port}/dist/modules/behavioral-module.js`,
+              }),
+            )
+            break
+          case 'swap-test':
+            sendSwapTestMessages(ws)
+            break
+          case 'attrs-test':
+            sendAttrsTestMessages(ws)
+            break
+          case 'action-test':
+            sendActionTestInitialRender(ws)
+            break
+          case 'retry-test': {
+            state.retryTestConnections++
+            if (state.retryTestConnections === 1) {
+              // First connection: close with 1012 (Service Restart) to trigger retry
+              // 1006 is reserved and cannot be sent in a Close frame per RFC 6455
+              setTimeout(() => ws.close(1012, 'test retry'), 100)
+            } else {
+              // Subsequent connections (after retry): send success render
+              ws.send(
+                JSON.stringify({
+                  type: 'render',
+                  detail: {
+                    target: 'main',
+                    html: '<div id="retry-success">Reconnected!</div>',
+                    swap: 'innerHTML',
+                  },
+                }),
+              )
+            }
+            break
+          }
+          default:
+            ws.send(RENDER_MESSAGE)
+        }
       },
       message(ws, message) {
         const data = JSON.parse(String(message))
-        if (data.type === 'client_connected') {
-          // detail uses { id, source, msg } envelope — source is the client tag string
-          const client = data.detail?.source
-          switch (client) {
-            case 'swap-fixture':
-              ws.send(DSD_RENDER_MESSAGE)
-              break
-            case 'behavioral-fixture':
-              // Send initial render, then update_behavioral with the module URL
-              ws.send(BEHAVIORAL_RENDER_MESSAGE)
-              ws.send(
-                JSON.stringify({
-                  type: 'update_behavioral',
-                  detail: `http://localhost:${server.port}/dist/modules/behavioral-module.js`,
-                }),
-              )
-              break
-            case 'swap-test':
-              sendSwapTestMessages(ws)
-              break
-            case 'attrs-test':
-              sendAttrsTestMessages(ws)
-              break
-            case 'action-test':
-              sendActionTestInitialRender(ws)
-              break
-            case 'retry-test': {
-              state.retryTestConnections++
-              if (state.retryTestConnections === 1) {
-                // First connection: close with 1012 (Service Restart) to trigger retry
-                // 1006 is reserved and cannot be sent in a Close frame per RFC 6455
-                setTimeout(() => ws.close(1012, 'test retry'), 100)
-              } else {
-                // Subsequent connections (after retry): send success render
-                ws.send(
-                  JSON.stringify({
-                    type: 'render',
-                    detail: {
-                      target: 'main',
-                      html: '<div id="retry-success">Reconnected!</div>',
-                      swap: 'innerHTML',
-                    },
-                  }),
-                )
-              }
-              break
-            }
-            default:
-              ws.send(RENDER_MESSAGE)
-          }
-        }
         if (data.type === 'user_action') {
           state.lastUserAction = data
           // detail uses { id, source, msg } envelope — msg is the action type string
@@ -377,7 +376,15 @@ export const startServer = (port = 0): FixtureServer => {
     fetch(req, server) {
       // Upgrade WebSocket requests on any path (client connects to /ws)
       if (req.headers.get('upgrade')?.toLowerCase() === 'websocket') {
-        if (server.upgrade(req)) return undefined
+        const source = req.headers.get('sec-websocket-protocol') ?? 'document'
+        if (
+          server.upgrade(req, {
+            data: { source },
+            headers: { 'Sec-WebSocket-Protocol': source },
+          })
+        ) {
+          return undefined
+        }
         return new Response('WebSocket upgrade failed', { status: 400 })
       }
 

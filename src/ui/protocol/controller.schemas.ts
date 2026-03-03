@@ -194,6 +194,22 @@ export const SnapshotEventSchema = z.object({
 /** @public */
 export type SnapshotEvent = z.infer<typeof SnapshotEventSchema>
 
+/**
+ * Discriminated union schema for all client → server WebSocket messages.
+ *
+ * @remarks
+ * Composes the protocol schemas into a single union for server-side
+ * validation. The `type` field discriminates:
+ * - `user_action` — DOM event forwarded from a p-trigger binding
+ * - `snapshot` — BP engine observation forwarded from the client controller
+ *
+ * @public
+ */
+export const ClientMessageSchema = z.discriminatedUnion('type', [UserActionMessageSchema, SnapshotEventSchema])
+
+/** @public */
+export type ClientMessage = z.infer<typeof ClientMessageSchema>
+
 type ControllerMessage = RenderMessage | AttrsMessage | UserAction | DisconnectMessage
 
 /**

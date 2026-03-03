@@ -7,7 +7,7 @@ import { keyMirror } from '../../utils.ts'
  * Partitioned by direction:
  * - **Server → Client**: `render`, `attrs`, `update_behavioral`, `disconnect`
  * - **Client → Server**: `client_connected`, `user_action`, `snapshot`
- * - **WebSocket lifecycle**: `connect`, `retry`, `on_ws_open`, `on_ws_message`, `on_ws_error`
+ * - **WebSocket lifecycle**: `connect`, `retry`, `on_ws_message`, `on_ws_error`
  *
  * @public
  */
@@ -26,7 +26,6 @@ export const CONTROLLER_EVENTS = keyMirror(
   'retry',
   'on_ws_error',
   'on_ws_message',
-  'on_ws_open',
 )
 
 /**
@@ -50,7 +49,6 @@ export const RESTRICTED_EVENTS = keyMirror(
   CONTROLLER_EVENTS.retry,
   CONTROLLER_EVENTS.on_ws_error,
   CONTROLLER_EVENTS.on_ws_message,
-  CONTROLLER_EVENTS.on_ws_open,
 )
 
 /**
