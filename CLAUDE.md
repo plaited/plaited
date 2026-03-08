@@ -93,6 +93,48 @@ Building top-down: UI → WebSocket server → agent loop. The full stack (agent
 - Engine-agnostic query interface — SQLite initial, door open for columnar engines if analytical workloads emerge
 - String constants in db (not hardcoded in templates) — eliminates injection vector, enables future encryption
 
+## Decided (from pi-mono audit)
+
+### Model Interface (ARCHITECTURE.md)
+- `Model.reason()` returns `AsyncIterable<ModelDelta>` (not `Promise`), accepts `signal: AbortSignal`
+- `ModelDelta` includes `thinking_delta`, `text_delta`, `toolcall_delta`, `done`, `error`
+- `ModelResponse` (final) includes `usage: { inputTokens, outputTokens }` for context budgeting
+- Inference handler consumes the stream privately, triggers BP events per chunk for progressive UI
+- OpenAI-compatible API is the wire format — llama.cpp, vLLM, Ollama all support it
+
+### Three Model Roles (ARCHITECTURE.md)
+Three interfaces at the same level — infrastructure called by handlers, NOT tool calls:
+- **Model** (required) — `reason(context, signal) → AsyncIterable<ModelDelta>` — reasoning + tool calls
+- **Indexer** (deferred, optional) — `embed(text) → Float32Array` — text → embeddings for semantic search
+- **Vision** (deferred, optional) — `analyze(image, prompt) → VisionResponse` — image → structured description
+
+Reference stack: Model (Falcon-H1R 7B, ~14GB) + Indexer (EmbeddingGemma 300M, ~600MB) + Vision (Qwen2.5-VL-7B, ~14GB) = ~29GB fp16 on DGX Spark (128GB). Skills extend Vision for specialized use cases (visual agent, chart analysis).
+
+Indexer/Vision are NOT tool calls because: (1) they're perception (input processing), not action (output); (2) no side effects → no safety gating needed; (3) handlers call them to enrich context, the Model never calls them directly. BP coordinates their lifecycle (bThreads can block inference until processing completes) but not their execution.
+
+### Prompt Caching — Session-Level System Prompt Pinning
+Each pub/sub topic (document-level `sessionId`, island-level `sessionId:tagName`) is a session. The system prompt (constitution, tool descriptions, personality) is pinned at session start and stays immutable across turns. The inference server's KV-cache naturally caches this prefix. No application-level cache logic. Dynamic content (plan state, history, last message) goes after the stable prefix.
+
+### Context Overflow — Hybrid Budget + Fallback
+Pre-flight token budget check in context assembly (count tokens, prune if over limit: history first → inactive tool descriptions → plan detail). If tokenizer mismatch causes unexpected overflow, reactive retry (controller.ts pattern: error → reduce budget → re-assemble → retry). Flywheel: snapshot logs reveal recurring overflow patterns → crystallize into MAC bThreads that proactively shape context assembly → owner approves.
+
+### Inference Retry — Controller-Mirror bThread Pattern
+Direct port of `controller.ts` WebSocket retry (exponential backoff, max retries). Handler for `inference_error` checks retry count, applies backoff via `setTimeout`, triggers `invoke_inference` retry. Error-type routing: transient errors (429, 5xx, OOM) → retry; context overflow → re-assemble with reduced budget; permanent errors (auth, model not found) → surface to user.
+
+### Request Abort — BP Interrupt + AbortSignal
+Already handled: `user_action` (UI) or `message` (ACP) → BP `interrupt` kills inference bThread → `AbortSignal` propagates to `fetch()` (inference) and `Bun.spawn()` (tool subprocess). Same pattern as `sim_guard_{id}` per-call threads.
+
+### Tool Progress — useSnapshot Observability
+Already handled: `useSnapshot` captures every BP decision including `execute` and `tool_result` events. Long-running tools can trigger intermediate `tool_progress` events → handlers send `render` messages for progressive UI. All observable and trainable.
+
+### Streaming UI — BP Events (not separate protocol)
+Inference handler reads OpenAI SSE stream → triggers BP events (`thinking_delta`, `text_delta`) → handlers send `render` messages to generative UI and ACP clients. BP IS the streaming protocol. No separate 12-event system needed.
+
+### Not Needed (dropped from pi-mono comparison)
+- **Cross-provider message transformation** — no mid-session model swap; model replaced between sessions via retrain + redeploy
+- **Partial/streaming JSON parsing** — handler accumulates tool call args privately, triggers `model_response` with complete parsed result
+- **Pi-pods infrastructure management** — genome skills generate deployment code to user needs; not a framework export
+
 ## Open Questions
 
 ### Server + Agent Integration
@@ -116,7 +158,7 @@ Pluggable Model interfaces exist but operational lifecycle is unspecified:
 - Fallback chain: if primary model unavailable, what's the degradation path (e.g., API → local, frontier → reference)
 - Model versioning: base version + fine-tuning epoch tracked in spawn config and session metadata
 - Health monitoring: inference latency, tool call parse failures, thinking quality anomalies
-- Hot-swap: can a running agent upgrade models mid-session?
+- No mid-session model swap — model replaced between sessions via retrain + redeploy
 
 ### Mid-Task Steering (AGENT-LOOP.md)
 BP has `interrupt` but UX for user intervention mid-task needs design:
@@ -141,9 +183,11 @@ Hypergraph + git provides the capability but user-facing UX is undesigned:
 - [x] `src/reference/` — 10-wave agent loop reference implementation
 - [x] `src/tools/eval/` — eval harness (19K LOC, production-ready)
 - [x] Doc breakout: SYSTEM-DESIGN-V3.md → 8 focused domain docs
+- [x] Pi-mono feature audit — decisions recorded above
 
 ### Next Up
 - [ ] WebAuthn auth (passkey registration/verification via SimpleWebAuthn)
 - [ ] `src/agent/` — agent loop implementation (from reference → production)
+- [ ] Update `docs/ARCHITECTURE.md` with Model interface changes (AsyncIterable, Vision role, usage field)
 - [ ] Genome skills restructuring (seeds/tools/eval directories)
 - [ ] Resolve open questions above as implementation reveals answers
