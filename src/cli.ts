@@ -12,7 +12,7 @@
  */
 
 // Agent tools (CRUD)
-import { bashCli, listFilesCli, readFileCli, writeFileCli } from './tools/crud/crud.ts'
+import { bashCli, editFileCli, listFilesCli, readFileCli, writeFileCli } from './tools/crud/crud.ts'
 import { balance } from './tools/eval/commands/balance.ts'
 import { calibrate } from './tools/eval/commands/calibrate.ts'
 import { capture } from './tools/eval/commands/capture.ts'
@@ -41,6 +41,7 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   // Agent tools (CRUD)
   'read-file': readFileCli,
   'write-file': writeFileCli,
+  'edit-file': editFileCli,
   'list-files': listFilesCli,
   bash: bashCli,
   // Eval harness
@@ -73,7 +74,7 @@ const printCommandManifest = () => {
     name: 'plaited',
     description: 'Agent-facing CLI toolbox for the Plaited framework',
     commands: Object.keys(COMMANDS).sort(),
-    usage: "plaited <command> --schema | --json '{...}'",
+    usage: "plaited <command> '<json>' | --schema input",
     discovery: 'plaited --schema',
   }
   console.log(JSON.stringify(manifest, null, 2))
@@ -88,13 +89,13 @@ const args = Bun.argv.slice(3)
 
 if (!command || command === '--help' || command === '-h') {
   console.error(`Usage: plaited <command> [options]
-       plaited <command> --schema     # Discover command schema
-       plaited <command> --json '{}'  # Structured input
+       plaited <command> --schema     # Discover input schema
+       plaited <command> '<json>'    # Structured JSON input
        plaited --schema               # List all commands
 
 Commands:
   Agent Tools:
-    read-file, write-file, list-files, bash
+    read-file, write-file, edit-file, list-files, bash
 
   Eval Harness:
     eval, capture, trials, summarize, calibrate,

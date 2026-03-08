@@ -15,12 +15,268 @@ These patterns apply to all BP-orchestrated code (`src/behavioral/`, `src/ui/`, 
 1. **Blocking prevents handler execution, not observability.** A blocked event won't fire its handler, but `useSnapshot` captures all BP engine decisions — selections, blocks, interrupts. The controller sends every snapshot to the server (`controller.ts:196-200`). The server sees everything. If you need a side effect for a blocked event (like a rejection message), the handler must check and produce it — don't rely on the block alone.
 
 2. **Pipeline pass-through > conditional bypass.** Events should flow through the full pipeline. When a seam is absent, the handler passes through — don't short-circuit with conditionals.
+   - **DON'T:** `if (actionCalls.length > 0) { bThreads.set({ batchCompletion... }) }` — conditional bThread creation means structural coordination exists only sometimes.
+   - **DO:** Always create `batchCompletion`. Zero-length batch completes immediately (zero `waitFor` iterations from empty `Array.from`) and the loop progresses normally.
 
-3. **Thin handlers, structural coordination.** Handlers do ONE thing. Routing and lifecycle belong in bThreads.
+3. **Thin handlers, structural coordination.** Handlers do ONE thing. Routing and lifecycle belong in bThreads. If a handler has `if/else` branches that produce different event types, it's doing routing — split into separate handlers or move routing into bThread block predicates.
+   - **DON'T:** A `model_response` handler that filters arrays (`savePlanCalls` vs `actionCalls`), conditionally creates bThreads, and has an else-branch for text-only messages — that's three responsibilities.
+   - **DO:** Every tool call becomes a `context_ready` event. Each handler inspects ONE tool call. Routing (save_plan vs action) happens via event type or bThread predicates. `batchCompletion` always exists. Text-only response triggers `message` directly from inference.
 
 4. **Additive composition.** Use unparameterized `behavioral()` — handlers self-validate with Zod at boundaries. Wire up what you need, ignore the rest.
 
 5. **No backward compatibility for greenfield.** Always-full is simpler than configurable.
+
+6. **Register once, not per-task.** Session-level subscriptions (`useFeedback`, `useSnapshot`) are registered once at agent creation. Dynamic coordination uses bThreads (which ARE per-task). Don't register/teardown feedback handlers on every task.
+   - **DON'T:** `disconnectObserver?.(); disconnectObserver = useFeedback({...})` inside a `task` handler.
+   - **DO:** Register all feedback handlers once in `createAgentLoop`. Use per-task bThreads for lifecycle coordination (they self-terminate via interrupt or completion).
+
+7. **One check, one location.** Don't duplicate safety checks across handlers. If a symbolic gate runs in the `simulate_request` handler to create a `safety_{id}` bThread, don't also run it in `eval_approved`. The bThread blocks structurally; the handler produces the workflow event (`eval_rejected`). They are complementary, not redundant copies of the same logic.
+
+## Agent Loop BP Patterns
+
+Concrete BP coordination patterns for building `createAgentLoop()` in `src/agent/`. All code sketches use production types from `src/agent/` and BP primitives from `src/behavioral/`.
+
+### Event Vocabulary
+
+The 6-step loop maps to these production events (from `agent.constants.ts`):
+
+| Step | Events | Produced by | Consumed by |
+|------|--------|-------------|-------------|
+| Context | `task` | adapter (external trigger) | task handler → triggers `invoke_inference` |
+| Reason | `invoke_inference`, `model_response` | task handler / batchCompletion bThread, inference handler | inference handler, dispatch handler |
+| Gate | `context_ready`, `gate_approved`, `gate_rejected` | dispatch handler, gate handler | gate handler, gate_approved handler / rejection handler |
+| Simulate | `simulate_request`, `simulation_result` | gate_approved handler, simulate handler | simulate handler, evaluate handler |
+| Evaluate | `eval_approved`, `eval_rejected` | evaluate handler | execute trigger / rejection handler |
+| Execute | `execute`, `tool_result` | gate_approved / eval_approved handler, execute handler | execute handler, batchCompletion bThread |
+
+Streaming side-channels (`thinking_delta`, `text_delta`, `inference_error`, `tool_progress`) don't affect loop flow — they're triggered by handlers for progressive UI.
+
+**Structural events** (coordinated by bThreads — block/waitFor/interrupt targets):
+- `task` / `message` — taskGate phase transitions
+- `execute` — blocked by sim_guard, safety, maxIterations, constitution bThreads
+- `tool_result` / `gate_rejected` / `eval_rejected` — counted by batchCompletion
+- `invoke_inference` — requested by batchCompletion after batch completes
+
+**Handler-produced events** (side effects via useFeedback):
+- `invoke_inference` — triggered by task handler (first call)
+- `model_response` — triggered by inference handler after stream completes
+- `context_ready` — triggered per tool call from dispatch handler
+- `gate_approved` / `gate_rejected` — triggered by gate handler
+- `simulate_request` — triggered by gate_approved handler (non-workspace tags)
+- `simulation_result` — triggered by simulate handler after async prediction
+- `eval_approved` / `eval_rejected` — triggered by evaluate handler
+- `execute` — triggered by gate_approved handler (workspace-only) or eval_approved handler
+- `tool_result` — triggered by execute handler after tool runs
+
+### Pattern: Phase-Transition Gate (taskGate)
+
+Two-phase bThread that alternates between blocking and allowing. Thread position IS coordination state — no boolean flag needed.
+
+```typescript
+const PIPELINE_EVENTS = new Set([
+  AGENT_EVENTS.invoke_inference, AGENT_EVENTS.model_response,
+  AGENT_EVENTS.context_ready, AGENT_EVENTS.gate_approved,
+  AGENT_EVENTS.gate_rejected, AGENT_EVENTS.simulate_request,
+  AGENT_EVENTS.simulation_result, AGENT_EVENTS.eval_approved,
+  AGENT_EVENTS.eval_rejected, AGENT_EVENTS.execute,
+  AGENT_EVENTS.tool_result, AGENT_EVENTS.save_plan,
+  AGENT_EVENTS.plan_saved,
+])
+
+bThreads.set({
+  // Session gate: blocks everything until client connects
+  sessionGate: bThread([
+    bSync({
+      waitFor: UI_ADAPTER_LIFECYCLE_EVENTS.client_connected,
+      block: (e) => PIPELINE_EVENTS.has(e.type) || e.type === AGENT_EVENTS.task,
+    }),
+    bSync({ waitFor: UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected }),
+  ], true),
+
+  // Task gate: blocks pipeline events between tasks (serial execution)
+  taskGate: bThread([
+    bSync({
+      waitFor: AGENT_EVENTS.task,
+      block: (e) => PIPELINE_EVENTS.has(e.type),
+      interrupt: [UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected],
+    }),
+    bSync({
+      waitFor: AGENT_EVENTS.message,
+      interrupt: [UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected],
+    }),
+  ], true),
+})
+```
+
+Stale async triggers (e.g., `tool_result` arriving after task ends) are silently blocked because `taskGate` is back at phase 1. Replaces `if (done) return` checks in handlers.
+
+### Pattern: Per-Call Dynamic Threads (sim_guard)
+
+Each tool call gets its own scoped bThread. Blocks `execute` for THIS call until `simulation_result` arrives. Self-terminates via predicate interrupt. No shared mutable state.
+
+```typescript
+// Created in gate_approved handler when tags require simulation
+const id = toolCall.id
+bThreads.set({
+  [`sim_guard_${id}`]: bThread([
+    bSync({
+      block: (e) => e.type === AGENT_EVENTS.execute && e.detail?.toolCall?.id === id,
+      interrupt: [
+        (e) => e.type === AGENT_EVENTS.simulation_result && e.detail?.toolCall?.id === id,
+      ],
+    }),
+  ]),
+})
+```
+
+Multiple `sim_guard_*` threads coexist for parallel tool calls — each scoped by ID, no interference. Observable via `useSnapshot` (`blockedBy: "sim_guard_tc-1"`).
+
+### Pattern: Batch Completion Coordination
+
+Waits for N completion events in any order, then requests next inference. **Always created** — zero-length batch completes immediately (see principle 2).
+
+```typescript
+const isCompletion = (e: { type: string }) =>
+  e.type === AGENT_EVENTS.tool_result ||
+  e.type === AGENT_EVENTS.gate_rejected ||
+  e.type === AGENT_EVENTS.eval_rejected
+
+// Created in dispatch handler after triggering context_ready per tool call
+bThreads.set({
+  batchCompletion: bThread([
+    ...Array.from({ length: toolCalls.length }, () =>
+      bSync({ waitFor: isCompletion, interrupt: [AGENT_EVENTS.message] }),
+    ),
+    bSync({
+      request: { type: AGENT_EVENTS.invoke_inference },
+      interrupt: [AGENT_EVENTS.message],
+    }),
+  ]),
+})
+```
+
+Every sync point has `interrupt: [AGENT_EVENTS.message]` — if `message` fires (text-only response, max iterations, user interrupt), `batchCompletion` is torn down cleanly. Thread name reused next model response.
+
+### Pattern: Risk Tag Routing via gate_approved
+
+Single `gate_approved` event with `tags: string[]` replaces three separate gate events. Handler inspects tag sets for routing.
+
+```typescript
+useFeedback({
+  [AGENT_EVENTS.gate_approved]({ toolCall, tags }: GateApprovedDetail) {
+    const tagSet = new Set(tags)
+    // workspace-only → execute directly (skip simulation)
+    if (tagSet.size > 0 && [...tagSet].every((t) => t === RISK_TAG.workspace)) {
+      trigger({ type: AGENT_EVENTS.execute, detail: { toolCall, tags } })
+      return
+    }
+    // Any other tags (or empty/unknown) → simulate + evaluate
+    bThreads.set({
+      [`sim_guard_${toolCall.id}`]: bThread([
+        bSync({
+          block: (e) => e.type === AGENT_EVENTS.execute && e.detail?.toolCall?.id === toolCall.id,
+          interrupt: [
+            (e) => e.type === AGENT_EVENTS.simulation_result && e.detail?.toolCall?.id === toolCall.id,
+          ],
+        }),
+      ]),
+    })
+    trigger({ type: AGENT_EVENTS.simulate_request, detail: { toolCall, tags } })
+  },
+})
+```
+
+Note: the `if` here is acceptable — it's a single routing decision in a thin handler, not multi-branch orchestration. The handler does ONE thing: route to execute or simulate. The structural coordination (blocking execute until simulation completes) is in the `sim_guard` bThread.
+
+### Pattern: Synthetic Tool Results for Rejected Events
+
+Thin handlers that add to history so the model sees feedback on next inference. `batchCompletion` already counts `gate_rejected` and `eval_rejected` as completion events.
+
+```typescript
+useFeedback({
+  [AGENT_EVENTS.gate_rejected]({ toolCall, decision }: GateRejectedDetail) {
+    history.push({
+      role: 'tool',
+      content: JSON.stringify({ error: decision.reason ?? 'Rejected by gate' }),
+      tool_call_id: toolCall.id,
+    })
+  },
+  [AGENT_EVENTS.eval_rejected]({ toolCall, reason }: EvalRejectedDetail) {
+    history.push({
+      role: 'tool',
+      content: JSON.stringify({ error: `Eval rejected: ${reason}` }),
+      tool_call_id: toolCall.id,
+    })
+  },
+})
+```
+
+### Pattern: maxIterations as Per-Task bThread
+
+Created fresh per task in the `task` handler. Counts N `tool_result` events, then blocks `execute` + requests `message`. Interrupted by `message` at task end, freeing thread name for reuse.
+
+```typescript
+// In task handler:
+bThreads.set({
+  maxIterations: bThread([
+    ...Array.from({ length: MAX_ITERATIONS }, () =>
+      bSync({ waitFor: AGENT_EVENTS.tool_result, interrupt: [AGENT_EVENTS.message] }),
+    ),
+    bSync({
+      block: AGENT_EVENTS.execute,
+      request: { type: AGENT_EVENTS.message, detail: { content: `Max iterations (${MAX_ITERATIONS}) reached` } },
+      interrupt: [AGENT_EVENTS.message],
+    }),
+  ]),
+})
+```
+
+### Pattern: Constitution as Additive Blocking Threads
+
+Each safety rule is an independent bThread with `repeat: true`. New rules compose without modifying existing ones. Governance factories produce these — `(trigger) => { threads?, handlers? }`.
+
+```typescript
+// MAC rules loaded at spawn, immutable
+bThreads.set({
+  noEtcWrites: bThread([
+    bSync({
+      block: (e) => e.type === AGENT_EVENTS.execute &&
+        e.detail?.toolCall?.function?.name === 'bash' &&
+        e.detail?.toolCall?.function?.arguments?.command?.includes('/etc/'),
+    }),
+  ], true),
+
+  noRmRf: bThread([
+    bSync({
+      block: (e) => e.type === AGENT_EVENTS.execute &&
+        e.detail?.toolCall?.function?.name === 'bash' &&
+        e.detail?.toolCall?.function?.arguments?.command?.includes('rm -rf'),
+    }),
+  ], true),
+})
+```
+
+### Handler Granularity Guide
+
+| Responsibility | Where | Why |
+|---------------|-------|-----|
+| Event routing (which event type next) | Thin handler with single routing decision, or bThread block predicates | Structural, observable, composable |
+| Side effects (inference, tool exec, history) | `useFeedback` handler | Async, fire-and-forget |
+| Lifecycle coordination (task start/end, batch) | bThreads with `repeat: true` | Thread position is state |
+| Safety constraints (block dangerous ops) | bThread block predicates, `repeat: true` | Additive, composable, observable via snapshot |
+| Per-call scoping (sim guard, safety net) | Dynamic bThreads with predicate interrupt | Self-terminating, no shared mutable state |
+| Observability / persistence | `useSnapshot` listener, registered once | Decoupled from handlers, captures all decisions |
+
+### Anti-Pattern Summary
+
+These patterns from the legacy reference must NOT be reproduced:
+
+1. **Array filtering in handlers** — don't imperatively separate `savePlanCalls` from `actionCalls`. Each tool call → one `context_ready` event. (Violates principle 3)
+2. **Conditional bThread creation** — don't wrap `bThreads.set()` in `if (length > 0)`. Always set the bThread. (Violates principle 2)
+3. **Duplicate safety checks** — don't run the same check in both `simulate_request` and `eval_approved`. Check once, let the bThread block structurally. (Violates principle 7)
+4. **Per-task observer re-registration** — don't `disconnect(); reconnect = useFeedback({...})` in the `task` handler. Register once. (Violates principle 6)
+5. **Multi-branch handler routing** — don't put `if/else if/else` chains in `model_response` that produce different event types. Split into thin handlers. (Violates principle 3)
+6. **Three separate gate events** — don't use `gate_read_only` / `gate_side_effects` / `gate_high_ambiguity`. Use single `gate_approved` with `tags: string[]`.
 
 ## Active Work Context
 
@@ -43,13 +299,13 @@ Building top-down: UI → WebSocket server → agent loop. The full stack (agent
 - `docs/Modnet.md` — Modnet design standards (MSS bridge-code tags, module structure)
 - `docs/Structural-IA.md` — design grammar (objects, channels, levers, loops, modules, blocks)
 
-**Reference code:** `src/reference/` contains 10 waves of agent loop implementation using behavioral programming. Use as a learning reference for BP coordination patterns, not as active code. **Do not read, modify, or run tests in `src/reference/`** — see `docs/AGENT-LOOP.md` for the authoritative loop design. Only read these files if explicitly asked to.
+**BP coordination patterns** for the agent loop are documented in the **Agent Loop BP Patterns** section above. See `docs/AGENT-LOOP.md` for the authoritative 6-step loop design.
 
 **What exists:**
 - `src/behavioral/` — BP engine (`behavioral()`, `bThread`, `bSync`, `trigger`, `useFeedback`, `useSnapshot`)
 - `src/ui/` — rendering pipeline, controller protocol, custom elements (see `docs/UI.md`)
 - `src/server/` — thin I/O server node via `createServer()` (routes, WebSocket, pub/sub, hot reload). Auth routes (`/auth/register`, `/auth/verify`) return 501 stubs — WebAuthn implementation is next.
-- `src/reference/` — agent loop reference (10 waves: tool executor, gate, simulate, evaluate, memory, orchestrator, constitution, BP-first, per-tool dispatch, AgentNode primitives)
+
 
 **What's next:** WebAuthn auth (passkey registration/verification via SimpleWebAuthn) → then agent loop (`src/agent/`).
 
@@ -253,7 +509,7 @@ tool-name/
 
 ### Migration Status
 - `validate-skill/` — **done** (reference implementation)
-- `crud/` — uses `parseCli` with `--json '{}'` pattern, needs migration to JSON positional arg
+- `crud/` — **done** (Phase 1: production imports, Bun Shell bash, risk tags, edit_file, JSON positional arg CLI, deleted createToolExecutor)
 - `constitution/`, `simulate/`, `evaluate/`, `memory/` — full rewrites pending (see Tool Audit below)
 - `eval/` — 19K LOC harness, uses `parseArgs` throughout, migrate as needed
 - `typescript-lsp/` — uses `parseArgs`, migrate as needed
@@ -267,7 +523,7 @@ tool-name/
 
 **Agent pipeline tools:** `constitution/`, `evaluate/`, `simulate/`, `memory/` — **deleted**. All were written before BP-first and pi-mono decisions were finalized (reference imports, `RISK_CLASS` enum, standalone factory functions instead of BP handlers, Promise-based `InferenceCall` instead of `Model.reason()` AsyncIterable). Misalignment too deep for incremental migration — rebuild from scratch in Phases 2–3.
 
-`crud/` — **kept, needs Phase 1 upgrade.** Handlers are clean but import from `src/reference/`, lack `AbortSignal`, bash uses raw `Bun.spawn()` instead of Bun Shell, and `createToolExecutor()` centralizes dispatch (BP replaces it).
+`crud/` — **Phase 1 complete.** Production imports from `src/agent/`, Bun Shell bash, risk tags, edit_file added, createToolExecutor deleted.
 
 ### Default Skills for Tools (agent-skills eval pattern)
 
@@ -315,7 +571,7 @@ Each default tool gets a skill (teaches agent usage) + eval prompts (tests tool 
 - [x] `src/behavioral/` — BP engine (1128 tests passing)
 - [x] `src/ui/` — rendering pipeline, controller protocol, custom elements
 - [x] `src/server/` — thin I/O server node via `createServer()`
-- [x] `src/reference/` — 10-wave agent loop reference implementation
+- [x] `src/reference/` — 10-wave agent loop reference (deleted — BP patterns extracted to CLAUDE.md "Agent Loop BP Patterns")
 - [x] `src/tools/eval/` — eval harness (19K LOC, production-ready)
 - [x] Doc breakout: SYSTEM-DESIGN-V3.md → 8 focused domain docs
 - [x] Pi-mono feature audit — decisions recorded above
@@ -323,9 +579,10 @@ Each default tool gets a skill (teaches agent usage) + eval prompts (tests tool 
 - [x] Phase 0 — Production types (`src/agent/`) extracted from reference, risk tag model applied
 - [x] `validate-skill/` — rewritten for agent consumption (Bun.YAML, JSON I/O, --schema, library exports)
 - [x] Deleted pre-production tools (`simulate/`, `memory/`, `evaluate/`, `constitution/`) — misaligned with BP-first architecture, rebuild from scratch in Phases 2–3
+- [x] Deleted `scaffold-rules/` — AGENTS.md ships in package, skill replaces CLI tool
+- [x] Phase 1 — `crud/` upgrade (production imports, Bun Shell bash, risk tags, edit_file, JSON positional arg CLI, deleted createToolExecutor)
 
 ### Next Up
-- [ ] Phase 1 — `crud/` upgrade (production imports, Bun Shell bash, risk tags, edit_file, delete createToolExecutor)
 - [ ] Phase 2–3 — Governance factories + pipeline handlers (see Recommended Build Path)
 - [ ] Default tool skills + evals Phase 4
 - [ ] WebAuthn auth (passkey registration/verification via SimpleWebAuthn)

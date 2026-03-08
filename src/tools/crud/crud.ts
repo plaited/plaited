@@ -1,51 +1,86 @@
 import { resolve } from 'node:path'
+import { $ } from 'bun'
 import { z } from 'zod'
-import { TOOL_STATUS } from '../../reference/agent.constants.ts'
-import type { AgentToolCall, ToolDefinition, ToolResult } from '../../reference/agent.schemas.ts'
-import type { ToolContext, ToolExecutor, ToolHandler } from '../../reference/agent.types.ts'
-import { BashConfigSchema, ListFilesConfigSchema, ReadFileConfigSchema, WriteFileConfigSchema } from './crud.schemas.ts'
+import { RISK_TAG } from '../../agent/agent.constants.ts'
+import type { ToolDefinition } from '../../agent/agent.schemas.ts'
+import type { ToolContext, ToolHandler } from '../../agent/agent.types.ts'
+import {
+  BashConfigSchema,
+  EditFileConfigSchema,
+  ListFilesConfigSchema,
+  ReadFileConfigSchema,
+  WriteFileConfigSchema,
+} from './crud.schemas.ts'
 
 // ============================================================================
-// CLI Argument Parser
+// CLI Input Parser (CLI tool pattern — JSON positional arg)
 // ============================================================================
 
 /**
- * Parse CLI arguments for a tool command.
+ * Parse CLI arguments following the CLI tool pattern.
  *
  * @remarks
- * Supports two modes:
- * - `--schema`: outputs JSON Schema for the tool and returns null
- * - `--json '{...}'`: validates input with Zod, returns parsed data
- *
- * @param args - CLI arguments array
- * @param schema - Zod schema for validation
- * @param name - Tool name for usage message
- * @returns Parsed data or null (when --schema was requested)
+ * - `--help` / `-h`: prints usage, exits 0
+ * - `--schema input`: emits JSON Schema for input, exits 0
+ * - First positional arg: JSON string validated with Zod
+ * - Exit 2 on bad input
  *
  * @internal
  */
-const parseCli = <T extends z.ZodSchema>(args: string[], schema: T, name: string): z.infer<T> | null => {
-  if (args.includes('--schema')) {
+const parseCli = <T extends z.ZodSchema>(args: string[], schema: T, name: string): z.infer<T> => {
+  if (args.includes('--help') || args.includes('-h')) {
+    console.error(`Usage: plaited ${name} '<json>' | --schema input`)
+    process.exit(0)
+  }
+  if (args[0] === '--schema') {
     // biome-ignore lint/suspicious/noConsole: CLI stdout output
     console.log(JSON.stringify(z.toJSONSchema(schema), null, 2))
-    return null
+    process.exit(0)
   }
-  const jsonIdx = args.indexOf('--json')
-  const jsonArg = args[jsonIdx + 1]
-  if (jsonIdx === -1 || !jsonArg) {
-    console.error(`Usage: plaited ${name} --json '{...}' | --schema`)
-    process.exit(1)
+  const jsonStr = args[0]
+  if (!jsonStr) {
+    console.error(`Usage: plaited ${name} '<json>' | --schema input`)
+    process.exit(2)
   }
-  const parsed = schema.safeParse(JSON.parse(jsonArg))
+  let raw: unknown
+  try {
+    raw = JSON.parse(jsonStr)
+  } catch {
+    console.error('Invalid JSON input')
+    process.exit(2)
+  }
+  const parsed = schema.safeParse(raw)
   if (!parsed.success) {
     console.error(JSON.stringify(parsed.error.issues, null, 2))
-    process.exit(1)
+    process.exit(2)
   }
   return parsed.data
 }
 
 // ============================================================================
-// Built-in Tool Schemas (OpenAI function-calling format)
+// Risk Tag Registry — static declarations per built-in tool
+// ============================================================================
+
+/**
+ * Static risk tag declarations for built-in tools.
+ *
+ * @remarks
+ * Gate bThread predicates inspect these tags to determine routing:
+ * - `workspace`-only → execute directly (safe path)
+ * - Empty tags → default-deny, routes to Simulate + Judge
+ *
+ * @public
+ */
+export const BUILT_IN_RISK_TAGS: Record<string, string[]> = {
+  read_file: [RISK_TAG.workspace],
+  write_file: [RISK_TAG.workspace],
+  edit_file: [RISK_TAG.workspace],
+  list_files: [RISK_TAG.workspace],
+  bash: [], // empty → default-deny, routes to Simulate + Judge
+}
+
+// ============================================================================
+// Tool Schemas (OpenAI function-calling format)
 // ============================================================================
 
 /**
@@ -53,8 +88,7 @@ const parseCli = <T extends z.ZodSchema>(args: string[], schema: T, name: string
  *
  * @remarks
  * Pass these to the inference call's `tools` parameter so the model
- * knows which tools are available. Consumers can merge with their
- * own tool schemas before passing to `createAgentLoop`.
+ * knows which tools are available.
  *
  * @public
  */
@@ -89,6 +123,22 @@ export const builtInToolSchemas: ToolDefinition[] = [
   {
     type: 'function',
     function: {
+      name: 'edit_file',
+      description: 'Replace a unique string in a file with new content. The old_string must appear exactly once.',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Relative path to the file' },
+          old_string: { type: 'string', description: 'Exact string to find (must be unique in file)' },
+          new_string: { type: 'string', description: 'Replacement string' },
+        },
+        required: ['path', 'old_string', 'new_string'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'list_files',
       description:
         'List files and directories matching a glob pattern. Returns entries with path, type (file or directory), and size in bytes for files.',
@@ -104,7 +154,7 @@ export const builtInToolSchemas: ToolDefinition[] = [
     type: 'function',
     function: {
       name: 'bash',
-      description: 'Execute a shell command in the workspace directory',
+      description: 'Execute a shell command in the workspace directory via Bun Shell',
       parameters: {
         type: 'object',
         properties: {
@@ -117,16 +167,26 @@ export const builtInToolSchemas: ToolDefinition[] = [
 ]
 
 // ============================================================================
-// Built-in Tool Handlers
+// Tool Handlers
 // ============================================================================
 
-const readFile: ToolHandler = async (args, ctx) => {
+/**
+ * Read a file's contents as text.
+ *
+ * @public
+ */
+export const readFile: ToolHandler = async (args, ctx) => {
   const path = args.path as string
   const resolved = resolve(ctx.workspace, path)
   return await Bun.file(resolved).text()
 }
 
-const writeFile: ToolHandler = async (args, ctx) => {
+/**
+ * Write content to a file, creating parent directories as needed.
+ *
+ * @public
+ */
+export const writeFile: ToolHandler = async (args, ctx) => {
   const path = args.path as string
   const content = args.content as string
   const resolved = resolve(ctx.workspace, path)
@@ -134,7 +194,42 @@ const writeFile: ToolHandler = async (args, ctx) => {
   return { written: path, bytes: content.length }
 }
 
-const listFiles: ToolHandler = async (args, ctx) => {
+/**
+ * Replace a unique string in a file with new content.
+ *
+ * @remarks
+ * Fails if `old_string` is not found or appears more than once.
+ * This prevents ambiguous edits.
+ *
+ * @public
+ */
+export const editFile: ToolHandler = async (args, ctx) => {
+  const path = args.path as string
+  const oldString = args.old_string as string
+  const newString = args.new_string as string
+  const resolved = resolve(ctx.workspace, path)
+
+  const content = await Bun.file(resolved).text()
+  const firstIdx = content.indexOf(oldString)
+  if (firstIdx === -1) {
+    throw new Error(`old_string not found in ${path}`)
+  }
+  const secondIdx = content.indexOf(oldString, firstIdx + 1)
+  if (secondIdx !== -1) {
+    throw new Error(`old_string is not unique in ${path} (found at positions ${firstIdx} and ${secondIdx})`)
+  }
+
+  const updated = content.replace(oldString, newString)
+  await Bun.write(resolved, updated)
+  return { edited: path, bytes: updated.length }
+}
+
+/**
+ * List files and directories matching a glob pattern.
+ *
+ * @public
+ */
+export const listFiles: ToolHandler = async (args, ctx) => {
   const pattern = (args.pattern as string) ?? '**/*'
   const glob = new Bun.Glob(pattern)
   const entries: Array<{ path: string; type: 'file' | 'directory'; size?: number }> = []
@@ -147,194 +242,75 @@ const listFiles: ToolHandler = async (args, ctx) => {
   return entries
 }
 
-const bash: ToolHandler = async (args, ctx) => {
+/**
+ * Execute a shell command via Bun Shell.
+ *
+ * @remarks
+ * Uses `Bun.$` (not `/bin/sh`) for sandboxing:
+ * - `.cwd(workspace)` locks working directory
+ * - `.nothrow()` captures exit code without throwing
+ * - `.quiet()` captures stdout/stderr as Buffers
+ * - `{ raw: command }` passes the command string to Bun Shell's parser
+ *
+ * Constitution bThreads inspect the command at the Gate (Layer 1) before
+ * execution reaches this handler.
+ *
+ * @public
+ */
+export const bash: ToolHandler = async (args, ctx) => {
   const command = args.command as string
-  const proc = Bun.spawn(['sh', '-c', command], {
-    cwd: ctx.workspace,
-    stdout: 'pipe',
-    stderr: 'pipe',
-  })
-  const [stdout, stderr] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()])
-  const exitCode = await proc.exited
+  if (ctx.signal.aborted) throw new Error('Aborted')
 
-  if (exitCode !== 0) {
-    throw new Error(stderr.trim() || `Command exited with code ${exitCode}`)
+  const result = await $`${{ raw: command }}`.cwd(ctx.workspace).nothrow().quiet()
+
+  if (result.exitCode !== 0) {
+    throw new Error(result.stderr.toString().trim() || `Command exited with code ${result.exitCode}`)
   }
-  return stdout.trim()
+  return result.stdout.toString().trim()
 }
 
-/** Default built-in tool handlers keyed by tool name */
-const builtInHandlers: Record<string, ToolHandler> = {
+/**
+ * Built-in handler registry keyed by tool name.
+ *
+ * @remarks
+ * Used by BP dispatch to look up handlers for `execute` events.
+ *
+ * @public
+ */
+export const builtInHandlers: Record<string, ToolHandler> = {
   read_file: readFile,
   write_file: writeFile,
+  edit_file: editFile,
   list_files: listFiles,
   bash,
 }
 
 // ============================================================================
-// Tool Executor Factory
+// CLI Handlers (CLI tool pattern — thin wrappers over library handlers)
 // ============================================================================
 
 /**
- * Creates a `ToolExecutor` that dispatches tool calls to registered handlers.
+ * Create a CLI handler that delegates to a library handler.
  *
- * @remarks
- * - Merges custom tools over built-in tools (custom overrides built-in)
- * - Unknown tools return a `failed` ToolResult (not an exception)
- * - Each tool call is timed (duration in ms)
- * - Filesystem/network containment is enforced by the deployment sandbox,
- *   not by the tool handlers themselves
- *
- * @param options.workspace - The workspace root directory for tool execution
- * @param options.tools - Optional custom tool handlers that override built-ins
- * @returns A `ToolExecutor` function
- *
- * @public
+ * @internal
  */
-export const createToolExecutor = ({
-  workspace,
-  tools,
-}: {
-  workspace: string
-  tools?: Record<string, ToolHandler>
-}): ToolExecutor => {
-  const handlers: Record<string, ToolHandler> = { ...builtInHandlers, ...tools }
-  const ctx: ToolContext = { workspace }
-
-  return async (toolCall: AgentToolCall): Promise<ToolResult> => {
-    const handler = handlers[toolCall.name]
-    const startTime = Date.now()
-
-    if (!handler) {
-      return {
-        toolCallId: toolCall.id,
-        name: toolCall.name,
-        status: TOOL_STATUS.failed,
-        error: `Unknown tool: "${toolCall.name}"`,
-        duration: Date.now() - startTime,
-      }
-    }
-
+const makeCli =
+  (handler: ToolHandler, schema: z.ZodSchema, name: string) =>
+  async (args: string[]): Promise<void> => {
+    const config = parseCli(args, schema, name)
+    const ctx: ToolContext = { workspace: process.cwd(), signal: AbortSignal.timeout(300_000) }
     try {
-      const output = await handler(toolCall.arguments, ctx)
-      return {
-        toolCallId: toolCall.id,
-        name: toolCall.name,
-        status: TOOL_STATUS.completed,
-        output,
-        duration: Date.now() - startTime,
-      }
+      const output = await handler(config as Record<string, unknown>, ctx)
+      // biome-ignore lint/suspicious/noConsole: CLI stdout output
+      console.log(JSON.stringify(output))
     } catch (error) {
-      return {
-        toolCallId: toolCall.id,
-        name: toolCall.name,
-        status: TOOL_STATUS.failed,
-        error: error instanceof Error ? error.message : String(error),
-        duration: Date.now() - startTime,
-      }
+      console.error(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }))
+      process.exit(1)
     }
   }
-}
 
-// ============================================================================
-// CLI Handlers (tool genome pattern)
-// ============================================================================
-
-/**
- * CLI handler for the read_file tool.
- *
- * @remarks
- * Supports `--schema` (outputs JSON Schema) and `--json '{...}'`
- * (validates with Zod, reads file, outputs JSON).
- *
- * @param args - CLI arguments
- *
- * @public
- */
-export const readFileCli = async (args: string[]): Promise<void> => {
-  const config = parseCli(args, ReadFileConfigSchema, 'read-file')
-  if (!config) return
-  const resolved = resolve(process.cwd(), config.path)
-  const content = await Bun.file(resolved).text()
-  // biome-ignore lint/suspicious/noConsole: CLI stdout output
-  console.log(JSON.stringify({ content }))
-}
-
-/**
- * CLI handler for the write_file tool.
- *
- * @remarks
- * Supports `--schema` (outputs JSON Schema) and `--json '{...}'`
- * (validates with Zod, writes file, outputs JSON).
- *
- * @param args - CLI arguments
- *
- * @public
- */
-export const writeFileCli = async (args: string[]): Promise<void> => {
-  const config = parseCli(args, WriteFileConfigSchema, 'write-file')
-  if (!config) return
-  const resolved = resolve(process.cwd(), config.path)
-  await Bun.write(resolved, config.content)
-  // biome-ignore lint/suspicious/noConsole: CLI stdout output
-  console.log(JSON.stringify({ written: config.path, bytes: config.content.length }))
-}
-
-/**
- * CLI handler for the list_files tool.
- *
- * @remarks
- * Supports `--schema` (outputs JSON Schema) and `--json '{...}'`
- * (validates with Zod, lists files, outputs JSON).
- *
- * @param args - CLI arguments
- *
- * @public
- */
-export const listFilesCli = async (args: string[]): Promise<void> => {
-  const config = parseCli(args, ListFilesConfigSchema, 'list-files')
-  if (!config) return
-  const pattern = config.pattern ?? '**/*'
-  const cwd = process.cwd()
-  const glob = new Bun.Glob(pattern)
-  const entries: Array<{ path: string; type: 'file' | 'directory'; size?: number }> = []
-  for await (const path of glob.scan({ cwd, onlyFiles: false })) {
-    const resolved = resolve(cwd, path)
-    const ref = Bun.file(resolved)
-    const isFile = await ref.exists()
-    entries.push(isFile ? { path, type: 'file', size: ref.size } : { path, type: 'directory' })
-  }
-  // biome-ignore lint/suspicious/noConsole: CLI stdout output
-  console.log(JSON.stringify(entries))
-}
-
-/**
- * CLI handler for the bash tool.
- *
- * @remarks
- * Supports `--schema` (outputs JSON Schema) and `--json '{...}'`
- * (validates with Zod, executes command, outputs JSON).
- *
- * @param args - CLI arguments
- *
- * @public
- */
-export const bashCli = async (args: string[]): Promise<void> => {
-  const config = parseCli(args, BashConfigSchema, 'bash')
-  if (!config) return
-  const cwd = process.cwd()
-  const proc = Bun.spawn(['sh', '-c', config.command], {
-    cwd,
-    stdout: 'pipe',
-    stderr: 'pipe',
-  })
-  const [stdout, stderr] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()])
-  const exitCode = await proc.exited
-
-  if (exitCode !== 0) {
-    console.error(JSON.stringify({ error: stderr.trim() || `Command exited with code ${exitCode}`, exitCode }))
-    process.exit(1)
-  }
-  // biome-ignore lint/suspicious/noConsole: CLI stdout output
-  console.log(JSON.stringify({ stdout: stdout.trim(), exitCode }))
-}
+export const readFileCli = makeCli(readFile, ReadFileConfigSchema, 'read-file')
+export const writeFileCli = makeCli(writeFile, WriteFileConfigSchema, 'write-file')
+export const editFileCli = makeCli(editFile, EditFileConfigSchema, 'edit-file')
+export const listFilesCli = makeCli(listFiles, ListFilesConfigSchema, 'list-files')
+export const bashCli = makeCli(bash, BashConfigSchema, 'bash')
