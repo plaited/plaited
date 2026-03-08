@@ -1,12 +1,12 @@
-import { AGENT_TO_CONTROLLER_EVENTS, CLIENT_TO_AGENT_EVENTS } from '../../events.ts'
+import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../events.ts'
 import { keyMirror } from '../../utils.ts'
 /**
  * Event type constants for the generative UI controller protocol.
  *
  * @remarks
  * WebSocket-internal lifecycle events for the controller.
- * Cross-module events live in `src/events/` (`CLIENT_LIFECYCLE_EVENTS`,
- * `AGENT_TO_CONTROLLER_EVENTS`, `CLIENT_TO_AGENT_EVENTS`).
+ * Cross-module events live in `src/events/` (`UI_ADAPTER_LIFECYCLE_EVENTS`,
+ * `AGENT_TO_CONTROLLER_EVENTS`, `CONTROLLER_TO_AGENT_EVENTS`).
  *
  * @public
  */
@@ -24,8 +24,8 @@ export const WEBSOCKET_LIFECYCLE_EVENTS = keyMirror('connect', 'retry', 'on_ws_e
  * @public
  */
 export const RESTRICTED_EVENTS = keyMirror(
-  CLIENT_TO_AGENT_EVENTS.user_action,
-  CLIENT_TO_AGENT_EVENTS.snapshot,
+  CONTROLLER_TO_AGENT_EVENTS.user_action,
+  CONTROLLER_TO_AGENT_EVENTS.snapshot,
   // WebSocket lifecycle
   WEBSOCKET_LIFECYCLE_EVENTS.connect,
   WEBSOCKET_LIFECYCLE_EVENTS.retry,

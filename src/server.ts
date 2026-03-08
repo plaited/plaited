@@ -5,7 +5,7 @@
  * This module provides:
  * - **Factory**: {@link createServer} — creates a Bun.serve-based server node
  * - **Schemas**: {@link WebSocketDataSchema} — Zod validation for WebSocket connection data
- * - **Constants**: {@link SERVER_EVENTS} — lifecycle events, {@link SERVER_ERRORS} — error codes
+ * - **Constants**: {@link SERVER_ERRORS} — error codes
  * - **Types**: {@link CreateServerOptions}
  *
  * @public

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { AGENT_TO_CONTROLLER_EVENTS, CLIENT_TO_AGENT_EVENTS } from '../../../events.ts'
+import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../../events.ts'
 import { SWAP_MODES } from '../controller.constants.ts'
 import {
   AttrsMessageSchema,
@@ -115,7 +115,7 @@ describe('AttrsMessageSchema', () => {
 describe('UserActionMessageSchema', () => {
   test('accepts valid user action message with { id, source, msg } envelope', () => {
     const msg = {
-      type: CLIENT_TO_AGENT_EVENTS.user_action,
+      type: CONTROLLER_TO_AGENT_EVENTS.user_action,
       detail: { id: 'abc123', source: 'test-island', msg: 'click_button' },
     }
     expect(UserActionMessageSchema.parse(msg)).toEqual(msg)
@@ -124,7 +124,7 @@ describe('UserActionMessageSchema', () => {
   test('rejects detail without id', () => {
     expect(() =>
       UserActionMessageSchema.parse({
-        type: CLIENT_TO_AGENT_EVENTS.user_action,
+        type: CONTROLLER_TO_AGENT_EVENTS.user_action,
         detail: { source: 'test-island', msg: 'click' },
       }),
     ).toThrow()
@@ -133,7 +133,7 @@ describe('UserActionMessageSchema', () => {
   test('rejects detail without source', () => {
     expect(() =>
       UserActionMessageSchema.parse({
-        type: CLIENT_TO_AGENT_EVENTS.user_action,
+        type: CONTROLLER_TO_AGENT_EVENTS.user_action,
         detail: { id: 'abc123', msg: 'click' },
       }),
     ).toThrow()
@@ -142,7 +142,7 @@ describe('UserActionMessageSchema', () => {
   test('rejects detail without msg', () => {
     expect(() =>
       UserActionMessageSchema.parse({
-        type: CLIENT_TO_AGENT_EVENTS.user_action,
+        type: CONTROLLER_TO_AGENT_EVENTS.user_action,
         detail: { id: 'abc123', source: 'test-island' },
       }),
     ).toThrow()
@@ -151,7 +151,7 @@ describe('UserActionMessageSchema', () => {
   test('rejects flat string detail (old format)', () => {
     expect(() =>
       UserActionMessageSchema.parse({
-        type: CLIENT_TO_AGENT_EVENTS.user_action,
+        type: CONTROLLER_TO_AGENT_EVENTS.user_action,
         detail: 'click_button',
       }),
     ).toThrow()
@@ -182,7 +182,7 @@ describe('DisconnectMessageSchema', () => {
 describe('SnapshotEventSchema', () => {
   test('accepts valid snapshot event with { id, source, msg } envelope', () => {
     const msg = {
-      type: CLIENT_TO_AGENT_EVENTS.snapshot,
+      type: CONTROLLER_TO_AGENT_EVENTS.snapshot,
       detail: {
         id: 'abc123',
         source: 'test-island',
@@ -205,7 +205,7 @@ describe('SnapshotEventSchema', () => {
 
   test('accepts snapshot with feedback_error kind', () => {
     const msg = {
-      type: CLIENT_TO_AGENT_EVENTS.snapshot,
+      type: CONTROLLER_TO_AGENT_EVENTS.snapshot,
       detail: {
         id: 'def456',
         source: 'document',
@@ -222,7 +222,7 @@ describe('SnapshotEventSchema', () => {
   test('rejects detail without id', () => {
     expect(() =>
       SnapshotEventSchema.parse({
-        type: CLIENT_TO_AGENT_EVENTS.snapshot,
+        type: CONTROLLER_TO_AGENT_EVENTS.snapshot,
         detail: {
           source: 'test-island',
           msg: {
@@ -237,7 +237,7 @@ describe('SnapshotEventSchema', () => {
   test('rejects detail without source', () => {
     expect(() =>
       SnapshotEventSchema.parse({
-        type: CLIENT_TO_AGENT_EVENTS.snapshot,
+        type: CONTROLLER_TO_AGENT_EVENTS.snapshot,
         detail: {
           id: 'abc123',
           msg: {

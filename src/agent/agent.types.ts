@@ -1,5 +1,7 @@
 import type { DefaultHandlers, Disconnect, SnapshotListener, Trigger } from '../behavioral/behavioral.types.ts'
-import type { CLIENT_LIFECYCLE_EVENTS, CLIENT_TO_AGENT_EVENTS } from '../events.ts'
+import type { CONTROLLER_TO_AGENT_EVENTS, UI_ADAPTER_LIFECYCLE_EVENTS } from '../events.ts'
+import type { UIClientConnectedDetail, UIClientDisconnectedDetail, UIClientErrorDetail } from '../server.ts'
+import type { SnapshotEvent, UserActionMessage } from '../ui.ts'
 import type { AGENT_EVENTS } from './agent.constants.ts'
 
 import type { AgentPlan, AgentToolCall, GateDecision, ModelUsage, ToolDefinition, ToolResult } from './agent.schemas.ts'
@@ -267,9 +269,9 @@ export type InferenceErrorDetail = {
  * Documents the full event vocabulary and expected detail shapes.
  *
  * @remarks
- * Covers both cross-module events (`CLIENT_LIFECYCLE_EVENTS`, `CLIENT_TO_AGENT_EVENTS`)
- * and pipeline events (`AGENT_EVENTS`). Cross-module event details are typed as
- * `unknown` because adapters own their detail shapes.
+ * Covers UI adapter events (`UI_ADAPTER_LIFECYCLE_EVENTS`, `CONTROLLER_TO_AGENT_EVENTS`) with
+ * concrete detail types from their respective modules, and pipeline events
+ * (`AGENT_EVENTS`) with agent-owned detail types.
  *
  * Not used as a generic parameter — `behavioral()` is unparameterized and handlers
  * self-validate with Zod where needed. Kept as a reference type for documentation
@@ -278,12 +280,12 @@ export type InferenceErrorDetail = {
  * @public
  */
 export type AgentEventDetails = {
-  // ── Cross-module events (adapter-owned details) ───────────────────
-  [CLIENT_LIFECYCLE_EVENTS.client_connected]: unknown
-  [CLIENT_LIFECYCLE_EVENTS.client_disconnected]: unknown
-  [CLIENT_LIFECYCLE_EVENTS.client_error]: unknown
-  [CLIENT_TO_AGENT_EVENTS.user_action]: unknown
-  [CLIENT_TO_AGENT_EVENTS.snapshot]: unknown
+  // ── UI adapter events ──────────────────────────────────────────────
+  [UI_ADAPTER_LIFECYCLE_EVENTS.client_connected]: UIClientConnectedDetail
+  [UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected]: UIClientDisconnectedDetail
+  [UI_ADAPTER_LIFECYCLE_EVENTS.client_error]: UIClientErrorDetail
+  [CONTROLLER_TO_AGENT_EVENTS.user_action]: UserActionMessage['detail']
+  [CONTROLLER_TO_AGENT_EVENTS.snapshot]: SnapshotEvent['detail']
   // ── Pipeline events ───────────────────────────────────────────────
   [AGENT_EVENTS.task]: TaskDetail
   [AGENT_EVENTS.context_ready]: ContextReadyDetail

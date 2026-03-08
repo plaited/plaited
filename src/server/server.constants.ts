@@ -4,7 +4,7 @@ import { keyMirror } from '../utils.ts'
  * Error type constants for the server module.
  *
  * @remarks
- * Used as error detail codes in `SERVER_EVENTS.error` triggers:
+ * Used as error detail codes in `UI_ADAPTER_LIFECYCLE_EVENTS.client_error` triggers:
  * - `origin_rejected` — WebSocket upgrade denied due to origin mismatch
  * - `upgrade_failed` — WebSocket upgrade call returned false
  * - `malformed_message` — Client sent a message that failed JSON parse or Zod validation

@@ -20,7 +20,7 @@
  */
 import type { BPEvent, BThreads, Disconnect, Handlers, Trigger, UseFeedback, UseSnapshot } from '../../behavioral.ts'
 import { BPEventSchema } from '../../behavioral.ts'
-import { AGENT_TO_CONTROLLER_EVENTS, CLIENT_TO_AGENT_EVENTS } from '../../events.ts'
+import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../events.ts'
 import { ueid } from '../../utils.ts'
 import { DelegatedListener, delegates } from '../dom/delegated-listener.ts'
 import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from '../render/template.constants.ts'
@@ -55,7 +55,7 @@ const bindTriggers = (subtree: DocumentFragment, trigger: (event: { type: string
       if (!domEvent || !type) continue
       const listener = new DelegatedListener((event: Event) => {
         trigger({
-          type: CLIENT_TO_AGENT_EVENTS.user_action,
+          type: CONTROLLER_TO_AGENT_EVENTS.user_action,
           detail: {
             type,
             event,
@@ -199,7 +199,7 @@ export const controller = ({
     useSnapshot((detail) => {
       if (socket?.readyState === WebSocket.OPEN) {
         socket.send(
-          JSON.stringify({ type: CLIENT_TO_AGENT_EVENTS.snapshot, detail: { id: ueid(), source, msg: detail } }),
+          JSON.stringify({ type: CONTROLLER_TO_AGENT_EVENTS.snapshot, detail: { id: ueid(), source, msg: detail } }),
         )
       }
     }),
@@ -250,14 +250,14 @@ export const controller = ({
         })
       }
     },
-    [CLIENT_TO_AGENT_EVENTS.user_action]({ type, event }) {
+    [CONTROLLER_TO_AGENT_EVENTS.user_action]({ type, event }) {
       if (bThreads.has(type)) {
         trigger({
           type,
           detail: event,
         })
       }
-      send({ type: CLIENT_TO_AGENT_EVENTS.user_action, detail: { id: ueid(), source, msg: type } })
+      send({ type: CONTROLLER_TO_AGENT_EVENTS.user_action, detail: { id: ueid(), source, msg: type } })
     },
     async [AGENT_TO_CONTROLLER_EVENTS.update_behavioral](detail) {
       const module = await import(detail)

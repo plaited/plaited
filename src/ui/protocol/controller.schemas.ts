@@ -7,7 +7,7 @@ import {
   SnapshotMessageSchema,
   type Trigger,
 } from '../../behavioral.ts'
-import { AGENT_TO_CONTROLLER_EVENTS, CLIENT_TO_AGENT_EVENTS } from '../../events.ts'
+import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../events.ts'
 import { isTypeOf, trueTypeOf } from '../../utils.ts'
 import { SWAP_MODES } from './controller.constants.ts'
 // ─── Server → Client Message Schemas ────────────────────────────────────────
@@ -86,7 +86,7 @@ export type AttrsMessage = z.infer<typeof AttrsMessageSchema>
  * @internal
  */
 export type UserAction = {
-  type: typeof CLIENT_TO_AGENT_EVENTS.user_action
+  type: typeof CONTROLLER_TO_AGENT_EVENTS.user_action
   detail: {
     type: string
     event: Event
@@ -103,7 +103,7 @@ export type UserAction = {
  * @public
  */
 export const UserActionMessageSchema = z.object({
-  type: z.literal(CLIENT_TO_AGENT_EVENTS.user_action),
+  type: z.literal(CONTROLLER_TO_AGENT_EVENTS.user_action),
   detail: z.object({
     id: z.string(),
     source: z.string(),
@@ -160,7 +160,7 @@ export type UpdateBehavioralMessage = z.infer<typeof UpdateBehavioralMessageSche
  * @public
  */
 export const SnapshotEventSchema = z.object({
-  type: z.literal(CLIENT_TO_AGENT_EVENTS.snapshot),
+  type: z.literal(CONTROLLER_TO_AGENT_EVENTS.snapshot),
   detail: z.object({
     id: z.string(),
     source: z.string(),
