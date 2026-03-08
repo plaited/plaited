@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { bSync, shuffleSyncs } from 'plaited'
+import { bSync, shuffleSyncs } from 'plaited/behavioral'
 
 test('shuffleSyncs: returns array with same length', () => {
   const sync1 = bSync({ request: { type: 'event1' } })

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { behavioral, bSync, bThread, type SnapshotMessage } from 'plaited'
+import { behavioral, bSync, bThread, type SnapshotMessage } from 'plaited/behavioral'
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 

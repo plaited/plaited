@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
-import type { BPEvent } from 'plaited'
-import { useRandomEvent } from 'plaited'
+import type { BPEvent } from 'plaited/behavioral'
+import { useRandomEvent } from 'plaited/behavioral'
 
 test('useRandomEvent: returns template function that selects one of the provided events', () => {
   const event1: BPEvent = { type: 'event1' }

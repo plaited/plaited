@@ -209,7 +209,7 @@ No confirmation message is sent back — the merge is silent. The server observe
 
 ```typescript
 // The module the agent generates and serves
-import type { Trigger } from 'plaited'
+import type { Trigger } from 'plaited/behavioral'
 import type { UpdateBehavioralResult } from 'plaited/ui'
 
 const factory = (trigger: Trigger): UpdateBehavioralResult => ({

@@ -96,7 +96,7 @@ The vertical integration is reflected in the package structure:
 | `plaited/agent` | Agent utilities — world agent, tool definitions |
 
 ```typescript
-import { useBehavioral, useSignal } from 'plaited'
+import { useBehavioral, useSignal } from 'plaited/behavioral'
 import { bElement, createStyles } from 'plaited/ui'
 import { story } from 'plaited/testing'
 ```

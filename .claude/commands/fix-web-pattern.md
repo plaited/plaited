@@ -119,7 +119,7 @@ Then show each file:
 
 ```typescript
 // accordion.css.ts
-import { createStyles } from 'plaited'
+import { createStyles } from 'plaited/behavioral'
 
 export const styles = createStyles({
   accordion: { /* ... */ },

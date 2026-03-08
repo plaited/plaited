@@ -213,7 +213,7 @@ Brief description of what this pattern does.
 
 ```typescript
 // [pattern-name].css.ts
-import { createStyles } from 'plaited'
+import { createStyles } from 'plaited/behavioral'
 
 export const styles = createStyles({
   container: {

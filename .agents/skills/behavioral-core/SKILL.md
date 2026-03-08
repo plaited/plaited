@@ -49,7 +49,7 @@ This skill provides comprehensive documentation for Plaited's behavioral program
 ### Synchronization Idioms
 
 ```typescript
-import { behavioral, bThread, bSync } from 'plaited'
+import { behavioral, bThread, bSync } from 'plaited/behavioral'
 
 const { trigger, bThreads, useFeedback } = behavioral()
 
@@ -96,7 +96,7 @@ flowchart TD
 ### useBehavioral Factory Pattern
 
 ```typescript
-import { useBehavioral } from 'plaited'
+import { useBehavioral } from 'plaited/behavioral'
 
 const createProgram = useBehavioral<Events, Context>({
   publicEvents: ['START', 'STOP'],  // API whitelist
