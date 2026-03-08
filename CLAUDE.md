@@ -222,11 +222,48 @@ Hypergraph + git provides the capability but user-facing UX is undesigned:
 - Branch creation: user explores alternative path at a decision point → git branch + parallel session
 - Branch merging: compare results via hypergraph CLI, user selects preferred path
 
+## CLI Tool Pattern (established via validate-skill rewrite)
+
+All `plaited` CLI tools follow this contract. Reference implementation: `src/tools/validate-skill/validate-skill.ts`.
+
+### I/O Contract
+- **Input**: JSON as first positional arg or piped via stdin. Validated with Zod `.parse()`.
+- **Output**: JSON on stdout. Errors on stderr.
+- **Discovery**: `--schema input` and `--schema output` emit `z.toJSONSchema()` for the respective Zod schemas.
+- **Help**: `--help` / `-h` prints usage and exits 0.
+- **Exit codes**: 0 = success, 1 = domain error (e.g. validation failed), 2 = bad input / tool error.
+
+### File Structure
+Each tool exports both **library functions** (pure, no side effects) and a **CLI handler** (owns `process.exit`, `console.log`):
+```
+tool-name/
+├── tool-name.ts        # Library exports + CLI handler
+└── tests/
+    └── tool-name.spec.ts
+```
+- Library functions: exported for in-process use. No `process.exit()`, no `console.log`.
+- CLI handler: single exported `async (args: string[]) => void`. Handles `--schema`, `--help`, input parsing, exit codes.
+- Zod schemas: exported (`InputSchema`, `OutputSchema`) so consumers can validate without running the CLI.
+
+### Conventions
+- **Bun.YAML.parse()** for any YAML parsing — no custom parsers. YAML 1.2 compliant.
+- **Spec-fidelity**: Output field names match their source spec verbatim. If the AgentSkills spec says `allowed-tools` (dash-case), the output says `allowed-tools` — don't camelCase.
+- **`z.record(z.string(), z.string())`** not `z.record(z.string())` — Zod v4's `toJSONSchema()` needs explicit key+value type args.
+- **`node:util` parseArgs removed** — input is always JSON, not CLI flags with positional args.
+
+### Migration Status
+- `validate-skill/` — **done** (reference implementation)
+- `crud/` — uses `parseCli` with `--json '{}'` pattern, needs migration to JSON positional arg
+- `constitution/`, `simulate/`, `evaluate/`, `memory/` — full rewrites pending (see Tool Audit below)
+- `eval/` — 19K LOC harness, uses `parseArgs` throughout, migrate as needed
+- `typescript-lsp/` — uses `parseArgs`, migrate as needed
+- `scaffold-rules/` — uses `parseArgs`, migrate as needed
+
 ## Tool Audit (from pi-mono audit session)
 
 ### Tool Categories
 
-**Development/eval tools (keep as-is):** `eval/` (19K LOC harness), `scaffold-rules/`, `typescript-lsp/`, `validate-skill/` — independent of agent loop architecture.
+**Development/eval tools:** `eval/` (19K LOC harness), `scaffold-rules/`, `typescript-lsp/` — independent of agent loop architecture. `validate-skill/` rewritten to CLI tool pattern (reference implementation).
 
 **Agent pipeline tools (need work):** `crud/`, `constitution/`, `evaluate/`, `simulate/`, `memory/` — written before BP-first and pi-mono decisions were finalized. All import from `src/reference/agent.*` (reference types, not production types).
 
@@ -317,8 +354,10 @@ Each default tool gets a skill (teaches agent usage) + eval prompts (tests tool 
 - [x] Pi-mono feature audit — decisions recorded above
 - [x] Tool audit — findings and build path recorded above
 - [x] Phase 0 — Production types (`src/agent/`) extracted from reference, risk tag model applied
+- [x] `validate-skill/` — rewritten for agent consumption (Bun.YAML, JSON I/O, --schema, library exports)
 
 ### Next Up
+- [ ] Migrate remaining CLI tools to CLI tool pattern (see § CLI Tool Pattern migration status)
 - [ ] Tool rewrite Phase 1–3 (see Tool Audit § Recommended Build Path)
 - [ ] Default tool skills + evals Phase 4
 - [ ] WebAuthn auth (passkey registration/verification via SimpleWebAuthn)
