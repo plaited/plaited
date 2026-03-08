@@ -30,6 +30,7 @@
   "files": [
     "./.bin/**",
     "./.plaited.ts",
+    "./AGENTS.md",
     "./src/**",
     "!./src/**/tests/*",
     "!./src/**/*.spec.@(tsx|ts)"

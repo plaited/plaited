@@ -11,39 +11,5 @@
  * @public
  */
 
-// Constitution (risk classification)
-export {
-  classifyRisk,
-  constitutionRule,
-  createConstitution,
-  createGateCheck,
-} from './tools/constitution/constitution.ts'
-export type { Constitution, ConstitutionRule, ConstitutionRuleConfig } from './tools/constitution/constitution.types.ts'
 // CRUD tools
 export { builtInToolSchemas, createToolExecutor } from './tools/crud/crud.ts'
-// Evaluate (judge scoring)
-export {
-  buildRewardPrompt,
-  checkSymbolicGate,
-  createEvaluate,
-  DANGEROUS_PREDICTION_PATTERNS,
-  parseRewardScore,
-} from './tools/evaluate/evaluate.ts'
-// Memory (FTS5 search)
-export { createMemoryDb, createSearchHandler, searchToolSchema } from './tools/memory/memory.ts'
-export type {
-  EventLogEntry,
-  EventLogRow,
-  MemoryDb,
-  MemoryDbOptions,
-  MessageRow,
-  SearchResultRow,
-  SessionRow,
-} from './tools/memory/memory.types.ts'
-// Simulate (dreamer prediction)
-export {
-  buildStateTransitionPrompt,
-  createSimulate,
-  createSubAgentSimulate,
-  parseSimulationResponse,
-} from './tools/simulate/simulate.ts'

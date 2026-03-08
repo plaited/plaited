@@ -183,5 +183,4 @@ and perform batch analysis of files.
 
 ## Related Skills
 
-- **scaffold-rules** - Install optimized rules with verification patterns
 - **validate-skill** - Validate skill structure

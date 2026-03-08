@@ -11,7 +11,6 @@
  * @internal
  */
 
-import { classifyRiskCli } from './tools/constitution/constitution.ts'
 // Agent tools (CRUD)
 import { bashCli, listFilesCli, readFileCli, writeFileCli } from './tools/crud/crud.ts'
 import { balance } from './tools/eval/commands/balance.ts'
@@ -30,12 +29,7 @@ import { grade } from './tools/eval/pipeline/grade.ts'
 // Pipeline commands
 import { run } from './tools/eval/pipeline/run.ts'
 import { schemasCli } from './tools/eval/schemas/schemas-cli.ts'
-import { evaluateCli } from './tools/evaluate/evaluate.ts'
-// Agent services
-import { searchCli } from './tools/memory/memory.ts'
 // Development tools
-import { scaffoldRules } from './tools/scaffold-rules/scaffold-rules.ts'
-import { simulateCli } from './tools/simulate/simulate.ts'
 import { lsp } from './tools/typescript-lsp/lsp.ts'
 import { validateSkill } from './tools/validate-skill/validate-skill.ts'
 
@@ -49,11 +43,6 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   'write-file': writeFileCli,
   'list-files': listFilesCli,
   bash: bashCli,
-  // Agent services
-  search: searchCli,
-  'classify-risk': classifyRiskCli,
-  simulate: simulateCli,
-  evaluate: evaluateCli,
   // Eval harness
   eval: evalRun,
   capture,
@@ -71,7 +60,6 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   format,
   compare,
   // Development tools
-  'scaffold-rules': scaffoldRules,
   'validate-skill': validateSkill,
   lsp,
 }
@@ -108,9 +96,6 @@ Commands:
   Agent Tools:
     read-file, write-file, list-files, bash
 
-  Agent Services:
-    search, classify-risk, simulate, evaluate
-
   Eval Harness:
     eval, capture, trials, summarize, calibrate,
     balance, validate-refs, schemas, headless
@@ -119,7 +104,7 @@ Commands:
     run, extract, grade, format, compare
 
   Development:
-    scaffold-rules, validate-skill, lsp`)
+    validate-skill, lsp`)
   process.exit(command ? 0 : 1)
 }
 

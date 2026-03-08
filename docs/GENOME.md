@@ -121,7 +121,7 @@ Current skills mix two fundamentally different concerns:
 | Category | Skills | Role |
 |----------|--------|------|
 | **Framework seeds** | behavioral-engine, server-transport, generative-ui-protocol, agent-loop, modnet-node | Generative — encode HOW TO BUILD the system |
-| **Development tools** | typescript-lsp, validate-skill, scaffold-rules, code-patterns, code-documentation, optimize-agents-md | Operational — encode HOW TO WORK in the system |
+| **Development tools** | typescript-lsp, validate-skill, code-patterns, code-documentation, optimize-agents-md | Operational — encode HOW TO WORK in the system |
 | **Evaluation** | agent-eval-harness, headless-adapters, ui-testing | Verification — encode HOW TO TEST the system |
 
 Framework seeds are the genome. Tool skills are the development environment. Evaluation skills are the quality gates. Making this distinction explicit (via a `category` frontmatter field or directory structure) lets the meta-seed know which skills to compose vs. which are ambient tooling.

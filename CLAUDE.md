@@ -257,53 +257,17 @@ tool-name/
 - `constitution/`, `simulate/`, `evaluate/`, `memory/` — full rewrites pending (see Tool Audit below)
 - `eval/` — 19K LOC harness, uses `parseArgs` throughout, migrate as needed
 - `typescript-lsp/` — uses `parseArgs`, migrate as needed
-- `scaffold-rules/` — uses `parseArgs`, migrate as needed
+- `scaffold-rules/` — **deleted** (AGENTS.md ships in package, copied by skill)
 
 ## Tool Audit (from pi-mono audit session)
 
 ### Tool Categories
 
-**Development/eval tools:** `eval/` (19K LOC harness), `scaffold-rules/`, `typescript-lsp/` — independent of agent loop architecture. `validate-skill/` rewritten to CLI tool pattern (reference implementation).
+**Development/eval tools:** `eval/` (19K LOC harness), `typescript-lsp/` — independent of agent loop architecture. `validate-skill/` rewritten to CLI tool pattern (reference implementation). `scaffold-rules/` deleted (AGENTS.md ships in package).
 
-**Agent pipeline tools (need work):** `crud/`, `constitution/`, `evaluate/`, `simulate/`, `memory/` — written before BP-first and pi-mono decisions were finalized. All import from `src/reference/agent.*` (reference types, not production types).
+**Agent pipeline tools:** `constitution/`, `evaluate/`, `simulate/`, `memory/` — **deleted**. All were written before BP-first and pi-mono decisions were finalized (reference imports, `RISK_CLASS` enum, standalone factory functions instead of BP handlers, Promise-based `InferenceCall` instead of `Model.reason()` AsyncIterable). Misalignment too deep for incremental migration — rebuild from scratch in Phases 2–3.
 
-### Per-Tool Findings
-
-**`crud/` — Partially Aligned**
-- Individual handlers (readFile, writeFile, listFiles, bash) are clean and correct
-- `createToolExecutor()` is a generic dispatcher — in BP-first, each tool call becomes its own BP event dispatched by per-tool bThreads (Wave 10 pattern). Centralized executor bypasses BP.
-- No `AbortSignal` on bash — decided pattern requires it for request abort via BP interrupt
-- `ToolContext` only has `workspace: string` — may need `signal: AbortSignal`
-- **Action:** Keep handlers, rewrite executor for BP dispatch, add AbortSignal
-
-**`constitution/` — Major Misalignment**
-- `constitutionRule(config)` produces config objects, not governance factories `(trigger) => { threads?, handlers? }`
-- `createConstitution(rules)` returns flat object with `.threads` + `.gateCheck` — not the factory shape
-- No branding (`$: '🏛️'`), no MAC/DAC distinction, no `protectGovernance` bThread
-- `classifyRisk()` is superseded by composable risk tags — tags declared at tool/wrapper definition time, not classified at runtime
-- **Action:** Complete rewrite as governance factory pattern
-
-**`evaluate/` — Partially Aligned**
-- `buildRewardPrompt()`, `parseRewardScore()` — keep (WebDreamer A.4 utilities)
-- `checkSymbolicGate()` — keep but relocate to Gate module (bThread block predicate, not evaluate)
-- `createEvaluate()` returns standalone function — should be a BP handler for `simulation_result` event
-- Uses `InferenceCall` (Promise-based) — needs `Model.reason()` (AsyncIterable)
-- **Action:** Keep utilities, rewrite as BP handler, relocate symbolic gate
-
-**`simulate/` — Partially Aligned**
-- `buildStateTransitionPrompt()`, `parseSimulationResponse()` — keep (WebDreamer A.3 utilities)
-- `createSimulate()` returns standalone function — should be a BP handler for `gate_approved` event
-- Uses `InferenceCall` (Promise-based) — needs `Model.reason()` (AsyncIterable)
-- Sub-agent pattern (`createSubAgentSimulate()`) may need rethinking with BP's native concurrency
-- **Action:** Keep utilities, rewrite as BP handler
-
-**`memory/` — Complete Misalignment**
-- SQLite database (sessions, messages, event_log, FTS5) — design says JSON-LD files in git
-- `useSnapshot` → JSON-LD decision files replaces event_log table
-- Plans as bThreads replaces sessions table state
-- Context assembly as BP event replaces `getMessages()`
-- FTS5 still useful but ONLY for skill frontmatter/module manifests (package sidecar), not memory
-- **Action:** Complete rewrite — search tool backend changes to hypergraph queries (git + grep over JSON-LD)
+`crud/` — **kept, needs Phase 1 upgrade.** Handlers are clean but import from `src/reference/`, lack `AbortSignal`, bash uses raw `Bun.spawn()` instead of Bun Shell, and `createToolExecutor()` centralizes dispatch (BP replaces it).
 
 ### Default Skills for Tools (agent-skills eval pattern)
 
@@ -321,21 +285,24 @@ Each default tool gets a skill (teaches agent usage) + eval prompts (tests tool 
 
 **Phase 0 — Production Types:** Extract from `src/reference/agent.types.ts` → `src/agent/agent.types.ts`. No reference imports in production code.
 
-**Phase 1 — Tool Handlers (bottom-up, testable in isolation):**
-1. Rewrite `crud/` handlers with AbortSignal
-2. Create `search` handler for hypergraph queries (replaces memory/FTS5)
-3. Extract `checkSymbolicGate()` into shared utilities (classifyRisk superseded by risk tags)
-4. Extract `buildRewardPrompt()` + `buildStateTransitionPrompt()` into shared utilities
+**Phase 1 — Tool Handlers (`crud/` upgrade, testable in isolation):**
+1. Migrate `crud/` imports from `src/reference/` → `src/agent/` (production `ToolContext` already has `signal: AbortSignal`)
+2. Rewrite bash handler with Bun Shell (`$.cwd(workspace)`, `$.env()`, AbortSignal)
+3. Add risk tag registry — static `RISK_TAG` declarations per built-in tool alongside `builtInToolSchemas`
+4. Delete `createToolExecutor()` — BP dispatch replaces centralized dispatcher
+5. Add `edit_file` handler (listed in docs as default tool, doesn't exist yet)
 
-**Phase 2 — Governance Factories (constitution rewrite):**
+**Phase 2 — Governance Factories (build from scratch):**
 1. Define governance factory type `(trigger) => { threads?, handlers? }` branded `$: '🏛️'`
 2. Implement gate bThread predicates using composable risk tags
 3. Implement default MAC rules (file sandboxing, bash safety via Bun Shell)
+4. `protectGovernance` bThread blocking modification of MAC paths
 
-**Phase 3 — Pipeline Handlers (simulate + evaluate as BP handlers):**
-1. Simulate handler for `gate_approved` events
-2. Evaluate handler for `simulation_result` events
-3. Wire both to `Model.reason()` AsyncIterable
+**Phase 3 — Pipeline Handlers (build from scratch as BP handlers):**
+1. Simulate handler for `gate_approved` events — builds State Transition Prompt (WebDreamer A.3), calls `Model.reason()`, triggers `simulation_result`
+2. Evaluate handler for `simulation_result` events — symbolic gate (regex/keyword block predicates) + neural scorer (WebDreamer A.4 reward prompt), triggers `eval_approved` or `eval_rejected`
+3. Per-call dynamic threads with predicate interrupt for simulation guards (`sim_guard_{id}` pattern)
+4. Prompt utilities (buildStateTransitionPrompt, buildRewardPrompt, checkSymbolicGate, parseRewardScore) written fresh to use production types
 
 **Phase 4 — Skills + Evals (testable via `@plaited/agent-eval-harness`):**
 1. Create `prompts.jsonl` for each tool
@@ -355,10 +322,11 @@ Each default tool gets a skill (teaches agent usage) + eval prompts (tests tool 
 - [x] Tool audit — findings and build path recorded above
 - [x] Phase 0 — Production types (`src/agent/`) extracted from reference, risk tag model applied
 - [x] `validate-skill/` — rewritten for agent consumption (Bun.YAML, JSON I/O, --schema, library exports)
+- [x] Deleted pre-production tools (`simulate/`, `memory/`, `evaluate/`, `constitution/`) — misaligned with BP-first architecture, rebuild from scratch in Phases 2–3
 
 ### Next Up
-- [ ] Migrate remaining CLI tools to CLI tool pattern (see § CLI Tool Pattern migration status)
-- [ ] Tool rewrite Phase 1–3 (see Tool Audit § Recommended Build Path)
+- [ ] Phase 1 — `crud/` upgrade (production imports, Bun Shell bash, risk tags, edit_file, delete createToolExecutor)
+- [ ] Phase 2–3 — Governance factories + pipeline handlers (see Recommended Build Path)
 - [ ] Default tool skills + evals Phase 4
 - [ ] WebAuthn auth (passkey registration/verification via SimpleWebAuthn)
 - [ ] `src/agent/` — agent loop implementation (from reference → production)
