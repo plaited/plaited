@@ -36,11 +36,7 @@ import { searchCli } from './tools/memory/memory.ts'
 // Development tools
 import { scaffoldRules } from './tools/scaffold-rules/scaffold-rules.ts'
 import { simulateCli } from './tools/simulate/simulate.ts'
-import { lspAnalyze } from './tools/typescript-lsp/lsp-analyze.ts'
-import { lspFind } from './tools/typescript-lsp/lsp-find.ts'
-import { lspHover } from './tools/typescript-lsp/lsp-hover.ts'
-import { lspRefs } from './tools/typescript-lsp/lsp-references.ts'
-import { lspSymbols } from './tools/typescript-lsp/lsp-symbols.ts'
+import { lsp } from './tools/typescript-lsp/lsp.ts'
 import { validateSkill } from './tools/validate-skill/validate-skill.ts'
 
 // ============================================================================
@@ -77,11 +73,7 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   // Development tools
   'scaffold-rules': scaffoldRules,
   'validate-skill': validateSkill,
-  'lsp-find': lspFind,
-  'lsp-hover': lspHover,
-  'lsp-refs': lspRefs,
-  'lsp-symbols': lspSymbols,
-  'lsp-analyze': lspAnalyze,
+  lsp,
 }
 
 // ============================================================================
@@ -127,8 +119,7 @@ Commands:
     run, extract, grade, format, compare
 
   Development:
-    scaffold-rules, validate-skill,
-    lsp-find, lsp-hover, lsp-refs, lsp-symbols, lsp-analyze`)
+    scaffold-rules, validate-skill, lsp`)
   process.exit(command ? 0 : 1)
 }
 
