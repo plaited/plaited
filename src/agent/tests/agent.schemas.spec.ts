@@ -53,7 +53,7 @@ describe('AgentPlanSchema', () => {
       ],
     })
     expect(result.steps).toHaveLength(2)
-    expect(result.steps[1].depends).toEqual(['s1'])
+    expect(result.steps[1]!.depends).toEqual(['s1'])
   })
 
   test('defaults depends to undefined when omitted', () => {

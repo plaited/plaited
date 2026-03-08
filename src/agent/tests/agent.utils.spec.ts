@@ -200,7 +200,7 @@ describe('createTrajectoryRecorder', () => {
     const steps = recorder.getSteps()
     expect(steps).toHaveLength(1)
     expect(steps[0]!.type).toBe('thought')
-    expect(steps[0].content).toBe('Analyzing the code...')
+    expect((steps[0] as { content: string }).content).toBe('Analyzing the code...')
     expect(steps[0]!.timestamp).toBeGreaterThan(0)
   })
 
@@ -223,7 +223,7 @@ describe('createTrajectoryRecorder', () => {
     })
     const steps = recorder.getSteps()
     expect(steps).toHaveLength(1)
-    expect(steps[0].type).toBe('tool_call')
+    expect(steps[0]!.type).toBe('tool_call')
     const step = steps[0] as { type: 'tool_call'; name: string; duration?: number }
     expect(step.name).toBe('read_file')
     expect(step.duration).toBe(42)
@@ -234,7 +234,7 @@ describe('createTrajectoryRecorder', () => {
     recorder.addPlan([{ id: 's1', intent: 'Read files', tools: ['read_file'] }])
     const steps = recorder.getSteps()
     expect(steps).toHaveLength(1)
-    expect(steps[0].type).toBe('plan')
+    expect(steps[0]!.type).toBe('plan')
   })
 
   test('includes optional stepId', () => {
@@ -244,10 +244,10 @@ describe('createTrajectoryRecorder', () => {
     recorder.addToolCall({ name: 'bash', status: 'completed' }, 'step-3')
     recorder.addPlan([], 'step-4')
     const steps = recorder.getSteps()
-    expect(steps[0].stepId).toBe('step-1')
-    expect(steps[1].stepId).toBe('step-2')
-    expect(steps[2].stepId).toBe('step-3')
-    expect(steps[3].stepId).toBe('step-4')
+    expect(steps[0]!.stepId).toBe('step-1')
+    expect(steps[1]!.stepId).toBe('step-2')
+    expect(steps[2]!.stepId).toBe('step-3')
+    expect(steps[3]!.stepId).toBe('step-4')
   })
 
   test('getSteps returns a deep clone', () => {

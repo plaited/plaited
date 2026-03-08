@@ -1,4 +1,5 @@
 import type { DefaultHandlers, Disconnect, SnapshotListener, Trigger } from '../behavioral/behavioral.types.ts'
+import type { CLIENT_LIFECYCLE_EVENTS, CLIENT_TO_AGENT_EVENTS } from '../events.ts'
 import type { AGENT_EVENTS } from './agent.constants.ts'
 
 import type { AgentPlan, AgentToolCall, GateDecision, ModelUsage, ToolDefinition, ToolResult } from './agent.schemas.ts'
@@ -263,16 +264,27 @@ export type InferenceErrorDetail = {
 }
 
 /**
- * Documents the event vocabulary and expected detail shapes.
+ * Documents the full event vocabulary and expected detail shapes.
  *
  * @remarks
- * Each key matches an `AGENT_EVENTS` constant. Not used as a generic parameter —
- * `behavioral()` is unparameterized and handlers self-validate with Zod where needed.
- * Kept as a reference type for documentation and test authoring.
+ * Covers both cross-module events (`CLIENT_LIFECYCLE_EVENTS`, `CLIENT_TO_AGENT_EVENTS`)
+ * and pipeline events (`AGENT_EVENTS`). Cross-module event details are typed as
+ * `unknown` because adapters own their detail shapes.
+ *
+ * Not used as a generic parameter — `behavioral()` is unparameterized and handlers
+ * self-validate with Zod where needed. Kept as a reference type for documentation
+ * and test authoring.
  *
  * @public
  */
 export type AgentEventDetails = {
+  // ── Cross-module events (adapter-owned details) ───────────────────
+  [CLIENT_LIFECYCLE_EVENTS.client_connected]: unknown
+  [CLIENT_LIFECYCLE_EVENTS.client_disconnected]: unknown
+  [CLIENT_LIFECYCLE_EVENTS.client_error]: unknown
+  [CLIENT_TO_AGENT_EVENTS.user_action]: unknown
+  [CLIENT_TO_AGENT_EVENTS.snapshot]: unknown
+  // ── Pipeline events ───────────────────────────────────────────────
   [AGENT_EVENTS.task]: TaskDetail
   [AGENT_EVENTS.context_ready]: ContextReadyDetail
   [AGENT_EVENTS.invoke_inference]: undefined
