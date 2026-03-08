@@ -1,32 +1,16 @@
+import { AGENT_TO_CONTROLLER_EVENTS, CLIENT_TO_AGENT_EVENTS } from '../../events.ts'
 import { keyMirror } from '../../utils.ts'
-
 /**
  * Event type constants for the generative UI controller protocol.
  *
  * @remarks
- * Partitioned by direction:
- * - **Server → Client**: `render`, `attrs`, `update_behavioral`, `disconnect`
- * - **Client → Server**: `client_connected`, `user_action`, `snapshot`
- * - **WebSocket lifecycle**: `connect`, `retry`, `on_ws_message`, `on_ws_error`
+ * WebSocket-internal lifecycle events for the controller.
+ * Cross-module events live in `src/events/` (`CLIENT_LIFECYCLE_EVENTS`,
+ * `AGENT_TO_CONTROLLER_EVENTS`, `CLIENT_TO_AGENT_EVENTS`).
  *
  * @public
  */
-export const CONTROLLER_EVENTS = keyMirror(
-  // Server → Client
-  'attrs',
-  'disconnect',
-  'render',
-  'update_behavioral',
-  // Client → Server
-  'client_connected',
-  'user_action',
-  'snapshot',
-  // WebSocket lifecycle
-  'connect',
-  'retry',
-  'on_ws_error',
-  'on_ws_message',
-)
+export const WEBSOCKET_LIFECYCLE_EVENTS = keyMirror('connect', 'retry', 'on_ws_error', 'on_ws_message')
 
 /**
  * Event types blocked from the external `restrictedTrigger`.
@@ -40,15 +24,13 @@ export const CONTROLLER_EVENTS = keyMirror(
  * @public
  */
 export const RESTRICTED_EVENTS = keyMirror(
-  // Client → Server
-  CONTROLLER_EVENTS.client_connected,
-  CONTROLLER_EVENTS.user_action,
-  CONTROLLER_EVENTS.snapshot,
+  CLIENT_TO_AGENT_EVENTS.user_action,
+  CLIENT_TO_AGENT_EVENTS.snapshot,
   // WebSocket lifecycle
-  CONTROLLER_EVENTS.connect,
-  CONTROLLER_EVENTS.retry,
-  CONTROLLER_EVENTS.on_ws_error,
-  CONTROLLER_EVENTS.on_ws_message,
+  WEBSOCKET_LIFECYCLE_EVENTS.connect,
+  WEBSOCKET_LIFECYCLE_EVENTS.retry,
+  WEBSOCKET_LIFECYCLE_EVENTS.on_ws_error,
+  WEBSOCKET_LIFECYCLE_EVENTS.on_ws_message,
 )
 
 /**
@@ -70,4 +52,4 @@ export const SWAP_MODES = keyMirror('afterbegin', 'afterend', 'beforebegin', 'be
  *
  * @public
  */
-export const CONTROLLER_ERRORS = keyMirror(`${CONTROLLER_EVENTS.attrs}_element_not_found`)
+export const CONTROLLER_ERRORS = keyMirror(`${AGENT_TO_CONTROLLER_EVENTS.attrs}_element_not_found`)

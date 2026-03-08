@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
-import { CONTROLLER_EVENTS, SWAP_MODES } from '../controller.constants.ts'
+import { AGENT_TO_CONTROLLER_EVENTS, CLIENT_TO_AGENT_EVENTS } from '../../../events.ts'
+import { SWAP_MODES } from '../controller.constants.ts'
 import {
   AttrsMessageSchema,
-  ClientConnectedMessageSchema,
   DisconnectMessageSchema,
   RenderMessageSchema,
   SnapshotEventSchema,
@@ -27,7 +27,7 @@ describe('SwapModeSchema', () => {
 describe('RenderMessageSchema', () => {
   test('accepts valid render message with swap', () => {
     const msg = {
-      type: CONTROLLER_EVENTS.render,
+      type: AGENT_TO_CONTROLLER_EVENTS.render,
       detail: { target: 'main', html: '<div>hello</div>', swap: SWAP_MODES.innerHTML },
     }
     expect(RenderMessageSchema.parse(msg)).toEqual(msg)
@@ -35,7 +35,7 @@ describe('RenderMessageSchema', () => {
 
   test('accepts render message without swap (optional)', () => {
     const msg = {
-      type: CONTROLLER_EVENTS.render,
+      type: AGENT_TO_CONTROLLER_EVENTS.render,
       detail: { target: 'main', html: '<p>content</p>' },
     }
     expect(RenderMessageSchema.parse(msg)).toEqual(msg)
@@ -53,7 +53,7 @@ describe('RenderMessageSchema', () => {
   test('rejects render message missing target', () => {
     expect(() =>
       RenderMessageSchema.parse({
-        type: CONTROLLER_EVENTS.render,
+        type: AGENT_TO_CONTROLLER_EVENTS.render,
         detail: { html: '<div/>' },
       }),
     ).toThrow()
@@ -62,7 +62,7 @@ describe('RenderMessageSchema', () => {
   test('rejects render message missing html', () => {
     expect(() =>
       RenderMessageSchema.parse({
-        type: CONTROLLER_EVENTS.render,
+        type: AGENT_TO_CONTROLLER_EVENTS.render,
         detail: { target: 'main' },
       }),
     ).toThrow()
@@ -72,7 +72,7 @@ describe('RenderMessageSchema', () => {
 describe('AttrsMessageSchema', () => {
   test('accepts valid attrs message with string value', () => {
     const msg = {
-      type: CONTROLLER_EVENTS.attrs,
+      type: AGENT_TO_CONTROLLER_EVENTS.attrs,
       detail: { target: 'main', attr: { class: 'active' } },
     }
     expect(AttrsMessageSchema.parse(msg)).toEqual(msg)
@@ -80,7 +80,7 @@ describe('AttrsMessageSchema', () => {
 
   test('accepts attrs with null value (remove)', () => {
     const msg = {
-      type: CONTROLLER_EVENTS.attrs,
+      type: AGENT_TO_CONTROLLER_EVENTS.attrs,
       detail: { target: 'main', attr: { class: null } },
     }
     expect(AttrsMessageSchema.parse(msg)).toEqual(msg)
@@ -88,7 +88,7 @@ describe('AttrsMessageSchema', () => {
 
   test('accepts attrs with number value', () => {
     const msg = {
-      type: CONTROLLER_EVENTS.attrs,
+      type: AGENT_TO_CONTROLLER_EVENTS.attrs,
       detail: { target: 'main', attr: { tabindex: 0 } },
     }
     expect(AttrsMessageSchema.parse(msg)).toEqual(msg)
@@ -96,7 +96,7 @@ describe('AttrsMessageSchema', () => {
 
   test('accepts attrs with boolean value', () => {
     const msg = {
-      type: CONTROLLER_EVENTS.attrs,
+      type: AGENT_TO_CONTROLLER_EVENTS.attrs,
       detail: { target: 'main', attr: { disabled: true } },
     }
     expect(AttrsMessageSchema.parse(msg)).toEqual(msg)
@@ -115,7 +115,7 @@ describe('AttrsMessageSchema', () => {
 describe('UserActionMessageSchema', () => {
   test('accepts valid user action message with { id, source, msg } envelope', () => {
     const msg = {
-      type: CONTROLLER_EVENTS.user_action,
+      type: CLIENT_TO_AGENT_EVENTS.user_action,
       detail: { id: 'abc123', source: 'test-island', msg: 'click_button' },
     }
     expect(UserActionMessageSchema.parse(msg)).toEqual(msg)
@@ -124,7 +124,7 @@ describe('UserActionMessageSchema', () => {
   test('rejects detail without id', () => {
     expect(() =>
       UserActionMessageSchema.parse({
-        type: CONTROLLER_EVENTS.user_action,
+        type: CLIENT_TO_AGENT_EVENTS.user_action,
         detail: { source: 'test-island', msg: 'click' },
       }),
     ).toThrow()
@@ -133,7 +133,7 @@ describe('UserActionMessageSchema', () => {
   test('rejects detail without source', () => {
     expect(() =>
       UserActionMessageSchema.parse({
-        type: CONTROLLER_EVENTS.user_action,
+        type: CLIENT_TO_AGENT_EVENTS.user_action,
         detail: { id: 'abc123', msg: 'click' },
       }),
     ).toThrow()
@@ -142,7 +142,7 @@ describe('UserActionMessageSchema', () => {
   test('rejects detail without msg', () => {
     expect(() =>
       UserActionMessageSchema.parse({
-        type: CONTROLLER_EVENTS.user_action,
+        type: CLIENT_TO_AGENT_EVENTS.user_action,
         detail: { id: 'abc123', source: 'test-island' },
       }),
     ).toThrow()
@@ -151,53 +151,8 @@ describe('UserActionMessageSchema', () => {
   test('rejects flat string detail (old format)', () => {
     expect(() =>
       UserActionMessageSchema.parse({
-        type: CONTROLLER_EVENTS.user_action,
+        type: CLIENT_TO_AGENT_EVENTS.user_action,
         detail: 'click_button',
-      }),
-    ).toThrow()
-  })
-})
-
-describe('ClientConnectedMessageSchema', () => {
-  test('accepts valid client_connected message with { id, source, msg } envelope', () => {
-    const msg = {
-      type: CONTROLLER_EVENTS.client_connected,
-      detail: { id: 'abc123', source: 'test-island', msg: 'connected' as const },
-    }
-    expect(ClientConnectedMessageSchema.parse(msg)).toEqual(msg)
-  })
-
-  test('accepts document as source value', () => {
-    const msg = {
-      type: CONTROLLER_EVENTS.client_connected,
-      detail: { id: 'def456', source: 'document', msg: 'connected' as const },
-    }
-    expect(ClientConnectedMessageSchema.parse(msg)).toEqual(msg)
-  })
-
-  test('rejects detail without source', () => {
-    expect(() =>
-      ClientConnectedMessageSchema.parse({
-        type: CONTROLLER_EVENTS.client_connected,
-        detail: { id: 'abc123', msg: 'connected' },
-      }),
-    ).toThrow()
-  })
-
-  test('rejects msg other than connected', () => {
-    expect(() =>
-      ClientConnectedMessageSchema.parse({
-        type: CONTROLLER_EVENTS.client_connected,
-        detail: { id: 'abc123', source: 'test-island', msg: 'test-island' },
-      }),
-    ).toThrow()
-  })
-
-  test('rejects flat string detail (old format)', () => {
-    expect(() =>
-      ClientConnectedMessageSchema.parse({
-        type: CONTROLLER_EVENTS.client_connected,
-        detail: 'test-island',
       }),
     ).toThrow()
   })
@@ -205,19 +160,19 @@ describe('ClientConnectedMessageSchema', () => {
 
 describe('DisconnectMessageSchema', () => {
   test('accepts disconnect message without detail', () => {
-    const msg = { type: CONTROLLER_EVENTS.disconnect }
+    const msg = { type: AGENT_TO_CONTROLLER_EVENTS.disconnect }
     expect(DisconnectMessageSchema.parse(msg)).toEqual(msg)
   })
 
   test('accepts disconnect message with undefined detail', () => {
-    const msg = { type: CONTROLLER_EVENTS.disconnect, detail: undefined }
+    const msg = { type: AGENT_TO_CONTROLLER_EVENTS.disconnect, detail: undefined }
     expect(DisconnectMessageSchema.parse(msg)).toEqual(msg)
   })
 
   test('rejects disconnect with non-undefined detail', () => {
     expect(() =>
       DisconnectMessageSchema.parse({
-        type: CONTROLLER_EVENTS.disconnect,
+        type: AGENT_TO_CONTROLLER_EVENTS.disconnect,
         detail: 'something',
       }),
     ).toThrow()
@@ -227,7 +182,7 @@ describe('DisconnectMessageSchema', () => {
 describe('SnapshotEventSchema', () => {
   test('accepts valid snapshot event with { id, source, msg } envelope', () => {
     const msg = {
-      type: CONTROLLER_EVENTS.snapshot,
+      type: CLIENT_TO_AGENT_EVENTS.snapshot,
       detail: {
         id: 'abc123',
         source: 'test-island',
@@ -250,7 +205,7 @@ describe('SnapshotEventSchema', () => {
 
   test('accepts snapshot with feedback_error kind', () => {
     const msg = {
-      type: CONTROLLER_EVENTS.snapshot,
+      type: CLIENT_TO_AGENT_EVENTS.snapshot,
       detail: {
         id: 'def456',
         source: 'document',
@@ -267,7 +222,7 @@ describe('SnapshotEventSchema', () => {
   test('rejects detail without id', () => {
     expect(() =>
       SnapshotEventSchema.parse({
-        type: CONTROLLER_EVENTS.snapshot,
+        type: CLIENT_TO_AGENT_EVENTS.snapshot,
         detail: {
           source: 'test-island',
           msg: {
@@ -282,7 +237,7 @@ describe('SnapshotEventSchema', () => {
   test('rejects detail without source', () => {
     expect(() =>
       SnapshotEventSchema.parse({
-        type: CONTROLLER_EVENTS.snapshot,
+        type: CLIENT_TO_AGENT_EVENTS.snapshot,
         detail: {
           id: 'abc123',
           msg: {

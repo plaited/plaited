@@ -1,21 +1,6 @@
 import { keyMirror } from '../utils.ts'
 
 /**
- * Lifecycle event constants for the server transport layer.
- *
- * @remarks
- * Server-owned events triggered into the agent's BP:
- * - `client_connected` — WebSocket opened (source identified via subprotocol)
- * - `client_disconnected` — WebSocket closed
- * - `error` — transport-level error (origin rejected, missing session, malformed message, etc.)
- *
- * Error codes from {@link SERVER_ERRORS} are carried in the `error` event's detail.
- *
- * @public
- */
-export const SERVER_EVENTS = keyMirror('client_connected', 'client_disconnected', 'error')
-
-/**
  * Error type constants for the server module.
  *
  * @remarks

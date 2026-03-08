@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, test } from 'bun:test'
-import { SERVER_ERRORS, SERVER_EVENTS } from '../server.constants.ts'
+import { CLIENT_LIFECYCLE_EVENTS } from '../../events.ts'
+import { SERVER_ERRORS } from '../server.constants.ts'
 import { createServer } from '../server.ts'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -120,7 +121,9 @@ describe('WebSocket Upgrade', () => {
     expect(body).toBe(SERVER_ERRORS.session_missing)
 
     const errorEvt = triggered.find(
-      (e) => e.type === SERVER_EVENTS.error && (e.detail as { code: string })?.code === SERVER_ERRORS.session_missing,
+      (e) =>
+        e.type === CLIENT_LIFECYCLE_EVENTS.client_error &&
+        (e.detail as { code: string })?.code === SERVER_ERRORS.session_missing,
     )
     expect(errorEvt).toBeDefined()
   })
@@ -138,7 +141,9 @@ describe('WebSocket Upgrade', () => {
     expect(body).toBe(SERVER_ERRORS.origin_rejected)
 
     const errorEvt = triggered.find(
-      (e) => e.type === SERVER_EVENTS.error && (e.detail as { code: string })?.code === SERVER_ERRORS.origin_rejected,
+      (e) =>
+        e.type === CLIENT_LIFECYCLE_EVENTS.client_error &&
+        (e.detail as { code: string })?.code === SERVER_ERRORS.origin_rejected,
     )
     expect(errorEvt).toBeDefined()
   })
@@ -156,7 +161,9 @@ describe('WebSocket Upgrade', () => {
     expect(body).toBe(SERVER_ERRORS.protocol_missing)
 
     const errorEvt = triggered.find(
-      (e) => e.type === SERVER_EVENTS.error && (e.detail as { code: string })?.code === SERVER_ERRORS.protocol_missing,
+      (e) =>
+        e.type === CLIENT_LIFECYCLE_EVENTS.client_error &&
+        (e.detail as { code: string })?.code === SERVER_ERRORS.protocol_missing,
     )
     expect(errorEvt).toBeDefined()
   })
@@ -197,7 +204,7 @@ describe('WebSocket Lifecycle', () => {
     await waitForOpen(ws)
     await Bun.sleep(50)
 
-    const connectEvt = triggered.find((e) => e.type === SERVER_EVENTS.client_connected)
+    const connectEvt = triggered.find((e) => e.type === CLIENT_LIFECYCLE_EVENTS.client_connected)
     expect(connectEvt).toBeDefined()
     const detail = connectEvt!.detail as { sessionId: string; source: string }
     expect(detail.sessionId).toBe('test-session-id')
@@ -212,7 +219,7 @@ describe('WebSocket Lifecycle', () => {
     ws.close()
     await Bun.sleep(50)
 
-    const disconnectEvt = triggered.slice(before).find((e) => e.type === SERVER_EVENTS.client_disconnected)
+    const disconnectEvt = triggered.slice(before).find((e) => e.type === CLIENT_LIFECYCLE_EVENTS.client_disconnected)
     expect(disconnectEvt).toBeDefined()
     const detail = disconnectEvt!.detail as { sessionId: string }
     expect(detail.sessionId).toBe('test-session-id')
@@ -323,7 +330,8 @@ describe('Message Forwarding', () => {
       .slice(before)
       .find(
         (e) =>
-          e.type === SERVER_EVENTS.error && (e.detail as { code: string })?.code === SERVER_ERRORS.malformed_message,
+          e.type === CLIENT_LIFECYCLE_EVENTS.client_error &&
+          (e.detail as { code: string })?.code === SERVER_ERRORS.malformed_message,
       )
     expect(errorEvt).toBeDefined()
     ws.close()
@@ -341,7 +349,8 @@ describe('Message Forwarding', () => {
       .slice(before)
       .find(
         (e) =>
-          e.type === SERVER_EVENTS.error && (e.detail as { code: string })?.code === SERVER_ERRORS.malformed_message,
+          e.type === CLIENT_LIFECYCLE_EVENTS.client_error &&
+          (e.detail as { code: string })?.code === SERVER_ERRORS.malformed_message,
       )
     expect(errorEvt).toBeDefined()
     ws.close()
@@ -375,7 +384,11 @@ describe('Fetch Fallthrough', () => {
 
     const errorEvt = triggered
       .slice(before)
-      .find((e) => e.type === SERVER_EVENTS.error && (e.detail as { code: string })?.code === SERVER_ERRORS.not_found)
+      .find(
+        (e) =>
+          e.type === CLIENT_LIFECYCLE_EVENTS.client_error &&
+          (e.detail as { code: string })?.code === SERVER_ERRORS.not_found,
+      )
     expect(errorEvt).toBeDefined()
     expect((errorEvt!.detail as { pathname: string }).pathname).toBe('/nonexistent')
   })

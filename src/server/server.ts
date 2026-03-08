@@ -1,6 +1,7 @@
 import type { Server } from 'bun'
+import { CLIENT_LIFECYCLE_EVENTS } from '../events.ts'
 import { ClientMessageSchema } from '../ui.ts'
-import { SERVER_ERRORS, SERVER_EVENTS } from './server.constants.ts'
+import { SERVER_ERRORS } from './server.constants.ts'
 import type { WebSocketData } from './server.schemas.ts'
 import type { CreateServerOptions } from './server.types.ts'
 
@@ -15,7 +16,7 @@ type ServerInstance = Server<WebSocketData>
  * The server has no behavioral program of its own. It is a stateless
  * connector that:
  * - Translates WebSocket messages into BP events via `trigger()`
- * - Fires lifecycle events (`SERVER_EVENTS`) so the agent's BP observes connections
+ * - Fires lifecycle events (`CLIENT_LIFECYCLE_EVENTS`) so the agent's BP observes connections
  * - Manages security (origin validation, session cookies)
  * - Serves caller-provided routes directly
  *
@@ -47,7 +48,7 @@ export const createServer = ({
         const topic = source === 'document' ? sessionId : `${sessionId}:${source}`
         ws.subscribe(topic)
         trigger({
-          type: SERVER_EVENTS.client_connected,
+          type: CLIENT_LIFECYCLE_EVENTS.client_connected,
           detail: { sessionId, source },
         })
       },
@@ -58,7 +59,7 @@ export const createServer = ({
           trigger(ClientMessageSchema.parse(parsed))
         } catch (error) {
           trigger({
-            type: SERVER_EVENTS.error,
+            type: CLIENT_LIFECYCLE_EVENTS.client_error,
             detail: {
               code: SERVER_ERRORS.malformed_message,
               sessionId: ws.data.sessionId,
@@ -70,7 +71,7 @@ export const createServer = ({
 
       close(ws) {
         trigger({
-          type: SERVER_EVENTS.client_disconnected,
+          type: CLIENT_LIFECYCLE_EVENTS.client_disconnected,
           detail: { sessionId: ws.data.sessionId },
         })
       },
@@ -84,7 +85,7 @@ export const createServer = ({
           const origin = req.headers.get('origin')
           if (!origin || !allowedOrigins.has(origin)) {
             trigger({
-              type: SERVER_EVENTS.error,
+              type: CLIENT_LIFECYCLE_EVENTS.client_error,
               detail: { code: SERVER_ERRORS.origin_rejected },
             })
             return new Response(SERVER_ERRORS.origin_rejected, { status: 403 })
@@ -96,7 +97,7 @@ export const createServer = ({
         const sessionId = cookies.get('sid')
         if (!sessionId) {
           trigger({
-            type: SERVER_EVENTS.error,
+            type: CLIENT_LIFECYCLE_EVENTS.client_error,
             detail: { code: SERVER_ERRORS.session_missing },
           })
           return new Response(SERVER_ERRORS.session_missing, { status: 401 })
@@ -106,7 +107,7 @@ export const createServer = ({
         const source = req.headers.get('sec-websocket-protocol')
         if (!source) {
           trigger({
-            type: SERVER_EVENTS.error,
+            type: CLIENT_LIFECYCLE_EVENTS.client_error,
             detail: { code: SERVER_ERRORS.protocol_missing, sessionId },
           })
           return new Response(SERVER_ERRORS.protocol_missing, { status: 400 })
@@ -120,7 +121,7 @@ export const createServer = ({
         if (upgraded) return undefined
 
         trigger({
-          type: SERVER_EVENTS.error,
+          type: CLIENT_LIFECYCLE_EVENTS.client_error,
           detail: { code: SERVER_ERRORS.upgrade_failed, sessionId },
         })
         return new Response(SERVER_ERRORS.upgrade_failed, { status: 400 })
@@ -129,7 +130,7 @@ export const createServer = ({
       // ── Not found ──────────────────────────────────────
       const url = new URL(req.url)
       trigger({
-        type: SERVER_EVENTS.error,
+        type: CLIENT_LIFECYCLE_EVENTS.client_error,
         detail: { code: SERVER_ERRORS.not_found, pathname: url.pathname },
       })
       return new Response('Not Found', { status: 404 })
@@ -137,7 +138,7 @@ export const createServer = ({
 
     error(error) {
       trigger({
-        type: SERVER_EVENTS.error,
+        type: CLIENT_LIFECYCLE_EVENTS.client_error,
         detail: { code: SERVER_ERRORS.internal_error, message: error.message },
       })
       return new Response('Internal Server Error', { status: 500 })

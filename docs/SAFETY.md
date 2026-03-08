@@ -35,7 +35,7 @@ graph TD
     end
 
     subgraph L1["Layer 1: BP Hard Gate"]
-        GATE["block predicates evaluate<br/>every tool call before execution"]
+        GATE["Composable risk tags +<br/>block predicates evaluate<br/>every tool call before execution"]
     end
 
     subgraph L4["Layer 4: Simulation / Dreamer"]
@@ -73,16 +73,17 @@ BP orchestrates context assembly via the `context_assembly` event (see `HYPERGRA
 
 **Failure mode:** The model is neural. It may ignore or misinterpret constraints. This layer is probabilistic, not deterministic. That's why Layer 1 exists.
 
-### Layer 1 — Hard Gate (Classification + Domain Checks)
+### Layer 1 — Hard Gate (Risk Tags + Domain Checks)
 
 Every structured tool call is evaluated before execution:
 
-1. **Risk classification** — categorizes each tool call as `read_only`, `side_effects`, or `high_ambiguity`, determining the pipeline path.
-2. **Domain-specific checks** — custom `block` predicates enforce semantic rules. These encode intent constraints a sandbox cannot express.
+1. **Composable risk tags** — each tool call carries a `Set<string>` of tags (`workspace`, `crosses_boundary`, `inbound`, `outbound`, `irreversible`, `external_audience`). Tags are declared at tool/wrapper definition time, not classified at runtime. Gate bThread predicates inspect tag sets to determine routing.
+2. **Default-deny** — unknown/untagged tool calls route to Simulate + Judge. Only explicitly tagged `workspace`-only operations skip the pipeline.
+3. **Domain-specific checks** — custom `block` predicates enforce semantic rules. These encode intent constraints a sandbox cannot express. Constitution bThreads compose additively — each rule is an independent blocking thread.
 
 Containment (filesystem, network, process isolation) is delegated to Layer 2 (Sandbox). The gate does not validate paths or commands — the sandbox enforces those at the OS level.
 
-**Failure mode:** Novel tools default to `high_ambiguity` (conservative). Custom checks may have gaps. That's why Layer 4 exists.
+**Failure mode:** Wrapper modules may declare incorrect tags. Untagged calls default to full pipeline (conservative). Custom checks may have gaps. That's why Layer 4 exists.
 
 ### Layer 4 — Simulation / Dreamer (Predicted Consequences)
 
@@ -109,7 +110,9 @@ Tool execution runs in a sandboxed subprocess. The framework defines the **secur
 | **No privilege escalation** | Subprocess cannot gain capabilities beyond what it was spawned with |
 | **Process isolation** | Subprocess cannot inspect or signal other processes |
 
-The enforcement mechanism is pluggable and deployment-specific:
+**Bash sandboxing via Bun Shell:** The bash tool uses `Bun.$` (not `/bin/sh`) for command execution. Bun Shell provides: `$.cwd(workspace)` to lock the working directory, `$.env()` for environment variable allowlisting, auto-escaping of template literal interpolations to prevent injection, and `$.nothrow()` for error management. This is an application-level defense — it complements but does not replace OS-level sandboxing below.
+
+The OS-level enforcement mechanism is pluggable and deployment-specific:
 
 | Environment | Per-Tool Isolation | Session Isolation | Key Mechanism |
 |---|---|---|---|
@@ -118,7 +121,7 @@ The enforcement mechanism is pluggable and deployment-specific:
 | **Modal** | Landlock LSM via `landrun` | Modal Sandbox (gVisor) | VFS-layer filesystem + TCP restriction |
 | **Firecracker** | `bubblewrap` + `seccomp` via srt | Firecracker microVM | Full namespace isolation inside VM |
 
-**Git worktrees** provide a universal rollback layer — not a security boundary, but a recoverability mechanism.
+**Git-versioned workspace** provides a universal rollback layer — not a security boundary, but a recoverability mechanism. The entire node workspace is git-tracked (`.gitignore` excludes `modules/`), so destructive workspace operations can be reverted.
 
 ### Layer 3 — Hypergraph Recovery (Audit & Replay)
 
@@ -137,7 +140,7 @@ Each layer operates on a different level of the stack and uses a different mecha
 | Layer | Stack Level | Mechanism | Bypassed By |
 |---|---|---|---|
 | 0 | Application | BP-orchestrated context assembly | Model ignoring instructions |
-| 1 | Application | Risk classification + domain checks | Novel tools default conservative; custom check gaps |
+| 1 | Application | Composable risk tags + domain checks | Incorrect tag declaration; untagged defaults to full pipeline |
 | 4 | Application | Model predicts consequences | Inaccurate prediction (hallucination) |
 | 5a | Application | Deterministic BP block predicates on simulated output | Patterns not in predicate set |
 | 5b | Application | Model scores simulated state | Inaccurate scoring (neural) |
@@ -150,7 +153,7 @@ No single attack vector compromises more than one layer.
 
 The six layers form a coupled system:
 
-**Environmental hardening** (Layers 1, 4–5, 2) creates hard boundaries. The model encounters these as blocked actions and rejected simulations. Over time, through the feedback loop, the model internalizes the constraint landscape.
+**Environmental hardening** (Layers 1, 4–5, 2) creates hard boundaries. Risk tags determine which defenses engage — unknown/untagged actions face the full pipeline. The model encounters these as blocked actions and rejected simulations. Over time, through the feedback loop, the model internalizes the constraint landscape.
 
 **Behavioral alignment** (Layer 0) is the result. The model's behavior aligns with constraints not through instruction-following (fragile) but through accumulated experience (robust). The hard gates fire less over time — not because constraints relaxed, but because the model learned to navigate them.
 

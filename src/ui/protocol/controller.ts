@@ -20,10 +20,11 @@
  */
 import type { BPEvent, BThreads, Disconnect, Handlers, Trigger, UseFeedback, UseSnapshot } from '../../behavioral.ts'
 import { BPEventSchema } from '../../behavioral.ts'
+import { AGENT_TO_CONTROLLER_EVENTS, CLIENT_TO_AGENT_EVENTS } from '../../events.ts'
 import { ueid } from '../../utils.ts'
 import { DelegatedListener, delegates } from '../dom/delegated-listener.ts'
 import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from '../render/template.constants.ts'
-import { CONTROLLER_ERRORS, CONTROLLER_EVENTS, SWAP_MODES } from './controller.constants.ts'
+import { CONTROLLER_ERRORS, SWAP_MODES, WEBSOCKET_LIFECYCLE_EVENTS } from './controller.constants.ts'
 import type { ControllerHandlers, SwapMode } from './controller.schemas.ts'
 import { UpdateBehavioralModuleSchema, UpdateBehavioralResultSchema } from './controller.schemas.ts'
 
@@ -54,7 +55,7 @@ const bindTriggers = (subtree: DocumentFragment, trigger: (event: { type: string
       if (!domEvent || !type) continue
       const listener = new DelegatedListener((event: Event) => {
         trigger({
-          type: CONTROLLER_EVENTS.user_action,
+          type: CLIENT_TO_AGENT_EVENTS.user_action,
           detail: {
             type,
             event,
@@ -183,35 +184,37 @@ export const controller = ({
     if (socket?.readyState === WebSocket.OPEN) {
       return socket.send(JSON.stringify(message))
     }
-    !socket && trigger({ type: CONTROLLER_EVENTS.connect })
+    !socket && trigger({ type: WEBSOCKET_LIFECYCLE_EVENTS.connect })
     socket?.addEventListener('open', fallback)
   }
 
   const callback = (evt: CloseEvent | MessageEvent) => {
-    evt instanceof MessageEvent && trigger({ type: CONTROLLER_EVENTS.on_ws_message, detail: evt })
+    evt instanceof MessageEvent && trigger({ type: WEBSOCKET_LIFECYCLE_EVENTS.on_ws_message, detail: evt })
     if (evt.type === 'open') retryCount = 0
-    evt instanceof CloseEvent && RETRY_STATUS_CODES.has(evt.code) && trigger({ type: CONTROLLER_EVENTS.retry })
-    evt.type === 'error' && trigger({ type: CONTROLLER_EVENTS.on_ws_error, detail: evt })
+    evt instanceof CloseEvent && RETRY_STATUS_CODES.has(evt.code) && trigger({ type: WEBSOCKET_LIFECYCLE_EVENTS.retry })
+    evt.type === 'error' && trigger({ type: WEBSOCKET_LIFECYCLE_EVENTS.on_ws_error, detail: evt })
   }
 
   disconnectSet.add(
     useSnapshot((detail) => {
       if (socket?.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: CONTROLLER_EVENTS.snapshot, detail: { id: ueid(), source, msg: detail } }))
+        socket.send(
+          JSON.stringify({ type: CLIENT_TO_AGENT_EVENTS.snapshot, detail: { id: ueid(), source, msg: detail } }),
+        )
       }
     }),
   )
   // ─── Feedback handlers ─────────────────────────────────────────────
   const handlers: Handlers<ControllerHandlers> = {
-    [CONTROLLER_EVENTS.on_ws_error](evt: Event) {
+    [WEBSOCKET_LIFECYCLE_EVENTS.on_ws_error](evt: Event) {
       const target = evt.target as WebSocket
       throw new Error(`WebSocket error on ${target.url} (readyState: ${target.readyState})`)
     },
-    [CONTROLLER_EVENTS.on_ws_message](evt: MessageEvent) {
+    [WEBSOCKET_LIFECYCLE_EVENTS.on_ws_message](evt: MessageEvent) {
       const result = BPEventSchema.parse(JSON.parse(evt.data))
       restrictedTrigger(result)
     },
-    [CONTROLLER_EVENTS.connect]() {
+    [WEBSOCKET_LIFECYCLE_EVENTS.connect]() {
       socket = new WebSocket(`${self.location.origin.replace(/^http/, 'ws')}/ws`, source)
       const listener = new DelegatedListener(callback)
       delegates.set(socket, listener)
@@ -220,23 +223,23 @@ export const controller = ({
       socket.addEventListener('error', listener)
       socket.addEventListener('close', listener)
     },
-    [CONTROLLER_EVENTS.retry]() {
+    [WEBSOCKET_LIFECYCLE_EVENTS.retry]() {
       socket = undefined
       if (retryCount < MAX_RETRIES) {
         const max = Math.min(9999, 1000 * 2 ** retryCount)
-        setTimeout(() => trigger({ type: CONTROLLER_EVENTS.connect }), Math.floor(Math.random() * max))
+        setTimeout(() => trigger({ type: WEBSOCKET_LIFECYCLE_EVENTS.connect }), Math.floor(Math.random() * max))
         retryCount++
       }
     },
-    [CONTROLLER_EVENTS.disconnect]() {
+    [AGENT_TO_CONTROLLER_EVENTS.disconnect]() {
       socket?.close()
     },
-    [CONTROLLER_EVENTS.render](detail) {
+    [AGENT_TO_CONTROLLER_EVENTS.render](detail) {
       const el = root.querySelector(`[${P_TARGET}="${detail.target}"]`)
       if (!el) return
       performSwap({ el, html: detail.html, swap: detail.swap ?? SWAP_MODES.innerHTML, trigger })
     },
-    [CONTROLLER_EVENTS.attrs]({ target, attr }) {
+    [AGENT_TO_CONTROLLER_EVENTS.attrs]({ target, attr }) {
       const element = root.querySelector(`[${P_TARGET}="${target}"]`)
       if (!element) return console.error(CONTROLLER_ERRORS.attrs_element_not_found, target)
       for (const key in attr) {
@@ -247,16 +250,16 @@ export const controller = ({
         })
       }
     },
-    [CONTROLLER_EVENTS.user_action]({ type, event }) {
+    [CLIENT_TO_AGENT_EVENTS.user_action]({ type, event }) {
       if (bThreads.has(type)) {
         trigger({
           type,
           detail: event,
         })
       }
-      send({ type: CONTROLLER_EVENTS.user_action, detail: { id: ueid(), source, msg: type } })
+      send({ type: CLIENT_TO_AGENT_EVENTS.user_action, detail: { id: ueid(), source, msg: type } })
     },
-    async [CONTROLLER_EVENTS.update_behavioral](detail) {
+    async [AGENT_TO_CONTROLLER_EVENTS.update_behavioral](detail) {
       const module = await import(detail)
       const { default: factory } = UpdateBehavioralModuleSchema.parse(module)
       const { threads, handlers } = UpdateBehavioralResultSchema.parse(factory(restrictedTrigger))
@@ -266,5 +269,5 @@ export const controller = ({
   }
   disconnectSet.add(useFeedback(handlers))
 
-  trigger({ type: CONTROLLER_EVENTS.connect })
+  trigger({ type: WEBSOCKET_LIFECYCLE_EVENTS.connect })
 }

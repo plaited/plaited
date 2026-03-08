@@ -28,7 +28,7 @@ Task prompts (prompts.jsonl)
   → Re-evaluate → repeat
 ```
 
-This pipeline is orchestrated as a skill, reusing `agent-eval-harness` for capture/compare and `headless-adapters` for schema-driven agent interaction. The eval harness provides pass@k, pass^k, and comparison metrics — the model's improvement is measured, not assumed.
+This pipeline is orchestrated as a skill, reusing `agent-eval-harness` for capture/compare and `headless-adapters` for schema-driven agent interaction. The trainer itself is an external CLI tool integrated via the composable wrapper pattern — the agent dispatches training runs through standard `execute`/`tool_result` events (see § Trainer as External Tool below). The eval harness provides pass@k, pass^k, and comparison metrics — the model's improvement is measured, not assumed.
 
 ### Why Distillation, Not a Pre-trained Tool-Calling Model
 
@@ -97,6 +97,30 @@ JSON-LD decision files (by project, time range, outcome)
 ```
 
 Training data extraction is a query over the hypergraph, not a separate export pipeline.
+
+### Trainer as External Tool
+
+The training pipeline is not a built-in agent subsystem — it's an external CLI tool integrated via the composable wrapper pattern (see CLAUDE.md § External Tool Integration). The agent delegates training tasks through the standard `execute` → `tool_result` event flow:
+
+```
+Agent Loop                         Trainer CLI
+  │                                    │
+  │  execute: bash train-wrapper.ts    │
+  │  ───────────────────────────────►  │
+  │    (wrapper extracts trajectories  │
+  │     from hypergraph, sanitizes     │
+  │     PII → synthetic variants)      │
+  │                                    │  SFT/GRPO on sanitized data
+  │  tool_result: metrics + checkpoint │
+  │  ◄───────────────────────────────  │
+  │                                    │
+```
+
+**PII boundary:** Real data flows freely to the local model during runtime (useful for Dreamer simulation). The wrapper module is the sanitization point — when extracting trajectories for training, it replaces sensitive data with synthetic variants matching the original schema and statistical distribution. Sensitive data never reaches external training infrastructure.
+
+**No special events:** Training dispatch uses existing `execute`/`tool_result` events. The trainer is a tool like any other — discovered, wrapped, skilled, composed.
+
+**Skill-driven:** A `training` skill teaches the agent when to trigger training (sufficient trajectory volume, user request, flywheel signal) and how to configure runs (LoRA vs full-parameter, hyperparameters, data selection).
 
 ### Log Retention for Training
 

@@ -7,9 +7,9 @@ import {
   SnapshotMessageSchema,
   type Trigger,
 } from '../../behavioral.ts'
+import { AGENT_TO_CONTROLLER_EVENTS, CLIENT_TO_AGENT_EVENTS } from '../../events.ts'
 import { isTypeOf, trueTypeOf } from '../../utils.ts'
-import { CONTROLLER_EVENTS, SWAP_MODES } from './controller.constants.ts'
-
+import { SWAP_MODES } from './controller.constants.ts'
 // ─── Server → Client Message Schemas ────────────────────────────────────────
 
 /**
@@ -44,7 +44,7 @@ export type SwapMode = z.infer<typeof SwapModeSchema>
  * @public
  */
 export const RenderMessageSchema = z.object({
-  type: z.literal(CONTROLLER_EVENTS.render),
+  type: z.literal(AGENT_TO_CONTROLLER_EVENTS.render),
   detail: z.object({
     target: z.string(),
     html: z.string(),
@@ -66,7 +66,7 @@ export type RenderMessage = z.infer<typeof RenderMessageSchema>
  * @public
  */
 export const AttrsMessageSchema = z.object({
-  type: z.literal(CONTROLLER_EVENTS.attrs),
+  type: z.literal(AGENT_TO_CONTROLLER_EVENTS.attrs),
   detail: z.object({
     target: z.string(),
     attr: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]).nullable()),
@@ -86,7 +86,7 @@ export type AttrsMessage = z.infer<typeof AttrsMessageSchema>
  * @internal
  */
 export type UserAction = {
-  type: typeof CONTROLLER_EVENTS.user_action
+  type: typeof CLIENT_TO_AGENT_EVENTS.user_action
   detail: {
     type: string
     event: Event
@@ -103,7 +103,7 @@ export type UserAction = {
  * @public
  */
 export const UserActionMessageSchema = z.object({
-  type: z.literal(CONTROLLER_EVENTS.user_action),
+  type: z.literal(CLIENT_TO_AGENT_EVENTS.user_action),
   detail: z.object({
     id: z.string(),
     source: z.string(),
@@ -115,29 +115,6 @@ export const UserActionMessageSchema = z.object({
 export type UserActionMessage = z.infer<typeof UserActionMessageSchema>
 
 /**
- * Schema for the initial handshake message sent from client to server.
- *
- * @remarks
- * Sent immediately after the WebSocket opens. The `detail` is the
- * lowercase tag name of the root element (or `'document'` for
- * `controlDocument`, or `'cli'` for CLI clients), allowing the server
- * to identify which client connected.
- *
- * @public
- */
-export const ClientConnectedMessageSchema = z.object({
-  type: z.literal(CONTROLLER_EVENTS.client_connected),
-  detail: z.object({
-    id: z.string(),
-    source: z.string(),
-    msg: z.literal('connected'),
-  }),
-})
-
-/** @public */
-export type ClientConnectedMessage = z.infer<typeof ClientConnectedMessageSchema>
-
-/**
  * Schema for disconnect messages sent from server to client
  *
  * @remarks
@@ -147,7 +124,7 @@ export type ClientConnectedMessage = z.infer<typeof ClientConnectedMessageSchema
  * @public
  */
 export const DisconnectMessageSchema = z.object({
-  type: z.literal(CONTROLLER_EVENTS.disconnect),
+  type: z.literal(AGENT_TO_CONTROLLER_EVENTS.disconnect),
   detail: z.undefined().optional(),
 })
 
@@ -165,7 +142,7 @@ export type DisconnectMessage = z.infer<typeof DisconnectMessageSchema>
  * @public
  */
 export const UpdateBehavioralMessageSchema = z.object({
-  type: z.literal(CONTROLLER_EVENTS.update_behavioral),
+  type: z.literal(AGENT_TO_CONTROLLER_EVENTS.update_behavioral),
   detail: z.httpUrl(),
 })
 
@@ -183,7 +160,7 @@ export type UpdateBehavioralMessage = z.infer<typeof UpdateBehavioralMessageSche
  * @public
  */
 export const SnapshotEventSchema = z.object({
-  type: z.literal(CONTROLLER_EVENTS.snapshot),
+  type: z.literal(CLIENT_TO_AGENT_EVENTS.snapshot),
   detail: z.object({
     id: z.string(),
     source: z.string(),
