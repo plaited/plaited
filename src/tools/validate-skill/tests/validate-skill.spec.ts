@@ -23,13 +23,11 @@ describe('validate-skill', () => {
     return skillDir
   }
 
-  const runValidation = async (path: string, json = true) => {
-    const args = json ? ['--json'] : []
-    const result = await Bun.$`bun ${scriptsDir}/validate-skill.ts ${path} ${args}`.quiet().nothrow()
-    if (json) {
-      return JSON.parse(result.text())
-    }
-    return result
+  const runValidation = async (paths: string | string[]) => {
+    const pathsArray = Array.isArray(paths) ? paths : [paths]
+    const input = JSON.stringify({ paths: pathsArray })
+    const result = await Bun.$`bun ${scriptsDir}/validate-skill.ts ${input}`.quiet().nothrow()
+    return JSON.parse(result.text())
   }
 
   describe('single skill validation', () => {
@@ -42,6 +40,19 @@ describe('validate-skill', () => {
       expect(result.errors).toHaveLength(0)
       expect(result.properties?.name).toBe('valid-skill')
       expect(result.properties?.description).toBe('A test skill')
+    })
+
+    test('includes body in valid properties', async () => {
+      const skillDir = await createSkill(
+        'body-skill',
+        'name: body-skill\ndescription: Has body',
+        '# Instructions\n\nDo the thing.',
+      )
+
+      const [result] = await runValidation(skillDir)
+
+      expect(result.valid).toBe(true)
+      expect(result.properties?.body).toBe('# Instructions\n\nDo the thing.')
     })
 
     test('validates skill with all optional fields', async () => {
@@ -63,7 +74,7 @@ metadata:
       expect(result.errors).toHaveLength(0)
       expect(result.properties?.license).toBe('MIT')
       expect(result.properties?.compatibility).toBe('Requires bun')
-      expect(result.properties?.['allowed-tools']).toBe('Bash Read Write')
+      expect(result.properties?.['allowed-tools']).toEqual(['Bash', 'Read', 'Write'])
       expect(result.properties?.metadata).toEqual({ author: 'test', version: '1.0' })
     })
 
@@ -203,11 +214,12 @@ metadata:
     })
   })
 
-  describe('CLI output', () => {
+  describe('CLI', () => {
     test('exits with code 1 on validation errors', async () => {
       const skillDir = await createSkill('cli-exit', 'description: No name field')
+      const input = JSON.stringify({ paths: [skillDir] })
 
-      const proc = Bun.spawn(['bun', `${scriptsDir}/validate-skill.ts`, skillDir], {
+      const proc = Bun.spawn(['bun', `${scriptsDir}/validate-skill.ts`, input], {
         stderr: 'pipe',
         stdout: 'pipe',
       })
@@ -218,8 +230,37 @@ metadata:
 
     test('exits with code 0 on valid skills', async () => {
       const skillDir = await createSkill('cli-success', 'name: cli-success\ndescription: Valid skill')
+      const input = JSON.stringify({ paths: [skillDir] })
 
-      const proc = Bun.spawn(['bun', `${scriptsDir}/validate-skill.ts`, skillDir], {
+      const proc = Bun.spawn(['bun', `${scriptsDir}/validate-skill.ts`, input], {
+        stderr: 'pipe',
+        stdout: 'pipe',
+      })
+      const exitCode = await proc.exited
+
+      expect(exitCode).toBe(0)
+    })
+
+    test('--schema input outputs JSON Schema', async () => {
+      const result = await Bun.$`bun ${scriptsDir}/validate-skill.ts --schema input`.quiet()
+      const schema = JSON.parse(result.text())
+
+      expect(schema.type).toBe('object')
+      expect(schema.properties).toHaveProperty('paths')
+    })
+
+    test('--schema output outputs JSON Schema', async () => {
+      const result = await Bun.$`bun ${scriptsDir}/validate-skill.ts --schema output`.quiet()
+      const schema = JSON.parse(result.text())
+
+      expect(schema.type).toBe('array')
+      expect(schema.items.properties).toHaveProperty('valid')
+      expect(schema.items.properties).toHaveProperty('errors')
+      expect(schema.items.properties).toHaveProperty('properties')
+    })
+
+    test('--help exits 0', async () => {
+      const proc = Bun.spawn(['bun', `${scriptsDir}/validate-skill.ts`, '--help'], {
         stderr: 'pipe',
         stdout: 'pipe',
       })

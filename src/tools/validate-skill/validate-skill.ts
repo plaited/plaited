@@ -2,29 +2,42 @@
 /**
  * Validate skill directories against AgentSkills specification.
  *
- * Usage: bun validate-skill.ts [paths...] [--json]
+ * @remarks
+ * Accepts JSON positional arg or stdin pipe.
+ * `--schema input|output` for agent discovery.
  *
  * @see https://agentskills.io/specification
+ *
+ * @public
  */
 
 import { basename, join } from 'node:path'
-import { parseArgs } from 'node:util'
-import { Glob } from 'bun'
+import { Glob, YAML } from 'bun'
+import { z } from 'zod'
+
+// ============================================================================
+// Types
+// ============================================================================
 
 /**
- * Properties extracted from SKILL.md frontmatter.
+ * Properties extracted from SKILL.md frontmatter and body.
+ *
+ * @public
  */
 type SkillProperties = {
   name: string
   description: string
   license?: string
   compatibility?: string
-  'allowed-tools'?: string
+  'allowed-tools'?: string[]
   metadata?: Record<string, string>
+  body: string
 }
 
 /**
  * Result of validating a skill directory.
+ *
+ * @public
  */
 type ValidationResult = {
   valid: boolean
@@ -34,27 +47,69 @@ type ValidationResult = {
   properties?: SkillProperties
 }
 
-/**
- * Validation constants from AgentSkills specification
- * @see https://agentskills.io/specification
- */
+export type { SkillProperties, ValidationResult }
+
+// ============================================================================
+// Schemas
+// ============================================================================
+
+/** @public */
+const ValidateSkillInputSchema = z.object({
+  paths: z.array(z.string()).optional().describe('Paths to validate (defaults to .claude/skills/)'),
+})
+
+/** @public */
+const ValidateSkillOutputSchema = z.array(
+  z.object({
+    valid: z.boolean().describe('Whether the skill passed validation'),
+    path: z.string().describe('Absolute path to the skill directory'),
+    errors: z.array(z.string()).describe('Validation errors'),
+    warnings: z.array(z.string()).describe('Non-blocking warnings'),
+    properties: z
+      .object({
+        name: z.string(),
+        description: z.string(),
+        license: z.string().optional(),
+        compatibility: z.string().optional(),
+        'allowed-tools': z.array(z.string()).optional().describe('Parsed from space-delimited allowed-tools field'),
+        metadata: z.record(z.string(), z.string()).optional(),
+        body: z.string().describe('Markdown body after frontmatter'),
+      })
+      .optional()
+      .describe('Extracted properties (only present when valid)'),
+  }),
+)
+
+export { ValidateSkillInputSchema, ValidateSkillOutputSchema }
+
+// ============================================================================
+// Constants
+// ============================================================================
+
 const ALLOWED_FIELDS = new Set(['name', 'description', 'license', 'compatibility', 'allowed-tools', 'metadata'])
 const REQUIRED_FIELDS = ['name', 'description'] as const
-/** Must be lowercase alphanumeric with optional hyphens (no consecutive hyphens, no leading/trailing) */
 const NAME_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/
-/** Spec: name must be 1-64 characters */
 const MAX_NAME_LENGTH = 64
-/** Spec: description must be 1-1024 characters */
 const MAX_DESCRIPTION_LENGTH = 1024
-/** Spec: compatibility must be 1-500 characters if provided */
 const MAX_COMPATIBILITY_LENGTH = 500
+
+// ============================================================================
+// Frontmatter Parser
+// ============================================================================
 
 /**
  * Parse YAML frontmatter from SKILL.md content.
  *
- * @returns Tuple of [metadata, body] or throws on parse error
+ * @remarks
+ * Extracts the YAML block between `---` delimiters and parses via
+ * `Bun.YAML.parse()` (YAML 1.2: multi-line strings, anchors, comments, tags).
+ *
+ * @param content - Raw SKILL.md file content
+ * @returns Parsed metadata and markdown body
+ *
+ * @public
  */
-const parseFrontmatter = (content: string): [Record<string, unknown>, string] => {
+const parseFrontmatter = (content: string): { metadata: Record<string, unknown>; body: string } => {
   const trimmed = content.trim()
   if (!trimmed.startsWith('---')) {
     throw new Error('SKILL.md must start with YAML frontmatter (---)')
@@ -67,71 +122,22 @@ const parseFrontmatter = (content: string): [Record<string, unknown>, string] =>
 
   const yamlContent = trimmed.slice(3, endIndex).trim()
   const body = trimmed.slice(endIndex + 3).trim()
+  const metadata = YAML.parse(yamlContent) as Record<string, unknown>
 
-  // Simple YAML parser for frontmatter (handles key: value and key: "value")
-  const metadata: Record<string, unknown> = {}
-  let currentKey: string | null = null
-  let inMetadata = false
-  const metadataObj: Record<string, string> = {}
-
-  for (const line of yamlContent.split('\n')) {
-    const trimmedLine = line.trim()
-    if (!trimmedLine) continue
-
-    // Check for metadata block
-    if (trimmedLine === 'metadata:') {
-      inMetadata = true
-      continue
-    }
-
-    // Handle metadata entries (indented key: value pairs)
-    if (inMetadata && line.startsWith('  ')) {
-      const metaMatch = trimmedLine.match(/^([a-zA-Z0-9_-]+):\s*(.*)$/)
-      if (metaMatch?.[1] && metaMatch[2] !== undefined) {
-        const key = metaMatch[1]
-        const value = metaMatch[2]
-        metadataObj[key] = value.replace(/^["']|["']$/g, '')
-      }
-      continue
-    }
-
-    // Exit metadata block when encountering non-indented line
-    if (inMetadata && !line.startsWith('  ')) {
-      inMetadata = false
-      if (Object.keys(metadataObj).length > 0) {
-        metadata.metadata = { ...metadataObj }
-      }
-    }
-
-    // Parse regular key: value pairs
-    const match = trimmedLine.match(/^([a-zA-Z0-9_-]+):\s*(.*)$/)
-    if (match?.[1]) {
-      const key = match[1]
-      const value = match[2] ?? ''
-      currentKey = key
-
-      // Handle multi-line strings (value on same line)
-      if (value) {
-        metadata[key] = value.replace(/^["']|["']$/g, '')
-      }
-    } else if (currentKey && trimmedLine) {
-      // Handle continuation of previous value
-      const prev = metadata[currentKey]
-      metadata[currentKey] = typeof prev === 'string' ? `${prev} ${trimmedLine}` : trimmedLine
-    }
+  if (typeof metadata !== 'object' || metadata === null || Array.isArray(metadata)) {
+    throw new Error('YAML frontmatter must be a mapping (key-value pairs)')
   }
 
-  // Capture any remaining metadata
-  if (Object.keys(metadataObj).length > 0 && !metadata.metadata) {
-    metadata.metadata = { ...metadataObj }
-  }
-
-  return [metadata, body]
+  return { metadata, body }
 }
 
-/**
- * Validate skill name according to AgentSkills specification.
- */
+export { parseFrontmatter }
+
+// ============================================================================
+// Field Validators
+// ============================================================================
+
+/** @internal */
 const validateName = (name: unknown, dirName: string): string[] => {
   const errors: string[] = []
 
@@ -167,9 +173,7 @@ const validateName = (name: unknown, dirName: string): string[] => {
   return errors
 }
 
-/**
- * Validate skill description according to AgentSkills specification.
- */
+/** @internal */
 const validateDescription = (description: unknown): string[] => {
   const errors: string[] = []
 
@@ -185,12 +189,9 @@ const validateDescription = (description: unknown): string[] => {
   return errors
 }
 
-/**
- * Validate optional compatibility field.
- */
+/** @internal */
 const validateCompatibility = (compatibility: unknown): string[] => {
   const errors: string[] = []
-
   if (compatibility === undefined) return errors
 
   if (typeof compatibility !== 'string') {
@@ -205,12 +206,9 @@ const validateCompatibility = (compatibility: unknown): string[] => {
   return errors
 }
 
-/**
- * Validate metadata fields are all strings.
- */
+/** @internal */
 const validateMetadata = (metadata: unknown): string[] => {
   const errors: string[] = []
-
   if (metadata === undefined) return errors
 
   if (typeof metadata !== 'object' || metadata === null) {
@@ -227,9 +225,7 @@ const validateMetadata = (metadata: unknown): string[] => {
   return errors
 }
 
-/**
- * Check for unexpected fields in frontmatter.
- */
+/** @internal */
 const validateFields = (metadata: Record<string, unknown>): string[] => {
   const warnings: string[] = []
 
@@ -242,30 +238,42 @@ const validateFields = (metadata: Record<string, unknown>): string[] => {
   return warnings
 }
 
-/**
- * Find SKILL.md file in a directory (case-insensitive).
- */
-const findSkillMd = async (skillDir: string): Promise<string | null> => {
-  // Prefer uppercase SKILL.md
-  const upperPath = join(skillDir, 'SKILL.md')
-  if (await Bun.file(upperPath).exists()) {
-    return upperPath
-  }
+// ============================================================================
+// Directory Helpers
+// ============================================================================
 
-  // Fall back to lowercase
+/** @internal */
+const findSkillMd = async (skillDir: string): Promise<string | null> => {
+  const upperPath = join(skillDir, 'SKILL.md')
+  if (await Bun.file(upperPath).exists()) return upperPath
+
   const lowerPath = join(skillDir, 'skill.md')
-  if (await Bun.file(lowerPath).exists()) {
-    return lowerPath
-  }
+  if (await Bun.file(lowerPath).exists()) return lowerPath
 
   return null
 }
 
+/** @internal */
+const isDirectory = async (path: string): Promise<boolean> => {
+  try {
+    const stat = await Bun.$`test -d ${path}`.quiet()
+    return stat.exitCode === 0
+  } catch {
+    return false
+  }
+}
+
+// ============================================================================
+// Core Validation
+// ============================================================================
+
 /**
  * Validate a single skill directory.
  *
- * @param skillDir - Path to the skill directory
- * @returns Validation result with errors and warnings
+ * @param skillDir - Absolute path to the skill directory
+ * @returns Validation result with errors, warnings, and extracted properties
+ *
+ * @public
  */
 const validateSkillDirectory = async (skillDir: string): Promise<ValidationResult> => {
   const result: ValidationResult = {
@@ -275,26 +283,17 @@ const validateSkillDirectory = async (skillDir: string): Promise<ValidationResul
     warnings: [],
   }
 
-  // Check directory exists
-  try {
-    const stat = await Bun.$`test -d ${skillDir}`.quiet()
-    if (stat.exitCode !== 0) {
-      result.errors.push(`Path is not a directory: ${skillDir}`)
-      return result
-    }
-  } catch {
+  if (!(await isDirectory(skillDir))) {
     result.errors.push(`Directory does not exist: ${skillDir}`)
     return result
   }
 
-  // Find SKILL.md
   const skillMdPath = await findSkillMd(skillDir)
   if (!skillMdPath) {
     result.errors.push('Missing required file: SKILL.md')
     return result
   }
 
-  // Read and parse content
   let content: string
   try {
     content = await Bun.file(skillMdPath).text()
@@ -303,27 +302,25 @@ const validateSkillDirectory = async (skillDir: string): Promise<ValidationResul
     return result
   }
 
-  // Parse frontmatter
   let metadata: Record<string, unknown>
+  let body: string
   try {
-    ;[metadata] = parseFrontmatter(content)
+    const parsed = parseFrontmatter(content)
+    metadata = parsed.metadata
+    body = parsed.body
   } catch (error) {
     result.errors.push(`Failed to parse frontmatter: ${error}`)
     return result
   }
 
-  // Check for required fields
   for (const field of REQUIRED_FIELDS) {
     if (!(field in metadata)) {
       result.errors.push(`Missing required field in frontmatter: '${field}'`)
     }
   }
 
-  if (result.errors.length > 0) {
-    return result
-  }
+  if (result.errors.length > 0) return result
 
-  // Validate individual fields
   const dirName = basename(skillDir)
 
   result.errors.push(...validateName(metadata.name, dirName))
@@ -332,16 +329,18 @@ const validateSkillDirectory = async (skillDir: string): Promise<ValidationResul
   result.errors.push(...validateMetadata(metadata.metadata))
   result.warnings.push(...validateFields(metadata))
 
-  // If valid, extract properties
   if (result.errors.length === 0) {
     result.valid = true
     const props: SkillProperties = {
       name: metadata.name as string,
       description: metadata.description as string,
+      body,
     }
     if (typeof metadata.license === 'string') props.license = metadata.license
     if (typeof metadata.compatibility === 'string') props.compatibility = metadata.compatibility
-    if (typeof metadata['allowed-tools'] === 'string') props['allowed-tools'] = metadata['allowed-tools']
+    if (typeof metadata['allowed-tools'] === 'string') {
+      props['allowed-tools'] = (metadata['allowed-tools'] as string).split(/\s+/).filter(Boolean)
+    }
     if (metadata.metadata && typeof metadata.metadata === 'object') {
       props.metadata = metadata.metadata as Record<string, string>
     }
@@ -352,34 +351,20 @@ const validateSkillDirectory = async (skillDir: string): Promise<ValidationResul
 }
 
 /**
- * Check if a path is an existing directory.
- */
-const isDirectory = async (path: string): Promise<boolean> => {
-  try {
-    const stat = await Bun.$`test -d ${path}`.quiet()
-    return stat.exitCode === 0
-  } catch {
-    return false
-  }
-}
-
-/**
  * Find all skill directories under a root path.
  *
  * @param rootDir - Root directory to search
- * @returns Array of skill directory paths
+ * @returns Sorted array of absolute skill directory paths
+ *
+ * @public
  */
 const findSkillDirectories = async (rootDir: string): Promise<string[]> => {
-  // Check if directory exists before scanning
-  if (!(await isDirectory(rootDir))) {
-    return []
-  }
+  if (!(await isDirectory(rootDir))) return []
 
   const skillDirs: string[] = []
   const glob = new Glob('**/SKILL.md')
 
   for await (const file of glob.scan({ cwd: rootDir, absolute: true })) {
-    // Get parent directory of SKILL.md
     const skillDir = file.replace(/\/SKILL\.md$/i, '')
     skillDirs.push(skillDir)
   }
@@ -392,101 +377,130 @@ const findSkillDirectories = async (rootDir: string): Promise<string[]> => {
  *
  * @param rootDir - Root directory containing skill folders
  * @returns Array of validation results
+ *
+ * @public
  */
 const validateSkills = async (rootDir: string): Promise<ValidationResult[]> => {
   const skillDirs = await findSkillDirectories(rootDir)
-  const results: ValidationResult[] = []
-
-  for (const skillDir of skillDirs) {
-    results.push(await validateSkillDirectory(skillDir))
-  }
-
-  return results
+  return Promise.all(skillDirs.map((dir) => validateSkillDirectory(dir)))
 }
 
-/**
- * Validate skill directories against AgentSkills specification
- *
- * @param args - Command line arguments
- */
-export const validateSkill = async (args: string[]) => {
-  const { values, positionals } = parseArgs({
-    args,
-    options: {
-      json: {
-        type: 'boolean',
-        default: false,
-      },
-    },
-    allowPositionals: true,
-  })
+export { validateSkillDirectory, validateSkills, findSkillDirectories }
 
-  const cwd = process.cwd()
-  const searchPaths = positionals.length > 0 ? positionals : [join(cwd, '.claude/skills')]
+// ============================================================================
+// Path Resolution
+// ============================================================================
 
+/** @internal */
+const resolveAndValidate = async (searchPaths: string[], cwd: string): Promise<ValidationResult[]> => {
   const allResults: ValidationResult[] = []
 
   for (const searchPath of searchPaths) {
     const fullPath = searchPath.startsWith('/') ? searchPath : join(cwd, searchPath)
-
-    // Check if path is a skill directory or a directory containing skills
     const skillMdPath = await findSkillMd(fullPath)
 
     if (skillMdPath) {
-      // Direct skill directory
       allResults.push(await validateSkillDirectory(fullPath))
     } else {
-      // Directory containing skills
       const results = await validateSkills(fullPath)
       if (results.length > 0) {
         allResults.push(...results)
       } else {
-        // No nested skills found - validate path directly (will produce error)
         allResults.push(await validateSkillDirectory(fullPath))
       }
     }
   }
 
-  if (values.json) {
-    console.log(JSON.stringify(allResults, null, 2))
-  } else {
-    // Human-readable output
-    let hasErrors = false
-
-    for (const result of allResults) {
-      const relativePath = result.path.replace(cwd, '').replace(/^\//, '')
-
-      if (result.valid) {
-        console.log(`✓ ${relativePath}`)
-      } else {
-        console.log(`✗ ${relativePath}`)
-        hasErrors = true
-      }
-
-      for (const error of result.errors) {
-        console.log(`  ERROR: ${error}`)
-      }
-
-      for (const warning of result.warnings) {
-        console.log(`  WARN: ${warning}`)
-      }
-    }
-
-    if (allResults.length === 0) {
-      console.log('No skills found to validate')
-    } else {
-      const valid = allResults.filter((r) => r.valid).length
-      const total = allResults.length
-      console.log(`\n${valid}/${total} skills valid`)
-    }
-
-    if (hasErrors) {
-      process.exit(1)
-    }
-  }
+  return allResults
 }
 
-// Keep executable entry point for direct execution
+// ============================================================================
+// CLI Handler
+// ============================================================================
+
+/**
+ * CLI entry point.
+ *
+ * @remarks
+ * Exit 0 = all valid, 1 = validation errors, 2 = bad input.
+ *
+ * @param args - CLI arguments (after command name)
+ *
+ * @public
+ */
+export const validateSkill = async (args: string[]) => {
+  if (args.includes('--help') || args.includes('-h')) {
+    // biome-ignore lint/suspicious/noConsole: CLI output
+    console.log(`plaited validate-skill
+Validate skill directories against AgentSkills specification
+
+Usage: plaited validate-skill '<json>' [options]
+       echo '<json>' | plaited validate-skill
+
+Input (JSON):
+  paths    string[]   Paths to validate (default: .claude/skills/)
+
+Options:
+  --schema <input|output>  Print JSON Schema and exit
+  -h, --help               Show this help
+
+Exit codes:
+  0  All skills valid (or --schema/--help)
+  1  Validation errors found
+  2  Bad input or tool error
+
+Examples:
+  plaited validate-skill '{"paths": [".claude/skills"]}'
+  echo '{"paths": ["skills/"]}' | plaited validate-skill
+  plaited validate-skill --schema input
+  plaited validate-skill --schema output`)
+    return
+  }
+
+  const schemaIdx = args.indexOf('--schema')
+  if (schemaIdx !== -1) {
+    const target = args[schemaIdx + 1]
+    // biome-ignore lint/suspicious/noConsole: CLI output
+    if (target === 'output') {
+      console.log(JSON.stringify(z.toJSONSchema(ValidateSkillOutputSchema)))
+    } else {
+      console.log(JSON.stringify(z.toJSONSchema(ValidateSkillInputSchema)))
+    }
+    return
+  }
+
+  const positionals = args.filter((arg) => !arg.startsWith('--'))
+  let rawInput: string | undefined
+
+  if (positionals.length > 0) {
+    rawInput = positionals[0]
+  } else if (!process.stdin.isTTY) {
+    const stdinData = await Bun.stdin.text()
+    if (stdinData.trim()) rawInput = stdinData.trim()
+  }
+
+  let input: z.infer<typeof ValidateSkillInputSchema>
+  try {
+    input = ValidateSkillInputSchema.parse(rawInput ? JSON.parse(rawInput) : {})
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      console.error(JSON.stringify(error.issues, null, 2))
+    } else {
+      console.error(`Invalid JSON input: ${error instanceof Error ? error.message : error}`)
+    }
+    process.exit(2)
+  }
+
+  const cwd = process.cwd()
+  const searchPaths = input.paths && input.paths.length > 0 ? input.paths : [join(cwd, '.claude/skills')]
+  const results = await resolveAndValidate(searchPaths, cwd)
+
+  // biome-ignore lint/suspicious/noConsole: CLI output
+  console.log(JSON.stringify(results, null, 2))
+
+  if (results.some((r) => !r.valid)) process.exit(1)
+}
+
 if (import.meta.main) {
   await validateSkill(Bun.argv.slice(2))
 }
