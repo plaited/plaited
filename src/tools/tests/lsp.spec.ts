@@ -1,9 +1,198 @@
-import { describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
-import { executeLsp, flattenSymbols, getLanguageId, resolveFilePath } from '../lsp.ts'
+import { RISK_TAG } from '../../agent/agent.constants.ts'
+import { ToolDefinitionSchema } from '../../agent/agent.schemas.ts'
+import type { ToolContext } from '../../agent/agent.types.ts'
+import {
+  executeLsp,
+  flattenSymbols,
+  getLanguageId,
+  LspClient,
+  type LspOutput,
+  lspHandler,
+  lspRiskTags,
+  lspToolSchema,
+  resolveFilePath,
+} from '../lsp.ts'
 
 const scriptsDir = join(import.meta.dir, '..')
 const fixtureFile = join(import.meta.dir, 'fixtures/sample.ts')
+const rootUri = `file://${process.cwd()}`
+const testUri = `file://${fixtureFile}`
+
+// ============================================================================
+// LspClient
+// ============================================================================
+
+describe('LspClient', () => {
+  let client: LspClient
+
+  beforeAll(() => {
+    client = new LspClient({ rootUri })
+  })
+
+  afterAll(async () => {
+    if (client.isRunning()) {
+      await client.stop()
+    }
+  })
+
+  test('initializes with rootUri', () => {
+    expect(client).toBeDefined()
+    expect(client.isRunning()).toBe(false)
+  })
+
+  test('starts and stops LSP server', async () => {
+    await client.start()
+    expect(client.isRunning()).toBe(true)
+
+    await client.stop()
+    expect(client.isRunning()).toBe(false)
+  })
+
+  test('throws when starting already running server', async () => {
+    await client.start()
+    expect(client.isRunning()).toBe(true)
+
+    await expect(client.start()).rejects.toThrow('LSP server already running')
+
+    await client.stop()
+  })
+
+  test('handles stop on non-running server gracefully', async () => {
+    expect(client.isRunning()).toBe(false)
+    await client.stop()
+    expect(client.isRunning()).toBe(false)
+  })
+
+  describe('LSP operations', () => {
+    beforeAll(async () => {
+      await client.start()
+    })
+
+    afterAll(async () => {
+      await client.stop()
+    })
+
+    test('opens and closes document', async () => {
+      const text = await Bun.file(fixtureFile).text()
+
+      client.openDocument(testUri, 'typescript', 1, text)
+      client.closeDocument(testUri)
+    })
+
+    test('gets hover information', async () => {
+      const text = await Bun.file(fixtureFile).text()
+
+      client.openDocument(testUri, 'typescript', 1, text)
+
+      const lines = text.split('\n')
+      let line = 0
+      let char = 0
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i]?.startsWith('export')) {
+          line = i
+          char = 0
+          break
+        }
+      }
+
+      const result = await client.hover(testUri, line, char)
+      expect(result).toBeDefined()
+
+      client.closeDocument(testUri)
+    })
+
+    test('gets document symbols', async () => {
+      const text = await Bun.file(fixtureFile).text()
+
+      client.openDocument(testUri, 'typescript', 1, text)
+
+      const result = await client.documentSymbols(testUri)
+
+      expect(result).toBeDefined()
+      expect(Array.isArray(result)).toBe(true)
+
+      client.closeDocument(testUri)
+    })
+
+    test('searches workspace symbols', async () => {
+      const text = await Bun.file(fixtureFile).text()
+      client.openDocument(testUri, 'typescript', 1, text)
+
+      const result = await client.workspaceSymbols('parseConfig')
+
+      expect(result).toBeDefined()
+      expect(Array.isArray(result)).toBe(true)
+
+      client.closeDocument(testUri)
+    })
+
+    test('finds references', async () => {
+      const text = await Bun.file(fixtureFile).text()
+
+      client.openDocument(testUri, 'typescript', 1, text)
+
+      const lines = text.split('\n')
+      let line = 0
+      let char = 0
+      for (let i = 0; i < lines.length; i++) {
+        const currentLine = lines[i]
+        if (!currentLine) continue
+        const match = currentLine.match(/export\s+const\s+(\w+)/)
+        if (match?.[1]) {
+          line = i
+          char = currentLine.indexOf(match[1])
+          break
+        }
+      }
+
+      const result = await client.references(testUri, line, char)
+      expect(result).toBeDefined()
+
+      client.closeDocument(testUri)
+    })
+
+    test('gets definition', async () => {
+      const text = await Bun.file(fixtureFile).text()
+
+      client.openDocument(testUri, 'typescript', 1, text)
+
+      const lines = text.split('\n')
+      let line = 0
+      let char = 0
+      for (let i = 0; i < lines.length; i++) {
+        const currentLine = lines[i]
+        if (!currentLine) continue
+        const match = currentLine.match(/import\s+.*{\s*(\w+)/)
+        if (match?.[1]) {
+          line = i
+          char = currentLine.indexOf(match[1])
+          break
+        }
+      }
+
+      const result = await client.definition(testUri, line, char)
+      expect(result).toBeDefined()
+
+      client.closeDocument(testUri)
+    })
+  })
+
+  describe('error handling', () => {
+    test('throws on request when server not running', async () => {
+      const notRunningClient = new LspClient({ rootUri })
+
+      await expect(notRunningClient.hover('file:///test.ts', 0, 0)).rejects.toThrow('LSP server not running')
+    })
+
+    test('throws on notify when server not running', () => {
+      const notRunningClient = new LspClient({ rootUri })
+
+      expect(() => notRunningClient.notify('test')).toThrow('LSP server not running')
+    })
+  })
+})
 
 // ============================================================================
 // Helper functions
@@ -220,6 +409,43 @@ describe('executeLsp', () => {
         operations: [{ type: 'symbols' }],
       }),
     ).rejects.toThrow('File not found')
+  })
+})
+
+// ============================================================================
+// Agent Integration
+// ============================================================================
+
+describe('lspToolSchema', () => {
+  test('validates against ToolDefinitionSchema', () => {
+    const result = ToolDefinitionSchema.safeParse(lspToolSchema)
+    expect(result.success).toBe(true)
+  })
+
+  test('has correct tool name', () => {
+    expect(lspToolSchema.function.name).toBe('lsp')
+  })
+})
+
+describe('lspRiskTags', () => {
+  test('has workspace tag', () => {
+    expect(lspRiskTags).toContain(RISK_TAG.workspace)
+  })
+})
+
+describe('lspHandler', () => {
+  test('executes LSP operations via ToolHandler interface', async () => {
+    const ctx: ToolContext = { workspace: process.cwd(), signal: new AbortController().signal }
+    const result = (await lspHandler({ file: fixtureFile, operations: [{ type: 'symbols' }] }, ctx)) as LspOutput
+    expect(result.file).toBe(fixtureFile)
+    expect(result.results).toHaveLength(1)
+    expect(result.results[0]?.type).toBe('symbols')
+    expect(result.results[0]?.data).toBeDefined()
+  })
+
+  test('throws when signal is already aborted', async () => {
+    const ctx: ToolContext = { workspace: process.cwd(), signal: AbortSignal.abort() }
+    expect(lspHandler({ file: fixtureFile, operations: [{ type: 'symbols' }] }, ctx)).rejects.toThrow('Aborted')
   })
 })
 

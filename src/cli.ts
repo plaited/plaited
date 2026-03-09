@@ -12,7 +12,7 @@
  */
 
 // Agent tools (CRUD)
-import { bashCli, editFileCli, listFilesCli, readFileCli, writeFileCli } from './tools/crud/crud.ts'
+import { bashCli, editFileCli, listFilesCli, readFileCli, writeFileCli } from './tools/crud.ts'
 import { balance } from './tools/eval/commands/balance.ts'
 import { calibrate } from './tools/eval/commands/calibrate.ts'
 import { capture } from './tools/eval/commands/capture.ts'
@@ -30,8 +30,8 @@ import { grade } from './tools/eval/pipeline/grade.ts'
 import { run } from './tools/eval/pipeline/run.ts'
 import { schemasCli } from './tools/eval/schemas/schemas-cli.ts'
 // Development tools
-import { lsp } from './tools/typescript-lsp/lsp.ts'
-import { validateSkill } from './tools/validate-skill/validate-skill.ts'
+import { lsp } from './tools/lsp.ts'
+import { validateSkill } from './tools/validate-skill.ts'
 
 // ============================================================================
 // Command Registry

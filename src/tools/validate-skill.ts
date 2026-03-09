@@ -13,7 +13,8 @@
 
 import { basename, join } from 'node:path'
 import { Glob, YAML } from 'bun'
-import { z } from 'zod'
+import * as z from 'zod'
+import { parseCli } from './cli.utils.ts'
 
 // ============================================================================
 // Types
@@ -457,47 +458,18 @@ Examples:
     return
   }
 
-  const schemaIdx = args.indexOf('--schema')
-  if (schemaIdx !== -1) {
-    const target = args[schemaIdx + 1]
-    // biome-ignore lint/suspicious/noConsole: CLI output
-    if (target === 'output') {
-      console.log(JSON.stringify(z.toJSONSchema(ValidateSkillOutputSchema)))
-    } else {
-      console.log(JSON.stringify(z.toJSONSchema(ValidateSkillInputSchema)))
-    }
-    return
-  }
-
-  const positionals = args.filter((arg) => !arg.startsWith('--'))
-  let rawInput: string | undefined
-
-  if (positionals.length > 0) {
-    rawInput = positionals[0]
-  } else if (!process.stdin.isTTY) {
-    const stdinData = await Bun.stdin.text()
-    if (stdinData.trim()) rawInput = stdinData.trim()
-  }
-
-  let input: z.infer<typeof ValidateSkillInputSchema>
-  try {
-    input = ValidateSkillInputSchema.parse(rawInput ? JSON.parse(rawInput) : {})
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      console.error(JSON.stringify(error.issues, null, 2))
-    } else {
-      console.error(`Invalid JSON input: ${error instanceof Error ? error.message : error}`)
-    }
-    process.exit(2)
-  }
+  // All fields optional — default to {} when called interactively with no args
+  const input = await parseCli(args.length === 0 && process.stdin.isTTY ? ['{}'] : args, ValidateSkillInputSchema, {
+    name: 'validate-skill',
+    outputSchema: ValidateSkillOutputSchema,
+  })
 
   const cwd = process.cwd()
-  const searchPaths = input.paths && input.paths.length > 0 ? input.paths : [join(cwd, '.claude/skills')]
+  const searchPaths = input.paths?.length ? input.paths : [join(cwd, '.claude/skills')]
   const results = await resolveAndValidate(searchPaths, cwd)
 
   // biome-ignore lint/suspicious/noConsole: CLI output
   console.log(JSON.stringify(results, null, 2))
-
   if (results.some((r) => !r.valid)) process.exit(1)
 }
 

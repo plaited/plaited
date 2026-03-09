@@ -2,19 +2,9 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { RISK_TAG } from '../../../agent/agent.constants.ts'
-import { ToolDefinitionSchema } from '../../../agent/agent.schemas.ts'
-import type { ToolContext } from '../../../agent/agent.types.ts'
-import {
-  BUILT_IN_RISK_TAGS,
-  bash,
-  builtInHandlers,
-  builtInToolSchemas,
-  editFile,
-  listFiles,
-  readFile,
-  writeFile,
-} from '../crud.ts'
+import { RISK_TAG } from '../../agent/agent.constants.ts'
+import type { ToolContext } from '../../agent/agent.types.ts'
+import { BUILT_IN_RISK_TAGS, bash, builtInHandlers, editFile, listFiles, readFile, writeFile } from '../crud.ts'
 
 // ============================================================================
 // Temp workspace setup
@@ -154,28 +144,6 @@ describe('bash', () => {
 })
 
 // ============================================================================
-// builtInToolSchemas
-// ============================================================================
-
-describe('builtInToolSchemas', () => {
-  test('each definition validates against ToolDefinitionSchema', () => {
-    for (const def of builtInToolSchemas) {
-      const result = ToolDefinitionSchema.safeParse(def)
-      expect(result.success).toBe(true)
-    }
-  })
-
-  test('includes all built-in tool names', () => {
-    const names = builtInToolSchemas.map((s) => s.function.name)
-    expect(names).toContain('read_file')
-    expect(names).toContain('write_file')
-    expect(names).toContain('edit_file')
-    expect(names).toContain('list_files')
-    expect(names).toContain('bash')
-  })
-})
-
-// ============================================================================
 // BUILT_IN_RISK_TAGS
 // ============================================================================
 
@@ -197,10 +165,11 @@ describe('BUILT_IN_RISK_TAGS', () => {
 // ============================================================================
 
 describe('builtInHandlers', () => {
-  test('has handler for each tool schema', () => {
-    const schemaNames = builtInToolSchemas.map((s) => s.function.name)
-    for (const name of schemaNames) {
-      expect(builtInHandlers[name]).toBeDefined()
-    }
+  test('has handler for all built-in tools', () => {
+    expect(builtInHandlers.read_file).toBeDefined()
+    expect(builtInHandlers.write_file).toBeDefined()
+    expect(builtInHandlers.edit_file).toBeDefined()
+    expect(builtInHandlers.list_files).toBeDefined()
+    expect(builtInHandlers.bash).toBeDefined()
   })
 })

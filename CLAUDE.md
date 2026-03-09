@@ -327,12 +327,13 @@ Building top-down: UI → WebSocket server → agent loop. The full stack (agent
 - **Future migration:** If workspace grows too large, add `bunfig.toml` to switch `@node` scope to local npm registry (Verdaccio). No code changes — only resolution changes.
 
 **Memory architecture** (decided, see `docs/HYPERGRAPH-MEMORY.md`):
-- **Hypergraph memory** — BP decisions as git-versioned JSON-LD files, queryable via SPARQL-like patterns
+- **Hypergraph memory** — BP decisions as git-versioned JSON-LD files in `.memory/` at module root (and node root)
+- `.memory/` co-located with code in each module's git repo — commits bind reasoning to code state
+- **Per-side-effect commits** — git commit on `tool_result` from write_file/edit_file/bash, bundling code change + all pending decision `.jsonld` files. Final commit at session end.
 - `useSnapshot` captures every BP decision (selections, blocks, interrupts) + every tool result
-- Plans as bThreads with `plan_steps` materialized view for hot-path BP predicate queries
+- Plans as bThreads — no external state, step dependencies are `waitFor`/`block` in BP engine
 - Context assembly as BP event with contributor handlers
 - Agent uses bash + git + grep for structural queries against its own workspace
-- FTS5 indexes skill frontmatter and module manifests
 - Log retention: hot JSON-LD → archived `.jsonl.gz` outside workspace → training extraction
 
 **Constitution & governance** (decided, see `docs/CONSTITUTION.md`):
@@ -480,7 +481,7 @@ Hypergraph + git provides the capability but user-facing UX is undesigned:
 
 ## CLI Tool Pattern (established via validate-skill rewrite)
 
-All `plaited` CLI tools follow this contract. Reference implementation: `src/tools/validate-skill/validate-skill.ts`.
+All `plaited` CLI tools follow this contract. Reference implementation: `src/tools/validate-skill.ts`.
 
 ### I/O Contract
 - **Input**: JSON as first positional arg or piped via stdin. Validated with Zod `.parse()`.
@@ -512,18 +513,18 @@ tool-name/
 - `crud/` — **done** (Phase 1: production imports, Bun Shell bash, risk tags, edit_file, JSON positional arg CLI, deleted createToolExecutor)
 - `constitution/`, `simulate/`, `evaluate/`, `memory/` — full rewrites pending (see Tool Audit below)
 - `eval/` — 19K LOC harness, uses `parseArgs` throughout, migrate as needed
-- `typescript-lsp/` — uses `parseArgs`, migrate as needed
+- `typescript-lsp/` — **done** (consolidated lsp-client.ts into lsp.ts, agent types, shared CLI utils)
 - `scaffold-rules/` — **deleted** (AGENTS.md ships in package, copied by skill)
 
 ## Tool Audit (from pi-mono audit session)
 
 ### Tool Categories
 
-**Development/eval tools:** `eval/` (19K LOC harness), `typescript-lsp/` — independent of agent loop architecture. `validate-skill/` rewritten to CLI tool pattern (reference implementation). `scaffold-rules/` deleted (AGENTS.md ships in package).
+**Development/eval tools:** `eval/` (19K LOC harness), `typescript-lsp/` — independent of agent loop architecture but now exports agent types (ToolHandler, ToolDefinition, risk tags) for in-process use. `validate-skill/` rewritten to CLI tool pattern (reference implementation). `scaffold-rules/` deleted (AGENTS.md ships in package).
 
 **Agent pipeline tools:** `constitution/`, `evaluate/`, `simulate/`, `memory/` — **deleted**. All were written before BP-first and pi-mono decisions were finalized (reference imports, `RISK_CLASS` enum, standalone factory functions instead of BP handlers, Promise-based `InferenceCall` instead of `Model.reason()` AsyncIterable). Misalignment too deep for incremental migration — rebuild from scratch in Phases 2–3.
 
-`crud/` — **Phase 1 complete.** Production imports from `src/agent/`, Bun Shell bash, risk tags, edit_file added, createToolExecutor deleted.
+`crud/` — **Phase 1 complete.** Production imports from `src/agent/`, Bun Shell bash, risk tags, edit_file added, createToolExecutor deleted. `builtInToolSchemas` removed (per-tool schemas instead). Shared CLI utils extracted to `src/tools/cli.utils.ts`.
 
 ### Default Skills for Tools (agent-skills eval pattern)
 
@@ -581,6 +582,8 @@ Each default tool gets a skill (teaches agent usage) + eval prompts (tests tool 
 - [x] Deleted pre-production tools (`simulate/`, `memory/`, `evaluate/`, `constitution/`) — misaligned with BP-first architecture, rebuild from scratch in Phases 2–3
 - [x] Deleted `scaffold-rules/` — AGENTS.md ships in package, skill replaces CLI tool
 - [x] Phase 1 — `crud/` upgrade (production imports, Bun Shell bash, risk tags, edit_file, JSON positional arg CLI, deleted createToolExecutor)
+- [x] `typescript-lsp/` — consolidated lsp-client.ts into lsp.ts, added agent types (ToolHandler, ToolDefinition, RISK_TAG), shared CLI utils (`src/tools/cli.utils.ts`)
+- [x] Extracted shared CLI utils (`parseCli`, `makeCli`) to `src/tools/cli.utils.ts`, removed `builtInToolSchemas` from crud (per-tool schemas instead), deleted stale `src/tools.ts`
 
 ### Next Up
 - [ ] Phase 2–3 — Governance factories + pipeline handlers (see Recommended Build Path)

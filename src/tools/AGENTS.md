@@ -13,18 +13,23 @@ Rules for building CLI tools in this directory. Every tool serves two consumers:
 `parseCli` tools (lsp, validate-skill): tool owns `--help`, exit codes, and execution flow.
 
 *Verify:* Every tool uses one of these — never raw `process.argv` or `parseArgs`.
-*Fix:* Import from `../cli.utils.ts`.
+*Fix:* Import from `./cli.utils.ts`.
 
 ## File Structure
 
 ```
-tool-name/
+src/tools/
+├── AGENTS.md
+├── cli.utils.ts          # Shared CLI factories (parseCli, makeCli)
 ├── tool-name.ts          # Library exports + CLI handler
 ├── tool-name.schemas.ts  # Optional — split when schemas are shared or large
-└── tests/
-    └── tool-name.spec.ts
+├── tests/
+│   ├── tool-name.spec.ts
+│   └── fixtures/         # Test fixtures (e.g., LSP sample files)
+└── eval/                 # Eval harness (separate, 19K LOC)
 ```
 
+Flat layout — tool files live directly in `src/tools/`, tests in `src/tools/tests/`.
 Schemas co-locate in main file (lsp, validate-skill) or split when shared across handlers (crud.schemas.ts used by 5 handlers).
 
 *Verify:* No `index.ts` files. Explicit `.ts` extensions on all imports.
