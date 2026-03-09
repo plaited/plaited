@@ -28,9 +28,7 @@
     "./.plaited.ts",
     "./AGENTS.md",
     "./skills/**",
-    "./src/**",
-    "!./src/**/tests/*",
-    "!./src/**/*.spec.@(tsx|ts)"
+    "./src/**"
   ],
   "publishConfig": {
     "access": "public"
