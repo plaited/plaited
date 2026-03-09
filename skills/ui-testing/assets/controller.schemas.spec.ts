@@ -1,3 +1,4 @@
+// @ts-nocheck — reference file, imports resolve in src/ui/ context
 import { describe, expect, test } from 'bun:test'
 import { CONTROLLER_EVENTS, SWAP_MODES } from '../controller.constants.ts'
 import {

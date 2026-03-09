@@ -29,6 +29,9 @@
 **Executables:**
 - `Bun.which(cmd)` to check if command exists
 - `Bun.$\`bun add pkg\`` for package management
+- `bunx` not `npx` — always prefer Bun's package runner
+*Verify:* `grep 'npx' package.json .github/workflows/*.yml`
+*Fix:* Replace `npx` with `bunx`
 
 **When Node.js OK:** readline (interactive input), node:path utilities, APIs without Bun equivalents
 

@@ -1,6 +1,6 @@
+// @ts-nocheck — reference file, imports resolve in src/ui/ context
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { CONTROLLER_TEMPLATE_IDENTIFIER, controlIsland } from '../control-island.ts'
-import { TEMPLATE_OBJECT_IDENTIFIER } from '../create-template.constants.ts'
+import { CONTROLLER_TEMPLATE_IDENTIFIER, controlIsland, TEMPLATE_OBJECT_IDENTIFIER } from 'plaited'
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
 // happy-dom provides customElements.define() for registration tests.

@@ -1,3 +1,4 @@
+// @ts-nocheck — reference file, imports resolve when fixtures/ exists
 /**
  * Real browser tests using @playwright/cli.
  * Tests DOM behaviors through actual Chromium with a real WebSocket fixture server.

@@ -4,7 +4,7 @@
 
 ## Summary
 
-Replace the SQLite event log + FTS5 index with a **git-versioned hypergraph** persisted as JSON-LD files. The agent's memory becomes files in a git repository — queryable via bash/grep (text), an in-memory TS runtime (structural), and optionally Bun FFI to native code (expensive algorithms). Embeddings are stored inline as properties on JSON-LD documents, not in a separate vector store.
+Replace the SQLite event log + FTS5 index with a **git-versioned hypergraph** persisted as JSON-LD files. The agent's memory becomes files in a git repository — queryable via bash/grep (text), an in-memory TS runtime (structural), and graph algorithms compiled to WebAssembly via AssemblyScript (BFS, DFS, cosine similarity, pattern matching). Embeddings are stored inline as properties on JSON-LD documents, not in a separate vector store.
 
 The core insight: BP snapshots are already a hypergraph — each `SelectionBid[]` is a hyperedge connecting multiple threads, events, and decisions. JSON-LD preserves this structure on disk. Git provides versioning, branching (concurrent agents), and archival.
 
@@ -558,28 +558,23 @@ type HypergraphIndex = {
 }
 ```
 
-### Layer 3: FFI to Native Code (Expensive Algorithms)
+### Layer 3: WebAssembly via AssemblyScript (Graph Algorithms)
 
-When TS `Map`/`Set` operations are insufficient — subgraph isomorphism, cycle detection in large constraint graphs, hypertree decomposition:
+Graph algorithms run in WebAssembly compiled from AssemblyScript (`src/tools/graph-algorithms/`). The TS layer maps `@id` URIs to integer indices, serializes the incidence structure as CSR (Compressed Sparse Row) `Int32Array`s, calls WASM functions, and maps results back to URIs.
 
-```typescript
-import { dlopen, FFIType, suffix } from 'bun:ffi'
+**Implemented algorithms:**
 
-const lib = dlopen(`libhypergraph.${suffix}`, {
-  find_cycles: {
-    args: [FFIType.ptr, FFIType.u32, FFIType.ptr, FFIType.u32],
-    returns: FFIType.ptr,
-  },
-  subgraph_match: {
-    args: [FFIType.ptr, FFIType.u32, FFIType.ptr, FFIType.u32],
-    returns: FFIType.ptr,
-  },
-})
-```
+| Function | Algorithm | Use Case |
+|----------|-----------|----------|
+| `causalChain` | BFS over incidence structure | Find how two vertices connect through shared hyperedges |
+| `coOccurrence` | Direct CSR lookup | Find all hyperedges containing a vertex |
+| `checkCycles` | DFS with coloring (white/gray/black) | Detect blocking cycles in directed edges (blockedBy, requires) |
+| `matchPattern` | Sliding window over type sequence | Find consecutive hyperedges matching a type pattern |
+| `similar` | Brute-force cosine similarity with top-K | Rank documents by embedding similarity |
 
-The incidence structure serializes to `Uint32Array` (CSR format) for zero-copy FFI. Native library written in Rust or Zig, compiled to a shared library per platform.
+**Data flow:** TS allocates `StaticArray<i32>` / `StaticArray<f32>` in WASM memory via `__new`, pins them with `__pin` to prevent GC collection during computation, calls the algorithm, decodes the count-prefixed result array via `DataView`, then unpins all pointers.
 
-**Deferred** — build when TS runtime proves insufficient for real workloads. Start with TS only.
+**Build:** `npx asc src/tools/graph-algorithms/graph-algorithms.ts --outFile src/tools/hypergraph.wasm --optimize --exportRuntime`
 
 ## Embeddings
 
@@ -764,9 +759,9 @@ Build `consolidate` handler (decision files → `decisions.jsonl`, write `meta.j
 
 Add `embedding` field to `meta.jsonld` write path. Implement `similar` command in hypergraph CLI. Brute-force cosine similarity over loaded embeddings.
 
-### Phase 6: FFI Native Library (Deferred)
+### Phase 6: WebAssembly Graph Algorithms (Done)
 
-Build Rust/Zig shared library for subgraph isomorphism, hypertree decomposition. Wire via `bun:ffi`. Only when TS runtime proves insufficient.
+AssemblyScript module compiled to WASM replaces the deferred `bun:ffi` + Rust/Zig approach. Implements BFS (causal chain), DFS (cycle detection), cosine similarity, and pattern matching. The `search` tool (`src/tools/hypergraph.ts`) loads JSON-LD, builds an in-memory index, and bridges to WASM. 57 tests validate all 5 query types against realistic agent loop fixtures.
 
 ## Training Flywheel
 

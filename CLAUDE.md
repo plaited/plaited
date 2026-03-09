@@ -6,16 +6,20 @@
 
 ## Skills Directory
 
-Skills live in `skills/` at the project root (not `.agents/skills/` or `.claude/skills/`). Each skill follows the [AgentSkills specification](https://agentskills.io/specification) with a `SKILL.md` containing YAML frontmatter (`name`, `description`) and optional `references/` directory.
+Skills live in `skills/` at the project root (not `.agents/skills/` or `.claude/skills/`). Each skill follows the [AgentSkills specification](https://agentskills.io/specification) with a `SKILL.md` containing YAML frontmatter (`name`, `description`) and optional `scripts/`, `references/`, `assets/` directories.
 
 ```
 skills/
-├── trial-runner/         # Running trials with adapters
-├── trial-adapters/       # Writing adapter scripts for trial runner
-├── compare-trials/       # Statistical comparison of trial results
-├── typescript-lsp/       # LSP symbol search
-├── code-documentation/   # TSDoc standards
-├── validate-skill/       # Skill validation
+├── remote-mcp-integration/ # Generate skills from remote MCP servers
+├── search-bun-docs/        # Search Bun documentation via MCP
+├── search-mcp-docs/        # Search MCP specification via MCP
+├── search-agent-skills/    # Search AgentSkills specification via MCP
+├── trial-runner/            # Running trials with adapters
+├── trial-adapters/          # Writing adapter scripts for trial runner
+├── compare-trials/          # Statistical comparison of trial results
+├── typescript-lsp/          # LSP symbol search
+├── code-documentation/      # TSDoc standards
+├── validate-skill/          # Skill validation
 └── ...
 ```
 
@@ -352,7 +356,7 @@ Key implementation decisions. See `docs/ARCHITECTURE.md`, `docs/SAFETY.md`, `doc
 
 **Streaming UI:** Inference handler → BP events (`thinking_delta`, `text_delta`) → `render` messages. BP IS the streaming protocol.
 
-**External tool integration:** Discover schema → store as JSON-LD → generate TypeScript wrapper → teach via skill → agent composes scripts. Wrappers are `src/` (never shared); schemas are `data/` (shared via A2A). PII sanitization at wrapper level for training extraction.
+**External tool integration:** Discover schema → generate TypeScript wrapper → teach via skill → agent composes scripts. Implemented for MCP Streamable HTTP via `src/utils/remote-mcp-client.ts` (convenience layer over `@modelcontextprotocol/sdk`) + `skills/remote-mcp-integration/` (meta-skill teaching the pattern). Three search skills generated: `search-bun-docs`, `search-mcp-docs`, `search-agent-skills`.
 
 **Risk tags:** Implemented in `agent.constants.ts`. Tags: `workspace`, `crosses_boundary`, `inbound`, `outbound`, `irreversible`, `external_audience`. Empty/unknown → simulate+judge; workspace-only → execute directly; boundary/irreversible/audience → simulate+judge.
 
