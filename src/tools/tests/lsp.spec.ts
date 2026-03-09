@@ -212,6 +212,16 @@ describe('resolveFilePath', () => {
     const result = resolveFilePath('src/file.ts')
     expect(result).toBe(join(process.cwd(), 'src/file.ts'))
   })
+
+  test('resolves relative path from custom base', () => {
+    const result = resolveFilePath('src/file.ts', '/projects/my-app')
+    expect(result).toBe('/projects/my-app/src/file.ts')
+  })
+
+  test('ignores base for absolute paths', () => {
+    const result = resolveFilePath('/usr/local/file.ts', '/projects/my-app')
+    expect(result).toBe('/usr/local/file.ts')
+  })
 })
 
 describe('getLanguageId', () => {

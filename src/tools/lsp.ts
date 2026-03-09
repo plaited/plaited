@@ -504,9 +504,9 @@ const SYMBOL_KIND_NAMES: Record<number, string> = {
  *
  * @internal
  */
-const resolveFilePath = (filePath: string): string => {
+const resolveFilePath = (filePath: string, base?: string): string => {
   if (filePath.startsWith('/')) return filePath
-  return join(process.cwd(), filePath)
+  return join(base ?? process.cwd(), filePath)
 }
 
 /**
@@ -631,7 +631,7 @@ const executeOperation = async (client: LspClient, uri: string, text: string, op
 const executeLsp = async (input: LspInput, ctx?: ToolContext): Promise<LspOutput> => {
   if (ctx?.signal.aborted) throw new Error('Aborted')
 
-  const absolutePath = resolveFilePath(input.file)
+  const absolutePath = resolveFilePath(input.file, ctx?.workspace)
   const uri = `file://${absolutePath}`
   const rootUri = ctx ? `file://${ctx.workspace}` : `file://${process.cwd()}`
 
