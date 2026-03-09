@@ -13,7 +13,7 @@ import {
   lspRiskTags,
   lspToolSchema,
   resolveFilePath,
-} from '../lsp.ts'
+} from '../typescript-lsp.ts'
 
 const scriptsDir = join(import.meta.dir, '..')
 const fixtureFile = join(import.meta.dir, 'fixtures/sample.ts')
@@ -465,7 +465,7 @@ describe('lspHandler', () => {
 
 describe('CLI', () => {
   test('--schema input outputs JSON Schema', async () => {
-    const result = await Bun.$`bun ${scriptsDir}/lsp.ts --schema input`.quiet()
+    const result = await Bun.$`bun ${scriptsDir}/typescript-lsp.ts --schema input`.quiet()
     const schema = JSON.parse(result.text())
 
     expect(schema.type).toBe('object')
@@ -474,7 +474,7 @@ describe('CLI', () => {
   })
 
   test('--schema output outputs JSON Schema', async () => {
-    const result = await Bun.$`bun ${scriptsDir}/lsp.ts --schema output`.quiet()
+    const result = await Bun.$`bun ${scriptsDir}/typescript-lsp.ts --schema output`.quiet()
     const schema = JSON.parse(result.text())
 
     expect(schema.type).toBe('object')
@@ -483,7 +483,7 @@ describe('CLI', () => {
   })
 
   test('--help exits 0', async () => {
-    const proc = Bun.spawn(['bun', `${scriptsDir}/lsp.ts`, '--help'], {
+    const proc = Bun.spawn(['bun', `${scriptsDir}/typescript-lsp.ts`, '--help'], {
       stderr: 'pipe',
       stdout: 'pipe',
     })
@@ -497,7 +497,7 @@ describe('CLI', () => {
       file: fixtureFile,
       operations: [{ type: 'symbols' }],
     })
-    const result = await Bun.$`bun ${scriptsDir}/lsp.ts ${input}`.quiet()
+    const result = await Bun.$`bun ${scriptsDir}/typescript-lsp.ts ${input}`.quiet()
     const output = JSON.parse(result.text())
 
     expect(output.file).toBe(fixtureFile)
@@ -512,7 +512,7 @@ describe('CLI', () => {
       operations: [{ type: 'hover' }],
     })
 
-    const proc = Bun.spawn(['bun', `${scriptsDir}/lsp.ts`, input], {
+    const proc = Bun.spawn(['bun', `${scriptsDir}/typescript-lsp.ts`, input], {
       stderr: 'pipe',
       stdout: 'pipe',
     })
@@ -522,7 +522,7 @@ describe('CLI', () => {
   })
 
   test('exits with code 2 on invalid input', async () => {
-    const proc = Bun.spawn(['bun', `${scriptsDir}/lsp.ts`, '{"bad": true}'], {
+    const proc = Bun.spawn(['bun', `${scriptsDir}/typescript-lsp.ts`, '{"bad": true}'], {
       stderr: 'pipe',
       stdout: 'pipe',
     })

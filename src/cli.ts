@@ -30,7 +30,7 @@ import { grade } from './tools/eval/pipeline/grade.ts'
 import { run } from './tools/eval/pipeline/run.ts'
 import { schemasCli } from './tools/eval/schemas/schemas-cli.ts'
 // Development tools
-import { lsp } from './tools/lsp.ts'
+import { lsp } from './tools/typescript-lsp.ts'
 import { validateSkill } from './tools/validate-skill.ts'
 
 // ============================================================================

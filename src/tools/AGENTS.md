@@ -73,7 +73,7 @@ export const BUILT_IN_RISK_TAGS: Record<string, string[]> = {
   bash: [], // empty → Simulate + Judge
 }
 
-// lsp.ts — read-only analysis
+// typescript-lsp.ts — read-only analysis
 export const lspRiskTags: string[] = [RISK_TAG.workspace]
 ```
 
