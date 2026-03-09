@@ -31,6 +31,7 @@
     "./.bin/**",
     "./.plaited.ts",
     "./AGENTS.md",
+    "./skills/**",
     "./src/**",
     "!./src/**/tests/*",
     "!./src/**/*.spec.@(tsx|ts)"
