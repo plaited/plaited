@@ -96,7 +96,7 @@ export const TOOL_STATUS = keyMirror('pending', 'completed', 'failed')
  *
  * @public
  */
-export const BUILT_IN_TOOLS = keyMirror('read_file', 'write_file', 'edit_file', 'list_files', 'bash', 'search')
+export const BUILT_IN_TOOLS = keyMirror('read_file', 'write_file', 'edit_file', 'list_files', 'bash', 'lsp', 'search')
 
 /**
  * Subset of built-in tools that produce side effects (code changes).
