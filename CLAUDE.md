@@ -299,7 +299,7 @@ These patterns from the legacy reference must NOT be reproduced:
 
 ### Generative UI Node (feat/agent-loop-build branch)
 
-Building top-down: UI → WebSocket server → agent loop. The full stack (agent + UI) is a Modnet node. Modules are generated for nodes.
+Building top-down: UI → WebSocket server → agent loop. The full stack (agent + UI) is a Modnet node.
 
 **Key docs:**
 - `docs/ARCHITECTURE.md` — top-level overview, first principles, pluggable models, deployment tiers
@@ -309,153 +309,54 @@ Building top-down: UI → WebSocket server → agent loop. The full stack (agent
 - `docs/HYPERGRAPH-MEMORY.md` — git-versioned JSON-LD memory, context assembly, plans as bThreads
 - `docs/TRAINING.md` — distillation pipeline, training tiers, flywheel
 - `docs/PROJECT-ISOLATION.md` — multi-project orchestrator, IPC bridge, tool layers
-- `docs/MODNET-IMPLEMENTATION.md` — modnet topology, A2A protocol, identity, access control, payment
+- `docs/MODNET-IMPLEMENTATION.md` — modnet topology, A2A protocol, identity, access control, payment, module sidecar
 - `docs/GENOME.md` — genome architecture for skills (seeds/tools/eval split, CONTRACT frontmatter, wave ordering)
 - `docs/UI.md` — current `src/ui/` architecture (rendering, protocol, custom elements)
 - `docs/WEBSOCKET-ARCHITECTURE.md` — open design questions for the WebSocket server layer
 - `docs/Modnet.md` — Modnet design standards (MSS bridge-code tags, module structure)
 - `docs/Structural-IA.md` — design grammar (objects, channels, levers, loops, modules, blocks)
 
-**BP coordination patterns** for the agent loop are documented in the **Agent Loop BP Patterns** section above. See `docs/AGENT-LOOP.md` for the authoritative 6-step loop design.
-
 **What exists:**
 - `src/behavioral/` — BP engine (`behavioral()`, `bThread`, `bSync`, `trigger`, `useFeedback`, `useSnapshot`)
-- `src/ui/` — rendering pipeline, controller protocol, custom elements (see `docs/UI.md`)
-- `src/server/` — thin I/O server node via `createServer()` (routes, WebSocket, pub/sub, hot reload). Auth routes (`/auth/register`, `/auth/verify`) return 501 stubs — WebAuthn implementation is next.
+- `src/ui/` — rendering pipeline, controller protocol, custom elements
+- `src/server/` — thin I/O server via `createServer()` (routes, WebSocket, pub/sub, hot reload). Auth routes return 501 stubs.
+- `src/agent/` — production types (`agent.types.ts`, `agent.schemas.ts`, `agent.constants.ts`, `agent.utils.ts`)
+- `src/tools/` — `crud/` handlers, `trial.*`, `validate-skill.ts`, `lsp.ts`, `cli.utils.ts`, `tools.registry.ts`, `hypergraph.schemas.ts`
 
+**What's next:** WebAuthn auth → agent loop (`createAgentLoop()`) → governance factories.
 
-**What's next:** WebAuthn auth (passkey registration/verification via SimpleWebAuthn) → then agent loop (`src/agent/`).
-
-**Server architecture notes** (implemented in `src/server/server.ts`):
-- Server has no BP of its own — it's a stateless connector between browser and agent BP
-- Routes use `BunRequest` (has `req.cookies` with auto-apply); `fetch` fallback uses `Request` (needs `new Bun.CookieMap()`)
-- WebSocket data typed via `data: {} as WebSocketData` pattern on websocket config
-- Pub/sub topics: `sessionId` (document-level) and `sessionId:tagName` (island-level)
-- `server.reload()` merges new routes with existing ones for hot-swap
-
-**Module architecture** (decided, see `docs/MODNET-IMPLEMENTATION.md`):
-- Node root IS a git repo (`.gitignore` excludes `modules/`). Each module in `modules/` has its own `git init`. OS-level backups capture `.git` folders. Eliminates "local but not git-tracked" — everything in the workspace is versioned.
-- Bun workspace: `package.json` at node root with `"workspaces": ["modules/*"]`, `workspace:*` for inter-module imports
-- MSS bridge-code tags in `package.json` `"modnet"` field (`contentType`, `structure`, `mechanics`, `boundary`, `scale`)
-- `@node` scope for agent identity
-- No TypeScript compilation — Bun runs TS natively. Only `Bun.build({ target: 'browser' })` for `.behavior.ts` files sent via `update_behavioral`
-- Code vs data split: `src/` never leaves node, `data/` can cross A2A gated by `boundary` tag
-- Large assets symlinked from outside workspace (not git LFS) — requires constitution bThread for symlink integrity
-- **Future migration:** If workspace grows too large, add `bunfig.toml` to switch `@node` scope to local npm registry (Verdaccio). No code changes — only resolution changes.
-
-**Memory architecture** (decided, see `docs/HYPERGRAPH-MEMORY.md`):
-- **Hypergraph memory** — BP decisions as git-versioned JSON-LD files in `.memory/` at module root (and node root)
-- `.memory/` co-located with code in each module's git repo — commits bind reasoning to code state
-- **Per-side-effect commits** — git commit on `tool_result` from write_file/edit_file/bash, bundling code change + all pending decision `.jsonld` files. Final commit at session end.
-- `useSnapshot` captures every BP decision (selections, blocks, interrupts) + every tool result
-- Plans as bThreads — no external state, step dependencies are `waitFor`/`block` in BP engine
-- Context assembly as BP event with contributor handlers
-- Agent uses bash + git + grep for structural queries against its own workspace
-- Log retention: hot JSON-LD → archived `.jsonl.gz` outside workspace → training extraction
-
-**Constitution & governance** (decided, see `docs/CONSTITUTION.md`):
-- Constitution rules are **governance factory functions** — same contract as `update_behavioral`: `(trigger) => { threads?, handlers? }`
-- Branded with `$: '🏛️'` (GOVERNANCE_FACTORY_IDENTIFIER) — extends existing brand pattern (`🦄` template, `🪢` rules, `🎛️` controller, `🎨` decorator)
-- **MAC** (mandatory) factories loaded at spawn, immutable. **DAC** (discretionary) factories loaded with user approval at runtime.
-- Neuro-symbolic split: structural/syntactic checks in bThread block predicates (Gate, synchronous), contextual/semantic checks in async handlers feeding Simulate→Evaluate pipeline
-- `protectGovernance` bThread queries sidecar db for MAC paths, blocks modifications
-
-**Module sidecar** (decided, see `docs/MODNET-IMPLEMENTATION.md` § Package Sidecar):
-- Per-module `.meta.db` (SQLite, committed to module's git repo) — indexes branded objects and string constants
-- Node-level `.workspace.db` (rebuilt via ATTACH) — cross-module queries
-- Collector tool (`collect_metadata`) scans source files for branded `$` identifiers, upserts sidecar
-- Engine-agnostic query interface — SQLite initial, door open for columnar engines if analytical workloads emerge
-- String constants in db (not hardcoded in templates) — eliminates injection vector, enables future encryption
+**Server notes** (`src/server/server.ts`):
+- Stateless connector (no BP) — browser ↔ agent BP
+- `BunRequest` has `req.cookies`; `Request` fallback needs `new Bun.CookieMap()`
+- WebSocket: `data: {} as WebSocketData`, pub/sub topics: `sessionId` and `sessionId:tagName`
+- `server.reload()` merges new routes for hot-swap
 
 ## Decided (from pi-mono audit)
 
-### Model Interface (ARCHITECTURE.md)
-- `Model.reason()` returns `AsyncIterable<ModelDelta>` (not `Promise`), accepts `signal: AbortSignal`
-- `ModelDelta` includes `thinking_delta`, `text_delta`, `toolcall_delta`, `done`, `error`
-- `ModelResponse` (final) includes `usage: { inputTokens, outputTokens }` for context budgeting
-- Inference handler consumes the stream privately, triggers BP events per chunk for progressive UI
-- OpenAI-compatible API is the wire format — llama.cpp, vLLM, Ollama all support it
+Key implementation decisions. See `docs/ARCHITECTURE.md`, `docs/SAFETY.md`, `docs/CONSTITUTION.md`, `docs/HYPERGRAPH-MEMORY.md`, `docs/MODNET-IMPLEMENTATION.md` for full context.
 
-### Three Model Roles (ARCHITECTURE.md)
-Three interfaces at the same level — infrastructure called by handlers, NOT tool calls:
-- **Model** (required) — `reason(context, signal) → AsyncIterable<ModelDelta>` — reasoning + tool calls
-- **Indexer** (deferred, optional) — `embed(text) → Float32Array` — text → embeddings for semantic search
-- **Vision** (deferred, optional) — `analyze(image, prompt) → VisionResponse` — image → structured description
+**Model interface:** `Model.reason(context, signal) → AsyncIterable<ModelDelta>`. Deltas: `thinking_delta`, `text_delta`, `toolcall_delta`, `done`, `error`. `ModelResponse` includes `usage: { inputTokens, outputTokens }`. OpenAI-compatible wire format.
 
-Reference stack: Model (Falcon-H1R 7B, ~14GB) + Indexer (EmbeddingGemma 300M, ~600MB) + Vision (Qwen2.5-VL-7B, ~14GB) = ~29GB fp16 on DGX Spark (128GB). Skills extend Vision for specialized use cases (visual agent, chart analysis).
+**Three model roles** (infrastructure called by handlers, NOT tool calls):
+- **Model** (required) — reasoning + tool calls
+- **Indexer** (deferred) — `embed(text) → Float32Array`
+- **Vision** (deferred) — `analyze(image, prompt) → VisionResponse`
 
-Indexer/Vision are NOT tool calls because: (1) they're perception (input processing), not action (output); (2) no side effects → no safety gating needed; (3) handlers call them to enrich context, the Model never calls them directly. BP coordinates their lifecycle (bThreads can block inference until processing completes) but not their execution.
+**Prompt caching:** System prompt pinned per session, immutable. Inference server KV-cache handles prefix caching. Dynamic content (history, plan state) after the stable prefix.
 
-### Prompt Caching — Session-Level System Prompt Pinning
-Each pub/sub topic (document-level `sessionId`, island-level `sessionId:tagName`) is a session. The system prompt (constitution, tool descriptions, personality) is pinned at session start and stays immutable across turns. The inference server's KV-cache naturally caches this prefix. No application-level cache logic. Dynamic content (plan state, history, last message) goes after the stable prefix.
+**Context overflow:** Pre-flight budget check → prune (history first → inactive tools → plan detail) → reactive retry on tokenizer mismatch.
 
-### Context Overflow — Hybrid Budget + Fallback
-Pre-flight token budget check in context assembly (count tokens, prune if over limit: history first → inactive tool descriptions → plan detail). If tokenizer mismatch causes unexpected overflow, reactive retry (controller.ts pattern: error → reduce budget → re-assemble → retry). Flywheel: snapshot logs reveal recurring overflow patterns → crystallize into MAC bThreads that proactively shape context assembly → owner approves.
+**Inference retry:** Exponential backoff mirroring `controller.ts` pattern. Transient (429, 5xx, OOM) → retry. Context overflow → re-assemble. Permanent → surface to user.
 
-### Inference Retry — Controller-Mirror bThread Pattern
-Direct port of `controller.ts` WebSocket retry (exponential backoff, max retries). Handler for `inference_error` checks retry count, applies backoff via `setTimeout`, triggers `invoke_inference` retry. Error-type routing: transient errors (429, 5xx, OOM) → retry; context overflow → re-assemble with reduced budget; permanent errors (auth, model not found) → surface to user.
+**Request abort:** BP `interrupt` + `AbortSignal` propagation to `fetch()` and `Bun.spawn()`.
 
-### Request Abort — BP Interrupt + AbortSignal
-Already handled: `user_action` (UI) or `message` (ACP) → BP `interrupt` kills inference bThread → `AbortSignal` propagates to `fetch()` (inference) and `Bun.spawn()` (tool subprocess). Same pattern as `sim_guard_{id}` per-call threads.
+**Streaming UI:** Inference handler → BP events (`thinking_delta`, `text_delta`) → `render` messages. BP IS the streaming protocol.
 
-### Tool Progress — useSnapshot Observability
-Already handled: `useSnapshot` captures every BP decision including `execute` and `tool_result` events. Long-running tools can trigger intermediate `tool_progress` events → handlers send `render` messages for progressive UI. All observable and trainable.
+**External tool integration:** Discover schema → store as JSON-LD → generate TypeScript wrapper → teach via skill → agent composes scripts. Wrappers are `src/` (never shared); schemas are `data/` (shared via A2A). PII sanitization at wrapper level for training extraction.
 
-### Streaming UI — BP Events (not separate protocol)
-Inference handler reads OpenAI SSE stream → triggers BP events (`thinking_delta`, `text_delta`) → handlers send `render` messages to generative UI and ACP clients. BP IS the streaming protocol. No separate 12-event system needed.
+**Risk tags:** Implemented in `agent.constants.ts`. Tags: `workspace`, `crosses_boundary`, `inbound`, `outbound`, `irreversible`, `external_audience`. Empty/unknown → simulate+judge; workspace-only → execute directly; boundary/irreversible/audience → simulate+judge.
 
-### External Tool Integration — Composable Wrappers
-External capabilities (MCP servers, REST APIs, CLIs, A2A agents, databases) are integrated via a uniform pattern:
-1. **Discover** — one-shot script fetches schema (MCP `tools/list`, OpenAPI spec, `--help`, A2A agent card, DB introspection)
-2. **Store** — schema saved as JSON-LD in hypergraph memory. Available during context assembly so agent knows what tools exist.
-3. **Generate** — typed TypeScript wrapper module with async functions per tool. Handles client lifecycle (connect, invoke, disconnect) internally.
-4. **Skill** — teaches the agent how to compose multi-step scripts using the wrapper module.
-5. **Compose** — agent writes ad-hoc scripts that import wrapper functions, chain operations with control flow, filter/transform data in code. Only results reach model context.
-
-**PII + training boundary:** Real data can flow freely to the local model — it's on-device, useful for simulation/Dreamer prediction, and never leaves the node. The boundary matters for **training data extraction**: when trajectories are exported for distillation (see TRAINING.md), wrapper modules produce synthetic variants with matching schema + statistical distribution so sensitive data never reaches external training infrastructure. The wrapper is the sanitization point, not the model context.
-
-**A2A boundary alignment:** Wrapper modules are `src/` (never shared). Schemas are `data/` (shared via A2A for capability advertisement). When agents ask "what tools do you have?", the answer is stored schemas — not wrapper code. Execution stays in the owning agent's boundary.
-
-**Meta-skill:** `tool-integration` teaches the agent how to run discovery for any source type and generate wrapper + skill. It's the skill that creates other skills.
-
-**Gate:** All external calls go through bash → gate bThread classifies risk. Constitution can block by wrapper module, function name, or argument patterns.
-
-### Risk Tag Model (replaces RISK_CLASS)
-Composable `RISK_TAG` tags replace the mutually exclusive `RISK_CLASS` enum (`read_only`, `side_effects`, `high_ambiguity`). Tags are additive — a tool call carries a `Set<string>` of applicable tags.
-
-**Tags:** `workspace`, `crosses_boundary`, `inbound`, `outbound`, `irreversible`, `external_audience`
-
-**Routing logic:**
-- **Empty/unknown tags → Simulate + Judge** (default-deny — prove it's safe)
-- **`workspace`-only → Execute directly** (declared safe, git-versioned workspace)
-- **Any boundary/irreversible/audience tags → Simulate + Judge** (bThread predicates inspect tag sets)
-
-**Tag sources:**
-- Built-in tools declare static tags (e.g., `read_file` → `{workspace}`)
-- Wrapper modules declare tags at generation time from schema analysis
-- No runtime classifier function — structural rules in bThreads, semantic understanding via Simulate/Judge
-- Flywheel: snapshot patterns → propose new bThreads for recurring tag combinations → owner approves
-
-**Gate events simplified:** Three gate variants (`gate_read_only`, `gate_side_effects`, `gate_high_ambiguity`) → single `gate_approved` with `tags: string[]`. Gate bThreads compose by inspecting tag sets, not switching on enum values.
-
-**Defense in depth intact:** Git-versioned workspace + OS backups + constitution bThreads + Simulate/Judge pipeline. Tags determine *which* defenses engage, not *whether* defenses exist.
-
-**Risk tags ↔ Modnet boundaries:** Risk tags (per-tool-call) and Modnet boundary tags (per-module `"boundary"` in `package.json`) are two levels of the same enforcement mechanism — BP bThread block predicates. Risk tags describe *what a tool call does*; boundary tags describe *what a module shares*. Both flow through the Gate → Execute pipeline as BP events. Connection point is **Phase 2 (Governance Factories)**: boundary policies become MAC bThread block predicates that inspect risk tags on `execute` events. A2A events (`share_module`, `share_data`, `payment_required`) will be added to `AGENT_EVENTS` when the A2A handler is built — they carry risk tags like any other tool call (`{crosses_boundary, outbound, external_audience}`).
-
-### Bash Sandboxing — Bun Shell
-Bash tool execution uses Bun Shell (`Bun.$`) for sandboxing:
-- `$.cwd(workspace)` — locks working directory to workspace root
-- `$.env()` — controls environment variables (allowlist, not passthrough)
-- Auto-escaping — template literals prevent injection (`$\`echo ${userInput}\``)
-- No system shell — Bun Shell is its own implementation, doesn't invoke `/bin/sh`
-- `$.nothrow()` — prevents non-zero exit codes from throwing (tool handler manages errors)
-- Constitution bThreads provide structural blocking (e.g., block `rm -rf`, block `/etc/` writes) via `execute` event predicates inspecting tool arguments
-
-### Not Needed (dropped from pi-mono comparison)
-- **Cross-provider message transformation** — no mid-session model swap; model replaced between sessions via retrain + redeploy
-- **Partial/streaming JSON parsing** — handler accumulates tool call args privately, triggers `model_response` with complete parsed result
-- **Pi-pods infrastructure management** — genome skills generate deployment code to user needs; not a framework export
-- **Native MCP client** — MCP servers integrated via composable wrappers pattern above, not a built-in protocol client
+**Bash sandboxing:** Bun Shell (`Bun.$`) — `$.cwd()`, `$.env()`, auto-escaping, `$.nothrow()`. Constitution bThreads block dangerous patterns via `execute` event predicates.
 
 ## Open Questions
 
@@ -496,19 +397,13 @@ Hypergraph + git provides the capability but user-facing UX is undesigned:
 - Branch creation: user explores alternative path at a decision point → git branch + parallel session
 - Branch merging: compare results via hypergraph CLI, user selects preferred path
 
-## CLI Tool Pattern (established via validate-skill rewrite)
+## CLI Tool Pattern
 
-All `plaited` CLI tools follow this contract. Reference implementation: `src/tools/validate-skill.ts`.
+All `plaited` CLI tools follow this contract. Reference: `src/tools/validate-skill.ts`.
 
-### I/O Contract
-- **Input**: JSON as first positional arg or piped via stdin. Validated with Zod `.parse()`.
-- **Output**: JSON on stdout. Errors on stderr.
-- **Discovery**: `--schema input` and `--schema output` emit `z.toJSONSchema()` for the respective Zod schemas.
-- **Help**: `--help` / `-h` prints usage and exits 0.
-- **Exit codes**: 0 = success, 1 = domain error (e.g. validation failed), 2 = bad input / tool error.
+**I/O:** JSON in (first positional arg or stdin, Zod `.parse()`), JSON out (stdout), errors on stderr. `--schema input`/`--schema output` for discovery. `--help`/`-h` for usage. Exit: 0 success, 1 domain error, 2 bad input.
 
-### File Structure
-Flat layout — tool files live directly in `src/tools/`, tests in `src/tools/tests/`. Each tool exports both **library functions** (pure, no side effects) and a **CLI handler** (owns `process.exit`, `console.log`):
+**File structure:**
 ```
 src/tools/
 ├── cli.utils.ts          # Shared CLI factories (parseCli, makeCli)
@@ -522,33 +417,28 @@ src/tools/
 - CLI handler: single exported `async (args: string[]) => void`. Handles `--schema`, `--help`, input parsing, exit codes.
 - Zod schemas: exported (`InputSchema`, `OutputSchema`) so consumers can validate without running the CLI.
 
-### Conventions
-- **Bun.YAML.parse()** for any YAML parsing — no custom parsers. YAML 1.2 compliant.
-- **Spec-fidelity**: Output field names match their source spec verbatim. If the AgentSkills spec says `allowed-tools` (dash-case), the output says `allowed-tools` — don't camelCase.
-- **`z.record(z.string(), z.string())`** not `z.record(z.string())` — Zod v4's `toJSONSchema()` needs explicit key+value type args.
-- **`node:util` parseArgs removed** — input is always JSON, not CLI flags with positional args.
+**Conventions:**
+- `Bun.YAML.parse()` for YAML — no custom parsers
+- Spec-fidelity: output field names match source spec verbatim (dash-case if spec says dash-case)
+- `z.record(z.string(), z.string())` not `z.record(z.string())` — Zod v4 `toJSONSchema()` needs explicit key+value
 
-### Migration Status
-- `validate-skill/` — **done** (reference implementation)
-- `crud/` — **done** (Phase 1: production imports, Bun Shell bash, risk tags, edit_file, JSON positional arg CLI, deleted createToolExecutor)
-- `constitution/`, `simulate/`, `evaluate/`, `memory/` — full rewrites pending (see Tool Audit below)
-- `eval/` → `trial` — **done** (19K LOC eval harness rebuilt as 4-file trial runner: `trial.ts`, `trial.schemas.ts`, `trial.utils.ts`, `trial.constants.ts`. Library-first API, script-based adapters, unified TrialResult, `compare-trials` skill)
-- `typescript-lsp/` — **done** (consolidated lsp-client.ts into lsp.ts, agent types, shared CLI utils)
-- `scaffold-rules/` — **deleted** (AGENTS.md ships in package, copied by skill)
+## Build Path
 
-## Tool Audit (from pi-mono audit session)
+**Phase 2 — Governance Factories (from scratch):**
+1. Governance factory type `(trigger) => { threads?, handlers? }` branded `$: '🏛️'`
+2. Gate bThread predicates using composable risk tags
+3. Default MAC rules (file sandboxing, bash safety via Bun Shell)
+4. `protectGovernance` bThread blocking modification of MAC paths
 
-### Tool Categories
+**Phase 3 — Pipeline Handlers (from scratch as BP handlers):**
+1. Simulate handler — State Transition Prompt (WebDreamer A.3), `Model.reason()`, triggers `simulation_result`
+2. Evaluate handler — symbolic gate + neural scorer (WebDreamer A.4), triggers `eval_approved`/`eval_rejected`
+3. Per-call dynamic threads (`sim_guard_{id}` pattern)
+4. Prompt utilities fresh from production types
 
-**Development tools:** `trial` (library-first trial runner with script-based adapters), `typescript-lsp/` (LSP symbol search, exports agent types), `validate-skill/` (AgentSkills spec validation). `scaffold-rules/` deleted (AGENTS.md ships in package).
-
-**Agent pipeline tools:** `constitution/`, `evaluate/`, `simulate/`, `memory/` — **deleted**. All were written before BP-first and pi-mono decisions were finalized (reference imports, `RISK_CLASS` enum, standalone factory functions instead of BP handlers, Promise-based `InferenceCall` instead of `Model.reason()` AsyncIterable). Misalignment too deep for incremental migration — rebuild from scratch in Phases 2–3.
-
-`crud/` — **Phase 1 complete.** Production imports from `src/agent/`, Bun Shell bash, risk tags, edit_file added, createToolExecutor deleted. `builtInToolSchemas` removed (per-tool schemas instead). Shared CLI utils extracted to `src/tools/cli.utils.ts`.
-
-### Default Skills for Tools (agent-skills eval pattern)
-
-Each default tool gets a skill (teaches agent usage) + eval prompts (tests tool in isolation via the trial runner). Pattern: `prompts.jsonl` → adapter script → `grader.ts` scores output → `runTrial()` or `plaited trial`.
+**Phase 4 — Skills + Evals:**
+1. `prompts.jsonl` per tool → adapter scripts → graders
+2. Run via `runTrial()` or `plaited trial`
 
 | Skill | Tools Covered | Eval Focus |
 |-------|--------------|------------|
@@ -558,58 +448,10 @@ Each default tool gets a skill (teaches agent usage) + eval prompts (tests tool 
 | `planning` | save_plan | Plan step structure, dependency chains, goal coherence |
 | `context-assembly` | (implicit) | Contributor ordering, budget allocation, pruning quality |
 
-### Recommended Build Path
+## Next Up
 
-**Phase 0 — Production Types:** Extract from `src/reference/agent.types.ts` → `src/agent/agent.types.ts`. No reference imports in production code.
-
-**Phase 1 — Tool Handlers (`crud/` upgrade, testable in isolation):**
-1. Migrate `crud/` imports from `src/reference/` → `src/agent/` (production `ToolContext` already has `signal: AbortSignal`)
-2. Rewrite bash handler with Bun Shell (`$.cwd(workspace)`, `$.env()`, AbortSignal)
-3. Add risk tag registry — static `RISK_TAG` declarations per built-in tool alongside `builtInToolSchemas`
-4. Delete `createToolExecutor()` — BP dispatch replaces centralized dispatcher
-5. Add `edit_file` handler (listed in docs as default tool, doesn't exist yet)
-
-**Phase 2 — Governance Factories (build from scratch):**
-1. Define governance factory type `(trigger) => { threads?, handlers? }` branded `$: '🏛️'`
-2. Implement gate bThread predicates using composable risk tags
-3. Implement default MAC rules (file sandboxing, bash safety via Bun Shell)
-4. `protectGovernance` bThread blocking modification of MAC paths
-
-**Phase 3 — Pipeline Handlers (build from scratch as BP handlers):**
-1. Simulate handler for `gate_approved` events — builds State Transition Prompt (WebDreamer A.3), calls `Model.reason()`, triggers `simulation_result`
-2. Evaluate handler for `simulation_result` events — symbolic gate (regex/keyword block predicates) + neural scorer (WebDreamer A.4 reward prompt), triggers `eval_approved` or `eval_rejected`
-3. Per-call dynamic threads with predicate interrupt for simulation guards (`sim_guard_{id}` pattern)
-4. Prompt utilities (buildStateTransitionPrompt, buildRewardPrompt, checkSymbolicGate, parseRewardScore) written fresh to use production types
-
-**Phase 4 — Skills + Evals (testable via trial runner):**
-1. Create `prompts.jsonl` for each tool
-2. Create adapter scripts + graders
-3. Run evals via `runTrial()` or `plaited trial`
-
-## Build Progress
-
-### Completed
-- [x] `src/behavioral/` — BP engine (1128 tests passing)
-- [x] `src/ui/` — rendering pipeline, controller protocol, custom elements
-- [x] `src/server/` — thin I/O server node via `createServer()`
-- [x] `src/reference/` — 10-wave agent loop reference (deleted — BP patterns extracted to CLAUDE.md "Agent Loop BP Patterns")
-- [x] `src/tools/eval/` → `src/tools/trial.*` — eval harness rebuilt as trial runner (4 files, library-first, script-based adapters, `compare-trials` skill)
-- [x] Doc breakout: SYSTEM-DESIGN-V3.md → 8 focused domain docs
-- [x] Pi-mono feature audit — decisions recorded above
-- [x] Tool audit — findings and build path recorded above
-- [x] Phase 0 — Production types (`src/agent/`) extracted from reference, risk tag model applied
-- [x] `validate-skill/` — rewritten for agent consumption (Bun.YAML, JSON I/O, --schema, library exports)
-- [x] Deleted pre-production tools (`simulate/`, `memory/`, `evaluate/`, `constitution/`) — misaligned with BP-first architecture, rebuild from scratch in Phases 2–3
-- [x] Deleted `scaffold-rules/` — AGENTS.md ships in package, skill replaces CLI tool
-- [x] Phase 1 — `crud/` upgrade (production imports, Bun Shell bash, risk tags, edit_file, JSON positional arg CLI, deleted createToolExecutor)
-- [x] `typescript-lsp/` — consolidated lsp-client.ts into lsp.ts, added agent types (ToolHandler, ToolDefinition, RISK_TAG), shared CLI utils (`src/tools/cli.utils.ts`)
-- [x] Extracted shared CLI utils (`parseCli`, `makeCli`) to `src/tools/cli.utils.ts`, removed `builtInToolSchemas` from crud (per-tool schemas instead), deleted stale `src/tools.ts`
-
-### Next Up
-- [ ] Phase 2–3 — Governance factories + pipeline handlers (see Recommended Build Path)
-- [ ] Default tool skills + evals Phase 4
 - [ ] WebAuthn auth (passkey registration/verification via SimpleWebAuthn)
-- [ ] `src/agent/` — agent loop implementation (from reference → production)
-- [ ] Update `docs/ARCHITECTURE.md` with Model interface changes (AsyncIterable, Vision role, usage field)
+- [ ] `src/agent/` — agent loop implementation (`createAgentLoop()`)
+- [ ] Phase 2–3 — Governance factories + pipeline handlers
+- [ ] Phase 4 — Default tool skills + evals
 - [ ] Genome skills restructuring (seeds/tools/eval directories)
-- [ ] Resolve open questions above as implementation reveals answers
