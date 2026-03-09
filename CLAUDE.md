@@ -512,7 +512,7 @@ tool-name/
 - `validate-skill/` — **done** (reference implementation)
 - `crud/` — **done** (Phase 1: production imports, Bun Shell bash, risk tags, edit_file, JSON positional arg CLI, deleted createToolExecutor)
 - `constitution/`, `simulate/`, `evaluate/`, `memory/` — full rewrites pending (see Tool Audit below)
-- `eval/` — 19K LOC harness, uses `parseArgs` throughout, migrate as needed
+- `eval/` → `trial` — **done** (19K LOC eval harness rebuilt as 4-file trial runner: `trial.ts`, `trial.schemas.ts`, `trial.utils.ts`, `trial.constants.ts`. Library-first API, script-based adapters, unified TrialResult, `compare-trials` skill)
 - `typescript-lsp/` — **done** (consolidated lsp-client.ts into lsp.ts, agent types, shared CLI utils)
 - `scaffold-rules/` — **deleted** (AGENTS.md ships in package, copied by skill)
 
@@ -520,7 +520,7 @@ tool-name/
 
 ### Tool Categories
 
-**Development/eval tools:** `eval/` (19K LOC harness), `typescript-lsp/` — independent of agent loop architecture but now exports agent types (ToolHandler, ToolDefinition, risk tags) for in-process use. `validate-skill/` rewritten to CLI tool pattern (reference implementation). `scaffold-rules/` deleted (AGENTS.md ships in package).
+**Development/eval tools:** `trial` (rebuilt from 19K LOC eval harness → 4 files, library-first, script-based adapters), `typescript-lsp/` — independent of agent loop architecture but now exports agent types (ToolHandler, ToolDefinition, risk tags) for in-process use. `validate-skill/` rewritten to CLI tool pattern (reference implementation). `scaffold-rules/` deleted (AGENTS.md ships in package).
 
 **Agent pipeline tools:** `constitution/`, `evaluate/`, `simulate/`, `memory/` — **deleted**. All were written before BP-first and pi-mono decisions were finalized (reference imports, `RISK_CLASS` enum, standalone factory functions instead of BP handlers, Promise-based `InferenceCall` instead of `Model.reason()` AsyncIterable). Misalignment too deep for incremental migration — rebuild from scratch in Phases 2–3.
 
@@ -528,7 +528,7 @@ tool-name/
 
 ### Default Skills for Tools (agent-skills eval pattern)
 
-Each default tool gets a skill (teaches agent usage) + eval prompts (tests tool in isolation via `@plaited/agent-eval-harness`). Pattern from `youdotcom-oss/agent-skills`: `prompts.jsonl` → `capture` command with headless adapter → `grader.ts` scores output.
+Each default tool gets a skill (teaches agent usage) + eval prompts (tests tool in isolation via the trial runner). Pattern: `prompts.jsonl` → adapter script → `grader.ts` scores output → `runTrial()` or `plaited trial`.
 
 | Skill | Tools Covered | Eval Focus |
 |-------|--------------|------------|
@@ -561,10 +561,10 @@ Each default tool gets a skill (teaches agent usage) + eval prompts (tests tool 
 3. Per-call dynamic threads with predicate interrupt for simulation guards (`sim_guard_{id}` pattern)
 4. Prompt utilities (buildStateTransitionPrompt, buildRewardPrompt, checkSymbolicGate, parseRewardScore) written fresh to use production types
 
-**Phase 4 — Skills + Evals (testable via `@plaited/agent-eval-harness`):**
+**Phase 4 — Skills + Evals (testable via trial runner):**
 1. Create `prompts.jsonl` for each tool
-2. Create graders
-3. Run evals against Claude Code (as in agent-skills pattern)
+2. Create adapter scripts + graders
+3. Run evals via `runTrial()` or `plaited trial`
 
 ## Build Progress
 
@@ -573,7 +573,7 @@ Each default tool gets a skill (teaches agent usage) + eval prompts (tests tool 
 - [x] `src/ui/` — rendering pipeline, controller protocol, custom elements
 - [x] `src/server/` — thin I/O server node via `createServer()`
 - [x] `src/reference/` — 10-wave agent loop reference (deleted — BP patterns extracted to CLAUDE.md "Agent Loop BP Patterns")
-- [x] `src/tools/eval/` — eval harness (19K LOC, production-ready)
+- [x] `src/tools/eval/` → `src/tools/trial.*` — eval harness rebuilt as trial runner (4 files, library-first, script-based adapters, `compare-trials` skill)
 - [x] Doc breakout: SYSTEM-DESIGN-V3.md → 8 focused domain docs
 - [x] Pi-mono feature audit — decisions recorded above
 - [x] Tool audit — findings and build path recorded above
