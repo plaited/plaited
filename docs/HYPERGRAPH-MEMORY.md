@@ -177,7 +177,18 @@ This applies identically to skills and AGENTS.md rules — both are subgraphs wi
 
 ### Git as Coordination and Versioning Layer
 
-Each session boundary produces a git commit. Decision files are written to disk continuously during the session (data is durable before commit). At session end, decision files are consolidated into a single JSONL archive, and the session is committed. The agent has `git log` for temporal queries, `git diff` for change detection, `git worktree` for concurrent access.
+Memory lives in `.memory/` at the root of each module (and the node root). Code changes and decision snapshots are committed together in the same git repo, binding reasoning to the code state that produced it.
+
+**Per-side-effect commits:** A git commit happens when a `tool_result` arrives for a side-effect-producing tool (write_file, edit_file, bash). The commit includes both the code change AND all pending decision `.jsonld` files since the last commit. Pure-read tools and coordination events produce decision files (durable on disk) but don't trigger a commit — they're bundled into the next side-effect commit. At session end, a final commit captures any remaining decision files plus `meta.jsonld`.
+
+**Why per-side-effect, not per-session or per-decision:**
+- Per-session is too coarse — loses correlation between specific decisions and specific code changes. When the agent retries after a failed test, you want to see both the code delta and the reasoning delta between attempts.
+- Per-decision is too noisy — most BP supersteps (coordination, gate checks) produce no code diff. Committing empty diffs makes `git log` unusable.
+- Per-side-effect is the sweet spot — every commit has a meaningful code diff paired with the full reasoning chain that led to it. Each commit is a labeled `(reasoning, code_change)` training pair.
+
+**Two-level memory:**
+- **Module `.memory/`** — decisions about changes to this module's code. Committed in the module's git repo alongside the code changes. Travels with the module.
+- **Node `.memory/`** — session coordination, cross-module decisions, constitution. Committed in the node's git repo.
 
 **Concurrent agents:** The orchestrator creates git worktrees for sub-agents. Each writes to an isolated branch. Results merge back through standard git operations.
 
@@ -252,31 +263,48 @@ The bThread catches anything the model gets wrong. The skill reduces how often t
 
 ## File Structure
 
+Module-level `.memory/` (inside each module's git repo):
+
 ```
-data/memory/
-├── @context.jsonld              # framework-level vocabulary (BP types, tool types)
-├── sessions/
-│   ├── {session_id}/
-│   │   ├── @context.jsonld      # session-specific vocabulary extensions
-│   │   ├── meta.jsonld          # summary, outcome, embedding, tools used
-│   │   ├── decisions/
-│   │   │   ├── {superstep}.jsonld   # one file per BP decision (hyperedge)
-│   │   │   └── ...
-│   │   └── trajectory.jsonld    # tool calls + outputs (adapter concern)
-│   └── ...
-├── skills/
-│   ├── {skill_name}.jsonld      # ingested skill subgraph (source pointer to .md)
-│   └── ...
-├── rules/
-│   ├── workspace.jsonld         # ingested workspace AGENTS.md (source pointer)
-│   ├── {module_name}.jsonld     # ingested module AGENTS.md (source pointer)
-│   └── ...
-├── threads/
-│   ├── {thread_name}.jsonld     # design-time thread vertex (from LSP + brand scan)
-│   └── ...
-└── constitution/
-    ├── mac/                     # mandatory governance subgraphs
-    └── dac/                     # discretionary governance subgraphs
+modules/{module_name}/
+├── .memory/
+│   ├── @context.jsonld              # module-scoped vocabulary extensions
+│   ├── sessions/
+│   │   ├── {session_id}/
+│   │   │   ├── @context.jsonld      # session-specific vocabulary extensions
+│   │   │   ├── meta.jsonld          # summary, outcome, embedding, tools used
+│   │   │   ├── decisions/
+│   │   │   │   ├── {superstep}.jsonld   # one file per BP decision (hyperedge)
+│   │   │   │   └── ...
+│   │   │   └── trajectory.jsonld    # tool calls + outputs (adapter concern)
+│   │   └── ...
+│   ├── skills/
+│   │   ├── {skill_name}.jsonld      # ingested skill subgraph (source pointer to .md)
+│   │   └── ...
+│   ├── rules/
+│   │   ├── {module_name}.jsonld     # ingested module AGENTS.md (source pointer)
+│   │   └── ...
+│   └── threads/
+│       ├── {thread_name}.jsonld     # design-time thread vertex (from LSP + brand scan)
+│       └── ...
+├── src/
+├── data/
+└── package.json
+```
+
+Node-level `.memory/` (in the node root git repo):
+
+```
+node/
+├── .memory/
+│   ├── @context.jsonld              # framework-level vocabulary (BP types, tool types)
+│   ├── sessions/                    # cross-module session coordination
+│   ├── rules/
+│   │   └── workspace.jsonld         # ingested workspace AGENTS.md (source pointer)
+│   └── constitution/
+│       ├── mac/                     # mandatory governance subgraphs
+│       └── dac/                     # discretionary governance subgraphs
+└── modules/
 ```
 
 ### Progressive Disclosure
@@ -284,7 +312,7 @@ data/memory/
 The file hierarchy appears in the system prompt as a summarized tree. Each `meta.jsonld` provides enough context for the agent to decide what to load without loading it:
 
 ```jsonc
-// data/memory/sessions/sess_abc/meta.jsonld
+// .memory/sessions/sess_abc/meta.jsonld
 {
   "@id": "session/sess_abc",
   "@type": "bp:Session",
@@ -340,7 +368,7 @@ The agent reads the tree, decides relevance, loads specific files. Grep for quic
 ### Decision Document (Runtime Hyperedge)
 
 ```jsonc
-// data/memory/sessions/sess_abc/decisions/007.jsonld
+// .memory/sessions/sess_abc/decisions/007.jsonld
 {
   "@context": "../../../@context.jsonld",
   "@id": "session/sess_abc/decision/7",
@@ -372,7 +400,7 @@ The agent reads the tree, decides relevance, loads specific files. Grep for quic
 The JSON-LD points to the markdown source — it does not duplicate CONTRACT frontmatter:
 
 ```jsonc
-// data/memory/skills/behavioral-core.jsonld
+// .memory/skills/behavioral-core.jsonld
 {
   "@context": "../@context.jsonld",
   "@id": "skill://behavioral-core",
@@ -404,7 +432,7 @@ Note: `layer` and `wave` are extracted from the CONTRACT frontmatter during inge
 ### AGENTS.md Subgraph (Rule Vertices)
 
 ```jsonc
-// data/memory/rules/workspace.jsonld
+// .memory/rules/workspace.jsonld
 {
   "@context": "../@context.jsonld",
   "@id": "rules://workspace",
@@ -431,7 +459,7 @@ Note: `layer` and `wave` are extracted from the CONTRACT frontmatter during inge
 ### Thread Vertex (Design-Time, from LSP + Brand Scan)
 
 ```jsonc
-// data/memory/threads/taskGate.jsonld
+// .memory/threads/taskGate.jsonld
 {
   "@context": "../@context.jsonld",
   "@id": "bp:thread/taskGate",
@@ -462,20 +490,20 @@ Three layers over the same JSON-LD files, escalating in capability:
 
 ```bash
 # What happened in this session?
-cat data/memory/sessions/sess_abc/meta.jsonld
+cat .memory/sessions/sess_abc/meta.jsonld
 
 # Find all gate rejections across sessions
-grep -rl '"gate_rejected"' data/memory/sessions/
+grep -rl '"gate_rejected"' .memory/sessions/
 
 # What blocked execute in session abc?
-grep -l '"blockedBy"' data/memory/sessions/sess_abc/decisions/ | \
+grep -l '"blockedBy"' .memory/sessions/sess_abc/decisions/ | \
   xargs grep '"execute"'
 
 # Git history of memory changes
-git log --oneline data/memory/sessions/
+git log --oneline .memory/sessions/
 
 # Diff between sessions
-git diff HEAD~5 -- data/memory/sessions/sess_abc/meta.jsonld
+git diff HEAD~5 -- .memory/sessions/sess_abc/meta.jsonld
 ```
 
 No index. No database. Standard unix tools.
@@ -487,27 +515,27 @@ A compiled Bun executable that loads JSON-LD files into an in-memory incidence s
 ```bash
 # Causal chain from task to message
 ./tools/hypergraph causal-chain \
-  --session data/memory/sessions/sess_abc \
+  --session .memory/sessions/sess_abc \
   --from "bp:event/task" --to "bp:event/message"
 
 # Thread co-participation across sessions
 ./tools/hypergraph co-occurrence \
   --vertex "bp:thread/sim_guard" \
-  --sessions data/memory/sessions/
+  --sessions .memory/sessions/
 
 # Check constitution rules for deadlocks
 ./tools/hypergraph check-cycles \
-  --threads data/memory/threads/
+  --threads .memory/threads/
 
 # Find structurally similar sessions
 ./tools/hypergraph match \
   --pattern '{"sequence": ["gate_rejected", "simulate_request"]}' \
-  --sessions data/memory/sessions/
+  --sessions .memory/sessions/
 
 # Semantic similarity (embedding search)
 ./tools/hypergraph similar \
   --query "implement file watcher with debounce" \
-  --sessions data/memory/sessions/ \
+  --sessions .memory/sessions/ \
   --top-k 3
 ```
 
@@ -610,9 +638,19 @@ EmbeddingGemma (Gemma 3 300M base) runs locally via the `Indexer` interface (see
 Memory operations are coordinated by bThreads, not ad-hoc scheduling:
 
 ```
+// Commit code + pending decisions on side-effect-producing tool results
+sideEffectCommit: bThread([
+  bSync({
+    waitFor: (e) => e.type === 'tool_result' &&
+      ['write_file', 'edit_file', 'bash'].includes(e.detail?.tool),
+    interrupt: ['message'],
+  }),
+  bSync({ request: { type: 'commit_snapshot' } }),  // git add + commit code + .memory/
+], true)
+
 sessionClose: bThread([
   bSync({ waitFor: 'message' }),                    // session completed
-  bSync({ request: { type: 'consolidate' } }),      // archive decisions → JSONL
+  bSync({ request: { type: 'consolidate' } }),      // archive decisions → JSONL + final commit
 ], true)                                             // repeats after every session
 
 defragSchedule: bThread([
@@ -639,12 +677,12 @@ memoryIntegrity: bThread([
   // Constitution rule: block writes to protected memory paths
   bSync({
     block: (e) => e.type === 'execute' &&
-      e.detail?.command?.includes('data/memory/@context.jsonld'),
+      e.detail?.command?.includes('.memory/@context.jsonld'),
   }),
 ], true)
 ```
 
-The `consolidate` and `defrag` handlers are async (they do I/O). They call `trigger()` with results when done, starting new super-steps. The bThreads coordinate *when* these operations happen. The tools do the actual work.
+The `commit_snapshot`, `consolidate`, and `defrag` handlers are async (they do I/O). They call `trigger()` with results when done, starting new super-steps. The bThreads coordinate *when* these operations happen. The tools do the actual work.
 
 ## Ingestion Pipeline
 
@@ -792,7 +830,7 @@ State transition pairs (`(Context + Tool Call) → (Real Tool Output)`) are extr
 ```bash
 # Extract state transition pairs from a session
 ./tools/hypergraph extract-transitions \
-  --session data/memory/sessions/sess_abc \
+  --session .memory/sessions/sess_abc \
   --output transitions.jsonl
 
 # Each pair:
@@ -812,7 +850,7 @@ The eval harness's JSONL format is stable and well-defined. It captures teacher 
 ```bash
 # Extract flat trajectory view from student's JSON-LD session
 ./tools/hypergraph export-trajectory \
-  --session data/memory/sessions/sess_abc \
+  --session .memory/sessions/sess_abc \
   --format capture-result > student-run.jsonl
 
 # Compare teacher vs student using existing eval harness
@@ -855,7 +893,7 @@ Recurring patterns in the hypergraph → candidate bThreads → owner approval:
 ```bash
 # Find recurring blocking patterns across sessions
 ./tools/hypergraph recurring-patterns \
-  --sessions data/memory/sessions/ \
+  --sessions .memory/sessions/ \
   --min-occurrences 5 \
   --output patterns.jsonl
 
@@ -874,19 +912,19 @@ JSON-LD replaces SQLite as the source, but the extraction is simpler — just re
 ```bash
 # SFT: successful session trajectories
 ./tools/hypergraph extract-training \
-  --sessions data/memory/sessions/ \
+  --sessions .memory/sessions/ \
   --filter "outcome=approved" \
   --format sft > sft-data.jsonl
 
 # GRPO: failed + corrected trajectories
 ./tools/hypergraph extract-training \
-  --sessions data/memory/sessions/ \
+  --sessions .memory/sessions/ \
   --filter "outcome=rejected" \
   --format grpo > grpo-pairs.jsonl
 
 # Dreamer: state transition pairs
 ./tools/hypergraph extract-transitions \
-  --sessions data/memory/sessions/ \
+  --sessions .memory/sessions/ \
   --output dreamer-data.jsonl
 ```
 
@@ -921,18 +959,25 @@ One `.jsonld` file per superstep decision. Snapshots are continuously written du
 - Each file is a self-contained hyperedge — no need to parse a larger batch to find one decision
 - Archival consolidates them (see below)
 
-### Git Commit Frequency — Per-Session
+### Git Commit Frequency — Per-Side-Effect
 
-Commits happen per session, not per decision. Snapshots are already written to disk as individual `.jsonld` files during the session — the data is durable before the commit. The commit marks "session boundary" in git history, not "decision boundary."
+Commits happen when a side-effect-producing tool changes code, not per-session or per-decision. Each commit bundles the code change with all pending decision `.jsonld` files since the last commit.
 
-**Rationale**: Per-decision commits would create thousands of commits per session with no practical benefit — `git log` becomes unusable, and the individual files already provide fine-grained history via their filenames (`{superstep}.jsonld`).
+| Event | Write `.jsonld`? | Git commit? |
+|-------|-----------------|-------------|
+| Any BP decision | Yes (always) | No |
+| `tool_result` from read_file, list_files | Yes | No |
+| `tool_result` from write_file, edit_file, bash | Yes | **Yes** — code change + all pending decisions |
+| `message` (session end) | Yes | **Yes** — final commit, consolidate |
+
+**Rationale**: Per-session commits lose the correlation between specific decisions and specific code changes — when the agent retries after a failed test, you can't see which reasoning led to which attempt. Per-decision commits are too noisy (most supersteps produce no code diff). Per-side-effect commits are the sweet spot: every commit has a meaningful code diff paired with the reasoning chain that produced it. Each commit is a labeled `(reasoning, code_change)` pair for training extraction.
 
 ### Archival Strategy — JSONL Consolidation
 
 At session end (or module disconnect), decision files are consolidated into a single JSONL archive:
 
 ```
-data/memory/sessions/{session_id}/
+.memory/sessions/{session_id}/
 ├── meta.jsonld                    # kept as-is (summary, embedding)
 ├── trajectory.jsonld              # kept as-is (tool call log)
 ├── decisions/                     # individual files (hot session)
@@ -993,7 +1038,7 @@ Constitution skills follow area-of-effect scoping: governance rules relevant to 
 
 ### Governance Factory Generation — Protected File Writes
 
-Governance factories are created through file writes to `data/memory/constitution/mac/` or `data/memory/constitution/dac/` — paths that `protectGovernance` and `memoryIntegrity` bThreads monitor. This is not a dedicated governance tool; it's a write operation to a protected location.
+Governance factories are created through file writes to `.memory/constitution/mac/` or `.memory/constitution/dac/` — paths that `protectGovernance` and `memoryIntegrity` bThreads monitor. This is not a dedicated governance tool; it's a write operation to a protected location.
 
 **Who creates factories:** The agent itself, a system-builder agent, or a human system engineer. The factory creation pattern matters for agents — they generate governance rules from user desired outcomes (what the user wants to achieve), not from explicit rule descriptions.
 

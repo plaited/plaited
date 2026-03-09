@@ -22,27 +22,37 @@ The Agent Card is the node's **public entry point** — a projection of capabili
 
 ## Module Architecture: Module-Per-Repo
 
-Each module is its own git repository inside a Bun workspace. The node directory is **not** a git repo — full-system backup is at the OS/machine level. Modules get independent version history and transportability. Bun workspace resolution (`workspace:*`) works regardless of whether subdirectories have `.git/`.
+The node directory is a git repo (`.gitignore` excludes `modules/`). Each module in `modules/` has its own `git init`. This gives two layers of version history: node-level (constitution, global config, node `.memory/`) and module-level (code, data, module `.memory/`). OS-level backups capture `.git` folders. Bun workspace resolution (`workspace:*`) works regardless of whether subdirectories have `.git/`.
 
 ### Node Structure
 
 ```
-node/                               ← plain directory (not a git repo)
+node/                               ← git repo (.gitignore excludes modules/)
+  .git/
+  .gitignore                        ← modules/
+  .memory/                          ← node-level decisions (session coordination, cross-module)
+    @context.jsonld
+    sessions/
+    constitution/
   package.json                      ← "workspaces": ["modules/*"], "private": true
   bun.lock                          ← human-readable lockfile
   tsconfig.json
   .workspace.db                     ← rebuilt from sidecars via ATTACH
   modules/
-    apple-block/                    ← git repo
+    apple-block/                    ← git repo (independent of node .git)
       .git/
+      .memory/                      ← module-scoped decisions (tool results, code changes)
+        sessions/
       package.json                  ← name: "@node/apple-block", "modnet": { MSS tags }
       .meta.db                      ← per-module sidecar, committed to module repo
       apple.ts
       apple.types.ts
       data/
         varieties.json
-    farm-stand/                     ← git repo
+    farm-stand/                     ← git repo (independent of node .git)
       .git/
+      .memory/                      ← module-scoped decisions
+        sessions/
       package.json                  ← depends on "@node/apple-block": "workspace:*"
       .meta.db                      ← per-module sidecar, committed to module repo
       farm-stand.ts

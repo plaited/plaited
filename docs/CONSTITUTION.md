@@ -100,7 +100,7 @@ The constitution is **additive and append-only** (ratchet principle). New factor
 
 ## Governance Factory Generation
 
-Factories are created through file writes to protected locations — `data/memory/constitution/mac/` or `data/memory/constitution/dac/` — monitored by `protectGovernance` and `memoryIntegrity` bThreads.
+Factories are created through file writes to protected locations — `.memory/constitution/mac/` or `.memory/constitution/dac/` — monitored by `protectGovernance` and `memoryIntegrity` bThreads.
 
 **Who creates factories:** The agent itself, a system-builder agent, or a human system engineer. They generate governance rules from **user desired outcomes** — what the user wants to achieve, not explicit rule descriptions.
 
