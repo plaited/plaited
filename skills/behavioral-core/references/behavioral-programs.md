@@ -174,7 +174,7 @@ Threads are composed using generator functions wrapped by `bThread()` and yieldi
 Creates a single synchronization point (one `yield`):
 
 ```typescript
-import { bSync } from 'plaited/behavioral'
+import { bSync } from 'plaited'
 
 // Single sync point with request
 const syncPoint = bSync({ request: { type: 'event1' } })
@@ -193,7 +193,7 @@ const syncPoint2 = bSync({
 Composes multiple `bSync` points into a sequential thread:
 
 ```typescript
-import { bThread, bSync } from 'plaited/behavioral'
+import { bThread, bSync } from 'plaited'
 
 // Finite sequence (runs once)
 const oneShotThread = bThread([
@@ -381,7 +381,7 @@ bThreads.set({
 A complete Tic-Tac-Toe game demonstrates additive composition:
 
 ```typescript
-import { behavioral, bThread, bSync } from 'plaited/behavioral'
+import { behavioral, bThread, bSync } from 'plaited'
 
 const { trigger, bThreads, useFeedback } = behavioral()
 
@@ -801,7 +801,7 @@ trigger({ type: 'stopPolling' })
 Real-world pattern from test orchestration:
 
 ```typescript
-import { behavioral, bThread, bSync } from 'plaited/behavioral'
+import { behavioral, bThread, bSync } from 'plaited'
 
 const { trigger, bThreads, useFeedback } = behavioral()
 
@@ -1059,7 +1059,7 @@ type SnapshotMessage = Array<{
 ### Observing Program State
 
 ```typescript
-import { behavioral, bThread, bSync } from 'plaited/behavioral'
+import { behavioral, bThread, bSync } from 'plaited'
 
 const { trigger, bThreads, useSnapshot } = behavioral()
 
@@ -1142,7 +1142,7 @@ bThreads.set({
 ### Basic Usage
 
 ```typescript
-import { useBehavioral } from 'plaited/behavioral'
+import { useBehavioral } from 'plaited'
 
 // Define events interface for type safety
 type Events = {
@@ -1465,7 +1465,7 @@ Plaited provides utility functions for randomness, runtime validation, and advan
 Creates an event template function that randomly selects from provided events with uniform probability. The template function is evaluated each time the sync point is reached, ensuring fresh random selection on every iteration.
 
 ```typescript
-import { behavioral, bThread, bSync, useRandomEvent } from 'plaited/behavioral'
+import { behavioral, bThread, bSync, useRandomEvent } from 'plaited'
 
 const { trigger, bThreads, useFeedback } = behavioral()
 
@@ -1522,7 +1522,7 @@ trigger({ type: 'step' }) // Maybe moveRight
 Randomize the order of synchronization points using Fisher-Yates shuffle:
 
 ```typescript
-import { behavioral, bThread, bSync, shuffleSyncs } from 'plaited/behavioral'
+import { behavioral, bThread, bSync, shuffleSyncs } from 'plaited'
 
 const { trigger, bThreads, useFeedback } = behavioral()
 
@@ -1564,7 +1564,7 @@ useFeedback({
 Type guard for validating unknown values as BPEvents:
 
 ```typescript
-import { isBPEvent } from 'plaited/behavioral'
+import { isBPEvent } from 'plaited'
 
 function handleMessage(data: unknown) {
   if (isBPEvent(data)) {
@@ -1601,8 +1601,8 @@ handleMessage({ type: 123 }) // type must be string
 Type guard for identifying enhanced triggers with cleanup support:
 
 ```typescript
-import { isPlaitedTrigger } from 'plaited/behavioral'
-import type { Trigger, PlaitedTrigger } from 'plaited/behavioral'
+import { isPlaitedTrigger } from 'plaited'
+import type { Trigger, PlaitedTrigger } from 'plaited'
 
 function setupCleanup(trigger: Trigger) {
   if (isPlaitedTrigger(trigger)) {
@@ -1633,7 +1633,7 @@ BP is a general coordination mechanism, not limited to UI:
 From `plaited/workshop/use-runner.ts`:
 
 ```typescript
-import { behavioral, bThread, bSync } from 'plaited/behavioral'
+import { behavioral, bThread, bSync } from 'plaited'
 
 const { trigger, bThreads, useFeedback } = behavioral()
 
@@ -1854,7 +1854,7 @@ For large systems, avoid monolithic behavioral programs by composing multiple de
 - **Neuro-Symbolic AI**: Separate symbolic reasoning from neural processing
 
 ```typescript
-import { behavioral, bThread, bSync, useBehavioral, useSignal } from 'plaited/behavioral'
+import { behavioral, bThread, bSync, useBehavioral, useSignal } from 'plaited'
 
 // ============================================================================
 // Shared Signals for Actor Communication

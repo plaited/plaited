@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { createRootStyles, createTokens } from 'plaited/ui'
+import { createRootStyles, createTokens } from 'plaited'
 
 test('createRootStyles: supports simple properties', () => {
   const root = createRootStyles({

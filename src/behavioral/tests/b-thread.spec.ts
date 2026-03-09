@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
-import type { BPEvent } from 'plaited/behavioral'
-import { bSync, bThread } from 'plaited/behavioral'
+import type { BPEvent } from 'plaited'
+import { bSync, bThread } from 'plaited'
 
 test('bThread: executes rules sequentially', () => {
   const results: string[] = []

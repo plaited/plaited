@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { createKeyframes, createTokens } from 'plaited/ui'
+import { createKeyframes, createTokens } from 'plaited'
 
 test('createKeyframes: generates named keyframes with unique id', () => {
   const { pulse } = createKeyframes('pulse', {

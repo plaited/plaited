@@ -17,15 +17,11 @@
     "plaited": "./src/cli.ts"
   },
   "type": "module",
+  "main": "./src/main.ts",
   "exports": {
-    "./agent": "./src/agent.ts",
-    "./behavioral": "./src/behavioral.ts",
+    ".": "./src/main.ts",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
-    "./jsx-runtime": "./src/jsx-runtime.ts",
-    "./server": "./src/server.ts",
-    "./tools": "./src/tools.ts",
-    "./ui": "./src/ui.ts",
-    "./utils": "./src/utils.ts"
+    "./jsx-runtime": "./src/jsx-runtime.ts"
   },
   "files": [
     "./.bin/**",

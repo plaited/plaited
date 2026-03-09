@@ -77,7 +77,7 @@ flowchart TB
 Plaited uses JSX with two special attributes for server ↔ client coordination:
 
 ```typescript
-import { createSSR, createStyles, controlIsland, decorateElements } from 'plaited/ui'
+import { createSSR, createStyles, controlIsland, decorateElements } from 'plaited'
 
 // p-target: marks elements the server can update later
 // p-trigger: binds DOM events to actions sent to server
@@ -209,8 +209,8 @@ No confirmation message is sent back — the merge is silent. The server observe
 
 ```typescript
 // The module the agent generates and serves
-import type { Trigger } from 'plaited/behavioral'
-import type { UpdateBehavioralResult } from 'plaited/ui'
+import type { Trigger } from 'plaited'
+import type { UpdateBehavioralResult } from 'plaited'
 
 const factory = (trigger: Trigger): UpdateBehavioralResult => ({
   threads: {

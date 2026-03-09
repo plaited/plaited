@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { createTrajectoryRecorder, parseModelResponse, TOOL_STATUS, toToolResult } from 'plaited/agent'
+import { createTrajectoryRecorder, parseModelResponse, TOOL_STATUS, toToolResult } from 'plaited'
 
 describe('toToolResult', () => {
   const toolCall = { id: 'tc-1', name: 'read_file', arguments: { path: '/main.ts' } }

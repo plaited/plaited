@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { createHostStyles, createStyles, joinStyles } from 'plaited/ui'
+import { createHostStyles, createStyles, joinStyles } from 'plaited'
 import { createHash, isElementStylesObject, isHostStylesObject, isStylesObject } from '../css.utils.ts'
 
 test('createHash: produces consistent hash from strings', () => {

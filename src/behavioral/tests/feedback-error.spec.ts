@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { behavioral, bSync, bThread, type FeedbackError, type SnapshotMessage } from 'plaited/behavioral'
+import { behavioral, bSync, bThread, type FeedbackError, type SnapshotMessage } from 'plaited'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
 
 /**

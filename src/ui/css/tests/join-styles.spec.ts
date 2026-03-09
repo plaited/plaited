@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { createHostStyles, createStyles, createTokens, joinStyles } from 'plaited/ui'
+import { createHostStyles, createStyles, createTokens, joinStyles } from 'plaited'
 
 test('joinStyles: combines element styles with host styles', () => {
   const testStyles = createStyles({

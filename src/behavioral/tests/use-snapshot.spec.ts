@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { behavioral, bSync, bThread, type SnapshotMessage } from 'plaited/behavioral'
+import { behavioral, bSync, bThread, type SnapshotMessage } from 'plaited'
 
 /**
  * Test suite for useSnapshot concurrent listener behaviour.

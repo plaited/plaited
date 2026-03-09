@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { behavioral, bSync, bThread, type RulesFunction } from 'plaited/behavioral'
+import { behavioral, bSync, bThread, type RulesFunction } from 'plaited'
 
 /** Represents all possible winning combinations of squares in Tic-Tac-Toe. */
 const winConditions = [

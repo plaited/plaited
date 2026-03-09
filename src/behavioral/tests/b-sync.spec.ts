@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { bSync } from 'plaited/behavioral'
+import { bSync } from 'plaited'
 
 test('bSync: creates generator that yields sync point once', () => {
   const syncPoint = { request: { type: 'test' } }

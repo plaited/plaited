@@ -11,7 +11,7 @@ import {
   ToolDefinitionSchema,
   ToolResultSchema,
   TrajectoryStepSchema,
-} from 'plaited/agent'
+} from 'plaited'
 
 describe('AgentToolCallSchema', () => {
   test('validates a complete tool call', () => {
