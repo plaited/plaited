@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import * as z from 'zod'
 import { RISK_TAG, TOOL_STATUS } from './agent.constants.ts'
 
 // ============================================================================

@@ -14,6 +14,11 @@ import { keyMirror } from '../utils.ts'
  * handler per chunk for progressive UI rendering. The handler consumes the
  * `AsyncIterable<ModelDelta>` privately and bridges chunks to BP events.
  *
+ * Memory lifecycle events (`commit_snapshot`, `consolidate`, `defrag`) are
+ * coordinated by bThreads that bind code changes to decision snapshots in
+ * each module's `.memory/` directory. Per-side-effect commits ensure every
+ * git commit pairs a code diff with the reasoning chain that produced it.
+ *
  * @public
  */
 export const AGENT_EVENTS = keyMirror(
@@ -45,6 +50,10 @@ export const AGENT_EVENTS = keyMirror(
   'text_delta',
   // Inference errors
   'inference_error',
+  // Memory lifecycle — coordinated by sideEffectCommit, sessionClose, defragSchedule bThreads
+  'commit_snapshot',
+  'consolidate',
+  'defrag',
 )
 
 /**
@@ -88,3 +97,15 @@ export const TOOL_STATUS = keyMirror('pending', 'completed', 'failed')
  * @public
  */
 export const BUILT_IN_TOOLS = keyMirror('read_file', 'write_file', 'edit_file', 'list_files', 'bash', 'search')
+
+/**
+ * Subset of built-in tools that produce side effects (code changes).
+ *
+ * @remarks
+ * Used by the `sideEffectCommit` bThread to determine when a `tool_result`
+ * should trigger a git commit. Each commit bundles the code change with all
+ * pending decision `.jsonld` files in `.memory/` since the last commit.
+ *
+ * @public
+ */
+export const SIDE_EFFECT_TOOLS = new Set([BUILT_IN_TOOLS.write_file, BUILT_IN_TOOLS.edit_file, BUILT_IN_TOOLS.bash])

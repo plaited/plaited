@@ -265,6 +265,58 @@ export type InferenceErrorDetail = {
   retryable: boolean
 }
 
+// ============================================================================
+// Memory Lifecycle Event Details — commit_snapshot, consolidate, defrag
+// ============================================================================
+
+/**
+ * Detail payload for the `commit_snapshot` event.
+ *
+ * @remarks
+ * Requested by the `sideEffectCommit` bThread after a side-effect-producing
+ * `tool_result` (write_file, edit_file, bash). The handler commits both the
+ * code change and all pending `.memory/` decision files to the module's git repo.
+ *
+ * @public
+ */
+export type CommitSnapshotDetail = {
+  /** Absolute path to the module root being committed */
+  modulePath: string
+  /** The tool_result that triggered this commit */
+  toolResult: ToolResult
+}
+
+/**
+ * Detail payload for the `consolidate` event.
+ *
+ * @remarks
+ * Requested by the `sessionClose` bThread at session end.
+ * Archives individual decision `.jsonld` files into `decisions.jsonl`,
+ * writes `meta.jsonld` with summary + embedding, then commits.
+ *
+ * @public
+ */
+export type ConsolidateDetail = {
+  /** Session ID being consolidated */
+  sessionId: string
+  /** Absolute path to the module's `.memory/` directory */
+  memoryPath: string
+}
+
+/**
+ * Detail payload for the `defrag` event.
+ *
+ * @remarks
+ * Requested by `defragSchedule` bThread after N session completions.
+ * Archives old sessions out of the working tree via `git archive`.
+ *
+ * @public
+ */
+export type DefragDetail = {
+  /** Absolute path to the module's `.memory/` directory */
+  memoryPath: string
+}
+
 /**
  * Documents the full event vocabulary and expected detail shapes.
  *
@@ -307,6 +359,10 @@ export type AgentEventDetails = {
   [AGENT_EVENTS.thinking_delta]: ThinkingDeltaDetail
   [AGENT_EVENTS.text_delta]: TextDeltaDetail
   [AGENT_EVENTS.inference_error]: InferenceErrorDetail
+  // ── Memory lifecycle events ────────────────────────────────────────
+  [AGENT_EVENTS.commit_snapshot]: CommitSnapshotDetail
+  [AGENT_EVENTS.consolidate]: ConsolidateDetail
+  [AGENT_EVENTS.defrag]: DefragDetail
 }
 
 // ============================================================================
