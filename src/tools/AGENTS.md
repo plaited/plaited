@@ -23,10 +23,11 @@ src/tools/
 ├── cli.utils.ts          # Shared CLI factories (parseCli, makeCli)
 ├── tool-name.ts          # Library exports + CLI handler
 ├── tool-name.schemas.ts  # Optional — split when schemas are shared or large
+├── tool-name.constants.ts # Optional — split when constants are shared
+├── tool-name.utils.ts    # Optional — split when utilities are shared or large
 ├── tests/
 │   ├── tool-name.spec.ts
 │   └── fixtures/         # Test fixtures (e.g., LSP sample files)
-└── eval/                 # Eval harness (separate, 19K LOC)
 ```
 
 Flat layout — tool files live directly in `src/tools/`, tests in `src/tools/tests/`.

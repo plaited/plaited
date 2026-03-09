@@ -4,6 +4,23 @@
 
 **Always use `bun test src/`** — never bare `bun test`. The `skills/` directory contains copied test assets with broken module paths that are not meant to be tested directly. The `package.json` `test` script scopes tests to `src/` only.
 
+## Skills Directory
+
+Skills live in `skills/` at the project root (not `.agents/skills/` or `.claude/skills/`). Each skill follows the [AgentSkills specification](https://agentskills.io/specification) with a `SKILL.md` containing YAML frontmatter (`name`, `description`) and optional `references/` directory.
+
+```
+skills/
+├── trial-runner/         # Running trials with adapters
+├── trial-adapters/       # Writing adapter scripts for trial runner
+├── compare-trials/       # Statistical comparison of trial results
+├── typescript-lsp/       # LSP symbol search
+├── code-documentation/   # TSDoc standards
+├── validate-skill/       # Skill validation
+└── ...
+```
+
+Validate with: `bunx @plaited/development-skills validate-skill skills/`
+
 ## Greenfield Mindset
 
 This is **greenfield code with zero external consumers**. There are no backward-compatibility concerns. Don't preserve patterns or APIs "just in case." If something is unused, delete it. If a simpler approach exists, use it.
@@ -491,12 +508,15 @@ All `plaited` CLI tools follow this contract. Reference implementation: `src/too
 - **Exit codes**: 0 = success, 1 = domain error (e.g. validation failed), 2 = bad input / tool error.
 
 ### File Structure
-Each tool exports both **library functions** (pure, no side effects) and a **CLI handler** (owns `process.exit`, `console.log`):
+Flat layout — tool files live directly in `src/tools/`, tests in `src/tools/tests/`. Each tool exports both **library functions** (pure, no side effects) and a **CLI handler** (owns `process.exit`, `console.log`):
 ```
-tool-name/
-├── tool-name.ts        # Library exports + CLI handler
-└── tests/
-    └── tool-name.spec.ts
+src/tools/
+├── cli.utils.ts          # Shared CLI factories (parseCli, makeCli)
+├── tool-name.ts          # Library exports + CLI handler
+├── tool-name.schemas.ts  # Optional — split when schemas are shared or large
+├── tool-name.utils.ts    # Optional — split when utilities are large
+├── tests/
+│   └── tool-name.spec.ts
 ```
 - Library functions: exported for in-process use. No `process.exit()`, no `console.log`.
 - CLI handler: single exported `async (args: string[]) => void`. Handles `--schema`, `--help`, input parsing, exit codes.
@@ -520,7 +540,7 @@ tool-name/
 
 ### Tool Categories
 
-**Development/eval tools:** `trial` (rebuilt from 19K LOC eval harness → 4 files, library-first, script-based adapters), `typescript-lsp/` — independent of agent loop architecture but now exports agent types (ToolHandler, ToolDefinition, risk tags) for in-process use. `validate-skill/` rewritten to CLI tool pattern (reference implementation). `scaffold-rules/` deleted (AGENTS.md ships in package).
+**Development tools:** `trial` (library-first trial runner with script-based adapters), `typescript-lsp/` (LSP symbol search, exports agent types), `validate-skill/` (AgentSkills spec validation). `scaffold-rules/` deleted (AGENTS.md ships in package).
 
 **Agent pipeline tools:** `constitution/`, `evaluate/`, `simulate/`, `memory/` — **deleted**. All were written before BP-first and pi-mono decisions were finalized (reference imports, `RISK_CLASS` enum, standalone factory functions instead of BP handlers, Promise-based `InferenceCall` instead of `Model.reason()` AsyncIterable). Misalignment too deep for incremental migration — rebuild from scratch in Phases 2–3.
 
