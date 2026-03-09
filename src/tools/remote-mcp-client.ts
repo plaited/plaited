@@ -5,12 +5,20 @@
  * Thin convenience layer over `@modelcontextprotocol/sdk` for one-shot
  * discovery and invocation against remote MCP servers.
  *
- * Re-exported from `'plaited'` so skill scripts import directly.
+ * Library functions are exported for in-process use. The CLI handler
+ * (`remoteMcpClientCli`) dispatches on `method` for shell invocation
+ * via `plaited remote-mcp-client`.
+ *
+ * Risk tags: `crosses_boundary`, `inbound`
+ *
+ * @internal
  */
 
 import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
+import { parseCli } from './cli.utils.ts'
+import { RemoteMcpClientInputSchema } from './remote-mcp-client.schemas.ts'
 
 // ── Result types — current MCP spec, no backward-compat variants ──
 
@@ -194,4 +202,55 @@ export const mcpDiscover = async (url: string, options?: McpTransportOptions): P
   } finally {
     await client.close()
   }
+}
+
+// ── CLI Handler ──
+
+/**
+ * CLI handler for `plaited remote-mcp-client`.
+ *
+ * @remarks
+ * Uses `parseCli` directly since `RemoteMcpClientInputSchema` is a discriminated
+ * union (not `ZodObject`), which is incompatible with `makeCli`'s `.extend()`.
+ *
+ * @internal
+ */
+export const remoteMcpClientCli = async (args: string[]): Promise<void> => {
+  const input = await parseCli(args, RemoteMcpClientInputSchema, { name: 'remote-mcp-client' })
+  const options: McpTransportOptions | undefined = input.headers ? { headers: input.headers } : undefined
+  try {
+    let output: unknown
+    switch (input.method) {
+      case 'discover':
+        output = await mcpDiscover(input.url, options)
+        break
+      case 'list-tools':
+        output = { tools: await mcpListTools(input.url, options) }
+        break
+      case 'call-tool':
+        output = await mcpCallTool(input.url, input.toolName, input.arguments ?? {}, options)
+        break
+      case 'list-prompts':
+        output = { prompts: await mcpListPrompts(input.url, options) }
+        break
+      case 'get-prompt':
+        output = { messages: await mcpGetPrompt(input.url, input.name, input.arguments, options) }
+        break
+      case 'list-resources':
+        output = { resources: await mcpListResources(input.url, options) }
+        break
+      case 'read-resource':
+        output = { contents: await mcpReadResource(input.url, input.uri, options) }
+        break
+    }
+    // biome-ignore lint/suspicious/noConsole: CLI stdout output
+    console.log(JSON.stringify(output))
+  } catch (error) {
+    console.error(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }))
+    process.exit(1)
+  }
+}
+
+if (import.meta.main) {
+  remoteMcpClientCli(process.argv.slice(2))
 }

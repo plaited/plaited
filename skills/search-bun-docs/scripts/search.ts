@@ -4,14 +4,8 @@
  * Usage: bun run search.ts '{"query": "Bun.file API"}'
  */
 
-import { mcpCallTool } from 'plaited'
-
 const MCP_URL = 'https://bun.com/docs/mcp'
 const TOOL_NAME = 'SearchBun'
-
-type SearchInput = {
-  query: string
-}
 
 const main = async () => {
   const raw = process.argv[2]
@@ -26,13 +20,19 @@ const main = async () => {
     process.exit(2)
   }
 
-  const input = JSON.parse(raw) as SearchInput
+  const input = JSON.parse(raw)
   if (!input.query) {
     console.error('Missing required field: query')
     process.exit(2)
   }
 
-  const result = await mcpCallTool(MCP_URL, TOOL_NAME, input)
+  const result = await Bun.$`plaited remote-mcp-client ${JSON.stringify({
+    url: MCP_URL,
+    method: 'call-tool',
+    toolName: TOOL_NAME,
+    arguments: input,
+  })}`.json()
+
   for (const content of result.content) {
     if (content.type === 'text' && content.text) {
       // biome-ignore lint/suspicious/noConsole: CLI stdout output

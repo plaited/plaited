@@ -24,50 +24,39 @@ Generate skills from any remote MCP server (Streamable HTTP transport) using the
 
 Discover all capabilities in a single connection:
 
-```typescript
-import { mcpDiscover } from 'plaited'
-const { tools, prompts, resources } = await mcpDiscover('https://example.com/mcp')
-console.log(JSON.stringify({ tools, prompts, resources }, null, 2))
+```bash
+plaited remote-mcp-client '{"url": "https://example.com/mcp", "method": "discover"}'
 ```
 
 ### Tool schemas
 
 Get input schemas for each tool — equivalent to our CLI `--schema input` pattern:
 
-```typescript
-import { mcpListTools } from 'plaited'
-const tools = await mcpListTools('https://example.com/mcp')
-for (const tool of tools) {
-  console.log(`${tool.name}: ${tool.description}`)
-  console.log(JSON.stringify(tool.inputSchema, null, 2))
-}
+```bash
+plaited remote-mcp-client '{"url": "https://example.com/mcp", "method": "list-tools"}'
 ```
 
 ### Prompts
 
-List prompts and retrieve their messages:
+List prompts:
 
-```typescript
-import { mcpListPrompts, mcpGetPrompt } from 'plaited'
-const prompts = await mcpListPrompts('https://example.com/mcp')
-for (const p of prompts) {
-  console.log(`${p.name}: ${p.description}`)
-  const messages = await mcpGetPrompt('https://example.com/mcp', p.name)
-  console.log(JSON.stringify(messages, null, 2))
-}
+```bash
+plaited remote-mcp-client '{"url": "https://example.com/mcp", "method": "list-prompts"}'
+```
+
+Retrieve a prompt's messages:
+
+```bash
+plaited remote-mcp-client '{"url": "https://example.com/mcp", "method": "get-prompt", "name": "prompt-name", "arguments": {"arg": "value"}}'
 ```
 
 ### Resources
 
 List and read resources:
 
-```typescript
-import { mcpListResources, mcpReadResource } from 'plaited'
-const resources = await mcpListResources('https://example.com/mcp')
-for (const r of resources) {
-  console.log(`${r.uri} (${r.mimeType}): ${r.description}`)
-}
-const contents = await mcpReadResource('https://example.com/mcp', resources[0].uri)
+```bash
+plaited remote-mcp-client '{"url": "https://example.com/mcp", "method": "list-resources"}'
+plaited remote-mcp-client '{"url": "https://example.com/mcp", "method": "read-resource", "uri": "resource://schemas/config.json"}'
 ```
 
 ## Skill Generation Pattern
@@ -93,9 +82,13 @@ MCP prompts are pre-built message templates. Evaluate whether to:
 - **Create a prompt script in `scripts/`** — If the prompt is used at runtime (e.g., a specialized system prompt for a specific task), create a script that fetches and prints it:
 
 ```typescript
-import { mcpGetPrompt } from 'plaited'
-const messages = await mcpGetPrompt(MCP_URL, 'prompt-name', { arg: 'value' })
-for (const m of messages) {
+const result = await Bun.$`plaited remote-mcp-client ${JSON.stringify({
+  url: MCP_URL,
+  method: 'get-prompt',
+  name: 'prompt-name',
+  arguments: { arg: 'value' },
+})}`.json()
+for (const m of result.messages) {
   if (m.content.type === 'text') console.log(m.content.text)
 }
 ```
@@ -107,9 +100,12 @@ MCP resources are data the server exposes. Evaluate the access pattern:
 - **Static/small → `assets/`** — Download once and commit. Good for schemas, templates, configuration files that rarely change. Create a one-time download script:
 
 ```typescript
-import { mcpReadResource } from 'plaited'
-const contents = await mcpReadResource(MCP_URL, 'resource://schemas/config.json')
-for (const c of contents) {
+const result = await Bun.$`plaited remote-mcp-client ${JSON.stringify({
+  url: MCP_URL,
+  method: 'read-resource',
+  uri: 'resource://schemas/config.json',
+})}`.json()
+for (const c of result.contents) {
   if (c.text) await Bun.write(`skills/my-skill/assets/${c.uri.split('/').pop()}`, c.text)
 }
 ```
@@ -117,9 +113,12 @@ for (const c of contents) {
 - **Dynamic/large → `scripts/`** — Create a pull script that fetches on demand. Good for documentation, search indexes, or data that updates frequently:
 
 ```typescript
-import { mcpReadResource } from 'plaited'
-const contents = await mcpReadResource(MCP_URL, process.argv[2])
-for (const c of contents) {
+const result = await Bun.$`plaited remote-mcp-client ${JSON.stringify({
+  url: MCP_URL,
+  method: 'read-resource',
+  uri: process.argv[2],
+})}`.json()
+for (const c of result.contents) {
   if (c.text) console.log(c.text)
 }
 ```
@@ -155,7 +154,7 @@ bun run skills/my-skill/scripts/search.ts '{"query": "test query"}'
 ## Dependencies
 
 - **`@modelcontextprotocol/sdk`** — MCP protocol client (Streamable HTTP transport). Handles session management, Accept header negotiation, and JSON-RPC framing.
-- [**src/utils/remote-mcp-client.ts**](../../src/utils/remote-mcp-client.ts) — Convenience layer over the SDK. Exports `mcpConnect`, `mcpDiscover`, `mcpListTools`, `mcpCallTool`, `mcpListPrompts`, `mcpGetPrompt`, `mcpListResources`, `mcpReadResource`. Re-exported from `'plaited'`.
+- **`plaited remote-mcp-client`** — CLI tool wrapping the SDK. Accepts JSON input with `method` discriminant, returns JSON output. Scripts call this via `Bun.$` instead of importing library functions.
 
 ## References
 
@@ -163,45 +162,55 @@ bun run skills/my-skill/scripts/search.ts '{"query": "test query"}'
 
 ## Authentication
 
-All convenience functions accept an optional `McpTransportOptions` as their last parameter.
-
 ### Tier 1: No auth (public endpoints)
 
-No options needed — the default:
+No headers needed — the default:
 
-```typescript
-const tools = await mcpListTools('https://bun.com/docs/mcp')
+```bash
+plaited remote-mcp-client '{"url": "https://bun.com/docs/mcp", "method": "list-tools"}'
 ```
 
 ### Tier 2: API key / Bearer token
 
-Pass custom headers via `options.headers`. Use environment variables — never hardcode secrets:
+Pass custom headers. Use environment variables — never hardcode secrets:
 
-```typescript
-const result = await mcpCallTool(MCP_URL, TOOL_NAME, input, {
-  headers: { Authorization: `Bearer ${process.env.MY_API_KEY}` },
-})
+```bash
+plaited remote-mcp-client "$(jq -n --arg key "$MY_API_KEY" '{
+  url: "https://example.com/mcp",
+  method: "call-tool",
+  toolName: "SearchExample",
+  arguments: {query: "test"},
+  headers: {Authorization: ("Bearer " + $key)}
+}')"
 ```
 
-For wrapper scripts, read the key at the top:
+For wrapper scripts, build the headers object:
 
 ```typescript
-const AUTH_HEADER = process.env.MY_API_KEY
-  ? { headers: { Authorization: `Bearer ${process.env.MY_API_KEY}` } }
-  : undefined
+const AUTH_HEADERS: Record<string, string> | undefined =
+  process.env.MY_API_KEY
+    ? { Authorization: `Bearer ${process.env.MY_API_KEY}` }
+    : undefined
 
-const result = await mcpCallTool(MCP_URL, TOOL_NAME, input, AUTH_HEADER)
+const result = await Bun.$`plaited remote-mcp-client ${JSON.stringify({
+  url: MCP_URL,
+  method: 'call-tool',
+  toolName: TOOL_NAME,
+  arguments: input,
+  ...(AUTH_HEADERS ? { headers: AUTH_HEADERS } : {}),
+})}`.json()
 ```
 
 ### Tier 3: OAuth 2.1
 
-Pass an `OAuthClientProvider` from the SDK for machine-to-machine (client credentials) or interactive (authorization code) flows:
+OAuth requires programmatic `OAuthClientProvider` from the SDK — not CLI-serializable. For OAuth flows, import the library functions directly from `src/tools/remote-mcp-client.ts`:
 
 ```typescript
 import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js'
+import { mcpListTools } from '../../src/tools/remote-mcp-client.ts'
 
 const provider: OAuthClientProvider = {
-  get redirectUrl() { return undefined }, // undefined for non-interactive flows
+  get redirectUrl() { return undefined },
   get clientMetadata() { return { client_id: '...', client_name: '...' } },
   tokens() { /* return cached tokens */ },
   saveTokens(tokens) { /* persist tokens */ },
@@ -224,7 +233,5 @@ const tools = await mcpListTools(MCP_URL, { authProvider: provider })
 
 - Uses MCP Streamable HTTP transport (2025-03-26+) via `StreamableHTTPClientTransport`
 - SDK handles Accept header negotiation (`application/json` and `text/event-stream`)
-- Each convenience function creates a fresh client connection (stateless)
-- Use `mcpConnect` directly for multi-operation sessions (single connection)
-- Use `mcpDiscover` for efficient full-server capability scanning (single connection)
+- Each CLI invocation creates a fresh client connection (stateless)
 - Not for stdio-based MCP servers — use `@modelcontextprotocol/sdk` directly for those

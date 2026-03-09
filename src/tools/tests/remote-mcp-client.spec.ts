@@ -45,12 +45,9 @@ describe('mcpCallTool', () => {
   test('searches bun-docs for Bun.file', async () => {
     const result = await mcpCallTool(BUN_DOCS_URL, 'SearchBun', { query: 'Bun.file' })
     expect(result.content.length).toBeGreaterThan(0)
-    const first = result.content[0]
-    expect(first).toBeDefined()
-    if (first) {
-      expect(first.type).toBe('text')
-      expect('text' in first && first.text).toBeString()
-    }
+    const first = result.content[0]!
+    expect(first.type).toBe('text')
+    expect(first.text).toBeString()
   })
 
   test('searches mcp-docs for tools/call', async () => {
@@ -58,11 +55,8 @@ describe('mcpCallTool', () => {
       query: 'tools/call request',
     })
     expect(result.content.length).toBeGreaterThan(0)
-    const first = result.content[0]
-    expect(first).toBeDefined()
-    if (first) {
-      expect(first.type).toBe('text')
-    }
+    const first = result.content[0]!
+    expect(first.type).toBe('text')
   })
 
   test('searches agent-skills for SKILL.md', async () => {
@@ -70,10 +64,65 @@ describe('mcpCallTool', () => {
       query: 'SKILL.md frontmatter',
     })
     expect(result.content.length).toBeGreaterThan(0)
-    const first = result.content[0]
-    expect(first).toBeDefined()
-    if (first) {
-      expect(first.type).toBe('text')
-    }
+    const first = result.content[0]!
+    expect(first.type).toBe('text')
+  })
+})
+
+describe('remoteMcpClientCli', () => {
+  test('--help exits 0', async () => {
+    const proc = Bun.spawn(['bun', 'run', 'src/tools/remote-mcp-client.ts', '--help'], {
+      cwd: import.meta.dir.replace('/src/tools/tests', ''),
+      stdout: 'pipe',
+      stderr: 'pipe',
+    })
+    const exitCode = await proc.exited
+    expect(exitCode).toBe(0)
+  })
+
+  test('--schema input emits JSON Schema', async () => {
+    const proc = Bun.spawn(['bun', 'run', 'src/tools/remote-mcp-client.ts', '--schema', 'input'], {
+      cwd: import.meta.dir.replace('/src/tools/tests', ''),
+      stdout: 'pipe',
+      stderr: 'pipe',
+    })
+    const stdout = await new Response(proc.stdout).text()
+    const exitCode = await proc.exited
+    expect(exitCode).toBe(0)
+    const schema = JSON.parse(stdout)
+    expect(schema).toHaveProperty('oneOf')
+  })
+
+  test('exits 2 on missing input', async () => {
+    const proc = Bun.spawn(['bun', 'run', 'src/tools/remote-mcp-client.ts'], {
+      cwd: import.meta.dir.replace('/src/tools/tests', ''),
+      stdout: 'pipe',
+      stderr: 'pipe',
+    })
+    const exitCode = await proc.exited
+    expect(exitCode).toBe(2)
+  })
+
+  test('exits 2 on invalid JSON', async () => {
+    const proc = Bun.spawn(['bun', 'run', 'src/tools/remote-mcp-client.ts', 'not-json'], {
+      cwd: import.meta.dir.replace('/src/tools/tests', ''),
+      stdout: 'pipe',
+      stderr: 'pipe',
+    })
+    const exitCode = await proc.exited
+    expect(exitCode).toBe(2)
+  })
+
+  test('exits 2 on invalid method', async () => {
+    const proc = Bun.spawn(
+      ['bun', 'run', 'src/tools/remote-mcp-client.ts', JSON.stringify({ method: 'bogus', url: 'http://x' })],
+      {
+        cwd: import.meta.dir.replace('/src/tools/tests', ''),
+        stdout: 'pipe',
+        stderr: 'pipe',
+      },
+    )
+    const exitCode = await proc.exited
+    expect(exitCode).toBe(2)
   })
 })

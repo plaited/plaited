@@ -356,7 +356,7 @@ Key implementation decisions. See `docs/ARCHITECTURE.md`, `docs/SAFETY.md`, `doc
 
 **Streaming UI:** Inference handler → BP events (`thinking_delta`, `text_delta`) → `render` messages. BP IS the streaming protocol.
 
-**External tool integration:** Discover schema → generate TypeScript wrapper → teach via skill → agent composes scripts. Implemented for MCP Streamable HTTP via `src/utils/remote-mcp-client.ts` (convenience layer over `@modelcontextprotocol/sdk`) + `skills/remote-mcp-integration/` (meta-skill teaching the pattern). Three search skills generated: `search-bun-docs`, `search-mcp-docs`, `search-agent-skills`.
+**External tool integration:** Discover schema → generate TypeScript wrapper → teach via skill → agent composes scripts. Implemented for MCP Streamable HTTP via `src/tools/remote-mcp-client.ts` (CLI tool + library over `@modelcontextprotocol/sdk`) + `skills/remote-mcp-integration/` (meta-skill teaching the pattern). Three search skills generated: `search-bun-docs`, `search-mcp-docs`, `search-agent-skills`. Skills shell out via `Bun.$` to `plaited remote-mcp-client` — no library import.
 
 **Risk tags:** Implemented in `agent.constants.ts`. Tags: `workspace`, `crosses_boundary`, `inbound`, `outbound`, `irreversible`, `external_audience`. Empty/unknown → simulate+judge; workspace-only → execute directly; boundary/irreversible/audience → simulate+judge.
 
