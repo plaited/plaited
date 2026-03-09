@@ -26,16 +26,15 @@ Projects are indexed on first encounter — when a task arrives with a `cwd` pat
 
 ## Tool Layers
 
-Tools are assembled from four layers. Project-level skills use a two-tier convention — **external** (`skills/`) for portable skills versioned with the repo, and **internal** (`.agents/skills/`) for agent-specific skills:
+Tools are assembled from three layers:
 
 | Layer | Location | Scope | Discovery |
 |---|---|---|---|
 | **Framework built-ins** | Shipped with `plaited/agent` | All projects | Always available |
 | **Global user config** | `~/.agents/skills/`, `~/.agents/mcp.json` | All projects | Loaded at subprocess spawn |
-| **Project external** | `skills/*` | This repo, all agents | Symlinked from agent runtime dirs |
-| **Project internal** | `.agents/skills/*`, `.agents/mcp.json` | This repo, all agents | Symlinked from agent runtime dirs |
+| **Project skills** | `skills/*` | This repo, all agents | Discovered from repo |
 
-**External vs internal:** External skills (`skills/`) are portable — publishable, shareable. Internal skills (`.agents/skills/`) are tightly coupled to the project's development workflow (eval harnesses, headless adapters).
+Project skills live in `skills/` at the project root — portable, publishable, versioned with the repo.
 
 **Approval model** — mapped to the authority axis of the risk model:
 
@@ -56,9 +55,7 @@ Global CLI approval is enforced by a looping bThread that blocks `install_global
 Framework built-ins (read_file, write_file, bash, save_plan, etc.)
   + ~/.agents/skills/*          → global skills
   + ~/.agents/mcp.json servers  → global MCP tools
-  + skills/*                    → project external skills (via symlinks)
-  + .agents/skills/*            → project internal skills (via symlinks)
-  + .agents/mcp.json servers    → project MCP tools
+  + skills/*                    → project skills
   + OS PATH binaries            → discovered, approval-gated
   + project-local binaries      → node_modules/.bin/, etc.
   → model sees available tools in context
@@ -147,6 +144,6 @@ For *explicit* sharing:
 | What | Mechanism |
 |---|---|
 | Shared tool configs | `~/.agents/mcp.json` (user installs globally) |
-| Shared skills | `~/.agents/skills/` (user installs globally) |
+| Shared skills | `~/.agents/skills/` (user installs globally), `skills/` (project-level) |
 | Style and patterns | Model weights (training flywheel) + code-pattern skills |
 | Project-specific knowledge | Per-project JSON-LD files only (never crosses boundary) |

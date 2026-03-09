@@ -122,7 +122,7 @@ Current skills mix two fundamentally different concerns:
 |----------|--------|------|
 | **Framework seeds** | behavioral-engine, server-transport, generative-ui-protocol, agent-loop, modnet-node | Generative — encode HOW TO BUILD the system |
 | **Development tools** | typescript-lsp, validate-skill, code-patterns, code-documentation, optimize-agents-md | Operational — encode HOW TO WORK in the system |
-| **Evaluation** | agent-eval-harness, headless-adapters, ui-testing | Verification — encode HOW TO TEST the system |
+| **Evaluation** | trial-runner, trial-adapters, compare-trials, ui-testing | Verification — encode HOW TO TEST the system |
 
 Framework seeds are the genome. Tool skills are the development environment. Evaluation skills are the quality gates. Making this distinction explicit (via a `category` frontmatter field or directory structure) lets the meta-seed know which skills to compose vs. which are ambient tooling.
 
@@ -136,18 +136,21 @@ skills/
     agent-loop/
     modnet-node/
     plaited-genome/   # Meta-seed (composition orchestrator)
-  tools/              # Development environment (symlinked to .claude/skills/)
+  tools/              # Development environment
     code-patterns/
     code-documentation/
   eval/               # Quality gate skills
+    trial-runner/
+    trial-adapters/
+    compare-trials/
     ui-testing/
 ```
 
 ## Execution Plan
 
 ### Phase 1: Restructure directories + create `server-transport` seed
-1. Create `skills/seeds/` and `skills/tools/` and `skills/eval/` directories
-2. Move existing skills into appropriate categories
+1. Create `skills/seeds/` and `skills/tools/` and `skills/eval/` subdirectories
+2. Move existing skills into appropriate categories (trial-runner, trial-adapters, compare-trials → eval/; code-patterns, code-documentation → tools/)
 3. Write `skills/seeds/server-transport/SKILL.md` — covers `createServer`, `SERVER_EVENTS`, `SERVER_ERRORS`, WebSocket upgrade, pub/sub, trigger bridge. Include "Key Decisions" section documenting the trigger-based architecture choice.
 4. Add CONTRACT frontmatter to `server-transport`
 
@@ -175,14 +178,11 @@ skills/
 2. Write `skills/seeds/plaited-genome/SKILL.md` — the meta-seed with wave ordering, composition contract, quality gates
 3. Add CONTRACT frontmatter to both
 
-### Phase 6: Update symlinks and cross-references
-1. Update `.claude/skills/` symlinks to point to new `skills/seeds/` paths
-2. Update `.agents/skills/` symlinks for tool skills
-3. Update "Related Skills" sections across all seeds
-4. Run `bunx @plaited/development-skills validate-skill skills/` to validate all
+### Phase 6: Update cross-references
+1. Update "Related Skills" sections across all seeds
+2. Run `bunx @plaited/development-skills validate-skill skills/` to validate all
 
 ## NOT Changing
-- `.agents/skills/` external packages (agent-eval-harness, headless-adapters, etc.) — these are already well-scoped
 - `AGENTS.md` rules — independent of skill restructuring
 - `src/` code — this plan restructures skills/documentation only, no code changes
 - Test files — existing tests remain as-is

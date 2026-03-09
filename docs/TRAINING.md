@@ -15,20 +15,20 @@ The framework ships with base-trained checkpoints for generative UI and general-
 
 ## Distillation Pipeline
 
-The model is trained via distillation from frontier agents using the existing eval harness and headless adapters — no new infrastructure required:
+The model is trained via distillation from frontier agents using the trial runner and script-based adapters — no new infrastructure required:
 
 ```
 Task prompts (prompts.jsonl)
-  → eval harness capture (teacher: Claude/Gemini via headless adapter)
-  → eval harness capture (student: model via headless adapter)
-  → eval harness compare (teacher vs. student trajectories)
+  → trial runner (teacher: Claude/Gemini via adapter script)
+  → trial runner (student: model via adapter script)
+  → compare-trials analysis (teacher vs. student trajectories)
   → Successful teacher trajectories → SFT fine-tuning data
   → Comparison signal (teacher-preferred vs. student-generated) → GRPO preference pairs
   → Fine-tune model (full-parameter or LoRA — both ship as skills)
   → Re-evaluate → repeat
 ```
 
-This pipeline is orchestrated as a skill, reusing `agent-eval-harness` for capture/compare and `headless-adapters` for schema-driven agent interaction. The trainer itself is an external CLI tool integrated via the composable wrapper pattern — the agent dispatches training runs through standard `execute`/`tool_result` events (see § Trainer as External Tool below). The eval harness provides pass@k, pass^k, and comparison metrics — the model's improvement is measured, not assumed.
+This pipeline is orchestrated as a skill, reusing `runTrial()` for capture/compare and adapter scripts for agent interaction. The trainer itself is an external CLI tool integrated via the composable wrapper pattern — the agent dispatches training runs through standard `execute`/`tool_result` events (see § Trainer as External Tool below). The trial runner provides pass@k, pass^k, and comparison metrics — the model's improvement is measured, not assumed.
 
 ### Why Distillation, Not a Pre-trained Tool-Calling Model
 
@@ -39,7 +39,7 @@ Pre-trained tool-calling models (GPT-4, Claude) are trained on generic tool sche
 3. **Dreamer capability** — predicting state transitions requires training on `(Context + Tool Call) → (Real Output)` pairs from our specific tools
 4. **Constitution awareness** — the model learns governance constraints through context assembly + experience, not generic instruction-following
 
-Distillation from frontier agents (Claude Code, Gemini CLI) via the eval harness provides the reasoning patterns. Fine-tuning on our specific tools and BP feedback loop produces a model that's both capable and constraint-aware. See `AGENT-LOOP.md`.
+Distillation from frontier agents (Claude Code, Gemini CLI) via the trial runner provides the reasoning patterns. Fine-tuning on our specific tools and BP feedback loop produces a model that's both capable and constraint-aware. See `AGENT-LOOP.md`.
 
 ## Training Tiers
 

@@ -115,11 +115,9 @@ workspace/
 ├── modules/
 │   ├── apple-block/
 │   │   ├── AGENTS.md                # module-level rules (overrides workspace)
-│   │   └── .agents/skills/          # module-level skills
 │   └── farm-stand/
-│       ├── AGENTS.md                # different module, different overrides
-│       └── .agents/skills/
-└── .agents/skills/                  # workspace-level skills
+│       └── AGENTS.md                # different module, different overrides
+└── skills/                          # workspace-level skills
 ```
 
 Each `AGENTS.md` is ingested as a JSON-LD subgraph with a `scope` property:
@@ -155,7 +153,7 @@ When multiple sources (skills, AGENTS.md files) define overlapping vocabulary, c
 graph TD
     FW["Framework @context (base vocabulary)"] --> WS
     WS["Workspace @context (workspace AGENTS.md + workspace skills)"] --> MOD
-    MOD["Module @context (module AGENTS.md + module .agents/skills/)"] --> SES
+    MOD["Module @context (module AGENTS.md + module skills)"] --> SES
     SES["Session @context (runtime vocabulary extensions)"]
 
     style SES fill:#f9f,stroke:#333
@@ -168,7 +166,7 @@ graph TD
 |---|---|---|---|
 | Framework | Base `@context.jsonld` | Lowest | `bp:Thread`, `bp:SelectionDecision` |
 | Workspace | Workspace `AGENTS.md`, workspace skills | ↑ | Testing conventions, git workflow rules |
-| Module | Module `AGENTS.md`, module `.agents/skills/` | ↑ | Module-specific type definitions, local conventions |
+| Module | Module `AGENTS.md`, module skills | ↑ | Module-specific type definitions, local conventions |
 | Session | Runtime decisions, per-session extensions | Highest | Dynamic thread types, per-task vocabulary |
 
 **Resolution rule**: When the same `@id` or `@type` appears at multiple scopes, the narrowest scope takes precedence. The agent resolves context by walking from session → module → workspace → framework, taking the first match. This is a merge, not a replacement — broader scopes provide defaults, narrower scopes override specific entries.
@@ -779,8 +777,8 @@ The hypergraph memory replaces the SQLite event log as the training data source.
 ```mermaid
 graph TD
     subgraph "Teacher (frontier agents)"
-        EH[Eval Harness] -->|capture| CR[CaptureResult JSONL]
-        CR -->|"flat: tool calls + thinking"| SFT1[SFT Data]
+        TR[Trial Runner] -->|"runTrial()"| TRR[TrialResult JSONL]
+        TRR -->|"flat: tool calls + thinking"| SFT1[SFT Data]
     end
 
     subgraph "Student (local agent)"
@@ -791,7 +789,7 @@ graph TD
     end
 
     subgraph "Comparison"
-        CR --> CMP[compare]
+        TRR --> CMP[compare-trials]
         JLD -->|"extract trajectory view"| CMP
         CMP --> PREF[Preference Pairs]
     end
@@ -806,9 +804,9 @@ graph TD
 
 | Source | Format | Signal | Training Use |
 |--------|--------|--------|-------------|
-| **Teacher** (Claude/Gemini via eval harness) | Flat JSONL (`CaptureResult`) | Tool call format, reasoning patterns, `<think>` structure | SFT — teaches HOW to use tools |
+| **Teacher** (Claude/Gemini via trial runner) | Flat JSONL (`TrialResult`) | Tool call format, reasoning patterns, `<think>` structure | SFT — teaches HOW to use tools |
 | **Student** (local agent via useSnapshot) | JSON-LD decisions | BP decisions, blocking, thread coordination, gate rejections | SFT + GRPO — teaches WHAT to do AND what NOT to do |
-| **Comparison** (eval harness `compare`) | `ComparisonReport` JSON | Teacher-preferred vs student-generated | GRPO preference pairs |
+| **Comparison** (compare-trials script) | `ComparisonReport` JSON | Teacher-preferred vs student-generated | GRPO preference pairs |
 
 ### Four Signal Tiers as Hypergraph Queries
 
@@ -839,32 +837,31 @@ State transition pairs (`(Context + Tool Call) → (Real Tool Output)`) are extr
 
 The hypergraph provides richer context for each transition than flat tool call logs — the model sees which threads were active, what was blocked, and what the gate check decided. This helps the Dreamer learn not just "what `ls -la` returns" but "what `ls -la` returns when the agent is in phase 2 of a file refactoring task with `noRmRf` constitution active."
 
-### Eval Harness Integration
+### Trial Runner Integration
 
-The eval harness's JSONL format is stable and well-defined. It captures teacher trajectories from external agents that don't have BP. The integration points:
+The trial runner's `TrialResult` JSONL format is stable and well-defined. It captures teacher trajectories from external agents that don't have BP. The integration points:
 
-**Capture** — Unchanged. The eval harness captures from teacher agents via headless adapters, producing `CaptureResult` JSONL. Teacher trajectories are flat (no BP snapshots).
+**Capture** — `runTrial()` captures from teacher agents via adapter scripts, producing `TrialResult` JSONL. Teacher trajectories are flat (no BP snapshots). Adapters can capture rich trajectory data including tool calls, thinking, and token usage.
 
-**Compare** — The `compare` command works with its existing JSONL format. For student trajectories, a view adapter extracts flat `CaptureResult`-compatible JSONL from the JSON-LD decisions:
+**Compare** — The `compare-trials` skill provides reference comparison scripts. For student trajectories, a view adapter extracts flat `TrialResult`-compatible JSONL from the JSON-LD decisions:
 
 ```bash
 # Extract flat trajectory view from student's JSON-LD session
 ./tools/hypergraph export-trajectory \
   --session .memory/sessions/sess_abc \
-  --format capture-result > student-run.jsonl
+  --format trial-result > student-run.jsonl
 
-# Compare teacher vs student using existing eval harness
-bunx @plaited/agent-eval-harness compare teacher-run.jsonl student-run.jsonl \
-  --strategy statistical -o comparison.json
+# Compare teacher vs student using compare-trials reference script
+bun run skills/compare-trials/references/compare.ts teacher-run.jsonl student-run.jsonl
 ```
 
-**Grade** — Graders work on `CaptureResult` JSONL. For structural grading (did the agent respect constitution rules? did blocking work correctly?), a hypergraph-aware grader can read the JSON-LD directly:
+**Grade** — Graders work on `TrialResult` JSONL. For structural grading (did the agent respect constitution rules? did blocking work correctly?), a hypergraph-aware grader can read the JSON-LD directly:
 
 ```typescript
 // structural-grader.ts — grades based on BP decision quality
-import type { Grader } from '@plaited/agent-eval-harness/schemas'
+import type { Grader } from './src/tools/trial.schemas.ts'
 
-export const grade: Grader = async ({ id, output, cwd }) => {
+export const grade: Grader = async ({ output, cwd }) => {
   // Read the session's JSON-LD decisions
   const decisions = await loadSessionDecisions(cwd, id)
 
