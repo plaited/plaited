@@ -153,12 +153,16 @@ describe('runTrial', () => {
     })
 
     expect(results).toHaveLength(2)
-    expect(results[0].id).toBe('p1')
-    expect(results[0].k).toBe(1)
-    expect(results[0].trials).toHaveLength(1)
-    expect(results[0].trials[0].output).toBe('Hello world')
-    expect(results[0].trials[0].trialNum).toBe(1)
-    expect(results[0].trials[0].duration).toBeGreaterThanOrEqual(0)
+    const first = results[0]
+    expect(first).toBeDefined()
+    expect(first!.id).toBe('p1')
+    expect(first!.k).toBe(1)
+    expect(first!.trials).toHaveLength(1)
+    const firstTrial = first!.trials[0]
+    expect(firstTrial).toBeDefined()
+    expect(firstTrial!.output).toBe('Hello world')
+    expect(firstTrial!.trialNum).toBe(1)
+    expect(firstTrial!.duration).toBeGreaterThanOrEqual(0)
   })
 
   test('k=3 multiple trials per prompt', async () => {
@@ -169,13 +173,21 @@ describe('runTrial', () => {
     })
 
     expect(results).toHaveLength(1)
-    expect(results[0].k).toBe(3)
-    expect(results[0].trials).toHaveLength(3)
-    expect(results[0].trials[0].trialNum).toBe(1)
-    expect(results[0].trials[1].trialNum).toBe(2)
-    expect(results[0].trials[2].trialNum).toBe(3)
+    const r = results[0]
+    expect(r).toBeDefined()
+    expect(r!.k).toBe(3)
+    expect(r!.trials).toHaveLength(3)
+    const t0 = r!.trials[0]
+    const t1 = r!.trials[1]
+    const t2 = r!.trials[2]
+    expect(t0).toBeDefined()
+    expect(t1).toBeDefined()
+    expect(t2).toBeDefined()
+    expect(t0!.trialNum).toBe(1)
+    expect(t1!.trialNum).toBe(2)
+    expect(t2!.trialNum).toBe(3)
     // All trials should produce the same output for echo adapter
-    for (const trial of results[0].trials) {
+    for (const trial of r!.trials) {
       expect(trial.output).toBe('test')
     }
   })
@@ -186,8 +198,12 @@ describe('runTrial', () => {
       prompts: [{ id: 'mt', input: ['Hello', 'World'] }],
     })
 
-    expect(results[0].trials[0].output).toBe('Hello\nWorld')
-    expect(results[0].input).toEqual(['Hello', 'World'])
+    const r = results[0]
+    expect(r).toBeDefined()
+    const trial = r!.trials[0]
+    expect(trial).toBeDefined()
+    expect(trial!.output).toBe('Hello\nWorld')
+    expect(r!.input).toEqual(['Hello', 'World'])
   })
 
   test('with grader computes metrics', async () => {
@@ -199,11 +215,12 @@ describe('runTrial', () => {
     })
 
     const r = results[0]
-    expect(r.passRate).toBe(1)
-    expect(r.passAtK).toBe(1)
-    expect(r.passExpK).toBe(1)
-    expect(r.hint).toBe('should pass')
-    for (const trial of r.trials) {
+    expect(r).toBeDefined()
+    expect(r!.passRate).toBe(1)
+    expect(r!.passAtK).toBe(1)
+    expect(r!.passExpK).toBe(1)
+    expect(r!.hint).toBe('should pass')
+    for (const trial of r!.trials) {
       expect(trial.pass).toBe(true)
       expect(trial.score).toBe(1.0)
       expect(trial.reasoning).toBeDefined()
@@ -219,14 +236,15 @@ describe('runTrial', () => {
     })
 
     const r = results[0]
+    expect(r).toBeDefined()
     // flakyCounter: 0 (pass), 1 (fail), 2 (pass), 3 (fail) → 2/4
-    expect(r.passRate).toBe(0.5)
-    expect(r.passAtK).toBeDefined()
-    expect(r.passExpK).toBeDefined()
-    expect(r.passAtK!).toBeGreaterThan(0)
-    expect(r.passAtK!).toBeLessThanOrEqual(1)
-    expect(r.passExpK!).toBeGreaterThanOrEqual(0)
-    expect(r.passExpK!).toBeLessThan(1)
+    expect(r!.passRate).toBe(0.5)
+    expect(r!.passAtK).toBeDefined()
+    expect(r!.passExpK).toBeDefined()
+    expect(r!.passAtK!).toBeGreaterThan(0)
+    expect(r!.passAtK!).toBeLessThanOrEqual(1)
+    expect(r!.passExpK!).toBeGreaterThanOrEqual(0)
+    expect(r!.passExpK!).toBeLessThan(1)
   })
 
   test('adapter failure records error entry', async () => {
@@ -236,11 +254,14 @@ describe('runTrial', () => {
     })
 
     expect(results).toHaveLength(1)
-    const trial = results[0].trials[0]
-    expect(trial.output).toBe('')
-    expect(trial.pass).toBe(false)
-    expect(trial.reasoning).toContain('Adapter exploded')
-    expect(trial.duration).toBeGreaterThanOrEqual(0)
+    const r = results[0]
+    expect(r).toBeDefined()
+    const trial = r!.trials[0]
+    expect(trial).toBeDefined()
+    expect(trial!.output).toBe('')
+    expect(trial!.pass).toBe(false)
+    expect(trial!.reasoning).toContain('Adapter exploded')
+    expect(trial!.duration).toBeGreaterThanOrEqual(0)
   })
 
   test('adapter timeout records timed out entry', async () => {
@@ -255,10 +276,13 @@ describe('runTrial', () => {
       timeout: 50,
     })
 
-    const trial = results[0].trials[0]
-    expect(trial.output).toBe('')
-    expect(trial.timedOut).toBe(true)
-    expect(trial.pass).toBe(false)
+    const r = results[0]
+    expect(r).toBeDefined()
+    const trial = r!.trials[0]
+    expect(trial).toBeDefined()
+    expect(trial!.output).toBe('')
+    expect(trial!.timedOut).toBe(true)
+    expect(trial!.pass).toBe(false)
   })
 
   test('rich adapter includes trajectory and timing', async () => {
@@ -267,14 +291,21 @@ describe('runTrial', () => {
       prompts: [{ id: 'rich', input: 'data' }],
     })
 
-    const trial = results[0].trials[0]
-    expect(trial.trajectory).toBeDefined()
-    expect(trial.trajectory).toHaveLength(2)
-    expect(trial.trajectory![0].type).toBe('thought')
-    expect(trial.trajectory![1].type).toBe('message')
-    expect(trial.timing).toBeDefined()
-    expect(trial.timing!.inputTokens).toBe(10)
-    expect(trial.timing!.outputTokens).toBe(20)
+    const r = results[0]
+    expect(r).toBeDefined()
+    const trial = r!.trials[0]
+    expect(trial).toBeDefined()
+    expect(trial!.trajectory).toBeDefined()
+    expect(trial!.trajectory).toHaveLength(2)
+    const traj0 = trial!.trajectory![0]
+    const traj1 = trial!.trajectory![1]
+    expect(traj0).toBeDefined()
+    expect(traj1).toBeDefined()
+    expect(traj0!.type).toBe('thought')
+    expect(traj1!.type).toBe('message')
+    expect(trial!.timing).toBeDefined()
+    expect(trial!.timing!.inputTokens).toBe(10)
+    expect(trial!.timing!.outputTokens).toBe(20)
   })
 
   test('writes JSONL to output file', async () => {
@@ -290,9 +321,13 @@ describe('runTrial', () => {
     const lines = content.trim().split('\n')
     expect(lines).toHaveLength(2)
 
-    const first = TrialResultSchema.parse(JSON.parse(lines[0]))
+    const line0 = lines[0]
+    const line1 = lines[1]
+    expect(line0).toBeDefined()
+    expect(line1).toBeDefined()
+    const first = TrialResultSchema.parse(JSON.parse(line0!))
     expect(first.id).toBe('p1')
-    const second = TrialResultSchema.parse(JSON.parse(lines[1]))
+    const second = TrialResultSchema.parse(JSON.parse(line1!))
     expect(second.id).toBe('p2')
   })
 
@@ -310,7 +345,9 @@ describe('runTrial', () => {
     const lines = (await Bun.file(outPath).text()).trim().split('\n')
     expect(lines).toHaveLength(2)
     expect(lines[0]).toBe('{"existing":"line"}')
-    expect(JSON.parse(lines[1]).id).toBe('appended')
+    const appendedLine = lines[1]
+    expect(appendedLine).toBeDefined()
+    expect(JSON.parse(appendedLine!).id).toBe('appended')
   })
 
   test('metadata passes through', async () => {
@@ -319,7 +356,9 @@ describe('runTrial', () => {
       prompts: [{ id: 'meta', input: 'test', metadata: { category: 'unit', difficulty: 'easy' } }],
     })
 
-    expect(results[0].metadata).toEqual({ category: 'unit', difficulty: 'easy' })
+    const r = results[0]
+    expect(r).toBeDefined()
+    expect(r!.metadata).toEqual({ category: 'unit', difficulty: 'easy' })
   })
 
   test('schema validation on results', () => {
@@ -455,8 +494,12 @@ describe('loadJsonl', () => {
 
     const data = await loadJsonl<{ a: number }>(path)
     expect(data).toHaveLength(3)
-    expect(data[0].a).toBe(1)
-    expect(data[2].a).toBe(3)
+    const d0 = data[0]
+    const d2 = data[2]
+    expect(d0).toBeDefined()
+    expect(d2).toBeDefined()
+    expect(d0!.a).toBe(1)
+    expect(d2!.a).toBe(3)
   })
 
   test('skips empty lines', async () => {
@@ -482,8 +525,12 @@ describe('loadPrompts', () => {
 
     const prompts = await loadPrompts(path)
     expect(prompts).toHaveLength(2)
-    expect(prompts[0].id).toBe('p1')
-    expect(prompts[1].input).toEqual(['a', 'b'])
+    const p0 = prompts[0]
+    const p1 = prompts[1]
+    expect(p0).toBeDefined()
+    expect(p1).toBeDefined()
+    expect(p0!.id).toBe('p1')
+    expect(p1!.input).toEqual(['a', 'b'])
   })
 
   test('rejects invalid prompts', async () => {
@@ -530,8 +577,10 @@ describe('runWorkerPool', () => {
     )
     expect(results).toEqual([1, 3])
     expect(errors).toHaveLength(1)
-    expect(errors[0].index).toBe(1)
-    expect(errors[0].error.message).toBe('boom')
+    const err0 = errors[0]
+    expect(err0).toBeDefined()
+    expect(err0!.index).toBe(1)
+    expect(err0!.error.message).toBe('boom')
   })
 
   test('progress callback', async () => {

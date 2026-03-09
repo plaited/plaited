@@ -1,0 +1,21 @@
+{
+  "@id": "session/sess_test/decision/2",
+  "@type": "SelectionDecision",
+  "superstep": 2,
+  "timestamp": "2026-03-03T10:00:01.000Z",
+  "bids": [
+    {
+      "event": "bp:event/execute",
+      "thread": "bp:thread/sim_guard_tc-1",
+      "selected": false,
+      "blockedBy": "bp:thread/sim_guard_tc-1",
+      "priority": 0
+    },
+    {
+      "event": "bp:event/tool_result",
+      "thread": "bp:thread/batchCompletion",
+      "selected": true,
+      "priority": 0
+    }
+  ]
+}
