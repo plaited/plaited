@@ -13,24 +13,10 @@
 
 // Agent tools (CRUD)
 import { bashCli, editFileCli, listFilesCli, readFileCli, writeFileCli } from './tools/crud.ts'
-import { balance } from './tools/eval/commands/balance.ts'
-import { calibrate } from './tools/eval/commands/calibrate.ts'
-import { capture } from './tools/eval/commands/capture.ts'
-// Eval harness
-import { evalRun } from './tools/eval/commands/eval-run.ts'
-import { summarize } from './tools/eval/commands/summarize.ts'
-import { trials } from './tools/eval/commands/trials.ts'
-import { validateRefs } from './tools/eval/commands/validate-refs.ts'
-import { headless } from './tools/eval/headless/headless-cli.ts'
-import { compare } from './tools/eval/pipeline/compare.ts'
-import { extract } from './tools/eval/pipeline/extract.ts'
-import { format } from './tools/eval/pipeline/format.ts'
-import { grade } from './tools/eval/pipeline/grade.ts'
-// Pipeline commands
-import { run } from './tools/eval/pipeline/run.ts'
-import { schemasCli } from './tools/eval/schemas/schemas-cli.ts'
+// Trial runner
+import { trialCli } from './tools/trial.ts'
 // Development tools
-import { lsp } from './tools/typescript-lsp.ts'
+import { typescriptLsp } from './tools/typescript-lsp.ts'
 import { validateSkill } from './tools/validate-skill.ts'
 
 // ============================================================================
@@ -44,25 +30,11 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   'edit-file': editFileCli,
   'list-files': listFilesCli,
   bash: bashCli,
-  // Eval harness
-  eval: evalRun,
-  capture,
-  trials,
-  summarize,
-  calibrate,
-  balance,
-  'validate-refs': validateRefs,
-  schemas: schemasCli,
-  headless,
-  // Pipeline commands
-  run,
-  extract,
-  grade,
-  format,
-  compare,
+  // Trial runner
+  trial: trialCli,
   // Development tools
   'validate-skill': validateSkill,
-  lsp,
+  'typescript-lsp': typescriptLsp,
 }
 
 // ============================================================================
@@ -97,15 +69,11 @@ Commands:
   Agent Tools:
     read-file, write-file, edit-file, list-files, bash
 
-  Eval Harness:
-    eval, capture, trials, summarize, calibrate,
-    balance, validate-refs, schemas, headless
-
-  Pipeline:
-    run, extract, grade, format, compare
+  Trial Runner:
+    trial
 
   Development:
-    validate-skill, lsp`)
+    validate-skill, typescript-lsp`)
   process.exit(command ? 0 : 1)
 }
 

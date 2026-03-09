@@ -757,14 +757,14 @@ export const lspHandler: ToolHandler = async (args, ctx) => {
  *
  * @public
  */
-export const lsp = async (args: string[]) => {
+export const typescriptLsp = async (args: string[]) => {
   if (args.includes('--help') || args.includes('-h')) {
     // biome-ignore lint/suspicious/noConsole: CLI output
-    console.log(`plaited lsp
+    console.log(`plaited typescript-lsp
 Unified TypeScript LSP tool — type-aware codebase analysis
 
-Usage: plaited lsp '<json>' [options]
-       echo '<json>' | plaited lsp
+Usage: plaited typescript-lsp '<json>' [options]
+       echo '<json>' | plaited typescript-lsp
 
 Input (JSON):
   file         string              Path to TypeScript/JavaScript file
@@ -789,7 +789,7 @@ Exit codes:
     return
   }
 
-  const input = await parseCli(args, LspInputSchema, { name: 'lsp', outputSchema: LspOutputSchema })
+  const input = await parseCli(args, LspInputSchema, { name: 'typescript-lsp', outputSchema: LspOutputSchema })
 
   try {
     const result = await executeLsp(input)
@@ -804,5 +804,5 @@ Exit codes:
 }
 
 if (import.meta.main) {
-  await lsp(Bun.argv.slice(2))
+  await typescriptLsp(Bun.argv.slice(2))
 }
