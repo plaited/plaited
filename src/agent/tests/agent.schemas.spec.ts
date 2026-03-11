@@ -4,6 +4,7 @@ import {
   AgentPlanSchema,
   AgentPlanStepSchema,
   AgentToolCallSchema,
+  DecisionStepSchema,
   GateDecisionSchema,
   ModelUsageSchema,
   RISK_TAG,
@@ -117,6 +118,40 @@ describe('TrajectoryStepSchema', () => {
     ).toThrow()
   })
 
+  test('validates a decision step with bids', () => {
+    const result = TrajectoryStepSchema.parse({
+      type: 'decision',
+      bids: [
+        {
+          thread: 'taskGate',
+          trigger: false,
+          selected: true,
+          type: 'task',
+          priority: 0,
+        },
+        {
+          thread: 'noRmRf',
+          trigger: false,
+          selected: false,
+          type: 'execute',
+          priority: 1,
+          blockedBy: 'noRmRf',
+        },
+      ],
+      timestamp: Date.now(),
+    })
+    expect(result.type).toBe('decision')
+  })
+
+  test('validates a decision step with empty bids', () => {
+    const result = TrajectoryStepSchema.parse({
+      type: 'decision',
+      bids: [],
+      timestamp: Date.now(),
+    })
+    expect(result.type).toBe('decision')
+  })
+
   test('accepts optional stepId on all types', () => {
     const thought = TrajectoryStepSchema.parse({
       type: 'thought',
@@ -125,6 +160,58 @@ describe('TrajectoryStepSchema', () => {
       stepId: 'step-1',
     })
     expect(thought.stepId).toBe('step-1')
+  })
+})
+
+describe('DecisionStepSchema', () => {
+  test('validates complete bid with all fields', () => {
+    const result = DecisionStepSchema.parse({
+      type: 'decision',
+      bids: [
+        {
+          thread: 'sim_guard_tc-1',
+          trigger: false,
+          selected: false,
+          type: 'execute',
+          detail: { toolCall: { id: 'tc-1' } },
+          priority: 2,
+          blockedBy: 'sim_guard_tc-1',
+          interrupts: 'batchCompletion',
+        },
+      ],
+      timestamp: Date.now(),
+      stepId: 'decision-1',
+    })
+    expect(result.bids).toHaveLength(1)
+    expect(result.bids[0]!.blockedBy).toBe('sim_guard_tc-1')
+    expect(result.stepId).toBe('decision-1')
+  })
+
+  test('validates bid from external trigger', () => {
+    const result = DecisionStepSchema.parse({
+      type: 'decision',
+      bids: [
+        {
+          thread: 'Symbol(external)',
+          trigger: true,
+          selected: true,
+          type: 'task',
+          detail: { content: 'user message' },
+          priority: 0,
+        },
+      ],
+      timestamp: Date.now(),
+    })
+    expect(result.bids[0]!.trigger).toBe(true)
+  })
+
+  test('rejects missing bids field', () => {
+    expect(() =>
+      DecisionStepSchema.parse({
+        type: 'decision',
+        timestamp: Date.now(),
+      }),
+    ).toThrow()
   })
 })
 

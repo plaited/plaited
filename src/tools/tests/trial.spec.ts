@@ -10,8 +10,8 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { stat, unlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import * as z from 'zod'
-import type { Adapter, Grader, PromptCase } from '../trial.schemas.ts'
-import { TrialResultSchema } from '../trial.schemas.ts'
+import type { Adapter, Grader, GraderResult, PromptCase } from '../trial.schemas.ts'
+import { GraderResultSchema, GradingDimensionsSchema, TrialEntrySchema, TrialResultSchema } from '../trial.schemas.ts'
 import { calculatePassAtK, calculatePassExpK, runTrial, TrialInputSchema, TrialOutputSchema } from '../trial.ts'
 import {
   createWorkspaceDir,
@@ -22,6 +22,7 @@ import {
   loadPrompts,
   resolvePath,
   runWorkerPool,
+  withMetaVerification,
 } from '../trial.utils.ts'
 
 // ============================================================================
@@ -667,6 +668,171 @@ describe('detectRichness', () => {
 
   test('trajectory with tool calls is full', () => {
     expect(detectRichness([{ type: 'tool_call', name: 'bash', status: 'completed', timestamp: 0 }])).toBe('full')
+  })
+
+  test('trajectory with decision steps is full', () => {
+    expect(
+      detectRichness([
+        {
+          type: 'decision',
+          bids: [{ thread: 'taskGate', trigger: false, selected: true, type: 'task', priority: 0 }],
+          timestamp: 0,
+        },
+        { type: 'message', content: 'hello', timestamp: 0 },
+      ]),
+    ).toBe('full')
+  })
+})
+
+// ============================================================================
+// GradingDimensions
+// ============================================================================
+
+describe('GradingDimensionsSchema', () => {
+  test('validates all three dimensions', () => {
+    const result = GradingDimensionsSchema.parse({
+      outcome: 0.95,
+      process: 0.8,
+      efficiency: 0.6,
+    })
+    expect(result.outcome).toBe(0.95)
+    expect(result.process).toBe(0.8)
+    expect(result.efficiency).toBe(0.6)
+  })
+
+  test('all dimensions are optional', () => {
+    const result = GradingDimensionsSchema.parse({})
+    expect(result.outcome).toBeUndefined()
+    expect(result.process).toBeUndefined()
+    expect(result.efficiency).toBeUndefined()
+  })
+
+  test('accepts partial dimensions', () => {
+    const result = GradingDimensionsSchema.parse({ outcome: 1.0 })
+    expect(result.outcome).toBe(1.0)
+    expect(result.process).toBeUndefined()
+  })
+
+  test('rejects values below 0', () => {
+    expect(() => GradingDimensionsSchema.parse({ outcome: -0.1 })).toThrow()
+  })
+
+  test('rejects values above 1', () => {
+    expect(() => GradingDimensionsSchema.parse({ process: 1.5 })).toThrow()
+  })
+})
+
+describe('GraderResultSchema with dimensions', () => {
+  test('accepts result with dimensions', () => {
+    const result = GraderResultSchema.parse({
+      pass: true,
+      score: 0.9,
+      dimensions: { outcome: 0.95, process: 0.85 },
+    })
+    expect(result.dimensions).toBeDefined()
+    expect(result.dimensions!.outcome).toBe(0.95)
+    expect(result.dimensions!.process).toBe(0.85)
+  })
+
+  test('dimensions are optional on GraderResult', () => {
+    const result = GraderResultSchema.parse({
+      pass: true,
+      score: 1.0,
+    })
+    expect(result.dimensions).toBeUndefined()
+  })
+})
+
+describe('TrialEntrySchema with dimensions', () => {
+  test('accepts trial entry with dimensions', () => {
+    const result = TrialEntrySchema.parse({
+      trialNum: 1,
+      output: 'hello',
+      duration: 100,
+      pass: true,
+      score: 0.9,
+      dimensions: { outcome: 1.0, process: 0.7, efficiency: 0.5 },
+    })
+    expect(result.dimensions).toBeDefined()
+    expect(result.dimensions!.efficiency).toBe(0.5)
+  })
+
+  test('dimensions are optional on TrialEntry', () => {
+    const result = TrialEntrySchema.parse({
+      trialNum: 1,
+      output: 'hello',
+      duration: 100,
+    })
+    expect(result.dimensions).toBeUndefined()
+  })
+})
+
+// ============================================================================
+// withMetaVerification
+// ============================================================================
+
+describe('withMetaVerification', () => {
+  test('wraps grader and adds _metaVerification to outcome', async () => {
+    const baseGrader: Grader = async ({ output }) => ({
+      pass: output.length > 0,
+      score: output.length > 0 ? 1.0 : 0.0,
+      reasoning: 'Output is non-empty',
+    })
+
+    const verifier = async (result: GraderResult) => ({
+      confidence: result.score > 0.5 ? 0.95 : 0.3,
+      reasoning: 'Score consistent with reasoning',
+    })
+
+    const wrapped = withMetaVerification(baseGrader, verifier)
+    const result = await wrapped({ input: 'test', output: 'hello' })
+
+    expect(result.pass).toBe(true)
+    expect(result.score).toBe(1.0)
+    expect(result.reasoning).toBe('Output is non-empty')
+    expect(result.outcome).toBeDefined()
+    expect(result.outcome!._metaVerification).toEqual({
+      confidence: 0.95,
+      reasoning: 'Score consistent with reasoning',
+    })
+  })
+
+  test('preserves existing outcome fields', async () => {
+    const baseGrader: Grader = async () => ({
+      pass: true,
+      score: 1.0,
+      outcome: { matchType: 'exact', details: 'perfect match' },
+    })
+
+    const verifier = async () => ({ confidence: 0.99 })
+
+    const wrapped = withMetaVerification(baseGrader, verifier)
+    const result = await wrapped({ input: 'test', output: 'hello' })
+
+    expect(result.outcome!.matchType).toBe('exact')
+    expect(result.outcome!.details).toBe('perfect match')
+    expect(result.outcome!._metaVerification).toEqual({ confidence: 0.99 })
+  })
+
+  test('creates outcome when base grader returns none', async () => {
+    const baseGrader: Grader = async () => ({
+      pass: false,
+      score: 0.0,
+    })
+
+    const verifier = async () => ({
+      confidence: 0.5,
+      reasoning: 'Low confidence on failure',
+    })
+
+    const wrapped = withMetaVerification(baseGrader, verifier)
+    const result = await wrapped({ input: 'test', output: '' })
+
+    expect(result.outcome).toBeDefined()
+    expect(result.outcome!._metaVerification).toEqual({
+      confidence: 0.5,
+      reasoning: 'Low confidence on failure',
+    })
   })
 })
 
