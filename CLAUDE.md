@@ -362,6 +362,8 @@ Key implementation decisions. See `docs/ARCHITECTURE.md`, `docs/SAFETY.md`, `doc
 
 **Bash sandboxing:** Bun Shell (`Bun.$`) — `$.cwd()`, `$.env()`, auto-escaping, `$.nothrow()`. Constitution bThreads block dangerous patterns via `execute` event predicates.
 
+**Training weights:** Training weight = `outcome × process`. BP snapshots (`DecisionStep` in `TrajectoryStep`) provide deterministic process signal without a learned PRM. `GradingDimensions` separates outcome, process, and efficiency scoring. `withMetaVerification` wraps graders with confidence scoring. Augmented self-distillation: bootstrap (shadowing) → refinement (self-vs-self) → probing (adversarial). See `docs/TRAINING.md`.
+
 ## Open Questions
 
 ### Server + Agent Integration
@@ -451,6 +453,13 @@ src/tools/
 | `search` | search (hypergraph query) | JSON-LD navigation, git grep, relevance |
 | `planning` | save_plan | Plan step structure, dependency chains, goal coherence |
 | `context-assembly` | (implicit) | Contributor ordering, budget allocation, pruning quality |
+
+**Phase 4b — Training Pipeline Improvements:**
+1. `DecisionStepSchema` in trajectories — BP snapshots as process signal
+2. `GradingDimensionsSchema` — multi-dimensional grading (outcome, process, efficiency)
+3. `withMetaVerification` grader wrapper — confidence scoring for grader outputs
+4. Augmented self-distillation pipeline (bootstrap → refinement → probing)
+5. Self-vs-self comparison (k parallel instances, dimensional breakdown)
 
 ## Next Up
 

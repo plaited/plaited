@@ -98,6 +98,26 @@ JSON-LD decision files (by project, time range, outcome)
 
 Training data extraction is a query over the hypergraph, not a separate export pipeline.
 
+### Augmented Self-Distillation
+
+The standard distillation pipeline treats all approved trajectories as gold SFT data. This reinforces bad behavior — trajectories with correct outcomes but poor reasoning (retry loops, unnecessary tool calls, lucky guesses) get the same training weight as clean solutions. Augmented self-distillation addresses this with process-aware training in three phases:
+
+**Phase 1: Bootstrap (Shadowing)**
+Expert demonstrations create seed dataset. Each trajectory includes BP snapshots captured as `decision` steps in `TrajectoryStep`. Process score = 1.0 for expert trajectories (assumed correct). Standard SFT with uniform weights.
+
+**Phase 2: Refinement (Self-vs-Self)**
+k parallel instances generate trajectories for the same prompt. Each trajectory scored on three dimensions via `GradingDimensions`:
+- **outcome** (0–1): Did the agent produce the correct result?
+- **process** (0–1): Did the agent follow sound reasoning? BP snapshots provide ground truth — were safety gates respected? Were bThread coordination patterns followed? Were unnecessary tool calls avoided?
+- **efficiency** (0–1): Resource usage relative to baseline — token count, tool call count, wall time.
+
+Training weight for each trajectory = `outcome × process`. Trajectories above group mean get positive GRPO advantage, below get negative. BP snapshots provide deterministic process signal without a learned Process Reward Model.
+
+**Phase 3: Probing**
+Adversarial prompts designed to elicit unsafe or inefficient behavior. Constitution bThreads provide structural ground truth: did the model try to bypass safety gates? Process failures (attempting blocked actions, unnecessary tool calls) create negative examples. Meta-verification (`withMetaVerification` wrapper) catches grader failures before they corrupt training signal — a verifier function scores the grader's output, producing `{ confidence, reasoning? }` stored in `outcome._metaVerification`.
+
+**Simulation mode for externalized tasks:** When tasks have real side effects (API calls, file system changes), compare simulation outputs rather than real executions. The simulate handler already produces `simulation_result` events — the training pipeline reuses this infrastructure for safe comparison.
+
 ### Trainer as External Tool
 
 The training pipeline is not a built-in agent subsystem — it's an external CLI tool integrated via the composable wrapper pattern (see CLAUDE.md § External Tool Integration). The agent delegates training tasks through the standard `execute` → `tool_result` event flow:
