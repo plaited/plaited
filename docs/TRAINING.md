@@ -103,7 +103,7 @@ Training data extraction is a query over the hypergraph, not a separate export p
 The standard distillation pipeline treats all approved trajectories as gold SFT data. This reinforces bad behavior — trajectories with correct outcomes but poor reasoning (retry loops, unnecessary tool calls, lucky guesses) get the same training weight as clean solutions. Augmented self-distillation addresses this with process-aware training in three phases:
 
 **Phase 1: Bootstrap (Shadowing)**
-Expert demonstrations create seed dataset. Each trajectory includes BP snapshots captured as `decision` steps in `TrajectoryStep`. Process score = 1.0 for expert trajectories (assumed correct). Standard SFT with uniform weights.
+Expert demonstrations (from frontier agents like Claude or Gemini via adapter scripts) create the seed dataset. Because the frontier agent runs via an adapter — not through the BP engine — there are no bThread instances, no event selection, and therefore no `DecisionStep` snapshots in shadowing trajectories. Process scoring during bootstrap relies on trajectory-level heuristics: tool call efficiency, absence of error-retry loops, reasoning coherence. Standard SFT with uniform or heuristic process weights.
 
 **Phase 2: Refinement (Self-vs-Self)**
 k parallel instances generate trajectories for the same prompt. Each trajectory scored on three dimensions via `GradingDimensions`:
@@ -116,7 +116,7 @@ Training weight for each trajectory = `outcome × process`. Trajectories above g
 **Phase 3: Probing**
 Adversarial prompts designed to elicit unsafe or inefficient behavior. Constitution bThreads provide structural ground truth: did the model try to bypass safety gates? Process failures (attempting blocked actions, unnecessary tool calls) create negative examples. Meta-verification (`withMetaVerification` wrapper) catches grader failures before they corrupt training signal — a verifier function scores the grader's output, producing `{ confidence, reasoning? }` stored in `outcome._metaVerification`.
 
-**Simulation mode for externalized tasks:** When tasks have real side effects (API calls, file system changes), compare simulation outputs rather than real executions. The simulate handler already produces `simulation_result` events — the training pipeline reuses this infrastructure for safe comparison.
+**Simulation mode for boundary-crossing tasks:** When tasks involve side effects that cross boundaries we can't roll back — API calls to external services, writes to external databases, A2A communication — compare simulation outputs rather than real executions. File system writes to the hypergraph are safe (git versioning + defense in depth make them inherently reversible). The simulate handler already produces `simulation_result` events — the training pipeline reuses this infrastructure for safe comparison.
 
 ### Trainer as External Tool
 
