@@ -9,7 +9,7 @@
  */
 
 import { appendFile, mkdir } from 'node:fs/promises'
-import type { Adapter, Grader, PromptCase, TrajectoryRichness } from './trial.schemas.ts'
+import type { Adapter, Grader, GraderResult, PromptCase, TrajectoryRichness } from './trial.schemas.ts'
 import { AdapterResultSchema, GraderResultSchema, PromptCaseSchema, type TrajectoryStep } from './trial.schemas.ts'
 
 // ============================================================================
@@ -433,7 +433,7 @@ export const detectRichness = (trajectory: TrajectoryStep[]): TrajectoryRichness
   let hasMessages = false
 
   for (const step of trajectory) {
-    if (step.type === 'thought' || step.type === 'tool_call' || step.type === 'plan') {
+    if (step.type === 'thought' || step.type === 'tool_call' || step.type === 'plan' || step.type === 'decision') {
       return 'full'
     }
     if (step.type === 'message') {
@@ -442,4 +442,49 @@ export const detectRichness = (trajectory: TrajectoryStep[]): TrajectoryRichness
   }
 
   return hasMessages ? 'messages-only' : 'minimal'
+}
+
+// ============================================================================
+// Meta-Verification
+// ============================================================================
+
+/** Meta-verification result from a verifier function */
+export type MetaVerification = {
+  confidence: number
+  reasoning?: string
+}
+
+/** Verifier function that scores a grader's output */
+export type Verifier = (result: GraderResult) => Promise<MetaVerification>
+
+/**
+ * Wrap a grader with meta-verification.
+ *
+ * @remarks
+ * The verifier scores the grader's own output, producing a confidence
+ * signal and optional reasoning. The result is stored in
+ * `outcome._metaVerification` on the grader result, allowing downstream
+ * consumers to filter or weight results by grader confidence.
+ *
+ * This catches hallucinated scores, inconsistent reasoning, and
+ * grader failures before they corrupt training signal.
+ *
+ * @param grader - The grader function to wrap
+ * @param verifier - Function that evaluates the grader's output
+ * @returns Wrapped grader that includes meta-verification in outcome
+ *
+ * @public
+ */
+export const withMetaVerification = (grader: Grader, verifier: Verifier): Grader => {
+  return async (params) => {
+    const result = await grader(params)
+    const verification = await verifier(result)
+    return {
+      ...result,
+      outcome: {
+        ...result.outcome,
+        _metaVerification: verification,
+      },
+    }
+  }
 }

@@ -1,4 +1,5 @@
 import * as z from 'zod'
+import { SelectionBidSchema } from '../behavioral/behavioral.schemas.ts'
 import { RISK_TAG, TOOL_STATUS } from './agent.constants.ts'
 
 // ============================================================================
@@ -112,6 +113,27 @@ export const PlanStepSchema = z.object({
 })
 
 /**
+ * Decision trajectory step — captures BP engine selection state.
+ *
+ * @remarks
+ * Each entry in `bids` is a {@link SelectionBid} from the BP engine's
+ * event selection step — what was requested, blocked, selected, and
+ * interrupted. Provides deterministic process signal for training
+ * without requiring a learned Process Reward Model.
+ *
+ * @public
+ */
+export const DecisionStepSchema = z.object({
+  type: z.literal('decision'),
+  bids: z.array(SelectionBidSchema),
+  timestamp: z.number(),
+  stepId: z.string().optional(),
+})
+
+/** BP engine decision step */
+export type DecisionStep = z.infer<typeof DecisionStepSchema>
+
+/**
  * Discriminated union of all trajectory step types.
  *
  * @remarks
@@ -119,6 +141,7 @@ export const PlanStepSchema = z.object({
  * `ThoughtStepSchema`, `MessageStepSchema`, and `ToolCallStepSchema`.
  * `PlanStepSchema` intentionally diverges in the eval harness
  * (`entries: z.array(z.unknown())`) to accept arbitrary adapter outputs.
+ * `DecisionStepSchema` is agent-build specific (BP snapshots).
  *
  * @public
  */
@@ -127,6 +150,7 @@ export const TrajectoryStepSchema = z.discriminatedUnion('type', [
   MessageStepSchema,
   ToolCallStepSchema,
   PlanStepSchema,
+  DecisionStepSchema,
 ])
 
 /** Trajectory step type */

@@ -130,6 +130,33 @@ export type Adapter = (input: AdapterInput) => Promise<AdapterResult>
 // ============================================================================
 
 /**
+ * Multi-dimensional grading scores.
+ *
+ * @remarks
+ * Separates outcome correctness from process quality and efficiency.
+ * All dimensions are optional — graders report only what they measure.
+ *
+ * - `outcome`: Did the agent produce the correct result? (0–1)
+ * - `process`: Did the agent follow sound reasoning? BP snapshots
+ *   provide ground truth for structural process quality. (0–1)
+ * - `efficiency`: Resource usage relative to baseline — token count,
+ *   tool call count, wall time. (0–1, higher = more efficient)
+ *
+ * @public
+ */
+export const GradingDimensionsSchema = z.object({
+  /** Outcome correctness score */
+  outcome: z.number().min(0).max(1).optional(),
+  /** Process quality score */
+  process: z.number().min(0).max(1).optional(),
+  /** Efficiency score */
+  efficiency: z.number().min(0).max(1).optional(),
+})
+
+/** Grading dimensions type */
+export type GradingDimensions = z.infer<typeof GradingDimensionsSchema>
+
+/**
  * Grader result schema.
  *
  * @public
@@ -143,6 +170,8 @@ export const GraderResultSchema = z.object({
   reasoning: z.string().optional(),
   /** Optional structured outcome data */
   outcome: z.record(z.string(), z.unknown()).optional(),
+  /** Optional multi-dimensional scores */
+  dimensions: GradingDimensionsSchema.optional(),
 })
 
 /** Grader result type */
@@ -198,6 +227,8 @@ export const TrialEntrySchema = z.object({
   reasoning: z.string().optional(),
   /** Outcome data from grader */
   outcome: z.record(z.string(), z.unknown()).optional(),
+  /** Multi-dimensional grading scores (if grader provides them) */
+  dimensions: GradingDimensionsSchema.optional(),
 })
 
 /** Trial entry type */
