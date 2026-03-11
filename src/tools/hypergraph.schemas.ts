@@ -43,6 +43,20 @@ export const SimilarInputSchema = z.object({
   topK: z.number().optional().describe('Number of top results to return (default: 5)'),
 })
 
+export const FilteredReachabilityInputSchema = z.object({
+  path: pathField,
+  query: z.literal('reachability'),
+  startVertices: z.array(z.string()).describe('Starting vertex @id URIs for reachability traversal'),
+  vertexTypeFilter: z.array(z.string()).optional().describe('Only traverse vertices of these types (empty = all)'),
+  hyperedgeTypeFilter: z.array(z.string()).optional().describe('Only traverse hyperedges of these types (empty = all)'),
+  maxDepth: z.number().optional().describe('Maximum BFS depth (default: unlimited)'),
+})
+
+export const DeriveProvenanceInputSchema = z.object({
+  path: pathField,
+  query: z.literal('provenance'),
+})
+
 // ============================================================================
 // Discriminated Union Input Schema
 // ============================================================================
@@ -53,6 +67,8 @@ export const HypergraphQuerySchema = z.discriminatedUnion('query', [
   CheckCyclesInputSchema,
   MatchInputSchema,
   SimilarInputSchema,
+  FilteredReachabilityInputSchema,
+  DeriveProvenanceInputSchema,
 ])
 
 export type HypergraphQuery = z.infer<typeof HypergraphQuerySchema>
@@ -92,4 +108,39 @@ export const SimilarOutputSchema = z.object({
       score: z.number(),
     }),
   ),
+})
+
+export const ReachabilityOutputSchema = z.object({
+  vertices: z.array(
+    z.object({
+      id: z.string(),
+      type: z.string(),
+      depth: z.number(),
+    }),
+  ),
+})
+
+export const ProvenanceEdgeSchema = z.object({
+  from: z.string().describe('Source decision @id URI'),
+  to: z.string().describe('Target decision @id URI'),
+  kind: z.enum(['thread_continuity', 'block_unblock', 'event_chain']).describe('Type of causal relationship'),
+  via: z.string().describe('Thread or event that links the two decisions'),
+})
+
+export type ProvenanceEdge = z.infer<typeof ProvenanceEdgeSchema>
+
+export const ProvenanceOutputSchema = z.object({
+  edges: z.array(ProvenanceEdgeSchema),
+})
+
+export const SessionMetaSchema = z.object({
+  '@id': z.string(),
+  '@type': z.literal('Session'),
+  summary: z.string(),
+  embedding: z.array(z.number()).optional(),
+  threadTypes: z.array(z.string()),
+  outcomeEvents: z.array(z.string()),
+  toolsUsed: z.array(z.string()),
+  decisionCount: z.number(),
+  timestamp: z.string(),
 })

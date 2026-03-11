@@ -535,6 +535,16 @@ A compiled Bun executable that loads JSON-LD files into an in-memory incidence s
   --query "implement file watcher with debounce" \
   --sessions .memory/sessions/ \
   --top-k 3
+
+# Filtered reachability with vertex/hyperedge type masks
+./tools/hypergraph reachability \
+  --start "bp:event/execute" \
+  --vertex-type-filter Thread \
+  --max-depth 2
+
+# Derive causal provenance edges from decision sequence
+./tools/hypergraph provenance \
+  --session .memory/sessions/sess_abc
 ```
 
 Built with Bun bytecode compilation for fast startup:
@@ -571,10 +581,15 @@ Graph algorithms run in WebAssembly compiled from AssemblyScript (`src/tools/gra
 | `checkCycles` | DFS with coloring (white/gray/black) | Detect blocking cycles in directed edges (blockedBy, requires) |
 | `matchPattern` | Sliding window over type sequence | Find consecutive hyperedges matching a type pattern |
 | `similar` | Brute-force cosine similarity with top-K | Rank documents by embedding similarity |
+| `filteredReachability` | Masked BFS with depth tracking | Find reachable vertices filtered by vertex/hyperedge type |
 
 **Data flow:** TS allocates `StaticArray<i32>` / `StaticArray<f32>` in WASM memory via `__new`, pins them with `__pin` to prevent GC collection during computation, calls the algorithm, decodes the count-prefixed result array via `DataView`, then unpins all pointers.
 
-**Build:** `npx asc src/tools/graph-algorithms/graph-algorithms.ts --outFile src/tools/hypergraph.wasm --optimize --exportRuntime`
+**TS-only queries:** The `provenance` query derives causal edges from decision sequences entirely in TypeScript (no WASM). Three signals: thread continuity, block→unblock transitions, and event chain causation via the agent loop's `EVENT_CAUSATION` map. `buildSessionSummary` aggregates decision metadata into `meta.jsonld` format.
+
+**Vertex types:** The index tracks `@type` from `provides`/`requires`/`rules` items (e.g., `Thread`, `Skill`, `GovernanceRule`). Vertices first registered from bids (no `@type`) get upgraded when a skill/ruleset doc later annotates them. `filteredReachability` uses vertex/hyperedge type masks to constrain traversal.
+
+**Build:** `bunx asc src/tools/graph-algorithms/graph-algorithms.ts --outFile src/tools/hypergraph.wasm --optimize --exportRuntime`
 
 ## Embeddings
 
@@ -761,7 +776,7 @@ Add `embedding` field to `meta.jsonld` write path. Implement `similar` command i
 
 ### Phase 6: WebAssembly Graph Algorithms (Done)
 
-AssemblyScript module compiled to WASM replaces the deferred `bun:ffi` + Rust/Zig approach. Implements BFS (causal chain), DFS (cycle detection), cosine similarity, and pattern matching. The `search` tool (`src/tools/hypergraph.ts`) loads JSON-LD, builds an in-memory index, and bridges to WASM. 57 tests validate all 5 query types against realistic agent loop fixtures.
+AssemblyScript module compiled to WASM replaces the deferred `bun:ffi` + Rust/Zig approach. Implements BFS (causal chain), DFS (cycle detection), cosine similarity, pattern matching, and filtered reachability. The `search` tool (`src/tools/hypergraph.ts`) loads JSON-LD, builds an in-memory index with vertex type tracking, and bridges to WASM. TS-only `provenance` query derives causal edges from decision sequences. `hypergraph.utils.ts` provides `deriveProvenanceEdges` and `buildSessionSummary`. 83 tests validate all 7 query types against realistic agent loop fixtures.
 
 ## Training Flywheel
 

@@ -704,5 +704,209 @@ describe('search ToolHandler', () => {
       ctx,
     )) as { results: unknown[] }
     expect(Array.isArray(similar.results)).toBe(true)
+
+    const reachability = (await search(
+      { path: 'hypergraph', query: 'reachability', startVertices: ['bp:event/execute'] },
+      ctx,
+    )) as { vertices: unknown[] }
+    expect(Array.isArray(reachability.vertices)).toBe(true)
+
+    const provenance = (await search({ path: 'hypergraph', query: 'provenance' }, ctx)) as { edges: unknown[] }
+    expect(Array.isArray(provenance.edges)).toBe(true)
+  })
+})
+
+// ============================================================================
+// vertex types
+// ============================================================================
+
+describe('vertex types', () => {
+  test('Thread type from skill provides (bp:thread/taskGate → "Thread")', async () => {
+    const docs = await loadJsonLd(FIXTURES_DIR)
+    const index = buildIndex(docs)
+    const idx = index.vertexMap.get('bp:thread/taskGate')
+    expect(idx).toBeDefined()
+    expect(index.vertexTypes[idx!]).toBe('Thread')
+  })
+
+  test('Skill type from skill requires (skill://code-patterns → "Skill")', async () => {
+    const docs = await loadJsonLd(FIXTURES_DIR)
+    const index = buildIndex(docs)
+    const idx = index.vertexMap.get('skill://code-patterns')
+    expect(idx).toBeDefined()
+    expect(index.vertexTypes[idx!]).toBe('Skill')
+  })
+
+  test('GovernanceRule type from ruleset rules (rule://no-rm-rf → "GovernanceRule")', async () => {
+    const docs = await loadJsonLd(FIXTURES_DIR)
+    const index = buildIndex(docs)
+    const idx = index.vertexMap.get('rule://no-rm-rf')
+    expect(idx).toBeDefined()
+    expect(index.vertexTypes[idx!]).toBe('GovernanceRule')
+  })
+
+  test('typeless vertices have empty string (bp:event/task from bids)', async () => {
+    const docs = await loadJsonLd(FIXTURES_DIR)
+    const index = buildIndex(docs)
+    const idx = index.vertexMap.get('bp:event/task')
+    expect(idx).toBeDefined()
+    expect(index.vertexTypes[idx!]).toBe('')
+  })
+
+  test('upgrade pattern: vertex registered typeless then typed', () => {
+    // First doc registers bp:thread/t1 via bid (no type), second provides it with type
+    const docs = [
+      {
+        '@id': 'test:d1',
+        '@type': 'SelectionDecision',
+        bids: [{ thread: 'bp:thread/t1', event: 'bp:event/e1', selected: true }],
+      },
+      {
+        '@id': 'test:skill',
+        '@type': 'Skill',
+        provides: [{ '@id': 'bp:thread/t1', '@type': 'Thread' }],
+      },
+    ]
+    const index = buildIndex(docs)
+    const idx = index.vertexMap.get('bp:thread/t1')
+    expect(idx).toBeDefined()
+    expect(index.vertexTypes[idx!]).toBe('Thread')
+  })
+
+  test('vertexTypeSet contains unique sorted types', async () => {
+    const docs = await loadJsonLd(FIXTURES_DIR)
+    const index = buildIndex(docs)
+    expect(index.vertexTypeSet.length).toBeGreaterThan(0)
+    // Should contain Thread, Skill, GovernanceRule (from provides/requires/rules items)
+    expect(index.vertexTypeSet).toContain('Thread')
+    expect(index.vertexTypeSet).toContain('Skill')
+    expect(index.vertexTypeSet).toContain('GovernanceRule')
+    // Verify sorted
+    const sorted = [...index.vertexTypeSet].sort()
+    expect(index.vertexTypeSet).toEqual(sorted)
+  })
+})
+
+// ============================================================================
+// reachability query
+// ============================================================================
+
+describe('reachability', () => {
+  test('finds reachable vertices from well-connected vertex (bp:event/execute)', async () => {
+    const result = (await search(
+      { path: 'hypergraph', query: 'reachability', startVertices: ['bp:event/execute'] },
+      ctx,
+    )) as { vertices: Array<{ id: string; type: string; depth: number }> }
+    // execute connects to 5 hyperedges, which connect to many vertices
+    expect(result.vertices.length).toBeGreaterThan(5)
+    // The start vertex itself should be in results
+    const startEntry = result.vertices.find((v) => v.id === 'bp:event/execute')
+    expect(startEntry).toBeDefined()
+    expect(startEntry!.depth).toBe(0)
+  })
+
+  test('respects vertexTypeFilter (only Thread-typed results)', async () => {
+    const result = (await search(
+      {
+        path: 'hypergraph',
+        query: 'reachability',
+        startVertices: ['bp:event/execute'],
+        vertexTypeFilter: ['Thread'],
+      },
+      ctx,
+    )) as { vertices: Array<{ id: string; type: string; depth: number }> }
+    // Start vertex is always included (mask forced to 1), but only Thread vertices pass the filter
+    for (const v of result.vertices) {
+      if (v.depth > 0) {
+        expect(v.type).toBe('Thread')
+      }
+    }
+  })
+
+  test('respects hyperedgeTypeFilter (only Skill hyperedges)', async () => {
+    const result = (await search(
+      {
+        path: 'hypergraph',
+        query: 'reachability',
+        startVertices: ['bp:event/execute'],
+        hyperedgeTypeFilter: ['Skill'],
+      },
+      ctx,
+    )) as { vertices: Array<{ id: string; type: string; depth: number }> }
+    // Only traverses through Skill hyperedges, so reachable set is limited
+    // to vertices in the skill document
+    expect(result.vertices.length).toBeGreaterThan(1) // at least start + skill vertices
+    const ids = result.vertices.map((v) => v.id)
+    // Should include vertices from the skill (bp:event/message only in skill)
+    expect(ids).toContain('bp:event/message')
+  })
+
+  test('respects maxDepth (all depths ≤ limit)', async () => {
+    const result = (await search(
+      {
+        path: 'hypergraph',
+        query: 'reachability',
+        startVertices: ['bp:event/execute'],
+        maxDepth: 1,
+      },
+      ctx,
+    )) as { vertices: Array<{ id: string; type: string; depth: number }> }
+    for (const v of result.vertices) {
+      expect(v.depth).toBeLessThanOrEqual(1)
+    }
+  })
+
+  test('unknown start vertex → empty result', async () => {
+    const result = (await search(
+      { path: 'hypergraph', query: 'reachability', startVertices: ['nonexistent:vertex'] },
+      ctx,
+    )) as { vertices: Array<{ id: string; type: string; depth: number }> }
+    expect(result.vertices).toEqual([])
+  })
+
+  test('isolated vertices unreachable (sessions are disconnected)', async () => {
+    const result = (await search(
+      { path: 'hypergraph', query: 'reachability', startVertices: ['bp:event/execute'] },
+      ctx,
+    )) as { vertices: Array<{ id: string; type: string; depth: number }> }
+    const ids = result.vertices.map((v) => v.id)
+    // Session singleton docs should not be reachable from execute
+    expect(ids).not.toContain('session/sess_other')
+    expect(ids).not.toContain('session/sess_different')
+  })
+})
+
+// ============================================================================
+// provenance query
+// ============================================================================
+
+describe('provenance', () => {
+  test('finds thread continuity edges (batchCompletion in D2→D3)', async () => {
+    const result = (await search({ path: 'hypergraph', query: 'provenance' }, ctx)) as {
+      edges: Array<{ from: string; to: string; kind: string; via: string }>
+    }
+    const continuityEdges = result.edges.filter((e) => e.kind === 'thread_continuity')
+    expect(continuityEdges.length).toBeGreaterThan(0)
+    // batchCompletion is selected in both decision/2 and decision/3
+    const batchEdge = continuityEdges.find(
+      (e) =>
+        e.from === 'session/sess_test/decision/2' &&
+        e.to === 'session/sess_test/decision/3' &&
+        e.via === 'bp:thread/batchCompletion',
+    )
+    expect(batchEdge).toBeDefined()
+  })
+
+  test('returns edges with valid from/to @id URIs', async () => {
+    const result = (await search({ path: 'hypergraph', query: 'provenance' }, ctx)) as {
+      edges: Array<{ from: string; to: string; kind: string; via: string }>
+    }
+    for (const edge of result.edges) {
+      expect(edge.from).toMatch(/^session\//)
+      expect(edge.to).toMatch(/^session\//)
+      expect(['thread_continuity', 'block_unblock', 'event_chain']).toContain(edge.kind)
+      expect(typeof edge.via).toBe('string')
+      expect(edge.via.length).toBeGreaterThan(0)
+    }
   })
 })

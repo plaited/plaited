@@ -324,6 +324,113 @@ export function matchPattern(
 }
 
 // ============================================================================
+// filteredReachability — masked BFS with depth tracking
+// ============================================================================
+
+/**
+ * Find all vertices reachable from a set of start vertices, respecting
+ * vertex and hyperedge masks with BFS depth tracking.
+ *
+ * @remarks
+ * Masked BFS alternating vertex→hyperedge→vertex. Vertices/hyperedges
+ * with mask=0 are skipped during traversal. Tracks BFS depth per vertex.
+ * Stops when maxDepth is reached (0 = unlimited).
+ *
+ * @param numVertices - Number of vertices in the graph
+ * @param numHyperedges - Number of hyperedges in the graph
+ * @param vOffsets - CSR offsets for vertex→hyperedge
+ * @param vNeighbors - CSR neighbors for vertex→hyperedge
+ * @param heOffsets - CSR offsets for hyperedge→vertex
+ * @param heNeighbors - CSR neighbors for hyperedge→vertex
+ * @param vertexMask - 1=traversable, 0=skip (length: numVertices)
+ * @param hyperedgeMask - 1=traversable, 0=skip (length: numHyperedges)
+ * @param startVertices - Array of starting vertex indices
+ * @param numStarts - Number of start vertices
+ * @param maxDepth - Maximum BFS depth (0 = unlimited)
+ * @returns StaticArray<i32> — [count, vIdx1, depth1, vIdx2, depth2, ...]
+ */
+export function filteredReachability(
+  numVertices: i32,
+  numHyperedges: i32,
+  vOffsets: StaticArray<i32>,
+  vNeighbors: StaticArray<i32>,
+  heOffsets: StaticArray<i32>,
+  heNeighbors: StaticArray<i32>,
+  vertexMask: StaticArray<i32>,
+  hyperedgeMask: StaticArray<i32>,
+  startVertices: StaticArray<i32>,
+  numStarts: i32,
+  maxDepth: i32,
+): StaticArray<i32> {
+  const visitedV = new StaticArray<bool>(numVertices)
+  const visitedHE = new StaticArray<bool>(numHyperedges)
+  const depthV = new StaticArray<i32>(numVertices)
+
+  // Queue holds vertex indices; depthV tracks their BFS depth
+  const queue = new Array<i32>()
+
+  // Seed the BFS with start vertices
+  for (let s: i32 = 0; s < numStarts; s++) {
+    const sv = unchecked(startVertices[s])
+    if (sv >= 0 && sv < numVertices && !unchecked(visitedV[sv])) {
+      unchecked((visitedV[sv] = true))
+      unchecked((depthV[sv] = 0))
+      queue.push(sv)
+    }
+  }
+
+  while (queue.length > 0) {
+    const v = queue.shift()
+    const vDepth = unchecked(depthV[v])
+
+    // Check depth limit (0 = unlimited)
+    if (maxDepth > 0 && vDepth >= maxDepth) continue
+
+    // Expand vertex → hyperedges
+    const heStart = unchecked(vOffsets[v])
+    const heEnd = unchecked(vOffsets[v + 1])
+
+    for (let i = heStart; i < heEnd; i++) {
+      const he = unchecked(vNeighbors[i])
+      if (unchecked(visitedHE[he])) continue
+      if (unchecked(hyperedgeMask[he]) === 0) continue
+      unchecked((visitedHE[he] = true))
+
+      // Expand hyperedge → vertices
+      const vStart = unchecked(heOffsets[he])
+      const vEnd = unchecked(heOffsets[he + 1])
+
+      for (let j = vStart; j < vEnd; j++) {
+        const nextV = unchecked(heNeighbors[j])
+        if (unchecked(visitedV[nextV])) continue
+        if (unchecked(vertexMask[nextV]) === 0) continue
+        unchecked((visitedV[nextV] = true))
+        unchecked((depthV[nextV] = vDepth + 1))
+        queue.push(nextV)
+      }
+    }
+  }
+
+  // Collect results: all visited vertices except starts (which have depth 0)
+  // Include starts in results too for completeness
+  const resultPairs = new Array<i32>()
+  for (let i: i32 = 0; i < numVertices; i++) {
+    if (unchecked(visitedV[i])) {
+      resultPairs.push(i)
+      resultPairs.push(unchecked(depthV[i]))
+    }
+  }
+
+  const count = resultPairs.length / 2
+  const result = new StaticArray<i32>(1 + resultPairs.length)
+  unchecked((result[0] = count))
+  for (let i: i32 = 0; i < resultPairs.length; i++) {
+    unchecked((result[i + 1] = resultPairs[i]))
+  }
+  return result
+}
+
+// ============================================================================
 // similar — brute-force cosine similarity
 // ============================================================================
 

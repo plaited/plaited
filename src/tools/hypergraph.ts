@@ -28,6 +28,8 @@ import {
   type CoOccurrenceOutputSchema,
   HypergraphQuerySchema,
   type MatchOutputSchema,
+  type ProvenanceOutputSchema,
+  type ReachabilityOutputSchema,
   type SimilarOutputSchema,
 } from './hypergraph.schemas.ts'
 
@@ -47,6 +49,10 @@ import {
 export type HypergraphIndex = {
   vertexIds: string[]
   vertexMap: Map<string, number>
+  /** Vertex @type parallel to vertexIds ('' if unknown) */
+  vertexTypes: string[]
+  /** Unique non-empty vertex type names, sorted */
+  vertexTypeSet: string[]
   hyperedgeIds: string[]
   hyperedgeMap: Map<string, number>
   hyperedgeTypes: string[]
@@ -93,6 +99,19 @@ type WasmExports = {
   checkCycles: (numV: number, dirOffsets: number, dirNeighbors: number) => number
   matchPattern: (numHE: number, types: number, pattern: number, patternLen: number) => number
   similar: (numDocs: number, dims: number, embeddings: number, query: number, topK: number) => number
+  filteredReachability: (
+    numV: number,
+    numHE: number,
+    vOffsets: number,
+    vNeighbors: number,
+    heOffsets: number,
+    heNeighbors: number,
+    vertexMask: number,
+    hyperedgeMask: number,
+    startVertices: number,
+    numStarts: number,
+    maxDepth: number,
+  ) => number
 }
 
 /**
@@ -162,31 +181,31 @@ export const loadJsonLd = async (dirPath: string): Promise<Record<string, unknow
 const extractVertices = (
   doc: Record<string, unknown>,
 ): {
-  vertices: string[]
+  vertices: Array<{ id: string; type?: string }>
   directedEdges: Array<[string, string]>
 } => {
-  const vertices: string[] = []
+  const vertices: Array<{ id: string; type?: string }> = []
   const directedEdges: Array<[string, string]> = []
 
   // Document itself is a vertex
   const docId = doc['@id'] as string | undefined
-  if (docId) vertices.push(docId)
+  if (docId) vertices.push({ id: docId })
 
   // Bids (SelectionDecision documents)
   const bids = doc.bids as Array<Record<string, unknown>> | undefined
   if (Array.isArray(bids)) {
     for (const bid of bids) {
-      if (typeof bid.thread === 'string') vertices.push(bid.thread)
+      if (typeof bid.thread === 'string') vertices.push({ id: bid.thread })
       // Handle both JSON-LD `event` field and raw schema `type` field
       const eventRef = bid.event ?? bid.type
-      if (typeof eventRef === 'string') vertices.push(eventRef as string)
+      if (typeof eventRef === 'string') vertices.push({ id: eventRef as string })
       if (typeof bid.blockedBy === 'string') {
-        vertices.push(bid.blockedBy)
+        vertices.push({ id: bid.blockedBy })
         if (typeof bid.thread === 'string') {
           directedEdges.push([bid.thread, bid.blockedBy])
         }
       }
-      if (typeof bid.interrupts === 'string') vertices.push(bid.interrupts)
+      if (typeof bid.interrupts === 'string') vertices.push({ id: bid.interrupts })
     }
   }
 
@@ -198,7 +217,8 @@ const extractVertices = (
         if (typeof item === 'object' && item !== null && '@id' in item) {
           const rec = item as Record<string, unknown>
           const itemId = rec['@id'] as string
-          vertices.push(itemId)
+          const itemType = rec['@type'] as string | undefined
+          vertices.push({ id: itemId, type: itemType })
 
           // requires creates directed edge: doc → required item (dependency chain)
           if (field === 'requires' && docId) {
@@ -210,7 +230,7 @@ const extractVertices = (
             const refs = rec[nested]
             if (Array.isArray(refs)) {
               for (const ref of refs) {
-                if (typeof ref === 'string') vertices.push(ref)
+                if (typeof ref === 'string') vertices.push({ id: ref })
               }
             }
           }
@@ -263,10 +283,14 @@ const buildCsr = (
  *
  * @public
  */
-export const buildIndex = (docs: Record<string, unknown>[]): HypergraphIndex => {
+export const buildIndex = (
+  docs: Record<string, unknown>[],
+  provenanceEdges?: Array<[string, string]>,
+): HypergraphIndex => {
   const vertexMap = new Map<string, number>()
   const hyperedgeMap = new Map<string, number>()
   const vertexIds: string[] = []
+  const vertexTypes: string[] = []
   const hyperedgeIds: string[] = []
   const hyperedgeTypes: string[] = []
   const typeSetMap = new Map<string, number>()
@@ -282,12 +306,16 @@ export const buildIndex = (docs: Record<string, unknown>[]): HypergraphIndex => 
   const embeddingArrays: number[][] = []
   let dims = 0
 
-  const getVertexIdx = (id: string): number => {
+  const getVertexIdx = (id: string, type?: string): number => {
     let idx = vertexMap.get(id)
     if (idx === undefined) {
       idx = vertexIds.length
       vertexMap.set(id, idx)
       vertexIds.push(id)
+      vertexTypes.push(type ?? '')
+    } else if (type && vertexTypes[idx] === '') {
+      // Upgrade: vertex was registered typeless, now has a type
+      vertexTypes[idx] = type
     }
     return idx
   }
@@ -317,8 +345,8 @@ export const buildIndex = (docs: Record<string, unknown>[]): HypergraphIndex => 
     // Deduplicate per-doc: same vertex appearing in multiple bids of one doc
     // should only create one adjacency entry per (vertex, hyperedge) pair
     const seenVertices = new Set<number>()
-    for (const vId of vertices) {
-      const vIdx = getVertexIdx(vId)
+    for (const v of vertices) {
+      const vIdx = getVertexIdx(v.id, v.type)
 
       // Link vertex to hyperedge only if this doc is a hyperedge (and not already linked)
       if (heIdx !== undefined && !seenVertices.has(vIdx)) {
@@ -359,6 +387,17 @@ export const buildIndex = (docs: Record<string, unknown>[]): HypergraphIndex => 
     }
   }
 
+  // Append provenance edges to directed adjacency
+  if (provenanceEdges) {
+    for (const [fromId, toId] of provenanceEdges) {
+      const fromIdx = getVertexIdx(fromId)
+      const toIdx = getVertexIdx(toId)
+      const adj = directedAdj.get(fromIdx)
+      if (adj) adj.push(toIdx)
+      else directedAdj.set(fromIdx, [toIdx])
+    }
+  }
+
   // Build CSR arrays
   const { offsets, neighbors } = buildCsr(vertexIds.length, vertexToHyperedges)
   const { offsets: heOffsets, neighbors: heNeighbors } = buildCsr(hyperedgeIds.length, hyperedgeToVertices)
@@ -372,9 +411,18 @@ export const buildIndex = (docs: Record<string, unknown>[]): HypergraphIndex => 
     embIdx++
   }
 
+  // Build vertexTypeSet from unique non-empty vertex types, sorted
+  const vtSet = new Set<string>()
+  for (const vt of vertexTypes) {
+    if (vt !== '') vtSet.add(vt)
+  }
+  const vertexTypeSet = [...vtSet].sort()
+
   return {
     vertexIds,
     vertexMap,
+    vertexTypes,
+    vertexTypeSet,
     hyperedgeIds,
     hyperedgeMap,
     hyperedgeTypes,
@@ -521,6 +569,25 @@ const decodeSimilar = (wasm: WasmExports, ptr: number): SimilarEntry[] => {
     const docIdx = Math.round(view.getFloat32(ptr + (1 + i * 2) * 4, true))
     const score = view.getFloat32(ptr + (2 + i * 2) * 4, true)
     entries.push({ docIdx, score })
+  }
+  return entries
+}
+
+/**
+ * Decode a `[count, vIdx1, depth1, vIdx2, depth2, ...]` i32 pair result.
+ *
+ * @internal
+ */
+const decodeReachability = (wasm: WasmExports, ptr: number): Array<{ vIdx: number; depth: number }> => {
+  const view = new DataView(wasm.memory.buffer)
+  const byteLen = view.getUint32(ptr - HEADER_RTSIZE_OFFSET, true)
+  if (byteLen < 4) return []
+  const count = view.getInt32(ptr, true)
+  const entries: Array<{ vIdx: number; depth: number }> = []
+  for (let i = 0; i < count; i++) {
+    const vIdx = view.getInt32(ptr + (1 + i * 2) * 4, true)
+    const depth = view.getInt32(ptr + (2 + i * 2) * 4, true)
+    entries.push({ vIdx, depth })
   }
   return entries
 }
@@ -730,6 +797,91 @@ const querySimilar = (
   return { results }
 }
 
+const queryFilteredReachability = (
+  index: HypergraphIndex,
+  inst: WasmInstance,
+  startVertices: string[],
+  vertexTypeFilter?: string[],
+  hyperedgeTypeFilter?: string[],
+  maxDepth?: number,
+): z.infer<typeof ReachabilityOutputSchema> => {
+  // Resolve start vertex indices
+  const startIndices: number[] = []
+  for (const sv of startVertices) {
+    const idx = index.vertexMap.get(sv)
+    if (idx !== undefined) startIndices.push(idx)
+  }
+  if (startIndices.length === 0) return { vertices: [] }
+
+  // Build vertex mask (1=traversable, 0=skip)
+  const vertexMask = new Int32Array(index.vertexIds.length)
+  if (vertexTypeFilter && vertexTypeFilter.length > 0) {
+    const filterSet = new Set(vertexTypeFilter)
+    for (let i = 0; i < index.vertexIds.length; i++) {
+      const vt = index.vertexTypes[i] ?? ''
+      vertexMask[i] = filterSet.has(vt) ? 1 : 0
+    }
+    // Start vertices always traversable
+    for (const idx of startIndices) vertexMask[idx] = 1
+  } else {
+    vertexMask.fill(1)
+  }
+
+  // Build hyperedge mask
+  const hyperedgeMask = new Int32Array(index.hyperedgeIds.length)
+  if (hyperedgeTypeFilter && hyperedgeTypeFilter.length > 0) {
+    const filterSet = new Set(hyperedgeTypeFilter)
+    for (let i = 0; i < index.hyperedgeIds.length; i++) {
+      const ht = index.hyperedgeTypes[i] ?? ''
+      hyperedgeMask[i] = filterSet.has(ht) ? 1 : 0
+    }
+  } else {
+    hyperedgeMask.fill(1)
+  }
+
+  const { exports: wasm } = inst
+  const pVOff = lowerI32Array(inst, index.offsets)
+  const pVNbr = lowerI32Array(inst, index.neighbors)
+  const pHEOff = lowerI32Array(inst, index.heOffsets)
+  const pHENbr = lowerI32Array(inst, index.heNeighbors)
+  const pVMask = lowerI32Array(inst, vertexMask)
+  const pHEMask = lowerI32Array(inst, hyperedgeMask)
+  const pStarts = lowerI32Array(inst, new Int32Array(startIndices))
+
+  const resultPtr = wasm.__pin(
+    wasm.filteredReachability(
+      index.vertexIds.length,
+      index.hyperedgeIds.length,
+      pVOff,
+      pVNbr,
+      pHEOff,
+      pHENbr,
+      pVMask,
+      pHEMask,
+      pStarts,
+      startIndices.length,
+      maxDepth ?? 0,
+    ),
+  )
+  const entries = decodeReachability(wasm, resultPtr)
+  unpinAll(wasm, [pVOff, pVNbr, pHEOff, pHENbr, pVMask, pHEMask, pStarts, resultPtr])
+
+  const vertices = entries.map(({ vIdx, depth }) => ({
+    id: getVertexId(index, vIdx),
+    type: index.vertexTypes[vIdx] ?? '',
+    depth,
+  }))
+  return { vertices }
+}
+
+const queryProvenance = async (dirPath: string): Promise<z.infer<typeof ProvenanceOutputSchema>> => {
+  const { deriveProvenanceEdges } = await import('./hypergraph.utils.ts')
+  const docs = await loadJsonLd(dirPath)
+  // Filter to decision documents and sort by @id
+  const decisions = docs.filter((doc) => Array.isArray(doc.bids) && typeof doc['@id'] === 'string')
+  return { edges: deriveProvenanceEdges(decisions) }
+}
+
 // ============================================================================
 // ToolHandler — search
 // ============================================================================
@@ -740,12 +892,19 @@ const querySimilar = (
  * @remarks
  * Loads `.jsonld` files from the given path, builds an in-memory incidence
  * structure, and runs the requested graph algorithm via WASM.
+ * The `provenance` query is TS-only (no WASM overhead).
  *
  * @public
  */
 export const search: ToolHandler = async (args, ctx) => {
   const input = HypergraphQuerySchema.parse(args)
   const dirPath = resolve(ctx.workspace, input.path)
+
+  // Provenance is TS-only, no WASM needed
+  if (input.query === 'provenance') {
+    return queryProvenance(dirPath)
+  }
+
   const docs = await loadJsonLd(dirPath)
   const index = buildIndex(docs)
   const inst = await loadWasm()
@@ -761,6 +920,15 @@ export const search: ToolHandler = async (args, ctx) => {
       return queryMatchPattern(index, inst, input.pattern.sequence)
     case 'similar':
       return querySimilar(index, inst, input.embedding, input.topK ?? 5)
+    case 'reachability':
+      return queryFilteredReachability(
+        index,
+        inst,
+        input.startVertices,
+        input.vertexTypeFilter,
+        input.hyperedgeTypeFilter,
+        input.maxDepth,
+      )
   }
 }
 
