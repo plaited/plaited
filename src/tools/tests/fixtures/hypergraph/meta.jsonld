@@ -1,0 +1,9 @@
+{
+  "@id": "session/sess_test",
+  "@type": "Session",
+  "summary": "Test session for hypergraph fixture data",
+  "embedding": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
+  "threadTypes": ["taskGate", "maxIterations", "batchCompletion"],
+  "decisionCount": 4,
+  "timestamp": "2026-03-03T10:00:00Z"
+}

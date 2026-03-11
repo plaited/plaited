@@ -1,0 +1,533 @@
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { join } from 'node:path'
+import { RISK_TAG } from '../../agent/agent.constants.ts'
+import { ToolDefinitionSchema } from '../../agent/agent.schemas.ts'
+import type { ToolContext } from '../../agent/agent.types.ts'
+import {
+  executeLsp,
+  flattenSymbols,
+  getLanguageId,
+  LspClient,
+  type LspOutput,
+  lspHandler,
+  lspRiskTags,
+  lspToolSchema,
+  resolveFilePath,
+} from '../typescript-lsp.ts'
+
+const scriptsDir = join(import.meta.dir, '..')
+const fixtureFile = join(import.meta.dir, 'fixtures/sample.ts')
+const rootUri = `file://${process.cwd()}`
+const testUri = `file://${fixtureFile}`
+
+// ============================================================================
+// LspClient
+// ============================================================================
+
+describe('LspClient', () => {
+  let client: LspClient
+
+  beforeAll(() => {
+    client = new LspClient({ rootUri })
+  })
+
+  afterAll(async () => {
+    if (client.isRunning()) {
+      await client.stop()
+    }
+  })
+
+  test('initializes with rootUri', () => {
+    expect(client).toBeDefined()
+    expect(client.isRunning()).toBe(false)
+  })
+
+  test('starts and stops LSP server', async () => {
+    await client.start()
+    expect(client.isRunning()).toBe(true)
+
+    await client.stop()
+    expect(client.isRunning()).toBe(false)
+  })
+
+  test('throws when starting already running server', async () => {
+    await client.start()
+    expect(client.isRunning()).toBe(true)
+
+    await expect(client.start()).rejects.toThrow('LSP server already running')
+
+    await client.stop()
+  })
+
+  test('handles stop on non-running server gracefully', async () => {
+    expect(client.isRunning()).toBe(false)
+    await client.stop()
+    expect(client.isRunning()).toBe(false)
+  })
+
+  describe('LSP operations', () => {
+    beforeAll(async () => {
+      await client.start()
+    })
+
+    afterAll(async () => {
+      await client.stop()
+    })
+
+    test('opens and closes document', async () => {
+      const text = await Bun.file(fixtureFile).text()
+
+      client.openDocument(testUri, 'typescript', 1, text)
+      client.closeDocument(testUri)
+    })
+
+    test('gets hover information', async () => {
+      const text = await Bun.file(fixtureFile).text()
+
+      client.openDocument(testUri, 'typescript', 1, text)
+
+      const lines = text.split('\n')
+      let line = 0
+      let char = 0
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i]?.startsWith('export')) {
+          line = i
+          char = 0
+          break
+        }
+      }
+
+      const result = await client.hover(testUri, line, char)
+      expect(result).toBeDefined()
+
+      client.closeDocument(testUri)
+    })
+
+    test('gets document symbols', async () => {
+      const text = await Bun.file(fixtureFile).text()
+
+      client.openDocument(testUri, 'typescript', 1, text)
+
+      const result = await client.documentSymbols(testUri)
+
+      expect(result).toBeDefined()
+      expect(Array.isArray(result)).toBe(true)
+
+      client.closeDocument(testUri)
+    })
+
+    test('searches workspace symbols', async () => {
+      const text = await Bun.file(fixtureFile).text()
+      client.openDocument(testUri, 'typescript', 1, text)
+
+      const result = await client.workspaceSymbols('parseConfig')
+
+      expect(result).toBeDefined()
+      expect(Array.isArray(result)).toBe(true)
+
+      client.closeDocument(testUri)
+    })
+
+    test('finds references', async () => {
+      const text = await Bun.file(fixtureFile).text()
+
+      client.openDocument(testUri, 'typescript', 1, text)
+
+      const lines = text.split('\n')
+      let line = 0
+      let char = 0
+      for (let i = 0; i < lines.length; i++) {
+        const currentLine = lines[i]
+        if (!currentLine) continue
+        const match = currentLine.match(/export\s+const\s+(\w+)/)
+        if (match?.[1]) {
+          line = i
+          char = currentLine.indexOf(match[1])
+          break
+        }
+      }
+
+      const result = await client.references(testUri, line, char)
+      expect(result).toBeDefined()
+
+      client.closeDocument(testUri)
+    })
+
+    test('gets definition', async () => {
+      const text = await Bun.file(fixtureFile).text()
+
+      client.openDocument(testUri, 'typescript', 1, text)
+
+      const lines = text.split('\n')
+      let line = 0
+      let char = 0
+      for (let i = 0; i < lines.length; i++) {
+        const currentLine = lines[i]
+        if (!currentLine) continue
+        const match = currentLine.match(/import\s+.*{\s*(\w+)/)
+        if (match?.[1]) {
+          line = i
+          char = currentLine.indexOf(match[1])
+          break
+        }
+      }
+
+      const result = await client.definition(testUri, line, char)
+      expect(result).toBeDefined()
+
+      client.closeDocument(testUri)
+    })
+  })
+
+  describe('error handling', () => {
+    test('throws on request when server not running', async () => {
+      const notRunningClient = new LspClient({ rootUri })
+
+      await expect(notRunningClient.hover('file:///test.ts', 0, 0)).rejects.toThrow('LSP server not running')
+    })
+
+    test('throws on notify when server not running', () => {
+      const notRunningClient = new LspClient({ rootUri })
+
+      expect(() => notRunningClient.notify('test')).toThrow('LSP server not running')
+    })
+  })
+})
+
+// ============================================================================
+// Helper functions
+// ============================================================================
+
+describe('resolveFilePath', () => {
+  test('returns absolute path as-is', () => {
+    expect(resolveFilePath('/usr/local/file.ts')).toBe('/usr/local/file.ts')
+  })
+
+  test('resolves relative path from cwd', () => {
+    const result = resolveFilePath('./src/file.ts')
+    expect(result).toBe(join(process.cwd(), './src/file.ts'))
+  })
+
+  test('resolves implicit relative path from cwd', () => {
+    const result = resolveFilePath('src/file.ts')
+    expect(result).toBe(join(process.cwd(), 'src/file.ts'))
+  })
+
+  test('resolves relative path from custom base', () => {
+    const result = resolveFilePath('src/file.ts', '/projects/my-app')
+    expect(result).toBe('/projects/my-app/src/file.ts')
+  })
+
+  test('ignores base for absolute paths', () => {
+    const result = resolveFilePath('/usr/local/file.ts', '/projects/my-app')
+    expect(result).toBe('/usr/local/file.ts')
+  })
+})
+
+describe('getLanguageId', () => {
+  test('returns typescriptreact for .tsx', () => {
+    expect(getLanguageId('file.tsx')).toBe('typescriptreact')
+  })
+
+  test('returns typescript for .ts', () => {
+    expect(getLanguageId('file.ts')).toBe('typescript')
+  })
+
+  test('returns javascriptreact for .jsx', () => {
+    expect(getLanguageId('file.jsx')).toBe('javascriptreact')
+  })
+
+  test('returns javascript for .js', () => {
+    expect(getLanguageId('file.js')).toBe('javascript')
+  })
+
+  test('returns javascript for unknown extension', () => {
+    expect(getLanguageId('file.mjs')).toBe('javascript')
+  })
+})
+
+describe('flattenSymbols', () => {
+  test('flattens top-level symbols', () => {
+    const symbols = [
+      { name: 'foo', kind: 13, range: { start: { line: 0, character: 0 }, end: { line: 0, character: 10 } } },
+      { name: 'bar', kind: 12, range: { start: { line: 5, character: 0 }, end: { line: 5, character: 20 } } },
+    ]
+    const result = flattenSymbols(symbols)
+    expect(result).toEqual([
+      { name: 'foo', kind: 'Variable', line: 0 },
+      { name: 'bar', kind: 'Function', line: 5 },
+    ])
+  })
+
+  test('flattens nested symbols with dotted names', () => {
+    const symbols = [
+      {
+        name: 'MyClass',
+        kind: 5,
+        range: { start: { line: 0, character: 0 }, end: { line: 10, character: 1 } },
+        children: [
+          { name: 'method', kind: 6, range: { start: { line: 2, character: 2 }, end: { line: 4, character: 3 } } },
+        ],
+      },
+    ]
+    const result = flattenSymbols(symbols)
+    expect(result).toEqual([
+      { name: 'MyClass', kind: 'Class', line: 0 },
+      { name: 'MyClass.method', kind: 'Method', line: 2 },
+    ])
+  })
+
+  test('handles unknown symbol kinds', () => {
+    const symbols = [
+      { name: 'x', kind: 99, range: { start: { line: 0, character: 0 }, end: { line: 0, character: 5 } } },
+    ]
+    const result = flattenSymbols(symbols)
+    expect(result[0]?.kind).toBe('Unknown(99)')
+  })
+})
+
+// ============================================================================
+// Library API
+// ============================================================================
+
+describe('executeLsp', () => {
+  test('returns symbols for a valid file', async () => {
+    const result = await executeLsp({
+      file: fixtureFile,
+      operations: [{ type: 'symbols' }],
+    })
+
+    expect(result.file).toBe(fixtureFile)
+    expect(result.results).toHaveLength(1)
+    expect(result.results[0]?.type).toBe('symbols')
+    expect(result.results[0]?.data).toBeDefined()
+    expect(Array.isArray(result.results[0]?.data)).toBe(true)
+  })
+
+  test('returns exports for a valid file', async () => {
+    const result = await executeLsp({
+      file: fixtureFile,
+      operations: [{ type: 'exports' }],
+    })
+
+    expect(result.results).toHaveLength(1)
+    expect(result.results[0]?.type).toBe('exports')
+    const exports = result.results[0]?.data as Array<{ name: string }>
+    expect(exports.length).toBeGreaterThan(0)
+
+    const names = exports.map((e) => e.name)
+    expect(names).toContain('parseConfig')
+    expect(names).toContain('Config')
+    expect(names).toContain('validateInput')
+    expect(names).toContain('ConfigManager')
+  })
+
+  test('exports excludes nested symbols', async () => {
+    const result = await executeLsp({
+      file: fixtureFile,
+      operations: [{ type: 'exports' }],
+    })
+
+    const exports = result.results[0]?.data as Array<{ name: string }>
+    const nestedNames = exports.filter((e) => e.name.includes('.'))
+    expect(nestedNames).toHaveLength(0)
+  })
+
+  test('returns hover data at a valid position', async () => {
+    const result = await executeLsp({
+      file: fixtureFile,
+      operations: [{ type: 'hover', line: 8, character: 13 }],
+    })
+
+    expect(result.results).toHaveLength(1)
+    expect(result.results[0]?.type).toBe('hover')
+    expect(result.results[0]?.data).toBeDefined()
+  })
+
+  test('returns references for a symbol', async () => {
+    const result = await executeLsp({
+      file: fixtureFile,
+      operations: [{ type: 'references', line: 8, character: 13 }],
+    })
+
+    expect(result.results).toHaveLength(1)
+    expect(result.results[0]?.type).toBe('references')
+    expect(result.results[0]?.data).toBeDefined()
+  })
+
+  test('returns definition for a symbol', async () => {
+    const result = await executeLsp({
+      file: fixtureFile,
+      operations: [{ type: 'definition', line: 19, character: 22 }],
+    })
+
+    expect(result.results).toHaveLength(1)
+    expect(result.results[0]?.type).toBe('definition')
+    expect(result.results[0]?.data).toBeDefined()
+  })
+
+  test('returns workspace symbols for find', async () => {
+    const result = await executeLsp({
+      file: fixtureFile,
+      operations: [{ type: 'find', query: 'parseConfig' }],
+    })
+
+    expect(result.results).toHaveLength(1)
+    expect(result.results[0]?.type).toBe('find')
+    expect(Array.isArray(result.results[0]?.data)).toBe(true)
+  })
+
+  test('batches multiple operations in one session', async () => {
+    const result = await executeLsp({
+      file: fixtureFile,
+      operations: [{ type: 'symbols' }, { type: 'exports' }, { type: 'hover', line: 8, character: 13 }],
+    })
+
+    expect(result.results).toHaveLength(3)
+    expect(result.results[0]?.type).toBe('symbols')
+    expect(result.results[1]?.type).toBe('exports')
+    expect(result.results[2]?.type).toBe('hover')
+    expect(result.results.every((r) => r.data !== undefined)).toBe(true)
+  })
+
+  test('returns error for operation missing required fields', async () => {
+    const result = await executeLsp({
+      file: fixtureFile,
+      operations: [{ type: 'hover' }],
+    })
+
+    expect(result.results).toHaveLength(1)
+    expect(result.results[0]?.error).toBe('hover requires line and character')
+    expect(result.results[0]?.data).toBeUndefined()
+  })
+
+  test('continues after a failed operation', async () => {
+    const result = await executeLsp({
+      file: fixtureFile,
+      operations: [{ type: 'hover' }, { type: 'symbols' }],
+    })
+
+    expect(result.results).toHaveLength(2)
+    expect(result.results[0]?.error).toBeDefined()
+    expect(result.results[1]?.data).toBeDefined()
+  })
+
+  test('throws for non-existent file', async () => {
+    await expect(
+      executeLsp({
+        file: '/nonexistent/file.ts',
+        operations: [{ type: 'symbols' }],
+      }),
+    ).rejects.toThrow('File not found')
+  })
+})
+
+// ============================================================================
+// Agent Integration
+// ============================================================================
+
+describe('lspToolSchema', () => {
+  test('validates against ToolDefinitionSchema', () => {
+    const result = ToolDefinitionSchema.safeParse(lspToolSchema)
+    expect(result.success).toBe(true)
+  })
+
+  test('has correct tool name', () => {
+    expect(lspToolSchema.function.name).toBe('lsp')
+  })
+})
+
+describe('lspRiskTags', () => {
+  test('has workspace tag', () => {
+    expect(lspRiskTags).toContain(RISK_TAG.workspace)
+  })
+})
+
+describe('lspHandler', () => {
+  test('executes LSP operations via ToolHandler interface', async () => {
+    const ctx: ToolContext = { workspace: process.cwd(), signal: new AbortController().signal }
+    const result = (await lspHandler({ file: fixtureFile, operations: [{ type: 'symbols' }] }, ctx)) as LspOutput
+    expect(result.file).toBe(fixtureFile)
+    expect(result.results).toHaveLength(1)
+    expect(result.results[0]?.type).toBe('symbols')
+    expect(result.results[0]?.data).toBeDefined()
+  })
+
+  test('throws when signal is already aborted', async () => {
+    const ctx: ToolContext = { workspace: process.cwd(), signal: AbortSignal.abort() }
+    expect(lspHandler({ file: fixtureFile, operations: [{ type: 'symbols' }] }, ctx)).rejects.toThrow('Aborted')
+  })
+})
+
+// ============================================================================
+// CLI
+// ============================================================================
+
+describe('CLI', () => {
+  test('--schema input outputs JSON Schema', async () => {
+    const result = await Bun.$`bun ${scriptsDir}/typescript-lsp.ts --schema input`.quiet()
+    const schema = JSON.parse(result.text())
+
+    expect(schema.type).toBe('object')
+    expect(schema.properties).toHaveProperty('file')
+    expect(schema.properties).toHaveProperty('operations')
+  })
+
+  test('--schema output outputs JSON Schema', async () => {
+    const result = await Bun.$`bun ${scriptsDir}/typescript-lsp.ts --schema output`.quiet()
+    const schema = JSON.parse(result.text())
+
+    expect(schema.type).toBe('object')
+    expect(schema.properties).toHaveProperty('file')
+    expect(schema.properties).toHaveProperty('results')
+  })
+
+  test('--help exits 0', async () => {
+    const proc = Bun.spawn(['bun', `${scriptsDir}/typescript-lsp.ts`, '--help'], {
+      stderr: 'pipe',
+      stdout: 'pipe',
+    })
+    const exitCode = await proc.exited
+
+    expect(exitCode).toBe(0)
+  })
+
+  test('runs symbols via JSON positional arg', async () => {
+    const input = JSON.stringify({
+      file: fixtureFile,
+      operations: [{ type: 'symbols' }],
+    })
+    const result = await Bun.$`bun ${scriptsDir}/typescript-lsp.ts ${input}`.quiet()
+    const output = JSON.parse(result.text())
+
+    expect(output.file).toBe(fixtureFile)
+    expect(output.results).toHaveLength(1)
+    expect(output.results[0].type).toBe('symbols')
+    expect(Array.isArray(output.results[0].data)).toBe(true)
+  })
+
+  test('exits with code 1 when an operation fails', async () => {
+    const input = JSON.stringify({
+      file: fixtureFile,
+      operations: [{ type: 'hover' }],
+    })
+
+    const proc = Bun.spawn(['bun', `${scriptsDir}/typescript-lsp.ts`, input], {
+      stderr: 'pipe',
+      stdout: 'pipe',
+    })
+    const exitCode = await proc.exited
+
+    expect(exitCode).toBe(1)
+  })
+
+  test('exits with code 2 on invalid input', async () => {
+    const proc = Bun.spawn(['bun', `${scriptsDir}/typescript-lsp.ts`, '{"bad": true}'], {
+      stderr: 'pipe',
+      stdout: 'pipe',
+    })
+    const exitCode = await proc.exited
+
+    expect(exitCode).toBe(2)
+  })
+})

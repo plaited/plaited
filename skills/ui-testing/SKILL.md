@@ -1,23 +1,16 @@
 ---
 name: ui-testing
-description: Three-layer test strategy for Plaited UI. Use when writing tests for custom elements (controlIsland, controlDocument, decorateElements), testing the controller protocol over real WebSocket, building fixture servers for scripted browser conversations, or debugging CI failures from mock-based approaches.
+description: >-
+  Three-layer test strategy for Plaited UI. Use when testing custom elements
+  (controlIsland, controlDocument, decorateElements), the controller protocol
+  over real WebSocket, building fixture servers, or debugging mock-based CI failures.
 license: ISC
 compatibility: Requires bun, @playwright/cli, @happy-dom/global-registrator
 ---
 
 # UI Testing
 
-## Purpose
-
-This skill documents the three-layer test strategy for Plaited's UI layer. It was born from a hard lesson: **mock.module cache poisoning** in bun causes cross-test contamination when multiple spec files mock the same module. Tests that pass in isolation fail together, creating phantom CI failures that waste hours to diagnose.
-
-The solution: push real-browser concerns into real-browser tests, keep DOM unit tests in happy-dom, and let pure functions stay pure. Each layer uses the simplest tool that can prove the behavior.
-
-**Use this when:**
-- Writing tests for `controlIsland`, `controlDocument`, or `decorateElements`
-- Testing the controller protocol (render, attrs, update_behavioral, user_action)
-- Building a fixture server for scripted WebSocket conversations
-- Debugging CI failures that look like mock contamination
+Three layers matched to complexity. Born from `mock.module` cache poisoning — mocks shared across spec files cause phantom CI failures.
 
 ## Layer Strategy
 
@@ -72,7 +65,7 @@ flowchart TB
 
 No DOM, no mocks, no setup. Import the unit, call it, assert the output.
 
-**Exemplar:** [assets/controller.schemas.spec.ts](assets/controller.schemas.spec.ts)
+**Living exemplar:** `plaited/src/ui/protocol/tests/controller.schemas.spec.ts`
 
 ### Pattern
 
@@ -92,16 +85,17 @@ describe('SomeSchema', () => {
 })
 ```
 
-**Guidelines:**
-- Test both accept and reject paths for every schema
-- Use real constants from the source (`CONTROLLER_EVENTS.render`, not `'render'`)
-- No `beforeAll`/`afterAll` needed
+**Rules:**
+- **Test both accept and reject paths** for every schema
+- **Use real constants** — `AGENT_TO_CONTROLLER_EVENTS.render`, not `'render'`
+  *Verify:* `grep -n "type: '" src/ui/**/tests/*.spec.ts` — string literals for event types indicate stale constants
+  *Fix:* Import from `controller.constants.ts` or `events.ts`
 
 ## Layer 2: DOM Unit Tests (happy-dom)
 
-Tests that need `customElements`, `document`, or basic DOM APIs but **not** a real browser or network.
+Needs `customElements` but not network.
 
-**Exemplar:** [assets/control-island.spec.ts](assets/control-island.spec.ts)
+**Living exemplar:** `plaited/src/ui/dom/tests/control-island.spec.ts`
 
 ### Pattern
 
@@ -126,16 +120,20 @@ describe('controlIsland: factory', () => {
 })
 ```
 
-**Guidelines:**
-- **Never append control islands to the DOM** in happy-dom tests. `connectedCallback` calls `controller()`, which opens a real WebSocket — happy-dom cannot handle this. Test the factory return value and registration only.
-- `mock.module` is acceptable within a single spec file for isolating DOM-only behavior, but **never mock across files** — this causes cache poisoning.
-- Register happy-dom in `beforeAll`, unregister in `afterAll` to avoid leaking globals.
+**Rules:**
+- **Never append control islands to DOM** — `connectedCallback` opens a real WebSocket; happy-dom hangs
+  *Verify:* `grep -n 'appendChild\|append(' src/ui/**/tests/*island*.spec.ts` — no DOM insertion of control islands
+  *Fix:* Test factory return values and registration only
+- **`mock.module` within single spec file only** — never across files (cache poisoning)
+  *Verify:* `grep -rn 'mock.module' src/ui/` — each file touches only its own mocks
+- **Register/unregister happy-dom** in `beforeAll`/`afterAll`
+  *Verify:* `grep -n 'GlobalRegistrator' src/ui/**/tests/*.spec.ts` — every DOM test has both
 
 ## Fixture Server Pattern
 
-Layer 3 tests require a real HTTP + WebSocket server that acts as the agent — responding to `root_connected` with scripted message sequences.
+Layer 3 requires a real HTTP + WebSocket server acting as the agent.
 
-**Exemplar:** [assets/serve.ts](assets/serve.ts)
+**Living exemplar:** `plaited/src/ui/protocol/tests/fixtures/serve.ts`
 
 ### Architecture
 
@@ -153,51 +151,35 @@ sequenceDiagram
     Test->>Browser: cli('open')
     Test->>Browser: gotoTest('/page.html')
     Browser->>Server: GET /page.html
-    Server-->>Browser: HTML + <script src="/dist/entry.js">
+    Server-->>Browser: HTML + script src=/dist/entry.js
     Browser->>Server: WebSocket upgrade
-    Browser->>Server: root_connected { detail: 'tag-name' }
+    Browser->>Server: client_connected
     Server->>Browser: Scripted messages (render, attrs, etc.)
 
     Test->>Browser: cli('eval', '() => ...')
     Browser-->>Test: DOM query result
 ```
 
-### Key Components
+### Key Decisions
 
-**Entry files** — Built with `Bun.build()` for browser consumption. Each entry registers custom elements and imports from the main source:
+| Decision | Why |
+|---|---|
+| `Bun.build()` entry files for browser | Module graph resolved at build time, not runtime |
+| Dynamic `/test/<tag>` routes | One entry file serves multiple test scenarios via tag-based routing |
+| `startServer(0)` for random port | Avoid CI port conflicts |
+| WebSocket dispatch on element tag | `root_connected` detail routes to scripted conversation |
+| Fixture state via getters | Same-process access for server-side assertions |
+| `display: contents` on custom element | Element is invisible wrapper; `p-target` descendant receives renders |
 
-```typescript
-// control-island.entry.ts
-import { controlIsland } from '../../control-island.ts'
-controlIsland({ tag: 'test-island', observedAttributes: ['value', 'label'] })
-```
+## Layer 3: Real Browser (@playwright/cli)
 
-**Static HTML** — Fixtures provide the initial DOM structure. The control island must have `display: contents` and a descendant with `p-target`:
-
-```html
-<test-island>
-  <div p-target="main"><p>initial content</p></div>
-</test-island>
-```
-
-**Dynamic test pages** — `generateTestPage(tag)` creates HTML on demand for `/test/<tag>` routes, reusing a single entry file for multiple test scenarios.
-
-**WebSocket routing** — The server switches on `data.detail` (the element tag) in the `root_connected` handler to send test-specific message sequences.
-
-**Server state** — Exposes getters (`lastUserAction`, `lastBehavioralUpdated`) for server-side assertions in tests.
-
-## @playwright/cli Test Pattern
-
-Real browser tests use `@playwright/cli` — a CLI wrapper around Playwright that manages a persistent Chromium session.
-
-**Exemplar:** [assets/controller-browser.spec.ts](assets/controller-browser.spec.ts)
+**Living exemplar:** `plaited/src/ui/protocol/tests/controller-browser.spec.ts`
 
 ### Helpers
 
 ```typescript
 const SESSION = 'ui-test'
 
-/** Run a playwright-cli command. */
 const cli = async (...args: string[]) => {
   const proc = Bun.spawn(['bunx', '@playwright/cli', `-s=${SESSION}`, ...args], {
     stdout: 'pipe',
@@ -208,70 +190,60 @@ const cli = async (...args: string[]) => {
   return text.trim()
 }
 
-/** Extract result from playwright-cli eval output. */
 const parseResult = (output: string) => {
   const match = output.match(/### Result\n([\s\S]*?)(?:\n### |$)/)
   return match?.[1]?.trim() ?? output.trim()
 }
 
-/** Navigate and wait for WebSocket render. */
 const gotoTest = async (path: string, waitMs = 3000) => {
   await cli('goto', `http://localhost:${fixture.port}${path}`)
   await new Promise((r) => setTimeout(r, waitMs))
 }
 ```
 
-### Test Lifecycle
+### Pattern
 
 ```typescript
 beforeAll(async () => {
-  fixture = startServer(0)       // Random port
-  await cli('open')               // Launch Chromium session
-  await gotoTest('/first.html')   // Navigate + wait for WS
+  fixture = startServer(0)
+  await cli('open')
+  await gotoTest('/first.html')
 }, 30000)
 
 afterAll(async () => {
   try { await cli('close') } catch { /* ignore */ }
   await fixture.stop()
 }, 30000)
-```
 
-### DOM Assertions
-
-All DOM queries go through `cli('eval', ...)`:
-
-```typescript
+// DOM queries via eval
 test('rendered content appears in DOM', async () => {
   const output = await cli('eval', "() => document.getElementById('ws-rendered')?.textContent")
-  const result = parseResult(output)
-  expect(result).toContain('Hello from WebSocket')
+  expect(parseResult(output)).toContain('Hello from WebSocket')
 })
-```
 
-### Server-Side Assertions
-
-Access fixture state directly in tests (same process):
-
-```typescript
+// Server-side assertions (same process)
 test('server received user_action', () => {
   expect(fixture.lastUserAction).toBeDefined()
-  expect((fixture.lastUserAction as Record<string, unknown>).detail).toBe('test_click')
 })
 ```
+
+**Rules:**
+- **Always `waitMs` in `gotoTest`** — browser needs time for WebSocket messages (default 3000ms, increase for retry tests)
+- **30000ms timeout on `beforeAll`/`afterAll`** — browser startup is slow
+  *Verify:* `grep -n 'beforeAll\|afterAll' src/ui/**/tests/*browser*.spec.ts` — must have timeout arg
 
 ## Anti-Patterns
 
 | Anti-Pattern | Problem | Correct Approach |
 |---|---|---|
 | MockWebSocket in unit tests | Cache poisoning across spec files; phantom CI failures | Real WebSocket via fixture server (Layer 3) |
-| `mock.module` across files | Bun's module cache holds stale mocks; test order matters | Isolate `mock.module` to a single spec file, or avoid entirely |
-| Appending control islands in happy-dom | `connectedCallback` opens a real WebSocket; happy-dom hangs | Only test factory return values and registration (Layer 2) |
+| `mock.module` across files | Bun's module cache holds stale mocks; test order matters | Isolate `mock.module` to single spec file, or avoid entirely |
+| Appending control islands in happy-dom | `connectedCallback` opens real WebSocket; happy-dom hangs | Only test factory return values and registration (Layer 2) |
 | Skipping `waitMs` in `gotoTest` | Browser hasn't received/processed WebSocket messages yet | Always wait (default 3000ms, increase for retry tests) |
 | Hardcoded ports | Port conflicts in CI | Use `startServer(0)` for random port assignment |
-| Testing swap modes without a fixture server | Can't verify actual DOM mutation with mocks | Use Layer 3 with scripted message sequences |
+| Testing swap modes without fixture server | Can't verify actual DOM mutation with mocks | Use Layer 3 with scripted message sequences |
 
 ## Related Skills
 
-- **generative-ui** - Controller protocol, server rendering pipeline, dynamic behavioral loading
-- **code-patterns** - Pure function testing patterns and TypeScript conventions
-- **behavioral-core** - BP fundamentals for understanding `update_behavioral` and thread/handler patterns
+- **generative-ui** — Controller protocol, server rendering pipeline, dynamic behavioral loading
+- **behavioral-core** — BP fundamentals for `update_behavioral` and thread/handler patterns

@@ -17,51 +17,36 @@
     "plaited": "./src/cli.ts"
   },
   "type": "module",
-  "main": "./src/behavioral.ts",
+  "main": "./src/main.ts",
   "exports": {
-    ".": "./src/behavioral.ts",
-    "./*.ts": "./src/*.ts",
-    "./*.tsx": "./src/*.tsx",
-    "./ui": "./src/ui.ts",
-    "./ui/*.ts": "./src/ui/*.ts",
-    "./ui/*.tsx": "./src/ui/*.tsx",
+    ".": "./src/main.ts",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
-    "./jsx-runtime": "./src/jsx-runtime.ts",
-    "./utils": "./src/utils.ts",
-    "./utils/*.ts": "./src/utils/*.ts",
-    "./utils/*.tsx": "./src/utils/*.tsx",
-    "./agent": "./src/agent.ts",
-    "./agent/*.ts": "./src/agent/*.ts",
-    "./agent/*.tsx": "./src/agent/*.tsx",
-    "./workshop": "./src/workshop.ts",
-    "./workshop/*.ts": "./src/workshop/*.ts",
-    "./workshop/*.tsx": "./src/workshop/*.tsx"
+    "./jsx-runtime": "./src/jsx-runtime.ts"
   },
   "files": [
     "./.bin/**",
-    "./.plaited.ts",
-    "./src/**",
-    "!./src/**/tests/*",
-    "!./src/**/*.spec.@(tsx|ts)",
-    "!./src/**/*.stories.@(tsx|ts)"
+    "./AGENTS.md",
+    "./skills/**",
+    "./src/**"
   ],
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
+    "build:wasm": "bunx asc src/tools/graph-algorithms/graph-algorithms.ts --outFile src/tools/hypergraph.wasm --optimize --exportRuntime",
     "check": "bun run check:biome && bun run check:types && bun run check:package",
     "check:biome": "biome check",
     "check:package": "format-package --check",
     "check:types": "tsc --noEmit",
     "check:write": "biome check --write && format-package --write",
     "copy:css-types": "bash scripts/copy-css-types.sh",
-    "copy:testing-assets": "cp src/ui/tests/controller-browser.spec.ts skills/ui-testing/assets/ && cp src/ui/tests/fixtures/serve.ts skills/ui-testing/assets/ && cp src/ui/tests/control-island.spec.ts skills/ui-testing/assets/ && cp src/ui/tests/controller.schemas.spec.ts skills/ui-testing/assets/",
     "dev": "bun --hot src/cli.ts dev src/ui",
     "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .hooks || true",
     "test": "bun run test:stories src/ui && bun test src/",
     "test:playwright": "bunx playwright test",
     "test:stories": "bun src/cli.ts test",
-    "test:stories-ui": "bun run test:stories src/ui"
+    "test:stories-ui": "bun run test:stories src/ui",
+    "test:tools": "bun test src/tools/"
   },
   "lint-staged": {
     "*.{js,cjs,jsx,tsx,ts}": [
@@ -72,8 +57,7 @@
     ]
   },
   "dependencies": {
-    "@plaited/agent-eval-harness": "0.13.0",
-    "@plaited/development-skills": "0.8.1",
+    "@modelcontextprotocol/sdk": "1.26.0",
     "zod": "4.3.6"
   },
   "devDependencies": {
@@ -81,12 +65,13 @@
     "@commitlint/cli": "20.4.2",
     "@commitlint/config-conventional": "20.4.2",
     "@happy-dom/global-registrator": "^20.7.0",
-    "@modelcontextprotocol/sdk": "1.26.0",
+    "@mermaid-js/mermaid-cli": "11.12.0",
     "@playwright/cli": "^0.1.1",
     "@types/beautify": "0.0.3",
     "@types/bun": "1.3.9",
     "@types/node": "25.3.0",
     "@types/sinon": "21.0.0",
+    "assemblyscript": "^0.28.9",
     "axe-core": "4.11.1",
     "beautify": "0.0.8",
     "csstype": "3.2.3",

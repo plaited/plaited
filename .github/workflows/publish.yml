@@ -113,6 +113,7 @@ jobs:
           IS_PRERELEASE: ${{ steps.set_version.outputs.is_prerelease }}
         run: |
           npm version --no-git-tag-version "$VERSION"
+          bun run build:wasm
           bun run copy:css-types
           bun run copy:testing-assets
 

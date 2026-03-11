@@ -1,0 +1,29 @@
+{
+  "@id": "session/sess_test/decision/4",
+  "@type": "SelectionDecision",
+  "superstep": 4,
+  "timestamp": "2026-03-03T10:00:03.000Z",
+  "bids": [
+    {
+      "event": "bp:event/execute",
+      "thread": "bp:thread/alpha",
+      "selected": false,
+      "blockedBy": "bp:thread/beta",
+      "priority": 0
+    },
+    {
+      "event": "bp:event/execute",
+      "thread": "bp:thread/beta",
+      "selected": false,
+      "blockedBy": "bp:thread/gamma",
+      "priority": 0
+    },
+    {
+      "event": "bp:event/execute",
+      "thread": "bp:thread/gamma",
+      "selected": false,
+      "blockedBy": "bp:thread/alpha",
+      "priority": 0
+    }
+  ]
+}

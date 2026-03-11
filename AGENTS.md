@@ -29,6 +29,9 @@
 **Executables:**
 - `Bun.which(cmd)` to check if command exists
 - `Bun.$\`bun add pkg\`` for package management
+- `bunx` not `npx` — always prefer Bun's package runner
+*Verify:* `grep 'npx' package.json .github/workflows/*.yml`
+*Fix:* Replace `npx` with `bunx`
 
 **When Node.js OK:** readline (interactive input), node:path utilities, APIs without Bun equivalents
 
@@ -37,16 +40,32 @@
 
 # Workflow
 
+## Git as Context
+
+**Read history before working** - `git log --oneline -20` at session start. Understand recent changes before proposing new ones.
+**File history** - `git log --oneline -- <path>` to understand why a file looks the way it does. Commit messages explain decisions.
+**Branch scope** - `git diff main...HEAD --stat` to understand what the current branch has changed.
+**History over stale prose** - When docs and code disagree, code + git history wins. Update the doc.
+
 ## Git Commits
 
-**Conventional commits** - `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`, `test:`  
-**Multi-line messages** - Use for detailed context  
-**Never --no-verify** - Fix the issue, don't bypass hooks  
+**Conventional commits** - `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`, `test:`
+**Multi-line messages** - Use for detailed context
+**Never --no-verify** - Fix the issue, don't bypass hooks
 *Verify:* Check git log format
+
+## Code Quality Gate
+
+**Before committing code changes**, both must pass:
+1. `bun --bun tsc --noEmit` — type check
+2. `bun test src/` — tests
+
+Don't commit code that fails either check. Fix first, then commit.
+*Exception:* `docs:` and `chore:` commits (no code changes) skip this gate.
 
 ## GitHub CLI
 
-**Use `gh` over WebFetch** - Better data access, auth, private repos
+**Always use `gh` for GitHub URLs** - When given any `github.com` link, use `gh api` or `gh` subcommands. Never use WebFetch for GitHub content. `gh api repos/<owner>/<repo>/contents/<path>` for files, `gh pr view` for PRs, etc.
 
 **PR evaluation** - Fetch ALL sources:
 ```bash
@@ -75,6 +94,46 @@ gh api repos/<owner>/<repo>/pulls/<n>/comments
 | `.../security/code-scanning/<id>` | `gh api .../code-scanning/alerts/<id>` |
 
 **Review states:** `APPROVED`, `CHANGES_REQUESTED`, `COMMENTED`, `PENDING`
+
+
+# Context Repository
+
+This codebase is a **context repository** — the codebase itself is the source of truth, not any single document. Agents maintain context by reading code, git history, and docs together.
+
+## Source of Truth Hierarchy
+
+| Source | Role | Freshness |
+|--------|------|-----------|
+| `src/` code + types | What the system IS | Always current |
+| `git log` | Why it changed | Always current |
+| `AGENTS.md` | How to work here | Manually maintained rules |
+| `CLAUDE.md` | Active decisions, open questions, what's next | Updated as decisions are made |
+| `docs/*.md` | Detailed design rationale | May drift — verify against code |
+| `skills/` | How to use capabilities | Updated alongside code |
+
+**When sources conflict:** Code + git history wins. Update the stale doc.
+
+## Keep Docs in Sync
+
+When code changes affect documented decisions, update affected docs **in the same commit** (or the next):
+1. After code changes, `grep -r` docs/ for references to changed modules, types, or concepts
+2. Update stale references, remove deleted concepts, add new ones
+3. Commit docs alongside code — don't leave sync as a separate task
+
+*Verify:* `git diff --name-only HEAD~1` — if `src/` files changed, check whether `docs/` or `CLAUDE.md` reference them
+*Fix:* Update affected docs before moving on
+
+## Progressive Disclosure
+
+Agents discover context through layers, not by reading everything upfront:
+
+1. **AGENTS.md** — rules (always loaded, keep concise)
+2. **CLAUDE.md** — active work context, decisions, build progress
+3. **docs/*.md** — deep dives on specific domains (read on demand)
+4. **skills/** — capability-specific knowledge (loaded via skill activation)
+5. **git log** — historical context (queried when understanding evolution)
+
+Don't duplicate across layers. Reference down: `CLAUDE.md` points to `docs/`, `docs/` points to `src/`.
 
 
 # Module Organization
@@ -233,8 +292,12 @@ See rules/testing.md for verification in test contexts.
 
 **No @example** - Tests are living examples  
 **Use @internal** - Mark non-public APIs  
-**Mermaid only** - No ASCII box-drawing diagrams  
+**Mermaid only** - No ASCII box-drawing diagrams
 *Verify:* `grep '[┌│└─]' *.md`
+
+**Validate Mermaid diagrams** - All `.md` mermaid blocks must render without errors
+*Verify:* `bunx @mermaid-js/mermaid-cli -i diagram.mmd -o /tmp/out.svg`
+*Fix:* No code syntax in `stateDiagram-v2` notes (`=>`, `{}`, `||`, `&&` break parser). No `{}` in sequence diagram messages. Keep inner-state transitions inside composite state braces.
 
 
 # Core Conventions

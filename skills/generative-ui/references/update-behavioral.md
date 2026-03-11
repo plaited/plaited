@@ -17,8 +17,7 @@ sequenceDiagram
     participant BP as BP Engine
 
     Agent->>Agent: Generate behavioral module code
-    Agent->>Agent: Bundle & serve at URL
-    Agent->>WS: { type: "update_behavioral", detail: "https://..." }
+    Agent->>WS: update_behavioral with project-local module path
 
     WS->>Controller: on_ws_message validates schema
     Controller->>Browser: await import(url)
@@ -35,8 +34,7 @@ sequenceDiagram
         Controller->>BP: useFeedback(handlers)
     end
 
-    Controller->>WS: behavioral_updated { src, threads?, handlers? }
-    WS->>Agent: Confirmation with loaded thread/handler names
+    Note over Controller: Merge is silent — no confirmation sent back
 ```
 
 ## Module Contract
@@ -93,14 +91,13 @@ z.object({
 
 ## Security: restrictedTrigger
 
-The factory function receives `restrictedTrigger` — a sandboxed version of the BP engine's `trigger` that only allows specific event types:
+The factory function receives `restrictedTrigger` — a sandboxed version of the BP engine's `trigger`. `useRestrictedTrigger` takes the list of events to **block** — everything else passes through:
 
 ```typescript
-// What restrictedTrigger allows (from RESTRICTED_EVENTS):
-const allowed = {
-  // Client → Server feedback
-  behavioral_updated: true,
-  root_connected: true,
+// What restrictedTrigger BLOCKS (from RESTRICTED_EVENTS + ELEMENT_CALLBACKS):
+const blocked = {
+  // Client → Server messages
+  client_connected: true,
   user_action: true,
   snapshot: true,
   // WebSocket lifecycle
@@ -109,99 +106,48 @@ const allowed = {
   on_ws_error: true,
   on_ws_message: true,
   on_ws_open: true,
+  // Element callbacks (added by controlIsland)
+  on_adopted: true,
+  on_attribute_changed: true,
+  on_connected: true,
+  on_disconnected: true,
+  on_form_associated: true,
+  on_form_disabled: true,
+  on_form_reset: true,
+  on_form_state_restore: true,
 }
 
-// Element callbacks are also allowed:
-// on_adopted, on_attribute_changed, on_connected, on_disconnected,
-// on_form_associated, on_form_disabled, on_form_reset, on_form_state_restore
+// What PASSES THROUGH (allowed):
+// render, attrs, update_behavioral, disconnect, any custom event types
 ```
 
-**Blocked events** (only the controller itself can trigger these):
-- `render` — prevents loaded code from injecting HTML
-- `attrs` — prevents loaded code from changing attributes
-- `disconnect` — prevents loaded code from tearing down the shell
+This creates a **trust boundary**: dynamically loaded code participates in the BP engine's event coordination (can request renders, attribute updates via normal event flow) but cannot fire client→server messages, WebSocket lifecycle events, or element callbacks directly.
 
-This creates a **trust boundary**: dynamically loaded code participates in the BP engine's event coordination but cannot directly manipulate the DOM or the WebSocket connection.
+## No Confirmation Message
 
-## Confirmation Message
-
-After successful loading, the controller sends back:
-
-```typescript
-{
-  type: 'behavioral_updated',
-  detail: {
-    src: 'https://cdn.example.com/modules/form-handler.js',
-    threads: ['form-submit', 'form-validate'],  // Thread names registered
-    handlers: ['onValid', 'onInvalid'],          // Handler names registered
-  },
-}
-```
-
-The server agent can use this confirmation to:
-- Verify the module loaded correctly
-- Track which behavioral modules are active on the client
-- Sequence follow-up actions (e.g., send initial data after behavior is ready)
+The controller does **not** send a confirmation after loading a behavioral module. The merge of threads and handlers into the BP engine is silent. The server observes success through:
+- Subsequent client behavior (e.g., the loaded module's threads start requesting events)
+- Snapshot messages — `useSnapshot` captures all BP engine decisions and the controller sends them to the server
+- Absence of error — if `import()` or schema validation fails, the error surfaces in snapshot messages
 
 ## Agent Workflow for Generating Modules
 
 An agent building generative UI follows this pattern:
 
 1. **Generate behavioral code** — based on the UI being rendered, write TypeScript/JavaScript that defines threads and handlers
-2. **Bundle the module** — compile to a single JavaScript file suitable for `import()`
-3. **Serve at a URL** — make the bundled module accessible via HTTPS
-4. **Send `update_behavioral`** — tell the client to load it
-5. **Wait for `behavioral_updated`** — confirm the module loaded
-6. **Continue rendering** — send additional `render` messages knowing the client now has interactive behavior
+2. **Serve at a URL** — make the module accessible via HTTPS (`import()` supports both single files and code-split modules with their own imports — the delivery pattern is TBD)
+3. **Send `update_behavioral`** — tell the client to load it
+4. **Continue rendering** — send additional `render` messages; the client's BP engine coordinates event flow once the module is loaded
+5. **Observe via snapshots** — monitor snapshot messages for confirmation that new threads are active
 
-### Pattern: Render Then Animate
-
-```typescript
-// 1. Send the HTML
-ws.send(JSON.stringify({
-  type: 'render',
-  detail: {
-    target: 'form-container',
-    html: render(<ContactForm />),
-    swap: 'innerHTML',
-  },
-}))
-
-// 2. Send the behavior
-ws.send(JSON.stringify({
-  type: 'update_behavioral',
-  detail: 'https://cdn.example.com/modules/contact-form.js',
-}))
-
-// 3. Server waits for behavioral_updated before accepting form submissions
-```
-
-### Pattern: Progressive Enhancement
-
-```typescript
-// Initial render: static content
-ws.send(JSON.stringify({
-  type: 'render',
-  detail: { target: 'root', html: render(staticDashboard), swap: 'innerHTML' },
-}))
-
-// Later: add interactivity as needed
-ws.send(JSON.stringify({
-  type: 'update_behavioral',
-  detail: 'https://cdn.example.com/modules/chart-interaction.js',
-}))
-
-// Even later: add more features
-ws.send(JSON.stringify({
-  type: 'update_behavioral',
-  detail: 'https://cdn.example.com/modules/data-filter.js',
-}))
-```
+<!-- TODO: Agent workflow patterns (render-then-animate, progressive enhancement)
+     depend on server layer design — module delivery, message routing, and how the
+     agent produces protocol messages. Define these after src/server/ is built. -->
 
 ## Error Handling
 
 If `import()` fails (network error, invalid module), the controller throws within the BP engine's event cycle. The error surfaces as:
-- A `snapshot` message with error details (if `useSnapshot` is configured)
+- A `snapshot` message with error details — `useSnapshot` captures all BP engine decisions
 - The WebSocket remains open for retry
 
-If schema validation fails (module doesn't have default export, factory returns wrong shape), a Zod error is thrown. The server can detect this via missing `behavioral_updated` response.
+If schema validation fails (module doesn't have default export, factory returns wrong shape), a Zod error is thrown. The error surfaces in snapshot messages sent to the server.

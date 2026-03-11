@@ -97,7 +97,7 @@ The vertical integration is reflected in the package structure:
 
 ```typescript
 import { useBehavioral, useSignal } from 'plaited'
-import { bElement, createStyles } from 'plaited/ui'
+import { bElement, createStyles } from 'plaited'
 import { story } from 'plaited/testing'
 ```
 
@@ -130,7 +130,6 @@ Skills from `@plaited/development-skills` teach your AI coding agent how to buil
 - `/lsp-refs` — Find all references to a symbol
 - `/lsp-analyze` — Batch analysis of a file
 - `/validate-skill` — Validate skill directories
-- `/scaffold-rules` — Scaffold development rules for AI agents
 
 </details>
 

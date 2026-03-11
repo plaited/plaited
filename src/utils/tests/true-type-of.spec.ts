@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { trueTypeOf } from 'plaited/utils'
+import { trueTypeOf } from 'plaited'
 
 test('trueTypeOf()', () => {
   expect(trueTypeOf([])).toBe('array')

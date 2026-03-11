@@ -77,7 +77,7 @@ flowchart TB
 Plaited uses JSX with two special attributes for server ↔ client coordination:
 
 ```typescript
-import { createSSR, createStyles, controlIsland, decorateElements } from 'plaited/ui'
+import { createSSR, createStyles, controlIsland, decorateElements } from 'plaited'
 
 // p-target: marks elements the server can update later
 // p-trigger: binds DOM events to actions sent to server
@@ -108,26 +108,17 @@ clearStyles()
 
 ### 3. Send via Protocol
 
+The server forwards protocol messages to the client. Message shapes:
+
 ```typescript
 // Insert HTML at a target element
-ws.send(JSON.stringify({
-  type: 'render',
-  detail: {
-    target: 'content',      // Finds [p-target="content"]
-    html: render(newContent),
-    swap: 'innerHTML',       // Default; also: afterbegin, beforeend, outerHTML, etc.
-  },
-}))
+{ type: 'render', detail: { target: 'content', html: render(newContent), swap: 'innerHTML' } }
 
 // Update attributes surgically
-ws.send(JSON.stringify({
-  type: 'attrs',
-  detail: {
-    target: 'content',
-    attr: { class: 'loaded', 'aria-busy': false },
-  },
-}))
+{ type: 'attrs', detail: { target: 'content', attr: { class: 'loaded', 'aria-busy': false } } }
 ```
+
+<!-- TODO: How the agent produces and the server routes these messages depends on src/server/ design -->
 
 ## Custom Elements
 
@@ -150,9 +141,9 @@ const page = render(
 )
 ```
 
-### decorateElements (Presentational)
+### decorateElements (Shadow DOM Decorator)
 
-For elements that need shadow DOM encapsulation without a WebSocket:
+Moves nodes out of the main DOM to reduce node count, captures styles and layouts, and leverages slots via declarative Shadow DOM. No WebSocket or BP engine — purely structural:
 
 ```typescript
 const Card = decorateElements({
@@ -199,27 +190,27 @@ This is the key to **generative UI** — the server can command the client to lo
 ### Server Sends Module URL
 
 ```typescript
-ws.send(JSON.stringify({
-  type: 'update_behavioral',
-  detail: 'https://cdn.example.com/modules/form-handler.js',
-}))
+// Behavioral modules are project-local files served by the server
+{ type: 'update_behavioral', detail: '/modules/form-handler.js' }
 ```
 
 ### Client Loads and Registers
 
 The controller handler automatically:
 1. `await import(url)` — fetches and evaluates the module
-2. Validates: module must have `default` export (factory function)
+2. Validates: module must have `default` export (factory function) via `UpdateBehavioralModuleSchema`
 3. Calls `factory(restrictedTrigger)` — passes a sandboxed trigger
-4. Registers returned `{ threads, handlers }` into the BP engine
-5. Sends `behavioral_updated` confirmation back to server
+4. Validates returned value via `UpdateBehavioralResultSchema`
+5. Merges `threads` into `bThreads.set()` and `handlers` into `useFeedback()`
+
+No confirmation message is sent back — the merge is silent. The server observes success via subsequent client behavior or snapshot messages.
 
 ### Module Contract
 
 ```typescript
 // The module the agent generates and serves
 import type { Trigger } from 'plaited'
-import type { UpdateBehavioralResult } from 'plaited/ui'
+import type { UpdateBehavioralResult } from 'plaited'
 
 const factory = (trigger: Trigger): UpdateBehavioralResult => ({
   threads: {
@@ -241,18 +232,16 @@ export default factory
 
 ### Security: restrictedTrigger
 
-Dynamically loaded code receives `restrictedTrigger`, not the full `trigger`. It can only fire:
+Dynamically loaded code receives `restrictedTrigger`, not the full `trigger`. `useRestrictedTrigger` takes the list of events to **block** — everything else passes through:
 
-| Allowed | Blocked |
-|---------|---------|
-| `user_action` | `render` |
-| `behavioral_updated` | `attrs` |
-| `root_connected` | `disconnect` |
-| `snapshot` | |
-| WebSocket lifecycle events | |
-| Element callbacks (`on_connected`, etc.) | |
+| Blocked (`RESTRICTED_EVENTS` + `ELEMENT_CALLBACKS`) | Allowed (passes through) |
+|------------------------------------------------------|--------------------------|
+| `client_connected`, `user_action`, `snapshot` | `render`, `attrs` |
+| `connect`, `retry`, `on_ws_open`, `on_ws_message`, `on_ws_error` | `update_behavioral`, `disconnect` |
+| `on_connected`, `on_disconnected`, `on_adopted`, `on_attribute_changed` | Any custom event types |
+| `on_form_associated`, `on_form_disabled`, `on_form_reset`, `on_form_state_restore` | |
 
-This prevents loaded modules from directly manipulating the DOM — they must go through the BP engine.
+Loaded modules participate in BP event coordination (can request renders, attribute updates) but cannot fire client→server messages, WebSocket lifecycle events, or element callbacks directly.
 
 ## Protocol Message Reference
 
@@ -267,12 +256,13 @@ This prevents loaded modules from directly manipulating the DOM — they must go
 
 ### Client → Server
 
-| Message | Schema | Purpose |
-|---------|--------|---------|
-| `root_connected` | `string` (element tag) | Report root element type |
-| `user_action` | `string` (action type) | User triggered an action |
-| `behavioral_updated` | `{ src, threads?, handlers? }` | Module loaded successfully |
-| `snapshot` | `SnapshotMessage` | BP engine observability |
+All client→server messages use `{ id: string, msg: ... }` envelope format:
+
+| Message | Envelope Detail | Purpose |
+|---------|----------------|---------|
+| `client_connected` | `{ id, msg: tagName }` | Handshake — tag name or `'document'` |
+| `user_action` | `{ id, msg: actionType }` | User triggered a `p-trigger` action |
+| `snapshot` | `{ id, msg: SnapshotMessage }` | BP engine observability (all decisions) |
 
 ### Swap Modes
 
@@ -295,28 +285,32 @@ sequenceDiagram
     participant DOM as Browser DOM
     participant BP as BP Engine
 
+    Note over Ctrl: controller() calls trigger(connect) immediately
+    Ctrl->>WS: WebSocket to self.location.origin
+    WS-->>Ctrl: on_ws_open
+    Ctrl->>WS: client_connected with id and msg as tagName
+
     Note over Agent: Agent generates initial HTML
-    Agent->>WS: render { target: "root", html, swap: "innerHTML" }
+    Agent->>WS: render with target, html, swap innerHTML
     WS->>Ctrl: on_ws_message
     Ctrl->>DOM: setHTMLUnsafe + bindTriggers + performSwap
 
     Note over Agent: Agent sends behavioral module
-    Agent->>WS: update_behavioral { detail: "https://..." }
+    Agent->>WS: update_behavioral with detail as URL
     WS->>Ctrl: on_ws_message
-    Ctrl->>BP: import(url) → factory(restrictedTrigger)
-    BP-->>Ctrl: { threads, handlers }
-    Ctrl->>WS: behavioral_updated { src, threads, handlers }
+    Ctrl->>BP: import(url) then factory(restrictedTrigger)
+    BP-->>Ctrl: threads and handlers merged silently
 
     Note over DOM: User clicks button with p-trigger
-    DOM->>Ctrl: click event on [p-trigger="click:submit"]
-    Ctrl->>BP: trigger({ type: user_action, detail: { type: "submit" } })
-    Ctrl->>WS: user_action { detail: "submit" }
+    DOM->>Ctrl: click event on p-trigger click submit
+    Ctrl->>BP: trigger user_action with type submit
+    Ctrl->>WS: user_action with id and msg as submit
     WS->>Agent: Receives user action
 
     Note over Agent: Agent responds with new content
-    Agent->>WS: render { target: "content", html: "..." }
+    Agent->>WS: render with target content and html
     WS->>Ctrl: on_ws_message
-    Ctrl->>DOM: Update [p-target="content"]
+    Ctrl->>DOM: Update p-target content
 ```
 
 ## Style System Integration
