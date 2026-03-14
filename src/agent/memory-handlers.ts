@@ -47,6 +47,19 @@ export type MemoryHandlersConfig = {
   keepSessions?: number
 }
 
+/**
+ * Return type of `createMemoryHandlers`.
+ *
+ * @remarks
+ * Extends `DefaultHandlers` with `trackDecision` — called by
+ * `useSnapshot` listeners when a decision document is written to disk.
+ *
+ * @public
+ */
+export type MemoryHandlers = DefaultHandlers & {
+  trackDecision: (decisionId: string) => void
+}
+
 // ============================================================================
 // Commit Vertex Builder
 // ============================================================================
@@ -89,7 +102,7 @@ export const createMemoryHandlers = ({
   sessionId,
   embedder,
   keepSessions = 10,
-}: MemoryHandlersConfig): DefaultHandlers => {
+}: MemoryHandlersConfig): MemoryHandlers => {
   /** Pending decision @id URIs accumulated since last commit */
   let pendingDecisions: string[] = []
 
@@ -221,5 +234,5 @@ export const createMemoryHandlers = ({
 
     /** Expose trackDecision for external use (e.g. useSnapshot listener) */
     trackDecision,
-  } as DefaultHandlers & { trackDecision: (id: string) => void }
+  } as MemoryHandlers
 }

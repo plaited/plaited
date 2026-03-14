@@ -137,6 +137,17 @@ describe('deriveProvenanceEdges', () => {
     expect(EVENT_CAUSATION.has('snapshot_committed')).toBe(false)
     expect(EVENT_CAUSATION.has('consolidate')).toBe(false)
     expect(EVENT_CAUSATION.has('defrag')).toBe(false)
+    expect(EVENT_CAUSATION.has('message')).toBe(false)
+    expect(EVENT_CAUSATION.has('loop_complete')).toBe(false)
+  })
+
+  test('plan save/restore path in EVENT_CAUSATION', () => {
+    expect(EVENT_CAUSATION.get('save_plan')).toEqual(['plan_saved'])
+    expect(EVENT_CAUSATION.get('plan_saved')).toEqual(['invoke_inference'])
+  })
+
+  test('inference_error can retry via invoke_inference', () => {
+    expect(EVENT_CAUSATION.get('inference_error')).toEqual(['invoke_inference'])
   })
 
   test('tool_result branches to invoke_inference and commit_snapshot', () => {
