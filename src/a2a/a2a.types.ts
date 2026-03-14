@@ -82,14 +82,16 @@ export type CreateA2AClientOptions = {
 /**
  * Options for {@link createA2AHandler}.
  *
- * @param card - The Agent Card to serve at the well-known URL
+ * @param card - Agent Card value or getter for dynamic capabilities.
+ *   A function is called per-request so runtime capability changes
+ *   (added skills, updated constitution) are reflected immediately.
  * @param handlers - Operation implementations
  * @param authenticate - Optional auth callback; returns identifier or throws
  *
  * @public
  */
 export type CreateA2AHandlerOptions = {
-  card: AgentCard
+  card: AgentCard | (() => AgentCard)
   handlers: A2AOperationHandlers
   authenticate?: (request: Request) => Promise<string | undefined>
 }

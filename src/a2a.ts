@@ -12,7 +12,10 @@
 
 export * from './a2a/a2a.client.ts'
 export * from './a2a/a2a.constants.ts'
+export * from './a2a/a2a.peers.ts'
 export * from './a2a/a2a.schemas.ts'
 export * from './a2a/a2a.server.ts'
 export type * from './a2a/a2a.types.ts'
 export * from './a2a/a2a.utils.ts'
+export * from './a2a/a2a.ws-client.ts'
+export * from './a2a/a2a.ws-server.ts'

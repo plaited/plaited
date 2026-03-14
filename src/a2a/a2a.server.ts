@@ -29,12 +29,11 @@ import { A2AError, formatSSE, formatSSEError, jsonRpcError, jsonRpcSuccess } fro
  * @public
  */
 export const createA2AHandler = ({ card, handlers, authenticate }: CreateA2AHandlerOptions) => {
-  const cardJson = JSON.stringify(card)
+  /** Resolve the Agent Card — supports both static value and dynamic getter */
+  const resolveCard = typeof card === 'function' ? card : () => card
 
   const routes = {
-    [AGENT_CARD_PATH]: new Response(cardJson, {
-      headers: { 'Content-Type': 'application/json' },
-    }),
+    [AGENT_CARD_PATH]: () => Response.json(resolveCard()),
 
     '/a2a': async (req: Request) => {
       if (req.method !== 'POST') {
@@ -123,6 +122,15 @@ export const createA2AHandler = ({ card, handlers, authenticate }: CreateA2AHand
             const extCard = await handlers.getExtendedAgentCard()
             return Response.json(jsonRpcSuccess(extCard, id))
           }
+
+          // Push notification CRUD — recognized but not supported
+          case 'tasks/pushNotificationConfig/set':
+          case 'tasks/pushNotificationConfig/get':
+          case 'tasks/pushNotificationConfig/list':
+          case 'tasks/pushNotificationConfig/delete':
+            return Response.json(
+              jsonRpcError(A2A_ERROR_CODE.push_notification_not_supported, 'Push notifications not supported', id),
+            )
 
           default:
             return Response.json(jsonRpcError(A2A_ERROR_CODE.method_not_found, `Method not found: ${method}`, id))
