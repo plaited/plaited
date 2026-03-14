@@ -31,5 +31,5 @@
 
     "jsxImportSource": "plaited"
   },
-  "exclude": ["src/ui/css/types", "src/tools/graph-algorithms"]
+  "exclude": ["src/ui/css/types", "src/tools/graph-algorithms", "skills/node-auth/assets"]
 }

@@ -34,6 +34,7 @@ export const createServer = ({
   port = 0,
   tls,
   allowedOrigins,
+  validateSession,
 }: CreateServerOptions): ServerInstance => {
   const server = Bun.serve({
     port,
@@ -101,6 +102,14 @@ export const createServer = ({
             detail: { code: SERVER_ERRORS.session_missing },
           })
           return new Response(SERVER_ERRORS.session_missing, { status: 401 })
+        }
+
+        if (validateSession && !validateSession(sessionId)) {
+          trigger({
+            type: UI_ADAPTER_LIFECYCLE_EVENTS.client_error,
+            detail: { code: SERVER_ERRORS.session_invalid, sessionId },
+          })
+          return new Response(SERVER_ERRORS.session_invalid, { status: 401 })
         }
 
         // Subprotocol — carries client source identity
