@@ -1,3 +1,4 @@
+export * from './a2a.ts'
 export * from './agent.ts'
 export * from './behavioral.ts'
 export * from './server.ts'
