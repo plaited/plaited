@@ -326,9 +326,9 @@ Building top-down: UI → WebSocket server → agent loop. The full stack (agent
 - `src/behavioral/` — BP engine (`behavioral()`, `bThread`, `bSync`, `trigger`, `useFeedback`, `useSnapshot`)
 - `src/ui/` — rendering pipeline, controller protocol, custom elements
 - `src/server/` — thin I/O server via `createServer()` (routes, WebSocket, pub/sub, hot reload). Auth routes return 501 stubs.
-- `src/agent/` — production types (`agent.types.ts`, `agent.schemas.ts`, `agent.constants.ts`, `agent.utils.ts`)
-- `src/tools/` — `crud/` handlers, `trial.*`, `validate-skill.ts`, `lsp.ts`, `cli.utils.ts`, `tools.registry.ts`, `hypergraph.schemas.ts`
-- `src/a2a/` — (planned) Bun-native A2A protocol implementation: data model, abstract operations, protocol bindings (HTTP+JSON, WebSocket, unix socket)
+- `src/agent/` — production types (`agent.types.ts`, `agent.schemas.ts`, `agent.constants.ts`, `agent.utils.ts`), memory handlers (`memory-handlers.ts`)
+- `src/tools/` — `crud/` handlers, `trial.*`, `skill-validate.ts`, `skill-discovery.ts`, `skill.utils.ts`, `validate-thread.ts`, `ingest-goal.ts`, `lsp.ts`, `cli.utils.ts`, `tools.registry.ts`, `hypergraph.schemas.ts`
+- `src/a2a/` — Bun-native A2A protocol: data model (`a2a.schemas.ts`), operations (`a2a.types.ts`), HTTP+JSON-RPC binding (`a2a.server.ts`, `a2a.client.ts`), SSE streaming, Agent Card JWS signing (`a2a.utils.ts`). Client supports unix socket + mTLS. WebSocket binding and push notifications pending.
 
 **What's next:** WebAuthn auth → agent loop (`createAgentLoop()`) → governance factories.
 
@@ -476,7 +476,8 @@ src/tools/
 
 - [ ] WebAuthn auth (passkey registration/verification via SimpleWebAuthn)
 - [ ] `src/agent/` — agent loop implementation (`createAgentLoop()`)
-- [ ] `src/a2a/` — Bun-native A2A protocol (data model, operations, HTTP+JSON/WebSocket/unix bindings, mTLS)
+- [x] `src/a2a/` — Bun-native A2A protocol (HTTP binding complete; WebSocket/push notifications pending)
+- [ ] A2A known-peers management (trust store, TOFU lifecycle, peer revocation)
 - [ ] Phase 2–3 — Governance factories + pipeline handlers
 - [ ] Phase 4 — Default tool skills + evals
 - [ ] Genome skills restructuring (seeds/tools/eval directories)

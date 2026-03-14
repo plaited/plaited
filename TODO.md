@@ -7,12 +7,12 @@
 | **BP Engine** (`src/behavioral/`) | Full algorithm, bThread, bSync | **100% implemented**, well-tested |
 | **UI** (`src/ui/`) | Rendering pipeline, controller protocol, custom elements | **Complete**, actively maintained |
 | **Server** (`src/server/`) | Stateless I/O connector, WebSocket, pub/sub | **Basic shell exists**, edge cases unhandled |
-| **Agent Loop** (`src/agent/`) | 6-step pipeline, 12+ events, handler coordination | **Types only** — zero handler code |
+| **Agent Loop** (`src/agent/`) | 6-step pipeline, 12+ events, handler coordination | **Types + constants + memory handlers** — zero pipeline handler code |
 | **Governance** | MAC/DAC factories, constitution bThreads | **Types only** — no `createGovernanceFactory` |
-| **A2A Protocol** (`src/a2a/`) | HTTP+JSON, WebSocket, unix sockets, mTLS | **Directory doesn't exist** |
+| **A2A Protocol** (`src/a2a/`) | HTTP+JSON, WebSocket, unix sockets, mTLS | **HTTP binding complete** — schemas, client, server, utils, tests. WebSocket/push notifications pending |
 | **Project Isolation** | Orchestrator, subprocess spawning, IPC bridge | **Not implemented** |
 | **Training Pipeline** | GradingDimensions, withMetaVerification, self-distillation | **Trial runner exists**, training semantics missing |
-| **Hypergraph Memory** | JSON-LD vertices, @context vocab, attestation | **Partial** — core exists, BP integration missing |
+| **Hypergraph Memory** | JSON-LD vertices, @context vocab, attestation | **Partial** — core + EVENT_CAUSATION updates + commit vertex schema. BP integration missing |
 
 ## Cross-Document Conflicts
 
@@ -41,6 +41,37 @@
 - **Current reality:** Flat `skills/` directory with SKILL.md per AgentSkills spec
 - No conflict — GENOME.md is a future refactor plan — but nothing links the two conventions.
 
+## Recently Completed
+
+### A2A Protocol (`feat/a2a-protocol` branch, merged)
+- [x] **Layer 1 — Data Model:** Zod schemas for Parts, Messages, Tasks, Artifacts, Agent Card, Security Schemes, JSON-RPC envelopes (`a2a.schemas.ts`)
+- [x] **Layer 2 — Operations:** `A2AOperationHandlers` (server) + `A2AClient` (client) type signatures (`a2a.types.ts`)
+- [x] **Layer 3 — HTTP Binding:** `createA2AHandler` returns `{ routes }` for `Bun.serve()` composition. `createA2AClient` with unix socket + mTLS support (`a2a.server.ts`, `a2a.client.ts`)
+- [x] **Utilities:** SSE encode/parse, JSON-RPC framing, Agent Card JWS signing/verification (ES256/ECDSA P-256) (`a2a.utils.ts`)
+- [x] **Constants:** Task states, message roles, A2A methods, error codes, SSE headers, Agent Card path (`a2a.constants.ts`)
+- [x] **Tests:** Schema validation, SSE round-trip, JSON-RPC framing, Agent Card signing, client-server integration with auth
+
+### MCP Skill Restructuring (`refactor: restructure MCP client`)
+- [x] **Two-tier architecture:** `add-mcp` (transport-agnostic core) → `add-remote-mcp` (HTTP convenience)
+- [x] **Search skills updated:** `search-bun-docs`, `search-mcp-docs`, `search-agent-skills` import from `add-remote-mcp/scripts/remote-mcp.ts`
+- [x] **Old `remote-mcp-integration` skill removed**, `remote-mcp-client.ts` removed from `src/tools/`
+
+### Proactive Events & Memory Architecture
+- [x] **Proactive event constants** (`agent.constants.ts`) — `tick`, `sensor_delta`, `sensor_sweep`, `sleep`, `snapshot_committed`
+- [x] **Memory lifecycle events** (`agent.constants.ts`) — `commit_snapshot`, `consolidate`, `defrag`
+- [x] **`SIDE_EFFECT_TOOLS` set** — identifies write_file, edit_file, bash as commit triggers
+- [x] **Memory handler types** (`agent.types.ts`) — detail types for memory lifecycle events
+
+### Hypergraph Tool Updates
+- [x] **`EVENT_CAUSATION` map updated** (`hypergraph.utils.ts`) — added `tick → sensor_delta → context_assembly`, `sleep` (terminal), `snapshot_committed` (terminal)
+- [x] **`SessionMetaSchema` updated** (`hypergraph.schemas.ts`) — added `commits` field
+- [x] **Commit vertex fixture** added for testing
+- [x] **`validate-thread`** (`src/tools/validate-thread.ts`) — 7-check validation gate (parse, brand, sandbox, purity, MAC protection, name collision, tests pass)
+- [x] **`ingest-goal`** (`src/tools/ingest-goal.ts`) — Goal `.ts` factory → JSON-LD vertex
+- [x] **`memory-handlers`** (`src/agent/memory-handlers.ts`) — `commit_snapshot`, `consolidate`, `defrag` handlers
+- [x] **`skill-discovery`** (`src/tools/skill-discovery.ts`) — discover skills from directories
+- [x] **`skill.utils.ts`** extracted — shared skill utilities
+
 ## Priority Work Items
 
 ### Critical — blocks everything downstream
@@ -59,7 +90,7 @@
 
 - [ ] **Branded factory contract** — Extend GovernanceFactory pattern with `🎯` (goal) and `🔄` (workflow) brands alongside `🏛️` (constitution). Same `{ threads?, handlers? }` return shape.
 - [ ] **Test-first generation flow** — Agent generates `.spec.ts` first (red), then `.ts` implementation (green). Verification pipeline: tsc → LSP analysis → bun test → load.
-- [ ] **`validateAndImport` loader** — Parse, brand check, sandbox check (no imports outside behavioral types), purity check (no side effects), MAC protection (goals can't block MAC events), name collision check, test pass check.
+- [x] **`validateAndImport` loader** — `validate-thread.ts` implements 7-check validation gate.
 - [ ] **`.memory/goals/` directory** — Goal factories persisted as TypeScript. Loaded at spawn via `loadPersistedThreads`. Git-versioned.
 - [ ] **Trial/grader for bThread generation** — Prompt cases for goal and DAC generation. Grader runs tsc + bun test. pass@k/pass^k measures generation reliability. Feeds distillation pipeline.
 
@@ -71,7 +102,7 @@
 - All categories (MAC, DAC, goals, workflows) share the same factory contract — only brand and approval flow differ
 - See CONSTITUTION.md § Generated bThreads for full architecture
 
-### High — hypergraph tool updates (existing code, update in worktree)
+### High — hypergraph tool updates (partially complete)
 
 Three layers — agent tools go through pipeline, memory handlers don't, CLI tools run offline:
 
@@ -83,31 +114,33 @@ Three layers — agent tools go through pipeline, memory handlers don't, CLI too
 | Validation CLI | `tsc`, `bun test`, LSP | No — pre-load gate | `validate-thread` |
 
 **Updates to existing code:**
-- [ ] **`EVENT_CAUSATION` map** (`hypergraph.utils.ts`) — Add `tick → sensor_delta → context_assembly`, `sleep` (terminal), `snapshot_committed` (terminal)
-- [ ] **`SessionMetaSchema`** (`hypergraph.schemas.ts`) — Add `commits: z.array(z.string()).optional()`
-- [ ] **`buildSessionSummary()`** (`hypergraph.utils.ts`) — Collect commit vertex `@id`s from `commits/` dir
-- [ ] **Proactive event constants** (`agent.constants.ts`) — `tick`, `sensor_delta`, `sensor_sweep`, `sleep`, `snapshot_committed` + detail types in `agent.types.ts`
+- [x] **`EVENT_CAUSATION` map** (`hypergraph.utils.ts`) — Added proactive and memory lifecycle events
+- [x] **`SessionMetaSchema`** (`hypergraph.schemas.ts`) — Added `commits` field
+- [x] **`buildSessionSummary()`** (`hypergraph.utils.ts`) — Collects commit vertex `@id`s from session docs
+- [x] **Proactive event constants** (`agent.constants.ts`) — All proactive and memory events added
 
-**New memory handlers (useFeedback, use Bun APIs directly, NOT CRUD tools):**
-- [ ] **`commit_snapshot` handler** — `git add` + `git commit` + SHA capture via `git rev-parse HEAD` + write commit vertex. One-behind pattern. Triggered by `sideEffectCommit` bThread.
-- [ ] **`consolidate` handler** — Decisions → `decisions.jsonl`, `meta.jsonld` via `buildSessionSummary()`, embedding via Indexer, final git commit. Triggered by `sessionClose` bThread.
-- [ ] **`defrag` handler** — `git archive` old sessions, clean working tree. Triggered by `defragSchedule` bThread.
+**Memory handlers (implemented):**
+- [x] **`commit_snapshot` handler** — `git add` + `git commit` + SHA capture + commit vertex
+- [x] **`consolidate` handler** — Decisions → `decisions.jsonl`, `meta.jsonld`, embedding, final commit
+- [x] **`defrag` handler** — `git archive` old sessions, clean working tree
 
-**New CLI tools (offline, standard CLI contract):**
-- [ ] **`plaited ingest-skill`** — Markdown + TS → `skills/{name}.jsonld`. Parse frontmatter, scan brands, LSP types, emit JSON-LD.
-- [ ] **`plaited ingest-rules`** — AGENTS.md → `rules/{scope}.jsonld`. Parse sections, derive scope from path, emit RuleSet.
-- [ ] **`plaited ingest-goal`** — Goal `.ts` factory → `threads/goal_{name}.jsonld`. Design-time vertex with source pointer.
-- [ ] **`plaited validate-thread`** — 7-check validation gate (parse, brand, sandbox, purity, MAC protection, name collision, tests pass).
+**CLI tools (partially complete):**
+- [x] **`plaited ingest-goal`** — Goal `.ts` factory → JSON-LD vertex
+- [x] **`plaited validate-thread`** — 7-check validation gate
+- [ ] **`plaited ingest-skill`** — Markdown + TS → `skills/{name}.jsonld`
+- [ ] **`plaited ingest-rules`** — AGENTS.md → `rules/{scope}.jsonld`
 
 ### Medium — enables multi-agent & training
 
-- [ ] **A2A protocol** (`src/a2a/`) — Required for modnet topology. Directory doesn't exist.
+- [x] **A2A protocol** (`src/a2a/`) — HTTP binding complete. Known-peers, push notifications, WebSocket binding remaining.
+- [ ] **Known-peers management** — Trust store, TOFU lifecycle, peer revocation. Connects Agent Card signing (exists) to trust decisions.
 - [ ] **Project isolation orchestrator** — Multi-project coordination, IPC bridge, tool layers. Nothing built.
 - [ ] **Training pipeline semantics** — `GradingDimensions`, `withMetaVerification`, augmented self-distillation. Trial runner exists but scoring/training loop doesn't.
 - [ ] **Hypergraph <-> BP integration** — Bridge between BP snapshots and JSON-LD file persistence. Both sides partially exist but aren't connected.
 
 ### Medium — enables proactive agent (decided: Variant A)
 
+- [x] **Proactive event constants** — `tick`, `sensor_delta`, `sensor_sweep`, `sleep`, `snapshot_committed` added to `agent.constants.ts`
 - [ ] **Heartbeat bThread** — `tick` event as second entry point into the 6-step pipeline. Timer fires `trigger({ type: 'tick' })`, `taskGate` extended to accept both `task` and `tick`. See AGENT-LOOP.md § Proactive Mode.
 - [ ] **Sensor sweep system** — `useFeedback` handlers on `tick`, parallel sensor execution, `sensor_delta` events, `sensorBatch` bThread coordination. No-delta → `sleep` (skip inference).
 - [ ] **User-configurable interval** — `set_heartbeat` tool call. Natural language control ("check every 2 hours", "pause heartbeat"). Zero marginal cost on local hardware; cloud cost scales with interval.
@@ -122,11 +155,20 @@ Three layers — agent tools go through pipeline, memory handlers don't, CLI too
 - Can evolve toward Variant C (Dual-Mode) later by adding sensor abstractions
 - Variant B only preferred for cloud-only/serverless deployment (not our primary target)
 
+### Medium — enterprise network topology (design complete, see MODNET-IMPLEMENTATION.md)
+
+- [ ] **PM/orchestrator node pattern** — Admin's sovereign agent managing infrastructure nodes via A2A. Design documented. Depends on agent loop.
+- [ ] **Node generation via seeds** — Ephemeral seed skills generate nodes, then are discarded. Node identity is structural (constitution + modules + Agent Card).
+- [ ] **Enterprise genome** — One-shot bootstrap document generates PM node. PM carries seed templates to generate the rest of the network.
+- [ ] **Modnet metadata conventions** — `modnet:role`, `modnet:constitutionHash` in Agent Card `metadata` field.
+
 ### Low — nice-to-have
 
 - [ ] **WebSocket edge cases** — SSR reconciliation, MPA view transitions, origin validation per WEBSOCKET-ARCHITECTURE.md
 - [ ] **Session rollback/branching UX** — HYPERGRAPH-MEMORY.md describes capability; no user-facing design
 - [ ] **Mid-task steering** — User intervention points during the 6-step loop
+- [ ] **A2A WebSocket binding** — Persistent bidirectional. Optimization for sustained collaboration; HTTP covers all operations.
+- [ ] **A2A push notification handlers** — `tasks/pushNotificationConfig/*`. Constants exist, no handler code.
 
 ## Accurate Documents (no action needed)
 
