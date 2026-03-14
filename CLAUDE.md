@@ -19,6 +19,7 @@ skills/
 ├── compare-trials/          # Statistical comparison of trial results
 ├── typescript-lsp/          # LSP symbol search
 ├── code-documentation/      # TSDoc standards
+├── node-auth/               # Auth code generation (WebAuthn, JWT, OIDC, dev-mode)
 ├── validate-skill/          # Skill validation
 └── ...
 ```
@@ -324,12 +325,12 @@ Building top-down: UI → WebSocket server → agent loop. The full stack (agent
 **What exists:**
 - `src/behavioral/` — BP engine (`behavioral()`, `bThread`, `bSync`, `trigger`, `useFeedback`, `useSnapshot`)
 - `src/ui/` — rendering pipeline, controller protocol, custom elements
-- `src/server/` — thin I/O server via `createServer()` (routes, WebSocket, pub/sub, hot reload). Auth routes return 501 stubs.
+- `src/server/` — thin I/O server via `createServer()` (routes, WebSocket, pub/sub, hot reload). Has `validateSession` seam for pluggable auth.
 - `src/agent/` — production types (`agent.types.ts`, `agent.schemas.ts`, `agent.constants.ts`, `agent.utils.ts`)
 - `src/tools/` — `crud/` handlers, `trial.*`, `validate-skill.ts`, `lsp.ts`, `cli.utils.ts`, `tools.registry.ts`, `hypergraph.schemas.ts`
 - `src/a2a/` — (planned) Bun-native A2A protocol implementation: data model, abstract operations, protocol bindings (HTTP+JSON, WebSocket, unix socket)
 
-**What's next:** WebAuthn auth → agent loop (`createAgentLoop()`) → governance factories.
+**What's next:** Agent loop (`createAgentLoop()`) → governance factories.
 
 **Server notes** (`src/server/server.ts`):
 - Stateless connector (no BP) — browser ↔ agent BP
@@ -382,7 +383,7 @@ How does server compose with agent? Is it just another tool seam?
 const agent = createAgentLoop({ inferenceCall, toolExecutor })
 const server = createServer({ port: 3000, tls, allowedOrigins, trigger: agent.trigger, initialRoutes })
 ```
-Also need to integrate https://simplewebauthn.dev/docs/
+Auth is handled via `skills/node-auth/` — the server only provides the `validateSession` seam.
 
 ### Context Window Management (AGENT-LOOP.md)
 Context assembly (`context_assembly` event + contributor handlers) is designed but no pruning strategy exists. Need to decide:
@@ -473,7 +474,7 @@ src/tools/
 
 ## Next Up
 
-- [ ] WebAuthn auth (passkey registration/verification via SimpleWebAuthn)
+- [x] Node auth skill (`skills/node-auth/`) — `validateSession` seam in server + skill with WebAuthn/JWT/OIDC/dev-mode references
 - [ ] `src/agent/` — agent loop implementation (`createAgentLoop()`)
 - [ ] `src/a2a/` — Bun-native A2A protocol (data model, operations, HTTP+JSON/WebSocket/unix bindings, mTLS)
 - [ ] Phase 2–3 — Governance factories + pipeline handlers

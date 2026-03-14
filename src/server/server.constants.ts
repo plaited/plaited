@@ -9,6 +9,7 @@ import { keyMirror } from '../utils.ts'
  * - `upgrade_failed` — WebSocket upgrade call returned false
  * - `malformed_message` — Client sent a message that failed JSON parse or Zod validation
  * - `session_missing` — WebSocket upgrade accessed without `sid` cookie
+ * - `session_invalid` — `sid` cookie present but `validateSession` returned false
  * - `protocol_missing` — WebSocket upgrade without `Sec-WebSocket-Protocol` header
  * - `not_found` — HTTP request for unmatched path (404)
  * - `internal_error` — Uncaught exception in request handler (500)
@@ -20,6 +21,7 @@ export const SERVER_ERRORS = keyMirror(
   'upgrade_failed',
   'malformed_message',
   'session_missing',
+  'session_invalid',
   'protocol_missing',
   'not_found',
   'internal_error',
