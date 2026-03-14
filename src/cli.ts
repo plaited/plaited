@@ -13,11 +13,13 @@
 
 // Agent tools (CRUD)
 import { bashCli, editFileCli, listFilesCli, readFileCli, writeFileCli } from './tools/crud.ts'
+import { ingestGoalCli } from './tools/ingest-goal.ts'
 import { discoverSkillsCli } from './tools/skill-discovery.ts'
 import { validateSkill } from './tools/skill-validate.ts'
 // Trial runner
 import { trialCli } from './tools/trial.ts'
 import { typescriptLsp } from './tools/typescript-lsp.ts'
+import { validateThreadCli } from './tools/validate-thread.ts'
 
 // ============================================================================
 // Command Registry
@@ -34,6 +36,8 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   trial: trialCli,
   // Development tools
   'validate-skill': validateSkill,
+  'validate-thread': validateThreadCli,
+  'ingest-goal': ingestGoalCli,
   'discover-skills': discoverSkillsCli,
   'typescript-lsp': typescriptLsp,
 }
@@ -74,7 +78,8 @@ Commands:
     trial
 
   Development:
-    validate-skill, discover-skills, typescript-lsp`)
+    validate-skill, validate-thread, ingest-goal,
+    discover-skills, typescript-lsp`)
   process.exit(command ? 0 : 1)
 }
 

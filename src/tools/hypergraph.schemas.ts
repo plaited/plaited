@@ -142,5 +142,6 @@ export const SessionMetaSchema = z.object({
   outcomeEvents: z.array(z.string()),
   toolsUsed: z.array(z.string()),
   decisionCount: z.number(),
+  commits: z.array(z.string()).optional(),
   timestamp: z.string(),
 })

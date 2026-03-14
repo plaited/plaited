@@ -50,6 +50,12 @@ export const AGENT_EVENTS = keyMirror(
   'text_delta',
   // Inference errors
   'inference_error',
+  // Proactive heartbeat — autonomous sensing and idle coordination
+  'tick',
+  'sensor_delta',
+  'sensor_sweep',
+  'sleep',
+  'snapshot_committed',
   // Memory lifecycle — coordinated by sideEffectCommit, sessionClose, defragSchedule bThreads
   'commit_snapshot',
   'consolidate',

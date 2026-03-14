@@ -5,10 +5,11 @@
  * Uses fixture `.jsonld` files in `fixtures/hypergraph/` with a known graph
  * structure designed around realistic agent loop use cases.
  *
- * **Fixture graph (9 files, 9 hyperedges):**
+ * **Fixture graph (10 files, 10 hyperedges):**
  *
  * | File | @type | Key vertices |
  * |------|-------|-------------|
+ * | commit-abc1234 | Commit | sha abc1234, attestsTo decisions 1+2 |
  * | decision-001 | SelectionDecision | taskGate, task, maxIterations, execute |
  * | decision-002 | SelectionDecision | sim_guard_tc-1, execute, batchCompletion, tool_result |
  * | decision-003 | SelectionDecision | batchCompletion, invoke_inference, taskGate, gate_approved |
@@ -47,9 +48,9 @@ const ctx: ToolContext = {
 // ============================================================================
 
 describe('loadJsonLd', () => {
-  test('loads all 9 .jsonld files from fixtures directory', async () => {
+  test('loads all 10 .jsonld files from fixtures directory', async () => {
     const docs = await loadJsonLd(FIXTURES_DIR)
-    expect(docs.length).toBe(9)
+    expect(docs.length).toBe(10)
   })
 
   test('each document has an @id field', async () => {
@@ -67,10 +68,10 @@ describe('loadJsonLd', () => {
 
 describe('buildIndex', () => {
   describe('hyperedge registration', () => {
-    test('counts 9 hyperedges (4 decisions + 3 sessions + 1 ruleset + 1 skill)', async () => {
+    test('counts 10 hyperedges (4 decisions + 3 sessions + 1 commit + 1 ruleset + 1 skill)', async () => {
       const docs = await loadJsonLd(FIXTURES_DIR)
       const index = buildIndex(docs)
-      expect(index.hyperedgeIds.length).toBe(9)
+      expect(index.hyperedgeIds.length).toBe(10)
     })
 
     test('collects 5 unique @type values', async () => {
@@ -81,7 +82,8 @@ describe('buildIndex', () => {
       expect(types.has('Session')).toBe(true)
       expect(types.has('Skill')).toBe(true)
       expect(types.has('RuleSet')).toBe(true)
-      expect(types.size).toBe(4)
+      expect(types.has('Commit')).toBe(true)
+      expect(types.size).toBe(5)
     })
 
     test('handles documents without @id (skips them)', () => {
@@ -509,20 +511,20 @@ describe('match', () => {
     expect(result.matches.length).toBe(2)
   })
 
-  test('finds cross-type match [Session, SelectionDecision]', async () => {
-    // Sorted @id order: RuleSet, Session×3, SD×4, Skill
-    // Session→SD boundary at indices [3,4]
+  test('finds cross-type match [Session, Commit]', async () => {
+    // Sorted @id order: RuleSet, Session×3, Commit, SD×4, Skill
+    // Session→Commit boundary at indices [3,4]
     const result = (await search(
-      { path: 'hypergraph', query: 'match', pattern: { sequence: ['Session', 'SelectionDecision'] } },
+      { path: 'hypergraph', query: 'match', pattern: { sequence: ['Session', 'Commit'] } },
       ctx,
     )) as { matches: Array<Array<{ id: string; type: string; vertices: string[] }>> }
     expect(result.matches.length).toBe(1)
     expect(result.matches[0]![0]!.type).toBe('Session')
-    expect(result.matches[0]![1]!.type).toBe('SelectionDecision')
+    expect(result.matches[0]![1]!.type).toBe('Commit')
   })
 
   test('finds [SelectionDecision, Skill] match (SD→Skill boundary)', async () => {
-    // Last SD at index 7, Skill at index 8
+    // Last SD at index 8, Skill at index 9
     const result = (await search(
       { path: 'hypergraph', query: 'match', pattern: { sequence: ['SelectionDecision', 'Skill'] } },
       ctx,
