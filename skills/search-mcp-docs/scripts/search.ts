@@ -5,7 +5,7 @@
  */
 
 const MCP_URL = 'https://modelcontextprotocol.io/mcp'
-const TOOL_NAME = 'SearchModelContextProtocol'
+const TOOL_NAME = 'search_model_context_protocol'
 
 const main = async () => {
   const raw = process.argv[2]

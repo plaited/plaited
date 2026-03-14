@@ -5,7 +5,7 @@
  */
 
 const MCP_URL = 'https://bun.com/docs/mcp'
-const TOOL_NAME = 'SearchBun'
+const TOOL_NAME = 'search_bun'
 
 const main = async () => {
   const raw = process.argv[2]

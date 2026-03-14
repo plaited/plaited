@@ -5,7 +5,7 @@
  */
 
 const MCP_URL = 'https://agentskills.io/mcp'
-const TOOL_NAME = 'SearchAgentSkills'
+const TOOL_NAME = 'search_agent_skills'
 
 const main = async () => {
   const raw = process.argv[2]

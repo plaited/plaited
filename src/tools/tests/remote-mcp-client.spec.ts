@@ -21,7 +21,7 @@ describe('mcpListTools', () => {
   test('lists tools from bun-docs server', async () => {
     const tools = await mcpListTools(BUN_DOCS_URL)
     expect(tools.length).toBeGreaterThan(0)
-    const searchTool = tools.find((t) => t.name === 'SearchBun')
+    const searchTool = tools.find((t) => t.name === 'search_bun')
     expect(searchTool).toBeDefined()
     expect(searchTool?.inputSchema).toBeDefined()
   })
@@ -29,21 +29,21 @@ describe('mcpListTools', () => {
   test('lists tools from mcp-docs server', async () => {
     const tools = await mcpListTools(MCP_DOCS_URL)
     expect(tools.length).toBeGreaterThan(0)
-    const searchTool = tools.find((t) => t.name === 'SearchModelContextProtocol')
+    const searchTool = tools.find((t) => t.name === 'search_model_context_protocol')
     expect(searchTool).toBeDefined()
   })
 
   test('lists tools from agent-skills server', async () => {
     const tools = await mcpListTools(AGENT_SKILLS_URL)
     expect(tools.length).toBeGreaterThan(0)
-    const searchTool = tools.find((t) => t.name === 'SearchAgentSkills')
+    const searchTool = tools.find((t) => t.name === 'search_agent_skills')
     expect(searchTool).toBeDefined()
   })
 })
 
 describe('mcpCallTool', () => {
   test('searches bun-docs for Bun.file', async () => {
-    const result = await mcpCallTool(BUN_DOCS_URL, 'SearchBun', { query: 'Bun.file' })
+    const result = await mcpCallTool(BUN_DOCS_URL, 'search_bun', { query: 'Bun.file' })
     expect(result.content.length).toBeGreaterThan(0)
     const first = result.content[0]!
     expect(first.type).toBe('text')
@@ -51,7 +51,7 @@ describe('mcpCallTool', () => {
   })
 
   test('searches mcp-docs for tools/call', async () => {
-    const result = await mcpCallTool(MCP_DOCS_URL, 'SearchModelContextProtocol', {
+    const result = await mcpCallTool(MCP_DOCS_URL, 'search_model_context_protocol', {
       query: 'tools/call request',
     })
     expect(result.content.length).toBeGreaterThan(0)
@@ -60,7 +60,7 @@ describe('mcpCallTool', () => {
   })
 
   test('searches agent-skills for SKILL.md', async () => {
-    const result = await mcpCallTool(AGENT_SKILLS_URL, 'SearchAgentSkills', {
+    const result = await mcpCallTool(AGENT_SKILLS_URL, 'search_agent_skills', {
       query: 'SKILL.md frontmatter',
     })
     expect(result.content.length).toBeGreaterThan(0)
