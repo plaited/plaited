@@ -48,7 +48,13 @@ export const EVENT_CAUSATION = new Map<string, string[]>([
   ['sensor_sweep', ['sensor_delta', 'sleep']],
   // sensor_delta merges into reactive path via context_assembly
   ['sensor_delta', ['context_assembly']],
-  // Terminals: sleep, snapshot_committed, consolidate, defrag have no successors
+  // Plan save/restore path (loop within Reason step)
+  ['save_plan', ['plan_saved']],
+  ['plan_saved', ['invoke_inference']],
+  // Inference error → retry or terminal
+  ['inference_error', ['invoke_inference']],
+  // Terminals: sleep, snapshot_committed, consolidate, defrag,
+  // message, loop_complete have no successors
 ])
 
 // ============================================================================
