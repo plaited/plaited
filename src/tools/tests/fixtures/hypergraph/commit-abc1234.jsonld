@@ -1,0 +1,7 @@
+{
+  "@id": "session/sess_test/commit/abc1234",
+  "@type": "Commit",
+  "sha": "abc1234",
+  "timestamp": "2026-03-03T10:00:04.000Z",
+  "attestsTo": ["session/sess_test/decision/1", "session/sess_test/decision/2"]
+}

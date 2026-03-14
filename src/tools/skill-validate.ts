@@ -15,11 +15,11 @@ import { basename, join } from 'node:path'
 import * as z from 'zod'
 import { parseCli } from './cli.utils.ts'
 import {
-  type SkillProperties,
   findSkillDirectories,
   findSkillMd,
   isDirectory,
   parseFrontmatter,
+  type SkillProperties,
 } from './skill.utils.ts'
 
 // ============================================================================

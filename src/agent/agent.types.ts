@@ -266,6 +266,38 @@ export type InferenceErrorDetail = {
 }
 
 // ============================================================================
+// Proactive Heartbeat Event Details — tick, sensor_delta, sensor_sweep, sleep, snapshot_committed
+// ============================================================================
+
+/** Detail payload for the `tick` event (periodic heartbeat) */
+export type TickDetail = {
+  tickNumber: number
+  timestamp: string
+}
+
+/** Detail payload for the `sensor_delta` event (single sensor change) */
+export type SensorDeltaDetail = {
+  sensor: string
+  delta: unknown
+}
+
+/** Detail payload for the `sensor_sweep` event (batched sensor deltas) */
+export type SensorSweepDetail = {
+  deltas: SensorDeltaDetail[]
+}
+
+/** Detail payload for the `sleep` event (idle after no deltas detected) */
+export type SleepDetail = {
+  durationMs: number
+}
+
+/** Detail payload for the `snapshot_committed` event (git commit captured) */
+export type SnapshotCommittedDetail = {
+  sha: string
+  modulePath: string
+}
+
+// ============================================================================
 // Memory Lifecycle Event Details — commit_snapshot, consolidate, defrag
 // ============================================================================
 
@@ -359,6 +391,12 @@ export type AgentEventDetails = {
   [AGENT_EVENTS.thinking_delta]: ThinkingDeltaDetail
   [AGENT_EVENTS.text_delta]: TextDeltaDetail
   [AGENT_EVENTS.inference_error]: InferenceErrorDetail
+  // ── Proactive heartbeat events ─────────────────────────────────────
+  [AGENT_EVENTS.tick]: TickDetail
+  [AGENT_EVENTS.sensor_delta]: SensorDeltaDetail
+  [AGENT_EVENTS.sensor_sweep]: SensorSweepDetail
+  [AGENT_EVENTS.sleep]: SleepDetail
+  [AGENT_EVENTS.snapshot_committed]: SnapshotCommittedDetail
   // ── Memory lifecycle events ────────────────────────────────────────
   [AGENT_EVENTS.commit_snapshot]: CommitSnapshotDetail
   [AGENT_EVENTS.consolidate]: ConsolidateDetail
