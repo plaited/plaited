@@ -5,7 +5,7 @@
  */
 
 const MCP_URL = 'https://bun.com/docs/mcp'
-const TOOL_NAME = 'SearchBun'
+const TOOL_NAME = 'search_bun'
 
 const main = async () => {
   const raw = process.argv[2]
@@ -20,7 +20,13 @@ const main = async () => {
     process.exit(2)
   }
 
-  const input = JSON.parse(raw)
+  let input: { query?: string }
+  try {
+    input = JSON.parse(raw)
+  } catch {
+    console.error('Invalid JSON input')
+    process.exit(2)
+  }
   if (!input.query) {
     console.error('Missing required field: query')
     process.exit(2)

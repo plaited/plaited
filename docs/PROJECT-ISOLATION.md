@@ -116,6 +116,29 @@ useFeedback({
 })
 ```
 
+## Two Levels of `Bun.spawn()`
+
+The architecture uses `Bun.spawn()` at two distinct levels — project isolation and sub-agent coordination. They serve different purposes but use the same IPC mechanism:
+
+| Level | Purpose | Lifecycle | Spawned By |
+|---|---|---|---|
+| **Project subprocess** | Isolate codebases with different security contexts | Long-lived (reused across tasks) | Orchestrator |
+| **Sub-agent process** | Isolate inference + tool execution per sub-task | Ephemeral (per-task, fresh context) | PM engine within a project subprocess |
+
+A project subprocess contains the PM's `behavioral()` engine. The PM spawns sub-agents within that subprocess's context — sub-agents inherit the project's cwd, tool assembly, and constitution. The orchestrator doesn't manage sub-agents directly; it routes tasks to the right project, and the project's PM handles decomposition.
+
+```
+Orchestrator (behavioral())
+  └─ Project A (Bun.spawn)     ← long-lived, per-project
+       └─ PM Engine (behavioral())
+            ├─ Sub-agent 1 (Bun.spawn)  ← ephemeral, per-task
+            ├─ Sub-agent 2 (Bun.spawn)  ← ephemeral, per-task
+            └─ Judge (Bun.spawn)        ← ephemeral, per-verification
+  └─ Project B (Bun.spawn)
+       └─ PM Engine (behavioral())
+            └─ ...
+```
+
 ## What Isolation Provides
 
 | Concern | Solution |
