@@ -104,7 +104,7 @@ export const createServer = ({
           return new Response(SERVER_ERRORS.session_missing, { status: 401 })
         }
 
-        if (validateSession && !validateSession(sessionId)) {
+        if (!validateSession(sessionId)) {
           trigger({
             type: UI_ADAPTER_LIFECYCLE_EVENTS.client_error,
             detail: { code: SERVER_ERRORS.session_invalid, sessionId },

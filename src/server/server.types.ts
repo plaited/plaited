@@ -61,5 +61,5 @@ export type CreateServerOptions = {
   port?: number
   tls?: TLSOptions
   allowedOrigins?: Set<string>
-  validateSession?: (sessionId: string) => boolean
+  validateSession: (sessionId: string) => boolean
 }

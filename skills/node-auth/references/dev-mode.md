@@ -9,27 +9,23 @@ For local development and testing where auth friction should be zero.
 - CI/CD test environments
 - Any context where the network boundary provides sufficient isolation
 
-## Option A: No Auth (Simplest)
+## Option A: Accept All (Simplest)
 
-Don't pass `validateSession` at all. The server only checks for the presence of the `sid` cookie, not its validity:
+Pass a no-op validator. Any `sid` cookie value is accepted:
 
 ```typescript
 const server = createServer({
   trigger,
-  routes: {},
-  // No validateSession — any sid cookie value is accepted
+  routes: {
+    '/dev/session': new Response('OK', {
+      headers: { 'Set-Cookie': `sid=${crypto.randomUUID()}; HttpOnly; SameSite=Strict; Path=/` },
+    }),
+  },
+  validateSession: () => true,
 })
 ```
 
-The client just needs any `sid` cookie set. Use a static route to set one:
-
-```typescript
-const routes = {
-  '/dev/session': new Response('OK', {
-    headers: { 'Set-Cookie': `sid=${crypto.randomUUID()}; HttpOnly; SameSite=Strict; Path=/` },
-  }),
-}
-```
+The client just needs any `sid` cookie set — hit `/dev/session` first.
 
 ## Option B: Auto-Session (Slightly Better)
 

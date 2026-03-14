@@ -22,21 +22,20 @@ import {
   verifyRegistrationResponse,
 } from '@simplewebauthn/server'
 import { isoBase64URL } from '@simplewebauthn/server/helpers'
-import { keyMirror } from '../../src/utils.ts'
 import type { OwnerRecord, StoredCredential } from './webauthn-schemas.ts'
 import { AuthStoreSchema, RegisterOptionsRequestSchema } from './webauthn-schemas.ts'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-export const AUTH_ERRORS = keyMirror(
-  'owner_exists',
-  'not_authenticated',
-  'challenge_expired',
-  'verification_failed',
-  'credential_not_found',
-  'invalid_input',
-  'no_owner',
-)
+export const AUTH_ERRORS = Object.freeze({
+  owner_exists: 'owner_exists',
+  not_authenticated: 'not_authenticated',
+  challenge_expired: 'challenge_expired',
+  verification_failed: 'verification_failed',
+  credential_not_found: 'credential_not_found',
+  invalid_input: 'invalid_input',
+  no_owner: 'no_owner',
+} as const)
 
 export const AUTH_ROUTES = {
   status: '/auth/status',
@@ -48,6 +47,7 @@ export const AUTH_ROUTES = {
 
 const CHALLENGE_TTL_MS = 5 * 60 * 1000
 const SESSION_MAX_AGE_S = 24 * 60 * 60
+const SESSION_MAX_AGE_MS = SESSION_MAX_AGE_S * 1000
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -149,6 +149,9 @@ export const createAuthRoutes = async (options: CreateAuthRoutesOptions) => {
     const now = Date.now()
     for (const [sid, entry] of challengeStore) {
       if (now - entry.createdAt > CHALLENGE_TTL_MS) challengeStore.delete(sid)
+    }
+    for (const [sid, entry] of sessionStore) {
+      if (now - entry.createdAt > SESSION_MAX_AGE_MS) sessionStore.delete(sid)
     }
   }, CHALLENGE_TTL_MS)
 

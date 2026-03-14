@@ -15,6 +15,7 @@ const createTestServer = (overrides: Partial<Parameters<typeof createServer>[0]>
   const server = createServer({
     trigger,
     routes: overrides.routes ?? {},
+    validateSession: () => true,
     port: 0,
     ...overrides,
   })

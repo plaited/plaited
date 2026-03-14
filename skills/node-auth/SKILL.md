@@ -31,7 +31,7 @@ createServer({
 })
 ```
 
-When `validateSession` is provided, WebSocket upgrades are rejected with `session_invalid` (401) if the function returns `false` for the `sid` cookie value.
+`validateSession` is required. WebSocket upgrades are rejected with `session_invalid` (401) if it returns `false` for the `sid` cookie value. For dev mode, pass `() => true`.
 
 ## Decision: Deployment Context
 
