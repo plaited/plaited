@@ -18,7 +18,8 @@ import { remoteMcpClientCli } from './tools/remote-mcp-client.ts'
 // Trial runner
 import { trialCli } from './tools/trial.ts'
 import { typescriptLsp } from './tools/typescript-lsp.ts'
-import { validateSkill } from './tools/validate-skill.ts'
+import { discoverSkillsCli } from './tools/skill-discovery.ts'
+import { validateSkill } from './tools/skill-validate.ts'
 
 // ============================================================================
 // Command Registry
@@ -36,6 +37,7 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   // Development tools
   'remote-mcp-client': remoteMcpClientCli,
   'validate-skill': validateSkill,
+  'discover-skills': discoverSkillsCli,
   'typescript-lsp': typescriptLsp,
 }
 
@@ -75,7 +77,7 @@ Commands:
     trial
 
   Development:
-    remote-mcp-client, validate-skill, typescript-lsp`)
+    remote-mcp-client, validate-skill, discover-skills, typescript-lsp`)
   process.exit(command ? 0 : 1)
 }
 

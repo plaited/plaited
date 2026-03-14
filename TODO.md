@@ -71,14 +71,40 @@
 - All categories (MAC, DAC, goals, workflows) share the same factory contract — only brand and approval flow differ
 - See CONSTITUTION.md § Generated bThreads for full architecture
 
+### High — hypergraph tool updates (existing code, update in worktree)
+
+Three layers — agent tools go through pipeline, memory handlers don't, CLI tools run offline:
+
+| Layer | Uses | Goes through pipeline? | Example |
+|-------|------|----------------------|---------|
+| Agent tools (CRUD) | Tool handlers in registry | Yes — gate, simulate, evaluate | `write_file`, `bash`, `search` |
+| Memory handlers | `Bun.write`, `Bun.file`, `Bun.$` directly | No — BP coordinates via bThreads | `commit_snapshot`, `consolidate`, `defrag` |
+| Ingestion CLI | `Bun.file`, `Bun.write`, LSP | No — offline pipeline | `ingest-skill`, `ingest-rules`, `ingest-goal` |
+| Validation CLI | `tsc`, `bun test`, LSP | No — pre-load gate | `validate-thread` |
+
+**Updates to existing code:**
+- [ ] **`EVENT_CAUSATION` map** (`hypergraph.utils.ts`) — Add `tick → sensor_delta → context_assembly`, `sleep` (terminal), `snapshot_committed` (terminal)
+- [ ] **`SessionMetaSchema`** (`hypergraph.schemas.ts`) — Add `commits: z.array(z.string()).optional()`
+- [ ] **`buildSessionSummary()`** (`hypergraph.utils.ts`) — Collect commit vertex `@id`s from `commits/` dir
+- [ ] **Proactive event constants** (`agent.constants.ts`) — `tick`, `sensor_delta`, `sensor_sweep`, `sleep`, `snapshot_committed` + detail types in `agent.types.ts`
+
+**New memory handlers (useFeedback, use Bun APIs directly, NOT CRUD tools):**
+- [ ] **`commit_snapshot` handler** — `git add` + `git commit` + SHA capture via `git rev-parse HEAD` + write commit vertex. One-behind pattern. Triggered by `sideEffectCommit` bThread.
+- [ ] **`consolidate` handler** — Decisions → `decisions.jsonl`, `meta.jsonld` via `buildSessionSummary()`, embedding via Indexer, final git commit. Triggered by `sessionClose` bThread.
+- [ ] **`defrag` handler** — `git archive` old sessions, clean working tree. Triggered by `defragSchedule` bThread.
+
+**New CLI tools (offline, standard CLI contract):**
+- [ ] **`plaited ingest-skill`** — Markdown + TS → `skills/{name}.jsonld`. Parse frontmatter, scan brands, LSP types, emit JSON-LD.
+- [ ] **`plaited ingest-rules`** — AGENTS.md → `rules/{scope}.jsonld`. Parse sections, derive scope from path, emit RuleSet.
+- [ ] **`plaited ingest-goal`** — Goal `.ts` factory → `threads/goal_{name}.jsonld`. Design-time vertex with source pointer.
+- [ ] **`plaited validate-thread`** — 7-check validation gate (parse, brand, sandbox, purity, MAC protection, name collision, tests pass).
+
 ### Medium — enables multi-agent & training
 
 - [ ] **A2A protocol** (`src/a2a/`) — Required for modnet topology. Directory doesn't exist.
 - [ ] **Project isolation orchestrator** — Multi-project coordination, IPC bridge, tool layers. Nothing built.
 - [ ] **Training pipeline semantics** — `GradingDimensions`, `withMetaVerification`, augmented self-distillation. Trial runner exists but scoring/training loop doesn't.
 - [ ] **Hypergraph <-> BP integration** — Bridge between BP snapshots and JSON-LD file persistence. Both sides partially exist but aren't connected.
-- [ ] **Commit vertex + SHA capture** — `commit_snapshot` handler: run `git commit`, capture SHA via `git rev-parse HEAD`, write commit vertex `.jsonld` with `attestsTo` links to bundled decisions. One-behind pattern (vertex for commit N stored in commit N+1). See HYPERGRAPH-MEMORY.md § Commit Vertex.
-- [ ] **Generated factory ingestion** — When agent generates `.memory/goals/*.ts` or `.memory/constitution/dac/*.ts`, also emit design-time `.jsonld` vertex in `.memory/threads/` for hypergraph queryability. Re-ingest on `git diff`.
 
 ### Medium — enables proactive agent (decided: Variant A)
 
