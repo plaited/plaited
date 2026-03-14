@@ -144,6 +144,47 @@ describe('Client-Server Integration', () => {
   })
 })
 
+// ── Dynamic Agent Card ────────────────────────────────────────────────────────
+
+describe('Dynamic Agent Card', () => {
+  let server: ReturnType<typeof Bun.serve>
+  let url: string
+  let skillCount: number
+
+  test('setup', () => {
+    skillCount = 0
+    const { routes } = createA2AHandler({
+      card: () => ({
+        ...testCard,
+        skills: Array.from({ length: skillCount }, (_, i) => ({
+          id: `skill-${i}`,
+          name: `Skill ${i}`,
+        })),
+      }),
+      handlers: { sendMessage: async () => makeTask('task-1') },
+    })
+    server = Bun.serve({ port: 0, routes })
+    url = `http://localhost:${server.port}`
+  })
+
+  afterAll(() => server?.stop(true))
+
+  test('card reflects runtime state changes', async () => {
+    const client = createA2AClient({ url })
+
+    // Initially no skills
+    const card1 = await client.fetchAgentCard()
+    expect(card1.skills).toHaveLength(0)
+
+    // "Add" a skill at runtime
+    skillCount = 2
+    const card2 = await client.fetchAgentCard()
+    expect(card2.skills).toHaveLength(2)
+
+    client.disconnect()
+  })
+})
+
 // ── Error Handling ────────────────────────────────────────────────────────────
 
 describe('Error Handling', () => {
@@ -215,7 +256,7 @@ describe('Error Handling', () => {
     expect(json.error.code).toBe(-32600)
   })
 
-  test('unknown method returns method not found', async () => {
+  test('push notification methods return push_notification_not_supported', async () => {
     const response = await fetch(`${url}/a2a`, {
       method: 'POST',
       body: JSON.stringify({
@@ -227,7 +268,8 @@ describe('Error Handling', () => {
       headers: { 'Content-Type': 'application/json' },
     })
     const json = await response.json()
-    expect(json.error.code).toBe(-32601)
+    expect(json.error.code).toBe(-32003)
+    expect(json.error.message).toBe('Push notifications not supported')
   })
 
   test('GET on /a2a returns 405', async () => {
