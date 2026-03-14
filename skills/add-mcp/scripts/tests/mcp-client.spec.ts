@@ -1,19 +1,24 @@
 import { describe, expect, test } from 'bun:test'
-import { mcpCallTool, mcpConnect, mcpListTools } from '../remote-mcp-client.ts'
+import {
+  createRemoteMcpSession,
+  mcpCallTool,
+  mcpListTools,
+  remoteMcpConnect,
+} from '../../../add-remote-mcp/scripts/remote-mcp.ts'
 
 const BUN_DOCS_URL = 'https://bun.com/docs/mcp'
 const MCP_DOCS_URL = 'https://modelcontextprotocol.io/mcp'
 const AGENT_SKILLS_URL = 'https://agentskills.io/mcp'
 
-describe('mcpConnect', () => {
+describe('remoteMcpConnect', () => {
   test('connects to bun-docs server', async () => {
-    const client = await mcpConnect(BUN_DOCS_URL)
+    const client = await remoteMcpConnect(BUN_DOCS_URL)
     expect(client).toBeDefined()
     await client.close()
   })
 
   test('throws on invalid URL', async () => {
-    await expect(mcpConnect('https://localhost:1/nonexistent')).rejects.toThrow()
+    await expect(remoteMcpConnect('https://localhost:1/nonexistent')).rejects.toThrow()
   })
 })
 
@@ -69,60 +74,28 @@ describe('mcpCallTool', () => {
   })
 })
 
-describe('remoteMcpClientCli', () => {
-  test('--help exits 0', async () => {
-    const proc = Bun.spawn(['bun', 'run', 'src/tools/remote-mcp-client.ts', '--help'], {
-      cwd: import.meta.dir.replace('/src/tools/tests', ''),
-      stdout: 'pipe',
-      stderr: 'pipe',
-    })
-    const exitCode = await proc.exited
-    expect(exitCode).toBe(0)
+describe('createRemoteMcpSession', () => {
+  test('reuses connection across multiple operations', async () => {
+    await using session = await createRemoteMcpSession(BUN_DOCS_URL)
+
+    const tools = await session.listTools()
+    expect(tools.length).toBeGreaterThan(0)
+
+    const result = await session.callTool('search_bun', { query: 'Bun.serve' })
+    expect(result.content.length).toBeGreaterThan(0)
   })
 
-  test('--schema input emits JSON Schema', async () => {
-    const proc = Bun.spawn(['bun', 'run', 'src/tools/remote-mcp-client.ts', '--schema', 'input'], {
-      cwd: import.meta.dir.replace('/src/tools/tests', ''),
-      stdout: 'pipe',
-      stderr: 'pipe',
-    })
-    const stdout = await new Response(proc.stdout).text()
-    const exitCode = await proc.exited
-    expect(exitCode).toBe(0)
-    const schema = JSON.parse(stdout)
-    expect(schema).toHaveProperty('oneOf')
+  test('supports timeoutMs option', async () => {
+    await using session = await createRemoteMcpSession(BUN_DOCS_URL, { timeoutMs: 30_000 })
+    const tools = await session.listTools()
+    expect(tools.length).toBeGreaterThan(0)
   })
 
-  test('exits 2 on missing input', async () => {
-    const proc = Bun.spawn(['bun', 'run', 'src/tools/remote-mcp-client.ts'], {
-      cwd: import.meta.dir.replace('/src/tools/tests', ''),
-      stdout: 'pipe',
-      stderr: 'pipe',
-    })
-    const exitCode = await proc.exited
-    expect(exitCode).toBe(2)
-  })
-
-  test('exits 2 on invalid JSON', async () => {
-    const proc = Bun.spawn(['bun', 'run', 'src/tools/remote-mcp-client.ts', 'not-json'], {
-      cwd: import.meta.dir.replace('/src/tools/tests', ''),
-      stdout: 'pipe',
-      stderr: 'pipe',
-    })
-    const exitCode = await proc.exited
-    expect(exitCode).toBe(2)
-  })
-
-  test('exits 2 on invalid method', async () => {
-    const proc = Bun.spawn(
-      ['bun', 'run', 'src/tools/remote-mcp-client.ts', JSON.stringify({ method: 'bogus', url: 'http://x' })],
-      {
-        cwd: import.meta.dir.replace('/src/tools/tests', ''),
-        stdout: 'pipe',
-        stderr: 'pipe',
-      },
-    )
-    const exitCode = await proc.exited
-    expect(exitCode).toBe(2)
+  test('discover returns tools, prompts, and resources', async () => {
+    await using session = await createRemoteMcpSession(BUN_DOCS_URL)
+    const capabilities = await session.discover()
+    expect(capabilities.tools.length).toBeGreaterThan(0)
+    expect(Array.isArray(capabilities.prompts)).toBe(true)
+    expect(Array.isArray(capabilities.resources)).toBe(true)
   })
 })

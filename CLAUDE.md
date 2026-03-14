@@ -2,7 +2,7 @@
 
 ## Testing
 
-**Always use `bun test src/`** — never bare `bun test`. The `skills/` directory contains copied test assets with broken module paths that are not meant to be tested directly. The `package.json` `test` script scopes tests to `src/` only.
+**Always use `bun test src/ skills/`** — never bare `bun test`. The `package.json` `test` script scopes tests to `src/` and `skills/` directories. Skill tests live in `skills/*/scripts/tests/*.spec.ts`.
 
 ## Skills Directory
 
@@ -10,7 +10,8 @@ Skills live in `skills/` at the project root (not `.agents/skills/` or `.claude/
 
 ```
 skills/
-├── remote-mcp-integration/ # Generate skills from remote MCP servers
+├── add-mcp/                # Transport-agnostic MCP client (session API)
+├── add-remote-mcp/         # HTTP MCP convenience layer + skill generation
 ├── search-bun-docs/        # Search Bun documentation via MCP
 ├── search-mcp-docs/        # Search MCP specification via MCP
 ├── search-agent-skills/    # Search AgentSkills specification via MCP
@@ -358,7 +359,7 @@ Key implementation decisions. See `docs/ARCHITECTURE.md`, `docs/SAFETY.md`, `doc
 
 **Streaming UI:** Inference handler → BP events (`thinking_delta`, `text_delta`) → `render` messages. BP IS the streaming protocol.
 
-**External tool integration:** Discover schema → generate TypeScript wrapper → teach via skill → agent composes scripts. Implemented for MCP Streamable HTTP via `src/tools/remote-mcp-client.ts` (CLI tool + library over `@modelcontextprotocol/sdk`) + `skills/remote-mcp-integration/` (meta-skill teaching the pattern). Three search skills generated: `search-bun-docs`, `search-mcp-docs`, `search-agent-skills`. Skills shell out via `Bun.$` to `plaited remote-mcp-client` — no library import.
+**External tool integration:** Discover schema → generate TypeScript wrapper → teach via skill → agent composes scripts. Two-tier skill architecture: `skills/add-mcp/` (transport-agnostic MCP client with session API over `@modelcontextprotocol/sdk`) and `skills/add-remote-mcp/` (HTTP convenience layer). Three generated search skills (`search-bun-docs`, `search-mcp-docs`, `search-agent-skills`) import directly from `add-remote-mcp/scripts/remote-mcp.ts` — no CLI shelling.
 
 **Risk tags:** Implemented in `agent.constants.ts`. Tags: `workspace`, `crosses_boundary`, `inbound`, `outbound`, `irreversible`, `external_audience`. Empty/unknown → simulate+judge; workspace-only → execute directly; boundary/irreversible/audience → simulate+judge.
 

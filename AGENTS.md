@@ -58,7 +58,7 @@
 
 **Before committing code changes**, both must pass:
 1. `bun --bun tsc --noEmit` — type check
-2. `bun test src/` — tests
+2. `bun test src/ skills/` — tests
 
 Don't commit code that fails either check. Fix first, then commit.
 *Exception:* `docs:` and `chore:` commits (no code changes) skip this gate.
@@ -195,7 +195,7 @@ graph TD
 **Coverage checklist** - Happy path, edge cases, error paths, real integrations  
 *Verify:* Review test file completeness
 
-**Run:** `bun test` before commit
+**Run:** `bun test src/ skills/` before commit
 
 
 # Accuracy
