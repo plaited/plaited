@@ -1,0 +1,95 @@
+import type {
+  AgentCard,
+  Message,
+  MessageSendParams,
+  Task,
+  TaskArtifactUpdateEvent,
+  TaskIdParams,
+  TaskQueryParams,
+  TaskStatusUpdateEvent,
+} from './a2a.schemas.ts'
+
+// ============================================================================
+// Streaming Event Union
+// ============================================================================
+
+/** Events yielded during streaming operations */
+export type StreamEvent = Task | Message | TaskStatusUpdateEvent | TaskArtifactUpdateEvent
+
+// ============================================================================
+// Server-Side Operation Handlers
+// ============================================================================
+
+/**
+ * Server-side handler signatures that the agent implements.
+ *
+ * @remarks
+ * Only `sendMessage` is required. Unimplemented operations return
+ * `-32601 method_not_found` to the caller via JSON-RPC.
+ *
+ * @public
+ */
+export type A2AOperationHandlers = {
+  sendMessage: (params: MessageSendParams, signal: AbortSignal) => Promise<Task | Message>
+  sendStreamingMessage?: (params: MessageSendParams, signal: AbortSignal) => AsyncIterable<StreamEvent>
+  getTask?: (params: TaskQueryParams) => Promise<Task>
+  cancelTask?: (params: TaskIdParams) => Promise<Task>
+  subscribeToTask?: (params: TaskIdParams, signal: AbortSignal) => AsyncIterable<StreamEvent>
+  getExtendedAgentCard?: () => Promise<AgentCard>
+}
+
+// ============================================================================
+// Client Interface
+// ============================================================================
+
+/**
+ * Outbound A2A client — all operations available.
+ *
+ * @public
+ */
+export type A2AClient = {
+  sendMessage: (params: MessageSendParams) => Promise<Task | Message>
+  sendStreamingMessage: (params: MessageSendParams, signal?: AbortSignal) => AsyncIterable<StreamEvent>
+  getTask: (params: TaskQueryParams) => Promise<Task>
+  cancelTask: (params: TaskIdParams) => Promise<Task>
+  subscribeToTask: (params: TaskIdParams, signal?: AbortSignal) => AsyncIterable<StreamEvent>
+  getExtendedAgentCard: () => Promise<AgentCard>
+  fetchAgentCard: () => Promise<AgentCard>
+  disconnect: () => void
+}
+
+// ============================================================================
+// Factory Option Types
+// ============================================================================
+
+/**
+ * Options for {@link createA2AClient}.
+ *
+ * @param url - Base URL of the remote agent
+ * @param unix - Unix socket path (Bun extension) for same-box transport
+ * @param tls - mTLS client certificates (Bun extension)
+ * @param headers - Additional headers sent with every request
+ *
+ * @public
+ */
+export type CreateA2AClientOptions = {
+  url: string
+  unix?: string
+  tls?: { cert: string; key: string; ca?: string }
+  headers?: Record<string, string>
+}
+
+/**
+ * Options for {@link createA2AHandler}.
+ *
+ * @param card - The Agent Card to serve at the well-known URL
+ * @param handlers - Operation implementations
+ * @param authenticate - Optional auth callback; returns identifier or throws
+ *
+ * @public
+ */
+export type CreateA2AHandlerOptions = {
+  card: AgentCard
+  handlers: A2AOperationHandlers
+  authenticate?: (request: Request) => Promise<string | undefined>
+}
