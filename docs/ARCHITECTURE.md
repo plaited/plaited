@@ -30,19 +30,23 @@ The framework is **not prescriptive** about inference backend. Consumers choose 
 The Model and Indexer are interfaces, not implementations:
 
 ```typescript
-type ModelResponse = {
-  thinking: string    // from <think>...</think> — observability + training signal
-  toolCall: ToolCall  // structured tool call from post-</think> response
-}
+type ModelDelta =
+  | { type: 'thinking_delta'; content: string }
+  | { type: 'text_delta'; content: string }
+  | { type: 'toolcall_delta'; toolCall: Partial<ToolCall> }
+  | { type: 'done'; usage: { inputTokens: number; outputTokens: number } }
+  | { type: 'error'; error: Error }
 
 type Model = {
-  reason(context: ModelContext): Promise<ModelResponse>
+  reason(context: ModelContext, signal?: AbortSignal): AsyncIterable<ModelDelta>
 }
 
 type Indexer = {
   embed(text: string): Promise<Float32Array>
 }
 ```
+
+The `AsyncIterable<ModelDelta>` interface works identically whether the backend is a local inference server (Ollama on localhost), a cloud GPU (vLLM), or an API endpoint (OpenRouter). Deltas stream via BP events (`thinking_delta`, `text_delta`) for progressive UI rendering. OpenAI-compatible wire format.
 
 ### Reference Model Stack
 
@@ -58,10 +62,46 @@ type Indexer = {
 - **Framework, Not Platform:** Composable primitives. Code via npm, models via Hugging Face. Platforms are built with it, not by it.
 - **Single Tenancy:** 1 User : 1 Agent instance. User data lives on their agent — nowhere else.
 - **Pluggable Models:** Model and Indexer are interfaces. Implementations swap freely.
-- **BP-Orchestrated:** One central `behavioral()` program coordinates the entire agent loop. No actors, no workers, no external signal stores.
+- **BP-Orchestrated:** The PM's `behavioral()` engine is the central coordinator. Sub-agents run as `Bun.spawn()` processes for crash isolation; the PM's bThreads handle all structural coordination (task lifecycle, batch completion, constitution enforcement). See Runtime Hierarchy below.
 - **Plan-Driven Context:** The model's plan provides the optimization signal for context assembly. Neural produces, symbolic consumes.
 - **Defense in Depth:** Six independent safety layers across three stack levels. See `SAFETY.md`.
 - **Three-Axis Risk Awareness:** Capability × Autonomy × Authority. Risk grows geometrically when all three scale. BP constraints cap each axis independently.
+
+## Runtime Hierarchy
+
+Four native levels of coordination, each with distinct isolation, cost, and guarantees:
+
+```
+Bun.spawn()      — OS process isolation (~ms create, structured clone IPC)
+  behavioral()   — logical isolation, separate event space (~μs, function call)
+    bThread      — shared event space, formal blocking (~μs, O(n) selection)
+      bSync      — atomic synchronization point (~ns, array index)
+```
+
+Each level down is orders of magnitude cheaper but trades isolation for speed. The design principle: **push coordination DOWN the stack as far as isolation allows.**
+
+| Level | Isolation | Message Cost | Use For |
+|---|---|---|---|
+| `Bun.spawn()` | Full (separate V8 heap) | ~μs (JSC structured clone) | Inference server (persistent), sub-agents (ephemeral), sandboxed bash |
+| `behavioral()` | Logical (separate event space) | ~ns (function call) | PM engine + UI controller (same process, zero-copy via `useRestrictedTrigger`) |
+| `bThread` | None (shared event space) | Event selection eval | Constitution rules, task lifecycle, batch coordination |
+| `bSync` | None (sequential) | Array advance | Individual synchronization points |
+
+**Sub-agents** are `Bun.spawn()` processes, not bThreads. They have their own inference context and optionally their own `behavioral()` engine scoped to their role. The PM coordinates against a `SubAgentHandle` interface:
+
+```typescript
+type SubAgentHandle = {
+  send: Trigger                     // PM → sub-agent (same Trigger type as BP)
+  onMessage(handler: Trigger): void // sub-agent → PM
+  terminate(): Promise<void>
+}
+```
+
+**Why `Bun.spawn()` over Workers:** Sub-agents are ephemeral — spawn, do work, terminate. Bun's Worker API is experimental (particularly `worker.terminate()`). `Bun.spawn()` has OS-guaranteed process lifecycle (SIGTERM/SIGKILL/exit codes). IPC defaults to `serialization: "advanced"` (JSC structured clone — not JSON). When Workers stabilize, swapping is a one-interface change.
+
+**Local inference:** The inference server runs as a persistent `Bun.spawn()` process (Ollama, llama.cpp, vLLM) on the same box. Sub-agents call it via `fetch("http://localhost:PORT")` — async I/O that doesn't block the event loop. GPU/Apple Silicon Metal handles acceleration.
+
+**A2A transport:** Bun-native implementation of A2A protocol (no a2a-js dependency). One `Bun.serve()` handles all transports — HTTP+JSON/REST, WebSocket (custom binding), and unix sockets — with native mTLS. See `MODNET-IMPLEMENTATION.md` § A2A Transport Strategy for deployment-specific bindings. Implementation in `src/a2a/`.
 
 ## Deployment Tiers
 
@@ -89,6 +129,7 @@ The pluggable model interfaces make tier selection a deployment decision, not an
 | `PROJECT-ISOLATION.md` | Multi-project orchestrator, IPC bridge, tool layers |
 | `MODNET-IMPLEMENTATION.md` | Modnet topology, A2A protocol, identity, access control, payment |
 | `GENOME.md` | Skills taxonomy (seeds/tools/eval), CONTRACT frontmatter, wave ordering |
+| `CRITIQUE-RESPONSE.md` | Gap resolutions, attestation layer, module architecture evolution |
 | `UI.md` | Generative UI rendering pipeline, controller protocol |
 | `WEBSOCKET-ARCHITECTURE.md` | WebSocket server layer design |
 | `BEHAVIORAL-PROGRAMMING.md` | BP paradigm foundation |

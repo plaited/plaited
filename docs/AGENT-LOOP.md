@@ -4,7 +4,9 @@
 
 ## The 6-Step Loop
 
-One central `behavioral()` program orchestrates the entire loop. No actors, no workers, no separate signal stores. BP manages state through bThread closures and coordinates compute via `Bun.spawn()` subprocesses for inference and sandboxed execution.
+The PM's `behavioral()` engine is the central coordinator. Sub-agents run as `Bun.spawn()` processes for crash isolation, each with their own inference context. The PM's bThreads handle all structural coordination — task lifecycle, batch completion, constitution enforcement, simulation guards. Sub-agents have minimal bThreads scoped to their role (or none — simple inference runners).
+
+See `ARCHITECTURE.md` § Runtime Hierarchy for the full `Bun.spawn → behavioral → bThread → bSync` isolation model.
 
 ```mermaid
 graph LR
@@ -89,6 +91,54 @@ graph TD
 **Narrow World View:** Each tool call is an independent scenario. `model_response` triggers one `context_ready` event per tool call, each flowing through its own pipeline. `batchCompletion` waits for all N to resolve, then triggers `context_assembly` for the next inference call.
 
 **Pipeline pass-through:** Events always flow through the full simulate → evaluate → execute pipeline. When a seam is absent, the handler passes through via optional chaining — no conditional routing.
+
+## Sub-Agent Coordination (4-Step Harness)
+
+The PM decomposes complex tasks into sub-tasks, each handled by a `Bun.spawn()` sub-agent. The harness maps to BP:
+
+1. **Decompose** — PM reads task context, breaks into sub-tasks via bThread coordination
+2. **Parallelize** — Spawn sub-agent processes (each calls local inference server via `fetch`)
+3. **Verify** — Judge sub-agent evaluates results against acceptance criteria
+4. **Iterate** — On failure, spawn FRESH sub-agent with error context (new process, clean context window)
+
+```mermaid
+graph TD
+    subgraph PM["PM Engine (persistent behavioral())"]
+        TASK["task event"]
+        DECOMP["Decompose<br/>bThread breaks into sub-tasks"]
+        BATCH["batchCompletion<br/>waits for N results"]
+        CONST["Constitution<br/>MAC/DAC bThreads"]
+    end
+
+    subgraph Workers["Sub-Agents (Bun.spawn, ephemeral)"]
+        W1["Worker 1<br/>fetch → inference server"]
+        W2["Worker 2<br/>fetch → inference server"]
+        JUDGE["Judge<br/>evaluates against criteria"]
+    end
+
+    subgraph Infra["Infrastructure (Bun.spawn, persistent)"]
+        INF["Inference Server<br/>Ollama / llama.cpp / vLLM"]
+    end
+
+    TASK --> DECOMP
+    DECOMP -->|"spawn"| W1
+    DECOMP -->|"spawn"| W2
+    W1 -->|"IPC result"| BATCH
+    W2 -->|"IPC result"| BATCH
+    BATCH -->|"spawn"| JUDGE
+    JUDGE -->|"IPC verdict"| PM
+    W1 -.->|"fetch localhost"| INF
+    W2 -.->|"fetch localhost"| INF
+    JUDGE -.->|"fetch localhost"| INF
+    CONST -.->|"blocks"| DECOMP
+
+    style W1 fill:#e8d5f5,stroke:#333
+    style W2 fill:#e8d5f5,stroke:#333
+    style JUDGE fill:#e8d5f5,stroke:#333
+    style INF fill:#d5e8f5,stroke:#333
+```
+
+Sub-agents communicate with the PM via the `SubAgentHandle` interface (see `ARCHITECTURE.md` § Runtime Hierarchy). IPC uses `serialization: "advanced"` (JSC structured clone). The inference server is a persistent process on the same box — sub-agents call it via `fetch("http://localhost:PORT")`, making inference async I/O from the sub-agent's perspective.
 
 ## ACP Interface (Agent Communication Protocol)
 

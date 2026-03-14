@@ -313,7 +313,8 @@ Building top-down: UI → WebSocket server → agent loop. The full stack (agent
 - `docs/HYPERGRAPH-MEMORY.md` — git-versioned JSON-LD memory, context assembly, plans as bThreads
 - `docs/TRAINING.md` — distillation pipeline, training tiers, flywheel
 - `docs/PROJECT-ISOLATION.md` — multi-project orchestrator, IPC bridge, tool layers
-- `docs/MODNET-IMPLEMENTATION.md` — modnet topology, A2A protocol, identity, access control, payment, module sidecar
+- `docs/MODNET-IMPLEMENTATION.md` — modnet topology, A2A protocol, identity, access control, payment, module registry
+- `docs/CRITIQUE-RESPONSE.md` — gap resolutions, attestation layer, module architecture evolution
 - `docs/GENOME.md` — genome architecture for skills (seeds/tools/eval split, CONTRACT frontmatter, wave ordering)
 - `docs/UI.md` — current `src/ui/` architecture (rendering, protocol, custom elements)
 - `docs/WEBSOCKET-ARCHITECTURE.md` — open design questions for the WebSocket server layer
@@ -326,6 +327,7 @@ Building top-down: UI → WebSocket server → agent loop. The full stack (agent
 - `src/server/` — thin I/O server via `createServer()` (routes, WebSocket, pub/sub, hot reload). Auth routes return 501 stubs.
 - `src/agent/` — production types (`agent.types.ts`, `agent.schemas.ts`, `agent.constants.ts`, `agent.utils.ts`)
 - `src/tools/` — `crud/` handlers, `trial.*`, `validate-skill.ts`, `lsp.ts`, `cli.utils.ts`, `tools.registry.ts`, `hypergraph.schemas.ts`
+- `src/a2a/` — (planned) Bun-native A2A protocol implementation: data model, abstract operations, protocol bindings (HTTP+JSON, WebSocket, unix socket)
 
 **What's next:** WebAuthn auth → agent loop (`createAgentLoop()`) → governance factories.
 
@@ -361,6 +363,14 @@ Key implementation decisions. See `docs/ARCHITECTURE.md`, `docs/SAFETY.md`, `doc
 **Risk tags:** Implemented in `agent.constants.ts`. Tags: `workspace`, `crosses_boundary`, `inbound`, `outbound`, `irreversible`, `external_audience`. Empty/unknown → simulate+judge; workspace-only → execute directly; boundary/irreversible/audience → simulate+judge.
 
 **Bash sandboxing:** Bun Shell (`Bun.$`) — `$.cwd()`, `$.env()`, auto-escaping, `$.nothrow()`. Constitution bThreads block dangerous patterns via `execute` event predicates.
+
+**Runtime hierarchy:** `Bun.spawn() → behavioral() → bThread → bSync`. Four levels with distinct isolation/cost. PM's `behavioral()` engine is the central coordinator. Sub-agents run as `Bun.spawn()` processes (stable termination, crash isolation). Workers deferred (experimental `terminate()`). IPC uses `serialization: "advanced"` (JSC structured clone). `SubAgentHandle` interface (uses `Trigger` type — same as BP) abstracts transport.
+
+**Local inference:** Inference server runs as persistent `Bun.spawn()` process on same box (Ollama, llama.cpp, vLLM). Sub-agents call via `fetch("http://localhost:PORT")` — async I/O. GPU/Apple Silicon Metal handles acceleration.
+
+**Module registry:** SKILL.md `metadata` replaces `.meta.db` sidecar and `.workspace.db`. PM reads frontmatter for module discovery, cross-module queries, dependency resolution. No `collect_metadata` tool needed.
+
+**A2A transport:** Bun-native implementation in `src/a2a/` — no a2a-js dependency. One `Bun.serve()` handles HTTP+JSON/REST, WebSocket (custom binding per A2A spec §12), and unix sockets. mTLS via `MutualTlsSecurityScheme`. Unix sockets for same-box (k8s pods, docker-compose). WebSocket for persistent cross-network PM collaboration. See `MODNET-IMPLEMENTATION.md` § A2A Transport Strategy.
 
 **Training weights:** Training weight = `outcome × process`. BP snapshots (`DecisionStep` in `TrajectoryStep`) provide deterministic process signal without a learned PRM. `GradingDimensions` separates outcome, process, and efficiency scoring. `withMetaVerification` wraps graders with confidence scoring. Augmented self-distillation: bootstrap (shadowing) → refinement (self-vs-self) → probing (adversarial). See `docs/TRAINING.md`.
 
@@ -465,6 +475,7 @@ src/tools/
 
 - [ ] WebAuthn auth (passkey registration/verification via SimpleWebAuthn)
 - [ ] `src/agent/` — agent loop implementation (`createAgentLoop()`)
+- [ ] `src/a2a/` — Bun-native A2A protocol (data model, operations, HTTP+JSON/WebSocket/unix bindings, mTLS)
 - [ ] Phase 2–3 — Governance factories + pipeline handlers
 - [ ] Phase 4 — Default tool skills + evals
 - [ ] Genome skills restructuring (seeds/tools/eval directories)

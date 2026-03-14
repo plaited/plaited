@@ -37,16 +37,18 @@ node/                               ← git repo (.gitignore excludes modules/)
   package.json                      ← "workspaces": ["modules/*"], "private": true
   bun.lock                          ← human-readable lockfile
   tsconfig.json
-  .workspace.db                     ← rebuilt from sidecars via ATTACH
   modules/
     apple-block/                    ← git repo (independent of node .git)
       .git/
       .memory/                      ← module-scoped decisions (tool results, code changes)
         sessions/
       package.json                  ← name: "@node/apple-block", "modnet": { MSS tags }
-      .meta.db                      ← per-module sidecar, committed to module repo
-      apple.ts
-      apple.types.ts
+      skills/
+        apple-block/                ← seed skill (named after module)
+          SKILL.md                  ← seed body + CONTRACT in metadata
+          scripts/                  ← committed generated code
+          references/               ← interface.jsonld, decisions.md
+          assets/                   ← grading.jsonl (eval criteria)
       data/
         varieties.json
     farm-stand/                     ← git repo (independent of node .git)
@@ -54,13 +56,20 @@ node/                               ← git repo (.gitignore excludes modules/)
       .memory/                      ← module-scoped decisions
         sessions/
       package.json                  ← depends on "@node/apple-block": "workspace:*"
-      .meta.db                      ← per-module sidecar, committed to module repo
-      farm-stand.ts
-      farm-stand.template.tsx
-      farm-stand.behavior.ts        ← only this compiles for browser
+      skills/
+        farm-stand/                 ← seed skill
+          SKILL.md                  ← seed body + CONTRACT in metadata
+          scripts/                  ← committed generated code
+          references/               ← interface.jsonld
+          assets/                   ← grading.jsonl
+        price-lookup/               ← additional capability skill
+          SKILL.md
+          scripts/
       data/
         inventory.json
 ```
+
+Modules follow the AgentSkills specification. Each module has a `skills/` directory containing a seed skill (named after the module) and optional capability skills. MSS bridge-code tags and CONTRACT fields live in the `metadata` field of SKILL.md frontmatter (arbitrary string key-value pairs, spec-compliant). The PM reads SKILL.md metadata for module discovery, cross-module queries, and dependency resolution — no sidecar database needed.
 
 ### Package.json as Module Manifest
 
@@ -113,75 +122,30 @@ Bun runs TypeScript natively — no compilation needed for server-side module co
 
 Bun workspace resolution handles inter-module imports via symlinks. Each module declares its dependencies in `package.json` and can only import what it declares — standard npm semantics. The single `bun.lock` at the node root tracks the full dependency tree.
 
-### Package Sidecar (`.meta.db`)
+### Module Registry (SKILL.md Metadata)
 
-Each module contains a `.meta.db` SQLite sidecar — a small database committed to the module's git repo alongside the code it describes. The sidecar is populated by a collector tool that scans source files for branded objects (`$` identifiers) and indexes them for fast lookup.
+> **Supersedes:** The `.meta.db` per-module sidecar and `.workspace.db` workspace view documented in earlier revisions. In the C+D module architecture, the PM generates code from specifications it already has — source-file scanning for branded objects is unnecessary.
 
-**Why per-module sidecars (not a central db):**
+The PM reads SKILL.md `metadata` fields for module discovery, cross-module queries, and dependency resolution. MSS bridge-code tags (`contentType`, `structure`, `mechanics`, `boundary`, `scale`) and CONTRACT fields (`produces`, `consumes`) are stored as string key-value pairs in the AgentSkills `metadata` field:
 
-- **Data ownership aligns with module ownership** — the sidecar travels with the module. When a module is transported to another node, its metadata comes with it.
-- **No rebuild-from-source** — the sidecar is pre-indexed. The agent queries it directly without re-scanning source files.
-- **Git-diffable provenance** — changes to branded objects produce visible diffs in the sidecar, auditable in git history.
-- **No coordination** — each package's sidecar is independent. No lock contention, no merge conflicts across packages.
-
-**Sidecar schema:**
-
-```sql
--- Branded objects discovered by the collector tool
-CREATE TABLE branded_objects (
-  path       TEXT NOT NULL,           -- relative path within package
-  identifier TEXT NOT NULL,           -- brand emoji: 🦄 🪢 🎛️ 🎨 🏛️
-  name       TEXT NOT NULL,           -- export name or factory name
-  layer      TEXT,                    -- 'mac' | 'dac' (governance factories only)
-  metadata   TEXT,                    -- JSON blob for brand-specific fields
-  PRIMARY KEY (path, name)
-);
-
--- String constants extracted from source (not hardcoded in templates)
-CREATE TABLE constants (
-  key        TEXT PRIMARY KEY,        -- constant identifier
-  value      TEXT NOT NULL,           -- the string value
-  source     TEXT NOT NULL            -- file path where defined
-);
+```yaml
+---
+name: farm-stand
+description: Produce inventory management with filtering and sorting
+metadata:
+  contentType: produce
+  structure: list
+  mechanics: sort,filter
+  boundary: ask
+  scale: "3"
+  produces: inventory-data
+  consumes: apple-data
+---
 ```
 
-The `constants` table isolates string values that would otherwise be hardcoded in templates — event type strings, attribute names, error messages. This eliminates an injection vector (the agent cannot redefine constants by editing source) and enables future encryption of sensitive values.
+**Cross-module queries** use the same metadata: the PM scans `skills/*/SKILL.md` frontmatter to find modules by `contentType`, `scale`, or `produces`/`consumes` relationships. No SQLite, no collector tool, no workspace rebuild.
 
-**Workspace-level view (`.workspace.db`):**
-
-A `.workspace.db` at the node root provides cross-module queries by attaching all sidecars:
-
-```sql
--- Rebuilt on workspace init or after package changes
-ATTACH 'modules/apple-block/.meta.db' AS apple_block;
-ATTACH 'modules/farm-stand/.meta.db' AS farm_stand;
-
--- Cross-package query: find all governance factories
-SELECT * FROM apple_block.branded_objects WHERE identifier = '🏛️'
-UNION ALL
-SELECT * FROM farm_stand.branded_objects WHERE identifier = '🏛️';
-```
-
-The workspace db is ephemeral — it is rebuilt from sidecars, never the other way around. If deleted, it regenerates. If a sidecar is modified, the workspace view reflects the change on next attach.
-
-**Collector tool:**
-
-The collector scans a package's source files, identifies branded objects by their `$` property, and upserts the sidecar. It runs:
-- On package creation (agent generates a new module)
-- On governance factory changes (new rules added or modified)
-- On demand (agent tool call)
-
-The collector is a built-in agent tool — `collect_metadata` — that takes a package path and updates its `.meta.db`. No background daemon, no watch process.
-
-**Engine-agnostic interface:**
-
-SQLite is the initial engine — it's Bun-native (`bun:sqlite`), single-file, zero-config, and matches the access pattern (point queries, single writer, hundreds of rows). The query interface is designed to be engine-agnostic:
-
-- Queries return plain objects, not SQLite-specific cursors
-- Schema is simple enough to port to any relational or document store
-- If analytical workloads emerge (event log analysis, training data extraction), a columnar engine (DuckDB, chDB) can serve those queries without replacing SQLite for point lookups
-
-The decision on additional engines is deferred until real workload data reveals the need. Start with what's free and boring.
+**Validation:** Modules validate with `bunx @plaited/development-skills validate-skill` — the same tool that validates framework skills.
 
 ### Asset Management: Symlinks Over Git LFS
 
@@ -250,6 +214,89 @@ A2A is a transport-agnostic protocol for agent-to-agent communication with three
 **Streaming** uses SSE framing (`text/event-stream`) over POST — not GET. The browser's `EventSource` API cannot be used; streaming requires `fetch()` with `ReadableStream`. Each SSE `data:` line contains a JSON-RPC 2.0 response wrapping one of: `task`, `message`, `statusUpdate`, or `artifactUpdate`.
 
 **A2A maps naturally to BP's event model.** Request-response maps to `trigger` → `waitFor`. Streaming maps to SSE events → `trigger()` per event. Push notifications map to inbound webhook → `trigger()`. No separate adapter layer — A2A calls are tool calls flowing through the same Gate → Execute pipeline.
+
+### A2A Transport Strategy
+
+The A2A spec (v1.0.0) requires encrypted communication for production but is transport-agnostic. The spec explicitly supports custom protocol bindings, including WebSocket (`protocolBinding: "WEBSOCKET"`). The requirement is **encryption**, not specifically HTTPS — `wss://` satisfies it for WebSocket, and unix sockets need no encryption (traffic never leaves the kernel).
+
+**Bun-native implementation** — no a2a-js dependency. `Bun.serve()` handles all A2A transport needs in a single server: HTTP (JSON-RPC/REST), WebSocket (custom binding for persistent connections), and unix sockets — all with native mTLS support.
+
+```typescript
+Bun.serve({
+  unix: "/tmp/a2a.sock",          // same-box: k8s pods, docker-compose
+  tls: { cert, key, ca },         // cross-network: mTLS
+  fetch(req, server) {
+    // A2A JSON-RPC/REST endpoints (Layer 3 binding)
+    // WebSocket upgrade for persistent A2A + UI
+    // Agent Card at /.well-known/agent-card.json
+  },
+  websocket: {
+    // A2A streaming (bidirectional, custom binding)
+    // UI controller protocol (generative UI)
+  },
+})
+```
+
+A2A Layers 1 (data model) + 2 (abstract operations) are implemented once. Layer 3 (protocol binding) varies by deployment context and interaction pattern.
+
+**By deployment (wire selection):**
+
+| Deployment | Wire | Security | Bun API |
+|---|---|---|---|
+| **Same box** (k8s pod, docker-compose) | Unix domain socket | OS-level (no network) | `Bun.serve({ unix })` + `fetch({ unix })` |
+| **Same cluster** (k8s services, docker network) | TCP over internal DNS | mTLS via cert-manager/Istio or direct | `Bun.serve({ tls })` + `fetch()` |
+| **Cross-network** (sovereign nodes) | TCP over internet | mTLS (`MutualTlsSecurityScheme`) | `Bun.serve({ tls })` + `fetch()` / `new WebSocket()` |
+
+**By interaction pattern (protocol selection):**
+
+| Pattern | Protocol | When |
+|---|---|---|
+| **One-shot** (query, lookup, single task) | HTTP+JSON POST | Default. Stateless, no connection overhead. |
+| **Streaming response** (task progress) | HTTP POST → SSE response (`text/event-stream`) | Standard A2A streaming. NOT `EventSource` (POST-initiated). `fetch()` + `ReadableStream`. |
+| **Active collaboration** (multi-turn negotiation) | WebSocket | Persistent bidirectional. Avoids repeated TLS handshake per message. |
+| **Async updates** (post-disconnect) | Webhook (HTTP POST back) | A2A native push notifications. |
+
+Transport is **per-interaction, not per-node.** A node can use HTTP for one task and WebSocket for another with the same peer. The Agent Card declares both via `supportedInterfaces`; the client selects based on interaction needs. WebSocket is an optimization for sustained collaboration, not a requirement. HTTP+JSON is the default.
+
+### A2A Interaction Strategy
+
+The five A2A operations compose into a hybrid interaction model — the spec used as designed:
+
+| A2A Operation | Wire | When |
+|---|---|---|
+| `POST /message:send` | HTTP POST → JSON response | One-shot. Short task, immediate result. |
+| `POST /message:stream` | HTTP POST → SSE response | Client wants real-time progress. Connection held until task completes. |
+| `POST /tasks/{id}:subscribe` | HTTP POST → SSE response | Client reconnects to in-progress task. Resumes from where it left off. |
+| Push notification (webhook) | Agent POSTs to client's registered URL | Client disconnects, gets notified async. Requires client to be a server. |
+| WebSocket (custom binding) | Persistent `wss://` connection | Active multi-turn collaboration. Replaces repeated POST + SSE cycles. |
+
+**Typical interaction flow:**
+
+```
+1. POST /message:send → taskId + ack           (fire-and-forget)
+2. Want real-time? POST /message:stream         (SSE, hold open)
+3. Connection drops? POST /tasks/{id}:subscribe (SSE, resume)
+4. Don't need real-time? Register webhook       (async POST back)
+5. Heavy collaboration? Upgrade to WebSocket    (persistent bidirectional)
+```
+
+Each operation is independent — the client picks the right one per interaction. No state machine needed. Every node is already a server (`Bun.serve()`), so receiving webhooks is free.
+
+**K8s same-box optimization:** Pods in the same deployment share a unix socket via `emptyDir` volume mount. Pods in different deployments use k8s Service DNS with mTLS. Same `Bun.serve()`, different wire.
+
+### Bun Networking Surface
+
+All networking primitives available for A2A and internal communication:
+
+| Bun API | Protocol | TLS | Unix Socket | Use For |
+|---|---|---|---|---|
+| `Bun.serve()` | HTTP + WebSocket server | Yes | Yes | A2A server, UI server, WebSocket upgrade |
+| `fetch()` | HTTP client | Yes | Yes | A2A client calls, inference server |
+| `Bun.listen()` | Raw TCP server | Yes | Yes | Custom binary protocol (future) |
+| `Bun.connect()` | Raw TCP client | Yes | Yes | Custom binary protocol (future) |
+| `Bun.udpSocket()` | UDP | No | No | Heartbeats, discovery (future) |
+| `Bun.spawn({ ipc })` | IPC (structured clone) | N/A | N/A | PM ↔ sub-agent |
+| `new WebSocket()` | WebSocket client | Yes (`wss://`) | No | A2A client to other nodes |
 
 ## Identity & Authentication
 
