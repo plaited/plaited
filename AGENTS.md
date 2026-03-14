@@ -195,10 +195,6 @@ graph TD
 **Coverage checklist** - Happy path, edge cases, error paths, real integrations  
 *Verify:* Review test file completeness
 
-**Docker tests** - `*.docker.ts` for external APIs, run via docker-compose  
-*Verify:* Check if test needs API key or external service  
-*Fix:* Rename to `.docker.ts`, update CI gating
-
 **Run:** `bun test` before commit
 
 
