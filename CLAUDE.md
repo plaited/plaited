@@ -327,11 +327,11 @@ Building top-down: UI → WebSocket server → agent loop. The full stack (agent
 - `src/behavioral/` — BP engine (`behavioral()`, `bThread`, `bSync`, `trigger`, `useFeedback`, `useSnapshot`)
 - `src/ui/` — rendering pipeline, controller protocol, custom elements
 - `src/server/` — thin I/O server via `createServer()` (routes, WebSocket, pub/sub, hot reload). Has `validateSession` seam for pluggable auth.
-- `src/agent/` — production types (`agent.types.ts`, `agent.schemas.ts`, `agent.constants.ts`, `agent.utils.ts`), memory handlers (`memory-handlers.ts`)
-- `src/tools/` — `crud/` handlers, `trial.*`, `skill-validate.ts`, `skill-discovery.ts`, `skill.utils.ts`, `validate-thread.ts`, `ingest-goal.ts`, `lsp.ts`, `cli.utils.ts`, `tools.registry.ts`, `hypergraph.schemas.ts`
-- `src/a2a/` — Bun-native A2A protocol: data model (`a2a.schemas.ts`), operations (`a2a.types.ts`), HTTP+JSON-RPC binding (`a2a.server.ts`, `a2a.client.ts`), SSE streaming, Agent Card JWS signing (`a2a.utils.ts`). Client supports unix socket + mTLS. WebSocket binding and push notifications pending.
+- `src/agent/` — `createAgentLoop()` (`agent.loop.ts`), governance (`agent.governance.ts`), gate (`agent.gate.ts`), simulate (`agent.simulate.ts`), evaluate (`agent.evaluate.ts`), context assembly (`agent.context.ts`), branded factories (`agent.factories.ts`), goal persistence (`agent.goals.ts`), generation types (`agent.generation.ts`), proactive heartbeat (`proactive.ts`), snapshot writer (`snapshot-writer.ts`), memory handlers (`memory-handlers.ts`), types, schemas, constants, utils
+- `src/tools/` — `crud/` handlers, `trial.*`, `training.*`, `bthread-grader.ts`, `bthread-trial.ts`, `skill-validate.ts`, `skill-discovery.ts`, `skill.utils.ts`, `validate-thread.ts`, `ingest-goal.ts`, `ingest-skill.ts`, `ingest-rules.ts`, `lsp.ts`, `cli.utils.ts`, `tools.registry.ts`, `hypergraph.*`
+- `src/a2a/` — Bun-native A2A protocol: data model (`a2a.schemas.ts`), operations (`a2a.types.ts`), HTTP+JSON-RPC binding (`a2a.server.ts`, `a2a.client.ts`), WebSocket binding (`a2a.ws-server.ts`, `a2a.ws-client.ts`), push notifications, SSE streaming, Agent Card JWS signing, known-peers trust store (`a2a.peers.ts`). Client supports unix socket + mTLS.
 
-**What's next:** Agent loop (`createAgentLoop()`) → governance factories.
+**What's next:** Server + agent integration → default tool skills + evals → genome restructuring.
 
 **Server notes** (`src/server/server.ts`):
 - Stateless connector (no BP) — browser ↔ agent BP
@@ -476,9 +476,11 @@ src/tools/
 ## Next Up
 
 - [x] Node auth skill (`skills/node-auth/`) — `validateSession` seam in server + skill with WebAuthn/JWT/OIDC/dev-mode references
-- [ ] `src/agent/` — agent loop implementation (`createAgentLoop()`)
-- [x] `src/a2a/` — Bun-native A2A protocol (HTTP binding complete; WebSocket/push notifications pending)
-- [ ] A2A known-peers management (trust store, TOFU lifecycle, peer revocation)
-- [ ] Phase 2–3 — Governance factories + pipeline handlers
+- [x] `src/agent/` — `createAgentLoop()` + all pipeline handlers (governance, gate, simulate, evaluate, context assembly)
+- [x] `src/a2a/` — HTTP + WebSocket bindings, push notifications, known-peers trust store
+- [x] Branded factory contract (`🏛️` constitution, `🎯` goal, `🔄` workflow) + goal persistence
+- [x] Training pipeline (GradingDimensions, withStatisticalVerification, bThread grader/trial)
+- [x] Proactive heartbeat bThreads + snapshot writer + BP↔hypergraph integration
+- [ ] Server + agent integration (wiring `createServer` with `createAgentLoop`)
 - [ ] Phase 4 — Default tool skills + evals
 - [ ] Genome skills restructuring (seeds/tools/eval directories)
