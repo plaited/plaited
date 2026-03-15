@@ -65,6 +65,9 @@ export async function* parseSSEStream(body: ReadableStream<Uint8Array>, signal?:
 
       buffer += decoder.decode(value, { stream: true })
 
+      // Normalize \r\n → \n so we match all SSE line-ending variants
+      buffer = buffer.replaceAll('\r\n', '\n').replaceAll('\r', '\n')
+
       // Split on double newline (SSE frame boundary)
       let frameEnd = buffer.indexOf('\n\n')
       while (frameEnd !== -1) {

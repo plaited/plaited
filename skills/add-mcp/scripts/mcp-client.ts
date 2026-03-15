@@ -166,12 +166,13 @@ export const createMcpSession = async (transport: Transport, options?: McpSessio
 
   const withTimeout = <T>(fn: () => Promise<T>): Promise<T> => {
     if (!timeoutMs) return fn()
-    return Promise.race([
-      fn(),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error(`MCP operation timed out after ${timeoutMs}ms`)), timeoutMs),
-      ),
-    ])
+    const timeout = AbortSignal.timeout(timeoutMs)
+    return new Promise<T>((resolve, reject) => {
+      timeout.addEventListener('abort', () => reject(new Error(`MCP operation timed out after ${timeoutMs}ms`)), {
+        once: true,
+      })
+      fn().then(resolve, reject)
+    })
   }
 
   const close = async () => {

@@ -97,6 +97,24 @@ describe('SSE Parsing', () => {
     expect(events).toEqual([])
   })
 
+  test('handles \\r\\n line endings from proxies', async () => {
+    const stream = sseStream('data: {"crlf":true}\r\n\r\n')
+    const events: unknown[] = []
+    for await (const event of parseSSEStream(stream)) {
+      events.push(event)
+    }
+    expect(events).toEqual([{ crlf: true }])
+  })
+
+  test('handles bare \\r line endings', async () => {
+    const stream = sseStream('data: {"cr":true}\r\r')
+    const events: unknown[] = []
+    for await (const event of parseSSEStream(stream)) {
+      events.push(event)
+    }
+    expect(events).toEqual([{ cr: true }])
+  })
+
   test('round-trips with formatSSE', async () => {
     const original = { kind: 'task', id: 'task-1', status: { state: 'working' } }
     const sse = formatSSE(original)

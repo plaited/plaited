@@ -50,13 +50,24 @@ export const isEtcWrite = (toolCall: AgentToolCall): boolean => {
 }
 
 /**
- * Checks whether a tool call contains an `rm -rf` command.
+ * Checks whether a tool call contains a recursive-force `rm` command.
+ *
+ * @remarks
+ * Catches `rm -rf`, `rm -fr`, `rm -r -f`, `rm -f -r`, and long-form
+ * `rm --recursive --force` / `rm --force --recursive` variants.
  *
  * @public
  */
 export const isRmRf = (toolCall: AgentToolCall): boolean => {
   const command = getCommand(toolCall)
-  return command?.includes('rm -rf') ?? false
+  if (command == null) return false
+  // Match `rm` as a word boundary, then scan for both -r and -f in any order
+  if (!/\brm\b/.test(command)) return false
+  // Extract the portion after `rm` up to a pipe, semicolon, or &&
+  const rmTail = command.slice(command.search(/\brm\b/) + 2).split(/[|;&]/)[0] ?? ''
+  const hasRecursive = /(?:^|\s)(?:-[^\s]*r[^\s]*|--recursive)\b/.test(rmTail)
+  const hasForce = /(?:^|\s)(?:-[^\s]*f[^\s]*|--force)\b/.test(rmTail)
+  return hasRecursive && hasForce
 }
 
 /**

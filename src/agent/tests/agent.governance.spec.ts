@@ -129,9 +129,24 @@ describe('isRmRf', () => {
     expect(isRmRf(bashCall('sudo rm -rf --no-preserve-root /'))).toBe(true)
   })
 
+  test('detects rm -fr (reversed flags)', () => {
+    expect(isRmRf(bashCall('rm -fr /tmp/build'))).toBe(true)
+  })
+
+  test('detects rm -r -f (separate flags)', () => {
+    expect(isRmRf(bashCall('rm -r -f /tmp/build'))).toBe(true)
+    expect(isRmRf(bashCall('rm -f -r /tmp/build'))).toBe(true)
+  })
+
+  test('detects rm --recursive --force (long flags)', () => {
+    expect(isRmRf(bashCall('rm --recursive --force /tmp/build'))).toBe(true)
+    expect(isRmRf(bashCall('rm --force --recursive /tmp/build'))).toBe(true)
+  })
+
   test('allows safe bash commands', () => {
     expect(isRmRf(bashCall('rm file.txt'))).toBe(false)
     expect(isRmRf(bashCall('ls -la'))).toBe(false)
+    expect(isRmRf(bashCall('rm -r /tmp/build'))).toBe(false)
   })
 
   test('ignores non-bash tools', () => {

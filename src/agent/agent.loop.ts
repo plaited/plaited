@@ -34,7 +34,7 @@ import { evaluate } from './agent.evaluate.ts'
 import type { ConstitutionFactory, GoalFactory } from './agent.factories.ts'
 import { type ConstitutionPredicate, composedGateCheck } from './agent.gate.ts'
 import { isEtcWrite, isForcePush, isGovernanceModification, isRmRf } from './agent.governance.ts'
-import type { AgentToolCall, ToolDefinition } from './agent.schemas.ts'
+import type { ToolDefinition } from './agent.schemas.ts'
 import { simulate } from './agent.simulate.ts'
 import type {
   AgentNode,
