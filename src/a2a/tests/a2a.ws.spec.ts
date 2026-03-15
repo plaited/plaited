@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, test } from 'bun:test'
-import type { Message, Task } from '../a2a.schemas.ts'
+import type { Message, Task, TaskPushNotificationConfig } from '../a2a.schemas.ts'
 import type { A2AOperationHandlers, StreamEvent } from '../a2a.types.ts'
 import { createA2AWebSocketClient } from '../a2a.ws-client.ts'
 import { createA2AWebSocketHandler } from '../a2a.ws-server.ts'
@@ -301,7 +301,7 @@ describe('WebSocket A2A Raw Protocol', () => {
     ws.close()
   })
 
-  test('push notification method returns push_notification_not_supported', async () => {
+  test('push notification method returns push_notification_not_supported when no handler', async () => {
     const ws = new WebSocket(wsUrl)
     await waitForOpen(ws)
 
@@ -320,5 +320,102 @@ describe('WebSocket A2A Raw Protocol', () => {
     const json = (await response) as Record<string, unknown>
     expect((json.error as Record<string, unknown>).code).toBe(-32003)
     ws.close()
+  })
+})
+
+// ── Push Notification CRUD (WebSocket) ──────────────────────────────────────
+
+describe('WebSocket Push Notification Config', () => {
+  const configs = new Map<string, TaskPushNotificationConfig>()
+
+  const pushHandlers: A2AOperationHandlers = {
+    sendMessage: async () => makeTask('task-1'),
+    setPushConfig: async (params) => {
+      configs.set(params.id, params)
+      return params
+    },
+    getPushConfig: async (params) => {
+      const config = configs.get(params.id)
+      if (!config) throw new Error('Config not found')
+      return config
+    },
+    listPushConfigs: async () => [...configs.values()],
+    deletePushConfig: async (params) => {
+      configs.delete(params.id)
+    },
+  }
+
+  let server: ReturnType<typeof Bun.serve>
+  let wsUrl: string
+
+  test('setup server', () => {
+    configs.clear()
+    const { websocket, handleUpgrade } = createA2AWebSocketHandler({ handlers: pushHandlers })
+    server = Bun.serve({
+      port: 0,
+      async fetch(req, srv) {
+        if (req.headers.get('upgrade')?.toLowerCase() === 'websocket') {
+          return handleUpgrade(req, srv.upgrade.bind(srv))
+        }
+        return new Response('Not Found', { status: 404 })
+      },
+      websocket,
+    })
+    wsUrl = `ws://localhost:${server.port}`
+  })
+
+  afterAll(() => server?.stop(true))
+
+  test('setPushConfig round-trip', async () => {
+    const client = createA2AWebSocketClient({ url: wsUrl })
+    try {
+      const result = await client.setPushConfig({
+        id: 'task-42',
+        pushNotificationConfig: {
+          url: 'https://example.com/webhook',
+          token: 'secret',
+        },
+      })
+      expect(result.id).toBe('task-42')
+      expect(result.pushNotificationConfig.url).toBe('https://example.com/webhook')
+    } finally {
+      client.disconnect()
+    }
+  })
+
+  test('getPushConfig round-trip', async () => {
+    const client = createA2AWebSocketClient({ url: wsUrl })
+    try {
+      const result = await client.getPushConfig({ id: 'task-42' })
+      expect(result.id).toBe('task-42')
+      expect(result.pushNotificationConfig.url).toBe('https://example.com/webhook')
+    } finally {
+      client.disconnect()
+    }
+  })
+
+  test('listPushConfigs round-trip', async () => {
+    const client = createA2AWebSocketClient({ url: wsUrl })
+    try {
+      await client.setPushConfig({
+        id: 'task-99',
+        pushNotificationConfig: { url: 'https://other.com/hook' },
+      })
+      const result = await client.listPushConfigs({ id: 'task-42' })
+      expect(result).toHaveLength(2)
+    } finally {
+      client.disconnect()
+    }
+  })
+
+  test('deletePushConfig round-trip', async () => {
+    const client = createA2AWebSocketClient({ url: wsUrl })
+    try {
+      await client.deletePushConfig({ id: 'task-42' })
+      await client.getPushConfig({ id: 'task-42' })
+      expect(true).toBe(false)
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error)
+    }
   })
 })

@@ -1,5 +1,11 @@
 import { A2A_ERROR_CODE } from './a2a.constants.ts'
-import type { AgentCard, JsonRpcErrorResponse, JsonRpcRequest, JsonRpcSuccessResponse } from './a2a.schemas.ts'
+import type {
+  AgentCard,
+  JsonRpcErrorResponse,
+  JsonRpcRequest,
+  JsonRpcSuccessResponse,
+  PushNotificationConfig,
+} from './a2a.schemas.ts'
 
 // ============================================================================
 // SSE Encoding
@@ -253,4 +259,38 @@ export class A2AError extends Error {
   static internalError(message: string): A2AError {
     return new A2AError(A2A_ERROR_CODE.internal_error, message)
   }
+}
+
+// ============================================================================
+// Push Notification Delivery
+// ============================================================================
+
+/**
+ * Send a push notification to a registered webhook URL.
+ *
+ * @remarks
+ * POSTs a JSON-RPC 2.0 response wrapping the event to the webhook `url`.
+ * If the config includes a `token`, it is sent as a `Bearer` authorization
+ * header. Returns `true` if the webhook responded with a 2xx status.
+ *
+ * @param config - The push notification config with webhook URL and optional token
+ * @param event - The event payload to deliver (typically a `StreamEvent`)
+ *
+ * @public
+ */
+export const sendPushNotification = async (config: PushNotificationConfig, event: unknown): Promise<boolean> => {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (config.token) {
+    headers.Authorization = `Bearer ${config.token}`
+  }
+
+  const body = jsonRpcSuccess(event, 0)
+
+  const response = await fetch(config.url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  })
+
+  return response.ok
 }

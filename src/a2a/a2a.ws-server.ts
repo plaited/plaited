@@ -4,6 +4,7 @@ import {
   JsonRpcRequestSchema,
   MessageSendParamsSchema,
   TaskIdParamsSchema,
+  TaskPushNotificationConfigSchema,
   TaskQueryParamsSchema,
 } from './a2a.schemas.ts'
 import type { A2AOperationHandlers } from './a2a.types.ts'
@@ -165,15 +166,49 @@ export const createA2AWebSocketHandler = ({ handlers, authenticate }: CreateA2AW
             break
           }
 
-          case 'tasks/pushNotificationConfig/set':
-          case 'tasks/pushNotificationConfig/get':
-          case 'tasks/pushNotificationConfig/list':
-          case 'tasks/pushNotificationConfig/delete':
-            send(
-              ws,
-              jsonRpcError(A2A_ERROR_CODE.push_notification_not_supported, 'Push notifications not supported', id),
-            )
+          case 'tasks/pushNotificationConfig/set': {
+            if (!handlers.setPushConfig) {
+              send(ws, jsonRpcError(A2A_ERROR_CODE.push_notification_not_supported, 'Push notifications not supported', id))
+              break
+            }
+            const setConfigParams = TaskPushNotificationConfigSchema.parse(params)
+            const setResult = await handlers.setPushConfig(setConfigParams)
+            send(ws, jsonRpcSuccess(setResult, id))
             break
+          }
+
+          case 'tasks/pushNotificationConfig/get': {
+            if (!handlers.getPushConfig) {
+              send(ws, jsonRpcError(A2A_ERROR_CODE.push_notification_not_supported, 'Push notifications not supported', id))
+              break
+            }
+            const getConfigParams = TaskIdParamsSchema.parse(params)
+            const getResult = await handlers.getPushConfig(getConfigParams)
+            send(ws, jsonRpcSuccess(getResult, id))
+            break
+          }
+
+          case 'tasks/pushNotificationConfig/list': {
+            if (!handlers.listPushConfigs) {
+              send(ws, jsonRpcError(A2A_ERROR_CODE.push_notification_not_supported, 'Push notifications not supported', id))
+              break
+            }
+            const listConfigParams = TaskIdParamsSchema.parse(params)
+            const listResult = await handlers.listPushConfigs(listConfigParams)
+            send(ws, jsonRpcSuccess(listResult, id))
+            break
+          }
+
+          case 'tasks/pushNotificationConfig/delete': {
+            if (!handlers.deletePushConfig) {
+              send(ws, jsonRpcError(A2A_ERROR_CODE.push_notification_not_supported, 'Push notifications not supported', id))
+              break
+            }
+            const deleteConfigParams = TaskIdParamsSchema.parse(params)
+            await handlers.deletePushConfig(deleteConfigParams)
+            send(ws, jsonRpcSuccess(null, id))
+            break
+          }
 
           default:
             send(ws, jsonRpcError(A2A_ERROR_CODE.method_not_found, `Method not found: ${method}`, id))

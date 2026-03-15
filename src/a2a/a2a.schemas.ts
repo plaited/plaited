@@ -408,6 +408,60 @@ export const TaskIdParamsSchema = z.object({
 export type TaskIdParams = z.infer<typeof TaskIdParamsSchema>
 
 // ============================================================================
+// Push Notification Schemas
+// ============================================================================
+
+/**
+ * Authentication configuration for push notification webhooks.
+ *
+ * @remarks
+ * Declares which security schemes the webhook expects and optional
+ * pre-shared credentials for the callback.
+ *
+ * @public
+ */
+export const PushNotificationAuthenticationSchema = z.object({
+  schemes: z.array(z.string()),
+  credentials: z.string().optional(),
+})
+
+export type PushNotificationAuthentication = z.infer<typeof PushNotificationAuthenticationSchema>
+
+/**
+ * Configuration for a push notification webhook endpoint.
+ *
+ * @remarks
+ * Registered per-task via `tasks/pushNotificationConfig/set`.
+ * When a task status changes, the server POSTs a JSON-RPC notification
+ * to `url` with optional bearer token authentication.
+ *
+ * @public
+ */
+export const PushNotificationConfigSchema = z.object({
+  url: z.string(),
+  token: z.string().optional(),
+  authentication: PushNotificationAuthenticationSchema.optional(),
+})
+
+export type PushNotificationConfig = z.infer<typeof PushNotificationConfigSchema>
+
+/**
+ * A push notification config scoped to a specific task.
+ *
+ * @remarks
+ * Used as both the input parameter for `set` and the return value
+ * for `get`/`list` operations.
+ *
+ * @public
+ */
+export const TaskPushNotificationConfigSchema = z.object({
+  id: z.string(),
+  pushNotificationConfig: PushNotificationConfigSchema,
+})
+
+export type TaskPushNotificationConfig = z.infer<typeof TaskPushNotificationConfigSchema>
+
+// ============================================================================
 // JSON-RPC 2.0 Envelope Schemas
 // ============================================================================
 

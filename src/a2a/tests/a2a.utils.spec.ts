@@ -9,6 +9,7 @@ import {
   jsonRpcRequest,
   jsonRpcSuccess,
   parseSSEStream,
+  sendPushNotification,
   signAgentCard,
   verifyAgentCardSignature,
 } from '../a2a.utils.ts'
@@ -284,5 +285,80 @@ describe('A2AError', () => {
   test('internalError factory', () => {
     const error = A2AError.internalError('Something broke')
     expect(error.code).toBe(A2A_ERROR_CODE.internal_error)
+  })
+})
+
+// ── Push Notification Delivery ──────────────────────────────────────────────
+
+describe('sendPushNotification', () => {
+  test('posts event to webhook URL', async () => {
+    let receivedBody: unknown = null
+    let receivedHeaders: Record<string, string> = {}
+
+    const webhookServer = Bun.serve({
+      port: 0,
+      async fetch(req) {
+        receivedHeaders = Object.fromEntries(req.headers.entries())
+        receivedBody = await req.json()
+        return new Response('OK', { status: 200 })
+      },
+    })
+
+    try {
+      const ok = await sendPushNotification(
+        { url: `http://localhost:${webhookServer.port}` },
+        { kind: 'status-update', taskId: 'task-1', status: { state: 'completed' }, final: true },
+      )
+      expect(ok).toBe(true)
+      expect(receivedHeaders['content-type']).toBe('application/json')
+      expect(receivedBody).toHaveProperty('jsonrpc', '2.0')
+      expect(receivedBody).toHaveProperty('result')
+      const result = (receivedBody as { result: unknown }).result as Record<string, unknown>
+      expect(result.kind).toBe('status-update')
+      expect(result.taskId).toBe('task-1')
+    } finally {
+      webhookServer.stop(true)
+    }
+  })
+
+  test('sends Bearer token when configured', async () => {
+    let receivedAuth = ''
+
+    const webhookServer = Bun.serve({
+      port: 0,
+      async fetch(req) {
+        receivedAuth = req.headers.get('authorization') ?? ''
+        return new Response('OK', { status: 200 })
+      },
+    })
+
+    try {
+      await sendPushNotification(
+        { url: `http://localhost:${webhookServer.port}`, token: 'my-secret-token' },
+        { kind: 'status-update', taskId: 'task-1', status: { state: 'working' }, final: false },
+      )
+      expect(receivedAuth).toBe('Bearer my-secret-token')
+    } finally {
+      webhookServer.stop(true)
+    }
+  })
+
+  test('returns false on non-2xx response', async () => {
+    const webhookServer = Bun.serve({
+      port: 0,
+      fetch() {
+        return new Response('Forbidden', { status: 403 })
+      },
+    })
+
+    try {
+      const ok = await sendPushNotification(
+        { url: `http://localhost:${webhookServer.port}` },
+        { kind: 'status-update', taskId: 'task-1', status: { state: 'failed' }, final: true },
+      )
+      expect(ok).toBe(false)
+    } finally {
+      webhookServer.stop(true)
+    }
   })
 })
