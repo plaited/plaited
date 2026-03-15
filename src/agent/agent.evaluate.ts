@@ -64,9 +64,9 @@ export const DEFAULT_BLOCK_PATTERNS: RegExp[] = [
   /privilege\s+escalat/i,
 
   // Security bypass
-  /permission denied.*override/i,
-  /bypass.*security/i,
-  /bypass.*authentication/i,
+  /permission denied.{0,100}override/i,
+  /bypass.{0,100}security/i,
+  /bypass.{0,100}authentication/i,
 
   // Credential exposure
   /credentials?\s+exposed/i,

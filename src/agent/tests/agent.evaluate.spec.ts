@@ -83,13 +83,13 @@ describe('evaluateSymbolic', () => {
   test('rejects output with security bypass', () => {
     const result = evaluateSymbolic('This would bypass security checks')
     expect(result.approved).toBe(false)
-    expect(result.reason).toContain('bypass.*security')
+    expect(result.reason).toContain('bypass')
   })
 
   test('rejects output with authentication bypass', () => {
     const result = evaluateSymbolic('Command would bypass authentication')
     expect(result.approved).toBe(false)
-    expect(result.reason).toContain('bypass.*authentication')
+    expect(result.reason).toContain('authentication')
   })
 
   test('stops at first matching pattern', () => {
