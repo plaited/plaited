@@ -3,10 +3,10 @@
  *
  * @remarks
  * This module provides:
- * - **Factory**: {@link createServer} — creates a Bun.serve-based server node
+ * - **Factory**: {@link createServer} — creates a Bun.serve-based server node, returns {@link ServerHandle}
  * - **Schemas**: {@link WebSocketDataSchema} — Zod validation for WebSocket connection data
  * - **Constants**: {@link SERVER_ERRORS} — error codes
- * - **Types**: {@link CreateServerOptions}
+ * - **Types**: {@link CreateServerOptions}, {@link ServerHandle}, {@link ReplayBufferOptions}, {@link WebSocketLimits}
  *
  * @public
  */

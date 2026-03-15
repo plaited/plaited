@@ -1,12 +1,8 @@
-import type { Server } from 'bun'
 import { UI_ADAPTER_LIFECYCLE_EVENTS } from '../events.ts'
 import { ClientMessageSchema } from '../ui.ts'
 import { SERVER_ERRORS } from './server.constants.ts'
 import type { WebSocketData } from './server.schemas.ts'
-import type { CreateServerOptions } from './server.types.ts'
-
-/** Server with WebSocket data typed for the controller protocol */
-type ServerInstance = Server<WebSocketData>
+import type { CreateServerOptions, ServerHandle } from './server.types.ts'
 
 /**
  * Creates a thin I/O server — the transport bridge between
@@ -18,13 +14,14 @@ type ServerInstance = Server<WebSocketData>
  * - Translates WebSocket messages into BP events via `trigger()`
  * - Fires lifecycle events (`UI_ADAPTER_LIFECYCLE_EVENTS`) so the agent's BP observes connections
  * - Manages security (origin validation, session cookies)
+ * - Buffers messages during MPA navigation gaps and replays on reconnect
  * - Serves caller-provided routes directly
  *
  * Client identity (`source`) is carried via WebSocket subprotocol
  * (`Sec-WebSocket-Protocol` header) — no post-connect handshake message needed.
  *
  * @param options - Server configuration
- * @returns Raw `Bun.Server` instance
+ * @returns {@link ServerHandle} wrapping the Bun server
  *
  * @public
  */
@@ -35,22 +32,59 @@ export const createServer = ({
   tls,
   allowedOrigins,
   validateSession,
-}: CreateServerOptions): ServerInstance => {
+  wsLimits,
+  replayBuffer: replayBufferOpts,
+}: CreateServerOptions): ServerHandle => {
+  // ── Connection tracking ──────────────────────────────────────────────────
+  const topicConnections = new Map<string, number>()
+  const knownSessions = new Set<string>()
+
+  // ── Replay buffer for MPA navigation gaps ────────────────────────────────
+  const maxBufferSize = replayBufferOpts?.maxSize ?? 32
+  const bufferTtlMs = replayBufferOpts?.ttlMs ?? 5_000
+  const replayBuffers = new Map<string, Array<{ data: string; timestamp: number }>>()
+
+  /** Compute the pub/sub topic for a WebSocket connection */
+  const topicFor = (data: WebSocketData) =>
+    data.source === 'document' ? data.sessionId : `${data.sessionId}:${data.source}`
+
   const server = Bun.serve({
     port,
     tls,
     routes,
 
     websocket: {
+      idleTimeout: wsLimits?.idleTimeout ?? 120,
+      maxPayloadLength: wsLimits?.maxPayloadLength ?? 1_048_576,
       data: {} as WebSocketData,
 
       open(ws) {
         const { sessionId, source } = ws.data
-        const topic = source === 'document' ? sessionId : `${sessionId}:${source}`
+        const topic = topicFor(ws.data)
         ws.subscribe(topic)
+
+        // Track active connections per topic
+        topicConnections.set(topic, (topicConnections.get(topic) ?? 0) + 1)
+
+        // Replay buffered messages from MPA navigation gap
+        const buffer = replayBuffers.get(topic)
+        if (buffer) {
+          const now = Date.now()
+          for (const msg of buffer) {
+            if (now - msg.timestamp < bufferTtlMs) {
+              ws.sendText(msg.data)
+            }
+          }
+          replayBuffers.delete(topic)
+        }
+
+        // Detect reconnection for SSR reconciliation
+        const isReconnect = knownSessions.has(sessionId)
+        knownSessions.add(sessionId)
+
         trigger({
           type: UI_ADAPTER_LIFECYCLE_EVENTS.client_connected,
-          detail: { sessionId, source },
+          detail: { sessionId, source, isReconnect },
         })
       },
 
@@ -70,10 +104,17 @@ export const createServer = ({
         }
       },
 
-      close(ws) {
+      close(ws, code, reason) {
+        const topic = topicFor(ws.data)
+
+        // Decrement connection count
+        const count = topicConnections.get(topic) ?? 0
+        if (count <= 1) topicConnections.delete(topic)
+        else topicConnections.set(topic, count - 1)
+
         trigger({
           type: UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected,
-          detail: { sessionId: ws.data.sessionId },
+          detail: { sessionId: ws.data.sessionId, code, reason },
         })
       },
     },
@@ -154,5 +195,27 @@ export const createServer = ({
     },
   })
 
-  return server
+  /** Send with replay buffering for MPA navigation gaps */
+  const send = (topic: string, data: string) => {
+    const count = topicConnections.get(topic) ?? 0
+    if (count > 0) {
+      server.publish(topic, data)
+      return
+    }
+    if (maxBufferSize === 0) return
+    let buffer = replayBuffers.get(topic)
+    if (!buffer) {
+      buffer = []
+      replayBuffers.set(topic, buffer)
+    }
+    buffer.push({ data, timestamp: Date.now() })
+    if (buffer.length > maxBufferSize) buffer.shift()
+  }
+
+  return {
+    server,
+    port: server.port!,
+    send,
+    stop: (closeActive?: boolean) => server.stop(closeActive),
+  }
 }
