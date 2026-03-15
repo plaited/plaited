@@ -262,6 +262,54 @@ Events must enter via `trigger()` from handlers or external calls, breaking the 
 | `true` | Infinite loop: thread never terminates | Safety constraints, persistent gates |
 | `() => boolean` | Conditional: repeats while predicate returns `true` | Task-scoped threads that self-terminate |
 
+### Handler Operation Order: `bThreads.set()` Before `trigger()`
+
+**CRITICAL:** `trigger()` calls `step()` synchronously — the full step/select/nextStep chain runs within the trigger call. `useFeedback` handlers ARE async (fire-and-forget via `void cb(value)`), but thread state transitions are synchronous.
+
+This means `bThreads.set()` MUST come BEFORE any `trigger()` calls in the same handler, or the new thread will miss events that fire during the trigger's synchronous processing:
+
+```typescript
+// CORRECT: thread present when trigger fires
+useFeedback({
+  model_response(detail) {
+    bThreads.set({ batchCompletion: bThread([...]) })  // thread added to running
+    trigger({ type: 'context_ready' })                  // step() processes batchCompletion
+  },
+})
+
+// WRONG: thread misses events — gate_rejected fires before batchCompletion exists
+useFeedback({
+  model_response(detail) {
+    trigger({ type: 'context_ready' })                  // step() runs, events process, chain completes
+    bThreads.set({ batchCompletion: bThread([...]) })  // too late — nobody calls step() again
+  },
+})
+```
+
+**Why it matters:** When `trigger(context_ready)` fires, the BP engine processes it synchronously. If the context_ready handler triggers `gate_rejected`, that also processes synchronously. `batchCompletion` needs to be in the pending set to catch `gate_rejected` as a completion event. If set after trigger, it sits in running with no step() call to advance it.
+
+### Zero-Length batchCompletion is an Anti-Pattern
+
+A `batchCompletion` with zero `waitFor` entries immediately requests its completion event (e.g., `invoke_inference`), creating a re-entry loop before text-only events can fire:
+
+```typescript
+// ANTI-PATTERN: zero-length batch immediately requests invoke_inference
+bThreads.set({
+  batchCompletion: bThread([
+    ...Array.from({ length: 0 }, () => bSync({ waitFor: isCompletion })),  // empty!
+    bSync({ request: { type: 'invoke_inference' } }),  // fires immediately
+  ]),
+})
+
+// CORRECT: only create batchCompletion when there are items to count
+if (toolCalls.length > 0) {
+  bThreads.set({ batchCompletion: bThread([...]) })
+  for (const tc of toolCalls) trigger({ type: 'context_ready', detail: { toolCall: tc } })
+} else {
+  trigger({ type: 'message', detail: { content: text } })
+}
+```
+
 ### Blocked Events Don't Produce Workflow Events
 
 Blocked events are NOT queued — they don't fire. However, blocks ARE observable: `SelectionBid.blockedBy` records exactly which thread blocked which event. The event doesn't produce workflow side-effects (handlers don't fire), but the snapshot captures the decision.
