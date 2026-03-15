@@ -22,6 +22,8 @@ import { validateSkill } from './tools/skill-validate.ts'
 import { trialCli } from './tools/trial.ts'
 import { typescriptLsp } from './tools/typescript-lsp.ts'
 import { validateThreadCli } from './tools/validate-thread.ts'
+// Modnet workspace
+import { initModuleCli, initNodeCli } from './modnet/workspace.cli.ts'
 
 // ============================================================================
 // Command Registry
@@ -48,6 +50,9 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   acp: async () => {
     await import('./acp.ts')
   },
+  // Modnet workspace
+  'init-node': initNodeCli,
+  'init-module': initModuleCli,
 }
 
 // ============================================================================
@@ -91,7 +96,10 @@ Commands:
     typescript-lsp
 
   ACP (Editor Transport):
-    acp [--node <name>]`)
+    acp [--node <name>]
+
+  Modnet Workspace:
+    init-node, init-module`)
   process.exit(command ? 0 : 1)
 }
 
