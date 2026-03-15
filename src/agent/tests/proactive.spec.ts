@@ -5,12 +5,8 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { behavioral } from '../../behavioral/behavioral.ts'
 import { AGENT_EVENTS } from '../agent.constants.ts'
-import {
-  createHeartbeatTimer,
-  createTickYieldThread,
-  createSensorBatchThread,
-} from '../proactive.ts'
 import type { HeartbeatHandle } from '../proactive.ts'
+import { createHeartbeatTimer, createSensorBatchThread, createTickYieldThread } from '../proactive.ts'
 
 // ============================================================================
 // Helpers

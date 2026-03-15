@@ -1,6 +1,6 @@
 import { bSync, bThread } from '../behavioral/behavioral.utils.ts'
 import { AGENT_EVENTS, BUILT_IN_TOOLS } from './agent.constants.ts'
-import { createConstitution, type ConstitutionFactory } from './agent.factories.ts'
+import { type ConstitutionFactory, createConstitution } from './agent.factories.ts'
 import type { AgentToolCall } from './agent.schemas.ts'
 
 // ============================================================================
@@ -44,9 +44,9 @@ const getTargetPath = (toolCall: AgentToolCall): string | undefined => {
  */
 export const isEtcWrite = (toolCall: AgentToolCall): boolean => {
   const command = getCommand(toolCall)
-  if (command != null && command.includes('/etc/')) return true
+  if (command?.includes('/etc/')) return true
   const path = getTargetPath(toolCall)
-  return path != null && path.includes('/etc/')
+  return path?.includes('/etc/') ?? false
 }
 
 /**
@@ -56,7 +56,7 @@ export const isEtcWrite = (toolCall: AgentToolCall): boolean => {
  */
 export const isRmRf = (toolCall: AgentToolCall): boolean => {
   const command = getCommand(toolCall)
-  return command != null && command.includes('rm -rf')
+  return command?.includes('rm -rf') ?? false
 }
 
 /**
@@ -74,8 +74,8 @@ export const isForcePush = (toolCall: AgentToolCall): boolean => {
   if (!command.includes('git') || !command.includes('push')) return false
   // --force but NOT --force-with-lease or --force-if-includes
   if (/--force(?!-)/.test(command)) return true
-  // Standalone -f flag
-  return / -f(?:\s|$)/.test(command)
+  // Standalone -f flag (with or without space before argument)
+  return / -f(?:\s|$|[^a-z])/.test(command)
 }
 
 /** Paths protected by MAC governance */
@@ -115,8 +115,7 @@ export const noEtcWrites = createConstitution(() => ({
     noEtcWrites: bThread(
       [
         bSync({
-          block: (e) =>
-            e.type === AGENT_EVENTS.execute && e.detail?.toolCall != null && isEtcWrite(e.detail.toolCall),
+          block: (e) => e.type === AGENT_EVENTS.execute && e.detail?.toolCall != null && isEtcWrite(e.detail.toolCall),
         }),
       ],
       true,
@@ -134,8 +133,7 @@ export const noRmRf = createConstitution(() => ({
     noRmRf: bThread(
       [
         bSync({
-          block: (e) =>
-            e.type === AGENT_EVENTS.execute && e.detail?.toolCall != null && isRmRf(e.detail.toolCall),
+          block: (e) => e.type === AGENT_EVENTS.execute && e.detail?.toolCall != null && isRmRf(e.detail.toolCall),
         }),
       ],
       true,
@@ -153,8 +151,7 @@ export const noForcePush = createConstitution(() => ({
     noForcePush: bThread(
       [
         bSync({
-          block: (e) =>
-            e.type === AGENT_EVENTS.execute && e.detail?.toolCall != null && isForcePush(e.detail.toolCall),
+          block: (e) => e.type === AGENT_EVENTS.execute && e.detail?.toolCall != null && isForcePush(e.detail.toolCall),
         }),
       ],
       true,

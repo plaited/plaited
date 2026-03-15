@@ -15,7 +15,7 @@
 
 import { resolve } from 'node:path'
 import * as z from 'zod'
-import { createBThreadGrader, type BThreadGraderConfig } from './bthread-grader.ts'
+import { type BThreadGraderConfig, createBThreadGrader } from './bthread-grader.ts'
 import { parseCli } from './cli.utils.ts'
 import type { PromptCase, TrialResult } from './trial.schemas.ts'
 import { TrialResultSchema } from './trial.schemas.ts'

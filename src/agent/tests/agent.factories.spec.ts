@@ -1,15 +1,15 @@
-import { describe, test, expect } from 'bun:test'
+import { describe, expect, test } from 'bun:test'
 import {
+  type ConstitutionFactory,
   createConstitution,
   createGoal,
   createWorkflow,
   FACTORY_BRANDS,
+  type GoalFactory,
   isBrandedFactory,
   isConstitutionFactory,
   isGoalFactory,
   isWorkflowFactory,
-  type ConstitutionFactory,
-  type GoalFactory,
   type WorkflowFactory,
 } from '../agent.factories.ts'
 

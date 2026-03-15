@@ -109,7 +109,7 @@ const checkParse = (source: string): GradeCheck => {
 const checkTypeCheck = async (tmpBase: string, projectRoot: string): Promise<GradeCheck> => {
   // Compute relative path from tmpBase to project root for extends
   const depth = tmpBase.replace(projectRoot, '').split('/').filter(Boolean).length
-  const extendsPath = '../'.repeat(depth) + 'tsconfig.json'
+  const extendsPath = `${'../'.repeat(depth)}tsconfig.json`
 
   const tsconfigPath = join(tmpBase, 'tsconfig.json')
   await Bun.write(

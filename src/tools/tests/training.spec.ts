@@ -8,7 +8,6 @@
 
 import { describe, expect, test } from 'bun:test'
 import * as z from 'zod'
-import type { Grader } from '../trial.schemas.ts'
 import {
   MetaVerificationSchema,
   TrainingScoreInputSchema,
@@ -16,6 +15,7 @@ import {
   TrainingScoreSchema,
 } from '../training.schemas.ts'
 import { computeTrainingWeight, scoreTrainingDimensions, withStatisticalVerification } from '../training.ts'
+import type { Grader } from '../trial.schemas.ts'
 
 // ============================================================================
 // computeTrainingWeight

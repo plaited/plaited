@@ -14,8 +14,8 @@
 import * as z from 'zod'
 import { GradingDimensionsSchema } from './trial.schemas.ts'
 
-export { DecisionStepSchema, type DecisionStep } from '../agent/agent.schemas.ts'
-export { GradingDimensionsSchema, type GradingDimensions } from './trial.schemas.ts'
+export { type DecisionStep, DecisionStepSchema } from '../agent/agent.schemas.ts'
+export { type GradingDimensions, GradingDimensionsSchema } from './trial.schemas.ts'
 
 // ============================================================================
 // Training Score

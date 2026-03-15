@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { composedGateCheck, isEtcWrite, isForcePush, isGovernanceModification, isRmRf, RISK_TAG } from 'plaited'
 import type { AgentToolCall, ConstitutionPredicate } from 'plaited'
+import { composedGateCheck, isEtcWrite, isForcePush, isGovernanceModification, isRmRf, RISK_TAG } from 'plaited'
 
 // ============================================================================
 // Helpers

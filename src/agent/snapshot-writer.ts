@@ -16,8 +16,8 @@
  */
 
 import { join } from 'node:path'
-import type { SnapshotListener } from '../behavioral/behavioral.types.ts'
 import type { SelectionBid } from '../behavioral/behavioral.schemas.ts'
+import type { SnapshotListener } from '../behavioral/behavioral.types.ts'
 import type { MemoryHandlers } from './memory-handlers.ts'
 
 // ============================================================================
@@ -86,11 +86,7 @@ const toBidVertex = (bid: SelectionBid): DecisionBid => {
  *
  * @internal
  */
-const buildDecisionVertex = (
-  sessionId: string,
-  superstep: number,
-  bids: SelectionBid[],
-): Record<string, unknown> => ({
+const buildDecisionVertex = (sessionId: string, superstep: number, bids: SelectionBid[]): Record<string, unknown> => ({
   '@id': `session/${sessionId}/decision/${superstep}`,
   '@type': 'SelectionDecision',
   superstep,

@@ -12,13 +12,13 @@
  */
 
 import { parseCli } from './cli.utils.ts'
-import type { Grader, GradingDimensions } from './trial.schemas.ts'
 import {
-  TrainingScoreInputSchema,
-  TrainingScoreOutputSchema,
   type MetaVerification,
   type TrainingScore,
+  TrainingScoreInputSchema,
+  TrainingScoreOutputSchema,
 } from './training.schemas.ts'
+import type { Grader, GradingDimensions } from './trial.schemas.ts'
 
 // ============================================================================
 // Training Weight

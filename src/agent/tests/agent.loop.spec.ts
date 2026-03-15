@@ -8,13 +8,13 @@
  */
 
 import { afterAll, describe, expect, test } from 'bun:test'
+import { bSync, bThread } from '../../behavioral/behavioral.utils.ts'
 import { UI_ADAPTER_LIFECYCLE_EVENTS } from '../../events.ts'
 import { AGENT_EVENTS, RISK_TAG } from '../agent.constants.ts'
 import { createConstitution } from '../agent.factories.ts'
-import type { AgentToolCall, ToolDefinition } from '../agent.schemas.ts'
-import type { AgentNode, Model, ModelDelta } from '../agent.types.ts'
 import { createAgentLoop } from '../agent.loop.ts'
-import { bSync, bThread } from '../../behavioral/behavioral.utils.ts'
+import type { ToolDefinition } from '../agent.schemas.ts'
+import type { AgentNode, Model, ModelDelta } from '../agent.types.ts'
 
 // ============================================================================
 // Mock Model — returns canned responses
@@ -25,7 +25,7 @@ const createMockModel = (
 ): Model => {
   let callCount = 0
   return {
-    reason: async function* ({ messages, tools, signal }) {
+    reason: async function* () {
       const response = responses[callCount] ?? responses[responses.length - 1]!
       callCount++
 
@@ -89,21 +89,51 @@ const taggedBashTool = { ...bashTool, tags: [RISK_TAG.workspace] }
 const collectEvents = (agent: AgentNode) => {
   const events: Array<{ type: string; detail?: unknown }> = []
   agent.subscribe({
-    [AGENT_EVENTS.invoke_inference]() { events.push({ type: AGENT_EVENTS.invoke_inference }) },
-    [AGENT_EVENTS.model_response](d: unknown) { events.push({ type: AGENT_EVENTS.model_response, detail: d }) },
-    [AGENT_EVENTS.context_ready](d: unknown) { events.push({ type: AGENT_EVENTS.context_ready, detail: d }) },
-    [AGENT_EVENTS.gate_approved](d: unknown) { events.push({ type: AGENT_EVENTS.gate_approved, detail: d }) },
-    [AGENT_EVENTS.gate_rejected](d: unknown) { events.push({ type: AGENT_EVENTS.gate_rejected, detail: d }) },
-    [AGENT_EVENTS.execute](d: unknown) { events.push({ type: AGENT_EVENTS.execute, detail: d }) },
-    [AGENT_EVENTS.tool_result](d: unknown) { events.push({ type: AGENT_EVENTS.tool_result, detail: d }) },
-    [AGENT_EVENTS.simulate_request](d: unknown) { events.push({ type: AGENT_EVENTS.simulate_request, detail: d }) },
-    [AGENT_EVENTS.simulation_result](d: unknown) { events.push({ type: AGENT_EVENTS.simulation_result, detail: d }) },
-    [AGENT_EVENTS.eval_approved](d: unknown) { events.push({ type: AGENT_EVENTS.eval_approved, detail: d }) },
-    [AGENT_EVENTS.eval_rejected](d: unknown) { events.push({ type: AGENT_EVENTS.eval_rejected, detail: d }) },
-    [AGENT_EVENTS.message](d: unknown) { events.push({ type: AGENT_EVENTS.message, detail: d }) },
-    [AGENT_EVENTS.thinking_delta](d: unknown) { events.push({ type: AGENT_EVENTS.thinking_delta, detail: d }) },
-    [AGENT_EVENTS.text_delta](d: unknown) { events.push({ type: AGENT_EVENTS.text_delta, detail: d }) },
-    [AGENT_EVENTS.inference_error](d: unknown) { events.push({ type: AGENT_EVENTS.inference_error, detail: d }) },
+    [AGENT_EVENTS.invoke_inference]() {
+      events.push({ type: AGENT_EVENTS.invoke_inference })
+    },
+    [AGENT_EVENTS.model_response](d: unknown) {
+      events.push({ type: AGENT_EVENTS.model_response, detail: d })
+    },
+    [AGENT_EVENTS.context_ready](d: unknown) {
+      events.push({ type: AGENT_EVENTS.context_ready, detail: d })
+    },
+    [AGENT_EVENTS.gate_approved](d: unknown) {
+      events.push({ type: AGENT_EVENTS.gate_approved, detail: d })
+    },
+    [AGENT_EVENTS.gate_rejected](d: unknown) {
+      events.push({ type: AGENT_EVENTS.gate_rejected, detail: d })
+    },
+    [AGENT_EVENTS.execute](d: unknown) {
+      events.push({ type: AGENT_EVENTS.execute, detail: d })
+    },
+    [AGENT_EVENTS.tool_result](d: unknown) {
+      events.push({ type: AGENT_EVENTS.tool_result, detail: d })
+    },
+    [AGENT_EVENTS.simulate_request](d: unknown) {
+      events.push({ type: AGENT_EVENTS.simulate_request, detail: d })
+    },
+    [AGENT_EVENTS.simulation_result](d: unknown) {
+      events.push({ type: AGENT_EVENTS.simulation_result, detail: d })
+    },
+    [AGENT_EVENTS.eval_approved](d: unknown) {
+      events.push({ type: AGENT_EVENTS.eval_approved, detail: d })
+    },
+    [AGENT_EVENTS.eval_rejected](d: unknown) {
+      events.push({ type: AGENT_EVENTS.eval_rejected, detail: d })
+    },
+    [AGENT_EVENTS.message](d: unknown) {
+      events.push({ type: AGENT_EVENTS.message, detail: d })
+    },
+    [AGENT_EVENTS.thinking_delta](d: unknown) {
+      events.push({ type: AGENT_EVENTS.thinking_delta, detail: d })
+    },
+    [AGENT_EVENTS.text_delta](d: unknown) {
+      events.push({ type: AGENT_EVENTS.text_delta, detail: d })
+    },
+    [AGENT_EVENTS.inference_error](d: unknown) {
+      events.push({ type: AGENT_EVENTS.inference_error, detail: d })
+    },
   })
   return events
 }
@@ -120,7 +150,10 @@ const waitForEvent = async (events: Array<{ type: string }>, eventType: string, 
 
 /** Start the agent with a connected session */
 const connectAndTask = (agent: AgentNode, prompt: string) => {
-  agent.trigger({ type: UI_ADAPTER_LIFECYCLE_EVENTS.client_connected, detail: { sessionId: 'test', source: 'document', isReconnect: false } })
+  agent.trigger({
+    type: UI_ADAPTER_LIFECYCLE_EVENTS.client_connected,
+    detail: { sessionId: 'test', source: 'document', isReconnect: false },
+  })
   agent.trigger({ type: AGENT_EVENTS.task, detail: { prompt } })
 }
 
@@ -372,7 +405,7 @@ describe('createAgentLoop', () => {
 
   test('simulation + evaluation: untagged tool → simulate → evaluate → execute', async () => {
     // Simulation model: returns safe prediction
-    const simModel: Model = {
+    const _simModel: Model = {
       reason: async function* () {
         yield {
           type: 'text_delta',
@@ -385,7 +418,7 @@ describe('createAgentLoop', () => {
     // Main model: first returns tool call, then text
     let mainCallCount = 0
     const mainModel: Model = {
-      reason: async function* ({ messages }) {
+      reason: async function* () {
         mainCallCount++
         if (mainCallCount === 1) {
           yield { type: 'toolcall_delta', id: 'tc-1', name: 'read_file', arguments: '{"path":"main.ts"}' } as ModelDelta

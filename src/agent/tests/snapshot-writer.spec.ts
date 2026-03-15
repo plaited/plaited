@@ -6,8 +6,8 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { rmSync } from 'node:fs'
 import { join } from 'node:path'
 import type { SnapshotMessage } from '../../behavioral/behavioral.schemas.ts'
-import { createSnapshotWriter } from '../snapshot-writer.ts'
 import type { MemoryHandlers } from '../memory-handlers.ts'
+import { createSnapshotWriter } from '../snapshot-writer.ts'
 
 // ============================================================================
 // Helpers
@@ -113,11 +113,7 @@ describe('createSnapshotWriter', () => {
       memoryHandlers: handlers,
     })
 
-    await writer(
-      selectionSnapshot([
-        { thread: 'taskGate', type: 'task', selected: true, priority: 1 },
-      ]),
-    )
+    await writer(selectionSnapshot([{ thread: 'taskGate', type: 'task', selected: true, priority: 1 }]))
 
     const filePath = join(TEMP_DIR, '.memory-prefix/sessions/sess_prefix/decisions/1.jsonld')
     const vertex = JSON.parse(await Bun.file(filePath).text())
@@ -169,15 +165,9 @@ describe('createSnapshotWriter', () => {
       memoryHandlers: handlers,
     })
 
-    await writer(
-      selectionSnapshot([{ thread: 't1', type: 'task', selected: true, priority: 0 }]),
-    )
-    await writer(
-      selectionSnapshot([{ thread: 't1', type: 'invoke_inference', selected: true, priority: 0 }]),
-    )
-    await writer(
-      selectionSnapshot([{ thread: 't1', type: 'model_response', selected: true, priority: 0 }]),
-    )
+    await writer(selectionSnapshot([{ thread: 't1', type: 'task', selected: true, priority: 0 }]))
+    await writer(selectionSnapshot([{ thread: 't1', type: 'invoke_inference', selected: true, priority: 0 }]))
+    await writer(selectionSnapshot([{ thread: 't1', type: 'model_response', selected: true, priority: 0 }]))
 
     const dir = join(TEMP_DIR, '.memory-step/sessions/sess_step/decisions')
 
@@ -198,17 +188,10 @@ describe('createSnapshotWriter', () => {
       memoryHandlers: handlers,
     })
 
-    await writer(
-      selectionSnapshot([{ thread: 't1', type: 'task', selected: true, priority: 0 }]),
-    )
-    await writer(
-      selectionSnapshot([{ thread: 't1', type: 'execute', selected: true, priority: 0 }]),
-    )
+    await writer(selectionSnapshot([{ thread: 't1', type: 'task', selected: true, priority: 0 }]))
+    await writer(selectionSnapshot([{ thread: 't1', type: 'execute', selected: true, priority: 0 }]))
 
-    expect(handlers.tracked).toEqual([
-      'session/sess_track/decision/1',
-      'session/sess_track/decision/2',
-    ])
+    expect(handlers.tracked).toEqual(['session/sess_track/decision/1', 'session/sess_track/decision/2'])
   })
 
   test('ignores non-selection snapshot messages', async () => {

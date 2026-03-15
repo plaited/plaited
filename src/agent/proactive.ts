@@ -72,10 +72,7 @@ export type HeartbeatHandle = {
  *
  * @public
  */
-export const createHeartbeatTimer = ({
-  trigger,
-  intervalMs = 15 * 60 * 1000,
-}: HeartbeatConfig): HeartbeatHandle => {
+export const createHeartbeatTimer = ({ trigger, intervalMs = 15 * 60 * 1000 }: HeartbeatConfig): HeartbeatHandle => {
   let timerId: Timer | undefined
   let tickNumber = 0
 

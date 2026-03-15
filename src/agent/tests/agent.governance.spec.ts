@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import type { AgentToolCall, ConstitutionFactory } from 'plaited'
 import {
   AGENT_EVENTS,
   behavioral,
@@ -14,7 +15,6 @@ import {
   noRmRf,
   protectGovernance,
 } from 'plaited'
-import type { AgentToolCall, ConstitutionFactory } from 'plaited'
 
 // ============================================================================
 // Helpers
@@ -226,10 +226,7 @@ describe('noEtcWrites factory', () => {
 
   test('allows non-execute events', () => {
     const { trigger, selected } = setupWithGovernance(noEtcWrites)
-    const taskSelected: string[] = []
-    // Re-subscribe for task events
-    const { useFeedback } = behavioral()
-    // We need to use the same instance — let's just verify non-execute goes through
+    // Verify non-execute events go through — noEtcWrites only blocks execute
     trigger({ type: AGENT_EVENTS.task, detail: { prompt: 'test' } })
     // task event is not blocked by noEtcWrites (only execute is)
     // We don't have a task handler in setupWithGovernance, so we check selected is still 0

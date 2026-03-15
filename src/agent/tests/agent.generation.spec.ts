@@ -1,6 +1,6 @@
-import { describe, test, expect } from 'bun:test'
-import type { GenerationRequest, GenerationResult } from '../agent.generation.ts'
+import { describe, expect, test } from 'bun:test'
 import type { ThreadValidationResult } from '../../tools/validate-thread.ts'
+import type { GenerationRequest, GenerationResult } from '../agent.generation.ts'
 
 // ============================================================================
 // GenerationRequest type contract

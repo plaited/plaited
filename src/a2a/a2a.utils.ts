@@ -290,6 +290,7 @@ export const sendPushNotification = async (config: PushNotificationConfig, event
     method: 'POST',
     headers,
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(5_000),
   })
 
   return response.ok

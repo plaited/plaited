@@ -1,8 +1,8 @@
-import { describe, test, expect, beforeAll, afterAll } from 'bun:test'
-import { join } from 'node:path'
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { checkMacProtection, MAC_PROTECTED_EVENTS, loadPersistedGoals, saveGoal, removeGoal } from '../agent.goals.ts'
+import { join } from 'node:path'
+import { checkMacProtection, loadPersistedGoals, MAC_PROTECTED_EVENTS, removeGoal, saveGoal } from '../agent.goals.ts'
 
 // ============================================================================
 // MAC Protection Check

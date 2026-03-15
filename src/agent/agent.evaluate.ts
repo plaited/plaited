@@ -179,7 +179,10 @@ export const evaluateNeural = async ({
     },
   ]
 
-  const text = await collectModelText(model.reason({ messages, temperature: 0, signal: effectiveSignal }), effectiveSignal)
+  const text = await collectModelText(
+    model.reason({ messages, temperature: 0, signal: effectiveSignal }),
+    effectiveSignal,
+  )
 
   const scoreMatch = text.match(SCORE_REGEX)
   const reasoningMatch = text.match(REASONING_REGEX)

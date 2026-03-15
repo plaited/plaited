@@ -8,8 +8,7 @@
 
 import { describe, expect, test } from 'bun:test'
 import { resolve } from 'node:path'
-import type { Grader, PromptCase } from '../trial.schemas.ts'
-import { createBThreadGrader, grade, BThreadPromptMetadataSchema } from '../bthread-grader.ts'
+import { BThreadPromptMetadataSchema, createBThreadGrader, grade } from '../bthread-grader.ts'
 import { runTrial } from '../trial.ts'
 import { loadPrompts } from '../trial.utils.ts'
 
@@ -415,7 +414,7 @@ describe('bundled prompt cases', () => {
 
 describe('trial integration', () => {
   test('grader works with runTrial', async () => {
-    const echoAdapter = async ({ prompt }: { prompt: string | string[] }) => ({
+    const echoAdapter = async (_input: { prompt: string | string[] }) => ({
       output: validGoalFactory,
     })
 

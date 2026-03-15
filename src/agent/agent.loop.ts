@@ -16,12 +16,26 @@
  */
 
 import { behavioral } from '../behavioral/behavioral.ts'
+import type { DefaultHandlers, Trigger } from '../behavioral/behavioral.types.ts'
 import { bSync, bThread } from '../behavioral/behavioral.utils.ts'
-import type { DefaultHandlers, RulesFunction, Trigger } from '../behavioral/behavioral.types.ts'
 import { UI_ADAPTER_LIFECYCLE_EVENTS } from '../events.ts'
-import { AGENT_EVENTS, RISK_TAG, SIDE_EFFECT_TOOLS } from './agent.constants.ts'
+import { AGENT_EVENTS, RISK_TAG } from './agent.constants.ts'
+import {
+  type ContextContributor,
+  createContextAssembler,
+  historyContributor,
+  planContributor,
+  rejectionContributor,
+  systemPromptContributor,
+  toolsContributor,
+  trimHistory,
+} from './agent.context.ts'
+import { evaluate } from './agent.evaluate.ts'
 import type { ConstitutionFactory, GoalFactory } from './agent.factories.ts'
-import type { ToolDefinition, AgentToolCall } from './agent.schemas.ts'
+import { type ConstitutionPredicate, composedGateCheck } from './agent.gate.ts'
+import { isEtcWrite, isForcePush, isGovernanceModification, isRmRf } from './agent.governance.ts'
+import type { AgentToolCall, ToolDefinition } from './agent.schemas.ts'
+import { simulate } from './agent.simulate.ts'
 import type {
   AgentNode,
   ChatMessage,
@@ -34,37 +48,15 @@ import type {
   Indexer,
   MessageDetail,
   Model,
-  ModelDelta,
   ModelResponseDetail,
-  ParsedModelResponse,
   SimulateRequestDetail,
   SimulationResultDetail,
   TaskDetail,
   ToolResultDetail,
 } from './agent.types.ts'
-import { composedGateCheck, type ConstitutionPredicate } from './agent.gate.ts'
-import { simulate } from './agent.simulate.ts'
-import { evaluate } from './agent.evaluate.ts'
 import { parseModelResponse, toToolResult } from './agent.utils.ts'
-import {
-  createContextAssembler,
-  historyContributor,
-  planContributor,
-  rejectionContributor,
-  systemPromptContributor,
-  toolsContributor,
-  trimHistory,
-  type ContextContributor,
-} from './agent.context.ts'
 import { createMemoryHandlers } from './memory-handlers.ts'
 import { createSnapshotWriter } from './snapshot-writer.ts'
-import { loadPersistedGoals } from './agent.goals.ts'
-import {
-  isEtcWrite,
-  isForcePush,
-  isGovernanceModification,
-  isRmRf,
-} from './agent.governance.ts'
 
 // ============================================================================
 // Types
@@ -280,7 +272,11 @@ export const createAgentLoop = ({
       )
 
       // Consume model stream
-      const accumulated: { thinking: string; text: string; toolCalls: Map<string, { id: string; name: string; arguments: string }> } = {
+      const accumulated: {
+        thinking: string
+        text: string
+        toolCalls: Map<string, { id: string; name: string; arguments: string }>
+      } = {
         thinking: '',
         text: '',
         toolCalls: new Map(),
@@ -342,7 +338,7 @@ export const createAgentLoop = ({
 
     // ── model_response ───────────────────────────────────────────────────
     [AGENT_EVENTS.model_response](detail: unknown) {
-      const { parsed, usage } = detail as ModelResponseDetail
+      const { parsed } = detail as ModelResponseDetail
 
       // Add assistant message to history
       if (parsed.toolCalls.length > 0) {
@@ -388,7 +384,7 @@ export const createAgentLoop = ({
 
       // Look up tags for this tool
       const toolDef = tools.find((t) => t.function.name === toolCall.name)
-      const tags = (toolDef as Record<string, unknown>)?.tags as string[] ?? []
+      const tags = ((toolDef as Record<string, unknown>)?.tags as string[]) ?? []
 
       const result = composedGateCheck({ toolCall, tags }, DEFAULT_CONSTITUTION_PREDICATES)
 
@@ -397,7 +393,7 @@ export const createAgentLoop = ({
           type: AGENT_EVENTS.gate_rejected,
           detail: {
             toolCall,
-            decision: { approved: false, tags: [], reason: result.reason },
+            decision: { approved: false, tags: tags as GateRejectedDetail['decision']['tags'], reason: result.reason },
           } satisfies GateRejectedDetail,
         })
       } else if (result.route === 'execute') {
@@ -433,9 +429,7 @@ export const createAgentLoop = ({
         [`sim_guard_${toolCall.id}`]: bThread([
           bSync({
             block: (e) => e.type === AGENT_EVENTS.execute && e.detail?.toolCall?.id === toolCall.id,
-            interrupt: [
-              (e) => e.type === AGENT_EVENTS.simulation_result && e.detail?.toolCall?.id === toolCall.id,
-            ],
+            interrupt: [(e) => e.type === AGENT_EVENTS.simulation_result && e.detail?.toolCall?.id === toolCall.id],
           }),
         ]),
       })
@@ -557,7 +551,11 @@ export const createAgentLoop = ({
       try {
         const output = await toolExecutor(toolCall, controller.signal)
         const duration = Date.now() - start
-        const result = toToolResult(toolCall, { toolCallId: toolCall.id, name: toolCall.name, status: 'completed', output }, duration)
+        const result = toToolResult(
+          toolCall,
+          { toolCallId: toolCall.id, name: toolCall.name, status: 'completed', output },
+          duration,
+        )
 
         history.push({
           role: 'tool',
@@ -589,8 +587,7 @@ export const createAgentLoop = ({
     },
 
     // ── message ──────────────────────────────────────────────────────────
-    [AGENT_EVENTS.message](detail: unknown) {
-      const { content } = detail as MessageDetail
+    [AGENT_EVENTS.message](_detail: unknown) {
       // Clear rejections for next task
       priorRejections.length = 0
     },
@@ -600,11 +597,7 @@ export const createAgentLoop = ({
   })
 
   // ── Restricted trigger for external use ────────────────────────────────
-  const restrictedTrigger = useRestrictedTrigger(
-    ...Object.values(AGENT_EVENTS).filter(
-      (e) => e !== AGENT_EVENTS.task,
-    ),
-  )
+  const restrictedTrigger = useRestrictedTrigger(...Object.values(AGENT_EVENTS).filter((e) => e !== AGENT_EVENTS.task))
 
   // Create a trigger that allows task + lifecycle events
   const publicTrigger: Trigger = (event) => {
@@ -652,6 +645,4 @@ export const createAgentLoop = ({
 // ============================================================================
 
 const isCompletionEvent = (e: { type: string }) =>
-  e.type === AGENT_EVENTS.tool_result ||
-  e.type === AGENT_EVENTS.gate_rejected ||
-  e.type === AGENT_EVENTS.eval_rejected
+  e.type === AGENT_EVENTS.tool_result || e.type === AGENT_EVENTS.gate_rejected || e.type === AGENT_EVENTS.eval_rejected
