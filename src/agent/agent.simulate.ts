@@ -128,7 +128,7 @@ export const simulate = async ({
     },
   ]
 
-  const text = await collectModelText(model.reason({ messages, temperature: 0, signal: effectiveSignal }), signal)
+  const text = await collectModelText(model.reason({ messages, temperature: 0, signal: effectiveSignal }), effectiveSignal)
 
   return parsePrediction(text)
 }

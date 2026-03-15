@@ -35,7 +35,7 @@ REASONING: <brief explanation>`
  *
  * @remarks
  * Actions scoring below this threshold are rejected by the Judge.
- * Set at 0.5 — ambiguous actions are denied by default (conservative).
+ * Set at 0.5 — scores below 0.5 are denied; scores at 0.5 or above are approved.
  *
  * @public
  */
@@ -179,7 +179,7 @@ export const evaluateNeural = async ({
     },
   ]
 
-  const text = await collectModelText(model.reason({ messages, temperature: 0, signal: effectiveSignal }), signal)
+  const text = await collectModelText(model.reason({ messages, temperature: 0, signal: effectiveSignal }), effectiveSignal)
 
   const scoreMatch = text.match(SCORE_REGEX)
   const reasoningMatch = text.match(REASONING_REGEX)
