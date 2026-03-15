@@ -284,6 +284,7 @@ export const sendPushNotification = async (config: PushNotificationConfig, event
     headers.Authorization = `Bearer ${config.token}`
   }
 
+  // Push notifications are fire-and-forget — id 0 signals no response expected
   const body = jsonRpcSuccess(event, 0)
 
   const response = await fetch(config.url, {

@@ -56,10 +56,11 @@ export const createServer = ({
   const topicFor = (data: WebSocketData) =>
     data.source === 'document' ? data.sessionId : `${data.sessionId}:${data.source}`
 
+  const hasRoutes = Object.keys(routes).length > 0
   const server = Bun.serve({
     port,
     tls,
-    routes,
+    ...(hasRoutes && { routes }),
 
     websocket: {
       idleTimeout: wsLimits?.idleTimeout ?? 120,

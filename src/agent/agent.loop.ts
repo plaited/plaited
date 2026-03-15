@@ -401,7 +401,7 @@ export const createAgentLoop = ({
 
       // Look up tags for this tool
       const toolDef = tools.find((t) => t.function.name === toolCall.name)
-      const tags = ((toolDef as Record<string, unknown>)?.tags as string[]) ?? []
+      const tags = toolDef?.tags ?? []
 
       const result = composedGateCheck({ toolCall, tags }, DEFAULT_CONSTITUTION_PREDICATES)
 
