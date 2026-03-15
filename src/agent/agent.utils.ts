@@ -3,6 +3,48 @@ import type { AgentPlanStep, AgentToolCall, ToolResult, TrajectoryStep } from '.
 import type { ModelDelta, ParsedModelResponse } from './agent.types.ts'
 
 // ============================================================================
+// Startup Timing — enabled by PLAITED_TIMING=1 environment variable
+// ============================================================================
+
+const TIMING_ENABLED = Bun.env.PLAITED_TIMING === '1'
+const marks: Array<{ label: string; ns: number }> = []
+let lastNs = Bun.nanoseconds()
+
+/**
+ * Record a timing mark with nanosecond precision.
+ *
+ * @remarks
+ * No-op unless `PLAITED_TIMING=1` is set. Uses `Bun.nanoseconds()` for
+ * sub-millisecond precision vs `Date.now()`.
+ *
+ * @param label - Human-readable label for this checkpoint
+ *
+ * @public
+ */
+export const mark = (label: string) => {
+  if (!TIMING_ENABLED) return
+  const now = Bun.nanoseconds()
+  marks.push({ label, ns: now - lastNs })
+  lastNs = now
+}
+
+/**
+ * Print all recorded timing marks to stderr, then clear.
+ *
+ * @remarks
+ * No-op if timing is disabled or no marks have been recorded.
+ *
+ * @public
+ */
+export const printTimings = () => {
+  if (!TIMING_ENABLED || marks.length === 0) return
+  const total = marks.reduce((a, b) => a + b.ns, 0)
+  for (const m of marks) console.error(`  ${m.label}: ${(m.ns / 1e6).toFixed(1)}ms`)
+  console.error(`  TOTAL: ${(total / 1e6).toFixed(1)}ms`)
+  marks.length = 0
+}
+
+// ============================================================================
 // toToolResult — normalize tool execution result or error into ToolResult
 // ============================================================================
 

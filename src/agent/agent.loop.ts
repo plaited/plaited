@@ -56,7 +56,7 @@ import type {
   ToolExecutor,
   ToolResultDetail,
 } from './agent.types.ts'
-import { parseModelResponse, toToolResult } from './agent.utils.ts'
+import { mark, parseModelResponse, printTimings, toToolResult } from './agent.utils.ts'
 import { createMemoryHandlers } from './memory-handlers.ts'
 import { createSnapshotWriter } from './snapshot-writer.ts'
 
@@ -155,7 +155,9 @@ export const createAgentLoop = ({
   maxIterations = 50,
 }: CreateAgentLoopOptions): AgentNode => {
   // ── BP engine ───────────────────────────────────────────────────────────
+  mark('createAgentLoop:start')
   const { bThreads, trigger, useFeedback, useSnapshot, useRestrictedTrigger } = behavioral()
+  mark('bp-engine')
 
   // ── Shared state ────────────────────────────────────────────────────────
   const history: ChatMessage[] = []
@@ -177,6 +179,7 @@ export const createAgentLoop = ({
   const assemble = createContextAssembler(contributors)
 
   // ── Memory handlers (registered once) ───────────────────────────────────
+  mark('context-assembler')
   const memoryHandlers = createMemoryHandlers({
     trigger,
     memoryPath,
@@ -185,12 +188,14 @@ export const createAgentLoop = ({
   })
 
   // ── Snapshot writer ─────────────────────────────────────────────────────
+  mark('memory-handlers')
   const snapshotWriter = createSnapshotWriter({
     sessionId,
     memoryPath,
     memoryHandlers,
   })
   useSnapshot(snapshotWriter)
+  mark('snapshot-writer')
 
   // ── Structural bThreads ─────────────────────────────────────────────────
 
@@ -225,6 +230,7 @@ export const createAgentLoop = ({
   })
 
   // ── Constitution bThreads ───────────────────────────────────────────────
+  mark('structural-bthreads')
   for (const factory of constitution) {
     const { threads, handlers } = factory.create(trigger)
     if (threads) bThreads.set(threads)
@@ -232,6 +238,7 @@ export const createAgentLoop = ({
   }
 
   // ── Goal bThreads ──────────────────────────────────────────────────────
+  mark('constitution')
   for (const factory of goals) {
     const { threads, handlers } = factory.create(trigger)
     if (threads) bThreads.set(threads)
@@ -239,6 +246,7 @@ export const createAgentLoop = ({
   }
 
   // ── Pipeline handlers (registered once — principle 6) ───────────────────
+  mark('goals')
 
   useFeedback({
     // ── task ──────────────────────────────────────────────────────────────
@@ -631,6 +639,10 @@ export const createAgentLoop = ({
     // ── memory lifecycle ─────────────────────────────────────────────────
     ...memoryHandlers,
   })
+
+  // ── Timing report ──────────────────────────────────────────────────────
+  mark('handler-registration')
+  printTimings()
 
   // ── Restricted trigger for external use ────────────────────────────────
   const restrictedTrigger = useRestrictedTrigger(...Object.values(AGENT_EVENTS).filter((e) => e !== AGENT_EVENTS.task))

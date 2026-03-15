@@ -11,3 +11,4 @@
  */
 
 export * from './modnet/modnet.constants.ts'
+export * from './modnet/modnet.utils.ts'
