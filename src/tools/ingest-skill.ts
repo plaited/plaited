@@ -46,26 +46,31 @@ const scanReferences = async (
   const threads: string[] = []
   const events: string[] = []
   const requires: string[] = []
+  const transpiler = new Bun.Transpiler({ loader: 'tsx' })
 
   const glob = new Bun.Glob('**/*.ts')
   for await (const path of glob.scan({ cwd: skillDir, onlyFiles: true })) {
     if (path.endsWith('.spec.ts') || path.endsWith('.test.ts')) continue
     const content = await Bun.file(join(skillDir, path)).text()
 
-    // Extract bThread references
+    // Extract bThread references (string literals — scan() doesn't parse these)
     for (const match of content.matchAll(/bp:thread\/(\w+)/g)) {
       threads.push(match[1]!)
     }
 
-    // Extract event references
+    // Extract event references (string literals — scan() doesn't parse these)
     for (const match of content.matchAll(/bp:event\/(\w+)/g)) {
       events.push(match[1]!)
     }
 
-    // Extract skill requires from import paths
-    for (const match of content.matchAll(/from\s+['"]\.\.\/([^/'"]+)\//g)) {
-      const dep = match[1]!
-      if (dep !== basename(skillDir)) {
+    // Extract cross-skill dependencies from imports via Bun.Transpiler.scan()
+    const { imports } = transpiler.scan(content)
+    const skillName = basename(skillDir)
+    for (const imp of imports) {
+      if (!imp.path.startsWith('../')) continue
+      const segments = imp.path.replace(/^\.\.\//, '').split('/')
+      const dep = segments[0]
+      if (dep && dep !== skillName) {
         requires.push(dep)
       }
     }

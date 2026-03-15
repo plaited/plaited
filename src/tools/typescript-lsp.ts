@@ -426,7 +426,9 @@ export type { LspOperation, LspInput, LspResult, LspOutput }
 
 /** @public */
 const LspOperationSchema = z.object({
-  type: z.enum(['hover', 'references', 'definition', 'symbols', 'exports', 'find']).describe('LSP operation type'),
+  type: z
+    .enum(['hover', 'references', 'definition', 'symbols', 'exports', 'find', 'scan'])
+    .describe('LSP operation type'),
   line: z.number().optional().describe('Line number (0-indexed) — required for hover, references, definition'),
   character: z
     .number()
@@ -564,32 +566,55 @@ export { resolveFilePath, getLanguageId, flattenSymbols }
  *
  * @internal
  */
-const executeOperation = async (client: LspClient, uri: string, text: string, op: LspOperation): Promise<unknown> => {
+/**
+ * Map file extension to Bun.Transpiler loader for scan().
+ *
+ * @internal
+ */
+const getLoader = (path: string): 'tsx' | 'ts' | 'jsx' | 'js' => {
+  if (path.endsWith('.tsx')) return 'tsx'
+  if (path.endsWith('.ts')) return 'ts'
+  if (path.endsWith('.jsx')) return 'jsx'
+  return 'js'
+}
+
+const executeOperation = async (
+  client: LspClient | null,
+  uri: string,
+  text: string,
+  op: LspOperation,
+  absolutePath: string,
+): Promise<unknown> => {
   switch (op.type) {
+    case 'scan': {
+      const transpiler = new Bun.Transpiler({ loader: getLoader(absolutePath) })
+      const result = transpiler.scan(text)
+      return { imports: result.imports, exports: result.exports }
+    }
     case 'hover': {
       if (op.line === undefined || op.character === undefined) {
         throw new Error('hover requires line and character')
       }
-      return client.hover(uri, op.line, op.character)
+      return client!.hover(uri, op.line, op.character)
     }
     case 'references': {
       if (op.line === undefined || op.character === undefined) {
         throw new Error('references requires line and character')
       }
-      return client.references(uri, op.line, op.character)
+      return client!.references(uri, op.line, op.character)
     }
     case 'definition': {
       if (op.line === undefined || op.character === undefined) {
         throw new Error('definition requires line and character')
       }
-      return client.definition(uri, op.line, op.character)
+      return client!.definition(uri, op.line, op.character)
     }
     case 'symbols': {
-      const symbols = (await client.documentSymbols(uri)) as SymbolInfo[]
+      const symbols = (await client!.documentSymbols(uri)) as SymbolInfo[]
       return flattenSymbols(symbols)
     }
     case 'exports': {
-      const symbols = (await client.documentSymbols(uri)) as SymbolInfo[]
+      const symbols = (await client!.documentSymbols(uri)) as SymbolInfo[]
       const all = flattenSymbols(symbols)
       const lines = text.split('\n')
       return all.filter((sym) => {
@@ -602,10 +627,12 @@ const executeOperation = async (client: LspClient, uri: string, text: string, op
       if (!op.query) {
         throw new Error('find requires query')
       }
-      return client.workspaceSymbols(op.query)
+      return client!.workspaceSymbols(op.query)
     }
   }
 }
+
+export { getLoader }
 
 // ============================================================================
 // Library API
@@ -633,43 +660,53 @@ const executeLsp = async (input: LspInput, ctx?: ToolContext): Promise<LspOutput
 
   const absolutePath = resolveFilePath(input.file, ctx?.workspace)
   const uri = `file://${absolutePath}`
-  const rootUri = ctx ? `file://${ctx.workspace}` : `file://${process.cwd()}`
 
-  const client = new LspClient({ rootUri })
+  const file = Bun.file(absolutePath)
+  if (!(await file.exists())) {
+    throw new Error(`File not found: ${absolutePath}`)
+  }
+
+  const text = await file.text()
+
+  // If all operations are scan-only, skip LSP server entirely
+  const needsLsp = input.operations.some((op) => op.type !== 'scan')
+
+  let client: LspClient | null = null
+  if (needsLsp) {
+    const rootUri = ctx ? `file://${ctx.workspace}` : `file://${process.cwd()}`
+    client = new LspClient({ rootUri })
+  }
 
   const onAbort = () => {
-    client.stop().catch(() => {})
+    client?.stop().catch(() => {})
   }
   ctx?.signal.addEventListener('abort', onAbort, { once: true })
 
   try {
-    await client.start()
-
-    const file = Bun.file(absolutePath)
-    if (!(await file.exists())) {
-      throw new Error(`File not found: ${absolutePath}`)
+    if (client) {
+      await client.start()
+      client.openDocument(uri, getLanguageId(absolutePath), 1, text)
     }
-
-    const text = await file.text()
-    client.openDocument(uri, getLanguageId(absolutePath), 1, text)
 
     const results: LspResult[] = []
 
     for (const op of input.operations) {
       try {
-        const data = await executeOperation(client, uri, text, op)
+        const data = await executeOperation(client, uri, text, op, absolutePath)
         results.push({ type: op.type, data })
       } catch (error) {
         results.push({ type: op.type, error: error instanceof Error ? error.message : String(error) })
       }
     }
 
-    client.closeDocument(uri)
-    await client.stop()
+    if (client) {
+      client.closeDocument(uri)
+      await client.stop()
+    }
 
     return { file: input.file, results }
   } catch (error) {
-    await client.stop().catch(() => {})
+    await client?.stop().catch(() => {})
     throw error
   } finally {
     ctx?.signal.removeEventListener('abort', onAbort)
@@ -692,7 +729,7 @@ export const lspToolSchema: ToolDefinition = {
   function: {
     name: 'lsp',
     description:
-      'Execute TypeScript LSP operations for type-aware codebase analysis. Supports hover (type info), references, definition, symbols, exports, and workspace symbol search. Multiple operations run in a single server session for efficiency.',
+      'Execute TypeScript LSP operations for type-aware codebase analysis. Supports hover (type info), references, definition, symbols, exports, workspace symbol search, and scan (fast import/export extraction via Bun.Transpiler — no LSP subprocess). Multiple operations run in a single server session for efficiency.',
     parameters: {
       type: 'object',
       properties: {
@@ -700,13 +737,13 @@ export const lspToolSchema: ToolDefinition = {
         operations: {
           type: 'array',
           description:
-            'Operations to perform: hover/references/definition need line+character, find needs query, symbols/exports need no extra args',
+            'Operations to perform: hover/references/definition need line+character, find needs query, symbols/exports/scan need no extra args',
           items: {
             type: 'object',
             properties: {
               type: {
                 type: 'string',
-                description: 'hover | references | definition | symbols | exports | find',
+                description: 'hover | references | definition | symbols | exports | find | scan',
               },
               line: { type: 'number', description: '0-indexed line number' },
               character: { type: 'number', description: '0-indexed character position' },
@@ -777,6 +814,7 @@ Operations:
   symbols      { type: "symbols" }                       All symbols in file
   exports      { type: "exports" }                       Exported symbols only
   find         { type: "find", query }                   Search workspace symbols
+  scan         { type: "scan" }                          Fast import/export extraction (no LSP)
 
 Options:
   --schema <input|output>  Print JSON Schema and exit

@@ -7,6 +7,7 @@ import {
   executeLsp,
   flattenSymbols,
   getLanguageId,
+  getLoader,
   LspClient,
   type LspOutput,
   lspHandler,
@@ -246,6 +247,28 @@ describe('getLanguageId', () => {
   })
 })
 
+describe('getLoader', () => {
+  test('returns tsx for .tsx', () => {
+    expect(getLoader('file.tsx')).toBe('tsx')
+  })
+
+  test('returns ts for .ts', () => {
+    expect(getLoader('file.ts')).toBe('ts')
+  })
+
+  test('returns jsx for .jsx', () => {
+    expect(getLoader('file.jsx')).toBe('jsx')
+  })
+
+  test('returns js for .js', () => {
+    expect(getLoader('file.js')).toBe('js')
+  })
+
+  test('returns js for unknown extension', () => {
+    expect(getLoader('file.mjs')).toBe('js')
+  })
+})
+
 describe('flattenSymbols', () => {
   test('flattens top-level symbols', () => {
     const symbols = [
@@ -364,6 +387,46 @@ describe('executeLsp', () => {
     expect(result.results).toHaveLength(1)
     expect(result.results[0]?.type).toBe('definition')
     expect(result.results[0]?.data).toBeDefined()
+  })
+
+  test('scan returns imports and exports without LSP subprocess', async () => {
+    const result = await executeLsp({
+      file: fixtureFile,
+      operations: [{ type: 'scan' }],
+    })
+
+    expect(result.results).toHaveLength(1)
+    expect(result.results[0]?.type).toBe('scan')
+    const data = result.results[0]?.data as { imports: unknown[]; exports: unknown[] }
+    expect(data).toBeDefined()
+    expect(Array.isArray(data.imports)).toBe(true)
+    expect(Array.isArray(data.exports)).toBe(true)
+    // sample.ts has 3 runtime exports (scan() elides type-only exports like Config)
+    expect(data.exports.length).toBeGreaterThanOrEqual(3)
+  })
+
+  test('scan-only operations skip LSP server startup', async () => {
+    // Scan should succeed even when only scan ops are requested (no LSP subprocess)
+    const result = await executeLsp({
+      file: fixtureFile,
+      operations: [{ type: 'scan' }, { type: 'scan' }],
+    })
+
+    expect(result.results).toHaveLength(2)
+    expect(result.results.every((r) => r.type === 'scan' && r.data !== undefined)).toBe(true)
+  })
+
+  test('scan mixed with LSP operations works', async () => {
+    const result = await executeLsp({
+      file: fixtureFile,
+      operations: [{ type: 'scan' }, { type: 'symbols' }],
+    })
+
+    expect(result.results).toHaveLength(2)
+    expect(result.results[0]?.type).toBe('scan')
+    expect(result.results[0]?.data).toBeDefined()
+    expect(result.results[1]?.type).toBe('symbols')
+    expect(result.results[1]?.data).toBeDefined()
   })
 
   test('returns workspace symbols for find', async () => {

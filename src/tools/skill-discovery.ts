@@ -38,6 +38,17 @@ export type SkillCatalogEntry = {
   location: string
 }
 
+/**
+ * A collision diagnostic emitted when two skill sources define the same name.
+ *
+ * @public
+ */
+export type SkillCollisionDiagnostic = {
+  type: 'collision'
+  name: string
+  message: string
+}
+
 // ============================================================================
 // Schemas
 // ============================================================================
@@ -107,6 +118,48 @@ export const discoverSkills = async (rootDir: string): Promise<SkillCatalogEntry
 }
 
 // ============================================================================
+// Collision Detection
+// ============================================================================
+
+/**
+ * Detect name collisions across skill catalogs from multiple sources.
+ *
+ * @remarks
+ * Priority: later entries win (project skills > global skills > framework built-ins).
+ * Emits a diagnostic for each shadowed skill. Returns the deduplicated catalog.
+ *
+ * @param entries - Entries from all sources, ordered by priority (lowest first)
+ * @returns Deduplicated catalog and collision diagnostics
+ *
+ * @public
+ */
+export const detectCollisions = (
+  entries: SkillCatalogEntry[],
+): { catalog: SkillCatalogEntry[]; diagnostics: SkillCollisionDiagnostic[] } => {
+  const seen = new Map<string, string>()
+  const diagnostics: SkillCollisionDiagnostic[] = []
+
+  for (const entry of entries) {
+    const existing = seen.get(entry.name)
+    if (existing) {
+      diagnostics.push({
+        type: 'collision',
+        name: entry.name,
+        message: `Skill '${entry.name}' found in both ${existing} and ${entry.location}. Using ${entry.location} (later source wins).`,
+      })
+    }
+    seen.set(entry.name, entry.location)
+  }
+
+  // Build deduplicated catalog — last entry per name wins
+  const deduped = new Map<string, SkillCatalogEntry>()
+  for (const entry of entries) {
+    deduped.set(entry.name, entry)
+  }
+  return { catalog: [...deduped.values()], diagnostics }
+}
+
+// ============================================================================
 // CLI Handler
 // ============================================================================
 
@@ -160,8 +213,13 @@ Examples:
     allEntries.push(...entries)
   }
 
+  const { catalog, diagnostics } = detectCollisions(allEntries)
+  for (const d of diagnostics) {
+    console.error(d.message)
+  }
+
   // biome-ignore lint/suspicious/noConsole: CLI output
-  console.log(JSON.stringify(allEntries, null, 2))
+  console.log(JSON.stringify(catalog, null, 2))
 }
 
 if (import.meta.main) {
