@@ -180,7 +180,7 @@ skills/
 
 ### Phase 6: Update cross-references
 1. Update "Related Skills" sections across all seeds
-2. Run `bunx @plaited/development-skills validate-skill skills/` to validate all
+2. Run `bun plaited validate-skill skills/` to validate all
 
 ## NOT Changing
 - `AGENTS.md` rules — independent of skill restructuring
@@ -190,7 +190,7 @@ skills/
 ## Verification
 ```bash
 # Validate all skills against AgentSkills spec
-bunx @plaited/development-skills validate-skill skills/seeds skills/tools skills/eval
+bun plaited validate-skill skills/seeds skills/tools skills/eval
 
 # Verify symlinks resolve
 ls -la .claude/skills/

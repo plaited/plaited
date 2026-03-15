@@ -102,7 +102,7 @@ Before committing code, both must pass:
 **JSON imports** — `import x from 'file.json' with { type: 'json' }`.
 **@ts-ignore needs description** — `// @ts-ignore - reason here`.
 **Mermaid diagrams only** — no ASCII box-drawing.
-**AgentSkills validation** — `bunx @plaited/development-skills validate-skill <path>`.
+**AgentSkills validation** — `bun plaited validate-skill <path>`.
 
 # Skill Pointers
 
