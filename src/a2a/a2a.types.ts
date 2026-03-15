@@ -5,6 +5,7 @@ import type {
   Task,
   TaskArtifactUpdateEvent,
   TaskIdParams,
+  TaskPushNotificationConfig,
   TaskQueryParams,
   TaskStatusUpdateEvent,
 } from './a2a.schemas.ts'
@@ -36,6 +37,10 @@ export type A2AOperationHandlers = {
   cancelTask?: (params: TaskIdParams) => Promise<Task>
   subscribeToTask?: (params: TaskIdParams, signal: AbortSignal) => AsyncIterable<StreamEvent>
   getExtendedAgentCard?: () => Promise<AgentCard>
+  setPushConfig?: (params: TaskPushNotificationConfig) => Promise<TaskPushNotificationConfig>
+  getPushConfig?: (params: TaskIdParams) => Promise<TaskPushNotificationConfig>
+  listPushConfigs?: (params: TaskIdParams) => Promise<TaskPushNotificationConfig[]>
+  deletePushConfig?: (params: TaskIdParams) => Promise<void>
 }
 
 // ============================================================================
@@ -54,6 +59,10 @@ export type A2AClient = {
   cancelTask: (params: TaskIdParams) => Promise<Task>
   subscribeToTask: (params: TaskIdParams, signal?: AbortSignal) => AsyncIterable<StreamEvent>
   getExtendedAgentCard: () => Promise<AgentCard>
+  setPushConfig: (params: TaskPushNotificationConfig) => Promise<TaskPushNotificationConfig>
+  getPushConfig: (params: TaskIdParams) => Promise<TaskPushNotificationConfig>
+  listPushConfigs: (params: TaskIdParams) => Promise<TaskPushNotificationConfig[]>
+  deletePushConfig: (params: TaskIdParams) => Promise<void>
   fetchAgentCard: () => Promise<AgentCard>
   disconnect: () => void
 }

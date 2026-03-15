@@ -6,6 +6,7 @@ import type {
   MessageSendParams,
   Task,
   TaskIdParams,
+  TaskPushNotificationConfig,
   TaskQueryParams,
 } from './a2a.schemas.ts'
 import type { A2AClient, StreamEvent } from './a2a.types.ts'
@@ -225,6 +226,19 @@ export const createA2AWebSocketClient = (options: CreateA2AWebSocketClientOption
       rpcStream(A2A_METHOD['tasks/resubscribe'], params, signal),
 
     getExtendedAgentCard: () => rpcCall(A2A_METHOD['agent/authenticatedExtendedCard'], {}) as Promise<AgentCard>,
+
+    setPushConfig: (params: TaskPushNotificationConfig) =>
+      rpcCall(A2A_METHOD['tasks/pushNotificationConfig/set'], params) as Promise<TaskPushNotificationConfig>,
+
+    getPushConfig: (params: TaskIdParams) =>
+      rpcCall(A2A_METHOD['tasks/pushNotificationConfig/get'], params) as Promise<TaskPushNotificationConfig>,
+
+    listPushConfigs: (params: TaskIdParams) =>
+      rpcCall(A2A_METHOD['tasks/pushNotificationConfig/list'], params) as Promise<TaskPushNotificationConfig[]>,
+
+    deletePushConfig: async (params: TaskIdParams) => {
+      await rpcCall(A2A_METHOD['tasks/pushNotificationConfig/delete'], params)
+    },
 
     fetchAgentCard: () => {
       // Agent Card is served via HTTP GET, not WebSocket

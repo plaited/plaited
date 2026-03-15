@@ -10,9 +10,12 @@ import {
   MessageSchema,
   MessageSendParamsSchema,
   PartSchema,
+  PushNotificationAuthenticationSchema,
+  PushNotificationConfigSchema,
   SecuritySchemeSchema,
   TaskArtifactUpdateEventSchema,
   TaskIdParamsSchema,
+  TaskPushNotificationConfigSchema,
   TaskQueryParamsSchema,
   TaskSchema,
   TaskStatusSchema,
@@ -409,5 +412,70 @@ describe('JSON-RPC Schemas', () => {
       error: { code: -32602, message: 'Invalid params', data: { field: 'message' } },
     })
     expect(result.error.data).toEqual({ field: 'message' })
+  })
+})
+
+// ── Push Notification Schemas ──────────────────────────────────────────────────
+
+describe('Push Notification Schemas', () => {
+  test('PushNotificationConfig minimal', () => {
+    const result = PushNotificationConfigSchema.parse({
+      url: 'https://example.com/webhook',
+    })
+    expect(result.url).toBe('https://example.com/webhook')
+    expect(result.token).toBeUndefined()
+    expect(result.authentication).toBeUndefined()
+  })
+
+  test('PushNotificationConfig with token', () => {
+    const result = PushNotificationConfigSchema.parse({
+      url: 'https://example.com/webhook',
+      token: 'secret-token',
+    })
+    expect(result.token).toBe('secret-token')
+  })
+
+  test('PushNotificationConfig with authentication', () => {
+    const result = PushNotificationConfigSchema.parse({
+      url: 'https://example.com/webhook',
+      authentication: {
+        schemes: ['bearer', 'apiKey'],
+        credentials: 'my-key',
+      },
+    })
+    expect(result.authentication?.schemes).toEqual(['bearer', 'apiKey'])
+    expect(result.authentication?.credentials).toBe('my-key')
+  })
+
+  test('PushNotificationConfig rejects missing url', () => {
+    expect(() => PushNotificationConfigSchema.parse({})).toThrow()
+  })
+
+  test('TaskPushNotificationConfig parses', () => {
+    const result = TaskPushNotificationConfigSchema.parse({
+      id: 'task-1',
+      pushNotificationConfig: {
+        url: 'https://example.com/webhook',
+        token: 'tok',
+      },
+    })
+    expect(result.id).toBe('task-1')
+    expect(result.pushNotificationConfig.url).toBe('https://example.com/webhook')
+  })
+
+  test('TaskPushNotificationConfig rejects missing id', () => {
+    expect(() =>
+      TaskPushNotificationConfigSchema.parse({
+        pushNotificationConfig: { url: 'https://example.com/webhook' },
+      }),
+    ).toThrow()
+  })
+
+  test('PushNotificationAuthentication with schemes only', () => {
+    const result = PushNotificationAuthenticationSchema.parse({
+      schemes: ['bearer'],
+    })
+    expect(result.schemes).toEqual(['bearer'])
+    expect(result.credentials).toBeUndefined()
   })
 })

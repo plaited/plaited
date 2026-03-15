@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, test } from 'bun:test'
 import { createA2AClient } from '../a2a.client.ts'
 import { AGENT_CARD_PATH } from '../a2a.constants.ts'
-import type { AgentCard, Message, Task } from '../a2a.schemas.ts'
+import type { AgentCard, Message, Task, TaskPushNotificationConfig } from '../a2a.schemas.ts'
 import { createA2AHandler } from '../a2a.server.ts'
 import type { A2AOperationHandlers, StreamEvent } from '../a2a.types.ts'
 
@@ -256,7 +256,7 @@ describe('Error Handling', () => {
     expect(json.error.code).toBe(-32600)
   })
 
-  test('push notification methods return push_notification_not_supported', async () => {
+  test('push notification methods return push_notification_not_supported when no handler', async () => {
     const response = await fetch(`${url}/a2a`, {
       method: 'POST',
       body: JSON.stringify({
@@ -369,6 +369,87 @@ describe('Handler Errors', () => {
       expect(error).toBeInstanceOf(Error)
       expect((error as { code: number }).code).toBe(-32603)
       expect((error as Error).message).toBe('Handler exploded')
+    }
+    client.disconnect()
+  })
+})
+
+// ── Push Notification CRUD ──────────────────────────────────────────────────
+
+describe('Push Notification Config (HTTP)', () => {
+  const configs = new Map<string, TaskPushNotificationConfig>()
+
+  const pushHandlers: A2AOperationHandlers = {
+    sendMessage: async () => makeTask('task-1'),
+    setPushConfig: async (params) => {
+      configs.set(params.id, params)
+      return params
+    },
+    getPushConfig: async (params) => {
+      const config = configs.get(params.id)
+      if (!config) throw new Error('Config not found')
+      return config
+    },
+    listPushConfigs: async () => [...configs.values()],
+    deletePushConfig: async (params) => {
+      configs.delete(params.id)
+    },
+  }
+
+  let server: ReturnType<typeof Bun.serve>
+  let url: string
+
+  test('setup', () => {
+    configs.clear()
+    const result = createTestServer(pushHandlers)
+    server = result.server
+    url = result.url
+  })
+
+  afterAll(() => server?.stop(true))
+
+  test('setPushConfig round-trip', async () => {
+    const client = createA2AClient({ url })
+    const result = await client.setPushConfig({
+      id: 'task-42',
+      pushNotificationConfig: {
+        url: 'https://example.com/webhook',
+        token: 'secret',
+      },
+    })
+    expect(result.id).toBe('task-42')
+    expect(result.pushNotificationConfig.url).toBe('https://example.com/webhook')
+    expect(result.pushNotificationConfig.token).toBe('secret')
+    client.disconnect()
+  })
+
+  test('getPushConfig round-trip', async () => {
+    const client = createA2AClient({ url })
+    const result = await client.getPushConfig({ id: 'task-42' })
+    expect(result.id).toBe('task-42')
+    expect(result.pushNotificationConfig.url).toBe('https://example.com/webhook')
+    client.disconnect()
+  })
+
+  test('listPushConfigs round-trip', async () => {
+    const client = createA2AClient({ url })
+    await client.setPushConfig({
+      id: 'task-99',
+      pushNotificationConfig: { url: 'https://other.com/hook' },
+    })
+    const result = await client.listPushConfigs({ id: 'task-42' })
+    expect(result).toHaveLength(2)
+    client.disconnect()
+  })
+
+  test('deletePushConfig round-trip', async () => {
+    const client = createA2AClient({ url })
+    await client.deletePushConfig({ id: 'task-42' })
+    try {
+      await client.getPushConfig({ id: 'task-42' })
+      expect(true).toBe(false)
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error)
     }
     client.disconnect()
   })
