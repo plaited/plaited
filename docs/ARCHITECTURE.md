@@ -132,4 +132,4 @@ The pluggable model interfaces make tier selection a deployment decision, not an
 | `CRITIQUE-RESPONSE.md` | Gap resolutions, attestation layer, module architecture evolution |
 | `UI.md` | Generative UI rendering pipeline, controller protocol |
 | `WEBSOCKET-ARCHITECTURE.md` | WebSocket server layer design |
-| `BEHAVIORAL-PROGRAMMING.md` | BP paradigm foundation |
+| ~~`BEHAVIORAL-PROGRAMMING.md`~~ | Migrated → `skills/behavioral-core/references/algorithm-reference.md` |
