@@ -2,9 +2,9 @@ import { describe, expect, test } from 'bun:test'
 import {
   AGENT_EVENTS,
   behavioral,
-  createGovernanceFactory,
+  createConstitution,
   DEFAULT_MAC_FACTORIES,
-  GOVERNANCE_FACTORY_IDENTIFIER,
+  FACTORY_BRANDS,
   isEtcWrite,
   isForcePush,
   isGovernanceModification,
@@ -14,7 +14,7 @@ import {
   noRmRf,
   protectGovernance,
 } from 'plaited'
-import type { AgentToolCall } from 'plaited'
+import type { AgentToolCall, ConstitutionFactory } from 'plaited'
 
 // ============================================================================
 // Helpers
@@ -53,9 +53,9 @@ const executeEvent = (toolCall: AgentToolCall, tags: string[] = []) => ({
  * Sets up a behavioral instance with governance threads loaded,
  * and returns a tracker for selected events.
  */
-const setupWithGovernance = (factory: ReturnType<typeof createGovernanceFactory>) => {
+const setupWithGovernance = (factory: ConstitutionFactory) => {
   const { bThreads, trigger, useFeedback } = behavioral()
-  const { threads } = factory(trigger)
+  const { threads } = factory.create(trigger)
   if (threads) bThreads.set(threads)
 
   const selected: string[] = []
@@ -72,39 +72,21 @@ const setupWithGovernance = (factory: ReturnType<typeof createGovernanceFactory>
 // createGovernanceFactory
 // ============================================================================
 
-describe('createGovernanceFactory', () => {
-  test('brands the factory with GOVERNANCE_FACTORY_IDENTIFIER', () => {
-    const factory = createGovernanceFactory({
-      name: 'testFactory',
-      layer: 'mac',
-      create: () => ({}),
-    })
-    expect(factory.$).toBe(GOVERNANCE_FACTORY_IDENTIFIER)
+describe('createConstitution (governance)', () => {
+  test('brands the factory with constitution brand', () => {
+    const factory = createConstitution(() => ({}))
+    expect(factory.$).toBe(FACTORY_BRANDS.constitution)
     expect(factory.$).toBe('🏛️')
-  })
-
-  test('preserves name and layer', () => {
-    const factory = createGovernanceFactory({
-      name: 'myRule',
-      layer: 'dac',
-      create: () => ({}),
-    })
-    expect(factory.name).toBe('myRule')
-    expect(factory.layer).toBe('dac')
   })
 
   test('invokes the create function with trigger', () => {
     let receivedTrigger: unknown
-    const factory = createGovernanceFactory({
-      name: 'test',
-      layer: 'mac',
-      create: (trigger) => {
-        receivedTrigger = trigger
-        return {}
-      },
+    const factory = createConstitution((trigger) => {
+      receivedTrigger = trigger
+      return {}
     })
     const { trigger } = behavioral()
-    factory(trigger)
+    factory.create(trigger)
     expect(receivedTrigger).toBe(trigger)
   })
 })
@@ -334,17 +316,11 @@ describe('protectGovernance factory', () => {
 describe('DEFAULT_MAC_FACTORIES composition', () => {
   test('contains all four MAC factories', () => {
     expect(DEFAULT_MAC_FACTORIES).toHaveLength(4)
-    const names = DEFAULT_MAC_FACTORIES.map((f) => f.name)
-    expect(names).toContain('noEtcWrites')
-    expect(names).toContain('noRmRf')
-    expect(names).toContain('noForcePush')
-    expect(names).toContain('protectGovernance')
   })
 
-  test('all factories are branded as MAC', () => {
+  test('all factories are branded as constitution', () => {
     for (const factory of DEFAULT_MAC_FACTORIES) {
-      expect(factory.$).toBe(GOVERNANCE_FACTORY_IDENTIFIER)
-      expect(factory.layer).toBe('mac')
+      expect(factory.$).toBe(FACTORY_BRANDS.constitution)
     }
   })
 
@@ -353,7 +329,7 @@ describe('DEFAULT_MAC_FACTORIES composition', () => {
 
     // Load all MAC factories
     for (const factory of DEFAULT_MAC_FACTORIES) {
-      const { threads } = factory(trigger)
+      const { threads } = factory.create(trigger)
       if (threads) bThreads.set(threads)
     }
 
@@ -389,7 +365,7 @@ describe('DEFAULT_MAC_FACTORIES composition', () => {
     const { bThreads, trigger, useFeedback } = behavioral()
 
     for (const factory of DEFAULT_MAC_FACTORIES) {
-      const { threads } = factory(trigger)
+      const { threads } = factory.create(trigger)
       if (threads) bThreads.set(threads)
     }
 
