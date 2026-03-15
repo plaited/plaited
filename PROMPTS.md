@@ -1462,6 +1462,188 @@ Test with mock stdio streams:
 
 ---
 
+---
+
+## Secret Management (`skills/`)
+
+### Prompt 18: Varlock Integration — AI-Safe Environment Configuration
+
+```
+Work in a worktree branch off chore/audit-tool.
+
+## Task
+
+Create a Varlock integration skill and MCP-backed search skill for AI-safe environment configuration. Varlock lets agents understand environment configuration requirements (.env.schema) without ever seeing actual secret values.
+
+## Context
+
+Varlock (https://varlock.dev/) provides:
+- `.env.schema` files that describe environment variables with metadata (@sensitive, @required, @type)
+- Runtime resolution from multiple sources (local files, env-specific overrides, external secret managers)
+- AI-safe design — agents read schemas for context, never access actual secrets
+- Leak detection and prevention for logs and bundled code
+- Secret provider plugins (1Password, Infisical, AWS, Azure, Google, Bitwarden)
+
+This is critical for our enterprise deployment model: when seeds generate nodes, they need to declare environment requirements. When the PM provisions worker nodes, it needs to know what secrets each node requires without seeing the values.
+
+## What to Build
+
+### 1. Varlock Docs MCP Skill (skills/search-varlock-docs/)
+
+Generate a search skill from Varlock's MCP documentation server using the existing add-remote-mcp skill infrastructure.
+
+MCP server URL: `https://docs.mcp.varlock.dev/mcp`
+
+Use the add-remote-mcp skill to:
+1. Discover the MCP server capabilities: `mcpDiscover('https://docs.mcp.varlock.dev/mcp')`
+2. List available tools: `mcpListTools('https://docs.mcp.varlock.dev/mcp')`
+3. Generate a search wrapper script following the same pattern as search-bun-docs, search-mcp-docs, search-agent-skills
+4. Create the SKILL.md with appropriate frontmatter
+
+```
+skills/search-varlock-docs/
+  SKILL.md
+  scripts/
+    search.ts          ← wrapper calling the MCP server
+    tests/
+      search.spec.ts
+```
+
+### 2. Varlock Integration Skill (skills/varlock/)
+
+A skill that teaches agents how to use Varlock for node configuration:
+
+```
+skills/varlock/
+  SKILL.md                    ← when/how to use Varlock in the Plaited context
+  references/
+    schema-patterns.md        ← .env.schema patterns for node configuration
+    enterprise-secrets.md     ← secret provider setup for enterprise deployments
+    constitution-rules.md     ← MAC bThread patterns for secret protection
+```
+
+#### SKILL.md content:
+
+**When to use:**
+- Setting up a new node that needs environment configuration
+- Enterprise provisioning where secrets come from external providers
+- Generating seeds that declare environment requirements
+- Ensuring agent never leaks secrets into context/history/training data
+
+**Schema patterns for Plaited nodes:**
+
+```ini
+# .env.schema for a Plaited agent node
+
+# Model inference
+INFERENCE_URL=http://localhost:11434
+  @type url
+  @required
+  @description Local inference server endpoint
+
+INFERENCE_API_KEY=
+  @sensitive
+  @required
+  @description API key for hosted inference (empty for local)
+  @source exec('op read "op://Plaited/inference-key/credential"')
+
+# A2A
+A2A_CERT_PATH=
+  @sensitive
+  @required
+  @type path
+  @description mTLS certificate for A2A communication
+
+A2A_KEY_PATH=
+  @sensitive
+  @required
+  @type path
+  @description mTLS private key
+
+# Node identity
+NODE_ROLE=worker
+  @type enum(pm,worker,registry,observer)
+  @required
+
+NODE_NAME=
+  @required
+  @description Human-readable node identifier
+```
+
+**Constitution rules for secret protection:**
+
+A MAC bThread that blocks the agent from including .env content in context assembly or tool outputs:
+
+```typescript
+// Block reading .env files (only .env.schema is safe)
+bSync({
+  block: (e) =>
+    e.type === AGENT_EVENTS.execute &&
+    e.detail?.toolCall?.name === 'read_file' &&
+    e.detail?.toolCall?.arguments?.path?.match(/\.env($|\.)/) &&
+    !e.detail?.toolCall?.arguments?.path?.endsWith('.env.schema'),
+}, true)
+```
+
+**Enterprise secret providers:**
+
+For enterprise nodes, secrets resolve from the org's secret manager at runtime via Varlock's provider plugins:
+
+```ini
+DATABASE_URL=
+  @sensitive
+  @required
+  @source exec('aws secretsmanager get-secret-value --secret-id plaited/db-url --query SecretString --output text')
+```
+
+The agent sees the schema (knows a DATABASE_URL is needed), generates code that reads `process.env.DATABASE_URL`, but never sees the actual connection string.
+
+### 3. CLI Integration
+
+Add `varlock` as an optional tool in the node setup flow:
+
+```bash
+# Initialize Varlock in a node workspace
+bunx varlock init
+
+# Validate environment against schema
+bunx varlock validate
+
+# Run node with validated environment
+bunx varlock run -- bun run src/main.ts
+```
+
+The seed skill for node generation should include Varlock initialization when the deployment requires secret management.
+
+## Key Files
+
+- skills/add-remote-mcp/ — MCP skill generation infrastructure
+- skills/search-bun-docs/ — reference pattern for generated MCP search skills
+- src/agent/agent.governance.ts — constitution MAC factories (reference for secret protection bThread)
+- src/modnet/modnet.constants.ts — NODE_ROLE (used in schema patterns)
+- docs/MODNET-IMPLEMENTATION.md — enterprise topology (where secrets matter)
+
+## Design Notes
+
+**Varlock replaces .env.example files.** Instead of stale .env.example with placeholder values, .env.schema is the single source of truth with types, sensitivity markers, and provider references. Seeds generate .env.schema as part of node setup.
+
+**Secret protection is a constitution concern.** The bThread blocking .env reads is a MAC rule — the agent can't override it. Only .env.schema is readable. This prevents secret leakage into context/history/training data by design.
+
+**MCP server for docs.** Varlock provides its own MCP server for documentation search. Using add-remote-mcp to generate a search skill gives us the same pattern as our other doc search skills (bun docs, MCP docs, AgentSkills docs).
+
+## Constraints
+
+- Read CLAUDE.md and AGENTS.md for project conventions
+- Use add-remote-mcp skill to generate the MCP search skill (don't build from scratch)
+- The Varlock integration skill is a SKILL (skills/), not framework code (src/)
+- The constitution bThread for secret protection is a PATTERN in the skill, not implemented code — it's a reference for seeds to use when generating nodes
+- Validate: `bunx @plaited/development-skills validate-skill skills/search-varlock-docs skills/varlock`
+- If your changes affect docs/ or skills/, update in the same commit
+- Run `bun --bun tsc --noEmit` and `bun test src/ skills/` before committing
+```
+
+---
+
 ## Final Summary
 
 | # | Prompt | Directory | Parallel Group |
@@ -1483,5 +1665,6 @@ Test with mock stdio streams:
 | 15 | UI + WebSocket → merge into generative-ui | `docs/` + `skills/` | D |
 | 16 | Project isolation → skill | `docs/` + `skills/` | D |
 | 17 | ACP debug viewport (multi-node, A2A observation) | `src/agent/` | E |
+| 18 | Varlock integration (AI-safe secrets, MCP docs) | `skills/` | F (after B/Prompt 6) |
 
-Groups A, B, C, D, E can all run in parallel. Prompt 17 is independent — it bridges any node's AgentNode to ACP's stdio protocol. SSH provides admin access; ACP provides the debug viewport.
+Groups A–F can run in parallel where dependencies allow. Prompt 18 depends loosely on Prompt 6 (transport executor pattern establishes the seam that secret-aware node setup builds on), but the skill itself is independent.
