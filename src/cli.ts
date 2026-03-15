@@ -44,6 +44,10 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   'ingest-rules': ingestRulesCli,
   'discover-skills': discoverSkillsCli,
   'typescript-lsp': typescriptLsp,
+  // ACP adapter (long-lived stdio process)
+  acp: async () => {
+    await import('./acp.ts')
+  },
 }
 
 // ============================================================================
@@ -84,7 +88,10 @@ Commands:
   Development:
     validate-skill, validate-thread, ingest-goal,
     ingest-skill, ingest-rules, discover-skills,
-    typescript-lsp`)
+    typescript-lsp
+
+  ACP (Editor Transport):
+    acp [--node <name>]`)
   process.exit(command ? 0 : 1)
 }
 
