@@ -5,6 +5,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { behavioral } from '../../behavioral/behavioral.ts'
 import { AGENT_EVENTS } from '../agent.constants.ts'
+import type { SensorDeltaDetail } from '../agent.types.ts'
 import type { HeartbeatHandle } from '../proactive.ts'
 import { createHeartbeatTimer, createSensorBatchThread, createTickYieldThread } from '../proactive.ts'
 
@@ -193,14 +194,18 @@ describe('createSensorBatchThread', () => {
   test('waits for N sensor_delta events then requests sensor_sweep', () => {
     const { bThreads, trigger, useFeedback } = behavioral()
     const events: string[] = []
+    const deltas: SensorDeltaDetail[] = []
 
     useFeedback({
-      [AGENT_EVENTS.sensor_delta]: recorder(events, 'sensor_delta'),
+      [AGENT_EVENTS.sensor_delta]: (detail: unknown) => {
+        deltas.push(detail as SensorDeltaDetail)
+        events.push('sensor_delta')
+      },
       [AGENT_EVENTS.sensor_sweep]: recorder(events, 'sensor_sweep'),
     })
 
     bThreads.set({
-      sensorBatch: createSensorBatchThread(2),
+      sensorBatch: createSensorBatchThread(2, deltas),
     })
 
     // Fire 2 sensor deltas
@@ -210,6 +215,35 @@ describe('createSensorBatchThread', () => {
     // sensor_sweep should be requested after both deltas arrive
     expect(events).toContain('sensor_sweep')
     expect(events.filter((e) => e === 'sensor_delta').length).toBe(2)
+  })
+
+  test('sensor_sweep carries captured deltas', () => {
+    const { bThreads, trigger, useFeedback } = behavioral()
+    const deltas: SensorDeltaDetail[] = []
+    let sweepDetail: unknown = null
+
+    useFeedback({
+      [AGENT_EVENTS.sensor_delta]: (detail: unknown) => {
+        deltas.push(detail as SensorDeltaDetail)
+      },
+      [AGENT_EVENTS.sensor_sweep]: (detail: unknown) => {
+        sweepDetail = detail
+      },
+    })
+
+    bThreads.set({
+      sensorBatch: createSensorBatchThread(2, deltas),
+    })
+
+    trigger({ type: AGENT_EVENTS.sensor_delta, detail: { sensor: 'git', delta: { files: ['a.ts'] } } })
+    trigger({ type: AGENT_EVENTS.sensor_delta, detail: { sensor: 'fs', delta: { created: true } } })
+
+    // sensor_sweep detail should contain the captured deltas
+    expect(sweepDetail).toBeDefined()
+    const sweep = sweepDetail as { deltas: SensorDeltaDetail[] }
+    expect(sweep.deltas).toHaveLength(2)
+    expect(sweep.deltas[0]!.sensor).toBe('git')
+    expect(sweep.deltas[1]!.sensor).toBe('fs')
   })
 
   test('zero-length batch requests sensor_sweep on next super-step', () => {
@@ -225,7 +259,7 @@ describe('createSensorBatchThread', () => {
     // In practice, this is always created inside a tick handler where a
     // super-step is already running. The request fires on the next step.
     bThreads.set({
-      sensorBatch: createSensorBatchThread(0),
+      sensorBatch: createSensorBatchThread(0, []),
     })
 
     // Trigger a super-step — the pending request is selected
@@ -237,15 +271,19 @@ describe('createSensorBatchThread', () => {
   test('interrupts on task event (user preemption)', () => {
     const { bThreads, trigger, useFeedback } = behavioral()
     const events: string[] = []
+    const deltas: SensorDeltaDetail[] = []
 
     useFeedback({
-      [AGENT_EVENTS.sensor_delta]: recorder(events, 'sensor_delta'),
+      [AGENT_EVENTS.sensor_delta]: (detail: unknown) => {
+        deltas.push(detail as SensorDeltaDetail)
+        events.push('sensor_delta')
+      },
       [AGENT_EVENTS.sensor_sweep]: recorder(events, 'sensor_sweep'),
       [AGENT_EVENTS.task]: recorder(events, 'task'),
     })
 
     bThreads.set({
-      sensorBatch: createSensorBatchThread(3),
+      sensorBatch: createSensorBatchThread(3, deltas),
     })
 
     // Fire 1 of 3 expected deltas
@@ -262,15 +300,19 @@ describe('createSensorBatchThread', () => {
   test('interrupts on message event (cycle end)', () => {
     const { bThreads, trigger, useFeedback } = behavioral()
     const events: string[] = []
+    const deltas: SensorDeltaDetail[] = []
 
     useFeedback({
-      [AGENT_EVENTS.sensor_delta]: recorder(events, 'sensor_delta'),
+      [AGENT_EVENTS.sensor_delta]: (detail: unknown) => {
+        deltas.push(detail as SensorDeltaDetail)
+        events.push('sensor_delta')
+      },
       [AGENT_EVENTS.sensor_sweep]: recorder(events, 'sensor_sweep'),
       [AGENT_EVENTS.message]: recorder(events, 'message'),
     })
 
     bThreads.set({
-      sensorBatch: createSensorBatchThread(2),
+      sensorBatch: createSensorBatchThread(2, deltas),
     })
 
     // Fire 1 of 2 expected deltas
@@ -286,16 +328,20 @@ describe('createSensorBatchThread', () => {
 
   test('one-shot thread terminates after completion', () => {
     const { bThreads, trigger, useFeedback } = behavioral()
+    const deltas: SensorDeltaDetail[] = []
     let sweepCount = 0
 
     useFeedback({
+      [AGENT_EVENTS.sensor_delta]: (detail: unknown) => {
+        deltas.push(detail as SensorDeltaDetail)
+      },
       [AGENT_EVENTS.sensor_sweep]: () => {
         sweepCount++
       },
     })
 
     bThreads.set({
-      sensorBatch: createSensorBatchThread(1),
+      sensorBatch: createSensorBatchThread(1, deltas),
     })
 
     trigger({ type: AGENT_EVENTS.sensor_delta, detail: { sensor: 'git', delta: {} } })

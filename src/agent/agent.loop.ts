@@ -46,6 +46,7 @@ import type {
   GateApprovedDetail,
   GateRejectedDetail,
   Indexer,
+  InferenceErrorDetail,
   MessageDetail,
   Model,
   ModelResponseDetail,
@@ -153,6 +154,9 @@ export const createAgentLoop = ({
   const priorRejections: string[] = []
   let currentGoal = ''
   const abortControllers = new Map<string, AbortController>()
+  const INFERENCE_ABORT_KEY = '__inference__'
+  const MAX_INFERENCE_RETRIES = 3
+  let inferenceRetryCount = 0
 
   // ── Context assembler ───────────────────────────────────────────────────
   const contributors: ContextContributor[] = [
@@ -257,7 +261,9 @@ export const createAgentLoop = ({
 
     // ── invoke_inference ──────────────────────────────────────────────────
     async [AGENT_EVENTS.invoke_inference]() {
-      const signal = AbortSignal.timeout(120_000)
+      const controller = new AbortController()
+      abortControllers.set(INFERENCE_ABORT_KEY, controller)
+      const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(120_000)])
 
       // Assemble context
       const trimmedHistory = trimHistory(history, Math.floor(contextBudget * 0.6))
@@ -322,8 +328,11 @@ export const createAgentLoop = ({
             }
             const parsed = parseModelResponse(response)
             const detail: ModelResponseDetail = { parsed, usage: delta.response.usage }
+            abortControllers.delete(INFERENCE_ABORT_KEY)
+            inferenceRetryCount = 0
             trigger({ type: AGENT_EVENTS.model_response, detail })
           } else if (delta.type === 'error') {
+            abortControllers.delete(INFERENCE_ABORT_KEY)
             trigger({
               type: AGENT_EVENTS.inference_error,
               detail: { error: delta.error, retryable: false },
@@ -331,6 +340,7 @@ export const createAgentLoop = ({
           }
         }
       } catch (error) {
+        abortControllers.delete(INFERENCE_ABORT_KEY)
         const msg = error instanceof Error ? error.message : String(error)
         trigger({ type: AGENT_EVENTS.inference_error, detail: { error: msg, retryable: true } })
       }
@@ -396,13 +406,9 @@ export const createAgentLoop = ({
             decision: { approved: false, tags: tags as GateRejectedDetail['decision']['tags'], reason: result.reason },
           } satisfies GateRejectedDetail,
         })
-      } else if (result.route === 'execute') {
-        trigger({
-          type: AGENT_EVENTS.gate_approved,
-          detail: { toolCall, tags } satisfies GateApprovedDetail,
-        })
       } else {
-        // simulate
+        // Both 'execute' and 'simulate' routes trigger gate_approved;
+        // downstream gate_approved handler routes by tags
         trigger({
           type: AGENT_EVENTS.gate_approved,
           detail: { toolCall, tags } satisfies GateApprovedDetail,
@@ -586,10 +592,29 @@ export const createAgentLoop = ({
       }
     },
 
+    // ── inference_error ────────────────────────────────────────────────
+    async [AGENT_EVENTS.inference_error](detail: unknown) {
+      const { error, retryable } = detail as InferenceErrorDetail
+
+      if (retryable && inferenceRetryCount < MAX_INFERENCE_RETRIES) {
+        inferenceRetryCount++
+        const delayMs = Math.min(1000 * 2 ** (inferenceRetryCount - 1), 16_000)
+        await Bun.sleep(delayMs)
+        trigger({ type: AGENT_EVENTS.invoke_inference })
+      } else {
+        inferenceRetryCount = 0
+        trigger({
+          type: AGENT_EVENTS.message,
+          detail: { content: `Inference error: ${error}` } satisfies MessageDetail,
+        })
+      }
+    },
+
     // ── message ──────────────────────────────────────────────────────────
     [AGENT_EVENTS.message](_detail: unknown) {
-      // Clear rejections for next task
+      // Clear rejections and retry state for next task
       priorRejections.length = 0
+      inferenceRetryCount = 0
     },
 
     // ── memory lifecycle ─────────────────────────────────────────────────

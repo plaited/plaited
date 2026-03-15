@@ -17,6 +17,7 @@
  * @public
  */
 
+import { stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { DefaultHandlers, Trigger } from '../behavioral/behavioral.types.ts'
 import { buildSessionSummary } from '../tools/hypergraph.utils.ts'
@@ -213,7 +214,9 @@ export const createMemoryHandlers = ({
       for await (const name of glob.scan({ cwd: sessionsDir, onlyFiles: false })) {
         // Check if it's a directory by looking for meta.jsonld or decisions/
         const metaExists = await Bun.file(join(sessionsDir, name, 'meta.jsonld')).exists()
-        const decisionsExists = await Bun.file(join(sessionsDir, name, 'decisions')).exists()
+        const decisionsExists = await stat(join(sessionsDir, name, 'decisions'))
+          .then((s) => s.isDirectory())
+          .catch(() => false)
         if (metaExists || decisionsExists) {
           sessions.push(name)
         }

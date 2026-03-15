@@ -404,18 +404,8 @@ describe('createAgentLoop', () => {
   // ============================================================================
 
   test('simulation + evaluation: untagged tool → simulate → evaluate → execute', async () => {
-    // Simulation model: returns safe prediction
-    const _simModel: Model = {
-      reason: async function* () {
-        yield {
-          type: 'text_delta',
-          content: 'PREDICTED OUTPUT:\nSuccess\n\nPREDICTED CHANGES:\n- File created successfully',
-        } as ModelDelta
-        yield { type: 'done', response: { usage: { inputTokens: 50, outputTokens: 25 } } } as ModelDelta
-      },
-    }
-
-    // Main model: first returns tool call, then text
+    // createAgentLoop uses the same model for reasoning and simulation;
+    // a separate simModel parameter is not yet wired up
     let mainCallCount = 0
     const mainModel: Model = {
       reason: async function* () {
@@ -459,7 +449,72 @@ describe('createAgentLoop', () => {
   })
 
   // ============================================================================
-  // Test 8: Destroy cleans up
+  // Test 8: Inference error — non-retryable triggers message (unblocks taskGate)
+  // ============================================================================
+
+  test('inference_error: non-retryable error triggers message instead of deadlocking', async () => {
+    const errorModel: Model = {
+      reason: async function* () {
+        yield { type: 'error', error: 'Model unavailable' } as ModelDelta
+      },
+    }
+
+    const agent = createAgentLoop({
+      model: errorModel,
+      tools: [],
+      toolExecutor: async () => null,
+      memoryPath: '/tmp/test-memory-infer-err',
+      sessionId: 'test-infer-err',
+    })
+    afterAll(() => agent.destroy())
+
+    const events = collectEvents(agent)
+    connectAndTask(agent, 'Do something')
+
+    // Should produce inference_error → message (not deadlock)
+    await waitForEvent(events, AGENT_EVENTS.message, 3000)
+
+    expect(events.some((e) => e.type === AGENT_EVENTS.inference_error)).toBe(true)
+    expect(events.some((e) => e.type === AGENT_EVENTS.message)).toBe(true)
+  })
+
+  // ============================================================================
+  // Test 9: Inference error — retryable triggers retry then eventual message
+  // ============================================================================
+
+  test('inference_error: retryable error retries then surfaces after max retries', async () => {
+    // Exponential backoff: 1s + 2s + 4s = 7s minimum
+    let callCount = 0
+    const failingModel: Model = {
+      reason: async function* () {
+        callCount++
+        throw new Error('Connection refused')
+      },
+    }
+
+    const agent = createAgentLoop({
+      model: failingModel,
+      tools: [],
+      toolExecutor: async () => null,
+      memoryPath: '/tmp/test-memory-retry-err',
+      sessionId: 'test-retry-err',
+    })
+    afterAll(() => agent.destroy())
+
+    const events = collectEvents(agent)
+    connectAndTask(agent, 'Do something')
+
+    // Should eventually surface as message after MAX_INFERENCE_RETRIES (3) + 1 initial
+    await waitForEvent(events, AGENT_EVENTS.message, 30_000)
+
+    // 1 initial + 3 retries = 4 total calls
+    expect(callCount).toBe(4)
+    expect(events.filter((e) => e.type === AGENT_EVENTS.inference_error).length).toBe(4)
+    expect(events.some((e) => e.type === AGENT_EVENTS.message)).toBe(true)
+  }, 15_000)
+
+  // ============================================================================
+  // Test 10: Destroy cleans up
   // ============================================================================
 
   test('destroy aborts in-flight operations', () => {

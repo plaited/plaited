@@ -21,6 +21,7 @@
 import type { RulesFunction, Trigger } from '../behavioral/behavioral.types.ts'
 import { bSync, bThread } from '../behavioral/behavioral.utils.ts'
 import { AGENT_EVENTS } from './agent.constants.ts'
+import type { SensorDeltaDetail } from './agent.types.ts'
 
 // ============================================================================
 // Types
@@ -146,8 +147,12 @@ export const createTickYieldThread = (): RulesFunction =>
  * @remarks
  * After a tick fires, the tick handler runs all sensors in parallel.
  * Each sensor that detects a change triggers `sensor_delta`. This thread
- * waits for `sensorCount` deltas, then requests `context_assembly` to
- * feed the deltas into the inference pipeline.
+ * waits for `sensorCount` deltas, then requests `sensor_sweep` with the
+ * accumulated delta payloads.
+ *
+ * The `deltas` array is a mutable side-channel: the caller populates it
+ * via a `sensor_delta` useFeedback handler. By the time the final bSync
+ * fires, the array contains all collected payloads (JS reference identity).
  *
  * If no sensors detect changes (`sensorCount === 0`), the tick handler
  * triggers `sleep` directly — this thread is not created.
@@ -155,11 +160,12 @@ export const createTickYieldThread = (): RulesFunction =>
  * Interrupted by `task` (user preemption) or `message` (cycle end).
  *
  * @param sensorCount - Number of sensors that reported deltas
+ * @param deltas - Mutable array populated by a `sensor_delta` handler
  * @returns A `RulesFunction` to register via `bThreads.set()`
  *
  * @public
  */
-export const createSensorBatchThread = (sensorCount: number): RulesFunction =>
+export const createSensorBatchThread = (sensorCount: number, deltas: SensorDeltaDetail[]): RulesFunction =>
   bThread([
     ...Array.from({ length: sensorCount }, () =>
       bSync({
@@ -168,7 +174,7 @@ export const createSensorBatchThread = (sensorCount: number): RulesFunction =>
       }),
     ),
     bSync({
-      request: { type: AGENT_EVENTS.sensor_sweep, detail: { deltas: [] } },
+      request: { type: AGENT_EVENTS.sensor_sweep, detail: { deltas } },
       interrupt: [AGENT_EVENTS.task, AGENT_EVENTS.message],
     }),
   ])
