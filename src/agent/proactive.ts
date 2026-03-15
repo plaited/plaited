@@ -18,9 +18,8 @@
  * @public
  */
 
-import type { Trigger } from '../behavioral/behavioral.types.ts'
+import type { RulesFunction, Trigger } from '../behavioral/behavioral.types.ts'
 import { bSync, bThread } from '../behavioral/behavioral.utils.ts'
-import type { RulesFunction } from '../behavioral/behavioral.types.ts'
 import { AGENT_EVENTS } from './agent.constants.ts'
 
 // ============================================================================

@@ -15,7 +15,6 @@
  */
 
 import { join, resolve } from 'node:path'
-import { unlink } from 'node:fs/promises'
 import { validateThreadFactory, type ThreadValidationResult } from '../tools/validate-thread.ts'
 import { FACTORY_BRANDS, isGoalFactory, type GoalFactory } from './agent.factories.ts'
 
@@ -237,11 +236,7 @@ export const saveGoal = async (goalsDir: string, name: string, source: string): 
 
   if (!validation.valid || !mac.ok) {
     // Clean up invalid file
-    try {
-      await unlink(filePath)
-    } catch {
-      // File may already be gone
-    }
+    await Bun.$`rm ${filePath}`.quiet().nothrow()
     return {
       success: false,
       path: filePath,
@@ -277,12 +272,12 @@ export const removeGoal = async (goalsDir: string, name: string): Promise<boolea
   if (!(await Bun.file(filePath).exists())) return false
 
   // Remove the factory file
-  await unlink(filePath)
+  await Bun.$`rm ${filePath}`.quiet()
 
   // Also remove companion spec if it exists
   const specPath = join(goalsDir, `${name}.spec.ts`)
   if (await Bun.file(specPath).exists()) {
-    await unlink(specPath)
+    await Bun.$`rm ${specPath}`.quiet()
   }
 
   return true

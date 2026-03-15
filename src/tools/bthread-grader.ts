@@ -14,8 +14,6 @@
  * @packageDocumentation
  */
 
-import { rmSync } from 'node:fs'
-import { mkdir } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import * as z from 'zod'
 import type { Grader, GraderResult } from './trial.schemas.ts'
@@ -204,7 +202,7 @@ const createTempDir = async (
 ): Promise<{ tmpBase: string; factoryDir: string }> => {
   const tmpBase = join(projectRoot, `src/.bthread-grader-${id}`)
   const factoryDir = join(tmpBase, brandDir)
-  await mkdir(factoryDir, { recursive: true })
+  await Bun.$`mkdir -p ${factoryDir}`.quiet()
   return { tmpBase, factoryDir }
 }
 
@@ -214,11 +212,7 @@ const createTempDir = async (
  * @internal
  */
 const cleanupTempDir = (tmpBase: string): void => {
-  try {
-    rmSync(tmpBase, { recursive: true, force: true })
-  } catch {
-    // Best-effort cleanup
-  }
+  Bun.$`rm -rf ${tmpBase}`.quiet().nothrow()
 }
 
 // ============================================================================
