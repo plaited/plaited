@@ -1,3 +1,4 @@
+import type { A2AClient } from '../a2a/a2a.types.ts'
 import type { DefaultHandlers, Disconnect, SnapshotListener, Trigger } from '../behavioral/behavioral.types.ts'
 import type { CONTROLLER_TO_AGENT_EVENTS, UI_ADAPTER_LIFECYCLE_EVENTS } from '../events.ts'
 import type { UIClientConnectedDetail, UIClientDisconnectedDetail, UIClientErrorDetail } from '../server.ts'
@@ -152,6 +153,55 @@ export type ToolHandler = (args: Record<string, unknown>, ctx: ToolContext) => P
  * @public
  */
 export type ToolExecutor = (toolCall: AgentToolCall, signal: AbortSignal) => Promise<unknown>
+
+// ============================================================================
+// Executor Factory Options — transport-specific configuration
+// ============================================================================
+
+/**
+ * Options for {@link createLocalExecutor}.
+ *
+ * @remarks
+ * The default executor — calls ToolHandler functions directly in-process.
+ *
+ * @public
+ */
+export type CreateLocalExecutorOptions = {
+  workspace: string
+  handlers: Record<string, ToolHandler>
+}
+
+/**
+ * Options for {@link createSshExecutor}.
+ *
+ * @remarks
+ * Serializes tool calls as JSON and executes `bun run plaited <tool> <json>`
+ * on a remote machine via SSH. Relies on the CLI contract (`makeCli`) where
+ * every tool accepts JSON input with optional `cwd` and `timeout` fields.
+ *
+ * @public
+ */
+export type CreateSshExecutorOptions = {
+  host: string
+  port?: number
+  username: string
+  privateKey?: string
+  workspace: string
+}
+
+/**
+ * Options for {@link createA2AExecutor}.
+ *
+ * @remarks
+ * Sends tool calls as A2A `DataPart` messages to a remote agent node.
+ * The remote agent executes the tool and returns the result as a task artifact.
+ *
+ * @public
+ */
+export type CreateA2AExecutorOptions = {
+  client: A2AClient
+  taskTimeout?: number
+}
 
 // ============================================================================
 // Parsed Model Response
