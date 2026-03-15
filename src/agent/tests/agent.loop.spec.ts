@@ -486,6 +486,7 @@ describe('createAgentLoop', () => {
     // Exponential backoff: 1s + 2s + 4s = 7s minimum
     let callCount = 0
     const failingModel: Model = {
+      // biome-ignore lint/correctness/useYield: deliberately throws before yielding to simulate network failure
       reason: async function* () {
         callCount++
         throw new Error('Connection refused')
