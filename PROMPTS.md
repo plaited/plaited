@@ -1,1670 +1,725 @@
-# Worktree Prompts
+# Worktree Prompts — Final Phase
 
-Standalone prompts for Claude Code sessions. Each runs in a git worktree branch off `main`. Prompts are grouped by `src/` directory and can run in parallel within groups.
+Framework refinement via frontier agent evaluation. Skills calibrated by generating modnet modules, grading results, and iterating. SFT data collected from successful trajectories.
 
 ---
 
-## Tool Improvements (`src/tools/`)
+## Phase 0: Cleanup (Do First)
 
-### Prompt 1: Output Truncation + Read Enhancements
+### Prompt 1: Fix Grader Cleanup + Remove Old Package References
 
 ```
-Work in a worktree branch off main.
+Work in a worktree branch off local dev branch.
 
 ## Task
 
-Add output truncation, offset/limit pagination, and binary file detection to the built-in tools.
+Fix two housekeeping issues: orphaned .bthread-grader-* temp directories and stale references to removed packages.
 
-## Context
+## What to Do
 
-Current tools return unbounded output — a readFile on a 10MB file dumps everything into context. pi-mono caps at 2000 lines / 50KB per tool output. We need the same protection.
+### 1. Fix bthread-grader cleanup
 
-## What to Build
+40+ orphaned `.bthread-grader-*` directories exist in `src/`. The grader creates temp dirs but doesn't clean them on crash/timeout.
 
-### 1. Truncation Utility (src/tools/truncate.ts)
+In `src/tools/bthread-grader.ts`:
+- Ensure the `finally` block in the grading function always runs cleanup (even on unhandled errors)
+- Add a pre-run cleanup: at grader startup, delete any existing `.bthread-grader-*` dirs in the working directory
+- Verify `.gitignore` has `**/.bthread-grader-*` pattern (already added, confirm)
 
-Shared utility used by all tool handlers:
+Delete all existing orphaned dirs:
+```bash
+find src -maxdepth 1 -name ".bthread-grader-*" -type d -exec rm -rf {} +
+```
 
-- `truncateHead(text, opts)` — keep first N lines (for readFile)
-- `truncateTail(text, opts)` — keep last N lines (for bash output)
-- Options: `{ maxLines: 2000, maxBytes: 50 * 1024 }`
-- Use `Bun.indexOfLine` for fast native line counting (SIMD-optimized)
-- Return metadata: `{ content, truncated, totalLines, totalBytes, outputLines }`
-- Export Zod schema for TruncationResult
+### 2. Remove @plaited/agent-eval-harness and @plaited/development-skills references
 
-### 2. Read Tool — Offset/Limit (update src/tools/crud.ts)
+These packages no longer exist. Replace all references:
 
-Add `offset` and `limit` parameters to readFile:
+| File | What to Change |
+|---|---|
+| `AGENTS.md` | Replace `bunx @plaited/development-skills validate-skill` with current CLI command |
+| `README.md` | Remove/update any references |
+| `docs/GENOME.md` | Replace validation command references |
+| `PROMPTS.md` | Replace validation command references |
+| `skills/modnet-node/references/module-architecture.md` | Replace references |
 
-- `BunFile.slice(start, end)` for byte-range reads without loading entire file
-- `BunFile.size` for total size without reading
-- Default: truncateHead with 2000 lines / 50KB
-- With offset/limit: read specified range, then truncate
+Search codebase-wide: `grep -r "@plaited/agent-eval-harness\|@plaited/development-skills" --include="*.md" --include="*.ts" --include="*.json"`
 
-### 3. Read Tool — Binary Detection (update src/tools/crud.ts)
+### 3. Delete orphaned grader directories
 
-Use `BunFile.type` for MIME detection:
-
-- Text files → read as before (with truncation)
-- Image files → return `{ type: 'image', mimeType, size, path }` (no binary content)
-- Other binary → return `{ type: 'binary', mimeType, size, path }`
-- This is the multimodal attachment point for when Vision model is available
-
-### 4. Apply Truncation to All Handlers
-
-- `readFile` → truncateHead
-- `bash` → truncateTail (show last N lines of command output)
-- `listFiles` → cap results at 1000 entries
-- `editFile` → no truncation needed (output is small)
-
-Update crud.schemas.ts for new parameters. Update tests.
-
-## Key Files
-
-- src/tools/crud.ts — existing handlers
-- src/tools/crud.schemas.ts — existing schemas
-- Bun docs: BunFile.size, BunFile.type, BunFile.slice(), Bun.indexOfLine
+```bash
+find src -maxdepth 1 -name ".bthread-grader-*" -type d -exec rm -rf {} +
+```
 
 ## Constraints
 
-- Read CLAUDE.md and AGENTS.md for project conventions
-- Use Bun APIs (BunFile, Bun.indexOfLine) not Node.js
-- Run `bun --bun tsc --noEmit` and `bun test src/` before committing
-```
-
-### Prompt 2: Grep Tool + Find Enrichment
-
-```
-Work in a worktree branch off main.
-
-## Task
-
-Add a dedicated grep tool and enrich the find/listFiles tool with metadata.
-
-## Context
-
-Our agent uses the bash tool for text search, which means read-only searches go through the full simulate+judge pipeline (bash has empty risk tags → default-deny). A dedicated grep tool tagged [workspace] skips simulation for read-only searches.
-
-## What to Build
-
-### 1. Grep Tool (add to src/tools/crud.ts)
-
-Wraps ripgrep with structured output:
-
-```typescript
-const result = await $`rg --json ${pattern} ${path}`.cwd(workspace).nothrow().quiet()
-```
-
-Parameters:
-- `pattern` (string, required) — regex or literal search pattern
-- `path` (string, optional) — directory or file to search (default: workspace root)
-- `glob` (string, optional) — filter files by glob pattern
-- `ignoreCase` (boolean, optional)
-- `literal` (boolean, optional) — treat pattern as literal, not regex
-- `context` (number, optional) — lines before/after each match
-- `limit` (number, optional, default: 100) — max matches
-
-Use `Bun.JSONL.parse()` to parse `rg --json` output natively.
-
-Risk tags: `[RISK_TAG.workspace]` — read-only, skips simulation.
-
-Add to `BUILT_IN_RISK_TAGS`, `builtInHandlers`, `BUILT_IN_TOOLS`.
-
-Apply truncation from Prompt 1 to grep output.
-
-### 2. ensureTool Utility (src/tools/cli.utils.ts)
-
-Add a utility that checks for external binary dependencies at tool registration time:
-
-```typescript
-export const ensureTool = (name: string): string => {
-  const path = Bun.which(name)
-  if (!path) throw new Error(`Required tool '${name}' not found on PATH. Install it or add it to your node's setup.`)
-  return path
-}
-```
-
-Call `ensureTool('rg')` at grep handler creation time — fail fast with a clear message rather than failing at first use. This is the Bun-native equivalent of pi-mono's tools-manager, without auto-downloading binaries (that's a deployment/seed concern).
-
-### 3. Find/ListFiles Enrichment (update src/tools/crud.ts)
-
-Enrich listFiles results with metadata:
-
-- `BunFile.size` for file size
-- `BunFile.type` for MIME type
-- Add `limit` parameter (default: 1000)
-- Return sorted results (most recently modified first if possible)
-
-Update schemas and tests for both.
-
-## Key Files
-
-- src/tools/crud.ts — existing handlers
-- src/tools/crud.schemas.ts — existing schemas
-- src/agent/agent.constants.ts — BUILT_IN_TOOLS, RISK_TAG
-- Bun docs: Bun.$ (shell), Bun.JSONL.parse(), BunFile.size, BunFile.type
-
-## Constraints
-
-- Read CLAUDE.md and AGENTS.md for project conventions
-- grep must use Bun.$ to run rg (check Bun.which('rg') at startup)
-- Run `bun --bun tsc --noEmit` and `bun test src/` before committing
-```
-
-### Prompt 3: Edit with Scan-Assisted Matching
-
-```
-Work in a worktree branch off main.
-
-## Task
-
-Enhance the edit tool with Bun.Transpiler.scan()-based symbol location and fallback fuzzy matching.
-
-## Context
-
-Current editFile does exact string match only. When the model produces old_string with slightly different whitespace, the edit fails. pi-mono uses fuzzy matching with Unicode normalization. We can do better: use Bun.Transpiler.scan() to locate symbols by name, then apply edits within that range.
-
-## What to Build
-
-### 1. Scan-Assisted Edit Mode (update src/tools/crud.ts)
-
-New optional parameter: `symbol` (string) — if provided, use scan() to locate:
-
-```typescript
-const transpiler = new Bun.Transpiler({ loader: getLoader(path) })
-const { exports } = transpiler.scan(content)
-const target = exports.find(e => e.name === symbol)
-// Now we know the exact line range — edit within it
-```
-
-Flow:
-1. If `symbol` provided → scan() to find position → match old_string within that range only
-2. If no `symbol` → exact match first (existing behavior)
-3. If exact match fails → normalize whitespace (trimEnd per line) and retry
-4. If still fails → error with helpful message
-
-### 2. Whitespace Normalization Fallback
-
-Simple normalization (not pi-mono's full Unicode handling — greenfield, keep simple):
-
-```typescript
-const normalize = (s: string) => s.split('\n').map(l => l.trimEnd()).join('\n')
-```
-
-When exact match fails:
-- Normalize both content and old_string
-- Find match in normalized content
-- Map the match position back to original content
-- Apply edit to original (preserving original whitespace for untouched lines)
-
-### 3. Parse Validation After Edit
-
-After applying the edit, use scan() to verify the result still parses:
-
-```typescript
-try {
-  transpiler.scan(updatedContent) // throws on syntax error
-} catch {
-  throw new Error('Edit produced invalid TypeScript syntax')
-}
-```
-
-This is optional (controlled by file extension — only validate .ts/.tsx/.js/.jsx).
-
-Update schemas (add `symbol` parameter), update tests.
-
-## Key Files
-
-- src/tools/crud.ts — editFile handler
-- src/tools/crud.schemas.ts — EditFileConfigSchema
-- Bun docs: Bun.Transpiler, scan(), scanImports()
-
-## Constraints
-
-- Read CLAUDE.md and AGENTS.md for project conventions
-- scan() is microseconds — no performance concern for per-edit usage
-- The existing exact-match path must still work unchanged
-- Run `bun --bun tsc --noEmit` and `bun test src/` before committing
-```
-
-### Prompt 4: Scan Integration in Ingestion + LSP
-
-```
-Work in a worktree branch off main.
-
-## Task
-
-Replace regex-based scanning with Bun.Transpiler.scan() in ingestion tools, and add a lightweight scan sub-operation to the LSP tool.
-
-## Context
-
-ingest-skill.ts currently uses regex (/bp:thread\/(\w+)/g, /bp:event\/(\w+)/g, /from\s+['"]\.\.\/([^/'"]+)\//g) to extract references from TypeScript files. Bun.Transpiler.scan() gives imports and exports natively — more reliable, no false positives from comments or strings.
-
-The LSP tool (typescript-lsp.ts) spawns a subprocess for every query. For structural queries (imports, exports), scan() gives the same information instantly with zero subprocess cost.
-
-## What to Build
-
-### 1. Replace Regex Scanning in ingest-skill.ts
-
-Replace scanReferences() (lines 43-79) with Bun.Transpiler.scan():
-
-```typescript
-const transpiler = new Bun.Transpiler({ loader: 'tsx' })
-const { imports, exports } = transpiler.scan(sourceCode)
-```
-
-- Extract skill dependencies from `imports[].path` (replaces regex for cross-skill deps)
-- Keep regex for bp:thread/ and bp:event/ references (these appear in string literals that scan() doesn't parse — scan() only gives imports/exports, not string content)
-
-### 2. Add 'scan' Operation to typescript-lsp.ts
-
-New operation type alongside hover/references/definition/symbols/exports/find:
-
-```typescript
-case 'scan': {
-  const transpiler = new Bun.Transpiler({ loader: getLoader(absolutePath) })
-  const result = transpiler.scan(text)
-  return { imports: result.imports, exports: result.exports }
-}
-```
-
-This runs in microseconds with no LSP subprocess. The agent can:
-- Use 'scan' for structural queries (what does this file import/export?)
-- Use 'symbols'/'hover'/'references' for type-aware queries (what type is this? who uses it?)
-
-Risk tags: same as LSP ([RISK_TAG.workspace]).
-
-Update LspOperationSchema to include 'scan'. Update tests.
-
-### 3. Validate bThread Code with scan()
-
-In validate-thread.ts, use scan() for the sandbox check (no imports outside behavioral types) instead of regex:
-
-```typescript
-const { imports } = transpiler.scan(source)
-const disallowed = imports.filter(i => !allowedImports.has(i.path))
-```
-
-More reliable than the current regex-based import detection.
-
-### 4. Skill Collision Detection (update src/tools/skill-discovery.ts)
-
-When discovering skills from multiple sources (PROJECT-ISOLATION.md defines three tool layers: framework built-ins, global `~/.agents/skills/`, project `skills/`), detect name collisions:
-
-```typescript
-// After scanning all skill directories, check for duplicates
-const seen = new Map<string, string>()  // name → source path
-for (const skill of allSkills) {
-  const existing = seen.get(skill.name)
-  if (existing) {
-    diagnostics.push({
-      type: 'collision',
-      message: `Skill '${skill.name}' found in both ${existing} and ${skill.path}. Using ${skill.path} (project wins over global).`,
-    })
-  }
-  seen.set(skill.name, skill.path)
-}
-```
-
-Priority: project skills > global skills > framework built-ins. The last-loaded source wins, and a diagnostic is emitted for shadowed skills. This prevents silent skill shadowing when an enterprise node and a worker node both define a skill with the same name.
-
-## Key Files
-
-- src/tools/ingest-skill.ts — scanReferences function
-- src/tools/typescript-lsp.ts — operation dispatch
-- src/tools/validate-thread.ts — sandbox check
-- src/tools/skill-discovery.ts — skill scanning
-- Bun docs: Bun.Transpiler, scan(), scanImports()
-
-## Constraints
-
-- Read CLAUDE.md and AGENTS.md for project conventions
-- Keep bp:thread/ and bp:event/ regex (these are in strings, not imports)
-- Run `bun --bun tsc --noEmit` and `bun test src/` before committing
+- Run `bun --bun tsc --noEmit` and `bun test src/ skills/` before committing
 ```
 
 ---
 
-## Bun-Native Optimizations (`src/tools/` + `src/agent/`)
+## Phase 1: Framework Infrastructure
 
-### Prompt 5: JSONL, Archive, Hash, DeepEquals
+### Prompt 2: Module-Per-Repo Workspace Utilities
 
 ```
-Work in a worktree branch off main.
+Work in a worktree branch off local dev branch.
 
 ## Task
 
-Replace manual implementations with Bun-native APIs: JSONL parsing, archive creation, hashing, and deep comparison.
+Create workspace initialization utilities for modnet node and module creation. This is framework code in src/modnet/.
 
 ## Context
 
-Several tools and handlers use manual implementations where Bun provides native, faster alternatives. These are low-effort, high-value replacements.
+The module-per-repo architecture is defined in docs/MODNET-IMPLEMENTATION.md and skills/modnet-node/. Each node is a git repo with modules/ subdirectory. Each module has its own git repo, package.json with @node/ scope, skills/, .memory/, and data/ directories. Bun workspace resolution (workspace:*) handles inter-module imports.
 
 ## What to Build
 
-### 1. Bun.JSONL.parse() for Decision Files (src/agent/memory-handlers.ts)
-
-The consolidate handler concatenates .jsonld files into decisions.jsonl. When reading back, use Bun.JSONL.parse() instead of manual line splitting:
+### 1. Node Workspace Init (src/modnet/workspace.ts)
 
 ```typescript
-const content = await Bun.file(path).text()
-const decisions = Bun.JSONL.parse(content)
-```
-
-Also update any code that reads decisions.jsonl files (e.g., buildSessionSummary in hypergraph.utils.ts if applicable).
-
-### 2. Bun.Archive for Defrag (src/agent/memory-handlers.ts)
-
-The defrag handler currently uses `git rm -rf` for old sessions. For archival before deletion, use Bun.Archive:
-
-```typescript
-const archive = new Bun.Archive(entries)
-await archive.writeTo(join(sessionsDir, `${session}.tar.gz`), { compression: 'gzip' })
-```
-
-This preserves old sessions as compressed archives without git subprocess.
-
-### 3. Bun.hash for Constitution Hashing (src/modnet/modnet.constants.ts or new modnet.utils.ts)
-
-Add a utility for computing the modnet:constitutionHash metadata value:
-
-```typescript
-export const hashConstitution = (source: string): string => {
-  const hash = Bun.hash(source)
-  return `wyhash:${hash.toString(16)}`
+export const initNodeWorkspace = async (opts: {
+  path: string
+  scope: string        // e.g., "@mynode"
+  name?: string
+}): Promise<void> => {
+  // 1. git init
+  // 2. Create package.json with "workspaces": ["modules/*"], "private": true
+  // 3. Create tsconfig.json
+  // 4. Create .gitignore (modules/, node_modules/, .bthread-grader-*)
+  // 5. Create .memory/ with @context.jsonld, sessions/, constitution/
+  // 6. bun install
 }
 ```
 
-For non-cryptographic purposes (comparing constitutions between nodes). For cryptographic attestation, keep crypto.subtle.
-
-### 4. Bun.deepEquals in Validation (src/tools/validate-thread.ts)
-
-Replace manual comparison logic with Bun.deepEquals where applicable.
-
-### 5. Startup Timing Utility (src/agent/agent.utils.ts)
-
-Add a minimal timing utility using `Bun.nanoseconds()` for startup profiling:
+### 2. Module Init (src/modnet/workspace.ts)
 
 ```typescript
-const ENABLED = Bun.env.PLAITED_TIMING === '1'
-const marks: Array<{ label: string; ns: number }> = []
-let lastNs = Bun.nanoseconds()
-
-export const mark = (label: string) => {
-  if (!ENABLED) return
-  const now = Bun.nanoseconds()
-  marks.push({ label, ns: now - lastNs })
-  lastNs = now
-}
-
-export const printTimings = () => {
-  if (!ENABLED || marks.length === 0) return
-  const total = marks.reduce((a, b) => a + b.ns, 0)
-  for (const m of marks) console.error(`  ${m.label}: ${(m.ns / 1e6).toFixed(1)}ms`)
-  console.error(`  TOTAL: ${(total / 1e6).toFixed(1)}ms`)
+export const initModule = async (opts: {
+  nodePath: string
+  name: string
+  modnet?: { contentType: string; structure: string; mechanics?: string; boundary: string; scale: number }
+}): Promise<void> => {
+  // 1. Create modules/{name}/ directory
+  // 2. git init inside it
+  // 3. Create package.json with @node/ scope, modnet field, workspace:* deps
+  // 4. Create skills/{name}/ seed skill directory with SKILL.md
+  // 5. Create .memory/ directory
+  // 6. Create data/ directory
+  // 7. Run bun install at node root to link workspace
 }
 ```
 
-Add `mark()` calls to `createAgentLoop` at key checkpoints: BP engine creation, constitution loading, goal loading, handler registration, snapshot writer setup. Enabled by `PLAITED_TIMING=1` environment variable. Uses `Bun.nanoseconds()` for ns-precision (vs pi-mono's `Date.now()` ms-precision).
+### 3. CLI Commands
 
-### 6. Bun.markdown for Rule Parsing (src/tools/ingest-rules.ts)
+Add to src/cli.ts:
+- `plaited init-node <path>` — creates a new node workspace
+- `plaited init-module <name>` — creates a module in current node workspace
 
-If Bun.markdown provides structured AST output, use it to replace the manual section parser in parseRuleSections(). This would give more reliable heading detection and content extraction. If Bun.markdown only renders HTML, keep the current manual parser (it works correctly).
+### 4. Schemas
 
-Tests for each change.
+Zod schemas for the MSS modnet field (contentType, structure, mechanics, boundary, scale) in src/modnet/modnet.schemas.ts.
+
+Tests in src/modnet/tests/workspace.spec.ts — test init creates correct file structure, git repos, package.json format.
 
 ## Key Files
 
-- src/agent/memory-handlers.ts — consolidate, defrag
-- src/modnet/modnet.constants.ts — MODNET_METADATA
-- src/tools/validate-thread.ts — comparison logic
-- src/tools/ingest-rules.ts — parseRuleSections
-- Bun docs: Bun.JSONL.parse, Bun.Archive, Bun.hash, Bun.deepEquals, Bun.markdown
+- src/modnet/modnet.constants.ts — NODE_ROLE, MODNET_METADATA (existing)
+- skills/modnet-node/ — reference patterns
+- docs/MODNET-IMPLEMENTATION.md — architecture spec
 
 ## Constraints
 
-- Read CLAUDE.md and AGENTS.md for project conventions
-- Only replace where Bun API is a clear improvement — don't force it
+- Use Bun APIs (Bun.write, Bun.$`git init`)
 - Run `bun --bun tsc --noEmit` and `bun test src/` before committing
 ```
 
----
-
-## Transport Pluggability (`src/agent/`)
-
-### Prompt 6: Document and Type the Executor Pattern
+### Prompt 3: Server + Agent Integration
 
 ```
-Work in a worktree branch off main.
+Work in a worktree branch off local dev branch.
 
 ## Task
 
-Document and formalize the transport-level executor pattern for remote tool execution via SSH and A2A.
-
-## Context
-
-createAgentLoop already has a `toolExecutor` callback:
-
-```typescript
-toolExecutor: (toolCall: AgentToolCall, signal: AbortSignal) => Promise<unknown>
-```
-
-This is the pluggability seam. Local execution calls handlers directly. SSH execution serializes tool calls over SSH. A2A execution sends tool calls as A2A messages. Same tool code runs everywhere — only the transport varies.
-
-Every built-in tool already has a CLI contract (JSON in/out, --schema) that makes remote execution straightforward: serialize the tool call, run the CLI on the remote machine, parse the result.
+Wire createServer with createAgentLoop — the integration from CLAUDE.md's open question.
 
 ## What to Build
 
-### 1. ToolExecutor Type Refinement (src/agent/agent.types.ts)
+### 1. createNode factory (src/modnet/node.ts)
 
-Formalize the executor type with factory functions:
-
-```typescript
-type ToolExecutor = (toolCall: AgentToolCall, signal: AbortSignal) => Promise<unknown>
-
-type CreateLocalExecutorOptions = {
-  workspace: string
-  handlers: Record<string, ToolHandler>
-}
-
-type CreateSshExecutorOptions = {
-  host: string
-  port?: number
-  username: string
-  privateKey?: string
-  workspace: string  // remote workspace path
-}
-
-type CreateA2AExecutorOptions = {
-  client: A2AClient
-  taskTimeout?: number
-}
-```
-
-### 2. Local Executor Factory (src/agent/agent.executor.ts)
+Composes server + agent + A2A into a running node:
 
 ```typescript
-export const createLocalExecutor = ({ workspace, handlers }: CreateLocalExecutorOptions): ToolExecutor => {
-  return async (toolCall, signal) => {
-    const handler = handlers[toolCall.name]
-    if (!handler) throw new Error(`Unknown tool: ${toolCall.name}`)
-    return handler(toolCall.arguments, { workspace, signal })
-  }
-}
-```
-
-This is what createAgentLoop uses by default when no custom executor is provided.
-
-### 3. SSH Executor Factory (src/agent/agent.executor.ts)
-
-Uses Bun.$ to run the tool CLI on a remote machine via SSH:
-
-```typescript
-export const createSshExecutor = ({ host, port, username, privateKey, workspace }: CreateSshExecutorOptions): ToolExecutor => {
-  return async (toolCall, signal) => {
-    const input = JSON.stringify({ ...toolCall.arguments, path: toolCall.arguments.path })
-    const sshArgs = ['-o', 'StrictHostKeyChecking=accept-new']
-    if (privateKey) sshArgs.push('-i', privateKey)
-    if (port) sshArgs.push('-p', String(port))
-
-    const result = await $`ssh ${sshArgs} ${username}@${host} bun run plaited ${toolCall.name} ${input}`
-      .nothrow().quiet()
-
-    if (result.exitCode !== 0) throw new Error(result.stderr.toString())
-    return JSON.parse(result.stdout.toString())
-  }
-}
-```
-
-### 4. A2A Executor Factory (src/agent/agent.executor.ts)
-
-Uses the A2A client to send tool calls as tasks to a remote node:
-
-```typescript
-export const createA2AExecutor = ({ client, taskTimeout = 30_000 }: CreateA2AExecutorOptions): ToolExecutor => {
-  return async (toolCall, signal) => {
-    const result = await client.sendMessage({
-      message: {
-        kind: 'message',
-        messageId: crypto.randomUUID(),
-        role: 'user',
-        parts: [{ kind: 'data', data: { tool: toolCall.name, arguments: toolCall.arguments } }],
-      },
-      configuration: { blocking: true },
-    })
-    // Extract tool result from response
-    if (result.kind === 'task' && result.artifacts?.[0]) {
-      const part = result.artifacts[0].parts[0]
-      if (part?.kind === 'data') return part.data
-      if (part?.kind === 'text') return JSON.parse(part.text)
-    }
-    throw new Error('Unexpected A2A response format')
-  }
-}
-```
-
-### 5. Update createAgentLoop Default
-
-If no toolExecutor is provided, createAgentLoop creates a local executor from builtInHandlers:
-
-```typescript
-const executor = toolExecutor ?? createLocalExecutor({ workspace: memoryPath, handlers: builtInHandlers })
-```
-
-Tests: test each executor factory. Mock SSH with a local Bun.spawn. Test A2A executor with a mock A2A server.
-
-## Key Files
-
-- src/agent/agent.loop.ts — createAgentLoop options
-- src/agent/agent.types.ts — ToolExecutor type
-- src/tools/crud.ts — builtInHandlers
-- src/a2a/a2a.client.ts — A2AClient
-- Bun docs: Bun.$ (shell), Bun.connect (TCP)
-
-## Constraints
-
-- Read CLAUDE.md and AGENTS.md for project conventions
-- SSH executor uses Bun.$ not child_process
-- A2A executor imports from src/a2a/
-- All executors respect AbortSignal
-- Run `bun --bun tsc --noEmit` and `bun test src/` before committing
-```
-
----
-
-## Context Management (`src/agent/`)
-
-### Prompt 7: Tiered Context (Hot/Warm/Cold) with D→A Migration Path
-
-```
-Work in a worktree branch off main.
-
-## Task
-
-Implement tiered context management (Variant D) — hot/warm/cold layers using existing infrastructure. This is the starting point for a migration path toward full hypergraph-backed recall (Variant A) as the model learns to search.
-
-## Context
-
-Current state:
-- `agent.context.ts` has priority-based contributors with budget trimming
-- `trimHistory` drops oldest messages when over budget
-- `buildSessionSummary` in `hypergraph.utils.ts` produces structured metadata from decision documents (thread types, outcome events, tools used, decision count, commits)
-- `consolidate` handler writes `meta.jsonld` with this summary
-- `search` tool queries the hypergraph (causal-chain, co-occurrence, reachability, similar, match, provenance)
-
-The problem: when context approaches the model's limit, older messages are dropped completely. The model loses orientation — it doesn't know what happened earlier or what decisions were made.
-
-## Design: Three Tiers
-
-### Hot Layer (in context, full detail)
-Last N turns of conversation history. ~60% of budget. This is what `historyContributor` already provides via `trimHistory`.
-
-### Warm Layer (in context, structured summary)
-Session metadata from `.memory/sessions/{sessionId}/meta.jsonld`. Injected by a new `sessionSummaryContributor`. ~10% of budget. Gives the model orientation: "here's what this session has done so far." No LLM summarization — reads the already-persisted `meta.jsonld`.
-
-### Cold Layer (on-demand via search tool)
-Full decision history in `.memory/`. Available via the `search` tool when the model needs deeper recall. 0% of budget (not in context until the model queries it).
-
-## What to Build
-
-### 1. Session Summary Contributor (update src/agent/agent.context.ts)
-
-New contributor function:
-
-```typescript
-export const sessionSummaryContributor = (memoryPath: string, sessionId: string): ContextContributor => ({
-  name: 'sessionSummary',
-  priority: 80,  // high — trimmed late, after history but before system prompt
-  contribute: (state) => {
-    // Read meta.jsonld synchronously if it exists
-    // This runs during context assembly — needs to be fast
-    const metaPath = join(memoryPath, 'sessions', sessionId, 'meta.jsonld')
-    const file = Bun.file(metaPath)
-    // Since contribute must be sync, cache the meta on first read
-    // and update it when consolidate fires
-    if (!cachedMeta) return null
-
-    const summary = formatSessionSummary(cachedMeta)
-    return {
-      role: 'system',
-      content: summary,
-      tokenEstimate: estimateTokens(summary),
-    }
-  },
-})
-```
-
-The contributor reads the `meta.jsonld` that `consolidate` already writes. Format the metadata into a concise prompt segment:
-
-```
-Session context (${meta.decisionCount} decisions):
-Threads active: ${meta.threadTypes.join(', ')}
-Events observed: ${meta.outcomeEvents.join(', ')}
-Tools used: ${meta.toolsUsed.join(', ')}
-${meta.commits ? `Commits: ${meta.commits.length}` : ''}
-```
-
-### 2. Async Meta Caching
-
-The contributor function must be synchronous (per ContextContributor contract). But `Bun.file().text()` is async. Solution: cache the meta on session start and update it when `consolidate` fires.
-
-```typescript
-// In createAgentLoop, after consolidate handler runs:
-useFeedback({
-  [AGENT_EVENTS.consolidate]: async () => {
-    // ... existing consolidate logic ...
-    // After consolidate writes meta.jsonld, update the cache
-    cachedSessionMeta = await loadMeta(memoryPath, sessionId)
-  }
-})
-```
-
-Or make the contributor factory async and load once at startup:
-
-```typescript
-export const createSessionSummaryContributor = async (
-  memoryPath: string,
-  sessionId: string,
-): Promise<ContextContributor> => {
-  let meta = await loadMetaIfExists(memoryPath, sessionId)
-  return {
-    name: 'sessionSummary',
-    priority: 80,
-    contribute: () => {
-      if (!meta) return null
-      return { role: 'system', content: formatSessionSummary(meta), tokenEstimate: estimateTokens(formatSessionSummary(meta)) }
-    },
-    // Expose updater for consolidate handler
-    updateMeta: (newMeta: SessionMeta) => { meta = newMeta },
-  }
-}
-```
-
-### 3. Progressive History Trimming
-
-Update `trimHistory` to be more aggressive in stages:
-
-- **Stage 1** (mild): Drop messages older than N turns, keep tool results for context
-- **Stage 2** (moderate): Drop tool result content, keep only `{ role: 'tool', content: '[truncated]', tool_call_id }` so the model knows a tool was called but not the full output
-- **Stage 3** (aggressive): Keep only the last 3-5 turns
-
-The current `trimHistory` does Stage 3 directly. Adding Stage 1 and 2 gives the model more context before hitting the wall.
-
-### 4. Wire into createAgentLoop
-
-Update `createAgentLoop` to:
-1. Create the session summary contributor
-2. Add it to the contributors list
-3. Pass the updater to the consolidate handler
-
-### 5. Structured System Prompt Builder (update src/agent/agent.context.ts)
-
-Enhance `systemPromptContributor` from a simple string wrapper to a structured builder that composes multiple sources:
-
-```typescript
-export const createSystemPromptContributor = ({
-  basePrompt,
-  tools,
-  skills,
-  constitutionRules,
-}: {
-  basePrompt: string
+export const createNode = async (opts: {
+  model: Model
   tools: ToolDefinition[]
-  skills?: Array<{ name: string; description: string }>
-  constitutionRules?: string[]
-}): ContextContributor => ({
-  name: 'systemPrompt',
-  priority: 100,
-  contribute: () => {
-    const sections = [basePrompt]
+  toolExecutor?: ToolExecutor
+  constitution?: ConstitutionFactory[]
+  goals?: GoalFactory[]
+  memoryPath: string
+  port?: number
+  tls?: TLSOptions
+  allowedOrigins?: Set<string>
+  validateSession?: (sid: string) => boolean
+  agentCard?: AgentCard
+}): Promise<{ server: ServerHandle; agent: AgentNode; a2a?: { routes: ServeRoutes } }> => {
+  const agent = createAgentLoop({ model, tools, toolExecutor, constitution, goals, memoryPath })
 
-    // Tool descriptions
-    if (tools.length > 0) {
-      sections.push('## Available Tools\n' + tools.map(t =>
-        `- **${t.function.name}**: ${t.function.description}`
-      ).join('\n'))
-    }
+  const a2aHandler = agentCard ? createA2AHandler({
+    card: agentCard,
+    handlers: { sendMessage: (params, signal) => { /* bridge to agent.trigger */ } },
+  }) : undefined
 
-    // Active skills
-    if (skills && skills.length > 0) {
-      sections.push('## Active Skills\n' + skills.map(s =>
-        `- **${s.name}**: ${s.description}`
-      ).join('\n'))
-    }
+  const authRoutes = validateSession ? {} : {} // from node-auth skill
 
-    // Constitution rules (human-readable summary)
-    if (constitutionRules && constitutionRules.length > 0) {
-      sections.push('## Constraints\n' + constitutionRules.map(r => `- ${r}`).join('\n'))
-    }
+  const server = createServer({
+    trigger: agent.trigger,
+    routes: { ...a2aHandler?.routes, ...authRoutes },
+    port, tls, allowedOrigins, validateSession,
+  })
 
-    const content = sections.join('\n\n')
-    return { role: 'system', content, tokenEstimate: estimateTokens(content) }
-  },
-})
+  return { server, agent, a2a: a2aHandler }
+}
 ```
 
-This replaces the current `systemPromptContributor(prompt: string)` with a factory that assembles the prompt from tools, skills, and constitution rules — like pi-mono's `buildSystemPrompt` but integrated into our contributor model.
+### 2. Tests
 
-### 6. Search Tool Hint in System Prompt
-
-Update `systemPromptContributor` to include a hint about the search tool when the warm layer is active:
-
-```
-If you need to recall earlier decisions or context from this session,
-use the search tool to query the hypergraph memory.
-```
-
-This primes the model for the D→A transition. As training progresses, the model learns to search proactively.
-
-Tests:
-- Test sessionSummaryContributor with mock meta.jsonld
-- Test progressive trimming stages
-- Test integration: context assembly with all three tiers
-- Test that warm layer is included when meta.jsonld exists, absent when it doesn't
+Integration test: create a node, connect a WebSocket client, send a task, verify the loop processes it and sends back a message.
 
 ## Key Files
 
-- src/agent/agent.context.ts — existing contributors and assembler
-- src/agent/agent.loop.ts — createAgentLoop wiring
-- src/tools/hypergraph.utils.ts — buildSessionSummary, SessionMeta type
-- src/tools/hypergraph.schemas.ts — SessionMetaSchema
-- src/agent/memory-handlers.ts — consolidate handler
-
-## Design Decisions
-
-**Why not LLM summarization (pi-mono pattern)?**
-Our hypergraph already persists structured decision data. Spending an inference call to generate a lossy natural language summary is redundant when the full history is queryable on disk.
-
-**Why tiered (D) before recall-only (A)?**
-The model needs to learn to search. The warm layer gives it orientation passively (no learned behavior needed). As distillation trains search behavior, the warm layer's priority drops and eventually it's trimmed first.
-
-**Why is the contributor priority 80?**
-- System prompt: 100 (never trimmed)
-- Session summary: 80 (trimmed after history but before system prompt)
-- Rejections: 70 (trimmed before session summary — recent rejections are in history anyway)
-- Tools: 60 (trimmed before rejections)
-- Plan: 50 (trimmed before tools)
-- History: 40 (trimmed first — the hot layer shrinks before the warm layer does)
+- src/agent/agent.loop.ts — createAgentLoop
+- src/server/server.ts — createServer
+- src/a2a/a2a.server.ts — createA2AHandler
 
 ## Constraints
 
-- Read CLAUDE.md and AGENTS.md for project conventions
-- Contributors must be pure functions (the caching is at the factory level, not in contribute())
-- No LLM calls for summarization — use existing buildSessionSummary/meta.jsonld
-- The search tool hint is a one-line addition to the system prompt, not a new contributor
+- This is framework code, not a skill
+- Run `bun --bun tsc --noEmit` and `bun test src/` before committing
+```
+
+### Prompt 4: Model Implementation (Ollama / vLLM / API)
+
+```
+Work in a worktree branch off local dev branch.
+
+## Task
+
+Create Model interface implementations for common inference backends.
+
+## What to Build
+
+### 1. OpenAI-Compatible Model (src/agent/models/openai-compat.ts)
+
+Works with Ollama, vLLM, llama.cpp, Together AI, OpenRouter, Fireworks — anything with OpenAI-compatible API:
+
+```typescript
+export const createOpenAICompatModel = (opts: {
+  baseUrl: string          // e.g., "http://localhost:11434/v1" for Ollama
+  apiKey?: string
+  model: string            // e.g., "falcon-h1r:7b"
+  defaultTimeout?: number
+}): Model => ({
+  reason: async function*(context) {
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(apiKey && { Authorization: `Bearer ${apiKey}` }) },
+      body: JSON.stringify({ model, messages: context.messages, tools: context.tools, stream: true }),
+      signal: context.signal,
+    })
+    // Parse SSE stream → yield ModelDelta (thinking_delta, text_delta, toolcall_delta, done, error)
+  }
+})
+```
+
+### 2. Anthropic Model (src/agent/models/anthropic.ts)
+
+For Claude API (distillation source):
+
+```typescript
+export const createAnthropicModel = (opts: { apiKey: string; model?: string }): Model
+```
+
+### 3. Google Gemini Model (src/agent/models/gemini.ts)
+
+For Gemini API (meta-verification):
+
+```typescript
+export const createGeminiModel = (opts: { apiKey: string; model?: string }): Model
+```
+
+Each implementation:
+- Streams via SSE or native SDK streaming
+- Yields `ModelDelta` (thinking_delta, text_delta, toolcall_delta, done, error)
+- Respects AbortSignal
+- Handles rate limiting (429 → exponential backoff)
+
+Tests with mock HTTP servers.
+
+## Constraints
+
+- No new dependencies for OpenAI-compat (just fetch + SSE parsing — reuse from src/a2a/a2a.utils.ts)
+- `bun add @anthropic-ai/sdk` for Anthropic model
+- `bun add @google/generative-ai` for Gemini model (or use OpenAI-compat endpoint)
 - Run `bun --bun tsc --noEmit` and `bun test src/` before committing
 ```
 
 ---
 
-## Training Skills (`skills/`)
+## Phase 2: MSS Skills + Eval Infrastructure
 
-### Prompt 8: Hypergraph Recall Skill (Phase 2 — Teach Search-Based Context Recall)
+### Prompt 5: MSS Vocabulary Skill (Distill Structural-IA + Modnet.md)
 
 ```
-Work in a worktree branch off main.
+Work in a worktree branch off local dev branch.
 
 ## Task
 
-Create a skill that teaches agents (and the distillation pipeline) how to use the hypergraph search tool for proactive context recall. This skill enables the transition from Variant D (tiered context with passive warm layer) to Variant A (model-driven recall via search).
+Create an MSS vocabulary skill that distills the actionable rules from Structural-IA.md (1648 lines) and Modnet.md (454 lines) into a compact, machine-consumable format. This skill teaches coding agents how to generate modules that conform to MSS standards.
 
 ## Context
 
-The agent has a hypergraph memory (`.memory/` with JSON-LD decision vertices) and a `search` tool with 7 query types: causal-chain, co-occurrence, check-cycles, match, similar, reachability, provenance. Currently the model receives a warm layer summary passively. The goal is to train the model to actively query its memory when it needs context.
+These two docs contain Rachel Jaffe's design philosophy for modular networks. Most of the content is conceptual narrative. The actionable parts — the MSS tag vocabulary, valid combinations, composition rules, scale nesting — need to be extracted into a skill that a coding agent can consume efficiently.
 
-This skill serves two audiences:
-1. **Claude Code (distillation source)** — teaches the frontier model to use search in patterns we want our distilled model to learn
-2. **Trial runner** — provides prompt cases and grading criteria for evaluating recall behavior
+This is NOT about converting docs to bThreads directly. It's about creating the skill that teaches an agent the rules, so the agent can GENERATE bThreads that enforce those rules.
 
 ## What to Build
 
-### 1. Skill Structure
+### 1. skills/mss-vocabulary/SKILL.md
 
-```
-skills/
-  hypergraph-recall/
-    SKILL.md                    ← when to search, which query for which situation
-    references/
-      recall-patterns.md        ← detailed search query selection guide
-      context-triggers.md       ← signals that indicate context recall is needed
-    assets/
-      recall-prompts.jsonl      ← trial prompts for training recall behavior
+```yaml
+name: mss-vocabulary
+description: MSS (Modnet Structural Standard) bridge-code vocabulary for module generation. Defines valid tag values, composition rules, scale nesting, and boundary semantics. Use when generating modules, validating MSS tags, or creating constitution bThreads that enforce MSS rules.
 ```
 
-### 2. SKILL.md
+Content:
+- MSS tag definitions (contentType, structure, mechanics, boundary, scale) with valid values
+- Composition rules: which tags combine validly
+- Scale nesting: how scale determines module composition (S1 inside S3, not reverse)
+- Boundary semantics: all/none/ask/paid — what each means for A2A data sharing
+- Mechanics auto-population: how mechanics tags activate based on connected structures
 
-Teach the agent when and how to search:
+### 2. skills/mss-vocabulary/references/
 
-**When to search:**
-- Starting a new task that references earlier work ("continue the refactoring", "fix what we discussed")
-- Encountering a gate rejection and needing to understand why a similar action succeeded/failed before
-- Working on a file that has been modified in earlier decisions
-- User references context from earlier in the session or previous sessions
+- `structural-ia-distilled.md` — Extract from Structural-IA.md: objects, channels, levers, loops, modules, blocks as they map to MSS tags. ~100 lines distilled from 1648.
+- `modnet-standards-distilled.md` — Extract from Modnet.md: bridge-code syntax, module patterns, crowd-sourced network structures. ~80 lines distilled from 454.
+- `valid-combinations.md` — Table of valid MSS tag combinations with examples
 
-**Which query for which situation:**
+### 3. skills/mss-vocabulary/assets/mss-patterns.jsonl
 
-| Situation | Query | Example |
-|---|---|---|
-| "What led to this state?" | `causal-chain` | `{ query: 'causal-chain', from: 'session/s1/decision/5', to: 'session/s1/decision/20' }` |
-| "What else touched this thread/event?" | `co-occurrence` | `{ query: 'co-occurrence', vertex: 'bp:thread/taskGate' }` |
-| "Have I seen this problem before?" | `similar` | `{ query: 'similar', embedding: [...], topK: 5 }` (requires Indexer) |
-| "Which decisions are reachable from here?" | `reachability` | `{ query: 'reachability', startVertices: ['session/s1/decision/1'], maxDepth: 5 }` |
-| "What type of decisions followed this pattern?" | `match` | `{ query: 'match', pattern: { sequence: ['gate_approved', 'execute', 'tool_result'] } }` |
-| "Are there circular dependencies?" | `check-cycles` | `{ query: 'check-cycles' }` |
-| "What caused what?" | `provenance` | `{ query: 'provenance' }` |
-
-**Key pattern: search before acting.** When the model needs context beyond the hot layer (recent messages), search the hypergraph first. The warm layer (session summary) provides orientation for knowing WHAT to search for.
-
-### 3. references/recall-patterns.md
-
-Detailed guide with examples for each query type, including:
-- Input format with real-world `@id` URI patterns (`session/s1/decision/N`, `bp:thread/name`, `bp:event/name`)
-- Output interpretation — what the results mean and how to use them
-- Composition — chaining queries (e.g., co-occurrence → causal-chain to understand HOW two things are related)
-
-### 4. references/context-triggers.md
-
-Signals in the conversation that should trigger a search:
-- User says "earlier", "before", "we discussed", "like last time", "continue"
-- A gate rejects an action the model thought would succeed
-- A tool result references a file the model hasn't seen in the hot layer
-- The warm layer mentions threads/events the model wants to know more about
-- The model's plan references a step that depends on earlier work
-
-### 5. assets/recall-prompts.jsonl
-
-Trial prompt cases for training recall behavior. Each prompt sets up a scenario where the model SHOULD search but might not:
+Machine-readable MSS tag patterns:
 
 ```jsonl
-{"id": "recall-earlier-decision", "input": "Continue the server refactoring we started earlier", "context": {"meta": {"threadTypes": ["taskGate", "batchCompletion"], "toolsUsed": ["edit_file", "bash"]}}, "expected_tool": "search", "expected_query": "co-occurrence"}
-{"id": "recall-rejection-context", "input": "Try running the deploy command again", "context": {"priorRejections": ["bash: Rejected by gate (irreversible)"]}, "expected_tool": "search", "expected_query": "causal-chain"}
-{"id": "recall-similar-problem", "input": "I'm getting the same error as before", "context": {}, "expected_tool": "search", "expected_query": "similar"}
-{"id": "no-recall-needed", "input": "Read the contents of main.ts", "context": {}, "expected_tool": "read_file", "expected_query": null}
+{"contentType": "produce", "structure": "list", "mechanics": ["sort", "filter"], "boundary": "ask", "scale": 3, "example": "Farm inventory with sortable produce listings"}
+{"contentType": "social", "structure": "feed", "mechanics": ["post", "like", "follow"], "boundary": "ask", "scale": 3, "example": "Social media feed with interactions"}
+{"contentType": "health", "structure": "form", "mechanics": ["track", "chart"], "boundary": "none", "scale": 2, "example": "Personal health metric tracker"}
 ```
-
-The grader checks: did the model call `search` when expected? Did it use the right query type? Did it NOT search when recall wasn't needed (avoid over-searching)?
-
-### 6. Grader Integration
-
-The recall prompts should work with the existing trial runner and bthread-grader infrastructure. The grader for recall behavior scores:
-- **Recall precision:** searched when needed (true positive) / total searches (avoid false positives)
-- **Recall coverage:** searched when needed / times search was needed (avoid false negatives)
-- **Query selection:** correct query type for the situation
 
 ## Key Files
 
-- src/tools/hypergraph.ts — search tool handler
-- src/tools/hypergraph.schemas.ts — HypergraphQuerySchema (all 7 query types)
-- src/agent/agent.context.ts — sessionSummaryContributor (provides warm layer)
-- skills/trial-runner/ — trial infrastructure
-- skills/compare-trials/ — analysis patterns
-- docs/HYPERGRAPH-MEMORY.md — memory design
+- docs/Structural-IA.md — source (1648 lines, keep unchanged)
+- docs/Modnet.md — source (454 lines, keep unchanged)
+- src/modnet/modnet.constants.ts — NODE_ROLE (existing)
 
 ## Constraints
 
-- Read CLAUDE.md and AGENTS.md for project conventions
-- This is a SKILL (skills/), not framework code (src/)
-- The skill teaches behavior — it doesn't implement code
-- Recall prompts must be valid JSONL parseable by the trial runner
-- Validate with: `bunx @plaited/development-skills validate-skill skills/hypergraph-recall`
-- The skill should be usable by both Claude Code (as context for distillation) and the trial runner (as eval criteria)
+- DO NOT modify Structural-IA.md or Modnet.md — these are reference documents
+- The skill DISTILLS actionable rules, it doesn't reproduce the full narrative
+- Validate: `bunx plaited validate-skill skills/mss-vocabulary`
+```
+
+### Prompt 6: Enrich modnet-node Skill
+
+```
+Work in a worktree branch off local dev branch.
+
+## Task
+
+Expand skills/modnet-node/ from 97 lines to ~250+ with complete implementation patterns for module generation.
+
+## What to Add
+
+- A2A binding code examples (createA2AHandler composition, transport selection)
+- Access control implementation patterns (DAC/MAC/ABAC block predicates)
+- Enterprise topology detail (PM node provisioning flow, infrastructure node setup)
+- Module generation patterns (how to create a module from MSS tags using initModule)
+- workspace.ts usage examples (initNodeWorkspace, initModule from Prompt 2)
+
+Reference the mss-vocabulary skill for tag definitions.
+
+## Constraints
+
+- Validate: `bunx plaited validate-skill skills/modnet-node`
+```
+
+### Prompt 7: Trial Adapter + Eval Result Persistence
+
+```
+Work in a worktree branch off local dev branch.
+
+## Task
+
+Create trial adapters for frontier agents and wire eval result persistence to the hypergraph.
+
+## What to Build
+
+### 1. Adapter Schemas (src/tools/adapters/)
+
+JSON adapter schemas for frontier agents (same pattern as web-search-agent-evals):
+
+- `claude-code.json` — Claude Code via `claude -p` with `--output-format stream-json`
+- `codex.json` — OpenAI Codex CLI
+- `gemini.json` — Gemini CLI
+
+Each schema maps the agent's stdout events to trial runner events (message, tool_call, result).
+
+### 2. Library Import Adapter (src/tools/adapters/local.ts)
+
+For fast pass@k evaluation without subprocess overhead:
+
+```typescript
+export const createLocalAdapter = (opts: {
+  model: Model
+  tools: ToolDefinition[]
+  toolExecutor: ToolExecutor
+  memoryPath: string
+}): TrialAdapter => async ({ prompt }) => {
+  const agent = createAgentLoop({ ...opts, sessionId: crypto.randomUUID() })
+  // trigger task, collect events, return output + trajectory
+  agent.destroy()
+  return { output, trajectory }
+}
+```
+
+### 3. Eval Result Persistence (src/tools/trial.utils.ts)
+
+After trial completion, commit results to hypergraph memory:
+
+```typescript
+export const persistTrialResults = async (results: TrialResult[], memoryPath: string) => {
+  const evalDir = join(memoryPath, 'evals')
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+  const path = join(evalDir, `trial-${timestamp}.jsonl`)
+  const content = results.map(r => JSON.stringify(r)).join('\n')
+  await Bun.write(path, content + '\n')
+  // git add + commit
+  await Bun.$`git add ${path} && git commit -m "eval: trial results ${timestamp}"`.cwd(join(memoryPath, '..'))
+}
+```
+
+Results are git-versioned and queryable via hypergraph. Generated code artifacts are NOT persisted — only the grading results.
+
+### 4. Update bthread-grader
+
+Ensure temp directories are cleaned up in `finally` block (cross-reference with Prompt 1).
+
+## Key Files
+
+- src/tools/trial.ts — existing trial runner
+- src/tools/trial.schemas.ts — TrialResult schema
+- skills/trial-adapters/ — adapter patterns
+- src/agent/agent.loop.ts — createAgentLoop
+
+## Constraints
+
+- Adapter schemas are JSON config files, not TypeScript
+- Library adapter imports createAgentLoop directly
+- Results persisted as JSONL in .memory/evals/, git-committed
+- Run `bun --bun tsc --noEmit` and `bun test src/` before committing
+```
+
+---
+
+## Phase 3: Module Generation Prompts + Eval
+
+### Prompt 8: Module Generation Prompts (MiniAppBench-Adapted)
+
+```
+Work in a worktree branch off local dev branch.
+
+## Task
+
+Create module generation eval prompts adapted from MiniAppBench's methodology, covering 6 domains. Include a Bluesky client module as a flagship prompt.
+
+## Context
+
+MiniAppBench evaluates LLM-generated interactive HTML apps across three dimensions:
+- **Intention** — does it fulfill the user's goal and capture implicit real-world principles?
+- **Static** — structural correctness without execution (parsing, file structure, types)
+- **Dynamic** — runtime behavior via exploratory testing (interactions, state transitions)
+
+We adapt this for modnet modules: Intention = MSS specification adherence. Static = package structure + types + SKILL.md. Dynamic = behavioral programs + UI rendering.
+
+## What to Build
+
+### 1. Prompt Format
+
+Each prompt is a JSONL entry with MiniAppBench-style eval references:
+
+```jsonl
+{"id": "bluesky-client", "query": "Create a Bluesky social client module...", "domain": "Social", "subclass": "Social Media", "difficulty": "Hard", "eval_ref": {"intention": [...], "static": [...], "dynamic": [...]}, "metadata": {"mss": {...}}, "hint": "Use @atproto/api package..."}
+```
+
+### 2. Prompt Categories (20 prompts across 6 domains)
+
+**Data (4 prompts):**
+- Diet tracker with calorie counting and weekly charts
+- Expense logger with category breakdowns
+- Inventory manager with barcode scanning placeholder
+- Reading list with progress tracking
+
+**Social (3 prompts):**
+- Bluesky client with feed, posting, profiles, follows (flagship)
+- Simple chat module with message history
+- Discussion forum with threads and replies
+
+**Visualization (3 prompts):**
+- Weather dashboard with current conditions and forecast
+- Data chart generator from JSON input
+- Interactive map with markers and popups
+
+**Tools (4 prompts):**
+- Unit converter with category tabs
+- Scheduling/calendar module with event creation
+- Markdown editor with live preview
+- Color palette generator with hex/rgb output
+
+**Creative (3 prompts):**
+- Portfolio gallery with project cards and filtering
+- Simple drawing canvas with tools
+- Music playlist manager with playback controls
+
+**Science (3 prompts):**
+- Newton's laws simulator (pendulum, projectile)
+- Periodic table explorer with element details
+- Simple statistics calculator with visualization
+
+### 3. Bluesky Client Module (Flagship Detail)
+
+```jsonl
+{
+  "id": "bluesky-client",
+  "query": "Create a Bluesky social client module. It should let a user authenticate with their Bluesky credentials, view their timeline feed, create new text posts, view user profiles, and follow/unfollow users. Use the @atproto/api package for the AT Protocol.",
+  "domain": "Social",
+  "subclass": "Social Media",
+  "difficulty": "Hard",
+  "eval_ref": {
+    "intention": [
+      "authenticates with Bluesky credentials via createSession",
+      "displays timeline feed with post content and author info",
+      "creates new text posts via createRecord",
+      "shows user profiles with follower/following counts",
+      "supports follow/unfollow actions"
+    ],
+    "static": [
+      "has package.json with @atproto/api dependency",
+      "has modnet field: contentType social, structure feed, boundary ask",
+      "has SKILL.md seed with name and description",
+      "TypeScript compiles without errors",
+      "has .memory/ directory"
+    ],
+    "dynamic": [
+      "login form accepts handle and app password",
+      "feed renders after authentication",
+      "new post appears in feed after creation",
+      "profile page shows user details",
+      "follow button toggles state"
+    ]
+  },
+  "metadata": {
+    "mss": {"contentType": "social", "structure": "feed", "mechanics": "post,like,follow", "boundary": "ask", "scale": 3},
+    "dependencies": ["@atproto/api"]
+  },
+  "hint": "Use @atproto/api BskyAgent class. Login via agent.login(). Get timeline via agent.getTimeline(). Create post via agent.post(). API base URL is https://bsky.social."
+}
+```
+
+### 4. Module Generation Grader (src/tools/module-grader.ts)
+
+Three-dimension grader matching MiniAppBench eval:
+
+**Intention grading:** LLM-as-judge checks each eval_ref.intention item against generated code.
+**Static grading:** Automated checks — tsc, package.json structure, SKILL.md presence, modnet field.
+**Dynamic grading:** If Playwright is available, run dynamic checks. Otherwise, fall back to code analysis (are event handlers present? are state transitions implemented?).
+
+Scoring: intention (0-1) × static (0-1) × dynamic (0-1) → composite score.
+
+### 5. Save prompts
+
+```
+skills/modnet-modules/
+  SKILL.md                ← describes module generation eval
+  assets/
+    prompts.jsonl         ← all 20 prompts
+    ground-truth/
+      bluesky-client/     ← reference implementation hints (not full code)
+```
+
+## Key Files
+
+- src/tools/bthread-grader.ts — reference for grader pattern
+- src/tools/trial.ts — trial runner
+- skills/mss-vocabulary/ — MSS tag definitions (from Prompt 5)
+- skills/modnet-node/ — module architecture patterns
+- docs/MODNET-IMPLEMENTATION.md — architecture reference
+
+## Constraints
+
+- Prompts are JSONL — one per line, parseable by trial runner
+- Grader combines automated checks (tsc, structure) with LLM-as-judge (intention)
+- Playwright for dynamic grading is OPTIONAL (degrade gracefully)
+- Run `bun --bun tsc --noEmit` and `bun test src/` before committing
+```
+
+### Prompt 9: Run Eval Cycle + Calibrate Skills
+
+```
+Work in a worktree branch off local dev branch.
+
+## Task
+
+Run the first evaluation cycle: frontier agents generate modules from prompts, grade results, identify skill gaps, iterate.
+
+## Process
+
+### 1. Configure Trial Run
+
+```typescript
+// Run with Claude Code as generation agent
+const results = await runTrial({
+  adapter: 'adapters/claude-code.json',
+  prompts: 'skills/modnet-modules/assets/prompts.jsonl',
+  k: 3,                    // 3 attempts per prompt
+  grader: moduleGrader,
+  workspace: '/tmp/module-eval',
+})
+```
+
+### 2. Analyze Results
+
+Use compare-trials skill to analyze:
+- pass@k by domain (which module types succeed/fail?)
+- pass@k by difficulty (Easy/Mid/Hard)
+- Intention vs Static vs Dynamic breakdown (where do failures occur?)
+- Common failure patterns (missing MSS tags? broken behavioral programs? UI rendering issues?)
+
+### 3. Calibrate Skills
+
+Based on failure analysis:
+- If modules lack MSS tags → improve mss-vocabulary skill with more examples
+- If behavioral programs don't work → improve behavioral-core skill with module-specific patterns
+- If UI doesn't render → improve generative-ui skill with module rendering patterns
+- If package structure is wrong → improve modnet-node skill with clearer structure requirements
+
+### 4. Persist Results
+
+Commit trial results to .memory/evals/ as JSONL (per Prompt 7 persistence).
+
+### 5. Iterate
+
+Re-run with calibrated skills. Compare pass@k improvements. Repeat until pass@1 > 0.7 for Easy, > 0.5 for Mid.
+
+## Key Files
+
+- src/tools/trial.ts — trial runner
+- src/tools/module-grader.ts — from Prompt 8
+- skills/modnet-modules/assets/prompts.jsonl — from Prompt 8
+- All skills — calibration targets
+
+## Constraints
+
+- This prompt is operational — it's a process, not code to write
+- Document findings in a results.md or commit message
+- Each iteration should improve at least one skill
+```
+
+---
+
+## Phase 4: Distillation Data Collection
+
+### Prompt 10: Collect SFT Trajectories from Frontier Agents
+
+```
+Work in a worktree branch off local dev branch.
+
+## Task
+
+Collect successful generation trajectories from frontier agents for SFT distillation.
+
+## Process
+
+### 1. Select Successful Generations
+
+From the eval results (Phase 3), identify generations that scored > 0.8 composite across all three dimensions.
+
+### 2. Re-run with Rich Trajectory Capture
+
+For each successful prompt:
+```bash
+# Run with trajectory capture enabled
+plaited trial --adapter adapters/claude-code.json \
+  --prompts skills/modnet-modules/assets/prompts.jsonl \
+  --k 1 --capture-trajectory \
+  --output trajectories/claude-code/
+```
+
+The trajectory includes: thinking, tool calls, tool results, BP decisions, file operations.
+
+### 3. Multi-Agent Diversity
+
+Run the same prompts through multiple frontier agents:
+- Claude Code (Opus 4.6) — primary distillation source
+- Gemini CLI (2.5 Pro) — alternative reasoning patterns
+- Codex (GPT-5.4) — different tool-calling patterns
+
+Diversity in trajectories improves distillation quality.
+
+### 4. Format for SFT
+
+Convert captured trajectories to SFT training format:
+- System prompt (from our context assembly)
+- User message (the module generation prompt)
+- Assistant response (the full trajectory: thinking + tool calls + code output)
+
+### 5. Quality Gate
+
+Use withStatisticalVerification to grade trajectories:
+- Only trajectories where grader passes all three dimensions (intention ≥ 0.8, static = 1.0, dynamic ≥ 0.7) become training data
+- Meta-verify grader reliability: run grader k=5 on each trajectory, check consistency
+
+## Key Files
+
+- src/tools/trial.ts — trial runner with trajectory capture
+- src/tools/training.ts — withStatisticalVerification, GradingDimensions
+- skills/training-pipeline/ — distillation stage reference
+
+## Constraints
+
+- This is an operational process that produces data files
+- Trajectories stored in trajectories/ directory (gitignored, backed up separately)
+- SFT data validated against training-pipeline skill format requirements
 ```
 
 ---
 
 ## Summary
 
-| # | Prompt | Directory | Parallel Group |
+| # | Prompt | Phase | Dependencies |
 |---|---|---|---|
-| 1 | Output truncation + read enhancements | `src/tools/` | A |
-| 2 | Grep tool + find enrichment + `ensureTool` | `src/tools/` | A (after #1 — uses truncation) |
-| 3 | Edit with scan-assisted matching | `src/tools/` | A |
-| 4 | Scan integration in ingestion + LSP + collision detection | `src/tools/` | A |
-| 5 | Bun-native optimizations (JSONL, Archive, Hash, timing, etc.) | `src/tools/` + `src/agent/` + `src/modnet/` | B |
-| 6 | Transport executor pattern (local, SSH, A2A) | `src/agent/` | B |
-| 7 | Tiered context (hot/warm/cold) + structured system prompt | `src/agent/` | B |
-| 8 | Hypergraph recall skill (Phase 2 training) | `skills/` | C (after #7 — uses warm layer) |
-
-**pi-mono features folded in:** `ensureTool` utility (Prompt 2), skill collision detection (Prompt 4), startup timing via `Bun.nanoseconds()` (Prompt 5), structured system prompt builder (Prompt 7).
-
-Group A (tools) and Group B (optimizations + transport + context) can run in parallel. Within Group A, prompt 2 depends on prompt 1 (grep uses truncation). Prompts 3 and 4 are independent. Prompts 5, 6, and 7 are independent within Group B. Prompt 8 depends on prompt 7 (the warm layer provides the orientation that recall builds on).
-
----
-
-## Docs → Skills Migration (`docs/` + `skills/`)
-
-Goal: Move implementation patterns from docs into skills (for agent training), slim docs down to public-facing framework documentation. Drop resolved historical artifacts.
-
-### Prompt 9: Drop Resolved Historical Docs
-
-```
-Work in a worktree branch off main.
-
-## Task
-
-Delete docs/GAP-ANALYSIS.md and docs/CRITIQUE-RESPONSE.md. Update all cross-references.
-
-## Context
-
-GAP-ANALYSIS.md identified 7 design gaps. CRITIQUE-RESPONSE.md resolved all 7. Both are historical artifacts — the resolutions are captured in the architecture docs they affected (SAFETY.md, CONSTITUTION.md, HYPERGRAPH-MEMORY.md, MODNET-IMPLEMENTATION.md, TRAINING.md). Keeping them adds confusion (TODO.md already noted "CRITIQUE-RESPONSE.md claims gaps are resolved — they aren't" because the distinction between "design exists" and "code exists" wasn't clear).
-
-## What to Do
-
-1. Delete docs/GAP-ANALYSIS.md
-2. Delete docs/CRITIQUE-RESPONSE.md
-3. Search all remaining docs, CLAUDE.md, TODO.md, and skills for references to these files and remove/update them
-4. Verify no broken cross-references remain
-
-## Constraints
-
-- Read CLAUDE.md and AGENTS.md for project conventions
-- Run `bun --bun tsc --noEmit` and `bun test src/` before committing (docs changes shouldn't break anything but verify)
-```
-
-### Prompt 10: Extract Agent Loop Patterns → Skill
-
-```
-Work in a worktree branch off main.
-
-## Task
-
-Create skills/agent-loop/ seed skill by extracting implementation patterns from docs/AGENT-LOOP.md. Slim the doc down to a public-facing overview.
-
-## Context
-
-AGENT-LOOP.md is 440+ lines covering the 6-step loop, event flow, selective simulation, sub-agent harness, ACP interface, and proactive heartbeat. Most of this is implementation patterns that agents need to BUILD code — it belongs in a skill, not a doc.
-
-## What to Build
-
-### 1. Create skills/agent-loop/SKILL.md
-
-Frontmatter:
-```yaml
-name: agent-loop
-description: 6-step BP-orchestrated agent pipeline. Use when implementing createAgentLoop, wiring handlers, designing event flow, or building sub-agent coordination.
-license: ISC
-compatibility: Requires bun
-```
-
-Move INTO the skill:
-- Event vocabulary table (all events, who produces, who consumes)
-- BP pattern examples (taskGate, batchCompletion, sim_guard, maxIterations)
-- Handler granularity guide
-- Anti-pattern summary
-- Selective simulation routing table
-- Sub-agent 4-step harness
-- Proactive mode (heartbeat, sensor sweep, tickYield)
-- ACP interface (AgentNode shape)
-
-### 2. Create skills/agent-loop/references/
-
-- `event-flow.md` — the mermaid event flow diagrams
-- `proactive-mode.md` — heartbeat design, sensor sweep, cost table
-- `sub-agents.md` — 4-step harness, SubAgentHandle
-
-### 3. Slim docs/AGENT-LOOP.md
-
-Keep ONLY:
-- Status header
-- One-paragraph overview ("The agent loop is a 6-step pipeline...")
-- The main mermaid diagram (high-level flow)
-- Step descriptions (1-2 sentences each, not full patterns)
-- Cross-reference to skills/agent-loop/ for implementation details
-
-Target: ~60 lines (down from 440+).
-
-### 4. Update cross-references
-
-CLAUDE.md, TODO.md, other docs that reference AGENT-LOOP.md patterns — point them to the skill instead.
-
-## Constraints
-
-- Read CLAUDE.md and AGENTS.md for project conventions
-- Validate skill: `bunx @plaited/development-skills validate-skill skills/agent-loop`
-```
-
-### Prompt 11: Extract Constitution Patterns → Skill
-
-```
-Work in a worktree branch off main.
-
-## Task
-
-Create skills/constitution/ seed skill from docs/CONSTITUTION.md. Slim the doc.
-
-## What to Build
-
-### 1. Create skills/constitution/SKILL.md
-
-Move INTO the skill:
-- Governance factory contract (type signatures, branded factories)
-- MAC/DAC loading patterns
-- Generated bThread flow (test-first, verification stack)
-- protectGovernance bThread pattern
-- Goal/workflow factory examples
-
-### 2. Create skills/constitution/references/
-
-- `factory-patterns.md` — factory signatures, brand emoji, return shapes
-- `generated-bthreads.md` — generation flow, verification layers, .memory/goals/ structure
-- `mac-rules.md` — default MAC factories (noRmRf, noEtcWrites, noForcePush, protectGovernance)
-
-### 3. Slim docs/CONSTITUTION.md
-
-Keep ONLY:
-- Neuro-symbolic split rationale (WHY symbolic constraints + neural reasoning)
-- MAC/DAC/ABAC conceptual explanation (not implementation)
-- Ratchet principle explanation
-- Cross-reference to skills/constitution/
-
-Target: ~80 lines.
-
-## Constraints
-
-- Validate skill: `bunx @plaited/development-skills validate-skill skills/constitution`
-```
-
-### Prompt 12: Merge BP Reference → behavioral-core Skill
-
-```
-Work in a worktree branch off main.
-
-## Task
-
-Merge docs/BEHAVIORAL-PROGRAMMING.md content into skills/behavioral-core/. Delete the doc.
-
-## Context
-
-behavioral-core skill already covers BP patterns. BEHAVIORAL-PROGRAMMING.md is the formal algorithm reference. Most content overlaps. The formal definitions and algorithm description should become a reference file in the skill.
-
-## What to Do
-
-1. Move the formal algorithm content (super-step execution, priority selection, timing semantics) into skills/behavioral-core/references/algorithm-formal.md
-2. Move pattern catalog (stopGame, shared state, counter-based) into skills/behavioral-core/references/ if not already there
-3. Delete docs/BEHAVIORAL-PROGRAMMING.md
-4. Update cross-references
-
-## Constraints
-
-- Don't duplicate — if behavioral-core already covers a pattern, don't copy it again
-- Validate: `bunx @plaited/development-skills validate-skill skills/behavioral-core`
-```
-
-### Prompt 13: Extract Hypergraph Memory → Skill
-
-```
-Work in a worktree branch off main.
-
-## Task
-
-Create skills/hypergraph-memory/ from docs/HYPERGRAPH-MEMORY.md. Slim the doc.
-
-## What to Build
-
-### 1. Create skills/hypergraph-memory/SKILL.md
-
-Move INTO the skill:
-- JSON-LD vertex taxonomy (@context, @id, @type patterns)
-- Session lifecycle (decisions → consolidate → defrag)
-- Commit vertex architecture (one-behind pattern)
-- Context assembly as BP event
-- Training data extraction patterns
-
-### 2. references/
-
-- `vertex-schemas.md` — Decision, Session, Commit, Skill, RuleSet vertex shapes
-- `causation-map.md` — EVENT_CAUSATION relationships
-- `session-lifecycle.md` — commit_snapshot → consolidate → defrag flow
-
-### 3. Slim docs/HYPERGRAPH-MEMORY.md
-
-Keep ONLY: "Why JSON-LD over SQLite", "Why git-versioned", high-level memory architecture overview.
-
-## Constraints
-
-- Validate: `bunx @plaited/development-skills validate-skill skills/hypergraph-memory`
-```
-
-### Prompt 14: Extract Training Pipeline → Skill
-
-```
-Work in a worktree branch off main.
-
-## Task
-
-Create skills/training-pipeline/ from docs/TRAINING.md. Slim the doc.
-
-## Context
-
-TRAINING.md overlaps heavily with existing trial-runner, trial-adapters, compare-trials skills. The new skill focuses on the distillation pipeline design, training tiers, and data format requirements that those skills don't cover.
-
-## What to Build
-
-### 1. Create skills/training-pipeline/SKILL.md
-
-Move INTO the skill:
-- Distillation stages (bootstrap → refinement → probing)
-- SFT/GRPO data mix requirements
-- Training tier selection (consumer LoRA, enterprise full-parameter)
-- DecisionStep as process signal
-- GradingDimensions scoring
-- Cross-project knowledge transfer via weights
-
-### 2. references/
-
-- `data-format.md` — trajectory format, decision step schema, grading dimensions
-- `distillation-stages.md` — bootstrap, refinement, probing with examples
-
-### 3. Slim docs/TRAINING.md
-
-Keep ONLY: high-level training philosophy, why distillation (not pre-trained), flywheel concept.
-
-## Constraints
-
-- Validate: `bunx @plaited/development-skills validate-skill skills/training-pipeline`
-```
-
-### Prompt 15: Merge UI + WebSocket → generative-ui Skill
-
-```
-Work in a worktree branch off main.
-
-## Task
-
-Merge implementation patterns from docs/UI.md and docs/WEBSOCKET-ARCHITECTURE.md into skills/generative-ui/. Slim both docs.
-
-## Context
-
-generative-ui skill already covers the controller protocol and custom elements. UI.md has rendering pipeline details and CSS system. WEBSOCKET-ARCHITECTURE.md has design decisions (some resolved, some open).
-
-## What to Do
-
-1. Move rendering pipeline details (createSSR, decorateElements, CSS system) from UI.md into generative-ui/references/ if not already there
-2. Move resolved WebSocket decisions (replay buffer, reconnection, CSP) from WEBSOCKET-ARCHITECTURE.md into generative-ui/references/
-3. Slim UI.md to overview only (~40 lines)
-4. Delete WEBSOCKET-ARCHITECTURE.md if all content is moved (or slim to "open questions" only if any remain)
-5. Update cross-references
-
-## Constraints
-
-- Don't duplicate — check what generative-ui already covers
-- Validate: `bunx @plaited/development-skills validate-skill skills/generative-ui`
-```
-
-### Prompt 16: Extract Project Isolation → Skill
-
-```
-Work in a worktree branch off main.
-
-## Task
-
-Create skills/project-isolation/ from docs/PROJECT-ISOLATION.md. Slim the doc.
-
-## What to Build
-
-### 1. Create skills/project-isolation/SKILL.md
-
-Move INTO the skill:
-- Orchestrator + subprocess architecture (mermaid diagram)
-- IPC trigger bridge code patterns
-- Tool layer assembly (framework → global → project)
-- Constitution loading at spawn
-- Two levels of Bun.spawn (project subprocess vs sub-agent)
-
-### 2. references/
-
-- `ipc-bridge.md` — Bun.spawn IPC patterns, structured clone serialization
-- `tool-assembly.md` — three-layer tool discovery, approval model
-
-### 3. Slim docs/PROJECT-ISOLATION.md
-
-Keep ONLY: "Why process isolation", isolation guarantees table, cross-reference to skill.
-
-## Constraints
-
-- Validate: `bunx @plaited/development-skills validate-skill skills/project-isolation`
-```
-
----
-
-## Updated Summary
-
-| # | Prompt | Directory | Parallel Group |
-|---|---|---|---|
-| 1 | Output truncation + read enhancements | `src/tools/` | A |
-| 2 | Grep tool + find enrichment + `ensureTool` | `src/tools/` | A (after #1) |
-| 3 | Edit with scan-assisted matching | `src/tools/` | A |
-| 4 | Scan integration in ingestion + LSP + collision detection | `src/tools/` | A |
-| 5 | Bun-native optimizations (JSONL, Archive, Hash, timing, etc.) | `src/tools/` + `src/agent/` + `src/modnet/` | B |
-| 6 | Transport executor pattern (local, SSH, A2A) | `src/agent/` | B |
-| 7 | Tiered context (hot/warm/cold) + structured system prompt | `src/agent/` | B |
-| 8 | Hypergraph recall skill (Phase 2 training) | `skills/` | C (after #7) |
-| 9 | Drop resolved historical docs | `docs/` | D |
-| 10 | Agent loop patterns → skill | `docs/` + `skills/` | D |
-| 11 | Constitution patterns → skill | `docs/` + `skills/` | D |
-| 12 | BP reference → merge into behavioral-core | `docs/` + `skills/` | D |
-| 13 | Hypergraph memory → skill | `docs/` + `skills/` | D |
-| 14 | Training pipeline → skill | `docs/` + `skills/` | D |
-| 15 | UI + WebSocket → merge into generative-ui | `docs/` + `skills/` | D |
-| 16 | Project isolation → skill | `docs/` + `skills/` | D |
-
-Groups A, B, C, D, E can all run in parallel. All prompts in Group D are independent of each other (each touches different docs and skills).
-
----
-
-## ACP Integration (`src/agent/`)
-
-### Prompt 17: ACP Debug Viewport via @agentclientprotocol/sdk
-
-```
-Work in a worktree branch off main.
-
-## Task
-
-Implement ACP (Agent Client Protocol) as a debug/admin viewport into any Plaited node. An admin SSHs into a box via their editor (Zed, VS Code Remote), then runs `plaited acp --node <name>` to ACP into any node on that box — observing all BP events, A2A traffic, and interacting with the node.
-
-## Context
-
-ACP is the standard protocol for editor ↔ coding agent communication. It uses JSON-RPC over stdio. Our architecture has:
-- `createAgentLoop()` returning `AgentNode { trigger, subscribe, snapshot, destroy }`
-- A2A protocol in `src/a2a/` for agent-to-agent communication
-- Multiple nodes per box in enterprise deployments (PM, registry, workers)
-
-**Key insight:** When an admin SSHs into a box via their editor, they have admin access to ALL nodes running on that box. ACP over stdio gives them a debug viewport into any node — same as the generative UI (WebSocket) but from their code editor.
-
-**ACP is a control UI transport** — like WebSocket for browsers, ACP is for editors. Both bridge to the same AgentNode interface. The adapter is the same pattern as `src/server/server.ts` but over stdio instead of WebSocket.
-
-### ACP Lifecycle
-
-1. `initialize` — negotiate capabilities
-2. `session/new` — create a session (receives cwd, MCP server configs)
-3. `session/prompt` — user sends a message → agent processes
-4. `session/update` — agent streams progress (message chunks, tool calls, plans, A2A traffic)
-5. `session/cancel` — user cancels in-progress work
-
-## Dependency
-
-```bash
-bun add @agentclientprotocol/sdk
-```
-
-Reference: https://agentclientprotocol.github.io/typescript-sdk/classes/AgentSideConnection.html
-
-## What to Build
-
-### 1. ACP Agent Adapter (src/agent/acp-adapter.ts)
-
-Implement the `Agent` interface from @agentclientprotocol/sdk:
-
-```typescript
-import { AgentSideConnection, ndJsonStream } from '@agentclientprotocol/sdk'
-import type { Agent } from '@agentclientprotocol/sdk'
-
-type CreateAcpAdapterOptions = {
-  resolveNode: (name?: string) => AgentNode | Promise<AgentNode>
-}
-
-export const createAcpAdapter = (options: CreateAcpAdapterOptions): Agent => { ... }
-```
-
-**Method mappings:**
-
-| ACP Method | Our Architecture |
-|---|---|
-| `initialize` | Return capabilities (text prompts, MCP stdio support, A2A observation extension) |
-| `newSession` | Resolve the target node via `resolveNode()`, create session against its AgentNode |
-| `prompt` | Trigger `{ type: 'task', detail: { prompt } }`. Subscribe to events. Stream `session/update` back via `conn.sessionUpdate()`. Return on `message` event. |
-| `cancel` | Propagate abort signal |
-| `loadSession` | Restore from hypergraph memory if session exists |
-
-**Event bridging (BP events → ACP session/update):**
-
-| BP Event | ACP session/update |
-|---|---|
-| `thinking_delta` | `agent_thought_chunk` with text content |
-| `text_delta` | `agent_message_chunk` with text content |
-| `execute` (start) | `tool_call` with status `in_progress` |
-| `tool_result` | `tool_call` with status `completed` + result content |
-| `gate_rejected` | `tool_call` with status `completed` + error content |
-| `message` | Return `PromptResponse` with `stopReason: 'endTurn'` |
-| `inference_error` | Return `PromptResponse` with `stopReason: 'error'` |
-
-**Permission bridging:**
-
-Non-workspace risk tags → `conn.requestPermission()` to ask the editor user.
-- `selected` (approved) → continue execute
-- `cancelled` → trigger gate_rejected
-
-BP gate does structural safety. ACP permission does user consent. Both must approve.
-
-### 2. A2A Traffic Observation (extNotification)
-
-Use ACP's `extNotification` for custom A2A observation. When the admin is debugging a node, they see all A2A messages:
-
-```typescript
-// Subscribe to A2A events on the target node
-node.subscribe({
-  // Inbound A2A messages
-  a2a_inbound(detail: unknown) {
-    conn.extNotification('plaited/a2a_inbound', detail as Record<string, unknown>)
-  },
-  // Outbound A2A messages
-  a2a_outbound(detail: unknown) {
-    conn.extNotification('plaited/a2a_outbound', detail as Record<string, unknown>)
-  },
-})
-```
-
-ACP clients that don't understand `plaited/a2a_*` extensions silently ignore them (per spec). Editors that support it can render A2A traffic in a dedicated panel.
-
-### 3. Multi-Node CLI Entry Point (src/acp.ts)
-
-```typescript
-#!/usr/bin/env bun
-import { AgentSideConnection, ndJsonStream } from '@agentclientprotocol/sdk'
-import { createAcpAdapter } from './agent/acp-adapter.ts'
-
-// --node flag selects which node to connect to
-const nodeName = process.argv.find((_, i, a) => a[i - 1] === '--node') ?? 'default'
-
-const adapter = createAcpAdapter({
-  resolveNode: async (name) => {
-    // Resolve node by name → connect via unix socket or direct import
-    // Nodes on same box use unix sockets (from MODNET-IMPLEMENTATION.md)
-    return connectToNode(name ?? nodeName)
-  },
-})
-
-const conn = new AgentSideConnection(() => adapter, ndJsonStream(process.stdin, process.stdout))
-await conn.closed
-```
-
-Usage from editor terminal (after SSH):
-```bash
-plaited acp                        # connect to default/only node
-plaited acp --node pm              # connect to PM/orchestrator
-plaited acp --node registry        # connect to Registry node
-plaited acp --node worker-alice    # connect to Alice's worker
-```
-
-### 4. Node Resolution
-
-Discover running nodes on the box:
-
-```typescript
-const connectToNode = async (name: string): Promise<AgentNode> => {
-  // Option A: Unix socket (nodes expose AgentNode via unix socket)
-  const socketPath = `/tmp/plaited-${name}.sock`
-  if (await Bun.file(socketPath).exists()) {
-    return connectViaSocket(socketPath)
-  }
-
-  // Option B: Direct import (single-node development)
-  const { createAgentLoop } = await import('./agent/agent.loop.ts')
-  return createAgentLoop({ ... })
-}
-```
-
-For enterprise boxes with multiple nodes, each node publishes a unix socket. The ACP adapter connects to the target node's socket. For single-node development, the adapter creates the loop directly.
-
-### 5. Session Management + MCP Passthrough
-
-Map ACP sessions to AgentNode interactions:
-
-```typescript
-const sessions = new Map<string, { node: AgentNode; disconnect: () => void }>()
-```
-
-Forward editor-provided MCP servers to the node's tool discovery using existing `skills/add-mcp/` infrastructure.
-
-## Key Files
-
-- src/agent/agent.loop.ts — createAgentLoop, AgentNode
-- src/agent/agent.types.ts — existing types
-- src/server/server.ts — reference for WebSocket transport adapter pattern
-- src/a2a/ — A2A protocol (the traffic we're observing)
-- skills/add-mcp/ — MCP client for tool discovery
-- @agentclientprotocol/sdk — TypeScript SDK
-- https://agentclientprotocol.github.io/typescript-sdk/classes/AgentSideConnection.html
-- https://agentclientprotocol.com/protocol/prompt-turn
-
-## Design Notes
-
-**ACP is a control UI transport, not a separate mode.** Like WebSocket (browsers) and IPC (orchestrator), ACP (editors) is another way to reach the AgentNode interface. The node doesn't know which transport delivered the task.
-
-**SSH + editor remote = admin access to all nodes.** When you SSH into an enterprise box via Zed/VS Code Remote, you can `plaited acp --node <name>` into any node. No additional auth — SSH provides the admin credential.
-
-**A2A observation via extNotification.** The admin sees all inbound/outbound A2A traffic for the connected node. For the PM node, this means seeing all orchestration traffic to registry, observer, gateway, and workers. Standard ACP clients ignore extensions they don't understand.
-
-**Same adapter, any node type.** Whether you connect to a PM node, a worker node, or a registry node, the ACP adapter works identically — it bridges to that node's AgentNode. The node's constitution determines what the node can/can't do; the ACP adapter just exposes it.
-
-## Tests (src/agent/tests/acp-adapter.spec.ts)
-
-Test with mock stdio streams:
-
-1. Initialize → capabilities include A2A observation extension
-2. New session → AgentNode resolved and connected
-3. Prompt → task triggered, events streamed as session/updates
-4. Cancel → abort signal propagated
-5. A2A observation → extNotification sent for inbound/outbound A2A traffic
-6. Multi-session → independent connections to same node
-7. Node resolution → correct node resolved by name
-
-## Constraints
-
-- Read CLAUDE.md and AGENTS.md for project conventions
-- Use `@agentclientprotocol/sdk` — don't re-implement JSON-RPC
-- The adapter is a thin bridge — same pattern as src/server/server.ts but stdio
-- `extNotification` for A2A observation (prefixed `plaited/`)
-- If your changes affect docs/ or skills/, update in the same commit
-- Run `bun --bun tsc --noEmit` and `bun test src/` before committing
-```
-
----
-
----
-
-## Secret Management (`skills/`)
-
-### Prompt 18: Varlock Integration — AI-Safe Environment Configuration
-
-```
-Work in a worktree branch off main.
-
-## Task
-
-Create a Varlock integration skill and MCP-backed search skill for AI-safe environment configuration. Varlock lets agents understand environment configuration requirements (.env.schema) without ever seeing actual secret values.
-
-## Context
-
-Varlock (https://varlock.dev/) provides:
-- `.env.schema` files that describe environment variables with metadata (@sensitive, @required, @type)
-- Runtime resolution from multiple sources (local files, env-specific overrides, external secret managers)
-- AI-safe design — agents read schemas for context, never access actual secrets
-- Leak detection and prevention for logs and bundled code
-- Secret provider plugins (1Password, Infisical, AWS, Azure, Google, Bitwarden)
-
-This is critical for our enterprise deployment model: when seeds generate nodes, they need to declare environment requirements. When the PM provisions worker nodes, it needs to know what secrets each node requires without seeing the values.
-
-## What to Build
-
-### 1. Varlock Docs MCP Skill (skills/search-varlock-docs/)
-
-Generate a search skill from Varlock's MCP documentation server using the existing add-remote-mcp skill infrastructure.
-
-MCP server URL: `https://docs.mcp.varlock.dev/mcp`
-
-Use the add-remote-mcp skill to:
-1. Discover the MCP server capabilities: `mcpDiscover('https://docs.mcp.varlock.dev/mcp')`
-2. List available tools: `mcpListTools('https://docs.mcp.varlock.dev/mcp')`
-3. Generate a search wrapper script following the same pattern as search-bun-docs, search-mcp-docs, search-agent-skills
-4. Create the SKILL.md with appropriate frontmatter
-
-```
-skills/search-varlock-docs/
-  SKILL.md
-  scripts/
-    search.ts          ← wrapper calling the MCP server
-    tests/
-      search.spec.ts
-```
-
-### 2. Varlock Integration Skill (skills/varlock/)
-
-A skill that teaches agents how to use Varlock for node configuration:
-
-```
-skills/varlock/
-  SKILL.md                    ← when/how to use Varlock in the Plaited context
-  references/
-    schema-patterns.md        ← .env.schema patterns for node configuration
-    enterprise-secrets.md     ← secret provider setup for enterprise deployments
-    constitution-rules.md     ← MAC bThread patterns for secret protection
-```
-
-#### SKILL.md content:
-
-**When to use:**
-- Setting up a new node that needs environment configuration
-- Enterprise provisioning where secrets come from external providers
-- Generating seeds that declare environment requirements
-- Ensuring agent never leaks secrets into context/history/training data
-
-**Schema patterns for Plaited nodes:**
-
-```ini
-# .env.schema for a Plaited agent node
-
-# Model inference
-INFERENCE_URL=http://localhost:11434
-  @type url
-  @required
-  @description Local inference server endpoint
-
-INFERENCE_API_KEY=
-  @sensitive
-  @required
-  @description API key for hosted inference (empty for local)
-  @source exec('op read "op://Plaited/inference-key/credential"')
-
-# A2A
-A2A_CERT_PATH=
-  @sensitive
-  @required
-  @type path
-  @description mTLS certificate for A2A communication
-
-A2A_KEY_PATH=
-  @sensitive
-  @required
-  @type path
-  @description mTLS private key
-
-# Node identity
-NODE_ROLE=worker
-  @type enum(pm,worker,registry,observer)
-  @required
-
-NODE_NAME=
-  @required
-  @description Human-readable node identifier
-```
-
-**Constitution rules for secret protection:**
-
-A MAC bThread that blocks the agent from including .env content in context assembly or tool outputs:
-
-```typescript
-// Block reading .env files (only .env.schema is safe)
-bSync({
-  block: (e) =>
-    e.type === AGENT_EVENTS.execute &&
-    e.detail?.toolCall?.name === 'read_file' &&
-    e.detail?.toolCall?.arguments?.path?.match(/\.env($|\.)/) &&
-    !e.detail?.toolCall?.arguments?.path?.endsWith('.env.schema'),
-}, true)
-```
-
-**Enterprise secret providers:**
-
-For enterprise nodes, secrets resolve from the org's secret manager at runtime via Varlock's provider plugins:
-
-```ini
-DATABASE_URL=
-  @sensitive
-  @required
-  @source exec('aws secretsmanager get-secret-value --secret-id plaited/db-url --query SecretString --output text')
-```
-
-The agent sees the schema (knows a DATABASE_URL is needed), generates code that reads `process.env.DATABASE_URL`, but never sees the actual connection string.
-
-### 3. CLI Integration
-
-Add `varlock` as an optional tool in the node setup flow:
-
-```bash
-# Initialize Varlock in a node workspace
-bunx varlock init
-
-# Validate environment against schema
-bunx varlock validate
-
-# Run node with validated environment
-bunx varlock run -- bun run src/main.ts
-```
-
-The seed skill for node generation should include Varlock initialization when the deployment requires secret management.
-
-## Key Files
-
-- skills/add-remote-mcp/ — MCP skill generation infrastructure
-- skills/search-bun-docs/ — reference pattern for generated MCP search skills
-- src/agent/agent.governance.ts — constitution MAC factories (reference for secret protection bThread)
-- src/modnet/modnet.constants.ts — NODE_ROLE (used in schema patterns)
-- docs/MODNET-IMPLEMENTATION.md — enterprise topology (where secrets matter)
-
-## Design Notes
-
-**Varlock replaces .env.example files.** Instead of stale .env.example with placeholder values, .env.schema is the single source of truth with types, sensitivity markers, and provider references. Seeds generate .env.schema as part of node setup.
-
-**Secret protection is a constitution concern.** The bThread blocking .env reads is a MAC rule — the agent can't override it. Only .env.schema is readable. This prevents secret leakage into context/history/training data by design.
-
-**MCP server for docs.** Varlock provides its own MCP server for documentation search. Using add-remote-mcp to generate a search skill gives us the same pattern as our other doc search skills (bun docs, MCP docs, AgentSkills docs).
-
-## Constraints
-
-- Read CLAUDE.md and AGENTS.md for project conventions
-- Use add-remote-mcp skill to generate the MCP search skill (don't build from scratch)
-- The Varlock integration skill is a SKILL (skills/), not framework code (src/)
-- The constitution bThread for secret protection is a PATTERN in the skill, not implemented code — it's a reference for seeds to use when generating nodes
-- Validate: `bunx @plaited/development-skills validate-skill skills/search-varlock-docs skills/varlock`
-- If your changes affect docs/ or skills/, update in the same commit
-- Run `bun --bun tsc --noEmit` and `bun test src/ skills/` before committing
-```
-
----
-
-## Final Summary
-
-| # | Prompt | Directory | Parallel Group |
-|---|---|---|---|
-| 1 | Output truncation + read enhancements | `src/tools/` | A |
-| 2 | Grep tool + find enrichment + `ensureTool` | `src/tools/` | A (after #1) |
-| 3 | Edit with scan-assisted matching | `src/tools/` | A |
-| 4 | Scan integration in ingestion + LSP + collision detection | `src/tools/` | A |
-| 5 | Bun-native optimizations (JSONL, Archive, Hash, timing, etc.) | `src/tools/` + `src/agent/` + `src/modnet/` | B |
-| 6 | Transport executor pattern (local, SSH, A2A) | `src/agent/` | B |
-| 7 | Tiered context (hot/warm/cold) + structured system prompt | `src/agent/` | B |
-| 8 | Hypergraph recall skill (Phase 2 training) | `skills/` | C (after #7) |
-| 9 | Drop resolved historical docs | `docs/` | D |
-| 10 | Agent loop patterns → skill | `docs/` + `skills/` | D |
-| 11 | Constitution patterns → skill | `docs/` + `skills/` | D |
-| 12 | BP reference → merge into behavioral-core | `docs/` + `skills/` | D |
-| 13 | Hypergraph memory → skill | `docs/` + `skills/` | D |
-| 14 | Training pipeline → skill | `docs/` + `skills/` | D |
-| 15 | UI + WebSocket → merge into generative-ui | `docs/` + `skills/` | D |
-| 16 | Project isolation → skill | `docs/` + `skills/` | D |
-| 17 | ACP debug viewport (multi-node, A2A observation) | `src/agent/` | E |
-| 18 | Varlock integration (AI-safe secrets, MCP docs) | `skills/` | F (after B/Prompt 6) |
-
-Groups A–F can run in parallel where dependencies allow. Prompt 18 depends loosely on Prompt 6 (transport executor pattern establishes the seam that secret-aware node setup builds on), but the skill itself is independent.
+| 1 | Fix grader cleanup + remove old package refs | 0 (cleanup) | None |
+| 2 | Module-per-repo workspace utilities | 1 (infra) | None |
+| 3 | Server + agent integration (createNode) | 1 (infra) | None |
+| 4 | Model implementations (Ollama/Anthropic/Gemini) | 1 (infra) | None |
+| 5 | MSS vocabulary skill (distill Structural-IA + Modnet.md) | 2 (skills) | None |
+| 6 | Enrich modnet-node skill | 2 (skills) | After 2, 5 |
+| 7 | Trial adapter + eval result persistence | 2 (infra) | After 4 |
+| 8 | Module generation prompts + grader | 3 (eval) | After 5, 6, 7 |
+| 9 | Run eval cycle + calibrate skills | 3 (eval) | After 8 |
+| 10 | Collect SFT trajectories | 4 (training) | After 9 |
+
+**Parallel execution:**
+- Phase 0: Prompt 1 (do first)
+- Phase 1: Prompts 2, 3, 4 (all parallel)
+- Phase 2: Prompts 5, 6, 7 (5 parallel with 2-4; 6 after 2+5; 7 after 4)
+- Phase 3: Prompts 8, 9 (sequential — 8 then 9)
+- Phase 4: Prompt 10 (after 9)
