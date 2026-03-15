@@ -69,13 +69,13 @@ export const scoreTrainingDimensions = (dimensions: GradingDimensions): Training
  * The aggregated result uses majority vote for pass/fail and mean for score.
  * Meta-verification data is stored in `outcome._metaVerification`.
  *
- * This differs from the verifier-based `withMetaVerification` in
+ * This differs from the verifier-based `withStatisticalVerification` in
  * `trial.utils.ts` — that version runs a separate verifier function once.
  * This version runs the grader itself k times for statistical analysis.
  *
  * @public
  */
-export const withMetaVerification = (grader: Grader, k: number): Grader => {
+export const withStatisticalVerification = (grader: Grader, k: number): Grader => {
   return async (params) => {
     const results = await Promise.all(Array.from({ length: k }, () => grader(params)))
 

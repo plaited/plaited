@@ -2,7 +2,7 @@
  * Tests for the training pipeline scoring functions.
  *
  * @remarks
- * Covers: computeTrainingWeight, scoreTrainingDimensions, withMetaVerification,
+ * Covers: computeTrainingWeight, scoreTrainingDimensions, withStatisticalVerification,
  * schema validation, CLI contract.
  */
 
@@ -15,7 +15,7 @@ import {
   TrainingScoreOutputSchema,
   TrainingScoreSchema,
 } from '../training.schemas.ts'
-import { computeTrainingWeight, scoreTrainingDimensions, withMetaVerification } from '../training.ts'
+import { computeTrainingWeight, scoreTrainingDimensions, withStatisticalVerification } from '../training.ts'
 
 // ============================================================================
 // computeTrainingWeight
@@ -90,13 +90,13 @@ describe('scoreTrainingDimensions', () => {
 })
 
 // ============================================================================
-// withMetaVerification
+// withStatisticalVerification
 // ============================================================================
 
-describe('withMetaVerification', () => {
+describe('withStatisticalVerification', () => {
   test('runs grader k times and computes mean score', async () => {
     const grader: Grader = async () => ({ pass: true, score: 0.8 })
-    const wrapped = withMetaVerification(grader, 3)
+    const wrapped = withStatisticalVerification(grader, 3)
 
     const result = await wrapped({ input: 'test', output: 'hello' })
 
@@ -106,7 +106,7 @@ describe('withMetaVerification', () => {
 
   test('consistent grader has zero stddev', async () => {
     const grader: Grader = async () => ({ pass: true, score: 0.9 })
-    const wrapped = withMetaVerification(grader, 5)
+    const wrapped = withStatisticalVerification(grader, 5)
 
     const result = await wrapped({ input: 'test', output: 'hello' })
 
@@ -128,7 +128,7 @@ describe('withMetaVerification', () => {
       return { pass: score > 0.5, score }
     }
 
-    const wrapped = withMetaVerification(flakyGrader, 4)
+    const wrapped = withStatisticalVerification(flakyGrader, 4)
     const result = await wrapped({ input: 'test', output: 'hello' })
 
     const meta = result.outcome!._metaVerification as z.infer<typeof MetaVerificationSchema>
@@ -146,7 +146,7 @@ describe('withMetaVerification', () => {
       return { pass, score: pass ? 1.0 : 0.0 }
     }
 
-    const wrapped = withMetaVerification(grader, 5)
+    const wrapped = withStatisticalVerification(grader, 5)
     const result = await wrapped({ input: 'test', output: 'hello' })
 
     expect(result.pass).toBe(true)
@@ -161,7 +161,7 @@ describe('withMetaVerification', () => {
       return { pass, score: pass ? 1.0 : 0.0 }
     }
 
-    const wrapped = withMetaVerification(grader, 5)
+    const wrapped = withStatisticalVerification(grader, 5)
     const result = await wrapped({ input: 'test', output: 'hello' })
 
     expect(result.pass).toBe(false)
@@ -175,7 +175,7 @@ describe('withMetaVerification', () => {
       dimensions: { outcome: 0.95, process: 0.85 },
     })
 
-    const wrapped = withMetaVerification(grader, 3)
+    const wrapped = withStatisticalVerification(grader, 3)
     const result = await wrapped({ input: 'test', output: 'hello' })
 
     expect(result.reasoning).toBe('Looks good')
@@ -191,7 +191,7 @@ describe('withMetaVerification', () => {
       outcome: { matchType: 'exact', details: 'perfect' },
     })
 
-    const wrapped = withMetaVerification(grader, 2)
+    const wrapped = withStatisticalVerification(grader, 2)
     const result = await wrapped({ input: 'test', output: 'hello' })
 
     expect(result.outcome).toBeDefined()
@@ -202,7 +202,7 @@ describe('withMetaVerification', () => {
 
   test('k=1 produces single-run statistics', async () => {
     const grader: Grader = async () => ({ pass: true, score: 0.7 })
-    const wrapped = withMetaVerification(grader, 1)
+    const wrapped = withStatisticalVerification(grader, 1)
 
     const result = await wrapped({ input: 'test', output: 'hello' })
 
@@ -217,7 +217,7 @@ describe('withMetaVerification', () => {
 
   test('meta-verification validates against schema', async () => {
     const grader: Grader = async () => ({ pass: true, score: 0.8 })
-    const wrapped = withMetaVerification(grader, 3)
+    const wrapped = withStatisticalVerification(grader, 3)
 
     const result = await wrapped({ input: 'test', output: 'hello' })
 
