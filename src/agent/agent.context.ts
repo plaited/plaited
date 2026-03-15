@@ -1,5 +1,8 @@
 import type { AgentPlan, ToolDefinition } from './agent.schemas.ts'
 import type { ChatMessage } from './agent.types.ts'
+import type { SessionMeta } from '../tools/hypergraph.utils.ts'
+
+export type { SessionMeta } from '../tools/hypergraph.utils.ts'
 
 // ============================================================================
 // Context Assembly — pure functions for building model prompt from sources
@@ -99,6 +102,121 @@ export const systemPromptContributor = (systemPrompt: string): ContextContributo
     tokenEstimate: estimateTokens(systemPrompt),
   }),
 })
+
+/**
+ * Structured system prompt contributor — composes prompt from tools, skills, and constitution.
+ *
+ * @remarks
+ * Highest priority (100) — trimmed last. Replaces `systemPromptContributor` when
+ * the caller needs a composed prompt with tool descriptions, skill summaries,
+ * constitution rules, and an optional search hint for the D→A migration path.
+ *
+ * @public
+ */
+export const createSystemPromptContributor = ({
+  basePrompt,
+  tools,
+  skills,
+  constitutionRules,
+  searchHint = false,
+}: {
+  basePrompt: string
+  tools: ToolDefinition[]
+  skills?: Array<{ name: string; description: string }>
+  constitutionRules?: string[]
+  searchHint?: boolean
+}): ContextContributor => ({
+  name: 'system_prompt',
+  priority: 100,
+  contribute: () => {
+    const sections = [basePrompt]
+
+    if (tools.length > 0) {
+      sections.push(
+        '## Available Tools\n' + tools.map((t) => `- **${t.function.name}**: ${t.function.description ?? ''}`).join('\n'),
+      )
+    }
+
+    if (skills && skills.length > 0) {
+      sections.push('## Active Skills\n' + skills.map((s) => `- **${s.name}**: ${s.description}`).join('\n'))
+    }
+
+    if (constitutionRules && constitutionRules.length > 0) {
+      sections.push('## Constraints\n' + constitutionRules.map((r) => `- ${r}`).join('\n'))
+    }
+
+    if (searchHint) {
+      sections.push(
+        'If you need to recall earlier decisions or context from this session, use the search tool to query the hypergraph memory.',
+      )
+    }
+
+    const content = sections.join('\n\n')
+    return { role: 'system', content, tokenEstimate: estimateTokens(content) }
+  },
+})
+
+// ============================================================================
+// Session Summary Contributor — warm layer (tiered context Variant D)
+// ============================================================================
+
+/**
+ * Return type of {@link createSessionSummaryContributor}, exposing the meta updater.
+ *
+ * @public
+ */
+export type SessionSummaryContributor = ContextContributor & {
+  updateMeta: (newMeta: SessionMeta) => void
+}
+
+/**
+ * Format session metadata into a concise system prompt segment.
+ *
+ * @internal
+ */
+const formatSessionSummary = (meta: SessionMeta): string => {
+  const lines = [`Session context (${meta.decisionCount} decisions):`]
+  if (meta.threadTypes.length > 0) lines.push(`Threads active: ${meta.threadTypes.join(', ')}`)
+  if (meta.outcomeEvents.length > 0) lines.push(`Events observed: ${meta.outcomeEvents.join(', ')}`)
+  if (meta.toolsUsed.length > 0) lines.push(`Tools used: ${meta.toolsUsed.join(', ')}`)
+  if (meta.commits && meta.commits.length > 0) lines.push(`Commits: ${meta.commits.length}`)
+  return lines.join('\n')
+}
+
+/**
+ * Creates a session summary contributor (warm layer) from persisted meta.jsonld.
+ *
+ * @remarks
+ * Priority 70 — trimmed after history (20) and plan (40) but before
+ * rejections (80) and system prompt (100). The warm layer gives the model
+ * orientation about what this session has accomplished without consuming
+ * full conversation history budget.
+ *
+ * The contributor is synchronous per the `ContextContributor` contract.
+ * Meta is cached at creation and updated via `updateMeta()` when the
+ * consolidate handler writes new `meta.jsonld`.
+ *
+ * @param initialMeta - Pre-loaded session meta (or null if no meta exists yet)
+ * @returns Contributor with an `updateMeta` method for the consolidate handler
+ *
+ * @public
+ */
+export const createSessionSummaryContributor = (initialMeta: SessionMeta | null): SessionSummaryContributor => {
+  let meta = initialMeta
+
+  return {
+    name: 'session_summary',
+    priority: 70,
+    contribute: () => {
+      if (!meta) return null
+      const content = formatSessionSummary(meta)
+      return { role: 'system', content, tokenEstimate: estimateTokens(content) }
+    },
+    updateMeta: (newMeta: SessionMeta) => {
+      meta = newMeta
+    },
+  }
+}
 
 /**
  * Rejection contributor — prior gate/eval rejections.
@@ -206,28 +324,80 @@ export const historyContributor: ContextContributor = {
 }
 
 // ============================================================================
-// History trimming — fine-grained pruning for oversized history
+// History trimming — progressive three-stage degradation
 // ============================================================================
 
 /**
- * Trims conversation history to fit within a token budget.
+ * Truncate tool result content, preserving the fact that a tool was called.
  *
  * @remarks
- * Drops oldest messages first, preserving the most recent context.
- * Called before context assembly when history is large. Returns a
- * new array (no mutation).
+ * Stage 2 of progressive trimming: tool results outside the recent window
+ * become `[truncated]` stubs. The model still sees which tools ran and in
+ * what order, but not the full output.
+ *
+ * @internal
+ */
+const truncateToolResults = (history: ChatMessage[], recentCount: number): ChatMessage[] => {
+  const cutoff = history.length - recentCount
+  return history.map((msg, i) => {
+    if (i < cutoff && msg.role === 'tool') {
+      return { ...msg, content: '[truncated]' }
+    }
+    return msg
+  })
+}
+
+/**
+ * Trims conversation history to fit within a token budget using progressive degradation.
+ *
+ * @remarks
+ * Three tiers of degradation, applied cumulatively:
+ *
+ * 1. **Full content** — everything fits, return as-is
+ * 2. **Truncated** — tool results outside the `recentWindow` are replaced with
+ *    `[truncated]` (the model knows a tool was called but not the output),
+ *    then oldest messages are dropped to fit
+ * 3. **Fallback** — if even truncated history produces nothing, return the
+ *    last `recentWindow` messages (aggressive but guaranteed context)
+ *
+ * The truncation step often preserves more messages than pure dropping, since
+ * large tool outputs shrink to a few bytes.
  *
  * @param history - Full conversation history
  * @param budget - Maximum token budget for history
- * @returns Trimmed history (newest messages preserved)
+ * @param recentWindow - Number of recent messages whose tool results stay intact (default: 10)
+ * @returns Trimmed history (newest messages preserved, no mutation)
  *
  * @public
  */
-export const trimHistory = (history: ChatMessage[], budget: number): ChatMessage[] => {
+export const trimHistory = (history: ChatMessage[], budget: number, recentWindow = 10): ChatMessage[] => {
   if (budget <= 0) return []
+
+  // Fast path: everything fits within budget
+  if (totalTokens(history) <= budget) return history
+
+  // Truncate old tool results (outside recent window) to save space
+  const withTruncated = truncateToolResults(history, recentWindow)
+
+  // Drop oldest messages that still don't fit
+  const trimmed = dropOldest(withTruncated, budget)
+
+  // Fallback: ensure at least the recent window is returned
+  if (trimmed.length === 0 && history.length > 0) {
+    return history.slice(-Math.min(recentWindow, history.length))
+  }
+
+  return trimmed
+}
+
+/**
+ * Drop oldest messages until remaining fit within budget.
+ *
+ * @internal
+ */
+const dropOldest = (history: ChatMessage[], budget: number): ChatMessage[] => {
   let total = 0
   const result: ChatMessage[] = []
-  // Walk from newest to oldest, accumulating until budget exceeded
   for (let i = history.length - 1; i >= 0; i--) {
     const msg = history[i]!
     const tokens = estimateTokens(msg.content ?? '')
@@ -236,6 +406,19 @@ export const trimHistory = (history: ChatMessage[], budget: number): ChatMessage
     result.unshift(msg)
   }
   return result
+}
+
+/**
+ * Sum token estimates for a message array.
+ *
+ * @internal
+ */
+const totalTokens = (messages: ChatMessage[]): number => {
+  let total = 0
+  for (const msg of messages) {
+    total += estimateTokens(msg.content ?? '')
+  }
+  return total
 }
 
 // ============================================================================

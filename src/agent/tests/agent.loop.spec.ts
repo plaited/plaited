@@ -171,7 +171,7 @@ describe('createAgentLoop', () => {
     ])
 
     const executedTools: string[] = []
-    const agent = createAgentLoop({
+    const agent = await createAgentLoop({
       model,
       tools: [taggedWorkspaceTool],
       toolExecutor: async (toolCall) => {
@@ -216,7 +216,7 @@ describe('createAgentLoop', () => {
       { text: 'I apologize, that was unsafe.' },
     ])
 
-    const agent = createAgentLoop({
+    const agent = await createAgentLoop({
       model,
       tools: [taggedBashTool],
       toolExecutor: async () => 'should not reach here',
@@ -257,7 +257,7 @@ describe('createAgentLoop', () => {
     ])
 
     const executedTools: string[] = []
-    const agent = createAgentLoop({
+    const agent = await createAgentLoop({
       model,
       tools: [taggedWorkspaceTool],
       toolExecutor: async (toolCall) => {
@@ -299,7 +299,7 @@ describe('createAgentLoop', () => {
       })),
     )
 
-    const agent = createAgentLoop({
+    const agent = await createAgentLoop({
       model,
       tools: [taggedWorkspaceTool],
       toolExecutor: async () => 'content',
@@ -350,7 +350,7 @@ describe('createAgentLoop', () => {
       },
     }))
 
-    const agent = createAgentLoop({
+    const agent = await createAgentLoop({
       model,
       tools: [taggedBashTool],
       toolExecutor: async () => 'should not execute',
@@ -376,7 +376,7 @@ describe('createAgentLoop', () => {
   test('text-only response: model returns text without tools → message fires immediately', async () => {
     const model = createMockModel([{ text: 'Hello! How can I help?' }])
 
-    const agent = createAgentLoop({
+    const agent = await createAgentLoop({
       model,
       tools: [taggedWorkspaceTool],
       toolExecutor: async () => 'should not execute',
@@ -429,7 +429,7 @@ describe('createAgentLoop', () => {
       },
     }
 
-    const agent = createAgentLoop({
+    const agent = await createAgentLoop({
       model: mainModel,
       tools: [untaggedTool],
       toolExecutor: async () => 'file contents',
@@ -459,7 +459,7 @@ describe('createAgentLoop', () => {
       },
     }
 
-    const agent = createAgentLoop({
+    const agent = await createAgentLoop({
       model: errorModel,
       tools: [],
       toolExecutor: async () => null,
@@ -493,7 +493,7 @@ describe('createAgentLoop', () => {
       },
     }
 
-    const agent = createAgentLoop({
+    const agent = await createAgentLoop({
       model: failingModel,
       tools: [],
       toolExecutor: async () => null,
@@ -518,9 +518,9 @@ describe('createAgentLoop', () => {
   // Test 10: Destroy cleans up
   // ============================================================================
 
-  test('destroy aborts in-flight operations', () => {
+  test('destroy aborts in-flight operations', async () => {
     const model = createMockModel([{ text: 'Hello' }])
-    const agent = createAgentLoop({
+    const agent = await createAgentLoop({
       model,
       tools: [],
       toolExecutor: async () => null,
