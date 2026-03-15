@@ -5,7 +5,7 @@
  * This module provides:
  * - **Factory**: {@link createServer} — creates a Bun.serve-based server node, returns {@link ServerHandle}
  * - **Schemas**: {@link WebSocketDataSchema} — Zod validation for WebSocket connection data
- * - **Constants**: {@link SERVER_ERRORS} — error codes
+ * - **Constants**: {@link SERVER_ERRORS} — error codes, {@link DEFAULT_CSP} — Content-Security-Policy header value
  * - **Types**: {@link CreateServerOptions}, {@link ServerHandle}, {@link ReplayBufferOptions}, {@link WebSocketLimits}
  *
  * @public
