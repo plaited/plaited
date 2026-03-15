@@ -131,4 +131,4 @@ The pluggable model interfaces make tier selection a deployment decision, not an
 | `GENOME.md` | Skills taxonomy (seeds/tools/eval), CONTRACT frontmatter, wave ordering |
 | `UI.md` | Generative UI rendering pipeline, controller protocol |
 | `WEBSOCKET-ARCHITECTURE.md` | WebSocket server layer design |
-| `BEHAVIORAL-PROGRAMMING.md` | BP paradigm foundation |
+| ~~`BEHAVIORAL-PROGRAMMING.md`~~ | Migrated → `skills/behavioral-core/references/algorithm-reference.md` |
