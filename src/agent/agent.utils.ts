@@ -1,6 +1,6 @@
 import { TOOL_STATUS } from './agent.constants.ts'
 import type { AgentPlanStep, AgentToolCall, ToolResult, TrajectoryStep } from './agent.schemas.ts'
-import type { ParsedModelResponse } from './agent.types.ts'
+import type { ModelDelta, ParsedModelResponse } from './agent.types.ts'
 
 // ============================================================================
 // toToolResult — normalize tool execution result or error into ToolResult
@@ -94,6 +94,37 @@ export const parseModelResponse = (response: {
   const message = content?.trim() || null
 
   return { thinking, toolCalls, message }
+}
+
+// ============================================================================
+// collectModelText — consume AsyncIterable<ModelDelta> into a string
+// ============================================================================
+
+/**
+ * Consumes a model inference stream and collects all `text_delta` content.
+ *
+ * @remarks
+ * Used by the simulation handler (Dreamer) and neural evaluation scorer (Judge)
+ * to get the full text response from `Model.reason()`. Throws on `error` deltas
+ * and respects abort signals.
+ *
+ * @param stream - The async iterable from `Model.reason()`
+ * @param signal - Optional abort signal for cancellation
+ * @returns Concatenated text content from all `text_delta` chunks
+ *
+ * @public
+ */
+export const collectModelText = async (stream: AsyncIterable<ModelDelta>, signal?: AbortSignal): Promise<string> => {
+  const chunks: string[] = []
+  for await (const delta of stream) {
+    signal?.throwIfAborted()
+    if (delta.type === 'text_delta') {
+      chunks.push(delta.content)
+    } else if (delta.type === 'error') {
+      throw new Error(delta.error)
+    }
+  }
+  return chunks.join('')
 }
 
 // ============================================================================
