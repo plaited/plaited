@@ -2,7 +2,8 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { discoverSkills } from '../skill-discovery.ts'
+import type { SkillCatalogEntry } from '../skill-discovery.ts'
+import { detectCollisions, discoverSkills } from '../skill-discovery.ts'
 
 const scriptsDir = join(import.meta.dir, '..')
 
@@ -112,6 +113,62 @@ describe('skill-discovery', () => {
       const entry = catalog.at(0)
       expect(entry).toBeDefined()
       expect(entry!.location).toBe(join(rootDir, 'loc-skill', 'SKILL.md'))
+    })
+  })
+
+  describe('detectCollisions', () => {
+    test('returns empty diagnostics when no collisions', () => {
+      const entries: SkillCatalogEntry[] = [
+        { name: 'alpha', description: 'First', location: '/a/SKILL.md' },
+        { name: 'beta', description: 'Second', location: '/b/SKILL.md' },
+      ]
+      const { catalog, diagnostics } = detectCollisions(entries)
+
+      expect(diagnostics).toHaveLength(0)
+      expect(catalog).toHaveLength(2)
+    })
+
+    test('detects collisions and keeps later entry', () => {
+      const entries: SkillCatalogEntry[] = [
+        { name: 'my-skill', description: 'Global version', location: '/global/my-skill/SKILL.md' },
+        { name: 'my-skill', description: 'Project version', location: '/project/my-skill/SKILL.md' },
+      ]
+      const { catalog, diagnostics } = detectCollisions(entries)
+
+      expect(diagnostics).toHaveLength(1)
+      expect(diagnostics[0]!.type).toBe('collision')
+      expect(diagnostics[0]!.name).toBe('my-skill')
+      expect(diagnostics[0]!.message).toContain('/global/my-skill/SKILL.md')
+      expect(diagnostics[0]!.message).toContain('/project/my-skill/SKILL.md')
+
+      expect(catalog).toHaveLength(1)
+      expect(catalog[0]!.location).toBe('/project/my-skill/SKILL.md')
+      expect(catalog[0]!.description).toBe('Project version')
+    })
+
+    test('handles multiple collisions across three layers', () => {
+      const entries: SkillCatalogEntry[] = [
+        { name: 'tool-a', description: 'Built-in', location: '/framework/tool-a/SKILL.md' },
+        { name: 'tool-b', description: 'Built-in B', location: '/framework/tool-b/SKILL.md' },
+        { name: 'tool-a', description: 'Global', location: '/global/tool-a/SKILL.md' },
+        { name: 'tool-a', description: 'Project', location: '/project/tool-a/SKILL.md' },
+      ]
+      const { catalog, diagnostics } = detectCollisions(entries)
+
+      // Two collisions: global shadows framework, project shadows global
+      expect(diagnostics).toHaveLength(2)
+      expect(catalog).toHaveLength(2)
+
+      const toolA = catalog.find((e) => e.name === 'tool-a')
+      expect(toolA).toBeDefined()
+      expect(toolA!.location).toBe('/project/tool-a/SKILL.md')
+    })
+
+    test('returns empty for empty input', () => {
+      const { catalog, diagnostics } = detectCollisions([])
+
+      expect(catalog).toHaveLength(0)
+      expect(diagnostics).toHaveLength(0)
     })
   })
 

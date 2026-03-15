@@ -149,18 +149,21 @@ const checkBrand = (source: string, filePath: string): { ok: boolean; brand?: st
 /**
  * Check 3: Sandbox — imports only from behavioral/ and agent/ modules.
  *
+ * @remarks
+ * Uses Bun.Transpiler.scan() for reliable import extraction instead of regex.
+ *
  * @internal
  */
 const checkSandbox = (source: string): { ok: boolean; errors: string[] } => {
   const errors: string[] = []
-  const importRegex = /(?:import|from)\s+['"]([^'"]+)['"]/g
-  for (const match of source.matchAll(importRegex)) {
-    const specifier = match[1]!
-    if (specifier.startsWith('.')) {
+  const transpiler = new Bun.Transpiler({ loader: 'ts' })
+  const { imports } = transpiler.scan(source)
+  for (const imp of imports) {
+    if (imp.path.startsWith('.')) {
       // Relative imports — allow only behavioral/ and agent/ paths
-      const isAllowed = ALLOWED_IMPORT_PREFIXES.some((prefix) => specifier.startsWith(prefix))
+      const isAllowed = ALLOWED_IMPORT_PREFIXES.some((prefix) => imp.path.startsWith(prefix))
       if (!isAllowed) {
-        errors.push(`Disallowed import: '${specifier}' — factories may only import from behavioral/ and agent/`)
+        errors.push(`Disallowed import: '${imp.path}' — factories may only import from behavioral/ and agent/`)
       }
     }
     // Bare specifiers (packages) are allowed — they resolve to node_modules
