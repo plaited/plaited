@@ -1,6 +1,6 @@
 # Modnet Implementation
 
-> **Status: ACTIVE** — Extracted from SYSTEM-DESIGN-V3.md. Cross-references: `Modnet.md` (design standards), `Structural-IA.md` (design grammar), `CONSTITUTION.md` (governance enforcement), `PROJECT-ISOLATION.md` (modules vs. projects).
+> **Status: ACTIVE** — Design rationale for the modnet architecture. Implementation patterns (code sketches, transport tables, access control predicates, enterprise node specs) are in `skills/modnet-node/`. Cross-references: `Modnet.md` (design standards), `Structural-IA.md` (design grammar), `CONSTITUTION.md` (governance enforcement), `PROJECT-ISOLATION.md` (modules vs. projects).
 
 ## Topology: 1 Node : 1 User
 
@@ -22,172 +22,17 @@ The Agent Card is the node's **public entry point** — a projection of capabili
 
 ## Module Architecture: Module-Per-Repo
 
-The node directory is a git repo (`.gitignore` excludes `modules/`). Each module in `modules/` has its own `git init`. This gives two layers of version history: node-level (constitution, global config, node `.memory/`) and module-level (code, data, module `.memory/`). OS-level backups capture `.git` folders. Bun workspace resolution (`workspace:*`) works regardless of whether subdirectories have `.git/`.
+The node directory is a git repo (`.gitignore` excludes `modules/`). Each module in `modules/` has its own `git init`. This gives two layers of version history: node-level (constitution, global config, node `.memory/`) and module-level (code, data, module `.memory/`). Bun workspace resolution (`workspace:*`) works regardless of whether subdirectories have `.git/`.
 
-### Node Structure
+Modules follow the AgentSkills specification. Each module has a seed skill (named after the module) and optional capability skills. MSS bridge-code tags and CONTRACT fields live in the `metadata` field of SKILL.md frontmatter. The PM reads SKILL.md metadata for module discovery, cross-module queries, and dependency resolution — no sidecar database needed.
 
-```
-node/                               ← git repo (.gitignore excludes modules/)
-  .git/
-  .gitignore                        ← modules/
-  .memory/                          ← node-level decisions (session coordination, cross-module)
-    @context.jsonld
-    sessions/
-    constitution/
-  package.json                      ← "workspaces": ["modules/*"], "private": true
-  bun.lock                          ← human-readable lockfile
-  tsconfig.json
-  modules/
-    apple-block/                    ← git repo (independent of node .git)
-      .git/
-      .memory/                      ← module-scoped decisions (tool results, code changes)
-        sessions/
-      package.json                  ← name: "@node/apple-block", "modnet": { MSS tags }
-      skills/
-        apple-block/                ← seed skill (named after module)
-          SKILL.md                  ← seed body + CONTRACT in metadata
-          scripts/                  ← committed generated code
-          references/               ← interface.jsonld, decisions.md
-          assets/                   ← grading.jsonl (eval criteria)
-      data/
-        varieties.json
-    farm-stand/                     ← git repo (independent of node .git)
-      .git/
-      .memory/                      ← module-scoped decisions
-        sessions/
-      package.json                  ← depends on "@node/apple-block": "workspace:*"
-      skills/
-        farm-stand/                 ← seed skill
-          SKILL.md                  ← seed body + CONTRACT in metadata
-          scripts/                  ← committed generated code
-          references/               ← interface.jsonld
-          assets/                   ← grading.jsonl
-        price-lookup/               ← additional capability skill
-          SKILL.md
-          scripts/
-      data/
-        inventory.json
-```
+Key architectural choices:
+- `@node` scope for all module packages, `workspace:*` resolution
+- Code never leaves the node; only `data/` contents cross A2A boundaries
+- No compilation needed for server-side code (Bun runs TypeScript natively). Only `Bun.build({ target: 'browser' })` for behavioral modules sent to clients.
+- Large assets are symlinked from outside the workspace (no git LFS)
 
-Modules follow the AgentSkills specification. Each module has a `skills/` directory containing a seed skill (named after the module) and optional capability skills. MSS bridge-code tags and CONTRACT fields live in the `metadata` field of SKILL.md frontmatter (arbitrary string key-value pairs, spec-compliant). The PM reads SKILL.md metadata for module discovery, cross-module queries, and dependency resolution — no sidecar database needed.
-
-### Package.json as Module Manifest
-
-MSS bridge-code tags live in a custom `"modnet"` field in `package.json`:
-
-```json
-{
-  "name": "@node/farm-stand",
-  "version": "1.0.0",
-  "dependencies": {
-    "@node/apple-block": "workspace:*"
-  },
-  "modnet": {
-    "contentType": "produce",
-    "structure": "list",
-    "mechanics": ["sort", "filter"],
-    "boundary": "ask",
-    "scale": 3
-  }
-}
-```
-
-The `@node` scope is the agent's identity scope. All module packages share this scope. The `workspace:*` protocol resolves inter-module imports via Bun's workspace resolution — standard TypeScript imports, no custom loader.
-
-### Scale Mapping
-
-Scale determines module complexity:
-
-| Scale | Structure | Example |
-|---|---|---|
-| S1 | JSON data + template | Single `data.json` + one JSX template |
-| S2 | Structured data + list rendering | Multiple data files + list component |
-| S3 | Multiple files + behavioral code + streams | Full package with `src/`, `data/`, behavioral modules |
-| S4+ | Full package with dependencies | Package depending on other workspace packages |
-
-### Code vs. Data Boundary
-
-Each module package separates code from data:
-
-- **`src/`** (or root `.ts` files) — code, bThreads, templates, behavioral modules. Never leaves the node.
-- **`data/`** — JSON, assets, structured content. Can cross A2A boundaries, gated by the module's `boundary` tag.
-
-A constitution MAC bThread blocks code from crossing A2A boundaries. When another node requests data from a module with `boundary: "all"` or `boundary: "ask"`, only the `data/` contents are eligible for sharing. The module's code stays internal — the receiving agent generates its own code to process the data.
-
-### Browser Compilation
-
-Bun runs TypeScript natively — no compilation needed for server-side module code. The only compilation step is `Bun.build({ target: 'browser' })` for behavioral modules sent to the client via `update_behavioral`. These are `.behavior.ts` files that the agent compiles on-demand when rendering generative UI.
-
-### Dependency Isolation
-
-Bun workspace resolution handles inter-module imports via symlinks. Each module declares its dependencies in `package.json` and can only import what it declares — standard npm semantics. The single `bun.lock` at the node root tracks the full dependency tree.
-
-### Module Registry (SKILL.md Metadata)
-
-> **Supersedes:** The `.meta.db` per-module sidecar and `.workspace.db` workspace view documented in earlier revisions. In the C+D module architecture, the PM generates code from specifications it already has — source-file scanning for branded objects is unnecessary.
-
-The PM reads SKILL.md `metadata` fields for module discovery, cross-module queries, and dependency resolution. MSS bridge-code tags (`contentType`, `structure`, `mechanics`, `boundary`, `scale`) and CONTRACT fields (`produces`, `consumes`) are stored as string key-value pairs in the AgentSkills `metadata` field:
-
-```yaml
----
-name: farm-stand
-description: Produce inventory management with filtering and sorting
-metadata:
-  contentType: produce
-  structure: list
-  mechanics: sort,filter
-  boundary: ask
-  scale: "3"
-  produces: inventory-data
-  consumes: apple-data
----
-```
-
-**Cross-module queries** use the same metadata: the PM scans `skills/*/SKILL.md` frontmatter to find modules by `contentType`, `scale`, or `produces`/`consumes` relationships. No SQLite, no collector tool, no workspace rebuild.
-
-**Validation:** Modules validate with `bunx @plaited/development-skills validate-skill` — the same tool that validates framework skills.
-
-### Asset Management: Symlinks Over Git LFS
-
-Large assets (images, models, datasets) live outside the workspace and are symlinked in. This avoids git repository bloat without the complexity of git LFS:
-
-```
-~/assets/                           ← outside workspace, not in git
-  farm-photos/
-    apple-red.jpg
-    apple-green.jpg
-
-workspace/modules/farm-stand/data/
-  photos -> ~/assets/farm-photos    ← symlink
-```
-
-A constitution bThread enforces symlink integrity:
-
-```typescript
-// Asset symlink guard — blocks execute if symlink targets are missing or outside allowed paths
-bSync({
-  block: ({ type, detail }) => {
-    if (type !== 'execute') return false
-    return isSymlinkViolation(detail)
-  }
-})
-```
-
-The bThread ensures the agent cannot create symlinks to arbitrary filesystem locations (a security concern in a sandboxed environment). Only symlinks from `data/` directories to the configured asset root are permitted.
-
-### Future: Local Registry Migration
-
-When a workspace grows beyond practical limits for Bun workspaces (hundreds of packages, deeply nested dependency graphs), the migration path is a local npm registry:
-
-1. Deploy a local registry (e.g., Verdaccio) on the node
-2. Add a `bunfig.toml` at the node root to point `@node` scope at the local registry
-3. Publish packages via `bun publish` instead of `workspace:*` resolution
-4. No code changes — imports stay the same, only resolution changes
-
-```toml
-[install.scopes]
-"@node" = { url = "http://localhost:4873" }
-```
+> **Implementation details** (node directory layout, package.json manifest, scale mapping, code vs. data boundary, dependency isolation, asset management, module registry): [`skills/modnet-node/references/module-architecture.md`](../skills/modnet-node/references/module-architecture.md)
 
 ### Modules vs. Projects
 
@@ -215,135 +60,35 @@ A2A is a transport-agnostic protocol for agent-to-agent communication with three
 
 **A2A maps naturally to BP's event model.** Request-response maps to `trigger` → `waitFor`. Streaming maps to SSE events → `trigger()` per event. Push notifications map to inbound webhook → `trigger()`. No separate adapter layer — A2A calls are tool calls flowing through the same Gate → Execute pipeline.
 
-### A2A Transport Strategy
+Transport is **per-interaction, not per-node.** A node can use HTTP for one task and WebSocket for another with the same peer. The Agent Card declares supported interfaces; the client selects based on interaction needs.
 
-The A2A spec (v1.0.0) requires encrypted communication for production but is transport-agnostic. The spec explicitly supports custom protocol bindings, including WebSocket (`protocolBinding: "WEBSOCKET"`). The requirement is **encryption**, not specifically HTTPS — `wss://` satisfies it for WebSocket, and unix sockets need no encryption (traffic never leaves the kernel).
+### Transport by Deployment
 
-**Bun-native implementation** — no a2a-js dependency. `Bun.serve()` handles all A2A transport needs in a single server: HTTP (JSON-RPC/REST), WebSocket (custom binding for persistent connections), and unix sockets — all with native mTLS support.
+The A2A spec requires encrypted communication but is transport-agnostic. The requirement is **encryption**, not specifically HTTPS — `wss://` satisfies it for WebSocket, and unix sockets need no encryption (traffic never leaves the kernel).
 
-```typescript
-Bun.serve({
-  unix: "/tmp/a2a.sock",          // same-box: k8s pods, docker-compose
-  tls: { cert, key, ca },         // cross-network: mTLS
-  fetch(req, server) {
-    // A2A JSON-RPC/REST endpoints (Layer 3 binding)
-    // WebSocket upgrade for persistent A2A + UI
-    // Agent Card at /.well-known/agent-card.json
-  },
-  websocket: {
-    // A2A streaming (bidirectional, custom binding)
-    // UI controller protocol (generative UI)
-  },
-})
-```
+Bun-native implementation — one `Bun.serve()` handles HTTP, WebSocket, and unix sockets with native mTLS. Three deployment contexts:
 
-A2A Layers 1 (data model) + 2 (abstract operations) are implemented once. Layer 3 (protocol binding) varies by deployment context and interaction pattern.
+- **Same box** (k8s pod, docker-compose) — Unix domain socket. OS-level security, no network overhead.
+- **Same cluster** (k8s services, docker network) — TCP over internal DNS. mTLS via cert-manager/Istio or direct.
+- **Cross-network** (sovereign nodes) — TCP over internet. mTLS (`MutualTlsSecurityScheme`).
 
-**By deployment (wire selection):**
+Four interaction patterns map to protocols: HTTP POST (one-shot), SSE (streaming), WebSocket (active collaboration), webhook (async). Each is independent — the client picks per interaction.
 
-| Deployment | Wire | Security | Bun API |
-|---|---|---|---|
-| **Same box** (k8s pod, docker-compose) | Unix domain socket | OS-level (no network) | `Bun.serve({ unix })` + `fetch({ unix })` |
-| **Same cluster** (k8s services, docker network) | TCP over internal DNS | mTLS via cert-manager/Istio or direct | `Bun.serve({ tls })` + `fetch()` |
-| **Cross-network** (sovereign nodes) | TCP over internet | mTLS (`MutualTlsSecurityScheme`) | `Bun.serve({ tls })` + `fetch()` / `new WebSocket()` |
-
-**By interaction pattern (protocol selection):**
-
-| Pattern | Protocol | When |
-|---|---|---|
-| **One-shot** (query, lookup, single task) | HTTP+JSON POST | Default. Stateless, no connection overhead. |
-| **Streaming response** (task progress) | HTTP POST → SSE response (`text/event-stream`) | Standard A2A streaming. NOT `EventSource` (POST-initiated). `fetch()` + `ReadableStream`. |
-| **Active collaboration** (multi-turn negotiation) | WebSocket | Persistent bidirectional. Avoids repeated TLS handshake per message. |
-| **Async updates** (post-disconnect) | Webhook (HTTP POST back) | A2A native push notifications. |
-
-Transport is **per-interaction, not per-node.** A node can use HTTP for one task and WebSocket for another with the same peer. The Agent Card declares both via `supportedInterfaces`; the client selects based on interaction needs. WebSocket is an optimization for sustained collaboration, not a requirement. HTTP+JSON is the default.
-
-### A2A Interaction Strategy
-
-The five A2A operations compose into a hybrid interaction model — the spec used as designed:
-
-| A2A Operation | Wire | When |
-|---|---|---|
-| `POST /message:send` | HTTP POST → JSON response | One-shot. Short task, immediate result. |
-| `POST /message:stream` | HTTP POST → SSE response | Client wants real-time progress. Connection held until task completes. |
-| `POST /tasks/{id}:subscribe` | HTTP POST → SSE response | Client reconnects to in-progress task. Resumes from where it left off. |
-| Push notification (webhook) | Agent POSTs to client's registered URL | Client disconnects, gets notified async. Requires client to be a server. |
-| WebSocket (custom binding) | Persistent `wss://` connection | Active multi-turn collaboration. Replaces repeated POST + SSE cycles. |
-
-**Typical interaction flow:**
-
-```
-1. POST /message:send → taskId + ack           (fire-and-forget)
-2. Want real-time? POST /message:stream         (SSE, hold open)
-3. Connection drops? POST /tasks/{id}:subscribe (SSE, resume)
-4. Don't need real-time? Register webhook       (async POST back)
-5. Heavy collaboration? Upgrade to WebSocket    (persistent bidirectional)
-```
-
-Each operation is independent — the client picks the right one per interaction. No state machine needed. Every node is already a server (`Bun.serve()`), so receiving webhooks is free.
-
-**K8s same-box optimization:** Pods in the same deployment share a unix socket via `emptyDir` volume mount. Pods in different deployments use k8s Service DNS with mTLS. Same `Bun.serve()`, different wire.
-
-### Bun Networking Surface
-
-All networking primitives available for A2A and internal communication:
-
-| Bun API | Protocol | TLS | Unix Socket | Use For |
-|---|---|---|---|---|
-| `Bun.serve()` | HTTP + WebSocket server | Yes | Yes | A2A server, UI server, WebSocket upgrade |
-| `fetch()` | HTTP client | Yes | Yes | A2A client calls, inference server |
-| `Bun.listen()` | Raw TCP server | Yes | Yes | Custom binary protocol (future) |
-| `Bun.connect()` | Raw TCP client | Yes | Yes | Custom binary protocol (future) |
-| `Bun.udpSocket()` | UDP | No | No | Heartbeats, discovery (future) |
-| `Bun.spawn({ ipc })` | IPC (structured clone) | N/A | N/A | PM ↔ sub-agent |
-| `new WebSocket()` | WebSocket client | Yes (`wss://`) | No | A2A client to other nodes |
+> **Implementation details** (transport selection tables, `Bun.serve()` configuration, interaction strategy, networking surface): [`skills/modnet-node/references/a2a-bindings.md`](../skills/modnet-node/references/a2a-bindings.md)
 
 ## Identity & Authentication
 
-The framework does not define its own identity system. A2A handles authentication at the protocol layer via standard web security mechanisms. The framework adds a **trust layer** on top.
+The framework does not define its own identity system. A2A handles authentication at the protocol layer via standard web security mechanisms. The framework adds a **trust layer** on top:
 
-**What A2A provides:**
+- **Agent Card signing (JWS)** — Peers verify card authenticity and integrity
+- **Security schemes** — Cards declare required auth (mTLS, OAuth 2.0, API key, HTTP Bearer, OpenID Connect)
+- **Extended Agent Card** — Authenticated peers see additional capabilities beyond the public card
+- **Known-peers table** — Local trust store, TOFU like SSH `known_hosts`
+- **Owner approval** — First connection to a new peer requires human confirmation; subsequent connections verify automatically
 
-| Mechanism | What it does |
-|---|---|
-| **Agent Card signing (JWS)** | Card is signed with the node's private key. Any peer can verify the card is authentic and untampered. |
-| **Security schemes** | Each card declares its required auth via `securitySchemes` — mTLS, OAuth 2.0, API key, HTTP Bearer, or OpenID Connect. Peers read the card to discover what's required. |
-| **Extended Agent Card** | Authenticated peers call `get-extended-agent-card` to see additional capabilities. The public card shows broad strokes; the extended card shows detail. |
+For sovereign nodes, **mTLS is the natural fit** — both sides prove identity, no third party needed. For team deployments, OAuth 2.0 works. The framework is auth-scheme-agnostic.
 
-**What the framework adds:**
-
-| Mechanism | What it does |
-|---|---|
-| **Known-peers table** | Local trust store — records which peers the owner has approved. Trust-on-first-use (TOFU), like SSH `known_hosts`. |
-| **Owner approval** | First connection to a new peer requires owner confirmation (human in the loop). Subsequent connections verify automatically against stored keys. |
-| **Access control** | After authentication, BP evaluates every request via DAC + MAC + ABAC (see Access Control below). |
-
-**Known-peers table:**
-
-```sql
-CREATE TABLE known_peers (
-  public_key  TEXT PRIMARY KEY,   -- the peer's public key (from their Agent Card)
-  card_url    TEXT,               -- where to fetch their Agent Card
-  name        TEXT,               -- human-readable label
-  trust_level TEXT NOT NULL,      -- 'tofu' | 'verified' | 'blocked'
-  first_seen  INTEGER NOT NULL,   -- when we first connected
-  last_seen   INTEGER             -- last successful interaction
-);
-```
-
-**First connection flow:**
-
-```
-Node B fetches Node A's Agent Card from well-known URL
-  → Verifies JWS signature (card is authentic)
-  → Reads securitySchemes (e.g., mTLS required)
-  → Node B's owner sees: "New peer: Node A. Approve?"
-  → Owner approves → public key stored in known-peers
-  → mTLS handshake completes (both sides verified)
-  → Subsequent connections verify automatically
-```
-
-For sovereign nodes in a modnet, **mTLS is the natural fit** — both sides prove identity, no third party needed. For team deployments behind a shared auth server, OAuth 2.0 works. The framework is auth-scheme-agnostic — it reads whatever the peer's card declares.
+> **Implementation details** (known-peers SQL schema, first connection flow, TOFU lifecycle): [`skills/modnet-node/references/access-control.md`](../skills/modnet-node/references/access-control.md)
 
 ## Module Discovery: Three Tiers
 
@@ -392,77 +137,15 @@ Owner sets boundary: "none"
 
 The MAC layer uses the same ratchet principle as the local constitution — mandatory bThreads only add, never remove. The security floor only rises.
 
-**BP is the single policy engine.** The same `block` predicates that govern local tool execution govern inter-agent module sharing:
-
-```typescript
-bSync({
-  block: ({ type, detail }) => {
-    if (type !== 'share_module') return false
-    const mod = getModule(detail.moduleId)
-    const requester = detail.requesterCard
-
-    // MAC: constitution blocks credentials regardless of owner setting
-    if (mod.contentType === 'credentials') return true
-
-    // DAC: owner's boundary decision
-    if (mod.boundary === 'none') return true
-
-    // ABAC: evaluate requester attributes when boundary is 'ask'
-    if (mod.boundary === 'ask') {
-      return !evaluatePolicy(requester, mod, detail.context)
-    }
-
-    return false
-  }
-})
-```
+> **Implementation details** (BP block predicates, DAC/MAC/ABAC code examples, payment as ABAC attribute): [`skills/modnet-node/references/access-control.md`](../skills/modnet-node/references/access-control.md)
 
 ## Payment (x402)
 
-Payment is an essential feature of the modnet. Approval contingent on payment is normal for any content on the web — the modnet simply makes it machine-negotiable.
+Payment is an essential feature of the modnet — approval contingent on payment is normal for any content on the web. The modnet makes it machine-negotiable.
 
-[x402](https://github.com/coinbase/x402) layers directly on HTTP via the `402 Payment Required` status code. Since A2A uses HTTP as its transport, x402 composes without a protocol bridge:
+[x402](https://github.com/coinbase/x402) layers on HTTP via the `402 Payment Required` status code. Since A2A uses HTTP, x402 composes without a protocol bridge. Payment is bidirectional — a node can both charge for its services and pay for others'. Payment status becomes an ABAC attribute with the boundary taxonomy extending to: `all` | `ask` | `paid` | `none`.
 
-```
-Agent A sends A2A request to Agent B
-  → B evaluates access control (DAC + MAC + ABAC)
-  → B determines this service requires payment
-  → B returns HTTP 402 with x402 payment requirements header
-  → A receives 402 → trigger({ type: 'payment_required', detail })
-  → A's BP blocks until owner confirms payment
-  → Owner approves → payment executes on-chain
-  → A retries request with payment proof header
-  → B verifies payment → processes request → returns result
-```
-
-**Payment is bidirectional.** A node can both charge for its services (selling) and pay for others' services (buying). The same agent that charges for module generation might pay another agent for specialized training data or domain knowledge.
-
-**Payment as ABAC attribute.** In the access control model, payment status becomes another attribute the ABAC layer evaluates:
-
-```typescript
-bSync({
-  block: ({ type, detail }) => {
-    if (type !== 'share_module') return false
-    const mod = getModule(detail.moduleId)
-
-    // ABAC: module requires payment and payment not verified
-    if (mod.boundary === 'paid' && !detail.paymentVerified) return true
-
-    return false
-  }
-})
-```
-
-The boundary taxonomy extends naturally:
-
-| Boundary | Meaning |
-|---|---|
-| `all` | Share freely |
-| `ask` | Evaluate requester attributes |
-| `paid` | Requires verified x402 payment |
-| `none` | Never share |
-
-**Owner approval maps to existing patterns.** The `payment_required` event follows the same human-in-the-loop flow as any other BP-gated action. No new approval mechanism needed — it's the same `trigger()` → bThread → owner confirmation flow used everywhere else.
+Owner approval follows the same human-in-the-loop flow as any BP-gated action — same `trigger()` → bThread → owner confirmation pattern.
 
 ## Inter-Agent Task Flow
 
@@ -524,46 +207,11 @@ graph TD
 
 The PM node's relationship to infrastructure nodes mirrors the orchestrator pattern in `PROJECT-ISOLATION.md` — same concept (centralized coordination, delegated execution), different blast radius (network-level instead of project-level).
 
-### Node Roles Are Structural, Not Instructional
-
-A node's role comes from what it **was built with**, not from a skill telling it what it is:
-
-| Identity Source | What It Determines |
-|---|---|
-| **Constitution (MAC bThreads)** | What the node CANNOT do — immutable constraints loaded at spawn |
-| **Modules** | What the node CAN do — the actual code for its role |
-| **Agent Card** | What the node TELLS others — capability advertisement |
-| **DAC configuration** | What the node CHOOSES to share — owner-tunable boundary tags |
-| **Skills** | Operational tools the node uses in its work (NOT identity) |
-
-A registry node doesn't need an "awareness skill" saying "you are a registry." Its constitution enforces registry-appropriate constraints (`block-data-access`, `allow-provisioning`). Its modules contain provisioning code. Its Agent Card declares provisioning capabilities. The role is the structure.
-
-### Infrastructure Node Types
-
-| Node Type | Constitution (MAC) | Modules | Agent Card Declares |
-|---|---|---|---|
-| **Registry** | Can't read worker data, can't execute arbitrary code. Can provision/revoke nodes, issue/rotate certs | Provisioning, directory, cert management | `provisioning`, `directory`, `certificates` |
-| **Observer** | Can't modify other nodes, can't execute tools. Can receive and store audit events | Audit aggregation, compliance checking, trace correlation | `audit`, `compliance`, `tracing` |
-| **Gateway** | Can't access internal modules, can't modify network topology. Can proxy A2A across boundaries | Federation rules, external peering, boundary enforcement | `federation`, `external-peering` |
-| **Worker** | Standard agent constraints (file sandbox, bash safety, etc.) + org-level MAC | Full agent loop, tools, memory, generative UI | Domain-specific skills and capabilities |
-
 ### Node Generation via Seeds
 
-Nodes are generated by **seed skills** — build-time specifications consumed by Claude Code. Seeds are ephemeral: they generate the node, then are discarded. The generated node runs with its constitution + modules + Agent Card.
+Nodes are generated by **seed skills** — build-time specifications consumed by Claude Code. Seeds are ephemeral: they generate the node, then are discarded. The generated node runs with its constitution + modules + Agent Card. The PM carries seed templates as internal modules.
 
-```
-BUILD TIME (ephemeral):
-  enterprise-genome + Claude Code → PM/orchestrator node
-  genome is archived
-
-PM NODE GENERATES (via registry, using seeds from its modules):
-  registry-seed → Registry Node (constitution + modules + Agent Card) → seed discarded
-  observer-seed → Observer Node → seed discarded
-  gateway-seed  → Gateway Node  → seed discarded
-  worker-seed   → Worker Nodes  → seed discarded (per employee)
-```
-
-The PM node carries seed templates as internal modules. When provisioning, it sends the seed to the registry node, which generates the target node and installs the appropriate constitution + modules. Seeds are not kept on generated nodes — the node's identity is its structure, not its build instructions.
+A node's role is structural — constitution (what it cannot do) + modules (what it can do) + Agent Card (what it tells others). No "awareness skill" needed.
 
 **Lifecycle:**
 
@@ -575,7 +223,7 @@ The PM node carries seed templates as internal modules. When provisioning, it se
 
 ### Enterprise MAC Composition
 
-The org distributes a base constitution that ALL nodes must run. Each node type adds role-specific MAC on top:
+The org distributes a base constitution that ALL nodes must run. Each node type adds role-specific MAC on top. The MAC ratchet principle applies: org-level bThreads only add constraints, never remove. Workers can add their own DAC preferences (personal boundary tags, skill choices), but cannot weaken the org floor.
 
 ```
 Org base MAC (all nodes):
@@ -583,62 +231,12 @@ Org base MAC (all nodes):
   + block-credential-sharing     ← credentials never cross A2A
   + require-org-cert             ← all A2A must use org-issued certs
 
-Registry node adds:
-  + block-data-access            ← can't read worker module data
-  + allow-provisioning           ← can provision/revoke nodes
-
-Worker node adds:
-  + standard file sandbox        ← workspace-scoped file access
-  + standard bash safety         ← Bun Shell, no rm -rf /
-  + org-specific tool restrictions ← per org policy
++ Role-specific MAC (per node type)
++ Owner DAC preferences (personal, non-weakening)
 ```
-
-The MAC ratchet principle applies: org-level bThreads only add constraints, never remove. Workers can add their own DAC preferences on top (personal boundary tags, skill choices), but cannot weaken the org floor.
 
 ### Multi-Client Access
 
-"1 Node : 1 User" means one sovereign agent per person, not one device. A single node supports multiple simultaneous client connections:
+"1 Node : 1 User" means one sovereign agent per person, not one device. A single node supports multiple simultaneous client connections (phone, desktop, CLI) via WebSocket. The server's pub/sub model broadcasts BP events to all subscribed clients.
 
-- Phone browser app → WebSocket to the node
-- Desktop browser tab → WebSocket to the node
-- CLI tool → WebSocket to the node
-
-The server's pub/sub model (topics: `sessionId` and `sessionId:tagName`) broadcasts BP events to all subscribed clients. Multiple devices share the session. The node is the user's agent, accessible from anywhere they authenticate.
-
-### Discovery Is Deployment-Specific
-
-How nodes find each other's Agent Cards varies by deployment context. The framework defines how an agent publishes and evaluates cards, not how cards are found. Discovery mechanisms are generated into nodes at build time by their seeds:
-
-| Context | Discovery Mechanism | Generated By |
-|---|---|---|
-| Enterprise (managed) | Registry node API, org CA | Enterprise seed |
-| Personal (sovereign) | URL entry, QR code scan | Personal seed |
-| Local area (ephemeral) | mDNS/Bonjour, BLE beacons, geofencing | Local network seed |
-| Public (internet) | DNS, well-known URL | Public seed |
-
-Discovery code is native to the node — not a runtime skill. The seed generates it during node creation. Different seeds produce nodes with different discovery capabilities.
-
-## A2A Implementation Status
-
-> **Status: IMPLEMENTED** — `src/a2a/` provides a Bun-native A2A protocol implementation with all three layers. Cross-references: `src/a2a/a2a.schemas.ts` (Layer 1), `src/a2a/a2a.types.ts` (Layer 2), `src/a2a/a2a.server.ts` + `src/a2a/a2a.client.ts` (Layer 3).
-
-**What exists:**
-
-| Component | File | Status |
-|---|---|---|
-| Data model (Parts, Messages, Tasks, Artifacts, Agent Card) | `a2a.schemas.ts` | Complete |
-| Constants (task states, methods, error codes, SSE headers) | `a2a.constants.ts` | Complete |
-| Operation types (server handlers, client interface) | `a2a.types.ts` | Complete |
-| HTTP+JSON-RPC server handler factory | `a2a.server.ts` | Complete |
-| HTTP client with unix socket + mTLS support | `a2a.client.ts` | Complete |
-| SSE encoding/parsing, JSON-RPC framing, Agent Card JWS signing | `a2a.utils.ts` | Complete |
-| Integration tests (client-server, schemas, utils) | `tests/` | Complete |
-
-**What's next:**
-
-| Component | Status |
-|---|---|
-| Known-peers management (trust store, TOFU lifecycle) | Not implemented |
-| Push notification handlers (`tasks/pushNotificationConfig/*`) | Constants exist, no handler code |
-| WebSocket binding (persistent bidirectional) | Not implemented (HTTP covers all operations) |
-| Modnet metadata conventions (`modnet:role`, `modnet:constitutionHash`) | Not defined (Agent Card `metadata` field is the extension point) |
+> **Implementation details** (infrastructure node types, seed lifecycle, MAC composition, discovery mechanisms, A2A implementation status): [`skills/modnet-node/references/enterprise-topology.md`](../skills/modnet-node/references/enterprise-topology.md)

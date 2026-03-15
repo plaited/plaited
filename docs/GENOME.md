@@ -35,7 +35,7 @@ Replace the current monoliths with focused seeds, one per architectural layer:
 | `server-transport` | `createServer`, WebSocket lifecycle, pub/sub topics, trigger bridge, `SERVER_EVENTS` | **NEW** — extracted from `generative-ui` + new server code |
 | `generative-ui-protocol` | Controller protocol (render/attrs/update_behavioral), swap modes, `p-trigger`/`p-target`, SSR pipeline, custom elements | Refined `generative-ui` — protocol + rendering only, no transport |
 | `agent-loop` | 6-step loop, seams, gate/simulate/evaluate, constitution, memory, AgentNode | Extracted from `agent-build` |
-| `modnet-node` | Module architecture, sidecar, MSS tags, workspace structure, governance factories | **NEW** — from `docs/MODNET-IMPLEMENTATION.md` + `docs/Modnet.md` |
+| `modnet-node` | Module architecture, A2A bindings, access control, enterprise topology, workspace structure | **DONE** — extracted from `docs/MODNET-IMPLEMENTATION.md` |
 
 Each seed is self-contained enough that an AI reading only that seed can rebuild its layer. The `agent-build` skill gets retired — its content distributes across `agent-loop` and `modnet-node`.
 

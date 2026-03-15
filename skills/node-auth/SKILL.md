@@ -17,7 +17,7 @@ This skill teaches coding agents how to generate authentication code for Plaited
 - A user asks "how do users authenticate to this node?"
 - Generating auth routes for any deployment scenario
 
-**Not for:** Authentication between agents (that's A2A mTLS — see `docs/MODNET-IMPLEMENTATION.md`).
+**Not for:** Authentication between agents (that's A2A mTLS — see `skills/modnet-node/` [access-control.md](../modnet-node/references/access-control.md)).
 
 ## The Seam
 

@@ -146,7 +146,7 @@ Three layers — agent tools go through pipeline, memory handlers don't, CLI too
 - Can evolve toward Variant C (Dual-Mode) later by adding sensor abstractions
 - Variant B only preferred for cloud-only/serverless deployment (not our primary target)
 
-### Medium — enterprise network topology (design complete, see MODNET-IMPLEMENTATION.md)
+### Medium — enterprise network topology (design in MODNET-IMPLEMENTATION.md, implementation patterns in skills/modnet-node/)
 
 - [ ] **PM/orchestrator node pattern** — Admin's sovereign agent managing infrastructure nodes via A2A. Design documented. Depends on agent loop.
 - [ ] **Node generation via seeds** — Ephemeral seed skills generate nodes, then are discarded. Node identity is structural (constitution + modules + Agent Card).

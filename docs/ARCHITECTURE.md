@@ -101,7 +101,7 @@ type SubAgentHandle = {
 
 **Local inference:** The inference server runs as a persistent `Bun.spawn()` process (Ollama, llama.cpp, vLLM) on the same box. Sub-agents call it via `fetch("http://localhost:PORT")` — async I/O that doesn't block the event loop. GPU/Apple Silicon Metal handles acceleration.
 
-**A2A transport:** Bun-native implementation of A2A protocol (no a2a-js dependency). One `Bun.serve()` handles all transports — HTTP+JSON/REST, WebSocket (custom binding), and unix sockets — with native mTLS. See `MODNET-IMPLEMENTATION.md` § A2A Transport Strategy for deployment-specific bindings. Implementation in `src/a2a/`.
+**A2A transport:** Bun-native implementation of A2A protocol (no a2a-js dependency). One `Bun.serve()` handles all transports — HTTP+JSON/REST, WebSocket (custom binding), and unix sockets — with native mTLS. See `skills/modnet-node/` [a2a-bindings.md](../skills/modnet-node/references/a2a-bindings.md) for deployment-specific bindings. Implementation in `src/a2a/`.
 
 ## Deployment Tiers
 
@@ -127,7 +127,7 @@ The pluggable model interfaces make tier selection a deployment decision, not an
 | `TRAINING.md` | Distillation pipeline, training tiers, flywheel |
 | `HYPERGRAPH-MEMORY.md` | Git-versioned JSON-LD memory, context assembly, plans as bThreads |
 | `PROJECT-ISOLATION.md` | Multi-project orchestrator, IPC bridge, tool layers |
-| `MODNET-IMPLEMENTATION.md` | Modnet topology, A2A protocol, identity, access control, payment |
+| `MODNET-IMPLEMENTATION.md` | Modnet topology, A2A protocol, identity, access control, payment (implementation patterns in `skills/modnet-node/`) |
 | `GENOME.md` | Skills taxonomy (seeds/tools/eval), CONTRACT frontmatter, wave ordering |
 | `CRITIQUE-RESPONSE.md` | Gap resolutions, attestation layer, module architecture evolution |
 | `UI.md` | Generative UI overview (details in `generative-ui` skill) |
