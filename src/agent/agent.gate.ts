@@ -62,7 +62,7 @@ export type ConstitutionPredicate = {
  * @public
  */
 export const composedGateCheck = (
-  { toolCall, tags }: { toolCall: AgentToolCall; tags: Set<string> },
+  { toolCall, tags }: { toolCall: AgentToolCall; tags: string[] },
   constitutionPredicates: ConstitutionPredicate[] = [],
 ): GateCheckResult => {
   // 1. Constitution predicates — hard rejections
@@ -73,7 +73,8 @@ export const composedGateCheck = (
   }
 
   // 2. Workspace-only tags → execute directly (skip simulation)
-  if (tags.size > 0 && [...tags].every((tag) => tag === RISK_TAG.workspace)) {
+  const tagSet = new Set(tags)
+  if (tagSet.size > 0 && [...tagSet].every((tag) => tag === RISK_TAG.workspace)) {
     return { route: 'execute' }
   }
 

@@ -26,7 +26,7 @@ describe('composedGateCheck — risk tag routing', () => {
   test('workspace-only tags route to execute', () => {
     const result = composedGateCheck({
       toolCall: readCall('/project/main.ts'),
-      tags: new Set([RISK_TAG.workspace]),
+      tags: [RISK_TAG.workspace],
     })
     expect(result.route).toBe('execute')
     expect(result.reason).toBeUndefined()
@@ -35,7 +35,7 @@ describe('composedGateCheck — risk tag routing', () => {
   test('empty tags route to simulate (default-deny)', () => {
     const result = composedGateCheck({
       toolCall: bashCall('curl https://example.com'),
-      tags: new Set(),
+      tags: [],
     })
     expect(result.route).toBe('simulate')
   })
@@ -43,7 +43,7 @@ describe('composedGateCheck — risk tag routing', () => {
   test('mixed tags route to simulate', () => {
     const result = composedGateCheck({
       toolCall: bashCall('curl https://api.example.com'),
-      tags: new Set([RISK_TAG.workspace, RISK_TAG.outbound]),
+      tags: [RISK_TAG.workspace, RISK_TAG.outbound],
     })
     expect(result.route).toBe('simulate')
   })
@@ -51,7 +51,7 @@ describe('composedGateCheck — risk tag routing', () => {
   test('crosses_boundary tag routes to simulate', () => {
     const result = composedGateCheck({
       toolCall: bashCall('ssh remote-host'),
-      tags: new Set([RISK_TAG.crosses_boundary]),
+      tags: [RISK_TAG.crosses_boundary],
     })
     expect(result.route).toBe('simulate')
   })
@@ -59,7 +59,7 @@ describe('composedGateCheck — risk tag routing', () => {
   test('irreversible tag routes to simulate', () => {
     const result = composedGateCheck({
       toolCall: bashCall('drop table users;'),
-      tags: new Set([RISK_TAG.irreversible]),
+      tags: [RISK_TAG.irreversible],
     })
     expect(result.route).toBe('simulate')
   })
@@ -67,7 +67,7 @@ describe('composedGateCheck — risk tag routing', () => {
   test('external_audience tag routes to simulate', () => {
     const result = composedGateCheck({
       toolCall: bashCall('gh pr create'),
-      tags: new Set([RISK_TAG.external_audience]),
+      tags: [RISK_TAG.external_audience],
     })
     expect(result.route).toBe('simulate')
   })
@@ -75,7 +75,7 @@ describe('composedGateCheck — risk tag routing', () => {
   test('inbound tag routes to simulate', () => {
     const result = composedGateCheck({
       toolCall: bashCall('wget https://example.com/data'),
-      tags: new Set([RISK_TAG.inbound]),
+      tags: [RISK_TAG.inbound],
     })
     expect(result.route).toBe('simulate')
   })
@@ -83,7 +83,7 @@ describe('composedGateCheck — risk tag routing', () => {
   test('outbound tag routes to simulate', () => {
     const result = composedGateCheck({
       toolCall: bashCall('curl -X POST https://api.example.com'),
-      tags: new Set([RISK_TAG.outbound]),
+      tags: [RISK_TAG.outbound],
     })
     expect(result.route).toBe('simulate')
   })
@@ -105,7 +105,7 @@ describe('composedGateCheck — constitution predicates', () => {
     const result = composedGateCheck(
       {
         toolCall: bashCall('rm -rf /'),
-        tags: new Set([RISK_TAG.workspace]),
+        tags: [RISK_TAG.workspace],
       },
       macPredicates,
     )
@@ -118,7 +118,7 @@ describe('composedGateCheck — constitution predicates', () => {
     const result = composedGateCheck(
       {
         toolCall: bashCall('echo bad > /etc/passwd'),
-        tags: new Set(),
+        tags: [],
       },
       macPredicates,
     )
@@ -132,7 +132,7 @@ describe('composedGateCheck — constitution predicates', () => {
     const result = composedGateCheck(
       {
         toolCall: bashCall('git push --force origin main'),
-        tags: new Set([RISK_TAG.workspace]),
+        tags: [RISK_TAG.workspace],
       },
       macPredicates,
     )
@@ -144,7 +144,7 @@ describe('composedGateCheck — constitution predicates', () => {
     const result = composedGateCheck(
       {
         toolCall: bashCall('ls -la'),
-        tags: new Set([RISK_TAG.workspace]),
+        tags: [RISK_TAG.workspace],
       },
       macPredicates,
     )
@@ -154,7 +154,7 @@ describe('composedGateCheck — constitution predicates', () => {
   test('defaults to empty predicates when none provided', () => {
     const result = composedGateCheck({
       toolCall: bashCall('rm -rf /'),
-      tags: new Set([RISK_TAG.workspace]),
+      tags: [RISK_TAG.workspace],
     })
     // Without predicates, workspace-only tags route to execute
     expect(result.route).toBe('execute')
@@ -169,7 +169,7 @@ describe('composedGateCheck — edge cases', () => {
   test('unknown tag values route to simulate', () => {
     const result = composedGateCheck({
       toolCall: readCall('/main.ts'),
-      tags: new Set(['unknown_tag']),
+      tags: ['unknown_tag'],
     })
     expect(result.route).toBe('simulate')
   })
@@ -177,17 +177,16 @@ describe('composedGateCheck — edge cases', () => {
   test('workspace + unknown tag routes to simulate', () => {
     const result = composedGateCheck({
       toolCall: readCall('/main.ts'),
-      tags: new Set([RISK_TAG.workspace, 'unknown_tag']),
+      tags: [RISK_TAG.workspace, 'unknown_tag'],
     })
     expect(result.route).toBe('simulate')
   })
 
   test('multiple workspace tags (duplicated) route to execute', () => {
-    // Set deduplicates, so this is effectively one workspace tag
-    const tags = new Set([RISK_TAG.workspace, RISK_TAG.workspace])
+    // Duplicates in array are handled internally via Set
     const result = composedGateCheck({
       toolCall: readCall('/main.ts'),
-      tags,
+      tags: [RISK_TAG.workspace, RISK_TAG.workspace],
     })
     expect(result.route).toBe('execute')
   })
