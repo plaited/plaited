@@ -341,7 +341,7 @@ modules/
     .memory/
 ```
 
-MSS bridge-code tags and CONTRACT fields live in the AgentSkills `metadata` field (arbitrary string key-value pairs, spec-compliant). This means modules validate with `bunx @plaited/development-skills validate-skill`, use the same progressive disclosure as framework skills, and feed the same distillation pipeline.
+MSS bridge-code tags and CONTRACT fields live in the AgentSkills `metadata` field (arbitrary string key-value pairs, spec-compliant). This means modules validate with `bun plaited validate-skill`, use the same progressive disclosure as framework skills, and feed the same distillation pipeline.
 
 ### Sub-Agent Architecture (4-Step Harness)
 

@@ -110,7 +110,7 @@ import { story } from 'plaited/testing'
 <details>
 <summary><strong>Development Skills</strong></summary>
 
-Skills from `@plaited/development-skills` teach your AI coding agent how to build with Plaited:
+Skills teach your AI coding agent how to build with Plaited:
 
 **What it enables:**
 - Generate templates, styles, and stories from descriptions

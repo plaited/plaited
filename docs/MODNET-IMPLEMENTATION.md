@@ -145,7 +145,7 @@ metadata:
 
 **Cross-module queries** use the same metadata: the PM scans `skills/*/SKILL.md` frontmatter to find modules by `contentType`, `scale`, or `produces`/`consumes` relationships. No SQLite, no collector tool, no workspace rebuild.
 
-**Validation:** Modules validate with `bunx @plaited/development-skills validate-skill` — the same tool that validates framework skills.
+**Validation:** Modules validate with `bun plaited validate-skill` — the same tool that validates framework skills.
 
 ### Asset Management: Symlinks Over Git LFS
 

@@ -187,6 +187,24 @@ const findProjectRoot = (): string => {
 }
 
 /**
+ * Remove orphaned `.bthread-grader-*` directories left by previous crashes.
+ *
+ * @remarks
+ * SIGKILL and OOM kills bypass `finally` blocks, so temp dirs can accumulate.
+ * This scavenges any leftovers at grader startup before creating new ones.
+ *
+ * @internal
+ */
+const cleanupOrphanedDirs = async (projectRoot: string): Promise<void> => {
+  const srcDir = join(projectRoot, 'src')
+  const result = await Bun.$`find ${srcDir} -maxdepth 1 -name ".bthread-grader-*" -type d`.quiet().nothrow()
+  const dirs = result.stdout.toString().trim().split('\n').filter(Boolean)
+  for (const dir of dirs) {
+    await Bun.$`rm -rf ${dir}`.quiet().nothrow()
+  }
+}
+
+/**
  * Create a temp directory for factory evaluation within the project tree.
  *
  * @remarks
@@ -212,8 +230,8 @@ const createTempDir = async (
  *
  * @internal
  */
-const cleanupTempDir = (tmpBase: string): void => {
-  Bun.$`rm -rf ${tmpBase}`.quiet().nothrow()
+const cleanupTempDir = async (tmpBase: string): Promise<void> => {
+  await Bun.$`rm -rf ${tmpBase}`.quiet().nothrow()
 }
 
 // ============================================================================
@@ -296,7 +314,12 @@ export const createBThreadGrader = (config?: BThreadGraderConfig): Grader => {
   const { typeCheck = true, validate = true, projectRoot } = config ?? {}
   const root = projectRoot ?? findProjectRoot()
 
+  // Scavenge orphaned temp dirs from previous crashes/kills
+  let orphanCleanup: Promise<void> | undefined
+  const ensureOrphanCleanup = () => (orphanCleanup ??= cleanupOrphanedDirs(root))
+
   return async ({ output, metadata }) => {
+    await ensureOrphanCleanup()
     const meta = BThreadPromptMetadataSchema.safeParse(metadata ?? {})
     const brandDir = meta.success ? meta.data.brandDir : 'goals'
     const specContent = meta.success ? meta.data.spec : undefined
@@ -341,7 +364,7 @@ export const createBThreadGrader = (config?: BThreadGraderConfig): Grader => {
 
       return scoreChecks(checks, warnings)
     } finally {
-      cleanupTempDir(tmpBase)
+      await cleanupTempDir(tmpBase)
     }
   }
 }

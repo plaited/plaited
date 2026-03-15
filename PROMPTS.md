@@ -906,7 +906,7 @@ The recall prompts should work with the existing trial runner and bthread-grader
 - This is a SKILL (skills/), not framework code (src/)
 - The skill teaches behavior — it doesn't implement code
 - Recall prompts must be valid JSONL parseable by the trial runner
-- Validate with: `bunx @plaited/development-skills validate-skill skills/hypergraph-recall`
+- Validate with: `bun plaited validate-skill skills/hypergraph-recall`
 - The skill should be usable by both Claude Code (as context for distillation) and the trial runner (as eval criteria)
 ```
 
@@ -1020,7 +1020,7 @@ CLAUDE.md, TODO.md, other docs that reference AGENT-LOOP.md patterns — point t
 ## Constraints
 
 - Read CLAUDE.md and AGENTS.md for project conventions
-- Validate skill: `bunx @plaited/development-skills validate-skill skills/agent-loop`
+- Validate skill: `bun plaited validate-skill skills/agent-loop`
 ```
 
 ### Prompt 11: Extract Constitution Patterns → Skill
@@ -1061,7 +1061,7 @@ Target: ~80 lines.
 
 ## Constraints
 
-- Validate skill: `bunx @plaited/development-skills validate-skill skills/constitution`
+- Validate skill: `bun plaited validate-skill skills/constitution`
 ```
 
 ### Prompt 12: Merge BP Reference → behavioral-core Skill
@@ -1087,7 +1087,7 @@ behavioral-core skill already covers BP patterns. BEHAVIORAL-PROGRAMMING.md is t
 ## Constraints
 
 - Don't duplicate — if behavioral-core already covers a pattern, don't copy it again
-- Validate: `bunx @plaited/development-skills validate-skill skills/behavioral-core`
+- Validate: `bun plaited validate-skill skills/behavioral-core`
 ```
 
 ### Prompt 13: Extract Hypergraph Memory → Skill
@@ -1122,7 +1122,7 @@ Keep ONLY: "Why JSON-LD over SQLite", "Why git-versioned", high-level memory arc
 
 ## Constraints
 
-- Validate: `bunx @plaited/development-skills validate-skill skills/hypergraph-memory`
+- Validate: `bun plaited validate-skill skills/hypergraph-memory`
 ```
 
 ### Prompt 14: Extract Training Pipeline → Skill
@@ -1161,7 +1161,7 @@ Keep ONLY: high-level training philosophy, why distillation (not pre-trained), f
 
 ## Constraints
 
-- Validate: `bunx @plaited/development-skills validate-skill skills/training-pipeline`
+- Validate: `bun plaited validate-skill skills/training-pipeline`
 ```
 
 ### Prompt 15: Merge UI + WebSocket → generative-ui Skill
@@ -1188,7 +1188,7 @@ generative-ui skill already covers the controller protocol and custom elements. 
 ## Constraints
 
 - Don't duplicate — check what generative-ui already covers
-- Validate: `bunx @plaited/development-skills validate-skill skills/generative-ui`
+- Validate: `bun plaited validate-skill skills/generative-ui`
 ```
 
 ### Prompt 16: Extract Project Isolation → Skill
@@ -1222,7 +1222,7 @@ Keep ONLY: "Why process isolation", isolation guarantees table, cross-reference 
 
 ## Constraints
 
-- Validate: `bunx @plaited/development-skills validate-skill skills/project-isolation`
+- Validate: `bun plaited validate-skill skills/project-isolation`
 ```
 
 ---
@@ -1637,7 +1637,7 @@ The seed skill for node generation should include Varlock initialization when th
 - Use add-remote-mcp skill to generate the MCP search skill (don't build from scratch)
 - The Varlock integration skill is a SKILL (skills/), not framework code (src/)
 - The constitution bThread for secret protection is a PATTERN in the skill, not implemented code — it's a reference for seeds to use when generating nodes
-- Validate: `bunx @plaited/development-skills validate-skill skills/search-varlock-docs skills/varlock`
+- Validate: `bun plaited validate-skill skills/search-varlock-docs skills/varlock`
 - If your changes affect docs/ or skills/, update in the same commit
 - Run `bun --bun tsc --noEmit` and `bun test src/ skills/` before committing
 ```
