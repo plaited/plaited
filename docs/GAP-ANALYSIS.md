@@ -39,7 +39,7 @@ The overarching argument: **steering should operate around system state, not jus
 
 **Current state:** `withMetaVerification` produces `{ confidence, reasoning? }` — a grader-confidence score. This asks "did the grader reason well?" not "does the supporting evidence exist?"
 
-**Affected docs:** TRAINING.md (§ Meta-Verification), `correct-behavior-analysis.md` (§ Meta-Verification)
+**Affected docs:** `skills/training-pipeline/references/data-format.md` (§ MetaVerification), `correct-behavior-analysis.md` (§ Meta-Verification)
 
 **Fix shape:** Meta-verification should also check for evidence links. A `GraderResult` should reference the artifacts that support it — the test run ID, the scan report path, the deployment record. The verifier then checks whether those references resolve to actual, coherent evidence.
 
@@ -70,9 +70,9 @@ The overarching argument: **steering should operate around system state, not jus
 
 **Critique:** BP snapshots are "one verifier among several" — they capture local coordination decisions, not broader system impact. Valuable, but not the complete picture.
 
-**Current state:** TRAINING.md and `correct-behavior-analysis.md` present BP snapshots as the process signal that replaces learned PRMs entirely. The training weight formula (`outcome × process`) derives process from BP snapshots alone.
+**Current state:** `skills/training-pipeline/` and `correct-behavior-analysis.md` present BP snapshots as the process signal that replaces learned PRMs entirely. The training weight formula (`outcome × process`) derives process from BP snapshots alone.
 
-**Affected docs:** TRAINING.md (§ Augmented Self-Distillation), `correct-behavior-analysis.md` (throughout)
+**Affected docs:** `skills/training-pipeline/references/distillation-stages.md`, `correct-behavior-analysis.md` (throughout)
 
 **Fix shape:** The process dimension in `GradingDimensions` should be a composite signal:
 

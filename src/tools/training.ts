@@ -30,7 +30,7 @@ import type { Grader, GradingDimensions } from './trial.schemas.ts'
  * @remarks
  * Training weight = `outcome × process`. Missing dimensions default to 0,
  * ensuring unscored trajectories contribute nothing to training.
- * See `docs/TRAINING.md` § Augmented Self-Distillation.
+ * See `skills/training-pipeline/` § Augmented Self-Distillation.
  *
  * @public
  */

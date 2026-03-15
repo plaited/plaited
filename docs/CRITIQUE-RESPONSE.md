@@ -239,7 +239,7 @@ Every modnet module carries five MSS tags. Three of them directly address data g
 | Code/data separation | MSS architecture | Code never crosses A2A boundaries. Only `data/` contents are eligible for sharing. |
 | Access control | DAC + MAC + ABAC | Three-layer evaluation for every sharing request. |
 
-What the architecture doesn't have is **retention policy** — when to archive or delete data. This is partially addressed by hypergraph rotation (`TRAINING.md` § Log Retention): time-based or size-based rotation moves old decision files into compressed archives. Extending retention to module data would add a `retention` property to MSS bridge-code — but this is a minor addition to an existing model, not a new architecture.
+What the architecture doesn't have is **retention policy** — when to archive or delete data. This is partially addressed by hypergraph rotation (`skills/training-pipeline/SKILL.md` § Log Retention): time-based or size-based rotation moves old decision files into compressed archives. Extending retention to module data would add a `retention` property to MSS bridge-code — but this is a minor addition to an existing model, not a new architecture.
 
 The critique's concern about data governance assumes a platform context where user data is centralized and needs classification to prevent misuse. In modnet, data is sovereign by default — it starts private on the user's node and only crosses boundaries through explicit, BP-gated sharing. The governance model is inverted: not "classify to protect" but "everything is protected; classify to share."
 
@@ -414,7 +414,7 @@ After resolving all seven gaps and the module architecture evolution, one area r
 
 ### Retention Policy
 
-MSS bridge-code doesn't include a retention property. Hypergraph rotation (`TRAINING.md` § Log Retention) handles decision file lifecycle, but module-level data retention (when to archive, when to delete, regulatory compliance) would need an additional MSS tag or a governance factory pattern. This is a minor extension for enterprise deployments, not an architectural gap.
+MSS bridge-code doesn't include a retention property. Hypergraph rotation (`skills/training-pipeline/SKILL.md` § Log Retention) handles decision file lifecycle, but module-level data retention (when to archive, when to delete, regulatory compliance) would need an additional MSS tag or a governance factory pattern. This is a minor extension for enterprise deployments, not an architectural gap.
 
 ---
 
