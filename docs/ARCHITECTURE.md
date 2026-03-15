@@ -129,7 +129,6 @@ The pluggable model interfaces make tier selection a deployment decision, not an
 | `PROJECT-ISOLATION.md` | Multi-project orchestrator, IPC bridge, tool layers |
 | `MODNET-IMPLEMENTATION.md` | Modnet topology, A2A protocol, identity, access control, payment |
 | `GENOME.md` | Skills taxonomy (seeds/tools/eval), CONTRACT frontmatter, wave ordering |
-| `CRITIQUE-RESPONSE.md` | Gap resolutions, attestation layer, module architecture evolution |
 | `UI.md` | Generative UI rendering pipeline, controller protocol |
 | `WEBSOCKET-ARCHITECTURE.md` | WebSocket server layer design |
 | `BEHAVIORAL-PROGRAMMING.md` | BP paradigm foundation |

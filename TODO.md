@@ -27,16 +27,7 @@
 - **AGENT-LOOP.md** describes `gate_approved` routing (workspace -> execute, others -> simulate)
 - **Reality:** Risk tag enum exists. No routing logic applies them.
 
-### 3. Attestation layer — two docs, different scopes
-- **CRITIQUE-RESPONSE.md** defines 6 evidence types as a new hypergraph vertex layer
-- **GAP-ANALYSIS.md** calls it "evidence-backed meta-verification" positioned post-execution
-- Overlapping but different scopes. Neither is implemented.
-
-### 4. CRITIQUE-RESPONSE.md claims gaps are "resolved" — they aren't
-- GAP-ANALYSIS.md identifies 7 gaps. CRITIQUE-RESPONSE.md marks Gaps 2, 4, 5, 7 as "EXISTING DESIGN."
-- The designs exist; the code doesn't.
-
-### 5. Genome restructuring vs. current skills layout
+### 3. Genome restructuring vs. current skills layout
 - **GENOME.md** proposes `seeds/`, `tools/`, `eval/` with CONTRACT frontmatter and wave ordering
 - **Current reality:** Flat `skills/` directory with SKILL.md per AgentSkills spec
 - No conflict — GENOME.md is a future refactor plan — but nothing links the two conventions.
@@ -181,11 +172,9 @@ Three layers — agent tools go through pipeline, memory handlers don't, CLI too
 
 1. **AGENT-LOOP.md** — Most detailed, most aspirational. Will need constant updates as `createAgentLoop()` is built.
 2. **CONSTITUTION.md** — References systems that don't exist. Will drift as governance is implemented.
-3. **CRITIQUE-RESPONSE.md** — Claims resolutions that aren't coded. Could mislead.
 
 ## Recommendations
 
 1. Add implementation status badges to each doc (`[DESIGN ONLY]`, `[PARTIAL]`, `[IMPLEMENTED]`)
 2. Update docs alongside code in the same commit — not speculatively
-3. CRITIQUE-RESPONSE.md should distinguish "design exists" from "code exists"
-4. GENOME.md restructuring should wait until agent loop works
+3. GENOME.md restructuring should wait until agent loop works
