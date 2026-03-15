@@ -170,7 +170,7 @@ Three layers — agent tools go through pipeline, memory handlers don't, CLI too
 
 ## Documents Most at Risk of Drift
 
-1. **AGENT-LOOP.md** — Most detailed, most aspirational. Will need constant updates as `createAgentLoop()` is built.
+1. **AGENT-LOOP.md** — Slimmed to overview. Implementation patterns moved to `skills/agent-loop/`.
 2. **CONSTITUTION.md** — References systems that don't exist. Will drift as governance is implemented.
 
 ## Recommendations

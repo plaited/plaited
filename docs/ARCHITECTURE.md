@@ -121,7 +121,7 @@ The pluggable model interfaces make tier selection a deployment decision, not an
 
 | Doc | Scope |
 |---|---|
-| `AGENT-LOOP.md` | 6-step loop, selective simulation, ACP interface |
+| `AGENT-LOOP.md` | 6-step loop overview (impl patterns in `skills/agent-loop/`) |
 | `SAFETY.md` | Three-axis risk, defense in depth (6 layers) |
 | `CONSTITUTION.md` | Governance factories, neuro-symbolic split, MAC/DAC |
 | `TRAINING.md` | Distillation pipeline, training tiers, flywheel |
