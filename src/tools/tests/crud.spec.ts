@@ -172,6 +172,102 @@ describe('editFile', () => {
       'old_string is not unique',
     )
   })
+
+  // ---------------------------------------------------------------------------
+  // Whitespace normalization fallback
+  // ---------------------------------------------------------------------------
+
+  test('matches with trailing whitespace differences', async () => {
+    await Bun.write(join(workspace, 'ws-target.ts'), 'export const x = 1  \nexport const y = 2\t\n')
+    const result = (await editFile(
+      { path: 'ws-target.ts', old_string: 'export const x = 1\nexport const y = 2\n', new_string: 'export const x = 10\nexport const y = 20\n' },
+      ctx,
+    )) as { edited: string; bytes: number }
+
+    expect(result.edited).toBe('ws-target.ts')
+    const content = await Bun.file(join(workspace, 'ws-target.ts')).text()
+    expect(content).toBe('export const x = 10\nexport const y = 20\n')
+  })
+
+  test('throws on non-unique after normalization', async () => {
+    // Both occurrences have trailing whitespace so exact match fails,
+    // but normalized match finds two hits
+    await Bun.write(join(workspace, 'ws-dup.txt'), 'abc  \ndef\nabc \ndef')
+    expect(
+      editFile({ path: 'ws-dup.txt', old_string: 'abc\ndef', new_string: 'replaced' }, ctx),
+    ).rejects.toThrow('not unique')
+  })
+
+  // ---------------------------------------------------------------------------
+  // Symbol-scoped search
+  // ---------------------------------------------------------------------------
+
+  test('scopes edit to named export symbol', async () => {
+    const source = [
+      'export const alpha = "hello"',
+      '',
+      'export const beta = "hello"',
+      '',
+      'export const gamma = 42',
+    ].join('\n')
+    await Bun.write(join(workspace, 'symbols.ts'), source)
+
+    // "hello" appears in both alpha and beta — without symbol it would be ambiguous
+    const result = (await editFile(
+      { path: 'symbols.ts', old_string: '"hello"', new_string: '"goodbye"', symbol: 'beta' },
+      ctx,
+    )) as { edited: string; bytes: number }
+
+    expect(result.edited).toBe('symbols.ts')
+    const content = await Bun.file(join(workspace, 'symbols.ts')).text()
+    expect(content).toContain('export const alpha = "hello"')
+    expect(content).toContain('export const beta = "goodbye"')
+  })
+
+  test('throws when symbol not found as export', async () => {
+    await Bun.write(join(workspace, 'no-sym.ts'), 'export const a = 1')
+    expect(
+      editFile({ path: 'no-sym.ts', old_string: '1', new_string: '2', symbol: 'missing' }, ctx),
+    ).rejects.toThrow("Symbol 'missing' not found as export")
+  })
+
+  test('symbol-scoped edit with trailing whitespace normalization', async () => {
+    const source = 'export const foo = "bar"  \n\nexport const baz = "qux"'
+    await Bun.write(join(workspace, 'sym-ws.ts'), source)
+
+    const result = (await editFile(
+      { path: 'sym-ws.ts', old_string: 'export const foo = "bar"\n', new_string: 'export const foo = "baz"\n', symbol: 'foo' },
+      ctx,
+    )) as { edited: string; bytes: number }
+
+    expect(result.edited).toBe('sym-ws.ts')
+    const content = await Bun.file(join(workspace, 'sym-ws.ts')).text()
+    expect(content).toContain('export const foo = "baz"')
+    expect(content).toContain('export const baz = "qux"')
+  })
+
+  // ---------------------------------------------------------------------------
+  // Post-edit syntax validation
+  // ---------------------------------------------------------------------------
+
+  test('rejects edits that produce invalid syntax in TS files', async () => {
+    await Bun.write(join(workspace, 'valid.ts'), 'export const x = 1')
+    expect(
+      editFile({ path: 'valid.ts', old_string: 'export const x = 1', new_string: 'export const x =' }, ctx),
+    ).rejects.toThrow('invalid syntax')
+  })
+
+  test('skips syntax validation for non-TS/JS files', async () => {
+    await Bun.write(join(workspace, 'data.json'), '{"key": "old"}')
+    const result = (await editFile(
+      { path: 'data.json', old_string: '"old"', new_string: '"new"' },
+      ctx,
+    )) as { edited: string; bytes: number }
+
+    expect(result.edited).toBe('data.json')
+    const content = await Bun.file(join(workspace, 'data.json')).text()
+    expect(content).toBe('{"key": "new"}')
+  })
 })
 
 // ============================================================================
