@@ -1,6 +1,6 @@
 # Worktree Prompts
 
-Standalone prompts for Claude Code sessions. Each runs in a git worktree branch off `chore/audit-tool`. Prompts are grouped by `src/` directory and can run in parallel within groups.
+Standalone prompts for Claude Code sessions. Each runs in a git worktree branch off `main`. Prompts are grouped by `src/` directory and can run in parallel within groups.
 
 ---
 
@@ -9,7 +9,7 @@ Standalone prompts for Claude Code sessions. Each runs in a git worktree branch 
 ### Prompt 1: Output Truncation + Read Enhancements
 
 ```
-Work in a worktree branch off chore/audit-tool.
+Work in a worktree branch off main.
 
 ## Task
 
@@ -75,7 +75,7 @@ Update crud.schemas.ts for new parameters. Update tests.
 ### Prompt 2: Grep Tool + Find Enrichment
 
 ```
-Work in a worktree branch off chore/audit-tool.
+Work in a worktree branch off main.
 
 ## Task
 
@@ -154,7 +154,7 @@ Update schemas and tests for both.
 ### Prompt 3: Edit with Scan-Assisted Matching
 
 ```
-Work in a worktree branch off chore/audit-tool.
+Work in a worktree branch off main.
 
 ## Task
 
@@ -230,7 +230,7 @@ Update schemas (add `symbol` parameter), update tests.
 ### Prompt 4: Scan Integration in Ingestion + LSP
 
 ```
-Work in a worktree branch off chore/audit-tool.
+Work in a worktree branch off main.
 
 ## Task
 
@@ -330,7 +330,7 @@ Priority: project skills > global skills > framework built-ins. The last-loaded 
 ### Prompt 5: JSONL, Archive, Hash, DeepEquals
 
 ```
-Work in a worktree branch off chore/audit-tool.
+Work in a worktree branch off main.
 
 ## Task
 
@@ -435,7 +435,7 @@ Tests for each change.
 ### Prompt 6: Document and Type the Executor Pattern
 
 ```
-Work in a worktree branch off chore/audit-tool.
+Work in a worktree branch off main.
 
 ## Task
 
@@ -577,7 +577,7 @@ Tests: test each executor factory. Mock SSH with a local Bun.spawn. Test A2A exe
 ### Prompt 7: Tiered Context (Hot/Warm/Cold) with D→A Migration Path
 
 ```
-Work in a worktree branch off chore/audit-tool.
+Work in a worktree branch off main.
 
 ## Task
 
@@ -802,7 +802,7 @@ The model needs to learn to search. The warm layer gives it orientation passivel
 ### Prompt 8: Hypergraph Recall Skill (Phase 2 — Teach Search-Based Context Recall)
 
 ```
-Work in a worktree branch off chore/audit-tool.
+Work in a worktree branch off main.
 
 ## Task
 
@@ -938,7 +938,7 @@ Goal: Move implementation patterns from docs into skills (for agent training), s
 ### Prompt 9: Drop Resolved Historical Docs
 
 ```
-Work in a worktree branch off chore/audit-tool.
+Work in a worktree branch off main.
 
 ## Task
 
@@ -964,7 +964,7 @@ GAP-ANALYSIS.md identified 7 design gaps. CRITIQUE-RESPONSE.md resolved all 7. B
 ### Prompt 10: Extract Agent Loop Patterns → Skill
 
 ```
-Work in a worktree branch off chore/audit-tool.
+Work in a worktree branch off main.
 
 ## Task
 
@@ -1026,7 +1026,7 @@ CLAUDE.md, TODO.md, other docs that reference AGENT-LOOP.md patterns — point t
 ### Prompt 11: Extract Constitution Patterns → Skill
 
 ```
-Work in a worktree branch off chore/audit-tool.
+Work in a worktree branch off main.
 
 ## Task
 
@@ -1067,7 +1067,7 @@ Target: ~80 lines.
 ### Prompt 12: Merge BP Reference → behavioral-core Skill
 
 ```
-Work in a worktree branch off chore/audit-tool.
+Work in a worktree branch off main.
 
 ## Task
 
@@ -1093,7 +1093,7 @@ behavioral-core skill already covers BP patterns. BEHAVIORAL-PROGRAMMING.md is t
 ### Prompt 13: Extract Hypergraph Memory → Skill
 
 ```
-Work in a worktree branch off chore/audit-tool.
+Work in a worktree branch off main.
 
 ## Task
 
@@ -1128,7 +1128,7 @@ Keep ONLY: "Why JSON-LD over SQLite", "Why git-versioned", high-level memory arc
 ### Prompt 14: Extract Training Pipeline → Skill
 
 ```
-Work in a worktree branch off chore/audit-tool.
+Work in a worktree branch off main.
 
 ## Task
 
@@ -1167,7 +1167,7 @@ Keep ONLY: high-level training philosophy, why distillation (not pre-trained), f
 ### Prompt 15: Merge UI + WebSocket → generative-ui Skill
 
 ```
-Work in a worktree branch off chore/audit-tool.
+Work in a worktree branch off main.
 
 ## Task
 
@@ -1194,7 +1194,7 @@ generative-ui skill already covers the controller protocol and custom elements. 
 ### Prompt 16: Extract Project Isolation → Skill
 
 ```
-Work in a worktree branch off chore/audit-tool.
+Work in a worktree branch off main.
 
 ## Task
 
@@ -1257,7 +1257,7 @@ Groups A, B, C, D, E can all run in parallel. All prompts in Group D are indepen
 ### Prompt 17: ACP Debug Viewport via @agentclientprotocol/sdk
 
 ```
-Work in a worktree branch off chore/audit-tool.
+Work in a worktree branch off main.
 
 ## Task
 
@@ -1469,7 +1469,7 @@ Test with mock stdio streams:
 ### Prompt 18: Varlock Integration — AI-Safe Environment Configuration
 
 ```
-Work in a worktree branch off chore/audit-tool.
+Work in a worktree branch off main.
 
 ## Task
 
