@@ -797,7 +797,6 @@ Exit codes:
     console.log(JSON.stringify(result, null, 2))
     if (result.results.some((r) => r.error)) process.exit(1)
   } catch (error) {
-    // biome-ignore lint/suspicious/noConsole: CLI output
     console.error(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }))
     process.exit(2)
   }

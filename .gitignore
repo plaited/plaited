@@ -23,6 +23,7 @@ yarn.lock
 # Test  artifacts
 **/coverage
 **/test-results/
+**/.bthread-grader-*
 **/playwright-report/
 **/playwright/.cache/
 **/test-videos

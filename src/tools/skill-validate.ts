@@ -12,28 +12,19 @@
  */
 
 import { basename, join } from 'node:path'
-import { Glob, YAML } from 'bun'
 import * as z from 'zod'
 import { parseCli } from './cli.utils.ts'
+import {
+  findSkillDirectories,
+  findSkillMd,
+  isDirectory,
+  parseFrontmatter,
+  type SkillProperties,
+} from './skill.utils.ts'
 
 // ============================================================================
 // Types
 // ============================================================================
-
-/**
- * Properties extracted from SKILL.md frontmatter and body.
- *
- * @public
- */
-type SkillProperties = {
-  name: string
-  description: string
-  license?: string
-  compatibility?: string
-  'allowed-tools'?: string[]
-  metadata?: Record<string, string>
-  body: string
-}
 
 /**
  * Result of validating a skill directory.
@@ -93,46 +84,6 @@ const NAME_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/
 const MAX_NAME_LENGTH = 64
 const MAX_DESCRIPTION_LENGTH = 1024
 const MAX_COMPATIBILITY_LENGTH = 500
-
-// ============================================================================
-// Frontmatter Parser
-// ============================================================================
-
-/**
- * Parse YAML frontmatter from SKILL.md content.
- *
- * @remarks
- * Extracts the YAML block between `---` delimiters and parses via
- * `Bun.YAML.parse()` (YAML 1.2: multi-line strings, anchors, comments, tags).
- *
- * @param content - Raw SKILL.md file content
- * @returns Parsed metadata and markdown body
- *
- * @public
- */
-const parseFrontmatter = (content: string): { metadata: Record<string, unknown>; body: string } => {
-  const trimmed = content.trim()
-  if (!trimmed.startsWith('---')) {
-    throw new Error('SKILL.md must start with YAML frontmatter (---)')
-  }
-
-  const endIndex = trimmed.indexOf('---', 3)
-  if (endIndex === -1) {
-    throw new Error('YAML frontmatter not properly closed with ---')
-  }
-
-  const yamlContent = trimmed.slice(3, endIndex).trim()
-  const body = trimmed.slice(endIndex + 3).trim()
-  const metadata = YAML.parse(yamlContent) as Record<string, unknown>
-
-  if (typeof metadata !== 'object' || metadata === null || Array.isArray(metadata)) {
-    throw new Error('YAML frontmatter must be a mapping (key-value pairs)')
-  }
-
-  return { metadata, body }
-}
-
-export { parseFrontmatter }
 
 // ============================================================================
 // Field Validators
@@ -240,31 +191,6 @@ const validateFields = (metadata: Record<string, unknown>): string[] => {
 }
 
 // ============================================================================
-// Directory Helpers
-// ============================================================================
-
-/** @internal */
-const findSkillMd = async (skillDir: string): Promise<string | null> => {
-  const upperPath = join(skillDir, 'SKILL.md')
-  if (await Bun.file(upperPath).exists()) return upperPath
-
-  const lowerPath = join(skillDir, 'skill.md')
-  if (await Bun.file(lowerPath).exists()) return lowerPath
-
-  return null
-}
-
-/** @internal */
-const isDirectory = async (path: string): Promise<boolean> => {
-  try {
-    const stat = await Bun.$`test -d ${path}`.quiet()
-    return stat.exitCode === 0
-  } catch {
-    return false
-  }
-}
-
-// ============================================================================
 // Core Validation
 // ============================================================================
 
@@ -352,28 +278,6 @@ const validateSkillDirectory = async (skillDir: string): Promise<ValidationResul
 }
 
 /**
- * Find all skill directories under a root path.
- *
- * @param rootDir - Root directory to search
- * @returns Sorted array of absolute skill directory paths
- *
- * @public
- */
-const findSkillDirectories = async (rootDir: string): Promise<string[]> => {
-  if (!(await isDirectory(rootDir))) return []
-
-  const skillDirs: string[] = []
-  const glob = new Glob('**/SKILL.md')
-
-  for await (const file of glob.scan({ cwd: rootDir, absolute: true })) {
-    const skillDir = file.replace(/\/SKILL\.md$/i, '')
-    skillDirs.push(skillDir)
-  }
-
-  return skillDirs.sort()
-}
-
-/**
  * Validate all skills under a root directory.
  *
  * @param rootDir - Root directory containing skill folders
@@ -386,7 +290,7 @@ const validateSkills = async (rootDir: string): Promise<ValidationResult[]> => {
   return Promise.all(skillDirs.map((dir) => validateSkillDirectory(dir)))
 }
 
-export { validateSkillDirectory, validateSkills, findSkillDirectories }
+export { validateSkillDirectory, validateSkills }
 
 // ============================================================================
 // Path Resolution

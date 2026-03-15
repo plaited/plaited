@@ -4,6 +4,8 @@
  * Usage: bun run search.ts '{"query": "tools/call request format"}'
  */
 
+import { mcpCallTool } from '../../add-remote-mcp/scripts/remote-mcp.ts'
+
 const MCP_URL = 'https://modelcontextprotocol.io/mcp'
 const TOOL_NAME = 'search_model_context_protocol'
 
@@ -32,12 +34,7 @@ const main = async () => {
     process.exit(2)
   }
 
-  const result = await Bun.$`plaited remote-mcp-client ${JSON.stringify({
-    url: MCP_URL,
-    method: 'call-tool',
-    toolName: TOOL_NAME,
-    arguments: input,
-  })}`.json()
+  const result = await mcpCallTool(MCP_URL, TOOL_NAME, input)
 
   for (const content of result.content) {
     if (content.type === 'text' && content.text) {

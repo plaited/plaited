@@ -10,7 +10,11 @@ import type { AgentPlan, AgentToolCall, GateDecision, ModelUsage, ToolDefinition
 // Model Interface — streaming inference (from pi-mono audit decisions)
 // ============================================================================
 
-/** A single message in the OpenAI chat format */
+/**
+ * A single message in the OpenAI chat format.
+ *
+ * @public
+ */
 export type ChatMessage = {
   role: 'system' | 'user' | 'assistant' | 'tool'
   content?: string | null
@@ -137,6 +141,18 @@ export type ToolContext = {
  */
 export type ToolHandler = (args: Record<string, unknown>, ctx: ToolContext) => Promise<unknown>
 
+/**
+ * Executes a tool call with transport abstraction.
+ *
+ * @remarks
+ * The pluggability seam for local, SSH, and A2A tool execution.
+ * Local executor calls handlers directly. Remote executors serialize
+ * tool calls over the wire. Same tool code runs everywhere.
+ *
+ * @public
+ */
+export type ToolExecutor = (toolCall: AgentToolCall, signal: AbortSignal) => Promise<unknown>
+
 // ============================================================================
 // Parsed Model Response
 // ============================================================================
@@ -161,108 +177,232 @@ export type ParsedModelResponse = {
 // Agent Event Details — documents the event vocabulary and detail shapes
 // ============================================================================
 
-/** Detail payload for the `task` event */
+/**
+ * Detail payload for the `task` event.
+ *
+ * @public
+ */
 export type TaskDetail = {
   prompt: string
 }
 
-/** Detail payload for the `model_response` event */
+/**
+ * Detail payload for the `model_response` event.
+ *
+ * @public
+ */
 export type ModelResponseDetail = {
   parsed: ParsedModelResponse
   usage: ModelUsage
 }
 
-/** Detail payload for the `context_ready` event (per-tool-call gate dispatch) */
+/**
+ * Detail payload for the `context_ready` event (per-tool-call gate dispatch).
+ *
+ * @public
+ */
 export type ContextReadyDetail = {
   toolCall: AgentToolCall
 }
 
-/** Detail payload for the `gate_rejected` event */
+/**
+ * Detail payload for the `gate_rejected` event.
+ *
+ * @public
+ */
 export type GateRejectedDetail = {
   toolCall: AgentToolCall
   decision: GateDecision
 }
 
-/** Detail payload for the `gate_approved` event */
+/**
+ * Detail payload for the `gate_approved` event.
+ *
+ * @public
+ */
 export type GateApprovedDetail = {
   toolCall: AgentToolCall
   tags: string[]
 }
 
-/** Detail payload for the `execute` event */
+/**
+ * Detail payload for the `execute` event.
+ *
+ * @public
+ */
 export type ExecuteDetail = {
   toolCall: AgentToolCall
   tags: string[]
 }
 
-/** Detail payload for the `tool_result` event */
+/**
+ * Detail payload for the `tool_result` event.
+ *
+ * @public
+ */
 export type ToolResultDetail = {
   result: ToolResult
 }
 
-/** Detail payload for the `tool_progress` event */
+/**
+ * Detail payload for the `tool_progress` event.
+ *
+ * @public
+ */
 export type ToolProgressDetail = {
   toolCallId: string
   progress: unknown
 }
 
-/** Detail payload for the `save_plan` event */
+/**
+ * Detail payload for the `save_plan` event.
+ *
+ * @public
+ */
 export type SavePlanDetail = {
   plan: AgentPlan
   toolCallId?: string
 }
 
-/** Detail payload for the `plan_saved` event */
+/**
+ * Detail payload for the `plan_saved` event.
+ *
+ * @public
+ */
 export type PlanSavedDetail = {
   plan: AgentPlan
 }
 
-/** Detail payload for the `simulate_request` event */
+/**
+ * Detail payload for the `simulate_request` event.
+ *
+ * @public
+ */
 export type SimulateRequestDetail = {
   toolCall: AgentToolCall
   tags: string[]
 }
 
-/** Detail payload for the `simulation_result` event */
+/**
+ * Detail payload for the `simulation_result` event.
+ *
+ * @public
+ */
 export type SimulationResultDetail = {
   toolCall: AgentToolCall
   prediction: string
   tags: string[]
 }
 
-/** Detail payload for the `eval_approved` event */
+/**
+ * Detail payload for the `eval_approved` event.
+ *
+ * @public
+ */
 export type EvalApprovedDetail = {
   toolCall: AgentToolCall
   tags: string[]
   score?: number
 }
 
-/** Detail payload for the `eval_rejected` event */
+/**
+ * Detail payload for the `eval_rejected` event.
+ *
+ * @public
+ */
 export type EvalRejectedDetail = {
   toolCall: AgentToolCall
   reason: string
   score?: number
 }
 
-/** Detail payload for the `message` event */
+/**
+ * Detail payload for the `message` event.
+ *
+ * @public
+ */
 export type MessageDetail = {
   content: string
 }
 
-/** Detail payload for the `thinking_delta` event */
+/**
+ * Detail payload for the `thinking_delta` event.
+ *
+ * @public
+ */
 export type ThinkingDeltaDetail = {
   content: string
 }
 
-/** Detail payload for the `text_delta` event */
+/**
+ * Detail payload for the `text_delta` event.
+ *
+ * @public
+ */
 export type TextDeltaDetail = {
   content: string
 }
 
-/** Detail payload for the `inference_error` event */
+/**
+ * Detail payload for the `inference_error` event.
+ *
+ * @public
+ */
 export type InferenceErrorDetail = {
   error: string
   retryable: boolean
+}
+
+// ============================================================================
+// Proactive Heartbeat Event Details — tick, sensor_delta, sensor_sweep, sleep, snapshot_committed
+// ============================================================================
+
+/**
+ * Detail payload for the `tick` event (periodic heartbeat).
+ *
+ * @public
+ */
+export type TickDetail = {
+  tickNumber: number
+  timestamp: string
+}
+
+/**
+ * Detail payload for the `sensor_delta` event (single sensor change).
+ *
+ * @public
+ */
+export type SensorDeltaDetail = {
+  sensor: string
+  delta: unknown
+}
+
+/**
+ * Detail payload for the `sensor_sweep` event (batched sensor deltas).
+ *
+ * @public
+ */
+export type SensorSweepDetail = {
+  deltas: SensorDeltaDetail[]
+}
+
+/**
+ * Detail payload for the `sleep` event (idle after no deltas detected).
+ *
+ * @public
+ */
+export type SleepDetail = {
+  durationMs: number
+}
+
+/**
+ * Detail payload for the `snapshot_committed` event (git commit captured).
+ *
+ * @public
+ */
+export type SnapshotCommittedDetail = {
+  sha: string
+  modulePath: string
 }
 
 // ============================================================================
@@ -317,6 +457,61 @@ export type DefragDetail = {
   memoryPath: string
 }
 
+// ============================================================================
+// Re-ingestion Event Details — reingest_skill, reingest_rules, reingest_goal
+// ============================================================================
+
+/**
+ * Detail payload for the `reingest_skill` event.
+ *
+ * @remarks
+ * Triggered by a bThread when the agent modifies a skill file during
+ * a session. The handler calls `ingestSkill()` to update the hypergraph
+ * vertex in `.memory/skills/`.
+ *
+ * @public
+ */
+export type ReingestSkillDetail = {
+  /** Absolute path to the skill directory containing SKILL.md */
+  skillDir: string
+  /** Absolute path to the memory directory */
+  memoryDir: string
+}
+
+/**
+ * Detail payload for the `reingest_rules` event.
+ *
+ * @remarks
+ * Triggered by a bThread when the agent modifies AGENTS.md during
+ * a session. The handler calls `ingestRules()` to update the hypergraph
+ * RuleSet vertices in `.memory/rules/`.
+ *
+ * @public
+ */
+export type ReingestRulesDetail = {
+  /** Absolute path to the AGENTS.md file */
+  path: string
+  /** Absolute path to the memory directory */
+  memoryDir: string
+}
+
+/**
+ * Detail payload for the `reingest_goal` event.
+ *
+ * @remarks
+ * Triggered by a bThread when the agent modifies a goal factory file
+ * during a session. The handler calls `ingestGoal()` to update the
+ * hypergraph Goal vertex in `.memory/threads/`.
+ *
+ * @public
+ */
+export type ReingestGoalDetail = {
+  /** Absolute path to the goal factory .ts file */
+  path: string
+  /** Absolute path to the memory directory */
+  memoryDir: string
+}
+
 /**
  * Documents the full event vocabulary and expected detail shapes.
  *
@@ -359,10 +554,20 @@ export type AgentEventDetails = {
   [AGENT_EVENTS.thinking_delta]: ThinkingDeltaDetail
   [AGENT_EVENTS.text_delta]: TextDeltaDetail
   [AGENT_EVENTS.inference_error]: InferenceErrorDetail
+  // ── Proactive heartbeat events ─────────────────────────────────────
+  [AGENT_EVENTS.tick]: TickDetail
+  [AGENT_EVENTS.sensor_delta]: SensorDeltaDetail
+  [AGENT_EVENTS.sensor_sweep]: SensorSweepDetail
+  [AGENT_EVENTS.sleep]: SleepDetail
+  [AGENT_EVENTS.snapshot_committed]: SnapshotCommittedDetail
   // ── Memory lifecycle events ────────────────────────────────────────
   [AGENT_EVENTS.commit_snapshot]: CommitSnapshotDetail
   [AGENT_EVENTS.consolidate]: ConsolidateDetail
   [AGENT_EVENTS.defrag]: DefragDetail
+  // ── Re-ingestion events ─────────────────────────────────────────────
+  [AGENT_EVENTS.reingest_skill]: ReingestSkillDetail
+  [AGENT_EVENTS.reingest_rules]: ReingestRulesDetail
+  [AGENT_EVENTS.reingest_goal]: ReingestGoalDetail
 }
 
 // ============================================================================

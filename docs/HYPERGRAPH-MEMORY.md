@@ -274,6 +274,9 @@ modules/{module_name}/
 │   │   │   ├── decisions/
 │   │   │   │   ├── {superstep}.jsonld   # one file per BP decision (hyperedge)
 │   │   │   │   └── ...
+│   │   │   ├── commits/
+│   │   │   │   ├── {sha}.jsonld     # commit vertex — links decisions to code changes
+│   │   │   │   └── ...
 │   │   │   └── trajectory.jsonld    # tool calls + outputs (adapter concern)
 │   │   └── ...
 │   ├── skills/
@@ -284,6 +287,7 @@ modules/{module_name}/
 │   │   └── ...
 │   └── threads/
 │       ├── {thread_name}.jsonld     # design-time thread vertex (from LSP + brand scan)
+│       ├── goal_{name}.jsonld       # design-time vertex for generated goal (ingested from goals/*.ts)
 │       └── ...
 ├── src/
 ├── data/
@@ -299,11 +303,34 @@ node/
 │   ├── sessions/                    # cross-module session coordination
 │   ├── rules/
 │   │   └── workspace.jsonld         # ingested workspace AGENTS.md (source pointer)
-│   └── constitution/
-│       ├── mac/                     # mandatory governance subgraphs
-│       └── dac/                     # discretionary governance subgraphs
+│   ├── constitution/
+│   │   ├── mac/                     # mandatory governance (framework .ts factories)
+│   │   │   ├── no-rm-rf.ts
+│   │   │   └── tests/
+│   │   └── dac/                     # discretionary governance (user-approved .ts factories)
+│   │       ├── *.ts
+│   │       └── tests/
+│   └── goals/                       # agent-generated goal factories (.ts + tests)
+│       ├── watch-alice.ts
+│       ├── server-health.ts
+│       └── tests/
+│           ├── watch-alice.spec.ts
+│           └── server-health.spec.ts
 └── modules/
 ```
+
+### Generated Factory Ingestion
+
+Generated bThread factories (goals, DAC constitution) are **executable TypeScript** — they produce bThreads at spawn. But they also need to be queryable via the hypergraph. The ingestion pipeline produces a design-time vertex for each generated factory:
+
+```
+Agent generates .memory/goals/watch-alice.ts
+  → validateAndImport() runs 5-layer verification (see CONSTITUTION.md § Generated bThreads)
+  → On success: emit .memory/threads/goal_watch_alice.jsonld (design-time vertex)
+  → Thread vertex has source pointer back to the .ts file
+```
+
+The `.ts` file is the executable truth. The `.jsonld` is the derived structural projection. `git diff` on the `.ts` triggers re-ingestion of the `.jsonld`. Same pattern as skills: markdown is source, JSON-LD is index.
 
 ### Progressive Disclosure
 
@@ -345,8 +372,13 @@ The agent reads the tree, decides relevance, loads specific files. Grep for quic
     "Event": "bp:Event",
     "Skill": "bp:Skill",
     "GovernanceRule": "bp:GovernanceRule",
+    "Commit": "bp:Commit",
+    "Goal": "bp:Goal",
 
     "thread": { "@type": "@id" },
+    "attestsTo": { "@type": "@id", "@container": "@set" },
+    "artifacts": { "@container": "@set" },
+    "session": { "@type": "@id" },
     "event": { "@type": "@id" },
     "blockedBy": { "@type": "@id" },
     "interrupts": { "@type": "@id" },
@@ -392,6 +424,31 @@ The agent reads the tree, decides relevance, loads specific files. Grep for quic
   ]
 }
 ```
+
+### Commit Vertex (Training Anchor)
+
+Written by the `commit_snapshot` handler after each side-effect commit. Links decisions to code changes via `@id` references. The commit vertex for commit N is stored in commit N+1 (one-behind pattern — the SHA is only known after the commit completes).
+
+```jsonc
+// .memory/sessions/sess_abc/commits/a1b2c3d.jsonld
+{
+  "@context": "../../../@context.jsonld",
+  "@id": "git:a1b2c3d",
+  "@type": "Commit",
+  "session": "session/sess_abc",
+  "attestsTo": [
+    "session/sess_abc/decision/42",
+    "session/sess_abc/decision/43"
+  ],
+  "artifacts": [
+    { "path": "src/agent/agent.ts", "action": "modified" },
+    { "path": ".memory/sessions/sess_abc/decisions/042.jsonld", "action": "added" }
+  ],
+  "timestamp": "2026-03-14T10:00:00Z"
+}
+```
+
+The training pipeline traverses: `decision/42 ← attestsTo ← git:a1b2c3d → artifacts → src/agent/agent.ts`. This assembles `(reasoning, code_change)` pairs via `@id` links rather than parsing `git log` output.
 
 ### Skill Subgraph (Design-Time Vertices)
 
@@ -692,6 +749,51 @@ memoryIntegrity: bThread([
 
 The `commit_snapshot`, `consolidate`, and `defrag` handlers are async (they do I/O). They call `trigger()` with results when done, starting new super-steps. The bThreads coordinate *when* these operations happen. The tools do the actual work.
 
+### `commit_snapshot` Handler Flow
+
+The handler runs `git commit`, captures the SHA, and writes a commit vertex linking decisions to code changes:
+
+```typescript
+useFeedback({
+  async [AGENT_EVENTS.commit_snapshot]({ modulePath, toolResult }: CommitSnapshotDetail) {
+    // 1. Gather pending decision files + any commit vertices from previous commits
+    const pendingDecisions = glob(`${modulePath}/.memory/sessions/*/decisions/*.jsonld`)
+    const pendingCommitVertices = glob(`${modulePath}/.memory/sessions/*/commits/*.jsonld`)
+
+    // 2. Stage code changes + pending memory files
+    await Bun.$`git add ${changedFiles} ${pendingDecisions} ${pendingCommitVertices}`
+
+    // 3. Commit (passes through .hooks/pre-commit and .hooks/commit-msg)
+    await Bun.$`git commit -m ${'feat: ' + summarize(toolResult)}`
+
+    // 4. Capture SHA — git rev-parse HEAD returns the hash of the commit we just created
+    const sha = (await Bun.$`git rev-parse HEAD`.text()).trim()
+
+    // 5. Write commit vertex — this file is PENDING, bundled into the NEXT commit
+    const commitVertex = {
+      '@context': '../../../@context.jsonld',
+      '@id': `git:${sha}`,
+      '@type': 'Commit',
+      session: `session/${sessionId}`,
+      attestsTo: pendingDecisions.map(fileToDecisionId),
+      artifacts: await getChangedFiles(sha),
+      timestamp: new Date().toISOString(),
+    }
+    await Bun.write(
+      `${modulePath}/.memory/sessions/${sessionId}/commits/${sha}.jsonld`,
+      JSON.stringify(commitVertex, null, 2),
+    )
+
+    // 6. Notify — other handlers (training indexer, UI) can react
+    trigger({ type: 'snapshot_committed', detail: { sha, modulePath } })
+  },
+})
+```
+
+**One-behind pattern:** The commit vertex for commit N is written *after* commit N completes (because the SHA is only known after the commit). It becomes a pending file bundled into commit N+1. This is inherent — you cannot include a receipt inside the transaction it describes (the transaction's identity depends on its contents). The `attestsTo` links are still correct; the vertex just lives in the next commit's tree.
+
+**Final session commit:** The `sessionClose` handler's commit captures any remaining pending commit vertices. The very last commit vertex (for the session-closing commit itself) is orphaned in the working tree until the next session or `defrag` cycle.
+
 ## Ingestion Pipeline
 
 Skills and AGENTS.md files share the same pipeline — both are markdown sources that produce JSON-LD subgraphs with `source` pointers back to the authoritative files.
@@ -970,14 +1072,16 @@ One `.jsonld` file per superstep decision. Snapshots are continuously written du
 
 Commits happen when a side-effect-producing tool changes code, not per-session or per-decision. Each commit bundles the code change with all pending decision `.jsonld` files since the last commit.
 
-| Event | Write `.jsonld`? | Git commit? |
-|-------|-----------------|-------------|
-| Any BP decision | Yes (always) | No |
-| `tool_result` from read_file, list_files | Yes | No |
-| `tool_result` from write_file, edit_file, bash | Yes | **Yes** — code change + all pending decisions |
-| `message` (session end) | Yes | **Yes** — final commit, consolidate |
+| Event | Write `.jsonld`? | Git commit? | Commit vertex? |
+|-------|-----------------|-------------|----------------|
+| Any BP decision | Yes (decision file) | No | No |
+| `tool_result` from read_file, list_files | Yes | No | No |
+| `tool_result` from write_file, edit_file, bash | Yes | **Yes** — code + pending decisions + pending commit vertices | **Yes** — written after commit, pending for next |
+| `message` (session end) | Yes | **Yes** — final commit, consolidate | **Yes** — last vertex orphaned until next session |
 
 **Rationale**: Per-session commits lose the correlation between specific decisions and specific code changes — when the agent retries after a failed test, you can't see which reasoning led to which attempt. Per-decision commits are too noisy (most supersteps produce no code diff). Per-side-effect commits are the sweet spot: every commit has a meaningful code diff paired with the reasoning chain that produced it. Each commit is a labeled `(reasoning, code_change)` pair for training extraction.
+
+**Commit vertex as training anchor:** The commit vertex's `attestsTo` field links directly to decision `@id`s, and `artifacts` links to changed files. The training pipeline follows these links to assemble `(reasoning, code_change)` pairs via `@id` traversal, not by parsing `git log` output or relying on time-proximity.
 
 ### Archival Strategy — JSONL Consolidation
 

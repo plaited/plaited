@@ -27,7 +27,9 @@ import { loadJsonLd } from './hypergraph.ts'
  * @internal
  */
 export const EVENT_CAUSATION = new Map<string, string[]>([
-  ['task', ['invoke_inference']],
+  // Reactive path: task → context_assembly → invoke_inference → ...
+  ['task', ['context_assembly']],
+  ['context_assembly', ['invoke_inference']],
   ['invoke_inference', ['model_response']],
   ['model_response', ['context_ready']],
   ['context_ready', ['gate_approved', 'gate_rejected']],
@@ -36,9 +38,24 @@ export const EVENT_CAUSATION = new Map<string, string[]>([
   ['simulation_result', ['eval_approved', 'eval_rejected']],
   ['eval_approved', ['execute']],
   ['execute', ['tool_result']],
-  ['tool_result', ['invoke_inference']],
+  ['tool_result', ['invoke_inference', 'commit_snapshot']],
   ['gate_rejected', ['invoke_inference']],
   ['eval_rejected', ['invoke_inference']],
+  // Commit vertex architecture: commit_snapshot → snapshot_committed (terminal)
+  ['commit_snapshot', ['snapshot_committed']],
+  // Proactive heartbeat path: tick → sensor_sweep → sensor_delta | sleep
+  ['tick', ['sensor_sweep']],
+  ['sensor_sweep', ['sensor_delta', 'sleep']],
+  // sensor_delta merges into reactive path via context_assembly
+  ['sensor_delta', ['context_assembly']],
+  // Plan save/restore path (loop within Reason step)
+  ['save_plan', ['plan_saved']],
+  ['plan_saved', ['invoke_inference']],
+  // Inference error → retry or terminal
+  ['inference_error', ['invoke_inference']],
+  // Terminals: sleep, snapshot_committed, consolidate, defrag,
+  // reingest_skill, reingest_rules, reingest_goal,
+  // message, loop_complete have no successors
 ])
 
 // ============================================================================
@@ -165,7 +182,7 @@ export const deriveProvenanceEdges = (decisions: Record<string, unknown>[]): Pro
     const nextEvent = getSelectedEvent(nextBids)
     if (currEvent && nextEvent) {
       const successors = EVENT_CAUSATION.get(currEvent)
-      if (successors && successors.includes(nextEvent)) {
+      if (successors?.includes(nextEvent)) {
         addEdge({ from: currId, to: nextId, kind: 'event_chain', via: `${currEvent}->${nextEvent}` })
       }
     }
@@ -192,6 +209,7 @@ export type SessionMeta = {
   outcomeEvents: string[]
   toolsUsed: string[]
   decisionCount: number
+  commits?: string[]
   timestamp: string
 }
 
@@ -219,6 +237,11 @@ export const buildSessionSummary = async (
 
   // Filter to decision documents (have bids array)
   const decisions = docs.filter((doc) => Array.isArray(doc.bids) && typeof doc['@id'] === 'string')
+
+  // Collect commit vertex @id values
+  const commitIds = docs
+    .filter((doc) => doc['@type'] === 'Commit' && typeof doc['@id'] === 'string')
+    .map((doc) => doc['@id'] as string)
 
   const threadTypeSet = new Set<string>()
   const outcomeEventSet = new Set<string>()
@@ -274,7 +297,7 @@ export const buildSessionSummary = async (
     embedding = Array.from(embeddingFloat32)
   }
 
-  return {
+  const meta: SessionMeta = {
     '@id': sessionId,
     '@type': 'Session',
     summary,
@@ -285,4 +308,8 @@ export const buildSessionSummary = async (
     decisionCount: decisions.length,
     timestamp: new Date().toISOString(),
   }
+  if (commitIds.length > 0) {
+    meta.commits = commitIds
+  }
+  return meta
 }

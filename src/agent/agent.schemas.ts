@@ -242,6 +242,7 @@ export const ToolDefinitionSchema = z.object({
     description: z.string().optional(),
     parameters: ToolParametersSchema.optional(),
   }),
+  tags: z.array(z.string()).optional(),
 })
 
 /** OpenAI function-calling tool definition */

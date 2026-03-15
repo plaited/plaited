@@ -11,6 +11,8 @@
  * Usage: bun run search.ts '{"query": "your search query"}'
  */
 
+import { mcpCallTool } from '../../add-remote-mcp/scripts/remote-mcp.ts'
+
 // ---- Customize these ----
 const MCP_URL = 'https://example.com/mcp'
 const TOOL_NAME = 'SearchExample'
@@ -18,7 +20,7 @@ const TOOL_NAME = 'SearchExample'
 // ---- Auth (delete if not needed) ----
 const AUTH_ENV_VAR = '' // e.g., 'MY_SERVICE_API_KEY'
 const AUTH_HEADERS: Record<string, string> | undefined =
-  AUTH_ENV_VAR && process.env[AUTH_ENV_VAR] ? { Authorization: `Bearer ${process.env[AUTH_ENV_VAR]}` } : undefined
+  AUTH_ENV_VAR && Bun.env[AUTH_ENV_VAR] ? { Authorization: `Bearer ${Bun.env[AUTH_ENV_VAR]}` } : undefined
 
 // ---- Main ----
 
@@ -41,13 +43,7 @@ const main = async () => {
     process.exit(2)
   }
 
-  const result = await Bun.$`plaited remote-mcp-client ${JSON.stringify({
-    url: MCP_URL,
-    method: 'call-tool',
-    toolName: TOOL_NAME,
-    arguments: input,
-    ...(AUTH_HEADERS ? { headers: AUTH_HEADERS } : {}),
-  })}`.json()
+  const result = await mcpCallTool(MCP_URL, TOOL_NAME, input, AUTH_HEADERS ? { headers: AUTH_HEADERS } : undefined)
 
   for (const content of result.content) {
     if (content.type === 'text' && content.text) {

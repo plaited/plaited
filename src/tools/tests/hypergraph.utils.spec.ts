@@ -7,7 +7,7 @@
 
 import { describe, expect, test } from 'bun:test'
 import { resolve } from 'node:path'
-import { buildSessionSummary, deriveProvenanceEdges } from '../hypergraph.utils.ts'
+import { buildSessionSummary, deriveProvenanceEdges, EVENT_CAUSATION } from '../hypergraph.utils.ts'
 
 // ============================================================================
 // deriveProvenanceEdges
@@ -67,7 +67,7 @@ describe('deriveProvenanceEdges', () => {
     expect(unblock[0]!.via).toBe('bp:thread/sim_guard_tc-1')
   })
 
-  test('event chain via EVENT_CAUSATION', () => {
+  test('event chain via EVENT_CAUSATION (task → context_assembly)', () => {
     const decisions = [
       {
         '@id': 'session/s1/decision/1',
@@ -75,13 +75,13 @@ describe('deriveProvenanceEdges', () => {
       },
       {
         '@id': 'session/s1/decision/2',
-        bids: [{ thread: 'bp:thread/t2', event: 'bp:event/invoke_inference', selected: true }],
+        bids: [{ thread: 'bp:thread/t2', event: 'bp:event/context_assembly', selected: true }],
       },
     ]
     const edges = deriveProvenanceEdges(decisions)
     const chain = edges.filter((e) => e.kind === 'event_chain')
     expect(chain.length).toBe(1)
-    expect(chain[0]!.via).toBe('task->invoke_inference')
+    expect(chain[0]!.via).toBe('task->context_assembly')
   })
 
   test('empty input → empty', () => {
@@ -96,6 +96,65 @@ describe('deriveProvenanceEdges', () => {
       },
     ]
     expect(deriveProvenanceEdges(decisions)).toEqual([])
+  })
+
+  test('proactive event chain (tick → sensor_sweep)', () => {
+    const decisions = [
+      {
+        '@id': 'session/s1/decision/1',
+        bids: [{ thread: 'bp:thread/heartbeat', event: 'bp:event/tick', selected: true }],
+      },
+      {
+        '@id': 'session/s1/decision/2',
+        bids: [{ thread: 'bp:thread/sensors', event: 'bp:event/sensor_sweep', selected: true }],
+      },
+    ]
+    const edges = deriveProvenanceEdges(decisions)
+    const chain = edges.filter((e) => e.kind === 'event_chain')
+    expect(chain.length).toBe(1)
+    expect(chain[0]!.via).toBe('tick->sensor_sweep')
+  })
+
+  test('sensor_delta merges into reactive path via context_assembly', () => {
+    const decisions = [
+      {
+        '@id': 'session/s1/decision/1',
+        bids: [{ thread: 'bp:thread/sensors', event: 'bp:event/sensor_delta', selected: true }],
+      },
+      {
+        '@id': 'session/s1/decision/2',
+        bids: [{ thread: 'bp:thread/ctx', event: 'bp:event/context_assembly', selected: true }],
+      },
+    ]
+    const edges = deriveProvenanceEdges(decisions)
+    const chain = edges.filter((e) => e.kind === 'event_chain')
+    expect(chain.length).toBe(1)
+    expect(chain[0]!.via).toBe('sensor_delta->context_assembly')
+  })
+
+  test('terminal events have no successors in EVENT_CAUSATION', () => {
+    expect(EVENT_CAUSATION.has('sleep')).toBe(false)
+    expect(EVENT_CAUSATION.has('snapshot_committed')).toBe(false)
+    expect(EVENT_CAUSATION.has('consolidate')).toBe(false)
+    expect(EVENT_CAUSATION.has('defrag')).toBe(false)
+    expect(EVENT_CAUSATION.has('message')).toBe(false)
+    expect(EVENT_CAUSATION.has('loop_complete')).toBe(false)
+  })
+
+  test('plan save/restore path in EVENT_CAUSATION', () => {
+    expect(EVENT_CAUSATION.get('save_plan')).toEqual(['plan_saved'])
+    expect(EVENT_CAUSATION.get('plan_saved')).toEqual(['invoke_inference'])
+  })
+
+  test('inference_error can retry via invoke_inference', () => {
+    expect(EVENT_CAUSATION.get('inference_error')).toEqual(['invoke_inference'])
+  })
+
+  test('tool_result branches to invoke_inference and commit_snapshot', () => {
+    const successors = EVENT_CAUSATION.get('tool_result')
+    expect(successors).toBeDefined()
+    expect(successors).toContain('invoke_inference')
+    expect(successors).toContain('commit_snapshot')
   })
 
   test('no selected bids → no edges', () => {
@@ -165,5 +224,11 @@ describe('buildSessionSummary', () => {
     const meta = await buildSessionSummary(FIXTURES_DIR, 'session/test', mockEmbedder)
     expect(meta.embedding).toBeDefined()
     expect(meta.embedding).toEqual([expect.closeTo(0.1, 2), expect.closeTo(0.2, 2), expect.closeTo(0.3, 2)])
+  })
+
+  test('collects commit vertex @id values', async () => {
+    const meta = await buildSessionSummary(FIXTURES_DIR, 'session/test')
+    expect(meta.commits).toBeDefined()
+    expect(meta.commits).toContain('session/sess_test/commit/abc1234')
   })
 })
