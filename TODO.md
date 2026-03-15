@@ -102,7 +102,7 @@
 - All categories (MAC, DAC, goals, workflows) share the same factory contract — only brand and approval flow differ
 - See CONSTITUTION.md § Generated bThreads for full architecture
 
-### High — hypergraph tool updates (partially complete)
+### High — hypergraph tool updates (complete)
 
 Three layers — agent tools go through pipeline, memory handlers don't, CLI tools run offline:
 
@@ -124,11 +124,11 @@ Three layers — agent tools go through pipeline, memory handlers don't, CLI too
 - [x] **`consolidate` handler** — Decisions → `decisions.jsonl`, `meta.jsonld`, embedding, final commit
 - [x] **`defrag` handler** — `git archive` old sessions, clean working tree
 
-**CLI tools (partially complete):**
+**CLI tools (complete):**
 - [x] **`plaited ingest-goal`** — Goal `.ts` factory → JSON-LD vertex
 - [x] **`plaited validate-thread`** — 7-check validation gate
-- [ ] **`plaited ingest-skill`** — Markdown + TS → `skills/{name}.jsonld`
-- [ ] **`plaited ingest-rules`** — AGENTS.md → `rules/{scope}.jsonld`
+- [x] **`plaited ingest-skill`** — SKILL.md + TS → `skills/{name}.jsonld`
+- [x] **`plaited ingest-rules`** — AGENTS.md → `rules/{scope}.jsonld`
 
 ### Medium — enables multi-agent & training
 
