@@ -17,6 +17,7 @@ export const EditFileConfigSchema = z.object({
   path: z.string().describe('Relative path to the file'),
   old_string: z.string().describe('Exact string to find (must appear exactly once in file)'),
   new_string: z.string().describe('Replacement string'),
+  symbol: z.string().optional().describe('Export name to scope the search to (uses Bun.Transpiler.scan)'),
 })
 
 export const ListFilesConfigSchema = z.object({
