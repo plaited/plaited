@@ -2,6 +2,7 @@ import { afterAll, describe, expect, test } from 'bun:test'
 import { UI_ADAPTER_LIFECYCLE_EVENTS } from '../../events.ts'
 import { SERVER_ERRORS } from '../server.constants.ts'
 import { createServer } from '../server.ts'
+import type { ServerHandle } from '../server.types.ts'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -12,14 +13,13 @@ const createTestServer = (overrides: Partial<Parameters<typeof createServer>[0]>
   const trigger = (evt: TriggeredEvent) => {
     triggered.push(evt)
   }
-  const server = createServer({
+  const handle = createServer({
     trigger,
     routes: overrides.routes ?? {},
     port: 0,
     ...overrides,
   })
-  // port is always defined when Bun.serve() succeeds with port: 0
-  return { server, port: server.port!, triggered }
+  return { ...handle, triggered }
 }
 
 const wsUrl = (port: number) => `ws://localhost:${port}/ws`
@@ -45,6 +45,12 @@ const waitForOpen = (ws: WebSocket) =>
     ws.onerror = (e) => reject(e)
   })
 
+/** Wait for a WebSocket to reach closed state */
+const waitForClose = (ws: WebSocket) =>
+  new Promise<void>((resolve) => {
+    ws.onclose = () => resolve()
+  })
+
 /** Collect a single message from the WebSocket */
 const nextMessage = (ws: WebSocket) =>
   new Promise<unknown>((resolve) => {
@@ -54,22 +60,24 @@ const nextMessage = (ws: WebSocket) =>
 // ─── Server Setup ─────────────────────────────────────────────────────────────
 
 describe('Server Setup', () => {
-  let server: ReturnType<typeof createServer>
+  let handle: ServerHandle
   afterAll(async () => {
-    server.stop(true)
+    handle.stop(true)
   })
 
-  test('creates on random port and returns raw Bun.Server', () => {
+  test('creates on random port and returns ServerHandle', () => {
     const result = createTestServer()
-    server = result.server
+    handle = result
     expect(result.port).toBeGreaterThan(0)
-    // It's a raw Bun.Server — has publish, stop, etc.
-    expect(typeof server.publish).toBe('function')
-    expect(typeof server.stop).toBe('function')
+    // Raw Bun.Server accessible via .server
+    expect(typeof handle.server.publish).toBe('function')
+    // ServerHandle API
+    expect(typeof handle.send).toBe('function')
+    expect(typeof handle.stop).toBe('function')
   })
 
   test('serves caller-provided routes', async () => {
-    const { server: s, port } = createTestServer({
+    const result = createTestServer({
       routes: {
         '/health': new Response('OK'),
         '/api/status': new Response(JSON.stringify({ ok: true }), {
@@ -77,13 +85,13 @@ describe('Server Setup', () => {
         }),
       },
     })
-    afterAll(() => s.stop(true))
+    afterAll(() => result.stop(true))
 
-    const health = await fetch(httpUrl(port, '/health'))
+    const health = await fetch(httpUrl(result.port, '/health'))
     expect(health.status).toBe(200)
     expect(await health.text()).toBe('OK')
 
-    const status = await fetch(httpUrl(port, '/api/status'))
+    const status = await fetch(httpUrl(result.port, '/api/status'))
     expect(status.status).toBe(200)
     expect(await status.json()).toEqual({ ok: true })
   })
@@ -93,18 +101,18 @@ describe('Server Setup', () => {
 
 describe('WebSocket Upgrade', () => {
   let port: number
-  let server: ReturnType<typeof createServer>
+  let handle: ServerHandle
   let triggered: TriggeredEvent[]
 
   afterAll(() => {
-    server.stop(true)
+    handle.stop(true)
   })
 
   test('setup', () => {
     const result = createTestServer({
       allowedOrigins: new Set(['http://localhost:3000']),
     })
-    server = result.server
+    handle = result
     port = result.port
     triggered = result.triggered
   })
@@ -179,40 +187,54 @@ describe('WebSocket Upgrade', () => {
     expect(ws.protocol).toBe('document')
     ws.close()
   })
+
+  test('missing origin rejected when allowedOrigins is set', async () => {
+    const res = await fetch(httpUrl(port, '/ws'), {
+      headers: {
+        Upgrade: 'websocket',
+        Cookie: SESSION_COOKIE,
+        // No Origin header
+      },
+    })
+    expect(res.status).toBe(403)
+    const body = await res.text()
+    expect(body).toBe(SERVER_ERRORS.origin_rejected)
+  })
 })
 
 // ─── WebSocket Lifecycle ──────────────────────────────────────────────────────
 
 describe('WebSocket Lifecycle', () => {
   let port: number
-  let server: ReturnType<typeof createServer>
+  let handle: ServerHandle
   let triggered: TriggeredEvent[]
 
   afterAll(() => {
-    server.stop(true)
+    handle.stop(true)
   })
 
   test('setup', () => {
     const result = createTestServer()
-    server = result.server
+    handle = result
     port = result.port
     triggered = result.triggered
   })
 
-  test('client_connected triggered on open with sessionId and source', async () => {
+  test('client_connected triggered on open with sessionId, source, and isReconnect', async () => {
     const ws = openWs(port, { protocol: 'document' })
     await waitForOpen(ws)
     await Bun.sleep(50)
 
     const connectEvt = triggered.find((e) => e.type === UI_ADAPTER_LIFECYCLE_EVENTS.client_connected)
     expect(connectEvt).toBeDefined()
-    const detail = connectEvt!.detail as { sessionId: string; source: string }
+    const detail = connectEvt!.detail as { sessionId: string; source: string; isReconnect: boolean }
     expect(detail.sessionId).toBe('test-session-id')
     expect(detail.source).toBe('document')
+    expect(detail.isReconnect).toBe(false)
     ws.close()
   })
 
-  test('client_disconnected triggered on close', async () => {
+  test('client_disconnected triggered on close with code and reason', async () => {
     const before = triggered.length
     const ws = openWs(port, { protocol: 'my-island' })
     await waitForOpen(ws)
@@ -223,8 +245,10 @@ describe('WebSocket Lifecycle', () => {
       .slice(before)
       .find((e) => e.type === UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected)
     expect(disconnectEvt).toBeDefined()
-    const detail = disconnectEvt!.detail as { sessionId: string }
+    const detail = disconnectEvt!.detail as { sessionId: string; code: number; reason: string }
     expect(detail.sessionId).toBe('test-session-id')
+    expect(typeof detail.code).toBe('number')
+    expect(typeof detail.reason).toBe('string')
   })
 
   test('document source subscribes to sessionId topic', async () => {
@@ -233,7 +257,7 @@ describe('WebSocket Lifecycle', () => {
     await Bun.sleep(50)
 
     const messagePromise = nextMessage(ws)
-    server.publish(
+    handle.server.publish(
       'test-session-id',
       JSON.stringify({ type: 'render', detail: { target: 'main', html: '<p>hello</p>' } }),
     )
@@ -250,7 +274,7 @@ describe('WebSocket Lifecycle', () => {
     await Bun.sleep(50)
 
     const messagePromise = nextMessage(ws)
-    server.publish(
+    handle.server.publish(
       'test-session-id:app-shell',
       JSON.stringify({ type: 'attrs', detail: { target: 'main', attr: { class: 'active' } } }),
     )
@@ -261,20 +285,217 @@ describe('WebSocket Lifecycle', () => {
   })
 })
 
-// ─── Message Forwarding ─────────────────────────────────────────────────────
+// ─── SSR Reconciliation ─────────────────────────────────────────────────────
 
-describe('Message Forwarding', () => {
+describe('SSR Reconciliation', () => {
   let port: number
-  let server: ReturnType<typeof createServer>
+  let handle: ServerHandle
   let triggered: TriggeredEvent[]
 
   afterAll(() => {
-    server.stop(true)
+    handle.stop(true)
   })
 
   test('setup', () => {
     const result = createTestServer()
-    server = result.server
+    handle = result
+    port = result.port
+    triggered = result.triggered
+  })
+
+  test('first connection for a session has isReconnect false', async () => {
+    const ws = openWs(port, { protocol: 'document' })
+    await waitForOpen(ws)
+    await Bun.sleep(50)
+
+    const connectEvt = triggered.find((e) => e.type === UI_ADAPTER_LIFECYCLE_EVENTS.client_connected)
+    expect(connectEvt).toBeDefined()
+    const detail = connectEvt!.detail as { isReconnect: boolean }
+    expect(detail.isReconnect).toBe(false)
+    ws.close()
+    await waitForClose(ws)
+    await Bun.sleep(50)
+  })
+
+  test('subsequent connection for same session has isReconnect true', async () => {
+    const before = triggered.length
+    const ws = openWs(port, { protocol: 'document' })
+    await waitForOpen(ws)
+    await Bun.sleep(50)
+
+    const connectEvt = triggered
+      .slice(before)
+      .find((e) => e.type === UI_ADAPTER_LIFECYCLE_EVENTS.client_connected)
+    expect(connectEvt).toBeDefined()
+    const detail = connectEvt!.detail as { isReconnect: boolean }
+    expect(detail.isReconnect).toBe(true)
+    ws.close()
+  })
+
+  test('different source on same session still detects reconnection', async () => {
+    const before = triggered.length
+    // Same session (same cookie) but different source (island vs document)
+    const ws = openWs(port, { protocol: 'sidebar-island' })
+    await waitForOpen(ws)
+    await Bun.sleep(50)
+
+    const connectEvt = triggered
+      .slice(before)
+      .find((e) => e.type === UI_ADAPTER_LIFECYCLE_EVENTS.client_connected)
+    expect(connectEvt).toBeDefined()
+    const detail = connectEvt!.detail as { isReconnect: boolean; source: string }
+    // Same sessionId seen before → isReconnect true regardless of source
+    expect(detail.isReconnect).toBe(true)
+    expect(detail.source).toBe('sidebar-island')
+    ws.close()
+  })
+})
+
+// ─── MPA View Transition Replay Buffer ──────────────────────────────────────
+
+describe('MPA View Transition Replay Buffer', () => {
+  let port: number
+  let handle: ServerHandle
+  let triggered: TriggeredEvent[]
+
+  afterAll(() => {
+    handle.stop(true)
+  })
+
+  test('setup', () => {
+    const result = createTestServer({
+      replayBuffer: { maxSize: 5, ttlMs: 2000 },
+    })
+    handle = result
+    port = result.port
+    triggered = result.triggered
+  })
+
+  test('send() delivers immediately when connected', async () => {
+    const ws = openWs(port, { protocol: 'document' })
+    await waitForOpen(ws)
+    await Bun.sleep(50)
+
+    const messagePromise = nextMessage(ws)
+    handle.send(
+      'test-session-id',
+      JSON.stringify({ type: 'render', detail: { target: 'main', html: '<p>live</p>' } }),
+    )
+
+    const msg = (await messagePromise) as { type: string; detail: { html: string } }
+    expect(msg.type).toBe('render')
+    expect(msg.detail.html).toBe('<p>live</p>')
+    ws.close()
+    await waitForClose(ws)
+    await Bun.sleep(50)
+  })
+
+  test('messages sent during connection gap are replayed on reconnect', async () => {
+    // Previous test closed the connection — no subscribers on this topic
+    const msg1 = JSON.stringify({ type: 'render', detail: { target: 'main', html: '<p>buffered-1</p>' } })
+    const msg2 = JSON.stringify({ type: 'attrs', detail: { target: 'nav', attr: { class: 'active' } } })
+    handle.send('test-session-id', msg1)
+    handle.send('test-session-id', msg2)
+
+    // Reconnect — should receive buffered messages
+    const ws = openWs(port, { protocol: 'document' })
+    const received: unknown[] = []
+    ws.onmessage = (e) => received.push(JSON.parse(String(e.data)))
+    await waitForOpen(ws)
+    await Bun.sleep(100)
+
+    expect(received).toHaveLength(2)
+    expect((received[0] as { detail: { html: string } }).detail.html).toBe('<p>buffered-1</p>')
+    expect((received[1] as { type: string }).type).toBe('attrs')
+    ws.close()
+    await waitForClose(ws)
+    await Bun.sleep(50)
+  })
+
+  test('expired messages are not replayed', async () => {
+    // Send a message while disconnected
+    handle.send(
+      'test-session-id',
+      JSON.stringify({ type: 'render', detail: { target: 'main', html: '<p>expired</p>' } }),
+    )
+
+    // Wait for TTL to expire (configured to 2000ms)
+    await Bun.sleep(2100)
+
+    // Reconnect — expired message should NOT be replayed
+    const ws = openWs(port, { protocol: 'document' })
+    const received: unknown[] = []
+    ws.onmessage = (e) => received.push(JSON.parse(String(e.data)))
+    await waitForOpen(ws)
+    await Bun.sleep(100)
+
+    expect(received).toHaveLength(0)
+    ws.close()
+    await waitForClose(ws)
+    await Bun.sleep(50)
+  })
+
+  test('buffer respects maxSize limit', async () => {
+    // Buffer more than maxSize (5) messages while disconnected
+    for (let i = 0; i < 8; i++) {
+      handle.send(
+        'test-session-id',
+        JSON.stringify({ type: 'render', detail: { target: 'main', html: `<p>msg-${i}</p>` } }),
+      )
+    }
+
+    // Reconnect — should receive only last 5 messages
+    const ws = openWs(port, { protocol: 'document' })
+    const received: unknown[] = []
+    ws.onmessage = (e) => received.push(JSON.parse(String(e.data)))
+    await waitForOpen(ws)
+    await Bun.sleep(100)
+
+    expect(received).toHaveLength(5)
+    // First message should be msg-3 (oldest 3 were dropped)
+    expect((received[0] as { detail: { html: string } }).detail.html).toBe('<p>msg-3</p>')
+    ws.close()
+  })
+
+  test('island topics buffer independently', async () => {
+    // Buffer messages on two different island topics
+    handle.send(
+      'test-session-id:app-shell',
+      JSON.stringify({ type: 'render', detail: { target: 'header', html: '<h1>Shell</h1>' } }),
+    )
+    handle.send(
+      'test-session-id:sidebar',
+      JSON.stringify({ type: 'render', detail: { target: 'nav', html: '<nav>Links</nav>' } }),
+    )
+
+    // Connect only the app-shell island
+    const ws = openWs(port, { protocol: 'app-shell' })
+    const received: unknown[] = []
+    ws.onmessage = (e) => received.push(JSON.parse(String(e.data)))
+    await waitForOpen(ws)
+    await Bun.sleep(100)
+
+    // Only app-shell messages should be replayed
+    expect(received).toHaveLength(1)
+    expect((received[0] as { detail: { html: string } }).detail.html).toBe('<h1>Shell</h1>')
+    ws.close()
+  })
+})
+
+// ─── Message Forwarding ─────────────────────────────────────────────────────
+
+describe('Message Forwarding', () => {
+  let port: number
+  let handle: ServerHandle
+  let triggered: TriggeredEvent[]
+
+  afterAll(() => {
+    handle.stop(true)
+  })
+
+  test('setup', () => {
+    const result = createTestServer()
+    handle = result
     port = result.port
     triggered = result.triggered
   })
@@ -363,18 +584,18 @@ describe('Message Forwarding', () => {
 
 describe('Fetch Fallthrough', () => {
   let port: number
-  let server: ReturnType<typeof createServer>
+  let handle: ServerHandle
   let triggered: TriggeredEvent[]
 
   afterAll(() => {
-    server.stop(true)
+    handle.stop(true)
   })
 
   test('setup', () => {
     const result = createTestServer({
       routes: { '/health': new Response('OK') },
     })
-    server = result.server
+    handle = result
     port = result.port
     triggered = result.triggered
   })
