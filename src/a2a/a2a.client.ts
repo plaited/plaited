@@ -64,6 +64,9 @@ export const createA2AClient = (options: CreateA2AClientOptions): A2AClient => {
     const id = ++requestCounter
     const request = jsonRpcRequest(method, params, id)
     const response = await fetch(a2aUrl, fetchOptions(request))
+    if (!response.ok) {
+      throw A2AError.internalError(`HTTP ${response.status}: ${response.statusText}`)
+    }
     const json = (await response.json()) as Record<string, unknown>
 
     // Check for error first — z.unknown() in success schema accepts missing 'result'
@@ -88,6 +91,9 @@ export const createA2AClient = (options: CreateA2AClientOptions): A2AClient => {
       const id = ++requestCounter
       const request = jsonRpcRequest(method, params, id)
       const response = await fetch(a2aUrl, fetchOptions(request, controller.signal, 'text/event-stream'))
+      if (!response.ok) {
+        throw A2AError.internalError(`HTTP ${response.status}: ${response.statusText}`)
+      }
 
       // Server may return JSON error instead of SSE for unsupported operations
       const contentType = response.headers.get('content-type') ?? ''
@@ -152,6 +158,9 @@ export const createA2AClient = (options: CreateA2AClientOptions): A2AClient => {
       if (extraHeaders) opts.headers = extraHeaders
 
       const response = await fetch(cardUrl, opts)
+      if (!response.ok) {
+        throw A2AError.internalError(`HTTP ${response.status}: ${response.statusText}`)
+      }
       const json = await response.json()
       return AgentCardSchema.parse(json)
     },

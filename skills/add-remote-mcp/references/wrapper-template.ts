@@ -20,7 +20,7 @@ const TOOL_NAME = 'SearchExample'
 // ---- Auth (delete if not needed) ----
 const AUTH_ENV_VAR = '' // e.g., 'MY_SERVICE_API_KEY'
 const AUTH_HEADERS: Record<string, string> | undefined =
-  AUTH_ENV_VAR && process.env[AUTH_ENV_VAR] ? { Authorization: `Bearer ${process.env[AUTH_ENV_VAR]}` } : undefined
+  AUTH_ENV_VAR && Bun.env[AUTH_ENV_VAR] ? { Authorization: `Bearer ${Bun.env[AUTH_ENV_VAR]}` } : undefined
 
 // ---- Main ----
 

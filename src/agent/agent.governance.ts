@@ -46,7 +46,7 @@ export const isEtcWrite = (toolCall: AgentToolCall): boolean => {
   const command = getCommand(toolCall)
   if (command?.includes('/etc/')) return true
   const path = getTargetPath(toolCall)
-  return path?.includes('/etc/') ?? false
+  return path?.startsWith('/etc/') ?? false
 }
 
 /**
