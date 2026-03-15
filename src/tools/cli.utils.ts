@@ -12,6 +12,25 @@ import * as z from 'zod'
 import type { ToolContext, ToolHandler } from '../agent/agent.types.ts'
 
 // ============================================================================
+// External Binary Check
+// ============================================================================
+
+/**
+ * Assert that a required external binary is on PATH.
+ *
+ * @remarks
+ * Call at handler registration time (module load) so missing dependencies
+ * surface at startup, not mid-task. Returns the resolved path for logging.
+ *
+ * @public
+ */
+export const ensureTool = (name: string): string => {
+  const path = Bun.which(name)
+  if (!path) throw new Error(`Required tool '${name}' not found on PATH. Install it or add it to your node's setup.`)
+  return path
+}
+
+// ============================================================================
 // CLI Context Schema (shared execution context for all makeCli tools)
 // ============================================================================
 
