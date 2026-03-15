@@ -1,81 +1,96 @@
 /**
- * Zod schemas and types for the training pipeline.
+ * Training pipeline schemas and types.
  *
  * @remarks
- * Schema-first approach — Zod schemas are the single source of truth,
- * TypeScript types derived via `z.infer<>`.
+ * Connects BP snapshots to model improvement. Re-exports canonical schemas
+ * from agent and trial modules; adds training-specific scoring schemas.
  *
- * Re-exports `GradingDimensionsSchema` (from trial schemas) and
- * `DecisionStepSchema` (from agent schemas) for ergonomic imports
- * by training consumers. Adds training-specific schemas for weight
- * computation and meta-verification statistics.
+ * `DecisionStepSchema` imported from `src/agent/agent.schemas.ts` (canonical source).
+ * `GradingDimensionsSchema` imported from `src/tools/trial.schemas.ts` (canonical source).
  *
  * @packageDocumentation
  */
 
 import * as z from 'zod'
+import { GradingDimensionsSchema } from './trial.schemas.ts'
 
-// ============================================================================
-// Re-exports — canonical schemas used by training consumers
-// ============================================================================
-
-export { GradingDimensionsSchema, type GradingDimensions } from './trial.schemas.ts'
 export { DecisionStepSchema, type DecisionStep } from '../agent/agent.schemas.ts'
+export { GradingDimensionsSchema, type GradingDimensions } from './trial.schemas.ts'
 
 // ============================================================================
-// Meta-Verification Statistics
+// Training Score
 // ============================================================================
 
 /**
- * Statistics from running a grader k times for flakiness detection.
+ * Training score — grading dimensions with computed overall weight.
  *
  * @remarks
- * Produced by the k-runs `withMetaVerification` wrapper. Captures
- * the distribution of scores across repeated grader invocations
- * on the same input — high stddev indicates a flaky grader whose
- * signal should not be trusted for training.
+ * Extends `GradingDimensions` with `overall`, computed as `outcome × process`.
+ * Trajectories with correct outcomes but poor reasoning (retry loops,
+ * unnecessary tool calls) get lower weights than clean solutions.
+ * See `docs/TRAINING.md` § Augmented Self-Distillation.
  *
  * @public
  */
-export const MetaVerificationStatsSchema = z.object({
+export const TrainingScoreSchema = GradingDimensionsSchema.extend({
+  /** Computed training weight: outcome × process */
+  overall: z.number().min(0).max(1),
+})
+
+/** Training score type */
+export type TrainingScore = z.infer<typeof TrainingScoreSchema>
+
+// ============================================================================
+// Meta-Verification
+// ============================================================================
+
+/**
+ * Statistical meta-verification result from running a grader k times.
+ *
+ * @remarks
+ * Detects flaky graders by computing confidence intervals over repeated
+ * runs. A high `stddev` indicates inconsistent scoring — the grader's
+ * signal should not be trusted for training data.
+ *
+ * Stored in `outcome._metaVerification` on the `GraderResult`.
+ *
+ * @public
+ */
+export const MetaVerificationSchema = z.object({
   /** Mean score across k runs */
-  mean: z.number(),
+  mean: z.number().min(0).max(1),
   /** Standard deviation of scores */
-  stddev: z.number(),
+  stddev: z.number().min(0),
   /** Minimum score observed */
-  min: z.number(),
+  min: z.number().min(0).max(1),
   /** Maximum score observed */
-  max: z.number(),
-  /** Number of runs */
-  k: z.number(),
+  max: z.number().min(0).max(1),
+  /** Number of grader runs */
+  k: z.number().int().positive(),
   /** Individual scores from each run */
-  scores: z.array(z.number()),
+  scores: z.array(z.number().min(0).max(1)),
 })
 
-/** Meta-verification statistics type */
-export type MetaVerificationStats = z.infer<typeof MetaVerificationStatsSchema>
+/** Meta-verification result type */
+export type MetaVerification = z.infer<typeof MetaVerificationSchema>
 
 // ============================================================================
-// Training Weight Result
+// CLI Schemas
 // ============================================================================
 
 /**
- * Result of computing a training weight from grading dimensions.
- *
- * @remarks
- * Training weight = outcome x process. Captures the input dimensions
- * alongside the computed weight for transparency.
+ * CLI input schema for the training-score command.
  *
  * @public
  */
-export const TrainingWeightResultSchema = z.object({
-  /** Computed training weight (outcome x process) */
-  weight: z.number().min(0).max(1),
-  /** Outcome score used in computation */
-  outcome: z.number().min(0).max(1),
-  /** Process score used in computation */
-  process: z.number().min(0).max(1),
+export const TrainingScoreInputSchema = z.object({
+  outcome: z.number().min(0).max(1).optional().describe('Outcome correctness score (0-1)'),
+  process: z.number().min(0).max(1).optional().describe('Process quality score (0-1)'),
+  efficiency: z.number().min(0).max(1).optional().describe('Efficiency score (0-1)'),
 })
 
-/** Training weight result type */
-export type TrainingWeightResult = z.infer<typeof TrainingWeightResultSchema>
+/** CLI input type */
+export type TrainingScoreInput = z.infer<typeof TrainingScoreInputSchema>
+
+/** CLI output schema (array of TrainingScore) */
+export const TrainingScoreOutputSchema = TrainingScoreSchema

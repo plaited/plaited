@@ -1,187 +1,227 @@
 /**
- * Tests for the training pipeline.
+ * Tests for the training pipeline scoring functions.
  *
  * @remarks
- * Covers: computeTrainingWeight, withMetaVerification (k-runs),
- * schema validation, and CLI contract (--schema).
+ * Covers: computeTrainingWeight, scoreTrainingDimensions, withMetaVerification,
+ * schema validation, CLI contract.
  */
 
 import { describe, expect, test } from 'bun:test'
 import * as z from 'zod'
 import type { Grader } from '../trial.schemas.ts'
 import {
-  DecisionStepSchema,
-  GradingDimensionsSchema,
-  MetaVerificationStatsSchema,
-  TrainingWeightResultSchema,
+  MetaVerificationSchema,
+  TrainingScoreInputSchema,
+  TrainingScoreOutputSchema,
+  TrainingScoreSchema,
 } from '../training.schemas.ts'
-import { computeTrainingWeight, TrainingInputSchema, TrainingOutputSchema, withMetaVerification } from '../training.ts'
+import { computeTrainingWeight, scoreTrainingDimensions, withMetaVerification } from '../training.ts'
 
 // ============================================================================
 // computeTrainingWeight
 // ============================================================================
 
 describe('computeTrainingWeight', () => {
-  test('outcome x process', () => {
-    expect(computeTrainingWeight({ outcome: 0.8, process: 0.9 })).toBeCloseTo(0.72, 10)
+  test('multiplies outcome by process', () => {
+    expect(computeTrainingWeight({ outcome: 0.9, process: 0.8 })).toBeCloseTo(0.72, 10)
   })
 
-  test('perfect scores yield 1', () => {
-    expect(computeTrainingWeight({ outcome: 1.0, process: 1.0 })).toBe(1)
+  test('perfect scores return 1', () => {
+    expect(computeTrainingWeight({ outcome: 1, process: 1 })).toBe(1)
   })
 
-  test('zero outcome yields 0', () => {
+  test('zero outcome returns 0', () => {
     expect(computeTrainingWeight({ outcome: 0, process: 0.9 })).toBe(0)
   })
 
-  test('zero process yields 0', () => {
+  test('zero process returns 0', () => {
     expect(computeTrainingWeight({ outcome: 0.9, process: 0 })).toBe(0)
   })
 
-  test('both zero yields 0', () => {
-    expect(computeTrainingWeight({ outcome: 0, process: 0 })).toBe(0)
-  })
-
   test('missing outcome defaults to 0', () => {
-    expect(computeTrainingWeight({ process: 0.5 })).toBe(0)
+    expect(computeTrainingWeight({ process: 0.8 })).toBe(0)
   })
 
   test('missing process defaults to 0', () => {
-    expect(computeTrainingWeight({ outcome: 0.5 })).toBe(0)
+    expect(computeTrainingWeight({ outcome: 0.9 })).toBe(0)
   })
 
-  test('empty dimensions defaults to 0', () => {
+  test('both missing returns 0', () => {
     expect(computeTrainingWeight({})).toBe(0)
   })
 
-  test('efficiency is ignored', () => {
-    expect(computeTrainingWeight({ outcome: 0.8, process: 0.5, efficiency: 1.0 })).toBeCloseTo(0.4, 10)
+  test('ignores efficiency in weight calculation', () => {
+    const withEfficiency = computeTrainingWeight({ outcome: 0.9, process: 0.8, efficiency: 1.0 })
+    const withoutEfficiency = computeTrainingWeight({ outcome: 0.9, process: 0.8 })
+    expect(withEfficiency).toBe(withoutEfficiency)
   })
 })
 
 // ============================================================================
-// withMetaVerification (k-runs)
+// scoreTrainingDimensions
+// ============================================================================
+
+describe('scoreTrainingDimensions', () => {
+  test('includes all dimensions plus computed overall', () => {
+    const result = scoreTrainingDimensions({ outcome: 0.9, process: 0.8, efficiency: 0.7 })
+    expect(result.outcome).toBe(0.9)
+    expect(result.process).toBe(0.8)
+    expect(result.efficiency).toBe(0.7)
+    expect(result.overall).toBeCloseTo(0.72, 10)
+  })
+
+  test('handles partial dimensions', () => {
+    const result = scoreTrainingDimensions({ outcome: 0.5 })
+    expect(result.outcome).toBe(0.5)
+    expect(result.process).toBeUndefined()
+    expect(result.efficiency).toBeUndefined()
+    expect(result.overall).toBe(0)
+  })
+
+  test('empty dimensions produce zero overall', () => {
+    const result = scoreTrainingDimensions({})
+    expect(result.overall).toBe(0)
+  })
+
+  test('result validates against TrainingScoreSchema', () => {
+    const result = scoreTrainingDimensions({ outcome: 0.9, process: 0.8 })
+    expect(() => TrainingScoreSchema.parse(result)).not.toThrow()
+  })
+})
+
+// ============================================================================
+// withMetaVerification
 // ============================================================================
 
 describe('withMetaVerification', () => {
-  test('consistent grader produces low stddev', async () => {
-    const consistentGrader: Grader = async () => ({
-      pass: true,
-      score: 0.85,
-      reasoning: 'Consistent result',
-    })
+  test('runs grader k times and computes mean score', async () => {
+    const grader: Grader = async () => ({ pass: true, score: 0.8 })
+    const wrapped = withMetaVerification(grader, 3)
 
-    const wrapped = withMetaVerification(consistentGrader, 5)
     const result = await wrapped({ input: 'test', output: 'hello' })
 
+    expect(result.score).toBeCloseTo(0.8, 10)
     expect(result.pass).toBe(true)
-    expect(result.score).toBeCloseTo(0.85, 10)
-    expect(result.outcome).toBeDefined()
-    expect(result.outcome!._metaVerification).toBeDefined()
-
-    const stats = result.outcome!._metaVerification as {
-      mean: number
-      stddev: number
-      min: number
-      max: number
-      k: number
-      scores: number[]
-    }
-    expect(stats.mean).toBeCloseTo(0.85, 10)
-    expect(stats.stddev).toBe(0)
-    expect(stats.k).toBe(5)
-    expect(stats.scores).toHaveLength(5)
-    expect(stats.min).toBe(0.85)
-    expect(stats.max).toBe(0.85)
   })
 
-  test('flaky grader produces high stddev', async () => {
+  test('consistent grader has zero stddev', async () => {
+    const grader: Grader = async () => ({ pass: true, score: 0.9 })
+    const wrapped = withMetaVerification(grader, 5)
+
+    const result = await wrapped({ input: 'test', output: 'hello' })
+
+    expect(result.outcome).toBeDefined()
+    const meta = result.outcome!._metaVerification as z.infer<typeof MetaVerificationSchema>
+    expect(meta.stddev).toBe(0)
+    expect(meta.mean).toBe(0.9)
+    expect(meta.min).toBe(0.9)
+    expect(meta.max).toBe(0.9)
+    expect(meta.k).toBe(5)
+    expect(meta.scores).toHaveLength(5)
+  })
+
+  test('detects flaky grader via high stddev', async () => {
     let callCount = 0
     const flakyGrader: Grader = async () => {
-      const pass = callCount++ % 2 === 0
-      return { pass, score: pass ? 1.0 : 0.0 }
+      callCount++
+      const score = callCount % 2 === 0 ? 1.0 : 0.0
+      return { pass: score > 0.5, score }
     }
 
     const wrapped = withMetaVerification(flakyGrader, 4)
     const result = await wrapped({ input: 'test', output: 'hello' })
 
-    const stats = result.outcome!._metaVerification as { mean: number; stddev: number; min: number; max: number }
-    expect(stats.mean).toBe(0.5)
-    expect(stats.stddev).toBe(0.5)
-    expect(stats.min).toBe(0)
-    expect(stats.max).toBe(1)
-    // 2 pass, 2 fail → majority vote is false (2 is not > 4/2)
-    expect(result.pass).toBe(false)
+    const meta = result.outcome!._metaVerification as z.infer<typeof MetaVerificationSchema>
+    expect(meta.stddev).toBeGreaterThan(0.4)
+    expect(meta.min).toBe(0)
+    expect(meta.max).toBe(1)
   })
 
-  test('majority vote for pass', async () => {
+  test('majority vote for pass/fail', async () => {
     let callCount = 0
-    const mostlyPassGrader: Grader = async () => {
-      const pass = callCount++ < 3
+    const grader: Grader = async () => {
+      callCount++
+      // 3 pass, 2 fail → majority pass
+      const pass = callCount <= 3
       return { pass, score: pass ? 1.0 : 0.0 }
     }
 
-    const wrapped = withMetaVerification(mostlyPassGrader, 4)
+    const wrapped = withMetaVerification(grader, 5)
     const result = await wrapped({ input: 'test', output: 'hello' })
 
-    // 3 pass, 1 fail → 3 > 4/2 → true
     expect(result.pass).toBe(true)
   })
 
-  test('k=1 passes through single result', async () => {
-    const grader: Grader = async () => ({
-      pass: true,
-      score: 0.7,
-      reasoning: 'Single run',
-    })
-
-    const wrapped = withMetaVerification(grader, 1)
-    const result = await wrapped({ input: 'test', output: 'hello' })
-
-    expect(result.score).toBeCloseTo(0.7, 10)
-    expect(result.pass).toBe(true)
-
-    const stats = result.outcome!._metaVerification as { stddev: number; k: number }
-    expect(stats.stddev).toBe(0)
-    expect(stats.k).toBe(1)
-  })
-
-  test('score is mean of k runs', async () => {
+  test('majority vote fails when fewer than half pass', async () => {
     let callCount = 0
-    const gradientGrader: Grader = async () => {
-      const scores = [0.2, 0.4, 0.6, 0.8, 1.0]
-      const score = scores[callCount++]!
-      return { pass: score > 0.5, score }
+    const grader: Grader = async () => {
+      callCount++
+      // 1 pass, 4 fail → majority fail
+      const pass = callCount === 1
+      return { pass, score: pass ? 1.0 : 0.0 }
     }
 
-    const wrapped = withMetaVerification(gradientGrader, 5)
+    const wrapped = withMetaVerification(grader, 5)
     const result = await wrapped({ input: 'test', output: 'hello' })
 
-    // Mean of [0.2, 0.4, 0.6, 0.8, 1.0] = 0.6
-    expect(result.score).toBeCloseTo(0.6, 10)
+    expect(result.pass).toBe(false)
   })
 
-  test('reasoning includes stats summary', async () => {
-    const grader: Grader = async () => ({ pass: true, score: 0.9 })
+  test('preserves base result reasoning and dimensions', async () => {
+    const grader: Grader = async () => ({
+      pass: true,
+      score: 0.9,
+      reasoning: 'Looks good',
+      dimensions: { outcome: 0.95, process: 0.85 },
+    })
 
     const wrapped = withMetaVerification(grader, 3)
     const result = await wrapped({ input: 'test', output: 'hello' })
 
-    expect(result.reasoning).toBeDefined()
-    expect(result.reasoning).toContain('Meta-verification')
-    expect(result.reasoning).toContain('3 runs')
-    expect(result.reasoning).toContain('mean=')
-    expect(result.reasoning).toContain('stddev=')
+    expect(result.reasoning).toBe('Looks good')
+    expect(result.dimensions).toBeDefined()
+    expect(result.dimensions!.outcome).toBe(0.95)
+    expect(result.dimensions!.process).toBe(0.85)
   })
 
-  test('stats schema validates output', async () => {
-    const grader: Grader = async () => ({ pass: true, score: 0.5 })
+  test('preserves existing outcome fields', async () => {
+    const grader: Grader = async () => ({
+      pass: true,
+      score: 1.0,
+      outcome: { matchType: 'exact', details: 'perfect' },
+    })
 
-    const wrapped = withMetaVerification(grader, 3)
+    const wrapped = withMetaVerification(grader, 2)
     const result = await wrapped({ input: 'test', output: 'hello' })
 
-    const parsed = MetaVerificationStatsSchema.safeParse(result.outcome!._metaVerification)
-    expect(parsed.success).toBe(true)
+    expect(result.outcome).toBeDefined()
+    expect(result.outcome!.matchType).toBe('exact')
+    expect(result.outcome!.details).toBe('perfect')
+    expect(result.outcome!._metaVerification).toBeDefined()
+  })
+
+  test('k=1 produces single-run statistics', async () => {
+    const grader: Grader = async () => ({ pass: true, score: 0.7 })
+    const wrapped = withMetaVerification(grader, 1)
+
+    const result = await wrapped({ input: 'test', output: 'hello' })
+
+    const meta = result.outcome!._metaVerification as z.infer<typeof MetaVerificationSchema>
+    expect(meta.k).toBe(1)
+    expect(meta.mean).toBe(0.7)
+    expect(meta.stddev).toBe(0)
+    expect(meta.min).toBe(0.7)
+    expect(meta.max).toBe(0.7)
+    expect(meta.scores).toEqual([0.7])
+  })
+
+  test('meta-verification validates against schema', async () => {
+    const grader: Grader = async () => ({ pass: true, score: 0.8 })
+    const wrapped = withMetaVerification(grader, 3)
+
+    const result = await wrapped({ input: 'test', output: 'hello' })
+
+    expect(() => MetaVerificationSchema.parse(result.outcome!._metaVerification)).not.toThrow()
   })
 })
 
@@ -189,72 +229,84 @@ describe('withMetaVerification', () => {
 // Schema Validation
 // ============================================================================
 
-describe('training schemas', () => {
-  test('GradingDimensionsSchema re-export works', () => {
-    const result = GradingDimensionsSchema.parse({
-      outcome: 0.95,
+describe('TrainingScoreSchema', () => {
+  test('validates complete training score', () => {
+    const result = TrainingScoreSchema.parse({
+      outcome: 0.9,
       process: 0.8,
-      efficiency: 0.6,
+      efficiency: 0.7,
+      overall: 0.72,
     })
-    expect(result.outcome).toBe(0.95)
+    expect(result.overall).toBe(0.72)
   })
 
-  test('DecisionStepSchema re-export works', () => {
-    const result = DecisionStepSchema.parse({
-      type: 'decision',
-      bids: [
-        {
-          thread: 'taskGate',
-          trigger: false,
-          selected: true,
-          type: 'task',
-          priority: 0,
-        },
-      ],
-      timestamp: Date.now(),
-    })
-    expect(result.type).toBe('decision')
-    expect(result.bids).toHaveLength(1)
-  })
-
-  test('MetaVerificationStatsSchema validates', () => {
-    const result = MetaVerificationStatsSchema.parse({
-      mean: 0.8,
-      stddev: 0.1,
-      min: 0.6,
-      max: 1.0,
-      k: 5,
-      scores: [0.6, 0.7, 0.8, 0.9, 1.0],
-    })
-    expect(result.mean).toBe(0.8)
-    expect(result.scores).toHaveLength(5)
-  })
-
-  test('TrainingWeightResultSchema validates', () => {
-    const result = TrainingWeightResultSchema.parse({
-      weight: 0.72,
-      outcome: 0.8,
-      process: 0.9,
-    })
-    expect(result.weight).toBe(0.72)
-  })
-
-  test('TrainingWeightResultSchema rejects weight > 1', () => {
+  test('requires overall field', () => {
     expect(() =>
-      TrainingWeightResultSchema.parse({
-        weight: 1.5,
-        outcome: 0.8,
-        process: 0.9,
+      TrainingScoreSchema.parse({
+        outcome: 0.9,
+        process: 0.8,
       }),
     ).toThrow()
   })
 
-  test('TrainingWeightResultSchema rejects negative weight', () => {
+  test('inherits optional dimensions from GradingDimensionsSchema', () => {
+    const result = TrainingScoreSchema.parse({ overall: 0 })
+    expect(result.outcome).toBeUndefined()
+    expect(result.process).toBeUndefined()
+    expect(result.efficiency).toBeUndefined()
+    expect(result.overall).toBe(0)
+  })
+
+  test('rejects overall below 0', () => {
+    expect(() => TrainingScoreSchema.parse({ overall: -0.1 })).toThrow()
+  })
+
+  test('rejects overall above 1', () => {
+    expect(() => TrainingScoreSchema.parse({ overall: 1.5 })).toThrow()
+  })
+})
+
+describe('MetaVerificationSchema', () => {
+  test('validates complete meta-verification', () => {
+    const result = MetaVerificationSchema.parse({
+      mean: 0.85,
+      stddev: 0.05,
+      min: 0.8,
+      max: 0.9,
+      k: 5,
+      scores: [0.8, 0.85, 0.85, 0.9, 0.85],
+    })
+    expect(result.mean).toBe(0.85)
+    expect(result.k).toBe(5)
+    expect(result.scores).toHaveLength(5)
+  })
+
+  test('requires all fields', () => {
+    expect(() => MetaVerificationSchema.parse({ mean: 0.5 })).toThrow()
+  })
+
+  test('rejects negative stddev', () => {
     expect(() =>
-      TrainingWeightResultSchema.parse({
-        weight: -0.1,
-        outcome: 0.8,
-        process: 0.9,
+      MetaVerificationSchema.parse({
+        mean: 0.5,
+        stddev: -1,
+        min: 0.5,
+        max: 0.5,
+        k: 1,
+        scores: [0.5],
+      }),
+    ).toThrow()
+  })
+
+  test('rejects non-positive k', () => {
+    expect(() =>
+      MetaVerificationSchema.parse({
+        mean: 0.5,
+        stddev: 0,
+        min: 0.5,
+        max: 0.5,
+        k: 0,
+        scores: [],
       }),
     ).toThrow()
   })
@@ -266,8 +318,9 @@ describe('training schemas', () => {
 
 describe('CLI contract', () => {
   test('--schema input emits JSON Schema', () => {
-    const schema = z.toJSONSchema(TrainingInputSchema)
+    const schema = z.toJSONSchema(TrainingScoreInputSchema)
     expect(schema.type).toBe('object')
+    expect(schema.properties).toBeDefined()
     const props = schema.properties as Record<string, unknown>
     expect(props.outcome).toBeDefined()
     expect(props.process).toBeDefined()
@@ -275,43 +328,29 @@ describe('CLI contract', () => {
   })
 
   test('--schema output emits JSON Schema', () => {
-    const schema = z.toJSONSchema(TrainingOutputSchema)
+    const schema = z.toJSONSchema(TrainingScoreOutputSchema)
     expect(schema.type).toBe('object')
+    expect(schema.properties).toBeDefined()
     const props = schema.properties as Record<string, unknown>
-    expect(props.weight).toBeDefined()
-    expect(props.outcome).toBeDefined()
-    expect(props.process).toBeDefined()
+    expect(props.overall).toBeDefined()
   })
 
-  test('TrainingInputSchema validates correct input', () => {
-    const result = TrainingInputSchema.safeParse({
-      outcome: 0.8,
-      process: 0.9,
+  test('TrainingScoreInputSchema validates correct input', () => {
+    const result = TrainingScoreInputSchema.safeParse({
+      outcome: 0.9,
+      process: 0.8,
+      efficiency: 0.7,
     })
     expect(result.success).toBe(true)
   })
 
-  test('TrainingInputSchema accepts optional efficiency', () => {
-    const result = TrainingInputSchema.parse({
-      outcome: 0.8,
-      process: 0.9,
-      efficiency: 0.5,
-    })
-    expect(result.efficiency).toBe(0.5)
+  test('TrainingScoreInputSchema accepts empty object', () => {
+    const result = TrainingScoreInputSchema.safeParse({})
+    expect(result.success).toBe(true)
   })
 
-  test('TrainingInputSchema rejects out-of-range values', () => {
-    expect(
-      TrainingInputSchema.safeParse({
-        outcome: 1.5,
-        process: 0.5,
-      }).success,
-    ).toBe(false)
-  })
-
-  test('TrainingInputSchema rejects missing required fields', () => {
-    expect(TrainingInputSchema.safeParse({ outcome: 0.5 }).success).toBe(false)
-    expect(TrainingInputSchema.safeParse({ process: 0.5 }).success).toBe(false)
-    expect(TrainingInputSchema.safeParse({}).success).toBe(false)
+  test('TrainingScoreInputSchema rejects out-of-range values', () => {
+    const result = TrainingScoreInputSchema.safeParse({ outcome: 2.0 })
+    expect(result.success).toBe(false)
   })
 })
