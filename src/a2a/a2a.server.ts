@@ -1,3 +1,4 @@
+import { ZodError } from 'zod'
 import { A2A_ERROR_CODE, AGENT_CARD_PATH, SSE_HEADERS } from './a2a.constants.ts'
 import {
   JsonRpcRequestSchema,
@@ -174,6 +175,9 @@ export const createA2AHandler = ({ card, handlers, authenticate }: CreateA2AHand
       } catch (error) {
         if (error instanceof A2AError) {
           return Response.json(jsonRpcError(error.code, error.message, id, error.data))
+        }
+        if (error instanceof ZodError) {
+          return Response.json(jsonRpcError(A2A_ERROR_CODE.invalid_params, error.message, id))
         }
         const message = error instanceof Error ? error.message : String(error)
         return Response.json(jsonRpcError(A2A_ERROR_CODE.internal_error, message, id))

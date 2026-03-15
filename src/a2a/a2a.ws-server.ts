@@ -1,4 +1,5 @@
 import type { ServerWebSocket, WebSocketHandler } from 'bun'
+import { ZodError } from 'zod'
 import { A2A_ERROR_CODE } from './a2a.constants.ts'
 import {
   JsonRpcRequestSchema,
@@ -118,6 +119,9 @@ export const createA2AWebSocketHandler = ({ handlers, authenticate }: CreateA2AW
               if (controller.signal.aborted) break
               send(ws, jsonRpcSuccess(event, id))
             }
+            // Send stream completion sentinel so client doesn't hang
+            // if the iterable ended without a final: true status-update
+            send(ws, jsonRpcSuccess(null, id))
             break
           }
 
@@ -153,6 +157,8 @@ export const createA2AWebSocketHandler = ({ handlers, authenticate }: CreateA2AW
               if (controller.signal.aborted) break
               send(ws, jsonRpcSuccess(event, id))
             }
+            // Send stream completion sentinel
+            send(ws, jsonRpcSuccess(null, id))
             break
           }
 
@@ -216,6 +222,8 @@ export const createA2AWebSocketHandler = ({ handlers, authenticate }: CreateA2AW
       } catch (error) {
         if (error instanceof A2AError) {
           send(ws, jsonRpcError(error.code, error.message, id, error.data))
+        } else if (error instanceof ZodError) {
+          send(ws, jsonRpcError(A2A_ERROR_CODE.invalid_params, error.message, id))
         } else {
           const msg = error instanceof Error ? error.message : String(error)
           send(ws, jsonRpcError(A2A_ERROR_CODE.internal_error, msg, id))
