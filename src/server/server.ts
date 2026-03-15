@@ -1,6 +1,6 @@
 import { UI_ADAPTER_LIFECYCLE_EVENTS } from '../events.ts'
 import { ClientMessageSchema } from '../ui.ts'
-import { SERVER_ERRORS } from './server.constants.ts'
+import { DEFAULT_CSP, SERVER_ERRORS } from './server.constants.ts'
 import type { WebSocketData } from './server.schemas.ts'
 import type { CreateServerOptions, ServerHandle } from './server.types.ts'
 
@@ -34,7 +34,15 @@ export const createServer = ({
   validateSession,
   wsLimits,
   replayBuffer: replayBufferOpts,
+  csp: cspOpt,
 }: CreateServerOptions): ServerHandle => {
+  // ── Security headers ───────────────────────────────────────────────────
+  const cspValue = cspOpt === false ? undefined : (cspOpt ?? DEFAULT_CSP)
+  const securedResponse = (body: string, init: ResponseInit) =>
+    cspValue
+      ? new Response(body, { ...init, headers: { ...init.headers, 'Content-Security-Policy': cspValue } })
+      : new Response(body, init)
+
   // ── Connection tracking ──────────────────────────────────────────────────
   const topicConnections = new Map<string, number>()
   const knownSessions = new Set<string>()
@@ -130,7 +138,7 @@ export const createServer = ({
               type: UI_ADAPTER_LIFECYCLE_EVENTS.client_error,
               detail: { code: SERVER_ERRORS.origin_rejected },
             })
-            return new Response(SERVER_ERRORS.origin_rejected, { status: 403 })
+            return securedResponse(SERVER_ERRORS.origin_rejected, { status: 403 })
           }
         }
 
@@ -142,7 +150,7 @@ export const createServer = ({
             type: UI_ADAPTER_LIFECYCLE_EVENTS.client_error,
             detail: { code: SERVER_ERRORS.session_missing },
           })
-          return new Response(SERVER_ERRORS.session_missing, { status: 401 })
+          return securedResponse(SERVER_ERRORS.session_missing, { status: 401 })
         }
 
         if (!validateSession(sessionId)) {
@@ -150,7 +158,7 @@ export const createServer = ({
             type: UI_ADAPTER_LIFECYCLE_EVENTS.client_error,
             detail: { code: SERVER_ERRORS.session_invalid, sessionId },
           })
-          return new Response(SERVER_ERRORS.session_invalid, { status: 401 })
+          return securedResponse(SERVER_ERRORS.session_invalid, { status: 401 })
         }
 
         // Subprotocol — carries client source identity
@@ -160,7 +168,7 @@ export const createServer = ({
             type: UI_ADAPTER_LIFECYCLE_EVENTS.client_error,
             detail: { code: SERVER_ERRORS.protocol_missing, sessionId },
           })
-          return new Response(SERVER_ERRORS.protocol_missing, { status: 400 })
+          return securedResponse(SERVER_ERRORS.protocol_missing, { status: 400 })
         }
 
         const upgraded = server.upgrade(req, {
@@ -174,7 +182,7 @@ export const createServer = ({
           type: UI_ADAPTER_LIFECYCLE_EVENTS.client_error,
           detail: { code: SERVER_ERRORS.upgrade_failed, sessionId },
         })
-        return new Response(SERVER_ERRORS.upgrade_failed, { status: 400 })
+        return securedResponse(SERVER_ERRORS.upgrade_failed, { status: 400 })
       }
 
       // ── Not found ──────────────────────────────────────
@@ -183,7 +191,7 @@ export const createServer = ({
         type: UI_ADAPTER_LIFECYCLE_EVENTS.client_error,
         detail: { code: SERVER_ERRORS.not_found, pathname: url.pathname },
       })
-      return new Response('Not Found', { status: 404 })
+      return securedResponse('Not Found', { status: 404 })
     },
 
     error(error) {
@@ -191,7 +199,7 @@ export const createServer = ({
         type: UI_ADAPTER_LIFECYCLE_EVENTS.client_error,
         detail: { code: SERVER_ERRORS.internal_error, message: error.message },
       })
-      return new Response('Internal Server Error', { status: 500 })
+      return securedResponse('Internal Server Error', { status: 500 })
     },
   })
 

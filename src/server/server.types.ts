@@ -103,6 +103,9 @@ export type CreateServerOptions = {
   validateSession: (sessionId: string) => boolean
   wsLimits?: WebSocketLimits
   replayBuffer?: ReplayBufferOptions
+  /** Content-Security-Policy header value for server-generated responses.
+   * Defaults to {@link DEFAULT_CSP}. Pass `false` to disable. */
+  csp?: string | false
 }
 
 /**

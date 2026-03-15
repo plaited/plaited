@@ -26,3 +26,20 @@ export const SERVER_ERRORS = keyMirror(
   'not_found',
   'internal_error',
 )
+
+/**
+ * Default Content-Security-Policy header value.
+ *
+ * @remarks
+ * Mitigates two attack vectors from WEBSOCKET-ARCHITECTURE.md:
+ * - `connect-src 'self'` — blocks Cross-Site WebSocket Hijacking (CSWSH)
+ * - `script-src 'self'` — prevents injected inline scripts from executing
+ * - `style-src 'self' 'unsafe-inline'` — allows SSR-generated inline `<style>` tags
+ * - `default-src 'self'` — baseline restriction for all other resource types
+ *
+ * Callers should include this (or a custom policy) on their own route responses
+ * since Bun static routes bypass the `fetch` handler.
+ *
+ * @public
+ */
+export const DEFAULT_CSP = "default-src 'self'; connect-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'"

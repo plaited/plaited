@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, test } from 'bun:test'
 import { UI_ADAPTER_LIFECYCLE_EVENTS } from '../../events.ts'
-import { SERVER_ERRORS } from '../server.constants.ts'
+import { DEFAULT_CSP, SERVER_ERRORS } from '../server.constants.ts'
 import { createServer } from '../server.ts'
 import type { ServerHandle } from '../server.types.ts'
 
@@ -324,9 +324,7 @@ describe('SSR Reconciliation', () => {
     await waitForOpen(ws)
     await Bun.sleep(50)
 
-    const connectEvt = triggered
-      .slice(before)
-      .find((e) => e.type === UI_ADAPTER_LIFECYCLE_EVENTS.client_connected)
+    const connectEvt = triggered.slice(before).find((e) => e.type === UI_ADAPTER_LIFECYCLE_EVENTS.client_connected)
     expect(connectEvt).toBeDefined()
     const detail = connectEvt!.detail as { isReconnect: boolean }
     expect(detail.isReconnect).toBe(true)
@@ -340,9 +338,7 @@ describe('SSR Reconciliation', () => {
     await waitForOpen(ws)
     await Bun.sleep(50)
 
-    const connectEvt = triggered
-      .slice(before)
-      .find((e) => e.type === UI_ADAPTER_LIFECYCLE_EVENTS.client_connected)
+    const connectEvt = triggered.slice(before).find((e) => e.type === UI_ADAPTER_LIFECYCLE_EVENTS.client_connected)
     expect(connectEvt).toBeDefined()
     const detail = connectEvt!.detail as { isReconnect: boolean; source: string }
     // Same sessionId seen before → isReconnect true regardless of source
@@ -357,7 +353,6 @@ describe('SSR Reconciliation', () => {
 describe('MPA View Transition Replay Buffer', () => {
   let port: number
   let handle: ServerHandle
-  let triggered: TriggeredEvent[]
 
   afterAll(() => {
     handle.stop(true)
@@ -369,7 +364,6 @@ describe('MPA View Transition Replay Buffer', () => {
     })
     handle = result
     port = result.port
-    triggered = result.triggered
   })
 
   test('send() delivers immediately when connected', async () => {
@@ -378,10 +372,7 @@ describe('MPA View Transition Replay Buffer', () => {
     await Bun.sleep(50)
 
     const messagePromise = nextMessage(ws)
-    handle.send(
-      'test-session-id',
-      JSON.stringify({ type: 'render', detail: { target: 'main', html: '<p>live</p>' } }),
-    )
+    handle.send('test-session-id', JSON.stringify({ type: 'render', detail: { target: 'main', html: '<p>live</p>' } }))
 
     const msg = (await messagePromise) as { type: string; detail: { html: string } }
     expect(msg.type).toBe('render')
@@ -620,5 +611,65 @@ describe('Fetch Fallthrough', () => {
   test('no 405 — unmatched paths return 404 not 405', async () => {
     const res = await fetch(httpUrl(port, '/does-not-exist'))
     expect(res.status).toBe(404)
+  })
+})
+
+// ─── CSP Security Headers ────────────────────────────────────────────────────
+
+describe('CSP Security Headers', () => {
+  test('default CSP header present on 404 response', async () => {
+    const result = createTestServer()
+    afterAll(() => result.stop(true))
+
+    const res = await fetch(httpUrl(result.port, '/nonexistent'))
+    expect(res.status).toBe(404)
+    expect(res.headers.get('Content-Security-Policy')).toBe(DEFAULT_CSP)
+  })
+
+  test('default CSP header present on 401 response', async () => {
+    const result = createTestServer()
+    afterAll(() => result.stop(true))
+
+    const res = await fetch(httpUrl(result.port, '/ws'), {
+      headers: { Upgrade: 'websocket' },
+    })
+    expect(res.status).toBe(401)
+    expect(res.headers.get('Content-Security-Policy')).toBe(DEFAULT_CSP)
+  })
+
+  test('default CSP header present on 403 response', async () => {
+    const result = createTestServer({
+      allowedOrigins: new Set(['http://localhost:3000']),
+    })
+    afterAll(() => result.stop(true))
+
+    const res = await fetch(httpUrl(result.port, '/ws'), {
+      headers: {
+        Upgrade: 'websocket',
+        Cookie: SESSION_COOKIE,
+        Origin: 'http://evil.example.com',
+      },
+    })
+    expect(res.status).toBe(403)
+    expect(res.headers.get('Content-Security-Policy')).toBe(DEFAULT_CSP)
+  })
+
+  test('custom CSP string overrides default', async () => {
+    const customCsp = "default-src 'none'; connect-src 'self'"
+    const result = createTestServer({ csp: customCsp })
+    afterAll(() => result.stop(true))
+
+    const res = await fetch(httpUrl(result.port, '/nonexistent'))
+    expect(res.status).toBe(404)
+    expect(res.headers.get('Content-Security-Policy')).toBe(customCsp)
+  })
+
+  test('csp: false disables CSP header entirely', async () => {
+    const result = createTestServer({ csp: false })
+    afterAll(() => result.stop(true))
+
+    const res = await fetch(httpUrl(result.port, '/nonexistent'))
+    expect(res.status).toBe(404)
+    expect(res.headers.get('Content-Security-Policy')).toBeNull()
   })
 })
