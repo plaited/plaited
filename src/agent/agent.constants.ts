@@ -60,6 +60,10 @@ export const AGENT_EVENTS = keyMirror(
   'commit_snapshot',
   'consolidate',
   'defrag',
+  // Re-ingestion — triggered when agent modifies skill/rules/goal files during a session
+  'reingest_skill',
+  'reingest_rules',
+  'reingest_goal',
 )
 
 /**

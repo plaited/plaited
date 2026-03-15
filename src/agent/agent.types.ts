@@ -349,6 +349,61 @@ export type DefragDetail = {
   memoryPath: string
 }
 
+// ============================================================================
+// Re-ingestion Event Details — reingest_skill, reingest_rules, reingest_goal
+// ============================================================================
+
+/**
+ * Detail payload for the `reingest_skill` event.
+ *
+ * @remarks
+ * Triggered by a bThread when the agent modifies a skill file during
+ * a session. The handler calls `ingestSkill()` to update the hypergraph
+ * vertex in `.memory/skills/`.
+ *
+ * @public
+ */
+export type ReingestSkillDetail = {
+  /** Absolute path to the skill directory containing SKILL.md */
+  skillDir: string
+  /** Absolute path to the memory directory */
+  memoryDir: string
+}
+
+/**
+ * Detail payload for the `reingest_rules` event.
+ *
+ * @remarks
+ * Triggered by a bThread when the agent modifies AGENTS.md during
+ * a session. The handler calls `ingestRules()` to update the hypergraph
+ * RuleSet vertices in `.memory/rules/`.
+ *
+ * @public
+ */
+export type ReingestRulesDetail = {
+  /** Absolute path to the AGENTS.md file */
+  path: string
+  /** Absolute path to the memory directory */
+  memoryDir: string
+}
+
+/**
+ * Detail payload for the `reingest_goal` event.
+ *
+ * @remarks
+ * Triggered by a bThread when the agent modifies a goal factory file
+ * during a session. The handler calls `ingestGoal()` to update the
+ * hypergraph Goal vertex in `.memory/threads/`.
+ *
+ * @public
+ */
+export type ReingestGoalDetail = {
+  /** Absolute path to the goal factory .ts file */
+  path: string
+  /** Absolute path to the memory directory */
+  memoryDir: string
+}
+
 /**
  * Documents the full event vocabulary and expected detail shapes.
  *
@@ -401,6 +456,10 @@ export type AgentEventDetails = {
   [AGENT_EVENTS.commit_snapshot]: CommitSnapshotDetail
   [AGENT_EVENTS.consolidate]: ConsolidateDetail
   [AGENT_EVENTS.defrag]: DefragDetail
+  // ── Re-ingestion events ─────────────────────────────────────────────
+  [AGENT_EVENTS.reingest_skill]: ReingestSkillDetail
+  [AGENT_EVENTS.reingest_rules]: ReingestRulesDetail
+  [AGENT_EVENTS.reingest_goal]: ReingestGoalDetail
 }
 
 // ============================================================================
