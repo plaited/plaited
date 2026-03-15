@@ -1,4 +1,6 @@
 export * from './agent/agent.constants.ts'
+export * from './agent/agent.gate.ts'
+export * from './agent/agent.governance.ts'
 export * from './agent/agent.schemas.ts'
 export type * from './agent/agent.types.ts'
 export * from './agent/agent.utils.ts'
