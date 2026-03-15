@@ -13,12 +13,14 @@
 
 // Agent tools (CRUD)
 import { bashCli, editFileCli, listFilesCli, readFileCli, writeFileCli } from './tools/crud.ts'
+import { ingestGoalCli } from './tools/ingest-goal.ts'
 // Development tools
 import { remoteMcpClientCli } from './tools/remote-mcp-client.ts'
 // Trial runner
 import { trialCli } from './tools/trial.ts'
 import { typescriptLsp } from './tools/typescript-lsp.ts'
 import { validateSkill } from './tools/validate-skill.ts'
+import { validateThreadCli } from './tools/validate-thread.ts'
 
 // ============================================================================
 // Command Registry
@@ -36,6 +38,8 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   // Development tools
   'remote-mcp-client': remoteMcpClientCli,
   'validate-skill': validateSkill,
+  'validate-thread': validateThreadCli,
+  'ingest-goal': ingestGoalCli,
   'typescript-lsp': typescriptLsp,
 }
 
@@ -75,7 +79,8 @@ Commands:
     trial
 
   Development:
-    remote-mcp-client, validate-skill, typescript-lsp`)
+    remote-mcp-client, validate-skill, validate-thread, ingest-goal,
+    typescript-lsp`)
   process.exit(command ? 0 : 1)
 }
 
