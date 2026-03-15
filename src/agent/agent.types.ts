@@ -161,105 +161,177 @@ export type ParsedModelResponse = {
 // Agent Event Details — documents the event vocabulary and detail shapes
 // ============================================================================
 
-/** Detail payload for the `task` event */
+/**
+ * Detail payload for the `task` event.
+ *
+ * @public
+ */
 export type TaskDetail = {
   prompt: string
 }
 
-/** Detail payload for the `model_response` event */
+/**
+ * Detail payload for the `model_response` event.
+ *
+ * @public
+ */
 export type ModelResponseDetail = {
   parsed: ParsedModelResponse
   usage: ModelUsage
 }
 
-/** Detail payload for the `context_ready` event (per-tool-call gate dispatch) */
+/**
+ * Detail payload for the `context_ready` event (per-tool-call gate dispatch).
+ *
+ * @public
+ */
 export type ContextReadyDetail = {
   toolCall: AgentToolCall
 }
 
-/** Detail payload for the `gate_rejected` event */
+/**
+ * Detail payload for the `gate_rejected` event.
+ *
+ * @public
+ */
 export type GateRejectedDetail = {
   toolCall: AgentToolCall
   decision: GateDecision
 }
 
-/** Detail payload for the `gate_approved` event */
+/**
+ * Detail payload for the `gate_approved` event.
+ *
+ * @public
+ */
 export type GateApprovedDetail = {
   toolCall: AgentToolCall
   tags: string[]
 }
 
-/** Detail payload for the `execute` event */
+/**
+ * Detail payload for the `execute` event.
+ *
+ * @public
+ */
 export type ExecuteDetail = {
   toolCall: AgentToolCall
   tags: string[]
 }
 
-/** Detail payload for the `tool_result` event */
+/**
+ * Detail payload for the `tool_result` event.
+ *
+ * @public
+ */
 export type ToolResultDetail = {
   result: ToolResult
 }
 
-/** Detail payload for the `tool_progress` event */
+/**
+ * Detail payload for the `tool_progress` event.
+ *
+ * @public
+ */
 export type ToolProgressDetail = {
   toolCallId: string
   progress: unknown
 }
 
-/** Detail payload for the `save_plan` event */
+/**
+ * Detail payload for the `save_plan` event.
+ *
+ * @public
+ */
 export type SavePlanDetail = {
   plan: AgentPlan
   toolCallId?: string
 }
 
-/** Detail payload for the `plan_saved` event */
+/**
+ * Detail payload for the `plan_saved` event.
+ *
+ * @public
+ */
 export type PlanSavedDetail = {
   plan: AgentPlan
 }
 
-/** Detail payload for the `simulate_request` event */
+/**
+ * Detail payload for the `simulate_request` event.
+ *
+ * @public
+ */
 export type SimulateRequestDetail = {
   toolCall: AgentToolCall
   tags: string[]
 }
 
-/** Detail payload for the `simulation_result` event */
+/**
+ * Detail payload for the `simulation_result` event.
+ *
+ * @public
+ */
 export type SimulationResultDetail = {
   toolCall: AgentToolCall
   prediction: string
   tags: string[]
 }
 
-/** Detail payload for the `eval_approved` event */
+/**
+ * Detail payload for the `eval_approved` event.
+ *
+ * @public
+ */
 export type EvalApprovedDetail = {
   toolCall: AgentToolCall
   tags: string[]
   score?: number
 }
 
-/** Detail payload for the `eval_rejected` event */
+/**
+ * Detail payload for the `eval_rejected` event.
+ *
+ * @public
+ */
 export type EvalRejectedDetail = {
   toolCall: AgentToolCall
   reason: string
   score?: number
 }
 
-/** Detail payload for the `message` event */
+/**
+ * Detail payload for the `message` event.
+ *
+ * @public
+ */
 export type MessageDetail = {
   content: string
 }
 
-/** Detail payload for the `thinking_delta` event */
+/**
+ * Detail payload for the `thinking_delta` event.
+ *
+ * @public
+ */
 export type ThinkingDeltaDetail = {
   content: string
 }
 
-/** Detail payload for the `text_delta` event */
+/**
+ * Detail payload for the `text_delta` event.
+ *
+ * @public
+ */
 export type TextDeltaDetail = {
   content: string
 }
 
-/** Detail payload for the `inference_error` event */
+/**
+ * Detail payload for the `inference_error` event.
+ *
+ * @public
+ */
 export type InferenceErrorDetail = {
   error: string
   retryable: boolean
@@ -269,29 +341,49 @@ export type InferenceErrorDetail = {
 // Proactive Heartbeat Event Details — tick, sensor_delta, sensor_sweep, sleep, snapshot_committed
 // ============================================================================
 
-/** Detail payload for the `tick` event (periodic heartbeat) */
+/**
+ * Detail payload for the `tick` event (periodic heartbeat).
+ *
+ * @public
+ */
 export type TickDetail = {
   tickNumber: number
   timestamp: string
 }
 
-/** Detail payload for the `sensor_delta` event (single sensor change) */
+/**
+ * Detail payload for the `sensor_delta` event (single sensor change).
+ *
+ * @public
+ */
 export type SensorDeltaDetail = {
   sensor: string
   delta: unknown
 }
 
-/** Detail payload for the `sensor_sweep` event (batched sensor deltas) */
+/**
+ * Detail payload for the `sensor_sweep` event (batched sensor deltas).
+ *
+ * @public
+ */
 export type SensorSweepDetail = {
   deltas: SensorDeltaDetail[]
 }
 
-/** Detail payload for the `sleep` event (idle after no deltas detected) */
+/**
+ * Detail payload for the `sleep` event (idle after no deltas detected).
+ *
+ * @public
+ */
 export type SleepDetail = {
   durationMs: number
 }
 
-/** Detail payload for the `snapshot_committed` event (git commit captured) */
+/**
+ * Detail payload for the `snapshot_committed` event (git commit captured).
+ *
+ * @public
+ */
 export type SnapshotCommittedDetail = {
   sha: string
   modulePath: string

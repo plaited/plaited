@@ -110,6 +110,10 @@ export const remoteMcpConnect = async (url: string, options?: RemoteMcpOptions) 
 /**
  * List available tools from a remote MCP server.
  *
+ * @param url - Base URL of the remote MCP server.
+ * @param options - Optional session configuration.
+ * @returns Promise resolving to the list of available tools.
+ *
  * @public
  */
 export const mcpListTools = async (url: string, options?: RemoteMcpOptions): Promise<McpTool[]> => {
@@ -123,6 +127,12 @@ export const mcpListTools = async (url: string, options?: RemoteMcpOptions): Pro
 
 /**
  * Call a tool on a remote MCP server.
+ *
+ * @param url - Base URL of the remote MCP server.
+ * @param toolName - Name of the tool to invoke.
+ * @param args - Arguments to pass to the tool.
+ * @param options - Optional session configuration.
+ * @returns Promise resolving to the tool call result.
  *
  * @public
  */
@@ -143,6 +153,10 @@ export const mcpCallTool = async (
 /**
  * List available prompts from a remote MCP server.
  *
+ * @param url - Base URL of the remote MCP server.
+ * @param options - Optional session configuration.
+ * @returns Promise resolving to the list of available prompts.
+ *
  * @public
  */
 export const mcpListPrompts = async (url: string, options?: RemoteMcpOptions): Promise<McpPrompt[]> => {
@@ -156,6 +170,12 @@ export const mcpListPrompts = async (url: string, options?: RemoteMcpOptions): P
 
 /**
  * Get a prompt's messages from a remote MCP server.
+ *
+ * @param url - Base URL of the remote MCP server.
+ * @param name - Name of the prompt to retrieve.
+ * @param args - Optional arguments to render the prompt template.
+ * @param options - Optional session configuration.
+ * @returns Promise resolving to the rendered prompt messages.
  *
  * @public
  */
@@ -176,6 +196,10 @@ export const mcpGetPrompt = async (
 /**
  * List available resources from a remote MCP server.
  *
+ * @param url - Base URL of the remote MCP server.
+ * @param options - Optional session configuration.
+ * @returns Promise resolving to the list of available resources.
+ *
  * @public
  */
 export const mcpListResources = async (url: string, options?: RemoteMcpOptions): Promise<McpResource[]> => {
@@ -189,6 +213,11 @@ export const mcpListResources = async (url: string, options?: RemoteMcpOptions):
 
 /**
  * Read a resource from a remote MCP server.
+ *
+ * @param url - Base URL of the remote MCP server.
+ * @param uri - URI of the resource to read.
+ * @param options - Optional session configuration.
+ * @returns Promise resolving to the resource content.
  *
  * @public
  */
@@ -207,6 +236,10 @@ export const mcpReadResource = async (
 
 /**
  * Discover all capabilities of a remote MCP server.
+ *
+ * @param url - Base URL of the remote MCP server.
+ * @param options - Optional session configuration.
+ * @returns Promise resolving to all available capabilities from the server.
  *
  * @public
  */

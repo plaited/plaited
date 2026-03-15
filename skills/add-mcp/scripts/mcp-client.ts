@@ -16,20 +16,60 @@ import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 
 // ── Result types — current MCP spec, no backward-compat variants ──
 
+/**
+ * Content item returned by an MCP tool call.
+ *
+ * @public
+ */
 export type McpContent = { type: string; text?: string; [key: string]: unknown }
+/**
+ * Result of a tool call via MCP.
+ *
+ * @public
+ */
 export type McpCallToolResult = { content: McpContent[]; isError?: boolean }
+/**
+ * Tool definition returned by an MCP server.
+ *
+ * @public
+ */
 export type McpTool = { name: string; description?: string; inputSchema: Record<string, unknown> }
 
+/**
+ * Argument definition for an MCP prompt.
+ *
+ * @public
+ */
 export type McpPromptArgument = { name: string; description?: string; required?: boolean }
+/**
+ * Prompt definition returned by an MCP server.
+ *
+ * @public
+ */
 export type McpPrompt = { name: string; description?: string; arguments?: McpPromptArgument[] }
+/**
+ * A single message within an MCP prompt.
+ *
+ * @public
+ */
 export type McpPromptMessage = { role: 'user' | 'assistant'; content: McpContent }
 
+/**
+ * Resource entry returned by an MCP server.
+ *
+ * @public
+ */
 export type McpResource = {
   uri: string
   name: string
   description?: string
   mimeType?: string
 }
+/**
+ * Content of a resource read from an MCP server.
+ *
+ * @public
+ */
 export type McpResourceContent = {
   uri: string
   text?: string
@@ -37,12 +77,22 @@ export type McpResourceContent = {
   mimeType?: string
 }
 
+/**
+ * Subset of capabilities advertised by an MCP server.
+ *
+ * @public
+ */
 export type McpServerCapabilities = {
   tools: McpTool[]
   prompts: McpPrompt[]
   resources: McpResource[]
 }
 
+/**
+ * Options for creating an MCP session.
+ *
+ * @public
+ */
 export type McpSessionOptions = {
   timeoutMs?: number
 }
@@ -59,6 +109,7 @@ const CLIENT_INFO = { name: 'plaited', version: '1.0.0' }
  * For managed lifecycle, use `createMcpSession` instead.
  *
  * @param transport - SDK Transport instance (StreamableHTTP, stdio, etc.)
+ * @returns Connected `Client` instance — caller must call `client.close()` when done.
  *
  * @public
  */

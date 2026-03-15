@@ -14,7 +14,15 @@ import type {
 // Streaming Event Union
 // ============================================================================
 
-/** Events yielded during streaming operations */
+/**
+ * Events yielded during streaming operations.
+ *
+ * @remarks
+ * Union type of all events that can be emitted by a streaming A2A response,
+ * including both partial task updates and final task state.
+ *
+ * @public
+ */
 export type StreamEvent = Task | Message | TaskStatusUpdateEvent | TaskArtifactUpdateEvent
 
 // ============================================================================

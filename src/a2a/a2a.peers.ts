@@ -70,13 +70,17 @@ type PeerStoreData = z.infer<typeof PeerStoreSchema>
 // ============================================================================
 
 /**
+ * Trust level value — one of the values from TRUST_LEVEL constants.
+ *
+ * @public
+ */
+export type TrustLevel = (typeof TRUST_LEVEL)[keyof typeof TRUST_LEVEL]
+
+/**
  * Return type of {@link createPeerStore}.
  *
  * @public
  */
-/** Trust level value type derived from TRUST_LEVEL constants */
-export type TrustLevel = (typeof TRUST_LEVEL)[keyof typeof TRUST_LEVEL]
-
 export type PeerStore = {
   addPeer: (card: AgentCard, publicKey: CryptoKey) => Promise<KnownPeer>
   getPeer: (cardUrl: string) => Promise<KnownPeer | undefined>

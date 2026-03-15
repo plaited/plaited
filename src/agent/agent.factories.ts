@@ -69,16 +69,32 @@ export type BrandedFactory<B extends string> = {
   create: (trigger: Trigger) => FactoryResult
 }
 
-/** MAC rules factory — immutable at spawn, framework-provided. */
+/**
+ * MAC rules factory — immutable at spawn, framework-provided.
+ *
+ * @public
+ */
 export type ConstitutionFactory = BrandedFactory<'🏛️'>
 
-/** User/agent-defined objective factory — loaded from `.memory/goals/`. */
+/**
+ * User/agent-defined objective factory — loaded from `.memory/goals/`.
+ *
+ * @public
+ */
 export type GoalFactory = BrandedFactory<'🎯'>
 
-/** Task-specific coordination factory — ephemeral, created at runtime. */
+/**
+ * Task-specific coordination factory — ephemeral, created at runtime.
+ *
+ * @public
+ */
 export type WorkflowFactory = BrandedFactory<'🔄'>
 
-/** Union of all factory brands for runtime discrimination. */
+/**
+ * Union of all factory brands for runtime discrimination.
+ *
+ * @public
+ */
 export type AnyFactory = ConstitutionFactory | GoalFactory | WorkflowFactory
 
 // ============================================================================
@@ -131,6 +147,9 @@ export const createWorkflow = (create: (trigger: Trigger) => FactoryResult): Wor
 /**
  * Check whether a value is a branded factory of any kind.
  *
+ * @param value - The value to test
+ * @returns `true` if the value is a branded `ConstitutionFactory`, `GoalFactory`, or `WorkflowFactory`
+ *
  * @public
  */
 export const isBrandedFactory = (value: unknown): value is AnyFactory =>
@@ -145,6 +164,9 @@ export const isBrandedFactory = (value: unknown): value is AnyFactory =>
 /**
  * Check whether a value is a goal factory specifically.
  *
+ * @param value - The value to test
+ * @returns `true` if the value is a `GoalFactory` branded with `🎯`
+ *
  * @public
  */
 export const isGoalFactory = (value: unknown): value is GoalFactory =>
@@ -153,6 +175,9 @@ export const isGoalFactory = (value: unknown): value is GoalFactory =>
 /**
  * Check whether a value is a constitution factory specifically.
  *
+ * @param value - The value to test
+ * @returns `true` if the value is a `ConstitutionFactory` branded with `🏛️`
+ *
  * @public
  */
 export const isConstitutionFactory = (value: unknown): value is ConstitutionFactory =>
@@ -160,6 +185,9 @@ export const isConstitutionFactory = (value: unknown): value is ConstitutionFact
 
 /**
  * Check whether a value is a workflow factory specifically.
+ *
+ * @param value - The value to test
+ * @returns `true` if the value is a `WorkflowFactory` branded with `🔄`
  *
  * @public
  */
