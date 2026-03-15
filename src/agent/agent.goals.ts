@@ -77,6 +77,31 @@ export const checkMacProtection = (source: string): { ok: boolean; errors: strin
 }
 
 // ============================================================================
+// Internal Helpers
+// ============================================================================
+
+/**
+ * Find a goal factory export in a dynamically imported module.
+ *
+ * @remarks
+ * Checks `default` export first, then searches named exports for an
+ * object with `$: '🎯'` brand and a `create` function.
+ *
+ * @internal
+ */
+const findGoalExport = (mod: Record<string, unknown>): GoalFactory | null => {
+  // Check default export first
+  if (isGoalFactory(mod.default)) return mod.default
+
+  // Search named exports
+  for (const value of Object.values(mod)) {
+    if (isGoalFactory(value)) return value
+  }
+
+  return null
+}
+
+// ============================================================================
 // Goal Loading
 // ============================================================================
 
@@ -281,29 +306,4 @@ export const removeGoal = async (goalsDir: string, name: string): Promise<boolea
   }
 
   return true
-}
-
-// ============================================================================
-// Internal Helpers
-// ============================================================================
-
-/**
- * Find a goal factory export in a dynamically imported module.
- *
- * @remarks
- * Checks `default` export first, then searches named exports for an
- * object with `$: '🎯'` brand and a `create` function.
- *
- * @internal
- */
-const findGoalExport = (mod: Record<string, unknown>): GoalFactory | null => {
-  // Check default export first
-  if (isGoalFactory(mod.default)) return mod.default
-
-  // Search named exports
-  for (const value of Object.values(mod)) {
-    if (isGoalFactory(value)) return value
-  }
-
-  return null
 }

@@ -258,48 +258,6 @@ export type AssembledContext = {
   totalTokenEstimate: number
 }
 
-/**
- * Assembles context from contributors within a token budget.
- *
- * @remarks
- * 1. Calls each contributor to get segments
- * 2. Sorts by priority (highest first — these are kept)
- * 3. Accumulates segments until budget is exceeded
- * 4. Drops lowest-priority segments that don't fit
- * 5. Returns messages in contributor-defined order (not priority order)
- *
- * The two-pass approach (sort by priority for selection, then restore
- * original order for message sequence) ensures the model sees a
- * coherent prompt: system → tools → plan → history, not shuffled
- * by priority ranking.
- *
- * @param contributors - Context contributors to call
- * @param budget - Maximum token budget
- * @returns Assembled context with inclusion metadata
- *
- * @public
- */
-export const assembleContext = (contributors: ContextContributor[], budget: number): AssembledContext =>
-  assembleWithState(contributors, budget)
-
-/**
- * Creates a context assembler bound to a specific set of contributors.
- *
- * @remarks
- * The factory captures contributors and provides the `ContextState`
- * on each assembly call. This is the primary API for the agent loop.
- *
- * @param contributors - Context contributors to use
- * @returns A function that assembles context from state within a budget
- *
- * @public
- */
-export const createContextAssembler =
-  (contributors: ContextContributor[]) =>
-  (ctxState: ContextState, budget: number): AssembledContext => {
-    return assembleWithState(contributors, budget, ctxState)
-  }
-
 // ============================================================================
 // Internal assembly implementation
 // ============================================================================
@@ -362,3 +320,49 @@ const assembleWithState = (
 
   return { messages, included, excluded, totalTokenEstimate }
 }
+
+// ============================================================================
+// Context Assembler
+// ============================================================================
+
+/**
+ * Assembles context from contributors within a token budget.
+ *
+ * @remarks
+ * 1. Calls each contributor to get segments
+ * 2. Sorts by priority (highest first — these are kept)
+ * 3. Accumulates segments until budget is exceeded
+ * 4. Drops lowest-priority segments that don't fit
+ * 5. Returns messages in contributor-defined order (not priority order)
+ *
+ * The two-pass approach (sort by priority for selection, then restore
+ * original order for message sequence) ensures the model sees a
+ * coherent prompt: system → tools → plan → history, not shuffled
+ * by priority ranking.
+ *
+ * @param contributors - Context contributors to call
+ * @param budget - Maximum token budget
+ * @returns Assembled context with inclusion metadata
+ *
+ * @public
+ */
+export const assembleContext = (contributors: ContextContributor[], budget: number): AssembledContext =>
+  assembleWithState(contributors, budget)
+
+/**
+ * Creates a context assembler bound to a specific set of contributors.
+ *
+ * @remarks
+ * The factory captures contributors and provides the `ContextState`
+ * on each assembly call. This is the primary API for the agent loop.
+ *
+ * @param contributors - Context contributors to use
+ * @returns A function that assembles context from state within a budget
+ *
+ * @public
+ */
+export const createContextAssembler =
+  (contributors: ContextContributor[]) =>
+  (ctxState: ContextState, budget: number): AssembledContext => {
+    return assembleWithState(contributors, budget, ctxState)
+  }

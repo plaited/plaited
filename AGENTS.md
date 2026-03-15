@@ -165,8 +165,13 @@ graph TD
 - `feature.constants.ts` - Constants, error codes
 - `feature.ts` - Main implementation
 
-**Direct imports** - Import from specific files, not through re-exports within module  
-*Verify:* Check for circular imports  
+**Helpers first** - Define helper consts/functions BEFORE their first reference in the file, not after
+*Why:* `const` arrow functions are not hoisted — a later-defined const only works if referenced inside a deferred closure. Helpers-first eliminates this hidden contract and matches the dominant codebase convention (~95% of files).
+*Verify:* Check that no `const` is referenced above its declaration
+*Fix:* Move the helper above its first consumer
+
+**Direct imports** - Import from specific files, not through re-exports within module
+*Verify:* Check for circular imports
 *Fix:* Import directly: `from './feature.types.ts'` not `from './feature.ts'`
 
 

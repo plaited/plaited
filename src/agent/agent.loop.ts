@@ -114,6 +114,13 @@ const DEFAULT_CONSTITUTION_PREDICATES: ConstitutionPredicate[] = [
 ]
 
 // ============================================================================
+// Completion event predicate — used by batchCompletion bThread
+// ============================================================================
+
+const isCompletionEvent = (e: { type: string }) =>
+  e.type === AGENT_EVENTS.tool_result || e.type === AGENT_EVENTS.gate_rejected || e.type === AGENT_EVENTS.eval_rejected
+
+// ============================================================================
 // createAgentLoop
 // ============================================================================
 
@@ -664,10 +671,3 @@ export const createAgentLoop = ({
     },
   }
 }
-
-// ============================================================================
-// Internal helpers
-// ============================================================================
-
-const isCompletionEvent = (e: { type: string }) =>
-  e.type === AGENT_EVENTS.tool_result || e.type === AGENT_EVENTS.gate_rejected || e.type === AGENT_EVENTS.eval_rejected

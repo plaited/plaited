@@ -10,6 +10,43 @@ import {
 import type { CreateA2AHandlerOptions } from './a2a.types.ts'
 import { A2AError, formatSSE, formatSSEError, jsonRpcError, jsonRpcSuccess } from './a2a.utils.ts'
 
+// ============================================================================
+// Internal: SSE response from async iterable
+// ============================================================================
+
+/**
+ * Wraps an async iterable into an SSE Response.
+ *
+ * @internal
+ */
+const sseResponse = (iterable: AsyncIterable<unknown>, id: string | number, controller: AbortController): Response => {
+  const encoder = new TextEncoder()
+  const stream = new ReadableStream({
+    async start(streamController) {
+      try {
+        for await (const event of iterable) {
+          if (controller.signal.aborted) break
+          const rpcResponse = jsonRpcSuccess(event, id)
+          streamController.enqueue(encoder.encode(formatSSE(rpcResponse)))
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        const code = error instanceof A2AError ? error.code : A2A_ERROR_CODE.internal_error
+        const rpcError = jsonRpcError(code, message, id)
+        streamController.enqueue(encoder.encode(formatSSEError(rpcError)))
+      } finally {
+        streamController.close()
+      }
+    },
+  })
+
+  return new Response(stream, { headers: SSE_HEADERS })
+}
+
+// ============================================================================
+// Handler Factory
+// ============================================================================
+
 /**
  * Creates A2A route handlers for composition with `Bun.serve()`.
  *
@@ -186,37 +223,4 @@ export const createA2AHandler = ({ card, handlers, authenticate }: CreateA2AHand
   }
 
   return { routes }
-}
-
-// ============================================================================
-// Internal: SSE response from async iterable
-// ============================================================================
-
-/**
- * Wraps an async iterable into an SSE Response.
- *
- * @internal
- */
-const sseResponse = (iterable: AsyncIterable<unknown>, id: string | number, controller: AbortController): Response => {
-  const encoder = new TextEncoder()
-  const stream = new ReadableStream({
-    async start(streamController) {
-      try {
-        for await (const event of iterable) {
-          if (controller.signal.aborted) break
-          const rpcResponse = jsonRpcSuccess(event, id)
-          streamController.enqueue(encoder.encode(formatSSE(rpcResponse)))
-        }
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        const code = error instanceof A2AError ? error.code : A2A_ERROR_CODE.internal_error
-        const rpcError = jsonRpcError(code, message, id)
-        streamController.enqueue(encoder.encode(formatSSEError(rpcError)))
-      } finally {
-        streamController.close()
-      }
-    },
-  })
-
-  return new Response(stream, { headers: SSE_HEADERS })
 }

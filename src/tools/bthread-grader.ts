@@ -216,6 +216,60 @@ const cleanupTempDir = (tmpBase: string): void => {
 }
 
 // ============================================================================
+// Scoring
+// ============================================================================
+
+/**
+ * Compute GraderResult from check results.
+ *
+ * @internal
+ */
+const scoreChecks = (checks: GradeCheck[], warnings: string[]): GraderResult => {
+  const passCount = checks.filter((c) => c.pass).length
+  const totalChecks = checks.length
+  const score = totalChecks > 0 ? passCount / totalChecks : 0
+  const pass = checks.every((c) => c.pass)
+
+  // Outcome: binary — did the factory pass all checks?
+  const outcome = pass ? 1 : 0
+
+  // Process: weighted by check importance
+  // parse + typeCheck are foundational (each worth 2x), validate + specTest are structural (1x)
+  const weights: Record<string, number> = { parse: 2, typeCheck: 2, validate: 1, specTest: 1 }
+  let weightedSum = 0
+  let weightTotal = 0
+  for (const check of checks) {
+    const w = weights[check.name] ?? 1
+    weightedSum += check.pass ? w : 0
+    weightTotal += w
+  }
+  const process = weightTotal > 0 ? weightedSum / weightTotal : 0
+
+  const reasoning = checks
+    .map((c) => `${c.name}: ${c.pass ? 'PASS' : 'FAIL'}${c.error ? ` (${c.error.slice(0, 100)})` : ''}`)
+    .join('; ')
+
+  return {
+    pass,
+    score,
+    reasoning: warnings.length > 0 ? `${reasoning}; warnings: ${warnings.join(', ')}` : reasoning,
+    outcome: {
+      checks: checks.map((c) => ({
+        name: c.name,
+        pass: c.pass,
+        ...(c.error && { error: c.error }),
+      })),
+      ...(warnings.length > 0 && { warnings }),
+    },
+    dimensions: {
+      outcome,
+      process,
+      efficiency: 1, // Static — could compare line count or structure complexity
+    },
+  }
+}
+
+// ============================================================================
 // Grader Factory
 // ============================================================================
 
@@ -288,60 +342,6 @@ export const createBThreadGrader = (config?: BThreadGraderConfig): Grader => {
     } finally {
       cleanupTempDir(tmpBase)
     }
-  }
-}
-
-// ============================================================================
-// Scoring
-// ============================================================================
-
-/**
- * Compute GraderResult from check results.
- *
- * @internal
- */
-const scoreChecks = (checks: GradeCheck[], warnings: string[]): GraderResult => {
-  const passCount = checks.filter((c) => c.pass).length
-  const totalChecks = checks.length
-  const score = totalChecks > 0 ? passCount / totalChecks : 0
-  const pass = checks.every((c) => c.pass)
-
-  // Outcome: binary — did the factory pass all checks?
-  const outcome = pass ? 1 : 0
-
-  // Process: weighted by check importance
-  // parse + typeCheck are foundational (each worth 2x), validate + specTest are structural (1x)
-  const weights: Record<string, number> = { parse: 2, typeCheck: 2, validate: 1, specTest: 1 }
-  let weightedSum = 0
-  let weightTotal = 0
-  for (const check of checks) {
-    const w = weights[check.name] ?? 1
-    weightedSum += check.pass ? w : 0
-    weightTotal += w
-  }
-  const process = weightTotal > 0 ? weightedSum / weightTotal : 0
-
-  const reasoning = checks
-    .map((c) => `${c.name}: ${c.pass ? 'PASS' : 'FAIL'}${c.error ? ` (${c.error.slice(0, 100)})` : ''}`)
-    .join('; ')
-
-  return {
-    pass,
-    score,
-    reasoning: warnings.length > 0 ? `${reasoning}; warnings: ${warnings.join(', ')}` : reasoning,
-    outcome: {
-      checks: checks.map((c) => ({
-        name: c.name,
-        pass: c.pass,
-        ...(c.error && { error: c.error }),
-      })),
-      ...(warnings.length > 0 && { warnings }),
-    },
-    dimensions: {
-      outcome,
-      process,
-      efficiency: 1, // Static — could compare line count or structure complexity
-    },
   }
 }
 
