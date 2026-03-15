@@ -53,6 +53,7 @@ import type {
   SimulateRequestDetail,
   SimulationResultDetail,
   TaskDetail,
+  ToolExecutor,
   ToolResultDetail,
 } from './agent.types.ts'
 import { parseModelResponse, toToolResult } from './agent.utils.ts'
@@ -71,7 +72,7 @@ import { createSnapshotWriter } from './snapshot-writer.ts'
 export type CreateAgentLoopOptions = {
   model: Model
   tools: ToolDefinition[]
-  toolExecutor: (toolCall: AgentToolCall, signal: AbortSignal) => Promise<unknown>
+  toolExecutor: ToolExecutor
   constitution?: ConstitutionFactory[]
   goals?: GoalFactory[]
   memoryPath: string
@@ -442,7 +443,10 @@ export const createAgentLoop = ({
         [`sim_guard_${toolCall.id}`]: bThread([
           bSync({
             block: (e) => e.type === AGENT_EVENTS.execute && e.detail?.toolCall?.id === toolCall.id,
-            interrupt: [(e) => e.type === AGENT_EVENTS.simulation_result && e.detail?.toolCall?.id === toolCall.id],
+            interrupt: [
+              (e) => e.type === AGENT_EVENTS.simulation_result && e.detail?.toolCall?.id === toolCall.id,
+              AGENT_EVENTS.message,
+            ],
           }),
         ]),
       })

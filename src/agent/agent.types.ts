@@ -137,6 +137,18 @@ export type ToolContext = {
  */
 export type ToolHandler = (args: Record<string, unknown>, ctx: ToolContext) => Promise<unknown>
 
+/**
+ * Executes a tool call with transport abstraction.
+ *
+ * @remarks
+ * The pluggability seam for local, SSH, and A2A tool execution.
+ * Local executor calls handlers directly. Remote executors serialize
+ * tool calls over the wire. Same tool code runs everywhere.
+ *
+ * @public
+ */
+export type ToolExecutor = (toolCall: AgentToolCall, signal: AbortSignal) => Promise<unknown>
+
 // ============================================================================
 // Parsed Model Response
 // ============================================================================

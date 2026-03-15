@@ -82,7 +82,7 @@ export type TrustLevel = (typeof TRUST_LEVEL)[keyof typeof TRUST_LEVEL]
  * @public
  */
 export type PeerStore = {
-  addPeer: (card: AgentCard, publicKey: CryptoKey) => Promise<KnownPeer>
+  addPeer: (card: AgentCard, publicKey: CryptoKey, trustLevel?: TrustLevel) => Promise<KnownPeer>
   getPeer: (cardUrl: string) => Promise<KnownPeer | undefined>
   updateTrust: (cardUrl: string, trustLevel: TrustLevel) => Promise<KnownPeer>
   removePeer: (cardUrl: string) => Promise<boolean>
@@ -135,7 +135,7 @@ export const createPeerStore = (path: string): PeerStore => {
     crypto.subtle.importKey('jwk', jwk, { name: 'ECDSA', namedCurve: 'P-256' }, true, ['verify'])
 
   return {
-    addPeer: async (card, publicKey) => {
+    addPeer: async (card, publicKey, trustLevel = TRUST_LEVEL.tofu) => {
       const data = await read()
       const now = new Date().toISOString()
       const jwk = await exportKey(publicKey)
@@ -144,7 +144,7 @@ export const createPeerStore = (path: string): PeerStore => {
         cardUrl: card.url,
         name: card.name,
         publicKey: jwk,
-        trustLevel: TRUST_LEVEL.tofu,
+        trustLevel,
         firstSeen: now,
         lastSeen: now,
         metadata: card.metadata,
