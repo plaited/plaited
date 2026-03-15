@@ -28,7 +28,7 @@ export { type GradingDimensions, GradingDimensionsSchema } from './trial.schemas
  * Extends `GradingDimensions` with `overall`, computed as `outcome × process`.
  * Trajectories with correct outcomes but poor reasoning (retry loops,
  * unnecessary tool calls) get lower weights than clean solutions.
- * See `docs/TRAINING.md` § Augmented Self-Distillation.
+ * See `skills/training-pipeline/` § Augmented Self-Distillation.
  *
  * @public
  */
