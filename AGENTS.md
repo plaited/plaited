@@ -110,3 +110,4 @@ Before committing code, both must pass:
 **BP patterns** — use `behavioral-core` skill when implementing behavioral programs.
 **UI development** — use `generative-ui` skill for controller protocol and custom elements.
 **Testing UI** — use `ui-testing` skill for three-layer test strategy.
+**Agent pipeline** — use `agent-loop` skill when implementing createAgentLoop, wiring handlers, or designing event flow.

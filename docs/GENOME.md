@@ -1,6 +1,6 @@
 # Genome Architecture
 
-> **Status: ACTIVE** — Extracted from SKILLS-RESTRUCTURING.md. Defines the seeds/tools/eval taxonomy for skills. Cross-references: `AGENT-LOOP.md` (agent-loop seed scope), `CONSTITUTION.md` (governance skills), `TRAINING.md` (eval category feeds training).
+> **Status: ACTIVE** — Extracted from SKILLS-RESTRUCTURING.md. Defines the seeds/tools/eval taxonomy for skills. Cross-references: `AGENT-LOOP.md` / `skills/agent-loop/` (agent-loop seed scope), `CONSTITUTION.md` (governance skills), `TRAINING.md` (eval category feeds training).
 
 ## Context
 

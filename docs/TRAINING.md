@@ -39,7 +39,7 @@ Pre-trained tool-calling models (GPT-4, Claude) are trained on generic tool sche
 3. **Dreamer capability** — predicting state transitions requires training on `(Context + Tool Call) → (Real Output)` pairs from our specific tools
 4. **Constitution awareness** — the model learns governance constraints through context assembly + experience, not generic instruction-following
 
-Distillation from frontier agents (Claude Code, Gemini CLI) via the trial runner provides the reasoning patterns. Fine-tuning on our specific tools and BP feedback loop produces a model that's both capable and constraint-aware. See `AGENT-LOOP.md`.
+Distillation from frontier agents (Claude Code, Gemini CLI) via the trial runner provides the reasoning patterns. Fine-tuning on our specific tools and BP feedback loop produces a model that's both capable and constraint-aware. See `AGENT-LOOP.md` (overview) and `skills/agent-loop/` (implementation patterns).
 
 ## Training Tiers
 
