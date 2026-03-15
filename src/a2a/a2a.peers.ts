@@ -32,7 +32,7 @@ const trustLevelValues = Object.values(TRUST_LEVEL)
  * A known peer entry in the trust store.
  *
  * @remarks
- * Maps to the `known_peers` table from MODNET-IMPLEMENTATION.md.
+ * Maps to the `known_peers` table from skills/modnet-node/references/access-control.md.
  * Stored as a JSON file, keyed by the peer's Agent Card URL.
  *
  * @public

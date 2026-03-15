@@ -37,7 +37,7 @@ This is **greenfield code with zero external consumers**. No backward-compatibil
 
 **Risk tags:** `workspace`, `crosses_boundary`, `inbound`, `outbound`, `irreversible`, `external_audience`. Empty/unknown → simulate+judge. Workspace-only → execute directly.
 
-**Enterprise topology:** PM/orchestrator node manages infrastructure nodes via A2A. Seeds are ephemeral (generate node, then discard). Node identity is structural (constitution + modules + Agent Card). See `docs/MODNET-IMPLEMENTATION.md`.
+**Enterprise topology:** PM/orchestrator node manages infrastructure nodes via A2A. Seeds are ephemeral (generate node, then discard). Node identity is structural (constitution + modules + Agent Card). See `docs/MODNET-IMPLEMENTATION.md` (design rationale) and `skills/modnet-node/` (implementation patterns).
 
 ## Open Questions
 
