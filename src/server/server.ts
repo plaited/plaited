@@ -113,6 +113,7 @@ export const createServer = ({
       },
 
       close(ws, code, reason) {
+        const { sessionId } = ws.data
         const topic = topicFor(ws.data)
 
         // Decrement connection count
@@ -120,9 +121,33 @@ export const createServer = ({
         if (count <= 1) topicConnections.delete(topic)
         else topicConnections.set(topic, count - 1)
 
+        // Evict session from knownSessions when no connections remain for this sessionId
+        // Check all topics that could reference this session
+        const hasRemainingConnections = [...topicConnections.keys()].some(
+          (t) => t === sessionId || t.startsWith(`${sessionId}:`),
+        )
+        if (!hasRemainingConnections) {
+          // Schedule cleanup after replay buffer grace period
+          setTimeout(() => {
+            // Only evict if still no connections
+            const stillConnected = [...topicConnections.keys()].some(
+              (t) => t === sessionId || t.startsWith(`${sessionId}:`),
+            )
+            if (!stillConnected) {
+              knownSessions.delete(sessionId)
+              // Clean up any lingering replay buffers for this session
+              for (const key of replayBuffers.keys()) {
+                if (key === sessionId || key.startsWith(`${sessionId}:`)) {
+                  replayBuffers.delete(key)
+                }
+              }
+            }
+          }, bufferTtlMs)
+        }
+
         trigger({
           type: UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected,
-          detail: { sessionId: ws.data.sessionId, code, reason },
+          detail: { sessionId, code, reason },
         })
       },
     },
