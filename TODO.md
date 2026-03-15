@@ -164,7 +164,7 @@ Three layers — agent tools go through pipeline, memory handlers don't, CLI too
 ## Accurate Documents (no action needed)
 
 - ~~**BEHAVIORAL-PROGRAMMING.md**~~ — Migrated to `skills/behavioral-core/references/algorithm-reference.md`
-- **UI.md** — Accurately describes `src/ui/`. Recently updated.
+- **UI.md** — Slimmed to overview; details moved to `generative-ui` skill.
 - **Structural-IA.md** — Design grammar doc, not implementation-dependent.
 - **Modnet.md** — MSS design standards, conceptual.
 

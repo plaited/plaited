@@ -31,7 +31,7 @@ export const SERVER_ERRORS = keyMirror(
  * Default Content-Security-Policy header value.
  *
  * @remarks
- * Mitigates two attack vectors from WEBSOCKET-ARCHITECTURE.md:
+ * Mitigates two attack vectors (see generative-ui skill, references/websocket-decisions.md):
  * - `connect-src 'self'` — blocks Cross-Site WebSocket Hijacking (CSWSH)
  * - `script-src 'self'` — prevents injected inline scripts from executing
  * - `style-src 'self' 'unsafe-inline'` — allows SSR-generated inline `<style>` tags
