@@ -572,6 +572,58 @@ describe('Message Forwarding', () => {
   })
 })
 
+// ─── validateSession Rejection ───────────────────────────────────────────────
+
+describe('validateSession Rejection', () => {
+  let port: number
+  let handle: ServerHandle
+  let triggered: TriggeredEvent[]
+
+  afterAll(() => {
+    handle.stop(true)
+  })
+
+  test('setup', () => {
+    const result = createTestServer({
+      validateSession: (sid) => sid !== 'bad-session',
+    })
+    handle = result
+    port = result.port
+    triggered = result.triggered
+  })
+
+  test('invalid session returns 401 with session_invalid error', async () => {
+    const res = await fetch(httpUrl(port, '/ws'), {
+      headers: {
+        Upgrade: 'websocket',
+        Cookie: 'sid=bad-session',
+        'Sec-WebSocket-Protocol': 'document',
+      },
+    })
+    expect(res.status).toBe(401)
+    const body = await res.text()
+    expect(body).toBe(SERVER_ERRORS.session_invalid)
+
+    const errorEvt = triggered.find(
+      (e) =>
+        e.type === UI_ADAPTER_LIFECYCLE_EVENTS.client_error &&
+        (e.detail as { code: string })?.code === SERVER_ERRORS.session_invalid,
+    )
+    expect(errorEvt).toBeDefined()
+    expect((errorEvt!.detail as { sessionId: string }).sessionId).toBe('bad-session')
+  })
+
+  test('valid session connects successfully', async () => {
+    const ws = openWs(port, {
+      cookie: 'sid=good-session',
+      protocol: 'document',
+    })
+    await waitForOpen(ws)
+    expect(ws.readyState).toBe(WebSocket.OPEN)
+    ws.close()
+  })
+})
+
 // ─── Fetch Fallthrough ──────────────────────────────────────────────────────
 
 describe('Fetch Fallthrough', () => {
