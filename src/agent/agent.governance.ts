@@ -61,12 +61,20 @@ export const isEtcWrite = (toolCall: AgentToolCall): boolean => {
 export const isRmRf = (toolCall: AgentToolCall): boolean => {
   const command = getCommand(toolCall)
   if (command == null) return false
-  // Match `rm` as a word boundary, then scan for both -r and -f in any order
   if (!/\brm\b/.test(command)) return false
-  // Extract the portion after `rm` up to a pipe, semicolon, or &&
+  // Extract tokens after `rm` up to a pipe, semicolon, or &&
   const rmTail = command.slice(command.search(/\brm\b/) + 2).split(/[|;&]/)[0] ?? ''
-  const hasRecursive = /(?:^|\s)(?:-[^\s]*r[^\s]*|--recursive)\b/.test(rmTail)
-  const hasForce = /(?:^|\s)(?:-[^\s]*f[^\s]*|--force)\b/.test(rmTail)
+  const tokens = rmTail.trim().split(/\s+/)
+  let hasRecursive = false
+  let hasForce = false
+  for (const t of tokens) {
+    if (t === '--recursive') hasRecursive = true
+    else if (t === '--force') hasForce = true
+    else if (t.startsWith('-') && !t.startsWith('--')) {
+      if (t.includes('r')) hasRecursive = true
+      if (t.includes('f')) hasForce = true
+    }
+  }
   return hasRecursive && hasForce
 }
 
