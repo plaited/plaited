@@ -30,7 +30,7 @@ export const NODE_ROLE = keyMirror('pm', 'worker', 'registry', 'observer')
 export const MODNET_METADATA = {
   /** Node role in the modnet topology (value from NODE_ROLE) */
   role: 'modnet:role',
-  /** SHA-256 hash of the node's constitution (MAC rules) */
+  /** Hash of the node's constitution (MAC rules) — prefixed with algorithm (e.g. `wyhash:`, `sha256:`) */
   constitutionHash: 'modnet:constitutionHash',
   /** MSS (Module Sharing Standard) content type */
   mssContentType: 'modnet:mss:contentType',

@@ -17,7 +17,8 @@
  * @public
  */
 
-import { stat } from 'node:fs/promises'
+import { readdir } from 'node:fs/promises'
+import { rmSync } from 'node:fs'
 import { join } from 'node:path'
 import type { DefaultHandlers, Trigger } from '../behavioral/behavioral.types.ts'
 import { buildSessionSummary } from '../tools/hypergraph.utils.ts'
@@ -29,6 +30,57 @@ import type {
   Indexer,
   SnapshotCommittedDetail,
 } from './agent.types.ts'
+
+// ============================================================================
+// JSONL Reader
+// ============================================================================
+
+/**
+ * Load decisions from a `decisions.jsonl` file using Bun's native JSONL parser.
+ *
+ * @param jsonlPath - Absolute path to the `.jsonl` file
+ * @returns Parsed decision documents, or empty array if file doesn't exist
+ *
+ * @public
+ */
+export const loadDecisionsJsonl = async (jsonlPath: string): Promise<unknown[]> => {
+  if (!(await Bun.file(jsonlPath).exists())) return []
+  const content = await Bun.file(jsonlPath).text()
+  return Bun.JSONL.parse(content)
+}
+
+// ============================================================================
+// Archive Helper
+// ============================================================================
+
+/**
+ * Archive a session directory into a compressed tarball using Bun.Archive.
+ *
+ * @param sessionDir - Absolute path to the session directory
+ * @param archivePath - Absolute path for the output `.tar.gz` file
+ *
+ * @internal
+ */
+const archiveSession = async (sessionDir: string, archivePath: string): Promise<void> => {
+  const files: Record<string, Blob> = {}
+
+  const walk = async (dir: string, prefix = '') => {
+    const entries = await readdir(dir, { withFileTypes: true })
+    for (const entry of entries) {
+      const fullPath = join(dir, entry.name)
+      const archiveKey = prefix ? `${prefix}/${entry.name}` : entry.name
+      if (entry.isDirectory()) {
+        await walk(fullPath, archiveKey)
+      } else {
+        files[archiveKey] = Bun.file(fullPath)
+      }
+    }
+  }
+
+  await walk(sessionDir)
+  const archive = new Bun.Archive(files, { compress: 'gzip' })
+  await Bun.write(archivePath, await archive.blob())
+}
 
 // ============================================================================
 // Types
@@ -201,7 +253,7 @@ export const createMemoryHandlers = ({
     },
 
     /**
-     * defrag — remove old sessions, keep recent N.
+     * defrag — archive old sessions to `.tar.gz`, then remove from working tree.
      */
     [AGENT_EVENTS.defrag]: async (detail: unknown) => {
       const { memoryPath: mPath } = detail as DefragDetail
@@ -214,24 +266,28 @@ export const createMemoryHandlers = ({
       for await (const name of glob.scan({ cwd: sessionsDir, onlyFiles: false })) {
         // Check if it's a directory by looking for meta.jsonld or decisions/
         const metaExists = await Bun.file(join(sessionsDir, name, 'meta.jsonld')).exists()
-        const decisionsExists = await stat(join(sessionsDir, name, 'decisions'))
-          .then((s) => s.isDirectory())
-          .catch(() => false)
+        const decisionsExists = await Bun.file(join(sessionsDir, name, 'decisions')).exists()
         if (metaExists || decisionsExists) {
           sessions.push(name)
         }
       }
       sessions.sort()
 
-      // Remove oldest sessions beyond keepSessions limit
+      // Archive + remove oldest sessions beyond keepSessions limit
       const toRemove = sessions.slice(0, Math.max(0, sessions.length - keepSessions))
       for (const session of toRemove) {
         const sessionPath = join(sessionsDir, session)
-        Bun.spawnSync(['git', 'rm', '-rf', sessionPath], { cwd: moduleRoot })
+        const archivePath = join(sessionsDir, `${session}.tar.gz`)
+        await archiveSession(sessionPath, archivePath)
+        rmSync(sessionPath, { recursive: true, force: true })
       }
 
       if (toRemove.length > 0) {
-        Bun.spawnSync(['git', 'commit', '-m', `defrag: removed ${toRemove.length} old sessions`], { cwd: moduleRoot })
+        Bun.spawnSync(['git', 'add', '-A'], { cwd: moduleRoot })
+        Bun.spawnSync(
+          ['git', 'commit', '-m', `defrag: archived ${toRemove.length} old sessions`],
+          { cwd: moduleRoot },
+        )
       }
     },
 

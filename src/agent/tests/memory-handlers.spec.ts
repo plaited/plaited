@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { AGENT_EVENTS } from '../agent.constants.ts'
-import { createMemoryHandlers } from '../memory-handlers.ts'
+import { createMemoryHandlers, loadDecisionsJsonl } from '../memory-handlers.ts'
 
 // ============================================================================
 // Helpers
@@ -164,14 +164,15 @@ describe('createMemoryHandlers', () => {
         memoryPath: memoryDir,
       })
 
-      // Check decisions.jsonl was written
+      // Check decisions.jsonl was written and parseable via Bun.JSONL
       const jsonlPath = join(sessionDir, 'decisions.jsonl')
       const jsonlExists = await Bun.file(jsonlPath).exists()
       expect(jsonlExists).toBe(true)
 
       const jsonlContent = await Bun.file(jsonlPath).text()
-      const lines = jsonlContent.trim().split('\n')
-      expect(lines.length).toBe(2) // 2 decision files
+      const decisions = Bun.JSONL.parse(jsonlContent)
+      expect(decisions.length).toBe(2) // 2 decision files
+      expect((decisions[0] as Record<string, unknown>)['@type']).toBe('SelectionDecision')
 
       // Check meta.jsonld was written
       const metaPath = join(sessionDir, 'meta.jsonld')
@@ -186,7 +187,7 @@ describe('createMemoryHandlers', () => {
   })
 
   describe('defrag', () => {
-    test('removes old sessions beyond keepSessions limit', async () => {
+    test('archives and removes old sessions beyond keepSessions limit', async () => {
       const repoDir = join(TEMP_DIR, 'defrag-test')
       const memoryDir = join(repoDir, '.memory')
 
@@ -198,10 +199,11 @@ describe('createMemoryHandlers', () => {
       Bun.spawnSync(['git', 'config', 'user.email', 'test@test.com'], { cwd: repoDir })
       Bun.spawnSync(['git', 'config', 'user.name', 'Test'], { cwd: repoDir })
 
-      // Create 4 sessions
+      // Create 4 sessions with content
       for (const name of ['sess_01', 'sess_02', 'sess_03', 'sess_04']) {
         const sessionDir = join(memoryDir, 'sessions', name)
         await Bun.write(join(sessionDir, 'meta.jsonld'), JSON.stringify({ '@id': name, '@type': 'Session' }))
+        await Bun.write(join(sessionDir, 'decisions', 'dec.jsonld'), JSON.stringify({ '@id': `${name}/d1` }))
       }
 
       Bun.spawnSync(['git', 'add', '-A'], { cwd: repoDir })
@@ -216,7 +218,7 @@ describe('createMemoryHandlers', () => {
 
       await handlers[AGENT_EVENTS.defrag]!({ memoryPath: memoryDir })
 
-      // Should have removed 2 oldest sessions (sess_01, sess_02)
+      // Directories should be removed
       const sess01Exists = await Bun.file(join(memoryDir, 'sessions/sess_01/meta.jsonld')).exists()
       const sess02Exists = await Bun.file(join(memoryDir, 'sessions/sess_02/meta.jsonld')).exists()
       const sess03Exists = await Bun.file(join(memoryDir, 'sessions/sess_03/meta.jsonld')).exists()
@@ -226,6 +228,42 @@ describe('createMemoryHandlers', () => {
       expect(sess02Exists).toBe(false)
       expect(sess03Exists).toBe(true)
       expect(sess04Exists).toBe(true)
+
+      // Archives should exist
+      const archive01Exists = await Bun.file(join(memoryDir, 'sessions/sess_01.tar.gz')).exists()
+      const archive02Exists = await Bun.file(join(memoryDir, 'sessions/sess_02.tar.gz')).exists()
+      expect(archive01Exists).toBe(true)
+      expect(archive02Exists).toBe(true)
+
+      // Archives should be valid gzip (check magic bytes)
+      const archive01Bytes = await Bun.file(join(memoryDir, 'sessions/sess_01.tar.gz')).bytes()
+      expect(archive01Bytes[0]).toBe(0x1f)
+      expect(archive01Bytes[1]).toBe(0x8b)
     })
+  })
+})
+
+// ============================================================================
+// loadDecisionsJsonl
+// ============================================================================
+
+describe('loadDecisionsJsonl', () => {
+  const JSONL_DIR = join(TEMP_DIR, 'jsonl-test')
+
+  test('parses decisions.jsonl via Bun.JSONL', async () => {
+    const jsonlPath = join(JSONL_DIR, 'decisions.jsonl')
+    const doc1 = { '@id': 'test/d1', '@type': 'SelectionDecision', bids: [] }
+    const doc2 = { '@id': 'test/d2', '@type': 'SelectionDecision', bids: [] }
+    await Bun.write(jsonlPath, `${JSON.stringify(doc1)}\n${JSON.stringify(doc2)}\n`)
+
+    const decisions = await loadDecisionsJsonl(jsonlPath)
+    expect(decisions).toHaveLength(2)
+    expect((decisions[0] as Record<string, unknown>)['@id']).toBe('test/d1')
+    expect((decisions[1] as Record<string, unknown>)['@id']).toBe('test/d2')
+  })
+
+  test('returns empty array for missing file', async () => {
+    const decisions = await loadDecisionsJsonl(join(JSONL_DIR, 'nonexistent.jsonl'))
+    expect(decisions).toEqual([])
   })
 })
