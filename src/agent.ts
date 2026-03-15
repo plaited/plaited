@@ -1,4 +1,5 @@
 export * from './agent/agent.constants.ts'
+export * from './agent/agent.context.ts'
 export * from './agent/agent.evaluate.ts'
 export * from './agent/agent.schemas.ts'
 export * from './agent/agent.simulate.ts'
