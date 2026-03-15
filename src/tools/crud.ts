@@ -10,6 +10,20 @@ import {
   ReadFileConfigSchema,
   WriteFileConfigSchema,
 } from './crud.schemas.ts'
+import { truncateHead, truncateTail } from './truncate.ts'
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+const DEFAULT_LIST_LIMIT = 1000
+
+const TEXT_MIME_PREFIXES = ['text/', 'application/json', 'application/xml', 'application/javascript']
+
+const isTextMime = (mime: string): boolean =>
+  TEXT_MIME_PREFIXES.some((prefix) => mime.startsWith(prefix)) || mime.includes('charset=')
+
+const isImageMime = (mime: string): boolean => mime.startsWith('image/')
 
 // ============================================================================
 // Risk Tag Registry — static declarations per built-in tool
@@ -38,14 +52,52 @@ export const BUILT_IN_RISK_TAGS: Record<string, string[]> = {
 // ============================================================================
 
 /**
- * Read a file's contents as text.
+ * Read a file's contents with truncation and binary detection.
+ *
+ * @remarks
+ * Three possible return shapes based on MIME type:
+ * - `text` — file content with truncation metadata
+ * - `image` — metadata only (attachment point for Vision model)
+ * - `binary` — metadata only (no binary content in context)
+ *
+ * Supports `offset` (line-based, 0-indexed) and `limit` (line count)
+ * for paginated reads of large files.
  *
  * @public
  */
 export const readFile: ToolHandler = async (args, ctx) => {
   const path = args.path as string
+  const offset = args.offset as number | undefined
+  const limit = args.limit as number | undefined
   const resolved = resolve(ctx.workspace, path)
-  return await Bun.file(resolved).text()
+  const file = Bun.file(resolved)
+
+  const size = file.size
+  const mime = file.type
+
+  // Image files: metadata only (Vision model attachment point)
+  if (isImageMime(mime)) {
+    return { type: 'image', path, mimeType: mime, size }
+  }
+
+  // Non-text binary files: metadata only
+  if (!isTextMime(mime)) {
+    return { type: 'binary', path, mimeType: mime, size }
+  }
+
+  // Text file: read, apply offset/limit, then truncate
+  const text = await file.text()
+
+  let content = text
+  if (offset !== undefined || limit !== undefined) {
+    const lines = text.split('\n')
+    const start = offset ?? 0
+    const end = limit !== undefined ? start + limit : lines.length
+    content = lines.slice(start, end).join('\n')
+  }
+
+  const result = truncateHead(content)
+  return { type: 'text', path, ...result }
 }
 
 /**
@@ -94,25 +146,43 @@ export const editFile: ToolHandler = async (args, ctx) => {
 /**
  * List files and directories matching a glob pattern.
  *
+ * @remarks
+ * Results are capped at `limit` entries (default 1000) to prevent
+ * unbounded output in large repositories.
+ *
  * @public
  */
 export const listFiles: ToolHandler = async (args, ctx) => {
   const pattern = (args.pattern as string) ?? '**/*'
+  const limit = (args.limit as number) ?? DEFAULT_LIST_LIMIT
   const glob = new Bun.Glob(pattern)
   const entries: Array<{ path: string; type: 'file' | 'directory'; size?: number }> = []
+  let totalEntries = 0
   for await (const path of glob.scan({ cwd: ctx.workspace, onlyFiles: false })) {
-    const resolved = resolve(ctx.workspace, path)
-    const ref = Bun.file(resolved)
-    const isFile = await ref.exists()
-    entries.push(isFile ? { path, type: 'file', size: ref.size } : { path, type: 'directory' })
+    totalEntries++
+    if (entries.length < limit) {
+      const resolved = resolve(ctx.workspace, path)
+      const ref = Bun.file(resolved)
+      const isFile = await ref.exists()
+      entries.push(isFile ? { path, type: 'file', size: ref.size } : { path, type: 'directory' })
+    }
   }
-  return entries
+  return {
+    entries,
+    truncated: totalEntries > limit,
+    totalEntries,
+    returnedEntries: entries.length,
+  }
 }
 
 /**
  * Execute a shell command via Bun Shell.
  *
  * @remarks
+ * Output is truncated from the tail (last N lines kept) since the
+ * most recent output is usually the most relevant — build errors,
+ * test results, final status lines.
+ *
  * Uses `Bun.$` (not `/bin/sh`) for sandboxing:
  * - `.cwd(workspace)` locks working directory
  * - `.nothrow()` captures exit code without throwing
@@ -133,7 +203,8 @@ export const bash: ToolHandler = async (args, ctx) => {
   if (result.exitCode !== 0) {
     throw new Error(result.stderr.toString().trim() || `Command exited with code ${result.exitCode}`)
   }
-  return result.stdout.toString().trim()
+  const output = result.stdout.toString().trim()
+  return truncateTail(output)
 }
 
 /**

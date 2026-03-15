@@ -1,4 +1,5 @@
 import * as z from 'zod'
+import { TruncationResultSchema } from './truncate.ts'
 
 // ============================================================================
 // Input Schemas
@@ -6,6 +7,8 @@ import * as z from 'zod'
 
 export const ReadFileConfigSchema = z.object({
   path: z.string().describe('Relative path to the file'),
+  offset: z.number().optional().describe('Line offset to start reading from (0-indexed)'),
+  limit: z.number().optional().describe('Maximum number of lines to return'),
 })
 
 export const WriteFileConfigSchema = z.object({
@@ -21,6 +24,7 @@ export const EditFileConfigSchema = z.object({
 
 export const ListFilesConfigSchema = z.object({
   pattern: z.string().optional().describe('Glob pattern (defaults to **/* if omitted)'),
+  limit: z.number().optional().describe('Maximum number of entries to return (defaults to 1000)'),
 })
 
 export const BashConfigSchema = z.object({
@@ -30,6 +34,30 @@ export const BashConfigSchema = z.object({
 // ============================================================================
 // Output Schemas
 // ============================================================================
+
+export const ReadFileOutputSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('text'),
+    path: z.string(),
+    ...TruncationResultSchema.shape,
+  }),
+  z.object({
+    type: z.literal('image'),
+    path: z.string(),
+    mimeType: z.string(),
+    size: z.number(),
+  }),
+  z.object({
+    type: z.literal('binary'),
+    path: z.string(),
+    mimeType: z.string(),
+    size: z.number(),
+  }),
+])
+
+export const BashOutputSchema = z.object({
+  ...TruncationResultSchema.shape,
+})
 
 export const WriteFileOutputSchema = z.object({
   written: z.string(),
@@ -47,4 +75,9 @@ export const ListFilesEntrySchema = z.object({
   size: z.number().optional(),
 })
 
-export const ListFilesOutputSchema = z.array(ListFilesEntrySchema)
+export const ListFilesOutputSchema = z.object({
+  entries: z.array(ListFilesEntrySchema),
+  truncated: z.boolean(),
+  totalEntries: z.number(),
+  returnedEntries: z.number(),
+})
