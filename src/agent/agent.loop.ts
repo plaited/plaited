@@ -15,14 +15,18 @@
  * @public
  */
 
+import { join } from 'node:path'
 import { behavioral } from '../behavioral/behavioral.ts'
 import type { DefaultHandlers, Trigger } from '../behavioral/behavioral.types.ts'
 import { bSync, bThread } from '../behavioral/behavioral.utils.ts'
 import { UI_ADAPTER_LIFECYCLE_EVENTS } from '../events.ts'
+import type { SessionMeta } from '../tools/hypergraph.utils.ts'
 import { AGENT_EVENTS, RISK_TAG } from './agent.constants.ts'
 import {
   type ContextContributor,
+  type SessionSummaryContributor,
   createContextAssembler,
+  createSessionSummaryContributor,
   historyContributor,
   planContributor,
   rejectionContributor,
@@ -39,6 +43,7 @@ import { simulate } from './agent.simulate.ts'
 import type {
   AgentNode,
   ChatMessage,
+  ConsolidateDetail,
   ContextReadyDetail,
   EvalApprovedDetail,
   EvalRejectedDetail,
@@ -126,6 +131,18 @@ const isCompletionEvent = (e: { type: string }) =>
 // ============================================================================
 
 /**
+ * Load session meta.jsonld if it exists on disk.
+ *
+ * @internal
+ */
+const loadSessionMeta = async (memoryPath: string, sessionId: string): Promise<SessionMeta | null> => {
+  const metaPath = join(memoryPath, 'sessions', sessionId, 'meta.jsonld')
+  const file = Bun.file(metaPath)
+  if (!(await file.exists())) return null
+  return (await file.json()) as SessionMeta
+}
+
+/**
  * Creates a BP-orchestrated agent loop implementing the 6-step pipeline.
  *
  * @remarks
@@ -136,12 +153,14 @@ const isCompletionEvent = (e: { type: string }) =>
  * coordination uses dynamic bThreads (maxIterations, batchCompletion,
  * sim_guard) that self-terminate via interrupt.
  *
+ * Async because it loads the session's `meta.jsonld` (warm layer) at startup.
+ *
  * @param options - Agent loop configuration
  * @returns {@link AgentNode} with restricted trigger, subscribe, snapshot, destroy
  *
  * @public
  */
-export const createAgentLoop = ({
+export const createAgentLoop = async ({
   model,
   tools,
   toolExecutor,
@@ -153,7 +172,7 @@ export const createAgentLoop = ({
   embedder,
   systemPrompt = 'You are a helpful assistant.',
   maxIterations = 50,
-}: CreateAgentLoopOptions): AgentNode => {
+}: CreateAgentLoopOptions): Promise<AgentNode> => {
   // ── BP engine ───────────────────────────────────────────────────────────
   mark('createAgentLoop:start')
   const { bThreads, trigger, useFeedback, useSnapshot, useRestrictedTrigger } = behavioral()
@@ -168,10 +187,15 @@ export const createAgentLoop = ({
   const MAX_INFERENCE_RETRIES = 3
   let inferenceRetryCount = 0
 
+  // ── Warm layer: load session meta for context orientation ──────────────
+  const initialMeta = await loadSessionMeta(memoryPath, sessionId)
+  const sessionSummary: SessionSummaryContributor = createSessionSummaryContributor(initialMeta)
+
   // ── Context assembler ───────────────────────────────────────────────────
   const contributors: ContextContributor[] = [
     systemPromptContributor(systemPrompt),
     rejectionContributor,
+    sessionSummary,
     toolsContributor,
     planContributor,
     historyContributor,
@@ -638,6 +662,15 @@ export const createAgentLoop = ({
 
     // ── memory lifecycle ─────────────────────────────────────────────────
     ...memoryHandlers,
+  })
+
+  // ── Warm layer refresh (separate registration — cannot share key with memoryHandlers)
+  useFeedback({
+    async [AGENT_EVENTS.consolidate](detail: unknown) {
+      const { sessionId: sid, memoryPath: mPath } = detail as ConsolidateDetail
+      const updatedMeta = await loadSessionMeta(mPath, sid)
+      if (updatedMeta) sessionSummary.updateMeta(updatedMeta)
+    },
   })
 
   // ── Timing report ──────────────────────────────────────────────────────
