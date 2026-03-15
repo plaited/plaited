@@ -106,14 +106,20 @@ export const createA2AWebSocketClient = (options: CreateA2AWebSocketClientOption
     }
 
     // Success response
-    const result = json.result as Record<string, unknown>
+    const result = json.result as Record<string, unknown> | null
 
     // Check if this is a streaming response
     const stream = pendingStreams.get(id)
     if (stream) {
+      // Null result is the stream completion sentinel from the server
+      if (result === null) {
+        stream.done()
+        pendingStreams.delete(id)
+        return
+      }
       stream.push(result as unknown as StreamEvent)
       // Check for final status-update — signals end of stream
-      if (result && result.kind === 'status-update' && result.final === true) {
+      if (result.kind === 'status-update' && result.final === true) {
         stream.done()
         pendingStreams.delete(id)
       }
