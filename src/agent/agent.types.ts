@@ -10,7 +10,11 @@ import type { AgentPlan, AgentToolCall, GateDecision, ModelUsage, ToolDefinition
 // Model Interface — streaming inference (from pi-mono audit decisions)
 // ============================================================================
 
-/** A single message in the OpenAI chat format */
+/**
+ * A single message in the OpenAI chat format.
+ *
+ * @public
+ */
 export type ChatMessage = {
   role: 'system' | 'user' | 'assistant' | 'tool'
   content?: string | null

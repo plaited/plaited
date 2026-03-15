@@ -69,6 +69,7 @@ export const BThreadPromptMetadataSchema = z.object({
   category: z.string().optional(),
 })
 
+/** Inferred type for {@link BThreadPromptMetadataSchema}. */
 export type BThreadPromptMetadata = z.infer<typeof BThreadPromptMetadataSchema>
 
 // ============================================================================
