@@ -32,6 +32,16 @@ export const BashConfigSchema = z.object({
   command: z.string().describe('The shell command to execute'),
 })
 
+export const GrepConfigSchema = z.object({
+  pattern: z.string().describe('Regex or literal search pattern'),
+  path: z.string().optional().describe('Directory or file to search (default: workspace root)'),
+  glob: z.string().optional().describe('Filter files by glob pattern (e.g. "*.ts")'),
+  ignoreCase: z.boolean().optional().describe('Case-insensitive search'),
+  literal: z.boolean().optional().describe('Treat pattern as literal string, not regex'),
+  context: z.number().optional().describe('Lines of context before and after each match'),
+  limit: z.number().optional().describe('Maximum number of matches to return (default: 100)'),
+})
+
 // ============================================================================
 // Output Schemas
 // ============================================================================
@@ -74,6 +84,7 @@ export const ListFilesEntrySchema = z.object({
   path: z.string(),
   type: z.enum(['file', 'directory']),
   size: z.number().optional(),
+  mimeType: z.string().optional(),
 })
 
 export const ListFilesOutputSchema = z.object({
@@ -81,4 +92,22 @@ export const ListFilesOutputSchema = z.object({
   truncated: z.boolean(),
   totalEntries: z.number(),
   returnedEntries: z.number(),
+})
+
+export const GrepMatchSchema = z.object({
+  path: z.string(),
+  line: z.number(),
+  text: z.string(),
+  context: z
+    .object({
+      before: z.array(z.string()).optional(),
+      after: z.array(z.string()).optional(),
+    })
+    .optional(),
+})
+
+export const GrepOutputSchema = z.object({
+  matches: z.array(GrepMatchSchema),
+  totalMatches: z.number(),
+  truncated: z.boolean(),
 })

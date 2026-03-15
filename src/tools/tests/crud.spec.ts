@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { RISK_TAG } from '../../agent/agent.constants.ts'
 import type { ToolContext } from '../../agent/agent.types.ts'
 import type { TruncationResult } from '../truncate.ts'
-import { BUILT_IN_RISK_TAGS, bash, builtInHandlers, editFile, listFiles, readFile, writeFile } from '../crud.ts'
+import { BUILT_IN_RISK_TAGS, bash, builtInHandlers, editFile, grep, listFiles, readFile, writeFile } from '../crud.ts'
 
 // ============================================================================
 // Temp workspace setup
@@ -27,6 +27,11 @@ beforeAll(async () => {
   // Large file for truncation testing
   const largeContent = Array.from({ length: 3000 }, (_, i) => `line ${i}`).join('\n')
   await Bun.write(join(workspace, 'large.txt'), largeContent)
+  // Grep search target
+  await Bun.write(
+    join(workspace, 'search-target.ts'),
+    'const alpha = 1\nconst beta = 2\nconst ALPHA = 3\nfunction gamma() { return alpha + beta }',
+  )
 })
 
 afterAll(async () => {
@@ -277,7 +282,7 @@ describe('editFile', () => {
 describe('listFiles', () => {
   test('returns entries with metadata and truncation info', async () => {
     const result = (await listFiles({ pattern: '*.txt' }, ctx)) as {
-      entries: Array<{ path: string; type: string; size?: number }>
+      entries: Array<{ path: string; type: string; size?: number; mimeType?: string }>
       truncated: boolean
       totalEntries: number
       returnedEntries: number
@@ -286,6 +291,7 @@ describe('listFiles', () => {
     expect(hello).toBeDefined()
     expect(hello!.type).toBe('file')
     expect(hello!.size).toBe(13) // 'Hello, world!' is 13 bytes
+    expect(hello!.mimeType).toBe('text/plain;charset=utf-8')
     expect(result.truncated).toBe(false)
     expect(result.totalEntries).toBe(result.returnedEntries)
   })
@@ -293,9 +299,11 @@ describe('listFiles', () => {
   test('defaults to **/* when no pattern', async () => {
     const result = (await listFiles({}, ctx)) as {
       entries: Array<{ path: string; type: string }>
+      truncated: boolean
     }
     const paths = result.entries.map((e) => e.path)
     expect(paths).toContain('hello.txt')
+    expect(result.truncated).toBe(false)
   })
 
   test('respects limit parameter', async () => {
@@ -309,6 +317,108 @@ describe('listFiles', () => {
     expect(result.entries).toHaveLength(1)
     expect(result.truncated).toBe(true)
     expect(result.totalEntries).toBeGreaterThan(1)
+  })
+})
+
+// ============================================================================
+// grep
+// ============================================================================
+
+describe('grep', () => {
+  test('finds matches with structured output', async () => {
+    const result = (await grep({ pattern: 'alpha', path: 'search-target.ts' }, ctx)) as {
+      matches: Array<{ path: string; line: number; text: string }>
+      totalMatches: number
+      truncated: boolean
+    }
+    expect(result.matches.length).toBeGreaterThan(0)
+    expect(result.totalMatches).toBeGreaterThan(0)
+    expect(result.truncated).toBe(false)
+
+    const match = result.matches[0]!
+    expect(match.path).toBe('search-target.ts')
+    expect(match.line).toBeGreaterThan(0)
+    expect(match.text).toContain('alpha')
+  })
+
+  test('supports case-insensitive search', async () => {
+    const sensitive = (await grep({ pattern: 'alpha' }, ctx)) as {
+      matches: Array<{ path: string; line: number; text: string }>
+      totalMatches: number
+    }
+    const insensitive = (await grep({ pattern: 'alpha', ignoreCase: true }, ctx)) as {
+      matches: Array<{ path: string; line: number; text: string }>
+      totalMatches: number
+    }
+    expect(insensitive.totalMatches).toBeGreaterThan(sensitive.totalMatches)
+  })
+
+  test('supports literal search', async () => {
+    const result = (await grep({ pattern: 'alpha + beta', literal: true }, ctx)) as {
+      matches: Array<{ path: string; line: number; text: string }>
+      totalMatches: number
+    }
+    expect(result.totalMatches).toBe(1)
+    expect(result.matches[0]!.text).toContain('alpha + beta')
+  })
+
+  test('supports glob filtering', async () => {
+    const result = (await grep({ pattern: 'Hello', glob: '*.txt' }, ctx)) as {
+      matches: Array<{ path: string }>
+      totalMatches: number
+    }
+    expect(result.totalMatches).toBe(1)
+    expect(result.matches[0]!.path).toBe('hello.txt')
+  })
+
+  test('supports context lines', async () => {
+    const result = (await grep({ pattern: 'beta', path: 'search-target.ts', context: 1 }, ctx)) as {
+      matches: Array<{
+        path: string
+        line: number
+        text: string
+        context?: { before?: string[]; after?: string[] }
+      }>
+    }
+    expect(result.matches.length).toBeGreaterThan(0)
+    const firstMatch = result.matches[0]!
+    expect(firstMatch.context).toBeDefined()
+  })
+
+  test('respects limit parameter', async () => {
+    const result = (await grep({ pattern: 'const', limit: 1 }, ctx)) as {
+      matches: Array<{ path: string }>
+      totalMatches: number
+      truncated: boolean
+    }
+    expect(result.matches.length).toBe(1)
+    expect(result.totalMatches).toBeGreaterThan(1)
+    expect(result.truncated).toBe(true)
+  })
+
+  test('returns empty for no matches', async () => {
+    const result = (await grep({ pattern: 'zzz_no_match_zzz' }, ctx)) as {
+      matches: Array<unknown>
+      totalMatches: number
+      truncated: boolean
+    }
+    expect(result.matches).toEqual([])
+    expect(result.totalMatches).toBe(0)
+    expect(result.truncated).toBe(false)
+  })
+
+  test('searches within specified path', async () => {
+    const result = (await grep({ pattern: 'app', path: 'src' }, ctx)) as {
+      matches: Array<{ path: string }>
+      totalMatches: number
+    }
+    expect(result.totalMatches).toBeGreaterThan(0)
+    expect(result.matches[0]!.path).toMatch(/^src\//)
+  })
+
+  test('throws when signal is already aborted', async () => {
+    const aborted = AbortSignal.abort()
+    expect(grep({ pattern: 'test' }, { workspace, signal: aborted })).rejects.toThrow('Aborted')
   })
 })
 
@@ -349,6 +459,7 @@ describe('BUILT_IN_RISK_TAGS', () => {
     expect(BUILT_IN_RISK_TAGS.write_file).toContain(RISK_TAG.workspace)
     expect(BUILT_IN_RISK_TAGS.edit_file).toContain(RISK_TAG.workspace)
     expect(BUILT_IN_RISK_TAGS.list_files).toContain(RISK_TAG.workspace)
+    expect(BUILT_IN_RISK_TAGS.grep).toContain(RISK_TAG.workspace)
   })
 
   test('bash has empty tags (default-deny)', () => {
@@ -366,6 +477,7 @@ describe('builtInHandlers', () => {
     expect(builtInHandlers.write_file).toBeDefined()
     expect(builtInHandlers.edit_file).toBeDefined()
     expect(builtInHandlers.list_files).toBeDefined()
+    expect(builtInHandlers.grep).toBeDefined()
     expect(builtInHandlers.bash).toBeDefined()
   })
 })

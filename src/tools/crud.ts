@@ -1,11 +1,12 @@
-import { extname, resolve } from 'node:path'
+import { extname, relative, resolve } from 'node:path'
 import { $ } from 'bun'
 import { RISK_TAG } from '../agent/agent.constants.ts'
 import type { ToolHandler } from '../agent/agent.types.ts'
-import { makeCli } from './cli.utils.ts'
+import { ensureTool, makeCli } from './cli.utils.ts'
 import {
   BashConfigSchema,
   EditFileConfigSchema,
+  GrepConfigSchema,
   ListFilesConfigSchema,
   ReadFileConfigSchema,
   WriteFileConfigSchema,
@@ -25,7 +26,6 @@ const isTextMime = (mime: string): boolean =>
 
 const isImageMime = (mime: string): boolean => mime.startsWith('image/')
 
-// ============================================================================
 // Edit Helpers — scan-assisted symbol location + whitespace normalization
 // ============================================================================
 
@@ -238,6 +238,12 @@ const validateSyntax = (content: string, path: string, ext: string): void => {
 }
 
 // ============================================================================
+// External Binary Dependencies — fail fast at module load
+// ============================================================================
+
+const RG_PATH = ensureTool('rg')
+
+// ============================================================================
 // Risk Tag Registry — static declarations per built-in tool
 // ============================================================================
 
@@ -256,6 +262,7 @@ export const BUILT_IN_RISK_TAGS: Record<string, string[]> = {
   write_file: [RISK_TAG.workspace],
   edit_file: [RISK_TAG.workspace],
   list_files: [RISK_TAG.workspace],
+  grep: [RISK_TAG.workspace],
   bash: [], // empty → default-deny, routes to Simulate + Judge
 }
 
@@ -363,6 +370,7 @@ export const editFile: ToolHandler = async (args, ctx) => {
  * List files and directories matching a glob pattern.
  *
  * @remarks
+ * Returns entries enriched with file size and MIME type.
  * Results are capped at `limit` entries (default 1000) to prevent
  * unbounded output in large repositories.
  *
@@ -372,7 +380,7 @@ export const listFiles: ToolHandler = async (args, ctx) => {
   const pattern = (args.pattern as string) ?? '**/*'
   const limit = (args.limit as number) ?? DEFAULT_LIST_LIMIT
   const glob = new Bun.Glob(pattern)
-  const entries: Array<{ path: string; type: 'file' | 'directory'; size?: number }> = []
+  const entries: Array<{ path: string; type: 'file' | 'directory'; size?: number; mimeType?: string }> = []
   let totalEntries = 0
   for await (const path of glob.scan({ cwd: ctx.workspace, onlyFiles: false })) {
     totalEntries++
@@ -380,7 +388,7 @@ export const listFiles: ToolHandler = async (args, ctx) => {
       const resolved = resolve(ctx.workspace, path)
       const ref = Bun.file(resolved)
       const isFile = await ref.exists()
-      entries.push(isFile ? { path, type: 'file', size: ref.size } : { path, type: 'directory' })
+      entries.push(isFile ? { path, type: 'file', size: ref.size, mimeType: ref.type } : { path, type: 'directory' })
     }
   }
   return {
@@ -389,6 +397,101 @@ export const listFiles: ToolHandler = async (args, ctx) => {
     totalEntries,
     returnedEntries: entries.length,
   }
+}
+
+/**
+ * Search file contents using ripgrep with structured output.
+ *
+ * @remarks
+ * Wraps `rg --json` and parses the JSONL output natively with `Bun.JSONL.parse()`.
+ * Tagged `[workspace]` so read-only searches skip the simulate+judge pipeline.
+ *
+ * Uses the `rg` binary path resolved at module load time via `ensureTool('rg')`.
+ *
+ * @public
+ */
+export const grep: ToolHandler = async (args, ctx) => {
+  const pattern = args.pattern as string
+  const searchPath = args.path ? resolve(ctx.workspace, args.path as string) : ctx.workspace
+  const limit = (args.limit as number | undefined) ?? 100
+
+  if (ctx.signal.aborted) throw new Error('Aborted')
+
+  // Build rg arguments
+  const rgArgs = ['--json']
+  if (args.ignoreCase) rgArgs.push('--ignore-case')
+  if (args.literal) rgArgs.push('--fixed-strings')
+  if (args.glob) rgArgs.push('--glob', args.glob as string)
+  if (args.context != null) rgArgs.push('--context', String(args.context as number))
+
+  const result = await $`${RG_PATH} ${rgArgs} ${pattern} ${searchPath}`.nothrow().quiet()
+
+  // rg exits 1 when no matches found — not an error
+  if (result.exitCode !== 0 && result.exitCode !== 1) {
+    throw new Error(result.stderr.toString().trim() || `rg exited with code ${result.exitCode}`)
+  }
+
+  const stdout = result.stdout.toString()
+  if (!stdout.trim()) return { matches: [], totalMatches: 0, truncated: false }
+
+  // Parse rg JSONL output — collect matches with optional context lines
+  type GrepMatch = {
+    path: string
+    line: number
+    text: string
+    context?: { before?: string[]; after?: string[] }
+  }
+
+  const matches: GrepMatch[] = []
+  let totalMatches = 0
+  // Track context lines for the current match group
+  let pendingBefore: string[] = []
+  let lastMatch: GrepMatch | undefined
+
+  for await (const entry of Bun.JSONL.parse(stdout)) {
+    const record = entry as { type: string; data: Record<string, unknown> }
+    if (record.type === 'context') {
+      const lineText = ((record.data.lines as { text: string }).text ?? '').replace(/\n$/, '')
+      const lineNumber = record.data.line_number as number
+
+      if (lastMatch && lineNumber > lastMatch.line) {
+        // Context after the last match
+        lastMatch.context ??= {}
+        lastMatch.context.after ??= []
+        lastMatch.context.after.push(lineText)
+      } else {
+        // Context before the next match
+        pendingBefore.push(lineText)
+      }
+    } else if (record.type === 'match') {
+      totalMatches++
+      if (matches.length >= limit) continue
+
+      const pathData = record.data.path as { text: string }
+      const matchPath = relative(ctx.workspace, pathData.text)
+      const lineText = ((record.data.lines as { text: string }).text ?? '').replace(/\n$/, '')
+
+      const match: GrepMatch = {
+        path: matchPath,
+        line: record.data.line_number as number,
+        text: lineText,
+      }
+
+      if (pendingBefore.length > 0) {
+        match.context = { before: pendingBefore }
+        pendingBefore = []
+      }
+
+      matches.push(match)
+      lastMatch = match
+    } else if (record.type === 'begin') {
+      // Reset context accumulation at file boundaries
+      pendingBefore = []
+      lastMatch = undefined
+    }
+  }
+
+  return { matches, totalMatches, truncated: totalMatches > limit }
 }
 
 /**
@@ -436,6 +539,7 @@ export const builtInHandlers: Record<string, ToolHandler> = {
   write_file: writeFile,
   edit_file: editFile,
   list_files: listFiles,
+  grep,
   bash,
 }
 
@@ -447,4 +551,5 @@ export const readFileCli = makeCli(readFile, ReadFileConfigSchema, 'read-file')
 export const writeFileCli = makeCli(writeFile, WriteFileConfigSchema, 'write-file')
 export const editFileCli = makeCli(editFile, EditFileConfigSchema, 'edit-file')
 export const listFilesCli = makeCli(listFiles, ListFilesConfigSchema, 'list-files')
+export const grepCli = makeCli(grep, GrepConfigSchema, 'grep')
 export const bashCli = makeCli(bash, BashConfigSchema, 'bash')
