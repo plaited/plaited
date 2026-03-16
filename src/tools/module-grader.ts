@@ -535,7 +535,23 @@ const matchDynamicIndicator = (code: string, item: string): boolean => {
       codeIndicators: ['localstorage', 'bun.write', 'bun.file', 'readfile', 'writefile', 'jsonl', 'data/'],
     },
     {
-      keywords: ['marker', 'coordinate', 'latitude', 'longitude', 'geocod', 'tile', 'leaflet'],
+      keywords: ['stroke', 'freehand', 'canvas', 'brush', 'paint', 'draw'],
+      codeIndicators: [
+        'mousemove',
+        'mousedown',
+        'mouseup',
+        'getcontext',
+        'beginpath',
+        'lineto',
+        'moveto',
+        'stroke(',
+        'fillrect',
+        'imagedata',
+        '<canvas',
+      ],
+    },
+    {
+      keywords: ['marker', 'coordinate', 'latitude', 'longitude', 'geocod', 'tile', 'leaflet', 'circle'],
       codeIndicators: [
         'l.marker',
         '.marker(',
