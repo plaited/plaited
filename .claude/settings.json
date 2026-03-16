@@ -49,6 +49,16 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/Stop"
+          }
+        ]
+      }
     ]
   },
   "enableAllProjectMcpServers": true
