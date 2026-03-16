@@ -14,47 +14,40 @@ This is **greenfield code with zero external consumers**. No backward-compatibil
 - `src/behavioral/` — BP engine (100% implemented)
 - `src/ui/` — rendering pipeline, controller protocol, custom elements
 - `src/server/` — thin I/O server with `validateSession` seam, WebSocket replay buffer, CSP headers
-- `src/agent/` — `createAgentLoop()`, governance, gate, simulate, evaluate, context assembly, branded factories, goal persistence, proactive heartbeat, snapshot writer, memory handlers, reingest handlers
-- `src/tools/` — CRUD handlers, trial/training/grader, hypergraph (WASM), ingestion CLI, LSP, skill discovery/validation
+- `src/agent/` — `createAgentLoop()`, governance, gate, simulate, evaluate, context assembly (tiered hot/warm/cold), transport executors (local/SSH/A2A), branded factories, goal persistence, proactive heartbeat, snapshot writer, memory handlers, reingest handlers, ACP adapter
+- `src/tools/` — CRUD handlers (with truncation, grep, scan-assisted edit, binary detection), trial/training/grader, hypergraph (WASM), ingestion CLI, LSP (with Bun.Transpiler scan), skill discovery with collision detection
 - `src/a2a/` — HTTP + WebSocket bindings, push notifications, known-peers TOFU trust store, Agent Card JWS signing
 - `src/modnet/` — node role constants, Agent Card metadata conventions
 
-**What's next:**
-- [ ] Server + agent integration (wiring `createServer` with `createAgentLoop`)
-- [ ] Tool improvements (truncation, grep, scan-assisted edit) — see PROMPTS.md
-- [ ] Docs → skills migration — see PROMPTS.md Group D
-- [ ] Genome skills restructuring (seeds/tools/eval directories)
+**What's next (see PROMPTS.md):**
+- [ ] Phase 0: Cleanup (grader temp dirs, old package refs)
+- [ ] Phase 1: Module workspace utils, server+agent integration (`createNode`), Model implementations
+- [ ] Phase 2: MSS vocabulary skill, enriched modnet-node, trial adapters + eval persistence
+- [ ] Phase 3: Module generation prompts (20, MiniAppBench-adapted), eval cycle, skill calibration
+- [ ] Phase 4: SFT trajectory collection from frontier agents
 
-## Key Decisions (Affecting Future Work)
+## Key Decisions
 
 **Model interface:** `Model.reason(context, signal) → AsyncIterable<ModelDelta>`. OpenAI-compatible wire format.
 
-**Three model roles:** Model (required), Indexer (deferred), Vision (deferred).
+**Context management:** Tiered hot/warm/cold (Variant D → A migration via training).
 
-**Context management:** Tiered hot/warm/cold (Variant D). Warm layer reads `meta.jsonld` from hypergraph. Migration to Variant A (model-driven recall via search) as distillation trains search behavior.
+**Transport pluggability:** `toolExecutor` callback. Local/SSH/A2A executors.
 
-**Transport pluggability:** `toolExecutor` callback in `createAgentLoop`. Local executor calls handlers directly. SSH/A2A executors serialize over the wire. Same tool code everywhere.
+**Enterprise topology:** PM node + seeds. Node identity = constitution + modules + Agent Card. See `skills/modnet-node/`.
 
-**Risk tags:** `workspace`, `crosses_boundary`, `inbound`, `outbound`, `irreversible`, `external_audience`. Empty/unknown → simulate+judge. Workspace-only → execute directly.
+**Eval methodology:** MiniAppBench-adapted three dimensions (Intention × Static × Dynamic). Eval results persisted as JSONL in `.memory/evals/`, git-versioned. Generated artifacts ephemeral.
 
-**Enterprise topology:** PM/orchestrator node manages infrastructure nodes via A2A. Seeds are ephemeral (generate node, then discard). Node identity is structural (constitution + modules + Agent Card). See `docs/MODNET-IMPLEMENTATION.md` (design rationale) and `skills/modnet-node/` (implementation patterns).
+**Eval model mix:** Claude Opus for generation, Codex for inline grading, Gemini Flash for meta-verification.
 
 ## Open Questions
-
-### Server + Agent Integration
-```typescript
-const agent = createAgentLoop({ model, tools, toolExecutor, constitution, goals, memoryPath })
-const server = createServer({ trigger: agent.trigger, routes: { ...authRoutes, ...a2aRoutes }, validateSession })
-```
 
 ### Model Lifecycle
 - Loading/unloading at spawn, context window size discovery
 - Fallback chain (API → local, frontier → reference)
-- Health monitoring (latency, parse failures)
 
 ### Mid-Task Steering
 - User intervention points in the 6-step loop
-- Override semantics (does user approval override a gate block?)
 - Teach mode (user corrections → GRPO preference pairs)
 
 ## CLI Tool Contract
