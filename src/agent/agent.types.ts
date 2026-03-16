@@ -374,6 +374,8 @@ export type EvalRejectedDetail = {
  */
 export type MessageDetail = {
   content: string
+  /** Origin of the message cycle: 'proactive' for tick-triggered, 'reactive' (default) for user-triggered. */
+  source?: 'reactive' | 'proactive'
 }
 
 /**
