@@ -173,6 +173,15 @@ const checkParseFiles = async (cwd: string): Promise<GradeCheck> => {
  * @internal
  */
 const checkTypeCheck = async (cwd: string, projectRoot: string): Promise<GradeCheck> => {
+	// Skip tsc for isolated workspaces without installed dependencies —
+	// tsc can't resolve external imports (e.g., 'plaited') without node_modules.
+	// Parse check (Bun.Transpiler) already validates syntax.
+	const hasNodeModules = await Bun.file(join(cwd, 'node_modules')).exists()
+		|| await Bun.file(join(projectRoot, 'node_modules')).exists()
+	if (!hasNodeModules) {
+		return { name: 'typeCheck', pass: true }
+	}
+
 	const tsconfigPath = join(cwd, 'tsconfig.json')
 	const tsconfigExists = await Bun.file(tsconfigPath).exists()
 

@@ -81,6 +81,44 @@ Reference table of validated MSS tag combinations. Each row represents a real-wo
 | Pop-up Exhibition | `art` | `feed` | `["vote"]` | `all` | S5 | Art displayed on screens within wifi range |
 | Local Market | `commerce` | `pool` | `["filter", "sort"]` | `all` | S6 | Ephemeral market that exists only while sellers are present |
 
+## Tools & Utility Patterns
+
+| Pattern | contentType | structure | mechanics | boundary | scale | Example |
+|---------|------------|-----------|-----------|----------|-------|---------|
+| Converter | `tools` | `form` | `[]` | `all` | S1 | Unit converter, format converter |
+| Editor | `tools` | `form` | `[]` | `none` | S2 | Markdown editor, code editor with document persistence |
+| Dashboard | `data-viz` | `form` | `["chart"]` | `all` | S2 | Chart generator from JSON data input |
+| Palette | `design` | `object` | `[]` | `all` | S1 | Color palette with harmony rules and contrast checking |
+
+## Productivity Patterns
+
+| Pattern | contentType | structure | mechanics | boundary | scale | Example |
+|---------|------------|-----------|-----------|----------|-------|---------|
+| Calendar | `productivity` | `steps` | `["track", "filter"]` | `none` | S3 | Calendar with events, recurrence, and day/month views |
+| Task List | `productivity` | `list` | `["sort", "filter", "track"]` | `none` | S2 | Todo list with categories and completion tracking |
+
+## Science Patterns
+
+| Pattern | contentType | structure | mechanics | boundary | scale | Example |
+|---------|------------|-----------|-----------|----------|-------|---------|
+| Simulator | `science` | `steps` | `["track", "chart"]` | `all` | S2 | Physics/chemistry simulation with real-time visualization |
+| Explorer | `science` | `collection` | `["filter"]` | `all` | S2 | Periodic table, element explorer with detail panels |
+| Calculator | `science` | `form` | `["chart"]` | `all` | S2 | Statistics calculator with visualization output |
+
+## Finance Patterns
+
+| Pattern | contentType | structure | mechanics | boundary | scale | Example |
+|---------|------------|-----------|-----------|----------|-------|---------|
+| Tracker | `finance` | `collection` | `["track", "chart", "filter", "sort"]` | `none` | S2 | Expense logger, budget tracker with category breakdowns |
+| Ledger | `finance` | `list` | `["sort", "filter"]` | `ask` | S3 | Shared expense tracking with approval workflow |
+
+## Geography Patterns
+
+| Pattern | contentType | structure | mechanics | boundary | scale | Example |
+|---------|------------|-----------|-----------|----------|-------|---------|
+| Map | `geo` | `collection` | `["filter"]` | `all` | S3 | Interactive map with markers, categories, and search |
+| Weather | `weather` | `object` | `["track", "chart"]` | `all` | S2 | Weather dashboard with forecast visualization |
+
 ## Invalid Combinations (Anti-Patterns)
 
 | Invalid | Why |

@@ -25,7 +25,7 @@ const MODULE_SYSTEM_PROMPT = `You are generating a modnet module. Create a compl
      "name": "@node/<module-name>",
      "version": "1.0.0",
      "modnet": {
-       "contentType": "<domain>",
+       "contentType": "<see canonical list below>",
        "structure": "<list|collection|form|feed|stream|thread|object|steps>",
        "mechanics": ["<sort|filter|track|chart|post|like|follow|share|reply|vote>"],
        "boundary": "<all|none|ask|paid>",
@@ -60,6 +60,12 @@ For any UI rendering, use the plaited template system:
 - Templates use \`h('tag', { attrs }, ...children)\` syntax
 - Use \`p-trigger\` attribute for event binding, \`p-target\` for element targeting
 - CSS: use style objects, not CSS strings
+
+## Canonical contentType Values
+Use EXACTLY these values — do not invent alternatives:
+health, social, science, finance, logistics, tools, productivity, art,
+entertainment, education, data-viz, design, geo, weather, news,
+commerce, real-estate, produce, work-creation, work-evaluation
 
 ## Rules
 - Write ALL files to the current working directory

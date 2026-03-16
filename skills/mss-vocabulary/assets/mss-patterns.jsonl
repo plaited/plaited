@@ -39,3 +39,21 @@
 {"contentType":"music","structure":"list","mechanics":["sort"],"boundary":"ask","scale":2,"example":"Playlist with ordered tracks"}
 {"contentType":"music","structure":"feed","mechanics":["like","follow","share"],"boundary":"all","scale":5,"example":"Music discovery feed with social mechanics"}
 {"contentType":"food-access","structure":"pool","mechanics":["filter","chart"],"boundary":"all","scale":7,"example":"Urban food access map aggregating market data"}
+{"contentType":"tools","structure":"form","mechanics":[],"boundary":"all","scale":1,"example":"Unit converter with input fields and result display"}
+{"contentType":"tools","structure":"form","mechanics":[],"boundary":"none","scale":2,"example":"Markdown editor with live preview and document saving"}
+{"contentType":"finance","structure":"collection","mechanics":["track","chart","filter","sort"],"boundary":"none","scale":2,"example":"Expense logger with category breakdowns and CSV export"}
+{"contentType":"productivity","structure":"steps","mechanics":["track","filter"],"boundary":"none","scale":3,"example":"Calendar module with monthly grid, event management, and recurrence"}
+{"contentType":"data-viz","structure":"form","mechanics":["chart"],"boundary":"all","scale":2,"example":"Chart generator accepting JSON data for bar, line, and pie charts"}
+{"contentType":"design","structure":"object","mechanics":[],"boundary":"all","scale":1,"example":"Color palette generator with harmony rules and WCAG contrast checker"}
+{"contentType":"geo","structure":"collection","mechanics":["filter"],"boundary":"all","scale":3,"example":"Interactive map with markers, categories, and location search"}
+{"contentType":"weather","structure":"object","mechanics":["track","chart"],"boundary":"all","scale":2,"example":"Weather dashboard with current conditions and 5-day forecast"}
+{"contentType":"science","structure":"steps","mechanics":["track","chart"],"boundary":"all","scale":2,"example":"Physics simulator with pendulum, projectile, and spring-mass systems"}
+{"contentType":"science","structure":"collection","mechanics":["filter"],"boundary":"all","scale":2,"example":"Periodic table explorer with element details and category filtering"}
+{"contentType":"science","structure":"form","mechanics":["chart"],"boundary":"all","scale":2,"example":"Statistics calculator with box plots, histograms, and dataset comparison"}
+{"contentType":"education","structure":"list","mechanics":["track","filter","sort"],"boundary":"none","scale":2,"example":"Reading list with progress tracking, status filtering, and genre tags"}
+{"contentType":"entertainment","structure":"list","mechanics":["sort"],"boundary":"none","scale":2,"example":"Playlist manager with drag-reorder and playback controls"}
+{"contentType":"art","structure":"collection","mechanics":["filter","sort"],"boundary":"all","scale":2,"example":"Portfolio gallery with tech tags, lightbox, and responsive grid"}
+{"contentType":"art","structure":"form","mechanics":[],"boundary":"none","scale":2,"example":"Drawing canvas with shapes, layers, undo/redo, and PNG export"}
+{"contentType":"social","structure":"stream","mechanics":["post","reply"],"boundary":"ask","scale":3,"example":"Chat module with rooms, message history, and typing indicators"}
+{"contentType":"social","structure":"thread","mechanics":["vote","post","reply","sort","filter"],"boundary":"all","scale":3,"example":"Discussion forum with nested replies, voting, and thread sorting"}
+{"contentType":"social","structure":"feed","mechanics":["post","like","follow","share"],"boundary":"ask","scale":3,"example":"Bluesky client with timeline, profiles, and social interactions"}

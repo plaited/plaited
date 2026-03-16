@@ -28,6 +28,30 @@ Every module carries five bridge-code tags. Together they form the MSS envelope.
 - Free-form string, lowercase, no spaces (use hyphens)
 - Must be unique per module within a network at the same scale
 - Modules with matching contentType auto-group when connected to a shared block
+
+**Canonical content types by domain:**
+
+| Domain | contentType | NOT these alternatives |
+|--------|------------|----------------------|
+| Health/Fitness | `health` | ~~nutrition~~, ~~wellness~~, ~~fitness~~ |
+| Social/Chat/Forum | `social` | ~~chat~~, ~~messaging~~, ~~discussion~~, ~~forum~~ |
+| Science/Simulation | `science` | ~~physics~~, ~~chemistry~~, ~~statistics~~, ~~simulation~~ |
+| Finance/Expenses | `finance` | ~~money~~, ~~expenses~~, ~~budget~~ |
+| Logistics/Inventory | `logistics` | ~~inventory~~, ~~warehouse~~, ~~shipping~~ |
+| Tools/Utilities | `tools` | ~~utility~~, ~~utilities~~, ~~converter~~ |
+| Productivity/Calendar | `productivity` | ~~schedule~~, ~~events~~, ~~calendar~~, ~~tasks~~ |
+| Art/Creative | `art` | ~~drawing~~, ~~graphics~~, ~~portfolio~~, ~~creative~~ |
+| Entertainment/Music | `entertainment` | ~~music~~, ~~playlist~~, ~~media~~ |
+| Education/Learning | `education` | ~~books~~, ~~reading~~, ~~study~~ |
+| Data Visualization | `data-viz` | ~~visualization~~, ~~charts~~, ~~data-visualization~~ |
+| Design/Color | `design` | ~~colors~~, ~~palette~~, ~~design-tools~~ |
+| Geography/Maps | `geo` | ~~geospatial~~, ~~maps~~, ~~location~~ |
+| Weather | `weather` | ~~forecast~~, ~~climate~~ |
+| News | `news` | — |
+| Real Estate | `real-estate` | — |
+| Commerce | `commerce` | — |
+
+Use the **canonical** value (left column). Agents that pick alternatives will fail modnet field validation.
 - Examples: `produce`, `health`, `social`, `art`, `education`, `work`, `logistics`
 
 ### 2. `structure` (string)
