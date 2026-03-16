@@ -566,6 +566,10 @@ const matchDynamicIndicator = (code: string, item: string): boolean => {
       codeIndicators: ['draggable', 'ondragstart', 'ondragover', 'ondrop', 'dragend'],
     },
     {
+      keywords: ['grid', 'responsive', 'viewport', 'adjusts'],
+      codeIndicators: ['auto-fill', 'auto-fit', 'minmax', 'gridtemplatecolumns', 'grid-template-columns', '1fr', 'repeat('],
+    },
+    {
       keywords: ['persist', 'load', 'store'],
       codeIndicators: ['localstorage', 'bun.write', 'bun.file', 'readfile', 'writefile', 'jsonl', 'data/'],
     },
