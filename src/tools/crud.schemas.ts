@@ -111,3 +111,19 @@ export const GrepOutputSchema = z.object({
   totalMatches: z.number(),
   truncated: z.boolean(),
 })
+
+// ============================================================================
+// Proactive — set_heartbeat tool
+// ============================================================================
+
+export const SetHeartbeatConfigSchema = z.object({
+  interval_seconds: z
+    .number()
+    .min(0)
+    .describe('Heartbeat interval in seconds. 0 = pause, any positive value = set interval.'),
+})
+
+export const SetHeartbeatOutputSchema = z.object({
+  interval_seconds: z.number(),
+  status: z.enum(['active', 'paused']),
+})

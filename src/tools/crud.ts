@@ -2,6 +2,7 @@ import { extname, relative, resolve } from 'node:path'
 import { $ } from 'bun'
 import { RISK_TAG } from '../agent/agent.constants.ts'
 import type { ToolHandler } from '../agent/agent.types.ts'
+import type { HeartbeatHandle } from '../agent/proactive.ts'
 import { ensureTool, makeCli } from './cli.utils.ts'
 import {
   BashConfigSchema,
@@ -264,6 +265,7 @@ export const BUILT_IN_RISK_TAGS: Record<string, string[]> = {
   list_files: [RISK_TAG.workspace],
   grep: [RISK_TAG.workspace],
   bash: [], // empty → default-deny, routes to Simulate + Judge
+  set_heartbeat: [RISK_TAG.workspace], // safe: only reconfigures local timer
 }
 
 // ============================================================================
@@ -525,6 +527,29 @@ export const bash: ToolHandler = async (args, ctx) => {
   const output = result.stdout.toString().trim()
   return truncateTail(output)
 }
+
+/**
+ * Create a `set_heartbeat` tool handler bound to a HeartbeatHandle.
+ *
+ * @remarks
+ * Uses closure capture to access the HeartbeatHandle created inside
+ * `createAgentLoop`. The handler reconfigures the heartbeat timer:
+ * 0 = pause, positive value = set interval in seconds.
+ *
+ * @param heartbeatHandle - Handle from `createHeartbeatTimer`
+ * @returns A ToolHandler for the `set_heartbeat` tool
+ *
+ * @public
+ */
+export const createSetHeartbeatHandler = (heartbeatHandle: HeartbeatHandle): ToolHandler =>
+  async (args) => {
+    const intervalSeconds = args.interval_seconds as number
+    heartbeatHandle.setInterval(intervalSeconds * 1000)
+    return {
+      interval_seconds: intervalSeconds,
+      status: intervalSeconds > 0 ? ('active' as const) : ('paused' as const),
+    }
+  }
 
 /**
  * Built-in handler registry keyed by tool name.

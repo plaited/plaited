@@ -1,6 +1,6 @@
 import type { SessionMeta } from '../tools/hypergraph.utils.ts'
 import type { AgentPlan, ToolDefinition } from './agent.schemas.ts'
-import type { ChatMessage } from './agent.types.ts'
+import type { ChatMessage, SensorDeltaDetail } from './agent.types.ts'
 
 export type { SessionMeta } from '../tools/hypergraph.utils.ts'
 
@@ -322,6 +322,76 @@ export const historyContributor: ContextContributor = {
       tokenEstimate: estimateTokens(content),
     }
   },
+}
+
+// ============================================================================
+// Proactive Context Contributor — framing for tick-triggered cycles
+// ============================================================================
+
+/**
+ * Return type of {@link createProactiveContextContributor}, exposing mutable state setters.
+ *
+ * @public
+ */
+export type ProactiveContextContributor = ContextContributor & {
+  setProactive: (isProactive: boolean) => void
+  setSensorDeltas: (deltas: SensorDeltaDetail[]) => void
+}
+
+/**
+ * Creates a context contributor that frames proactive (tick-triggered) cycles.
+ *
+ * @remarks
+ * Priority 90 — below system prompt (100), above rejections (80).
+ * Returns `null` during reactive (task-triggered) cycles, making it
+ * zero-cost when proactive mode is not active.
+ *
+ * During proactive cycles, injects framing that tells the model:
+ * - This is a proactive check, not a user request
+ * - Sensor delta summaries (what changed since last tick)
+ * - Decision guidance: act only if warranted, otherwise respond with text
+ *
+ * The `setProactive` and `setSensorDeltas` methods are called by the
+ * tick/task handlers in agent.loop.ts to update the contributor's state
+ * before context assembly.
+ *
+ * @returns Contributor with state setters for the agent loop
+ *
+ * @public
+ */
+export const createProactiveContextContributor = (): ProactiveContextContributor => {
+  let isProactive = false
+  let sensorDeltas: SensorDeltaDetail[] = []
+
+  return {
+    name: 'proactive_context',
+    priority: 90,
+    contribute: () => {
+      if (!isProactive) return null
+
+      const sections = ['## Proactive Check', 'This cycle was triggered by a periodic heartbeat, not a user request.']
+
+      if (sensorDeltas.length > 0) {
+        const deltaLines = sensorDeltas.map((d) => `- **${d.sensor}**: ${JSON.stringify(d.delta)}`)
+        sections.push(`### Sensor Deltas\n${deltaLines.join('\n')}`)
+      } else {
+        sections.push('No sensor changes detected since last check.')
+      }
+
+      sections.push(
+        'Based strictly on this context, is any action required? If no, respond with text only. If yes, produce tool calls.',
+      )
+
+      const content = sections.join('\n\n')
+      return { role: 'system', content, tokenEstimate: estimateTokens(content) }
+    },
+    setProactive: (value: boolean) => {
+      isProactive = value
+    },
+    setSensorDeltas: (deltas: SensorDeltaDetail[]) => {
+      sensorDeltas = deltas
+    },
+  }
 }
 
 // ============================================================================
