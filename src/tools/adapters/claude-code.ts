@@ -139,12 +139,13 @@ export const adapt: Adapter = async ({ prompt, cwd }) => {
   const proc = Bun.spawn(args, {
     cwd: cwd ?? process.cwd(),
     stdout: 'pipe',
-    stderr: 'pipe',
+    // stderr: 'ignore' — piping but not draining stderr keeps the Bun process alive
+    // after the subprocess exits (stream ref stays open). Ignore discards cleanly.
+    stderr: 'ignore',
     env: spawnEnv as Record<string, string>,
   })
 
-  const raw = await new Response(proc.stdout).text()
-  const exitCode = await proc.exited
+  const [raw, exitCode] = await Promise.all([new Response(proc.stdout).text(), proc.exited])
   const elapsed = Date.now() - start
 
   // Parse NDJSON events
