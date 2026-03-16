@@ -177,8 +177,27 @@ export const createNode = async ({
     validateSession,
   })
 
+  // ── Proactive push routing ───────────────────────────────────────────────
+  // Track active session for routing proactive messages to WebSocket clients
+  let activeSessionId: string | undefined
+  const pushDisconnect = agent.subscribe({
+    [UI_ADAPTER_LIFECYCLE_EVENTS.client_connected](detail: unknown) {
+      activeSessionId = (detail as { sessionId: string }).sessionId
+    },
+    [UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected]() {
+      activeSessionId = undefined
+    },
+    [AGENT_EVENTS.message](detail: unknown) {
+      const msg = detail as MessageDetail
+      if (msg.source === 'proactive' && activeSessionId) {
+        server.send(activeSessionId, JSON.stringify({ type: 'notification', content: msg.content }))
+      }
+    },
+  })
+
   // ── Destroy ─────────────────────────────────────────────────────────────
   const destroy = () => {
+    pushDisconnect()
     server.stop(true)
     agent.destroy()
   }

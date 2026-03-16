@@ -197,6 +197,8 @@ export const createAgentLoop = async ({
   const INFERENCE_ABORT_KEY = '__inference__'
   const MAX_INFERENCE_RETRIES = 3
   let inferenceRetryCount = 0
+  /** Tracks whether current pipeline cycle was triggered by a tick (proactive) or task (reactive) */
+  let isProactiveCycle = false
 
   // ── Warm layer: load session meta for context orientation ──────────────
   const initialMeta = await loadSessionMeta(memoryPath, sessionId)
@@ -298,6 +300,7 @@ export const createAgentLoop = async ({
     [AGENT_EVENTS.task](detail: unknown) {
       const { prompt } = detail as TaskDetail
       currentGoal = prompt
+      isProactiveCycle = false
 
       // Add user message to history
       history.push({ role: 'user', content: prompt })
@@ -324,6 +327,7 @@ export const createAgentLoop = async ({
     ...(proactive
       ? {
           async [AGENT_EVENTS.tick](_detail: unknown) {
+            isProactiveCycle = true
             const sensors = proactive.sensors ?? []
 
             // Per-tick maxIterations (same safety limit as tasks)
@@ -336,7 +340,7 @@ export const createAgentLoop = async ({
                   block: AGENT_EVENTS.execute,
                   request: {
                     type: AGENT_EVENTS.message,
-                    detail: { content: `Max iterations (${maxIterations}) reached` },
+                    detail: { content: `Max iterations (${maxIterations}) reached`, source: 'proactive' as const },
                   },
                   interrupt: [AGENT_EVENTS.message],
                 }),
@@ -520,7 +524,13 @@ export const createAgentLoop = async ({
         }
       } else if (parsed.message) {
         // Text-only response → message (task complete)
-        trigger({ type: AGENT_EVENTS.message, detail: { content: parsed.message } satisfies MessageDetail })
+        trigger({
+          type: AGENT_EVENTS.message,
+          detail: {
+            content: parsed.message,
+            ...(isProactiveCycle && { source: 'proactive' as const }),
+          } satisfies MessageDetail,
+        })
       }
     },
 
@@ -744,16 +754,20 @@ export const createAgentLoop = async ({
         inferenceRetryCount = 0
         trigger({
           type: AGENT_EVENTS.message,
-          detail: { content: `Inference error: ${error}` } satisfies MessageDetail,
+          detail: {
+            content: `Inference error: ${error}`,
+            ...(isProactiveCycle && { source: 'proactive' as const }),
+          } satisfies MessageDetail,
         })
       }
     },
 
     // ── message ──────────────────────────────────────────────────────────
     [AGENT_EVENTS.message](_detail: unknown) {
-      // Clear rejections and retry state for next task
+      // Clear rejections, retry state, and proactive flag for next cycle
       priorRejections.length = 0
       inferenceRetryCount = 0
+      isProactiveCycle = false
     },
 
     // ── memory lifecycle ─────────────────────────────────────────────────
