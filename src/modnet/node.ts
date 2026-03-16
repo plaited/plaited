@@ -48,6 +48,7 @@ export const createNode = async ({
   systemPrompt,
   embedder,
   maxIterations,
+  proactive,
 }: CreateNodeOptions): Promise<NodeHandle> => {
   // ── Agent loop ──────────────────────────────────────────────────────────
   const agent = await createAgentLoop({
@@ -60,6 +61,7 @@ export const createNode = async ({
     ...(systemPrompt && { systemPrompt }),
     ...(embedder && { embedder }),
     ...(maxIterations && { maxIterations }),
+    ...(proactive && { proactive }),
   })
 
   // ── A2A handler (optional — only when agentCard is provided) ────────────
@@ -185,6 +187,7 @@ export const createNode = async ({
     agent,
     server,
     ...(a2aHandler && { a2a: a2aHandler }),
+    ...(agent.heartbeat && { heartbeat: agent.heartbeat }),
     destroy,
   }
 }

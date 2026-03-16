@@ -1,5 +1,6 @@
 import type { A2AClient } from '../a2a/a2a.types.ts'
 import type { DefaultHandlers, Disconnect, SnapshotListener, Trigger } from '../behavioral/behavioral.types.ts'
+import type { HeartbeatHandle } from './proactive.ts'
 import type { CONTROLLER_TO_AGENT_EVENTS, UI_ADAPTER_LIFECYCLE_EVENTS } from '../events.ts'
 import type { UIClientConnectedDetail, UIClientDisconnectedDetail, UIClientErrorDetail } from '../server.ts'
 import type { SnapshotEvent, UserActionMessage } from '../ui.ts'
@@ -404,6 +405,42 @@ export type InferenceErrorDetail = {
 }
 
 // ============================================================================
+// Proactive — Sensor Factory contract (Prompt 11 adds reference implementations)
+// ============================================================================
+
+/**
+ * A snapshot persisted between sensor sweeps for diff comparison.
+ *
+ * @public
+ */
+export type SensorSnapshot = {
+  timestamp: string
+  data: unknown
+}
+
+/**
+ * Contract for a pluggable sensor.
+ *
+ * @remarks
+ * Sensors are read-only observers — they read state, diff against the last
+ * snapshot, and report deltas. The framework coordinates execution via
+ * `createSensorBatchThread`. Concrete implementations (git, filesystem, HTTP)
+ * are generation targets, not framework code.
+ *
+ * @public
+ */
+export type SensorFactory = {
+  /** Human-readable sensor name (used in `sensor_delta` events) */
+  name: string
+  /** Read current state. Receives AbortSignal for timeout control. */
+  read: (signal: AbortSignal) => Promise<unknown>
+  /** Compare current state to previous snapshot. Returns delta or null (no change). */
+  diff: (current: unknown, previous: SensorSnapshot | null) => unknown | null
+  /** Path for snapshot persistence (relative to `.memory/sensors/`) */
+  snapshotPath: string
+}
+
+// ============================================================================
 // Proactive Heartbeat Event Details — tick, sensor_delta, sensor_sweep, sleep, snapshot_committed
 // ============================================================================
 
@@ -645,6 +682,8 @@ export type AgentNode = {
   subscribe: (handlers: DefaultHandlers) => Disconnect
   snapshot: (listener: SnapshotListener) => Disconnect
   destroy: () => void
+  /** Heartbeat handle for runtime interval control (present when proactive mode is enabled) */
+  heartbeat?: HeartbeatHandle
 }
 
 // ============================================================================
