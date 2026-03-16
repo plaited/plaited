@@ -172,17 +172,39 @@ can read the skills and generate a complete working node.
       daily updates from team members via Slack and posts a morning summary"
       (workspace + social module/MSS + schedule goal + webhook in/out)
 
-2. Create a grader (`src/tools/node-grader.ts`) with five dimensions:
+2. Create a grader (`src/tools/node-grader.ts`) with five dimensions.
+   The generated node must implement all 5 components of the proactive
+   push-based agent spec:
 
    - **Structure** — workspace exists, package.json valid, MSS tags valid
      against mss-vocabulary, module has own git init
-   - **Composition** — createNode() or createAgentLoop() call present,
-     proactive config wired with sensors + goals
+
+   - **Proactive Architecture** — the generated node wires `createServer` +
+     `createAgentLoop` + proactive config into a running `createNode` that
+     implements:
+     1. Heartbeat Engine: `proactive.intervalMs` configured, heartbeat timer
+        created (not a custom setInterval — uses framework's createHeartbeatTimer)
+     2. State & Memory: `.memory/` path configured, context assembly wired
+        (sessionSummary contributor present or createNode defaults used)
+     3. Environment Sensors: at least one `SensorFactory` in `proactive.sensors`
+        with `read()` + `diff()` + `snapshotPath`. Diff returns null on no-change.
+     4. Goal State: at least one `GoalFactory` in `proactive.goals` with
+        `repeat: true` bThread that `waitFor` sensor_delta
+     5. Push Notification: notification handler wired — subscribes to
+        `message` events where `source === 'proactive'`, routes to external
+        channel (webhook/email/WebSocket). Handler formats a structured
+        summary (not raw model output).
+
    - **Constitution** — MAC rules present (at minimum default protectGovernance),
-     governance factories used correctly
-   - **Secrets** — .env.schema exists for any API keys/webhooks,
-     @sensitive markers present, no hardcoded secrets in code
-   - **Integration** — tsc --noEmit passes on the generated node
+     governance factories used correctly. Risk tags declared for any custom tools.
+
+   - **Secrets** — .env.schema exists for any API keys/webhooks/notification URLs,
+     @sensitive markers present, no hardcoded secrets in code. Code reads
+     from `process.env.VARNAME`, never from literal strings.
+
+   - **Integration** — tsc --noEmit passes on the generated node. All imports
+     resolve. createNode() call present with model, tools, toolExecutor,
+     constitution, proactive config, memoryPath, and port.
 
 3. Create a `skills/node-generation/SKILL.md` that teaches the full
    composition pattern — the "plaited genome" in skill form:
