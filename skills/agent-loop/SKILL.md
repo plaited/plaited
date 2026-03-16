@@ -1,6 +1,6 @@
 ---
 name: agent-loop
-description: 6-step BP-orchestrated agent pipeline. Use when implementing createAgentLoop, wiring handlers, designing event flow, building sub-agent coordination, or configuring proactive heartbeat mode.
+description: 6-step BP-orchestrated agent pipeline. Use when implementing createAgentLoop, wiring handlers, designing event flow, building sub-agent coordination, configuring proactive heartbeat mode, or generating sensors, goals, and notification channels.
 license: ISC
 compatibility: Requires bun
 ---
@@ -17,6 +17,7 @@ This skill teaches agents how to build and extend the 6-step agent pipeline orch
 - Designing gate predicates or simulation routing
 - Building sub-agent coordination (4-step harness)
 - Configuring proactive mode (heartbeat, sensors, goals)
+- Generating sensors (`SensorFactory`), goals (`GoalFactory`), or notification channels
 - Connecting external clients via the AgentNode interface
 
 ## Quick Reference
@@ -29,6 +30,8 @@ This skill teaches agents how to build and extend the 6-step agent pipeline orch
 - `src/agent/agent.evaluate.ts` — Judge (5a symbolic + 5b neural)
 - `src/agent/agent.governance.ts` — Constitution factories
 - `src/agent/proactive.ts` — Heartbeat, sensor sweep, tickYield
+- `src/agent/sensors/git.ts` — Reference `SensorFactory` implementation
+- `src/agent/agent.factories.ts` — `createGoal()`, `createConstitution()`, `createWorkflow()`
 
 **Model interface:** `Model.reason(context, signal) → AsyncIterable<ModelDelta>` (OpenAI-compatible wire format).
 
@@ -46,13 +49,25 @@ This skill teaches agents how to build and extend the 6-step agent pipeline orch
 
 ### Proactive Mode
 
-**[proactive-mode.md](references/proactive-mode.md)** — Heartbeat design for autonomous agent behavior:
+**[proactive-mode.md](references/proactive-mode.md)** — Heartbeat design and generation patterns:
 - Tick as BP event (not a scheduler)
 - Sensor sweep system and sensorBatch coordination
-- Goals as persistent bThreads
-- User-configurable intervals via tool call
+- Goals as persistent bThreads (watch, alert, schedule patterns)
+- User-configurable intervals via `set_heartbeat` tool call
 - Priority: user always wins (tickYield)
-- Cost implications table (local vs cloud)
+- Goal generation patterns: watch, alert, schedule, business hours
+- Notification channel patterns: WebSocket, webhook, email
+- Cost model decision table (local GPU vs cloud API vs hybrid)
+
+### Sensor Patterns
+
+**[sensor-patterns.md](references/sensor-patterns.md)** — `SensorFactory` generation reference:
+- Git sensor (commits, branches, working tree) — reference implementation
+- Filesystem sensor (file modification times in a watched directory)
+- HTTP sensor (poll endpoint, diff response body)
+- Web search sensor (vendor-agnostic, `.env.schema` integration)
+- Snapshot lifecycle and persistence patterns
+- Sensor test patterns
 
 ### Sub-Agent Coordination
 
@@ -247,4 +262,5 @@ All modes use the same `AgentNode` API — the transport adapter translates betw
 - **behavioral-core** — BP algorithm, bThread/bSync patterns, event selection mechanics
 - **generative-ui** — Server-driven UI with controller protocol (render/attrs/update_behavioral)
 - **node-auth** — Authentication for server nodes (WebAuthn, JWT, OIDC)
+- **varlock** — `.env.schema` patterns for sensors and notification channels that need API keys
 - **code-patterns** — Utility function genome (coding conventions)
