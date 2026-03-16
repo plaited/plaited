@@ -272,7 +272,8 @@ const checkBSync = (code: string): GradeCheck => {
  * @internal
  */
 const checkRepeat = (code: string): GradeCheck => {
-  const hasRepeatTrue = /,\s*true\s*\)/.test(code) || /repeat\s*:\s*true/.test(code)
+  // Allow trailing comma before closing paren: bThread([...], true,\n)
+  const hasRepeatTrue = /,\s*true\s*,?\s*\)/.test(code) || /repeat\s*:\s*true/.test(code)
   const hasRepeatPredicate = /,\s*\(\s*\)\s*=>/.test(code)
   if (!hasRepeatTrue && !hasRepeatPredicate) {
     return { name: 'repeat', pass: false, error: 'no repeat parameter found on bThread — goals need repeat: true' }
@@ -352,7 +353,9 @@ const checkTaskWiring = (code: string): GradeCheck => {
   const hasTaskRequest =
     /request\s*:.*type\s*:\s*['"`]task['"`]/.test(code) ||
     /request\s*:.*AGENT_EVENTS\.task/.test(code) ||
-    /type\s*:\s*['"`]task['"`]/.test(code)
+    /type\s*:\s*['"`]task['"`]/.test(code) ||
+    // AGENT_EVENTS.task used as the type value (may be on a separate line)
+    /AGENT_EVENTS\.task/.test(code)
   if (!hasTaskRequest) {
     return { name: 'taskWiring', pass: false, error: 'goal should request a task event to trigger agent action' }
   }
