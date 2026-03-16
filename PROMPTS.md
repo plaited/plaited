@@ -1,35 +1,6 @@
-# Worktree Prompts — Final Phase
+# Worktree Prompts
 
-Framework refinement via frontier agent evaluation. Skills calibrated by generating modnet modules, grading results, and iterating. SFT data collected from successful trajectories.
-
-## Completed
-
-| # | Prompt | Result |
-|---|---|---|
-| 1 | Fix grader cleanup + old package refs | 0 orphaned dirs, refs cleaned |
-| 2 | Module-per-repo workspace utilities | `src/modnet/workspace.ts` |
-| 3 | Server + agent integration | `createNode` factory in `src/modnet/node.ts` |
-| 4 | Model implementations | OpenAI-compat, Anthropic, Gemini in `src/agent/models/` |
-| 5 | MSS vocabulary skill | `skills/mss-vocabulary/` (45 lines + 18 patterns) |
-| 6 | Enrich modnet-node skill | 97 → 366 lines |
-| 7 | Trial adapters + eval persistence | `src/tools/adapters/`, `.memory/evals/` persistence |
-| 8 | Module generation prompts + grader | 20 prompts, 741-line module-grader, Bluesky flagship |
-| 9 | Eval cycle + calibrate | 5 runs, 3 calibration passes, **100% pass@k≥0.66 (20/20)** |
-
-### Eval Results Summary (Latest — Calibration Pass 3)
-
-| Domain | Prompts | Avg Score | Notes |
-|---|---|---|---|
-| Data | 4 | 0.98 | diet-tracker, expense-logger, inventory, reading-list |
-| Social | 3 | 0.99 | bluesky-client (0.97), chat (1.0), forum (1.0) |
-| Visualization | 3 | 0.93 | interactive-map lowest at 0.86 |
-| Tools | 4 | 0.97 | all strong |
-| Creative | 3 | 0.96 | drawing-canvas complex but solid |
-| Science | 3 | 0.88 | physics-simulator at 0.65 (hardest prompt) |
-
----
-
-## Remaining: Phase 4 — Distillation Data Collection
+## In Progress: Phase 4 — Distillation Data Collection
 
 ### Prompt 10: Collect SFT Trajectories from Frontier Agents
 
