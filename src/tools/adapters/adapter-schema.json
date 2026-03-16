@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AdapterSchema",
+  "description": "Declarative schema for mapping CLI agent stdout events to trial runner events",
+  "type": "object",
+  "required": ["name", "command", "streamFormat", "eventMapping"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "name": {
+      "type": "string",
+      "description": "Human-readable adapter name"
+    },
+    "description": {
+      "type": "string",
+      "description": "What this adapter wraps"
+    },
+    "command": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Base command and flags to spawn the agent"
+    },
+    "promptArg": {
+      "type": "string",
+      "description": "CLI flag for passing the prompt (e.g. --prompt)"
+    },
+    "cwdArg": {
+      "type": "string",
+      "description": "CLI flag for setting the working directory (e.g. --cwd)"
+    },
+    "streamFormat": {
+      "type": "string",
+      "enum": ["ndjson", "json"],
+      "description": "Output format: ndjson (one JSON object per line) or json (single JSON object)"
+    },
+    "eventMapping": {
+      "type": "object",
+      "description": "Maps agent events to trial runner trajectory steps",
+      "properties": {
+        "message": { "$ref": "#/$defs/eventRule" },
+        "thinking": { "$ref": "#/$defs/eventRule" },
+        "tool_call": { "$ref": "#/$defs/eventRule" },
+        "tool_result": { "$ref": "#/$defs/eventRule" },
+        "result": { "$ref": "#/$defs/eventRule" }
+      }
+    },
+    "exitCodeMapping": {
+      "type": "object",
+      "properties": {
+        "success": { "type": "array", "items": { "type": "number" } },
+        "timeout": { "type": "array", "items": { "type": "number" } }
+      }
+    }
+  },
+  "$defs": {
+    "eventRule": {
+      "type": "object",
+      "required": ["match"],
+      "properties": {
+        "match": {
+          "type": "object",
+          "description": "Key-value pairs to match against event properties"
+        },
+        "content": { "type": "string" },
+        "output": { "type": "string" },
+        "name": { "type": "string" },
+        "input": { "type": "string" },
+        "id": { "type": "string" },
+        "toolCallId": { "type": "string" },
+        "costUsd": { "type": "string" },
+        "inputTokens": { "type": "string" },
+        "outputTokens": { "type": "string" }
+      }
+    }
+  }
+}

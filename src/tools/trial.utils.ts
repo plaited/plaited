@@ -9,7 +9,7 @@
  */
 
 import { appendFile, mkdir } from 'node:fs/promises'
-import type { Adapter, Grader, GraderResult, PromptCase, TrajectoryRichness } from './trial.schemas.ts'
+import type { Adapter, Grader, GraderResult, PromptCase, TrajectoryRichness, TrialResult } from './trial.schemas.ts'
 import { AdapterResultSchema, GraderResultSchema, PromptCaseSchema, type TrajectoryStep } from './trial.schemas.ts'
 
 // ============================================================================
@@ -487,4 +487,44 @@ export const withMetaVerification = (grader: Grader, verifier: Verifier): Grader
       },
     }
   }
+}
+
+// ============================================================================
+// Eval Result Persistence
+// ============================================================================
+
+/**
+ * Persist trial results to the hypergraph memory as git-versioned JSONL.
+ *
+ * @remarks
+ * Writes `TrialResult[]` as JSONL to `.memory/evals/trial-{timestamp}.jsonl`,
+ * then stages and commits the file. Results become queryable via the
+ * hypergraph's text layer (`grep -rl`) and structural layer.
+ *
+ * Only grading results are persisted — generated code artifacts are
+ * ephemeral and not committed.
+ *
+ * @param results - Trial results to persist
+ * @param memoryPath - Path to the `.memory/` directory
+ *
+ * @public
+ */
+export const persistTrialResults = async (
+  results: TrialResult[],
+  memoryPath: string,
+): Promise<{ path: string; timestamp: string }> => {
+  const { join } = await import('node:path')
+  const evalDir = join(memoryPath, 'evals')
+  await mkdir(evalDir, { recursive: true })
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+  const filePath = join(evalDir, `trial-${timestamp}.jsonl`)
+  const content = results.map((r) => JSON.stringify(r)).join('\n') + '\n'
+  await Bun.write(filePath, content)
+
+  // Git add + commit from the repo root (parent of .memory/)
+  const repoRoot = join(memoryPath, '..')
+  await Bun.$`git add ${filePath} && git commit -m ${'eval: trial results ' + timestamp}`.cwd(repoRoot).nothrow().quiet()
+
+  return { path: filePath, timestamp }
 }
