@@ -49,7 +49,11 @@ yarn.lock
 
 # Claude
 .claude/settings.local.json
+.claude/worktrees/
 notes.md
+
+# Git worktrees
+.worktrees/
 
 # SFT distillation artifacts (too large for git — back up externally)
 trajectories/
