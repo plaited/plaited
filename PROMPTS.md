@@ -284,7 +284,15 @@ patterns for: "how do I write a sensor?", "how do I write a goal?",
    - Git sensor (commits, branches, working tree)
    - Filesystem sensor (file modification times in a watched directory)
    - HTTP sensor (poll an endpoint, diff response body)
+   - Web search sensor (vendor-agnostic — configurable base URL + API key)
    - Pattern: read → diff → delta, snapshot persistence, AbortSignal
+
+   **Web Search Sensor** must be vendor-agnostic:
+   - Configurable `SEARCH_API_URL` and `SEARCH_API_KEY` via .env.schema
+   - Works with You.com, Brave, Tavily, SearXNG, or any REST search API
+   - Diff compares result URLs between snapshots (new URLs = deltas)
+   - Same SensorFactory contract — read/diff/snapshotPath
+   - The skill teaches the shape, the deployment chooses the provider
 
    **Goal Generation Patterns** — show GoalFactory implementations:
    - Watch pattern: `repeat: true` bThread that `waitFor` specific sensor_delta
@@ -518,7 +526,10 @@ These items are deferred until after the initial training cycle:
 
 - **ACP debug viewport** — for debugging trained agent running on a node
 - **Enterprise genome** — PM node seed generation from calibrated skills
+- **Multi-agent git coordination via A2A** — PM node monitors shared repo via git sensor, workers push via SSH executor, coordination through A2A messages. DAG browsing (children, leaves, lineage) as tools. Adapts AgentHub concepts natively into A2A rather than adding a separate server. See `docs/AUTO-RESEARCH.md`
+- **Module worktree experiments** — personal agent explores multiple approaches per module via git worktrees. Same keep/discard pattern as autoresearch, module-scoped
 - **Structural-IA → bThreads** — MSS enforcement rules generated from mss-vocabulary skill
 - **Project isolation orchestrator** — subprocess spawning, IPC bridge
+- **Web search for MSS prompt generation** — vendor-agnostic search API (Research endpoint) generates grounded domain descriptions → map to MSS tags → expand prompts.jsonl → calibrate via autoresearch loop
 - **Session rollback/branching UX**
 - **Mid-task steering**

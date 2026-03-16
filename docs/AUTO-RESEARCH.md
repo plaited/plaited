@@ -21,6 +21,33 @@ Three conditions for effectiveness:
 2. **Clear metric** — objective, measurable, comparable across runs
 3. **Programmatic access** — agent can modify inputs and run experiments via tools
 
+## Optimization Targets
+
+The loop pattern is general purpose — it works anywhere you have a variable, a metric, and fast feedback. The infrastructure (`Stop` hook, `git-experiment.ts`, experiments JSONL) is target-agnostic.
+
+| Target | Variable | Metric | Feedback |
+|---|---|---|---|
+| Skill content | `skills/*/references/*.md`, `prompts.jsonl` | Module grader composite score | ~10 min/prompt |
+| Framework code | `src/agent/`, `src/tools/` | `tsc` + `bun test` + pilot eval | Seconds + ~10 min |
+| bThread generation | `.memory/constitution/*.ts`, `.memory/goals/*.ts` | tsc + spec tests + trial runner | Seconds |
+| Constitution rules | Governance factories, gate predicates | Gate rejection rate, false positive/negative | ~10 min |
+| Context assembly | Contributor weights, priorities, trimming | Eval scores (better context → better generation?) | ~10 min/prompt |
+| Proactive tuning | Heartbeat interval, sensor configs, goal thresholds | Sensor hit rate, false alarm rate | Minutes |
+| System prompts | Base prompt text, tool descriptions | Eval scores across all prompts | ~10 min/prompt |
+| Grader accuracy | Block patterns, thresholds, dimension weights | Grader-vs-human agreement, false pass/fail | Seconds (re-grade) |
+| Training data | SFT mix, GRPO preference pairs | Student model eval post-training | Hours |
+
+To optimize a different target, change the kickoff prompt:
+
+```
+Read docs/AUTO-RESEARCH.md. Optimize [TARGET].
+Variable: [what to modify].
+Metric: [how to measure].
+Run the calibration loop.
+```
+
+The `Stop` hook doesn't care what you're optimizing. The `git-experiment.ts` keep/discard works on any file.
+
 ## Variant 1: Skill Calibration Loop (Active)
 
 **Variable:** Skill content files (`.md` references, prompt JSONL)
@@ -145,6 +172,32 @@ if (improved) {
 const baseline = await getBaseline()
 const allExperiments = await loadExperiments()
 ```
+
+## Design Decisions
+
+### Sensors Come from Skills, Not Framework
+
+The framework provides `SensorFactory` as a type contract. Skills teach agents how to generate sensors per deployment. A web search sensor, a git sensor, a filesystem sensor — these are all generated into the node's modules at deployment time, not baked into `src/agent/`.
+
+The flow: user describes what to watch → agent reads sensor patterns from skill → agent generates `SensorFactory` implementation → code lives in the module, satisfies the framework contract.
+
+### Vendor-Agnostic Search
+
+Web search sensors use configurable `SEARCH_API_URL` + `SEARCH_API_KEY` via `.env.schema`. The skill teaches the shape (fetch → diff URLs → delta), the deployment chooses the provider (You.com, Brave, Tavily, SearXNG). Same pattern as the model interface — `Model.reason()` is vendor-agnostic, the adapter is plugged in at deployment.
+
+### Multi-Agent Git Coordination via A2A (Not AgentHub)
+
+For enterprise org scenarios (multiple worker agents on a shared codebase), coordination concepts from [AgentHub](https://github.com/ygivenx/agenthub) are adapted into existing A2A primitives rather than adding a separate Go server:
+
+| AgentHub Concept | Plaited Equivalent |
+|---|---|
+| Git push/fetch | `createSshExecutor` (already exists) |
+| Commit DAG browsing | `git log --graph`, `git rev-list --children` via bash tool |
+| Leaves (frontier) | `git branch --no-merged` |
+| Message board | A2A messages between worker nodes, PM as router |
+| Coordination posts | `sensor_delta` events — PM's git sensor detects worker pushes, broadcasts |
+
+The PM node becomes the coordination server. Workers push code, PM detects via git sensor, broadcasts to affected workers via A2A. Single auth model (mTLS), single protocol (A2A), no additional infrastructure.
 
 ## Key Difference from Autoresearch
 
