@@ -25,9 +25,11 @@ import { AGENT_EVENTS, RISK_TAG } from './agent.constants.ts'
 import {
   type ContextContributor,
   createContextAssembler,
+  createProactiveContextContributor,
   createSessionSummaryContributor,
   historyContributor,
   planContributor,
+  type ProactiveContextContributor,
   rejectionContributor,
   type SessionSummaryContributor,
   systemPromptContributor,
@@ -67,6 +69,7 @@ import { mark, parseModelResponse, printTimings, toToolResult } from './agent.ut
 import { createMemoryHandlers } from './memory-handlers.ts'
 import { createHeartbeatTimer, createSensorBatchThread, createTickYieldThread } from './proactive.ts'
 import { createSnapshotWriter } from './snapshot-writer.ts'
+import { createSetHeartbeatHandler } from '../tools/crud.ts'
 
 // ============================================================================
 // Types
@@ -204,9 +207,15 @@ export const createAgentLoop = async ({
   const initialMeta = await loadSessionMeta(memoryPath, sessionId)
   const sessionSummary: SessionSummaryContributor = createSessionSummaryContributor(initialMeta)
 
+  // ── Proactive context contributor (opt-in) ──────────────────────────────
+  const proactiveContext: ProactiveContextContributor | undefined = proactive
+    ? createProactiveContextContributor()
+    : undefined
+
   // ── Context assembler ───────────────────────────────────────────────────
   const contributors: ContextContributor[] = [
     systemPromptContributor(systemPrompt),
+    ...(proactiveContext ? [proactiveContext] : []),
     rejectionContributor,
     sessionSummary,
     toolsContributor,
@@ -302,6 +311,9 @@ export const createAgentLoop = async ({
       currentGoal = prompt
       isProactiveCycle = false
 
+      // Clear proactive framing — this is a reactive (user) cycle
+      proactiveContext?.setProactive(false)
+
       // Add user message to history
       history.push({ role: 'user', content: prompt })
 
@@ -330,6 +342,9 @@ export const createAgentLoop = async ({
             isProactiveCycle = true
             const sensors = proactive.sensors ?? []
 
+            // Enable proactive framing for this cycle's context assembly
+            proactiveContext?.setProactive(true)
+
             // Per-tick maxIterations (same safety limit as tasks)
             bThreads.set({
               maxIterations: bThread([
@@ -348,7 +363,8 @@ export const createAgentLoop = async ({
             })
 
             if (sensors.length === 0) {
-              // No sensors — go straight to inference, model decides what to do
+              // No sensors — update contributor with empty deltas, go to inference
+              proactiveContext?.setSensorDeltas([])
               trigger({ type: AGENT_EVENTS.invoke_inference })
               return
             }
@@ -370,6 +386,9 @@ export const createAgentLoop = async ({
                 }
               }),
             )
+
+            // Update proactive contributor with collected deltas
+            proactiveContext?.setSensorDeltas(collectedDeltas)
 
             if (collectedDeltas.length === 0) {
               // No changes detected — invoke inference directly
@@ -704,7 +723,10 @@ export const createAgentLoop = async ({
 
       const start = Date.now()
       try {
-        const output = await toolExecutor(toolCall, controller.signal)
+        // Intercept set_heartbeat: handled locally via closure, not the external executor
+        const output = toolCall.name === 'set_heartbeat' && setHeartbeatHandler
+          ? await setHeartbeatHandler(toolCall.arguments, { workspace: '', signal: controller.signal })
+          : await toolExecutor(toolCall, controller.signal)
         const duration = Date.now() - start
         const result = toToolResult(
           toolCall,
@@ -764,10 +786,11 @@ export const createAgentLoop = async ({
 
     // ── message ──────────────────────────────────────────────────────────
     [AGENT_EVENTS.message](_detail: unknown) {
-      // Clear rejections, retry state, and proactive flag for next cycle
+      // Clear rejections, retry state, and proactive flag/framing for next cycle
       priorRejections.length = 0
       inferenceRetryCount = 0
       isProactiveCycle = false
+      proactiveContext?.setProactive(false)
     },
 
     // ── memory lifecycle ─────────────────────────────────────────────────
@@ -786,6 +809,11 @@ export const createAgentLoop = async ({
   // ── Proactive heartbeat timer (opt-in) ──────────────────────────────────
   const heartbeatHandle = proactive
     ? createHeartbeatTimer({ trigger, intervalMs: proactive.intervalMs })
+    : undefined
+
+  // ── set_heartbeat tool handler (closure over heartbeatHandle) ──────────
+  const setHeartbeatHandler = heartbeatHandle
+    ? createSetHeartbeatHandler(heartbeatHandle)
     : undefined
   mark('proactive')
 
