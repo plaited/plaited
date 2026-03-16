@@ -78,7 +78,7 @@ export const createLocalAdapter = (opts: LocalAdapterOptions): Adapter => {
     let inputTokens = 0
     let outputTokens = 0
 
-    const agent = createAgentLoop({
+    const agent = await createAgentLoop({
       model,
       tools,
       toolExecutor,

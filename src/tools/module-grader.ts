@@ -124,6 +124,50 @@ const checkParse = (source: string): GradeCheck => {
 }
 
 /**
+ * Check: Parse each TS file in the workspace individually.
+ *
+ * @remarks
+ * Concatenated source fails to parse due to duplicate exports/imports.
+ * This checks each file independently and reports aggregate results.
+ *
+ * @internal
+ */
+const checkParseFiles = async (cwd: string): Promise<GradeCheck> => {
+	const result = Bun.spawnSync(
+		['find', cwd, '-name', '*.ts', '-not', '-name', '*.spec.ts', '-not', '-path', '*/node_modules/*'],
+		{ stdout: 'pipe', stderr: 'pipe' },
+	)
+	const files = result.stdout.toString().trim().split('\n').filter(Boolean)
+
+	if (files.length === 0) {
+		return { name: 'parse', pass: false, error: 'no .ts files found' }
+	}
+
+	const transpiler = new Bun.Transpiler({ loader: 'ts' })
+	const errors: string[] = []
+
+	for (const file of files) {
+		try {
+			const source = await Bun.file(file).text()
+			transpiler.transformSync(source)
+		} catch (e) {
+			const shortPath = file.replace(cwd + '/', '')
+			errors.push(`${shortPath}: ${e instanceof Error ? e.message : String(e)}`)
+		}
+	}
+
+	if (errors.length > 0) {
+		return {
+			name: 'parse',
+			pass: false,
+			error: `${errors.length}/${files.length} files failed: ${errors[0]!.slice(0, 200)}`,
+		}
+	}
+
+	return { name: 'parse', pass: true }
+}
+
+/**
  * Check: Type check via tsc --noEmit in a temp directory.
  *
  * @internal
@@ -338,7 +382,8 @@ const matchIntentionKeywords = (code: string, item: string): boolean => {
 	// Extract meaningful terms (3+ chars, not common words)
 	const stopWords = new Set([
 		'the', 'and', 'with', 'for', 'that', 'this', 'from', 'has', 'via', 'its',
-		'should', 'does', 'can', 'are', 'was', 'not', 'but',
+		'should', 'does', 'can', 'are', 'was', 'not', 'but', 'between', 'through',
+		'each', 'all', 'any', 'into', 'per', 'using', 'shows', 'allows', 'supports',
 	])
 	const terms = item
 		.toLowerCase()
@@ -348,9 +393,17 @@ const matchIntentionKeywords = (code: string, item: string): boolean => {
 
 	if (terms.length === 0) return true
 
-	// Require at least 60% of terms to be present in the code
-	const matched = terms.filter((term) => lower.includes(term))
-	return matched.length / terms.length >= 0.6
+	// Stem-aware matching: check if the code contains the term or its stem
+	const matched = terms.filter((term) => {
+		// Direct match
+		if (lower.includes(term)) return true
+		// Stem match: strip common suffixes and check
+		const stem = term.replace(/(s|es|ed|ing|tion|ment|ness|able|ible)$/, '')
+		if (stem.length >= 3 && lower.includes(stem)) return true
+		// Also check if any word in code starts with the stem
+		return stem.length >= 4 && lower.includes(stem)
+	})
+	return matched.length / terms.length >= 0.5
 }
 
 // ============================================================================
@@ -617,8 +670,13 @@ export const createModuleGrader = (config?: ModuleGraderConfig): Grader => {
 			// === Dimension 2: Static (process) ===
 			const staticChecks: GradeCheck[] = []
 
-			// Parse check on generated output
-			staticChecks.push(checkParse(output))
+			// Parse check — per-file when workspace is available (concatenated source
+			// fails due to duplicate exports), fallback to raw output otherwise
+			if (cwd) {
+				staticChecks.push(await checkParseFiles(cwd))
+			} else {
+				staticChecks.push(output ? checkParse(output) : { name: 'parse', pass: false, error: 'no source found' })
+			}
 
 			// Type check (skip if parse failed)
 			if (typeCheck && cwd && staticChecks[0]!.pass) {

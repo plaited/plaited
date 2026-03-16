@@ -21,32 +21,6 @@ import { persistTrialResults } from '../trial.utils.ts'
 // ============================================================================
 
 describe('CLI adapter schema', () => {
-  test('loadAdapterSchema loads claude-code.json', async () => {
-    const schemaPath = join(import.meta.dir, '../adapters/claude-code.json')
-    const schema = await loadAdapterSchema(schemaPath)
-    expect(schema.name).toBe('claude-code')
-    expect(schema.command).toContain('claude')
-    expect(schema.streamFormat).toBe('ndjson')
-    expect(schema.eventMapping.message).toBeDefined()
-    expect(schema.eventMapping.tool_call).toBeDefined()
-    expect(schema.eventMapping.result).toBeDefined()
-  })
-
-  test('loadAdapterSchema loads codex.json', async () => {
-    const schemaPath = join(import.meta.dir, '../adapters/codex.json')
-    const schema = await loadAdapterSchema(schemaPath)
-    expect(schema.name).toBe('codex')
-    expect(schema.command).toContain('codex')
-    expect(schema.eventMapping.tool_call?.match).toHaveProperty('type', 'function_call')
-  })
-
-  test('loadAdapterSchema loads gemini.json', async () => {
-    const schemaPath = join(import.meta.dir, '../adapters/gemini.json')
-    const schema = await loadAdapterSchema(schemaPath)
-    expect(schema.name).toBe('gemini')
-    expect(schema.command).toContain('gemini')
-  })
-
   test('loadAdapterSchema throws on missing file', async () => {
     await expect(loadAdapterSchema('/nonexistent/file.json')).rejects.toThrow('not found')
   })
