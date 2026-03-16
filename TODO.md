@@ -6,9 +6,10 @@
 
 ## Next
 
-- **Prompt 17: Node generation eval** — 5 full personal-agent prompts + node-grader (composition test)
+- **Prompt 17: Node generation eval** — 6 full personal-agent prompts + node-grader + node-generation skill (plaited genome)
 - **Node calibration** — autoresearch loop on node-generation prompts
-- **Node trajectory collection** — add node-generation trajectories to SFT data
+- **Prompt 18: Client-pushed sensors** — WebSocket sensor_input → sensor_delta, ClientSensorFactory type, mobile sensor patterns
+- **Node + proactive trajectory collection** — add to SFT data, then train
 
 ## Scripts
 

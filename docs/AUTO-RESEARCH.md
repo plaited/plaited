@@ -36,6 +36,9 @@ The loop pattern is general purpose — it works anywhere you have a variable, a
 | System prompts | Base prompt text, tool descriptions | Eval scores across all prompts | ~10 min/prompt |
 | Grader accuracy | Block patterns, thresholds, dimension weights | Grader-vs-human agreement, false pass/fail | Seconds (re-grade) |
 | Training data | SFT mix, GRPO preference pairs | Student model eval post-training | Hours |
+| Node composition | `skills/node-generation/SKILL.md`, wave patterns | Node-grader 5 dimensions (structure, proactive, constitution, secrets, integration) | ~15 min |
+| Messaging modules | MSS patterns for social/stream modules | Outbound risk tags enforced, boundary:ask works, Gate → Simulate → Evaluate | ~10 min |
+| Client sensors | `src/server/` sensor_input handling | sensor_input → sensor_delta → goal fires | Seconds (tests) |
 
 To optimize a different target, change the kickoff prompt:
 

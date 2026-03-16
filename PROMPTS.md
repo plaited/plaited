@@ -150,7 +150,7 @@ can read the skills and generate a complete working node.
 
 ## Requirements
 
-1. Create `skills/node-generation/assets/prompts.jsonl` with 5 prompts:
+1. Create `skills/node-generation/assets/prompts.jsonl` with 6 prompts:
 
    a. **GitHub Watcher** — "Generate a personal agent node that monitors
       my GitHub repos for new issues and alerts me via Discord webhook"
@@ -171,6 +171,12 @@ can read the skills and generate a complete working node.
    e. **Team Standup Bot** — "Generate a personal agent node that collects
       daily updates from team members via Slack and posts a morning summary"
       (workspace + social module/MSS + schedule goal + webhook in/out)
+
+   f. **Bluesky Publisher** — "Generate a personal agent node that monitors
+      RSS feeds for articles in my field and cross-posts relevant ones to
+      my Bluesky account with a summary"
+      (workspace + social module/MSS boundary:ask + RSS HTTP sensor +
+      bluesky messaging module with outbound risk tags + varlock)
 
 2. Create a grader (`src/tools/node-grader.ts`) with five dimensions.
    The generated node must implement all 5 components of the proactive
@@ -209,15 +215,25 @@ can read the skills and generate a complete working node.
 3. Create a `skills/node-generation/SKILL.md` that teaches the full
    composition pattern — the "plaited genome" in skill form:
 
-   Wave 0: Initialize workspace (initNodeWorkspace)
-   Wave 1: Create module(s) with MSS tags (initModule)
-   Wave 2: Add constitution (MAC factories)
-   Wave 3: Wire proactive mode (sensors + goals + heartbeat)
-   Wave 4: Add notification channels
-   Wave 5: Configure secrets (.env.schema via varlock)
-   Wave 6: Compose node (createNode with all pieces)
+   Wave 0: Initialize workspace (initNodeWorkspace) → modnet-node skill
+   Wave 1: Create module(s) with MSS tags (initModule) → mss-vocabulary skill
+   Wave 2: Add constitution (MAC factories) → constitution skill
+   Wave 3: Wire proactive mode (sensors + goals + heartbeat) → agent-loop skill
+   Wave 3.5: Add messaging modules as MSS artifacts → modnet-node + mss-vocabulary
+     - Messaging platforms (Bluesky, Slack, etc.) are modules, not adapters
+     - MSS tags: contentType:social, structure:stream/thread, boundary:ask
+     - Tools with risk tags: [crosses_boundary, outbound, external_audience]
+       for sends, [crosses_boundary, inbound] for reads
+     - Outbound risk tags route through full Gate → Simulate → Evaluate
+       (not the workspace fast-path) — grader must verify this
+   Wave 4: Add notification channels → agent-loop proactive patterns
+   Wave 5: Configure secrets (.env.schema via varlock) → varlock skill
+   Wave 6: Compose node (createNode with all pieces) → modnet-node skill
 
    Each wave references the specific skill that teaches it.
+   This skill IS the "plaited genome" — a frontier agent reading it
+   can generate a complete personal agent node from a natural language
+   description via `bun run prompt`.
 
 ## Key Files
 
@@ -236,6 +252,88 @@ can read the skills and generate a complete working node.
 - .env.schema must exist if any secret is referenced (varlock enforcement)
 - Prompts should cover diverse MSS contentTypes, boundaries, and scales
 - Follow existing JSONL format from modnet-modules and proactive-node prompts
+```
+
+---
+
+## Phase 8 — Client-Pushed Sensor Input
+
+### Prompt 18: Event-Driven Sensors from WebSocket Clients
+
+```
+Work in a worktree branch off local dev branch.
+
+## Task
+
+Extend the server to accept sensor_input messages from authenticated
+WebSocket clients and route them into the proactive pipeline as
+sensor_delta events. Add a ClientSensorFactory type for push-based
+sensors (mobile location, Bluetooth proximity, etc.).
+
+## Context
+
+The server already supports multiple simultaneous clients per session
+via topic subscription (sessionId or sessionId:source). A mobile
+WebView connecting as source 'mobile-app' gets its own topic. But
+ClientMessageSchema only accepts controller protocol messages
+(user_action, snapshot). There's no path for a client to push sensor
+data into the BP engine.
+
+Polling sensors (SensorFactory) read on each tick. Client-pushed
+sensors receive data asynchronously from WebSocket clients — the
+phone pushes location, the node's BP engine processes it as a
+sensor_delta. Same proactive pipeline, different data source.
+
+## Requirements
+
+1. Extend ClientMessageSchema in src/ui.ts (or server schemas) to
+   accept sensor_input messages:
+   - { type: 'sensor_input', detail: { sensor: string, data: unknown } }
+   - Validated by Zod schema, rejected if malformed
+
+2. In server.ts message handler, route validated sensor_input to
+   trigger() as sensor_delta events:
+   - { type: AGENT_EVENTS.sensor_delta, detail: { sensor, delta: data } }
+   - These flow into the same sensorBatch / goal bThread pipeline
+
+3. Define ClientSensorFactory type in agent.types.ts:
+   - Like SensorFactory but no read() or snapshotPath
+   - Just: { name: string, clientSource: string }
+   - Declares which WebSocket source provides data for this sensor
+   - The node-generation skill teaches: "for location data, create a
+     ClientSensorFactory that expects input from source 'mobile-app'"
+
+4. Wire into createAgentLoop proactive config:
+   - proactive.clientSensors?: ClientSensorFactory[]
+   - These don't run on tick — they fire whenever the client pushes
+
+5. Tests:
+   - sensor_input message from WebSocket → sensor_delta in BP
+   - Malformed sensor_input rejected with client_error
+   - ClientSensorFactory registered, goal bThread fires on matching delta
+   - Multiple client sources (mobile-app, desktop) don't cross-contaminate
+
+6. Update skills/agent-loop/references/sensor-patterns.md:
+   - Add "Client-Pushed Sensor" pattern alongside polling sensors
+   - Mobile location example, Bluetooth proximity example
+   - Explain when to use push vs poll
+
+## Key Files
+
+- src/server/server.ts — message handler extension
+- src/server/server.schemas.ts — ClientMessageSchema extension
+- src/agent/agent.types.ts — ClientSensorFactory type
+- src/agent/agent.loop.ts — proactive config extension
+- skills/agent-loop/references/sensor-patterns.md — pattern update
+
+## Constraints
+
+- sensor_input messages must be from authenticated sessions only
+  (same session validation as all WebSocket messages)
+- Client-pushed data is untrusted — the sensor_delta detail carries
+  the raw data, goals/model evaluate it
+- No changes to existing polling SensorFactory contract
+- Backward compatible — nodes without clientSensors work as before
 ```
 
 ---
