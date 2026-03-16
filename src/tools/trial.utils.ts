@@ -526,7 +526,7 @@ export const persistTrialResults = async (
 
   // Git add + commit from the repo root (parent of .memory/)
   const repoRoot = join(memoryPath, '..')
-  await Bun.$`git add ${filePath} && git commit -m ${`eval: trial results ${timestamp}`}`
+  await Bun.$`git add ${filePath} && git commit -m ${`eval: trial results ${timestamp}`} && git push`
     .cwd(repoRoot)
     .nothrow()
     .quiet()

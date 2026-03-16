@@ -63,7 +63,9 @@ export const commitExperiment = async (description: string): Promise<string> => 
   await $`git add -A`.cwd(PROJECT_ROOT).quiet()
   await $`git commit -m ${{ raw: `experiment: ${description}` }}`.cwd(PROJECT_ROOT).quiet()
   const result = await $`git rev-parse --short HEAD`.cwd(PROJECT_ROOT).quiet()
-  return result.text().trim()
+  const sha = result.text().trim()
+  await $`git push`.cwd(PROJECT_ROOT).nothrow().quiet()
+  return sha
 }
 
 /**
@@ -76,6 +78,7 @@ export const commitExperiment = async (description: string): Promise<string> => 
  */
 export const discardExperiment = async (): Promise<void> => {
   await $`git reset --hard HEAD~1`.cwd(PROJECT_ROOT).quiet()
+  await $`git push --force-with-lease`.cwd(PROJECT_ROOT).nothrow().quiet()
 }
 
 // ============================================================================
