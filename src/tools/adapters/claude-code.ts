@@ -73,7 +73,7 @@ entertainment, education, geo, weather, news, commerce, produce
 **boundary** — match the sharing model:
 - \`none\`: personal data user wouldn't share (health, finance, playlists, drawings, notes)
 - \`ask\`: social/collaborative data user might share (chat, social feeds, inventories)
-- \`all\`: public content or stateless tools (forums, converters, calculators, weather, periodic table, charts)
+- \`all\`: public content or stateless tools (forums, converters, calculators, weather, periodic table, charts, portfolio galleries — anything designed to be publicly viewed)
 
 **structure** — choose by information pattern:
 - \`object\`: single display item (weather reading, color palette, one artwork)
