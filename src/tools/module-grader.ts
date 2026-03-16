@@ -536,6 +536,10 @@ const matchDynamicIndicator = (code: string, item: string): boolean => {
       ],
     },
     {
+      keywords: ['csv', 'comma', 'separated', 'json', 'parsing', 'parse'],
+      codeIndicators: ['json.parse', 'split(', '.split(', 'parsefloat', 'parseint', '.map(number', '.map(parsefloat', '.map(parseint', 'comma', 'csv', 'delimiter'],
+    },
+    {
       keywords: ['filter', 'search', 'narrows'],
       codeIndicators: ['filter(', '.filter', 'search', 'query', 'match'],
     },
