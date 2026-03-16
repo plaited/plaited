@@ -212,8 +212,8 @@ const createTempDir = async (
  *
  * @internal
  */
-const cleanupTempDir = (tmpBase: string): void => {
-  Bun.$`rm -rf ${tmpBase}`.quiet().nothrow()
+const cleanupTempDir = async (tmpBase: string): Promise<void> => {
+  await Bun.$`rm -rf ${tmpBase}`.quiet().nothrow()
 }
 
 // ============================================================================
@@ -341,7 +341,7 @@ export const createBThreadGrader = (config?: BThreadGraderConfig): Grader => {
 
       return scoreChecks(checks, warnings)
     } finally {
-      cleanupTempDir(tmpBase)
+      await cleanupTempDir(tmpBase)
     }
   }
 }

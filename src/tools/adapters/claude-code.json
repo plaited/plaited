@@ -1,0 +1,41 @@
+{
+  "$schema": "./adapter-schema.json",
+  "name": "claude-code",
+  "description": "Claude Code CLI via `claude -p` with stream-json output",
+  "command": ["claude", "-p", "--output-format", "stream-json", "--max-turns", "50"],
+  "promptArg": "--prompt",
+  "cwdArg": "--cwd",
+  "streamFormat": "ndjson",
+  "eventMapping": {
+    "message": {
+      "match": { "type": "assistant" },
+      "content": "$.content[?(@.type=='text')].text"
+    },
+    "thinking": {
+      "match": { "type": "assistant" },
+      "content": "$.content[?(@.type=='thinking')].thinking"
+    },
+    "tool_call": {
+      "match": { "type": "tool_use" },
+      "name": "$.name",
+      "input": "$.input",
+      "id": "$.id"
+    },
+    "tool_result": {
+      "match": { "type": "tool_result" },
+      "output": "$.content",
+      "toolCallId": "$.tool_use_id"
+    },
+    "result": {
+      "match": { "type": "result" },
+      "output": "$.result",
+      "costUsd": "$.cost_usd",
+      "inputTokens": "$.usage.input_tokens",
+      "outputTokens": "$.usage.output_tokens"
+    }
+  },
+  "exitCodeMapping": {
+    "success": [0],
+    "timeout": [124]
+  }
+}

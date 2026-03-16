@@ -1,0 +1,40 @@
+{
+  "$schema": "./adapter-schema.json",
+  "name": "gemini",
+  "description": "Gemini CLI with JSON output",
+  "command": ["gemini", "--json"],
+  "promptArg": "--prompt",
+  "cwdArg": "--cwd",
+  "streamFormat": "ndjson",
+  "eventMapping": {
+    "message": {
+      "match": { "type": "text" },
+      "content": "$.text"
+    },
+    "thinking": {
+      "match": { "type": "thinking" },
+      "content": "$.text"
+    },
+    "tool_call": {
+      "match": { "type": "tool_use" },
+      "name": "$.name",
+      "input": "$.args",
+      "id": "$.id"
+    },
+    "tool_result": {
+      "match": { "type": "tool_result" },
+      "output": "$.output",
+      "toolCallId": "$.tool_use_id"
+    },
+    "result": {
+      "match": { "type": "result" },
+      "output": "$.text",
+      "inputTokens": "$.usage.input_tokens",
+      "outputTokens": "$.usage.output_tokens"
+    }
+  },
+  "exitCodeMapping": {
+    "success": [0],
+    "timeout": [124]
+  }
+}
