@@ -2,8 +2,13 @@
 
 ## Active
 
-- **Proactive skill calibration** — autoresearch loop on 5 proactive eval prompts (`bun run research`)
-- **SFT trajectory collection** — Prompt 16, running via `bun run research:overnight`
+- **SFT trajectory collection** — Prompt 16, running via `bun run research:overnight` (25 prompts, k=10)
+
+## Next
+
+- **Prompt 17: Node generation eval** — 5 full personal-agent prompts + node-grader (composition test)
+- **Node calibration** — autoresearch loop on node-generation prompts
+- **Node trajectory collection** — add node-generation trajectories to SFT data
 
 ## Scripts
 
@@ -16,11 +21,3 @@
 ## Future Work
 
 See `PROMPTS.md` § Future Work and `docs/AUTO-RESEARCH.md` for full details.
-
-- **Enterprise genome** — PM node seed generation from calibrated skills
-- **Multi-agent git coordination via A2A** — AgentHub concepts built natively
-- **Module worktree experiments** — per-module autoresearch
-- **Project isolation orchestrator** — subprocess spawning, IPC bridge
-- **Web search for MSS prompt generation** — expand prompts.jsonl via grounded research
-- **Session rollback/branching UX**
-- **Mid-task steering**

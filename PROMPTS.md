@@ -122,6 +122,102 @@ Summary metadata (which trajectories passed, scores, agent source) committed to 
 
 ---
 
+## Phase 7 — Full Node Generation Eval
+
+### Prompt 17: Personal Agent Node Generation + Grader
+
+```
+Work in a worktree branch off local dev branch.
+
+## Task
+
+Add 5 personal-agent node generation prompts and a node-grader that tests
+full composition — workspace + modules + sensors + goals + constitution +
+notification channels + varlock. This is the integration test for the entire
+framework: can a frontier agent compose all skills into a working node?
+
+## Context
+
+Module eval (25 prompts) validates individual artifacts. Proactive eval
+(5 prompts) validates sensors and goals. But nothing tests the full
+composition path: initNodeWorkspace → initModule (MSS) → constitution →
+createAgentLoop (proactive) → createNode (server + A2A) → varlock (.env.schema).
+
+The skills exist (modnet-node, mss-vocabulary, agent-loop, proactive-node,
+constitution, varlock). The framework primitives exist (workspace.ts, node.ts,
+proactive.ts, agent.loop.ts). This prompt validates that a frontier agent
+can read the skills and generate a complete working node.
+
+## Requirements
+
+1. Create `skills/node-generation/assets/prompts.jsonl` with 5 prompts:
+
+   a. **GitHub Watcher** — "Generate a personal agent node that monitors
+      my GitHub repos for new issues and alerts me via Discord webhook"
+      (workspace + git sensor + alert goal + webhook notifier + varlock)
+
+   b. **Expense Tracker** — "Generate a personal agent node that
+      categorizes my expenses and emails me a weekly summary"
+      (workspace + finance module/MSS + schedule goal + email notifier)
+
+   c. **Competitor Monitor** — "Generate a personal agent node that watches
+      a competitor's pricing page and alerts me when prices change"
+      (workspace + HTTP sensor + alert goal + webhook + varlock)
+
+   d. **Personal Knowledge Base** — "Generate a personal agent node that
+      indexes my notes folder and answers questions about my documents"
+      (workspace + education module + filesystem sensor, no notification)
+
+   e. **Team Standup Bot** — "Generate a personal agent node that collects
+      daily updates from team members via Slack and posts a morning summary"
+      (workspace + social module/MSS + schedule goal + webhook in/out)
+
+2. Create a grader (`src/tools/node-grader.ts`) with five dimensions:
+
+   - **Structure** — workspace exists, package.json valid, MSS tags valid
+     against mss-vocabulary, module has own git init
+   - **Composition** — createNode() or createAgentLoop() call present,
+     proactive config wired with sensors + goals
+   - **Constitution** — MAC rules present (at minimum default protectGovernance),
+     governance factories used correctly
+   - **Secrets** — .env.schema exists for any API keys/webhooks,
+     @sensitive markers present, no hardcoded secrets in code
+   - **Integration** — tsc --noEmit passes on the generated node
+
+3. Create a `skills/node-generation/SKILL.md` that teaches the full
+   composition pattern — the "plaited genome" in skill form:
+
+   Wave 0: Initialize workspace (initNodeWorkspace)
+   Wave 1: Create module(s) with MSS tags (initModule)
+   Wave 2: Add constitution (MAC factories)
+   Wave 3: Wire proactive mode (sensors + goals + heartbeat)
+   Wave 4: Add notification channels
+   Wave 5: Configure secrets (.env.schema via varlock)
+   Wave 6: Compose node (createNode with all pieces)
+
+   Each wave references the specific skill that teaches it.
+
+## Key Files
+
+- skills/node-generation/SKILL.md — NEW (composition patterns)
+- skills/node-generation/assets/prompts.jsonl — NEW (5 prompts)
+- src/tools/node-grader.ts — NEW (5-dimension grader)
+- scripts/run-eval.ts — may need node-generation adapter
+- src/tools/module-grader.ts — reference for grader patterns
+- src/tools/proactive-grader.ts — reference for grader patterns
+
+## Constraints
+
+- Each prompt must be self-contained — frontier agent receives prompt + skills
+- The grader must validate MSS tags against mss-vocabulary valid combinations
+- tsc --noEmit is the hard gate — if it fails, the node is broken
+- .env.schema must exist if any secret is referenced (varlock enforcement)
+- Prompts should cover diverse MSS contentTypes, boundaries, and scales
+- Follow existing JSONL format from modnet-modules and proactive-node prompts
+```
+
+---
+
 ## Future Work (After Distillation)
 
 These items are deferred until after the initial training cycle:
