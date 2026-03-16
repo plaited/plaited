@@ -130,10 +130,16 @@ export const adapt: Adapter = async ({ prompt, cwd }) => {
     text,
   ]
 
+  // Strip session-scoped keys from env so the subprocess uses ~/.claude/ OAuth
+  // credentials instead of the parent session's temp ANTHROPIC_API_KEY (which
+  // expires after heavy usage and causes 401s in long eval runs).
+  const { ANTHROPIC_API_KEY: _, CLAUDE_CODE_ENTRYPOINT: __, CLAUDECODE: ___, ...spawnEnv } = process.env
+
   const proc = Bun.spawn(args, {
     cwd: cwd ?? process.cwd(),
     stdout: 'pipe',
     stderr: 'pipe',
+    env: spawnEnv as Record<string, string>,
   })
 
   const raw = await new Response(proc.stdout).text()
