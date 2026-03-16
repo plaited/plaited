@@ -10,7 +10,7 @@
 import { afterAll, describe, expect, test } from 'bun:test'
 import { AGENT_CARD_PATH } from '../../a2a/a2a.constants.ts'
 import type { AgentCard, Task } from '../../a2a/a2a.schemas.ts'
-import { AGENT_EVENTS, RISK_TAG } from '../../agent/agent.constants.ts'
+import { RISK_TAG } from '../../agent/agent.constants.ts'
 import type { ToolDefinition } from '../../agent/agent.schemas.ts'
 import type { Model, ModelDelta } from '../../agent/agent.types.ts'
 import { createNode } from '../node.ts'

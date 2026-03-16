@@ -4,8 +4,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RISK_TAG } from '../../agent/agent.constants.ts'
 import type { ToolContext } from '../../agent/agent.types.ts'
-import type { TruncationResult } from '../truncate.ts'
 import { BUILT_IN_RISK_TAGS, bash, builtInHandlers, editFile, grep, listFiles, readFile, writeFile } from '../crud.ts'
+import type { TruncationResult } from '../truncate.ts'
 
 // ============================================================================
 // Temp workspace setup
@@ -185,7 +185,11 @@ describe('editFile', () => {
   test('matches with trailing whitespace differences', async () => {
     await Bun.write(join(workspace, 'ws-target.ts'), 'export const x = 1  \nexport const y = 2\t\n')
     const result = (await editFile(
-      { path: 'ws-target.ts', old_string: 'export const x = 1\nexport const y = 2\n', new_string: 'export const x = 10\nexport const y = 20\n' },
+      {
+        path: 'ws-target.ts',
+        old_string: 'export const x = 1\nexport const y = 2\n',
+        new_string: 'export const x = 10\nexport const y = 20\n',
+      },
       ctx,
     )) as { edited: string; bytes: number }
 
@@ -198,9 +202,9 @@ describe('editFile', () => {
     // Both occurrences have trailing whitespace so exact match fails,
     // but normalized match finds two hits
     await Bun.write(join(workspace, 'ws-dup.txt'), 'abc  \ndef\nabc \ndef')
-    expect(
-      editFile({ path: 'ws-dup.txt', old_string: 'abc\ndef', new_string: 'replaced' }, ctx),
-    ).rejects.toThrow('not unique')
+    expect(editFile({ path: 'ws-dup.txt', old_string: 'abc\ndef', new_string: 'replaced' }, ctx)).rejects.toThrow(
+      'not unique',
+    )
   })
 
   // ---------------------------------------------------------------------------
@@ -231,9 +235,9 @@ describe('editFile', () => {
 
   test('throws when symbol not found as export', async () => {
     await Bun.write(join(workspace, 'no-sym.ts'), 'export const a = 1')
-    expect(
-      editFile({ path: 'no-sym.ts', old_string: '1', new_string: '2', symbol: 'missing' }, ctx),
-    ).rejects.toThrow("Symbol 'missing' not found as export")
+    expect(editFile({ path: 'no-sym.ts', old_string: '1', new_string: '2', symbol: 'missing' }, ctx)).rejects.toThrow(
+      "Symbol 'missing' not found as export",
+    )
   })
 
   test('symbol-scoped edit with trailing whitespace normalization', async () => {
@@ -241,7 +245,12 @@ describe('editFile', () => {
     await Bun.write(join(workspace, 'sym-ws.ts'), source)
 
     const result = (await editFile(
-      { path: 'sym-ws.ts', old_string: 'export const foo = "bar"\n', new_string: 'export const foo = "baz"\n', symbol: 'foo' },
+      {
+        path: 'sym-ws.ts',
+        old_string: 'export const foo = "bar"\n',
+        new_string: 'export const foo = "baz"\n',
+        symbol: 'foo',
+      },
       ctx,
     )) as { edited: string; bytes: number }
 
@@ -264,10 +273,10 @@ describe('editFile', () => {
 
   test('skips syntax validation for non-TS/JS files', async () => {
     await Bun.write(join(workspace, 'data.json'), '{"key": "old"}')
-    const result = (await editFile(
-      { path: 'data.json', old_string: '"old"', new_string: '"new"' },
-      ctx,
-    )) as { edited: string; bytes: number }
+    const result = (await editFile({ path: 'data.json', old_string: '"old"', new_string: '"new"' }, ctx)) as {
+      edited: string
+      bytes: number
+    }
 
     expect(result.edited).toBe('data.json')
     const content = await Bun.file(join(workspace, 'data.json')).text()

@@ -8,12 +8,12 @@
 
 import { afterEach, describe, expect, test } from 'bun:test'
 import { rm } from 'node:fs/promises'
-import { join } from 'node:path'
 import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import type { Model } from '../../agent/agent.types.ts'
-import type { TrialResult } from '../trial.schemas.ts'
 import { createCliAdapter, loadAdapterSchema } from '../adapters/cli-adapter.ts'
 import { createLocalAdapter } from '../adapters/local.ts'
+import type { TrialResult } from '../trial.schemas.ts'
 import { persistTrialResults } from '../trial.utils.ts'
 
 // ============================================================================
@@ -121,7 +121,7 @@ describe('createLocalAdapter', () => {
       model: createMockModel('hello'),
       tools: [],
       toolExecutor: async () => 'ok',
-      memoryPath: join(tmpdir(), 'test-memory-' + Date.now()),
+      memoryPath: join(tmpdir(), `test-memory-${Date.now()}`),
     })
     expect(typeof adapter).toBe('function')
   })
@@ -131,7 +131,7 @@ describe('createLocalAdapter', () => {
       model: createMockModel('Test response'),
       tools: [],
       toolExecutor: async () => 'ok',
-      memoryPath: join(tmpdir(), 'test-memory-' + Date.now()),
+      memoryPath: join(tmpdir(), `test-memory-${Date.now()}`),
       maxIterations: 5,
     })
 
@@ -148,7 +148,7 @@ describe('createLocalAdapter', () => {
       model: createMockModel('Multi response'),
       tools: [],
       toolExecutor: async () => 'ok',
-      memoryPath: join(tmpdir(), 'test-memory-' + Date.now()),
+      memoryPath: join(tmpdir(), `test-memory-${Date.now()}`),
     })
 
     const result = await adapter({ prompt: ['First turn', 'Second turn'] })
@@ -160,7 +160,7 @@ describe('createLocalAdapter', () => {
       model: createFailingModel(),
       tools: [],
       toolExecutor: async () => 'ok',
-      memoryPath: join(tmpdir(), 'test-memory-' + Date.now()),
+      memoryPath: join(tmpdir(), `test-memory-${Date.now()}`),
       maxIterations: 1,
     })
 

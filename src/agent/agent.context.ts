@@ -1,6 +1,6 @@
+import type { SessionMeta } from '../tools/hypergraph.utils.ts'
 import type { AgentPlan, ToolDefinition } from './agent.schemas.ts'
 import type { ChatMessage } from './agent.types.ts'
-import type { SessionMeta } from '../tools/hypergraph.utils.ts'
 
 export type { SessionMeta } from '../tools/hypergraph.utils.ts'
 
@@ -133,16 +133,17 @@ export const createSystemPromptContributor = ({
 
     if (tools.length > 0) {
       sections.push(
-        '## Available Tools\n' + tools.map((t) => `- **${t.function.name}**: ${t.function.description ?? ''}`).join('\n'),
+        '## Available Tools\n' +
+          tools.map((t) => `- **${t.function.name}**: ${t.function.description ?? ''}`).join('\n'),
       )
     }
 
     if (skills && skills.length > 0) {
-      sections.push('## Active Skills\n' + skills.map((s) => `- **${s.name}**: ${s.description}`).join('\n'))
+      sections.push(`## Active Skills\n${skills.map((s) => `- **${s.name}**: ${s.description}`).join('\n')}`)
     }
 
     if (constitutionRules && constitutionRules.length > 0) {
-      sections.push('## Constraints\n' + constitutionRules.map((r) => `- ${r}`).join('\n'))
+      sections.push(`## Constraints\n${constitutionRules.map((r) => `- ${r}`).join('\n')}`)
     }
 
     if (searchHint) {

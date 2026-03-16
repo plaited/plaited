@@ -39,7 +39,8 @@ const LOADER_MAP: Record<string, 'ts' | 'tsx' | 'js' | 'jsx'> = {
 }
 
 /** Pattern matching the start of a top-level export declaration. */
-const EXPORT_DECL_RE = /^export\s+(?:default\s+)?(?:const|let|var|function|class|type|interface|enum|abstract|async\s+function)\s+/m
+const EXPORT_DECL_RE =
+  /^export\s+(?:default\s+)?(?:const|let|var|function|class|type|interface|enum|abstract|async\s+function)\s+/m
 
 /**
  * Normalize whitespace: trim trailing whitespace per line.
@@ -47,7 +48,10 @@ const EXPORT_DECL_RE = /^export\s+(?:default\s+)?(?:const|let|var|function|class
  * with slightly different trailing spaces/tabs.
  */
 const normalize = (s: string) =>
-  s.split('\n').map((l) => l.trimEnd()).join('\n')
+  s
+    .split('\n')
+    .map((l) => l.trimEnd())
+    .join('\n')
 
 /**
  * Find the source range of an exported symbol by name.
@@ -57,11 +61,7 @@ const normalize = (s: string) =>
  * then locates its declaration via regex. Returns the byte offset range
  * from the declaration start to the next top-level export (or EOF).
  */
-const findSymbolRange = (
-  content: string,
-  symbol: string,
-  ext: string,
-): { start: number; end: number } | undefined => {
+const findSymbolRange = (content: string, symbol: string, ext: string): { start: number; end: number } | undefined => {
   const loader = LOADER_MAP[ext]
   if (!loader) return undefined
 

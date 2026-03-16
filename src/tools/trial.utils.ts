@@ -519,12 +519,15 @@ export const persistTrialResults = async (
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
   const filePath = join(evalDir, `trial-${timestamp}.jsonl`)
-  const content = results.map((r) => JSON.stringify(r)).join('\n') + '\n'
+  const content = `${results.map((r) => JSON.stringify(r)).join('\n')}\n`
   await Bun.write(filePath, content)
 
   // Git add + commit from the repo root (parent of .memory/)
   const repoRoot = join(memoryPath, '..')
-  await Bun.$`git add ${filePath} && git commit -m ${'eval: trial results ' + timestamp}`.cwd(repoRoot).nothrow().quiet()
+  await Bun.$`git add ${filePath} && git commit -m ${`eval: trial results ${timestamp}`}`
+    .cwd(repoRoot)
+    .nothrow()
+    .quiet()
 
   return { path: filePath, timestamp }
 }

@@ -11,6 +11,8 @@
  * @internal
  */
 
+// Modnet workspace
+import { initModuleCli, initNodeCli } from './modnet/workspace.cli.ts'
 // Agent tools (CRUD)
 import { bashCli, editFileCli, listFilesCli, readFileCli, writeFileCli } from './tools/crud.ts'
 import { ingestGoalCli } from './tools/ingest-goal.ts'
@@ -22,8 +24,6 @@ import { validateSkill } from './tools/skill-validate.ts'
 import { trialCli } from './tools/trial.ts'
 import { typescriptLsp } from './tools/typescript-lsp.ts'
 import { validateThreadCli } from './tools/validate-thread.ts'
-// Modnet workspace
-import { initModuleCli, initNodeCli } from './modnet/workspace.cli.ts'
 
 // ============================================================================
 // Command Registry

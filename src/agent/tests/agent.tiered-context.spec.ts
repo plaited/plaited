@@ -12,11 +12,9 @@
 import { describe, expect, test } from 'bun:test'
 import type { ChatMessage, ContextState, SessionMeta, ToolDefinition } from 'plaited'
 import {
-  assembleContext,
   createContextAssembler,
   createSessionSummaryContributor,
   createSystemPromptContributor,
-  estimateTokens,
   historyContributor,
   planContributor,
   rejectionContributor,
@@ -170,10 +168,10 @@ describe('trimHistory (progressive)', () => {
   test('truncates old tool results outside recent window to save space', () => {
     const bigToolContent = 'x'.repeat(400) // ~100 tokens
     const history = [
-      mkMsg('tool', bigToolContent, 'tc-old'),   // index 0 — outside recentWindow of 2
-      mkMsg('user', 'a'.repeat(20)),              // index 1 — outside recentWindow of 2
-      mkMsg('assistant', 'b'.repeat(20)),         // index 2 — inside recentWindow
-      mkMsg('user', 'c'.repeat(20)),              // index 3 — inside recentWindow
+      mkMsg('tool', bigToolContent, 'tc-old'), // index 0 — outside recentWindow of 2
+      mkMsg('user', 'a'.repeat(20)), // index 1 — outside recentWindow of 2
+      mkMsg('assistant', 'b'.repeat(20)), // index 2 — inside recentWindow
+      mkMsg('user', 'c'.repeat(20)), // index 3 — inside recentWindow
     ]
     // recentWindow=2 → tool at index 0 gets truncated to '[truncated]' (~3 tokens)
     // After truncation: [truncated](3) + a(5) + b(5) + c(5) = 18 tokens
@@ -191,11 +189,11 @@ describe('trimHistory (progressive)', () => {
   test('truncation preserves more messages than pure dropping would', () => {
     const bigToolContent = 'x'.repeat(400) // ~100 tokens
     const history = [
-      mkMsg('user', 'first question'),                // ~4 tokens
-      mkMsg('assistant', 'first answer'),              // ~3 tokens
-      mkMsg('tool', bigToolContent, 'tc-big'),         // ~100 tokens (will be truncated)
-      mkMsg('user', 'second question'),                // ~4 tokens
-      mkMsg('assistant', 'second answer'),             // ~3 tokens
+      mkMsg('user', 'first question'), // ~4 tokens
+      mkMsg('assistant', 'first answer'), // ~3 tokens
+      mkMsg('tool', bigToolContent, 'tc-big'), // ~100 tokens (will be truncated)
+      mkMsg('user', 'second question'), // ~4 tokens
+      mkMsg('assistant', 'second answer'), // ~3 tokens
     ]
     // Without truncation, budget 15 would only fit last 2-3 messages
     // With truncation (recentWindow=2), tool output shrinks, allowing more messages
@@ -239,7 +237,7 @@ describe('trimHistory (progressive)', () => {
     const bigToolContent = 'x'.repeat(400) // ~100 tokens
     const history = [
       mkMsg('user', 'old'),
-      mkMsg('tool', bigToolContent, 'tc-recent'),  // inside recentWindow of 3
+      mkMsg('tool', bigToolContent, 'tc-recent'), // inside recentWindow of 3
       mkMsg('user', 'question'),
     ]
     // recentWindow=3 → all messages are "recent", no truncation

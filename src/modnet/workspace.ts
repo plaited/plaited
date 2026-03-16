@@ -95,7 +95,11 @@ const NODE_TSCONFIG = {
  * @param opts.scope - npm scope for module packages (e.g., `"\@mynode"`)
  * @param opts.name - Optional human-readable name (defaults to directory basename)
  */
-export const initNodeWorkspace = async ({ path, scope, name }: {
+export const initNodeWorkspace = async ({
+  path,
+  scope,
+  name,
+}: {
   path: string
   scope: string
   name?: string
@@ -112,17 +116,17 @@ export const initNodeWorkspace = async ({ path, scope, name }: {
     workspaces: ['modules/*'],
     modnet: { scope },
   }
-  await Bun.write(join(path, 'package.json'), JSON.stringify(packageJson, null, 2) + '\n')
+  await Bun.write(join(path, 'package.json'), `${JSON.stringify(packageJson, null, 2)}\n`)
 
   // 3. tsconfig.json
-  await Bun.write(join(path, 'tsconfig.json'), JSON.stringify(NODE_TSCONFIG, null, 2) + '\n')
+  await Bun.write(join(path, 'tsconfig.json'), `${JSON.stringify(NODE_TSCONFIG, null, 2)}\n`)
 
   // 4. .gitignore
   await Bun.write(join(path, '.gitignore'), NODE_GITIGNORE)
 
   // 5. .memory/ with @context.jsonld, sessions/, constitution/
   const memoryDir = join(path, '.memory')
-  await Bun.write(join(memoryDir, '@context.jsonld'), JSON.stringify(BASE_CONTEXT, null, 2) + '\n')
+  await Bun.write(join(memoryDir, '@context.jsonld'), `${JSON.stringify(BASE_CONTEXT, null, 2)}\n`)
   await Bun.write(join(memoryDir, 'sessions', '.gitkeep'), '')
   await Bun.write(join(memoryDir, 'constitution', '.gitkeep'), '')
 
@@ -150,13 +154,17 @@ export const initNodeWorkspace = async ({ path, scope, name }: {
  * @param opts.name - Module name (used for directory and package name)
  * @param opts.modnet - Optional MSS bridge-code tags
  */
-export const initModule = async ({ nodePath, name, modnet }: {
+export const initModule = async ({
+  nodePath,
+  name,
+  modnet,
+}: {
   nodePath: string
   name: string
   modnet?: ModnetField
 }): Promise<void> => {
   // Read node scope from root package.json
-  const rootPkg = await Bun.file(join(nodePath, 'package.json')).json() as {
+  const rootPkg = (await Bun.file(join(nodePath, 'package.json')).json()) as {
     modnet?: { scope?: string }
   }
   const scope = rootPkg.modnet?.scope ?? '@node'
@@ -174,7 +182,7 @@ export const initModule = async ({ nodePath, name, modnet }: {
   if (modnet) {
     packageJson.modnet = modnet
   }
-  await Bun.write(join(moduleDir, 'package.json'), JSON.stringify(packageJson, null, 2) + '\n')
+  await Bun.write(join(moduleDir, 'package.json'), `${JSON.stringify(packageJson, null, 2)}\n`)
 
   // 3. Seed skill directory with SKILL.md
   const skillDir = join(moduleDir, 'skills', name)

@@ -10,7 +10,7 @@
  * @packageDocumentation
  */
 
-import type { Adapter, AdapterResult, TrajectoryStep, Timing } from '../trial.schemas.ts'
+import type { Adapter, AdapterResult, Timing, TrajectoryStep } from '../trial.schemas.ts'
 
 // ============================================================================
 // Schema Types (mirrors adapter-schema.json)
@@ -71,17 +71,14 @@ const extractField = (obj: Record<string, unknown>, path: string): unknown => {
   const filterMatch = stripped.match(/^(.+?)\[\?\(@\.(.+?)==['"](.*?)['"]\)\]\.(.+)$/)
 
   if (filterMatch) {
-    const [, arrayPath, filterKey, filterVal, pluckKey] = filterMatch as [
-      string,
-      string,
-      string,
-      string,
-      string,
-    ]
+    const [, arrayPath, filterKey, filterVal, pluckKey] = filterMatch as [string, string, string, string, string]
     const arr = getNestedValue(obj, arrayPath)
     if (!Array.isArray(arr)) return undefined
     const results = arr
-      .filter((item) => typeof item === 'object' && item !== null && (item as Record<string, unknown>)[filterKey] === filterVal)
+      .filter(
+        (item) =>
+          typeof item === 'object' && item !== null && (item as Record<string, unknown>)[filterKey] === filterVal,
+      )
       .map((item) => (item as Record<string, unknown>)[pluckKey])
     return results.length === 1 ? results[0] : results.length > 0 ? results.join('') : undefined
   }
@@ -173,15 +170,28 @@ export const createCliAdapter = (config: AdapterSchemaConfig): Adapter => {
     const elapsed = Date.now() - start
 
     // Parse events
-    const events: Record<string, unknown>[] = streamFormat === 'ndjson'
-      ? raw.trim().split('\n').filter(Boolean).map((line) => {
-          try { return JSON.parse(line) as Record<string, unknown> }
-          catch { return null }
-        }).filter((e): e is Record<string, unknown> => e !== null)
-      : (() => {
-          try { const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed : [parsed] }
-          catch { return [] }
-        })()
+    const events: Record<string, unknown>[] =
+      streamFormat === 'ndjson'
+        ? raw
+            .trim()
+            .split('\n')
+            .filter(Boolean)
+            .map((line) => {
+              try {
+                return JSON.parse(line) as Record<string, unknown>
+              } catch {
+                return null
+              }
+            })
+            .filter((e): e is Record<string, unknown> => e !== null)
+        : (() => {
+            try {
+              const parsed = JSON.parse(raw)
+              return Array.isArray(parsed) ? parsed : [parsed]
+            } catch {
+              return []
+            }
+          })()
 
     // Build trajectory and extract final output
     const trajectory: TrajectoryStep[] = []
@@ -252,7 +262,6 @@ export const createCliAdapter = (config: AdapterSchemaConfig): Adapter => {
           output += content
           trajectory.push({ type: 'message', content, timestamp: ts })
         }
-        continue
       }
     }
 

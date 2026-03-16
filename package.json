@@ -42,7 +42,7 @@
     "copy:css-types": "bash scripts/copy-css-types.sh",
     "dev": "bun --hot src/cli.ts dev src/ui",
     "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .hooks || true",
-    "test": "bun test src/ skills/",
+    "test": "bun test src/ skills/ scripts/",
     "test:playwright": "bunx playwright test",
     "test:tools": "bun test src/tools/"
   },

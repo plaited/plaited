@@ -24,12 +24,12 @@ import type { SessionMeta } from '../tools/hypergraph.utils.ts'
 import { AGENT_EVENTS, RISK_TAG } from './agent.constants.ts'
 import {
   type ContextContributor,
-  type SessionSummaryContributor,
   createContextAssembler,
   createSessionSummaryContributor,
   historyContributor,
   planContributor,
   rejectionContributor,
+  type SessionSummaryContributor,
   systemPromptContributor,
   toolsContributor,
   trimHistory,

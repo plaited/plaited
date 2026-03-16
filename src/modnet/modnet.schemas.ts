@@ -23,9 +23,9 @@ import * as z from 'zod'
  * - `ask` — ABAC evaluation per-request (BP predicates)
  * - `paid` — x402 payment gating
  */
-export const BoundarySchema = z.enum(['all', 'none', 'ask', 'paid']).describe(
-  'DAC boundary tag controlling cross-A2A data sharing',
-)
+export const BoundarySchema = z
+  .enum(['all', 'none', 'ask', 'paid'])
+  .describe('DAC boundary tag controlling cross-A2A data sharing')
 
 // ============================================================================
 // MSS Scale
@@ -39,9 +39,12 @@ export const BoundarySchema = z.enum(['all', 'none', 'ask', 'paid']).describe(
  * - S3: Multiple files + behavioral code + streams
  * - S4+: Full package with workspace dependencies
  */
-export const ScaleSchema = z.number().int().min(1).max(4).describe(
-  'Module complexity scale (1=simple data, 4=full package with deps)',
-)
+export const ScaleSchema = z
+  .number()
+  .int()
+  .min(1)
+  .max(4)
+  .describe('Module complexity scale (1=simple data, 4=full package with deps)')
 
 // ============================================================================
 // Modnet Field Schema

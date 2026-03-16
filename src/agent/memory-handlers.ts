@@ -17,8 +17,8 @@
  * @public
  */
 
-import { readdir } from 'node:fs/promises'
 import { rmSync } from 'node:fs'
+import { readdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { DefaultHandlers, Trigger } from '../behavioral/behavioral.types.ts'
 import { buildSessionSummary } from '../tools/hypergraph.utils.ts'
@@ -284,10 +284,7 @@ export const createMemoryHandlers = ({
 
       if (toRemove.length > 0) {
         Bun.spawnSync(['git', 'add', '-A'], { cwd: moduleRoot })
-        Bun.spawnSync(
-          ['git', 'commit', '-m', `defrag: archived ${toRemove.length} old sessions`],
-          { cwd: moduleRoot },
-        )
+        Bun.spawnSync(['git', 'commit', '-m', `defrag: archived ${toRemove.length} old sessions`], { cwd: moduleRoot })
       }
     },
 

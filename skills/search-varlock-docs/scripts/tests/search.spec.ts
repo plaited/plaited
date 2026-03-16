@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'bun:test'
+import { describe, expect, test } from 'bun:test'
 
 const SCRIPT_PATH = new URL('../search.ts', import.meta.url).pathname
 

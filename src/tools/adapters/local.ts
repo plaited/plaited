@@ -12,7 +12,7 @@
  */
 
 import { AGENT_EVENTS } from '../../agent/agent.constants.ts'
-import { createAgentLoop, type CreateAgentLoopOptions } from '../../agent/agent.loop.ts'
+import { type CreateAgentLoopOptions, createAgentLoop } from '../../agent/agent.loop.ts'
 import type { ToolDefinition } from '../../agent/agent.schemas.ts'
 import type { MessageDetail, Model, ToolExecutor, ToolResultDetail } from '../../agent/agent.types.ts'
 import { UI_ADAPTER_LIFECYCLE_EVENTS } from '../../events.ts'
@@ -59,16 +59,7 @@ export type LocalAdapterOptions = {
  * @public
  */
 export const createLocalAdapter = (opts: LocalAdapterOptions): Adapter => {
-  const {
-    model,
-    tools,
-    toolExecutor,
-    memoryPath,
-    systemPrompt,
-    maxIterations,
-    constitution,
-    goals,
-  } = opts
+  const { model, tools, toolExecutor, memoryPath, systemPrompt, maxIterations, constitution, goals } = opts
 
   return async ({ prompt }) => {
     const text = Array.isArray(prompt) ? prompt.join('\n') : prompt
@@ -91,7 +82,7 @@ export const createLocalAdapter = (opts: LocalAdapterOptions): Adapter => {
     })
 
     try {
-      const result = await new Promise<AdapterResult>((resolve, reject) => {
+      const result = await new Promise<AdapterResult>((resolve, _reject) => {
         const timeout = setTimeout(() => {
           resolve({
             output: output || '',
