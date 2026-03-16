@@ -3,22 +3,23 @@
 > **For:** Autonomous overnight session (`PLAITED_AUTO_RESEARCH=1 claude`)
 > **Never-stop rule:** Do not stop until `PLAITED_MAX_EXPERIMENTS` is reached or you are explicitly interrupted.
 
-## Current State (updated 2026-03-16 evening)
+## Current State (updated 2026-03-16 night)
 
 - **Variant 1 (Skill Calibration): COMPLETE** — 20/20 prompts at pass@3=1.00 after 13 experiments
-- k=3 full-suite baseline (exp 12): 59/60 pass (98.3%), composite 0.99 I/S/D
-- physics-simulator structure:steps fix confirmed k=3 1.00 (exp 13)
-- **Phase 6 (SFT k=1)**: running — `scripts/collect-trajectories.ts`
-- **Phase 2 (prompt expansion)**: 5 new prompts added → calibrating k=1
+- **Phase 6 (SFT k=1): COMPLETE** — 17/20 pass quality gate, 17 trajectories saved (exp #15)
+  - Dropped: inventory-manager (S:0.83), reading-list (S:0.83), bluesky-client (S:0.86)
+- **Phase 2 (prompt expansion): COMPLETE** — 5 new prompts calibrated, all I:1.00 S:1.00 D:1.00 (exp #16)
+  - recipe-manager: produce/collection MSS fix; quiz-builder: boundary:ask + eval_ref vocab fix
+- **Phase 3 (k=3 expanded baseline)**: running — 25 prompts × 3 trials (exp #17 in progress)
 
 ### Experiment Queue
 
 | # | Task | Status |
 |---|------|--------|
-| 14 | Phase 6 SFT — k=1 all 20, quality gate, log trajectories | Running (background) |
-| 15 | Phase 2 — k=1 calibration: recipe-manager, habit-tracker, crypto-tracker, code-snippets, quiz-builder | Running (background) |
-| 16 | Phase 2 — k=3 reliability on 5 new prompts | Queued |
-| 17 | Phase 3 — k=3 baseline on all 25 prompts | Queued |
+| 14 | recipe-manager MSS calibration | DONE |
+| 15 | Phase 6 SFT k=1 all 20, quality gate | DONE — 17/20 trajectories |
+| 16 | Phase 2 k=1 calibration all 5 new prompts | DONE — all 1.00 |
+| 17 | Phase 3 k=3 baseline on all 25 prompts | Running |
 | 18-50 | k=10 collection on 25 prompts (rolling batches) | Future |
 
 ## Tonight's Goal: Trajectory Collection for SFT
@@ -41,11 +42,11 @@ bun scripts/collect-trajectories.ts
 
 Add 5 new prompts covering gaps in the current 20:
 
-- `recipe-manager` — Data/Culinary, contentType:health, list, boundary:none ✓ added
-- `habit-tracker` — Data/Habit, contentType:health, steps, boundary:none ✓ added
-- `crypto-tracker` — Finance, contentType:finance, collection, boundary:none ✓ added
-- `code-snippets` — Tools, contentType:tools, collection, boundary:none ✓ added
-- `quiz-builder` — Education, contentType:education, steps, boundary:all ✓ added
+- `recipe-manager` — Data/Culinary, contentType:produce, collection, boundary:none ✓ calibrated
+- `habit-tracker` — Data/Habit, contentType:health, steps, boundary:none ✓ calibrated
+- `crypto-tracker` — Finance, contentType:finance, collection, boundary:none ✓ calibrated
+- `code-snippets` — Tools, contentType:tools, collection, boundary:none ✓ calibrated
+- `quiz-builder` — Education, contentType:education, steps, boundary:ask ✓ calibrated
 
 Calibration steps per new prompt:
 1. Run k=1 to verify passes — if grader gives 0, adjust eval_ref (not the prompt)
