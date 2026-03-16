@@ -69,6 +69,7 @@ entertainment, education, geo, weather, news, commerce, produce
 - Color tools/design → \`art\` (not design)
 - Calendars/scheduling → \`tools\` (not productivity)
 - Drawing/portfolio → \`art\` (not drawing/portfolio)
+- Recipes/food items → \`produce\` (not health; health is for fitness/medical tracking)
 
 **boundary** — match the sharing model:
 - \`none\`: personal data user wouldn't share (health, finance, playlists, drawings, notes)
