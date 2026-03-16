@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import { appendFile, mkdir } from 'node:fs/promises'
+import { appendFile, mkdir, rm } from 'node:fs/promises'
 import type { Adapter, Grader, GraderResult, PromptCase, TrajectoryRichness, TrialResult } from './trial.schemas.ts'
 import { AdapterResultSchema, GraderResultSchema, PromptCaseSchema, type TrajectoryStep } from './trial.schemas.ts'
 
@@ -402,6 +402,8 @@ export const createWriteMutex = (): WriteMutex => {
 export const createWorkspaceDir = async (baseDir: string, promptId: string): Promise<string> => {
   const sanitizedId = promptId.replace(/[<>:"/\\|?*]/g, '_')
   const workspaceDir = `${baseDir}/prompt-${sanitizedId}`
+  // Clear any leftover files from previous runs to prevent workspace contamination
+  await rm(workspaceDir, { recursive: true, force: true })
   await mkdir(workspaceDir, { recursive: true })
   return workspaceDir
 }
