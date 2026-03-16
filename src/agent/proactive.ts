@@ -18,10 +18,12 @@
  * @public
  */
 
+import { join } from 'node:path'
+import { mkdir } from 'node:fs/promises'
 import type { RulesFunction, Trigger } from '../behavioral/behavioral.types.ts'
 import { bSync, bThread } from '../behavioral/behavioral.utils.ts'
 import { AGENT_EVENTS } from './agent.constants.ts'
-import type { SensorDeltaDetail } from './agent.types.ts'
+import type { SensorDeltaDetail, SensorFactory, SensorSnapshot } from './agent.types.ts'
 
 // ============================================================================
 // Types
@@ -178,3 +180,80 @@ export const createSensorBatchThread = (sensorCount: number, deltas: SensorDelta
       interrupt: [AGENT_EVENTS.task, AGENT_EVENTS.message],
     }),
   ])
+
+// ============================================================================
+// Sensor Sweep — load snapshots, run sensors, save snapshots
+// ============================================================================
+
+/**
+ * Result of a single sensor execution during a sweep.
+ *
+ * @public
+ */
+export type SensorResult = {
+  sensor: string
+  delta: unknown
+}
+
+/**
+ * Run all sensors in parallel: load snapshots, read, diff, save.
+ *
+ * @remarks
+ * Extracted from the tick handler so the logic is testable independently.
+ * Each sensor's previous snapshot is loaded from `{memoryPath}/sensors/{snapshotPath}`.
+ * After reading, the new snapshot is saved regardless of whether a delta was detected.
+ * Sensor errors are non-fatal — a failing sensor is skipped.
+ *
+ * @param sensors - Sensor factories to execute
+ * @param memoryPath - Base path for `.memory/` directory
+ * @param signal - AbortSignal for timeout control
+ * @returns Array of non-null deltas (sensor name + delta payload)
+ *
+ * @public
+ */
+export const runSensorSweep = async (
+  sensors: SensorFactory[],
+  memoryPath: string,
+  signal: AbortSignal,
+): Promise<SensorResult[]> => {
+  const sensorsDir = join(memoryPath, 'sensors')
+
+  // Ensure sensors directory exists
+  await mkdir(sensorsDir, { recursive: true })
+
+  const results = await Promise.all(
+    sensors.map(async (sensor): Promise<SensorResult | null> => {
+      try {
+        // Load previous snapshot
+        const snapshotFile = Bun.file(join(sensorsDir, sensor.snapshotPath))
+        let previous: SensorSnapshot | null = null
+        if (await snapshotFile.exists()) {
+          previous = (await snapshotFile.json()) as SensorSnapshot
+        }
+
+        // Read current state
+        const current = await sensor.read(signal)
+
+        // Diff against previous
+        const delta = sensor.diff(current, previous)
+
+        // Save new snapshot (always, even if no delta)
+        const snapshot: SensorSnapshot = {
+          timestamp: new Date().toISOString(),
+          data: current,
+        }
+        await Bun.write(join(sensorsDir, sensor.snapshotPath), JSON.stringify(snapshot, null, 2))
+
+        if (delta !== null) {
+          return { sensor: sensor.name, delta }
+        }
+        return null
+      } catch {
+        // Sensor errors are non-fatal — skip this sensor
+        return null
+      }
+    }),
+  )
+
+  return results.filter((r): r is SensorResult => r !== null)
+}

@@ -65,7 +65,7 @@ import type {
 } from './agent.types.ts'
 import { mark, parseModelResponse, printTimings, toToolResult } from './agent.utils.ts'
 import { createMemoryHandlers } from './memory-handlers.ts'
-import { createHeartbeatTimer, createSensorBatchThread, createTickYieldThread } from './proactive.ts'
+import { createHeartbeatTimer, createSensorBatchThread, createTickYieldThread, runSensorSweep } from './proactive.ts'
 import { createSnapshotWriter } from './snapshot-writer.ts'
 
 // ============================================================================
@@ -260,7 +260,9 @@ export const createAgentLoop = async ({
           interrupt: [UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected],
         }),
         bSync({
-          waitFor: AGENT_EVENTS.message,
+          waitFor: proactive
+            ? (e) => e.type === AGENT_EVENTS.message || e.type === AGENT_EVENTS.sleep
+            : AGENT_EVENTS.message,
           interrupt: [UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected],
           ...(proactive ? { block: AGENT_EVENTS.tick } : {}),
         }),
@@ -349,29 +351,21 @@ export const createAgentLoop = async ({
               return
             }
 
-            // Run all sensors in parallel, collect non-null deltas
-            const collectedDeltas: SensorDeltaDetail[] = []
+            // Run sensor sweep: load snapshots → read → diff → save
             const signal = AbortSignal.timeout(30_000)
+            const sensorResults = await runSensorSweep(sensors, memoryPath, signal)
 
-            await Promise.all(
-              sensors.map(async (sensor) => {
-                try {
-                  const current = await sensor.read(signal)
-                  const delta = sensor.diff(current, null)
-                  if (delta !== null) {
-                    collectedDeltas.push({ sensor: sensor.name, delta })
-                  }
-                } catch {
-                  // Sensor errors are non-fatal — skip this sensor
-                }
-              }),
-            )
-
-            if (collectedDeltas.length === 0) {
-              // No changes detected — invoke inference directly
-              trigger({ type: AGENT_EVENTS.invoke_inference })
+            if (sensorResults.length === 0) {
+              // No changes detected — sleep until next tick
+              trigger({ type: AGENT_EVENTS.sleep, detail: { durationMs: proactive.intervalMs ?? 900_000 } })
               return
             }
+
+            // Convert to SensorDeltaDetail and coordinate via sensorBatch bThread
+            const collectedDeltas: SensorDeltaDetail[] = sensorResults.map((r) => ({
+              sensor: r.sensor,
+              delta: r.delta,
+            }))
 
             // bThreads.set() BEFORE trigger() — sensorBatch must be
             // present when sensor_delta events are processed

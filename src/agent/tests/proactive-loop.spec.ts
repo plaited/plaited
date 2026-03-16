@@ -92,6 +92,9 @@ const collectEvents = (agent: AgentNode) => {
     [AGENT_EVENTS.sensor_sweep](d: unknown) {
       events.push({ type: AGENT_EVENTS.sensor_sweep, detail: d })
     },
+    [AGENT_EVENTS.sleep](d: unknown) {
+      events.push({ type: AGENT_EVENTS.sleep, detail: d })
+    },
     [AGENT_EVENTS.execute](d: unknown) {
       events.push({ type: AGENT_EVENTS.execute, detail: d })
     },
@@ -348,10 +351,10 @@ describe('proactive mode in createAgentLoop', () => {
     expect(detail.sensor).toBe('test-sensor')
   })
 
-  // ── Test 7: tick with sensor returning null diff skips to inference ────
+  // ── Test 7: tick with sensor returning null diff triggers sleep ─────────
 
-  test('tick with sensor returning null diff goes straight to inference', async () => {
-    const model = createMockModel([{ text: 'Nothing changed.' }])
+  test('tick with sensor returning null diff triggers sleep (no inference)', async () => {
+    const model = createMockModel([{ text: 'Should not be called.' }])
 
     const nullSensor = {
       name: 'null-sensor',
@@ -373,14 +376,18 @@ describe('proactive mode in createAgentLoop', () => {
     const events = collectEvents(agent)
     connect(agent)
 
-    await waitForEvent(events, AGENT_EVENTS.message, 3000)
+    // Zero deltas → sleep event (not inference)
+    await waitForEvent(events, AGENT_EVENTS.sleep, 3000)
 
     // No sensor_delta (diff returned null)
     expect(events.some((e) => e.type === AGENT_EVENTS.sensor_delta)).toBe(false)
-    // No sensor_sweep (skipped — went straight to inference)
+    // No sensor_sweep (no deltas to batch)
     expect(events.some((e) => e.type === AGENT_EVENTS.sensor_sweep)).toBe(false)
-    // Inference still ran
-    expect(events.some((e) => e.type === AGENT_EVENTS.invoke_inference)).toBe(true)
+    // No inference — sleep means "nothing to do"
+    expect(events.some((e) => e.type === AGENT_EVENTS.invoke_inference)).toBe(false)
+    // Sleep event carries the interval duration
+    const sleepEvent = events.find((e) => e.type === AGENT_EVENTS.sleep)
+    expect((sleepEvent?.detail as { durationMs: number }).durationMs).toBe(50)
   })
 
   // ── Test 8: heartbeat handle allows runtime interval control ──────────
