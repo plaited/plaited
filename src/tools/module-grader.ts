@@ -534,6 +534,22 @@ const matchDynamicIndicator = (code: string, item: string): boolean => {
       keywords: ['persist', 'load', 'store'],
       codeIndicators: ['localstorage', 'bun.write', 'bun.file', 'readfile', 'writefile', 'jsonl', 'data/'],
     },
+    {
+      keywords: ['oscillates', 'oscillat', 'frequency', 'pendulum', 'harmonic', 'parabolic', 'trajectory'],
+      codeIndicators: [
+        'math.cos',
+        'math.sin',
+        'math.sqrt',
+        'requestanimationframe',
+        'omega',
+        'oscillat',
+        'frequency',
+        'freq',
+        'angular',
+        'pendulum',
+        'trajectory',
+      ],
+    },
   ]
 
   // Check if any pattern group matches both the item and the code
