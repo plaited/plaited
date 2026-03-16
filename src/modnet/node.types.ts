@@ -2,8 +2,9 @@ import type { TLSOptions } from 'bun'
 import type { AgentCard } from '../a2a/a2a.schemas.ts'
 import type { CreateA2AHandlerOptions } from '../a2a/a2a.types.ts'
 import type { ConstitutionFactory, GoalFactory } from '../agent/agent.factories.ts'
+import type { HeartbeatHandle } from '../agent/proactive.ts'
 import type { ToolDefinition } from '../agent/agent.schemas.ts'
-import type { AgentNode, Indexer, Model, ToolExecutor } from '../agent/agent.types.ts'
+import type { AgentNode, Indexer, Model, SensorFactory, ToolExecutor } from '../agent/agent.types.ts'
 import type { ServerHandle } from '../server/server.types.ts'
 
 /**
@@ -42,6 +43,13 @@ export type CreateNodeOptions = {
   embedder?: Indexer
   /** Max tool call iterations per task */
   maxIterations?: number
+  /** Opt-in proactive mode: heartbeat timer + sensor sweep */
+  proactive?: {
+    /** Heartbeat interval in ms (default: 900_000 = 15 min) */
+    intervalMs?: number
+    /** Sensor factories to run on each tick (default: []) */
+    sensors?: SensorFactory[]
+  }
 }
 
 /**
@@ -56,6 +64,8 @@ export type NodeHandle = {
   server: ServerHandle
   /** A2A routes (present when agentCard was provided) */
   a2a?: { routes: Record<string, (req: Request) => Response | Promise<Response>> }
+  /** Heartbeat handle for runtime interval control (present when proactive mode is enabled) */
+  heartbeat?: HeartbeatHandle
   /** Tear down agent + server */
   destroy: () => void
 }

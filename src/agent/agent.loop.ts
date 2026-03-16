@@ -55,6 +55,8 @@ import type {
   MessageDetail,
   Model,
   ModelResponseDetail,
+  SensorDeltaDetail,
+  SensorFactory,
   SimulateRequestDetail,
   SimulationResultDetail,
   TaskDetail,
@@ -63,6 +65,7 @@ import type {
 } from './agent.types.ts'
 import { mark, parseModelResponse, printTimings, toToolResult } from './agent.utils.ts'
 import { createMemoryHandlers } from './memory-handlers.ts'
+import { createHeartbeatTimer, createSensorBatchThread, createTickYieldThread } from './proactive.ts'
 import { createSnapshotWriter } from './snapshot-writer.ts'
 
 // ============================================================================
@@ -86,6 +89,13 @@ export type CreateAgentLoopOptions = {
   embedder?: Indexer
   systemPrompt?: string
   maxIterations?: number
+  /** Opt-in proactive mode: heartbeat timer + sensor sweep */
+  proactive?: {
+    /** Heartbeat interval in ms (default: 900_000 = 15 min) */
+    intervalMs?: number
+    /** Sensor factories to run on each tick (default: []) */
+    sensors?: SensorFactory[]
+  }
 }
 
 // ============================================================================
@@ -172,6 +182,7 @@ export const createAgentLoop = async ({
   embedder,
   systemPrompt = 'You are a helpful assistant.',
   maxIterations = 50,
+  proactive,
 }: CreateAgentLoopOptions): Promise<AgentNode> => {
   // ── BP engine ───────────────────────────────────────────────────────────
   mark('createAgentLoop:start')
@@ -237,20 +248,30 @@ export const createAgentLoop = async ({
     ),
 
     // Task gate: blocks pipeline events between tasks (serial execution)
+    // When proactive is enabled, also accepts tick events to start proactive cycles
+    // Phase 2 blocks ticks to prevent concurrent cycles during active pipeline
     taskGate: bThread(
       [
         bSync({
-          waitFor: AGENT_EVENTS.task,
+          waitFor: proactive
+            ? (e) => e.type === AGENT_EVENTS.task || e.type === AGENT_EVENTS.tick
+            : AGENT_EVENTS.task,
           block: (e) => PIPELINE_EVENTS.has(e.type),
           interrupt: [UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected],
         }),
         bSync({
           waitFor: AGENT_EVENTS.message,
           interrupt: [UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected],
+          ...(proactive ? { block: AGENT_EVENTS.tick } : {}),
         }),
       ],
       true,
     ),
+
+    // Tick yield: ensures user tasks interrupt proactive cycles (only when proactive)
+    ...(proactive
+      ? { tickYield: createTickYieldThread() }
+      : {}),
   })
 
   // ── Constitution bThreads ───────────────────────────────────────────────
@@ -298,6 +319,81 @@ export const createAgentLoop = async ({
       // Trigger inference
       trigger({ type: AGENT_EVENTS.invoke_inference })
     },
+
+    // ── tick (proactive heartbeat) ───────────────────────────────────────
+    ...(proactive
+      ? {
+          async [AGENT_EVENTS.tick](_detail: unknown) {
+            const sensors = proactive.sensors ?? []
+
+            // Per-tick maxIterations (same safety limit as tasks)
+            bThreads.set({
+              maxIterations: bThread([
+                ...Array.from({ length: maxIterations }, () =>
+                  bSync({ waitFor: AGENT_EVENTS.tool_result, interrupt: [AGENT_EVENTS.message] }),
+                ),
+                bSync({
+                  block: AGENT_EVENTS.execute,
+                  request: {
+                    type: AGENT_EVENTS.message,
+                    detail: { content: `Max iterations (${maxIterations}) reached` },
+                  },
+                  interrupt: [AGENT_EVENTS.message],
+                }),
+              ]),
+            })
+
+            if (sensors.length === 0) {
+              // No sensors — go straight to inference, model decides what to do
+              trigger({ type: AGENT_EVENTS.invoke_inference })
+              return
+            }
+
+            // Run all sensors in parallel, collect non-null deltas
+            const collectedDeltas: SensorDeltaDetail[] = []
+            const signal = AbortSignal.timeout(30_000)
+
+            await Promise.all(
+              sensors.map(async (sensor) => {
+                try {
+                  const current = await sensor.read(signal)
+                  const delta = sensor.diff(current, null)
+                  if (delta !== null) {
+                    collectedDeltas.push({ sensor: sensor.name, delta })
+                  }
+                } catch {
+                  // Sensor errors are non-fatal — skip this sensor
+                }
+              }),
+            )
+
+            if (collectedDeltas.length === 0) {
+              // No changes detected — invoke inference directly
+              trigger({ type: AGENT_EVENTS.invoke_inference })
+              return
+            }
+
+            // bThreads.set() BEFORE trigger() — sensorBatch must be
+            // present when sensor_delta events are processed
+            bThreads.set({
+              sensorBatch: createSensorBatchThread(collectedDeltas.length, collectedDeltas),
+            })
+
+            for (const delta of collectedDeltas) {
+              trigger({
+                type: AGENT_EVENTS.sensor_delta,
+                detail: delta,
+              })
+            }
+            // sensorBatch thread requests sensor_sweep after all deltas arrive
+          },
+
+          // Sensor sweep complete — trigger inference with accumulated context
+          [AGENT_EVENTS.sensor_sweep](_detail: unknown) {
+            trigger({ type: AGENT_EVENTS.invoke_inference })
+          },
+        }
+      : {}),
 
     // ── invoke_inference ──────────────────────────────────────────────────
     async [AGENT_EVENTS.invoke_inference]() {
@@ -673,6 +769,12 @@ export const createAgentLoop = async ({
     },
   })
 
+  // ── Proactive heartbeat timer (opt-in) ──────────────────────────────────
+  const heartbeatHandle = proactive
+    ? createHeartbeatTimer({ trigger, intervalMs: proactive.intervalMs })
+    : undefined
+  mark('proactive')
+
   // ── Timing report ──────────────────────────────────────────────────────
   mark('handler-registration')
   printTimings()
@@ -709,6 +811,7 @@ export const createAgentLoop = async ({
       return disconnect
     },
     destroy: () => {
+      heartbeatHandle?.destroy()
       for (const controller of abortControllers.values()) {
         controller.abort()
       }
@@ -718,5 +821,6 @@ export const createAgentLoop = async ({
       }
       disconnects.length = 0
     },
+    ...(heartbeatHandle && { heartbeat: heartbeatHandle }),
   }
 }
