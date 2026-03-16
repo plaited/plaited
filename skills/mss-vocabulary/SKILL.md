@@ -35,16 +35,13 @@ Every module carries five bridge-code tags. Together they form the MSS envelope.
 |--------|------------|----------------------|
 | Health/Fitness | `health` | ~~nutrition~~, ~~wellness~~, ~~fitness~~ |
 | Social/Chat/Forum | `social` | ~~chat~~, ~~messaging~~, ~~discussion~~, ~~forum~~ |
-| Science/Simulation | `science` | ~~physics~~, ~~chemistry~~, ~~statistics~~, ~~simulation~~ |
+| Science/Simulation/Stats | `science` | ~~physics~~, ~~chemistry~~, ~~statistics~~, ~~simulation~~, ~~data-viz~~ |
 | Finance/Expenses | `finance` | ~~money~~, ~~expenses~~, ~~budget~~ |
 | Logistics/Inventory | `logistics` | ~~inventory~~, ~~warehouse~~, ~~shipping~~ |
-| Tools/Utilities | `tools` | ~~utility~~, ~~utilities~~, ~~converter~~ |
-| Productivity/Calendar | `productivity` | ~~schedule~~, ~~events~~, ~~calendar~~, ~~tasks~~ |
-| Art/Creative | `art` | ~~drawing~~, ~~graphics~~, ~~portfolio~~, ~~creative~~ |
+| Tools/Utilities | `tools` | ~~utility~~, ~~utilities~~, ~~converter~~, ~~productivity~~ |
+| Art/Creative/Drawing/Design | `art` | ~~drawing~~, ~~graphics~~, ~~portfolio~~, ~~creative~~, ~~design~~ |
 | Entertainment/Music | `entertainment` | ~~music~~, ~~playlist~~, ~~media~~ |
-| Education/Learning | `education` | ~~books~~, ~~reading~~, ~~study~~ |
-| Data Visualization | `data-viz` | ~~visualization~~, ~~charts~~, ~~data-visualization~~ |
-| Design/Color | `design` | ~~colors~~, ~~palette~~, ~~design-tools~~ |
+| Education/Learning/Reading | `education` | ~~books~~, ~~reading~~, ~~study~~ |
 | Geography/Maps | `geo` | ~~geospatial~~, ~~maps~~, ~~location~~ |
 | Weather | `weather` | ~~forecast~~, ~~climate~~ |
 | News | `news` | — |
@@ -52,6 +49,12 @@ Every module carries five bridge-code tags. Together they form the MSS envelope.
 | Commerce | `commerce` | — |
 
 Use the **canonical** value (left column). Agents that pick alternatives will fail modnet field validation.
+
+**Disambiguation rules:**
+- Charts/visualization for **data analysis** → `science` (not `data-viz`)
+- Color tools, palettes, design systems → `art` (not `design`)
+- Calendars, task lists, scheduling → `tools` (not `productivity`)
+- Drawing canvas, portfolio galleries → `art` (not `drawing`, `portfolio`)
 - Examples: `produce`, `health`, `social`, `art`, `education`, `work`, `logistics`
 
 ### 2. `structure` (string)
@@ -72,6 +75,13 @@ Use the **canonical** value (left column). Agents that pick alternatives will fa
 | `wall` | Static profile info + collaborative stream | S3 |
 | `thread` | Nested reply modules | S3 |
 | `form` | Structured input (creation/manipulation) | S2-S3 |
+
+**Structure disambiguation (commonly confused pairs):**
+- `stream` = chronological messages (chat rooms, logs) vs `thread` = nested replies (forums, Reddit)
+- `list` = ordered sequence (playlists, reading lists) vs `collection` = unordered group (portfolios, inventories)
+- `form` = user input/creation tool (editors, calculators) vs `object` = display-only item (a single artwork, a weather reading)
+- `steps` = multi-page wizard/flow (calendar with day/month views, onboarding) vs `collection` = all items visible at once
+
 | `daisy` | Central portal with secondary loops | S7 |
 | `hierarchy` | Top-down strict pathways | S7 |
 | `matrix` | Hierarchy + hypertext navigation | S7 |
@@ -122,6 +132,18 @@ Use the **canonical** value (left column). Agents that pick alternatives will fa
 - S1-S2 (bedroom scale): high privacy expected → typically `none` or `ask`
 - S3-S5 (house/office scale): community trust → `ask` or `all` within group
 - S6-S8 (neighborhood/city scale): expect information spillage → `all` or `paid`
+
+**Boundary selection rules (when unsure, default to `none` or `ask`, NOT `all`):**
+
+| Data type | Default boundary | Rationale |
+|-----------|-----------------|-----------|
+| Personal data (health, finance, reading lists) | `none` | User's private data stays local |
+| User-generated docs (notes, drawings, playlists) | `none` | Creative work is private by default |
+| Social content (posts, chat, forum threads) | `ask` | Social implies sharing but needs consent |
+| Reference/tools (converters, calculators, maps) | `all` | Stateless utilities have nothing to protect |
+| Public data (weather, periodic table, charts) | `all` | No user data involved |
+
+**Never default to `all`** for modules that store user-entered data. The `all` boundary means data flows freely across A2A — only appropriate for stateless tools and public reference data.
 
 ### 5. `scale` (number)
 

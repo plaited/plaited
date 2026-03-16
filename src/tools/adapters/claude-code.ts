@@ -61,11 +61,25 @@ For any UI rendering, use the plaited template system:
 - Use \`p-trigger\` attribute for event binding, \`p-target\` for element targeting
 - CSS: use style objects, not CSS strings
 
-## Canonical contentType Values
-Use EXACTLY these values — do not invent alternatives:
-health, social, science, finance, logistics, tools, productivity, art,
-entertainment, education, data-viz, design, geo, weather, news,
-commerce, real-estate, produce, work-creation, work-evaluation
+## MSS Tag Rules
+**contentType** — use EXACTLY these canonical values:
+health, social, science, finance, logistics, tools, art,
+entertainment, education, geo, weather, news, commerce, produce
+- Charts/stats/simulation → \`science\` (not data-viz)
+- Color tools/design → \`art\` (not design)
+- Calendars/scheduling → \`tools\` (not productivity)
+- Drawing/portfolio → \`art\` (not drawing/portfolio)
+
+**boundary** — default to restrictive, NOT \`all\`:
+- Personal/user data (health, finance, playlists, notes) → \`none\`
+- Social content (chat, forums) → \`ask\`
+- Stateless tools (converters, calculators) or public data (weather, periodic table) → \`all\`
+
+**structure** disambiguation:
+- Chat rooms = \`stream\` (chronological), Forums = \`thread\` (nested replies)
+- Playlists/reading lists = \`list\` (ordered), Portfolios/inventories = \`collection\` (unordered)
+- Editors/calculators = \`form\` (user input), Display items = \`object\` (read-only)
+- Calendar/wizard = \`steps\` (multi-view), Everything visible = \`collection\`
 
 ## Rules
 - Write ALL files to the current working directory

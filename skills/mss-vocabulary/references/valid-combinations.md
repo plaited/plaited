@@ -87,15 +87,10 @@ Reference table of validated MSS tag combinations. Each row represents a real-wo
 |---------|------------|-----------|-----------|----------|-------|---------|
 | Converter | `tools` | `form` | `[]` | `all` | S1 | Unit converter, format converter |
 | Editor | `tools` | `form` | `[]` | `none` | S2 | Markdown editor, code editor with document persistence |
-| Dashboard | `data-viz` | `form` | `["chart"]` | `all` | S2 | Chart generator from JSON data input |
-| Palette | `design` | `object` | `[]` | `all` | S1 | Color palette with harmony rules and contrast checking |
-
-## Productivity Patterns
-
-| Pattern | contentType | structure | mechanics | boundary | scale | Example |
-|---------|------------|-----------|-----------|----------|-------|---------|
-| Calendar | `productivity` | `steps` | `["track", "filter"]` | `none` | S3 | Calendar with events, recurrence, and day/month views |
-| Task List | `productivity` | `list` | `["sort", "filter", "track"]` | `none` | S2 | Todo list with categories and completion tracking |
+| Calendar | `tools` | `steps` | `["track", "filter"]` | `none` | S3 | Calendar with events, recurrence, and day/month views |
+| Task List | `tools` | `list` | `["sort", "filter", "track"]` | `none` | S2 | Todo list with categories and completion tracking |
+| Chart Generator | `science` | `form` | `["chart"]` | `all` | S2 | Chart generator from JSON data input |
+| Color Palette | `art` | `object` | `[]` | `all` | S1 | Color palette with harmony rules and contrast checking |
 
 ## Science Patterns
 

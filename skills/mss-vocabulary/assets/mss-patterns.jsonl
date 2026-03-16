@@ -42,9 +42,9 @@
 {"contentType":"tools","structure":"form","mechanics":[],"boundary":"all","scale":1,"example":"Unit converter with input fields and result display"}
 {"contentType":"tools","structure":"form","mechanics":[],"boundary":"none","scale":2,"example":"Markdown editor with live preview and document saving"}
 {"contentType":"finance","structure":"collection","mechanics":["track","chart","filter","sort"],"boundary":"none","scale":2,"example":"Expense logger with category breakdowns and CSV export"}
-{"contentType":"productivity","structure":"steps","mechanics":["track","filter"],"boundary":"none","scale":3,"example":"Calendar module with monthly grid, event management, and recurrence"}
-{"contentType":"data-viz","structure":"form","mechanics":["chart"],"boundary":"all","scale":2,"example":"Chart generator accepting JSON data for bar, line, and pie charts"}
-{"contentType":"design","structure":"object","mechanics":[],"boundary":"all","scale":1,"example":"Color palette generator with harmony rules and WCAG contrast checker"}
+{"contentType":"tools","structure":"steps","mechanics":["track","filter"],"boundary":"none","scale":3,"example":"Calendar module with monthly grid, event management, and recurrence"}
+{"contentType":"science","structure":"form","mechanics":["chart"],"boundary":"all","scale":2,"example":"Chart generator accepting JSON data for bar, line, and pie charts"}
+{"contentType":"art","structure":"object","mechanics":[],"boundary":"all","scale":1,"example":"Color palette generator with harmony rules and WCAG contrast checker"}
 {"contentType":"geo","structure":"collection","mechanics":["filter"],"boundary":"all","scale":3,"example":"Interactive map with markers, categories, and location search"}
 {"contentType":"weather","structure":"object","mechanics":["track","chart"],"boundary":"all","scale":2,"example":"Weather dashboard with current conditions and 5-day forecast"}
 {"contentType":"science","structure":"steps","mechanics":["track","chart"],"boundary":"all","scale":2,"example":"Physics simulator with pendulum, projectile, and spring-mass systems"}
