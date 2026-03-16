@@ -133,17 +133,16 @@ Use the **canonical** value (left column). Agents that pick alternatives will fa
 - S3-S5 (house/office scale): community trust → `ask` or `all` within group
 - S6-S8 (neighborhood/city scale): expect information spillage → `all` or `paid`
 
-**Boundary selection rules (when unsure, default to `none` or `ask`, NOT `all`):**
+**Boundary selection — match the prompt's expected sharing model:**
 
-| Data type | Default boundary | Rationale |
-|-----------|-----------------|-----------|
-| Personal data (health, finance, reading lists) | `none` | User's private data stays local |
-| User-generated docs (notes, drawings, playlists) | `none` | Creative work is private by default |
-| Social content (posts, chat, forum threads) | `ask` | Social implies sharing but needs consent |
-| Reference/tools (converters, calculators, maps) | `all` | Stateless utilities have nothing to protect |
-| Public data (weather, periodic table, charts) | `all` | No user data involved |
+| Module type | boundary | Examples |
+|-------------|----------|---------|
+| Private user data, no sharing intent | `none` | health tracker, finance logger, personal reading list, drawing canvas, playlist, markdown editor |
+| Social/collaborative — users expect to share | `ask` | chat rooms, social feeds, inventories with team access, bluesky client |
+| Public forums — content is inherently public | `all` | discussion forums, open wikis |
+| Stateless tools — no user data stored | `all` | unit converter, chart generator, periodic table, weather dashboard, statistics calculator, color palette |
 
-**Never default to `all`** for modules that store user-entered data. The `all` boundary means data flows freely across A2A — only appropriate for stateless tools and public reference data.
+**Key distinction:** `none` = the module stores personal data the user wouldn't share. `ask` = the module stores data the user *might* share with consent. `all` = either no user data is stored, or the content is inherently public.
 
 ### 5. `scale` (number)
 

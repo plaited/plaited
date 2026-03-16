@@ -70,16 +70,20 @@ entertainment, education, geo, weather, news, commerce, produce
 - Calendars/scheduling → \`tools\` (not productivity)
 - Drawing/portfolio → \`art\` (not drawing/portfolio)
 
-**boundary** — default to restrictive, NOT \`all\`:
-- Personal/user data (health, finance, playlists, notes) → \`none\`
-- Social content (chat, forums) → \`ask\`
-- Stateless tools (converters, calculators) or public data (weather, periodic table) → \`all\`
+**boundary** — match the sharing model:
+- \`none\`: personal data user wouldn't share (health, finance, playlists, drawings, notes)
+- \`ask\`: social/collaborative data user might share (chat, social feeds, inventories)
+- \`all\`: public content or stateless tools (forums, converters, calculators, weather, periodic table, charts)
 
-**structure** disambiguation:
-- Chat rooms = \`stream\` (chronological), Forums = \`thread\` (nested replies)
-- Playlists/reading lists = \`list\` (ordered), Portfolios/inventories = \`collection\` (unordered)
-- Editors/calculators = \`form\` (user input), Display items = \`object\` (read-only)
-- Calendar/wizard = \`steps\` (multi-view), Everything visible = \`collection\`
+**structure** — choose by information pattern:
+- \`object\`: single display item (weather reading, color palette, one artwork)
+- \`list\`: ordered items (playlists, reading lists — order matters)
+- \`collection\`: unordered group (portfolios, inventories, expense categories — no inherent order)
+- \`form\`: user input/creation (editors, calculators, chart generators — primary action is input)
+- \`steps\`: multi-page flow (calendar day/month views, wizards — distinct views of same data)
+- \`stream\`: chronological messages (chat rooms — time-ordered, append-only)
+- \`thread\`: nested replies (forums, Reddit — hierarchical discussion)
+- \`feed\`: algorithm-sorted (social feeds — ranked by relevance)
 
 ## Rules
 - Write ALL files to the current working directory
