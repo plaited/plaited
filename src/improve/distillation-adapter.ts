@@ -64,6 +64,7 @@ export const createLocalAdapter = (opts: LocalAdapterOptions): Adapter => {
   return async ({ prompt }) => {
     const text = Array.isArray(prompt) ? prompt.join('\n') : prompt
     const start = Date.now()
+    const sessionId = crypto.randomUUID()
     const trajectory: TrajectoryStep[] = []
     let output = ''
     let inputTokens = 0
@@ -74,7 +75,7 @@ export const createLocalAdapter = (opts: LocalAdapterOptions): Adapter => {
       tools,
       toolExecutor,
       memoryPath,
-      sessionId: crypto.randomUUID(),
+      sessionId,
       systemPrompt,
       maxIterations,
       constitution,
@@ -83,8 +84,9 @@ export const createLocalAdapter = (opts: LocalAdapterOptions): Adapter => {
 
     try {
       const result = await new Promise<AdapterResult>((resolve, _reject) => {
+        let settled = false
         const timeout = setTimeout(() => {
-          resolve({
+          finish({
             output: output || '',
             trajectory: trajectory.length > 0 ? trajectory : undefined,
             timing: { total: Date.now() - start, inputTokens, outputTokens },
@@ -92,8 +94,26 @@ export const createLocalAdapter = (opts: LocalAdapterOptions): Adapter => {
           })
         }, 300_000) // 5 minute safety timeout
 
+        let disconnectSubscription = () => {}
+
+        const finish = (result: AdapterResult) => {
+          if (settled) return
+          settled = true
+          clearTimeout(timeout)
+          disconnectSubscription()
+          agent.trigger({
+            type: UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected,
+            detail: {
+              sessionId,
+              code: result.exitCode === 0 ? 1000 : 1011,
+              reason: result.timedOut ? 'Local adapter timed out' : 'Local adapter complete',
+            },
+          })
+          resolve(result)
+        }
+
         // Subscribe to events for trajectory capture
-        const disconnect = agent.subscribe({
+        disconnectSubscription = agent.subscribe({
           [AGENT_EVENTS.thinking_delta](detail: unknown) {
             const { content } = detail as { content: string }
             // Accumulate thinking into a single trajectory step
@@ -134,9 +154,7 @@ export const createLocalAdapter = (opts: LocalAdapterOptions): Adapter => {
             // Use final message content as output if text_delta didn't accumulate
             if (!output) output = content
 
-            clearTimeout(timeout)
-            disconnect()
-            resolve({
+            finish({
               output,
               trajectory: trajectory.length > 0 ? trajectory : undefined,
               timing: {
@@ -164,7 +182,7 @@ export const createLocalAdapter = (opts: LocalAdapterOptions): Adapter => {
         // Simulate WebSocket lifecycle: connect → task
         agent.trigger({
           type: UI_ADAPTER_LIFECYCLE_EVENTS.client_connected,
-          detail: { sessionId: 'trial', source: 'local-adapter', isReconnect: false },
+          detail: { sessionId, source: 'local-adapter', isReconnect: false },
         })
         agent.trigger({
           type: AGENT_EVENTS.task,
