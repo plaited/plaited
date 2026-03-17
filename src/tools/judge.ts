@@ -13,7 +13,21 @@ import { createHash } from 'node:crypto'
 import { appendFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import Anthropic from '@anthropic-ai/sdk'
-import type { IntentionJudge } from './module-grader.ts'
+
+/**
+ * Judge function for LLM-as-judge evaluation.
+ *
+ * @remarks
+ * Receives code and a checklist item, returns whether
+ * the code fulfills that intention.
+ *
+ * @public
+ */
+export type IntentionJudge = (params: {
+  code: string
+  intentionItem: string
+  context?: string
+}) => Promise<{ pass: boolean; reasoning?: string }>
 
 // ============================================================================
 // Cache

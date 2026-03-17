@@ -45,7 +45,7 @@ export type ExperimentEntry = {
 // Constants
 // ============================================================================
 
-const PROJECT_ROOT = join(import.meta.dir, '..')
+const PROJECT_ROOT = join(import.meta.dir, '..', '..')
 const EXPERIMENTS_LOG = join(PROJECT_ROOT, '.memory', 'evals', 'experiments.jsonl')
 
 // ============================================================================

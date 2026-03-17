@@ -14,17 +14,16 @@
  */
 
 import { join, resolve } from 'node:path'
-import { adapt } from '../src/tools/adapters/claude-code.ts'
-import { createModuleGrader } from '../src/tools/module-grader.ts'
-import type { PromptCase } from '../src/tools/trial.schemas.ts'
-import { runTrial } from '../src/tools/trial.ts'
-import { loadPrompts, persistTrialResults } from '../src/tools/trial.utils.ts'
+import { adapt } from './adapters/claude-code.ts'
+import type { Grader, PromptCase } from './trial.schemas.ts'
+import { runTrial } from './trial.ts'
+import { loadPrompts, persistTrialResults } from './trial.utils.ts'
 
 // ============================================================================
 // Config
 // ============================================================================
 
-const PROJECT_ROOT = resolve(import.meta.dir, '..')
+const PROJECT_ROOT = resolve(import.meta.dir, '..', '..')
 const PROMPTS_PATH = join(PROJECT_ROOT, 'skills/modnet-modules/assets/prompts.jsonl')
 const MEMORY_PATH = join(PROJECT_ROOT, '.memory')
 const DEFAULT_WORKSPACE = '/tmp/module-eval'
@@ -145,11 +144,16 @@ const main = async () => {
   console.error(`Total executions: ${prompts.length * config.k}`)
   console.error('')
 
-  // Create grader (keyword matching — no LLM judge for first cycle)
-  const grader = createModuleGrader({
-    typeCheck: true,
-    projectRoot: PROJECT_ROOT,
-  })
+  // Grader — caller provides via graderPath or defaults to type-check only
+  const grader: Grader = async ({ output, cwd }) => {
+    if (!cwd) return { pass: false, score: 0, reasoning: 'No cwd' }
+    const tsc = await Bun.$`cd ${cwd} && bun --bun tsc --noEmit`.nothrow().quiet()
+    return {
+      pass: tsc.exitCode === 0,
+      score: tsc.exitCode === 0 ? 1 : 0,
+      reasoning: tsc.exitCode === 0 ? 'tsc passes' : tsc.stderr.toString().slice(0, 500),
+    }
+  }
 
   // Timestamp for output file
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
