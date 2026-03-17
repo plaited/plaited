@@ -314,6 +314,42 @@ export const createAgentLoop = async ({
     })
   }
 
+  const executeToolCall = async ({
+    toolCall,
+    signal,
+  }: {
+    toolCall: ExecuteDetail['toolCall']
+    signal: AbortSignal
+  }) => {
+    const start = Date.now()
+    try {
+      const output = toolCall.name === 'set_heartbeat' && setHeartbeatHandler
+        ? await setHeartbeatHandler(toolCall.arguments, { workspace: '', signal })
+        : await toolExecutor(toolCall, signal)
+      return toToolResult(
+        toolCall,
+        { toolCallId: toolCall.id, name: toolCall.name, status: 'completed', output },
+        Date.now() - start,
+      )
+    } catch (error) {
+      return toToolResult(toolCall, error, Date.now() - start)
+    }
+  }
+
+  const requestExecution = (detail: ExecuteDetail) => {
+    trigger({
+      type: AGENT_EVENTS.execute,
+      detail,
+    })
+  }
+
+  const rejectEvaluation = (detail: EvalRejectedDetail) => {
+    trigger({
+      type: AGENT_EVENTS.eval_rejected,
+      detail,
+    })
+  }
+
   // ── Warm layer: load session meta for context orientation ──────────────
   const initialMeta = await loadSessionMeta(memoryPath, sessionId)
   const sessionSummary: SessionSummaryContributor = createSessionSummaryContributor(initialMeta)
@@ -620,10 +656,7 @@ export const createAgentLoop = async ({
       const tagSet = new Set(tags)
       // Workspace-only → execute directly (skip simulation)
       if (tagSet.size > 0 && [...tagSet].every((t) => t === RISK_TAG.workspace)) {
-        trigger({
-          type: AGENT_EVENTS.execute,
-          detail: { toolCall, tags } satisfies ExecuteDetail,
-        })
+        requestExecution({ toolCall, tags } satisfies ExecuteDetail)
         return
       }
 
@@ -674,13 +707,10 @@ export const createAgentLoop = async ({
         })
       } catch (error) {
         // Simulation failed — reject the tool call
-        trigger({
-          type: AGENT_EVENTS.eval_rejected,
-          detail: {
-            toolCall,
-            reason: `Simulation failed: ${error instanceof Error ? error.message : String(error)}`,
-          } satisfies EvalRejectedDetail,
-        })
+        rejectEvaluation({
+          toolCall,
+          reason: `Simulation failed: ${error instanceof Error ? error.message : String(error)}`,
+        } satisfies EvalRejectedDetail)
       }
     },
 
@@ -702,33 +732,24 @@ export const createAgentLoop = async ({
             detail: { toolCall, tags, score: result.score } satisfies EvalApprovedDetail,
           })
         } else {
-          trigger({
-            type: AGENT_EVENTS.eval_rejected,
-            detail: {
-              toolCall,
-              reason: result.reason ?? 'Evaluation rejected',
-              score: result.score,
-            } satisfies EvalRejectedDetail,
-          })
+          rejectEvaluation({
+            toolCall,
+            reason: result.reason ?? 'Evaluation rejected',
+            score: result.score,
+          } satisfies EvalRejectedDetail)
         }
       } catch (error) {
-        trigger({
-          type: AGENT_EVENTS.eval_rejected,
-          detail: {
-            toolCall,
-            reason: `Evaluation failed: ${error instanceof Error ? error.message : String(error)}`,
-          } satisfies EvalRejectedDetail,
-        })
+        rejectEvaluation({
+          toolCall,
+          reason: `Evaluation failed: ${error instanceof Error ? error.message : String(error)}`,
+        } satisfies EvalRejectedDetail)
       }
     },
 
     // ── eval_approved ────────────────────────────────────────────────────
     [AGENT_EVENTS.eval_approved](detail: unknown) {
       const { toolCall, tags } = detail as EvalApprovedDetail
-      trigger({
-        type: AGENT_EVENTS.execute,
-        detail: { toolCall, tags } satisfies ExecuteDetail,
-      })
+      requestExecution({ toolCall, tags } satisfies ExecuteDetail)
     },
 
     // ── eval_rejected ────────────────────────────────────────────────────
@@ -743,22 +764,8 @@ export const createAgentLoop = async ({
       const controller = new AbortController()
       abortControllers.set(toolCall.id, controller)
 
-      const start = Date.now()
       try {
-        // Intercept set_heartbeat: handled locally via closure, not the external executor
-        const output = toolCall.name === 'set_heartbeat' && setHeartbeatHandler
-          ? await setHeartbeatHandler(toolCall.arguments, { workspace: '', signal: controller.signal })
-          : await toolExecutor(toolCall, controller.signal)
-        const duration = Date.now() - start
-        const result = toToolResult(
-          toolCall,
-          { toolCallId: toolCall.id, name: toolCall.name, status: 'completed', output },
-          duration,
-        )
-        recordToolResult(result)
-      } catch (error) {
-        const duration = Date.now() - start
-        const result = toToolResult(toolCall, error, duration)
+        const result = await executeToolCall({ toolCall, signal: controller.signal })
         recordToolResult(result)
       } finally {
         abortControllers.delete(toolCall.id)
