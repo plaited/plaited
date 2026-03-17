@@ -112,19 +112,23 @@ const invokeGeminiJudge = async (prompt: string): Promise<JudgeOutput> => {
   }
 }
 
+export const toGraderResult = (result: JudgeOutput): GraderResult => ({
+  pass: result.pass,
+  score: result.score,
+  reasoning: result.reasoning,
+  ...(result.dimensions
+    ? {
+        outcome: {
+          judgeDimensions: result.dimensions,
+        },
+      }
+    : {}),
+})
+
 export const grade: Grader = async ({ input, output, metadata }): Promise<GraderResult> => {
   const task = Array.isArray(input) ? input.join('\n') : input
   const meta = (metadata ?? {}) as Record<string, unknown>
   const result = await invokeGeminiJudge(buildJudgePrompt({ task, output, metadata: meta }))
 
-  return {
-    pass: result.pass,
-    score: result.score,
-    reasoning: result.reasoning,
-    ...(result.dimensions
-      ? {
-          metadata: { dimensions: result.dimensions },
-        }
-      : {}),
-  }
+  return toGraderResult(result)
 }
