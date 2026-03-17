@@ -11,8 +11,6 @@
  * @internal
  */
 
-// Modnet workspace
-import { initModuleCli, initNodeCli } from './modnet/workspace-cli.ts'
 // Agent tools (CRUD)
 import { bashCli, editFileCli, listFilesCli, readFileCli, writeFileCli } from './tools/crud.ts'
 import { ingestGoalCli } from './tools/ingest-goal.ts'
@@ -50,9 +48,6 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   acp: async () => {
     await import('./acp.ts')
   },
-  // Modnet workspace
-  'init-node': initNodeCli,
-  'init-module': initModuleCli,
 }
 
 // ============================================================================
@@ -96,10 +91,7 @@ Commands:
     typescript-lsp
 
   ACP (Editor Transport):
-    acp [--node <name>]
-
-  Modnet Workspace:
-    init-node, init-module`)
+    acp [--node <name>]`)
   process.exit(command ? 0 : 1)
 }
 

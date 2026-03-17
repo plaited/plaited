@@ -9,14 +9,14 @@
 import { describe, expect, test } from 'bun:test'
 import { resolve } from 'node:path'
 import { BThreadPromptMetadataSchema, createBThreadGrader, grade } from '../bthread-grader.ts'
-import { runTrial } from '../trial.ts'
-import { loadPrompts } from '../trial.utils.ts'
+import { runTrial } from '../../src/tools/trial.ts'
+import { loadPrompts } from '../../src/tools/trial.utils.ts'
 
 // ============================================================================
 // Fixtures — known-good and known-bad bThread factories
 // ============================================================================
 
-const PROJECT_ROOT = resolve(import.meta.dir, '../../..')
+const PROJECT_ROOT = resolve(import.meta.dir, '../..')
 
 /** Valid goal factory — counts tool_result events, blocks execute after N */
 const validGoalFactory = `import { bThread, bSync } from '../../behavioral/behavioral.utils.ts'

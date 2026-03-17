@@ -11,7 +11,7 @@
  * @packageDocumentation
  */
 
-import type { Grader, GraderResult } from './trial.schemas.ts'
+import type { Grader, GraderResult } from '../src/tools/trial.schemas.ts'
 
 // ============================================================================
 // Types

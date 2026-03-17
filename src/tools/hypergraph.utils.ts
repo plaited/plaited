@@ -54,7 +54,6 @@ export const EVENT_CAUSATION = new Map<string, string[]>([
   // Inference error → retry or terminal
   ['inference_error', ['invoke_inference']],
   // Terminals: sleep, snapshot_committed, consolidate, defrag,
-  // reingest_skill, reingest_rules, reingest_goal,
   // message, loop_complete have no successors
 ])
 

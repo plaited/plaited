@@ -15,7 +15,7 @@ import { grade } from '../skeleton-grader.ts'
 // Helpers
 // ============================================================================
 
-const PROJECT_ROOT = resolve(import.meta.dir, '../../..')
+const PROJECT_ROOT = resolve(import.meta.dir, '../..')
 const PROMPTS_PATH = resolve(PROJECT_ROOT, 'skills/modnet-node/assets/skeleton-prompts.jsonl')
 
 const refSkeleton = {

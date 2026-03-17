@@ -23,7 +23,7 @@
  */
 
 import { query } from '@anthropic-ai/claude-agent-sdk'
-import { grade } from '../src/tools/skeleton-grader.ts'
+import { grade } from './skeleton-grader.ts'
 
 // ============================================================================
 // Configuration

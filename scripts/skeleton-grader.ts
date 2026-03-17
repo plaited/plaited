@@ -15,8 +15,8 @@
  * @packageDocumentation
  */
 
-import { ModnetFieldSchema } from '../modnet/modnet.schemas.ts'
-import type { Grader, GraderResult } from './trial.schemas.ts'
+import { ModnetFieldSchema } from '../src/modnet/modnet.schemas.ts'
+import type { Grader, GraderResult } from '../src/tools/trial.schemas.ts'
 
 // ============================================================================
 // Types

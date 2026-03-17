@@ -14,7 +14,7 @@ import { grade } from '../mss-grader.ts'
 // Helpers
 // ============================================================================
 
-const PROJECT_ROOT = resolve(import.meta.dir, '../../..')
+const PROJECT_ROOT = resolve(import.meta.dir, '../..')
 const PROMPTS_PATH = resolve(PROJECT_ROOT, 'skills/mss-vocabulary/assets/mss-classify-prompts.jsonl')
 
 const refMss = {

@@ -16,8 +16,8 @@
 
 import { join, resolve } from 'node:path'
 import * as z from 'zod'
-import type { Grader, GraderResult } from './trial.schemas.ts'
-import { validateThreadFactory } from './validate-thread.ts'
+import type { Grader, GraderResult } from '../src/tools/trial.schemas.ts'
+import { validateThreadFactory } from '../src/tools/validate-thread.ts'
 
 // ============================================================================
 // Types
@@ -181,9 +181,9 @@ const checkSpec = (specPath: string, cwd: string): GradeCheck => {
  * @internal
  */
 const findProjectRoot = (): string => {
-  // This file is at src/tools/bthread-grader.ts
-  // Project root is two levels up
-  return resolve(import.meta.dir, '../..')
+  // This file is at scripts/bthread-grader.ts
+  // Project root is one level up
+  return resolve(import.meta.dir, '..')
 }
 
 /**

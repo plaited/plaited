@@ -22,7 +22,7 @@
  */
 
 import { query } from '@anthropic-ai/claude-agent-sdk'
-import { grade } from '../src/tools/mss-grader.ts'
+import { grade } from './mss-grader.ts'
 
 // ============================================================================
 // Configuration

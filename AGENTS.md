@@ -31,9 +31,17 @@
 
 Before committing code, both must pass:
 1. `bun --bun tsc --noEmit`
-2. `bun test src/ skills/`
+2. `bun test src/ skills/ scripts/`
 
 *Exception:* `docs:` and `chore:` commits skip this gate.
+
+## Directory Boundaries
+
+**`src/`** — Framework code that ships with the node. CLI tools (`src/tools/`), runtime modules, schemas, types.
+**`scripts/`** — Calibration & eval infrastructure: graders, adapters, runners, MLX server launchers. Removed post-distillation.
+**`skills/`** — Implementation patterns + operational tools. Skill assets (prompts, references) live under their skill directory.
+
+**Never put graders, eval runners, or adapters in `src/tools/`.** Those are calibration infrastructure, not CLI commands.
 
 ## GitHub CLI
 
@@ -87,7 +95,7 @@ Before committing code, both must pass:
 **Test both branches** — try/catch, conditionals, fallbacks need both paths.
 **Use real dependencies** — prefer installed packages over mocks.
 **Coverage:** happy path, edge cases, error paths, real integrations.
-**Run:** `bun test src/ skills/` before commit.
+**Run:** `bun test src/ skills/ scripts/` before commit.
 
 
 # Accuracy
