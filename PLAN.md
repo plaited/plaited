@@ -267,14 +267,24 @@ Successful generation trajectories from Phases 4-6 ARE the SFT training data. No
 ### Already Done
 - Deleted: `module-grader.ts`, `proactive-grader.ts`, `bthread-trial.ts` (regex graders)
 - Deleted: 6 old calibration/collection scripts
-- Moved: `run-eval.ts` and `git-experiment.ts` from `scripts/` to `src/tools/`
-- Deleted: `src/agent/models/` vendor wrappers (anthropic.ts, gemini.ts, models.ts barrel) — vendor lock-in in framework
-- Moved: `openai-compat.ts` up to `src/agent/openai-compat.ts` (pure fetch, no SDK — the vendor-agnostic Model impl)
-- Deleted: `src/agent/sensors/git.ts` — git is a tool the agent calls, not a framework sensor
-- tsc clean, 1398 tests pass
+- Moved: `git-experiment.ts` from `scripts/` to `src/tools/`
+- Deleted: `src/agent/models/` vendor wrappers (anthropic.ts, gemini.ts, models.ts barrel) — vendor lock-in
+- Moved: `openai-compat.ts` up to `src/agent/openai-compat.ts` (pure fetch, no SDK)
+- Deleted: `src/agent/sensors/git.ts` — git is a tool, not a framework sensor
+- Deleted: `src/tools/judge.ts` — vendor SDK import (`@anthropic-ai/sdk`), judge moves to Gemini CLI via `Bun.$`
+- Deleted: `src/tools/run-eval.ts` — orchestrator superseded by autoresearch loop
+- Deleted: `src/tools/adapters/proactive.ts` — premature Phase 6 code
+- Deleted: `src/tools/adapters/cli-adapter.ts` — dead code (JSON schema approach never adopted)
+- Moved: `claude-code.ts` → `scripts/claude-code-adapter.ts` (deployment-specific, not framework)
+- Renamed: `local.ts` → `src/tools/distillation-adapter.ts` (self-distillation for continuous improvement)
+- Flattened: removed `src/tools/adapters/` directory
+- Renamed: 10 files in `src/agent/` to remove redundant `agent.` prefix (e.g., `agent.loop.ts` → `create-agent-loop.ts`)
+- Deleted: `PROMPTS.md`, `docs/program.md` — superseded by PLAN.md + AUTO-RESEARCH.md
+- Deleted: `skills/varlock/` — premature, regenerate via autoresearch post-deploy
+- Zero vendor SDK imports in `src/` — framework is fully vendor-agnostic
+- tsc clean, 1331 tests pass
 
 ### Still Needed
-- `src/tools/judge.ts` → refactor to use Gemini CLI (`Bun.$`) for judge, drop Anthropic SDK import
 - `src/a2a/a2a.schemas.ts` → add `AgentExtension`, `inputModes`/`outputModes` on `AgentSkill`
 - Process `Structural-IA.md` + `Modnet.md` → queryable form (JSON-LD or structured distillation)
 - ~~Write MSS comprehension test prompts (20 descriptions with reference MSS tags)~~ ✓ Phase 1 complete (20/20, commit b382c74)
