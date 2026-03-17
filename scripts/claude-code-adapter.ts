@@ -104,6 +104,42 @@ For modules requiring large static datasets (e.g., periodic table elements, worl
 - Keep TypeScript source files thin: just load the JSON with \`Bun.file('data/<name>.json').json()\`
 - This keeps TypeScript files short and avoids running out of time writing inline data
 
+## TypeScript Patterns (avoid tsc errors)
+
+These patterns prevent the most common TypeScript strict-mode errors in generated code:
+
+**Typed array literals** — always annotate empty arrays:
+\`\`\`ts
+// ✗ TypeScript infers never[] or can't infer element type
+const items = []
+// ✓
+const items: Item[] = []
+\`\`\`
+
+**Typed null/undefined variables** — annotate mutable nullable vars:
+\`\`\`ts
+// ✗ TypeScript infers type 'null', can't reassign to MyType
+let result = null
+// ✓
+let result: MyType | null = null
+\`\`\`
+
+**Optional parameter guards** — use optional chaining + nullish coalescing:
+\`\`\`ts
+// ✗ TypeScript strict: 'params.genre' is possibly undefined
+data.filter(item => item.genre === params.genre)
+// ✓
+data.filter(item => item.genre === (params.genre ?? ''))
+\`\`\`
+
+**Binary data in fetch** — use Uint8Array not Buffer (Buffer isn't BodyInit):
+\`\`\`ts
+// ✗ Buffer<ArrayBufferLike> not assignable to BodyInit
+fetch(url, { method: 'POST', body: buffer })
+// ✓ Use Bun.write for file I/O, or convert to Uint8Array for fetch
+await Bun.write(path, buffer)
+\`\`\`
+
 ## Rules
 - Write ALL files to the current working directory
 - Do NOT create test files (.spec.ts)
