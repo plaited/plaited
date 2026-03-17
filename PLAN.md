@@ -224,9 +224,14 @@ Successful generation trajectories from Phases 4-6 ARE the SFT training data. No
 
 ## Local Student Model: Falcon H1R 7B
 
-**Model:** `mlx-community/Falcon-H1R-7B-4bit` — hybrid Transformer-Mamba, Q4 quantized (~4.6 GB)
+**Models:**
 
-**Architecture:** 12 standard attention heads + 2 Mamba-2 SSM heads per layer. The SSM heads give efficient long-context and persistent state; the attention heads handle reasoning. Consumer LoRA trains attention heads only; enterprise full-parameter trains both.
+| Model | Format | Size | Purpose |
+|---|---|---|---|
+| `mlx-community/Falcon-H1R-7B-4bit` | Q4 MLX | ~4.6 GB | Inference + student evaluation |
+| `tiiuae/Falcon-H1R-7B` | FP16 | ~14 GB | Training base (LoRA + full fine-tune) |
+
+**Architecture:** Hybrid Transformer-Mamba — 12 standard attention heads + 2 Mamba-2 SSM heads per layer. The SSM heads give efficient long-context and persistent state; the attention heads handle reasoning. Consumer LoRA trains attention heads only; enterprise full-parameter trains both.
 
 | Component | Location |
 |---|---|
@@ -245,7 +250,30 @@ Successful generation trajectories from Phases 4-6 ARE the SFT training data. No
 | Consumer LoRA | Mac Studio M4/M5 Max or AI Max 395 mini PC | LoRA on attention layers via MLX/Unsloth | Adapt to deployment environment |
 | Enterprise full-parameter | Cloud H100 (~$25/run) | Full SFT + GRPO | Train all parameters including Mamba-2 SSM heads |
 
-**Role in pipeline:** Falcon H1R is the **student model**. Frontier agents (Claude Code, Gemini CLI) are **teachers** generating SFT trajectories in Phases 4–6. Phase 7 distills those trajectories into Falcon H1R. The local adapter enables student evaluation via `runTrial()` + `compare-trials` to measure the teacher–student gap.
+**Train → Quantize → Evaluate cycle:**
+
+```
+tiiuae/Falcon-H1R-7B (FP16 base, ~14 GB)
+    │
+    ├─ Consumer LoRA → adapter (~200 MB) → merge into base
+    │                                           │
+    └─ Enterprise Full FT ──────────────────────┤
+                                                │
+                                          Fine-tuned FP16
+                                                │
+                                          Quantize → Q4 (~4.6 GB)
+                                                │
+                                          Deploy locally via MLX
+                                                │
+                                          Evaluate via compare-trials
+                                                │
+                                          Gap shrunk? → next Phase
+                                          Gap remains? → more trajectories → retrain
+```
+
+Training is iterative — each Phase produces trajectories, train after each phase (don't wait until Phase 7). LoRA adapters are stackable: train separate adapters for MSS comprehension, code generation, and proactive behavior, then merge.
+
+**Role in pipeline:** Falcon H1R is the **student model**. Frontier agents (Claude Code, Gemini CLI) are **teachers** generating SFT trajectories in Phases 4–6. The local adapter enables student evaluation via `runTrial()` + `compare-trials` to measure the teacher–student gap after each training cycle.
 
 ---
 
@@ -260,17 +288,26 @@ Phase 2: Module skeleton generation
     ↓
 Phase 3: MSS composition tests
     ↓
+─── First training checkpoint ───────────────────────────────
+    Trajectories from Phases 1–3 → LoRA on MSS comprehension
+    Quantize → evaluate student → measure gap
+─────────────────────────────────────────────────────────────
+    ↓
 Phase 4: Layered boot (progressive gates)
     ↓
 Phase 5: Runtime module generation from Agent Card
     ↓
+─── Second training checkpoint ──────────────────────────────
+    Trajectories from Phases 4–5 → LoRA on code generation
+    Merge adapters → quantize → evaluate → measure gap
+─────────────────────────────────────────────────────────────
+    ↓
 Phase 6: Full proactive cycle
     ↓
-Phase 7: SFT trajectory collection (successful generations = training data)
-    ↓
-Train model (consumer LoRA on local hardware, enterprise full-param on cloud H100)
-    ↓
-Evaluate student via falcon-h1r-mlx-adapter + compare-trials
+─── Final training checkpoint ───────────────────────────────
+    All trajectories → enterprise full-parameter on cloud H100
+    Quantize → full evaluation across all phases
+─────────────────────────────────────────────────────────────
     ↓
 Deploy first node
 ```
