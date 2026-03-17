@@ -75,15 +75,15 @@ The CLI resolves file paths to functions, then delegates to `runTrial`:
 
 ```bash
 # Basic trial
-plaited trial '{"adapterPath":"./adapter.ts","promptsPath":"prompts.jsonl","k":5}'
+plaited-improve trial '{"adapterPath":"./adapter.ts","promptsPath":"prompts.jsonl","k":5}'
 
 # With grader and progress
-plaited trial '{"adapterPath":"./adapter.ts","promptsPath":"prompts.jsonl","k":10,"graderPath":"./grader.ts","concurrency":4,"progress":true}'
+plaited-improve trial '{"adapterPath":"./adapter.ts","promptsPath":"prompts.jsonl","k":10,"graderPath":"./grader.ts","concurrency":4,"progress":true}'
 
 # Schema discovery
-plaited trial --schema input
-plaited trial --schema output
-plaited trial --help
+plaited-improve trial --schema input
+plaited-improve trial --schema output
+plaited-improve trial --help
 ```
 
 ## Input Format (prompts.jsonl)

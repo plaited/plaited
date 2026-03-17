@@ -237,7 +237,7 @@ export const adapt: Adapter = async ({ prompt, cwd }) => {
 
 ```bash
 # CLI: path-based loading
-plaited trial '{"adapterPath":"./my-adapter.ts","promptsPath":"prompts.jsonl","k":5}'
+plaited-improve trial '{"adapterPath":"./my-adapter.ts","promptsPath":"prompts.jsonl","k":5}'
 
 # Library: function-based (primary)
 import { runTrial } from './src/improve/trial.ts'

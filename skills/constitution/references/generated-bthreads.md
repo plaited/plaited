@@ -40,7 +40,7 @@ Layer 3: Generated Test Execution (bun test)
   │  CATCHES: behavioral errors, wrong blocking logic, infinite loops
   │
   ▼
-Layer 4: Trial/Grader Evaluation (plaited trial)
+Layer 4: Trial/Grader Evaluation (plaited-improve trial)
   │  Run k=10 attempts of "generate bThread for goal X"
   │  Grader: does generated thread pass tsc + bun test?
   │  pass@k = capability, pass^k = reliability

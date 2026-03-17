@@ -14,7 +14,8 @@
   },
   "homepage": "https://github.com/plaited/plaited/tree/main#readme",
   "bin": {
-    "plaited": "./src/cli.ts"
+    "plaited": "./src/cli.ts",
+    "plaited-improve": "./src/improve-cli.ts"
   },
   "type": "module",
   "main": "./src/main.ts",
@@ -48,7 +49,7 @@
     "research:overnight": "PLAITED_AUTO_RESEARCH=1 PLAITED_MAX_EXPERIMENTS=50 claude --model sonnet --dangerously-skip-permissions --rc",
     "test": "bun test src/ skills/ scripts/",
     "test:playwright": "bunx playwright test",
-    "test:tools": "bun test src/tools/"
+    "test:tools": "bun test src/tools/ src/improve/"
   },
   "lint-staged": {
     "*.{js,cjs,jsx,tsx,ts}": [

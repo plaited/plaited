@@ -18,8 +18,6 @@ import { ingestRulesCli } from './tools/ingest-rules.ts'
 import { ingestSkillCli } from './tools/ingest-skill.ts'
 import { discoverSkillsCli } from './tools/skill-discovery.ts'
 import { validateSkill } from './tools/skill-validate.ts'
-// Trial runner
-import { trialCli } from './improve/trial.ts'
 import { typescriptLsp } from './tools/typescript-lsp.ts'
 import { validateThreadCli } from './tools/validate-thread.ts'
 
@@ -34,8 +32,6 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   'edit-file': editFileCli,
   'list-files': listFilesCli,
   bash: bashCli,
-  // Trial runner
-  trial: trialCli,
   // Development tools
   'validate-skill': validateSkill,
   'validate-thread': validateThreadCli,
@@ -81,9 +77,6 @@ if (!command || command === '--help' || command === '-h') {
 Commands:
   Agent Tools:
     read-file, write-file, edit-file, list-files, bash
-
-  Trial Runner:
-    trial
 
   Development:
     validate-skill, validate-thread, ingest-goal,
