@@ -59,6 +59,112 @@ export const createProactivePushHandlers = (server: Pick<ServerHandle, 'send'>):
   }
 }
 
+const connectVirtualSession = (agent: Pick<NodeHandle['agent'], 'trigger'>, sessionId: string) => {
+  agent.trigger({
+    type: UI_ADAPTER_LIFECYCLE_EVENTS.client_connected,
+    detail: { sessionId, source: 'a2a', isReconnect: false },
+  })
+}
+
+const disconnectVirtualSession = (
+  agent: Pick<NodeHandle['agent'], 'trigger'>,
+  sessionId: string,
+  detail: { code: number; reason: string },
+) => {
+  agent.trigger({
+    type: UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected,
+    detail: { sessionId, ...detail },
+  })
+}
+
+const extractPrompt = (message: { parts: Array<{ kind: string }> }) => {
+  const textPart = message.parts.find((part) => part.kind === 'text')
+  return textPart && 'text' in textPart ? textPart.text : ''
+}
+
+const createCompletedTask = ({
+  taskId,
+  contextId,
+  content,
+}: {
+  taskId: string
+  contextId: string | undefined
+  content: string
+}) =>
+  ({
+    kind: 'task',
+    id: taskId,
+    contextId,
+    status: { state: TASK_STATE.completed },
+    artifacts: [
+      {
+        artifactId: crypto.randomUUID(),
+        parts: [{ kind: 'text' as const, text: content }],
+      },
+    ],
+  }) satisfies Task
+
+const createFailedTask = ({
+  taskId,
+  contextId,
+  error,
+}: {
+  taskId: string
+  contextId: string | undefined
+  error: unknown
+}) =>
+  ({
+    kind: 'task',
+    id: taskId,
+    contextId,
+    status: {
+      state: TASK_STATE.failed,
+      message: {
+        kind: 'message',
+        messageId: crypto.randomUUID(),
+        role: 'agent',
+        parts: [
+          {
+            kind: 'text' as const,
+            text: error instanceof Error ? error.message : String(error),
+          },
+        ],
+      },
+    },
+  }) satisfies Task
+
+const waitForAgentMessage = ({
+  agent,
+  signal,
+}: {
+  agent: Pick<NodeHandle['agent'], 'subscribe'>
+  signal: AbortSignal
+}) =>
+  new Promise<string>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      disconnect()
+      reject(new Error('A2A task timed out'))
+    }, 120_000)
+
+    signal.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(timeout)
+        disconnect()
+        reject(new Error('A2A task aborted'))
+      },
+      { once: true },
+    )
+
+    const disconnect = agent.subscribe({
+      [AGENT_EVENTS.message](detail: unknown) {
+        clearTimeout(timeout)
+        disconnect()
+        resolve((detail as MessageDetail).content)
+      },
+    })
+  })
+
 /**
  * Creates a running modnet node: agent loop + HTTP/WS server + optional A2A.
  *
@@ -107,90 +213,20 @@ export const createNode = async ({
       async sendMessage(params, signal) {
         const taskId = crypto.randomUUID()
         const sessionId = `a2a:${taskId}`
+        const prompt = extractPrompt(params.message)
+        const messagePromise = waitForAgentMessage({ agent, signal })
 
-        // Extract text from the first text part of the message
-        const textPart = params.message.parts.find((p) => p.kind === 'text')
-        const prompt = textPart && 'text' in textPart ? textPart.text : ''
-
-        // Subscribe for the message response before triggering
-        const messagePromise = new Promise<string>((resolve, reject) => {
-          const timeout = setTimeout(() => {
-            disconnect()
-            reject(new Error('A2A task timed out'))
-          }, 120_000)
-
-          signal.addEventListener(
-            'abort',
-            () => {
-              clearTimeout(timeout)
-              disconnect()
-              reject(new Error('A2A task aborted'))
-            },
-            { once: true },
-          )
-
-          const disconnect = agent.subscribe({
-            [AGENT_EVENTS.message](detail: unknown) {
-              clearTimeout(timeout)
-              disconnect()
-              resolve((detail as MessageDetail).content)
-            },
-          })
-        })
-
-        // Unlock session gate → trigger task → await response
-        agent.trigger({
-          type: UI_ADAPTER_LIFECYCLE_EVENTS.client_connected,
-          detail: { sessionId, source: 'a2a', isReconnect: false },
-        })
+        connectVirtualSession(agent, sessionId)
         agent.trigger({ type: AGENT_EVENTS.task, detail: { prompt } })
 
         try {
           const content = await messagePromise
 
-          // Clean up: disconnect the virtual session
-          agent.trigger({
-            type: UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected,
-            detail: { sessionId, code: 1000, reason: 'A2A task complete' },
-          })
-
-          return {
-            kind: 'task',
-            id: taskId,
-            contextId: params.message.contextId,
-            status: { state: TASK_STATE.completed },
-            artifacts: [
-              {
-                artifactId: crypto.randomUUID(),
-                parts: [{ kind: 'text' as const, text: content }],
-              },
-            ],
-          } satisfies Task
+          disconnectVirtualSession(agent, sessionId, { code: 1000, reason: 'A2A task complete' })
+          return createCompletedTask({ taskId, contextId: params.message.contextId, content })
         } catch (error) {
-          agent.trigger({
-            type: UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected,
-            detail: { sessionId, code: 1011, reason: 'A2A task failed' },
-          })
-
-          return {
-            kind: 'task',
-            id: taskId,
-            contextId: params.message.contextId,
-            status: {
-              state: TASK_STATE.failed,
-              message: {
-                kind: 'message',
-                messageId: crypto.randomUUID(),
-                role: 'agent',
-                parts: [
-                  {
-                    kind: 'text' as const,
-                    text: error instanceof Error ? error.message : String(error),
-                  },
-                ],
-              },
-            },
-          } satisfies Task
+          disconnectVirtualSession(agent, sessionId, { code: 1011, reason: 'A2A task failed' })
+          return createFailedTask({ taskId, contextId: params.message.contextId, error })
         }
       },
     }
