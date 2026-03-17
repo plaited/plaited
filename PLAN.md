@@ -220,6 +220,32 @@ Successful generation trajectories from Phases 4-6 ARE the SFT training data. No
 | `bun run prompt` | Opus session with remote control for implementation |
 | `bun run research` | Sonnet calibration loop (3 experiments, remote control) |
 | `bun run research:overnight` | Sonnet calibration loop (50 experiments, remote control) |
+| `bun falcon:mlx` | Start Falcon H1R 7B MLX inference server (port 8080) |
+
+## Local Student Model: Falcon H1R 7B
+
+**Model:** `mlx-community/Falcon-H1R-7B-4bit` — hybrid Transformer-Mamba, Q4 quantized (~4.6 GB)
+
+**Architecture:** 12 standard attention heads + 2 Mamba-2 SSM heads per layer. The SSM heads give efficient long-context and persistent state; the attention heads handle reasoning. Consumer LoRA trains attention heads only; enterprise full-parameter trains both.
+
+| Component | Location |
+|---|---|
+| MLX adapter | `scripts/falcon-h1r-mlx-adapter.ts` |
+| MLX server launcher | `scripts/falcon-mlx-server.ts` |
+| Python venv | `.venv/` (mlx-lm, huggingface-hub, Python 3.12) |
+| Model cache | HuggingFace cache (`~/.cache/huggingface/`) |
+
+**Adapter contract:** OpenAI-compatible `/v1/chat/completions` — same endpoint for MLX, llama.cpp, or vLLM. When switching hardware, write a new server launcher (e.g., `falcon-llamacpp-server.ts` for CUDA), keep the adapter pointing at localhost.
+
+**Hardware tiers (matches training-pipeline skill):**
+
+| Tier | Hardware | Method | What |
+|---|---|---|---|
+| Inference (current) | M3 Pro 18 GB (~22 tok/s) | Q4 MLX | Autoresearch inference loop |
+| Consumer LoRA | Mac Studio M4/M5 Max or AI Max 395 mini PC | LoRA on attention layers via MLX/Unsloth | Adapt to deployment environment |
+| Enterprise full-parameter | Cloud H100 (~$25/run) | Full SFT + GRPO | Train all parameters including Mamba-2 SSM heads |
+
+**Role in pipeline:** Falcon H1R is the **student model**. Frontier agents (Claude Code, Gemini CLI) are **teachers** generating SFT trajectories in Phases 4–6. Phase 7 distills those trajectories into Falcon H1R. The local adapter enables student evaluation via `runTrial()` + `compare-trials` to measure the teacher–student gap.
 
 ---
 
@@ -242,5 +268,9 @@ Phase 6: Full proactive cycle
     ↓
 Phase 7: SFT trajectory collection (successful generations = training data)
     ↓
-Train model → Deploy first node
+Train model (consumer LoRA on local hardware, enterprise full-param on cloud H100)
+    ↓
+Evaluate student via falcon-h1r-mlx-adapter + compare-trials
+    ↓
+Deploy first node
 ```
