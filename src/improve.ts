@@ -83,3 +83,12 @@ export {
   runTrial,
   trialCli,
 } from './improve/trial.ts'
+
+export {
+  type Verifier,
+  loadAdapter,
+  loadGrader,
+  loadJsonl,
+  persistTrialResults,
+  withMetaVerification,
+} from './improve/trial.utils.ts'
