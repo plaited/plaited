@@ -221,6 +221,26 @@ export const createAgentLoop = async ({
       }),
     ])
 
+  const installMaxIterationsGuard = (source?: MessageDetail['source']) => {
+    bThreads.set({
+      maxIterations: createMaxIterationsThread(source),
+    })
+  }
+
+  const beginReactiveCycle = (prompt: string) => {
+    currentGoal = prompt
+    isProactiveCycle = false
+    proactiveContext?.setProactive(false)
+    history.push({ role: 'user', content: prompt })
+    installMaxIterationsGuard()
+  }
+
+  const beginProactiveCycle = () => {
+    isProactiveCycle = true
+    proactiveContext?.setProactive(true)
+    installMaxIterationsGuard('proactive')
+  }
+
   const emitMessage = (content: string) => {
     trigger({
       type: AGENT_EVENTS.message,
@@ -361,19 +381,7 @@ export const createAgentLoop = async ({
     // ── task ──────────────────────────────────────────────────────────────
     [AGENT_EVENTS.task](detail: unknown) {
       const { prompt } = detail as TaskDetail
-      currentGoal = prompt
-      isProactiveCycle = false
-
-      // Clear proactive framing — this is a reactive (user) cycle
-      proactiveContext?.setProactive(false)
-
-      // Add user message to history
-      history.push({ role: 'user', content: prompt })
-
-      // Per-task maxIterations bThread
-      bThreads.set({
-        maxIterations: createMaxIterationsThread(),
-      })
+      beginReactiveCycle(prompt)
 
       // Trigger inference
       trigger({ type: AGENT_EVENTS.invoke_inference })
@@ -383,16 +391,8 @@ export const createAgentLoop = async ({
     ...(proactive
       ? {
           async [AGENT_EVENTS.tick](_detail: unknown) {
-            isProactiveCycle = true
+            beginProactiveCycle()
             const sensors = proactive.sensors ?? []
-
-            // Enable proactive framing for this cycle's context assembly
-            proactiveContext?.setProactive(true)
-
-            // Per-tick maxIterations (same safety limit as tasks)
-            bThreads.set({
-              maxIterations: createMaxIterationsThread('proactive'),
-            })
 
             if (sensors.length === 0) {
               // No sensors — update contributor with empty deltas, go to inference
