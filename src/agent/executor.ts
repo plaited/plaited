@@ -1,6 +1,6 @@
 /**
- * Transport executor factories — local-first tool execution, with optional
- * remote transports for modnet and external deployment contexts.
+ * Transport executor factories — local-first tool execution with A2A as the
+ * remote modnet transport.
  *
  * @remarks
  * Each factory returns a {@link ToolExecutor} closure that abstracts
@@ -8,19 +8,15 @@
  * without knowing whether execution is in-process or remote.
  *
  * Local execution is the primary path for the personal node runtime.
- * A2A remains part of the modnet story. SSH is retained as a secondary
- * transport for experiments and external deployment, but it is not part of
- * the core public runtime surface.
+ * A2A is the remote transport for modnet-to-modnet execution.
  *
  * @public
  */
 
-import { $ } from 'bun'
 import type { Task } from '../a2a/a2a.schemas.ts'
 import type {
   CreateA2AExecutorOptions,
   CreateLocalExecutorOptions,
-  CreateSshExecutorOptions,
   ToolExecutor,
 } from './agent.types.ts'
 
@@ -50,61 +46,6 @@ export const createLocalExecutor = ({ workspace, handlers }: CreateLocalExecutor
   }
 }
 
-// ============================================================================
-// SSH Executor — secondary remote transport, not part of the core surface
-// ============================================================================
-
-/**
- * Creates an SSH executor that runs tools on a remote machine via SSH.
- *
- * @remarks
- * Serializes the tool call arguments as JSON with `cwd` set to the remote
- * workspace path. Executes `bun run plaited <tool-name> <json>` on the
- * remote host via `Bun.$`. The CLI contract ensures consistent JSON in/out.
- *
- * SSH connection uses `StrictHostKeyChecking=accept-new` for TOFU
- * (Trust On First Use), consistent with the A2A known-peers trust model.
- *
- * Signal propagation: the abort signal is not forwarded. Killing the local
- * SSH process via Bun.$ subprocess management terminates the remote command.
- *
- * @param options - SSH connection details and remote workspace path
- * @returns A {@link ToolExecutor} that serializes tool calls over SSH
- *
- * @internal
- */
-export const createSshExecutor = ({
-  host,
-  port,
-  username,
-  privateKey,
-  workspace,
-}: CreateSshExecutorOptions): ToolExecutor => {
-  return async (toolCall, signal) => {
-    if (signal.aborted) throw new Error('Aborted before SSH execution')
-
-    const input = JSON.stringify({ ...toolCall.arguments, cwd: workspace })
-    const sshArgs = ['-o', 'StrictHostKeyChecking=accept-new']
-    if (privateKey) sshArgs.push('-i', privateKey)
-    if (port) sshArgs.push('-p', String(port))
-
-    const target = `${username}@${host}`
-    const remoteCmd = `bun run plaited ${toolCall.name} '${input.replace(/'/g, "'\\''")}'`
-
-    const result = await $`ssh ${sshArgs} ${target} ${remoteCmd}`.nothrow().quiet()
-
-    if (signal.aborted) throw new Error('Aborted during SSH execution')
-    if (result.exitCode === 2) {
-      throw new Error(`Invalid input for ${toolCall.name}: ${result.stderr.toString().trim()}`)
-    }
-    if (result.exitCode !== 0) {
-      throw new Error(result.stderr.toString().trim() || `Remote tool exited with code ${result.exitCode}`)
-    }
-    return JSON.parse(result.stdout.toString())
-  }
-}
-
-// ============================================================================
 // A2A Executor — remote tool execution via Agent-to-Agent protocol
 // ============================================================================
 

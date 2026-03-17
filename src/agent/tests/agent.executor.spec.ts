@@ -1,9 +1,8 @@
 /**
- * Tests for transport executor factories — local, SSH, and A2A.
+ * Tests for transport executor factories — local and A2A.
  *
  * @remarks
- * Local executor is tested with real handlers. SSH executor uses a local
- * mock script via Bun.spawn (no actual SSH). A2A executor uses a mock client.
+ * Local executor is tested with real handlers. A2A executor uses a mock client.
  */
 
 import { describe, expect, test } from 'bun:test'
@@ -11,7 +10,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Message, MessageSendParams, Task } from '../../a2a/a2a.schemas.ts'
 import type { A2AClient } from '../../a2a/a2a.types.ts'
-import { createA2AExecutor, createLocalExecutor, createSshExecutor } from '../executor.ts'
+import { createA2AExecutor, createLocalExecutor } from '../executor.ts'
 import type { AgentToolCall } from '../agent.schemas.ts'
 import type { ToolHandler } from '../agent.types.ts'
 
@@ -111,38 +110,6 @@ describe('createLocalExecutor', () => {
   })
 })
 
-// ============================================================================
-// SSH Executor
-// ============================================================================
-
-describe('createSshExecutor', () => {
-  test('constructs correct SSH command shape', () => {
-    // Verify the factory creates a function — integration testing
-    // requires actual SSH infrastructure
-    const executor = createSshExecutor({
-      host: 'node-1.local',
-      port: 2222,
-      username: 'agent',
-      privateKey: '/keys/id_ed25519',
-      workspace: '/remote/workspace',
-    })
-
-    expect(typeof executor).toBe('function')
-  })
-
-  test('includes cwd in serialized arguments', () => {
-    // Verify the JSON serialization includes cwd by testing the
-    // structure that would be sent (unit-level verification)
-    const toolCall = makeToolCall('read_file', { path: 'src/main.ts' })
-    const serialized = JSON.stringify({ ...toolCall.arguments, cwd: '/remote/workspace' })
-    const parsed = JSON.parse(serialized)
-
-    expect(parsed.path).toBe('src/main.ts')
-    expect(parsed.cwd).toBe('/remote/workspace')
-  })
-})
-
-// ============================================================================
 // A2A Executor
 // ============================================================================
 

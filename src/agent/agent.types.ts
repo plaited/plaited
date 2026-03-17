@@ -185,7 +185,7 @@ export type ToolHandler = (args: Record<string, unknown>, ctx: ToolContext) => P
  * Executes a tool call with transport abstraction.
  *
  * @remarks
- * The pluggability seam for local, SSH, and A2A tool execution.
+ * The pluggability seam for local and A2A tool execution.
  * Local executor calls handlers directly. Remote executors serialize
  * tool calls over the wire. Same tool code runs everywhere.
  *
@@ -208,24 +208,6 @@ export type ToolExecutor = (toolCall: AgentToolCall, signal: AbortSignal) => Pro
 export type CreateLocalExecutorOptions = {
   workspace: string
   handlers: Record<string, ToolHandler>
-}
-
-/**
- * Options for {@link createSshExecutor}.
- *
- * @remarks
- * Serializes tool calls as JSON and executes `bun run plaited <tool> <json>`
- * on a remote machine via SSH. Relies on the CLI contract (`makeCli`) where
- * every tool accepts JSON input with optional `cwd` and `timeout` fields.
- *
- * @public
- */
-export type CreateSshExecutorOptions = {
-  host: string
-  port?: number
-  username: string
-  privateKey?: string
-  workspace: string
 }
 
 /**
