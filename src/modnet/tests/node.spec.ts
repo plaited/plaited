@@ -13,8 +13,8 @@ import type { AgentCard, Task } from '../../a2a/a2a.schemas.ts'
 import { RISK_TAG } from '../../agent/agent.constants.ts'
 import type { ToolDefinition } from '../../agent/agent.schemas.ts'
 import type { Model, ModelDelta } from '../../agent/agent.types.ts'
-import { createNode } from '../node.ts'
-import type { NodeHandle } from '../node.types.ts'
+import { createNode } from '../create-node.ts'
+import type { NodeHandle } from '../modnet.types.ts'
 
 // ============================================================================
 // Mock Model — returns canned responses

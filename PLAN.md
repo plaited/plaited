@@ -2,7 +2,7 @@
 
 > **Goal:** Ship a personal agent node that a user can deploy on their own hardware, running a distilled model that generates MSS-compliant modules at runtime, monitors the environment proactively, and communicates through a generative UI — all governed by deterministic BP constraints.
 
-> **Framework status:** Complete. 1396 tests, 0 failures, 95 files. `createNode()` composes agent loop + server + A2A. The gap is generation quality and MSS comprehension, not framework code.
+> **Framework status:** Complete. 1441 tests, 0 failures, 96 files. `createNode()` composes agent loop + server + A2A. The gap is generation quality and MSS comprehension, not framework code.
 
 ---
 

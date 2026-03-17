@@ -22,7 +22,7 @@ import { createAgentLoop } from '../agent/create-agent-loop.ts'
 import type { MessageDetail } from '../agent/agent.types.ts'
 import { UI_ADAPTER_LIFECYCLE_EVENTS } from '../events.ts'
 import { createServer } from '../server/server.ts'
-import type { CreateNodeOptions, NodeHandle } from './node.types.ts'
+import type { CreateNodeOptions, NodeHandle } from './modnet.types.ts'
 
 /**
  * Creates a running modnet node: agent loop + HTTP/WS server + optional A2A.

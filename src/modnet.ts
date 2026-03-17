@@ -12,5 +12,5 @@
 
 export * from './modnet/modnet.constants.ts'
 export * from './modnet/modnet.utils.ts'
-export * from './modnet/node.ts'
-export type * from './modnet/node.types.ts'
+export * from './modnet/create-node.ts'
+export type * from './modnet/modnet.types.ts'
