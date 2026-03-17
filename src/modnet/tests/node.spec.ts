@@ -10,10 +10,11 @@
 import { afterAll, describe, expect, test } from 'bun:test'
 import { AGENT_CARD_PATH } from '../../a2a/a2a.constants.ts'
 import type { AgentCard, Task } from '../../a2a/a2a.schemas.ts'
-import { RISK_TAG } from '../../agent/agent.constants.ts'
+import { AGENT_EVENTS, RISK_TAG } from '../../agent/agent.constants.ts'
 import type { ToolDefinition } from '../../agent/agent.schemas.ts'
 import type { Model, ModelDelta } from '../../agent/agent.types.ts'
-import { createNode } from '../create-node.ts'
+import { UI_ADAPTER_LIFECYCLE_EVENTS } from '../../events.ts'
+import { createNode, createProactivePushHandlers } from '../create-node.ts'
 import type { NodeHandle } from '../modnet.types.ts'
 
 // ============================================================================
@@ -274,5 +275,49 @@ describe('createNode', () => {
     } catch {
       // Expected: connection refused
     }
+  })
+
+  test('proactive push handlers route to all active sessions and remove disconnected sessions', () => {
+    const sent: Array<{ topic: string; payload: string }> = []
+    const handlers = createProactivePushHandlers({
+      send(topic, payload) {
+        sent.push({ topic, payload })
+      },
+    })
+
+    handlers[UI_ADAPTER_LIFECYCLE_EVENTS.client_connected]({
+      sessionId: 'session-a',
+      source: 'document',
+      isReconnect: false,
+    })
+    handlers[UI_ADAPTER_LIFECYCLE_EVENTS.client_connected]({
+      sessionId: 'session-b',
+      source: 'document',
+      isReconnect: false,
+    })
+    handlers[AGENT_EVENTS.message]({
+      content: 'first proactive ping',
+      source: 'proactive',
+    })
+
+    expect(sent.map((entry) => entry.topic)).toEqual(['session-a', 'session-b'])
+
+    sent.length = 0
+
+    handlers[UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected]({
+      sessionId: 'session-a',
+      code: 1000,
+      reason: 'closed',
+    })
+    handlers[AGENT_EVENTS.message]({
+      content: 'second proactive ping',
+      source: 'proactive',
+    })
+
+    expect(sent.map((entry) => entry.topic)).toEqual(['session-b'])
+    expect(JSON.parse(sent[0]!.payload)).toEqual({
+      type: 'notification',
+      content: 'second proactive ping',
+    })
   })
 })

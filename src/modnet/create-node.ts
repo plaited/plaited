@@ -22,7 +22,42 @@ import { createAgentLoop } from '../agent/create-agent-loop.ts'
 import type { MessageDetail } from '../agent/agent.types.ts'
 import { UI_ADAPTER_LIFECYCLE_EVENTS } from '../events.ts'
 import { createServer } from '../server/server.ts'
+import type { ServerHandle } from '../server/server.types.ts'
 import type { CreateNodeOptions, NodeHandle } from './modnet.types.ts'
+
+type ProactivePushHandlers = {
+  [UI_ADAPTER_LIFECYCLE_EVENTS.client_connected]: (detail: unknown) => void
+  [UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected]: (detail: unknown) => void
+  [AGENT_EVENTS.message]: (detail: unknown) => void
+}
+
+/**
+ * Creates the event handlers that fan proactive agent messages out to every
+ * currently connected UI session.
+ *
+ * @internal
+ */
+export const createProactivePushHandlers = (server: Pick<ServerHandle, 'send'>): ProactivePushHandlers => {
+  const activeSessionIds = new Set<string>()
+
+  return {
+    [UI_ADAPTER_LIFECYCLE_EVENTS.client_connected](detail: unknown) {
+      activeSessionIds.add((detail as { sessionId: string }).sessionId)
+    },
+    [UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected](detail: unknown) {
+      activeSessionIds.delete((detail as { sessionId: string }).sessionId)
+    },
+    [AGENT_EVENTS.message](detail: unknown) {
+      const msg = detail as MessageDetail
+      if (msg.source !== 'proactive') return
+
+      const payload = JSON.stringify({ type: 'notification', content: msg.content })
+      for (const sessionId of activeSessionIds) {
+        server.send(sessionId, payload)
+      }
+    },
+  }
+}
 
 /**
  * Creates a running modnet node: agent loop + HTTP/WS server + optional A2A.
@@ -179,21 +214,7 @@ export const createNode = async ({
 
   // ── Proactive push routing ───────────────────────────────────────────────
   // Track active session for routing proactive messages to WebSocket clients
-  let activeSessionId: string | undefined
-  const pushDisconnect = agent.subscribe({
-    [UI_ADAPTER_LIFECYCLE_EVENTS.client_connected](detail: unknown) {
-      activeSessionId = (detail as { sessionId: string }).sessionId
-    },
-    [UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected]() {
-      activeSessionId = undefined
-    },
-    [AGENT_EVENTS.message](detail: unknown) {
-      const msg = detail as MessageDetail
-      if (msg.source === 'proactive' && activeSessionId) {
-        server.send(activeSessionId, JSON.stringify({ type: 'notification', content: msg.content }))
-      }
-    },
-  })
+  const pushDisconnect = agent.subscribe(createProactivePushHandlers(server))
 
   // ── Destroy ─────────────────────────────────────────────────────────────
   const destroy = () => {
