@@ -1,5 +1,5 @@
-import type { ModelUsage, ToolDefinition } from '../agent.schemas.ts'
-import type { Model, ModelDelta } from '../agent.types.ts'
+import type { ModelUsage, ToolDefinition } from './agent.schemas.ts'
+import type { Model, ModelDelta } from './agent.types.ts'
 
 /**
  * Configuration for an OpenAI-compatible inference backend.

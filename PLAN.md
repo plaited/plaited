@@ -241,11 +241,13 @@ Successful generation trajectories from Phases 4-6 ARE the SFT training data. No
 - Deleted: `module-grader.ts`, `proactive-grader.ts`, `bthread-trial.ts` (regex graders)
 - Deleted: 6 old calibration/collection scripts
 - Moved: `run-eval.ts` and `git-experiment.ts` from `scripts/` to `src/tools/`
-- tsc clean, 1371 tests pass
+- Deleted: `src/agent/models/` vendor wrappers (anthropic.ts, gemini.ts, models.ts barrel) — vendor lock-in in framework
+- Moved: `openai-compat.ts` up to `src/agent/openai-compat.ts` (pure fetch, no SDK — the vendor-agnostic Model impl)
+- Deleted: `src/agent/sensors/git.ts` — git is a tool the agent calls, not a framework sensor
+- tsc clean, 1398 tests pass
 
 ### Still Needed
-- `src/tools/judge.ts` → refactor to accept `Model` interface, drop Anthropic import
-- `src/agent/sensors/git.ts` → move to skill reference (deployment-specific, not framework)
+- `src/tools/judge.ts` → refactor to use Gemini CLI (`Bun.$`) for judge, drop Anthropic SDK import
 - `src/a2a/a2a.schemas.ts` → add `AgentExtension`, `inputModes`/`outputModes` on `AgentSkill`
 - Process `Structural-IA.md` + `Modnet.md` → queryable form (JSON-LD or structured distillation)
 - Write MSS comprehension test prompts (20 descriptions with reference MSS tags)

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import type { ModelDelta } from '../../agent.types.ts'
+import type { ModelDelta } from '../agent.types.ts'
 import { createOpenAICompatModel } from '../openai-compat.ts'
 
 // ── Helpers ──────────────────────────────────────────────────────────
