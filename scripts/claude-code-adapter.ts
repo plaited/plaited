@@ -54,10 +54,14 @@ const MODULE_SYSTEM_PROMPT = `You are generating a modnet module. Create a compl
 
 ## UI Library
 
-For any UI rendering, use the plaited template system:
-- Import \`{ h, Fragment }\` from the template module for JSX-like HTML generation
-- Use \`createSSR()\` for server-side rendering
-- Templates use \`h('tag', { attrs }, ...children)\` syntax
+For UI rendering, use whichever HTML generation approach you prefer:
+- **Option A (simple)**: Return an HTML string directly with template literals
+- **Option B (plaited)**: Use \`import { h, Fragment, createSSR } from 'plaited'\`
+  - h(tag, attrs) — EXACTLY 2 args; children go as \`{ children: [...] }\` inside attrs
+  - h('div', { class: 'x', children: [h('span', { children: ['text'] })] })
+  - style must be an object: \`{ style: { backgroundColor: 'blue' } }\` NOT \`{ style: 'color: red' }\`
+- Prefer Option A (HTML strings) unless you specifically need the plaited SSR system
+- Example Option A: \`const renderPage = (data: MyData): string => \`<div>\${data.title}</div>\`\`
 - Use \`p-trigger\` attribute for event binding, \`p-target\` for element targeting
 - CSS: use style objects, not CSS strings
 
