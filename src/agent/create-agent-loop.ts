@@ -350,6 +350,44 @@ export const createAgentLoop = async ({
     })
   }
 
+  const recordAssistantResponse = (parsed: ModelResponseDetail['parsed']) => {
+    if (parsed.toolCalls.length > 0) {
+      history.push({
+        role: 'assistant',
+        content: parsed.message,
+        tool_calls: parsed.toolCalls.map((tc) => ({
+          id: tc.id,
+          function: { name: tc.name, arguments: JSON.stringify(tc.arguments) },
+        })),
+      })
+      return
+    }
+
+    if (parsed.message) {
+      history.push({ role: 'assistant', content: parsed.message })
+    }
+  }
+
+  const requestToolContexts = (toolCalls: ModelResponseDetail['parsed']['toolCalls']) => {
+    for (const toolCall of toolCalls) {
+      trigger({ type: AGENT_EVENTS.context_ready, detail: { toolCall } satisfies ContextReadyDetail })
+    }
+  }
+
+  const installBatchCompletion = (count: number) => {
+    bThreads.set({
+      batchCompletion: bThread([
+        ...Array.from({ length: count }, () =>
+          bSync({ waitFor: isCompletionEvent, interrupt: [AGENT_EVENTS.message] }),
+        ),
+        bSync({
+          request: { type: AGENT_EVENTS.invoke_inference },
+          interrupt: [AGENT_EVENTS.message],
+        }),
+      ]),
+    })
+  }
+
   // ── Warm layer: load session meta for context orientation ──────────────
   const initialMeta = await loadSessionMeta(memoryPath, sessionId)
   const sessionSummary: SessionSummaryContributor = createSessionSummaryContributor(initialMeta)
@@ -577,47 +615,14 @@ export const createAgentLoop = async ({
     [AGENT_EVENTS.model_response](detail: unknown) {
       const { parsed } = detail as ModelResponseDetail
 
-      // Add assistant message to history
-      if (parsed.toolCalls.length > 0) {
-        history.push({
-          role: 'assistant',
-          content: parsed.message,
-          tool_calls: parsed.toolCalls.map((tc) => ({
-            id: tc.id,
-            function: { name: tc.name, arguments: JSON.stringify(tc.arguments) },
-          })),
-        })
-      } else if (parsed.message) {
-        history.push({ role: 'assistant', content: parsed.message })
-      }
+      recordAssistantResponse(parsed)
 
       if (parsed.toolCalls.length > 0) {
         // Batch completion MUST be set before triggers — BP trigger() is synchronous
-        bThreads.set({
-          batchCompletion: bThread([
-            ...Array.from({ length: parsed.toolCalls.length }, () =>
-              bSync({ waitFor: isCompletionEvent, interrupt: [AGENT_EVENTS.message] }),
-            ),
-            bSync({
-              request: { type: AGENT_EVENTS.invoke_inference },
-              interrupt: [AGENT_EVENTS.message],
-            }),
-          ]),
-        })
-
-        // Per tool call → context_ready
-        for (const toolCall of parsed.toolCalls) {
-          trigger({ type: AGENT_EVENTS.context_ready, detail: { toolCall } satisfies ContextReadyDetail })
-        }
+        installBatchCompletion(parsed.toolCalls.length)
+        requestToolContexts(parsed.toolCalls)
       } else if (parsed.message) {
-        // Text-only response → message (task complete)
-        trigger({
-          type: AGENT_EVENTS.message,
-          detail: {
-            content: parsed.message,
-            ...(isProactiveCycle && { source: 'proactive' as const }),
-          } satisfies MessageDetail,
-        })
+        emitMessage(parsed.message)
       }
     },
 
