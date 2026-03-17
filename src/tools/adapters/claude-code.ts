@@ -78,13 +78,20 @@ entertainment, education, geo, weather, news, commerce, produce
 
 **structure** — choose by information pattern:
 - \`object\`: single display item (weather reading, color palette, one artwork)
-- \`list\`: ordered items (playlists, reading lists — order matters)
-- \`collection\`: unordered group (portfolios, inventories, expense categories — no inherent order)
-- \`form\`: user input/creation (editors, calculators, chart generators — single mode, primary action is input)
-- \`steps\`: multi-page flow (calendar day/month views, wizards, multi-mode simulators — distinct views of same data)
+- \`list\`: ordered items where order/sequence matters — playlists, reading lists, meal logs, activity logs, habit trackers, expense logs, crypto trackers, code snippets (any time-ordered or user-sequenced record)
+- \`collection\`: unordered group — portfolios, inventories, quiz banks, recipe collections (no inherent order; user browses by category, not sequence)
+- \`form\`: user input/creation — editors, calculators, chart generators, color palettes (single mode, primary action is input/creation)
+- \`steps\`: multi-page flow — calendar day/month views, wizards, multi-mode simulators with distinct navigation tabs (explicitly multiple screens of the SAME data, not just a list of records)
 - \`stream\`: chronological messages (chat rooms — time-ordered, append-only)
 - \`thread\`: nested replies (forums, Reddit — hierarchical discussion)
 - \`feed\`: algorithm-sorted (social feeds — ranked by relevance)
+
+## Large Data Sets
+
+For modules requiring large static datasets (e.g., periodic table elements, world countries, currencies, emoji lists):
+- Write the data as a **JSON file** in \`data/<name>.json\` — do NOT hardcode as TypeScript constants
+- Keep TypeScript source files thin: just load the JSON with \`Bun.file('data/<name>.json').json()\`
+- This keeps TypeScript files short and avoids running out of time writing inline data
 
 ## Rules
 - Write ALL files to the current working directory

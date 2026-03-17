@@ -119,7 +119,7 @@ const main = async () => {
       k: 1,
       outputPath: moduleOutputPath,
       progress: true,
-      timeout: 300_000,
+      timeout: 600_000,
       concurrency: 1,
       workspaceDir: MODULE_WORKSPACE,
     })
