@@ -6,7 +6,7 @@
  * @remarks
  * Provides the keep/discard pattern from autoresearch:
  * - `commitExperiment(description)` — stages and commits, returns short SHA
- * - `discardExperiment()` — reverts the last commit (hard reset)
+ * - `discardExperiment()` — safely reverts the last commit
  * - `logExperiment(entry)` — appends a JSONL line to the experiments log
  * - `loadExperiments()` — reads the cumulative experiments log
  *
@@ -65,22 +65,20 @@ export const commitExperiment = async (description: string): Promise<string> => 
   await $`git add -A`.cwd(PROJECT_ROOT).quiet()
   await $`git commit -m ${{ raw: `experiment: ${description}` }}`.cwd(PROJECT_ROOT).quiet()
   const result = await $`git rev-parse --short HEAD`.cwd(PROJECT_ROOT).quiet()
-  const sha = result.text().trim()
-  await $`git push`.cwd(PROJECT_ROOT).nothrow().quiet()
-  return sha
+  return result.text().trim()
 }
 
 /**
- * Discard the last commit (hard reset to HEAD~1).
+ * Discard the last experiment commit by reverting it.
  *
  * @remarks
- * Only call this after a failed experiment — it destroys the last commit.
+ * Uses `git revert --no-edit` instead of history-rewriting commands.
+ * This is safe for shared branches and preserves experiment lineage.
  *
  * @public
  */
 export const discardExperiment = async (): Promise<void> => {
-  await $`git reset --hard HEAD~1`.cwd(PROJECT_ROOT).quiet()
-  await $`git push --force-with-lease`.cwd(PROJECT_ROOT).nothrow().quiet()
+  await $`git revert --no-edit HEAD`.cwd(PROJECT_ROOT).quiet()
 }
 
 // ============================================================================
@@ -92,7 +90,9 @@ export const discardExperiment = async (): Promise<void> => {
  *
  * @remarks
  * Creates the log file and parent directories if they don't exist.
- * Uses `appendFileSync` for atomic single-line appends.
+ * Uses `appendFileSync` for atomic single-line appends. Logging does not
+ * create git commits automatically — experiment orchestration decides when
+ * a result is worth checkpointing.
  *
  * @public
  */
@@ -101,12 +101,6 @@ export const logExperiment = async (entry: ExperimentEntry): Promise<void> => {
   await $`mkdir -p ${dir}`.quiet()
   const line = `${JSON.stringify(entry)}\n`
   appendFileSync(EXPERIMENTS_LOG, line)
-  // Commit and push the log entry so the research record is durably checkpointed
-  // after every experiment — even if the session ends unexpectedly mid-loop.
-  const msg = `chore: log experiment — ${entry.description.slice(0, 72)}`
-  await $`git add ${EXPERIMENTS_LOG}`.cwd(PROJECT_ROOT).quiet()
-  await $`git commit -m ${msg}`.cwd(PROJECT_ROOT).nothrow().quiet()
-  await $`git push`.cwd(PROJECT_ROOT).nothrow().quiet()
 }
 
 /**

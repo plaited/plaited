@@ -1,14 +1,16 @@
 /**
- * Transport executor factories — local, SSH, and A2A tool execution.
+ * Transport executor factories — local-first tool execution, with optional
+ * remote transports for modnet and external deployment contexts.
  *
  * @remarks
  * Each factory returns a {@link ToolExecutor} closure that abstracts
  * the transport layer. The agent loop calls `toolExecutor(toolCall, signal)`
- * without knowing whether execution is in-process, over SSH, or via A2A.
+ * without knowing whether execution is in-process or remote.
  *
- * The CLI contract (`makeCli` in `cli.utils.ts`) ensures every tool accepts
- * JSON input with `cwd` and `timeout` fields, making remote execution
- * straightforward: serialize → transport → `bun run plaited <tool> <json>` → parse.
+ * Local execution is the primary path for the personal node runtime.
+ * A2A remains part of the modnet story. SSH is retained as a secondary
+ * transport for experiments and external deployment, but it is not part of
+ * the core public runtime surface.
  *
  * @public
  */
@@ -49,7 +51,7 @@ export const createLocalExecutor = ({ workspace, handlers }: CreateLocalExecutor
 }
 
 // ============================================================================
-// SSH Executor — remote tool execution over SSH
+// SSH Executor — secondary remote transport, not part of the core surface
 // ============================================================================
 
 /**
@@ -69,7 +71,7 @@ export const createLocalExecutor = ({ workspace, handlers }: CreateLocalExecutor
  * @param options - SSH connection details and remote workspace path
  * @returns A {@link ToolExecutor} that serializes tool calls over SSH
  *
- * @public
+ * @internal
  */
 export const createSshExecutor = ({
   host,

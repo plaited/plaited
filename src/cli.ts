@@ -90,7 +90,7 @@ Commands:
     ingest-skill, ingest-rules, discover-skills,
     typescript-lsp
 
-  ACP (Editor Transport):
+  ACP (Internal Control Surface):
     acp [--node <name>]`)
   process.exit(command ? 0 : 1)
 }

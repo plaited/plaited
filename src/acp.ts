@@ -1,17 +1,15 @@
 #!/usr/bin/env bun
 
 /**
- * ACP (Agent Client Protocol) entry point for Plaited nodes.
+ * ACP (Agent Client Protocol) entry point for privileged control surfaces.
  *
  * @remarks
- * Provides a debug/admin viewport into any Plaited node running on
- * the current box. An admin SSHs into the box via their editor
- * (Zed, VS Code Remote), then runs `plaited acp --node <name>`
- * to ACP into any node — observing all BP events, A2A traffic,
- * and interacting with the node.
+ * Provides a debug/admin viewport into a running node. This is treated as
+ * an internal control surface rather than a core runtime primitive. It may
+ * later become a privileged modnet module.
  *
- * ACP is a control UI transport — like WebSocket for browsers,
- * ACP is for editors. Both bridge to the same AgentNode interface.
+ * ACP is a control UI transport — like WebSocket for browsers, ACP is for
+ * editors and admin tooling. Both bridge to the same AgentNode interface.
  *
  * @internal
  */
