@@ -230,6 +230,32 @@ Successful generation trajectories from Phases 4-6 ARE the SFT training data. No
 
 ---
 
+## Part 5: Skill Calibration Schedule
+
+Skills containing hand-written implementation guidance need autoresearch calibration — regenerated from actual code + validated against experiments. The `mss-vocabulary` calibration (Phase 1) is the template: run the loop, measure accuracy, iterate on content, keep or discard.
+
+**Status key:** `frozen` = written once, not validated. `calibrating` = in active autoresearch loop. `varlock` was removed as premature — regenerate via autoresearch when `.env.schema` patterns are implemented.
+
+| Skill | Calibrate At | Depends On | Status |
+|---|---|---|---|
+| `mss-vocabulary` | **Phase 1** (now) | MSS classification prompts + deterministic grader | `calibrating` |
+| `modnet-node` | Phase 2–3 | MSS skeleton + composition working | `frozen` |
+| `behavioral-core` | Phase 4 | Agent loop boots, BP patterns validated by tests | `frozen` |
+| `agent-loop` | Phase 4 | Layered boot passes all gates | `frozen` |
+| `constitution` | Phase 4 | Gate predicates + MAC/DAC rules exercised in boot | `frozen` |
+| `generative-ui` | Phase 5 | Runtime module generation renders via Playwright | `frozen` |
+| `hypergraph-memory` | Phase 4–5 | Memory read/write exercised in real agent sessions | `frozen` |
+| `hypergraph-recall` | Phase 5–6 | Semantic search over real hypergraph data | `frozen` |
+| `training-pipeline` | Phase 7 | First training checkpoint validates the pipeline | `frozen` |
+| `proactive-node` | Phase 6 | Sensor sweep + goal triggers working end-to-end | `frozen` |
+| `project-isolation` | Post-deploy | Multi-project subprocess coordination tested | `frozen` |
+| `node-auth` | Post-deploy | Auth wired into createServer, tested against real clients | `frozen` |
+| ~~`varlock`~~ | Post-deploy | `.env.schema` patterns implemented, regenerate from search-varlock-docs | `removed` |
+
+**Infrastructure skills (13) and meta/process skills (7) are stable** — thin wrappers and coding conventions don't need autoresearch calibration.
+
+---
+
 ## Scripts
 
 | Script | What it does |
