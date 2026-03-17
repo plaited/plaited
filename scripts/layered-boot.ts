@@ -57,7 +57,7 @@ type TrialResult = {
 const PROJECT_ROOT = `${import.meta.dir}/..`
 const PROMPTS_PATH = `${import.meta.dir}/assets/autoresearch-prompts.jsonl`
 const RESULTS_DIR = `${PROJECT_ROOT}/.memory/evals`
-const DEFAULT_ALLOWED_PREFIXES = ['scripts/', 'src/agent/', 'src/tools/', 'src/modnet/', 'src/a2a/', 'src/events/']
+const DEFAULT_ALLOWED_PREFIXES = ['scripts/', 'src/agent/', 'src/improve/', 'src/modnet/', 'src/a2a/', 'src/events/']
 
 const args = process.argv.slice(2)
 
