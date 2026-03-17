@@ -35,13 +35,13 @@ import {
   systemPromptContributor,
   toolsContributor,
   trimHistory,
-} from './agent.context.ts'
-import { evaluate } from './agent.evaluate.ts'
-import type { ConstitutionFactory, GoalFactory } from './agent.factories.ts'
-import { type ConstitutionPredicate, composedGateCheck } from './agent.gate.ts'
-import { isEtcWrite, isForcePush, isGovernanceModification, isRmRf } from './agent.governance.ts'
+} from './context.ts'
+import { evaluate } from './evaluate.ts'
+import type { ConstitutionFactory, GoalFactory } from './factories.ts'
+import { type ConstitutionPredicate, composedGateCheck } from './gate.ts'
+import { isEtcWrite, isForcePush, isGovernanceModification, isRmRf } from './governance.ts'
 import type { ToolDefinition } from './agent.schemas.ts'
-import { simulate } from './agent.simulate.ts'
+import { simulate } from './simulate.ts'
 import type {
   AgentNode,
   ChatMessage,

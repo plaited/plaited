@@ -11,7 +11,7 @@
 import { afterAll, describe, expect, test } from 'bun:test'
 import { UI_ADAPTER_LIFECYCLE_EVENTS } from '../../events.ts'
 import { AGENT_EVENTS, RISK_TAG } from '../agent.constants.ts'
-import { createAgentLoop } from '../agent.loop.ts'
+import { createAgentLoop } from '../create-agent-loop.ts'
 import type { ToolDefinition } from '../agent.schemas.ts'
 import type { AgentNode, MessageDetail, Model, ModelDelta } from '../agent.types.ts'
 

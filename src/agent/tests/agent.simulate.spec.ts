@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { AgentToolCall, ChatMessage, Model } from 'plaited'
-import { parsePrediction, STATE_TRANSITION_PROMPT, simulate } from '../agent.simulate.ts'
+import { parsePrediction, STATE_TRANSITION_PROMPT, simulate } from '../simulate.ts'
 
 // ============================================================================
 // Mock Model factory

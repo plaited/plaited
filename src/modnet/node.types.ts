@@ -1,7 +1,7 @@
 import type { TLSOptions } from 'bun'
 import type { AgentCard } from '../a2a/a2a.schemas.ts'
 import type { CreateA2AHandlerOptions } from '../a2a/a2a.types.ts'
-import type { ConstitutionFactory, GoalFactory } from '../agent/agent.factories.ts'
+import type { ConstitutionFactory, GoalFactory } from '../agent/factories.ts'
 import type { HeartbeatHandle } from '../agent/proactive.ts'
 import type { ToolDefinition } from '../agent/agent.schemas.ts'
 import type { AgentNode, Indexer, Model, SensorFactory, ToolExecutor } from '../agent/agent.types.ts'

@@ -6,7 +6,7 @@ import {
   evaluateNeural,
   evaluateSymbolic,
   NEURAL_SCORE_THRESHOLD,
-} from '../agent.evaluate.ts'
+} from '../evaluate.ts'
 
 // ============================================================================
 // Mock Model factory

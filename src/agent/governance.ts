@@ -1,6 +1,6 @@
 import { bSync, bThread } from '../behavioral/behavioral.utils.ts'
 import { AGENT_EVENTS, BUILT_IN_TOOLS } from './agent.constants.ts'
-import { type ConstitutionFactory, createConstitution } from './agent.factories.ts'
+import { type ConstitutionFactory, createConstitution } from './factories.ts'
 import type { AgentToolCall } from './agent.schemas.ts'
 
 // ============================================================================

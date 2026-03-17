@@ -323,7 +323,7 @@ sensor_delta. Same proactive pipeline, different data source.
 - src/server/server.ts — message handler extension
 - src/server/server.schemas.ts — ClientMessageSchema extension
 - src/agent/agent.types.ts — ClientSensorFactory type
-- src/agent/agent.loop.ts — proactive config extension
+- src/agent/create-agent-loop.ts — proactive config extension
 - skills/agent-loop/references/sensor-patterns.md — pattern update
 
 ## Constraints

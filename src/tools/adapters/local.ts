@@ -12,7 +12,7 @@
  */
 
 import { AGENT_EVENTS } from '../../agent/agent.constants.ts'
-import { type CreateAgentLoopOptions, createAgentLoop } from '../../agent/agent.loop.ts'
+import { type CreateAgentLoopOptions, createAgentLoop } from '../../agent/create-agent-loop.ts'
 import type { ToolDefinition } from '../../agent/agent.schemas.ts'
 import type { MessageDetail, Model, ToolExecutor, ToolResultDetail } from '../../agent/agent.types.ts'
 import { UI_ADAPTER_LIFECYCLE_EVENTS } from '../../events.ts'

@@ -11,7 +11,7 @@ import {
   isGoalFactory,
   isWorkflowFactory,
   type WorkflowFactory,
-} from '../agent.factories.ts'
+} from '../factories.ts'
 
 // ============================================================================
 // Factory Branding

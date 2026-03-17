@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Message, MessageSendParams, Task } from '../../a2a/a2a.schemas.ts'
 import type { A2AClient } from '../../a2a/a2a.types.ts'
-import { createA2AExecutor, createLocalExecutor, createSshExecutor } from '../agent.executor.ts'
+import { createA2AExecutor, createLocalExecutor, createSshExecutor } from '../executor.ts'
 import type { AgentToolCall } from '../agent.schemas.ts'
 import type { ToolHandler } from '../agent.types.ts'
 

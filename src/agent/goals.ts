@@ -16,7 +16,7 @@
 
 import { join, resolve } from 'node:path'
 import { type ThreadValidationResult, validateThreadFactory } from '../tools/validate-thread.ts'
-import { type GoalFactory, isGoalFactory } from './agent.factories.ts'
+import { type GoalFactory, isGoalFactory } from './factories.ts'
 
 // ============================================================================
 // MAC Protection
