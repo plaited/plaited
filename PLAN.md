@@ -141,6 +141,23 @@ Test two modules that must connect — scale nesting, boundary cascade, dependen
 - **Variable:** all MSS-related skills
 - **Metric:** composition validity rate
 
+### Phase 3.5: Multimodal Tool Implementations
+
+Build the `ToolDefinition` + `ToolExecutor` wiring that lets Falcon invoke embedding, vision, and voice as tool calls. These must exist before Phase 4 (boot requires tools to be registered in the agent loop).
+
+| Tool | Interface | Backend | What it does |
+|---|---|---|---|
+| `embed_search` | `Indexer.embed()` | EmbeddingGemma via MLX/vLLM | Semantic search over hypergraph memory. Cosine similarity on 768-dim vectors. |
+| `analyze_image` | `Vision.analyze()` | Qwen 2.5 VL via MLX-VLM/vLLM | Image/video → structured description. Object localization, OCR. |
+| `speak` | `Voice.speak()` | Qwen3-TTS via MLX-Audio/vLLM-Omni | Text → speech audio. Voice cloning, streaming. |
+
+**Also needed:**
+- MLX server wrappers for each model (similar to `scripts/falcon-mlx-server.ts`)
+- OpenAI-compatible endpoint adapters for each interface
+- Integration tests: tool_call → tool_result round-trip through the agent loop
+
+**Gate:** All three tools callable via `createAgentLoop()` with mock and real backends.
+
 ### Phase 4: Layered Boot (Variant 4)
 
 Progressive: MSS classification → skeleton → implementation → boot → judge.
@@ -292,6 +309,9 @@ Phase 3: MSS composition tests
     Trajectories from Phases 1–3 → LoRA on MSS comprehension
     Quantize → evaluate student → measure gap
 ─────────────────────────────────────────────────────────────
+    ↓
+Phase 3.5: Multimodal tool implementations
+    (embed_search, analyze_image, speak → ToolExecutor wiring)
     ↓
 Phase 4: Layered boot (progressive gates)
     ↓
