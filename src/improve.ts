@@ -33,10 +33,12 @@ export {
 } from './improve/training.schemas.ts'
 
 export {
+  type TrainingDataCandidate,
   type AssessTrainingCaptureOptions,
   type AssessTrainingCandidateOptions,
   assessTrainingCapture,
   assessTrainingCandidate,
+  collectTrainingCandidates,
   computeTrainingWeight,
   scoreTrainingDimensions,
   trainingScoreCli,

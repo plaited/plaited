@@ -20,7 +20,7 @@ import {
   TrainingScoreInputSchema,
   TrainingScoreOutputSchema,
 } from './training.schemas.ts'
-import type { Grader, GradingDimensions, TrajectoryRichness, TrialEntry } from './trial.schemas.ts'
+import type { Grader, GradingDimensions, TrajectoryRichness, TrialEntry, TrialResult } from './trial.schemas.ts'
 import { detectRichness, hasToolErrors } from './trial.utils.ts'
 
 // ============================================================================
@@ -83,6 +83,23 @@ export type AssessTrainingCaptureOptions = {
   trial: Pick<TrialEntry, 'trajectory' | 'timedOut' | 'exitCode'>
   minRichness?: Exclude<TrajectoryRichness, 'minimal'>
   allowToolErrors?: boolean
+}
+
+/**
+ * Extracted training candidate from a graded trial result.
+ *
+ * @public
+ */
+export type TrainingDataCandidate = {
+  id: string
+  input: string | string[]
+  output: string
+  trialNum: number
+  trajectory: NonNullable<TrialEntry['trajectory']>
+  assessment: TrainingCandidateAssessment
+  dimensions?: GradingDimensions
+  outcome?: TrialEntry['outcome']
+  metadata?: TrialResult['metadata']
 }
 
 /**
@@ -157,6 +174,37 @@ export const assessTrainingCapture = ({
     reasons: [...reasons],
   }
 }
+
+/**
+ * Collect training-ready trajectories from trial results.
+ *
+ * @remarks
+ * This is the selection boundary between trial execution and dataset writing.
+ * Only trials already marked `trainingAssessment.eligible === true` are kept,
+ * and trajectories are required so downstream code receives concrete data
+ * instead of having to re-check nullable fields.
+ *
+ * @public
+ */
+export const collectTrainingCandidates = (results: TrialResult[]): TrainingDataCandidate[] =>
+  results.flatMap((result) =>
+    result.trials.flatMap((trial) => {
+      if (!trial.trainingAssessment?.eligible) return []
+      if (!trial.trajectory) return []
+
+      return [{
+        id: result.id,
+        input: result.input,
+        output: trial.output,
+        trialNum: trial.trialNum,
+        trajectory: trial.trajectory,
+        assessment: trial.trainingAssessment,
+        ...(trial.dimensions && { dimensions: trial.dimensions }),
+        ...(trial.outcome && { outcome: trial.outcome }),
+        ...(result.metadata && { metadata: result.metadata }),
+      }]
+    }),
+  )
 
 // ============================================================================
 // Statistical Meta-Verification

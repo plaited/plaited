@@ -21,6 +21,7 @@ import {
 import {
   assessTrainingCapture,
   assessTrainingCandidate,
+  collectTrainingCandidates,
   computeTrainingWeight,
   scoreTrainingDimensions,
   withStatisticalVerification,
@@ -287,6 +288,79 @@ describe('assessTrainingCapture', () => {
 
   test('schema validates capture reasons', () => {
     expect(() => TrainingCaptureReasonSchema.parse('tool_error')).not.toThrow()
+  })
+})
+
+// ============================================================================
+// collectTrainingCandidates
+// ============================================================================
+
+describe('collectTrainingCandidates', () => {
+  test('returns only eligible trials with trajectories', () => {
+    const candidates = collectTrainingCandidates([
+      {
+        id: 'kept',
+        input: 'Prompt',
+        k: 2,
+        metadata: { source: 'eval' },
+        trials: [
+          {
+            trialNum: 1,
+            output: 'Good output',
+            duration: 10,
+            trajectory: [
+              { type: 'thought', content: 'Plan', timestamp: 1 },
+              { type: 'message', content: 'Done', timestamp: 2 },
+            ],
+            dimensions: { outcome: 0.9, process: 0.8 },
+            trainingAssessment: {
+              eligible: true,
+              richness: 'full',
+              score: { outcome: 0.9, process: 0.8, overall: 0.72 },
+              weight: 0.72,
+              reasons: [],
+            },
+          },
+          {
+            trialNum: 2,
+            output: 'Rejected output',
+            duration: 12,
+            trajectory: [{ type: 'message', content: 'Nope', timestamp: 3 }],
+            trainingAssessment: {
+              eligible: false,
+              richness: 'messages-only',
+              weight: 0,
+              reasons: ['failed_grade'],
+            },
+          },
+        ],
+      },
+      {
+        id: 'missing-trajectory',
+        input: 'Prompt 2',
+        k: 1,
+        trials: [
+          {
+            trialNum: 1,
+            output: 'No trajectory',
+            duration: 8,
+            trainingAssessment: {
+              eligible: true,
+              richness: 'full',
+              weight: 0.9,
+              reasons: [],
+            },
+          },
+        ],
+      },
+    ])
+
+    expect(candidates).toHaveLength(1)
+    expect(candidates[0]!.id).toBe('kept')
+    expect(candidates[0]!.trialNum).toBe(1)
+    expect(candidates[0]!.trajectory).toHaveLength(2)
+    expect(candidates[0]!.assessment.weight).toBeCloseTo(0.72, 10)
+    expect(candidates[0]!.metadata).toEqual({ source: 'eval' })
   })
 })
 
