@@ -58,3 +58,7 @@ notes.md
 # SFT distillation artifacts (too large for git — back up externally)
 trajectories/
 training-data/
+
+# Python venv (MLX inference)
+.venv/
+__pycache__/
