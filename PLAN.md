@@ -254,6 +254,18 @@ Skills containing hand-written implementation guidance need autoresearch calibra
 
 **Infrastructure skills (13) and meta/process skills (7) are stable** — thin wrappers and coding conventions don't need autoresearch calibration.
 
+### Post-Distillation: Skill Reduction
+
+Once the distilled model passes evaluation across all phases, implementation skills become redundant — their knowledge is in the weights, not the context window. Target state:
+
+| Category | Current | Post-distillation |
+|---|---|---|
+| Infrastructure (MCP wrappers, search, CLI tools) | 13 | **Keep** — tool access, not knowledge |
+| Meta/Process (conventions, eval methodology) | 7 | **Keep** (slim down) — enforce standards |
+| Implementation guidance | 11 | **Remove** — knowledge is in weights |
+
+This cuts ~11 skills and their `references/` directories from the context window (~60–70% token reduction). The distilled model doesn't need a 500-line skill explaining the agent loop it was trained on.
+
 ---
 
 ## Scripts
