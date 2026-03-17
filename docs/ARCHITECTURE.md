@@ -84,6 +84,20 @@ All reference models run on both MLX (Apple Silicon) and vLLM (CUDA/cloud):
 
 When switching hardware, swap the inference server — not the framework code. The adapter contract (OpenAI-compatible `/v1/` endpoints) is the stable boundary.
 
+### Tools over Interfaces
+
+Embedding, vision, and voice are exposed to the reasoning model as **tools** — `ToolDefinition` entries that Falcon H1R invokes via standard `tool_call` events. The typed interfaces (`Indexer`, `Vision`, `Voice`) sit behind the `ToolExecutor`, providing backend abstraction:
+
+```
+Agent Loop (Falcon H1R)
+    │
+    ├─ tool_call: "embed_search"  → ToolExecutor → Indexer.embed()
+    ├─ tool_call: "analyze_image" → ToolExecutor → Vision.analyze()
+    └─ tool_call: "speak"         → ToolExecutor → Voice.speak()
+```
+
+This design makes capabilities **observable** (tool calls appear in trajectories for SFT training), **gateable** (BP can block any tool call), and **trainable** (the model learns *when* to invoke each capability, not just *how*).
+
 ## Key Design Principles
 
 - **Framework, Not Platform:** Composable primitives. Code via npm, models via Hugging Face. Platforms are built with it, not by it.

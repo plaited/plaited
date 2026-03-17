@@ -83,8 +83,11 @@ export type Model = {
  * Embedding model interface — text to vector.
  *
  * @remarks
- * Infrastructure called by handlers, NOT a tool call.
- * Perception (input processing), no side effects, no safety gating.
+ * Tool-backing interface: the reasoning model invokes semantic search
+ * via an `embed_search` tool call; the tool executor delegates to this
+ * interface. Implementations swap freely across MLX, vLLM, and cloud APIs.
+ *
+ * Reference model: EmbeddingGemma (Gemma 3 300M base).
  *
  * @public
  */
@@ -106,13 +109,48 @@ export type VisionResponse = {
  * Vision model interface — image to structured description.
  *
  * @remarks
- * Infrastructure called by handlers, NOT a tool call.
- * Perception (input processing), no side effects, no safety gating.
+ * Tool-backing interface: the reasoning model invokes image analysis
+ * via an `analyze_image` tool call; the tool executor delegates to this
+ * interface. Implementations swap freely across MLX (`mlx-vlm`), vLLM,
+ * and cloud APIs.
+ *
+ * Reference model: Qwen 2.5 VL 7B.
  *
  * @public
  */
 export type Vision = {
   analyze: (image: Uint8Array, prompt: string) => Promise<VisionResponse>
+}
+
+/**
+ * Structured response from voice synthesis.
+ *
+ * @public
+ */
+export type VoiceResponse = {
+  /** Raw audio bytes (WAV/PCM format) */
+  audio: Uint8Array
+  /** Audio sample rate in Hz */
+  sampleRate: number
+  /** Audio duration in seconds */
+  duration: number
+}
+
+/**
+ * Voice model interface — text to speech audio.
+ *
+ * @remarks
+ * Tool-backing interface: the reasoning model invokes speech synthesis
+ * via a `speak` tool call; the tool executor delegates to this interface.
+ * Implementations swap freely across MLX (`mlx-audio`), vLLM (`vLLM-Omni`),
+ * and cloud APIs.
+ *
+ * Reference model: Qwen3-TTS 1.7B VoiceDesign.
+ *
+ * @public
+ */
+export type Voice = {
+  speak: (text: string, options?: { voice?: string; language?: string }) => Promise<VoiceResponse>
 }
 
 // ============================================================================
