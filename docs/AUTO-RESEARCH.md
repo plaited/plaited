@@ -111,7 +111,7 @@ Combines Variants 1+3 into a phased overnight program. The agent implements proa
 | LLM-as-judge | Exists | `src/tools/judge.ts` |
 | MSS grader (deterministic) | Exists | `src/tools/mss-grader.ts` |
 | Training scoring | Exists | `src/tools/training.ts` (meta-verification) |
-| Adapters (Claude Code, local, Falcon MLX) | Exist | `src/tools/adapters/`, `scripts/falcon-h1r-mlx-adapter.ts` |
+| Adapters (teachers + student) | Exist | `scripts/claude-code-adapter.ts`, `scripts/falcon-h1r-mlx-adapter.ts`, `src/tools/distillation-adapter.ts` |
 | Result persistence | Exists | `src/tools/trial.utils.ts` |
 | Compare-trials | Exists | `skills/compare-trials/` |
 | Git keep/discard | Exists | `src/tools/git-experiment.ts` |
