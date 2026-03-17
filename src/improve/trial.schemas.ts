@@ -229,6 +229,24 @@ export const TrialEntrySchema = z.object({
   outcome: z.record(z.string(), z.unknown()).optional(),
   /** Multi-dimensional grading scores (if grader provides them) */
   dimensions: GradingDimensionsSchema.optional(),
+  /** Eligibility assessment for training/distillation */
+  trainingAssessment: z.object({
+    eligible: z.boolean(),
+    richness: z.enum(['full', 'minimal', 'messages-only']),
+    score: GradingDimensionsSchema.extend({
+      overall: z.number().min(0).max(1),
+    }).optional(),
+    weight: z.number().min(0).max(1),
+    reasons: z.array(z.enum([
+      'missing_dimensions',
+      'failed_grade',
+      'timed_out',
+      'non_zero_exit',
+      'insufficient_richness',
+      'tool_error',
+      'low_weight',
+    ])),
+  }).optional(),
 })
 
 /** Trial entry type */
@@ -262,6 +280,10 @@ export const TrialResultSchema = z.object({
   passAtK: z.number().optional(),
   /** pass^k: probability of all k samples passing (with grader only) */
   passExpK: z.number().optional(),
+  /** Count of trials eligible for training/distillation */
+  eligibleForTraining: z.number().optional(),
+  /** Ratio of trials eligible for training/distillation */
+  eligibleRate: z.number().optional(),
   /** Individual trial results */
   trials: z.array(TrialEntrySchema),
   /** Metadata (from prompt case + runtime additions) */

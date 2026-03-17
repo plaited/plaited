@@ -13,6 +13,7 @@
 import * as z from 'zod'
 import { parseCli } from '../tools/cli.utils.ts'
 import { DEFAULT_K, DEFAULT_TIMEOUT } from './trial.constants.ts'
+import { assessTrainingCandidate } from './training.ts'
 import type { Adapter, Grader, PromptCase, TrialEntry, TrialResult } from './trial.schemas.ts'
 import { TrialResultSchema } from './trial.schemas.ts'
 import {
@@ -168,6 +169,18 @@ export const runTrial = async (config: TrialConfig): Promise<TrialResult[]> => {
           if (graderResult.outcome) {
             entry.outcome = graderResult.outcome
           }
+          if (graderResult.dimensions) {
+            entry.dimensions = graderResult.dimensions
+          }
+          entry.trainingAssessment = assessTrainingCandidate({
+            trial: {
+              pass: entry.pass,
+              exitCode: entry.exitCode,
+              timedOut: entry.timedOut,
+              trajectory: entry.trajectory,
+            },
+            dimensions: graderResult.dimensions,
+          })
         }
 
         entries.push(entry)
@@ -207,6 +220,9 @@ export const runTrial = async (config: TrialConfig): Promise<TrialResult[]> => {
       result.passRate = passes / k
       result.passAtK = calculatePassAtK(passes, k)
       result.passExpK = calculatePassExpK(passes, k)
+      const eligible = entries.filter((t) => t.trainingAssessment?.eligible).length
+      result.eligibleForTraining = eligible
+      result.eligibleRate = eligible / k
     }
 
     // Write result immediately (mutex for concurrent writes)
