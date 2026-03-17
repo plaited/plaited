@@ -30,6 +30,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { ModnetFieldSchema } from '../src/modnet/modnet.schemas.ts'
+import { logExperiment } from '../src/tools/git-experiment.ts'
 import { grade as geminiGrade } from './gemini-judge.ts'
 import { adapt as claudeAdapt } from './claude-code-adapter.ts'
 
@@ -570,6 +571,33 @@ const main = async () => {
   await Bun.$`mkdir -p ${RESULTS_DIR}`.quiet()
   await Bun.write(resultsPath, results.map((r) => JSON.stringify(r)).join('\n') + '\n')
   console.log(`Results saved: ${resultsPath}`)
+
+  // Auto-checkpoint experiment to git log (skip on filtered runs — those are debug reruns)
+  if (!filter) {
+    const passAtK = fullPass / results.length
+    const domainScores: Record<string, number> = {}
+    for (const [domain, items] of [...byDomain.entries()]) {
+      domainScores[domain] = items.filter((r) => r.passRate === 1).length / items.length
+    }
+    const gateFailCounts: Record<string, number> = {}
+    for (const [gate, count] of Object.entries(failByGate)) {
+      gateFailCounts[`gate_${gate}`] = count
+    }
+    const sha = (await Bun.$`git rev-parse --short HEAD`.quiet()).text().trim()
+    await logExperiment({
+      commit: sha,
+      scores: { passRate: passAtK, avgGates, ...domainScores, ...gateFailCounts },
+      status: fullPass === results.length ? 'keep' : 'keep',
+      description: `Phase 4 layered-boot k=${k} — ${fullPass}/${results.length} pass (${(passAtK * 100).toFixed(0)}%)`,
+      timestamp: new Date().toISOString(),
+      prompts: results.map((r) => r.id),
+      metadata: {
+        k,
+        failedIds: results.filter((r) => r.passRate < 1).map((r) => r.id),
+        judge: useJudge,
+      },
+    })
+  }
 
   // Cleanup workspaces
   try { await rm(workspaceBase, { recursive: true, force: true }) } catch {}

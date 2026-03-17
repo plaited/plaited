@@ -29,7 +29,7 @@ import { $ } from 'bun'
 export type ExperimentEntry = {
   /** Short git commit SHA (7 chars) */
   commit: string
-  /** Grader scores per dimension */
+  /** Numeric grader scores per dimension — kept strictly numeric for comparison */
   scores: Record<string, number>
   /** Whether the experiment was kept, discarded, or crashed */
   status: 'keep' | 'discard' | 'crash'
@@ -39,6 +39,8 @@ export type ExperimentEntry = {
   timestamp: string
   /** Which prompts were evaluated */
   prompts?: string[]
+  /** Qualitative annotations — failure mode, notes, non-numeric context */
+  metadata?: Record<string, unknown>
 }
 
 // ============================================================================
