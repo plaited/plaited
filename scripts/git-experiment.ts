@@ -101,11 +101,9 @@ export const logExperiment = async (entry: ExperimentEntry): Promise<void> => {
   appendFileSync(EXPERIMENTS_LOG, line)
   // Commit and push the log entry so the research record is durably checkpointed
   // after every experiment — even if the session ends unexpectedly mid-loop.
+  const msg = `chore: log experiment — ${entry.description.slice(0, 72)}`
   await $`git add ${EXPERIMENTS_LOG}`.cwd(PROJECT_ROOT).quiet()
-  await $`git commit -m ${{ raw: `chore: log experiment — ${entry.description.slice(0, 72)}` }}`
-    .cwd(PROJECT_ROOT)
-    .nothrow()
-    .quiet()
+  await $`git commit -m ${msg}`.cwd(PROJECT_ROOT).nothrow().quiet()
   await $`git push`.cwd(PROJECT_ROOT).nothrow().quiet()
 }
 

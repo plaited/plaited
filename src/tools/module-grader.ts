@@ -450,14 +450,26 @@ const matchIntentionKeywords = (code: string, item: string): boolean => {
 const gradeDynamic = async (
   code: string,
   items: string[],
+  judge?: IntentionJudge,
 ): Promise<{ score: number; results: Array<{ item: string; pass: boolean }> }> => {
   if (items.length === 0) return { score: 1, results: [] }
 
   const results: Array<{ item: string; pass: boolean }> = []
 
   for (const item of items) {
-    const pass = matchDynamicIndicator(code, item)
-    results.push({ item, pass })
+    // Use judge if provided; keyword match is the fallback
+    if (judge) {
+      const keywordPass = matchDynamicIndicator(code, item)
+      // Accept if either keyword OR judge agrees — avoids false negatives from both paths
+      if (keywordPass) {
+        results.push({ item, pass: true })
+      } else {
+        const judged = await judge({ code, intentionItem: item, context: 'dynamic behavior check' })
+        results.push({ item, pass: judged.pass })
+      }
+    } else {
+      results.push({ item, pass: matchDynamicIndicator(code, item) })
+    }
   }
 
   const passCount = results.filter((r) => r.pass).length
@@ -537,7 +549,19 @@ const matchDynamicIndicator = (code: string, item: string): boolean => {
     },
     {
       keywords: ['csv', 'comma', 'separated', 'json', 'parsing', 'parse'],
-      codeIndicators: ['json.parse', 'split(', '.split(', 'parsefloat', 'parseint', '.map(number', '.map(parsefloat', '.map(parseint', 'comma', 'csv', 'delimiter'],
+      codeIndicators: [
+        'json.parse',
+        'split(',
+        '.split(',
+        'parsefloat',
+        'parseint',
+        '.map(number',
+        '.map(parsefloat',
+        '.map(parseint',
+        'comma',
+        'csv',
+        'delimiter',
+      ],
     },
     {
       keywords: ['filter', 'search', 'narrows'],
@@ -571,7 +595,15 @@ const matchDynamicIndicator = (code: string, item: string): boolean => {
     },
     {
       keywords: ['grid', 'responsive', 'viewport', 'adjusts'],
-      codeIndicators: ['auto-fill', 'auto-fit', 'minmax', 'gridtemplatecolumns', 'grid-template-columns', '1fr', 'repeat('],
+      codeIndicators: [
+        'auto-fill',
+        'auto-fit',
+        'minmax',
+        'gridtemplatecolumns',
+        'grid-template-columns',
+        '1fr',
+        'repeat(',
+      ],
     },
     {
       keywords: ['persist', 'load', 'store'],
@@ -837,7 +869,11 @@ export const createModuleGrader = (config?: ModuleGraderConfig): Grader => {
       }
 
       // === Dimension 3: Dynamic (efficiency) ===
-      const { score: dynamicScore, results: dynamicResults } = await gradeDynamic(allSource, evalRef?.dynamic ?? [])
+      const { score: dynamicScore, results: dynamicResults } = await gradeDynamic(
+        allSource,
+        evalRef?.dynamic ?? [],
+        judge,
+      )
 
       return scoreModule(intentionScore, staticChecks, dynamicScore, {
         intentionResults,

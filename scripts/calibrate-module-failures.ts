@@ -14,6 +14,7 @@
 
 import { join, resolve } from 'node:path'
 import { adapt } from '../src/tools/adapters/claude-code.ts'
+import { createJudge } from '../src/tools/judge.ts'
 import { createModuleGrader } from '../src/tools/module-grader.ts'
 import type { TrialResult } from '../src/tools/trial.schemas.ts'
 import { runTrial } from '../src/tools/trial.ts'
@@ -59,7 +60,7 @@ const main = async () => {
   const results = await runTrial({
     adapter: adapt,
     prompts,
-    grader: createModuleGrader(),
+    grader: createModuleGrader({ judge: createJudge() }),
     k: 1,
     outputPath,
     progress: true,
