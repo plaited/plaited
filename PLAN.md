@@ -174,25 +174,41 @@ Progressive: MSS classification → skeleton → implementation → boot → jud
 
 Layers 0–3 are deterministic (schema validation, tsc, boot). Layer 4 uses LLM-as-judge for semantic quality — "does the module do what the prompt asked?" This requires statistical verification to detect flaky grading.
 
-**Judge providers:** Mix of Gemini (via Google AI SDK) and Claude (via Anthropic Agent SDK). Using multiple providers reduces single-model bias in grading. The `Model` interface abstracts the provider — judge code doesn't care which model scores.
+**Model assignments:**
+
+| Role | Model | Provider | Cost (per 1M in/out) | Rationale |
+|---|---|---|---|---|
+| **Autoresearch** (teacher) | Claude Sonnet 4.6 | Anthropic Agent SDK | $3 / $15 | Strong reasoning for generating SFT trajectories |
+| **LLM-as-judge** (primary) | Gemini 3 Flash | Google AI SDK | $0.50 / $3 | Fast, cheap, current gen — structured eval doesn't need frontier reasoning |
+| **Meta-verification** (cross-check) | Claude Haiku 4.5 | Anthropic Agent SDK | $0.80 / $4 | Different provider from judge — catches systematic bias |
+| **Student** (inference + eval) | Falcon H1R 7B | Local MLX / vLLM | $0 | Distillation target |
+
+**Cross-provider rationale:** The judge (Gemini) and meta-verifier (Claude) are intentionally from different model families. Running the same model 3× measures self-consistency; using a different family for verification catches systematic biases that self-consistency can't detect.
 
 **Meta-verification protocol** (`withStatisticalVerification` in `src/tools/training.ts`):
 
-1. Run the judge **k times** (default k=3) on the same (input, output) pair
-2. Compute confidence interval: mean, stddev, min, max over the k scores
-3. **Majority vote** for pass/fail: passes > k/2 → pass
-4. **Mean score** as the numeric grade (0.0–1.0)
-5. **Stddev threshold**: high stddev (>0.2) flags the grader as inconsistent — the signal should not be trusted for training data
+1. Primary judge: **Gemini 3 Flash** scores the (input, output) pair → score + pass/fail
+2. Cross-check: **Claude Haiku 4.5** scores the same pair **k times** (default k=3)
+3. Compute confidence interval: mean, stddev, min, max over the k Haiku scores
+4. **Majority vote** for pass/fail: passes > k/2 → pass
+5. **Agreement check**: if Gemini and Haiku majority disagree → flag as uncertain, exclude from training data
+6. **Stddev threshold**: high stddev (>0.2) in Haiku runs → flaky signal, exclude from training data
 
 ```
-Judge run 1: score=0.85, pass=true
-Judge run 2: score=0.80, pass=true
-Judge run 3: score=0.90, pass=true
-→ mean=0.85, stddev=0.041, pass=true (3/3 majority)
-→ Low stddev → high confidence → safe for SFT training data
+Gemini 3 Flash:  score=0.85, pass=true
+Haiku run 1:     score=0.82, pass=true
+Haiku run 2:     score=0.80, pass=true
+Haiku run 3:     score=0.88, pass=true
+→ Haiku mean=0.83, stddev=0.033, pass=true (3/3 majority)
+→ Gemini agrees with Haiku → high confidence → safe for SFT training data
 ```
 
-**Why this matters for training:** Trajectories scored by a flaky judge produce noisy training signal. Meta-verification filters out uncertain grades so only high-confidence scores feed the training pipeline (see `TrainingScore.overall = outcome × process`).
+**Cost per full evaluation (20 prompts):**
+- Judge (Gemini 3 Flash): 20 × ~$0.01 = ~$0.20
+- Meta-verification (Haiku ×3): 20 × ~$0.03 × 3 = ~$1.80
+- **Total: ~$2.00 per eval cycle**
+
+**Why this matters for training:** Trajectories scored by a flaky or biased judge produce noisy training signal. Cross-provider meta-verification filters out uncertain grades so only high-confidence scores feed the training pipeline (see `TrainingScore.overall = outcome × process`).
 
 ### Phase 5: Runtime Module Generation from Agent Card
 
