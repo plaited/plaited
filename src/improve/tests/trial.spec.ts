@@ -7,7 +7,7 @@
  */
 
 import { afterEach, describe, expect, test } from 'bun:test'
-import { stat, unlink } from 'node:fs/promises'
+import { mkdir, stat, unlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import * as z from 'zod'
 import type { Adapter, Grader, GraderResult, PromptCase } from '../trial.schemas.ts'
@@ -20,6 +20,7 @@ import {
   hasToolErrors,
   loadJsonl,
   loadPrompts,
+  persistTrialResults,
   resolvePath,
   runWorkerPool,
   withMetaVerification,
@@ -364,6 +365,33 @@ describe('runTrial', () => {
     expect(first.id).toBe('p1')
     const second = TrialResultSchema.parse(JSON.parse(line1!))
     expect(second.id).toBe('p2')
+  })
+
+  test('persistTrialResults writes JSONL without git side effects', async () => {
+    const memoryPath = tempFile('memory')
+    await mkdir(memoryPath, { recursive: true })
+
+    const persisted = await persistTrialResults([
+      {
+        id: 'persisted',
+        input: 'test',
+        k: 1,
+        trials: [{ trialNum: 1, output: 'ok', duration: 1 }],
+      },
+    ], memoryPath)
+
+    const fileStat = await stat(persisted.path)
+    expect(fileStat.isFile()).toBe(true)
+
+    const content = await Bun.file(persisted.path).text()
+    const lines = content.trim().split('\n')
+    expect(lines).toHaveLength(1)
+    expect(JSON.parse(lines[0]!)).toEqual({
+      id: 'persisted',
+      input: 'test',
+      k: 1,
+      trials: [{ trialNum: 1, output: 'ok', duration: 1 }],
+    })
   })
 
   test('append mode adds to existing file', async () => {

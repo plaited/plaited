@@ -498,15 +498,15 @@ export const withMetaVerification = (grader: Grader, verifier: Verifier): Grader
 // ============================================================================
 
 /**
- * Persist trial results to the hypergraph memory as git-versioned JSONL.
+ * Persist trial results to the hypergraph memory as JSONL.
  *
  * @remarks
  * Writes `TrialResult[]` as JSONL to `.memory/evals/trial-{timestamp}.jsonl`,
- * then stages and commits the file. Results become queryable via the
+ * and returns its path for callers that want to stage or process it later.
+ * Results become queryable via the
  * hypergraph's text layer (`grep -rl`) and structural layer.
  *
- * Only grading results are persisted — generated code artifacts are
- * ephemeral and not committed.
+ * Only grading results are persisted — generated code artifacts are ephemeral.
  *
  * @param results - Trial results to persist
  * @param memoryPath - Path to the `.memory/` directory
@@ -525,13 +525,6 @@ export const persistTrialResults = async (
   const filePath = join(evalDir, `trial-${timestamp}.jsonl`)
   const content = `${results.map((r) => JSON.stringify(r)).join('\n')}\n`
   await Bun.write(filePath, content)
-
-  // Git add + commit from the repo root (parent of .memory/)
-  const repoRoot = join(memoryPath, '..')
-  await Bun.$`git add ${filePath} && git commit -m ${`eval: trial results ${timestamp}`} && git push`
-    .cwd(repoRoot)
-    .nothrow()
-    .quiet()
 
   return { path: filePath, timestamp }
 }
