@@ -485,6 +485,93 @@ A weather display that "refreshes periodically" = `track` (temporal external dat
 
 ---
 
+## Composition Guide
+
+When generating **two-module compositions** (inner + outer), apply these rules AFTER the single-module Skeleton Generation Guide rules.
+
+### Rule: Outer Mechanics — Structure-Dependent Inheritance
+
+The outer module declares mechanics that are **directly operable at its own structural level**. Apply these rules:
+
+**`track` on outer:** Only when the outer's own description involves monitoring ongoing/live data streams.
+- Outer "fitness dashboard groups workout log, step count, and sleep quality" → the step count and sleep quality are live ongoing metrics the outer aggregates → `track`
+- Outer "wellness workspace arranging health overview + mood journal + meditation log" → the mood journal and meditation log are daily ongoing records → `track`
+- Outer "research dashboard combining birdwatching log, weather data, notes" → aggregating historical records for analysis (not live monitoring) → NO `track`
+
+**`chart` on outer:** Only when the outer itself has chart visualizations in its description ("combined view — charts for each metric", "trend charts and filtering").
+
+**`sort` and `filter` on `collection` outer:** A `collection` outer that aggregates multiple distinct data types typically supports both `sort` and `filter` — users sort/filter across the combined view.
+
+**`sort` on `steps` outer:** NO. You navigate between predefined steps, you don't reorder them. A `steps` outer may inherit `filter` (filter which step/view to show), but never `sort`.
+
+**`share` mechanic:** ONLY when the description explicitly mentions a user-facing export/sharing action ("share pieces externally", "members can share file links", "share with clients"). Do NOT add `share` just because boundary=`ask` and "sharing" appears. Boundary=`ask` already handles consent-based data access — "the research dashboard can share findings with a collaborating team with consent" is just the `ask` boundary, not a `share` mechanic.
+
+**Examples:**
+- Inner: birdwatching log with `track`, `filter`. Outer: "research dashboard combining log, weather data, and notes — grouped collection with charts. Can share findings with team with consent." → outer has `chart` (visualizes data), `filter` (explicit), `sort` (collection of heterogeneous data). No `track` (historical aggregation, not live monitoring). No `share` (just boundary=`ask`).
+- Inner: workout log with `track`, `chart`. Outer: "fitness dashboard groups workout log, step count, sleep quality — charts for each metric, filtered by type. Requires consent to share with doctor." → outer has `track` (aggregates live step count + sleep quality streams), `chart` (explicit), `filter` (explicit). No `share` (doctor access = just `ask` boundary).
+
+### Rule: Inner Auto-Refreshing S1 Objects Get `track`
+
+An S1 display card that "updates automatically", "refreshes with each new measurement", or shows live/current data → `track` mechanic, even though it's just a display card.
+
+- "Blood pressure reading card that updates automatically with each new measurement" → `mechanics: ["track"]`
+- "Current weather card showing live temperature" → `mechanics: ["track"]`
+- Contrast: "flashcard showing word + translation" (static, no refresh) → `mechanics: []`
+
+### Rule: `form` vs `collection` for Trackers
+
+`form` structure = the primary UI is the INPUT/ENTRY interface itself (the form IS the module).
+- "Personal blood pressure tracker that stores each reading over time, shows trends as line chart" → `form` (the primary UX is recording each reading)
+- "Workout log — form where I record exercises, sets, reps, and weight. Charts show progress." → `form`
+
+`collection` structure = items are organized BY CATEGORY (the category grouping IS the primary view, even if you can add new entries).
+- "Personal expense tracker — expenses organized by category (dining, transport, bills) with trend charts and filters" → `collection` (category grouping is the primary view, not the entry form)
+- "Expenses across categories" = the categories ARE the structure → `collection`
+
+**Key test:** Is the module primarily a VIEW of organized categories? → `collection`. Or primarily the entry/input screen itself? → `form`.
+
+### Rule: Don't Add `track` to Static Sorted Lists
+
+A sorted list or collection that doesn't change over time → no `track`.
+- "Study deck sorted by difficulty" → `mechanics: ["sort"]` (no track — the flashcards don't auto-update)
+- "Recipe collection filterable by ingredient" → `mechanics: ["filter"]` (no track)
+
+### Rule: Include `sort` When Description Implies User Reordering
+
+`sort` when the description mentions sorting by attribute OR when items are explicitly "organized by [non-temporal category] + user can reorder":
+- "expenses organized by category (dining, transport, bills) with filters" = `filter` (sort by category alone ≠ user reordering → no `sort`)
+- "expenses... sort by amount or date" = `sort` (explicit)
+- "trend charts and filters" only → no `sort`
+
+### Canonical Composition Hard Cases
+
+These require non-obvious contentType, scale, or mechanics choices. Apply directly:
+
+| Description pattern | inner | outer |
+|---------------------|-------|-------|
+| Personal reading journal (form-based daily reactions/reflections) → study group discussion thread | contentType: **education-study** | contentType: **education-discussion** |
+| Vocabulary flashcard card → personal study deck sorted by difficulty | contentType: `education` | contentType: **education** (NOT `education-study` — a sorted flashcard list is generic education, not personal reflection writing) |
+| Project coordination workspace spatially arranging calendar + task board + invoice log; "The coordination space requires consent to **share with clients**" | inner is `tools` | outer contentType: **work-coordination**, mechanics: `["sort","filter","share"]`, scale: **4** — **`share` is required** because "share with clients" = user actively shares workspace access with an external person (a client-facing sharing action, not just internal consent) |
+| Health overview combining 3 metrics (step count + sleep + heart rate), grouped view with trend charts | — | scale: **3** (three data groups = S3 block) |
+| Wellness workspace arranging health overview + mood journal + meditation log side-by-side | inner scale: 3, has `chart` | outer scale: **4**, mechanics: `["track","filter"]` — track (daily journals = ongoing data), filter (by area), but **NO `chart`** (charts are in the inner health overview, not the outer arranger) |
+| Kitchen management hub navigating between recipe browsing, grocery shopping, meal planning | inner is recipe book `["filter","sort"]` | outer structure: `steps`, mechanics: `["filter"]` only — **NO `sort`** (steps structure navigates between views, doesn't sort them) |
+| Field research dashboard combining birdwatching log + weather + observation notes into grouped collection with charts; can share findings with team with consent | inner has `track`, `filter` | outer: `["filter","sort","chart"]` — chart (explicit "collection with charts"), **sort** (combining heterogeneous data types: log + weather + notes = users sort by type/date), filter (explicit). **NO `track`** — even though weather data is live, the outer dashboard is a COMPILATION VIEW for analysis, not a live monitor. The outer aggregates historical records for research, period. No `share` (team consent access = `ask` boundary, not user-facing export) |
+| Personal expense tracker (expenses by category with trend charts and filters) → shared household budget board (combines roommate spending by category and person) | inner mechanics: **`["track","chart","filter","sort"]`** — sort implied for finance collections (users sort by date/amount) | outer mechanics: **`["sort","filter"]`** — sort (group by person+category), filter. **NO `track`** (outer views collected spending, doesn't monitor live streams). **NO `chart`** (outer doesn't have its own charts) |
+
+**education-study** vs **education-discussion** vs **education:**
+- `education-study` — personal **writing-based reflection tool** (reading journal, practice diary, daily reactions to texts, reflective writing tracker). The user WRITES personal thoughts/reflections. NOT for flashcard decks or quiz tools.
+- `education-discussion` — group discussion space (forum thread, peer replies, students posting to a shared space). Content involves multiple participants interacting.
+- `education` — all other education modules: flashcard decks, quiz builders, vocabulary study, course content, study tools that don't involve personal reflection writing.
+
+**work-coordination:** Use for workspaces that *spatially arrange multiple work tools* (calendar + task board + document log + invoice) into a coordination hub. Not just `work` (which is for individual work tasks). Signal: "coordination workspace", "arranges alongside", "project suite with multiple tools".
+- work-coordination outer mechanics: `sort` (users reorder tasks/items), `filter` (filter by type/status), `share` (explicit "requires consent to share with clients" → `share` mechanic when client-facing sharing is described as a user action).
+- The `share` mechanic applies here because clients actively receive shared access — this is an explicit interactive sharing action, not just internal consent-gated access.
+
+**Scale cap — NEVER exceed S4 in compositions:**
+The schema hard cap is scale=4. If a "coordination workspace" or "project suite" spatially arranges blocks, it is S4, NOT S5. Do not assign scale=5 under any circumstances. If your analysis leads to S5, assign S4.
+
+---
+
 ## Related Skills
 
 - **mss-vocabulary** — MSS tag definitions, composition rules, valid combinations
