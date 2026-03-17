@@ -272,8 +272,10 @@ const checkBSync = (code: string): GradeCheck => {
  * @internal
  */
 const checkRepeat = (code: string): GradeCheck => {
-  // Allow trailing comma before closing paren: bThread([...], true,\n)
-  const hasRepeatTrue = /,\s*true\s*,?\s*\)/.test(code) || /repeat\s*:\s*true/.test(code)
+  // Strip single-line comments and collapse whitespace so the regex works across
+  // multi-line patterns like: bThread([...], true, // comment\n)
+  const stripped = code.replace(/\/\/[^\n]*/g, '').replace(/\s+/g, ' ')
+  const hasRepeatTrue = /,\s*true\s*,?\s*\)/.test(stripped) || /repeat\s*:\s*true/.test(code)
   const hasRepeatPredicate = /,\s*\(\s*\)\s*=>/.test(code)
   if (!hasRepeatTrue && !hasRepeatPredicate) {
     return { name: 'repeat', pass: false, error: 'no repeat parameter found on bThread — goals need repeat: true' }
