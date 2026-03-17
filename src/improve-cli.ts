@@ -10,8 +10,7 @@
  * @internal
  */
 
-import { trainingScoreCli } from './improve/training.ts'
-import { trialCli } from './improve/trial.ts'
+import { trainingScoreCli, trialCli } from './improve.ts'
 
 const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   trial: trialCli,
