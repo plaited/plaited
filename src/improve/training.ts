@@ -13,12 +13,14 @@
 
 import { parseCli } from '../tools/cli.utils.ts'
 import {
+  type TrainingCandidateAssessment,
   type MetaVerification,
   type TrainingScore,
   TrainingScoreInputSchema,
   TrainingScoreOutputSchema,
 } from './training.schemas.ts'
-import type { Grader, GradingDimensions } from './trial.schemas.ts'
+import type { Grader, GradingDimensions, TrajectoryRichness, TrialEntry } from './trial.schemas.ts'
+import { detectRichness, hasToolErrors } from './trial.utils.ts'
 
 // ============================================================================
 // Training Weight
@@ -53,6 +55,69 @@ export const scoreTrainingDimensions = (dimensions: GradingDimensions): Training
   ...dimensions,
   overall: computeTrainingWeight(dimensions),
 })
+
+// ============================================================================
+// Training Candidate Assessment
+// ============================================================================
+
+const TRAINING_RICHNESS_ORDER: Record<TrajectoryRichness, number> = {
+  minimal: 0,
+  'messages-only': 1,
+  full: 2,
+}
+
+/** Configuration for training-candidate assessment. */
+export type AssessTrainingCandidateOptions = {
+  trial: Pick<TrialEntry, 'trajectory' | 'timedOut' | 'exitCode' | 'pass'>
+  dimensions?: GradingDimensions
+  minWeight?: number
+  minRichness?: Exclude<TrajectoryRichness, 'minimal'>
+  requirePass?: boolean
+  requireDimensions?: boolean
+  allowToolErrors?: boolean
+}
+
+/**
+ * Assess whether a trial should be kept for distillation/training.
+ *
+ * @remarks
+ * This is the policy seam between evals and model improvement. It converts
+ * runtime facts plus grader dimensions into a typed eligibility decision so
+ * downstream training code does not need to infer policy from raw trial data.
+ *
+ * @public
+ */
+export const assessTrainingCandidate = ({
+  trial,
+  dimensions,
+  minWeight = 0.2,
+  minRichness = 'full',
+  requirePass = true,
+  requireDimensions = true,
+  allowToolErrors = false,
+}: AssessTrainingCandidateOptions): TrainingCandidateAssessment => {
+  const reasons = new Set<TrainingCandidateAssessment['reasons'][number]>()
+  const trajectory = trial.trajectory ?? []
+  const richness = detectRichness(trajectory)
+  const score = dimensions ? scoreTrainingDimensions(dimensions) : undefined
+  const weight = score?.overall ?? 0
+
+  if (requireDimensions && !dimensions) reasons.add('missing_dimensions')
+  if (requirePass && trial.pass === false) reasons.add('failed_grade')
+  if (trial.timedOut) reasons.add('timed_out')
+  if (trial.exitCode !== undefined && trial.exitCode !== null && trial.exitCode !== 0) reasons.add('non_zero_exit')
+  if (TRAINING_RICHNESS_ORDER[richness] < TRAINING_RICHNESS_ORDER[minRichness]) reasons.add('insufficient_richness')
+  if (!allowToolErrors && hasToolErrors(trajectory)) reasons.add('tool_error')
+  if (score && weight < minWeight) reasons.add('low_weight')
+
+  return {
+    eligible: reasons.size === 0,
+    richness,
+    ...(score && { score }),
+    weight,
+    reasons: [...reasons],
+  }
+}
 
 // ============================================================================
 // Statistical Meta-Verification

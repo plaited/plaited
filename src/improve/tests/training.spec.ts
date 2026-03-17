@@ -10,11 +10,18 @@ import { describe, expect, test } from 'bun:test'
 import * as z from 'zod'
 import {
   MetaVerificationSchema,
+  TrainingAssessmentReasonSchema,
+  TrainingCandidateAssessmentSchema,
   TrainingScoreInputSchema,
   TrainingScoreOutputSchema,
   TrainingScoreSchema,
 } from '../training.schemas.ts'
-import { computeTrainingWeight, scoreTrainingDimensions, withStatisticalVerification } from '../training.ts'
+import {
+  assessTrainingCandidate,
+  computeTrainingWeight,
+  scoreTrainingDimensions,
+  withStatisticalVerification,
+} from '../training.ts'
 import type { Grader } from '../trial.schemas.ts'
 
 // ============================================================================
@@ -86,6 +93,121 @@ describe('scoreTrainingDimensions', () => {
   test('result validates against TrainingScoreSchema', () => {
     const result = scoreTrainingDimensions({ outcome: 0.9, process: 0.8 })
     expect(() => TrainingScoreSchema.parse(result)).not.toThrow()
+  })
+})
+
+// ============================================================================
+// assessTrainingCandidate
+// ============================================================================
+
+describe('assessTrainingCandidate', () => {
+  test('accepts a rich passing trajectory with sufficient weight', () => {
+    const result = assessTrainingCandidate({
+      trial: {
+        pass: true,
+        exitCode: 0,
+        trajectory: [
+          { type: 'thought', content: 'Plan', timestamp: 1 },
+          { type: 'tool_call', name: 'read_file', status: 'completed', timestamp: 2 },
+          { type: 'message', content: 'Done', timestamp: 3 },
+        ],
+      },
+      dimensions: { outcome: 0.9, process: 0.9 },
+    })
+
+    expect(result.eligible).toBe(true)
+    expect(result.richness).toBe('full')
+    expect(result.weight).toBeCloseTo(0.81, 10)
+    expect(result.reasons).toEqual([])
+    expect(() => TrainingCandidateAssessmentSchema.parse(result)).not.toThrow()
+  })
+
+  test('rejects missing dimensions by default', () => {
+    const result = assessTrainingCandidate({
+      trial: {
+        pass: true,
+        exitCode: 0,
+        trajectory: [{ type: 'message', content: 'Done', timestamp: 1 }],
+      },
+    })
+
+    expect(result.eligible).toBe(false)
+    expect(result.reasons).toContain('missing_dimensions')
+    expect(result.richness).toBe('messages-only')
+  })
+
+  test('rejects timed out and non-zero exit trials', () => {
+    const result = assessTrainingCandidate({
+      trial: {
+        timedOut: true,
+        exitCode: 124,
+        pass: false,
+        trajectory: [{ type: 'message', content: 'Timed out', timestamp: 1 }],
+      },
+      dimensions: { outcome: 0.9, process: 0.9 },
+      minRichness: 'messages-only',
+    })
+
+    expect(result.eligible).toBe(false)
+    expect(result.reasons).toContain('timed_out')
+    expect(result.reasons).toContain('non_zero_exit')
+    expect(result.reasons).toContain('failed_grade')
+  })
+
+  test('rejects trajectories with failed tool calls by default', () => {
+    const result = assessTrainingCandidate({
+      trial: {
+        pass: true,
+        exitCode: 0,
+        trajectory: [
+          { type: 'tool_call', name: 'bash', status: 'failed', timestamp: 1 },
+          { type: 'message', content: 'Recovered', timestamp: 2 },
+        ],
+      },
+      dimensions: { outcome: 0.9, process: 0.9 },
+      minRichness: 'messages-only',
+    })
+
+    expect(result.eligible).toBe(false)
+    expect(result.reasons).toContain('tool_error')
+  })
+
+  test('can allow tool errors and message-only traces for weaker distillation passes', () => {
+    const result = assessTrainingCandidate({
+      trial: {
+        pass: true,
+        exitCode: 0,
+        trajectory: [
+          { type: 'tool_call', name: 'bash', status: 'failed', timestamp: 1 },
+          { type: 'message', content: 'Recovered', timestamp: 2 },
+        ],
+      },
+      dimensions: { outcome: 0.9, process: 0.9 },
+      minRichness: 'messages-only',
+      allowToolErrors: true,
+    })
+
+    expect(result.eligible).toBe(true)
+    expect(result.reasons).toEqual([])
+  })
+
+  test('rejects low-weight trajectories even when they pass', () => {
+    const result = assessTrainingCandidate({
+      trial: {
+        pass: true,
+        exitCode: 0,
+        trajectory: [
+          { type: 'thought', content: 'Messy plan', timestamp: 1 },
+          { type: 'message', content: 'Done', timestamp: 2 },
+        ],
+      },
+      dimensions: { outcome: 0.9, process: 0.1 },
+      minWeight: 0.2,
+    })
+
+    expect(result.eligible).toBe(false)
+    expect(result.weight).toBeCloseTo(0.09, 10)
+    expect(result.reasons).toContain('low_weight')
   })
 })
 
@@ -309,6 +431,17 @@ describe('MetaVerificationSchema', () => {
         scores: [],
       }),
     ).toThrow()
+  })
+})
+
+describe('TrainingAssessmentReasonSchema', () => {
+  test('accepts known assessment reasons', () => {
+    expect(TrainingAssessmentReasonSchema.parse('tool_error')).toBe('tool_error')
+    expect(TrainingAssessmentReasonSchema.parse('low_weight')).toBe('low_weight')
+  })
+
+  test('rejects unknown assessment reasons', () => {
+    expect(() => TrainingAssessmentReasonSchema.parse('bad_reason')).toThrow()
   })
 })
 

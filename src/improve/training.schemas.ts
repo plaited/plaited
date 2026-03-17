@@ -12,7 +12,7 @@
  */
 
 import * as z from 'zod'
-import { GradingDimensionsSchema } from './trial.schemas.ts'
+import { GradingDimensionsSchema, TrajectoryRichnessSchema } from './trial.schemas.ts'
 
 export { type DecisionStep, DecisionStepSchema } from '../agent/agent.schemas.ts'
 export { type GradingDimensions, GradingDimensionsSchema } from './trial.schemas.ts'
@@ -73,6 +73,54 @@ export const MetaVerificationSchema = z.object({
 
 /** Meta-verification result type */
 export type MetaVerification = z.infer<typeof MetaVerificationSchema>
+
+// ============================================================================
+// Training Candidate Assessment
+// ============================================================================
+
+/**
+ * Reasons a trial should be excluded from training/distillation datasets.
+ *
+ * @public
+ */
+export const TrainingAssessmentReasonSchema = z.enum([
+  'missing_dimensions',
+  'failed_grade',
+  'timed_out',
+  'non_zero_exit',
+  'insufficient_richness',
+  'tool_error',
+  'low_weight',
+])
+
+/** Training assessment reason type */
+export type TrainingAssessmentReason = z.infer<typeof TrainingAssessmentReasonSchema>
+
+/**
+ * Training-candidate assessment result.
+ *
+ * @remarks
+ * Makes the distillation boundary explicit: a trial is only eligible when it
+ * has acceptable runtime behavior, sufficient trajectory richness, and enough
+ * grader-derived weight to justify inclusion.
+ *
+ * @public
+ */
+export const TrainingCandidateAssessmentSchema = z.object({
+  /** Whether the trial should be included in training/distillation data */
+  eligible: z.boolean(),
+  /** Computed richness of the available trajectory */
+  richness: TrajectoryRichnessSchema,
+  /** Computed training score when dimensions are available */
+  score: TrainingScoreSchema.optional(),
+  /** Final training weight used for promotion/filtering */
+  weight: z.number().min(0).max(1),
+  /** Reasons the candidate was excluded */
+  reasons: z.array(TrainingAssessmentReasonSchema),
+})
+
+/** Training-candidate assessment type */
+export type TrainingCandidateAssessment = z.infer<typeof TrainingCandidateAssessmentSchema>
 
 // ============================================================================
 // CLI Schemas
