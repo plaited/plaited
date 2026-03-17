@@ -168,7 +168,31 @@ Progressive: MSS classification → skeleton → implementation → boot → jud
 | 1: Module skeleton | ModnetFieldSchema validates? | modnet-node skill |
 | 2: Implementation | tsc --noEmit? | code patterns |
 | 3: Node composition | Node boots? WebSocket connects? | agent-loop skill |
-| 4: Semantic verification | LLM judge + 3x meta-verification | rubric |
+| 4: Semantic verification | LLM-as-judge + meta-verification | rubric |
+
+#### Layer 4: LLM-as-Judge with Meta-Verification
+
+Layers 0–3 are deterministic (schema validation, tsc, boot). Layer 4 uses LLM-as-judge for semantic quality — "does the module do what the prompt asked?" This requires statistical verification to detect flaky grading.
+
+**Judge providers:** Mix of Gemini (via Google AI SDK) and Claude (via Anthropic Agent SDK). Using multiple providers reduces single-model bias in grading. The `Model` interface abstracts the provider — judge code doesn't care which model scores.
+
+**Meta-verification protocol** (`withStatisticalVerification` in `src/tools/training.ts`):
+
+1. Run the judge **k times** (default k=3) on the same (input, output) pair
+2. Compute confidence interval: mean, stddev, min, max over the k scores
+3. **Majority vote** for pass/fail: passes > k/2 → pass
+4. **Mean score** as the numeric grade (0.0–1.0)
+5. **Stddev threshold**: high stddev (>0.2) flags the grader as inconsistent — the signal should not be trusted for training data
+
+```
+Judge run 1: score=0.85, pass=true
+Judge run 2: score=0.80, pass=true
+Judge run 3: score=0.90, pass=true
+→ mean=0.85, stddev=0.041, pass=true (3/3 majority)
+→ Low stddev → high confidence → safe for SFT training data
+```
+
+**Why this matters for training:** Trajectories scored by a flaky judge produce noisy training signal. Meta-verification filters out uncertain grades so only high-confidence scores feed the training pipeline (see `TrainingScore.overall = outcome × process`).
 
 ### Phase 5: Runtime Module Generation from Agent Card
 
