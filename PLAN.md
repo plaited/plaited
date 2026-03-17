@@ -277,7 +277,7 @@ Successful generation trajectories from Phases 4-6 ARE the SFT training data. No
 - `src/tools/judge.ts` → refactor to use Gemini CLI (`Bun.$`) for judge, drop Anthropic SDK import
 - `src/a2a/a2a.schemas.ts` → add `AgentExtension`, `inputModes`/`outputModes` on `AgentSkill`
 - Process `Structural-IA.md` + `Modnet.md` → queryable form (JSON-LD or structured distillation)
-- Write MSS comprehension test prompts (20 descriptions with reference MSS tags)
+- ~~Write MSS comprehension test prompts (20 descriptions with reference MSS tags)~~ ✓ Phase 1 complete (20/20, commit b382c74)
 - Write MSS composition test prompts (module pairs that must connect)
 - Write Agent Card fixtures for runtime module generation tests
 
@@ -296,6 +296,8 @@ Successful generation trajectories from Phases 4-6 ARE the SFT training data. No
 | Mechanics | Same definition as Jaffe. Activate across A2A boundaries. No UI/agent distinction needed. |
 | Network duration | Goal bThread lifecycle (`repeat: true` vs terminate), not a new MSS tag. |
 | MSS as A2A extension | `modnet:mss/v1` as formal `AgentExtension` URI. |
+| Scale: two contexts | S1–S4 = user-facing (generative UI renders, `ModnetFieldSchema` validates). S5–S8 = agent infrastructure (Agent Cards declare, agents navigate). The agent bridges: user expresses intent, agent translates to scale navigation. `ModnetFieldSchema` caps at 4 by design. |
+| S1 objects are data, not modules | S1 = items in a module's `data/` directory (an apple, a weather reading). S2+ = modules (`initModule`, own git, package.json, SKILL.md). No "lightweight module" variant — uniform contract for PM discovery. |
 
 ---
 
@@ -307,7 +309,7 @@ Skills containing hand-written implementation guidance need autoresearch calibra
 
 | Skill | Calibrate At | Depends On | Status |
 |---|---|---|---|
-| `mss-vocabulary` | **Phase 1** (now) | MSS classification prompts + deterministic grader | `calibrating` |
+| `mss-vocabulary` | **Phase 1** (done) | MSS classification prompts + deterministic grader | `calibrated` |
 | `modnet-node` | Phase 2–3 | MSS skeleton + composition working | `frozen` |
 | `behavioral-core` | Phase 4 | Agent loop boots, BP patterns validated by tests | `frozen` |
 | `agent-loop` | Phase 4 | Layered boot passes all gates | `frozen` |
