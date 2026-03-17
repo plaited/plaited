@@ -36,8 +36,8 @@
 {"contentType":"news","structure":"matrix","mechanics":["vote","follow","share","filter"],"boundary":"ask","scale":7,"example":"Multi-source news platform with topic navigation"}
 {"contentType":"real-estate","structure":"collection","mechanics":["sort","filter"],"boundary":"ask","scale":2,"example":"Property listings with search filters"}
 {"contentType":"real-estate","structure":"feed","mechanics":["sort","filter","swipe"],"boundary":"ask","scale":5,"example":"Property discovery feed with card-based browsing"}
-{"contentType":"music","structure":"list","mechanics":["sort"],"boundary":"ask","scale":2,"example":"Playlist with ordered tracks"}
-{"contentType":"music","structure":"feed","mechanics":["like","follow","share"],"boundary":"all","scale":5,"example":"Music discovery feed with social mechanics"}
+{"contentType":"entertainment","structure":"list","mechanics":["sort"],"boundary":"ask","scale":2,"example":"Playlist with ordered tracks"}
+{"contentType":"entertainment","structure":"feed","mechanics":["like","follow","share"],"boundary":"all","scale":5,"example":"Music discovery feed with social mechanics"}
 {"contentType":"food-access","structure":"pool","mechanics":["filter","chart"],"boundary":"all","scale":7,"example":"Urban food access map aggregating market data"}
 {"contentType":"tools","structure":"form","mechanics":[],"boundary":"all","scale":1,"example":"Unit converter with input fields and result display"}
 {"contentType":"tools","structure":"form","mechanics":[],"boundary":"none","scale":2,"example":"Markdown editor with live preview and document saving"}

@@ -7,7 +7,9 @@ description: MSS (Modnet Structural Standard) bridge-code vocabulary for module 
 
 ## Purpose
 
-This skill teaches agents the **Modnet Structural Standard (MSS)** — a bridge-code vocabulary that enables modules to self-assemble into modular networks (modnets). MSS distills Rachel Jaffe's Structural Information Architecture into five machine-readable tags that govern how modules connect, nest, and share data.
+This skill teaches agents the **Modnet Structural Standard (MSS)** — a composition grammar that enables modules to self-assemble into modular networks (modnets). MSS distills Rachel Jaffe's Structural Information Architecture into five machine-readable tags that govern how modules connect, nest, and share data.
+
+**MSS is not a classification system.** It is a composition grammar — each tag answers a question about how a module participates in networks. Correct tagging requires reasoning about the module's role in a larger system, not pattern-matching against a fixed list.
 
 **Use this when:**
 - Generating modules with MSS bridge-code tags
@@ -18,183 +20,334 @@ This skill teaches agents the **Modnet Structural Standard (MSS)** — a bridge-
 
 ## The Five MSS Tags
 
-Every module carries five bridge-code tags. Together they form the MSS envelope.
+Every module carries five bridge-code tags. Each answers a composition question.
 
-### 1. `contentType` (string)
+| Tag | Question | Determines |
+|-----|----------|-----------|
+| `contentType` | What domain, and what should auto-group with it? | Network assembly |
+| `structure` | How is information organized within this module? | Interaction patterns |
+| `mechanics` | What interactions could activate when connected? | Dynamic capabilities |
+| `boundary` | What data flows across this module's boundary? | Data sovereignty |
+| `scale` | Where in the nesting hierarchy? | Composition level |
 
-**What it is:** A keyword identifying the module's domain/use-case. Modules with the same contentType can be manipulated together (sorted, filtered, grouped).
+### 1. `contentType` — What domain, and what groups with it?
+
+**What it is:** A free-form keyword identifying the module's domain. Modules with the same contentType auto-group when connected to a shared parent structure.
+
+**Reasoning principle:** contentType is *inferred from context*, not selected from a fixed list. Ask: "If this module connects to a network alongside other modules, which ones should it be grouped and manipulated with (sorted, filtered, grouped)?"
+
+contentTypes don't need to align between networks — an agent can translate. A commerce network might produce a `health`-contentType module if the user cares about nutrition.
 
 **Rules:**
-- Free-form string, lowercase, no spaces (use hyphens)
-- Must be unique per module within a network at the same scale
+- Lowercase, no spaces (use hyphens for multi-word)
 - Modules with matching contentType auto-group when connected to a shared block
 
-**Canonical content types by domain:**
+**Common defaults by domain:**
 
-| Domain | contentType | NOT these alternatives |
-|--------|------------|----------------------|
-| Health/Fitness | `health` | ~~nutrition~~, ~~wellness~~, ~~fitness~~ |
-| Social/Chat/Forum | `social` | ~~chat~~, ~~messaging~~, ~~discussion~~, ~~forum~~ |
-| Science/Simulation/Stats | `science` | ~~physics~~, ~~chemistry~~, ~~statistics~~, ~~simulation~~, ~~data-viz~~ |
-| Finance/Expenses | `finance` | ~~money~~, ~~expenses~~, ~~budget~~ |
-| Logistics/Inventory | `logistics` | ~~inventory~~, ~~warehouse~~, ~~shipping~~ |
-| Tools/Utilities | `tools` | ~~utility~~, ~~utilities~~, ~~converter~~, ~~productivity~~ |
-| Art/Creative/Drawing/Design | `art` | ~~drawing~~, ~~graphics~~, ~~portfolio~~, ~~creative~~, ~~design~~ |
-| Entertainment/Music | `entertainment` | ~~music~~, ~~playlist~~, ~~media~~ |
-| Education/Learning/Reading | `education` | ~~books~~, ~~reading~~, ~~study~~ |
-| Geography/Maps | `geo` | ~~geospatial~~, ~~maps~~, ~~location~~ |
-| Weather | `weather` | ~~forecast~~, ~~climate~~ |
-| News | `news` | — |
-| Real Estate | `real-estate` | — |
-| Commerce | `commerce` | — |
+| Domain | Default contentType |
+|--------|-------------------|
+| Health/Fitness | `health` |
+| Social/Chat/Forum | `social` |
+| Science/Simulation/Stats | `science` |
+| Finance/Expenses | `finance` |
+| Logistics/Inventory | `logistics` |
+| Tools/Utilities | `tools` |
+| Art/Creative/Design | `art` |
+| Entertainment/Music | `entertainment` |
+| Education/Learning | `education` |
+| Geography/Maps | `geo` |
+| Weather | `weather` |
+| News | `news` |
+| Real Estate | `real-estate` |
+| Commerce | `commerce` |
+| Fresh Produce | `produce` |
+| Work/Professional | `work` |
+| Play/Games | `play` |
+| Family/Household | `family` |
 
-Use the **canonical** value (left column). Agents that pick alternatives will fail modnet field validation.
+These are **defaults**, not constraints. Use them when the module fits a common domain.
 
-**Disambiguation rules:**
-- Charts/visualization for **data analysis** → `science` (not `data-viz`)
-- Color tools, palettes, design systems → `art` (not `design`)
-- Calendars, task lists, scheduling → `tools` (not `productivity`)
-- Drawing canvas, portfolio galleries → `art` (not `drawing`, `portfolio`)
-- Examples: `produce`, `health`, `social`, `art`, `education`, `work`, `logistics`
+**Hyphenated variants:** When two modules in the same domain shouldn't be manipulated together, they need different contentTypes. Use `{domain}-{function}`:
 
-### 2. `structure` (string)
+- `health-research` (not `health`) — population-level analysis shouldn't group with personal trackers
+- `social-identity` (not `social`) — profile/reputation shouldn't group with content feeds
+- `work-distribution` (not `work`) — organizational hierarchy shouldn't group with individual desks
+- `education-study` (not `education`) — individual reflection shouldn't group with course platforms
+- `education-discussion` (not `education`) — group discussion shouldn't group with individual study
+- `play-cocreation` (not `play`) — collaborative creation shouldn't group with solo games
+
+**Principle:** If two modules with the same contentType shouldn't be manipulated together, they need different contentTypes.
+
+**Disambiguation:**
+- Charts/visualization for **data analysis** → `science`
+- Color tools, palettes, design systems → `art`
+- Calendars, task lists, scheduling → `tools`
+- Drawing canvas, portfolio galleries → `art`
+
+### 2. `structure` — How is information organized?
 
 **What it is:** The information organization pattern within the module.
 
-**Valid values (from Structural IA):**
+**Reasoning framework:** Ask "What is the user doing with the data, and how is it presented?"
 
-| Value | Description | Typical Scale |
-|-------|-------------|---------------|
-| `object` | Singular item | S1 |
-| `list` | Ordered sequence of objects | S2 |
-| `collection` | Unordered group of related objects | S2 |
-| `steps` | Linked objects across pages (wizard/flow) | S2 |
-| `pool` | Modules nested under hierarchy | S3 |
-| `stream` | Chronologically ordered scrollable modules | S3 |
-| `feed` | Algorithm-sorted stream | S3 |
-| `wall` | Static profile info + collaborative stream | S3 |
-| `thread` | Nested reply modules | S3 |
-| `form` | Structured input (creation/manipulation) | S2-S3 |
+**Decision tree:**
 
-**Structure disambiguation (commonly confused pairs):**
+1. **Is the user looking at a single item?** → `object`
+   - Display-only. One artwork, one weather reading, one health metric.
+
+2. **Is the user creating or manipulating data through input?** → `form`
+   - Active input tool. Editors, calculators, converters, trackers with input fields.
+
+3. **Are items organized in a defined order?** → `list`
+   - Sequence matters. Playlists, reading lists, task lists with priority.
+
+4. **Are items grouped without inherent order?** → `collection`
+   - Set of related items. Portfolios, inventories, category groupings.
+
+5. **Are items linked across pages toward a goal?** → `steps`
+   - Wizard flow, multi-view navigation. Calendar (day/month views), simulation modes.
+
+6. **Are items nested under hierarchy?** → `pool`
+   - Folders within folders. Categorized modules, hierarchical browsing.
+
+7. **Are items ordered chronologically and scrollable?** → `stream`
+   - Time-based flow. Chat rooms, activity logs, message history.
+
+8. **Is it a stream sorted by algorithm?** → `feed`
+   - Ranked content. Social feeds, news feeds, discovery feeds.
+
+9. **Is it static profile info combined with a collaborative stream?** → `wall`
+   - Owned by one person. User profiles with activity.
+
+10. **Are items nested replies?** → `thread`
+    - Branching conversation. Reddit comments, forum threads.
+
+11. **Platform navigation structures (S7 only):**
+    - Central portal with secondary loops → `daisy`
+    - Top-down strict pathways → `hierarchy`
+    - Hierarchy + hypertext navigation → `matrix`
+    - User-generated search structures → `hypertext`
+
+**Structure–scale compatibility:**
+
+| Scale | Valid structures |
+|-------|----------------|
+| S1 | `object`, `form` |
+| S2 | `object`, `list`, `collection`, `steps`, `form` |
+| S3 | `pool`, `stream`, `feed`, `wall`, `thread`, `form`, `collection`, `steps` |
+| S4–S6 | Any structure from lower scales, composed |
+| S7 | `hierarchy`, `matrix`, `daisy`, `hypertext`, `pool`, `collection` |
+| S8 | Federated compositions |
+
+**Disambiguation:**
 - `stream` = chronological messages (chat rooms, logs) vs `thread` = nested replies (forums, Reddit)
 - `list` = ordered sequence (playlists, reading lists) vs `collection` = unordered group (portfolios, inventories)
-- `form` = user input/creation tool (editors, calculators) vs `object` = display-only item (a single artwork, a weather reading)
-- `steps` = multi-page wizard/flow (calendar with day/month views, onboarding) vs `collection` = all items visible at once
+- `form` = user input/creation tool (editors, calculators) vs `object` = display-only item
+- `steps` = multi-page wizard/flow (calendar views, simulations) vs `collection` = all items visible at once
 
-| `daisy` | Central portal with secondary loops | S7 |
-| `hierarchy` | Top-down strict pathways | S7 |
-| `matrix` | Hierarchy + hypertext navigation | S7 |
-| `hypertext` | User-generated search structures | S7 |
+### 3. `mechanics` — What interactions activate in context?
 
-### 3. `mechanics` (string[])
+**What it is:** Cross-cutting interaction dynamics. Mechanics are *capability declarations* — they activate only when the module connects to a structure that uses them.
 
-**What it is:** Cross-cutting interaction dynamics that activate based on context. Mechanics are NOT always present — they auto-populate when a module connects to a structure that uses them.
+**Reasoning framework:** For each mechanic, ask "Does the description **explicitly mention or directly imply** this interaction?"
+
+**Conservative tagging principle:** Only tag mechanics that the description explicitly names or clearly implies. If the description doesn't mention filtering, sorting, charting, or sharing — don't add them even if they could theoretically apply. The module can gain additional mechanics later through composition (inheritance) or evolution.
+
+**Evolution tagging:** When a module evolves, re-evaluate mechanics from scratch based on the new description. Don't carry forward old mechanics unless the new description still supports them. If the description says a format is "replaced" or "transformed," the old mechanics are gone.
+
+| Mechanic | Tag when... | Do NOT tag when... |
+|----------|------------|-------------------|
+| `track` | Module contains **temporal data** — data that changes over time, whether user-generated (steps, expenses) or external (forecasts, prices). A 5-day forecast = `track`. A calendar with events = `track`. | Data is static/unchanging |
+| `chart` | Data is **visualized as graphs, trends, or plots**. Co-occurs with `track` when the module itself records temporal data. Analysis tools visualizing pre-existing or aggregated data (chart generators, stats calculators, research platforms) declare `chart` without `track`. | Raw numbers without visualization |
+| `filter` | Users can **hide items by criteria** (category, status, date range, price). Description mentions filtering, categories, "show subset", or "by X". | No subsetting capability |
+| `sort` | Users can **reorder items** by attribute (date, price, rating, priority). Description mentions sorting, ordering, or "sort by". | Fixed order only |
+| `post` | Users **create new top-level content** in a stream/feed/wall. | Content is pre-populated or input-only (use `form` structure) |
+| `reply` | Users **respond to existing content** in a nested thread. A forum with nested comments = both `post` and `reply`. | Flat messaging (that's `post` only) |
+| `vote` | Content has **upvote/downvote** for ranking. | No ranking mechanism |
+| `karma` | **Accumulated reputation** score across posts in a community. | No persistent reputation system |
+| `gold` | **Premium award** from users (costs real value). | No premium mechanics |
+| `follow` | Users can **subscribe to a specific source** for updates. | Just participating — joining a chat room ≠ following |
+| `like` | **Single-direction approval** signal (not ranked). | No approval mechanism |
+| `swipe` | **Card-based binary decisions**, one item at a time. | Multiple items visible simultaneously |
+| `scarcity` | **Designer-imposed cap** on interactions per period. | No engagement limits |
+| `limited-loops` | **Turn-based messaging** — can't send until reply received. | Free-flowing communication |
+| `share` | **Export/link content externally**. Only when boundary is `all` or `ask`. | Boundary is `none` |
+
+**Auto-population rule:** A module's mechanics tags declare *potential* mechanics. They activate only when the module connects to a structure that uses them. An art portfolio tagged `mechanics: ["vote"]` shows no vote UI standalone, but gains upvote/downvote when connected to an exhibition feed.
+
+**Inheritance:**
+- **Bottom-up:** Child module mechanics project onto parent view (food tracking → health icons on farm stand items)
+- **Top-down:** Parent mechanics available to children (density heatmap over individual stalls)
+
+### 4. `boundary` — What data crosses the module boundary?
+
+**What it is:** The data-sharing policy — what information flows out when this module connects to a network.
 
 **Valid values:**
 
-| Value | Effect | Activates When |
-|-------|--------|----------------|
-| `vote` | Upvote/downvote on content | Connected to ranked structure (feed, pool) |
-| `karma` | Accumulated reputation score | Connected to community with vote mechanic |
-| `follow` | Subscribe to updates from a source | Connected to stream/feed structure |
-| `like` | Single-direction approval signal | Connected to social content structure |
-| `swipe` | Card-based binary decision | Structure presents one-at-a-time objects |
-| `scarcity` | Limited interactions per period | Designer-imposed engagement cap |
-| `limited-loops` | Turn-based messaging | Connected to 1:1 communication channel |
-| `sort` | Reorder items by attribute | Connected to list/collection structure |
-| `filter` | Show subset by criteria | Connected to list/collection/pool structure |
-| `track` | Record data over time | Module has temporal content (health, metrics) |
-| `chart` | Visualize tracked data | Combined with track mechanic |
-| `post` | Create new content objects | Connected to stream/feed/wall structure |
-| `reply` | Respond to existing content | Connected to thread structure |
-| `share` | Export/link content externally | Module boundary is `all` or `ask` |
-| `gold` | Premium award mechanic | Connected to community with karma |
+| Value | Meaning |
+|-------|---------|
+| `all` | Data flows freely to connected modules |
+| `none` | No data leaves the module |
+| `ask` | User prompted before sharing |
+| `paid` | Sharing requires value exchange |
 
-**Auto-population rule:** A module's mechanics tags declare *potential* mechanics. They activate only when the module connects to a structure that uses them. An art portfolio module tagged `mechanics: ["vote"]` shows no vote UI standalone, but gains upvote/downvote when connected to an exhibition feed.
+**Reasoning framework:** Ask "When this module connects to a network, what should happen to its data?"
 
-### 4. `boundary` (string)
+**Decision signals:**
 
-**What it is:** What information the module shares with other modules in the network.
+| Signal in the description | → boundary |
+|--------------------------|-----------|
+| Private/personal data (health, finance, notes, drawings, playlists) | `none` |
+| Stateless tool, no user data (converter, calculator, palette) | `all` |
+| Public content, no account needed (open forum, wiki, weather) | `all` |
+| Social/collaborative — users share with others | `ask` |
+| Commerce/transactions — purchases require data exchange | `ask` |
+| Community with signup/accounts | `ask` |
+| Hierarchical organizations with access tiers | `ask` |
+| Research/data requiring payment | `paid` |
 
-**Valid values:**
+**Key distinction:** `none` = personal data the user wouldn't share. `ask` = data the user *might* share with consent. `all` = no user data stored, or content is inherently public.
 
-| Value | Semantics | A2A Mapping |
-|-------|-----------|-------------|
-| `all` | All data in the module is shared with connected modules | Data flows freely across A2A boundaries |
-| `none` | No data leaves the module | Module is isolated; no A2A data sharing |
-| `ask` | User is prompted before data is shared | Requires explicit consent per connection |
-| `paid` | Data sharing requires payment/exchange | Commercial boundary; requires value exchange |
+**Additional signals:**
+- Users must **sign up or create an account** → `ask` (account = personal data)
+- Module involves **commerce/transactions** → `ask` (purchases = data exchange)
+- Content is **publicly accessible without any account** → `all`
+- Module has **hierarchical access tiers** → `ask` (data flows between tiers with consent)
 
-**Boundary inheritance:** Smaller-scale modules inherit the *most restrictive* boundary of their containing module. A `none` parent means all children are `none` regardless of their own tags.
+**Boundary cascade:** Effective boundary = `min(own, parent)` where restriction order is `none` > `paid` > `ask` > `all`.
 
-**Boundary and publicness:** Boundary interacts with the cross-cutting pattern of *degree of publicness*:
-- S1-S2 (bedroom scale): high privacy expected → typically `none` or `ask`
-- S3-S5 (house/office scale): community trust → `ask` or `all` within group
-- S6-S8 (neighborhood/city scale): expect information spillage → `all` or `paid`
+### 5. `scale` — Where in the nesting hierarchy?
 
-**Boundary selection — match the prompt's expected sharing model:**
+**What it is:** The module's position in the nesting hierarchy. Determines what it can contain and what can contain it.
 
-| Module type | boundary | Examples |
-|-------------|----------|---------|
-| Private user data, no sharing intent | `none` | health tracker, finance logger, personal reading list, drawing canvas, playlist, markdown editor |
-| Social/collaborative — users expect to share | `ask` | chat rooms, social feeds, inventories with team access, bluesky client |
-| Public forums — content is inherently public | `all` | discussion forums, open wikis |
-| Stateless tools — no user data stored | `all` | unit converter, chart generator, periodic table, weather dashboard, statistics calculator, color palette |
+**Reasoning framework:** Ask "What does this module contain?" and "What would contain this module?"
 
-**Key distinction:** `none` = the module stores personal data the user wouldn't share. `ask` = the module stores data the user *might* share with consent. `all` = either no user data is stored, or the content is inherently public.
+**Scale decision tree:**
 
-### 5. `scale` (number)
+**S1 — Singular Object.** A single atomic item with no internal grouping.
+- One data point, one product, one artwork, one stateless converter.
+- Contains nothing. Contained by S2+ groups.
+- *Examples: health metric, product listing, artwork, unit converter, color palette*
 
-**What it is:** Where the module sits in the nesting hierarchy. Determines what can contain it and what it can contain.
+**S2 — Object Group.** Organizes multiple items into a single group.
+- A list, collection, set of steps, or input form with persistence/tracking.
+- Contains S1 objects. Contained by S3+ blocks.
+- *Examples: health tracker, product catalog, portfolio, editor, task list, playlist, expense tracker, calculator, weather dashboard, simulator*
 
-**Scale levels:**
+**S3 — Block.** Composes multiple groups into an interactive block with emergent dynamics.
+- A room where grouped items create interactions they don't have alone.
+- Contains S2 groups. Contained by S4+ compositions.
+- *Examples: chat room, social feed, health dashboard, calendar, user profile, forum, map*
 
-| Scale | Name | Physical Analogy | Contains |
-|-------|------|-----------------|----------|
-| S1 | Singular Object | A chair | — |
-| S2 | Object Group | A table setting | S1 objects in lists/collections/steps |
-| S3 | Block | A room | S2 groups as pools/streams/feeds/walls/threads |
-| S4 | Block Group | A suite of rooms | S3 blocks in spatial arrangements |
-| S5 | Module | A house/building | S3-S4 blocks with loops forming interactive units |
-| S6 | Module Group | A block/neighborhood | S5 modules in functional clusters |
-| S7 | Platform Structure | A neighborhood | S5-S6 as daisy/hierarchy/matrix/hypertext |
-| S8 | Super-structure | A city | S7 platforms in federated networks |
+**S4 — Block Group.** Arranges multiple blocks spatially.
+- A suite of rooms. Rare — spatial arrangement without forming a complete unit.
+- Contains S3 blocks. Contained by S5+ modules.
+- *Examples: co-creation canvas with pass-back between participants*
+
+**S5 — Module.** A complete, self-contained interactive unit.
+- A house/building. Has internal loops. Could stand alone.
+- Contains S3-S4 blocks. Contained by S6+ clusters.
+- *Examples: farm stand, community, exhibition, family space, discussion group*
+
+**S6 — Module Group.** Clusters multiple modules by function.
+- A city block. Multiple S5 modules organized together.
+- Contains S5 modules. Contained by S7+ platforms.
+- *Examples: farmers market, neighborhood game platform, cross-team coordination, household platform*
+
+**S7 — Platform Structure.** A platform with navigation architecture.
+- Uses `hierarchy`, `matrix`, `daisy`, or `hypertext` as primary structure. Also uses `pool` and `collection` for large-scale organization.
+- Contains S5-S6 clusters. Contained by S8 federations.
+- *Examples: company platform, social network, research platform, gallery platform, entertainment platform*
+
+**S8 — Super-structure.** Federates multiple platforms.
+- A city — network of S7 platforms.
+- *Examples: decentralized education marketplace, federated social networks*
+
+**Scale signals from descriptions:**
+
+| Signal | → Scale |
+|--------|---------|
+| "single", "one", "a [item]", stateless tool | S1 |
+| "list of", "tracker", "editor", "with categories", "catalog" | S2 |
+| "dashboard", "room", "feed", "chat", "profile", flat "forum" | S3 |
+| "suite", spatial arrangement of blocks | S4 |
+| "community", "full module", "stand", "exhibition" | S5 |
+| "market", "neighborhood", "cross-team", "group of modules" | S6 |
+| "platform", "network", "enterprise", "with tiers/roles" | S7 |
+| "decentralized", "federated", "cross-platform" | S8 |
 
 **Nesting rules:**
 - A module at scale N can only be *contained by* modules at scale > N
 - A module at scale N can only *contain* modules at scale < N
-- `scale.rel` (relative) means the module nests wherever its contentType matches, regardless of scale
 - Nesting is transitive: S1 inside S2 inside S3 is valid
 
 ## Composition Rules
 
-### Rule 1: Content-Type Grouping
-Modules with the same `contentType` auto-group when connected to a shared parent structure. A farmer's market block (S6) receiving three `produce` modules (S5) arranges them together.
+### Rule 1: ContentType Grouping
+Modules with the same `contentType` auto-group when connected to a shared parent. A farmers market (S6) receiving three `produce` modules (S5) arranges them together.
 
-### Rule 2: Structure Compatibility
-Not all structures are valid at all scales:
-- S1: `object` only
-- S2: `list`, `collection`, `steps`, `form`
-- S3: `pool`, `stream`, `feed`, `wall`, `thread`, `form`
-- S4-S6: compositions of lower-scale structures
-- S7: `daisy`, `hierarchy`, `matrix`, `hypertext`
-- S8: federated compositions of S7
+### Rule 2: Structure–Scale Compatibility
+See the structure–scale table in §2 above.
 
 ### Rule 3: Mechanics Activation
-Mechanics tags are *declarations of capability*, not active features. They activate when:
+Mechanics tags are declarations of capability. They activate when:
 1. The module connects to a structure that uses that mechanic
-2. The parent scale's mechanics propagate down (top-down inheritance)
-3. Child modules' mechanics propagate up to the parent view (bottom-up aggregation)
+2. Parent mechanics propagate down (top-down inheritance)
+3. Child mechanics propagate up (bottom-up aggregation)
 
-### Rule 4: Boundary Restriction Cascade
-The effective boundary of a module is: `min(own_boundary, parent_boundary)` where the restriction order is: `none` > `paid` > `ask` > `all`.
+### Rule 4: Boundary Cascade
+Effective boundary = `min(own, parent)` where restriction order is `none` > `paid` > `ask` > `all`.
 
 ### Rule 5: Emergent Network Formation
-When modules with compatible contentType and structure connect without a pre-existing parent:
+When compatible modules connect without a pre-existing parent:
 1. Two similar modules form an Object Group (S2)
 2. Three or more form a Block (S3)
-3. Diverse contentTypes at S5+ trigger automatic scale promotion (e.g., farmer stalls + clothing stalls → general market at S6)
+3. Diverse contentTypes at S5+ trigger scale promotion (farmer stalls + clothing stalls → general market at S6)
+
+## Module Lifecycle
+
+MSS tags are not static labels — they evolve as modules grow from personal tools to network participants.
+
+### Phase 1: Create — Personal Intent
+
+A user describes what they want. The agent generates a module with MSS tags based on intent.
+
+- Boundary is typically `none` (personal) or `all` (stateless tool)
+- Scale starts at S1–S2 (single items or groups)
+- Mechanics reflect personal capabilities (`track`, `chart`, `filter`, `sort`)
+
+### Phase 2: Compose — Building Alongside Existing
+
+The user has existing modules and wants a new one that works with them.
+
+- **Same contentType** → modules auto-group in shared views
+- **Different contentType** → use hyphenated variant to prevent unwanted grouping (e.g., `social-identity` alongside `social` feed)
+- Scale of compositions follows nesting rules: S2 groups compose into S3 blocks, S5 modules cluster into S6
+
+### Phase 3: Evolve — Boundary & Scale Transitions
+
+As usage changes, MSS tags adapt:
+
+- **Boundary progression:** `none` → `ask` → `all` → `paid` follows natural sharing patterns
+  - Personal tool → shared with friends (`none` → `ask`)
+  - Shared tool → public utility (`ask` → `all`)
+  - Popular resource → monetized access (`all`/`ask` → `paid`)
+- **Scale promotion:** Accumulating modules triggers scale increases
+  - Three S2 tools → S3 dashboard block
+  - Multiple S5 modules of diverse contentTypes → S6 cluster with contentType promotion (e.g., produce + crafts → `commerce`)
+- **Mechanics expansion:** New mechanics activate when boundary or structure changes (e.g., `share` activates when boundary moves from `none` to `ask` or `all`)
+
+### Phase 4: Network — Agent Card Declaration
+
+When a module joins a network via Agent Card, its MSS tags declare:
+
+- What it offers (`contentType` for network grouping)
+- How it shares data (`boundary` for connection consent)
+- Where it nests (`scale` for composition hierarchy)
+- What interactions it supports (`mechanics` as capability declarations)
+
+The Agent Card is the module's identity in the network. Tags must be accurate for correct auto-assembly.
 
 ## Agent Card Integration
 
@@ -208,9 +361,15 @@ MSS tags map to `modnet:mss:*` metadata keys on Agent Cards (see `src/modnet/mod
 }
 ```
 
-When generating Agent Cards for modnet nodes, include MSS metadata to declare what the node offers and how it shares data.
+**How networks use MSS metadata:**
 
-## Pattern Examples (Content/Structure/Boundary/Scale)
+- **Discovery:** Platforms query Agent Cards by contentType to find compatible modules
+- **Consent:** Boundary tags determine what consent flow is needed before data crosses module boundaries
+- **Grouping:** Modules with matching contentType auto-group when connected to a shared parent
+
+When generating Agent Cards, include MSS metadata so network nodes can discover, assemble, and negotiate data sharing correctly. All five MSS tags inform composition behavior even when only contentType and boundary are declared in the Agent Card — the remaining tags (structure, mechanics, scale) are carried in the module's bridge-code envelope.
+
+## Pattern Examples
 
 See [references/valid-combinations.md](references/valid-combinations.md) for a full table of validated MSS tag combinations.
 
@@ -220,6 +379,7 @@ See [assets/mss-patterns.jsonl](assets/mss-patterns.jsonl) for machine-readable 
 
 - **[structural-ia-distilled.md](references/structural-ia-distilled.md)** — Distilled primitives from Structural-IA.md: objects, channels, levers, loops, modules, blocks, platforms as they map to MSS tags
 - **[modnet-standards-distilled.md](references/modnet-standards-distilled.md)** — Distilled bridge-code syntax, module patterns, and crowd-sourced network structures from Modnet.md
+- **[dynamics-distilled.md](references/dynamics-distilled.md)** — Interaction dynamics, feedback loops, ephemeral networks, and emergent assembly — the behavioral layer that MSS tags reference but don't encode. Includes agent-mediation annotations
 - **[valid-combinations.md](references/valid-combinations.md)** — Table of valid MSS tag combinations with examples
 
 ## Related Skills
