@@ -203,6 +203,43 @@ export const createAgentLoop = async ({
   /** Tracks whether current pipeline cycle was triggered by a tick (proactive) or task (reactive) */
   let isProactiveCycle = false
 
+  const createMaxIterationsThread = (source?: MessageDetail['source']) =>
+    bThread([
+      ...Array.from({ length: maxIterations }, () =>
+        bSync({ waitFor: AGENT_EVENTS.tool_result, interrupt: [AGENT_EVENTS.message] }),
+      ),
+      bSync({
+        block: AGENT_EVENTS.execute,
+        request: {
+          type: AGENT_EVENTS.message,
+          detail: {
+            content: `Max iterations (${maxIterations}) reached`,
+            ...(source ? { source } : {}),
+          } satisfies MessageDetail,
+        },
+        interrupt: [AGENT_EVENTS.message],
+      }),
+    ])
+
+  const emitMessage = (content: string) => {
+    trigger({
+      type: AGENT_EVENTS.message,
+      detail: {
+        content,
+        ...(isProactiveCycle ? { source: 'proactive' as const } : {}),
+      } satisfies MessageDetail,
+    })
+  }
+
+  const recordRejectedToolCall = (toolCall: { id: string; name: string }, reason: string) => {
+    history.push({
+      role: 'tool',
+      content: JSON.stringify({ error: reason }),
+      tool_call_id: toolCall.id,
+    })
+    priorRejections.push(`${toolCall.name}: ${reason}`)
+  }
+
   // ── Warm layer: load session meta for context orientation ──────────────
   const initialMeta = await loadSessionMeta(memoryPath, sessionId)
   const sessionSummary: SessionSummaryContributor = createSessionSummaryContributor(initialMeta)
@@ -321,16 +358,7 @@ export const createAgentLoop = async ({
 
       // Per-task maxIterations bThread
       bThreads.set({
-        maxIterations: bThread([
-          ...Array.from({ length: maxIterations }, () =>
-            bSync({ waitFor: AGENT_EVENTS.tool_result, interrupt: [AGENT_EVENTS.message] }),
-          ),
-          bSync({
-            block: AGENT_EVENTS.execute,
-            request: { type: AGENT_EVENTS.message, detail: { content: `Max iterations (${maxIterations}) reached` } },
-            interrupt: [AGENT_EVENTS.message],
-          }),
-        ]),
+        maxIterations: createMaxIterationsThread(),
       })
 
       // Trigger inference
@@ -349,19 +377,7 @@ export const createAgentLoop = async ({
 
             // Per-tick maxIterations (same safety limit as tasks)
             bThreads.set({
-              maxIterations: bThread([
-                ...Array.from({ length: maxIterations }, () =>
-                  bSync({ waitFor: AGENT_EVENTS.tool_result, interrupt: [AGENT_EVENTS.message] }),
-                ),
-                bSync({
-                  block: AGENT_EVENTS.execute,
-                  request: {
-                    type: AGENT_EVENTS.message,
-                    detail: { content: `Max iterations (${maxIterations}) reached`, source: 'proactive' as const },
-                  },
-                  interrupt: [AGENT_EVENTS.message],
-                }),
-              ]),
+              maxIterations: createMaxIterationsThread('proactive'),
             })
 
             if (sensors.length === 0) {
@@ -612,12 +628,7 @@ export const createAgentLoop = async ({
     [AGENT_EVENTS.gate_rejected](detail: unknown) {
       const { toolCall, decision } = detail as GateRejectedDetail
       const reason = decision.reason ?? 'Rejected by gate'
-      history.push({
-        role: 'tool',
-        content: JSON.stringify({ error: reason }),
-        tool_call_id: toolCall.id,
-      })
-      priorRejections.push(`${toolCall.name}: ${reason}`)
+      recordRejectedToolCall(toolCall, reason)
     },
 
     // ── simulate_request ─────────────────────────────────────────────────
@@ -702,12 +713,7 @@ export const createAgentLoop = async ({
     // ── eval_rejected ────────────────────────────────────────────────────
     [AGENT_EVENTS.eval_rejected](detail: unknown) {
       const { toolCall, reason } = detail as EvalRejectedDetail
-      history.push({
-        role: 'tool',
-        content: JSON.stringify({ error: `Eval rejected: ${reason}` }),
-        tool_call_id: toolCall.id,
-      })
-      priorRejections.push(`${toolCall.name}: ${reason}`)
+      recordRejectedToolCall(toolCall, `Eval rejected: ${reason}`)
     },
 
     // ── execute ──────────────────────────────────────────────────────────
@@ -769,13 +775,7 @@ export const createAgentLoop = async ({
         trigger({ type: AGENT_EVENTS.invoke_inference })
       } else {
         inferenceRetryCount = 0
-        trigger({
-          type: AGENT_EVENTS.message,
-          detail: {
-            content: `Inference error: ${error}`,
-            ...(isProactiveCycle && { source: 'proactive' as const }),
-          } satisfies MessageDetail,
-        })
+        emitMessage(`Inference error: ${error}`)
       }
     },
 
