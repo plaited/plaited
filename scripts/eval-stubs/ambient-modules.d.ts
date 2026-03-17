@@ -107,7 +107,17 @@ declare module 'chart.js/auto' {
 }
 
 declare module 'marked' {
-  export function marked(src: string, opts?: any): string
+  // marked() is callable AND has .parse/.use/.walkTokens as properties.
+  // Use a callable interface type so both `marked('text')` and `marked.parse('text')` work.
+  type MarkedParser = {
+    (src: string, opts?: any): string | Promise<string>
+    parse(src: string, opts?: any): string | Promise<string>
+    parseInline(src: string, opts?: any): string | Promise<string>
+    use(...args: any[]): void
+    walkTokens(tokens: any[], callback: any): void
+    [key: string]: any
+  }
+  export const marked: MarkedParser
   export function parse(src: string, opts?: any): string | Promise<string>
   export const Marked: any
   export default {} as any
