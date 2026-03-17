@@ -11,14 +11,25 @@
  * - `crud.ts` — file I/O and shell execution
  * - `typescript-lsp.ts` — LSP-based codebase analysis
  * - `hypergraph.ts` — hypergraph memory queries (JSON-LD + WASM)
+ * - `embed-search.ts` — semantic embedding search over hypergraph memory
+ * - `analyze-image.ts` — vision language model image analysis
+ * - `speak.ts` — text-to-speech audio synthesis
+ *
+ * Multimodal tools (`embed_search`, `analyze_image`, `speak`) are factory-based:
+ * call `createEmbedSearchHandler()`, `createAnalyzeImageHandler()`, or
+ * `createSpeakHandler()` with `{ url }` to get a real-backend handler, or
+ * omit `url` for mock mode (tests / dev without running MLX servers).
  *
  * @public
  */
 
 import type { ToolDefinition } from '../agent/agent.schemas.ts'
 import type { ToolHandler } from '../agent/agent.types.ts'
+import { analyzeImageRiskTags, analyzeImageToolDefinition, createAnalyzeImageHandler } from './analyze-image.ts'
 import { BUILT_IN_RISK_TAGS, builtInHandlers } from './crud.ts'
+import { createEmbedSearchHandler, embedSearchRiskTags, embedSearchToolDefinition } from './embed-search.ts'
 import { search, searchRiskTags, searchToolDefinition } from './hypergraph.ts'
+import { createSpeakHandler, speakRiskTags, speakToolDefinition } from './speak.ts'
 import { lspHandler, lspRiskTags, lspToolSchema } from './typescript-lsp.ts'
 
 // ============================================================================
@@ -32,12 +43,20 @@ import { lspHandler, lspRiskTags, lspToolSchema } from './typescript-lsp.ts'
  * Used by BP dispatch to look up the handler for an `execute` event's
  * tool call name. Merges handlers from all tool modules.
  *
+ * Multimodal handlers use mock backends by default. Pass a `{ url }` to
+ * `createEmbedSearchHandler`, `createAnalyzeImageHandler`, or
+ * `createSpeakHandler` to get a real-backend handler, then merge it into
+ * the registry at node startup.
+ *
  * @public
  */
 export const toolHandlers: Record<string, ToolHandler> = {
   ...builtInHandlers,
   lsp: lspHandler,
   search,
+  embed_search: createEmbedSearchHandler(),
+  analyze_image: createAnalyzeImageHandler(),
+  speak: createSpeakHandler(),
 }
 
 // ============================================================================
@@ -58,6 +77,9 @@ export const toolRiskTags: Record<string, string[]> = {
   ...BUILT_IN_RISK_TAGS,
   lsp: lspRiskTags,
   search: searchRiskTags,
+  embed_search: embedSearchRiskTags,
+  analyze_image: analyzeImageRiskTags,
+  speak: speakRiskTags,
 }
 
 // ============================================================================
@@ -74,4 +96,10 @@ export const toolRiskTags: Record<string, string[]> = {
  *
  * @public
  */
-export const toolDefinitions: ToolDefinition[] = [lspToolSchema, searchToolDefinition]
+export const toolDefinitions: ToolDefinition[] = [
+  lspToolSchema,
+  searchToolDefinition,
+  embedSearchToolDefinition,
+  analyzeImageToolDefinition,
+  speakToolDefinition,
+]
