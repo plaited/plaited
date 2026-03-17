@@ -17,10 +17,10 @@ if [ "$PLAITED_AUTO_RESEARCH" != "1" ]; then
 fi
 
 MAX=${PLAITED_MAX_EXPERIMENTS:-20}
-LOG="${CLAUDE_PROJECT_DIR:-.}/.memory/evals/experiments.jsonl"
+LOG="${CLAUDE_PROJECT_DIR:-.}/results.jsonl"
 
 if [ ! -f "$LOG" ]; then
-  echo '{"decision":"block","reason":"Auto-research active. No experiments completed yet. Continue the calibration loop — see docs/AUTO-RESEARCH.md Variant 1."}'
+  echo '{"decision":"block","reason":"Auto-research active. No experiments completed yet. Continue the experiment loop — see program.md."}'
   exit 0
 fi
 
@@ -30,5 +30,5 @@ if [ "$COUNT" -ge "$MAX" ]; then
   exit 0
 fi
 
-echo "{\"decision\":\"block\",\"reason\":\"Auto-research active. ${COUNT}/${MAX} experiments completed. Continue the calibration loop.\"}"
+echo "{\"decision\":\"block\",\"reason\":\"Auto-research active. ${COUNT}/${MAX} experiments completed. Continue the experiment loop.\"}"
 exit 0

@@ -40,16 +40,6 @@
         ]
       }
     ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/UserPromptSubmit"
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "hooks": [
