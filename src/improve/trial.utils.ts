@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import { appendFile, mkdir, rm } from 'node:fs/promises'
+import { mkdir, rm } from 'node:fs/promises'
 import type { Adapter, Grader, GraderResult, PromptCase, TrajectoryRichness, TrialResult } from './trial.schemas.ts'
 import { AdapterResultSchema, GraderResultSchema, PromptCaseSchema, type TrajectoryStep } from './trial.schemas.ts'
 
@@ -228,7 +228,9 @@ export const readStdinPrompts = async (): Promise<PromptCase[] | null> => {
 export const writeOutput = async (line: string, outputPath?: string, append?: boolean): Promise<void> => {
   if (outputPath) {
     if (append) {
-      await appendFile(outputPath, `${line}\n`)
+      const file = Bun.file(outputPath)
+      const existing = (await file.exists()) ? await file.text() : ''
+      await Bun.write(outputPath, `${existing}${line}\n`)
     } else {
       await Bun.write(outputPath, `${line}\n`)
     }
