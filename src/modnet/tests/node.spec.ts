@@ -237,6 +237,70 @@ describe('createNode', () => {
     expect(rpcResponse.result.status.state).toBe('completed')
   })
 
+  test('A2A sendMessage ignores proactive messages while waiting for task completion', async () => {
+    let callCount = 0
+    const model: Model = {
+      reason: async function* () {
+        callCount++
+        if (callCount === 1) {
+          yield { type: 'toolcall_delta', id: 'tc-1', name: 'read_file', arguments: '{"path":"test.ts"}' } as ModelDelta
+          yield {
+            type: 'done',
+            response: { usage: { inputTokens: 100, outputTokens: 50 } },
+          } as ModelDelta
+          return
+        }
+
+        await Bun.sleep(40)
+        yield { type: 'text_delta', content: 'Reactive result.' } as ModelDelta
+        yield {
+          type: 'done',
+          response: { usage: { inputTokens: 100, outputTokens: 50 } },
+        } as ModelDelta
+      },
+    }
+
+    const node = await createNode({
+      model,
+      tools: [readFileTool],
+      toolExecutor: async () => 'file contents',
+      memoryPath: tmpDir(),
+      agentCard: testAgentCard,
+    })
+    nodes.push(node)
+
+    const responsePromise = fetch(`http://localhost:${node.server.port}/a2a`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(
+        jsonRpc('message/send', {
+          message: {
+            kind: 'message',
+            messageId: 'msg-proactive-ignore',
+            role: 'user',
+            parts: [{ kind: 'text', text: 'Read test.ts' }],
+          },
+        }),
+      ),
+    })
+
+    setTimeout(() => {
+      node.agent.trigger({
+        type: AGENT_EVENTS.message,
+        detail: { content: 'Proactive noise', source: 'proactive' },
+      })
+    }, 10)
+
+    const res = await responsePromise
+    expect(res.status).toBe(200)
+    const rpcResponse = (await res.json()) as { result: Task }
+    const artifact = rpcResponse.result.artifacts?.[0]
+    const textPart = artifact?.parts[0]
+    expect(textPart).toBeDefined()
+    expect(textPart!.kind).toBe('text')
+    expect('text' in textPart! && textPart!.text).toBe('Reactive result.')
+  })
+
   test('WebSocket connection requires session cookie', async () => {
     const model = createMockModel([{ text: 'ok' }])
     const node = await createNode({

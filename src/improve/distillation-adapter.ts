@@ -149,7 +149,8 @@ export const createLocalAdapter = (opts: LocalAdapterOptions): Adapter => {
           },
 
           [AGENT_EVENTS.message](detail: unknown) {
-            const { content } = detail as MessageDetail
+            const { content, source } = detail as MessageDetail
+            if (source === 'proactive') return
             trajectory.push({ type: 'message', content, timestamp: Date.now() })
             // Use final message content as output if text_delta didn't accumulate
             if (!output) output = content

@@ -158,9 +158,11 @@ const waitForAgentMessage = ({
 
     const disconnect = agent.subscribe({
       [AGENT_EVENTS.message](detail: unknown) {
+        const message = detail as MessageDetail
+        if (message.source === 'proactive') return
         clearTimeout(timeout)
         disconnect()
-        resolve((detail as MessageDetail).content)
+        resolve(message.content)
       },
     })
   })
