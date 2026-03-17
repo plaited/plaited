@@ -149,24 +149,30 @@ export const loadGrader = (path: string): Promise<Grader> => loadPolyglot<Grader
 // JSONL Loading
 // ============================================================================
 
+const parseJsonlLines = <T>(
+  content: string,
+  errorPrefix: string,
+  parseLine: (value: unknown) => T = (value) => value as T,
+): T[] =>
+  content
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map((line, index) => {
+      try {
+        return parseLine(JSON.parse(line))
+      } catch (error) {
+        throw new Error(`${errorPrefix} at line ${index + 1}: ${error instanceof Error ? error.message : error}`)
+      }
+    })
+
 /**
  * Load raw JSONL file as parsed JSON objects.
  *
  * @public
  */
 export const loadJsonl = async <T = unknown>(path: string): Promise<T[]> => {
-  const content = await Bun.file(path).text()
-  return content
-    .trim()
-    .split('\n')
-    .filter(Boolean)
-    .map((line, index) => {
-      try {
-        return JSON.parse(line) as T
-      } catch (error) {
-        throw new Error(`Invalid JSON at line ${index + 1}: ${error instanceof Error ? error.message : error}`)
-      }
-    })
+  return parseJsonlLines<T>(await Bun.file(path).text(), 'Invalid JSON')
 }
 
 /**
@@ -175,18 +181,7 @@ export const loadJsonl = async <T = unknown>(path: string): Promise<T[]> => {
  * @public
  */
 export const loadPrompts = async (path: string): Promise<PromptCase[]> => {
-  const content = await Bun.file(path).text()
-  return content
-    .trim()
-    .split('\n')
-    .filter(Boolean)
-    .map((line, index) => {
-      try {
-        return PromptCaseSchema.parse(JSON.parse(line))
-      } catch (error) {
-        throw new Error(`Invalid prompt at line ${index + 1}: ${error instanceof Error ? error.message : error}`)
-      }
-    })
+  return parseJsonlLines<PromptCase>(await Bun.file(path).text(), 'Invalid prompt', (value) => PromptCaseSchema.parse(value))
 }
 
 /**
@@ -204,16 +199,7 @@ export const readStdinPrompts = async (): Promise<PromptCase[] | null> => {
   const content = (await Bun.stdin.text()).trim()
   if (!content) return null
 
-  return content
-    .split('\n')
-    .filter(Boolean)
-    .map((line, index) => {
-      try {
-        return PromptCaseSchema.parse(JSON.parse(line))
-      } catch (error) {
-        throw new Error(`Invalid stdin prompt at line ${index + 1}: ${error instanceof Error ? error.message : error}`)
-      }
-    })
+  return parseJsonlLines<PromptCase>(content, 'Invalid stdin prompt', (value) => PromptCaseSchema.parse(value))
 }
 
 // ============================================================================
@@ -256,14 +242,6 @@ export const logProgress = (message: string, showProgress: boolean): void => {
  *
  * @public
  */
-export const getInputPreview = (input: string | string[]): string => {
-  if (Array.isArray(input)) {
-    const first = input[0] ?? ''
-    return `[${input.length} turns] ${first.slice(0, 40)}...`
-  }
-  return input.slice(0, 50)
-}
-
 // ============================================================================
 // Worker Pool
 // ============================================================================
