@@ -13,7 +13,6 @@
  * @public
  */
 
-import { appendFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { $ } from 'bun'
 
@@ -90,17 +89,18 @@ export const discardExperiment = async (): Promise<void> => {
  *
  * @remarks
  * Creates the log file and parent directories if they don't exist.
- * Uses `appendFileSync` for atomic single-line appends. Logging does not
- * create git commits automatically — experiment orchestration decides when
- * a result is worth checkpointing.
+ * Logging does not create git commits automatically — experiment
+ * orchestration decides when a result is worth checkpointing.
  *
  * @public
  */
 export const logExperiment = async (entry: ExperimentEntry): Promise<void> => {
   const dir = dirname(EXPERIMENTS_LOG)
   await $`mkdir -p ${dir}`.quiet()
+  const file = Bun.file(EXPERIMENTS_LOG)
+  const existing = (await file.exists()) ? await file.text() : ''
   const line = `${JSON.stringify(entry)}\n`
-  appendFileSync(EXPERIMENTS_LOG, line)
+  await Bun.write(EXPERIMENTS_LOG, `${existing}${line}`)
 }
 
 /**
