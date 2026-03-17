@@ -25,7 +25,7 @@ Eval prompts and grading infrastructure for module generation quality. Adapted f
 
 ## Prompt Format
 
-Prompts are JSONL conforming to `PromptCaseSchema` from `src/tools/trial.schemas.ts`:
+Prompts are JSONL conforming to `PromptCaseSchema` from `src/improve/trial.schemas.ts`:
 
 ```jsonl
 {"id":"<id>","input":"<generation prompt>","hint":"<implementation hints>","metadata":{"domain":"<domain>","subclass":"<subclass>","difficulty":"<Easy|Medium|Hard>","eval_ref":{"intention":[...],"static":[...],"dynamic":[...]},"mss":{"contentType":"...","structure":"...","mechanics":[...],"boundary":"...","scale":<n>},"dependencies":[...]}}
@@ -77,7 +77,7 @@ Three-dimension scoring maps to `GradingDimensions`:
 ## Running Trials
 
 ```typescript
-import { runTrial } from '../tools/trial.ts'
+import { runTrial } from '../improve/trial.ts'
 import { grade } from '../tools/module-grader.ts'
 
 const results = await runTrial({

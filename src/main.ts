@@ -1,6 +1,7 @@
 export * from './a2a.ts'
 export * from './agent.ts'
 export * from './behavioral.ts'
+export * from './improve.ts'
 export * from './modnet.ts'
 export * from './server.ts'
 export * from './tools/cli.utils.ts'

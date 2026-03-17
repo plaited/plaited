@@ -11,7 +11,7 @@
  * @packageDocumentation
  */
 
-import { parseCli } from './cli.utils.ts'
+import { parseCli } from '../tools/cli.utils.ts'
 import {
   type MetaVerification,
   type TrainingScore,

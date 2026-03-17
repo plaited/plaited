@@ -30,8 +30,8 @@ Run prompts against any adapter, capture structured results, and optionally grad
 The in-process API is the primary interface. Agents call `runTrial()` directly:
 
 ```typescript
-import { runTrial } from './src/tools/trial.ts'
-import type { Adapter, Grader } from './src/tools/trial.schemas.ts'
+import { runTrial } from './src/improve/trial.ts'
+import type { Adapter, Grader } from './src/improve/trial.schemas.ts'
 
 const adapter: Adapter = async ({ prompt, cwd }) => {
   const proc = Bun.spawn(['my-agent', '--prompt', prompt], { cwd })
@@ -138,7 +138,7 @@ Graders follow the polyglot pattern — TS module (`export const grade`) or exec
 ### Git-Based Grading (Coding Tasks)
 
 ```typescript
-import type { Grader } from './src/tools/trial.schemas.ts'
+import type { Grader } from './src/improve/trial.schemas.ts'
 
 export const grade: Grader = async ({ output, hint, cwd }) => {
   if (!cwd) return { pass: false, score: 0, reasoning: 'No cwd' }
@@ -168,8 +168,8 @@ print(json.dumps({"pass": passed, "score": 1.0 if passed else 0.0}))
 ## Schema Exports
 
 ```typescript
-import { TrialResultSchema, TrialInputSchema, TrialOutputSchema } from './src/tools/trial.ts'
-import { PromptCaseSchema, GraderResultSchema, AdapterResultSchema } from './src/tools/trial.schemas.ts'
+import { TrialResultSchema, TrialInputSchema, TrialOutputSchema } from './src/improve/trial.ts'
+import { PromptCaseSchema, GraderResultSchema, AdapterResultSchema } from './src/improve/trial.schemas.ts'
 import * as z from 'zod'
 
 // Generate JSON Schema (Zod 4 native)

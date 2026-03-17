@@ -23,7 +23,7 @@ Write adapter scripts that wrap any CLI agent for the trial runner. Adapters fol
 Export an `adapt` function matching the `Adapter` type:
 
 ```typescript
-import type { Adapter } from './src/tools/trial.schemas.ts'
+import type { Adapter } from './src/improve/trial.schemas.ts'
 
 export const adapt: Adapter = async ({ prompt, cwd }) => {
   const text = Array.isArray(prompt) ? prompt.join('\n') : prompt
@@ -87,7 +87,7 @@ type AdapterResult = {
 The trial runner loads adapters via `loadAdapter()`:
 
 ```typescript
-import { loadAdapter } from './src/tools/trial.utils.ts'
+import { loadAdapter } from './src/improve/trial.utils.ts'
 
 // TS module: imports and extracts 'adapt' export
 const adapter = await loadAdapter('./my-adapter.ts')
@@ -105,7 +105,7 @@ Detection is by file extension: `.ts`, `.js`, `.mjs`, `.cjs` are imported as ES 
 Simplest possible adapter — just captures text output:
 
 ```typescript
-import type { Adapter } from './src/tools/trial.schemas.ts'
+import type { Adapter } from './src/improve/trial.schemas.ts'
 
 export const adapt: Adapter = async ({ prompt }) => {
   const text = Array.isArray(prompt) ? prompt.join('\n') : prompt
@@ -119,7 +119,7 @@ export const adapt: Adapter = async ({ prompt }) => {
 Captures structured trajectory for detailed analysis:
 
 ```typescript
-import type { Adapter } from './src/tools/trial.schemas.ts'
+import type { Adapter } from './src/improve/trial.schemas.ts'
 import type { TrajectoryStep } from './src/agent/agent.schemas.ts'
 
 export const adapt: Adapter = async ({ prompt, cwd }) => {
@@ -176,7 +176,7 @@ export const adapt: Adapter = async ({ prompt, cwd }) => {
 Handles `prompt: string[]` by sending each turn sequentially:
 
 ```typescript
-import type { Adapter } from './src/tools/trial.schemas.ts'
+import type { Adapter } from './src/improve/trial.schemas.ts'
 
 export const adapt: Adapter = async ({ prompt, cwd }) => {
   const turns = Array.isArray(prompt) ? prompt : [prompt]
@@ -196,7 +196,7 @@ export const adapt: Adapter = async ({ prompt, cwd }) => {
 Reports its own timeout detection:
 
 ```typescript
-import type { Adapter } from './src/tools/trial.schemas.ts'
+import type { Adapter } from './src/improve/trial.schemas.ts'
 
 export const adapt: Adapter = async ({ prompt, cwd }) => {
   const text = Array.isArray(prompt) ? prompt.join('\n') : prompt
@@ -219,7 +219,7 @@ export const adapt: Adapter = async ({ prompt, cwd }) => {
 For agents with a library API — no process spawning needed:
 
 ```typescript
-import type { Adapter } from './src/tools/trial.schemas.ts'
+import type { Adapter } from './src/improve/trial.schemas.ts'
 
 export const adapt: Adapter = async ({ prompt, cwd }) => {
   // Call agent library directly
@@ -240,7 +240,7 @@ export const adapt: Adapter = async ({ prompt, cwd }) => {
 plaited trial '{"adapterPath":"./my-adapter.ts","promptsPath":"prompts.jsonl","k":5}'
 
 # Library: function-based (primary)
-import { runTrial } from './src/tools/trial.ts'
+import { runTrial } from './src/improve/trial.ts'
 const results = await runTrial({ adapter: myAdapter, prompts, k: 5 })
 ```
 

@@ -8,7 +8,7 @@
  * delete stale code instead of archiving it.
  */
 
-import type { Adapter, TrajectoryStep } from '../src/tools/trial.schemas.ts'
+import type { Adapter, TrajectoryStep } from '../src/improve/trial.schemas.ts'
 
 const SYSTEM_PROMPT = `You are improving a personal modnet agent runtime.
 

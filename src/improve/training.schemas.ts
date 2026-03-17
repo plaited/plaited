@@ -6,7 +6,7 @@
  * from agent and trial modules; adds training-specific scoring schemas.
  *
  * `DecisionStepSchema` imported from `src/agent/agent.schemas.ts` (canonical source).
- * `GradingDimensionsSchema` imported from `src/tools/trial.schemas.ts` (canonical source).
+ * `GradingDimensionsSchema` imported from `src/improve/trial.schemas.ts` (canonical source).
  *
  * @packageDocumentation
  */

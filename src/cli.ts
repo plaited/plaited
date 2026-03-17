@@ -19,7 +19,7 @@ import { ingestSkillCli } from './tools/ingest-skill.ts'
 import { discoverSkillsCli } from './tools/skill-discovery.ts'
 import { validateSkill } from './tools/skill-validate.ts'
 // Trial runner
-import { trialCli } from './tools/trial.ts'
+import { trialCli } from './improve/trial.ts'
 import { typescriptLsp } from './tools/typescript-lsp.ts'
 import { validateThreadCli } from './tools/validate-thread.ts'
 

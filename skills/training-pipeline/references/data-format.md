@@ -56,7 +56,7 @@ Pre-trained models don't understand behavioral programming constraints. Decision
 Three-dimensional scoring for trajectory quality:
 
 ```typescript
-// Canonical source: src/tools/trial.schemas.ts
+// Canonical source: src/improve/trial.schemas.ts
 const GradingDimensionsSchema = z.object({
   outcome: z.number().min(0).max(1).optional(),   // Correct result?
   process: z.number().min(0).max(1).optional(),    // Sound reasoning?
@@ -75,7 +75,7 @@ const GradingDimensionsSchema = z.object({
 Extends GradingDimensions with a computed training weight:
 
 ```typescript
-// Canonical source: src/tools/training.schemas.ts
+// Canonical source: src/improve/training.schemas.ts
 const TrainingScoreSchema = GradingDimensionsSchema.extend({
   overall: z.number().min(0).max(1),  // outcome x process
 })
@@ -88,7 +88,7 @@ const TrainingScoreSchema = GradingDimensionsSchema.extend({
 Detects flaky graders by running them k times and computing confidence intervals:
 
 ```typescript
-// Canonical source: src/tools/training.schemas.ts
+// Canonical source: src/improve/training.schemas.ts
 const MetaVerificationSchema = z.object({
   mean: z.number().min(0).max(1),
   stddev: z.number().min(0),
@@ -103,7 +103,7 @@ Stored in `outcome._metaVerification` on the `GraderResult`. High `stddev` indic
 
 ### Usage in Training
 
-The `withMetaVerification` wrapper (from `src/tools/trial.utils.ts`) runs a grader multiple times and produces a `MetaVerification` result. During probing phase, this catches grader failures before they corrupt training signal:
+The `withMetaVerification` wrapper (from `src/improve/trial.utils.ts`) runs a grader multiple times and produces a `MetaVerification` result. During probing phase, this catches grader failures before they corrupt training signal:
 
 1. Grader runs k times on the same trajectory
 2. MetaVerification computes mean, stddev, min, max
