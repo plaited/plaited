@@ -388,6 +388,48 @@ export const createAgentLoop = async ({
     })
   }
 
+  const resolveToolTags = (toolCall: ContextReadyDetail['toolCall']) =>
+    tools.find((t) => t.function.name === toolCall.name)?.tags ?? []
+
+  const requestSimulation = ({
+    toolCall,
+    tags,
+  }: {
+    toolCall: GateApprovedDetail['toolCall']
+    tags: GateApprovedDetail['tags']
+  }) => {
+    bThreads.set({
+      [`sim_guard_${toolCall.id}`]: bThread([
+        bSync({
+          block: (e) => e.type === AGENT_EVENTS.execute && e.detail?.toolCall?.id === toolCall.id,
+          interrupt: [
+            (e) => e.type === AGENT_EVENTS.simulation_result && e.detail?.toolCall?.id === toolCall.id,
+            AGENT_EVENTS.message,
+          ],
+        }),
+      ]),
+    })
+    trigger({
+      type: AGENT_EVENTS.simulate_request,
+      detail: { toolCall, tags } satisfies SimulateRequestDetail,
+    })
+  }
+
+  const routeApprovedToolCall = ({
+    toolCall,
+    tags,
+  }: {
+    toolCall: GateApprovedDetail['toolCall']
+    tags: GateApprovedDetail['tags']
+  }) => {
+    const tagSet = new Set(tags)
+    if (tagSet.size > 0 && [...tagSet].every((t) => t === RISK_TAG.workspace)) {
+      requestExecution({ toolCall, tags } satisfies ExecuteDetail)
+      return
+    }
+    requestSimulation({ toolCall, tags })
+  }
+
   // ── Warm layer: load session meta for context orientation ──────────────
   const initialMeta = await loadSessionMeta(memoryPath, sessionId)
   const sessionSummary: SessionSummaryContributor = createSessionSummaryContributor(initialMeta)
@@ -630,9 +672,7 @@ export const createAgentLoop = async ({
     [AGENT_EVENTS.context_ready](detail: unknown) {
       const { toolCall } = detail as ContextReadyDetail
 
-      // Look up tags for this tool
-      const toolDef = tools.find((t) => t.function.name === toolCall.name)
-      const tags = toolDef?.tags ?? []
+      const tags = resolveToolTags(toolCall)
 
       const result = composedGateCheck({ toolCall, tags }, DEFAULT_CONSTITUTION_PREDICATES)
 
@@ -657,30 +697,7 @@ export const createAgentLoop = async ({
     // ── gate_approved ────────────────────────────────────────────────────
     [AGENT_EVENTS.gate_approved](detail: unknown) {
       const { toolCall, tags } = detail as GateApprovedDetail
-
-      const tagSet = new Set(tags)
-      // Workspace-only → execute directly (skip simulation)
-      if (tagSet.size > 0 && [...tagSet].every((t) => t === RISK_TAG.workspace)) {
-        requestExecution({ toolCall, tags } satisfies ExecuteDetail)
-        return
-      }
-
-      // Any other tags (or empty/unknown) → simulate + evaluate
-      bThreads.set({
-        [`sim_guard_${toolCall.id}`]: bThread([
-          bSync({
-            block: (e) => e.type === AGENT_EVENTS.execute && e.detail?.toolCall?.id === toolCall.id,
-            interrupt: [
-              (e) => e.type === AGENT_EVENTS.simulation_result && e.detail?.toolCall?.id === toolCall.id,
-              AGENT_EVENTS.message,
-            ],
-          }),
-        ]),
-      })
-      trigger({
-        type: AGENT_EVENTS.simulate_request,
-        detail: { toolCall, tags } satisfies SimulateRequestDetail,
-      })
+      routeApprovedToolCall({ toolCall, tags })
     },
 
     // ── gate_rejected ────────────────────────────────────────────────────
