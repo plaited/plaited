@@ -2,7 +2,7 @@
 
 > **Goal:** Ship a personal agent node that a user can deploy on their own hardware, running a distilled model that generates MSS-compliant modules at runtime, monitors the environment proactively, and communicates through a generative UI — all governed by deterministic BP constraints.
 
-> **Framework status:** Complete. 1326 tests, 0 failures, 90 files. `createNode()` composes agent loop + server + A2A. The gap is generation quality and MSS comprehension, not framework code.
+> **Framework status:** Complete. 1398 tests, 0 failures, 97 files. `createNode()` composes agent loop + server + A2A. The gap is generation quality and MSS comprehension, not framework code.
 
 ---
 
@@ -104,7 +104,7 @@ Before any experiments, make `Structural-IA.md` and `Modnet.md` queryable. Optio
 - **Structured interrogation** — for each concept, ask "how does this change with agent mediation?" → produce a diff, not a rewrite
 - **bThread encoding** — composition rules as deterministic constitution factories
 
-### Phase 1: MSS Autoresearch (Variant 5)
+### Phase 1: MSS Autoresearch (AUTO-RESEARCH Variant 1)
 
 Calibrate `mss-vocabulary` skill until 100% classification accuracy.
 
@@ -368,7 +368,7 @@ tiiuae/Falcon-H1R-7B (FP16 base, ~14 GB)
 
 Training is iterative — each Phase produces trajectories, train after each phase (don't wait until Phase 7). LoRA adapters are stackable: train separate adapters for MSS comprehension, code generation, and proactive behavior, then merge.
 
-**Role in pipeline:** Falcon H1R is the **student model**. Frontier agents (Claude Code, Gemini CLI) are **teachers** generating SFT trajectories in Phases 4–6. The local adapter enables student evaluation via `runTrial()` + `compare-trials` to measure the teacher–student gap after each training cycle.
+**Role in pipeline:** Falcon H1R is the **student model**. Frontier agents (Claude Code via Anthropic Agent SDK, Gemini CLI via Google AI SDK) are **teachers** generating SFT trajectories in Phases 4–6. The local adapter enables student evaluation via `runTrial()` + `compare-trials` to measure the teacher–student gap after each training cycle.
 
 ---
 

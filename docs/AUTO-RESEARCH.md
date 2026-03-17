@@ -1,6 +1,6 @@
 # Autonomous Research Loops
 
-> **Status: DESIGN** — Variant 1 (Skill Calibration) is the active approach. Other variants are documented for future adoption. Inspired by [karpathy/autoresearch](https://github.com/karpathy/autoresearch).
+> **Status: ACTIVE** — Variant 1 (Skill Calibration) is running for Phase 1 MSS comprehension. Other variants activate as PLAN.md phases progress. Inspired by [karpathy/autoresearch](https://github.com/karpathy/autoresearch). See `PLAN.md` for the full phase schedule and model assignments.
 
 ## Core Pattern
 
@@ -57,7 +57,9 @@ The `Stop` hook doesn't care what you're optimizing. The `git-experiment.ts` kee
 **Metric:** Composite grader score (avg across weakest prompts)
 **Time budget:** ~10 min per prompt evaluation
 
-The agent identifies the weakest prompts from eval results, hypothesizes why they fail (bad wording, missing skill pattern, grader miscalibration), modifies skill content, and re-evaluates. See `scripts/auto-calibrate.ts` for the orchestrator.
+The agent identifies the weakest prompts from eval results, hypothesizes why they fail (bad wording, missing skill pattern, grader miscalibration), modifies skill content, and re-evaluates.
+
+**PLAN.md phases served:** Phase 1 (MSS comprehension), Phase 2 (skeleton), Phase 3 (composition), and all skill calibration schedule entries.
 
 ## Variant 2: Framework Quality Loop
 
@@ -69,13 +71,17 @@ Two-speed loop: fast inner loop (type check + tests, seconds) and slow outer loo
 
 Useful for improving tool handlers, context assembly, gate predicates — anything where code changes should improve generation quality measurably.
 
+**PLAN.md phases served:** Phase 3.5 (multimodal tools), Phase 4 (layered boot).
+
 ## Variant 3: Proactive Infrastructure Loop
 
 **Variable:** Proactive framework code (heartbeat, sensors, goals, push routing)
 **Metric:** Proactive-specific tests + integration eval
 **Time budget:** Seconds (tests) + ~10 min (integration check)
 
-Automates the Phase 5 prompt chain as a single session. The agent follows the dependency chain (wire proactive → sensor contract → set_heartbeat → push routing), implementing and testing each piece, without waiting for a human to invoke each prompt.
+Automates the proactive infrastructure as a single session. The agent follows the dependency chain (wire proactive → sensor contract → set_heartbeat → push routing), implementing and testing each piece, without waiting for a human to invoke each prompt.
+
+**PLAN.md phases served:** Phase 6 (full proactive cycle).
 
 ## Variant 4: Multi-Agent Tournament
 
@@ -83,7 +89,9 @@ Automates the Phase 5 prompt chain as a single session. The agent follows the de
 **Metric:** Composite grader scores per agent per prompt
 **Time budget:** ~10 min per prompt × 3 agents
 
-Runs the same prompt through Claude Code, Gemini, and Codex. Compares scores, identifies which agent excels at which domain, and auto-selects the best trajectory per prompt for SFT data. Useful during distillation (Phase 6).
+Runs the same prompt through Claude Code (Anthropic Agent SDK) and Gemini CLI (Google AI SDK). Compares scores, identifies which agent excels at which domain, and auto-selects the best trajectory per prompt for SFT data.
+
+**PLAN.md phases served:** Training checkpoints (trajectory collection for SFT/GRPO).
 
 ## Variant 5: Overnight Autonomous Session
 
@@ -93,16 +101,20 @@ Runs the same prompt through Claude Code, Gemini, and Codex. Compares scores, id
 
 Combines Variants 1+3 into a phased overnight program. The agent implements proactive primitives, writes skill content, runs calibration loops, and collects trajectories — all autonomously. Uses a `program.md` that encodes the phase structure and never-stop rule.
 
+**PLAN.md phases served:** Any phase — overnight sessions can target whichever phase is active.
+
 ## Infrastructure
 
 | Component | Status | Location |
 |---|---|---|
 | Trial runner | Exists | `src/tools/trial.ts` |
-| Module grader | Exists | `src/tools/module-grader.ts` |
-| Adapters | Exist | `src/tools/adapters/` |
+| LLM-as-judge | Exists | `src/tools/judge.ts` |
+| MSS grader (deterministic) | Exists | `src/tools/mss-grader.ts` |
+| Training scoring | Exists | `src/tools/training.ts` (meta-verification) |
+| Adapters (Claude Code, local, Falcon MLX) | Exist | `src/tools/adapters/`, `scripts/falcon-h1r-mlx-adapter.ts` |
 | Result persistence | Exists | `src/tools/trial.utils.ts` |
 | Compare-trials | Exists | `skills/compare-trials/` |
-| Git keep/discard | Exists | `scripts/git-experiment.ts` |
+| Git keep/discard | Exists | `src/tools/git-experiment.ts` |
 | Stop hook (never-stop) | Exists | `.claude/hooks/Stop` |
 | Cumulative results log | Exists | `.memory/evals/experiments.jsonl` |
 
@@ -135,7 +147,7 @@ The hook reads `.memory/evals/experiments.jsonl` to count completed experiments.
 
 ## Git Experiment Helpers
 
-`scripts/git-experiment.ts` provides the keep/discard pattern:
+`src/tools/git-experiment.ts` provides the keep/discard pattern:
 
 ```typescript
 import {
@@ -144,7 +156,7 @@ import {
   logExperiment,
   loadExperiments,
   getBaseline,
-} from '../scripts/git-experiment.ts'
+} from '../src/tools/git-experiment.ts'
 
 // After modifying skill content:
 const sha = await commitExperiment('tighten MSS boundary guidance')
