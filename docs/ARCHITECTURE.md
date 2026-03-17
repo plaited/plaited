@@ -18,7 +18,7 @@ Plaited's agent layer is a **framework** — composable primitives shipped as a 
 
 The framework provides:
 
-- **Interfaces** for two model roles (Model, Indexer)
+- **Interfaces** for four model roles (Model, Indexer, Vision, Voice)
 - **BP orchestration** for the agent loop, safety constraints, and context assembly
 - **Memory via hypergraph** — BP decisions and tool results as git-versioned JSON-LD files (see `HYPERGRAPH-MEMORY.md`)
 - **A constitution** encoding Structural-IA and Modnet concepts as bThreads + skills (see `CONSTITUTION.md`)
@@ -27,7 +27,7 @@ The framework is **not prescriptive** about inference backend. Consumers choose 
 
 ### Pluggable Models
 
-The Model and Indexer are interfaces, not implementations:
+Model, Indexer, Vision, and Voice are interfaces, not implementations:
 
 ```typescript
 type ModelDelta =
@@ -44,24 +44,51 @@ type Model = {
 type Indexer = {
   embed(text: string): Promise<Float32Array>
 }
+
+type Vision = {
+  analyze(image: Uint8Array, prompt: string): Promise<VisionResponse>
+}
+
+type Voice = {
+  speak(text: string, options?: { voice?: string }): Promise<Uint8Array>
+}
 ```
 
 The `AsyncIterable<ModelDelta>` interface works identically whether the backend is a local inference server (Ollama on localhost), a cloud GPU (vLLM), or an API endpoint (OpenRouter). Deltas stream via BP events (`thinking_delta`, `text_delta`) for progressive UI rendering. OpenAI-compatible wire format.
 
+All four interfaces are backend-agnostic — implementations can target MLX (Apple Silicon), vLLM (CUDA/cloud), or any OpenAI-compatible endpoint. Swap the server, not the adapter.
+
 ### Reference Model Stack
 
-| Role | Reference Model | Params | Function |
-|---|---|---|---|
-| **Model** | Falcon-H1R 7B (Mamba/SSM hybrid) | 7B | Reasons in `<think>` blocks. Produces structured tool calls. Fine-tuned via distillation from frontier agents. |
-| **Indexer** *(deferred)* | EmbeddingGemma (Gemma 3 300M base) | 300M | 768-dim embeddings (Matryoshka truncation to 512/256/128). Semantic similarity. 2K token context. Not part of the agent loop. |
+| Role | Interface | Reference Model | Params | Function |
+|---|---|---|---|---|
+| **Reasoning** | `Model` | Falcon-H1R 7B (Mamba/SSM hybrid) | 7B | Reasons in `<think>` blocks. Produces structured tool calls. Fine-tuned via distillation from frontier agents. |
+| **Embedding** | `Indexer` *(deferred)* | EmbeddingGemma (Gemma 3 300M base) | 300M | 768-dim embeddings (Matryoshka truncation to 512/256/128). Semantic similarity for hypergraph search. 2K token context. 100+ languages. |
+| **Vision** | `Vision` *(deferred)* | Qwen 2.5 VL 7B | 7B | Image/video to structured description. Object localization, OCR, visual grounding. 29 languages. |
+| **Speech output** | `Voice` *(deferred)* | Qwen3-TTS | ~2B | Text to speech. Voice cloning, voice design, streaming. Multilingual. |
 
-**Reference total: ~7B parameters (~14GB at fp16) initially.** The Indexer adds ~300M when semantic search is enabled. Any model satisfying the interface can be substituted — including frontier API models for pay-per-use.
+**Speech input (STT) is a client-side concern.** Browsers provide the Web Speech API, iOS has `SFSpeechRecognizer`, Android has `SpeechRecognizer` — all on-device, free, multilingual. The client transcribes speech to text and sends it to the node as a normal `task` event. The node never processes raw audio input.
+
+**Reference total: ~16.3B parameters across all roles.** In practice, only Model loads at startup (~4.6 GB quantized). Vision, Voice, and Indexer load on-demand when first called, then remain resident. On a 64+ GB machine all four run concurrently; on 18 GB they swap.
+
+### Framework Compatibility
+
+All reference models run on both MLX (Apple Silicon) and vLLM (CUDA/cloud):
+
+| Model | MLX Package | vLLM Support | Quantized Size |
+|---|---|---|---|
+| Falcon-H1R 7B | mlx-lm | Yes | ~4.6 GB (Q4) |
+| EmbeddingGemma 300M | mlx-community | Yes | ~200 MB (6-bit) |
+| Qwen 2.5 VL 7B | mlx-vlm | Yes (official recipes) | ~4.6 GB (Q4) |
+| Qwen3-TTS ~2B | mlx-audio | Yes (vLLM-Omni) | ~1.5 GB |
+
+When switching hardware, swap the inference server — not the framework code. The adapter contract (OpenAI-compatible `/v1/` endpoints) is the stable boundary.
 
 ## Key Design Principles
 
 - **Framework, Not Platform:** Composable primitives. Code via npm, models via Hugging Face. Platforms are built with it, not by it.
 - **Single Tenancy:** 1 User : 1 Agent instance. User data lives on their agent — nowhere else.
-- **Pluggable Models:** Model and Indexer are interfaces. Implementations swap freely.
+- **Pluggable Models:** Model, Indexer, Vision, and Voice are interfaces. Implementations swap freely across MLX, vLLM, and cloud APIs.
 - **BP-Orchestrated:** The PM's `behavioral()` engine is the central coordinator. Sub-agents run as `Bun.spawn()` processes for crash isolation; the PM's bThreads handle all structural coordination (task lifecycle, batch completion, constitution enforcement). See Runtime Hierarchy below.
 - **Plan-Driven Context:** The model's plan provides the optimization signal for context assembly. Neural produces, symbolic consumes.
 - **Defense in Depth:** Six independent safety layers across three stack levels. See `SAFETY.md`.
