@@ -170,6 +170,6 @@ The pluggable model interfaces make tier selection a deployment decision, not an
 | `PROJECT-ISOLATION.md` | Multi-project orchestrator, IPC bridge, tool layers |
 | `MODNET-IMPLEMENTATION.md` | Modnet topology, A2A protocol, identity, access control, payment (implementation patterns in `skills/modnet-node/`) |
 | `GENOME.md` | Skills taxonomy (seeds/tools/eval), CONTRACT frontmatter, wave ordering |
-| `CRITIQUE-RESPONSE.md` | Gap resolutions, attestation layer, module architecture evolution |
+| ~~`CRITIQUE-RESPONSE.md`~~ | Removed — gap resolutions folded into `PLAN.md` Part 4 (Design Decisions) |
 | `UI.md` | Generative UI overview (details in `generative-ui` skill) |
 | ~~`BEHAVIORAL-PROGRAMMING.md`~~ | Migrated → `skills/behavioral-core/references/algorithm-reference.md` |

@@ -29,14 +29,14 @@ The loop pattern is general purpose — it works anywhere you have a variable, a
 |---|---|---|---|
 | Skill content | `skills/*/references/*.md`, `prompts.jsonl` | Module grader composite score | ~10 min/prompt |
 | Framework code | `src/agent/`, `src/tools/` | `tsc` + `bun test` + pilot eval | Seconds + ~10 min |
-| bThread generation | `.memory/constitution/*.ts`, `.memory/goals/*.ts` | tsc + spec tests + trial runner | Seconds |
+| bThread generation | `.memory/constitution/*.ts`, `.memory/goals/*.ts` (created at runtime) | tsc + spec tests + trial runner | Seconds |
 | Constitution rules | Governance factories, gate predicates | Gate rejection rate, false positive/negative | ~10 min |
 | Context assembly | Contributor weights, priorities, trimming | Eval scores (better context → better generation?) | ~10 min/prompt |
 | Proactive tuning | Heartbeat interval, sensor configs, goal thresholds | Sensor hit rate, false alarm rate | Minutes |
 | System prompts | Base prompt text, tool descriptions | Eval scores across all prompts | ~10 min/prompt |
 | Grader accuracy | Block patterns, thresholds, dimension weights | Grader-vs-human agreement, false pass/fail | Seconds (re-grade) |
 | Training data | SFT mix, GRPO preference pairs | Student model eval post-training | Hours |
-| Node composition | `skills/node-generation/SKILL.md`, wave patterns | Node-grader 5 dimensions (structure, proactive, constitution, secrets, integration) | ~15 min |
+| Node composition | `skills/modnet-node/SKILL.md`, wave patterns | Node-grader 5 dimensions (structure, proactive, constitution, secrets, integration) | ~15 min |
 | Messaging modules | MSS patterns for social/stream modules | Outbound risk tags enforced, boundary:ask works, Gate → Simulate → Evaluate | ~10 min |
 | Client sensors | `src/server/` sensor_input handling | sensor_input → sensor_delta → goal fires | Seconds (tests) |
 
@@ -156,7 +156,7 @@ import {
   logExperiment,
   loadExperiments,
   getBaseline,
-} from '../src/tools/git-experiment.ts'
+} from './src/tools/git-experiment.ts'
 
 // After modifying skill content:
 const sha = await commitExperiment('tighten MSS boundary guidance')
@@ -165,7 +165,7 @@ const sha = await commitExperiment('tighten MSS boundary guidance')
 if (improved) {
   await logExperiment({
     commit: sha,
-    scores: { intention: 0.95, static: 1.0, dynamic: 0.88, composite: 0.94 },
+    scores: { outcome: 0.95, process: 1.0, efficiency: 0.88 },
     status: 'keep',
     description: 'tighten MSS boundary guidance',
     timestamp: new Date().toISOString(),
@@ -175,7 +175,7 @@ if (improved) {
   await discardExperiment()
   await logExperiment({
     commit: sha,
-    scores: { intention: 0.90, static: 1.0, dynamic: 0.75, composite: 0.88 },
+    scores: { outcome: 0.90, process: 1.0, efficiency: 0.75 },
     status: 'discard',
     description: 'tighten MSS boundary guidance',
     timestamp: new Date().toISOString(),
@@ -216,7 +216,7 @@ The PM node becomes the coordination server. Workers push code, PM detects via g
 
 ## Key Difference from Autoresearch
 
-Autoresearch optimizes one file against one scalar metric. This system optimizes **skill content** (multiple files) against **multi-dimensional grading** (Intention × Static × Dynamic). The loop pattern is identical; the measurement surface is richer. This means:
+Autoresearch optimizes one file against one scalar metric. This system optimizes **skill content** (multiple files) against **multi-dimensional grading** (outcome × process × efficiency). The loop pattern is identical; the measurement surface is richer. This means:
 
 - Keep/discard decisions need composite score comparison, not just `<` on a scalar
 - The agent must identify *which dimension* regressed and *which skill file* caused it
