@@ -78,13 +78,20 @@ entertainment, education, geo, weather, news, commerce, produce
 
 **structure** — choose by information pattern:
 - \`object\`: single display item (weather reading, color palette, one artwork)
-- \`list\`: ordered items where order/sequence matters — playlists, reading lists, meal logs, activity logs, habit trackers, expense logs, crypto trackers, code snippets (any time-ordered or user-sequenced record)
-- \`collection\`: unordered group — portfolios, inventories, quiz banks, recipe collections (no inherent order; user browses by category, not sequence)
-- \`form\`: user input/creation — editors, calculators, chart generators, color palettes (single mode, primary action is input/creation)
-- \`steps\`: multi-page flow — calendar day/month views, wizards, multi-mode simulators with distinct navigation tabs (explicitly multiple screens of the SAME data, not just a list of records)
+- \`list\`: strictly ordered sequences where ORDER IS THE POINT — playlists (track order matters), reading lists (reading order matters), meal/food logs (chronological append-only records with timestamps). Use ONLY when ordering is a core feature.
+- \`collection\`: unordered groups browsed by category, filter, or search — portfolios, inventories, expense records, crypto portfolios, code snippet libraries, quiz banks, recipe collections, habit records, map marker collections, geographic datasets (no inherent sequence; user filters/searches to explore)
+- \`form\`: CREATION or GENERATION tools where the primary action is producing output — editors (markdown, code), calculators, chart generators, color palette generators (the user creates something; the main flow is input→generate→output)
+- \`steps\`: multi-page flow with distinct screens/modes — habit trackers with day/week/month view tabs, quiz builders with multi-step question flow, calendar day/month views, wizards, multi-mode simulators (explicit navigation between different views of the same data)
 - \`stream\`: chronological messages (chat rooms — time-ordered, append-only)
 - \`thread\`: nested replies (forums, Reddit — hierarchical discussion)
 - \`feed\`: algorithm-sorted (social feeds — ranked by relevance)
+
+## Common Dependencies
+
+Always declare these in package.json when relevant:
+- Map modules: \`"leaflet": "^1"\` and \`"@types/leaflet": "^1"\` (do NOT use Google Maps or Mapbox inline API)
+- Chart modules: \`"chart.js": "^4"\` (unless building SVG charts from scratch, which is preferred)
+- Markdown: \`"marked": "^12"\` for parsing
 
 ## Large Data Sets
 
