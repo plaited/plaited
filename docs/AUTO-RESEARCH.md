@@ -109,7 +109,7 @@ Combines Variants 1+3 into a phased overnight program. The agent implements proa
 |---|---|---|
 | Trial runner | Exists | `src/tools/trial.ts` |
 | LLM-as-judge | Removed | Was `src/tools/judge.ts` — deleted (vendor lock-in). Phase 4 uses Gemini CLI via `Bun.$` |
-| MSS grader (deterministic) | Exists | `src/tools/mss-grader.ts` |
+| MSS grader (deterministic) | Exists | `scripts/mss-grader.ts` |
 | Training scoring | Exists | `src/tools/training.ts` (meta-verification) |
 | Adapters (teachers + student) | Exist | `scripts/claude-code-adapter.ts`, `scripts/falcon-h1r-mlx-adapter.ts`, `src/tools/distillation-adapter.ts` |
 | Result persistence | Exists | `src/tools/trial.utils.ts` |
