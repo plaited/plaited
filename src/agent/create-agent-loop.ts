@@ -274,6 +274,46 @@ export const createAgentLoop = async ({
     })
   }
 
+  const createInferenceAccumulator = () => ({
+    thinking: '',
+    text: '',
+    toolCalls: new Map<string, { id: string; name: string; arguments: string }>(),
+  })
+
+  const applyToolCallDelta = (
+    toolCalls: Map<string, { id: string; name: string; arguments: string }>,
+    delta: { id: string; name?: string; arguments?: string },
+  ) => {
+    const existing = toolCalls.get(delta.id)
+    if (existing) {
+      if (delta.arguments) existing.arguments += delta.arguments
+      return
+    }
+    toolCalls.set(delta.id, {
+      id: delta.id,
+      name: delta.name ?? '',
+      arguments: delta.arguments ?? '',
+    })
+  }
+
+  const buildParsedModelResponse = (accumulated: ReturnType<typeof createInferenceAccumulator>) => {
+    const toolCallsArr = [...accumulated.toolCalls.values()].map((toolCall) => ({
+      id: toolCall.id,
+      function: { name: toolCall.name, arguments: toolCall.arguments },
+    }))
+    return parseModelResponse({
+      choices: [
+        {
+          message: {
+            content: accumulated.text || null,
+            reasoning_content: accumulated.thinking || null,
+            tool_calls: toolCallsArr.length > 0 ? toolCallsArr : undefined,
+          },
+        },
+      ],
+    })
+  }
+
   // ── Warm layer: load session meta for context orientation ──────────────
   const initialMeta = await loadSessionMeta(memoryPath, sessionId)
   const sessionSummary: SessionSummaryContributor = createSessionSummaryContributor(initialMeta)
@@ -462,15 +502,7 @@ export const createAgentLoop = async ({
       )
 
       // Consume model stream
-      const accumulated: {
-        thinking: string
-        text: string
-        toolCalls: Map<string, { id: string; name: string; arguments: string }>
-      } = {
-        thinking: '',
-        text: '',
-        toolCalls: new Map(),
-      }
+      const accumulated = createInferenceAccumulator()
 
       try {
         for await (const delta of model.reason({ messages: ctx.messages, tools, temperature: 0, signal })) {
@@ -483,34 +515,9 @@ export const createAgentLoop = async ({
             accumulated.text += delta.content
             trigger({ type: AGENT_EVENTS.text_delta, detail: { content: delta.content } })
           } else if (delta.type === 'toolcall_delta') {
-            const existing = accumulated.toolCalls.get(delta.id)
-            if (existing) {
-              if (delta.arguments) existing.arguments += delta.arguments
-            } else {
-              accumulated.toolCalls.set(delta.id, {
-                id: delta.id,
-                name: delta.name ?? '',
-                arguments: delta.arguments ?? '',
-              })
-            }
+            applyToolCallDelta(accumulated.toolCalls, delta)
           } else if (delta.type === 'done') {
-            // Build response in OpenAI format for parseModelResponse
-            const toolCallsArr = [...accumulated.toolCalls.values()].map((tc) => ({
-              id: tc.id,
-              function: { name: tc.name, arguments: tc.arguments },
-            }))
-            const response = {
-              choices: [
-                {
-                  message: {
-                    content: accumulated.text || null,
-                    reasoning_content: accumulated.thinking || null,
-                    tool_calls: toolCallsArr.length > 0 ? toolCallsArr : undefined,
-                  },
-                },
-              ],
-            }
-            const parsed = parseModelResponse(response)
+            const parsed = buildParsedModelResponse(accumulated)
             const detail: ModelResponseDetail = { parsed, usage: delta.response.usage }
             abortControllers.delete(INFERENCE_ABORT_KEY)
             inferenceRetryCount = 0
