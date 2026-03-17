@@ -390,6 +390,101 @@ MAC ratchet principle: org-level bThreads only add constraints, never remove. Wo
 
 See [enterprise-topology.md](references/enterprise-topology.md) for node type specifications, seed lifecycle, multi-client access, and discovery mechanisms.
 
+## Skeleton Generation Guide
+
+When generating a module skeleton from a natural language description, reason in this order: **scale → contentType → structure → mechanics → boundary**.
+
+### Canonical Hard Cases
+
+These are edge cases with non-obvious answers. Apply them directly when the description matches:
+
+| Description pattern | scale | structure | mechanics | Notes |
+|---------------------|-------|-----------|-----------|-------|
+| Color mixing tool showing blend + palettes | **2** | form | [] | Multiple output sections = S2 even without persistence |
+| Calendar with day/week/month views | **3** | steps | track, filter | 3 navigable views = S3 block, not S2 |
+| Shared expense tracker (roommates, log + split) | **3** | collection | sort, filter | Organized by person + category = S3. **No `track`** — logging ≠ temporal tracking |
+| Two-person turn-based canvas (pass-and-draw) | **4** | form | limited-loops | Spatial arrangement of two S3 blocks = S4 |
+
+### Scale: S2 vs S3 vs S4
+
+The most common error is assigning S2 when the module is actually S3 or S4.
+
+**S2 = One group of items.** A single organized collection, list, form, or tracker with no internal sub-groups.
+- Examples: recipe collection, workout log, budget tracker, plant diary, wine collection
+- A stateless tool that produces **multiple simultaneous output items** is S2 — the outputs form a group of objects, even without data persistence.
+  - **S1 form**: single output (a format converter → one converted result = S1)
+  - **S2 form**: rich output panel with **multiple simultaneous outputs grouped together**. Example: A color mixer that shows the blend result + complementary palette + analogous palette in the same output view = S2. The multiple palette outputs form an object group, even if stateless.
+  - **The decisive rule:** Does the tool display multiple *categories* of output items (blend + palettes + color values together)? → S2. Does it display one converted/calculated result? → S1.
+
+**S3 = Multiple groups combined into an interactive block.**
+- Signal: "combining X, Y, and Z" — health overview combining step count + sleep + heart rate = three groups = S3
+- Signal: "multiple views / modes" — a **personal calendar with day, week, and month views** = S3 (`steps` structure). The three navigable view modes compose into a multi-mode block. Note: `steps` is valid at both S2 (simple 2-step sequence) and S3 (3+ navigable modes). **3 distinct view modes = S3, not S2.**
+- Signal: "map with categories of markers" — a city map with restaurants/parks/landmarks organized in categories = S3 (map block with category groups)
+- Signal: "organized by person and category in a shared context" — shared expense tracker = S3 (multiple axes)
+- Signal: "dashboard" combining multiple data types = S3
+- **Rule of thumb:** If you can describe the module as "a block that *contains* multiple groups" — it's S3, not S2.
+
+**S4 = Spatial arrangement of multiple S3 blocks between participants.**
+- Signal: "two participants taking turns / passing back and forth" — each participant has a block, arranged spatially = S4
+- Example: two-person turn-based collaborative canvas where each person's workspace is a block
+
+**Quick test:** Count how many distinct *groups* the module contains. One group → S2. Multiple groups combined into one interactive space → S3. Multiple blocks arranged between participants → S4.
+
+### ContentType Defaults
+
+When a module doesn't match an obvious domain keyword, apply these rules:
+
+| Module type | → contentType |
+|-------------|---------------|
+| Fitness/workout/exercise/gym trackers | `health` (never `tools` — body/exercise is always health domain) |
+| Personal organization tool for **non-body content** (recipe book, plant diary, wine collection) | `tools` |
+| Nature observation, field notes, birdwatching, scientific study | `science` |
+| Collaborative **creative** exchange between specific participants (turn-based, pass-and-draw) | `play-cocreation` |
+| Hobby management that is primarily an organizational tool | `tools` |
+
+**Never use boundary values as contentType.** The values `"all"`, `"none"`, `"ask"`, `"paid"` are boundary values — they are never valid contentType values. If you're tempted to write `"none"` as contentType, you have confused the two fields.
+
+**Hyphenated contentType:** Use `play-cocreation` (not `art`, not `play`) specifically for turn-based collaborative creative tools where participants exchange control. `play` is for solo games; `art` is for individual creative work; `play-cocreation` is for co-creation between partners.
+
+### Mechanics: When to Tag `track`
+
+`track` applies when the module contains **temporal data that changes over time**, including:
+- User-recorded data across sessions (logs, diaries, trackers, history)
+- External data that **auto-refreshes** (weather readings, live metrics, stock prices)
+
+A weather display that "refreshes periodically" = `track` (temporal external data, even if user doesn't write it).
+
+**Conservative tagging:** Only add mechanics the description explicitly names or directly implies. If the description doesn't mention sorting, don't add `sort` even if it seems useful. A calendar with events does *not* imply `sort` — events are filtered and tracked, not sorted by user action.
+
+**`share` mechanic:** Tag `share` when the description explicitly mentions sharing files, links, or content with others. "Members can share file links" = `share`. If boundary is `ask` or `all` and the description involves sending/attaching files or links to others in a stream — include `share`.
+
+**`limited-loops` mechanic:** Tag `limited-loops` when participants alternate turns and cannot act again until the other responds. Trigger phrases: "take turns", "passes to the other", "one person draws then the other", "turn-based". A two-person collaborative tool where "one person acts then passes to the other" = `limited-loops`.
+
+### Boundary: `ask` vs `all` for Viewable Content
+
+- `all` = **publicly accessible without any action** — no login, no consent, no request needed
+- `ask` = viewing requires **user consent or explicit request** — "upon request", "with consent", "must join", "need to be added"
+
+"Visitors can view it **upon request**" → `ask` (consent is required before data flows, even if unauthenticated).
+
+### Structure: `collection` vs `list` vs `pool`
+
+- `collection` = items **grouped by category** (flat grouping, no nesting) — expenses by category, metrics side-by-side, cuisine groupings
+- `list` = items in a **defined order/sequence** — ordered queue, priority-ranked, chronological
+- `pool` = **hierarchical browsing** — folders within folders, nested categories, drill-down navigation
+
+"Expenses across categories (dining, transport, bills)" → `collection` (grouped flat, no inherent order between categories).
+"An ordered list of movies by priority" → `list` (sequence matters).
+"Health metrics displayed side-by-side in one view" → `collection` (flat grouping of metrics — NOT `pool` which requires nesting).
+"Map with markers categorized into restaurants, parks, landmarks" → `collection` (flat category grouping — the categories are side-by-side groups, not nested. Maps with categorical filters use `collection`, not `pool`).
+"Folders within folders / nested sub-categories" → `pool` (hierarchical browsing only). `pool` = drill-down navigation, NOT flat categories.
+
+**Critical distinction:** Category filters ("show only restaurants") = flat grouping = `collection`. Nested folders-in-folders = hierarchical = `pool`. When in doubt: is there drill-down navigation where clicking a category reveals sub-categories? If no sub-categories → `collection`.
+
+- `form` = the **primary interaction is creation/input** — users draw, type, calculate, or compose. A collaborative drawing canvas where each turn involves drawing = `form`. Even if content accumulates over turns, if the UX is about *creating*, it's `form`. A drawing canvas is NOT a `collection` of drawings — it's a single shared canvas where users actively input strokes.
+
+---
+
 ## Related Skills
 
 - **mss-vocabulary** — MSS tag definitions, composition rules, valid combinations
