@@ -66,6 +66,13 @@ Before committing code, both must pass:
 **Helpers first** — define helper consts/functions BEFORE their first reference.
 **Direct imports** — import from specific files, not through re-exports within a module.
 
+**File naming:**
+- Shared files use module prefix: `feature.types.ts`, `feature.schemas.ts`, `feature.utils.ts`, `feature.constants.ts`
+- Feature files use dash-case: `create-agent-loop.ts`, `control-island.ts`, `key-mirror.ts`
+- Name the file after its primary export: `createA2AHandler` → `create-a2a-handler.ts`
+- Main entry uses module name: `behavioral.ts`, `server.ts`, `controller.ts`
+- **Never prefix feature files with the directory name** — the directory already provides context
+
 **File organization:**
 - `feature.types.ts` — types only
 - `feature.schemas.ts` — Zod schemas + `z.infer<>` types

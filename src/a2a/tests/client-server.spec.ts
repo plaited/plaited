@@ -1,8 +1,8 @@
 import { afterAll, describe, expect, test } from 'bun:test'
-import { createA2AClient } from '../a2a.client.ts'
+import { createA2AClient } from '../create-a2a-client.ts'
 import { AGENT_CARD_PATH } from '../a2a.constants.ts'
 import type { AgentCard, Message, Task, TaskPushNotificationConfig } from '../a2a.schemas.ts'
-import { createA2AHandler } from '../a2a.server.ts'
+import { createA2AHandler } from '../create-a2a-handler.ts'
 import type { A2AOperationHandlers, StreamEvent } from '../a2a.types.ts'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

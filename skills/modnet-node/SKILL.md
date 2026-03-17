@@ -171,10 +171,10 @@ const node = await createNode({
 
 ### Handler Factory (Lower-Level)
 
-For custom composition without `createNode`, use `createA2AHandler` directly from `src/a2a/a2a.server.ts`:
+For custom composition without `createNode`, use `createA2AHandler` directly from `src/a2a/create-a2a-handler.ts`:
 
 ```typescript
-import { createA2AHandler } from '../a2a/a2a.server.ts'
+import { createA2AHandler } from '../a2a/create-a2a-handler.ts'
 import { createServer } from '../server/server.ts'
 
 const { routes } = createA2AHandler({
@@ -200,10 +200,10 @@ const server = createServer({
 
 ### Transport Selection by Deployment
 
-Transport is **per-interaction, not per-node.** Use `createA2AClient` from `src/a2a/a2a.client.ts`:
+Transport is **per-interaction, not per-node.** Use `createA2AClient` from `src/a2a/create-a2a-client.ts`:
 
 ```typescript
-import { createA2AClient } from '../a2a/a2a.client.ts'
+import { createA2AClient } from '../a2a/create-a2a-client.ts'
 
 // Same-box (k8s pod, docker-compose) — unix socket
 const local = createA2AClient({
@@ -286,10 +286,10 @@ bSync({
 
 ### Known-Peers Trust Store (TOFU)
 
-Identity uses TOFU (trust-on-first-use) via `createPeerStore` from `src/a2a/a2a.peers.ts`:
+Identity uses TOFU (trust-on-first-use) via `createPeerStore` from `src/a2a/peers.ts`:
 
 ```typescript
-import { createPeerStore, TRUST_LEVEL } from '../a2a/a2a.peers.ts'
+import { createPeerStore, TRUST_LEVEL } from '../a2a/peers.ts'
 
 const peers = createPeerStore('/home/user/my-node/.memory/known-peers.json')
 

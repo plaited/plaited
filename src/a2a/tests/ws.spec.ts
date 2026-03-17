@@ -1,8 +1,8 @@
 import { afterAll, describe, expect, test } from 'bun:test'
 import type { Message, Task, TaskPushNotificationConfig } from '../a2a.schemas.ts'
 import type { A2AOperationHandlers, StreamEvent } from '../a2a.types.ts'
-import { createA2AWebSocketClient } from '../a2a.ws-client.ts'
-import { createA2AWebSocketHandler } from '../a2a.ws-server.ts'
+import { createA2AWebSocketClient } from '../create-a2a-ws-client.ts'
+import { createA2AWebSocketHandler } from '../create-a2a-ws-handler.ts'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

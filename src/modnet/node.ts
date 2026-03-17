@@ -15,7 +15,7 @@
 
 import { TASK_STATE } from '../a2a/a2a.constants.ts'
 import type { Task } from '../a2a/a2a.schemas.ts'
-import { createA2AHandler } from '../a2a/a2a.server.ts'
+import { createA2AHandler } from '../a2a/create-a2a-handler.ts'
 import type { A2AOperationHandlers } from '../a2a/a2a.types.ts'
 import { AGENT_EVENTS } from '../agent/agent.constants.ts'
 import { createAgentLoop } from '../agent/create-agent-loop.ts'

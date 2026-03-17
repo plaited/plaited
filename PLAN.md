@@ -2,7 +2,7 @@
 
 > **Goal:** Ship a personal agent node that a user can deploy on their own hardware, running a distilled model that generates MSS-compliant modules at runtime, monitors the environment proactively, and communicates through a generative UI — all governed by deterministic BP constraints.
 
-> **Framework status:** Complete. 1398 tests, 0 failures, 97 files. `createNode()` composes agent loop + server + A2A. The gap is generation quality and MSS comprehension, not framework code.
+> **Framework status:** Complete. 1396 tests, 0 failures, 95 files. `createNode()` composes agent loop + server + A2A. The gap is generation quality and MSS comprehension, not framework code.
 
 ---
 
@@ -282,7 +282,7 @@ Successful generation trajectories from Phases 4-6 ARE the SFT training data. No
 - Deleted: `PROMPTS.md`, `docs/program.md` — superseded by PLAN.md + AUTO-RESEARCH.md
 - Deleted: `skills/varlock/` — premature, regenerate via autoresearch post-deploy
 - Zero vendor SDK imports in `src/` — framework is fully vendor-agnostic
-- tsc clean, 1331 tests pass
+- tsc clean, 1396 tests pass
 
 ### Still Needed
 - `src/a2a/a2a.schemas.ts` → add `AgentExtension`, `inputModes`/`outputModes` on `AgentSkill`

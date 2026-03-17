@@ -12,7 +12,7 @@
  */
 
 // Modnet workspace
-import { initModuleCli, initNodeCli } from './modnet/workspace.cli.ts'
+import { initModuleCli, initNodeCli } from './modnet/workspace-cli.ts'
 // Agent tools (CRUD)
 import { bashCli, editFileCli, listFilesCli, readFileCli, writeFileCli } from './tools/crud.ts'
 import { ingestGoalCli } from './tools/ingest-goal.ts'

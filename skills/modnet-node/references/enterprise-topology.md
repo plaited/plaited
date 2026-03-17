@@ -107,8 +107,8 @@ Discovery code is native to the node — not a runtime skill. The seed generates
 | Data model (Parts, Messages, Tasks, Artifacts, Agent Card) | `a2a.schemas.ts` | Complete |
 | Constants (task states, methods, error codes, SSE headers) | `a2a.constants.ts` | Complete |
 | Operation types (server handlers, client interface) | `a2a.types.ts` | Complete |
-| HTTP+JSON-RPC server handler factory | `a2a.server.ts` | Complete |
-| HTTP client with unix socket + mTLS support | `a2a.client.ts` | Complete |
+| HTTP+JSON-RPC server handler factory | `create-a2a-handler.ts` | Complete |
+| HTTP client with unix socket + mTLS support | `create-a2a-client.ts` | Complete |
 | SSE encoding/parsing, JSON-RPC framing, Agent Card JWS signing | `a2a.utils.ts` | Complete |
 | Integration tests (client-server, schemas, utils) | `tests/` | Complete |
 

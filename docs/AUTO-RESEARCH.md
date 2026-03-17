@@ -1,6 +1,6 @@
 # Autonomous Research Loops
 
-> **Status: ACTIVE** — Variant 1 (Skill Calibration) is running for Phase 1 MSS comprehension. Other variants activate as PLAN.md phases progress. Inspired by [karpathy/autoresearch](https://github.com/karpathy/autoresearch). See `PLAN.md` for the full phase schedule and model assignments.
+> **Status: Phase 1 COMPLETE** — Variant 1 achieved 100% MSS classification accuracy (commit b382c74). Now serving Phase 2 (skeleton generation). Other variants activate as PLAN.md phases progress. Inspired by [karpathy/autoresearch](https://github.com/karpathy/autoresearch). See `PLAN.md` for the full phase schedule and model assignments.
 
 ## Core Pattern
 
@@ -108,7 +108,7 @@ Combines Variants 1+3 into a phased overnight program. The agent implements proa
 | Component | Status | Location |
 |---|---|---|
 | Trial runner | Exists | `src/tools/trial.ts` |
-| LLM-as-judge | Exists | `src/tools/judge.ts` |
+| LLM-as-judge | Removed | Was `src/tools/judge.ts` — deleted (vendor lock-in). Phase 4 uses Gemini CLI via `Bun.$` |
 | MSS grader (deterministic) | Exists | `src/tools/mss-grader.ts` |
 | Training scoring | Exists | `src/tools/training.ts` (meta-verification) |
 | Adapters (teachers + student) | Exist | `scripts/claude-code-adapter.ts`, `scripts/falcon-h1r-mlx-adapter.ts`, `src/tools/distillation-adapter.ts` |

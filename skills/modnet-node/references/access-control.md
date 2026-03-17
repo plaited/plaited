@@ -1,6 +1,6 @@
 # Access Control
 
-Implementation details for identity, authentication, and access control between modnet nodes. Design rationale is in `docs/MODNET-IMPLEMENTATION.md`. Trust store implementation is in `src/a2a/a2a.peers.ts`.
+Implementation details for identity, authentication, and access control between modnet nodes. Design rationale is in `docs/MODNET-IMPLEMENTATION.md`. Trust store implementation is in `src/a2a/peers.ts`.
 
 ## Identity & Authentication
 
