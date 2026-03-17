@@ -8,7 +8,7 @@
  * - safety/regression risk
  */
 
-import type { Grader, GraderResult } from '../src/improve/trial.schemas.ts'
+import type { Grader, GraderResult } from '../src/improve.ts'
 
 type JudgeOutput = {
   score: number

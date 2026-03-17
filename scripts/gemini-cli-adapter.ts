@@ -2,7 +2,7 @@
  * Gemini CLI adapter for bounded agent-runtime improvement experiments.
  */
 
-import type { Adapter, TrajectoryStep } from '../src/improve/trial.schemas.ts'
+import type { Adapter, TrajectoryStep } from '../src/improve.ts'
 
 const SYSTEM_PROMPT = `You are improving a personal modnet agent runtime.
 

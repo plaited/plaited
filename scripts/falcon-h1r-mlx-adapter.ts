@@ -20,7 +20,7 @@
  * @packageDocumentation
  */
 
-import type { Adapter, AdapterResult, TrajectoryStep } from '../src/improve/trial.schemas.ts'
+import type { Adapter, AdapterResult, TrajectoryStep } from '../src/improve.ts'
 
 // ============================================================================
 // Configuration
