@@ -240,6 +240,20 @@ export const createAgentLoop = async ({
     priorRejections.push(`${toolCall.name}: ${reason}`)
   }
 
+  const recordToolResult = (result: ToolResultDetail['result']) => {
+    history.push({
+      role: 'tool',
+      content: result.status === 'failed'
+        ? JSON.stringify({ error: result.error })
+        : JSON.stringify(result.output ?? result.error ?? null),
+      tool_call_id: result.toolCallId,
+    })
+    trigger({
+      type: AGENT_EVENTS.tool_result,
+      detail: { result } satisfies ToolResultDetail,
+    })
+  }
+
   // ── Warm layer: load session meta for context orientation ──────────────
   const initialMeta = await loadSessionMeta(memoryPath, sessionId)
   const sessionSummary: SessionSummaryContributor = createSessionSummaryContributor(initialMeta)
@@ -734,31 +748,11 @@ export const createAgentLoop = async ({
           { toolCallId: toolCall.id, name: toolCall.name, status: 'completed', output },
           duration,
         )
-
-        history.push({
-          role: 'tool',
-          content: JSON.stringify(result.output ?? result.error ?? null),
-          tool_call_id: toolCall.id,
-        })
-
-        trigger({
-          type: AGENT_EVENTS.tool_result,
-          detail: { result } satisfies ToolResultDetail,
-        })
+        recordToolResult(result)
       } catch (error) {
         const duration = Date.now() - start
         const result = toToolResult(toolCall, error, duration)
-
-        history.push({
-          role: 'tool',
-          content: JSON.stringify({ error: result.error }),
-          tool_call_id: toolCall.id,
-        })
-
-        trigger({
-          type: AGENT_EVENTS.tool_result,
-          detail: { result } satisfies ToolResultDetail,
-        })
+        recordToolResult(result)
       } finally {
         abortControllers.delete(toolCall.id)
       }
