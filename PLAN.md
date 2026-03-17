@@ -36,7 +36,23 @@
 
 2. **Mechanics activate across A2A boundaries.** Same mechanics Jaffe defined, but the channel is A2A instead of a shared database. When Node A sends a Message with MSS info to Node B, B's agent routes to the matching module by contentType. Mechanics activate based on the *receiving* module's structure. A mobile client sending BLE/location data is a sensor pushing to the node — `track` and `filter` mechanics activate because the module has temporal location data.
 
-3. **Agent collapses UX complexity, not structural layers.** S5-S7 still exist architecturally. The agent means the user doesn't have to navigate the full hierarchy — generative UI presents the right slice for the current task. When using a mobile/desktop client, the user drops into their agent, which may be part of a complex ephemeral network, but the user sees simpler mini-app UIs.
+3. **Scale splits into two contexts — the agent bridges them.**
+
+   S5-S8 still exist architecturally but the user never navigates them. Scale divides cleanly:
+
+   | Context | Scale | Who Sees It | Where It Lives |
+   |---|---|---|---|
+   | **User-facing** | S1–S4 | User via generative UI | `package.json` modnet field (`ModnetFieldSchema`) |
+   | **Agent infrastructure** | S5–S8 | Agents via Agent Cards | `modnet:mss:scale` on Agent Card metadata |
+
+   The user experiences S1–S3 directly: forms, lists, feeds, threads. They never think "I'm in an S6 pool" — they think "show me the tomatoes." The agent translates intent into scale navigation:
+
+   1. User says "join that market" → agent fetches S6 Agent Card
+   2. Agent generates compatible S5 module → internally structured as S2-S3 views
+   3. Generative UI renders S2-S3 slices (product lists, filtered catalogs)
+   4. S6 market topology is invisible — the agent routed it
+
+   This is why `ModnetFieldSchema` caps at S1–S4 (validates what generative UI renders) while Agent Cards carry S1–S8 (inter-agent routing). Two schemas for two contexts, not a gap.
 
 4. **Network duration is a spectrum (not binary ephemeral/permanent):**
 
@@ -159,6 +175,17 @@ Build the `ToolDefinition` + `ToolExecutor` wiring that lets Falcon invoke embed
 **Gate:** All three tools callable via `createAgentLoop()` with mock and real backends.
 
 ### Phase 4: Layered Boot (Variant 4)
+
+**Also needed for Phase 4:** Teacher adapters and judge implementation.
+
+| Component | Location | Status |
+|---|---|---|
+| Claude Code adapter (teacher) | `scripts/claude-code-adapter.ts` | Exists |
+| Gemini CLI adapter (teacher) | `scripts/gemini-cli-adapter.ts` | **Write for Phase 4** — headless mode, `--output-format stream-json` ([Gemini CLI headless docs](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/headless.md)) |
+| Gemini judge (grading) | `scripts/gemini-judge.ts` | **Write for Phase 4** — `gemini -p --output-format json` via `Bun.$`, no SDK |
+| Falcon adapter (student) | `scripts/falcon-h1r-mlx-adapter.ts` | Exists |
+
+**Adapter lifecycle:** Teacher adapters (`claude-code`, `gemini-cli`) live in `scripts/`, not `src/` — they're deployment-specific, not framework code. Post-distillation, when the student model handles all tasks, teacher adapters are removed.
 
 Progressive: MSS classification → skeleton → implementation → boot → judge.
 

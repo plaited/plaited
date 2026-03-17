@@ -3,13 +3,13 @@
  * and rich trajectory capture for module generation evaluation.
  *
  * @remarks
- * Loaded by the trial runner via `loadAdapter('src/tools/adapters/claude-code.ts')`.
+ * Loaded by the trial runner via `loadAdapter('scripts/claude-code-adapter.ts')`.
  * The `adapt` named export satisfies the Adapter contract.
  *
  * @packageDocumentation
  */
 
-import type { Adapter, TrajectoryStep } from '../trial.schemas.ts'
+import type { Adapter, TrajectoryStep } from '../src/tools/trial.schemas.ts'
 
 // ============================================================================
 // Module Generation System Prompt (appended to Claude Code defaults)
