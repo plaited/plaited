@@ -122,6 +122,47 @@ export const TrainingCandidateAssessmentSchema = z.object({
 /** Training-candidate assessment type */
 export type TrainingCandidateAssessment = z.infer<typeof TrainingCandidateAssessmentSchema>
 
+/**
+ * Reasons a runtime trace should be excluded from raw training-capture output.
+ *
+ * @remarks
+ * This is weaker than full training eligibility. It is used when the runtime
+ * can only assess whether a trace is worth keeping for later grading, not
+ * whether the trace is already safe to include in a dataset.
+ *
+ * @public
+ */
+export const TrainingCaptureReasonSchema = z.enum([
+  'timed_out',
+  'non_zero_exit',
+  'insufficient_richness',
+  'tool_error',
+])
+
+/** Training-capture assessment reason type */
+export type TrainingCaptureReason = z.infer<typeof TrainingCaptureReasonSchema>
+
+/**
+ * Runtime-only trace capture assessment.
+ *
+ * @remarks
+ * Used by bounded improvement loops like `layered-boot` that can inspect the
+ * captured trajectory and runtime status but do not have grader dimensions yet.
+ *
+ * @public
+ */
+export const TrainingCaptureAssessmentSchema = z.object({
+  /** Whether the runtime trace is worth keeping for later grading/training */
+  eligible: z.boolean(),
+  /** Computed richness of the available trajectory */
+  richness: TrajectoryRichnessSchema,
+  /** Reasons the trace should be excluded from raw capture */
+  reasons: z.array(TrainingCaptureReasonSchema),
+})
+
+/** Training-capture assessment type */
+export type TrainingCaptureAssessment = z.infer<typeof TrainingCaptureAssessmentSchema>
+
 // ============================================================================
 // CLI Schemas
 // ============================================================================

@@ -18,6 +18,7 @@
 
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
+import { assessTrainingCapture, type TrainingCaptureAssessment } from '../src/improve.ts'
 import { grade as geminiGrade } from './gemini-judge.ts'
 import { adapt as claudeAdapt } from './claude-code-adapter.ts'
 import { adapt as geminiAdapt } from './gemini-cli-adapter.ts'
@@ -44,6 +45,7 @@ type TrialResult = {
   changedFiles: string[]
   diffStat: string
   patch: string
+  captureAssessment: TrainingCaptureAssessment
   layers: {
     scope: CheckResult
     types: CheckResult
@@ -188,6 +190,13 @@ const runSingle = async (prompt: PromptCase): Promise<TrialResult> => {
     const changedFiles = await getChangedFiles(worktree)
     const diffStat = await getDiffStat(worktree)
     const patch = await getPatch(worktree)
+    const captureAssessment = assessTrainingCapture({
+      trial: {
+        trajectory: adapterResult.trajectory,
+        timedOut: adapterResult.timedOut,
+        exitCode: adapterResult.exitCode,
+      },
+    })
 
     const scope = checkScope(changedFiles, prompt.allowedPaths)
     const types = scope.passed ? await checkTypes(worktree) : { passed: false, notes: 'Skipped: scope failed' }
@@ -204,6 +213,7 @@ const runSingle = async (prompt: PromptCase): Promise<TrialResult> => {
       changedFiles,
       diffStat,
       patch,
+      captureAssessment,
       layers: { scope, types, tests, focus },
       passed: scope.passed && types.passed && tests.passed && focus.passed,
     }
@@ -257,7 +267,10 @@ const main = async () => {
       .filter(([, layer]) => layer && !layer.passed)
       .map(([name]) => name)
     if (result.passed) {
-      console.log(`✓ ${result.changedFiles.length} file(s) changed`)
+      const captureLabel = result.captureAssessment.eligible
+        ? `capture=${result.captureAssessment.richness}`
+        : `capture=skip:${result.captureAssessment.reasons.join('+')}`
+      console.log(`✓ ${result.changedFiles.length} file(s) changed ${captureLabel}`)
     } else {
       console.log(`✗ ${failures.join(', ') || 'unknown failure'}`)
     }
@@ -269,7 +282,9 @@ const main = async () => {
   await Bun.write(outPath, results.map((result) => JSON.stringify(result)).join('\n') + '\n')
 
   const passes = results.filter((result) => result.passed).length
+  const captureEligible = results.filter((result) => result.captureAssessment.eligible).length
   console.log(`\nSummary: ${passes}/${results.length} passed`)
+  console.log(`Training capture: ${captureEligible}/${results.length} usable traces`)
   console.log(`Results saved: ${outPath}`)
 
   if (passes !== results.length) process.exit(1)

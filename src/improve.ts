@@ -13,6 +13,8 @@ export {
 } from './improve/git-experiment.ts'
 
 export {
+  type TrainingCaptureReason,
+  type TrainingCaptureAssessment,
   type TrainingAssessmentReason,
   type TrainingCandidateAssessment,
   type MetaVerification,
@@ -21,6 +23,8 @@ export {
   DecisionStepSchema,
   GradingDimensionsSchema,
   MetaVerificationSchema,
+  TrainingCaptureReasonSchema,
+  TrainingCaptureAssessmentSchema,
   TrainingAssessmentReasonSchema,
   TrainingCandidateAssessmentSchema,
   TrainingScoreInputSchema,
@@ -29,7 +33,9 @@ export {
 } from './improve/training.schemas.ts'
 
 export {
+  type AssessTrainingCaptureOptions,
   type AssessTrainingCandidateOptions,
+  assessTrainingCapture,
   assessTrainingCandidate,
   computeTrainingWeight,
   scoreTrainingDimensions,

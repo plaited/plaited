@@ -10,6 +10,8 @@ import { describe, expect, test } from 'bun:test'
 import * as z from 'zod'
 import {
   MetaVerificationSchema,
+  TrainingCaptureAssessmentSchema,
+  TrainingCaptureReasonSchema,
   TrainingAssessmentReasonSchema,
   TrainingCandidateAssessmentSchema,
   TrainingScoreInputSchema,
@@ -17,6 +19,7 @@ import {
   TrainingScoreSchema,
 } from '../training.schemas.ts'
 import {
+  assessTrainingCapture,
   assessTrainingCandidate,
   computeTrainingWeight,
   scoreTrainingDimensions,
@@ -208,6 +211,82 @@ describe('assessTrainingCandidate', () => {
     expect(result.eligible).toBe(false)
     expect(result.weight).toBeCloseTo(0.09, 10)
     expect(result.reasons).toContain('low_weight')
+  })
+})
+
+// ============================================================================
+// assessTrainingCapture
+// ============================================================================
+
+describe('assessTrainingCapture', () => {
+  test('accepts a full clean trace', () => {
+    const result = assessTrainingCapture({
+      trial: {
+        exitCode: 0,
+        trajectory: [
+          { type: 'thought', content: 'Plan', timestamp: 1 },
+          { type: 'tool_call', name: 'read_file', status: 'completed', timestamp: 2 },
+          { type: 'message', content: 'Done', timestamp: 3 },
+        ],
+      },
+    })
+
+    expect(result.eligible).toBe(true)
+    expect(result.richness).toBe('full')
+    expect(result.reasons).toEqual([])
+    expect(() => TrainingCaptureAssessmentSchema.parse(result)).not.toThrow()
+  })
+
+  test('rejects timed out traces with non-zero exit', () => {
+    const result = assessTrainingCapture({
+      trial: {
+        timedOut: true,
+        exitCode: 124,
+        trajectory: [{ type: 'message', content: 'Timed out', timestamp: 1 }],
+      },
+      minRichness: 'messages-only',
+    })
+
+    expect(result.eligible).toBe(false)
+    expect(result.reasons).toContain('timed_out')
+    expect(result.reasons).toContain('non_zero_exit')
+  })
+
+  test('rejects failed tool calls by default', () => {
+    const result = assessTrainingCapture({
+      trial: {
+        exitCode: 0,
+        trajectory: [
+          { type: 'tool_call', name: 'bash', status: 'failed', timestamp: 1 },
+          { type: 'message', content: 'Recovered', timestamp: 2 },
+        ],
+      },
+      minRichness: 'messages-only',
+    })
+
+    expect(result.eligible).toBe(false)
+    expect(result.reasons).toContain('tool_error')
+  })
+
+  test('can allow tool errors for weaker raw-capture passes', () => {
+    const result = assessTrainingCapture({
+      trial: {
+        exitCode: 0,
+        trajectory: [
+          { type: 'tool_call', name: 'bash', status: 'failed', timestamp: 1 },
+          { type: 'message', content: 'Recovered', timestamp: 2 },
+        ],
+      },
+      minRichness: 'messages-only',
+      allowToolErrors: true,
+    })
+
+    expect(result.eligible).toBe(true)
+    expect(result.reasons).toEqual([])
+  })
+
+  test('schema validates capture reasons', () => {
+    expect(() => TrainingCaptureReasonSchema.parse('tool_error')).not.toThrow()
   })
 })
 

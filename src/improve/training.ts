@@ -13,6 +13,7 @@
 
 import { parseCli } from '../tools/cli.utils.ts'
 import {
+  type TrainingCaptureAssessment,
   type TrainingCandidateAssessment,
   type MetaVerification,
   type TrainingScore,
@@ -77,6 +78,13 @@ export type AssessTrainingCandidateOptions = {
   allowToolErrors?: boolean
 }
 
+/** Configuration for runtime-only trace capture assessment. */
+export type AssessTrainingCaptureOptions = {
+  trial: Pick<TrialEntry, 'trajectory' | 'timedOut' | 'exitCode'>
+  minRichness?: Exclude<TrajectoryRichness, 'minimal'>
+  allowToolErrors?: boolean
+}
+
 /**
  * Assess whether a trial should be kept for distillation/training.
  *
@@ -115,6 +123,37 @@ export const assessTrainingCandidate = ({
     richness,
     ...(score && { score }),
     weight,
+    reasons: [...reasons],
+  }
+}
+
+/**
+ * Assess whether a runtime trace is worth keeping for later grading/training.
+ *
+ * @remarks
+ * This is intentionally weaker than `assessTrainingCandidate`. It answers a
+ * simpler question for bounded improvement loops: did this run produce a clean,
+ * sufficiently rich trace worth saving for later review or grading?
+ *
+ * @public
+ */
+export const assessTrainingCapture = ({
+  trial,
+  minRichness = 'full',
+  allowToolErrors = false,
+}: AssessTrainingCaptureOptions): TrainingCaptureAssessment => {
+  const reasons = new Set<TrainingCaptureAssessment['reasons'][number]>()
+  const trajectory = trial.trajectory ?? []
+  const richness = detectRichness(trajectory)
+
+  if (trial.timedOut) reasons.add('timed_out')
+  if (trial.exitCode !== undefined && trial.exitCode !== null && trial.exitCode !== 0) reasons.add('non_zero_exit')
+  if (TRAINING_RICHNESS_ORDER[richness] < TRAINING_RICHNESS_ORDER[minRichness]) reasons.add('insufficient_richness')
+  if (!allowToolErrors && hasToolErrors(trajectory)) reasons.add('tool_error')
+
+  return {
+    eligible: reasons.size === 0,
+    richness,
     reasons: [...reasons],
   }
 }
