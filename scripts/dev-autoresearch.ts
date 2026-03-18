@@ -10,7 +10,6 @@
  */
 
 import { join } from 'node:path'
-import { tmpdir } from 'node:os'
 import {
   assessTrainingCapture,
   loadAdapter,
@@ -78,6 +77,7 @@ type JudgeBundle = {
 }
 
 const PROJECT_ROOT = join(import.meta.dir, '..')
+const WORKTREES_ROOT = join(PROJECT_ROOT, '.worktrees')
 const TEST_FILE_PATTERN = /(\.spec\.ts|\.test\.ts|_spec\.ts|_test\.ts)$/
 const SOURCE_FILE_PATTERN = /\.(ts|tsx|js|jsx)$/
 const TEST_DIRECTORIES = ['src/', 'scripts/', 'skills/']
@@ -132,14 +132,22 @@ const requireMarkdown = async (path: string, headings: string[]): Promise<string
   return text
 }
 
+const linkSharedToolchain = async (worktree: string) => {
+  const nodeModulesSource = join(PROJECT_ROOT, 'node_modules')
+  if (!(await Bun.file(nodeModulesSource).exists())) return
+  await Bun.$`ln -sfn ${nodeModulesSource} ${join(worktree, 'node_modules')}`.nothrow().quiet()
+}
+
 const createWorktree = async (id: string): Promise<string> => {
   const safeId = id.replace(/[^a-z0-9-]/gi, '-').toLowerCase()
-  const base = (await Bun.$`mktemp -d ${join(tmpdir(), `plaited-dev-${safeId}-XXXXXX`)}`.quiet()).text().trim()
+  await Bun.$`mkdir -p ${WORKTREES_ROOT}`.quiet()
+  const base = (await Bun.$`mktemp -d ${join(WORKTREES_ROOT, `plaited-dev-${safeId}-XXXXXX`)}`.quiet()).text().trim()
   const target = join(base, 'repo')
   const add = await Bun.$`git worktree add --detach ${target} HEAD`.cwd(PROJECT_ROOT).nothrow().quiet()
   if (add.exitCode !== 0) {
     throw new Error(`git worktree add failed: ${add.stderr.toString().trim()}`)
   }
+  await linkSharedToolchain(target)
   return target
 }
 

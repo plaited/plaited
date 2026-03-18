@@ -146,4 +146,33 @@ describe('dev-autoresearch dry run', () => {
     expect(parsed.slicePath).toBe('./dev-research/runtime-taxonomy/slice-2.md')
     expect(parsed.quiet).toBe(true)
   })
+
+  test('package research script forwards a caller-provided slice', async () => {
+    const proc = Bun.spawn(
+      [
+        'bun',
+        'run',
+        'research',
+        '--',
+        './dev-research/runtime-taxonomy/slice-2.md',
+        '--dry-run',
+      ],
+      {
+        cwd: join(import.meta.dir, '..', '..'),
+        stdout: 'pipe',
+        stderr: 'pipe',
+        env: process.env as Record<string, string>,
+      },
+    )
+
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ])
+
+    expect(exitCode).toBe(0)
+    expect(stderr).toContain('bun scripts/dev-autoresearch.ts')
+    expect(stdout).toContain('slice=./dev-research/runtime-taxonomy/slice-2.md')
+  })
 })
