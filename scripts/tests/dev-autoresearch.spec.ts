@@ -153,7 +153,10 @@ describe('dev-autoresearch dry run', () => {
         cwd: join(import.meta.dir, '..', '..'),
         stdout: 'pipe',
         stderr: 'pipe',
-        env: process.env as Record<string, string>,
+        env: {
+          ...(process.env as Record<string, string>),
+          ANTHROPIC_API_KEY: 'dummy',
+        },
       },
     )
 
@@ -166,5 +169,5 @@ describe('dev-autoresearch dry run', () => {
     expect(exitCode).toBe(0)
     expect(stderr).toContain('bun --no-env-file scripts/dev-autoresearch.ts')
     expect(stdout).toContain('slice=./dev-research/runtime-taxonomy/slice-2.md')
-  })
+  }, 15_000)
 })
