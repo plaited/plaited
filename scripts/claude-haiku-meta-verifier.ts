@@ -1,27 +1,27 @@
 /**
- * Claude Code judge for bounded Plaited development slices.
+ * Claude Haiku meta-verifier for bounded Plaited development slices.
  *
  * @remarks
- * Reviews a candidate diff against the active program/slice contract and
- * returns a schema-valid grader result for the dev autoresearch harness.
+ * Reviews the primary judge output plus diff/check context and returns a
+ * second-pass grader result used to confirm or challenge keep decisions.
  */
 
 import type { Grader, GraderResult } from '../src/improve.ts'
 
-type JudgeOutput = {
+type MetaJudgeOutput = {
   pass: boolean
   score: number
   reasoning: string
   dimensions?: {
-    architecture: number
-    boundedness: number
-    quality: number
+    consistency: number
+    risk: number
+    confidence: number
   }
 }
 
-const CLAUDE_PRIMARY_MODEL = 'sonnet'
+const CLAUDE_META_MODEL = 'haiku'
 
-const JudgeOutputSchema = {
+const MetaJudgeOutputSchema = {
   type: 'object',
   additionalProperties: false,
   required: ['pass', 'score', 'reasoning'],
@@ -32,17 +32,17 @@ const JudgeOutputSchema = {
     dimensions: {
       type: 'object',
       additionalProperties: false,
-      required: ['architecture', 'boundedness', 'quality'],
+      required: ['consistency', 'risk', 'confidence'],
       properties: {
-        architecture: { type: 'number', minimum: 0, maximum: 1 },
-        boundedness: { type: 'number', minimum: 0, maximum: 1 },
-        quality: { type: 'number', minimum: 0, maximum: 1 },
+        consistency: { type: 'number', minimum: 0, maximum: 1 },
+        risk: { type: 'number', minimum: 0, maximum: 1 },
+        confidence: { type: 'number', minimum: 0, maximum: 1 },
       },
     },
   },
 } as const
 
-const buildJudgePrompt = ({
+const buildMetaPrompt = ({
   task,
   output,
   metadata,
@@ -55,24 +55,18 @@ const buildJudgePrompt = ({
   const diffStat = typeof metadata?.diffStat === 'string' ? metadata.diffStat : '(none)'
   const patch = typeof metadata?.patch === 'string' ? metadata.patch : '(none)'
   const checks = JSON.stringify(metadata?.checks ?? {}, null, 2)
-  const program = typeof metadata?.program === 'string' ? metadata.program : '(missing program)'
-  const slice = typeof metadata?.slice === 'string' ? metadata.slice : '(missing slice)'
+  const candidateOutput = typeof metadata?.candidateOutput === 'string' ? metadata.candidateOutput : '(missing candidate output)'
 
-  return `You are reviewing a bounded Plaited framework-development slice.
-
-This is developer tooling for improving Plaited itself, not a shipped runtime feature.
-
-Program:
-${program}
-
-Slice:
-${slice}
+  return `You are meta-verifying an LLM judge decision for a bounded Plaited framework-development slice.
 
 Task:
 ${task}
 
-Candidate summary:
+Primary judge result:
 ${output}
+
+Candidate summary:
+${candidateOutput}
 
 Changed files:
 ${changedFiles}
@@ -86,28 +80,28 @@ ${checks}
 Patch excerpt:
 ${patch.slice(0, 12000)}
 
-Score the candidate from 0.0 to 1.0 on:
-- architecture: does it preserve the fixed architecture and avoid drift?
-- boundedness: does it stay tightly within the declared slice?
-- quality: is the code clear, coherent, and low-risk?
+Score the primary judge result from 0.0 to 1.0 on:
+- consistency: does the reasoning match the actual diff and checks?
+- risk: does the candidate still look safe despite any optimistic judging?
+- confidence: how much should the harness trust the primary judge?
 
-Pass only if the candidate should be kept after review.`
+Pass only if the primary judge result looks internally consistent and safe to trust.`
 }
 
-export const toGraderResult = (result: JudgeOutput): GraderResult => ({
+export const toGraderResult = (result: MetaJudgeOutput): GraderResult => ({
   pass: result.pass,
   score: result.score,
   reasoning: result.reasoning,
   ...(result.dimensions
     ? {
         outcome: {
-          judgeDimensions: result.dimensions,
+          metaVerificationDimensions: result.dimensions,
         },
       }
     : {}),
 })
 
-const parseJudgeOutput = (raw: string): JudgeOutput => {
+const parseMetaOutput = (raw: string): MetaJudgeOutput => {
   const envelope = JSON.parse(raw) as Record<string, unknown>
   const structured = envelope.structured_output
   const result = envelope.result
@@ -115,8 +109,8 @@ const parseJudgeOutput = (raw: string): JudgeOutput => {
 
   const parsed =
     typeof payload === 'string'
-      ? (JSON.parse(payload) as JudgeOutput)
-      : (payload as JudgeOutput)
+      ? (JSON.parse(payload) as MetaJudgeOutput)
+      : (payload as MetaJudgeOutput)
 
   return {
     pass: typeof parsed.pass === 'boolean' ? parsed.pass : false,
@@ -126,7 +120,7 @@ const parseJudgeOutput = (raw: string): JudgeOutput => {
   }
 }
 
-const invokeClaudeJudge = async (prompt: string): Promise<JudgeOutput> => {
+const invokeClaudeMetaVerifier = async (prompt: string): Promise<MetaJudgeOutput> => {
   const claudePath = await Bun.which('claude')
   if (!claudePath) {
     return { pass: false, score: 0, reasoning: 'Claude CLI not available' }
@@ -138,13 +132,13 @@ const invokeClaudeJudge = async (prompt: string): Promise<JudgeOutput> => {
         'claude',
         '-p',
         '--model',
-        CLAUDE_PRIMARY_MODEL,
+        CLAUDE_META_MODEL,
         '--output-format',
         'json',
         '--tools',
         '',
         '--json-schema',
-        JSON.stringify(JudgeOutputSchema),
+        JSON.stringify(MetaJudgeOutputSchema),
         prompt,
       ],
       {
@@ -158,21 +152,22 @@ const invokeClaudeJudge = async (prompt: string): Promise<JudgeOutput> => {
     clearTimeout(timeout)
 
     const raw = stdout.trim()
-    if (!raw) return { pass: false, score: 0, reasoning: 'Claude returned empty response' }
+    if (!raw) return { pass: false, score: 0, reasoning: 'Claude meta verifier returned empty response' }
 
-    return parseJudgeOutput(raw)
+    return parseMetaOutput(raw)
   } catch (error) {
     return {
       pass: false,
       score: 0,
-      reasoning: error instanceof Error ? `Claude judge parse error: ${error.message}` : String(error),
+      reasoning: error instanceof Error ? `Claude meta verifier parse error: ${error.message}` : String(error),
     }
   }
 }
 
-export const grade: Grader = async ({ input, output, metadata }) => {
+export const grade: Grader = async ({ input, output, metadata }): Promise<GraderResult> => {
   const task = Array.isArray(input) ? input.join('\n') : input
   const meta = (metadata ?? {}) as Record<string, unknown>
-  const result = await invokeClaudeJudge(buildJudgePrompt({ task, output, metadata: meta }))
+  const result = await invokeClaudeMetaVerifier(buildMetaPrompt({ task, output, metadata: meta }))
+
   return toGraderResult(result)
 }

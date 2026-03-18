@@ -29,6 +29,7 @@ type SliceDecision = 'keep' | 'revise' | 'discard'
 type ValidationResult = {
   passed: boolean
   notes: string
+  command: string[]
 }
 
 type JudgeBundle = {
@@ -37,6 +38,9 @@ type JudgeBundle = {
 }
 
 const PROJECT_ROOT = join(import.meta.dir, '..')
+const TEST_FILE_PATTERN = /(\.spec\.ts|\.test\.ts|_spec\.ts|_test\.ts)$/
+const SOURCE_FILE_PATTERN = /\.(ts|tsx|js|jsx)$/
+const TEST_DIRECTORIES = ['src/', 'scripts/', 'skills/']
 
 const getArg = (args: string[], flag: string, fallback?: string): string | undefined => {
   const index = args.indexOf(flag)
@@ -53,7 +57,7 @@ const parseInput = (args: string[]): CliInput => {
     judge: hasFlag(args, '--judge'),
     judgePath: getArg(args, '--judge-path', './scripts/claude-code-judge.ts')!,
     maxAttempts: Number(getArg(args, '--max-attempts', '1')),
-    metaVerifierPath: getArg(args, '--meta-verifier-path', './scripts/gemini-meta-verifier.ts')!,
+    metaVerifierPath: getArg(args, '--meta-verifier-path', './scripts/claude-haiku-meta-verifier.ts')!,
     programPath: getArg(args, '--program', './dev-research/program.md')!,
     slicePath: getArg(args, '--slice', './dev-research/runtime-taxonomy/slice-1.md')!,
   }
@@ -108,10 +112,11 @@ const runCheck = async (cwd: string, command: string[]): Promise<ValidationResul
     return {
       passed: false,
       notes: `${stdout}${stderr}`.trim().slice(0, 1000) || `Command failed: ${command.join(' ')}`,
+      command,
     }
   }
 
-  return { passed: true, notes: 'ok' }
+  return { passed: true, notes: 'ok', command }
 }
 
 const getChangedFiles = async (cwd: string): Promise<string[]> => {
@@ -129,6 +134,125 @@ const getDiffStat = async (cwd: string): Promise<string> => {
 
 const getPatch = async (cwd: string): Promise<string> => {
   return (await Bun.$`git diff --no-ext-diff`.cwd(cwd).quiet()).text().trim()
+}
+
+const normalizePath = (path: string): string => path.replace(/\\/g, '/')
+
+const dirname = (path: string): string => {
+  const normalized = normalizePath(path)
+  const index = normalized.lastIndexOf('/')
+  return index === -1 ? '.' : normalized.slice(0, index)
+}
+
+const basename = (path: string): string => {
+  const normalized = normalizePath(path)
+  const index = normalized.lastIndexOf('/')
+  return index === -1 ? normalized : normalized.slice(index + 1)
+}
+
+const basenameWithoutExt = (path: string): string => basename(path).replace(/\.[^.]+$/, '')
+
+const resolveImportPath = (fromFile: string, specifier: string): string | null => {
+  if (!specifier.startsWith('.')) return null
+
+  const baseDir = dirname(fromFile)
+  const candidates = [
+    join(baseDir, specifier),
+    join(baseDir, `${specifier}.ts`),
+    join(baseDir, `${specifier}.tsx`),
+    join(baseDir, `${specifier}.js`),
+    join(baseDir, `${specifier}.jsx`),
+    join(baseDir, specifier, 'index.ts'),
+    join(baseDir, specifier, 'index.tsx'),
+    join(baseDir, specifier, 'index.js'),
+    join(baseDir, specifier, 'index.jsx'),
+  ].map(normalizePath)
+
+  return candidates[0] ?? null
+}
+
+const listTestFiles = async (cwd: string): Promise<string[]> => {
+  const result = await Bun.$`rg --files src scripts skills`.cwd(cwd).quiet()
+  return result
+    .text()
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .filter((path) => TEST_FILE_PATTERN.test(path))
+    .map(normalizePath)
+}
+
+const scanImports = async (cwd: string, filePath: string): Promise<string[]> => {
+  if (!SOURCE_FILE_PATTERN.test(filePath)) return []
+
+  const file = Bun.file(join(cwd, filePath))
+  if (!(await file.exists())) return []
+
+  const text = await file.text()
+  const loader = filePath.endsWith('.tsx')
+    ? 'tsx'
+    : filePath.endsWith('.ts')
+      ? 'ts'
+      : filePath.endsWith('.jsx')
+        ? 'jsx'
+        : 'js'
+
+  const transpiler = new Bun.Transpiler({ loader })
+  const { imports } = transpiler.scan(text)
+
+  return imports
+    .map((entry) => resolveImportPath(filePath, entry.path))
+    .filter((candidate): candidate is string => candidate !== null)
+}
+
+const buildConventionalTestCandidates = (changedFile: string, allTests: string[]): string[] => {
+  if (TEST_FILE_PATTERN.test(changedFile)) {
+    return allTests.includes(changedFile) ? [changedFile] : []
+  }
+
+  const fileName = basenameWithoutExt(changedFile)
+  const parentDir = dirname(changedFile)
+  const parentName = basename(parentDir)
+  const moduleDir = parentName === 'tests' ? dirname(parentDir) : parentDir
+
+  return allTests.filter((testPath) => {
+    if (!testPath.startsWith(dirname(moduleDir))) return false
+    const testBase = basenameWithoutExt(testPath)
+    return (
+      testBase === fileName
+      || testBase === parentName
+      || dirname(testPath) === join(moduleDir, 'tests')
+      || dirname(testPath).startsWith(join(moduleDir, 'tests'))
+    )
+  })
+}
+
+const resolveImpactedTests = async (cwd: string, changedFiles: string[]): Promise<string[]> => {
+  const allTests = await listTestFiles(cwd)
+  const selected = new Set<string>()
+
+  for (const changedFile of changedFiles.map(normalizePath)) {
+    for (const candidate of buildConventionalTestCandidates(changedFile, allTests)) {
+      selected.add(candidate)
+    }
+  }
+
+  if (selected.size === 0) {
+    const importGraph = new Map<string, string[]>()
+    for (const testFile of allTests) {
+      importGraph.set(testFile, await scanImports(cwd, testFile))
+    }
+
+    for (const changedFile of changedFiles.map(normalizePath)) {
+      for (const [testFile, imports] of importGraph.entries()) {
+        if (imports.some((entry) => entry.includes(changedFile.replace(/\.[^.]+$/, '')) || entry === changedFile)) {
+          selected.add(testFile)
+        }
+      }
+    }
+  }
+
+  return [...selected].sort()
 }
 
 const buildPrompt = (program: string, slice: string) => {
@@ -150,10 +274,12 @@ const buildChecks = (typecheck: ValidationResult, tests: ValidationResult) => ({
   typecheck: {
     passed: typecheck.passed,
     notes: typecheck.notes,
+    command: typecheck.command,
   },
   tests: {
     passed: tests.passed,
     notes: tests.notes,
+    command: tests.command,
   },
 })
 
@@ -238,7 +364,13 @@ const main = async () => {
       const diffStat = await getDiffStat(worktree)
       const patch = await getPatch(worktree)
       const typecheck = await runCheck(worktree, ['bun', '--bun', 'tsc', '--noEmit'])
-      const tests = await runCheck(worktree, ['bun', 'test', 'src/', 'skills/', 'scripts/'])
+      const impactedTests = await resolveImpactedTests(worktree, changedFiles)
+      const tests = await runCheck(
+        worktree,
+        impactedTests.length > 0
+          ? ['bun', 'test', ...impactedTests]
+          : ['bun', 'test', ...TEST_DIRECTORIES],
+      )
       const checks = buildChecks(typecheck, tests)
       const judges = await runJudges({
         enabled: input.judge,
@@ -255,7 +387,15 @@ const main = async () => {
       })
 
       const judgePassed = judges ? judges.primary.pass && (judges.meta?.pass ?? true) : true
-      const passed = changedFiles.length > 0 && typecheck.passed && tests.passed && judgePassed
+      const fastPassed = changedFiles.length > 0 && typecheck.passed && tests.passed && judgePassed
+      const fullTests = fastPassed
+        ? await runCheck(worktree, ['bun', 'test', ...TEST_DIRECTORIES])
+        : {
+            passed: false,
+            notes: 'Skipped: fast validation failed',
+            command: ['bun', 'test', ...TEST_DIRECTORIES],
+          }
+      const passed = fastPassed && fullTests.passed
       const decision: SliceDecision =
         passed ? 'keep' : changedFiles.length > 0 ? 'revise' : 'discard'
 
@@ -271,6 +411,7 @@ const main = async () => {
           changed_files: changedFiles.length,
           typecheck: typecheck.passed ? 1 : 0,
           tests: tests.passed ? 1 : 0,
+          full_tests: fullTests.passed ? 1 : 0,
         },
         status: decision === 'keep' ? 'keep' : decision === 'discard' ? 'crash' : 'discard',
         timestamp: new Date().toISOString(),
@@ -283,6 +424,12 @@ const main = async () => {
           output: result.output,
           changedFiles,
           checks,
+          impactedTests,
+          fullTests: {
+            passed: fullTests.passed,
+            notes: fullTests.notes,
+            command: fullTests.command,
+          },
           judge: judges?.primary,
           metaVerification: judges?.meta,
         },

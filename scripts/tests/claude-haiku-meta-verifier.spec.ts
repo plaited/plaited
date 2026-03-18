@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import { GraderResultSchema } from '../../src/improve.ts'
-import { toGraderResult } from '../gemini-meta-verifier.ts'
+import { toGraderResult } from '../claude-haiku-meta-verifier.ts'
 
-describe('gemini-meta-verifier', () => {
+describe('claude-haiku-meta-verifier', () => {
   test('returns a schema-valid meta verification result', () => {
     const result = toGraderResult({
       pass: true,

@@ -9,7 +9,7 @@
  * 2. Type gate — `bun --bun tsc --noEmit`
  * 3. Test gate — `bun test src/ skills/ scripts/`
  * 4. Focus gate — diff is non-empty and bounded
- * 5. Optional semantic gate — Gemini judge on task + diff + check output
+ * 5. Optional semantic gate — Claude Sonnet judge on task + diff + check output
  *
  * This is intentionally closer to autoresearch than the old module-generation
  * evals: small tasks, bounded edits, real checks, no archive of stale prompt
@@ -19,11 +19,9 @@
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { assessTrainingCapture, type TrainingCaptureAssessment } from '../src/improve.ts'
-import { grade as geminiGrade } from './gemini-judge.ts'
+import { grade as claudeJudge } from './claude-code-judge.ts'
 import { adapt as claudeAdapt } from './claude-code-adapter.ts'
-import { adapt as geminiAdapt } from './gemini-cli-adapter.ts'
-
-type AdapterName = 'claude' | 'gemini'
+type AdapterName = 'claude'
 
 type PromptCase = {
   id: string
@@ -69,7 +67,7 @@ const getArg = (flag: string, fallback: string): string => {
   return args[index + 1] ?? fallback
 }
 
-const adapterName = getArg('--adapter', 'claude') as AdapterName
+const adapterName = 'claude'
 const filter = args.includes('--filter') ? args[args.indexOf('--filter') + 1] : undefined
 const useJudge = !args.includes('--no-judge')
 
@@ -103,10 +101,7 @@ const removeWorktree = async (worktree: string) => {
   await Bun.$`git worktree remove --force ${worktree}`.cwd(PROJECT_ROOT).nothrow().quiet()
 }
 
-const selectAdapter = () => {
-  if (adapterName === 'gemini') return geminiAdapt
-  return claudeAdapt
-}
+const selectAdapter = () => claudeAdapt
 
 const getChangedFiles = async (cwd: string): Promise<string[]> => {
   const result = await Bun.$`git diff --name-only`.cwd(cwd).quiet()
@@ -219,7 +214,7 @@ const runSingle = async (prompt: PromptCase): Promise<TrialResult> => {
     }
 
     if (useJudge && result.passed) {
-      const judge = await geminiGrade({
+      const judge = await claudeJudge({
         input: prompt.goal,
         output: adapterResult.output,
         metadata: {
