@@ -19,6 +19,8 @@ type MetaJudgeOutput = {
   }
 }
 
+const GEMINI_META_MODEL = 'gemini-3-flash-preview'
+
 const buildMetaPrompt = ({
   task,
   output,
@@ -75,7 +77,7 @@ const invokeGeminiMetaVerifier = async (prompt: string): Promise<MetaJudgeOutput
   }
 
   try {
-    const proc = Bun.spawn(['gemini', '-p', prompt, '--output-format', 'json'], {
+    const proc = Bun.spawn(['gemini', '--model', GEMINI_META_MODEL, '-p', prompt, '--output-format', 'json'], {
       stdout: 'pipe',
       stderr: 'ignore',
     })
