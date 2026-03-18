@@ -7,6 +7,7 @@
  */
 
 import type { Grader, GraderResult } from '../src/improve.ts'
+import { runStructuredClaudeQuery } from './claude-agent-sdk.ts'
 
 type JudgeOutput = {
   pass: boolean
@@ -20,7 +21,7 @@ type JudgeOutput = {
   }
 }
 
-const CLAUDE_PRIMARY_MODEL = 'sonnet'
+const CLAUDE_PRIMARY_MODEL = 'claude-sonnet-4-6'
 
 const JudgeOutputSchema = {
   type: 'object',
@@ -110,66 +111,26 @@ export const toGraderResult = (result: JudgeOutput): GraderResult => ({
     : {}),
 })
 
-const parseJudgeOutput = (raw: string): JudgeOutput => {
-  const envelope = JSON.parse(raw) as Record<string, unknown>
-  const structured = envelope.structured_output
-  const result = envelope.result
-  const payload = structured ?? result ?? envelope
-
-  const parsed =
-    typeof payload === 'string'
-      ? (JSON.parse(payload) as JudgeOutput)
-      : (payload as JudgeOutput)
-
-  return {
-    pass: typeof parsed.pass === 'boolean' ? parsed.pass : false,
-    score: typeof parsed.score === 'number' ? Math.max(0, Math.min(1, parsed.score)) : 0,
-    reasoning: typeof parsed.reasoning === 'string' ? parsed.reasoning : '',
-    dimensions: parsed.dimensions,
-  }
-}
-
 const invokeClaudeJudge = async (prompt: string): Promise<JudgeOutput> => {
-  const claudePath = await Bun.which('claude')
-  if (!claudePath) {
-    return { pass: false, score: 0, reasoning: 'Claude CLI not available' }
-  }
+  const result = await runStructuredClaudeQuery<JudgeOutput>({
+    model: CLAUDE_PRIMARY_MODEL,
+    prompt,
+    schema: JudgeOutputSchema,
+  })
 
-  try {
-    const proc = Bun.spawn(
-      [
-        'claude',
-        '-p',
-        '--model',
-        CLAUDE_PRIMARY_MODEL,
-        '--output-format',
-        'json',
-        '--tools',
-        '',
-        '--json-schema',
-        JSON.stringify(JudgeOutputSchema),
-        prompt,
-      ],
-      {
-        stdout: 'pipe',
-        stderr: 'ignore',
-      },
-    )
-
-    const timeout = setTimeout(() => proc.kill(), 60_000)
-    const [stdout] = await Promise.all([new Response(proc.stdout).text(), proc.exited])
-    clearTimeout(timeout)
-
-    const raw = stdout.trim()
-    if (!raw) return { pass: false, score: 0, reasoning: 'Claude returned empty response' }
-
-    return parseJudgeOutput(raw)
-  } catch (error) {
+  if (!result.ok) {
     return {
       pass: false,
       score: 0,
-      reasoning: error instanceof Error ? `Claude judge parse error: ${error.message}` : String(error),
+      reasoning: `Claude judge SDK error: ${result.reason}`,
     }
+  }
+
+  return {
+    pass: typeof result.value.pass === 'boolean' ? result.value.pass : false,
+    score: typeof result.value.score === 'number' ? Math.max(0, Math.min(1, result.value.score)) : 0,
+    reasoning: typeof result.value.reasoning === 'string' ? result.value.reasoning : '',
+    dimensions: result.value.dimensions,
   }
 }
 

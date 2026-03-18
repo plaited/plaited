@@ -7,6 +7,7 @@
  */
 
 import type { Grader, GraderResult } from '../src/improve.ts'
+import { runStructuredClaudeQuery } from './claude-agent-sdk.ts'
 
 type MetaJudgeOutput = {
   pass: boolean
@@ -19,7 +20,7 @@ type MetaJudgeOutput = {
   }
 }
 
-const CLAUDE_META_MODEL = 'haiku'
+const CLAUDE_META_MODEL = 'claude-haiku-4-5-20251001'
 
 const MetaJudgeOutputSchema = {
   type: 'object',
@@ -55,7 +56,8 @@ const buildMetaPrompt = ({
   const diffStat = typeof metadata?.diffStat === 'string' ? metadata.diffStat : '(none)'
   const patch = typeof metadata?.patch === 'string' ? metadata.patch : '(none)'
   const checks = JSON.stringify(metadata?.checks ?? {}, null, 2)
-  const candidateOutput = typeof metadata?.candidateOutput === 'string' ? metadata.candidateOutput : '(missing candidate output)'
+  const candidateOutput =
+    typeof metadata?.candidateOutput === 'string' ? metadata.candidateOutput : '(missing candidate output)'
   const program = typeof metadata?.program === 'string' ? metadata.program : '(missing program)'
   const slice = typeof metadata?.slice === 'string' ? metadata.slice : '(missing slice)'
 
@@ -109,66 +111,26 @@ export const toGraderResult = (result: MetaJudgeOutput): GraderResult => ({
     : {}),
 })
 
-const parseMetaOutput = (raw: string): MetaJudgeOutput => {
-  const envelope = JSON.parse(raw) as Record<string, unknown>
-  const structured = envelope.structured_output
-  const result = envelope.result
-  const payload = structured ?? result ?? envelope
-
-  const parsed =
-    typeof payload === 'string'
-      ? (JSON.parse(payload) as MetaJudgeOutput)
-      : (payload as MetaJudgeOutput)
-
-  return {
-    pass: typeof parsed.pass === 'boolean' ? parsed.pass : false,
-    score: typeof parsed.score === 'number' ? Math.max(0, Math.min(1, parsed.score)) : 0,
-    reasoning: typeof parsed.reasoning === 'string' ? parsed.reasoning : '',
-    dimensions: parsed.dimensions,
-  }
-}
-
 const invokeClaudeMetaVerifier = async (prompt: string): Promise<MetaJudgeOutput> => {
-  const claudePath = await Bun.which('claude')
-  if (!claudePath) {
-    return { pass: false, score: 0, reasoning: 'Claude CLI not available' }
-  }
+  const result = await runStructuredClaudeQuery<MetaJudgeOutput>({
+    model: CLAUDE_META_MODEL,
+    prompt,
+    schema: MetaJudgeOutputSchema,
+  })
 
-  try {
-    const proc = Bun.spawn(
-      [
-        'claude',
-        '-p',
-        '--model',
-        CLAUDE_META_MODEL,
-        '--output-format',
-        'json',
-        '--tools',
-        '',
-        '--json-schema',
-        JSON.stringify(MetaJudgeOutputSchema),
-        prompt,
-      ],
-      {
-        stdout: 'pipe',
-        stderr: 'ignore',
-      },
-    )
-
-    const timeout = setTimeout(() => proc.kill(), 60_000)
-    const [stdout] = await Promise.all([new Response(proc.stdout).text(), proc.exited])
-    clearTimeout(timeout)
-
-    const raw = stdout.trim()
-    if (!raw) return { pass: false, score: 0, reasoning: 'Claude meta verifier returned empty response' }
-
-    return parseMetaOutput(raw)
-  } catch (error) {
+  if (!result.ok) {
     return {
       pass: false,
       score: 0,
-      reasoning: error instanceof Error ? `Claude meta verifier parse error: ${error.message}` : String(error),
+      reasoning: `Claude meta verifier SDK error: ${result.reason}`,
     }
+  }
+
+  return {
+    pass: typeof result.value.pass === 'boolean' ? result.value.pass : false,
+    score: typeof result.value.score === 'number' ? Math.max(0, Math.min(1, result.value.score)) : 0,
+    reasoning: typeof result.value.reasoning === 'string' ? result.value.reasoning : '',
+    dimensions: result.value.dimensions,
   }
 }
 
