@@ -427,6 +427,12 @@ const createLogger = (quiet: boolean) => {
   }
 }
 
+const summarizeReasoning = (reasoning?: string): string => {
+  if (!reasoning) return ''
+  const firstLine = reasoning.split('\n').find((line) => line.trim().length > 0) ?? ''
+  return firstLine.slice(0, 220)
+}
+
 const runJudges = async ({
   enabled,
   judgePath,
@@ -687,10 +693,28 @@ const main = async () => {
           ? `capture=${captureAssessment.richness}`
           : `capture=skip:${captureAssessment.reasons.join('+') || 'unknown'}`,
       )
+      if (judges?.primary) {
+        console.log(`fast-judge=${judges.primary.pass ? 'pass' : 'fail'} score=${judges.primary.score.toFixed(2)}`)
+        if (judges.primary.reasoning) {
+          console.log(`fast-judge-reason="${summarizeReasoning(judges.primary.reasoning)}"`)
+        }
+      }
+      if (judges?.meta) {
+        console.log(`fast-meta=${judges.meta.pass ? 'pass' : 'fail'} score=${judges.meta.score.toFixed(2)}`)
+        if (judges.meta.reasoning) {
+          console.log(`fast-meta-reason="${summarizeReasoning(judges.meta.reasoning)}"`)
+        }
+      }
       if (finalJudges) {
         console.log(`judge=${finalJudges.primary.pass ? 'pass' : 'fail'} score=${finalJudges.primary.score.toFixed(2)}`)
+        if (finalJudges.primary.reasoning) {
+          console.log(`judge-reason="${summarizeReasoning(finalJudges.primary.reasoning)}"`)
+        }
         if (finalJudges.meta) {
           console.log(`meta=${finalJudges.meta.pass ? 'pass' : 'fail'} score=${finalJudges.meta.score.toFixed(2)}`)
+          if (finalJudges.meta.reasoning) {
+            console.log(`meta-reason="${summarizeReasoning(finalJudges.meta.reasoning)}"`)
+          }
         }
       }
 
