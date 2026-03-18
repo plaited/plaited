@@ -46,8 +46,8 @@
     "falcon:mlx": "bun scripts/falcon-mlx-server.ts",
     "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .hooks || true",
     "prompt": "claude --model opus --dangerously-skip-permissions --rc",
-    "research": "bun scripts/dev-autoresearch.ts --program ./dev-research/program.md --slice ./dev-research/runtime-taxonomy/slice-1.md --adapter ./scripts/codex-cli-adapter.ts --commit",
-    "research:overnight": "PLAITED_MAX_EXPERIMENTS=10 bun scripts/dev-autoresearch.ts --program ./dev-research/program.md --slice ./dev-research/runtime-taxonomy/slice-1.md --adapter ./scripts/codex-cli-adapter.ts --commit --max-attempts 10",
+    "research": "bun scripts/dev-autoresearch.ts --program ./dev-research/program.md --slice ./dev-research/runtime-taxonomy/slice-1.md --adapter ./scripts/codex-cli-adapter.ts --judge --commit",
+    "research:overnight": "PLAITED_MAX_EXPERIMENTS=10 bun scripts/dev-autoresearch.ts --program ./dev-research/program.md --slice ./dev-research/runtime-taxonomy/slice-1.md --adapter ./scripts/codex-cli-adapter.ts --judge --commit --max-attempts 10",
     "test": "bun test src/ skills/ scripts/",
     "test:playwright": "bunx playwright test",
     "test:tools": "bun test src/tools/ src/improve/"

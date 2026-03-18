@@ -11,13 +11,15 @@
 
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { loadAdapter, logExperiment } from '../src/improve.ts'
+import { loadAdapter, loadGrader, logExperiment, type GraderResult } from '../src/improve.ts'
 
 type CliInput = {
   adapterPath: string
   commit: boolean
   judge: boolean
+  judgePath: string
   maxAttempts: number
+  metaVerifierPath: string
   programPath: string
   slicePath: string
 }
@@ -27,6 +29,11 @@ type SliceDecision = 'keep' | 'revise' | 'discard'
 type ValidationResult = {
   passed: boolean
   notes: string
+}
+
+type JudgeBundle = {
+  primary: GraderResult
+  meta?: GraderResult
 }
 
 const PROJECT_ROOT = join(import.meta.dir, '..')
@@ -44,7 +51,9 @@ const parseInput = (args: string[]): CliInput => {
     adapterPath: getArg(args, '--adapter', './scripts/codex-cli-adapter.ts')!,
     commit: hasFlag(args, '--commit'),
     judge: hasFlag(args, '--judge'),
+    judgePath: getArg(args, '--judge-path', './scripts/claude-code-judge.ts')!,
     maxAttempts: Number(getArg(args, '--max-attempts', '1')),
+    metaVerifierPath: getArg(args, '--meta-verifier-path', './scripts/gemini-meta-verifier.ts')!,
     programPath: getArg(args, '--program', './dev-research/program.md')!,
     slicePath: getArg(args, '--slice', './dev-research/runtime-taxonomy/slice-1.md')!,
   }
@@ -118,6 +127,10 @@ const getDiffStat = async (cwd: string): Promise<string> => {
   return (await Bun.$`git diff --stat`.cwd(cwd).quiet()).text().trim()
 }
 
+const getPatch = async (cwd: string): Promise<string> => {
+  return (await Bun.$`git diff --no-ext-diff`.cwd(cwd).quiet()).text().trim()
+}
+
 const buildPrompt = (program: string, slice: string) => {
   return [
     'Execution mode:',
@@ -131,6 +144,73 @@ const buildPrompt = (program: string, slice: string) => {
     'Slice:',
     slice,
   ].join('\n')
+}
+
+const buildChecks = (typecheck: ValidationResult, tests: ValidationResult) => ({
+  typecheck: {
+    passed: typecheck.passed,
+    notes: typecheck.notes,
+  },
+  tests: {
+    passed: tests.passed,
+    notes: tests.notes,
+  },
+})
+
+const runJudges = async ({
+  enabled,
+  judgePath,
+  metaVerifierPath,
+  task,
+  candidateOutput,
+  program,
+  slice,
+  changedFiles,
+  diffStat,
+  patch,
+  checks,
+}: {
+  enabled: boolean
+  judgePath: string
+  metaVerifierPath: string
+  task: string
+  candidateOutput: string
+  program: string
+  slice: string
+  changedFiles: string[]
+  diffStat: string
+  patch: string
+  checks: ReturnType<typeof buildChecks>
+}): Promise<JudgeBundle | undefined> => {
+  if (!enabled) return undefined
+
+  const judge = await loadGrader(judgePath)
+  const metadata = {
+    changedFiles,
+    diffStat,
+    patch,
+    checks,
+    program,
+    slice,
+  }
+
+  const primary = await judge({
+    input: task,
+    output: candidateOutput,
+    metadata,
+  })
+
+  const metaVerifier = await loadGrader(metaVerifierPath)
+  const meta = await metaVerifier({
+    input: task,
+    output: JSON.stringify(primary, null, 2),
+    metadata: {
+      ...metadata,
+      candidateOutput,
+    },
+  })
+
+  return { primary, meta }
 }
 
 const main = async () => {
@@ -156,11 +236,28 @@ const main = async () => {
       const result = await adapter({ prompt, cwd: worktree })
       const changedFiles = await getChangedFiles(worktree)
       const diffStat = await getDiffStat(worktree)
+      const patch = await getPatch(worktree)
       const typecheck = await runCheck(worktree, ['bun', '--bun', 'tsc', '--noEmit'])
       const tests = await runCheck(worktree, ['bun', 'test', 'src/', 'skills/', 'scripts/'])
+      const checks = buildChecks(typecheck, tests)
+      const judges = await runJudges({
+        enabled: input.judge,
+        judgePath: input.judgePath,
+        metaVerifierPath: input.metaVerifierPath,
+        task: slice,
+        candidateOutput: result.output,
+        program,
+        slice,
+        changedFiles,
+        diffStat,
+        patch,
+        checks,
+      })
 
-      const passed = changedFiles.length > 0 && typecheck.passed && tests.passed
-      const decision: SliceDecision = passed ? 'keep' : changedFiles.length > 0 ? 'revise' : 'discard'
+      const judgePassed = judges ? judges.primary.pass && (judges.meta?.pass ?? true) : true
+      const passed = changedFiles.length > 0 && typecheck.passed && tests.passed && judgePassed
+      const decision: SliceDecision =
+        passed ? 'keep' : changedFiles.length > 0 ? 'revise' : 'discard'
 
       let commit = ''
       if (passed && input.commit) {
@@ -182,15 +279,23 @@ const main = async () => {
           adapterPath: input.adapterPath,
           decision,
           diffStat,
+          patch: patch.slice(0, 12000),
           output: result.output,
           changedFiles,
-          typecheck: typecheck.notes,
-          tests: tests.notes,
+          checks,
+          judge: judges?.primary,
+          metaVerification: judges?.meta,
         },
       })
 
       console.log(`attempt=${attempt} decision=${decision}`)
       console.log(`changed=${changedFiles.length} diff="${diffStat || 'no diff'}"`)
+      if (judges) {
+        console.log(`judge=${judges.primary.pass ? 'pass' : 'fail'} score=${judges.primary.score.toFixed(2)}`)
+        if (judges.meta) {
+          console.log(`meta=${judges.meta.pass ? 'pass' : 'fail'} score=${judges.meta.score.toFixed(2)}`)
+        }
+      }
 
       if (decision === 'keep') {
         console.log(commit ? `commit=${commit}` : 'commit=skipped')
