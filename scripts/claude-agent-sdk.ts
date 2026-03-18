@@ -1,3 +1,4 @@
+import type { SDKResultError, SDKResultSuccess } from '@anthropic-ai/claude-agent-sdk'
 import { query } from '@anthropic-ai/claude-agent-sdk'
 
 const PROJECT_ROOT = `${import.meta.dir}/..`
@@ -12,6 +13,24 @@ type StructuredResult<T> =
       ok: false
       reason: string
     }
+
+export const formatClaudeResultFailure = (message: SDKResultError | SDKResultSuccess): string => {
+  const parts: string[] = [`subtype=${message.subtype}`]
+
+  if ('errors' in message && message.errors.length > 0) {
+    parts.push(`errors=${message.errors.join('; ')}`)
+  }
+
+  if (message.permission_denials.length > 0) {
+    parts.push(`permission_denials=${message.permission_denials.length}`)
+  }
+
+  if ('result' in message && message.result) {
+    parts.push(`result=${message.result}`)
+  }
+
+  return parts.join(' ')
+}
 
 export const runStructuredClaudeQuery = async <T>({
   model,
@@ -55,7 +74,7 @@ export const runStructuredClaudeQuery = async <T>({
 
       return {
         ok: false,
-        reason: 'errors' in message ? message.errors.join('; ') : `Claude SDK returned subtype ${message.subtype}`,
+        reason: formatClaudeResultFailure(message),
       }
     }
 
