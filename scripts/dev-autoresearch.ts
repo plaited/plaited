@@ -11,7 +11,14 @@
 
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { loadAdapter, loadGrader, logExperiment, type GraderResult } from '../src/improve.ts'
+import {
+  assessTrainingCapture,
+  loadAdapter,
+  loadGrader,
+  logExperiment,
+  type GraderResult,
+  type TrainingCaptureAssessment,
+} from '../src/improve.ts'
 
 type CliInput = {
   adapterPath: string
@@ -32,6 +39,37 @@ type ValidationResult = {
   command: string[]
 }
 
+type ScopeCheckResult = {
+  passed: boolean
+  notes: string
+  allowedPaths: string[]
+}
+
+type Checks = {
+  typecheck: {
+    passed: boolean
+    notes: string
+    command: string[]
+  }
+  targetedTests: {
+    passed: boolean
+    notes: string
+    command: string[]
+  }
+  scope?: {
+    passed: boolean
+    notes: string
+    allowedPaths: string[]
+  }
+  traceCapture?: TrainingCaptureAssessment
+  fullSuite?: {
+    passed: boolean
+    notes: string
+    command: string[]
+    ran: boolean
+  }
+}
+
 type JudgeBundle = {
   primary: GraderResult
   meta?: GraderResult
@@ -41,6 +79,7 @@ const PROJECT_ROOT = join(import.meta.dir, '..')
 const TEST_FILE_PATTERN = /(\.spec\.ts|\.test\.ts|_spec\.ts|_test\.ts)$/
 const SOURCE_FILE_PATTERN = /\.(ts|tsx|js|jsx)$/
 const TEST_DIRECTORIES = ['src/', 'scripts/', 'skills/']
+const DEFAULT_ALLOWED_PATHS = ['scripts/', 'src/runtime/', 'src/improve/']
 
 const getArg = (args: string[], flag: string, fallback?: string): string | undefined => {
   const index = args.indexOf(flag)
@@ -136,6 +175,24 @@ const getPatch = async (cwd: string): Promise<string> => {
   return (await Bun.$`git diff --no-ext-diff`.cwd(cwd).quiet()).text().trim()
 }
 
+const parseSliceScope = (slice: string): string[] => {
+  const match = slice.match(/## Scope\s*\n([\s\S]*?)(?:\n## |\s*$)/)
+  if (!match) return []
+  const section = match[1]
+  if (!section) return []
+
+  return section
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith('- '))
+    .map((line) => line.slice(2).trim())
+    .filter((line) => line.includes('/'))
+    .map((line) => line.replace(/\*+$/, ''))
+    .map((line) => line.replace(/^\.\//, ''))
+    .map((line) => normalizePath(line))
+    .filter(Boolean)
+}
+
 const normalizePath = (path: string): string => path.replace(/\\/g, '/')
 
 const dirname = (path: string): string => {
@@ -216,7 +273,7 @@ const buildConventionalTestCandidates = (changedFile: string, allTests: string[]
   const moduleDir = parentName === 'tests' ? dirname(parentDir) : parentDir
 
   return allTests.filter((testPath) => {
-    if (!testPath.startsWith(dirname(moduleDir))) return false
+    if (!testPath.startsWith(moduleDir)) return false
     const testBase = basenameWithoutExt(testPath)
     return (
       testBase === fileName
@@ -255,6 +312,31 @@ const resolveImpactedTests = async (cwd: string, changedFiles: string[]): Promis
   return [...selected].sort()
 }
 
+const checkScope = (changedFiles: string[], allowedPaths: string[]): ScopeCheckResult => {
+  if (changedFiles.length === 0) {
+    return {
+      passed: false,
+      notes: 'No files changed',
+      allowedPaths,
+    }
+  }
+
+  const invalid = changedFiles.filter((file) => !allowedPaths.some((prefix) => file.startsWith(prefix)))
+  if (invalid.length > 0) {
+    return {
+      passed: false,
+      notes: `Out-of-scope files changed: ${invalid.join(', ')}`,
+      allowedPaths,
+    }
+  }
+
+  return {
+    passed: true,
+    notes: `${changedFiles.length} in-scope file(s) changed`,
+    allowedPaths,
+  }
+}
+
 const buildPrompt = (program: string, slice: string) => {
   return [
     'Execution mode:',
@@ -270,7 +352,7 @@ const buildPrompt = (program: string, slice: string) => {
   ].join('\n')
 }
 
-const buildChecks = (typecheck: ValidationResult, tests: ValidationResult) => ({
+const buildChecks = (typecheck: ValidationResult, tests: ValidationResult): Checks => ({
   typecheck: {
     passed: typecheck.passed,
     notes: typecheck.notes,
@@ -352,6 +434,7 @@ const main = async () => {
   const prompt = buildPrompt(program, slice)
   const adapter = await loadAdapter(input.adapterPath)
   const sliceId = input.slicePath.split('/').at(-1)?.replace('.md', '') ?? 'slice'
+  const allowedPaths = parseSliceScope(slice).length > 0 ? parseSliceScope(slice) : DEFAULT_ALLOWED_PATHS
 
   console.log(`mode=repo-harness adapter=${input.adapterPath} slice=${sliceId} judge=${input.judge}`)
 
@@ -363,17 +446,37 @@ const main = async () => {
       const changedFiles = await getChangedFiles(worktree)
       const diffStat = await getDiffStat(worktree)
       const patch = await getPatch(worktree)
-      const typecheck = await runCheck(worktree, ['bun', '--bun', 'tsc', '--noEmit'])
-      const impactedTests = await resolveImpactedTests(worktree, changedFiles)
-      const tests = await runCheck(
-        worktree,
-        impactedTests.length > 0
-          ? ['bun', 'test', ...impactedTests]
-          : ['bun', 'test', ...TEST_DIRECTORIES],
-      )
+      const scope = checkScope(changedFiles, allowedPaths)
+      const captureAssessment: TrainingCaptureAssessment = assessTrainingCapture({
+        trial: {
+          trajectory: result.trajectory,
+          timedOut: result.timedOut,
+          exitCode: result.exitCode,
+        },
+      })
+      const typecheck = scope.passed
+        ? await runCheck(worktree, ['bun', '--bun', 'tsc', '--noEmit'])
+        : {
+            passed: false,
+            notes: 'Skipped: scope failed',
+            command: ['bun', '--bun', 'tsc', '--noEmit'],
+          }
+      const impactedTests = scope.passed ? await resolveImpactedTests(worktree, changedFiles) : []
+      const tests = scope.passed && typecheck.passed
+        ? await runCheck(
+            worktree,
+            impactedTests.length > 0
+              ? ['bun', 'test', ...impactedTests]
+              : ['bun', 'test', ...TEST_DIRECTORIES],
+          )
+        : {
+            passed: false,
+            notes: 'Skipped: earlier validation failed',
+            command: impactedTests.length > 0 ? ['bun', 'test', ...impactedTests] : ['bun', 'test', ...TEST_DIRECTORIES],
+          }
       const checks = buildChecks(typecheck, tests)
       const judges = await runJudges({
-        enabled: input.judge,
+        enabled: input.judge && scope.passed,
         judgePath: input.judgePath,
         metaVerifierPath: input.metaVerifierPath,
         task: slice,
@@ -383,11 +486,18 @@ const main = async () => {
         changedFiles,
         diffStat,
         patch,
-        checks,
+        checks: {
+          ...checks,
+          scope: {
+            passed: scope.passed,
+            notes: scope.notes,
+            allowedPaths: scope.allowedPaths,
+          },
+        },
       })
 
       const judgePassed = judges ? judges.primary.pass && (judges.meta?.pass ?? true) : true
-      const fastPassed = changedFiles.length > 0 && typecheck.passed && tests.passed && judgePassed
+      const fastPassed = scope.passed && typecheck.passed && tests.passed && judgePassed
       const fullTests = fastPassed
         ? await runCheck(worktree, ['bun', 'test', ...TEST_DIRECTORIES])
         : {
@@ -415,7 +525,15 @@ const main = async () => {
         changedFiles,
         diffStat,
         patch,
-        checks: judgeChecks,
+        checks: {
+          ...judgeChecks,
+          scope: {
+            passed: scope.passed,
+            notes: scope.notes,
+            allowedPaths: scope.allowedPaths,
+          },
+          traceCapture: captureAssessment,
+        },
       })
       const finalJudgePassed = finalJudges ? finalJudges.primary.pass && (finalJudges.meta?.pass ?? true) : fastPassed
       const passed = fastPassed && fullTests.passed && finalJudgePassed
@@ -446,6 +564,8 @@ const main = async () => {
           patch: patch.slice(0, 12000),
           output: result.output,
           changedFiles,
+          scope,
+          captureAssessment,
           checks: judgeChecks,
           impactedTests,
           fullTests: {
@@ -462,6 +582,11 @@ const main = async () => {
 
       console.log(`attempt=${attempt} decision=${decision}`)
       console.log(`changed=${changedFiles.length} diff="${diffStat || 'no diff'}"`)
+      console.log(
+        captureAssessment.eligible
+          ? `capture=${captureAssessment.richness}`
+          : `capture=skip:${captureAssessment.reasons.join('+') || 'unknown'}`,
+      )
       if (finalJudges) {
         console.log(`judge=${finalJudges.primary.pass ? 'pass' : 'fail'} score=${finalJudges.primary.score.toFixed(2)}`)
         if (finalJudges.meta) {

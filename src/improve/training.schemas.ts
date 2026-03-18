@@ -146,7 +146,7 @@ export type TrainingCaptureReason = z.infer<typeof TrainingCaptureReasonSchema>
  * Runtime-only trace capture assessment.
  *
  * @remarks
- * Used by bounded improvement loops like `layered-boot` that can inspect the
+ * Used by bounded improvement loops like `dev-autoresearch` that can inspect the
  * captured trajectory and runtime status but do not have grader dimensions yet.
  *
  * @public

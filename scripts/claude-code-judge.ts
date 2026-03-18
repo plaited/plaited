@@ -15,6 +15,7 @@ type JudgeOutput = {
   dimensions?: {
     architecture: number
     boundedness: number
+    focus: number
     quality: number
   }
 }
@@ -32,10 +33,11 @@ const JudgeOutputSchema = {
     dimensions: {
       type: 'object',
       additionalProperties: false,
-      required: ['architecture', 'boundedness', 'quality'],
+      required: ['architecture', 'boundedness', 'focus', 'quality'],
       properties: {
         architecture: { type: 'number', minimum: 0, maximum: 1 },
         boundedness: { type: 'number', minimum: 0, maximum: 1 },
+        focus: { type: 'number', minimum: 0, maximum: 1 },
         quality: { type: 'number', minimum: 0, maximum: 1 },
       },
     },
@@ -89,6 +91,7 @@ ${patch.slice(0, 12000)}
 Score the candidate from 0.0 to 1.0 on:
 - architecture: does it preserve the fixed architecture and avoid drift?
 - boundedness: does it stay tightly within the declared slice?
+- focus: does it materially address the intended slice target rather than merely staying in-bounds?
 - quality: is the code clear, coherent, and low-risk?
 
 Pass only if the candidate should be kept after review.`

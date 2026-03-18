@@ -11,6 +11,7 @@ describe('claude-code-judge', () => {
       dimensions: {
         architecture: 0.95,
         boundedness: 0.9,
+        focus: 0.92,
         quality: 0.85,
       },
     })
