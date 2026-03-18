@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { dirname, join } from 'node:path'
-import { resolveImpactedTests, resolveImportPath, scanImports } from '../dev-autoresearch.ts'
+import {
+  getChangedFiles,
+  parseInput,
+  parseSliceScope,
+  resolveImpactedTests,
+  resolveImportPath,
+  scanImports,
+} from '../dev-autoresearch.ts'
 
 const tempDirs = new Set<string>()
 
@@ -61,6 +68,39 @@ describe('dev-autoresearch import resolution', () => {
   })
 })
 
+describe('dev-autoresearch slice parsing', () => {
+  test('parses backtick-wrapped scope paths from real slice markdown', async () => {
+    const slice = await Bun.file(join(import.meta.dir, '..', '..', 'dev-research/runtime-taxonomy/slice-1.md')).text()
+
+    expect(parseSliceScope(slice)).toEqual(['src/runtime/'])
+  })
+
+  test('extracts inline code paths from prose scope lines', async () => {
+    const slice = await Bun.file(join(import.meta.dir, '..', '..', 'dev-research/runtime-taxonomy/slice-3.md')).text()
+
+    expect(parseSliceScope(slice)).toEqual(['src/runtime/', 'src/agent/', 'src/modnet/'])
+  })
+})
+
+describe('dev-autoresearch git diff detection', () => {
+  test('includes newly created untracked files in changed files', async () => {
+    const cwd = await makeTempDir()
+    await Bun.$`git init`.cwd(cwd).quiet()
+    await Bun.$`git config user.email test@example.com`.cwd(cwd).quiet()
+    await Bun.$`git config user.name "Test User"`.cwd(cwd).quiet()
+    await writeFixture(cwd, 'tracked.ts', 'export const tracked = 1\n')
+    await Bun.$`git add tracked.ts`.cwd(cwd).quiet()
+    await Bun.$`git commit -m "init"`.cwd(cwd).quiet()
+
+    await writeFixture(cwd, 'tracked.ts', 'export const tracked = 2\n')
+    await writeFixture(cwd, 'new-file.ts', 'export const created = true\n')
+
+    const changed = await getChangedFiles(cwd)
+
+    expect(changed).toEqual(['new-file.ts', 'tracked.ts'])
+  })
+})
+
 describe('dev-autoresearch dry run', () => {
   test('exits successfully without running an experiment', async () => {
     const proc = Bun.spawn(
@@ -92,5 +132,16 @@ describe('dev-autoresearch dry run', () => {
     expect(stderr).toBe('')
     expect(stdout).toContain('dry-run=true attempts=3')
     expect(stdout).toContain('slice=./dev-research/runtime-taxonomy/slice-1.md')
+    expect(stdout).toContain('allowedPaths=src/runtime/')
+  })
+
+  test('keeps positional slice parsing correct after boolean flags', () => {
+    const parsed = parseInput([
+      '--judge',
+      './dev-research/runtime-taxonomy/slice-2.md',
+      '--dry-run',
+    ])
+
+    expect(parsed.slicePath).toBe('./dev-research/runtime-taxonomy/slice-2.md')
   })
 })

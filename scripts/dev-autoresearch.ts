@@ -81,6 +81,7 @@ const TEST_FILE_PATTERN = /(\.spec\.ts|\.test\.ts|_spec\.ts|_test\.ts)$/
 const SOURCE_FILE_PATTERN = /\.(ts|tsx|js|jsx)$/
 const TEST_DIRECTORIES = ['src/', 'scripts/', 'skills/']
 const DEFAULT_ALLOWED_PATHS = ['scripts/', 'src/runtime/', 'src/improve/']
+const BOOLEAN_FLAGS = new Set(['--commit', '--dry-run', '--judge'])
 
 const getArg = (args: string[], flag: string, fallback?: string): string | undefined => {
   const index = args.indexOf(flag)
@@ -96,7 +97,7 @@ const getPositionalArgs = (args: string[]): string[] => {
     const arg = args[index]
     if (!arg) continue
     if (arg.startsWith('--')) {
-      index += 1
+      if (!BOOLEAN_FLAGS.has(arg)) index += 1
       continue
     }
     positional.push(arg)
@@ -104,7 +105,7 @@ const getPositionalArgs = (args: string[]): string[] => {
   return positional
 }
 
-const parseInput = (args: string[]): CliInput => {
+export const parseInput = (args: string[]): CliInput => {
   const [slicePath] = getPositionalArgs(args)
   return {
     adapterPath: getArg(args, '--adapter', './scripts/codex-cli-adapter.ts')!,
@@ -175,24 +176,32 @@ const runCheck = async (cwd: string, command: string[]): Promise<ValidationResul
   return { passed: true, notes: 'ok', command }
 }
 
-const getChangedFiles = async (cwd: string): Promise<string[]> => {
-  const result = await Bun.$`git diff --name-only`.cwd(cwd).quiet()
+const prepareDiffView = async (cwd: string) => {
+  await Bun.$`git add -N .`.cwd(cwd).nothrow().quiet()
+}
+
+export const getChangedFiles = async (cwd: string): Promise<string[]> => {
+  await prepareDiffView(cwd)
+  const result = await Bun.$`git diff HEAD --name-only`.cwd(cwd).nothrow().quiet()
   return result
     .text()
     .trim()
     .split('\n')
     .filter(Boolean)
+    .map(normalizePath)
 }
 
-const getDiffStat = async (cwd: string): Promise<string> => {
-  return (await Bun.$`git diff --stat`.cwd(cwd).quiet()).text().trim()
+export const getDiffStat = async (cwd: string): Promise<string> => {
+  await prepareDiffView(cwd)
+  return (await Bun.$`git diff HEAD --stat`.cwd(cwd).nothrow().quiet()).text().trim()
 }
 
-const getPatch = async (cwd: string): Promise<string> => {
-  return (await Bun.$`git diff --no-ext-diff`.cwd(cwd).quiet()).text().trim()
+export const getPatch = async (cwd: string): Promise<string> => {
+  await prepareDiffView(cwd)
+  return (await Bun.$`git diff HEAD --no-ext-diff`.cwd(cwd).nothrow().quiet()).text().trim()
 }
 
-const parseSliceScope = (slice: string): string[] => {
+export const parseSliceScope = (slice: string): string[] => {
   const match = slice.match(/## Scope\s*\n([\s\S]*?)(?:\n## |\s*$)/)
   if (!match) return []
   const section = match[1]
@@ -203,6 +212,11 @@ const parseSliceScope = (slice: string): string[] => {
     .map((line) => line.trim())
     .filter((line) => line.startsWith('- '))
     .map((line) => line.slice(2).trim())
+    .flatMap((line) => {
+      const spans = [...line.matchAll(/`([^`]+\/[^`]*)`/g)].map((match) => match[1] ?? '')
+      if (spans.length > 0) return spans
+      return line.includes('/') ? [line.replace(/`/g, '')] : []
+    })
     .filter((line) => line.includes('/'))
     .map((line) => line.replace(/\*+$/, ''))
     .map((line) => line.replace(/^\.\//, ''))
@@ -463,7 +477,8 @@ const main = async () => {
   const prompt = buildPrompt(program, slice)
   const adapter = await loadAdapter(input.adapterPath)
   const sliceId = input.slicePath.split('/').at(-1)?.replace('.md', '') ?? 'slice'
-  const allowedPaths = parseSliceScope(slice).length > 0 ? parseSliceScope(slice) : DEFAULT_ALLOWED_PATHS
+  const sliceScope = parseSliceScope(slice)
+  const allowedPaths = sliceScope.length > 0 ? sliceScope : DEFAULT_ALLOWED_PATHS
 
   console.log(`mode=repo-harness adapter=${input.adapterPath} slice=${sliceId} judge=${input.judge}`)
   if (input.dryRun) {
