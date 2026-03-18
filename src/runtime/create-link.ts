@@ -1,7 +1,8 @@
-import type { Disconnect, Trigger } from '../behavioral/behavioral.types.ts'
+import type { Disconnect } from '../behavioral/behavioral.types.ts'
 import type {
   CreateLinkOptions,
   LinkActivity,
+  MessageHandlers,
   LinkMessage,
   LinkObserver,
   LinkSubscriber,
@@ -26,7 +27,33 @@ const publishActivity = <Message extends LinkMessage>(
   activity: LinkActivity & { message?: Message },
 ) => {
   for (const observer of observers) {
-    void observer(activity)
+    try {
+      const result = observer(activity)
+      Promise.resolve(result).catch((error) => {
+        console.error('Runtime link observer failed', error)
+      })
+    } catch (error) {
+      console.error('Runtime link observer failed', error)
+    }
+  }
+}
+
+const isolateDelivery = <Message extends LinkMessage>({
+  listener,
+  message,
+  onDelivered,
+  onFailed,
+}: {
+  listener: LinkSubscriber<Message>
+  message: Message
+  onDelivered: () => void
+  onFailed: (error: unknown) => void
+}) => {
+  try {
+    const result = listener(message)
+    Promise.resolve(result).then(onDelivered, onFailed)
+  } catch (error) {
+    onFailed(error)
   }
 }
 
@@ -54,8 +81,21 @@ export const createLink = <Message extends LinkMessage = LinkMessage>({
 
     emitActivity({ kind: 'publish', linkId: id, message })
     for (const subscriber of subscribers) {
-      void subscriber(message)
-      emitActivity({ kind: 'deliver', linkId: id, message })
+      isolateDelivery({
+        listener: subscriber,
+        message,
+        onDelivered: () => {
+          emitActivity({ kind: 'deliver', linkId: id, message })
+        },
+        onFailed: (error) => {
+          emitActivity({
+            kind: 'deliver_failed',
+            linkId: id,
+            message,
+            error: error instanceof Error ? error.message : String(error),
+          })
+        },
+      })
     }
   }
 
@@ -118,25 +158,27 @@ export const linkToTrigger = <Message extends LinkMessage = LinkMessage>({
 export const triggerToLink = <Message extends LinkMessage = LinkMessage>({
   eventTypes,
   link,
+  actor,
   subscribe,
   createMessage,
 }: TriggerToLinkOptions<Message>): Disconnect => {
   const handlers: Record<string, (detail: unknown) => void | Promise<void>> = {}
+  const subscribeToActor = actor?.subscribe ?? subscribe
+
+  if (!subscribeToActor) {
+    throw new Error('triggerToLink requires either actor.subscribe or subscribe')
+  }
 
   for (const eventType of eventTypes) {
     handlers[eventType] = (detail) => {
       const message = createMessage
-        ? createMessage({ type: eventType, detail })
+        ? createMessage({ type: eventType, detail } as Message)
         : ({ type: eventType, detail } as Message)
       link.publish(message)
     }
   }
 
-  return subscribe(
-    handlers as {
-      [Type in Message['type']]: (detail: unknown) => void | Promise<void>
-    } & Record<string, (detail: unknown) => void | Promise<void>>,
-  )
+  return subscribeToActor(handlers as MessageHandlers<Message>)
 }
 
 export type { CreateLinkOptions, RuntimeLink, TriggerToLinkOptions }

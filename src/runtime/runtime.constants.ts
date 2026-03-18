@@ -69,4 +69,11 @@ export const MSS_SCALES = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8'] as co
  *
  * @public
  */
-export const LINK_ACTIVITY_KINDS = ['publish', 'deliver', 'subscribe', 'unsubscribe', 'destroy'] as const
+export const LINK_ACTIVITY_KINDS = [
+  'publish',
+  'deliver',
+  'deliver_failed',
+  'subscribe',
+  'unsubscribe',
+  'destroy',
+] as const

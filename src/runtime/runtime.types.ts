@@ -74,6 +74,17 @@ export type LinkObserver<Message extends LinkMessage = LinkMessage> = (
 ) => void | Promise<void>
 
 /**
+ * Event handler map derived from a message envelope union.
+ *
+ * @public
+ */
+export type MessageHandlers<Message extends LinkMessage = LinkMessage> = {
+  [Type in Message['type']]: (
+    detail: Extract<Message, { type: Type }>['detail'],
+  ) => void | Promise<void>
+} & DefaultHandlers
+
+/**
  * Public createLink options.
  *
  * @public
@@ -106,6 +117,7 @@ export type RuntimeLink<Message extends LinkMessage = LinkMessage> = {
  */
 export type BehavioralActor<Message extends LinkMessage = LinkMessage> = BehavioralActorDescriptor & {
   trigger: Trigger
+  subscribe: (handlers: MessageHandlers<Message>) => Disconnect
   snapshot?: (listener: SnapshotListener) => Disconnect
   destroy: () => void
   links?: Set<RuntimeLink<Message>>
@@ -130,12 +142,9 @@ export type LinkToTriggerOptions<Message extends LinkMessage = LinkMessage> = {
 export type TriggerToLinkOptions<Message extends LinkMessage = LinkMessage> = {
   eventTypes: Message['type'][]
   link: RuntimeLink<Message>
-  subscribe: (
-    handlers: {
-      [Type in Message['type']]: (detail: unknown) => void | Promise<void>
-    } & DefaultHandlers,
-  ) => Disconnect
-  createMessage?: (event: { type: Message['type']; detail: unknown }) => Message
+  actor?: Pick<BehavioralActor<Message>, 'subscribe'>
+  subscribe?: (handlers: MessageHandlers<Message>) => Disconnect
+  createMessage?: (event: Message) => Message
 }
 
 export type { BehavioralActorDescriptor, LinkActivity, MssObject, RuntimeArtifact, RuntimeContract }

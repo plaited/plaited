@@ -126,6 +126,7 @@ export const LinkActivitySchema = z.object({
   linkId: z.string(),
   subscriptionId: z.string().optional(),
   message: LinkMessageSchema.optional(),
+  error: z.string().optional(),
 })
 
 export type RuntimeContract = z.infer<typeof RuntimeContractSchema>
