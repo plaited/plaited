@@ -140,8 +140,10 @@ describe('dev-autoresearch dry run', () => {
       '--judge',
       './dev-research/runtime-taxonomy/slice-2.md',
       '--dry-run',
+      '--quiet',
     ])
 
     expect(parsed.slicePath).toBe('./dev-research/runtime-taxonomy/slice-2.md')
+    expect(parsed.quiet).toBe(true)
   })
 })

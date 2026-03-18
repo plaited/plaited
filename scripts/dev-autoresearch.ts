@@ -29,6 +29,7 @@ type CliInput = {
   maxAttempts: number
   metaVerifierPath: string
   programPath: string
+  quiet: boolean
   slicePath: string
 }
 
@@ -81,7 +82,7 @@ const TEST_FILE_PATTERN = /(\.spec\.ts|\.test\.ts|_spec\.ts|_test\.ts)$/
 const SOURCE_FILE_PATTERN = /\.(ts|tsx|js|jsx)$/
 const TEST_DIRECTORIES = ['src/', 'scripts/', 'skills/']
 const DEFAULT_ALLOWED_PATHS = ['scripts/', 'src/runtime/', 'src/improve/']
-const BOOLEAN_FLAGS = new Set(['--commit', '--dry-run', '--judge'])
+const BOOLEAN_FLAGS = new Set(['--commit', '--dry-run', '--judge', '--quiet'])
 
 const getArg = (args: string[], flag: string, fallback?: string): string | undefined => {
   const index = args.indexOf(flag)
@@ -116,6 +117,7 @@ export const parseInput = (args: string[]): CliInput => {
     maxAttempts: Number(getArg(args, '--max-attempts', '1')),
     metaVerifierPath: getArg(args, '--meta-verifier-path', './scripts/claude-haiku-meta-verifier.ts')!,
     programPath: getArg(args, '--program', './dev-research/program.md')!,
+    quiet: hasFlag(args, '--quiet'),
     slicePath: slicePath ?? getArg(args, '--slice', './dev-research/runtime-taxonomy/slice-1.md')!,
   }
 }
@@ -408,6 +410,15 @@ const buildChecks = (typecheck: ValidationResult, tests: ValidationResult): Chec
   },
 })
 
+const timestamp = (): string => new Date().toISOString()
+
+const createLogger = (quiet: boolean) => {
+  return (stage: string, message: string) => {
+    if (quiet) return
+    console.log(`[${timestamp()}] ${stage} ${message}`)
+  }
+}
+
 const runJudges = async ({
   enabled,
   judgePath,
@@ -466,6 +477,7 @@ const runJudges = async ({
 
 const main = async () => {
   const input = parseInput(process.argv.slice(2))
+  const logStatus = createLogger(input.quiet)
 
   const program = await requireMarkdown(input.programPath, [
     '## Mission',
@@ -490,14 +502,20 @@ const main = async () => {
   }
 
   for (let attempt = 1; attempt <= input.maxAttempts; attempt++) {
+    logStatus('attempt:start', `${attempt}/${input.maxAttempts}`)
     const worktree = await createWorktree(`${sliceId}-${attempt}`)
+    logStatus('worktree', worktree)
 
     try {
+      logStatus('adapter:start', 'running implementation adapter')
       const result = await adapter({ prompt, cwd: worktree })
+      logStatus('adapter:done', `timedOut=${result.timedOut} exitCode=${result.exitCode ?? 'none'}`)
+      logStatus('diff:start', 'collecting changed files and patch')
       const changedFiles = await getChangedFiles(worktree)
       const diffStat = await getDiffStat(worktree)
       const patch = await getPatch(worktree)
       const scope = checkScope(changedFiles, allowedPaths)
+      logStatus('scope', `${scope.passed ? 'pass' : 'fail'} changed=${changedFiles.length} allowed=${allowedPaths.join(', ')}`)
       const captureAssessment: TrainingCaptureAssessment = assessTrainingCapture({
         trial: {
           trajectory: result.trajectory,
@@ -505,6 +523,13 @@ const main = async () => {
           exitCode: result.exitCode,
         },
       })
+      logStatus(
+        'capture',
+        captureAssessment.eligible
+          ? `eligible richness=${captureAssessment.richness}`
+          : `skip reasons=${captureAssessment.reasons.join('+') || 'unknown'}`,
+      )
+      logStatus('typecheck:start', 'bun --bun tsc --noEmit')
       const typecheck = scope.passed
         ? await runCheck(worktree, ['bun', '--bun', 'tsc', '--noEmit'])
         : {
@@ -512,7 +537,14 @@ const main = async () => {
             notes: 'Skipped: scope failed',
             command: ['bun', '--bun', 'tsc', '--noEmit'],
           }
+      logStatus('typecheck', typecheck.passed ? 'pass' : `fail ${typecheck.notes}`)
       const impactedTests = scope.passed ? await resolveImpactedTests(worktree, changedFiles) : []
+      logStatus(
+        'tests:targeted',
+        impactedTests.length > 0
+          ? `selected ${impactedTests.length} test file(s)`
+          : 'falling back to default test roots',
+      )
       const tests = scope.passed && typecheck.passed
         ? await runCheck(
             worktree,
@@ -525,7 +557,9 @@ const main = async () => {
             notes: 'Skipped: earlier validation failed',
             command: impactedTests.length > 0 ? ['bun', 'test', ...impactedTests] : ['bun', 'test', ...TEST_DIRECTORIES],
           }
+      logStatus('tests', tests.passed ? 'pass' : `fail ${tests.notes}`)
       const checks = buildChecks(typecheck, tests)
+      logStatus('judge:fast', input.judge && scope.passed ? 'running fast judge pass' : 'skipped')
       const judges = await runJudges({
         enabled: input.judge && scope.passed,
         judgePath: input.judgePath,
@@ -549,6 +583,7 @@ const main = async () => {
 
       const judgePassed = judges ? judges.primary.pass && (judges.meta?.pass ?? true) : true
       const fastPassed = scope.passed && typecheck.passed && tests.passed && judgePassed
+      logStatus('validation:fast', fastPassed ? 'pass' : 'fail')
       const fullTests = fastPassed
         ? await runCheck(worktree, ['bun', 'test', ...TEST_DIRECTORIES])
         : {
@@ -556,6 +591,7 @@ const main = async () => {
             notes: 'Skipped: fast validation failed',
             command: ['bun', 'test', ...TEST_DIRECTORIES],
           }
+      logStatus('tests:full', fastPassed ? (fullTests.passed ? 'pass' : `fail ${fullTests.notes}`) : 'skipped')
       const judgeChecks = {
         ...checks,
         fullSuite: {
@@ -586,6 +622,7 @@ const main = async () => {
           traceCapture: captureAssessment,
         },
       })
+      logStatus('judge:final', input.judge && fastPassed ? 'completed' : 'skipped')
       const finalJudgePassed = finalJudges ? finalJudges.primary.pass && (finalJudges.meta?.pass ?? true) : fastPassed
       const passed = fastPassed && fullTests.passed && finalJudgePassed
       const decision: SliceDecision =
@@ -593,9 +630,12 @@ const main = async () => {
 
       let commit = ''
       if (passed && input.commit) {
+        logStatus('commit:start', 'creating experiment commit')
         commit = await commitWorktreeExperiment(worktree, `dev-autoresearch ${sliceId} attempt ${attempt}`)
+        logStatus('commit:done', commit)
       }
 
+      logStatus('log:start', 'recording experiment result')
       await logExperiment({
         commit,
         description: `dev-autoresearch ${sliceId} attempt ${attempt}`,
@@ -630,6 +670,7 @@ const main = async () => {
           metaVerification: finalJudges?.meta,
         },
       })
+      logStatus('log:done', decision)
 
       console.log(`attempt=${attempt} decision=${decision}`)
       console.log(`changed=${changedFiles.length} diff="${diffStat || 'no diff'}"`)
@@ -650,6 +691,7 @@ const main = async () => {
         return
       }
     } finally {
+      logStatus('cleanup', `removing worktree ${worktree}`)
       await removeWorktree(worktree)
     }
   }
