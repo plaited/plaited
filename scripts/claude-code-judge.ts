@@ -105,6 +105,25 @@ export const toGraderResult = (result: JudgeOutput): GraderResult => ({
     : {}),
 })
 
+const parseJudgeOutput = (raw: string): JudgeOutput => {
+  const envelope = JSON.parse(raw) as Record<string, unknown>
+  const structured = envelope.structured_output
+  const result = envelope.result
+  const payload = structured ?? result ?? envelope
+
+  const parsed =
+    typeof payload === 'string'
+      ? (JSON.parse(payload) as JudgeOutput)
+      : (payload as JudgeOutput)
+
+  return {
+    pass: typeof parsed.pass === 'boolean' ? parsed.pass : false,
+    score: typeof parsed.score === 'number' ? Math.max(0, Math.min(1, parsed.score)) : 0,
+    reasoning: typeof parsed.reasoning === 'string' ? parsed.reasoning : '',
+    dimensions: parsed.dimensions,
+  }
+}
+
 const invokeClaudeJudge = async (prompt: string): Promise<JudgeOutput> => {
   const claudePath = await Bun.which('claude')
   if (!claudePath) {
@@ -137,24 +156,12 @@ const invokeClaudeJudge = async (prompt: string): Promise<JudgeOutput> => {
     const raw = stdout.trim()
     if (!raw) return { pass: false, score: 0, reasoning: 'Claude returned empty response' }
 
-    const envelope = JSON.parse(raw) as Record<string, unknown>
-    const payload = envelope.result
-    const parsed =
-      typeof payload === 'string'
-        ? (JSON.parse(payload) as JudgeOutput)
-        : ((payload ?? envelope) as JudgeOutput)
-
-    return {
-      pass: typeof parsed.pass === 'boolean' ? parsed.pass : false,
-      score: typeof parsed.score === 'number' ? Math.max(0, Math.min(1, parsed.score)) : 0,
-      reasoning: typeof parsed.reasoning === 'string' ? parsed.reasoning : '',
-      dimensions: parsed.dimensions,
-    }
+    return parseJudgeOutput(raw)
   } catch (error) {
     return {
       pass: false,
       score: 0,
-      reasoning: error instanceof Error ? error.message : String(error),
+      reasoning: error instanceof Error ? `Claude judge parse error: ${error.message}` : String(error),
     }
   }
 }
