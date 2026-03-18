@@ -123,6 +123,13 @@ const invokeClaudeJudge = async (prompt: string): Promise<JudgeOutput> => {
       pass: false,
       score: 0,
       reasoning: `Claude judge SDK error: ${result.reason}`,
+      ...(result.meta
+        ? {
+            outcome: {
+              judgeSdk: result.meta,
+            },
+          }
+        : {}),
     }
   }
 
@@ -130,7 +137,14 @@ const invokeClaudeJudge = async (prompt: string): Promise<JudgeOutput> => {
     pass: typeof result.value.pass === 'boolean' ? result.value.pass : false,
     score: typeof result.value.score === 'number' ? Math.max(0, Math.min(1, result.value.score)) : 0,
     reasoning: typeof result.value.reasoning === 'string' ? result.value.reasoning : '',
-    dimensions: result.value.dimensions,
+    ...(result.value.dimensions || result.meta
+      ? {
+          outcome: {
+            ...(result.value.dimensions ? { judgeDimensions: result.value.dimensions } : {}),
+            ...(result.meta ? { judgeSdk: result.meta } : {}),
+          },
+        }
+      : {}),
   }
 }
 

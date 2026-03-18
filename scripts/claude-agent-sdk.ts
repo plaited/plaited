@@ -4,15 +4,25 @@ import { query } from '@anthropic-ai/claude-agent-sdk'
 const PROJECT_ROOT = `${import.meta.dir}/..`
 const CLIENT_APP = 'plaited-dev-autoresearch'
 const CLAUDE_JUDGE_MAX_TURNS = 1
+const JUDGE_DISALLOWED_TOOLS = ['Read', 'Write', 'Edit', 'MultiEdit', 'Bash', 'Glob', 'Grep', 'LS', 'Skill', 'Task']
+
+export type ClaudeQueryMetadata = {
+  subtype: string
+  totalCostUsd: number
+  modelUsage: Record<string, unknown>
+  permissionDenials: number
+}
 
 type StructuredResult<T> =
   | {
       ok: true
       value: T
+      meta: ClaudeQueryMetadata
     }
   | {
       ok: false
       reason: string
+      meta?: ClaudeQueryMetadata
     }
 
 export const formatClaudeResultFailure = (message: SDKResultError | SDKResultSuccess): string => {
@@ -33,6 +43,13 @@ export const formatClaudeResultFailure = (message: SDKResultError | SDKResultSuc
   return parts.join(' ')
 }
 
+const getClaudeQueryMetadata = (message: SDKResultError | SDKResultSuccess): ClaudeQueryMetadata => ({
+  subtype: message.subtype,
+  totalCostUsd: message.total_cost_usd,
+  modelUsage: message.modelUsage,
+  permissionDenials: message.permission_denials.length,
+})
+
 export const runStructuredClaudeQuery = async <T>({
   model,
   prompt,
@@ -49,6 +66,7 @@ export const runStructuredClaudeQuery = async <T>({
       model,
       maxTurns: CLAUDE_JUDGE_MAX_TURNS,
       permissionMode: 'plan',
+      disallowedTools: JUDGE_DISALLOWED_TOOLS,
       persistSession: false,
       settingSources: [],
       effort: 'low',
@@ -71,12 +89,14 @@ export const runStructuredClaudeQuery = async <T>({
         return {
           ok: true,
           value: message.structured_output as T,
+          meta: getClaudeQueryMetadata(message),
         }
       }
 
       return {
         ok: false,
         reason: formatClaudeResultFailure(message),
+        meta: getClaudeQueryMetadata(message),
       }
     }
 

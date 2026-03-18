@@ -123,6 +123,13 @@ const invokeClaudeMetaVerifier = async (prompt: string): Promise<MetaJudgeOutput
       pass: false,
       score: 0,
       reasoning: `Claude meta verifier SDK error: ${result.reason}`,
+      ...(result.meta
+        ? {
+            outcome: {
+              metaVerificationSdk: result.meta,
+            },
+          }
+        : {}),
     }
   }
 
@@ -130,7 +137,14 @@ const invokeClaudeMetaVerifier = async (prompt: string): Promise<MetaJudgeOutput
     pass: typeof result.value.pass === 'boolean' ? result.value.pass : false,
     score: typeof result.value.score === 'number' ? Math.max(0, Math.min(1, result.value.score)) : 0,
     reasoning: typeof result.value.reasoning === 'string' ? result.value.reasoning : '',
-    dimensions: result.value.dimensions,
+    ...(result.value.dimensions || result.meta
+      ? {
+          outcome: {
+            ...(result.value.dimensions ? { metaVerificationDimensions: result.value.dimensions } : {}),
+            ...(result.meta ? { metaVerificationSdk: result.meta } : {}),
+          },
+        }
+      : {}),
   }
 }
 
