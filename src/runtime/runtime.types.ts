@@ -1,0 +1,141 @@
+import type { DefaultHandlers, Disconnect, SnapshotListener, Trigger } from '../behavioral/behavioral.types.ts'
+import type { LINK_ACTIVITY_KINDS, MSS_BOUNDARIES, MSS_MECHANICS, MSS_SCALES, MSS_STRUCTURES } from './runtime.constants.ts'
+import type {
+  BehavioralActorDescriptor,
+  LinkActivity,
+  MssObject,
+  RuntimeArtifact,
+  RuntimeContract,
+} from './runtime.schemas.ts'
+
+/**
+ * MSS content type.
+ *
+ * @public
+ */
+export type ContentType = string
+
+/**
+ * MSS structure.
+ *
+ * @public
+ */
+export type Structure = (typeof MSS_STRUCTURES)[number]
+
+/**
+ * MSS mechanic.
+ *
+ * @public
+ */
+export type Mechanic = (typeof MSS_MECHANICS)[number]
+
+/**
+ * MSS boundary.
+ *
+ * @public
+ */
+export type Boundary = (typeof MSS_BOUNDARIES)[number]
+
+/**
+ * MSS scale.
+ *
+ * @public
+ */
+export type Scale = (typeof MSS_SCALES)[number]
+
+/**
+ * Observable link activity kind.
+ *
+ * @public
+ */
+export type LinkActivityKind = (typeof LINK_ACTIVITY_KINDS)[number]
+
+/**
+ * Canonical runtime message envelope.
+ *
+ * @public
+ */
+export type LinkMessage = { type: string; detail?: unknown }
+
+/**
+ * Runtime link subscriber.
+ *
+ * @public
+ */
+export type LinkSubscriber<Message extends LinkMessage = LinkMessage> = (message: Message) => void | Promise<void>
+
+/**
+ * Runtime link observer.
+ *
+ * @public
+ */
+export type LinkObserver<Message extends LinkMessage = LinkMessage> = (
+  activity: LinkActivity & { message?: Message },
+) => void | Promise<void>
+
+/**
+ * Public createLink options.
+ *
+ * @public
+ */
+export type CreateLinkOptions<Message extends LinkMessage = LinkMessage> = {
+  id?: string
+  onActivity?: LinkObserver<Message>
+}
+
+/**
+ * Transport-neutral communication primitive.
+ *
+ * @public
+ */
+export type RuntimeLink<Message extends LinkMessage = LinkMessage> = {
+  id: string
+  publish: (message: Message) => void
+  subscribe: (listener: LinkSubscriber<Message>) => Disconnect
+  observe: (listener: LinkObserver<Message>) => Disconnect
+  destroy: () => void
+}
+
+/**
+ * Concrete runtime shape for a behavioral actor.
+ *
+ * @remarks
+ * The structural MSS object remains separate from the runtime edge that coordinates it.
+ *
+ * @public
+ */
+export type BehavioralActor<Message extends LinkMessage = LinkMessage> = BehavioralActorDescriptor & {
+  trigger: Trigger
+  snapshot?: (listener: SnapshotListener) => Disconnect
+  destroy: () => void
+  links?: Set<RuntimeLink<Message>>
+}
+
+/**
+ * Options for bridging link traffic into a BP trigger.
+ *
+ * @public
+ */
+export type LinkToTriggerOptions<Message extends LinkMessage = LinkMessage> = {
+  link: RuntimeLink<Message>
+  trigger: Trigger
+  mapMessage?: (message: Message) => Message
+}
+
+/**
+ * Options for bridging selected BP events into a link.
+ *
+ * @public
+ */
+export type TriggerToLinkOptions<Message extends LinkMessage = LinkMessage> = {
+  eventTypes: Message['type'][]
+  link: RuntimeLink<Message>
+  subscribe: (
+    handlers: {
+      [Type in Message['type']]: (detail: unknown) => void | Promise<void>
+    } & DefaultHandlers,
+  ) => Disconnect
+  createMessage?: (event: { type: Message['type']; detail: unknown }) => Message
+}
+
+export type { BehavioralActorDescriptor, LinkActivity, MssObject, RuntimeArtifact, RuntimeContract }

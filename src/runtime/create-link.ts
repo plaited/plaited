@@ -1,0 +1,142 @@
+import type { Disconnect, Trigger } from '../behavioral/behavioral.types.ts'
+import type {
+  CreateLinkOptions,
+  LinkActivity,
+  LinkMessage,
+  LinkObserver,
+  LinkSubscriber,
+  LinkToTriggerOptions,
+  RuntimeLink,
+  TriggerToLinkOptions,
+} from './runtime.types.ts'
+
+const createDisconnect = <T>(listeners: Set<T>, listener: T, onDisconnect?: () => void): Disconnect => {
+  let disconnected = false
+
+  return () => {
+    if (disconnected) return
+    disconnected = true
+    const deleted = listeners.delete(listener)
+    deleted && onDisconnect?.()
+  }
+}
+
+const publishActivity = <Message extends LinkMessage>(
+  observers: Set<LinkObserver<Message>>,
+  activity: LinkActivity & { message?: Message },
+) => {
+  for (const observer of observers) {
+    void observer(activity)
+  }
+}
+
+/**
+ * Creates a transport-neutral BP event link.
+ *
+ * @public
+ */
+export const createLink = <Message extends LinkMessage = LinkMessage>({
+  id = crypto.randomUUID(),
+  onActivity,
+}: CreateLinkOptions<Message> = {}): RuntimeLink<Message> => {
+  const subscribers = new Set<LinkSubscriber<Message>>()
+  const observers = new Set<LinkObserver<Message>>()
+  let destroyed = false
+
+  onActivity && observers.add(onActivity)
+
+  const emitActivity = (activity: LinkActivity & { message?: Message }) => {
+    publishActivity(observers, activity)
+  }
+
+  const publish = (message: Message) => {
+    if (destroyed) return
+
+    emitActivity({ kind: 'publish', linkId: id, message })
+    for (const subscriber of subscribers) {
+      void subscriber(message)
+      emitActivity({ kind: 'deliver', linkId: id, message })
+    }
+  }
+
+  const subscribe = (listener: LinkSubscriber<Message>) => {
+    if (destroyed) return () => {}
+
+    subscribers.add(listener)
+    const subscriptionId = crypto.randomUUID()
+    emitActivity({ kind: 'subscribe', linkId: id, subscriptionId })
+
+    return createDisconnect(subscribers, listener, () => {
+      emitActivity({ kind: 'unsubscribe', linkId: id, subscriptionId })
+    })
+  }
+
+  const observe = (listener: LinkObserver<Message>) => {
+    if (destroyed) return () => {}
+
+    observers.add(listener)
+    return createDisconnect(observers, listener)
+  }
+
+  const destroy = () => {
+    if (destroyed) return
+    destroyed = true
+    emitActivity({ kind: 'destroy', linkId: id })
+    subscribers.clear()
+    observers.clear()
+  }
+
+  return {
+    id,
+    publish,
+    subscribe,
+    observe,
+    destroy,
+  }
+}
+
+/**
+ * Bridges link traffic into a BP trigger.
+ *
+ * @public
+ */
+export const linkToTrigger = <Message extends LinkMessage = LinkMessage>({
+  link,
+  trigger,
+  mapMessage,
+}: LinkToTriggerOptions<Message>): Disconnect => {
+  return link.subscribe((message) => {
+    trigger(mapMessage ? mapMessage(message) : message)
+  })
+}
+
+/**
+ * Bridges selected BP events into a runtime link.
+ *
+ * @public
+ */
+export const triggerToLink = <Message extends LinkMessage = LinkMessage>({
+  eventTypes,
+  link,
+  subscribe,
+  createMessage,
+}: TriggerToLinkOptions<Message>): Disconnect => {
+  const handlers: Record<string, (detail: unknown) => void | Promise<void>> = {}
+
+  for (const eventType of eventTypes) {
+    handlers[eventType] = (detail) => {
+      const message = createMessage
+        ? createMessage({ type: eventType, detail })
+        : ({ type: eventType, detail } as Message)
+      link.publish(message)
+    }
+  }
+
+  return subscribe(
+    handlers as {
+      [Type in Message['type']]: (detail: unknown) => void | Promise<void>
+    } & Record<string, (detail: unknown) => void | Promise<void>>,
+  )
+}
+
+export type { CreateLinkOptions, RuntimeLink, TriggerToLinkOptions }
