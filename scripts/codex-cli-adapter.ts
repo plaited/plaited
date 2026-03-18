@@ -8,6 +8,8 @@
 
 import type { Adapter, TrajectoryStep } from '../src/improve.ts'
 
+const CODEX_ADAPTER_TIMEOUT_MS = 10 * 60_000
+
 type CodexJsonEvent =
   | { type: 'thread.started'; thread_id?: string }
   | { type: 'turn.started' }
@@ -108,11 +110,14 @@ export const adapt: Adapter = async ({ prompt, cwd }) => {
     },
   )
 
+  const timeout = setTimeout(() => proc.kill(), CODEX_ADAPTER_TIMEOUT_MS)
+
   const [stdout, stderr, exitCode] = await Promise.all([
     new Response(proc.stdout).text(),
     new Response(proc.stderr).text(),
     proc.exited,
   ])
+  clearTimeout(timeout)
 
   const elapsed = Date.now() - start
   const parsed = parseCodexExecJsonl(stdout)
@@ -126,7 +131,7 @@ export const adapt: Adapter = async ({ prompt, cwd }) => {
       ...(parsed.outputTokens !== undefined ? { outputTokens: parsed.outputTokens } : {}),
     },
     exitCode,
-    timedOut: exitCode === 124,
+    timedOut: exitCode === 124 || elapsed >= CODEX_ADAPTER_TIMEOUT_MS,
     ...(exitCode !== 0 && stderr.trim()
       ? {
           output: parsed.output || stderr.trim(),

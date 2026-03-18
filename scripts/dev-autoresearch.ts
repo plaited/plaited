@@ -276,7 +276,7 @@ const buildChecks = (typecheck: ValidationResult, tests: ValidationResult) => ({
     notes: typecheck.notes,
     command: typecheck.command,
   },
-  tests: {
+  targetedTests: {
     passed: tests.passed,
     notes: tests.notes,
     command: tests.command,
@@ -395,7 +395,30 @@ const main = async () => {
             notes: 'Skipped: fast validation failed',
             command: ['bun', 'test', ...TEST_DIRECTORIES],
           }
-      const passed = fastPassed && fullTests.passed
+      const judgeChecks = {
+        ...checks,
+        fullSuite: {
+          passed: fullTests.passed,
+          notes: fullTests.notes,
+          command: fullTests.command,
+          ran: fastPassed,
+        },
+      }
+      const finalJudges = await runJudges({
+        enabled: input.judge && fastPassed,
+        judgePath: input.judgePath,
+        metaVerifierPath: input.metaVerifierPath,
+        task: slice,
+        candidateOutput: result.output,
+        program,
+        slice,
+        changedFiles,
+        diffStat,
+        patch,
+        checks: judgeChecks,
+      })
+      const finalJudgePassed = finalJudges ? finalJudges.primary.pass && (finalJudges.meta?.pass ?? true) : fastPassed
+      const passed = fastPassed && fullTests.passed && finalJudgePassed
       const decision: SliceDecision =
         passed ? 'keep' : changedFiles.length > 0 ? 'revise' : 'discard'
 
@@ -413,7 +436,7 @@ const main = async () => {
           tests: tests.passed ? 1 : 0,
           full_tests: fullTests.passed ? 1 : 0,
         },
-        status: decision === 'keep' ? 'keep' : decision === 'discard' ? 'crash' : 'discard',
+        status: decision === 'keep' ? 'keep' : 'discard',
         timestamp: new Date().toISOString(),
         prompts: [sliceId],
         metadata: {
@@ -423,24 +446,26 @@ const main = async () => {
           patch: patch.slice(0, 12000),
           output: result.output,
           changedFiles,
-          checks,
+          checks: judgeChecks,
           impactedTests,
           fullTests: {
             passed: fullTests.passed,
             notes: fullTests.notes,
             command: fullTests.command,
           },
-          judge: judges?.primary,
-          metaVerification: judges?.meta,
+          fastJudge: judges?.primary,
+          fastMetaVerification: judges?.meta,
+          judge: finalJudges?.primary,
+          metaVerification: finalJudges?.meta,
         },
       })
 
       console.log(`attempt=${attempt} decision=${decision}`)
       console.log(`changed=${changedFiles.length} diff="${diffStat || 'no diff'}"`)
-      if (judges) {
-        console.log(`judge=${judges.primary.pass ? 'pass' : 'fail'} score=${judges.primary.score.toFixed(2)}`)
-        if (judges.meta) {
-          console.log(`meta=${judges.meta.pass ? 'pass' : 'fail'} score=${judges.meta.score.toFixed(2)}`)
+      if (finalJudges) {
+        console.log(`judge=${finalJudges.primary.pass ? 'pass' : 'fail'} score=${finalJudges.primary.score.toFixed(2)}`)
+        if (finalJudges.meta) {
+          console.log(`meta=${finalJudges.meta.pass ? 'pass' : 'fail'} score=${finalJudges.meta.score.toFixed(2)}`)
         }
       }
 

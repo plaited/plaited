@@ -56,8 +56,16 @@ const buildMetaPrompt = ({
   const patch = typeof metadata?.patch === 'string' ? metadata.patch : '(none)'
   const checks = JSON.stringify(metadata?.checks ?? {}, null, 2)
   const candidateOutput = typeof metadata?.candidateOutput === 'string' ? metadata.candidateOutput : '(missing candidate output)'
+  const program = typeof metadata?.program === 'string' ? metadata.program : '(missing program)'
+  const slice = typeof metadata?.slice === 'string' ? metadata.slice : '(missing slice)'
 
   return `You are meta-verifying an LLM judge decision for a bounded Plaited framework-development slice.
+
+Program:
+${program}
+
+Slice:
+${slice}
 
 Task:
 ${task}
