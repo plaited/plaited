@@ -34,7 +34,11 @@ describe('dev-autoresearch import resolution', () => {
     const cwd = await makeTempDir()
     await writeFixture(cwd, 'src/runtime/create-link.ts', 'export const createLink = () => {}')
 
-    const resolved = await resolveImportPath(cwd, 'scripts/tests/runtime-harness.spec.ts', '../../src/runtime/create-link')
+    const resolved = await resolveImportPath(
+      cwd,
+      'scripts/tests/runtime-harness.spec.ts',
+      '../../src/runtime/create-link',
+    )
 
     expect(resolved).toBe('src/runtime/create-link.ts')
   })
@@ -136,12 +140,7 @@ describe('dev-autoresearch dry run', () => {
   })
 
   test('keeps positional slice parsing correct after boolean flags', () => {
-    const parsed = parseInput([
-      '--judge',
-      './dev-research/runtime-taxonomy/slice-2.md',
-      '--dry-run',
-      '--quiet',
-    ])
+    const parsed = parseInput(['--judge', './dev-research/runtime-taxonomy/slice-2.md', '--dry-run', '--quiet'])
 
     expect(parsed.slicePath).toBe('./dev-research/runtime-taxonomy/slice-2.md')
     expect(parsed.quiet).toBe(true)
@@ -149,14 +148,7 @@ describe('dev-autoresearch dry run', () => {
 
   test('package research script forwards a caller-provided slice', async () => {
     const proc = Bun.spawn(
-      [
-        'bun',
-        'run',
-        'research',
-        '--',
-        './dev-research/runtime-taxonomy/slice-2.md',
-        '--dry-run',
-      ],
+      ['bun', 'run', 'research', '--', './dev-research/runtime-taxonomy/slice-2.md', '--dry-run'],
       {
         cwd: join(import.meta.dir, '..', '..'),
         stdout: 'pipe',
@@ -172,7 +164,7 @@ describe('dev-autoresearch dry run', () => {
     ])
 
     expect(exitCode).toBe(0)
-    expect(stderr).toContain('bun scripts/dev-autoresearch.ts')
+    expect(stderr).toContain('bun --no-env-file scripts/dev-autoresearch.ts')
     expect(stdout).toContain('slice=./dev-research/runtime-taxonomy/slice-2.md')
   })
 })

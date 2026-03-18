@@ -12,10 +12,10 @@
 import { join } from 'node:path'
 import {
   assessTrainingCapture,
+  type GraderResult,
   loadAdapter,
   loadGrader,
   logExperiment,
-  type GraderResult,
   type TrainingCaptureAssessment,
 } from '../src/improve.ts'
 
@@ -132,6 +132,15 @@ const requireMarkdown = async (path: string, headings: string[]): Promise<string
   return text
 }
 
+const ensureRequiredSecrets = ({ judge }: { judge: boolean }) => {
+  if (judge && !process.env.ANTHROPIC_API_KEY) {
+    throw new Error(
+      'Missing ANTHROPIC_API_KEY. Resolve secrets before running judged autoresearch. ' +
+        'For long-term setup, use Varlock + 1Password via .env.schema.',
+    )
+  }
+}
+
 const linkSharedToolchain = async (worktree: string) => {
   const nodeModulesSource = join(PROJECT_ROOT, 'node_modules')
   if (!(await Bun.file(nodeModulesSource).exists())) return
@@ -193,12 +202,7 @@ const prepareDiffView = async (cwd: string) => {
 export const getChangedFiles = async (cwd: string): Promise<string[]> => {
   await prepareDiffView(cwd)
   const result = await Bun.$`git diff HEAD --name-only`.cwd(cwd).nothrow().quiet()
-  return result
-    .text()
-    .trim()
-    .split('\n')
-    .filter(Boolean)
-    .map(normalizePath)
+  return result.text().trim().split('\n').filter(Boolean).map(normalizePath)
 }
 
 export const getDiffStat = async (cwd: string): Promise<string> => {
@@ -329,10 +333,10 @@ const buildConventionalTestCandidates = (changedFile: string, allTests: string[]
     if (!testPath.startsWith(moduleDir)) return false
     const testBase = basenameWithoutExt(testPath)
     return (
-      testBase === fileName
-      || testBase === parentName
-      || dirname(testPath) === join(moduleDir, 'tests')
-      || dirname(testPath).startsWith(join(moduleDir, 'tests'))
+      testBase === fileName ||
+      testBase === parentName ||
+      dirname(testPath) === join(moduleDir, 'tests') ||
+      dirname(testPath).startsWith(join(moduleDir, 'tests'))
     )
   })
 }
@@ -515,6 +519,8 @@ const main = async () => {
     return
   }
 
+  ensureRequiredSecrets({ judge: input.judge })
+
   for (let attempt = 1; attempt <= input.maxAttempts; attempt++) {
     logStatus('attempt:start', `${attempt}/${input.maxAttempts}`)
     const worktree = await createWorktree(`${sliceId}-${attempt}`)
@@ -529,7 +535,10 @@ const main = async () => {
       const diffStat = await getDiffStat(worktree)
       const patch = await getPatch(worktree)
       const scope = checkScope(changedFiles, allowedPaths)
-      logStatus('scope', `${scope.passed ? 'pass' : 'fail'} changed=${changedFiles.length} allowed=${allowedPaths.join(', ')}`)
+      logStatus(
+        'scope',
+        `${scope.passed ? 'pass' : 'fail'} changed=${changedFiles.length} allowed=${allowedPaths.join(', ')}`,
+      )
       const captureAssessment: TrainingCaptureAssessment = assessTrainingCapture({
         trial: {
           trajectory: result.trajectory,
@@ -559,18 +568,18 @@ const main = async () => {
           ? `selected ${impactedTests.length} test file(s)`
           : 'falling back to default test roots',
       )
-      const tests = scope.passed && typecheck.passed
-        ? await runCheck(
-            worktree,
-            impactedTests.length > 0
-              ? ['bun', 'test', ...impactedTests]
-              : ['bun', 'test', ...TEST_DIRECTORIES],
-          )
-        : {
-            passed: false,
-            notes: 'Skipped: earlier validation failed',
-            command: impactedTests.length > 0 ? ['bun', 'test', ...impactedTests] : ['bun', 'test', ...TEST_DIRECTORIES],
-          }
+      const tests =
+        scope.passed && typecheck.passed
+          ? await runCheck(
+              worktree,
+              impactedTests.length > 0 ? ['bun', 'test', ...impactedTests] : ['bun', 'test', ...TEST_DIRECTORIES],
+            )
+          : {
+              passed: false,
+              notes: 'Skipped: earlier validation failed',
+              command:
+                impactedTests.length > 0 ? ['bun', 'test', ...impactedTests] : ['bun', 'test', ...TEST_DIRECTORIES],
+            }
       logStatus('tests', tests.passed ? 'pass' : `fail ${tests.notes}`)
       const checks = buildChecks(typecheck, tests)
       logStatus('judge:fast', input.judge && scope.passed ? 'running fast judge pass' : 'skipped')
@@ -639,8 +648,7 @@ const main = async () => {
       logStatus('judge:final', input.judge && fastPassed ? 'completed' : 'skipped')
       const finalJudgePassed = finalJudges ? finalJudges.primary.pass && (finalJudges.meta?.pass ?? true) : fastPassed
       const passed = fastPassed && fullTests.passed && finalJudgePassed
-      const decision: SliceDecision =
-        passed ? 'keep' : changedFiles.length > 0 ? 'revise' : 'discard'
+      const decision: SliceDecision = passed ? 'keep' : changedFiles.length > 0 ? 'revise' : 'discard'
 
       let commit = ''
       if (passed && input.commit) {
