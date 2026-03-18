@@ -209,7 +209,7 @@ const basename = (path: string): string => {
 
 const basenameWithoutExt = (path: string): string => basename(path).replace(/\.[^.]+$/, '')
 
-const resolveImportPath = (fromFile: string, specifier: string): string | null => {
+export const resolveImportPath = async (cwd: string, fromFile: string, specifier: string): Promise<string | null> => {
   if (!specifier.startsWith('.')) return null
 
   const baseDir = dirname(fromFile)
@@ -225,11 +225,24 @@ const resolveImportPath = (fromFile: string, specifier: string): string | null =
     join(baseDir, specifier, 'index.jsx'),
   ].map(normalizePath)
 
+  for (const candidate of candidates) {
+    if (await Bun.file(join(cwd, candidate)).exists()) return candidate
+  }
+
   return candidates[0] ?? null
 }
 
 const listTestFiles = async (cwd: string): Promise<string[]> => {
-  const result = await Bun.$`rg --files src scripts skills`.cwd(cwd).quiet()
+  const roots: string[] = []
+  for (const directory of TEST_DIRECTORIES) {
+    const candidate = directory.replace(/\/$/, '')
+    const exists = await Bun.$`test -d ${join(cwd, candidate)}`.nothrow().quiet()
+    if (exists.exitCode === 0) roots.push(candidate)
+  }
+
+  if (roots.length === 0) return []
+
+  const result = await Bun.$`rg --files ${roots}`.cwd(cwd).quiet()
   return result
     .text()
     .trim()
@@ -239,7 +252,7 @@ const listTestFiles = async (cwd: string): Promise<string[]> => {
     .map(normalizePath)
 }
 
-const scanImports = async (cwd: string, filePath: string): Promise<string[]> => {
+export const scanImports = async (cwd: string, filePath: string): Promise<string[]> => {
   if (!SOURCE_FILE_PATTERN.test(filePath)) return []
 
   const file = Bun.file(join(cwd, filePath))
@@ -257,9 +270,8 @@ const scanImports = async (cwd: string, filePath: string): Promise<string[]> => 
   const transpiler = new Bun.Transpiler({ loader })
   const { imports } = transpiler.scan(text)
 
-  return imports
-    .map((entry) => resolveImportPath(filePath, entry.path))
-    .filter((candidate): candidate is string => candidate !== null)
+  const resolved = await Promise.all(imports.map((entry) => resolveImportPath(cwd, filePath, entry.path)))
+  return resolved.filter((candidate): candidate is string => candidate !== null)
 }
 
 const buildConventionalTestCandidates = (changedFile: string, allTests: string[]): string[] => {
@@ -284,7 +296,7 @@ const buildConventionalTestCandidates = (changedFile: string, allTests: string[]
   })
 }
 
-const resolveImpactedTests = async (cwd: string, changedFiles: string[]): Promise<string[]> => {
+export const resolveImpactedTests = async (cwd: string, changedFiles: string[]): Promise<string[]> => {
   const allTests = await listTestFiles(cwd)
   const selected = new Set<string>()
 
@@ -606,4 +618,6 @@ const main = async () => {
   process.exit(1)
 }
 
-await main()
+if (import.meta.main) {
+  await main()
+}
