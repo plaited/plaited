@@ -46,8 +46,8 @@
     "falcon:mlx": "bun scripts/falcon-mlx-server.ts",
     "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .hooks || true",
     "prompt": "claude --model opus --dangerously-skip-permissions --rc",
-    "research": "PLAITED_AUTO_RESEARCH=1 PLAITED_MAX_EXPERIMENTS=3 claude --model sonnet --dangerously-skip-permissions --rc",
-    "research:overnight": "PLAITED_AUTO_RESEARCH=1 PLAITED_MAX_EXPERIMENTS=50 claude --model sonnet --dangerously-skip-permissions --rc",
+    "research": "PLAITED_AUTO_RESEARCH=1 PLAITED_MAX_EXPERIMENTS=3 claude --model sonnet --dangerously-skip-permissions --rc \"Read dev-research/program.md and dev-research/runtime-taxonomy/slice-2.md, then execute the current bounded autoresearch slice for Plaited development.\"",
+    "research:overnight": "PLAITED_AUTO_RESEARCH=1 PLAITED_MAX_EXPERIMENTS=50 claude --model sonnet --dangerously-skip-permissions --rc \"Read dev-research/program.md and the current slice under dev-research/runtime-taxonomy/, then continue bounded autoresearch for Plaited development overnight.\"",
     "test": "bun test src/ skills/ scripts/",
     "test:playwright": "bunx playwright test",
     "test:tools": "bun test src/tools/ src/improve/"
