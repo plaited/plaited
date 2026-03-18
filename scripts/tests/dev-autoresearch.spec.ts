@@ -60,3 +60,37 @@ describe('dev-autoresearch import resolution', () => {
     expect(impacted).toEqual(['scripts/tests/runtime-harness.spec.ts'])
   })
 })
+
+describe('dev-autoresearch dry run', () => {
+  test('exits successfully without running an experiment', async () => {
+    const proc = Bun.spawn(
+      [
+        'bun',
+        'scripts/dev-autoresearch.ts',
+        './dev-research/runtime-taxonomy/slice-1.md',
+        '--program',
+        './dev-research/program.md',
+        '--dry-run',
+        '--max-attempts',
+        '3',
+      ],
+      {
+        cwd: join(import.meta.dir, '..', '..'),
+        stdout: 'pipe',
+        stderr: 'pipe',
+        env: process.env as Record<string, string>,
+      },
+    )
+
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ])
+
+    expect(exitCode).toBe(0)
+    expect(stderr).toBe('')
+    expect(stdout).toContain('dry-run=true attempts=3')
+    expect(stdout).toContain('slice=./dev-research/runtime-taxonomy/slice-1.md')
+  })
+})

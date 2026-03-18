@@ -23,6 +23,7 @@ import {
 type CliInput = {
   adapterPath: string
   commit: boolean
+  dryRun: boolean
   judge: boolean
   judgePath: string
   maxAttempts: number
@@ -108,6 +109,7 @@ const parseInput = (args: string[]): CliInput => {
   return {
     adapterPath: getArg(args, '--adapter', './scripts/codex-cli-adapter.ts')!,
     commit: hasFlag(args, '--commit'),
+    dryRun: hasFlag(args, '--dry-run'),
     judge: hasFlag(args, '--judge'),
     judgePath: getArg(args, '--judge-path', './scripts/claude-code-judge.ts')!,
     maxAttempts: Number(getArg(args, '--max-attempts', '1')),
@@ -464,6 +466,13 @@ const main = async () => {
   const allowedPaths = parseSliceScope(slice).length > 0 ? parseSliceScope(slice) : DEFAULT_ALLOWED_PATHS
 
   console.log(`mode=repo-harness adapter=${input.adapterPath} slice=${sliceId} judge=${input.judge}`)
+  if (input.dryRun) {
+    console.log(`dry-run=true attempts=${input.maxAttempts} commit=${input.commit}`)
+    console.log(`program=${input.programPath}`)
+    console.log(`slice=${input.slicePath}`)
+    console.log(`allowedPaths=${allowedPaths.join(', ')}`)
+    return
+  }
 
   for (let attempt = 1; attempt <= input.maxAttempts; attempt++) {
     const worktree = await createWorktree(`${sliceId}-${attempt}`)
