@@ -3,7 +3,7 @@ import { query } from '@anthropic-ai/claude-agent-sdk'
 
 const PROJECT_ROOT = `${import.meta.dir}/..`
 const CLIENT_APP = 'plaited-dev-autoresearch'
-const CLAUDE_JUDGE_MAX_TURNS = 3
+const CLAUDE_JUDGE_MAX_TURNS = 1
 
 type StructuredResult<T> =
   | {
@@ -48,9 +48,10 @@ export const runStructuredClaudeQuery = async <T>({
       cwd: PROJECT_ROOT,
       model,
       maxTurns: CLAUDE_JUDGE_MAX_TURNS,
-      permissionMode: 'dontAsk',
+      permissionMode: 'plan',
       persistSession: false,
       settingSources: [],
+      effort: 'low',
       env: {
         ...process.env,
         CLAUDE_AGENT_SDK_CLIENT_APP: CLIENT_APP,
