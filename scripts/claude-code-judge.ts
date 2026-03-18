@@ -13,6 +13,7 @@ type JudgeOutput = {
   pass: boolean
   score: number
   reasoning: string
+  outcome?: Record<string, unknown>
   dimensions?: {
     architecture: number
     boundedness: number
@@ -102,11 +103,9 @@ export const toGraderResult = (result: JudgeOutput): GraderResult => ({
   pass: result.pass,
   score: result.score,
   reasoning: result.reasoning,
-  ...(result.dimensions
+  ...(result.outcome
     ? {
-        outcome: {
-          judgeDimensions: result.dimensions,
-        },
+        outcome: result.outcome,
       }
     : {}),
 })

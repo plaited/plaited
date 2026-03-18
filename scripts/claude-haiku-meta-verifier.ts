@@ -13,6 +13,7 @@ type MetaJudgeOutput = {
   pass: boolean
   score: number
   reasoning: string
+  outcome?: Record<string, unknown>
   dimensions?: {
     consistency: number
     risk: number
@@ -102,11 +103,9 @@ export const toGraderResult = (result: MetaJudgeOutput): GraderResult => ({
   pass: result.pass,
   score: result.score,
   reasoning: result.reasoning,
-  ...(result.dimensions
+  ...(result.outcome
     ? {
-        outcome: {
-          metaVerificationDimensions: result.dimensions,
-        },
+        outcome: result.outcome,
       }
     : {}),
 })
