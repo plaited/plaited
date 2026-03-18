@@ -89,7 +89,22 @@ const getArg = (args: string[], flag: string, fallback?: string): string | undef
 
 const hasFlag = (args: string[], flag: string): boolean => args.includes(flag)
 
+const getPositionalArgs = (args: string[]): string[] => {
+  const positional: string[] = []
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index]
+    if (!arg) continue
+    if (arg.startsWith('--')) {
+      index += 1
+      continue
+    }
+    positional.push(arg)
+  }
+  return positional
+}
+
 const parseInput = (args: string[]): CliInput => {
+  const [slicePath] = getPositionalArgs(args)
   return {
     adapterPath: getArg(args, '--adapter', './scripts/codex-cli-adapter.ts')!,
     commit: hasFlag(args, '--commit'),
@@ -98,7 +113,7 @@ const parseInput = (args: string[]): CliInput => {
     maxAttempts: Number(getArg(args, '--max-attempts', '1')),
     metaVerifierPath: getArg(args, '--meta-verifier-path', './scripts/claude-haiku-meta-verifier.ts')!,
     programPath: getArg(args, '--program', './dev-research/program.md')!,
-    slicePath: getArg(args, '--slice', './dev-research/runtime-taxonomy/slice-1.md')!,
+    slicePath: slicePath ?? getArg(args, '--slice', './dev-research/runtime-taxonomy/slice-1.md')!,
   }
 }
 
