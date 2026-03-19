@@ -71,8 +71,10 @@ export const MSS_SCALES = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8'] as co
  */
 export const LINK_ACTIVITY_KINDS = [
   'publish',
+  'receive',
   'deliver',
   'deliver_failed',
+  'bridge_failed',
   'subscribe',
   'unsubscribe',
   'destroy',

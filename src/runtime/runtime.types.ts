@@ -1,5 +1,11 @@
 import type { DefaultHandlers, Disconnect, SnapshotListener, Trigger } from '../behavioral/behavioral.types.ts'
-import type { LINK_ACTIVITY_KINDS, MSS_BOUNDARIES, MSS_MECHANICS, MSS_SCALES, MSS_STRUCTURES } from './runtime.constants.ts'
+import type {
+  LINK_ACTIVITY_KINDS,
+  MSS_BOUNDARIES,
+  MSS_MECHANICS,
+  MSS_SCALES,
+  MSS_STRUCTURES,
+} from './runtime.constants.ts'
 import type {
   BehavioralActorDescriptor,
   LinkActivity,
@@ -74,14 +80,23 @@ export type LinkObserver<Message extends LinkMessage = LinkMessage> = (
 ) => void | Promise<void>
 
 /**
+ * Transport-specific bridge for cross-process link delivery.
+ *
+ * @public
+ */
+export type LinkBridge<Message extends LinkMessage = LinkMessage> = {
+  send: (message: Message) => void
+  receive: (listener: LinkSubscriber<Message>) => Disconnect
+  destroy?: () => void
+}
+
+/**
  * Event handler map derived from a message envelope union.
  *
  * @public
  */
 export type MessageHandlers<Message extends LinkMessage = LinkMessage> = {
-  [Type in Message['type']]: (
-    detail: Extract<Message, { type: Type }>['detail'],
-  ) => void | Promise<void>
+  [Type in Message['type']]: (detail: Extract<Message, { type: Type }>['detail']) => void | Promise<void>
 } & DefaultHandlers
 
 /**
@@ -92,6 +107,7 @@ export type MessageHandlers<Message extends LinkMessage = LinkMessage> = {
 export type CreateLinkOptions<Message extends LinkMessage = LinkMessage> = {
   id?: string
   onActivity?: LinkObserver<Message>
+  bridge?: LinkBridge<Message>
 }
 
 /**

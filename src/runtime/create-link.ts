@@ -2,6 +2,7 @@ import type { Disconnect } from '../behavioral/behavioral.types.ts'
 import type {
   CreateLinkOptions,
   LinkActivity,
+  LinkBridge,
   LinkMessage,
   LinkObserver,
   LinkSubscriber,
@@ -67,6 +68,7 @@ const isolateDelivery = <Message extends LinkMessage>({
 export const createLink = <Message extends LinkMessage = LinkMessage>({
   id = crypto.randomUUID(),
   onActivity,
+  bridge,
 }: CreateLinkOptions<Message> = {}): RuntimeLink<Message> => {
   const subscribers = new Set<LinkSubscriber<Message>>()
   const observers = new Set<LinkObserver<Message>>()
@@ -78,10 +80,7 @@ export const createLink = <Message extends LinkMessage = LinkMessage>({
     publishActivity(observers, activity)
   }
 
-  const publish = (message: Message) => {
-    if (destroyed) return
-
-    emitActivity({ kind: 'publish', linkId: id, message })
+  const deliverToSubscribers = (message: Message) => {
     const subscriberSnapshot = [...subscribers]
 
     for (const subscriber of subscriberSnapshot) {
@@ -101,6 +100,33 @@ export const createLink = <Message extends LinkMessage = LinkMessage>({
         },
       })
     }
+  }
+
+  const publishToBridge = (message: Message, activeBridge: LinkBridge<Message>) => {
+    try {
+      activeBridge.send(message)
+    } catch (error) {
+      emitActivity({
+        kind: 'bridge_failed',
+        linkId: id,
+        message,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
+  const bridgeDisconnect = bridge?.receive((message) => {
+    if (destroyed) return
+    emitActivity({ kind: 'receive', linkId: id, message })
+    deliverToSubscribers(message)
+  })
+
+  const publish = (message: Message) => {
+    if (destroyed) return
+
+    emitActivity({ kind: 'publish', linkId: id, message })
+    deliverToSubscribers(message)
+    bridge && publishToBridge(message, bridge)
   }
 
   const subscribe = (listener: LinkSubscriber<Message>) => {
@@ -125,6 +151,8 @@ export const createLink = <Message extends LinkMessage = LinkMessage>({
   const destroy = () => {
     if (destroyed) return
     destroyed = true
+    bridgeDisconnect?.()
+    bridge?.destroy?.()
     emitActivity({ kind: 'destroy', linkId: id })
     subscribers.clear()
     observers.clear()
@@ -185,4 +213,4 @@ export const triggerToLink = <Message extends LinkMessage = LinkMessage>({
   return subscribeToActor(handlers as MessageHandlers<Message>)
 }
 
-export type { CreateLinkOptions, RuntimeLink, TriggerToLinkOptions }
+export type { CreateLinkOptions, LinkBridge, RuntimeLink, TriggerToLinkOptions }
