@@ -86,6 +86,20 @@ describe('createLink', () => {
     expect(activities).toContain('destroy')
   })
 
+  test('removes observers after disconnect', () => {
+    const activities: string[] = []
+    const link = createLink<{ type: 'task'; detail?: unknown }>()
+
+    const disconnect = link.observe((activity) => {
+      activities.push(activity.kind)
+    })
+
+    disconnect()
+    link.publish({ type: 'task' })
+
+    expect(activities).toEqual([])
+  })
+
   test('cleans up subscribers after destroy', () => {
     const received: Array<{ type: 'task'; detail?: unknown }> = []
     const activities: string[] = []
@@ -184,6 +198,36 @@ describe('linkToTrigger', () => {
 
     expect(received).toEqual([{ type: 'routed', detail: { taskId: 'task-1' } }])
   })
+
+  test('maps messages before triggering the behavioral runtime', () => {
+    const received: Array<{ type: string; detail: unknown }> = []
+    const { trigger, useFeedback } = behavioral<{ task: { taskId: string } }>()
+    const link = createLink<{ type: 'task'; detail: { taskId: string } }>()
+
+    useFeedback({
+      task(detail) {
+        received.push({ type: 'task', detail })
+      },
+    })
+
+    const disconnect = linkToTrigger({
+      link,
+      trigger,
+      mapMessage(message) {
+        return {
+          type: 'task' as const,
+          detail: {
+            taskId: `${message.detail.taskId}-mapped`,
+          },
+        }
+      },
+    })
+
+    link.publish({ type: 'task', detail: { taskId: 'task-1' } })
+    disconnect()
+
+    expect(received).toEqual([{ type: 'task', detail: { taskId: 'task-1-mapped' } }])
+  })
 })
 
 describe('triggerToLink', () => {
@@ -232,5 +276,46 @@ describe('triggerToLink', () => {
     disconnect()
 
     expect(received).toEqual([{ type: 'pm_event', detail: { taskId: 'task-1' } }])
+  })
+
+  test('uses createMessage to transform behavioral events before publishing', () => {
+    const received: Array<{ type: 'pm_event'; detail: { taskId: string } }> = []
+    const { trigger, useFeedback } = behavioral<{ pm_event: { taskId: string } }>()
+    const link = createLink<{ type: 'pm_event'; detail: { taskId: string } }>()
+
+    link.subscribe((message) => {
+      received.push(message)
+    })
+
+    const disconnect = triggerToLink({
+      eventTypes: ['pm_event'],
+      link,
+      subscribe: useFeedback,
+      createMessage(event) {
+        return {
+          type: event.type,
+          detail: {
+            taskId: `${event.detail.taskId}-created`,
+          },
+        }
+      },
+    })
+
+    trigger({ type: 'pm_event', detail: { taskId: 'task-1' } })
+    disconnect()
+
+    expect(received).toEqual([{ type: 'pm_event', detail: { taskId: 'task-1-created' } }])
+  })
+
+  test('throws when neither actor.subscribe nor subscribe is provided', () => {
+    const link = createLink<{ type: 'pm_event'; detail: { taskId: string } }>()
+
+    expect(() =>
+      // @ts-expect-error - runtime guard coverage for invalid call sites
+      triggerToLink({
+        eventTypes: ['pm_event'],
+        link,
+      }),
+    ).toThrow('triggerToLink requires either actor.subscribe or subscribe')
   })
 })

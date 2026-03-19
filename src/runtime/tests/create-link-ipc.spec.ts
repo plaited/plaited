@@ -8,6 +8,7 @@ type ChildSignalMessage =
   | { type: 'received'; detail: { taskId: string; route: 'parent_to_child'; linkId: string } }
 
 const childProcesses: Array<ReturnType<typeof Bun.spawn>> = []
+const flushAsyncWork = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 afterEach(async () => {
   await Promise.all(
@@ -87,8 +88,7 @@ describe('createLink IPC bridge', () => {
     })
 
     const childMessage = await received
-    await Promise.resolve()
-    await Promise.resolve()
+    await flushAsyncWork()
 
     expect(childMessage).toEqual({
       type: 'received',
@@ -117,5 +117,34 @@ describe('createLink IPC bridge', () => {
       },
     ])
     expect(parentActivities).toEqual(['subscribe', 'receive', 'publish', 'deliver', 'deliver', 'receive', 'deliver'])
+  })
+
+  test('emits bridge_failed when the bridge send operation throws', async () => {
+    const activities: Array<{ kind: string; error?: string }> = []
+    const link = createLink<ParentToChildMessage>({
+      id: 'parent-link',
+      onActivity(activity) {
+        activities.push({ kind: activity.kind, error: activity.error })
+      },
+      bridge: createIpcLinkBridge({
+        send() {
+          throw new Error('send failed')
+        },
+        subscribe() {
+          return () => {}
+        },
+      }),
+    })
+
+    link.publish({
+      type: 'task',
+      detail: {
+        taskId: 'task-1',
+        route: 'parent_to_child',
+      },
+    })
+    await flushAsyncWork()
+
+    expect(activities).toContainEqual({ kind: 'bridge_failed', error: 'send failed' })
   })
 })

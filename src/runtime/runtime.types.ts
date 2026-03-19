@@ -170,9 +170,16 @@ export type LinkToTriggerOptions<Message extends LinkMessage = LinkMessage> = {
 export type TriggerToLinkOptions<Message extends LinkMessage = LinkMessage> = {
   eventTypes: Message['type'][]
   link: RuntimeLink<Message>
-  actor?: Pick<BehavioralActor<Message>, 'subscribe'>
-  subscribe?: (handlers: MessageHandlers<Message>) => Disconnect
   createMessage?: (event: Message) => Message
-}
+} & (
+  | {
+      actor: Pick<BehavioralActor<Message>, 'subscribe'>
+      subscribe?: (handlers: MessageHandlers<Message>) => Disconnect
+    }
+  | {
+      actor?: Pick<BehavioralActor<Message>, 'subscribe'>
+      subscribe: (handlers: MessageHandlers<Message>) => Disconnect
+    }
+)
 
 export type { BehavioralActorDescriptor, LinkActivity, MssObject, RuntimeArtifact, RuntimeContract }

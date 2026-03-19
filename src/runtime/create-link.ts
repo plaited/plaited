@@ -57,7 +57,9 @@ const isolateDelivery = <Message extends LinkMessage>({
     const result = listener(message)
     Promise.resolve(result).then(onDelivered, onFailed)
   } catch (error) {
-    onFailed(error)
+    queueMicrotask(() => {
+      onFailed(error)
+    })
   }
 }
 
