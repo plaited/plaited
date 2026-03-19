@@ -164,7 +164,53 @@ const removeWorktree = async (worktree: string) => {
   await Bun.$`git worktree remove --force ${worktree}`.cwd(PROJECT_ROOT).nothrow().quiet()
 }
 
+const formatWorktreeChanges = async (cwd: string) => {
+  const stagedOrModified = (await Bun.$`git diff --name-only HEAD`.cwd(cwd).quiet()).text().trim()
+  const changedFiles = stagedOrModified
+    .split('\n')
+    .map((file) => file.trim())
+    .filter(Boolean)
+
+  if (changedFiles.length === 0) return
+
+  const formatTargets = changedFiles.filter((file) => /\.(js|cjs|jsx|ts|tsx)$/.test(file))
+  if (formatTargets.length > 0) {
+    const format = Bun.spawn(['bunx', 'biome', 'check', '--write', ...formatTargets], {
+      cwd,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: process.env as Record<string, string>,
+    })
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(format.stdout).text(),
+      new Response(format.stderr).text(),
+      format.exited,
+    ])
+    if (exitCode !== 0) {
+      throw new Error(`biome format failed: ${`${stdout}${stderr}`.trim()}`)
+    }
+  }
+
+  if (changedFiles.includes('package.json')) {
+    const formatPackage = Bun.spawn(['format-package', '-w'], {
+      cwd,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: process.env as Record<string, string>,
+    })
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(formatPackage.stdout).text(),
+      new Response(formatPackage.stderr).text(),
+      formatPackage.exited,
+    ])
+    if (exitCode !== 0) {
+      throw new Error(`format-package failed: ${`${stdout}${stderr}`.trim()}`)
+    }
+  }
+}
+
 const commitWorktreeExperiment = async (cwd: string, description: string): Promise<string> => {
+  await formatWorktreeChanges(cwd)
   await Bun.$`git add -A`.cwd(cwd).quiet()
   const commit = Bun.spawn(['git', 'commit', '-m', `chore(experiment): ${description}`], {
     cwd,
