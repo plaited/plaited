@@ -83,7 +83,7 @@ const TEST_FILE_PATTERN = /(\.spec\.ts|\.test\.ts|_spec\.ts|_test\.ts)$/
 const SOURCE_FILE_PATTERN = /\.(ts|tsx|js|jsx)$/
 const TEST_DIRECTORIES = ['src/', 'scripts/', 'skills/']
 const DEFAULT_ALLOWED_PATHS = ['scripts/', 'src/runtime/', 'src/improve/']
-const BOOLEAN_FLAGS = new Set(['--commit', '--dry-run', '--judge', '--push', '--quiet'])
+const BOOLEAN_FLAGS = new Set(['--commit', '--dry-run', '--judge', '--push', '--no-push', '--quiet'])
 
 const getArg = (args: string[], flag: string, fallback?: string): string | undefined => {
   const index = args.indexOf(flag)
@@ -117,7 +117,7 @@ export const parseInput = (args: string[]): CliInput => {
     judgePath: getArg(args, '--judge-path', './scripts/claude-code-judge.ts')!,
     maxAttempts: Number(getArg(args, '--max-attempts', '1')),
     metaVerifierPath: getArg(args, '--meta-verifier-path', './scripts/claude-haiku-meta-verifier.ts')!,
-    push: hasFlag(args, '--push'),
+    push: hasFlag(args, '--no-push') ? false : true,
     programPath: getArg(args, '--program', './dev-research/program.md')!,
     quiet: hasFlag(args, '--quiet'),
     slicePath: slicePath ?? getArg(args, '--slice', './dev-research/runtime-taxonomy/slice-1.md')!,
