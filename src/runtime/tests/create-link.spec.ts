@@ -93,6 +93,34 @@ describe('createLink', () => {
     expect(activities).toContain('destroy')
     expect(activities).not.toContain('publish')
   })
+
+  test('freezes the subscriber set for the current publish when subscriptions change mid-delivery', () => {
+    const received: string[] = []
+    const link = createLink<{ type: 'task'; detail: { id: string } }>({
+      id: 'pm-link',
+    })
+
+    let lateReceived = 0
+    let disconnectSecond = () => {}
+
+    link.subscribe((message) => {
+      received.push(`first:${message.detail.id}`)
+      link.subscribe(() => {
+        lateReceived += 1
+      })
+      disconnectSecond()
+    })
+
+    disconnectSecond = link.subscribe((message) => {
+      received.push(`second:${message.detail.id}`)
+    })
+
+    link.publish({ type: 'task', detail: { id: 'task-1' } })
+    link.publish({ type: 'task', detail: { id: 'task-2' } })
+
+    expect(received).toEqual(['first:task-1', 'second:task-1', 'first:task-2'])
+    expect(lateReceived).toBe(1)
+  })
 })
 
 describe('linkToTrigger', () => {

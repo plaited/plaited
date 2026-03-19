@@ -2,11 +2,11 @@ import type { Disconnect } from '../behavioral/behavioral.types.ts'
 import type {
   CreateLinkOptions,
   LinkActivity,
-  MessageHandlers,
   LinkMessage,
   LinkObserver,
   LinkSubscriber,
   LinkToTriggerOptions,
+  MessageHandlers,
   RuntimeLink,
   TriggerToLinkOptions,
 } from './runtime.types.ts'
@@ -26,7 +26,9 @@ const publishActivity = <Message extends LinkMessage>(
   observers: Set<LinkObserver<Message>>,
   activity: LinkActivity & { message?: Message },
 ) => {
-  for (const observer of observers) {
+  const observerSnapshot = [...observers]
+
+  for (const observer of observerSnapshot) {
     try {
       const result = observer(activity)
       Promise.resolve(result).catch((error) => {
@@ -80,7 +82,9 @@ export const createLink = <Message extends LinkMessage = LinkMessage>({
     if (destroyed) return
 
     emitActivity({ kind: 'publish', linkId: id, message })
-    for (const subscriber of subscribers) {
+    const subscriberSnapshot = [...subscribers]
+
+    for (const subscriber of subscriberSnapshot) {
       isolateDelivery({
         listener: subscriber,
         message,
