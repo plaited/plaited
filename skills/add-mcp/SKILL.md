@@ -1,6 +1,6 @@
 ---
 name: add-mcp
-description: Transport-agnostic MCP integration patterns. Explains session API, transport choices, and how to use the framework's shared MCP CLI and utilities.
+description: Transport-agnostic MCP integration patterns. Explains session API, transport choices, and how to use the framework's shared MCP library surface.
 license: ISC
 compatibility: Requires bun and @modelcontextprotocol/sdk
 allowed-tools: Bash Read Write
@@ -28,49 +28,19 @@ For HTTP endpoints, use `add-remote-mcp` which scaffolds wrapper skills around t
 
 ## Session API
 
-The session API maintains a single connection for multiple operations:
-
-```typescript
-import { createMcpSession } from 'plaited/mcp'
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-
-const transport = new StreamableHTTPClientTransport(new URL('https://example.com/mcp'))
-await using session = await createMcpSession(transport, { timeoutMs: 30_000 })
-
-const tools = await session.listTools()
-const result = await session.callTool('search', { query: 'test' })
-```
+The session API maintains a single connection for multiple operations.
+See [references/session-template.ts](references/session-template.ts).
 
 `await using` automatically closes the connection when the block exits — no manual cleanup needed.
 
 ## One-shot pattern
 
-For single operations, use `mcpConnect` directly:
-
-```typescript
-import { mcpConnect } from 'plaited/mcp'
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-
-const transport = new StreamableHTTPClientTransport(new URL('https://example.com/mcp'))
-const client = await mcpConnect(transport)
-try {
-  const { tools } = await client.listTools()
-} finally {
-  await client.close()
-}
-```
+For single operations, use `mcpConnect` directly.
+See [references/one-shot-template.ts](references/one-shot-template.ts).
 
 ## Framework MCP Library
 
-The framework ships a shared MCP library surface:
-
-```typescript
-import { mcpDiscover, mcpListTools, mcpCallTool } from 'plaited/mcp'
-
-await mcpDiscover('https://example.com/mcp')
-await mcpListTools('https://example.com/mcp')
-await mcpCallTool('https://example.com/mcp', 'SearchExample', { query: 'test' })
-```
+The framework ships a shared MCP library surface via `plaited/mcp`.
 
 ## References
 

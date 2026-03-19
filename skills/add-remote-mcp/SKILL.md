@@ -20,66 +20,17 @@ Generate skills from any remote MCP server using the framework's shared `plaited
 
 ## Discovery
 
-### Full server discovery
-
-Discover all capabilities in a single connection:
-
-```typescript
-import { mcpDiscover } from 'plaited/mcp'
-
-const capabilities = await mcpDiscover('https://example.com/mcp')
-console.log(JSON.stringify(capabilities, null, 2))
-```
-
-### Tool schemas
-
-Get input schemas for each tool:
-
-```typescript
-import { mcpListTools } from 'plaited/mcp'
-
-const tools = await mcpListTools('https://example.com/mcp')
-for (const tool of tools) {
-  console.log(`${tool.name}: ${tool.description}`)
-  console.log(JSON.stringify(tool.inputSchema, null, 2))
-}
-```
-
-### Prompts
-
-List and retrieve prompts:
-
-```typescript
-import { mcpGetPrompt, mcpListPrompts } from 'plaited/mcp'
-
-const prompts = await mcpListPrompts('https://example.com/mcp')
-const messages = await mcpGetPrompt('https://example.com/mcp', 'prompt-name', { arg: 'value' })
-```
-
-### Resources
-
-List and read resources:
-
-```typescript
-import { mcpListResources, mcpReadResource } from 'plaited/mcp'
-
-const resources = await mcpListResources('https://example.com/mcp')
-const contents = await mcpReadResource('https://example.com/mcp', 'resource://schemas/config.json')
-```
+- Full capability discovery and tool listing:
+  [references/discovery-template.ts](references/discovery-template.ts)
+- Prompt retrieval:
+  [references/prompt-template.ts](references/prompt-template.ts)
+- Resource reads:
+  [references/resource-template.ts](references/resource-template.ts)
 
 ## Session API (connection reuse)
 
-For multiple operations against the same server, use a session:
-
-```typescript
-import { createRemoteMcpSession } from 'plaited/mcp'
-
-await using session = await createRemoteMcpSession('https://example.com/mcp', {
-  timeoutMs: 30_000,
-})
-const tools = await session.listTools()
-const result = await session.callTool('search', { query: 'test' })
-```
+For multiple operations against the same server, use a session.
+See [../add-mcp/references/session-template.ts](../add-mcp/references/session-template.ts).
 
 `await using` automatically closes the connection when the block exits.
 
@@ -103,30 +54,14 @@ Edit the constants: `MCP_URL`, `TOOL_NAME`, and adjust the input validation if t
 MCP prompts are pre-built message templates. Evaluate whether to:
 
 - **Adapt into SKILL.md instructions** — If the prompt teaches a workflow, extract its content into the skill's markdown body.
-- **Create a prompt script in `scripts/`** — If the prompt is used at runtime:
-
-```typescript
-import { mcpGetPrompt } from 'plaited/mcp'
-
-const messages = await mcpGetPrompt(MCP_URL, 'prompt-name', { arg: 'value' })
-for (const message of messages) {
-  if (message.content.type === 'text') console.log(message.content.text)
-}
-```
+- **Create a prompt script in `scripts/`** — If the prompt is used at runtime.
+  See [references/prompt-template.ts](references/prompt-template.ts).
 
 ### 3. Resources → `assets/` or pull scripts
 
 - **Static/small → `assets/`** — Download once and commit.
-- **Dynamic/large → `scripts/`** — Fetch on demand:
-
-```typescript
-import { mcpReadResource } from 'plaited/mcp'
-
-const contents = await mcpReadResource(MCP_URL, process.argv[2]!)
-for (const content of contents) {
-  if (content.text) console.log(content.text)
-}
-```
+- **Dynamic/large → `scripts/`** — Fetch on demand.
+  See [references/resource-template.ts](references/resource-template.ts).
 
 ### 4. Scaffold SKILL.md
 
@@ -166,38 +101,13 @@ const tools = await mcpListTools('https://bun.com/docs/mcp')
 
 ### Tier 2: API key / Bearer token
 
-Pass custom headers via options:
-
-```typescript
-import { mcpCallTool } from 'plaited/mcp'
-
-const result = await mcpCallTool(
-  'https://example.com/mcp',
-  'SearchExample',
-  { query: 'test' },
-  { headers: { Authorization: `Bearer ${process.env.MY_API_KEY}` } },
-)
-```
+Pass custom headers via options.
+See [references/wrapper-template.ts](references/wrapper-template.ts).
 
 ### Tier 3: OAuth 2.1
 
-OAuth requires a programmatic `OAuthClientProvider`:
-
-```typescript
-import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js'
-import { createRemoteMcpSession } from 'plaited/mcp'
-
-const provider: OAuthClientProvider = {
-  get redirectUrl() { return undefined },
-  get clientMetadata() { return { client_id: '...', client_name: '...' } },
-  tokens() { /* return cached tokens */ },
-  saveTokens(tokens) { /* persist tokens */ },
-  redirectToAuthorization(url) { /* open browser */ },
-}
-
-await using session = await createRemoteMcpSession(MCP_URL, { authProvider: provider })
-const tools = await session.listTools()
-```
+OAuth requires a programmatic `OAuthClientProvider`.
+See [references/oauth-provider-template.ts](references/oauth-provider-template.ts).
 
 ### Which tier to use
 
@@ -210,6 +120,10 @@ const tools = await session.listTools()
 
 ## References
 
+- **`references/discovery-template.ts`** — Capability discovery and tool listing
+- **`references/prompt-template.ts`** — Prompt retrieval example
+- **`references/resource-template.ts`** — Resource read example
+- **`references/oauth-provider-template.ts`** — OAuth provider seam example
 - **`references/wrapper-template.ts`** — Template for MCP wrapper scripts that import `plaited/mcp`
 
 ## Dependencies
