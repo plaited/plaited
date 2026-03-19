@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { dirname, join } from 'node:path'
+import packageJson from '../../package.json' with { type: 'json' }
 import {
   getChangedFiles,
   parseInput,
@@ -146,28 +147,26 @@ describe('dev-autoresearch dry run', () => {
     expect(parsed.quiet).toBe(true)
   })
 
-  test('package research script forwards a caller-provided slice', async () => {
-    const proc = Bun.spawn(
-      ['bun', 'run', 'research', '--', './dev-research/runtime-taxonomy/slice-2.md', '--dry-run'],
-      {
-        cwd: join(import.meta.dir, '..', '..'),
-        stdout: 'pipe',
-        stderr: 'pipe',
-        env: {
-          ...(process.env as Record<string, string>),
-          ANTHROPIC_API_KEY: 'dummy',
-        },
-      },
-    )
+  test('package research script leaves slice selection to forwarded args', () => {
+    expect(packageJson.scripts.research).toContain('varlock run -- bun --no-env-file scripts/dev-autoresearch.ts')
+    expect(packageJson.scripts.research).not.toContain('slice-1.md')
 
-    const [stdout, stderr, exitCode] = await Promise.all([
-      new Response(proc.stdout).text(),
-      new Response(proc.stderr).text(),
-      proc.exited,
+    const parsed = parseInput([
+      './dev-research/runtime-taxonomy/slice-2.md',
+      '--program',
+      './dev-research/program.md',
+      '--adapter',
+      './scripts/codex-cli-adapter.ts',
+      '--judge',
+      '--commit',
+      '--dry-run',
     ])
 
-    expect(exitCode).toBe(0)
-    expect(stderr).toContain('bun --no-env-file scripts/dev-autoresearch.ts')
-    expect(stdout).toContain('slice=./dev-research/runtime-taxonomy/slice-2.md')
-  }, 15_000)
+    expect(parsed.slicePath).toBe('./dev-research/runtime-taxonomy/slice-2.md')
+    expect(parsed.programPath).toBe('./dev-research/program.md')
+    expect(parsed.adapterPath).toBe('./scripts/codex-cli-adapter.ts')
+    expect(parsed.judge).toBe(true)
+    expect(parsed.commit).toBe(true)
+    expect(parsed.dryRun).toBe(true)
+  })
 })
