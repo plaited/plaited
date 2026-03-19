@@ -48,6 +48,7 @@
     "prompt": "claude --model opus --dangerously-skip-permissions --rc",
     "research": "varlock run -- bun --no-env-file scripts/dev-autoresearch.ts --program ./dev-research/program.md --adapter ./scripts/codex-cli-adapter.ts --judge --commit",
     "research:overnight": "varlock run -- bun --no-env-file scripts/dev-autoresearch.ts --program ./dev-research/program.md --adapter ./scripts/codex-cli-adapter.ts --judge --commit --max-attempts 10",
+    "research:push": "varlock run -- bun --no-env-file scripts/dev-autoresearch.ts --program ./dev-research/program.md --adapter ./scripts/codex-cli-adapter.ts --judge --commit --push",
     "test": "bun test src/ skills/ scripts/",
     "test:playwright": "bunx playwright test",
     "test:tools": "bun test src/tools/ src/improve/"

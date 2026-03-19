@@ -27,6 +27,7 @@ type CliInput = {
   judgePath: string
   maxAttempts: number
   metaVerifierPath: string
+  push: boolean
   programPath: string
   quiet: boolean
   slicePath: string
@@ -82,7 +83,7 @@ const TEST_FILE_PATTERN = /(\.spec\.ts|\.test\.ts|_spec\.ts|_test\.ts)$/
 const SOURCE_FILE_PATTERN = /\.(ts|tsx|js|jsx)$/
 const TEST_DIRECTORIES = ['src/', 'scripts/', 'skills/']
 const DEFAULT_ALLOWED_PATHS = ['scripts/', 'src/runtime/', 'src/improve/']
-const BOOLEAN_FLAGS = new Set(['--commit', '--dry-run', '--judge', '--quiet'])
+const BOOLEAN_FLAGS = new Set(['--commit', '--dry-run', '--judge', '--push', '--quiet'])
 
 const getArg = (args: string[], flag: string, fallback?: string): string | undefined => {
   const index = args.indexOf(flag)
@@ -116,6 +117,7 @@ export const parseInput = (args: string[]): CliInput => {
     judgePath: getArg(args, '--judge-path', './scripts/claude-code-judge.ts')!,
     maxAttempts: Number(getArg(args, '--max-attempts', '1')),
     metaVerifierPath: getArg(args, '--meta-verifier-path', './scripts/claude-haiku-meta-verifier.ts')!,
+    push: hasFlag(args, '--push'),
     programPath: getArg(args, '--program', './dev-research/program.md')!,
     quiet: hasFlag(args, '--quiet'),
     slicePath: slicePath ?? getArg(args, '--slice', './dev-research/runtime-taxonomy/slice-1.md')!,
@@ -162,6 +164,13 @@ const createWorktree = async (id: string): Promise<string> => {
 
 const removeWorktree = async (worktree: string) => {
   await Bun.$`git worktree remove --force ${worktree}`.cwd(PROJECT_ROOT).nothrow().quiet()
+}
+
+const ensureMainBranchReady = async () => {
+  const status = (await Bun.$`git status --porcelain --untracked-files=no`.cwd(PROJECT_ROOT).quiet()).text().trim()
+  if (status) {
+    throw new Error('Main worktree has tracked changes. Clean dev before using --push.')
+  }
 }
 
 const formatWorktreeChanges = async (cwd: string) => {
@@ -227,6 +236,45 @@ const commitWorktreeExperiment = async (cwd: string, description: string): Promi
     throw new Error(`git commit failed: ${`${stdout}${stderr}`.trim()}`)
   }
   return (await Bun.$`git rev-parse --short HEAD`.cwd(cwd).quiet()).text().trim()
+}
+
+const cherryPickExperimentCommit = async (sha: string): Promise<void> => {
+  const cherryPick = Bun.spawn(['git', 'cherry-pick', sha], {
+    cwd: PROJECT_ROOT,
+    stdout: 'pipe',
+    stderr: 'pipe',
+    env: process.env as Record<string, string>,
+  })
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(cherryPick.stdout).text(),
+    new Response(cherryPick.stderr).text(),
+    cherryPick.exited,
+  ])
+  if (exitCode !== 0) {
+    throw new Error(`git cherry-pick failed: ${`${stdout}${stderr}`.trim()}`)
+  }
+}
+
+const pushCurrentBranch = async (): Promise<string> => {
+  const branch = (await Bun.$`git rev-parse --abbrev-ref HEAD`.cwd(PROJECT_ROOT).quiet()).text().trim()
+  if (!branch || branch === 'HEAD') {
+    throw new Error('Cannot push detached HEAD from main worktree.')
+  }
+  const push = Bun.spawn(['git', 'push', 'origin', branch], {
+    cwd: PROJECT_ROOT,
+    stdout: 'pipe',
+    stderr: 'pipe',
+    env: process.env as Record<string, string>,
+  })
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(push.stdout).text(),
+    new Response(push.stderr).text(),
+    push.exited,
+  ])
+  if (exitCode !== 0) {
+    throw new Error(`git push failed: ${`${stdout}${stderr}`.trim()}`)
+  }
+  return branch
 }
 
 const summarizeCommandFailure = (command: string[], stdout: string, stderr: string): string => {
@@ -672,7 +720,7 @@ const main = async () => {
 
   console.log(`mode=repo-harness adapter=${input.adapterPath} slice=${sliceId} judge=${input.judge}`)
   if (input.dryRun) {
-    console.log(`dry-run=true attempts=${input.maxAttempts} commit=${input.commit}`)
+    console.log(`dry-run=true attempts=${input.maxAttempts} commit=${input.commit} push=${input.push}`)
     console.log(`program=${input.programPath}`)
     console.log(`slice=${input.slicePath}`)
     console.log(`allowedPaths=${allowedPaths.join(', ')}`)
@@ -817,6 +865,19 @@ const main = async () => {
         logStatus('commit:done', commit)
       }
 
+      let pushedBranch = ''
+      if (passed && input.push) {
+        logStatus('push:start', 'cherry-picking keep commit onto main branch')
+        await ensureMainBranchReady()
+        if (!commit) {
+          throw new Error('Cannot push without a keep commit. Use --commit with --push.')
+        }
+        await cherryPickExperimentCommit(commit)
+        logStatus('push:cherry-pick', commit)
+        pushedBranch = await pushCurrentBranch()
+        logStatus('push:done', pushedBranch)
+      }
+
       logStatus('log:start', 'recording experiment result')
       await logExperiment({
         commit,
@@ -879,6 +940,9 @@ const main = async () => {
 
       if (decision === 'keep') {
         console.log(commit ? `commit=${commit}` : 'commit=skipped')
+        if (pushedBranch) {
+          console.log(`push=${pushedBranch}`)
+        }
         return
       }
     } finally {

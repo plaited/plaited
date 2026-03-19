@@ -141,15 +141,23 @@ describe('dev-autoresearch dry run', () => {
   })
 
   test('keeps positional slice parsing correct after boolean flags', () => {
-    const parsed = parseInput(['--judge', './dev-research/runtime-taxonomy/slice-2.md', '--dry-run', '--quiet'])
+    const parsed = parseInput([
+      '--judge',
+      './dev-research/runtime-taxonomy/slice-2.md',
+      '--dry-run',
+      '--push',
+      '--quiet',
+    ])
 
     expect(parsed.slicePath).toBe('./dev-research/runtime-taxonomy/slice-2.md')
+    expect(parsed.push).toBe(true)
     expect(parsed.quiet).toBe(true)
   })
 
   test('package research script leaves slice selection to forwarded args', () => {
     expect(packageJson.scripts.research).toContain('varlock run -- bun --no-env-file scripts/dev-autoresearch.ts')
     expect(packageJson.scripts.research).not.toContain('slice-1.md')
+    expect(packageJson.scripts['research:push']).toContain('--push')
 
     const parsed = parseInput([
       './dev-research/runtime-taxonomy/slice-2.md',
@@ -159,6 +167,7 @@ describe('dev-autoresearch dry run', () => {
       './scripts/codex-cli-adapter.ts',
       '--judge',
       '--commit',
+      '--push',
       '--dry-run',
     ])
 
@@ -167,6 +176,7 @@ describe('dev-autoresearch dry run', () => {
     expect(parsed.adapterPath).toBe('./scripts/codex-cli-adapter.ts')
     expect(parsed.judge).toBe(true)
     expect(parsed.commit).toBe(true)
+    expect(parsed.push).toBe(true)
     expect(parsed.dryRun).toBe(true)
   })
 })
