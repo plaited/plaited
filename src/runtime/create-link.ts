@@ -1,5 +1,6 @@
 import type { Disconnect } from '../behavioral/behavioral.types.ts'
 import type {
+  CreateIpcLinkBridgeOptions,
   CreateLinkOptions,
   LinkActivity,
   LinkBridge,
@@ -58,6 +59,10 @@ const isolateDelivery = <Message extends LinkMessage>({
   } catch (error) {
     onFailed(error)
   }
+}
+
+const isLinkMessage = (message: unknown): message is LinkMessage => {
+  return message !== null && typeof message === 'object' && 'type' in message && typeof message.type === 'string'
 }
 
 /**
@@ -168,6 +173,29 @@ export const createLink = <Message extends LinkMessage = LinkMessage>({
 }
 
 /**
+ * Creates an IPC-backed transport bridge for runtime links.
+ *
+ * @public
+ */
+export const createIpcLinkBridge = <Message extends LinkMessage = LinkMessage>({
+  send,
+  subscribe,
+  destroy,
+  isMessage = isLinkMessage as (message: unknown) => message is Message,
+}: CreateIpcLinkBridgeOptions<Message>): LinkBridge<Message> => {
+  return {
+    send,
+    receive(listener) {
+      return subscribe((message) => {
+        if (!isMessage(message)) return
+        listener(message)
+      })
+    },
+    destroy,
+  }
+}
+
+/**
  * Bridges link traffic into a BP trigger.
  *
  * @public
@@ -213,4 +241,4 @@ export const triggerToLink = <Message extends LinkMessage = LinkMessage>({
   return subscribeToActor(handlers as MessageHandlers<Message>)
 }
 
-export type { CreateLinkOptions, LinkBridge, RuntimeLink, TriggerToLinkOptions }
+export type { CreateIpcLinkBridgeOptions, CreateLinkOptions, LinkBridge, RuntimeLink, TriggerToLinkOptions }

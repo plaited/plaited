@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import { behavioral } from '../../behavioral/behavioral.ts'
 import { LinkActivitySchema, LinkMessageSchema } from '../runtime.schemas.ts'
-import { createLink, linkToTrigger, triggerToLink } from '../runtime.ts'
+import { createIpcLinkBridge, createLink, linkToTrigger, triggerToLink } from '../runtime.ts'
 
 describe('createLink', () => {
   test('accepts the public runtime link envelope in exported schemas', () => {
@@ -105,6 +105,34 @@ describe('createLink', () => {
     expect(received).toEqual([])
     expect(activities).toContain('destroy')
     expect(activities).not.toContain('publish')
+  })
+
+  test('filters non-envelope IPC payloads before delivery', () => {
+    const received: Array<{ type: 'task'; detail: { id: string } }> = []
+    const listeners = new Set<(message: unknown) => void>()
+    const link = createLink<{ type: 'task'; detail: { id: string } }>({
+      bridge: createIpcLinkBridge({
+        send() {},
+        subscribe(listener) {
+          listeners.add(listener)
+          return () => {
+            listeners.delete(listener)
+          }
+        },
+      }),
+    })
+
+    link.subscribe((message) => {
+      received.push(message)
+    })
+
+    for (const listener of listeners) {
+      listener({ nope: true })
+      listener('task')
+      listener({ type: 'task', detail: { id: 'task-1' } })
+    }
+
+    expect(received).toEqual([{ type: 'task', detail: { id: 'task-1' } }])
   })
 
   test('freezes the subscriber set for the current publish when subscriptions change mid-delivery', () => {

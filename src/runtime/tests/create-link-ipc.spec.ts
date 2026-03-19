@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 
-import { createLink } from '../runtime.ts'
+import { createIpcLinkBridge, createLink } from '../runtime.ts'
 
 type ParentToChildMessage = { type: 'task'; detail: { taskId: string; route: 'parent_to_child' } }
 type ChildSignalMessage =
@@ -20,10 +20,12 @@ afterEach(async () => {
 
 describe('createLink IPC bridge', () => {
   test('delivers canonical link messages across a Bun IPC boundary', async () => {
-    const events: string[] = []
-    let childReadyResolve = () => {}
-    const childReady = new Promise<void>((resolve) => {
-      childReadyResolve = resolve
+    const parentActivities: string[] = []
+    const childMessages: Array<ParentToChildMessage | ChildSignalMessage> = []
+    const childMessageListeners = new Set<(message: unknown) => void>()
+    let readyResolve = () => {}
+    const ready = new Promise<void>((resolve) => {
+      readyResolve = resolve
     })
     let receivedResolve = (_message: ChildSignalMessage & { type: 'received' }) => {}
     const received = new Promise<ChildSignalMessage & { type: 'received' }>((resolve) => {
@@ -36,38 +38,45 @@ describe('createLink IPC bridge', () => {
       stdout: 'ignore',
       stderr: 'inherit',
       ipc(message) {
-        if (!message || typeof message !== 'object') return
-        if (!('type' in message)) return
-
-        const typedMessage = message as ChildSignalMessage
-        if (typedMessage.type === 'ready') {
-          childReadyResolve()
-          return
-        }
-
-        if (typedMessage.type === 'received') {
-          receivedResolve(typedMessage)
+        for (const listener of childMessageListeners) {
+          listener(message)
         }
       },
     })
     childProcesses.push(child)
 
-    const link = createLink<ParentToChildMessage>({
+    const link = createLink<ParentToChildMessage | ChildSignalMessage>({
       id: 'parent-link',
       onActivity(activity) {
-        events.push(activity.kind)
+        parentActivities.push(activity.kind)
       },
-      bridge: {
+      bridge: createIpcLinkBridge({
         send(message) {
           child.send(message)
         },
-        receive() {
-          return () => {}
+        subscribe(listener) {
+          childMessageListeners.add(listener)
+          return () => {
+            childMessageListeners.delete(listener)
+          }
         },
-      },
+      }),
     })
 
-    await childReady
+    link.subscribe((message) => {
+      childMessages.push(message)
+
+      if (message.type === 'ready') {
+        readyResolve()
+        return
+      }
+
+      if (message.type === 'received') {
+        receivedResolve(message)
+      }
+    })
+
+    await ready
 
     link.publish({
       type: 'task',
@@ -78,6 +87,8 @@ describe('createLink IPC bridge', () => {
     })
 
     const childMessage = await received
+    await Promise.resolve()
+    await Promise.resolve()
 
     expect(childMessage).toEqual({
       type: 'received',
@@ -87,6 +98,24 @@ describe('createLink IPC bridge', () => {
         linkId: 'child-link',
       },
     })
-    expect(events).toEqual(['publish'])
+    expect(childMessages).toEqual([
+      { type: 'ready' },
+      {
+        type: 'task',
+        detail: {
+          taskId: 'task-1',
+          route: 'parent_to_child',
+        },
+      },
+      {
+        type: 'received',
+        detail: {
+          taskId: 'task-1',
+          route: 'parent_to_child',
+          linkId: 'child-link',
+        },
+      },
+    ])
+    expect(parentActivities).toEqual(['subscribe', 'receive', 'publish', 'deliver', 'deliver', 'receive', 'deliver'])
   })
 })

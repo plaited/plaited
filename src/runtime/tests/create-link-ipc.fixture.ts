@@ -1,18 +1,19 @@
-import { createLink } from '../runtime.ts'
+import { createIpcLinkBridge, createLink } from '../runtime.ts'
 
-type FixtureMessage = { type: 'task'; detail: { taskId: string; route: 'parent_to_child' } } | { type: 'ready' }
+type FixtureMessage =
+  | { type: 'task'; detail: { taskId: string; route: 'parent_to_child' } }
+  | { type: 'ready' }
+  | { type: 'received'; detail: { taskId: string; route: 'parent_to_child'; linkId: string } }
 
 const link = createLink<FixtureMessage>({
   id: 'child-link',
-  bridge: {
+  bridge: createIpcLinkBridge({
     send(message) {
       process.send?.(message)
     },
-    receive(listener) {
+    subscribe(listener) {
       const onMessage = (message: unknown) => {
-        if (!message || typeof message !== 'object') return
-        if (!('type' in message)) return
-        listener(message as FixtureMessage)
+        listener(message)
       }
 
       process.on('message', onMessage)
@@ -20,13 +21,13 @@ const link = createLink<FixtureMessage>({
         process.off('message', onMessage)
       }
     },
-  },
+  }),
 })
 
 link.subscribe((message) => {
   if (message.type !== 'task') return
 
-  process.send?.({
+  link.publish({
     type: 'received',
     detail: {
       taskId: message.detail.taskId,
@@ -36,4 +37,4 @@ link.subscribe((message) => {
   })
 })
 
-process.send?.({ type: 'ready' })
+link.publish({ type: 'ready' })

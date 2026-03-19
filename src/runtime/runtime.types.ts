@@ -91,6 +91,18 @@ export type LinkBridge<Message extends LinkMessage = LinkMessage> = {
 }
 
 /**
+ * Transport adapter for IPC-backed runtime links.
+ *
+ * @public
+ */
+export type CreateIpcLinkBridgeOptions<Message extends LinkMessage = LinkMessage> = {
+  send: (message: Message) => void
+  subscribe: (listener: (message: unknown) => void) => Disconnect
+  destroy?: () => void
+  isMessage?: (message: unknown) => message is Message
+}
+
+/**
  * Event handler map derived from a message envelope union.
  *
  * @public
