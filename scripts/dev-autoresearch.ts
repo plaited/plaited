@@ -166,7 +166,20 @@ const removeWorktree = async (worktree: string) => {
 
 const commitWorktreeExperiment = async (cwd: string, description: string): Promise<string> => {
   await Bun.$`git add -A`.cwd(cwd).quiet()
-  await Bun.$`git commit -m ${{ raw: `experiment: ${description}` }}`.cwd(cwd).quiet()
+  const commit = Bun.spawn(['git', 'commit', '-m', `experiment: ${description}`], {
+    cwd,
+    stdout: 'pipe',
+    stderr: 'pipe',
+    env: process.env as Record<string, string>,
+  })
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(commit.stdout).text(),
+    new Response(commit.stderr).text(),
+    commit.exited,
+  ])
+  if (exitCode !== 0) {
+    throw new Error(`git commit failed: ${`${stdout}${stderr}`.trim()}`)
+  }
   return (await Bun.$`git rev-parse --short HEAD`.cwd(cwd).quiet()).text().trim()
 }
 
