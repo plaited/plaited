@@ -30,7 +30,7 @@ Generate skills from any remote MCP server using the framework's shared `plaited
 ## Session API (connection reuse)
 
 For multiple operations against the same server, use a session.
-See [../add-mcp/references/session-template.ts](../add-mcp/references/session-template.ts).
+See [references/session-template.ts](references/session-template.ts).
 
 `await using` automatically closes the connection when the block exits.
 
@@ -121,6 +121,7 @@ See [references/oauth-provider-template.ts](references/oauth-provider-template.t
 ## References
 
 - **`references/discovery-template.ts`** — Capability discovery and tool listing
+- **`references/session-template.ts`** — Reusable remote session pattern
 - **`references/prompt-template.ts`** — Prompt retrieval example
 - **`references/resource-template.ts`** — Resource read example
 - **`references/oauth-provider-template.ts`** — OAuth provider seam example
@@ -129,7 +130,6 @@ See [references/oauth-provider-template.ts](references/oauth-provider-template.t
 ## Dependencies
 
 - **`@modelcontextprotocol/sdk`** — MCP protocol client (Streamable HTTP transport)
-- **`add-mcp`** — Transport-agnostic session API (sibling skill)
 
 ## Protocol notes
 

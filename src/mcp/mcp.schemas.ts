@@ -55,46 +55,6 @@ export const McpServerCapabilitiesSchema = z.object({
   resources: z.array(McpResourceSchema),
 })
 
-export const RemoteMcpCliOptionsSchema = z.object({
-  headers: z.record(z.string(), z.string()).optional(),
-  timeoutMs: z.number().int().positive().optional(),
-})
-
-export const McpDiscoverInputSchema = z.object({
-  url: z.string().url(),
-  headers: RemoteMcpCliOptionsSchema.shape.headers,
-  timeoutMs: RemoteMcpCliOptionsSchema.shape.timeoutMs,
-})
-
-export const McpListToolsInputSchema = McpDiscoverInputSchema
-
-export const McpCallToolInputSchema = z.object({
-  url: z.string().url(),
-  toolName: z.string().min(1),
-  args: z.record(z.string(), z.unknown()),
-  headers: RemoteMcpCliOptionsSchema.shape.headers,
-  timeoutMs: RemoteMcpCliOptionsSchema.shape.timeoutMs,
-})
-
-export const McpListPromptsInputSchema = McpDiscoverInputSchema
-
-export const McpGetPromptInputSchema = z.object({
-  url: z.string().url(),
-  name: z.string().min(1),
-  args: z.record(z.string(), z.string()).optional(),
-  headers: RemoteMcpCliOptionsSchema.shape.headers,
-  timeoutMs: RemoteMcpCliOptionsSchema.shape.timeoutMs,
-})
-
-export const McpListResourcesInputSchema = McpDiscoverInputSchema
-
-export const McpReadResourceInputSchema = z.object({
-  url: z.string().url(),
-  uri: z.string().min(1),
-  headers: RemoteMcpCliOptionsSchema.shape.headers,
-  timeoutMs: RemoteMcpCliOptionsSchema.shape.timeoutMs,
-})
-
 export type McpCallToolResultOutput = z.infer<typeof McpCallToolResultSchema>
 export type McpContentOutput = z.infer<typeof McpContentSchema>
 export type McpPromptMessageOutput = z.infer<typeof McpPromptMessageSchema>
