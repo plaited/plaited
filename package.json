@@ -47,7 +47,7 @@
     "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .hooks || true",
     "prompt": "claude --model opus --dangerously-skip-permissions --rc",
     "research": "varlock run -- bun --no-env-file scripts/dev-autoresearch.ts --program ./dev-research/program.md --adapter ./scripts/codex-cli-adapter.ts --judge --commit --push",
-    "research:overnight": "varlock run -- bun --no-env-file scripts/dev-autoresearch.ts --program ./dev-research/program.md --adapter ./scripts/codex-cli-adapter.ts --judge --commit --push --max-attempts 30",
+    "research:overnight": "varlock run -- bun --no-env-file scripts/dev-autoresearch.ts --program ./dev-research/program.md --adapter ./scripts/codex-cli-adapter.ts --judge --commit --push --quiet --max-attempts 30",
     "test": "bun test src/ skills/ scripts/",
     "test:playwright": "bunx playwright test",
     "test:tools": "bun test src/tools/ src/improve/"

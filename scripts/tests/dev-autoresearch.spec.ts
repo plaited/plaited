@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { dirname, join } from 'node:path'
 import packageJson from '../../package.json' with { type: 'json' }
 import {
+  createLogger,
   getChangedFiles,
   parseInput,
   parseSliceScope,
@@ -154,10 +155,23 @@ describe('dev-autoresearch dry run', () => {
     expect(parsed.quiet).toBe(true)
   })
 
+  test('records stage logs even when quiet output is enabled', () => {
+    const stageLog: { at: string; stage: string; message: string }[] = []
+    const logger = createLogger(true, stageLog)
+
+    logger('attempt:start', '1/30')
+
+    expect(stageLog).toHaveLength(1)
+    expect(stageLog[0]?.stage).toBe('attempt:start')
+    expect(stageLog[0]?.message).toBe('1/30')
+    expect(typeof stageLog[0]?.at).toBe('string')
+  })
+
   test('package research script leaves slice selection to forwarded args', () => {
     expect(packageJson.scripts.research).toContain('varlock run -- bun --no-env-file scripts/dev-autoresearch.ts')
     expect(packageJson.scripts.research).not.toContain('slice-1.md')
     expect(packageJson.scripts.research).toContain('--push')
+    expect(packageJson.scripts['research:overnight']).toContain('--quiet')
 
     const parsed = parseInput([
       './dev-research/runtime-taxonomy/slice-2.md',

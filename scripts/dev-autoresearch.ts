@@ -77,6 +77,12 @@ type JudgeBundle = {
   meta?: GraderResult
 }
 
+export type StageLogEntry = {
+  at: string
+  stage: string
+  message: string
+}
+
 const PROJECT_ROOT = join(import.meta.dir, '..')
 const WORKTREES_ROOT = join(PROJECT_ROOT, '.worktrees')
 const TEST_FILE_PATTERN = /(\.spec\.ts|\.test\.ts|_spec\.ts|_test\.ts)$/
@@ -552,10 +558,15 @@ const buildChecks = (typecheck: ValidationResult, tests: ValidationResult): Chec
 
 const timestamp = (): string => new Date().toISOString()
 
-const createLogger = (quiet: boolean) => {
+export const createLogger = (quiet: boolean, stageLog: StageLogEntry[]) => {
   return (stage: string, message: string) => {
+    stageLog.push({
+      at: timestamp(),
+      stage,
+      message,
+    })
     if (quiet) return
-    console.log(`[${timestamp()}] ${stage} ${message}`)
+    console.log(`[${stageLog.at(-1)?.at ?? timestamp()}] ${stage} ${message}`)
   }
 }
 
@@ -703,7 +714,8 @@ const printAttemptSummary = ({
 
 const main = async () => {
   const input = parseInput(process.argv.slice(2))
-  const logStatus = createLogger(input.quiet)
+  const stageLog: StageLogEntry[] = []
+  const logStatus = createLogger(input.quiet, stageLog)
 
   const program = await requireMarkdown(input.programPath, [
     '## Mission',
@@ -923,6 +935,7 @@ const main = async () => {
           fastMetaVerification: judges?.meta,
           judge: finalJudges?.primary,
           metaVerification: finalJudges?.meta,
+          stageLog,
         },
       })
       logStatus('log:done', decision)
