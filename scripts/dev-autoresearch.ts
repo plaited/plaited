@@ -523,6 +523,77 @@ const runJudges = async ({
   return { primary, meta }
 }
 
+const printAttemptSummary = ({
+  attempt,
+  decision,
+  changedFiles,
+  diffStat,
+  captureAssessment,
+  judges,
+  finalJudges,
+  fullTests,
+}: {
+  attempt: number
+  decision: SliceDecision
+  changedFiles: string[]
+  diffStat: string
+  captureAssessment: TrainingCaptureAssessment
+  judges?: JudgeBundle
+  finalJudges?: JudgeBundle
+  fullTests: ValidationResult
+}) => {
+  console.log(`attempt=${attempt} decision=${decision}`)
+  console.log(`changed=${changedFiles.length} diff="${diffStat || 'no diff'}"`)
+  if (!fullTests.passed && fullTests.notes !== 'Skipped: fast validation failed') {
+    console.log(`full-tests-failure="${summarizeReasoning(fullTests.notes)}"`)
+  }
+  console.log(
+    captureAssessment.eligible
+      ? `capture=${captureAssessment.richness}`
+      : `capture=skip:${captureAssessment.reasons.join('+') || 'unknown'}`,
+  )
+  if (judges?.primary) {
+    console.log(`fast-judge=${judges.primary.pass ? 'pass' : 'fail'} score=${judges.primary.score.toFixed(2)}`)
+    const fastJudgeCost = getJudgeCostUsd(judges.primary, 'judgeSdk')
+    if (fastJudgeCost !== undefined) {
+      console.log(`fast-judge-cost=$${fastJudgeCost.toFixed(4)}`)
+    }
+    if (judges.primary.reasoning) {
+      console.log(`fast-judge-reason="${summarizeReasoning(judges.primary.reasoning)}"`)
+    }
+  }
+  if (judges?.meta) {
+    console.log(`fast-meta=${judges.meta.pass ? 'pass' : 'fail'} score=${judges.meta.score.toFixed(2)}`)
+    const fastMetaCost = getJudgeCostUsd(judges.meta, 'metaVerificationSdk')
+    if (fastMetaCost !== undefined) {
+      console.log(`fast-meta-cost=$${fastMetaCost.toFixed(4)}`)
+    }
+    if (judges.meta.reasoning) {
+      console.log(`fast-meta-reason="${summarizeReasoning(judges.meta.reasoning)}"`)
+    }
+  }
+  if (finalJudges) {
+    console.log(`judge=${finalJudges.primary.pass ? 'pass' : 'fail'} score=${finalJudges.primary.score.toFixed(2)}`)
+    const judgeCost = getJudgeCostUsd(finalJudges.primary, 'judgeSdk')
+    if (judgeCost !== undefined) {
+      console.log(`judge-cost=$${judgeCost.toFixed(4)}`)
+    }
+    if (finalJudges.primary.reasoning) {
+      console.log(`judge-reason="${summarizeReasoning(finalJudges.primary.reasoning)}"`)
+    }
+    if (finalJudges.meta) {
+      console.log(`meta=${finalJudges.meta.pass ? 'pass' : 'fail'} score=${finalJudges.meta.score.toFixed(2)}`)
+      const metaCost = getJudgeCostUsd(finalJudges.meta, 'metaVerificationSdk')
+      if (metaCost !== undefined) {
+        console.log(`meta-cost=$${metaCost.toFixed(4)}`)
+      }
+      if (finalJudges.meta.reasoning) {
+        console.log(`meta-reason="${summarizeReasoning(finalJudges.meta.reasoning)}"`)
+      }
+    }
+  }
+}
+
 const main = async () => {
   const input = parseInput(process.argv.slice(2))
   const logStatus = createLogger(input.quiet)
@@ -736,56 +807,16 @@ const main = async () => {
       })
       logStatus('log:done', decision)
 
-      console.log(`attempt=${attempt} decision=${decision}`)
-      console.log(`changed=${changedFiles.length} diff="${diffStat || 'no diff'}"`)
-      if (!fullTests.passed && fastPassed) {
-        console.log(`full-tests-failure="${summarizeReasoning(fullTests.notes)}"`)
-      }
-      console.log(
-        captureAssessment.eligible
-          ? `capture=${captureAssessment.richness}`
-          : `capture=skip:${captureAssessment.reasons.join('+') || 'unknown'}`,
-      )
-      if (judges?.primary) {
-        console.log(`fast-judge=${judges.primary.pass ? 'pass' : 'fail'} score=${judges.primary.score.toFixed(2)}`)
-        const fastJudgeCost = getJudgeCostUsd(judges.primary, 'judgeSdk')
-        if (fastJudgeCost !== undefined) {
-          console.log(`fast-judge-cost=$${fastJudgeCost.toFixed(4)}`)
-        }
-        if (judges.primary.reasoning) {
-          console.log(`fast-judge-reason="${summarizeReasoning(judges.primary.reasoning)}"`)
-        }
-      }
-      if (judges?.meta) {
-        console.log(`fast-meta=${judges.meta.pass ? 'pass' : 'fail'} score=${judges.meta.score.toFixed(2)}`)
-        const fastMetaCost = getJudgeCostUsd(judges.meta, 'metaVerificationSdk')
-        if (fastMetaCost !== undefined) {
-          console.log(`fast-meta-cost=$${fastMetaCost.toFixed(4)}`)
-        }
-        if (judges.meta.reasoning) {
-          console.log(`fast-meta-reason="${summarizeReasoning(judges.meta.reasoning)}"`)
-        }
-      }
-      if (finalJudges) {
-        console.log(`judge=${finalJudges.primary.pass ? 'pass' : 'fail'} score=${finalJudges.primary.score.toFixed(2)}`)
-        const judgeCost = getJudgeCostUsd(finalJudges.primary, 'judgeSdk')
-        if (judgeCost !== undefined) {
-          console.log(`judge-cost=$${judgeCost.toFixed(4)}`)
-        }
-        if (finalJudges.primary.reasoning) {
-          console.log(`judge-reason="${summarizeReasoning(finalJudges.primary.reasoning)}"`)
-        }
-        if (finalJudges.meta) {
-          console.log(`meta=${finalJudges.meta.pass ? 'pass' : 'fail'} score=${finalJudges.meta.score.toFixed(2)}`)
-          const metaCost = getJudgeCostUsd(finalJudges.meta, 'metaVerificationSdk')
-          if (metaCost !== undefined) {
-            console.log(`meta-cost=$${metaCost.toFixed(4)}`)
-          }
-          if (finalJudges.meta.reasoning) {
-            console.log(`meta-reason="${summarizeReasoning(finalJudges.meta.reasoning)}"`)
-          }
-        }
-      }
+      printAttemptSummary({
+        attempt,
+        decision,
+        changedFiles,
+        diffStat,
+        captureAssessment,
+        judges,
+        finalJudges,
+        fullTests,
+      })
 
       if (decision === 'keep') {
         console.log(commit ? `commit=${commit}` : 'commit=skipped')
@@ -797,7 +828,7 @@ const main = async () => {
     }
   }
 
-  process.exit(1)
+  console.log('result=no-keep')
 }
 
 if (import.meta.main) {
