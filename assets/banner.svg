@@ -77,12 +77,12 @@
   <!-- Text -->
   <text x="470" y="280" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="64" font-weight="700" fill="#FFFFFF">Plaited</text>
   
-  <text x="470" y="330" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" fill="#E91E8C" letter-spacing="3" font-weight="500">NEURO-SYMBOLIC AGENTIC FRAMEWORK</text>
+  <text x="470" y="330" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" fill="#E91E8C" letter-spacing="3" font-weight="500">SOVEREIGN AGENT NODE FRAMEWORK</text>
   
   <!-- Horizontal separator -->
   <rect x="470" y="355" width="500" height="1" fill="url(#lineGrad)"/>
   
-  <text x="470" y="395" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" fill="#AAAAAA">AI-Assisted Design Systems</text>
-  <text x="470" y="420" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" fill="#AAAAAA">Generative UI Agents</text>
-  <text x="470" y="445" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" fill="#AAAAAA">Personalized Knowledge Worker Screens</text>
+  <text x="470" y="395" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" fill="#AAAAAA">Sovereign Agent Nodes</text>
+  <text x="470" y="420" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" fill="#AAAAAA">A2A Modnets and Generative UI</text>
+  <text x="470" y="445" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" fill="#AAAAAA">Behavioral Runtime, Memory, and Provenance</text>
 </svg>
