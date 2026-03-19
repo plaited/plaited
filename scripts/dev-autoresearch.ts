@@ -166,7 +166,7 @@ const removeWorktree = async (worktree: string) => {
 
 const commitWorktreeExperiment = async (cwd: string, description: string): Promise<string> => {
   await Bun.$`git add -A`.cwd(cwd).quiet()
-  const commit = Bun.spawn(['git', 'commit', '-m', `experiment: ${description}`], {
+  const commit = Bun.spawn(['git', 'commit', '-m', `chore(experiment): ${description}`], {
     cwd,
     stdout: 'pipe',
     stderr: 'pipe',
