@@ -1,13 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import { createRemoteMcpSession, mcpCallTool, mcpListTools, remoteMcpConnect } from '../mcp.utils.ts'
 
-const BUN_DOCS_URL = 'https://bun.com/docs/mcp'
 const MCP_DOCS_URL = 'https://modelcontextprotocol.io/mcp'
 const AGENT_SKILLS_URL = 'https://agentskills.io/mcp'
 
 describe('remoteMcpConnect', () => {
-  test('connects to bun-docs server', async () => {
-    const client = await remoteMcpConnect(BUN_DOCS_URL)
+  test('connects to mcp-docs server', async () => {
+    const client = await remoteMcpConnect(MCP_DOCS_URL)
     expect(client).toBeDefined()
     await client.close()
   })
@@ -18,14 +17,6 @@ describe('remoteMcpConnect', () => {
 })
 
 describe('mcpListTools', () => {
-  test('lists tools from bun-docs server', async () => {
-    const tools = await mcpListTools(BUN_DOCS_URL)
-    expect(tools.length).toBeGreaterThan(0)
-    const searchTool = tools.find((tool) => tool.name === 'search_bun')
-    expect(searchTool).toBeDefined()
-    expect(searchTool?.inputSchema).toBeDefined()
-  })
-
   test('lists tools from mcp-docs server', async () => {
     const tools = await mcpListTools(MCP_DOCS_URL)
     expect(tools.length).toBeGreaterThan(0)
@@ -42,14 +33,6 @@ describe('mcpListTools', () => {
 })
 
 describe('mcpCallTool', () => {
-  test('searches bun-docs for Bun.file', async () => {
-    const result = await mcpCallTool(BUN_DOCS_URL, 'search_bun', { query: 'Bun.file' })
-    expect(result.content.length).toBeGreaterThan(0)
-    const first = result.content[0]
-    expect(first?.type).toBe('text')
-    expect(first?.text).toBeString()
-  })
-
   test('searches mcp-docs for tools/call', async () => {
     const result = await mcpCallTool(MCP_DOCS_URL, 'search_model_context_protocol', {
       query: 'tools/call request',
@@ -71,23 +54,23 @@ describe('mcpCallTool', () => {
 
 describe('createRemoteMcpSession', () => {
   test('reuses connection across multiple operations', async () => {
-    await using session = await createRemoteMcpSession(BUN_DOCS_URL)
+    await using session = await createRemoteMcpSession(MCP_DOCS_URL)
 
     const tools = await session.listTools()
     expect(tools.length).toBeGreaterThan(0)
 
-    const result = await session.callTool('search_bun', { query: 'Bun.serve' })
+    const result = await session.callTool('search_model_context_protocol', { query: 'MCP resources' })
     expect(result.content.length).toBeGreaterThan(0)
   })
 
   test('supports timeoutMs option', async () => {
-    await using session = await createRemoteMcpSession(BUN_DOCS_URL, { timeoutMs: 30_000 })
+    await using session = await createRemoteMcpSession(MCP_DOCS_URL, { timeoutMs: 30_000 })
     const tools = await session.listTools()
     expect(tools.length).toBeGreaterThan(0)
   })
 
   test('discover returns tools, prompts, and resources', async () => {
-    await using session = await createRemoteMcpSession(BUN_DOCS_URL)
+    await using session = await createRemoteMcpSession(MCP_DOCS_URL)
     const capabilities = await session.discover()
     expect(capabilities.tools.length).toBeGreaterThan(0)
     expect(Array.isArray(capabilities.prompts)).toBe(true)

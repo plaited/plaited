@@ -96,7 +96,7 @@ bun run skills/my-skill/scripts/search.ts '{"query": "test query"}'
 No options needed — the default:
 
 ```typescript
-const tools = await mcpListTools('https://bun.com/docs/mcp')
+const tools = await mcpListTools('https://modelcontextprotocol.io/mcp')
 ```
 
 ### Tier 2: API key / Bearer token
@@ -113,7 +113,7 @@ See [references/oauth-provider-template.ts](references/oauth-provider-template.t
 
 | Scenario | Tier | Example |
 |----------|------|---------|
-| Public doc search | No auth | bun.com, modelcontextprotocol.io |
+| Public doc search | No auth | modelcontextprotocol.io, agentskills.io |
 | SaaS API with API key | Bearer token | You.com, OpenAI |
 | Enterprise SSO / IdP | OAuth 2.1 | Internal services |
 | Agent-to-agent (Modnet) | OAuth client credentials | Node MCP servers |
