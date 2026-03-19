@@ -8,8 +8,6 @@ import {
   MSS_STRUCTURES,
   RUNTIME_TAXONOMY,
 } from './runtime.constants.ts'
-import type { BPEvent } from '../behavioral/behavioral.types.ts'
-import { isBPEvent } from '../behavioral/behavioral.utils.ts'
 
 /**
  * MSS content type.
@@ -110,11 +108,14 @@ export const BehavioralActorDescriptorSchema = z.object({
 })
 
 /**
- * BP event envelope used by runtime links.
+ * Message envelope used by runtime links.
  *
  * @public
  */
-export const LinkMessageSchema = z.custom<BPEvent>(isBPEvent)
+export const LinkMessageSchema = z.object({
+  type: z.string(),
+  detail: z.unknown().optional(),
+})
 
 /**
  * Observable createLink activity.

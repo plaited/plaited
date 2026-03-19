@@ -1,9 +1,22 @@
 import { describe, expect, test } from 'bun:test'
 
 import { behavioral } from '../../behavioral/behavioral.ts'
+import { LinkActivitySchema, LinkMessageSchema } from '../runtime.schemas.ts'
 import { createLink, linkToTrigger, triggerToLink } from '../runtime.ts'
 
 describe('createLink', () => {
+  test('accepts the public runtime link envelope in exported schemas', () => {
+    const message = { type: 'pm_task', detail: { taskId: 'task-1', via: 'pm' } }
+    const activity = {
+      kind: 'publish' as const,
+      linkId: 'pm-link',
+      message,
+    }
+
+    expect(LinkMessageSchema.parse(message)).toEqual(message)
+    expect(LinkActivitySchema.parse(activity)).toEqual(activity)
+  })
+
   test('publishes typed messages to subscribers and observers', async () => {
     const activities: string[] = []
     const received: Array<{ type: 'task'; detail: { prompt: string } }> = []
