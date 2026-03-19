@@ -1,10 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import {
-  createRemoteMcpSession,
-  mcpCallTool,
-  mcpListTools,
-  remoteMcpConnect,
-} from '../../../add-remote-mcp/scripts/remote-mcp.ts'
+import { createRemoteMcpSession, mcpCallTool, mcpListTools, remoteMcpConnect } from '../mcp.utils.ts'
 
 const BUN_DOCS_URL = 'https://bun.com/docs/mcp'
 const MCP_DOCS_URL = 'https://modelcontextprotocol.io/mcp'
@@ -26,7 +21,7 @@ describe('mcpListTools', () => {
   test('lists tools from bun-docs server', async () => {
     const tools = await mcpListTools(BUN_DOCS_URL)
     expect(tools.length).toBeGreaterThan(0)
-    const searchTool = tools.find((t) => t.name === 'search_bun')
+    const searchTool = tools.find((tool) => tool.name === 'search_bun')
     expect(searchTool).toBeDefined()
     expect(searchTool?.inputSchema).toBeDefined()
   })
@@ -34,14 +29,14 @@ describe('mcpListTools', () => {
   test('lists tools from mcp-docs server', async () => {
     const tools = await mcpListTools(MCP_DOCS_URL)
     expect(tools.length).toBeGreaterThan(0)
-    const searchTool = tools.find((t) => t.name === 'search_model_context_protocol')
+    const searchTool = tools.find((tool) => tool.name === 'search_model_context_protocol')
     expect(searchTool).toBeDefined()
   })
 
   test('lists tools from agent-skills server', async () => {
     const tools = await mcpListTools(AGENT_SKILLS_URL)
     expect(tools.length).toBeGreaterThan(0)
-    const searchTool = tools.find((t) => t.name === 'search_agent_skills')
+    const searchTool = tools.find((tool) => tool.name === 'search_agent_skills')
     expect(searchTool).toBeDefined()
   })
 })
@@ -50,9 +45,9 @@ describe('mcpCallTool', () => {
   test('searches bun-docs for Bun.file', async () => {
     const result = await mcpCallTool(BUN_DOCS_URL, 'search_bun', { query: 'Bun.file' })
     expect(result.content.length).toBeGreaterThan(0)
-    const first = result.content[0]!
-    expect(first.type).toBe('text')
-    expect(first.text).toBeString()
+    const first = result.content[0]
+    expect(first?.type).toBe('text')
+    expect(first?.text).toBeString()
   })
 
   test('searches mcp-docs for tools/call', async () => {
@@ -60,8 +55,8 @@ describe('mcpCallTool', () => {
       query: 'tools/call request',
     })
     expect(result.content.length).toBeGreaterThan(0)
-    const first = result.content[0]!
-    expect(first.type).toBe('text')
+    const first = result.content[0]
+    expect(first?.type).toBe('text')
   })
 
   test('searches agent-skills for SKILL.md', async () => {
@@ -69,8 +64,8 @@ describe('mcpCallTool', () => {
       query: 'SKILL.md frontmatter',
     })
     expect(result.content.length).toBeGreaterThan(0)
-    const first = result.content[0]!
-    expect(first.type).toBe('text')
+    const first = result.content[0]
+    expect(first?.type).toBe('text')
   })
 })
 

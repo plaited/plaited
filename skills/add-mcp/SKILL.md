@@ -1,6 +1,6 @@
 ---
 name: add-mcp
-description: Transport-agnostic MCP client with session API. Routes by transport type — HTTP (add-remote-mcp), stdio (future), WebSocket (future). Provides connection reuse, timeouts, and Symbol.asyncDispose cleanup.
+description: Transport-agnostic MCP integration patterns. Explains session API, transport choices, and how to use the framework's shared MCP CLI and utilities.
 license: ISC
 compatibility: Requires bun and @modelcontextprotocol/sdk
 allowed-tools: Bash Read Write
@@ -8,7 +8,7 @@ allowed-tools: Bash Read Write
 
 # Add MCP
 
-Transport-agnostic MCP client core. Use this skill when integrating any MCP server regardless of transport.
+Transport-agnostic MCP integration guidance. Use this skill when integrating any MCP server regardless of transport.
 
 ## When to use
 
@@ -24,14 +24,14 @@ Transport-agnostic MCP client core. Use this skill when integrating any MCP serv
 | stdio | Direct SDK usage | Future |
 | WebSocket | Direct SDK usage | Future |
 
-For HTTP endpoints, use `add-remote-mcp` which provides URL-based convenience wrappers.
+For HTTP endpoints, use `add-remote-mcp` which scaffolds wrapper skills around the shared `plaited mcp ...` CLI.
 
 ## Session API
 
 The session API maintains a single connection for multiple operations:
 
 ```typescript
-import { createMcpSession } from '../../add-mcp/scripts/mcp-client.ts'
+import { createMcpSession } from '../../../src/tools/mcp.utils.ts'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 
 const transport = new StreamableHTTPClientTransport(new URL('https://example.com/mcp'))
@@ -48,7 +48,7 @@ const result = await session.callTool('search', { query: 'test' })
 For single operations, use `mcpConnect` directly:
 
 ```typescript
-import { mcpConnect } from '../../add-mcp/scripts/mcp-client.ts'
+import { mcpConnect } from '../../../src/tools/mcp.utils.ts'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 
 const transport = new StreamableHTTPClientTransport(new URL('https://example.com/mcp'))
@@ -60,10 +60,20 @@ try {
 }
 ```
 
-## Scripts
+## Framework MCP CLI
 
-- **`scripts/mcp-client.ts`** — Core library: `mcpConnect`, `createMcpSession`, result types
-- **`scripts/mcp-client.schemas.ts`** — Zod schemas for MCP response validation
+The framework ships a shared MCP CLI:
+
+```bash
+plaited mcp discover https://example.com/mcp
+plaited mcp list-tools https://example.com/mcp
+plaited mcp call https://example.com/mcp SearchExample '{"query":"test"}'
+```
+
+## References
+
+- **`references/session-template.ts`** — Reusable session pattern with `await using`
+- **`references/one-shot-template.ts`** — One-shot client pattern
 
 ## Dependencies
 

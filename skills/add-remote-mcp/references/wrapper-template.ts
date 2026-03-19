@@ -11,7 +11,7 @@
  * Usage: bun run search.ts '{"query": "your search query"}'
  */
 
-import { mcpCallTool } from '../../add-remote-mcp/scripts/remote-mcp.ts'
+import { join } from 'node:path'
 
 // ---- Customize these ----
 const MCP_URL = 'https://example.com/mcp'
@@ -21,6 +21,23 @@ const TOOL_NAME = 'SearchExample'
 const AUTH_ENV_VAR = '' // e.g., 'MY_SERVICE_API_KEY'
 const AUTH_HEADERS: Record<string, string> | undefined =
   AUTH_ENV_VAR && Bun.env[AUTH_ENV_VAR] ? { Authorization: `Bearer ${Bun.env[AUTH_ENV_VAR]}` } : undefined
+
+const createCliCommand = (payload: string) => {
+  const plaited = Bun.which('plaited')
+  if (plaited) {
+    const command = [plaited, 'mcp', 'call', MCP_URL, TOOL_NAME, payload]
+    if (AUTH_HEADERS) {
+      command.push('--headers', JSON.stringify(AUTH_HEADERS))
+    }
+    return command
+  }
+
+  const command = ['bun', join(import.meta.dir, '../../../src/cli.ts'), 'mcp', 'call', MCP_URL, TOOL_NAME, payload]
+  if (AUTH_HEADERS) {
+    command.push('--headers', JSON.stringify(AUTH_HEADERS))
+  }
+  return command
+}
 
 // ---- Main ----
 
@@ -43,9 +60,24 @@ const main = async () => {
     process.exit(2)
   }
 
-  const result = await mcpCallTool(MCP_URL, TOOL_NAME, input, AUTH_HEADERS ? { headers: AUTH_HEADERS } : undefined)
+  const proc = Bun.spawn(createCliCommand(JSON.stringify(input)), {
+    stdout: 'pipe',
+    stderr: 'pipe',
+  })
+  const [exitCode, stdout, stderr] = await Promise.all([
+    proc.exited,
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+  ])
 
-  for (const content of result.content) {
+  if (exitCode !== 0) {
+    console.error(stderr || stdout || 'plaited mcp call failed')
+    process.exit(exitCode)
+  }
+
+  const result = JSON.parse(stdout) as { content?: Array<{ type: string; text?: string }> }
+
+  for (const content of result.content ?? []) {
     if (content.type === 'text' && content.text) {
       // biome-ignore lint/suspicious/noConsole: CLI stdout output
       console.log(content.text)
