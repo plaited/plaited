@@ -1,5 +1,5 @@
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import { mcpConnect } from '../../../src/tools/mcp.utils.ts'
+import { mcpConnect } from 'plaited/mcp'
 
 const transport = new StreamableHTTPClientTransport(new URL('https://example.com/mcp'))
 const client = await mcpConnect(transport)

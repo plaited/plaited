@@ -22,6 +22,7 @@
   "exports": {
     ".": "./src/main.ts",
     "./improve": "./src/improve.ts",
+    "./mcp": "./src/mcp.ts",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
     "./jsx-runtime": "./src/jsx-runtime.ts"
   },

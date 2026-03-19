@@ -31,7 +31,7 @@ For HTTP endpoints, use `add-remote-mcp` which scaffolds wrapper skills around t
 The session API maintains a single connection for multiple operations:
 
 ```typescript
-import { createMcpSession } from '../../../src/tools/mcp.utils.ts'
+import { createMcpSession } from 'plaited/mcp'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 
 const transport = new StreamableHTTPClientTransport(new URL('https://example.com/mcp'))
@@ -48,7 +48,7 @@ const result = await session.callTool('search', { query: 'test' })
 For single operations, use `mcpConnect` directly:
 
 ```typescript
-import { mcpConnect } from '../../../src/tools/mcp.utils.ts'
+import { mcpConnect } from 'plaited/mcp'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 
 const transport = new StreamableHTTPClientTransport(new URL('https://example.com/mcp'))

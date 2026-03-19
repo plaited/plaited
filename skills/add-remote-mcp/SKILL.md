@@ -151,7 +151,7 @@ OAuth requires a programmatic `OAuthClientProvider`:
 
 ```typescript
 import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js'
-import { createRemoteMcpSession } from '../../../src/tools/mcp.utils.ts'
+import { createRemoteMcpSession } from 'plaited/mcp'
 
 const provider: OAuthClientProvider = {
   get redirectUrl() { return undefined },

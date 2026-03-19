@@ -1,5 +1,5 @@
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import { createMcpSession } from '../../../src/tools/mcp.utils.ts'
+import { createMcpSession } from 'plaited/mcp'
 
 const transport = new StreamableHTTPClientTransport(new URL('https://example.com/mcp'))
 
