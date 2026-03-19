@@ -71,6 +71,13 @@ For accepted code slices, both must pass:
 - `bun --bun tsc --noEmit`
 - `bun test src/ skills/ scripts/`
 
+## Slice Progression
+
+- Slice 1: runtime taxonomy and in-process `createLink`
+- Slice 2: IPC bridge for `createLink`
+- Slice 3: explicit actor/sub-agent/team integration path
+- Slice 4: local Attempt-DAG TeamHub for sovereign node teams
+
 ## Keep / Revise / Discard
 
 Keep only changes that:
