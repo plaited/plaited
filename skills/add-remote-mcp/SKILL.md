@@ -8,7 +8,7 @@ allowed-tools: Bash Read Write
 
 # Add Remote MCP
 
-Generate skills from any remote MCP server using the framework's shared `plaited mcp ...` CLI.
+Generate skills from any remote MCP server using the framework's shared `plaited/mcp` library surface.
 
 ## When to use
 
@@ -25,7 +25,10 @@ Generate skills from any remote MCP server using the framework's shared `plaited
 Discover all capabilities in a single connection:
 
 ```typescript
-plaited mcp discover https://example.com/mcp
+import { mcpDiscover } from 'plaited/mcp'
+
+const capabilities = await mcpDiscover('https://example.com/mcp')
+console.log(JSON.stringify(capabilities, null, 2))
 ```
 
 ### Tool schemas
@@ -33,7 +36,13 @@ plaited mcp discover https://example.com/mcp
 Get input schemas for each tool:
 
 ```typescript
-plaited mcp list-tools https://example.com/mcp
+import { mcpListTools } from 'plaited/mcp'
+
+const tools = await mcpListTools('https://example.com/mcp')
+for (const tool of tools) {
+  console.log(`${tool.name}: ${tool.description}`)
+  console.log(JSON.stringify(tool.inputSchema, null, 2))
+}
 ```
 
 ### Prompts
@@ -41,8 +50,10 @@ plaited mcp list-tools https://example.com/mcp
 List and retrieve prompts:
 
 ```typescript
-plaited mcp list-prompts https://example.com/mcp
-plaited mcp get-prompt https://example.com/mcp prompt-name '{"arg":"value"}'
+import { mcpGetPrompt, mcpListPrompts } from 'plaited/mcp'
+
+const prompts = await mcpListPrompts('https://example.com/mcp')
+const messages = await mcpGetPrompt('https://example.com/mcp', 'prompt-name', { arg: 'value' })
 ```
 
 ### Resources
@@ -50,8 +61,10 @@ plaited mcp get-prompt https://example.com/mcp prompt-name '{"arg":"value"}'
 List and read resources:
 
 ```typescript
-plaited mcp list-resources https://example.com/mcp
-plaited mcp read-resource https://example.com/mcp resource://schemas/config.json
+import { mcpListResources, mcpReadResource } from 'plaited/mcp'
+
+const resources = await mcpListResources('https://example.com/mcp')
+const contents = await mcpReadResource('https://example.com/mcp', 'resource://schemas/config.json')
 ```
 
 ## Session API (connection reuse)
@@ -59,8 +72,13 @@ plaited mcp read-resource https://example.com/mcp resource://schemas/config.json
 For multiple operations against the same server, use a session:
 
 ```typescript
-plaited mcp list-tools https://example.com/mcp --timeout 30000
-plaited mcp call https://example.com/mcp search '{"query":"test"}'
+import { createRemoteMcpSession } from 'plaited/mcp'
+
+await using session = await createRemoteMcpSession('https://example.com/mcp', {
+  timeoutMs: 30_000,
+})
+const tools = await session.listTools()
+const result = await session.callTool('search', { query: 'test' })
 ```
 
 `await using` automatically closes the connection when the block exits.
@@ -88,7 +106,12 @@ MCP prompts are pre-built message templates. Evaluate whether to:
 - **Create a prompt script in `scripts/`** — If the prompt is used at runtime:
 
 ```typescript
-plaited mcp get-prompt "$MCP_URL" prompt-name '{"arg":"value"}'
+import { mcpGetPrompt } from 'plaited/mcp'
+
+const messages = await mcpGetPrompt(MCP_URL, 'prompt-name', { arg: 'value' })
+for (const message of messages) {
+  if (message.content.type === 'text') console.log(message.content.text)
+}
 ```
 
 ### 3. Resources → `assets/` or pull scripts
@@ -97,7 +120,12 @@ plaited mcp get-prompt "$MCP_URL" prompt-name '{"arg":"value"}'
 - **Dynamic/large → `scripts/`** — Fetch on demand:
 
 ```typescript
-plaited mcp read-resource "$MCP_URL" "$RESOURCE_URI"
+import { mcpReadResource } from 'plaited/mcp'
+
+const contents = await mcpReadResource(MCP_URL, process.argv[2]!)
+for (const content of contents) {
+  if (content.text) console.log(content.text)
+}
 ```
 
 ### 4. Scaffold SKILL.md
@@ -141,8 +169,14 @@ const tools = await mcpListTools('https://bun.com/docs/mcp')
 Pass custom headers via options:
 
 ```typescript
-plaited mcp call https://example.com/mcp SearchExample '{"query":"test"}' \
-  --headers "{\"Authorization\":\"Bearer ${MY_API_KEY}\"}"
+import { mcpCallTool } from 'plaited/mcp'
+
+const result = await mcpCallTool(
+  'https://example.com/mcp',
+  'SearchExample',
+  { query: 'test' },
+  { headers: { Authorization: `Bearer ${process.env.MY_API_KEY}` } },
+)
 ```
 
 ### Tier 3: OAuth 2.1
@@ -176,7 +210,7 @@ const tools = await session.listTools()
 
 ## References
 
-- **`references/wrapper-template.ts`** — Template for MCP wrapper scripts that shell out to `plaited mcp call`
+- **`references/wrapper-template.ts`** — Template for MCP wrapper scripts that import `plaited/mcp`
 
 ## Dependencies
 

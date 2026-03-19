@@ -1,16 +1,7 @@
-import { join } from 'node:path'
+import { mcpCallTool } from 'plaited/mcp'
 
 const MCP_URL = 'https://modelcontextprotocol.io/mcp'
 const TOOL_NAME = 'search_model_context_protocol'
-
-const createCliCommand = (payload: string) => {
-  const plaited = Bun.which('plaited')
-  if (plaited) {
-    return [plaited, 'mcp', 'call', MCP_URL, TOOL_NAME, payload]
-  }
-
-  return ['bun', join(import.meta.dir, '../../../src/cli.ts'), 'mcp', 'call', MCP_URL, TOOL_NAME, payload]
-}
 
 const main = async () => {
   const raw = process.argv[2]
@@ -37,24 +28,9 @@ const main = async () => {
     process.exit(2)
   }
 
-  const proc = Bun.spawn(createCliCommand(JSON.stringify(input)), {
-    stdout: 'pipe',
-    stderr: 'pipe',
-  })
-  const [exitCode, stdout, stderr] = await Promise.all([
-    proc.exited,
-    new Response(proc.stdout).text(),
-    new Response(proc.stderr).text(),
-  ])
+  const result = await mcpCallTool(MCP_URL, TOOL_NAME, input)
 
-  if (exitCode !== 0) {
-    console.error(stderr || stdout || 'plaited mcp call failed')
-    process.exit(exitCode)
-  }
-
-  const result = JSON.parse(stdout) as { content?: Array<{ type: string; text?: string }> }
-
-  for (const content of result.content ?? []) {
+  for (const content of result.content) {
     if (content.type === 'text' && content.text) {
       // biome-ignore lint/suspicious/noConsole: CLI stdout output
       console.log(content.text)

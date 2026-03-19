@@ -16,7 +16,6 @@ import { bashCli, editFileCli, listFilesCli, readFileCli, writeFileCli } from '.
 import { ingestGoalCli } from './tools/ingest-goal.ts'
 import { ingestRulesCli } from './tools/ingest-rules.ts'
 import { ingestSkillCli } from './tools/ingest-skill.ts'
-import { mcpCli } from './tools/mcp.ts'
 import { discoverSkillsCli } from './tools/skill-discovery.ts'
 import { validateSkill } from './tools/skill-validate.ts'
 import { typescriptLsp } from './tools/typescript-lsp.ts'
@@ -41,7 +40,6 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   'ingest-rules': ingestRulesCli,
   'discover-skills': discoverSkillsCli,
   'typescript-lsp': typescriptLsp,
-  mcp: mcpCli,
   // ACP adapter (long-lived stdio process)
   acp: async () => {
     await import('./acp.ts')
@@ -83,7 +81,7 @@ Commands:
   Development:
     validate-skill, validate-thread, ingest-goal,
     ingest-skill, ingest-rules, discover-skills,
-    typescript-lsp, mcp
+    typescript-lsp
 
   ACP (Internal Control Surface):
     acp [--node <name>]`)

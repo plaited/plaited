@@ -24,7 +24,7 @@ Transport-agnostic MCP integration guidance. Use this skill when integrating any
 | stdio | Direct SDK usage | Future |
 | WebSocket | Direct SDK usage | Future |
 
-For HTTP endpoints, use `add-remote-mcp` which scaffolds wrapper skills around the shared `plaited mcp ...` CLI.
+For HTTP endpoints, use `add-remote-mcp` which scaffolds wrapper skills around the shared `plaited/mcp` library export.
 
 ## Session API
 
@@ -60,14 +60,16 @@ try {
 }
 ```
 
-## Framework MCP CLI
+## Framework MCP Library
 
-The framework ships a shared MCP CLI:
+The framework ships a shared MCP library surface:
 
-```bash
-plaited mcp discover https://example.com/mcp
-plaited mcp list-tools https://example.com/mcp
-plaited mcp call https://example.com/mcp SearchExample '{"query":"test"}'
+```typescript
+import { mcpDiscover, mcpListTools, mcpCallTool } from 'plaited/mcp'
+
+await mcpDiscover('https://example.com/mcp')
+await mcpListTools('https://example.com/mcp')
+await mcpCallTool('https://example.com/mcp', 'SearchExample', { query: 'test' })
 ```
 
 ## References
