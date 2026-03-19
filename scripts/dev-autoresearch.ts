@@ -170,6 +170,27 @@ const commitWorktreeExperiment = async (cwd: string, description: string): Promi
   return (await Bun.$`git rev-parse --short HEAD`.cwd(cwd).quiet()).text().trim()
 }
 
+const summarizeCommandFailure = (command: string[], stdout: string, stderr: string): string => {
+  const output = `${stdout}${stderr}`.trim()
+  if (!output) return `Command failed: ${command.join(' ')}`
+
+  if (command[0] === 'bun' && command[1] === 'test') {
+    const lines = output.split('\n')
+    const failureLines = lines.filter((line) => {
+      const trimmed = line.trim()
+      return trimmed.startsWith('(fail)') || trimmed.startsWith('error:') || trimmed.startsWith('Expected:')
+    })
+    const tail = lines.slice(-40)
+    const parts = [
+      ...(failureLines.length > 0 ? ['Failures:', ...failureLines.slice(0, 8)] : []),
+      ...(tail.length > 0 ? ['', 'Tail:', ...tail] : []),
+    ]
+    return parts.join('\n').trim().slice(0, 4000)
+  }
+
+  return output.length > 1500 ? output.slice(-1500) : output
+}
+
 const runCheck = async (cwd: string, command: string[]): Promise<ValidationResult> => {
   const result = await Bun.spawn(command, {
     cwd,
@@ -187,7 +208,7 @@ const runCheck = async (cwd: string, command: string[]): Promise<ValidationResul
   if (exitCode !== 0) {
     return {
       passed: false,
-      notes: `${stdout}${stderr}`.trim().slice(0, 1000) || `Command failed: ${command.join(' ')}`,
+      notes: summarizeCommandFailure(command, stdout, stderr),
       command,
     }
   }
@@ -717,6 +738,9 @@ const main = async () => {
 
       console.log(`attempt=${attempt} decision=${decision}`)
       console.log(`changed=${changedFiles.length} diff="${diffStat || 'no diff'}"`)
+      if (!fullTests.passed && fastPassed) {
+        console.log(`full-tests-failure="${summarizeReasoning(fullTests.notes)}"`)
+      }
       console.log(
         captureAssessment.eligible
           ? `capture=${captureAssessment.richness}`
