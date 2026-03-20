@@ -118,7 +118,8 @@ Git is not just deployment plumbing here. It is part of the accountability model
 - [dev-research/](/Users/eirby/Workspace/plaited/dev-research/) — bounded research programs for improving Plaited itself
 
 Current research lanes:
-- [program.md](/Users/eirby/Workspace/plaited/dev-research/program.md) — framework/runtime/autoresearch lane
+- [program.md](/Users/eirby/Workspace/plaited/dev-research/runtime-taxonomy/program.md) — framework/runtime/autoresearch lane
+- [program.md](/Users/eirby/Workspace/plaited/dev-research/skills/program.md) — skills/tooling lane
 - [program.md](/Users/eirby/Workspace/plaited/dev-research/native-model/program.md) — native-model/Falcon lane
 - [program.md](/Users/eirby/Workspace/plaited/dev-research/modnet/program.md) — inter-node/modnet lane
 

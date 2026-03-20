@@ -113,8 +113,18 @@ const getPositionalArgs = (args: string[]): string[] => {
   return positional
 }
 
+const getSliceDirectory = (slicePath: string): string => {
+  const normalized = slicePath.replace(/\\/g, '/')
+  const index = normalized.lastIndexOf('/')
+  return index === -1 ? '.' : normalized.slice(0, index)
+}
+
+export const resolveProgramPath = (slicePath: string, explicitProgramPath?: string): string =>
+  explicitProgramPath ?? `${getSliceDirectory(slicePath)}/program.md`
+
 export const parseInput = (args: string[]): CliInput => {
   const [slicePath] = getPositionalArgs(args)
+  const resolvedSlicePath = slicePath ?? getArg(args, '--slice', './dev-research/runtime-taxonomy/slice-1.md')!
   return {
     adapterPath: getArg(args, '--adapter', './scripts/codex-cli-adapter.ts')!,
     commit: hasFlag(args, '--commit'),
@@ -124,9 +134,9 @@ export const parseInput = (args: string[]): CliInput => {
     maxAttempts: Number(getArg(args, '--max-attempts', '1')),
     metaVerifierPath: getArg(args, '--meta-verifier-path', './scripts/claude-haiku-meta-verifier.ts')!,
     push: hasFlag(args, '--no-push') ? false : true,
-    programPath: getArg(args, '--program', './dev-research/program.md')!,
+    programPath: resolveProgramPath(resolvedSlicePath, getArg(args, '--program')),
     quiet: hasFlag(args, '--quiet'),
-    slicePath: slicePath ?? getArg(args, '--slice', './dev-research/runtime-taxonomy/slice-1.md')!,
+    slicePath: resolvedSlicePath,
   }
 }
 

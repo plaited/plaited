@@ -118,7 +118,7 @@ The current research split reinforces this doctrine:
 
 ### Framework Program
 
-`dev-research/program.md`
+`dev-research/runtime-taxonomy/program.md`
 
 Builds the substrate that modules will rely on:
 - runtime taxonomy

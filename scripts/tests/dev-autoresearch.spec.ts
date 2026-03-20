@@ -8,6 +8,7 @@ import {
   parseSliceScope,
   resolveImpactedTests,
   resolveImportPath,
+  resolveProgramPath,
   scanImports,
 } from '../dev-autoresearch.ts'
 
@@ -114,8 +115,6 @@ describe('dev-autoresearch dry run', () => {
         'bun',
         'scripts/dev-autoresearch.ts',
         './dev-research/runtime-taxonomy/slice-1.md',
-        '--program',
-        './dev-research/program.md',
         '--dry-run',
         '--max-attempts',
         '3',
@@ -170,13 +169,12 @@ describe('dev-autoresearch dry run', () => {
   test('package research script leaves slice selection to forwarded args', () => {
     expect(packageJson.scripts.research).toContain('varlock run -- bun --no-env-file scripts/dev-autoresearch.ts')
     expect(packageJson.scripts.research).not.toContain('slice-1.md')
+    expect(packageJson.scripts.research).not.toContain('--program')
     expect(packageJson.scripts.research).toContain('--push')
     expect(packageJson.scripts['research:overnight']).toContain('--quiet')
 
     const parsed = parseInput([
       './dev-research/runtime-taxonomy/slice-2.md',
-      '--program',
-      './dev-research/program.md',
       '--adapter',
       './scripts/codex-cli-adapter.ts',
       '--judge',
@@ -185,11 +183,18 @@ describe('dev-autoresearch dry run', () => {
     ])
 
     expect(parsed.slicePath).toBe('./dev-research/runtime-taxonomy/slice-2.md')
-    expect(parsed.programPath).toBe('./dev-research/program.md')
+    expect(parsed.programPath).toBe('./dev-research/runtime-taxonomy/program.md')
     expect(parsed.adapterPath).toBe('./scripts/codex-cli-adapter.ts')
     expect(parsed.judge).toBe(true)
     expect(parsed.commit).toBe(true)
     expect(parsed.push).toBe(true)
     expect(parsed.dryRun).toBe(true)
+  })
+
+  test('derives program path from the slice directory by default', () => {
+    expect(resolveProgramPath('./dev-research/runtime-taxonomy/slice-4.md')).toBe(
+      './dev-research/runtime-taxonomy/program.md',
+    )
+    expect(resolveProgramPath('./dev-research/skills/slice-1.md')).toBe('./dev-research/skills/program.md')
   })
 })

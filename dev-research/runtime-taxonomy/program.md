@@ -1,12 +1,15 @@
-# Dev Research Program
+# Runtime Taxonomy Program
 
-This directory contains bounded autoresearch artifacts for improving Plaited itself.
+This directory contains bounded autoresearch artifacts for improving Plaited's
+internal runtime coordination model.
 
-It is not the same thing as future user- or agent-generated research objects inside a running node.
+It is not the same thing as future user- or agent-generated research objects
+inside a running node.
 
 ## Mission
 
-Improve Plaited's internal runtime coordination model without changing the user or system model.
+Improve Plaited's internal runtime coordination model without changing the user
+or system model.
 
 Plaited remains:
 - a sovereign personal agent runtime
