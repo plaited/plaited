@@ -27,7 +27,6 @@ const model = process.env.QWEN_VL_MODEL ?? DEFAULT_MODEL
 
 const venvExists = await Bun.file(VENV_PYTHON).exists()
 if (!venvExists) {
-  // biome-ignore lint/suspicious/noConsole: CLI output
   console.error(
     'Python venv not found. Create it with:\n' +
       '  python3.12 -m venv .venv\n' +
@@ -36,15 +35,10 @@ if (!venvExists) {
   process.exit(1)
 }
 
-// biome-ignore lint/suspicious/noConsole: CLI output
 console.log(`Starting Qwen 2.5 VL MLX server...`)
-// biome-ignore lint/suspicious/noConsole: CLI output
 console.log(`  Model:  ${model}`)
-// biome-ignore lint/suspicious/noConsole: CLI output
 console.log(`  Port:   ${port}`)
-// biome-ignore lint/suspicious/noConsole: CLI output
 console.log(`  URL:    http://localhost:${port}/v1/chat/completions`)
-// biome-ignore lint/suspicious/noConsole: CLI output
 console.log()
 
 const proc = Bun.spawn([VENV_PYTHON, '-m', 'mlx_vlm.server', '--model', model, '--port', port], {
