@@ -48,11 +48,16 @@ Falcon 7B should become strong at:
 - Success criteria for Falcon improvement
 
 **Slices 2A-2H: Parallel Data Collection** (6-8 hours wall-clock, 8 workers)
-- 8 independent autoresearch workers, each runs 375 attempts
-- Worker 1: Feature branch `native-model-worker-1`
-- Worker 2: Feature branch `native-model-worker-2`
-- ... (6 more)
-- Each worker: `bun run research:overnight -- ./dev-research/native-model/slice-2-worker.md --adapter ./scripts/codex-cli-adapter.ts --judge --max-attempts 375`
+- 8 independent autoresearch workers (one per slice), each runs 375 attempts
+- Slice 2A: Feature branch `native-model-worker-a`
+- Slice 2B: Feature branch `native-model-worker-b`
+- Slice 2C: Feature branch `native-model-worker-c`
+- Slice 2D: Feature branch `native-model-worker-d`
+- Slice 2E: Feature branch `native-model-worker-e`
+- Slice 2F: Feature branch `native-model-worker-f`
+- Slice 2G: Feature branch `native-model-worker-g`
+- Slice 2H: Feature branch `native-model-worker-h`
+- Each worker: `bun run research:overnight -- ./dev-research/native-model/slice-2X.md --adapter ./scripts/codex-cli-adapter.ts --judge --max-attempts 375`
 - Adapter: Codex CLI (existing subscription)
 - Judge: Claude Sonnet + Haiku meta-verifier
 - Result: 3,000 total generations with judge scores, trajectories, token counts
@@ -90,8 +95,8 @@ Falcon 7B should become strong at:
 
 **Launch command (from EdgeXpert machine):**
 ```bash
-for i in {1..8}; do
-  bun run research:overnight -- ./dev-research/native-model/slice-2-worker.md \
+for i in {a..h}; do
+  bun run research:overnight -- ./dev-research/native-model/slice-2$i.md \
     --adapter ./scripts/codex-cli-adapter.ts \
     --judge \
     --max-attempts 375 &
