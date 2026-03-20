@@ -8,11 +8,12 @@ repo-autoresearch loop as the runtime.
 
 ## Scope
 
+- `package.json`
 - `src/improve.ts`
 - `src/improve/`
 - `scripts/`
-- `package.json`
 - `dev-research/native-model/`
+- `dev-research/native-model/evals/`
 
 ## Required
 
