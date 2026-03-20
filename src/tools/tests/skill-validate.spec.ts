@@ -42,6 +42,15 @@ describe('skill-validate', () => {
       expect(result.properties?.description).toBe('A test skill')
     })
 
+    test('does not require behavioral evaluation artifacts', async () => {
+      const skillDir = await createSkill('structural-only', 'name: structural-only\ndescription: No eval files')
+
+      const [result] = await runValidation(skillDir)
+
+      expect(result.valid).toBe(true)
+      expect(result.errors).toHaveLength(0)
+    })
+
     test('includes body in valid properties', async () => {
       const skillDir = await createSkill(
         'body-skill',

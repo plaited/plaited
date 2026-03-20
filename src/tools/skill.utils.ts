@@ -30,6 +30,28 @@ export type SkillProperties = {
   body: string
 }
 
+/**
+ * Local behavioral-evaluation artifacts for a skill.
+ *
+ * @remarks
+ * These files are optional and stay outside AgentSkills structural validation.
+ * They give autoresearch and trial tooling a stable place to look for
+ * trigger-quality prompts, output-quality cases, and evaluation guidance.
+ *
+ * @public
+ */
+export type SkillEvaluationSurface = {
+  triggerPrompts?: string
+  outputCases?: string
+  rubric?: string
+}
+
+const SKILL_EVALUATION_FILES = {
+  triggerPrompts: 'evals/trigger-prompts.jsonl',
+  outputCases: 'evals/output-cases.jsonl',
+  rubric: 'evals/RUBRIC.md',
+} as const
+
 // ============================================================================
 // Frontmatter Parser
 // ============================================================================
@@ -130,4 +152,35 @@ export const findSkillDirectories = async (rootDir: string): Promise<string[]> =
   }
 
   return skillDirs.sort()
+}
+
+/**
+ * Discover optional behavioral-evaluation artifacts for a skill.
+ *
+ * @param skillDir - Absolute path to the skill directory
+ * @returns Evaluation surface paths when present
+ *
+ * @public
+ */
+export const findSkillEvaluationSurface = async (skillDir: string): Promise<SkillEvaluationSurface | undefined> => {
+  const evaluation: SkillEvaluationSurface = {}
+
+  for (const [key, relativePath] of Object.entries(SKILL_EVALUATION_FILES)) {
+    const absolutePath = join(skillDir, relativePath)
+    if (!(await Bun.file(absolutePath).exists())) continue
+
+    if (key === 'triggerPrompts') {
+      evaluation.triggerPrompts = absolutePath
+      continue
+    }
+
+    if (key === 'outputCases') {
+      evaluation.outputCases = absolutePath
+      continue
+    }
+
+    evaluation.rubric = absolutePath
+  }
+
+  return Object.keys(evaluation).length > 0 ? evaluation : undefined
 }

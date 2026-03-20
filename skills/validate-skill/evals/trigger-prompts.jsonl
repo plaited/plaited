@@ -1,0 +1,2 @@
+{"input":"I added a new SKILL.md and want to catch bad frontmatter before commit.","expect_trigger":true}
+{"input":"Does this skill description activate too often for unrelated requests?","expect_trigger":false}

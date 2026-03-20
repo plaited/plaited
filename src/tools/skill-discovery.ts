@@ -2,8 +2,8 @@
  * Skill discovery — scan directories for SKILL.md files and build a catalog.
  *
  * @remarks
- * Lightweight alternative to validation that extracts only `name`,
- * `description`, and `location` from each skill's frontmatter.
+ * Lightweight alternative to structural validation that extracts only the
+ * activation catalog plus optional local evaluation pointers.
  * Used by the agent loop at spawn to build the skill catalog for
  * context assembly (progressive disclosure tier 1: ~100 tokens per skill).
  *
@@ -15,7 +15,7 @@
 import { join } from 'node:path'
 import * as z from 'zod'
 import { parseCli } from './cli.utils.ts'
-import { findSkillDirectories, findSkillMd, parseFrontmatter } from './skill.utils.ts'
+import { findSkillDirectories, findSkillEvaluationSurface, findSkillMd, parseFrontmatter } from './skill.utils.ts'
 
 // ============================================================================
 // Types
@@ -36,6 +36,11 @@ export type SkillCatalogEntry = {
   name: string
   description: string
   location: string
+  evaluation?: {
+    triggerPrompts?: string
+    outputCases?: string
+    rubric?: string
+  }
 }
 
 /**
@@ -64,6 +69,14 @@ export const SkillDiscoveryOutputSchema = z.array(
     name: z.string().describe('Skill name from frontmatter'),
     description: z.string().describe('Skill description from frontmatter'),
     location: z.string().describe('Absolute path to SKILL.md'),
+    evaluation: z
+      .object({
+        triggerPrompts: z.string().optional().describe('Absolute path to trigger-evaluation prompts'),
+        outputCases: z.string().optional().describe('Absolute path to output-quality cases'),
+        rubric: z.string().optional().describe('Absolute path to evaluation guidance'),
+      })
+      .optional()
+      .describe('Optional local behavioral-evaluation artifacts'),
   }),
 )
 
@@ -76,8 +89,9 @@ export const SkillDiscoveryOutputSchema = z.array(
  *
  * @remarks
  * Scans for SKILL.md files, parses frontmatter with `Bun.YAML.parse()`,
- * and extracts `name` + `description`. Skills with missing or malformed
- * frontmatter are skipped (warning to stderr).
+ * extracts `name` + `description`, and surfaces optional skill-local
+ * evaluation artifacts. Skills with missing or malformed frontmatter are
+ * skipped (warning to stderr).
  *
  * @param rootDir - Root directory containing skill folders
  * @returns Array of catalog entries sorted by name
@@ -108,7 +122,8 @@ export const discoverSkills = async (rootDir: string): Promise<SkillCatalogEntry
         continue
       }
 
-      catalog.push({ name, description, location: skillMdPath })
+      const evaluation = await findSkillEvaluationSurface(skillDir)
+      catalog.push({ name, description, location: skillMdPath, evaluation })
     } catch (error) {
       console.error(`Skipping ${skillMdPath}: ${error instanceof Error ? error.message : String(error)}`)
     }
@@ -175,6 +190,9 @@ export const discoverSkillsCli = async (args: string[]): Promise<void> => {
     // biome-ignore lint/suspicious/noConsole: CLI output
     console.log(`plaited discover-skills
 Scan directories for skills and output a catalog
+
+This is discovery, not structural validation. It exposes optional skill-local
+behavioral evaluation artifacts when present.
 
 Usage: plaited discover-skills '<json>' [options]
        echo '<json>' | plaited discover-skills

@@ -114,6 +114,32 @@ describe('skill-discovery', () => {
       expect(entry).toBeDefined()
       expect(entry!.location).toBe(join(rootDir, 'loc-skill', 'SKILL.md'))
     })
+
+    test('surfaces optional local evaluation artifacts without requiring them', async () => {
+      const rootDir = join(tempDir, 'discover-evals')
+      const skillDir = await createSkill(
+        'discover-evals/evaluated-skill',
+        'name: evaluated-skill\ndescription: Includes eval artifacts',
+      )
+      await Bun.$`mkdir -p ${join(skillDir, 'evals')}`.quiet()
+      await Bun.write(join(skillDir, 'evals', 'trigger-prompts.jsonl'), '{"input":"when should this skill trigger?"}\n')
+      await Bun.write(
+        join(skillDir, 'evals', 'output-cases.jsonl'),
+        '{"input":"validate this skill","expect":"reports structural findings"}\n',
+      )
+      await Bun.write(join(skillDir, 'evals', 'RUBRIC.md'), '# Rubric')
+
+      const catalog = await discoverSkills(rootDir)
+
+      expect(catalog).toHaveLength(1)
+      const entry = catalog.at(0)
+      expect(entry).toBeDefined()
+      expect(entry!.evaluation).toEqual({
+        triggerPrompts: join(rootDir, 'evaluated-skill', 'evals', 'trigger-prompts.jsonl'),
+        outputCases: join(rootDir, 'evaluated-skill', 'evals', 'output-cases.jsonl'),
+        rubric: join(rootDir, 'evaluated-skill', 'evals', 'RUBRIC.md'),
+      })
+    })
   })
 
   describe('detectCollisions', () => {
@@ -199,6 +225,7 @@ describe('skill-discovery', () => {
       expect(schema.items.properties).toHaveProperty('name')
       expect(schema.items.properties).toHaveProperty('description')
       expect(schema.items.properties).toHaveProperty('location')
+      expect(schema.items.properties).toHaveProperty('evaluation')
     })
 
     test('discovers skills from specified paths', async () => {
@@ -213,6 +240,7 @@ describe('skill-discovery', () => {
       const entry = catalog.at(0)
       expect(entry).toBeDefined()
       expect(entry!.name).toBe('cli-skill')
+      expect(entry!.evaluation).toBeUndefined()
     })
   })
 })

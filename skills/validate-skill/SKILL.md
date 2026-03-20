@@ -1,6 +1,6 @@
 ---
 name: validate-skill
-description: Validate skill directories against AgentSkills spec
+description: Validate skill directories against AgentSkills structural spec
 license: ISC
 compatibility: Requires bun
 allowed-tools: Bash
@@ -9,11 +9,18 @@ allowed-tools: Bash
 # Validate Skill
 
 Validates skill directories against the [AgentSkills specification](https://agentskills.io/specification).
+This skill is for structural/spec compliance only. It does not judge trigger
+quality, output quality, or overall behavioral performance.
 
 **Use when:**
 - Creating a new skill — run before committing to catch frontmatter errors
 - Reviewing PRs that add or modify skills
 - Bulk-validating a skills directory
+
+**Do not use for:**
+- deciding whether a description triggers reliably
+- grading whether a skill produced a strong answer
+- behavioral trial runs during autoresearch
 
 ## Interface
 
@@ -97,7 +104,7 @@ echo '{"paths": [".claude/skills"]}' | plaited validate-skill
 plaited validate-skill --schema output
 ```
 
-## Validation rules
+## Structural validation rules
 
 ### Required frontmatter fields
 
@@ -112,6 +119,20 @@ plaited validate-skill --schema output
 - `metadata` — YAML object with string values only
 
 Unknown frontmatter fields produce warnings (not errors).
+
+## Behavioral evaluation split
+
+Behavioral evaluation is a separate concern from validation.
+
+- Validation checks structure, frontmatter, and directory conventions.
+- Evaluation should stay local to the skill when practical.
+- The initial convention is an optional `evals/` directory inside the skill:
+  - `evals/trigger-prompts.jsonl` for activation-quality prompts
+  - `evals/output-cases.jsonl` for output-quality cases
+  - `evals/RUBRIC.md` for reviewer guidance
+
+Those files are discoverable by framework tooling, but they are not required
+for AgentSkills compatibility and are not enforced by `validate-skill`.
 
 ### Naming rules
 

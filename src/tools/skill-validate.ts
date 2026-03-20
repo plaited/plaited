@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Validate skill directories against AgentSkills specification.
+ * Validate skill directories against AgentSkills structural requirements.
  *
  * @remarks
  * Accepts JSON positional arg or stdin pipe.
@@ -27,7 +27,7 @@ import {
 // ============================================================================
 
 /**
- * Result of validating a skill directory.
+ * Result of structurally validating a skill directory.
  *
  * @public
  */
@@ -195,7 +195,7 @@ const validateFields = (metadata: Record<string, unknown>): string[] => {
 // ============================================================================
 
 /**
- * Validate a single skill directory.
+ * Structurally validate a single skill directory.
  *
  * @param skillDir - Absolute path to the skill directory
  * @returns Validation result with errors, warnings, and extracted properties
@@ -278,7 +278,7 @@ const validateSkillDirectory = async (skillDir: string): Promise<ValidationResul
 }
 
 /**
- * Validate all skills under a root directory.
+ * Structurally validate all skills under a root directory.
  *
  * @param rootDir - Root directory containing skill folders
  * @returns Array of validation results
@@ -327,7 +327,7 @@ const resolveAndValidate = async (searchPaths: string[], cwd: string): Promise<V
  * CLI entry point.
  *
  * @remarks
- * Exit 0 = all valid, 1 = validation errors, 2 = bad input.
+ * Exit 0 = all structurally valid, 1 = structural validation errors, 2 = bad input.
  *
  * @param args - CLI arguments (after command name)
  *
@@ -338,6 +338,9 @@ export const validateSkill = async (args: string[]) => {
     // biome-ignore lint/suspicious/noConsole: CLI output
     console.log(`plaited validate-skill
 Validate skill directories against AgentSkills specification
+
+This command is structural only. It does not evaluate trigger quality,
+output quality, or skill behavior.
 
 Usage: plaited validate-skill '<json>' [options]
        echo '<json>' | plaited validate-skill
@@ -350,8 +353,8 @@ Options:
   -h, --help               Show this help
 
 Exit codes:
-  0  All skills valid (or --schema/--help)
-  1  Validation errors found
+  0  All skills structurally valid (or --schema/--help)
+  1  Structural validation errors found
   2  Bad input or tool error
 
 Examples:
