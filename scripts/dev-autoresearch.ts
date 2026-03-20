@@ -11,6 +11,15 @@
 
 import { join } from 'node:path'
 import {
+  checkImproveScope,
+  createStageLogger,
+  type ImprovementAttemptDecision,
+  type ImprovementStageLogEntry,
+  type ImprovementValidationResult,
+  loadImprovementProtocolContext,
+  resolveProgramPath,
+} from '../src/improve/protocol.ts'
+import {
   assessTrainingCapture,
   type GraderResult,
   loadAdapter,
@@ -33,19 +42,7 @@ type CliInput = {
   slicePath: string
 }
 
-type SliceDecision = 'keep' | 'revise' | 'discard'
-
-type ValidationResult = {
-  passed: boolean
-  notes: string
-  command: string[]
-}
-
-type ScopeCheckResult = {
-  passed: boolean
-  notes: string
-  allowedPaths: string[]
-}
+type ValidationResult = ImprovementValidationResult
 
 type Checks = {
   typecheck: {
@@ -77,11 +74,7 @@ type JudgeBundle = {
   meta?: GraderResult
 }
 
-export type StageLogEntry = {
-  at: string
-  stage: string
-  message: string
-}
+export type StageLogEntry = ImprovementStageLogEntry
 
 const PROJECT_ROOT = join(import.meta.dir, '..')
 const WORKTREES_ROOT = join(PROJECT_ROOT, '.worktrees')
@@ -113,15 +106,6 @@ const getPositionalArgs = (args: string[]): string[] => {
   return positional
 }
 
-const getSliceDirectory = (slicePath: string): string => {
-  const normalized = slicePath.replace(/\\/g, '/')
-  const index = normalized.lastIndexOf('/')
-  return index === -1 ? '.' : normalized.slice(0, index)
-}
-
-export const resolveProgramPath = (slicePath: string, explicitProgramPath?: string): string =>
-  explicitProgramPath ?? `${getSliceDirectory(slicePath)}/program.md`
-
 export const parseInput = (args: string[]): CliInput => {
   const [slicePath] = getPositionalArgs(args)
   const resolvedSlicePath = slicePath ?? getArg(args, '--slice', './dev-research/runtime-taxonomy/slice-1.md')!
@@ -138,16 +122,6 @@ export const parseInput = (args: string[]): CliInput => {
     quiet: hasFlag(args, '--quiet'),
     slicePath: resolvedSlicePath,
   }
-}
-
-const requireMarkdown = async (path: string, headings: string[]): Promise<string> => {
-  const file = Bun.file(path)
-  if (!(await file.exists())) throw new Error(`Missing file: ${path}`)
-  const text = await file.text()
-  for (const heading of headings) {
-    if (!text.includes(heading)) throw new Error(`Missing heading "${heading}" in ${path}`)
-  }
-  return text
 }
 
 const ensureRequiredSecrets = ({ judge }: { judge: boolean }) => {
@@ -359,29 +333,6 @@ export const getPatch = async (cwd: string): Promise<string> => {
   return (await Bun.$`git diff HEAD --no-ext-diff`.cwd(cwd).nothrow().quiet()).text().trim()
 }
 
-export const parseSliceScope = (slice: string): string[] => {
-  const match = slice.match(/## Scope\s*\n([\s\S]*?)(?:\n## |\s*$)/)
-  if (!match) return []
-  const section = match[1]
-  if (!section) return []
-
-  return section
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line.startsWith('- '))
-    .map((line) => line.slice(2).trim())
-    .flatMap((line) => {
-      const spans = [...line.matchAll(/`([^`]+\/[^`]*)`/g)].map((match) => match[1] ?? '')
-      if (spans.length > 0) return spans
-      return line.includes('/') ? [line.replace(/`/g, '')] : []
-    })
-    .filter((line) => line.includes('/'))
-    .map((line) => line.replace(/\*+$/, ''))
-    .map((line) => line.replace(/^\.\//, ''))
-    .map((line) => normalizePath(line))
-    .filter(Boolean)
-}
-
 const normalizePath = (path: string): string => path.replace(/\\/g, '/')
 
 const dirname = (path: string): string => {
@@ -513,46 +464,6 @@ export const resolveImpactedTests = async (cwd: string, changedFiles: string[]):
   return [...selected].sort()
 }
 
-const checkScope = (changedFiles: string[], allowedPaths: string[]): ScopeCheckResult => {
-  if (changedFiles.length === 0) {
-    return {
-      passed: false,
-      notes: 'No files changed',
-      allowedPaths,
-    }
-  }
-
-  const invalid = changedFiles.filter((file) => !allowedPaths.some((prefix) => file.startsWith(prefix)))
-  if (invalid.length > 0) {
-    return {
-      passed: false,
-      notes: `Out-of-scope files changed: ${invalid.join(', ')}`,
-      allowedPaths,
-    }
-  }
-
-  return {
-    passed: true,
-    notes: `${changedFiles.length} in-scope file(s) changed`,
-    allowedPaths,
-  }
-}
-
-const buildPrompt = (program: string, slice: string) => {
-  return [
-    'Execution mode:',
-    '- Use an autoresearch-style workflow for this bounded development slice.',
-    '- The architecture is already decided by the program and slice files below.',
-    '- Make one bounded attempt, run validation, and state whether the result should be kept or revised.',
-    '',
-    'Program:',
-    program,
-    '',
-    'Slice:',
-    slice,
-  ].join('\n')
-}
-
 const buildChecks = (typecheck: ValidationResult, tests: ValidationResult): Checks => ({
   typecheck: {
     passed: typecheck.passed,
@@ -566,19 +477,7 @@ const buildChecks = (typecheck: ValidationResult, tests: ValidationResult): Chec
   },
 })
 
-const timestamp = (): string => new Date().toISOString()
-
-export const createLogger = (quiet: boolean, stageLog: StageLogEntry[]) => {
-  return (stage: string, message: string) => {
-    stageLog.push({
-      at: timestamp(),
-      stage,
-      message,
-    })
-    if (quiet) return
-    console.log(`[${stageLog.at(-1)?.at ?? timestamp()}] ${stage} ${message}`)
-  }
-}
+export const createLogger = createStageLogger
 
 const summarizeReasoning = (reasoning?: string): string => {
   if (!reasoning) return ''
@@ -662,7 +561,7 @@ const printAttemptSummary = ({
   fullTests,
 }: {
   attempt: number
-  decision: SliceDecision
+  decision: ImprovementAttemptDecision
   changedFiles: string[]
   diffStat: string
   captureAssessment: TrainingCaptureAssessment
@@ -726,19 +625,16 @@ const main = async () => {
   const input = parseInput(process.argv.slice(2))
   const stageLog: StageLogEntry[] = []
   const logStatus = createLogger(input.quiet, stageLog)
-
-  const program = await requireMarkdown(input.programPath, [
-    '## Mission',
-    '## Fixed Architecture',
-    '## Runtime Taxonomy',
-    '## Validation',
-  ])
-  const slice = await requireMarkdown(input.slicePath, ['# Slice', '## Target', '## Acceptance Criteria'])
-  const prompt = buildPrompt(program, slice)
+  const protocol = await loadImprovementProtocolContext({
+    defaultAllowedPaths: DEFAULT_ALLOWED_PATHS,
+    programPath: input.programPath,
+    slicePath: input.slicePath,
+  })
+  const { allowedPaths, prompt } = protocol
+  const program = protocol.program.text
+  const slice = protocol.slice.text
   const adapter = await loadAdapter(input.adapterPath)
-  const sliceId = input.slicePath.split('/').at(-1)?.replace('.md', '') ?? 'slice'
-  const sliceScope = parseSliceScope(slice)
-  const allowedPaths = sliceScope.length > 0 ? sliceScope : DEFAULT_ALLOWED_PATHS
+  const sliceId = protocol.slice.id
 
   console.log(`mode=repo-harness adapter=${input.adapterPath} slice=${sliceId} judge=${input.judge}`)
   if (input.dryRun) {
@@ -764,7 +660,7 @@ const main = async () => {
       const changedFiles = await getChangedFiles(worktree)
       const diffStat = await getDiffStat(worktree)
       const patch = await getPatch(worktree)
-      const scope = checkScope(changedFiles, allowedPaths)
+      const scope = checkImproveScope(changedFiles, allowedPaths)
       logStatus(
         'scope',
         `${scope.passed ? 'pass' : 'fail'} changed=${changedFiles.length} allowed=${allowedPaths.join(', ')}`,
@@ -878,7 +774,7 @@ const main = async () => {
       logStatus('judge:final', input.judge && fastPassed ? 'completed' : 'skipped')
       const finalJudgePassed = finalJudges ? finalJudges.primary.pass && (finalJudges.meta?.pass ?? true) : fastPassed
       const passed = fastPassed && fullTests.passed && finalJudgePassed
-      const decision: SliceDecision = passed ? 'keep' : changedFiles.length > 0 ? 'revise' : 'discard'
+      const decision: ImprovementAttemptDecision = passed ? 'keep' : changedFiles.length > 0 ? 'revise' : 'discard'
 
       let commit = ''
       if (passed && input.commit) {

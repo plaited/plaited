@@ -1,14 +1,12 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { dirname, join } from 'node:path'
 import packageJson from '../../package.json' with { type: 'json' }
+import { createStageLogger, parseSliceScope, resolveProgramPath } from '../../src/improve/protocol.ts'
 import {
-  createLogger,
   getChangedFiles,
   parseInput,
-  parseSliceScope,
   resolveImpactedTests,
   resolveImportPath,
-  resolveProgramPath,
   scanImports,
 } from '../dev-autoresearch.ts'
 
@@ -156,7 +154,7 @@ describe('dev-autoresearch dry run', () => {
 
   test('records stage logs even when quiet output is enabled', () => {
     const stageLog: { at: string; stage: string; message: string }[] = []
-    const logger = createLogger(true, stageLog)
+    const logger = createStageLogger(true, stageLog)
 
     logger('attempt:start', '1/30')
 
