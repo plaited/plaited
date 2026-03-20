@@ -174,7 +174,7 @@ const formatWorktreeChanges = async (cwd: string) => {
 
   const formatTargets = changedFiles.filter((file) => /\.(js|cjs|jsx|ts|tsx)$/.test(file))
   if (formatTargets.length > 0) {
-    const format = Bun.spawn(['bunx', 'biome', 'check', '--write', ...formatTargets], {
+    const format = Bun.spawn(['bunx', 'biome', 'format', '--write', ...formatTargets], {
       cwd,
       stdout: 'pipe',
       stderr: 'pipe',
