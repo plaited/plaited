@@ -8,7 +8,7 @@ repo-autoresearch loop as the runtime.
 
 ## Scope
 
-- `package.json`
+- `./package.json`
 - `src/improve.ts`
 - `src/improve/`
 - `scripts/`
