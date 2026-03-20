@@ -9,13 +9,16 @@ provider-specific adapter and judge layer in the current dev autoresearch stack.
 
 - `src/improve/`
 - `scripts/dev-autoresearch.ts`
-- `scripts/`
+- `scripts/codex-cli-adapter.ts`
+- `scripts/claude-code-judge.ts`
+- `scripts/tests/dev-autoresearch.spec.ts`
 
 ## Required
 
 - Preserve current bounded autoresearch behavior.
 - Keep Claude/Codex-specific code out of shared framework surfaces.
 - Clarify which attempt/provenance/program-slice responsibilities are generic.
+- Make the generic/provider-specific boundary explicit in code or docs.
 - Do not force a full migration in one slice.
 
 ## Preserve
@@ -29,6 +32,8 @@ provider-specific adapter and judge layer in the current dev autoresearch stack.
 
 - The code and docs make the boundary between generic improvement substrate and
   provider-specific bindings more explicit.
+- The slice identifies a concrete extraction boundary rather than leaving the
+  separation entirely conceptual.
 - The direction supports later reuse by:
   - skills evaluation
   - module improvement

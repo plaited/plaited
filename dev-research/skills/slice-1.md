@@ -10,15 +10,19 @@ forcing that work into the runtime-taxonomy lane.
 
 ## Scope
 
-- `src/tools/`
+- `src/tools/skill-validate.ts`
+- `src/tools/skill-discovery.ts`
+- `src/tools/skill.utils.ts`
+- `src/tools/tests/skill-validate.spec.ts`
+- `src/tools/tests/skill-discovery.spec.ts`
 - `skills/validate-skill/`
-- `skills/`
 
 ## Required
 
 - Keep `validate-skill` focused on structural/spec checks.
 - Add the first explicit skill-evaluation surface rather than overloading
   validation.
+- Make the split visible in framework tooling, naming, or docs.
 - Preserve progressive disclosure and AgentSkills-compatible layout.
 - Keep eval artifacts and conventions local to skills where practical.
 
@@ -33,6 +37,8 @@ forcing that work into the runtime-taxonomy lane.
 
 - Structural validation and behavioral evaluation are represented as distinct
   concepts in the code and docs.
+- The implementation identifies a concrete initial surface for behavioral
+  evaluation instead of leaving it purely conceptual.
 - The implementation direction supports:
   - description trigger evaluation
   - output-quality evaluation
