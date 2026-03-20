@@ -24,7 +24,10 @@ Transport-agnostic MCP integration guidance. Use this skill when integrating any
 | stdio | Direct SDK usage | Future |
 | WebSocket | Direct SDK usage | Future |
 
-For HTTP endpoints, use `add-remote-mcp` which scaffolds wrapper skills around the shared `plaited/mcp` library export.
+For HTTP endpoints, use `add-remote-mcp`.
+That skill starts from the remote URL you are given, which is often a discovery/manifest URL
+such as `https://bun.com/docs/mcp`, and then determines whether you can stop at discovery or
+need a separate live transport endpoint for session-style calls.
 
 ## Session API
 
@@ -33,10 +36,17 @@ See [references/session-template.ts](references/session-template.ts).
 
 `await using` automatically closes the connection when the block exits — no manual cleanup needed.
 
+For remote HTTP servers, only use a session when you have a live transport endpoint.
+Manifest/discovery URLs are valid inputs for discovery and listing, but not necessarily for
+connection reuse or direct tool invocation.
+
 ## One-shot pattern
 
 For single operations, use `mcpConnect` directly.
 See [references/one-shot-template.ts](references/one-shot-template.ts).
+
+For remote HTTP discovery/list operations, prefer the higher-level helpers in `plaited/mcp`
+such as `mcpDiscover`, `mcpListTools`, `mcpListPrompts`, and `mcpListResources`.
 
 ## Framework MCP Library
 

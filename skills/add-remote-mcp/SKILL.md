@@ -10,6 +10,9 @@ allowed-tools: Bash Read Write
 
 Generate skills from any remote MCP server using the framework's shared `plaited/mcp` library surface.
 
+Remote MCP URLs often start as discovery URLs, not direct transport endpoints.
+For example, `https://bun.com/docs/mcp` is a valid remote MCP URL for discovery and tool listing.
+
 ## When to use
 
 - Adding a new remote MCP server as a searchable skill
@@ -17,6 +20,24 @@ Generate skills from any remote MCP server using the framework's shared `plaited
 - Generating typed wrapper scripts for MCP tools
 - Evaluating MCP prompts for adaptation into skill instructions
 - Downloading or scripting access to MCP resources
+
+## URL shapes
+
+Remote MCP integrations commonly begin from one of two URL types:
+
+- **Discovery/manifest URL** — Returns advertised capabilities as JSON.
+  Example: `https://bun.com/docs/mcp`
+- **Live transport endpoint** — Supports Streamable HTTP MCP session traffic directly.
+
+The shared `plaited/mcp` library supports both, but not for the same operations:
+
+- `mcpDiscover`, `mcpListTools`, `mcpListPrompts`, `mcpListResources`
+  - accept either URL type
+- `createRemoteMcpSession`, `remoteMcpConnect`, `mcpCallTool`, `mcpGetPrompt`, `mcpReadResource`
+  - require a live transport endpoint
+
+If you only have a discovery URL, start by generating discovery/list wrappers or use the
+advertised capabilities to locate the server's transport endpoint.
 
 ## Discovery
 
@@ -29,7 +50,8 @@ Generate skills from any remote MCP server using the framework's shared `plaited
 
 ## Session API (connection reuse)
 
-For multiple operations against the same server, use a session.
+For multiple operations against the same server, use a session only when you have a live
+transport endpoint.
 See [references/session-template.ts](references/session-template.ts).
 
 `await using` automatically closes the connection when the block exits.
@@ -47,7 +69,11 @@ mkdir -p skills/search-my-service/scripts
 cp skills/add-remote-mcp/references/wrapper-template.ts skills/search-my-service/scripts/search.ts
 ```
 
-Edit the constants: `MCP_URL`, `TOOL_NAME`, and adjust the input validation if the tool takes more than `query`.
+Edit the constants: `MCP_URL`, `TOOL_NAME`, and adjust the input validation if the tool takes
+more than `query`.
+
+Use a discovery/manifest URL here if the script is only surfacing advertised capabilities.
+Use a transport URL only if the wrapper needs to execute the tool directly.
 
 ### 2. Prompts → evaluate for skill adaptation
 
@@ -96,7 +122,7 @@ bun run skills/my-skill/scripts/search.ts '{"query": "test query"}'
 No options needed — the default:
 
 ```typescript
-const tools = await mcpListTools('https://modelcontextprotocol.io/mcp')
+const tools = await mcpListTools('https://bun.com/docs/mcp')
 ```
 
 ### Tier 2: API key / Bearer token
@@ -133,6 +159,8 @@ See [references/oauth-provider-template.ts](references/oauth-provider-template.t
 
 ## Protocol notes
 
+- Discovery/list helpers accept both manifest URLs and live Streamable HTTP transport URLs
+- Session-style APIs require a live transport endpoint
 - Uses MCP Streamable HTTP transport (2025-03-26+) via `StreamableHTTPClientTransport`
 - SDK handles Accept header negotiation (`application/json` and `text/event-stream`)
 - Session API reuses a single connection; one-shot helpers create and dispose per call
