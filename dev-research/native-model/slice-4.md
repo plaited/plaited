@@ -13,15 +13,18 @@ Fine-tune Falcon 7B on curated Plaited-native training data from Slice 3.
 
 ## Required
 
-- Curated training data from Slice 3
-- Falcon 7B base model (local or HuggingFace)
-- QLoRA setup (bitsandbytes, PEFT, or equivalent)
+- Curated training data from Slice 3 (`/tmp/good-outputs.jsonl`)
+- Falcon 7B base model (HuggingFace or local copy)
+- vLLM infrastructure installed (required for EdgeXpert)
+  - MLX does NOT work on NVIDIA Grace Blackwell GPU
+  - See `scripts/VLLM_SETUP.md` for installation
+- QLoRA setup (bitsandbytes, PEFT, transformers)
 - GPU/local compute for training (~2-4 hours on EdgeXpert)
 - Training script with:
   - Data loading from JSONL
   - LoRA rank/alpha hyperparameters
   - Learning rate, batch size, epochs
-  - Checkpoint saving
+  - Checkpoint saving to `./models/falcon-7b-native-model.qlora`
 
 ## Preserve
 
