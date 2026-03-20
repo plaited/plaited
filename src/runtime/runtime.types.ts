@@ -240,6 +240,20 @@ export type CreateTeamOptions<Message extends LinkMessage = LinkMessage> = {
 }
 
 /**
+ * Options for creating a managed team around a root actor.
+ *
+ * @public
+ */
+export type CreateManagedTeamRuntimeOptions<Message extends LinkMessage = LinkMessage> = {
+  actor: BehavioralActor<Message>
+  teamId?: string
+  pmId?: string
+  authorizeRoute?: PmRuntime<Message>['authorizeRoute']
+  observeRoute?: TeamRouteObserver
+  onRouteActivity?: TeamRouteObserver
+}
+
+/**
  * Options for opening a direct route between team members.
  *
  * @public
@@ -262,6 +276,20 @@ export type Team<Message extends LinkMessage = LinkMessage> = Omit<TeamDescripto
   pm: PmRuntime<Message>
   members: Map<string, TeamMember<Message>>
   openRoute: (options: OpenTeamRouteOptions<Message>) => Disconnect
+  destroy: () => void
+}
+
+/**
+ * Integrated runtime path for a sovereign PM-owned team.
+ *
+ * @public
+ */
+export type ManagedTeamRuntime<Message extends LinkMessage = LinkMessage> = {
+  pm: PmRuntime<Message>
+  actor: BehavioralActor<Message>
+  team: Team<Message>
+  attachSubAgent: (subAgent: SubAgent<Message>) => SubAgent<Message>
+  openDirectRoute: (options: Omit<OpenTeamRouteOptions<Message>, 'sourceId'> & { sourceId?: string }) => Disconnect
   destroy: () => void
 }
 

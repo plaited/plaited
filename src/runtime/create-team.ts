@@ -2,9 +2,11 @@ import { createLink, linkToTrigger, triggerToLink } from './create-link.ts'
 import type {
   BehavioralActor,
   BehavioralActorDescriptor,
+  CreateManagedTeamRuntimeOptions,
   CreateRuntimeParticipantOptions,
   CreateTeamOptions,
   LinkMessage,
+  ManagedTeamRuntime,
   OpenTeamRouteOptions,
   PmRuntime,
   SubAgent,
@@ -109,6 +111,15 @@ const assertTeamMember = <Message extends LinkMessage>(
 const observeRoute = (observers: Array<TeamRouteObserver | undefined>, activity: TeamRouteActivity) => {
   for (const observer of observers) {
     notifyRouteObserver(observer, activity)
+  }
+}
+
+const assertUniqueMemberId = <Message extends LinkMessage>(
+  members: Map<string, TeamMember<Message>>,
+  memberId: string,
+) => {
+  if (members.has(memberId)) {
+    throw new Error(`Duplicate team member: ${memberId}`)
   }
 }
 
@@ -220,5 +231,71 @@ export const createTeam = <Message extends LinkMessage = LinkMessage>({
         disconnect()
       }
     },
+  }
+}
+
+/**
+ * Creates one integrated PM-owned actor/sub-agent/team runtime path.
+ *
+ * @public
+ */
+export const createManagedTeamRuntime = <Message extends LinkMessage = LinkMessage>({
+  actor,
+  teamId = `team:${actor.id}`,
+  pmId = `pm:${actor.id}`,
+  authorizeRoute = () => true,
+  observeRoute,
+  onRouteActivity,
+}: CreateManagedTeamRuntimeOptions<Message>): ManagedTeamRuntime<Message> => {
+  const managedSubAgentIds = new Set<string>()
+  const pm = createPmRuntime<Message>({
+    kind: 'pm',
+    id: pmId,
+    authorizeRoute,
+    observeRoute,
+  })
+  const team = createTeam<Message>({
+    descriptor: {
+      kind: 'team',
+      id: teamId,
+      pmId: pm.id,
+      members: [actor],
+    },
+    pm,
+    members: [actor],
+    onRouteActivity,
+  })
+
+  const attachSubAgent = (subAgent: SubAgent<Message>) => {
+    assertUniqueMemberId(team.members, subAgent.id)
+    team.members.set(subAgent.id, subAgent)
+    managedSubAgentIds.add(subAgent.id)
+    return subAgent
+  }
+
+  const openDirectRoute: ManagedTeamRuntime<Message>['openDirectRoute'] = ({ sourceId = actor.id, ...options }) => {
+    return team.openRoute({
+      sourceId,
+      ...options,
+    })
+  }
+
+  const destroy = () => {
+    team.destroy()
+
+    for (const subAgentId of managedSubAgentIds) {
+      const member = team.members.get(subAgentId)
+      member?.destroy()
+      team.members.delete(subAgentId)
+    }
+  }
+
+  return {
+    pm,
+    actor,
+    team,
+    attachSubAgent,
+    openDirectRoute,
+    destroy,
   }
 }

@@ -1,10 +1,11 @@
 import type { TLSOptions } from 'bun'
 import type { AgentCard } from '../a2a/a2a.schemas.ts'
 import type { CreateA2AHandlerOptions } from '../a2a/a2a.types.ts'
-import type { ConstitutionFactory, GoalFactory } from '../agent/factories.ts'
-import type { HeartbeatHandle } from '../agent/proactive.ts'
 import type { ToolDefinition } from '../agent/agent.schemas.ts'
 import type { AgentNode, Indexer, Model, SensorFactory, ToolExecutor } from '../agent/agent.types.ts'
+import type { ConstitutionFactory, GoalFactory } from '../agent/factories.ts'
+import type { HeartbeatHandle } from '../agent/proactive.ts'
+import type { ManagedTeamRuntime } from '../runtime/runtime.types.ts'
 import type { ServerHandle } from '../server/server.types.ts'
 
 /**
@@ -60,6 +61,8 @@ export type CreateNodeOptions = {
 export type NodeHandle = {
   /** The agent loop instance */
   agent: AgentNode
+  /** Internal runtime taxonomy path for PM-owned direct routes */
+  runtime: ManagedTeamRuntime
   /** The HTTP/WebSocket server handle */
   server: ServerHandle
   /** A2A routes (present when agentCard was provided) */

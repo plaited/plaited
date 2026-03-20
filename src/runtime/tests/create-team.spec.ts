@@ -7,7 +7,13 @@ import {
   TeamDescriptorSchema,
   TeamRouteActivitySchema,
 } from '../runtime.schemas.ts'
-import { createBehavioralActorRuntime, createPmRuntime, createSubAgentRuntime, createTeam } from '../runtime.ts'
+import {
+  createBehavioralActorRuntime,
+  createManagedTeamRuntime,
+  createPmRuntime,
+  createSubAgentRuntime,
+  createTeam,
+} from '../runtime.ts'
 import type { BehavioralActorDescriptor, PmDescriptor, SubAgentDescriptor, TeamDescriptor } from '../runtime.types.ts'
 
 type DirectMessage = { type: 'direct_task'; detail: { taskId: string; route: 'direct' | 'mapped' } }
@@ -229,5 +235,84 @@ describe('createTeam', () => {
     expect(routeActivities).toEqual(['authorize', 'deny'])
     expect(actor.links?.size).toBe(0)
     expect(subAgent.links?.size).toBe(0)
+  })
+
+  test('creates one managed actor/sub-agent/team path with root-actor direct routes', async () => {
+    const sourceRuntime = behavioral<{ direct_task: { taskId: string } }>()
+    const targetRuntime = behavioral<{ direct_task: { taskId: string } }>()
+    const received: Array<{ taskId: string }> = []
+    const routeActivities: string[] = []
+
+    targetRuntime.useFeedback({
+      direct_task(detail) {
+        received.push(detail)
+      },
+    })
+
+    const actor = createBehavioralActorRuntime<DirectMessage | { type: 'direct_task'; detail: { taskId: string } }>({
+      kind: 'behavioral_actor',
+      id: 'actor-root',
+      object: {
+        kind: 'mss_object',
+        id: 'object-root',
+        contentType: 'agent',
+        structure: 'object',
+        mechanics: ['track'],
+        boundary: 'ask',
+        scale: 'S2',
+      },
+      trigger: sourceRuntime.trigger,
+      subscribe: sourceRuntime.useFeedback,
+      destroy: () => {},
+    })
+
+    const managed = createManagedTeamRuntime({
+      actor,
+      observeRoute(activity) {
+        routeActivities.push(activity.kind)
+      },
+    })
+
+    const subAgent = managed.attachSubAgent(
+      createSubAgentRuntime<{ type: 'direct_task'; detail: { taskId: string } }>({
+        kind: 'sub_agent',
+        id: 'sub-agent-managed',
+        actor: {
+          kind: 'behavioral_actor',
+          id: 'actor-managed',
+          object: {
+            kind: 'mss_object',
+            id: 'object-managed',
+            contentType: 'agent',
+            structure: 'object',
+            mechanics: ['track'],
+            boundary: 'ask',
+            scale: 'S2',
+          },
+        },
+        parentActorId: actor.id,
+        trigger: targetRuntime.trigger,
+        subscribe: targetRuntime.useFeedback,
+        destroy: () => {},
+      }),
+    )
+
+    const disconnect = managed.openDirectRoute({
+      targetId: subAgent.id,
+      eventTypes: ['direct_task'],
+    })
+
+    sourceRuntime.trigger({
+      type: 'direct_task',
+      detail: { taskId: 'task-managed-1' },
+    })
+    await Promise.resolve()
+
+    expect(received).toEqual([{ taskId: 'task-managed-1' }])
+    expect(routeActivities).toEqual(['authorize', 'connect'])
+    expect(managed.team.members.get(subAgent.id)).toBe(subAgent)
+
+    disconnect()
+    managed.destroy()
   })
 })

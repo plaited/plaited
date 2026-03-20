@@ -13,7 +13,9 @@ import type { AgentCard, Task } from '../../a2a/a2a.schemas.ts'
 import { AGENT_EVENTS, RISK_TAG } from '../../agent/agent.constants.ts'
 import type { ToolDefinition } from '../../agent/agent.schemas.ts'
 import type { Model, ModelDelta } from '../../agent/agent.types.ts'
+import { behavioral } from '../../behavioral/behavioral.ts'
 import { UI_ADAPTER_LIFECYCLE_EVENTS } from '../../events.ts'
+import { createSubAgentRuntime } from '../../runtime.ts'
 import { createNode, createProactivePushHandlers } from '../create-node.ts'
 import type { NodeHandle } from '../modnet.types.ts'
 
@@ -112,7 +114,82 @@ describe('createNode', () => {
 
     expect(node.server.port).toBeGreaterThan(0)
     expect(node.agent).toBeDefined()
+    expect(node.runtime.team.members.has(node.runtime.actor.id)).toBe(true)
     expect(node.a2a).toBeUndefined()
+  })
+
+  test('exposes a PM-owned direct actor-to-sub-agent route inside the node runtime', async () => {
+    const model = createMockModel([{ text: 'delegated' }])
+    const node = await createNode({
+      model,
+      tools: [],
+      toolExecutor: async () => 'ok',
+      memoryPath: tmpDir(),
+    })
+    nodes.push(node)
+
+    const subAgentRuntime = behavioral<{
+      client_connected: { sessionId: string; source: 'document'; isReconnect: boolean }
+    }>()
+    const received: Array<{ sessionId: string; source: 'document'; isReconnect: boolean }> = []
+
+    subAgentRuntime.useFeedback({
+      [UI_ADAPTER_LIFECYCLE_EVENTS.client_connected](detail) {
+        received.push(detail)
+      },
+    })
+
+    const subAgentSubscribe = (handlers: Record<string, (detail: unknown) => void | Promise<void>>) => {
+      return subAgentRuntime.useFeedback(
+        handlers as {
+          client_connected: (detail: {
+            sessionId: string
+            source: 'document'
+            isReconnect: boolean
+          }) => void | Promise<void>
+        },
+      )
+    }
+
+    const subAgentTrigger = (event: { type: string; detail?: unknown }) => {
+      subAgentRuntime.trigger(
+        event as {
+          type: 'client_connected'
+          detail: { sessionId: string; source: 'document'; isReconnect: boolean }
+        },
+      )
+    }
+
+    const subAgent = node.runtime.attachSubAgent(
+      createSubAgentRuntime({
+        kind: 'sub_agent',
+        id: 'node-sub-agent-1',
+        actor: node.runtime.actor,
+        parentActorId: node.runtime.actor.id,
+        trigger: subAgentTrigger,
+        subscribe: subAgentSubscribe,
+        destroy: () => {},
+      }),
+    )
+
+    const disconnect = node.runtime.openDirectRoute({
+      targetId: subAgent.id,
+      eventTypes: [UI_ADAPTER_LIFECYCLE_EVENTS.client_connected],
+    })
+
+    node.agent.trigger({
+      type: UI_ADAPTER_LIFECYCLE_EVENTS.client_connected,
+      detail: { sessionId: 'session-1', source: 'document', isReconnect: false },
+    })
+
+    expect(received).toEqual([{ sessionId: 'session-1', source: 'document', isReconnect: false }])
+    expect(node.runtime.actor.links?.size).toBe(1)
+    expect(subAgent.links?.size).toBe(1)
+
+    disconnect()
+
+    expect(node.runtime.actor.links?.size).toBe(0)
+    expect(subAgent.links?.size).toBe(0)
   })
 
   test('creates a node with A2A routes when agentCard is provided', async () => {
