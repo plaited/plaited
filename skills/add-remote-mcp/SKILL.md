@@ -10,8 +10,9 @@ allowed-tools: Bash Read Write
 
 Generate skills from any remote MCP server using the framework's shared `plaited/mcp` library surface.
 
-Remote MCP URLs often start as discovery URLs, not direct transport endpoints.
-For example, `https://bun.com/docs/mcp` is a valid remote MCP URL for discovery and tool listing.
+Remote MCP URLs often start as discovery URLs that also accept Streamable HTTP MCP traffic.
+For example, `https://bun.com/docs/mcp` is a valid remote MCP URL for discovery, tool listing,
+and direct tool calls.
 
 ## When to use
 
@@ -29,15 +30,16 @@ Remote MCP integrations commonly begin from one of two URL types:
   Example: `https://bun.com/docs/mcp`
 - **Live transport endpoint** — Supports Streamable HTTP MCP session traffic directly.
 
-The shared `plaited/mcp` library supports both, but not for the same operations:
+The shared `plaited/mcp` library accepts either URL type:
 
 - `mcpDiscover`, `mcpListTools`, `mcpListPrompts`, `mcpListResources`
   - accept either URL type
 - `createRemoteMcpSession`, `remoteMcpConnect`, `mcpCallTool`, `mcpGetPrompt`, `mcpReadResource`
-  - require a live transport endpoint
+  - work against live transport endpoints and manifest URLs that also serve Streamable HTTP
 
-If you only have a discovery URL, start by generating discovery/list wrappers or use the
-advertised capabilities to locate the server's transport endpoint.
+If you only have a discovery URL, start by trying it directly. If connection attempts fail,
+then fall back to discovery/list wrappers or use the advertised capabilities to locate a
+separate transport endpoint.
 
 ## Discovery
 
@@ -50,8 +52,8 @@ advertised capabilities to locate the server's transport endpoint.
 
 ## Session API (connection reuse)
 
-For multiple operations against the same server, use a session only when you have a live
-transport endpoint.
+For multiple operations against the same server, use a session when the URL accepts live MCP
+traffic.
 See [references/session-template.ts](references/session-template.ts).
 
 `await using` automatically closes the connection when the block exits.
@@ -72,8 +74,8 @@ cp skills/add-remote-mcp/references/wrapper-template.ts skills/search-my-service
 Edit the constants: `MCP_URL`, `TOOL_NAME`, and adjust the input validation if the tool takes
 more than `query`.
 
-Use a discovery/manifest URL here if the script is only surfacing advertised capabilities.
-Use a transport URL only if the wrapper needs to execute the tool directly.
+Start with the discovery URL the server publishes. If direct execution fails, switch the wrapper
+to the server's separate transport URL if one is advertised.
 
 ### 2. Prompts → evaluate for skill adaptation
 
@@ -160,7 +162,7 @@ See [references/oauth-provider-template.ts](references/oauth-provider-template.t
 ## Protocol notes
 
 - Discovery/list helpers accept both manifest URLs and live Streamable HTTP transport URLs
-- Session-style APIs require a live transport endpoint
+- Session-style APIs also work with manifest URLs when the same URL serves live MCP traffic
 - Uses MCP Streamable HTTP transport (2025-03-26+) via `StreamableHTTPClientTransport`
 - SDK handles Accept header negotiation (`application/json` and `text/event-stream`)
 - Session API reuses a single connection; one-shot helpers create and dispose per call

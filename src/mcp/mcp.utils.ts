@@ -99,15 +99,6 @@ const getRemoteManifestCapabilities = async (url: string, options?: RemoteMcpOpt
   return manifest ? normalizeMcpManifestCapabilities(manifest) : null
 }
 
-const assertNotManifestOnlyUrl = async (url: string, options?: RemoteMcpOptions) => {
-  const manifest = await fetchRemoteMcpManifest(url, options)
-  if (manifest) {
-    throw new Error(
-      `MCP manifest URL ${url} supports discovery but not direct session use. Provide the server transport endpoint to connect or call tools.`,
-    )
-  }
-}
-
 export const mcpConnect = async (transport: Transport) => {
   const client = new Client(CLIENT_INFO)
   await client.connect(transport)
@@ -209,14 +200,10 @@ export const createRemoteMcpTransport = (url: string, options?: RemoteMcpOptions
     authProvider: options?.authProvider,
   })
 
-export const createRemoteMcpSession = async (url: string, options?: RemoteMcpOptions): Promise<McpSession> => {
-  await assertNotManifestOnlyUrl(url, options)
-  const transport = createRemoteMcpTransport(url, options)
-  return createMcpSession(transport, { timeoutMs: options?.timeoutMs })
-}
+export const createRemoteMcpSession = async (url: string, options?: RemoteMcpOptions): Promise<McpSession> =>
+  createMcpSession(createRemoteMcpTransport(url, options), { timeoutMs: options?.timeoutMs })
 
 export const remoteMcpConnect = async (url: string, options?: RemoteMcpOptions) => {
-  await assertNotManifestOnlyUrl(url, options)
   const transport = createRemoteMcpTransport(url, options)
   return mcpConnect(transport)
 }
@@ -224,8 +211,12 @@ export const remoteMcpConnect = async (url: string, options?: RemoteMcpOptions) 
 export const mcpListTools = async (url: string, options?: RemoteMcpOptions): Promise<McpTool[]> => {
   const capabilities = await getRemoteManifestCapabilities(url, options)
   if (capabilities) return capabilities.tools
-  await using session = await createRemoteMcpSession(url, options)
-  return session.listTools()
+  const session = await createRemoteMcpSession(url, options)
+  try {
+    return await session.listTools()
+  } finally {
+    await session.close()
+  }
 }
 
 export const mcpCallTool = async (
@@ -234,16 +225,23 @@ export const mcpCallTool = async (
   args: Record<string, unknown>,
   options?: RemoteMcpOptions,
 ): Promise<McpCallToolResult> => {
-  await assertNotManifestOnlyUrl(url, options)
-  await using session = await createRemoteMcpSession(url, options)
-  return session.callTool(toolName, args)
+  const session = await createRemoteMcpSession(url, options)
+  try {
+    return await session.callTool(toolName, args)
+  } finally {
+    await session.close()
+  }
 }
 
 export const mcpListPrompts = async (url: string, options?: RemoteMcpOptions): Promise<McpPrompt[]> => {
   const capabilities = await getRemoteManifestCapabilities(url, options)
   if (capabilities) return capabilities.prompts
-  await using session = await createRemoteMcpSession(url, options)
-  return session.listPrompts()
+  const session = await createRemoteMcpSession(url, options)
+  try {
+    return await session.listPrompts()
+  } finally {
+    await session.close()
+  }
 }
 
 export const mcpGetPrompt = async (
@@ -252,16 +250,23 @@ export const mcpGetPrompt = async (
   args?: Record<string, string>,
   options?: RemoteMcpOptions,
 ): Promise<McpPromptMessage[]> => {
-  await assertNotManifestOnlyUrl(url, options)
-  await using session = await createRemoteMcpSession(url, options)
-  return session.getPrompt(name, args)
+  const session = await createRemoteMcpSession(url, options)
+  try {
+    return await session.getPrompt(name, args)
+  } finally {
+    await session.close()
+  }
 }
 
 export const mcpListResources = async (url: string, options?: RemoteMcpOptions): Promise<McpResource[]> => {
   const capabilities = await getRemoteManifestCapabilities(url, options)
   if (capabilities) return capabilities.resources
-  await using session = await createRemoteMcpSession(url, options)
-  return session.listResources()
+  const session = await createRemoteMcpSession(url, options)
+  try {
+    return await session.listResources()
+  } finally {
+    await session.close()
+  }
 }
 
 export const mcpReadResource = async (
@@ -269,14 +274,21 @@ export const mcpReadResource = async (
   uri: string,
   options?: RemoteMcpOptions,
 ): Promise<McpResourceContent[]> => {
-  await assertNotManifestOnlyUrl(url, options)
-  await using session = await createRemoteMcpSession(url, options)
-  return session.readResource(uri)
+  const session = await createRemoteMcpSession(url, options)
+  try {
+    return await session.readResource(uri)
+  } finally {
+    await session.close()
+  }
 }
 
 export const mcpDiscover = async (url: string, options?: RemoteMcpOptions): Promise<McpServerCapabilities> => {
   const capabilities = await getRemoteManifestCapabilities(url, options)
   if (capabilities) return capabilities
-  await using session = await createRemoteMcpSession(url, options)
-  return session.discover()
+  const session = await createRemoteMcpSession(url, options)
+  try {
+    return await session.discover()
+  } finally {
+    await session.close()
+  }
 }

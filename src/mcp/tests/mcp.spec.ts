@@ -3,6 +3,7 @@ import { createRemoteMcpSession, mcpCallTool, mcpListTools, remoteMcpConnect } f
 
 const MCP_DOCS_URL = 'https://modelcontextprotocol.io/mcp'
 const AGENT_SKILLS_URL = 'https://agentskills.io/mcp'
+const SLOW_REMOTE_TIMEOUT_MS = 15_000
 
 describe('remoteMcpConnect', () => {
   test('connects to mcp-docs server', async () => {
@@ -42,14 +43,23 @@ describe('mcpCallTool', () => {
     expect(first?.type).toBe('text')
   })
 
-  test('searches agent-skills for SKILL.md', async () => {
-    const result = await mcpCallTool(AGENT_SKILLS_URL, 'search_agent_skills', {
-      query: 'SKILL.md frontmatter',
-    })
-    expect(result.content.length).toBeGreaterThan(0)
-    const first = result.content[0]
-    expect(first?.type).toBe('text')
-  })
+  test(
+    'searches agent-skills for SKILL.md',
+    async () => {
+      const result = await mcpCallTool(
+        AGENT_SKILLS_URL,
+        'search_agent_skills',
+        {
+          query: 'SKILL.md frontmatter',
+        },
+        { timeoutMs: SLOW_REMOTE_TIMEOUT_MS },
+      )
+      expect(result.content.length).toBeGreaterThan(0)
+      const first = result.content[0]
+      expect(first?.type).toBe('text')
+    },
+    { timeout: SLOW_REMOTE_TIMEOUT_MS },
+  )
 })
 
 describe('createRemoteMcpSession', () => {
