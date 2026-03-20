@@ -83,10 +83,29 @@ This is the priority lane for Falcon/self-distillation.
 ## Slice Progression
 
 - Slice 1: eval themes, rubric, and retained-output format design
-- Slice 2: small-scale validation of eval design and output shape
+- Slice 2: small-scale trial-based validation of eval design and output shape
 - Slice 3: result analysis and curation
 - Slice 4: Falcon fine-tuning
 - Slice 5: evaluation and success metrics
+
+## Execution Model
+
+This lane should not default to the current bounded repo autoresearch harness.
+
+Use the following execution split:
+
+- `scripts/dev-autoresearch.ts`
+  - for bounded framework code improvement inside the repo
+  - stop-on-first-keep behavior is acceptable there
+- `src/improve/trial.ts` and related trial infrastructure
+  - for native-model validation, sampling, pass@k analysis, and retained-output
+    collection
+  - supports repeated prompt execution without pretending each attempt is a
+    repo mutation
+
+Native-model evaluation should primarily use the trial layer.
+Repo autoresearch may still help with scaffolding around the lane, but it is
+not the main collection engine.
 
 ## Data Provenance Requirements
 
