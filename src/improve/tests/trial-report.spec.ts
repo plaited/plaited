@@ -88,7 +88,10 @@ describe('summarizeTrialResults', () => {
     expect(summary.passRate).toBeCloseTo(0.667, 3)
     expect(summary.averageScore).toBeCloseTo(0.7, 3)
     expect(summary.eligibleTrials).toBe(1)
+    expect(summary.ineligibleTrials).toBe(2)
     expect(summary.eligibleRate).toBeCloseTo(0.333, 3)
+    expect(summary.prompts[0]?.failedTrials).toBe(1)
+    expect(summary.prompts[0]?.ineligibleTrials).toBe(1)
     expect(summary.prompts[0]?.retentionLabels.retain_for_distillation).toBe(1)
     expect(summary.prompts[0]?.retentionLabels.reject).toBe(1)
     expect(summary.themes[1]?.themeId).toBe('mss-grounded-module-generation')
@@ -104,6 +107,7 @@ describe('formatTrialSummary', () => {
       failedTrials: 1,
       passRate: 0.5,
       eligibleTrials: 1,
+      ineligibleTrials: 1,
       eligibleRate: 0.5,
       averageScore: 0.75,
       prompts: [
@@ -113,8 +117,10 @@ describe('formatTrialSummary', () => {
           taskType: 'module-outline',
           totalTrials: 2,
           passedTrials: 1,
+          failedTrials: 1,
           passRate: 0.5,
           eligibleTrials: 1,
+          ineligibleTrials: 1,
           averageScore: 0.75,
           retentionLabels: {
             retain_for_review: 1,
@@ -127,8 +133,10 @@ describe('formatTrialSummary', () => {
           promptCount: 1,
           totalTrials: 2,
           passedTrials: 1,
+          failedTrials: 1,
           passRate: 0.5,
           eligibleTrials: 1,
+          ineligibleTrials: 1,
           averageScore: 0.75,
           retentionLabels: {
             retain_for_review: 1,
@@ -139,7 +147,10 @@ describe('formatTrialSummary', () => {
 
     expect(output).toContain('# Trial Summary')
     expect(output).toContain('## By Prompt')
+    expect(output).toContain('Validation passed trials: 1')
+    expect(output).toContain('Training-eligible trials: 1')
     expect(output).toContain('module-1: theme=mss-grounded-module-generation')
+    expect(output).toContain('validation=1/2 (0.500)')
     expect(output).toContain('retain_for_review=1')
   })
 })

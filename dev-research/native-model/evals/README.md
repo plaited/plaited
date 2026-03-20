@@ -18,13 +18,15 @@ is intentionally lightweight and externalized in
 ## Run It
 
 ```bash
-bun run native-model:validate -- --adapter ./scripts/falcon-h1r-mlx-adapter.ts
+bun run native-model:validate -- --adapter ./scripts/falcon-h1r-mlx-adapter.ts --timeout 90000
 ```
 
 You can swap in any other trial adapter that follows the same contract:
 
 ```bash
-NATIVE_MODEL_ADAPTER=./scripts/falcon-h1r-mlx-adapter.ts bun run native-model:validate
+NATIVE_MODEL_ADAPTER=./scripts/falcon-h1r-mlx-adapter.ts \
+NATIVE_MODEL_VALIDATION_TIMEOUT_MS=90000 \
+bun run native-model:validate
 ```
 
 ## Artifacts
@@ -33,8 +35,8 @@ Each run writes a timestamped folder under `./runs/` with:
 
 - `run.json` — config and provenance for the batch
 - `results.jsonl` — raw `TrialResult` records from the trial layer
-- `summary.md` — human-readable pass-rate and score summary
-- `summary.json` — machine-readable aggregated summary
+- `summary.md` — human-readable summary split into validation success and training eligibility
+- `summary.json` — machine-readable aggregated summary with the same split
 
 These artifacts are intended to be easy to inspect without digging into
 internal runner state.

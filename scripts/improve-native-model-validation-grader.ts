@@ -37,6 +37,12 @@ const isStringArray = (value: unknown): value is string[] => {
   return Array.isArray(value) && value.every((item) => typeof item === 'string')
 }
 
+const normalizeSignalText = (value: string): string =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+
 const getMetadata = (metadata: Record<string, unknown> | undefined): NativeModelJudgeMetadata => {
   const rawJudge = metadata?.judge
   const judge = rawJudge && typeof rawJudge === 'object' ? (rawJudge as Record<string, unknown>) : undefined
@@ -69,8 +75,16 @@ const scoreSignals = (
     }
   }
 
-  const matched = signals.filter((signal) => haystack.includes(signal.toLowerCase()))
-  const missing = signals.filter((signal) => !haystack.includes(signal.toLowerCase()))
+  const normalizedHaystack = normalizeSignalText(haystack)
+  const matched = signals.filter((signal) => {
+    const alternatives = signal
+      .split('|')
+      .map((candidate) => normalizeSignalText(candidate))
+      .filter(Boolean)
+
+    return alternatives.some((candidate) => normalizedHaystack.includes(candidate))
+  })
+  const missing = signals.filter((signal) => !matched.includes(signal))
 
   return {
     score: matched.length / signals.length,

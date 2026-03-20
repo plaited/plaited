@@ -5,6 +5,7 @@ import { grade } from './improve-native-model-validation-grader.ts'
 
 const DEFAULT_K = 2
 const DEFAULT_CONCURRENCY = 1
+const DEFAULT_BATCH_TIMEOUT = Number(process.env.NATIVE_MODEL_VALIDATION_TIMEOUT_MS ?? 90_000)
 const DEFAULT_PROMPTS_PATH = `${import.meta.dir}/../dev-research/native-model/evals/slice-3-validation-prompts.jsonl`
 const DEFAULT_RUNS_DIR = `${import.meta.dir}/../dev-research/native-model/evals/runs`
 
@@ -15,6 +16,7 @@ type ValidationDriverOptions = {
   runId?: string
   k: number
   concurrency: number
+  timeout: number
   progress: boolean
 }
 
@@ -29,10 +31,13 @@ Optional:
   --run-id <value>        Stable run folder name
   --k <number>            Trials per prompt (default: 2)
   --concurrency <number>  Worker concurrency (default: 1)
+  --timeout <ms>          Default per-prompt timeout in ms (default: ${DEFAULT_BATCH_TIMEOUT})
   --no-progress           Disable stderr progress logging
 
 Environment:
   NATIVE_MODEL_ADAPTER    Adapter path fallback when --adapter is omitted
+  NATIVE_MODEL_VALIDATION_TIMEOUT_MS
+                           Timeout fallback when --timeout is omitted
 `
 
 const takeValue = (args: string[], index: number, flag: string): string => {
@@ -51,6 +56,7 @@ const parseArgs = (args: string[]): ValidationDriverOptions => {
     outputDir: DEFAULT_RUNS_DIR,
     k: DEFAULT_K,
     concurrency: DEFAULT_CONCURRENCY,
+    timeout: DEFAULT_BATCH_TIMEOUT,
     progress: true,
   }
 
@@ -132,6 +138,17 @@ const parseArgs = (args: string[]): ValidationDriverOptions => {
       continue
     }
 
+    if (arg === '--timeout') {
+      options.timeout = Number(takeValue(args, index, arg))
+      index += 1
+      continue
+    }
+
+    if (arg.startsWith('--timeout=')) {
+      options.timeout = Number(arg.slice('--timeout='.length))
+      continue
+    }
+
     if (arg === '--no-progress') {
       options.progress = false
       continue
@@ -158,6 +175,10 @@ const parseArgs = (args: string[]): ValidationDriverOptions => {
 
   if (!Number.isFinite(options.concurrency) || options.concurrency < 1) {
     throw new Error(`Invalid concurrency value: ${options.concurrency}`)
+  }
+
+  if (!Number.isFinite(options.timeout) || options.timeout < 1) {
+    throw new Error(`Invalid timeout value: ${options.timeout}`)
   }
 
   return options
@@ -194,6 +215,7 @@ const run = async () => {
     grader: grade,
     k: options.k,
     outputPath: resultsPath,
+    timeout: options.timeout,
     concurrency: options.concurrency,
     progress: options.progress,
   })
@@ -211,6 +233,7 @@ const run = async () => {
     config: {
       k: options.k,
       concurrency: options.concurrency,
+      timeout: options.timeout,
       progress: options.progress,
     },
   }

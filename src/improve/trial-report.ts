@@ -65,8 +65,10 @@ export type TrialPromptSummary = {
   taskType?: string
   totalTrials: number
   passedTrials: number
+  failedTrials: number
   passRate?: number
   eligibleTrials: number
+  ineligibleTrials: number
   averageScore?: number
   retentionLabels: Record<string, number>
 }
@@ -76,8 +78,10 @@ export type TrialThemeSummary = {
   promptCount: number
   totalTrials: number
   passedTrials: number
+  failedTrials: number
   passRate?: number
   eligibleTrials: number
+  ineligibleTrials: number
   averageScore?: number
   retentionLabels: Record<string, number>
 }
@@ -89,6 +93,7 @@ export type TrialRunSummary = {
   failedTrials: number
   passRate?: number
   eligibleTrials: number
+  ineligibleTrials: number
   eligibleRate?: number
   averageScore?: number
   prompts: TrialPromptSummary[]
@@ -124,10 +129,12 @@ export const summarizeTrialResults = (results: TrialResult[]): TrialRunSummary =
         taskType: getMetadataString(result, ['taskType', 'task_type']),
         totalTrials: result.trials.length,
         passedTrials,
+        failedTrials: result.trials.length - passedTrials,
         passRate: round(
           result.passRate ?? (result.trials.length > 0 ? passedTrials / result.trials.length : undefined),
         ),
         eligibleTrials,
+        ineligibleTrials: result.trials.length - eligibleTrials,
         averageScore: round(average(scores)),
         retentionLabels,
       }
@@ -146,7 +153,9 @@ export const summarizeTrialResults = (results: TrialResult[]): TrialRunSummary =
       promptCount: 0,
       totalTrials: 0,
       passedTrials: 0,
+      failedTrials: 0,
       eligibleTrials: 0,
+      ineligibleTrials: 0,
       retentionLabels: {},
       scoreValues: [],
     }
@@ -154,7 +163,9 @@ export const summarizeTrialResults = (results: TrialResult[]): TrialRunSummary =
     existing.promptCount += 1
     existing.totalTrials += result.trials.length
     existing.passedTrials += result.trials.filter((trial) => trial.pass === true).length
+    existing.failedTrials = existing.totalTrials - existing.passedTrials
     existing.eligibleTrials += result.trials.filter((trial) => trial.trainingAssessment?.eligible === true).length
+    existing.ineligibleTrials = existing.totalTrials - existing.eligibleTrials
 
     for (const trial of result.trials) {
       if (typeof trial.score === 'number') {
@@ -191,6 +202,7 @@ export const summarizeTrialResults = (results: TrialResult[]): TrialRunSummary =
     failedTrials: totalTrials - passedTrials,
     passRate: round(totalTrials > 0 ? passedTrials / totalTrials : undefined),
     eligibleTrials,
+    ineligibleTrials: totalTrials - eligibleTrials,
     eligibleRate: round(totalTrials > 0 ? eligibleTrials / totalTrials : undefined),
     averageScore,
     prompts: promptSummaries,
@@ -225,11 +237,12 @@ export const formatTrialSummary = (summary: TrialRunSummary): string => {
     '',
     `- Prompts: ${summary.promptCount}`,
     `- Trials: ${summary.totalTrials}`,
-    `- Passed trials: ${summary.passedTrials}`,
-    `- Failed trials: ${summary.failedTrials}`,
-    `- Pass rate: ${formatNumber(summary.passRate)}`,
-    `- Eligible trials: ${summary.eligibleTrials}`,
-    `- Eligible rate: ${formatNumber(summary.eligibleRate)}`,
+    `- Validation passed trials: ${summary.passedTrials}`,
+    `- Validation failed trials: ${summary.failedTrials}`,
+    `- Validation pass rate: ${formatNumber(summary.passRate)}`,
+    `- Training-eligible trials: ${summary.eligibleTrials}`,
+    `- Training-ineligible trials: ${summary.ineligibleTrials}`,
+    `- Training eligible rate: ${formatNumber(summary.eligibleRate)}`,
     `- Average score: ${formatNumber(summary.averageScore)}`,
     '',
     '## By Prompt',
@@ -238,7 +251,7 @@ export const formatTrialSummary = (summary: TrialRunSummary): string => {
 
   for (const prompt of summary.prompts) {
     lines.push(
-      `- ${prompt.id}: theme=${prompt.themeId ?? 'n/a'}, task=${prompt.taskType ?? 'n/a'}, passRate=${formatNumber(prompt.passRate)}, avgScore=${formatNumber(prompt.averageScore)}, labels=${formatLabelCounts(prompt.retentionLabels)}`,
+      `- ${prompt.id}: theme=${prompt.themeId ?? 'n/a'}, task=${prompt.taskType ?? 'n/a'}, validation=${prompt.passedTrials}/${prompt.totalTrials} (${formatNumber(prompt.passRate)}), trainingEligible=${prompt.eligibleTrials}/${prompt.totalTrials}, avgScore=${formatNumber(prompt.averageScore)}, labels=${formatLabelCounts(prompt.retentionLabels)}`,
     )
   }
 
@@ -246,7 +259,7 @@ export const formatTrialSummary = (summary: TrialRunSummary): string => {
     lines.push('', '## By Theme', '')
     for (const theme of summary.themes) {
       lines.push(
-        `- ${theme.themeId}: prompts=${theme.promptCount}, passRate=${formatNumber(theme.passRate)}, avgScore=${formatNumber(theme.averageScore)}, labels=${formatLabelCounts(theme.retentionLabels)}`,
+        `- ${theme.themeId}: prompts=${theme.promptCount}, validation=${theme.passedTrials}/${theme.totalTrials} (${formatNumber(theme.passRate)}), trainingEligible=${theme.eligibleTrials}/${theme.totalTrials}, avgScore=${formatNumber(theme.averageScore)}, labels=${formatLabelCounts(theme.retentionLabels)}`,
       )
     }
   }

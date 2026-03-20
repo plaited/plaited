@@ -1,80 +1,60 @@
-# Slice 4: Falcon Fine-Tuning
+# Slice 4: Native-Model Validation Calibration
 
 ## Target
 
-Fine-tune a Falcon-family base model on curated Plaited-native training data
-from Slice 3.
+Calibrate the first native-model validation path so it produces stable
+validation signals without overstating curation or training readiness.
+
+This slice should respond directly to the first real validation run:
+
+- timeout instability on one prompt
+- prompt/grader mismatch for the module-outline theme
+- reporting that does not clearly separate validation success from training
+  eligibility
 
 ## Scope
 
-- Load curated dataset from Slice 3
-- Train a Falcon-family model using parameter-efficient fine-tuning
-- Save checkpoint for evaluation (Slice 5)
-- Log training metrics: loss, convergence, token efficiency
+- `./package.json`
+- `src/improve.ts`
+- `src/improve/`
+- `scripts/`
+- `dev-research/native-model/`
+- `dev-research/native-model/evals/`
 
 ## Required
 
-- Curated training data from Slice 3
-- Falcon-family base model available locally
-- Training stack chosen for the actual hardware in use
-  - QLoRA is the default baseline
-  - See `scripts/VLLM_SETUP.md` only if the selected environment needs it
-- Local compute suitable for fine-tuning
-- Training script with:
-  - Data loading from JSONL
-  - LoRA rank/alpha hyperparameters
-  - Learning rate, batch size, epochs
-  - Checkpoint saving to a stable model output path
+- make timeout behavior configurable and appropriate for the validation batch
+- tighten the fit between the module-outline prompt and its grading signals
+- distinguish validation-pass reporting from training-eligibility reporting
+- preserve the small-batch validation workflow added in Slice 3
 
 ## Preserve
 
-- Base model integrity (only adaptation weights modified)
-- Training data integrity (read-only from Slice 3)
-- Reproducibility (seed, hyperparams logged)
+- the validation driver remains trial-layer based
+- prompt count remains intentionally small
+- provider-specific model bindings remain in `scripts/`
+- training eligibility remains stricter than validation success
 
 ## Avoid
 
-- Full parameter fine-tune unless a later phase explicitly justifies it
-- Overfitting to a small curated dataset
-- Training so long that model memorizes corpus
-- Discarding base model weights (needed for fallback)
+- expanding into broad corpus collection
+- treating prompt calibration as a full native-model data pipeline
+- hiding validation failure reasons behind one aggregate score
+- lowering thresholds just to manufacture training eligibility
 
 ## Acceptance Criteria
 
-- Training completes without errors
-- Checkpoint saved with LoRA weights
-- Baseline and fine-tuned models can both run inference on the target setup
-- Training logs show convergence (loss decreasing)
-- At least 1 epoch completed on the curated dataset
-- Hyperparameters and environment details are recorded with the output
+- the validation driver can run with an explicit timeout suitable for the batch
+- the module-outline prompt/grader pairing no longer fails for avoidable
+  calibration reasons
+- summaries and outputs clearly distinguish:
+  - validation pass/fail
+  - retention label
+  - training eligibility
+- the resulting validation batch gives a more trustworthy signal for whether
+  native-model Slice 2 is ready to proceed
 
-## Hyperparameters (Baseline)
+## Notes
 
-```
-Model: Falcon-family base model
-Method: QLoRA
-LoRA rank: 8
-LoRA alpha: 32
-Learning rate: 2e-4
-Batch size: 4 (per-device)
-Epochs: 1-3
-Max seq length: 2048
-```
-
-## Input Dataset
-
-Expected source:
-
-- `./dev-research/native-model/evals/curated-good-outputs.jsonl`
-
-If a different stable path is chosen, document it together with the training
-run so Slice 5 can reproduce the comparison.
-
-## Output
-
-**File:** stable model output path chosen for the training run
-
-Contains:
-- LoRA weights (rank 8, alpha 32)
-- Training metadata (hyperparams, data count, loss)
-- Timestamp and git commit hash
+This slice is calibration work on top of the new driver, not a new execution
+model.
