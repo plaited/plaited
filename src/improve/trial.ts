@@ -12,8 +12,8 @@
 
 import * as z from 'zod'
 import { parseCli } from '../tools/cli.utils.ts'
-import { DEFAULT_K, DEFAULT_TIMEOUT } from './trial.constants.ts'
 import { assessTrainingCandidate } from './training.ts'
+import { DEFAULT_K, DEFAULT_TIMEOUT } from './trial.constants.ts'
 import type { Adapter, Grader, PromptCase, TrialEntry, TrialResult } from './trial.schemas.ts'
 import { TrialResultSchema } from './trial.schemas.ts'
 import {
@@ -134,12 +134,18 @@ export const runTrial = async (config: TrialConfig): Promise<TrialResult[]> => {
         : cwd
 
       const start = Date.now()
+      let timeoutId: ReturnType<typeof setTimeout> | undefined
 
       try {
-        const adapterResult = await Promise.race([
-          adapter({ prompt: promptCase.input, cwd: promptCwd }),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Trial timed out')), effectiveTimeout)),
-        ])
+        const adapterPromise = adapter({ prompt: promptCase.input, cwd: promptCwd })
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error('Trial timed out')), effectiveTimeout)
+        })
+        const adapterResult = await Promise.race([adapterPromise, timeoutPromise])
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = undefined
+        }
 
         const duration = Date.now() - start
 
@@ -189,6 +195,10 @@ export const runTrial = async (config: TrialConfig): Promise<TrialResult[]> => {
           progress,
         )
       } catch (error) {
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = undefined
+        }
         const duration = Date.now() - start
         const isTimeout = error instanceof Error && error.message === 'Trial timed out'
 

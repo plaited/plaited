@@ -84,9 +84,8 @@ This is the priority lane for Falcon/self-distillation.
 
 - Slice 1: eval themes, rubric, and retained-output format design
 - Slice 2: small-scale trial-based validation of eval design and output shape
-- Slice 3: result analysis and curation
-- Slice 4: Falcon fine-tuning
-- Slice 5: evaluation and success metrics
+- Slice 3: first executable native-model validation driver on top of the trial layer
+- Later slices: result curation, Falcon fine-tuning, and success-metric evaluation
 
 ## Execution Model
 

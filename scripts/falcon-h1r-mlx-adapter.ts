@@ -123,54 +123,57 @@ export const adapt: Adapter = async ({ prompt }) => {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), FALCON_TIMEOUT_MS)
 
-    const response = await fetch(`${FALCON_BASE_URL}/v1/chat/completions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: FALCON_MODEL,
-        messages,
-        max_tokens: FALCON_MAX_TOKENS,
-        temperature: FALCON_TEMPERATURE,
-        stream: false,
-      }),
-      signal: controller.signal,
-    })
-
-    clearTimeout(timeout)
-    const elapsed = Date.now() - start
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      return {
-        output: `MLX server error (${response.status}): ${errorText}`,
-        timing: { total: elapsed },
-        exitCode: 1,
-      }
-    }
-
-    const completion = (await response.json()) as ChatCompletionResponse
-    const output = completion.choices[0]?.message.content ?? ''
-    const finishReason = completion.choices[0]?.finish_reason
-
-    // Record the response as a trajectory message
-    trajectory.push({
-      type: 'message',
-      content: output,
-      timestamp: Date.now(),
-    })
-
-    result = {
-      output,
-      trajectory,
-      timing: {
-        total: elapsed,
-        ...(completion.usage && {
-          inputTokens: completion.usage.prompt_tokens,
-          outputTokens: completion.usage.completion_tokens,
+    try {
+      const response = await fetch(`${FALCON_BASE_URL}/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: FALCON_MODEL,
+          messages,
+          max_tokens: FALCON_MAX_TOKENS,
+          temperature: FALCON_TEMPERATURE,
+          stream: false,
         }),
-      },
-      exitCode: 0,
-      timedOut: finishReason === 'length',
+        signal: controller.signal,
+      })
+
+      const elapsed = Date.now() - start
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        return {
+          output: `MLX server error (${response.status}): ${errorText}`,
+          timing: { total: elapsed },
+          exitCode: 1,
+        }
+      }
+
+      const completion = (await response.json()) as ChatCompletionResponse
+      const output = completion.choices[0]?.message.content ?? ''
+      const finishReason = completion.choices[0]?.finish_reason
+
+      // Record the response as a trajectory message
+      trajectory.push({
+        type: 'message',
+        content: output,
+        timestamp: Date.now(),
+      })
+
+      result = {
+        output,
+        trajectory,
+        timing: {
+          total: elapsed,
+          ...(completion.usage && {
+            inputTokens: completion.usage.prompt_tokens,
+            outputTokens: completion.usage.completion_tokens,
+          }),
+        },
+        exitCode: 0,
+        timedOut: finishReason === 'length',
+      }
+    } finally {
+      clearTimeout(timeout)
     }
   } catch (error) {
     const elapsed = Date.now() - start

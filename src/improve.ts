@@ -75,12 +75,10 @@ export {
   trainingScoreCli,
   withStatisticalVerification,
 } from './improve/training.ts'
-
 export {
   DEFAULT_K,
   DEFAULT_TIMEOUT,
 } from './improve/trial.constants.ts'
-
 export {
   type Adapter,
   type AdapterInput,
@@ -104,7 +102,6 @@ export {
   type TrialResult,
   TrialResultSchema,
 } from './improve/trial.schemas.ts'
-
 export {
   calculatePassAtK,
   calculatePassExpK,
@@ -114,12 +111,19 @@ export {
   TrialOutputSchema,
   trialCli,
 } from './improve/trial.ts'
-
 export {
   loadAdapter,
   loadGrader,
   loadJsonl,
+  loadPrompts,
   persistTrialResults,
   type Verifier,
   withMetaVerification,
 } from './improve/trial.utils.ts'
+export {
+  formatTrialSummary,
+  summarizeTrialResults,
+  type TrialPromptSummary,
+  type TrialRunSummary,
+  type TrialThemeSummary,
+} from './improve/trial-report.ts'
