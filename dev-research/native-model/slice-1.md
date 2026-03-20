@@ -44,40 +44,215 @@ It is not a keep/revise/discard autoresearch run.
 - the next slice can validate the eval design without requiring
   prompt-generation autoresearch
 
+## Eval Design Principles
+
+- Prefer Plaited-native tasks over generic coding benchmarks.
+- Prefer tasks that require end-to-end reasoning across structure, runtime,
+  UI, and governance.
+- Treat module generation as the primary evaluation center of gravity.
+- Reuse existing Plaited prompt assets where possible instead of inventing
+  synthetic benchmark families from scratch.
+- Keep external web research optional and secondary to repo-grounded tasks.
+
 ## Eval Themes
 
-**1. Module Generation (BP-shaped)**
-- Generate a Plaited module with BP-shaped actors and UI
+The first validation set should be organized around these eight themes.
 
-**2. UI Generation (Controller-compatible)**
-- Generate controller-compatible UI for a Plaited intent
+**1. MSS-grounded module generation**
+- Generate a small Plaited module with correct MSS tags, package structure,
+  and agent-facing guidance.
+- Seed from:
+  - `skills/modnet-modules/assets/prompts.jsonl`
+  - `skills/mss-vocabulary/`
 
-**3. Runtime Wiring (Coordination)**
-- Emit coordination logic with correct behavioral thread semantics
+**2. Controller-compatible UI generation**
+- Generate controller-compatible UI for a bounded user intent.
+- Must align with Plaited's generative UI/controller model rather than generic
+  SPA assumptions.
 
-**4. Constitution & Memory**
-- Add constitution-aware bridge-code that respects `.memory/` conventions
+**3. Runtime wiring and BP coordination**
+- Emit runtime wiring with correct behavioral thread semantics, event flow,
+  and link usage.
+- Must use Plaited runtime concepts rather than generic async orchestration.
 
-**5. Actor vs Sub-Agent Decision**
-- Decide whether task X should be actor, sub-agent, or team and justify it
+**4. Constitution-aware module or bridge-code changes**
+- Add or revise bridge-code that respects constitution, boundary policy, and
+  PM authority.
 
-**6. Plaited-Native Refactoring**
-- Refactor a module using git history and `.memory/` as context
+**5. Memory-aware continuation**
+- Continue or revise work using `.memory/` and git history as working context,
+  not as dead attachments.
+
+**6. Actor vs sub-agent vs team choice**
+- Decide whether a bounded task should remain local, become an actor, be
+  delegated to a sub-agent, or require a team.
+- Justification is part of the evaluation.
+
+**7. Plaited-native refactoring**
+- Refactor an existing module or runtime surface while preserving its
+  Plaited-native semantics.
+
+**8. End-to-end module plus UI plus runtime composition**
+- Produce a coherent result that connects structure, UI, and runtime wiring
+  together instead of solving them in isolation.
+
+## Theme Packaging
+
+For each theme, the retained eval case should eventually record:
+
+- `theme_id`
+- `theme_name`
+- `task_type`
+- `difficulty`
+- `seed_source`
+- `prompt`
+- optional `hint`
+- expected evaluation dimensions
+- whether the task is intended for:
+  - native-model distillation
+  - framework-only scaffolding
+  - mixed review but not distillation
 
 ## Judge Rubric
 
-Dimensions (0-1 scale):
+The primary judge should score each candidate on a 0-1 scale across these
+dimensions.
 
-- **Architecture:** follows Plaited patterns (BP, PM, MSS, constitution)
-- **Boundedness:** stays focused on one coherent concern
-- **Focus:** addresses the task intent without bloat
-- **Quality:** implementation correctness and completeness
+- **Plaited Alignment**
+  - Uses BP, PM, MSS, constitution, `.memory/`, and node concepts correctly.
+- **Task Fulfillment**
+  - Solves the stated task without drifting into unrelated output.
+- **Structural Correctness**
+  - Produces correct files, schemas, tags, and module/runtime shape.
+- **Dynamic Correctness**
+  - Runtime/UI behavior is plausible and internally coherent.
+- **Distillation Suitability**
+  - The output is clean and informative enough to be useful training data.
+
+### Judge Thresholds
+
+- `retain_for_review`
+  - overall score `>= 0.80`
+  - no single dimension `< 0.65`
+- `retain_for_distillation`
+  - overall score `>= 0.85`
+  - `Plaited Alignment >= 0.85`
+  - `Distillation Suitability >= 0.85`
+- `reject`
+  - overall score `< 0.80`
+  - or any critical dimension `< 0.65`
+
+The judge should also emit short free-text reasons for:
+
+- strongest success
+- most important flaw
+- whether the output is:
+  - scaffolding-only
+  - native-distillation-eligible
+  - unsuitable for retention
 
 ## Meta-Verifier Rubric
 
-- **Consistency:** reasoning matches the produced result
-- **Risk:** important gaps or safety issues are surfaced
-- **Confidence:** confidence in the primary judge's assessment
+- **Consistency**
+  - The judge's explanation matches the actual output.
+- **Risk**
+  - Safety, architecture, or evaluation risks are surfaced honestly.
+- **Confidence**
+  - Confidence that the judge result is safe to trust for curation decisions.
+
+### Meta-Verifier Thresholds
+
+- `trust_high`
+  - confidence `>= 0.85`
+  - risk `<= 0.20`
+- `trust_with_review`
+  - confidence `>= 0.75`
+  - risk `<= 0.35`
+- `do_not_retain_without_human_review`
+  - confidence `< 0.75`
+  - or risk `> 0.35`
+
+## Retained-Output Format
+
+Retained outputs for later curation should be captured in JSONL with fields
+like:
+
+```json
+{
+  "id": "native-eval-001",
+  "theme_id": "module-generation",
+  "task_type": "module_ui_runtime",
+  "producer_model": "codex-cli",
+  "judge_model": "claude-sonnet",
+  "meta_verifier_model": "claude-haiku",
+  "improvement_lane": "native_producer_behavior",
+  "prompt": "...",
+  "output_summary": "...",
+  "artifact_paths": [],
+  "judge": {
+    "overall_score": 0.88,
+    "dimensions": {
+      "plaited_alignment": 0.90,
+      "task_fulfillment": 0.87,
+      "structural_correctness": 0.86,
+      "dynamic_correctness": 0.84,
+      "distillation_suitability": 0.91
+    },
+    "retention_label": "retain_for_distillation"
+  },
+  "meta_verifier": {
+    "confidence": 0.89,
+    "risk": 0.12,
+    "consistency": 0.92,
+    "trust_label": "trust_high"
+  },
+  "suitability": {
+    "framework_improvement": false,
+    "native_model_distillation": true,
+    "ui_module_corpus": true,
+    "constitution_governance_corpus": false
+  }
+}
+```
+
+At minimum, retained outputs must preserve:
+
+- task and theme identity
+- producer/judge/meta-verifier provenance
+- judge dimension scores and retention label
+- meta-verifier trust signal
+- suitability labels for later curation
+
+## Slice 2 Validation Plan
+
+Slice 2 should validate this design with a small manual or semi-manual sample:
+
+- 1 to 2 cases per theme
+- mixed difficulty
+- direct execution against real tasks
+- no prompt-generation autoresearch loop
+
+Slice 2 should answer:
+
+- are the themes distinct enough to avoid collapse into one generic task type?
+- do the judge dimensions separate good Plaited-native outputs from generic
+  but plausible coding outputs?
+- do the retained-output fields capture enough signal for later curation?
+- which themes are immediately good distillation candidates versus only useful
+  for scaffolding?
+
+## External Research Inputs
+
+External research APIs such as You.com Search or Research can be useful later
+for:
+
+- finding public product/task patterns
+- collecting realistic user-intent phrasing
+- grounding domain-specific prompts
+
+They should not define the Slice 1 foundation.
+Slice 1 should be anchored in Plaited's own ontology, current skills, runtime
+surfaces, and module patterns first.
 
 ## Output
 
