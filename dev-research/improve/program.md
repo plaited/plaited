@@ -104,6 +104,7 @@ Before committing a change in this lane:
 
 - Slice 1: separate model-agnostic improvement orchestration from provider-specific adapters and judges
 - Slice 2: define trial-oriented judge/meta-verifier boundaries and retained-output labels
+- Slice 3: build the first native-model validation driver on top of the trial layer
 
 ## Acceptance Criteria
 
