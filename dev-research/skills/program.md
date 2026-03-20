@@ -15,6 +15,8 @@ discovers, validates, evaluates, and improves those skills.
   - local framework/runtime/autoresearch infrastructure
 - `dev-research/skills/program.md`
   - skill discovery, validation, evaluation, and improvement workflows
+- `dev-research/improve/program.md`
+  - generic improvement substrate and model-agnostic improvement protocol
 - `dev-research/native-model/program.md`
   - Falcon/native-model behavior and distillation
 - `dev-research/modnet/program.md`
