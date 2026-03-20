@@ -58,6 +58,15 @@ over baseline on Plaited-native evaluation tasks.
 - fine-tuning compute cost
 - evaluation cost
 
+## Eval-Set Expectations
+
+The held-out eval set should:
+
+- be represented in the same general task language as Slice 1 themes
+- not overlap with the curated training set from Slice 3
+- be executable through the same trial/eval substrate used for validation
+- include enough cases to expose regressions, not just best-case wins
+
 ## Next Steps (if success)
 
 - Scale data collection with the validated eval design

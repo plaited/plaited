@@ -103,6 +103,7 @@ Before committing a change in this lane:
 ## Initial Slice Progression
 
 - Slice 1: separate model-agnostic improvement orchestration from provider-specific adapters and judges
+- Slice 2: define trial-oriented judge/meta-verifier boundaries and retained-output labels
 
 ## Acceptance Criteria
 

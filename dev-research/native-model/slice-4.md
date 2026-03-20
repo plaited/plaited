@@ -61,6 +61,15 @@ Epochs: 1-3
 Max seq length: 2048
 ```
 
+## Input Dataset
+
+Expected source:
+
+- `./dev-research/native-model/evals/curated-good-outputs.jsonl`
+
+If a different stable path is chosen, document it together with the training
+run so Slice 5 can reproduce the comparison.
+
 ## Output
 
 **File:** stable model output path chosen for the training run
