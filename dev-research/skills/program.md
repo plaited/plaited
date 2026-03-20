@@ -57,6 +57,24 @@ This lane should improve:
 - Keep skills AgentSkills-aligned and portable.
 - Put shared runtime/tooling substrate in `src/`, not in skill-local scripts.
 
+## Fixed Architecture
+
+These decisions are already made. Do not change them.
+
+- Skills remain AgentSkills-spec compatible and portable.
+- Progressive disclosure is the loading model.
+- Validation is structural; evaluation is behavioral.
+- Skill improvements use the improve/protocol.ts infrastructure, not custom runners.
+- Shared tooling lives in `src/tools/`, skill-specific work lives in `skills/`.
+
+## Runtime Taxonomy
+
+This lane operates on:
+
+- `src/tools/skill-*.ts` — framework tooling for discovery, validation, evaluation
+- `skills/` — individual skill implementations
+- `src/improve/protocol.ts` — reused for skill trial/eval infrastructure
+
 ## Validation Split
 
 This program distinguishes:
