@@ -52,22 +52,99 @@ After that, a separate native-model lane focuses on making Falcon or another Pla
 
 **Experiment:** 3K trials on H100 cloud, 48-hour validation.
 
-**Setup:**
-```bash
-# 1. Rent H100 on Thunder Compute ($1.38/hr)
-# 2. Run autoresearch with codex-cli-adapter
-bun run research:overnight -- ./dev-research/native-model/slice-1.md \
-  --adapter ./scripts/codex-cli-adapter.ts \
-  --judge \
-  --max-attempts 30
+---
 
-# 3. Collect outputs (~100-300 quality samples from 3K trials)
-# 4. Fine-tune Falcon with collected data (QLoRA)
-# 5. Evaluate: baseline vs fine-tuned metrics
+## Step 1: Cloud Infrastructure Setup
+
+**1a. Sign up for Thunder Compute H100**
+- Go to https://www.thundercompute.com/
+- Create account, add payment method
+- Request H100 instance (spot pricing, ~$1.38/hr)
+- Note: API key and endpoint URL
+
+**1b. Set environment variables**
+```bash
+export THUNDER_COMPUTE_API_KEY="your-api-key"
+export THUNDER_COMPUTE_ENDPOINT="https://api.thundercompute.com/v1"
+export THUNDER_COMPUTE_MODEL="meta-llama/Llama-3.1-70B"  # or Falcon equiv
 ```
 
+---
+
+## Step 2: Cloud Adapter (✓ Complete)
+
+**Status:** `scripts/thunder-compute-adapter.ts` created
+
+Implements cloud-based inference for Thunder Compute H100 with:
+- HTTP client for Thunder Compute REST API
+- Batch queue (8-16 parallel requests) for throughput optimization
+- Exponential backoff retry logic (3 attempts, max)
+- Token usage tracking for cost measurement
+- Standard Adapter interface (AdapterInput/AdapterResult)
+- Timeout handling and graceful error recovery
+
+**What you need to do:**
+1. Sign up for Thunder Compute account at https://www.thundercompute.com/
+2. Get API key and endpoint URL
+3. Set environment variables (see Step 1b)
+4. Run the validation experiment (see Step 3)
+
+---
+
+## Step 3: Run Validation Experiment
+
+**3a. Dry run (no charges)**
+```bash
+bun run research:overnight -- ./dev-research/native-model/slice-1.md \
+  --adapter ./scripts/thunder-compute-adapter.ts \
+  --judge \
+  --dry-run \
+  --max-attempts 3
+```
+
+**3b. Full run (48 hours, $1,178)**
+```bash
+# Monitor Thunder Compute dashboard in parallel
+bun run research:overnight -- ./dev-research/native-model/slice-1.md \
+  --adapter ./scripts/thunder-compute-adapter.ts \
+  --judge \
+  --max-attempts 30
+```
+
+**3c. Collect results**
+```bash
+# After completion:
+# - Extract good outputs (judge score > 0.85) → /tmp/good-outputs.jsonl
+# - Log cost breakdown ($$$)
+# - Compare to baseline
+```
+
+---
+
+## Step 4: Fine-tune & Evaluate
+
+**4a. Fine-tune Falcon on collected data**
+```bash
+# Use collected outputs to fine-tune
+bun scripts/falcon-finetune.ts \
+  --data /tmp/good-outputs.jsonl \
+  --method qlora \
+  --model falcon-7b
+```
+
+**4b. Evaluate**
+```bash
+# Test baseline vs fine-tuned on benchmark
+bun scripts/eval-native-model.ts \
+  --baseline-model falcon-7b \
+  --finetuned-model falcon-7b-finetuned \
+  --test-set ./dev-research/native-model/evals/test-cases.jsonl
+```
+
+---
+
 **Expected Outcome:**
-- ✓ Generation works (Codex produces valid modules)
+- ✓ Generation works (H100 produces valid modules)
 - ✓ Judging works (Sonnet identifies quality)
 - ✓ Distillation works (fine-tuned model improves)
 - ✓ Unit economics clear (cost per good output)
