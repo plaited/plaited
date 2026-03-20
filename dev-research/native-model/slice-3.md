@@ -2,28 +2,26 @@
 
 ## Target
 
-Aggregate results from 8 parallel workers, filter for training suitability, emit curated dataset for Falcon fine-tuning.
+Aggregate collected native-model trial results, filter for training
+suitability, and emit a curated dataset for Falcon fine-tuning.
 
 ## Scope
 
-- Merge all worker branches (native-model-worker-1 through native-model-worker-8)
-- Collect trial metadata (judge scores, meta-verify confidence, trajectories)
+- collect trial metadata (judge scores, meta-verify confidence, trajectories)
 - Filter by: judge > 0.85, meta-verify confidence > 0.8, richness = full
 - Categorize by task type and suitability (native-model training vs framework improvement)
 - Emit `/tmp/good-outputs.jsonl` with curated examples
 
 ## Required
 
-- All 8 worker branches completed and committed
-- Trial data accessible (attempt DAGs, judge scores, trajectories)
-- Filtering logic: apply Slice 1 rubric thresholds
+- collected trial data accessible (attempt records, judge scores, trajectories)
+- filtering logic applies the validated rubric from earlier slices
 - Output format: JSONL with full context (input prompt, output code, scores, dimensions)
 
 ## Preserve
 
 - Do not modify trial data (read-only analysis)
-- Keep worker branches intact (for reproducibility)
-- Maintain provenance metadata (which worker, which attempt)
+- Maintain provenance metadata (source run, which attempt)
 - Distinguish Lane A (framework) from Lane B (native producer) suitability
 
 ## Avoid
@@ -35,12 +33,11 @@ Aggregate results from 8 parallel workers, filter for training suitability, emit
 
 ## Acceptance Criteria
 
-- All 3,000 trials collected and analyzed
-- ~300 outputs meet filtering criteria (judge > 0.85, confidence > 0.8, full trajectory)
+- collected trials are analyzed without data loss
+- outputs meeting the filtering criteria are retained in curated form
 - Curated dataset stored at `/tmp/good-outputs.jsonl`
-- Distribution analysis: pass rates per worker, per task type, per dimension
+- Distribution analysis: pass rates per task type and per dimension
 - Summary report: total cost, cost per quality output, confidence distribution
-- No data loss or corruption
 
 ## Output
 
@@ -49,7 +46,7 @@ Aggregate results from 8 parallel workers, filter for training suitability, emit
 Each line: JSONL object with:
 ```json
 {
-  "worker": "native-model-worker-1",
+  "source": "native-model-collection-run",
   "attempt": 42,
   "prompt": "...",
   "output": "...",
@@ -63,8 +60,8 @@ Each line: JSONL object with:
 ```
 
 **Summary metrics:**
-- Total trials: 3,000
-- Good outputs: ~300
-- Cost per quality output: ~$140 / 300 = ~$0.47
-- Worker quality variance: (range of pass rates across 8 workers)
+- Total trials: ?
+- Good outputs: ?
+- Cost per quality output: ?
+- Source quality variance: (range across collection runs or batches)
 - Task type distribution: % modules, % UI, % bridge-code, etc.

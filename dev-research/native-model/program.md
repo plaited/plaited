@@ -2,187 +2,147 @@
 
 ## Mission
 
-Train Falcon 7B to generate Plaited-native code through large-scale autoresearch data collection and distillation.
+Improve Plaited's native model behavior so it can generate Plaited-native UI,
+modules, and runtime wiring end-to-end.
 
-**Phase 1 PoC (this program):** Collect 3K high-quality code generation trials on MSI EdgeXpert, distill into Falcon 7B, validate improvement.
+This program is not for general framework refactoring.
+It is for improving the model that will operate inside Plaited's ontology:
+- BP-first orchestration
+- PM sovereignty
+- MSS structural objects
+- behavioral actors
+- sub-agents and teams
+- git + `.memory/` provenance
+- constitution-aware execution
 
-**Hardware:** MSI EdgeXpert (Grace Blackwell GB10, 128GB unified memory, local Codex CLI)
-**Timeline:** 2-4 hours (Slice 1 calibration) + 6-8 hours (Slices 2A-2H data collection) = **8-12 hours total wall-clock**
-**Cost:** ~$140-160 per run (Sonnet/Haiku judging only; Codex subscription amortized)
+## Separation From Framework Program
 
-## Separation From Other Lanes
+This program is distinct from the framework dev autoresearch program.
 
-This program is distinct from framework development and bounded improvement work.
+- Framework program:
+  - improves code, tooling, runtime, and harnesses
+  - frontier models may be primary workers
+- Native model program:
+  - improves the behavior of the model that will become a Plaited-native producer
+  - Falcon/self-distillation is expected to be primary over time
 
-- **Framework program** (`dev-research/runtime-taxonomy/`)
-  - Improves runtime, tooling, harnesses
-  - One attempt at a time, human review
-- **Native-model program** (this program)
-  - Collects 3K+ trials via parallel autoresearch workers
-  - Distills Falcon 7B on curated data
-  - Scales to production model
-
-Do not merge these concerns.
+Do not merge these lanes casually.
 
 ## Core Hypothesis
 
-Plaited's autoresearch loop (Codex → Sonnet judge → Haiku meta-verify → keep/revise/discard) can scale to produce training data for native model distillation. Falcon, fine-tuned on high-quality Plaited-native outputs, will improve over time and eventually become the preferred producer.
+Frontier coding agents can help build the school.
+The native model must become the student and eventually the teacher.
+
+Therefore:
+- Codex/Claude outputs may be used to improve scaffolding
+- Falcon/native-model outputs should become the preferred source for true
+  Plaited-native distillation
 
 ## Target Capabilities
 
-Falcon 7B should become strong at:
+The native model should become strong at:
 
-- generating modules end-to-end (BP-shaped, constitution-aware)
+- generating modules end-to-end
 - generating UI through Plaited's controller/generative UI model
-- emitting coordination logic with correct semantics
+- emitting BP-shaped coordination logic
 - respecting constitution and boundary policy
 - using `.memory/` and git history as working context
-- deciding actor vs sub-agent vs team correctly
-- reasoning in Plaited runtime terms, not generic code
+- deciding when to stay local vs. promote to actor/sub-agent/team
+- reasoning in Plaited runtime terms rather than generic coding-agent terms
 
-## Slice Progression
+## Non-Goals
 
-**Slice 1: Foundation – Eval Prompt Calibration** (autoresearch, 2-4 hours)
-- Run autoresearch to generate and validate 20+ eval prompts across 8 Lane B themes
-- Test prompts on 50 iterations to find >20% pass rate per prompt
-- Document judge/meta-verifier rubric with concrete examples
-- Output: `./eval-prompts.jsonl` (validated prompts) + scoring rules
-- Run sequentially (once) before Slices 2A-2H
+- broad framework rewrites
+- generic coding benchmark chasing
+- optimizing only for frontier-model style fluency
+- training on every accepted framework diff by default
 
-**Slices 2A-2H: Parallel Data Collection** (6-8 hours wall-clock, 8 workers)
-- 8 independent autoresearch workers (one per slice), each runs 375 attempts
-- Slice 2A: Feature branch `native-model-worker-a`
-- Slice 2B: Feature branch `native-model-worker-b`
-- Slice 2C: Feature branch `native-model-worker-c`
-- Slice 2D: Feature branch `native-model-worker-d`
-- Slice 2E: Feature branch `native-model-worker-e`
-- Slice 2F: Feature branch `native-model-worker-f`
-- Slice 2G: Feature branch `native-model-worker-g`
-- Slice 2H: Feature branch `native-model-worker-h`
-- Each worker: `bun run research:overnight -- ./dev-research/native-model/slice-2X.md --adapter ./scripts/codex-cli-adapter.ts --judge --max-attempts 375`
-- Adapter: Codex CLI (existing subscription)
-- Judge: Claude Sonnet + Haiku meta-verifier
-- Result: 3,000 total generations with judge scores, trajectories, token counts
-
-**Slice 3: Result Analysis & Curation** (1-2 hours)
-- Merge all worker results
-- Filter by: judge score > 0.85, meta-verifier confidence > 0.8, trajectory richness = full
-- Categorize by task type (module, UI, bridge-code, actor decision)
-- Label suitability: native-model training vs framework improvement
-- Emit: `/tmp/good-outputs.jsonl` (curated training data)
-
-**Slice 4: Falcon Fine-Tuning** (2-4 hours)
-- QLoRA fine-tune on curated data
-- Baseline: Falcon 7B
-- Output: Falcon 7B fine-tuned checkpoint
-
-**Slice 5: Evaluation** (1-2 hours)
-- Test baseline vs fine-tuned on held-out Plaited-native eval set
-- Measure: score improvement, cost per quality output, training suitability
-- Success criteria: measurable improvement, cost < $5 per output
-
-## Execution Model
-
-**Hardware Requirements:**
-- MSI EdgeXpert AI Supercomputer (Grace Blackwell GB10)
-- 128GB unified memory (sufficient for 8 parallel workers)
-- Codex CLI subscription (already owned, $200/month)
-- Sonnet API access (for judging)
-
-**Parallelization Strategy:**
-- Slices 2A-2H run in parallel on single EdgeXpert machine
-- 8 separate `bun run research:overnight` processes, each on own branch
-- No coordination needed between workers
-- Results collected in Slice 3
-
-**Launch command (from EdgeXpert machine):**
-
-Step 1: Run Slice 1 (calibration, sequential):
-```bash
-bun run research:overnight -- ./dev-research/native-model/slice-1.md \
-  --adapter ./scripts/codex-cli-adapter.ts \
-  --judge \
-  --max-attempts 50
-```
-
-Step 2: After Slice 1 completes, run Slices 2A-2H (parallel):
-```bash
-for i in {a..h}; do
-  bun run research:overnight -- ./dev-research/native-model/slice-2$i.md \
-    --adapter ./scripts/codex-cli-adapter.ts \
-    --judge \
-    --max-attempts 375 &
-done
-wait
-```
-
-## Improvement Lanes (Codex-Generated vs Future Falcon)
+## Improvement Lanes
 
 ### Lane A: Framework Scaffolding
 
-Codex outputs that improve tooling/runtime/evals. May be useful for framework but not native-model distillation.
+Data from external frontier models that improves:
+- tooling
+- runtime
+- harnesses
+- evals
+- capture systems
 
-### Lane B: Native Producer Behavior (Primary)
+This data may be useful but is not automatically native-model training data.
 
-Codex outputs that teach Falcon to generate Plaited-native code. High-quality, multi-dimensional grading. This is the distillation target.
+### Lane B: Native Producer Behavior
 
-## Data Provenance in Trials
+Data intended to teach the native model to:
+- build modules
+- build UI
+- wire runtime behavior
+- use constitution and BP semantics correctly
 
-Every trial in Slices 2A-2H captures:
+This is the priority lane for Falcon/self-distillation.
 
-- **Producer:** Codex CLI
-- **Judge:** Claude Sonnet (score + dimensions)
-- **Meta-verifier:** Claude Haiku (confidence)
-- **Task type:** Lane A (scaffolding) or Lane B (native producer)
-- **Output type:** Module, UI, bridge-code, actor decision, or combination
-- **Judge dimensions:** Architecture (0-1), Boundedness (0-1), Focus (0-1), Quality (0-1)
-- **Meta dimensions:** Consistency (0-1), Risk (0-1), Confidence (0-1)
-- **Trajectory:** Full (tool calls + reasoning) or minimal (code only)
-- **Token usage:** Input/output for cost tracking
+## Slice Progression
 
-Curation in Slice 3 selects trials suitable for Falcon distillation based on:
-- Judge score > 0.85
-- Meta-verifier confidence > 0.8
-- Trajectory richness = full
-- Dimensions align with Plaited-native reasoning
+- Slice 1: eval themes, rubric, and retained-output format design
+- Slice 2: small-scale validation of eval design and output shape
+- Slice 3: result analysis and curation
+- Slice 4: Falcon fine-tuning
+- Slice 5: evaluation and success metrics
 
-## Acceptance Criteria (for Slice-Curated Data)
+## Data Provenance Requirements
 
-Retained outputs must demonstrate:
+Every candidate retained by this program should record:
 
-- Correct BP/PM/MSS reasoning (not generic code)
-- Constitution-aware behavior
-- Proper actor/sub-agent/team decisions
-- Quality > 0.80 on judge dimensions
-- High meta-verifier confidence (consistency + low risk)
+- producer model
+- judge model
+- meta-verifier model
+- improvement lane
+- task type
+- whether it produced:
+  - code only
+  - UI only
+  - module only
+  - end-to-end module + UI + runtime wiring
+- whether it is suitable for:
+  - framework improvement
+  - native model distillation
+  - UI/module generation corpus
+  - constitution/governance corpus
 
-## Eval Themes for Slice 1 Prompt Design
+## Acceptance Criteria
 
-Tasks for Lane B (native producer training):
+A retained candidate should be judged on:
 
-- Generate a module with BP-shaped actors and matching UI
-- Generate runtime taxonomy-aware behavioral coordination
-- Produce controller-compatible UI for a Plaited-native intent
-- Add constitution-aware bridge-code to existing module
-- Use `.memory/` and git history to revise a module correctly
-- Choose actor vs sub-agent vs team for bounded work
-- Generate MSS-compliant module structure
-- Emit correct behavioral thread patterns
+- Plaited-native reasoning quality
+- end-to-end module/UI correctness
+- constitution/boundary compliance
+- BP/runtime alignment
+- usefulness as native-model distillation data
+
+Passing framework tests alone is not sufficient.
+
+## Initial Eval Themes
+
+Start with tasks like:
+
+- generate a small module with matching UI and behavior
+- generate runtime taxonomy-aware module actors
+- produce controller-compatible UI for a user intent
+- add constitution-aware bridge-code to a module
+- use `.memory/` context to continue or revise a module
+- choose actor vs sub-agent vs team correctly for a bounded task
 
 ## Distillation Policy
 
-**Phase 1 (this program):**
-- All Lane B outputs with judge score > 0.85 → Falcon training data
-- Lane A outputs → Framework improvement (separate track)
-- No filtering by model performance yet (Codex outputs only)
+Default policy:
 
-**Phase 2+ (future):**
-- Falcon-generated outputs → self-distillation if quality thresholds met
-- Separate policy review required before self-improvement
+- Frontier-model framework traces:
+  - retain selectively
+  - mostly for scaffolding and eval construction
+- Native-model traces:
+  - preferred for true distillation if quality thresholds are met
 
 ## Safety
 
-Do not allow:
-- Falcon to modify its own grading policy
-- Codex outputs to bypass judge thresholds without manual review
-- Training data to include Lane A (framework scaffolding) data by default
+Do not allow the native model to self-modify its own grading policy,
+distillation policy, or constitutional floor without separate approval and
+stronger controls.

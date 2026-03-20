@@ -2,56 +2,56 @@
 
 ## Target
 
-Fine-tune Falcon 7B on curated Plaited-native training data from Slice 3.
+Fine-tune a Falcon-family base model on curated Plaited-native training data
+from Slice 3.
 
 ## Scope
 
-- Load curated dataset: `/tmp/good-outputs.jsonl` (~300 high-quality examples)
-- Train Falcon 7B using QLoRA (quantized low-rank adaptation)
+- Load curated dataset from Slice 3
+- Train a Falcon-family model using parameter-efficient fine-tuning
 - Save checkpoint for evaluation (Slice 5)
 - Log training metrics: loss, convergence, token efficiency
 
 ## Required
 
-- Curated training data from Slice 3 (`/tmp/good-outputs.jsonl`)
-- Falcon 7B base model (HuggingFace or local copy)
-- vLLM infrastructure installed (required for EdgeXpert)
-  - MLX does NOT work on NVIDIA Grace Blackwell GPU
-  - See `scripts/VLLM_SETUP.md` for installation
-- QLoRA setup (bitsandbytes, PEFT, transformers)
-- GPU/local compute for training (~2-4 hours on EdgeXpert)
+- Curated training data from Slice 3
+- Falcon-family base model available locally
+- Training stack chosen for the actual hardware in use
+  - QLoRA is the default baseline
+  - See `scripts/VLLM_SETUP.md` only if the selected environment needs it
+- Local compute suitable for fine-tuning
 - Training script with:
   - Data loading from JSONL
   - LoRA rank/alpha hyperparameters
   - Learning rate, batch size, epochs
-  - Checkpoint saving to `./models/falcon-7b-native-model.qlora`
+  - Checkpoint saving to a stable model output path
 
 ## Preserve
 
-- Falcon 7B base model integrity (only LoRA weights modified)
+- Base model integrity (only adaptation weights modified)
 - Training data integrity (read-only from Slice 3)
 - Reproducibility (seed, hyperparams logged)
 
 ## Avoid
 
-- Full parameter fine-tune (QLoRA keeps cost low)
-- Overfitting to 300 examples (validate with held-out set)
+- Full parameter fine-tune unless a later phase explicitly justifies it
+- Overfitting to a small curated dataset
 - Training so long that model memorizes corpus
-- Discarding base Falcon weights (needed for fallback)
+- Discarding base model weights (needed for fallback)
 
 ## Acceptance Criteria
 
 - Training completes without errors
 - Checkpoint saved with LoRA weights
-- Baseline and fine-tuned models can both run inference
+- Baseline and fine-tuned models can both run inference on the target setup
 - Training logs show convergence (loss decreasing)
-- At least 1 epoch completed on full dataset
-- Memory usage on EdgeXpert < 120GB
+- At least 1 epoch completed on the curated dataset
+- Hyperparameters and environment details are recorded with the output
 
 ## Hyperparameters (Baseline)
 
 ```
-Model: Falcon 7B (or equivalent)
+Model: Falcon-family base model
 Method: QLoRA
 LoRA rank: 8
 LoRA alpha: 32
@@ -63,7 +63,7 @@ Max seq length: 2048
 
 ## Output
 
-**File:** `./models/falcon-7b-native-model.qlora`
+**File:** stable model output path chosen for the training run
 
 Contains:
 - LoRA weights (rank 8, alpha 32)

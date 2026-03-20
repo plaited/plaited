@@ -39,23 +39,17 @@ In a separate terminal:
 export VLLM_API_URL="http://localhost:8000/v1"
 export VLLM_MODEL_NAME="falcon-7b"
 
-bun run research:overnight -- ./dev-research/native-model/slice-2a.md \
+bun run research:overnight -- ./dev-research/native-model/slice-2.md \
   --adapter ./scripts/vllm-local-adapter.ts \
   --judge \
-  --max-attempts 375
+  --max-attempts 10
 ```
 
-Or launch 8 workers in parallel:
+Later large-scale collection should wait until the native-model lane has a
+validated collection plan beyond the current bounded harness.
 
-```bash
-for i in {a..h}; do
-  bun run research:overnight -- ./dev-research/native-model/slice-2$i.md \
-    --adapter ./scripts/vllm-local-adapter.ts \
-    --judge \
-    --max-attempts 375 &
-done
-wait
-```
+Do not assume the current `research:overnight` flow can accumulate hundreds of
+kept trials on separate worker branches without additional orchestration work.
 
 ## Environment Variables
 
