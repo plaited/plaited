@@ -7,7 +7,7 @@ Train Falcon 7B to generate Plaited-native code through large-scale autoresearch
 **Phase 1 PoC (this program):** Collect 3K high-quality code generation trials on MSI EdgeXpert, distill into Falcon 7B, validate improvement.
 
 **Hardware:** MSI EdgeXpert (Grace Blackwell GB10, 128GB unified memory, local Codex CLI)
-**Timeline:** 6-8 hours for 3K trials (8 parallel workers), 12-16 hours for scale
+**Timeline:** 2-4 hours (Slice 1 calibration) + 6-8 hours (Slices 2A-2H data collection) = **8-12 hours total wall-clock**
 **Cost:** ~$140-160 per run (Sonnet/Haiku judging only; Codex subscription amortized)
 
 ## Separation From Other Lanes
@@ -42,10 +42,12 @@ Falcon 7B should become strong at:
 
 ## Slice Progression
 
-**Slice 1: Foundation** (setup, ~1 hour)
-- Test case/prompt design for Lane B (modules, UI, runtime wiring)
-- Evaluation rubric (judge score thresholds, meta-verifier confidence)
-- Success criteria for Falcon improvement
+**Slice 1: Foundation – Eval Prompt Calibration** (autoresearch, 2-4 hours)
+- Run autoresearch to generate and validate 20+ eval prompts across 8 Lane B themes
+- Test prompts on 50 iterations to find >20% pass rate per prompt
+- Document judge/meta-verifier rubric with concrete examples
+- Output: `./eval-prompts.jsonl` (validated prompts) + scoring rules
+- Run sequentially (once) before Slices 2A-2H
 
 **Slices 2A-2H: Parallel Data Collection** (6-8 hours wall-clock, 8 workers)
 - 8 independent autoresearch workers (one per slice), each runs 375 attempts
@@ -94,6 +96,16 @@ Falcon 7B should become strong at:
 - Results collected in Slice 3
 
 **Launch command (from EdgeXpert machine):**
+
+Step 1: Run Slice 1 (calibration, sequential):
+```bash
+bun run research:overnight -- ./dev-research/native-model/slice-1.md \
+  --adapter ./scripts/codex-cli-adapter.ts \
+  --judge \
+  --max-attempts 50
+```
+
+Step 2: After Slice 1 completes, run Slices 2A-2H (parallel):
 ```bash
 for i in {a..h}; do
   bun run research:overnight -- ./dev-research/native-model/slice-2$i.md \
