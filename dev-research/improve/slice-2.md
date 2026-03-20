@@ -8,6 +8,7 @@ judge/meta-verifier logic without inheriting repo-autoresearch assumptions.
 
 ## Scope
 
+- `src/improve.ts`
 - `src/improve/`
 - `scripts/claude-code-judge.ts`
 - `scripts/claude-haiku-meta-verifier.ts`
