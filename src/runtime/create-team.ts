@@ -123,6 +123,21 @@ const assertUniqueMemberId = <Message extends LinkMessage>(
   }
 }
 
+const attachManagedMember = <Member extends TeamMember<Message>, Message extends LinkMessage>({
+  team,
+  member,
+  managedMemberIds,
+}: {
+  team: Team<Message>
+  member: Member
+  managedMemberIds: Set<string>
+}) => {
+  assertUniqueMemberId(team.members, member.id)
+  team.members.set(member.id, member)
+  managedMemberIds.add(member.id)
+  return member
+}
+
 /**
  * Creates a governed team runtime where PM authorizes direct actor routes.
  *
@@ -247,7 +262,7 @@ export const createManagedTeamRuntime = <Message extends LinkMessage = LinkMessa
   observeRoute,
   onRouteActivity,
 }: CreateManagedTeamRuntimeOptions<Message>): ManagedTeamRuntime<Message> => {
-  const managedSubAgentIds = new Set<string>()
+  const managedMemberIds = new Set<string>()
   const pm = createPmRuntime<Message>({
     kind: 'pm',
     id: pmId,
@@ -266,15 +281,28 @@ export const createManagedTeamRuntime = <Message extends LinkMessage = LinkMessa
     onRouteActivity,
   })
 
+  const attachActor = (attachedActor: BehavioralActor<Message>) => {
+    return attachManagedMember({
+      team,
+      member: attachedActor,
+      managedMemberIds,
+    })
+  }
+
   const attachSubAgent = (subAgent: SubAgent<Message>) => {
-    assertUniqueMemberId(team.members, subAgent.id)
-    team.members.set(subAgent.id, subAgent)
-    managedSubAgentIds.add(subAgent.id)
-    return subAgent
+    return attachManagedMember({
+      team,
+      member: subAgent,
+      managedMemberIds,
+    })
+  }
+
+  const openPeerRoute: ManagedTeamRuntime<Message>['openPeerRoute'] = (options) => {
+    return team.openRoute(options)
   }
 
   const openDirectRoute: ManagedTeamRuntime<Message>['openDirectRoute'] = ({ sourceId = actor.id, ...options }) => {
-    return team.openRoute({
+    return openPeerRoute({
       sourceId,
       ...options,
     })
@@ -283,10 +311,10 @@ export const createManagedTeamRuntime = <Message extends LinkMessage = LinkMessa
   const destroy = () => {
     team.destroy()
 
-    for (const subAgentId of managedSubAgentIds) {
-      const member = team.members.get(subAgentId)
+    for (const memberId of managedMemberIds) {
+      const member = team.members.get(memberId)
       member?.destroy()
-      team.members.delete(subAgentId)
+      team.members.delete(memberId)
     }
   }
 
@@ -294,7 +322,9 @@ export const createManagedTeamRuntime = <Message extends LinkMessage = LinkMessa
     pm,
     actor,
     team,
+    attachActor,
     attachSubAgent,
+    openPeerRoute,
     openDirectRoute,
     destroy,
   }

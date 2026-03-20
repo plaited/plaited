@@ -288,7 +288,9 @@ export type ManagedTeamRuntime<Message extends LinkMessage = LinkMessage> = {
   pm: PmRuntime<Message>
   actor: BehavioralActor<Message>
   team: Team<Message>
+  attachActor: (actor: BehavioralActor<Message>) => BehavioralActor<Message>
   attachSubAgent: (subAgent: SubAgent<Message>) => SubAgent<Message>
+  openPeerRoute: (options: OpenTeamRouteOptions<Message>) => Disconnect
   openDirectRoute: (options: Omit<OpenTeamRouteOptions<Message>, 'sourceId'> & { sourceId?: string }) => Disconnect
   destroy: () => void
 }

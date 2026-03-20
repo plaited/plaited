@@ -315,4 +315,112 @@ describe('createTeam', () => {
     disconnect()
     managed.destroy()
   })
+
+  test('opens a PM-governed peer route between attached actors without forcing the root actor to relay', async () => {
+    type PeerMessage = { type: 'direct_task'; detail: { taskId: string; route: 'direct' | 'peer' } }
+
+    const rootRuntime = behavioral<{ direct_task: { taskId: string; route: 'direct' | 'peer' } }>()
+    const analystRuntime = behavioral<{ direct_task: { taskId: string; route: 'direct' | 'peer' } }>()
+    const reviewerRuntime = behavioral<{ direct_task: { taskId: string; route: 'peer' } }>()
+    const received: Array<{ taskId: string; route: 'peer' }> = []
+    const routeActivities: string[] = []
+
+    reviewerRuntime.useFeedback({
+      direct_task(detail) {
+        received.push(detail)
+      },
+    })
+
+    const rootActor = createBehavioralActorRuntime<PeerMessage>({
+      kind: 'behavioral_actor',
+      id: 'actor-root',
+      object: {
+        kind: 'mss_object',
+        id: 'object-root',
+        contentType: 'agent',
+        structure: 'object',
+        mechanics: ['track'],
+        boundary: 'ask',
+        scale: 'S2',
+      },
+      trigger: rootRuntime.trigger,
+      subscribe: rootRuntime.useFeedback,
+      destroy: () => {},
+    })
+
+    const managed = createManagedTeamRuntime<PeerMessage>({
+      actor: rootActor,
+      observeRoute(activity) {
+        routeActivities.push(activity.kind)
+      },
+    })
+
+    const analyst = managed.attachActor(
+      createBehavioralActorRuntime<PeerMessage>({
+        kind: 'behavioral_actor',
+        id: 'actor-analyst',
+        object: {
+          kind: 'mss_object',
+          id: 'object-analyst',
+          contentType: 'agent',
+          structure: 'object',
+          mechanics: ['track'],
+          boundary: 'ask',
+          scale: 'S2',
+        },
+        trigger: analystRuntime.trigger,
+        subscribe: analystRuntime.useFeedback,
+        destroy: () => {},
+      }),
+    )
+
+    const reviewer = managed.attachActor(
+      createBehavioralActorRuntime<PeerMessage>({
+        kind: 'behavioral_actor',
+        id: 'actor-reviewer',
+        object: {
+          kind: 'mss_object',
+          id: 'object-reviewer',
+          contentType: 'agent',
+          structure: 'object',
+          mechanics: ['track'],
+          boundary: 'ask',
+          scale: 'S2',
+        },
+        trigger: reviewerRuntime.trigger as (event: { type: string; detail?: unknown }) => void,
+        subscribe: reviewerRuntime.useFeedback as typeof analystRuntime.useFeedback,
+        destroy: () => {},
+      }),
+    )
+
+    const disconnect = managed.openPeerRoute({
+      sourceId: analyst.id,
+      targetId: reviewer.id,
+      eventTypes: ['direct_task'],
+      mapMessage(message) {
+        return {
+          type: message.type,
+          detail: {
+            taskId: message.detail.taskId,
+            route: 'peer',
+          },
+        }
+      },
+    })
+
+    analystRuntime.trigger({
+      type: 'direct_task',
+      detail: { taskId: 'task-peer-1', route: 'direct' },
+    })
+    await Promise.resolve()
+
+    expect(received).toEqual([{ taskId: 'task-peer-1', route: 'peer' }])
+    expect(routeActivities).toEqual(['authorize', 'connect'])
+    expect(rootActor.links?.size).toBe(0)
+    expect(analyst.links?.size).toBe(1)
+    expect(reviewer.links?.size).toBe(1)
+
+    disconnect()
+    managed.destroy()
+  })
 })
