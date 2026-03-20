@@ -69,6 +69,37 @@ Those remain separate until they can be expressed as generic interfaces.
 - Only move code into `src/` if it is model-agnostic and broadly reusable.
 - Preserve provenance and boundedness when extracting reusable pieces.
 
+## Fixed Architecture
+
+These decisions are already made. Do not change them.
+
+- Improvement attempts are bounded and isolated in worktrees.
+- Keep/revise/discard decisions remain with the autoresearch harness.
+- Adapters (model bindings) stay in `scripts/` or external packages.
+- Judges (evaluation logic) stay provider-agnostic or external.
+- Provenance records (attempt history, decisions, artifacts) are framework-owned.
+- Program/slice loading and validation is framework-owned.
+
+## Runtime Taxonomy
+
+The improvement substrate supports all runtime types:
+
+- `src/improve/` — model-agnostic improvement orchestration
+- `src/improve.ts` — core Attempt, Program, Slice interfaces
+- `scripts/` — provider-specific adapters (Claude, Codex, Together.ai, etc.)
+- Judges remain external until expressible as generic interfaces
+- Adapters implement a simple stdin/stdout contract
+
+## Validation
+
+Before committing a change in this lane:
+
+1. **Scope check:** Only changes in `src/improve/` and `scripts/improve-*.ts`
+2. **No coupling to provider:** No Claude SDK in `src/`, no hardcoded model refs
+3. **Preserves autoresearch behavior:** Existing bounded attempts still work
+4. **Generic interface:** Logic should be expressible without model knowledge
+5. **Tests pass:** `bun test src/improve/`
+
 ## Initial Slice Progression
 
 - Slice 1: separate model-agnostic improvement orchestration from provider-specific adapters and judges
