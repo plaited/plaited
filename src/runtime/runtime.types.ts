@@ -19,7 +19,10 @@ import type {
   TeamAttempt,
   TeamAttemptGraph,
   TeamDescriptor,
+  TeamPromotionCandidate,
   TeamRouteActivity,
+  TeamWinnerSelection,
+  TeamWinnerSelectionHistory,
 } from './runtime.schemas.ts'
 
 /**
@@ -331,6 +334,20 @@ export type TeamAttemptInput = Omit<TeamAttempt, 'createdAt' | 'updatedAt'> & {
 }
 
 /**
+ * Input shape for persisting a PM winner selection.
+ *
+ * @public
+ */
+export type SelectPromotionCandidateInput = {
+  id?: string
+  pmId: string
+  selectedAttemptId: string
+  candidateAttemptIds?: string[]
+  rationale?: string
+  metadata?: Record<string, unknown>
+}
+
+/**
  * Queryable and persisted local attempt DAG for a single sovereign team.
  *
  * @public
@@ -347,6 +364,11 @@ export type TeamHub = {
   getLeaves: () => TeamAttempt[]
   getFrontier: () => TeamAttempt[]
   getLineage: (attemptId: string) => TeamAttempt[]
+  listPromotionCandidates: () => TeamPromotionCandidate[]
+  getPromotionCandidate: (attemptId: string) => TeamPromotionCandidate | undefined
+  listWinnerSelections: () => TeamWinnerSelection[]
+  getLatestWinnerSelection: () => TeamWinnerSelection | undefined
+  selectPromotionCandidate: (selection: SelectPromotionCandidateInput) => Promise<TeamWinnerSelection>
 }
 
 /**
@@ -389,7 +411,10 @@ export type {
   RuntimeContract,
   TeamAttempt,
   TeamAttemptGraph,
+  TeamPromotionCandidate,
   SubAgentDescriptor,
   TeamDescriptor,
   TeamRouteActivity,
+  TeamWinnerSelection,
+  TeamWinnerSelectionHistory,
 }
