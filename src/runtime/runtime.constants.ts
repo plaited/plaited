@@ -86,3 +86,10 @@ export const LINK_ACTIVITY_KINDS = [
  * @public
  */
 export const TEAM_ROUTE_ACTIVITY_KINDS = ['authorize', 'deny', 'connect', 'disconnect'] as const
+
+/**
+ * Local team attempt lifecycle states.
+ *
+ * @public
+ */
+export const TEAM_ATTEMPT_STATUSES = ['pending', 'running', 'succeeded', 'failed', 'abandoned'] as const

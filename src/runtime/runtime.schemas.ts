@@ -7,6 +7,7 @@ import {
   MSS_SCALES,
   MSS_STRUCTURES,
   RUNTIME_TAXONOMY,
+  TEAM_ATTEMPT_STATUSES,
   TEAM_ROUTE_ACTIVITY_KINDS,
 } from './runtime.constants.ts'
 
@@ -186,6 +187,36 @@ export const TeamRouteActivitySchema = z.object({
   linkId: z.string().optional(),
 })
 
+/**
+ * Persisted attempt metadata for a local sovereign team DAG.
+ *
+ * @public
+ */
+export const TeamAttemptSchema = z.object({
+  id: z.string(),
+  teamId: z.string(),
+  parentAttemptId: z.string().optional(),
+  branch: z.string().optional(),
+  worktreePath: z.string(),
+  commit: z.string().optional(),
+  status: z.enum(TEAM_ATTEMPT_STATUSES),
+  actorId: z.string().optional(),
+  taskId: z.string().optional(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+})
+
+/**
+ * Serializable snapshot of a team's local attempt graph.
+ *
+ * @public
+ */
+export const TeamAttemptGraphSchema = z.object({
+  teamId: z.string(),
+  attempts: z.array(TeamAttemptSchema),
+})
+
 export type RuntimeContract = z.infer<typeof RuntimeContractSchema>
 export type MssObject = z.infer<typeof MssObjectSchema>
 export type RuntimeArtifact = z.infer<typeof RuntimeArtifactSchema>
@@ -195,3 +226,5 @@ export type PmDescriptor = z.infer<typeof PmDescriptorSchema>
 export type TeamDescriptor = z.infer<typeof TeamDescriptorSchema>
 export type LinkActivity = z.infer<typeof LinkActivitySchema>
 export type TeamRouteActivity = z.infer<typeof TeamRouteActivitySchema>
+export type TeamAttempt = z.infer<typeof TeamAttemptSchema>
+export type TeamAttemptGraph = z.infer<typeof TeamAttemptGraphSchema>

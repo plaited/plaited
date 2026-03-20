@@ -148,6 +148,7 @@ export const createTeam = <Message extends LinkMessage = LinkMessage>({
   pm,
   members,
   onRouteActivity,
+  hub,
 }: CreateTeamOptions<Message>): Team<Message> => {
   const memberMap = new Map(members.map((member) => [member.id, member]))
   const activeRouteDisconnects = new Set<() => void>()
@@ -240,6 +241,7 @@ export const createTeam = <Message extends LinkMessage = LinkMessage>({
     ...descriptor,
     pm,
     members: memberMap,
+    hub,
     openRoute,
     destroy() {
       for (const disconnect of [...activeRouteDisconnects]) {
@@ -261,6 +263,7 @@ export const createManagedTeamRuntime = <Message extends LinkMessage = LinkMessa
   authorizeRoute = () => true,
   observeRoute,
   onRouteActivity,
+  hub,
 }: CreateManagedTeamRuntimeOptions<Message>): ManagedTeamRuntime<Message> => {
   const managedMemberIds = new Set<string>()
   const pm = createPmRuntime<Message>({
@@ -278,6 +281,7 @@ export const createManagedTeamRuntime = <Message extends LinkMessage = LinkMessa
     },
     pm,
     members: [actor],
+    hub,
     onRouteActivity,
   })
 
@@ -322,6 +326,7 @@ export const createManagedTeamRuntime = <Message extends LinkMessage = LinkMessa
     pm,
     actor,
     team,
+    hub,
     attachActor,
     attachSubAgent,
     openPeerRoute,

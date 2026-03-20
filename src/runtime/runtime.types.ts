@@ -5,6 +5,7 @@ import type {
   MSS_MECHANICS,
   MSS_SCALES,
   MSS_STRUCTURES,
+  TEAM_ATTEMPT_STATUSES,
   TEAM_ROUTE_ACTIVITY_KINDS,
 } from './runtime.constants.ts'
 import type {
@@ -15,6 +16,8 @@ import type {
   RuntimeArtifact,
   RuntimeContract,
   SubAgentDescriptor,
+  TeamAttempt,
+  TeamAttemptGraph,
   TeamDescriptor,
   TeamRouteActivity,
 } from './runtime.schemas.ts'
@@ -67,6 +70,13 @@ export type LinkActivityKind = (typeof LINK_ACTIVITY_KINDS)[number]
  * @public
  */
 export type TeamRouteActivityKind = (typeof TEAM_ROUTE_ACTIVITY_KINDS)[number]
+
+/**
+ * Local team attempt lifecycle state.
+ *
+ * @public
+ */
+export type TeamAttemptStatus = (typeof TEAM_ATTEMPT_STATUSES)[number]
 
 /**
  * Canonical runtime message envelope.
@@ -237,6 +247,7 @@ export type CreateTeamOptions<Message extends LinkMessage = LinkMessage> = {
   pm: PmRuntime<Message>
   members: TeamMember<Message>[]
   onRouteActivity?: TeamRouteObserver
+  hub?: TeamHub
 }
 
 /**
@@ -251,6 +262,7 @@ export type CreateManagedTeamRuntimeOptions<Message extends LinkMessage = LinkMe
   authorizeRoute?: PmRuntime<Message>['authorizeRoute']
   observeRoute?: TeamRouteObserver
   onRouteActivity?: TeamRouteObserver
+  hub?: TeamHub
 }
 
 /**
@@ -275,6 +287,7 @@ export type OpenTeamRouteOptions<Message extends LinkMessage = LinkMessage> = {
 export type Team<Message extends LinkMessage = LinkMessage> = Omit<TeamDescriptor, 'members'> & {
   pm: PmRuntime<Message>
   members: Map<string, TeamMember<Message>>
+  hub?: TeamHub
   openRoute: (options: OpenTeamRouteOptions<Message>) => Disconnect
   destroy: () => void
 }
@@ -288,11 +301,52 @@ export type ManagedTeamRuntime<Message extends LinkMessage = LinkMessage> = {
   pm: PmRuntime<Message>
   actor: BehavioralActor<Message>
   team: Team<Message>
+  hub?: TeamHub
   attachActor: (actor: BehavioralActor<Message>) => BehavioralActor<Message>
   attachSubAgent: (subAgent: SubAgent<Message>) => SubAgent<Message>
   openPeerRoute: (options: OpenTeamRouteOptions<Message>) => Disconnect
   openDirectRoute: (options: Omit<OpenTeamRouteOptions<Message>, 'sourceId'> & { sourceId?: string }) => Disconnect
   destroy: () => void
+}
+
+/**
+ * Inputs for a persisted local TeamHub.
+ *
+ * @public
+ */
+export type CreateTeamHubOptions = {
+  teamId: string
+  memoryPath: string
+  now?: () => Date
+}
+
+/**
+ * Input shape for recording or replacing a team attempt.
+ *
+ * @public
+ */
+export type TeamAttemptInput = Omit<TeamAttempt, 'createdAt' | 'updatedAt'> & {
+  createdAt?: string
+  updatedAt?: string
+}
+
+/**
+ * Queryable and persisted local attempt DAG for a single sovereign team.
+ *
+ * @public
+ */
+export type TeamHub = {
+  teamId: string
+  memoryPath: string
+  load: () => Promise<TeamAttemptGraph>
+  save: () => Promise<void>
+  recordAttempt: (attempt: TeamAttemptInput) => Promise<TeamAttempt>
+  listAttempts: () => TeamAttempt[]
+  getAttempt: (attemptId: string) => TeamAttempt | undefined
+  getChildren: (attemptId: string) => TeamAttempt[]
+  getLeaves: () => TeamAttempt[]
+  getFrontier: () => TeamAttempt[]
+  getLineage: (attemptId: string) => TeamAttempt[]
 }
 
 /**
@@ -333,6 +387,8 @@ export type {
   PmDescriptor,
   RuntimeArtifact,
   RuntimeContract,
+  TeamAttempt,
+  TeamAttemptGraph,
   SubAgentDescriptor,
   TeamDescriptor,
   TeamRouteActivity,
