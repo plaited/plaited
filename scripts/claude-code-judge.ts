@@ -7,6 +7,7 @@
  */
 
 import type { Grader, GraderResult } from '../src/improve.ts'
+import { RepoImprovementJudgeInputSchema, RepoImprovementJudgeOutcomeSchema } from '../src/improve.ts'
 import { runStructuredClaudeQuery } from './claude-agent-sdk.ts'
 
 type JudgeOutput = {
@@ -62,6 +63,20 @@ const buildJudgePrompt = ({
   const program = typeof metadata?.program === 'string' ? metadata.program : '(missing program)'
   const slice = typeof metadata?.slice === 'string' ? metadata.slice : '(missing slice)'
 
+  RepoImprovementJudgeInputSchema.parse({
+    evaluationTarget: 'repo-improvement',
+    task,
+    candidateOutput: output,
+    changedFiles: Array.isArray(metadata?.changedFiles)
+      ? metadata.changedFiles.filter((value): value is string => typeof value === 'string')
+      : [],
+    diffStat,
+    patch,
+    checks: (metadata?.checks ?? {}) as Record<string, unknown>,
+    program,
+    slice,
+  })
+
   return `You are reviewing a bounded Plaited framework-development slice.
 
 This is developer tooling for improving Plaited itself, not a shipped runtime feature.
@@ -99,13 +114,40 @@ Score the candidate from 0.0 to 1.0 on:
 Pass only if the candidate should be kept after review.`
 }
 
+const buildOutcome = ({
+  dimensions,
+  outcome,
+  sdkMeta,
+}: {
+  dimensions?: JudgeOutput['dimensions']
+  outcome?: Record<string, unknown>
+  sdkMeta?: Record<string, unknown>
+}) => {
+  const contract = RepoImprovementJudgeOutcomeSchema.parse({
+    evaluationTarget: 'repo-improvement',
+    judgeKind: 'repo-improvement',
+    ...(dimensions ? { rubric: dimensions } : {}),
+    ...(sdkMeta ? { judgeSdk: sdkMeta } : {}),
+  })
+
+  return {
+    ...outcome,
+    ...contract,
+    ...(dimensions ? { judgeDimensions: dimensions } : {}),
+    ...(sdkMeta ? { judgeSdk: sdkMeta } : {}),
+  }
+}
+
 export const toGraderResult = (result: JudgeOutput): GraderResult => ({
   pass: result.pass,
   score: result.score,
   reasoning: result.reasoning,
-  ...(result.outcome
+  ...(result.outcome || result.dimensions
     ? {
-        outcome: result.outcome,
+        outcome: buildOutcome({
+          dimensions: result.dimensions,
+          outcome: result.outcome,
+        }),
       }
     : {}),
 })
@@ -124,9 +166,9 @@ const invokeClaudeJudge = async (prompt: string): Promise<JudgeOutput> => {
       reasoning: `Claude judge SDK error: ${result.reason}`,
       ...(result.meta
         ? {
-            outcome: {
-              judgeSdk: result.meta,
-            },
+            outcome: buildOutcome({
+              sdkMeta: result.meta,
+            }),
           }
         : {}),
     }
@@ -138,10 +180,10 @@ const invokeClaudeJudge = async (prompt: string): Promise<JudgeOutput> => {
     reasoning: typeof result.value.reasoning === 'string' ? result.value.reasoning : '',
     ...(result.value.dimensions || result.meta
       ? {
-          outcome: {
-            ...(result.value.dimensions ? { judgeDimensions: result.value.dimensions } : {}),
-            ...(result.meta ? { judgeSdk: result.meta } : {}),
-          },
+          outcome: buildOutcome({
+            dimensions: result.value.dimensions,
+            sdkMeta: result.meta,
+          }),
         }
       : {}),
   }

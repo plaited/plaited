@@ -7,6 +7,7 @@
  */
 
 import type { Grader, GraderResult } from '../src/improve.ts'
+import { RepoImprovementJudgeInputSchema, RepoImprovementMetaVerifierOutcomeSchema } from '../src/improve.ts'
 import { runStructuredClaudeQuery } from './claude-agent-sdk.ts'
 
 type MetaJudgeOutput = {
@@ -62,6 +63,20 @@ const buildMetaPrompt = ({
   const program = typeof metadata?.program === 'string' ? metadata.program : '(missing program)'
   const slice = typeof metadata?.slice === 'string' ? metadata.slice : '(missing slice)'
 
+  RepoImprovementJudgeInputSchema.parse({
+    evaluationTarget: 'repo-improvement',
+    task,
+    candidateOutput,
+    changedFiles: Array.isArray(metadata?.changedFiles)
+      ? metadata.changedFiles.filter((value): value is string => typeof value === 'string')
+      : [],
+    diffStat,
+    patch,
+    checks: (metadata?.checks ?? {}) as Record<string, unknown>,
+    program,
+    slice,
+  })
+
   return `You are meta-verifying an LLM judge decision for a bounded Plaited framework-development slice.
 
 Program:
@@ -99,13 +114,40 @@ Score the primary judge result from 0.0 to 1.0 on:
 Pass only if the primary judge result looks internally consistent and safe to trust.`
 }
 
+const buildOutcome = ({
+  dimensions,
+  outcome,
+  sdkMeta,
+}: {
+  dimensions?: MetaJudgeOutput['dimensions']
+  outcome?: Record<string, unknown>
+  sdkMeta?: Record<string, unknown>
+}) => {
+  const contract = RepoImprovementMetaVerifierOutcomeSchema.parse({
+    evaluationTarget: 'repo-improvement',
+    judgeKind: 'repo-improvement-meta-verifier',
+    ...(dimensions ? { rubric: dimensions } : {}),
+    ...(sdkMeta ? { metaVerificationSdk: sdkMeta } : {}),
+  })
+
+  return {
+    ...outcome,
+    ...contract,
+    ...(dimensions ? { metaVerificationDimensions: dimensions } : {}),
+    ...(sdkMeta ? { metaVerificationSdk: sdkMeta } : {}),
+  }
+}
+
 export const toGraderResult = (result: MetaJudgeOutput): GraderResult => ({
   pass: result.pass,
   score: result.score,
   reasoning: result.reasoning,
-  ...(result.outcome
+  ...(result.outcome || result.dimensions
     ? {
-        outcome: result.outcome,
+        outcome: buildOutcome({
+          dimensions: result.dimensions,
+          outcome: result.outcome,
+        }),
       }
     : {}),
 })
@@ -124,9 +166,9 @@ const invokeClaudeMetaVerifier = async (prompt: string): Promise<MetaJudgeOutput
       reasoning: `Claude meta verifier SDK error: ${result.reason}`,
       ...(result.meta
         ? {
-            outcome: {
-              metaVerificationSdk: result.meta,
-            },
+            outcome: buildOutcome({
+              sdkMeta: result.meta,
+            }),
           }
         : {}),
     }
@@ -138,10 +180,10 @@ const invokeClaudeMetaVerifier = async (prompt: string): Promise<MetaJudgeOutput
     reasoning: typeof result.value.reasoning === 'string' ? result.value.reasoning : '',
     ...(result.value.dimensions || result.meta
       ? {
-          outcome: {
-            ...(result.value.dimensions ? { metaVerificationDimensions: result.value.dimensions } : {}),
-            ...(result.meta ? { metaVerificationSdk: result.meta } : {}),
-          },
+          outcome: buildOutcome({
+            dimensions: result.value.dimensions,
+            sdkMeta: result.meta,
+          }),
         }
       : {}),
   }

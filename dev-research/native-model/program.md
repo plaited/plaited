@@ -127,6 +127,22 @@ Every candidate retained by this program should record:
   - UI/module generation corpus
   - constitution/governance corpus
 
+The current contract boundary for that labeling lives in `src/improve/`:
+
+- repo-improvement judging uses `RepoImprovementJudgeInputSchema`
+  and repo-only outcomes
+- trial-based judging uses `TrialJudgeInputSchema`
+  and `TrialJudgeResultSchema`
+- trial meta-verification uses `TrialMetaVerifierInputSchema`
+  and `TrialMetaVerifierOutcomeSchema`
+
+Retained-output suitability labels are:
+
+- `framework-improvement`
+- `native-model-distillation`
+- `ui-module-generation-corpus`
+- `constitution-governance-corpus`
+
 ## Acceptance Criteria
 
 A retained candidate should be judged on:

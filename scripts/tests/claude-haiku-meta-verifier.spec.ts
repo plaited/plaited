@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { GraderResultSchema } from '../../src/improve.ts'
+import { GraderResultSchema, RepoImprovementMetaVerifierOutcomeSchema } from '../../src/improve.ts'
 import { toGraderResult } from '../claude-haiku-meta-verifier.ts'
 
 describe('claude-haiku-meta-verifier', () => {
@@ -16,5 +16,25 @@ describe('claude-haiku-meta-verifier', () => {
     })
 
     expect(GraderResultSchema.parse(result)).toEqual(result)
+    expect(
+      RepoImprovementMetaVerifierOutcomeSchema.parse({
+        evaluationTarget: result.outcome?.evaluationTarget,
+        judgeKind: result.outcome?.judgeKind,
+        rubric: result.outcome?.rubric,
+      }),
+    ).toEqual({
+      evaluationTarget: 'repo-improvement',
+      judgeKind: 'repo-improvement-meta-verifier',
+      rubric: {
+        consistency: 0.9,
+        risk: 0.8,
+        confidence: 0.7,
+      },
+    })
+    expect(result.outcome?.metaVerificationDimensions).toEqual({
+      consistency: 0.9,
+      risk: 0.8,
+      confidence: 0.7,
+    })
   })
 })
