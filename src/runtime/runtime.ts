@@ -10,6 +10,7 @@
  */
 
 export * from './create-link.ts'
+export * from './create-team.ts'
 export * from './runtime.constants.ts'
 export * from './runtime.schemas.ts'
 export type * from './runtime.types.ts'

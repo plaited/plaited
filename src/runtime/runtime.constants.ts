@@ -79,3 +79,10 @@ export const LINK_ACTIVITY_KINDS = [
   'unsubscribe',
   'destroy',
 ] as const
+
+/**
+ * Observable team route lifecycle moments.
+ *
+ * @public
+ */
+export const TEAM_ROUTE_ACTIVITY_KINDS = ['authorize', 'deny', 'connect', 'disconnect'] as const

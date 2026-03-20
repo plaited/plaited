@@ -7,6 +7,7 @@ import {
   MSS_SCALES,
   MSS_STRUCTURES,
   RUNTIME_TAXONOMY,
+  TEAM_ROUTE_ACTIVITY_KINDS,
 } from './runtime.constants.ts'
 
 /**
@@ -108,6 +109,46 @@ export const BehavioralActorDescriptorSchema = z.object({
 })
 
 /**
+ * Serializable sub-agent descriptor.
+ *
+ * @public
+ */
+export const SubAgentDescriptorSchema = z.object({
+  kind: z.literal(RUNTIME_TAXONOMY[3]),
+  id: z.string(),
+  actor: BehavioralActorDescriptorSchema,
+  parentActorId: z.string().optional(),
+  governance: z
+    .object({
+      macFloor: z.array(z.string()),
+      taskScope: z.array(z.string()).optional(),
+    })
+    .optional(),
+})
+
+/**
+ * Serializable PM descriptor.
+ *
+ * @public
+ */
+export const PmDescriptorSchema = z.object({
+  kind: z.literal(RUNTIME_TAXONOMY[5]),
+  id: z.string(),
+})
+
+/**
+ * Serializable team descriptor.
+ *
+ * @public
+ */
+export const TeamDescriptorSchema = z.object({
+  kind: z.literal(RUNTIME_TAXONOMY[4]),
+  id: z.string(),
+  pmId: z.string(),
+  members: z.array(z.union([BehavioralActorDescriptorSchema, SubAgentDescriptorSchema])),
+})
+
+/**
  * Message envelope used by runtime links.
  *
  * @public
@@ -130,8 +171,27 @@ export const LinkActivitySchema = z.object({
   error: z.string().optional(),
 })
 
+/**
+ * Observable team route activity.
+ *
+ * @public
+ */
+export const TeamRouteActivitySchema = z.object({
+  kind: z.enum(TEAM_ROUTE_ACTIVITY_KINDS),
+  teamId: z.string(),
+  pmId: z.string(),
+  sourceId: z.string(),
+  targetId: z.string(),
+  eventTypes: z.array(z.string()),
+  linkId: z.string().optional(),
+})
+
 export type RuntimeContract = z.infer<typeof RuntimeContractSchema>
 export type MssObject = z.infer<typeof MssObjectSchema>
 export type RuntimeArtifact = z.infer<typeof RuntimeArtifactSchema>
 export type BehavioralActorDescriptor = z.infer<typeof BehavioralActorDescriptorSchema>
+export type SubAgentDescriptor = z.infer<typeof SubAgentDescriptorSchema>
+export type PmDescriptor = z.infer<typeof PmDescriptorSchema>
+export type TeamDescriptor = z.infer<typeof TeamDescriptorSchema>
 export type LinkActivity = z.infer<typeof LinkActivitySchema>
+export type TeamRouteActivity = z.infer<typeof TeamRouteActivitySchema>
