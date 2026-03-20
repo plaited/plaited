@@ -14,13 +14,20 @@ forcing that work into the runtime-taxonomy lane.
 - `skills/validate-skill/`
 - `skills/`
 
-## Requirements
+## Required
 
 - Keep `validate-skill` focused on structural/spec checks.
 - Add the first explicit skill-evaluation surface rather than overloading
   validation.
 - Preserve progressive disclosure and AgentSkills-compatible layout.
 - Keep eval artifacts and conventions local to skills where practical.
+
+## Preserve
+
+- progressive disclosure remains the skill loading model
+- skills remain AgentSkills-compatible and portable
+- shared tooling stays in `src/`, not in cross-skill runtime imports
+- this lane remains separate from runtime-taxonomy work
 
 ## Acceptance Criteria
 

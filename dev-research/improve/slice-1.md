@@ -11,12 +11,19 @@ provider-specific adapter and judge layer in the current dev autoresearch stack.
 - `scripts/dev-autoresearch.ts`
 - `scripts/`
 
-## Requirements
+## Required
 
 - Preserve current bounded autoresearch behavior.
 - Keep Claude/Codex-specific code out of shared framework surfaces.
 - Clarify which attempt/provenance/program-slice responsibilities are generic.
 - Do not force a full migration in one slice.
+
+## Preserve
+
+- current bounded autoresearch semantics remain intact
+- provider-specific adapters and judges remain outside the shared framework surface
+- provenance and experiment history stay explicit
+- this lane remains distinct from runtime-taxonomy and native-model work
 
 ## Acceptance Criteria
 

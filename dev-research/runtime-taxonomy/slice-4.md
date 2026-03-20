@@ -14,7 +14,6 @@ Introduce a local Attempt-DAG TeamHub for a single sovereign node.
 
 - local attempt graph over worktrees/commits
 - frontier/leaves/lineage concepts for team attempts
-- PM-governed winner selection
 - `createLink` and BP-first coordination remain the live messaging layer
 - `.memory/teams/<team-id>/` or equivalent local attempt metadata shape
 
@@ -36,5 +35,4 @@ Introduce a local Attempt-DAG TeamHub for a single sovereign node.
 
 - attempt DAG is locally queryable (frontier/leaves/lineage)
 - team attempts can be persisted and restored
-- PM-governed winner selection chooses promotion candidates
 - validation passes

@@ -80,6 +80,7 @@ For accepted code slices, both must pass:
 - Slice 2: IPC bridge for `createLink`
 - Slice 3: explicit actor/sub-agent/team integration path
 - Slice 4: local Attempt-DAG TeamHub for sovereign node teams
+- Slice 5: PM-governed winner selection for local TeamHub attempts
 
 ## Keep / Revise / Discard
 
