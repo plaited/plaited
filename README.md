@@ -46,6 +46,38 @@ After that, a separate native-model lane focuses on making Falcon or another Pla
 - generating UI through Plaited's controller/generative UI model
 - operating inside Plaited's BP/PM/MSS ontology
 
+### TODO: Native Model PoC Validation (Phase 1)
+
+**Goal:** Prove autoresearch + native model distillation works before fundraising.
+
+**Experiment:** 3K trials on H100 cloud, 48-hour validation.
+
+**Setup:**
+```bash
+# 1. Rent H100 on Thunder Compute ($1.38/hr)
+# 2. Run autoresearch with codex-cli-adapter
+bun run research:overnight -- ./dev-research/native-model/slice-1.md \
+  --adapter ./scripts/codex-cli-adapter.ts \
+  --judge \
+  --max-attempts 30
+
+# 3. Collect outputs (~100-300 quality samples from 3K trials)
+# 4. Fine-tune Falcon with collected data (QLoRA)
+# 5. Evaluate: baseline vs fine-tuned metrics
+```
+
+**Expected Outcome:**
+- ✓ Generation works (Codex produces valid modules)
+- ✓ Judging works (Sonnet identifies quality)
+- ✓ Distillation works (fine-tuned model improves)
+- ✓ Unit economics clear (cost per good output)
+
+**Cost:** $1,178 (H100 + APIs)
+**Timeline:** 48 hours wall-clock
+**Success Criteria:** Measurable improvement on test set, <$5 cost per quality output
+
+**Next Step:** If validation succeeds, scale to 8K trials on MSI EdgeXpert ($6,900) for investor-ready model.
+
 ## Layer 2: How Plaited Works
 
 ### Behavioral Programming First
