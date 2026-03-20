@@ -55,8 +55,28 @@ export const McpServerCapabilitiesSchema = z.object({
   resources: z.array(McpResourceSchema),
 })
 
+export const McpManifestServerSchema = z.object({
+  name: z.string(),
+  version: z.string().optional(),
+  transport: z.string().optional(),
+})
+
+export const McpManifestCapabilitiesSchema = z.object({
+  tools: z.union([z.record(z.string(), McpToolSchema), z.array(McpToolSchema)]).default([]),
+  prompts: z.union([z.record(z.string(), McpPromptSchema), z.array(McpPromptSchema)]).default([]),
+  resources: z.union([z.record(z.string(), McpResourceSchema), z.array(McpResourceSchema)]).default([]),
+})
+
+export const McpManifestSchema = z.object({
+  server: McpManifestServerSchema.optional(),
+  capabilities: McpManifestCapabilitiesSchema,
+})
+
 export type McpCallToolResultOutput = z.infer<typeof McpCallToolResultSchema>
 export type McpContentOutput = z.infer<typeof McpContentSchema>
+export type McpManifestCapabilitiesOutput = z.infer<typeof McpManifestCapabilitiesSchema>
+export type McpManifestOutput = z.infer<typeof McpManifestSchema>
+export type McpManifestServerOutput = z.infer<typeof McpManifestServerSchema>
 export type McpPromptMessageOutput = z.infer<typeof McpPromptMessageSchema>
 export type McpPromptOutput = z.infer<typeof McpPromptSchema>
 export type McpResourceContentOutput = z.infer<typeof McpResourceContentSchema>
