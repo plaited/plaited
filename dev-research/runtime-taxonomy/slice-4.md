@@ -24,3 +24,17 @@ Introduce a local Attempt-DAG TeamHub for a single sovereign node.
 - Falcon/native-model dependencies
 - replacing PM authority with a free-push hub
 - broad createAgentLoop rewrites
+
+## Preserve
+
+- PM remains authority for attempt promotion/lineage decisions
+- createLink + BP coordination remain the live messaging path
+- Node boundary and A2A termination points untouched
+- Actor/sub-agent/team types from Slice 3 remain usable
+
+## Acceptance Criteria
+
+- attempt DAG is locally queryable (frontier/leaves/lineage)
+- team attempts can be persisted and restored
+- PM-governed winner selection chooses promotion candidates
+- validation passes
