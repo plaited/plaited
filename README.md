@@ -46,114 +46,77 @@ After that, a separate native-model lane focuses on making Falcon or another Pla
 - generating UI through Plaited's controller/generative UI model
 - operating inside Plaited's BP/PM/MSS ontology
 
-### TODO: Native Model PoC Validation (Phase 1)
+### Native-Model Status
 
-**Goal:** Prove autoresearch + native model distillation works before fundraising.
+The current native-model lane is no longer centered on a speculative cloud PoC.
+It now has a working local bootstrap loop:
+- curated eval outputs become an SFT dataset boundary
+- a Bun wrapper launches the uv-managed MLX trainer
+- Falcon can be served locally with or without a LoRA adapter
+- tuned and untuned runs can be compared before promotion
 
-**Experiment:** 3K trials on H100 cloud, 48-hour validation.
+Current conclusion:
+- this Mac is good for validation, curation, tiny quantized bootstrap runs, and
+  train/eval/promotion workflow development
+- this Mac is not the right box for meaningful Falcon quality work
+- the MSI box is the intended training plane for less truncated, higher-headroom
+  follow-up runs
 
----
+The first successful local bootstrap run used:
+- `mlx-community/Falcon-H1R-7B-4bit`
+- `--max-seq-length 384`
+- `--num-layers 2`
+- `--iters 20`
 
-## Step 1: Cloud Infrastructure Setup
+That proved the workflow, but the tuned adapter did not beat the untuned local
+Falcon baseline, so it should not be promoted.
 
-**1a. Sign up for Thunder Compute H100**
-- Go to https://www.thundercompute.com/
-- Create account, add payment method
-- Request H100 instance (spot pricing, ~$1.38/hr)
-- Note: API key and endpoint URL
+### Native-Model Workflow
 
-**1b. Set environment variables**
+Use the local Falcon/MLX lane for:
+- adapter smoke tests
+- bounded validation
+- small bootstrap LoRA runs
+- comparison and promotion decisions
+
+Use the MSI box for:
+- longer-context training
+- less aggressive quantization
+- more trainable layers
+- serious candidate promotion attempts
+
+Key commands:
+
 ```bash
-export THUNDER_COMPUTE_API_KEY="your-api-key"
-export THUNDER_COMPUTE_ENDPOINT="https://api.thundercompute.com/v1"
-export THUNDER_COMPUTE_MODEL="meta-llama/Llama-3.1-70B"  # or Falcon equiv
+# Prepare and run a local MLX bootstrap train/eval cycle
+bun run native-model:bootstrap-cycle -- \
+  --model mlx-community/Falcon-H1R-7B-4bit \
+  --max-seq-length 384 \
+  --num-layers 2 \
+  --iters 20
+
+# Run a bounded local MLX training attempt directly
+bun run native-model:train:mlx -- \
+  --base-model mlx-community/Falcon-H1R-7B-4bit \
+  --max-seq-length 384 \
+  --num-layers 2 \
+  --iters 20 \
+  --run
+
+# Serve the tracked Falcon adapter target from .env.schema
+bun run falcon:mlx
+
+# Run the bounded validation batch against the Falcon adapter
+bun run native-model:validate -- --adapter ./scripts/falcon-h1r-mlx-adapter.ts
+
+# Compare untuned vs tuned validation artifacts
+bun run native-model:compare -- \
+  --baseline ./dev-research/native-model/evals/runs/falcon-untuned-baseline \
+  --candidate ./dev-research/native-model/evals/runs/<candidate-run>
 ```
 
----
-
-## Step 2: Cloud Adapter (✓ Complete)
-
-**Status:** `scripts/thunder-compute-adapter.ts` created
-
-Implements cloud-based inference for Thunder Compute H100 with:
-- HTTP client for Thunder Compute REST API
-- Batch queue (8-16 parallel requests) for throughput optimization
-- Exponential backoff retry logic (3 attempts, max)
-- Token usage tracking for cost measurement
-- Standard Adapter interface (AdapterInput/AdapterResult)
-- Timeout handling and graceful error recovery
-
-**What you need to do:**
-1. Sign up for Thunder Compute account at https://www.thundercompute.com/
-2. Get API key and endpoint URL
-3. Set environment variables (see Step 1b)
-4. Run the validation experiment (see Step 3)
-
----
-
-## Step 3: Run Validation Experiment
-
-**3a. Dry run (no charges)**
-```bash
-bun run research:overnight -- ./dev-research/native-model/slice-1.md \
-  --adapter ./scripts/thunder-compute-adapter.ts \
-  --judge \
-  --dry-run \
-  --max-attempts 3
-```
-
-**3b. Full run (48 hours, $1,178)**
-```bash
-# Monitor Thunder Compute dashboard in parallel
-bun run research:overnight -- ./dev-research/native-model/slice-1.md \
-  --adapter ./scripts/thunder-compute-adapter.ts \
-  --judge \
-  --max-attempts 30
-```
-
-**3c. Collect results**
-```bash
-# After completion:
-# - Extract good outputs (judge score > 0.85) → /tmp/good-outputs.jsonl
-# - Log cost breakdown ($$$)
-# - Compare to baseline
-```
-
----
-
-## Step 4: Fine-tune & Evaluate
-
-**4a. Fine-tune Falcon on collected data**
-```bash
-# Use collected outputs to fine-tune
-bun scripts/falcon-finetune.ts \
-  --data /tmp/good-outputs.jsonl \
-  --method qlora \
-  --model falcon-7b
-```
-
-**4b. Evaluate**
-```bash
-# Test baseline vs fine-tuned on benchmark
-bun scripts/eval-native-model.ts \
-  --baseline-model falcon-7b \
-  --finetuned-model falcon-7b-finetuned \
-  --test-set ./dev-research/native-model/evals/test-cases.jsonl
-```
-
----
-
-**Expected Outcome:**
-- ✓ Generation works (H100 produces valid modules)
-- ✓ Judging works (Sonnet identifies quality)
-- ✓ Distillation works (fine-tuned model improves)
-- ✓ Unit economics clear (cost per good output)
-
-**Cost:** $1,178 (H100 + APIs)
-**Timeline:** 48 hours wall-clock
-**Success Criteria:** Measurable improvement on test set, <$5 cost per quality output
-
-**Next Step:** If validation succeeds, scale to 8K trials on MSI EdgeXpert ($6,900) for investor-ready model.
+Detailed training and MSI handoff notes live in:
+- [training/README.md](/Users/eirby/Workspace/plaited/dev-research/native-model/training/README.md)
 
 ## Layer 2: How Plaited Works
 
@@ -268,11 +231,28 @@ bun run native-model:validate -- --adapter ./scripts/codex-cli-adapter.ts
 # Prepare a trainer-friendly SFT dataset + manifest from curated outputs
 bun run native-model:train
 
-# Launch the MLX LoRA backend through a Bun wrapper
-bun run native-model:train:mlx -- --run
+# Launch a bounded local MLX LoRA run through the Bun wrapper
+bun run native-model:train:mlx -- \
+  --base-model mlx-community/Falcon-H1R-7B-4bit \
+  --max-seq-length 384 \
+  --num-layers 2 \
+  --iters 20 \
+  --run
+
+# Train, evaluate, compare, and optionally promote in one loop
+bun run native-model:bootstrap-cycle -- \
+  --model mlx-community/Falcon-H1R-7B-4bit \
+  --max-seq-length 384 \
+  --num-layers 2 \
+  --iters 20
 
 # Start the local Falcon MLX inference server
 bun run falcon:mlx
+
+# Compare untuned vs tuned validation artifacts
+bun run native-model:compare -- \
+  --baseline ./dev-research/native-model/evals/runs/falcon-untuned-baseline \
+  --candidate ./dev-research/native-model/evals/runs/<candidate-run>
 
 # Start the local EmbeddingGemma MLX embedding server
 bun run embedding:mlx
@@ -296,9 +276,31 @@ What each command does:
   - writes a manifest and output paths for the first local tuning run
   - does not start training by itself unless a trainer backend is configured
 
+- `bun run native-model:train:mlx -- ...`
+  - prepares the SFT dataset and launches the MLX LoRA/SFT backend through a Bun wrapper
+  - keeps Python as the training implementation, but Bun as the operator surface
+  - defaults to a timestamped run under `dev-research/native-model/training/runs/`
+  - forwards flags to:
+    - [train_mlx_lora.py](/Users/eirby/Workspace/plaited/dev-research/native-model/training/train_mlx_lora.py)
+  - on this Mac, the proven working bootstrap settings are the quantized Falcon run shown above
+
+- `bun run native-model:bootstrap-cycle -- ...`
+  - runs the bounded bootstrap loop end-to-end
+  - trains a candidate local adapter
+  - evaluates untuned and tuned Falcon runs
+  - compares both summaries
+  - optionally promotes the tuned adapter by updating `FALCON_ADAPTER_PATH` in [`.env.schema`](/Users/eirby/Workspace/plaited/.env.schema)
+
+- `bun run native-model:compare -- ...`
+  - compares two validation artifacts
+  - accepts a run directory, `summary.json`, or `results.jsonl`
+  - reports pass-rate, eligibility, and score deltas before promotion decisions
+
 - `bun run falcon:mlx`
   - starts the local MLX inference server for Falcon H1R on Apple Silicon
+  - reads the tracked promoted adapter path from [`.env.schema`](/Users/eirby/Workspace/plaited/.env.schema)
   - is for local inference/eval loops, not weight updates
+  - use `FALCON_DISABLE_ADAPTER=1 bun run falcon:mlx` for an untuned baseline run
 
 - `bun run embedding:mlx`
   - starts the local MLX embedding server using EmbeddingGemma
@@ -312,26 +314,19 @@ What each command does:
   - starts the local MLX text-to-speech server using Qwen3 TTS
   - is the local audio backend for `speak`
 
-- `bun run native-model:train:mlx -- ...`
-  - prepares the SFT dataset and launches the MLX LoRA/SFT backend through a Bun wrapper
-  - keeps Python as the training implementation, but Bun as the operator surface
-  - defaults to a timestamped run under `dev-research/native-model/training/runs/`
-  - forwards flags to:
-    - [train_mlx_lora.py](/Users/eirby/Workspace/plaited/dev-research/native-model/training/train_mlx_lora.py)
-
 The MLX LoRA/SFT backend currently lives under:
 - [training](/Users/eirby/Workspace/plaited/dev-research/native-model/training)
-
-The first real local tuning run can now be launched from the repo root:
-
-```bash
-bun run native-model:train:mlx -- --run
-```
 
 Use `--output-dir` when you want a stable run path:
 
 ```bash
-bun run native-model:train:mlx -- --output-dir ./dev-research/native-model/training/runs/bootstrap-mlx --run
+bun run native-model:train:mlx -- \
+  --base-model mlx-community/Falcon-H1R-7B-4bit \
+  --max-seq-length 384 \
+  --num-layers 2 \
+  --iters 20 \
+  --output-dir ./dev-research/native-model/training/runs/bootstrap-mlx \
+  --run
 ```
 
 ### Agent-Facing CLI
