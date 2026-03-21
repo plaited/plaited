@@ -32,6 +32,34 @@ uv run python -c "import mlx.core as mx; print(mx.default_device())"
 
 If that fails, fix the MLX runtime before attempting any local tuning run.
 
+## Python Quality Commands
+
+```bash
+uv run ruff check .
+uv run ruff format .
+uv run pytest
+```
+
+## First MLX LoRA Run
+
+Prepare the MLX dataset split and print the exact training command:
+
+```bash
+TRAIN_DATASET_PATH=../evals/curated-good-outputs.jsonl \
+TRAIN_OUTPUT_DIR=./runs/bootstrap-mlx \
+BASE_MODEL=tiiuae/Falcon-H1R-7B-Base \
+uv run python train_mlx_lora.py
+```
+
+Actually start the first MLX LoRA run:
+
+```bash
+TRAIN_DATASET_PATH=../evals/curated-good-outputs.jsonl \
+TRAIN_OUTPUT_DIR=./runs/bootstrap-mlx \
+BASE_MODEL=tiiuae/Falcon-H1R-7B-Base \
+uv run python train_mlx_lora.py --run
+```
+
 ## Notes
 
 - `runs/` and `checkpoints/` are local artifacts and should not be committed.

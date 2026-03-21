@@ -9,7 +9,9 @@ dependencies = []
 [dependency-groups]
 dev = [
   "numpy>=2.3.0,<3",
+  "pytest>=8.4.2,<9",
   "pyyaml>=6.0.2,<7",
+  "ruff>=0.13.1,<0.14",
 ]
 mlx = [
   "mlx==0.31.1",
@@ -20,3 +22,10 @@ mlx = [
 environments = [
   "sys_platform == 'darwin' and platform_machine == 'arm64'",
 ]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
