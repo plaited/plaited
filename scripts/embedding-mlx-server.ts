@@ -17,7 +17,7 @@
  */
 
 const VENV_PYTHON = `${import.meta.dir}/../.venv/bin/python3`
-const DEFAULT_MODEL = 'mlx-community/multilingual-e5-small-mlx'
+const DEFAULT_MODEL = 'mlx-community/embeddinggemma-300m-4bit'
 const DEFAULT_PORT = '8081'
 
 const args = process.argv.slice(2)

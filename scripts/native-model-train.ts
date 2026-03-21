@@ -48,7 +48,7 @@ type TrainConfig = {
 }
 
 const DEFAULT_INPUT_PATH = './dev-research/native-model/evals/curated-good-outputs.jsonl'
-const DEFAULT_BASE_MODEL = process.env.NATIVE_MODEL_BASE_MODEL ?? 'tiiuae/Falcon-H1R-7B-Base'
+const DEFAULT_BASE_MODEL = process.env.NATIVE_MODEL_BASE_MODEL ?? 'tiiuae/Falcon-H1-7B-Base'
 
 const createTimestamp = (): string => new Date().toISOString().replaceAll(':', '-').replaceAll('.', '-')
 

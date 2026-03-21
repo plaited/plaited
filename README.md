@@ -273,6 +273,15 @@ bun run native-model:train:mlx -- --run
 
 # Start the local Falcon MLX inference server
 bun run falcon:mlx
+
+# Start the local EmbeddingGemma MLX embedding server
+bun run embedding:mlx
+
+# Start the local Qwen3 VL MLX vision-language server
+bun run qwen:vl:mlx
+
+# Start the local Qwen3 TTS MLX audio server
+bun run qwen:tts:mlx
 ```
 
 What each command does:
@@ -290,6 +299,18 @@ What each command does:
 - `bun run falcon:mlx`
   - starts the local MLX inference server for Falcon H1R on Apple Silicon
   - is for local inference/eval loops, not weight updates
+
+- `bun run embedding:mlx`
+  - starts the local MLX embedding server using EmbeddingGemma
+  - is the local embedding backend for `embed_search`
+
+- `bun run qwen:vl:mlx`
+  - starts the local MLX vision-language server using Qwen3 VL
+  - is the local vision backend for `analyze_image`
+
+- `bun run qwen:tts:mlx`
+  - starts the local MLX text-to-speech server using Qwen3 TTS
+  - is the local audio backend for `speak`
 
 - `bun run native-model:train:mlx -- ...`
   - prepares the SFT dataset and launches the MLX LoRA/SFT backend through a Bun wrapper

@@ -11,6 +11,14 @@ from pathlib import Path
 from typing import Any
 
 
+def summarize_auth_env() -> dict[str, bool]:
+    return {
+        "HF_TOKEN": bool(os.environ.get("HF_TOKEN")),
+        "HUGGING_FACE_HUB_TOKEN": bool(os.environ.get("HUGGING_FACE_HUB_TOKEN")),
+        "HUGGINGFACE_HUB_TOKEN": bool(os.environ.get("HUGGINGFACE_HUB_TOKEN")),
+    }
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Prepare and run the first MLX LoRA/SFT tuning pass.")
     parser.add_argument(
@@ -25,7 +33,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--base-model",
-        default=os.environ.get("BASE_MODEL", "tiiuae/Falcon-H1R-7B-Base"),
+        default=os.environ.get("BASE_MODEL", "tiiuae/Falcon-H1-7B-Base"),
         help="Base model path or Hugging Face repo.",
     )
     parser.add_argument("--batch-size", type=int, default=1)
@@ -163,12 +171,22 @@ def main() -> None:
     print(f"- Valid split: {dataset_dir / 'valid.jsonl'} ({len(valid_examples)} examples)")
     print(f"- Manifest: {output_dir / 'mlx-train-manifest.json'}")
     print(f"- Adapter output: {adapter_path}")
+    print(f"- HF auth env: {summarize_auth_env()}")
     print()
     print("Command:")
     print(" ".join(command))
 
     if args.run:
-        subprocess.run(command, check=True)
+        child_env = os.environ.copy()
+        print(
+            "Launching mlx_lm with auth env:",
+            {
+                "HF_TOKEN": bool(child_env.get("HF_TOKEN")),
+                "HUGGING_FACE_HUB_TOKEN": bool(child_env.get("HUGGING_FACE_HUB_TOKEN")),
+                "HUGGINGFACE_HUB_TOKEN": bool(child_env.get("HUGGINGFACE_HUB_TOKEN")),
+            },
+        )
+        subprocess.run(command, check=True, env=child_env)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 /**
- * Start the Qwen 2.5 VL MLX vision-language server.
+ * Start the Qwen3 VL MLX vision-language server.
  *
  * @remarks
  * Launches `mlx_vlm.server` from the project venv. The server exposes an
@@ -17,7 +17,7 @@
  */
 
 const VENV_PYTHON = `${import.meta.dir}/../.venv/bin/python3`
-const DEFAULT_MODEL = 'mlx-community/Qwen2.5-VL-7B-Instruct-4bit'
+const DEFAULT_MODEL = 'mlx-community/Qwen3-VL-4B-Instruct-4bit'
 const DEFAULT_PORT = '8082'
 
 const args = process.argv.slice(2)
@@ -35,7 +35,7 @@ if (!venvExists) {
   process.exit(1)
 }
 
-console.log(`Starting Qwen 2.5 VL MLX server...`)
+console.log(`Starting Qwen3 VL MLX server...`)
 console.log(`  Model:  ${model}`)
 console.log(`  Port:   ${port}`)
 console.log(`  URL:    http://localhost:${port}/v1/chat/completions`)

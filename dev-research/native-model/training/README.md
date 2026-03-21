@@ -47,7 +47,7 @@ Prepare the MLX dataset split and print the exact training command:
 ```bash
 TRAIN_DATASET_PATH=../evals/curated-good-outputs.jsonl \
 TRAIN_OUTPUT_DIR=./runs/bootstrap-mlx \
-BASE_MODEL=tiiuae/Falcon-H1R-7B-Base \
+BASE_MODEL=tiiuae/Falcon-H1-7B-Base \
 uv run python train_mlx_lora.py
 ```
 
@@ -56,7 +56,7 @@ Actually start the first MLX LoRA run:
 ```bash
 TRAIN_DATASET_PATH=../evals/curated-good-outputs.jsonl \
 TRAIN_OUTPUT_DIR=./runs/bootstrap-mlx \
-BASE_MODEL=tiiuae/Falcon-H1R-7B-Base \
+BASE_MODEL=tiiuae/Falcon-H1-7B-Base \
 uv run python train_mlx_lora.py --run
 ```
 

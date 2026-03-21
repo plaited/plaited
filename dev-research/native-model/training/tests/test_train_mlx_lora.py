@@ -14,7 +14,7 @@ def test_split_examples_keeps_at_least_one_validation_example() -> None:
 
 def test_build_training_command_uses_expected_mlx_cli_shape(tmp_path: Path) -> None:
     class Args:
-        base_model = "tiiuae/Falcon-H1R-7B-Base"
+        base_model = "tiiuae/Falcon-H1-7B-Base"
         batch_size = 1
         iters = 60
         learning_rate = 1e-5

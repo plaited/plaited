@@ -17,7 +17,7 @@
  */
 
 const VENV_PYTHON = `${import.meta.dir}/../.venv/bin/python3`
-const DEFAULT_MODEL = 'mlx-community/Qwen3-TTS-4bit'
+const DEFAULT_MODEL = 'mlx-community/Qwen3-TTS-4B-4bit'
 const DEFAULT_PORT = '8083'
 
 const args = process.argv.slice(2)
