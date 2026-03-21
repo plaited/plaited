@@ -43,6 +43,36 @@ Before committing code, both must pass:
 
 **Never put graders, eval runners, or adapters in `src/tools/`.** Those are calibration infrastructure, not CLI commands.
 
+## Python Stack
+
+**Use `uv`** for Python environment and dependency management.
+
+**Project boundary:** Python belongs in dedicated subprojects, not the Bun repo root.
+- Good: `dev-research/native-model/training/`
+- Avoid: root-level `pyproject.toml` for the whole repo
+
+**Required files for Python subprojects:**
+- `pyproject.toml`
+- `.python-version`
+- `uv.lock`
+- local `.venv/` (ignored)
+
+**Default Python tools:**
+- **Lint/format:** `ruff`
+- **Tests:** `pytest`
+
+**Default Python workflow:**
+1. `uv sync`
+2. `uv run ruff check .`
+3. `uv run pytest`
+
+**Runtime smoke test first** — before wiring MLX/training/inference commands:
+```bash
+uv run python -c "import mlx.core as mx; print(mx.default_device())"
+```
+
+**Do not ad hoc `pip install` into the repo root.** Python here supports training/inference workflows, not the shipped framework runtime.
+
 ## GitHub CLI
 
 **Always use `gh` for GitHub URLs** — `gh api`, `gh pr view`, `gh issue view`. Never WebFetch for GitHub content.
