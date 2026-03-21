@@ -1,4 +1,4 @@
-import { formatTrialSummary, loadJsonl, summarizeTrialResults, type TrialResult } from '../src/improve.ts'
+import { loadJsonl, summarizeTrialResults, type TrialResult } from '../src/improve.ts'
 import { compareSummaries } from './native-model-bootstrap-cycle.ts'
 
 type SummaryLike = {
@@ -122,12 +122,6 @@ const run = async () => {
   console.log(`- No regression: ${comparison.noRegression}`)
   console.log(`- Improved: ${comparison.improved}`)
   console.log(`- Promotion candidate: ${comparison.shouldPromote}`)
-  console.log()
-  console.log(`Baseline summary:`)
-  console.log(formatTrialSummary(baseline as never).trimEnd())
-  console.log()
-  console.log(`Candidate summary:`)
-  console.log(formatTrialSummary(candidate as never).trimEnd())
 }
 
 await run()

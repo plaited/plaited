@@ -16,6 +16,22 @@ trainer dependencies do not leak into shipped framework surfaces.
 - larger Linux/CUDA runs on the MSI/EdgeXpert box with a separate trainer stack
 - less truncated, more meaningful Falcon training on hardware with more headroom
 
+## Current Conclusion
+
+- This Mac is good for:
+  - validation
+  - curation
+  - tiny quantized bootstrap runs
+  - train/eval/promotion workflow development
+- This Mac is not the right place for meaningful Falcon quality work.
+- The untuned versus tuned local Falcon comparison currently shows:
+  - no validation improvement
+  - no training-eligible outputs
+  - slight score regression after the tiny local LoRA run
+
+That means the workflow is proven here, but real training should move to the
+MSI box.
+
 ## Setup
 
 ```bash
@@ -100,6 +116,37 @@ smaller section-bounded training items before `mlx_lm` sees them.
 - `native-model:train` accepts `--max-example-tokens`
 - `native-model:train:mlx` defaults shaping to `--max-seq-length` unless you
   override it with `--max-example-tokens`
+
+## MSI Handoff
+
+When moving to the MSI box:
+
+1. Reuse the same curated dataset boundary:
+   - `dev-research/native-model/evals/curated-good-outputs.jsonl`
+2. Reuse the same comparison loop:
+   - baseline eval
+   - tuned eval
+   - `bun run native-model:compare`
+3. Keep the same promotion rule:
+   - do not promote on regression
+   - only promote when the tuned run is clearly better
+4. Swap the trainer backend:
+   - MLX on this Mac
+   - CUDA/Unsloth-style trainer on the MSI box
+5. Increase training ambition only on the MSI box:
+   - longer context
+   - more trainable layers
+   - less aggressive quantization
+   - more than one tiny bootstrap run
+
+Recommended first MSI checklist:
+
+```bash
+# 1. bring up the trainer environment on the MSI box
+# 2. copy or regenerate the curated dataset boundary
+# 3. run the equivalent bootstrap cycle with the MSI trainer backend
+# 4. compare untuned vs tuned summaries before promotion
+```
 
 ## Notes
 

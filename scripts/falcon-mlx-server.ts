@@ -31,7 +31,8 @@ const args = process.argv.slice(2)
 const portIdx = args.indexOf('--port')
 const port = portIdx !== -1 ? (args[portIdx + 1] ?? DEFAULT_PORT) : DEFAULT_PORT
 const model = process.env.FALCON_MODEL ?? DEFAULT_MODEL
-const adapterPath = process.env.FALCON_ADAPTER_PATH
+const disableAdapter = process.env.FALCON_DISABLE_ADAPTER === '1'
+const adapterPath = disableAdapter ? undefined : process.env.FALCON_ADAPTER_PATH
 const resolvedAdapterPath = adapterPath ? resolve(REPO_ROOT, adapterPath) : undefined
 
 // ============================================================================
@@ -55,7 +56,9 @@ if (!Bun.which('uv')) {
 
 console.log(`Starting Falcon H1R MLX server...`)
 console.log(`  Model:  ${model}`)
-if (resolvedAdapterPath) {
+if (disableAdapter) {
+  console.log(`  Adapter: disabled`)
+} else if (resolvedAdapterPath) {
   console.log(`  Adapter: ${resolvedAdapterPath}`)
 }
 console.log(`  Port:   ${port}`)

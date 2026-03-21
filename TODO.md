@@ -25,6 +25,12 @@
 Use this machine as the control plane for validation, curation, adapter evaluation, and data-shaping.
 Use the MSI machine as the serious training plane once it is ready.
 
+The local Falcon comparison now confirms:
+- untuned local Falcon is weak on controller-compatible UI
+- the tiny tuned MLX adapter did not improve pass rate
+- the tuned adapter regressed average score slightly
+- this Mac workflow is valid, but not a promotion-quality training path
+
 ## Next Steps
 
 1. Evaluate the successful local adapter on this machine.
@@ -60,6 +66,13 @@ Use the MSI machine as the serious training plane once it is ready.
      - more trainable layers
      - less truncated runs
      - repeated distillation cycles
+   - Reuse:
+     - `bun run native-model:bootstrap-cycle`
+     - `bun run native-model:compare`
+     - the same curated dataset boundary
+   - Replace:
+     - MLX trainer backend
+     - local Falcon server backend as needed for the MSI environment
 
 5. Once the MSI environment is ready, reuse the same curated boundary and run manifest flow.
    - Keep:
@@ -75,6 +88,7 @@ Use the MSI machine as the serious training plane once it is ready.
 2. Add a data-shaping step to reduce truncation.
 3. Keep this Mac for validation/curation/bootstrap only.
 4. Move real Falcon training to the MSI machine.
+5. Run the first MSI baseline vs tuned comparison before promoting anything.
 
 ## Do Not Revisit Unless Needed
 
