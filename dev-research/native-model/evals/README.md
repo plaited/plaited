@@ -11,6 +11,10 @@ lane. The batch runs through `src/improve/trial.ts` via the wrapper script
 - `mss-grounded-module-generation`
 - `controller-compatible-ui-generation`
 
+The current batch intentionally overweights controller-compatible generative UI
+because it is a major project goal. It now includes multiple controller-shaped
+prompt variants instead of relying on a single inbox example.
+
 Each prompt stays inspection-oriented instead of mutating the repo. The grader
 is intentionally lightweight and externalized in
 `scripts/improve-native-model-validation-grader.ts`.
