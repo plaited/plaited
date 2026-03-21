@@ -16,6 +16,9 @@
  * @packageDocumentation
  */
 
+import { resolve } from 'node:path'
+
+const REPO_ROOT = `${import.meta.dir}/..`
 const TRAINING_DIR = `${import.meta.dir}/../dev-research/native-model/training`
 const DEFAULT_MODEL = 'mlx-community/Falcon-H1R-7B-4bit'
 const DEFAULT_PORT = '8080'
@@ -29,6 +32,7 @@ const portIdx = args.indexOf('--port')
 const port = portIdx !== -1 ? (args[portIdx + 1] ?? DEFAULT_PORT) : DEFAULT_PORT
 const model = process.env.FALCON_MODEL ?? DEFAULT_MODEL
 const adapterPath = process.env.FALCON_ADAPTER_PATH
+const resolvedAdapterPath = adapterPath ? resolve(REPO_ROOT, adapterPath) : undefined
 
 // ============================================================================
 // Verify uv training project exists
@@ -51,14 +55,14 @@ if (!Bun.which('uv')) {
 
 console.log(`Starting Falcon H1R MLX server...`)
 console.log(`  Model:  ${model}`)
-if (adapterPath) {
-  console.log(`  Adapter: ${adapterPath}`)
+if (resolvedAdapterPath) {
+  console.log(`  Adapter: ${resolvedAdapterPath}`)
 }
 console.log(`  Port:   ${port}`)
 console.log(`  URL:    http://localhost:${port}/v1/chat/completions`)
 console.log()
 
-const adapterArgs = adapterPath ? ['--adapter-path', adapterPath] : []
+const adapterArgs = resolvedAdapterPath ? ['--adapter-path', resolvedAdapterPath] : []
 const result = await Bun.$`uv run python -m mlx_lm.server --model ${model} --port ${port} ${adapterArgs}`
   .cwd(TRAINING_DIR)
   .env({
