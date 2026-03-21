@@ -7,7 +7,7 @@
 **Prefer Bun over Node.js** when running in Bun environment.
 
 **File system:** `Bun.file(path).exists()`, `.text()`, `.json()`, `.bytes()` — not `node:fs`. `Bun.write(path, data)` — not `writeFileSync`.
-**Shell:** `Bun.$\`cmd\`` with `.cwd()`, `.nothrow()`, `.quiet()` — not `child_process`.
+**Shell:** prefer `Bun.$\`cmd\`` with `.cwd()`, `.nothrow()`, `.quiet()` for repo scripts. Use `Bun.spawn()` only when lower-level process control is actually needed (IPC, manual stdin streaming, detached/background child management, explicit stdio descriptors).
 **Path:** `Bun.resolveSync()` for modules, `import.meta.dir` for current dir. Keep `node:path` for join/resolve/dirname.
 **Executables:** `Bun.which(cmd)` to check existence. `bunx` not `npx`.
 **When Node.js OK:** readline, node:path, APIs without Bun equivalents.
@@ -70,6 +70,8 @@ Before committing code, both must pass:
 ```bash
 uv run python -c "import mlx.core as mx; print(mx.default_device())"
 ```
+
+**Bun wrapper rule:** if a Python training/inference workflow is meant to be run from this repo, expose it through a Bun `scripts/*.ts` wrapper and a `package.json` command. Keep Python as the backend implementation, not the primary operator surface.
 
 **Do not ad hoc `pip install` into the repo root.** Python here supports training/inference workflows, not the shipped framework runtime.
 

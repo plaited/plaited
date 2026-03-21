@@ -259,6 +259,60 @@ bun run research -- ./dev-research/runtime-taxonomy/slice-1.md --max-attempts 1
 bun run research:overnight -- ./dev-research/runtime-taxonomy/slice-2.md
 ```
 
+### Native-Model Commands
+
+```bash
+# Run the current bounded native-model validation batch against an adapter
+bun run native-model:validate -- --adapter ./scripts/codex-cli-adapter.ts
+
+# Prepare a trainer-friendly SFT dataset + manifest from curated outputs
+bun run native-model:train
+
+# Launch the MLX LoRA backend through a Bun wrapper
+bun run native-model:train:mlx -- --run
+
+# Start the local Falcon MLX inference server
+bun run falcon:mlx
+```
+
+What each command does:
+
+- `bun run native-model:validate -- --adapter ...`
+  - runs the current native-model eval prompt batch through the trial layer
+  - writes `run.json`, `results.jsonl`, `summary.md`, and `summary.json`
+  - is the command to use when checking validation pass rate, training eligibility, and trajectory richness
+
+- `bun run native-model:train`
+  - converts `dev-research/native-model/evals/curated-good-outputs.jsonl` into a trainer-friendly SFT dataset
+  - writes a manifest and output paths for the first local tuning run
+  - does not start training by itself unless a trainer backend is configured
+
+- `bun run falcon:mlx`
+  - starts the local MLX inference server for Falcon H1R on Apple Silicon
+  - is for local inference/eval loops, not weight updates
+
+- `bun run native-model:train:mlx -- ...`
+  - prepares the SFT dataset and launches the MLX LoRA/SFT backend through a Bun wrapper
+  - keeps Python as the training implementation, but Bun as the operator surface
+  - defaults to a timestamped run under `dev-research/native-model/training/runs/`
+  - forwards flags to:
+    - [train_mlx_lora.py](/Users/eirby/Workspace/plaited/dev-research/native-model/training/train_mlx_lora.py)
+
+The MLX LoRA/SFT backend currently lives under:
+- [training](/Users/eirby/Workspace/plaited/dev-research/native-model/training)
+
+The first real local tuning run can now be launched from the repo root:
+
+```bash
+bun run native-model:train:mlx -- --run
+```
+
+Use `--output-dir` when you want a stable run path:
+
+```bash
+bun run native-model:train:mlx -- --output-dir ./dev-research/native-model/training/runs/bootstrap-mlx --run
+```
+
 ### Agent-Facing CLI
 
 The repo ships an agent-facing CLI toolbox:
