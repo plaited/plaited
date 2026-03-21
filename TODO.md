@@ -105,3 +105,17 @@ The local Falcon comparison now confirms:
 - Do not go back to the old `native-model` worker-split plan.
 - Do not use `scripts/dev-autoresearch.ts` as the native-model data collection loop itself.
 - Do not assume a successful bootstrap LoRA run on this Mac means it is the right machine for sustained Falcon training.
+
+## Validation Follow-Up
+
+- The current browser-test gating in `scripts/dev-autoresearch.ts` is correct
+  for framework-repo slices like `runtime-taxonomy`, where browser/controller
+  tests should only run when UI paths are actually impacted.
+- This is not the final policy for deployed module generation or user-facing
+  agent tooling.
+- Later work should add task-specific validation profiles so:
+  - framework repo slices keep impact-gated browser tests
+  - generated module / controller work can run module-specific browser
+    validation by default
+  - future AgentHub-style breadth executors can choose validation policy per
+    lane instead of inheriting one repo-wide rule
