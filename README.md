@@ -235,6 +235,21 @@ The shared program orchestrator sits above the two existing executors:
 Use it when you want breadth-first exploration against a `program.md` / slice
 boundary before refining the best strategy more deeply.
 
+Usage notes:
+- first repo fanout run:
+  - `bun run program:run -- ./dev-research/runtime-taxonomy/slice-2.md --lane repo --pattern fanout --agents 3 --judge`
+- promote the winning repo candidate only after you trust the fanout behavior:
+  - `bun run program:run -- ./dev-research/runtime-taxonomy/slice-2.md --lane repo --pattern fanout --agents 3 --judge --promote-winner`
+- native-model strategy fanout:
+  - `bun run program:run -- ./dev-research/native-model/slice-4.md --lane native-model --pattern fanout --agents 3 --model mlx-community/Falcon-H1R-7B-4bit --max-seq-length 384 --num-layers 2 --iters 20`
+
+Operational behavior:
+- repo fanout creates isolated git worktrees for each candidate
+- repo promotion cherry-picks only the winning committed candidate onto the
+  current branch
+- native-model fanout runs candidate strategies sequentially on one machine,
+  because the local training/serving path is resource-constrained
+
 ### Native-Model Commands
 
 ```bash
