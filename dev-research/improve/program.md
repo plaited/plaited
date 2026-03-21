@@ -106,6 +106,7 @@ Before committing a change in this lane:
 - Slice 2: define trial-oriented judge/meta-verifier boundaries and retained-output labels
 - Slice 3: build the first native-model validation driver on top of the trial layer
 - Slice 4: calibrate native-model validation timeout, prompt/grader fit, and reporting
+- Slice 5: improve trajectory capture so validated native-model runs can become training-eligible
 
 ## Acceptance Criteria
 
