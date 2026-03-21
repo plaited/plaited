@@ -251,6 +251,46 @@ export const pickRepoWinner = (candidates: RepoCandidate[]): RepoCandidate =>
 export const pickNativeWinner = (candidates: NativeCandidate[]): NativeCandidate =>
   [...candidates].sort((left, right) => rankNativeResult(right.result) - rankNativeResult(left.result))[0]!
 
+export const buildRepoFanoutArgs = ({
+  input,
+  resultPath,
+  strategyNote,
+}: {
+  input: CliInput
+  resultPath: string
+  strategyNote: string
+}) => {
+  const bunPath = Bun.which('bun')
+  if (!bunPath) throw new Error('bun not found on PATH')
+
+  const args = [
+    bunPath,
+    '--no-env-file',
+    'scripts/dev-autoresearch.ts',
+    input.slicePath,
+    '--program',
+    input.programPath,
+    '--adapter',
+    input.repo.adapterPath,
+    '--max-attempts',
+    String(input.repo.maxAttempts),
+    '--judge-path',
+    input.repo.judgePath,
+    '--meta-verifier-path',
+    input.repo.metaVerifierPath,
+    '--result-json',
+    resultPath,
+    '--strategy-note',
+    strategyNote,
+    '--no-push',
+  ]
+  if (input.repo.judge) args.push('--judge')
+  if (input.promoteWinner) args.push('--commit')
+  if (input.quiet) args.push('--quiet')
+
+  return args
+}
+
 const ensureMainBranchReady = async () => {
   const status = (await Bun.$`git status --porcelain --untracked-files=no`.cwd(REPO_ROOT).quiet()).text().trim()
   if (status) {
@@ -305,35 +345,15 @@ const runRepoFanout = async (input: CliInput): Promise<OrchestrationSummary> => 
   const runDir = join(DEFAULT_RESULTS_DIR, `repo-${basename(input.slicePath).replace(/\.md$/, '')}-${Date.now()}`)
   await ensureDir(runDir)
   const strategyNotes = getRepoStrategyNotes(input.agents)
-  const bunPath = Bun.which('bun')
-  if (!bunPath) throw new Error('bun not found on PATH')
 
   const procs = strategyNotes.map((strategyNote, index) => {
     const label = `agent-${index + 1}`
     const resultPath = join(runDir, `${label}.json`)
-    const args = [
-      bunPath,
-      '--no-env-file',
-      'scripts/dev-autoresearch.ts',
-      input.slicePath,
-      '--program',
-      input.programPath,
-      '--adapter',
-      input.repo.adapterPath,
-      '--max-attempts',
-      String(input.repo.maxAttempts),
-      '--judge-path',
-      input.repo.judgePath,
-      '--meta-verifier-path',
-      input.repo.metaVerifierPath,
-      '--result-json',
+    const args = buildRepoFanoutArgs({
+      input,
       resultPath,
-      '--strategy-note',
       strategyNote,
-    ]
-    if (input.repo.judge) args.push('--judge')
-    if (input.promoteWinner) args.push('--commit')
-    if (input.quiet) args.push('--quiet')
+    })
 
     const proc = Bun.spawn(args, {
       cwd: REPO_ROOT,

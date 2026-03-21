@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { parseInput, pickNativeWinner, pickRepoWinner } from '../program-orchestrator.ts'
+import { buildRepoFanoutArgs, parseInput, pickNativeWinner, pickRepoWinner } from '../program-orchestrator.ts'
 
 describe('program-orchestrator', () => {
   test('parseInput reads repo fanout flags', () => {
@@ -207,5 +207,28 @@ describe('program-orchestrator', () => {
     ])
 
     expect(winner.label).toBe('promo')
+  })
+
+  test('buildRepoFanoutArgs disables push for subprocess candidates', () => {
+    const input = parseInput([
+      './dev-research/runtime-taxonomy/slice-2.md',
+      '--lane',
+      'repo',
+      '--pattern',
+      'fanout',
+      '--agents',
+      '3',
+      '--judge',
+    ])
+
+    const args = buildRepoFanoutArgs({
+      input,
+      resultPath: './tmp/agent-1.json',
+      strategyNote: 'Prefer deleting unnecessary abstractions first.',
+    })
+
+    expect(args).toContain('--no-push')
+    expect(args).not.toContain('--push')
+    expect(args).not.toContain('--commit')
   })
 })
