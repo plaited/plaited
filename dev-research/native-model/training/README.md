@@ -62,6 +62,26 @@ BASE_MODEL=tiiuae/Falcon-H1-7B-Base \
 uv run python train_mlx_lora.py --run
 ```
 
+## Bootstrap Cycle
+
+Run the Bun-native bootstrap cycle to:
+- train a candidate MLX adapter
+- evaluate the untuned baseline
+- evaluate the tuned adapter
+- compare both summaries
+- optionally promote the tuned adapter by updating `FALCON_ADAPTER_PATH`
+
+```bash
+bun run native-model:bootstrap-cycle -- \
+  --model mlx-community/Falcon-H1R-7B-4bit \
+  --max-seq-length 384 \
+  --num-layers 2 \
+  --iters 20
+```
+
+Add `--promote` to update `.env.schema` automatically when the tuned adapter
+clears the no-regression gate.
+
 ## Notes
 
 - `runs/` and `checkpoints/` are local artifacts and should not be committed.
