@@ -30,6 +30,9 @@ Use the MSI machine as the serious training plane once it is ready.
 1. Evaluate the successful local adapter on this machine.
    - Use the adapter output from:
      - `dev-research/native-model/training/runs/bootstrap-mlx-2026-03-21T05-05-29-567Z/adapters/adapters.safetensors`
+   - Keep `FALCON_ADAPTER_PATH` in `.env.schema` pointed at the currently
+     promoted adapter run so `bun run falcon:mlx` continues to target the
+     tracked local baseline.
    - Goal:
      - confirm whether the bootstrap run changes native-model outputs at all
      - treat this as adapter validation, not final quality judgment

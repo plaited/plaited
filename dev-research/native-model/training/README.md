@@ -67,6 +67,10 @@ uv run python train_mlx_lora.py --run
 - `runs/` and `checkpoints/` are local artifacts and should not be committed.
 - The curated training input boundary remains:
   - `../evals/curated-good-outputs.jsonl`
+- The active local Falcon evaluation target is tracked in:
+  - `/.env.schema` via `FALCON_ADAPTER_PATH`
+- Update `FALCON_ADAPTER_PATH` when a newer adapter run is promoted as the
+  local evaluation baseline.
 - The first successful local bootstrap run on this machine used:
   - `mlx-community/Falcon-H1R-7B-4bit`
   - `--max-seq-length 384`
