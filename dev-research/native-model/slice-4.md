@@ -56,3 +56,9 @@ This slice begins after:
 
 This slice is about wiring the first practical local tuning path, not about
 solving the full long-term training stack.
+
+As of the first successful bootstrap run:
+
+- the workflow is proven on Apple Silicon using a quantized MLX model
+- meaningful 7B Falcon training is still expected to move to the MSI box
+- this machine should remain the validation/curation/bootstrap control plane

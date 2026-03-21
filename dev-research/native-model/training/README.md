@@ -9,10 +9,12 @@ trainer dependencies do not leak into shipped framework surfaces.
 ## Current Target
 
 - local bootstrap tuning on Apple Silicon with MLX LoRA/SFT
+- validation, curation, and small quantized adapter runs on this machine
 
 ## Planned Later Target
 
 - larger Linux/CUDA runs on the MSI/EdgeXpert box with a separate trainer stack
+- less truncated, more meaningful Falcon training on hardware with more headroom
 
 ## Setup
 
@@ -65,3 +67,10 @@ uv run python train_mlx_lora.py --run
 - `runs/` and `checkpoints/` are local artifacts and should not be committed.
 - The curated training input boundary remains:
   - `../evals/curated-good-outputs.jsonl`
+- The first successful local bootstrap run on this machine used:
+  - `mlx-community/Falcon-H1R-7B-4bit`
+  - `--max-seq-length 384`
+  - `--num-layers 2`
+  - `--iters 20`
+- That proves the loop works here, but it does not make this machine the right
+  long-term Falcon training target.

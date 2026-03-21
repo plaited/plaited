@@ -105,7 +105,13 @@ const run = async (): Promise<void> => {
     forwardArgs,
   })
   await Bun.write(`${UV_CACHE_DIR}/.gitkeep`, '')
-  const result = await Bun.$`uv ${args}`.cwd(TRAINING_DIR).env({ UV_CACHE_DIR }).nothrow()
+  const result = await Bun.$`uv ${args}`
+    .cwd(TRAINING_DIR)
+    .env({
+      ...(process.env as Record<string, string>),
+      UV_CACHE_DIR,
+    })
+    .nothrow()
 
   const exitCode = result.exitCode
   if (exitCode !== 0) {

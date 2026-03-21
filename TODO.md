@@ -3,94 +3,79 @@
 ## Current State
 
 - `runtime-taxonomy` is effectively complete enough to stop touching for now.
-- `skills/slice-1`, `improve/slice-1`, `improve/slice-2`, `improve/slice-3`, and `improve/slice-4` all landed on `dev`.
-- Native-model validation now runs through the trial layer via:
+- `skills/slice-1`, `improve/slice-1` through `improve/slice-5`, and the current `native-model` prep slices all landed on `dev`.
+- Native-model validation runs through the trial layer via:
   - `bun run native-model:validate -- --adapter ./scripts/codex-cli-adapter.ts`
-- Latest successful validation run:
-  - `dev-research/native-model/evals/runs/2026-03-21T01-01-26-652Z/`
-- Latest validation result:
-  - validation pass rate: `1.000`
-  - training eligible rate: `0.000`
+- The curated training set exists at:
+  - `dev-research/native-model/evals/curated-good-outputs.jsonl`
+- The first local MLX LoRA bootstrap run has now succeeded on this Mac with:
+  - base model: `mlx-community/Falcon-H1R-7B-4bit`
+  - `--max-seq-length 384`
+  - `--num-layers 2`
+  - `--iters 20`
+  - output:
+    - `dev-research/native-model/training/runs/bootstrap-mlx-2026-03-21T05-05-29-567Z/adapters/adapters.safetensors`
 - Meaning:
-  - prompt/grader calibration for the first two themes is now good enough for validation
-  - trajectory richness is still insufficient for training/distillation
+  - the end-to-end local tuning loop works on this machine
+  - this machine can handle a small quantized bootstrap run
+  - this machine is still too constrained for less-truncated or less-quantized 7B training
 
 ## Immediate Goal
 
-Finish all work needed to reach the first real local tuning run on new hardware within the next 24 hours.
+Use this machine as the control plane for validation, curation, adapter evaluation, and data-shaping.
+Use the MSI machine as the serious training plane once it is ready.
 
 ## Next Steps
 
-1. Review the current training-readiness blocker in the latest validation artifacts.
-   - Inspect:
-     - `dev-research/native-model/evals/runs/2026-03-21T01-01-26-652Z/results.jsonl`
-     - `dev-research/native-model/evals/runs/2026-03-21T01-01-26-652Z/summary.json`
-   - Confirm all `trainingAssessment.eligible = false` cases are failing for `insufficient_richness`, not prompt quality.
-
-2. Add a new bounded slice in `dev-research/improve/` for richer trial capture.
+1. Evaluate the successful local adapter on this machine.
+   - Use the adapter output from:
+     - `dev-research/native-model/training/runs/bootstrap-mlx-2026-03-21T05-05-29-567Z/adapters/adapters.safetensors`
    - Goal:
-     - increase captured trajectory richness beyond `messages-only`
-     - keep provider-specific capture in `scripts/`
-     - keep reusable types/reporting in `src/improve/`
-   - Likely targets:
-     - `scripts/codex-cli-adapter.ts`
-     - `scripts/falcon-h1r-mlx-adapter.ts`
-     - `src/improve/trial.ts`
-     - `src/improve/trial-report.ts`
+     - confirm whether the bootstrap run changes native-model outputs at all
+     - treat this as adapter validation, not final quality judgment
 
-3. Run autoresearch on that richer-capture slice.
-   - Use `research`, not manual edits, if the slice is cleanly bounded.
-   - Expect success criteria to include:
-     - richer trajectory capture present in JSONL
-     - explicit distinction between validation-ready and training-ready outputs preserved
+2. Reduce truncation pressure in the training data.
+   - The current run succeeded only by truncating many examples to `384` tokens.
+   - Add a data-shaping step for:
+     - shorter prompt/output pairs
+     - chunking or splitting oversized examples
+     - preserving training quality while staying within local memory limits
 
-4. Rerun native-model validation after richer capture lands.
-   - Command:
-     - `bun run native-model:validate -- --adapter ./scripts/codex-cli-adapter.ts`
-   - Desired result:
-     - validation still passes
-     - at least some trials become training-eligible
+3. Keep this machine for lightweight bootstrap experiments only.
+   - Good use cases:
+     - validation
+     - dataset curation
+     - adapter smoke tests
+     - tiny quantized LoRA runs
+   - Avoid:
+     - serious 7B full-context training
+     - assuming non-quantized or long-context runs will fit here
 
-5. If training eligibility remains zero, do one more narrow pass before moving on.
-   - Check whether the blocker is:
-     - adapter capture richness
-     - eligibility thresholds
-     - missing fields in retained output
-   - Do not expand prompt count yet.
+4. Move meaningful Falcon training to the MSI machine.
+   - Use the MSI box for:
+     - longer context
+     - more trainable layers
+     - less truncated runs
+     - repeated distillation cycles
 
-6. Once some outputs are training-eligible, treat native-model Slice 2 as complete.
-   - Then move to native-model Slice 3:
-     - curate retained outputs into a stable dataset path
-     - produce `dev-research/native-model/evals/curated-good-outputs.jsonl`
-
-7. Prepare the first local tuning run on the new hardware.
-   - Review:
-     - `dev-research/native-model/slice-4.md`
-     - `scripts/VLLM_SETUP.md`
-     - any Falcon/MLX adapter and launch scripts in `scripts/`
-   - Confirm:
-     - dataset format matches training expectations
-     - local adapter/server invocation path is documented
-     - storage path and run naming are stable
-
-8. Start the first real local fine-tuning/tuning pass only after:
-   - validation path is stable
-   - some outputs are training-eligible
-   - curated dataset exists
-   - local hardware path is confirmed runnable
+5. Once the MSI environment is ready, reuse the same curated boundary and run manifest flow.
+   - Keep:
+     - `dev-research/native-model/evals/curated-good-outputs.jsonl`
+     - Bun wrapper entrypoints
+     - run manifests and adapter output paths
+   - Swap:
+     - the trainer backend and hardware target
 
 ## Short Sequence
 
-1. Add richer-capture improve slice.
-2. Run autoresearch on it.
-3. Rerun `native-model:validate`.
-4. Get `trainingEligible > 0`.
-5. Curate dataset.
-6. Run first local tuning pass.
+1. Evaluate the successful local adapter.
+2. Add a data-shaping step to reduce truncation.
+3. Keep this Mac for validation/curation/bootstrap only.
+4. Move real Falcon training to the MSI machine.
 
 ## Do Not Revisit Unless Needed
 
 - Do not rerun `runtime-taxonomy`.
 - Do not go back to the old `native-model` worker-split plan.
 - Do not use `scripts/dev-autoresearch.ts` as the native-model data collection loop itself.
-- Do not expand the prompt set before training eligibility works for the current two prompts.
+- Do not assume a successful bootstrap LoRA run on this Mac means it is the right machine for sustained Falcon training.
