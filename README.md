@@ -235,6 +235,49 @@ The shared program orchestrator sits above the two existing executors:
 Use it when you want breadth-first exploration against a `program.md` / slice
 boundary before refining the best strategy more deeply.
 
+How programs and slices are used:
+- both lanes start from a slice path such as:
+  - `./dev-research/runtime-taxonomy/slice-2.md`
+  - `./dev-research/native-model/slice-4.md`
+- `program:run` resolves the matching `program.md` from that slice directory by
+  default
+- repo lane uses the slice + `program.md` as the actual improvement protocol
+  boundary passed into `dev-autoresearch`
+- native-model lane currently uses the slice + `program.md` as the
+  orchestration boundary and run label, while the concrete train/eval inputs
+  still come from the curated dataset and validation prompt files unless you
+  override them with flags
+
+`program:run` API:
+- common flags:
+  - positional slice path or `--slice <path>`
+  - `--program <path>` to override the default resolved `program.md`
+  - `--lane repo|native-model`
+  - `--pattern depth|fanout`
+  - `--agents <n>`
+  - `--result-json <path>`
+  - `--promote-winner`
+  - `--quiet`
+- repo-lane flags:
+  - `--adapter <path>`
+  - `--judge`
+  - `--judge-path <path>`
+  - `--meta-verifier-path <path>`
+  - `--max-attempts <n>`
+  - `--commit`
+  - `--push`
+- native-model-lane flags:
+  - `--output-dir <path>`
+  - `--prompts <path>`
+  - `--runs-dir <path>`
+  - `--model <hf-or-mlx-model-id>`
+  - `--k <n>`
+  - `--concurrency <n>`
+  - `--timeout <ms>`
+  - `--max-seq-length <n>`
+  - `--num-layers <n>`
+  - `--iters <n>`
+
 Usage notes:
 - first repo fanout run:
   - `bun run program:run -- ./dev-research/runtime-taxonomy/slice-2.md --lane repo --pattern fanout --agents 3 --judge`
@@ -247,8 +290,12 @@ Operational behavior:
 - repo fanout creates isolated git worktrees for each candidate
 - repo promotion cherry-picks only the winning committed candidate onto the
   current branch
+- repo lane supports `--max-attempts`, which is forwarded to
+  `scripts/dev-autoresearch.ts`
 - native-model fanout runs candidate strategies sequentially on one machine,
   because the local training/serving path is resource-constrained
+- native-model lane does not use `--max-attempts`; its primary knobs are
+  `--iters`, `--max-seq-length`, `--num-layers`, and `--agents`
 
 ### Native-Model Commands
 
