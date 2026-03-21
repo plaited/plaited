@@ -50,3 +50,12 @@ Successful validation and training eligibility are still separate outcomes.
 `trainingAssessment` reasons/richness so it is visible whether a trial failed
 eligibility because it only captured a messages-only transcript or because the
 run/runtime itself was not clean enough to retain.
+
+## Curated Dataset
+
+`curated-good-outputs.jsonl` is the stable Slice 3 curation path.
+
+It should contain only training-eligible trials retained from validation runs,
+not every successful validation output. That keeps later local tuning anchored
+to clean trajectories instead of mixing in failed-grade or tool-error cases by
+default.
