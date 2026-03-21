@@ -25,6 +25,12 @@
 Use this machine as the control plane for validation, curation, adapter evaluation, and data-shaping.
 Use the MSI machine as the serious training plane once it is ready.
 
+The native-model plan is now explicitly staged:
+
+1. symbolic output quality
+2. tool-aware process behavior
+3. autonomous improvement loops
+
 The local Falcon comparison now confirms:
 - untuned local Falcon is weak on controller-compatible UI
 - the tiny tuned MLX adapter did not improve pass rate
@@ -33,7 +39,17 @@ The local Falcon comparison now confirms:
 
 ## Next Steps
 
-1. Evaluate the successful local adapter on this machine.
+1. Finish Layer 1 first: symbolic output quality.
+   - Keep using manually authored validation prompts plus curated retained
+     outputs as the stable training boundary.
+   - Continue training Falcon on Plaited-native symbolic artifacts:
+     - modules
+     - controller-compatible UI
+     - BP/runtime wiring
+     - provenance-aware structures
+   - Do not confuse this with tool-use or autonomous improvement training yet.
+
+2. Evaluate the successful local adapter on this machine.
    - Use the adapter output from:
      - `dev-research/native-model/training/runs/bootstrap-mlx-2026-03-21T05-05-29-567Z/adapters/adapters.safetensors`
    - Keep `FALCON_ADAPTER_PATH` in `.env.schema` pointed at the currently
@@ -43,14 +59,14 @@ The local Falcon comparison now confirms:
      - confirm whether the bootstrap run changes native-model outputs at all
      - treat this as adapter validation, not final quality judgment
 
-2. Reduce truncation pressure in the training data.
+3. Reduce truncation pressure in the training data.
    - The current run succeeded only by truncating many examples to `384` tokens.
    - Add a data-shaping step for:
      - shorter prompt/output pairs
      - chunking or splitting oversized examples
      - preserving training quality while staying within local memory limits
 
-3. Keep this machine for lightweight bootstrap experiments only.
+4. Keep this machine for lightweight bootstrap experiments only.
    - Good use cases:
      - validation
      - dataset curation
@@ -60,7 +76,7 @@ The local Falcon comparison now confirms:
      - serious 7B full-context training
      - assuming non-quantized or long-context runs will fit here
 
-4. Move meaningful Falcon training to the MSI machine.
+5. Move meaningful Falcon training to the MSI machine.
    - Use the MSI box for:
      - longer context
      - more trainable layers
@@ -83,21 +99,28 @@ The local Falcon comparison now confirms:
      - isolate candidate eval serving with distinct ports and output dirs before
        enabling parallel native-model fanout
 
-5. Once the MSI environment is ready, reuse the same curated boundary and run manifest flow.
+6. Once the MSI environment is ready, reuse the same curated boundary and run manifest flow.
    - Keep:
      - `dev-research/native-model/evals/curated-good-outputs.jsonl`
      - Bun wrapper entrypoints
      - run manifests and adapter output paths
    - Swap:
      - the trainer backend and hardware target
+   - After MSI bring-up:
+     - continue Layer 1 with better headroom
+     - then begin Layer 2 by adding tool-aware process traces
+     - keep Layer 3 for later, after Layer 2 data and evaluation are stable
 
 ## Short Sequence
 
-1. Evaluate the successful local adapter.
-2. Add a data-shaping step to reduce truncation.
-3. Keep this Mac for validation/curation/bootstrap only.
-4. Move real Falcon training to the MSI machine.
-5. Run the first MSI baseline vs tuned comparison before promoting anything.
+1. Finish Layer 1 symbolic-output training boundaries and eval loops.
+2. Evaluate the successful local adapter.
+3. Add a data-shaping step to reduce truncation.
+4. Keep this Mac for validation/curation/bootstrap only.
+5. Move real Falcon training to the MSI machine.
+6. Run the first MSI baseline vs tuned comparison before promoting anything.
+7. Only after Layer 1 is stable, start Layer 2 tool-aware process training.
+8. Keep Layer 3 autonomous-improvement training as a later phase.
 
 ## Do Not Revisit Unless Needed
 
