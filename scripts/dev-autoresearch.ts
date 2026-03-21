@@ -109,6 +109,8 @@ const WORKTREES_ROOT = join(PROJECT_ROOT, '.worktrees')
 const TEST_FILE_PATTERN = /(\.spec\.ts|\.test\.ts|_spec\.ts|_test\.ts)$/
 const SOURCE_FILE_PATTERN = /\.(ts|tsx|js|jsx)$/
 const TEST_DIRECTORIES = ['src/', 'scripts/', 'skills/']
+const BROWSER_TEST_FILES = ['src/ui/protocol/tests/controller-browser.spec.ts']
+const UI_PATH_PREFIXES = ['src/ui/']
 const DEFAULT_ALLOWED_PATHS = ['scripts/', 'src/runtime/', 'src/improve/']
 const BOOLEAN_FLAGS = new Set(['--commit', '--dry-run', '--judge', '--push', '--no-push', '--quiet'])
 
@@ -494,6 +496,36 @@ export const resolveImpactedTests = async (cwd: string, changedFiles: string[]):
   return [...selected].sort()
 }
 
+export const shouldRunBrowserTests = ({
+  changedFiles,
+  impactedTests,
+}: {
+  changedFiles: string[]
+  impactedTests: string[]
+}) => {
+  const allSignals = [...changedFiles, ...impactedTests].map(normalizePath)
+  return allSignals.some(
+    (path) => BROWSER_TEST_FILES.includes(path) || UI_PATH_PREFIXES.some((prefix) => path.startsWith(prefix)),
+  )
+}
+
+const buildFullSuiteCommand = async ({
+  cwd,
+  changedFiles,
+  impactedTests,
+}: {
+  cwd: string
+  changedFiles: string[]
+  impactedTests: string[]
+}) => {
+  if (shouldRunBrowserTests({ changedFiles, impactedTests })) {
+    return ['bun', 'test', ...TEST_DIRECTORIES]
+  }
+
+  const filteredTests = (await listTestFiles(cwd)).filter((path) => !BROWSER_TEST_FILES.includes(path))
+  return filteredTests.length > 0 ? ['bun', 'test', ...filteredTests] : ['bun', 'test', ...TEST_DIRECTORIES]
+}
+
 const buildChecks = (typecheck: ValidationResult, tests: ValidationResult): Checks => ({
   typecheck: {
     passed: typecheck.passed,
@@ -770,12 +802,19 @@ const main = async () => {
       const judgePassed = judges ? judges.primary.pass && (judges.meta?.pass ?? true) : true
       const fastPassed = scope.passed && typecheck.passed && tests.passed && judgePassed
       logStatus('validation:fast', fastPassed ? 'pass' : 'fail')
+      const fullTestsCommand = fastPassed
+        ? await buildFullSuiteCommand({
+            cwd: worktree,
+            changedFiles,
+            impactedTests,
+          })
+        : ['bun', 'test', ...TEST_DIRECTORIES]
       const fullTests = fastPassed
-        ? await runCheck(worktree, ['bun', 'test', ...TEST_DIRECTORIES])
+        ? await runCheck(worktree, fullTestsCommand)
         : {
             passed: false,
             notes: 'Skipped: fast validation failed',
-            command: ['bun', 'test', ...TEST_DIRECTORIES],
+            command: fullTestsCommand,
           }
       logStatus('tests:full', fastPassed ? (fullTests.passed ? 'pass' : `fail ${fullTests.notes}`) : 'skipped')
       const judgeChecks = {

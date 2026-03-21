@@ -8,6 +8,7 @@ import {
   resolveImpactedTests,
   resolveImportPath,
   scanImports,
+  shouldRunBrowserTests,
 } from '../dev-autoresearch.ts'
 
 const tempDirs = new Set<string>()
@@ -70,6 +71,24 @@ describe('dev-autoresearch import resolution', () => {
     const impacted = await resolveImpactedTests(cwd, ['src/runtime/create-link.ts'])
 
     expect(impacted).toEqual(['scripts/tests/runtime-harness.spec.ts'])
+  })
+
+  test('shouldRunBrowserTests stays false for non-ui runtime slices', () => {
+    expect(
+      shouldRunBrowserTests({
+        changedFiles: ['src/runtime/create-link.ts'],
+        impactedTests: ['scripts/tests/runtime-harness.spec.ts'],
+      }),
+    ).toBe(false)
+  })
+
+  test('shouldRunBrowserTests turns on for ui changes', () => {
+    expect(
+      shouldRunBrowserTests({
+        changedFiles: ['src/ui/dom/control-island.ts'],
+        impactedTests: [],
+      }),
+    ).toBe(true)
   })
 })
 
