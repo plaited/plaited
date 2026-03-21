@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdir, rm } from 'node:fs/promises'
-import { loadCandidates, parseArgs, prepareTrainingRun, toSftExample } from '../native-model-train.ts'
+import { loadCandidates, parseArgs, prepareTrainingRun, shapeSftExample, toSftExample } from '../native-model-train.ts'
 
 const tempDir = '/tmp/plaited-native-model-train-spec'
 
@@ -10,13 +10,23 @@ afterEach(async () => {
 
 describe('native-model-train', () => {
   test('parseArgs builds dataset and manifest paths', () => {
-    const parsed = parseArgs(['--input', './input.jsonl', '--output-dir', './out', '--base-model', 'model-x'])
+    const parsed = parseArgs([
+      '--input',
+      './input.jsonl',
+      '--output-dir',
+      './out',
+      '--base-model',
+      'model-x',
+      '--max-example-tokens',
+      '256',
+    ])
 
     expect(parsed.inputPath).toBe('./input.jsonl')
     expect(parsed.outputDir).toBe('./out')
     expect(parsed.datasetPath).toBe('./out/sft-chat.jsonl')
     expect(parsed.manifestPath).toBe('./out/manifest.json')
     expect(parsed.baseModel).toBe('model-x')
+    expect(parsed.maxExampleTokens).toBe(256)
   })
 
   test('toSftExample converts curated candidate into chat format', () => {
@@ -73,6 +83,7 @@ describe('native-model-train', () => {
       datasetPath: `${outputDir}/sft-chat.jsonl`,
       manifestPath: `${outputDir}/manifest.json`,
       baseModel: 'model-x',
+      maxExampleTokens: 512,
       runTrainer: false,
     })
 
@@ -90,7 +101,37 @@ describe('native-model-train', () => {
         datasetPath: `${outputDir}/sft-chat.jsonl`,
         baseModel: 'model-x',
         candidateCount: 1,
+        sourceExampleCount: 1,
         exampleCount: 1,
+        maxExampleTokens: 512,
+      }),
+    )
+  })
+
+  test('shapeSftExample slices oversized sectioned outputs into bounded examples', () => {
+    const shaped = shapeSftExample({
+      example: {
+        messages: [
+          { role: 'user', content: 'Design the module.' },
+          {
+            role: 'assistant',
+            content: ['## Overview', 'A'.repeat(900), '', '## Runtime Wiring', 'B'.repeat(900)].join('\n'),
+          },
+        ],
+        weight: 1,
+        metadata: { sourceCandidateId: 'case-1', trialNum: 1 },
+      },
+      maxExampleTokens: 300,
+    })
+
+    expect(shaped.length).toBeGreaterThan(1)
+    expect(shaped[0]?.messages[0]?.content).toContain('Focus only on these sections')
+    expect(shaped[0]?.metadata).toEqual(
+      expect.objectContaining({
+        shaping: expect.objectContaining({
+          strategy: 'section_slice',
+          totalSlices: shaped.length,
+        }),
       }),
     )
   })

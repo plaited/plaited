@@ -82,6 +82,25 @@ bun run native-model:bootstrap-cycle -- \
 Add `--promote` to update `.env.schema` automatically when the tuned adapter
 clears the no-regression gate.
 
+## Compare Runs
+
+Compare two validation artifacts directly:
+
+```bash
+bun run native-model:compare -- \
+  --baseline ./dev-research/native-model/evals/runs/bootstrap-cycle-baseline \
+  --candidate ./dev-research/native-model/evals/runs/2026-03-21T05-41-26-835Z
+```
+
+## Data Shaping
+
+For constrained local MLX runs, the prep path can slice oversized examples into
+smaller section-bounded training items before `mlx_lm` sees them.
+
+- `native-model:train` accepts `--max-example-tokens`
+- `native-model:train:mlx` defaults shaping to `--max-seq-length` unless you
+  override it with `--max-example-tokens`
+
 ## Notes
 
 - `runs/` and `checkpoints/` are local artifacts and should not be committed.

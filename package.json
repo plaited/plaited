@@ -47,6 +47,7 @@
     "embedding:mlx": "varlock run -- bun --no-env-file scripts/embedding-mlx-server.ts",
     "falcon:mlx": "varlock run -- bun --no-env-file scripts/falcon-mlx-server.ts",
     "native-model:bootstrap-cycle": "varlock run -- bun --no-env-file scripts/native-model-bootstrap-cycle.ts",
+    "native-model:compare": "bun scripts/native-model-compare.ts",
     "native-model:train": "bun scripts/native-model-train.ts",
     "native-model:train:mlx": "varlock run -- bun --no-env-file scripts/native-model-train-mlx.ts",
     "native-model:validate": "bun scripts/improve-native-model-validation.ts",

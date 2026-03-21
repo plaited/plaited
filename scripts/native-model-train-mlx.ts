@@ -37,11 +37,15 @@ const ensureUv = (): void => {
 type MlxConfig = {
   outputDir: string
   forwardArgs: string[]
+  shapeMaxExampleTokens?: number
+  maxSeqLength?: number
 }
 
 const parseMlxArgs = (args: string[]): MlxConfig => {
   let outputDir = process.env.NATIVE_MODEL_TRAIN_OUTPUT_DIR ?? `${DEFAULT_OUTPUT_DIR}-${createTimestamp()}`
   const forwardArgs: string[] = []
+  let shapeMaxExampleTokens: number | undefined
+  let maxSeqLength: number | undefined
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index]
@@ -59,6 +63,28 @@ const parseMlxArgs = (args: string[]): MlxConfig => {
         }
         index += 1
         break
+      case '--max-seq-length':
+        {
+          const nextMaxSeqLength = args[index + 1]
+          if (nextMaxSeqLength) {
+            maxSeqLength = Number(nextMaxSeqLength)
+          }
+          forwardArgs.push(arg)
+          if (nextMaxSeqLength) {
+            forwardArgs.push(nextMaxSeqLength)
+          }
+        }
+        index += 1
+        break
+      case '--max-example-tokens':
+        {
+          const nextShapeMaxExampleTokens = args[index + 1]
+          if (nextShapeMaxExampleTokens) {
+            shapeMaxExampleTokens = Number(nextShapeMaxExampleTokens)
+          }
+        }
+        index += 1
+        break
       default:
         forwardArgs.push(arg)
         break
@@ -68,6 +94,10 @@ const parseMlxArgs = (args: string[]): MlxConfig => {
   return {
     outputDir: outputDir.replace(/\/$/, ''),
     forwardArgs,
+    ...(typeof shapeMaxExampleTokens === 'number' && Number.isFinite(shapeMaxExampleTokens)
+      ? { shapeMaxExampleTokens }
+      : {}),
+    ...(typeof maxSeqLength === 'number' && Number.isFinite(maxSeqLength) ? { maxSeqLength } : {}),
   }
 }
 
@@ -94,8 +124,13 @@ const run = async (): Promise<void> => {
   ensureUv()
   await ensureTrainingProject()
 
-  const { outputDir, forwardArgs } = parseMlxArgs(process.argv.slice(2))
-  const prepConfig = parseTrainingArgs(['--output-dir', outputDir])
+  const { outputDir, forwardArgs, shapeMaxExampleTokens, maxSeqLength } = parseMlxArgs(process.argv.slice(2))
+  const prepArgs = ['--output-dir', outputDir]
+  const effectiveShapeMaxExampleTokens = shapeMaxExampleTokens ?? maxSeqLength
+  if (typeof effectiveShapeMaxExampleTokens === 'number') {
+    prepArgs.push('--max-example-tokens', String(effectiveShapeMaxExampleTokens))
+  }
+  const prepConfig = parseTrainingArgs(prepArgs)
   await mkdir(prepConfig.outputDir, { recursive: true })
   await prepareTrainingRun(prepConfig)
 

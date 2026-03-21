@@ -43,6 +43,7 @@ type TrainConfig = {
   datasetPath: string
   manifestPath: string
   baseModel: string
+  maxExampleTokens?: number
   trainerCommand?: string
   runTrainer: boolean
 }
@@ -53,12 +54,161 @@ const DEFAULT_BASE_MODEL = process.env.NATIVE_MODEL_BASE_MODEL ?? 'tiiuae/Falcon
 const createTimestamp = (): string => new Date().toISOString().replaceAll(':', '-').replaceAll('.', '-')
 
 const joinPrompt = (input: string | string[]): string => (Array.isArray(input) ? input.join('\n\n') : input)
+const estimateTokens = (content: string): number => Math.max(1, Math.ceil(content.length / 4))
+
+const splitMarkdownSections = (content: string): string[] => {
+  const headingMatches = Array.from(content.matchAll(/^## .+$/gm))
+  if (headingMatches.length === 0) {
+    return content
+      .split(/\n{2,}/)
+      .map((section) => section.trim())
+      .filter((section) => section.length > 0)
+  }
+
+  return headingMatches
+    .map((match, index) => {
+      const start = match.index ?? 0
+      const nextStart = headingMatches[index + 1]?.index ?? content.length
+      return content.slice(start, nextStart).trim()
+    })
+    .filter((section) => section.length > 0)
+}
+
+const splitOversizedSection = (section: string, maxTokens: number): string[] => {
+  if (estimateTokens(section) <= maxTokens) {
+    return [section]
+  }
+
+  const paragraphs = section
+    .split(/\n{2,}/)
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
+
+  if (paragraphs.length <= 1) {
+    return [section]
+  }
+
+  const chunks: string[] = []
+  let current = ''
+
+  for (const paragraph of paragraphs) {
+    const next = current ? `${current}\n\n${paragraph}` : paragraph
+    if (current && estimateTokens(next) > maxTokens) {
+      chunks.push(current)
+      current = paragraph
+      continue
+    }
+
+    current = next
+  }
+
+  if (current) {
+    chunks.push(current)
+  }
+
+  return chunks
+}
+
+const chunkAssistantContent = (content: string, maxTokens: number): string[] => {
+  const sections = splitMarkdownSections(content).flatMap((section) => splitOversizedSection(section, maxTokens))
+  const chunks: string[] = []
+  let current = ''
+
+  for (const section of sections) {
+    const next = current ? `${current}\n\n${section}` : section
+    if (current && estimateTokens(next) > maxTokens) {
+      chunks.push(current)
+      current = section
+      continue
+    }
+
+    current = next
+  }
+
+  if (current) {
+    chunks.push(current)
+  }
+
+  return chunks.filter((chunk) => chunk.length > 0)
+}
+
+const deriveFocusText = (assistantChunk: string, slice: number, totalSlices: number): string => {
+  const headings = Array.from(assistantChunk.matchAll(/^## ([^\n]+)$/gm))
+    .map((match) => match[1]?.trim())
+    .filter((heading): heading is string => typeof heading === 'string' && heading.length > 0)
+
+  if (headings.length > 0) {
+    return `\n\nFocus only on these sections for slice ${slice}/${totalSlices}: ${headings.join(', ')}.`
+  }
+
+  return `\n\nContinue with only slice ${slice}/${totalSlices} of the answer.`
+}
+
+export const shapeSftExample = ({
+  example,
+  maxExampleTokens,
+}: {
+  example: SftExample
+  maxExampleTokens?: number
+}): SftExample[] => {
+  if (!maxExampleTokens) {
+    return [example]
+  }
+
+  const userMessage = example.messages.find((message) => message.role === 'user')
+  const assistantMessage = example.messages.find((message) => message.role === 'assistant')
+
+  if (!userMessage || !assistantMessage) {
+    return [example]
+  }
+
+  const totalTokens = estimateTokens(userMessage.content) + estimateTokens(assistantMessage.content)
+  if (totalTokens <= maxExampleTokens) {
+    return [example]
+  }
+
+  const assistantBudget = maxExampleTokens - estimateTokens(userMessage.content) - 32
+  if (assistantBudget < 64) {
+    return [example]
+  }
+
+  const assistantChunks = chunkAssistantContent(assistantMessage.content, assistantBudget)
+  if (assistantChunks.length <= 1) {
+    return [example]
+  }
+
+  return assistantChunks.map((assistantChunk, index) => ({
+    ...example,
+    messages: [
+      {
+        role: 'user',
+        content: `${userMessage.content}${deriveFocusText(assistantChunk, index + 1, assistantChunks.length)}`,
+      },
+      {
+        role: 'assistant',
+        content: assistantChunk,
+      },
+    ],
+    metadata: {
+      ...example.metadata,
+      shaping: {
+        strategy: 'section_slice',
+        slice: index + 1,
+        totalSlices: assistantChunks.length,
+        maxExampleTokens,
+      },
+    },
+  }))
+}
 
 export const parseArgs = (args: string[]): TrainConfig => {
   let inputPath = process.env.NATIVE_MODEL_TRAIN_INPUT ?? DEFAULT_INPUT_PATH
   let outputDir =
     process.env.NATIVE_MODEL_TRAIN_OUTPUT_DIR ?? `./dev-research/native-model/training/runs/${createTimestamp()}`
   let baseModel = DEFAULT_BASE_MODEL
+  let maxExampleTokens = process.env.NATIVE_MODEL_MAX_EXAMPLE_TOKENS
+    ? Number(process.env.NATIVE_MODEL_MAX_EXAMPLE_TOKENS)
+    : undefined
   let trainerCommand = process.env.NATIVE_MODEL_TRAINER_CMD
   let runTrainer = false
 
@@ -75,6 +225,10 @@ export const parseArgs = (args: string[]): TrainConfig => {
         break
       case '--base-model':
         baseModel = args[index + 1] ?? baseModel
+        index += 1
+        break
+      case '--max-example-tokens':
+        maxExampleTokens = Number(args[index + 1] ?? maxExampleTokens)
         index += 1
         break
       case '--trainer-cmd':
@@ -95,6 +249,7 @@ export const parseArgs = (args: string[]): TrainConfig => {
     datasetPath: `${normalizedOutputDir}/sft-chat.jsonl`,
     manifestPath: `${normalizedOutputDir}/manifest.json`,
     baseModel,
+    ...(typeof maxExampleTokens === 'number' && Number.isFinite(maxExampleTokens) ? { maxExampleTokens } : {}),
     ...(trainerCommand ? { trainerCommand } : {}),
     runTrainer,
   }
@@ -153,7 +308,13 @@ export const loadCandidates = async (path: string): Promise<TrainingCandidate[]>
 
 export const prepareTrainingRun = async (config: TrainConfig) => {
   const candidates = await loadCandidates(config.inputPath)
-  const examples = candidates.map(toSftExample)
+  const sourceExamples = candidates.map(toSftExample)
+  const examples = sourceExamples.flatMap((example) =>
+    shapeSftExample({
+      example,
+      maxExampleTokens: config.maxExampleTokens,
+    }),
+  )
 
   await Bun.write(config.datasetPath, `${examples.map((item) => JSON.stringify(item)).join('\n')}\n`)
   await Bun.write(
@@ -165,7 +326,9 @@ export const prepareTrainingRun = async (config: TrainConfig) => {
         datasetPath: config.datasetPath,
         baseModel: config.baseModel,
         candidateCount: candidates.length,
+        sourceExampleCount: sourceExamples.length,
         exampleCount: examples.length,
+        ...(typeof config.maxExampleTokens === 'number' ? { maxExampleTokens: config.maxExampleTokens } : {}),
         ...(config.trainerCommand ? { trainerCommand: config.trainerCommand } : {}),
       },
       null,
@@ -187,6 +350,9 @@ const printSummary = ({ config, candidateCount }: { config: TrainConfig; candida
   console.log(`- SFT dataset: ${config.datasetPath}`)
   console.log(`- Manifest: ${config.manifestPath}`)
   console.log(`- Candidates: ${candidateCount}`)
+  if (typeof config.maxExampleTokens === 'number') {
+    console.log(`- Max example tokens: ${config.maxExampleTokens}`)
+  }
   console.log()
 
   if (config.trainerCommand) {
