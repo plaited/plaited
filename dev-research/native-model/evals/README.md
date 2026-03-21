@@ -40,3 +40,9 @@ Each run writes a timestamped folder under `./runs/` with:
 
 These artifacts are intended to be easy to inspect without digging into
 internal runner state.
+
+Successful validation and training eligibility are still separate outcomes.
+`results.jsonl` now carries adapter-reported `capture` evidence plus
+`trainingAssessment` reasons/richness so it is visible whether a trial failed
+eligibility because it only captured a messages-only transcript or because the
+run/runtime itself was not clean enough to retain.

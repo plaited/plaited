@@ -90,8 +90,13 @@ describe('summarizeTrialResults', () => {
     expect(summary.eligibleTrials).toBe(1)
     expect(summary.ineligibleTrials).toBe(2)
     expect(summary.eligibleRate).toBeCloseTo(0.333, 3)
+    expect(summary.richness.full).toBe(1)
+    expect(summary.richness.minimal).toBe(1)
+    expect(summary.trainingReasons.failed_grade).toBe(1)
     expect(summary.prompts[0]?.failedTrials).toBe(1)
     expect(summary.prompts[0]?.ineligibleTrials).toBe(1)
+    expect(summary.prompts[0]?.richness.full).toBe(1)
+    expect(summary.prompts[0]?.trainingReasons.failed_grade).toBe(1)
     expect(summary.prompts[0]?.retentionLabels.retain_for_distillation).toBe(1)
     expect(summary.prompts[0]?.retentionLabels.reject).toBe(1)
     expect(summary.themes[1]?.themeId).toBe('mss-grounded-module-generation')
@@ -110,6 +115,14 @@ describe('formatTrialSummary', () => {
       ineligibleTrials: 1,
       eligibleRate: 0.5,
       averageScore: 0.75,
+      trainingReasons: {
+        failed_grade: 1,
+      },
+      richness: {
+        full: 1,
+        minimal: 0,
+        'messages-only': 1,
+      },
       prompts: [
         {
           id: 'module-1',
@@ -122,6 +135,14 @@ describe('formatTrialSummary', () => {
           eligibleTrials: 1,
           ineligibleTrials: 1,
           averageScore: 0.75,
+          trainingReasons: {
+            failed_grade: 1,
+          },
+          richness: {
+            full: 1,
+            minimal: 0,
+            'messages-only': 1,
+          },
           retentionLabels: {
             retain_for_review: 1,
           },
@@ -138,6 +159,14 @@ describe('formatTrialSummary', () => {
           eligibleTrials: 1,
           ineligibleTrials: 1,
           averageScore: 0.75,
+          trainingReasons: {
+            failed_grade: 1,
+          },
+          richness: {
+            full: 1,
+            minimal: 0,
+            'messages-only': 1,
+          },
           retentionLabels: {
             retain_for_review: 1,
           },
@@ -149,6 +178,8 @@ describe('formatTrialSummary', () => {
     expect(output).toContain('## By Prompt')
     expect(output).toContain('Validation passed trials: 1')
     expect(output).toContain('Training-eligible trials: 1')
+    expect(output).toContain('Training exclusion reasons: failed_grade=1')
+    expect(output).toContain('richness=full=1, messages-only=1, minimal=0')
     expect(output).toContain('module-1: theme=mss-grounded-module-generation')
     expect(output).toContain('validation=1/2 (0.500)')
     expect(output).toContain('retain_for_review=1')

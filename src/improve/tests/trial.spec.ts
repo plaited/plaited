@@ -344,6 +344,42 @@ describe('runTrial', () => {
     expect(trial!.timing!.outputTokens).toBe(20)
   })
 
+  test('adapter capture evidence can drive training eligibility', async () => {
+    const captureOnlyAdapter: Adapter = async ({ prompt }) => {
+      const text = Array.isArray(prompt) ? prompt.join('\n') : prompt
+      return {
+        output: text,
+        trajectory: [{ type: 'message', content: text, timestamp: Date.now() }],
+        capture: {
+          source: 'capture-only',
+          format: 'jsonl-event-stream',
+          eventCount: 4,
+          messageCount: 1,
+          thoughtCount: 1,
+          toolCallCount: 0,
+        },
+      }
+    }
+
+    const dimensionalGrader: Grader = async () => ({
+      pass: true,
+      score: 0.91,
+      dimensions: { outcome: 0.91, process: 0.9, efficiency: 0.8 },
+    })
+
+    const results = await runTrial({
+      adapter: captureOnlyAdapter,
+      prompts: [{ id: 'capture-trainable', input: 'test' }],
+      grader: dimensionalGrader,
+    })
+
+    const result = results[0]
+    expect(result).toBeDefined()
+    expect(result!.eligibleForTraining).toBe(1)
+    expect(result!.trials[0]?.trainingAssessment?.richness).toBe('full')
+    expect(result!.trials[0]?.capture?.thoughtCount).toBe(1)
+  })
+
   test('writes JSONL to output file', async () => {
     const outPath = tempFile('output.jsonl')
 
@@ -371,14 +407,17 @@ describe('runTrial', () => {
     const memoryPath = tempFile('memory')
     await mkdir(memoryPath, { recursive: true })
 
-    const persisted = await persistTrialResults([
-      {
-        id: 'persisted',
-        input: 'test',
-        k: 1,
-        trials: [{ trialNum: 1, output: 'ok', duration: 1 }],
-      },
-    ], memoryPath)
+    const persisted = await persistTrialResults(
+      [
+        {
+          id: 'persisted',
+          input: 'test',
+          k: 1,
+          trials: [{ trialNum: 1, output: 'ok', duration: 1 }],
+        },
+      ],
+      memoryPath,
+    )
 
     const fileStat = await stat(persisted.path)
     expect(fileStat.isFile()).toBe(true)
@@ -744,6 +783,18 @@ describe('detectRichness', () => {
       ]),
     ).toBe('full')
   })
+
+  test('capture thoughts upgrade message-only trajectory to full', () => {
+    expect(
+      detectRichness([{ type: 'message', content: 'hello', timestamp: 0 }], {
+        source: 'adapter',
+        format: 'mixed',
+        messageCount: 1,
+        thoughtCount: 1,
+        toolCallCount: 0,
+      }),
+    ).toBe('full')
+  })
 })
 
 // ============================================================================
@@ -844,6 +895,25 @@ describe('TrialEntrySchema with dimensions', () => {
 
     expect(result.trainingAssessment).toBeDefined()
     expect(result.trainingAssessment!.eligible).toBe(true)
+  })
+
+  test('accepts capture evidence on TrialEntry', () => {
+    const result = TrialEntrySchema.parse({
+      trialNum: 1,
+      output: 'ok',
+      duration: 10,
+      capture: {
+        source: 'adapter',
+        format: 'jsonl-event-stream',
+        eventCount: 5,
+        messageCount: 1,
+        thoughtCount: 1,
+        toolCallCount: 0,
+      },
+    })
+
+    expect(result.capture).toBeDefined()
+    expect(result.capture!.thoughtCount).toBe(1)
   })
 })
 

@@ -21,11 +21,44 @@ describe('parseCodexExecJsonl', () => {
     expect(parsed.output).toBe('hello world')
     expect(parsed.inputTokens).toBe(12)
     expect(parsed.outputTokens).toBe(7)
+    expect(parsed.capture.source).toBe('codex-cli')
+    expect(parsed.capture.format).toBe('jsonl-event-stream')
+    expect(parsed.capture.messageCount).toBe(1)
     expect(parsed.trajectory).toEqual([
       expect.objectContaining({
         type: 'message',
         content: 'hello world',
       }),
+    ])
+  })
+
+  test('captures reasoning and tool items as rich evidence', () => {
+    const parsed = parseCodexExecJsonl(
+      [
+        JSON.stringify({ type: 'thread.started', thread_id: 't1' }),
+        JSON.stringify({ type: 'turn.started' }),
+        JSON.stringify({
+          type: 'item.completed',
+          item: { id: 'i-think', type: 'reasoning', text: 'inspect the slice first' },
+        }),
+        JSON.stringify({
+          type: 'item.completed',
+          item: { id: 'i-tool', type: 'tool_call', name: 'rg', status: 'completed', input: 'src/improve' },
+        }),
+        JSON.stringify({
+          type: 'item.completed',
+          item: { id: 'i-msg', type: 'agent_message', text: 'done' },
+        }),
+      ].join('\n'),
+    )
+
+    expect(parsed.capture.thoughtCount).toBe(1)
+    expect(parsed.capture.toolCallCount).toBe(1)
+    expect(parsed.capture.itemTypes).toEqual(['agent_message', 'reasoning', 'tool_call'])
+    expect(parsed.trajectory).toEqual([
+      expect.objectContaining({ type: 'thought', content: 'inspect the slice first' }),
+      expect.objectContaining({ type: 'tool_call', name: 'rg', status: 'completed' }),
+      expect.objectContaining({ type: 'message', content: 'done' }),
     ])
   })
 })

@@ -13,14 +13,21 @@
 
 import { parseCli } from '../tools/cli.utils.ts'
 import {
-  type TrainingCaptureAssessment,
-  type TrainingCandidateAssessment,
   type MetaVerification,
+  type TrainingCandidateAssessment,
+  type TrainingCaptureAssessment,
   type TrainingScore,
   TrainingScoreInputSchema,
   TrainingScoreOutputSchema,
 } from './training.schemas.ts'
-import type { Grader, GradingDimensions, TrajectoryRichness, TrialEntry, TrialResult } from './trial.schemas.ts'
+import type {
+  CaptureEvidence,
+  Grader,
+  GradingDimensions,
+  TrajectoryRichness,
+  TrialEntry,
+  TrialResult,
+} from './trial.schemas.ts'
 import { detectRichness, hasToolErrors } from './trial.utils.ts'
 
 // ============================================================================
@@ -69,7 +76,7 @@ const TRAINING_RICHNESS_ORDER: Record<TrajectoryRichness, number> = {
 
 /** Configuration for training-candidate assessment. */
 export type AssessTrainingCandidateOptions = {
-  trial: Pick<TrialEntry, 'trajectory' | 'timedOut' | 'exitCode' | 'pass'>
+  trial: Pick<TrialEntry, 'capture' | 'trajectory' | 'timedOut' | 'exitCode' | 'pass'>
   dimensions?: GradingDimensions
   minWeight?: number
   minRichness?: Exclude<TrajectoryRichness, 'minimal'>
@@ -80,7 +87,7 @@ export type AssessTrainingCandidateOptions = {
 
 /** Configuration for runtime-only trace capture assessment. */
 export type AssessTrainingCaptureOptions = {
-  trial: Pick<TrialEntry, 'trajectory' | 'timedOut' | 'exitCode'>
+  trial: Pick<TrialEntry, 'capture' | 'trajectory' | 'timedOut' | 'exitCode'>
   minRichness?: Exclude<TrajectoryRichness, 'minimal'>
   allowToolErrors?: boolean
 }
@@ -96,6 +103,7 @@ export type TrainingDataCandidate = {
   output: string
   trialNum: number
   trajectory: NonNullable<TrialEntry['trajectory']>
+  capture?: CaptureEvidence
   assessment: TrainingCandidateAssessment
   dimensions?: GradingDimensions
   outcome?: TrialEntry['outcome']
@@ -123,7 +131,7 @@ export const assessTrainingCandidate = ({
 }: AssessTrainingCandidateOptions): TrainingCandidateAssessment => {
   const reasons = new Set<TrainingCandidateAssessment['reasons'][number]>()
   const trajectory = trial.trajectory ?? []
-  const richness = detectRichness(trajectory)
+  const richness = detectRichness(trajectory, trial.capture)
   const score = dimensions ? scoreTrainingDimensions(dimensions) : undefined
   const weight = score?.overall ?? 0
 
@@ -161,7 +169,7 @@ export const assessTrainingCapture = ({
 }: AssessTrainingCaptureOptions): TrainingCaptureAssessment => {
   const reasons = new Set<TrainingCaptureAssessment['reasons'][number]>()
   const trajectory = trial.trajectory ?? []
-  const richness = detectRichness(trajectory)
+  const richness = detectRichness(trajectory, trial.capture)
 
   if (trial.timedOut) reasons.add('timed_out')
   if (trial.exitCode !== undefined && trial.exitCode !== null && trial.exitCode !== 0) reasons.add('non_zero_exit')
@@ -192,17 +200,20 @@ export const collectTrainingCandidates = (results: TrialResult[]): TrainingDataC
       if (!trial.trainingAssessment?.eligible) return []
       if (!trial.trajectory) return []
 
-      return [{
-        id: result.id,
-        input: result.input,
-        output: trial.output,
-        trialNum: trial.trialNum,
-        trajectory: trial.trajectory,
-        assessment: trial.trainingAssessment,
-        ...(trial.dimensions && { dimensions: trial.dimensions }),
-        ...(trial.outcome && { outcome: trial.outcome }),
-        ...(result.metadata && { metadata: result.metadata }),
-      }]
+      return [
+        {
+          id: result.id,
+          input: result.input,
+          output: trial.output,
+          trialNum: trial.trialNum,
+          trajectory: trial.trajectory,
+          ...(trial.capture && { capture: trial.capture }),
+          assessment: trial.trainingAssessment,
+          ...(trial.dimensions && { dimensions: trial.dimensions }),
+          ...(trial.outcome && { outcome: trial.outcome }),
+          ...(result.metadata && { metadata: result.metadata }),
+        },
+      ]
     }),
   )
 

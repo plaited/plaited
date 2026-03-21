@@ -75,6 +75,59 @@ export const TimingSchema = z.object({
 export type Timing = z.infer<typeof TimingSchema>
 
 // ============================================================================
+// Capture Evidence
+// ============================================================================
+
+/**
+ * Lightweight capture snippet for per-trial provenance.
+ *
+ * @remarks
+ * Keeps JSONL output inspectable without embedding full provider-native logs.
+ *
+ * @public
+ */
+export const CaptureSnippetSchema = z.object({
+  kind: z.enum(['message', 'thought', 'tool_call', 'event', 'stderr', 'stdout', 'usage']),
+  text: z.string(),
+})
+
+/** Capture snippet type */
+export type CaptureSnippet = z.infer<typeof CaptureSnippetSchema>
+
+/**
+ * Generic adapter-reported evidence about what was captured during a run.
+ *
+ * @remarks
+ * This is intentionally model-agnostic. Adapters can summarize provider-native
+ * streams here without promoting provider-specific event formats into `src/`.
+ *
+ * @public
+ */
+export const CaptureEvidenceSchema = z.object({
+  /** Adapter or capture source identifier */
+  source: z.string(),
+  /** High-level capture format */
+  format: z.enum(['response-only', 'chat-completion', 'jsonl-event-stream', 'mixed']),
+  /** Count of provider-native events seen during the run */
+  eventCount: z.number().int().min(0).optional(),
+  /** Count of captured assistant/user-facing messages */
+  messageCount: z.number().int().min(0).optional(),
+  /** Count of captured reasoning/thought segments */
+  thoughtCount: z.number().int().min(0).optional(),
+  /** Count of captured tool calls or tool-like events */
+  toolCallCount: z.number().int().min(0).optional(),
+  /** Provider-native item/event labels observed during capture */
+  itemTypes: z.array(z.string()).optional(),
+  /** Short evidence snippets for inspection/debugging */
+  snippets: z.array(CaptureSnippetSchema).optional(),
+  /** Additional generic capture metadata */
+  metadata: z.record(z.string(), z.unknown()).optional(),
+})
+
+/** Capture evidence type */
+export type CaptureEvidence = z.infer<typeof CaptureEvidenceSchema>
+
+// ============================================================================
 // Adapter
 // ============================================================================
 
@@ -103,6 +156,8 @@ export const AdapterResultSchema = z.object({
   output: z.string(),
   /** Optional structured trajectory */
   trajectory: z.array(TrajectoryStepSchema).optional(),
+  /** Optional model-agnostic capture evidence */
+  capture: CaptureEvidenceSchema.optional(),
   /** Optional timing from the adapter */
   timing: TimingSchema.optional(),
   /** Process exit code (null if signaled) */
@@ -211,6 +266,8 @@ export const TrialEntrySchema = z.object({
   output: z.string(),
   /** Full trajectory for this trial */
   trajectory: z.array(TrajectoryStepSchema).optional(),
+  /** Adapter-reported capture evidence for this trial */
+  capture: CaptureEvidenceSchema.optional(),
   /** Runner-measured wall-clock duration in ms */
   duration: z.number(),
   /** Adapter-reported timing (token counts, adapter-measured duration) */
@@ -230,23 +287,27 @@ export const TrialEntrySchema = z.object({
   /** Multi-dimensional grading scores (if grader provides them) */
   dimensions: GradingDimensionsSchema.optional(),
   /** Eligibility assessment for training/distillation */
-  trainingAssessment: z.object({
-    eligible: z.boolean(),
-    richness: z.enum(['full', 'minimal', 'messages-only']),
-    score: GradingDimensionsSchema.extend({
-      overall: z.number().min(0).max(1),
-    }).optional(),
-    weight: z.number().min(0).max(1),
-    reasons: z.array(z.enum([
-      'missing_dimensions',
-      'failed_grade',
-      'timed_out',
-      'non_zero_exit',
-      'insufficient_richness',
-      'tool_error',
-      'low_weight',
-    ])),
-  }).optional(),
+  trainingAssessment: z
+    .object({
+      eligible: z.boolean(),
+      richness: z.enum(['full', 'minimal', 'messages-only']),
+      score: GradingDimensionsSchema.extend({
+        overall: z.number().min(0).max(1),
+      }).optional(),
+      weight: z.number().min(0).max(1),
+      reasons: z.array(
+        z.enum([
+          'missing_dimensions',
+          'failed_grade',
+          'timed_out',
+          'non_zero_exit',
+          'insufficient_richness',
+          'tool_error',
+          'low_weight',
+        ]),
+      ),
+    })
+    .optional(),
 })
 
 /** Trial entry type */

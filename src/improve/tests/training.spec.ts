@@ -10,17 +10,17 @@ import { describe, expect, test } from 'bun:test'
 import * as z from 'zod'
 import {
   MetaVerificationSchema,
-  TrainingCaptureAssessmentSchema,
-  TrainingCaptureReasonSchema,
   TrainingAssessmentReasonSchema,
   TrainingCandidateAssessmentSchema,
+  TrainingCaptureAssessmentSchema,
+  TrainingCaptureReasonSchema,
   TrainingScoreInputSchema,
   TrainingScoreOutputSchema,
   TrainingScoreSchema,
 } from '../training.schemas.ts'
 import {
-  assessTrainingCapture,
   assessTrainingCandidate,
+  assessTrainingCapture,
   collectTrainingCandidates,
   computeTrainingWeight,
   scoreTrainingDimensions,
@@ -140,6 +140,27 @@ describe('assessTrainingCandidate', () => {
     expect(result.richness).toBe('messages-only')
   })
 
+  test('accepts capture evidence with thoughts even when trajectory is message-only', () => {
+    const result = assessTrainingCandidate({
+      trial: {
+        pass: true,
+        exitCode: 0,
+        trajectory: [{ type: 'message', content: 'Done', timestamp: 1 }],
+        capture: {
+          source: 'adapter',
+          format: 'mixed',
+          messageCount: 1,
+          thoughtCount: 2,
+          toolCallCount: 0,
+        },
+      },
+      dimensions: { outcome: 0.95, process: 0.9 },
+    })
+
+    expect(result.eligible).toBe(true)
+    expect(result.richness).toBe('full')
+  })
+
   test('rejects timed out and non-zero exit trials', () => {
     const result = assessTrainingCandidate({
       trial: {
@@ -236,6 +257,27 @@ describe('assessTrainingCapture', () => {
     expect(result.richness).toBe('full')
     expect(result.reasons).toEqual([])
     expect(() => TrainingCaptureAssessmentSchema.parse(result)).not.toThrow()
+  })
+
+  test('uses capture evidence when trajectory lacks rich steps', () => {
+    const result = assessTrainingCapture({
+      trial: {
+        exitCode: 0,
+        trajectory: [{ type: 'message', content: 'Done', timestamp: 1 }],
+        capture: {
+          source: 'adapter',
+          format: 'jsonl-event-stream',
+          eventCount: 6,
+          messageCount: 1,
+          thoughtCount: 1,
+          toolCallCount: 0,
+        },
+      },
+    })
+
+    expect(result.eligible).toBe(true)
+    expect(result.richness).toBe('full')
+    expect(result.reasons).toEqual([])
   })
 
   test('rejects timed out traces with non-zero exit', () => {

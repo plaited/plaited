@@ -20,7 +20,7 @@
  * @packageDocumentation
  */
 
-import type { Adapter, AdapterResult, TrajectoryStep } from '../src/improve.ts'
+import type { Adapter, AdapterResult, CaptureEvidence, CaptureSnippet, TrajectoryStep } from '../src/improve.ts'
 
 // ============================================================================
 // Configuration
@@ -46,6 +46,15 @@ type ChatCompletionResponse = {
     message: {
       role: string
       content: string
+      reasoning_content?: string | null
+      tool_calls?: Array<{
+        id?: string
+        type?: string
+        function?: {
+          name?: string
+          arguments?: string
+        }
+      }>
     }
     finish_reason: string | null
   }>
@@ -55,6 +64,40 @@ type ChatCompletionResponse = {
     total_tokens: number
   }
 }
+
+const THINK_TAG_REGEX = /<think>([\s\S]*?)<\/think>/gi
+
+const truncate = (value: string, max = 240): string => (value.length <= max ? value : `${value.slice(0, max - 1)}...`)
+
+const extractThoughts = (content: string): string[] =>
+  Array.from(content.matchAll(THINK_TAG_REGEX))
+    .map((match) => match[1]?.trim())
+    .filter((segment): segment is string => typeof segment === 'string' && segment.length > 0)
+
+const stripThinkTags = (content: string): string => content.replace(THINK_TAG_REGEX, '').trim()
+
+const createCapture = ({
+  thoughts,
+  toolCallCount,
+  snippets,
+  responseModel,
+}: {
+  thoughts: string[]
+  toolCallCount: number
+  snippets: CaptureSnippet[]
+  responseModel: string
+}): CaptureEvidence => ({
+  source: 'falcon-h1r-mlx-adapter',
+  format: 'chat-completion',
+  eventCount: 1,
+  messageCount: snippets.some((snippet) => snippet.kind === 'message') ? 1 : 0,
+  thoughtCount: thoughts.length,
+  toolCallCount,
+  ...(snippets.length > 0 ? { snippets } : {}),
+  metadata: {
+    model: responseModel,
+  },
+})
 
 // ============================================================================
 // Server health check
@@ -149,19 +192,66 @@ export const adapt: Adapter = async ({ prompt }) => {
       }
 
       const completion = (await response.json()) as ChatCompletionResponse
-      const output = completion.choices[0]?.message.content ?? ''
+      const choice = completion.choices[0]
+      const rawContent = choice?.message.content ?? ''
+      const reasoningContent = choice?.message.reasoning_content?.trim() ?? ''
+      const thinkTagThoughts = extractThoughts(rawContent)
+      const thoughts = reasoningContent ? [reasoningContent, ...thinkTagThoughts] : thinkTagThoughts
+      const visibleOutput = stripThinkTags(rawContent)
+      const output = rawContent
       const finishReason = completion.choices[0]?.finish_reason
+      const snippets: CaptureSnippet[] = []
+
+      for (const thought of thoughts.slice(0, 4)) {
+        trajectory.push({
+          type: 'thought',
+          content: thought,
+          timestamp: Date.now(),
+        })
+        snippets.push({
+          kind: 'thought',
+          text: truncate(thought),
+        })
+      }
+
+      const toolCalls = Array.isArray(choice?.message.tool_calls) ? choice.message.tool_calls : []
+      for (const toolCall of toolCalls) {
+        trajectory.push({
+          type: 'tool_call',
+          name: toolCall.function?.name ?? 'tool_call',
+          status: 'completed',
+          ...(toolCall.function?.arguments ? { input: toolCall.function.arguments } : {}),
+          timestamp: Date.now(),
+          ...(toolCall.id ? { stepId: toolCall.id } : {}),
+        })
+        snippets.push({
+          kind: 'tool_call',
+          text: toolCall.function?.name ?? 'tool_call',
+        })
+      }
 
       // Record the response as a trajectory message
       trajectory.push({
         type: 'message',
-        content: output,
+        content: visibleOutput || rawContent,
         timestamp: Date.now(),
       })
+      if (visibleOutput || rawContent) {
+        snippets.push({
+          kind: 'message',
+          text: truncate(visibleOutput || rawContent),
+        })
+      }
 
       result = {
         output,
         trajectory,
+        capture: createCapture({
+          thoughts,
+          toolCallCount: toolCalls.length,
+          snippets,
+          responseModel: completion.model,
+        }),
         timing: {
           total: elapsed,
           ...(completion.usage && {
@@ -184,6 +274,14 @@ export const adapt: Adapter = async ({ prompt }) => {
         ? `Falcon H1R inference timed out after ${FALCON_TIMEOUT_MS}ms`
         : `Falcon H1R inference error: ${error instanceof Error ? error.message : String(error)}`,
       trajectory: trajectory.length > 0 ? trajectory : undefined,
+      capture: {
+        source: 'falcon-h1r-mlx-adapter',
+        format: 'chat-completion',
+        eventCount: 0,
+        messageCount: 0,
+        thoughtCount: 0,
+        toolCallCount: 0,
+      },
       timing: { total: elapsed },
       exitCode: 1,
       timedOut: isAbort,

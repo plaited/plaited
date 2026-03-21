@@ -1,0 +1,15 @@
+{
+  "runId": "slice-5-codex-capture-check",
+  "createdAt": "2026-03-21T02:11:49.177Z",
+  "adapterPath": "./scripts/codex-cli-adapter.ts",
+  "promptsPath": "/Users/eirby/Workspace/plaited/.worktrees/plaited-dev-slice-5-1-zbxVuT/repo/scripts/../dev-research/native-model/evals/slice-3-validation-prompts.jsonl",
+  "resultsPath": "/Users/eirby/Workspace/plaited/.worktrees/plaited-dev-slice-5-1-zbxVuT/repo/scripts/../dev-research/native-model/evals/runs/slice-5-codex-capture-check/results.jsonl",
+  "summaryPath": "/Users/eirby/Workspace/plaited/.worktrees/plaited-dev-slice-5-1-zbxVuT/repo/scripts/../dev-research/native-model/evals/runs/slice-5-codex-capture-check/summary.md",
+  "summaryJsonPath": "/Users/eirby/Workspace/plaited/.worktrees/plaited-dev-slice-5-1-zbxVuT/repo/scripts/../dev-research/native-model/evals/runs/slice-5-codex-capture-check/summary.json",
+  "config": {
+    "k": 2,
+    "concurrency": 1,
+    "timeout": 90000,
+    "progress": false
+  }
+}

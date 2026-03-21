@@ -9,7 +9,15 @@
  */
 
 import { mkdir, rm } from 'node:fs/promises'
-import type { Adapter, Grader, GraderResult, PromptCase, TrajectoryRichness, TrialResult } from './trial.schemas.ts'
+import type {
+  Adapter,
+  CaptureEvidence,
+  Grader,
+  GraderResult,
+  PromptCase,
+  TrajectoryRichness,
+  TrialResult,
+} from './trial.schemas.ts'
 import { AdapterResultSchema, GraderResultSchema, PromptCaseSchema, type TrajectoryStep } from './trial.schemas.ts'
 
 // ============================================================================
@@ -181,7 +189,9 @@ export const loadJsonl = async <T = unknown>(path: string): Promise<T[]> => {
  * @public
  */
 export const loadPrompts = async (path: string): Promise<PromptCase[]> => {
-  return parseJsonlLines<PromptCase>(await Bun.file(path).text(), 'Invalid prompt', (value) => PromptCaseSchema.parse(value))
+  return parseJsonlLines<PromptCase>(await Bun.file(path).text(), 'Invalid prompt', (value) =>
+    PromptCaseSchema.parse(value),
+  )
 }
 
 /**
@@ -411,7 +421,7 @@ export const hasToolErrors = (trajectory: TrajectoryStep[]): boolean =>
  *
  * @public
  */
-export const detectRichness = (trajectory: TrajectoryStep[]): TrajectoryRichness => {
+export const detectRichness = (trajectory: TrajectoryStep[], capture?: CaptureEvidence): TrajectoryRichness => {
   let hasMessages = false
 
   for (const step of trajectory) {
@@ -423,7 +433,15 @@ export const detectRichness = (trajectory: TrajectoryStep[]): TrajectoryRichness
     }
   }
 
-  return hasMessages ? 'messages-only' : 'minimal'
+  if ((capture?.thoughtCount ?? 0) > 0 || (capture?.toolCallCount ?? 0) > 0) {
+    return 'full'
+  }
+
+  if (hasMessages || (capture?.messageCount ?? 0) > 0) {
+    return 'messages-only'
+  }
+
+  return 'minimal'
 }
 
 // ============================================================================

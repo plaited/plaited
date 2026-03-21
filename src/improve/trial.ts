@@ -154,6 +154,7 @@ export const runTrial = async (config: TrialConfig): Promise<TrialResult[]> => {
           output: adapterResult.output,
           duration,
           ...(adapterResult.trajectory && { trajectory: adapterResult.trajectory }),
+          ...(adapterResult.capture && { capture: adapterResult.capture }),
           ...(adapterResult.timing && { timing: adapterResult.timing }),
           ...(adapterResult.exitCode !== undefined && { exitCode: adapterResult.exitCode }),
           ...(adapterResult.timedOut && { timedOut: true }),
@@ -181,6 +182,7 @@ export const runTrial = async (config: TrialConfig): Promise<TrialResult[]> => {
           entry.trainingAssessment = assessTrainingCandidate({
             trial: {
               pass: entry.pass,
+              capture: entry.capture,
               exitCode: entry.exitCode,
               timedOut: entry.timedOut,
               trajectory: entry.trajectory,
