@@ -113,6 +113,9 @@ bun run native-model:validate -- --adapter ./scripts/falcon-h1r-mlx-adapter.ts
 bun run native-model:compare -- \
   --baseline ./dev-research/native-model/evals/runs/falcon-untuned-baseline \
   --candidate ./dev-research/native-model/evals/runs/<candidate-run>
+
+# Run a native-model fanout over multiple training strategies
+bun run program:run -- ./dev-research/native-model/slice-4.md --lane native-model --pattern fanout --agents 3 --model mlx-community/Falcon-H1R-7B-4bit --max-seq-length 384 --num-layers 2 --iters 20
 ```
 
 Detailed training and MSI handoff notes live in:
@@ -220,7 +223,17 @@ bun run research -- ./dev-research/runtime-taxonomy/slice-1.md --max-attempts 1
 
 # Longer unattended batch
 bun run research:overnight -- ./dev-research/runtime-taxonomy/slice-2.md
+
+# Shared breadth/depth orchestrator over a program/slice lane
+bun run program:run -- ./dev-research/runtime-taxonomy/slice-2.md --lane repo --pattern fanout --agents 3 --judge --promote-winner
 ```
+
+The shared program orchestrator sits above the two existing executors:
+- repo lane uses `scripts/dev-autoresearch.ts`
+- native-model lane uses `scripts/native-model-bootstrap-cycle.ts`
+
+Use it when you want breadth-first exploration against a `program.md` / slice
+boundary before refining the best strategy more deeply.
 
 ### Native-Model Commands
 

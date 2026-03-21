@@ -85,4 +85,18 @@ describe('native-model-bootstrap-cycle', () => {
     expect(comparison.noRegression).toBe(false)
     expect(comparison.shouldPromote).toBe(false)
   })
+
+  test('parseArgs reads result-json and strategy-label flags', () => {
+    const parsed = parseArgs([
+      '--output-dir',
+      './tmp/out',
+      '--result-json',
+      './tmp/native-result.json',
+      '--strategy-label',
+      'balanced',
+    ])
+
+    expect(parsed.resultJsonPath).toBe('./tmp/native-result.json')
+    expect(parsed.strategyLabel).toBe('balanced')
+  })
 })

@@ -195,4 +195,17 @@ describe('dev-autoresearch dry run', () => {
     )
     expect(resolveProgramPath('./dev-research/skills/slice-1.md')).toBe('./dev-research/skills/program.md')
   })
+
+  test('parses result-json and strategy-note flags', () => {
+    const parsed = parseInput([
+      './dev-research/runtime-taxonomy/slice-2.md',
+      '--result-json',
+      './tmp/repo-result.json',
+      '--strategy-note',
+      'Prefer deleting unnecessary abstractions first.',
+    ])
+
+    expect(parsed.resultJsonPath).toBe('./tmp/repo-result.json')
+    expect(parsed.strategyNote).toBe('Prefer deleting unnecessary abstractions first.')
+  })
 })

@@ -1,4 +1,4 @@
-import { relative, resolve } from 'node:path'
+import { dirname, relative, resolve } from 'node:path'
 
 type Summary = {
   passRate: number
@@ -44,7 +44,25 @@ type CycleConfig = {
   iters?: number
   adapterPath?: string
   baselineRunId: string
+  resultJsonPath?: string
+  strategyLabel?: string
   tunedRunId: string
+}
+
+export type NativeModelCycleResult = {
+  mode: 'native-model-bootstrap'
+  outputDir: string
+  promptsPath: string
+  runsDir: string
+  model: string
+  baselineRunId: string
+  tunedRunId: string
+  tunedAdapterPath: string
+  comparison: Comparison
+  strategyLabel?: string
+  maxSeqLength?: number
+  numLayers?: number
+  iters?: number
 }
 
 const REPO_ROOT = `${import.meta.dir}/..`
@@ -84,6 +102,8 @@ export const parseArgs = (args: string[]): CycleConfig => {
   let iters: number | undefined
   let adapterPath = process.env.FALCON_ADAPTER_PATH
   let baselineRunId = DEFAULT_BASELINE_RUN_ID
+  let resultJsonPath: string | undefined
+  let strategyLabel: string | undefined
   let tunedRunId = DEFAULT_TUNED_RUN_ID
 
   for (let index = 0; index < args.length; index += 1) {
@@ -140,6 +160,14 @@ export const parseArgs = (args: string[]): CycleConfig => {
         baselineRunId = next ?? baselineRunId
         index += 1
         break
+      case '--result-json':
+        resultJsonPath = next ?? resultJsonPath
+        index += 1
+        break
+      case '--strategy-label':
+        strategyLabel = next ?? strategyLabel
+        index += 1
+        break
       case '--tuned-run-id':
         tunedRunId = next ?? tunedRunId
         index += 1
@@ -168,6 +196,8 @@ export const parseArgs = (args: string[]): CycleConfig => {
     ...(typeof iters === 'number' ? { iters } : {}),
     ...(adapterPath ? { adapterPath } : {}),
     baselineRunId,
+    ...(resultJsonPath ? { resultJsonPath } : {}),
+    ...(strategyLabel ? { strategyLabel } : {}),
     tunedRunId,
   }
 }
@@ -453,8 +483,28 @@ export const run = async () => {
     tuned: tunedSummary,
   })
 
+  const result: NativeModelCycleResult = {
+    mode: 'native-model-bootstrap',
+    outputDir: resolve(config.outputDir),
+    promptsPath: resolve(config.promptsPath),
+    runsDir: resolve(config.runsDir),
+    model: config.model,
+    baselineRunId: config.baselineRunId,
+    tunedRunId: config.tunedRunId,
+    tunedAdapterPath,
+    comparison,
+    ...(config.strategyLabel ? { strategyLabel: config.strategyLabel } : {}),
+    ...(typeof config.maxSeqLength === 'number' ? { maxSeqLength: config.maxSeqLength } : {}),
+    ...(typeof config.numLayers === 'number' ? { numLayers: config.numLayers } : {}),
+    ...(typeof config.iters === 'number' ? { iters: config.iters } : {}),
+  }
+
   const comparisonPath = `${resolve(config.outputDir)}/bootstrap-comparison.json`
   await Bun.write(`${comparisonPath}`, `${JSON.stringify(comparison, null, 2)}\n`)
+  if (config.resultJsonPath) {
+    await Bun.$`mkdir -p ${dirname(config.resultJsonPath)}`.quiet()
+    await Bun.write(config.resultJsonPath, `${JSON.stringify(result, null, 2)}\n`)
+  }
   printComparison(comparison)
   console.log(`- Comparison artifact: ${comparisonPath}`)
 

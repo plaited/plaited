@@ -9,7 +9,7 @@
  * result, and logs keep/revise/discard output via the improve-layer utilities.
  */
 
-import { join } from 'node:path'
+import { join, dirname as pathDirname } from 'node:path'
 import {
   checkImproveScope,
   createStageLogger,
@@ -39,7 +39,9 @@ type CliInput = {
   push: boolean
   programPath: string
   quiet: boolean
+  resultJsonPath?: string
   slicePath: string
+  strategyNote?: string
 }
 
 type ValidationResult = ImprovementValidationResult
@@ -75,6 +77,32 @@ type JudgeBundle = {
 }
 
 export type StageLogEntry = ImprovementStageLogEntry
+
+export type RepoAutoresearchResult = {
+  mode: 'repo-harness'
+  sliceId: string
+  slicePath: string
+  programPath: string
+  decision: ImprovementAttemptDecision
+  changedFiles: string[]
+  diffStat: string
+  attempt: number
+  passed: boolean
+  strategyNote?: string
+  commit?: string
+  pushedBranch?: string
+  capture: {
+    eligible: boolean
+    richness: string
+    reasons: string[]
+  }
+  judges?: {
+    fast?: { pass: boolean; score: number }
+    fastMeta?: { pass: boolean; score: number }
+    final?: { pass: boolean; score: number }
+    finalMeta?: { pass: boolean; score: number }
+  }
+}
 
 const PROJECT_ROOT = join(import.meta.dir, '..')
 const WORKTREES_ROOT = join(PROJECT_ROOT, '.worktrees')
@@ -120,7 +148,9 @@ export const parseInput = (args: string[]): CliInput => {
     push: hasFlag(args, '--no-push') ? false : true,
     programPath: resolveProgramPath(resolvedSlicePath, getArg(args, '--program')),
     quiet: hasFlag(args, '--quiet'),
+    resultJsonPath: getArg(args, '--result-json'),
     slicePath: resolvedSlicePath,
+    strategyNote: getArg(args, '--strategy-note'),
   }
 }
 
@@ -621,6 +651,12 @@ const printAttemptSummary = ({
   }
 }
 
+const persistResultJson = async ({ path, result }: { path?: string; result: RepoAutoresearchResult }) => {
+  if (!path) return
+  await Bun.$`mkdir -p ${pathDirname(path)}`.quiet()
+  await Bun.write(path, `${JSON.stringify(result, null, 2)}\n`)
+}
+
 const main = async () => {
   const input = parseInput(process.argv.slice(2))
   const stageLog: StageLogEntry[] = []
@@ -631,6 +667,7 @@ const main = async () => {
     slicePath: input.slicePath,
   })
   const { allowedPaths, prompt } = protocol
+  const effectivePrompt = input.strategyNote ? `${prompt}\n\nStrategy note:\n- ${input.strategyNote}` : prompt
   const program = protocol.program.text
   const slice = protocol.slice.text
   const adapter = await loadAdapter(input.adapterPath)
@@ -654,7 +691,7 @@ const main = async () => {
 
     try {
       logStatus('adapter:start', 'running implementation adapter')
-      const result = await adapter({ prompt, cwd: worktree })
+      const result = await adapter({ prompt: effectivePrompt, cwd: worktree })
       logStatus('adapter:done', `timedOut=${result.timedOut} exitCode=${result.exitCode ?? 'none'}`)
       logStatus('diff:start', 'collecting changed files and patch')
       const changedFiles = await getChangedFiles(worktree)
@@ -857,6 +894,37 @@ const main = async () => {
         fullTests,
       })
 
+      await persistResultJson({
+        path: input.resultJsonPath,
+        result: {
+          mode: 'repo-harness',
+          sliceId,
+          slicePath: input.slicePath,
+          programPath: input.programPath,
+          decision,
+          changedFiles,
+          diffStat,
+          attempt,
+          passed,
+          ...(input.strategyNote ? { strategyNote: input.strategyNote } : {}),
+          ...(commit ? { commit } : {}),
+          ...(pushedBranch ? { pushedBranch } : {}),
+          capture: {
+            eligible: captureAssessment.eligible,
+            richness: captureAssessment.richness,
+            reasons: captureAssessment.reasons,
+          },
+          judges: {
+            ...(judges?.primary ? { fast: { pass: judges.primary.pass, score: judges.primary.score } } : {}),
+            ...(judges?.meta ? { fastMeta: { pass: judges.meta.pass, score: judges.meta.score } } : {}),
+            ...(finalJudges?.primary
+              ? { final: { pass: finalJudges.primary.pass, score: finalJudges.primary.score } }
+              : {}),
+            ...(finalJudges?.meta ? { finalMeta: { pass: finalJudges.meta.pass, score: finalJudges.meta.score } } : {}),
+          },
+        },
+      })
+
       if (decision === 'keep') {
         console.log(commit ? `commit=${commit}` : 'commit=skipped')
         if (pushedBranch) {
@@ -870,6 +938,26 @@ const main = async () => {
     }
   }
 
+  await persistResultJson({
+    path: input.resultJsonPath,
+    result: {
+      mode: 'repo-harness',
+      sliceId,
+      slicePath: input.slicePath,
+      programPath: input.programPath,
+      decision: 'discard',
+      changedFiles: [],
+      diffStat: '',
+      attempt: input.maxAttempts,
+      passed: false,
+      ...(input.strategyNote ? { strategyNote: input.strategyNote } : {}),
+      capture: {
+        eligible: false,
+        richness: 'minimal',
+        reasons: ['no-keep'],
+      },
+    },
+  })
   console.log('result=no-keep')
 }
 
