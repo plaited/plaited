@@ -26,6 +26,9 @@
 
 **Conventional commits** — `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`, `test:`
 **Multi-line messages** for detailed context. **Never --no-verify**.
+**Wrap commit body lines at 100 chars or less** to satisfy commitlint.
+**When a multi-line message is awkward in shell quoting, use a commit message file** rather than
+forcing escaped newlines into `git commit -m`.
 
 ## Code Quality Gate
 
