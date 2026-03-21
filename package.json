@@ -52,7 +52,6 @@
     "native-model:train:mlx": "varlock run -- bun --no-env-file scripts/native-model-train-mlx.ts",
     "native-model:validate": "bun scripts/improve-native-model-validation.ts",
     "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .hooks || true",
-    "prompt": "claude --model opus --dangerously-skip-permissions --rc",
     "qwen:tts:mlx": "varlock run -- bun --no-env-file scripts/qwen-tts-mlx-server.ts",
     "qwen:vl:mlx": "varlock run -- bun --no-env-file scripts/qwen-vl-mlx-server.ts",
     "research": "varlock run -- bun --no-env-file scripts/dev-autoresearch.ts --adapter ./scripts/codex-cli-adapter.ts --judge --commit --push",
