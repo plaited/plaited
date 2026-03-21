@@ -2,7 +2,8 @@
  * Start the Falcon H1R 7B MLX inference server.
  *
  * @remarks
- * Convenience wrapper that launches `mlx_lm.server` from the project venv
+ * Convenience wrapper that launches `mlx_lm.server` from the uv-managed
+ * native-model training project
  * with sensible defaults. The server exposes an OpenAI-compatible API at
  * `http://localhost:<port>/v1/chat/completions`.
  *
@@ -15,7 +16,7 @@
  * @packageDocumentation
  */
 
-const VENV_PYTHON = `${import.meta.dir}/../.venv/bin/python3`
+const TRAINING_DIR = `${import.meta.dir}/../dev-research/native-model/training`
 const DEFAULT_MODEL = 'mlx-community/Falcon-H1R-7B-4bit'
 const DEFAULT_PORT = '8080'
 
@@ -27,18 +28,20 @@ const args = process.argv.slice(2)
 const portIdx = args.indexOf('--port')
 const port = portIdx !== -1 ? (args[portIdx + 1] ?? DEFAULT_PORT) : DEFAULT_PORT
 const model = process.env.FALCON_MODEL ?? DEFAULT_MODEL
+const adapterPath = process.env.FALCON_ADAPTER_PATH
 
 // ============================================================================
-// Verify venv exists
+// Verify uv training project exists
 // ============================================================================
 
-const venvExists = await Bun.file(VENV_PYTHON).exists()
-if (!venvExists) {
-  console.error(
-    'Python venv not found. Create it with:\n' +
-      '  python3.12 -m venv .venv\n' +
-      '  .venv/bin/pip install mlx-lm huggingface-hub',
-  )
+const pyprojectExists = await Bun.file(`${TRAINING_DIR}/pyproject.toml`).exists()
+if (!pyprojectExists) {
+  console.error(`Native-model training project not found. Expected:\n  ${TRAINING_DIR}/pyproject.toml`)
+  process.exit(1)
+}
+
+if (!Bun.which('uv')) {
+  console.error('uv not found. Install it first, then run `uv sync --group dev --group mlx`.')
   process.exit(1)
 }
 
@@ -48,25 +51,19 @@ if (!venvExists) {
 
 console.log(`Starting Falcon H1R MLX server...`)
 console.log(`  Model:  ${model}`)
+if (adapterPath) {
+  console.log(`  Adapter: ${adapterPath}`)
+}
 console.log(`  Port:   ${port}`)
 console.log(`  URL:    http://localhost:${port}/v1/chat/completions`)
 console.log()
 
-const proc = Bun.spawn([VENV_PYTHON, '-m', 'mlx_lm.server', '--model', model, '--port', port], {
-  cwd: `${import.meta.dir}/..`,
-  stdout: 'inherit',
-  stderr: 'inherit',
-  env: {
-    ...process.env,
-    HF_TOKEN: process.env.HF_TOKEN,
-  },
-})
+const adapterArgs = adapterPath ? ['--adapter-path', adapterPath] : []
+const result = await Bun.$`uv run python -m mlx_lm.server --model ${model} --port ${port} ${adapterArgs}`
+  .cwd(TRAINING_DIR)
+  .env({
+    ...(process.env as Record<string, string>),
+  })
+  .nothrow()
 
-// Forward SIGINT/SIGTERM to the subprocess for clean shutdown
-const shutdown = () => {
-  proc.kill('SIGTERM')
-}
-process.on('SIGINT', shutdown)
-process.on('SIGTERM', shutdown)
-
-await proc.exited
+process.exit(result.exitCode)

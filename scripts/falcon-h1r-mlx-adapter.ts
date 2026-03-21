@@ -10,7 +10,7 @@
  *
  * Start the server:
  * ```bash
- * .venv/bin/mlx_lm.server --model mlx-community/Falcon-H1R-7B-4bit --port 8080
+ * bun run falcon:mlx
  * ```
  *
  * The adapter calls the OpenAI-compatible `/v1/chat/completions` endpoint
@@ -143,7 +143,7 @@ export const adapt: Adapter = async ({ prompt }) => {
   const serverUp = await checkServer()
   if (!serverUp) {
     return {
-      output: `Falcon H1R server not reachable at ${FALCON_BASE_URL}. Start it with:\n  .venv/bin/mlx_lm.server --model ${FALCON_MODEL} --port 8080`,
+      output: `Falcon H1R server not reachable at ${FALCON_BASE_URL}. Start it with:\n  bun run falcon:mlx`,
       timing: { total: Date.now() - start },
       exitCode: 1,
     }
