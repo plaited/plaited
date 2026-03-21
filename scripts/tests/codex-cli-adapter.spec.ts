@@ -61,4 +61,51 @@ describe('parseCodexExecJsonl', () => {
       expect.objectContaining({ type: 'message', content: 'done' }),
     ])
   })
+
+  test('treats command execution items as rich capture and preserves raw events', () => {
+    const parsed = parseCodexExecJsonl(
+      [
+        JSON.stringify({ type: 'thread.started', thread_id: 't1' }),
+        JSON.stringify({ type: 'turn.started' }),
+        JSON.stringify({
+          type: 'item.completed',
+          item: {
+            id: 'i-cmd',
+            type: 'command_execution',
+            command: 'sed',
+            argv: ['-n', '1,20p', 'README.md'],
+            status: 'completed',
+            stdout: 'file content',
+            exit_code: 0,
+            duration_ms: 42,
+          },
+        }),
+        JSON.stringify({
+          type: 'item.completed',
+          item: { id: 'i-msg', type: 'agent_message', text: 'done' },
+        }),
+      ].join('\n'),
+    )
+
+    expect(parsed.capture.toolCallCount).toBe(1)
+    expect(parsed.capture.itemTypes).toEqual(['agent_message', 'command_execution'])
+    expect(parsed.capture.metadata).toEqual(
+      expect.objectContaining({
+        threadId: 't1',
+        turnCount: 1,
+        rawEvents: expect.any(Array),
+      }),
+    )
+    expect(parsed.trajectory).toEqual([
+      expect.objectContaining({
+        type: 'tool_call',
+        name: 'command_execution',
+        status: 'completed',
+        input: { command: 'sed', argv: ['-n', '1,20p', 'README.md'] },
+        output: { stdout: 'file content', exitCode: 0 },
+        duration: 42,
+      }),
+      expect.objectContaining({ type: 'message', content: 'done' }),
+    ])
+  })
 })

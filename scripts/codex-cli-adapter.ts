@@ -31,6 +31,8 @@ const getNumber = (value: unknown): number | undefined => (typeof value === 'num
 
 const getRecord = (value: unknown): JsonRecord | undefined => (isRecord(value) ? value : undefined)
 
+const getArray = (value: unknown): unknown[] | undefined => (Array.isArray(value) ? value : undefined)
+
 const truncate = (value: string, max = 240): string => (value.length <= max ? value : `${value.slice(0, max - 1)}...`)
 
 const pushSnippet = (snippets: CaptureSnippet[], snippet: CaptureSnippet): void => {
@@ -41,6 +43,36 @@ const pushSnippet = (snippets: CaptureSnippet[], snippet: CaptureSnippet): void 
 
 const extractItemText = (item: JsonRecord): string | undefined => {
   return getString(item.text) ?? getString(item.content) ?? getString(item.summary)
+}
+
+const extractCommandInput = (item: JsonRecord): unknown => {
+  const command = getString(item.command)
+  const argv = getArray(item.argv)
+  if (command || argv) {
+    return {
+      ...(command ? { command } : {}),
+      ...(argv ? { argv } : {}),
+    }
+  }
+
+  return item.input
+}
+
+const extractCommandOutput = (item: JsonRecord): unknown => {
+  const stdout = getString(item.stdout)
+  const stderr = getString(item.stderr)
+  const exitCode = getNumber(item.exit_code) ?? getNumber(item.exitCode)
+  const output = {
+    ...(stdout ? { stdout } : {}),
+    ...(stderr ? { stderr } : {}),
+    ...(exitCode !== undefined ? { exitCode } : {}),
+  }
+
+  if (Object.keys(output).length > 0) {
+    return output
+  }
+
+  return item.output ?? item.result
 }
 
 const normalizeToolStatus = (item: JsonRecord): string => {
@@ -59,18 +91,27 @@ const normalizeToolStatus = (item: JsonRecord): string => {
 
 const parseToolStep = (item: JsonRecord, itemType: string, timestamp: number): ToolCallStep | undefined => {
   const explicitName = getString(item.name) ?? getString(item.tool_name)
-  const hasToolShape = itemType.includes('tool') || explicitName !== undefined
+  const hasCommandShape = itemType === 'command_execution'
+  const hasToolShape = itemType.includes('tool') || explicitName !== undefined || hasCommandShape
   if (!hasToolShape) {
     return undefined
   }
 
   return {
     type: 'tool_call',
-    name: explicitName ?? itemType,
+    name: explicitName ?? (hasCommandShape ? 'command_execution' : itemType),
     status: normalizeToolStatus(item),
-    ...(item.input !== undefined ? { input: item.input } : {}),
-    ...(item.output !== undefined ? { output: item.output } : item.result !== undefined ? { output: item.result } : {}),
-    ...(getNumber(item.duration_ms) !== undefined ? { duration: getNumber(item.duration_ms) } : {}),
+    ...((hasCommandShape ? extractCommandInput(item) : item.input) !== undefined
+      ? { input: hasCommandShape ? extractCommandInput(item) : item.input }
+      : {}),
+    ...((hasCommandShape ? extractCommandOutput(item) : (item.output ?? item.result)) !== undefined
+      ? { output: hasCommandShape ? extractCommandOutput(item) : (item.output ?? item.result) }
+      : {}),
+    ...(getNumber(item.duration_ms) !== undefined
+      ? { duration: getNumber(item.duration_ms) }
+      : getNumber(item.duration) !== undefined
+        ? { duration: getNumber(item.duration) }
+        : {}),
     timestamp,
     ...(getString(item.id) ? { stepId: getString(item.id) } : {}),
   }
@@ -203,6 +244,7 @@ export const parseCodexExecJsonl = (raw: string): ParsedCodexExecJsonl => {
       metadata: {
         ...(threadId ? { threadId } : {}),
         turnCount,
+        rawEvents: events,
       },
     },
     ...(trajectory.length > 0 ? { trajectory } : {}),
