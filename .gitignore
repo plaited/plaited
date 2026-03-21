@@ -59,6 +59,8 @@ notes.md
 trajectories/
 training-data/
 .memory/
+dev-research/native-model/evals/runs/
+dev-research/native-model/training/runs/
 
 # Python venv (MLX inference)
 .venv/
