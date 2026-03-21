@@ -1,0 +1,22 @@
+[project]
+name = "plaited-native-model-training"
+version = "0.1.0"
+description = "Dedicated uv-managed Python environment for Plaited native-model training."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+  "numpy>=2.3.0,<3",
+  "pyyaml>=6.0.2,<7",
+]
+mlx = [
+  "mlx==0.31.1",
+  "mlx-lm==0.31.1",
+]
+
+[tool.uv]
+environments = [
+  "sys_platform == 'darwin' and platform_machine == 'arm64'",
+]

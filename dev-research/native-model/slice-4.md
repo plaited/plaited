@@ -1,60 +1,58 @@
-# Slice 4: Native-Model Validation Calibration
+# Slice 4: First Local Tuning Run
 
 ## Target
 
-Calibrate the first native-model validation path so it produces stable
-validation signals without overstating curation or training readiness.
+Prepare and launch the first local native-model tuning run from the curated
+Slice 3 dataset.
 
-This slice should respond directly to the first real validation run:
+This slice begins after:
 
-- timeout instability on one prompt
-- prompt/grader mismatch for the module-outline theme
-- reporting that does not clearly separate validation success from training
-  eligibility
+- the validation path is stable
+- at least some retained outputs are training-eligible
+- `dev-research/native-model/evals/curated-good-outputs.jsonl` exists as the
+  stable curation path
 
 ## Scope
 
 - `./package.json`
-- `src/improve.ts`
-- `src/improve/`
 - `scripts/`
 - `dev-research/native-model/`
 - `dev-research/native-model/evals/`
 
 ## Required
 
-- make timeout behavior configurable and appropriate for the validation batch
-- tighten the fit between the module-outline prompt and its grading signals
-- distinguish validation-pass reporting from training-eligibility reporting
-- preserve the small-batch validation workflow added in Slice 3
+- define the first local tuning command for the curated dataset
+- export the curated candidates into a trainer-friendly SFT dataset format
+- write a stable run manifest with dataset path, base model, and output
+  directory
+- keep trainer execution external rather than hardwiring one training stack
+  into framework code
+- make the first local tuning command inspectable and reproducible
 
 ## Preserve
 
-- the validation driver remains trial-layer based
-- prompt count remains intentionally small
-- provider-specific model bindings remain in `scripts/`
-- training eligibility remains stricter than validation success
+- provider/model-specific launch logic remains in `scripts/`
+- the curated dataset remains the stable input boundary for tuning
+- validation-ready and training-ready outputs remain distinct
+- trainer infrastructure remains external to `src/`
 
 ## Avoid
 
-- expanding into broad corpus collection
-- treating prompt calibration as a full native-model data pipeline
-- hiding validation failure reasons behind one aggregate score
-- lowering thresholds just to manufacture training eligibility
+- pretending inference servers are training pipelines
+- coupling the repo to one mandatory trainer dependency too early
+- training directly from raw validation `results.jsonl`
+- expanding into large-scale self-distillation orchestration in this slice
 
 ## Acceptance Criteria
 
-- the validation driver can run with an explicit timeout suitable for the batch
-- the module-outline prompt/grader pairing no longer fails for avoidable
-  calibration reasons
-- summaries and outputs clearly distinguish:
-  - validation pass/fail
-  - retention label
-  - training eligibility
-- the resulting validation batch gives a more trustworthy signal for whether
-  native-model Slice 2 is ready to proceed
+- there is a package-script entrypoint for the first local tuning run
+- the command consumes `curated-good-outputs.jsonl`, not raw validation output
+- running the command prepares a trainer-friendly dataset and a run manifest
+- the command can optionally invoke an external trainer when configured
+- the resulting workflow is good enough to start the first real local tuning
+  pass on the new hardware
 
 ## Notes
 
-This slice is calibration work on top of the new driver, not a new execution
-model.
+This slice is about wiring the first practical local tuning path, not about
+solving the full long-term training stack.
