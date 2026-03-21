@@ -69,10 +69,19 @@ The local Falcon comparison now confirms:
    - Reuse:
      - `bun run native-model:bootstrap-cycle`
      - `bun run native-model:compare`
+     - `bun run program:run -- ... --lane native-model --pattern fanout`
      - the same curated dataset boundary
    - Replace:
      - MLX trainer backend
      - local Falcon server backend as needed for the MSI environment
+   - MSI follow-up:
+     - revisit `scripts/program-orchestrator.ts` native-model fanout so it can
+       run candidate strategies in parallel when the MSI box has enough GPU
+       headroom
+     - add explicit concurrency/worker controls instead of assuming one-machine
+       sequential execution
+     - isolate candidate eval serving with distinct ports and output dirs before
+       enabling parallel native-model fanout
 
 5. Once the MSI environment is ready, reuse the same curated boundary and run manifest flow.
    - Keep:
