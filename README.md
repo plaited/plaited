@@ -366,6 +366,12 @@ Default artifact layout stays inside the skill:
 The tool also commits those updated eval artifacts by default when the skill
 lives in a git repo, so git history becomes the longitudinal skill-eval log.
 
+For `baseline:"without-skill"` runs, `evaluate-skill` now snapshots both the
+with-skill and without-skill scenarios into detached `.worktrees/` checkouts
+from the same git state. Repo-local adapter, grader, and prompt paths are
+resolved inside those worktrees so Codex comparisons stay inspectable even when
+the current checkout has uncommitted changes.
+
 Examples:
 - trigger eval against the current skill:
   - `plaited evaluate-skill '{"skillPath":"skills/generative-ui","mode":"trigger","adapterPath":"./scripts/codex-cli-adapter.ts","graderPath":"./scripts/gemini-judge.ts","k":2,"progress":true}'`

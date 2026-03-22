@@ -175,4 +175,46 @@ export const adapt = async ({ cwd }) => {
       process.chdir(previousCwd)
     }
   })
+
+  test('uses repo-local adapter and prompt files from the detached comparison worktrees', async () => {
+    const fixture = await createRepoFixture()
+    const previousCwd = process.cwd()
+    process.chdir(fixture.repoDir)
+
+    try {
+      await Bun.write(fixture.adapterPath, `export const adapt = async () => ({ output: 'missing' })\n`)
+      await Bun.write(
+        join(fixture.skillDir, 'evals', 'trigger-prompts.jsonl'),
+        `${JSON.stringify({
+          id: 'should-trigger',
+          input: 'Use the demo skill',
+          metadata: { expected: 'missing' },
+        })}\n`,
+      )
+
+      const result = await evaluateSkill({
+        skillPath: fixture.skillDir,
+        mode: 'trigger',
+        adapterPath: fixture.adapterPath,
+        graderPath: fixture.graderPath,
+        baseline: 'without-skill',
+        useWorktree: true,
+        keepWorktrees: false,
+        commit: false,
+        k: 1,
+        concurrency: 1,
+        progress: false,
+      })
+
+      const withSkill = result.runs.find((run) => run.label === 'with-skill')
+      const withoutSkill = result.runs.find((run) => run.label === 'without-skill')
+      expect(withSkill?.summary.passRate).toBe(1)
+      expect(withoutSkill?.summary.passRate).toBe(0)
+
+      const report = await Bun.file(result.resultsMarkdownPath).text()
+      expect(report).toContain('- Pass rate delta: +1.000')
+    } finally {
+      process.chdir(previousCwd)
+    }
+  })
 })

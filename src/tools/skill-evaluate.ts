@@ -208,6 +208,24 @@ const removeWorktree = async ({ repoRoot, worktreeDir }: { repoRoot: string; wor
   await Bun.$`git -C ${repoRoot} worktree remove --force ${worktreeDir}`.quiet().nothrow()
 }
 
+const resolvePathInWorktree = async ({
+  repoRoot,
+  worktreeDir,
+  path,
+}: {
+  repoRoot: string
+  worktreeDir: string
+  path: string
+}): Promise<string> => {
+  const [canonicalRepoRoot, canonicalPath] = await Promise.all([canonicalizePath(repoRoot), canonicalizePath(path)])
+  const relativePath = relative(canonicalRepoRoot, canonicalPath)
+  if (relativePath.startsWith('..') || relativePath === '') {
+    return path
+  }
+
+  return join(worktreeDir, relativePath)
+}
+
 const hideSkillInWorktree = async ({
   worktreeDir,
   repoRoot,
@@ -479,6 +497,8 @@ const createScenarioRun = async ({
   label,
   cwd,
   worktreeDir,
+  sourceWorktreeDir,
+  repoRoot,
   outputDir,
   workspaceDir,
   adapterPath,
@@ -492,6 +512,8 @@ const createScenarioRun = async ({
   label: string
   cwd: string
   worktreeDir?: string
+  sourceWorktreeDir?: string
+  repoRoot?: string
   outputDir: string
   workspaceDir?: string
   adapterPath: string
@@ -505,10 +527,22 @@ const createScenarioRun = async ({
   const scenarioDir = join(outputDir, label)
   await ensureDir(scenarioDir)
 
+  const pathResolutionWorktreeDir = sourceWorktreeDir ?? worktreeDir
+  const [scenarioAdapterPath, scenarioGraderPath, scenarioPromptsPath] =
+    pathResolutionWorktreeDir && repoRoot
+      ? await Promise.all([
+          resolvePathInWorktree({ repoRoot, worktreeDir: pathResolutionWorktreeDir, path: adapterPath }),
+          graderPath
+            ? resolvePathInWorktree({ repoRoot, worktreeDir: pathResolutionWorktreeDir, path: graderPath })
+            : Promise.resolve(undefined),
+          resolvePathInWorktree({ repoRoot, worktreeDir: pathResolutionWorktreeDir, path: promptsPath }),
+        ])
+      : [adapterPath, graderPath, promptsPath]
+
   const [adapter, grader, prompts] = await Promise.all([
-    loadAdapter(adapterPath),
-    graderPath ? loadGrader(graderPath) : Promise.resolve(undefined),
-    loadPrompts(promptsPath),
+    loadAdapter(scenarioAdapterPath),
+    scenarioGraderPath ? loadGrader(scenarioGraderPath) : Promise.resolve(undefined),
+    loadPrompts(scenarioPromptsPath),
   ])
 
   const resultsPath = join(scenarioDir, 'results.jsonl')
@@ -601,17 +635,45 @@ export const evaluateSkill = async (
       }
 
       const repoRoot = await getGitRoot(dirname(skillPath))
-      const worktreeDir = join(repoRoot, '.worktrees', `skill-eval-${basename(skillPath)}-${runId}-without-skill`)
+      const withSkillWorktreeDir = join(repoRoot, '.worktrees', `skill-eval-${basename(skillPath)}-${runId}-with-skill`)
+      const withoutSkillWorktreeDir = join(
+        repoRoot,
+        '.worktrees',
+        `skill-eval-${basename(skillPath)}-${runId}-without-skill`,
+      )
       await ensureDir(join(repoRoot, '.worktrees'))
-      await addDetachedWorktree({ repoRoot, worktreeDir })
-      worktreesToCleanup.push({ repoRoot, worktreeDir })
-      await hideSkillInWorktree({ worktreeDir, repoRoot, skillPath })
+      await addDetachedWorktree({ repoRoot, worktreeDir: withSkillWorktreeDir })
+      await addDetachedWorktree({ repoRoot, worktreeDir: withoutSkillWorktreeDir })
+      worktreesToCleanup.push(
+        { repoRoot, worktreeDir: withSkillWorktreeDir },
+        { repoRoot, worktreeDir: withoutSkillWorktreeDir },
+      )
+      await hideSkillInWorktree({ worktreeDir: withoutSkillWorktreeDir, repoRoot, skillPath })
+
+      runArtifacts[0] = await createScenarioRun({
+        label: 'with-skill',
+        cwd: withSkillWorktreeDir,
+        worktreeDir: withSkillWorktreeDir,
+        sourceWorktreeDir: withSkillWorktreeDir,
+        repoRoot,
+        outputDir: runDir,
+        workspaceDir: withSkillWorkspaceDir,
+        adapterPath,
+        graderPath,
+        promptsPath,
+        k: input.k,
+        timeout: input.timeout,
+        concurrency: input.concurrency,
+        progress: input.progress,
+      })
 
       runArtifacts.push(
         await createScenarioRun({
           label: 'without-skill',
-          cwd: worktreeDir,
-          worktreeDir,
+          cwd: withoutSkillWorktreeDir,
+          worktreeDir: withoutSkillWorktreeDir,
+          sourceWorktreeDir: withSkillWorktreeDir,
+          repoRoot,
           outputDir: runDir,
           workspaceDir: defaultWorkspaceBase ? join(defaultWorkspaceBase, 'without-skill') : undefined,
           adapterPath,
@@ -722,6 +784,11 @@ Examples:
   plaited evaluate-skill '{"skillPath":"skills/generative-ui","mode":"trigger","adapterPath":"./scripts/codex-cli-adapter.ts","baseline":"without-skill","useWorktree":true}'
   plaited evaluate-skill --schema input
   plaited evaluate-skill --schema output`)
+    console.log(`
+Notes:
+  baseline="without-skill" snapshots both scenarios into detached worktrees.
+  Repo-local adapter, grader, and prompt paths are resolved inside each worktree
+  so Codex comparisons stay stable even if the current checkout is dirty.`)
     process.exit(0)
   }
 
