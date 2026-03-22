@@ -240,9 +240,10 @@ bun run research:overnight -- ./dev-research/runtime-taxonomy/slice-2.md
 bun run program:run -- ./dev-research/runtime-taxonomy/slice-2.md --lane repo --pattern fanout --agents 3 --judge --promote-winner
 ```
 
-The shared program orchestrator sits above the two existing executors:
+The shared program orchestrator sits above the three existing executors:
 - repo lane uses `scripts/dev-autoresearch.ts`
 - native-model lane uses `scripts/native-model-bootstrap-cycle.ts`
+- skills lane uses `src/tools/skill-evaluate.ts`
 
 Use it when you want breadth-first exploration against a `program.md` / slice
 boundary before refining the best strategy more deeply.
@@ -251,6 +252,7 @@ How programs and slices are used:
 - both lanes start from a slice path such as:
   - `./dev-research/runtime-taxonomy/slice-2.md`
   - `./dev-research/native-model/slice-4.md`
+  - `./dev-research/skills/slice-1.md`
 - `program:run` resolves the matching `program.md` from that slice directory by
   default
 - repo lane uses the slice + `program.md` as the actual improvement protocol
@@ -259,12 +261,15 @@ How programs and slices are used:
   orchestration boundary and run label, while the concrete train/eval inputs
   still come from the curated dataset and validation prompt files unless you
   override them with flags
+- skills lane uses the slice + `program.md` as the orchestration boundary while
+  the concrete skill under evaluation, eval mode, baseline, and adapter/grader
+  come from flags
 
 `program:run` API:
 - common flags:
   - positional slice path or `--slice <path>`
   - `--program <path>` to override the default resolved `program.md`
-  - `--lane repo|native-model`
+  - `--lane repo|native-model|skills`
   - `--pattern depth|fanout`
   - `--agents <n>`
   - `--result-json <path>`
@@ -289,6 +294,22 @@ How programs and slices are used:
   - `--max-seq-length <n>`
   - `--num-layers <n>`
   - `--iters <n>`
+- skills-lane flags:
+  - `--skill-path <path>`
+  - `--mode trigger|output`
+  - `--adapter <path>`
+  - `--grader-path <path>`
+  - `--prompts <path>`
+  - `--baseline none|without-skill|previous-skill`
+  - `--use-worktree`
+  - `--keep-worktrees`
+  - `--workspace-dir <path>`
+  - `--output-dir <path>`
+  - `--run-id <id>`
+  - `--k <n>`
+  - `--timeout <ms>`
+  - `--concurrency <n>`
+  - `--no-skill-commit`
 
 Usage notes:
 - first repo fanout run:
@@ -297,6 +318,10 @@ Usage notes:
   - `bun run program:run -- ./dev-research/runtime-taxonomy/slice-2.md --lane repo --pattern fanout --agents 3 --judge --promote-winner`
 - native-model strategy fanout:
   - `bun run program:run -- ./dev-research/native-model/slice-4.md --lane native-model --pattern fanout --agents 3 --model mlx-community/Falcon-H1R-7B-4bit --max-seq-length 384 --num-layers 2 --iters 20`
+- one skill evaluation run:
+  - `bun run program:run -- ./dev-research/skills/slice-1.md --lane skills --skill-path ./skills/generative-ui --mode trigger --adapter ./scripts/codex-cli-adapter.ts --grader-path ./scripts/claude-code-judge.ts --baseline without-skill --use-worktree`
+- skills fanout with winner promotion:
+  - `bun run program:run -- ./dev-research/skills/slice-1.md --lane skills --pattern fanout --agents 3 --skill-path ./skills/generative-ui --mode trigger --adapter ./scripts/codex-cli-adapter.ts --grader-path ./scripts/claude-code-judge.ts --baseline without-skill --use-worktree --promote-winner`
 
 Operational behavior:
 - repo fanout creates isolated git worktrees for each candidate
@@ -308,6 +333,10 @@ Operational behavior:
   because the local training/serving path is resource-constrained
 - native-model lane does not use `--max-attempts`; its primary knobs are
   `--iters`, `--max-seq-length`, `--num-layers`, and `--agents`
+- skills depth runs `evaluate-skill` directly and can commit the latest eval
+  artifacts to the repo by default
+- skills fanout runs each candidate in an isolated git worktree, letting the
+  winner's eval-artifact commit be cherry-picked back with `--promote-winner`
 
 ### Skill Evaluation
 

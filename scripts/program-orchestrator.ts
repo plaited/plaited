@@ -1,10 +1,11 @@
 import { basename, join, resolve } from 'node:path'
 import { resolveProgramPath } from '../src/improve/protocol.ts'
+import type { SkillEvaluationOutput } from '../src/tools/skill-evaluate.ts'
 import type { RepoAutoresearchResult } from './dev-autoresearch.ts'
 import { type NativeModelCycleResult, updateFalconAdapterPath } from './native-model-bootstrap-cycle.ts'
 
 type CoordinationPattern = 'depth' | 'fanout'
-type OrchestrationLane = 'repo' | 'native-model'
+type OrchestrationLane = 'repo' | 'native-model' | 'skills'
 
 type CliInput = {
   lane: OrchestrationLane
@@ -36,6 +37,23 @@ type CliInput = {
     numLayers?: number
     iters?: number
   }
+  skills: {
+    skillPath: string
+    mode: 'trigger' | 'output'
+    adapterPath: string
+    graderPath?: string
+    promptsPath?: string
+    baseline: 'none' | 'without-skill' | 'previous-skill'
+    useWorktree: boolean
+    keepWorktrees: boolean
+    commit: boolean
+    workspaceDir?: string
+    outputDir?: string
+    runId?: string
+    k: number
+    timeout?: number
+    concurrency: number
+  }
 }
 
 type RepoCandidate = {
@@ -47,6 +65,12 @@ type RepoCandidate = {
 type NativeCandidate = {
   label: string
   result: NativeModelCycleResult
+  resultPath: string
+}
+
+type SkillCandidate = {
+  label: string
+  result: SkillEvaluationOutput
   resultPath: string
 }
 
@@ -81,13 +105,40 @@ type OrchestrationSummary =
       }>
       promoted: boolean
     }
+  | {
+      lane: 'skills'
+      pattern: CoordinationPattern
+      slicePath: string
+      programPath: string
+      winner: SkillEvaluationOutput
+      candidates: Array<{
+        label: string
+        passRate?: number
+        eligibleRate?: number
+        averageScore?: number
+        deltaPassRate?: number
+        deltaEligibleRate?: number
+        deltaAverageScore?: number
+        resultPath: string
+      }>
+      promoted: boolean
+    }
 
 const REPO_ROOT = `${import.meta.dir}/..`
 const DEFAULT_NATIVE_OUTPUT_DIR = `${REPO_ROOT}/dev-research/native-model/training/runs/orchestrated-${new Date().toISOString().replaceAll(':', '-').replaceAll('.', '-')}`
 const DEFAULT_RESULTS_DIR = `${REPO_ROOT}/.memory/evals/orchestrator`
 const ENV_SCHEMA_PATH = `${REPO_ROOT}/.env.schema`
 
-const BOOLEAN_FLAGS = new Set(['--judge', '--commit', '--push', '--quiet', '--promote-winner'])
+const BOOLEAN_FLAGS = new Set([
+  '--judge',
+  '--commit',
+  '--push',
+  '--quiet',
+  '--promote-winner',
+  '--use-worktree',
+  '--keep-worktrees',
+  '--no-skill-commit',
+])
 
 const getArg = (args: string[], flag: string, fallback?: string): string | undefined => {
   const index = args.indexOf(flag)
@@ -152,6 +203,23 @@ export const parseInput = (args: string[]): CliInput => {
       maxSeqLength: parseNumber(getArg(args, '--max-seq-length')),
       numLayers: parseNumber(getArg(args, '--num-layers')),
       iters: parseNumber(getArg(args, '--iters')),
+    },
+    skills: {
+      skillPath: getArg(args, '--skill-path', './skills/generative-ui')!,
+      mode: (getArg(args, '--mode', 'trigger') ?? 'trigger') as 'trigger' | 'output',
+      adapterPath: getArg(args, '--adapter', './scripts/codex-cli-adapter.ts')!,
+      graderPath: getArg(args, '--grader-path'),
+      promptsPath: getArg(args, '--prompts'),
+      baseline: (getArg(args, '--baseline', 'none') ?? 'none') as 'none' | 'without-skill' | 'previous-skill',
+      useWorktree: hasFlag(args, '--use-worktree'),
+      keepWorktrees: hasFlag(args, '--keep-worktrees'),
+      commit: hasFlag(args, '--no-skill-commit') ? false : true,
+      workspaceDir: getArg(args, '--workspace-dir'),
+      outputDir: getArg(args, '--output-dir'),
+      runId: getArg(args, '--run-id'),
+      k: parseNumber(getArg(args, '--k')) ?? 1,
+      timeout: parseNumber(getArg(args, '--timeout')),
+      concurrency: parseNumber(getArg(args, '--concurrency')) ?? 1,
     },
   }
 }
@@ -251,6 +319,47 @@ export const pickRepoWinner = (candidates: RepoCandidate[]): RepoCandidate =>
 export const pickNativeWinner = (candidates: NativeCandidate[]): NativeCandidate =>
   [...candidates].sort((left, right) => rankNativeResult(right.result) - rankNativeResult(left.result))[0]!
 
+const getScenarioMetric = (
+  result: SkillEvaluationOutput,
+  label: string,
+): { passRate?: number; eligibleRate?: number; averageScore?: number } => {
+  const run = result.runs.find((candidate) => candidate.label === label)
+  return {
+    passRate: run?.summary.passRate,
+    eligibleRate: run?.summary.eligibleRate,
+    averageScore: run?.summary.averageScore,
+  }
+}
+
+const rankSkillResult = (result: SkillEvaluationOutput): number => {
+  const withSkill = getScenarioMetric(result, 'with-skill')
+  const withoutSkill = result.baseline === 'none' ? undefined : getScenarioMetric(result, 'without-skill')
+  const deltaPassRate =
+    withSkill.passRate !== undefined && withoutSkill?.passRate !== undefined
+      ? withSkill.passRate - withoutSkill.passRate
+      : 0
+  const deltaEligibleRate =
+    withSkill.eligibleRate !== undefined && withoutSkill?.eligibleRate !== undefined
+      ? withSkill.eligibleRate - withoutSkill.eligibleRate
+      : 0
+  const deltaAverageScore =
+    withSkill.averageScore !== undefined && withoutSkill?.averageScore !== undefined
+      ? withSkill.averageScore - withoutSkill.averageScore
+      : 0
+
+  return (
+    (withSkill.passRate ?? 0) * 1_000 +
+    (withSkill.eligibleRate ?? 0) * 500 +
+    (withSkill.averageScore ?? 0) * 100 +
+    deltaPassRate * 50 +
+    deltaEligibleRate * 25 +
+    deltaAverageScore * 10
+  )
+}
+
+export const pickSkillWinner = (candidates: SkillCandidate[]): SkillCandidate =>
+  [...candidates].sort((left, right) => rankSkillResult(right.result) - rankSkillResult(left.result))[0]!
+
 export const buildRepoFanoutArgs = ({
   input,
   resultPath,
@@ -302,6 +411,47 @@ const cherryPickExperimentCommit = async (sha: string) => {
   const result = await Bun.$`git cherry-pick ${sha}`.cwd(REPO_ROOT).nothrow().quiet()
   if (result.exitCode !== 0) {
     throw new Error(`git cherry-pick failed: ${result.stderr.toString().trim()}`)
+  }
+}
+
+const addDetachedWorktree = async ({ repoRoot, worktreeDir }: { repoRoot: string; worktreeDir: string }) => {
+  const result = await Bun.$`git -C ${repoRoot} worktree add --detach ${worktreeDir}`.quiet().nothrow()
+  if (result.exitCode !== 0) {
+    throw new Error(`git worktree add failed: ${result.stderr.toString().trim()}`)
+  }
+}
+
+const removeDetachedWorktree = async ({ repoRoot, worktreeDir }: { repoRoot: string; worktreeDir: string }) => {
+  await Bun.$`git -C ${repoRoot} worktree remove --force ${worktreeDir}`.quiet().nothrow()
+}
+
+const getRepoRoot = async () => {
+  const result = await Bun.$`git -C ${REPO_ROOT} rev-parse --show-toplevel`.quiet()
+  return result.text().trim()
+}
+
+const buildSkillSummaryCandidate = (candidate: SkillCandidate) => {
+  const withSkill = getScenarioMetric(candidate.result, 'with-skill')
+  const withoutSkill =
+    candidate.result.baseline === 'none' ? undefined : getScenarioMetric(candidate.result, 'without-skill')
+  return {
+    label: candidate.label,
+    passRate: withSkill.passRate,
+    eligibleRate: withSkill.eligibleRate,
+    averageScore: withSkill.averageScore,
+    deltaPassRate:
+      withSkill.passRate !== undefined && withoutSkill?.passRate !== undefined
+        ? Number((withSkill.passRate - withoutSkill.passRate).toFixed(3))
+        : undefined,
+    deltaEligibleRate:
+      withSkill.eligibleRate !== undefined && withoutSkill?.eligibleRate !== undefined
+        ? Number((withSkill.eligibleRate - withoutSkill.eligibleRate).toFixed(3))
+        : undefined,
+    deltaAverageScore:
+      withSkill.averageScore !== undefined && withoutSkill?.averageScore !== undefined
+        ? Number((withSkill.averageScore - withoutSkill.averageScore).toFixed(3))
+        : undefined,
+    resultPath: candidate.resultPath,
   }
 }
 
@@ -545,6 +695,112 @@ const runNativeFanout = async (input: CliInput): Promise<OrchestrationSummary> =
   }
 }
 
+const runSkillsDepth = async (input: CliInput): Promise<SkillEvaluationOutput> => {
+  const { evaluateSkill } = await import('../src/tools/skill-evaluate.ts')
+  return evaluateSkill({
+    skillPath: input.skills.skillPath,
+    mode: input.skills.mode,
+    adapterPath: input.skills.adapterPath,
+    graderPath: input.skills.graderPath,
+    promptsPath: input.skills.promptsPath,
+    baseline: input.skills.baseline,
+    useWorktree: input.skills.useWorktree,
+    keepWorktrees: input.skills.keepWorktrees,
+    commit: input.skills.commit,
+    workspaceDir: input.skills.workspaceDir,
+    outputDir: input.skills.outputDir,
+    runId: input.skills.runId,
+    k: input.skills.k,
+    timeout: input.skills.timeout,
+    concurrency: input.skills.concurrency,
+    progress: !input.quiet,
+  })
+}
+
+const runSkillsFanout = async (input: CliInput): Promise<OrchestrationSummary> => {
+  const { evaluateSkill } = await import('../src/tools/skill-evaluate.ts')
+  const repoRoot = await getRepoRoot()
+  const runDir = join(DEFAULT_RESULTS_DIR, `skills-${basename(input.slicePath).replace(/\.md$/, '')}-${Date.now()}`)
+  await ensureDir(runDir)
+  await ensureDir(join(repoRoot, '.worktrees'))
+
+  const skillPathAbsolute = resolve(REPO_ROOT, input.skills.skillPath)
+  const skillPathRelative = skillPathAbsolute.startsWith(`${repoRoot}/`)
+    ? skillPathAbsolute.slice(repoRoot.length + 1)
+    : input.skills.skillPath
+
+  const worktrees: Array<{ label: string; worktreeDir: string }> = []
+  const candidates: SkillCandidate[] = []
+
+  try {
+    const labels = Array.from({ length: input.agents }, (_, index) => `agent-${index + 1}`)
+    for (const label of labels) {
+      const worktreeDir = join(repoRoot, '.worktrees', `skills-${basename(skillPathRelative)}-${Date.now()}-${label}`)
+      await addDetachedWorktree({ repoRoot, worktreeDir })
+      worktrees.push({ label, worktreeDir })
+    }
+
+    await Promise.all(
+      worktrees.map(async ({ label, worktreeDir }) => {
+        const result = await evaluateSkill({
+          skillPath: join(worktreeDir, skillPathRelative),
+          mode: input.skills.mode,
+          adapterPath: resolve(REPO_ROOT, input.skills.adapterPath),
+          graderPath: input.skills.graderPath ? resolve(REPO_ROOT, input.skills.graderPath) : undefined,
+          promptsPath: input.skills.promptsPath ? resolve(REPO_ROOT, input.skills.promptsPath) : undefined,
+          baseline: input.skills.baseline,
+          useWorktree: input.skills.useWorktree,
+          keepWorktrees: input.skills.keepWorktrees,
+          commit: input.skills.commit,
+          workspaceDir: input.skills.workspaceDir
+            ? join(resolve(REPO_ROOT, input.skills.workspaceDir), label)
+            : undefined,
+          outputDir: join(
+            worktreeDir,
+            'skills',
+            basename(skillPathRelative),
+            'evals',
+            'runs',
+            `${Date.now()}-${label}`,
+          ),
+          runId: input.skills.runId ? `${input.skills.runId}-${label}` : undefined,
+          k: input.skills.k,
+          timeout: input.skills.timeout,
+          concurrency: input.skills.concurrency,
+          progress: !input.quiet,
+        })
+        const resultPath = join(runDir, `${label}.json`)
+        await Bun.write(resultPath, `${JSON.stringify(result, null, 2)}\n`)
+        candidates.push({ label, result, resultPath })
+      }),
+    )
+  } finally {
+    if (!input.skills.keepWorktrees) {
+      for (const worktree of worktrees) {
+        await removeDetachedWorktree({ repoRoot, worktreeDir: worktree.worktreeDir })
+      }
+    }
+  }
+
+  const winner = pickSkillWinner(candidates)
+  let promoted = false
+  if (input.promoteWinner && winner.result.commitSha) {
+    await ensureMainBranchReady()
+    await cherryPickExperimentCommit(winner.result.commitSha)
+    promoted = true
+  }
+
+  return {
+    lane: 'skills',
+    pattern: 'fanout',
+    slicePath: input.slicePath,
+    programPath: input.programPath,
+    winner: winner.result,
+    candidates: candidates.map(buildSkillSummaryCandidate),
+    promoted,
+  }
+}
+
 const printSummary = (summary: OrchestrationSummary) => {
   console.log(`# Program Orchestrator`)
   console.log()
@@ -559,6 +815,14 @@ const printSummary = (summary: OrchestrationSummary) => {
       `- Winner score: ${(summary.winner.judges?.final?.score ?? summary.winner.judges?.fast?.score ?? 0).toFixed(3)}`,
     )
   } else {
+    if (summary.lane === 'skills') {
+      const withSkill = summary.winner.runs.find((run) => run.label === 'with-skill')
+      console.log(`- Winner pass rate: ${(withSkill?.summary.passRate ?? 0).toFixed(3)}`)
+      console.log(`- Winner eligible rate: ${(withSkill?.summary.eligibleRate ?? 0).toFixed(3)}`)
+      console.log(`- Winner avg score: ${(withSkill?.summary.averageScore ?? 0).toFixed(3)}`)
+      console.log(`- Winner committed eval: ${Boolean(summary.winner.commitSha)}`)
+      return
+    }
     console.log(`- Winner should promote: ${summary.winner.comparison.shouldPromote}`)
     console.log(`- Winner avg score delta: ${summary.winner.comparison.delta.averageScore.toFixed(3)}`)
   }
@@ -589,7 +853,7 @@ const main = async () => {
         ],
         promoted: Boolean(result.pushedBranch),
       }
-    } else {
+    } else if (input.lane === 'native-model') {
       const resultPath = createInternalResultPath({ lane: 'native-model', pattern: 'depth' })
       await ensureDir(dirnameSafe(resultPath))
       const result = await runNativeDepth(input, resultPath)
@@ -611,9 +875,39 @@ const main = async () => {
         ],
         promoted: input.promoteWinner && result.comparison.shouldPromote,
       }
+    } else {
+      const resultPath = createInternalResultPath({ lane: 'skills', pattern: 'depth' })
+      await ensureDir(dirnameSafe(resultPath))
+      const result = await runSkillsDepth(input)
+      await Bun.write(resultPath, `${JSON.stringify(result, null, 2)}\n`)
+      summary = {
+        lane: 'skills',
+        pattern: 'depth',
+        slicePath: input.slicePath,
+        programPath: input.programPath,
+        winner: result,
+        candidates: [
+          {
+            label: 'depth',
+            passRate: result.runs.find((run) => run.label === 'with-skill')?.summary.passRate,
+            eligibleRate: result.runs.find((run) => run.label === 'with-skill')?.summary.eligibleRate,
+            averageScore: result.runs.find((run) => run.label === 'with-skill')?.summary.averageScore,
+            deltaPassRate: undefined,
+            deltaEligibleRate: undefined,
+            deltaAverageScore: undefined,
+            resultPath,
+          },
+        ],
+        promoted: false,
+      }
     }
   } else {
-    summary = input.lane === 'repo' ? await runRepoFanout(input) : await runNativeFanout(input)
+    summary =
+      input.lane === 'repo'
+        ? await runRepoFanout(input)
+        : input.lane === 'native-model'
+          ? await runNativeFanout(input)
+          : await runSkillsFanout(input)
   }
 
   if (input.resultJsonPath) {
