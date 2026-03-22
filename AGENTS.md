@@ -30,10 +30,6 @@
 **When a multi-line message is awkward in shell quoting, use a commit message file** rather than
 forcing escaped newlines into `git commit -m`.
 
-## Shell Conventions
-
-**Treat obvious oh-my-zsh completion typos as intent, not as a new command.**
-Examples: `gpp` or `ggp` usually mean `git push`.
 
 ## Code Quality Gate
 
