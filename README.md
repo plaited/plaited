@@ -56,9 +56,14 @@ It now has a working local bootstrap loop:
 - tuned and untuned runs can be compared before promotion
 
 Current conclusion:
-- this Mac is good for validation, curation, tiny quantized bootstrap runs, and
-  train/eval/promotion workflow development
-- this Mac is not the right box for meaningful Falcon quality work
+- this Mac is now treated as a native-model control-plane and tooling box
+- this Mac is good for:
+  - validation
+  - curation
+  - data shaping
+  - compare/report tooling
+  - shared native-model infrastructure work
+- this Mac is not the forward execution path for meaningful Falcon training
 - the MSI box is the intended training plane for less truncated, higher-headroom
   follow-up runs
 
@@ -73,22 +78,37 @@ Falcon baseline, so it should not be promoted.
 
 ### Native-Model Workflow
 
-Use the local Falcon/MLX lane for:
-- adapter smoke tests
+Use this Mac for:
 - bounded validation
-- small bootstrap LoRA runs
-- comparison and promotion decisions
+- curation and stable training-boundary management
+- data shaping
+- compare/report tooling
+- fixing shared native-model infrastructure
+
+Treat local MLX runs here as proof-of-loop or tooling-debug work only, not as
+the normal path for improving Falcon quality.
 
 Use the MSI box for:
+- actual native-model execution and training
 - longer-context training
 - less aggressive quantization
 - more trainable layers
 - serious candidate promotion attempts
+- later tool-aware process and autonomous-improvement training phases
 
 Key commands:
 
 ```bash
-# Prepare and run a local MLX bootstrap train/eval cycle
+# Run the bounded validation batch against the Falcon adapter
+bun run native-model:validate -- --adapter ./scripts/falcon-h1r-mlx-adapter.ts
+
+# Compare untuned vs tuned validation artifacts
+bun run native-model:compare -- \
+  --baseline ./dev-research/native-model/evals/runs/falcon-untuned-baseline \
+  --candidate ./dev-research/native-model/evals/runs/<candidate-run>
+
+# Prepare and run an MLX bootstrap train/eval cycle only when debugging or
+# verifying the local toolchain
 bun run native-model:bootstrap-cycle -- \
   --model mlx-community/Falcon-H1R-7B-4bit \
   --max-seq-length 384 \
@@ -105,14 +125,6 @@ bun run native-model:train:mlx -- \
 
 # Serve the tracked Falcon adapter target from .env.schema
 bun run falcon:mlx
-
-# Run the bounded validation batch against the Falcon adapter
-bun run native-model:validate -- --adapter ./scripts/falcon-h1r-mlx-adapter.ts
-
-# Compare untuned vs tuned validation artifacts
-bun run native-model:compare -- \
-  --baseline ./dev-research/native-model/evals/runs/falcon-untuned-baseline \
-  --candidate ./dev-research/native-model/evals/runs/<candidate-run>
 
 # Run a native-model fanout over multiple training strategies
 bun run program:run -- ./dev-research/native-model/slice-4.md --lane native-model --pattern fanout --agents 3 --model mlx-community/Falcon-H1R-7B-4bit --max-seq-length 384 --num-layers 2 --iters 20
