@@ -63,3 +63,18 @@ For future expansion, use:
 This script generates candidate low-scale prompt expansions from higher-scale
 seeds. Its output is advisory and should be reviewed before being promoted into
 the canonical JSONL.
+
+To evaluate derived prompt candidates with deterministic gating plus LLM judge
+and meta-verification, use:
+- [modnet-prompt-derivation-evaluate.ts](/Users/eirby/Workspace/plaited/scripts/modnet-prompt-derivation-evaluate.ts)
+- [modnet-prompt-derivation-judge.ts](/Users/eirby/Workspace/plaited/scripts/modnet-prompt-derivation-judge.ts)
+- [modnet-prompt-derivation-meta-verifier.ts](/Users/eirby/Workspace/plaited/scripts/modnet-prompt-derivation-meta-verifier.ts)
+
+Example:
+
+```bash
+bun scripts/derive-modnet-prompts.ts --limit 20 > /tmp/modnet-derived-prompts.json
+bun scripts/modnet-prompt-derivation-evaluate.ts \
+  --candidates /tmp/modnet-derived-prompts.json \
+  --output /tmp/modnet-derived-prompt-evals.jsonl
+```
