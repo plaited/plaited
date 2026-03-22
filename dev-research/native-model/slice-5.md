@@ -3,13 +3,14 @@
 ## Target
 
 Validate that a fine-tuned Falcon-family model shows measurable improvement
-over baseline on Plaited-native evaluation tasks.
+over baseline on Plaited-native evaluation tasks before promotion.
 
 ## Scope
 
 - Run baseline and fine-tuned models on a held-out eval set
 - Measure quality improvements (judge scores, meta-verify confidence)
 - Validate success criteria for a go/no-go decision on the next iteration
+- Keep the current policy grounded in Stage 1 symbolic-output evaluation
 
 ## Required
 
@@ -18,6 +19,7 @@ over baseline on Plaited-native evaluation tasks.
 - Held-out eval set for Plaited-native tasks
 - Sonnet judge and Haiku meta-verifier for scoring
 - Evaluation script comparing baseline vs fine-tuned
+- Explicit no-promotion-on-regression rule
 
 ## Preserve
 
@@ -35,13 +37,14 @@ over baseline on Plaited-native evaluation tasks.
 ## Acceptance Criteria
 
 **Success (Go for Phase 2):**
-- Fine-tuned judge score > baseline by ≥ 5% absolute
-- Meta-verifier confidence increases by ≥ 3% absolute
-- At least 80% of fine-tuned outputs show improvement over baseline
+- Fine-tuned output does not regress the agreed baseline metrics
+- Fine-tuned output shows clear enough improvement to justify promotion
+- Improvement is visible on the held-out task set, not only in training logs
 
 **No-Go:**
 - Fine-tuned score < baseline or equal within noise
 - Fine-tuned model produces worse trajectories or regressions
+- Fine-tuned run only proves loop execution without real quality gains
 
 ## Evaluation Results
 
@@ -66,6 +69,21 @@ The held-out eval set should:
 - not overlap with the curated training set from Slice 3
 - be executable through the same trial/eval substrate used for validation
 - include enough cases to expose regressions, not just best-case wins
+
+## Current Practical Reading
+
+The first local Mac comparison already showed:
+
+- a successful quantized bootstrap LoRA run can complete
+- tuned versus untuned local Falcon did not improve pass rate
+- average score regressed slightly
+
+Therefore this slice should currently be read as:
+
+- baseline vs tuned comparison is mandatory before promotion
+- bootstrap success is not the same as model success
+- meaningful promotion attempts should move to the MSI machine once Stage 1
+  data shaping and training headroom improve
 
 ## Next Steps (if success)
 

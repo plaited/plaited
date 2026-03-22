@@ -3,7 +3,7 @@
 ## Target
 
 Prepare and launch the first local native-model tuning run from the curated
-Slice 3 dataset.
+Slice 3 dataset as a Stage 1 symbolic-output experiment.
 
 This slice begins after:
 
@@ -28,6 +28,7 @@ This slice begins after:
 - keep trainer execution external rather than hardwiring one training stack
   into framework code
 - make the first local tuning command inspectable and reproducible
+- keep the workflow honest about local hardware constraints
 
 ## Preserve
 
@@ -35,6 +36,7 @@ This slice begins after:
 - the curated dataset remains the stable input boundary for tuning
 - validation-ready and training-ready outputs remain distinct
 - trainer infrastructure remains external to `src/`
+- this slice remains Stage 1 only, not tool-aware process training
 
 ## Avoid
 
@@ -62,3 +64,5 @@ As of the first successful bootstrap run:
 - the workflow is proven on Apple Silicon using a quantized MLX model
 - meaningful 7B Falcon training is still expected to move to the MSI box
 - this machine should remain the validation/curation/bootstrap control plane
+- the local Mac run should be treated as proof-of-loop, not as promotion
+  evidence by itself
