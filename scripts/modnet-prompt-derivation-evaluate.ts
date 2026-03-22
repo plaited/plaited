@@ -204,6 +204,7 @@ const parseArgs = () => {
   let candidatesPath = DEFAULT_INPUT
   let sourcePath = DEFAULT_SOURCE_CATALOG
   let outputPath = DEFAULT_OUTPUT
+  let progress = true
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index]
@@ -220,10 +221,14 @@ const parseArgs = () => {
     if (arg === '--output' && args[index + 1]) {
       outputPath = args[index + 1]!
       index += 1
+      continue
+    }
+    if (arg === '--quiet') {
+      progress = false
     }
   }
 
-  return { candidatesPath, sourcePath, outputPath }
+  return { candidatesPath, sourcePath, outputPath, progress }
 }
 
 const loadPromptCatalog = async (path: string): Promise<Map<string, PromptCase>> => {
@@ -280,14 +285,38 @@ const summarizeFamilies = (evaluations: DerivedPromptEvaluation[]) => {
   return Object.fromEntries(Array.from(counts.entries()).sort((left, right) => right[1] - left[1]))
 }
 
+const logProgress = ({ enabled, message }: { enabled: boolean; message: string }) => {
+  if (!enabled) {
+    return
+  }
+
+  console.error(`[modnet-derive-eval] ${message}`)
+}
+
 const main = async () => {
-  const { candidatesPath, sourcePath, outputPath } = parseArgs()
+  const { candidatesPath, sourcePath, outputPath, progress } = parseArgs()
+  logProgress({
+    enabled: progress,
+    message: `loading source catalog from ${sourcePath}`,
+  })
   const sourceCatalog = await loadPromptCatalog(sourcePath)
+  logProgress({
+    enabled: progress,
+    message: `loading candidates from ${candidatesPath}`,
+  })
   const candidates = await loadDerivedCandidates(candidatesPath)
+  logProgress({
+    enabled: progress,
+    message: `loaded ${candidates.length} candidate(s)`,
+  })
   const seenIds = new Set<string>()
   const evaluations: DerivedPromptEvaluation[] = []
 
-  for (const candidate of candidates) {
+  for (const [index, candidate] of candidates.entries()) {
+    logProgress({
+      enabled: progress,
+      message: `candidate ${index + 1}/${candidates.length}: ${candidate.id} precheck`,
+    })
     const sourcePrompt = sourceCatalog.get(candidate.sourceId)
     const deterministicCheck = assessDerivedPromptCandidate({
       candidate,
@@ -297,6 +326,10 @@ const main = async () => {
     seenIds.add(candidate.id)
 
     if (!sourcePrompt) {
+      logProgress({
+        enabled: progress,
+        message: `candidate ${index + 1}/${candidates.length}: ${candidate.id} blocked (missing source)`,
+      })
       evaluations.push(
         DerivedPromptEvaluationSchema.parse({
           candidate,
@@ -312,6 +345,10 @@ const main = async () => {
     }
 
     if (!deterministicCheck.pass) {
+      logProgress({
+        enabled: progress,
+        message: `candidate ${index + 1}/${candidates.length}: ${candidate.id} blocked (${deterministicCheck.hardFailures.join(', ')})`,
+      })
       evaluations.push(
         DerivedPromptEvaluationSchema.parse({
           candidate,
@@ -330,10 +367,18 @@ const main = async () => {
       deterministicCheck,
     }
 
+    logProgress({
+      enabled: progress,
+      message: `candidate ${index + 1}/${candidates.length}: ${candidate.id} judge`,
+    })
     const judge = await judgeDerivedPrompt({
       input: task,
       output: JSON.stringify(candidate, null, 2),
       metadata,
+    })
+    logProgress({
+      enabled: progress,
+      message: `candidate ${index + 1}/${candidates.length}: ${candidate.id} meta-verifier`,
     })
     const metaVerification = await metaVerifyDerivedPrompt({
       input: task,
@@ -354,6 +399,10 @@ const main = async () => {
         recommended: deterministicCheck.pass && judge.pass && metaVerification.pass,
       }),
     )
+    logProgress({
+      enabled: progress,
+      message: `candidate ${index + 1}/${candidates.length}: ${candidate.id} done judge=${judge.pass} meta=${metaVerification.pass}`,
+    })
   }
 
   const outputDir = dirname(outputPath)
@@ -363,6 +412,10 @@ const main = async () => {
 
   const jsonl = `${evaluations.map((entry) => JSON.stringify(entry)).join('\n')}\n`
   await Bun.write(outputPath, jsonl)
+  logProgress({
+    enabled: progress,
+    message: `wrote ${evaluations.length} evaluation row(s) to ${outputPath}`,
+  })
 
   const recommended = evaluations.filter((entry) => entry.recommended).length
   const blockedDeterministically = evaluations.filter((entry) => !entry.deterministicCheck.pass).length
