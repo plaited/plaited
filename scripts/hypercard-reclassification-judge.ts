@@ -23,10 +23,15 @@ const REFERENCE_SYNTHESIS_CONTEXT = [
   '- Instrument-control is for operating external hardware, lab equipment, telemetry, or real data-acquisition surfaces. Internal music-making, simulated instruments, and composition/playback tools are usually creative-tool unless the source clearly controls an external device.',
   '- Business-process beats personal-data-manager when the primary loop is payroll, ledger, inventory, scheduling, or repeatable operational work, even if the stack also keeps personal records or contact fields.',
   "- Personal-data-manager is only correct when the core value is the owner's personal records, contacts, notes, calendars, or household organization rather than an operational workflow.",
+  '- Household, owner, or personal examples do not force personal-data-manager when the actual job is budgeting, project costing, inventory upkeep, vendor tracking, or payment summarization.',
   '- Creative-tool is for authoring, composing, arranging, performing, or manipulating expressive material. Do not snap to instrument-control just because the title mentions a keyboard, lab, or toolbox.',
   '- S2 remains correct for a rich tracker, editor, catalog, or workflow form. S3 needs a true block with multiple grouped views or emergent interactions. S4 is rare and requires multiple distinct S3-like blocks arranged into a coordinated suite.',
   '- "Complete", "thorough", "powerful", or "suite-like" prose is not enough for S4 by itself. Require evidence of separate coordinated blocks, not just depth inside one workflow.',
+  '- Avoid reflexive collection defaults. Use list for ordered or printable records, form for dialog-style entry/editing, hierarchy for parent-child project/subproject organization, matrix for budget-vs-actual or category cross-comparison, and steps for explicit staged workflows.',
+  '- Use collection only when the dominant value is browsing or managing a general catalog rather than a more specific list, hierarchy, matrix, steps, or form shape.',
+  '- Menu-driven sections, generated category lists, transfer helpers, or printable summaries may still be an S2 operational tool rather than an S3/S4 suite unless the evidence shows separately coordinated blocks.',
   '- Seed-worthiness should favor niche-gold sovereign modules, enduring operational tools, and reusable module patterns. Do not promote thin demos or lexical curiosities just because the title sounds unusual.',
+  '- S2 operational tools can still be seed-worthy when they capture an evergreen workflow with transferable structure, but ordinary inventory logs, simple payment ledgers, or thin record keepers should stay conservative unless the source shows unusual leverage.',
   '- Resist lexical snap-to-label errors. Titles like "keyboard", "accounting", or "laboratory toolbox" are clues, but the description and dominant user job decide the family, scale, and seed value.',
 ].join('\n')
 
@@ -182,6 +187,7 @@ export const buildJudgePrompt = ({
   const sourceRecord = JSON.stringify(metadata?.sourceRecord ?? {}, null, 2)
   const currentClassification = JSON.stringify(metadata?.currentClassification ?? {}, null, 2)
   const heuristicPrior = JSON.stringify(metadata?.heuristicPrior ?? {}, null, 2)
+  const calibrationCues = JSON.stringify(metadata?.calibrationCues ?? [], null, 2)
 
   return `You are reclassifying a HyperCard-derived modnet training prompt.
 
@@ -215,6 +221,9 @@ ${currentClassification}
 
 Heuristic prior:
 ${heuristicPrior}
+
+Calibration cues:
+${calibrationCues}
 
 ${TRAINING_GUIDE_CONTEXT}
 

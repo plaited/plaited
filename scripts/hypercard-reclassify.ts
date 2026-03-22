@@ -119,6 +119,17 @@ const logProgress = ({ enabled, message }: { enabled: boolean; message: string }
   console.error(`[hypercard-reclassify] ${message}`)
 }
 
+const getNestedNumber = (value: unknown, key: string): number | undefined => {
+  if (!value || typeof value !== 'object') return undefined
+  const nested = (value as Record<string, unknown>)[key]
+  return typeof nested === 'number' ? nested : undefined
+}
+
+const getJudgeCostUsd = (value: unknown): number => getNestedNumber(value, 'totalCostUsd') ?? 0
+
+const asRecord = (value: unknown): Record<string, unknown> =>
+  value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
+
 const buildTask = (row: PromptRow) =>
   [
     'Reclassify this HyperCard-derived prompt for modnet training.',
@@ -126,6 +137,59 @@ const buildTask = (row: PromptRow) =>
     `Current pattern family: ${row.metadata?.patternFamily ?? 'unknown'}`,
     `Current scale: ${typeof row._source?.mss?.scale === 'number' ? `S${row._source.mss.scale}` : 'unknown'}`,
   ].join('\n')
+
+const deriveCalibrationCues = (row: PromptRow, heuristic: ReturnType<typeof suggestMinimumScale>) => {
+  const title = (row._source?.title ?? '').toLowerCase()
+  const description = (row._source?.description ?? '').toLowerCase()
+  const generatedPrompt = flattenInput(row.input).toLowerCase()
+  const evidence = [title, description, generatedPrompt].filter(Boolean).join(' ')
+  const cues: string[] = []
+
+  if (/(inventory|vendor|payment|budget|cost|ledger|tax|summary|project costing|job costing)/.test(evidence)) {
+    cues.push(
+      'Operational workflow evidence is present. Favor business-process over personal-data-manager unless the source is primarily about household or personal record keeping.',
+    )
+  }
+
+  if (
+    /(household|owner|personal)/.test(evidence) &&
+    /(inventory|vendor|payment|budget|cost|project|tax)/.test(evidence)
+  ) {
+    cues.push(
+      'Household or owner-facing examples appear as usage context, but they do not override an underlying operational workflow classification.',
+    )
+  }
+
+  if (/(project stacks|sub-projects|subprojects|categories|summary|objects)/.test(evidence)) {
+    cues.push(
+      'Review non-collection structures carefully: project/subproject language can imply hierarchy, category summaries can imply matrix, and object/data stack phrasing may still remain a specific S2 workflow rather than a generic collection.',
+    )
+  }
+
+  if (/(dialog entry|form|entry control|record each payment|maintain|update)/.test(evidence)) {
+    cues.push('Form may fit better than collection when the dominant loop is entering or editing operational records.')
+  }
+
+  if (/(list|listing|print|printable|menu driven|categories of software lists)/.test(evidence)) {
+    cues.push(
+      'List may fit better than collection when the core experience is maintaining, generating, or printing ordered records.',
+    )
+  }
+
+  if (/(hypothesis|researcher|experiment|project stacks build info and data stacks)/.test(evidence)) {
+    cues.push(
+      'Niche research tooling can be seed-worthy if the structure is reusable, but do not inflate scale or seed value from "powerful" or "complete" marketing language alone.',
+    )
+  }
+
+  if (heuristic.suggestedScale <= 2) {
+    cues.push(
+      'The scale heuristic does not by itself justify promotion beyond S2. Require concrete evidence before raising scale or seed-worthiness.',
+    )
+  }
+
+  return cues
+}
 
 const processCandidate = async ({
   row,
@@ -165,6 +229,7 @@ const processCandidate = async ({
       scaleLooksUnderstated: flagged,
       modernization: row.metadata?.modernization ?? null,
     },
+    calibrationCues: deriveCalibrationCues(row, heuristic),
   }
 
   logProgress({
@@ -305,6 +370,12 @@ const main = async () => {
 
   const trusted = records.filter((entry) => entry.trusted).length
   const seedReview = records.filter((entry) => entry.recommendedForSeedReview).length
+  const judgeCostUsd = records.reduce((sum, entry) => sum + getJudgeCostUsd(asRecord(entry.judge?.outcome).judgeSdk), 0)
+  const metaVerifierCostUsd = records.reduce(
+    (sum, entry) => sum + getJudgeCostUsd(asRecord(entry.metaVerification?.outcome).metaVerificationSdk),
+    0,
+  )
+  const totalCostUsd = judgeCostUsd + metaVerifierCostUsd
 
   console.log(
     JSON.stringify(
@@ -315,6 +386,11 @@ const main = async () => {
         processedCandidates: records.length,
         trusted,
         recommendedForSeedReview: seedReview,
+        spendUsd: {
+          judge: Number(judgeCostUsd.toFixed(6)),
+          metaVerifier: Number(metaVerifierCostUsd.toFixed(6)),
+          total: Number(totalCostUsd.toFixed(6)),
+        },
       },
       null,
       2,

@@ -38,7 +38,8 @@ describe('hypercard-reclassification-meta-verifier', () => {
     const result = toGraderResult({
       pass: false,
       score: 0.28,
-      reasoning: 'The primary judge over-read suite language and treated author contact text as module behavior.',
+      reasoning:
+        'The primary judge over-read suite language, fell back to collection, and treated author contact text as module behavior.',
       dimensions: {
         consistency: 0.32,
         risk: 0.88,
