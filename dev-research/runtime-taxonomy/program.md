@@ -17,6 +17,27 @@ Plaited remains:
 - a BP-first system
 - a git + hypergraph backed system of provenance, rollback, and training context
 
+## Separation From Other Programs
+
+- `dev-research/runtime-taxonomy/program.md`
+  - local framework/runtime/autoresearch infrastructure
+- `dev-research/skills/program.md`
+  - skill discovery, validation, evaluation, and improvement workflows
+- `dev-research/improve/program.md`
+  - generic improvement substrate and model-agnostic improvement protocol
+- `dev-research/native-model/program.md`
+  - Falcon/native-model behavior and distillation
+- `dev-research/modnet/program.md`
+  - inter-node collaboration, exchange, and governance
+
+Do not merge these concerns casually.
+
+## Core Hypothesis
+
+The local runtime ontology should become clearer and more operational without
+changing the sovereign-node architecture or collapsing later modnet concerns
+into premature implementation shortcuts.
+
 ## Fixed Architecture
 
 These decisions are already made. Do not change them.
@@ -94,3 +115,20 @@ Revise or discard changes that:
 - hide coordination outside BP event flow
 - weaken observability
 - introduce architecture drift outside the current slice
+
+## Acceptance Criteria
+
+A retained change in this lane should:
+
+- preserve the fixed architecture and runtime taxonomy
+- improve the local runtime/execution story without collapsing sovereignty
+- keep the runtime boundary explicit and inspectable
+- avoid mixing native-model or inter-node concerns into local runtime slices
+
+## Safety
+
+Do not let runtime-taxonomy work:
+
+- bypass PM or constitutional authority
+- smuggle inter-node concerns into local runtime shortcuts
+- weaken observability in the name of convenience

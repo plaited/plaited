@@ -24,6 +24,18 @@ Add the initial runtime taxonomy and in-process actor communication primitive.
 
 Keep the initial bridge path PM-mediated for simplicity and observability.
 
+## Preserve
+
+- PM-mediated routing remains the temporary constraint for this slice
+- the runtime boundary stays explicit
+- actor taxonomy remains local-runtime-only in this slice
+
+## Avoid
+
+- broad A2A redesign
+- cross-process work before the in-process contract is stable
+- collapsing the temporary PM-mediated constraint into the permanent design
+
 ## Acceptance Criteria
 
 - runtime boundary exists and is explicit

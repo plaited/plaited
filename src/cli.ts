@@ -16,6 +16,7 @@ import { bashCli, editFileCli, listFilesCli, readFileCli, writeFileCli } from '.
 import { ingestGoalCli } from './tools/ingest-goal.ts'
 import { ingestRulesCli } from './tools/ingest-rules.ts'
 import { ingestSkillCli } from './tools/ingest-skill.ts'
+import { validateResearchCli } from './tools/research-validate.ts'
 import { discoverSkillsCli } from './tools/skill-discovery.ts'
 import { evaluateSkillCli } from './tools/skill-evaluate.ts'
 import { validateSkill } from './tools/skill-validate.ts'
@@ -35,6 +36,7 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   bash: bashCli,
   // Development tools
   'validate-skill': validateSkill,
+  'validate-research': validateResearchCli,
   'validate-thread': validateThreadCli,
   'ingest-goal': ingestGoalCli,
   'ingest-skill': ingestSkillCli,
@@ -84,6 +86,7 @@ Commands:
     validate-skill, validate-thread, ingest-goal,
     ingest-skill, ingest-rules, discover-skills,
     evaluate-skill,
+    validate-research,
     typescript-lsp
 
   ACP (Internal Control Surface):

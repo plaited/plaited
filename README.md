@@ -316,6 +316,8 @@ Skill evaluation is separate from structural validation:
   - AgentSkills-compatible structure only
 - `plaited evaluate-skill`
   - behavioral quality against the skill's local `evals/` surface
+- `plaited validate-research`
+  - structural validation for `dev-research/**/program.md` and `slice-*.md`
 
 `evaluate-skill` uses the skill-local files when present:
 - `evals/trigger-prompts.jsonl`
@@ -340,6 +342,8 @@ Examples:
   - `plaited evaluate-skill '{"skillPath":"skills/generative-ui","mode":"trigger","adapterPath":"./scripts/codex-cli-adapter.ts","graderPath":"./scripts/gemini-judge.ts","k":2,"progress":true}'`
 - with-skill vs without-skill comparison:
   - `plaited evaluate-skill '{"skillPath":"skills/generative-ui","mode":"trigger","adapterPath":"./scripts/codex-cli-adapter.ts","graderPath":"./scripts/gemini-judge.ts","baseline":"without-skill","useWorktree":true,"k":2,"progress":true}'`
+- validate the internal research docs:
+  - `plaited validate-research '{"paths":["dev-research"]}'`
 
 ### Native-Model Commands
 
@@ -463,6 +467,7 @@ The repo ships an agent-facing CLI toolbox:
 - `plaited ingest-rules`
 - `plaited discover-skills`
 - `plaited evaluate-skill`
+- `plaited validate-research`
 - `plaited typescript-lsp`
 
 See:

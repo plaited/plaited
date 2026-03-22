@@ -21,6 +21,12 @@ Add IPC bridge support for `createLink`.
 
 Do not change A2A -> PM boundary semantics in this slice.
 
+## Preserve
+
+- A2A still terminates at PM/node boundary first
+- the slice remains about IPC bridge support, not broader runtime redesign
+- local runtime taxonomy from Slice 1 remains intact
+
 ## Avoid
 
 - broad PM rewrites

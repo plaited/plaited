@@ -153,10 +153,9 @@ Current hardware roles:
 - Slice 3: first executable native-model validation driver on top of the trial layer
 - Slice 4: first local tuning path from the curated Stage 1 boundary
 - Slice 5: baseline vs tuned comparison and success-metric evaluation
-- Later slices:
-  - Stage 1 data shaping and MSI-scale training refinement
-  - Stage 2 tool-aware process training
-  - Stage 3 autonomous improvement training
+- Slice 6: Stage 1 data shaping and MSI-scale training refinement
+- Slice 7: Stage 2 tool-aware module and browser process training
+- Slice 8: Stage 3 autonomous improvement on realistic module/modnet tasks
 
 ## Execution Model
 

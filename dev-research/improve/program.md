@@ -100,7 +100,7 @@ Before committing a change in this lane:
 4. **Generic interface:** Logic should be expressible without model knowledge
 5. **Tests pass:** `bun test src/improve/`
 
-## Initial Slice Progression
+## Slice Progression
 
 - Slice 1: separate model-agnostic improvement orchestration from provider-specific adapters and judges
 - Slice 2: define trial-oriented judge/meta-verifier boundaries and retained-output labels

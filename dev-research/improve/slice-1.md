@@ -28,6 +28,12 @@ provider-specific adapter and judge layer in the current dev autoresearch stack.
 - provenance and experiment history stay explicit
 - this lane remains distinct from runtime-taxonomy and native-model work
 
+## Avoid
+
+- full-harness rewrites in one slice
+- moving provider-specific bindings into `src/`
+- collapsing this lane into runtime-taxonomy or native-model policy
+
 ## Acceptance Criteria
 
 - The code and docs make the boundary between generic improvement substrate and

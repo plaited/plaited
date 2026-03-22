@@ -33,6 +33,12 @@ forcing that work into the runtime-taxonomy lane.
 - shared tooling stays in `src/`, not in cross-skill runtime imports
 - this lane remains separate from runtime-taxonomy work
 
+## Avoid
+
+- collapsing behavioral evaluation back into structural validation
+- moving shared skill tooling into skill-local runtime imports
+- mixing runtime-taxonomy or native-model concerns into this slice
+
 ## Acceptance Criteria
 
 - Structural validation and behavioral evaluation are represented as distinct

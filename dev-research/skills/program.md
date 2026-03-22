@@ -91,7 +91,7 @@ This program distinguishes:
 
 Do not pretend validation alone is sufficient evidence of skill quality.
 
-## Initial Slice Progression
+## Slice Progression
 
 - Slice 1: split structural validation from behavioral evaluation
 

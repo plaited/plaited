@@ -110,6 +110,13 @@ So:
 - asynchronous collaboration across many sovereign nodes
 - DAG-like exploration without requiring a centralized mutable repo
 
+## Slice Progression
+
+- Slice 1: git bundles as A2A-governed exchange artifacts
+- Slice 2: provenance and evaluation envelope for exchanged artifacts
+- Slice 3: receiving-node simulation and import decision flow
+- Slice 4: enterprise/shared-service node exchange patterns
+
 ## Acceptance Criteria
 
 A future design in this lane should:
