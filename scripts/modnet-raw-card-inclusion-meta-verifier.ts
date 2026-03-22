@@ -1,0 +1,147 @@
+import * as z from 'zod'
+import type { Grader, GraderResult } from '../src/improve.ts'
+import { GraderResultSchema } from '../src/improve.ts'
+import { runStructuredClaudeQuery } from './claude-agent-sdk.ts'
+
+const CLAUDE_META_MODEL = 'claude-haiku-4-5-20251001'
+
+export const ModnetRawCardInclusionMetaDimensionsSchema = z.object({
+  consistency: z.number().min(0).max(1),
+  risk: z.number().min(0).max(1),
+  confidence: z.number().min(0).max(1),
+})
+
+export const ModnetRawCardInclusionMetaOutcomeSchema = z.object({
+  verifierKind: z.literal('modnet-raw-card-inclusion-meta-verifier'),
+  dimensions: ModnetRawCardInclusionMetaDimensionsSchema.optional(),
+  metaVerificationSdk: z.record(z.string(), z.unknown()).optional(),
+})
+
+type MetaJudgeOutput = {
+  pass: boolean
+  score: number
+  reasoning: string
+  dimensions?: z.infer<typeof ModnetRawCardInclusionMetaDimensionsSchema>
+}
+
+const MetaJudgeOutputSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['pass', 'score', 'reasoning'],
+  properties: {
+    pass: { type: 'boolean' },
+    score: { type: 'number', minimum: 0, maximum: 1 },
+    reasoning: { type: 'string' },
+    dimensions: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['consistency', 'risk', 'confidence'],
+      properties: {
+        consistency: { type: 'number', minimum: 0, maximum: 1 },
+        risk: { type: 'number', minimum: 0, maximum: 1 },
+        confidence: { type: 'number', minimum: 0, maximum: 1 },
+      },
+    },
+  },
+} as const
+
+const buildMetaPrompt = ({
+  task,
+  output,
+  metadata,
+}: {
+  task: string
+  output: string
+  metadata?: Record<string, unknown>
+}) => {
+  const rawCard = JSON.stringify(metadata?.rawCard ?? {}, null, 2)
+  const deterministicCheck = JSON.stringify(metadata?.deterministicCheck ?? {}, null, 2)
+
+  return `You are meta-verifying an LLM judge result for the raw-card inclusion gate in the modnet prompt pipeline.
+
+Task:
+${task}
+
+Raw card:
+${rawCard}
+
+Deterministic precheck:
+${deterministicCheck}
+
+Primary judge result:
+${output}
+
+Score the primary judge on:
+- consistency: does the reasoning match the raw card and the proposed inclusion output?
+- risk: how risky would it be to trust this inclusion decision in the next pipeline step?
+- confidence: how much should the harness trust the primary judge here?
+
+Pass only if the primary judge result looks internally consistent and safe to trust.`
+}
+
+const buildOutcome = ({
+  dimensions,
+  sdkMeta,
+}: {
+  dimensions?: MetaJudgeOutput['dimensions']
+  sdkMeta?: Record<string, unknown>
+}) =>
+  ModnetRawCardInclusionMetaOutcomeSchema.parse({
+    verifierKind: 'modnet-raw-card-inclusion-meta-verifier',
+    ...(dimensions ? { dimensions } : {}),
+    ...(sdkMeta ? { metaVerificationSdk: sdkMeta } : {}),
+  })
+
+export const toGraderResult = (result: MetaJudgeOutput & { outcome?: Record<string, unknown> }): GraderResult =>
+  GraderResultSchema.parse({
+    pass: result.pass,
+    score: result.score,
+    reasoning: result.reasoning,
+    ...(result.outcome || result.dimensions
+      ? {
+          outcome: {
+            ...(result.outcome ?? {}),
+            ...buildOutcome({
+              dimensions: result.dimensions,
+            }),
+          },
+        }
+      : {}),
+  })
+
+const invokeClaudeMetaVerifier = async (
+  prompt: string,
+): Promise<MetaJudgeOutput & { outcome?: Record<string, unknown> }> => {
+  const result = await runStructuredClaudeQuery<MetaJudgeOutput>({
+    model: CLAUDE_META_MODEL,
+    prompt,
+    schema: MetaJudgeOutputSchema,
+  })
+
+  if (!result.ok) {
+    return {
+      pass: false,
+      score: 0,
+      reasoning: `Claude meta verifier SDK error: ${result.reason}`,
+      outcome: buildOutcome({
+        sdkMeta: result.meta,
+      }),
+    }
+  }
+
+  return {
+    ...result.value,
+    score: Math.max(0, Math.min(1, result.value.score)),
+    outcome: buildOutcome({
+      dimensions: result.value.dimensions,
+      sdkMeta: result.meta,
+    }),
+  }
+}
+
+export const grade: Grader = async ({ input, output, metadata }): Promise<GraderResult> => {
+  const task = Array.isArray(input) ? input.join('\n') : input
+  const meta = (metadata ?? {}) as Record<string, unknown>
+  const result = await invokeClaudeMetaVerifier(buildMetaPrompt({ task, output, metadata: meta }))
+  return toGraderResult(result)
+}

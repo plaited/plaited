@@ -223,6 +223,11 @@ So:
 - Slice 8: deployment module families and modnet product-surface priorities
 - Slice 9: HyperCard reclassification judge-prompt calibration for better seed recovery
 - Slice 10: HyperCard reclassification follow-up for family and structure drift
+- Slice 11: derive a reusable modnet prompt-target rubric from skills, docs, and handcrafted prompts
+- Slice 12: validate a raw-card inclusion gate over the worktree catalog JSONLs and produce a raw prompt-ready corpus
+- Slice 13: test search-grounded regeneration variants against the derived prompt-target rubric
+- Slice 14: run the chosen regeneration flow over the retained HyperCard corpus and produce a regenerated prompt set
+- Slice 15: run seed review on the regenerated prompt set, analyze a 100-row sample at concurrency 5, and define promotion criteria
 
 ## Validation
 
