@@ -148,6 +148,9 @@ Recommended first MSI checklist:
 # 4. compare untuned vs tuned summaries before promotion
 ```
 
+Operator notes for the MSI environment live in:
+- [msi-operator.md](/Users/eirby/Workspace/plaited/docs/msi-operator.md)
+
 ## Notes
 
 - `runs/` and `checkpoints/` are local artifacts and should not be committed.

@@ -2,14 +2,25 @@
 
 ## Mission
 
-Design the inter-node coordination layer for Plaited after the local framework and native-model lanes are stable.
+Design the modnet layer for Plaited as both:
+
+- the sovereign inter-node coordination layer
+- the canonical task-definition and ontology lane for modnet-native modules
+
+This program should define what modnet modules are, how they expose
+capabilities, how they connect across nodes, and how that ontology feeds the
+native-model training program.
 
 This program is about:
+- MSS-grounded module definitions
+- exposure and bridge-module reasoning
 - sovereign node-to-node coordination
 - A2A exchange patterns
 - artifact movement across trust boundaries
 - enterprise/shared-service modnet structures
 - research commons and agent communities across nodes
+- modnet-native prompt catalogs and modernization lenses that feed
+  native-model training
 
 It is not about local framework refactoring or native-model distillation.
 
@@ -24,7 +35,7 @@ It is not about local framework refactoring or native-model distillation.
 - `dev-research/native-model/program.md`
   - Falcon/native-model behavior and distillation
 - `dev-research/modnet/program.md`
-  - inter-node collaboration, exchange, and governance
+  - modnet ontology, inter-node collaboration, exchange, and governance
 
 Do not merge these concerns casually.
 
@@ -37,6 +48,21 @@ Therefore:
 - A2A remains the external coordination boundary
 - PM remains the treaty authority at each node boundary
 - shared artifacts move between nodes only through governed exchange
+- module ontology and exposure rules should be defined here before they are
+  used as native-model training targets elsewhere
+
+## Canonical Inputs
+
+The following files are support assets for this lane:
+
+- [modnet-native-model-training-guide.md](/Users/eirby/Workspace/plaited/dev-research/modnet/references/modnet-native-model-training-guide.md)
+  - consolidated ontology and training-shaping reference
+- [modnet-training-prompts.jsonl](/Users/eirby/Workspace/plaited/dev-research/modnet/catalog/modnet-training-prompts.jsonl)
+  - canonical prompt catalog for modnet-native tasks
+
+These are not slice files.
+They are inputs that should shape future slices in this lane and derived
+native-model eval/training batches in `dev-research/native-model/`.
 
 ## AgentHub Relevance
 
@@ -75,6 +101,18 @@ So:
 
 ## Research Questions
 
+- How should MSS vocabulary be represented so modules, bridges, and exposure
+  transitions remain consistent across prompts, UI, and A2A behavior?
+- How should the PM classify internal-only vs artifact-shareable vs
+  service-exposed modules?
+- How should bridge modules differ from native A2A-exposed modules?
+- Which modnet deployment modules must be taught first because they define the
+  real product surface?
+- How should nodes detect resource pressure, explain migration/provisioning
+  options, and connect paid-service decisions to real infrastructure needs?
+- How should the model distinguish intrinsic module scale from contextual
+  participation scale when a local module joins an ephemeral or aggregated
+  network?
 - How should git bundles be represented as A2A artifacts?
 - What provenance must accompany bundle exchange?
 - How should receiving nodes sandbox and evaluate imported artifacts?
@@ -84,6 +122,36 @@ So:
 - How should shared-service nodes expose capabilities without collapsing sovereignty?
 
 ## Target Themes
+
+### Modnet Ontology
+
+- MSS tags as first-class design constraints
+- exposure classification heuristic
+- bridge vs native module distinction
+- exposure transitions and governance implications
+- modernization of historical patterns into sovereign-node modules
+
+### Prompt Catalog Shaping
+
+- handcrafted Tier 1-3 prompts as high-precision ontology teaching data
+- HyperCard-derived Tier 4 prompts as breadth and abandoned-niche coverage
+- clear separation between canonical prompt source and derived native-model
+  eval/training batches
+
+### Deployment Modules
+
+- booking, payments, fiction, social, media, and bridge modules as concrete
+  must-have product surfaces
+- module families that matter because they shape user-facing modnet behavior,
+  not just abstract network diagrams
+
+### Capacity-Aware Node Evolution
+
+- resource pressure detection
+- migration and stronger-node recommendations
+- dedicated service-node splits
+- paid-priority decisions tied to actual infrastructure burden
+- owner-facing comparison flows rather than silent auto-scaling
 
 ### A2A Artifact Exchange
 
@@ -116,16 +184,27 @@ So:
 - Slice 2: provenance and evaluation envelope for exchanged artifacts
 - Slice 3: receiving-node simulation and import decision flow
 - Slice 4: enterprise/shared-service node exchange patterns
+- Slice 5: MSS vocabulary and exposure classification for native modnet modules
+- Slice 6: bridge modules, exposure transitions, and PM routing patterns
+- Slice 7: prompt-catalog shaping and native-model handoff boundaries
+- Slice 8: deployment module families and modnet product-surface priorities
 
 ## Acceptance Criteria
 
 A future design in this lane should:
 
+- make MSS and exposure reasoning explicit enough to be used in prompt and
+  training design
+- distinguish internal modules, bridge modules, artifact-sharing, and
+  service exposure cleanly
 - preserve sovereign node boundaries
 - keep A2A as the external exchange boundary
 - avoid bypassing PM/constitution authority
 - make artifact provenance explicit
-- support enterprise/shared-service patterns without collapsing into a central hub
+- support enterprise/shared-service patterns without collapsing into a central
+  hub
+- provide a clean handoff into the native-model lane without collapsing modnet
+  research into training implementation
 
 ## Safety
 
@@ -136,3 +215,11 @@ Do not allow imported artifacts to bypass:
 - PM approval of external work
 
 Do not treat external bundles as trusted code by default.
+
+Do not let prompt catalogs or training convenience erase the distinction
+between:
+
+- internal modules
+- bridge modules
+- artifact-sharing surfaces
+- service-exposed Agent Card capabilities

@@ -140,11 +140,19 @@ Current hardware roles:
   - compare/report tooling
   - native-model control-plane and shared tooling work
 - **MSI machine**
+  - NVIDIA DGX Spark OS in Network Appliance Mode
+  - reached from this Mac over Tailscale
   - meaningful Falcon training
   - longer context
   - more trainable layers
   - repeated baseline vs tuned comparisons
   - later Stage 2 and Stage 3 work
+
+Operational assumption:
+- the MSI is a remote training appliance, not the primary editing environment
+- use reconnect-safe `cmux` sessions from this Mac for long-running jobs
+- use Zed on this Mac as the editor/operator surface
+- document ports and service endpoints explicitly for remote serving/eval flows
 
 ## Slice Progression
 
@@ -183,6 +191,8 @@ Stage-specific execution:
   - trial-layer validation
   - curated retained-output boundary
   - SFT/LoRA-style tuning
+  - remote execution should still assume reconnect-safe terminal orchestration
+    on the MSI once meaningful training moves there
 - **Stage 2**
   - process/tool capture becomes first-class data
   - validation behavior matters, not just final artifact quality
@@ -190,10 +200,14 @@ Stage-specific execution:
     - browser execution where applicable
     - interaction and simulation loops
     - module-specific validation rather than only static output judgment
+  - remote training/eval should assume Tailscale-reachable services and
+    explicit port coordination on the MSI appliance
 - **Stage 3**
   - breadth/depth coordination and promotion loops become training targets
   - the optimized objective should increasingly be realistic modnet/module
     success, not only framework-internal correctness
+  - remote worker pools and service endpoints should be designed for
+    `cmux`-managed long-running sessions rather than local GUI-only workflows
 
 ## Relationship To Modnet
 

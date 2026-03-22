@@ -27,6 +27,13 @@ and native-model tooling work only.
 Use the MSI machine as the actual native-model execution and training plane
 once it is ready.
 
+Current MSI assumptions:
+- NVIDIA DGX Spark OS device
+- Network Appliance Mode
+- reached from this Mac over Tailscale
+- remote-shell-first workflow with reconnect-safe `cmux`
+- Zed on this Mac as the editor/operator surface
+
 The native-model plan is now explicitly staged:
 
 1. symbolic output quality
@@ -92,6 +99,7 @@ The local Falcon comparison now confirms:
      - more trainable layers
      - less truncated runs
      - repeated distillation cycles
+     - remote DGX Spark execution over Tailscale rather than local-desktop use
    - Reuse:
      - `bun run native-model:bootstrap-cycle`
      - `bun run native-model:compare`
@@ -100,6 +108,11 @@ The local Falcon comparison now confirms:
    - Replace:
      - MLX trainer backend
      - local Falcon server backend as needed for the MSI environment
+   - Operate through:
+     - remote shell sessions from this Mac
+     - `cmux` for long-running jobs and reconnect-safe monitoring
+     - explicit service/port documentation because the device is in Network
+       Appliance Mode
    - MSI follow-up:
      - revisit `scripts/program-orchestrator.ts` native-model fanout so it can
        run candidate strategies in parallel when the MSI box has enough GPU
@@ -116,6 +129,7 @@ The local Falcon comparison now confirms:
      - run manifests and adapter output paths
    - Swap:
      - the trainer backend and hardware target
+     - local-shell assumptions for remote Tailscale/`cmux` execution
    - After MSI bring-up:
      - continue Layer 1 with better headroom
      - then begin Layer 2 by adding tool-aware process traces on realistic

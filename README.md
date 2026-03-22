@@ -66,6 +66,9 @@ Current conclusion:
 - this Mac is not the forward execution path for meaningful Falcon training
 - the MSI box is the intended training plane for less truncated, higher-headroom
   follow-up runs
+- the MSI target is a NVIDIA DGX Spark OS device in Network Appliance Mode,
+  reached remotely from this Mac over Tailscale rather than used as a
+  desktop-first local workstation
 
 The first successful local bootstrap run used:
 - `mlx-community/Falcon-H1R-7B-4bit`
@@ -95,6 +98,14 @@ Use the MSI box for:
 - more trainable layers
 - serious candidate promotion attempts
 - later tool-aware process and autonomous-improvement training phases
+
+Operator model for the MSI environment:
+- access the DGX Spark remotely from this Mac over Tailscale
+- assume SSH-style remote shell workflows, not local GUI-first usage on the box
+- keep long-running jobs in reconnect-safe `cmux` sessions
+- use Zed on this Mac as the editor over the remote workspace
+- document ports and service endpoints explicitly because the MSI runs in
+  Network Appliance Mode
 
 Key commands:
 
