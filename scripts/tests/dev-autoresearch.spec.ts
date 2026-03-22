@@ -59,6 +59,20 @@ describe('dev-autoresearch import resolution', () => {
     expect(imports).toEqual(['src/runtime/create-link.ts'])
   })
 
+  test('scanImports ignores dynamic imports without concrete string specifiers', async () => {
+    const cwd = await makeTempDir()
+    await writeFixture(cwd, 'src/runtime/create-link.ts', 'export const createLink = () => {}')
+    await writeFixture(
+      cwd,
+      'scripts/tests/runtime-harness.spec.ts',
+      "const name = '../../src/runtime/create-link'\nawait import(name)\n",
+    )
+
+    const imports = await scanImports(cwd, 'scripts/tests/runtime-harness.spec.ts')
+
+    expect(imports).toEqual([])
+  })
+
   test('resolveImpactedTests finds cross-directory tests through import scanning', async () => {
     const cwd = await makeTempDir()
     await writeFixture(cwd, 'src/runtime/create-link.ts', 'export const createLink = () => {}')

@@ -441,8 +441,11 @@ export const scanImports = async (cwd: string, filePath: string): Promise<string
 
   const transpiler = new Bun.Transpiler({ loader })
   const { imports } = transpiler.scan(text)
+  const importSpecifiers = imports
+    .map((entry) => (entry && typeof entry.path === 'string' ? entry.path : null))
+    .filter((entry): entry is string => entry !== null)
 
-  const resolved = await Promise.all(imports.map((entry) => resolveImportPath(cwd, filePath, entry.path)))
+  const resolved = await Promise.all(importSpecifiers.map((entry) => resolveImportPath(cwd, filePath, entry)))
   return resolved.filter((candidate): candidate is string => candidate !== null)
 }
 
@@ -486,7 +489,13 @@ export const resolveImpactedTests = async (cwd: string, changedFiles: string[]):
 
     for (const changedFile of changedFiles.map(normalizePath)) {
       for (const [testFile, imports] of importGraph.entries()) {
-        if (imports.some((entry) => entry.includes(changedFile.replace(/\.[^.]+$/, '')) || entry === changedFile)) {
+        if (
+          imports.some(
+            (entry) =>
+              typeof entry === 'string' &&
+              (entry.includes(changedFile.replace(/\.[^.]+$/, '')) || entry === changedFile),
+          )
+        ) {
           selected.add(testFile)
         }
       }
