@@ -535,6 +535,17 @@ const buildFullSuiteCommand = async ({
   return filteredTests.length > 0 ? ['bun', 'test', ...filteredTests] : ['bun', 'test', ...TEST_DIRECTORIES]
 }
 
+export const shouldSkipRepoTests = ({
+  changedFiles,
+  impactedTests,
+}: {
+  changedFiles: string[]
+  impactedTests: string[]
+}) =>
+  impactedTests.length === 0 &&
+  changedFiles.length > 0 &&
+  changedFiles.every((path) => path.startsWith('dev-research/') && /\.(md|jsonl)$/.test(path))
+
 const buildChecks = (typecheck: ValidationResult, tests: ValidationResult): Checks => ({
   typecheck: {
     passed: typecheck.passed,
@@ -766,14 +777,22 @@ const main = async () => {
           }
       logStatus('typecheck', typecheck.passed ? 'pass' : `fail ${typecheck.notes}`)
       const impactedTests = scope.passed ? await resolveImpactedTests(worktree, changedFiles) : []
+      const skipRepoTests = scope.passed && shouldSkipRepoTests({ changedFiles, impactedTests })
       logStatus(
         'tests:targeted',
-        impactedTests.length > 0
-          ? `selected ${impactedTests.length} test file(s)`
-          : 'falling back to default test roots',
+        skipRepoTests
+          ? 'skipping docs-only research slice'
+          : impactedTests.length > 0
+            ? `selected ${impactedTests.length} test file(s)`
+            : 'falling back to default test roots',
       )
-      const tests =
-        scope.passed && typecheck.passed
+      const tests = skipRepoTests
+        ? {
+            passed: true,
+            notes: 'Skipped: docs-only research slice',
+            command: ['bun', 'test'],
+          }
+        : scope.passed && typecheck.passed
           ? await runCheck(
               worktree,
               impactedTests.length > 0 ? ['bun', 'test', ...impactedTests] : ['bun', 'test', ...TEST_DIRECTORIES],
@@ -811,20 +830,28 @@ const main = async () => {
       const judgePassed = judges ? judges.primary.pass && (judges.meta?.pass ?? true) : true
       const fastPassed = scope.passed && typecheck.passed && tests.passed && judgePassed
       logStatus('validation:fast', fastPassed ? 'pass' : 'fail')
-      const fullTestsCommand = fastPassed
-        ? await buildFullSuiteCommand({
-            cwd: worktree,
-            changedFiles,
-            impactedTests,
-          })
-        : ['bun', 'test', ...TEST_DIRECTORIES]
-      const fullTests = fastPassed
-        ? await runCheck(worktree, fullTestsCommand)
-        : {
-            passed: false,
-            notes: 'Skipped: fast validation failed',
+      const fullTestsCommand = skipRepoTests
+        ? ['bun', 'test']
+        : fastPassed
+          ? await buildFullSuiteCommand({
+              cwd: worktree,
+              changedFiles,
+              impactedTests,
+            })
+          : ['bun', 'test', ...TEST_DIRECTORIES]
+      const fullTests = skipRepoTests
+        ? {
+            passed: true,
+            notes: 'Skipped: docs-only research slice',
             command: fullTestsCommand,
           }
+        : fastPassed
+          ? await runCheck(worktree, fullTestsCommand)
+          : {
+              passed: false,
+              notes: 'Skipped: fast validation failed',
+              command: fullTestsCommand,
+            }
       logStatus('tests:full', fastPassed ? (fullTests.passed ? 'pass' : `fail ${fullTests.notes}`) : 'skipped')
       const judgeChecks = {
         ...checks,

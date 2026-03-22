@@ -9,6 +9,7 @@ import {
   resolveImportPath,
   scanImports,
   shouldRunBrowserTests,
+  shouldSkipRepoTests,
 } from '../dev-autoresearch.ts'
 
 const tempDirs = new Set<string>()
@@ -103,6 +104,24 @@ describe('dev-autoresearch import resolution', () => {
         impactedTests: [],
       }),
     ).toBe(true)
+  })
+
+  test('shouldSkipRepoTests returns true for docs-only research slices', () => {
+    expect(
+      shouldSkipRepoTests({
+        changedFiles: ['dev-research/modnet/prompt-target-rubric.md', 'dev-research/modnet/catalog/foo.jsonl'],
+        impactedTests: [],
+      }),
+    ).toBe(true)
+  })
+
+  test('shouldSkipRepoTests stays false when code changes are present', () => {
+    expect(
+      shouldSkipRepoTests({
+        changedFiles: ['dev-research/modnet/prompt-target-rubric.md', 'scripts/dev-autoresearch.ts'],
+        impactedTests: [],
+      }),
+    ).toBe(false)
   })
 })
 
