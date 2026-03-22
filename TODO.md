@@ -33,6 +33,11 @@ The native-model plan is now explicitly staged:
 2. tool-aware process behavior
 3. autonomous improvement loops
 
+Interpretation:
+- Layer 1 can remain mostly symbolic-output and framework-grounded
+- Layers 2 and 3 should increasingly optimize for realistic module, browser,
+  and modnet-adjacent UX outcomes rather than abstract framework tasks alone
+
 The local Falcon comparison now confirms:
 - untuned local Falcon is weak on controller-compatible UI
 - the tiny tuned MLX adapter did not improve pass rate
@@ -113,8 +118,11 @@ The local Falcon comparison now confirms:
      - the trainer backend and hardware target
    - After MSI bring-up:
      - continue Layer 1 with better headroom
-     - then begin Layer 2 by adding tool-aware process traces
-     - keep Layer 3 for later, after Layer 2 data and evaluation are stable
+     - then begin Layer 2 by adding tool-aware process traces on realistic
+       module and browser tasks
+     - keep Layer 3 for later, after Layer 2 data and evaluation are stable,
+       but orient it toward autonomous improvement on realistic module/modnet
+       tasks rather than framework-only tasks
 
 ## Short Sequence
 
@@ -124,8 +132,10 @@ The local Falcon comparison now confirms:
 4. Keep this Mac for validation/curation/tooling only.
 5. Move real Falcon training to the MSI machine.
 6. Run the first MSI baseline vs tuned comparison before promoting anything.
-7. Only after Layer 1 is stable, start Layer 2 tool-aware process training.
-8. Keep Layer 3 autonomous-improvement training as a later phase.
+7. Only after Layer 1 is stable, start Layer 2 tool-aware process training on
+   realistic module/browser tasks.
+8. Keep Layer 3 autonomous-improvement training as a later phase, but make it
+   target realistic module/modnet outcomes.
 
 ## Do Not Revisit Unless Needed
 

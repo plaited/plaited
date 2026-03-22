@@ -18,6 +18,11 @@ Those tasks include:
 - controller-compatible UI generation
 - BP / PM / provenance-aware runtime reasoning
 
+Later stages should push beyond symbolic correctness alone and increasingly ask:
+- does the model help produce useful module outcomes?
+- does the resulting browser or interaction behavior hold up under simulation?
+- does the system improve outcomes for non-technical end-user experiences?
+
 ## What Is Already Proven
 
 ### The Workflow Works
@@ -131,6 +136,30 @@ Success criteria:
 Why this is the right next step:
 - it preserves the workflow that is already working
 - it changes the actual limiting factor: hardware headroom
+
+### Phase 2: Tool-Aware Module Tasks
+
+Goal:
+- move beyond prompt/output-only distillation
+- capture inspect/edit/validate/revise behavior on realistic module tasks
+- evaluate those behaviors against browser and module outcomes where relevant
+
+This phase should not be framed as generic coding-agent improvement.
+It should be framed as improving the model's ability to operate toward
+Plaited-native module and UX goals.
+
+### Phase 3: Autonomous Improvement On Real Tasks
+
+Goal:
+- teach breadth/depth coordination and safe promotion behavior
+- optimize against realistic module and modnet-adjacent tasks
+- use multiple attempts, simulation, and evaluation to improve outcome quality
+
+Important boundary:
+- this does not require collapsing the `modnet` lane into
+  `runtime-taxonomy` or `native-model`
+- it does require the native-model lane to aim at realistic module/modnet
+  outcomes rather than staying trapped in framework-only exercises
 
 ## Cost Model
 

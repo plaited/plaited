@@ -22,7 +22,8 @@ The work is now explicitly staged:
 3. autonomous improvement loops
 
 Do not collapse these stages together. The current program is still primarily
-in Stage 1.
+in Stage 1, but Stages 2 and 3 should already be oriented toward realistic
+module and modnet outcomes rather than abstract framework-only behavior.
 
 ## Separation From Framework Program
 
@@ -71,9 +72,13 @@ Stage-specific interpretation:
 - **Stage 2: tool-aware process behavior**
   - inspect, edit, validate, revise
   - process/tool traces become training targets
+  - tool use should increasingly be evaluated against real module outcomes,
+    browser behavior, and non-technical UX quality
 - **Stage 3: autonomous improvement loops**
   - breadth/depth coordination
   - compare, select, promote, and improve outcomes safely
+  - loops should increasingly optimize for realistic module/modnet tasks, not
+    only internal framework tasks
 
 ## Non-Goals
 
@@ -118,6 +123,11 @@ The active boundary is narrower than the long-term goal:
 
 Do not mistake the current bootstrap loop for the full long-term native-model
 training system.
+
+Also do not mistake the current Stage 1 boundary for the eventual destination.
+The long-term destination is not merely "a model that writes Plaited-flavored
+code." It is a model that can help produce useful modnet modules and user
+experiences with the right tool support and evaluation discipline.
 
 ## Machine Split
 
@@ -177,8 +187,32 @@ Stage-specific execution:
 - **Stage 2**
   - process/tool capture becomes first-class data
   - validation behavior matters, not just final artifact quality
+  - modules should increasingly be exercised in realistic environments:
+    - browser execution where applicable
+    - interaction and simulation loops
+    - module-specific validation rather than only static output judgment
 - **Stage 3**
   - breadth/depth coordination and promotion loops become training targets
+  - the optimized objective should increasingly be realistic modnet/module
+    success, not only framework-internal correctness
+
+## Relationship To Modnet
+
+`dev-research/modnet/` should remain a separate lane.
+
+Reason:
+- `runtime-taxonomy` is the lower-level local runtime ontology
+- `modnet` is the higher-level inter-node, service, and product/outcome layer
+
+However, the native-model stages should not stay framework-pure forever:
+
+- Stage 1 can remain mostly framework- and symbolic-output-centered
+- Stage 2 should begin shifting toward realistic module and UX outcomes
+- Stage 3 should explicitly optimize coordinated improvement on realistic
+  module/modnet tasks
+
+So the lanes stay separate, but the destination for Stages 2 and 3 should be
+closer to modnet/module reality than to isolated framework exercises.
 
 ## Data Provenance Requirements
 
