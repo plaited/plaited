@@ -81,6 +81,7 @@ For accepted code slices, both must pass:
 - Slice 3: explicit actor/sub-agent/team integration path
 - Slice 4: local Attempt-DAG TeamHub for sovereign node teams
 - Slice 5: PM-governed winner selection for local TeamHub attempts
+- Slice 6: Codex-oriented refinement of `plaited evaluate-skill`
 
 ## Keep / Revise / Discard
 
