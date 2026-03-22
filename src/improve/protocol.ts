@@ -72,11 +72,11 @@ export const parseSliceScope = (slice: string): string[] => {
     .filter((line) => line.startsWith('- '))
     .map((line) => line.slice(2).trim())
     .flatMap((line) => {
-      const spans = [...line.matchAll(/`([^`]+\/[^`]*)`/g)].map((span) => span[1] ?? '')
+      const spans = [...line.matchAll(/`([^`]+)`/g)].map((span) => span[1] ?? '')
       if (spans.length > 0) return spans
-      return line.includes('/') ? [line.replace(/`/g, '')] : []
+      const cleaned = line.replace(/`/g, '')
+      return /^[A-Za-z0-9._/-]+\.(md|ts|tsx|js|jsx|json)$/.test(cleaned) || cleaned.endsWith('/') ? [cleaned] : []
     })
-    .filter((line) => line.includes('/'))
     .map((line) => line.replace(/\*+$/, ''))
     .map((line) => line.replace(/^\.\//, ''))
     .map(normalizePath)

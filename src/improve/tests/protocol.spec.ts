@@ -28,6 +28,17 @@ describe('improve protocol context', () => {
     expect(parseSliceScope(slice)).toEqual(['src/runtime/', 'src/agent/', 'src/modnet/'])
   })
 
+  test('retains standalone file paths like README.md in slice scope', async () => {
+    const slice = await Bun.file(`${import.meta.dir}/../../../dev-research/runtime-taxonomy/slice-6.md`).text()
+
+    expect(parseSliceScope(slice)).toEqual([
+      'src/tools/skill-evaluate.ts',
+      'src/tools/tests/skill-evaluate.spec.ts',
+      'src/cli.ts',
+      'README.md',
+    ])
+  })
+
   test('loads program, slice, and allowed paths as a reusable protocol context', async () => {
     const context = await loadImprovementProtocolContext({
       defaultAllowedPaths: ['src/improve/'],
