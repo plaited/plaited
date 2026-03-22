@@ -5,9 +5,49 @@ import { runStructuredClaudeQuery } from './claude-agent-sdk.ts'
 
 const CLAUDE_PRIMARY_MODEL = 'claude-sonnet-4-6'
 
+const TRAINING_GUIDE_CONTEXT = [
+  'Training guide context:',
+  '- HyperCard-derived prompts are breadth material for modnet Stage 1, but the goal is not nostalgia-faithful reproduction. The goal is to recover strong sovereign-module patterns.',
+  '- Good seed-review candidates are historically interesting artifacts that still express reusable module structure, especially richer S4+ suites, niche but evergreen tools, or artifacts with clear modern sovereign-node relevance.',
+  '- Scale guidance: S1 single object, S2 object group/list/editor, S3 interactive block, S4 connected block group or suite, S5 standalone full module/community, S6+ networked module group or platform.',
+  '- Use S4 only when the artifact really behaves like a connected suite of blocks, not merely a feature-rich S2 object group.',
+  '- Public-domain or public reference artifacts can reasonably be boundary=all. Personal records, payroll, journals, and similarly sensitive data should usually remain boundary=none.',
+  '- Pattern-family choices should stay inside the canonical ten-family modnet catalog vocabulary and reflect the actual artifact, not prompt-noise or accidental workflow phrasing.',
+].join('\n')
+
+const PatternFamilySchema = z.enum([
+  'personal-data-manager',
+  'reference-browser',
+  'educational-interactive',
+  'creative-tool',
+  'business-process',
+  'game-simulation',
+  'communication',
+  'instrument-control',
+  'multimedia-presentation',
+  'developer-utility',
+])
+
+const StructureSchema = z.enum([
+  'object',
+  'form',
+  'list',
+  'collection',
+  'steps',
+  'pool',
+  'stream',
+  'feed',
+  'wall',
+  'thread',
+  'hierarchy',
+  'matrix',
+  'daisy',
+  'hypertext',
+])
+
 export const ReclassifiedMssSchema = z.object({
   contentType: z.string(),
-  structure: z.string(),
+  structure: StructureSchema,
   mechanics: z.array(z.string()),
   boundary: z.enum(['none', 'ask', 'all', 'paid']),
   scale: z.number().int().min(1).max(8),
@@ -23,7 +63,7 @@ export const HypercardReclassificationDimensionsSchema = z.object({
 
 export const HypercardReclassificationJudgeOutcomeSchema = z.object({
   judgeKind: z.literal('hypercard-reclassification'),
-  patternFamily: z.string(),
+  patternFamily: PatternFamilySchema,
   mss: ReclassifiedMssSchema,
   keepForSeedReview: z.boolean(),
   rationale: z.string(),
@@ -35,7 +75,7 @@ type JudgeOutput = {
   pass: boolean
   score: number
   reasoning: string
-  patternFamily: string
+  patternFamily: z.infer<typeof PatternFamilySchema>
   mss: z.infer<typeof ReclassifiedMssSchema>
   keepForSeedReview: boolean
   rationale: string
@@ -50,7 +90,21 @@ const JudgeOutputSchema = {
     pass: { type: 'boolean' },
     score: { type: 'number', minimum: 0, maximum: 1 },
     reasoning: { type: 'string' },
-    patternFamily: { type: 'string' },
+    patternFamily: {
+      type: 'string',
+      enum: [
+        'personal-data-manager',
+        'reference-browser',
+        'educational-interactive',
+        'creative-tool',
+        'business-process',
+        'game-simulation',
+        'communication',
+        'instrument-control',
+        'multimedia-presentation',
+        'developer-utility',
+      ],
+    },
     keepForSeedReview: { type: 'boolean' },
     rationale: { type: 'string' },
     mss: {
@@ -59,7 +113,25 @@ const JudgeOutputSchema = {
       required: ['contentType', 'structure', 'mechanics', 'boundary', 'scale', 'confidence'],
       properties: {
         contentType: { type: 'string' },
-        structure: { type: 'string' },
+        structure: {
+          type: 'string',
+          enum: [
+            'object',
+            'form',
+            'list',
+            'collection',
+            'steps',
+            'pool',
+            'stream',
+            'feed',
+            'wall',
+            'thread',
+            'hierarchy',
+            'matrix',
+            'daisy',
+            'hypertext',
+          ],
+        },
         mechanics: {
           type: 'array',
           items: { type: 'string' },
@@ -105,6 +177,13 @@ Key heuristics:
 - Many historical HyperCard business tools are understated if they really behave like multi-block suites rather than a single list.
 - Pattern family must match the actual artifact, not generic workflow language accidentally added during prompt generation.
 - KeepForSeedReview should be true when the reclassified item is especially useful for richer future derivation, especially if scale >= 4 or it is a high-value niche pattern.
+- Stay inside the Plaited vocabulary drawn from skills/mss-vocabulary, skills/modnet-node, and skills/modnet-modules.
+- Do not invent new pattern families.
+- Do not invent new structure labels. Use only: object, form, list, collection, steps, pool, stream, feed, wall, thread, hierarchy, matrix, daisy, hypertext.
+- Prefer the documented MSS mechanic vocabulary when it fits: sort, filter, track, chart, vote, reply, share, follow, like, post, tag, book, rate, stream, contact, limited-loops, gold, karma, scarcity.
+- Do not force a mechanic into that list if it would distort the artifact. When needed, you may return a more specific mechanic label, but keep it concise and semantically grounded in the source.
+- ContentType may be specific, but it should still read like MSS vocabulary: lowercase, hyphenated when needed, and semantically compatible with modnet grouping.
+- Apply modnet-node boundary reasoning conservatively: truly private/personal records should stay none, public reference material can be all, collaborative or account-like flows should usually be ask, and value-exchange flows may be paid.
 
 Task:
 ${task}
@@ -120,6 +199,8 @@ ${currentClassification}
 
 Heuristic prior:
 ${heuristicPrior}
+
+${TRAINING_GUIDE_CONTEXT}
 
 Return the best revised patternFamily and MSS classification for this item. Pass only if the reclassification looks trustworthy enough to keep for audit/promotion review.`
 }
@@ -171,7 +252,7 @@ const invokeClaudeJudge = async (prompt: string): Promise<JudgeOutput & { outcom
       pass: false,
       score: 0,
       reasoning: `Claude judge SDK error: ${result.reason}`,
-      patternFamily: 'unknown',
+      patternFamily: 'developer-utility',
       mss: {
         contentType: 'tools',
         structure: 'list',
@@ -184,7 +265,7 @@ const invokeClaudeJudge = async (prompt: string): Promise<JudgeOutput & { outcom
       rationale: 'Judge failed before returning a structured reclassification.',
       outcome: buildOutcome({
         result: {
-          patternFamily: 'unknown',
+          patternFamily: 'developer-utility',
           mss: {
             contentType: 'tools',
             structure: 'list',
