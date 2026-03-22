@@ -22,8 +22,10 @@
 
 ## Immediate Goal
 
-Use this machine as the control plane for validation, curation, adapter evaluation, and data-shaping.
-Use the MSI machine as the serious training plane once it is ready.
+Use this machine as the control plane for validation, curation, data-shaping,
+and native-model tooling work only.
+Use the MSI machine as the actual native-model execution and training plane
+once it is ready.
 
 The native-model plan is now explicitly staged:
 
@@ -66,15 +68,18 @@ The local Falcon comparison now confirms:
      - chunking or splitting oversized examples
      - preserving training quality while staying within local memory limits
 
-4. Keep this machine for lightweight bootstrap experiments only.
+4. Keep this machine for control-plane work only.
    - Good use cases:
      - validation
      - dataset curation
-     - adapter smoke tests
-     - tiny quantized LoRA runs
+     - compare/report tooling
+     - data shaping
+     - fixing shared native-model infrastructure
    - Avoid:
+     - local native-model training as a normal workflow
      - serious 7B full-context training
      - assuming non-quantized or long-context runs will fit here
+     - treating proof-of-loop MLX runs as part of the forward plan
 
 5. Move meaningful Falcon training to the MSI machine.
    - Use the MSI box for:
@@ -116,7 +121,7 @@ The local Falcon comparison now confirms:
 1. Finish Layer 1 symbolic-output training boundaries and eval loops.
 2. Evaluate the successful local adapter.
 3. Add a data-shaping step to reduce truncation.
-4. Keep this Mac for validation/curation/bootstrap only.
+4. Keep this Mac for validation/curation/tooling only.
 5. Move real Falcon training to the MSI machine.
 6. Run the first MSI baseline vs tuned comparison before promoting anything.
 7. Only after Layer 1 is stable, start Layer 2 tool-aware process training.

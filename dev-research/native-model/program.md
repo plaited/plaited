@@ -112,7 +112,8 @@ The active boundary is narrower than the long-term goal:
 - current data collection is still mostly Stage 1
 - validation prompts are manually authored
 - retained outputs are manually curated into a stable training boundary
-- local MLX runs on this Mac are bootstrap-quality only
+- local MLX runs on this Mac proved the loop but are no longer the intended
+  execution path
 - meaningful Falcon quality work is expected to move to the MSI machine
 
 Do not mistake the current bootstrap loop for the full long-term native-model
@@ -125,8 +126,9 @@ Current hardware roles:
 - **This Mac**
   - validation
   - curation
-  - tiny quantized MLX bootstrap runs
-  - train/eval/compare workflow development
+  - data shaping
+  - compare/report tooling
+  - native-model control-plane and shared tooling work
 - **MSI machine**
   - meaningful Falcon training
   - longer context
@@ -260,6 +262,8 @@ Current practical policy:
 - do not train directly from raw validation `results.jsonl`
 - do not treat tiny local Mac LoRA wins as promotion evidence without baseline
   comparison
+- do not treat local Mac LoRA runs as part of the forward execution plan unless
+  they are needed to debug tooling
 - move meaningful Falcon quality work to the MSI box before broadening Stage 1
   claims
 
