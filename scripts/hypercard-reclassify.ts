@@ -76,6 +76,7 @@ const parseArgs = () => {
   let limit: number | null = null
   let onlyFlagged = true
   let progress = true
+  let concurrency = 3
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index]
@@ -94,6 +95,11 @@ const parseArgs = () => {
       index += 1
       continue
     }
+    if (arg === '--concurrency' && args[index + 1]) {
+      concurrency = Math.max(1, Number(args[index + 1]!))
+      index += 1
+      continue
+    }
     if (arg === '--all-hypercard') {
       onlyFlagged = false
       continue
@@ -103,7 +109,7 @@ const parseArgs = () => {
     }
   }
 
-  return { inputPath, outputPath, limit, onlyFlagged, progress }
+  return { inputPath, outputPath, limit, onlyFlagged, progress, concurrency }
 }
 
 const logProgress = ({ enabled, message }: { enabled: boolean; message: string }) => {
@@ -119,8 +125,136 @@ const buildTask = (row: PromptRow) =>
     `Current scale: ${typeof row._source?.mss?.scale === 'number' ? `S${row._source.mss.scale}` : 'unknown'}`,
   ].join('\n')
 
+const processCandidate = async ({
+  row,
+  heuristic,
+  flagged,
+  index,
+  total,
+  progress,
+}: {
+  row: PromptRow
+  heuristic: ReturnType<typeof suggestMinimumScale>
+  flagged: boolean
+  index: number
+  total: number
+  progress: boolean
+}) => {
+  const currentScale = typeof row._source?.mss?.scale === 'number' ? row._source.mss.scale : null
+  const metadata = {
+    sourceRecord: {
+      id: row.id,
+      title: row._source?.title ?? row.id,
+      creator: row._source?.creator ?? null,
+      description: row._source?.description ?? '',
+      sourceUrl: row._source?.source_url ?? null,
+      generatedPrompt: flattenInput(row.input),
+    },
+    currentClassification: {
+      patternFamily: row.metadata?.patternFamily ?? 'unknown',
+      mss: row._source?.mss ?? {},
+    },
+    heuristicPrior: {
+      suggestedMinimumScale: heuristic.suggestedScale,
+      reasons: heuristic.reasons,
+      scaleLooksUnderstated: flagged,
+      modernization: row.metadata?.modernization ?? null,
+    },
+  }
+
+  logProgress({
+    enabled: progress,
+    message: `candidate ${index + 1}/${total}: ${row.id} judge`,
+  })
+  const judge = await judgeReclassification({
+    input: buildTask(row),
+    output: flattenInput(row.input),
+    metadata,
+  })
+
+  let metaVerification: Record<string, unknown> | undefined
+  if (judge.pass) {
+    logProgress({
+      enabled: progress,
+      message: `candidate ${index + 1}/${total}: ${row.id} meta-verifier`,
+    })
+    metaVerification = await metaVerifyReclassification({
+      input: buildTask(row),
+      output: JSON.stringify(judge, null, 2),
+      metadata: {
+        ...metadata,
+        judgeResult: judge,
+      },
+    })
+  } else {
+    logProgress({
+      enabled: progress,
+      message: `candidate ${index + 1}/${total}: ${row.id} meta-verifier skipped (judge failed)`,
+    })
+  }
+
+  const judgeOutcome = (judge.outcome ?? {}) as Record<string, unknown>
+  const keepForSeedReview = judgeOutcome.keepForSeedReview === true
+  const trusted = judge.pass && (metaVerification ? metaVerification.pass === true : false)
+
+  logProgress({
+    enabled: progress,
+    message: `candidate ${index + 1}/${total}: ${row.id} done trusted=${trusted} seed=${trusted && keepForSeedReview}`,
+  })
+
+  return ReclassificationRecordSchema.parse({
+    id: row.id,
+    title: row._source?.title ?? row.id,
+    current: {
+      patternFamily: row.metadata?.patternFamily ?? 'unknown',
+      mss: {
+        contentType: row._source?.mss?.contentType,
+        structure: row._source?.mss?.structure,
+        mechanics: row._source?.mss?.mechanics,
+        boundary: row._source?.mss?.boundary,
+        scale: currentScale,
+        confidence: row._source?.mss?.confidence,
+      },
+    },
+    heuristicPrior: {
+      suggestedMinimumScale: heuristic.suggestedScale,
+      reasons: heuristic.reasons,
+      scaleLooksUnderstated: flagged,
+    },
+    judge,
+    ...(metaVerification ? { metaVerification } : {}),
+    trusted,
+    recommendedForSeedReview: trusted && keepForSeedReview,
+  })
+}
+
+const runConcurrent = async <T, R>({
+  items,
+  concurrency,
+  worker,
+}: {
+  items: T[]
+  concurrency: number
+  worker: (item: T, index: number) => Promise<R>
+}): Promise<R[]> => {
+  const results = new Array<R>(items.length)
+  let nextIndex = 0
+
+  const runWorker = async () => {
+    while (nextIndex < items.length) {
+      const currentIndex = nextIndex
+      nextIndex += 1
+      results[currentIndex] = await worker(items[currentIndex]!, currentIndex)
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, () => runWorker())
+  await Promise.all(workers)
+  return results
+}
+
 const main = async () => {
-  const { inputPath, outputPath, limit, onlyFlagged, progress } = parseArgs()
+  const { inputPath, outputPath, limit, onlyFlagged, progress, concurrency } = parseArgs()
   logProgress({ enabled: progress, message: `loading catalog from ${inputPath}` })
   const rows = await parseRows(inputPath)
   const hypercardRows = rows.filter((row) => row.metadata?.promptSource === 'hypercard-archive')
@@ -140,94 +274,21 @@ const main = async () => {
 
   logProgress({
     enabled: progress,
-    message: `selected ${candidates.length} hypercard candidate(s) from ${hypercardRows.length} total`,
+    message: `selected ${candidates.length} hypercard candidate(s) from ${hypercardRows.length} total (concurrency=${concurrency})`,
   })
-
-  const records: z.infer<typeof ReclassificationRecordSchema>[] = []
-
-  for (const [index, candidate] of candidates.entries()) {
-    const row = candidate.row
-    const currentScale = typeof row._source?.mss?.scale === 'number' ? row._source.mss.scale : null
-    const metadata = {
-      sourceRecord: {
-        id: row.id,
-        title: row._source?.title ?? row.id,
-        creator: row._source?.creator ?? null,
-        description: row._source?.description ?? '',
-        sourceUrl: row._source?.source_url ?? null,
-        generatedPrompt: flattenInput(row.input),
-      },
-      currentClassification: {
-        patternFamily: row.metadata?.patternFamily ?? 'unknown',
-        mss: row._source?.mss ?? {},
-      },
-      heuristicPrior: {
-        suggestedMinimumScale: candidate.heuristic.suggestedScale,
-        reasons: candidate.heuristic.reasons,
-        scaleLooksUnderstated: candidate.flagged,
-        modernization: row.metadata?.modernization ?? null,
-      },
-    }
-
-    logProgress({
-      enabled: progress,
-      message: `candidate ${index + 1}/${candidates.length}: ${row.id} judge`,
-    })
-    const judge = await judgeReclassification({
-      input: buildTask(row),
-      output: flattenInput(row.input),
-      metadata,
-    })
-
-    logProgress({
-      enabled: progress,
-      message: `candidate ${index + 1}/${candidates.length}: ${row.id} meta-verifier`,
-    })
-    const metaVerification = await metaVerifyReclassification({
-      input: buildTask(row),
-      output: JSON.stringify(judge, null, 2),
-      metadata: {
-        ...metadata,
-        judgeResult: judge,
-      },
-    })
-
-    const judgeOutcome = (judge.outcome ?? {}) as Record<string, unknown>
-    const keepForSeedReview = judgeOutcome.keepForSeedReview === true
-    const trusted = judge.pass && metaVerification.pass
-
-    records.push(
-      ReclassificationRecordSchema.parse({
-        id: row.id,
-        title: row._source?.title ?? row.id,
-        current: {
-          patternFamily: row.metadata?.patternFamily ?? 'unknown',
-          mss: {
-            contentType: row._source?.mss?.contentType,
-            structure: row._source?.mss?.structure,
-            mechanics: row._source?.mss?.mechanics,
-            boundary: row._source?.mss?.boundary,
-            scale: currentScale,
-            confidence: row._source?.mss?.confidence,
-          },
-        },
-        heuristicPrior: {
-          suggestedMinimumScale: candidate.heuristic.suggestedScale,
-          reasons: candidate.heuristic.reasons,
-          scaleLooksUnderstated: candidate.flagged,
-        },
-        judge,
-        metaVerification,
-        trusted,
-        recommendedForSeedReview: trusted && keepForSeedReview,
+  const records = await runConcurrent({
+    items: candidates,
+    concurrency,
+    worker: (candidate, index) =>
+      processCandidate({
+        row: candidate.row,
+        heuristic: candidate.heuristic,
+        flagged: candidate.flagged,
+        index,
+        total: candidates.length,
+        progress,
       }),
-    )
-
-    logProgress({
-      enabled: progress,
-      message: `candidate ${index + 1}/${candidates.length}: ${row.id} done trusted=${trusted} seed=${trusted && keepForSeedReview}`,
-    })
-  }
+  })
 
   const outputDir = dirname(outputPath)
   if (outputDir && outputDir !== '.') {
