@@ -11,7 +11,21 @@ to produce a prompt-ready retained corpus based only on `id`, `title`, and
 - `.worktrees/macrepo-catalog-task/dev-research/native-model/macrepo-catalog.jsonl`
 - `.worktrees/hypercard-catalog-task/dev-research/native-model/hypercard-catalog.jsonl`
 - `dev-research/modnet/catalog/modnet-training-prompts.jsonl`
+- `dev-research/modnet/catalog/README.md`
 - `dev-research/modnet/`
+- `scripts/modnet-build-raw-card-corpus.ts`
+- `scripts/modnet-build-retained-raw-card-corpus.ts`
+- `scripts/modnet-raw-card-base.ts`
+- `scripts/modnet-raw-card-inclusion-evaluate.ts`
+- `scripts/modnet-raw-card-inclusion-judge.ts`
+- `scripts/modnet-raw-card-inclusion-meta-verifier.ts`
+- `scripts/workspace-paths.ts`
+- `scripts/tests/modnet-build-raw-card-corpus.spec.ts`
+- `scripts/tests/modnet-build-retained-raw-card-corpus.spec.ts`
+- `scripts/tests/modnet-raw-card-base.spec.ts`
+- `scripts/tests/modnet-raw-card-inclusion-evaluate.spec.ts`
+- `scripts/tests/modnet-raw-card-inclusion-judge.spec.ts`
+- `scripts/tests/modnet-raw-card-inclusion-meta-verifier.spec.ts`
 
 ## Required
 
