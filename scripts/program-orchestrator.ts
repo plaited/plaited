@@ -228,6 +228,10 @@ const ensureDir = async (dir: string) => {
   await Bun.$`mkdir -p ${dir}`.cwd(REPO_ROOT).quiet()
 }
 
+const sleep = async (ms: number) => {
+  await new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 const createInternalResultPath = ({ lane, pattern }: { lane: OrchestrationLane; pattern: CoordinationPattern }) =>
   join(DEFAULT_RESULTS_DIR, `${lane}-${pattern}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.json`)
 
@@ -401,10 +405,20 @@ export const buildRepoFanoutArgs = ({
 }
 
 const ensureMainBranchReady = async () => {
-  const status = (await Bun.$`git status --porcelain --untracked-files=no`.cwd(REPO_ROOT).quiet()).text().trim()
-  if (status) {
-    throw new Error('Main worktree has tracked changes. Clean dev before promoting a fan-out repo winner.')
+  const attempts = 3
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    await Bun.$`git update-index -q --refresh`.cwd(REPO_ROOT).quiet().nothrow()
+    const status = (await Bun.$`git status --porcelain --untracked-files=no`.cwd(REPO_ROOT).quiet()).text().trim()
+    if (!status) {
+      return
+    }
+
+    if (attempt < attempts - 1) {
+      await sleep(250)
+    }
   }
+
+  throw new Error('Main worktree has tracked changes. Clean dev before promoting a fan-out repo winner.')
 }
 
 const cherryPickExperimentCommit = async (sha: string) => {

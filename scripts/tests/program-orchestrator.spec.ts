@@ -422,4 +422,28 @@ describe('program-orchestrator', () => {
     expect(args).not.toContain('--push')
     expect(args).not.toContain('--commit')
   })
+
+  test('buildRepoFanoutArgs enables commit for promotable repo winners', () => {
+    const input = parseInput([
+      './dev-research/runtime-taxonomy/slice-6.md',
+      '--lane',
+      'repo',
+      '--pattern',
+      'fanout',
+      '--agents',
+      '3',
+      '--judge',
+      '--promote-winner',
+    ])
+
+    const args = buildRepoFanoutArgs({
+      input,
+      resultPath: './tmp/agent-1.json',
+      strategyNote: 'Prefer deleting unnecessary abstractions first.',
+    })
+
+    expect(args).toContain('--commit')
+    expect(args).toContain('--no-push')
+    expect(args).not.toContain('--push')
+  })
 })
