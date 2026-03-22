@@ -51,6 +51,22 @@ Therefore:
 - module ontology and exposure rules should be defined here before they are
   used as native-model training targets elsewhere
 
+## Fixed Architecture
+
+These decisions are already made. Do not change them.
+
+- Nodes remain sovereign; modnet work must not collapse them into a shared
+  mutable host.
+- A2A remains the external coordination and treaty boundary between nodes.
+- PM remains the treaty authority at the node boundary.
+- Shared artifacts move between nodes only through governed exchange.
+- Internal modules, bridge modules, artifact-sharing, and service exposure are
+  distinct concepts and must stay distinct.
+- Modnet ontology and exposure rules should be defined here before they are
+  used as native-model training targets elsewhere.
+- Modnet research must not drift into local runtime refactoring or native-model
+  implementation details.
+
 ## Canonical Inputs
 
 The following files are support assets for this lane:
@@ -98,6 +114,23 @@ So:
 - bundle = artifact
 - A2A = inter-node exchange protocol
 - PM = import/export/apply authority
+
+## Runtime Taxonomy
+
+- node: sovereign runtime and policy boundary
+- PM: treaty authority and import/export decision-maker at the node boundary
+- module: user-facing or internal capability unit shaped by MSS and exposure
+  rules
+- bridge module: module that mediates between local semantics and external
+  service or treaty surfaces
+- native modnet module: module designed to participate directly in modnet
+  exchange without bridge semantics
+- artifact: transferable bundle, package, or other governed exchange object
+- exposure state: internal-only, artifact-shareable, or service-exposed
+- participation scale: contextual scale a module or node reaches when it joins
+  an ephemeral or aggregated network
+- deployment module: concrete product-surface module that makes modnet
+  behavior real for operators and end users
 
 ## Research Questions
 
@@ -189,6 +222,13 @@ So:
 - Slice 7: prompt-catalog shaping and native-model handoff boundaries
 - Slice 8: deployment module families and modnet product-surface priorities
 - Slice 9: HyperCard reclassification judge-prompt calibration for better seed recovery
+
+## Validation
+
+For accepted code slices, both must pass:
+
+- `bun --bun tsc --noEmit`
+- `bun test src/ skills/ scripts/`
 
 ## Acceptance Criteria
 
