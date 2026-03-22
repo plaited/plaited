@@ -5,6 +5,7 @@ definition.
 
 Current primary file:
 - [modnet-training-prompts.jsonl](/Users/eirby/Workspace/plaited/dev-research/modnet/catalog/modnet-training-prompts.jsonl)
+- [modnet-prompt-target-rubric.md](/Users/eirby/Workspace/plaited/dev-research/modnet/references/modnet-prompt-target-rubric.md)
 
 ## Current Shape
 
@@ -20,6 +21,10 @@ the same thing as:
 
 Those belong in `dev-research/native-model/` after generation, judging, and
 curation.
+
+The handcrafted prompts should also be treated as a control set rather than the
+whole target space. For later raw-card regeneration and promotion decisions,
+use the reusable rubric above instead of copying handcrafted prompt wording.
 
 ## Current Expansion Tracks
 
