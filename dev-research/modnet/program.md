@@ -222,6 +222,7 @@ So:
 - Slice 7: prompt-catalog shaping and native-model handoff boundaries
 - Slice 8: deployment module families and modnet product-surface priorities
 - Slice 9: HyperCard reclassification judge-prompt calibration for better seed recovery
+- Slice 10: HyperCard reclassification follow-up for family and structure drift
 
 ## Validation
 
