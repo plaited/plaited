@@ -8,18 +8,18 @@ without overcorrecting the classifier contract.
 
 ## Scope
 
-- modnet research lane only
-- prompt/rubric tuning for the HyperCard reclassification judge
-- focused on known hard examples such as:
-  - `hypercard_keyboard-stack`
-  - `hypercard_laboratorytoolbox`
-  - `hypercard_accounting`
-- bounded files only:
-  - [hypercard-reclassification-judge.ts](/Users/eirby/Workspace/plaited/scripts/hypercard-reclassification-judge.ts)
-  - [hypercard-reclassify.ts](/Users/eirby/Workspace/plaited/scripts/hypercard-reclassify.ts)
-  - [hypercard-reclassification-judge.spec.ts](/Users/eirby/Workspace/plaited/scripts/tests/hypercard-reclassification-judge.spec.ts)
-  - [hypercard-reclassification-meta-verifier.spec.ts](/Users/eirby/Workspace/plaited/scripts/tests/hypercard-reclassification-meta-verifier.spec.ts)
-  - supporting modnet references only if strictly needed
+- `scripts/hypercard-reclassification-judge.ts`
+- `scripts/hypercard-reclassify.ts`
+- `scripts/tests/hypercard-reclassification-judge.spec.ts`
+- `scripts/tests/hypercard-reclassification-meta-verifier.spec.ts`
+
+## Calibration Cases
+
+Focus prompt/rubric tuning on known hard examples such as:
+
+- `hypercard_keyboard-stack`
+- `hypercard_laboratorytoolbox`
+- `hypercard_accounting`
 
 ## Required
 
