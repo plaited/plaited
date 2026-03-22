@@ -19,6 +19,8 @@ type PromptRow = {
     creator?: string
     description?: string
     source_url?: string
+    expectedExposure?: string
+    modernAnalog?: string
     mss?: {
       contentType?: string
       structure?: string
@@ -148,6 +150,9 @@ const processCandidate = async ({
       creator: row._source?.creator ?? null,
       description: row._source?.description ?? '',
       sourceUrl: row._source?.source_url ?? null,
+      expectedExposure: row._source?.expectedExposure ?? null,
+      modernAnalog: row._source?.modernAnalog ?? null,
+      modernization: row.metadata?.modernization ?? null,
       generatedPrompt: flattenInput(row.input),
     },
     currentClassification: {

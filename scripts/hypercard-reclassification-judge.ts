@@ -15,6 +15,21 @@ const TRAINING_GUIDE_CONTEXT = [
   '- Pattern-family choices should stay inside the canonical ten-family modnet catalog vocabulary and reflect the actual artifact, not prompt-noise or accidental workflow phrasing.',
 ].join('\n')
 
+const REFERENCE_SYNTHESIS_CONTEXT = [
+  'Reference synthesis from skills/mss-vocabulary, skills/modnet-node, skills/modnet-modules, and the modnet training guide:',
+  "- Use MSS as composition reasoning, not nostalgia labeling: classify by the module's dominant loop, information organization, boundary, and containment level.",
+  '- Boundary=none means internal-only. Do not let invitation text, author contact details, or distribution notes pressure the classification toward communication or service exposure.',
+  '- Session-like verbs only count as mechanics when the artifact itself mediates that interaction. "Contact me for info", support addresses, and author credits are metadata, not module mechanics.',
+  '- Instrument-control is for operating external hardware, lab equipment, telemetry, or real data-acquisition surfaces. Internal music-making, simulated instruments, and composition/playback tools are usually creative-tool unless the source clearly controls an external device.',
+  '- Business-process beats personal-data-manager when the primary loop is payroll, ledger, inventory, scheduling, or repeatable operational work, even if the stack also keeps personal records or contact fields.',
+  "- Personal-data-manager is only correct when the core value is the owner's personal records, contacts, notes, calendars, or household organization rather than an operational workflow.",
+  '- Creative-tool is for authoring, composing, arranging, performing, or manipulating expressive material. Do not snap to instrument-control just because the title mentions a keyboard, lab, or toolbox.',
+  '- S2 remains correct for a rich tracker, editor, catalog, or workflow form. S3 needs a true block with multiple grouped views or emergent interactions. S4 is rare and requires multiple distinct S3-like blocks arranged into a coordinated suite.',
+  '- "Complete", "thorough", "powerful", or "suite-like" prose is not enough for S4 by itself. Require evidence of separate coordinated blocks, not just depth inside one workflow.',
+  '- Seed-worthiness should favor niche-gold sovereign modules, enduring operational tools, and reusable module patterns. Do not promote thin demos or lexical curiosities just because the title sounds unusual.',
+  '- Resist lexical snap-to-label errors. Titles like "keyboard", "accounting", or "laboratory toolbox" are clues, but the description and dominant user job decide the family, scale, and seed value.',
+].join('\n')
+
 const PatternFamilySchema = z.enum([
   'personal-data-manager',
   'reference-browser',
@@ -155,7 +170,7 @@ const JudgeOutputSchema = {
   },
 } as const
 
-const buildJudgePrompt = ({
+export const buildJudgePrompt = ({
   task,
   output,
   metadata,
@@ -184,6 +199,7 @@ Key heuristics:
 - Do not force a mechanic into that list if it would distort the artifact. When needed, you may return a more specific mechanic label, but keep it concise and semantically grounded in the source.
 - ContentType may be specific, but it should still read like MSS vocabulary: lowercase, hyphenated when needed, and semantically compatible with modnet grouping.
 - Apply modnet-node boundary reasoning conservatively: truly private/personal records should stay none, public reference material can be all, collaborative or account-like flows should usually be ask, and value-exchange flows may be paid.
+- Prioritize title + source description over prompt phrasing, appended contact copy, and generic modernization filler.
 
 Task:
 ${task}
@@ -201,6 +217,8 @@ Heuristic prior:
 ${heuristicPrior}
 
 ${TRAINING_GUIDE_CONTEXT}
+
+${REFERENCE_SYNTHESIS_CONTEXT}
 
 Return the best revised patternFamily and MSS classification for this item. Pass only if the reclassification looks trustworthy enough to keep for audit/promotion review.`
 }

@@ -33,4 +33,32 @@ describe('hypercard-reclassification-meta-verifier', () => {
       },
     })
   })
+
+  test('preserves a schema-valid failed verification outcome for risky hard-case drift', () => {
+    const result = toGraderResult({
+      pass: false,
+      score: 0.28,
+      reasoning: 'The primary judge over-read suite language and treated author contact text as module behavior.',
+      dimensions: {
+        consistency: 0.32,
+        risk: 0.88,
+        confidence: 0.24,
+      },
+    })
+
+    expect(GraderResultSchema.parse(result)).toEqual(result)
+    expect(
+      HypercardReclassificationMetaOutcomeSchema.parse({
+        verifierKind: result.outcome?.verifierKind,
+        dimensions: result.outcome?.dimensions,
+      }),
+    ).toEqual({
+      verifierKind: 'hypercard-reclassification-meta-verifier',
+      dimensions: {
+        consistency: 0.32,
+        risk: 0.88,
+        confidence: 0.24,
+      },
+    })
+  })
 })
