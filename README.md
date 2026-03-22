@@ -297,6 +297,38 @@ Operational behavior:
 - native-model lane does not use `--max-attempts`; its primary knobs are
   `--iters`, `--max-seq-length`, `--num-layers`, and `--agents`
 
+### Skill Evaluation
+
+Skill evaluation is separate from structural validation:
+- `plaited validate-skill`
+  - AgentSkills-compatible structure only
+- `plaited evaluate-skill`
+  - behavioral quality against the skill's local `evals/` surface
+
+`evaluate-skill` uses the skill-local files when present:
+- `evals/trigger-prompts.jsonl`
+- `evals/output-cases.jsonl`
+- `evals/RUBRIC.md`
+
+Default artifact layout stays inside the skill:
+- `<skill>/evals/runs/<run-id>/`
+  - run-specific `results.jsonl`, `summary.md`, `summary.json`, `benchmark.json`, `RESULTS.md`
+- `<skill>/evals/RESULTS.md`
+  - latest human-review summary
+- `<skill>/evals/benchmark.json`
+  - latest machine-readable aggregate summary
+- `<skill>/evals/latest-run.json`
+  - pointer to the latest run and artifact paths
+
+The tool also commits those updated eval artifacts by default when the skill
+lives in a git repo, so git history becomes the longitudinal skill-eval log.
+
+Examples:
+- trigger eval against the current skill:
+  - `plaited evaluate-skill '{"skillPath":"skills/generative-ui","mode":"trigger","adapterPath":"./scripts/codex-cli-adapter.ts","graderPath":"./scripts/gemini-judge.ts","k":2,"progress":true}'`
+- with-skill vs without-skill comparison:
+  - `plaited evaluate-skill '{"skillPath":"skills/generative-ui","mode":"trigger","adapterPath":"./scripts/codex-cli-adapter.ts","graderPath":"./scripts/gemini-judge.ts","baseline":"without-skill","useWorktree":true,"k":2,"progress":true}'`
+
 ### Native-Model Commands
 
 ```bash
@@ -418,6 +450,7 @@ The repo ships an agent-facing CLI toolbox:
 - `plaited ingest-skill`
 - `plaited ingest-rules`
 - `plaited discover-skills`
+- `plaited evaluate-skill`
 - `plaited typescript-lsp`
 
 See:

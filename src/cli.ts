@@ -17,6 +17,7 @@ import { ingestGoalCli } from './tools/ingest-goal.ts'
 import { ingestRulesCli } from './tools/ingest-rules.ts'
 import { ingestSkillCli } from './tools/ingest-skill.ts'
 import { discoverSkillsCli } from './tools/skill-discovery.ts'
+import { evaluateSkillCli } from './tools/skill-evaluate.ts'
 import { validateSkill } from './tools/skill-validate.ts'
 import { typescriptLsp } from './tools/typescript-lsp.ts'
 import { validateThreadCli } from './tools/validate-thread.ts'
@@ -39,6 +40,7 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   'ingest-skill': ingestSkillCli,
   'ingest-rules': ingestRulesCli,
   'discover-skills': discoverSkillsCli,
+  'evaluate-skill': evaluateSkillCli,
   'typescript-lsp': typescriptLsp,
   // ACP adapter (long-lived stdio process)
   acp: async () => {
@@ -81,6 +83,7 @@ Commands:
   Development:
     validate-skill, validate-thread, ingest-goal,
     ingest-skill, ingest-rules, discover-skills,
+    evaluate-skill,
     typescript-lsp
 
   ACP (Internal Control Surface):
