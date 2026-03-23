@@ -48,3 +48,15 @@ Run seed review on the regenerated prompt set, analyze a 100-row sample at
 - a sample-analysis report exists for the regenerated prompt set
 - clear thresholds exist for when to run the full retained corpus
 - promotion policy is explicit enough to move from experiment to curation
+
+## Sample Thresholds
+
+- run the full regenerated prompt set only if the 100-row sample meets all of:
+  - trusted rate at or above `0.90`
+  - recommended-for-seed-review rate between `0.20` and `0.40`
+  - no obvious collapse into a single family or structure in the sample
+  - spend totals remain within the same general band as the current
+    HyperCard reclassification lane for 100-row runs
+- if any threshold fails:
+  - inspect the regenerated prompt artifact first
+  - fix the regeneration lane before scaling to the full retained corpus
