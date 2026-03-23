@@ -1,9 +1,7 @@
 import * as z from 'zod'
 import type { Grader, GraderResult } from '../src/improve.ts'
 import { GraderResultSchema } from '../src/improve.ts'
-import { runStructuredClaudeQuery } from './claude-agent-sdk.ts'
-
-const CLAUDE_META_MODEL = 'claude-haiku-4-5-20251001'
+import { runStructuredMetaVerifierQuery } from './meta-verifier-runtime.ts'
 
 export const ModnetDerivedPromptMetaDimensionsSchema = z.object({
   consistency: z.number().min(0).max(1),
@@ -113,11 +111,8 @@ export const toGraderResult = (result: MetaJudgeOutput & { outcome?: Record<stri
       : {}),
   })
 
-const invokeClaudeMetaVerifier = async (
-  prompt: string,
-): Promise<MetaJudgeOutput & { outcome?: Record<string, unknown> }> => {
-  const result = await runStructuredClaudeQuery<MetaJudgeOutput>({
-    model: CLAUDE_META_MODEL,
+const invokeMetaVerifier = async (prompt: string): Promise<MetaJudgeOutput & { outcome?: Record<string, unknown> }> => {
+  const result = await runStructuredMetaVerifierQuery<MetaJudgeOutput>({
     prompt,
     schema: MetaJudgeOutputSchema,
   })
@@ -126,7 +121,7 @@ const invokeClaudeMetaVerifier = async (
     return {
       pass: false,
       score: 0,
-      reasoning: `Claude meta verifier SDK error: ${result.reason}`,
+      reasoning: `Meta verifier SDK error: ${result.reason}`,
       outcome: buildOutcome({
         sdkMeta: result.meta,
       }),
@@ -151,6 +146,6 @@ const invokeClaudeMetaVerifier = async (
 export const grade: Grader = async ({ input, output, metadata }): Promise<GraderResult> => {
   const task = Array.isArray(input) ? input.join('\n') : input
   const meta = (metadata ?? {}) as Record<string, unknown>
-  const result = await invokeClaudeMetaVerifier(buildMetaPrompt({ task, output, metadata: meta }))
+  const result = await invokeMetaVerifier(buildMetaPrompt({ task, output, metadata: meta }))
   return toGraderResult(result)
 }

@@ -1,16 +1,17 @@
 /**
- * vLLM local inference adapter for Plaited autoresearch.
+ * vLLM inference adapter for Plaited autoresearch.
  *
  * @remarks
- * Calls a local vLLM API server for code generation.
- * Used in Phase 2+ to generate with fine-tuned Falcon 7B.
+ * Calls an OpenAI-compatible vLLM server for code generation.
+ * Intended to talk to an MSI-hosted vLLM endpoint; this Mac is the operator
+ * and control-plane box, not the target serving machine.
  *
  * Prerequisites:
- * 1. Start vLLM server: `bun scripts/vllm-server.ts`
- * 2. Set VLLM_API_URL environment variable (default: http://localhost:8000/v1)
+ * 1. Start the MSI-side vLLM server: `bun scripts/vllm-server.ts`
+ * 2. Set VLLM_API_URL to the reachable MSI endpoint
  *
  * Environment variables:
- * - VLLM_API_URL: vLLM API endpoint (default: http://localhost:8000/v1)
+ * - VLLM_API_URL: vLLM API endpoint
  * - VLLM_MODEL_NAME: Model name for API (default: falcon-7b)
  * - VLLM_MAX_TOKENS: Max completion tokens (default: 2048)
  * - VLLM_TEMPERATURE: Sampling temperature (default: 0.7)

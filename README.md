@@ -330,9 +330,9 @@ Usage notes:
 - native-model strategy fanout:
   - `bun run program:run -- ./dev-research/native-model/slice-4.md --lane native-model --pattern fanout --agents 3 --model mlx-community/Falcon-H1R-7B-4bit --max-seq-length 384 --num-layers 2 --iters 20`
 - one skill evaluation run:
-  - `bun run program:run -- ./dev-research/skills/slice-1.md --lane skills --skill-path ./skills/generative-ui --mode trigger --adapter ./scripts/codex-cli-adapter.ts --grader-path ./scripts/claude-code-judge.ts --baseline without-skill --use-worktree`
+  - `bun run program:run -- ./dev-research/skills/slice-1.md --lane skills --skill-path ./skills/generative-ui --mode trigger --adapter ./scripts/codex-cli-adapter.ts --grader-path ./scripts/repo-improvement-judge.ts --baseline without-skill --use-worktree`
 - skills fanout with winner promotion:
-  - `bun run program:run -- ./dev-research/skills/slice-1.md --lane skills --pattern fanout --agents 3 --skill-path ./skills/generative-ui --mode trigger --adapter ./scripts/codex-cli-adapter.ts --grader-path ./scripts/claude-code-judge.ts --baseline without-skill --use-worktree --promote-winner`
+  - `bun run program:run -- ./dev-research/skills/slice-1.md --lane skills --pattern fanout --agents 3 --skill-path ./skills/generative-ui --mode trigger --adapter ./scripts/codex-cli-adapter.ts --grader-path ./scripts/repo-improvement-judge.ts --baseline without-skill --use-worktree --promote-winner`
 
 Operational behavior:
 - repo fanout creates isolated git worktrees for each candidate

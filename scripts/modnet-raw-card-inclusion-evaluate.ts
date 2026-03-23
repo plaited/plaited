@@ -2,6 +2,7 @@
 
 import { dirname } from 'node:path'
 import * as z from 'zod'
+import { appendJsonlRow, resetJsonlOutput } from './jsonl-output.ts'
 import {
   type Base1InclusionCandidate as InclusionCandidate,
   Base1InclusionCandidateSchema as InclusionCandidateSchema,
@@ -163,6 +164,8 @@ const logProgress = ({ enabled, message }: { enabled: boolean; message: string }
   }
 }
 
+const toSummaryPath = (outputPath: string) => `${outputPath}.summary.json`
+
 const parseArgs = () => {
   const args = Bun.argv.slice(2)
   let sourcePath = DEFAULT_SOURCE
@@ -201,15 +204,6 @@ const parseArgs = () => {
   return { sourcePath, candidatesPath, outputPath, progress, concurrency }
 }
 
-const summarizeDecisions = (evaluations: Evaluation[]) => {
-  const counts = new Map<string, number>()
-  for (const evaluation of evaluations) {
-    counts.set(evaluation.candidate.inclusionDecision, (counts.get(evaluation.candidate.inclusionDecision) ?? 0) + 1)
-  }
-
-  return Object.fromEntries(Array.from(counts.entries()).sort((left, right) => right[1] - left[1]))
-}
-
 const getNestedNumber = (value: unknown, key: string): number | undefined => {
   if (!value || typeof value !== 'object') return undefined
   const nested = (value as Record<string, unknown>)[key]
@@ -223,34 +217,54 @@ const getCostUsd = (value: unknown, path: 'judgeSdk' | 'metaVerificationSdk'): n
   return getNestedNumber((outcome as Record<string, unknown>)[path], 'totalCostUsd') ?? 0
 }
 
-const runConcurrent = async <T, R>({
+const getJudgedInclusionDecision = (judge: unknown): InclusionCandidate['inclusionDecision'] | undefined => {
+  if (!judge || typeof judge !== 'object') return undefined
+  const outcome = (judge as Record<string, unknown>).outcome
+  if (!outcome || typeof outcome !== 'object') return undefined
+  const inclusionDecision = (outcome as Record<string, unknown>).inclusionDecision
+  if (
+    inclusionDecision === 'retain' ||
+    inclusionDecision === 'retain_low_priority' ||
+    inclusionDecision === 'discard'
+  ) {
+    return inclusionDecision
+  }
+  return undefined
+}
+
+const runConcurrent = async <T>({
   items,
   concurrency,
   worker,
 }: {
   items: T[]
   concurrency: number
-  worker: (item: T, index: number) => Promise<R>
-}): Promise<R[]> => {
-  const results = new Array<R>(items.length)
+  worker: (item: T, index: number) => Promise<void>
+}): Promise<void> => {
   let nextIndex = 0
 
   const runWorker = async () => {
     while (nextIndex < items.length) {
       const currentIndex = nextIndex
       nextIndex += 1
-      results[currentIndex] = await worker(items[currentIndex]!, currentIndex)
+      await worker(items[currentIndex]!, currentIndex)
     }
   }
 
   await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => runWorker()))
-  return results
 }
 
 const main = async () => {
   const { sourcePath, candidatesPath, outputPath, progress, concurrency } = parseArgs()
+  const outputDir = dirname(outputPath)
+  if (outputDir && outputDir !== '.') {
+    await Bun.$`mkdir -p ${outputDir}`.quiet()
+  }
   const rawCards = await loadJsonlRows(sourcePath, RawPromptCardSchema)
   const candidates = await loadJsonlRows(candidatesPath, InclusionCandidateSchema)
+  await resetJsonlOutput(outputPath)
+  const summaryPath = toSummaryPath(outputPath)
+
   const sourceMap = new Map(rawCards.map((row) => [row.id, row]))
   const seenIds = new Set<string>()
   const prechecked = candidates.map((candidate, index) => {
@@ -279,17 +293,71 @@ const main = async () => {
     }
   })
 
-  const evaluations = await runConcurrent({
+  const decisions = new Map<string, number>()
+  let totalCandidates = 0
+  let recommendedCount = 0
+  let blockedDeterministically = 0
+  let judgeSpendUsd = 0
+  let metaVerifierSpendUsd = 0
+  let writeQueue = Promise.resolve()
+  const startedAt = new Date().toISOString()
+
+  const writeSummary = async () => {
+    const summary = {
+      sourcePath,
+      candidatesPath,
+      outputPath,
+      summaryPath,
+      totalRows: candidates.length,
+      completed: totalCandidates,
+      recommended: recommendedCount,
+      blockedDeterministically,
+      decisions: Object.fromEntries(Array.from(decisions.entries()).sort((left, right) => right[1] - left[1])),
+      spendUsd: {
+        judge: Number(judgeSpendUsd.toFixed(6)),
+        metaVerifier: Number(metaVerifierSpendUsd.toFixed(6)),
+        total: Number((judgeSpendUsd + metaVerifierSpendUsd).toFixed(6)),
+      },
+      startedAt,
+      updatedAt: new Date().toISOString(),
+    }
+
+    await Bun.write(summaryPath, `${JSON.stringify(summary, null, 2)}\n`)
+  }
+
+  await writeSummary()
+
+  await runConcurrent({
     items: prechecked,
     concurrency,
     worker: async ({ candidate, rawCard, deterministicCheck }, index) => {
-      if (!sourceMap.get(candidate.id) || !deterministicCheck.pass) {
-        return EvaluationSchema.parse({
-          candidate,
-          rawCard,
-          deterministicCheck,
-          recommended: false,
+      const finalizeEvaluation = async (evaluation: Evaluation): Promise<void> => {
+        totalCandidates += 1
+        if (evaluation.recommended) recommendedCount += 1
+        if (!evaluation.deterministicCheck.pass) blockedDeterministically += 1
+        decisions.set(
+          evaluation.candidate.inclusionDecision,
+          (decisions.get(evaluation.candidate.inclusionDecision) ?? 0) + 1,
+        )
+        judgeSpendUsd += getCostUsd(evaluation.judge, 'judgeSdk')
+        metaVerifierSpendUsd += getCostUsd(evaluation.metaVerification, 'metaVerificationSdk')
+        writeQueue = writeQueue.then(async () => {
+          await appendJsonlRow(outputPath, evaluation)
+          await writeSummary()
         })
+        await writeQueue
+      }
+
+      if (!sourceMap.get(candidate.id) || !deterministicCheck.pass) {
+        await finalizeEvaluation(
+          EvaluationSchema.parse({
+            candidate,
+            rawCard,
+            deterministicCheck,
+            recommended: false,
+          }),
+        )
+        return
       }
 
       const task = createTaskDescription(candidate)
@@ -320,51 +388,38 @@ const main = async () => {
         },
       })
 
-      return EvaluationSchema.parse({
-        candidate,
-        rawCard,
-        deterministicCheck,
-        judge,
-        metaVerification,
-        recommended: judge.pass && metaVerification.pass,
-      })
+      await finalizeEvaluation(
+        EvaluationSchema.parse({
+          candidate,
+          rawCard,
+          deterministicCheck,
+          judge,
+          metaVerification,
+          recommended:
+            metaVerification.pass && (getJudgedInclusionDecision(judge) ?? candidate.inclusionDecision) !== 'discard',
+        }),
+      )
+      return
     },
   })
-
-  const outputDir = dirname(outputPath)
-  if (outputDir && outputDir !== '.') {
-    await Bun.$`mkdir -p ${outputDir}`.quiet()
-  }
-
-  await Bun.write(outputPath, `${evaluations.map((row) => JSON.stringify(row)).join('\n')}\n`)
-
   console.log(
     JSON.stringify(
       {
         sourcePath,
         candidatesPath,
         outputPath,
-        totalCandidates: evaluations.length,
-        recommended: evaluations.filter((entry) => entry.recommended).length,
-        blockedDeterministically: evaluations.filter((entry) => !entry.deterministicCheck.pass).length,
-        decisions: summarizeDecisions(evaluations),
+        summaryPath,
+        totalCandidates,
+        recommended: recommendedCount,
+        blockedDeterministically,
+        decisions: Object.fromEntries(Array.from(decisions.entries()).sort((left, right) => right[1] - left[1])),
         spendUsd: {
-          judge: Number(evaluations.reduce((sum, row) => sum + getCostUsd(row.judge, 'judgeSdk'), 0).toFixed(6)),
-          metaVerifier: Number(
-            evaluations
-              .reduce((sum, row) => sum + getCostUsd(row.metaVerification, 'metaVerificationSdk'), 0)
-              .toFixed(6),
-          ),
-          total: Number(
-            evaluations
-              .reduce(
-                (sum, row) =>
-                  sum + getCostUsd(row.judge, 'judgeSdk') + getCostUsd(row.metaVerification, 'metaVerificationSdk'),
-                0,
-              )
-              .toFixed(6),
-          ),
+          judge: Number(judgeSpendUsd.toFixed(6)),
+          metaVerifier: Number(metaVerifierSpendUsd.toFixed(6)),
+          total: Number((judgeSpendUsd + metaVerifierSpendUsd).toFixed(6)),
         },
+        startedAt,
+        updatedAt: new Date().toISOString(),
       },
       null,
       2,

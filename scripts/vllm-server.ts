@@ -2,8 +2,11 @@
  * vLLM server launcher for Plaited native-model inference.
  *
  * @remarks
- * Starts a vLLM inference server for local LLM serving.
- * Used in Phase 2+ to run fine-tuned Falcon 7B as the generation adapter.
+ * Starts a vLLM inference server for MSI-hosted model serving.
+ * This is intended for the MSI machine, with this Mac acting as the remote
+ * control-plane/operator box.
+ * Used in later native-model phases to run fine-tuned Falcon as the generation
+ * adapter.
  *
  * Environment variables:
  * - VLLM_MODEL_PATH: Path to model checkpoint (e.g., ./models/falcon-7b-native-model.qlora)

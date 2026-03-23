@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import { assessInclusionCandidate } from '../modnet-raw-card-inclusion-evaluate.ts'
 
+const isRetainedDecision = (value: 'retain' | 'retain_low_priority' | 'discard') => value !== 'discard'
+
 describe('modnet-raw-card-inclusion-evaluate', () => {
   test('passes a grounded retained candidate', () => {
     const check = assessInclusionCandidate({
@@ -55,5 +57,27 @@ describe('modnet-raw-card-inclusion-evaluate', () => {
     expect(check.pass).toBe(false)
     expect(check.hardFailures).toContain('missing-search-query-seed')
     expect(check.softWarnings).toContain('generic-modern-analog')
+  })
+
+  test('judge outcome should override discard candidate when determining retention', () => {
+    const judge = {
+      pass: true,
+      score: 0.6,
+      reasoning: 'bounded workflow survives',
+      outcome: {
+        judgeKind: 'modnet-raw-card-inclusion',
+        inclusionDecision: 'retain_low_priority' as const,
+      },
+    }
+
+    const metaVerification = {
+      pass: true,
+      score: 0.9,
+      reasoning: 'consistent',
+    }
+
+    const recommended = metaVerification.pass && isRetainedDecision(judge.outcome.inclusionDecision)
+
+    expect(recommended).toBe(true)
   })
 })

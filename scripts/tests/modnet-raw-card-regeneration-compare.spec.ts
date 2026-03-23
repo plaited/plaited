@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { chooseWinningVariant } from '../modnet-raw-card-regeneration-compare.ts'
 
 describe('modnet-raw-card-regeneration-compare', () => {
-  test('chooses the cheapest reliable variant within the quality band', () => {
+  test('prefers stronger module-shape and prompt-quality winners inside the quality band', () => {
     const winner = chooseWinningVariant([
       {
         variantId: 'base_1',
@@ -69,6 +69,6 @@ describe('modnet-raw-card-regeneration-compare', () => {
       },
     ])
 
-    expect(winner?.variantId).toBe('base_1_search')
+    expect(winner?.variantId).toBe('base_1_search_followup_livecrawl')
   })
 })

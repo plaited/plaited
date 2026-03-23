@@ -56,6 +56,7 @@
     "qwen:tts:mlx": "varlock run -- bun --no-env-file scripts/qwen-tts-mlx-server.ts",
     "qwen:vl:mlx": "varlock run -- bun --no-env-file scripts/qwen-vl-mlx-server.ts",
     "research": "varlock run -- bun --no-env-file scripts/dev-autoresearch.ts --adapter ./scripts/codex-cli-adapter.ts --judge --commit --push",
+    "research:openrouter": "varlock run -- bun --no-env-file scripts/dev-autoresearch.ts --adapter ./scripts/openrouter-adapter.ts --judge --commit --push",
     "research:overnight": "varlock run -- bun --no-env-file scripts/dev-autoresearch.ts --adapter ./scripts/codex-cli-adapter.ts --judge --commit --push --quiet --max-attempts 30",
     "test": "bun test src/ skills/ scripts/",
     "test:playwright": "bunx playwright test",
@@ -71,12 +72,10 @@
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "^0.16.1",
-    "@anthropic-ai/sdk": "^0.78.0",
     "@modelcontextprotocol/sdk": "1.26.0",
     "zod": "4.3.6"
   },
   "devDependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.2.79",
     "@biomejs/biome": "2.4.4",
     "@commitlint/cli": "20.4.2",
     "@commitlint/config-conventional": "20.4.2",

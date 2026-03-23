@@ -2,7 +2,10 @@
 
 ## Purpose
 
-Run fine-tuned Falcon 7B locally on EdgeXpert for self-distillation cycles.
+Run fine-tuned Falcon 7B on the MSI machine for self-distillation cycles.
+
+This is an MSI-target execution surface, not a recommendation to serve models
+on this Mac.
 
 **Phase 1:** Codex CLI → judge → fine-tune Falcon
 **Phase 2+:** Falcon (vLLM) → judge → fine-tune Falcon (self-improvement)
@@ -19,7 +22,7 @@ pip install peft
 
 ## Usage
 
-### 1. Start vLLM Server
+### 1. Start vLLM Server on the MSI machine
 
 ```bash
 export VLLM_MODEL_PATH="./models/falcon-7b-native-model"
@@ -31,9 +34,9 @@ bun scripts/vllm-server.ts
 
 Server will start at `http://localhost:8000/v1`
 
-### 2. Run Autoresearch with vLLM Adapter
+### 2. Run Autoresearch Against the MSI vLLM Server
 
-In a separate terminal:
+From the operator machine, point the adapter at the MSI-hosted endpoint:
 
 ```bash
 export VLLM_API_URL="http://localhost:8000/v1"
@@ -69,13 +72,14 @@ kept trials on separate worker branches without additional orchestration work.
 
 ## Hardware Requirements
 
-**Minimum:**
-- GPU with 40GB VRAM (Falcon 7B float16)
-- EdgeXpert Grace Blackwell: ✓ (has 128GB unified memory)
+**Target:**
+- MSI / EdgeXpert Grace Blackwell class machine
+- 128GB unified memory
+- remote operator control from this Mac over Tailscale / reconnect-safe shell
 
 **Recommended:**
 - Quantized model (4-bit or 8-bit) if memory constrained
-- Use `--gpu-memory-utilization 0.85` on EdgeXpert
+- Use `--gpu-memory-utilization 0.85` on the MSI target
 
 ## Model Paths
 
@@ -106,18 +110,3 @@ curl http://localhost:8000/v1/models
 - Lower `VLLM_GPU_MEMORY_UTILIZATION` (reduces batch efficiency)
 - Check GPU is not throttling (thermal limit)
 - Use quantized model (4-bit) for speed/memory tradeoff
-
-## Cost Analysis
-
-**Phase 1 (Codex CLI):**
-- Generation: $0 (subscription)
-- Judging: ~$140-160 (Sonnet/Haiku)
-- Total: ~$140-160/run
-
-**Phase 2+ (vLLM + Falcon):**
-- Generation: $0 (local)
-- Judging: ~$140-160 (Sonnet/Haiku)
-- Total: ~$140-160/run (same judging cost)
-- Hardware: $6,900 (amortized)
-
-**Advantage:** Eliminate Codex dependency for generation, enable true self-distillation.

@@ -13,6 +13,7 @@ import { resolveRepoPath } from './workspace-paths.ts'
 const EvaluationRowSchema = z.object({
   candidate: z.record(z.string(), z.unknown()),
   rawCard: z.record(z.string(), z.unknown()),
+  judge: z.record(z.string(), z.unknown()).optional(),
   recommended: z.boolean(),
 })
 
@@ -56,6 +57,22 @@ const toRetainedRow = ({ candidate, rawCard }: { candidate: Base1InclusionCandid
     searchQuerySeed: candidate.searchQuerySeed,
   })
 
+const getJudgedInclusionDecision = (row: EvaluationRow): Base1InclusionCandidate['inclusionDecision'] => {
+  const outcome = row.judge?.outcome
+  if (!outcome || typeof outcome !== 'object') {
+    return (row.candidate as Base1InclusionCandidate).inclusionDecision
+  }
+  const inclusionDecision = (outcome as Record<string, unknown>).inclusionDecision
+  if (
+    inclusionDecision === 'retain' ||
+    inclusionDecision === 'retain_low_priority' ||
+    inclusionDecision === 'discard'
+  ) {
+    return inclusionDecision
+  }
+  return (row.candidate as Base1InclusionCandidate).inclusionDecision
+}
+
 const loadEvaluations = async (path: string): Promise<EvaluationRow[]> => {
   const text = await Bun.file(path).text()
   return text
@@ -70,10 +87,13 @@ const main = async () => {
   const evaluations = await loadEvaluations(inputPath)
   const retained = evaluations
     .filter((entry) => entry.recommended)
-    .filter((entry) => (entry.candidate as Base1InclusionCandidate).inclusionDecision !== 'discard')
+    .filter((entry) => getJudgedInclusionDecision(entry) !== 'discard')
     .map((entry) =>
       toRetainedRow({
-        candidate: entry.candidate as Base1InclusionCandidate,
+        candidate: {
+          ...(entry.candidate as Base1InclusionCandidate),
+          inclusionDecision: getJudgedInclusionDecision(entry),
+        },
         rawCard: entry.rawCard as RawPromptCard,
       }),
     )

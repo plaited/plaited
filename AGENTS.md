@@ -11,6 +11,13 @@
 **Path:** `Bun.resolveSync()` for modules, `import.meta.dir` for current dir. Keep `node:path` for join/resolve/dirname.
 **Executables:** `Bun.which(cmd)` to check existence. `bunx` not `npx`.
 **When Node.js OK:** readline, node:path, APIs without Bun equivalents.
+**JSONL batch scripts:** for long-running scripts that emit `.jsonl`, stream rows to disk as they complete instead of buffering the full run in memory and writing once at the end. Keep a final summary print, but prefer append-style output for observability and crash recovery.
+**Long-running summaries:** if a batch script runs for minutes or hours, write a rolling sidecar summary file (for example `output.jsonl.summary.json`) as rows complete. Do not keep summary state observable only in stdout.
+**Batch memory discipline:** for high-row-count runners, keep only the minimum rolling counters and write queue in memory. Do not accumulate full result arrays unless the total result set is trivially small.
+**Varlock-backed API calls:** when a repo script needs secrets injected by `varlock`, prefer direct Bun `fetch` or normal process env access inside the script. Avoid nested shell quoting pipelines for authenticated API calls because they are brittle and can masquerade as missing-key failures.
+**API-bound evaluation matrices:** when a script is evaluating many independent rows against remote model APIs, prefer bounded concurrency instead of sequential execution. Default to a modest concurrency like `5` or `6` unless there is a clear provider-specific reason not to.
+**Concurrency ramping:** for remote-model batch runs, start at a bounded concurrency, observe parse stability / retry behavior / provider throughput, then raise concurrency only after the smaller run is clean. Do not jump straight to the highest plausible parallelism.
+**Throughput bottleneck assumption:** for OpenRouter or other remote-model lanes, assume network/provider latency is the main bottleneck before assuming local CPU or memory is. Optimize script architecture first, then raise concurrency.
 
 
 # Workflow

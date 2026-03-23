@@ -10,10 +10,10 @@ judge/meta-verifier logic without inheriting repo-autoresearch assumptions.
 
 - `src/improve.ts`
 - `src/improve/`
-- `scripts/claude-code-judge.ts`
-- `scripts/claude-haiku-meta-verifier.ts`
-- `scripts/tests/claude-code-judge.spec.ts`
-- `scripts/tests/claude-haiku-meta-verifier.spec.ts`
+- `scripts/repo-improvement-judge.ts`
+- `scripts/repo-improvement-meta-verifier.ts`
+- `scripts/tests/program-orchestrator.spec.ts`
+- `src/improve/tests/protocol.spec.ts`
 - `dev-research/native-model/`
 
 ## Required
@@ -35,7 +35,7 @@ judge/meta-verifier logic without inheriting repo-autoresearch assumptions.
 
 ## Avoid
 
-- moving Claude-specific logic into shipped framework surfaces
+- moving provider-specific judge logic into shipped framework surfaces
 - conflating code-diff judging with prompt/output trial judging
 - requiring a full migration of all judge scripts in one slice
 - baking native-model policy directly into provider-specific scripts

@@ -1,9 +1,10 @@
 #!/usr/bin/env bun
 
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import * as z from 'zod'
 import type { PromptCase } from '../src/improve.ts'
 import { PromptCaseSchema } from '../src/improve.ts'
+import { appendJsonlRow, resetJsonlOutput } from './jsonl-output.ts'
 import { grade as judgeDerivedPrompt } from './modnet-prompt-derivation-judge.ts'
 import { grade as metaVerifyDerivedPrompt } from './modnet-prompt-derivation-meta-verifier.ts'
 
@@ -311,6 +312,7 @@ const main = async () => {
   })
   const seenIds = new Set<string>()
   const evaluations: DerivedPromptEvaluation[] = []
+  await resetJsonlOutput(outputPath)
 
   for (const [index, candidate] of candidates.entries()) {
     logProgress({
@@ -330,17 +332,17 @@ const main = async () => {
         enabled: progress,
         message: `candidate ${index + 1}/${candidates.length}: ${candidate.id} blocked (missing source)`,
       })
-      evaluations.push(
-        DerivedPromptEvaluationSchema.parse({
-          candidate,
-          sourcePrompt: PromptCaseSchema.parse({
-            id: candidate.sourceId,
-            input: '',
-          }),
-          deterministicCheck,
-          recommended: false,
+      const evaluation = DerivedPromptEvaluationSchema.parse({
+        candidate,
+        sourcePrompt: PromptCaseSchema.parse({
+          id: candidate.sourceId,
+          input: '',
         }),
-      )
+        deterministicCheck,
+        recommended: false,
+      })
+      evaluations.push(evaluation)
+      await appendJsonlRow(outputPath, evaluation)
       continue
     }
 
@@ -349,14 +351,14 @@ const main = async () => {
         enabled: progress,
         message: `candidate ${index + 1}/${candidates.length}: ${candidate.id} blocked (${deterministicCheck.hardFailures.join(', ')})`,
       })
-      evaluations.push(
-        DerivedPromptEvaluationSchema.parse({
-          candidate,
-          sourcePrompt,
-          deterministicCheck,
-          recommended: false,
-        }),
-      )
+      const evaluation = DerivedPromptEvaluationSchema.parse({
+        candidate,
+        sourcePrompt,
+        deterministicCheck,
+        recommended: false,
+      })
+      evaluations.push(evaluation)
+      await appendJsonlRow(outputPath, evaluation)
       continue
     }
 
@@ -389,29 +391,22 @@ const main = async () => {
       },
     })
 
-    evaluations.push(
-      DerivedPromptEvaluationSchema.parse({
-        candidate,
-        sourcePrompt,
-        deterministicCheck,
-        judge,
-        metaVerification,
-        recommended: deterministicCheck.pass && judge.pass && metaVerification.pass,
-      }),
-    )
+    const evaluation = DerivedPromptEvaluationSchema.parse({
+      candidate,
+      sourcePrompt,
+      deterministicCheck,
+      judge,
+      metaVerification,
+      recommended: deterministicCheck.pass && judge.pass && metaVerification.pass,
+    })
+    evaluations.push(evaluation)
+    await appendJsonlRow(outputPath, evaluation)
     logProgress({
       enabled: progress,
       message: `candidate ${index + 1}/${candidates.length}: ${candidate.id} done judge=${judge.pass} meta=${metaVerification.pass}`,
     })
   }
 
-  const outputDir = dirname(outputPath)
-  if (outputDir && outputDir !== '.') {
-    await Bun.$`mkdir -p ${outputDir}`.quiet()
-  }
-
-  const jsonl = `${evaluations.map((entry) => JSON.stringify(entry)).join('\n')}\n`
-  await Bun.write(outputPath, jsonl)
   logProgress({
     enabled: progress,
     message: `wrote ${evaluations.length} evaluation row(s) to ${outputPath}`,

@@ -52,7 +52,7 @@ describe('improve protocol context', () => {
       'src/improve/',
       'scripts/dev-autoresearch.ts',
       'scripts/codex-cli-adapter.ts',
-      'scripts/claude-code-judge.ts',
+      'scripts/repo-improvement-judge.ts',
       'scripts/tests/dev-autoresearch.spec.ts',
     ])
     expect(context.prompt).toContain('Program:')

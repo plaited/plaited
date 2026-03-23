@@ -40,8 +40,8 @@ describe('modnet-raw-card-base', () => {
     expect(BASE_1_VALIDATION_PLAN.map((entry) => entry.stage)).toEqual([
       'deterministic_prefilter',
       'codex_generation',
-      'sonnet_judgment',
-      'haiku_meta_verification',
+      'primary_judgment',
+      'meta_verification',
     ])
     expect(normalizeRawCardText(' A  B\tC ')).toBe('A B C')
   })

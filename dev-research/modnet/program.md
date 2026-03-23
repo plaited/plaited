@@ -228,14 +228,30 @@ So:
 - Slice 13: test search-grounded regeneration variants against the derived prompt-target rubric
 - Slice 14: run the chosen regeneration flow over the retained HyperCard corpus and produce a regenerated prompt set
 - Slice 15: run seed review on the regenerated prompt set, analyze a 100-row sample at concurrency 5, and define promotion criteria
+- Slice 16: refine lower-scale prompt derivation using handpicked approved seeds and then derive `S1-S3` precursors from the regenerated HyperCard seed set
+- Slice 17: run a held-out 100-row judge ablation to test Haiku replacements and Sonnet challengers while keeping Codex unchanged
+- Slice 18: calibrate the raw-card inclusion judge/meta prompts on disagreement rows and edge cases before rerunning the full HyperCard inclusion lane
 
 ## Current Execution Notes
 
 - Slice 12 produces the retained raw corpus gate.
+- Slice 17 is complete.
+  - The current raw-card inclusion target stack is:
+    - `glm-5`
+    - `minimax-m2.5`
+- Slice 18 is complete.
+  - The raw-card inclusion judge/meta prompts have been recalibrated for:
+    - obsolete-medium rescue
+    - thin-demo rejection
+    - stronger pass/decision/score coherence
+- The next modnet action is the full raw-card inclusion rerun over the `2204`
+  row HyperCard lane using the calibrated `glm-5 -> minimax-m2.5` stack.
 - Slice 13 selects between the concrete regeneration variants:
   - `base_1`
   - `base_1_search`
   - `base_1_search_followup_livecrawl`
+- Slice 14 should begin with a bounded retained-corpus sample before the full
+  retained-corpus regeneration run.
 - Slice 14 should write deterministic intermediate artifacts before writing the
   final regenerated prompt set.
 - Slice 15 should consume only the regenerated prompt-set artifact from Slice

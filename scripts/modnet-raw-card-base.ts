@@ -35,7 +35,7 @@ export const RetainedRawCardCorpusRowSchema = z.object({
 })
 
 export const RawCardEvaluationSummarySchema = z.object({
-  stage: z.enum(['deterministic_prefilter', 'codex_generation', 'sonnet_judgment', 'haiku_meta_verification']),
+  stage: z.enum(['deterministic_prefilter', 'codex_generation', 'primary_judgment', 'meta_verification']),
   role: z.string(),
   purpose: z.string(),
 })
@@ -62,14 +62,14 @@ export const BASE_1_VALIDATION_PLAN = RawCardEvaluationSummarySchema.array().par
     purpose: 'Generate the Base 1 inclusion decision and compact corollaries from id, title, and description only.',
   },
   {
-    stage: 'sonnet_judgment',
-    role: 'Claude Sonnet',
+    stage: 'primary_judgment',
+    role: 'Primary judge',
     purpose: 'Judge whether the Codex output is coherent, restrained, and modnet-relevant.',
   },
   {
-    stage: 'haiku_meta_verification',
-    role: 'Claude Haiku',
-    purpose: 'Verify the Sonnet result for consistency, confidence, and downstream risk.',
+    stage: 'meta_verification',
+    role: 'Meta-verifier',
+    purpose: 'Verify the primary judgment for consistency, confidence, and downstream risk.',
   },
 ])
 

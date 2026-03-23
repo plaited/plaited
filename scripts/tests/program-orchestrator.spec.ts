@@ -115,7 +115,7 @@ describe('program-orchestrator', () => {
       '--adapter',
       './scripts/codex-cli-adapter.ts',
       '--grader-path',
-      './scripts/claude-code-judge.ts',
+      './scripts/repo-improvement-judge.ts',
       '--baseline',
       'without-skill',
       '--use-worktree',
@@ -131,7 +131,7 @@ describe('program-orchestrator', () => {
     expect(parsed.skills.skillPath).toBe('./skills/generative-ui')
     expect(parsed.skills.mode).toBe('trigger')
     expect(parsed.skills.adapterPath).toBe('./scripts/codex-cli-adapter.ts')
-    expect(parsed.skills.graderPath).toBe('./scripts/claude-code-judge.ts')
+    expect(parsed.skills.graderPath).toBe('./scripts/repo-improvement-judge.ts')
     expect(parsed.skills.baseline).toBe('without-skill')
     expect(parsed.skills.useWorktree).toBe(true)
     expect(parsed.skills.k).toBe(2)

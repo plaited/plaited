@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 
+import { appendJsonlRow, resetJsonlOutput } from './jsonl-output.ts'
 import {
   average,
   computeEffectiveVariantCost,
@@ -7,7 +8,6 @@ import {
   countNormalizedWords,
   DEFAULT_REGENERATION_CANDIDATES_PATH,
   DEFAULT_REGENERATION_EVALS_PATH,
-  ensureParentDir,
   gradeFromScore,
   loadRegenerationCandidates,
   normalizeWords,
@@ -218,10 +218,16 @@ export const evaluateRegenerationCandidate = (candidate: RegenerationVariantCand
 const main = async () => {
   const { candidatesPath, outputPath } = parseArgs()
   const candidates = await loadRegenerationCandidates(candidatesPath)
-  const evaluations = candidates.map(evaluateRegenerationCandidate)
+  await resetJsonlOutput(outputPath)
+  let reliable = 0
+  let recommended = 0
 
-  await ensureParentDir(outputPath)
-  await Bun.write(outputPath, `${evaluations.map((row) => JSON.stringify(row)).join('\n')}\n`)
+  for (const candidate of candidates) {
+    const evaluation = evaluateRegenerationCandidate(candidate)
+    await appendJsonlRow(outputPath, evaluation)
+    if (evaluation.reliable) reliable += 1
+    if (evaluation.recommended) recommended += 1
+  }
 
   console.log(
     JSON.stringify(
@@ -229,8 +235,8 @@ const main = async () => {
         candidatesPath,
         outputPath,
         totalCandidates: candidates.length,
-        reliable: evaluations.filter((row) => row.reliable).length,
-        recommended: evaluations.filter((row) => row.recommended).length,
+        reliable,
+        recommended,
       },
       null,
       2,

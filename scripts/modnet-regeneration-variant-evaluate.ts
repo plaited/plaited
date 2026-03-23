@@ -1,10 +1,12 @@
 #!/usr/bin/env bun
 
+import { appendJsonlRow, resetJsonlOutput } from './jsonl-output.ts'
 import {
   DEFAULT_REGENERATION_CANDIDATES_PATH,
   DEFAULT_REGENERATION_COMPARE_PATH,
   ensureParentDir,
   loadRegenerationCandidates,
+  type RegenerationVariantEvaluation,
   VariantComparisonOutputSchema,
 } from './modnet-raw-card-regeneration-base.ts'
 import { chooseWinningVariant } from './modnet-raw-card-regeneration-compare.ts'
@@ -35,10 +37,13 @@ const main = async () => {
   const { candidatesPath, outputPath } = parseArgs()
   const candidates = await loadRegenerationCandidates(candidatesPath)
   const evalOutputPath = outputPath.replace(/\.json$/u, '.evals.jsonl')
-  const evaluations = candidates.map(evaluateRegenerationCandidate)
-
-  await ensureParentDir(evalOutputPath)
-  await Bun.write(evalOutputPath, `${evaluations.map((row) => JSON.stringify(row)).join('\n')}\n`)
+  await resetJsonlOutput(evalOutputPath)
+  const evaluations: RegenerationVariantEvaluation[] = []
+  for (const candidate of candidates) {
+    const evaluation = evaluateRegenerationCandidate(candidate)
+    evaluations.push(evaluation)
+    await appendJsonlRow(evalOutputPath, evaluation)
+  }
 
   const summaries = Array.from(new Set(evaluations.map((row) => row.candidate.variantId))).map((variantId) => {
     const rows = evaluations.filter((row) => row.candidate.variantId === variantId)

@@ -1,173 +1,71 @@
 # TODO
 
-## Current State
+## Current Focus
 
-- `runtime-taxonomy` is effectively complete enough to stop touching for now.
-- `skills/slice-1`, `improve/slice-1` through `improve/slice-5`, and the current `native-model` prep slices all landed on `dev`.
-- Native-model validation runs through the trial layer via:
-  - `bun run native-model:validate -- --adapter ./scripts/codex-cli-adapter.ts`
-- The curated training set exists at:
-  - `dev-research/native-model/evals/curated-good-outputs.jsonl`
-- The first local MLX LoRA bootstrap run has now succeeded on this Mac with:
-  - base model: `mlx-community/Falcon-H1R-7B-4bit`
-  - `--max-seq-length 384`
-  - `--num-layers 2`
-  - `--iters 20`
-  - output:
-    - `dev-research/native-model/training/runs/bootstrap-mlx-2026-03-21T05-05-29-567Z/adapters/adapters.safetensors`
-- Meaning:
-  - the end-to-end local tuning loop works on this machine
-  - this machine can handle a small quantized bootstrap run
-  - this machine is still too constrained for less-truncated or less-quantized 7B training
+- `modnet` is the active lane.
+- The current production judge stack for raw-card inclusion is:
+  - `glm-5`
+  - `minimax-m2.5`
+- Keep this file focused on the modnet curation and regeneration pipeline until
+  that lane is stable again.
 
-## Immediate Goal
+## Modnet Order Of Operations
 
-Use this machine as the control plane for validation, curation, data-shaping,
-and native-model tooling work only.
-Use the MSI machine as the actual native-model execution and training plane
-once it is ready.
+The raw-card corpus and retained corpus already exist. The next modnet steps
+are:
 
-Current MSI assumptions:
-- NVIDIA DGX Spark OS device
-- Network Appliance Mode
-- reached from this Mac over Tailscale
-- remote-shell-first workflow with reconnect-safe `cmux`
-- Zed on this Mac as the editor/operator surface
+1. Rerun the full raw-card inclusion lane with the calibrated prompt pair.
+   - Input:
+     - `dev-research/modnet/catalog/modnet-raw-card-corpus.jsonl`
+     - `/tmp/modnet-raw-card-inclusion-candidates.jsonl`
+   - Output:
+     - `/tmp/modnet-raw-card-inclusion-evals.jsonl`
+   - Judge stack:
+     - `glm-5`
+     - `minimax-m2.5`
 
-The native-model plan is now explicitly staged:
+2. Rebuild the retained raw corpus from the calibrated inclusion results.
+   - Input:
+     - `/tmp/modnet-raw-card-inclusion-evals.jsonl`
+   - Output:
+     - `dev-research/modnet/catalog/modnet-retained-raw-card-corpus.jsonl`
 
-1. symbolic output quality
-2. tool-aware process behavior
-3. autonomous improvement loops
+3. Run Slice 14 regeneration sample over a bounded retained subset first.
+   - Compare:
+     - `base_1`
+     - `base_1_search`
+     - `base_1_search_followup_livecrawl`
+   - Pick the winning regeneration path before the full retained-corpus run.
 
-Interpretation:
-- Layer 1 can remain mostly symbolic-output and framework-grounded
-- Layers 2 and 3 should increasingly optimize for realistic module, browser,
-  and modnet-adjacent UX outcomes rather than abstract framework tasks alone
+4. Run Slice 14 regeneration over the full retained raw corpus.
+   - Generate the three allowed variants:
+     - `base_1`
+     - `base_1_search`
+     - `base_1_search_followup_livecrawl`
+   - Write:
+     - regeneration candidates
+     - regeneration evaluations
+     - variant comparison
+     - final regenerated prompt-set artifact
 
-The local Falcon comparison now confirms:
-- untuned local Falcon is weak on controller-compatible UI
-- the tiny tuned MLX adapter did not improve pass rate
-- the tuned adapter regressed average score slightly
-- this Mac workflow is valid, but not a promotion-quality training path
+5. Run Slice 15 sample seed review on `100` regenerated prompts at `--concurrency 5`.
+   - Check:
+     - trusted rate `>= 0.90`
+     - recommended-for-seed-review rate between `0.20` and `0.40`
+     - no obvious family/structure collapse
+     - spend remains in the same general band as the current HyperCard lane
 
-## Next Steps
+6. If the sample passes, run seed review over the full regenerated prompt set.
 
-1. Finish Layer 1 first: symbolic output quality.
-   - Keep using manually authored validation prompts plus curated retained
-     outputs as the stable training boundary.
-   - Continue training Falcon on Plaited-native symbolic artifacts:
-     - modules
-     - controller-compatible UI
-     - BP/runtime wiring
-     - provenance-aware structures
-   - Do not confuse this with tool-use or autonomous improvement training yet.
+7. Curate the approved regenerated seeds and decide promotion policy.
+   - handcrafted prompts remain the control set
+   - regenerated HyperCard prompts become the curated breadth set
 
-2. Evaluate the successful local adapter on this machine.
-   - Use the adapter output from:
-     - `dev-research/native-model/training/runs/bootstrap-mlx-2026-03-21T05-05-29-567Z/adapters/adapters.safetensors`
-   - Keep `FALCON_ADAPTER_PATH` in `.env.schema` pointed at the currently
-     promoted adapter run so `bun run falcon:mlx` continues to target the
-     tracked local baseline.
-   - Goal:
-     - confirm whether the bootstrap run changes native-model outputs at all
-     - treat this as adapter validation, not final quality judgment
+8. Run Slice 16.
+   - use handpicked approved seeds to refine lower-scale derivation
+   - derive stronger `S1-S3` precursor prompts from the regenerated seed set
 
-3. Reduce truncation pressure in the training data.
-   - The current run succeeded only by truncating many examples to `384` tokens.
-   - Add a data-shaping step for:
-     - shorter prompt/output pairs
-     - chunking or splitting oversized examples
-     - preserving training quality while staying within local memory limits
-
-4. Keep this machine for control-plane work only.
-   - Good use cases:
-     - validation
-     - dataset curation
-     - compare/report tooling
-     - data shaping
-     - fixing shared native-model infrastructure
-   - Avoid:
-     - local native-model training as a normal workflow
-     - serious 7B full-context training
-     - assuming non-quantized or long-context runs will fit here
-     - treating proof-of-loop MLX runs as part of the forward plan
-
-5. Move meaningful Falcon training to the MSI machine.
-   - Use the MSI box for:
-     - longer context
-     - more trainable layers
-     - less truncated runs
-     - repeated distillation cycles
-     - remote DGX Spark execution over Tailscale rather than local-desktop use
-   - Reuse:
-     - `bun run native-model:bootstrap-cycle`
-     - `bun run native-model:compare`
-     - `bun run program:run -- ... --lane native-model --pattern fanout`
-     - the same curated dataset boundary
-   - Replace:
-     - MLX trainer backend
-     - local Falcon server backend as needed for the MSI environment
-   - Operate through:
-     - remote shell sessions from this Mac
-     - `cmux` for long-running jobs and reconnect-safe monitoring
-     - explicit service/port documentation because the device is in Network
-       Appliance Mode
-   - MSI follow-up:
-     - revisit `scripts/program-orchestrator.ts` native-model fanout so it can
-       run candidate strategies in parallel when the MSI box has enough GPU
-       headroom
-     - add explicit concurrency/worker controls instead of assuming one-machine
-       sequential execution
-     - isolate candidate eval serving with distinct ports and output dirs before
-       enabling parallel native-model fanout
-
-6. Once the MSI environment is ready, reuse the same curated boundary and run manifest flow.
-   - Keep:
-     - `dev-research/native-model/evals/curated-good-outputs.jsonl`
-     - Bun wrapper entrypoints
-     - run manifests and adapter output paths
-   - Swap:
-     - the trainer backend and hardware target
-     - local-shell assumptions for remote Tailscale/`cmux` execution
-   - After MSI bring-up:
-     - continue Layer 1 with better headroom
-     - then begin Layer 2 by adding tool-aware process traces on realistic
-       module and browser tasks
-     - keep Layer 3 for later, after Layer 2 data and evaluation are stable,
-       but orient it toward autonomous improvement on realistic module/modnet
-       tasks rather than framework-only tasks
-
-## Short Sequence
-
-1. Finish Layer 1 symbolic-output training boundaries and eval loops.
-2. Evaluate the successful local adapter.
-3. Add a data-shaping step to reduce truncation.
-4. Keep this Mac for validation/curation/tooling only.
-5. Move real Falcon training to the MSI machine.
-6. Run the first MSI baseline vs tuned comparison before promoting anything.
-7. Only after Layer 1 is stable, start Layer 2 tool-aware process training on
-   realistic module/browser tasks.
-8. Keep Layer 3 autonomous-improvement training as a later phase, but make it
-   target realistic module/modnet outcomes.
-
-## Do Not Revisit Unless Needed
-
-- Do not rerun `runtime-taxonomy`.
-- Do not go back to the old `native-model` worker-split plan.
-- Do not use `scripts/dev-autoresearch.ts` as the native-model data collection loop itself.
-- Do not assume a successful bootstrap LoRA run on this Mac means it is the right machine for sustained Falcon training.
-
-## Validation Follow-Up
-
-- The current browser-test gating in `scripts/dev-autoresearch.ts` is correct
-  for framework-repo slices like `runtime-taxonomy`, where browser/controller
-  tests should only run when UI paths are actually impacted.
-- This is not the final policy for deployed module generation or user-facing
-  agent tooling.
-- Later work should add task-specific validation profiles so:
-  - framework repo slices keep impact-gated browser tests
-  - generated module / controller work can run module-specific browser
-    validation by default
-  - future AgentHub-style breadth executors can choose validation policy per
-    lane instead of inheriting one repo-wide rule
+9. Keep Codex as the generation and implementation surface.
+   - do not change the active Codex path to Codex `--oss`
+   - do not make alternative generation-model experiments part of the current
+     modnet execution path

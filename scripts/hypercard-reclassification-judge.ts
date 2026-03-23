@@ -1,9 +1,7 @@
 import * as z from 'zod'
 import type { Grader, GraderResult } from '../src/improve.ts'
 import { GraderResultSchema } from '../src/improve.ts'
-import { runStructuredClaudeQuery } from './claude-agent-sdk.ts'
-
-const CLAUDE_PRIMARY_MODEL = 'claude-sonnet-4-6'
+import { resolvePrimaryJudgeModel, runStructuredLlmQuery } from './structured-llm-query.ts'
 
 const TRAINING_GUIDE_CONTEXT = [
   'Training guide context:',
@@ -267,9 +265,9 @@ export const toGraderResult = (result: JudgeOutput & { outcome?: Record<string, 
         }),
   })
 
-const invokeClaudeJudge = async (prompt: string): Promise<JudgeOutput & { outcome?: Record<string, unknown> }> => {
-  const result = await runStructuredClaudeQuery<JudgeOutput>({
-    model: CLAUDE_PRIMARY_MODEL,
+const invokeJudge = async (prompt: string): Promise<JudgeOutput & { outcome?: Record<string, unknown> }> => {
+  const result = await runStructuredLlmQuery<JudgeOutput>({
+    model: resolvePrimaryJudgeModel(),
     prompt,
     schema: JudgeOutputSchema,
   })
@@ -278,7 +276,7 @@ const invokeClaudeJudge = async (prompt: string): Promise<JudgeOutput & { outcom
     return {
       pass: false,
       score: 0,
-      reasoning: `Claude judge SDK error: ${result.reason}`,
+      reasoning: `Primary judge SDK error: ${result.reason}`,
       patternFamily: 'developer-utility',
       mss: {
         contentType: 'tools',
@@ -327,6 +325,6 @@ const invokeClaudeJudge = async (prompt: string): Promise<JudgeOutput & { outcom
 export const grade: Grader = async ({ input, output, metadata }) => {
   const task = Array.isArray(input) ? input.join('\n') : input
   const meta = (metadata ?? {}) as Record<string, unknown>
-  const result = await invokeClaudeJudge(buildJudgePrompt({ task, output, metadata: meta }))
+  const result = await invokeJudge(buildJudgePrompt({ task, output, metadata: meta }))
   return toGraderResult(result)
 }

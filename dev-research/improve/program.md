@@ -12,7 +12,7 @@ This lane is about the generic improvement protocol:
 - program/slice execution
 - validation and decision flow
 
-It is not about locking Plaited to Claude, Codex, or any single model vendor.
+It is not about locking Plaited to Codex, OpenRouter, or any single model vendor.
 
 ## Separation From Other Programs
 
@@ -55,7 +55,7 @@ Therefore:
 
 ## What Does Not Belong In This Lane
 
-- Claude-specific judge logic
+- provider-specific judge logic
 - Codex-specific adapter logic
 - provider SDK wrappers
 - native-model distillation policy itself
@@ -86,7 +86,7 @@ The improvement substrate supports all runtime types:
 
 - `src/improve/` — model-agnostic improvement orchestration
 - `src/improve.ts` — core Attempt, Program, Slice interfaces
-- `scripts/` — provider-specific adapters (Claude, Codex, Together.ai, etc.)
+- `scripts/` — provider-specific adapters (OpenRouter, Codex, Together.ai, etc.)
 - Judges remain external until expressible as generic interfaces
 - Adapters implement a simple stdin/stdout contract
 
@@ -95,7 +95,7 @@ The improvement substrate supports all runtime types:
 Before committing a change in this lane:
 
 1. **Scope check:** Only changes in `src/improve/` and `scripts/improve-*.ts`
-2. **No coupling to provider:** No Claude SDK in `src/`, no hardcoded model refs
+2. **No coupling to provider:** No provider SDK in `src/`, no hardcoded model refs
 3. **Preserves autoresearch behavior:** Existing bounded attempts still work
 4. **Generic interface:** Logic should be expressible without model knowledge
 5. **Tests pass:** `bun test src/improve/`

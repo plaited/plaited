@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import { GraderResultSchema } from '../../src/improve.ts'
-import { ModnetRawCardInclusionMetaOutcomeSchema, toGraderResult } from '../modnet-raw-card-inclusion-meta-verifier.ts'
+import {
+  buildMetaPrompt,
+  ModnetRawCardInclusionMetaOutcomeSchema,
+  toGraderResult,
+} from '../modnet-raw-card-inclusion-meta-verifier.ts'
 
 describe('modnet-raw-card-inclusion-meta-verifier', () => {
   test('returns a schema-valid meta verification result', () => {
@@ -57,5 +61,34 @@ describe('modnet-raw-card-inclusion-meta-verifier', () => {
         confidence: 0.27,
       },
     })
+  })
+
+  test('keeps obsolete-medium and thin-demo checks explicit', () => {
+    const prompt = buildMetaPrompt({
+      task: 'Meta-verify the judge result.',
+      output: JSON.stringify({
+        pass: false,
+        score: 0.21,
+        reasoning: 'The medium is obsolete so this should be discarded.',
+        inclusionDecision: 'discard',
+      }),
+      metadata: {
+        rawCard: {
+          id: 'hypercard_audio-cass-labeler-101',
+          title: 'Audio Cass. Labeler 1.0.1',
+          description: 'Print multiple labels for audio cassette boxes and keep a consistent presentation.',
+        },
+        deterministicCheck: {
+          pass: true,
+        },
+      },
+    })
+
+    expect(prompt).toContain('Obsolete storage, transport, or packaging formats can still imply a valid modern module')
+    expect(prompt).toContain('cassette labeler -> physical media, merch, or print-label workflow')
+    expect(prompt).toContain('phone-number change utility -> contact-data normalization or migration')
+    expect(prompt).toContain('treats "old medium" as sufficient evidence for discard')
+    expect(prompt).toContain('technique demo, script trick, or implementation sample with no bounded end-user workflow')
+    expect(prompt).toContain('invented a broad modern category')
   })
 })

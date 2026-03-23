@@ -1,9 +1,7 @@
 import * as z from 'zod'
 import type { Grader, GraderResult } from '../src/improve.ts'
 import { GraderResultSchema } from '../src/improve.ts'
-import { runStructuredClaudeQuery } from './claude-agent-sdk.ts'
-
-const CLAUDE_META_MODEL = 'claude-haiku-4-5-20251001'
+import { runStructuredMetaVerifierQuery } from './meta-verifier-runtime.ts'
 
 export const ModnetRawCardInclusionMetaDimensionsSchema = z.object({
   consistency: z.number().min(0).max(1),
@@ -45,7 +43,21 @@ const MetaJudgeOutputSchema = {
   },
 } as const
 
-const buildMetaPrompt = ({
+const normalizeProbability = (value: unknown): number => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 0
+  return Math.max(0, Math.min(1, value))
+}
+
+const normalizeText = (value: unknown, fallback = ''): string => (typeof value === 'string' ? value : fallback)
+
+const normalizeMetaOutput = (value: Partial<MetaJudgeOutput>, fallbackReasoning: string): MetaJudgeOutput => ({
+  pass: typeof value.pass === 'boolean' ? value.pass : false,
+  score: normalizeProbability(value.score),
+  reasoning: normalizeText(value.reasoning, fallbackReasoning),
+  ...(value.dimensions ? { dimensions: value.dimensions } : {}),
+})
+
+export const buildMetaPrompt = ({
   task,
   output,
   metadata,
@@ -58,6 +70,16 @@ const buildMetaPrompt = ({
   const deterministicCheck = JSON.stringify(metadata?.deterministicCheck ?? {}, null, 2)
 
   return `You are meta-verifying an LLM judge result for the raw-card inclusion gate in the modnet prompt pipeline.
+
+Modnet context:
+- The gate is trying to keep rows that recover durable sovereign/local-first module patterns.
+- It should reject thin implementation demos, one-off migration shims, nostalgia artifacts, trivia, and content-only stacks without a reusable workflow/module shape.
+- A judge should not be rewarded for finding a merely possible generic software abstraction if the raw card does not support it.
+- Obsolete storage, transport, or packaging formats can still imply a valid modern module if the underlying job survives in another medium or toolchain.
+- Examples:
+  - cassette labeler -> physical media, merch, or print-label workflow
+  - phone-number change utility -> contact-data normalization or migration
+  - fax or mail transport -> intake, routing, logging, or archival workflow
 
 Task:
 ${task}
@@ -75,6 +97,22 @@ Score the primary judge on:
 - consistency: does the reasoning match the raw card and the proposed inclusion output?
 - risk: how risky would it be to trust this inclusion decision in the next pipeline step?
 - confidence: how much should the harness trust the primary judge here?
+
+Consistency should include whether the judge correctly distinguishes:
+- obsolete medium but durable workflow
+- one-off technical demo with no bounded end-user utility
+- broad generic abstraction invented from weak evidence
+
+Meta checks:
+- Fail if "pass" and "inclusionDecision" disagree.
+  - "discard" should not come with "pass=true".
+  - "retain" or "retain_low_priority" should not come with "pass=false".
+- Fail or sharply downgrade if the score contradicts the reasoning.
+- Fail or sharply downgrade if the judge treats "old medium" as sufficient evidence for discard without checking whether the underlying operational job is still durable.
+- Reward discard when the row is only a technique demo, script trick, or implementation sample with no bounded end-user workflow.
+- Fail or sharply downgrade if the judge over-generalizes from weak evidence into a broad modern analog.
+- Distinguish "durable workflow survives in a new medium" from "judge invented a broad modern category"; downgrade the second but not the first.
+- Reward judges that stay close to the text while still recovering a plausible modern workflow/module when one truly exists.
 
 Pass only if the primary judge result looks internally consistent and safe to trust.`
 }
@@ -109,11 +147,8 @@ export const toGraderResult = (result: MetaJudgeOutput & { outcome?: Record<stri
       : {}),
   })
 
-const invokeClaudeMetaVerifier = async (
-  prompt: string,
-): Promise<MetaJudgeOutput & { outcome?: Record<string, unknown> }> => {
-  const result = await runStructuredClaudeQuery<MetaJudgeOutput>({
-    model: CLAUDE_META_MODEL,
+const invokeMetaVerifier = async (prompt: string): Promise<MetaJudgeOutput & { outcome?: Record<string, unknown> }> => {
+  const result = await runStructuredMetaVerifierQuery<MetaJudgeOutput>({
     prompt,
     schema: MetaJudgeOutputSchema,
   })
@@ -122,18 +157,22 @@ const invokeClaudeMetaVerifier = async (
     return {
       pass: false,
       score: 0,
-      reasoning: `Claude meta verifier SDK error: ${result.reason}`,
+      reasoning: `Meta verifier SDK error: ${result.reason}`,
       outcome: buildOutcome({
         sdkMeta: result.meta,
       }),
     }
   }
 
+  const normalized = normalizeMetaOutput(
+    result.value,
+    'Meta verifier returned a partially malformed structured verification result.',
+  )
+
   return {
-    ...result.value,
-    score: Math.max(0, Math.min(1, result.value.score)),
+    ...normalized,
     outcome: buildOutcome({
-      dimensions: result.value.dimensions,
+      dimensions: normalized.dimensions,
       sdkMeta: result.meta,
     }),
   }
@@ -142,6 +181,6 @@ const invokeClaudeMetaVerifier = async (
 export const grade: Grader = async ({ input, output, metadata }): Promise<GraderResult> => {
   const task = Array.isArray(input) ? input.join('\n') : input
   const meta = (metadata ?? {}) as Record<string, unknown>
-  const result = await invokeClaudeMetaVerifier(buildMetaPrompt({ task, output, metadata: meta }))
+  const result = await invokeMetaVerifier(buildMetaPrompt({ task, output, metadata: meta }))
   return toGraderResult(result)
 }

@@ -78,6 +78,12 @@ export const chooseWinningVariant = (summaries: Array<ReturnType<typeof summariz
   const bestQuality = Math.max(...eligible.map((summary) => summary.averageQualityScore))
   const closeBand = eligible.filter((summary) => bestQuality - summary.averageQualityScore <= 0.05)
   return closeBand.sort((left, right) => {
+    if (left.averageDimensionScores.mssPlausibility !== right.averageDimensionScores.mssPlausibility) {
+      return right.averageDimensionScores.mssPlausibility - left.averageDimensionScores.mssPlausibility
+    }
+    if (left.averageDimensionScores.promptQuality !== right.averageDimensionScores.promptQuality) {
+      return right.averageDimensionScores.promptQuality - left.averageDimensionScores.promptQuality
+    }
     if (left.averageEffectiveCost !== right.averageEffectiveCost) {
       return left.averageEffectiveCost - right.averageEffectiveCost
     }

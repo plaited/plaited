@@ -144,10 +144,10 @@ export const parseInput = (args: string[]): CliInput => {
     commit: hasFlag(args, '--commit'),
     dryRun: hasFlag(args, '--dry-run'),
     judge: hasFlag(args, '--judge'),
-    judgePath: getArg(args, '--judge-path', './scripts/claude-code-judge.ts')!,
+    judgePath: getArg(args, '--judge-path', './scripts/repo-improvement-judge.ts')!,
     maxAttempts: Number(getArg(args, '--max-attempts', '1')),
-    metaVerifierPath: getArg(args, '--meta-verifier-path', './scripts/claude-haiku-meta-verifier.ts')!,
-    push: hasFlag(args, '--no-push') ? false : true,
+    metaVerifierPath: getArg(args, '--meta-verifier-path', './scripts/repo-improvement-meta-verifier.ts')!,
+    push: !hasFlag(args, '--no-push'),
     programPath: resolveProgramPath(resolvedSlicePath, getArg(args, '--program')),
     quiet: hasFlag(args, '--quiet'),
     resultJsonPath: getArg(args, '--result-json'),
@@ -157,9 +157,9 @@ export const parseInput = (args: string[]): CliInput => {
 }
 
 const ensureRequiredSecrets = ({ judge }: { judge: boolean }) => {
-  if (judge && !process.env.ANTHROPIC_API_KEY) {
+  if (judge && !process.env.OPENROUTER_API_KEY) {
     throw new Error(
-      'Missing ANTHROPIC_API_KEY. Resolve secrets before running judged autoresearch. ' +
+      'Missing OPENROUTER_API_KEY. Resolve secrets before running judged autoresearch. ' +
         'For long-term setup, use Varlock + 1Password via .env.schema.',
     )
   }

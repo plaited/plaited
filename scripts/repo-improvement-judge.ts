@@ -1,30 +1,21 @@
-/**
- * Claude Haiku meta-verifier for bounded Plaited development slices.
- *
- * @remarks
- * Reviews the primary judge output plus diff/check context and returns a
- * second-pass grader result used to confirm or challenge keep decisions.
- */
-
 import type { Grader, GraderResult } from '../src/improve.ts'
-import { RepoImprovementJudgeInputSchema, RepoImprovementMetaVerifierOutcomeSchema } from '../src/improve.ts'
-import { runStructuredClaudeQuery } from './claude-agent-sdk.ts'
+import { RepoImprovementJudgeInputSchema, RepoImprovementJudgeOutcomeSchema } from '../src/improve.ts'
+import { resolvePrimaryJudgeModel, runStructuredLlmQuery } from './structured-llm-query.ts'
 
-type MetaJudgeOutput = {
+type JudgeOutput = {
   pass: boolean
   score: number
   reasoning: string
   outcome?: Record<string, unknown>
   dimensions?: {
-    consistency: number
-    risk: number
-    confidence: number
+    architecture: number
+    boundedness: number
+    focus: number
+    quality: number
   }
 }
 
-const CLAUDE_META_MODEL = 'claude-haiku-4-5-20251001'
-
-const MetaJudgeOutputSchema = {
+const JudgeOutputSchema = {
   type: 'object',
   additionalProperties: false,
   required: ['pass', 'score', 'reasoning'],
@@ -35,17 +26,18 @@ const MetaJudgeOutputSchema = {
     dimensions: {
       type: 'object',
       additionalProperties: false,
-      required: ['consistency', 'risk', 'confidence'],
+      required: ['architecture', 'boundedness', 'focus', 'quality'],
       properties: {
-        consistency: { type: 'number', minimum: 0, maximum: 1 },
-        risk: { type: 'number', minimum: 0, maximum: 1 },
-        confidence: { type: 'number', minimum: 0, maximum: 1 },
+        architecture: { type: 'number', minimum: 0, maximum: 1 },
+        boundedness: { type: 'number', minimum: 0, maximum: 1 },
+        focus: { type: 'number', minimum: 0, maximum: 1 },
+        quality: { type: 'number', minimum: 0, maximum: 1 },
       },
     },
   },
 } as const
 
-const buildMetaPrompt = ({
+const buildJudgePrompt = ({
   task,
   output,
   metadata,
@@ -58,15 +50,13 @@ const buildMetaPrompt = ({
   const diffStat = typeof metadata?.diffStat === 'string' ? metadata.diffStat : '(none)'
   const patch = typeof metadata?.patch === 'string' ? metadata.patch : '(none)'
   const checks = JSON.stringify(metadata?.checks ?? {}, null, 2)
-  const candidateOutput =
-    typeof metadata?.candidateOutput === 'string' ? metadata.candidateOutput : '(missing candidate output)'
   const program = typeof metadata?.program === 'string' ? metadata.program : '(missing program)'
   const slice = typeof metadata?.slice === 'string' ? metadata.slice : '(missing slice)'
 
   RepoImprovementJudgeInputSchema.parse({
     evaluationTarget: 'repo-improvement',
     task,
-    candidateOutput,
+    candidateOutput: output,
     changedFiles: Array.isArray(metadata?.changedFiles)
       ? metadata.changedFiles.filter((value): value is string => typeof value === 'string')
       : [],
@@ -77,7 +67,9 @@ const buildMetaPrompt = ({
     slice,
   })
 
-  return `You are meta-verifying an LLM judge decision for a bounded Plaited framework-development slice.
+  return `You are reviewing a bounded Plaited framework-development slice.
+
+This is developer tooling for improving Plaited itself, not a shipped runtime feature.
 
 Program:
 ${program}
@@ -88,11 +80,8 @@ ${slice}
 Task:
 ${task}
 
-Primary judge result:
-${output}
-
 Candidate summary:
-${candidateOutput}
+${output}
 
 Changed files:
 ${changedFiles}
@@ -106,12 +95,13 @@ ${checks}
 Patch excerpt:
 ${patch.slice(0, 12000)}
 
-Score the primary judge result from 0.0 to 1.0 on:
-- consistency: does the reasoning match the actual diff and checks?
-- risk: does the candidate still look safe despite any optimistic judging?
-- confidence: how much should the harness trust the primary judge?
+Score the candidate from 0.0 to 1.0 on:
+- architecture: does it preserve the fixed architecture and avoid drift?
+- boundedness: does it stay tightly within the declared slice?
+- focus: does it materially address the intended slice target rather than merely staying in-bounds?
+- quality: is the code clear, coherent, and low-risk?
 
-Pass only if the primary judge result looks internally consistent and safe to trust.`
+Pass only if the candidate should be kept after review.`
 }
 
 const buildOutcome = ({
@@ -119,26 +109,26 @@ const buildOutcome = ({
   outcome,
   sdkMeta,
 }: {
-  dimensions?: MetaJudgeOutput['dimensions']
+  dimensions?: JudgeOutput['dimensions']
   outcome?: Record<string, unknown>
   sdkMeta?: Record<string, unknown>
 }) => {
-  const contract = RepoImprovementMetaVerifierOutcomeSchema.parse({
+  const contract = RepoImprovementJudgeOutcomeSchema.parse({
     evaluationTarget: 'repo-improvement',
-    judgeKind: 'repo-improvement-meta-verifier',
+    judgeKind: 'repo-improvement',
     ...(dimensions ? { rubric: dimensions } : {}),
-    ...(sdkMeta ? { metaVerificationSdk: sdkMeta } : {}),
+    ...(sdkMeta ? { judgeSdk: sdkMeta } : {}),
   })
 
   return {
     ...outcome,
     ...contract,
-    ...(dimensions ? { metaVerificationDimensions: dimensions } : {}),
-    ...(sdkMeta ? { metaVerificationSdk: sdkMeta } : {}),
+    ...(dimensions ? { judgeDimensions: dimensions } : {}),
+    ...(sdkMeta ? { judgeSdk: sdkMeta } : {}),
   }
 }
 
-export const toGraderResult = (result: MetaJudgeOutput): GraderResult => ({
+export const toGraderResult = (result: JudgeOutput): GraderResult => ({
   pass: result.pass,
   score: result.score,
   reasoning: result.reasoning,
@@ -152,18 +142,18 @@ export const toGraderResult = (result: MetaJudgeOutput): GraderResult => ({
     : {}),
 })
 
-const invokeClaudeMetaVerifier = async (prompt: string): Promise<MetaJudgeOutput> => {
-  const result = await runStructuredClaudeQuery<MetaJudgeOutput>({
-    model: CLAUDE_META_MODEL,
+const invokeJudge = async (prompt: string): Promise<JudgeOutput> => {
+  const result = await runStructuredLlmQuery<JudgeOutput>({
+    model: resolvePrimaryJudgeModel(),
     prompt,
-    schema: MetaJudgeOutputSchema,
+    schema: JudgeOutputSchema,
   })
 
   if (!result.ok) {
     return {
       pass: false,
       score: 0,
-      reasoning: `Claude meta verifier SDK error: ${result.reason}`,
+      reasoning: `Primary judge SDK error: ${result.reason}`,
       ...(result.meta
         ? {
             outcome: buildOutcome({
@@ -189,10 +179,9 @@ const invokeClaudeMetaVerifier = async (prompt: string): Promise<MetaJudgeOutput
   }
 }
 
-export const grade: Grader = async ({ input, output, metadata }): Promise<GraderResult> => {
+export const grade: Grader = async ({ input, output, metadata }) => {
   const task = Array.isArray(input) ? input.join('\n') : input
   const meta = (metadata ?? {}) as Record<string, unknown>
-  const result = await invokeClaudeMetaVerifier(buildMetaPrompt({ task, output, metadata: meta }))
-
+  const result = await invokeJudge(buildJudgePrompt({ task, output, metadata: meta }))
   return toGraderResult(result)
 }
