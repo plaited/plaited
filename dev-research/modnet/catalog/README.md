@@ -35,6 +35,37 @@ The retained raw corpus is the compact handoff for Slice 13. It keeps the raw
 card trio plus the accepted Base 1 corollaries and excludes archive URLs and
 other enrichment.
 
+## Slice 13 Regeneration Comparison
+
+Slice 13 compares exactly three regeneration flows against the reusable rubric:
+
+1. `Base 1`
+2. `Base 1 + Search`
+3. `Base 1 + Search -> targeted follow-up search + conditional livecrawl`
+
+The comparison scripts are:
+
+- [modnet-raw-card-regeneration-base.ts](/Users/eirby/Workspace/plaited/scripts/modnet-raw-card-regeneration-base.ts)
+- [modnet-regeneration-variant-evaluate.ts](/Users/eirby/Workspace/plaited/scripts/modnet-regeneration-variant-evaluate.ts)
+- [modnet-raw-card-regeneration-evaluate.ts](/Users/eirby/Workspace/plaited/scripts/modnet-raw-card-regeneration-evaluate.ts)
+- [modnet-raw-card-regeneration-compare.ts](/Users/eirby/Workspace/plaited/scripts/modnet-raw-card-regeneration-compare.ts)
+
+The retained raw corpus from Slice 12 remains the only card input surface. The
+two enriched variants both require an initial search pass to recover modern
+workflow vocabulary. The deepest variant only permits targeted follow-up search
+when those first snippets do not recover the module shape, and only permits
+livecrawl when that follow-up still leaves the shape underspecified.
+
+Evaluation is deterministic in this slice. Each candidate prompt is graded on:
+
+- modern relevance
+- prompt quality against the handcrafted control profile
+- MSS plausibility
+- seed-worthiness
+
+The compare step chooses the cheapest reliable winner rather than assuming
+deeper retrieval is automatically better.
+
 ## Current Shape
 
 The catalog mixes:
@@ -110,4 +141,16 @@ bun scripts/derive-modnet-prompts.ts --limit 20 > /tmp/modnet-derived-prompts.js
 bun scripts/modnet-prompt-derivation-evaluate.ts \
   --candidates /tmp/modnet-derived-prompts.json \
   --output /tmp/modnet-derived-prompt-evals.jsonl
+
+bun scripts/modnet-raw-card-regeneration-evaluate.ts \
+  --candidates /tmp/modnet-raw-card-regeneration-candidates.jsonl \
+  --output /tmp/modnet-raw-card-regeneration-evals.jsonl
+
+bun scripts/modnet-raw-card-regeneration-compare.ts \
+  --input /tmp/modnet-raw-card-regeneration-evals.jsonl \
+  --output /tmp/modnet-regeneration-variant-compare.json
+
+bun scripts/modnet-regeneration-variant-evaluate.ts \
+  --candidates /tmp/modnet-raw-card-regeneration-candidates.jsonl \
+  --output /tmp/modnet-regeneration-variant-summary.json
 ```
