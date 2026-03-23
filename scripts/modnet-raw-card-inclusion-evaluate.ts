@@ -1,32 +1,19 @@
 #!/usr/bin/env bun
 
-import { dirname, join } from 'node:path'
+import { dirname } from 'node:path'
 import * as z from 'zod'
+import {
+  type Base1InclusionCandidate as InclusionCandidate,
+  Base1InclusionCandidateSchema as InclusionCandidateSchema,
+  loadJsonlRows,
+  type RawPromptCard,
+  RawPromptCardSchema,
+} from './modnet-raw-card-base.ts'
 import { grade as judgeInclusion } from './modnet-raw-card-inclusion-judge.ts'
 import { grade as metaVerifyInclusion } from './modnet-raw-card-inclusion-meta-verifier.ts'
+import { resolveRepoPath } from './workspace-paths.ts'
 
-const RawPromptCardSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  description: z.string(),
-})
-
-const InclusionDecisionSchema = z.enum(['retain', 'retain_low_priority', 'discard'])
-
-const InclusionCandidateSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  description: z.string(),
-  inclusionDecision: InclusionDecisionSchema,
-  modernAnalog: z.string(),
-  coreUserJob: z.string(),
-  whyRelevant: z.string(),
-  likelyPatternFamily: z.string(),
-  likelyStructure: z.string(),
-  searchQuerySeed: z.string(),
-})
-
-const DeterministicCheckSchema = z.object({
+export const DeterministicCheckSchema = z.object({
   pass: z.boolean(),
   hardFailures: z.array(z.string()),
   softWarnings: z.array(z.string()),
@@ -51,14 +38,12 @@ const EvaluationSchema = z.object({
   recommended: z.boolean(),
 })
 
-type RawPromptCard = z.infer<typeof RawPromptCardSchema>
-type InclusionCandidate = z.infer<typeof InclusionCandidateSchema>
 type DeterministicCheck = z.infer<typeof DeterministicCheckSchema>
 type Evaluation = z.infer<typeof EvaluationSchema>
 
-const DEFAULT_SOURCE = join(import.meta.dir, '..', 'dev-research', 'modnet', 'catalog', 'modnet-raw-card-corpus.jsonl')
-const DEFAULT_CANDIDATES = join(import.meta.dir, 'modnet-raw-card-inclusion-candidates.jsonl')
-const DEFAULT_OUTPUT = join(import.meta.dir, '..', 'tmp', 'modnet-raw-card-inclusion-evals.jsonl')
+const DEFAULT_SOURCE = resolveRepoPath('dev-research', 'modnet', 'catalog', 'modnet-raw-card-corpus.jsonl')
+const DEFAULT_CANDIDATES = resolveRepoPath('scripts', 'modnet-raw-card-inclusion-candidates.jsonl')
+const DEFAULT_OUTPUT = resolveRepoPath('tmp', 'modnet-raw-card-inclusion-evals.jsonl')
 
 const GENERIC_ANALOG_PATTERNS = [
   'private organizer on my phone',
@@ -72,15 +57,6 @@ const normalizeWord = (value: string): string =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
-
-const readJsonl = async <T>(path: string, schema: z.ZodSchema<T>): Promise<T[]> => {
-  const text = await Bun.file(path).text()
-  return text
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => schema.parse(JSON.parse(line)))
-}
 
 const buildLexicalAnchorSet = (rawCard: RawPromptCard): Set<string> =>
   new Set(
@@ -230,8 +206,8 @@ const summarizeDecisions = (evaluations: Evaluation[]) => {
 
 const main = async () => {
   const { sourcePath, candidatesPath, outputPath, progress } = parseArgs()
-  const rawCards = await readJsonl(sourcePath, RawPromptCardSchema)
-  const candidates = await readJsonl(candidatesPath, InclusionCandidateSchema)
+  const rawCards = await loadJsonlRows(sourcePath, RawPromptCardSchema)
+  const candidates = await loadJsonlRows(candidatesPath, InclusionCandidateSchema)
   const sourceMap = new Map(rawCards.map((row) => [row.id, row]))
   const seenIds = new Set<string>()
   const evaluations: Evaluation[] = []

@@ -1,85 +1,22 @@
 #!/usr/bin/env bun
 
-import { dirname, join } from 'node:path'
+import { dirname } from 'node:path'
+import { dedupeRawPromptCards, loadRawPromptCards, type RawPromptCard } from './modnet-raw-card-base.ts'
+import { resolveRepoPath, resolveWorkspacePath } from './workspace-paths.ts'
 
-type RawCatalogRow = {
-  id?: unknown
-  title?: unknown
-  description?: unknown
-}
-
-type RawPromptCard = {
-  id: string
-  title: string
-  description: string
-}
-
-const DEFAULT_HYPERCARD_INPUT = join(
-  import.meta.dir,
-  '..',
-  '.worktrees',
+const DEFAULT_HYPERCARD_INPUT = resolveWorkspacePath(
   'hypercard-catalog-task',
   'dev-research',
   'native-model',
   'hypercard-catalog.jsonl',
 )
-const DEFAULT_MACREPO_INPUT = join(
-  import.meta.dir,
-  '..',
-  '.worktrees',
+const DEFAULT_MACREPO_INPUT = resolveWorkspacePath(
   'macrepo-catalog-task',
   'dev-research',
   'native-model',
   'macrepo-catalog.jsonl',
 )
-const DEFAULT_OUTPUT = join(import.meta.dir, '..', 'dev-research', 'modnet', 'catalog', 'modnet-raw-card-corpus.jsonl')
-
-const normalizeText = (value: string): string => value.replace(/\s+/g, ' ').trim()
-
-const parseRawRow = (line: string): RawPromptCard | null => {
-  const parsed = JSON.parse(line) as RawCatalogRow
-
-  if (typeof parsed.id !== 'string' || typeof parsed.title !== 'string' || typeof parsed.description !== 'string') {
-    return null
-  }
-
-  const id = normalizeText(parsed.id)
-  const title = normalizeText(parsed.title)
-  const description = normalizeText(parsed.description)
-
-  if (!id || !title || !description) {
-    return null
-  }
-
-  return { id, title, description }
-}
-
-const loadJsonl = async (path: string): Promise<RawPromptCard[]> => {
-  const text = await Bun.file(path).text()
-
-  return text
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map(parseRawRow)
-    .filter((row): row is RawPromptCard => row !== null)
-}
-
-const dedupeCards = (rows: RawPromptCard[]): RawPromptCard[] => {
-  const seen = new Set<string>()
-  const deduped: RawPromptCard[] = []
-
-  for (const row of rows) {
-    if (seen.has(row.id)) {
-      continue
-    }
-
-    seen.add(row.id)
-    deduped.push(row)
-  }
-
-  return deduped
-}
+const DEFAULT_OUTPUT = resolveRepoPath('dev-research', 'modnet', 'catalog', 'modnet-raw-card-corpus.jsonl')
 
 const parseArgs = () => {
   const args = Bun.argv.slice(2)
@@ -136,14 +73,14 @@ const main = async () => {
   const rows: RawPromptCard[] = []
 
   if (includeHypercard) {
-    rows.push(...(await loadJsonl(hypercardInput)))
+    rows.push(...(await loadRawPromptCards(hypercardInput)))
   }
 
   if (includeMacrepo) {
-    rows.push(...(await loadJsonl(macrepoInput)))
+    rows.push(...(await loadRawPromptCards(macrepoInput)))
   }
 
-  const deduped = dedupeCards(rows)
+  const deduped = dedupeRawPromptCards(rows)
   const outputDir = dirname(outputPath)
   if (outputDir && outputDir !== '.') {
     await Bun.$`mkdir -p ${outputDir}`.quiet()

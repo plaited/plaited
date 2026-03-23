@@ -6,6 +6,34 @@ definition.
 Current primary file:
 - [modnet-training-prompts.jsonl](/Users/eirby/Workspace/plaited/dev-research/modnet/catalog/modnet-training-prompts.jsonl)
 - [modnet-prompt-target-rubric.md](/Users/eirby/Workspace/plaited/dev-research/modnet/references/modnet-prompt-target-rubric.md)
+- `modnet-raw-card-corpus.jsonl`
+- `modnet-retained-raw-card-corpus.jsonl`
+
+## Raw-Card Base 1 Gate
+
+Slice 12 adds a compact Base 1 gate for historical catalog rows. It is
+intentionally narrow:
+
+- input fields: `id`, `title`, `description`
+- output fields:
+  - `inclusionDecision`
+  - `modernAnalog`
+  - `coreUserJob`
+  - `whyRelevant`
+  - `likelyPatternFamily`
+  - `likelyStructure`
+  - `searchQuerySeed`
+
+The Base 1 validation flow is explicitly split into four stages:
+
+1. deterministic prefilter
+2. Codex inclusion/corollary generation
+3. Sonnet judgment
+4. Haiku meta-verification
+
+The retained raw corpus is the compact handoff for Slice 13. It keeps the raw
+card trio plus the accepted Base 1 corollaries and excludes archive URLs and
+other enrichment.
 
 ## Current Shape
 

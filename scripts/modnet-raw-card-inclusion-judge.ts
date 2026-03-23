@@ -112,7 +112,7 @@ Deterministic precheck:
 ${deterministicCheck}
 
 Derived target rubric:
-${derivedRubric}
+${derivedRubric || '"Use the Slice 11 prompt-target rubric when present."'}
 
 Judge this candidate on:
 - relevance: does the row imply a durable modern user job with sovereign/local-first value?
