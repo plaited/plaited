@@ -15,9 +15,12 @@ prompt-target rubric and choose the cheapest reliable enrichment path.
 - `skills/modnet-node/SKILL.md`
 - `skills/modnet-modules/SKILL.md`
 - `dev-research/modnet/references/modnet-native-model-training-guide.md`
+- `scripts/modnet-raw-card-base.ts`
 - `scripts/modnet-raw-card-regeneration-base.ts`
 - `scripts/modnet-raw-card-regeneration-compare.ts`
 - `scripts/modnet-regeneration-variant-evaluate.ts`
+- `scripts/modnet-raw-card-regeneration-evaluate.ts`
+- `scripts/tests/modnet-raw-card-regeneration-evaluate.spec.ts`
 - `scripts/tests/modnet-raw-card-regeneration-compare.spec.ts`
 - `scripts/tests/modnet-regeneration-variant-evaluate.spec.ts`
 
