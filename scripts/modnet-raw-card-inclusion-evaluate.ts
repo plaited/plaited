@@ -169,6 +169,7 @@ const parseArgs = () => {
   let candidatesPath = DEFAULT_CANDIDATES
   let outputPath = DEFAULT_OUTPUT
   let progress = true
+  let concurrency = 5
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index]
@@ -187,12 +188,17 @@ const parseArgs = () => {
       index += 1
       continue
     }
+    if (arg === '--concurrency' && args[index + 1]) {
+      concurrency = Math.max(1, Number(args[index + 1]!))
+      index += 1
+      continue
+    }
     if (arg === '--quiet') {
       progress = false
     }
   }
 
-  return { sourcePath, candidatesPath, outputPath, progress }
+  return { sourcePath, candidatesPath, outputPath, progress, concurrency }
 }
 
 const summarizeDecisions = (evaluations: Evaluation[]) => {
@@ -204,15 +210,50 @@ const summarizeDecisions = (evaluations: Evaluation[]) => {
   return Object.fromEntries(Array.from(counts.entries()).sort((left, right) => right[1] - left[1]))
 }
 
+const getNestedNumber = (value: unknown, key: string): number | undefined => {
+  if (!value || typeof value !== 'object') return undefined
+  const nested = (value as Record<string, unknown>)[key]
+  return typeof nested === 'number' ? nested : undefined
+}
+
+const getCostUsd = (value: unknown, path: 'judgeSdk' | 'metaVerificationSdk'): number => {
+  if (!value || typeof value !== 'object') return 0
+  const outcome = (value as Record<string, unknown>).outcome
+  if (!outcome || typeof outcome !== 'object') return 0
+  return getNestedNumber((outcome as Record<string, unknown>)[path], 'totalCostUsd') ?? 0
+}
+
+const runConcurrent = async <T, R>({
+  items,
+  concurrency,
+  worker,
+}: {
+  items: T[]
+  concurrency: number
+  worker: (item: T, index: number) => Promise<R>
+}): Promise<R[]> => {
+  const results = new Array<R>(items.length)
+  let nextIndex = 0
+
+  const runWorker = async () => {
+    while (nextIndex < items.length) {
+      const currentIndex = nextIndex
+      nextIndex += 1
+      results[currentIndex] = await worker(items[currentIndex]!, currentIndex)
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => runWorker()))
+  return results
+}
+
 const main = async () => {
-  const { sourcePath, candidatesPath, outputPath, progress } = parseArgs()
+  const { sourcePath, candidatesPath, outputPath, progress, concurrency } = parseArgs()
   const rawCards = await loadJsonlRows(sourcePath, RawPromptCardSchema)
   const candidates = await loadJsonlRows(candidatesPath, InclusionCandidateSchema)
   const sourceMap = new Map(rawCards.map((row) => [row.id, row]))
   const seenIds = new Set<string>()
-  const evaluations: Evaluation[] = []
-
-  for (const [index, candidate] of candidates.entries()) {
+  const prechecked = candidates.map((candidate, index) => {
     logProgress({
       enabled: progress,
       message: `candidate ${index + 1}/${candidates.length}: ${candidate.id} precheck`,
@@ -225,64 +266,70 @@ const main = async () => {
       seenIds,
     })
     seenIds.add(candidate.id)
-
-    if (!rawCard || !deterministicCheck.pass) {
-      evaluations.push(
-        EvaluationSchema.parse({
-          candidate,
-          rawCard:
-            rawCard ??
-            RawPromptCardSchema.parse({
-              id: candidate.id,
-              title: candidate.title,
-              description: candidate.description,
-            }),
-          deterministicCheck,
-          recommended: false,
+    return {
+      candidate,
+      rawCard:
+        rawCard ??
+        RawPromptCardSchema.parse({
+          id: candidate.id,
+          title: candidate.title,
+          description: candidate.description,
         }),
-      )
-      continue
-    }
-
-    const task = createTaskDescription(candidate)
-    const metadata = {
-      rawCard,
       deterministicCheck,
     }
+  })
 
-    logProgress({
-      enabled: progress,
-      message: `candidate ${index + 1}/${candidates.length}: ${candidate.id} judge`,
-    })
-    const judge = await judgeInclusion({
-      input: task,
-      output: JSON.stringify(candidate, null, 2),
-      metadata,
-    })
-    logProgress({
-      enabled: progress,
-      message: `candidate ${index + 1}/${candidates.length}: ${candidate.id} meta-verifier`,
-    })
-    const metaVerification = await metaVerifyInclusion({
-      input: task,
-      output: JSON.stringify(judge, null, 2),
-      metadata: {
-        ...metadata,
-        judgeResult: judge,
-      },
-    })
+  const evaluations = await runConcurrent({
+    items: prechecked,
+    concurrency,
+    worker: async ({ candidate, rawCard, deterministicCheck }, index) => {
+      if (!sourceMap.get(candidate.id) || !deterministicCheck.pass) {
+        return EvaluationSchema.parse({
+          candidate,
+          rawCard,
+          deterministicCheck,
+          recommended: false,
+        })
+      }
 
-    evaluations.push(
-      EvaluationSchema.parse({
+      const task = createTaskDescription(candidate)
+      const metadata = {
+        rawCard,
+        deterministicCheck,
+      }
+
+      logProgress({
+        enabled: progress,
+        message: `candidate ${index + 1}/${candidates.length}: ${candidate.id} judge`,
+      })
+      const judge = await judgeInclusion({
+        input: task,
+        output: JSON.stringify(candidate, null, 2),
+        metadata,
+      })
+      logProgress({
+        enabled: progress,
+        message: `candidate ${index + 1}/${candidates.length}: ${candidate.id} meta-verifier`,
+      })
+      const metaVerification = await metaVerifyInclusion({
+        input: task,
+        output: JSON.stringify(judge, null, 2),
+        metadata: {
+          ...metadata,
+          judgeResult: judge,
+        },
+      })
+
+      return EvaluationSchema.parse({
         candidate,
         rawCard,
         deterministicCheck,
         judge,
         metaVerification,
         recommended: judge.pass && metaVerification.pass,
-      }),
-    )
-  }
+      })
+    },
+  })
 
   const outputDir = dirname(outputPath)
   if (outputDir && outputDir !== '.') {
@@ -301,6 +348,23 @@ const main = async () => {
         recommended: evaluations.filter((entry) => entry.recommended).length,
         blockedDeterministically: evaluations.filter((entry) => !entry.deterministicCheck.pass).length,
         decisions: summarizeDecisions(evaluations),
+        spendUsd: {
+          judge: Number(evaluations.reduce((sum, row) => sum + getCostUsd(row.judge, 'judgeSdk'), 0).toFixed(6)),
+          metaVerifier: Number(
+            evaluations
+              .reduce((sum, row) => sum + getCostUsd(row.metaVerification, 'metaVerificationSdk'), 0)
+              .toFixed(6),
+          ),
+          total: Number(
+            evaluations
+              .reduce(
+                (sum, row) =>
+                  sum + getCostUsd(row.judge, 'judgeSdk') + getCostUsd(row.metaVerification, 'metaVerificationSdk'),
+                0,
+              )
+              .toFixed(6),
+          ),
+        },
       },
       null,
       2,
