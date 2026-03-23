@@ -8,12 +8,18 @@ prompt-target rubric and choose the cheapest reliable enrichment path.
 ## Scope
 
 - `dev-research/modnet/catalog/modnet-training-prompts-handcrafted.jsonl`
+- `dev-research/modnet/catalog/README.md`
 - `.worktrees/hypercard-catalog-task/dev-research/native-model/hypercard-catalog.jsonl`
 - `dev-research/modnet/`
 - `skills/mss-vocabulary/SKILL.md`
 - `skills/modnet-node/SKILL.md`
 - `skills/modnet-modules/SKILL.md`
 - `dev-research/modnet/references/modnet-native-model-training-guide.md`
+- `scripts/modnet-raw-card-regeneration-base.ts`
+- `scripts/modnet-raw-card-regeneration-compare.ts`
+- `scripts/modnet-regeneration-variant-evaluate.ts`
+- `scripts/tests/modnet-raw-card-regeneration-compare.spec.ts`
+- `scripts/tests/modnet-regeneration-variant-evaluate.spec.ts`
 
 ## Required
 
