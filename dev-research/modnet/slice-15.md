@@ -17,6 +17,8 @@ Run seed review on the regenerated prompt set, analyze a 100-row sample at
 
 - run seed review on the regenerated prompt set rather than the original prompt
   set
+- treat the regenerated prompt-set artifact from Slice 14 as the only input
+  source for this slice
 - analyze a 100-row sample with:
   - trust rate
   - recommended-for-seed-review rate
@@ -32,12 +34,14 @@ Run seed review on the regenerated prompt set, analyze a 100-row sample at
 
 - use the existing reclassification judge/meta-verifier lane unless a clear
   failure forces change
+- keep the sample run at `--concurrency 5`
 - keep spend visible for sample and full-run decisions
 
 ## Avoid
 
 - treating all `recommendedForSeedReview` rows as auto-promoted
 - skipping the sample analysis before the full run
+- falling back to the legacy prompt catalog out of convenience
 
 ## Acceptance Criteria
 

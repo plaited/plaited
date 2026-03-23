@@ -229,6 +229,18 @@ So:
 - Slice 14: run the chosen regeneration flow over the retained HyperCard corpus and produce a regenerated prompt set
 - Slice 15: run seed review on the regenerated prompt set, analyze a 100-row sample at concurrency 5, and define promotion criteria
 
+## Current Execution Notes
+
+- Slice 12 produces the retained raw corpus gate.
+- Slice 13 selects between the concrete regeneration variants:
+  - `base_1`
+  - `base_1_search`
+  - `base_1_search_followup_livecrawl`
+- Slice 14 should write deterministic intermediate artifacts before writing the
+  final regenerated prompt set.
+- Slice 15 should consume only the regenerated prompt-set artifact from Slice
+  14, not the legacy catalog.
+
 ## Validation
 
 For accepted code slices, both must pass:
