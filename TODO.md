@@ -30,12 +30,12 @@ are:
    - Output:
      - `dev-research/modnet/catalog/modnet-retained-raw-card-corpus.jsonl`
 
-3. Run Slice 14 regeneration sample over a bounded retained subset first.
-   - Compare:
-     - `base_1`
-     - `base_1_search`
-     - `base_1_search_followup_livecrawl`
-   - Pick the winning regeneration path before the full retained-corpus run.
+3. Run Slice 19 and Slice 20 before the next large Slice 14 regeneration run.
+   - Slice 19:
+     - verify cheap planner viability for modernization/search shaping
+   - Slice 20:
+     - improve the chosen `MiniMax M2.5` planner prompt and code path
+   - only then rerun the next bounded Slice 14 regeneration sample
 
 4. Run Slice 14 regeneration over the full retained raw corpus.
    - Generate the three allowed variants:
@@ -48,24 +48,28 @@ are:
      - variant comparison
      - final regenerated prompt-set artifact
 
-5. Run Slice 15 sample seed review on `100` regenerated prompts at `--concurrency 5`.
+5. Run Slice 21 first to strengthen Slice 15 seed-review context.
+   - enrich regenerated-seed sample rows with MSS/provenance context
+   - tune the reclassification judge/meta prompts for promotion review
+
+6. Run Slice 15 sample seed review on `100` regenerated prompts at `--concurrency 5`.
    - Check:
      - trusted rate `>= 0.90`
      - recommended-for-seed-review rate between `0.20` and `0.40`
      - no obvious family/structure collapse
      - spend remains in the same general band as the current HyperCard lane
 
-6. If the sample passes, run seed review over the full regenerated prompt set.
+7. If the sample passes, run seed review over the full regenerated prompt set.
 
-7. Curate the approved regenerated seeds and decide promotion policy.
+8. Curate the approved regenerated seeds and decide promotion policy.
    - handcrafted prompts remain the control set
    - regenerated HyperCard prompts become the curated breadth set
 
-8. Run Slice 16.
+9. Run Slice 16.
    - use handpicked approved seeds to refine lower-scale derivation
    - derive stronger `S1-S3` precursor prompts from the regenerated seed set
 
-9. Keep Codex as the generation and implementation surface.
+10. Keep Codex as the generation and implementation surface.
    - do not change the active Codex path to Codex `--oss`
    - do not make alternative generation-model experiments part of the current
      modnet execution path

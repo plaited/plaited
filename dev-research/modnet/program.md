@@ -231,6 +231,9 @@ So:
 - Slice 16: refine lower-scale prompt derivation using handpicked approved seeds and then derive `S1-S3` precursors from the regenerated HyperCard seed set
 - Slice 17: run a held-out 100-row judge ablation to test Haiku replacements and Sonnet challengers while keeping Codex unchanged
 - Slice 18: calibrate the raw-card inclusion judge/meta prompts on disagreement rows and edge cases before rerunning the full HyperCard inclusion lane
+- Slice 19: test cheap planner candidates for search-query and modernization shaping in the Slice 14 regeneration path
+- Slice 20: improve the chosen `MiniMax M2.5` planner prompt and code path with bounded autoresearch before the next full regeneration run
+- Slice 21: calibrate Slice 15 seed-review context so regenerated prompt seeds carry richer MSS/provenance and the review judge knows it is doing promotion review rather than first-pass modernization
 
 ## Current Execution Notes
 

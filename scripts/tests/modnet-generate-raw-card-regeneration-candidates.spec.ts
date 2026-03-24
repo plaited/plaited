@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
   buildPromptDraft,
+  chooseSearchQuery,
   createBaseVariantCandidate,
   recoverModuleShape,
 } from '../modnet-generate-raw-card-regeneration-candidates.ts'
@@ -51,5 +52,26 @@ describe('modnet-generate-raw-card-regeneration-candidates', () => {
     expect(draft.input).toContain('collection workflow')
     expect(draft.hint).toContain('current workflow vocabulary')
     expect(draft.id).toBe('hypercard_school-discipline-base_1_search')
+  })
+
+  test('search-backed prompts keep search subordinate to the retained row job', () => {
+    const draft = buildPromptDraft({
+      row,
+      variantId: 'base_1_search_followup_livecrawl',
+      vocab: ['incident', 'referral', 'conference', 'tracking'],
+      structureCue: 'collection',
+    })
+
+    expect(draft.input).toContain("must not replace the retained row's core user job")
+    expect(draft.hint).toContain('if search is noisy or generic, fall back to the retained row')
+  })
+
+  test('falls back when planner returns a useless search query', () => {
+    const query = chooseSearchQuery({
+      preferred: '.--.',
+      fallback: 'student discipline referral tracking parent conference incident record workflow',
+    })
+
+    expect(query).toBe('student discipline referral tracking parent conference incident record workflow')
   })
 })

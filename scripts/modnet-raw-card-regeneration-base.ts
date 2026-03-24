@@ -39,6 +39,53 @@ export const RegenerationResearchTraceSchema = z.object({
   moduleShapeRecoveredFromSearch: ShapeRecoverySchema,
 })
 
+export const RegenerationPlannerInitialOutputSchema = z.object({
+  credibleModernization: z.boolean(),
+  modernAnalog: z.string(),
+  coreUserJob: z.string(),
+  likelyStructure: z.string(),
+  initialSearchQuery: z.string(),
+  whyPlausible: z.string(),
+  restraintNotes: z.string(),
+})
+
+export const RegenerationPlannerRefinementOutputSchema = z.object({
+  credibleModernization: z.boolean(),
+  modernAnalog: z.string(),
+  coreUserJob: z.string(),
+  likelyStructure: z.string(),
+  needsFollowUpSearch: z.boolean(),
+  followUpSearchQuery: z.string(),
+  needsLivecrawl: z.boolean(),
+  promptInput: z.string(),
+  promptHint: z.string(),
+  whyPlausible: z.string(),
+  restraintNotes: z.string(),
+})
+
+export const RegenerationModernizerOutputSchema = z.object({
+  credibleModernization: z.boolean(),
+  modernTitle: z.string(),
+  modernAnalog: z.string(),
+  coreUserJob: z.string(),
+  likelyStructure: z.string(),
+  mssModule: z.string(),
+  scale: z.enum(['S1', 'S2', 'S3', 'S4']),
+  likelySubmodules: z.array(z.string()).max(8),
+  promptInput: z.string(),
+  promptHint: z.string(),
+  whyPlausible: z.string(),
+})
+
+export const RegenerationModernizerVerificationOutputSchema = z.object({
+  pass: z.boolean().default(false),
+  score: z.number().min(0).max(1).default(0),
+  rationale: z.string().default(''),
+  scalePlausible: z.boolean().default(false),
+  submodulesCoherent: z.boolean().default(false),
+  promptBounded: z.boolean().default(false),
+})
+
 export const RegenerationAssessmentSignalsSchema = z.object({
   modernRelevance: ConfidenceSchema,
   promptQuality: ConfidenceSchema,
@@ -135,6 +182,10 @@ export type RegenerationVariantEvaluation = z.infer<typeof RegenerationVariantEv
 export type VariantComparisonSummary = z.infer<typeof VariantComparisonSummarySchema>
 export type RegenerationVariantId = z.infer<typeof RegenerationVariantIdSchema>
 export type Confidence = z.infer<typeof ConfidenceSchema>
+export type RegenerationPlannerInitialOutput = z.infer<typeof RegenerationPlannerInitialOutputSchema>
+export type RegenerationPlannerRefinementOutput = z.infer<typeof RegenerationPlannerRefinementOutputSchema>
+export type RegenerationModernizerOutput = z.infer<typeof RegenerationModernizerOutputSchema>
+export type RegenerationModernizerVerificationOutput = z.infer<typeof RegenerationModernizerVerificationOutputSchema>
 
 export const DEFAULT_RETAINED_RAW_CARD_PATH = resolveRepoPath(
   'dev-research',
