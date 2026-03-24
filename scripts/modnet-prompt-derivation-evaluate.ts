@@ -8,12 +8,46 @@ import { appendJsonlRow, resetJsonlOutput } from './jsonl-output.ts'
 import { grade as judgeDerivedPrompt } from './modnet-prompt-derivation-judge.ts'
 import { grade as metaVerifyDerivedPrompt } from './modnet-prompt-derivation-meta-verifier.ts'
 
+type CandidateSeedContext = {
+  sourceId?: string
+  rewrittenTitle?: string
+  rewrittenInput?: string
+  rewrittenHint?: string
+  sourceTitle?: string
+  sourceDescription?: string
+  sourceFamily?: string
+  sourceStructure?: string
+  sourceScale?: number
+  sourceScaleLabel?: string
+  sourceCoreUserJob?: string
+  sourceWhyRelevant?: string
+  sourceAnchors?: string
+}
+
 export const DerivedPromptCandidateSchema = z.object({
   id: z.string(),
   sourceId: z.string(),
   targetScale: z.enum(['S1', 'S2', 'S3']),
   input: z.string(),
   hint: z.string(),
+  seedContext: z
+    .object({
+      sourceId: z.string().optional(),
+      rewrittenTitle: z.string().optional(),
+      rewrittenInput: z.string().optional(),
+      rewrittenHint: z.string().optional(),
+      sourceTitle: z.string().optional(),
+      sourceDescription: z.string().optional(),
+      sourceFamily: z.string().optional(),
+      sourceStructure: z.string().optional(),
+      sourceScale: z.number().optional(),
+      sourceScaleLabel: z.string().optional(),
+      sourceCoreUserJob: z.string().optional(),
+      sourceWhyRelevant: z.string().optional(),
+      sourceAnchors: z.string().optional(),
+    })
+    .passthrough()
+    .optional(),
 })
 
 export type DerivedPromptCandidate = z.infer<typeof DerivedPromptCandidateSchema>
@@ -25,12 +59,16 @@ export const DeterministicCheckSchema = z.object({
   checks: z.object({
     sourceExists: z.boolean(),
     idIsUnique: z.boolean(),
+    sourceHasRewrittenSeed: z.boolean(),
     inputHasEnoughDetail: z.boolean(),
     hintHasEnoughDetail: z.boolean(),
-    sourceIsHigherScale: z.boolean(),
+    sourceScaleFits: z.boolean(),
+    sourceScaleKnown: z.boolean(),
     targetScaleMatchesId: z.boolean(),
     avoidsGenericTemplateLanguage: z.boolean(),
+    hasRewrittenSeedAnchor: z.boolean(),
     hasSourceLexicalAnchor: z.boolean(),
+    familyContinuity: z.boolean(),
   }),
   score: z.number().min(0).max(1),
 })
@@ -59,6 +97,43 @@ const DEFAULT_SOURCE_CATALOG = join(
 const DEFAULT_INPUT = join(import.meta.dir, 'modnet-derived-prompts.json')
 const DEFAULT_OUTPUT = join(import.meta.dir, '..', 'tmp', 'modnet-derived-prompt-evals.jsonl')
 
+const STOP_WORDS = new Set([
+  'and',
+  'with',
+  'that',
+  'this',
+  'from',
+  'your',
+  'their',
+  'there',
+  'they',
+  'them',
+  'then',
+  'just',
+  'only',
+  'also',
+  'when',
+  'where',
+  'about',
+  'which',
+  'have',
+  'for',
+  'can',
+  'will',
+  'been',
+  'using',
+  'used',
+  'lets',
+  'let',
+  'make',
+  'show',
+  'build',
+  'create',
+  'generate',
+  'find',
+  'list',
+])
+
 const GENERIC_TEMPLATE_PATTERNS = [
   'smallest useful single object',
   'grouped object/list view',
@@ -69,6 +144,57 @@ const GENERIC_TEMPLATE_PATTERNS = [
   'derived s2 precursor candidate',
   'derived s3 precursor candidate',
 ]
+
+const FAMILY_ANCHORS: Record<string, string[]> = {
+  'creative-tool': ['creative', 'tool', 'compose', 'edit', 'canvas', 'project'],
+  'reference-browser': ['reference', 'lookup', 'browse', 'search', 'entry', 'detail'],
+  'educational-interactive': ['lesson', 'learn', 'practice', 'quiz', 'education', 'study'],
+  'personal-data-manager': ['record', 'profile', 'history', 'note', 'household', 'ledger', 'task'],
+  'business-process': ['workflow', 'status', 'task', 'schedule', 'project', 'coordination'],
+  'game-simulation': ['play', 'simulate', 'score', 'challenge', 'state'],
+  communication: ['message', 'conversation', 'contact', 'reply', 'thread'],
+  'instrument-control': ['input', 'control', 'session', 'log', 'instrument'],
+  'multimedia-presentation': ['slide', 'screen', 'media', 'gallery'],
+  'developer-utility': ['generate', 'inspect', 'lint', 'test', 'tool'],
+  unknown: ['module'],
+}
+
+type SeedContext = {
+  sourceId: string
+  seedTitle: string
+  seedInput: string
+  seedHint: string
+  sourceTitle: string
+  sourceDescription: string
+  sourceFamily: string
+  sourceStructure: string
+  sourceScale: number | null
+  sourceScaleLabel: string
+  sourceHasRewrittenSeed: boolean
+  sourceCoreUserJob: string
+  sourceWhyRelevant: string
+}
+
+const asRecord = (value: unknown): Record<string, unknown> =>
+  value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
+
+const asString = (value: unknown): string => (typeof value === 'string' ? value : '')
+
+const asNumber = (value: unknown): number | null => (typeof value === 'number' && Number.isFinite(value) ? value : null)
+
+const normalizeWord = (value: string): string =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+
+const parseScaleFromString = (value: string | null | undefined): number | null => {
+  if (!value) return null
+  const match = /(?:^|[^\w])(?:scale-|S)?\s*([1-8])(?:[^\w]|$)/i.exec(value)
+  return match ? Number(match[1]!) : null
+}
+
+const parseCandidateScale = (targetScale: 'S1' | 'S2' | 'S3') => Number(targetScale.replace('S', ''))
 
 const getRequiredConcepts = (prompt: PromptCase): string[] => {
   const judge = prompt.metadata?.judge
@@ -82,33 +208,169 @@ const getRequiredConcepts = (prompt: PromptCase): string[] => {
     : []
 }
 
-const getSourceScale = (prompt: PromptCase): number | null => {
-  const requiredConcepts = getRequiredConcepts(prompt)
-  for (const concept of requiredConcepts) {
-    const match = /^scale-S(\d)$/i.exec(concept)
-    if (match) {
-      return Number(match[1]!)
-    }
+const parseSourceScaleFromRecord = (prompt: PromptCase, candidateContext?: CandidateSeedContext): number | null => {
+  if (typeof candidateContext?.sourceScale === 'number' && Number.isFinite(candidateContext.sourceScale)) {
+    return Math.max(1, Math.min(8, Math.round(candidateContext.sourceScale)))
   }
 
-  return null
+  const parsedCandidateLabel = parseScaleFromString(candidateContext?.sourceScaleLabel)
+  if (parsedCandidateLabel !== null) return parsedCandidateLabel
+
+  const sourceRecord = asRecord(prompt.metadata?._source)
+  const metadata = asRecord(prompt.metadata)
+  const seedReviewContext = asRecord(metadata.seedReviewContext)
+
+  const fromConcepts = getRequiredConcepts(prompt).find((concept) => /^scale-S[1-8]$/i.test(concept))
+  if (fromConcepts) return Number(fromConcepts.replace('scale-S', ''))
+
+  const candidates = [
+    parseScaleFromString(asString(metadata.generatedScale)),
+    parseScaleFromString(asString(seedReviewContext.generatedScale)),
+    parseScaleFromString(asString(seedReviewContext.generatedScaleLabel)),
+    parseScaleFromString(asString(seedReviewContext.sourceScaleEstimateLabel)),
+    asNumber(metadata.generatedScaleValue),
+    asNumber(seedReviewContext.generatedScaleValue),
+    asNumber(seedReviewContext.sourceScale),
+    asNumber(metadata.sourceScaleEstimate),
+    asNumber(seedReviewContext.sourceScaleEstimate),
+    asNumber(seedReviewContext.sourceScale),
+    asNumber(asRecord(sourceRecord.mss).scale),
+  ]
+    .map((value) => (typeof value === 'number' ? Math.max(1, Math.min(8, Math.round(value))) : value))
+    .filter((value): value is number => value !== null)
+
+  return candidates[0] ?? null
 }
 
-const normalizeWord = (value: string): string =>
-  value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim()
+const getRewrittenPromptInput = (prompt: PromptCase, candidateContext?: CandidateSeedContext): string => {
+  const candidateInput = asString(candidateContext?.rewrittenInput)
+  if (candidateInput.length > 0) return candidateInput
 
-const buildLexicalAnchorSet = (prompt: PromptCase): Set<string> => {
-  const fields = [prompt.input, prompt.hint, prompt.metadata?.patternFamily]
-  const tokens = fields
-    .flatMap((value) => (Array.isArray(value) ? value : [value]))
-    .filter((value): value is string => typeof value === 'string')
-    .flatMap((value) => normalizeWord(value).split(/\s+/))
-    .filter((value) => value.length >= 4)
+  const metadata = asRecord(prompt.metadata)
+  const seedReviewContext = asRecord(metadata.seedReviewContext)
+  return (
+    asString(metadata.generatedPromptInput) ||
+    asString(seedReviewContext.generatedPromptInput) ||
+    (Array.isArray(prompt.input) ? prompt.input.join(' ') : prompt.input) ||
+    asString(prompt.hint) ||
+    ''
+  )
+}
 
+const extractSeedContext = (candidate: DerivedPromptCandidate, sourcePrompt?: PromptCase): SeedContext => {
+  const promptMetadata = asRecord(sourcePrompt?.metadata)
+  const sourceRecord = asRecord(promptMetadata._source)
+  const candidateContext = asRecord(candidate.seedContext)
+  const seedReviewContext = asRecord(promptMetadata.seedReviewContext)
+
+  const sourceScale = parseSourceScaleFromRecord(
+    sourcePrompt ?? ({ id: candidate.sourceId, input: '' } as PromptCase),
+    candidateContext as CandidateSeedContext,
+  )
+  const sourceScaleLabel =
+    asString(candidateContext.sourceScaleLabel) || (sourceScale !== null ? `S${sourceScale}` : '')
+  const sourceFamily =
+    asString(candidateContext.sourceFamily) ||
+    asString(promptMetadata.patternFamily) ||
+    asString(seedReviewContext.generatedLikelyPatternFamily) ||
+    'unknown'
+  const sourceStructure =
+    asString(candidateContext.sourceStructure) || asString(seedReviewContext.generatedLikelyStructure) || 'module'
+
+  const seedTitle =
+    asString(candidateContext.rewrittenTitle) ||
+    asString(seedReviewContext.generatedModernTitle) ||
+    asString(promptMetadata.generatedModernTitle) ||
+    asString(sourceRecord.title) ||
+    asString(sourcePrompt?.id) ||
+    candidate.sourceId
+  const seedInput = getRewrittenPromptInput(
+    sourcePrompt ?? ({ id: candidate.sourceId, input: '' } as PromptCase),
+    candidateContext as CandidateSeedContext,
+  )
+  const seedHint =
+    asString(candidateContext.rewrittenHint) ||
+    asString(seedReviewContext.generatedPromptHint) ||
+    asString(promptMetadata.generatedPromptHint) ||
+    asString(sourcePrompt?.hint)
+
+  const sourceTitle =
+    asString(candidateContext.sourceTitle) ||
+    asString(sourceRecord.title) ||
+    asString(seedReviewContext.sourceTitle) ||
+    asString(sourcePrompt?.id) ||
+    candidate.sourceId
+  const sourceDescription =
+    asString(candidateContext.sourceDescription) ||
+    asString(sourceRecord.description) ||
+    asString(seedReviewContext.sourceDescription)
+  const sourceCoreUserJob =
+    asString(candidateContext.sourceCoreUserJob) ||
+    asString(seedReviewContext.coreUserJob) ||
+    asString(sourceRecord.coreUserJob)
+  const sourceWhyRelevant =
+    asString(candidateContext.sourceWhyRelevant) ||
+    asString(seedReviewContext.whyRelevant) ||
+    asString(sourceRecord.whyRelevant)
+  const sourceHasRewrittenSeed =
+    asString(candidateContext.rewrittenTitle).length > 0 ||
+    asString(candidateContext.rewrittenInput).length > 0 ||
+    asString(candidateContext.rewrittenHint).length > 0 ||
+    asString(seedReviewContext.generatedModernTitle).length > 0 ||
+    asString(promptMetadata.generatedModernTitle).length > 0
+
+  return {
+    sourceId: candidate.sourceId,
+    seedTitle,
+    seedInput,
+    seedHint,
+    sourceTitle,
+    sourceDescription,
+    sourceFamily,
+    sourceStructure,
+    sourceScale,
+    sourceScaleLabel,
+    sourceHasRewrittenSeed,
+    sourceCoreUserJob,
+    sourceWhyRelevant,
+  }
+}
+
+const splitTokens = (value: string, limit: number): string[] => {
+  const words = normalizeWord(value)
+    .split(/\s+/)
+    .filter((word) => word.length >= 4 && !STOP_WORDS.has(word))
+
+  const unique = new Set<string>()
+  return words.filter((word) => {
+    if (unique.has(word)) return false
+    unique.add(word)
+    return unique.size <= limit
+  })
+}
+
+const extractAnchorSet = (context: SeedContext): Set<string> => {
+  const sourceFields = [
+    context.seedInput,
+    context.seedHint,
+    context.seedTitle,
+    context.sourceTitle,
+    context.sourceDescription,
+    context.sourceCoreUserJob,
+    context.sourceWhyRelevant,
+    context.sourceStructure,
+  ]
+  const tokens = sourceFields.flatMap((value) => (value ? splitTokens(value, 256) : []))
   return new Set(tokens)
+}
+
+const hasFamilyTermOverlap = (family: string, candidateText: string): boolean => {
+  const anchors = FAMILY_ANCHORS[family] ?? FAMILY_ANCHORS.unknown ?? []
+  const normalized = normalizeWord(candidateText)
+  return anchors.some(
+    (anchor) =>
+      normalized.includes(` ${anchor} `) || normalized.endsWith(` ${anchor}`) || normalized.startsWith(`${anchor} `),
+  )
 }
 
 export const assessDerivedPromptCandidate = ({
@@ -123,6 +385,7 @@ export const assessDerivedPromptCandidate = ({
   const hardFailures: string[] = []
   const softWarnings: string[] = []
 
+  const sourceContext = extractSeedContext(candidate, sourcePrompt)
   const sourceExists = Boolean(sourcePrompt)
   if (!sourceExists) {
     hardFailures.push(`missing-source:${candidate.sourceId}`)
@@ -143,10 +406,18 @@ export const assessDerivedPromptCandidate = ({
     softWarnings.push('hint-too-short')
   }
 
-  const sourceScale = sourcePrompt ? getSourceScale(sourcePrompt) : null
-  const sourceIsHigherScale = sourceScale !== null ? sourceScale >= 4 : false
-  if (sourceExists && !sourceIsHigherScale) {
-    hardFailures.push(`source-not-higher-scale:${sourceScale ?? 'unknown'}`)
+  const sourceScale = sourceContext.sourceScale
+  const sourceScaleKnown = sourceScale !== null
+  const targetScale = parseCandidateScale(candidate.targetScale)
+  const sourceScaleFits = sourceScale === null ? false : targetScale < sourceScale
+  if (sourceScale !== null && sourceScale < 4) {
+    hardFailures.push(`source-scale-too-small:${sourceScale}`)
+  }
+  if (!sourceScaleKnown) {
+    softWarnings.push('source-scale-unknown')
+  }
+  if (!sourceScaleFits && sourceScale !== null) {
+    softWarnings.push(`scale-inconsistency:S${targetScale}-from-S${sourceScale}`)
   }
 
   const targetScaleMatchesId = candidate.id.toLowerCase().includes(candidate.targetScale.toLowerCase())
@@ -162,25 +433,46 @@ export const assessDerivedPromptCandidate = ({
     softWarnings.push('generic-template-language')
   }
 
-  const sourceAnchors = sourcePrompt ? buildLexicalAnchorSet(sourcePrompt) : new Set<string>()
-  const derivedWords = new Set(normalizedCombined.split(/\s+/).filter((value) => value.length >= 4))
-  const hasSourceLexicalAnchor = Array.from(derivedWords).some((word) => sourceAnchors.has(word))
+  const sourceAnchors = sourceExists ? extractAnchorSet(sourceContext) : new Set<string>()
+  const derivedTokens = new Set(splitTokens(normalizedCombined, 120))
+  const hasSourceLexicalAnchor = Array.from(derivedTokens).some((word) => sourceAnchors.has(word))
   if (sourceExists && !hasSourceLexicalAnchor) {
     softWarnings.push('weak-lexical-anchor')
   }
 
-  const passedChecks = [
+  const sourceHasRewrittenSeed = sourceContext.sourceHasRewrittenSeed
+  const rewrittenSeedTokens = splitTokens(
+    `${sourceContext.seedInput} ${sourceContext.seedHint} ${sourceContext.seedTitle}`,
+    24,
+  )
+  const hasRewrittenSeedAnchor =
+    rewrittenSeedTokens.length === 0 || rewrittenSeedTokens.some((word) => derivedTokens.has(word))
+  if (!hasRewrittenSeedAnchor) {
+    softWarnings.push('missing-rewritten-seed-anchor')
+  }
+
+  const family = sourceContext.sourceFamily.length > 0 ? sourceContext.sourceFamily : 'unknown'
+  const familyContinuity = hasFamilyTermOverlap(family, normalizedCombined) || hasRewrittenSeedAnchor
+  if (!familyContinuity) {
+    softWarnings.push('family-continuity-gap')
+  }
+
+  const checkValues = [
     sourceExists,
     idIsUnique,
+    sourceHasRewrittenSeed,
     inputHasEnoughDetail,
     hintHasEnoughDetail,
-    sourceIsHigherScale,
+    sourceScaleFits || sourceScale === null,
+    sourceScaleKnown,
     targetScaleMatchesId,
     avoidsGenericTemplateLanguage,
+    hasRewrittenSeedAnchor,
     hasSourceLexicalAnchor,
-  ].filter(Boolean).length
+    familyContinuity,
+  ]
 
-  const score = Number((passedChecks / 8).toFixed(3))
+  const score = Number((checkValues.filter(Boolean).length / checkValues.length).toFixed(3))
 
   return DeterministicCheckSchema.parse({
     pass: hardFailures.length === 0,
@@ -189,12 +481,16 @@ export const assessDerivedPromptCandidate = ({
     checks: {
       sourceExists,
       idIsUnique,
+      sourceHasRewrittenSeed,
       inputHasEnoughDetail,
       hintHasEnoughDetail,
-      sourceIsHigherScale,
+      sourceScaleFits,
+      sourceScaleKnown,
       targetScaleMatchesId,
       avoidsGenericTemplateLanguage,
+      hasRewrittenSeedAnchor,
       hasSourceLexicalAnchor,
+      familyContinuity,
     },
     score,
   })
@@ -264,13 +560,29 @@ const loadDerivedCandidates = async (path: string): Promise<DerivedPromptCandida
   return bundle.prompts
 }
 
-const createTaskDescription = (candidate: DerivedPromptCandidate, sourcePrompt: PromptCase) =>
-  [
+const createTaskDescription = (candidate: DerivedPromptCandidate, sourcePrompt: PromptCase) => {
+  const sourceContext = extractSeedContext(candidate, sourcePrompt)
+  return [
     `Evaluate whether this derived prompt is worth keeping for the modnet catalog.`,
     `Source prompt id: ${sourcePrompt.id}`,
     `Candidate id: ${candidate.id}`,
     `Target scale: ${candidate.targetScale}`,
+    `Source scale: ${sourceContext.sourceScaleLabel || 'unknown'} (${sourceContext.sourceScale ?? 'unknown'})`,
+    `Source family: ${sourceContext.sourceFamily}`,
+    `Source structure: ${sourceContext.sourceStructure}`,
+    '',
+    'Rewritten seed (primary source):',
+    `- title: ${sourceContext.seedTitle || 'missing'}`,
+    `- input: ${sourceContext.seedInput || 'missing'}`,
+    `- hint: ${sourceContext.seedHint || 'missing'}`,
+    '',
+    'Original source grounding (anti-drift):',
+    `- title: ${sourceContext.sourceTitle || 'missing'}`,
+    `- description: ${sourceContext.sourceDescription || 'missing'}`,
+    `- core user job: ${sourceContext.sourceCoreUserJob || 'missing'}`,
+    `- why relevant: ${sourceContext.sourceWhyRelevant || 'missing'}`,
   ].join('\n')
+}
 
 const summarizeFamilies = (evaluations: DerivedPromptEvaluation[]) => {
   const counts = new Map<string, number>()
@@ -319,7 +631,9 @@ const main = async () => {
       enabled: progress,
       message: `candidate ${index + 1}/${candidates.length}: ${candidate.id} precheck`,
     })
+
     const sourcePrompt = sourceCatalog.get(candidate.sourceId)
+    const sourceContext = sourcePrompt ? extractSeedContext(candidate, sourcePrompt) : extractSeedContext(candidate)
     const deterministicCheck = assessDerivedPromptCandidate({
       candidate,
       sourcePrompt,
@@ -367,6 +681,7 @@ const main = async () => {
       sourcePrompt,
       candidatePrompt: candidate,
       deterministicCheck,
+      sourceContext,
     }
 
     logProgress({

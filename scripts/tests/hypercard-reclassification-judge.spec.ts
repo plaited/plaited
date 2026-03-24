@@ -126,7 +126,7 @@ describe('hypercard-reclassification-judge', () => {
     })
 
     expect(prompt).toContain('Seed-worthiness should favor niche-gold sovereign modules')
-    expect(prompt).toContain('S2 operational tools can still be seed-worthy')
+    expect(prompt).toContain('S2 operational tools can be seed-worthy')
     expect(prompt).toContain(
       '"Complete", "thorough", "powerful", or "suite-like" prose is not enough for S4 by itself.',
     )
@@ -134,6 +134,49 @@ describe('hypercard-reclassification-judge', () => {
     expect(prompt).toContain('"modernization": "niche"')
     expect(prompt).toContain('Calibration cues:')
     expect(prompt).toContain('Niche research tooling can be seed-worthy')
+  })
+
+  test('adds explicit slice-15 seed review anti-overbuild checks', () => {
+    const prompt = buildJudgePrompt({
+      task: 'Reclassify the HyperCard seed.',
+      output: 'Create a modernized operational module from a thin reference stack.',
+      metadata: {
+        sourceRecord: {
+          id: 'hypercard_something',
+          title: 'Tiny Utility',
+          description: 'A small personal notes stack.',
+          seedReviewContext: {
+            provenance: 'iffy',
+            recommendedFromSlice14: false,
+            antiInflationRisk: 'high',
+            antiInflationSignals: ['source overreach risk', 'scale jump risk'],
+            scaleDrift: 2,
+          },
+        },
+        currentClassification: {
+          patternFamily: 'personal-data-manager',
+          mss: {
+            contentType: 'notes',
+            structure: 'list',
+            mechanics: ['note'],
+            boundary: 'none',
+            scale: 1,
+            confidence: 'medium',
+          },
+        },
+        heuristicPrior: {
+          suggestedMinimumScale: 1,
+          reasons: ['small personal scope'],
+          scaleLooksUnderstated: false,
+        },
+        calibrationCues: ['No additional signals.'],
+      },
+    })
+
+    expect(prompt).toContain('Seed-review context:')
+    expect(prompt).toContain('antiInflationSignals')
+    expect(prompt).toContain('scale inflation risk')
+    expect(prompt).toContain('keepForSeedReview')
   })
 
   test('keeps structure and family disambiguation explicit for the remaining drift cases', () => {
@@ -176,5 +219,94 @@ describe('hypercard-reclassification-judge', () => {
     expect(prompt).toContain('Menu-driven sections, generated category lists, transfer helpers, or printable summaries')
     expect(prompt).toContain('Operational workflow evidence is present.')
     expect(prompt).toContain('project/subproject language can imply hierarchy')
+  })
+
+  test('builds lane-specific seed-promotion policy for strong-trusted contexts', () => {
+    const prompt = buildJudgePrompt({
+      task: 'Reclassify the HyperCard seed.',
+      output: 'Create a compact module from a stable source flow.',
+      metadata: {
+        sourceRecord: {
+          id: 'hypercard_strong_trusted',
+          title: 'Compact Project Tracker',
+          description: 'Maintains weekly project milestones and costs.',
+          seedReviewContext: {
+            provenance: 'trusted',
+            recommendedFromSlice14: true,
+            slice14Reliable: true,
+            regenerationQualityScore: 0.91,
+            antiInflationLevel: 'low',
+            antiInflationSignals: [],
+            sourceScale: 2,
+            generatedScaleValue: 2,
+            scaleDrift: 0,
+          },
+        },
+        currentClassification: {
+          patternFamily: 'business-process',
+          mss: {
+            contentType: 'tracker',
+            structure: 'list',
+            mechanics: ['track'],
+            boundary: 'none',
+            scale: 2,
+            confidence: 'medium',
+          },
+        },
+        heuristicPrior: {
+          suggestedMinimumScale: 2,
+          reasons: ['trusted lane with explicit evidence'],
+          scaleLooksUnderstated: false,
+        },
+      },
+    })
+
+    expect(prompt).toContain('Seed-review lane: strong-trusted')
+    expect(prompt).toContain('For this lane, a compact S3 is acceptable')
+    expect(prompt).toContain('iffy-gated rows need stronger evidence')
+  })
+
+  test('builds lane-specific seed-promotion policy for iffy-rescue contexts', () => {
+    const prompt = buildJudgePrompt({
+      task: 'Reclassify the HyperCard seed.',
+      output: 'Create a compact workflow module from thin source context.',
+      metadata: {
+        sourceRecord: {
+          id: 'hypercard_iffy_rescue',
+          title: 'Tiny Contact Archive',
+          description: 'A focused contact and relationship tracker.',
+          seedReviewContext: {
+            provenance: 'iffy',
+            recommendedFromSlice14: true,
+            regenerationQualityScore: 0.9,
+            antiInflationLevel: 'low',
+            antiInflationSignals: [],
+            sourceScale: 1,
+            generatedScaleValue: 2,
+            scaleDrift: 1,
+          },
+        },
+        currentClassification: {
+          patternFamily: 'personal-data-manager',
+          mss: {
+            contentType: 'contacts',
+            structure: 'list',
+            mechanics: ['tag'],
+            boundary: 'none',
+            scale: 1,
+            confidence: 'low',
+          },
+        },
+        heuristicPrior: {
+          suggestedMinimumScale: 1,
+          reasons: ['narrow operational scope'],
+          scaleLooksUnderstated: true,
+        },
+      },
+    })
+
+    expect(prompt).toContain('Seed-review lane: iffy-rescue')
+    expect(prompt).toContain('bounded')
+    expect(prompt).toContain('Prefer bounded S1-S2 or cautious S3')
   })
 })

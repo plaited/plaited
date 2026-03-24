@@ -6,12 +6,143 @@ import { resolvePrimaryJudgeModel, runStructuredLlmQuery } from './structured-ll
 const TRAINING_GUIDE_CONTEXT = [
   'Training guide context:',
   '- HyperCard-derived prompts are breadth material for modnet Stage 1, but the goal is not nostalgia-faithful reproduction. The goal is to recover strong sovereign-module patterns.',
-  '- Good seed-review candidates are historically interesting artifacts that still express reusable module structure, especially richer S4+ suites, niche but evergreen tools, or artifacts with clear modern sovereign-node relevance.',
+  '- Good seed-review candidates are historically interesting artifacts that still express reusable module structure.',
+  '- Promotion can be valid at bounded scales too: S1-S2 reusable modules are often strongest for later lower-scale derivation.',
+  '- Heavier score goes to richer S4+ suites, niche but evergreen tools, and artifacts with clear modern sovereign-node relevance, but novelty or high scale is not a requirement.',
   '- Scale guidance: S1 single object, S2 object group/list/editor, S3 interactive block, S4 connected block group or suite, S5 standalone full module/community, S6+ networked module group or platform.',
   '- Use S4 only when the artifact really behaves like a connected suite of blocks, not merely a feature-rich S2 object group.',
   '- Public-domain or public reference artifacts can reasonably be boundary=all. Personal records, payroll, journals, and similarly sensitive data should usually remain boundary=none.',
   '- Pattern-family choices should stay inside the canonical ten-family modnet catalog vocabulary and reflect the actual artifact, not prompt-noise or accidental workflow phrasing.',
 ].join('\n')
+
+type SeedReviewContext = {
+  provenance?: string
+  recommendedFromSlice14?: boolean
+  slice14Reliable?: boolean
+  regenerationQualityScore?: number
+  antiInflationLevel?: string
+  antiInflationSignals?: unknown
+  sourceScale?: number
+  generatedScaleValue?: number
+  generatedScaleDelta?: number
+  deterministicPass?: boolean
+  scaleDrift?: number
+}
+
+const getSeedReviewContext = (metadata?: Record<string, unknown>): SeedReviewContext => {
+  const sourceRecord = metadata?.sourceRecord
+  const maybeContext =
+    sourceRecord && typeof sourceRecord === 'object'
+      ? ((sourceRecord as Record<string, unknown>).seedReviewContext as unknown)
+      : undefined
+
+  if (!maybeContext || typeof maybeContext !== 'object') {
+    return {}
+  }
+
+  return maybeContext as SeedReviewContext
+}
+
+const antiInflationFromContext = (context: SeedReviewContext): 'low' | 'medium' | 'high' => {
+  if (context.antiInflationLevel === 'high') return 'high'
+  if (context.antiInflationLevel === 'medium') return 'medium'
+  if (context.antiInflationLevel === 'low') return 'low'
+  return 'low'
+}
+
+const countAntiInflationSignals = (context: SeedReviewContext): number =>
+  Array.isArray(context.antiInflationSignals) ? context.antiInflationSignals.length : 0
+
+const isStrongTrustedCandidate = (context: SeedReviewContext): boolean => {
+  const quality = context.regenerationQualityScore
+  return (
+    context.provenance === 'trusted' &&
+    context.recommendedFromSlice14 === true &&
+    context.slice14Reliable === true &&
+    typeof quality === 'number' &&
+    quality >= 0.82 &&
+    antiInflationFromContext(context) !== 'high'
+  )
+}
+
+const isRescueIffyCandidate = (context: SeedReviewContext): boolean => {
+  const quality = context.regenerationQualityScore
+  return (
+    context.provenance === 'iffy' &&
+    context.recommendedFromSlice14 === true &&
+    antiInflationFromContext(context) === 'low' &&
+    typeof quality === 'number' &&
+    quality >= 0.88 &&
+    countAntiInflationSignals(context) === 0
+  )
+}
+
+const buildSlice22PromotionPolicy = (context: SeedReviewContext): string => {
+  const strongTrusted = isStrongTrustedCandidate(context)
+  const rescueIffy = isRescueIffyCandidate(context)
+  const antiInflation = antiInflationFromContext(context)
+  const signalCount = countAntiInflationSignals(context)
+  const provenance = context.provenance ?? 'unknown'
+  const lane = strongTrusted
+    ? 'strong-trusted'
+    : rescueIffy
+      ? 'iffy-rescue'
+      : provenance === 'iffy'
+        ? 'iffy-gated'
+        : 'unknown'
+  const quality =
+    typeof context.regenerationQualityScore === 'number' ? context.regenerationQualityScore.toFixed(2) : 'unknown'
+  const sourceScale = typeof context.sourceScale === 'number' ? context.sourceScale : null
+  const generatedScale =
+    typeof context.generatedScaleValue === 'number'
+      ? context.generatedScaleValue
+      : typeof context.generatedScaleDelta === 'number' && sourceScale !== null
+        ? sourceScale + context.generatedScaleDelta
+        : null
+  const deterministicPass = context.deterministicPass ?? null
+  const scaleDrift = typeof context.scaleDrift === 'number' ? context.scaleDrift : null
+  const antiInflationGuidance =
+    antiInflation === 'high'
+      ? [
+          '- Anti-inflation is high: reject family/scale expansion unless direct multi-mechanic, multi-block evidence is present.',
+          '- For high anti-inflation candidates, S4+ scale is almost always rejected.',
+        ]
+      : antiInflation === 'medium'
+        ? [
+            '- Anti-inflation medium requires additional proof for expansion above S2; favor compact bounded variants over inflated suites.',
+          ]
+        : [
+            '- Anti-inflation is low: still protect against suite wording inflation, but do not reject compact reusable S1-S2/S3 modules on novelty alone.',
+          ]
+
+  return [
+    'Seed-promotion policy:',
+    `- Provenance: ${provenance}.`,
+    `- Seed-review lane: ${lane}.`,
+    `- Slice 14 quality signal: ${quality}.`,
+    `- Anti-inflation level: ${antiInflation} (${signalCount} signal(s)).`,
+    `- Source scale: ${sourceScale ?? 'unknown'}, regenerated scale: ${generatedScale ?? 'unknown'}, scale drift: ${scaleDrift ?? 'unknown'}.`,
+    '- Apply a boundedness-first rule: source-aligned S1-S2 and compact S3 modules are promotion-eligible when reusable.',
+    ...(deterministicPass === false
+      ? ['- Deterministic checks were not clean; require direct source-alignment evidence before keepForSeedReview.']
+      : []),
+    ...(strongTrusted
+      ? [
+          '- Trusted candidate is already strongly supported by Slice 14. If source alignment is explicit and mechanics are coherent, prefer keepForSeedReview=true for bounded reuse, even when novelty is modest.',
+          '- For this lane, a compact S3 is acceptable when evidence of coherent mechanisms is present.',
+        ]
+      : [
+          '- Trusted evidence is not in the strongest band. KeepForSeedReview should default to no unless source evidence is explicit.',
+          ...(rescueIffy
+            ? [
+                '- Iffy candidate with strong Slice 14 signal can still be promoted when evidence is explicit and scope is still bounded.',
+                '- Prefer bounded S1-S2 or cautious S3 for rescue cases; treat higher scales as suspicious without direct proof.',
+              ]
+            : []),
+        ]),
+    ...antiInflationGuidance,
+  ].join('\n')
+}
 
 const REFERENCE_SYNTHESIS_CONTEXT = [
   'Reference synthesis from skills/mss-vocabulary, skills/modnet-node, skills/modnet-modules, and the modnet training guide:',
@@ -29,7 +160,9 @@ const REFERENCE_SYNTHESIS_CONTEXT = [
   '- Use collection only when the dominant value is browsing or managing a general catalog rather than a more specific list, hierarchy, matrix, steps, or form shape.',
   '- Menu-driven sections, generated category lists, transfer helpers, or printable summaries may still be an S2 operational tool rather than an S3/S4 suite unless the evidence shows separately coordinated blocks.',
   '- Seed-worthiness should favor niche-gold sovereign modules, enduring operational tools, and reusable module patterns. Do not promote thin demos or lexical curiosities just because the title sounds unusual.',
-  '- S2 operational tools can still be seed-worthy when they capture an evergreen workflow with transferable structure, but ordinary inventory logs, simple payment ledgers, or thin record keepers should stay conservative unless the source shows unusual leverage.',
+  '- S2 operational tools can be seed-worthy when they capture a usable evergreen workflow with transferable structure.',
+  '- Do not reject lower-scale candidates simply because they are not standout or novel; bounded S1-S2 modules can still be highly promotable.',
+  '- Ordinary inventory logs, simple payment ledgers, or thin record keepers should stay conservative unless the source shows unusual leverage.',
   '- Resist lexical snap-to-label errors. Titles like "keyboard", "accounting", or "laboratory toolbox" are clues, but the description and dominant user job decide the family, scale, and seed value.',
 ].join('\n')
 
@@ -186,16 +319,34 @@ export const buildJudgePrompt = ({
   const currentClassification = JSON.stringify(metadata?.currentClassification ?? {}, null, 2)
   const heuristicPrior = JSON.stringify(metadata?.heuristicPrior ?? {}, null, 2)
   const calibrationCues = JSON.stringify(metadata?.calibrationCues ?? [], null, 2)
+  const seedReviewContextParsed = getSeedReviewContext(metadata)
+  const seedReviewContext = JSON.stringify(seedReviewContextParsed, null, 2)
 
-  return `You are reclassifying a HyperCard-derived modnet training prompt.
+  const seedReviewPolicy = buildSlice22PromotionPolicy(seedReviewContextParsed)
+
+  return `You are reclassifying a HyperCard-derived modnet training prompt for a regeneration seed-promotion review.
+
+You are not judging modernized prose quality. You are deciding if this regenerated seed is safe and useful enough to promote into the trusted catalog workflow.
 
 Use the current MSS fields as a prior, not as ground truth. Prefer the actual title/description evidence.
+
+Review rubric:
+- Keep the candidate only if:
+  - Scope, family, structure, and scale are grounded in source evidence.
+  - Scale is plausible (avoid inflation from verbose prompt language, but allow bounded expansion when evidence supports bounded utility).
+  - The regenerated seed is reusable for lower-scale derivation (especially S1-S3).
+  - The seed is not overbuilt for a historical source ("powerful", "suite", "complete" language alone is insufficient).
+  - S2 and S3 are acceptable when one coherent workflow, explicit mechanics, and source alignment are preserved.
+  - Flag as not trusted when source intent is thin, scope is drifted, or family/scale jumps without evidence.
+  - Prefer boundedness and source-aligned scale, but avoid rejecting useful compact modules as over-conservative.
+- Anchor your judgment in source intent when available: 'coreUserJob', 'whyRelevant', and 'searchQuerySeed' should keep the classification in a realistic scope.
 
 Key heuristics:
 - S1 = single object, S2 = object group/list/editor, S3 = block/dashboard/feed/profile/forum, S4 = connected block group/suite, S5 = full standalone module/community, S6+ = networked module group or platform.
 - Many historical HyperCard business tools are understated if they really behave like multi-block suites rather than a single list.
 - Pattern family must match the actual artifact, not generic workflow language accidentally added during prompt generation.
-- KeepForSeedReview should be true when the reclassified item is especially useful for richer future derivation, especially if scale >= 4 or it is a high-value niche pattern.
+- KeepForSeedReview should be true when the reclassified item is reusable, source-aligned, and suitable for trusted promotion.
+- S1-S2 candidates can be recommended when they are bounded, low-risk, and mechanically reusable even without exceptional novelty.
 - Stay inside the Plaited vocabulary drawn from skills/mss-vocabulary, skills/modnet-node, and skills/modnet-modules.
 - Do not invent new pattern families.
 - Do not invent new structure labels. Use only: object, form, list, collection, steps, pool, stream, feed, wall, thread, hierarchy, matrix, daisy, hypertext.
@@ -220,12 +371,32 @@ ${currentClassification}
 Heuristic prior:
 ${heuristicPrior}
 
+Seed-review context:
+${seedReviewContext}
+
 Calibration cues:
 ${calibrationCues}
+
+Seed-promotion policy:
+${seedReviewPolicy}
 
 ${TRAINING_GUIDE_CONTEXT}
 
 ${REFERENCE_SYNTHESIS_CONTEXT}
+
+Before finalizing:
+- Check for potential scale overreach (e.g., claiming S4/S5 without coordinated block evidence).
+- Check for provenance-aware caution: by lane, iffy-gated rows need stronger evidence than rescue/strong-trusted rows.
+- Check for mismatch between source scope and regenerated scope (different job, different audience, added distribution logic).
+- If source intent is present, use 'coreUserJob', 'whyRelevant', and 'searchQuerySeed' as alignment anchors before accepting scope expansion.
+- If antiInflationSignals are present, treat them as explicit evidence of scale inflation risk and require direct block-level proof.
+- For keepForSeedReview decisions:
+  - for strong-trusted candidates, accept compact promotion when source alignment is explicit and anti-overbuild checks pass.
+  - for iffy-rescue candidates, allow S1-S2 and cautious S3 if mechanics and provenance anchors are explicit.
+  - for iffy-gated candidates, do not promote unless source text, modern prompt, and search-recovered shape provide strong alignment.
+  - for S1-S3, require source alignment and reusable mechanics first; reject only hard scale drift or clearly expanded family claims.
+  - reject inflated scopes where scale jumps +2+ levels without explicit block-level mechanics unless there is strong direct evidence.
+- Preserve evidence-weighted calibration on borderline cases: if provenance risk is present, require higher evidence quality to keepForSeedReview.
 
 Return the best revised patternFamily and MSS classification for this item. Pass only if the reclassification looks trustworthy enough to keep for audit/promotion review.`
 }
@@ -325,6 +496,26 @@ const invokeJudge = async (prompt: string): Promise<JudgeOutput & { outcome?: Re
 export const grade: Grader = async ({ input, output, metadata }) => {
   const task = Array.isArray(input) ? input.join('\n') : input
   const meta = (metadata ?? {}) as Record<string, unknown>
-  const result = await invokeJudge(buildJudgePrompt({ task, output, metadata: meta }))
-  return toGraderResult(result)
+  try {
+    const result = await invokeJudge(buildJudgePrompt({ task, output, metadata: meta }))
+    return toGraderResult(result)
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error)
+    return toGraderResult({
+      pass: false,
+      score: 0,
+      reasoning: `Primary judge parse error: ${message}`,
+      patternFamily: 'developer-utility',
+      mss: {
+        contentType: 'unknown',
+        structure: 'object',
+        mechanics: [],
+        boundary: 'none',
+        scale: 1,
+        confidence: 'low',
+      },
+      keepForSeedReview: false,
+      rationale: 'Judge response was malformed, so this row was conservatively rejected.',
+    })
+  }
 }

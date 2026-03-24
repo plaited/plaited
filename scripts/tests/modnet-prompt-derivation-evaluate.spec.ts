@@ -9,6 +9,9 @@ const sourcePrompt: PromptCase = {
   hint: 'Generate a Plaited-native produce module at S5.',
   metadata: {
     patternFamily: 'personal-data-manager',
+    generatedModernTitle: 'Farm Stand Module',
+    generatedPromptInput: 'Create a bound farm produce card with name, logo, and contact method.',
+    generatedPromptHint: 'Build one compact module for listing produce items.',
     judge: {
       requiredConcepts: ['module', 'mss', 'contentType-produce', 'structure-collection', 'scale-S5'],
     },
@@ -32,7 +35,9 @@ describe('assessDerivedPromptCandidate', () => {
 
     expect(result.pass).toBe(true)
     expect(result.hardFailures).toEqual([])
-    expect(result.checks.sourceIsHigherScale).toBe(true)
+    expect(result.checks.sourceScaleFits).toBe(true)
+    expect(result.checks.sourceHasRewrittenSeed).toBe(true)
+    expect(result.checks.hasRewrittenSeedAnchor).toBe(true)
     expect(result.checks.hasSourceLexicalAnchor).toBe(true)
   })
 
