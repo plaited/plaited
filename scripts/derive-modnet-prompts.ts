@@ -873,7 +873,7 @@ const seedShapeFromAnchor = (
   targetScale: DerivedPrompt['targetScale'],
 ): PrecursorShapeTemplate => {
   const shapePrefix = shapeHintTokenFromAnchor(anchor, targetScale)
-  const slugParts = normalizeShapeWord(anchor.id)
+  const slugParts = normalizeShapeWord(`${anchor.subjectStyle} ${anchor.family}`)
     .split('-')
     .filter((value) => value.length > 0)
     .slice(0, 3)
@@ -1203,7 +1203,32 @@ const selectLowScaleExemplars = (
   return candidate.length > 0 ? candidate.slice(0, 3) : anchors.slice(0, 3)
 }
 
-const buildApprovedAnchorContext = (sourceId: string, family: string) => {
+const buildApprovedAnchorContext = ({
+  sourceId,
+  family,
+  sourceScale,
+  mechanism,
+  subject,
+}: {
+  sourceId: string
+  family: string
+  sourceScale: number
+  mechanism: string
+  subject: string
+}) => {
+  const normalizedMechanism = mechanism.trim().length > 0 ? mechanism : 'build'
+  const normalizedSubject = subject.trim().length > 0 ? subject : 'bounded module'
+
+  if (sourceId.trim().length > 0) {
+    return {
+      approvedParentAnchor: sourceId,
+      approvedParentFamily: family,
+      approvedParentScale: `S${Math.max(1, Math.min(8, Math.round(sourceScale)))}`,
+      approvedParentMechanism: normalizedMechanism,
+      approvedParentSubject: normalizedSubject,
+    }
+  }
+
   const approved = APPROVED_ANCHORS.find((entry) => entry.id === sourceId)
   if (approved) {
     return {
@@ -1400,7 +1425,6 @@ const buildHintsByScale = (
 }
 
 const chooseSubject = (context: DerivedSeedContext): string => {
-  const calibrated = APPROVED_ANCHORS.find((entry) => entry.id === context.approvedParentAnchor)
   const exemplarTerms = normalizeText(context.handcraftedAnchorTerms)
     .split(' ')
     .filter((term) => term.length >= 4 && !STOP_WORDS.has(term))
@@ -1411,7 +1435,7 @@ const chooseSubject = (context: DerivedSeedContext): string => {
   if (exemplarTerms.length > 0) return exemplarTerms[0]!
   if (titleTerms.length > 0) return titleTerms[0]!
 
-  return calibrated?.subjectStyle ?? 'module item'
+  return context.approvedParentSubject || 'module item'
 }
 
 const canonicalShapeId = (shape: PrecursorShapeTemplate): string => {
@@ -1477,7 +1501,13 @@ const buildSeedContext = (
     `${provisionalContext.rewrittenInput} ${provisionalContext.rewrittenHint} ${provisionalContext.sourceDescription}`,
   )
   const reusableActions = reusableActionSignature(mechanics)
-  const approvedParentContext = buildApprovedAnchorContext(row.id, provisionalContext.sourceFamily)
+  const approvedParentContext = buildApprovedAnchorContext({
+    sourceId: row.id,
+    family: provisionalContext.sourceFamily,
+    sourceScale,
+    mechanism: sourceMechanics,
+    subject: rewrittenTitle,
+  })
   const handcraftedAnchors = selectLowScaleExemplars(
     provisionalContext.sourceFamily,
     `S${Math.min(3, sourceScale)}` as 'S1' | 'S2' | 'S3',
@@ -1696,11 +1726,17 @@ const deriveScaleCandidates = (
   handcraftedAnchorsByFamily: Map<string, HandcraftedSeedAnchor[]>,
 ): DerivedPrompt[] => {
   const context = buildSeedContext(row, handcraftedAnchorsByFamily)
+  if (context.sourceScale <= 1) {
+    return []
+  }
+
   const mechanics = extractMechanics(context)
   const mechanism = mechanics[0] ?? 'create'
   const sourceScaleSignature = `${context.sourceScaleLabel} (${context.sourceFamily}/${context.sourceStructure})`
   const candidateMechanics = renderMechanics(mechanics)
-  const targets: DerivedPrompt['targetScale'][] = ['S1', 'S2', 'S3']
+  const targets: DerivedPrompt['targetScale'][] = ['S1', 'S2', 'S3'].filter(
+    (targetScale) => Number(targetScale.replace('S', '')) < context.sourceScale,
+  ) as DerivedPrompt['targetScale'][]
 
   return targets.flatMap((targetScale) => {
     const targetScaleAnchors = selectLowScaleExemplars(context.sourceFamily, targetScale, handcraftedAnchorsByFamily)
@@ -1794,9 +1830,9 @@ const deriveScaleCandidates = (
   })
 }
 
-const hasScaleAtLeast4 = (row: PromptRow): boolean => {
+const hasScaleAtLeast = (row: PromptRow, minimumScale: number): boolean => {
   const sourceScale = pickScaleFromRow(row)
-  return sourceScale !== null && sourceScale >= 4
+  return sourceScale !== null && sourceScale >= minimumScale
 }
 
 const parseArgs = () => {
@@ -1804,6 +1840,7 @@ const parseArgs = () => {
   let inputPath = DEFAULT_INPUT
   let limit = 20
   let outputPath: string | null = null
+  let minSourceScale = 4
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index]
@@ -1823,22 +1860,29 @@ const parseArgs = () => {
     if (arg === '--output' && args[index + 1]) {
       outputPath = args[index + 1]!
       index += 1
+      continue
+    }
+
+    if (arg === '--min-source-scale' && args[index + 1]) {
+      minSourceScale = Math.max(1, Math.min(8, Number(args[index + 1]!)))
+      index += 1
     }
   }
 
-  return { inputPath, limit, outputPath }
+  return { inputPath, limit, outputPath, minSourceScale }
 }
 
 const main = async () => {
-  const { inputPath, limit, outputPath } = parseArgs()
+  const { inputPath, limit, outputPath, minSourceScale } = parseArgs()
   const rows = await readRows(inputPath)
   const handcraftedByFamily = await loadHandcraftedAnchors(DEFAULT_HANDCRAFTED_INPUT).catch(
     () => new Map<string, HandcraftedSeedAnchor[]>(),
   )
-  const qualified = rows.filter(hasScaleAtLeast4).slice(0, limit)
+  const qualified = rows.filter((row) => hasScaleAtLeast(row, minSourceScale)).slice(0, limit)
   const prompts = qualified.flatMap((row) => deriveScaleCandidates(row, handcraftedByFamily))
   const payload = {
     inputPath,
+    minSourceScale,
     seedCount: qualified.length,
     derivedCount: prompts.length,
     prompts,

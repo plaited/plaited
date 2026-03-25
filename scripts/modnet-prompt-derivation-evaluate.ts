@@ -204,6 +204,11 @@ const DEFAULT_SOURCE_CATALOG = join(
 )
 const DEFAULT_INPUT = join(import.meta.dir, 'modnet-derived-prompts.json')
 const DEFAULT_OUTPUT = join(import.meta.dir, '..', 'tmp', 'modnet-derived-prompt-evals.jsonl')
+const DEFAULT_CONCURRENCY = 5
+const MODEL_STAGE_TIMEOUT_MS = 90_000
+const MAX_MODEL_STAGE_RETRIES = 2
+const INITIAL_MODEL_STAGE_BACKOFF_MS = 1_000
+const MAX_MODEL_STAGE_BACKOFF_MS = 9_999
 
 const STOP_WORDS = new Set([
   'and',
@@ -994,7 +999,7 @@ export const assessDerivedPromptCandidate = ({
   const sourceScaleKnown = sourceScale !== null
   const targetScale = parseCandidateScale(candidate.targetScale)
   const sourceScaleFits = sourceScale === null ? false : targetScale < sourceScale
-  if (sourceScale !== null && sourceScale < 4) {
+  if (sourceScale !== null && sourceScale < 2) {
     hardFailures.push(`source-scale-too-small:${sourceScale}`)
   }
   if (!sourceScaleKnown) {
@@ -1475,6 +1480,8 @@ const parseArgs = () => {
   let sourcePath = DEFAULT_SOURCE_CATALOG
   let outputPath = DEFAULT_OUTPUT
   let progress = true
+  let concurrency = DEFAULT_CONCURRENCY
+  let resume = true
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index]
@@ -1493,12 +1500,21 @@ const parseArgs = () => {
       index += 1
       continue
     }
+    if (arg === '--concurrency' && args[index + 1]) {
+      concurrency = Math.max(1, Number(args[index + 1]!))
+      index += 1
+      continue
+    }
     if (arg === '--quiet') {
       progress = false
+      continue
+    }
+    if (arg === '--no-resume') {
+      resume = false
     }
   }
 
-  return { candidatesPath, sourcePath, outputPath, progress }
+  return { candidatesPath, sourcePath, outputPath, progress, concurrency, resume }
 }
 
 const loadPromptCatalog = async (path: string): Promise<Map<string, PromptCase>> => {
@@ -1531,6 +1547,76 @@ const loadDerivedCandidates = async (path: string): Promise<DerivedPromptCandida
     .parse(parsed)
 
   return bundle.prompts
+}
+
+const readExistingEvaluationIds = async (path: string): Promise<Set<string>> => {
+  if (!(await Bun.file(path).exists())) return new Set()
+  const text = await Bun.file(path).text()
+  return new Set(
+    text
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        try {
+          const row = JSON.parse(line) as { candidate?: { id?: unknown } }
+          return typeof row.candidate?.id === 'string' ? row.candidate.id : null
+        } catch {
+          return null
+        }
+      })
+      .filter((id): id is string => Boolean(id)),
+  )
+}
+
+const getJudgeCostUsd = (value: unknown): number => {
+  const record = asRecord(value)
+  return typeof record.totalCostUsd === 'number' ? record.totalCostUsd : 0
+}
+
+const summarizeExistingEvaluations = async (path: string) => {
+  if (!(await Bun.file(path).exists())) {
+    return {
+      processedCandidates: 0,
+      blockedDeterministically: 0,
+      judgePassed: 0,
+      metaPassed: 0,
+      recommended: 0,
+      judgeCostUsd: 0,
+      metaVerifierCostUsd: 0,
+      sourceFamilies: {} as Record<string, number>,
+    }
+  }
+
+  const text = await Bun.file(path).text()
+  const rows = text
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => JSON.parse(line) as DerivedPromptEvaluation)
+
+  return {
+    processedCandidates: rows.length,
+    blockedDeterministically: rows.filter((row) => row.deterministicCheck.pass === false).length,
+    judgePassed: rows.filter((row) => row.judge?.pass === true).length,
+    metaPassed: rows.filter((row) => row.metaVerification?.pass === true).length,
+    recommended: rows.filter((row) => row.recommended === true).length,
+    judgeCostUsd: rows.reduce((sum, row) => sum + getJudgeCostUsd(asRecord(row.judge?.outcome).judgeSdk), 0),
+    metaVerifierCostUsd: rows.reduce(
+      (sum, row) => sum + getJudgeCostUsd(asRecord(row.metaVerification?.outcome).metaVerificationSdk),
+      0,
+    ),
+    sourceFamilies: summarizeFamilies(rows),
+  }
+}
+
+const countErrorRows = async (path: string): Promise<number> => {
+  if (!(await Bun.file(path).exists())) return 0
+  const text = await Bun.file(path).text()
+  return text
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean).length
 }
 
 const createTaskDescription = (candidate: DerivedPromptCandidate, sourcePrompt: PromptCase) => {
@@ -1593,6 +1679,98 @@ const summarizeFamilies = (evaluations: DerivedPromptEvaluation[]) => {
   return Object.fromEntries(Array.from(counts.entries()).sort((left, right) => right[1] - left[1]))
 }
 
+const getSummaryPath = (outputPath: string) => `${outputPath}.summary.json`
+
+const getErrorsPath = (outputPath: string) => `${outputPath}.errors.jsonl`
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const computeBackoffMs = (attempt: number): number => {
+  const exponential = Math.min(MAX_MODEL_STAGE_BACKOFF_MS, INITIAL_MODEL_STAGE_BACKOFF_MS * 2 ** attempt)
+  const jitter = Math.floor(Math.random() * 250)
+  return exponential + jitter
+}
+
+const withTimeout = async <T>({
+  label,
+  operation,
+  timeoutMs = MODEL_STAGE_TIMEOUT_MS,
+}: {
+  label: string
+  operation: () => Promise<T>
+  timeoutMs?: number
+}): Promise<T> => {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs)
+  })
+
+  try {
+    return await Promise.race([operation(), timeoutPromise])
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId)
+  }
+}
+
+const isRetryableStageFailure = (reason: string): boolean => {
+  const normalized = reason.toLowerCase()
+  return (
+    normalized.includes('timed out') ||
+    normalized.includes('429') ||
+    normalized.includes('500') ||
+    normalized.includes('502') ||
+    normalized.includes('503') ||
+    normalized.includes('504') ||
+    normalized.includes('zlib') ||
+    normalized.includes('decompression') ||
+    normalized.includes('no json object found') ||
+    normalized.includes('unexpected token') ||
+    normalized.includes('invalid input') ||
+    normalized.includes('json') ||
+    normalized.includes('structured llm query exhausted validation retries')
+  )
+}
+
+const runRetriableStage = async <T>({
+  label,
+  operation,
+  isRetryableResult,
+  timeoutMs = MODEL_STAGE_TIMEOUT_MS,
+  onRetry,
+}: {
+  label: string
+  operation: () => Promise<T>
+  isRetryableResult?: (result: T) => boolean
+  timeoutMs?: number
+  onRetry?: (message: string) => void
+}): Promise<T> => {
+  let lastResult: T | undefined
+  for (let attempt = 0; attempt <= MAX_MODEL_STAGE_RETRIES; attempt += 1) {
+    try {
+      const result = await withTimeout({ label, operation, timeoutMs })
+      lastResult = result
+      if (isRetryableResult?.(result) && attempt < MAX_MODEL_STAGE_RETRIES) {
+        const backoffMs = computeBackoffMs(attempt)
+        onRetry?.(`${label} retrying after empty/invalid result in ${backoffMs}ms`)
+        await sleep(backoffMs)
+        continue
+      }
+      return result
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error)
+      if (attempt < MAX_MODEL_STAGE_RETRIES && isRetryableStageFailure(reason)) {
+        const backoffMs = computeBackoffMs(attempt)
+        onRetry?.(`${label} retrying after error in ${backoffMs}ms: ${reason}`)
+        await sleep(backoffMs)
+        continue
+      }
+      throw error
+    }
+  }
+
+  return lastResult as T
+}
+
 const logProgress = ({ enabled, message }: { enabled: boolean; message: string }) => {
   if (!enabled) {
     return
@@ -1601,8 +1779,121 @@ const logProgress = ({ enabled, message }: { enabled: boolean; message: string }
   console.error(`[modnet-derive-eval] ${message}`)
 }
 
+const processCandidate = async ({
+  candidate,
+  sourceCatalog,
+  seenIds,
+  index,
+  total,
+  progress,
+}: {
+  candidate: DerivedPromptCandidate
+  sourceCatalog: Map<string, PromptCase>
+  seenIds: Set<string>
+  index: number
+  total: number
+  progress: boolean
+}): Promise<DerivedPromptEvaluation> => {
+  logProgress({
+    enabled: progress,
+    message: `candidate ${index + 1}/${total}: ${candidate.id} precheck`,
+  })
+
+  const sourcePrompt = sourceCatalog.get(candidate.sourceId)
+  const sourceContext = sourcePrompt ? extractSeedContext(candidate, sourcePrompt) : extractSeedContext(candidate)
+  const deterministicCheck = assessDerivedPromptCandidate({
+    candidate,
+    sourcePrompt,
+    seenIds,
+  })
+  seenIds.add(candidate.id)
+
+  if (!sourcePrompt) {
+    logProgress({
+      enabled: progress,
+      message: `candidate ${index + 1}/${total}: ${candidate.id} blocked (missing source)`,
+    })
+    return DerivedPromptEvaluationSchema.parse({
+      candidate,
+      sourcePrompt: PromptCaseSchema.parse({
+        id: candidate.sourceId,
+        input: '',
+      }),
+      deterministicCheck,
+      recommended: false,
+    })
+  }
+
+  if (!deterministicCheck.pass) {
+    logProgress({
+      enabled: progress,
+      message: `candidate ${index + 1}/${total}: ${candidate.id} blocked (${deterministicCheck.hardFailures.join(', ')})`,
+    })
+    return DerivedPromptEvaluationSchema.parse({
+      candidate,
+      sourcePrompt,
+      deterministicCheck,
+      recommended: false,
+    })
+  }
+
+  const task = createTaskDescription(candidate, sourcePrompt)
+  const metadata = {
+    sourcePrompt,
+    candidatePrompt: candidate,
+    deterministicCheck,
+    sourceContext,
+  }
+
+  logProgress({
+    enabled: progress,
+    message: `candidate ${index + 1}/${total}: ${candidate.id} judge`,
+  })
+  const judge = await runRetriableStage({
+    label: `${candidate.id} judge`,
+    operation: () =>
+      judgeDerivedPrompt({
+        input: task,
+        output: JSON.stringify(candidate, null, 2),
+        metadata,
+      }),
+    onRetry: (message) => logProgress({ enabled: progress, message }),
+  })
+  logProgress({
+    enabled: progress,
+    message: `candidate ${index + 1}/${total}: ${candidate.id} meta-verifier`,
+  })
+  const metaVerification = await runRetriableStage({
+    label: `${candidate.id} meta-verifier`,
+    operation: () =>
+      metaVerifyDerivedPrompt({
+        input: task,
+        output: JSON.stringify(judge, null, 2),
+        metadata: {
+          ...metadata,
+          judgeResult: judge,
+        },
+      }),
+    onRetry: (message) => logProgress({ enabled: progress, message }),
+  })
+
+  const evaluation = DerivedPromptEvaluationSchema.parse({
+    candidate,
+    sourcePrompt,
+    deterministicCheck,
+    judge,
+    metaVerification,
+    recommended: deterministicCheck.pass && judge.pass && metaVerification.pass,
+  })
+  logProgress({
+    enabled: progress,
+    message: `candidate ${index + 1}/${total}: ${candidate.id} done judge=${judge.pass} meta=${metaVerification.pass}`,
+  })
+  return evaluation
+}
+
 const main = async () => {
-  const { candidatesPath, sourcePath, outputPath, progress } = parseArgs()
+  const { candidatesPath, sourcePath, outputPath, progress, concurrency, resume } = parseArgs()
   logProgress({
     enabled: progress,
     message: `loading source catalog from ${sourcePath}`,
@@ -1617,115 +1908,147 @@ const main = async () => {
     enabled: progress,
     message: `loaded ${candidates.length} candidate(s)`,
   })
-  const seenIds = new Set<string>()
-  const evaluations: DerivedPromptEvaluation[] = []
-  await resetJsonlOutput(outputPath)
+  const errorsPath = getErrorsPath(outputPath)
+  const summaryPath = getSummaryPath(outputPath)
+  const existingIds = resume ? await readExistingEvaluationIds(outputPath) : new Set<string>()
+  const pendingCandidates = candidates.filter((candidate) => !existingIds.has(candidate.id))
+  const seenIds = new Set(existingIds)
 
-  for (const [index, candidate] of candidates.entries()) {
-    logProgress({
-      enabled: progress,
-      message: `candidate ${index + 1}/${candidates.length}: ${candidate.id} precheck`,
-    })
-
-    const sourcePrompt = sourceCatalog.get(candidate.sourceId)
-    const sourceContext = sourcePrompt ? extractSeedContext(candidate, sourcePrompt) : extractSeedContext(candidate)
-    const deterministicCheck = assessDerivedPromptCandidate({
-      candidate,
-      sourcePrompt,
-      seenIds,
-    })
-    seenIds.add(candidate.id)
-
-    if (!sourcePrompt) {
-      logProgress({
-        enabled: progress,
-        message: `candidate ${index + 1}/${candidates.length}: ${candidate.id} blocked (missing source)`,
-      })
-      const evaluation = DerivedPromptEvaluationSchema.parse({
-        candidate,
-        sourcePrompt: PromptCaseSchema.parse({
-          id: candidate.sourceId,
-          input: '',
-        }),
-        deterministicCheck,
-        recommended: false,
-      })
-      evaluations.push(evaluation)
-      await appendJsonlRow(outputPath, evaluation)
-      continue
+  if (resume) {
+    if (!(await Bun.file(errorsPath).exists())) {
+      await resetJsonlOutput(errorsPath)
     }
-
-    if (!deterministicCheck.pass) {
-      logProgress({
-        enabled: progress,
-        message: `candidate ${index + 1}/${candidates.length}: ${candidate.id} blocked (${deterministicCheck.hardFailures.join(', ')})`,
-      })
-      const evaluation = DerivedPromptEvaluationSchema.parse({
-        candidate,
-        sourcePrompt,
-        deterministicCheck,
-        recommended: false,
-      })
-      evaluations.push(evaluation)
-      await appendJsonlRow(outputPath, evaluation)
-      continue
-    }
-
-    const task = createTaskDescription(candidate, sourcePrompt)
-    const metadata = {
-      sourcePrompt,
-      candidatePrompt: candidate,
-      deterministicCheck,
-      sourceContext,
-    }
-
-    logProgress({
-      enabled: progress,
-      message: `candidate ${index + 1}/${candidates.length}: ${candidate.id} judge`,
-    })
-    const judge = await judgeDerivedPrompt({
-      input: task,
-      output: JSON.stringify(candidate, null, 2),
-      metadata,
-    })
-    logProgress({
-      enabled: progress,
-      message: `candidate ${index + 1}/${candidates.length}: ${candidate.id} meta-verifier`,
-    })
-    const metaVerification = await metaVerifyDerivedPrompt({
-      input: task,
-      output: JSON.stringify(judge, null, 2),
-      metadata: {
-        ...metadata,
-        judgeResult: judge,
-      },
-    })
-
-    const evaluation = DerivedPromptEvaluationSchema.parse({
-      candidate,
-      sourcePrompt,
-      deterministicCheck,
-      judge,
-      metaVerification,
-      recommended: deterministicCheck.pass && judge.pass && metaVerification.pass,
-    })
-    evaluations.push(evaluation)
-    await appendJsonlRow(outputPath, evaluation)
-    logProgress({
-      enabled: progress,
-      message: `candidate ${index + 1}/${candidates.length}: ${candidate.id} done judge=${judge.pass} meta=${metaVerification.pass}`,
-    })
+  } else {
+    await resetJsonlOutput(outputPath)
+    await resetJsonlOutput(errorsPath)
   }
 
-  logProgress({
-    enabled: progress,
-    message: `wrote ${evaluations.length} evaluation row(s) to ${outputPath}`,
-  })
+  const existingSummary = resume
+    ? await summarizeExistingEvaluations(outputPath)
+    : {
+        processedCandidates: 0,
+        blockedDeterministically: 0,
+        judgePassed: 0,
+        metaPassed: 0,
+        recommended: 0,
+        judgeCostUsd: 0,
+        metaVerifierCostUsd: 0,
+        sourceFamilies: {} as Record<string, number>,
+      }
 
-  const recommended = evaluations.filter((entry) => entry.recommended).length
-  const blockedDeterministically = evaluations.filter((entry) => !entry.deterministicCheck.pass).length
-  const judgePassed = evaluations.filter((entry) => entry.judge?.pass === true).length
-  const metaPassed = evaluations.filter((entry) => entry.metaVerification?.pass === true).length
+  let processedCandidates = existingSummary.processedCandidates
+  let blockedDeterministically = existingSummary.blockedDeterministically
+  let judgePassed = existingSummary.judgePassed
+  let metaPassed = existingSummary.metaPassed
+  let recommended = existingSummary.recommended
+  let failedCandidates = resume ? await countErrorRows(errorsPath) : 0
+  let judgeCostUsd = existingSummary.judgeCostUsd
+  let metaVerifierCostUsd = existingSummary.metaVerifierCostUsd
+  const familyCounts = new Map(Object.entries(existingSummary.sourceFamilies))
+  let lastFailure: { id: string; message: string } | null = null
+  let writeQueue = Promise.resolve()
+
+  const writeSummary = async () => {
+    await Bun.write(
+      summaryPath,
+      `${JSON.stringify(
+        {
+          candidatesPath,
+          sourcePath,
+          outputPath,
+          errorsPath,
+          totalCandidates: candidates.length,
+          pendingCandidates: pendingCandidates.length,
+          processedCandidates,
+          failedCandidates,
+          blockedDeterministically,
+          judgePassed,
+          metaPassed,
+          recommended,
+          spendUsd: {
+            judge: Number(judgeCostUsd.toFixed(6)),
+            metaVerifier: Number(metaVerifierCostUsd.toFixed(6)),
+            total: Number((judgeCostUsd + metaVerifierCostUsd).toFixed(6)),
+          },
+          sourceFamilies: Object.fromEntries(
+            Array.from(familyCounts.entries()).sort((left, right) => right[1] - left[1]),
+          ),
+          lastFailure,
+          updatedAt: new Date().toISOString(),
+        },
+        null,
+        2,
+      )}\n`,
+    )
+  }
+
+  await writeSummary()
+
+  const recordSuccess = (evaluation: DerivedPromptEvaluation) => {
+    writeQueue = writeQueue.then(async () => {
+      await appendJsonlRow(outputPath, evaluation)
+      processedCandidates += 1
+      if (!evaluation.deterministicCheck.pass) blockedDeterministically += 1
+      if (evaluation.judge?.pass === true) judgePassed += 1
+      if (evaluation.metaVerification?.pass === true) metaPassed += 1
+      if (evaluation.recommended) recommended += 1
+      judgeCostUsd += getJudgeCostUsd(asRecord(evaluation.judge?.outcome).judgeSdk)
+      metaVerifierCostUsd += getJudgeCostUsd(asRecord(evaluation.metaVerification?.outcome).metaVerificationSdk)
+      const family =
+        typeof evaluation.sourcePrompt.metadata?.patternFamily === 'string'
+          ? evaluation.sourcePrompt.metadata.patternFamily
+          : 'unknown'
+      familyCounts.set(family, (familyCounts.get(family) ?? 0) + 1)
+      await writeSummary()
+    })
+    return writeQueue
+  }
+
+  const recordFailure = (candidateId: string, error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error)
+    writeQueue = writeQueue.then(async () => {
+      failedCandidates += 1
+      lastFailure = { id: candidateId, message }
+      await appendJsonlRow(errorsPath, {
+        id: candidateId,
+        error: message,
+      })
+      await writeSummary()
+    })
+    return writeQueue
+  }
+
+  let nextIndex = 0
+  const runWorker = async () => {
+    while (nextIndex < pendingCandidates.length) {
+      const currentIndex = nextIndex
+      nextIndex += 1
+      const candidate = pendingCandidates[currentIndex]!
+      try {
+        const evaluation = await processCandidate({
+          candidate,
+          sourceCatalog,
+          seenIds,
+          index: currentIndex,
+          total: pendingCandidates.length,
+          progress,
+        })
+        await recordSuccess(evaluation)
+      } catch (error: unknown) {
+        logProgress({
+          enabled: progress,
+          message: `candidate ${currentIndex + 1}/${pendingCandidates.length}: ${candidate.id} failed ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        })
+        await recordFailure(candidate.id, error)
+      }
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(concurrency, pendingCandidates.length) }, () => runWorker())
+  await Promise.all(workers)
+  await writeQueue
 
   console.log(
     JSON.stringify(
@@ -1733,12 +2056,19 @@ const main = async () => {
         candidatesPath,
         sourcePath,
         outputPath,
-        totalCandidates: evaluations.length,
+        errorsPath,
+        summaryPath,
+        totalCandidates: candidates.length,
+        pendingCandidates: pendingCandidates.length,
+        processedCandidates,
+        failedCandidates,
         blockedDeterministically,
         judgePassed,
         metaPassed,
         recommended,
-        sourceFamilies: summarizeFamilies(evaluations),
+        sourceFamilies: Object.fromEntries(
+          Array.from(familyCounts.entries()).sort((left, right) => right[1] - left[1]),
+        ),
       },
       null,
       2,

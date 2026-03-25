@@ -667,6 +667,18 @@ const buildOutcome = ({
     ...(sdkMeta ? { judgeSdk: sdkMeta } : {}),
   })
 
+const clampUnit = (value: number): number => Math.max(0, Math.min(1, value))
+
+const clampDimensions = (dimensions?: JudgeOutput['dimensions']): JudgeOutput['dimensions'] | undefined =>
+  dimensions
+    ? {
+        fidelity: clampUnit(dimensions.fidelity),
+        scaleFit: clampUnit(dimensions.scaleFit),
+        usefulness: clampUnit(dimensions.usefulness),
+        specificity: clampUnit(dimensions.specificity),
+      }
+    : undefined
+
 export const toGraderResult = (result: JudgeOutput & { outcome?: Record<string, unknown> }): GraderResult =>
   GraderResultSchema.parse({
     pass: result.pass,
@@ -706,10 +718,11 @@ const invokeJudge = async (prompt: string): Promise<JudgeOutput & { outcome?: Re
     pass: result.value.pass,
     score: Math.max(0, Math.min(1, result.value.score)),
     reasoning: result.value.reasoning,
+    dimensions: clampDimensions(result.value.dimensions),
     ...(result.value.dimensions || result.meta
       ? {
           outcome: buildOutcome({
-            dimensions: result.value.dimensions,
+            dimensions: clampDimensions(result.value.dimensions),
             sdkMeta: result.meta,
           }),
         }

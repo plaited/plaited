@@ -1,0 +1,37 @@
+{
+  "inputPath": "dev-research/modnet/catalog/modnet-derived-prompts.slice16.full.evals.jsonl",
+  "outputPath": "dev-research/modnet/catalog/modnet-derived-prompts.slice16.recommended.jsonl",
+  "totalRecommended": 448,
+  "byScale": {
+    "S1": 311,
+    "S2": 109,
+    "S3": 28
+  },
+  "topFamilies": {
+    "personal-data-manager": 21,
+    "business-process": 17,
+    "calculator": 13,
+    "integrity-scan-and-remediation": 10,
+    "inspection and reference utility": 9,
+    "reference directory": 9,
+    "reference lookup": 8,
+    "education_content": 8,
+    "decision support": 8,
+    "educational annotation": 7,
+    "calculation_tool": 7,
+    "design asset library": 7,
+    "interactive education": 7,
+    "media playback control": 6,
+    "presentation formatting": 6,
+    "directory/reference": 6,
+    "file operations": 6,
+    "quiz-and-assessment": 6,
+    "reference database": 6,
+    "profile collection and segmentation": 6,
+    "network navigation / linked-record explorer": 5,
+    "cataloging_and_archive": 5,
+    "layout-and-rendering utility": 5,
+    "job-configuration dialog": 5,
+    "rendering_and_visualization_utilities": 5
+  }
+}

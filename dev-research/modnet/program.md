@@ -269,6 +269,9 @@ So:
     - handcrafted low-scale target-shape transfer
     - anti-generic anchors with selective lexical relaxation when mechanics and parent role are strong
   - The next Slice 23 fanout should preserve those findings but rerun under explicit git worktree orchestration with per-attempt status artifacts and targeted validation results.
+  - The observable fanout strategy list lives in `dev-research/modnet/slice-23-strategies.txt`.
+  - `scripts/dev-autoresearch-fanout.ts` reads that file, assigns one strategy note per attempt, and passes the note into `scripts/dev-autoresearch.ts` via `--strategy-note`.
+  - Those strategy notes are not documentation-only; they are the per-attempt context shaping the prompt/script search for Slice 23.
 - Slice 15 should consume only the regenerated prompt-set artifact from Slice
   14, not the legacy catalog.
 
