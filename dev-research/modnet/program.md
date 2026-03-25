@@ -234,6 +234,8 @@ So:
 - Slice 19: test cheap planner candidates for search-query and modernization shaping in the Slice 14 regeneration path
 - Slice 20: improve the chosen `MiniMax M2.5` planner prompt and code path with bounded autoresearch before the next full regeneration run
 - Slice 21: calibrate Slice 15 seed-review context so regenerated prompt seeds carry richer MSS/provenance and the review judge knows it is doing promotion review rather than first-pass modernization
+- Slice 22: improve the regenerated-seed review classifier results by strengthening the sample artifact and seed-review prompt surface before rerunning Slice 15
+- Slice 23: prepare carried-forward derivation context for Slice 16 so approved regenerated seeds remain primary and original HyperCard evidence stays as anti-drift grounding
 
 ## Current Execution Notes
 
@@ -257,6 +259,16 @@ So:
   retained-corpus regeneration run.
 - Slice 14 should write deterministic intermediate artifacts before writing the
   final regenerated prompt set.
+- Slice 15 is complete.
+  - Classified seed-review artifacts are committed in `dev-research/modnet/catalog/`.
+- Slice 23 has useful early calibration already.
+  - The first 14 completed attempts converged on the following direction:
+    - mechanics continuity
+    - immediate-parent / chain continuity
+    - precursor contribution framing
+    - handcrafted low-scale target-shape transfer
+    - anti-generic anchors with selective lexical relaxation when mechanics and parent role are strong
+  - The next Slice 23 fanout should preserve those findings but rerun under explicit git worktree orchestration with per-attempt status artifacts and targeted validation results.
 - Slice 15 should consume only the regenerated prompt-set artifact from Slice
   14, not the legacy catalog.
 

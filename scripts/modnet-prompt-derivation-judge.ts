@@ -62,8 +62,64 @@ type SeedContext = {
   sourceStructure: string
   sourceFamily: string
   sourceScaleLabel: string
+  sourceSeedAnchors: string
+  sourceGroundingAnchors: string
+  sourceMechanics: string
+  operationalLoop: string
+  reusableActions: string
+  targetShapeTransferSignals: string
+  targetShapeTransferMechanics: string
+  targetShapeTransferStructureSignals: string
+  targetShapeTransferDynamicSignals: string
+  targetShapeTransferManifest: string
+  targetShapeTransferTerms: string
+  handcraftedAnchorIds: string
+  handcraftedAnchorTerms: string
+  handcraftedAnchorMechanics: string
+  approvedParentAnchor: string
+  approvedParentFamily: string
+  approvedParentScale: string
+  approvedParentMechanism: string
+  approvedParentSubject: string
+  sourceShape: string
   sourceCoreUserJob: string
   sourceWhyRelevant: string
+  chainExpectedParentScale: string
+  chainImmediateParentScale: string
+  chainExpectedParentMechanism: string
+  chainImmediateParentMechanism: string
+  chainExpectedParentSubject: string
+  chainImmediateParentSubject: string
+  chainExpectedParentCapability: string
+  chainImmediateParentCapability: string
+  chainExpectedParentPromptId: string
+  chainImmediateParentPromptId: string
+  chainImmediateParentReusableActions: string
+  chainImmediateParentOperationalLoop: string
+  chainImmediateParentShape: string
+  chainImmediateParentRole: string
+  chainImmediateParentRoleAffordances: string
+  chainPath: string
+  contributesToParentCapability: string
+}
+
+type SeedChainContext = {
+  chainExpectedParentPromptId: string
+  chainImmediateParentPromptId: string
+  chainExpectedParentScale: string
+  chainImmediateParentScale: string
+  chainExpectedParentMechanism: string
+  chainImmediateParentMechanism: string
+  chainExpectedParentSubject: string
+  chainImmediateParentSubject: string
+  chainExpectedParentCapability: string
+  chainImmediateParentCapability: string
+  chainImmediateParentReusableActions: string
+  chainImmediateParentOperationalLoop: string
+  chainImmediateParentShape: string
+  chainImmediateParentRole: string
+  chainImmediateParentRoleAffordances: string
+  chainPath: string
 }
 
 const asRecord = (value: unknown): Record<string, unknown> =>
@@ -91,6 +147,101 @@ const parseScaleFromValue = (value: unknown): string => {
   const match = /(?:^|[^\w])(?:scale-|S)?\s*([1-8])(?:[^\w]|$)/i.exec(text)
   if (!match) return text
   return `S${match[1]!}`
+}
+
+const parseScalePathText = (value: unknown): string => {
+  if (!Array.isArray(value)) {
+    return ''
+  }
+
+  return value
+    .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
+    .filter((entry) => entry.length > 0)
+    .join(' → ')
+}
+
+const parseSourceShapeFromCandidate = (metadata?: Record<string, unknown>): string => {
+  const candidatePrompt = asRecord(metadata?.candidatePrompt)
+  const candidateId = asString(candidatePrompt.id)
+  const markerIndex = candidateId.indexOf('-derived-')
+  if (markerIndex === -1) return ''
+
+  const tail = candidateId.slice(markerIndex + '-derived-'.length).trim()
+  const separatorIndex = tail.indexOf('-')
+  if (separatorIndex === -1) return ''
+  return tail.slice(separatorIndex + 1)
+}
+
+const parseCandidateChainFromMetadata = (metadata?: Record<string, unknown>): SeedChainContext => {
+  const candidatePrompt = asRecord(metadata?.candidatePrompt)
+  const chainContext = asRecord(candidatePrompt.chain)
+  const sourceContext = asRecord(metadata?.sourceContext)
+  const expectedParentPromptId =
+    asString(chainContext.expectedParentPromptId) ||
+    asString(sourceContext.expectedParentPromptId) ||
+    asString(candidatePrompt.expectedParentPromptId) ||
+    ''
+  const immediateParentPromptId =
+    asString(chainContext.immediateParentPromptId) ||
+    asString(sourceContext.immediateParentPromptId) ||
+    expectedParentPromptId
+  const chainPath =
+    parseScalePathText(chainContext.chainPath) ||
+    parseScalePathText(sourceContext.chainPath) ||
+    parseScalePathText(sourceContext.chain)
+  const expectedParentScale =
+    asString(chainContext.parentScaleLabel) || asString(sourceContext.expectedParentScale) || ''
+  const immediateParentScale =
+    asString(chainContext.parentScaleLabel) || asString(sourceContext.immediateParentScale) || expectedParentScale
+  const expectedParentMechanism =
+    asString(chainContext.parentMechanism) ||
+    asString(sourceContext.parentMechanism) ||
+    asString(sourceContext.approvedParentMechanism)
+  const immediateParentMechanism = asString(chainContext.parentMechanism) || expectedParentMechanism
+  const expectedParentSubject =
+    asString(chainContext.parentSubject) ||
+    asString(sourceContext.parentSubject) ||
+    asString(sourceContext.approvedParentSubject)
+  const immediateParentSubject = asString(chainContext.parentSubject) || expectedParentSubject
+  const immediateParentReusableActions =
+    asString(chainContext.immediateParentReusableActions) || asString(sourceContext.immediateParentReusableActions)
+  const immediateParentOperationalLoop =
+    asString(chainContext.immediateParentOperationalLoop) || asString(sourceContext.immediateParentOperationalLoop)
+  const immediateParentShape =
+    asString(chainContext.immediateParentShape) || asString(sourceContext.immediateParentShape)
+  const immediateParentRole =
+    asString(chainContext.immediateParentRole) ||
+    asString(chainContext.chainImmediateParentRole) ||
+    asString(sourceContext.immediateParentRole) ||
+    asString(sourceContext.chainImmediateParentRole)
+  const immediateParentRoleAffordances =
+    asString(chainContext.immediateParentRoleAffordances) ||
+    asString(chainContext.chainImmediateParentRoleAffordances) ||
+    asString(sourceContext.immediateParentRoleAffordances) ||
+    asString(sourceContext.chainImmediateParentRoleAffordances)
+  const chainExpectedParentCapability =
+    asString(chainContext.chainImmediateParentCapability) || asString(sourceContext.chainExpectedParentCapability)
+  const chainImmediateParentCapability =
+    asString(chainContext.chainImmediateParentCapability) || asString(sourceContext.chainImmediateParentCapability)
+
+  return {
+    chainExpectedParentPromptId: expectedParentPromptId,
+    chainImmediateParentPromptId: immediateParentPromptId,
+    chainExpectedParentScale: expectedParentScale,
+    chainImmediateParentScale: immediateParentScale,
+    chainExpectedParentMechanism: expectedParentMechanism,
+    chainImmediateParentMechanism: immediateParentMechanism,
+    chainExpectedParentSubject: expectedParentSubject,
+    chainImmediateParentSubject: immediateParentSubject,
+    chainExpectedParentCapability,
+    chainImmediateParentCapability,
+    chainImmediateParentReusableActions: immediateParentReusableActions,
+    chainImmediateParentOperationalLoop: immediateParentOperationalLoop,
+    chainImmediateParentShape: immediateParentShape,
+    chainImmediateParentRole: immediateParentRole,
+    chainImmediateParentRoleAffordances: immediateParentRoleAffordances,
+    chainPath,
+  }
 }
 
 const getSeedContextFromMetadata = (metadata?: Record<string, unknown>): SeedContext => {
@@ -127,6 +278,16 @@ const getSeedContextFromMetadata = (metadata?: Record<string, unknown>): SeedCon
     asString(sourceRecord.generatedPromptHint) ||
     asString(sourcePrompt.hint) ||
     'missing'
+  const chainContext = parseCandidateChainFromMetadata({
+    candidatePrompt,
+    sourceContext,
+  })
+  const approvedParentAnchor = asString(sourceContext.approvedParentAnchor)
+  const approvedParentFamily = asString(sourceContext.approvedParentFamily)
+  const approvedParentScale = asString(sourceContext.approvedParentScale)
+  const approvedParentMechanism = asString(sourceContext.approvedParentMechanism)
+  const approvedParentSubject = asString(sourceContext.approvedParentSubject)
+  const contributesToParentCapability = asString(sourceContext.contributesToParentCapability)
 
   return {
     sourceId: asString(candidatePrompt.sourceId) || asString(sourcePrompt.id),
@@ -159,6 +320,50 @@ const getSeedContextFromMetadata = (metadata?: Record<string, unknown>): SeedCon
               asString(sourceMetadata.sourceScale) ??
               asString(seedReviewContext.sourceScale),
           ),
+    sourceShape: asString(sourceContext.sourceShape) || parseSourceShapeFromCandidate(metadata),
+    sourceSeedAnchors:
+      asString(sourceContext.sourceAnchors) ||
+      [
+        rewrittenTitle,
+        rewrittenInput,
+        rewrittenHint,
+        asString(seedReviewContext.sourceTitle),
+        asString(seedReviewContext.sourceDescription),
+      ]
+        .filter(Boolean)
+        .join(' '),
+    sourceGroundingAnchors:
+      asString(sourceContext.sourceGroundingAnchors) ||
+      [asString(sourceContext.sourceTitle), asString(sourceContext.sourceDescription)].filter(Boolean).join(' '),
+    sourceMechanics:
+      asString(sourceContext.sourceMechanics) ||
+      asString(seedReviewContext.sourceMechanics) ||
+      [asString(sourceContext.rewrittenTitle), asString(sourceContext.rewrittenHint)]
+        .filter(Boolean)
+        .join(' ')
+        .split(' ')
+        .slice(0, 12)
+        .filter((word) => word.length >= 4)
+        .join(', '),
+    operationalLoop:
+      asString(sourceContext.operationalLoop) ||
+      asString(seedReviewContext.operationalLoop) ||
+      asString(asRecord(seedReviewContext).loop) ||
+      'none',
+    reusableActions:
+      asString(sourceContext.reusableActions) ||
+      asString(seedReviewContext.reusableActions) ||
+      asString(sourceContext.sourceCoreUserJob) ||
+      'none',
+    targetShapeTransferSignals: asString(sourceContext.targetShapeTransferSignals),
+    targetShapeTransferMechanics: asString(sourceContext.targetShapeTransferMechanics),
+    targetShapeTransferStructureSignals: asString(sourceContext.targetShapeTransferStructureSignals),
+    targetShapeTransferDynamicSignals: asString(sourceContext.targetShapeTransferDynamicSignals),
+    targetShapeTransferManifest: asString(sourceContext.targetShapeTransferManifest),
+    targetShapeTransferTerms: asString(sourceContext.targetShapeTransferTerms),
+    handcraftedAnchorIds: asString(sourceContext.handcraftedAnchorIds),
+    handcraftedAnchorTerms: asString(sourceContext.handcraftedAnchorTerms),
+    handcraftedAnchorMechanics: asString(sourceContext.handcraftedAnchorMechanics),
     sourceCoreUserJob:
       asString(sourceContext.sourceCoreUserJob) ||
       asString(seedReviewContext.coreUserJob) ||
@@ -169,6 +374,28 @@ const getSeedContextFromMetadata = (metadata?: Record<string, unknown>): SeedCon
       asString(seedReviewContext.whyRelevant) ||
       asString(sourceRecord.whyRelevant) ||
       'missing',
+    chainExpectedParentScale: chainContext.chainExpectedParentScale,
+    chainImmediateParentScale: chainContext.chainImmediateParentScale,
+    chainExpectedParentMechanism: chainContext.chainExpectedParentMechanism,
+    chainImmediateParentMechanism: chainContext.chainImmediateParentMechanism,
+    chainExpectedParentCapability: chainContext.chainExpectedParentCapability,
+    chainImmediateParentCapability: chainContext.chainImmediateParentCapability,
+    chainExpectedParentSubject: chainContext.chainExpectedParentSubject,
+    chainImmediateParentSubject: chainContext.chainImmediateParentSubject,
+    chainImmediateParentReusableActions: chainContext.chainImmediateParentReusableActions,
+    chainImmediateParentOperationalLoop: chainContext.chainImmediateParentOperationalLoop,
+    chainImmediateParentShape: chainContext.chainImmediateParentShape,
+    chainExpectedParentPromptId: chainContext.chainExpectedParentPromptId,
+    chainImmediateParentPromptId: chainContext.chainImmediateParentPromptId,
+    chainImmediateParentRole: chainContext.chainImmediateParentRole,
+    chainImmediateParentRoleAffordances: chainContext.chainImmediateParentRoleAffordances,
+    chainPath: chainContext.chainPath,
+    contributesToParentCapability,
+    approvedParentAnchor,
+    approvedParentFamily,
+    approvedParentScale,
+    approvedParentMechanism,
+    approvedParentSubject,
     rewrittenTitle,
     rewrittenInput,
     rewrittenHint,
@@ -192,11 +419,59 @@ const summarizeDeterministicConcerns = (metadata?: Record<string, unknown>) => {
   if (asBoolean(checks.avoidsGenericTemplateLanguage) === false) {
     riskSignals.push('generic-template-language')
   }
+  if (asBoolean(checks.parentCapabilityContinuity) === false) {
+    riskSignals.push('missing-parent-capability')
+  }
+  if (asBoolean(checks.hasConcretePrecursorContribution) === false) {
+    riskSignals.push('family-agnostic-filler-precursor')
+  }
   if (asBoolean(checks.hasRewrittenSeedAnchor) === false) {
     riskSignals.push('missing-rewritten-seed-anchor')
   }
   if (asBoolean(checks.hasSourceLexicalAnchor) === false) {
     riskSignals.push('weak-source-anchor')
+  }
+  if (asBoolean(checks.hasSourceEvidenceAnchor) === false) {
+    riskSignals.push('missing-source-evidence-anchor')
+  }
+  if (asBoolean(checks.hasDualSourceAnchorEvidence) === false) {
+    riskSignals.push('missing-dual-source-anchor-evidence')
+  }
+  if (asBoolean(checks.familySpecificity) === false) {
+    riskSignals.push('family-generic-filler-risk')
+  }
+  if (asBoolean(checks.chainContinuity) === false) {
+    riskSignals.push('chain-continuity-risk')
+  }
+  if (asBoolean(checks.chainParentMatch) === false) {
+    riskSignals.push('chain-parent-mismatch')
+  }
+  if (asBoolean(checks.sourceMechanicsContinuity) === false) {
+    riskSignals.push('mechanics-continuity-risk')
+  }
+  if (asBoolean(checks.reusableActionsSignal) === false) {
+    riskSignals.push('reusable-actions-risk')
+  }
+  if (asBoolean(checks.reusableActionLoopContinuity) === false) {
+    riskSignals.push('reusable-action-loop-risk')
+  }
+  if (asBoolean(checks.approvedParentMechanicContinuity) === false) {
+    riskSignals.push('approved-parent-mechanic-risk')
+  }
+  if (asBoolean(checks.immediateParentRoleContinuity) === false) {
+    riskSignals.push('role-continuity-risk')
+  }
+  if (asBoolean(checks.operationalLoopContinuity) === false) {
+    riskSignals.push('operational-loop-continuity-risk')
+  }
+  if (
+    asBoolean(checks.targetShapeTransferContinuityDataPresent) === true &&
+    asBoolean(checks.targetShapeTransferContinuity) === false
+  ) {
+    riskSignals.push('missing-target-shape-transfer')
+  }
+  if (asBoolean(checks.handcraftedStyleCopySafe) === false) {
+    riskSignals.push('style-copying-risk')
   }
 
   return {
@@ -231,6 +506,34 @@ export const buildJudgePrompt = ({
   const seedReviewContext = getSeedContextFromMetadata(metadata)
   const seedContextText = JSON.stringify(seedReviewContext, null, 2)
   const deterministicConcerns = summarizeDeterministicConcerns(metadata)
+  const chainText = JSON.stringify(
+    {
+      targetShapeTransferSignals: seedReviewContext.targetShapeTransferSignals || 'none',
+      targetShapeTransferMechanics: seedReviewContext.targetShapeTransferMechanics || 'none',
+      targetShapeTransferStructureSignals: seedReviewContext.targetShapeTransferStructureSignals || 'none',
+      targetShapeTransferDynamicSignals: seedReviewContext.targetShapeTransferDynamicSignals || 'none',
+      targetShapeTransferTerms: seedReviewContext.targetShapeTransferTerms || 'none',
+      targetShapeTransferManifest: seedReviewContext.targetShapeTransferManifest || 'none',
+      expectedParentScale: seedReviewContext.chainExpectedParentScale,
+      immediateParentScale: seedReviewContext.chainImmediateParentScale,
+      expectedParentMechanism: seedReviewContext.chainExpectedParentMechanism,
+      immediateParentMechanism: seedReviewContext.chainImmediateParentMechanism,
+      immediateParentReusableActions: seedReviewContext.chainImmediateParentReusableActions,
+      immediateParentOperationalLoop: seedReviewContext.chainImmediateParentOperationalLoop,
+      immediateParentShape: seedReviewContext.chainImmediateParentShape,
+      immediateParentRole: seedReviewContext.chainImmediateParentRole,
+      immediateParentRoleAffordances: seedReviewContext.chainImmediateParentRoleAffordances,
+      immediateParentCapability: seedReviewContext.chainImmediateParentCapability,
+      expectedParentCapability: seedReviewContext.chainExpectedParentCapability,
+      expectedParentSubject: seedReviewContext.chainExpectedParentSubject,
+      immediateParentSubject: seedReviewContext.chainImmediateParentSubject,
+      expectedParentPromptId: seedReviewContext.chainExpectedParentPromptId,
+      immediateParentPromptId: seedReviewContext.chainImmediateParentPromptId,
+      chainPath: seedReviewContext.chainPath,
+    },
+    null,
+    2,
+  )
   const sourceAnchorCandidates = `${sourceInput} ${sourceHint}`
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')
@@ -251,6 +554,12 @@ ${task}
 Source continuity context:
 - source family: ${rawSourceFamily}
 - source scale signals: ${sourceJudgeRequiredConcepts.length > 0 ? sourceJudgeRequiredConcepts.join(', ') : sourceScaleConcept}
+- approved parent context:
+  - anchor: ${seedReviewContext.approvedParentAnchor || 'missing'}
+  - family/scale: ${seedReviewContext.approvedParentFamily || 'unknown'}/${seedReviewContext.approvedParentScale || 'missing'}
+  - mechanism: ${seedReviewContext.approvedParentMechanism || 'missing'}
+  - subject style: ${seedReviewContext.approvedParentSubject || 'missing'}
+- parent contribution: ${seedReviewContext.contributesToParentCapability || 'missing'}
 - rewritten seed anchors (primary):
   - title: ${seedReviewContext.rewrittenTitle}
   - input: ${seedReviewContext.rewrittenInput}
@@ -261,10 +570,28 @@ Source continuity context:
   - source description: ${seedReviewContext.sourceDescription}
   - source structure: ${seedReviewContext.sourceStructure}
   - source scale label: ${seedReviewContext.sourceScaleLabel}
+  - source precursor shape: ${seedReviewContext.sourceShape || 'unknown'}
   - source core user job: ${seedReviewContext.sourceCoreUserJob}
   - source why relevant: ${seedReviewContext.sourceWhyRelevant}
+  - source-anchor signals:
+  - rewritten-seed anchors: ${seedReviewContext.sourceSeedAnchors || 'none'}
+  - source-grounding anchors: ${seedReviewContext.sourceGroundingAnchors || 'none'}
+  - source mechanics: ${seedReviewContext.sourceMechanics || 'not-provided'}
+  - source operational loop: ${seedReviewContext.operationalLoop || 'not-provided'}
+  - source reusable actions: ${seedReviewContext.reusableActions || 'not-provided'}
+  - handcrafted anchor ids: ${seedReviewContext.handcraftedAnchorIds || 'none'}
+  - handcrafted anchor terms: ${seedReviewContext.handcraftedAnchorTerms || 'none'}
+  - handcrafted anchor mechanics: ${seedReviewContext.handcraftedAnchorMechanics || 'none'}
+  - target-shape transfer signals: ${seedReviewContext.targetShapeTransferSignals || 'none'}
+  - target-shape transfer mechanics: ${seedReviewContext.targetShapeTransferMechanics || 'none'}
+  - target structure signals: ${seedReviewContext.targetShapeTransferStructureSignals || 'none'}
+  - target dynamic signals: ${seedReviewContext.targetShapeTransferDynamicSignals || 'none'}
+  - target-shape transfer vocabulary: ${seedReviewContext.targetShapeTransferTerms || 'none'}
+  - target-shape transfer capsule: ${seedReviewContext.targetShapeTransferManifest || 'none'}
 - source context summary:
 ${sourceContextText}
+- chain context:
+${chainText}
 - top source anchors: ${sourceAnchors || 'none'}
 - approved lane anchors:
   - Archimedes/pi explorer → creative-tool / S1
@@ -287,8 +614,23 @@ Judge this candidate on:
 - fidelity: family continuity (preserve source family, nouns, and workflow intent; avoid drift into generic utilities)
 - scaleFit: scale continuity (strict precursor for S1/S3, not the full parent)
 - usefulness: building-block usefulness (directly composable into the approved parent seed)
-- specificity: concrete mechanics (defined fields/actions instead of template text)
-- precursor plausibility: one-stage precursor intent (real S1/S2/S3 precursor, not full abstraction)
+  - specificity: recurring source mechanics and reusable action primitives (not cosmetic family terms)
+- immediate-parent continuity: immediate mechanics/actions/loop and precursor shape must be reused as real building blocks
+  - precursor plausibility: one-stage precursor intent (real S1/S2/S3 precursor, not full abstraction)
+  - approved-parent mechanism fit: candidate mechanics should align to approved parent mechanism for the lane.
+  - role continuity: preferred candidate operations should explicitly mirror the immediate parent role affordances (not just family labels).
+  - chain continuity:
+  - expected parent scale: ${seedReviewContext.chainExpectedParentScale || 'missing'}
+  - immediate parent scale: ${seedReviewContext.chainImmediateParentScale || 'missing'}
+  - immediate parent reusable actions: ${seedReviewContext.chainImmediateParentReusableActions || 'missing'}
+  - immediate parent capability: ${seedReviewContext.chainImmediateParentCapability || 'missing'}
+  - immediate parent operational loop: ${seedReviewContext.chainImmediateParentOperationalLoop || 'missing'}
+  - immediate parent shape: ${seedReviewContext.chainImmediateParentShape || 'missing'}
+  - immediate parent role/affordances: ${seedReviewContext.chainImmediateParentRole || 'missing'} / ${seedReviewContext.chainImmediateParentRoleAffordances || 'missing'}
+  - expected parent capability: ${seedReviewContext.chainExpectedParentCapability || 'missing'}
+  - expected parent id: ${seedReviewContext.chainExpectedParentPromptId || 'missing'}
+  - immediate parent id: ${seedReviewContext.chainImmediateParentPromptId || 'missing'}
+  - path: ${seedReviewContext.chainPath || 'missing'}
 
 Scoring guidance:
 - S1 should be one atomic module with clear action and minimal surface area.
@@ -297,14 +639,18 @@ Scoring guidance:
 - Prefer explicit reuse mechanics over decorative intent.
 - Penalize over-abstracted, feature-suite, or duplicated full-parent scope candidates.
 - Reject candidates that fail source anchor continuity even if generic text is fluent.
+- Reject candidates that keep rewritten-seed anchors or source-grounding anchors while dropping the other.
+- Reject family-agnostic filler that uses only family labels without reusable mechanisms.
+- Reject candidates that lack an explicit parent-contribution path and only shrink scope (no reusable precursor role).
 
 Pass only if this candidate materially preserves family continuity, scale continuity, and real lower-scale composition value.
 Be conservative about generic prompts and overbroad abstractions.
 
 Continuity guardrails:
 - deterministic hard failures: ${deterministicConcerns.hardFailures.join(', ') || 'none'}
-- deterministic risk signals: ${deterministicConcerns.riskSignals.join(', ') || 'none'}
-- if risks exist, require explicit evidence in text, not implied intent.
+  - deterministic risk signals: ${deterministicConcerns.riskSignals.join(', ') || 'none'}
+  - action-loop continuity: checks.reusableActionLoopContinuity and approvedParentMechanicContinuity should both be true for strongest mechanical fidelity
+  - if risks exist, require explicit evidence in text, not implied intent.
 `
 }
 

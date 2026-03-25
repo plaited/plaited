@@ -724,6 +724,7 @@ const main = async () => {
   const slice = protocol.slice.text
   const adapter = await loadAdapter(input.adapterPath)
   const sliceId = protocol.slice.id
+  let lastAttemptResult: RepoAutoresearchResult | null = null
 
   console.log(`mode=repo-harness adapter=${input.adapterPath} slice=${sliceId} judge=${input.judge}`)
   if (input.dryRun) {
@@ -969,35 +970,38 @@ const main = async () => {
         fullTests,
       })
 
+      const attemptResult: RepoAutoresearchResult = {
+        mode: 'repo-harness',
+        sliceId,
+        slicePath: input.slicePath,
+        programPath: input.programPath,
+        decision,
+        changedFiles,
+        diffStat,
+        attempt,
+        passed,
+        ...(input.strategyNote ? { strategyNote: input.strategyNote } : {}),
+        ...(commit ? { commit } : {}),
+        ...(pushedBranch ? { pushedBranch } : {}),
+        capture: {
+          eligible: captureAssessment.eligible,
+          richness: captureAssessment.richness,
+          reasons: captureAssessment.reasons,
+        },
+        judges: {
+          ...(judges?.primary ? { fast: { pass: judges.primary.pass, score: judges.primary.score } } : {}),
+          ...(judges?.meta ? { fastMeta: { pass: judges.meta.pass, score: judges.meta.score } } : {}),
+          ...(finalJudges?.primary
+            ? { final: { pass: finalJudges.primary.pass, score: finalJudges.primary.score } }
+            : {}),
+          ...(finalJudges?.meta ? { finalMeta: { pass: finalJudges.meta.pass, score: finalJudges.meta.score } } : {}),
+        },
+      }
+      lastAttemptResult = attemptResult
+
       await persistResultJson({
         path: input.resultJsonPath,
-        result: {
-          mode: 'repo-harness',
-          sliceId,
-          slicePath: input.slicePath,
-          programPath: input.programPath,
-          decision,
-          changedFiles,
-          diffStat,
-          attempt,
-          passed,
-          ...(input.strategyNote ? { strategyNote: input.strategyNote } : {}),
-          ...(commit ? { commit } : {}),
-          ...(pushedBranch ? { pushedBranch } : {}),
-          capture: {
-            eligible: captureAssessment.eligible,
-            richness: captureAssessment.richness,
-            reasons: captureAssessment.reasons,
-          },
-          judges: {
-            ...(judges?.primary ? { fast: { pass: judges.primary.pass, score: judges.primary.score } } : {}),
-            ...(judges?.meta ? { fastMeta: { pass: judges.meta.pass, score: judges.meta.score } } : {}),
-            ...(finalJudges?.primary
-              ? { final: { pass: finalJudges.primary.pass, score: finalJudges.primary.score } }
-              : {}),
-            ...(finalJudges?.meta ? { finalMeta: { pass: finalJudges.meta.pass, score: finalJudges.meta.score } } : {}),
-          },
-        },
+        result: attemptResult,
       })
 
       if (decision === 'keep') {
@@ -1015,23 +1019,25 @@ const main = async () => {
 
   await persistResultJson({
     path: input.resultJsonPath,
-    result: {
-      mode: 'repo-harness',
-      sliceId,
-      slicePath: input.slicePath,
-      programPath: input.programPath,
-      decision: 'discard',
-      changedFiles: [],
-      diffStat: '',
-      attempt: input.maxAttempts,
-      passed: false,
-      ...(input.strategyNote ? { strategyNote: input.strategyNote } : {}),
-      capture: {
-        eligible: false,
-        richness: 'minimal',
-        reasons: ['no-keep'],
-      },
-    },
+    result:
+      lastAttemptResult ??
+      ({
+        mode: 'repo-harness',
+        sliceId,
+        slicePath: input.slicePath,
+        programPath: input.programPath,
+        decision: 'discard',
+        changedFiles: [],
+        diffStat: '',
+        attempt: input.maxAttempts,
+        passed: false,
+        ...(input.strategyNote ? { strategyNote: input.strategyNote } : {}),
+        capture: {
+          eligible: false,
+          richness: 'minimal',
+          reasons: ['no-keep'],
+        },
+      } satisfies RepoAutoresearchResult),
   })
   console.log('result=no-keep')
 }

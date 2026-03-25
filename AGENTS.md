@@ -19,6 +19,11 @@
 **API-bound evaluation matrices:** when a script is evaluating many independent rows against remote model APIs, prefer bounded concurrency instead of sequential execution. Default to a modest concurrency like `5` or `6` unless there is a clear provider-specific reason not to.
 **Concurrency ramping:** for remote-model batch runs, start at a bounded concurrency, observe parse stability / retry behavior / provider throughput, then raise concurrency only after the smaller run is clean. Do not jump straight to the highest plausible parallelism.
 **Throughput bottleneck assumption:** for OpenRouter or other remote-model lanes, assume network/provider latency is the main bottleneck before assuming local CPU or memory is. Optimize script architecture first, then raise concurrency.
+**Fanout observability:** for multi-attempt slice fanout or autoresearch with more than one concurrent attempt, use explicit `git worktree`-backed runs or an equivalent durable attempt directory. Each attempt must write observable artifacts while running:
+  - status/result JSON
+  - changed-file or diff summary
+  - targeted validation result
+Do not rely on long-running opaque subagent state as the only record for large fanout work.
 
 
 # Workflow

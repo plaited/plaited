@@ -48,9 +48,10 @@ are:
      - variant comparison
      - final regenerated prompt-set artifact
 
-5. Run Slice 21 first to strengthen Slice 15 seed-review context.
+5. Run Slice 21 / Slice 22 first to strengthen Slice 15 seed-review context and classifier quality.
    - enrich regenerated-seed sample rows with MSS/provenance context
    - tune the reclassification judge/meta prompts for promotion review
+   - improve classifier results before rerunning the Slice 15 sample
 
 6. Run Slice 15 sample seed review on `100` regenerated prompts at `--concurrency 5`.
    - Check:
@@ -65,11 +66,21 @@ are:
    - handcrafted prompts remain the control set
    - regenerated HyperCard prompts become the curated breadth set
 
-9. Run Slice 16.
-   - use handpicked approved seeds to refine lower-scale derivation
+9. Finish Slice 23 with observable worktree-backed fanout before Slice 16.
+   - preserve the completed Slice 23 calibration findings:
+     - mechanics continuity
+     - immediate-parent / chain continuity
+     - precursor contribution framing
+     - handcrafted low-scale target-shape transfer
+     - anti-generic anchors with selective lexical relaxation
+   - rerun the next Slice 23 fanout through explicit git worktrees with per-attempt status artifacts
+
+10. Run Slice 16.
+   - use approved Slice 15 seeds plus reviewed handcrafted parent-eligible prompts
+   - treat already-low-scale handcrafted prompts as target-shape references, not derivation parents
    - derive stronger `S1-S3` precursor prompts from the regenerated seed set
 
-10. Keep Codex as the generation and implementation surface.
+11. Keep Codex as the generation and implementation surface.
    - do not change the active Codex path to Codex `--oss`
    - do not make alternative generation-model experiments part of the current
      modnet execution path

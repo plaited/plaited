@@ -1,0 +1,31 @@
+# Slice 23 observable fanout strategies
+Mechanics continuity first: preserve reusable actions, loops, and concrete operations from the approved seed before titles or category labels.
+Immediate-parent chain first: make S3->S2->S1 precursor continuity explicit and carry parent scale, role, and chain path in context.
+Precursor contribution framing: every derived lower-scale block should state what capability it contributes upward to the parent seed.
+Handcrafted low-scale target-shape transfer: use reviewed handcrafted low-scale prompts as target-shape references without copying wording.
+Anti-generic anchor pressure: require both rewritten-seed anchors and original HyperCard source anchors to survive derivation.
+Mechanics plus immediate-parent chain: combine reusable actions and parent progression so lower-scale prompts feel like real building blocks.
+Handcrafted target-shape plus mechanics: favor low-scale shapes that preserve real operational loops over stylistic resemblance.
+Chain plus anti-generic anchors: reject smaller prompts that keep family wording but lose both seed and source grounding.
+Family diversity with handcrafted scaffolds: allow multiple lower-scale forms per family as long as each remains distinct and grounded.
+Anti-generic with mechanics continuity: relax lexical overlap only when mechanics and parent-role continuity stay strong.
+Parent-to-many-output discipline: one parent may yield several lower-scale candidates, but each must occupy a distinct role or affordance slot.
+Target-shape transfer without style copying: preserve the shape lessons from handcrafted prompts while rejecting copied handcrafted prose.
+Role-variant diversity: support object, list, board, queue, lookup, draft, session, and tracking variants where the parent plausibly supports them.
+Contribution-slot clarity: distinguish prerequisite, support, navigation, editing, tracking, lookup, and orchestration contributions.
+Anchor strength with variety balance: keep diverse lower-scale outputs when mechanics and parent contribution are strong, even if lexical overlap is lighter.
+Duplicate-role pressure: penalize near-duplicate lower-scale outputs from the same parent when role or contribution overlap is too high.
+Duplicate-affordance pressure: penalize outputs that perform the same operation under trivial wording changes.
+Approved-seed-primary context: rewritten approved seed remains primary parent artifact, with original HyperCard evidence only as anti-drift grounding.
+Source anti-drift continuity: keep original source title, description, core user job, and why-relevant anchors available in every derivation pass.
+Scale continuity with flexible lexical overlap: allow mechanically grounded candidates to survive when wording changes but scale path remains plausible.
+Mechanics and contribution over family cosmetics: judge should prefer operational continuity to polished family labels.
+Low-scale exemplar diversity scaffold: let multiple handcrafted low-scale shapes guide candidate diversity for a single parent.
+Chain-aware selection logic: selection should prefer sets of lower-scale candidates that cover distinct precursor roles instead of redundant variants.
+Family-aware role taxonomy: derived candidates should have explicit role labels and role affordances, not only family labels.
+Handcrafted parent eligibility awareness: use reviewed handcrafted parent-eligible prompts as real derivation parents when appropriate.
+Already-low-scale handcrafted prompts as references only: use them to shape targets, never as downward-derivation parents.
+Immediate-parent expectations plus target shape: each lower-scale candidate should feel like the next plausible building block, not just a smaller sibling.
+Selective lexical relaxation: weak lexical overlap is acceptable only when mechanics, contribution, and parent-role continuity are all strong.
+Concrete precursor affordances: context should express what the lower-scale block enables, supports, edits, tracks, looks up, or navigates for the parent.
+Diversity with anti-filler pressure: broaden lower-scale coverage while explicitly rejecting vague prompts that could come from any family.
