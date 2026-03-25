@@ -1,0 +1,24 @@
+{
+  "outputPath": "/Users/eirby/Workspace/plaited/dev-research/modnet/catalog/modnet-initial-corpus.jsonl",
+  "markdownPath": "/Users/eirby/Workspace/plaited/dev-research/modnet/references/modnet-initial-corpus-review.md",
+  "totalRows": 898,
+  "byCorpusKind": {
+    "seed-parent": 396,
+    "derived-lower-scale": 448,
+    "handcrafted": 54
+  },
+  "byCorpusSource": {
+    "slice15-recommended": 89,
+    "slice15-salvage": 307,
+    "slice16-recommended": 448,
+    "handcrafted": 54
+  },
+  "byScale": {
+    "S1": 560,
+    "S3": 59,
+    "S2": 224,
+    "S4": 17,
+    "S5": 1,
+    "unknown": 37
+  }
+}
