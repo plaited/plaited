@@ -88,6 +88,31 @@ type WaitResult =
       ready: ReadyRound
     }
 
+type SourceAction =
+  | 'keep'
+  | 'remove'
+  | 'skip'
+  | 'quit'
+  | ReadyRound
+  | {
+      action: 'refine'
+      feedback: string
+    }
+
+type WinnerAction =
+  | 'accept-winner'
+  | 'reject-winner'
+  | 'quit'
+  | {
+      action: 'refine'
+      feedback: string
+    }
+  | {
+      action: 'adjust-scale'
+      target: 'rel' | `s${number}`
+    }
+  | 'derive'
+
 const PROGRAM_PATH = join('dev-research', 'program.md')
 const CATALOG_DIR = join('dev-research', 'catalog')
 const PROMPTS_PATH = join(CATALOG_DIR, 'prompts.jsonl')
@@ -292,6 +317,10 @@ const launchRound = async ({
     detached: true,
   })
   proc.unref()
+  await writeRoundManifest({
+    ...manifest,
+    launchedPid: proc.pid,
+  })
 
   return manifest
 }
@@ -396,66 +425,93 @@ const waitForInputOrReady = async ({
   }
 }
 
-const promptSourceAction = async (
-  rl: ReturnType<typeof createInterface>,
-): Promise<'keep' | 'remove' | 'refine' | 'skip' | 'quit' | ReadyRound | null> => {
-  console.log('\nChoose action:')
-  console.log('  1. keep')
-  console.log('  2. remove')
-  console.log('  3. refine')
-  console.log('  4. skip')
-  console.log('  5. quit')
-  const result = await waitForInputOrReady({
-    rl,
-    question: 'Enter number: ',
-  })
-  if (result.kind === 'ready') {
-    return result.ready
+export const parseSourceInput = (value: string): SourceAction | null => {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return null
   }
-  const choice = result.value.trim()
-  switch (choice) {
+
+  switch (trimmed) {
     case '1':
       return 'keep'
     case '2':
       return 'remove'
-    case '3':
-      return 'refine'
     case '4':
       return 'skip'
     case '5':
       return 'quit'
     default:
-      return null
+      if (/^\d+$/u.test(trimmed)) {
+        return null
+      }
+      return {
+        action: 'refine',
+        feedback: trimmed,
+      }
   }
 }
 
-const promptWinnerAction = async (
-  rl: ReturnType<typeof createInterface>,
-): Promise<'accept-winner' | 'reject-winner' | 'refine-again' | 'adjust-scale' | 'derive' | 'quit' | null> => {
-  console.log('\nChoose winner action:')
-  console.log('  1. accept winner')
-  console.log('  2. reject winner')
-  console.log('  3. refine again')
-  console.log('  4. adjust scale')
-  console.log('  5. derive lower-scale prompt(s)')
-  console.log('  6. quit')
-  const choice = (await rl.question('Enter number: ')).trim()
-  switch (choice) {
+export const parseWinnerInput = (value: string): WinnerAction | null => {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  const lower = trimmed.toLowerCase()
+  if (lower === 'rel' || /^s[1-5]$/u.test(lower)) {
+    return {
+      action: 'adjust-scale',
+      target: lower as 'rel' | `s${number}`,
+    }
+  }
+
+  switch (trimmed) {
     case '1':
       return 'accept-winner'
     case '2':
       return 'reject-winner'
-    case '3':
-      return 'refine-again'
     case '4':
-      return 'adjust-scale'
-    case '5':
       return 'derive'
-    case '6':
+    case '5':
       return 'quit'
     default:
-      return null
+      if (/^\d+$/u.test(trimmed)) {
+        return null
+      }
+      return {
+        action: 'refine',
+        feedback: trimmed,
+      }
   }
+}
+
+const promptSourceAction = async (rl: ReturnType<typeof createInterface>): Promise<SourceAction | null> => {
+  console.log('\nChoose action:')
+  console.log('  1. keep')
+  console.log('  2. remove')
+  console.log('  3. type feedback to refine')
+  console.log('  4. skip')
+  console.log('  5. quit')
+  const result = await waitForInputOrReady({
+    rl,
+    question: 'Enter number or refine feedback: ',
+  })
+  if (result.kind === 'ready') {
+    return result.ready
+  }
+  return parseSourceInput(result.value)
+}
+
+const promptWinnerAction = async (rl: ReturnType<typeof createInterface>): Promise<WinnerAction | null> => {
+  console.log('\nChoose winner action:')
+  console.log('  1. accept winner')
+  console.log('  2. reject winner')
+  console.log('  3. type feedback to refine')
+  console.log('  4. derive lower-scale prompt(s)')
+  console.log('  5. quit')
+  console.log('  type s1-s5 or rel to adjust scale')
+  const choice = await rl.question('Enter number, scale token, or refine feedback: ')
+  return parseWinnerInput(choice)
 }
 
 const promptIdleAction = async (
@@ -522,6 +578,27 @@ const advanceIndex = ({
   return index
 }
 
+const stopRunningRounds = async (manifests: RoundManifest[]) => {
+  const running = manifests.filter(
+    (manifest) => manifest.status === 'running' && typeof manifest.launchedPid === 'number',
+  )
+
+  for (const manifest of running) {
+    try {
+      process.kill(manifest.launchedPid!, 'SIGTERM')
+    } catch {
+      // ignore missing/already-exited processes
+    }
+
+    await writeRoundManifest({
+      ...manifest,
+      status: 'stopped',
+      resolvedAt: new Date().toISOString(),
+      error: 'Stopped on quit',
+    })
+  }
+}
+
 const handleReadyRound = async ({
   rl,
   manifest,
@@ -574,17 +651,18 @@ const handleReadyRound = async ({
             scale: `S${winner.roundWinner.candidate.mss.scale}`,
           }
 
-    const feedbackPrompt =
-      action === 'refine-again'
-        ? 'Feedback for next round: '
-        : action === 'adjust-scale'
-          ? 'Scale adjustment guidance: '
-          : 'Lower-scale derivation guidance: '
-    const feedback = await rl.question(feedbackPrompt)
+    const feedback =
+      action === 'derive'
+        ? 'Derive a smaller-scale prompt from the approved parent prompt.'
+        : action.action === 'adjust-scale'
+          ? action.target === 'rel'
+            ? 'Adjust the scale of the prompt and MSS tags using relative scale semantics.'
+            : `Adjust the scale of the prompt and MSS tags to ${action.target.toUpperCase()}.`
+          : action.feedback
 
     await appendDecision({
       id: manifest.queuePromptId,
-      action,
+      action: typeof action === 'string' ? action : action.action,
       source: manifest.sourcePrompt.source,
       feedback,
       at: new Date().toISOString(),
@@ -599,12 +677,7 @@ const handleReadyRound = async ({
       queuePromptId: manifest.queuePromptId,
       prompt: nextSourcePrompt,
       mode: action === 'derive' ? 'derive' : 'refine',
-      feedback:
-        action === 'adjust-scale'
-          ? `Adjust the scale of the prompt and MSS tags. ${feedback}`
-          : action === 'derive'
-            ? `Derive a smaller-scale prompt from the approved parent prompt. ${feedback}`
-            : feedback,
+      feedback,
       basedOnRoundNumber: manifest.roundNumber,
     })
     return 'continue'
@@ -629,6 +702,7 @@ const main = async () => {
         winner: readyRound.winner,
       })
       if (result === 'quit') {
+        await stopRunningRounds(await loadAllManifests())
         break
       }
       decisions = await loadDecisions()
@@ -663,12 +737,14 @@ const main = async () => {
           winner: idleAction.winner,
         })
         if (result === 'quit') {
+          await stopRunningRounds(await loadAllManifests())
           break
         }
         decisions = await loadDecisions()
         continue
       }
       if (idleAction === 'quit') {
+        await stopRunningRounds(await loadAllManifests())
         break
       }
       continue
@@ -689,6 +765,7 @@ const main = async () => {
         winner: action.winner,
       })
       if (result === 'quit') {
+        await stopRunningRounds(await loadAllManifests())
         break
       }
       decisions = await loadDecisions()
@@ -700,6 +777,7 @@ const main = async () => {
     }
 
     if (action === 'quit') {
+      await stopRunningRounds(await loadAllManifests())
       break
     }
 
@@ -715,34 +793,17 @@ const main = async () => {
       continue
     }
 
-    const feedbackResult = await waitForInputOrReady({
-      rl,
-      question: 'Feedback for round: ',
-    })
-    if (feedbackResult.kind === 'ready') {
-      const result = await handleReadyRound({
-        rl,
-        manifest: feedbackResult.ready.manifest,
-        winner: feedbackResult.ready.winner,
-      })
-      if (result === 'quit') {
-        break
-      }
-      decisions = await loadDecisions()
-      continue
-    }
-    const feedback = feedbackResult.value
     await launchRound({
       queuePromptId: prompt.id,
       prompt,
       mode: 'refine',
-      feedback,
+      feedback: action.feedback,
     })
     await appendDecision({
       id: prompt.id,
       action: 'refine-launched',
       source: prompt.source,
-      feedback,
+      feedback: action.feedback,
       at: new Date().toISOString(),
     })
     decisions = await loadDecisions()

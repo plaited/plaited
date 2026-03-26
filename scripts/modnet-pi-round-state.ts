@@ -1,6 +1,6 @@
 import type { ReviewPrompt, WorkflowMode } from './modnet-pi-workflow.ts'
 
-export type RoundStatus = 'running' | 'completed' | 'accepted' | 'rejected' | 'superseded' | 'failed'
+export type RoundStatus = 'running' | 'completed' | 'accepted' | 'rejected' | 'superseded' | 'failed' | 'stopped'
 
 export type RoundManifest = {
   queuePromptId: string
@@ -13,6 +13,7 @@ export type RoundManifest = {
   createdAt: string
   status: RoundStatus
   basedOnRoundNumber?: number
+  launchedPid?: number
   completedAt?: string
   resolvedAt?: string
   error?: string
@@ -29,7 +30,11 @@ export const buildCompletedPromptIds = (decisions: DecisionRowLike[]): Set<strin
   new Set(decisions.filter((decision) => TERMINAL_DECISION_ACTIONS.has(decision.action)).map((decision) => decision.id))
 
 export const isRoundActionTerminal = (status: RoundStatus): boolean =>
-  status === 'accepted' || status === 'rejected' || status === 'superseded' || status === 'failed'
+  status === 'accepted' ||
+  status === 'rejected' ||
+  status === 'superseded' ||
+  status === 'failed' ||
+  status === 'stopped'
 
 export const buildBlockedPromptIds = (manifests: RoundManifest[]): Set<string> =>
   new Set(

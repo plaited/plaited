@@ -70,12 +70,25 @@ describe('modnet Pi round state', () => {
         resolvedAt: '2026-03-25T10:02:00.000Z',
         status: 'accepted',
       },
+      {
+        queuePromptId: 'd',
+        promptId: 'd',
+        promptTitle: 'd',
+        mode: 'refine',
+        feedback: 'x',
+        roundNumber: 1,
+        sourcePrompt,
+        createdAt: '2026-03-25T10:00:00.000Z',
+        resolvedAt: '2026-03-25T10:02:00.000Z',
+        status: 'stopped',
+      },
     ]
 
     const blocked = buildBlockedPromptIds(manifests)
     expect(blocked.has('a')).toBe(true)
     expect(blocked.has('b')).toBe(true)
     expect(blocked.has('c')).toBe(false)
+    expect(blocked.has('d')).toBe(false)
   })
 
   test('pickReadyManifest selects earliest completed unresolved round', () => {
@@ -100,6 +113,7 @@ describe('modnet Pi round state', () => {
     }
 
     expect(isRoundActionTerminal('accepted')).toBe(true)
+    expect(isRoundActionTerminal('stopped')).toBe(true)
     expect(isRoundActionTerminal('running')).toBe(false)
     expect(pickReadyManifest([later, earliest])?.queuePromptId).toBe('a')
   })

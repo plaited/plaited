@@ -100,7 +100,27 @@ const main = async () => {
   })
 
   const workerIndices = Array.from({ length: input.strategyNotes.length }, (_, index) => index + 1)
-  const procs = []
+  const procs: Array<ReturnType<typeof Bun.spawn>> = []
+
+  const shutdownWorkers = () => {
+    for (const proc of procs) {
+      try {
+        proc.kill()
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  process.on('SIGTERM', () => {
+    shutdownWorkers()
+    process.exit(0)
+  })
+
+  process.on('SIGINT', () => {
+    shutdownWorkers()
+    process.exit(0)
+  })
 
   for (const workerIndex of workerIndices) {
     const workerInput = {
