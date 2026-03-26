@@ -1,3 +1,4 @@
+import { extractFirstJsonObject, extractTaggedJsonObject } from './json-extract.ts'
 import { buildOpenRouterHeaders, extractOpenRouterText } from './openrouter-adapter.ts'
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
@@ -21,11 +22,16 @@ type OpenRouterResponse = {
   model?: string
 }
 
-const extractJsonObject = (value: string): string => {
+export const extractStructuredJsonObject = (value: string): string => {
   const fenced = value.match(/```json\s*([\s\S]*?)```/u)
   if (fenced?.[1]) return fenced[1].trim()
-  const objectMatch = value.match(/\{[\s\S]*\}/u)
-  if (objectMatch?.[0]) return objectMatch[0]
+  const tagged = extractTaggedJsonObject({
+    text: value,
+    tag: 'json',
+  })
+  if (tagged) return tagged
+  const objectMatch = extractFirstJsonObject(value)
+  if (objectMatch) return objectMatch
   throw new Error('No JSON object found in model output')
 }
 
@@ -95,7 +101,7 @@ export const runStructuredLlmQuery = async <T>({
       const text = extractOpenRouterText(payload)
       return {
         ok: true,
-        value: JSON.parse(extractJsonObject(text)) as T,
+        value: JSON.parse(extractStructuredJsonObject(text)) as T,
         meta: {
           source: 'openrouter-api',
           model: payload.model ?? model,

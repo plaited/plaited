@@ -65,3 +65,4 @@ dev-research/native-model/training/runs/
 # Python venv (MLX inference)
 .venv/
 __pycache__/
+.prompts/
