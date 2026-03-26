@@ -1,0 +1,11 @@
+{
+  "attempt": 10,
+  "strategyNote": "Anti-generic with mechanics continuity: relax lexical overlap only when mechanics and parent-role continuity stay strong.",
+  "startedAt": "2026-03-25T02:27:33.824Z",
+  "finishedAt": "2026-03-25T02:33:04.571Z",
+  "status": "succeeded",
+  "exitCode": 0,
+  "resultJsonPath": "/Users/eirby/Workspace/plaited/tmp/slice-23-fanout/attempt-10/result.json",
+  "stdoutPath": "/Users/eirby/Workspace/plaited/tmp/slice-23-fanout/attempt-10/stdout.log",
+  "stderrPath": "/Users/eirby/Workspace/plaited/tmp/slice-23-fanout/attempt-10/stderr.log"
+}

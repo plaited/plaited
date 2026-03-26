@@ -1,0 +1,38 @@
+{
+  "mode": "repo-harness",
+  "sliceId": "slice-23",
+  "slicePath": "./dev-research/modnet/slice-23.md",
+  "programPath": "./dev-research/modnet/program.md",
+  "decision": "revise",
+  "changedFiles": [
+    "scripts/derive-modnet-prompts.ts",
+    "scripts/modnet-prompt-derivation-evaluate.ts",
+    "scripts/modnet-prompt-derivation-judge.ts",
+    "scripts/modnet-prompt-derivation-meta-verifier.ts",
+    "scripts/tests/derive-modnet-prompts.spec.ts",
+    "scripts/tests/modnet-prompt-derivation-evaluate.spec.ts",
+    "scripts/tests/modnet-prompt-derivation-judge.spec.ts",
+    "scripts/tests/modnet-prompt-derivation-meta-verifier.spec.ts"
+  ],
+  "diffStat": "scripts/derive-modnet-prompts.ts                   | 146 ++++++++++++++++---\n scripts/modnet-prompt-derivation-evaluate.ts       | 160 ++++++++++++++++++---\n scripts/modnet-prompt-derivation-judge.ts          | 103 ++++++++++---\n scripts/modnet-prompt-derivation-meta-verifier.ts  |  76 +++++++++-\n scripts/tests/derive-modnet-prompts.spec.ts        |  68 +++++++++\n .../modnet-prompt-derivation-evaluate.spec.ts      |  79 +++++++++-\n .../tests/modnet-prompt-derivation-judge.spec.ts   |   6 +\n .../modnet-prompt-derivation-meta-verifier.spec.ts |   6 +\n 8 files changed, 566 insertions(+), 78 deletions(-)",
+  "attempt": 1,
+  "passed": false,
+  "strategyNote": "Anti-generic anchor pressure: require both rewritten-seed anchors and original HyperCard source anchors to survive derivation.",
+  "capture": {
+    "eligible": false,
+    "richness": "full",
+    "reasons": [
+      "tool_error"
+    ]
+  },
+  "judges": {
+    "fast": {
+      "pass": true,
+      "score": 0.85
+    },
+    "fastMeta": {
+      "pass": true,
+      "score": 0.95
+    }
+  }
+}

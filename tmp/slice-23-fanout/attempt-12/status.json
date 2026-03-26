@@ -1,0 +1,11 @@
+{
+  "attempt": 12,
+  "strategyNote": "Target-shape transfer without style copying: preserve the shape lessons from handcrafted prompts while rejecting copied handcrafted prose.",
+  "startedAt": "2026-03-25T02:32:36.869Z",
+  "finishedAt": "2026-03-25T02:37:34.127Z",
+  "status": "succeeded",
+  "exitCode": 0,
+  "resultJsonPath": "/Users/eirby/Workspace/plaited/tmp/slice-23-fanout/attempt-12/result.json",
+  "stdoutPath": "/Users/eirby/Workspace/plaited/tmp/slice-23-fanout/attempt-12/stdout.log",
+  "stderrPath": "/Users/eirby/Workspace/plaited/tmp/slice-23-fanout/attempt-12/stderr.log"
+}

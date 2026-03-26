@@ -1,0 +1,21 @@
+{
+  "mode": "repo-harness",
+  "sliceId": "slice-23",
+  "slicePath": "./dev-research/modnet/slice-23.md",
+  "programPath": "./dev-research/modnet/program.md",
+  "decision": "discard",
+  "changedFiles": [],
+  "diffStat": "",
+  "attempt": 1,
+  "passed": false,
+  "strategyNote": "Handcrafted low-scale target-shape transfer: use reviewed handcrafted low-scale prompts as target-shape references without copying wording.",
+  "capture": {
+    "eligible": false,
+    "richness": "full",
+    "reasons": [
+      "timed_out",
+      "tool_error"
+    ]
+  },
+  "judges": {}
+}

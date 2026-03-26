@@ -1,0 +1,37 @@
+{
+  "mode": "repo-harness",
+  "sliceId": "slice-23",
+  "slicePath": "./dev-research/modnet/slice-23.md",
+  "programPath": "./dev-research/modnet/program.md",
+  "decision": "revise",
+  "changedFiles": [
+    "scripts/derive-modnet-prompts.ts",
+    "scripts/modnet-prompt-derivation-evaluate.ts",
+    "scripts/modnet-prompt-derivation-judge.ts",
+    "scripts/modnet-prompt-derivation-meta-verifier.ts",
+    "scripts/tests/modnet-prompt-derivation-evaluate.spec.ts",
+    "scripts/tests/modnet-prompt-derivation-judge.spec.ts",
+    "scripts/tests/modnet-prompt-derivation-meta-verifier.spec.ts"
+  ],
+  "diffStat": "scripts/derive-modnet-prompts.ts                   |  62 +++++++++-\n scripts/modnet-prompt-derivation-evaluate.ts       | 130 +++++++++++++++++++++\n scripts/modnet-prompt-derivation-judge.ts          |  22 ++++\n scripts/modnet-prompt-derivation-meta-verifier.ts  |  16 +++\n .../modnet-prompt-derivation-evaluate.spec.ts      |   3 +\n .../tests/modnet-prompt-derivation-judge.spec.ts   |   8 ++\n .../modnet-prompt-derivation-meta-verifier.spec.ts |  10 ++\n 7 files changed, 247 insertions(+), 4 deletions(-)",
+  "attempt": 1,
+  "passed": false,
+  "strategyNote": "Parent-to-many-output discipline: one parent may yield several lower-scale candidates, but each must occupy a distinct role or affordance slot.",
+  "capture": {
+    "eligible": false,
+    "richness": "full",
+    "reasons": [
+      "tool_error"
+    ]
+  },
+  "judges": {
+    "fast": {
+      "pass": true,
+      "score": 0.88
+    },
+    "fastMeta": {
+      "pass": true,
+      "score": 0.85
+    }
+  }
+}

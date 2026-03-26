@@ -1,0 +1,37 @@
+{
+  "mode": "repo-harness",
+  "sliceId": "slice-23",
+  "slicePath": "./dev-research/modnet/slice-23.md",
+  "programPath": "./dev-research/modnet/program.md",
+  "decision": "revise",
+  "changedFiles": [
+    "scripts/derive-modnet-prompts.ts",
+    "scripts/modnet-prompt-derivation-evaluate.ts",
+    "scripts/modnet-prompt-derivation-judge.ts",
+    "scripts/modnet-prompt-derivation-meta-verifier.ts",
+    "scripts/tests/modnet-prompt-derivation-evaluate.spec.ts",
+    "scripts/tests/modnet-prompt-derivation-judge.spec.ts",
+    "scripts/tests/modnet-prompt-derivation-meta-verifier.spec.ts"
+  ],
+  "diffStat": "scripts/derive-modnet-prompts.ts                   | 156 +++++++++++++++++----\n scripts/modnet-prompt-derivation-evaluate.ts       | 135 ++++++++++++++++++\n scripts/modnet-prompt-derivation-judge.ts          |  39 ++++++\n scripts/modnet-prompt-derivation-meta-verifier.ts  |  39 ++++++\n .../modnet-prompt-derivation-evaluate.spec.ts      |  35 +++++\n .../tests/modnet-prompt-derivation-judge.spec.ts   |   9 ++\n .../modnet-prompt-derivation-meta-verifier.spec.ts |  11 ++\n 7 files changed, 400 insertions(+), 24 deletions(-)",
+  "attempt": 1,
+  "passed": false,
+  "strategyNote": "Chain plus anti-generic anchors: reject smaller prompts that keep family wording but lose both seed and source grounding.",
+  "capture": {
+    "eligible": false,
+    "richness": "full",
+    "reasons": [
+      "tool_error"
+    ]
+  },
+  "judges": {
+    "fast": {
+      "pass": true,
+      "score": 0.95
+    },
+    "fastMeta": {
+      "pass": true,
+      "score": 0.97
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "attempt": 4,
+  "strategyNote": "Handcrafted low-scale target-shape transfer: use reviewed handcrafted low-scale prompts as target-shape references without copying wording.",
+  "startedAt": "2026-03-25T02:17:33.146Z",
+  "finishedAt": "2026-03-25T02:27:33.824Z",
+  "status": "succeeded",
+  "exitCode": 0,
+  "resultJsonPath": "/Users/eirby/Workspace/plaited/tmp/slice-23-fanout/attempt-04/result.json",
+  "stdoutPath": "/Users/eirby/Workspace/plaited/tmp/slice-23-fanout/attempt-04/stdout.log",
+  "stderrPath": "/Users/eirby/Workspace/plaited/tmp/slice-23-fanout/attempt-04/stderr.log"
+}

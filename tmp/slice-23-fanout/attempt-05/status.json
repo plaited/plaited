@@ -1,0 +1,11 @@
+{
+  "attempt": 5,
+  "strategyNote": "Anti-generic anchor pressure: require both rewritten-seed anchors and original HyperCard source anchors to survive derivation.",
+  "startedAt": "2026-03-25T02:17:33.146Z",
+  "finishedAt": "2026-03-25T02:26:44.506Z",
+  "status": "succeeded",
+  "exitCode": 0,
+  "resultJsonPath": "/Users/eirby/Workspace/plaited/tmp/slice-23-fanout/attempt-05/result.json",
+  "stdoutPath": "/Users/eirby/Workspace/plaited/tmp/slice-23-fanout/attempt-05/stdout.log",
+  "stderrPath": "/Users/eirby/Workspace/plaited/tmp/slice-23-fanout/attempt-05/stderr.log"
+}

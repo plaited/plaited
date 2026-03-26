@@ -1,0 +1,11 @@
+{
+  "attempt": 16,
+  "strategyNote": "Duplicate-role pressure: penalize near-duplicate lower-scale outputs from the same parent when role or contribution overlap is too high.",
+  "startedAt": "2026-03-25T02:37:34.128Z",
+  "finishedAt": "2026-03-25T02:43:47.310Z",
+  "status": "succeeded",
+  "exitCode": 0,
+  "resultJsonPath": "/Users/eirby/Workspace/plaited/tmp/slice-23-fanout/attempt-16/result.json",
+  "stdoutPath": "/Users/eirby/Workspace/plaited/tmp/slice-23-fanout/attempt-16/stdout.log",
+  "stderrPath": "/Users/eirby/Workspace/plaited/tmp/slice-23-fanout/attempt-16/stderr.log"
+}

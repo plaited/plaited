@@ -1,0 +1,38 @@
+{
+  "mode": "repo-harness",
+  "sliceId": "slice-23",
+  "slicePath": "./dev-research/modnet/slice-23.md",
+  "programPath": "./dev-research/modnet/program.md",
+  "decision": "revise",
+  "changedFiles": [
+    "dev-research/modnet/slice-23.md",
+    "scripts/derive-modnet-prompts.ts",
+    "scripts/modnet-prompt-derivation-evaluate.ts",
+    "scripts/modnet-prompt-derivation-judge.ts",
+    "scripts/modnet-prompt-derivation-meta-verifier.ts",
+    "scripts/tests/modnet-prompt-derivation-evaluate.spec.ts",
+    "scripts/tests/modnet-prompt-derivation-judge.spec.ts",
+    "scripts/tests/modnet-prompt-derivation-meta-verifier.spec.ts"
+  ],
+  "diffStat": "dev-research/modnet/slice-23.md                    | 25 ++++++\n scripts/derive-modnet-prompts.ts                   | 86 +++++++++++++++++++--\n scripts/modnet-prompt-derivation-evaluate.ts       | 89 ++++++++++++++++++++++\n scripts/modnet-prompt-derivation-judge.ts          | 42 ++++++++++\n scripts/modnet-prompt-derivation-meta-verifier.ts  | 33 ++++++++\n .../modnet-prompt-derivation-evaluate.spec.ts      | 41 +++++++++-\n .../tests/modnet-prompt-derivation-judge.spec.ts   | 13 ++++\n .../modnet-prompt-derivation-meta-verifier.spec.ts | 14 ++++\n 8 files changed, 333 insertions(+), 10 deletions(-)",
+  "attempt": 1,
+  "passed": false,
+  "strategyNote": "Mechanics plus immediate-parent chain: combine reusable actions and parent progression so lower-scale prompts feel like real building blocks.",
+  "capture": {
+    "eligible": false,
+    "richness": "full",
+    "reasons": [
+      "tool_error"
+    ]
+  },
+  "judges": {
+    "fast": {
+      "pass": true,
+      "score": 0.88
+    },
+    "fastMeta": {
+      "pass": true,
+      "score": 0.95
+    }
+  }
+}

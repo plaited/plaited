@@ -1,0 +1,11 @@
+{
+  "attempt": 13,
+  "strategyNote": "Role-variant diversity: support object, list, board, queue, lookup, draft, session, and tracking variants where the parent plausibly supports them.",
+  "startedAt": "2026-03-25T02:33:04.571Z",
+  "finishedAt": "2026-03-25T02:39:34.302Z",
+  "status": "succeeded",
+  "exitCode": 0,
+  "resultJsonPath": "/Users/eirby/Workspace/plaited/tmp/slice-23-fanout/attempt-13/result.json",
+  "stdoutPath": "/Users/eirby/Workspace/plaited/tmp/slice-23-fanout/attempt-13/stdout.log",
+  "stderrPath": "/Users/eirby/Workspace/plaited/tmp/slice-23-fanout/attempt-13/stderr.log"
+}

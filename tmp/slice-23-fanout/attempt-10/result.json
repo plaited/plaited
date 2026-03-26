@@ -1,0 +1,37 @@
+{
+  "mode": "repo-harness",
+  "sliceId": "slice-23",
+  "slicePath": "./dev-research/modnet/slice-23.md",
+  "programPath": "./dev-research/modnet/program.md",
+  "decision": "revise",
+  "changedFiles": [
+    "scripts/derive-modnet-prompts.ts",
+    "scripts/modnet-prompt-derivation-evaluate.ts",
+    "scripts/modnet-prompt-derivation-judge.ts",
+    "scripts/modnet-prompt-derivation-meta-verifier.ts",
+    "scripts/tests/modnet-prompt-derivation-evaluate.spec.ts",
+    "scripts/tests/modnet-prompt-derivation-judge.spec.ts",
+    "scripts/tests/modnet-prompt-derivation-meta-verifier.spec.ts"
+  ],
+  "diffStat": "scripts/derive-modnet-prompts.ts                   | 51 ++++++++++--\n scripts/modnet-prompt-derivation-evaluate.ts       | 92 ++++++++++++++++++++++\n scripts/modnet-prompt-derivation-judge.ts          | 21 +++++\n scripts/modnet-prompt-derivation-meta-verifier.ts  | 21 +++++\n .../modnet-prompt-derivation-evaluate.spec.ts      | 20 ++++-\n .../tests/modnet-prompt-derivation-judge.spec.ts   |  2 +\n .../modnet-prompt-derivation-meta-verifier.spec.ts |  2 +\n 7 files changed, 202 insertions(+), 7 deletions(-)",
+  "attempt": 1,
+  "passed": false,
+  "strategyNote": "Anti-generic with mechanics continuity: relax lexical overlap only when mechanics and parent-role continuity stay strong.",
+  "capture": {
+    "eligible": false,
+    "richness": "full",
+    "reasons": [
+      "tool_error"
+    ]
+  },
+  "judges": {
+    "fast": {
+      "pass": true,
+      "score": 0.89
+    },
+    "fastMeta": {
+      "pass": true,
+      "score": 0.98
+    }
+  }
+}

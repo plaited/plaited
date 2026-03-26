@@ -1,0 +1,11 @@
+{
+  "attempt": 3,
+  "strategyNote": "Precursor contribution framing: every derived lower-scale block should state what capability it contributes upward to the parent seed.",
+  "startedAt": "2026-03-25T02:17:33.145Z",
+  "finishedAt": "2026-03-25T02:26:52.241Z",
+  "status": "succeeded",
+  "exitCode": 0,
+  "resultJsonPath": "/Users/eirby/Workspace/plaited/tmp/slice-23-fanout/attempt-03/result.json",
+  "stdoutPath": "/Users/eirby/Workspace/plaited/tmp/slice-23-fanout/attempt-03/stdout.log",
+  "stderrPath": "/Users/eirby/Workspace/plaited/tmp/slice-23-fanout/attempt-03/stderr.log"
+}
