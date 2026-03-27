@@ -43,7 +43,7 @@ export type ContextBundle = {
 export type WorkflowMode = 'refine' | 'derive'
 
 export const DEFAULT_CONTEXT_PATHS = [
-  join('dev-research', 'program.md'),
+  join('dev-research', 'training-prompts', 'program.md'),
   join('docs', 'MODNET-HUMAN-CLI-SPEC.md'),
   join('skills', 'modnet-modules', 'SKILL.md'),
   join('skills', 'mss-vocabulary', 'SKILL.md'),

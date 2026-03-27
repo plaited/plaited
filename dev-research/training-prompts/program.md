@@ -16,7 +16,7 @@ The workflow is human-in-the-loop:
 
 The prompt source catalog is:
 
-- `dev-research/catalog/prompts.jsonl`
+- `dev-research/training-prompts/catalog/prompts.jsonl`
 
 Each row is minimal:
 
@@ -34,7 +34,7 @@ passes that same shared context to:
 
 The current shared context surface is:
 
-- `dev-research/program.md`
+- `dev-research/training-prompts/program.md`
 - `docs/MODNET-HUMAN-CLI-SPEC.md`
 - `skills/modnet-modules/SKILL.md`
 - `skills/mss-vocabulary/SKILL.md`

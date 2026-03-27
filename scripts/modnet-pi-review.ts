@@ -113,8 +113,8 @@ type WinnerAction =
     }
   | 'derive'
 
-const PROGRAM_PATH = join('dev-research', 'program.md')
-const CATALOG_DIR = join('dev-research', 'catalog')
+const PROGRAM_PATH = join('dev-research', 'training-prompts', 'program.md')
+const CATALOG_DIR = join('dev-research', 'training-prompts', 'catalog')
 const PROMPTS_PATH = join(CATALOG_DIR, 'prompts.jsonl')
 const REVIEW_DIR = process.env.MODNET_REVIEW_DIR ?? join('.prompts', 'modnet-review')
 const ARTIFACTS_DIR = join(REVIEW_DIR, 'artifacts')

@@ -13,7 +13,7 @@ import {
 const context: ContextBundle = {
   documents: [
     {
-      path: 'dev-research/program.md',
+      path: 'dev-research/training-prompts/program.md',
       content: 'Program context for modnet review.',
     },
     {
@@ -56,7 +56,7 @@ describe('modnet Pi workflow prompts', () => {
   test('renderContextBundle includes file paths and content', () => {
     const rendered = renderContextBundle(context)
 
-    expect(rendered).toContain('FILE: dev-research/program.md')
+    expect(rendered).toContain('FILE: dev-research/training-prompts/program.md')
     expect(rendered).toContain('Program context for modnet review.')
     expect(rendered).toContain('FILE: docs/Structural-IA.md')
     expect(rendered).toContain('Structural IA context.')

@@ -188,7 +188,7 @@ derivation.
 
 ## Program Context
 
-`dev-research/program.md` is the standing operating context for the workflow.
+`dev-research/training-prompts/program.md` is the standing operating context for the workflow.
 
 It is the stable high-level contract for:
 
