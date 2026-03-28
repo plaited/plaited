@@ -221,6 +221,9 @@ Current research lanes:
 - [program.md](/Users/eirby/Workspace/plaited/dev-research/improve/program.md) — generic improvement substrate lane
 - [program.md](/Users/eirby/Workspace/plaited/dev-research/native-model/program.md) — native-model/Falcon lane
 - [program.md](/Users/eirby/Workspace/plaited/dev-research/modnet/program.md) — inter-node/modnet lane
+- [program.md](/Users/eirby/Workspace/plaited/dev-research/mss-seed/program.md) — compact MSS/Modnet seed ontology lane
+- [program.md](/Users/eirby/Workspace/plaited/dev-research/mss-corpus/program.md) — graph-ready MSS/Modnet corpus lane
+- [program.md](/Users/eirby/Workspace/plaited/dev-research/behavioral-factories/program.md) — downstream factory-compilation lane
 
 ## Development
 
@@ -228,9 +231,9 @@ Current research lanes:
 
 - [Bun](https://bun.sh/) `>= v1.2.9`
 - `git`
-- for judged autoresearch:
-  - Anthropic access
+- for Pi/autoresearch and remote-model research lanes:
   - Varlock + 1Password setup via [`.env.schema`](/Users/eirby/Workspace/plaited/.env.schema)
+  - provider access for the configured lane models and search integrations
 
 ### Useful Commands
 
@@ -241,113 +244,54 @@ bun --bun tsc --noEmit
 # Full test suite
 bun test
 
-# One bounded research run
-bun run research -- ./dev-research/runtime-taxonomy/slice-1.md --max-attempts 1
+# Generic autoresearch runner
+bun run autoresearch:runner -- scripts/mss-seed.ts run
+bun run autoresearch:runner -- scripts/mss-corpus.ts run
 
-# Longer unattended batch
-bun run research:overnight -- ./dev-research/runtime-taxonomy/slice-2.md
+# MSS seed lane through autoresearch
+bun run research:mss-seed
 
-# Shared breadth/depth orchestrator over a program/slice lane
-bun run program:run -- ./dev-research/runtime-taxonomy/slice-2.md --lane repo --pattern fanout --agents 3 --judge --promote-winner
+# MSS corpus lane through autoresearch
+bun run research:mss-corpus
+# Direct lane surfaces
+bun scripts/mss-seed.ts status
+bun scripts/mss-seed.ts validate
+bun scripts/mss-seed.ts generate
+bun scripts/mss-corpus.ts status
+bun scripts/mss-corpus.ts validate
+bun scripts/mss-corpus.ts generate
 ```
 
-The shared program orchestrator sits above the three existing executors:
-- repo lane uses `scripts/dev-autoresearch.ts`
-- native-model lane uses `scripts/native-model-bootstrap-cycle.ts`
-- skills lane uses `src/tools/skill-evaluate.ts`
+### Current Research Flow
 
-Use it when you want breadth-first exploration against a `program.md` / slice
-boundary before refining the best strategy more deeply.
+The current research split is:
+- `scripts/autoresearch-runner.ts`
+  - worktree-backed orchestration
+  - attempts, parallelism, retries, lane isolation
+- `src/improve`
+  - eval/improvement framework
+  - graders, meta-verifiers, trial utilities, shared judge contracts
+- lane scripts such as:
+  - [mss-seed.ts](/Users/eirby/Workspace/plaited/scripts/mss-seed.ts)
+  - [mss-corpus.ts](/Users/eirby/Workspace/plaited/scripts/mss-corpus.ts)
+  - lane-specific operator surfaces and configs
 
-How programs and slices are used:
-- both lanes start from a slice path such as:
-  - `./dev-research/runtime-taxonomy/slice-2.md`
-  - `./dev-research/native-model/slice-4.md`
-  - `./dev-research/skills/slice-1.md`
-- `program:run` resolves the matching `program.md` from that slice directory by
-  default
-- repo lane uses the slice + `program.md` as the actual improvement protocol
-  boundary passed into `dev-autoresearch`
-- native-model lane currently uses the slice + `program.md` as the
-  orchestration boundary and run label, while the concrete train/eval inputs
-  still come from the curated dataset and validation prompt files unless you
-  override them with flags
-- skills lane uses the slice + `program.md` as the orchestration boundary while
-  the concrete skill under evaluation, eval mode, baseline, and adapter/grader
-  come from flags
+For the MSS lanes:
+- `research:mss-seed` runs `mss-seed` through `autoresearch-runner`
+- `research:mss-corpus` runs `mss-corpus` through `autoresearch-runner`
+- both default to bounded worktree-backed autoresearch with:
+  - `15` attempts
+  - `3` parallel lane instances
+- promotion is still a separate explicit step after review
 
-`program:run` API:
-- common flags:
-  - positional slice path or `--slice <path>`
-  - `--program <path>` to override the default resolved `program.md`
-  - `--lane repo|native-model|skills`
-  - `--pattern depth|fanout`
-  - `--agents <n>`
-  - `--result-json <path>`
-  - `--promote-winner`
-  - `--quiet`
-- repo-lane flags:
-  - `--adapter <path>`
-  - `--judge`
-  - `--judge-path <path>`
-  - `--meta-verifier-path <path>`
-  - `--max-attempts <n>`
-  - `--commit`
-  - `--push`
-- native-model-lane flags:
-  - `--output-dir <path>`
-  - `--prompts <path>`
-  - `--runs-dir <path>`
-  - `--model <hf-or-mlx-model-id>`
-  - `--k <n>`
-  - `--concurrency <n>`
-  - `--timeout <ms>`
-  - `--max-seq-length <n>`
-  - `--num-layers <n>`
-  - `--iters <n>`
-- skills-lane flags:
-  - `--skill-path <path>`
-  - `--mode trigger|output`
-  - `--adapter <path>`
-  - `--grader-path <path>`
-  - `--prompts <path>`
-  - `--baseline none|without-skill|previous-skill`
-  - `--use-worktree`
-  - `--keep-worktrees`
-  - `--workspace-dir <path>`
-  - `--output-dir <path>`
-  - `--run-id <id>`
-  - `--k <n>`
-  - `--timeout <ms>`
-  - `--concurrency <n>`
-  - `--no-skill-commit`
+Each autoresearch attempt writes observable artifacts under:
+- `.prompts/autoresearch-runner/<lane>/<timestamp>/`
 
-Usage notes:
-- first repo fanout run:
-  - `bun run program:run -- ./dev-research/runtime-taxonomy/slice-2.md --lane repo --pattern fanout --agents 3 --judge`
-- promote the winning repo candidate only after you trust the fanout behavior:
-  - `bun run program:run -- ./dev-research/runtime-taxonomy/slice-2.md --lane repo --pattern fanout --agents 3 --judge --promote-winner`
-- native-model strategy fanout:
-  - `bun run program:run -- ./dev-research/native-model/slice-4.md --lane native-model --pattern fanout --agents 3 --model mlx-community/Falcon-H1R-7B-4bit --max-seq-length 384 --num-layers 2 --iters 20`
-- one skill evaluation run:
-  - `bun run program:run -- ./dev-research/skills/slice-1.md --lane skills --skill-path ./skills/generative-ui --mode trigger --adapter ./scripts/codex-cli-adapter.ts --grader-path ./scripts/repo-improvement-judge.ts --baseline without-skill --use-worktree`
-- skills fanout with winner promotion:
-  - `bun run program:run -- ./dev-research/skills/slice-1.md --lane skills --pattern fanout --agents 3 --skill-path ./skills/generative-ui --mode trigger --adapter ./scripts/codex-cli-adapter.ts --grader-path ./scripts/repo-improvement-judge.ts --baseline without-skill --use-worktree --promote-winner`
-
-Operational behavior:
-- repo fanout creates isolated git worktrees for each candidate
-- repo promotion cherry-picks only the winning committed candidate onto the
-  current branch
-- repo lane supports `--max-attempts`, which is forwarded to
-  `scripts/dev-autoresearch.ts`
-- native-model fanout runs candidate strategies sequentially on one machine,
-  because the local training/serving path is resource-constrained
-- native-model lane does not use `--max-attempts`; its primary knobs are
-  `--iters`, `--max-seq-length`, `--num-layers`, and `--agents`
-- skills depth runs `evaluate-skill` directly and can commit the latest eval
-  artifacts to the repo by default
-- skills fanout runs each candidate in an isolated git worktree, letting the
-  winner's eval-artifact commit be cherry-picked back with `--promote-winner`
+These runs can include:
+- lane-local validation
+- changed-file summaries
+- LLM judge scoring
+- optional meta-verifier confidence
 
 ### Skill Evaluation
 
@@ -390,33 +334,6 @@ Examples:
   - `plaited evaluate-skill '{"skillPath":"skills/generative-ui","mode":"trigger","adapterPath":"./scripts/codex-cli-adapter.ts","graderPath":"./scripts/gemini-judge.ts","baseline":"without-skill","useWorktree":true,"k":2,"progress":true}'`
 - validate the internal research docs:
   - `plaited validate-research '{"paths":["dev-research"]}'`
-
-### Native-Model Commands
-
-```bash
-# Run the current bounded native-model validation batch against an adapter
-bun run native-model:validate -- --adapter ./scripts/codex-cli-adapter.ts
-
-# Prepare a trainer-friendly SFT dataset + manifest from curated outputs
-bun run native-model:train
-
-# Launch a bounded local MLX LoRA run through the Bun wrapper
-bun run native-model:train:mlx -- \
-  --base-model mlx-community/Falcon-H1R-7B-4bit \
-  --max-seq-length 384 \
-  --num-layers 2 \
-  --iters 20 \
-  --run
-
-# Train, evaluate, compare, and optionally promote in one loop
-bun run native-model:bootstrap-cycle -- \
-  --model mlx-community/Falcon-H1R-7B-4bit \
-  --max-seq-length 384 \
-  --num-layers 2 \
-  --iters 20
-
-# Start the local Falcon MLX inference server
-bun run falcon:mlx
 
 # Compare untuned vs tuned validation artifacts
 bun run native-model:compare -- \
