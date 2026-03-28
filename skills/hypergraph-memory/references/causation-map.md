@@ -4,7 +4,14 @@ How causal provenance is derived from the hypergraph decision sequence.
 
 ## Provenance Query
 
-The `provenance` query (`hypergraph provenance --session <path>`) derives causal edges from decision sequences entirely in TypeScript (no WASM). It uses three signals to infer causation between events.
+The `provenance` query derives causal edges from decision sequences entirely in
+TypeScript (no WASM). It uses three signals to infer causation between events.
+
+Current CLI shape is JSON-input based, for example:
+
+```bash
+plaited search '{"path":".memory/sessions/sess_abc","query":"provenance"}'
+```
 
 ## Three Causation Signals
 
@@ -15,7 +22,7 @@ Same thread active across consecutive decisions implies causal flow. If thread `
 ```
 decision/5: thread taskGate → selected event "task"
 decision/6: thread taskGate → waitFor "message"
-  ⟹ CAUSED_BY edge: decision/6 → decision/5 (via taskGate continuity)
+  ⟹ thread_continuity edge: decision/5 → decision/6 (via taskGate)
 ```
 
 ### 2. Block→Unblock Transitions
@@ -26,8 +33,7 @@ When a thread was blocking an event and the block is later lifted (thread advanc
 decision/3: event "execute" blockedBy "sim_guard_tc-1"
 decision/7: thread "sim_guard_tc-1" interrupted by "simulation_result"
 decision/8: event "execute" selected (no longer blocked)
-  ⟹ UNBLOCKED_BY edge: decision/8 → decision/7 (sim_guard lifted)
-  ⟹ BLOCKED edge: decision/3 → decision/3.sim_guard_tc-1 (was blocked)
+  ⟹ block_unblock edge: decision/7 → decision/8 (via sim_guard_tc-1)
 ```
 
 ### 3. Event Chain Causation
@@ -37,18 +43,19 @@ The agent loop's `EVENT_CAUSATION` map defines structural causation between even
 | Cause Event | Effect Event | Relationship |
 |---|---|---|
 | `task` | `context_assembly` | Task starts context assembly |
-| `context_assembly` | `context_segment` | Assembly triggers contributor queries |
-| `context_segment` (all) | `invoke_inference` | All segments → inference gate opens |
 | `invoke_inference` | `model_response` | Inference produces response |
 | `model_response` | `context_ready` | Response parsed into tool calls |
-| `context_ready` | `simulate` / `execute` | Tool calls dispatched based on risk |
-| `simulate` | `simulation_result` | Simulation produces prediction |
-| `simulation_result` | `evaluate` | Result evaluated against threshold |
-| `evaluate` | `execute` / `gate_rejected` | Evaluation passes or rejects |
+| `context_ready` | `gate_approved` / `gate_rejected` | Gating decides whether work continues |
+| `gate_approved` | `simulate_request` / `execute` | Approved work may simulate or execute |
+| `simulate_request` | `simulation_result` | Simulation produces prediction |
+| `simulation_result` | `eval_approved` / `eval_rejected` | Result evaluated against threshold |
+| `eval_approved` | `execute` | Approved evaluation continues to execution |
 | `execute` | `tool_result` | Tool execution produces result |
 | `tool_result` | `commit_snapshot` | Side-effect tool triggers commit |
-| `tool_result` (all) | `context_assembly` | Batch complete → re-assemble context |
-| `message` | `consolidate` | Session end triggers consolidation |
+| `tool_result` | `invoke_inference` | Tool results can resume the loop directly |
+| `gate_rejected` | `invoke_inference` | Rejection returns to the loop |
+| `eval_rejected` | `invoke_inference` | Failed simulation returns to the loop |
+| `sensor_delta` | `context_assembly` | Proactive sensing re-enters the reactive path |
 
 ### Derived Edge Types
 
@@ -56,24 +63,14 @@ The provenance query produces these edge types:
 
 | Edge Type | Source Signal | Meaning |
 |---|---|---|
-| `CAUSED_BY` | Thread continuity | Sequential causation within a thread |
-| `BLOCKED` | Block presence | Event was prevented by a thread |
-| `UNBLOCKED_BY` | Block→unblock transition | Blocking was lifted by this decision |
-| `EVENT_CHAIN` | EVENT_CAUSATION map | Structural causation from agent loop architecture |
+| `thread_continuity` | Thread continuity | Sequential causation within a thread |
+| `block_unblock` | Block→unblock transition | Blocking was lifted by this decision |
+| `event_chain` | EVENT_CAUSATION map | Structural causation from agent loop architecture |
 
 ## Usage
 
 ```bash
-# Derive causal provenance edges from a session
-./tools/hypergraph provenance \
-  --session .memory/sessions/sess_abc
-
-# Output: JSON-LD edges with source/target decision @ids
-# [
-#   { "source": "decision/5", "target": "decision/6", "type": "CAUSED_BY", "via": "taskGate" },
-#   { "source": "decision/3", "target": "decision/7", "type": "UNBLOCKED_BY", "via": "sim_guard_tc-1" },
-#   ...
-# ]
+plaited search '{"path":".memory/sessions/sess_abc","query":"provenance"}'
 ```
 
 ## TS Utilities

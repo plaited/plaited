@@ -2,6 +2,12 @@
 
 The complete flow from decision writes through commit_snapshot, consolidation, and defrag — coordinated by bThreads.
 
+This file mixes:
+- **current memory lifecycle behavior** in `src/agent/memory-handlers.ts`
+- **broader architectural coordination patterns** around memory
+
+When they differ, the current code wins.
+
 ## Overview
 
 ```
@@ -22,7 +28,9 @@ BP decision → write .jsonld → [accumulate] → side-effect tool → commit_s
 
 ## bThread Coordination
 
-Four bThreads orchestrate memory operations:
+Some bThreads directly coordinate memory lifecycle events. Others, like
+`contextGate`, are broader agent-loop orchestration patterns that interact with
+memory but are not part of `memory-handlers.ts` itself.
 
 ### sideEffectCommit
 
@@ -79,6 +87,9 @@ contextGate: bThread([
 ], true)
 ```
 
+This is an **agent-loop coordination pattern**, not a memory-handler-specific
+thread.
+
 ### memoryIntegrity
 
 Constitution rule protecting the base vocabulary.
@@ -91,6 +102,9 @@ memoryIntegrity: bThread([
   }),
 ], true)
 ```
+
+This is architectural guidance rather than a currently enforced built-in memory
+handler rule.
 
 ## commit_snapshot Handler
 
@@ -114,12 +128,12 @@ useFeedback({
 
     // 5. Write commit vertex — PENDING for next commit (one-behind)
     const commitVertex = {
-      '@context': '../../../@context.jsonld',
-      '@id': `git:${sha}`,
+      '@context': { bp: 'urn:bp:' },
+      '@id': `bp:commit/${sha}`,
       '@type': 'Commit',
-      session: `session/${sessionId}`,
+      sha,
+      modulePath,
       attestsTo: pendingDecisions.map(fileToDecisionId),
-      artifacts: await getChangedFiles(sha),
       timestamp: new Date().toISOString(),
     }
     await Bun.write(
@@ -164,7 +178,9 @@ The `consolidate` handler runs when `sessionClose` requests it:
 └── commits/             # commit vertices
 ```
 
-The `hypergraph` CLI loads from either format — directory of individual files OR single JSONL.
+Current note: the generic `hypergraph` tool loads `.jsonld` files from a
+directory. Support for reading consolidated `decisions.jsonl` directly is
+architectural intent, not current generic-tool behavior.
 
 ## Defrag Flow
 

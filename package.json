@@ -46,6 +46,11 @@
     "pi": "bunx varlock run -- bunx pi --model openrouter/minimax/minimax-m2.7",
     "pi:review": "bunx varlock run -- bun scripts/modnet-pi-review.ts",
     "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .hooks || true",
+    "research:behavioral-factories": "bun scripts/behavioral-factories.ts",
+    "research:default-hypergraph": "bun scripts/default-hypergraph.ts",
+    "research:embeddings": "bun -e \"import { embed } from './scripts/embedding-adapter.ts'; const texts = process.argv.slice(1); embed({ texts }).then((result) => console.log(JSON.stringify(result, null, 2)))\"",
+    "research:fanout": "bun scripts/research-pi-fanout.ts",
+    "research:skill-links": "bun src/cli.ts skill-links",
     "test": "bun test src/ skills/ scripts/",
     "test:playwright": "bunx playwright test",
     "test:tools": "bun test src/tools/ src/improve/"

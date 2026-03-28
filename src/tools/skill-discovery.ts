@@ -210,7 +210,7 @@ Exit codes:
 
 Examples:
   plaited discover-skills '{"paths": ["skills/"]}'
-  plaited discover-skills '{"paths": [".claude/skills", "skills/"]}'
+  plaited discover-skills '{"paths": ["skills/", ".agents/skills/"]}'
   plaited discover-skills --schema input
   plaited discover-skills --schema output`)
     return

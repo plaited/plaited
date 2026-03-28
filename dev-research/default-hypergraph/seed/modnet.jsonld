@@ -1,0 +1,44 @@
+{
+  "@id": "skill://default-hypergraph-modnet",
+  "@type": "Skill",
+  "source": "dev-research/default-hypergraph/seed/modnet.jsonld",
+  "layer": "seed",
+  "provides": [
+    {
+      "@id": "modnet:composition/parent-child",
+      "@type": "Concept",
+      "references": ["mss:scale", "mss:scale/relative"]
+    },
+    {
+      "@id": "modnet:composition/auto-group",
+      "@type": "Concept",
+      "references": ["mss:content-type"]
+    },
+    {
+      "@id": "modnet:boundary/ask",
+      "@type": "Concept",
+      "references": ["mss:boundary/ask"]
+    },
+    {
+      "@id": "modnet:boundary/none",
+      "@type": "Concept",
+      "references": ["mss:boundary/none"]
+    },
+    {
+      "@id": "modnet:mechanic/filter",
+      "@type": "Concept",
+      "references": ["mss:mechanics/filter"]
+    },
+    {
+      "@id": "modnet:mechanic/share",
+      "@type": "Concept",
+      "references": ["mss:mechanics/share"]
+    }
+  ],
+  "requires": [
+    {
+      "@id": "skill://default-hypergraph-mss",
+      "@type": "Skill"
+    }
+  ]
+}

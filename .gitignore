@@ -47,9 +47,6 @@ yarn.lock
 .zed
 
 
-# Claude
-.claude/settings.local.json
-.claude/worktrees/
 notes.md
 
 # Git worktrees

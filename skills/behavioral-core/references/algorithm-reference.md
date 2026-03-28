@@ -245,26 +245,39 @@ useFeedback({
 
 This is the behavioral equivalent of spawning a Sender thread per mail in the Scaling Up paper's mail client example.
 
-### Pattern 4: Counter-Based Completion (useRunner Pattern)
+### Pattern 4: Counter-Based Completion
 
-From `workshop/use-runner.ts`: track completion of parallel work, then trigger a follow-up.
+Use a counting thread to wait for a bounded number of completion events, then
+trigger the next phase. This is a general coordination pattern for test
+runners, batch pipelines, fanout merges, and agent workflow checkpoints.
 
 ```typescript
-// Runner pattern: count test completions, then report
+// Batch completion pattern: wait for N completions, then continue
 bThreads.set({
-  onCountChange: bThread([
+  batchCompletion: bThread([
+    ...Array.from({ length: 3 }, () =>
+      bSync({
+        waitFor: (event) =>
+          event.type === 'tool_result' ||
+          event.type === 'gate_rejected' ||
+          event.type === 'eval_rejected',
+        interrupt: ['message'],
+      }),
+    ),
     bSync({
-      waitFor: ({ type }) => {
-        if (!['test_fail', 'test_pass'].includes(type)) return false
-        const remaining = stories.size - (failed.length + passed.length)
-        return remaining === 1  // trigger on the last one
-      }
+      request: { type: 'invoke_inference' },
+      interrupt: ['message'],
     }),
-    bSync({ request: { type: 'report' } }),
-    bSync({ request: { type: 'end' } }),
-  ], true),
+  ]),
 })
 ```
+
+This pattern is preferable to stale external "runner" references because it is
+grounded in the current repo's coordination style:
+
+- count a known number of completions
+- request the next phase only after the batch is done
+- use `interrupt` for clean teardown when the enclosing task ends
 
 **Agent equivalent**: `pendingToolCallCount` reaches 0 → re-invoke inference. Currently done in `checkComplete()` helper, could potentially be expressed as a bThread predicate.
 
@@ -286,25 +299,23 @@ This is how `simulationGuard` works: it blocks `execute` for specific tool calls
 
 Understanding the exact execution order is critical for correct agent design:
 
-```
-trigger({ type: 'A' })
-  │
-  ├─ Creates priority-0 thread requesting 'A'
-  ├─ step() → selectNextEvent()
-  │   └─ 'A' selected (not blocked)
-  │
-  ├─ nextStep('A'):
-  │   ├─ Move matching threads from pending → running
-  │   ├─ actionPublisher({ type: 'A' })
-  │   │   ├─ SYNC handler for 'A' runs to completion ← state changes visible immediately
-  │   │   └─ ASYNC handler for 'A' starts (fire-and-forget) ← does NOT block
-  │   │
-  │   └─ step() → advance running threads
-  │       ├─ Thread generators yield next sync point
-  │       └─ selectNextEvent() ← predicates see updated shared state
-  │           └─ If new event selected → nextStep() → ... (chain continues)
-  │
-  └─ When no event selected → super-step ends, control returns
+```mermaid
+flowchart TD
+    A["trigger({ type: 'A' })"] --> B["Create priority-0 thread requesting 'A'"]
+    B --> C["step() -> selectNextEvent()"]
+    C --> D["'A' selected (not blocked)"]
+    D --> E["nextStep('A')"]
+    E --> F["Move matching threads from pending -> running"]
+    F --> G["actionPublisher({ type: 'A' })"]
+    G --> H["SYNC handler for 'A' runs to completion; state changes visible immediately"]
+    G --> I["ASYNC handler for 'A' starts fire-and-forget and does not block"]
+    H --> J["step() -> advance running threads"]
+    I --> J
+    J --> K["Thread generators yield next sync point"]
+    K --> L["selectNextEvent() sees updated shared state"]
+    L --> M{"New event selected?"}
+    M -->|Yes| E
+    M -->|No| N["Super-step ends and control returns"]
 ```
 
 **Key insight for async handlers**: When a feedback handler is async (e.g., it `await`s an inference call), the handler starts executing but the super-step continues. The handler's `trigger()` call after the `await` starts a NEW super-step. This is how the agent loop handles async work without blocking the BP engine.
@@ -370,11 +381,27 @@ The event selection mechanism is a parameter, not fixed. Plaited uses priority-b
 
 ### Context Through Events (COBP, Decentralized Control)
 
-BP's formal model says b-threads communicate ONLY through events. In practice, Plaited's closure-based implementation allows shared state (like `board` in tic-tac-toe or `simulatingIds` in agent.ts). This is pragmatic but departs from pure BP semantics.
+BP's formal model says b-threads communicate ONLY through events. In practice,
+Plaited also allows runtime state to be observed through local closure state,
+predicate inputs, and other explicit context surfaces. Examples include shared
+maps like `board` in tic-tac-toe or tool-state sets like `simulatingIds` in the
+agent loop.
 
-The COBP paper formalizes this by adding explicit context idioms — `select` queries to read context, `update` to change it. This gives the same capability as shared closures but with formal semantics that enable verification.
+The COBP paper formalizes this by adding explicit context idioms — `select`
+queries to read context, `update` to change it. This is useful because it makes
+state dependencies more visible and easier to verify than purely hidden mutable
+closure state.
 
-For the agent loop, shared state via closures is the right pragmatic choice. The bThread predicates and feedback handlers are all in the same closure scope.
+For Plaited, the practical rule should be:
+
+- closures are acceptable for local implementations
+- explicit context inputs are preferred for reusable behavioral factories
+- event flow remains the main coordination mechanism
+
+This matters for the newer factory-oriented direction of the repo. If a
+behavioral factory is meant to be generated, validated, reused, or compiled
+from symbolic state, it should prefer an explicit context contract over
+implicitly shared mutable state where possible.
 
 ## Design Principles for the Agent Refactor
 

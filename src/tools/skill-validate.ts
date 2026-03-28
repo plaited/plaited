@@ -47,7 +47,8 @@ export type { SkillProperties, ValidationResult }
 
 /** @public */
 const ValidateSkillInputSchema = z.object({
-  paths: z.array(z.string()).optional().describe('Paths to validate (defaults to .claude/skills/)'),
+  path: z.string().optional().describe('Single path to validate (skill dir or parent dir; defaults to skills/)'),
+  paths: z.array(z.string()).optional().describe('Paths to validate (defaults to skills/)'),
 })
 
 /** @public */
@@ -346,7 +347,8 @@ Usage: plaited validate-skill '<json>' [options]
        echo '<json>' | plaited validate-skill
 
 Input (JSON):
-  paths    string[]   Paths to validate (default: .claude/skills/)
+  path     string     Single path to validate (default: skills/)
+  paths    string[]   Paths to validate (default: skills/)
 
 Options:
   --schema <input|output>  Print JSON Schema and exit
@@ -358,7 +360,7 @@ Exit codes:
   2  Bad input or tool error
 
 Examples:
-  plaited validate-skill '{"paths": [".claude/skills"]}'
+  plaited validate-skill '{"path": "skills"}'
   echo '{"paths": ["skills/"]}' | plaited validate-skill
   plaited validate-skill --schema input
   plaited validate-skill --schema output`)
@@ -372,7 +374,7 @@ Examples:
   })
 
   const cwd = process.cwd()
-  const searchPaths = input.paths?.length ? input.paths : [join(cwd, '.claude/skills')]
+  const searchPaths = input.paths?.length ? input.paths : input.path ? [input.path] : [join(cwd, 'skills')]
   const results = await resolveAndValidate(searchPaths, cwd)
 
   // biome-ignore lint/suspicious/noConsole: CLI output

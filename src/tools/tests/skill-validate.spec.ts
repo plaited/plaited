@@ -277,5 +277,21 @@ metadata:
 
       expect(exitCode).toBe(0)
     })
+
+    test('defaults to root skills dir when no path is provided', async () => {
+      const proc = Bun.spawn(['bun', `${scriptsDir}/skill-validate.ts`, '{}'], {
+        cwd: join(import.meta.dir, '..', '..'),
+        stderr: 'pipe',
+        stdout: 'pipe',
+      })
+      const exitCode = await proc.exited
+      const output = await new Response(proc.stdout).text()
+      const results = JSON.parse(output) as Array<{ path: string }>
+      const repoSkillsDir = join(import.meta.dir, '..', '..', 'skills')
+
+      expect([0, 1]).toContain(exitCode)
+      expect(results.length).toBeGreaterThan(0)
+      expect(results.some((result) => result.path.startsWith(repoSkillsDir))).toBe(true)
+    })
   })
 })

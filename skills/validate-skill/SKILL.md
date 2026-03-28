@@ -34,10 +34,10 @@ Input and output are always JSON. No human-readable mode.
 ### Input
 
 ```json
-{"paths": [".claude/skills/my-skill", ".claude/skills"]}
+{"paths": ["skills/my-skill", "skills"]}
 ```
 
-`paths` is optional — defaults to `.claude/skills/` in the current working directory. Pass a skill directory directly or a parent directory containing multiple skill directories.
+`path` and `paths` are both supported. If neither is provided, the command defaults to `skills/` in the current working directory. Pass a skill directory directly or a parent directory containing multiple skill directories.
 
 ### Output
 
@@ -86,19 +86,19 @@ Use `--schema output` to discover the full shape of the result without reading d
 
 ```bash
 # Validate a specific skill
-plaited validate-skill '{"paths": [".claude/skills/my-skill"]}'
+plaited validate-skill '{"path": "skills/my-skill"}'
 
 # Validate all skills under a directory
-plaited validate-skill '{"paths": [".claude/skills"]}'
+plaited validate-skill '{"path": "skills"}'
 
 # Validate multiple directories
-plaited validate-skill '{"paths": [".claude/skills", ".cursor/skills"]}'
+plaited validate-skill '{"paths": ["skills", "vendor-skills"]}'
 
-# Default: validates .claude/skills/ in cwd
+# Default: validates skills/ in cwd
 plaited validate-skill '{}'
 
 # Stdin pipe
-echo '{"paths": [".claude/skills"]}' | plaited validate-skill
+echo '{"paths": ["skills"]}' | plaited validate-skill
 
 # Discover output schema
 plaited validate-skill --schema output

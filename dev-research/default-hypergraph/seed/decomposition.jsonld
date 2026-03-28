@@ -1,0 +1,45 @@
+{
+  "@id": "skill://default-hypergraph-decomposition",
+  "@type": "Skill",
+  "source": "dev-research/default-hypergraph/seed/decomposition.jsonld",
+  "layer": "seed",
+  "provides": [
+    {
+      "@id": "agent:policy/single-path",
+      "@type": "Policy"
+    },
+    {
+      "@id": "agent:policy/fanout",
+      "@type": "Policy"
+    },
+    {
+      "@id": "agent:policy/merge-winner",
+      "@type": "Policy"
+    },
+    {
+      "@id": "agent:policy/request-review",
+      "@type": "Policy"
+    },
+    {
+      "@id": "bp:thread/search-gate",
+      "@type": "Thread",
+      "references": ["agent:action/web-search", "agent:state/evidence-required"]
+    },
+    {
+      "@id": "bp:thread/human-escalation",
+      "@type": "Thread",
+      "references": ["agent:action/ask-human", "agent:state/uncertain"]
+    },
+    {
+      "@id": "bp:thread/fanout-selection",
+      "@type": "Thread",
+      "references": ["agent:policy/fanout", "agent:policy/merge-winner"]
+    }
+  ],
+  "requires": [
+    {
+      "@id": "skill://default-hypergraph-agent-policy",
+      "@type": "Skill"
+    }
+  ]
+}

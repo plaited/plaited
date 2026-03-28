@@ -12,7 +12,7 @@ Apply Boris Cherny's compression principles to AGENTS.md and rules files.
 
 ## When to Use
 
-- User wants to improve their AGENTS.md or CLAUDE.md
+- User wants to improve their AGENTS.md or related project instruction docs
 - Agent instructions feel verbose or redundant
 - Rules exist but lack verification patterns
 - Setting up a new project's agent configuration

@@ -2,10 +2,14 @@
 
 Behavioral Programming (BP) is a general coordination mechanism for managing concurrent behaviors through event-driven synchronization. This document covers BP as a **foundational paradigm**, independent of UI concerns.
 
-**For UI-specific BP usage**, see:
-- `b-element.md` for integrating BP with custom elements
-- `cross-island-communication.md` for coordinating multiple islands
-- `form-associated-elements.md` for capturing user intent
+This document is intentionally **conceptual**:
+- what BP is
+- how `request`, `waitFor`, `block`, and `interrupt` work
+- how threads compose through event selection
+- where predicates and runtime state fit in broad BP design
+
+For **Plaited-specific execution details and current repo-grounded patterns**, use
+`algorithm-reference.md`.
 
 ## BP Paradigm Overview
 
@@ -1630,7 +1634,8 @@ BP is a general coordination mechanism, not limited to UI:
 
 ### Test Orchestration
 
-From `plaited/workshop/use-runner.ts`:
+Use a counting thread to wait for a bounded number of completion events, then
+request the next phase:
 
 ```typescript
 import { behavioral, bThread, bSync } from 'plaited'
@@ -2246,6 +2251,5 @@ bThreads.set({
 ```
 
 **Next Steps**:
-- See `b-element.md` for UI integration
-- See `cross-island-communication.md` for coordination patterns
-- See `form-associated-elements.md` for intent capture
+- Use `algorithm-reference.md` for Plaited-specific super-step behavior, handler timing, and current repo-grounded patterns
+- Use this document for conceptual BP framing, idioms, and thread composition

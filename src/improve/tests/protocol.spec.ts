@@ -1,4 +1,7 @@
 import { describe, expect, test } from 'bun:test'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import {
   buildImprovePrompt,
   checkImproveScope,
@@ -17,19 +20,61 @@ describe('improve protocol context', () => {
   })
 
   test('parses backtick-wrapped scope paths from real slice markdown', async () => {
-    const slice = await Bun.file(`${import.meta.dir}/../../../dev-research/runtime-taxonomy/slice-1.md`).text()
+    const slice = `# Slice 1
+
+## Target
+
+Test target.
+
+## Scope
+
+- \`src/runtime/\`
+
+## Acceptance Criteria
+
+- Works.
+`
 
     expect(parseSliceScope(slice)).toEqual(['src/runtime/'])
   })
 
   test('extracts inline code paths from prose scope lines', async () => {
-    const slice = await Bun.file(`${import.meta.dir}/../../../dev-research/runtime-taxonomy/slice-3.md`).text()
+    const slice = `# Slice 3
+
+## Target
+
+Test target.
+
+## Scope
+
+- Keep work inside \`src/runtime/\`, \`src/agent/\`, and \`src/modnet/\`.
+
+## Acceptance Criteria
+
+- Works.
+`
 
     expect(parseSliceScope(slice)).toEqual(['src/runtime/', 'src/agent/', 'src/modnet/'])
   })
 
   test('retains standalone file paths like README.md in slice scope', async () => {
-    const slice = await Bun.file(`${import.meta.dir}/../../../dev-research/runtime-taxonomy/slice-6.md`).text()
+    const slice = `# Slice 6
+
+## Target
+
+Test target.
+
+## Scope
+
+- src/tools/skill-evaluate.ts
+- src/tools/tests/skill-evaluate.spec.ts
+- src/cli.ts
+- README.md
+
+## Acceptance Criteria
+
+- Works.
+`
 
     expect(parseSliceScope(slice)).toEqual([
       'src/tools/skill-evaluate.ts',
@@ -40,16 +85,62 @@ describe('improve protocol context', () => {
   })
 
   test('loads program, slice, and allowed paths as a reusable protocol context', async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'improve-protocol-'))
+    const programPath = join(tempDir, 'program.md')
+    const slicePath = join(tempDir, 'slice-1.md')
+
+    await Bun.write(
+      programPath,
+      `# Program
+
+## Mission
+
+Do the thing.
+
+## Fixed Architecture
+
+Keep it bounded.
+
+## Runtime Taxonomy
+
+None.
+
+## Validation
+
+Run checks.
+`,
+    )
+
+    await Bun.write(
+      slicePath,
+      `# Slice 1
+
+## Target
+
+One bounded attempt.
+
+## Scope
+
+- scripts/dev-autoresearch.ts
+- scripts/codex-cli-adapter.ts
+- scripts/repo-improvement-judge.ts
+- scripts/tests/dev-autoresearch.spec.ts
+
+## Acceptance Criteria
+
+- Prompt loads.
+`,
+    )
+
     const context = await loadImprovementProtocolContext({
       defaultAllowedPaths: ['src/improve/'],
-      programPath: './dev-research/improve/program.md',
-      slicePath: './dev-research/improve/slice-1.md',
+      programPath,
+      slicePath,
     })
 
-    expect(context.program.path).toBe('./dev-research/improve/program.md')
+    expect(context.program.path).toBe(programPath)
     expect(context.slice.id).toBe('slice-1')
     expect(context.allowedPaths).toEqual([
-      'src/improve/',
       'scripts/dev-autoresearch.ts',
       'scripts/codex-cli-adapter.ts',
       'scripts/repo-improvement-judge.ts',
@@ -57,6 +148,8 @@ describe('improve protocol context', () => {
     ])
     expect(context.prompt).toContain('Program:')
     expect(context.prompt).toContain('Slice:')
+
+    rmSync(tempDir, { recursive: true, force: true })
   })
 })
 

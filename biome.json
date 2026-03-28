@@ -3,7 +3,7 @@
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!!.bin/*", "!!src/tools/graph-algorithms", "!!.claude/worktrees"]
+    "includes": ["**", "!!.bin/*", "!!src/tools/graph-algorithms"]
   },
   "formatter": {
     "enabled": true,
@@ -88,7 +88,7 @@
       }
     },
     {
-      "includes": ["src/workshop/**/*", "**/tests/**/*", "src/cli.ts", "scripts/**/*", ".claude/**/*"],
+      "includes": ["src/workshop/**/*", "**/tests/**/*", "src/cli.ts", "scripts/**/*"],
       "linter": {
         "rules": {
           "suspicious": {

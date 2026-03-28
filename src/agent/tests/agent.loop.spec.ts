@@ -4,17 +4,17 @@
  * @remarks
  * Tests use mock Model and toolExecutor to verify event flow without
  * real inference or tool execution. Each test verifies a specific
- * pipeline behavior pattern from CLAUDE.md.
+ * pipeline behavior pattern from the documented agent-loop architecture.
  */
 
 import { afterAll, describe, expect, test } from 'bun:test'
 import { bSync, bThread } from '../../behavioral/behavioral.utils.ts'
 import { UI_ADAPTER_LIFECYCLE_EVENTS } from '../../events.ts'
 import { AGENT_EVENTS, RISK_TAG } from '../agent.constants.ts'
-import { createConstitution } from '../factories.ts'
-import { createAgentLoop } from '../create-agent-loop.ts'
 import type { ToolDefinition } from '../agent.schemas.ts'
 import type { AgentNode, Model, ModelDelta } from '../agent.types.ts'
+import { createAgentLoop } from '../create-agent-loop.ts'
+import { createConstitution } from '../factories.ts'
 
 // ============================================================================
 // Mock Model — returns canned responses

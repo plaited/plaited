@@ -1,0 +1,72 @@
+{
+  "@id": "skill://default-hypergraph-mss",
+  "@type": "Skill",
+  "source": "dev-research/default-hypergraph/seed/mss.jsonld",
+  "layer": "seed",
+  "provides": [
+    {
+      "@id": "mss:content-type",
+      "@type": "Tag"
+    },
+    {
+      "@id": "mss:structure",
+      "@type": "Tag"
+    },
+    {
+      "@id": "mss:mechanics",
+      "@type": "Tag"
+    },
+    {
+      "@id": "mss:boundary",
+      "@type": "Tag"
+    },
+    {
+      "@id": "mss:scale",
+      "@type": "Tag"
+    },
+    {
+      "@id": "mss:scale/relative",
+      "@type": "Concept"
+    },
+    {
+      "@id": "mss:structure/object",
+      "@type": "Concept"
+    },
+    {
+      "@id": "mss:structure/form",
+      "@type": "Concept"
+    },
+    {
+      "@id": "mss:structure/collection",
+      "@type": "Concept"
+    },
+    {
+      "@id": "mss:structure/steps",
+      "@type": "Concept"
+    },
+    {
+      "@id": "mss:structure/pool",
+      "@type": "Concept"
+    },
+    {
+      "@id": "mss:mechanics/filter",
+      "@type": "Concept"
+    },
+    {
+      "@id": "mss:mechanics/share",
+      "@type": "Concept"
+    },
+    {
+      "@id": "mss:boundary/all",
+      "@type": "Concept"
+    },
+    {
+      "@id": "mss:boundary/ask",
+      "@type": "Concept"
+    },
+    {
+      "@id": "mss:boundary/none",
+      "@type": "Concept"
+    }
+  ]
+}

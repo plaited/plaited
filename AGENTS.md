@@ -106,7 +106,7 @@ uv run python -c "import mlx.core as mx; print(mx.default_device())"
 | `src/` code + types | What the system IS |
 | `git log` | Why it changed |
 | `AGENTS.md` | How to work here (rules) |
-| `CLAUDE.md` | Active decisions, what's next |
+| `dev-research/*/program.md` | Active research programs and execution goals |
 | `docs/*.md` | Design rationale (verify against code) |
 | `skills/` | Implementation patterns + operational tools |
 

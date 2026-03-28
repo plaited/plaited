@@ -1,10 +1,10 @@
 ---
 name: hypergraph-memory
 description: >
-  JSON-LD hypergraph memory architecture for agent decision persistence, context assembly,
-  and training data extraction. Use when working with .memory/ directories, JSON-LD vertex
+  JSON-LD hypergraph memory architecture for agent decision persistence, contributor-based context assembly,
+  and structural graph queries. Use when working with .memory/ directories, JSON-LD vertex
   schemas (Decision, Session, Commit, Skill, RuleSet), session lifecycle (commit_snapshot →
-  consolidate → defrag), context assembly as BP event, or extracting training data from
+  consolidate → defrag), context contributors, or reasoning about
   decision histories.
 ---
 
@@ -12,15 +12,25 @@ description: >
 
 ## Purpose
 
-This skill teaches agents how Plaited's memory architecture works — a git-versioned hypergraph persisted as JSON-LD files. The agent's memory is files in a git repo, queryable via grep (text), a TS runtime (structural), and WASM graph algorithms (BFS, DFS, cosine similarity).
+This skill teaches agents how Plaited's memory architecture works — a
+git-versioned hypergraph persisted as JSON-LD files. The agent's memory is
+files in a git repo, queryable via grep (text), a domain-agnostic TypeScript
+runtime, and WASM graph algorithms.
+
+This skill mixes two layers:
+- **current Plaited tooling** — what `src/tools/hypergraph.ts` and the ingest
+  tools actually support today
+- **memory architecture** — the broader `.memory/` conventions and runtime
+  lifecycle built around those tools
 
 **Use this when:**
 - Reading or writing to `.memory/` directories
 - Working with JSON-LD vertex schemas (decisions, sessions, commits, skills, rules)
 - Implementing session lifecycle handlers (commit, consolidate, defrag)
-- Wiring context assembly contributors
-- Extracting training data from decision histories
+- Wiring context contributors or session-summary context
+- Analyzing decision histories structurally
 - Understanding the commit vertex one-behind pattern
+- Using deterministic encoding/validation tools such as `skill-links` and `validate-encoding`
 
 ## JSON-LD Vertex Taxonomy
 
@@ -28,11 +38,17 @@ Every entity in the hypergraph uses three JSON-LD properties for identity and ty
 
 - **`@id`** — URI identity. `bp:thread/taskGate` in decision 7 and the same `@id` in decision 12 are the same vertex. No foreign keys, no JOINs.
 - **`@type`** — typed entities. The processor knows a `SelectionDecision` has `bids`, a `Skill` has `provides`.
-- **`@context`** — defines the vocabulary. Skills contribute context; loading a skill extends what types the hypergraph can express.
+- **`@context`** — defines vocabulary and naming conventions for the documents.
+  This is important architecturally, but the current generic hypergraph tool
+  does not implement full scoped `@context` resolution.
 
 ### `@context` Scoping — Area of Effect
 
-When multiple sources define overlapping vocabulary, the narrowest scope wins:
+This is **target architecture**, not a capability of the current generic
+hypergraph tool.
+
+When multiple sources define overlapping vocabulary, the intended rule is that
+the narrowest scope wins:
 
 | Scope | Source | Priority |
 |---|---|---|
@@ -41,7 +57,8 @@ When multiple sources define overlapping vocabulary, the narrowest scope wins:
 | Module | Module `AGENTS.md`, module skills | ↑ |
 | Session | Runtime decisions, per-session extensions | Highest |
 
-Resolution: walk session → module → workspace → framework, take first match. Broader scopes provide defaults; narrower scopes override.
+Resolution target: walk session → module → workspace → framework, take first
+match. Broader scopes provide defaults; narrower scopes override.
 
 ### Vertex Types
 
@@ -76,12 +93,12 @@ Git commits happen when a side-effect-producing tool result arrives (`write_file
 // After git commit completes:
 const sha = (await Bun.$`git rev-parse HEAD`.text()).trim()
 const commitVertex = {
-  '@context': '../../../@context.jsonld',
-  '@id': `git:${sha}`,
+  '@context': { bp: 'urn:bp:' },
+  '@id': `bp:commit/${sha}`,
   '@type': 'Commit',
-  session: `session/${sessionId}`,
-  attestsTo: pendingDecisions.map(fileToDecisionId),
-  artifacts: await getChangedFiles(sha),
+  sha,
+  modulePath,
+  attestsTo: pendingDecisions,
   timestamp: new Date().toISOString(),
 }
 // Written to disk — pending for NEXT commit
@@ -108,80 +125,88 @@ After N session completions, `defragSchedule` bThread requests `defrag`:
 
 See **[session-lifecycle.md](references/session-lifecycle.md)** for the complete flow with bThread coordination.
 
-## Context Assembly as BP Event
+## Context Contributors Around Hypergraph Memory
 
-Before each inference call, context is assembled through BP coordination — not an imperative function.
+Before each inference call, the agent assembles context from pure
+contributors. This is current code reality in `src/agent/context.ts` and
+`src/agent/create-agent-loop.ts`.
 
-### Flow
+This section describes the **memory architecture around the hypergraph**, not a
+behavior built into the generic `hypergraph` tool itself.
 
-1. `batchCompletion` requests `context_assembly` (not `invoke_inference` directly)
-2. `contextGate` bThread blocks `invoke_inference` until all contributors respond
-3. Each contributor handler queries the hypergraph and triggers `context_segment`
-4. After all segments arrive, `contextGate` requests `invoke_inference`
+### Current Flow
+
+1. The loop triggers `invoke_inference`
+2. `createContextAssembler()` composes context from registered contributors
+3. The session-summary contributor loads prior `meta.jsonld` once at startup and
+   contributes a warm-layer summary when present
+4. Other contributors add system prompt, prior rejections, tools, plan, history,
+   and optional proactive sensor state
+5. The assembled prompt is sent to the model directly
+
+Hypergraph-backed memory is part of this flow through persisted session
+metadata, decision files, and later structural queries. It is not currently
+coordinated by a dedicated `contextGate` or `context_segment` event protocol.
 
 ### Contributors
 
-| Contributor | Hypergraph Query | Provides |
+| Contributor | Hypergraph / Memory Input | Provides |
 |---|---|---|
-| Snapshot | Recent decision hyperedges | BP decision history |
+| Session summary | `meta.jsonld` from prior session state | Warm-layer orientation |
 | Memory | `meta.jsonld` embeddings + similarity | Similar past sessions |
-| Skills | Area-of-effect scoped subgraphs | Schema knowledge for current scope |
+| Skills | Ingested skill graphs + `skill-links` encoding surface | Schema knowledge for current scope |
 | Plan | Active plan step bThread positions | Step status and blocking |
 | Constitution | Governance rule subgraphs in scope | Rule explanations |
 | Rules | AGENTS.md subgraphs by proximity | Coding conventions, workflow rules |
 
-Context assembly is **observable** (useSnapshot captures which contributors provided what), **trainable** (assembly decisions become training signal), and **composable** (new contributors are additive — just another handler responding to `context_assembly`).
+Context assembly is **observable**, **trainable**, and **composable**. The
+contributor model is deterministic and additive even though the current
+implementation does not expose contributor contribution as separate BP events.
 
-## Training Data Extraction
+## Structural Signal Extraction
 
-JSON-LD files are the training data source. The hypergraph CLI extracts signal:
+JSON-LD files are the durable structural source for later training and
+distillation pipelines.
 
-### Extraction Commands
+Current Plaited tooling supports structural queries such as:
 
-```bash
-# SFT: successful session trajectories
-./tools/hypergraph extract-training \
-  --sessions .memory/sessions/ \
-  --filter "outcome=approved" \
-  --format sft > sft-data.jsonl
+- `causal-chain`
+- `co-occurrence`
+- `check-cycles`
+- `match`
+- `similar`
+- `reachability`
+- `provenance`
 
-# GRPO: failed + corrected trajectories
-./tools/hypergraph extract-training \
-  --sessions .memory/sessions/ \
-  --filter "outcome=rejected" \
-  --format grpo > grpo-pairs.jsonl
+These are enough to inspect memory structure, derive causal links, and assemble
+higher-level extraction pipelines.
 
-# Dreamer: state transition pairs
-./tools/hypergraph extract-transitions \
-  --sessions .memory/sessions/ \
-  --output dreamer-data.jsonl
-```
+Higher-level training/distillation extraction is still a research-layer task
+built on top of these queries, not a built-in generic hypergraph CLI command.
 
 ### Signal Tiers via Hypergraph
 
 | Signal | Hypergraph Query |
 |---|---|
-| Gate rejection | `grep -rl '"gate_rejected"'` or `hypergraph causal-chain --to "bp:event/gate_rejected"` |
+| Gate rejection | `grep -rl '"gate_rejected"'` or structural queries over decisions/provenance |
 | Test failure | grep over trajectory + `hypergraph co-occurrence` for active threads |
 | Test pass + user rejects | `meta.jsonld` with `outcome: "rejected"` — full decisions for GRPO |
 | Test pass + user approves | `meta.jsonld` with `outcome: "approved"` — gold SFT data |
 
 ### Commit Vertex as Training Anchor
 
-The training pipeline traverses `@id` links: `decision/42 ← attestsTo ← git:a1b2c3d → artifacts → src/agent/agent.ts`. This assembles `(reasoning, code_change)` pairs structurally, not by parsing `git log`.
+The training pipeline traverses `@id` links such as
+`session/sess_abc/decision/42 ← attestsTo ← bp:commit/a1b2c3d`.
+The current commit vertex records `modulePath` plus the decision links; richer
+code-change expansion is still a higher-level training/distillation concern
+rather than part of the vertex itself.
 
 ### bThread Crystallization
 
-Recurring patterns in the hypergraph become candidate bThreads:
-
-```bash
-./tools/hypergraph recurring-patterns \
-  --sessions .memory/sessions/ \
-  --min-occurrences 5 \
-  --output patterns.jsonl
-```
-
-Structural representation (threads, events, conditions) is precise enough to generate `bSync` declarations. Owner reviews before adding to constitution.
+Recurring patterns in the hypergraph may become candidate bThreads, but that is
+currently a research/program concern rather than a built-in hypergraph CLI
+command. Structural representation (threads, events, conditions) is precise
+enough to support later factory generation or review workflows.
 
 ## EVENT_CAUSATION Relationships
 
@@ -221,7 +246,7 @@ node/
 │   ├── @context.jsonld              # framework-level vocabulary
 │   ├── sessions/                    # cross-module coordination
 │   ├── rules/
-│   │   └── workspace.jsonld         # workspace AGENTS.md
+│   │   └── project.jsonld           # root AGENTS.md
 │   ├── constitution/
 │   │   ├── mac/                     # mandatory governance factories
 │   │   └── dac/                     # discretionary governance factories
@@ -235,7 +260,8 @@ Three layers over the same JSON-LD files:
 | Layer | Tool | Use Case |
 |---|---|---|
 | Text (80%) | `grep -rl`, `git log`, `cat` | Quick lookups, version history |
-| Structural | `hypergraph` CLI (compiled Bun) | Causal chains, co-occurrence, cycles, similarity |
+| Structural | `hypergraph` CLI (compiled Bun) | Causal chains, co-occurrence, cycles, similarity, reachability, provenance |
+| Encoding / validation | `skill-links`, `validate-encoding`, `ingest-skill`, `ingest-rules` | Deterministic skill/doc distillation and provenance checks |
 | Graph algorithms | WASM via AssemblyScript | BFS, DFS, cosine similarity, pattern matching, filtered reachability |
 
 ## References
@@ -250,3 +276,17 @@ Three layers over the same JSON-LD files:
 - **code-patterns** — Utility function conventions
 - **trial-runner** — Trial execution and trajectory capture
 - **compare-trials** — Teacher vs student trajectory comparison
+
+## Alignment With Default Hypergraph
+
+For `dev-research/default-hypergraph`, this skill should be treated as source
+material for encoding:
+
+- stable memory object types
+- provenance and continuity concepts
+- recall triggers and similarity concepts
+- query-mode semantics
+
+It should not be copied into ontology verbatim. Session lifecycle details,
+operator workflows, and aspirational extraction commands should remain prose or
+research material unless they are explicitly encoded and validated.

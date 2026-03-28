@@ -4,12 +4,12 @@ import { behavioral, bSync, bThread, type SnapshotMessage } from 'plaited'
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // ============================================================================
-// Wave 5 preview: Orchestrator routing
+// Orchestrator routing
 // A central BP program dispatches tasks to project-specific handlers.
 // Models the Bun IPC trigger bridge pattern from SYSTEM-DESIGN-V3.
 // ============================================================================
 
-describe('orchestrator routing (Wave 5)', () => {
+describe('orchestrator routing', () => {
   test('routes tasks to project-specific handlers via dynamic threads', () => {
     const log: string[] = []
     const projectHandlers = new Map<string, (detail: unknown) => void>()
@@ -551,19 +551,18 @@ describe('parallel simulation coordination', () => {
 })
 
 // ============================================================================
-// useBehavioral factory: the session as a reusable BP program
-// Demonstrates how the agent could use the factory pattern for
-// encapsulation with publicEvents as the API whitelist.
+// Restricted trigger boundary
+// Demonstrates how a behavioral runtime can expose a narrow external
+// trigger surface while keeping internal coordination events private.
 // ============================================================================
 
-describe('useBehavioral agent factory', () => {
-  test('publicEvents restrict which events can be triggered externally', () => {
-    // This test explores whether the agent loop could be built with
-    // useBehavioral, exposing only 'task' and 'destroy' as public events
+describe('restricted trigger boundary', () => {
+  test('useRestrictedTrigger restricts which events can be triggered externally', () => {
     const log: string[] = []
     const { bThreads, trigger, useFeedback, useRestrictedTrigger } = behavioral()
 
-    // Create restricted trigger — only 'task' and 'destroy' allowed externally
+    // Create a restricted trigger that rejects internal coordination events.
+    // External-facing events can still pass through.
     const publicTrigger = useRestrictedTrigger('model_response', 'execute', 'tool_result')
 
     bThreads.set({
@@ -582,11 +581,11 @@ describe('useBehavioral agent factory', () => {
       },
     })
 
-    // Public trigger allows 'task'
+    // Public trigger allows task events because they are not in the restricted set
     publicTrigger({ type: 'task' })
     expect(log).toEqual(['task'])
 
-    // Public trigger blocks internal events
+    // Public trigger blocks internal coordination events
     publicTrigger({ type: 'model_response' })
     publicTrigger({ type: 'execute' })
     expect(log).toEqual(['task']) // internal events rejected

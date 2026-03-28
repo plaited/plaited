@@ -5,7 +5,7 @@
  * Wires all standalone handler functions (simulate, evaluate, gate check,
  * context assembly, memory, snapshot) into a single `behavioral()` instance.
  *
- * Architecture principles (CLAUDE.md):
+ * Architecture principles:
  * - Pipeline pass-through > conditional bypass (always create batchCompletion)
  * - Thin handlers, structural coordination
  * - Per-call dynamic threads (sim_guard_{id})
@@ -20,28 +20,10 @@ import { behavioral } from '../behavioral/behavioral.ts'
 import type { DefaultHandlers, Trigger } from '../behavioral/behavioral.types.ts'
 import { bSync, bThread } from '../behavioral/behavioral.utils.ts'
 import { UI_ADAPTER_LIFECYCLE_EVENTS } from '../events.ts'
+import { createSetHeartbeatHandler } from '../tools/crud.ts'
 import type { SessionMeta } from '../tools/hypergraph.utils.ts'
 import { AGENT_EVENTS, RISK_TAG } from './agent.constants.ts'
-import {
-  type ContextContributor,
-  createContextAssembler,
-  createProactiveContextContributor,
-  createSessionSummaryContributor,
-  historyContributor,
-  planContributor,
-  type ProactiveContextContributor,
-  rejectionContributor,
-  type SessionSummaryContributor,
-  systemPromptContributor,
-  toolsContributor,
-  trimHistory,
-} from './context.ts'
-import { evaluate } from './evaluate.ts'
-import type { ConstitutionFactory, GoalFactory } from './factories.ts'
-import { type ConstitutionPredicate, composedGateCheck } from './gate.ts'
-import { isEtcWrite, isForcePush, isGovernanceModification, isRmRf } from './governance.ts'
 import type { ToolDefinition } from './agent.schemas.ts'
-import { simulate } from './simulate.ts'
 import type {
   AgentNode,
   ChatMessage,
@@ -66,10 +48,28 @@ import type {
   ToolResultDetail,
 } from './agent.types.ts'
 import { mark, parseModelResponse, printTimings, toToolResult } from './agent.utils.ts'
+import {
+  type ContextContributor,
+  createContextAssembler,
+  createProactiveContextContributor,
+  createSessionSummaryContributor,
+  historyContributor,
+  type ProactiveContextContributor,
+  planContributor,
+  rejectionContributor,
+  type SessionSummaryContributor,
+  systemPromptContributor,
+  toolsContributor,
+  trimHistory,
+} from './context.ts'
+import { evaluate } from './evaluate.ts'
+import type { ConstitutionFactory, GoalFactory } from './factories.ts'
+import { type ConstitutionPredicate, composedGateCheck } from './gate.ts'
+import { isEtcWrite, isForcePush, isGovernanceModification, isRmRf } from './governance.ts'
 import { createMemoryHandlers } from './memory-handlers.ts'
 import { createHeartbeatTimer, createSensorBatchThread, createTickYieldThread, runSensorSweep } from './proactive.ts'
+import { simulate } from './simulate.ts'
 import { createSnapshotWriter } from './snapshot-writer.ts'
-import { createSetHeartbeatHandler } from '../tools/crud.ts'
 
 // ============================================================================
 // Types
@@ -263,9 +263,10 @@ export const createAgentLoop = async ({
   const recordToolResult = (result: ToolResultDetail['result']) => {
     history.push({
       role: 'tool',
-      content: result.status === 'failed'
-        ? JSON.stringify({ error: result.error })
-        : JSON.stringify(result.output ?? result.error ?? null),
+      content:
+        result.status === 'failed'
+          ? JSON.stringify({ error: result.error })
+          : JSON.stringify(result.output ?? result.error ?? null),
       tool_call_id: result.toolCallId,
     })
     trigger({
@@ -323,9 +324,10 @@ export const createAgentLoop = async ({
   }) => {
     const start = Date.now()
     try {
-      const output = toolCall.name === 'set_heartbeat' && setHeartbeatHandler
-        ? await setHeartbeatHandler(toolCall.arguments, { workspace: '', signal })
-        : await toolExecutor(toolCall, signal)
+      const output =
+        toolCall.name === 'set_heartbeat' && setHeartbeatHandler
+          ? await setHeartbeatHandler(toolCall.arguments, { workspace: '', signal })
+          : await toolExecutor(toolCall, signal)
       return toToolResult(
         toolCall,
         { toolCallId: toolCall.id, name: toolCall.name, status: 'completed', output },
@@ -491,9 +493,7 @@ export const createAgentLoop = async ({
     taskGate: bThread(
       [
         bSync({
-          waitFor: proactive
-            ? (e) => e.type === AGENT_EVENTS.task || e.type === AGENT_EVENTS.tick
-            : AGENT_EVENTS.task,
+          waitFor: proactive ? (e) => e.type === AGENT_EVENTS.task || e.type === AGENT_EVENTS.tick : AGENT_EVENTS.task,
           block: (e) => PIPELINE_EVENTS.has(e.type),
           interrupt: [UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected],
         }),
@@ -509,9 +509,7 @@ export const createAgentLoop = async ({
     ),
 
     // Tick yield: ensures user tasks interrupt proactive cycles (only when proactive)
-    ...(proactive
-      ? { tickYield: createTickYieldThread() }
-      : {}),
+    ...(proactive ? { tickYield: createTickYieldThread() } : {}),
   })
 
   // ── Constitution bThreads ───────────────────────────────────────────────
@@ -832,14 +830,10 @@ export const createAgentLoop = async ({
   })
 
   // ── Proactive heartbeat timer (opt-in) ──────────────────────────────────
-  const heartbeatHandle = proactive
-    ? createHeartbeatTimer({ trigger, intervalMs: proactive.intervalMs })
-    : undefined
+  const heartbeatHandle = proactive ? createHeartbeatTimer({ trigger, intervalMs: proactive.intervalMs }) : undefined
 
   // ── set_heartbeat tool handler (closure over heartbeatHandle) ──────────
-  const setHeartbeatHandler = heartbeatHandle
-    ? createSetHeartbeatHandler(heartbeatHandle)
-    : undefined
+  const setHeartbeatHandler = heartbeatHandle ? createSetHeartbeatHandler(heartbeatHandle) : undefined
   mark('proactive')
 
   // ── Timing report ──────────────────────────────────────────────────────

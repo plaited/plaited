@@ -1,0 +1,58 @@
+{
+  "@id": "skill://default-hypergraph-agent-policy",
+  "@type": "Skill",
+  "source": "dev-research/default-hypergraph/seed/agent-policy.jsonld",
+  "layer": "seed",
+  "provides": [
+    {
+      "@id": "agent:state/uncertain",
+      "@type": "State"
+    },
+    {
+      "@id": "agent:state/evidence-required",
+      "@type": "State"
+    },
+    {
+      "@id": "agent:action/hypergraph-recall",
+      "@type": "Action"
+    },
+    {
+      "@id": "agent:action/web-search",
+      "@type": "Action"
+    },
+    {
+      "@id": "agent:action/ask-human",
+      "@type": "Action"
+    },
+    {
+      "@id": "agent:action/stop",
+      "@type": "Action"
+    },
+    {
+      "@id": "agent:policy/prefer-symbolic-state",
+      "@type": "Policy",
+      "references": ["agent:state/uncertain", "agent:action/hypergraph-recall"]
+    },
+    {
+      "@id": "agent:policy/search-when-unknown",
+      "@type": "Policy",
+      "references": ["agent:state/evidence-required", "agent:action/web-search"]
+    },
+    {
+      "@id": "agent:policy/escalate-to-human",
+      "@type": "Policy",
+      "references": ["agent:state/uncertain", "agent:action/ask-human"]
+    },
+    {
+      "@id": "agent:policy/stop-unsupported-claims",
+      "@type": "Policy",
+      "references": ["agent:state/evidence-required", "agent:action/stop"]
+    }
+  ],
+  "requires": [
+    {
+      "@id": "skill://default-hypergraph-modnet",
+      "@type": "Skill"
+    }
+  ]
+}

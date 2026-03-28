@@ -19,8 +19,10 @@ import { ingestSkillCli } from './tools/ingest-skill.ts'
 import { validateResearchCli } from './tools/research-validate.ts'
 import { discoverSkillsCli } from './tools/skill-discovery.ts'
 import { evaluateSkillCli } from './tools/skill-evaluate.ts'
+import { skillLinksCli } from './tools/skill-links.ts'
 import { validateSkill } from './tools/skill-validate.ts'
 import { typescriptLsp } from './tools/typescript-lsp.ts'
+import { validateEncodingCli } from './tools/validate-encoding.ts'
 import { validateThreadCli } from './tools/validate-thread.ts'
 
 // ============================================================================
@@ -43,6 +45,8 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   'ingest-rules': ingestRulesCli,
   'discover-skills': discoverSkillsCli,
   'evaluate-skill': evaluateSkillCli,
+  'skill-links': skillLinksCli,
+  'validate-encoding': validateEncodingCli,
   'typescript-lsp': typescriptLsp,
   // ACP adapter (long-lived stdio process)
   acp: async () => {
@@ -85,7 +89,7 @@ Commands:
   Development:
     validate-skill, validate-thread, ingest-goal,
     ingest-skill, ingest-rules, discover-skills,
-    evaluate-skill,
+    evaluate-skill, skill-links, validate-encoding,
     validate-research,
     typescript-lsp
 

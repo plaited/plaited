@@ -29,8 +29,10 @@ import { analyzeImageRiskTags, analyzeImageToolDefinition, createAnalyzeImageHan
 import { BUILT_IN_RISK_TAGS, builtInHandlers } from './crud.ts'
 import { createEmbedSearchHandler, embedSearchRiskTags, embedSearchToolDefinition } from './embed-search.ts'
 import { search, searchRiskTags, searchToolDefinition } from './hypergraph.ts'
+import { getSkillLinks, skillLinksRiskTags, skillLinksToolDefinition } from './skill-links.ts'
 import { createSpeakHandler, speakRiskTags, speakToolDefinition } from './speak.ts'
 import { lspHandler, lspRiskTags, lspToolSchema } from './typescript-lsp.ts'
+import { validateEncoding, validateEncodingRiskTags, validateEncodingToolDefinition } from './validate-encoding.ts'
 
 // ============================================================================
 // Handler Registry — tool name → ToolHandler
@@ -54,9 +56,11 @@ export const toolHandlers: Record<string, ToolHandler> = {
   ...builtInHandlers,
   lsp: lspHandler,
   search,
+  skill_links: getSkillLinks,
   embed_search: createEmbedSearchHandler(),
   analyze_image: createAnalyzeImageHandler(),
   speak: createSpeakHandler(),
+  validate_encoding: validateEncoding,
 }
 
 // ============================================================================
@@ -77,9 +81,11 @@ export const toolRiskTags: Record<string, string[]> = {
   ...BUILT_IN_RISK_TAGS,
   lsp: lspRiskTags,
   search: searchRiskTags,
+  skill_links: skillLinksRiskTags,
   embed_search: embedSearchRiskTags,
   analyze_image: analyzeImageRiskTags,
   speak: speakRiskTags,
+  validate_encoding: validateEncodingRiskTags,
 }
 
 // ============================================================================
@@ -99,7 +105,9 @@ export const toolRiskTags: Record<string, string[]> = {
 export const toolDefinitions: ToolDefinition[] = [
   lspToolSchema,
   searchToolDefinition,
+  skillLinksToolDefinition,
   embedSearchToolDefinition,
   analyzeImageToolDefinition,
   speakToolDefinition,
+  validateEncodingToolDefinition,
 ]

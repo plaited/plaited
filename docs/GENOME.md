@@ -171,7 +171,7 @@ skills/
 1. Create `skills/seeds/agent-loop/SKILL.md` — the 6-step loop, event vocabulary, seam pattern, three-layer architecture, per-call dispatch, key discoveries
 2. Add "Key Decisions" section (pipeline pass-through, per-call threads > persistent shared-state, interrupted thread timing, narrow world view)
 3. Add CONTRACT frontmatter with `depends-on: [behavioral-engine]`
-4. Retire `.claude/skills/agent-build/` — content fully distributed
+4. Retire the old `agent-build` seed location — content fully distributed
 
 ### Phase 5: Create `modnet-node` and `plaited-genome`
 1. Write `skills/seeds/modnet-node/SKILL.md` — module architecture, MSS tags, sidecar, workspace structure, governance factories
@@ -191,9 +191,6 @@ skills/
 ```bash
 # Validate all skills against AgentSkills spec
 bun plaited validate-skill skills/seeds skills/tools skills/eval
-
-# Verify symlinks resolve
-ls -la .claude/skills/
 
 # Verify no broken cross-references
 grep -r "Related Skills" skills/ | grep -v node_modules
