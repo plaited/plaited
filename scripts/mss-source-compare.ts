@@ -67,6 +67,7 @@ export type SourceCompareReport = {
 }
 
 const DEFAULT_CHUNK_PATH = join('.prompts', 'mss-doc-chunks', 'chunks.jsonl')
+export const DEFAULT_MSS_COMPARE_EMBEDDING_MODEL = 'nvidia/llama-nemotron-embed-vl-1b-v2:free'
 const DEFAULT_MARKDOWN_PATHS = [
   join('skills', 'mss', 'SKILL.md'),
   join('skills', 'mss', 'references', 'dynamics-distilled.md'),
@@ -295,6 +296,7 @@ export const buildEmbeddingPairs = async (
     .filter((section): section is ComparisonSection => Boolean(section))
 
   const result = await embed({
+    model: process.env.PLAITED_MSS_COMPARE_EMBED_MODEL?.trim() || DEFAULT_MSS_COMPARE_EMBEDDING_MODEL,
     texts: selectedSections.map((section) => `${section.headingPath.join(' / ')}\n${section.text.slice(0, 1200)}`),
   })
 

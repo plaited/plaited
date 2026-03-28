@@ -7,6 +7,7 @@ import {
   buildSignature,
   classifyDisposition,
   cosineSimilarity,
+  DEFAULT_MSS_COMPARE_EMBEDDING_MODEL,
   jaccardSimilarity,
   tokenize,
 } from '../mss-source-compare.ts'
@@ -43,6 +44,10 @@ describe('mss-source-compare', () => {
 
   test('cosineSimilarity returns 1 for identical vectors', () => {
     expect(cosineSimilarity([1, 2], [1, 2])).toBeCloseTo(1)
+  })
+
+  test('uses the free Nemotron embedding model by default for compare runs', () => {
+    expect(DEFAULT_MSS_COMPARE_EMBEDDING_MODEL).toBe('nvidia/llama-nemotron-embed-vl-1b-v2:free')
   })
 
   test('classifyDisposition flags old template assumptions for reinterpretation', () => {
