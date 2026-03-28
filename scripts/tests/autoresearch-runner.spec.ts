@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import {
+  buildPiCommand,
   buildRunDir,
   buildScopeViolationMessage,
   buildStrategyNotes,
@@ -104,6 +105,22 @@ describe('autoresearch-runner', () => {
 
   test('uses the Pi worktree guard extension', () => {
     expect(PI_WORKTREE_GUARD_EXTENSION_PATH).toBe('scripts/pi-worktree-guard-extension.ts')
+  })
+
+  test('passes the canonical repo root and extension into the Pi command', async () => {
+    const config = await getLaneConfig('scripts/mss-seed.ts')
+
+    const command = await buildPiCommand({
+      config,
+      strategy: 'minimal-diff-first',
+      repoRoot: process.cwd(),
+      workspaceRoot: process.cwd(),
+    })
+
+    expect(command).toContain('--extension')
+    expect(command).toContain(`${process.cwd()}/scripts/pi-worktree-guard-extension.ts`)
+    expect(command).toContain('--path')
+    expect(command).toContain(process.cwd())
   })
 
   test('allowed-path enforcement accepts only configured writable roots', () => {

@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 
 import { isAbsolute, join, resolve } from 'node:path'
+import { $ } from 'bun'
 import type { Grader, GraderResult, WorkspaceImprovementPromotionDecision } from '../src/improve.ts'
 import {
   buildWorkspaceImprovementPromotionPrompt,
@@ -101,7 +102,7 @@ export const MAX_ATTEMPT_RETRIES = 2
 export const PI_WORKTREE_GUARD_EXTENSION_PATH = 'scripts/pi-worktree-guard-extension.ts'
 
 const pathExists = async (path: string): Promise<boolean> => {
-  const result = await Bun.$`test -e ${path}`.quiet().nothrow()
+  const result = await $`test -e ${path}`.quiet().nothrow()
   return result.exitCode === 0
 }
 
@@ -116,7 +117,7 @@ export const resolveWorkspaceRoot = async ({ cwd = process.cwd() }: { cwd?: stri
     return override
   }
 
-  const gitTopLevel = await Bun.$`git rev-parse --show-toplevel`.cwd(cwd).quiet().nothrow()
+  const gitTopLevel = await $`git rev-parse --show-toplevel`.cwd(cwd).quiet().nothrow()
   if (gitTopLevel.exitCode === 0) {
     const root = (await gitTopLevel.text()).trim()
     if (root.length > 0) {
@@ -210,7 +211,7 @@ const evaluationSummaryPath = (runDir: string) => join(runDir, 'evaluation-summa
 const promotionSummaryPath = (runDir: string) => join(runDir, 'promotion-summary.json')
 
 const ensureDir = async (path: string) => {
-  await Bun.$`mkdir -p ${path}`.quiet()
+  await $`mkdir -p ${path}`.quiet()
 }
 
 const writeJson = async (path: string, value: unknown) => {
@@ -266,7 +267,7 @@ const createWorktree = async ({
 }) => {
   const worktreePath = attemptWorktreePath(runDir, attempt)
   await ensureDir(runAttemptDir(runDir, attempt))
-  await Bun.$`git worktree add --detach ${worktreePath} HEAD`.cwd(workspaceRoot).quiet()
+  await $`git worktree add --detach ${worktreePath} HEAD`.cwd(workspaceRoot).quiet()
   return worktreePath
 }
 
@@ -286,7 +287,7 @@ Writable roots:
 ${writableRoots}`
 }
 
-const buildPiCommand = async ({
+export const buildPiCommand = async ({
   config,
   strategy,
   repoRoot,
@@ -332,7 +333,7 @@ ${strategy}`,
 }
 
 export const summarizeDiff = async (worktreePath: string) => {
-  const diff = await Bun.$`git diff --stat`.cwd(worktreePath).quiet().nothrow()
+  const diff = await $`git diff --stat`.cwd(worktreePath).quiet().nothrow()
   return (await diff.text()).trim()
 }
 
@@ -345,18 +346,18 @@ export const commitAttempt = async ({
   laneKey: string
   attempt: number
 }) => {
-  const addResult = await Bun.$`git add -A`.cwd(worktreePath).quiet().nothrow()
+  const addResult = await $`git add -A`.cwd(worktreePath).quiet().nothrow()
   if (addResult.exitCode !== 0) {
     throw new Error(`git add failed with exit code ${addResult.exitCode}`)
   }
 
   const message = `chore(research): capture ${laneKey} attempt ${attempt.toString().padStart(2, '0')}`
-  const commitResult = await Bun.$`git commit -m ${message}`.cwd(worktreePath).quiet().nothrow()
+  const commitResult = await $`git commit -m ${message}`.cwd(worktreePath).quiet().nothrow()
   if (commitResult.exitCode !== 0) {
     throw new Error(`git commit failed with exit code ${commitResult.exitCode}`)
   }
 
-  const revParse = await Bun.$`git rev-parse HEAD`.cwd(worktreePath).quiet().nothrow()
+  const revParse = await $`git rev-parse HEAD`.cwd(worktreePath).quiet().nothrow()
   if (revParse.exitCode !== 0) {
     throw new Error(`git rev-parse failed with exit code ${revParse.exitCode}`)
   }
@@ -395,8 +396,8 @@ ${writableRoots.map((path) => `- ${path}`).join('\n')}
 Retry with a narrower edit set. Only modify files inside the allowed writable roots.`
 
 export const readChangedPaths = async (worktreePath: string) => {
-  const diff = await Bun.$`git diff --name-only`.cwd(worktreePath).quiet().nothrow()
-  const untracked = await Bun.$`git ls-files --others --exclude-standard`.cwd(worktreePath).quiet().nothrow()
+  const diff = await $`git diff --name-only`.cwd(worktreePath).quiet().nothrow()
+  const untracked = await $`git ls-files --others --exclude-standard`.cwd(worktreePath).quiet().nothrow()
 
   return [...(await diff.text()).split('\n'), ...(await untracked.text()).split('\n')]
     .map((line) => line.trim())
@@ -679,6 +680,7 @@ const runAttempt = async ({
       env: {
         PI_CODING_AGENT_DIR: attemptPiStatePath(runDir, attempt),
         PLAITED_WORKSPACE_ROOT: worktreePath,
+        PLAITED_REPO_ROOT: repoRoot,
         PLAITED_ALLOWED_WRITABLE_ROOTS: config.writableRoots.join('\n'),
       },
     })
@@ -717,6 +719,7 @@ ${errorMessage}`
       env: {
         ...process.env,
         PLAITED_WORKSPACE_ROOT: worktreePath,
+        PLAITED_REPO_ROOT: repoRoot,
       },
     })
 
