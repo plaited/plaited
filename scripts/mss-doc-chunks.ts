@@ -22,7 +22,9 @@ export type DocChunkFile = {
 export const DEFAULT_DOC_PATHS = [
   join('docs', 'Structural-IA.md'),
   join('docs', 'Modnet.md'),
-  join('docs', 'MODNET-IMPLEMENTATION.md'),
+  join('skills', 'modnet-node', 'references', 'module-architecture.md'),
+  join('skills', 'modnet-node', 'references', 'a2a-bindings.md'),
+  join('skills', 'modnet-node', 'references', 'access-control.md'),
 ] as const
 
 const parseArgs = (argv: string[]) => {

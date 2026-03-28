@@ -21,7 +21,7 @@ The framework provides:
 - **Interfaces** for four model roles (Model, Indexer, Vision, Voice)
 - **BP orchestration** for the agent loop, safety constraints, and context assembly
 - **Memory via hypergraph** — BP decisions and tool results as git-versioned JSON-LD files (see `HYPERGRAPH-MEMORY.md`)
-- **A constitution** encoding Structural-IA and Modnet concepts as bThreads + skills (see `CONSTITUTION.md`)
+- **A constitution** encoding Structural-IA and Modnet concepts as bThreads + skills (see `skills/constitution/`)
 
 The framework is **not prescriptive** about inference backend. Consumers choose how to serve models — vLLM, llama.cpp, Ollama, cloud APIs, or any OpenAI-compatible endpoint. All three backends support separating `<think>` reasoning from response content at the server level. Code ships via npm (`plaited`). Base-trained models ship via Hugging Face ([huggingface.co/plaited](https://huggingface.co/plaited)).
 
@@ -164,11 +164,11 @@ The pluggable model interfaces make tier selection a deployment decision, not an
 |---|---|
 | `AGENT-LOOP.md` | 6-step loop overview (impl patterns in `skills/agent-loop/`) |
 | `SAFETY.md` | Three-axis risk, defense in depth (6 layers) |
-| `CONSTITUTION.md` | Governance factories, neuro-symbolic split, MAC/DAC |
+| `skills/constitution/` | Governance factories, neuro-symbolic split, MAC/DAC |
 | `TRAINING.md` | Distillation pipeline, training tiers, flywheel |
 | `HYPERGRAPH-MEMORY.md` | Git-versioned JSON-LD memory, context assembly, plans as bThreads |
 | `PROJECT-ISOLATION.md` | Multi-project orchestrator, IPC bridge, tool layers |
-| `MODNET-IMPLEMENTATION.md` | Modnet topology, A2A protocol, identity, access control, payment (implementation patterns in `skills/modnet-node/`) |
+| `skills/modnet-node/` | Modnet topology, A2A protocol, identity, access control, and node references |
 | `GENOME.md` | Skills taxonomy (seeds/tools/eval), CONTRACT frontmatter, wave ordering |
 | ~~`CRITIQUE-RESPONSE.md`~~ | Removed — gap resolutions folded into `PLAN.md` Part 4 (Design Decisions) |
 | `UI.md` | Generative UI overview (details in `generative-ui` skill) |

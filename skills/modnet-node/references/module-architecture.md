@@ -1,6 +1,8 @@
 # Module Architecture
 
-Implementation details for the module-per-repo workspace structure. Design rationale is in `docs/MODNET-IMPLEMENTATION.md`.
+Implementation details for the module-per-workspace structure described in
+[`../SKILL.md`](../SKILL.md). This is a reference architecture for node/module layout,
+not a claim that one scaffolding API is the active runtime surface.
 
 ## Node Structure
 

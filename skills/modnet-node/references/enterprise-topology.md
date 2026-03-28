@@ -1,6 +1,8 @@
 # Enterprise Topology
 
-Implementation details for enterprise modnet deployments. Design rationale is in `docs/MODNET-IMPLEMENTATION.md`. Node role constants are in `src/modnet/modnet.constants.ts`.
+Implementation details for enterprise modnet deployments. Treat this as a reference
+topology rather than a blanket statement of the current default deployment path. Node
+role constants are in `src/modnet/modnet.constants.ts`.
 
 ## Node Roles Are Structural, Not Instructional
 

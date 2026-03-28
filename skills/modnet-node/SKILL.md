@@ -1,6 +1,6 @@
 ---
 name: modnet-node
-description: Modnet node architecture — module-per-repo structure, A2A protocol bindings, access control patterns, enterprise topology, and node generation via seeds. Use when building modnet nodes, configuring A2A transports, implementing access control, or provisioning enterprise networks.
+description: Modnet node architecture — node topology, A2A protocol bindings, access control patterns, and supporting workspace/reference structure. Use when building modnet nodes, configuring A2A transports, implementing access control, or reviewing node-level design constraints.
 license: ISC
 compatibility: Requires bun
 ---
@@ -9,16 +9,20 @@ compatibility: Requires bun
 
 ## Purpose
 
-This skill teaches agents how to build and configure modnet nodes — sovereign agent instances that communicate peer-to-peer via A2A. It covers the full implementation surface: module-per-repo workspace structure, A2A protocol bindings for different deployment contexts, access control (DAC + MAC + ABAC) code patterns, and enterprise network provisioning via seeds.
+This skill teaches agents how to build and configure modnet nodes: sovereign agent
+instances that communicate peer-to-peer via A2A. It covers the active node surface:
+A2A protocol bindings for different deployment contexts, node/module boundary rules,
+access control (DAC + MAC + ABAC) code patterns, and reference architecture for
+workspace and enterprise layouts.
 
 **Use when:**
-- Building a new modnet node (setting up the module-per-repo workspace)
+- Building a new modnet node or reviewing node topology
 - Configuring A2A transport for a deployment context (same-box, same-cluster, cross-network)
 - Implementing access control policies (boundary tags, block predicates, payment gating)
-- Provisioning enterprise infrastructure (registry, observer, gateway, worker nodes)
 - Wiring identity and authentication between nodes (known-peers, TOFU, mTLS)
+- Reviewing workspace structure, module boundaries, or enterprise node roles
 
-**Not for:** Local user authentication to a node (that's `node-auth` skill). Design rationale and conceptual models (that's `docs/MODNET-IMPLEMENTATION.md`).
+**Not for:** Local user authentication to a node (that's `node-auth` skill).
 
 ## Key Concepts
 
@@ -29,57 +33,45 @@ A **modnet** (modular network) is a network of user-owned nodes connected peer-t
 - **Constitution** (MAC bThreads) defines what the node cannot do. Modules define what it can do. The role is the structure.
 - **Node identity** is structural: constitution + modules + Agent Card + DAC configuration. Skills are operational tools, not identity.
 
-## Workspace Initialization
+## Node Topology
 
-Use `initNodeWorkspace` from `src/modnet/workspace.ts` to create a new node:
+A modnet uses a **1 node : 1 user** topology. Each node is one Plaited agent
+serving one owner. There is no central server, no shared tenancy, and no platform
+operator in the middle.
 
-```typescript
-import { initNodeWorkspace } from '../modnet/workspace.ts'
+- each node owns its own memory, constitution, and Agent Card
+- nodes cooperate through A2A rather than by sharing internal packages directly
+- nodes can participate in multiple networks at once
+- if one node goes offline, that node disappears from the network without taking
+  other nodes down with it
 
-await initNodeWorkspace({
-  path: '/home/user/my-node',
-  scope: '@mynode',
-  name: 'personal-agent',
-})
-```
+This is a network of sovereign agents, not a multi-user agent platform.
 
-This creates:
-- `package.json` with `"workspaces": ["modules/*"]` and `"modnet": { scope }`
-- `tsconfig.json` (strict, ESNext, bundler resolution)
-- `.gitignore` excluding `modules/` (each module has its own git)
-- `.memory/` with `@context.jsonld`, `sessions/`, `constitution/`
-- `modules/` directory (empty, ready for modules)
-- Runs `bun install` to initialize the workspace
+## Module Boundary Model
 
-See [module-architecture.md](references/module-architecture.md) for the full directory layout, scale mapping, code vs. data boundary, dependency isolation, and asset management.
+Modules are internal node artifacts: code, data, skills, tools, bThreads, and local
+memory. They do not cross A2A boundaries directly. Nodes expose **services** and
+**artifacts** through the Agent Card and A2A operations; the underlying module stays
+internal unless a higher-trust transfer path is explicitly approved.
 
-## Module Generation
+That distinction matters for both identity and safety:
 
-Use `initModule` to create modules from MSS tags. MSS tags are defined in the `mss` skill — the five bridge-code tags (`contentType`, `structure`, `mechanics`, `boundary`, `scale`) govern how modules connect, nest, and share data.
+- the Agent Card projects capabilities, not internals
+- outputs can cross the boundary
+- module internals remain node-local by default
+- constitution and access-control rules apply at the service/artifact boundary
 
-```typescript
-import { initModule } from '../modnet/workspace.ts'
+## Workspace Structure
 
-await initModule({
-  nodePath: '/home/user/my-node',
-  name: 'farm-stand',
-  modnet: {
-    contentType: 'produce',
-    structure: 'list',
-    mechanics: ['sort', 'filter'],
-    boundary: 'ask',
-    scale: 3,
-  },
-})
-```
+The module-per-workspace layout is preserved as a reference architecture, not a claim
+that a single scaffolding API is the current operator surface. Use
+[module-architecture.md](references/module-architecture.md) for:
 
-This creates under `modules/farm-stand/`:
-- Own `git init` (independent version history from the node)
-- `package.json` with `@node/farm-stand` name and MSS `"modnet"` field
-- `skills/farm-stand/SKILL.md` — seed skill with MSS metadata in frontmatter
-- `.memory/sessions/` — module-scoped decision history
-- `data/` — shareable data directory (gated by `boundary` tag)
-- Runs `bun install` at node root to link the new workspace package
+- node and module directory layout
+- `@node` package scope and `workspace:*` resolution
+- module-level git history inside the node workspace
+- code-vs-data boundary rules
+- metadata and asset-management conventions
 
 ### Module package.json Manifest
 
@@ -127,10 +119,10 @@ The PM reads `skills/*/SKILL.md` frontmatter to find modules by `contentType`, `
 
 ### Composing a Node with A2A
 
-`createNode` from `src/modnet/node.ts` composes agent loop + server + A2A into a running node:
+`createNode` from `src/modnet/create-node.ts` composes agent loop + server + A2A into a running node:
 
 ```typescript
-import { createNode } from '../modnet/node.ts'
+import { createNode } from '../modnet/create-node.ts'
 import type { AgentCard } from '../a2a/a2a.schemas.ts'
 
 const card: AgentCard = {
@@ -271,7 +263,9 @@ bSync({
 
 ### Payment Gating (x402)
 
-The `paid` boundary uses HTTP 402 with x402 headers. Payment status is an ABAC attribute:
+The `paid` boundary can use HTTP 402 / x402-style payment proofs as an ABAC input.
+Treat this as an optional access-control extension, not a guaranteed active runtime
+surface in every deployment. Payment status is modeled as an ABAC attribute:
 
 ```typescript
 bSync({

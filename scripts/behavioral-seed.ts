@@ -1,4 +1,5 @@
 import { join } from 'node:path'
+import { loadJsonLd } from '../src/tools/hypergraph.ts'
 import type { ResearchLaneConfig } from './autoresearch-runner.ts'
 
 export type ProgramRequirement = {
@@ -17,9 +18,158 @@ export type BehavioralSeedStatus = {
   programNonEmpty: boolean
   laneSeedPath: string
   laneSeedDocs: number
+  semanticSeedValid: boolean
+  semanticIssues: string[]
   artifactPath: string
   artifactFiles: number
   requirements: RequirementStatus[]
+}
+
+type JsonLdNode = Record<string, unknown>
+
+const REQUIRED_BEHAVIORAL_ANCHORS = ['behavioral', 'bthread', 'bsync', 'governance', 'constitution'] as const
+
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
+
+const collectJsonLdNodes = (document: JsonLdNode): JsonLdNode[] => {
+  const graph = document['@graph']
+  const nodes = Array.isArray(graph) ? graph.filter(isRecord) : []
+  return [document, ...nodes]
+}
+
+const toStringArray = (value: unknown): string[] => {
+  if (typeof value === 'string') {
+    return [value]
+  }
+
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value.filter((entry): entry is string => typeof entry === 'string')
+}
+
+const hasProvenanceSignal = (node: JsonLdNode): boolean =>
+  [
+    'derivedFrom',
+    'behavioral:derivedFrom',
+    'provenance',
+    'behavioral:provenance',
+    'source',
+    'sources',
+    'behavioral:source',
+    'behavioral:sources',
+  ].some((key) => key in node)
+
+const isRuleLikeNode = (node: JsonLdNode): boolean => {
+  const typeValues = toStringArray(node['@type']).map((value) => value.toLowerCase())
+  if (
+    typeValues.some((value) => value.includes('rule') || value.includes('invariant') || value.includes('constraint'))
+  ) {
+    return true
+  }
+
+  return typeof node.rule === 'string' || typeof node['behavioral:rule'] === 'string'
+}
+
+const isPatternLikeNode = (node: JsonLdNode): boolean => {
+  const typeValues = toStringArray(node['@type']).map((value) => value.toLowerCase())
+  if (typeValues.some((value) => value.includes('pattern'))) {
+    return true
+  }
+
+  const serialized = JSON.stringify(node).toLowerCase()
+  return serialized.includes('behavioral') && (serialized.includes('bthread') || serialized.includes('bsync'))
+}
+
+const collectExplicitReferences = (value: unknown, refs: Set<string>) => {
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      collectExplicitReferences(entry, refs)
+    }
+    return
+  }
+
+  if (!isRecord(value)) {
+    return
+  }
+
+  if (typeof value['@id'] === 'string' && Object.keys(value).every((key) => key === '@id')) {
+    refs.add(value['@id'])
+  }
+
+  for (const [key, entry] of Object.entries(value)) {
+    if (key === '@context' || key === '@id' || key === '@type') {
+      continue
+    }
+    collectExplicitReferences(entry, refs)
+  }
+}
+
+export const validateBehavioralSeedSemantics = async ({
+  workspaceRoot,
+  laneSeedPath = BEHAVIORAL_SEED_PATH,
+}: {
+  workspaceRoot: string
+  laneSeedPath?: string
+}) => {
+  const seedDir = join(workspaceRoot, laneSeedPath)
+  const issues: string[] = []
+
+  if (!(await pathExists(seedDir))) {
+    return { valid: true, issues }
+  }
+
+  const documents = (await loadJsonLd(seedDir)) as JsonLdNode[]
+  if (documents.length === 0) {
+    return { valid: true, issues }
+  }
+
+  const nodes = documents.flatMap((document) => collectJsonLdNodes(document))
+  const serialized = nodes.map((node) => JSON.stringify(node).toLowerCase()).join('\n')
+  const missingAnchors = REQUIRED_BEHAVIORAL_ANCHORS.filter((anchor) => !serialized.includes(anchor))
+  if (missingAnchors.length > 0) {
+    issues.push(`missing behavioral anchors: ${missingAnchors.join(', ')}`)
+  }
+
+  const ruleNodes = nodes.filter((node) => isRuleLikeNode(node))
+  if (ruleNodes.length === 0) {
+    issues.push('missing behavioral rule or invariant concepts')
+  }
+
+  const patternNodes = nodes.filter((node) => isPatternLikeNode(node))
+  if (patternNodes.length === 0) {
+    issues.push('missing representative behavioral pattern concepts')
+  }
+
+  if (!nodes.some((node) => hasProvenanceSignal(node))) {
+    issues.push('missing provenance or source linkage')
+  }
+
+  const anchorCoverage = REQUIRED_BEHAVIORAL_ANCHORS.filter((anchor) =>
+    nodes.some((node) => !patternNodes.includes(node) && JSON.stringify(node).toLowerCase().includes(anchor)),
+  )
+  if (anchorCoverage.length < 3) {
+    issues.push('behavioral anchors are not meaningfully connected to the rest of the seed semantics')
+  }
+
+  const explicitReferences = new Set<string>()
+  for (const node of nodes) {
+    collectExplicitReferences(node, explicitReferences)
+  }
+  const nodeIds = new Set(nodes.map((node) => (typeof node['@id'] === 'string' ? node['@id'] : '')).filter(Boolean))
+  const unresolvedReferences = [...explicitReferences].filter(
+    (ref) =>
+      (ref.startsWith('behavioral:') || ref.startsWith('constitution:') || ref.startsWith('bp:')) && !nodeIds.has(ref),
+  )
+  if (unresolvedReferences.length > 0) {
+    issues.push(`unresolved internal references: ${unresolvedReferences.slice(0, 5).join(', ')}`)
+  }
+
+  return {
+    valid: issues.length === 0,
+    issues,
+  }
 }
 
 export const BEHAVIORAL_SEED_PROGRAM_PATH = join('dev-research', 'behavioral-seed', 'program.md')
@@ -136,6 +286,7 @@ export const getBehavioralSeedStatus = async ({
   const laneSeedDocs = await countJsonLdDocs(
     resolveWorkspacePath({ workspaceRoot: resolvedWorkspaceRoot, relativePath: BEHAVIORAL_SEED_PATH }),
   )
+  const semanticValidation = await validateBehavioralSeedSemantics({ workspaceRoot: resolvedWorkspaceRoot })
   const artifactFiles = await countFiles(
     resolveWorkspacePath({ workspaceRoot: resolvedWorkspaceRoot, relativePath: BEHAVIORAL_SEED_ARTIFACTS_PATH }),
   )
@@ -156,6 +307,8 @@ export const getBehavioralSeedStatus = async ({
     programNonEmpty: programText.length > 0,
     laneSeedPath: BEHAVIORAL_SEED_PATH,
     laneSeedDocs,
+    semanticSeedValid: semanticValidation.valid,
+    semanticIssues: semanticValidation.issues,
     artifactPath: BEHAVIORAL_SEED_ARTIFACTS_PATH,
     artifactFiles,
     requirements,
@@ -163,7 +316,10 @@ export const getBehavioralSeedStatus = async ({
 }
 
 export const isBehavioralSeedValid = (status: BehavioralSeedStatus): boolean =>
-  status.programExists && status.programNonEmpty && status.requirements.every((requirement) => requirement.exists)
+  status.programExists &&
+  status.programNonEmpty &&
+  status.requirements.every((requirement) => requirement.exists) &&
+  (status.laneSeedDocs === 0 || status.semanticSeedValid)
 
 export const renderBehavioralSeedStatus = (status: BehavioralSeedStatus): string => {
   const lines = [
@@ -173,8 +329,12 @@ export const renderBehavioralSeedStatus = (status: BehavioralSeedStatus): string
     `programNonEmpty: ${status.programNonEmpty ? 'yes' : 'no'}`,
     `laneSeedPath: ${status.laneSeedPath}`,
     `laneSeedDocs: ${status.laneSeedDocs}`,
+    `semanticSeedValid: ${status.semanticSeedValid ? 'yes' : 'no'}`,
     `artifactPath: ${status.artifactPath}`,
     `artifactFiles: ${status.artifactFiles}`,
+    ...(status.semanticIssues.length > 0
+      ? ['semanticIssues:', ...status.semanticIssues.map((issue) => `- ${issue}`)]
+      : []),
     'requirements:',
     ...status.requirements.map(
       (requirement) => `- ${requirement.label}: ${requirement.exists ? 'ok' : 'missing'} (${requirement.path})`,

@@ -1,6 +1,6 @@
 ---
 name: modnet-modules
-description: Module generation eval prompts adapted from MiniAppBench methodology. 20 prompts across 6 domains (Data, Social, Visualization, Tools, Creative, Science) with three-dimension grading (Intention, Static, Dynamic). Use when generating modules, running module eval trials, or grading module output quality.
+description: Module generation eval prompts and grading guidance adapted from MiniAppBench methodology. The active operator prompt corpus lives under `dev-research/training-prompts/catalog/`; this skill provides the rubric and legacy prompt fixtures used for calibration and comparison work.
 license: ISC
 compatibility: Requires bun
 ---
@@ -22,6 +22,16 @@ Eval prompts and grading infrastructure for module generation quality. Adapted f
 - Grading generated module output quality
 - Comparing model performance on module generation
 - Calibrating module generation skills
+
+## Prompt Corpus
+
+The authoritative prompt-review corpus is:
+
+- `dev-research/training-prompts/catalog/prompts.jsonl`
+
+That catalog is the live source used by the modnet prompt-review workflow (`pi:review`).
+
+Do not treat this skill as owning a separate prompt corpus. The prompt source of truth is the training-prompts catalog.
 
 ## Prompt Format
 
@@ -46,16 +56,18 @@ Prompts are JSONL conforming to `PromptCaseSchema` from `src/improve.ts`:
 
 ## Prompt Categories
 
-20 prompts across 6 domains:
+The active corpus currently contains 25 prompts across 8 domains:
 
 | Domain | Count | Prompts |
 |---|---|---|
-| Data | 4 | diet-tracker, expense-logger, inventory-manager, reading-list |
+| Data | 6 | diet-tracker, expense-logger, inventory-manager, reading-list, recipe-manager, task-board |
 | Social | 3 | bluesky-client (flagship), chat-module, discussion-forum |
 | Visualization | 3 | weather-dashboard, chart-generator, interactive-map |
-| Tools | 4 | unit-converter, calendar-module, markdown-editor, color-palette |
+| Tools | 5 | unit-converter, calendar-module, markdown-editor, color-palette, file-organizer |
 | Creative | 3 | portfolio-gallery, drawing-canvas, playlist-manager |
 | Science | 3 | physics-simulator, periodic-table, statistics-calculator |
+| Finance | 1 | crypto-tracker |
+| Education | 1 | quiz-builder |
 
 ## Grading
 
@@ -82,7 +94,7 @@ import { grade } from '../tools/module-grader.ts'
 
 const results = await runTrial({
   adapter: myAdapter,
-  prompts: await loadPrompts('skills/modnet-modules/assets/prompts.jsonl'),
+  prompts: await loadPrompts('dev-research/training-prompts/catalog/prompts.jsonl'),
   grader: grade,
   k: 5,
   concurrency: 2,
@@ -90,10 +102,9 @@ const results = await runTrial({
 })
 ```
 
-## Assets
+## Prompt Source
 
-- **[assets/prompts.jsonl](assets/prompts.jsonl)** — All 20 eval prompts
-- **[assets/ground-truth/bluesky-client/](assets/ground-truth/bluesky-client/)** — Flagship reference hints
+- **`dev-research/training-prompts/catalog/prompts.jsonl`** — Active operator prompt corpus
 
 ## Related Skills
 

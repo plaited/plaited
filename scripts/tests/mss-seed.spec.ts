@@ -10,6 +10,7 @@ import {
   MSS_SEED_PROGRAM_PATH,
   renderMssSeedStatus,
   resolveWorkspaceRoot,
+  validateMssSeedSemantics,
 } from '../mss-seed.ts'
 
 describe('mss-seed script', () => {
@@ -72,6 +73,50 @@ describe('mss-seed script', () => {
 
     expect(status.programExists).toBe(true)
     expect(status.programPath).toBe(MSS_SEED_PROGRAM_PATH)
+
+    await rm(root, { force: true, recursive: true })
+  })
+
+  test('semantic validation checks concept coverage and linkage without fixing one file layout', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'plaited-mss-seed-semantic-'))
+    const seedDir = join(root, 'dev-research', 'mss-seed', 'seed')
+    await Bun.$`mkdir -p ${seedDir}`.quiet()
+    await Bun.write(
+      join(seedDir, 'seed.jsonld'),
+      `${JSON.stringify(
+        {
+          '@context': { '@vocab': 'https://plaited.dev/mss-seed/' },
+          '@graph': [
+            { '@id': 'mss:field/contentType', '@type': 'mss:Field', 'mss:fieldName': 'contentType' },
+            { '@id': 'mss:field/structure', '@type': 'mss:Field', 'mss:fieldName': 'structure' },
+            { '@id': 'mss:field/mechanics', '@type': 'mss:Field', 'mss:fieldName': 'mechanics' },
+            { '@id': 'mss:field/boundary', '@type': 'mss:Field', 'mss:fieldName': 'boundary' },
+            { '@id': 'mss:field/scale', '@type': 'mss:Field', 'mss:fieldName': 'scale' },
+            {
+              '@id': 'mss:invariant/boundary-cascade',
+              '@type': 'mss:Invariant',
+              'mss:rule': 'boundary and scale remain coherent under composition',
+              'mss:derivedFrom': ['skills/mss/SKILL.md'],
+            },
+            {
+              '@id': 'mss:pattern/example',
+              '@type': 'mss:Pattern',
+              'mss:contentType': 'health',
+              'mss:structure': 'list',
+              'mss:scale': 2,
+              'mss:references': [{ '@id': 'mss:field/contentType' }],
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+    )
+
+    const semantic = await validateMssSeedSemantics({ workspaceRoot: root })
+
+    expect(semantic.valid).toBe(true)
+    expect(semantic.issues).toEqual([])
 
     await rm(root, { force: true, recursive: true })
   })

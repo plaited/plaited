@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'bun:test'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   BEHAVIORAL_CORPUS_ENCODED_PATH,
@@ -9,6 +11,7 @@ import {
   RESEARCH_LANE_CONFIG,
   renderBehavioralCorpusStatus,
   resolveWorkspaceRoot,
+  validateBehavioralCorpusSemantics,
 } from '../behavioral-corpus.ts'
 
 describe('behavioral-corpus script', () => {
@@ -49,5 +52,41 @@ describe('behavioral-corpus script', () => {
     expect(RESEARCH_LANE_CONFIG.writableRoots).toEqual(['dev-research/behavioral-corpus'])
     expect(RESEARCH_LANE_CONFIG.defaultAttempts).toBe(20)
     expect(RESEARCH_LANE_CONFIG.defaultParallelism).toBe(3)
+  })
+
+  test('semantic validation requires encoded corpus to reference behavioral seed anchors', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'plaited-behavioral-corpus-semantic-'))
+    const seedDir = join(root, 'dev-research', 'behavioral-seed', 'seed')
+    const encodedDir = join(root, 'dev-research', 'behavioral-corpus', 'encoded')
+    await Bun.$`mkdir -p ${seedDir} ${encodedDir}`.quiet()
+    await Bun.write(
+      join(seedDir, 'seed.jsonld'),
+      `${JSON.stringify({
+        '@context': { '@vocab': 'https://plaited.dev/behavioral-seed/' },
+        '@graph': [{ '@id': 'behavioral:anchor/bthread', '@type': 'behavioral:Anchor' }],
+      })}\n`,
+    )
+    await Bun.write(
+      join(encodedDir, 'encoded.jsonld'),
+      `${JSON.stringify({
+        '@context': { '@vocab': 'https://plaited.dev/behavioral-corpus/' },
+        '@graph': [
+          {
+            '@id': 'behavioral-corpus:chunk/1',
+            '@type': 'behavioral:EncodedChunk',
+            provenance: ['skills/behavioral-core/SKILL.md'],
+            description: 'behavioral and constitution governance evidence',
+            seedRefs: [{ '@id': 'behavioral:anchor/bthread' }],
+          },
+        ],
+      })}\n`,
+    )
+
+    const semantic = await validateBehavioralCorpusSemantics({ workspaceRoot: root })
+
+    expect(semantic.valid).toBe(true)
+    expect(semantic.issues).toEqual([])
+
+    await rm(root, { force: true, recursive: true })
   })
 })

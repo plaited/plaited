@@ -1,6 +1,6 @@
 # Skills and Modules
 
-> **Status: ACTIVE** — Doctrine note for how skills and modules relate inside Plaited. Cross-references: `MODNET-IMPLEMENTATION.md` (node/module topology), `HYPERGRAPH-MEMORY.md` (memory layering), `AGENT-LOOP.md` (runtime execution), `dev-research/` (current program lanes).
+> **Status: ACTIVE** — Doctrine note for how skills and modules relate inside Plaited. Cross-references: `skills/modnet-node/` (node/module topology), `HYPERGRAPH-MEMORY.md` (memory layering), `AGENT-LOOP.md` (runtime execution), `dev-research/` (current program lanes).
 
 ## Summary
 
@@ -61,7 +61,7 @@ A module may include:
 Modules are not published as raw internals over the network.
 Nodes expose services and artifacts through A2A.
 
-This matches `MODNET-IMPLEMENTATION.md`:
+This matches the `modnet-node` skill and its references:
 - modules stay internal
 - Agent Card projects capabilities, not internals
 - outputs cross the boundary, not the whole module by default

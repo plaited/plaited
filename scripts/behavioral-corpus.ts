@@ -1,4 +1,5 @@
 import { join } from 'node:path'
+import { loadJsonLd } from '../src/tools/hypergraph.ts'
 import type { ResearchLaneConfig } from './autoresearch-runner.ts'
 
 export type ProgramRequirement = {
@@ -19,9 +20,77 @@ export type BehavioralCorpusStatus = {
   seedDocs: number
   encodedPath: string
   encodedDocs: number
+  semanticCorpusValid: boolean
+  semanticIssues: string[]
   artifactPath: string
   artifactFiles: number
   requirements: RequirementStatus[]
+}
+
+type JsonLdNode = Record<string, unknown>
+
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
+
+const collectJsonLdNodes = (document: JsonLdNode): JsonLdNode[] => {
+  const graph = document['@graph']
+  const nodes = Array.isArray(graph) ? graph.filter(isRecord) : []
+  return [document, ...nodes]
+}
+
+export const validateBehavioralCorpusSemantics = async ({
+  workspaceRoot,
+  seedPath = BEHAVIORAL_SEED_PATH,
+  encodedPath = BEHAVIORAL_CORPUS_ENCODED_PATH,
+}: {
+  workspaceRoot: string
+  seedPath?: string
+  encodedPath?: string
+}) => {
+  const resolvedSeedPath = resolveWorkspacePath({ workspaceRoot, relativePath: seedPath })
+  const resolvedEncodedPath = resolveWorkspacePath({ workspaceRoot, relativePath: encodedPath })
+  const issues: string[] = []
+
+  if (!(await pathExists(resolvedEncodedPath))) {
+    return { valid: true, issues }
+  }
+
+  const encodedDocs = (await loadJsonLd(resolvedEncodedPath)) as JsonLdNode[]
+  if (encodedDocs.length === 0) {
+    return { valid: true, issues }
+  }
+
+  const seedDocs = (await loadJsonLd(resolvedSeedPath).catch(() => [])) as JsonLdNode[]
+  const seedIds = new Set(
+    seedDocs
+      .flatMap((document) => collectJsonLdNodes(document))
+      .map((node) => (typeof node['@id'] === 'string' ? node['@id'] : ''))
+      .filter(Boolean),
+  )
+
+  const encodedNodes = encodedDocs.flatMap((document) => collectJsonLdNodes(document))
+  const encodedText = encodedNodes.map((node) => JSON.stringify(node).toLowerCase()).join('\n')
+
+  if (!encodedText.includes('source') && !encodedText.includes('provenance') && !encodedText.includes('derivedfrom')) {
+    issues.push('missing source-backed provenance in encoded behavioral corpus')
+  }
+
+  if (
+    !encodedText.includes('behavioral') &&
+    !encodedText.includes('constitution') &&
+    !encodedText.includes('governance')
+  ) {
+    issues.push('encoded behavioral corpus does not express behavioral or constitution semantics')
+  }
+
+  const seedReferences = [...seedIds].filter((seedId) => encodedText.includes(seedId.toLowerCase()))
+  if (seedIds.size > 0 && seedReferences.length === 0) {
+    issues.push('encoded behavioral corpus does not reference any behavioral seed anchors')
+  }
+
+  return {
+    valid: issues.length === 0,
+    issues,
+  }
 }
 
 export const BEHAVIORAL_CORPUS_PROGRAM_PATH = join('dev-research', 'behavioral-corpus', 'program.md')
@@ -149,6 +218,7 @@ export const getBehavioralCorpusStatus = async ({
   const encodedDocs = await countJsonLdDocs(
     resolveWorkspacePath({ workspaceRoot: resolvedWorkspaceRoot, relativePath: BEHAVIORAL_CORPUS_ENCODED_PATH }),
   )
+  const semanticValidation = await validateBehavioralCorpusSemantics({ workspaceRoot: resolvedWorkspaceRoot })
   const artifactFiles = await countFiles(
     resolveWorkspacePath({ workspaceRoot: resolvedWorkspaceRoot, relativePath: BEHAVIORAL_CORPUS_ARTIFACTS_PATH }),
   )
@@ -171,6 +241,8 @@ export const getBehavioralCorpusStatus = async ({
     seedDocs,
     encodedPath: BEHAVIORAL_CORPUS_ENCODED_PATH,
     encodedDocs,
+    semanticCorpusValid: semanticValidation.valid,
+    semanticIssues: semanticValidation.issues,
     artifactPath: BEHAVIORAL_CORPUS_ARTIFACTS_PATH,
     artifactFiles,
     requirements,
@@ -178,7 +250,10 @@ export const getBehavioralCorpusStatus = async ({
 }
 
 export const isBehavioralCorpusValid = (status: BehavioralCorpusStatus): boolean =>
-  status.programExists && status.programNonEmpty && status.requirements.every((requirement) => requirement.exists)
+  status.programExists &&
+  status.programNonEmpty &&
+  status.requirements.every((requirement) => requirement.exists) &&
+  (status.encodedDocs === 0 || status.semanticCorpusValid)
 
 export const renderBehavioralCorpusStatus = (status: BehavioralCorpusStatus): string => {
   const lines = [
@@ -190,8 +265,12 @@ export const renderBehavioralCorpusStatus = (status: BehavioralCorpusStatus): st
     `seedDocs: ${status.seedDocs}`,
     `encodedPath: ${status.encodedPath}`,
     `encodedDocs: ${status.encodedDocs}`,
+    `semanticCorpusValid: ${status.semanticCorpusValid ? 'yes' : 'no'}`,
     `artifactPath: ${status.artifactPath}`,
     `artifactFiles: ${status.artifactFiles}`,
+    ...(status.semanticIssues.length > 0
+      ? ['semanticIssues:', ...status.semanticIssues.map((issue) => `- ${issue}`)]
+      : []),
     'requirements:',
     ...status.requirements.map(
       (requirement) => `- ${requirement.label}: ${requirement.exists ? 'ok' : 'missing'} (${requirement.path})`,

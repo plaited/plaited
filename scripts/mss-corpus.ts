@@ -1,4 +1,5 @@
 import { join } from 'node:path'
+import { loadJsonLd } from '../src/tools/hypergraph.ts'
 import type { ResearchLaneConfig } from './autoresearch-runner.ts'
 import { buildDocChunks } from './mss-doc-chunks.ts'
 import { buildReport } from './mss-source-compare.ts'
@@ -21,9 +22,69 @@ export type MssCorpusStatus = {
   seedDocs: number
   encodedPath: string
   encodedDocs: number
+  semanticCorpusValid: boolean
+  semanticIssues: string[]
   artifactPath: string
   artifactFiles: number
   requirements: RequirementStatus[]
+}
+
+type JsonLdNode = Record<string, unknown>
+
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
+
+const collectJsonLdNodes = (document: JsonLdNode): JsonLdNode[] => {
+  const graph = document['@graph']
+  const nodes = Array.isArray(graph) ? graph.filter(isRecord) : []
+  return [document, ...nodes]
+}
+
+export const validateMssCorpusSemantics = async ({
+  workspaceRoot,
+  seedPath = MSS_SEED_PATH,
+  encodedPath = MSS_CORPUS_ENCODED_PATH,
+}: {
+  workspaceRoot: string
+  seedPath?: string
+  encodedPath?: string
+}) => {
+  const resolvedSeedPath = resolveWorkspacePath({ workspaceRoot, relativePath: seedPath })
+  const resolvedEncodedPath = resolveWorkspacePath({ workspaceRoot, relativePath: encodedPath })
+  const issues: string[] = []
+
+  if (!(await pathExists(resolvedEncodedPath))) {
+    return { valid: true, issues }
+  }
+
+  const encodedDocs = (await loadJsonLd(resolvedEncodedPath)) as JsonLdNode[]
+  if (encodedDocs.length === 0) {
+    return { valid: true, issues }
+  }
+
+  const seedDocs = (await loadJsonLd(resolvedSeedPath).catch(() => [])) as JsonLdNode[]
+  const seedIds = new Set(
+    seedDocs
+      .flatMap((document) => collectJsonLdNodes(document))
+      .map((node) => (typeof node['@id'] === 'string' ? node['@id'] : ''))
+      .filter(Boolean),
+  )
+
+  const encodedNodes = encodedDocs.flatMap((document) => collectJsonLdNodes(document))
+  const encodedText = encodedNodes.map((node) => JSON.stringify(node).toLowerCase()).join('\n')
+
+  if (!encodedText.includes('source') && !encodedText.includes('provenance') && !encodedText.includes('derivedfrom')) {
+    issues.push('missing source-backed provenance in encoded corpus')
+  }
+
+  const seedReferences = [...seedIds].filter((seedId) => encodedText.includes(seedId.toLowerCase()))
+  if (seedIds.size > 0 && seedReferences.length === 0) {
+    issues.push('encoded corpus does not reference any seed anchors')
+  }
+
+  return {
+    valid: issues.length === 0,
+    issues,
+  }
 }
 
 export const MSS_CORPUS_PROGRAM_PATH = join('dev-research', 'mss-corpus', 'program.md')
@@ -84,7 +145,13 @@ export const RESEARCH_LANE_CONFIG = {
     useMetaVerification: true,
     hint: 'Prefer lane-bounded corpus outputs with encoded/artifact evidence, source-backed structure, and seed-aligned semantics. Penalize ontology drift and weak corpus evidence.',
   },
-  sourceDocs: [join('docs', 'Structural-IA.md'), join('docs', 'Modnet.md'), join('docs', 'MODNET-IMPLEMENTATION.md')],
+  sourceDocs: [
+    join('docs', 'Structural-IA.md'),
+    join('docs', 'Modnet.md'),
+    join('skills', 'modnet-node', 'references', 'module-architecture.md'),
+    join('skills', 'modnet-node', 'references', 'a2a-bindings.md'),
+    join('skills', 'modnet-node', 'references', 'access-control.md'),
+  ],
   compareMarkdownPaths: [
     join('skills', 'mss', 'SKILL.md'),
     join('skills', 'mss', 'references', 'dynamics-distilled.md'),
@@ -104,7 +171,12 @@ export const MSS_CORPUS_REQUIREMENTS: readonly ProgramRequirement[] = [
   { label: 'Modnet modules skill', path: join('skills', 'modnet-modules', 'SKILL.md') },
   { label: 'Structural IA doc', path: join('docs', 'Structural-IA.md') },
   { label: 'Modnet doc', path: join('docs', 'Modnet.md') },
-  { label: 'Modnet implementation doc', path: join('docs', 'MODNET-IMPLEMENTATION.md') },
+  {
+    label: 'Modnet node architecture reference',
+    path: join('skills', 'modnet-node', 'references', 'module-architecture.md'),
+  },
+  { label: 'Modnet A2A bindings reference', path: join('skills', 'modnet-node', 'references', 'a2a-bindings.md') },
+  { label: 'Modnet access control reference', path: join('skills', 'modnet-node', 'references', 'access-control.md') },
   { label: 'Chunking helper', path: join('scripts', 'mss-doc-chunks.ts') },
   { label: 'Compare helper', path: join('scripts', 'mss-source-compare.ts') },
 ] as const
@@ -253,6 +325,7 @@ export const getMssCorpusStatus = async ({
   const encodedDocs = await countJsonLdDocs(
     resolveWorkspacePath({ workspaceRoot: resolvedWorkspaceRoot, relativePath: MSS_CORPUS_ENCODED_PATH }),
   )
+  const semanticValidation = await validateMssCorpusSemantics({ workspaceRoot: resolvedWorkspaceRoot })
   const artifactFiles = await countFiles(
     resolveWorkspacePath({ workspaceRoot: resolvedWorkspaceRoot, relativePath: MSS_CORPUS_ARTIFACTS_PATH }),
   )
@@ -275,6 +348,8 @@ export const getMssCorpusStatus = async ({
     seedDocs,
     encodedPath: MSS_CORPUS_ENCODED_PATH,
     encodedDocs,
+    semanticCorpusValid: semanticValidation.valid,
+    semanticIssues: semanticValidation.issues,
     artifactPath: MSS_CORPUS_ARTIFACTS_PATH,
     artifactFiles,
     requirements,
@@ -282,7 +357,10 @@ export const getMssCorpusStatus = async ({
 }
 
 export const isMssCorpusValid = (status: MssCorpusStatus): boolean =>
-  status.programExists && status.programNonEmpty && status.requirements.every((requirement) => requirement.exists)
+  status.programExists &&
+  status.programNonEmpty &&
+  status.requirements.every((requirement) => requirement.exists) &&
+  (status.encodedDocs === 0 || status.semanticCorpusValid)
 
 export const renderMssCorpusStatus = (status: MssCorpusStatus): string => {
   const lines = [
@@ -294,8 +372,12 @@ export const renderMssCorpusStatus = (status: MssCorpusStatus): string => {
     `seedDocs: ${status.seedDocs}`,
     `encodedPath: ${status.encodedPath}`,
     `encodedDocs: ${status.encodedDocs}`,
+    `semanticCorpusValid: ${status.semanticCorpusValid ? 'yes' : 'no'}`,
     `artifactPath: ${status.artifactPath}`,
     `artifactFiles: ${status.artifactFiles}`,
+    ...(status.semanticIssues.length > 0
+      ? ['semanticIssues:', ...status.semanticIssues.map((issue) => `- ${issue}`)]
+      : []),
     'requirements:',
     ...status.requirements.map(
       (requirement) => `- ${requirement.label}: ${requirement.exists ? 'ok' : 'missing'} (${requirement.path})`,

@@ -439,9 +439,9 @@ See:
 ## Read Next
 
 - [ARCHITECTURE.md](/Users/eirby/Workspace/plaited/docs/ARCHITECTURE.md)
-- [MODNET-IMPLEMENTATION.md](/Users/eirby/Workspace/plaited/docs/MODNET-IMPLEMENTATION.md)
+- [modnet-node skill](/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md)
 - [HYPERGRAPH-MEMORY.md](/Users/eirby/Workspace/plaited/docs/HYPERGRAPH-MEMORY.md)
-- [CONSTITUTION.md](/Users/eirby/Workspace/plaited/docs/CONSTITUTION.md)
+- [constitution skill](/Users/eirby/Workspace/plaited/skills/constitution/SKILL.md)
 
 ## License
 

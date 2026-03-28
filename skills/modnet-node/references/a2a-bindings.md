@@ -1,6 +1,8 @@
 # A2A Protocol Bindings
 
-Implementation details for A2A transport configuration across deployment contexts. Design rationale is in `docs/MODNET-IMPLEMENTATION.md`. Protocol implementation is in `src/a2a/`.
+Implementation details for A2A transport configuration across deployment contexts.
+The high-level node rationale lives in [`../SKILL.md`](../SKILL.md). Protocol
+implementation is in `src/a2a/`.
 
 ## Transport Strategy
 

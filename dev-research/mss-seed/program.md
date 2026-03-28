@@ -14,10 +14,12 @@ This lane exists to replace one-off manual seed curation with a stable, reviewab
 - `skills/mss/references/structural-ia-distilled.md`
 - `skills/mss/references/valid-combinations.md`
 - `skills/modnet-node/SKILL.md`
+- `skills/modnet-node/references/module-architecture.md`
+- `skills/modnet-node/references/a2a-bindings.md`
+- `skills/modnet-node/references/access-control.md`
 - `skills/modnet-modules/SKILL.md`
 - `docs/Structural-IA.md`
 - `docs/Modnet.md`
-- `docs/MODNET-IMPLEMENTATION.md`
 
 ## External Retrieval
 

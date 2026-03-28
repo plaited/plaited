@@ -11,6 +11,7 @@ import {
   MSS_SEED_PATH,
   renderMssCorpusStatus,
   resolveWorkspaceRoot,
+  validateMssCorpusSemantics,
 } from '../mss-corpus.ts'
 
 describe('mss-corpus script', () => {
@@ -81,6 +82,41 @@ describe('mss-corpus script', () => {
 
     expect(status.programExists).toBe(true)
     expect(status.programPath).toBe(MSS_CORPUS_PROGRAM_PATH)
+
+    await rm(root, { force: true, recursive: true })
+  })
+
+  test('semantic validation requires encoded corpus to reference seed anchors', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'plaited-mss-corpus-semantic-'))
+    const seedDir = join(root, 'dev-research', 'mss-seed', 'seed')
+    const encodedDir = join(root, 'dev-research', 'mss-corpus', 'encoded')
+    await Bun.$`mkdir -p ${seedDir} ${encodedDir}`.quiet()
+    await Bun.write(
+      join(seedDir, 'seed.jsonld'),
+      `${JSON.stringify({
+        '@context': { '@vocab': 'https://plaited.dev/mss-seed/' },
+        '@graph': [{ '@id': 'mss:field/contentType', '@type': 'mss:Field' }],
+      })}\n`,
+    )
+    await Bun.write(
+      join(encodedDir, 'encoded.jsonld'),
+      `${JSON.stringify({
+        '@context': { '@vocab': 'https://plaited.dev/mss-corpus/' },
+        '@graph': [
+          {
+            '@id': 'mss-corpus:chunk/1',
+            '@type': 'mss:EncodedChunk',
+            provenance: ['skills/mss/SKILL.md'],
+            seedRefs: [{ '@id': 'mss:field/contentType' }],
+          },
+        ],
+      })}\n`,
+    )
+
+    const semantic = await validateMssCorpusSemantics({ workspaceRoot: root })
+
+    expect(semantic.valid).toBe(true)
+    expect(semantic.issues).toEqual([])
 
     await rm(root, { force: true, recursive: true })
   })
