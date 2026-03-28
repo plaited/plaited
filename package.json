@@ -51,6 +51,7 @@
     "research:embeddings": "bun -e \"import { embed } from './scripts/embedding-adapter.ts'; const texts = process.argv.slice(1); embed({ texts }).then((result) => console.log(JSON.stringify(result, null, 2)))\"",
     "research:fanout": "bun scripts/research-pi-fanout.ts",
     "research:mss-doc-chunks": "bun scripts/mss-doc-chunks.ts",
+    "research:mss-source-compare": "bun scripts/mss-source-compare.ts",
     "research:skill-links": "bun src/cli.ts skill-links",
     "test": "bun test src/ skills/ scripts/",
     "test:playwright": "bunx playwright test",
