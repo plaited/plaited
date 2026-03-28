@@ -43,16 +43,13 @@
     "check:package": "format-package --check",
     "check:types": "tsc --noEmit",
     "check:write": "biome check --write && format-package --write",
-    "dev": "bun --hot src/cli.ts dev src/ui",
     "pi": "bunx varlock run -- bunx pi --model openrouter/minimax/minimax-m2.7",
     "pi:review": "bunx varlock run -- bun scripts/modnet-pi-review.ts",
     "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .hooks || true",
     "research:behavioral-factories": "bun scripts/behavioral-factories.ts",
-    "research:mss-corpus": "bun scripts/mss-corpus.ts",
-    "research:mss-seed": "bun scripts/mss-seed.ts",
-    "test": "bun test src/ skills/ scripts/",
-    "test:playwright": "bunx playwright test",
-    "test:tools": "bun test src/tools/ src/improve/"
+    "research:mss-corpus": "bun scripts/autoresearch-runner.ts scripts/mss-corpus.ts run",
+    "research:mss-seed": "bun scripts/autoresearch-runner.ts scripts/mss-seed.ts run",
+    "test": "bun test"
   },
   "lint-staged": {
     "*.{js,cjs,jsx,tsx,ts}": [
