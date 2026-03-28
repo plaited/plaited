@@ -1,0 +1,64 @@
+{
+  "@id": "seed://mss-seed-mss-fields",
+  "@type": "Skill",
+  "source": "dev-research/mss-seed/seed/mss-fields.jsonld",
+  "layer": "seed",
+  "description": "MSS fixed field anchors: five bridge-code field names that are stable across all MSS-tagged artifacts. Field names are fixed; canonical value sets are derived separately in mss-values.jsonld.",
+  "provides": [
+    {
+      "@id": "mss:field/contentType",
+      "@type": "Tag",
+      "fieldName": "contentType",
+      "description": "Fixed MSS field: semantic alignment surface. Answers 'what domain or alignment surface is this in?' Determines cross-agent grouping and translation compatibility.",
+      "stability": "alignment-driven",
+      "references": ["mss:field/contentType"]
+    },
+    {
+      "@id": "mss:field/structure",
+      "@type": "Tag",
+      "fieldName": "structure",
+      "description": "Fixed MSS field: information organization pattern in current realization. Answers 'how is information organized in the current realization?'",
+      "stability": "alignment-driven",
+      "references": ["mss:field/structure"]
+    },
+    {
+      "@id": "mss:field/mechanics",
+      "@type": "Tag",
+      "fieldName": "mechanics",
+      "description": "Fixed MSS field: capability declarations for interaction dynamics. Answers 'what interactions could activate in context?' May be mediated or translated by agents.",
+      "stability": "alignment-driven",
+      "references": ["mss:field/mechanics"]
+    },
+    {
+      "@id": "mss:field/boundary",
+      "@type": "Tag",
+      "fieldName": "boundary",
+      "description": "Fixed MSS field: data-sharing policy across module boundaries. Answers 'what data flows across this module boundary?' Strongest invariant.",
+      "stability": "strongest",
+      "references": ["mss:field/boundary", "mss:rule/boundary-cascade"]
+    },
+    {
+      "@id": "mss:field/scale",
+      "@type": "Tag",
+      "fieldName": "scale",
+      "description": "Fixed MSS field: position in the nesting hierarchy. Answers 'where in the nesting hierarchy?' S1-S8 scale levels. Strongest invariant.",
+      "stability": "strongest",
+      "references": ["mss:field/scale", "mss:scale/s1", "mss:scale/s2", "mss:scale/s3", "mss:scale/s4", "mss:scale/s5", "mss:scale/s6", "mss:scale/s7", "mss:scale/s8"]
+    },
+    {
+      "@id": "mss:rule/all-fields-required",
+      "@type": "Rule",
+      "description": "Every MSS-tagged module or artifact MUST carry all five fields: contentType, structure, mechanics, boundary, scale"
+    },
+    {
+      "@id": "mss:rule/mechanics-is-array",
+      "@type": "Rule",
+      "description": "The mechanics field is always an array, even when empty"
+    },
+    {
+      "@id": "mss:rule/field-names-fixed",
+      "@type": "Rule",
+      "description": "Field names are fixed strings: contentType, structure, mechanics, boundary, scale. These never vary."
+    }
+  ]
+}

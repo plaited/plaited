@@ -1,0 +1,17 @@
+{
+  "@id": "seed://mss-seed-seed-manifest",
+  "@type": "SeedManifest",
+  "description": "Lane seed artifact registry. Documents the seed artifacts present in dev-research/mss-seed/seed/.",
+  "totalArtifacts": 8,
+  "totalProvides": 243,
+  "files": [
+    "index.jsonld",
+    "mss-fields.jsonld",
+    "mss-values.jsonld",
+    "mss-invariants.jsonld",
+    "mss-composition.jsonld",
+    "mss-runtime.jsonld",
+    "mss-dynamics.jsonld",
+    "modnet-core.jsonld"
+  ]
+}

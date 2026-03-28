@@ -1,0 +1,658 @@
+{
+  "@id": "seed://mss-seed-mss-composition",
+  "@type": "Skill",
+  "source": "dev-research/mss-seed/seed/mss-composition.jsonld",
+  "layer": "seed",
+  "description": "MSS composition rules, lifecycle phases, pattern examples, and anti-patterns. Expresses how modules form networks and how MSS tags evolve over artifact lifecycle.",
+  "requires": [
+    {
+      "@id": "seed://mss-seed-mss-invariants",
+      "@type": "Skill"
+    }
+  ],
+  "provides": [
+    {
+      "@id": "mss:lifecycle/phase1-create",
+      "@type": "Concept",
+      "description": "Phase 1: Create \u2014 Personal intent. User describes what they want. Agent generates artifact with MSS fields. Boundary typically none (personal) or all (stateless tool). Scale S1-S2. Mechanics reflect personal capabilities."
+    },
+    {
+      "@id": "mss:lifecycle/phase2-compose",
+      "@type": "Concept",
+      "description": "Phase 2: Compose \u2014 Building alongside existing. Compatible contentType enables grouping or translation. Different contentType uses hyphenated variant to prevent unwanted grouping. Scale follows nesting rules."
+    },
+    {
+      "@id": "mss:lifecycle/phase3-evolve",
+      "@type": "Concept",
+      "description": "Phase 3: Evolve \u2014 Boundary and scale transitions. boundary progression: none \u2192 ask \u2192 all \u2192 paid. scale promotion: accumulating modules triggers scale increases. New mechanics activate when boundary or structure changes."
+    },
+    {
+      "@id": "mss:lifecycle/phase4-network",
+      "@type": "Concept",
+      "description": "Phase 4: Network \u2014 Capability declaration. Artifact joins network through agent. MSS fields declare: what it aligns with (contentType), how it shares data (boundary), where it nests (scale), what interactions it supports (mechanics)."
+    },
+    {
+      "@id": "mss:network/emergent-grouping",
+      "@type": "Concept",
+      "description": "Agent-initiated emergent grouping \u2014 agents may group, translate, or keep artifacts distinct based on intent, boundary, and alignment. Not proximity-triggered automatic self-assembly."
+    },
+    {
+      "@id": "mss:network/assembly-rules",
+      "@type": "Concept",
+      "references": [
+        "mss:field/contentType",
+        "mss:field/scale",
+        "mss:field/boundary",
+        "mss:field/mechanics"
+      ],
+      "description": "Assembly rules: contentType alignment (strong grouping hint), scale promotion (heuristic), boundary cascade (min rule), mechanics inheritance (top-down and bottom-up)"
+    },
+    {
+      "@id": "mss:network/ephemeral/duration-spectrum",
+      "@type": "Concept",
+      "description": "Ephemeral networks exist on a duration spectrum: ephemeral-task (minutes-hours), ephemeral-session (hours-days), sticky-subscription (ongoing, repeat:true bThread), permanent-membership (until explicitly left)"
+    },
+    {
+      "@id": "mss:network/ephemeral/search-boundary",
+      "@type": "Concept",
+      "description": "Search boundary \u2014 how far away you can discover a network. May equal participation boundary (innate ephemeral) or differ (locally ephemeral with designer-set boundaries)"
+    },
+    {
+      "@id": "mss:network/ephemeral/participation-boundary",
+      "@type": "Concept",
+      "description": "Participation boundary \u2014 how far away you can actively participate. May equal search boundary or differ"
+    },
+    {
+      "@id": "mss:pattern/personal-bedroom",
+      "@type": "Pattern",
+      "contentType": "personal",
+      "structure": "collection",
+      "mechanics": [
+        "track"
+      ],
+      "boundary": "none",
+      "scale": 3,
+      "description": "Private data aggregation (health, photos, schedules)"
+    },
+    {
+      "@id": "mss:pattern/household-house",
+      "@type": "Pattern",
+      "contentType": "household",
+      "structure": "hierarchy",
+      "mechanics": [
+        "share"
+      ],
+      "boundary": "ask",
+      "scale": 6,
+      "description": "Family platform connecting bedrooms + common areas"
+    },
+    {
+      "@id": "mss:pattern/health-metric",
+      "@type": "Pattern",
+      "contentType": "health",
+      "structure": "object",
+      "mechanics": [
+        "track"
+      ],
+      "boundary": "none",
+      "scale": 1,
+      "description": "Single data point \u2014 steps, weight, BP reading"
+    },
+    {
+      "@id": "mss:pattern/health-tracker",
+      "@type": "Pattern",
+      "contentType": "health",
+      "structure": "form",
+      "mechanics": [
+        "track",
+        "chart"
+      ],
+      "boundary": "none",
+      "scale": 2,
+      "description": "Personal health metric input plus visualization"
+    },
+    {
+      "@id": "mss:pattern/health-dashboard",
+      "@type": "Pattern",
+      "contentType": "health",
+      "structure": "collection",
+      "mechanics": [
+        "track",
+        "chart",
+        "filter"
+      ],
+      "boundary": "ask",
+      "scale": 3,
+      "description": "Aggregated health data with sharing controls"
+    },
+    {
+      "@id": "mss:pattern/health-research",
+      "@type": "Pattern",
+      "contentType": "health-research",
+      "structure": "pool",
+      "mechanics": [
+        "filter",
+        "sort",
+        "chart"
+      ],
+      "boundary": "paid",
+      "scale": 7,
+      "description": "Longitudinal study aggregating individual health modules"
+    },
+    {
+      "@id": "mss:pattern/social-identity",
+      "@type": "Pattern",
+      "contentType": "social-identity",
+      "structure": "wall",
+      "mechanics": [
+        "follow"
+      ],
+      "boundary": "ask",
+      "scale": 3,
+      "description": "Public accumulation of user info + karma"
+    },
+    {
+      "@id": "mss:pattern/social-post",
+      "@type": "Pattern",
+      "contentType": "social",
+      "structure": "stream",
+      "mechanics": [
+        "like",
+        "share",
+        "reply"
+      ],
+      "boundary": "all",
+      "scale": 3,
+      "description": "Content creation with social mechanics"
+    },
+    {
+      "@id": "mss:pattern/social-feed",
+      "@type": "Pattern",
+      "contentType": "social",
+      "structure": "feed",
+      "mechanics": [
+        "like",
+        "follow",
+        "share",
+        "post"
+      ],
+      "boundary": "ask",
+      "scale": 3,
+      "description": "Algorithm-sorted social content"
+    },
+    {
+      "@id": "mss:pattern/social-community",
+      "@type": "Pattern",
+      "contentType": "social",
+      "structure": "thread",
+      "mechanics": [
+        "vote",
+        "karma",
+        "gold",
+        "reply"
+      ],
+      "boundary": "ask",
+      "scale": 5,
+      "description": "Reddit-style community with reputation system"
+    },
+    {
+      "@id": "mss:pattern/social-network",
+      "@type": "Pattern",
+      "contentType": "social",
+      "structure": "matrix",
+      "mechanics": [
+        "like",
+        "follow",
+        "share",
+        "post"
+      ],
+      "boundary": "ask",
+      "scale": 7,
+      "description": "Full social platform with multiple navigation paths"
+    },
+    {
+      "@id": "mss:pattern/social-ephemeral",
+      "@type": "Pattern",
+      "contentType": "social-ephemeral",
+      "structure": "collection",
+      "mechanics": [
+        "filter"
+      ],
+      "boundary": "all",
+      "scale": 5,
+      "description": "Proximity-based module sharing (reading lists in a plaza)"
+    },
+    {
+      "@id": "mss:pattern/produce-listing",
+      "@type": "Pattern",
+      "contentType": "produce",
+      "structure": "object",
+      "mechanics": [],
+      "boundary": "ask",
+      "scale": 1,
+      "description": "Single item with price, weight, origin"
+    },
+    {
+      "@id": "mss:pattern/produce-catalog",
+      "@type": "Pattern",
+      "contentType": "produce",
+      "structure": "list",
+      "mechanics": [
+        "sort",
+        "filter"
+      ],
+      "boundary": "ask",
+      "scale": 2,
+      "description": "Sortable inventory from one seller"
+    },
+    {
+      "@id": "mss:pattern/produce-stand",
+      "@type": "Pattern",
+      "contentType": "produce",
+      "structure": "collection",
+      "mechanics": [
+        "sort",
+        "filter"
+      ],
+      "boundary": "all",
+      "scale": 5,
+      "description": "Full seller module with produce categories"
+    },
+    {
+      "@id": "mss:pattern/produce-market",
+      "@type": "Pattern",
+      "contentType": "produce",
+      "structure": "pool",
+      "mechanics": [
+        "sort",
+        "filter",
+        "vote"
+      ],
+      "boundary": "all",
+      "scale": 6,
+      "description": "Auto-assembled collection of farm stands"
+    },
+    {
+      "@id": "mss:pattern/playground",
+      "@type": "Pattern",
+      "contentType": "play-community",
+      "structure": "pool",
+      "mechanics": [
+        "post",
+        "vote",
+        "scarcity"
+      ],
+      "boundary": "ask",
+      "scale": 6,
+      "description": "Neighborhood game platform for verified age groups"
+    },
+    {
+      "@id": "mss:pattern/carnival",
+      "@type": "Pattern",
+      "contentType": "entertainment",
+      "structure": "collection",
+      "mechanics": [
+        "filter",
+        "vote",
+        "gold"
+      ],
+      "boundary": "ask",
+      "scale": 7,
+      "description": "Multi-genre entertainment platform with creator tiers"
+    },
+    {
+      "@id": "mss:pattern/education-marketplace",
+      "@type": "Pattern",
+      "contentType": "education",
+      "structure": "matrix",
+      "mechanics": [
+        "filter",
+        "sort",
+        "follow"
+      ],
+      "boundary": "ask",
+      "scale": 8,
+      "description": "Decentralized course platform with linked classes"
+    },
+    {
+      "@id": "mss:pattern/geo-map",
+      "@type": "Pattern",
+      "contentType": "geo",
+      "structure": "collection",
+      "mechanics": [
+        "filter"
+      ],
+      "boundary": "all",
+      "scale": 3,
+      "description": "Interactive map with markers, categories, and search"
+    },
+    {
+      "@id": "mss:pattern/weather-dashboard",
+      "@type": "Pattern",
+      "contentType": "weather",
+      "structure": "object",
+      "mechanics": [
+        "track",
+        "chart"
+      ],
+      "boundary": "all",
+      "scale": 2,
+      "description": "Weather dashboard with forecast visualization"
+    },
+    {
+      "@id": "mss:pattern/science-simulator",
+      "@type": "Pattern",
+      "contentType": "science",
+      "structure": "steps",
+      "mechanics": [
+        "track",
+        "chart"
+      ],
+      "boundary": "all",
+      "scale": 2,
+      "description": "Physics/chemistry simulation with real-time visualization"
+    },
+    {
+      "@id": "mss:pattern/science-explorer",
+      "@type": "Pattern",
+      "contentType": "science",
+      "structure": "collection",
+      "mechanics": [
+        "filter"
+      ],
+      "boundary": "all",
+      "scale": 2,
+      "description": "Periodic table, element explorer with detail panels"
+    },
+    {
+      "@id": "mss:pattern/science-calculator",
+      "@type": "Pattern",
+      "contentType": "science",
+      "structure": "form",
+      "mechanics": [
+        "chart"
+      ],
+      "boundary": "all",
+      "scale": 2,
+      "description": "Statistics calculator with visualization output"
+    },
+    {
+      "@id": "mss:pattern/finance-tracker",
+      "@type": "Pattern",
+      "contentType": "finance",
+      "structure": "collection",
+      "mechanics": [
+        "track",
+        "chart",
+        "filter",
+        "sort"
+      ],
+      "boundary": "none",
+      "scale": 2,
+      "description": "Expense logger, budget tracker with category breakdowns"
+    },
+    {
+      "@id": "mss:pattern/finance-ledger",
+      "@type": "Pattern",
+      "contentType": "finance",
+      "structure": "list",
+      "mechanics": [
+        "sort",
+        "filter"
+      ],
+      "boundary": "ask",
+      "scale": 3,
+      "description": "Shared expense tracking with approval workflow"
+    },
+    {
+      "@id": "mss:pattern/tools-tasklist",
+      "@type": "Pattern",
+      "contentType": "tools",
+      "structure": "list",
+      "mechanics": [
+        "sort",
+        "filter",
+        "track"
+      ],
+      "boundary": "none",
+      "scale": 2,
+      "description": "Todo list with categories and completion tracking"
+    },
+    {
+      "@id": "mss:pattern/family-livingroom",
+      "@type": "Pattern",
+      "contentType": "family",
+      "structure": "collection",
+      "mechanics": [
+        "share",
+        "post"
+      ],
+      "boundary": "ask",
+      "scale": 5,
+      "description": "Shared family space - movie night, grocery lists"
+    },
+    {
+      "@id": "mss:pattern/commerce-general",
+      "@type": "Pattern",
+      "contentType": "commerce",
+      "structure": "pool",
+      "mechanics": [
+        "sort",
+        "filter",
+        "vote"
+      ],
+      "boundary": "ask",
+      "scale": 6,
+      "description": "Auto-promoted market with diverse contentTypes"
+    },
+    {
+      "@id": "mss:pattern/education-study",
+      "@type": "Pattern",
+      "contentType": "education-study",
+      "structure": "form",
+      "mechanics": [
+        "track"
+      ],
+      "boundary": "none",
+      "scale": 3,
+      "description": "Individual notes and reactions on assigned reading"
+    },
+    {
+      "@id": "mss:pattern/education-discussion",
+      "@type": "Pattern",
+      "contentType": "education-discussion",
+      "structure": "thread",
+      "mechanics": [
+        "reply",
+        "vote"
+      ],
+      "boundary": "all",
+      "scale": 5,
+      "description": "Group discussion splitting into topic threads"
+    },
+    {
+      "@id": "mss:pattern/art-artwork",
+      "@type": "Pattern",
+      "contentType": "art",
+      "structure": "object",
+      "mechanics": [],
+      "boundary": "ask",
+      "scale": 1,
+      "description": "Single piece of art"
+    },
+    {
+      "@id": "mss:pattern/art-portfolio",
+      "@type": "Pattern",
+      "contentType": "art",
+      "structure": "collection",
+      "mechanics": [
+        "sort"
+      ],
+      "boundary": "ask",
+      "scale": 2,
+      "description": "Artist's curated body of work"
+    },
+    {
+      "@id": "mss:pattern/art-exhibition",
+      "@type": "Pattern",
+      "contentType": "art",
+      "structure": "feed",
+      "mechanics": [
+        "vote",
+        "gold",
+        "share"
+      ],
+      "boundary": "all",
+      "scale": 5,
+      "description": "Ranked art display with community awards"
+    },
+    {
+      "@id": "mss:pattern/play-cocreation",
+      "@type": "Pattern",
+      "contentType": "play-cocreation",
+      "structure": "form",
+      "mechanics": [
+        "limited-loops"
+      ],
+      "boundary": "none",
+      "scale": 4,
+      "description": "Two-person turn-based creative canvas with pass-back"
+    },
+    {
+      "@id": "mss:pattern/play-community",
+      "@type": "Pattern",
+      "contentType": "play-community",
+      "structure": "pool",
+      "mechanics": [
+        "post",
+        "vote",
+        "scarcity"
+      ],
+      "boundary": "ask",
+      "scale": 6,
+      "description": "Neighborhood game platform for verified age groups"
+    },
+    {
+      "@id": "mss:pattern/tools-converter",
+      "@type": "Pattern",
+      "contentType": "tools",
+      "structure": "form",
+      "mechanics": [],
+      "boundary": "all",
+      "scale": 1,
+      "description": "Unit converter, format converter \u2014 stateless tool"
+    },
+    {
+      "@id": "mss:pattern/tools-editor",
+      "@type": "Pattern",
+      "contentType": "tools",
+      "structure": "form",
+      "mechanics": [],
+      "boundary": "none",
+      "scale": 2,
+      "description": "Markdown editor, code editor with document persistence"
+    },
+    {
+      "@id": "mss:pattern/tools-calendar",
+      "@type": "Pattern",
+      "contentType": "tools",
+      "structure": "steps",
+      "mechanics": [
+        "track",
+        "filter"
+      ],
+      "boundary": "none",
+      "scale": 3,
+      "description": "Calendar with events, recurrence, day/month views"
+    },
+    {
+      "@id": "mss:antipattern/feed-at-s1",
+      "@type": "AntiPattern",
+      "violatedRules": [
+        "mss:rule/structure-scale-compatible"
+      ],
+      "description": "structure:feed at scale:S1 is invalid \u2014 feeds require multiple items and temporal ordering"
+    },
+    {
+      "@id": "mss:antipattern/hierarchy-at-s2",
+      "@type": "AntiPattern",
+      "violatedRules": [
+        "mss:rule/structure-scale-compatible"
+      ],
+      "description": "structure:hierarchy at scale:S2 is invalid \u2014 hierarchy is a large-scale navigation structure, not an S2 default"
+    },
+    {
+      "@id": "mss:antipattern/boundary-all-with-health",
+      "@type": "AntiPattern",
+      "violatedRules": [
+        "mss:invariant/boundary"
+      ],
+      "description": "boundary:all with contentType:health is invalid \u2014 health data should not default to open sharing"
+    },
+    {
+      "@id": "mss:antipattern/karma-with-boundary-none",
+      "@type": "AntiPattern",
+      "violatedRules": [
+        "mss:invariant/boundary"
+      ],
+      "description": "mechanics:karma with boundary:none is invalid \u2014 karma requires community interaction and visible exchange"
+    },
+    {
+      "@id": "mss:antipattern/s8-as-object",
+      "@type": "AntiPattern",
+      "violatedRules": [
+        "mss:rule/structure-scale-compatible",
+        "mss:rule/scale-contains-below"
+      ],
+      "description": "scale:S8 with structure:object is invalid \u2014 super-structures cannot be singular objects"
+    },
+    {
+      "@id": "mss:antipattern/vote-in-form",
+      "@type": "AntiPattern",
+      "violatedRules": [
+        "mss:rule/mechanics-activation-contextual"
+      ],
+      "description": "mechanics:vote in structure:form is invalid \u2014 voting usually applies to displayed artifacts, not pure input patterns"
+    },
+    {
+      "@id": "mss:antipattern/s5-containing-s6",
+      "@type": "AntiPattern",
+      "violatedRules": [
+        "mss:rule/scale-contains-below"
+      ],
+      "description": "S5 module containing S6 module is invalid \u2014 larger scale cannot be nested inside smaller"
+    },
+    {
+      "@id": "mss:antipattern/gold-with-boundary-none",
+      "@type": "AntiPattern",
+      "violatedRules": [
+        "mss:invariant/boundary"
+      ],
+      "description": "mechanics:gold with boundary:none is invalid \u2014 gold costs real value and requires visible community exchange"
+    },
+    {
+      "@id": "mss:antipattern/post-in-object",
+      "@type": "AntiPattern",
+      "violatedRules": [
+        "mss:rule/mechanics-activation-contextual"
+      ],
+      "description": "mechanics:post in structure:object is invalid \u2014 posting creates new top-level content, requires stream/feed/wall structure"
+    },
+    {
+      "@id": "mss:antipattern/thread-at-s1",
+      "@type": "AntiPattern",
+      "violatedRules": [
+        "mss:rule/structure-scale-compatible"
+      ],
+      "description": "structure:thread at scale:S1 is invalid \u2014 nested replies require multiple levels of content"
+    },
+    {
+      "@id": "mss:antipattern/matrix-at-s1-s3",
+      "@type": "AntiPattern",
+      "violatedRules": [
+        "mss:rule/structure-scale-compatible"
+      ],
+      "description": "structure:matrix at scale:S1-S3 is invalid \u2014 matrix is a platform navigation structure, S7+ only"
+    }
+  ]
+}
