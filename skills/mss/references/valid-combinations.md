@@ -1,6 +1,12 @@
-# Valid MSS Tag Combinations
+# Example MSS Tag Combinations
 
-Reference table of validated MSS tag combinations. Each row represents a real-world pattern with its MSS bridge-code tags.
+Reference table of example MSS tag combinations. Each row represents a real-world pattern with
+its MSS bridge-code fields.
+
+Treat these rows as:
+- coherent starting patterns,
+- useful examples for hypergraph extraction and tests,
+- not a closed registry or permanent truth table.
 
 ## Work Patterns
 
@@ -119,9 +125,13 @@ Reference table of validated MSS tag combinations. Each row represents a real-wo
 | Invalid | Why |
 |---------|-----|
 | `structure: "feed", scale: S1` | Feeds require multiple items; S1 is singular |
-| `structure: "hierarchy", scale: S2` | Hierarchy is a platform structure (S7) |
+| `structure: "hierarchy", scale: S2` | Hierarchy remains a large-scale structure, not an S2 default |
 | `boundary: "all", contentType: "health"` | Health data should not default to open sharing |
-| `mechanics: ["karma"], boundary: "none"` | Karma requires community interaction; `none` prevents it |
+| `mechanics: ["karma"], boundary: "none"` | Karma requires community interaction and visible exchange |
 | `scale: S8, structure: "object"` | Super-structures cannot be singular objects |
-| `mechanics: ["vote"], structure: "form"` | Forms are input patterns; voting is for displayed content |
+| `mechanics: ["vote"], structure: "form"` | Voting usually applies to displayed artifacts, not pure input patterns |
 | S5 module containing S6 module | Larger scale cannot be nested inside smaller |
+
+Some combinations that were once treated as rigidly invalid may become negotiable when agents
+mediate translation or generated UI. Use these anti-patterns as strong warnings, not as a
+substitute for contextual reasoning.

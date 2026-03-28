@@ -22,7 +22,7 @@ export const BEHAVIORAL_FACTORIES_PROGRAM_PATH = join('dev-research', 'behaviora
 export const BEHAVIORAL_FACTORIES_REQUIREMENTS: readonly ProgramRequirement[] = [
   { label: 'Behavioral core skill', path: join('skills', 'behavioral-core', 'SKILL.md') },
   { label: 'Hypergraph memory skill', path: join('skills', 'hypergraph-memory', 'SKILL.md') },
-  { label: 'MSS vocabulary skill', path: join('skills', 'mss-vocabulary', 'SKILL.md') },
+  { label: 'MSS skill', path: join('skills', 'mss', 'SKILL.md') },
   { label: 'Hypergraph tool', path: join('src', 'tools', 'hypergraph.ts') },
   { label: 'Training prompts program', path: join('dev-research', 'training-prompts', 'program.md') },
 ] as const

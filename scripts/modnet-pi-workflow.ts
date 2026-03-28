@@ -46,10 +46,10 @@ export const DEFAULT_CONTEXT_PATHS = [
   join('dev-research', 'training-prompts', 'program.md'),
   join('docs', 'MODNET-HUMAN-CLI-SPEC.md'),
   join('skills', 'modnet-modules', 'SKILL.md'),
-  join('skills', 'mss-vocabulary', 'SKILL.md'),
-  join('skills', 'mss-vocabulary', 'references', 'modnet-standards-distilled.md'),
-  join('skills', 'mss-vocabulary', 'references', 'structural-ia-distilled.md'),
-  join('skills', 'mss-vocabulary', 'references', 'valid-combinations.md'),
+  join('skills', 'mss', 'SKILL.md'),
+  join('skills', 'mss', 'references', 'modnet-standards-distilled.md'),
+  join('skills', 'mss', 'references', 'structural-ia-distilled.md'),
+  join('skills', 'mss', 'references', 'valid-combinations.md'),
 ] as const
 
 export const loadContextBundle = async (paths: readonly string[] = DEFAULT_CONTEXT_PATHS): Promise<ContextBundle> => {

@@ -38,7 +38,7 @@ They are the layer where Plaited captures:
 
 Examples:
 - `modnet-modules` teaches module generation patterns
-- `mss-vocabulary` constrains valid module bridge-code tags
+- `mss` constrains valid module bridge-code tags
 - `modnet-node` teaches node and module topology
 - `add-mcp` and `add-remote-mcp` teach MCP integration patterns
 

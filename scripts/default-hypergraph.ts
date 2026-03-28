@@ -58,7 +58,7 @@ export const DEFAULT_HYPERGRAPH_REQUIREMENTS: readonly ProgramRequirement[] = [
   { label: 'Hypergraph tool', path: join('src', 'tools', 'hypergraph.ts') },
   { label: 'Hypergraph memory skill', path: join('skills', 'hypergraph-memory', 'SKILL.md') },
   { label: 'Hypergraph recall skill', path: join('skills', 'hypergraph-recall', 'SKILL.md') },
-  { label: 'MSS vocabulary skill', path: join('skills', 'mss-vocabulary', 'SKILL.md') },
+  { label: 'MSS skill', path: join('skills', 'mss', 'SKILL.md') },
   { label: 'Modnet modules skill', path: join('skills', 'modnet-modules', 'SKILL.md') },
 ] as const
 

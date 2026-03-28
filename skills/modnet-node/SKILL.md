@@ -55,7 +55,7 @@ See [module-architecture.md](references/module-architecture.md) for the full dir
 
 ## Module Generation
 
-Use `initModule` to create modules from MSS tags. MSS tags are defined in the `mss-vocabulary` skill — the five bridge-code tags (`contentType`, `structure`, `mechanics`, `boundary`, `scale`) govern how modules connect, nest, and share data.
+Use `initModule` to create modules from MSS tags. MSS tags are defined in the `mss` skill — the five bridge-code tags (`contentType`, `structure`, `mechanics`, `boundary`, `scale`) govern how modules connect, nest, and share data.
 
 ```typescript
 import { initModule } from '../modnet/workspace.ts'
@@ -574,7 +574,7 @@ The schema hard cap is scale=4. If a "coordination workspace" or "project suite"
 
 ## Related Skills
 
-- **mss-vocabulary** — MSS tag definitions, composition rules, valid combinations
+- **mss** — MSS tag definitions, composition rules, valid combinations
 - **node-auth** — User authentication to a node (WebAuthn, JWT, OIDC)
 - **behavioral-core** — BP engine that drives access control and the agent loop
 - **agent-loop** — The 6-step agent pipeline nodes run

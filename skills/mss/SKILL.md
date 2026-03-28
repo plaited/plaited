@@ -1,48 +1,71 @@
 ---
-name: mss-vocabulary
-description: MSS (Modnet Structural Standard) bridge-code vocabulary for module generation. Defines valid tag values, composition rules, scale nesting, and boundary semantics. Use when generating modules, validating MSS tags, creating constitution bThreads that enforce MSS rules, or designing modnet node Agent Cards with MSS metadata.
+name: mss
+description: MSS (Modnet Structural Standard) semantics for modular and agent-mediated systems. Defines the five fixed MSS field names, their composition meaning, scale nesting, and boundary semantics. Use when generating modules, validating MSS tags, creating constitution bThreads that enforce MSS rules, or designing agents that support MSS-aware composition.
 ---
 
-# MSS Vocabulary
+# MSS
 
 ## Purpose
 
-This skill teaches agents the **Modnet Structural Standard (MSS)** — a composition grammar that enables modules to self-assemble into modular networks (modnets). MSS distills Rachel Jaffe's Structural Information Architecture into five machine-readable tags that govern how modules connect, nest, and share data.
+This skill teaches agents the **Modnet Structural Standard (MSS)** — a composition grammar
+for modular and agent-mediated systems. MSS distills Rachel Jaffe's Structural Information
+Architecture into five machine-readable fields that help agents reason about composition,
+alignment, sovereignty, and scale.
 
-**MSS is not a classification system.** It is a composition grammar — each tag answers a question about how a module participates in networks. Correct tagging requires reasoning about the module's role in a larger system, not pattern-matching against a fixed list.
+**MSS is not a classification system.** It is a composition grammar. Each field answers a
+question about how an artifact participates in a larger system. Correct tagging requires
+reasoning about role, data sharing, scale, and alignment, not pattern-matching against a
+fixed list.
+
+The original Structural IA and Modnet documents predate LLMs, A2A, and generative UI. Their
+core concepts still matter, but they must be reinterpreted for sovereign agent systems.
 
 **Use this when:**
 - Generating modules with MSS bridge-code tags
 - Validating MSS tag combinations for correctness
 - Creating constitution bThreads that enforce MSS rules
-- Designing Agent Card metadata with `modnet:mss:*` keys
+- Designing agent-facing capability surfaces that support MSS
 - Reasoning about scale nesting and module composition
 
-## The Five MSS Tags
+## The Five MSS Fields
 
-Every module carries five bridge-code tags. Each answers a composition question.
+Every module or artifact carries five bridge-code fields. The field names are fixed, but the
+values are not all equally rigid.
 
 | Tag | Question | Determines |
 |-----|----------|-----------|
-| `contentType` | What domain, and what should auto-group with it? | Network assembly |
-| `structure` | How is information organized within this module? | Interaction patterns |
-| `mechanics` | What interactions could activate when connected? | Dynamic capabilities |
+| `contentType` | What domain or semantic alignment surface is this in? | Cross-agent alignment |
+| `structure` | How is information organized in the current realization? | Interaction patterns |
+| `mechanics` | What interactions could activate in context? | Dynamic capabilities |
 | `boundary` | What data flows across this module's boundary? | Data sovereignty |
 | `scale` | Where in the nesting hierarchy? | Composition level |
 
-### 1. `contentType` — What domain, and what groups with it?
+**Stability model:**
+- Fixed field names: `contentType`, `structure`, `mechanics`, `boundary`, `scale`
+- Strongest invariants: `boundary`, `scale`
+- More alignment-driven or generated: `contentType`, `structure`, `mechanics`
 
-**What it is:** A free-form keyword identifying the module's domain. Modules with the same contentType auto-group when connected to a shared parent structure.
+In agent-mediated systems, `contentType`, `structure`, and `mechanics` do not need to be
+globally identical across networks. Agents can query each other, translate values, and
+generate new realizations as needed.
 
-**Reasoning principle:** contentType is *inferred from context*, not selected from a fixed list. Ask: "If this module connects to a network alongside other modules, which ones should it be grouped and manipulated with (sorted, filtered, grouped)?"
+### 1. `contentType` — What domain or alignment surface is this in?
 
-contentTypes don't need to align between networks — an agent can translate. A commerce network might produce a `health`-contentType module if the user cares about nutrition.
+**What it is:** A free-form semantic label for domain or alignment. It helps agents decide
+whether two artifacts should be grouped, translated, or composed together.
+
+**Reasoning principle:** contentType is *inferred from context*, not selected from a fixed
+registry. Ask: "If this artifact participates in a broader system, what other artifacts
+should it align or interoperate with?"
+
+contentTypes do not need to align globally. An agent can translate. A commerce network might
+produce a `health`-aligned view if the user cares about nutrition.
 
 **Rules:**
 - Lowercase, no spaces (use hyphens for multi-word)
-- Modules with matching contentType auto-group when connected to a shared block
+- Prefer values that make likely alignment obvious to another agent or human operator
 
-**Common defaults by domain:**
+**Useful defaults by domain:**
 
 | Domain | Default contentType |
 |--------|-------------------|
@@ -65,9 +88,10 @@ contentTypes don't need to align between networks — an agent can translate. A 
 | Play/Games | `play` |
 | Family/Household | `family` |
 
-These are **defaults**, not constraints. Use them when the module fits a common domain.
+These are **defaults**, not a closed registry.
 
-**Hyphenated variants:** When two modules in the same domain shouldn't be manipulated together, they need different contentTypes. Use `{domain}-{function}`:
+**Hyphenated variants:** When two artifacts in the same domain should not align closely, give
+them different contentTypes. Use `{domain}-{function}`:
 
 - `health-research` (not `health`) — population-level analysis shouldn't group with personal trackers
 - `social-identity` (not `social`) — profile/reputation shouldn't group with content feeds
@@ -76,7 +100,8 @@ These are **defaults**, not constraints. Use them when the module fits a common 
 - `education-discussion` (not `education`) — group discussion shouldn't group with individual study
 - `play-cocreation` (not `play`) — collaborative creation shouldn't group with solo games
 
-**Principle:** If two modules with the same contentType shouldn't be manipulated together, they need different contentTypes.
+**Principle:** If two artifacts should not align or be grouped together, they need different
+contentTypes.
 
 **Disambiguation:**
 - Charts/visualization for **data analysis** → `science`
@@ -84,11 +109,14 @@ These are **defaults**, not constraints. Use them when the module fits a common 
 - Calendars, task lists, scheduling → `tools`
 - Drawing canvas, portfolio galleries → `art`
 
-### 2. `structure` — How is information organized?
+### 2. `structure` — How is information organized in the current realization?
 
-**What it is:** The information organization pattern within the module.
+**What it is:** The information organization pattern in the current realization of the
+artifact. In agent-mediated systems this is often generated UI or generated code, not a
+globally shared template.
 
-**Reasoning framework:** Ask "What is the user doing with the data, and how is it presented?"
+**Reasoning framework:** Ask "What is the user doing with the data right now, and how is it
+being presented?"
 
 **Decision tree:**
 
@@ -128,7 +156,11 @@ These are **defaults**, not constraints. Use them when the module fits a common 
     - Hierarchy + hypertext navigation → `matrix`
     - User-generated search structures → `hypertext`
 
-**Structure–scale compatibility:**
+These are strong starting patterns, not a permanent closed registry. Agents may generate new
+structures over time to match user preferences, provided the resulting structure still makes
+semantic sense for the scale and task.
+
+**Structure–scale compatibility (default guidance):**
 
 | Scale | Valid structures |
 |-------|----------------|
@@ -147,11 +179,15 @@ These are **defaults**, not constraints. Use them when the module fits a common 
 
 ### 3. `mechanics` — What interactions activate in context?
 
-**What it is:** Cross-cutting interaction dynamics. Mechanics are *capability declarations* — they activate only when the module connects to a structure that uses them.
+**What it is:** Cross-cutting interaction dynamics. Mechanics are *capability declarations*
+that may be activated, translated, or mediated by agents depending on context.
 
 **Reasoning framework:** For each mechanic, ask "Does the description **explicitly mention or directly imply** this interaction?"
 
-**Conservative tagging principle:** Only tag mechanics that the description explicitly names or clearly implies. If the description doesn't mention filtering, sorting, charting, or sharing — don't add them even if they could theoretically apply. The module can gain additional mechanics later through composition (inheritance) or evolution.
+**Conservative tagging principle:** Only tag mechanics that the description explicitly names or
+clearly implies. If the description doesn't mention filtering, sorting, charting, or sharing,
+don't add them even if they could theoretically apply. The artifact can gain additional
+mechanics later through composition, alignment, or evolution.
 
 **Evolution tagging:** When a module evolves, re-evaluate mechanics from scratch based on the new description. Don't carry forward old mechanics unless the new description still supports them. If the description says a format is "replaced" or "transformed," the old mechanics are gone.
 
@@ -173,7 +209,9 @@ These are **defaults**, not constraints. Use them when the module fits a common 
 | `limited-loops` | **Turn-based messaging** — can't send until reply received. | Free-flowing communication |
 | `share` | **Export/link content externally**. Only when boundary is `all` or `ask`. | Boundary is `none` |
 
-**Auto-population rule:** A module's mechanics tags declare *potential* mechanics. They activate only when the module connects to a structure that uses them. An art portfolio tagged `mechanics: ["vote"]` shows no vote UI standalone, but gains upvote/downvote when connected to an exhibition feed.
+**Activation rule:** Mechanics tags declare *potential* mechanics. They activate when the
+current context, structure, and boundary support them. A standalone artifact can expose a very
+different UI from the same artifact when mediated through another agent or larger composition.
 
 **Inheritance:**
 - **Bottom-up:** Child module mechanics project onto parent view (food tracking → health icons on farm stand items)
@@ -285,7 +323,9 @@ These are **defaults**, not constraints. Use them when the module fits a common 
 ## Composition Rules
 
 ### Rule 1: ContentType Grouping
-Modules with the same `contentType` auto-group when connected to a shared parent. A farmers market (S6) receiving three `produce` modules (S5) arranges them together.
+Matching or compatible `contentType` values are a strong signal for grouping, translation, or
+composition. In agent-mediated systems this is negotiated rather than assumed to be globally
+identical.
 
 ### Rule 2: Structure–Scale Compatibility
 See the structure–scale table in §2 above.
@@ -300,18 +340,22 @@ Mechanics tags are declarations of capability. They activate when:
 Effective boundary = `min(own, parent)` where restriction order is `none` > `paid` > `ask` > `all`.
 
 ### Rule 5: Emergent Network Formation
-When compatible modules connect without a pre-existing parent:
-1. Two similar modules form an Object Group (S2)
-2. Three or more form a Block (S3)
-3. Diverse contentTypes at S5+ trigger scale promotion (farmer stalls + clothing stalls → general market at S6)
+Emergent grouping and promotion are useful defaults, not rigid universal laws. In
+agent-mediated systems the agent may:
+1. align two artifacts into a shared group,
+2. keep them distinct but query-compatible,
+3. generate an intermediate view,
+4. or decline composition because boundary or user intent blocks it.
 
-## Module Lifecycle
+## Artifact Lifecycle
 
-MSS tags are not static labels — they evolve as modules grow from personal tools to network participants.
+MSS fields are not static labels. They evolve as artifacts grow from personal tools into
+shared, queried, or federated participants.
 
 ### Phase 1: Create — Personal Intent
 
-A user describes what they want. The agent generates a module with MSS tags based on intent.
+A user describes what they want. The agent generates an artifact with MSS fields based on
+intent.
 
 - Boundary is typically `none` (personal) or `all` (stateless tool)
 - Scale starts at S1–S2 (single items or groups)
@@ -319,10 +363,10 @@ A user describes what they want. The agent generates a module with MSS tags base
 
 ### Phase 2: Compose — Building Alongside Existing
 
-The user has existing modules and wants a new one that works with them.
+The user has existing artifacts and wants a new one that works with them.
 
-- **Same contentType** → modules auto-group in shared views
-- **Different contentType** → use hyphenated variant to prevent unwanted grouping (e.g., `social-identity` alongside `social` feed)
+- **Compatible contentType** → agents may group or translate in shared views
+- **Different contentType** → use a more precise variant when unwanted grouping would happen
 - Scale of compositions follows nesting rules: S2 groups compose into S3 blocks, S5 modules cluster into S6
 
 ### Phase 3: Evolve — Boundary & Scale Transitions
@@ -338,36 +382,30 @@ As usage changes, MSS tags adapt:
   - Multiple S5 modules of diverse contentTypes → S6 cluster with contentType promotion (e.g., produce + crafts → `commerce`)
 - **Mechanics expansion:** New mechanics activate when boundary or structure changes (e.g., `share` activates when boundary moves from `none` to `ask` or `all`)
 
-### Phase 4: Network — Agent Card Declaration
+### Phase 4: Network — Capability Declaration
 
-When a module joins a network via Agent Card, its MSS tags declare:
+When an artifact joins a network through an agent, its MSS fields help declare:
 
-- What it offers (`contentType` for network grouping)
-- How it shares data (`boundary` for connection consent)
-- Where it nests (`scale` for composition hierarchy)
-- What interactions it supports (`mechanics` as capability declarations)
+- what it aligns with (`contentType`)
+- how it shares data (`boundary`)
+- where it nests (`scale`)
+- what interactions it can support (`mechanics`)
 
-The Agent Card is the module's identity in the network. Tags must be accurate for correct auto-assembly.
+The agent card should indicate that the agent supports MSS-aware interaction. It does not need
+to expose a full global registry of MSS values inline.
 
 ## Agent Card Integration
 
-MSS tags map to `modnet:mss:*` metadata keys on Agent Cards (see `src/modnet/modnet.constants.ts`):
+In the current architecture, the important fact is that an agent can signal MSS support and
+negotiate alignment over A2A. Some implementations may project selected MSS fields into
+metadata, but the metadata projection is not the ontology itself.
 
-```typescript
-// From MODNET_METADATA
-{
-  mssContentType: 'modnet:mss:contentType',  // e.g., 'produce'
-  mssBoundary: 'modnet:mss:boundary',        // e.g., 'ask'
-}
-```
-
-**How networks use MSS metadata:**
-
-- **Discovery:** Platforms query Agent Cards by contentType to find compatible modules
-- **Consent:** Boundary tags determine what consent flow is needed before data crosses module boundaries
-- **Grouping:** Modules with matching contentType auto-group when connected to a shared parent
-
-When generating Agent Cards, include MSS metadata so network nodes can discover, assemble, and negotiate data sharing correctly. All five MSS tags inform composition behavior even when only contentType and boundary are declared in the Agent Card — the remaining tags (structure, mechanics, scale) are carried in the module's bridge-code envelope.
+**How agent networks use MSS support:**
+- **Discovery:** identify agents that can reason about MSS
+- **Consent:** boundary determines sharing and escalation behavior
+- **Alignment:** agents can query each other for `contentType`, `structure`, or `mechanics`
+- **Composition:** generated UI and service/artifact exchange replace the old assumption of
+  fixed template registries
 
 ## Pattern Examples
 
@@ -378,9 +416,9 @@ See [assets/mss-patterns.jsonl](assets/mss-patterns.jsonl) for machine-readable 
 ## References
 
 - **[structural-ia-distilled.md](references/structural-ia-distilled.md)** — Distilled primitives from Structural-IA.md: objects, channels, levers, loops, modules, blocks, platforms as they map to MSS tags
-- **[modnet-standards-distilled.md](references/modnet-standards-distilled.md)** — Distilled bridge-code syntax, module patterns, and crowd-sourced network structures from Modnet.md
+- **[modnet-standards-distilled.md](references/modnet-standards-distilled.md)** — Distilled bridge-code and modnet concepts from Modnet.md, with older pre-agent assumptions needing reinterpretation
 - **[dynamics-distilled.md](references/dynamics-distilled.md)** — Interaction dynamics, feedback loops, ephemeral networks, and emergent assembly — the behavioral layer that MSS tags reference but don't encode. Includes agent-mediation annotations
-- **[valid-combinations.md](references/valid-combinations.md)** — Table of valid MSS tag combinations with examples
+- **[valid-combinations.md](references/valid-combinations.md)** — Example MSS combinations and anti-patterns; use as starting patterns, not a closed registry
 
 ## Related Skills
 

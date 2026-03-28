@@ -42,7 +42,7 @@ const PROGRAMS: Record<ProgramKey, ProgramConfig> = {
     programPath: join('dev-research', 'default-hypergraph', 'program.md'),
     validateCommand: ['bun', 'scripts/default-hypergraph.ts', 'validate'],
     writableRoots: [join('dev-research', 'default-hypergraph'), join('scripts'), join('package.json')],
-    skills: [join('skills', 'hypergraph-memory'), join('skills', 'mss-vocabulary'), join('skills', 'behavioral-core')],
+    skills: [join('skills', 'hypergraph-memory'), join('skills', 'mss'), join('skills', 'behavioral-core')],
     taskPrompt:
       'Improve the default hypergraph program artifacts. Prefer small deterministic edits that strengthen the seed graph, validation, and concept coverage. Run the validator before finishing and summarize what changed.',
   },
@@ -51,7 +51,7 @@ const PROGRAMS: Record<ProgramKey, ProgramConfig> = {
     programPath: join('dev-research', 'behavioral-factories', 'program.md'),
     validateCommand: ['bun', 'scripts/behavioral-factories.ts', 'validate'],
     writableRoots: [join('dev-research', 'behavioral-factories'), join('scripts'), join('package.json')],
-    skills: [join('skills', 'behavioral-core'), join('skills', 'hypergraph-memory'), join('skills', 'mss-vocabulary')],
+    skills: [join('skills', 'behavioral-core'), join('skills', 'hypergraph-memory'), join('skills', 'mss')],
     taskPrompt:
       'Improve the behavioral factories program artifacts. Prefer deterministic policy and factory surfaces, not freeform prompts. Run the validator before finishing and summarize what changed.',
   },

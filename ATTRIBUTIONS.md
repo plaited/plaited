@@ -25,7 +25,7 @@ Concepts that still show up in the repo:
 Where that influence is visible now:
 - [docs/Structural-IA.md](/Users/eirby/Workspace/plaited/docs/Structural-IA.md)
 - [docs/CONSTITUTION.md](/Users/eirby/Workspace/plaited/docs/CONSTITUTION.md)
-- [skills/mss-vocabulary/references/structural-ia-distilled.md](/Users/eirby/Workspace/plaited/skills/mss-vocabulary/references/structural-ia-distilled.md)
+- [skills/mss/references/structural-ia-distilled.md](/Users/eirby/Workspace/plaited/skills/mss/references/structural-ia-distilled.md)
 
 In Plaited, Structural IA is not just UI vocabulary. It also informs the
 constitution, module composition language, and the bridge between symbolic
@@ -55,8 +55,8 @@ Where that influence is visible now:
 - [docs/CONSTITUTION.md](/Users/eirby/Workspace/plaited/docs/CONSTITUTION.md)
 - [src/modnet.ts](/Users/eirby/Workspace/plaited/src/modnet.ts)
 - [src/modnet/modnet.schemas.ts](/Users/eirby/Workspace/plaited/src/modnet/modnet.schemas.ts)
-- [skills/mss-vocabulary/SKILL.md](/Users/eirby/Workspace/plaited/skills/mss-vocabulary/SKILL.md)
-- [skills/mss-vocabulary/references/modnet-standards-distilled.md](/Users/eirby/Workspace/plaited/skills/mss-vocabulary/references/modnet-standards-distilled.md)
+- [skills/mss/SKILL.md](/Users/eirby/Workspace/plaited/skills/mss/SKILL.md)
+- [skills/mss/references/modnet-standards-distilled.md](/Users/eirby/Workspace/plaited/skills/mss/references/modnet-standards-distilled.md)
 
 Plaited does not reproduce the modnet work verbatim. It adapts it into:
 - a Bun-native A2A node architecture

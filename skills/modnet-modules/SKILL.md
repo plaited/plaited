@@ -97,7 +97,7 @@ const results = await runTrial({
 
 ## Related Skills
 
-- **mss-vocabulary** — MSS tag definitions and composition rules
+- **mss** — MSS tag definitions and composition rules
 - **modnet-node** — Module architecture and workspace patterns
 - **trial-runner** — Trial execution infrastructure
 - **compare-trials** — Statistical comparison of trial results

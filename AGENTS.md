@@ -52,6 +52,14 @@ Before committing code, both must pass:
 
 *Exception:* `docs:` and `chore:` commits skip this gate.
 
+Area-of-effect rule:
+- Before running validation, assess the area of effect and verify it with code search or file inspection.
+- If the change is limited to path-only renames, link/reference updates, wording-only skill/doc changes,
+  or other edits that do not change executable behavior, use `bun --bun tsc --noEmit` plus targeted
+  tests for affected paths.
+- Use the full `bun test src/ skills/ scripts/` gate when runtime behavior, tool behavior, schemas,
+  validation logic, or testable script logic changes.
+
 ## Directory Boundaries
 
 **`src/`** — Framework code that ships with the node. CLI tools (`src/tools/`), runtime modules, schemas, types.

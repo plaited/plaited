@@ -55,7 +55,7 @@ The main research artifacts for this program are:
 - `dev-research/behavioral-factories/program.md`
 - `skills/behavioral-core/SKILL.md`
 - `skills/hypergraph-memory/SKILL.md`
-- `skills/mss-vocabulary/SKILL.md`
+- `skills/mss/SKILL.md`
 - `src/tools/hypergraph.ts`
 
 Expected future artifacts:

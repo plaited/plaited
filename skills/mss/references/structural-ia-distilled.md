@@ -2,6 +2,10 @@
 
 Distilled from Rachel Jaffe's *Structuralism and a Pattern Language for Online Environments* (Structural-IA.md, 1648 lines). Only actionable primitives that map to MSS tags are extracted here.
 
+This file captures durable conceptual primitives from pre-agent Structural IA. Treat the
+mapping here as conceptual lineage that informs MSS, not as a one-to-one statement of current
+runtime implementation.
+
 ## Foundational Primitives
 
 ### Objects (→ MSS scale S1)
@@ -16,11 +20,12 @@ Four grouping patterns:
 - **Structured Steps** — objects linked across pages toward a goal (wizard flows)
 - **List** — objects in a defined order within one page
 
-### Channels (→ MSS mechanics layer)
+### Channels (→ MSS sharing and interaction semantics)
 - Connections between objects that exchange information
 - Can transmit low info (yes/no) to high info (video, touch, smell)
 - **What info flows across channels determines who has power in the system**
-- Maps to MSS: mechanics define *what interactions* channels enable
+- Maps to MSS by informing both interaction capability (`mechanics`) and sharing/power
+  semantics (`boundary`)
 
 ### Levers (→ MSS mechanics)
 Tools to change energy demand or alter energy inputs:
@@ -42,11 +47,15 @@ Tools to change energy demand or alter energy inputs:
 - Non-core loops = friction (signup, page navigation)
 - **Users gravitate to lowest-energy systems that achieve their goals**
 
-### Modules (→ MSS scale S5)
+### Modules (→ MSS scale lineage)
 - `objects + loops = module` (interactive unit)
 - Physical analogy: chairs and tables
 - Examples: comment block, email composition, social post
 - Have a *primary* goal (Send, Reply, Share) with secondary actions
+
+In the current agent-era architecture, “module” remains a useful lineage concept, but the
+externally shared runtime surface is often services, artifacts, and generated views rather
+than raw module code.
 
 ### Blocks (→ MSS scale S3)
 - Multiple modules creating **emergent interactions**
@@ -67,14 +76,17 @@ Tools to change energy demand or alter energy inputs:
 - **Nested Pools** — hierarchical collections with user freedom (Google Drive)
 - **Nested Channels** — layered communication (Slack: channels → threads → DMs)
 
-## Pattern System (→ MSS Tag Structure)
+## Pattern System (→ MSS Tag Lineage)
 
-Every pattern has four attributes — these became the MSS tags:
+Every pattern has four original attributes — these informed the later MSS fields:
 
-1. **Content** — what activities/interactions take place (→ `contentType`)
-2. **Structure** — how information is organized, innate mechanics (→ `structure`)
-3. **Boundary** — what info is shared in/out, user permissions (→ `boundary`)
-4. **Scale** — where it sits in the nesting hierarchy (→ `scale`)
+1. **Content** — what activities/interactions take place (→ later `contentType`)
+2. **Structure** — how information is organized, innate mechanics (→ later `structure`)
+3. **Boundary** — what info is shared in/out, user permissions (→ later `boundary`)
+4. **Scale** — where it sits in the nesting hierarchy (→ later `scale`)
+
+MSS later adds an explicit `mechanics` field, and current agent-era systems treat some fields
+as more flexible than the original pattern language did.
 
 ## Scale System (S1–S8)
 
@@ -109,7 +121,7 @@ Every pattern has four attributes — these became the MSS tags:
 - Interpersonal vulnerability: built through mutual info exchange over time
 - Requires: clear entry requirements, prompts for continued conversation, disincentives for sharing externally
 
-## Validated Pattern Examples from Source
+## Source Pattern Examples
 
 | Pattern | Content | Structure | Boundary | Scale |
 |---------|---------|-----------|----------|-------|
@@ -126,3 +138,6 @@ Every pattern has four attributes — these became the MSS tags:
 | Connected Play | co-creation | pass-back canvas | private → invited | S4 |
 | Playground | community play | game module pool | verified age group | S6 |
 | Carnival | entertainment | bi-level collaborative collection | tiered (owner/creator/attendee) | S7 |
+
+These rows are useful conceptual examples and provenance anchors. They should not be treated as
+closed runtime truth tables for agent-mediated systems.

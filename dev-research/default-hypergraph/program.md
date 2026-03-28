@@ -77,7 +77,7 @@ The main research artifacts for this program are:
 - `plaited skill-links`
 - `skills/hypergraph-memory/SKILL.md`
 - `skills/behavioral-core/SKILL.md`
-- `skills/mss-vocabulary/SKILL.md`
+- `skills/mss/SKILL.md`
 
 Expected future artifacts:
 
@@ -232,7 +232,7 @@ The runner may use Pi as the agent harness, but it should:
 Recommended skill whitelist for this program:
 
 - `skills/hypergraph-memory`
-- `skills/mss-vocabulary`
+- `skills/mss`
 - `skills/behavioral-core`
 
 ## Relationship To Behavioral Factories

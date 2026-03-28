@@ -37,10 +37,10 @@ The current shared context surface is:
 - `dev-research/training-prompts/program.md`
 - `docs/MODNET-HUMAN-CLI-SPEC.md`
 - `skills/modnet-modules/SKILL.md`
-- `skills/mss-vocabulary/SKILL.md`
-- `skills/mss-vocabulary/references/modnet-standards-distilled.md`
-- `skills/mss-vocabulary/references/structural-ia-distilled.md`
-- `skills/mss-vocabulary/references/valid-combinations.md`
+- `skills/mss/SKILL.md`
+- `skills/mss/references/modnet-standards-distilled.md`
+- `skills/mss/references/structural-ia-distilled.md`
+- `skills/mss/references/valid-combinations.md`
 
 That shared context is the main source of modnet/MSS guidance.
 

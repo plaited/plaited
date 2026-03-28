@@ -3,6 +3,10 @@
 > Distilled from `docs/Structural-IA.md` (Jaffe, 2019) and `docs/Modnet.md` (Jaffe, 2020).
 > Covers the interaction dynamics, feedback loops, and emergent behaviors that MSS bridge-code tags reference but don't encode directly. Each section includes agent-mediation annotations showing how the pattern changes when an agent intermediates all interactions.
 
+This file preserves durable interaction theory, but the original source documents predate
+LLMs, A2A, and generative UI. Treat the dynamics here as conceptual lineage to reinterpret,
+not as rigid current runtime law.
+
 ## 1. Base Dynamics
 
 **Source:** Structural-IA §Base Dynamics
@@ -22,8 +26,8 @@ Each class can be **one-to-one** or **one-to-many** (same information transmitte
 
 | Original | Agent-Mediated | Change |
 |----------|---------------|--------|
-| Object ↔ Object | Object ↔ Object | **Unchanged** — data sync between modules happens via A2A message passing |
-| Object ↔ Person | Object ↔ Agent ↔ Person | Agent intermediates. Person talks to agent; agent manages module. Agent handles notifications, filters noise, escalates when uncertain |
+| Object ↔ Object | Object ↔ Object | **Largely preserved** — data sync between artifacts or services happens via direct transport or A2A message passing |
+| Object ↔ Person | Object ↔ Agent ↔ Person | Agent intermediates. Person talks to agent; agent manages artifacts, services, and views. Agent handles notifications, filters noise, escalates when uncertain |
 | Person ↔ Person | Person ↔ Agent ↔ Agent ↔ Person | Still exists (email, messaging). **View sovereignty** — each person's agent renders their view of the interaction. The agents are infrastructure, not participants |
 
 **Key insight:** Person ↔ person doesn't collapse. It routes through agents. The difference is that YOUR agent controls YOUR view, not a shared platform.
@@ -89,7 +93,8 @@ Four lever types:
 The agent **collapses lever complexity** at the UI layer:
 - **Affordances** are generated on-the-fly by the agent's generative UI — no need for a platform to pre-design them
 - **Structural cues** are chosen by the agent based on context (mobile? desktop? voice?) — the same module renders differently for different interaction modes
-- **Mechanics** remain unchanged — `vote`, `karma`, `scarcity` etc. are structural, not behavioral. The MSS `mechanics` tag declares capability; activation rules are the same
+- **Mechanic concepts** remain useful, but realization is agent-mediated. The MSS `mechanics`
+  field declares capability; activation and presentation may differ across agents and generated UIs
 - **Games** persist across agent boundaries — a user's karma on a community follows them because it's stored in their module, not the platform
 
 ## 5. Modules, Blocks, and Scale
@@ -115,7 +120,8 @@ Architecture is preserved. What changes is navigation:
 - The agent presents the right **slice** of the hierarchy for the current task
 - S5-S7 structures still exist architecturally, but the user doesn't navigate the full depth
 - Generative UI renders the relevant block/module for the current interaction
-- **Scale promotion** still works: 2 modules → S2, 3+ → S3, diverse contentTypes at S5+ → auto-promote
+- **Scale promotion** remains a useful heuristic, but not an unconditional law. Agents may group,
+  translate, or keep artifacts distinct based on intent, boundary, and alignment
 
 ## 6. Ephemeral Networks
 
@@ -153,11 +159,13 @@ Duration is controlled by the **goal bThread lifecycle** (`repeat: true` vs term
 
 **Source:** Modnet §Autonomous Assembly, §Living Networks
 
-Modules self-assemble into networks through MSS rules — no central coordinator needed. The assembly follows DNA-like patterns:
+Artifacts can assemble into larger systems through MSS-guided alignment without a central
+platform coordinator, but the current agent-era runtime treats this as negotiated assembly,
+not automatic destiny.
 
 **Assembly rules (from MSS tags):**
-1. **ContentType matching** — modules with same contentType auto-group when nearby
-2. **Scale promotion** — 2 farm stands → object group (S2), 3+ → block (S3), diverse types at S5+ → auto-promote to general market (S6)
+1. **ContentType alignment** — compatible contentTypes are a strong grouping and translation hint
+2. **Scale promotion** — useful default heuristic rather than hard law
 3. **Boundary cascade** — effective boundary = min(own, parent). A `none` parent forces all children to `none`
 4. **Mechanics inheritance** — bottom-up (child mechanics visible in parent view) and top-down (parent mechanics available to children)
 
@@ -168,11 +176,11 @@ Modules self-assemble into networks through MSS rules — no central coordinator
 ### Agent-Mediation Annotation
 
 Assembly is **agent-initiated** rather than proximity-triggered:
-1. Agent discovers network via QR scan, NFC tap, or search → fetches Agent Card
-2. Agent Card contains MSS metadata (`modnet:mss:contentType`, `modnet:mss:boundary`)
-3. Agent generates compatible module on-the-fly using framework (`initModule` + MSS tags)
-4. **ContentTypes don't need to align** — a commerce network might produce a health-tracking view if the user cares about nutrition. The agent translates between network MSS and user preferences.
-5. Module persists on user's node for future visits — fork, adapt, or regenerate as needed
+1. Agent discovers a network or peer via QR scan, NFC tap, search, or direct address
+2. Agent determines whether the peer supports MSS-aware interaction
+3. Agent generates or adapts a compatible artifact, view, or service binding on-the-fly
+4. **ContentTypes don't need to align** — a commerce network might produce a health-tracking view if the user cares about nutrition. The agent translates between network semantics and user preferences.
+5. The result persists on the user's node for future visits — fork, adapt, or regenerate as needed
 
 The "living network" metaphor still applies but the growth medium changes from automatic self-assembly to **agent-negotiated assembly** via A2A protocol.
 
@@ -198,14 +206,17 @@ How each mechanic creates engagement:
 
 ### Agent-Mediation Annotation
 
-Mechanics are structural, not behavioral. The agent may **execute** a mechanic (auto-vote based on user preferences, auto-filter based on learned patterns), but the mechanic definition doesn't change. The UI surfaces what the agent chose — the mechanic `vote` exists regardless of whether the user clicked or the agent voted based on preferences.
+Mechanics are structural capabilities, not rigid UI widgets. The agent may **execute** a
+mechanic (auto-vote based on user preferences, auto-filter based on learned patterns), but
+the actual presentation is generated and context-dependent. The mechanic `vote` can remain
+semantically present even when the realization differs across agents.
 
 ## Summary: What MSS Tags Encode vs What They Reference
 
 | MSS Tag | Encodes | References (dynamics not encoded) |
 |---------|---------|-----------------------------------|
-| `contentType` | Domain keyword | ContentType grouping rules, network formation |
-| `structure` | Information organization | Block dynamics (pool nesting, stream scrolling, thread branching) |
-| `mechanics` | Capability declarations | Activation rules, inheritance (bottom-up/top-down), dopamine loops |
+| `contentType` | Domain or alignment signal | Grouping, translation, and network formation dynamics |
+| `structure` | Information organization in the current realization | Block dynamics (pool nesting, stream scrolling, thread branching) |
+| `mechanics` | Capability declarations | Activation rules, inheritance (bottom-up/top-down), incentive and feedback loops |
 | `boundary` | Sharing policy | Channel power dynamics, trust building, search vs participation boundaries |
 | `scale` | Nesting level | Emergent assembly rules, scale promotion, architectural hierarchy |
