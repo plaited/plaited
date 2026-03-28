@@ -36,7 +36,7 @@
     "access": "public"
   },
   "scripts": {
-    "autoresearch:runner": "bun scripts/autoresearch-runner.ts",
+    "autoresearch:runner": "bunx varlock run -- bun scripts/autoresearch-runner.ts",
     "build:wasm": "bunx asc src/tools/graph-algorithms/graph-algorithms.ts --outFile src/tools/hypergraph.wasm --optimize --exportRuntime",
     "check": "bun run check:biome && bun run check:types && bun run check:package",
     "check:biome": "biome check",
@@ -47,8 +47,8 @@
     "pi:review": "bunx varlock run -- bun scripts/modnet-pi-review.ts",
     "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .hooks || true",
     "research:behavioral-factories": "bun scripts/behavioral-factories.ts",
-    "research:mss-corpus": "bun scripts/autoresearch-runner.ts scripts/mss-corpus.ts run",
-    "research:mss-seed": "bun scripts/autoresearch-runner.ts scripts/mss-seed.ts run",
+    "research:mss-corpus": "bunx varlock run -- bun scripts/autoresearch-runner.ts scripts/mss-corpus.ts run",
+    "research:mss-seed": "bunx varlock run -- bun scripts/autoresearch-runner.ts scripts/mss-seed.ts run",
     "test": "bun test"
   },
   "lint-staged": {
