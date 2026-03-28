@@ -56,13 +56,24 @@ export const RESEARCH_LANE_CONFIG = {
   programPath: MSS_SEED_PROGRAM_PATH,
   validateCommand: ['bun', 'scripts/mss-seed.ts', 'validate'],
   writableRoots: [join('dev-research', 'mss-seed')],
-  skills: [join('skills', 'mss'), join('skills', 'modnet-node'), join('skills', 'modnet-modules')],
+  skills: [
+    join('skills', 'mss'),
+    join('skills', 'modnet-node'),
+    join('skills', 'modnet-modules'),
+    join('skills', 'youdotcom-api'),
+  ],
   model: 'openrouter/minimax/minimax-m2.7',
   systemPrompt: MSS_SEED_SYSTEM_PROMPT,
   taskPrompt:
     'Improve the mss-seed lane artifacts. Produce or refine a compact lane-local seed ontology for downstream corpus encoding. Do not edit src/tools. Run the lane validator before finishing and summarize what changed.',
   defaultAttempts: 15,
   defaultParallelism: 3,
+  evaluation: {
+    graderPath: 'scripts/mss-seed-grader.ts',
+    verifierPath: 'scripts/mss-seed-verifier.ts',
+    useMetaVerification: true,
+    hint: 'Prefer compact, lane-bounded seed improvements with durable MSS and Modnet anchors. Penalize support-surface drift and weak seed evidence.',
+  },
   sourceDocs: [join('docs', 'Structural-IA.md'), join('docs', 'Modnet.md'), join('docs', 'MODNET-IMPLEMENTATION.md')],
   compareMarkdownPaths: [
     join('skills', 'mss', 'SKILL.md'),

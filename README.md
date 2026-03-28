@@ -239,7 +239,7 @@ Current research lanes:
 bun --bun tsc --noEmit
 
 # Full test suite
-bun test src/ skills/ scripts/
+bun test
 
 # One bounded research run
 bun run research -- ./dev-research/runtime-taxonomy/slice-1.md --max-attempts 1

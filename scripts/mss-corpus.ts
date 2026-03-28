@@ -67,6 +67,7 @@ export const RESEARCH_LANE_CONFIG = {
     join('skills', 'modnet-node'),
     join('skills', 'modnet-modules'),
     join('skills', 'hypergraph-memory'),
+    join('skills', 'youdotcom-api'),
   ],
   model: 'openrouter/minimax/minimax-m2.7',
   systemPrompt: MSS_CORPUS_SYSTEM_PROMPT,
@@ -74,6 +75,12 @@ export const RESEARCH_LANE_CONFIG = {
     'Improve the mss-corpus lane artifacts. Produce lane-local encoded corpus artifacts that depend on mss-seed anchors rather than raw ad hoc concepts. Do not edit src/tools. Run the lane validator before finishing and summarize what changed.',
   defaultAttempts: 15,
   defaultParallelism: 3,
+  evaluation: {
+    graderPath: 'scripts/mss-corpus-grader.ts',
+    verifierPath: 'scripts/mss-corpus-verifier.ts',
+    useMetaVerification: true,
+    hint: 'Prefer lane-bounded corpus outputs with encoded/artifact evidence, source-backed structure, and seed-aligned semantics. Penalize ontology drift and weak corpus evidence.',
+  },
   sourceDocs: [join('docs', 'Structural-IA.md'), join('docs', 'Modnet.md'), join('docs', 'MODNET-IMPLEMENTATION.md')],
   compareMarkdownPaths: [
     join('skills', 'mss', 'SKILL.md'),

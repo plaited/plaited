@@ -22,6 +22,29 @@ Encode MSS and Modnet source material as a graph-ready corpus that downstream be
 - `docs/Modnet.md`
 - `docs/MODNET-IMPLEMENTATION.md`
 
+## External Retrieval
+
+This lane already receives explicit local inputs and lane-provisioned skills.
+Treat those as the primary source surface.
+
+In practice, external retrieval here means targeted web search and source lookup
+through the provisioned You.com skill.
+
+External retrieval is allowed only when:
+
+- the listed MSS / Modnet inputs do not provide enough evidence to encode a chunk or assertion
+- multiple local sources conflict and additional source verification is needed
+- a missing reference, standard, or concept must be checked before it is added to the corpus
+
+External retrieval should remain a fallback, not the default corpus source.
+
+When external retrieval is used:
+
+- prefer narrow web-search and source-seeking queries over broad exploratory search
+- keep retrieved evidence tied to seed anchors and lane-local corpus outputs
+- record in the attempt summary that external retrieval materially influenced the result
+- do not replace local source-backed corpus structure with unsupported external synthesis
+
 ## Target Output Shape
 
 This lane should eventually emit graph-ready corpus artifacts such as:

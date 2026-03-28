@@ -43,22 +43,47 @@ Do not rely on long-running opaque subagent state as the only record for large f
 **When a multi-line message is awkward in shell quoting, use a commit message file** rather than
 forcing escaped newlines into `git commit -m`.
 
+**Git lock recovery:** if `/.git/index.lock` is present, first assume an interrupted or overlapping
+Git operation rather than corruption. Check that no Git process is still running, then remove the
+stale lock with `rm -f .git/index.lock` before retrying. Avoid starting a new commit while hook
+formatters or other Git operations are still in flight.
+
 
 ## Code Quality Gate
 
-Before committing code, both must pass:
+Before committing code, always choose validation based on area of effect.
+
+Use Bun as the default test runner for repo validation commands.
+
+Minimum gate:
 1. `bun --bun tsc --noEmit`
-2. `bun test src/ skills/ scripts/`
+2. targeted tests for the changed surface
 
-*Exception:* `docs:` and `chore:` commits skip this gate.
+Use broader validation when:
+- runtime behavior changes
+- tool behavior changes
+- schemas or validators change
+- shared infrastructure changes
+- the area of effect is broad or uncertain
 
-Area-of-effect rule:
-- Before running validation, assess the area of effect and verify it with code search or file inspection.
-- If the change is limited to path-only renames, link/reference updates, wording-only skill/doc changes,
-  or other edits that do not change executable behavior, use `bun --bun tsc --noEmit` plus targeted
-  tests for affected paths.
-- Use the full `bun test src/ skills/ scripts/` gate when runtime behavior, tool behavior, schemas,
-  validation logic, or testable script logic changes.
+Use the minimum gate when:
+- the change is tightly bounded and verified by file inspection or code search
+- only a small, clearly isolated executable surface changed
+- the change is path-only rename, link/reference cleanup, wording-only docs/skills text,
+  or another edit that does not materially change executable behavior
+
+If you choose targeted tests instead of the full suite, state the scope and why the narrower
+gate is sufficient.
+
+Broader validation is still area-aware. It does not mean “run unrelated tests.”
+Examples:
+- if only `scripts/` research infrastructure changed, run the relevant `scripts/tests/*`
+  plus any shared `src/` tests that those changes affect
+- if only `src/ui/` changed, run the relevant UI test surfaces
+- if shared code changed and the impact is broad or unclear, expand test coverage until the
+  affected surface is credibly covered
+
+`docs:` and `chore:` commits may skip executable validation when they do not change behavior.
 
 ## Directory Boundaries
 
@@ -152,7 +177,8 @@ uv run python -c "import mlx.core as mx; print(mx.default_device())"
 **Test both branches** — try/catch, conditionals, fallbacks need both paths.
 **Use real dependencies** — prefer installed packages over mocks.
 **Coverage:** happy path, edge cases, error paths, real integrations.
-**Run:** `bun test src/ skills/ scripts/` before commit.
+**Run:** choose tests by affected surface. Do not run unrelated areas just to satisfy a blanket rule.
+Expand test coverage when the impact is broad, shared, or uncertain.
 
 
 # Accuracy

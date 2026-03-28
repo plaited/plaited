@@ -1,18 +1,18 @@
 import { describe, expect, test } from 'bun:test'
 import {
-  RepoImprovementJudgeInputSchema,
-  RepoImprovementJudgeOutcomeSchema,
-  RepoImprovementMetaVerifierOutcomeSchema,
   TrialJudgeInputSchema,
   TrialJudgeResultSchema,
   TrialMetaVerifierInputSchema,
   TrialMetaVerifierOutcomeSchema,
+  WorkspaceImprovementJudgeInputSchema,
+  WorkspaceImprovementJudgeOutcomeSchema,
+  WorkspaceImprovementMetaVerifierOutcomeSchema,
 } from '../judge-contracts.ts'
 
 describe('judge contracts', () => {
-  test('distinguishes repo-improvement judging from trial-result judging', () => {
-    const repoInput = RepoImprovementJudgeInputSchema.parse({
-      evaluationTarget: 'repo-improvement',
+  test('distinguishes workspace-improvement judging from trial-result judging', () => {
+    const workspaceInput = WorkspaceImprovementJudgeInputSchema.parse({
+      evaluationTarget: 'workspace-improvement',
       task: 'Implement the slice',
       candidateOutput: 'Updated improve contracts.',
       changedFiles: ['src/improve/judge-contracts.ts'],
@@ -40,7 +40,7 @@ describe('judge contracts', () => {
       },
     })
 
-    expect(repoInput.evaluationTarget).toBe('repo-improvement')
+    expect(workspaceInput.evaluationTarget).toBe('workspace-improvement')
     expect(trialInput.evaluationTarget).toBe('trial-result')
   })
 
@@ -92,10 +92,10 @@ describe('judge contracts', () => {
     expect(metaOutcome.trustLabel).toBe('trusted')
   })
 
-  test('keeps repo-improvement judge and meta-verifier outcomes explicit', () => {
-    const judgeOutcome = RepoImprovementJudgeOutcomeSchema.parse({
-      evaluationTarget: 'repo-improvement',
-      judgeKind: 'repo-improvement',
+  test('keeps workspace-improvement judge and meta-verifier outcomes explicit', () => {
+    const judgeOutcome = WorkspaceImprovementJudgeOutcomeSchema.parse({
+      evaluationTarget: 'workspace-improvement',
+      judgeKind: 'workspace-improvement',
       rubric: {
         architecture: 0.9,
         boundedness: 0.95,
@@ -104,9 +104,9 @@ describe('judge contracts', () => {
       },
     })
 
-    const metaOutcome = RepoImprovementMetaVerifierOutcomeSchema.parse({
-      evaluationTarget: 'repo-improvement',
-      judgeKind: 'repo-improvement-meta-verifier',
+    const metaOutcome = WorkspaceImprovementMetaVerifierOutcomeSchema.parse({
+      evaluationTarget: 'workspace-improvement',
+      judgeKind: 'workspace-improvement-meta-verifier',
       rubric: {
         consistency: 0.9,
         risk: 0.8,
@@ -114,7 +114,7 @@ describe('judge contracts', () => {
       },
     })
 
-    expect(judgeOutcome.judgeKind).toBe('repo-improvement')
-    expect(metaOutcome.judgeKind).toBe('repo-improvement-meta-verifier')
+    expect(judgeOutcome.judgeKind).toBe('workspace-improvement')
+    expect(metaOutcome.judgeKind).toBe('workspace-improvement-meta-verifier')
   })
 })

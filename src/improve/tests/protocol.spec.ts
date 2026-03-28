@@ -123,7 +123,7 @@ One bounded attempt.
 
 - scripts/dev-autoresearch.ts
 - scripts/codex-cli-adapter.ts
-- scripts/repo-improvement-judge.ts
+        - scripts/workspace-improvement-judge.ts
 - scripts/tests/dev-autoresearch.spec.ts
 
 ## Acceptance Criteria
@@ -143,7 +143,7 @@ One bounded attempt.
     expect(context.allowedPaths).toEqual([
       'scripts/dev-autoresearch.ts',
       'scripts/codex-cli-adapter.ts',
-      'scripts/repo-improvement-judge.ts',
+      'scripts/workspace-improvement-judge.ts',
       'scripts/tests/dev-autoresearch.spec.ts',
     ])
     expect(context.prompt).toContain('Program:')

@@ -9,6 +9,7 @@
  */
 
 import { mkdir, rm } from 'node:fs/promises'
+import { MetaVerificationSchema } from './training.schemas.ts'
 import type {
   Adapter,
   CaptureEvidence,
@@ -152,6 +153,14 @@ export const loadAdapter = (path: string): Promise<Adapter> => loadPolyglot<Adap
  * @public
  */
 export const loadGrader = (path: string): Promise<Grader> => loadPolyglot<Grader>(path, 'grade', GraderResultSchema)
+
+/**
+ * Load a verifier from a file path.
+ *
+ * @public
+ */
+export const loadVerifier = (path: string): Promise<Verifier> =>
+  loadPolyglot<Verifier>(path, 'verify', MetaVerificationSchema)
 
 // ============================================================================
 // JSONL Loading

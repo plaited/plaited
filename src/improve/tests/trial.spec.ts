@@ -1024,6 +1024,23 @@ describe('loadPolyglot', () => {
     expect(result.score).toBe(1.0)
   })
 
+  test('loadVerifier from TS module', async () => {
+    const verifierPath = tempFile('confidence-verifier.ts')
+    await Bun.write(
+      verifierPath,
+      `export const verify = async ({ score }) => ({
+        confidence: score > 0.5 ? 0.95 : 0.25,
+        reasoning: 'confidence derived from score',
+      })`,
+    )
+
+    const { loadVerifier } = await import('../trial.utils.ts')
+    const verifier = await loadVerifier(verifierPath)
+    const result = await verifier({ pass: true, score: 1, reasoning: 'ok' })
+    expect(result.confidence).toBe(0.95)
+    expect(result.reasoning).toBe('confidence derived from score')
+  })
+
   test('rejects module without expected export', async () => {
     const badPath = tempFile('bad-module.ts')
     await Bun.write(badPath, 'export const wrong = () => {}')

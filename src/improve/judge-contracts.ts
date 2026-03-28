@@ -2,7 +2,7 @@ import * as z from 'zod'
 import { TrajectoryStepSchema } from '../agent/agent.schemas.ts'
 import { GraderResultSchema, PromptCaseSchema, TimingSchema } from './trial.schemas.ts'
 
-export const EvaluationTargetSchema = z.enum(['repo-improvement', 'trial-result'])
+export const EvaluationTargetSchema = z.enum(['workspace-improvement', 'trial-result'])
 export type EvaluationTarget = z.infer<typeof EvaluationTargetSchema>
 
 export const RetainedOutputSuitabilityLabelSchema = z.enum([
@@ -20,51 +20,51 @@ export const RetainedOutputSuitabilitySchema = z.object({
 })
 export type RetainedOutputSuitability = z.infer<typeof RetainedOutputSuitabilitySchema>
 
-const RepoJudgeChecksSchema = z.record(z.string(), z.unknown())
+const WorkspaceJudgeChecksSchema = z.record(z.string(), z.unknown())
 
-export const RepoImprovementJudgeInputSchema = z.object({
-  evaluationTarget: z.literal('repo-improvement'),
+export const WorkspaceImprovementJudgeInputSchema = z.object({
+  evaluationTarget: z.literal('workspace-improvement'),
   task: z.string(),
   candidateOutput: z.string(),
   changedFiles: z.array(z.string()),
   diffStat: z.string(),
   patch: z.string(),
-  checks: RepoJudgeChecksSchema,
+  checks: WorkspaceJudgeChecksSchema,
   program: z.string(),
   slice: z.string(),
 })
-export type RepoImprovementJudgeInput = z.infer<typeof RepoImprovementJudgeInputSchema>
+export type WorkspaceImprovementJudgeInput = z.infer<typeof WorkspaceImprovementJudgeInputSchema>
 
-export const RepoImprovementJudgeRubricSchema = z.object({
+export const WorkspaceImprovementJudgeRubricSchema = z.object({
   architecture: z.number().min(0).max(1),
   boundedness: z.number().min(0).max(1),
   focus: z.number().min(0).max(1),
   quality: z.number().min(0).max(1),
 })
-export type RepoImprovementJudgeRubric = z.infer<typeof RepoImprovementJudgeRubricSchema>
+export type WorkspaceImprovementJudgeRubric = z.infer<typeof WorkspaceImprovementJudgeRubricSchema>
 
-export const RepoImprovementJudgeOutcomeSchema = z.object({
-  evaluationTarget: z.literal('repo-improvement'),
-  judgeKind: z.literal('repo-improvement'),
-  rubric: RepoImprovementJudgeRubricSchema.optional(),
+export const WorkspaceImprovementJudgeOutcomeSchema = z.object({
+  evaluationTarget: z.literal('workspace-improvement'),
+  judgeKind: z.literal('workspace-improvement'),
+  rubric: WorkspaceImprovementJudgeRubricSchema.optional(),
   judgeSdk: z.record(z.string(), z.unknown()).optional(),
 })
-export type RepoImprovementJudgeOutcome = z.infer<typeof RepoImprovementJudgeOutcomeSchema>
+export type WorkspaceImprovementJudgeOutcome = z.infer<typeof WorkspaceImprovementJudgeOutcomeSchema>
 
-export const RepoImprovementMetaVerifierRubricSchema = z.object({
+export const WorkspaceImprovementMetaVerifierRubricSchema = z.object({
   consistency: z.number().min(0).max(1),
   risk: z.number().min(0).max(1),
   confidence: z.number().min(0).max(1),
 })
-export type RepoImprovementMetaVerifierRubric = z.infer<typeof RepoImprovementMetaVerifierRubricSchema>
+export type WorkspaceImprovementMetaVerifierRubric = z.infer<typeof WorkspaceImprovementMetaVerifierRubricSchema>
 
-export const RepoImprovementMetaVerifierOutcomeSchema = z.object({
-  evaluationTarget: z.literal('repo-improvement'),
-  judgeKind: z.literal('repo-improvement-meta-verifier'),
-  rubric: RepoImprovementMetaVerifierRubricSchema.optional(),
+export const WorkspaceImprovementMetaVerifierOutcomeSchema = z.object({
+  evaluationTarget: z.literal('workspace-improvement'),
+  judgeKind: z.literal('workspace-improvement-meta-verifier'),
+  rubric: WorkspaceImprovementMetaVerifierRubricSchema.optional(),
   metaVerificationSdk: z.record(z.string(), z.unknown()).optional(),
 })
-export type RepoImprovementMetaVerifierOutcome = z.infer<typeof RepoImprovementMetaVerifierOutcomeSchema>
+export type WorkspaceImprovementMetaVerifierOutcome = z.infer<typeof WorkspaceImprovementMetaVerifierOutcomeSchema>
 
 export const TrialJudgeInputSchema = z.object({
   evaluationTarget: z.literal('trial-result'),

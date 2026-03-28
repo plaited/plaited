@@ -15,16 +15,6 @@ export {
 export {
   type EvaluationTarget,
   EvaluationTargetSchema,
-  type RepoImprovementJudgeInput,
-  RepoImprovementJudgeInputSchema,
-  type RepoImprovementJudgeOutcome,
-  RepoImprovementJudgeOutcomeSchema,
-  type RepoImprovementJudgeRubric,
-  RepoImprovementJudgeRubricSchema,
-  type RepoImprovementMetaVerifierOutcome,
-  RepoImprovementMetaVerifierOutcomeSchema,
-  type RepoImprovementMetaVerifierRubric,
-  RepoImprovementMetaVerifierRubricSchema,
   type RetainedOutputSuitability,
   type RetainedOutputSuitabilityLabel,
   RetainedOutputSuitabilityLabelSchema,
@@ -41,8 +31,17 @@ export {
   TrialMetaVerifierOutcomeSchema,
   type TrialMetaVerifierTrustLabel,
   TrialMetaVerifierTrustLabelSchema,
+  type WorkspaceImprovementJudgeInput,
+  WorkspaceImprovementJudgeInputSchema,
+  type WorkspaceImprovementJudgeOutcome,
+  WorkspaceImprovementJudgeOutcomeSchema,
+  type WorkspaceImprovementJudgeRubric,
+  WorkspaceImprovementJudgeRubricSchema,
+  type WorkspaceImprovementMetaVerifierOutcome,
+  WorkspaceImprovementMetaVerifierOutcomeSchema,
+  type WorkspaceImprovementMetaVerifierRubric,
+  WorkspaceImprovementMetaVerifierRubricSchema,
 } from './improve/judge-contracts.ts'
-
 export {
   DecisionStepSchema,
   GradingDimensionsSchema,
@@ -62,7 +61,6 @@ export {
   TrainingScoreOutputSchema,
   TrainingScoreSchema,
 } from './improve/training.schemas.ts'
-
 export {
   type AssessTrainingCandidateOptions,
   type AssessTrainingCaptureOptions,
@@ -120,6 +118,7 @@ export {
   loadGrader,
   loadJsonl,
   loadPrompts,
+  loadVerifier,
   persistTrialResults,
   type Verifier,
   withMetaVerification,
@@ -131,3 +130,13 @@ export {
   type TrialRunSummary,
   type TrialThemeSummary,
 } from './improve/trial-report.ts'
+export {
+  buildWorkspaceImprovementJudgeInput,
+  buildWorkspaceImprovementJudgePrompt,
+  buildWorkspaceImprovementMetaVerifierPrompt,
+  toWorkspaceImprovementJudgeOutcome,
+  type WorkspaceImprovementJudgeResponse,
+  WorkspaceImprovementJudgeResponseSchema,
+  type WorkspaceImprovementMetaVerifierResponse,
+  WorkspaceImprovementMetaVerifierResponseSchema,
+} from './improve/workspace-improvement-eval.ts'

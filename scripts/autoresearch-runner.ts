@@ -1,6 +1,8 @@
 #!/usr/bin/env bun
 
 import { join, resolve } from 'node:path'
+import type { Grader, GraderResult } from '../src/improve.ts'
+import { loadGrader, loadVerifier, withMetaVerification } from '../src/improve.ts'
 
 export type ResearchLaneConfig = {
   key: string
@@ -15,6 +17,12 @@ export type ResearchLaneConfig = {
   defaultAttempts: number
   defaultParallelism: number
   strategyNotes?: string[]
+  evaluation?: {
+    graderPath: string
+    verifierPath?: string
+    useMetaVerification?: boolean
+    hint?: string
+  }
 }
 
 type AttemptStatus = 'queued' | 'running' | 'completed' | 'failed' | 'stopped'
@@ -39,6 +47,36 @@ type RunManifest = {
   attempts: number
   parallelism: number
   runDir: string
+}
+
+type AttemptResultRecord = {
+  attempt: number
+  strategy: string
+  retryCount: number
+  piExitCode: number
+  validateExitCode: number
+  diffStat: string
+  changedPaths: string[]
+  disallowedPaths: string[]
+  worktreePath: string
+}
+
+type AttemptEvaluationRecord = {
+  attempt: number
+  pass: boolean
+  score: number
+  reasoning?: string
+  outcome?: Record<string, unknown>
+  dimensions?: Record<string, unknown>
+}
+
+type EvaluationSummary = {
+  graderPath: string
+  verifierPath?: string
+  evaluatedAttempts: number
+  passedAttempts: number
+  averageScore: number
+  bestAttempt?: number
 }
 
 const REPO_ROOT = process.cwd()
@@ -127,6 +165,9 @@ const attemptStdoutPath = (runDir: string, attempt: number) => join(runAttemptDi
 const attemptStderrPath = (runDir: string, attempt: number) => join(runAttemptDir(runDir, attempt), 'stderr.log')
 const attemptWorktreePath = (runDir: string, attempt: number) => join(runAttemptDir(runDir, attempt), 'repo')
 const attemptPiStatePath = (runDir: string, attempt: number) => join(runAttemptDir(runDir, attempt), '.pi-agent')
+const attemptEvaluationPath = (runDir: string, attempt: number) =>
+  join(runAttemptDir(runDir, attempt), 'evaluation.json')
+const evaluationSummaryPath = (runDir: string) => join(runDir, 'evaluation-summary.json')
 
 const ensureDir = async (path: string) => {
   await Bun.$`mkdir -p ${path}`.quiet()
@@ -284,6 +325,108 @@ const readAttemptStatuses = async (runDir: string, attempts: number) => {
     }
   }
   return rows
+}
+
+const readAttemptResult = async (runDir: string, attempt: number): Promise<AttemptResultRecord | null> => {
+  const file = Bun.file(attemptResultPath(runDir, attempt))
+  if (!(await file.exists())) {
+    return null
+  }
+
+  return (await file.json()) as AttemptResultRecord
+}
+
+const buildEvaluationInput = ({
+  config,
+  status,
+  result,
+  stdout,
+}: {
+  config: ResearchLaneConfig
+  status: AttemptStatusRecord
+  result: AttemptResultRecord
+  stdout: string
+}) => ({
+  input: `${config.taskPrompt}\n\nAttempt strategy:\n${status.strategy}`,
+  output: stdout,
+  hint:
+    config.evaluation?.hint ??
+    `Evaluate this autoresearch attempt for lane ${config.key}. Reward valid, bounded, reviewable lane-local improvements.`,
+  metadata: {
+    lane: config.key,
+    attempt: status.attempt,
+    changedPaths: result.changedPaths,
+    diffStat: result.diffStat,
+    retryCount: result.retryCount,
+    piExitCode: result.piExitCode,
+    validateExitCode: result.validateExitCode,
+  },
+  cwd: status.worktreePath,
+})
+
+const toEvaluationRecord = (attempt: number, result: GraderResult): AttemptEvaluationRecord => ({
+  attempt,
+  pass: result.pass,
+  score: result.score,
+  ...(result.reasoning ? { reasoning: result.reasoning } : {}),
+  ...(result.outcome ? { outcome: result.outcome } : {}),
+  ...(result.dimensions ? { dimensions: result.dimensions } : {}),
+})
+
+const evaluateAttempts = async ({
+  runDir,
+  attempts,
+  config,
+}: {
+  runDir: string
+  attempts: number
+  config: ResearchLaneConfig
+}): Promise<EvaluationSummary | null> => {
+  const evaluationConfig = config.evaluation
+  if (!evaluationConfig?.graderPath) {
+    return null
+  }
+
+  let grader: Grader = await loadGrader(evaluationConfig.graderPath)
+  if (evaluationConfig.useMetaVerification && evaluationConfig.verifierPath) {
+    const verifier = await loadVerifier(evaluationConfig.verifierPath)
+    grader = withMetaVerification(grader, verifier)
+  }
+
+  const statuses = await readAttemptStatuses(runDir, attempts)
+  const completedStatuses = statuses.filter((status) => status.status === 'completed')
+  const evaluations: AttemptEvaluationRecord[] = []
+
+  for (const status of completedStatuses) {
+    const result = await readAttemptResult(runDir, status.attempt)
+    if (!result) continue
+
+    const stdoutFile = Bun.file(attemptStdoutPath(runDir, status.attempt))
+    const stdout = (await stdoutFile.exists()) ? await stdoutFile.text() : ''
+    const graded = await grader(buildEvaluationInput({ config, status, result, stdout }))
+    const record = toEvaluationRecord(status.attempt, graded)
+    evaluations.push(record)
+    await writeJson(attemptEvaluationPath(runDir, status.attempt), record)
+  }
+
+  const averageScore =
+    evaluations.length === 0
+      ? 0
+      : evaluations.reduce((sum, evaluation) => sum + evaluation.score, 0) / evaluations.length
+  const bestAttempt = evaluations.slice().sort((left, right) => right.score - left.score)[0]?.attempt
+  const summary: EvaluationSummary = {
+    graderPath: evaluationConfig.graderPath,
+    ...(evaluationConfig.useMetaVerification && evaluationConfig.verifierPath
+      ? { verifierPath: evaluationConfig.verifierPath }
+      : {}),
+    evaluatedAttempts: evaluations.length,
+    passedAttempts: evaluations.filter((evaluation) => evaluation.pass).length,
+    averageScore,
+    ...(bestAttempt ? { bestAttempt } : {}),
+  }
+
+  await writeJson(evaluationSummaryPath(runDir), summary)
+  return summary
 }
 
 const runAttempt = async ({
@@ -451,11 +594,13 @@ const main = async () => {
 
     const manifest = (await manifestFile.json()) as RunManifest
     const statuses = await readAttemptStatuses(effectiveRunDir, manifest.attempts)
+    const evaluationFile = Bun.file(evaluationSummaryPath(effectiveRunDir))
     console.log(
       JSON.stringify(
         {
           manifest,
           attempts: statuses,
+          evaluation: (await evaluationFile.exists()) ? await evaluationFile.json() : null,
         },
         null,
         2,
@@ -530,6 +675,11 @@ const main = async () => {
   })
 
   const statuses = await readAttemptStatuses(effectiveRunDir, attempts)
+  const evaluation = await evaluateAttempts({
+    runDir: effectiveRunDir,
+    attempts,
+    config,
+  })
   console.log(
     JSON.stringify(
       {
@@ -537,6 +687,7 @@ const main = async () => {
         lane: config.key,
         completed: statuses.filter((status) => status.status === 'completed').length,
         failed: statuses.filter((status) => status.status === 'failed').length,
+        ...(evaluation ? { evaluation } : {}),
       },
       null,
       2,

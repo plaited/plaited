@@ -19,6 +19,30 @@ This lane exists to replace one-off manual seed curation with a stable, reviewab
 - `docs/Modnet.md`
 - `docs/MODNET-IMPLEMENTATION.md`
 
+## External Retrieval
+
+This lane already receives explicit local inputs and lane-provisioned skills.
+Treat those as the primary source surface.
+
+In practice, external retrieval here means targeted web search and source lookup
+through the provisioned You.com skill.
+
+External retrieval is allowed only when:
+
+- the listed MSS / Modnet inputs are insufficient for a bounded seed decision
+- multiple local sources conflict and a tie-breaker is needed
+- a missing term, standard, or reference must be verified before encoding it
+
+External retrieval should be used as supporting evidence, not as the default
+authoring surface.
+
+When external retrieval is used:
+
+- prefer narrow web-search and source-seeking queries over broad open-ended exploration
+- preserve the lane boundary and keep changes reviewable
+- record in the attempt summary that external retrieval materially influenced the result
+- do not let externally retrieved material silently override the lane inputs without explanation
+
 ## Lane Output
 
 This lane owns its own seed candidate package under:
