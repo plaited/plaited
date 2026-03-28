@@ -1,8 +1,15 @@
 #!/usr/bin/env bun
 
 import { isAbsolute, join, resolve } from 'node:path'
-import type { Grader, GraderResult } from '../src/improve.ts'
-import { loadGrader, loadVerifier, withMetaVerification } from '../src/improve.ts'
+import type { Grader, GraderResult, WorkspaceImprovementPromotionDecision } from '../src/improve.ts'
+import {
+  buildWorkspaceImprovementPromotionPrompt,
+  loadGrader,
+  loadVerifier,
+  WorkspaceImprovementPromotionDecisionSchema,
+  withMetaVerification,
+} from '../src/improve.ts'
+import { runStructuredLlmQuery } from './structured-llm-query.ts'
 
 export type ResearchLaneConfig = {
   key: string
@@ -37,6 +44,7 @@ type AttemptStatusRecord = {
   pid?: number
   piExitCode?: number
   validateExitCode?: number
+  attemptCommit?: string
   error?: string
 }
 
@@ -59,6 +67,7 @@ type AttemptResultRecord = {
   changedPaths: string[]
   disallowedPaths: string[]
   worktreePath: string
+  attemptCommit?: string
 }
 
 type AttemptEvaluationRecord = {
@@ -79,7 +88,17 @@ type EvaluationSummary = {
   bestAttempt?: number
 }
 
+type PromotionSummary = {
+  model: string
+  action: 'promote_one' | 'manual_review' | 'reject_all'
+  selectedAttempt?: number
+  selectedCommit?: string
+  confidence: number
+  reasoning: string
+}
+
 export const MAX_ATTEMPT_RETRIES = 2
+export const PI_WORKTREE_GUARD_EXTENSION_PATH = 'scripts/pi-worktree-guard-extension.ts'
 
 const pathExists = async (path: string): Promise<boolean> => {
   const result = await Bun.$`test -e ${path}`.quiet().nothrow()
@@ -148,7 +167,7 @@ export const parseRunArgs = async (args: string[]) => {
   const laneScriptPath = args[0]
   const command = (args[1] ?? 'run') as 'run' | 'status'
   const defaults = laneScriptPath ? await getLaneConfig(laneScriptPath).catch(() => null) : null
-  let attempts = defaults?.defaultAttempts ?? 15
+  let attempts = defaults?.defaultAttempts ?? 20
   let parallelism = defaults?.defaultParallelism ?? 3
   let runDir: string | null = null
 
@@ -188,6 +207,7 @@ const attemptPiStatePath = (runDir: string, attempt: number) => join(runAttemptD
 const attemptEvaluationPath = (runDir: string, attempt: number) =>
   join(runAttemptDir(runDir, attempt), 'evaluation.json')
 const evaluationSummaryPath = (runDir: string) => join(runDir, 'evaluation-summary.json')
+const promotionSummaryPath = (runDir: string) => join(runDir, 'promotion-summary.json')
 
 const ensureDir = async (path: string) => {
   await Bun.$`mkdir -p ${path}`.quiet()
@@ -290,6 +310,8 @@ const buildPiCommand = async ({
     '--model',
     config.model ?? 'openrouter/minimax/minimax-m2.7',
     '--no-skills',
+    '--extension',
+    resolveWorkspacePath({ workspaceRoot: repoRoot, path: PI_WORKTREE_GUARD_EXTENSION_PATH }),
   ]
 
   for (const skill of config.skills ?? []) {
@@ -309,9 +331,37 @@ ${strategy}`,
   return cmd
 }
 
-const summarizeDiff = async (worktreePath: string) => {
+export const summarizeDiff = async (worktreePath: string) => {
   const diff = await Bun.$`git diff --stat`.cwd(worktreePath).quiet().nothrow()
   return (await diff.text()).trim()
+}
+
+export const commitAttempt = async ({
+  worktreePath,
+  laneKey,
+  attempt,
+}: {
+  worktreePath: string
+  laneKey: string
+  attempt: number
+}) => {
+  const addResult = await Bun.$`git add -A`.cwd(worktreePath).quiet().nothrow()
+  if (addResult.exitCode !== 0) {
+    throw new Error(`git add failed with exit code ${addResult.exitCode}`)
+  }
+
+  const message = `chore(research): capture ${laneKey} attempt ${attempt.toString().padStart(2, '0')}`
+  const commitResult = await Bun.$`git commit -m ${message}`.cwd(worktreePath).quiet().nothrow()
+  if (commitResult.exitCode !== 0) {
+    throw new Error(`git commit failed with exit code ${commitResult.exitCode}`)
+  }
+
+  const revParse = await Bun.$`git rev-parse HEAD`.cwd(worktreePath).quiet().nothrow()
+  if (revParse.exitCode !== 0) {
+    throw new Error(`git rev-parse failed with exit code ${revParse.exitCode}`)
+  }
+
+  return (await revParse.text()).trim()
 }
 
 export const normalizeRepoPath = (path: string) =>
@@ -344,7 +394,7 @@ ${writableRoots.map((path) => `- ${path}`).join('\n')}
 
 Retry with a narrower edit set. Only modify files inside the allowed writable roots.`
 
-const readChangedPaths = async (worktreePath: string) => {
+export const readChangedPaths = async (worktreePath: string) => {
   const diff = await Bun.$`git diff --name-only`.cwd(worktreePath).quiet().nothrow()
   const untracked = await Bun.$`git ls-files --others --exclude-standard`.cwd(worktreePath).quiet().nothrow()
 
@@ -374,6 +424,15 @@ const readAttemptResult = async (runDir: string, attempt: number): Promise<Attem
   return (await file.json()) as AttemptResultRecord
 }
 
+const readAttemptEvaluation = async (runDir: string, attempt: number): Promise<AttemptEvaluationRecord | null> => {
+  const file = Bun.file(attemptEvaluationPath(runDir, attempt))
+  if (!(await file.exists())) {
+    return null
+  }
+
+  return (await file.json()) as AttemptEvaluationRecord
+}
+
 const buildEvaluationInput = ({
   config,
   status,
@@ -398,6 +457,7 @@ const buildEvaluationInput = ({
     retryCount: result.retryCount,
     piExitCode: result.piExitCode,
     validateExitCode: result.validateExitCode,
+    cwd: status.worktreePath,
   },
   cwd: status.worktreePath,
 })
@@ -467,6 +527,107 @@ const evaluateAttempts = async ({
   return summary
 }
 
+export const selectPromotionDecision = async ({
+  repoRoot,
+  runDir,
+  attempts,
+  config,
+}: {
+  repoRoot: string
+  runDir: string
+  attempts: number
+  config: ResearchLaneConfig
+}): Promise<PromotionSummary | null> => {
+  const statuses = await readAttemptStatuses(runDir, attempts)
+  const candidates: Array<{
+    attempt: number
+    commit?: string
+    pass: boolean
+    score: number
+    confidence?: number
+    changedFiles: string[]
+    diffStat: string
+    reasoning?: string
+    worktreePath: string
+  }> = []
+
+  for (const status of statuses) {
+    if (status.status !== 'completed') continue
+    const result = await readAttemptResult(runDir, status.attempt)
+    const evaluation = await readAttemptEvaluation(runDir, status.attempt)
+    if (!result || !evaluation) continue
+    candidates.push({
+      attempt: status.attempt,
+      commit: result.attemptCommit,
+      pass: evaluation.pass,
+      score: evaluation.score,
+      confidence:
+        typeof evaluation.outcome?.metaVerification === 'object' &&
+        evaluation.outcome?.metaVerification &&
+        'confidence' in evaluation.outcome.metaVerification &&
+        typeof evaluation.outcome.metaVerification.confidence === 'number'
+          ? evaluation.outcome.metaVerification.confidence
+          : undefined,
+      changedFiles: result.changedPaths,
+      diffStat: result.diffStat,
+      reasoning: evaluation.reasoning,
+      worktreePath: status.worktreePath,
+    })
+  }
+
+  if (candidates.length === 0) {
+    return null
+  }
+
+  const model = process.env.PLAITED_PROMOTION_MODEL?.trim() || 'z-ai/glm-5'
+  const prompt = buildWorkspaceImprovementPromotionPrompt({
+    lane: config.key,
+    program: config.programPath,
+    attempts: candidates.map(({ worktreePath: _, ...candidate }) => candidate),
+  })
+
+  const result = await runStructuredLlmQuery<WorkspaceImprovementPromotionDecision>({
+    model,
+    prompt,
+    schema: WorkspaceImprovementPromotionDecisionSchema,
+    systemPrompt:
+      'You are selecting a promotion decision across validated workspace-improvement attempts. Be conservative. Prefer manual_review unless one attempt is clearly the best supported choice.',
+    workspaceReadAccess: {
+      workspaceRoot: repoRoot,
+      allowedRoots: [
+        runDir,
+        config.programPath,
+        ...config.writableRoots,
+        ...(config.skills ?? []),
+        ...candidates.map((candidate) => candidate.worktreePath),
+      ],
+      maxToolRounds: 6,
+    },
+  })
+
+  if (!result.ok) {
+    const summary: PromotionSummary = {
+      model,
+      action: 'manual_review',
+      confidence: 0,
+      reasoning: result.reason,
+    }
+    await writeJson(promotionSummaryPath(runDir), summary)
+    return summary
+  }
+
+  const summary: PromotionSummary = {
+    model,
+    action: result.value.action,
+    ...(result.value.selectedAttempt ? { selectedAttempt: result.value.selectedAttempt } : {}),
+    ...(result.value.selectedCommit ? { selectedCommit: result.value.selectedCommit } : {}),
+    confidence: result.value.confidence,
+    reasoning: result.value.reasoning,
+  }
+  await writeJson(promotionSummaryPath(runDir), summary)
+  return summary
+}
+
 const runAttempt = async ({
   repoRoot,
   workspaceRoot,
@@ -499,6 +660,7 @@ const runAttempt = async ({
   let diffStat = ''
   let changedPaths: string[] = []
   let disallowedPaths: string[] = []
+  let attemptCommit: string | undefined
   let errorMessage = ''
   let pid: number | undefined
 
@@ -517,6 +679,7 @@ const runAttempt = async ({
       env: {
         PI_CODING_AGENT_DIR: attemptPiStatePath(runDir, attempt),
         PLAITED_WORKSPACE_ROOT: worktreePath,
+        PLAITED_ALLOWED_WRITABLE_ROOTS: config.writableRoots.join('\n'),
       },
     })
     pid = proc.pid
@@ -567,6 +730,20 @@ ${errorMessage}`
 
     validateExitCode = await validate.exited
     diffStat = await summarizeDiff(worktreePath)
+    if (piExitCode === 0 && validateExitCode === 0 && disallowedPaths.length === 0 && changedPaths.length > 0) {
+      try {
+        attemptCommit = await commitAttempt({
+          worktreePath,
+          laneKey: config.key,
+          attempt,
+        })
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error)
+        validateExitCode = 1
+        errorMessage = `commit=${reason}`
+        break
+      }
+    }
     errorMessage = piExitCode === 0 && validateExitCode === 0 ? '' : `pi=${piExitCode}, validate=${validateExitCode}`
     break
   }
@@ -582,6 +759,7 @@ ${errorMessage}`
     pid,
     piExitCode,
     validateExitCode,
+    ...(attemptCommit ? { attemptCommit } : {}),
     ...(piExitCode === 0 && validateExitCode === 0 && disallowedPaths.length === 0 ? {} : { error: errorMessage }),
   }
 
@@ -596,6 +774,7 @@ ${errorMessage}`
     changedPaths,
     disallowedPaths,
     worktreePath,
+    ...(attemptCommit ? { attemptCommit } : {}),
   })
 }
 
@@ -647,12 +826,14 @@ const main = async () => {
     const manifest = (await manifestFile.json()) as RunManifest
     const statuses = await readAttemptStatuses(effectiveRunDir, manifest.attempts)
     const evaluationFile = Bun.file(evaluationSummaryPath(effectiveRunDir))
+    const promotionFile = Bun.file(promotionSummaryPath(effectiveRunDir))
     console.log(
       JSON.stringify(
         {
           manifest,
           attempts: statuses,
           evaluation: (await evaluationFile.exists()) ? await evaluationFile.json() : null,
+          promotion: (await promotionFile.exists()) ? await promotionFile.json() : null,
         },
         null,
         2,
@@ -734,6 +915,12 @@ const main = async () => {
     attempts,
     config,
   })
+  const promotion = await selectPromotionDecision({
+    repoRoot: workspaceRoot,
+    runDir: effectiveRunDir,
+    attempts,
+    config,
+  })
   console.log(
     JSON.stringify(
       {
@@ -742,6 +929,7 @@ const main = async () => {
         completed: statuses.filter((status) => status.status === 'completed').length,
         failed: statuses.filter((status) => status.status === 'failed').length,
         ...(evaluation ? { evaluation } : {}),
+        ...(promotion ? { promotion } : {}),
       },
       null,
       2,

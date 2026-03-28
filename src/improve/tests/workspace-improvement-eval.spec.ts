@@ -3,8 +3,10 @@ import {
   buildWorkspaceImprovementJudgeInput,
   buildWorkspaceImprovementJudgePrompt,
   buildWorkspaceImprovementMetaVerifierPrompt,
+  buildWorkspaceImprovementPromotionPrompt,
   WorkspaceImprovementJudgeResponseSchema,
   WorkspaceImprovementMetaVerifierResponseSchema,
+  WorkspaceImprovementPromotionDecisionSchema,
 } from '../workspace-improvement-eval.ts'
 
 describe('workspace-improvement-eval', () => {
@@ -46,6 +48,8 @@ describe('workspace-improvement-eval', () => {
     expect(prompt).toContain('Prefer source-backed encoded corpus outputs.')
     expect(prompt).toContain('diff --git a/manifest b/manifest')
     expect(prompt).toContain('dev-research/mss-corpus/encoded/manifest.json')
+    expect(prompt).toContain('Your primary job is to find problems')
+    expect(prompt).toContain('Do not approve eagerly')
   })
 
   test('builds meta-verifier prompt from judge result', () => {
@@ -74,6 +78,8 @@ describe('workspace-improvement-eval', () => {
     expect(prompt).toContain('Prefer compact seed anchors.')
     expect(prompt).toContain('"score": 0.9')
     expect(prompt).toContain('dev-research/mss-seed/seed/mss.jsonld')
+    expect(prompt).toContain('challenge the judgment')
+    expect(prompt).toContain('Prefer skepticism over agreement')
   })
 
   test('parses judge and verifier response schemas', () => {
@@ -95,5 +101,39 @@ describe('workspace-improvement-eval', () => {
         reasoning: 'Supported by changed files and checks.',
       }),
     ).not.toThrow()
+
+    expect(() =>
+      WorkspaceImprovementPromotionDecisionSchema.parse({
+        action: 'promote_one',
+        selectedAttempt: 3,
+        selectedCommit: 'abc123',
+        confidence: 0.85,
+        reasoning: 'Attempt 3 is the clearest winner.',
+      }),
+    ).not.toThrow()
+  })
+
+  test('builds promotion prompt with attempt summaries', () => {
+    const prompt = buildWorkspaceImprovementPromotionPrompt({
+      lane: 'mss-seed',
+      program: 'dev-research/mss-seed/program.md',
+      attempts: [
+        {
+          attempt: 2,
+          commit: 'abc123',
+          pass: true,
+          score: 0.91,
+          confidence: 0.84,
+          changedFiles: ['dev-research/mss-seed/seed/mss.jsonld'],
+          diffStat: '1 file changed',
+          reasoning: 'Strong bounded seed improvement.',
+        },
+      ],
+    })
+
+    expect(prompt).toContain('Select a promotion decision')
+    expect(prompt).toContain('Attempt 2')
+    expect(prompt).toContain('abc123')
+    expect(prompt).toContain('manual review')
   })
 })

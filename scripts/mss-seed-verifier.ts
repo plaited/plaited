@@ -17,6 +17,13 @@ export const getMssSeedJudgeInput = (result: GraderResult): WorkspaceImprovement
 
 export const verify: Verifier = async (result: GraderResult) => {
   const input = getMssSeedJudgeInput(result)
+  const workspaceRoot =
+    typeof result.outcome?.judgeSdk === 'object' &&
+    result.outcome?.judgeSdk &&
+    'workspaceRoot' in result.outcome.judgeSdk &&
+    typeof result.outcome.judgeSdk.workspaceRoot === 'string'
+      ? result.outcome.judgeSdk.workspaceRoot
+      : undefined
   if (!input) {
     return {
       confidence: 0.2,
@@ -32,7 +39,21 @@ export const verify: Verifier = async (result: GraderResult) => {
     }),
     schema: WorkspaceImprovementMetaVerifierResponseSchema,
     systemPrompt:
-      'You are meta-verifying a workspace-improvement judgment. Return strict JSON only. Focus on trustworthiness of the judgment, not re-scoring from scratch.',
+      'You are meta-verifying a workspace-improvement judgment. Return strict JSON only. Be skeptical. Lower confidence unless the judgment is clearly supported by the changed files, checks, output, and reasoning.',
+    workspaceReadAccess: workspaceRoot
+      ? {
+          workspaceRoot,
+          allowedRoots: [
+            'dev-research/mss-seed',
+            'skills/mss',
+            'skills/modnet-node',
+            'skills/modnet-modules',
+            'docs/Structural-IA.md',
+            'docs/Modnet.md',
+            'docs/MODNET-IMPLEMENTATION.md',
+          ],
+        }
+      : undefined,
   })
 
   if (!response.ok) {

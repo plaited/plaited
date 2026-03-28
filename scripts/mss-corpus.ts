@@ -74,7 +74,7 @@ export const RESEARCH_LANE_CONFIG = {
   systemPrompt: MSS_CORPUS_SYSTEM_PROMPT,
   taskPrompt:
     'Improve the mss-corpus lane artifacts. Produce lane-local encoded corpus artifacts that depend on mss-seed anchors rather than raw ad hoc concepts. Do not edit src/tools. Run the lane validator before finishing and summarize what changed.',
-  defaultAttempts: 15,
+  defaultAttempts: 20,
   defaultParallelism: 3,
   evaluation: {
     graderPath: 'scripts/mss-corpus-grader.ts',

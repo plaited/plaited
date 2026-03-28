@@ -30,6 +30,16 @@ export const WorkspaceImprovementMetaVerifierResponseSchema = z.object({
 
 export type WorkspaceImprovementMetaVerifierResponse = z.infer<typeof WorkspaceImprovementMetaVerifierResponseSchema>
 
+export const WorkspaceImprovementPromotionDecisionSchema = z.object({
+  action: z.enum(['promote_one', 'manual_review', 'reject_all']),
+  selectedAttempt: z.number().int().positive().optional(),
+  selectedCommit: z.string().optional(),
+  confidence: z.number().min(0).max(1),
+  reasoning: z.string(),
+})
+
+export type WorkspaceImprovementPromotionDecision = z.infer<typeof WorkspaceImprovementPromotionDecisionSchema>
+
 export const buildWorkspaceImprovementJudgeInput = ({
   task,
   candidateOutput,
@@ -64,6 +74,12 @@ export const buildWorkspaceImprovementJudgePrompt = ({
   input: WorkspaceImprovementJudgeInput
   criteria: string
 }) => `Evaluate this workspace-improvement attempt.
+
+Your primary job is to find problems, missing evidence, regressions, or scope drift.
+Do not approve eagerly. Return pass=true only when the changed files, checks, and candidate
+output provide strong evidence of a real improvement to the target slice.
+Treat empty diffs, weak evidence, support-surface drift, vague summaries, and mismatches
+between changed files and claimed outcomes as failure signals.
 
 Lane-specific criteria:
 ${criteria}
@@ -109,6 +125,11 @@ export const buildWorkspaceImprovementMetaVerifierPrompt = ({
   criteria: string
 }) => `Meta-verify this workspace-improvement judgment.
 
+Your job is to challenge the judgment, not to agree with it by default.
+Lower confidence when the pass/fail decision is weakly supported, when evidence is incomplete,
+or when the reasoning does not match the changed files, checks, or candidate output.
+Prefer skepticism over agreement when support is ambiguous.
+
 Lane-specific criteria:
 ${criteria}
 
@@ -131,6 +152,62 @@ Return JSON with:
 - confidence: 0..1
 - reasoning: string
 
-Use high confidence only when the judgment is well-supported by the changed files, checks, and candidate output.`
+Use high confidence only when the judgment is well-supported by the changed files, checks,
+candidate output, and lane-specific criteria.`
+
+export const buildWorkspaceImprovementPromotionPrompt = ({
+  lane,
+  program,
+  attempts,
+}: {
+  lane: string
+  program: string
+  attempts: Array<{
+    attempt: number
+    commit?: string
+    pass: boolean
+    score: number
+    confidence?: number
+    changedFiles: string[]
+    diffStat: string
+    reasoning?: string
+  }>
+}) => `Select a promotion decision for this workspace-improvement lane.
+
+Your job is to compare the validated attempts and decide whether one attempt should be promoted,
+whether the run needs manual review, or whether all attempts should be rejected.
+Do not choose a winner unless one attempt is clearly better-supported than the others.
+Prefer manual review when the evidence is mixed, confidence is low, or multiple attempts appear
+competitive in different ways.
+
+Lane:
+${lane}
+
+Program:
+${program}
+
+Attempt summaries:
+${attempts
+  .map(
+    (attempt) => `Attempt ${attempt.attempt}
+- commit: ${attempt.commit ?? '(none)'}
+- pass: ${attempt.pass}
+- score: ${attempt.score}
+- confidence: ${attempt.confidence ?? '(none)'}
+- diff stat: ${attempt.diffStat || '(empty)'}
+- changed files:
+${attempt.changedFiles.map((path) => `  - ${path}`).join('\n') || '  - none'}
+- reasoning: ${attempt.reasoning ?? '(none)'}`,
+  )
+  .join('\n\n')}
+
+Return JSON with:
+- action: "promote_one" | "manual_review" | "reject_all"
+- selectedAttempt?: number
+- selectedCommit?: string
+- confidence: 0..1
+- reasoning: string
+
+Choose "promote_one" only when the selected attempt clearly deserves promotion.`
 
 export const toWorkspaceImprovementJudgeOutcome = (outcome?: WorkspaceImprovementJudgeOutcome) => outcome

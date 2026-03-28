@@ -134,9 +134,12 @@ export {
   buildWorkspaceImprovementJudgeInput,
   buildWorkspaceImprovementJudgePrompt,
   buildWorkspaceImprovementMetaVerifierPrompt,
+  buildWorkspaceImprovementPromotionPrompt,
   toWorkspaceImprovementJudgeOutcome,
   type WorkspaceImprovementJudgeResponse,
   WorkspaceImprovementJudgeResponseSchema,
   type WorkspaceImprovementMetaVerifierResponse,
   WorkspaceImprovementMetaVerifierResponseSchema,
+  type WorkspaceImprovementPromotionDecision,
+  WorkspaceImprovementPromotionDecisionSchema,
 } from './improve/workspace-improvement-eval.ts'

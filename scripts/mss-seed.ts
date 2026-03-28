@@ -67,7 +67,7 @@ export const RESEARCH_LANE_CONFIG = {
   systemPrompt: MSS_SEED_SYSTEM_PROMPT,
   taskPrompt:
     'Improve the mss-seed lane artifacts. Produce or refine a compact lane-local seed ontology for downstream corpus encoding. Do not edit src/tools. Run the lane validator before finishing and summarize what changed.',
-  defaultAttempts: 15,
+  defaultAttempts: 20,
   defaultParallelism: 3,
   evaluation: {
     graderPath: 'scripts/mss-seed-grader.ts',

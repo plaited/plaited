@@ -47,6 +47,7 @@ export const buildMssCorpusJudgeInput = ({
   })
 
 export const grade: Grader = async ({ output, metadata }) => {
+  const workspaceRoot = typeof metadata?.cwd === 'string' ? metadata.cwd : undefined
   const input = buildMssCorpusJudgeInput({
     output,
     metadata,
@@ -60,7 +61,24 @@ export const grade: Grader = async ({ output, metadata }) => {
     }),
     schema: WorkspaceImprovementJudgeResponseSchema,
     systemPrompt:
-      'You are judging the quality of a workspace-improvement attempt. Return strict JSON only. Prefer bounded, reviewable lane-local corpus improvements.',
+      'You are evaluating a workspace-improvement attempt. Your first job is to find correctness, scope, and evidence problems. Return strict JSON only. Fail attempts unless the changed files, checks, and output strongly support a bounded lane-local corpus improvement.',
+    workspaceReadAccess: workspaceRoot
+      ? {
+          workspaceRoot,
+          allowedRoots: [
+            'dev-research/mss-corpus',
+            'dev-research/mss-corpus/program.md',
+            'dev-research/mss-seed',
+            'skills/mss',
+            'skills/modnet-node',
+            'skills/modnet-modules',
+            'skills/hypergraph-memory',
+            'docs/Structural-IA.md',
+            'docs/Modnet.md',
+            'docs/MODNET-IMPLEMENTATION.md',
+          ],
+        }
+      : undefined,
   })
 
   if (!result.ok) {
@@ -73,6 +91,7 @@ export const grade: Grader = async ({ output, metadata }) => {
         judgeKind: 'workspace-improvement',
         judgeSdk: {
           judgeInput: input,
+          ...(workspaceRoot ? { workspaceRoot } : {}),
         },
       },
     }
@@ -85,6 +104,7 @@ export const grade: Grader = async ({ output, metadata }) => {
       judgeSdk: {
         ...(result.value.outcome?.judgeSdk ?? {}),
         judgeInput: input,
+        ...(workspaceRoot ? { workspaceRoot } : {}),
       },
     },
   }

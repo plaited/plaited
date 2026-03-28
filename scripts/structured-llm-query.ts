@@ -1,3 +1,7 @@
+import { isAbsolute, join, normalize } from 'node:path'
+import { z } from 'zod'
+import { ReadFileConfigSchema } from '../src/tools/crud.schemas.ts'
+import { readFile } from '../src/tools/crud.ts'
 import { extractFirstJsonObject, extractTaggedJsonObject } from './json-extract.ts'
 import { buildOpenRouterHeaders, extractOpenRouterText } from './openrouter-adapter.ts'
 
@@ -12,6 +16,14 @@ type OpenRouterResponse = {
   choices?: Array<{
     message?: {
       content?: string | Array<{ type?: string; text?: string }>
+      tool_calls?: Array<{
+        id?: string
+        type?: string
+        function?: {
+          name?: string
+          arguments?: string
+        }
+      }>
     }
   }>
   usage?: {
@@ -21,6 +33,41 @@ type OpenRouterResponse = {
   }
   model?: string
 }
+
+type StructuredLlmToolMessage =
+  | { role: 'system' | 'user'; content: string }
+  | {
+      role: 'assistant'
+      content: string | null
+      tool_calls: Array<{
+        id: string
+        type: 'function'
+        function: {
+          name: string
+          arguments: string
+        }
+      }>
+    }
+  | {
+      role: 'tool'
+      tool_call_id: string
+      content: string
+    }
+
+export type WorkspaceReadAccess = {
+  workspaceRoot: string
+  allowedRoots: string[]
+  maxToolRounds?: number
+}
+
+const READ_FILE_TOOL = {
+  type: 'function',
+  function: {
+    name: 'read_file',
+    description: 'Read a text file from the allowed workspace roots.',
+    parameters: z.toJSONSchema(ReadFileConfigSchema),
+  },
+} as const
 
 export const extractStructuredJsonObject = (value: string): string => {
   const fenced = value.match(/```json\s*([\s\S]*?)```/u)
@@ -41,18 +88,59 @@ export const resolvePrimaryJudgeModel = (): string =>
 export const resolveMetaVerifierModel = (): string =>
   process.env.PLAITED_META_VERIFIER_MODEL?.trim() || DEFAULT_META_VERIFIER_MODEL
 
+export const normalizeFsPath = (path: string) => normalize(path).replaceAll('\\', '/')
+
+const resolveWithinWorkspace = ({ workspaceRoot, path }: { workspaceRoot: string; path: string }) =>
+  normalizeFsPath(isAbsolute(path) ? path : join(workspaceRoot, path))
+
+export const isAllowedReadPath = ({
+  workspaceRoot,
+  allowedRoots,
+  path,
+}: {
+  workspaceRoot: string
+  allowedRoots: string[]
+  path: string
+}) => {
+  const resolvedPath = resolveWithinWorkspace({ workspaceRoot, path })
+  const resolvedRoots = allowedRoots.map((root) => resolveWithinWorkspace({ workspaceRoot, path: root }))
+  return resolvedRoots.some((root) => resolvedPath === root || resolvedPath.startsWith(`${root}/`))
+}
+
+const executeReadTool = async ({
+  workspaceRoot,
+  allowedRoots,
+  args,
+}: {
+  workspaceRoot: string
+  allowedRoots: string[]
+  args: unknown
+}) => {
+  const parsed = ReadFileConfigSchema.parse(args)
+  if (!isAllowedReadPath({ workspaceRoot, allowedRoots, path: parsed.path })) {
+    throw new Error(`read_file path is outside allowed roots: ${parsed.path}`)
+  }
+
+  return readFile(parsed, {
+    workspace: workspaceRoot,
+    signal: AbortSignal.timeout(5000),
+  })
+}
+
 export const runStructuredLlmQuery = async <T>({
   model,
   prompt,
   schema,
   systemPrompt = DEFAULT_JSON_SYSTEM_PROMPT,
   validationRetries = DEFAULT_VALIDATION_RETRIES,
+  workspaceReadAccess,
 }: {
   model: string
   prompt: string
   schema: unknown
   systemPrompt?: string
   validationRetries?: number
+  workspaceReadAccess?: WorkspaceReadAccess
 }): Promise<
   { ok: true; value: T; meta?: Record<string, unknown> } | { ok: false; reason: string; meta?: Record<string, unknown> }
 > => {
@@ -60,57 +148,130 @@ export const runStructuredLlmQuery = async <T>({
 
   while (attempt <= validationRetries) {
     try {
-      const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
-        method: 'POST',
-        headers: buildOpenRouterHeaders(),
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: prompt },
-          ],
-          response_format: {
-            type: 'json_schema',
-            json_schema: {
-              name: 'plaited_structured_output',
-              strict: true,
-              schema,
-            },
-          },
-        }),
-      })
+      const messages: StructuredLlmToolMessage[] = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: prompt },
+      ]
+      const maxToolRounds = workspaceReadAccess?.maxToolRounds ?? 4
+      let payload: (OpenRouterResponse & { error?: { message?: string } }) | null = null
+      let response: Response | null = null
+      let toolRounds = 0
 
-      const payload = (await response.json()) as OpenRouterResponse & { error?: { message?: string } }
-      if (!response.ok) {
-        const message =
-          typeof payload.error?.message === 'string'
-            ? payload.error.message
-            : `${response.status} ${response.statusText}`
-        return {
-          ok: false,
-          reason: message,
-          meta: {
-            source: 'openrouter-api',
+      while (true) {
+        response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+          method: 'POST',
+          headers: buildOpenRouterHeaders(),
+          body: JSON.stringify({
             model,
-            status: response.status,
-            attempt: attempt + 1,
-          },
+            messages,
+            ...(workspaceReadAccess ? { tools: [READ_FILE_TOOL] } : {}),
+            response_format: {
+              type: 'json_schema',
+              json_schema: {
+                name: 'plaited_structured_output',
+                strict: true,
+                schema,
+              },
+            },
+          }),
+        })
+
+        payload = (await response.json()) as OpenRouterResponse & { error?: { message?: string } }
+        if (!response.ok) {
+          const message =
+            typeof payload.error?.message === 'string'
+              ? payload.error.message
+              : `${response.status} ${response.statusText}`
+          return {
+            ok: false,
+            reason: message,
+            meta: {
+              source: 'openrouter-api',
+              model,
+              status: response.status,
+              attempt: attempt + 1,
+            },
+          }
         }
+
+        const message = payload.choices?.[0]?.message
+        const toolCalls = message?.tool_calls ?? []
+        if (!workspaceReadAccess || toolCalls.length === 0) {
+          break
+        }
+
+        if (toolRounds >= maxToolRounds) {
+          return {
+            ok: false,
+            reason: 'Structured LLM query exceeded tool-calling round limit.',
+            meta: {
+              source: 'openrouter-api',
+              model,
+              attempt: attempt + 1,
+              toolRounds,
+            },
+          }
+        }
+
+        messages.push({
+          role: 'assistant',
+          content: typeof message?.content === 'string' ? message.content : null,
+          tool_calls: toolCalls.map((toolCall, index) => ({
+            id: toolCall.id ?? `tool_${toolRounds}_${index}`,
+            type: 'function',
+            function: {
+              name: toolCall.function?.name ?? 'unknown',
+              arguments: toolCall.function?.arguments ?? '{}',
+            },
+          })),
+        })
+
+        for (const toolCall of toolCalls) {
+          const name = toolCall.function?.name ?? ''
+          if (name !== 'read_file') {
+            return {
+              ok: false,
+              reason: `Unsupported tool requested by model: ${name || 'unknown'}`,
+              meta: {
+                source: 'openrouter-api',
+                model,
+                attempt: attempt + 1,
+              },
+            }
+          }
+
+          const argumentsText = toolCall.function?.arguments ?? '{}'
+          const parsedArguments = JSON.parse(argumentsText) as unknown
+          const toolResult = await executeReadTool({
+            workspaceRoot: workspaceReadAccess.workspaceRoot,
+            allowedRoots: workspaceReadAccess.allowedRoots,
+            args: parsedArguments,
+          })
+
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id ?? `tool_${toolRounds}`,
+            content: JSON.stringify(toolResult),
+          })
+        }
+
+        toolRounds += 1
       }
 
-      const text = extractOpenRouterText(payload)
+      const text = extractOpenRouterText(payload as OpenRouterResponse)
       return {
         ok: true,
         value: JSON.parse(extractStructuredJsonObject(text)) as T,
         meta: {
           source: 'openrouter-api',
-          model: payload.model ?? model,
-          totalCostUsd: typeof payload.usage?.cost === 'number' ? payload.usage.cost : 0,
+          model: payload?.model ?? model,
+          totalCostUsd: typeof payload?.usage?.cost === 'number' ? payload.usage.cost : 0,
           usage: {
-            promptTokens: payload.usage?.prompt_tokens ?? 0,
-            completionTokens: payload.usage?.completion_tokens ?? 0,
+            promptTokens: payload?.usage?.prompt_tokens ?? 0,
+            completionTokens: payload?.usage?.completion_tokens ?? 0,
           },
           attempt: attempt + 1,
+          toolRounds,
         },
       }
     } catch (error) {

@@ -15,6 +15,7 @@ describe('mss eval builders', () => {
         diffStat: '1 file changed',
         piExitCode: 0,
         validateExitCode: 0,
+        cwd: '/tmp/mss-seed-attempt',
       },
     })
 
@@ -30,6 +31,7 @@ describe('mss eval builders', () => {
       metadata: {
         changedPaths: ['dev-research/mss-corpus/encoded/manifest.json'],
         diffStat: '1 file changed',
+        cwd: '/tmp/mss-corpus-attempt',
       },
     })
 
@@ -93,6 +95,7 @@ describe('mss eval builders', () => {
         outcome: {
           judgeSdk: {
             judgeInput: seedInput,
+            workspaceRoot: '/tmp/mss-seed-attempt',
           },
         },
       }),
@@ -105,6 +108,7 @@ describe('mss eval builders', () => {
         outcome: {
           judgeSdk: {
             judgeInput: corpusInput,
+            workspaceRoot: '/tmp/mss-corpus-attempt',
           },
         },
       }),
