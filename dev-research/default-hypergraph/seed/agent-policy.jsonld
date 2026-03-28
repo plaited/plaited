@@ -3,6 +3,7 @@
   "@type": "Skill",
   "source": "dev-research/default-hypergraph/seed/agent-policy.jsonld",
   "layer": "seed",
+  "description": "Agent knowledge states, actions, and safety policies for uncertainty and unsupported claims",
   "provides": [
     {
       "@id": "agent:state/uncertain",
@@ -11,6 +12,66 @@
     {
       "@id": "agent:state/evidence-required",
       "@type": "State"
+    },
+    {
+      "@id": "agent:state/local-tool-sufficient",
+      "@type": "State",
+      "description": "Confidence threshold met by local tools or symbolic state. No retrieval or web search needed."
+    },
+    {
+      "@id": "agent:state/memory-useful",
+      "@type": "State",
+      "description": "Symbolic hypergraph recall is preferred when the query is structural or requires decision provenance."
+    },
+    {
+      "@id": "agent:state/unsupported-claim",
+      "@type": "State",
+      "description": "Claim detected without sufficient evidence or provenance"
+    },
+    {
+      "@id": "agent:state/claim-verified",
+      "@type": "State",
+      "description": "Claim has been verified against evidence"
+    },
+    {
+      "@id": "agent:state/claim-falsified",
+      "@type": "State",
+      "description": "Claim has been contradicted by evidence"
+    },
+    {
+      "@id": "agent:state/claim-unverified",
+      "@type": "State",
+      "description": "Claim lacks sufficient evidence to determine veracity"
+    },
+    {
+      "@id": "agent:uncertainty/low",
+      "@type": "Concept",
+      "description": "Sufficient evidence exists, high confidence in claim"
+    },
+    {
+      "@id": "agent:uncertainty/medium",
+      "@type": "Concept",
+      "description": "Partial evidence exists, confidence threshold not met"
+    },
+    {
+      "@id": "agent:uncertainty/high",
+      "@type": "Concept",
+      "description": "No evidence or conflicting evidence, low confidence"
+    },
+    {
+      "@id": "agent:evidence/present",
+      "@type": "Concept",
+      "description": "Evidence exists and is accessible"
+    },
+    {
+      "@id": "agent:evidence/absent",
+      "@type": "Concept",
+      "description": "No evidence found or accessible"
+    },
+    {
+      "@id": "agent:evidence/conflicting",
+      "@type": "Concept",
+      "description": "Evidence contradicts the claim"
     },
     {
       "@id": "agent:action/hypergraph-recall",
@@ -29,9 +90,20 @@
       "@type": "Action"
     },
     {
+      "@id": "agent:action/flag-uncertainty",
+      "@type": "Action",
+      "description": "Mark statement as uncertain when confidence threshold not met"
+    },
+    {
+      "@id": "agent:action/trace-claim",
+      "@type": "Action",
+      "description": "Track claim provenance and evidence chain"
+    },
+    {
       "@id": "agent:policy/prefer-symbolic-state",
       "@type": "Policy",
-      "references": ["agent:state/uncertain", "agent:action/hypergraph-recall"]
+      "references": ["agent:state/uncertain", "agent:action/hypergraph-recall"],
+      "description": "Prefer symbolic graph state over raw recall or speculation when uncertainty is active."
     },
     {
       "@id": "agent:policy/search-when-unknown",
@@ -46,7 +118,38 @@
     {
       "@id": "agent:policy/stop-unsupported-claims",
       "@type": "Policy",
-      "references": ["agent:state/evidence-required", "agent:action/stop"]
+      "references": ["agent:state/evidence-required", "agent:action/stop"],
+      "description": "Do not emit or propagate claims without sufficient evidence"
+    },
+    {
+      "@id": "agent:policy/trace-all-claims",
+      "@type": "Policy",
+      "references": ["agent:action/trace-claim", "agent:state/claim-unverified"],
+      "description": "Track provenance of all emitted claims for accountability"
+    },
+    {
+      "@id": "agent:policy/threshold-before-assertion",
+      "@type": "Policy",
+      "references": ["agent:uncertainty/low", "agent:state/evidence-required"],
+      "description": "Only assert claims when uncertainty is low and evidence is present"
+    },
+    {
+      "@id": "agent:policy/flag-rather-than-falsify",
+      "@type": "Policy",
+      "references": ["agent:state/claim-unverified", "agent:action/flag-uncertainty"],
+      "description": "When evidence is absent, flag uncertainty rather than asserting false"
+    },
+    {
+      "@id": "agent:policy/recall-via-hypergraph",
+      "@type": "Policy",
+      "references": ["agent:state/memory-useful", "agent:action/hypergraph-recall"],
+      "description": "Use hypergraph queries for structural memory lookups and provenance-shaped recall."
+    },
+    {
+      "@id": "agent:policy/local-tool-when-confident",
+      "@type": "Policy",
+      "references": ["agent:state/local-tool-sufficient", "agent:action/local-tool"],
+      "description": "When local tools or symbolic state can resolve the query, skip external retrieval and web search."
     }
   ],
   "requires": [

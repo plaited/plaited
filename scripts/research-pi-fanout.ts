@@ -272,10 +272,12 @@ Retry with a narrower edit set. Only modify files inside the allowed writable ro
 
 const readChangedPaths = async (worktreePath: string) => {
   const diff = await Bun.$`git diff --name-only`.cwd(worktreePath).quiet().nothrow()
-  return (await diff.text())
-    .split('\n')
+  const untracked = await Bun.$`git ls-files --others --exclude-standard`.cwd(worktreePath).quiet().nothrow()
+
+  return [...(await diff.text()).split('\n'), ...(await untracked.text()).split('\n')]
     .map((line) => line.trim())
     .filter(Boolean)
+    .filter((path, index, paths) => paths.indexOf(path) === index)
 }
 
 const readAttemptStatuses = async (runDir: string, attempts: number) => {

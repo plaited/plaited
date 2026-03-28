@@ -3,22 +3,444 @@
   "@type": "Skill",
   "source": "dev-research/default-hypergraph/seed/decomposition.jsonld",
   "layer": "seed",
+  "description": "Decomposition patterns with safety-aware fanout: triggers, strategies, merge policies, and uncertainty handling",
   "provides": [
     {
       "@id": "agent:policy/single-path",
-      "@type": "Policy"
+      "@type": "Policy",
+      "description": "Proceed with single path when decision criteria are satisfied"
     },
     {
       "@id": "agent:policy/fanout",
-      "@type": "Policy"
+      "@type": "Policy",
+      "description": "Explore multiple paths concurrently when criteria require verification"
     },
     {
       "@id": "agent:policy/merge-winner",
-      "@type": "Policy"
+      "@type": "Policy",
+      "description": "Select winner from merge results based on merge strategy"
     },
     {
       "@id": "agent:policy/request-review",
-      "@type": "Policy"
+      "@type": "Policy",
+      "description": "Escalate to human review when automated decision is uncertain"
+    },
+    {
+      "@id": "agent:policy/safety-constraint",
+      "@type": "Policy",
+      "description": "Safety constraints compose additively and may block decomposition outcomes."
+    },
+    {
+      "@id": "agent:policy/boundary-constraint",
+      "@type": "Policy",
+      "references": ["mss:boundary"],
+      "description": "Boundary constraints enforce data sovereignty at module boundaries during decomposition."
+    },
+    {
+      "@id": "agent:policy/branch-isolation",
+      "@type": "Policy",
+      "description": "Fanout branches should not share mutable state",
+      "references": ["decomp:branch/isolated"]
+    },
+    {
+      "@id": "agent:policy/abort-partial-on-violation",
+      "@type": "Policy",
+      "description": "Abort entire fanout when any branch encounters boundary violation",
+      "references": ["boundary:violation/detected", "decomp:failure/boundary-violation"]
+    },
+    {
+      "@id": "agent:state/evidence-required",
+      "@type": "State"
+    },
+    {
+      "@id": "agent:state/uncertain",
+      "@type": "State"
+    },
+    {
+      "@id": "agent:state/decomposing",
+      "@type": "State"
+    },
+    {
+      "@id": "agent:state/fanout-active",
+      "@type": "State"
+    },
+    {
+      "@id": "agent:state/merging",
+      "@type": "State"
+    },
+    {
+      "@id": "agent:state/single-path-selected",
+      "@type": "State"
+    },
+    {
+      "@id": "agent:state/merge-failed",
+      "@type": "State"
+    },
+    {
+      "@id": "agent:state/unsupported-claim",
+      "@type": "State"
+    },
+    {
+      "@id": "agent:state/single-path-failed",
+      "@type": "State",
+      "description": "Single-path attempt failed, may trigger fanout as fallback"
+    },
+    {
+      "@id": "agent:state/merge-conflict",
+      "@type": "State",
+      "description": "Merge produced conflicting results requiring resolution"
+    },
+    {
+      "@id": "agent:action/web-search",
+      "@type": "Action"
+    },
+    {
+      "@id": "agent:action/ask-human",
+      "@type": "Action"
+    },
+    {
+      "@id": "agent:action/stop",
+      "@type": "Action"
+    },
+    {
+      "@id": "agent:action/select-path",
+      "@type": "Action",
+      "description": "Select and commit to a single execution path"
+    },
+    {
+      "@id": "agent:action/abort-branch",
+      "@type": "Action",
+      "description": "Terminate a specific fanout branch early"
+    },
+    {
+      "@id": "agent:action/abort-fanout",
+      "@type": "Action",
+      "description": "Terminate all fanout branches and fall back"
+    },
+    {
+      "@id": "decomp:strategy/parallel",
+      "@type": "Concept",
+      "description": "Fanout branches execute concurrently, results merged after all complete"
+    },
+    {
+      "@id": "decomp:strategy/sequential",
+      "@type": "Concept",
+      "description": "Fanout branches execute one after another, each can influence next"
+    },
+    {
+      "@id": "decomp:strategy/recursive",
+      "@type": "Concept",
+      "description": "Decompose until atomic tasks reached, results compose upward"
+    },
+    {
+      "@id": "decomp:strategy/hierarchical",
+      "@type": "Concept",
+      "description": "Fixed-depth decomposition with parent-child coordination"
+    },
+    {
+      "@id": "decomp:strategy/conditional",
+      "@type": "Concept",
+      "description": "Decomposition strategy depends on conditions: single-path when confident, fanout when uncertain"
+    },
+    {
+      "@id": "agent:pattern/fanout-batch-search",
+      "@type": "Pattern",
+      "description": "Fanout decomposition where one prompt becomes multiple parallel candidate searches or sub-queries."
+    },
+    {
+      "@id": "agent:pattern/merge-selection",
+      "@type": "Pattern",
+      "description": "Deterministic or ranked winner selection after fanout completes."
+    },
+    {
+      "@id": "decomp:branch/isolated",
+      "@type": "Concept",
+      "description": "Fanout branch has no shared mutable state with other branches"
+    },
+    {
+      "@id": "decomp:branch/ephemeral",
+      "@type": "Concept",
+      "description": "Fanout branch state is discarded after merge unless explicitly preserved"
+    },
+    {
+      "@id": "decomp:limit/max-branches",
+      "@type": "Concept",
+      "description": "Upper bound on concurrent fanout branches"
+    },
+    {
+      "@id": "decomp:limit/max-depth",
+      "@type": "Concept",
+      "description": "Upper bound on decomposition recursion depth"
+    },
+    {
+      "@id": "decomp:limit/budget",
+      "@type": "Concept",
+      "description": "Resource constraint (tokens, time, cost) for decomposition"
+    },
+    {
+      "@id": "decomp:limit/branch-timeout",
+      "@type": "Concept",
+      "description": "Maximum time a single fanout branch may run before timeout"
+    },
+    {
+      "@id": "decomp:limit/merge-timeout",
+      "@type": "Concept",
+      "description": "Maximum time for merge operation before partial fallback"
+    },
+    {
+      "@id": "decomp:merge/winner-takes-all",
+      "@type": "Concept",
+      "description": "Select highest-confidence result, discard others"
+    },
+    {
+      "@id": "decomp:merge/consensus",
+      "@type": "Concept",
+      "description": "Select result with most agreement across branches"
+    },
+    {
+      "@id": "decomp:merge/confidence-weighted",
+      "@type": "Concept",
+      "description": "Weight-merge results by per-branch confidence scores"
+    },
+    {
+      "@id": "decomp:merge/priority",
+      "@type": "Concept",
+      "description": "Predefined priority ordering selects winner"
+    },
+    {
+      "@id": "decomp:merge/union",
+      "@type": "Concept",
+      "description": "Merge all non-conflicting results, flag conflicts"
+    },
+    {
+      "@id": "decomp:merge/partial",
+      "@type": "Concept",
+      "description": "Return partial results when full merge fails"
+    },
+    {
+      "@id": "decomp:merge/delegated",
+      "@type": "Concept",
+      "description": "Delegate merge decision to human reviewer"
+    },
+    {
+      "@id": "decomp:conflict/direct",
+      "@type": "Concept",
+      "description": "Branches produced explicitly contradictory results"
+    },
+    {
+      "@id": "decomp:conflict/inconsistent",
+      "@type": "Concept",
+      "description": "Results are logically inconsistent even if not directly contradictory"
+    },
+    {
+      "@id": "decomp:conflict/partial-overlap",
+      "@type": "Concept",
+      "description": "Results partially agree and partially conflict"
+    },
+    {
+      "@id": "decomp:conflict/resolve-by-confidence",
+      "@type": "Policy",
+      "references": ["decomp:conflict/direct", "decomp:merge/confidence-weighted"],
+      "description": "On direct conflict, resolve by highest confidence"
+    },
+    {
+      "@id": "decomp:conflict/flag-on-inconsistency",
+      "@type": "Policy",
+      "references": ["decomp:conflict/inconsistent", "agent:action/stop"],
+      "description": "Flag inconsistency as error rather than silently merging"
+    },
+    {
+      "@id": "decomp:tie/first-available",
+      "@type": "Concept",
+      "description": "On tie, select the result that completed first"
+    },
+    {
+      "@id": "decomp:tie/random",
+      "@type": "Concept",
+      "description": "On tie, select randomly (with seed for reproducibility)"
+    },
+    {
+      "@id": "decomp:tie/ask-human",
+      "@type": "Concept",
+      "description": "On tie, escalate to human for resolution"
+    },
+    {
+      "@id": "decomp:tie/lowest-cost",
+      "@type": "Concept",
+      "description": "On tie, select the lowest-cost result"
+    },
+    {
+      "@id": "decomp:criteria/confidence",
+      "@type": "Concept",
+      "description": "Single-path decision based on confidence threshold"
+    },
+    {
+      "@id": "decomp:criteria/cost",
+      "@type": "Concept",
+      "description": "Single-path decision based on resource cost tradeoff"
+    },
+    {
+      "@id": "decomp:criteria/entropy",
+      "@type": "Concept",
+      "description": "Single-path decision when uncertainty is below threshold"
+    },
+    {
+      "@id": "decomp:criteria/atomicity",
+      "@type": "Concept",
+      "description": "Single-path when subtasks must be atomic/sequential"
+    },
+    {
+      "@id": "decomp:criteria/reversibility",
+      "@type": "Concept",
+      "description": "Single-path when decision can be reversed if wrong"
+    },
+    {
+      "@id": "decomp:criteria/low-stakes",
+      "@type": "Concept",
+      "description": "Single-path when failure has low impact"
+    },
+    {
+      "@id": "decomp:criteria/evidence-sufficient",
+      "@type": "Concept",
+      "description": "Single-path when existing evidence meets threshold",
+      "references": ["agent:state/evidence-required"]
+    },
+    {
+      "@id": "decomp:criteria/time-sensitive",
+      "@type": "Concept",
+      "description": "Single-path when time constraints prevent fanout"
+    },
+    {
+      "@id": "decomp:failure/timeout",
+      "@type": "Concept",
+      "description": "Branch exceeded time/budget limit"
+    },
+    {
+      "@id": "decomp:failure/contradiction",
+      "@type": "Concept",
+      "description": "Branches produced mutually exclusive results"
+    },
+    {
+      "@id": "decomp:failure/incomplete",
+      "@type": "Concept",
+      "description": "Some branches did not complete"
+    },
+    {
+      "@id": "decomp:failure/boundary-violation",
+      "@type": "Concept",
+      "description": "Branch attempted unauthorized boundary crossing",
+      "references": ["boundary:violation/detected"]
+    },
+    {
+      "@id": "decomp:failure/depth-exceeded",
+      "@type": "Concept",
+      "description": "Decomposition exceeded maximum depth limit"
+    },
+    {
+      "@id": "decomp:failure/branch-limit-exceeded",
+      "@type": "Concept",
+      "description": "Branching exceeded maximum concurrent limit"
+    },
+    {
+      "@id": "decomp:failure/merge-timeout",
+      "@type": "Concept",
+      "description": "Merge operation exceeded time budget"
+    },
+    {
+      "@id": "decomp:failure/cascade",
+      "@type": "Policy",
+      "references": ["decomp:failure/timeout", "agent:state/merge-failed"],
+      "description": "Branch timeout triggers merge failure state"
+    },
+    {
+      "@id": "decomp:failure/abort-all",
+      "@type": "Policy",
+      "references": ["decomp:failure/boundary-violation", "agent:action/abort-fanout"],
+      "description": "Boundary violation in any branch aborts all fanout"
+    },
+    {
+      "@id": "decomp:trigger/high-uncertainty",
+      "@type": "Concept",
+      "references": ["agent:state/uncertain", "agent:policy/fanout"],
+      "description": "Use fanout when uncertainty exceeds threshold"
+    },
+    {
+      "@id": "decomp:trigger/multiple-valid",
+      "@type": "Concept",
+      "references": ["agent:policy/fanout"],
+      "description": "Use fanout when multiple valid approaches exist"
+    },
+    {
+      "@id": "decomp:trigger/risk-mitigation",
+      "@type": "Concept",
+      "references": ["agent:policy/fanout"],
+      "description": "Use fanout to explore alternatives before committing"
+    },
+    {
+      "@id": "decomp:trigger/unsupported-claim",
+      "@type": "Concept",
+      "references": ["agent:state/unsupported-claim", "agent:policy/fanout"],
+      "description": "Use fanout to verify unsupported claims before propagation"
+    },
+    {
+      "@id": "decomp:trigger/single-path-failed",
+      "@type": "Concept",
+      "references": ["agent:state/single-path-failed", "agent:policy/fanout"],
+      "description": "Fanout as fallback when single-path decision failed"
+    },
+    {
+      "@id": "decomp:trigger/evidence-gap",
+      "@type": "Concept",
+      "references": ["agent:state/evidence-required", "agent:policy/fanout"],
+      "description": "Fanout to gather evidence when gap detected"
+    },
+    {
+      "@id": "decomp:prefer/single-path-over-fanout",
+      "@type": "Policy",
+      "references": ["decomp:criteria/confidence", "decomp:criteria/cost"],
+      "description": "Prefer single-path when confidence is high or cost is constrained"
+    },
+    {
+      "@id": "decomp:prefer/fanout-over-single-path",
+      "@type": "Policy",
+      "references": ["decomp:trigger/high-uncertainty", "decomp:trigger/risk-mitigation"],
+      "description": "Prefer fanout when uncertainty is high or risk must be explored"
+    },
+    {
+      "@id": "decomp:prefer/fanout-when-evidence-required",
+      "@type": "Policy",
+      "references": ["agent:state/evidence-required", "decomp:trigger/evidence-gap"],
+      "description": "Fanout when evidence is explicitly required before proceeding"
+    },
+    {
+      "@id": "decomp:prefer/single-path-for-atomic",
+      "@type": "Policy",
+      "references": ["decomp:criteria/atomicity"],
+      "description": "Single-path when tasks cannot be parallelized"
+    },
+    {
+      "@id": "decomp:policy/abort-on-boundary-violation",
+      "@type": "Policy",
+      "references": ["decomp:failure/boundary-violation", "agent:action/stop"],
+      "description": "Abort fanout branch immediately on boundary violation"
+    },
+    {
+      "@id": "decomp:policy/abort-on-depth-exceeded",
+      "@type": "Policy",
+      "references": ["decomp:failure/depth-exceeded", "agent:action/stop"],
+      "description": "Abort decomposition when depth limit exceeded"
+    },
+    {
+      "@id": "decomp:policy/partial-on-merge-timeout",
+      "@type": "Policy",
+      "references": ["decomp:failure/merge-timeout", "decomp:merge/partial"],
+      "description": "Return partial results when merge times out"
+    },
+    {
+      "@id": "decomp:policy/single-to-fanout-fallback",
+      "@type": "Policy",
+      "references": ["agent:state/single-path-failed", "agent:policy/fanout"],
+      "description": "Automatically transition to fanout when single-path fails"
     },
     {
       "@id": "bp:thread/search-gate",
@@ -34,11 +456,61 @@
       "@id": "bp:thread/fanout-selection",
       "@type": "Thread",
       "references": ["agent:policy/fanout", "agent:policy/merge-winner"]
+    },
+    {
+      "@id": "bp:thread/single-path-selection",
+      "@type": "Thread",
+      "references": ["agent:policy/single-path", "decomp:criteria/confidence"]
+    },
+    {
+      "@id": "bp:thread/merge-coordination",
+      "@type": "Thread",
+      "references": ["agent:state/merging", "decomp:merge/winner-takes-all", "decomp:failure/contradiction"]
+    },
+    {
+      "@id": "bp:thread/safety-fanout",
+      "@type": "Thread",
+      "references": ["decomp:trigger/unsupported-claim", "agent:policy/fanout", "decomp:policy/abort-on-boundary-violation"],
+      "description": "bThread for safety-aware fanout that aborts on boundary violation"
+    },
+    {
+      "@id": "bp:thread/single-to-fanout-transition",
+      "@type": "Thread",
+      "references": ["agent:state/single-path-failed", "decomp:trigger/single-path-failed", "agent:policy/fanout"],
+      "description": "bThread for transitioning from failed single-path to fanout"
+    },
+    {
+      "@id": "bp:thread/merge-conflict-resolution",
+      "@type": "Thread",
+      "references": ["agent:state/merge-conflict", "decomp:conflict/resolve-by-confidence", "decomp:tie/ask-human"],
+      "description": "bThread for resolving merge conflicts"
+    },
+    {
+      "@id": "bp:thread/confidence-gated-single-path",
+      "@type": "Thread",
+      "references": ["decomp:criteria/confidence", "decomp:criteria/evidence-sufficient", "agent:state/single-path-selected"],
+      "description": "bThread for confidence-gated single-path selection"
+    },
+    {
+      "@id": "bp:thread/fanout-branch-isolation",
+      "@type": "Thread",
+      "references": ["decomp:branch/isolated", "decomp:branch/ephemeral", "agent:policy/branch-isolation"],
+      "description": "bThread ensuring fanout branch isolation"
+    },
+    {
+      "@id": "bp:thread/parallel-fanout-timeout",
+      "@type": "Thread",
+      "references": ["decomp:strategy/parallel", "decomp:limit/branch-timeout", "decomp:failure/timeout"],
+      "description": "bThread handling parallel fanout with timeout enforcement"
     }
   ],
   "requires": [
     {
       "@id": "skill://default-hypergraph-agent-policy",
+      "@type": "Skill"
+    },
+    {
+      "@id": "skill://default-hypergraph-boundary-safety",
       "@type": "Skill"
     }
   ]

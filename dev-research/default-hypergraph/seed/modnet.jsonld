@@ -7,12 +7,19 @@
     {
       "@id": "modnet:composition/parent-child",
       "@type": "Concept",
-      "references": ["mss:scale", "mss:scale/relative"]
+      "references": ["mss:scale", "mss:scale/relative"],
+      "description": "Parent-child composition uses scale as the primary nesting key."
     },
     {
       "@id": "modnet:composition/auto-group",
       "@type": "Concept",
-      "references": ["mss:content-type"]
+      "references": ["mss:content-type"],
+      "description": "Heuristic tendency, not a universal law. Agents may align, keep distinct, or generate intermediate views."
+    },
+    {
+      "@id": "modnet:composition/auto-promote",
+      "@type": "Concept",
+      "description": "Heuristic tendency, not a universal law. Scale or content promotion may be rejected based on boundary or intent."
     },
     {
       "@id": "modnet:boundary/ask",
@@ -33,6 +40,16 @@
       "@id": "modnet:mechanic/share",
       "@type": "Concept",
       "references": ["mss:mechanics/share"]
+    },
+    {
+      "@id": "modnet:assembly/scale-nesting",
+      "@type": "Concept",
+      "description": "Modnet assembly follows MSS scale nesting: scale N contains scales below N and is contained by scales above N."
+    },
+    {
+      "@id": "modnet:assembly/boundary-cascade",
+      "@type": "Concept",
+      "description": "Effective boundary is constrained by parent-child composition and the strongest parent restriction wins."
     }
   ],
   "requires": [

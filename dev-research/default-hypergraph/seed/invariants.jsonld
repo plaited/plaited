@@ -1,0 +1,73 @@
+{
+  "@id": "skill://default-hypergraph-invariants",
+  "@type": "Skill",
+  "source": "dev-research/default-hypergraph/seed/invariants.jsonld",
+  "layer": "seed",
+  "description": "MSS invariant encoding: boundary and scale are the strongest invariants. contentType, structure, and mechanics are more alignment-driven.",
+  "provides": [
+    {
+      "@id": "mss:invariant/boundary",
+      "@type": "Concept",
+      "invariantStrength": "strongest",
+      "description": "boundary is the strongest MSS invariant - defines what crosses module boundaries"
+    },
+    {
+      "@id": "mss:invariant/scale",
+      "@type": "Concept",
+      "invariantStrength": "strongest",
+      "description": "scale is the strongest MSS invariant - defines module nesting depth"
+    },
+    {
+      "@id": "mss:invariant/content-type",
+      "@type": "Concept",
+      "invariantStrength": "alignment-driven",
+      "description": "contentType alignment surface - agent-to-agent querying does not require global fixed-value equality"
+    },
+    {
+      "@id": "mss:invariant/structure",
+      "@type": "Concept",
+      "invariantStrength": "alignment-driven",
+      "description": "structure alignment surface - generated UI means structure is not a permanent shared template registry"
+    },
+    {
+      "@id": "mss:invariant/mechanics",
+      "@type": "Concept",
+      "invariantStrength": "alignment-driven",
+      "description": "mechanics alignment surface - agent-to-agent querying does not require global fixed-value equality"
+    },
+    {
+      "@id": "mss:composition/valid",
+      "@type": "Concept",
+      "description": "Valid MSS field combinations - parent/child composition follows scale hierarchy"
+    },
+    {
+      "@id": "mss:composition/invalid",
+      "@type": "Concept",
+      "description": "Invalid MSS field combinations - detected by constitution bThreads"
+    },
+    {
+      "@id": "mss:composition/parent-child",
+      "@type": "Relation",
+      "references": ["mss:scale", "mss:scale/relative"],
+      "description": "Parent-child composition in modnet follows scale hierarchy"
+    },
+    {
+      "@id": "mss:rule/no-circular-scale",
+      "@type": "Rule",
+      "references": ["mss:scale", "mss:composition/parent-child"],
+      "description": "Scale nesting must not be circular"
+    },
+    {
+      "@id": "mss:rule/boundary-respects-nesting",
+      "@type": "Rule",
+      "references": ["mss:boundary", "mss:composition/parent-child"],
+      "description": "Boundary constraints respect parent-child nesting"
+    }
+  ],
+  "requires": [
+    {
+      "@id": "skill://default-hypergraph-mss",
+      "@type": "Skill"
+    }
+  ]
+}

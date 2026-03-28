@@ -67,6 +67,46 @@
     {
       "@id": "mss:boundary/none",
       "@type": "Concept"
+    },
+    {
+      "@id": "mss:boundary/paid",
+      "@type": "Concept"
+    },
+    {
+      "@id": "mss:structure/list",
+      "@type": "Concept"
+    },
+    {
+      "@id": "mss:structure/stream",
+      "@type": "Concept"
+    },
+    {
+      "@id": "mss:structure/feed",
+      "@type": "Concept"
+    },
+    {
+      "@id": "mss:structure/wall",
+      "@type": "Concept"
+    },
+    {
+      "@id": "mss:structure/thread",
+      "@type": "Concept"
+    },
+    {
+      "@id": "mss:structure/hierarchy",
+      "@type": "Concept"
+    },
+    {
+      "@id": "mss:structure/matrix",
+      "@type": "Concept"
+    },
+    {
+      "@id": "mss:structure/daisy",
+      "@type": "Concept"
+    },
+    {
+      "@id": "mss:structure/hypertext",
+      "@type": "Concept"
     }
   ]
 }

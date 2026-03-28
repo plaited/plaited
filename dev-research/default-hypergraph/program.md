@@ -78,14 +78,17 @@ The main research artifacts for this program are:
 - `skills/hypergraph-memory/SKILL.md`
 - `skills/behavioral-core/SKILL.md`
 - `skills/mss/SKILL.md`
+- `dev-research/default-hypergraph/seed/factory.jsonld`
 
 Stable validator/support surfaces:
 
 - `scripts/default-hypergraph.ts`
 - `plaited skill-links`
+- `src/tools/hypergraph.ts`
 
 Program-owned writable artifacts should live under `dev-research/default-hypergraph/`.
 Do not rewrite the stable root runner/validator scripts during fanout attempts.
+Treat `src/tools/hypergraph.ts` as read-only support surface for this lane.
 
 Expected future artifacts:
 
@@ -148,6 +151,25 @@ The graph should treat these categories differently:
 - examples and counterexamples as provenance, not ontology
 - markdown link structure as optional relationship hints
 - explicit boundaries between ontology, factories, and commentary
+
+### Factory Compilation Surfaces
+
+The graph explicitly marks which concepts are factory-compilable:
+
+| Surface | Types | Compilable | Notes |
+|---------|-------|------------|-------|
+| `factory:surface/policy` | Policy, Trigger | Yes | Conditions, triggers, guards → behavioral rules |
+| `factory:surface/rule` | Rule | Yes | If-then semantics → rule assertions |
+| `factory:surface/thread-pattern` | Thread | Yes | bp:thread/* → bThread sequences |
+| `factory:surface/constraint` | Constraint | Yes | Constraints → additive blocking bThreads |
+| `factory:surface/graph-only` | Tag, Concept | No | Pure ontology, not policy-semantic |
+| `factory:surface/provenance` | Example, Provenance | No | Validation material only |
+
+Key factory policies:
+
+- `factory:policy/graph-before-factory` — resolve graph concepts before compiling
+- `factory:policy/preserve-invariants` — MSS invariants must survive compilation
+- `factory:policy/traceable-output` — factory outputs traceable back to graph concepts
 
 ## Encoding Contract
 
@@ -266,12 +288,27 @@ The contract is:
 
 - this program defines the graph and symbolic vocabulary
 - behavioral factories consume that graph to produce runtime rules
+- this program explicitly marks compilation surfaces (`factory:surface/*`)
+- factories must preserve MSS invariants (`factory:policy/preserve-invariants`)
 
 In particular:
 
 - this program should encode the durable MSS invariants and agent-era reinterpretations
 - it should distinguish hard constraints from soft heuristics
 - it should preserve provenance where older Structural IA / Modnet theory is being reinterpreted for agents
+- it should define which concepts are factory-compilable vs graph-only
+
+### Compilation Chain
+
+```
+SKILL.md prose
+    ↓ distillation (distill:* concepts)
+graph artifacts (concepts, relations, provenance)
+    ↓ factory compilation (factory:* surfaces)
+behavioral factories (bThreads, guards, rules)
+    ↓ runtime execution
+agent behavior
+```
 
 ## Long-Horizon Role
 

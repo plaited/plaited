@@ -1,0 +1,118 @@
+{
+  "@context": {
+    "bp": "urn:bp:",
+    "graph": "urn:graph:"
+  },
+  "@id": "skill://default-hypergraph-factory",
+  "@type": "Skill",
+  "source": "dev-research/default-hypergraph/seed/factory.jsonld",
+  "layer": "seed",
+  "description": "Deterministic graph-to-factory compilation surfaces: defines which concepts become behavioral factories vs remain graph-only",
+  "provides": [
+    {
+      "@id": "factory:surface/policy",
+      "@type": "CompilationSurface",
+      "description": "Policy concepts (conditions, triggers, guards) are deterministic and factory-compilable",
+      "compilable": true,
+      "inputTypes": ["Policy", "Trigger"]
+    },
+    {
+      "@id": "factory:surface/rule",
+      "@type": "CompilationSurface",
+      "description": "Rule concepts with clear if-then semantics are factory-compilable",
+      "compilable": true,
+      "inputTypes": ["Rule"]
+    },
+    {
+      "@id": "factory:surface/thread-pattern",
+      "@type": "CompilationSurface",
+      "description": "Thread patterns (bp:thread/*) are factory-compilable into bThread sequences",
+      "compilable": true,
+      "inputTypes": ["Thread"]
+    },
+    {
+      "@id": "factory:surface/constraint",
+      "@type": "CompilationSurface",
+      "description": "Constraint concepts compile into additive blocking bThreads",
+      "compilable": true,
+      "inputTypes": ["Constraint"]
+    },
+    {
+      "@id": "factory:surface/graph-only",
+      "@type": "CompilationSurface",
+      "description": "Ontology concepts (Tag, Concept without policy semantics) remain graph-only",
+      "compilable": false,
+      "inputTypes": ["Tag", "Concept", "Section", "Output"]
+    },
+    {
+      "@id": "factory:surface/provenance",
+      "@type": "CompilationSurface",
+      "description": "Examples and provenance links are validation material, not factory inputs",
+      "compilable": false,
+      "inputTypes": ["Example", "Provenance"]
+    },
+    {
+      "@id": "factory:policy/graph-before-factory",
+      "@type": "Policy",
+      "references": ["factory:surface/graph-only", "factory:surface/policy"],
+      "description": "Resolve graph concepts before compiling to factories"
+    },
+    {
+      "@id": "factory:policy/preserve-invariants",
+      "@type": "Policy",
+      "references": ["mss:invariant/boundary", "mss:invariant/scale"],
+      "description": "MSS invariants must be preserved in factory compilation"
+    },
+    {
+      "@id": "factory:policy/preserve-boundary",
+      "@type": "Policy",
+      "references": ["boundary:enforce/none-overrides-all", "boundary:enforce/child-inherits-parent"],
+      "description": "Boundary cascade semantics must survive factory compilation"
+    },
+    {
+      "@id": "factory:policy/traceable-output",
+      "@type": "Policy",
+      "description": "Factory outputs must be traceable back to source graph concepts"
+    },
+    {
+      "@id": "factory:policy/safety-first",
+      "@type": "Policy",
+      "references": ["coord:safety/no-propagate-uncertain", "coord:safety/block-unverified", "decomp:policy/abort-on-boundary-violation"],
+      "description": "Safety policies (uncertainty, verification, boundary) have compilation priority"
+    },
+    {
+      "@id": "factory:output/bthread",
+      "@type": "Output",
+      "description": "Compiled bThread sequence from thread patterns and constraints"
+    },
+    {
+      "@id": "factory:output/policy-guard",
+      "@type": "Output",
+      "description": "Compiled policy guard from conditions and triggers"
+    },
+    {
+      "@id": "factory:output/rule-assertion",
+      "@type": "Output",
+      "description": "Compiled rule assertion from if-then semantics"
+    },
+    {
+      "@id": "factory:output/safety-block",
+      "@type": "Output",
+      "description": "Compiled blocking bThread for safety constraints (boundary, verification)"
+    }
+  ],
+  "requires": [
+    {
+      "@id": "skill://default-hypergraph-distillation",
+      "@type": "Skill"
+    },
+    {
+      "@id": "skill://default-hypergraph-invariants",
+      "@type": "Skill"
+    },
+    {
+      "@id": "skill://default-hypergraph-boundary-safety",
+      "@type": "Skill"
+    }
+  ]
+}

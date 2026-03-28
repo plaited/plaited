@@ -1,0 +1,72 @@
+{
+  "@id": "skill://default-hypergraph-distillation",
+  "@type": "Skill",
+  "source": "dev-research/default-hypergraph/seed/distillation.jsonld",
+  "layer": "seed",
+  "description": "Encoding contract for skill distillation: separates ontology from policy from examples",
+  "provides": [
+    {
+      "@id": "distill:section/ontology",
+      "@type": "Section",
+      "description": "Skill sections that define concepts, classes, relations, invariants"
+    },
+    {
+      "@id": "distill:section/policy",
+      "@type": "Section",
+      "description": "Skill sections that define conditions, triggers, guard logic, decomposition patterns"
+    },
+    {
+      "@id": "distill:section/examples",
+      "@type": "Section",
+      "description": "Skill sections that provide provenance and validation material"
+    },
+    {
+      "@id": "distill:section/commentary",
+      "@type": "Section",
+      "description": "Skill sections with rationale that stays human-readable but not ontology"
+    },
+    {
+      "@id": "distill:output/concept-ids",
+      "@type": "Output",
+      "description": "Normalized concept IDs from skill distillation"
+    },
+    {
+      "@id": "distill:output/typed-relations",
+      "@type": "Output",
+      "description": "Typed relations (references, setupFor, dependsOn, examples) from distillation"
+    },
+    {
+      "@id": "distill:output/provenance",
+      "@type": "Output",
+      "description": "Provenance links back to source sections"
+    },
+    {
+      "@id": "distill:output/validation-targets",
+      "@type": "Output",
+      "description": "Validation targets for required concepts and links"
+    },
+    {
+      "@id": "distill:policy/ontology-before-examples",
+      "@type": "Policy",
+      "references": ["distill:section/ontology", "distill:section/examples"],
+      "description": "Extract durable symbolic structure before using examples as provenance"
+    },
+    {
+      "@id": "distill:policy/links-as-hints",
+      "@type": "Policy",
+      "description": "Markdown links are useful input but not the ontology by themselves"
+    },
+    {
+      "@id": "distill:policy/separate-ontology-from-factories",
+      "@type": "Policy",
+      "references": ["distill:section/ontology", "distill:section/policy"],
+      "description": "Distinguish what goes into graph vs behavioral factories"
+    }
+  ],
+  "requires": [
+    {
+      "@id": "skill://default-hypergraph-runtime",
+      "@type": "Skill"
+    }
+  ]
+}

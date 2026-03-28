@@ -1,0 +1,107 @@
+{
+  "@id": "skill://default-hypergraph-boundary-safety",
+  "@type": "Skill",
+  "source": "dev-research/default-hypergraph/seed/boundary-safety.jsonld",
+  "layer": "seed",
+  "description": "Explicit boundary safety concepts: violation states, enforcement policies, and cascade semantics",
+  "provides": [
+    {
+      "@id": "boundary:violation/detected",
+      "@type": "State",
+      "description": "Boundary crossing detected without authorization"
+    },
+    {
+      "@id": "boundary:violation/attempted",
+      "@type": "State",
+      "description": "Attempted boundary crossing blocked by constraint"
+    },
+    {
+      "@id": "boundary:violation/blocked",
+      "@type": "State",
+      "description": "Unauthorized crossing was successfully prevented"
+    },
+    {
+      "@id": "boundary:violation/escalated",
+      "@type": "State",
+      "description": "Boundary violation escalated to human review"
+    },
+    {
+      "@id": "boundary:enforce/none-overrides-all",
+      "@type": "Policy",
+      "references": ["mss:boundary/none", "coord:safety/boundary-none"],
+      "description": "boundary:none anywhere in ancestor chain blocks all data flow"
+    },
+    {
+      "@id": "boundary:enforce/paid-over-ask-all",
+      "@type": "Policy",
+      "references": ["mss:boundary/paid", "coord:safety/boundary-paid"],
+      "description": "boundary:paid restricts over boundary:ask and boundary:all"
+    },
+    {
+      "@id": "boundary:enforce/ask-over-all",
+      "@type": "Policy",
+      "references": ["mss:boundary/ask", "coord:safety/boundary-ask"],
+      "description": "boundary:ask requires consent, blocks boundary:all flow"
+    },
+    {
+      "@id": "boundary:enforce/child-inherits-parent",
+      "@type": "Policy",
+      "references": ["modnet:composition/parent-child", "coord:boundary/cascade"],
+      "description": "Child boundary cannot exceed parent boundary in permissiveness"
+    },
+    {
+      "@id": "boundary:action/block-crossing",
+      "@type": "Action",
+      "description": "Block data crossing unauthorized boundary"
+    },
+    {
+      "@id": "boundary:action/request-consent",
+      "@type": "Action",
+      "description": "Request user consent before crossing boundary:ask"
+    },
+    {
+      "@id": "boundary:action/log-violation",
+      "@type": "Action",
+      "description": "Log boundary violation for audit trail"
+    },
+    {
+      "@id": "boundary:trigger/violation-logged",
+      "@type": "Trigger",
+      "references": ["boundary:violation/detected", "boundary:action/log-violation"],
+      "description": "Trigger logging when boundary violation detected"
+    },
+    {
+      "@id": "boundary:trigger/consent-required",
+      "@type": "Trigger",
+      "references": ["mss:boundary/ask", "boundary:action/request-consent"],
+      "description": "Trigger consent request when boundary:ask crossing attempted"
+    },
+    {
+      "@id": "boundary:constraint/transitive-none",
+      "@type": "Constraint",
+      "description": "Transitive enforcement: if any ancestor has boundary:none, all descendants are restricted"
+    },
+    {
+      "@id": "bp:thread/boundary-enforcement",
+      "@type": "Thread",
+      "references": ["boundary:violation/detected", "boundary:action/block-crossing", "boundary:action/log-violation"],
+      "description": "bThread pattern for enforcing boundary constraints"
+    },
+    {
+      "@id": "bp:thread/consent-flow",
+      "@type": "Thread",
+      "references": ["boundary:action/request-consent", "agent:action/ask-human", "mss:boundary/ask"],
+      "description": "bThread pattern for consent-based boundary crossing"
+    }
+  ],
+  "requires": [
+    {
+      "@id": "skill://default-hypergraph-runtime",
+      "@type": "Skill"
+    },
+    {
+      "@id": "skill://default-hypergraph-modnet",
+      "@type": "Skill"
+    }
+  ]
+}

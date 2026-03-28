@@ -37,6 +37,7 @@ describe('default-hypergraph script', () => {
     expect(status.vertexCount).toBeGreaterThan(0)
     expect(status.hyperedgeCount).toBeGreaterThan(0)
     expect(status.missingConcepts).toHaveLength(0)
+    expect(status.missingInternalReferences).toHaveLength(0)
     expect(status.missingSkillLinks).toHaveLength(0)
   })
 })
