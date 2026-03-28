@@ -88,6 +88,13 @@ Initial behavioral factories should cover:
 - when confidence is too low to act
 - when data boundaries imply ask / stop / deny
 
+### MSS-Aware Composition
+
+- treat `boundary` and `scale` as the strongest invariants
+- treat `contentType`, `structure`, and `mechanics` as alignment-driven inputs
+- prefer negotiation, translation, or generated realization over assuming global fixed equality
+- treat grouping, promotion, and inheritance patterns as heuristics unless the graph marks them as hard constraints
+
 ### Human Escalation
 
 - when to ask the operator for clarification
@@ -135,27 +142,15 @@ Later outer-loop metrics may include:
 
 When this program is executed through autoresearch or fanout:
 
-- use one `git worktree` per attempt
+- use worktree-backed isolated attempts
 - each attempt must write durable artifacts while running
 - each attempt must run deterministic validation before completion
 - selection should prefer deterministic validation and changed-artifact quality
   over freeform model preference
 
-Minimum per-attempt artifacts:
-
-- `status.json`
-- `result.json`
-- `stdout.log`
-- `stderr.log`
-- validation stdout / stderr logs
-- diff summary
-
-The runner may use Pi as the agent harness, but it should:
-
-- disable automatic skill discovery
-- pass only an explicit skill whitelist
-- run in the attempt worktree as `cwd`
-- preserve the worktree for inspection after the attempt finishes
+The concrete runner decides which agent harness, skills, and search providers
+are available during a run. This program should specify when search, retrieval,
+or escalation behavior is needed, not which operational tool surface provides it.
 
 ## Relationship To Default Hypergraph
 
@@ -166,6 +161,12 @@ The contract is:
 
 - default hypergraph defines symbolic knowledge
 - behavioral factories turn that knowledge into runtime behavior
+
+More specifically:
+
+- default-hypergraph owns the symbolic distinction between hard constraints and soft heuristics
+- behavioral-factories must consume that distinction correctly
+- factories should not hardcode older pre-agent assumptions about fixed structure registries, automatic contentType grouping, or universal scale promotion
 
 ## Long-Horizon Role
 

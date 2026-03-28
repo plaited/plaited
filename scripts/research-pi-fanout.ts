@@ -36,13 +36,23 @@ type RunManifest = {
   runDir: string
 }
 
+// `attempts` is the total attempt budget for a run.
+// Attempts are executed concurrently in waves, starting with the initial fanout.
+export const DEFAULT_ATTEMPT_BUDGET = 15
+export const DEFAULT_INITIAL_CONCURRENT_ATTEMPTS = 3
+
 const PROGRAMS: Record<ProgramKey, ProgramConfig> = {
   'default-hypergraph': {
     key: 'default-hypergraph',
     programPath: join('dev-research', 'default-hypergraph', 'program.md'),
     validateCommand: ['bun', 'scripts/default-hypergraph.ts', 'validate'],
     writableRoots: [join('dev-research', 'default-hypergraph'), join('scripts'), join('package.json')],
-    skills: [join('skills', 'hypergraph-memory'), join('skills', 'mss'), join('skills', 'behavioral-core')],
+    skills: [
+      join('skills', 'hypergraph-memory'),
+      join('skills', 'mss'),
+      join('skills', 'behavioral-core'),
+      join('skills', 'youdotcom-api'),
+    ],
     taskPrompt:
       'Improve the default hypergraph program artifacts. Prefer small deterministic edits that strengthen the seed graph, validation, and concept coverage. Run the validator before finishing and summarize what changed.',
   },
@@ -79,8 +89,8 @@ export const getProgramConfig = (key: ProgramKey): ProgramConfig => PROGRAMS[key
 export const parseRunArgs = (args: string[]) => {
   const program = args[0] as ProgramKey | undefined
   const command = (args[1] ?? 'run') as 'run' | 'status'
-  let attempts = 5
-  let concurrency = 2
+  let attempts = DEFAULT_ATTEMPT_BUDGET
+  let concurrency = DEFAULT_INITIAL_CONCURRENT_ATTEMPTS
   let runDir: string | null = null
 
   for (let i = 2; i < args.length; i += 1) {

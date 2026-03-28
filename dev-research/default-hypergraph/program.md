@@ -93,15 +93,24 @@ The default graph should encode a significant portion of:
 
 ### Structural IA / MSS
 
+- fixed MSS field names
+- boundary
 - scale
 - relative scale
-- structure
-- mechanics
-- boundary
-- content type
+- structure as semantic lineage and generated realization
+- mechanics as capability declarations and interaction semantics
+- content type as alignment and translation surface
 - valid and invalid combinations
 - parent / child composition relationships
 - modnet assembly semantics
+
+The graph should treat these categories differently:
+
+- `boundary` and `scale` are the strongest MSS invariants
+- `contentType`, `structure`, and `mechanics` are more alignment-driven
+- generated UI means `structure` is not a permanent shared template registry
+- agent-to-agent querying means `contentType` and `mechanics` do not require global fixed-value equality
+- older auto-grouping and auto-promotion rules should be represented as heuristics or tendencies, not universal laws
 
 ### Agent Knowledge
 
@@ -207,33 +216,15 @@ This program is where that method should first be discovered and hardened.
 
 When this program is executed through autoresearch or fanout:
 
-- use one `git worktree` per attempt
-- each attempt must write durable artifacts while running
+- use worktree-backed isolated attempts
+- each attempt must write durable observable artifacts while running
 - each attempt must run deterministic validation before completion
 - selection should prefer deterministic validation and changed-artifact quality
   over freeform model preference
 
-Minimum per-attempt artifacts:
-
-- `status.json`
-- `result.json`
-- `stdout.log`
-- `stderr.log`
-- validation stdout / stderr logs
-- diff summary
-
-The runner may use Pi as the agent harness, but it should:
-
-- disable automatic skill discovery
-- pass only an explicit skill whitelist
-- run in the attempt worktree as `cwd`
-- preserve the worktree for inspection after the attempt finishes
-
-Recommended skill whitelist for this program:
-
-- `skills/hypergraph-memory`
-- `skills/mss`
-- `skills/behavioral-core`
+The concrete agent harness, skill whitelist, and search/tooling surface are
+runner concerns. This program should describe the ontology and evaluation
+surface, not the specific operational wiring of Pi or search providers.
 
 ## Relationship To Behavioral Factories
 
@@ -246,6 +237,12 @@ The contract is:
 
 - this program defines the graph and symbolic vocabulary
 - behavioral factories consume that graph to produce runtime rules
+
+In particular:
+
+- this program should encode the durable MSS invariants and agent-era reinterpretations
+- it should distinguish hard constraints from soft heuristics
+- it should preserve provenance where older Structural IA / Modnet theory is being reinterpreted for agents
 
 ## Long-Horizon Role
 

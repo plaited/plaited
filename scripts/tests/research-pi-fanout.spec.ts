@@ -1,5 +1,11 @@
 import { describe, expect, test } from 'bun:test'
-import { buildStrategyNotes, getProgramConfig, parseRunArgs } from '../research-pi-fanout.ts'
+import {
+  buildStrategyNotes,
+  DEFAULT_ATTEMPT_BUDGET,
+  DEFAULT_INITIAL_CONCURRENT_ATTEMPTS,
+  getProgramConfig,
+  parseRunArgs,
+} from '../research-pi-fanout.ts'
 
 describe('research-pi-fanout', () => {
   test('builds one strategy note per attempt', () => {
@@ -22,8 +28,8 @@ describe('research-pi-fanout', () => {
 
     expect(parsed.program).toBe('default-hypergraph')
     expect(parsed.command).toBe('run')
-    expect(parsed.attempts).toBe(5)
-    expect(parsed.concurrency).toBe(2)
+    expect(parsed.attempts).toBe(DEFAULT_ATTEMPT_BUDGET)
+    expect(parsed.concurrency).toBe(DEFAULT_INITIAL_CONCURRENT_ATTEMPTS)
     expect(parsed.runDir).toBeNull()
   })
 
