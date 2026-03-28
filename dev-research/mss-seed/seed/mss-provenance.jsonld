@@ -1,0 +1,130 @@
+{
+  "@context": {
+    "@vocab": "https://plaited.app/mss/vocab#",
+    "mss": "https://plaited.app/mss/vocab#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "dc": "http://purl.org/dc/elements/1.1/",
+    "derivedFrom": {
+      "@id": "https://plaited.app/mss/vocab#derivedFrom",
+      "@type": "@id"
+    }
+  },
+  "@graph": [
+    {
+      "@id": "mss:provenance_root",
+      "@type": "mss:ProvenanceRoot",
+      "rdfs:label": "MSS Seed Provenance",
+      "mss:description": "Compact seed ontology for MSS (Modnet Structural Standard) and Modnet. Derived from Rachel Jaffe's Structural Information Architecture and Modnet writings, distilled and reinterpreted for sovereign agent-mediated systems.",
+      "derivedFrom": [
+        "skills/mss/SKILL.md",
+        "skills/mss/references/structural-ia-distilled.md",
+        "skills/mss/references/modnet-standards-distilled.md",
+        "skills/mss/references/dynamics-distilled.md",
+        "skills/mss/references/valid-combinations.md",
+        "docs/Structural-IA.md",
+        "docs/Modnet.md"
+      ],
+      "dc:author": "Rachel Jaffe",
+      "mss:originalSources": {
+        "structural-IA": "https://rachelaliana.medium.com/current-frameworks-of-information-architecture-acf6e608f9e7",
+        "modnet": "https://rachelaliana.medium.com/past-the-internet-the-emergence-of-the-modnet-6ad49b7e2ee8"
+      }
+    },
+    {
+      "@id": "mss:distilled_structural-ia",
+      "@type": "mss:DistilledSource",
+      "rdfs:label": "Structural IA Distilled",
+      "mss:sourceFile": "skills/mss/references/structural-ia-distilled.md",
+      "mss:keyConcepts": {
+        "objects": "→ MSS scale S1. Atomic units — created, manipulated, or connected. What counts as 'one' depends on the system's goal.",
+        "objectGroups": "→ MSS scale S2. Relational, nested, structured steps, list patterns.",
+        "channels": "→ MSS sharing and interaction semantics. What info flows across channels determines who has power. Informs both mechanics and boundary.",
+        "levers": "→ MSS mechanics. Affordances, structural cues, mechanics, games — tools to change energy demand or alter energy inputs.",
+        "baseDynamics": "→ MSS mechanics activation. (Person or object) + channel + lever = base dynamic. Smallest unit of interaction on a platform.",
+        "loops": "→ MSS mechanics composition. Base dynamic + base dynamic = loop. Positive/negative × reinforcing/redirective. Core loops tied to user goals; non-core loops drain energy.",
+        "modules": "→ MSS scale lineage. Objects + loops = module. Repeatable interactive unit with a primary goal.",
+        "blocks": "→ MSS scale S3. Multiple modules creating emergent interactions. Pool, stream, feed, wall, thread structures.",
+        "platformStructures": "→ MSS scale S7. Strict hierarchy, hypertext, daisy, matrix, nested pools, nested channels."
+      },
+      "mss:distillationNote": "Durable conceptual primitives captured. Mapping to MSS fields is conceptual lineage, not one-to-one current runtime statement.",
+      "derivedFrom": "skills/mss/references/structural-ia-distilled.md"
+    },
+    {
+      "@id": "mss:distilled_modnet-standards",
+      "@type": "mss:DistilledSource",
+      "rdfs:label": "Modnet Standards Distilled",
+      "mss:sourceFile": "skills/mss/references/modnet-standards-distilled.md",
+      "mss:keyConcepts": {
+        "moduleSovereignty": "Modules/artifacts are individually owned (not platform-owned). Disconnecting removes data from that network. Platform death does not imply data loss.",
+        "bridgeCodePurpose": "Five MSS tags help agents decide composition, alignment, sovereignty, and scale. Not a classification system — a composition grammar.",
+        "boundaryCascade": "effective boundary = min(own, parent). Creates tiered access: private → supplier → public.",
+        "mechanicsInheritance": "Bottom-up (child data inherits mechanics from parent) and top-down (parent structure applies mechanics to children).",
+        "networkFormation": "Pre-structured networks use template metaphors. Emergent networks: modules self-assemble via bridge-code comparison. Ephemeral networks form based on proximity."
+      },
+      "mss:historicalLifecycleNote": "Original crowd-sourced template repository is a historical metaphor. Current systems may generate artifacts locally, expose services through agents, negotiate over A2A, preserve sovereignty without template marketplace.",
+      "derivedFrom": "skills/mss/references/modnet-standards-distilled.md"
+    },
+    {
+      "@id": "mss:distilled_dynamics",
+      "@type": "mss:DistilledSource",
+      "rdfs:label": "Dynamics Distilled",
+      "mss:sourceFile": "skills/mss/references/dynamics-distilled.md",
+      "mss:keyConcepts": {
+        "baseDynamics_agentMediated": "Object↔Person becomes Object↔Agent↔Person. Person↔Person becomes Person↔Agent↔Agent↔Person. View sovereignty — each person's agent renders their view.",
+        "loops_agentMediated": "Non-core loops eliminated by agent. Core loops preserved. Feedback changes form — generative UI instead of animations/redirects. Loop energy cost drops.",
+        "channels_agentMediated": "Agent becomes channel mediator. boundary tag encodes policy; agent enforces via ABAC. A2A messages ARE the channels.",
+        "ephemeralNetworks_agentMediated": "Duration becomes a spectrum: ephemeral (task), ephemeral (session), sticky (subscription), permanent (membership). Controlled by goal bThread lifecycle.",
+        "emergentAssembly_agentMediated": "Assembly is agent-initiated rather than proximity-triggered. ContentTypes don't need to align — agent translates. Negotiation rather than automatic destiny."
+      },
+      "mss:distillationNote": "Dynamics referenced but not directly encoded by MSS tags. Original sources predate LLMs, A2A, and generative UI.",
+      "derivedFrom": "skills/mss/references/dynamics-distilled.md"
+    },
+    {
+      "@id": "mss:distilled_valid-combinations",
+      "@type": "mss:DistilledSource",
+      "rdfs:label": "Valid Combinations Distilled",
+      "mss:sourceFile": "skills/mss/references/valid-combinations.md",
+      "mss:keyPatterns": {
+        "work": "Desk (S3,form,track,none), Table (S5,pool,vote/reply,ask), Meeting Room (S6,pool,sort/filter/share,ask), Office (S7,hierarchy,share/filter,ask)",
+        "home": "Bedroom (S3,collection,track,none), Living Room (S5,collection,share/post,ask), House (S6,hierarchy,share,ask)",
+        "education": "Reflection (S3,form,track,none), Reaction (S5,thread,reply/vote,all), Marketplace (S8,matrix,filter/sort/follow,ask)",
+        "play": "Connected Play (S4,form,limited-loops,none), Playground (S6,pool,post/vote/scarcity,ask), Carnival (S7,collection,vote/gold,ask)",
+        "commerce": "Product (S1,object,[],ask), Catalog (S2,list,sort/filter,ask), Farm Stand (S5,collection,sort/filter,all), Market (S6,pool,sort/filter/vote,all/ask)",
+        "social": "Profile (S3,wall,follow,ask), Post (S3,stream,like/share/reply,all), Feed (S3,feed,like/follow/share/post,ask), Community (S5,thread,vote/karma/gold/reply,ask)",
+        "health": "Metric (S1,object,track,none), Tracker (S2,form,track/chart,none), Dashboard (S3,collection,track/chart/filter,ask), Research (S7,pool,filter/sort/chart,paid)"
+      },
+      "mss:antiPatterns": [
+        "feed at S1",
+        "hierarchy at S2",
+        "health with all boundary",
+        "karma with none boundary",
+        "object at S8",
+        "vote on form",
+        "S5 containing S6"
+      ],
+      "mss:usageNote": "Starting patterns, not closed registry. May become negotiable with agent mediation.",
+      "derivedFrom": "skills/mss/references/valid-combinations.md"
+    },
+    {
+      "@id": "mss:lineage_jaffe-2019",
+      "@type": "mss:LineageNode",
+      "rdfs:label": "Structural Information Architecture (Jaffe 2019)",
+      "dc:author": "Rachel Jaffe",
+      "dc:date": "2019-07-11",
+      "mss:sourceUrl": "https://rachelaliana.medium.com/current-frameworks-of-information-architecture-acf6e608f9e7",
+      "mss:contributionToMSS": "Foundational concepts: objects, object groups, channels, levers, base dynamics, loops, modules, blocks, platform structures. These are the vocabulary and scale system (S1-S8) that directly inform MSS field semantics.",
+      "mss:agentEraNote": "Original pre-dates LLMs. Key re-interpretation: structure and contentType are more alignment-driven in agent systems; modules are now often services, artifacts, and negotiated capability rather than raw code."
+    },
+    {
+      "@id": "mss:lineage_jaffe-2020",
+      "@type": "mss:LineageNode",
+      "rdfs:label": "Modnet Design Standards (Jaffe 2020)",
+      "dc:author": "Rachel Jaffe",
+      "dc:date": "2020-02-03",
+      "mss:sourceUrl": "https://rachelaliana.medium.com/past-the-internet-the-emergence-of-the-modnet-6ad49b7e2ee8",
+      "mss:contributionToMSS": "Bridge-code tagging system (contentType, structure, mechanics, boundary, scale). Emergent network assembly model. Ephemeral network concept with search/participation boundaries. Sovereignty and data portability principles.",
+      "mss:agentEraNote": "Crowd-sourced template repository is historical metaphor. Current architecture uses A2A negotiation, generated UI, and agent-mediated assembly."
+    }
+  ]
+}

@@ -1,0 +1,191 @@
+{
+  "@context": {
+    "@vocab": "https://plaited.app/mss/vocab#",
+    "mss": "https://plaited.app/mss/vocab#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "derivedFrom": {
+      "@id": "https://plaited.app/mss/vocab#derivedFrom",
+      "@type": "@id"
+    }
+  },
+  "@graph": [
+    {
+      "@id": "mss:rule_network-formation",
+      "@type": "mss:CompositionRule",
+      "rdfs:label": "Emergent Network Formation",
+      "mss:description": "Emergent grouping and promotion are useful defaults, not rigid universal laws. In agent-mediated systems the agent may: (1) align two artifacts into a shared group, (2) keep them distinct but query-compatible, (3) generate an intermediate view, (4) or decline composition because boundary or user intent blocks it.",
+      "mss:assemblyRules": {
+        "contentTypeAlignment": "Compatible contentTypes are a strong grouping and translation hint. A commerce network might produce a health-tracking view if the user cares about nutrition. The agent translates between network semantics and user preferences.",
+        "scalePromotion": "Useful default heuristic rather than hard law. Accumulating modules triggers scale increases: S2 tools → S3 dashboard; diverse S5 modules → S6 cluster with contentType promotion",
+        "boundaryCascade": "effective boundary = min(own, parent) where restriction order is none > paid > ask > all",
+        "mechanicsInheritance": "Bottom-up (child mechanics project onto parent view) and top-down (parent mechanics available to children)"
+      },
+      "derivedFrom": "skills/mss/SKILL.md",
+      "mss:provenance": "skills/mss/references/modnet-standards-distilled.md"
+    },
+    {
+      "@id": "mss:rule_ephemeral-network",
+      "@type": "mss:CompositionRule",
+      "rdfs:label": "Ephemeral Network Assembly",
+      "mss:description": "Modules connect when within wifi/Bluetooth range. Data disappears from network when user leaves range. Search boundary (how far away you can discover) may differ from participation boundary (how far away you can actively engage).",
+      "mss:agentPattern": "Duration is controlled by goal bThread lifecycle (repeat: true vs terminate), not a new MSS tag. Task-based (minutes-hours), session-based (hours-days), sticky/subscription (ongoing), or permanent/membership.",
+      "mss:examples": {
+        "ephemeral-task": "Farmer's market visit — goal fires once, task completes, agent disconnects",
+        "ephemeral-session": "Conference networking — agent joins for duration, leaves after",
+        "sticky": "Bluesky club, monitoring feed — repeat: true bThread, tick listens for new messages",
+        "permanent": "Enterprise org, family — always connected, MAC-enforced"
+      },
+      "derivedFrom": "skills/mss/references/dynamics-distilled.md",
+      "mss:provenance": "docs/Modnet.md"
+    },
+    {
+      "@id": "mss:rule_agent-mediation",
+      "@type": "mss:CompositionRule",
+      "rdfs:label": "Agent-Mediated Interaction",
+      "mss:description": "When agents intermediate all interactions, some MSS dynamics change. Person-to-person doesn't collapse — it routes through agents. Each person's agent controls their view. Non-core loops (signup, navigation, data entry) are eliminated by the agent. Core loops (vote, post, create) are preserved.",
+      "mss:personObjectDynamics": "Object ↔ Person becomes Object ↔ Agent ↔ Person. Agent filters noise, escalates when uncertain, handles notifications.",
+      "mss:personPersonDynamics": "Person ↔ Person becomes Person ↔ Agent ↔ Agent ↔ Person. View sovereignty — each person's agent renders their view of the interaction.",
+      "mss:channelMediation": "The agent becomes a channel mediator. boundary tag encodes channel policy; agent enforces it via ABAC. A2A messages between nodes ARE the channels.",
+      "mss:mechanicExecution": "Mechanic concepts remain useful semantically, but realization is agent-mediated. The mechanics field declares capability; activation and presentation may differ across agents and generated UIs.",
+      "derivedFrom": "skills/mss/references/dynamics-distilled.md"
+    },
+    {
+      "@id": "mss:lifecycle_phase1-create",
+      "@type": "mss:LifecyclePhase",
+      "rdfs:label": "Phase 1: Create — Personal Intent",
+      "mss:description": "A user describes what they want. The agent generates an artifact with MSS fields based on intent.",
+      "mss:typicalBoundary": "none (personal) | all (stateless tool)",
+      "mss:typicalScale": "S1–S2",
+      "mss:typicalMechanics": ["track", "chart", "filter", "sort"]
+    },
+    {
+      "@id": "mss:lifecycle_phase2-compose",
+      "@type": "mss:LifecyclePhase",
+      "rdfs:label": "Phase 2: Compose — Building Alongside Existing",
+      "mss:description": "The user has existing artifacts and wants a new one that works with them.",
+      "mss:contentTypeSignals": "Compatible contentType → agents may group or translate in shared views. Different contentType → use a more precise variant to prevent unwanted grouping.",
+      "mss:scaleNesting": "S2 groups compose into S3 blocks; S5 modules cluster into S6"
+    },
+    {
+      "@id": "mss:lifecycle_phase3-evolve",
+      "@type": "mss:LifecyclePhase",
+      "rdfs:label": "Phase 3: Evolve — Boundary and Scale Transitions",
+      "mss:description": "As usage changes, MSS tags adapt.",
+      "mss:boundaryProgression": "none → ask → all → paid follows natural sharing patterns: personal tool → shared with friends → public utility → monetized access",
+      "mss:scalePromotion": "Accumulating modules triggers scale increases: S2 tools → S3 dashboard; multiple S5 diverse modules → S6 cluster with contentType promotion (e.g., produce + crafts → commerce)",
+      "mss:mechanicsExpansion": "New mechanics activate when boundary or structure changes. share activates when boundary moves from none to ask or all."
+    },
+    {
+      "@id": "mss:lifecycle_phase4-network",
+      "@type": "mss:LifecyclePhase",
+      "rdfs:label": "Phase 4: Network — Capability Declaration",
+      "mss:description": "When an artifact joins a network through an agent, its MSS fields help declare: what it aligns with (contentType), how it shares data (boundary), where it nests (scale), what interactions it can support (mechanics).",
+      "mss:agentCardIntegration": "The agent card should indicate that the agent supports MSS-aware interaction. It does not need to expose a full global registry of MSS values inline.",
+      "mss:networkUses": {
+        "discovery": "Identify agents that can reason about MSS",
+        "consent": "Boundary determines sharing and escalation behavior",
+        "alignment": "Agents can query each other for contentType, structure, or mechanics",
+        "composition": "Generated UI and service/artifact exchange replace fixed template registries"
+      }
+    },
+    {
+      "@id": "mss:antipattern_feed-at-S1",
+      "@type": "mss:AntiPattern",
+      "rdfs:label": "Feed at S1",
+      "mss:invalidCombination": "structure: feed, scale: S1",
+      "mss:reason": "Feeds require multiple items; S1 is singular",
+      "derivedFrom": "skills/mss/references/valid-combinations.md"
+    },
+    {
+      "@id": "mss:antipattern_hierarchy-at-S2",
+      "@type": "mss:AntiPattern",
+      "rdfs:label": "Hierarchy at S2",
+      "mss:invalidCombination": "structure: hierarchy, scale: S2",
+      "mss:reason": "Hierarchy remains a large-scale structure, not an S2 default",
+      "derivedFrom": "skills/mss/references/valid-combinations.md"
+    },
+    {
+      "@id": "mss:antipattern_health-all-boundary",
+      "@type": "mss:AntiPattern",
+      "rdfs:label": "Health data with all boundary",
+      "mss:invalidCombination": "boundary: all, contentType: health",
+      "mss:reason": "Health data should not default to open sharing",
+      "derivedFrom": "skills/mss/references/valid-combinations.md"
+    },
+    {
+      "@id": "mss:antipattern_karma-with-none-boundary",
+      "@type": "mss:AntiPattern",
+      "rdfs:label": "Karma with none boundary",
+      "mss:invalidCombination": "mechanics: [karma], boundary: none",
+      "mss:reason": "Karma requires community interaction and visible exchange",
+      "derivedFrom": "skills/mss/references/valid-combinations.md"
+    },
+    {
+      "@id": "mss:antipattern_object-at-S8",
+      "@type": "mss:AntiPattern",
+      "rdfs:label": "Object at S8",
+      "mss:invalidCombination": "scale: S8, structure: object",
+      "mss:reason": "Super-structures cannot be singular objects",
+      "derivedFrom": "skills/mss/references/valid-combinations.md"
+    },
+    {
+      "@id": "mss:antipattern_vote-on-form",
+      "@type": "mss:AntiPattern",
+      "rdfs:label": "Vote on form",
+      "mss:invalidCombination": "mechanics: [vote], structure: form",
+      "mss:reason": "Voting usually applies to displayed artifacts, not pure input patterns",
+      "derivedFrom": "skills/mss/references/valid-combinations.md"
+    },
+    {
+      "@id": "mss:antipattern_scale-containment",
+      "@type": "mss:AntiPattern",
+      "rdfs:label": "Cross-scale containment violation",
+      "mss:invalidCombination": "S5 module containing S6 module",
+      "mss:reason": "Larger scale cannot be nested inside smaller",
+      "derivedFrom": "skills/mss/references/valid-combinations.md"
+    },
+    {
+      "@id": "mss:pattern_education-platform",
+      "@type": "mss:Pattern",
+      "rdfs:label": "Education Platform",
+      "mss:signature": {
+        "contentType": "education | education-study | education-discussion",
+        "structure": "matrix | pool | thread",
+        "mechanics": ["filter", "sort", "follow", "reply", "vote"],
+        "boundary": "ask | all",
+        "scale": "S7 | S8"
+      },
+      "mss:description": "Decentralized education marketplace with linked classes. Research platform (health-research) aggregates individual health modules for longitudinal studies. The scale S7-S8 enables federated course platforms.",
+      "derivedFrom": "skills/mss/references/valid-combinations.md"
+    },
+    {
+      "@id": "mss:pattern_work-platform",
+      "@type": "mss:Pattern",
+      "rdfs:label": "Work Platform",
+      "mss:signature": {
+        "contentType": "work | work-creation | work-evaluation | work-coordination | work-distribution",
+        "structure": "form | pool | hierarchy",
+        "mechanics": ["track", "share", "filter", "vote", "reply"],
+        "boundary": "ask",
+        "scale": "S3 | S5 | S6 | S7"
+      },
+      "mss:description": "Desk (S3: form, track, none), Table (S5: pool, vote/reply, ask), Meeting Room (S6: pool, sort/filter/share, ask), Office (S7: hierarchy, share/filter, ask). Scale progression mirrors organizational hierarchy.",
+      "derivedFrom": "skills/mss/references/valid-combinations.md"
+    },
+    {
+      "@id": "mss:pattern_health-research",
+      "@type": "mss:Pattern",
+      "rdfs:label": "Health Research Platform",
+      "mss:signature": {
+        "contentType": "health-research",
+        "structure": "pool",
+        "mechanics": ["filter", "sort", "chart"],
+        "boundary": "paid",
+        "scale": "S7"
+      },
+      "mss:description": "Longitudinal study aggregating individual health modules. Research platform with paid boundary — data access requires value exchange.",
+      "derivedFrom": "skills/mss/references/valid-combinations.md"
+    }
+  ]
+}

@@ -1,0 +1,325 @@
+{
+  "@context": {
+    "@vocab": "https://plaited.app/mss/vocab#",
+    "mss": "https://plaited.app/mss/vocab#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "derivedFrom": {
+      "@id": "https://plaited.app/mss/vocab#derivedFrom",
+      "@type": "@id"
+    }
+  },
+  "@graph": [
+    {
+      "@id": "mss:structure_object",
+      "@type": "mss:StructureConcept",
+      "rdfs:label": "object",
+      "mss:description": "Display-only single item. One artwork, one weather reading, one health metric. No internal grouping.",
+      "mss:validScales": { "@list": ["S1"] },
+      "mss:disambiguatedFrom": {
+        "form": "object is display-only; form is active input/creation",
+        "collection": "object is singular; collection is a set of related items without inherent order"
+      },
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:structure_form",
+      "@type": "mss:StructureConcept",
+      "rdfs:label": "form",
+      "mss:description": "Active input tool. Editors, calculators, converters, trackers with input fields. User creates or manipulates data through input.",
+      "mss:validScales": { "@list": ["S1", "S2", "S3"] },
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:structure_list",
+      "@type": "mss:StructureConcept",
+      "rdfs:label": "list",
+      "mss:description": "Items in a defined order. Sequence matters. Playlists, reading lists, task lists with priority.",
+      "mss:validScales": { "@list": ["S2"] },
+      "mss:disambiguatedFrom": {
+        "collection": "list has a defined order; collection has no inherent order"
+      },
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:structure_collection",
+      "@type": "mss:StructureConcept",
+      "rdfs:label": "collection",
+      "mss:description": "Set of related items without inherent order. Portfolios, inventories, category groupings.",
+      "mss:validScales": { "@list": ["S2", "S3", "S7"] },
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:structure_steps",
+      "@type": "mss:StructureConcept",
+      "rdfs:label": "steps",
+      "mss:description": "Items linked across pages toward a goal. Wizard flow, multi-view navigation. Calendar (day/month views), simulation modes.",
+      "mss:validScales": { "@list": ["S2", "S3"] },
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:structure_pool",
+      "@type": "mss:StructureConcept",
+      "rdfs:label": "pool",
+      "mss:description": "Modules nested under hierarchy. Focus and specificity increase with depth. Folders within folders.",
+      "mss:validScales": { "@list": ["S3", "S6", "S7"] },
+      "mss:provenance": "skills/mss/references/structural-ia-distilled.md",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:structure_stream",
+      "@type": "mss:StructureConcept",
+      "rdfs:label": "stream",
+      "mss:description": "Chronological scrollable modules. Time-based flow. Chat rooms, activity logs, message history.",
+      "mss:validScales": { "@list": ["S3"] },
+      "mss:disambiguatedFrom": {
+        "thread": "stream is chronological messages; thread is nested replies"
+      },
+      "mss:provenance": "skills/mss/references/structural-ia-distilled.md",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:structure_feed",
+      "@type": "mss:StructureConcept",
+      "rdfs:label": "feed",
+      "mss:description": "Algorithm-sorted stream. Ranked content. Social feeds, news feeds, discovery feeds. Same as stream but with ranking mechanics applied.",
+      "mss:validScales": { "@list": ["S3"] },
+      "mss:invalidScales": { "@list": ["S1"] },
+      "mss:provenance": "skills/mss/references/structural-ia-distilled.md",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:structure_wall",
+      "@type": "mss:StructureConcept",
+      "rdfs:label": "wall",
+      "mss:description": "Static profile info combined with collaborative stream. Owned by one person. User profiles with activity.",
+      "mss:validScales": { "@list": ["S3"] },
+      "mss:provenance": "skills/mss/references/structural-ia-distilled.md",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:structure_thread",
+      "@type": "mss:StructureConcept",
+      "rdfs:label": "thread",
+      "mss:description": "Nested reply modules. Branching conversation. Reddit comments, forum threads. Both situational connectedness (visual layout) and system connectedness (upvote/downvote dynamics) coexist.",
+      "mss:validScales": { "@list": ["S3"] },
+      "mss:provenance": "skills/mss/references/structural-ia-distilled.md",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:structure_hierarchy",
+      "@type": "mss:StructureConcept",
+      "rdfs:label": "hierarchy",
+      "mss:description": "Strict top-down pathways. All pathways delineated by designer. DMV website, company platform with tiered access rings.",
+      "mss:validScales": { "@list": ["S7"] },
+      "mss:invalidScales": { "@list": ["S1", "S2", "S3"] },
+      "mss:provenance": "skills/mss/references/structural-ia-distilled.md",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:structure_matrix",
+      "@type": "mss:StructureConcept",
+      "rdfs:label": "matrix",
+      "mss:description": "Hierarchy combined with hypertext navigation. Users navigate in many different ways. Wikipedia, Facebook, social network platforms.",
+      "mss:validScales": { "@list": ["S7"] },
+      "mss:provenance": "skills/mss/references/structural-ia-distilled.md",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:structure_daisy",
+      "@type": "mss:StructureConcept",
+      "rdfs:label": "daisy",
+      "mss:description": "Central portal with secondary loops. Primary goal completed quickly then multiple secondary goals. Health tracking apps, neighborhood platforms.",
+      "mss:validScales": { "@list": ["S7"] },
+      "mss:provenance": "skills/mss/references/structural-ia-distilled.md",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:structure_hypertext",
+      "@type": "mss:StructureConcept",
+      "rdfs:label": "hypertext",
+      "mss:description": "User-generated search structures. No pre-defined hierarchy between objects before user interaction. Pinterest, Google, research platforms.",
+      "mss:validScales": { "@list": ["S7"] },
+      "mss:provenance": "skills/mss/references/structural-ia-distilled.md",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:scale_S1",
+      "@type": "mss:ScaleConcept",
+      "rdfs:label": "S1 — Singular Object",
+      "mss:description": "Single atomic item with no internal grouping. One data point, one product, one artwork, one stateless converter. Contains nothing. Contained by S2+ groups.",
+      "mss:contains": { "@list": [] },
+      "mss:containedBy": { "@list": ["S2", "S3", "S4", "S5", "S6", "S7", "S8"] },
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:scale_S2",
+      "@type": "mss:ScaleConcept",
+      "rdfs:label": "S2 — Object Group",
+      "mss:description": "Organizes multiple items into a single group. A list, collection, set of steps, or input form with persistence/tracking. Contains S1 objects. Contained by S3+ blocks.",
+      "mss:contains": { "@list": ["S1"] },
+      "mss:containedBy": { "@list": ["S3", "S4", "S5", "S6", "S7", "S8"] },
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:scale_S3",
+      "@type": "mss:ScaleConcept",
+      "rdfs:label": "S3 — Block",
+      "mss:description": "Composes multiple groups into an interactive block with emergent dynamics. A room where grouped items create interactions they don't have alone. Contains S2 groups. Contained by S4+ compositions.",
+      "mss:contains": { "@list": ["S1", "S2"] },
+      "mss:containedBy": { "@list": ["S4", "S5", "S6", "S7", "S8"] },
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:scale_S4",
+      "@type": "mss:ScaleConcept",
+      "rdfs:label": "S4 — Block Group",
+      "mss:description": "Arranges multiple blocks spatially. A suite of rooms. Spatial arrangement without forming a complete unit. Rare.",
+      "mss:contains": { "@list": ["S1", "S2", "S3"] },
+      "mss:containedBy": { "@list": ["S5", "S6", "S7", "S8"] },
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:scale_S5",
+      "@type": "mss:ScaleConcept",
+      "rdfs:label": "S5 — Module",
+      "mss:description": "Complete, self-contained interactive unit. A house/building. Has internal loops. Could stand alone. Contains S3-S4 blocks. Contained by S6+ clusters.",
+      "mss:contains": { "@list": ["S1", "S2", "S3", "S4"] },
+      "mss:containedBy": { "@list": ["S6", "S7", "S8"] },
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:scale_S6",
+      "@type": "mss:ScaleConcept",
+      "rdfs:label": "S6 — Module Group",
+      "mss:description": "Clusters multiple modules by function. A city block. Multiple S5 modules organized together. Contains S5 modules. Contained by S7+ platforms.",
+      "mss:contains": { "@list": ["S5"] },
+      "mss:containedBy": { "@list": ["S7", "S8"] },
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:scale_S7",
+      "@type": "mss:ScaleConcept",
+      "rdfs:label": "S7 — Platform Structure",
+      "mss:description": "Platform with navigation architecture. Uses hierarchy, matrix, daisy, or hypertext as primary structure; also pool and collection for large-scale organization. Contains S5-S6 clusters. Contained by S8 federations.",
+      "mss:contains": { "@list": ["S5", "S6"] },
+      "mss:containedBy": { "@list": ["S8"] },
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:scale_S8",
+      "@type": "mss:ScaleConcept",
+      "rdfs:label": "S8 — Super-structure",
+      "mss:description": "Federates multiple platforms. A city — network of S7 platforms. Cannot be singular objects (structure: object is invalid).",
+      "mss:contains": { "@list": ["S7"] },
+      "mss:containedBy": { "@list": [] },
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:mechanic_track",
+      "@type": "mss:MechanicConcept",
+      "rdfs:label": "track",
+      "mss:description": "Module contains temporal data — data that changes over time. User-generated (steps, expenses) or external (forecasts, prices). A 5-day forecast = track. A calendar with events = track.",
+      "mss:doNotTagWhen": "Data is static/unchanging",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:mechanic_chart",
+      "@type": "mss:MechanicConcept",
+      "rdfs:label": "chart",
+      "mss:description": "Data is visualized as graphs, trends, or plots. Co-occurs with track when the module itself records temporal data. Analysis tools visualizing pre-existing data (chart generators, stats calculators) declare chart without track.",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:mechanic_filter",
+      "@type": "mss:MechanicConcept",
+      "rdfs:label": "filter",
+      "mss:description": "Users can hide items by criteria — category, status, date range, price. Description mentions filtering, categories, show subset, or by X.",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:mechanic_sort",
+      "@type": "mss:MechanicConcept",
+      "rdfs:label": "sort",
+      "mss:description": "Users can reorder items by attribute — date, price, rating, priority. Description mentions sorting, ordering, or sort by.",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:mechanic_post",
+      "@type": "mss:MechanicConcept",
+      "rdfs:label": "post",
+      "mss:description": "Users create new top-level content in a stream/feed/wall. Content is pre-populated or input-only: use form structure instead.",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:mechanic_reply",
+      "@type": "mss:MechanicConcept",
+      "rdfs:label": "reply",
+      "mss:description": "Users respond to existing content in a nested thread. A forum with nested comments = both post and reply. Flat messaging = post only.",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:mechanic_vote",
+      "@type": "mss:MechanicConcept",
+      "rdfs:label": "vote",
+      "mss:description": "Content has upvote/downvote for ranking. Usually applies to displayed artifacts, not pure input patterns (invalid: structure:form with mechanics:vote).",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:mechanic_karma",
+      "@type": "mss:MechanicConcept",
+      "rdfs:label": "karma",
+      "mss:description": "Accumulated reputation score across posts in a community. Requires community interaction and visible exchange (invalid: boundary:none with mechanics:karma).",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:mechanic_gold",
+      "@type": "mss:MechanicConcept",
+      "rdfs:label": "gold",
+      "mss:description": "Premium award from users (costs real value). Self-moderation + alternative to ads for funding.",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:mechanic_follow",
+      "@type": "mss:MechanicConcept",
+      "rdfs:label": "follow",
+      "mss:description": "Users can subscribe to a specific source for updates. Just participating — joining a chat room ≠ following.",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:mechanic_like",
+      "@type": "mss:MechanicConcept",
+      "rdfs:label": "like",
+      "mss:description": "Single-direction approval signal (not ranked). Quick positive reinforcement.",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:mechanic_share",
+      "@type": "mss:MechanicConcept",
+      "rdfs:label": "share",
+      "mss:description": "Export/link content externally. Only activates when boundary is all or ask. Boundary none = no share.",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:mechanic_scarcity",
+      "@type": "mss:MechanicConcept",
+      "rdfs:label": "scarcity",
+      "mss:description": "Designer-imposed cap on interactions per period. Each interaction feels more valuable.",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:mechanic_limited-loops",
+      "@type": "mss:MechanicConcept",
+      "rdfs:label": "limited-loops",
+      "mss:description": "Turn-based messaging — can't send until reply received. Forces high-quality messages, deeper engagement.",
+      "derivedFrom": "skills/mss/SKILL.md"
+    },
+    {
+      "@id": "mss:mechanic_swipe",
+      "@type": "mss:MechanicConcept",
+      "rdfs:label": "swipe",
+      "mss:description": "Card-based binary decisions, one item at a time. Multiple items visible simultaneously = not swipe.",
+      "derivedFrom": "skills/mss/SKILL.md"
+    }
+  ]
+}
