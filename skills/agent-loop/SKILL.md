@@ -1,6 +1,6 @@
 ---
 name: agent-loop
-description: 6-step BP-orchestrated agent pipeline. Use when implementing createAgentLoop, wiring handlers, designing event flow, building sub-agent coordination, configuring proactive heartbeat mode, or generating sensors, goals, and notification channels.
+description: 6-step BP-orchestrated agent pipeline. Use when implementing createAgentLoop, wiring handlers, designing event flow, and maintaining the stable loop architecture.
 license: ISC
 compatibility: Requires bun
 ---
@@ -9,16 +9,25 @@ compatibility: Requires bun
 
 ## Purpose
 
-This skill teaches agents how to build and extend the 6-step agent pipeline orchestrated by behavioral programming. The loop is: **Context → Reason → Gate → Simulate → Evaluate → Execute**, with BP's `behavioral()` engine as the central coordinator.
+This skill teaches agents how to build and extend the stable 6-step agent
+pipeline orchestrated by behavioral programming. The loop is:
+**Context → Reason → Gate → Simulate → Evaluate → Execute**, with BP's
+`behavioral()` engine as the central coordinator.
+
+Treat this skill as the contract and architecture surface for the agent loop.
+Exploratory policy around proactive behavior, sub-agent orchestration, or
+autonomy strategy should live in research programs rather than accumulating here
+as if it were already settled runtime doctrine.
 
 **Use this when:**
 - Implementing or extending `createAgentLoop()` handlers
 - Wiring new events into the pipeline
 - Designing gate predicates or simulation routing
-- Building sub-agent coordination (4-step harness)
-- Configuring proactive mode (heartbeat, sensors, goals)
-- Generating sensors (`SensorFactory`), goals (`GoalFactory`), or notification channels
 - Connecting external clients via the AgentNode interface
+
+**Use with caution when:**
+- treating evolving proactive or sub-agent policy as if it were a stable loop invariant
+- turning this skill into a generator surface for domain-specific artifacts
 
 ## Quick Reference
 
@@ -47,35 +56,14 @@ This skill teaches agents how to build and extend the 6-step agent pipeline orch
 - Proactive extensions (tick, sensor_delta, sleep)
 - Narrow world view: each tool call is an independent scenario
 
-### Proactive Mode
+### Proactive and Autonomy References
 
-**[proactive-mode.md](references/proactive-mode.md)** — Heartbeat design and generation patterns:
-- Tick as BP event (not a scheduler)
-- Sensor sweep system and sensorBatch coordination
-- Goals as persistent bThreads (watch, alert, schedule patterns)
-- User-configurable intervals via `set_heartbeat` tool call
-- Priority: user always wins (tickYield)
-- Goal generation patterns: watch, alert, schedule, business hours
-- Notification channel patterns: WebSocket, webhook, email
-- Cost model decision table (local GPU vs cloud API vs hybrid)
+The following references are still useful, but they should be read as supporting
+patterns rather than core loop invariants:
 
-### Sensor Patterns
-
-**[sensor-patterns.md](references/sensor-patterns.md)** — `SensorFactory` generation reference:
-- Git sensor (commits, branches, working tree) — reference implementation
-- Filesystem sensor (file modification times in a watched directory)
-- HTTP sensor (poll endpoint, diff response body)
-- Web search sensor (vendor-agnostic, `.env.schema` integration)
-- Snapshot lifecycle and persistence patterns
-- Sensor test patterns
-
-### Sub-Agent Coordination
-
-**[sub-agents.md](references/sub-agents.md)** — 4-step harness for multi-agent task decomposition:
-- Decompose → Parallelize → Verify → Iterate
-- SubAgentHandle interface and IPC via structured clone
-- Inference server as persistent localhost process
-- Judge sub-agent evaluation
+- **[proactive-mode.md](references/proactive-mode.md)** — heartbeat and proactive coordination patterns
+- **[sensor-patterns.md](references/sensor-patterns.md)** — `SensorFactory` examples and diff patterns
+- **[sub-agents.md](references/sub-agents.md)** — sub-agent coordination patterns
 
 ## Event Vocabulary
 
@@ -107,6 +95,9 @@ This skill teaches agents how to build and extend the 6-step agent pipeline orch
 | `sensor_delta` | Individual sensor handlers | Goal bThreads, `sensorBatch` bThread |
 | `sleep` | Tick handler (no deltas) or model (no action) | `taskGate` (loops back) |
 | `set_heartbeat` | Model tool call | Execute handler (reconfigures timer) |
+
+These proactive events are extensions on top of the stable loop, not the core
+definition of the loop itself.
 
 ## Key Patterns
 
@@ -247,6 +238,20 @@ The agent exposes an `AgentNode` — `{ trigger, subscribe, snapshot, destroy }`
 | **stdin/stdout** | JSONL stream | Trial runner, CI pipelines |
 
 All modes use the same `AgentNode` API — the transport adapter translates between the protocol and `trigger()`/`subscribe()`.
+
+## Stable Boundary
+
+The stable boundary this skill owns is:
+
+- loop phases and event flow
+- handler granularity
+- gate / simulate / evaluate / execute routing
+- batch and per-call coordination
+- external `AgentNode` interface
+- loop-level anti-patterns and invariants
+
+It does not need to be the source of truth for every proactive policy,
+sub-agent tactic, or autonomy experiment.
 
 ## Anti-Patterns
 

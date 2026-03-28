@@ -11,6 +11,10 @@ compatibility: Requires bun
 
 This skill teaches agents how to implement hard process boundaries between projects using Bun.spawn IPC. A single agent may work across multiple git repositories with different security contexts — project isolation ensures memory separation, crash containment, and independent tool/constitution configuration per project.
 
+Treat this as the current architectural guidance for project isolation, not a claim
+that every routing and spawn policy described here is fully settled or already the
+final long-term design.
+
 **Use this when:**
 - Implementing the orchestrator → project subprocess architecture
 - Wiring IPC trigger bridges between processes
@@ -18,6 +22,10 @@ This skill teaches agents how to implement hard process boundaries between proje
 - Loading constitutions as immutable bThreads
 - Spawning sub-agents within a project subprocess
 - Designing cross-project knowledge transfer
+
+**Use with caution when:**
+- deciding whether a concern belongs in the stable architecture or an experimental research lane
+- treating a sketched policy as if it were already the only approved runtime behavior
 
 ## Architecture
 
@@ -47,6 +55,9 @@ graph TD
 ```
 
 **Project routing:** A task arrives with a path. The orchestrator resolves the git root, looks up the project in the registry, spawns (or reuses) a subprocess, and forwards the task via IPC.
+
+This is the preferred isolation model today. Specific reuse, lifecycle, and routing
+heuristics may still evolve as the multi-repo agent surface matures.
 
 ## IPC Trigger Bridge
 
@@ -96,6 +107,9 @@ Framework built-ins (read_file, write_file, bash, save_plan, etc.)
 
 See **[references/tool-assembly.md](references/tool-assembly.md)** for the three-layer model and approval rules.
 
+The layering model is stable in principle. The exact default tool set and approval
+policies remain implementation choices that may change as the agent becomes more autonomous.
+
 ## Constitution Loading
 
 The constitution is loaded at subprocess spawn time and is **immutable for the lifetime of that process.** The orchestrator passes constitution bThreads as part of the spawn configuration. The subprocess cannot modify its own constitution — this is the MAC layer in action.
@@ -134,7 +148,11 @@ Orchestrator (behavioral())
             └─ ...
 ```
 
-A project subprocess contains the PM's `behavioral()` engine. The PM spawns sub-agents within that subprocess's context — sub-agents inherit the project's cwd, tool assembly, and constitution. The orchestrator doesn't manage sub-agents directly; it routes tasks to the right project, and the project's PM handles decomposition.
+A project subprocess contains the PM's `behavioral()` engine. The PM can spawn
+sub-agents within that subprocess's context so they inherit the project's cwd,
+tool assembly, and constitution. The orchestrator routes tasks to the right
+project; decomposition within the project remains a policy choice rather than a
+guaranteed requirement for every implementation.
 
 ## Cross-Project Knowledge
 
@@ -146,6 +164,10 @@ Project subprocesses have hard process boundaries — Project A's memory cannot 
 | Shared skills | `~/.agents/skills/` (global), `skills/` (project-level) |
 | Style and patterns | Model weights (training flywheel) + code-pattern skills |
 | Project-specific knowledge | Per-project JSON-LD files only (never crosses boundary) |
+
+The hard boundary is the important rule. The precise mechanisms for safe higher-level
+transfer, summarization, or promotion across projects are still a research area and
+should not be inferred from this skill unless they are explicitly implemented elsewhere.
 
 ## Related Skills
 

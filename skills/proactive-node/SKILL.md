@@ -1,16 +1,19 @@
 ---
 name: proactive-node
-description: Generate SensorFactory and GoalFactory artifacts for proactive Plaited agent nodes
+description: Contracts and implementation guidance for proactive Plaited nodes: SensorFactory, GoalFactory, notification routing, and loop wiring.
 metadata:
   domain: Proactive
   artifact_types: sensor+goal+notification
 ---
 
-# Proactive Node Generation
+# Proactive Node
 
-Generate proactive node artifacts for the Plaited agent framework: sensors that watch external state, goals that react to changes, and notification handlers that route alerts.
+This skill documents the stable contracts and implementation rules for proactive
+Plaited nodes: sensors that watch external state, goals that react to change, and
+notification handlers that route alerts.
 
-Write ALL TypeScript files to the current working directory. No test files. No spec files.
+Use it when implementing or reviewing proactive surfaces. Do not treat it as a
+generator mandate for exact file names or a complete research program.
 
 ---
 
@@ -47,6 +50,11 @@ export const mySensor: SensorFactory = {
 - `snapshotPath: string` — e.g. `'git.json'`, `'pdfs.json'`, `'health.json'`
 - `read(signal: AbortSignal): Promise<unknown>` — always accept AbortSignal
 - `diff(current, previous: SensorSnapshot | null): unknown | null` — return null = no change
+
+**Design rules:**
+- `read()` should return the smallest stable snapshot that still supports meaningful diffing
+- `diff()` should emit reviewable deltas, not full noisy payloads, once a previous snapshot exists
+- snapshot paths should be durable and lane-neutral because they become part of long-term memory layout
 
 ---
 
@@ -92,6 +100,11 @@ export const myGoal = createGoal((_trigger) => ({
 - `AGENT_EVENTS.sensor_delta` — event type for sensor changes
 - `AGENT_EVENTS.task` — event type to trigger the agent's task loop
 
+**Design rules:**
+- goals should react to explicit sensor deltas, not re-read external state ad hoc
+- requested tasks should be bounded and explain what changed, not just that change occurred
+- repeatable goals should restart cleanly after each cycle without carrying hidden mutable state
+
 ---
 
 ## Accumulating Goals (multi-step patterns)
@@ -131,7 +144,8 @@ export const digestGoal = createGoal((_trigger) => ({
 
 ## Notification Handler
 
-For sending alerts to external systems (Discord, Slack, email):
+For sending alerts to external systems (Discord, Slack, email), keep notification
+logic separate from the sensor and goal contracts:
 
 ```typescript
 import type { DefaultHandlers } from 'src/behavioral/behavioral.types.ts'
@@ -158,6 +172,11 @@ export const alertGoal = createGoal((_trigger) => ({
 }))
 ```
 
+**Design rules:**
+- notifications are a side effect of proactive decisions, not the proactive decision itself
+- external delivery failures should usually be non-fatal and observable
+- handler logic should filter aggressively so it does not consume unrelated agent messages
+
 ---
 
 ## Import Paths
@@ -176,7 +195,7 @@ import type { DefaultHandlers } from 'src/behavioral/behavioral.types.ts'
 
 ## Wiring into createAgentLoop
 
-To integrate sensors and goals into a node:
+To integrate proactive behavior into a node:
 
 ```typescript
 import { createAgentLoop } from 'src/agent/agent.loop.ts'
@@ -193,17 +212,15 @@ const agent = createAgentLoop({
 })
 ```
 
+This wiring is the stable integration point. The exact sensor set, goal set, interval,
+and memory layout are appropriate subjects for research lanes and evals.
+
 ---
 
-## Rules
+## Invariants
 
-- Write ALL TypeScript files to the current working directory
-- Sensor file: `sensor.ts` (or descriptive name matching the task)
-- Goal file: `goal.ts` (or descriptive name matching the task)
-- No test files (.spec.ts, .test.ts)
-- Use TypeScript with strict types
-- Arrow functions only — `const fn = () =>` not `function fn()`
-- `type` keyword not `interface`
-- Prefer Bun APIs over Node.js (Bun.file, Bun.$, etc.)
-- Use `process.env.VARNAME` for environment variables
-- Do NOT install packages — declare in package.json only
+- sensors observe; goals decide; handlers deliver side effects
+- proactive state changes should be explainable from stored snapshots and deltas
+- sensors and goals should be testable in isolation even if a particular research lane chooses not to generate tests by default
+- proactive wiring should use the agent loop contracts rather than ad hoc polling code scattered through the repo
+- use TypeScript with strict types, arrow functions, and Bun-first APIs where appropriate
