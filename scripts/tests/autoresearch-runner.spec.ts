@@ -86,6 +86,13 @@ describe('autoresearch-runner', () => {
     expect(parsed.runDir).toBe('/tmp/mss-run')
   })
 
+  test('parses explicit evaluate arguments', async () => {
+    const parsed = await parseRunArgs(['scripts/mss-seed.ts', 'evaluate', '--run-dir', '/tmp/mss-run'])
+
+    expect(parsed.command).toBe('evaluate')
+    expect(parsed.runDir).toBe('/tmp/mss-run')
+  })
+
   test('normalizes script paths for lane loading', () => {
     expect(normalizeScriptPath('./scripts/mss-seed.ts')).toBe('scripts/mss-seed.ts')
     expect(normalizeScriptPath('scripts/mss-corpus.ts')).toBe('scripts/mss-corpus.ts')
@@ -171,6 +178,8 @@ describe('autoresearch-runner', () => {
     expect(changedPaths).toContain('tracked.txt')
     expect(changedPaths).toContain('new.txt')
     expect(diffStat).toContain('tracked.txt')
+    expect(diffStat).toContain('untracked files:')
+    expect(diffStat).toContain('new.txt')
 
     await rm(root, { force: true, recursive: true })
   })

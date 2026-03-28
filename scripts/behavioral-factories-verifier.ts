@@ -5,10 +5,10 @@ import {
   type WorkspaceImprovementMetaVerifierResponse,
   WorkspaceImprovementMetaVerifierResponseSchema,
 } from '../src/improve.ts'
-import { MSS_SEED_JUDGE_CRITERIA } from './mss-seed-grader.ts'
+import { BEHAVIORAL_FACTORIES_JUDGE_CRITERIA } from './behavioral-factories-grader.ts'
 import { resolveMetaVerifierModel, runStructuredLlmQuery } from './structured-llm-query.ts'
 
-export const getMssSeedJudgeInput = (result: GraderResult): WorkspaceImprovementJudgeInput | null => {
+export const getBehavioralFactoriesJudgeInput = (result: GraderResult): WorkspaceImprovementJudgeInput | null => {
   const judgeInput = result.outcome?.judgeSdk
   if (!judgeInput || typeof judgeInput !== 'object' || !('judgeInput' in judgeInput)) return null
   const value = judgeInput.judgeInput
@@ -16,7 +16,7 @@ export const getMssSeedJudgeInput = (result: GraderResult): WorkspaceImprovement
 }
 
 export const verify: Verifier = async (result: GraderResult) => {
-  const input = getMssSeedJudgeInput(result)
+  const input = getBehavioralFactoriesJudgeInput(result)
   const workspaceRoot =
     typeof result.outcome?.judgeSdk === 'object' &&
     result.outcome?.judgeSdk &&
@@ -30,12 +30,13 @@ export const verify: Verifier = async (result: GraderResult) => {
       reasoning: 'Missing workspace judge input in grader outcome.',
     }
   }
+
   const response = await runStructuredLlmQuery<WorkspaceImprovementMetaVerifierResponse>({
     model: resolveMetaVerifierModel(),
     prompt: buildWorkspaceImprovementMetaVerifierPrompt({
       input,
       judgeResult: result,
-      criteria: MSS_SEED_JUDGE_CRITERIA,
+      criteria: BEHAVIORAL_FACTORIES_JUDGE_CRITERIA,
     }),
     schema: WorkspaceImprovementMetaVerifierResponseSchema,
     systemPrompt:
@@ -43,7 +44,13 @@ export const verify: Verifier = async (result: GraderResult) => {
     workspaceReadAccess: workspaceRoot
       ? {
           workspaceRoot,
-          allowedRoots: ['skills/mss', 'skills/modnet-node', 'skills/modnet-modules'],
+          allowedRoots: [
+            'skills/behavioral-core',
+            'skills/hypergraph-memory',
+            'skills/mss',
+            'skills/modnet-node',
+            'skills/modnet-modules',
+          ],
           maxToolRounds: 3,
         }
       : undefined,

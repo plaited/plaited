@@ -20,7 +20,10 @@ describe('workspace-improvement-eval', () => {
       patch: 'diff --git a/... b/...',
       checks: { validateExitCode: 0 },
       program: 'dev-research/mss-seed/program.md',
+      programText: '# MSS Seed Program\n\nSeed contract.',
       slice: 'mss-seed',
+      contextFiles: [{ path: 'dev-research/mss-seed/seed/mss.jsonld', content: '{"@id":"mss:test"}' }],
+      skillCatalog: [{ path: 'skills/mss', description: 'MSS modeling skill.' }],
     })
 
     expect(input.slice).toBe('mss-seed')
@@ -37,7 +40,10 @@ describe('workspace-improvement-eval', () => {
       patch: 'diff --git a/manifest b/manifest',
       checks: { validateExitCode: 0, piExitCode: 0 },
       program: 'dev-research/mss-corpus/program.md',
+      programText: '# MSS Corpus Program\n\nCorpus contract.',
       slice: 'mss-corpus',
+      contextFiles: [{ path: 'dev-research/mss-corpus/encoded/manifest.json', content: '{"ok":true}' }],
+      skillCatalog: [{ path: 'skills/mss', description: 'MSS modeling skill.' }],
     })
 
     const prompt = buildWorkspaceImprovementJudgePrompt({
@@ -48,6 +54,8 @@ describe('workspace-improvement-eval', () => {
     expect(prompt).toContain('Prefer source-backed encoded corpus outputs.')
     expect(prompt).toContain('diff --git a/manifest b/manifest')
     expect(prompt).toContain('dev-research/mss-corpus/encoded/manifest.json')
+    expect(prompt).toContain('# MSS Corpus Program')
+    expect(prompt).toContain('skills/mss: MSS modeling skill.')
     expect(prompt).toContain('Your primary job is to find problems')
     expect(prompt).toContain('Do not approve eagerly')
   })
@@ -62,7 +70,10 @@ describe('workspace-improvement-eval', () => {
       patch: 'diff --git a/... b/...',
       checks: { validateExitCode: 0 },
       program: 'dev-research/mss-seed/program.md',
+      programText: '# MSS Seed Program\n\nSeed contract.',
       slice: 'mss-seed',
+      contextFiles: [{ path: 'dev-research/mss-seed/seed/mss.jsonld', content: '{"@id":"mss:test"}' }],
+      skillCatalog: [{ path: 'skills/mss', description: 'MSS modeling skill.' }],
     })
 
     const prompt = buildWorkspaceImprovementMetaVerifierPrompt({
@@ -78,6 +89,8 @@ describe('workspace-improvement-eval', () => {
     expect(prompt).toContain('Prefer compact seed anchors.')
     expect(prompt).toContain('"score": 0.9')
     expect(prompt).toContain('dev-research/mss-seed/seed/mss.jsonld')
+    expect(prompt).toContain('# MSS Seed Program')
+    expect(prompt).toContain('skills/mss: MSS modeling skill.')
     expect(prompt).toContain('challenge the judgment')
     expect(prompt).toContain('Prefer skepticism over agreement')
   })

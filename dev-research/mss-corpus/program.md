@@ -22,6 +22,20 @@ Encode MSS and Modnet source material as a graph-ready corpus that downstream be
 - `docs/Modnet.md`
 - `docs/MODNET-IMPLEMENTATION.md`
 
+## Input Priority
+
+Use a progressive mix with clear precedence:
+
+1. `dev-research/mss-seed/seed/` is the semantic frame for this lane.
+   Corpus nodes, assertions, and relations should align to seed anchors first.
+2. Raw MSS / Modnet skills and docs are the evidence surface.
+   Use them to extract chunks, provenance, and source-backed assertions.
+3. Only introduce corpus structure that is not already covered by the seed when
+   the source material requires it and the insufficiency is made explicit.
+
+This lane should not treat raw source material as a parallel ontology source.
+It should encode raw source material under seed semantics whenever possible.
+
 ## External Retrieval
 
 This lane already receives explicit local inputs and lane-provisioned skills.
@@ -71,16 +85,19 @@ Those artifacts should stay lane-local until reviewed and promoted.
 ## Run Loop
 
 1. Confirm that `mss-seed` and the lane-local seed artifacts exist.
-2. Chunk and compare the source material deterministically.
-3. Emit lane-local encoded corpus artifacts under `dev-research/mss-corpus/encoded/`.
-4. Validate that the corpus still depends on the seed layer rather than raw ad hoc concepts.
-5. Promote reviewed corpus outputs only as a separate explicit step.
+2. Load seed anchors first and treat them as the semantic frame for corpus encoding.
+3. Chunk and compare the raw MSS / Modnet source material deterministically.
+4. Emit lane-local encoded corpus artifacts under `dev-research/mss-corpus/encoded/`.
+5. Validate that the corpus still depends on the seed layer rather than raw ad hoc concepts.
+6. When seed coverage is insufficient, record the insufficiency explicitly instead of silently inventing a parallel ontology.
+7. Promote reviewed corpus outputs only as a separate explicit step.
 
 ## Success Criteria
 
 - lane-local encoded artifacts exist and are non-empty
 - source chunks and distilled assertions can point back to source material
 - encoded artifacts align to seed anchors instead of inventing a separate ontology
+- any justified expansion beyond current seed coverage is explicit, source-backed, and reviewable
 - downstream behavioral-factory generation can consume seed plus corpus without reopening raw source files
 
 ## Current Operator Surface

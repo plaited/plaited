@@ -2,202 +2,172 @@
 
 ## Purpose
 
-Build deterministic behavioral factories that consume the default hypergraph and
-compile it into runtime policy for the agent.
+Compile seed and corpus graph artifacts into deterministic behavioral-factory
+surfaces that can guide agent execution without relying on raw `SKILL.md`
+material at runtime.
 
-These factories are the symbolic execution layer for:
+This lane exists downstream of:
 
-- tool selection
-- search / retrieval triggers
-- uncertainty handling
-- decomposition and fanout
-- stopping and escalation
-- safety and boundary enforcement
+1. `mss-seed`
+2. `mss-corpus`
 
-## Why This Exists
+The intended order is:
 
-The agent should not rely on the model alone to decide when to:
+1. `mss-seed` derives compact seed anchors.
+2. `mss-corpus` encodes source material against those anchors.
+3. `behavioral-factories` compiles runtime-usable policy/factory surfaces from
+   the seed plus corpus.
 
-- search the web
-- retrieve graph context
-- ask the human
-- stop and request evidence
-- fan out multiple attempts
-- reject unsupported output
+## Inputs
 
-These behaviors should be expressible as deterministic behavioral factories
-driven by symbolic state and graph queries.
-
-## Deterministic Boundary
-
-This program is also deterministic at the core.
-
-Deterministic responsibilities:
-
-- map graph concepts to behavioral factories
-- compile query results into BP rules or runtime policy objects
-- validate factory integrity
-- validate expected runtime decisions under tests
-
-Generative responsibilities belong outside this core:
-
-- propose alternative factory sets
-- propose new thresholds or policies
-- propose new graph-to-factory mappings
-
-Those proposals may be optimized by autoresearch and fanout, but the runtime
-baseline should be deterministic and testable.
-
-## Core Artifacts
-
-The main research artifacts for this program are:
+Primary lane inputs:
 
 - `dev-research/behavioral-factories/program.md`
+- `dev-research/mss-seed/program.md`
+- `dev-research/mss-corpus/program.md`
 - `skills/behavioral-core/SKILL.md`
 - `skills/hypergraph-memory/SKILL.md`
 - `skills/mss/SKILL.md`
+- `skills/modnet-node/SKILL.md`
+- `skills/modnet-modules/SKILL.md`
+- `src/agent/factories.ts`
 - `src/tools/hypergraph.ts`
 
-Stable validator/support surfaces:
+The lane should treat `mss-seed` and `mss-corpus` as upstream contracts.
+It should not recreate those lanes’ responsibilities.
 
-- `scripts/behavioral-factories.ts`
+## External Retrieval
 
-Program-owned writable artifacts should live under
-`dev-research/behavioral-factories/`. Do not rewrite the stable root
-runner/validator script during fanout attempts.
+Primary evidence should come from the listed inputs and lane-provisioned
+skills. If those are insufficient, external retrieval may use targeted web
+search via the provisioned You.com skill.
 
-Expected future artifacts:
+Use external retrieval only to:
+
+- confirm missing compilation semantics
+- verify terminology or runtime patterns that are not present locally
+- find bounded references that materially improve the factory contract
+
+Do not treat web search as the primary source of truth for this lane.
+If external retrieval materially changes the result, record that in the run
+summary.
+
+## Goal
+
+Produce deterministic, reviewable behavioral-factory outputs such as:
+
+- policy guards
+- rule assertions
+- fanout / merge selectors
+- escalation / stop triggers
+- safety / boundary guards
+
+These outputs should be derived from graph-facing inputs, not from ad hoc
+prompt-only behavior.
+
+## Writable Surface
+
+Only write within:
+
+- `dev-research/behavioral-factories`
+
+Expected lane-local outputs may include:
 
 - `dev-research/behavioral-factories/factories/`
+- `dev-research/behavioral-factories/artifacts/`
 - `dev-research/behavioral-factories/tests/`
-- `dev-research/behavioral-factories/scripts/`
 
-## Factory Targets
+Do not write directly into:
 
-Initial behavioral factories should cover:
+- `dev-research/mss-seed`
+- `dev-research/mss-corpus`
+- `src/`
+- `skills/`
 
-### Search / Retrieval
+unless a separate reviewed promotion step explicitly chooses to do so.
 
-- when local symbolic context is sufficient
-- when recall over the hypergraph is required
-- when web search is required
-- when evidence quality is too low to answer directly
+## What This Lane Enables
 
-### Decomposition
+This lane should make it possible to:
 
-- when to stay single-threaded
-- when to fan out multiple attempts
-- when to merge candidate outputs
-- when to stop expanding and return to the human
+- determine when local symbolic context is sufficient
+- determine when retrieval or search is required
+- determine when fanout is justified
+- determine when safety or boundary guards should block execution
+- determine when the agent should stop or escalate to the operator
 
-### Safety / Boundaries
+## Deterministic Contract
 
-- when tool execution should be blocked
-- when confidence is too low to act
-- when data boundaries imply ask / stop / deny
+The runtime-facing result should be deterministic for the same seed/corpus
+inputs.
 
-### MSS-Aware Composition
+Deterministic responsibilities:
 
-- treat `boundary` and `scale` as the strongest invariants
-- treat `contentType`, `structure`, and `mechanics` as alignment-driven inputs
-- prefer negotiation, translation, or generated realization over assuming global fixed equality
-- treat grouping, promotion, and inheritance patterns as heuristics unless the graph marks them as hard constraints
+- map seed/corpus concepts into factory surfaces
+- preserve hard invariants such as boundary and scale semantics
+- emit stable factory outputs from the same graph-facing inputs
+- validate factory structure and references
 
-### Human Escalation
+Probabilistic or autoresearch responsibilities:
 
-- when to ask the operator for clarification
-- when to request review instead of continuing
-- when to surface uncertainty instead of guessing
+- propose alternative compilation layouts
+- compare factory sets
+- suggest narrower or broader policy decompositions
+- judge promotion candidates across attempts
 
-## Runtime Contract
+## Validation
 
-Behavioral factories should be derivable from:
+Deterministic validation should be preferred for promotion decisions.
 
-- graph query results
-- current task state
-- current tool and sensor state
-- explicit operator constraints
+Expected checks include:
 
-Factory outputs may be:
+- `bun scripts/behavioral-factories.ts validate`
+- `bun --bun tsc --noEmit` when TypeScript changes
+- targeted tests for this lane’s script/test surface
 
-- behavioral-program threads
-- deterministic policy objects
-- runtime guard sets
-- trigger rules
+The lane should fail validation when:
 
-The important property is not the exact representation.
-The important property is that the result is deterministic and testable.
-
-## Evaluation
-
-The main evaluation surface is deterministic:
-
-- correct factory generation from known graph conditions
-- correct blocking / allowing behavior
-- correct search / retrieval invocation decisions
-- correct escalation and stop decisions
-- stable outputs from identical symbolic inputs
-
-Later outer-loop metrics may include:
-
-- fewer hallucinations
-- better tool use
-- better retrieval timing
-- better search invocation precision
-- lower wasted fanout
-
-## Validation Tools
-
-When an attempt changes TypeScript or validator-support files, it should use the
-available repo tooling inside its worktree to assess the edit set.
-
-Expected deterministic checks include:
-
-- the stable program validator: `bun scripts/behavioral-factories.ts validate`
-- `bun --bun tsc --noEmit` when TypeScript files change
-- targeted tests for changed lane-local logic under `dev-research/behavioral-factories/tests/`
-- Biome on touched TypeScript files when formatting or linting is relevant
-
-Probabilistic assessment may still be used for synthesis, comparison, or
-selection across attempts, but deterministic checks should be preferred for
-promotion decisions.
+- the program is missing or empty
+- required upstream programs are missing
+- required skills or runtime surfaces are missing
+- changed files leave the lane writable surface
 
 ## Execution Contract
 
-When this program is executed through autoresearch or fanout:
+When run through autoresearch:
 
 - use worktree-backed isolated attempts
-- each attempt must write durable artifacts while running
-- each attempt must run deterministic validation before completion
-- selection should prefer deterministic validation and changed-artifact quality
-  over freeform model preference
+- keep the main repo untouched during attempts
+- write durable run artifacts while executing
+- run deterministic validation before attempt completion
+- prefer reviewable, lane-bounded outputs over broad speculative rewrites
 
-The concrete runner decides which agent harness, skills, and search providers
-are available during a run. This program should specify when search, retrieval,
-or escalation behavior is needed, not which operational tool surface provides it.
+`autoresearch-runner` owns:
 
-Lane-local helper scripts may be authored under
-`dev-research/behavioral-factories/scripts/` to augment the stable validator
-surface. They should not replace or override the root runner/validator entrypoint.
+- worktree creation
+- attempt budgets
+- parallel lane instances
+- judging and promotion selection
 
-## Relationship To Default Hypergraph
+This lane script owns:
 
-This program consumes the graph defined by
-`dev-research/default-hypergraph/program.md`.
+- lane contract
+- lane-local validation
+- lane-local generation helpers
 
-The contract is:
+## Success Criteria
 
-- default hypergraph defines symbolic knowledge
-- behavioral factories turn that knowledge into runtime behavior
+An attempt is stronger when it:
 
-More specifically:
+- preserves the seed/corpus dependency order
+- keeps compilation logic lane-local and reviewable
+- produces factory-oriented artifacts instead of raw ontology sprawl
+- improves traceability between graph inputs and factory outputs
+- does not drift into unrelated runtime/framework changes
 
-- default-hypergraph owns the symbolic distinction between hard constraints and soft heuristics
-- behavioral-factories must consume that distinction correctly
-- factories should not hardcode older pre-agent assumptions about fixed structure registries, automatic contentType grouping, or universal scale promotion
+## Promotion
 
-## Long-Horizon Role
+Promotion is separate from generation.
 
-Autoresearch, fanout, and evolutionary search should optimize around these
-factories, but the baseline set should remain deterministic so that harness
-quality can be improved by measurable tests rather than subjective drift.
+Validated attempts may be judged and selected, but the main repo should only
+change through explicit promotion of an accepted attempt.

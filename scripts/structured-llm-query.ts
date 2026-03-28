@@ -9,6 +9,7 @@ const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
 const DEFAULT_PRIMARY_JUDGE_MODEL = 'z-ai/glm-5'
 const DEFAULT_META_VERIFIER_MODEL = 'minimax/minimax-m2.5'
 const DEFAULT_VALIDATION_RETRIES = 2
+const DEFAULT_REQUEST_TIMEOUT_MS = 60_000
 const DEFAULT_JSON_SYSTEM_PROMPT =
   'Return only a single JSON object that satisfies the user request. Do not include markdown fences or commentary.'
 
@@ -134,6 +135,7 @@ export const runStructuredLlmQuery = async <T>({
   systemPrompt = DEFAULT_JSON_SYSTEM_PROMPT,
   validationRetries = DEFAULT_VALIDATION_RETRIES,
   workspaceReadAccess,
+  requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
 }: {
   model: string
   prompt: string
@@ -141,6 +143,7 @@ export const runStructuredLlmQuery = async <T>({
   systemPrompt?: string
   validationRetries?: number
   workspaceReadAccess?: WorkspaceReadAccess
+  requestTimeoutMs?: number
 }): Promise<
   { ok: true; value: T; meta?: Record<string, unknown> } | { ok: false; reason: string; meta?: Record<string, unknown> }
 > => {
@@ -161,6 +164,7 @@ export const runStructuredLlmQuery = async <T>({
         response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
           method: 'POST',
           headers: buildOpenRouterHeaders(),
+          signal: AbortSignal.timeout(requestTimeoutMs),
           body: JSON.stringify({
             model,
             messages,
@@ -295,6 +299,7 @@ export const runStructuredLlmQuery = async <T>({
           source: 'openrouter-api',
           model,
           attempt: attempt + 1,
+          requestTimeoutMs,
         },
       }
     }
@@ -307,6 +312,7 @@ export const runStructuredLlmQuery = async <T>({
       source: 'openrouter-api',
       model,
       attempt: validationRetries + 1,
+      requestTimeoutMs,
     },
   }
 }

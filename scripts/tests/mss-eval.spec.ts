@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import { buildWorkspaceImprovementJudgePrompt, buildWorkspaceImprovementMetaVerifierPrompt } from '../../src/improve.ts'
+import {
+  BEHAVIORAL_FACTORIES_JUDGE_CRITERIA,
+  buildBehavioralFactoriesJudgeInput,
+} from '../behavioral-factories-grader.ts'
+import { getBehavioralFactoriesJudgeInput } from '../behavioral-factories-verifier.ts'
 import { buildMssCorpusJudgeInput, MSS_CORPUS_JUDGE_CRITERIA } from '../mss-corpus-grader.ts'
 import { getMssCorpusJudgeInput } from '../mss-corpus-verifier.ts'
 import { buildMssSeedJudgeInput, MSS_SEED_JUDGE_CRITERIA } from '../mss-seed-grader.ts'
@@ -13,15 +18,22 @@ describe('mss eval builders', () => {
       metadata: {
         changedPaths: ['dev-research/mss-seed/seed/mss.jsonld'],
         diffStat: '1 file changed',
+        patch: 'diff --git a/seed b/seed',
         piExitCode: 0,
         validateExitCode: 0,
         cwd: '/tmp/mss-seed-attempt',
+        programText: '# Seed Program',
+        contextFiles: [{ path: 'dev-research/mss-seed/seed/mss.jsonld', content: '{"@id":"mss:test"}' }],
+        skillCatalog: [{ path: 'skills/mss', description: 'MSS modeling skill.' }],
       },
     })
 
     expect(input.slice).toBe('mss-seed')
     expect(input.program).toBe('dev-research/mss-seed/program.md')
     expect(input.changedFiles).toEqual(['dev-research/mss-seed/seed/mss.jsonld'])
+    expect(input.patch).toContain('diff --git')
+    expect(input.programText).toContain('# Seed Program')
+    expect(input.skillCatalog?.[0]?.path).toBe('skills/mss')
   })
 
   test('builds mss-corpus judge input with lane metadata', () => {
@@ -38,6 +50,22 @@ describe('mss eval builders', () => {
     expect(input.slice).toBe('mss-corpus')
     expect(input.program).toBe('dev-research/mss-corpus/program.md')
     expect(input.changedFiles).toEqual(['dev-research/mss-corpus/encoded/manifest.json'])
+  })
+
+  test('builds behavioral-factories judge input with lane metadata', () => {
+    const input = buildBehavioralFactoriesJudgeInput({
+      output: 'Updated factory guard summary.',
+      task: 'Evaluate a behavioral-factories autoresearch attempt.',
+      metadata: {
+        changedPaths: ['dev-research/behavioral-factories/factories/policy-guards.json'],
+        diffStat: '1 file changed',
+        cwd: '/tmp/behavioral-factories-attempt',
+      },
+    })
+
+    expect(input.slice).toBe('behavioral-factories')
+    expect(input.program).toBe('dev-research/behavioral-factories/program.md')
+    expect(input.changedFiles).toEqual(['dev-research/behavioral-factories/factories/policy-guards.json'])
   })
 
   test('shared judge and verifier prompts include lane-specific criteria', () => {
@@ -113,5 +141,46 @@ describe('mss eval builders', () => {
         },
       }),
     ).toEqual(corpusInput)
+
+    const behavioralFactoriesInput = buildBehavioralFactoriesJudgeInput({
+      output: 'Updated factory guard summary.',
+      task: 'Evaluate a behavioral-factories autoresearch attempt.',
+      metadata: {
+        changedPaths: ['dev-research/behavioral-factories/factories/policy-guards.json'],
+        diffStat: '1 file changed',
+      },
+    })
+
+    expect(
+      getBehavioralFactoriesJudgeInput({
+        pass: true,
+        score: 0.88,
+        outcome: {
+          judgeSdk: {
+            judgeInput: behavioralFactoriesInput,
+            workspaceRoot: '/tmp/behavioral-factories-attempt',
+          },
+        },
+      }),
+    ).toEqual(behavioralFactoriesInput)
+  })
+
+  test('behavioral-factories prompts include lane-specific criteria', () => {
+    const input = buildBehavioralFactoriesJudgeInput({
+      output: 'Updated factory guard summary.',
+      task: 'Evaluate a behavioral-factories autoresearch attempt.',
+      metadata: {
+        changedPaths: ['dev-research/behavioral-factories/factories/policy-guards.json'],
+        diffStat: '1 file changed',
+      },
+    })
+
+    const judgePrompt = buildWorkspaceImprovementJudgePrompt({
+      input,
+      criteria: BEHAVIORAL_FACTORIES_JUDGE_CRITERIA,
+    })
+
+    expect(judgePrompt).toContain('factory-oriented outputs')
+    expect(judgePrompt).toContain('dev-research/behavioral-factories/factories/policy-guards.json')
   })
 })

@@ -43,17 +43,8 @@ export const verify: Verifier = async (result: GraderResult) => {
     workspaceReadAccess: workspaceRoot
       ? {
           workspaceRoot,
-          allowedRoots: [
-            'dev-research/mss-corpus',
-            'dev-research/mss-seed',
-            'skills/mss',
-            'skills/modnet-node',
-            'skills/modnet-modules',
-            'skills/hypergraph-memory',
-            'docs/Structural-IA.md',
-            'docs/Modnet.md',
-            'docs/MODNET-IMPLEMENTATION.md',
-          ],
+          allowedRoots: ['skills/mss', 'skills/modnet-node', 'skills/modnet-modules', 'skills/hypergraph-memory'],
+          maxToolRounds: 3,
         }
       : undefined,
   })

@@ -8,11 +8,11 @@ import {
 } from '../src/improve.ts'
 import { resolvePrimaryJudgeModel, runStructuredLlmQuery } from './structured-llm-query.ts'
 
-export const MSS_CORPUS_JUDGE_CRITERIA = `Prefer lane-bounded corpus improvements that:
-- produce or refine encoded/artifact outputs
-- preserve source-backed structure, provenance, and retrieval value
-- align to seed anchors instead of inventing unrelated ontology
-- avoid support-surface drift or empty corpus changes`
+export const BEHAVIORAL_FACTORIES_JUDGE_CRITERIA = `Prefer lane-bounded behavioral-factory improvements that:
+- preserve the seed -> corpus -> factory dependency order
+- produce deterministic, reviewable factory-oriented outputs
+- improve traceability from graph-facing inputs to factory outputs
+- avoid drift into upstream seed/corpus generation or unrelated runtime rewrites`
 
 const toChangedFiles = (metadata: Record<string, unknown> | undefined) =>
   Array.isArray(metadata?.changedPaths)
@@ -25,7 +25,7 @@ const toCheckRecord = (metadata: Record<string, unknown> | undefined) => ({
   retryCount: metadata?.retryCount ?? null,
 })
 
-export const buildMssCorpusJudgeInput = ({
+export const buildBehavioralFactoriesJudgeInput = ({
   output,
   metadata,
   task,
@@ -42,9 +42,9 @@ export const buildMssCorpusJudgeInput = ({
     diffStat: typeof metadata?.diffStat === 'string' ? metadata.diffStat : '',
     patch: typeof metadata?.patch === 'string' ? metadata.patch : '',
     checks: toCheckRecord(metadata),
-    program: 'dev-research/mss-corpus/program.md',
+    program: 'dev-research/behavioral-factories/program.md',
     programText: typeof metadata?.programText === 'string' ? metadata.programText : undefined,
-    slice: 'mss-corpus',
+    slice: 'behavioral-factories',
     contextFiles: Array.isArray(metadata?.contextFiles)
       ? metadata.contextFiles.filter(
           (value): value is { path: string; content: string } =>
@@ -70,25 +70,31 @@ export const buildMssCorpusJudgeInput = ({
   })
 
 export const grade: Grader = async ({ output, metadata }) => {
-  const input = buildMssCorpusJudgeInput({
+  const input = buildBehavioralFactoriesJudgeInput({
     output,
     metadata,
-    task: 'Evaluate an MSS corpus autoresearch attempt.',
+    task: 'Evaluate a behavioral-factories autoresearch attempt.',
   })
   const result = await runStructuredLlmQuery<WorkspaceImprovementJudgeResponse>({
     model: resolvePrimaryJudgeModel(),
     prompt: buildWorkspaceImprovementJudgePrompt({
       input,
-      criteria: MSS_CORPUS_JUDGE_CRITERIA,
+      criteria: BEHAVIORAL_FACTORIES_JUDGE_CRITERIA,
     }),
     schema: WorkspaceImprovementJudgeResponseSchema,
     systemPrompt:
-      'You are evaluating a workspace-improvement attempt. Your first job is to find correctness, scope, and evidence problems. Return strict JSON only. Fail attempts unless the changed files, checks, and output strongly support a bounded lane-local corpus improvement.',
+      'You are evaluating a workspace-improvement attempt. Your first job is to find correctness, scope, and evidence problems. Return strict JSON only. Fail attempts unless the changed files, checks, and output strongly support a bounded behavioral-factories improvement.',
     workspaceReadAccess:
       typeof metadata?.cwd === 'string'
         ? {
             workspaceRoot: metadata.cwd,
-            allowedRoots: ['skills/mss', 'skills/modnet-node', 'skills/modnet-modules', 'skills/hypergraph-memory'],
+            allowedRoots: [
+              'skills/behavioral-core',
+              'skills/hypergraph-memory',
+              'skills/mss',
+              'skills/modnet-node',
+              'skills/modnet-modules',
+            ],
             maxToolRounds: 3,
           }
         : undefined,

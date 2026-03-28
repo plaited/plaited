@@ -21,6 +21,17 @@ export const RetainedOutputSuitabilitySchema = z.object({
 export type RetainedOutputSuitability = z.infer<typeof RetainedOutputSuitabilitySchema>
 
 const WorkspaceJudgeChecksSchema = z.record(z.string(), z.unknown())
+const WorkspaceContextFileSchema = z.object({
+  path: z.string(),
+  content: z.string(),
+})
+export type WorkspaceContextFile = z.infer<typeof WorkspaceContextFileSchema>
+
+const WorkspaceSkillSummarySchema = z.object({
+  path: z.string(),
+  description: z.string(),
+})
+export type WorkspaceSkillSummary = z.infer<typeof WorkspaceSkillSummarySchema>
 
 export const WorkspaceImprovementJudgeInputSchema = z.object({
   evaluationTarget: z.literal('workspace-improvement'),
@@ -31,7 +42,10 @@ export const WorkspaceImprovementJudgeInputSchema = z.object({
   patch: z.string(),
   checks: WorkspaceJudgeChecksSchema,
   program: z.string(),
+  programText: z.string().optional(),
   slice: z.string(),
+  contextFiles: z.array(WorkspaceContextFileSchema).optional(),
+  skillCatalog: z.array(WorkspaceSkillSummarySchema).optional(),
 })
 export type WorkspaceImprovementJudgeInput = z.infer<typeof WorkspaceImprovementJudgeInputSchema>
 

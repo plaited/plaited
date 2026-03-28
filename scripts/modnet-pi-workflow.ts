@@ -44,7 +44,6 @@ export type WorkflowMode = 'refine' | 'derive'
 
 export const DEFAULT_CONTEXT_PATHS = [
   join('dev-research', 'training-prompts', 'program.md'),
-  join('docs', 'MODNET-HUMAN-CLI-SPEC.md'),
   join('skills', 'modnet-modules', 'SKILL.md'),
   join('skills', 'mss', 'SKILL.md'),
   join('skills', 'mss', 'references', 'modnet-standards-distilled.md'),

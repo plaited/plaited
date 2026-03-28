@@ -43,6 +43,15 @@ This skill teaches agents how to author, load, and protect governance factories 
 - Return shape: `{ threads?, handlers? }` for structural + contextual checks
 - Goal and workflow factory examples
 
+### Governance Model
+
+**[governance-model.md](references/governance-model.md)** — Governance-layer rationale and control model:
+- neuro-symbolic split between behavioral enforcement and model understanding
+- MAC / DAC / ABAC composition and where each layer acts
+- dual representation of constitution rules as symbolic + neural surfaces
+- additive ratchet principle for MAC governance
+- relationship between constitution, MSS, and broader Plaited governance semantics
+
 ### Generated bThreads
 
 **[generated-bthreads.md](references/generated-bthreads.md)** — How the agent generates bThreads as TypeScript:
@@ -122,6 +131,8 @@ Constitution rules exist in two forms simultaneously:
 - **Skill** (neural): context assembly teaches the model the rules
 
 Both are needed: bThread alone wastes inference (model keeps proposing blocked actions). Skill alone risks circumvention. Together: defense-in-depth.
+
+See [governance-model.md](references/governance-model.md) for the broader governance framing, including the neuro-symbolic split and MAC / DAC / ABAC layering.
 
 ## Related Skills
 

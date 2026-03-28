@@ -38,7 +38,9 @@ export const DEFAULT_MSS_CORPUS_WITH_LLM = true
 export const MSS_CORPUS_SYSTEM_PROMPT = `You are working on the mss-corpus lane.
 
 Your job is to encode MSS and Modnet source material into a graph-ready corpus that depends on seed anchors.
+Treat dev-research/mss-seed/seed as the semantic frame first, and treat raw skills/docs as evidence to be encoded under that frame.
 Prefer source chunks, distilled assertions, provenance, and retrieval-ready structure over abstract ontology expansion.
+Do not treat raw source material as a parallel ontology source unless seed insufficiency is explicit and justified.
 Do not drift into unrelated repo improvement or support-surface rewrites.`
 
 export type GenerateMssCorpusArtifactsOptions = {
@@ -73,7 +75,7 @@ export const RESEARCH_LANE_CONFIG = {
   model: 'openrouter/minimax/minimax-m2.7',
   systemPrompt: MSS_CORPUS_SYSTEM_PROMPT,
   taskPrompt:
-    'Improve the mss-corpus lane artifacts. Produce lane-local encoded corpus artifacts that depend on mss-seed anchors rather than raw ad hoc concepts. Do not edit src/tools. Run the lane validator before finishing and summarize what changed.',
+    'Improve the mss-corpus lane artifacts. Use mss-seed as the semantic frame, and encode raw MSS/Modnet source material as evidence under that frame. Produce lane-local encoded corpus artifacts that depend on mss-seed anchors rather than raw ad hoc concepts. Do not edit src/tools. Run the lane validator before finishing and summarize what changed, including any explicit seed insufficiency.',
   defaultAttempts: 20,
   defaultParallelism: 3,
   evaluation: {

@@ -12,6 +12,15 @@ The workflow is human-in-the-loop:
 - `glm-5` generates candidate prompts
 - `m2.5` judges those candidates with a fixed rubric
 
+The goal is not another autonomous research lane. The goal is a durable,
+reviewable operator workflow where:
+
+- a human reviews prompts directly
+- model-written alternatives are generated under bounded fanout
+- a judge scores those alternatives against shared Modnet/MSS context
+- the runtime persists every decision and attempt locally
+- final exported artifacts stay minimal and training-oriented
+
 ## Inputs
 
 The prompt source catalog is:
@@ -25,7 +34,7 @@ Each row is minimal:
 
 ## Shared Context
 
-The CLI loads this file together with selected docs and skills references and
+The CLI loads this file together with selected skills references and
 passes that same shared context to:
 
 - Pi when it creates per-worker strategy briefs
@@ -35,7 +44,6 @@ passes that same shared context to:
 The current shared context surface is:
 
 - `dev-research/training-prompts/program.md`
-- `docs/MODNET-HUMAN-CLI-SPEC.md`
 - `skills/modnet-modules/SKILL.md`
 - `skills/mss/SKILL.md`
 - `skills/mss/references/modnet-standards-distilled.md`
@@ -72,6 +80,8 @@ It is responsible for:
 - persisting attempt artifacts under `.prompts/`
 - resuming interrupted work
 - surfacing only the winning candidate back to the human
+
+This runtime must not rely on Codex as a participant.
 
 ### Pi
 
@@ -112,6 +122,8 @@ It uses a fixed rubric to score:
 - fit to the source prompt and human feedback
 - clarity and boundedness of MSS tags
 
+The human is the final verifier. There is no meta-verifier in this workflow.
+
 ## Runtime
 
 Default fanout shape:
@@ -120,6 +132,10 @@ Default fanout shape:
 - up to `15` attempts per worker
 
 The human sees only the round winner, not every variant.
+
+Each attempt may vary by strategy note, wording pressure, or decomposition
+approach, but all attempts must share the same base prompt and human feedback
+for that round.
 
 ## Runtime Artifacts
 
@@ -136,6 +152,14 @@ They may include:
 - round winners
 - temporary exports
 
+Each attempt must write durable artifacts while running:
+
+- input payload
+- result payload
+- stdout log
+- stderr log
+- status file
+
 ## Final Artifact
 
 The final training artifact is minimal:
@@ -143,3 +167,6 @@ The final training artifact is minimal:
 - `id`
 - `prompt`
 - `mss`
+
+No parent lineage, judge metadata, attempt history, or review notes belong in
+the final exported corpus.

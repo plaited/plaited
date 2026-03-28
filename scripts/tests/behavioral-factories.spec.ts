@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import {
   BEHAVIORAL_FACTORIES_PROGRAM_PATH,
+  BEHAVIORAL_FACTORIES_SYSTEM_PROMPT,
   getBehavioralFactoriesStatus,
   isBehavioralFactoriesValid,
+  RESEARCH_LANE_CONFIG,
   renderBehavioralFactoriesStatus,
 } from '../behavioral-factories.ts'
 
@@ -19,6 +21,7 @@ describe('behavioral-factories script', () => {
 
     expect(output).toContain('program: behavioral-factories')
     expect(output).toContain(`programPath: ${BEHAVIORAL_FACTORIES_PROGRAM_PATH}`)
+    expect(output).toContain('outputRoot:')
     expect(output).toContain('requirements:')
   })
 
@@ -26,5 +29,17 @@ describe('behavioral-factories script', () => {
     const status = await getBehavioralFactoriesStatus()
 
     expect(isBehavioralFactoriesValid(status)).toBe(true)
+  })
+
+  test('exports an autoresearch lane config', () => {
+    expect(RESEARCH_LANE_CONFIG.scriptPath).toBe('scripts/behavioral-factories.ts')
+    expect(RESEARCH_LANE_CONFIG.validateCommand).toEqual(['bun', 'scripts/behavioral-factories.ts', 'validate'])
+    expect(RESEARCH_LANE_CONFIG.writableRoots).toEqual(['dev-research/behavioral-factories'])
+    expect(RESEARCH_LANE_CONFIG.defaultAttempts).toBe(20)
+    expect(RESEARCH_LANE_CONFIG.defaultParallelism).toBe(3)
+    expect(RESEARCH_LANE_CONFIG.systemPrompt).toBe(BEHAVIORAL_FACTORIES_SYSTEM_PROMPT)
+    expect(RESEARCH_LANE_CONFIG.evaluation?.graderPath).toBe('scripts/behavioral-factories-grader.ts')
+    expect(RESEARCH_LANE_CONFIG.evaluation?.verifierPath).toBe('scripts/behavioral-factories-verifier.ts')
+    expect(RESEARCH_LANE_CONFIG.evaluation?.useMetaVerification).toBe(true)
   })
 })

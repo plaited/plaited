@@ -31,6 +31,7 @@ export {
   TrialMetaVerifierOutcomeSchema,
   type TrialMetaVerifierTrustLabel,
   TrialMetaVerifierTrustLabelSchema,
+  type WorkspaceContextFile,
   type WorkspaceImprovementJudgeInput,
   WorkspaceImprovementJudgeInputSchema,
   type WorkspaceImprovementJudgeOutcome,

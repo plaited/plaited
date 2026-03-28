@@ -48,7 +48,10 @@ export const buildWorkspaceImprovementJudgeInput = ({
   patch,
   checks,
   program,
+  programText,
   slice,
+  contextFiles,
+  skillCatalog,
 }: WorkspaceImprovementJudgeInput): WorkspaceImprovementJudgeInput =>
   WorkspaceImprovementJudgeInputSchema.parse({
     evaluationTarget: 'workspace-improvement',
@@ -59,7 +62,10 @@ export const buildWorkspaceImprovementJudgeInput = ({
     patch,
     checks,
     program,
+    programText,
     slice,
+    contextFiles,
+    skillCatalog,
   })
 
 const formatChecks = (checks: Record<string, unknown>) =>
@@ -93,6 +99,12 @@ ${input.program}
 Slice:
 ${input.slice}
 
+Program text:
+${input.programText || '(not provided)'}
+
+Available skills:
+${input.skillCatalog?.map((skill) => `- ${skill.path}: ${skill.description}`).join('\n') || '(not provided)'}
+
 Changed files:
 ${input.changedFiles.map((path) => `- ${path}`).join('\n') || '- none'}
 
@@ -104,6 +116,9 @@ ${formatChecks(input.checks)}
 
 Patch:
 ${input.patch || '(empty)'}
+
+Changed file excerpts:
+${input.contextFiles?.map((file) => `File: ${file.path}\n${file.content}`).join('\n\n') || '(not provided)'}
 
 Candidate output:
 ${input.candidateOutput}
@@ -139,8 +154,20 @@ ${input.task}
 Changed files:
 ${input.changedFiles.map((path) => `- ${path}`).join('\n') || '- none'}
 
+Program text:
+${input.programText || '(not provided)'}
+
+Available skills:
+${input.skillCatalog?.map((skill) => `- ${skill.path}: ${skill.description}`).join('\n') || '(not provided)'}
+
 Diff stat:
 ${input.diffStat || '(empty)'}
+
+Patch:
+${input.patch || '(empty)'}
+
+Changed file excerpts:
+${input.contextFiles?.map((file) => `File: ${file.path}\n${file.content}`).join('\n\n') || '(not provided)'}
 
 Checks:
 ${formatChecks(input.checks)}

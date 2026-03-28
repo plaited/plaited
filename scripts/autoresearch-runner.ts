@@ -2,13 +2,12 @@
 
 import { isAbsolute, join, resolve } from 'node:path'
 import { $ } from 'bun'
-import type { Grader, GraderResult, WorkspaceImprovementPromotionDecision } from '../src/improve.ts'
+import type { Grader, GraderResult, Verifier, WorkspaceImprovementPromotionDecision } from '../src/improve.ts'
 import {
   buildWorkspaceImprovementPromotionPrompt,
   loadGrader,
   loadVerifier,
   WorkspaceImprovementPromotionDecisionSchema,
-  withMetaVerification,
 } from '../src/improve.ts'
 import { runStructuredLlmQuery } from './structured-llm-query.ts'
 
@@ -65,6 +64,7 @@ type AttemptResultRecord = {
   piExitCode: number
   validateExitCode: number
   diffStat: string
+  patch?: string
   changedPaths: string[]
   disallowedPaths: string[]
   worktreePath: string
@@ -100,6 +100,11 @@ type PromotionSummary = {
 
 export const MAX_ATTEMPT_RETRIES = 2
 export const PI_WORKTREE_GUARD_EXTENSION_PATH = 'scripts/pi-worktree-guard-extension.ts'
+export const EVALUATION_STAGE_TIMEOUT_MS = 120_000
+const MAX_EVALUATION_PROGRAM_CHARS = 12_000
+const MAX_EVALUATION_FILE_CHARS = 6_000
+const MAX_EVALUATION_CONTEXT_FILES = 6
+const MAX_EVALUATION_SKILL_CHARS = 4_000
 
 const pathExists = async (path: string): Promise<boolean> => {
   const result = await $`test -e ${path}`.quiet().nothrow()
@@ -166,7 +171,7 @@ export const getLaneConfig = async (scriptPath: string): Promise<ResearchLaneCon
 
 export const parseRunArgs = async (args: string[]) => {
   const laneScriptPath = args[0]
-  const command = (args[1] ?? 'run') as 'run' | 'status'
+  const command = (args[1] ?? 'run') as 'run' | 'status' | 'evaluate'
   const defaults = laneScriptPath ? await getLaneConfig(laneScriptPath).catch(() => null) : null
   let attempts = defaults?.defaultAttempts ?? 20
   let parallelism = defaults?.defaultParallelism ?? 3
@@ -207,6 +212,10 @@ const attemptWorktreePath = (runDir: string, attempt: number) => join(runAttempt
 const attemptPiStatePath = (runDir: string, attempt: number) => join(runAttemptDir(runDir, attempt), '.pi-agent')
 const attemptEvaluationPath = (runDir: string, attempt: number) =>
   join(runAttemptDir(runDir, attempt), 'evaluation.json')
+const attemptEvaluationStatusPath = (runDir: string, attempt: number) =>
+  join(runAttemptDir(runDir, attempt), 'evaluation.status.json')
+const attemptEvaluationErrorPath = (runDir: string, attempt: number) =>
+  join(runAttemptDir(runDir, attempt), 'evaluation.error.json')
 const evaluationSummaryPath = (runDir: string) => join(runDir, 'evaluation-summary.json')
 const promotionSummaryPath = (runDir: string) => join(runDir, 'promotion-summary.json')
 
@@ -334,6 +343,39 @@ ${strategy}`,
 
 export const summarizeDiff = async (worktreePath: string) => {
   const diff = await $`git diff --stat`.cwd(worktreePath).quiet().nothrow()
+  const untracked = await $`git ls-files --others --exclude-standard`.cwd(worktreePath).quiet().nothrow()
+  const trackedSummary = (await diff.text()).trim()
+  const untrackedPaths = (await untracked.text())
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+
+  if (trackedSummary.length > 0 && untrackedPaths.length === 0) {
+    return trackedSummary
+  }
+
+  if (trackedSummary.length === 0 && untrackedPaths.length === 0) {
+    return ''
+  }
+
+  const lines = []
+  if (trackedSummary.length > 0) {
+    lines.push(trackedSummary)
+  }
+  if (untrackedPaths.length > 0) {
+    lines.push(`untracked files:\n${untrackedPaths.map((path) => `- ${path}`).join('\n')}`)
+  }
+
+  return lines.join('\n\n')
+}
+
+const readPatch = async ({ worktreePath, attemptCommit }: { worktreePath: string; attemptCommit?: string }) => {
+  if (attemptCommit) {
+    const shown = await $`git show --format=medium --stat --patch ${attemptCommit}`.cwd(worktreePath).quiet().nothrow()
+    return (await shown.text()).trim()
+  }
+
+  const diff = await $`git diff --stat --patch`.cwd(worktreePath).quiet().nothrow()
   return (await diff.text()).trim()
 }
 
@@ -434,34 +476,111 @@ const readAttemptEvaluation = async (runDir: string, attempt: number): Promise<A
   return (await file.json()) as AttemptEvaluationRecord
 }
 
-const buildEvaluationInput = ({
+const readContextText = async ({
+  worktreePath,
+  path,
+  maxChars,
+}: {
+  worktreePath: string
+  path: string
+  maxChars: number
+}) => {
+  const file = Bun.file(resolveWorkspacePath({ workspaceRoot: worktreePath, path }))
+  if (!(await file.exists())) {
+    return null
+  }
+
+  try {
+    const text = await file.text()
+    if (text.length <= maxChars) {
+      return text
+    }
+    return `${text.slice(0, maxChars)}\n\n[truncated ${text.length - maxChars} chars]`
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error)
+    return `[unreadable file: ${reason}]`
+  }
+}
+
+const extractSkillDescription = (text: string) => {
+  const withoutFrontmatter = text.startsWith('---') ? text.replace(/^---[\s\S]*?---\s*/u, '') : text
+  const lines = withoutFrontmatter
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !line.startsWith('#'))
+  return (lines[0] ?? 'No description available.').slice(0, 240)
+}
+
+const buildEvaluationInput = async ({
   config,
   status,
   result,
   stdout,
+  patch,
 }: {
   config: ResearchLaneConfig
   status: AttemptStatusRecord
   result: AttemptResultRecord
   stdout: string
-}) => ({
-  input: `${config.taskPrompt}\n\nAttempt strategy:\n${status.strategy}`,
-  output: stdout,
-  hint:
-    config.evaluation?.hint ??
-    `Evaluate this autoresearch attempt for lane ${config.key}. Reward valid, bounded, reviewable lane-local improvements.`,
-  metadata: {
-    lane: config.key,
-    attempt: status.attempt,
-    changedPaths: result.changedPaths,
-    diffStat: result.diffStat,
-    retryCount: result.retryCount,
-    piExitCode: result.piExitCode,
-    validateExitCode: result.validateExitCode,
+  patch: string
+}) => {
+  const programText =
+    (await readContextText({
+      worktreePath: status.worktreePath,
+      path: config.programPath,
+      maxChars: MAX_EVALUATION_PROGRAM_CHARS,
+    })) ?? ''
+  const contextFiles = await Promise.all(
+    result.changedPaths.slice(0, MAX_EVALUATION_CONTEXT_FILES).map(async (path) => ({
+      path,
+      content:
+        (await readContextText({
+          worktreePath: status.worktreePath,
+          path,
+          maxChars: MAX_EVALUATION_FILE_CHARS,
+        })) ?? '[missing file]',
+    })),
+  )
+  const skillCatalog = await Promise.all(
+    (config.skills ?? []).map(async (skillPath) => {
+      const skillText =
+        (await readContextText({
+          worktreePath: status.worktreePath,
+          path: join(skillPath, 'SKILL.md'),
+          maxChars: MAX_EVALUATION_SKILL_CHARS,
+        })) ?? ''
+      return {
+        path: skillPath,
+        description: extractSkillDescription(skillText),
+      }
+    }),
+  )
+
+  return {
+    input: `${config.taskPrompt}\n\nAttempt strategy:\n${status.strategy}`,
+    output: stdout,
+    hint:
+      config.evaluation?.hint ??
+      `Evaluate this autoresearch attempt for lane ${config.key}. Reward valid, bounded, reviewable lane-local improvements.`,
+    metadata: {
+      lane: config.key,
+      attempt: status.attempt,
+      changedPaths: result.changedPaths,
+      diffStat: result.diffStat || patch,
+      retryCount: result.retryCount,
+      piExitCode: result.piExitCode,
+      validateExitCode: result.validateExitCode,
+      cwd: status.worktreePath,
+      patch,
+      programText,
+      contextFiles,
+      skillCatalog,
+    },
     cwd: status.worktreePath,
-  },
-  cwd: status.worktreePath,
-})
+    patch,
+  }
+}
 
 const toEvaluationRecord = (attempt: number, result: GraderResult): AttemptEvaluationRecord => ({
   attempt,
@@ -471,6 +590,27 @@ const toEvaluationRecord = (attempt: number, result: GraderResult): AttemptEvalu
   ...(result.outcome ? { outcome: result.outcome } : {}),
   ...(result.dimensions ? { dimensions: result.dimensions } : {}),
 })
+
+const withTimeout = async <T>({
+  promise,
+  timeoutMs,
+  phase,
+  attempt,
+}: {
+  promise: Promise<T>
+  timeoutMs: number
+  phase: string
+  attempt: number
+}) =>
+  await Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error(`Evaluation ${phase} timed out for attempt ${attempt} after ${timeoutMs}ms`))
+      }, timeoutMs)
+      void timer
+    }),
+  ])
 
 const evaluateAttempts = async ({
   runDir,
@@ -486,26 +626,97 @@ const evaluateAttempts = async ({
     return null
   }
 
-  let grader: Grader = await loadGrader(evaluationConfig.graderPath)
-  if (evaluationConfig.useMetaVerification && evaluationConfig.verifierPath) {
-    const verifier = await loadVerifier(evaluationConfig.verifierPath)
-    grader = withMetaVerification(grader, verifier)
-  }
+  const grader: Grader = await loadGrader(evaluationConfig.graderPath)
+  const verifier: Verifier | null =
+    evaluationConfig.useMetaVerification && evaluationConfig.verifierPath
+      ? await loadVerifier(evaluationConfig.verifierPath)
+      : null
 
   const statuses = await readAttemptStatuses(runDir, attempts)
   const completedStatuses = statuses.filter((status) => status.status === 'completed')
   const evaluations: AttemptEvaluationRecord[] = []
 
   for (const status of completedStatuses) {
+    const existing = await readAttemptEvaluation(runDir, status.attempt)
+    if (existing) {
+      evaluations.push(existing)
+      continue
+    }
+
     const result = await readAttemptResult(runDir, status.attempt)
     if (!result) continue
 
     const stdoutFile = Bun.file(attemptStdoutPath(runDir, status.attempt))
     const stdout = (await stdoutFile.exists()) ? await stdoutFile.text() : ''
-    const graded = await grader(buildEvaluationInput({ config, status, result, stdout }))
-    const record = toEvaluationRecord(status.attempt, graded)
-    evaluations.push(record)
-    await writeJson(attemptEvaluationPath(runDir, status.attempt), record)
+    const patch =
+      result.patch ?? (await readPatch({ worktreePath: status.worktreePath, attemptCommit: result.attemptCommit }))
+
+    try {
+      await writeJson(attemptEvaluationStatusPath(runDir, status.attempt), {
+        attempt: status.attempt,
+        phase: 'judge',
+        startedAt: new Date().toISOString(),
+      })
+
+      let graded = await withTimeout({
+        promise: buildEvaluationInput({ config, status, result, stdout, patch }).then((input) => grader(input)),
+        timeoutMs: EVALUATION_STAGE_TIMEOUT_MS,
+        phase: 'judge',
+        attempt: status.attempt,
+      })
+
+      if (verifier) {
+        await writeJson(attemptEvaluationStatusPath(runDir, status.attempt), {
+          attempt: status.attempt,
+          phase: 'verify',
+          startedAt: new Date().toISOString(),
+        })
+
+        const verification = await withTimeout({
+          promise: verifier(graded),
+          timeoutMs: EVALUATION_STAGE_TIMEOUT_MS,
+          phase: 'verify',
+          attempt: status.attempt,
+        })
+
+        graded = {
+          ...graded,
+          outcome: {
+            ...graded.outcome,
+            _metaVerification: verification,
+          },
+        }
+      }
+
+      const record = toEvaluationRecord(status.attempt, graded)
+      evaluations.push(record)
+      await writeJson(attemptEvaluationPath(runDir, status.attempt), record)
+      await writeJson(attemptEvaluationStatusPath(runDir, status.attempt), {
+        attempt: status.attempt,
+        phase: verifier ? 'verified' : 'graded',
+        finishedAt: new Date().toISOString(),
+      })
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error)
+      const record: AttemptEvaluationRecord = {
+        attempt: status.attempt,
+        pass: false,
+        score: 0,
+        reasoning: reason,
+      }
+      evaluations.push(record)
+      await writeJson(attemptEvaluationPath(runDir, status.attempt), record)
+      await writeJson(attemptEvaluationErrorPath(runDir, status.attempt), {
+        attempt: status.attempt,
+        error: reason,
+        finishedAt: new Date().toISOString(),
+      })
+      await writeJson(attemptEvaluationStatusPath(runDir, status.attempt), {
+        attempt: status.attempt,
+        phase: 'failed',
+        finishedAt: new Date().toISOString(),
+      })
+    }
   }
 
   const averageScore =
@@ -659,6 +870,7 @@ const runAttempt = async ({
   let piExitCode = 1
   let validateExitCode = 1
   let diffStat = ''
+  let patch = ''
   let changedPaths: string[] = []
   let disallowedPaths: string[] = []
   let attemptCommit: string | undefined
@@ -733,6 +945,7 @@ ${errorMessage}`
 
     validateExitCode = await validate.exited
     diffStat = await summarizeDiff(worktreePath)
+    patch = await readPatch({ worktreePath })
     if (piExitCode === 0 && validateExitCode === 0 && disallowedPaths.length === 0 && changedPaths.length > 0) {
       try {
         attemptCommit = await commitAttempt({
@@ -774,6 +987,7 @@ ${errorMessage}`
     piExitCode,
     validateExitCode,
     diffStat,
+    patch,
     changedPaths,
     disallowedPaths,
     worktreePath,
@@ -806,7 +1020,7 @@ const main = async () => {
   const { laneScriptPath, command, attempts, parallelism, runDir } = await parseRunArgs(Bun.argv.slice(2))
   if (!laneScriptPath) {
     console.error(
-      'Usage: bun scripts/autoresearch-runner.ts <lane-script-path> [run|status] [--attempts N] [--parallel N] [--run-dir PATH]',
+      'Usage: bun scripts/autoresearch-runner.ts <lane-script-path> [run|status|evaluate] [--attempts N] [--parallel N] [--run-dir PATH]',
     )
     process.exit(1)
   }
@@ -837,6 +1051,46 @@ const main = async () => {
           attempts: statuses,
           evaluation: (await evaluationFile.exists()) ? await evaluationFile.json() : null,
           promotion: (await promotionFile.exists()) ? await promotionFile.json() : null,
+        },
+        null,
+        2,
+      ),
+    )
+    return
+  }
+
+  if (command === 'evaluate') {
+    const effectiveRunDir = runDir
+    if (!effectiveRunDir) {
+      console.error('evaluate requires --run-dir PATH')
+      process.exit(1)
+    }
+
+    const manifestFile = Bun.file(join(effectiveRunDir, 'manifest.json'))
+    if (!(await manifestFile.exists())) {
+      console.error(`No manifest found at ${effectiveRunDir}`)
+      process.exit(1)
+    }
+
+    const manifest = (await manifestFile.json()) as RunManifest
+    const evaluation = await evaluateAttempts({
+      runDir: effectiveRunDir,
+      attempts: manifest.attempts,
+      config,
+    })
+    const promotion = await selectPromotionDecision({
+      repoRoot: workspaceRoot,
+      runDir: effectiveRunDir,
+      attempts: manifest.attempts,
+      config,
+    })
+    console.log(
+      JSON.stringify(
+        {
+          runDir: effectiveRunDir,
+          lane: config.key,
+          ...(evaluation ? { evaluation } : {}),
+          ...(promotion ? { promotion } : {}),
         },
         null,
         2,
