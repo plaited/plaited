@@ -1,6 +1,6 @@
 ---
 name: trial-adapters
-description: Write adapter scripts for the trial runner. Adapters wrap any CLI agent as a polyglot script (TypeScript module or executable) using the stdin/stdout JSON contract. Includes patterns for rich trajectory capture and token usage reporting.
+description: Write adapter scripts for `src/improve` and the improve CLI. Adapters wrap Pi, Plaited-native agents, or external agents behind the stdin/stdout JSON contract and can capture rich trajectory evidence.
 license: ISC
 ---
 
@@ -8,13 +8,18 @@ license: ISC
 
 ## Purpose
 
-Write adapter scripts that wrap any CLI agent for the trial runner. Adapters follow the polyglot pattern — TypeScript modules or executables with stdin/stdout JSON.
+Write adapter scripts that expose an execution surface to `src/improve`. Adapters
+follow the polyglot pattern: TypeScript modules or executables with stdin/stdout
+JSON.
 
 **Use this when:**
-- Wrapping a new CLI agent for evaluation
-- Creating adapters for different agent configurations
+- Exposing Pi, Plaited-native, or external execution to `runTrial()`
+- Creating adapters for different evaluation configurations
 - Building adapters that capture rich trajectory data
-- Integrating external tools (Gemini CLI, local models, A2A agents)
+- Integrating external tools or agent runtimes into the public improve surface
+
+This skill is a reusable integration surface. It is not the center of
+Plaited's internal autoresearch architecture.
 
 ## Adapter Contract
 
@@ -84,7 +89,7 @@ type AdapterResult = {
 
 ## Loading
 
-The trial runner loads adapters via `loadAdapter()`:
+`src/improve` loads adapters via `loadAdapter()`:
 
 ```typescript
 import { loadAdapter } from './src/improve/trial.ts'
@@ -116,7 +121,7 @@ export const adapt: Adapter = async ({ prompt }) => {
 
 ### Rich Adapter (Trajectory + Timing)
 
-Captures structured trajectory for detailed analysis:
+Captures structured trajectory for detailed analysis and downstream scoring:
 
 ```typescript
 import type { Adapter } from './src/improve.ts'
@@ -233,7 +238,7 @@ export const adapt: Adapter = async ({ prompt, cwd }) => {
 }
 ```
 
-## Usage with Trial Runner
+## Usage with Improve
 
 ```bash
 # CLI: path-based loading
@@ -244,6 +249,10 @@ import { runTrial } from './src/improve.ts'
 const results = await runTrial({ adapter: myAdapter, prompts, k: 5 })
 ```
 
+Adapters can also feed broader `src/improve` workflows beyond repeated trials.
+The same capture surface is useful wherever Plaited wants structured evidence
+from a non-native execution path.
+
 ## Tips
 
 - Return `trajectory` for richer analysis (thought steps, tool calls)
@@ -251,6 +260,8 @@ const results = await runTrial({ adapter: myAdapter, prompts, k: 5 })
 - Set `timedOut: true` if the adapter detects its own timeout
 - Use `cwd` for workspace-isolated code generation tasks
 - For multi-turn, the runner sends the full `prompt: string[]` — the adapter decides how to sequence turns
+- Prefer Pi and Plaited-native adapters when those are the main execution modes; keep
+  truly generic wrappers only when exposing `improve` as a consumer-facing surface
 
 ## Related
 

@@ -64,12 +64,13 @@ This skill teaches agents how to author, load, and protect governance factories 
 
 ### MAC Rules
 
-**[mac-rules.md](references/mac-rules.md)** — Default MAC factories shipped with the framework:
+**[mac-rules.md](references/mac-rules.md)** — Current shipped MAC baseline:
 - `noRmRf` — blocks `rm -rf` in execute events
 - `noEtcWrites` — blocks writes to `/etc/` paths
 - `noForcePush` — blocks `git push --force` commands
 - `protectGovernance` — blocks execute if tool call modifies MAC governance files
-- Loading at spawn pattern (`loadPersistedThreads`)
+- loading-at-spawn pattern (`loadPersistedThreads`)
+- framing as current baseline defaults rather than the final complete MAC set
 
 ## Key Patterns
 
@@ -128,9 +129,10 @@ The agent generates the test before the implementation:
 
 Constitution rules exist in two forms simultaneously:
 - **bThread** (symbolic): block predicates prevent dangerous events structurally
-- **Skill** (neural): context assembly teaches the model the rules
+- **Context / teaching surface**: skills, memory, or training context teach the model the rules
 
-Both are needed: bThread alone wastes inference (model keeps proposing blocked actions). Skill alone risks circumvention. Together: defense-in-depth.
+Both are needed: bThread alone wastes inference (model keeps proposing blocked
+actions). Context alone risks circumvention. Together: defense-in-depth.
 
 See [governance-model.md](references/governance-model.md) for the broader governance framing, including the neuro-symbolic split and MAC / DAC / ABAC layering.
 

@@ -28,7 +28,7 @@ export { type GradingDimensions, GradingDimensionsSchema } from './trial.schemas
  * Extends `GradingDimensions` with `overall`, computed as `outcome × process`.
  * Trajectories with correct outcomes but poor reasoning (retry loops,
  * unnecessary tool calls) get lower weights than clean solutions.
- * See `skills/training-pipeline/` § Augmented Self-Distillation.
+ * See `dev-research/evolutionary-agent/program.md` and `docs/TRAINING.md`.
  *
  * @public
  */
@@ -132,12 +132,7 @@ export type TrainingCandidateAssessment = z.infer<typeof TrainingCandidateAssess
  *
  * @public
  */
-export const TrainingCaptureReasonSchema = z.enum([
-  'timed_out',
-  'non_zero_exit',
-  'insufficient_richness',
-  'tool_error',
-])
+export const TrainingCaptureReasonSchema = z.enum(['timed_out', 'non_zero_exit', 'insufficient_richness', 'tool_error'])
 
 /** Training-capture assessment reason type */
 export type TrainingCaptureReason = z.infer<typeof TrainingCaptureReasonSchema>

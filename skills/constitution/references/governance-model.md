@@ -74,13 +74,17 @@ Constitution rules exist in two forms simultaneously:
 | Layer | Mechanism | What It Does |
 |-------|-----------|-------------|
 | bThread (symbolic) | Block predicates | Prevents dangerous events structurally |
-| Skill (neural) | Context assembly | Teaches the model the rules |
+| Context / teaching surface | Skill text, memory, or training context | Teaches the model the rules |
 
 Both are needed and non-substitutable:
 
 - bThread alone: the model keeps proposing blocked actions, wasting inference
-- skill alone: the model may find creative circumventions
+- context alone: the model may find creative circumventions
 - both: the model understands the rules and the engine still enforces them
+
+Skills are one current bootstrap surface for that context, but they should not be
+treated as the final home of governance knowledge. Constitution understanding
+should increasingly also live in durable memory and training substrates.
 
 Constitution skills should remain area-of-effect scoped rather than globally
 injecting every rule at all times.

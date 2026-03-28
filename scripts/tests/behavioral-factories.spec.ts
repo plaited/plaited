@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { join } from 'node:path'
 import {
   BEHAVIORAL_FACTORIES_PROGRAM_PATH,
   BEHAVIORAL_FACTORIES_SYSTEM_PROMPT,
@@ -6,6 +7,7 @@ import {
   isBehavioralFactoriesValid,
   RESEARCH_LANE_CONFIG,
   renderBehavioralFactoriesStatus,
+  resolveWorkspaceRoot,
 } from '../behavioral-factories.ts'
 
 describe('behavioral-factories script', () => {
@@ -29,6 +31,12 @@ describe('behavioral-factories script', () => {
     const status = await getBehavioralFactoriesStatus()
 
     expect(isBehavioralFactoriesValid(status)).toBe(true)
+  })
+
+  test('resolves workspace root from a nested repo directory', async () => {
+    const workspaceRoot = await resolveWorkspaceRoot({ cwd: join(process.cwd(), 'scripts') })
+
+    expect(workspaceRoot).toBe(process.cwd())
   })
 
   test('exports an autoresearch lane config', () => {

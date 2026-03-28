@@ -1,6 +1,11 @@
 # Default MAC Rules
 
-Framework-provided MAC factories loaded at spawn. Immutable at runtime — `protectGovernance` bThread blocks any modification.
+These are the current framework-provided MAC defaults loaded at spawn. Treat
+them as the shipped baseline protection set, not the final complete governance
+surface.
+
+They are immutable at runtime — `protectGovernance` blocks modification — but
+the baseline can still grow over time as the constitution ratchet tightens.
 
 ## noRmRf
 
@@ -85,7 +90,9 @@ const protectGovernance = createGovernanceFactory({
 })
 ```
 
-When blocked, the handler routes to simulation — the Dreamer predicts consequences, generative UI explains to the user, the user decides. Danger is contextual (same `rm` command, different paths = different consequences).
+When blocked, the handler routes to simulation — the Dreamer predicts
+consequences, generative UI explains to the user, the user decides. Danger is
+contextual (same `rm` command, different paths = different consequences).
 
 ## Loading at Spawn
 
@@ -123,3 +130,6 @@ The constitution is **additive and append-only**:
 - Goals can be added/removed freely (user-approved)
 
 This is enforced by `protectGovernance` blocking writes to `mac/` paths and by the `memoryIntegrity` bThread monitoring `.memory/constitution/`.
+
+The important invariant is the ratchet, not that this exact file lists every MAC
+rule that will ever matter. This file documents the current shipped defaults.

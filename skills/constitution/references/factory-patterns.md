@@ -1,5 +1,16 @@
 # Factory Patterns
 
+These are current working starting patterns for constitution, goal, and workflow
+factories. They encode useful defaults and invariants, but they are not meant to
+freeze the final architecture or imply that one exact decomposition is the only
+valid shape.
+
+When using this file:
+
+- treat the contracts and invariants as more stable than the exact examples
+- treat the examples as practical starting points
+- move unresolved strategy or alternative compositions into research/program surfaces rather than silently promoting them to doctrine
+
 ## GovernanceFactory Contract
 
 All governance, goal, and workflow factories share one type signature:
@@ -38,7 +49,7 @@ Both use the same contract. The distinction is lifecycle, not shape.
 
 ## Return Shape
 
-Factory functions encode two kinds of constitutional knowledge:
+Factory functions commonly encode two kinds of constitutional knowledge:
 
 ```typescript
 {
@@ -70,7 +81,8 @@ Factory functions encode two kinds of constitutional knowledge:
 
 ## Goal Factory Example
 
-Goals use brand `🎯` but follow the same contract:
+Goals use brand `🎯` but follow the same contract. This is an example starting
+pattern, not the only valid final arrangement:
 
 ```typescript
 // .memory/goals/watch-alice.ts
@@ -105,7 +117,8 @@ export const watchAlice = {
 
 ## Workflow Factory Example
 
-Workflows use brand `🔄` — same contract, runtime-loaded:
+Workflows use brand `🔄` — same contract, runtime-loaded. Again, this is a
+current example pattern rather than a final required organization:
 
 ```typescript
 export const dailyReport = {
@@ -142,3 +155,7 @@ export const dailyReport = {
 | Governance/goal skill (Markdown) | Teaches the model what rules/goals mean | Understanding |
 
 All are versioned in git. Factories are distributed via npm — MAC factories shipped with `plaited/agent`.
+
+The key stable point is the governance contract and its invariants. Specific
+factory groupings, names, and decomposition strategies should remain open to
+improvement until they are proven durable.

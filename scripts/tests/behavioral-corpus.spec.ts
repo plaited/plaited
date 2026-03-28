@@ -52,6 +52,9 @@ describe('behavioral-corpus script', () => {
     expect(RESEARCH_LANE_CONFIG.writableRoots).toEqual(['dev-research/behavioral-corpus'])
     expect(RESEARCH_LANE_CONFIG.defaultAttempts).toBe(20)
     expect(RESEARCH_LANE_CONFIG.defaultParallelism).toBe(3)
+    expect(RESEARCH_LANE_CONFIG.evaluation?.graderPath).toBe('scripts/behavioral-corpus-grader.ts')
+    expect(RESEARCH_LANE_CONFIG.evaluation?.verifierPath).toBe('scripts/behavioral-corpus-verifier.ts')
+    expect(RESEARCH_LANE_CONFIG.evaluation?.useMetaVerification).toBe(true)
   })
 
   test('semantic validation requires encoded corpus to reference behavioral seed anchors', async () => {

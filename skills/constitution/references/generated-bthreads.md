@@ -76,29 +76,30 @@ The agent generates the test before the thread:
 
 ## File Structure
 
-```
-.memory/
-├── @context.jsonld
-├── constitution/
-│   ├── mac/                          # Framework-provided (immutable)
-│   │   ├── no-rm-rf.ts
-│   │   ├── protect-governance.ts
-│   │   └── tests/
-│   │       ├── no-rm-rf.spec.ts
-│   │       └── protect-governance.spec.ts
-│   └── dac/                          # User-approved (mutable)
-│       ├── no-prod-deploys.ts
-│       └── tests/
-│           └── no-prod-deploys.spec.ts
-├── goals/                            # Agent-generated, user-approved
-│   ├── watch-alice.ts
-│   ├── server-health.ts
-│   ├── daily-report.ts
-│   └── tests/
-│       ├── watch-alice.spec.ts
-│       ├── server-health.spec.ts
-│       └── daily-report.spec.ts
-└── sessions/                         # Runtime snapshots (not generated)
+This is a current starting structure, not a frozen final layout:
+
+```mermaid
+graph TD
+    memory[".memory/"]
+    context["@context.jsonld"]
+    constitution["constitution/"]
+    mac["mac/ (framework-provided, immutable)"]
+    macTests["mac/tests/"]
+    dac["dac/ (user-approved, mutable)"]
+    dacTests["dac/tests/"]
+    goals["goals/ (agent-generated, user-approved)"]
+    goalTests["goals/tests/"]
+    sessions["sessions/ (runtime snapshots)"]
+
+    memory --> context
+    memory --> constitution
+    memory --> goals
+    memory --> sessions
+    constitution --> mac
+    constitution --> dac
+    mac --> macTests
+    dac --> dacTests
+    goals --> goalTests
 ```
 
 ## validateAndImport Gate

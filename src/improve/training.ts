@@ -40,7 +40,7 @@ import { detectRichness, hasToolErrors } from './trial.utils.ts'
  * @remarks
  * Training weight = `outcome × process`. Missing dimensions default to 0,
  * ensuring unscored trajectories contribute nothing to training.
- * See `skills/training-pipeline/` § Augmented Self-Distillation.
+ * See `dev-research/evolutionary-agent/program.md` and `docs/TRAINING.md`.
  *
  * @public
  */

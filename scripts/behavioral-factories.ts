@@ -25,7 +25,7 @@ export const BEHAVIORAL_FACTORIES_OUTPUT_PATH = join('dev-research', 'behavioral
 export const BEHAVIORAL_FACTORIES_SYSTEM_PROMPT = `You are working on the behavioral-factories lane.
 
 Your job is to derive deterministic, reviewable behavioral-factory outputs from
-upstream seed and corpus contracts.
+upstream MSS and behavioral seed/corpus contracts.
 Prefer lane-local compilation artifacts over broad runtime or framework edits.
 Do not rewrite upstream lanes while working on this lane.`
 
@@ -37,6 +37,7 @@ export const RESEARCH_LANE_CONFIG = {
   writableRoots: [join('dev-research', 'behavioral-factories')],
   skills: [
     join('skills', 'behavioral-core'),
+    join('skills', 'constitution'),
     join('skills', 'hypergraph-memory'),
     join('skills', 'mss'),
     join('skills', 'modnet-node'),
@@ -46,7 +47,7 @@ export const RESEARCH_LANE_CONFIG = {
   model: 'openrouter/minimax/minimax-m2.7',
   systemPrompt: BEHAVIORAL_FACTORIES_SYSTEM_PROMPT,
   taskPrompt:
-    'Improve the behavioral-factories lane. Keep changes lane-local, consume upstream seed/corpus contracts conceptually, run the lane validator before finishing, and summarize what changed.',
+    'Improve the behavioral-factories lane. Keep changes lane-local, consume upstream MSS and behavioral seed/corpus contracts, run the lane validator before finishing, and summarize what changed.',
   defaultAttempts: 20,
   defaultParallelism: 3,
   evaluation: {
@@ -59,12 +60,15 @@ export const RESEARCH_LANE_CONFIG = {
 
 export const BEHAVIORAL_FACTORIES_REQUIREMENTS: readonly ProgramRequirement[] = [
   { label: 'Behavioral core skill', path: join('skills', 'behavioral-core', 'SKILL.md') },
+  { label: 'Constitution skill', path: join('skills', 'constitution', 'SKILL.md') },
   { label: 'Hypergraph memory skill', path: join('skills', 'hypergraph-memory', 'SKILL.md') },
   { label: 'MSS skill', path: join('skills', 'mss', 'SKILL.md') },
   { label: 'Modnet node skill', path: join('skills', 'modnet-node', 'SKILL.md') },
   { label: 'Modnet modules skill', path: join('skills', 'modnet-modules', 'SKILL.md') },
   { label: 'Hypergraph tool', path: join('src', 'tools', 'hypergraph.ts') },
   { label: 'Factories runtime surface', path: join('src', 'agent', 'factories.ts') },
+  { label: 'Behavioral seed program', path: join('dev-research', 'behavioral-seed', 'program.md') },
+  { label: 'Behavioral corpus program', path: join('dev-research', 'behavioral-corpus', 'program.md') },
   { label: 'MSS seed program', path: join('dev-research', 'mss-seed', 'program.md') },
   { label: 'MSS corpus program', path: join('dev-research', 'mss-corpus', 'program.md') },
 ] as const
@@ -74,6 +78,26 @@ const pathExists = async (path: string): Promise<boolean> => {
   return result.exitCode === 0
 }
 
+export const resolveWorkspaceRoot = async ({ cwd = process.cwd() }: { cwd?: string } = {}) => {
+  const override = process.env.PLAITED_WORKSPACE_ROOT?.trim()
+  if (override) {
+    return override
+  }
+
+  const gitTopLevel = await Bun.$`git rev-parse --show-toplevel`.cwd(cwd).quiet().nothrow()
+  if (gitTopLevel.exitCode === 0) {
+    const root = (await gitTopLevel.text()).trim()
+    if (root.length > 0) {
+      return root
+    }
+  }
+
+  return cwd
+}
+
+const resolveWorkspacePath = ({ workspaceRoot, relativePath }: { workspaceRoot: string; relativePath: string }) =>
+  join(workspaceRoot, relativePath)
+
 const countFiles = async (dirPath: string): Promise<number> => {
   if (!(await pathExists(dirPath))) {
     return 0
@@ -82,16 +106,27 @@ const countFiles = async (dirPath: string): Promise<number> => {
   return Array.fromAsync(new Bun.Glob('*').scan({ cwd: dirPath })).then((entries) => entries.length)
 }
 
-export const getBehavioralFactoriesStatus = async (): Promise<BehavioralFactoriesStatus> => {
-  const programFile = Bun.file(BEHAVIORAL_FACTORIES_PROGRAM_PATH)
+export const getBehavioralFactoriesStatus = async ({
+  workspaceRoot,
+}: {
+  workspaceRoot?: string
+} = {}): Promise<BehavioralFactoriesStatus> => {
+  const resolvedWorkspaceRoot = workspaceRoot ?? (await resolveWorkspaceRoot())
+  const programFile = Bun.file(
+    resolveWorkspacePath({ workspaceRoot: resolvedWorkspaceRoot, relativePath: BEHAVIORAL_FACTORIES_PROGRAM_PATH }),
+  )
   const programExists = await programFile.exists()
   const programText = programExists ? (await programFile.text()).trim() : ''
-  const outputFiles = await countFiles(BEHAVIORAL_FACTORIES_OUTPUT_PATH)
+  const outputFiles = await countFiles(
+    resolveWorkspacePath({ workspaceRoot: resolvedWorkspaceRoot, relativePath: BEHAVIORAL_FACTORIES_OUTPUT_PATH }),
+  )
 
   const requirements = await Promise.all(
     BEHAVIORAL_FACTORIES_REQUIREMENTS.map(async (requirement) => ({
       ...requirement,
-      exists: await pathExists(requirement.path),
+      exists: await pathExists(
+        resolveWorkspacePath({ workspaceRoot: resolvedWorkspaceRoot, relativePath: requirement.path }),
+      ),
     })),
   )
 

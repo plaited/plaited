@@ -12,7 +12,7 @@ The goal is not to train a frontier model from scratch. The goal is to:
 - evolve that harness through parallel task rollouts
 - use judges, humans, and deterministic evals to select better variants
 - periodically distill stable winning behavior into cleaner defaults, datasets,
-  or adapters
+  or retained policy artifacts
 
 This lane is intended to run on the MSI machine over long periods.
 
@@ -69,7 +69,14 @@ The target is a hybrid agent stack with:
 - persistent memory
 - judges and task evals
 - human checkpoints when needed
-- agenthub / fanout / worktree-backed parallel experimentation
+- worktree-backed parallel experimentation
+
+In repo terms, the intended foundation is:
+
+- `scripts/autoresearch-runner.ts` for candidate generation and durable attempt orchestration
+- `src/improve` for judging, verifier/meta-verification, and promotion selection
+- lane `program.md` files for bounded mutation targets
+- accepted attempt commits and judged outputs as retention and distillation inputs
 
 ## What Evolves
 
@@ -136,6 +143,16 @@ past sessions:
 - observable status and artifacts
 - judged selection
 - resumable state
+
+Concretely, this means:
+
+1. mutate an agent package or lane-local policy surface
+2. generate candidate attempts with `autoresearch-runner`
+3. run deterministic validation inside each attempt
+4. evaluate surviving attempts with `src/improve`
+5. use optional meta-verification when selection confidence matters
+6. promote only accepted attempts
+7. extract retained trajectories, patches, summaries, and accepted commits for future distillation
 
 ## Agent Package
 
@@ -220,12 +237,43 @@ Evaluation should be layered.
 - memory usefulness
 - hallucination resistance
 
+### Verifier Signals
+
+- confidence in judge output
+- disagreement or ambiguity across close candidates
+- whether an accepted attempt is safe to retain or promote automatically
+
 ### Human Signals
 
 - practical usefulness
 - trustworthiness
 - readability
 - whether the behavior feels like a better agent, not just a better scorer
+
+## Current Tooling Fit
+
+Current repo tooling already supports part of this program:
+
+- `autoresearch-runner` gives:
+  - worktree-backed attempts
+  - durable status and result artifacts
+  - deterministic validation
+  - resumable evaluation
+
+- `src/improve` gives:
+  - trial-result evaluation
+  - workspace-improvement evaluation
+  - judge/meta-verifier contracts
+  - promotion selection scaffolding
+
+What still needs improvement to fully support this lane:
+
+- explicit agent-package schemas
+- mutation lineage and recombination support
+- richer long-horizon trajectory capture and replay
+- retrieval/search-specific evaluation dimensions
+- training-data extraction from accepted evolutionary runs
+- stronger support for comparing policy bundles, not just isolated attempts
 
 ## Phases
 
@@ -258,6 +306,18 @@ Optimize:
 - citation and answer grounding
 
 ### Phase 4: Distillation
+
+Distillation should consume the highest-confidence outputs from the evolutionary
+loop:
+
+- accepted attempt commits
+- judged and meta-verified summaries
+- retained trajectories and repair traces
+- durable policy artifacts that should become skills, memory, or runtime defaults
+
+`trial-runner` remains useful for repeated reliability suites, but it is not the
+center of this lane. The center is `autoresearch` for candidate generation and
+`improve` for evaluation and selection.
 
 Once stable patterns emerge:
 

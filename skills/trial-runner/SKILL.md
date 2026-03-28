@@ -1,6 +1,6 @@
 ---
 name: trial-runner
-description: Run trials against adapters (any CLI/agent), capture trajectories, and optionally grade results. Library-first API with CLI secondary. Supports pass@k reliability analysis, workspace isolation, and polyglot graders.
+description: Run repeated trials against `src/improve` adapters, capture trajectories, and optionally grade and meta-verify results. Library-first API with CLI secondary.
 license: ISC
 ---
 
@@ -8,9 +8,15 @@ license: ISC
 
 ## Purpose
 
-Run prompts against any adapter, capture structured results, and optionally grade them. The fundamental operation is a **trial** — running k attempts per prompt and measuring pass@k reliability.
+Run prompts against an adapter, capture structured results, and optionally grade
+them. The fundamental operation is a **trial**: running k attempts per prompt
+and measuring pass@k reliability.
 
-**The runner executes trials. You provide adapters and graders.**
+This is one evaluation mode inside `src/improve`, not the whole internal
+autoresearch architecture.
+
+**The runner executes repeated trials. You provide adapters and graders, and may
+optionally add verifier/meta-verification policy on top.**
 
 | Runner Provides | You Provide |
 |-----------------|-------------|
@@ -18,12 +24,19 @@ Run prompts against any adapter, capture structured results, and optionally grad
 | Structured JSONL output | Grader script (scores output) |
 | pass@k/pass^k metrics | Prompts (JSONL) |
 | Concurrent execution + workspace isolation | Comparison analysis scripts |
+| Optional verifier wrapping via `src/improve` | Policy for when meta-verification matters |
 
 **Use this when:**
 - Evaluating agent quality with pass@k reliability metrics
 - Capturing trajectories for downstream scoring or training
 - Comparing agents across configurations (via `compare-trials` skill)
-- Orchestrating distillation pipelines
+- Running repeated prompt suites against Pi, Plaited-native, or external adapters
+
+Use `scripts/autoresearch-runner.ts` instead when the question is:
+- mutate workspace state
+- validate candidate attempts
+- judge workspace improvements
+- select a promotable attempt
 
 ## Library API (Primary)
 
@@ -53,6 +66,9 @@ const results = await runTrial({
 // results[0].passRate, results[0].passAtK, results[0].passExpK
 ```
 
+If you want meta-verification, wrap the grader using `withMetaVerification(...)`
+from `src/improve` before calling `runTrial()`.
+
 ### runTrial Config
 
 | Field | Type | Default | Description |
@@ -68,6 +84,9 @@ const results = await runTrial({
 | `workspaceDir` | `string` | none | Per-prompt workspace isolation base dir |
 | `progress` | `boolean` | false | Show progress to stderr |
 | `append` | `boolean` | false | Append to output file |
+
+Verifier loading and meta-verification are separate `src/improve` utilities. The
+trial runner intentionally stays focused on repeated execution and result capture.
 
 ## CLI (Secondary)
 
@@ -164,6 +183,19 @@ hint = (data.get("hint") or "").lower()
 passed = hint in output if hint else True
 print(json.dumps({"pass": passed, "score": 1.0 if passed else 0.0}))
 ```
+
+## Verifier and Meta-Verification
+
+`runTrial()` itself does not require a verifier, but `src/improve` supports them.
+Use a verifier when:
+
+- grader trust is uncertain
+- prompts are adversarial
+- promotion or training inclusion depends on stable grading
+
+Meta-verification is especially useful when trial outputs feed downstream
+training or retention logic, but it should remain optional by policy rather than
+always-on.
 
 ## Schema Exports
 

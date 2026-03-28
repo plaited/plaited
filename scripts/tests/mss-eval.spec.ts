@@ -1,10 +1,14 @@
 import { describe, expect, test } from 'bun:test'
 import { buildWorkspaceImprovementJudgePrompt, buildWorkspaceImprovementMetaVerifierPrompt } from '../../src/improve.ts'
+import { BEHAVIORAL_CORPUS_JUDGE_CRITERIA, buildBehavioralCorpusJudgeInput } from '../behavioral-corpus-grader.ts'
+import { getBehavioralCorpusJudgeInput } from '../behavioral-corpus-verifier.ts'
 import {
   BEHAVIORAL_FACTORIES_JUDGE_CRITERIA,
   buildBehavioralFactoriesJudgeInput,
 } from '../behavioral-factories-grader.ts'
 import { getBehavioralFactoriesJudgeInput } from '../behavioral-factories-verifier.ts'
+import { BEHAVIORAL_SEED_JUDGE_CRITERIA, buildBehavioralSeedJudgeInput } from '../behavioral-seed-grader.ts'
+import { getBehavioralSeedJudgeInput } from '../behavioral-seed-verifier.ts'
 import { buildMssCorpusJudgeInput, MSS_CORPUS_JUDGE_CRITERIA } from '../mss-corpus-grader.ts'
 import { getMssCorpusJudgeInput } from '../mss-corpus-verifier.ts'
 import { buildMssSeedJudgeInput, MSS_SEED_JUDGE_CRITERIA } from '../mss-seed-grader.ts'
@@ -68,6 +72,30 @@ describe('mss eval builders', () => {
     expect(input.changedFiles).toEqual(['dev-research/behavioral-factories/factories/policy-guards.json'])
   })
 
+  test('builds behavioral-seed and behavioral-corpus judge input with lane metadata', () => {
+    const seedInput = buildBehavioralSeedJudgeInput({
+      output: 'Updated behavioral seed summary.',
+      task: 'Evaluate a behavioral-seed autoresearch attempt.',
+      metadata: {
+        changedPaths: ['dev-research/behavioral-seed/seed/anchors.jsonld'],
+        diffStat: '1 file changed',
+      },
+    })
+    const corpusInput = buildBehavioralCorpusJudgeInput({
+      output: 'Updated behavioral corpus summary.',
+      task: 'Evaluate a behavioral-corpus autoresearch attempt.',
+      metadata: {
+        changedPaths: ['dev-research/behavioral-corpus/encoded/manifest.json'],
+        diffStat: '1 file changed',
+      },
+    })
+
+    expect(seedInput.slice).toBe('behavioral-seed')
+    expect(seedInput.program).toBe('dev-research/behavioral-seed/program.md')
+    expect(corpusInput.slice).toBe('behavioral-corpus')
+    expect(corpusInput.program).toBe('dev-research/behavioral-corpus/program.md')
+  })
+
   test('shared judge and verifier prompts include lane-specific criteria', () => {
     const input = buildMssSeedJudgeInput({
       output: 'Updated seed artifact summary.',
@@ -96,6 +124,43 @@ describe('mss eval builders', () => {
     expect(judgePrompt).toContain('dev-research/mss-seed/seed/mss.jsonld')
     expect(verifierPrompt).toContain('corpus improvements')
     expect(verifierPrompt).toContain('"score": 0.92')
+  })
+
+  test('behavioral seed and corpus prompts include lane-specific criteria', () => {
+    const seedInput = buildBehavioralSeedJudgeInput({
+      output: 'Updated behavioral seed summary.',
+      task: 'Evaluate a behavioral-seed autoresearch attempt.',
+      metadata: {
+        changedPaths: ['dev-research/behavioral-seed/seed/anchors.jsonld'],
+        diffStat: '1 file changed',
+      },
+    })
+    const corpusInput = buildBehavioralCorpusJudgeInput({
+      output: 'Updated behavioral corpus summary.',
+      task: 'Evaluate a behavioral-corpus autoresearch attempt.',
+      metadata: {
+        changedPaths: ['dev-research/behavioral-corpus/encoded/manifest.json'],
+        diffStat: '1 file changed',
+      },
+    })
+
+    expect(
+      buildWorkspaceImprovementJudgePrompt({
+        input: seedInput,
+        criteria: BEHAVIORAL_SEED_JUDGE_CRITERIA,
+      }),
+    ).toContain('behavioral-seed improvements')
+    expect(
+      buildWorkspaceImprovementMetaVerifierPrompt({
+        input: corpusInput,
+        judgeResult: {
+          pass: true,
+          score: 0.91,
+          reasoning: 'Bounded corpus improvement.',
+        },
+        criteria: BEHAVIORAL_CORPUS_JUDGE_CRITERIA,
+      }),
+    ).toContain('behavioral-corpus improvements')
   })
 
   test('recovers preserved judge input for seed and corpus verifiers', () => {
@@ -163,6 +228,49 @@ describe('mss eval builders', () => {
         },
       }),
     ).toEqual(behavioralFactoriesInput)
+
+    const behavioralSeedInput = buildBehavioralSeedJudgeInput({
+      output: 'Updated behavioral seed summary.',
+      task: 'Evaluate a behavioral-seed autoresearch attempt.',
+      metadata: {
+        changedPaths: ['dev-research/behavioral-seed/seed/anchors.jsonld'],
+        diffStat: '1 file changed',
+      },
+    })
+    const behavioralCorpusInput = buildBehavioralCorpusJudgeInput({
+      output: 'Updated behavioral corpus summary.',
+      task: 'Evaluate a behavioral-corpus autoresearch attempt.',
+      metadata: {
+        changedPaths: ['dev-research/behavioral-corpus/encoded/manifest.json'],
+        diffStat: '1 file changed',
+      },
+    })
+
+    expect(
+      getBehavioralSeedJudgeInput({
+        pass: true,
+        score: 0.87,
+        outcome: {
+          judgeSdk: {
+            judgeInput: behavioralSeedInput,
+            workspaceRoot: '/tmp/behavioral-seed-attempt',
+          },
+        },
+      }),
+    ).toEqual(behavioralSeedInput)
+
+    expect(
+      getBehavioralCorpusJudgeInput({
+        pass: true,
+        score: 0.89,
+        outcome: {
+          judgeSdk: {
+            judgeInput: behavioralCorpusInput,
+            workspaceRoot: '/tmp/behavioral-corpus-attempt',
+          },
+        },
+      }),
+    ).toEqual(behavioralCorpusInput)
   })
 
   test('behavioral-factories prompts include lane-specific criteria', () => {

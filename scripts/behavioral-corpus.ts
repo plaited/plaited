@@ -121,6 +121,12 @@ export const RESEARCH_LANE_CONFIG = {
     'Improve the behavioral-corpus lane artifacts. Use behavioral-seed as the semantic frame, and encode raw behavioral and constitution source material as evidence under that frame. Produce lane-local encoded corpus artifacts rather than raw ad hoc concepts. Do not edit src/tools. Run the lane validator before finishing and summarize what changed, including any explicit seed insufficiency.',
   defaultAttempts: 20,
   defaultParallelism: 3,
+  evaluation: {
+    graderPath: 'scripts/behavioral-corpus-grader.ts',
+    verifierPath: 'scripts/behavioral-corpus-verifier.ts',
+    useMetaVerification: true,
+    hint: 'Prefer lane-bounded corpus outputs with encoded evidence, source-backed structure, and behavioral-seed-aligned semantics. Penalize ontology drift and weak corpus evidence.',
+  },
 } satisfies ResearchLaneConfig
 
 export const BEHAVIORAL_CORPUS_REQUIREMENTS: readonly ProgramRequirement[] = [

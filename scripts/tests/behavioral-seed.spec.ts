@@ -51,6 +51,9 @@ describe('behavioral-seed script', () => {
     expect(RESEARCH_LANE_CONFIG.defaultAttempts).toBe(20)
     expect(RESEARCH_LANE_CONFIG.defaultParallelism).toBe(3)
     expect(RESEARCH_LANE_CONFIG.systemPrompt).toBe(BEHAVIORAL_SEED_SYSTEM_PROMPT)
+    expect(RESEARCH_LANE_CONFIG.evaluation?.graderPath).toBe('scripts/behavioral-seed-grader.ts')
+    expect(RESEARCH_LANE_CONFIG.evaluation?.verifierPath).toBe('scripts/behavioral-seed-verifier.ts')
+    expect(RESEARCH_LANE_CONFIG.evaluation?.useMetaVerification).toBe(true)
   })
 
   test('semantic validation checks behavioral anchors and linkage', async () => {

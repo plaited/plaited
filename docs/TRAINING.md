@@ -1,6 +1,6 @@
 # Training: Distillation from Frontier Agents
 
-> **Status: ACTIVE** — Design rationale document. Implementation details moved to `skills/training-pipeline/`. Cross-references: `AGENT-LOOP.md` (pipeline context), `HYPERGRAPH-MEMORY.md` (JSON-LD as training source), `CONSTITUTION.md` (flywheel bThread approval).
+> **Status: ACTIVE** — Design rationale document. Implementation details now live across `src/improve`, `scripts/autoresearch-runner.ts`, and `dev-research/evolutionary-agent/program.md`. Cross-references: `AGENT-LOOP.md` (pipeline context), `HYPERGRAPH-MEMORY.md` (JSON-LD as training source), `skills/constitution/` (flywheel bThread approval).
 
 ## Overview
 
@@ -15,7 +15,11 @@ Pre-trained tool-calling models (GPT-4, Claude) are trained on generic tool sche
 3. **Dreamer capability** — predicting state transitions requires training on `(Context + Tool Call) -> (Real Output)` pairs from our specific tools
 4. **Constitution awareness** — the model learns governance constraints through context assembly + experience, not generic instruction-following
 
-Distillation from frontier agents (Claude Code, Gemini CLI) via the trial runner provides the reasoning patterns. Fine-tuning on our specific tools and BP feedback loop produces a model that's both capable and constraint-aware. See `AGENT-LOOP.md` (overview) and `skills/agent-loop/` (implementation patterns).
+Distillation from frontier agents and retained Plaited improvement runs provides
+the reasoning patterns. Fine-tuning on our specific tools and BP feedback loop
+produces a model that's both capable and constraint-aware. See
+`AGENT-LOOP.md` (overview), `skills/agent-loop/` (implementation patterns),
+and `dev-research/evolutionary-agent/program.md` (long-horizon improvement direction).
 
 ## The Flywheel
 
@@ -25,4 +29,8 @@ Usage -> trajectories -> SFT/GRPO -> better model -> better usage -> more trajec
 
 ## Implementation
 
-For pipeline design, data formats, training tiers, distillation stages, and cross-project knowledge transfer, see the [`training-pipeline` skill](../skills/training-pipeline/SKILL.md).
+For the current improvement-and-distillation direction, use:
+
+- [`src/improve`](/Users/eirby/Workspace/plaited/src/improve.ts) for trial, grading, verifier, and workspace-improvement utilities
+- [`autoresearch-runner.ts`](/Users/eirby/Workspace/plaited/scripts/autoresearch-runner.ts) for worktree-backed candidate generation
+- [`evolutionary-agent/program.md`](/Users/eirby/Workspace/plaited/dev-research/evolutionary-agent/program.md) for the longer-horizon evolutionary training direction

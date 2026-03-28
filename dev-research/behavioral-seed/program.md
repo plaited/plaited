@@ -20,10 +20,23 @@ training and runtime reasoning.
 - `skills/constitution/SKILL.md`
 - `skills/constitution/references/factory-patterns.md`
 - `skills/constitution/references/generated-bthreads.md`
+- `skills/constitution/references/governance-model.md`
 - `skills/constitution/references/mac-rules.md`
 - `src/behavioral/behavioral.ts`
-- `src/agent/factories.ts`
-- `src/agent/governance.ts`
+
+## Input Priority
+
+Use these inputs with clear precedence:
+
+1. `skills/behavioral-core` and `skills/constitution` define the primary
+   ontology surface for this lane.
+2. constitution references provide governance and lifecycle detail that should
+   shape the seed layer.
+3. runtime code such as `src/behavioral/behavioral.ts` is supporting
+   implementation evidence, not ontology authority.
+4. when runtime code and skill/reference surfaces diverge, prefer the
+   behavioral and constitution source surfaces unless the discrepancy is made
+   explicit and justified.
 
 ## External Retrieval
 
@@ -81,10 +94,11 @@ and behavioral-factory generation.
 ## Run Loop
 
 1. Check that behavioral and constitution source inputs exist.
-2. Distill compact, durable behavioral anchors from those sources.
-3. Generate or revise lane-local seed candidates under `dev-research/behavioral-seed/seed/`.
-4. Validate that the lane remains compact, reviewable, and independently authorable.
-5. Promote reviewed seed candidates only as a separate explicit step.
+2. Treat behavioral-core and constitution sources as the main ontology surface.
+3. Use runtime code only as supporting implementation evidence when needed.
+4. Generate or revise lane-local seed candidates under `dev-research/behavioral-seed/seed/`.
+5. Validate that the lane remains compact, reviewable, and independently authorable.
+6. Promote reviewed seed candidates only as a separate explicit step.
 
 ## Success Criteria
 

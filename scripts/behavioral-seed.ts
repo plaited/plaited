@@ -194,6 +194,12 @@ export const RESEARCH_LANE_CONFIG = {
     'Improve the behavioral-seed lane artifacts. Produce or refine a compact lane-local behavioral seed ontology for downstream corpus encoding and factory compilation. Do not edit src/tools. Run the lane validator before finishing and summarize what changed.',
   defaultAttempts: 20,
   defaultParallelism: 3,
+  evaluation: {
+    graderPath: 'scripts/behavioral-seed-grader.ts',
+    verifierPath: 'scripts/behavioral-seed-verifier.ts',
+    useMetaVerification: true,
+    hint: 'Prefer compact, lane-bounded behavioral seed improvements with durable behavioral and constitution anchors. Penalize weak seed evidence and support-surface drift.',
+  },
 } satisfies ResearchLaneConfig
 
 export const BEHAVIORAL_SEED_REQUIREMENTS: readonly ProgramRequirement[] = [

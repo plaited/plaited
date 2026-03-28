@@ -27,8 +27,6 @@ compilation without reopening raw `SKILL.md` files.
 - `skills/constitution/references/generated-bthreads.md`
 - `skills/constitution/references/mac-rules.md`
 - `src/behavioral/behavioral.ts`
-- `src/agent/factories.ts`
-- `src/agent/governance.ts`
 
 ## Input Priority
 
