@@ -1,9 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  buildScopeViolationMessage,
   buildStrategyNotes,
   DEFAULT_ATTEMPT_BUDGET,
   DEFAULT_INITIAL_CONCURRENT_ATTEMPTS,
   getProgramConfig,
+  isAllowedPath,
   parseRunArgs,
 } from '../research-pi-fanout.ts'
 
@@ -21,6 +23,7 @@ describe('research-pi-fanout', () => {
     expect(config.programPath).toBe('dev-research/default-hypergraph/program.md')
     expect(config.validateCommand).toEqual(['bun', 'scripts/default-hypergraph.ts', 'validate'])
     expect(config.skills.length).toBeGreaterThan(0)
+    expect(config.writableRoots).toEqual(['dev-research/default-hypergraph'])
   })
 
   test('parses run arguments with defaults', () => {
@@ -50,5 +53,39 @@ describe('research-pi-fanout', () => {
     expect(parsed.attempts).toBe(9)
     expect(parsed.concurrency).toBe(3)
     expect(parsed.runDir).toBe('/tmp/research-run')
+  })
+
+  test('allowed-path enforcement accepts only configured writable roots', () => {
+    expect(
+      isAllowedPath({
+        path: 'dev-research/default-hypergraph/seed/mss.jsonld',
+        writableRoots: ['dev-research/default-hypergraph'],
+      }),
+    ).toBe(true)
+
+    expect(
+      isAllowedPath({
+        path: 'scripts/default-hypergraph.ts',
+        writableRoots: ['dev-research/default-hypergraph'],
+      }),
+    ).toBe(false)
+
+    expect(
+      isAllowedPath({
+        path: 'skills/mss/SKILL.md',
+        writableRoots: ['dev-research/default-hypergraph'],
+      }),
+    ).toBe(false)
+  })
+
+  test('builds a retryable scope violation message for the agent', () => {
+    const message = buildScopeViolationMessage({
+      disallowedPaths: ['scripts/default-hypergraph.ts'],
+      writableRoots: ['dev-research/default-hypergraph'],
+    })
+
+    expect(message).toContain('modified files outside the allowed program surface')
+    expect(message).toContain('scripts/default-hypergraph.ts')
+    expect(message).toContain('dev-research/default-hypergraph')
   })
 })

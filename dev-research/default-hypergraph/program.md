@@ -79,11 +79,20 @@ The main research artifacts for this program are:
 - `skills/behavioral-core/SKILL.md`
 - `skills/mss/SKILL.md`
 
+Stable validator/support surfaces:
+
+- `scripts/default-hypergraph.ts`
+- `plaited skill-links`
+
+Program-owned writable artifacts should live under `dev-research/default-hypergraph/`.
+Do not rewrite the stable root runner/validator scripts during fanout attempts.
+
 Expected future artifacts:
 
 - `dev-research/default-hypergraph/schema/`
 - `dev-research/default-hypergraph/seed/`
 - `dev-research/default-hypergraph/tests/`
+- `dev-research/default-hypergraph/scripts/`
 - `dev-research/default-hypergraph/encodings/`
 - `dev-research/default-hypergraph/provenance/`
 
@@ -225,6 +234,10 @@ When this program is executed through autoresearch or fanout:
 The concrete agent harness, skill whitelist, and search/tooling surface are
 runner concerns. This program should describe the ontology and evaluation
 surface, not the specific operational wiring of Pi or search providers.
+
+Lane-local helper scripts may be authored under
+`dev-research/default-hypergraph/scripts/` to augment the stable validator
+surface. They should not replace or override the root runner/validator entrypoint.
 
 ## Relationship To Behavioral Factories
 

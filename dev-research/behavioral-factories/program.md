@@ -58,11 +58,19 @@ The main research artifacts for this program are:
 - `skills/mss/SKILL.md`
 - `src/tools/hypergraph.ts`
 
+Stable validator/support surfaces:
+
+- `scripts/behavioral-factories.ts`
+
+Program-owned writable artifacts should live under
+`dev-research/behavioral-factories/`. Do not rewrite the stable root
+runner/validator script during fanout attempts.
+
 Expected future artifacts:
 
 - `dev-research/behavioral-factories/factories/`
 - `dev-research/behavioral-factories/tests/`
-- `scripts/behavioral-factories.ts`
+- `dev-research/behavioral-factories/scripts/`
 
 ## Factory Targets
 
@@ -151,6 +159,10 @@ When this program is executed through autoresearch or fanout:
 The concrete runner decides which agent harness, skills, and search providers
 are available during a run. This program should specify when search, retrieval,
 or escalation behavior is needed, not which operational tool surface provides it.
+
+Lane-local helper scripts may be authored under
+`dev-research/behavioral-factories/scripts/` to augment the stable validator
+surface. They should not replace or override the root runner/validator entrypoint.
 
 ## Relationship To Default Hypergraph
 

@@ -40,13 +40,14 @@ type RunManifest = {
 // Attempts are executed concurrently in waves, starting with the initial fanout.
 export const DEFAULT_ATTEMPT_BUDGET = 15
 export const DEFAULT_INITIAL_CONCURRENT_ATTEMPTS = 3
+export const MAX_ATTEMPT_RETRIES = 2
 
 const PROGRAMS: Record<ProgramKey, ProgramConfig> = {
   'default-hypergraph': {
     key: 'default-hypergraph',
     programPath: join('dev-research', 'default-hypergraph', 'program.md'),
     validateCommand: ['bun', 'scripts/default-hypergraph.ts', 'validate'],
-    writableRoots: [join('dev-research', 'default-hypergraph'), join('scripts'), join('package.json')],
+    writableRoots: [join('dev-research', 'default-hypergraph')],
     skills: [
       join('skills', 'hypergraph-memory'),
       join('skills', 'mss'),
@@ -60,7 +61,7 @@ const PROGRAMS: Record<ProgramKey, ProgramConfig> = {
     key: 'behavioral-factories',
     programPath: join('dev-research', 'behavioral-factories', 'program.md'),
     validateCommand: ['bun', 'scripts/behavioral-factories.ts', 'validate'],
-    writableRoots: [join('dev-research', 'behavioral-factories'), join('scripts'), join('package.json')],
+    writableRoots: [join('dev-research', 'behavioral-factories')],
     skills: [join('skills', 'behavioral-core'), join('skills', 'hypergraph-memory'), join('skills', 'mss')],
     taskPrompt:
       'Improve the behavioral factories program artifacts. Prefer deterministic policy and factory surfaces, not freeform prompts. Run the validator before finishing and summarize what changed.',
@@ -234,6 +235,44 @@ const summarizeDiff = async (worktreePath: string) => {
   return (await diff.text()).trim()
 }
 
+export const normalizeRepoPath = (path: string) =>
+  path
+    .replaceAll('\\', '/')
+    .replace(/^\.\/+/u, '')
+    .replace(/\/+$/u, '')
+
+export const isAllowedPath = ({ path, writableRoots }: { path: string; writableRoots: string[] }) => {
+  const normalizedPath = normalizeRepoPath(path)
+  return writableRoots.some((root) => {
+    const normalizedRoot = normalizeRepoPath(root)
+    return normalizedPath === normalizedRoot || normalizedPath.startsWith(`${normalizedRoot}/`)
+  })
+}
+
+export const buildScopeViolationMessage = ({
+  disallowedPaths,
+  writableRoots,
+}: {
+  disallowedPaths: string[]
+  writableRoots: string[]
+}) => `Your previous attempt modified files outside the allowed program surface.
+
+Disallowed paths:
+${disallowedPaths.map((path) => `- ${path}`).join('\n')}
+
+Allowed writable roots:
+${writableRoots.map((path) => `- ${path}`).join('\n')}
+
+Retry with a narrower edit set. Only modify files inside the allowed writable roots.`
+
+const readChangedPaths = async (worktreePath: string) => {
+  const diff = await Bun.$`git diff --name-only`.cwd(worktreePath).quiet().nothrow()
+  return (await diff.text())
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+}
+
 const readAttemptStatuses = async (runDir: string, attempts: number) => {
   const rows: AttemptStatusRecord[] = []
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
@@ -266,53 +305,97 @@ const runAttempt = async ({
     startedAt,
   })
 
-  const piCommand = await buildPiCommand({ config, strategy })
-  const { proc, exitCode: piExitCode } = await runCommand({
-    cmd: piCommand,
-    cwd: worktreePath,
-    stdoutPath: attemptStdoutPath(runDir, attempt),
-    stderrPath: attemptStderrPath(runDir, attempt),
-  })
+  let retryCount = 0
+  let currentStrategy = strategy
+  let piExitCode = 1
+  let validateExitCode = 1
+  let diffStat = ''
+  let changedPaths: string[] = []
+  let disallowedPaths: string[] = []
+  let errorMessage = ''
+  let pid: number | undefined
 
-  const validate = await Bun.spawn({
-    cmd: config.validateCommand,
-    cwd: worktreePath,
-    stdout: 'pipe',
-    stderr: 'pipe',
-    env: process.env,
-  })
+  while (retryCount <= MAX_ATTEMPT_RETRIES) {
+    const piCommand = await buildPiCommand({ config, strategy: currentStrategy })
+    const { proc, exitCode } = await runCommand({
+      cmd: piCommand,
+      cwd: worktreePath,
+      stdoutPath: attemptStdoutPath(runDir, attempt),
+      stderrPath: attemptStderrPath(runDir, attempt),
+    })
+    pid = proc.pid
+    piExitCode = exitCode
+    changedPaths = await readChangedPaths(worktreePath)
+    disallowedPaths = changedPaths.filter((path) => !isAllowedPath({ path, writableRoots: config.writableRoots }))
 
-  const validateStdout = validate.stdout ? await new Response(validate.stdout).text() : ''
-  const validateStderr = validate.stderr ? await new Response(validate.stderr).text() : ''
+    if (disallowedPaths.length > 0) {
+      errorMessage = buildScopeViolationMessage({
+        disallowedPaths,
+        writableRoots: config.writableRoots,
+      })
 
-  await Promise.all([
-    Bun.write(join(runAttemptDir(runDir, attempt), 'validate.stdout.log'), validateStdout),
-    Bun.write(join(runAttemptDir(runDir, attempt), 'validate.stderr.log'), validateStderr),
-  ])
+      await Bun.write(join(runAttemptDir(runDir, attempt), `retry-${retryCount + 1}.txt`), `${errorMessage}\n`)
 
-  const validateExitCode = await validate.exited
-  const diffStat = await summarizeDiff(worktreePath)
+      if (retryCount < MAX_ATTEMPT_RETRIES) {
+        currentStrategy = `${strategy}
+
+Retry guidance:
+${errorMessage}`
+        retryCount += 1
+        continue
+      }
+
+      validateExitCode = 1
+      diffStat = await summarizeDiff(worktreePath)
+      break
+    }
+
+    const validate = await Bun.spawn({
+      cmd: config.validateCommand,
+      cwd: worktreePath,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: process.env,
+    })
+
+    const validateStdout = validate.stdout ? await new Response(validate.stdout).text() : ''
+    const validateStderr = validate.stderr ? await new Response(validate.stderr).text() : ''
+
+    await Promise.all([
+      Bun.write(join(runAttemptDir(runDir, attempt), 'validate.stdout.log'), validateStdout),
+      Bun.write(join(runAttemptDir(runDir, attempt), 'validate.stderr.log'), validateStderr),
+    ])
+
+    validateExitCode = await validate.exited
+    diffStat = await summarizeDiff(worktreePath)
+    errorMessage = piExitCode === 0 && validateExitCode === 0 ? '' : `pi=${piExitCode}, validate=${validateExitCode}`
+    break
+  }
+
   const finishedAt = new Date().toISOString()
   const status: AttemptStatusRecord = {
     attempt,
     strategy,
     worktreePath,
-    status: piExitCode === 0 && validateExitCode === 0 ? 'completed' : 'failed',
+    status: piExitCode === 0 && validateExitCode === 0 && disallowedPaths.length === 0 ? 'completed' : 'failed',
     startedAt,
     finishedAt,
-    pid: proc.pid,
+    pid,
     piExitCode,
     validateExitCode,
-    ...(piExitCode === 0 && validateExitCode === 0 ? {} : { error: `pi=${piExitCode}, validate=${validateExitCode}` }),
+    ...(piExitCode === 0 && validateExitCode === 0 && disallowedPaths.length === 0 ? {} : { error: errorMessage }),
   }
 
   await writeAttemptStatus(runDir, attempt, status)
   await writeJson(attemptResultPath(runDir, attempt), {
     attempt,
     strategy,
+    retryCount,
     piExitCode,
     validateExitCode,
     diffStat,
+    changedPaths,
+    disallowedPaths,
     worktreePath,
   })
 }

@@ -24,7 +24,7 @@ export const BEHAVIORAL_FACTORIES_REQUIREMENTS: readonly ProgramRequirement[] = 
   { label: 'Hypergraph memory skill', path: join('skills', 'hypergraph-memory', 'SKILL.md') },
   { label: 'MSS skill', path: join('skills', 'mss', 'SKILL.md') },
   { label: 'Hypergraph tool', path: join('src', 'tools', 'hypergraph.ts') },
-  { label: 'Training prompts program', path: join('dev-research', 'training-prompts', 'program.md') },
+  { label: 'Default hypergraph program', path: join('dev-research', 'default-hypergraph', 'program.md') },
 ] as const
 
 export const getBehavioralFactoriesStatus = async (): Promise<ProgramStatus> => {
