@@ -141,6 +141,8 @@ export const AdapterInputSchema = z.object({
   prompt: z.union([z.string(), z.array(z.string())]),
   /** Working directory for the adapter */
   cwd: z.string().optional(),
+  /** Optional scenario-specific system prompt override */
+  systemPrompt: z.string().optional(),
 })
 
 /** Adapter input type */

@@ -33,6 +33,13 @@ export const MSS_CORPUS_ARTIFACTS_PATH = join('dev-research', 'mss-corpus', 'art
 export const MSS_CORPUS_CHUNKS_PATH = join(MSS_CORPUS_ARTIFACTS_PATH, 'chunks.jsonl')
 export const MSS_CORPUS_COMPARE_REPORT_PATH = join(MSS_CORPUS_ARTIFACTS_PATH, 'source-compare.json')
 export const MSS_CORPUS_MANIFEST_PATH = join(MSS_CORPUS_ENCODED_PATH, 'manifest.json')
+export const DEFAULT_MSS_CORPUS_WITH_EMBEDDINGS = true
+export const DEFAULT_MSS_CORPUS_WITH_LLM = true
+export const MSS_CORPUS_SYSTEM_PROMPT = `You are working on the mss-corpus lane.
+
+Your job is to encode MSS and Modnet source material into a graph-ready corpus that depends on seed anchors.
+Prefer source chunks, distilled assertions, provenance, and retrieval-ready structure over abstract ontology expansion.
+Do not drift into unrelated repo improvement or support-surface rewrites.`
 
 export type GenerateMssCorpusArtifactsOptions = {
   docPaths?: string[]
@@ -40,6 +47,8 @@ export type GenerateMssCorpusArtifactsOptions = {
   artifactDir?: string
   encodedDir?: string
   seedPath?: string
+  withEmbeddings?: boolean
+  withLlm?: boolean
 }
 
 type MssCorpusLaneConfig = ResearchLaneConfig & {
@@ -60,6 +69,7 @@ export const RESEARCH_LANE_CONFIG = {
     join('skills', 'hypergraph-memory'),
   ],
   model: 'openrouter/minimax/minimax-m2.7',
+  systemPrompt: MSS_CORPUS_SYSTEM_PROMPT,
   taskPrompt:
     'Improve the mss-corpus lane artifacts. Produce lane-local encoded corpus artifacts that depend on mss-seed anchors rather than raw ad hoc concepts. Do not edit src/tools. Run the lane validator before finishing and summarize what changed.',
   defaultAttempts: 15,
@@ -142,6 +152,8 @@ export const generateMssCorpusArtifacts = async (options: GenerateMssCorpusArtif
   const artifactDir = options.artifactDir ?? MSS_CORPUS_ARTIFACTS_PATH
   const encodedDir = options.encodedDir ?? MSS_CORPUS_ENCODED_PATH
   const seedPath = options.seedPath ?? MSS_SEED_PATH
+  const withEmbeddings = options.withEmbeddings ?? DEFAULT_MSS_CORPUS_WITH_EMBEDDINGS
+  const withLlm = options.withLlm ?? DEFAULT_MSS_CORPUS_WITH_LLM
   const chunkOutputPath = join(artifactDir, 'chunks.jsonl')
   const compareOutputPath = join(artifactDir, 'source-compare.json')
   const manifestPath = join(encodedDir, 'manifest.json')
@@ -153,8 +165,8 @@ export const generateMssCorpusArtifacts = async (options: GenerateMssCorpusArtif
     chunkPath: chunkOutputPath,
     markdownPaths: options.markdownPaths ?? laneConfig.compareMarkdownPaths,
     pairLimit: 40,
-    withEmbeddings: false,
-    withLlm: false,
+    withEmbeddings,
+    withLlm,
   })
 
   await Bun.$`mkdir -p ${encodedDir}`.quiet()
@@ -168,6 +180,8 @@ export const generateMssCorpusArtifacts = async (options: GenerateMssCorpusArtif
         compareReportPath: compareOutputPath,
         sections: report.totals.sections,
         deterministicPairs: report.totals.deterministicPairs,
+        withEmbeddings,
+        withLlm,
       },
       null,
       2,
@@ -181,6 +195,8 @@ export const generateMssCorpusArtifacts = async (options: GenerateMssCorpusArtif
     docFiles: files.length,
     sections: files.reduce((count, file) => count + file.sections.length, 0),
     deterministicPairs: report.totals.deterministicPairs,
+    withEmbeddings,
+    withLlm,
   }
 }
 

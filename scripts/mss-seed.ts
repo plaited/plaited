@@ -29,11 +29,20 @@ export const MSS_SEED_PATH = join('dev-research', 'mss-seed', 'seed')
 export const MSS_SEED_ARTIFACTS_PATH = join('dev-research', 'mss-seed', 'artifacts')
 export const MSS_SEED_CHUNKS_PATH = join(MSS_SEED_ARTIFACTS_PATH, 'chunks.jsonl')
 export const MSS_SEED_COMPARE_REPORT_PATH = join(MSS_SEED_ARTIFACTS_PATH, 'source-compare.json')
+export const DEFAULT_MSS_SEED_WITH_EMBEDDINGS = false
+export const DEFAULT_MSS_SEED_WITH_LLM = true
+export const MSS_SEED_SYSTEM_PROMPT = `You are working on the mss-seed lane.
+
+Your job is to derive a compact, reviewable seed ontology from MSS and Modnet sources.
+Prefer durable anchors, invariants, and downstream corpus-enabling concepts over broad registries.
+Do not drift into general repo improvement or unrelated framework work.`
 
 export type GenerateMssSeedArtifactsOptions = {
   docPaths?: string[]
   markdownPaths?: string[]
   artifactDir?: string
+  withEmbeddings?: boolean
+  withLlm?: boolean
 }
 
 type MssSeedLaneConfig = ResearchLaneConfig & {
@@ -49,6 +58,7 @@ export const RESEARCH_LANE_CONFIG = {
   writableRoots: [join('dev-research', 'mss-seed')],
   skills: [join('skills', 'mss'), join('skills', 'modnet-node'), join('skills', 'modnet-modules')],
   model: 'openrouter/minimax/minimax-m2.7',
+  systemPrompt: MSS_SEED_SYSTEM_PROMPT,
   taskPrompt:
     'Improve the mss-seed lane artifacts. Produce or refine a compact lane-local seed ontology for downstream corpus encoding. Do not edit src/tools. Run the lane validator before finishing and summarize what changed.',
   defaultAttempts: 15,
@@ -129,6 +139,8 @@ export const generateMssSeedArtifacts = async (options: GenerateMssSeedArtifacts
   const artifactDir = options.artifactDir ?? MSS_SEED_ARTIFACTS_PATH
   const chunkOutputPath = join(artifactDir, 'chunks.jsonl')
   const compareOutputPath = join(artifactDir, 'source-compare.json')
+  const withEmbeddings = options.withEmbeddings ?? DEFAULT_MSS_SEED_WITH_EMBEDDINGS
+  const withLlm = options.withLlm ?? DEFAULT_MSS_SEED_WITH_LLM
   const docPaths = options.docPaths ?? laneConfig.sourceDocs
   const files = await buildDocChunks(docPaths)
   await writeDocChunksJsonl({ outputPath: chunkOutputPath, files, artifactDir })
@@ -137,8 +149,8 @@ export const generateMssSeedArtifacts = async (options: GenerateMssSeedArtifacts
     chunkPath: chunkOutputPath,
     markdownPaths: options.markdownPaths ?? laneConfig.compareMarkdownPaths,
     pairLimit: 40,
-    withEmbeddings: false,
-    withLlm: false,
+    withEmbeddings,
+    withLlm,
   })
 
   await Bun.write(compareOutputPath, `${JSON.stringify(report, null, 2)}\n`)
@@ -149,6 +161,8 @@ export const generateMssSeedArtifacts = async (options: GenerateMssSeedArtifacts
     docFiles: files.length,
     sections: files.reduce((count, file) => count + file.sections.length, 0),
     deterministicPairs: report.totals.deterministicPairs,
+    withEmbeddings,
+    withLlm,
     embeddingModel: DEFAULT_MSS_COMPARE_EMBEDDING_MODEL,
   }
 }

@@ -27,6 +27,7 @@ describe('autoresearch-runner', () => {
     expect(config.defaultAttempts).toBe(15)
     expect(config.defaultParallelism).toBe(3)
     expect(config.model).toBe('openrouter/minimax/minimax-m2.7')
+    expect(config.systemPrompt).toContain('mss-seed lane')
     expect(config.skills?.length).toBeGreaterThan(0)
   })
 
@@ -37,6 +38,7 @@ describe('autoresearch-runner', () => {
     expect(config.programPath).toBe('dev-research/mss-corpus/program.md')
     expect(config.validateCommand).toEqual(['bun', 'scripts/mss-corpus.ts', 'validate'])
     expect(config.writableRoots).toEqual(['dev-research/mss-corpus'])
+    expect(config.systemPrompt).toContain('mss-corpus lane')
   })
 
   test('parses run arguments with lane defaults', async () => {

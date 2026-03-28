@@ -45,12 +45,20 @@ describe('mss-corpus script', () => {
     const seedDir = join(root, 'seed')
     await Bun.$`mkdir -p ${seedDir}`.quiet()
     await Bun.write(join(seedDir, 'placeholder.jsonld'), '{}\n')
-    const result = await generateMssCorpusArtifacts({ artifactDir, encodedDir, seedPath: seedDir })
+    const result = await generateMssCorpusArtifacts({
+      artifactDir,
+      encodedDir,
+      seedPath: seedDir,
+      withEmbeddings: false,
+      withLlm: false,
+    })
     const compareExists = await Bun.file(result.compareOutputPath).exists()
     const manifestExists = await Bun.file(result.manifestPath).exists()
 
     expect(result.sections).toBeGreaterThan(0)
     expect(result.deterministicPairs).toBeGreaterThanOrEqual(0)
+    expect(result.withEmbeddings).toBe(false)
+    expect(result.withLlm).toBe(false)
     expect(compareExists).toBe(true)
     expect(manifestExists).toBe(true)
 

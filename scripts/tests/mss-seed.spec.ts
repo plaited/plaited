@@ -40,12 +40,17 @@ describe('mss-seed script', () => {
   test('generate writes chunk and compare artifacts', async () => {
     const root = await mkdtemp(join(tmpdir(), 'plaited-mss-seed-'))
     const artifactDir = join(root, 'artifacts')
-    const result = await generateMssSeedArtifacts({ artifactDir })
+    const result = await generateMssSeedArtifacts({
+      artifactDir,
+      withEmbeddings: false,
+      withLlm: false,
+    })
     const chunkExists = await Bun.file(result.chunkOutputPath).exists()
     const compareExists = await Bun.file(result.compareOutputPath).exists()
 
     expect(result.sections).toBeGreaterThan(0)
     expect(result.deterministicPairs).toBeGreaterThanOrEqual(0)
+    expect(result.withLlm).toBe(false)
     expect(chunkExists).toBe(true)
     expect(compareExists).toBe(true)
 

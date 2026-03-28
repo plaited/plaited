@@ -10,6 +10,7 @@ export type ResearchLaneConfig = {
   writableRoots: string[]
   skills?: string[]
   model?: string
+  systemPrompt?: string
   taskPrompt: string
   defaultAttempts: number
   defaultParallelism: number
@@ -182,8 +183,9 @@ const createWorktree = async (runDir: string, attempt: number) => {
 
 const buildSystemPrompt = async (config: ResearchLaneConfig) => {
   const programText = (await Bun.file(config.programPath).text()).trim()
+  const laneSystemPrompt = config.systemPrompt?.trim()
   const writableRoots = config.writableRoots.map((path) => `- ${path}`).join('\n')
-  return `${programText}
+  return `${laneSystemPrompt ? `${laneSystemPrompt}\n\n` : ''}${programText}
 
 Execution contract:
 - Work only within the selected lane surfaces.

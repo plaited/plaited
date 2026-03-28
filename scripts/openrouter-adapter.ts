@@ -3,7 +3,7 @@ import type { Adapter } from '../src/improve.ts'
 const OPENROUTER_TIMEOUT_MS = 10 * 60_000
 const DEFAULT_OPENROUTER_MODEL = 'google/gemini-3.1-pro-preview'
 
-const SYSTEM_PROMPT = `You are improving Plaited itself, not adding a shipped product feature.
+const DEFAULT_SYSTEM_PROMPT = `You are improving Plaited itself, not adding a shipped product feature.
 
 Priorities:
 1. Strengthen the runtime for a sovereign personal agent node.
@@ -67,11 +67,12 @@ export const buildOpenRouterHeaders = () => {
   return headers
 }
 
-export const adapt: Adapter = async ({ prompt }) => {
+export const adapt: Adapter = async ({ prompt, systemPrompt }) => {
   const model = process.env.OPENROUTER_MODEL?.trim() || DEFAULT_OPENROUTER_MODEL
 
   const baseUrl = process.env.OPENROUTER_BASE_URL?.trim() || 'https://openrouter.ai/api/v1'
   const text = Array.isArray(prompt) ? prompt.join('\n') : prompt
+  const resolvedSystemPrompt = systemPrompt?.trim() || DEFAULT_SYSTEM_PROMPT
   const start = Date.now()
   const controller = new AbortController()
   const timeoutMs = Number(process.env.OPENROUTER_TIMEOUT_MS ?? '') || OPENROUTER_TIMEOUT_MS
@@ -85,7 +86,7 @@ export const adapt: Adapter = async ({ prompt }) => {
       body: JSON.stringify({
         model,
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: resolvedSystemPrompt },
           { role: 'user', content: text },
         ],
       }),
