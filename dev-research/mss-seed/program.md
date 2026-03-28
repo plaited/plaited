@@ -40,10 +40,9 @@ This lane owns the authoring boundary for compact seed artifacts.
 
 ## Current Operator Surface
 
-- `bun run research:mss-doc-chunks`
-- `bun run research:mss-source-compare`
 - `bun run research:mss-seed -- status`
 - `bun run research:mss-seed -- validate`
+- `bun run research:mss-seed -- generate`
 
 ## What You Can Edit
 
@@ -61,7 +60,7 @@ These remain separate support surfaces unless the operator explicitly broadens s
 ## Run Loop
 
 1. Check that source inputs and deterministic helpers exist.
-2. Use chunking and comparison helpers to prepare source material.
+2. Use lane-owned chunking and comparison helpers to prepare source material.
 3. Generate or revise lane-local seed candidates under `dev-research/mss-seed/seed/`.
 4. Validate that the lane remains internally coherent and reviewable.
 5. Promote reviewed seed candidates into downstream lanes only as a separate explicit step.

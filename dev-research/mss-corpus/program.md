@@ -62,10 +62,9 @@ Those artifacts should stay lane-local until reviewed and promoted.
 
 ## Current Operator Surface
 
-- `bun run research:mss-doc-chunks`
-- `bun run research:mss-source-compare`
 - `bun run research:mss-corpus -- status`
 - `bun run research:mss-corpus -- validate`
+- `bun run research:mss-corpus -- generate`
 
 ## Validation
 
