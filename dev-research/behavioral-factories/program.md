@@ -146,6 +146,22 @@ Later outer-loop metrics may include:
 - better search invocation precision
 - lower wasted fanout
 
+## Validation Tools
+
+When an attempt changes TypeScript or validator-support files, it should use the
+available repo tooling inside its worktree to assess the edit set.
+
+Expected deterministic checks include:
+
+- the stable program validator: `bun scripts/behavioral-factories.ts validate`
+- `bun --bun tsc --noEmit` when TypeScript files change
+- targeted tests for changed lane-local logic under `dev-research/behavioral-factories/tests/`
+- Biome on touched TypeScript files when formatting or linting is relevant
+
+Probabilistic assessment may still be used for synthesis, comparison, or
+selection across attempts, but deterministic checks should be preferred for
+promotion decisions.
+
 ## Execution Contract
 
 When this program is executed through autoresearch or fanout:

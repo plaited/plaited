@@ -26,6 +26,13 @@ describe('research-pi-fanout', () => {
     expect(config.writableRoots).toEqual(['dev-research/default-hypergraph'])
   })
 
+  test('default hypergraph fanout keeps lane-local writes and includes search capability', () => {
+    const config = getProgramConfig('default-hypergraph')
+
+    expect(config.writableRoots).toEqual(['dev-research/default-hypergraph'])
+    expect(config.skills).toContain('skills/youdotcom-api')
+  })
+
   test('parses run arguments with defaults', () => {
     const parsed = parseRunArgs(['default-hypergraph'])
 

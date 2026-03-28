@@ -36,6 +36,8 @@ type RunManifest = {
   runDir: string
 }
 
+const REPO_ROOT = process.cwd()
+
 // `attempts` is the total attempt budget for a run.
 // Attempts are executed concurrently in waves, starting with the initial fanout.
 export const DEFAULT_ATTEMPT_BUDGET = 15
@@ -127,6 +129,7 @@ const attemptResultPath = (runDir: string, attempt: number) => join(runAttemptDi
 const attemptStdoutPath = (runDir: string, attempt: number) => join(runAttemptDir(runDir, attempt), 'stdout.log')
 const attemptStderrPath = (runDir: string, attempt: number) => join(runAttemptDir(runDir, attempt), 'stderr.log')
 const attemptWorktreePath = (runDir: string, attempt: number) => join(runAttemptDir(runDir, attempt), 'repo')
+const attemptPiStatePath = (runDir: string, attempt: number) => join(runAttemptDir(runDir, attempt), '.pi-agent')
 
 const ensureDir = async (path: string) => {
   await Bun.$`mkdir -p ${path}`.quiet()
@@ -205,6 +208,8 @@ const buildPiCommand = async ({ config, strategy }: { config: ProgramConfig; str
     'bunx',
     'varlock',
     'run',
+    '--path',
+    REPO_ROOT,
     '--',
     'bunx',
     'pi',
@@ -322,6 +327,9 @@ const runAttempt = async ({
       cwd: worktreePath,
       stdoutPath: attemptStdoutPath(runDir, attempt),
       stderrPath: attemptStderrPath(runDir, attempt),
+      env: {
+        PI_CODING_AGENT_DIR: attemptPiStatePath(runDir, attempt),
+      },
     })
     pid = proc.pid
     piExitCode = exitCode
