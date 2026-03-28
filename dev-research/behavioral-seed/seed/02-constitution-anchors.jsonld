@@ -1,0 +1,139 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "behavioral": "behavioral:",
+    "constitution": "constitution:",
+    "bp": "bp:",
+    "rule": "rule:",
+    "pattern": "pattern:",
+    "derivedFrom": {
+      "@id": "behavioral:derivedFrom",
+      "@type": "@vocab"
+    },
+    "@vocab": "https://schema.org/"
+  },
+  "@graph": [
+    {
+      "@id": "constitution:governance-model",
+      "@type": "Concept",
+      "name": "governance-model",
+      "description": "Neuro-symbolic governance: symbolic layer (bThread block predicates) for deterministic enforcement, neural layer (context/teaching surface) for model understanding. Both are non-substitutable. Symbolic alone wastes inference; neural alone risks circumvention.",
+      "derivedFrom": [
+        "skills/constitution/references/governance-model.md"
+      ],
+      "constitution:layer": "architecture",
+      "behavioral:anchor": true
+    },
+    {
+      "@id": "constitution:access-control-layers",
+      "@type": "Concept",
+      "name": "access-control-layers",
+      "description": "Three-layer access control stack: MAC (framework-provided, immutable), DAC (agent-generated, user-approved, mutable), ABAC (attribute-based routing at event level). MAC and DAC share the factory contract; ABAC operates at routing layer.",
+      "derivedFrom": [
+        "skills/constitution/references/governance-model.md"
+      ],
+      "constitution:layers": ["MAC", "DAC", "ABAC"],
+      "behavioral:anchor": true
+    },
+    {
+      "@id": "constitution:ratchet-principle",
+      "@type": "rule:GovernanceRule",
+      "name": "ratchet-principle",
+      "description": "Constitution is additive and append-only. New factories can be added; existing MAC factories cannot be removed or weakened. Enforced by protectGovernance blocking writes to mac/ paths. Safety guarantees only grow over time.",
+      "derivedFrom": [
+        "skills/constitution/references/governance-model.md",
+        "skills/constitution/references/mac-rules.md"
+      ],
+      "rule:classification": "governance-invariant"
+    },
+    {
+      "@id": "constitution:brand-system",
+      "@type": "Concept",
+      "name": "brand-system",
+      "description": "Factory functions carry branded identifiers: 🦄 templates, 🪢 RulesFunction, 🎛️ ControllerTemplate, 🎨 DecoratorTemplate, 🏛️ GovernanceFactory (constitution), 🎯 GoalFactory, 🔄 WorkflowFactory. Brand distinguishes lifecycle and approval model.",
+      "derivedFrom": [
+        "skills/constitution/references/factory-patterns.md"
+      ],
+      "constitution:brands": {
+        "🏛️": "GovernanceFactory",
+        "🎯": "GoalFactory",
+        "🔄": "WorkflowFactory"
+      }
+    },
+    {
+      "@id": "constitution:mac-layer",
+      "@type": "rule:GovernanceRule",
+      "name": "mac-layer",
+      "description": "Mandatory Access Control: framework-provided at spawn, immutable at runtime. Agent cannot override or remove. Examples: noRmRf, protectGovernance. Loaded once from .memory/constitution/mac/*.ts via loadPersistedThreads.",
+      "derivedFrom": [
+        "skills/constitution/references/mac-rules.md"
+      ],
+      "constitution:layer": "MAC",
+      "rule:loadedAt": "spawn"
+    },
+    {
+      "@id": "constitution:dac-layer",
+      "@type": "rule:GovernanceRule",
+      "name": "dac-layer",
+      "description": "Discretionary Access Control: agent-generated from user desired outcomes, user-approved at runtime. Mutable — can add/modify/remove with approval. Loaded from .memory/constitution/dac/*.ts.",
+      "derivedFrom": [
+        "skills/constitution/references/governance-model.md"
+      ],
+      "constitution:layer": "DAC",
+      "rule:loadedAt": "spawn-and-runtime"
+    },
+    {
+      "@id": "constitution:protectGovernance",
+      "@type": "rule:MACRule",
+      "name": "protectGovernance",
+      "description": "Self-protecting bThread: blocks execute events if the tool call modifies a MAC governance file. When blocked, handler routes to simulation — Dreamer predicts consequences, generative UI explains, user decides. Danger is contextual.",
+      "derivedFrom": [
+        "skills/constitution/references/mac-rules.md"
+      ],
+      "constitution:layer": "MAC",
+      "rule:classification": "self-protecting",
+      "bp:composition": "bSync({block: (e) => modifiesGovernancePath(e.detail?.toolCall)})"
+    },
+    {
+      "@id": "constitution:noRmRf",
+      "@type": "rule:MACRule",
+      "name": "noRmRf",
+      "description": "Blocks rm -rf in execute events. Structural/syntactic check via block predicate. MAC layer: immutable, framework-provided.",
+      "derivedFrom": [
+        "skills/constitution/references/mac-rules.md"
+      ],
+      "constitution:layer": "MAC",
+      "rule:classification": "structural"
+    },
+    {
+      "@id": "constitution:noEtcWrites",
+      "@type": "rule:MACRule",
+      "name": "noEtcWrites",
+      "description": "Blocks writes to /etc/ paths. Structural/syntactic check via block predicate. MAC layer: immutable, framework-provided.",
+      "derivedFrom": [
+        "skills/constitution/references/mac-rules.md"
+      ],
+      "constitution:layer": "MAC"
+    },
+    {
+      "@id": "constitution:noForcePush",
+      "@type": "rule:MACRule",
+      "name": "noForcePush",
+      "description": "Blocks git push --force commands. Structural/syntactic check via block predicate. MAC layer: immutable, framework-provided.",
+      "derivedFrom": [
+        "skills/constitution/references/mac-rules.md"
+      ],
+      "constitution:layer": "MAC"
+    },
+    {
+      "@id": "constitution:dual-representation",
+      "@type": "rule:GovernanceRule",
+      "name": "dual-representation",
+      "description": "Constitution rules exist in two forms simultaneously: bThread (symbolic, block predicates) for enforcement, and context/teaching surface (skills, memory, training) for model understanding. Both layers are required.",
+      "derivedFrom": [
+        "skills/constitution/references/governance-model.md"
+      ],
+      "rule:classification": "governance-principle"
+    }
+  ]
+}

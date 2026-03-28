@@ -1,0 +1,153 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "behavioral": "behavioral:",
+    "constitution": "constitution:",
+    "bp": "bp:",
+    "pattern": "pattern:",
+    "rule": "rule:",
+    "derivedFrom": {
+      "@id": "behavioral:derivedFrom",
+      "@type": "@vocab"
+    },
+    "@vocab": "https://schema.org/"
+  },
+  "@graph": [
+    {
+      "@id": "pattern:doneGuard",
+      "@type": "pattern:BehavioralPattern",
+      "name": "doneGuard",
+      "aliases": ["stopGame"],
+      "description": "Blocks all events after a terminal event fires. Phase 1: waitFor terminal event (dormant, no blocking). Phase 2: block everything via predicate () => true. repeat=true keeps the block active forever. Replaces all manual if(done) return checks.",
+      "bp:composition": "bThread([bSync({waitFor: terminal}), bSync({block: () => true})], true)",
+      "derivedFrom": [
+        "skills/behavioral-core/references/agent-patterns.spec.ts",
+        "skills/behavioral-core/references/algorithm-reference.md"
+      ],
+      "pattern:replaces": "manual-done-checking",
+      "pattern:category": "coordination",
+      "pattern:verified": true
+    },
+    {
+      "@id": "pattern:maxIterations",
+      "@type": "pattern:BehavioralPattern",
+      "name": "maxIterations",
+      "description": "Counts N events via waitFor repetitions, then requests a terminal event. One-shot thread (no repeat). After terminal fires, thread terminates — its block vanishes. Must pair with doneGuard for persistent blocking.",
+      "bp:composition": "bThread([...Array(N, () => bSync({waitFor: event})), bSync({block: target, request: terminal})])",
+      "derivedFrom": [
+        "skills/behavioral-core/references/agent-patterns.spec.ts"
+      ],
+      "pattern:requires": "pattern:doneGuard",
+      "pattern:category": "coordination",
+      "pattern:verified": true
+    },
+    {
+      "@id": "pattern:taskGate",
+      "@type": "pattern:BehavioralPattern",
+      "name": "taskGate",
+      "aliases": ["phaseTransitionGate", "oneAtATime"],
+      "description": "Two-phase thread alternating between blocking and allowing task events. Phase 1: block task events, waitFor 'task'. Phase 2: allow everything, waitFor 'message' (terminal). repeat=true loops: message → back to blocking. Enforces one active task at a time and blocks stale events between tasks.",
+      "bp:composition": "bThread([bSync({waitFor: task, block: TASK_EVENTS}), bSync({waitFor: message})], true)",
+      "derivedFrom": [
+        "skills/behavioral-core/references/agent-lifecycle.spec.ts",
+        "skills/behavioral-core/references/agent-orchestration.spec.ts"
+      ],
+      "pattern:category": "coordination",
+      "pattern:verified": true
+    },
+    {
+      "@id": "pattern:simulationGuard",
+      "@type": "pattern:BehavioralPattern",
+      "name": "simulationGuard",
+      "description": "Blocks execute events for tool calls currently in simulation. Shared Set (simulatingIds) is modified by handlers and read by bThread predicate. Handler runs before predicate re-evaluation, so state changes are visible in the next super-step.",
+      "bp:composition": "bThread([bSync({block: (e) => e.type === 'execute' && simulatingIds.has(e.detail?.id)})], true)",
+      "derivedFrom": [
+        "skills/behavioral-core/references/agent-orchestration.spec.ts"
+      ],
+      "pattern:usesSharedState": true,
+      "pattern:category": "safety",
+      "pattern:verified": true
+    },
+    {
+      "@id": "pattern:additiveComposition",
+      "@type": "pattern:BehavioralPattern",
+      "name": "additiveComposition",
+      "description": "New bThreads compose without modifying existing ones. Each thread encodes one independent concern. All threads participate in event selection simultaneously. New safety rules can be added at runtime via bThreads.set() with a new name.",
+      "derivedFrom": [
+        "skills/behavioral-core/SKILL.md",
+        "skills/behavioral-core/references/algorithm-reference.md"
+      ],
+      "pattern:category": "composition",
+      "pattern:principle": true,
+      "pattern:verified": true
+    },
+    {
+      "@id": "pattern:predicateBlocking",
+      "@type": "pattern:BehavioralPattern",
+      "name": "predicateBlocking",
+      "description": "Block predicates evaluate at COLLECT phase for every pending thread. Predicates should be fast — simple property checks. Async or expensive validation belongs in feedback handlers, which trigger events that predicates then wait for.",
+      "derivedFrom": [
+        "skills/behavioral-core/references/behavioral-programs.md"
+      ],
+      "pattern:category": "coordination",
+      "pattern:verified": true
+    },
+    {
+      "@id": "pattern:counterCompletion",
+      "@type": "pattern:BehavioralPattern",
+      "name": "counterCompletion",
+      "description": "A finite bThread waits for N completion events via repeated waitFor, then requests the next phase. Used for batch pipelines, fanout merges, and agent workflow checkpoints. Each waitFor in the sequence consumes one event.",
+      "derivedFrom": [
+        "skills/behavioral-core/references/agent-patterns.spec.ts",
+        "skills/behavioral-core/references/algorithm-reference.md"
+      ],
+      "pattern:category": "coordination",
+      "pattern:verified": true
+    },
+    {
+      "@id": "pattern:zeroBatchFastPath",
+      "@type": "rule:OrderingConstraint",
+      "name": "zeroBatchFastPath",
+      "description": "A counting thread with zero waitFor entries does not wait — it immediately requests the next event. Branch explicitly outside the bThread for zero-length batches. Do not rely on a zero-length counting thread to preserve intended control flow.",
+      "derivedFrom": [
+        "skills/behavioral-core/SKILL.md"
+      ],
+      "rule:classification": "behavioral-runtime-invariant",
+      "pattern:category": "coordination"
+    },
+    {
+      "@id": "pattern:perCallScopedGuard",
+      "@type": "pattern:BehavioralPattern",
+      "name": "perCallScopedGuard",
+      "description": "Each scoped operation gets its own guard bThread with a unique name (e.g., sim_guard_${id}). Thread self-terminates via interrupt predicate scoped to the call ID. No shared state cleanup needed. Observable via blockedBy/interrupts in snapshots.",
+      "bp:composition": "bThreads.set({[\"sim_guard_${id}\"]: bThread([bSync({block: predicate, interrupt: interruptPredicate})])})",
+      "derivedFrom": [
+        "skills/behavioral-core/SKILL.md"
+      ],
+      "pattern:category": "safety",
+      "pattern:verified": true
+    },
+    {
+      "@id": "pattern:snapshotObservability",
+      "@type": "pattern:BehavioralPattern",
+      "name": "snapshotObservability",
+      "description": "All BP decisions are observable via useSnapshot. SelectionBid records blockedBy (which thread blocked), interrupts (which thread was terminated), selected (winning event), thread (which thread proposed). Blocks are NOT silent — they are fully traceable.",
+      "derivedFrom": [
+        "skills/behavioral-core/SKILL.md"
+      ],
+      "pattern:category": "observability",
+      "pattern:principle": true
+    },
+    {
+      "@id": "bp:infiniteSuperStepAntiPattern",
+      "@type": "rule:AntiPattern",
+      "name": "infinite-super-step",
+      "description": "A repeat=true thread that continuously requests events without async gaps creates an infinite synchronous super-step (stack overflow). All events must enter via trigger() from handlers, breaking the synchronous chain.",
+      "derivedFrom": [
+        "skills/behavioral-core/references/algorithm-reference.md"
+      ],
+      "rule:classification": "anti-pattern",
+      "bp:avoid": "repeat-true-with-continuous-request"
+    }
+  ]
+}

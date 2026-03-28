@@ -1,0 +1,112 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "behavioral": "behavioral:",
+    "constitution": "constitution:",
+    "bp": "bp:",
+    "rule": "rule:",
+    "pattern": "pattern:",
+    "derivedFrom": {
+      "@id": "behavioral:derivedFrom",
+      "@type": "@vocab"
+    },
+    "@vocab": "https://schema.org/"
+  },
+  "@graph": [
+    {
+      "@id": "behavioral:schema",
+      "@type": "Schema",
+      "name": "behavioral-seed-ontology-v1",
+      "description": "Compact behavioral programming and governance ontology derived from behavioral-core and constitution source surfaces. Serves as durable seed for downstream corpus and factory generation.",
+      "version": "1.0",
+      "derivedFrom": [
+        "skills/behavioral-core/SKILL.md",
+        "skills/constitution/SKILL.md"
+      ],
+      "behavioral:layer": "ontology-schema"
+    },
+    {
+      "@id": "behavioral:bp-primitives",
+      "@type": "Concept",
+      "name": "bp-primitives",
+      "description": "Core behavioral programming primitives: behavioral(), bThread, bSync. These are the atomic building blocks from which all BP coordination is composed.",
+      "derivedFrom": [
+        "behavioral:bp-primitives-source",
+        "skills/behavioral-core/references/behavioral-programs.md"
+      ],
+      "behavioral:anchor": true
+    },
+    {
+      "@id": "behavioral:sync-idioms",
+      "@type": "Concept",
+      "name": "sync-idioms",
+      "description": "Four synchronization idioms declared at bSync yield points: request (propose event), waitFor (pause until event), block (prevent event), interrupt (terminate thread). Block takes precedence over request.",
+      "derivedFrom": [
+        "skills/behavioral-core/references/algorithm-reference.md",
+        "skills/behavioral-core/references/behavioral-programs.md"
+      ],
+      "behavioral:anchor": true,
+      "rule:usesIdioms": ["request", "waitFor", "block", "interrupt"]
+    },
+    {
+      "@id": "behavioral:event-selection",
+      "@type": "Concept",
+      "name": "event-selection",
+      "description": "Priority-based event selection. Triggered events get priority 0 (highest). Thread requests get priority by registration order. Lower number wins. Blocking filters candidates before priority applies.",
+      "derivedFrom": [
+        "skills/behavioral-core/references/algorithm-reference.md"
+      ],
+      "behavioral:anchor": true,
+      "rule:selectionPrecedence": ["block", "priority"],
+      "bp:superStepModel": "run-collect-select-notify"
+    },
+    {
+      "@id": "behavioral:repeat-parameter",
+      "@type": "Concept",
+      "name": "repeat-parameter",
+      "description": "bThread repeat modes: false/omit (one-shot, terminates after last rule), true (infinite loop, never terminates), () => boolean (conditional self-termination). Determines thread lifecycle.",
+      "derivedFrom": [
+        "skills/behavioral-core/SKILL.md"
+      ]
+    },
+    {
+      "@id": "behavioral:thread-lifecycle",
+      "@type": "Concept",
+      "name": "thread-lifecycle",
+      "description": "Threads exist in two states: running (executing between yield points) and pending (waiting at a sync point). Threads are added via bThreads.set(), terminated via interrupt idiom or generator exhaustion. Cannot be directly removed.",
+      "derivedFrom": [
+        "skills/behavioral-core/references/behavioral-programs.md"
+      ]
+    },
+    {
+      "@id": "behavioral:ephemeral-vs-persistent-block",
+      "@type": "rule:Invariant",
+      "name": "ephemeral-vs-persistent-block",
+      "description": "A block on a sync point that also has a request is ephemeral — it vanishes after the requested event fires. A block without a request or waitFor is persistent — it stays active until thread termination. This distinction determines whether a guard is temporary or permanent.",
+      "derivedFrom": [
+        "skills/behavioral-core/references/algorithm-reference.md"
+      ],
+      "rule:classification": "behavioral-runtime-invariant"
+    },
+    {
+      "@id": "behavioral:handler-before-trigger",
+      "@type": "rule:OrderingConstraint",
+      "name": "handler-before-trigger",
+      "description": "bThreads.set() must be called BEFORE any trigger() calls in the same handler. trigger() synchronously processes the event chain; a thread set after trigger() misses all events that fired during the synchronous processing.",
+      "derivedFrom": [
+        "skills/behavioral-core/SKILL.md"
+      ],
+      "rule:classification": "behavioral-runtime-invariant"
+    },
+    {
+      "@id": "behavioral:async-fire-and-forget",
+      "@type": "rule:Invariant",
+      "name": "async-fire-and-forget",
+      "description": "Async feedback handlers do NOT block the BP engine. The super-step ends when the handler starts async work. The handler's trigger() after await starts a NEW super-step. This is how the BP engine bridges sync and async worlds.",
+      "derivedFrom": [
+        "skills/behavioral-core/references/algorithm-reference.md"
+      ],
+      "rule:classification": "behavioral-runtime-invariant"
+    }
+  ]
+}

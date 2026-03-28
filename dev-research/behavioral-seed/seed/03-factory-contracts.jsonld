@@ -1,0 +1,138 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "behavioral": "behavioral:",
+    "constitution": "constitution:",
+    "bp": "bp:",
+    "rule": "rule:",
+    "pattern": "pattern:",
+    "derivedFrom": {
+      "@id": "behavioral:derivedFrom",
+      "@type": "@vocab"
+    },
+    "@vocab": "https://schema.org/"
+  },
+  "@graph": [
+    {
+      "@id": "constitution:governanceFactory-contract",
+      "@type": "Concept",
+      "name": "governanceFactory-contract",
+      "description": "All governance, goal, and workflow factories share one type signature: (trigger: Trigger) => { threads?: Record<string, RulesFunction>; handlers?: DefaultHandlers }. The distinction between categories is brand, lifecycle, and approval — not shape.",
+      "derivedFrom": [
+        "skills/constitution/references/factory-patterns.md"
+      ],
+      "constitution:contractShape": {
+        "parameter": "Trigger",
+        "returns": {
+          "threads": "Record<string, RulesFunction> (optional)",
+          "handlers": "DefaultHandlers (optional)"
+        }
+      },
+      "behavioral:anchor": true
+    },
+    {
+      "@id": "constitution:createGovernanceFactory",
+      "@type": "Concept",
+      "name": "createGovernanceFactory",
+      "description": "Helper that brands the factory function with $ identifier and layer. createGovernanceFactory({name, layer, create}) => GovernanceFactory. Extends the codebase $ brand pattern.",
+      "derivedFrom": [
+        "skills/constitution/references/factory-patterns.md"
+      ],
+      "constitution:factoryHelper": true
+    },
+    {
+      "@id": "constitution:thread-vs-handler-encoding",
+      "@type": "rule:EncodingRule",
+      "name": "thread-vs-handler-encoding",
+      "description": "threads encode structural/syntactic checks (synchronous block predicates, pipeline stage: Gate). handlers encode contextual/semantic checks (async, feed into simulate→evaluate pipeline). Both are needed in a complete factory.",
+      "derivedFrom": [
+        "skills/constitution/references/factory-patterns.md",
+        "skills/constitution/references/governance-model.md"
+      ],
+      "rule:classification": "factory-authoring-rule"
+    },
+    {
+      "@id": "constitution:validation-stack",
+      "@type": "Concept",
+      "name": "validation-stack",
+      "description": "Five-layer verification for generated bThreads: (1) TypeScript tsc, (2) LSP static analysis (imports, symbols), (3) Generated test execution (bun test), (4) Trial/grader evaluation (pass@k), (5) BP runtime itself. Verification IS the training signal.",
+      "derivedFrom": [
+        "skills/constitution/references/generated-bthreads.md"
+      ],
+      "constitution:verificationLayers": [
+        "tsc-type-check",
+        "lsp-static-analysis",
+        "bun-test",
+        "trial-grader",
+        "bp-runtime"
+      ],
+      "behavioral:anchor": true
+    },
+    {
+      "@id": "constitution:testFirst-generation",
+      "@type": "pattern:FactoryPattern",
+      "name": "testFirst-generation",
+      "description": "Agent generates companion .spec.ts alongside the bThread before implementation. Test creates behavioral(), loads thread, triggers events, asserts correct blocking/allowing/lifecycle. bun test fails until implementation exists.",
+      "derivedFrom": [
+        "skills/constitution/references/generated-bthreads.md"
+      ],
+      "pattern:category": "factory-generation"
+    },
+    {
+      "@id": "constitution:validateAndImport",
+      "@type": "rule:GateRule",
+      "name": "validateAndImport",
+      "description": "Seven-point gate before loading any generated thread: (1) parse valid TS, (2) brand check, (3) sandbox check (no disallowed imports), (4) purity check (no fetch/fs/Bun.$), (5) MAC protection check, (6) name collision check, (7) tests pass.",
+      "derivedFrom": [
+        "skills/constitution/references/generated-bthreads.md"
+      ],
+      "rule:classification": "factory-gate"
+    },
+    {
+      "@id": "constitution:category-lifecycle",
+      "@type": "Concept",
+      "name": "category-lifecycle",
+      "description": "Four factory categories with distinct lifecycles: MAC (🏛️, loaded at spawn, immutable), DAC (🏛️, spawn+runtime, mutable, user-approved), Goals (🎯, spawn+runtime, mutable, user-approved), Workflows (🔄, runtime, mutable, user-approved).",
+      "derivedFrom": [
+        "skills/constitution/references/generated-bthreads.md"
+      ],
+      "constitution:categories": [
+        {"brand": "🏛️", "layer": "MAC", "loadedAt": "spawn", "mutable": false},
+        {"brand": "🏛️", "layer": "DAC", "loadedAt": "spawn+runtime", "mutable": true},
+        {"brand": "🎯", "layer": "goal", "loadedAt": "spawn+runtime", "mutable": true},
+        {"brand": "🔄", "layer": "workflow", "loadedAt": "runtime", "mutable": true}
+      ]
+    },
+    {
+      "@id": "constitution:memory-file-structure",
+      "@type": "Concept",
+      "name": "memory-file-structure",
+      "description": ".memory/constitution/mac/ (framework-provided, immutable), .memory/constitution/dac/ (user-approved), .memory/goals/ (agent-generated, user-approved), .memory/sessions/ (runtime snapshots). Factories as TypeScript files with companion tests.",
+      "derivedFrom": [
+        "skills/constitution/references/generated-bthreads.md"
+      ]
+    },
+    {
+      "@id": "pattern:constitutionAsBThreads",
+      "@type": "pattern:BehavioralPattern",
+      "name": "constitutionAsBThreads",
+      "description": "Constitution rules as independent blocking bThreads that compose additively. Each safety rule is a named bThread with repeat=true. New rules can be loaded from config arrays — each entry becomes a bThread. Rules don't modify each other.",
+      "derivedFrom": [
+        "skills/behavioral-core/references/agent-orchestration.spec.ts"
+      ],
+      "pattern:category": "governance",
+      "pattern:verified": true
+    },
+    {
+      "@id": "pattern:runtimeRuleAddition",
+      "@type": "pattern:BehavioralPattern",
+      "name": "runtimeRuleAddition",
+      "description": "Rules can be added at runtime without modifying existing threads. bThreads.set({newRule: bThread([...])}) composes with existing threads via additive blocking. Used for DAC rule loading, goal activation, and runtime policy updates.",
+      "derivedFrom": [
+        "skills/behavioral-core/references/agent-orchestration.spec.ts"
+      ],
+      "pattern:category": "governance",
+      "pattern:verified": true
+    }
+  ]
+}
