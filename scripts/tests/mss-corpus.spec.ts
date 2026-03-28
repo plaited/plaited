@@ -10,6 +10,7 @@ import {
   MSS_CORPUS_PROGRAM_PATH,
   MSS_SEED_PATH,
   renderMssCorpusStatus,
+  resolveWorkspaceRoot,
 } from '../mss-corpus.ts'
 
 describe('mss-corpus script', () => {
@@ -38,6 +39,12 @@ describe('mss-corpus script', () => {
     expect(isMssCorpusValid(status)).toBe(false)
   })
 
+  test('resolves workspace root from a nested repo directory', async () => {
+    const workspaceRoot = await resolveWorkspaceRoot({ cwd: join(process.cwd(), 'scripts') })
+
+    expect(workspaceRoot).toBe(process.cwd())
+  })
+
   test('generate writes compare artifacts and encoded manifest', async () => {
     const root = await mkdtemp(join(tmpdir(), 'plaited-mss-corpus-'))
     const artifactDir = join(root, 'artifacts')
@@ -61,6 +68,19 @@ describe('mss-corpus script', () => {
     expect(result.withLlm).toBe(false)
     expect(compareExists).toBe(true)
     expect(manifestExists).toBe(true)
+
+    await rm(root, { force: true, recursive: true })
+  })
+
+  test('status resolves lane paths inside an overridden workspace root', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'plaited-mss-corpus-workspace-'))
+    await Bun.$`mkdir -p ${join(root, 'dev-research', 'mss-corpus')} ${join(root, 'dev-research', 'mss-seed')}`.quiet()
+    await Bun.write(join(root, 'dev-research', 'mss-corpus', 'program.md'), '# temp corpus program\n')
+    await Bun.write(join(root, 'dev-research', 'mss-seed', 'program.md'), '# temp seed program\n')
+    const status = await getMssCorpusStatus({ workspaceRoot: root })
+
+    expect(status.programExists).toBe(true)
+    expect(status.programPath).toBe(MSS_CORPUS_PROGRAM_PATH)
 
     await rm(root, { force: true, recursive: true })
   })

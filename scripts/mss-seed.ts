@@ -38,6 +38,7 @@ Prefer durable anchors, invariants, and downstream corpus-enabling concepts over
 Do not drift into general repo improvement or unrelated framework work.`
 
 export type GenerateMssSeedArtifactsOptions = {
+  workspaceRoot?: string
   docPaths?: string[]
   markdownPaths?: string[]
   artifactDir?: string
@@ -102,6 +103,26 @@ const pathExists = async (path: string): Promise<boolean> => {
   return result.exitCode === 0
 }
 
+export const resolveWorkspaceRoot = async ({ cwd = process.cwd() }: { cwd?: string } = {}) => {
+  const override = process.env.PLAITED_WORKSPACE_ROOT?.trim()
+  if (override) {
+    return override
+  }
+
+  const gitTopLevel = await Bun.$`git rev-parse --show-toplevel`.cwd(cwd).quiet().nothrow()
+  if (gitTopLevel.exitCode === 0) {
+    const root = (await gitTopLevel.text()).trim()
+    if (root.length > 0) {
+      return root
+    }
+  }
+
+  return cwd
+}
+
+const resolveWorkspacePath = ({ workspaceRoot, relativePath }: { workspaceRoot: string; relativePath: string }) =>
+  join(workspaceRoot, relativePath)
+
 const countJsonLdDocs = async (dirPath: string): Promise<number> => {
   if (!(await pathExists(dirPath))) {
     return 0
@@ -147,18 +168,23 @@ const writeDocChunksJsonl = async ({
 
 export const generateMssSeedArtifacts = async (options: GenerateMssSeedArtifactsOptions = {}) => {
   const laneConfig = RESEARCH_LANE_CONFIG as MssSeedLaneConfig
-  const artifactDir = options.artifactDir ?? MSS_SEED_ARTIFACTS_PATH
+  const workspaceRoot = options.workspaceRoot ?? (await resolveWorkspaceRoot())
+  const artifactDir =
+    options.artifactDir ?? resolveWorkspacePath({ workspaceRoot, relativePath: MSS_SEED_ARTIFACTS_PATH })
   const chunkOutputPath = join(artifactDir, 'chunks.jsonl')
   const compareOutputPath = join(artifactDir, 'source-compare.json')
   const withEmbeddings = options.withEmbeddings ?? DEFAULT_MSS_SEED_WITH_EMBEDDINGS
   const withLlm = options.withLlm ?? DEFAULT_MSS_SEED_WITH_LLM
-  const docPaths = options.docPaths ?? laneConfig.sourceDocs
+  const docPaths =
+    options.docPaths ?? laneConfig.sourceDocs.map((path) => resolveWorkspacePath({ workspaceRoot, relativePath: path }))
   const files = await buildDocChunks(docPaths)
   await writeDocChunksJsonl({ outputPath: chunkOutputPath, files, artifactDir })
 
   const report = await buildReport({
     chunkPath: chunkOutputPath,
-    markdownPaths: options.markdownPaths ?? laneConfig.compareMarkdownPaths,
+    markdownPaths:
+      options.markdownPaths ??
+      laneConfig.compareMarkdownPaths.map((path) => resolveWorkspacePath({ workspaceRoot, relativePath: path })),
     pairLimit: 40,
     withEmbeddings,
     withLlm,
@@ -178,17 +204,26 @@ export const generateMssSeedArtifacts = async (options: GenerateMssSeedArtifacts
   }
 }
 
-export const getMssSeedStatus = async (): Promise<MssSeedStatus> => {
-  const programFile = Bun.file(MSS_SEED_PROGRAM_PATH)
+export const getMssSeedStatus = async ({ workspaceRoot }: { workspaceRoot?: string } = {}): Promise<MssSeedStatus> => {
+  const resolvedWorkspaceRoot = workspaceRoot ?? (await resolveWorkspaceRoot())
+  const programFile = Bun.file(
+    resolveWorkspacePath({ workspaceRoot: resolvedWorkspaceRoot, relativePath: MSS_SEED_PROGRAM_PATH }),
+  )
   const programExists = await programFile.exists()
   const programText = programExists ? (await programFile.text()).trim() : ''
-  const laneSeedDocs = await countJsonLdDocs(MSS_SEED_PATH)
-  const artifactFiles = await countFiles(MSS_SEED_ARTIFACTS_PATH)
+  const laneSeedDocs = await countJsonLdDocs(
+    resolveWorkspacePath({ workspaceRoot: resolvedWorkspaceRoot, relativePath: MSS_SEED_PATH }),
+  )
+  const artifactFiles = await countFiles(
+    resolveWorkspacePath({ workspaceRoot: resolvedWorkspaceRoot, relativePath: MSS_SEED_ARTIFACTS_PATH }),
+  )
 
   const requirements = await Promise.all(
     MSS_SEED_REQUIREMENTS.map(async (requirement) => ({
       ...requirement,
-      exists: await pathExists(requirement.path),
+      exists: await pathExists(
+        resolveWorkspacePath({ workspaceRoot: resolvedWorkspaceRoot, relativePath: requirement.path }),
+      ),
     })),
   )
 

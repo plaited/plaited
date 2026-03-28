@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { join, resolve } from 'node:path'
+import { isAbsolute, join, resolve } from 'node:path'
 import type { Grader, GraderResult } from '../src/improve.ts'
 import { loadGrader, loadVerifier, withMetaVerification } from '../src/improve.ts'
 
@@ -79,7 +79,6 @@ type EvaluationSummary = {
   bestAttempt?: number
 }
 
-const REPO_ROOT = process.cwd()
 export const MAX_ATTEMPT_RETRIES = 2
 
 const pathExists = async (path: string): Promise<boolean> => {
@@ -91,6 +90,26 @@ export const normalizeScriptPath = (path: string) => {
   const normalized = path.replaceAll('\\', '/')
   return normalized.startsWith('./') ? normalized.slice(2) : normalized
 }
+
+export const resolveWorkspaceRoot = async ({ cwd = process.cwd() }: { cwd?: string } = {}) => {
+  const override = process.env.PLAITED_WORKSPACE_ROOT?.trim()
+  if (override) {
+    return override
+  }
+
+  const gitTopLevel = await Bun.$`git rev-parse --show-toplevel`.cwd(cwd).quiet().nothrow()
+  if (gitTopLevel.exitCode === 0) {
+    const root = (await gitTopLevel.text()).trim()
+    if (root.length > 0) {
+      return root
+    }
+  }
+
+  return cwd
+}
+
+const resolveWorkspacePath = ({ workspaceRoot, path }: { workspaceRoot: string; path: string }) =>
+  isAbsolute(path) ? path : join(workspaceRoot, path)
 
 export const buildStrategyNotes = (attempts: number): string[] => {
   const base = [
@@ -156,7 +175,8 @@ export const parseRunArgs = async (args: string[]) => {
 }
 
 const formatTimestamp = () => new Date().toISOString().replaceAll(':', '-').replaceAll('.', '-')
-const buildRunDir = (lane: string) => join('.prompts', 'autoresearch-runner', lane, formatTimestamp())
+export const buildRunDir = ({ workspaceRoot, lane }: { workspaceRoot: string; lane: string }) =>
+  join(workspaceRoot, '.prompts', 'autoresearch-runner', lane, formatTimestamp())
 const runAttemptDir = (runDir: string, attempt: number) =>
   join(runDir, `attempt-${attempt.toString().padStart(2, '0')}`)
 const attemptStatusPath = (runDir: string, attempt: number) => join(runAttemptDir(runDir, attempt), 'status.json')
@@ -215,15 +235,23 @@ const writeAttemptStatus = async (runDir: string, attempt: number, status: Attem
   await writeJson(attemptStatusPath(runDir, attempt), status)
 }
 
-const createWorktree = async (runDir: string, attempt: number) => {
+const createWorktree = async ({
+  workspaceRoot,
+  runDir,
+  attempt,
+}: {
+  workspaceRoot: string
+  runDir: string
+  attempt: number
+}) => {
   const worktreePath = attemptWorktreePath(runDir, attempt)
   await ensureDir(runAttemptDir(runDir, attempt))
-  await Bun.$`git worktree add --detach ${worktreePath} HEAD`.cwd(REPO_ROOT).quiet()
+  await Bun.$`git worktree add --detach ${worktreePath} HEAD`.cwd(workspaceRoot).quiet()
   return worktreePath
 }
 
-const buildSystemPrompt = async (config: ResearchLaneConfig) => {
-  const programText = (await Bun.file(config.programPath).text()).trim()
+const buildSystemPrompt = async ({ config, workspaceRoot }: { config: ResearchLaneConfig; workspaceRoot: string }) => {
+  const programText = (await Bun.file(resolveWorkspacePath({ workspaceRoot, path: config.programPath })).text()).trim()
   const laneSystemPrompt = config.systemPrompt?.trim()
   const writableRoots = config.writableRoots.map((path) => `- ${path}`).join('\n')
   return `${laneSystemPrompt ? `${laneSystemPrompt}\n\n` : ''}${programText}
@@ -238,14 +266,24 @@ Writable roots:
 ${writableRoots}`
 }
 
-const buildPiCommand = async ({ config, strategy }: { config: ResearchLaneConfig; strategy: string }) => {
-  const systemPrompt = await buildSystemPrompt(config)
+const buildPiCommand = async ({
+  config,
+  strategy,
+  repoRoot,
+  workspaceRoot,
+}: {
+  config: ResearchLaneConfig
+  strategy: string
+  repoRoot: string
+  workspaceRoot: string
+}) => {
+  const systemPrompt = await buildSystemPrompt({ config, workspaceRoot })
   const cmd = [
     'bunx',
     'varlock',
     'run',
     '--path',
-    REPO_ROOT,
+    repoRoot,
     '--',
     'bunx',
     'pi',
@@ -255,7 +293,7 @@ const buildPiCommand = async ({ config, strategy }: { config: ResearchLaneConfig
   ]
 
   for (const skill of config.skills ?? []) {
-    cmd.push('--skill', resolve(skill))
+    cmd.push('--skill', resolveWorkspacePath({ workspaceRoot: repoRoot, path: skill }))
   }
 
   cmd.push(
@@ -430,17 +468,21 @@ const evaluateAttempts = async ({
 }
 
 const runAttempt = async ({
+  repoRoot,
+  workspaceRoot,
   runDir,
   attempt,
   config,
   strategy,
 }: {
+  repoRoot: string
+  workspaceRoot: string
   runDir: string
   attempt: number
   config: ResearchLaneConfig
   strategy: string
 }) => {
-  const worktreePath = await createWorktree(runDir, attempt)
+  const worktreePath = await createWorktree({ workspaceRoot, runDir, attempt })
   const startedAt = new Date().toISOString()
   await writeAttemptStatus(runDir, attempt, {
     attempt,
@@ -461,7 +503,12 @@ const runAttempt = async ({
   let pid: number | undefined
 
   while (retryCount <= MAX_ATTEMPT_RETRIES) {
-    const piCommand = await buildPiCommand({ config, strategy: currentStrategy })
+    const piCommand = await buildPiCommand({
+      config,
+      strategy: currentStrategy,
+      repoRoot,
+      workspaceRoot: worktreePath,
+    })
     const { proc, exitCode } = await runCommand({
       cmd: piCommand,
       cwd: worktreePath,
@@ -469,6 +516,7 @@ const runAttempt = async ({
       stderrPath: attemptStderrPath(runDir, attempt),
       env: {
         PI_CODING_AGENT_DIR: attemptPiStatePath(runDir, attempt),
+        PLAITED_WORKSPACE_ROOT: worktreePath,
       },
     })
     pid = proc.pid
@@ -503,7 +551,10 @@ ${errorMessage}`
       cwd: worktreePath,
       stdout: 'pipe',
       stderr: 'pipe',
-      env: process.env,
+      env: {
+        ...process.env,
+        PLAITED_WORKSPACE_ROOT: worktreePath,
+      },
     })
 
     const validateStdout = validate.stdout ? await new Response(validate.stdout).text() : ''
@@ -569,6 +620,7 @@ const runWithParallelism = async ({
 }
 
 const main = async () => {
+  const workspaceRoot = await resolveWorkspaceRoot()
   const { laneScriptPath, command, attempts, parallelism, runDir } = await parseRunArgs(Bun.argv.slice(2))
   if (!laneScriptPath) {
     console.error(
@@ -609,7 +661,7 @@ const main = async () => {
     return
   }
 
-  const effectiveRunDir = runDir ?? buildRunDir(config.key)
+  const effectiveRunDir = runDir ?? buildRunDir({ workspaceRoot, lane: config.key })
   await ensureDir(effectiveRunDir)
   await writeJson(join(effectiveRunDir, 'manifest.json'), {
     lane: config.key,
@@ -666,6 +718,8 @@ const main = async () => {
         status: 'queued',
       })
       await runAttempt({
+        repoRoot: workspaceRoot,
+        workspaceRoot,
         runDir: effectiveRunDir,
         attempt,
         config,

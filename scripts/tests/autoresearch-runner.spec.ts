@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test'
+import { join } from 'node:path'
 import {
+  buildRunDir,
   buildScopeViolationMessage,
   buildStrategyNotes,
   getLaneConfig,
@@ -7,6 +9,7 @@ import {
   MAX_ATTEMPT_RETRIES,
   normalizeScriptPath,
   parseRunArgs,
+  resolveWorkspaceRoot,
 } from '../autoresearch-runner.ts'
 
 describe('autoresearch-runner', () => {
@@ -79,6 +82,18 @@ describe('autoresearch-runner', () => {
   test('normalizes script paths for lane loading', () => {
     expect(normalizeScriptPath('./scripts/mss-seed.ts')).toBe('scripts/mss-seed.ts')
     expect(normalizeScriptPath('scripts/mss-corpus.ts')).toBe('scripts/mss-corpus.ts')
+  })
+
+  test('resolves workspace root from a nested repo directory', async () => {
+    const workspaceRoot = await resolveWorkspaceRoot({ cwd: join(process.cwd(), 'scripts') })
+
+    expect(workspaceRoot).toBe(process.cwd())
+  })
+
+  test('builds run directories inside the active workspace root', () => {
+    const runDir = buildRunDir({ workspaceRoot: '/tmp/plaited-worktree', lane: 'mss-seed' })
+
+    expect(runDir).toContain('/tmp/plaited-worktree/.prompts/autoresearch-runner/mss-seed/')
   })
 
   test('allowed-path enforcement accepts only configured writable roots', () => {

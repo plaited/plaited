@@ -42,6 +42,7 @@ Prefer source chunks, distilled assertions, provenance, and retrieval-ready stru
 Do not drift into unrelated repo improvement or support-surface rewrites.`
 
 export type GenerateMssCorpusArtifactsOptions = {
+  workspaceRoot?: string
   docPaths?: string[]
   markdownPaths?: string[]
   artifactDir?: string
@@ -111,6 +112,26 @@ const pathExists = async (path: string): Promise<boolean> => {
   return result.exitCode === 0
 }
 
+export const resolveWorkspaceRoot = async ({ cwd = process.cwd() }: { cwd?: string } = {}) => {
+  const override = process.env.PLAITED_WORKSPACE_ROOT?.trim()
+  if (override) {
+    return override
+  }
+
+  const gitTopLevel = await Bun.$`git rev-parse --show-toplevel`.cwd(cwd).quiet().nothrow()
+  if (gitTopLevel.exitCode === 0) {
+    const root = (await gitTopLevel.text()).trim()
+    if (root.length > 0) {
+      return root
+    }
+  }
+
+  return cwd
+}
+
+const resolveWorkspacePath = ({ workspaceRoot, relativePath }: { workspaceRoot: string; relativePath: string }) =>
+  join(workspaceRoot, relativePath)
+
 const countJsonLdDocs = async (dirPath: string): Promise<number> => {
   if (!(await pathExists(dirPath))) {
     return 0
@@ -156,21 +177,27 @@ const writeDocChunksJsonl = async ({
 
 export const generateMssCorpusArtifacts = async (options: GenerateMssCorpusArtifactsOptions = {}) => {
   const laneConfig = RESEARCH_LANE_CONFIG as MssCorpusLaneConfig
-  const artifactDir = options.artifactDir ?? MSS_CORPUS_ARTIFACTS_PATH
-  const encodedDir = options.encodedDir ?? MSS_CORPUS_ENCODED_PATH
-  const seedPath = options.seedPath ?? MSS_SEED_PATH
+  const workspaceRoot = options.workspaceRoot ?? (await resolveWorkspaceRoot())
+  const artifactDir =
+    options.artifactDir ?? resolveWorkspacePath({ workspaceRoot, relativePath: MSS_CORPUS_ARTIFACTS_PATH })
+  const encodedDir =
+    options.encodedDir ?? resolveWorkspacePath({ workspaceRoot, relativePath: MSS_CORPUS_ENCODED_PATH })
+  const seedPath = options.seedPath ?? resolveWorkspacePath({ workspaceRoot, relativePath: MSS_SEED_PATH })
   const withEmbeddings = options.withEmbeddings ?? DEFAULT_MSS_CORPUS_WITH_EMBEDDINGS
   const withLlm = options.withLlm ?? DEFAULT_MSS_CORPUS_WITH_LLM
   const chunkOutputPath = join(artifactDir, 'chunks.jsonl')
   const compareOutputPath = join(artifactDir, 'source-compare.json')
   const manifestPath = join(encodedDir, 'manifest.json')
-  const docPaths = options.docPaths ?? laneConfig.sourceDocs
+  const docPaths =
+    options.docPaths ?? laneConfig.sourceDocs.map((path) => resolveWorkspacePath({ workspaceRoot, relativePath: path }))
   const files = await buildDocChunks(docPaths)
   await writeDocChunksJsonl({ outputPath: chunkOutputPath, files, artifactDir })
 
   const report = await buildReport({
     chunkPath: chunkOutputPath,
-    markdownPaths: options.markdownPaths ?? laneConfig.compareMarkdownPaths,
+    markdownPaths:
+      options.markdownPaths ??
+      laneConfig.compareMarkdownPaths.map((path) => resolveWorkspacePath({ workspaceRoot, relativePath: path })),
     pairLimit: 40,
     withEmbeddings,
     withLlm,
@@ -207,18 +234,33 @@ export const generateMssCorpusArtifacts = async (options: GenerateMssCorpusArtif
   }
 }
 
-export const getMssCorpusStatus = async (): Promise<MssCorpusStatus> => {
-  const programFile = Bun.file(MSS_CORPUS_PROGRAM_PATH)
+export const getMssCorpusStatus = async ({
+  workspaceRoot,
+}: {
+  workspaceRoot?: string
+} = {}): Promise<MssCorpusStatus> => {
+  const resolvedWorkspaceRoot = workspaceRoot ?? (await resolveWorkspaceRoot())
+  const programFile = Bun.file(
+    resolveWorkspacePath({ workspaceRoot: resolvedWorkspaceRoot, relativePath: MSS_CORPUS_PROGRAM_PATH }),
+  )
   const programExists = await programFile.exists()
   const programText = programExists ? (await programFile.text()).trim() : ''
-  const seedDocs = await countJsonLdDocs(MSS_SEED_PATH)
-  const encodedDocs = await countJsonLdDocs(MSS_CORPUS_ENCODED_PATH)
-  const artifactFiles = await countFiles(MSS_CORPUS_ARTIFACTS_PATH)
+  const seedDocs = await countJsonLdDocs(
+    resolveWorkspacePath({ workspaceRoot: resolvedWorkspaceRoot, relativePath: MSS_SEED_PATH }),
+  )
+  const encodedDocs = await countJsonLdDocs(
+    resolveWorkspacePath({ workspaceRoot: resolvedWorkspaceRoot, relativePath: MSS_CORPUS_ENCODED_PATH }),
+  )
+  const artifactFiles = await countFiles(
+    resolveWorkspacePath({ workspaceRoot: resolvedWorkspaceRoot, relativePath: MSS_CORPUS_ARTIFACTS_PATH }),
+  )
 
   const requirements = await Promise.all(
     MSS_CORPUS_REQUIREMENTS.map(async (requirement) => ({
       ...requirement,
-      exists: await pathExists(requirement.path),
+      exists: await pathExists(
+        resolveWorkspacePath({ workspaceRoot: resolvedWorkspaceRoot, relativePath: requirement.path }),
+      ),
     })),
   )
 
