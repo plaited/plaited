@@ -1,0 +1,528 @@
+{
+  "input": {
+    "chunkPath": "/Users/eirby/Workspace/plaited/dev-research/mss-corpus/artifacts/chunks.jsonl",
+    "markdownPaths": [
+      "/Users/eirby/Workspace/plaited/skills/mss/SKILL.md",
+      "/Users/eirby/Workspace/plaited/skills/mss/references/dynamics-distilled.md",
+      "/Users/eirby/Workspace/plaited/skills/mss/references/modnet-standards-distilled.md",
+      "/Users/eirby/Workspace/plaited/skills/mss/references/structural-ia-distilled.md",
+      "/Users/eirby/Workspace/plaited/skills/mss/references/valid-combinations.md",
+      "/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md",
+      "/Users/eirby/Workspace/plaited/skills/modnet-modules/SKILL.md"
+    ]
+  },
+  "totals": {
+    "sections": 266,
+    "deterministicPairs": 30
+  },
+  "deterministic": {
+    "pairs": [
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#section-001",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/MODNET-IMPLEMENTATION.md#chunk-0124",
+        "score": 0.6285714285714286,
+        "sharedTerms": [
+          "modnet",
+          "node",
+          "modular",
+          "network",
+          "user-owned",
+          "nodes",
+          "connected",
+          "peer-to-peer"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#section-016",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/MODNET-IMPLEMENTATION.md#chunk-0139",
+        "score": 0.4,
+        "sharedTerms": [
+          "modnet",
+          "node",
+          "enterprise",
+          "topology",
+          "mac",
+          "composition",
+          "org",
+          "distributes"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#section-009",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/MODNET-IMPLEMENTATION.md#chunk-0132",
+        "score": 0.3695652173913043,
+        "sharedTerms": [
+          "modnet",
+          "access",
+          "control",
+          "three",
+          "layers",
+          "dac",
+          "surface",
+          "owner"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/mss/references/dynamics-distilled.md#/Users/eirby/Workspace/plaited/skills/mss/references/dynamics-distilled.md#section-001",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/Structural-IA.md#chunk-0014",
+        "score": 0.28205128205128205,
+        "sharedTerms": [
+          "dynamics",
+          "base",
+          "smallest",
+          "unit",
+          "transfer",
+          "information",
+          "channel",
+          "lever"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/mss/references/structural-ia-distilled.md#/Users/eirby/Workspace/plaited/skills/mss/references/structural-ia-distilled.md#section-005",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/Structural-IA.md#chunk-0014",
+        "score": 0.2702702702702703,
+        "sharedTerms": [
+          "base",
+          "dynamics",
+          "object",
+          "channel",
+          "lever",
+          "dynamic",
+          "transfer",
+          "person"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/mss/SKILL.md#/Users/eirby/Workspace/plaited/skills/mss/SKILL.md#section-020",
+        "rightId": "/Users/eirby/Workspace/plaited/skills/modnet-modules/SKILL.md#/Users/eirby/Workspace/plaited/skills/modnet-modules/SKILL.md#section-007",
+        "score": 0.22857142857142856,
+        "sharedTerms": [
+          "mss",
+          "related",
+          "skills",
+          "modnet-node",
+          "architecture",
+          "patterns",
+          "rules",
+          "modules"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#section-013",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/MODNET-IMPLEMENTATION.md#chunk-0137",
+        "score": 0.22857142857142856,
+        "sharedTerms": [
+          "modnet",
+          "node",
+          "enterprise",
+          "topology",
+          "orchestrator",
+          "infrastructure",
+          "nodes",
+          "via"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/mss/references/dynamics-distilled.md#/Users/eirby/Workspace/plaited/skills/mss/references/dynamics-distilled.md#section-007",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/Structural-IA.md#chunk-0013",
+        "score": 0.2127659574468085,
+        "sharedTerms": [
+          "levers",
+          "energy",
+          "systems",
+          "two",
+          "decrease",
+          "needed",
+          "interact",
+          "increase"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#section-001",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/MODNET-IMPLEMENTATION.md#chunk-0125",
+        "score": 0.2127659574468085,
+        "sharedTerms": [
+          "modnet",
+          "node",
+          "network",
+          "one",
+          "agent",
+          "modules",
+          "internal",
+          "code"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#section-015",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/MODNET-IMPLEMENTATION.md#chunk-0138",
+        "score": 0.2127659574468085,
+        "sharedTerms": [
+          "modnet",
+          "node",
+          "enterprise",
+          "topology",
+          "ephemeral",
+          "claude",
+          "code",
+          "generation"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "reinterpret"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/mss/SKILL.md#/Users/eirby/Workspace/plaited/skills/mss/SKILL.md#section-020",
+        "rightId": "/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#section-031",
+        "score": 0.20930232558139536,
+        "sharedTerms": [
+          "mss",
+          "related",
+          "skills",
+          "node",
+          "access",
+          "control",
+          "behavioral-core",
+          "constitution"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/mss/references/structural-ia-distilled.md#/Users/eirby/Workspace/plaited/skills/mss/references/structural-ia-distilled.md#section-003",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/Structural-IA.md#chunk-0011",
+        "score": 0.20833333333333334,
+        "sharedTerms": [
+          "channels",
+          "connections",
+          "between",
+          "objects",
+          "exchange",
+          "information",
+          "can",
+          "transmit"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/mss/references/valid-combinations.md#/Users/eirby/Workspace/plaited/skills/mss/references/valid-combinations.md#section-005",
+        "rightId": "/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#section-005",
+        "score": 0.20833333333333334,
+        "sharedTerms": [
+          "mss",
+          "contenttype",
+          "structure",
+          "mechanics",
+          "boundary",
+          "produce",
+          "ask",
+          "list"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#section-000",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/MODNET-IMPLEMENTATION.md#chunk-0124",
+        "score": 0.20833333333333334,
+        "sharedTerms": [
+          "modnet",
+          "node",
+          "nodes",
+          "agent",
+          "communicate",
+          "peer-to-peer",
+          "via",
+          "a2a"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/mss/SKILL.md#/Users/eirby/Workspace/plaited/skills/mss/SKILL.md#section-020",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/MODNET-IMPLEMENTATION.md#chunk-0123",
+        "score": 0.2,
+        "sharedTerms": [
+          "skills",
+          "modnet-node",
+          "node",
+          "architecture",
+          "access",
+          "control",
+          "patterns",
+          "constitution"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/mss/references/structural-ia-distilled.md#/Users/eirby/Workspace/plaited/skills/mss/references/structural-ia-distilled.md#section-001",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/Structural-IA.md#chunk-0009",
+        "score": 0.2,
+        "sharedTerms": [
+          "objects",
+          "anything",
+          "conceived",
+          "one",
+          "system",
+          "goal",
+          "people",
+          "can"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#section-013",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/MODNET-IMPLEMENTATION.md#chunk-0138",
+        "score": 0.2,
+        "sharedTerms": [
+          "modnet",
+          "node",
+          "enterprise",
+          "topology",
+          "nodes",
+          "via",
+          "seed",
+          "skills"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "reinterpret"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/mss/references/valid-combinations.md#/Users/eirby/Workspace/plaited/skills/mss/references/valid-combinations.md#section-005",
+        "rightId": "/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#section-004",
+        "score": 0.19607843137254902,
+        "sharedTerms": [
+          "mss",
+          "contenttype",
+          "structure",
+          "mechanics",
+          "boundary",
+          "produce",
+          "ask",
+          "list"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/mss/references/structural-ia-distilled.md#/Users/eirby/Workspace/plaited/skills/mss/references/structural-ia-distilled.md#section-010",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/Structural-IA.md#chunk-0067",
+        "score": 0.19444444444444445,
+        "sharedTerms": [
+          "pattern",
+          "content",
+          "activities",
+          "interactions",
+          "take",
+          "place",
+          "user"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/mss/references/modnet-standards-distilled.md#/Users/eirby/Workspace/plaited/skills/mss/references/modnet-standards-distilled.md#section-013",
+        "rightId": "/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#section-003",
+        "score": 0.19230769230769232,
+        "sharedTerms": [
+          "modnet",
+          "mss",
+          "generation",
+          "modules",
+          "module",
+          "five",
+          "tags",
+          "contenttype"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#section-000",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/MODNET-IMPLEMENTATION.md#chunk-0137",
+        "score": 0.1836734693877551,
+        "sharedTerms": [
+          "modnet",
+          "node",
+          "nodes",
+          "sovereign",
+          "agent",
+          "via",
+          "a2a",
+          "implementation"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/mss/references/dynamics-distilled.md#/Users/eirby/Workspace/plaited/skills/mss/references/dynamics-distilled.md#section-003",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/Structural-IA.md#chunk-0015",
+        "score": 0.18,
+        "sharedTerms": [
+          "dynamics",
+          "loops",
+          "feedback",
+          "loop",
+          "two",
+          "connected",
+          "base",
+          "user"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#section-031",
+        "rightId": "/Users/eirby/Workspace/plaited/skills/modnet-modules/SKILL.md#/Users/eirby/Workspace/plaited/skills/modnet-modules/SKILL.md#section-007",
+        "score": 0.17777777777777778,
+        "sharedTerms": [
+          "modnet",
+          "related",
+          "skills",
+          "mss",
+          "tag",
+          "definitions",
+          "composition",
+          "rules"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/mss/references/structural-ia-distilled.md#/Users/eirby/Workspace/plaited/skills/mss/references/structural-ia-distilled.md#section-015",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/Structural-IA.md#chunk-0076",
+        "score": 0.17647058823529413,
+        "sharedTerms": [
+          "pattern",
+          "content",
+          "structure",
+          "desk",
+          "work",
+          "private",
+          "table",
+          "meeting"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/mss/references/modnet-standards-distilled.md#/Users/eirby/Workspace/plaited/skills/mss/references/modnet-standards-distilled.md#section-010",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/Modnet.md#chunk-0115",
+        "score": 0.17073170731707318,
+        "sharedTerms": [
+          "network",
+          "ephemeral",
+          "networks",
+          "connect",
+          "search",
+          "boundary",
+          "participation"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#section-001",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/MODNET-IMPLEMENTATION.md#chunk-0138",
+        "score": 0.16981132075471697,
+        "sharedTerms": [
+          "modnet",
+          "node",
+          "network",
+          "nodes",
+          "via",
+          "agent",
+          "modules",
+          "internal"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "reinterpret"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/mss/references/structural-ia-distilled.md#/Users/eirby/Workspace/plaited/skills/mss/references/structural-ia-distilled.md#section-010",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/Structural-IA.md#chunk-0068",
+        "score": 0.16666666666666666,
+        "sharedTerms": [
+          "pattern",
+          "structure",
+          "information",
+          "organized",
+          "innate",
+          "mechanics"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#section-001",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/MODNET-IMPLEMENTATION.md#chunk-0137",
+        "score": 0.16326530612244897,
+        "sharedTerms": [
+          "modnet",
+          "node",
+          "network",
+          "nodes",
+          "via",
+          "a2a",
+          "one",
+          "agent"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/mss/references/modnet-standards-distilled.md#/Users/eirby/Workspace/plaited/skills/mss/references/modnet-standards-distilled.md#section-005",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/MODNET-IMPLEMENTATION.md#chunk-0132",
+        "score": 0.16071428571428573,
+        "sharedTerms": [
+          "modnet",
+          "tags",
+          "boundary",
+          "modules",
+          "all",
+          "none",
+          "ask",
+          "controls"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      },
+      {
+        "leftId": "/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md#section-014",
+        "rightId": "/Users/eirby/Workspace/plaited/docs/MODNET-IMPLEMENTATION.md#chunk-0136",
+        "score": 0.16,
+        "sharedTerms": [
+          "modnet",
+          "node",
+          "enterprise",
+          "topology",
+          "constitution",
+          "agent",
+          "card",
+          "nodes"
+        ],
+        "leftDisposition": "preserve",
+        "rightDisposition": "preserve"
+      }
+    ]
+  }
+}

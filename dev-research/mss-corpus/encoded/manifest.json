@@ -1,0 +1,9 @@
+{
+  "seedPath": "/Users/eirby/Workspace/plaited/dev-research/mss-seed/seed",
+  "chunkPath": "/Users/eirby/Workspace/plaited/dev-research/mss-corpus/artifacts/chunks.jsonl",
+  "compareReportPath": "/Users/eirby/Workspace/plaited/dev-research/mss-corpus/artifacts/source-compare.json",
+  "sections": 266,
+  "deterministicPairs": 30,
+  "withEmbeddings": false,
+  "withLlm": false
+}
