@@ -2,7 +2,6 @@
 
 import { join, resolve } from 'node:path'
 import { extractSectionsFromMarkdown, type SkillSection } from '../src/tools/skill-links.ts'
-import { embed } from './embedding-adapter.ts'
 import { runStructuredLlmQuery } from './structured-llm-query.ts'
 
 export type SourceFamily = 'mss' | 'modnet-node' | 'modnet-modules' | 'docs-chunks'
@@ -68,6 +67,19 @@ export type SourceCompareReport = {
 
 const DEFAULT_CHUNK_PATH = join('.prompts', 'mss-doc-chunks', 'chunks.jsonl')
 export const DEFAULT_MSS_COMPARE_EMBEDDING_MODEL = 'nvidia/llama-nemotron-embed-vl-1b-v2:free'
+
+type OpenRouterEmbeddingsResponse = {
+  data?: Array<{
+    embedding?: number[]
+    index?: number
+  }>
+  model?: string
+  usage?: {
+    prompt_tokens?: number
+    total_tokens?: number
+  }
+}
+
 const DEFAULT_MARKDOWN_PATHS = [
   join('skills', 'mss', 'SKILL.md'),
   join('skills', 'mss', 'references', 'dynamics-distilled.md'),
@@ -119,6 +131,68 @@ const REINTERPRET_HINTS = [
   'agent card contains mss metadata',
   'modnet:mss:',
 ]
+
+const buildEmbeddingHeaders = () => {
+  const apiKey = process.env.OPENROUTER_API_KEY
+  if (!apiKey) {
+    throw new Error('OPENROUTER_API_KEY is required')
+  }
+
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
+  }
+
+  if (process.env.OPENROUTER_HTTP_REFERER) {
+    headers['HTTP-Referer'] = process.env.OPENROUTER_HTTP_REFERER
+  }
+  if (process.env.OPENROUTER_X_TITLE) {
+    headers['X-Title'] = process.env.OPENROUTER_X_TITLE
+  }
+
+  return headers
+}
+
+const normalizeEmbeddingResponse = (payload: OpenRouterEmbeddingsResponse): number[][] =>
+  (payload.data ?? [])
+    .slice()
+    .sort((left, right) => (left.index ?? 0) - (right.index ?? 0))
+    .map((row) => row.embedding ?? [])
+
+const embedSections = async ({ texts, model }: { texts: string[]; model: string }) => {
+  if (texts.length === 0) {
+    return []
+  }
+
+  const baseUrl = process.env.OPENROUTER_BASE_URL?.trim() || 'https://openrouter.ai/api/v1'
+  const response = await fetch(`${baseUrl}/embeddings`, {
+    method: 'POST',
+    headers: buildEmbeddingHeaders(),
+    body: JSON.stringify({
+      model,
+      input: texts,
+      encoding_format: 'float',
+    }),
+  })
+
+  const payload = (await response.json()) as OpenRouterEmbeddingsResponse | { error?: { message?: string } }
+
+  if (!response.ok) {
+    const errorMessage =
+      typeof payload === 'object' &&
+      payload !== null &&
+      'error' in payload &&
+      payload.error &&
+      typeof payload.error === 'object' &&
+      typeof payload.error.message === 'string'
+        ? payload.error.message
+        : `${response.status} ${response.statusText}`
+
+    throw new Error(errorMessage)
+  }
+
+  return normalizeEmbeddingResponse(payload as OpenRouterEmbeddingsResponse)
+}
 
 const ARCHIVE_HINTS = ['download — user gets a module template', 'crowd-sourced repository']
 
@@ -295,14 +369,14 @@ export const buildEmbeddingPairs = async (
     .map((id) => sections.find((section) => section.id === id))
     .filter((section): section is ComparisonSection => Boolean(section))
 
-  const result = await embed({
+  const result = await embedSections({
     model: process.env.PLAITED_MSS_COMPARE_EMBED_MODEL?.trim() || DEFAULT_MSS_COMPARE_EMBEDDING_MODEL,
     texts: selectedSections.map((section) => `${section.headingPath.join(' / ')}\n${section.text.slice(0, 1200)}`),
   })
 
   const embeddingMap = new Map<string, number[]>()
   selectedSections.forEach((section, index) => {
-    embeddingMap.set(section.id, result.embeddings[index] ?? [])
+    embeddingMap.set(section.id, result[index] ?? [])
   })
 
   const embeddingPairs = pairs
