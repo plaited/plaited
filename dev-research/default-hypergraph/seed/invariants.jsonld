@@ -1,5 +1,5 @@
 {
-  "@id": "skill://default-hypergraph-invariants",
+  "@id": "seed://default-hypergraph-invariants",
   "@type": "Skill",
   "source": "dev-research/default-hypergraph/seed/invariants.jsonld",
   "layer": "seed",
@@ -9,12 +9,14 @@
       "@id": "mss:invariant/boundary",
       "@type": "Concept",
       "invariantStrength": "strongest",
+      "references": ["mss:boundary", "mss:rule/boundary-cascade", "boundary:enforce/none-overrides-all"],
       "description": "boundary is the strongest MSS invariant - defines what crosses module boundaries"
     },
     {
       "@id": "mss:invariant/scale",
       "@type": "Concept",
       "invariantStrength": "strongest",
+      "references": ["mss:scale", "mss:scale/relative", "mss:rule/nesting-transitive"],
       "description": "scale is the strongest MSS invariant - defines module nesting depth"
     },
     {
@@ -66,7 +68,7 @@
   ],
   "requires": [
     {
-      "@id": "skill://default-hypergraph-mss",
+      "@id": "seed://default-hypergraph-mss",
       "@type": "Skill"
     }
   ]

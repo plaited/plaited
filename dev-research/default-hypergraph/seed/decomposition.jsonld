@@ -1,5 +1,5 @@
 {
-  "@id": "skill://default-hypergraph-decomposition",
+  "@id": "seed://default-hypergraph-decomposition",
   "@type": "Skill",
   "source": "dev-research/default-hypergraph/seed/decomposition.jsonld",
   "layer": "seed",
@@ -161,6 +161,38 @@
       "@id": "decomp:branch/ephemeral",
       "@type": "Concept",
       "description": "Fanout branch state is discarded after merge unless explicitly preserved"
+    },
+    {
+      "@id": "decomp:branch/pending",
+      "@type": "Concept",
+      "description": "Fanout branch scheduled but not yet started"
+    },
+    {
+      "@id": "decomp:branch/completed",
+      "@type": "Concept",
+      "description": "Fanout branch finished successfully with result available"
+    },
+    {
+      "@id": "decomp:branch/failed",
+      "@type": "Concept",
+      "description": "Fanout branch terminated with unrecoverable failure"
+    },
+    {
+      "@id": "decomp:branch/canceled",
+      "@type": "Concept",
+      "description": "Fanout branch explicitly canceled before completion"
+    },
+    {
+      "@id": "decomp:merge/deterministic",
+      "@type": "Concept",
+      "description": "Merge produces identical results for same inputs (winner-takes-all, consensus, priority)",
+      "references": ["decomp:merge/winner-takes-all", "decomp:merge/consensus", "decomp:merge/priority"]
+    },
+    {
+      "@id": "decomp:merge/non-deterministic",
+      "@type": "Concept",
+      "description": "Merge may produce different results for same inputs (random, confidence-weighted with ties)",
+      "references": ["decomp:tie/random", "decomp:merge/confidence-weighted"]
     },
     {
       "@id": "decomp:limit/max-branches",
@@ -506,11 +538,11 @@
   ],
   "requires": [
     {
-      "@id": "skill://default-hypergraph-agent-policy",
+      "@id": "seed://default-hypergraph-agent-policy",
       "@type": "Skill"
     },
     {
-      "@id": "skill://default-hypergraph-boundary-safety",
+      "@id": "seed://default-hypergraph-boundary-safety",
       "@type": "Skill"
     }
   ]

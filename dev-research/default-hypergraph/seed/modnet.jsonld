@@ -1,8 +1,9 @@
 {
-  "@id": "skill://default-hypergraph-modnet",
+  "@id": "seed://default-hypergraph-modnet",
   "@type": "Skill",
   "source": "dev-research/default-hypergraph/seed/modnet.jsonld",
   "layer": "seed",
+  "description": "Modnet composition and assembly semantics derived from skills/modnet-modules/SKILL.md",
   "provides": [
     {
       "@id": "modnet:composition/parent-child",
@@ -37,9 +38,24 @@
       "references": ["mss:mechanics/filter"]
     },
     {
+      "@id": "modnet:mechanic/sort",
+      "@type": "Concept",
+      "references": ["mss:mechanics/sort"]
+    },
+    {
+      "@id": "modnet:mechanic/track",
+      "@type": "Concept",
+      "references": ["mss:mechanics/track"]
+    },
+    {
       "@id": "modnet:mechanic/share",
       "@type": "Concept",
       "references": ["mss:mechanics/share"]
+    },
+    {
+      "@id": "modnet:mechanic/chart",
+      "@type": "Concept",
+      "references": ["mss:mechanics/chart"]
     },
     {
       "@id": "modnet:assembly/scale-nesting",
@@ -54,7 +70,7 @@
   ],
   "requires": [
     {
-      "@id": "skill://default-hypergraph-mss",
+      "@id": "seed://default-hypergraph-mss",
       "@type": "Skill"
     }
   ]

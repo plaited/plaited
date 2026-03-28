@@ -1,5 +1,5 @@
 {
-  "@id": "skill://default-hypergraph-boundary-safety",
+  "@id": "seed://default-hypergraph-boundary-safety",
   "@type": "Skill",
   "source": "dev-research/default-hypergraph/seed/boundary-safety.jsonld",
   "layer": "seed",
@@ -96,11 +96,11 @@
   ],
   "requires": [
     {
-      "@id": "skill://default-hypergraph-runtime",
+      "@id": "seed://default-hypergraph-runtime",
       "@type": "Skill"
     },
     {
-      "@id": "skill://default-hypergraph-modnet",
+      "@id": "seed://default-hypergraph-modnet",
       "@type": "Skill"
     }
   ]

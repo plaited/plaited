@@ -92,12 +92,9 @@ Treat `src/tools/hypergraph.ts` as read-only support surface for this lane.
 
 Expected future artifacts:
 
-- `dev-research/default-hypergraph/schema/`
 - `dev-research/default-hypergraph/seed/`
-- `dev-research/default-hypergraph/tests/`
 - `dev-research/default-hypergraph/scripts/`
 - `dev-research/default-hypergraph/encodings/`
-- `dev-research/default-hypergraph/provenance/`
 
 ## Required Coverage
 
@@ -237,7 +234,6 @@ Expected deterministic checks include:
 
 - the stable program validator: `bun scripts/default-hypergraph.ts validate`
 - `bun --bun tsc --noEmit` when TypeScript files change
-- targeted tests for changed lane-local logic under `dev-research/default-hypergraph/tests/`
 - Biome on touched TypeScript files when formatting or linting is relevant
 
 Probabilistic assessment may still be used for synthesis, comparison, or

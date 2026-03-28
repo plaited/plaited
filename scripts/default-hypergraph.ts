@@ -20,15 +20,15 @@ export type ProgramStatus = {
   vertexCount: number
   hyperedgeCount: number
   requirements: RequirementStatus[]
-  missingConcepts: string[]
-  missingSkillLinks: Array<{ from: string; to: string }>
+  missingCoreConcepts: string[]
+  missingSeedDocumentLinks: Array<{ from: string; to: string }>
   missingInternalReferences: Array<{ from: string; field: string; target: string }>
 }
 
 export const DEFAULT_HYPERGRAPH_PROGRAM_PATH = join('dev-research', 'default-hypergraph', 'program.md')
 export const DEFAULT_HYPERGRAPH_SEED_PATH = join('dev-research', 'default-hypergraph', 'seed')
 
-export const REQUIRED_CONCEPT_IDS = [
+export const REQUIRED_CORE_CONCEPT_IDS = [
   'mss:content-type',
   'mss:structure',
   'mss:mechanics',
@@ -36,7 +36,6 @@ export const REQUIRED_CONCEPT_IDS = [
   'mss:scale',
   'mss:scale/relative',
   'modnet:composition/parent-child',
-  'modnet:composition/auto-group',
   'agent:state/uncertain',
   'agent:state/evidence-required',
   'agent:action/hypergraph-recall',
@@ -46,15 +45,8 @@ export const REQUIRED_CONCEPT_IDS = [
   'agent:policy/fanout',
   'agent:policy/merge-winner',
   'agent:policy/single-path',
-  'agent:state/decomposing',
-  'agent:state/fanout-active',
-  'agent:state/merging',
-  'agent:state/single-path-selected',
-  'agent:state/merge-failed',
   'decomp:strategy/parallel',
   'decomp:strategy/sequential',
-  'decomp:strategy/recursive',
-  'decomp:strategy/hierarchical',
   'decomp:limit/max-branches',
   'decomp:limit/max-depth',
   'decomp:limit/budget',
@@ -63,20 +55,13 @@ export const REQUIRED_CONCEPT_IDS = [
   'decomp:merge/confidence-weighted',
   'decomp:merge/priority',
   'decomp:merge/union',
-  'decomp:merge/partial',
-  'decomp:tie/first-available',
-  'decomp:tie/random',
   'decomp:tie/ask-human',
   'decomp:criteria/confidence',
   'decomp:criteria/cost',
-  'decomp:criteria/entropy',
-  'decomp:criteria/atomicity',
   'decomp:failure/timeout',
   'decomp:failure/contradiction',
   'decomp:failure/incomplete',
   'decomp:trigger/high-uncertainty',
-  'decomp:trigger/multiple-valid',
-  'decomp:trigger/risk-mitigation',
   'decomp:prefer/single-path-over-fanout',
   'decomp:prefer/fanout-over-single-path',
   'bp:thread/search-gate',
@@ -99,21 +84,20 @@ export const REQUIRED_CONCEPT_IDS = [
   'factory:output/rule-assertion',
 ] as const
 
-export const REQUIRED_SKILL_LINKS = [
-  { from: 'skill://default-hypergraph-modnet', to: 'skill://default-hypergraph-mss' },
-  { from: 'skill://default-hypergraph-agent-policy', to: 'skill://default-hypergraph-modnet' },
-  { from: 'skill://default-hypergraph-decomposition', to: 'skill://default-hypergraph-agent-policy' },
-  { from: 'skill://default-hypergraph-invariants', to: 'skill://default-hypergraph-mss' },
-  { from: 'skill://default-hypergraph-runtime', to: 'skill://default-hypergraph-agent-policy' },
-  { from: 'skill://default-hypergraph-distillation', to: 'skill://default-hypergraph-runtime' },
-  { from: 'skill://default-hypergraph-factory', to: 'skill://default-hypergraph-distillation' },
-  { from: 'skill://default-hypergraph-factory', to: 'skill://default-hypergraph-invariants' },
+export const REQUIRED_SEED_DOCUMENT_LINKS = [
+  { from: 'seed://default-hypergraph-modnet', to: 'seed://default-hypergraph-mss' },
+  { from: 'seed://default-hypergraph-agent-policy', to: 'seed://default-hypergraph-modnet' },
+  { from: 'seed://default-hypergraph-decomposition', to: 'seed://default-hypergraph-agent-policy' },
+  { from: 'seed://default-hypergraph-invariants', to: 'seed://default-hypergraph-mss' },
+  { from: 'seed://default-hypergraph-runtime', to: 'seed://default-hypergraph-agent-policy' },
+  { from: 'seed://default-hypergraph-distillation', to: 'seed://default-hypergraph-runtime' },
+  { from: 'seed://default-hypergraph-factory', to: 'seed://default-hypergraph-distillation' },
+  { from: 'seed://default-hypergraph-factory', to: 'seed://default-hypergraph-invariants' },
 ] as const
 
 export const DEFAULT_HYPERGRAPH_REQUIREMENTS: readonly ProgramRequirement[] = [
   { label: 'Hypergraph tool', path: join('src', 'tools', 'hypergraph.ts') },
   { label: 'Hypergraph memory skill', path: join('skills', 'hypergraph-memory', 'SKILL.md') },
-  { label: 'Hypergraph recall skill', path: join('skills', 'hypergraph-recall', 'SKILL.md') },
   { label: 'MSS skill', path: join('skills', 'mss', 'SKILL.md') },
   { label: 'Modnet modules skill', path: join('skills', 'modnet-modules', 'SKILL.md') },
 ] as const
@@ -130,27 +114,29 @@ const INTERNAL_REFERENCE_FIELDS = new Set([
 
 const looksLikeGraphId = (value: string) => /^[a-z][a-z0-9-]*:(?:\/\/)?/i.test(value)
 
-const collectMissingInternalReferences = (
-  docs: Record<string, unknown>[],
-): Array<{ from: string; field: string; target: string }> => {
-  const ids = new Set<string>()
+const findMissingInternalReferences = ({
+  docs,
+}: {
+  docs: Record<string, unknown>[]
+}): Array<{ from: string; field: string; target: string }> => {
+  const knownIds = new Set<string>()
   const missing = new Map<string, { from: string; field: string; target: string }>()
 
   for (const doc of docs) {
     const docId = doc['@id']
     if (typeof docId === 'string') {
-      ids.add(docId)
+      knownIds.add(docId)
     }
 
     for (const field of ['provides', 'requires', 'rules', 'bids'] as const) {
       const items = doc[field]
       if (!Array.isArray(items)) continue
+
       for (const item of items) {
-        if (typeof item === 'object' && item !== null) {
-          const itemId = item['@id' as keyof typeof item]
-          if (typeof itemId === 'string') {
-            ids.add(itemId)
-          }
+        if (typeof item !== 'object' || item === null) continue
+        const itemId = item['@id' as keyof typeof item]
+        if (typeof itemId === 'string') {
+          knownIds.add(itemId)
         }
       }
     }
@@ -158,7 +144,7 @@ const collectMissingInternalReferences = (
 
   const visit = (value: unknown, from: string, field: string) => {
     if (typeof value === 'string') {
-      if (looksLikeGraphId(value) && !ids.has(value)) {
+      if (looksLikeGraphId(value) && !knownIds.has(value)) {
         missing.set(`${from}\0${field}\0${value}`, { from, field, target: value })
       }
       return
@@ -182,6 +168,7 @@ const collectMissingInternalReferences = (
 
   for (const doc of docs) {
     const docId = typeof doc['@id'] === 'string' ? doc['@id'] : '(unknown-doc)'
+
     for (const [field, value] of Object.entries(doc)) {
       if (INTERNAL_REFERENCE_FIELDS.has(field)) {
         visit(value, docId, field)
@@ -191,10 +178,12 @@ const collectMissingInternalReferences = (
     for (const containerField of ['provides', 'requires', 'rules', 'bids'] as const) {
       const items = doc[containerField]
       if (!Array.isArray(items)) continue
+
       for (const item of items) {
         if (typeof item !== 'object' || item === null) continue
         const itemId =
           typeof item['@id' as keyof typeof item] === 'string' ? (item['@id' as keyof typeof item] as string) : docId
+
         for (const [field, value] of Object.entries(item)) {
           if (INTERNAL_REFERENCE_FIELDS.has(field)) {
             visit(value, itemId, field)
@@ -223,9 +212,9 @@ export const getDefaultHypergraphStatus = async (): Promise<ProgramStatus> => {
     })),
   )
 
-  const missingConcepts = REQUIRED_CONCEPT_IDS.filter((id) => !index?.vertexMap.has(id))
-  const missingInternalReferences = collectMissingInternalReferences(docs)
-  const missingSkillLinks = REQUIRED_SKILL_LINKS.filter(({ from, to }) => {
+  const missingCoreConcepts = REQUIRED_CORE_CONCEPT_IDS.filter((id) => !index?.vertexMap.has(id))
+  const missingInternalReferences = findMissingInternalReferences({ docs })
+  const missingSeedDocumentLinks = REQUIRED_SEED_DOCUMENT_LINKS.filter(({ from, to }) => {
     if (!index) return true
 
     const fromIdx = index.vertexMap.get(from)
@@ -257,8 +246,8 @@ export const getDefaultHypergraphStatus = async (): Promise<ProgramStatus> => {
     vertexCount: index?.vertexIds.length ?? 0,
     hyperedgeCount: index?.hyperedgeIds.length ?? 0,
     requirements,
-    missingConcepts,
-    missingSkillLinks,
+    missingCoreConcepts,
+    missingSeedDocumentLinks,
     missingInternalReferences,
   }
 }
@@ -268,8 +257,8 @@ export const isDefaultHypergraphValid = (status: ProgramStatus): boolean =>
   status.programNonEmpty &&
   status.seedDocs > 0 &&
   status.requirements.every((requirement) => requirement.exists) &&
-  status.missingConcepts.length === 0 &&
-  status.missingSkillLinks.length === 0 &&
+  status.missingCoreConcepts.length === 0 &&
+  status.missingSeedDocumentLinks.length === 0 &&
   status.missingInternalReferences.length === 0
 
 export const renderDefaultHypergraphStatus = (status: ProgramStatus): string => {
@@ -286,16 +275,16 @@ export const renderDefaultHypergraphStatus = (status: ProgramStatus): string => 
     ...status.requirements.map(
       (requirement) => `- ${requirement.label}: ${requirement.exists ? 'ok' : 'missing'} (${requirement.path})`,
     ),
-    `missingConcepts: ${status.missingConcepts.length === 0 ? 'none' : status.missingConcepts.join(', ')}`,
+    `missingCoreConcepts: ${status.missingCoreConcepts.length === 0 ? 'none' : status.missingCoreConcepts.join(', ')}`,
     `missingInternalReferences: ${
       status.missingInternalReferences.length === 0
         ? 'none'
         : status.missingInternalReferences.map(({ from, field, target }) => `${from}.${field} -> ${target}`).join(', ')
     }`,
-    `missingSkillLinks: ${
-      status.missingSkillLinks.length === 0
+    `missingSeedDocumentLinks: ${
+      status.missingSeedDocumentLinks.length === 0
         ? 'none'
-        : status.missingSkillLinks.map(({ from, to }) => `${from} -> ${to}`).join(', ')
+        : status.missingSeedDocumentLinks.map(({ from, to }) => `${from} -> ${to}`).join(', ')
     }`,
   ]
 

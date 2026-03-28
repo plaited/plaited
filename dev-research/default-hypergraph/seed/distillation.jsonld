@@ -1,5 +1,5 @@
 {
-  "@id": "skill://default-hypergraph-distillation",
+  "@id": "seed://default-hypergraph-distillation",
   "@type": "Skill",
   "source": "dev-research/default-hypergraph/seed/distillation.jsonld",
   "layer": "seed",
@@ -61,11 +61,50 @@
       "@type": "Policy",
       "references": ["distill:section/ontology", "distill:section/policy"],
       "description": "Distinguish what goes into graph vs behavioral factories"
+    },
+    {
+      "@id": "distill:relation/produces",
+      "@type": "Relation",
+      "description": "Source concept produces target concept in distillation",
+      "domain": ["Section", "Skill"],
+      "range": ["Concept", "Policy", "Rule", "Output"]
+    },
+    {
+      "@id": "distill:relation/compiles-to",
+      "@type": "Relation",
+      "description": "Graph concept compiles to factory output artifact",
+      "domain": ["Policy", "Rule", "Constraint", "Thread"],
+      "range": ["Output"]
+    },
+    {
+      "@id": "distill:relation/traces-back",
+      "@type": "Relation",
+      "description": "Factory output traces back to source graph concept",
+      "domain": ["Output"],
+      "range": ["Policy", "Rule", "Constraint", "Thread"]
+    },
+    {
+      "@id": "distill:surface/graph-only",
+      "@type": "Surface",
+      "description": "Concept belongs to graph ontology, not factory-compilable",
+      "factory:compilable": false,
+      "inputTypes": ["Tag", "Concept", "Section", "Example"]
+    },
+    {
+      "@id": "distill:surface/factory-compilable",
+      "@type": "Surface",
+      "description": "Concept is factory-compilable via policy/rule/thread/constraint surfaces",
+      "factory:compilable": true,
+      "inputTypes": ["Policy", "Rule", "Thread", "Constraint"]
     }
   ],
   "requires": [
     {
-      "@id": "skill://default-hypergraph-runtime",
+      "@id": "seed://default-hypergraph-runtime",
+      "@type": "Skill"
+    },
+    {
+      "@id": "seed://default-hypergraph-factory",
       "@type": "Skill"
     }
   ]

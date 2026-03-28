@@ -1,5 +1,5 @@
 {
-  "@id": "skill://default-hypergraph-agent-policy",
+  "@id": "seed://default-hypergraph-agent-policy",
   "@type": "Skill",
   "source": "dev-research/default-hypergraph/seed/agent-policy.jsonld",
   "layer": "seed",
@@ -44,6 +44,11 @@
       "description": "Claim lacks sufficient evidence to determine veracity"
     },
     {
+      "@id": "agent:state/safety-critical",
+      "@type": "State",
+      "description": "Task or decision has safety implications requiring human oversight"
+    },
+    {
       "@id": "agent:uncertainty/low",
       "@type": "Concept",
       "description": "Sufficient evidence exists, high confidence in claim"
@@ -74,6 +79,20 @@
       "description": "Evidence contradicts the claim"
     },
     {
+      "@id": "agent:action/local-tool",
+      "@type": "Action"
+    },
+    {
+      "@id": "agent:action/retrieval",
+      "@type": "Action",
+      "description": "Query hypergraph memory for prior decisions or context"
+    },
+    {
+      "@id": "agent:action/search",
+      "@type": "Action",
+      "description": "Perform web or external search"
+    },
+    {
       "@id": "agent:action/hypergraph-recall",
       "@type": "Action"
     },
@@ -100,6 +119,18 @@
       "description": "Track claim provenance and evidence chain"
     },
     {
+      "@id": "agent:policy/local-tool-when-confident",
+      "@type": "Policy",
+      "references": ["agent:state/local-tool-sufficient", "agent:action/local-tool"],
+      "description": "When local tools or symbolic state can resolve the query, skip external retrieval and web search."
+    },
+    {
+      "@id": "agent:policy/recall-via-hypergraph",
+      "@type": "Policy",
+      "references": ["agent:state/memory-useful", "agent:action/hypergraph-recall"],
+      "description": "Use hypergraph queries for structural memory lookups and provenance-shaped recall."
+    },
+    {
       "@id": "agent:policy/prefer-symbolic-state",
       "@type": "Policy",
       "references": ["agent:state/uncertain", "agent:action/hypergraph-recall"],
@@ -111,15 +142,45 @@
       "references": ["agent:state/evidence-required", "agent:action/web-search"]
     },
     {
+      "@id": "agent:policy/search-when-local-insufficient",
+      "@type": "Policy",
+      "references": ["agent:state/local-tool-sufficient", "agent:action/search"],
+      "description": "Escalate to search when local tools and retrieval cannot resolve the task"
+    },
+    {
       "@id": "agent:policy/escalate-to-human",
       "@type": "Policy",
       "references": ["agent:state/uncertain", "agent:action/ask-human"]
+    },
+    {
+      "@id": "agent:policy/escalate-on-conflict",
+      "@type": "Policy",
+      "references": ["agent:evidence/conflicting", "agent:action/ask-human"],
+      "description": "Escalate to human when evidence conflicts after search"
+    },
+    {
+      "@id": "agent:policy/escalate-on-critical",
+      "@type": "Policy",
+      "references": ["agent:state/safety-critical", "agent:action/ask-human"],
+      "description": "Escalate to human immediately when task is safety-critical"
     },
     {
       "@id": "agent:policy/stop-unsupported-claims",
       "@type": "Policy",
       "references": ["agent:state/evidence-required", "agent:action/stop"],
       "description": "Do not emit or propagate claims without sufficient evidence"
+    },
+    {
+      "@id": "agent:policy/stop-on-unsupported-no-resolution",
+      "@type": "Policy",
+      "references": ["agent:state/unsupported-claim", "agent:action/stop"],
+      "description": "Stop when unsupported claim cannot be resolved through escalation chain"
+    },
+    {
+      "@id": "agent:policy/stop-on-boundary-violation",
+      "@type": "Policy",
+      "references": ["boundary:violation/detected", "agent:action/stop"],
+      "description": "Stop immediately on boundary violation without further processing"
     },
     {
       "@id": "agent:policy/trace-all-claims",
@@ -140,21 +201,38 @@
       "description": "When evidence is absent, flag uncertainty rather than asserting false"
     },
     {
-      "@id": "agent:policy/recall-via-hypergraph",
+      "@id": "agent:policy/escalation-chain-ordered",
       "@type": "Policy",
-      "references": ["agent:state/memory-useful", "agent:action/hypergraph-recall"],
-      "description": "Use hypergraph queries for structural memory lookups and provenance-shaped recall."
+      "description": "Escalation order: local-tool → retrieval → search → ask-human → stop",
+      "references": ["agent:action/local-tool", "agent:action/retrieval", "agent:action/search", "agent:action/ask-human", "agent:action/stop"]
     },
     {
-      "@id": "agent:policy/local-tool-when-confident",
+      "@id": "agent:policy/skip-escalation-on-resolution",
       "@type": "Policy",
-      "references": ["agent:state/local-tool-sufficient", "agent:action/local-tool"],
-      "description": "When local tools or symbolic state can resolve the query, skip external retrieval and web search."
+      "description": "Stop escalation chain as soon as sufficient resolution is achieved"
+    },
+    {
+      "@id": "agent:policy/retrieval-before-search",
+      "@type": "Policy",
+      "references": ["agent:action/retrieval", "agent:action/search"],
+      "description": "Always attempt hypergraph retrieval before external web search"
+    },
+    {
+      "@id": "bp:thread/escalation-ordered",
+      "@type": "Thread",
+      "references": ["agent:policy/escalation-chain-ordered", "agent:policy/skip-escalation-on-resolution"],
+      "description": "bThread enforcing ordered escalation with early exit on resolution"
+    },
+    {
+      "@id": "bp:thread/stop-escalation",
+      "@type": "Thread",
+      "references": ["agent:policy/stop-on-unsupported-no-resolution", "agent:policy/stop-on-boundary-violation"],
+      "description": "bThread terminating escalation on terminal states"
     }
   ],
   "requires": [
     {
-      "@id": "skill://default-hypergraph-modnet",
+      "@id": "seed://default-hypergraph-modnet",
       "@type": "Skill"
     }
   ]
