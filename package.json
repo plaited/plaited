@@ -36,6 +36,7 @@
     "access": "public"
   },
   "scripts": {
+    "autoresearch:runner": "bun scripts/autoresearch-runner.ts",
     "build:wasm": "bunx asc src/tools/graph-algorithms/graph-algorithms.ts --outFile src/tools/hypergraph.wasm --optimize --exportRuntime",
     "check": "bun run check:biome && bun run check:types && bun run check:package",
     "check:biome": "biome check",
@@ -47,10 +48,10 @@
     "pi:review": "bunx varlock run -- bun scripts/modnet-pi-review.ts",
     "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .hooks || true",
     "research:behavioral-factories": "bun scripts/behavioral-factories.ts",
-    "research:default-hypergraph": "bun scripts/default-hypergraph.ts",
     "research:embeddings": "bun -e \"import { embed } from './scripts/embedding-adapter.ts'; const texts = process.argv.slice(1); embed({ texts }).then((result) => console.log(JSON.stringify(result, null, 2)))\"",
-    "research:fanout": "bun scripts/research-pi-fanout.ts",
+    "research:mss-corpus": "bun scripts/mss-corpus.ts",
     "research:mss-doc-chunks": "bun scripts/mss-doc-chunks.ts",
+    "research:mss-seed": "bun scripts/mss-seed.ts",
     "research:mss-source-compare": "bun scripts/mss-source-compare.ts",
     "research:skill-links": "bun src/cli.ts skill-links",
     "test": "bun test src/ skills/ scripts/",

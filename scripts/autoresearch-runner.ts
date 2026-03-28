@@ -2,15 +2,18 @@
 
 import { join, resolve } from 'node:path'
 
-type ProgramKey = 'default-hypergraph' | 'behavioral-factories'
-
-type ProgramConfig = {
-  key: ProgramKey
+export type ResearchLaneConfig = {
+  key: string
+  scriptPath: string
   programPath: string
   validateCommand: string[]
   writableRoots: string[]
-  skills: string[]
+  skills?: string[]
+  model?: string
   taskPrompt: string
+  defaultAttempts: number
+  defaultParallelism: number
+  strategyNotes?: string[]
 }
 
 type AttemptStatus = 'queued' | 'running' | 'completed' | 'failed' | 'stopped'
@@ -29,83 +32,78 @@ type AttemptStatusRecord = {
 }
 
 type RunManifest = {
-  program: ProgramKey
+  lane: string
+  laneScriptPath: string
   createdAt: string
   attempts: number
-  concurrency: number
+  parallelism: number
   runDir: string
 }
 
 const REPO_ROOT = process.cwd()
-
-// `attempts` is the total attempt budget for a run.
-// Attempts are executed concurrently in waves, starting with the initial fanout.
-export const DEFAULT_ATTEMPT_BUDGET = 15
-export const DEFAULT_INITIAL_CONCURRENT_ATTEMPTS = 3
 export const MAX_ATTEMPT_RETRIES = 2
 
-const PROGRAMS: Record<ProgramKey, ProgramConfig> = {
-  'default-hypergraph': {
-    key: 'default-hypergraph',
-    programPath: join('dev-research', 'default-hypergraph', 'program.md'),
-    validateCommand: ['bun', 'scripts/default-hypergraph.ts', 'validate'],
-    writableRoots: [join('dev-research', 'default-hypergraph')],
-    skills: [
-      join('skills', 'hypergraph-memory'),
-      join('skills', 'mss'),
-      join('skills', 'behavioral-core'),
-      join('skills', 'youdotcom-api'),
-    ],
-    taskPrompt:
-      'Improve the default hypergraph program artifacts. Prefer small deterministic edits that strengthen the seed graph, validation, and concept coverage. Run the validator before finishing and summarize what changed.',
-  },
-  'behavioral-factories': {
-    key: 'behavioral-factories',
-    programPath: join('dev-research', 'behavioral-factories', 'program.md'),
-    validateCommand: ['bun', 'scripts/behavioral-factories.ts', 'validate'],
-    writableRoots: [join('dev-research', 'behavioral-factories')],
-    skills: [join('skills', 'behavioral-core'), join('skills', 'hypergraph-memory'), join('skills', 'mss')],
-    taskPrompt:
-      'Improve the behavioral factories program artifacts. Prefer deterministic policy and factory surfaces, not freeform prompts. Run the validator before finishing and summarize what changed.',
-  },
+const pathExists = async (path: string): Promise<boolean> => {
+  const result = await Bun.$`test -e ${path}`.quiet().nothrow()
+  return result.exitCode === 0
+}
+
+export const normalizeScriptPath = (path: string) => {
+  const normalized = path.replaceAll('\\', '/')
+  return normalized.startsWith('./') ? normalized.slice(2) : normalized
 }
 
 export const buildStrategyNotes = (attempts: number): string[] => {
   const base = [
-    'coverage-first: close the most obvious symbolic coverage gaps first.',
-    'link-integrity-first: strengthen required graph and factory links before broadening scope.',
-    'runtime-trigger-first: focus on search, retrieval, ask-human, and stop semantics.',
-    'decomposition-first: improve fanout, merge, and single-path decision concepts.',
-    'safety-first: strengthen boundary, uncertainty, and unsupported-claim handling.',
-    'minimal-diff: prefer the smallest coherent edit set that improves validation.',
-    'agent-sensor-first: emphasize tool, sensor, and evidence-state representation.',
-    'modnet-structure-first: strengthen Structural IA and MSS relationships.',
-    'factory-contract-first: clarify deterministic graph-to-factory compilation surfaces.',
-    'evaluation-first: improve deterministic validation surfaces and testability.',
+    'minimal-diff-first: prefer the smallest coherent edit set that improves the lane contract.',
+    'coverage-first: close the most obvious gaps in the lane output before broadening scope.',
+    'validation-first: strengthen deterministically checkable outcomes before speculative expansion.',
+    'structure-first: improve artifact organization and internal coherence before adding breadth.',
+    'boundary-first: stay within the lane writable roots and avoid support-surface drift.',
+    'traceability-first: preserve clear links between inputs, outputs, and validation evidence.',
+    'reviewability-first: favor changes that are easy to inspect, compare, and promote.',
+    'cleanup-first: remove stale or redundant lane output before introducing new complexity.',
   ]
 
   return Array.from({ length: attempts }, (_, index) => base[index % base.length]!)
 }
 
-export const getProgramConfig = (key: ProgramKey): ProgramConfig => PROGRAMS[key]
+export const getLaneConfig = async (scriptPath: string): Promise<ResearchLaneConfig> => {
+  const normalizedScriptPath = normalizeScriptPath(scriptPath)
+  if (!(await pathExists(normalizedScriptPath))) {
+    throw new Error(`Missing lane script: ${normalizedScriptPath}`)
+  }
 
-export const parseRunArgs = (args: string[]) => {
-  const program = args[0] as ProgramKey | undefined
+  const imported = (await import(resolve(normalizedScriptPath))) as {
+    RESEARCH_LANE_CONFIG?: ResearchLaneConfig
+  }
+  const config = imported.RESEARCH_LANE_CONFIG
+
+  if (!config) {
+    throw new Error(`Lane script does not export RESEARCH_LANE_CONFIG: ${normalizedScriptPath}`)
+  }
+
+  return config
+}
+
+export const parseRunArgs = async (args: string[]) => {
+  const laneScriptPath = args[0]
   const command = (args[1] ?? 'run') as 'run' | 'status'
-  let attempts = DEFAULT_ATTEMPT_BUDGET
-  let concurrency = DEFAULT_INITIAL_CONCURRENT_ATTEMPTS
+  const defaults = laneScriptPath ? await getLaneConfig(laneScriptPath).catch(() => null) : null
+  let attempts = defaults?.defaultAttempts ?? 15
+  let parallelism = defaults?.defaultParallelism ?? 3
   let runDir: string | null = null
 
   for (let i = 2; i < args.length; i += 1) {
     const arg = args[i]
     const next = args[i + 1]
-    if (arg === '--attempts' && next) {
+    if ((arg === '--attempts' || arg === '--budget') && next) {
       attempts = Number(next)
       i += 1
       continue
     }
-    if (arg === '--concurrency' && next) {
-      concurrency = Number(next)
+    if ((arg === '--parallel' || arg === '--concurrency') && next) {
+      parallelism = Number(next)
       i += 1
       continue
     }
@@ -115,13 +113,11 @@ export const parseRunArgs = (args: string[]) => {
     }
   }
 
-  return { program, command, attempts, concurrency, runDir }
+  return { laneScriptPath, command, attempts, parallelism, runDir }
 }
 
 const formatTimestamp = () => new Date().toISOString().replaceAll(':', '-').replaceAll('.', '-')
-
-const buildRunDir = (program: ProgramKey) => join('.prompts', 'research-fanout', program, formatTimestamp())
-
+const buildRunDir = (lane: string) => join('.prompts', 'autoresearch-runner', lane, formatTimestamp())
 const runAttemptDir = (runDir: string, attempt: number) =>
   join(runDir, `attempt-${attempt.toString().padStart(2, '0')}`)
 const attemptStatusPath = (runDir: string, attempt: number) => join(runAttemptDir(runDir, attempt), 'status.json')
@@ -170,10 +166,7 @@ const runCommand = async ({
   await Promise.all([Bun.write(stdoutPath, stdoutText), Bun.write(stderrPath, stderrText)])
 
   const exitCode = await proc.exited
-  return {
-    proc,
-    exitCode,
-  }
+  return { proc, exitCode }
 }
 
 const writeAttemptStatus = async (runDir: string, attempt: number, status: AttemptStatusRecord) => {
@@ -183,26 +176,26 @@ const writeAttemptStatus = async (runDir: string, attempt: number, status: Attem
 const createWorktree = async (runDir: string, attempt: number) => {
   const worktreePath = attemptWorktreePath(runDir, attempt)
   await ensureDir(runAttemptDir(runDir, attempt))
-  await Bun.$`git worktree add --detach ${worktreePath} HEAD`.cwd(process.cwd()).quiet()
+  await Bun.$`git worktree add --detach ${worktreePath} HEAD`.cwd(REPO_ROOT).quiet()
   return worktreePath
 }
 
-const buildSystemPrompt = async (config: ProgramConfig) => {
+const buildSystemPrompt = async (config: ResearchLaneConfig) => {
   const programText = (await Bun.file(config.programPath).text()).trim()
   const writableRoots = config.writableRoots.map((path) => `- ${path}`).join('\n')
   return `${programText}
 
 Execution contract:
-- Work only within the selected program surfaces.
-- Prefer deterministic edits over broad speculative changes.
-- Run the required validator before finishing.
-- Preserve explicit observability and testability.
+- Work only within the selected lane surfaces.
+- Keep the main repo untouched during attempts; treat promotion as a separate step.
+- Prefer deterministic, reviewable edits over broad speculative rewrites.
+- Run the lane validator before finishing.
 
 Writable roots:
 ${writableRoots}`
 }
 
-const buildPiCommand = async ({ config, strategy }: { config: ProgramConfig; strategy: string }) => {
+const buildPiCommand = async ({ config, strategy }: { config: ResearchLaneConfig; strategy: string }) => {
   const systemPrompt = await buildSystemPrompt(config)
   const cmd = [
     'bunx',
@@ -214,11 +207,11 @@ const buildPiCommand = async ({ config, strategy }: { config: ProgramConfig; str
     'bunx',
     'pi',
     '--model',
-    'openrouter/minimax/minimax-m2.7',
+    config.model ?? 'openrouter/minimax/minimax-m2.7',
     '--no-skills',
   ]
 
-  for (const skill of config.skills) {
+  for (const skill of config.skills ?? []) {
     cmd.push('--skill', resolve(skill))
   }
 
@@ -260,7 +253,7 @@ export const buildScopeViolationMessage = ({
 }: {
   disallowedPaths: string[]
   writableRoots: string[]
-}) => `Your previous attempt modified files outside the allowed program surface.
+}) => `Your previous attempt modified files outside the allowed lane surface.
 
 Disallowed paths:
 ${disallowedPaths.map((path) => `- ${path}`).join('\n')}
@@ -299,7 +292,7 @@ const runAttempt = async ({
 }: {
   runDir: string
   attempt: number
-  config: ProgramConfig
+  config: ResearchLaneConfig
   strategy: string
 }) => {
   const worktreePath = await createWorktree(runDir, attempt)
@@ -410,17 +403,17 @@ ${errorMessage}`
   })
 }
 
-const runWithConcurrency = async ({
+const runWithParallelism = async ({
   attempts,
-  concurrency,
+  parallelism,
   task,
 }: {
   attempts: number
-  concurrency: number
+  parallelism: number
   task: (attempt: number) => Promise<void>
 }) => {
   let next = 1
-  const workers = Array.from({ length: concurrency }, async () => {
+  const workers = Array.from({ length: parallelism }, async () => {
     while (next <= attempts) {
       const current = next
       next += 1
@@ -431,15 +424,15 @@ const runWithConcurrency = async ({
 }
 
 const main = async () => {
-  const { program, command, attempts, concurrency, runDir } = parseRunArgs(Bun.argv.slice(2))
-  if (!program || !(program in PROGRAMS)) {
+  const { laneScriptPath, command, attempts, parallelism, runDir } = await parseRunArgs(Bun.argv.slice(2))
+  if (!laneScriptPath) {
     console.error(
-      'Usage: bun scripts/research-pi-fanout.ts <default-hypergraph|behavioral-factories> [run|status] [--attempts N] [--concurrency N] [--run-dir PATH]',
+      'Usage: bun scripts/autoresearch-runner.ts <lane-script-path> [run|status] [--attempts N] [--parallel N] [--run-dir PATH]',
     )
     process.exit(1)
   }
 
-  const config = getProgramConfig(program)
+  const config = await getLaneConfig(laneScriptPath)
 
   if (command === 'status') {
     const effectiveRunDir = runDir
@@ -469,17 +462,24 @@ const main = async () => {
     return
   }
 
-  const effectiveRunDir = runDir ?? buildRunDir(program)
+  const effectiveRunDir = runDir ?? buildRunDir(config.key)
   await ensureDir(effectiveRunDir)
   await writeJson(join(effectiveRunDir, 'manifest.json'), {
-    program,
+    lane: config.key,
+    laneScriptPath: normalizeScriptPath(laneScriptPath),
     createdAt: new Date().toISOString(),
     attempts,
-    concurrency,
+    parallelism,
     runDir: effectiveRunDir,
   } satisfies RunManifest)
 
-  const strategyNotes = buildStrategyNotes(attempts)
+  const strategyNotes =
+    config.strategyNotes && config.strategyNotes.length > 0
+      ? Array.from(
+          { length: attempts },
+          (_, index) => config.strategyNotes?.[index % config.strategyNotes.length] ?? '',
+        )
+      : buildStrategyNotes(attempts)
 
   const stopHandler = async () => {
     const statuses = await readAttemptStatuses(effectiveRunDir, attempts)
@@ -507,9 +507,9 @@ const main = async () => {
     void stopHandler()
   })
 
-  await runWithConcurrency({
+  await runWithParallelism({
     attempts,
-    concurrency,
+    parallelism,
     task: async (attempt) => {
       const strategy = strategyNotes[attempt - 1]!
       await writeAttemptStatus(effectiveRunDir, attempt, {
@@ -532,7 +532,7 @@ const main = async () => {
     JSON.stringify(
       {
         runDir: effectiveRunDir,
-        program,
+        lane: config.key,
         completed: statuses.filter((status) => status.status === 'completed').length,
         failed: statuses.filter((status) => status.status === 'failed').length,
       },
