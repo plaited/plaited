@@ -17,7 +17,9 @@ export type ResearchLaneConfig = {
   programPath: string
   validateCommand: string[]
   writableRoots: string[]
+  readRoots?: string[]
   skills?: string[]
+  optionalSkillsByTag?: Record<string, string[]>
   model?: string
   systemPrompt?: string
   taskPrompt: string
@@ -105,6 +107,16 @@ const MAX_EVALUATION_PROGRAM_CHARS = 12_000
 const MAX_EVALUATION_FILE_CHARS = 6_000
 const MAX_EVALUATION_CONTEXT_FILES = 6
 const MAX_EVALUATION_SKILL_CHARS = 4_000
+const RESEARCH_SKILL_TAGS_ENV = 'PLAITED_RESEARCH_SKILL_TAGS'
+
+const logProgress = (message: string, details?: Record<string, unknown>) => {
+  const timestamp = new Date().toISOString()
+  if (details) {
+    console.log(`[autoresearch ${timestamp}] ${message} ${JSON.stringify(details)}`)
+    return
+  }
+  console.log(`[autoresearch ${timestamp}] ${message}`)
+}
 
 const pathExists = async (path: string): Promise<boolean> => {
   const result = await $`test -e ${path}`.quiet().nothrow()
@@ -135,6 +147,25 @@ export const resolveWorkspaceRoot = async ({ cwd = process.cwd() }: { cwd?: stri
 
 const resolveWorkspacePath = ({ workspaceRoot, path }: { workspaceRoot: string; path: string }) =>
   isAbsolute(path) ? path : join(workspaceRoot, path)
+
+const parseSkillTags = (value: string | undefined) =>
+  (value ?? '')
+    .split(/[\s,]+/u)
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+
+export const resolveLaneSkills = (config: ResearchLaneConfig): string[] => {
+  const resolved = new Set(config.skills ?? [])
+  const enabledTags = parseSkillTags(process.env[RESEARCH_SKILL_TAGS_ENV])
+
+  for (const tag of enabledTags) {
+    for (const skill of config.optionalSkillsByTag?.[tag] ?? []) {
+      resolved.add(skill)
+    }
+  }
+
+  return [...resolved]
+}
 
 export const buildStrategyNotes = (attempts: number): string[] => {
   const base = [
@@ -324,7 +355,7 @@ export const buildPiCommand = async ({
     resolveWorkspacePath({ workspaceRoot: repoRoot, path: PI_WORKTREE_GUARD_EXTENSION_PATH }),
   ]
 
-  for (const skill of config.skills ?? []) {
+  for (const skill of resolveLaneSkills(config)) {
     cmd.push('--skill', resolveWorkspacePath({ workspaceRoot: repoRoot, path: skill }))
   }
 
@@ -543,7 +574,7 @@ const buildEvaluationInput = async ({
     })),
   )
   const skillCatalog = await Promise.all(
-    (config.skills ?? []).map(async (skillPath) => {
+    resolveLaneSkills(config).map(async (skillPath) => {
       const skillText =
         (await readContextText({
           worktreePath: status.worktreePath,
@@ -639,6 +670,12 @@ const evaluateAttempts = async ({
   for (const status of completedStatuses) {
     const existing = await readAttemptEvaluation(runDir, status.attempt)
     if (existing) {
+      logProgress('evaluation reused', {
+        lane: config.key,
+        attempt: status.attempt,
+        score: existing.score,
+        pass: existing.pass,
+      })
       evaluations.push(existing)
       continue
     }
@@ -652,6 +689,10 @@ const evaluateAttempts = async ({
       result.patch ?? (await readPatch({ worktreePath: status.worktreePath, attemptCommit: result.attemptCommit }))
 
     try {
+      logProgress('evaluation start', {
+        lane: config.key,
+        attempt: status.attempt,
+      })
       await writeJson(attemptEvaluationStatusPath(runDir, status.attempt), {
         attempt: status.attempt,
         phase: 'judge',
@@ -666,6 +707,10 @@ const evaluateAttempts = async ({
       })
 
       if (verifier) {
+        logProgress('evaluation verify', {
+          lane: config.key,
+          attempt: status.attempt,
+        })
         await writeJson(attemptEvaluationStatusPath(runDir, status.attempt), {
           attempt: status.attempt,
           phase: 'verify',
@@ -691,6 +736,12 @@ const evaluateAttempts = async ({
       const record = toEvaluationRecord(status.attempt, graded)
       evaluations.push(record)
       await writeJson(attemptEvaluationPath(runDir, status.attempt), record)
+      logProgress('evaluation complete', {
+        lane: config.key,
+        attempt: status.attempt,
+        pass: record.pass,
+        score: record.score,
+      })
       await writeJson(attemptEvaluationStatusPath(runDir, status.attempt), {
         attempt: status.attempt,
         phase: verifier ? 'verified' : 'graded',
@@ -706,6 +757,11 @@ const evaluateAttempts = async ({
       }
       evaluations.push(record)
       await writeJson(attemptEvaluationPath(runDir, status.attempt), record)
+      logProgress('evaluation failed', {
+        lane: config.key,
+        attempt: status.attempt,
+        reason,
+      })
       await writeJson(attemptEvaluationErrorPath(runDir, status.attempt), {
         attempt: status.attempt,
         error: reason,
@@ -736,6 +792,13 @@ const evaluateAttempts = async ({
   }
 
   await writeJson(evaluationSummaryPath(runDir), summary)
+  logProgress('evaluation summary', {
+    lane: config.key,
+    evaluatedAttempts: summary.evaluatedAttempts,
+    passedAttempts: summary.passedAttempts,
+    averageScore: summary.averageScore,
+    bestAttempt: summary.bestAttempt ?? null,
+  })
   return summary
 }
 
@@ -810,7 +873,7 @@ export const selectPromotionDecision = async ({
         runDir,
         config.programPath,
         ...config.writableRoots,
-        ...(config.skills ?? []),
+        ...resolveLaneSkills(config),
         ...candidates.map((candidate) => candidate.worktreePath),
       ],
       maxToolRounds: 6,
@@ -825,6 +888,12 @@ export const selectPromotionDecision = async ({
       reasoning: result.reason,
     }
     await writeJson(promotionSummaryPath(runDir), summary)
+    logProgress('promotion fallback', {
+      lane: config.key,
+      action: summary.action,
+      confidence: summary.confidence,
+      reason: summary.reasoning,
+    })
     return summary
   }
 
@@ -837,6 +906,13 @@ export const selectPromotionDecision = async ({
     reasoning: result.value.reasoning,
   }
   await writeJson(promotionSummaryPath(runDir), summary)
+  logProgress('promotion decision', {
+    lane: config.key,
+    action: summary.action,
+    selectedAttempt: summary.selectedAttempt ?? null,
+    selectedCommit: summary.selectedCommit ?? null,
+    confidence: summary.confidence,
+  })
   return summary
 }
 
@@ -863,6 +939,11 @@ const runAttempt = async ({
     worktreePath,
     status: 'running',
     startedAt,
+  })
+  logProgress('attempt start', {
+    lane: config.key,
+    attempt,
+    runDir,
   })
 
   let retryCount = 0
@@ -894,6 +975,7 @@ const runAttempt = async ({
         PLAITED_WORKSPACE_ROOT: worktreePath,
         PLAITED_REPO_ROOT: repoRoot,
         PLAITED_ALLOWED_WRITABLE_ROOTS: config.writableRoots.join('\n'),
+        PLAITED_ALLOWED_READ_ROOTS: (config.readRoots ?? []).join('\n'),
       },
     })
     pid = proc.pid
@@ -910,6 +992,12 @@ const runAttempt = async ({
       await Bun.write(join(runAttemptDir(runDir, attempt), `retry-${retryCount + 1}.txt`), `${errorMessage}\n`)
 
       if (retryCount < MAX_ATTEMPT_RETRIES) {
+        logProgress('attempt retry', {
+          lane: config.key,
+          attempt,
+          retry: retryCount + 1,
+          reason: 'scope-violation',
+        })
         currentStrategy = `${strategy}
 
 Retry guidance:
@@ -992,6 +1080,15 @@ ${errorMessage}`
     disallowedPaths,
     worktreePath,
     ...(attemptCommit ? { attemptCommit } : {}),
+  })
+  logProgress('attempt complete', {
+    lane: config.key,
+    attempt,
+    status: status.status,
+    piExitCode,
+    validateExitCode,
+    changedPaths: changedPaths.length,
+    attemptCommit: attemptCommit ?? null,
   })
 }
 
@@ -1109,6 +1206,13 @@ const main = async () => {
     parallelism,
     runDir: effectiveRunDir,
   } satisfies RunManifest)
+  logProgress('run start', {
+    lane: config.key,
+    runDir: effectiveRunDir,
+    attempts,
+    parallelism,
+    skillTags: process.env[RESEARCH_SKILL_TAGS_ENV] ?? '',
+  })
 
   const strategyNotes =
     config.strategyNotes && config.strategyNotes.length > 0
@@ -1167,6 +1271,12 @@ const main = async () => {
   })
 
   const statuses = await readAttemptStatuses(effectiveRunDir, attempts)
+  logProgress('promotion start', {
+    lane: config.key,
+    runDir: effectiveRunDir,
+    completed: statuses.filter((status) => status.status === 'completed').length,
+    failed: statuses.filter((status) => status.status === 'failed').length,
+  })
   const evaluation = await evaluateAttempts({
     runDir: effectiveRunDir,
     attempts,

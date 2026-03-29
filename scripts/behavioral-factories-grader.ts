@@ -9,10 +9,10 @@ import {
 import { resolvePrimaryJudgeModel, runStructuredLlmQuery } from './structured-llm-query.ts'
 
 export const BEHAVIORAL_FACTORIES_JUDGE_CRITERIA = `Prefer lane-bounded behavioral-factory improvements that:
-- preserve the seed -> corpus -> factory dependency order
+- preserve the retained seed -> corpus -> factory dependency order
 - produce deterministic, reviewable factory-oriented outputs
-- improve traceability from graph-facing inputs to factory outputs
-- avoid drift into upstream seed/corpus generation or unrelated runtime rewrites`
+- improve traceability from memory-facing inputs to factory outputs
+- avoid drift into upstream seed/corpus regeneration or unrelated runtime rewrites`
 
 const toChangedFiles = (metadata: Record<string, unknown> | undefined) =>
   Array.isArray(metadata?.changedPaths)
@@ -83,17 +83,25 @@ export const grade: Grader = async ({ output, metadata }) => {
     }),
     schema: WorkspaceImprovementJudgeResponseSchema,
     systemPrompt:
-      'You are evaluating a workspace-improvement attempt. Your first job is to find correctness, scope, and evidence problems. Return strict JSON only. Fail attempts unless the changed files, checks, and output strongly support a bounded behavioral-factories improvement.',
+      'You are evaluating a workspace-improvement attempt. Your first job is to find correctness, scope, and evidence problems. Return strict JSON only. Treat the lane program as the contract. Use search on retained seed/corpus JSON-LD artifacts when semantic evidence matters, and use read_file for markdown or source surfaces. Fail attempts unless the changed files, checks, output, and artifact evidence strongly support a bounded behavioral-factories improvement.',
     workspaceReadAccess:
       typeof metadata?.cwd === 'string'
         ? {
             workspaceRoot: metadata.cwd,
             allowedRoots: [
+              'dev-research/behavioral-factories',
+              'dev-research/mss-seed',
+              'dev-research/mss-corpus',
+              'dev-research/behavioral-seed',
+              'dev-research/behavioral-corpus',
               'skills/behavioral-core',
+              'skills/constitution',
               'skills/hypergraph-memory',
               'skills/mss',
               'skills/modnet-node',
               'skills/modnet-modules',
+              'src/behavioral',
+              'src/agent',
             ],
             maxToolRounds: 3,
           }

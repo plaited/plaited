@@ -2,6 +2,8 @@ import { isAbsolute, join, normalize } from 'node:path'
 import { z } from 'zod'
 import { ReadFileConfigSchema } from '../src/tools/crud.schemas.ts'
 import { readFile } from '../src/tools/crud.ts'
+import { HypergraphQuerySchema } from '../src/tools/hypergraph.schemas.ts'
+import { search as searchHypergraph } from '../src/tools/hypergraph.ts'
 import { extractFirstJsonObject, extractTaggedJsonObject } from './json-extract.ts'
 import { buildOpenRouterHeaders, extractOpenRouterText } from './openrouter-adapter.ts'
 
@@ -70,6 +72,16 @@ const READ_FILE_TOOL = {
   },
 } as const
 
+const HYPERGRAPH_SEARCH_TOOL = {
+  type: 'function',
+  function: {
+    name: 'search',
+    description:
+      'Query JSON-LD hypergraph artifacts under the allowed workspace roots. Use this for semantic graph inspection instead of raw file reads when checking anchors, provenance, cycles, reachability, or co-occurrence.',
+    parameters: z.toJSONSchema(HypergraphQuerySchema),
+  },
+} as const
+
 export const extractStructuredJsonObject = (value: string): string => {
   const fenced = value.match(/```json\s*([\s\S]*?)```/u)
   if (fenced?.[1]) return fenced[1].trim()
@@ -128,6 +140,26 @@ const executeReadTool = async ({
   })
 }
 
+const executeHypergraphTool = async ({
+  workspaceRoot,
+  allowedRoots,
+  args,
+}: {
+  workspaceRoot: string
+  allowedRoots: string[]
+  args: unknown
+}) => {
+  const parsed = HypergraphQuerySchema.parse(args)
+  if (!isAllowedReadPath({ workspaceRoot, allowedRoots, path: parsed.path })) {
+    throw new Error(`search path is outside allowed roots: ${parsed.path}`)
+  }
+
+  return searchHypergraph(parsed, {
+    workspace: workspaceRoot,
+    signal: AbortSignal.timeout(10_000),
+  })
+}
+
 export const runStructuredLlmQuery = async <T>({
   model,
   prompt,
@@ -168,7 +200,7 @@ export const runStructuredLlmQuery = async <T>({
           body: JSON.stringify({
             model,
             messages,
-            ...(workspaceReadAccess ? { tools: [READ_FILE_TOOL] } : {}),
+            ...(workspaceReadAccess ? { tools: [READ_FILE_TOOL, HYPERGRAPH_SEARCH_TOOL] } : {}),
             response_format: {
               type: 'json_schema',
               json_schema: {
@@ -232,7 +264,7 @@ export const runStructuredLlmQuery = async <T>({
 
         for (const toolCall of toolCalls) {
           const name = toolCall.function?.name ?? ''
-          if (name !== 'read_file') {
+          if (name !== 'read_file' && name !== 'search') {
             return {
               ok: false,
               reason: `Unsupported tool requested by model: ${name || 'unknown'}`,
@@ -246,11 +278,18 @@ export const runStructuredLlmQuery = async <T>({
 
           const argumentsText = toolCall.function?.arguments ?? '{}'
           const parsedArguments = JSON.parse(argumentsText) as unknown
-          const toolResult = await executeReadTool({
-            workspaceRoot: workspaceReadAccess.workspaceRoot,
-            allowedRoots: workspaceReadAccess.allowedRoots,
-            args: parsedArguments,
-          })
+          const toolResult =
+            name === 'read_file'
+              ? await executeReadTool({
+                  workspaceRoot: workspaceReadAccess.workspaceRoot,
+                  allowedRoots: workspaceReadAccess.allowedRoots,
+                  args: parsedArguments,
+                })
+              : await executeHypergraphTool({
+                  workspaceRoot: workspaceReadAccess.workspaceRoot,
+                  allowedRoots: workspaceReadAccess.allowedRoots,
+                  args: parsedArguments,
+                })
 
           messages.push({
             role: 'tool',

@@ -11,34 +11,37 @@ describe('pi-worktree-guard-extension', () => {
   test('resolves relative paths inside the workspace root', () => {
     const resolved = resolveWithinWorkspace({
       workspaceRoot: '/tmp/worktree',
-      path: 'dev-research/mss-seed/seed/output.jsonld',
+      path: 'dev-research/behavioral-factories/policies/output.ts',
     })
 
-    expect(resolved).toBe('/tmp/worktree/dev-research/mss-seed/seed/output.jsonld')
+    expect(resolved).toBe('/tmp/worktree/dev-research/behavioral-factories/policies/output.ts')
   })
 
   test('parses allowed roots relative to the workspace root', () => {
     const roots = parseAllowedRoots({
       workspaceRoot: '/tmp/worktree',
-      value: 'dev-research/mss-seed\ndev-research/mss-corpus',
+      value: 'dev-research/behavioral-factories\ndev-research/behavioral-factories/cache',
     })
 
-    expect(roots).toEqual(['/tmp/worktree/dev-research/mss-seed', '/tmp/worktree/dev-research/mss-corpus'])
+    expect(roots).toEqual([
+      '/tmp/worktree/dev-research/behavioral-factories',
+      '/tmp/worktree/dev-research/behavioral-factories/cache',
+    ])
   })
 
   test('accepts paths inside an allowed root and blocks others', () => {
-    const allowedRoots = ['/tmp/worktree/dev-research/mss-seed']
+    const allowedRoots = ['/tmp/worktree/dev-research/behavioral-factories']
 
     expect(
       isAllowedWorkspacePath({
-        path: '/tmp/worktree/dev-research/mss-seed/seed/mss.jsonld',
+        path: '/tmp/worktree/dev-research/behavioral-factories/policies/search.ts',
         allowedRoots,
       }),
     ).toBe(true)
 
     expect(
       isAllowedWorkspacePath({
-        path: '/tmp/worktree/scripts/mss-seed.ts',
+        path: '/tmp/worktree/scripts/behavioral-factories.ts',
         allowedRoots,
       }),
     ).toBe(false)
@@ -46,12 +49,13 @@ describe('pi-worktree-guard-extension', () => {
 
   test('blocks nested autoresearch and worktree bash commands', () => {
     const violations = getBashCommandViolations({
-      command: 'git worktree add /tmp/attempt HEAD && bun run research:mss-seed',
+      command: 'git worktree add /tmp/attempt HEAD && bun run research:behavioral-factories',
       policy: {
         enabled: true,
         workspaceRoot: '/tmp/worktree',
         repoRoot: '/Users/eirby/Workspace/plaited',
-        allowedRoots: ['/tmp/worktree/dev-research/mss-seed'],
+        allowedRoots: ['/tmp/worktree/dev-research/behavioral-factories'],
+        readRoots: ['/tmp/worktree/dev-research/behavioral-factories'],
       },
     })
 
@@ -60,12 +64,13 @@ describe('pi-worktree-guard-extension', () => {
 
   test('blocks bash commands that target the canonical repo root', () => {
     const violations = getBashCommandViolations({
-      command: 'echo hi > /Users/eirby/Workspace/plaited/dev-research/mss-seed/artifacts/chunks.jsonl',
+      command: 'echo hi > /Users/eirby/Workspace/plaited/dev-research/behavioral-factories/cache/plan.json',
       policy: {
         enabled: true,
         workspaceRoot: '/tmp/worktree',
         repoRoot: '/Users/eirby/Workspace/plaited',
-        allowedRoots: ['/tmp/worktree/dev-research/mss-seed'],
+        allowedRoots: ['/tmp/worktree/dev-research/behavioral-factories'],
+        readRoots: ['/tmp/worktree/dev-research/behavioral-factories'],
       },
     })
 
@@ -76,11 +81,15 @@ describe('pi-worktree-guard-extension', () => {
     const originalWorkspace = process.env.PLAITED_WORKSPACE_ROOT
     const originalRepoRoot = process.env.PLAITED_REPO_ROOT
     const originalWritableRoots = process.env.PLAITED_ALLOWED_WRITABLE_ROOTS
+    const originalReadRoots = process.env.PLAITED_ALLOWED_READ_ROOTS
     const originalDisabled = process.env.PLAITED_SANDBOX_DISABLED
 
     process.env.PLAITED_WORKSPACE_ROOT = '/tmp/worktree'
     process.env.PLAITED_REPO_ROOT = '/Users/eirby/Workspace/plaited'
-    process.env.PLAITED_ALLOWED_WRITABLE_ROOTS = 'dev-research/mss-seed\ndev-research/mss-corpus'
+    process.env.PLAITED_ALLOWED_WRITABLE_ROOTS =
+      'dev-research/behavioral-factories\ndev-research/behavioral-factories/cache'
+    process.env.PLAITED_ALLOWED_READ_ROOTS =
+      'dev-research/behavioral-factories\ndev-research/mss-seed/seed\ndev-research/behavioral-seed/seed'
     delete process.env.PLAITED_SANDBOX_DISABLED
 
     try {
@@ -90,8 +99,13 @@ describe('pi-worktree-guard-extension', () => {
       expect(policy.workspaceRoot).toBe('/tmp/worktree')
       expect(policy.repoRoot).toBe('/Users/eirby/Workspace/plaited')
       expect(policy.allowedRoots).toEqual([
-        '/tmp/worktree/dev-research/mss-seed',
-        '/tmp/worktree/dev-research/mss-corpus',
+        '/tmp/worktree/dev-research/behavioral-factories',
+        '/tmp/worktree/dev-research/behavioral-factories/cache',
+      ])
+      expect(policy.readRoots).toEqual([
+        '/tmp/worktree/dev-research/behavioral-factories',
+        '/tmp/worktree/dev-research/mss-seed/seed',
+        '/tmp/worktree/dev-research/behavioral-seed/seed',
       ])
     } finally {
       if (originalWorkspace === undefined) delete process.env.PLAITED_WORKSPACE_ROOT
@@ -100,6 +114,8 @@ describe('pi-worktree-guard-extension', () => {
       else process.env.PLAITED_REPO_ROOT = originalRepoRoot
       if (originalWritableRoots === undefined) delete process.env.PLAITED_ALLOWED_WRITABLE_ROOTS
       else process.env.PLAITED_ALLOWED_WRITABLE_ROOTS = originalWritableRoots
+      if (originalReadRoots === undefined) delete process.env.PLAITED_ALLOWED_READ_ROOTS
+      else process.env.PLAITED_ALLOWED_READ_ROOTS = originalReadRoots
       if (originalDisabled === undefined) delete process.env.PLAITED_SANDBOX_DISABLED
       else process.env.PLAITED_SANDBOX_DISABLED = originalDisabled
     }
@@ -107,12 +123,13 @@ describe('pi-worktree-guard-extension', () => {
 
   test('allows ordinary in-worktree bash commands', () => {
     const violations = getBashCommandViolations({
-      command: 'mkdir -p dev-research/mss-seed/artifacts && echo ok',
+      command: 'mkdir -p dev-research/behavioral-factories/cache && echo ok',
       policy: {
         enabled: true,
         workspaceRoot: '/tmp/worktree',
         repoRoot: '/Users/eirby/Workspace/plaited',
-        allowedRoots: ['/tmp/worktree/dev-research/mss-seed'],
+        allowedRoots: ['/tmp/worktree/dev-research/behavioral-factories'],
+        readRoots: ['/tmp/worktree/dev-research/behavioral-factories'],
       },
     })
 
@@ -126,7 +143,8 @@ describe('pi-worktree-guard-extension', () => {
         enabled: false,
         workspaceRoot: '/tmp/worktree',
         repoRoot: '/Users/eirby/Workspace/plaited',
-        allowedRoots: ['/tmp/worktree/dev-research/mss-seed'],
+        allowedRoots: ['/tmp/worktree/dev-research/behavioral-factories'],
+        readRoots: ['/tmp/worktree/dev-research/behavioral-factories'],
       },
     })
 

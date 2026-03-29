@@ -14,6 +14,7 @@ import {
   PI_WORKTREE_GUARD_EXTENSION_PATH,
   parseRunArgs,
   readChangedPaths,
+  resolveLaneSkills,
   resolveWorkspaceRoot,
   selectPromotionDecision,
   summarizeDiff,
@@ -27,40 +28,50 @@ describe('autoresearch-runner', () => {
     expect(notes[0]).toContain('minimal-diff-first')
   })
 
-  test('returns lane config for mss-seed', async () => {
-    const config = await getLaneConfig('scripts/mss-seed.ts')
+  test('returns lane config for behavioral-factories', async () => {
+    const config = await getLaneConfig('scripts/behavioral-factories.ts')
 
-    expect(config.scriptPath).toBe('scripts/mss-seed.ts')
-    expect(config.programPath).toBe('dev-research/mss-seed/program.md')
-    expect(config.validateCommand).toEqual(['bun', 'scripts/mss-seed.ts', 'validate'])
-    expect(config.writableRoots).toEqual(['dev-research/mss-seed'])
+    expect(config.scriptPath).toBe('scripts/behavioral-factories.ts')
+    expect(config.programPath).toBe('dev-research/behavioral-factories/program.md')
+    expect(config.validateCommand).toEqual(['bun', 'scripts/behavioral-factories.ts', 'validate'])
+    expect(config.writableRoots).toEqual(['dev-research/behavioral-factories'])
     expect(config.defaultAttempts).toBe(20)
     expect(config.defaultParallelism).toBe(3)
     expect(config.model).toBe('openrouter/minimax/minimax-m2.7')
-    expect(config.systemPrompt).toContain('mss-seed lane')
-    expect(config.evaluation?.graderPath).toBe('scripts/mss-seed-grader.ts')
-    expect(config.evaluation?.verifierPath).toBe('scripts/mss-seed-verifier.ts')
+    expect(config.systemPrompt).toContain('behavioral-factories lane')
+    expect(config.evaluation?.graderPath).toBe('scripts/behavioral-factories-grader.ts')
+    expect(config.evaluation?.verifierPath).toBe('scripts/behavioral-factories-verifier.ts')
     expect(config.evaluation?.useMetaVerification).toBe(true)
     expect(config.skills?.length).toBeGreaterThan(0)
+    expect(config.optionalSkillsByTag?.ui).toEqual(['skills/generative-ui'])
+    expect(config.optionalSkillsByTag?.['agent-loop']).toEqual(['skills/agent-loop'])
   })
 
-  test('returns lane config for mss-corpus', async () => {
-    const config = await getLaneConfig('./scripts/mss-corpus.ts')
+  test('resolves optional lane skills from tags', async () => {
+    const config = await getLaneConfig('scripts/behavioral-factories.ts')
+    const originalTags = process.env.PLAITED_RESEARCH_SKILL_TAGS
+    process.env.PLAITED_RESEARCH_SKILL_TAGS = 'ui,agent-loop web'
 
-    expect(config.scriptPath).toBe('scripts/mss-corpus.ts')
-    expect(config.programPath).toBe('dev-research/mss-corpus/program.md')
-    expect(config.validateCommand).toEqual(['bun', 'scripts/mss-corpus.ts', 'validate'])
-    expect(config.writableRoots).toEqual(['dev-research/mss-corpus'])
-    expect(config.systemPrompt).toContain('mss-corpus lane')
-    expect(config.evaluation?.graderPath).toBe('scripts/mss-corpus-grader.ts')
-    expect(config.evaluation?.verifierPath).toBe('scripts/mss-corpus-verifier.ts')
-    expect(config.evaluation?.useMetaVerification).toBe(true)
+    try {
+      expect(resolveLaneSkills(config)).toEqual([
+        'skills/behavioral-core',
+        'skills/constitution',
+        'skills/hypergraph-memory',
+        'skills/mss',
+        'skills/generative-ui',
+        'skills/agent-loop',
+        'skills/youdotcom-api',
+      ])
+    } finally {
+      if (originalTags === undefined) delete process.env.PLAITED_RESEARCH_SKILL_TAGS
+      else process.env.PLAITED_RESEARCH_SKILL_TAGS = originalTags
+    }
   })
 
   test('parses run arguments with lane defaults', async () => {
-    const parsed = await parseRunArgs(['scripts/mss-seed.ts'])
+    const parsed = await parseRunArgs(['scripts/behavioral-factories.ts'])
 
-    expect(parsed.laneScriptPath).toBe('scripts/mss-seed.ts')
+    expect(parsed.laneScriptPath).toBe('scripts/behavioral-factories.ts')
     expect(parsed.command).toBe('run')
     expect(parsed.attempts).toBe(20)
     expect(parsed.parallelism).toBe(3)
@@ -69,33 +80,33 @@ describe('autoresearch-runner', () => {
 
   test('parses explicit status arguments', async () => {
     const parsed = await parseRunArgs([
-      './scripts/mss-corpus.ts',
+      './scripts/behavioral-factories.ts',
       'status',
       '--attempts',
       '7',
       '--parallel',
       '2',
       '--run-dir',
-      '/tmp/mss-run',
+      '/tmp/factory-run',
     ])
 
-    expect(parsed.laneScriptPath).toBe('./scripts/mss-corpus.ts')
+    expect(parsed.laneScriptPath).toBe('./scripts/behavioral-factories.ts')
     expect(parsed.command).toBe('status')
     expect(parsed.attempts).toBe(7)
     expect(parsed.parallelism).toBe(2)
-    expect(parsed.runDir).toBe('/tmp/mss-run')
+    expect(parsed.runDir).toBe('/tmp/factory-run')
   })
 
   test('parses explicit evaluate arguments', async () => {
-    const parsed = await parseRunArgs(['scripts/mss-seed.ts', 'evaluate', '--run-dir', '/tmp/mss-run'])
+    const parsed = await parseRunArgs(['scripts/behavioral-factories.ts', 'evaluate', '--run-dir', '/tmp/factory-run'])
 
     expect(parsed.command).toBe('evaluate')
-    expect(parsed.runDir).toBe('/tmp/mss-run')
+    expect(parsed.runDir).toBe('/tmp/factory-run')
   })
 
   test('normalizes script paths for lane loading', () => {
-    expect(normalizeScriptPath('./scripts/mss-seed.ts')).toBe('scripts/mss-seed.ts')
-    expect(normalizeScriptPath('scripts/mss-corpus.ts')).toBe('scripts/mss-corpus.ts')
+    expect(normalizeScriptPath('./scripts/behavioral-factories.ts')).toBe('scripts/behavioral-factories.ts')
+    expect(normalizeScriptPath('scripts/behavioral-factories.ts')).toBe('scripts/behavioral-factories.ts')
   })
 
   test('resolves workspace root from a nested repo directory', async () => {
@@ -105,9 +116,9 @@ describe('autoresearch-runner', () => {
   })
 
   test('builds run directories inside the active workspace root', () => {
-    const runDir = buildRunDir({ workspaceRoot: '/tmp/plaited-worktree', lane: 'mss-seed' })
+    const runDir = buildRunDir({ workspaceRoot: '/tmp/plaited-worktree', lane: 'behavioral-factories' })
 
-    expect(runDir).toContain('/tmp/plaited-worktree/.prompts/autoresearch-runner/mss-seed/')
+    expect(runDir).toContain('/tmp/plaited-worktree/.prompts/autoresearch-runner/behavioral-factories/')
   })
 
   test('uses the Pi worktree guard extension', () => {
@@ -115,7 +126,7 @@ describe('autoresearch-runner', () => {
   })
 
   test('passes the canonical repo root and extension into the Pi command', async () => {
-    const config = await getLaneConfig('scripts/mss-seed.ts')
+    const config = await getLaneConfig('scripts/behavioral-factories.ts')
 
     const command = await buildPiCommand({
       config,
@@ -133,28 +144,28 @@ describe('autoresearch-runner', () => {
   test('allowed-path enforcement accepts only configured writable roots', () => {
     expect(
       isAllowedPath({
-        path: 'dev-research/mss-seed/seed/mss.jsonld',
-        writableRoots: ['dev-research/mss-seed'],
+        path: 'dev-research/behavioral-factories/policies/search-policy.ts',
+        writableRoots: ['dev-research/behavioral-factories'],
       }),
     ).toBe(true)
 
     expect(
       isAllowedPath({
-        path: 'scripts/mss-seed.ts',
-        writableRoots: ['dev-research/mss-seed'],
+        path: 'scripts/behavioral-factories.ts',
+        writableRoots: ['dev-research/behavioral-factories'],
       }),
     ).toBe(false)
   })
 
   test('builds a retryable scope violation message for the lane agent', () => {
     const message = buildScopeViolationMessage({
-      disallowedPaths: ['scripts/mss-seed.ts'],
-      writableRoots: ['dev-research/mss-seed'],
+      disallowedPaths: ['scripts/behavioral-factories.ts'],
+      writableRoots: ['dev-research/behavioral-factories'],
     })
 
     expect(message).toContain('outside the allowed lane surface')
-    expect(message).toContain('scripts/mss-seed.ts')
-    expect(message).toContain('dev-research/mss-seed')
+    expect(message).toContain('scripts/behavioral-factories.ts')
+    expect(message).toContain('dev-research/behavioral-factories')
   })
 
   test('exposes bounded retry count', () => {
@@ -196,7 +207,7 @@ describe('autoresearch-runner', () => {
 
     const commit = await commitAttempt({
       worktreePath: root,
-      laneKey: 'mss-seed',
+      laneKey: 'behavioral-factories',
       attempt: 2,
     })
     const head = (await (await Bun.$`git rev-parse HEAD`.cwd(root).quiet()).text()).trim()
@@ -204,14 +215,14 @@ describe('autoresearch-runner', () => {
 
     expect(commit).toHaveLength(40)
     expect(head).toBe(commit)
-    expect(await log.text()).toContain('capture mss-seed attempt 02')
+    expect(await log.text()).toContain('capture behavioral-factories attempt 02')
 
     await rm(root, { force: true, recursive: true })
   })
 
   test('writes a promotion summary for validated evaluated attempts', async () => {
     const root = await mkdtemp(join('/tmp', 'plaited-runner-promotion-'))
-    const runDir = join(root, '.prompts', 'autoresearch-runner', 'mss-seed', 'run-1')
+    const runDir = join(root, '.prompts', 'autoresearch-runner', 'behavioral-factories', 'run-1')
     await Bun.$`mkdir -p ${join(runDir, 'attempt-01')} ${join(runDir, 'attempt-02')}`.quiet()
     await Bun.write(
       join(runDir, 'attempt-01', 'status.json'),
@@ -240,7 +251,7 @@ describe('autoresearch-runner', () => {
         piExitCode: 0,
         validateExitCode: 0,
         diffStat: '1 file changed',
-        changedPaths: ['dev-research/mss-seed/seed/a.jsonld'],
+        changedPaths: ['dev-research/behavioral-factories/policies/a.ts'],
         disallowedPaths: [],
         worktreePath: join(root, 'attempt-01-repo'),
         attemptCommit: 'aaa111',
@@ -255,7 +266,7 @@ describe('autoresearch-runner', () => {
         piExitCode: 0,
         validateExitCode: 0,
         diffStat: '2 files changed',
-        changedPaths: ['dev-research/mss-seed/seed/b.jsonld'],
+        changedPaths: ['dev-research/behavioral-factories/validation/b.ts'],
         disallowedPaths: [],
         worktreePath: join(root, 'attempt-02-repo'),
         attemptCommit: 'bbb222',
@@ -311,11 +322,11 @@ describe('autoresearch-runner', () => {
         runDir,
         attempts: 2,
         config: {
-          key: 'mss-seed',
-          scriptPath: 'scripts/mss-seed.ts',
-          programPath: 'dev-research/mss-seed/program.md',
-          validateCommand: ['bun', 'scripts/mss-seed.ts', 'validate'],
-          writableRoots: ['dev-research/mss-seed'],
+          key: 'behavioral-factories',
+          scriptPath: 'scripts/behavioral-factories.ts',
+          programPath: 'dev-research/behavioral-factories/program.md',
+          validateCommand: ['bun', 'scripts/behavioral-factories.ts', 'validate'],
+          writableRoots: ['dev-research/behavioral-factories'],
           taskPrompt: 'x',
           defaultAttempts: 20,
           defaultParallelism: 3,

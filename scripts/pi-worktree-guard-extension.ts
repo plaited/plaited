@@ -1,6 +1,9 @@
 import { isAbsolute, join, normalize } from 'node:path'
 import type { ExtensionAPI } from '@mariozechner/pi-coding-agent'
 import { createBashTool } from '@mariozechner/pi-coding-agent'
+import { Type } from '@sinclair/typebox'
+import { HypergraphQuerySchema } from '../src/tools/hypergraph.schemas.ts'
+import { search as searchHypergraph } from '../src/tools/hypergraph.ts'
 
 const DEFAULT_WRITABLE_ROOTS = ['.']
 const NESTED_AUTORESEARCH_PATTERNS = [
@@ -15,6 +18,7 @@ export type SandboxPolicy = {
   workspaceRoot: string
   repoRoot?: string
   allowedRoots: string[]
+  readRoots: string[]
   enabled: boolean
 }
 
@@ -42,6 +46,7 @@ export const isAllowedWorkspacePath = ({ path, allowedRoots }: { path: string; a
 export const buildSandboxPolicy = (): SandboxPolicy => {
   const workspaceRoot = normalizeFsPath(process.env.PLAITED_WORKSPACE_ROOT?.trim() || process.cwd())
   const repoRoot = process.env.PLAITED_REPO_ROOT?.trim()
+  const readRoots = process.env.PLAITED_ALLOWED_READ_ROOTS?.trim()
 
   return {
     workspaceRoot,
@@ -50,9 +55,35 @@ export const buildSandboxPolicy = (): SandboxPolicy => {
       workspaceRoot,
       value: process.env.PLAITED_ALLOWED_WRITABLE_ROOTS,
     }),
+    readRoots: parseAllowedRoots({
+      workspaceRoot,
+      value: readRoots && readRoots.length > 0 ? readRoots : process.env.PLAITED_ALLOWED_WRITABLE_ROOTS,
+    }),
     enabled: process.env.PLAITED_SANDBOX_DISABLED !== '1',
   }
 }
+
+const HypergraphSearchParams = Type.Object({
+  path: Type.String({ description: 'Directory containing JSON-LD graph artifacts, relative to the active worktree.' }),
+  query: Type.String({
+    description:
+      'Hypergraph query kind: causal-chain, co-occurrence, check-cycles, match, similar, reachability, or provenance.',
+  }),
+  from: Type.Optional(Type.String({ description: 'Source vertex id for causal-chain.' })),
+  to: Type.Optional(Type.String({ description: 'Target vertex id for causal-chain.' })),
+  vertex: Type.Optional(Type.String({ description: 'Vertex id for co-occurrence.' })),
+  pattern: Type.Optional(
+    Type.Object({
+      sequence: Type.Array(Type.String(), { description: 'Ordered sequence of hyperedge types for match.' }),
+    }),
+  ),
+  embedding: Type.Optional(Type.Array(Type.Number(), { description: 'Embedding vector for similar queries.' })),
+  topK: Type.Optional(Type.Number({ description: 'Top-K result count for similar queries.' })),
+  startVertices: Type.Optional(Type.Array(Type.String(), { description: 'Start vertices for reachability.' })),
+  vertexTypeFilter: Type.Optional(Type.Array(Type.String())),
+  hyperedgeTypeFilter: Type.Optional(Type.Array(Type.String())),
+  maxDepth: Type.Optional(Type.Number({ description: 'Maximum traversal depth for reachability.' })),
+})
 
 export const getBashCommandViolations = ({ command, policy }: { command: string; policy: SandboxPolicy }) => {
   const violations: string[] = []
@@ -108,6 +139,43 @@ export default function worktreeGuardExtension(pi: ExtensionAPI) {
     },
   })
 
+  pi.registerTool({
+    name: 'search',
+    label: 'search (hypergraph)',
+    description:
+      'Query retained JSON-LD seed/corpus artifacts semantically. Use this for graph anchors, provenance, cycles, reachability, and co-occurrence instead of raw file reads when possible.',
+    parameters: HypergraphSearchParams,
+    async execute(_id, params, signal, _onUpdate, ctx) {
+      const parsed = HypergraphQuerySchema.parse(params)
+      const resolvedPath = resolveWithinWorkspace({ workspaceRoot: policy.workspaceRoot, path: parsed.path })
+
+      if (!isAllowedWorkspacePath({ path: resolvedPath, allowedRoots: policy.readRoots })) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Graph query denied: "${parsed.path}" is outside the allowed read roots.`,
+            },
+          ],
+          details: {
+            error: true,
+            path: parsed.path,
+          },
+        }
+      }
+
+      const result = await searchHypergraph(parsed, {
+        workspace: ctx.cwd,
+        signal: signal ?? AbortSignal.timeout(10_000),
+      })
+
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        details: result,
+      }
+    },
+  })
+
   pi.on('session_start', async (_event, ctx) => {
     const noSandbox = pi.getFlag('no-sandbox') as boolean
     if (noSandbox) {
@@ -122,7 +190,10 @@ export default function worktreeGuardExtension(pi: ExtensionAPI) {
 
     ctx.ui.setStatus(
       'sandbox',
-      ctx.ui.theme.fg('accent', `sandbox: ${policy.allowedRoots.length} writable roots in worktree`),
+      ctx.ui.theme.fg(
+        'accent',
+        `sandbox: ${policy.allowedRoots.length} writable roots, ${policy.readRoots.length} read roots in worktree`,
+      ),
     )
   })
 

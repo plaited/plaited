@@ -245,21 +245,14 @@ bun --bun tsc --noEmit
 bun test
 
 # Generic autoresearch runner
-bun run autoresearch:runner -- scripts/mss-seed.ts run
-bun run autoresearch:runner -- scripts/mss-corpus.ts run
+bun run autoresearch:runner -- scripts/behavioral-factories.ts run
 
-# MSS seed lane through autoresearch
-bun run research:mss-seed
+# Active research lane through autoresearch
+bun run research:behavioral-factories
 
-# MSS corpus lane through autoresearch
-bun run research:mss-corpus
-# Direct lane surfaces
-bun scripts/mss-seed.ts status
-bun scripts/mss-seed.ts validate
-bun scripts/mss-seed.ts generate
-bun scripts/mss-corpus.ts status
-bun scripts/mss-corpus.ts validate
-bun scripts/mss-corpus.ts generate
+# Direct lane surface
+bun scripts/behavioral-factories.ts status
+bun scripts/behavioral-factories.ts validate
 ```
 
 ### Current Research Flow
@@ -271,15 +264,13 @@ The current research split is:
 - `src/improve`
   - eval/improvement framework
   - graders, meta-verifiers, trial utilities, shared judge contracts
-- lane scripts such as:
-  - [mss-seed.ts](/Users/eirby/Workspace/plaited/scripts/mss-seed.ts)
-  - [mss-corpus.ts](/Users/eirby/Workspace/plaited/scripts/mss-corpus.ts)
-  - lane-specific operator surfaces and configs
+- active lane scripts such as:
+  - [behavioral-factories.ts](/Users/eirby/Workspace/plaited/scripts/behavioral-factories.ts)
+  - retained seed/corpus artifacts are treated as fixed upstream inputs
 
-For the MSS lanes:
-- `research:mss-seed` runs `mss-seed` through `autoresearch-runner`
-- `research:mss-corpus` runs `mss-corpus` through `autoresearch-runner`
-- both default to bounded worktree-backed autoresearch with:
+For the active behavioral-factories lane:
+- `research:behavioral-factories` runs `behavioral-factories` through `autoresearch-runner`
+- it defaults to bounded worktree-backed autoresearch with:
   - `15` attempts
   - `3` parallel lane instances
 - promotion is still a separate explicit step after review

@@ -24,12 +24,17 @@ describe('behavioral-factories script', () => {
     expect(output).toContain('program: behavioral-factories')
     expect(output).toContain(`programPath: ${BEHAVIORAL_FACTORIES_PROGRAM_PATH}`)
     expect(output).toContain('outputRoot:')
+    expect(output).toContain('semanticUpstreamValid:')
     expect(output).toContain('requirements:')
   })
 
   test('validates against the current repo state', async () => {
     const status = await getBehavioralFactoriesStatus()
 
+    expect(status.upstreamStatus.mssSeedDocs).toBeGreaterThan(0)
+    expect(status.upstreamStatus.mssCorpusDocs).toBeGreaterThan(0)
+    expect(status.upstreamStatus.behavioralSeedDocs).toBeGreaterThan(0)
+    expect(status.upstreamStatus.behavioralCorpusDocs).toBeGreaterThan(0)
     expect(isBehavioralFactoriesValid(status)).toBe(true)
   })
 
@@ -43,6 +48,13 @@ describe('behavioral-factories script', () => {
     expect(RESEARCH_LANE_CONFIG.scriptPath).toBe('scripts/behavioral-factories.ts')
     expect(RESEARCH_LANE_CONFIG.validateCommand).toEqual(['bun', 'scripts/behavioral-factories.ts', 'validate'])
     expect(RESEARCH_LANE_CONFIG.writableRoots).toEqual(['dev-research/behavioral-factories'])
+    expect(RESEARCH_LANE_CONFIG.readRoots).toEqual([
+      'dev-research/behavioral-factories',
+      'dev-research/mss-seed/seed',
+      'dev-research/mss-corpus/encoded',
+      'dev-research/behavioral-seed/seed',
+      'dev-research/behavioral-corpus/encoded',
+    ])
     expect(RESEARCH_LANE_CONFIG.defaultAttempts).toBe(20)
     expect(RESEARCH_LANE_CONFIG.defaultParallelism).toBe(3)
     expect(RESEARCH_LANE_CONFIG.systemPrompt).toBe(BEHAVIORAL_FACTORIES_SYSTEM_PROMPT)
