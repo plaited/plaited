@@ -140,34 +140,27 @@ The loop engine should not own concrete:
 - rollout policy
 - validation policy
 
-### `src/policies`
+### `src/factories`
 
-We should likely add `src/policies` for shipped default policies and factory
-packs.
+Shipped default behavior should live in `src/factories`, not in a separate
+policy directory.
 
-This is the right home for default:
+This is the right home for accepted executable:
 
-- governance behavior
-- working-memory behavior
-- durable-memory behavior
-- rollout behavior
-- validation behavior
-- proactive behavior
+- governance factories
+- working-memory factories
+- durable-memory factories
+- rollout factories
+- validation factories
+- proactive factories
 
 ## Provisioned Extension Points
 
-The new agent engine should support explicit provisioning for:
+The new agent engine should support explicit provisioning primarily through
+factories.
 
-- tool execution
-- working-memory assembly
-- durable-memory projection
-- validation
-- governance checks
-- rollout decisions
-- proactive sensing/behavior
-
-These extension points are intended to let policies/factories control most
-actual loop behavior while keeping the engine generic.
+Factories should control most actual loop behavior while keeping the engine
+generic.
 
 ## Heartbeat
 
@@ -204,7 +197,7 @@ Examples:
 is general and substrate-like.
 
 The engine should know only that it can request tool execution and receive tool
-results. Policies decide which tools to target.
+results. Factories decide which CLI-backed or built-in capabilities to target.
 
 ## Improve
 
@@ -290,3 +283,285 @@ Commit hooks may also become event sources instead of relying only on generic
 2. Sketch the `src/agent` refactor plan before editing code.
 3. Then begin reshaping `src/agent`, `src/runtime`, and `src/policies` around
    these boundaries.
+
+## Additional Decisions
+
+### `src/agent` Rewrite Direction
+
+`src/agent` should likely shrink to:
+
+- `create-agent.ts`
+- `agent.types.ts`
+- `agent.schemas.ts`
+- `agent.constants.ts` only if the remaining constants are truly generic
+
+Most current `src/agent/*` files are better treated as policy or factory
+behavior, not core engine:
+
+- `evaluate.ts`
+- `executor.ts`
+- `governance.ts`
+- `gate.ts`
+- `factories.ts`
+- `memory-handlers.ts`
+- `goals.ts`
+- `snapshot-writer.ts`
+- `simulate.ts`
+- `proactive.ts`
+
+The concepts are still needed, but they should not remain as hardcoded agent
+defaults in the core engine.
+
+### `src/factories`
+
+Promoted executable behavior should land in `src/factories`.
+
+This should become the primary home for accepted:
+
+- policy factories
+- working-memory factories
+- durable-memory factories
+- rollout factories
+- validation factories
+- governance factories
+- proactive factories
+
+Successful experiments should clean up or replace older hardcoded paths in
+`src/agent` and promote real factory implementations into `src/factories`.
+
+### `src/inference`
+
+Model/provider-facing code should move into `src/inference`.
+
+At minimum this includes:
+
+- `src/agent/openai-compat.ts`
+
+`src/inference` should hold transport/adaptation code for model interfaces
+rather than keeping that logic embedded in `src/agent`.
+
+### Factory Identity
+
+Do not use emoji branding or internal symbol branding for factory identity.
+
+Use string literal kinds that are easy to inspect, serialize, extend, and
+generate.
+
+The contract should remain open to future agent evolution and user-created
+factories.
+
+### Modules
+
+Do not ship a default stateful module just to test the module system.
+
+Modules own memory, so a better path is likely:
+
+- `createMcpModule`
+- install/provision flows
+- runtime/module coordination through provisioned module surfaces
+
+Module-specific policies should likely live alongside their modules.
+
+### Heartbeat
+
+Heartbeat should remain part of the core engine.
+
+It should exist even if no policy currently listens to it.
+Policies may later attach proactive or maintenance behavior, and heartbeat
+timing may also be adjusted through explicit behavioral control surfaces.
+
+### Runtime Tooling and Shared Context
+
+Factories should continue to act through behavioral events and installed
+handlers.
+
+That means:
+
+- tool execution should remain behavioral
+- factories should not get direct helper callbacks like `read`, `write`, or
+  `now`
+- the engine should provision handlers that execute these operations
+
+For shared runtime context, the preferred direction is:
+
+- no direct `ctx` object passed into factories
+- no ad hoc shared `Map`/`Set`/counter approach as the main shared-context
+  model
+- use dedicated behavioral events and handlers for shared runtime context
+
+### Runtime SQLite Direction
+
+Shared runtime context should likely be backed by in-memory SQLite owned by the
+engine, not by direct factory-owned state.
+
+`create-agent.ts` should install default handlers for runtime SQLite operations.
+
+Factories still only get `trigger`.
+They request context work behaviorally, and handlers perform it.
+
+This preserves BP observability through:
+
+- trigger
+- bThreads
+- handlers
+- useSnapshot
+
+#### Important correction
+
+Factories should not be constrained to manage prepared statement ids manually.
+
+Requiring:
+
+- prepare statement
+- receive statement id
+- reuse statement id in later threads/handlers
+
+would be too rigid for generated behavior.
+
+Instead, factories should be allowed to pass SQL and params directly in their
+behavioral events, while engine-owned handlers:
+
+- prepare/cache statements internally
+- execute them via Bun SQLite
+- emit result events back with correlation ids
+
+#### Preferred SQLite operation model
+
+Mirror Bun's actual statement execution model instead of inventing a generic
+CRUD abstraction.
+
+Useful operations are closer to:
+
+- `run`
+- `get`
+- `all`
+- `values`
+- maybe later `iterate`
+- maybe later `toString`
+- maybe later `finalize`
+
+The initial event model should therefore be statement-oriented, not CRUD-style.
+
+#### Engine-owned lifecycle
+
+The engine should own:
+
+- opening the in-memory database
+- statement caching
+- cleanup/finalization on teardown or disconnect
+- DB configuration such as WAL/file controls when appropriate
+
+Factories should not own DB lifecycle directly.
+
+### Server/UI Clarification
+
+`src/server` is currently the browser transport adapter, not the PM runtime or
+sub-agent runtime.
+
+`src/ui/protocol/controller.ts` already demonstrates a strong provisioning
+pattern:
+
+- server sends `update_behavioral`
+- client imports an ES module dynamically
+- module returns `threads` and `handlers`
+- client installs them into its local behavioral runtime
+
+This proves that executable TypeScript factories are already a real runtime
+artifact pattern in Plaited.
+
+## `create-agent` Shape
+
+The current intended `create-agent.ts` contract is small.
+
+### Input
+
+- `id`
+- `factories`
+- `restrictedTriggers`
+- `heartbeat`
+- optional initial snapshot listener
+
+`id` should be assigned by the spawning agent/runtime, not self-generated by
+the child as the primary model.
+
+This keeps identity part of orchestration and topology rather than local engine
+state.
+
+### Output
+
+The most important returned surface is:
+
+- `restrictedTrigger`
+
+`disconnect` should be modeled as an event rather than an imperative returned
+method.
+
+The engine may also expose snapshot observation in a BP-native way, but should
+not fall back to a generic pub/sub mental model.
+
+## Factory Install Context
+
+Factories should not receive:
+
+- direct helper callbacks like `read`, `write`, or `now`
+- a direct shared `ctx` object
+
+Factories should continue to act through behavioral mechanisms.
+
+The current preferred install context is:
+
+- `trigger`
+- `useSnapshot`
+
+That gives factories:
+
+- action via triggered events
+- observation via BP snapshots
+
+This matches the existing `update_behavioral` pattern in the UI controller more
+closely than an object-oriented callback or context API.
+
+## Shared Runtime Context
+
+Shared runtime context should not be passed directly into factories.
+
+Instead:
+
+- factories request shared-runtime operations through triggered events
+- `create-agent.ts` installs the default handlers
+- handlers use in-memory SQLite internally
+
+Writes should emit completion events.
+Reads should emit result events.
+
+This keeps shared runtime context inside the BP idiom:
+
+- request via event
+- handler performs work
+- completion/result event is selected
+- threads can `waitFor` that completion/result
+
+## Identity and Registration
+
+Spawners should assign agent ids.
+
+`create-agent.ts` should accept that id rather than inventing one as the main
+orchestration path.
+
+Runtime registration and discoverability should then use those spawner-assigned
+ids.
+
+`create-link` is about transport and routing, not identity generation.
+
+## Runtime Error Forwarding
+
+Runtime and link/team errors should not stay as console-only local concerns.
+
+The preferred direction is:
+
+- emit structured error events upward
+- let the initial/top-level PM agent observe and react to them
+- allow factories on the PM side to log, persist, summarize, or escalate them
+
+This should use the same behavioral event model rather than hidden side
+channels.

@@ -43,7 +43,7 @@ needed for an evolvable agent system.
 
 That includes researching and refining:
 
-- policy factories
+- orchestration factories
 - working-memory factories
 - durable-memory factories
 - rollout factories
@@ -65,18 +65,18 @@ The intended boundary is:
 - `src/server` remains the browser transport adapter and route host
 - `src/ui` remains a render surface plus client-side behavioral runtime
 - `src/agent` becomes a generic agent loop engine
-- shipped default behaviors should live in a provisioned policy layer such as
-  `src/policies`
+- `src/factories` should contain promoted executable factory implementations
+- `src/inference` should contain model/provider-facing integration code
 
 The agent engine should own only stable loop mechanics such as:
 
 - lifecycle
 - heartbeat and timing primitives
 - thread and handler registration
-- tool execution interface
+- restricted trigger boundaries
 - safe execution boundaries
 
-Policies and factories should own most actual behavior, including:
+Factories should own most actual behavior, including:
 
 - proactive behavior
 - retrieval behavior
@@ -86,8 +86,29 @@ Policies and factories should own most actual behavior, including:
 - working-memory behavior
 - durable-memory behavior
 
-This lane should prefer executable TypeScript factory and policy surfaces over
+This lane should prefer executable TypeScript factory surfaces over
 embedding these behaviors directly into the core agent engine.
+
+Successful experiments should not only demonstrate a behavior. They should also
+improve the architecture by:
+
+- removing or shrinking hardcoded factory-like logic from `src/agent`
+- promoting accepted executable behavior into `src/factories`
+- leaving the core agent engine smaller and more generic than before
+
+The intended `create-agent` direction is minimal:
+
+- input:
+  - `id`
+  - `factories`
+  - `restrictedTriggers`
+  - `heartbeat`
+  - optional initial snapshot listener
+- output:
+  - restricted trigger as the main public action surface
+
+Disconnect should be modeled as an event, not as the primary imperative return
+surface.
 
 ## Inputs
 
@@ -108,8 +129,9 @@ Primary lane inputs:
 - `skills/mss/SKILL.md`
 - `src/behavioral/behavioral.ts`
 - `src/ui/`
-- `src/agent/factories.ts`
-- `src/agent/governance.ts`
+- `src/factories/`
+- `src/inference/`
+- `src/agent/`
 - `src/server/`
 
 Supporting implementation and memory-shaping surfaces:
@@ -199,19 +221,19 @@ surfaces are insufficient.
 This lane should assume an agent lifecycle shaped roughly like this:
 
 1. create the agent engine
-2. provision tools, policies, validators, and memory surfaces
+2. provision factories, validators, and memory surfaces
 3. start the loop and heartbeat
 4. assemble bounded working memory for the next step
 5. let the model reason within that context
-6. let deterministic policies decide retrieval, execution, retry, escalation,
+6. let deterministic factories decide retrieval, execution, retry, escalation,
    validation, or stop based on reasoning-derived signals
 7. validate outputs before retention or promotion
 8. on accepted work, project durable memory from commit-bounded context
 9. continue, replay, fan out to worktrees, hand off, or stop
 
 Heartbeat should be considered part of the core engine even if no current
-policy listens to it. Policies may attach behavior to that pulse later, and may
-also adjust its timing through explicit control surfaces.
+factory listens to it. Factories may attach behavior to that pulse later, and
+may also adjust its timing through explicit control surfaces.
 
 ## What This Lane Should Discover
 
@@ -225,18 +247,19 @@ The lane should answer questions such as:
 - how should git history be compacted and expanded as working memory?
 - how should commit messages and diff metadata be turned into useful context?
 - how should repo boundaries shape delegation and memory isolation?
+- when should an experiment clean up or replace an older hardcoded path?
 - what deterministic validators best constrain generated behavioral code?
 
 ## Factory Families
 
 The lane should explore and refine factory families such as:
 
-### Policy Factories
+### Orchestration Factories
 
-Policy factories should focus on deterministic tool and memory orchestration,
-not on trying to encode the model's internal reasoning directly.
+Orchestration factories should focus on deterministic tool and memory
+orchestration, not on trying to encode the model's internal reasoning directly.
 
-The model should still do the reasoning. Policy factories should watch for
+The model should still do the reasoning. Orchestration factories should watch for
 reasoning-derived signals and deterministically decide what happens next.
 Those decisions may recurse back into the model with new obligations, richer
 context, or a different coordination path.
@@ -249,7 +272,7 @@ Examples of reasoning-derived signals include:
 - cross-repo implications
 - repeated failed retrieval or critique cycles
 
-Policy factories should therefore focus on surfaces such as:
+Orchestration factories should therefore focus on surfaces such as:
 
 - search policy
 - retrieval invocation policy
@@ -430,6 +453,54 @@ Commit hooks can be treated as event sources that trigger validation threads
 with known file inputs, giving the runtime more control and reducing recurring
 `git/index` coordination issues.
 
+## Runtime SQLite Direction
+
+This lane may introduce a shared runtime-context layer backed by in-memory
+SQLite, so long as factories still interact with it behaviorally through
+triggered events and installed handlers.
+
+Factories should not receive a direct shared context object.
+Instead, they should operate through:
+
+- `trigger`
+- `useSnapshot`
+
+Shared runtime context should be mediated through triggered events and default
+handlers installed by `create-agent`.
+
+The preferred initial runtime SQLite surface should mirror Bun's statement
+execution model more closely than a generic CRUD abstraction.
+
+Good initial operations include:
+
+- `run`
+- `get`
+- `all`
+- `values`
+
+The lane may also add, if the work shows they are needed:
+
+- `iterate`
+- `toString`
+- `finalize`
+
+The engine should own runtime SQLite lifecycle, including setup, statement
+caching, and cleanup on teardown or disconnect.
+
+## Promotion Expectations
+
+This lane should treat architectural cleanup as part of successful promotion.
+
+A strong promoted result should usually:
+
+- replace or shrink a hardcoded behavior in `src/agent`
+- create or improve executable TypeScript factories in `src/factories`
+- preserve or improve validation coverage
+- make the resulting architecture easier to inspect and extend
+
+Experiments that only add parallel behavior without simplifying the older path
+should generally be treated as incomplete.
+
 ## External Retrieval
 
 Primary evidence should come from the listed local inputs and lane-provisioned
@@ -470,6 +541,9 @@ Only write within:
 - `dev-research/behavioral-factories`
 - `scripts/behavioral-factories.ts`
 - lane-local grader and verifier surfaces when explicitly needed
+- `src/factories`
+- `src/inference`
+- `src/agent` when simplifying or removing hardcoded paths during promotion-oriented work
 
 Expected lane-local outputs may include:
 
@@ -493,13 +567,15 @@ unless a separate reviewed promotion step explicitly chooses to do so.
 
 This lane should produce deterministic, reviewable outputs such as:
 
-- policy factory prototypes
+- orchestration factory prototypes
 - context pack schemas
 - memory item schemas
 - rollout and retry strategy artifacts
 - validation rule sets
 - retained artifact schemas
 - training-ready summaries of successful behavioral and MSS patterns
+- executable TypeScript factories ready for promotion into `src/factories`
+- cleanup plans or patches that remove superseded hardcoded agent behavior
 
 These outputs may be represented as:
 
