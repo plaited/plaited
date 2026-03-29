@@ -53,6 +53,42 @@ These factories should make it possible for a model to internalize behavioral
 programming, MSS, and the Plaited UI layer while still using tools, retrieval,
 and symbolic coordination when needed.
 
+## Engine vs Policy Boundary
+
+This lane should assume a strong separation between generic engines and
+provisioned behavior.
+
+The intended boundary is:
+
+- `src/behavioral` remains the stable BP engine
+- `src/runtime` owns generic participant and event coordination
+- `src/server` remains the browser transport adapter and route host
+- `src/ui` remains a render surface plus client-side behavioral runtime
+- `src/agent` becomes a generic agent loop engine
+- shipped default behaviors should live in a provisioned policy layer such as
+  `src/policies`
+
+The agent engine should own only stable loop mechanics such as:
+
+- lifecycle
+- heartbeat and timing primitives
+- thread and handler registration
+- tool execution interface
+- safe execution boundaries
+
+Policies and factories should own most actual behavior, including:
+
+- proactive behavior
+- retrieval behavior
+- validation behavior
+- governance behavior
+- rollout behavior
+- working-memory behavior
+- durable-memory behavior
+
+This lane should prefer executable TypeScript factory and policy surfaces over
+embedding these behaviors directly into the core agent engine.
+
 ## Inputs
 
 Primary lane inputs:
@@ -157,6 +193,25 @@ Default retrieval should begin with:
 
 The lane should only reach for heavier semantic machinery when these simpler
 surfaces are insufficient.
+
+## Agent Lifecycle
+
+This lane should assume an agent lifecycle shaped roughly like this:
+
+1. create the agent engine
+2. provision tools, policies, validators, and memory surfaces
+3. start the loop and heartbeat
+4. assemble bounded working memory for the next step
+5. let the model reason within that context
+6. let deterministic policies decide retrieval, execution, retry, escalation,
+   validation, or stop based on reasoning-derived signals
+7. validate outputs before retention or promotion
+8. on accepted work, project durable memory from commit-bounded context
+9. continue, replay, fan out to worktrees, hand off, or stop
+
+Heartbeat should be considered part of the core engine even if no current
+policy listens to it. Policies may attach behavior to that pulse later, and may
+also adjust its timing through explicit control surfaces.
 
 ## What This Lane Should Discover
 
