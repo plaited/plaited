@@ -1,0 +1,108 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "behavioral": "behavioral:",
+    "constitution": "constitution:",
+    "bp": "bp:",
+    "rule": "rule:",
+    "pattern": "pattern:",
+    "chunk": "chunk:",
+    "derivedFrom": {
+      "@id": "behavioral:derivedFrom",
+      "@type": "@vocab"
+    },
+    "@vocab": "https://schema.org/"
+  },
+  "@graph": [
+    {
+      "@id": "insufficiency:useBehavioral-not-in-seed",
+      "@type": "behavioral:SeedInsufficiency",
+      "name": "useBehavioral-not-covered-by-seed",
+      "insufficiency:text": "The behavioral-programs.md source material contains a full reference section on useBehavioral (useBehavioral factory pattern, publicEvents filtering, context injection, async initialization, manual lifecycle management) which is not represented in the behavioral-seed. The seed focuses on core bThread/bSync primitives and agent-specific patterns but does not include useBehavioral as a named anchor.",
+      "insufficiency:source": "skills/behavioral-core/references/behavioral-programs.md",
+      "insufficiency:section": "Reusable Behavioral Programs with useBehavioral",
+      "insufficiency:impact": "medium — useBehavioral is a valid BP factory pattern in this codebase; downstream factory generation should know about it",
+      "insufficiency:proposedAnchor": "behavioral:useBehavioral-factory",
+      "insufficiency:justification": "behavioral-seed did not include useBehavioral because it is not used in the agent-loop integration surfaces currently. However, behavioral-programs.md contains detailed documentation of this pattern, making it part of the corpus evidence surface.",
+      "behavioral:layer": "seed-insufficiency"
+    },
+    {
+      "@id": "insufficiency:bpjs-utilities-not-in-seed",
+      "@type": "behavioral:SeedInsufficiency",
+      "name": "bpjs-utilities-not-covered-by-seed",
+      "insufficiency:text": "behavioral-programs.md documents several behavioral utilities: useRandomEvent (non-deterministic event selection), shuffleSyncs (randomized sync point order), isBPEvent (runtime event validation), isPlaitedTrigger (trigger type guard). These are not in the behavioral-seed anchors.",
+      "insufficiency:source": "skills/behavioral-core/references/behavioral-programs.md",
+      "insufficiency:section": "Behavioral Utilities",
+      "insufficiency:impact": "low — these are utility helpers not core to the BP execution model or agent integration",
+      "insufficiency:proposedAnchor": "behavioral:bp-utilities",
+      "insufficiency:justification": "Seed focuses on core BP primitives and agent-loop patterns. Utilities are documented in the reference but not used in the agent integration surfaces — they are peripheral to the corpus's focus on behavioral/corpus/factory encoding.",
+      "behavioral:layer": "seed-insufficiency"
+    },
+    {
+      "@id": "insufficiency:governance-model-ref-not-found",
+      "@type": "behavioral:SeedInsufficiency",
+      "name": "governance-model-reference-not-in-inputs",
+      "insufficiency:text": "The constitution:governance-model anchor in the behavioral-seed references skills/constitution/references/governance-model.md, but this file is NOT listed in the behavioral-corpus lane inputs. The dual-representation and neuro-symbolic governance concepts come from this missing reference.",
+      "insufficiency:source": "skills/constitution/references/governance-model.md",
+      "insufficiency:impact": "high — governance-model.md is a key constitution reference cited by the seed but not provided as a lane input; evidence for dual-representation, neuro-symbolic governance, and ABAC layer is inferred from secondary sources (factory-patterns.md, constitution SKILL.md)",
+      "insufficiency:proposedAnchor": "constitution:governance-model",
+      "insufficiency:justification": "governance-model.md should be added to the behavioral-corpus lane inputs (and the program.md requirement list). The dual-representation assertion is supported by constitution SKILL.md and factory-patterns.md, but the detailed ABAC layer and MSS semantics come from the missing governance-model.md.",
+      "behavioral:layer": "input-gap"
+    },
+    {
+      "@id": "insufficiency:accesControlLayers-partial",
+      "@type": "behavioral:SeedInsufficiency",
+      "name": "access-control-layers-partial-coverage",
+      "insufficiency:text": "The constitution:access-control-layers anchor mentions MAC, DAC, and ABAC. However, ABAC (attribute-based routing at event level) is not covered in any of the provided constitution inputs. The seed anchor lists ABAC as a layer but the corpus cannot find evidence for what ABAC means in this codebase from the provided sources.",
+      "insufficiency:source": "inferred from constitution:access-control-layers",
+      "insufficiency:impact": "medium — ABAC is mentioned as part of the three-layer model but no source evidence exists in the provided inputs for its implementation or semantics",
+      "insufficiency:proposedAnchor": "constitution:abac-layer",
+      "insufficiency:justification": "The seed listed ABAC as a layer but the corpus evidence sources (factory-patterns.md, generated-bthreads.md, mac-rules.md, constitution SKILL.md) only document MAC and DAC. This is an explicit seed insufficiency — the ABAC concept was introduced at the seed level without sufficient corpus evidence.",
+      "behavioral:layer": "seed-insufficiency"
+    },
+    {
+      "@id": "insufficiency:brand-system-partial",
+      "@type": "behavioral:SeedInsufficiency",
+      "name": "brand-system-partial-evidence",
+      "insufficiency:text": "The constitution:brand-system anchor lists 🦄 templates, 🪢 RulesFunction, 🎛️ ControllerTemplate, 🎨 DecoratorTemplate in addition to 🏛️ 🦄 🎯 🔄. The corpus has evidence for 🏛️ 🎯 🔄 from factory-patterns.md and generated-bthreads.md, but 🦄 🪢 🎛️ 🎨 brands are not documented in the provided constitution inputs. These may be from other parts of the codebase not covered in this lane.",
+      "insufficiency:source": "skills/constitution/references/factory-patterns.md",
+      "insufficiency:impact": "low — the three governance-relevant brands (🏛️ 🎯 🔄) are fully evidenced; the others appear in seed but not in corpus evidence sources",
+      "insufficiency:proposedAnchor": "constitution:brand-system",
+      "insufficiency:justification": "The seed anchor is broader than the corpus evidence. Only 🏛️ 🎯 🔄 are substantiated by the provided constitution inputs. The other brands should either be removed from the anchor claim or documented with evidence from additional sources.",
+      "behavioral:layer": "seed-insufficiency"
+    },
+    {
+      "@id": "insufficiency:memory-file-structure-not-evidenced",
+      "@type": "behavioral:SeedInsufficiency",
+      "name": "memory-file-structure-not-fully-evidenced",
+      "insufficiency:text": "The constitution:memory-file-structure anchor mentions .memory/constitution/mac/, .memory/constitution/dac/, .memory/goals/, .memory/sessions/ and notes 'factories as TypeScript files with companion tests'. The corpus has evidence for the mac/ and dac/ paths from mac-rules.md loading-at-spawn section, but the goals/ and sessions/ paths and the TypeScript+test file structure are only briefly mentioned, not fully evidenced from generated-bthreads.md's file structure diagram.",
+      "insufficiency:source": "skills/constitution/references/generated-bthreads.md",
+      "insufficiency:impact": "low — the key memory structure (mac/ and dac/ loading) is evidenced; the goals/ and sessions/ details are inferrable but not explicitly encoded",
+      "insufficiency:proposedAnchor": "constitution:memory-file-structure",
+      "insufficiency:justification": "The seed anchor is partially evidenced. The mac/ and dac/ paths are evidenced by mac-rules.md. The goals/ path and the TypeScript+test companion pattern come from generated-bthreads.md but are not explicitly named in the source chunks encoded here.",
+      "behavioral:layer": "seed-insufficiency"
+    },
+    {
+      "@id": "insufficiency:runtime-code-not-authority",
+      "@type": "behavioral:SeedInsufficiency",
+      "name": "runtime-code-diverges-from-seed",
+      "insufficiency:text": "The behavioral-seed program states that runtime code (src/behavioral/behavioral.ts) is supporting implementation evidence, not ontology authority. However, behavioral.ts contains specific implementation details (Object.hasOwn for isPlaitedTrigger detection, Symbol-based thread naming for trigger threads, queueMicrotask in trigger implementation, generator.return() for interrupt, Object.freeze on the public API) that are not reflected in the behavioral-seed anchors. The seed provides behavioral semantics but the runtime has additional implementation specificity.",
+      "insufficiency:source": "src/behavioral/behavioral.ts",
+      "insufficiency:impact": "medium — the corpus uses behavioral-seed as the semantic frame, but behavioral.ts adds implementation-layer detail (thread naming, interrupt mechanism, snapshot format) that is not captured in the seed anchors",
+      "insufficiency:proposedAnchor": "behavioral:behavioral-runtime-implementation",
+      "insufficiency:justification": "Per the behavioral-corpus lane priority rules, runtime code is supporting evidence, not ontology authority. The seed anchors cover semantics; behavioral.ts adds implementation specifics. This is a documented boundary, not a gap — the corpus correctly uses seed semantics over runtime specifics unless seed is silent.",
+      "behavioral:layer": "authority-boundary"
+    },
+    {
+      "@id": "insufficiency:agent-runtime-not-in-seed",
+      "@type": "behavioral:SeedInsufficiency",
+      "name": "agent-factories-and-governance-runtimes-not-seeded",
+      "insufficiency:text": "The behavioral-corpus lane includes src/agent/factories.ts and src/agent/governance.ts as required inputs (per BEHAVIORAL_CORPUS_REQUIREMENTS), but the behavioral-seed does not include agent-specific runtime anchors. The corpus encoded here focuses on BP core and constitution patterns but does not encode agent-loop-specific runtime patterns from factories.ts and governance.ts.",
+      "insufficiency:source": "src/agent/factories.ts, src/agent/governance.ts",
+      "insufficiency:impact": "medium — agent-loop factory patterns (how governance factories wire into the BP engine) are not encoded in the corpus; downstream behavioral-factories lane may need to re-open these files",
+      "insufficiency:proposedAnchor": "agent:governance-factory-wiring",
+      "insufficiency:justification": "The behavioral-seed focuses on behavioral programming primitives and constitution patterns. Agent-specific factory wiring (how createGovernanceFactory connects to behavioral() instance, how loadPersistedThreads iterates over .memory/) is a downstream concern for behavioral-factories, not behavioral-seed. This is an explicit scope boundary.",
+      "behavioral:layer": "scope-boundary"
+    }
+  ]
+}

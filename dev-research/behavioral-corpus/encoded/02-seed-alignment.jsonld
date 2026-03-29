@@ -1,0 +1,301 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "behavioral": "behavioral:",
+    "constitution": "constitution:",
+    "bp": "bp:",
+    "rule": "rule:",
+    "pattern": "pattern:",
+    "chunk": "chunk:",
+    "assertion": "assertion:",
+    "derivedFrom": {
+      "@id": "behavioral:derivedFrom",
+      "@type": "@vocab"
+    },
+    "@vocab": "https://schema.org/"
+  },
+  "@graph": [
+    {
+      "@id": "alignment:bp-primitives",
+      "@type": "behavioral:SeedAlignment",
+      "name": "bp-primitives-alignment",
+      "behavioral:anchor": "behavioral:bp-primitives",
+      "corpus:chunks": ["chunk:bp-superstep-model"],
+      "corpus:assertions": [
+        "assertion:bp-engine-is-synchronous-superstep",
+        "assertion:block-precedence-over-request"
+      ],
+      "corpus:sources": [
+        "skills/behavioral-core/references/algorithm-reference.md",
+        "skills/behavioral-core/references/behavioral-programs.md"
+      ],
+      "coverage": "full"
+    },
+    {
+      "@id": "alignment:sync-idioms",
+      "@type": "behavioral:SeedAlignment",
+      "name": "sync-idioms-alignment",
+      "behavioral:anchor": "behavioral:sync-idioms",
+      "corpus:chunks": ["chunk:bp-superstep-model", "chunk:event-selection-precedence"],
+      "corpus:assertions": ["assertion:block-precedence-over-request"],
+      "corpus:sources": [
+        "skills/behavioral-core/references/algorithm-reference.md",
+        "skills/behavioral-core/references/behavioral-programs.md"
+      ],
+      "coverage": "full"
+    },
+    {
+      "@id": "alignment:event-selection",
+      "@type": "behavioral:SeedAlignment",
+      "name": "event-selection-alignment",
+      "behavioral:anchor": "behavioral:event-selection",
+      "corpus:chunks": ["chunk:event-selection-precedence"],
+      "corpus:assertions": [
+        "assertion:block-precedence-over-request",
+        "assertion:predicate-blocking-evaluates-every-pending"
+      ],
+      "corpus:sources": ["skills/behavioral-core/references/algorithm-reference.md"],
+      "coverage": "full"
+    },
+    {
+      "@id": "alignment:repeat-parameter",
+      "@type": "behavioral:SeedAlignment",
+      "name": "repeat-parameter-alignment",
+      "behavioral:anchor": "behavioral:repeat-parameter",
+      "corpus:chunks": [
+        "chunk:repeat-parameter",
+        "chunk:doneGuard-pattern",
+        "chunk:maxIterations-pattern",
+        "chunk:conditionalRepeatTermination-pattern"
+      ],
+      "corpus:assertions": [
+        "assertion:repeat-false-terminates-thread",
+        "assertion:repeat-true-is-infinite-persistent",
+        "assertion:conditional-repeat-self-terminates"
+      ],
+      "corpus:sources": [
+        "skills/behavioral-core/references/algorithm-reference.md",
+        "skills/behavioral-core/references/agent-patterns.spec.ts",
+        "skills/behavioral-core/references/agent-lifecycle.spec.ts"
+      ],
+      "coverage": "full"
+    },
+    {
+      "@id": "alignment:ephemeral-vs-persistent-block",
+      "@type": "behavioral:SeedAlignment",
+      "name": "ephemeral-vs-persistent-block-alignment",
+      "behavioral:anchor": "behavioral:ephemeral-vs-persistent-block",
+      "corpus:chunks": [
+        "chunk:ephemeral-vs-persistent-block",
+        "chunk:maxIterations-pattern"
+      ],
+      "corpus:assertions": [
+        "assertion:ephemeral-block-vanishes-after-request",
+        "assertion:maxIterations-ephemeral-plus-doneGuard-persistent"
+      ],
+      "corpus:sources": [
+        "skills/behavioral-core/references/algorithm-reference.md",
+        "skills/behavioral-core/references/agent-patterns.spec.ts"
+      ],
+      "coverage": "full"
+    },
+    {
+      "@id": "alignment:handler-before-trigger",
+      "@type": "behavioral:SeedAlignment",
+      "name": "handler-before-trigger-alignment",
+      "behavioral:anchor": "behavioral:handler-before-trigger",
+      "corpus:chunks": ["chunk:handler-before-trigger"],
+      "corpus:assertions": [
+        "assertion:bthreads-set-before-trigger",
+        "assertion:handler-state-visible-to-next-predicate"
+      ],
+      "corpus:sources": [
+        "skills/behavioral-core/references/algorithm-reference.md",
+        "skills/behavioral-core/SKILL.md"
+      ],
+      "coverage": "full"
+    },
+    {
+      "@id": "alignment:async-fire-and-forget",
+      "@type": "behavioral:SeedAlignment",
+      "name": "async-fire-and-forget-alignment",
+      "behavioral:anchor": "bp:asyncBridgeSuperStepBreak",
+      "corpus:chunks": ["chunk:async-fire-and-forget"],
+      "corpus:assertions": [
+        "assertion:bp-engine-is-synchronous-superstep",
+        "assertion:repeat-true-is-infinite-persistent"
+      ],
+      "corpus:sources": ["skills/behavioral-core/references/algorithm-reference.md"],
+      "coverage": "full"
+    },
+    {
+      "@id": "alignment:doneGuard",
+      "@type": "behavioral:SeedAlignment",
+      "name": "doneGuard-alignment",
+      "behavioral:anchor": "pattern:doneGuard",
+      "corpus:chunks": ["chunk:doneGuard-pattern"],
+      "corpus:assertions": [
+        "assertion:doneGuard-activates-permanent-blocking",
+        "assertion:maxIterations-ephemeral-plus-doneGuard-persistent"
+      ],
+      "corpus:sources": ["skills/behavioral-core/references/agent-patterns.spec.ts"],
+      "coverage": "full"
+    },
+    {
+      "@id": "alignment:maxIterations",
+      "@type": "behavioral:SeedAlignment",
+      "name": "maxIterations-alignment",
+      "behavioral:anchor": "pattern:maxIterations",
+      "corpus:chunks": ["chunk:maxIterations-pattern"],
+      "corpus:assertions": [
+        "assertion:maxIterations-ephemeral-plus-doneGuard-persistent",
+        "assertion:interrupt-kills-mid-sequence"
+      ],
+      "corpus:sources": [
+        "skills/behavioral-core/references/agent-patterns.spec.ts",
+        "skills/behavioral-core/references/agent-lifecycle.spec.ts"
+      ],
+      "coverage": "full"
+    },
+    {
+      "@id": "alignment:taskGate",
+      "@type": "behavioral:SeedAlignment",
+      "name": "taskGate-alignment",
+      "behavioral:anchor": "pattern:taskGate",
+      "corpus:chunks": ["chunk:taskGate-pattern", "chunk:staleAsyncProtection-pattern"],
+      "corpus:assertions": ["assertion:taskGate-blocks-stale-between-tasks"],
+      "corpus:sources": ["skills/behavioral-core/references/agent-lifecycle.spec.ts"],
+      "coverage": "full"
+    },
+    {
+      "@id": "alignment:sharedStateCoordination",
+      "@type": "behavioral:SeedAlignment",
+      "name": "sharedStateCoordination-alignment",
+      "behavioral:anchor": "pattern:sharedStateCoordination",
+      "corpus:chunks": [
+        "chunk:sharedStateCoordination-pattern",
+        "chunk:parallelSimulationCoordination-pattern"
+      ],
+      "corpus:assertions": ["assertion:handler-state-visible-to-next-predicate"],
+      "corpus:sources": [
+        "skills/behavioral-core/references/agent-patterns.spec.ts",
+        "skills/behavioral-core/references/agent-orchestration.spec.ts"
+      ],
+      "coverage": "full"
+    },
+    {
+      "@id": "alignment:constitutionAsBThreads",
+      "@type": "behavioral:SeedAlignment",
+      "name": "constitutionAsBThreads-alignment",
+      "behavioral:anchor": "pattern:constitutionAsBThreads",
+      "corpus:chunks": ["chunk:constitutionAsBThreads-pattern"],
+      "corpus:assertions": [
+        "assertion:additive-composition-new-rules",
+        "assertion:constitution-is-append-only-ratchet"
+      ],
+      "corpus:sources": [
+        "skills/behavioral-core/references/agent-orchestration.spec.ts",
+        "skills/constitution/references/governance-model.md"
+      ],
+      "coverage": "full"
+    },
+    {
+      "@id": "alignment:governanceFactory-contract",
+      "@type": "behavioral:SeedAlignment",
+      "name": "governanceFactory-contract-alignment",
+      "behavioral:anchor": "constitution:governanceFactory-contract",
+      "corpus:chunks": ["chunk:governanceFactory-contract", "chunk:thread-vs-handler-encoding"],
+      "corpus:assertions": ["assertion:governanceFactory-same-contract-different-lifecycle"],
+      "corpus:sources": ["skills/constitution/references/factory-patterns.md"],
+      "coverage": "full"
+    },
+    {
+      "@id": "alignment:validation-stack",
+      "@type": "behavioral:SeedAlignment",
+      "name": "validation-stack-alignment",
+      "behavioral:anchor": "constitution:validation-stack",
+      "corpus:chunks": ["chunk:five-layer-verification"],
+      "corpus:assertions": ["assertion:five-layer-verification-is-training-signal"],
+      "corpus:sources": ["skills/constitution/references/generated-bthreads.md"],
+      "coverage": "full"
+    },
+    {
+      "@id": "alignment:testFirst-generation",
+      "@type": "behavioral:SeedAlignment",
+      "name": "testFirst-generation-alignment",
+      "behavioral:anchor": "constitution:testFirst-generation",
+      "corpus:chunks": ["chunk:testFirst-generation"],
+      "corpus:sources": ["skills/constitution/references/generated-bthreads.md"],
+      "coverage": "full"
+    },
+    {
+      "@id": "alignment:protectGovernance",
+      "@type": "behavioral:SeedAlignment",
+      "name": "protectGovernance-alignment",
+      "behavioral:anchor": "constitution:protectGovernance",
+      "corpus:chunks": ["chunk:protectGovernance-rule"],
+      "corpus:sources": ["skills/constitution/references/mac-rules.md"],
+      "coverage": "full"
+    },
+    {
+      "@id": "alignment:noRmRf",
+      "@type": "behavioral:SeedAlignment",
+      "name": "noRmRf-alignment",
+      "behavioral:anchor": "constitution:noRmRf",
+      "corpus:chunks": ["chunk:noRmRf-rule"],
+      "corpus:sources": ["skills/constitution/references/mac-rules.md"],
+      "coverage": "full"
+    },
+    {
+      "@id": "alignment:dual-representation",
+      "@type": "behavioral:SeedAlignment",
+      "name": "dual-representation-alignment",
+      "behavioral:anchor": "constitution:dual-representation",
+      "corpus:chunks": ["chunk:dual-representation-rule"],
+      "corpus:assertions": ["assertion:dual-representation-required"],
+      "corpus:sources": ["skills/constitution/references/governance-model.md"],
+      "coverage": "full"
+    },
+    {
+      "@id": "alignment:snapshotObservability",
+      "@type": "behavioral:SeedAlignment",
+      "name": "snapshotObservability-alignment",
+      "behavioral:anchor": "pattern:snapshotObservability",
+      "corpus:chunks": ["chunk:snapshotObservability-pattern"],
+      "corpus:sources": ["skills/behavioral-core/SKILL.md"],
+      "coverage": "full"
+    },
+    {
+      "@id": "alignment:restrictedTriggerBoundary",
+      "@type": "behavioral:SeedAlignment",
+      "name": "restrictedTriggerBoundary-alignment",
+      "behavioral:anchor": "pattern:restrictedTriggerBoundary",
+      "corpus:chunks": ["chunk:restrictedTriggerBoundary-pattern"],
+      "corpus:sources": ["skills/behavioral-core/references/agent-orchestration.spec.ts"],
+      "coverage": "full"
+    },
+    {
+      "@id": "alignment:predicatePerformance",
+      "@type": "behavioral:SeedAlignment",
+      "name": "predicatePerformance-alignment",
+      "behavioral:anchor": "bp:predicatePerformance",
+      "corpus:chunks": ["chunk:predicate-performance"],
+      "corpus:assertions": ["assertion:predicate-blocking-evaluates-every-pending"],
+      "corpus:sources": ["skills/behavioral-core/references/behavioral-programs.md"],
+      "coverage": "full"
+    },
+    {
+      "@id": "alignment:ratchet-principle",
+      "@type": "behavioral:SeedAlignment",
+      "name": "ratchet-principle-alignment",
+      "behavioral:anchor": "constitution:ratchet-principle",
+      "corpus:chunks": ["chunk:mac-dac-lifecycle"],
+      "corpus:assertions": ["assertion:constitution-is-append-only-ratchet"],
+      "corpus:sources": [
+        "skills/constitution/references/governance-model.md",
+        "skills/constitution/references/mac-rules.md"
+      ],
+      "coverage": "full"
+    }
+  ]
+}

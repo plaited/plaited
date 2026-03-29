@@ -1,0 +1,279 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "behavioral": "behavioral:",
+    "constitution": "constitution:",
+    "bp": "bp:",
+    "rule": "rule:",
+    "pattern": "pattern:",
+    "chunk": "chunk:",
+    "derivedFrom": {
+      "@id": "behavioral:derivedFrom",
+      "@type": "@vocab"
+    },
+    "@vocab": "https://schema.org/"
+  },
+  "@graph": [
+    {
+      "@id": "assertion:bp-engine-is-synchronous-superstep",
+      "@type": "rule:BehavioralAssertion",
+      "name": "bp-engine-is-synchronous-superstep",
+      "assertion:text": "The BP engine is synchronous. A super-step runs to completion before accepting new external input. External events enter via trigger(), which creates a priority-0 thread. Async handlers do not block the super-step — they fire-and-forget via void cb(value). The handler's trigger() after await starts a NEW super-step.",
+      "behavioral:anchor": "bp:asyncBridgeSuperStepBreak",
+      "chunk:supports": ["chunk:async-fire-and-forget", "chunk:handler-before-trigger"],
+      "derivedFrom": [
+        "chunk:async-fire-and-forget",
+        "skills/behavioral-core/references/algorithm-reference.md"
+      ],
+      "rule:classification": "behavioral-runtime-invariant"
+    },
+    {
+      "@id": "assertion:block-precedence-over-request",
+      "@type": "rule:BehavioralAssertion",
+      "name": "block-precedence-over-request",
+      "assertion:text": "Blocking takes absolute precedence over requesting. If ANY thread blocks an event, it cannot be selected regardless of how many threads request it. A single validation thread can veto any number of request threads. This is the fundamental coordination mechanism in BP.",
+      "behavioral:anchor": "bp:blockingPrecedenceOverRequest",
+      "chunk:supports": ["chunk:event-selection-precedence"],
+      "derivedFrom": [
+        "chunk:event-selection-precedence",
+        "skills/behavioral-core/references/behavioral-programs.md"
+      ],
+      "rule:classification": "behavioral-runtime-invariant"
+    },
+    {
+      "@id": "assertion:repeat-false-terminates-thread",
+      "@type": "rule:BehavioralAssertion",
+      "name": "repeat-false-terminates-thread",
+      "assertion:text": "A bThread without repeat (or repeat=false) runs its rule sequence once and then terminates. The generator's done=true after the last rule; the thread is not re-added to pending. One-shot threads are used for counting sequences, per-task coordination, and finite workflows.",
+      "behavioral:anchor": "behavioral:repeat-parameter",
+      "chunk:supports": ["chunk:repeat-parameter"],
+      "derivedFrom": [
+        "chunk:repeat-parameter",
+        "skills/behavioral-core/references/algorithm-reference.md"
+      ],
+      "rule:classification": "behavioral-runtime-invariant"
+    },
+    {
+      "@id": "assertion:repeat-true-is-infinite-persistent",
+      "@type": "rule:BehavioralAssertion",
+      "name": "repeat-true-is-infinite-persistent",
+      "assertion:text": "repeat=true wraps the generator in while(true), so done is never true and the thread never terminates. Used for persistent safety constraints, phase-transition gates, and continuous coordination. NEVER combine repeat=true with continuous request — that creates an infinite synchronous super-step and stack overflow.",
+      "behavioral:anchor": "behavioral:repeat-parameter",
+      "chunk:supports": ["chunk:repeat-parameter", "chunk:async-fire-and-forget"],
+      "derivedFrom": [
+        "chunk:repeat-parameter",
+        "chunk:async-fire-and-forget",
+        "skills/behavioral-core/references/algorithm-reference.md"
+      ],
+      "rule:classification": "behavioral-runtime-invariant"
+    },
+    {
+      "@id": "assertion:ephemeral-block-vanishes-after-request",
+      "@type": "rule:BehavioralAssertion",
+      "name": "ephemeral-block-vanishes-after-request",
+      "assertion:text": "A block on a sync point that also has a request is ephemeral — it vanishes after the requested event fires and the thread advances. After advance, if no more rules exist, the thread is removed entirely. maxIterations alone is NOT sufficient for permanent blocking. doneGuard must take over for permanent blocking.",
+      "behavioral:anchor": "bp:ephemeralBlockVanishes",
+      "chunk:supports": ["chunk:ephemeral-vs-persistent-block", "chunk:maxIterations-pattern"],
+      "derivedFrom": [
+        "chunk:ephemeral-vs-persistent-block",
+        "chunk:maxIterations-pattern",
+        "skills/behavioral-core/references/algorithm-reference.md"
+      ],
+      "rule:classification": "behavioral-runtime-invariant"
+    },
+    {
+      "@id": "assertion:doneGuard-activates-permanent-blocking",
+      "@type": "rule:BehavioralAssertion",
+      "name": "doneGuard-activates-permanent-blocking",
+      "assertion:text": "doneGuard uses two sync points: waitFor terminal event (dormant, no blocking), then block () => true (active, blocks everything). repeat=true keeps the block active forever. After terminal fires, doneGuard blocks even external triggers — all BP decisions halt. This replaces all manual if(done) return checks.",
+      "behavioral:anchor": "pattern:doneGuard",
+      "chunk:supports": ["chunk:doneGuard-pattern"],
+      "derivedFrom": [
+        "chunk:doneGuard-pattern",
+        "skills/behavioral-core/references/agent-patterns.spec.ts"
+      ],
+      "pattern:verified": true,
+      "rule:classification": "behavioral-runtime-pattern"
+    },
+    {
+      "@id": "assertion:maxIterations-ephemeral-plus-doneGuard-persistent",
+      "@type": "rule:BehavioralAssertion",
+      "name": "maxIterations-ephemeral-plus-doneGuard-persistent",
+      "assertion:text": "maxIterations and doneGuard compose additively. maxIterations provides the ephemeral block (counts N events, requests terminal) — its block vanishes when the thread terminates. doneGuard picks up the terminal event and activates persistent block-all. Both threads are required for counting + permanent stopping.",
+      "behavioral:anchor": "pattern:maxIterations",
+      "chunk:supports": ["chunk:maxIterations-pattern", "chunk:doneGuard-pattern"],
+      "derivedFrom": [
+        "chunk:maxIterations-pattern",
+        "chunk:doneGuard-pattern",
+        "skills/behavioral-core/references/agent-patterns.spec.ts"
+      ],
+      "pattern:verified": true,
+      "rule:classification": "behavioral-runtime-pattern"
+    },
+    {
+      "@id": "assertion:handler-state-visible-to-next-predicate",
+      "@type": "rule:BehavioralAssertion",
+      "name": "handler-state-visible-to-next-predicate",
+      "assertion:text": "actionPublisher fires handlers BEFORE step() re-evaluates predicates. Shared state set in handlers IS visible in the next selectNextEvent() call. This is the mechanism by which handlers (async or sync) coordinate with bThread predicates. simulateIds in agent-orchestration uses this pattern.",
+      "behavioral:anchor": "bp:sharedStatePredicateVisibility",
+      "chunk:supports": ["chunk:handler-before-trigger", "chunk:sharedStateCoordination-pattern"],
+      "derivedFrom": [
+        "chunk:handler-before-trigger",
+        "chunk:sharedStateCoordination-pattern",
+        "skills/behavioral-core/references/algorithm-reference.md"
+      ],
+      "rule:classification": "behavioral-runtime-invariant"
+    },
+    {
+      "@id": "assertion:bthreads-set-before-trigger",
+      "@type": "rule:BehavioralAssertion",
+      "name": "bthreads-set-before-trigger",
+      "assertion:text": "bThreads.set() MUST be called BEFORE any trigger() calls in the same handler. trigger() synchronously processes the event chain via step() → selectNextEvent() → actionPublisher() → step(). A thread set after trigger() misses all events that fired during the synchronous processing and has no step() call to advance it.",
+      "behavioral:anchor": "behavioral:handler-before-trigger",
+      "chunk:supports": ["chunk:handler-before-trigger"],
+      "derivedFrom": [
+        "chunk:handler-before-trigger",
+        "skills/behavioral-core/SKILL.md"
+      ],
+      "rule:classification": "behavioral-runtime-invariant"
+    },
+    {
+      "@id": "assertion:taskGate-blocks-stale-between-tasks",
+      "@type": "rule:BehavioralAssertion",
+      "name": "taskGate-blocks-stale-between-tasks",
+      "assertion:text": "taskGate is a two-phase bThread: Phase 1 blocks task events (waitFor task, block TASK_EVENTS), Phase 2 allows everything (waitFor message). repeat=true loops back to Phase 1 after message. Between tasks, stale async completions from the previous task are blocked. This prevents next-task state corruption from late-arriving async events.",
+      "behavioral:anchor": "pattern:taskGate",
+      "chunk:supports": ["chunk:taskGate-pattern", "chunk:staleAsyncProtection-pattern"],
+      "derivedFrom": [
+        "chunk:taskGate-pattern",
+        "chunk:staleAsyncProtection-pattern",
+        "skills/behavioral-core/references/agent-lifecycle.spec.ts"
+      ],
+      "pattern:verified": true,
+      "rule:classification": "behavioral-runtime-pattern"
+    },
+    {
+      "@id": "assertion:perTask-threads-interrupt-cleanup",
+      "@type": "rule:BehavioralAssertion",
+      "name": "perTask-threads-interrupt-cleanup",
+      "assertion:text": "Per-task bThreads are added in feedback handlers with interrupt predicates scoped to the task ID. When the task ends (message fires), the interrupt predicate matches and the thread is terminated immediately, wherever it is in its sequence. The thread name is freed for re-use. No shared state cleanup needed.",
+      "behavioral:anchor": "pattern:perTaskDynamicThreads",
+      "chunk:supports": ["chunk:perTaskDynamicThreads-pattern"],
+      "derivedFrom": [
+        "chunk:perTaskDynamicThreads-pattern",
+        "skills/behavioral-core/references/agent-lifecycle.spec.ts"
+      ],
+      "pattern:verified": true,
+      "rule:classification": "behavioral-runtime-pattern"
+    },
+    {
+      "@id": "assertion:interrupt-kills-mid-sequence",
+      "@type": "rule:BehavioralAssertion",
+      "name": "interrupt-kills-mid-sequence",
+      "assertion:text": "interrupt terminates the thread wherever it is in its rule sequence — not just at the end. When an interrupt-matching event is selected, generator.return() is called immediately and the thread is removed from both pending and running sets. The thread cannot complete its remaining sync points.",
+      "behavioral:anchor": "pattern:interruptMidSequence",
+      "chunk:supports": ["chunk:maxIterations-pattern"],
+      "derivedFrom": [
+        "chunk:maxIterations-pattern",
+        "skills/behavioral-core/references/agent-lifecycle.spec.ts"
+      ],
+      "pattern:verified": true,
+      "rule:classification": "behavioral-runtime-pattern"
+    },
+    {
+      "@id": "assertion:conditional-repeat-self-terminates",
+      "@type": "rule:BehavioralAssertion",
+      "name": "conditional-repeat-self-terminates",
+      "assertion:text": "repeat: () => boolean self-terminates when the predicate returns false. The thread finishes its current rule sequence, the generator's done=true on the next advance, and the thread is not re-added to pending. No interrupt event is fired. Unlike interrupt, this is a clean self-termination from within the repeat mechanism.",
+      "behavioral:anchor": "pattern:conditionalRepeatTermination",
+      "chunk:supports": ["chunk:conditionalRepeatTermination-pattern"],
+      "derivedFrom": [
+        "chunk:conditionalRepeatTermination-pattern",
+        "skills/behavioral-core/references/agent-lifecycle.spec.ts"
+      ],
+      "pattern:verified": true,
+      "rule:classification": "behavioral-runtime-pattern"
+    },
+    {
+      "@id": "assertion:constitution-is-append-only-ratchet",
+      "@type": "rule:GovernanceAssertion",
+      "name": "constitution-is-append-only-ratchet",
+      "assertion:text": "The constitution is additive and append-only (ratchet principle). New factories can be added at any layer (MAC, DAC, Goal, Workflow). Existing MAC factories cannot be removed or weakened — protectGovernance blocks writes to mac/ paths. DAC factories can be modified with user approval. Safety guarantees only grow over time.",
+      "behavioral:anchor": "constitution:ratchet-principle",
+      "chunk:supports": ["chunk:mac-dac-lifecycle"],
+      "derivedFrom": [
+        "chunk:mac-dac-lifecycle",
+        "skills/constitution/references/governance-model.md"
+      ],
+      "rule:classification": "governance-invariant"
+    },
+    {
+      "@id": "assertion:governanceFactory-same-contract-different-lifecycle",
+      "@type": "rule:GovernanceAssertion",
+      "name": "governanceFactory-same-contract-different-lifecycle",
+      "assertion:text": "All three factory categories (GovernanceFactory 🏛️, GoalFactory 🎯, WorkflowFactory 🔄) share the same TypeScript contract: (trigger: Trigger) => { threads?: Record<string, RulesFunction>; handlers?: DefaultHandlers }. The distinction is brand, lifecycle, and approval model — not shape. threads are synchronous Gate-layer checks; handlers are async Simulate/Evaluate-layer checks.",
+      "behavioral:anchor": "constitution:governanceFactory-contract",
+      "chunk:supports": ["chunk:governanceFactory-contract", "chunk:thread-vs-handler-encoding"],
+      "derivedFrom": [
+        "chunk:governanceFactory-contract",
+        "chunk:thread-vs-handler-encoding",
+        "skills/constitution/references/factory-patterns.md"
+      ],
+      "rule:classification": "governance-principle"
+    },
+    {
+      "@id": "assertion:dual-representation-required",
+      "@type": "rule:GovernanceAssertion",
+      "name": "dual-representation-required",
+      "assertion:text": "Constitution rules require dual representation: (1) bThread (symbolic, block predicates) for deterministic enforcement — model cannot circumvent structural checks, (2) Context/teaching surface (skills, memory, training) for model understanding — prevents wasted inference on disallowed actions. Both layers are non-substitutable.",
+      "behavioral:anchor": "constitution:dual-representation",
+      "chunk:supports": ["chunk:dual-representation-rule"],
+      "derivedFrom": [
+        "chunk:dual-representation-rule",
+        "skills/constitution/references/governance-model.md"
+      ],
+      "rule:classification": "governance-principle"
+    },
+    {
+      "@id": "assertion:five-layer-verification-is-training-signal",
+      "@type": "rule:GovernanceAssertion",
+      "name": "five-layer-verification-is-training-signal",
+      "assertion:text": "Generated bThreads pass through five verification layers: tsc (types), LSP (sandbox), bun test (behavior), trial/grader (pass@k), BP runtime (enforcement). Every generated bThread that passes tsc + tests becomes a positive training example. Every failure becomes a negative example with structured feedback. Verification IS the training signal.",
+      "behavioral:anchor": "constitution:validation-stack",
+      "chunk:supports": ["chunk:five-layer-verification"],
+      "derivedFrom": [
+        "chunk:five-layer-verification",
+        "skills/constitution/references/generated-bthreads.md"
+      ],
+      "rule:classification": "factory-authoring-rule"
+    },
+    {
+      "@id": "assertion:predicate-blocking-evaluates-every-pending",
+      "@type": "rule:BehavioralAssertion",
+      "name": "predicate-blocking-evaluates-every-pending",
+      "assertion:text": "Block and waitFor predicates are evaluated during COLLECT phase for EVERY pending thread. Predicates must be fast — simple property checks. Expensive computations belong in feedback handlers which trigger events; predicates then wait for those events. Async or heavy work in predicates would block the COLLECT phase.",
+      "behavioral:anchor": "bp:predicatePerformance",
+      "chunk:supports": ["chunk:predicate-performance"],
+      "derivedFrom": [
+        "chunk:predicate-performance",
+        "skills/behavioral-core/references/behavioral-programs.md"
+      ],
+      "rule:classification": "performance-guideline"
+    },
+    {
+      "@id": "assertion:additive-composition-new-rules",
+      "@type": "rule:BehavioralAssertion",
+      "name": "additive-composition-new-rules",
+      "assertion:text": "New bThreads compose without modifying existing ones. Each thread encodes one independent concern. All threads participate in event selection simultaneously. New safety rules can be added at runtime via bThreads.set() with a new name. bThreads.set() with an existing name is ignored (warning logged). This is the additive composition principle from the CACM BP paper.",
+      "behavioral:anchor": "pattern:additiveComposition",
+      "chunk:supports": ["chunk:constitutionAsBThreads-pattern", "chunk:thread-cannot-be-replaced"],
+      "derivedFrom": [
+        "chunk:constitutionAsBThreads-pattern",
+        "chunk:thread-cannot-be-replaced",
+        "skills/behavioral-core/references/behavioral-programs.md"
+      ],
+      "pattern:verified": true,
+      "rule:classification": "behavioral-runtime-principle"
+    }
+  ]
+}
