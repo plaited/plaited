@@ -1,0 +1,74 @@
+{
+  "name": "mss-corpus",
+  "version": "1.0.0",
+  "description": "Encoded MSS/Modnet corpus aligned to mss-seed anchors",
+  "generated": "2026-03-29T00:00:00Z",
+  "seedPath": "dev-research/mss-seed/seed",
+  "encodedArtifacts": [
+    {
+      "path": "mss-field-assertions.jsonld",
+      "type": "corpus-assertions",
+      "assertionCount": 18,
+      "source": "skills/mss/SKILL.md",
+      "seedAnchors": ["mss:contentType", "mss:structure", "mss:mechanics", "mss:boundary", "mss:scale", "mss:fieldAnchors", "mss:invariant_*", "mss:heuristic_*", "mss:lifecycle_*", "mss:rule_*"]
+    },
+    {
+      "path": "modnet-node-architecture.jsonld",
+      "type": "corpus-assertions",
+      "assertionCount": 20,
+      "source": "skills/modnet-node/SKILL.md",
+      "seedAnchors": ["mss:scale", "mss:boundary", "mss:contentType", "mss:structure", "mss:fieldAnchors"]
+    },
+    {
+      "path": "mss-patterns.jsonld",
+      "type": "corpus-patterns",
+      "patternCount": 15,
+      "antiPatternCount": 5,
+      "source": "skills/mss/references/valid-combinations.md",
+      "seedAnchors": ["mss:pattern_*", "mss:antipattern_*", "mss:structure_*", "mss:scale_*"]
+    },
+    {
+      "path": "corpus-provenance.jsonld",
+      "type": "corpus-provenance",
+      "description": "Source chunk provenance, encoded corpus tracking, and seed insufficiencies"
+    }
+  ],
+  "sourceChunks": {
+    "path": "artifacts/chunks.jsonl",
+    "sources": [
+      {"path": "docs/Structural-IA.md", "chunks": 100},
+      {"path": "docs/Modnet.md", "chunks": 23},
+      {"path": "skills/modnet-node/references/module-architecture.md", "chunks": 11},
+      {"path": "skills/modnet-node/references/a2a-bindings.md", "chunks": 6},
+      {"path": "skills/modnet-node/references/access-control.md", "chunks": 8}
+    ],
+    "totalChunks": 148
+  },
+  "seedDependencies": {
+    "mss-field-anchors.jsonld": "5 fields (contentType, structure, mechanics, boundary, scale)",
+    "mss-composition-rules.jsonld": "composition rules, lifecycle phases, antipatterns",
+    "mss-structures.jsonld": "structure concepts, scale concepts, mechanic concepts",
+    "mss-provenance.jsonld": "source lineage and distillation notes"
+  },
+  "seedInsufficiencies": [
+    {
+      "id": "corpus:seed-insufficiency-1",
+      "label": "Agent card MSS metadata projection",
+      "type": "runtime-pattern",
+      "requiresExternalValidation": true
+    },
+    {
+      "id": "corpus:seed-insufficiency-2",
+      "label": "Scale S4 definition",
+      "type": "conceptual-gap",
+      "requiresExternalValidation": false
+    },
+    {
+      "id": "corpus:seed-insufficiency-3",
+      "label": "play-cocreation contentType",
+      "type": "vocabulary-gap",
+      "requiresExternalValidation": false
+    }
+  ],
+  "downstreamContract": "Behavioral-factory generation can consume seed plus corpus without reopening raw SKILL.md files. Encoded artifacts provide source-backed assertions with provenance links."
+}
