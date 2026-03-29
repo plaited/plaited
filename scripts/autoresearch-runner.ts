@@ -100,6 +100,11 @@ type PromotionSummary = {
   reasoning: string
 }
 
+const isValidEvaluationRecord = (
+  value: AttemptEvaluationRecord | null | undefined,
+): value is AttemptEvaluationRecord & { pass: boolean; score: number } =>
+  value != null && typeof value.pass === 'boolean' && typeof value.score === 'number' && Number.isFinite(value.score)
+
 export const MAX_ATTEMPT_RETRIES = 2
 export const PI_WORKTREE_GUARD_EXTENSION_PATH = 'scripts/pi-worktree-guard-extension.ts'
 export const EVALUATION_STAGE_TIMEOUT_MS = 120_000
@@ -669,7 +674,7 @@ const evaluateAttempts = async ({
 
   for (const status of completedStatuses) {
     const existing = await readAttemptEvaluation(runDir, status.attempt)
-    if (existing) {
+    if (isValidEvaluationRecord(existing)) {
       logProgress('evaluation reused', {
         lane: config.key,
         attempt: status.attempt,
@@ -705,6 +710,10 @@ const evaluateAttempts = async ({
         phase: 'judge',
         attempt: status.attempt,
       })
+
+      if (typeof graded.pass !== 'boolean' || typeof graded.score !== 'number' || !Number.isFinite(graded.score)) {
+        throw new Error('Grader returned an invalid result shape (missing pass or score).')
+      }
 
       if (verifier) {
         logProgress('evaluation verify', {
@@ -775,18 +784,19 @@ const evaluateAttempts = async ({
     }
   }
 
+  const validEvaluations = evaluations.filter(isValidEvaluationRecord)
   const averageScore =
-    evaluations.length === 0
+    validEvaluations.length === 0
       ? 0
-      : evaluations.reduce((sum, evaluation) => sum + evaluation.score, 0) / evaluations.length
-  const bestAttempt = evaluations.slice().sort((left, right) => right.score - left.score)[0]?.attempt
+      : validEvaluations.reduce((sum, evaluation) => sum + evaluation.score, 0) / validEvaluations.length
+  const bestAttempt = validEvaluations.slice().sort((left, right) => right.score - left.score)[0]?.attempt
   const summary: EvaluationSummary = {
     graderPath: evaluationConfig.graderPath,
     ...(evaluationConfig.useMetaVerification && evaluationConfig.verifierPath
       ? { verifierPath: evaluationConfig.verifierPath }
       : {}),
     evaluatedAttempts: evaluations.length,
-    passedAttempts: evaluations.filter((evaluation) => evaluation.pass).length,
+    passedAttempts: validEvaluations.filter((evaluation) => evaluation.pass).length,
     averageScore,
     ...(bestAttempt ? { bestAttempt } : {}),
   }

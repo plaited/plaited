@@ -83,17 +83,19 @@ export const grade: Grader = async ({ output, metadata }) => {
     }),
     schema: WorkspaceImprovementJudgeResponseSchema,
     systemPrompt:
-      'You are evaluating a workspace-improvement attempt. Your first job is to find correctness, scope, and evidence problems. Return strict JSON only. Treat the lane program as the contract. Use search on retained seed/corpus JSON-LD artifacts when semantic evidence matters, and use read_file for markdown or source surfaces. Fail attempts unless the changed files, checks, output, and artifact evidence strongly support a bounded behavioral-factories improvement.',
+      'You are evaluating a workspace-improvement attempt. Your first job is to find correctness, scope, and evidence problems. Return strict JSON only. Treat the lane program as the contract. Use search on retained seed/corpus JSON-LD artifacts when semantic evidence matters, and use read_file for markdown or source surfaces. Prefer exact artifact paths like dev-research/mss-seed/seed or dev-research/behavioral-corpus/encoded, not broad root queries. Use at most one or two focused tool calls before deciding. Fail attempts unless the changed files, checks, output, and artifact evidence strongly support a bounded behavioral-factories improvement.',
     workspaceReadAccess:
       typeof metadata?.cwd === 'string'
         ? {
             workspaceRoot: metadata.cwd,
             allowedRoots: [
+              'dev-research',
               'dev-research/behavioral-factories',
               'dev-research/mss-seed',
               'dev-research/mss-corpus',
               'dev-research/behavioral-seed',
               'dev-research/behavioral-corpus',
+              'scripts/behavioral-factories.ts',
               'skills/behavioral-core',
               'skills/constitution',
               'skills/hypergraph-memory',
@@ -103,7 +105,7 @@ export const grade: Grader = async ({ output, metadata }) => {
               'src/behavioral',
               'src/agent',
             ],
-            maxToolRounds: 3,
+            maxToolRounds: 5,
           }
         : undefined,
   })

@@ -77,7 +77,7 @@ const HYPERGRAPH_SEARCH_TOOL = {
   function: {
     name: 'search',
     description:
-      'Query JSON-LD hypergraph artifacts under the allowed workspace roots. Use this for semantic graph inspection instead of raw file reads when checking anchors, provenance, cycles, reachability, or co-occurrence.',
+      'Query JSON-LD hypergraph artifacts under the allowed workspace roots. Use exact relative paths such as dev-research/mss-seed/seed or dev-research/behavioral-corpus/encoded when possible. For reachability, startVertices must be an array of strings and maxDepth must be a number.',
     parameters: z.toJSONSchema(HypergraphQuerySchema),
   },
 } as const
@@ -149,7 +149,19 @@ const executeHypergraphTool = async ({
   allowedRoots: string[]
   args: unknown
 }) => {
-  const parsed = HypergraphQuerySchema.parse(args)
+  const normalizedArgs =
+    typeof args === 'object' && args !== null
+      ? ({
+          ...args,
+          ...('startVertices' in args && typeof args.startVertices === 'string'
+            ? { startVertices: [args.startVertices] }
+            : {}),
+          ...('maxDepth' in args && typeof args.maxDepth === 'string' ? { maxDepth: Number(args.maxDepth) } : {}),
+          ...('topK' in args && typeof args.topK === 'string' ? { topK: Number(args.topK) } : {}),
+        } satisfies Record<string, unknown>)
+      : args
+
+  const parsed = HypergraphQuerySchema.parse(normalizedArgs)
   if (!isAllowedReadPath({ workspaceRoot, allowedRoots, path: parsed.path })) {
     throw new Error(`search path is outside allowed roots: ${parsed.path}`)
   }
@@ -187,7 +199,7 @@ export const runStructuredLlmQuery = async <T>({
         { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt },
       ]
-      const maxToolRounds = workspaceReadAccess?.maxToolRounds ?? 4
+      const maxToolRounds = workspaceReadAccess?.maxToolRounds ?? 5
       let payload: (OpenRouterResponse & { error?: { message?: string } }) | null = null
       let response: Response | null = null
       let toolRounds = 0
