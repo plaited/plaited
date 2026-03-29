@@ -13,7 +13,7 @@ architecture needed for:
 - observable rollouts
 - scoring and selection
 - retained artifacts for reuse and distillation
-- tool-first memory and retrieval
+- git-backed memory and retrieval
 
 The stable runtime foundation is assumed to remain:
 
@@ -44,8 +44,8 @@ needed for an evolvable agent system.
 That includes researching and refining:
 
 - policy factories
-- context factories
-- memory factories
+- working-memory factories
+- durable-memory factories
 - rollout factories
 - validation factories
 
@@ -93,15 +93,18 @@ Use these inputs with clear precedence:
 
 1. `src/behavioral`, `src/ui`, and stable `src/server` surfaces are the runtime
    foundation.
-2. behavioral and MSS seed/corpus artifacts define the semantic and evidence
-   layer the factories should consume.
-3. skills are implementation and teaching surfaces, not the final runtime home
+2. git-backed markdown, code, and local file history are the primary memory
+   substrate.
+3. behavioral and MSS seed/corpus artifacts are derived semantic inputs that
+   can accelerate retrieval, validation, and compilation.
+4. skills are implementation and teaching surfaces, not the final runtime home
    of the system.
-4. if a simpler markdown / yaml / jsonl / archive approach satisfies the lane
+5. if a simpler markdown / yaml / jsonl / archive approach satisfies the lane
    goal better than a graph-heavy approach, prefer the simpler approach.
 
 This lane must not assume that hypergraph persistence is mandatory.
-Hypergraph-style artifacts are allowed, but only when they materially improve:
+Hypergraph-style artifacts are optional derived accelerators, not the canonical
+memory substrate. Use them when they materially improve:
 
 - retrieval
 - provenance
@@ -110,20 +113,50 @@ Hypergraph-style artifacts are allowed, but only when they materially improve:
 
 ## Memory Strategy
 
-This lane should prefer a tool-first memory approach unless the work shows that
-a heavier semantic substrate is necessary.
+This lane should treat git-backed markdown and code as the default memory
+foundation.
 
-Primary memory substrates may include:
+Canonical memory surfaces may include:
 
-- markdown fragments
+- markdown documents
+- code files
 - yaml fragments
+- jsonl traces
 - html fragments or rewritten extracts
-- JSONL traces
+- commit messages
+- diffs and patch history
 - git-backed context packs
 - archive snapshots
 
+Git is part of the memory model, not just version control. It provides:
+
+- temporal ordering of understanding
+- compact summaries through commit messages
+- expansion through diffs, older revisions, and blame/history
+- provenance linking memory back to concrete file changes
+
 Derived semantic artifacts may still exist, but they should serve retrieval,
 validation, provenance, or training rather than becoming mandatory by default.
+
+Hypergraph tools should be used as accelerators over markdown/code/git memory,
+for example to:
+
+- rank likely relevant files or artifact groups
+- follow semantic links across retained seed/corpus artifacts
+- connect related concepts across commits, files, and docs
+- narrow what the agent should inspect with direct git and file tools
+
+Default retrieval should begin with:
+
+- direct file reads
+- markdown link traversal
+- `git log`
+- `git show`
+- `git diff`
+- targeted commit and path inspection
+
+The lane should only reach for heavier semantic machinery when these simpler
+surfaces are insufficient.
 
 ## What This Lane Should Discover
 
@@ -134,6 +167,9 @@ The lane should answer questions such as:
 - how should context packs be built from files, traces, and source artifacts?
 - when should the agent rely on symbolic context vs retrieval vs search?
 - how should retained artifacts be summarized and reused?
+- how should git history be compacted and expanded as working memory?
+- how should commit messages and diff metadata be turned into useful context?
+- how should repo boundaries shape delegation and memory isolation?
 - what deterministic validators best constrain generated behavioral code?
 
 ## Factory Families
@@ -142,40 +178,202 @@ The lane should explore and refine factory families such as:
 
 ### Policy Factories
 
+Policy factories should focus on deterministic tool and memory orchestration,
+not on trying to encode the model's internal reasoning directly.
+
+The model should still do the reasoning. Policy factories should watch for
+reasoning-derived signals and deterministically decide what happens next.
+Those decisions may recurse back into the model with new obligations, richer
+context, or a different coordination path.
+
+Examples of reasoning-derived signals include:
+
+- uncertainty markers
+- unsupported claims
+- unresolved dependencies
+- cross-repo implications
+- repeated failed retrieval or critique cycles
+
+Policy factories should therefore focus on surfaces such as:
+
 - search policy
 - retrieval invocation policy
+- git/history inspection policy
+- context-pack selection policy
 - uncertainty and escalation policy
 - critique and retry policy
-- answer finalization policy
+- answer finalization and stop policy
 
-### Context Factories
+They should be designed so that:
+
+- the trigger conditions are observable
+- the next action is deterministic and reviewable
+- the resulting loop back to the model is bounded and inspectable
+
+### Working-Memory Factories
+
+Working-memory factories should build bounded working-memory packs for the next
+model or agent step.
+
+They are responsible for assembling reviewable context from:
+
+- current files
+- markdown links
+- git history and diffs
+- retained traces
+- optional semantic accelerators
+
+They should focus on deterministic questions such as:
+
+- which files belong in the pack?
+- which commits or diffs are relevant?
+- which markdown links should be expanded?
+- what should be summarized vs included verbatim?
+- what constraints and obligations must follow the pack?
+
+They should be especially important for cross-repo or cross-agent handoff,
+where a bounded context pack must carry:
+
+- summaries
+- links
+- commit references
+- diffs
+- constraints
+- unresolved questions
+
+Preferred working-memory surfaces include:
 
 - markdown pack builders
-- yaml/jsonl state pack builders
 - source-link expansion
 - git-context pack builders
-- archive snapshot builders
+- diff and snapshot pack builders
+- repo handoff pack builders
+- compacted-memory summary builders
 
-### Memory Factories
+YAML should be treated as secondary, mostly for frontmatter extraction or small
+configuration surfaces rather than a primary context-pack format.
 
-- write-memory decisions
-- summarize-to-memory rules
-- retrieval ranking and packing
-- stale-memory pruning
+### Durable-Memory Factories
+
+Durable-memory factories should manage durable memory projection and reuse.
+
+These factories are distinct from working-memory factories:
+
+- working-memory factories build ephemeral context for the next step
+- durable-memory factories update retained memory after accepted changes or commits
+
+They should treat accepted commits as the main boundary for durable memory
+projection. A commit is the durable event boundary, not automatically the final
+summary itself.
+
+These factories should deterministically gather the source context for durable
+memory updates, such as:
+
+- commit metadata
+- diffs
+- touched files
+- validation results
+- linked handoff context
+- retained artifacts that were explicitly accepted
+
+Within that bounded context, the model may still be used to draft summaries or
+projections for durable memory. The resulting memory write should then be
+validated before retention.
+
+That means they may:
+
+- write memory decisions
+- summarize accepted work into durable memory
+- project commit metadata into a minimal graph/link layer
+- record handoff links between repos, commits, files, and summaries
+- support retrieval ranking and packing
+- prune or compact stale memory
+
+The minimal graph layer should therefore be commit-derived and reviewable,
+rather than the primary authored memory surface.
 
 ### Rollout Factories
 
+Rollout factories should define how multi-step work unfolds across the main
+workspace repo and any bounded repos under `modules/*`.
+
+They should be worktree-first, not branch-first.
+
+That means they should:
+
+- use worktrees for active exploration
+- use commits as durable rollout checkpoints
+- use frontier or leaf concepts for orchestration and replay
+- avoid making branch management central to the workflow
+
+Their responsibilities include:
+
 - task decomposition
-- fanout strategy
-- compare and merge strategy
-- replay strategy
+- worktree fanout decisions
+- compare-and-select strategy across worktree attempts
+- replay-from-commit strategy
+- escalation and abort strategy
+
+Rollout factories should help answer questions such as:
+
+- when should work stay in the current repo vs move to a module repo?
+- when should the agent create one worktree vs several?
+- when should competing worktree attempts be compared or discarded?
+- which accepted or frontier commits should be replayed or expanded?
+- when should work stop, escalate, or hand off to another repo-scoped agent?
+
+The intended model is:
+
+- the workspace repo is itself a git-backed operating memory surface
+- `modules/*` may be separate git repos with their own histories and worktrees
+- OS-level backup handles catastrophic recovery outside the runtime
+
+Rollout factories should therefore optimize local exploration, comparison, and
+checkpointing within these repos rather than assume a traditional GitHub-style
+branch or PR workflow.
 
 ### Validation Factories
 
+Validation factories should act as the deterministic quality gate over code,
+context, handoff, and replay surfaces.
+
+They should go beyond narrow code checks and validate:
+
+- code correctness
+- context-pack correctness
+- handoff correctness
+- commit and replay validity
+
+Important validation signals include:
+
+- `bun --bun tsc --noEmit`
+- Biome formatting and structural checks
 - behavioral anti-pattern guards
 - TypeScript / LSP seam checks
-- test-selection rules
+- TSDoc presence and placement where required
+- test-selection and execution rules
 - contract-shape validators
+- context-pack and handoff validators
+- commit and replay target validators
+
+Biome is useful not only as a style check, but also because:
+
+- it enforces consistency
+- it keeps generated code reviewable in emergencies
+- `biome --write` shows the agent what correct code should look like
+
+TSDoc and LSP should also be treated as meaningful validation surfaces:
+
+- TSDoc can be required before important blocks or exported seams
+- hover/signature/definition data can be returned to the agent as repair
+  context
+- this helps the agent align generated code with the intended runtime seams
+
+This lane should also consider replacing or narrowing generic commit-hook
+automation such as `lint-staged` with more explicit validation/event factories.
+Commit hooks can be treated as event sources that trigger validation threads
+with known file inputs, giving the runtime more control and reducing recurring
+`git/index` coordination issues.
 
 ## External Retrieval
 
@@ -192,6 +390,23 @@ Use external retrieval only to:
 Do not treat web search as the primary source of truth for this lane.
 If external retrieval materially changes the result, record that in the run
 summary.
+
+## Repo-Scoped Coordination
+
+This lane should assume Plaited may evolve toward multiple bounded repos or
+repo-like modules coordinated by a PM/orchestrator agent.
+
+That means the lane should explore factory patterns for:
+
+- repo selection and routing
+- repo-local context pack construction
+- bounded delegation to repo-scoped worker agents
+- cross-repo merge and escalation
+- memory isolation with explicit transfer rather than implicit global context
+
+Each repo should be treated as a bounded memory domain whose canonical memory
+is its files plus git history. Cross-repo reasoning should prefer explicit
+context packs, summaries, and reviewed handoffs.
 
 ## Writable Surface
 
@@ -233,12 +448,24 @@ This lane should produce deterministic, reviewable outputs such as:
 
 These outputs may be represented as:
 
+- TypeScript
 - markdown
 - yaml
 - json
 - jsonl
-- TypeScript
 - archive bundles
+
+Executable TypeScript factories and tests are preferred when the output is
+meant to become a real runtime or orchestration surface.
+
+Non-TypeScript formats should usually support:
+
+- retrieval
+- provenance
+- schema description
+- retained artifacts
+
+They should not replace executable factory code by default.
 
 They do not need to default to graph-heavy storage.
 
