@@ -64,16 +64,17 @@ The intended boundary is:
 - `src/bootstrap` is the setup and install boundary for the initial node
 - `src/server` remains the browser transport adapter and route host
 - `src/ui` remains a render surface plus client-side behavioral runtime
-- `src/agent` becomes a generic agent loop engine
+- `src/agent` is the generic agent engine
 - `src/factories` should contain promoted executable factory implementations
 - `src/inference` should contain model/provider-facing integration code
 
-The agent engine should own only stable loop mechanics such as:
+The agent engine should own only stable mechanics such as:
 
 - lifecycle
 - heartbeat and timing primitives
 - thread and handler registration
 - restricted trigger boundaries
+- runtime SQLite substrate for transient shared runtime context
 - safe execution boundaries
 
 Factories should own most actual behavior, including:
@@ -129,6 +130,10 @@ The intended `create-agent` direction is minimal:
 Disconnect should be modeled as an event, not as the primary imperative return
 surface.
 
+This lane should treat the deletion of `create-agent-loop.ts`, `src/runtime`,
+and `src/modnet` as accomplished architecture work. Future effort should not
+recreate those layers under new names.
+
 ## Inputs
 
 Primary lane inputs:
@@ -162,7 +167,8 @@ Supporting implementation and memory-shaping surfaces:
   - html rewriting
   - file IO
   - JSONL streaming
-  - archive snapshots
+  - archive export
+  - SQLite runtime context
 
 ## Input Priority
 
@@ -205,7 +211,7 @@ Canonical memory surfaces may include:
 - commit messages
 - diffs and patch history
 - git-backed context packs
-- archive snapshots
+- archive exports
 
 Hypergraph should link those authored surfaces durably across:
 
@@ -249,7 +255,8 @@ This lane should keep durable memory distinct from runtime coordination state:
 
 - durable memory is commit- and artifact-linked
 - shared runtime context is transient
-- shared runtime context may be backed by in-memory SQLite
+- shared runtime context should be treated as engine-owned and may be backed by
+  in-memory SQLite
 - transient runtime context should not be confused with retained durable memory
 
 ## Agent Lifecycle
@@ -290,6 +297,8 @@ This means the lane should research and refine factories for:
 - top-level Agent Card projection
 - A2A extension-aware behavior
 - bootstrap-time composition of the initial agent and server
+- runtime snapshot capture and promotion
+- durable-memory linking through hypergraph-aware factories
 
 `src/a2a` should not absorb BP orchestration concerns.
 `src/bootstrap` should not become a new rich runtime ontology.

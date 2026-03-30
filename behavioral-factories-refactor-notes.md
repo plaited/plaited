@@ -3,7 +3,7 @@
 ## Purpose
 
 This note captures the current architectural decisions before refactoring
-`src/agent`, `src/runtime`, related policy surfaces, and
+`src/agent`, related policy surfaces, and
 `dev-research/behavioral-factories/program.md`.
 
 ## Accomplished So Far
@@ -12,9 +12,8 @@ The refactor has already made several concrete architecture moves:
 
 - `src/bootstrap` now exists as the top-level setup/install boundary
 - the root `src/runtime.ts` export was removed
-- `createLink` moved under `src/agent`
-- `src/runtime` lost its old PM/team/sub-agent wrapper layer
-- `src/runtime/team-hub.ts` was removed
+- the remaining `src/runtime/` directory has now been deleted
+- `createLink` and its schemas/types/constants now live fully under `src/agent`
 - `src/inference` now exists and owns the OpenAI-compatible model adapter
 - `src/agent` now has a minimal core centered on:
   - `create-agent.ts`
@@ -32,24 +31,42 @@ The refactor has already made several concrete architecture moves:
   - `useSnapshot`
 - `create-agent.ts` now supports runtime factory installation through
   `update_factories`
+- `create-agent.ts` now owns runtime in-memory SQLite handlers for
+  statement-oriented runtime context operations
 - `src/factories` now exists as a real promotion target
 - the first promoted factories are in place:
   - inference
   - gate/execute
   - simulation/evaluation
+  - snapshot-context capture
 - the old distillation adapter path in `src/improve` was removed because
   `dev-research/evolutionary-agent/program.md` is replacing that direction
 - `src/modnet` has now been deleted entirely
+- `src/agent/create-agent-loop.ts` has now been deleted
+- `src/agent` has shed legacy policy and loop surfaces including:
+  - goals
+  - governance
+  - branded factories
+  - gate helper
+  - simulate helper
+  - evaluate helper
+  - proactive helper layer
+  - context assembly layer
+  - file-backed snapshot writer
 
-The main remaining direct blockers for deleting `create-agent-loop.ts` are now:
+The main remaining refactor work is now no longer about deleting the old loop.
+That phase is complete.
 
-- the remaining legacy tests that still import it directly
-- the missing promoted factories for:
-  - task intake
-  - context assembly
-  - history/message emission
-  - memory
-  - proactive cycle orchestration
+The main remaining work is:
+
+- continuing to shrink `src/agent` toward the true minimal core
+- replacing stale legacy docs/tests that still mention removed layers
+- refining `src/bootstrap`
+- promoting more top-level behavior into factories, especially:
+  - bootstrap-node composition
+  - A2A behavior for the top-level agent
+  - durable-memory promotion
+  - message/history/task intake shaping where needed
 
 The deleted `create-node.ts` review still established an important point:
 
@@ -152,10 +169,9 @@ It should not know agent-specific policy.
 
 ### `src/runtime`
 
-This section is now mostly historical.
+This layer has been removed.
 
-The original runtime package has largely been dissolved.
-The surviving direction is:
+The surviving direction is now:
 
 - `src/bootstrap` for setup/install/startup
 - `src/agent` for agent-to-agent primitives and orchestration surfaces
@@ -206,22 +222,22 @@ behavior updates through `update_behavioral`.
 
 ### `src/agent`
 
-Should become a generic agent loop engine with explicit extension points, not a
-home for concrete policy defaults.
+Should remain a small generic agent engine with explicit extension points, not
+a home for concrete policy defaults.
 
-The likely main entrypoint should become:
+The main entrypoint is now:
 
 - `src/agent/create-agent.ts`
 
-The loop engine should own:
+The engine should own:
 
 - lifecycle
 - heartbeat/pulse
 - handler/thread registration
-- tool execution interface
+- runtime SQLite substrate
 - safe execution boundaries
 
-The loop engine should not own concrete:
+The engine should not own concrete:
 
 - governance defaults
 - memory policy
@@ -245,11 +261,10 @@ This is the right home for accepted executable:
 
 ## Provisioned Extension Points
 
-The new agent engine should support explicit provisioning primarily through
+The agent engine now supports explicit provisioning primarily through
 factories.
 
-Factories should control most actual loop behavior while keeping the engine
-generic.
+Factories should control most actual behavior while keeping the engine generic.
 
 ## Heartbeat
 
