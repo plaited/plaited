@@ -1,4 +1,3 @@
-#!/usr/bin/env bun
 /**
  * Skill/doc encoding surface — deterministic markdown sectioning and link extraction.
  *
@@ -15,7 +14,7 @@ import * as z from 'zod'
 import { RISK_TAG } from '../agent/agent.constants.ts'
 import type { ToolDefinition } from '../agent/agent.schemas.ts'
 import type { ToolHandler } from '../agent/agent.types.ts'
-import { parseCli } from './cli.utils.ts'
+import { parseCli } from '../tools/cli.utils.ts'
 import { parseFrontmatter } from './skill.utils.ts'
 
 export type SkillLinkEdgeType = 'references' | 'setupFor' | 'examples' | 'dependsOn'
@@ -399,8 +398,4 @@ Options:
   const output = await buildSkillEncodingSurface(fullPath)
   // biome-ignore lint/suspicious/noConsole: CLI output
   console.log(JSON.stringify(output, null, 2))
-}
-
-if (import.meta.main) {
-  await skillLinksCli(Bun.argv.slice(2))
 }

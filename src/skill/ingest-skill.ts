@@ -1,18 +1,16 @@
-#!/usr/bin/env bun
 /**
  * Ingest a skill directory into a JSON-LD vertex for hypergraph memory.
  *
  * @remarks
- * Offline CLI tool — no agent pipeline. Reads SKILL.md frontmatter,
- * scans for TypeScript exports and bThread references, then writes
- * a JSON-LD Skill vertex to the memory directory.
+ * Reads SKILL.md frontmatter, scans for TypeScript exports and bThread
+ * references, then writes a JSON-LD Skill vertex to the memory directory.
  *
  * @public
  */
 
 import { basename, join, resolve } from 'node:path'
 import * as z from 'zod'
-import { parseCli } from './cli.utils.ts'
+import { parseCli } from '../tools/cli.utils.ts'
 import { findSkillMd, parseFrontmatter } from './skill.utils.ts'
 
 // ============================================================================
@@ -230,8 +228,4 @@ Exit codes:
     console.error(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }))
     process.exit(1)
   }
-}
-
-if (import.meta.main) {
-  await ingestSkillCli(Bun.argv.slice(2))
 }

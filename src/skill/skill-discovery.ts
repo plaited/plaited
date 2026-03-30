@@ -4,8 +4,6 @@
  * @remarks
  * Lightweight alternative to structural validation that extracts only the
  * activation catalog plus optional local evaluation pointers.
- * Used by the agent loop at spawn to build the skill catalog for
- * context assembly (progressive disclosure tier 1: ~100 tokens per skill).
  *
  * Skills that fail to parse are skipped with a stderr warning.
  *
@@ -14,7 +12,7 @@
 
 import { join } from 'node:path'
 import * as z from 'zod'
-import { parseCli } from './cli.utils.ts'
+import { parseCli } from '../tools/cli.utils.ts'
 import { findSkillDirectories, findSkillEvaluationSurface, findSkillMd, parseFrontmatter } from './skill.utils.ts'
 
 // ============================================================================
@@ -238,8 +236,4 @@ Examples:
 
   // biome-ignore lint/suspicious/noConsole: CLI output
   console.log(JSON.stringify(catalog, null, 2))
-}
-
-if (import.meta.main) {
-  await discoverSkillsCli(Bun.argv.slice(2))
 }

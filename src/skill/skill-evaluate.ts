@@ -1,4 +1,3 @@
-#!/usr/bin/env bun
 /**
  * Evaluate one skill's behavioral quality using the shared trial harness.
  *
@@ -23,7 +22,7 @@ import {
   summarizeTrialResults,
   type TrialRunSummary,
 } from '../improve.ts'
-import { parseCli } from './cli.utils.ts'
+import { parseCli } from '../tools/cli.utils.ts'
 import { findSkillEvaluationSurface } from './skill.utils.ts'
 
 type SkillEvaluationMode = 'trigger' | 'output'
@@ -799,11 +798,4 @@ Notes:
 
   // biome-ignore lint/suspicious/noConsole: CLI JSON output
   console.log(JSON.stringify(await evaluateSkill(input), null, 2))
-}
-
-if (import.meta.main) {
-  evaluateSkillCli(process.argv.slice(2)).catch((error: unknown) => {
-    console.error(error instanceof Error ? error.message : String(error))
-    process.exit(1)
-  })
 }

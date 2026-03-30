@@ -13,14 +13,8 @@
 
 // Agent tools (CRUD)
 import { bashCli, editFileCli, listFilesCli, readFileCli, writeFileCli } from './agent/crud.ts'
-import { ingestGoalCli } from './tools/ingest-goal.ts'
-import { ingestRulesCli } from './tools/ingest-rules.ts'
-import { ingestSkillCli } from './tools/ingest-skill.ts'
+import { discoverSkillsCli, evaluateSkillCli, ingestSkillCli, skillLinksCli, validateSkillCli } from './skill.ts'
 import { validateResearchCli } from './tools/research-validate.ts'
-import { discoverSkillsCli } from './tools/skill-discovery.ts'
-import { evaluateSkillCli } from './tools/skill-evaluate.ts'
-import { skillLinksCli } from './tools/skill-links.ts'
-import { validateSkill } from './tools/skill-validate.ts'
 import { typescriptLsp } from './tools/typescript-lsp.ts'
 
 // ============================================================================
@@ -35,11 +29,9 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   'list-files': listFilesCli,
   bash: bashCli,
   // Development tools
-  'validate-skill': validateSkill,
+  'validate-skill': validateSkillCli,
   'validate-research': validateResearchCli,
-  'ingest-goal': ingestGoalCli,
   'ingest-skill': ingestSkillCli,
-  'ingest-rules': ingestRulesCli,
   'discover-skills': discoverSkillsCli,
   'evaluate-skill': evaluateSkillCli,
   'skill-links': skillLinksCli,
@@ -79,8 +71,7 @@ Commands:
     read-file, write-file, edit-file, list-files, bash
 
   Development:
-    validate-skill, ingest-goal,
-    ingest-skill, ingest-rules, discover-skills,
+    validate-skill, ingest-skill, discover-skills,
     evaluate-skill, skill-links,
     validate-research, typescript-lsp`)
   process.exit(command ? 0 : 1)

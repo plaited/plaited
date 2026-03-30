@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import type { SkillCatalogEntry } from '../skill-discovery.ts'
 import { detectCollisions, discoverSkills } from '../skill-discovery.ts'
 
-const scriptsDir = join(import.meta.dir, '..')
+const cliPath = join(import.meta.dir, '..', '..', 'cli.ts')
 
 describe('skill-discovery', () => {
   let tempDir: string
@@ -200,7 +200,7 @@ describe('skill-discovery', () => {
 
   describe('CLI', () => {
     test('--help exits 0', async () => {
-      const proc = Bun.spawn(['bun', `${scriptsDir}/skill-discovery.ts`, '--help'], {
+      const proc = Bun.spawn(['bun', cliPath, 'discover-skills', '--help'], {
         stderr: 'pipe',
         stdout: 'pipe',
       })
@@ -210,7 +210,7 @@ describe('skill-discovery', () => {
     })
 
     test('--schema input outputs JSON Schema', async () => {
-      const result = await Bun.$`bun ${scriptsDir}/skill-discovery.ts --schema input`.quiet()
+      const result = await Bun.$`bun ${cliPath} discover-skills --schema input`.quiet()
       const schema = JSON.parse(result.text())
 
       expect(schema.type).toBe('object')
@@ -218,7 +218,7 @@ describe('skill-discovery', () => {
     })
 
     test('--schema output outputs JSON Schema', async () => {
-      const result = await Bun.$`bun ${scriptsDir}/skill-discovery.ts --schema output`.quiet()
+      const result = await Bun.$`bun ${cliPath} discover-skills --schema output`.quiet()
       const schema = JSON.parse(result.text())
 
       expect(schema.type).toBe('array')
@@ -233,7 +233,7 @@ describe('skill-discovery', () => {
       await createSkill('discover-cli/cli-skill', 'name: cli-skill\ndescription: CLI test')
 
       const input = JSON.stringify({ paths: [rootDir] })
-      const result = await Bun.$`bun ${scriptsDir}/skill-discovery.ts ${input}`.quiet().nothrow()
+      const result = await Bun.$`bun ${cliPath} discover-skills ${input}`.quiet().nothrow()
       const catalog = JSON.parse(result.text())
 
       expect(catalog).toHaveLength(1)

@@ -7,9 +7,9 @@
  */
 
 import { afterEach, describe, expect, test } from 'bun:test'
-import { join } from 'node:path'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { findSkillDirectories, findSkillMd, isDirectory, parseFrontmatter } from '../skill.utils.ts'
 
 // ============================================================================

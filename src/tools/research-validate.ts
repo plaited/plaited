@@ -12,8 +12,8 @@
 
 import { basename, join } from 'node:path'
 import * as z from 'zod'
+import { isDirectory } from '../skill/skill.utils.ts'
 import { parseCli } from './cli.utils.ts'
-import { isDirectory } from './skill.utils.ts'
 
 type ResearchValidationResult = {
   valid: boolean

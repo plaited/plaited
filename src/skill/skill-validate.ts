@@ -1,4 +1,3 @@
-#!/usr/bin/env bun
 /**
  * Validate skill directories against AgentSkills structural requirements.
  *
@@ -13,7 +12,7 @@
 
 import { basename, join } from 'node:path'
 import * as z from 'zod'
-import { parseCli } from './cli.utils.ts'
+import { parseCli } from '../tools/cli.utils.ts'
 import {
   findSkillDirectories,
   findSkillMd,
@@ -334,7 +333,7 @@ const resolveAndValidate = async (searchPaths: string[], cwd: string): Promise<V
  *
  * @public
  */
-export const validateSkill = async (args: string[]) => {
+export const validateSkillCli = async (args: string[]) => {
   if (args.includes('--help') || args.includes('-h')) {
     // biome-ignore lint/suspicious/noConsole: CLI output
     console.log(`plaited validate-skill
@@ -380,8 +379,4 @@ Examples:
   // biome-ignore lint/suspicious/noConsole: CLI output
   console.log(JSON.stringify(results, null, 2))
   if (results.some((r) => !r.valid)) process.exit(1)
-}
-
-if (import.meta.main) {
-  await validateSkill(Bun.argv.slice(2))
 }

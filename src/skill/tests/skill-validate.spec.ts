@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-const scriptsDir = join(import.meta.dir, '..')
+const cliPath = join(import.meta.dir, '..', '..', 'cli.ts')
 
 describe('skill-validate', () => {
   let tempDir: string
@@ -26,7 +26,7 @@ describe('skill-validate', () => {
   const runValidation = async (paths: string | string[]) => {
     const pathsArray = Array.isArray(paths) ? paths : [paths]
     const input = JSON.stringify({ paths: pathsArray })
-    const result = await Bun.$`bun ${scriptsDir}/skill-validate.ts ${input}`.quiet().nothrow()
+    const result = await Bun.$`bun ${cliPath} validate-skill ${input}`.quiet().nothrow()
     return JSON.parse(result.text())
   }
 
@@ -228,7 +228,7 @@ metadata:
       const skillDir = await createSkill('cli-exit', 'description: No name field')
       const input = JSON.stringify({ paths: [skillDir] })
 
-      const proc = Bun.spawn(['bun', `${scriptsDir}/skill-validate.ts`, input], {
+      const proc = Bun.spawn(['bun', cliPath, 'validate-skill', input], {
         stderr: 'pipe',
         stdout: 'pipe',
       })
@@ -241,7 +241,7 @@ metadata:
       const skillDir = await createSkill('cli-success', 'name: cli-success\ndescription: Valid skill')
       const input = JSON.stringify({ paths: [skillDir] })
 
-      const proc = Bun.spawn(['bun', `${scriptsDir}/skill-validate.ts`, input], {
+      const proc = Bun.spawn(['bun', cliPath, 'validate-skill', input], {
         stderr: 'pipe',
         stdout: 'pipe',
       })
@@ -251,7 +251,7 @@ metadata:
     })
 
     test('--schema input outputs JSON Schema', async () => {
-      const result = await Bun.$`bun ${scriptsDir}/skill-validate.ts --schema input`.quiet()
+      const result = await Bun.$`bun ${cliPath} validate-skill --schema input`.quiet()
       const schema = JSON.parse(result.text())
 
       expect(schema.type).toBe('object')
@@ -259,7 +259,7 @@ metadata:
     })
 
     test('--schema output outputs JSON Schema', async () => {
-      const result = await Bun.$`bun ${scriptsDir}/skill-validate.ts --schema output`.quiet()
+      const result = await Bun.$`bun ${cliPath} validate-skill --schema output`.quiet()
       const schema = JSON.parse(result.text())
 
       expect(schema.type).toBe('array')
@@ -269,7 +269,7 @@ metadata:
     })
 
     test('--help exits 0', async () => {
-      const proc = Bun.spawn(['bun', `${scriptsDir}/skill-validate.ts`, '--help'], {
+      const proc = Bun.spawn(['bun', cliPath, 'validate-skill', '--help'], {
         stderr: 'pipe',
         stdout: 'pipe',
       })
@@ -279,7 +279,7 @@ metadata:
     })
 
     test('defaults to root skills dir when no path is provided', async () => {
-      const proc = Bun.spawn(['bun', `${scriptsDir}/skill-validate.ts`, '{}'], {
+      const proc = Bun.spawn(['bun', cliPath, 'validate-skill', '{}'], {
         cwd: join(import.meta.dir, '..', '..'),
         stderr: 'pipe',
         stdout: 'pipe',
