@@ -42,6 +42,48 @@ describe('createAgent', () => {
 
     expect(snapshots).toContain('restricted_trigger_error')
   })
+
+  test('installs factory modules at runtime through update_factories', async () => {
+    const seen: string[] = []
+    const moduleUrl = new URL('./fixtures/update-factories.fixture.ts', import.meta.url).href
+    let resolveUpdate!: () => void
+    let rejectUpdate!: (error: Error) => void
+    const updated = new Promise<void>((resolve, reject) => {
+      resolveUpdate = resolve
+      rejectUpdate = reject
+    })
+
+    const agent = await createAgent({
+      id: 'agent:test',
+      factories: [
+        () => ({
+          handlers: {
+            [AGENT_CORE_EVENTS.factories_updated](detail) {
+              seen.push(`updated:${(detail as { module: string }).module}`)
+              resolveUpdate()
+            },
+            [AGENT_CORE_EVENTS.update_factories_error](detail) {
+              rejectUpdate(new Error((detail as { error: string }).error))
+            },
+            fixture_pong() {
+              seen.push('fixture_pong')
+            },
+          },
+        }),
+      ],
+    })
+
+    agent.restrictedTrigger({
+      type: AGENT_CORE_EVENTS.update_factories,
+      detail: { module: moduleUrl },
+    })
+
+    await updated
+
+    agent.restrictedTrigger({ type: 'fixture_ping' })
+
+    expect(seen).toEqual([`updated:${moduleUrl}`, 'fixture_pong'])
+  })
 })
 
 describe('spawnAgent', () => {

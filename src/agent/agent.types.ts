@@ -11,7 +11,17 @@ import type { CONTROLLER_TO_AGENT_EVENTS, UI_ADAPTER_LIFECYCLE_EVENTS } from '..
 import type { UIClientConnectedDetail, UIClientDisconnectedDetail, UIClientErrorDetail } from '../server.ts'
 import type { SnapshotEvent, UserActionMessage } from '../ui.ts'
 import type { AGENT_EVENTS } from './agent.constants.ts'
-import type { AgentPlan, AgentToolCall, GateDecision, ModelUsage, ToolDefinition, ToolResult } from './agent.schemas.ts'
+import type {
+  AgentPlan,
+  AgentToolCall,
+  FactoriesUpdatedDetail,
+  GateDecision,
+  ModelUsage,
+  ToolDefinition,
+  ToolResult,
+  UpdateFactoriesDetail,
+  UpdateFactoriesErrorDetail,
+} from './agent.schemas.ts'
 import type { HeartbeatHandle } from './proactive.ts'
 
 /**
@@ -703,6 +713,17 @@ export type AgentEventDetails = {
   [AGENT_EVENTS.commit_snapshot]: CommitSnapshotDetail
   [AGENT_EVENTS.consolidate]: ConsolidateDetail
   [AGENT_EVENTS.defrag]: DefragDetail
+}
+
+/**
+ * Event details for the new agent core surface.
+ *
+ * @public
+ */
+export type AgentCoreEventDetails = {
+  update_factories: UpdateFactoriesDetail
+  factories_updated: FactoriesUpdatedDetail
+  update_factories_error: UpdateFactoriesErrorDetail
 }
 
 // ============================================================================

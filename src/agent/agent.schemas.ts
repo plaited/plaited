@@ -11,6 +11,38 @@ export const AgentHeartbeatConfigSchema = z.object({
   intervalMs: z.number().int().positive().optional(),
 })
 
+/**
+ * Runtime factory update request for the new agent core.
+ *
+ * @public
+ */
+export const UpdateFactoriesDetailSchema = z.object({
+  module: z.string().min(1),
+})
+
+/**
+ * Runtime factory update success payload for the new agent core.
+ *
+ * @public
+ */
+export const FactoriesUpdatedDetailSchema = z.object({
+  module: z.string().min(1),
+})
+
+/**
+ * Runtime factory update error payload for the new agent core.
+ *
+ * @public
+ */
+export const UpdateFactoriesErrorDetailSchema = z.object({
+  module: z.string().min(1),
+  error: z.string(),
+})
+
+export type UpdateFactoriesDetail = z.infer<typeof UpdateFactoriesDetailSchema>
+export type FactoriesUpdatedDetail = z.infer<typeof FactoriesUpdatedDetailSchema>
+export type UpdateFactoriesErrorDetail = z.infer<typeof UpdateFactoriesErrorDetailSchema>
+
 // ============================================================================
 // Agent Tool Call Schemas
 // ============================================================================

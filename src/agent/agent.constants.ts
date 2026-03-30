@@ -137,6 +137,9 @@ export const SIDE_EFFECT_TOOLS = new Set([BUILT_IN_TOOLS.write_file, BUILT_IN_TO
 export const AGENT_CORE_EVENTS = keyMirror(
   'agent_disconnect',
   'agent_heartbeat',
+  'update_factories',
+  'factories_updated',
+  'update_factories_error',
   'spawn_agent',
   'agent_spawned',
   'spawn_agent_error',
