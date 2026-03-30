@@ -1,9 +1,4 @@
 export {
-  createLocalAdapter,
-  type LocalAdapterOptions,
-} from './improve/distillation-adapter.ts'
-
-export {
   commitExperiment,
   discardExperiment,
   type ExperimentEntry,
