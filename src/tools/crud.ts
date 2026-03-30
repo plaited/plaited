@@ -532,8 +532,8 @@ export const bash: ToolHandler = async (args, ctx) => {
  * Create a `set_heartbeat` tool handler bound to a HeartbeatHandle.
  *
  * @remarks
- * Uses closure capture to access the HeartbeatHandle created inside
- * `createAgentLoop`. The handler reconfigures the heartbeat timer:
+ * Uses closure capture to access a loop-owned HeartbeatHandle.
+ * The handler reconfigures the heartbeat timer:
  * 0 = pause, positive value = set interval in seconds.
  *
  * @param heartbeatHandle - Handle from `createHeartbeatTimer`
@@ -541,7 +541,8 @@ export const bash: ToolHandler = async (args, ctx) => {
  *
  * @public
  */
-export const createSetHeartbeatHandler = (heartbeatHandle: HeartbeatHandle): ToolHandler =>
+export const createSetHeartbeatHandler =
+  (heartbeatHandle: HeartbeatHandle): ToolHandler =>
   async (args) => {
     const intervalSeconds = args.interval_seconds as number
     heartbeatHandle.setInterval(intervalSeconds * 1000)

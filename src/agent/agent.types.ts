@@ -731,13 +731,11 @@ export type AgentCoreEventDetails = {
 // ============================================================================
 
 /**
- * Return type of `createAgentLoop`.
+ * Legacy adapter-facing agent handle retained during the refactor.
  *
  * @remarks
- * Exposes BP primitives for adapter consumption. Adapters connect via
- * `subscribe` (event handlers) and inject lifecycle events via a restricted
- * `trigger`. The agent loop coordinates the pipeline internally; adapters
- * build their own views (trajectory recording, persistence, streaming).
+ * Exposes BP primitives for adapter consumption while remaining legacy
+ * surfaces are trimmed away.
  *
  * - `trigger` — restricted to `task`, `client_connected`, `disconnected`
  * - `subscribe` — register fire-and-forget event handlers, returns disconnect
