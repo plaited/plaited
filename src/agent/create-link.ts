@@ -11,7 +11,7 @@ import type {
   MessageHandlers,
   RuntimeLink,
   TriggerToLinkOptions,
-} from '../runtime/runtime.types.ts'
+} from './create-link.types.ts'
 
 const createDisconnect = <T>(listeners: Set<T>, listener: T, onDisconnect?: () => void): Disconnect => {
   let disconnected = false

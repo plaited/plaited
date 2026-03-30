@@ -1,47 +1,8 @@
 import type { DefaultHandlers, Disconnect, Trigger } from '../behavioral/behavioral.types.ts'
-import type {
-  LINK_ACTIVITY_KINDS,
-  MSS_BOUNDARIES,
-  MSS_MECHANICS,
-  MSS_SCALES,
-  MSS_STRUCTURES,
-} from './runtime.constants.ts'
-import type { LinkActivity, MssObject, RuntimeArtifact, RuntimeContract } from './runtime.schemas.ts'
+import type { LINK_ACTIVITY_KINDS } from './create-link.constants.ts'
+import type { LinkActivity } from './create-link.schemas.ts'
 
-/**
- * MSS content type.
- *
- * @public
- */
-export type ContentType = string
-
-/**
- * MSS structure.
- *
- * @public
- */
-export type Structure = (typeof MSS_STRUCTURES)[number]
-
-/**
- * MSS mechanic.
- *
- * @public
- */
-export type Mechanic = (typeof MSS_MECHANICS)[number]
-
-/**
- * MSS boundary.
- *
- * @public
- */
-export type Boundary = (typeof MSS_BOUNDARIES)[number]
-
-/**
- * MSS scale.
- *
- * @public
- */
-export type Scale = (typeof MSS_SCALES)[number]
+export type { LinkActivity } from './create-link.schemas.ts'
 
 /**
  * Observable link activity kind.
@@ -51,21 +12,21 @@ export type Scale = (typeof MSS_SCALES)[number]
 export type LinkActivityKind = (typeof LINK_ACTIVITY_KINDS)[number]
 
 /**
- * Canonical runtime message envelope.
+ * Canonical link message envelope.
  *
  * @public
  */
 export type LinkMessage = { type: string; detail?: unknown }
 
 /**
- * Runtime link subscriber.
+ * Link subscriber.
  *
  * @public
  */
 export type LinkSubscriber<Message extends LinkMessage = LinkMessage> = (message: Message) => void | Promise<void>
 
 /**
- * Runtime link observer.
+ * Link observer.
  *
  * @public
  */
@@ -74,7 +35,7 @@ export type LinkObserver<Message extends LinkMessage = LinkMessage> = (
 ) => void | Promise<void>
 
 /**
- * Transport-specific bridge for cross-process link delivery.
+ * Transport-specific bridge for cross-process delivery.
  *
  * @public
  */
@@ -85,7 +46,7 @@ export type LinkBridge<Message extends LinkMessage = LinkMessage> = {
 }
 
 /**
- * Transport adapter for IPC-backed runtime links.
+ * Transport adapter for IPC-backed links.
  *
  * @public
  */
@@ -163,5 +124,3 @@ export type TriggerToLinkOptions<Message extends LinkMessage = LinkMessage> = {
       subscribe: (handlers: MessageHandlers<Message>) => Disconnect
     }
 )
-
-export type { LinkActivity, MssObject, RuntimeArtifact, RuntimeContract }

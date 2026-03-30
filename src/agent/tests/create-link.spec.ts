@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
 import { behavioral } from '../../behavioral/behavioral.ts'
-import { LinkActivitySchema, LinkMessageSchema } from '../../runtime/runtime.schemas.ts'
+import { LinkActivitySchema, LinkMessageSchema } from '../create-link.schemas.ts'
 import { createIpcLinkBridge, createLink, linkToTrigger, triggerToLink } from '../create-link.ts'
 
 describe('createLink', () => {
