@@ -1,8 +1,33 @@
 import { AGENT_EVENTS } from '../agent/agent.constants.ts'
-import type { EvalRejectedDetail, Model, SimulateRequestDetail, SimulationResultDetail } from '../agent/agent.types.ts'
+import type { AgentToolCall } from '../agent/agent.schemas.ts'
+import type {
+  ChatMessage,
+  EvalRejectedDetail,
+  Model,
+  SimulateRequestDetail,
+  SimulationResultDetail,
+} from '../agent/agent.types.ts'
 import { collectModelText } from '../agent/agent.utils.ts'
-import { simulate } from '../agent/simulate.ts'
 import type { SimulationEvaluationFactoryCreator } from './factories.types.ts'
+
+export const STATE_TRANSITION_PROMPT = `You are a simulation engine. Given the conversation context and a proposed tool call, predict ONLY the state changes that would occur if this tool call were executed.
+
+Do NOT execute the tool call. Predict the outcome.
+
+Output your prediction in the following format:
+
+PREDICTED OUTPUT:
+<what stdout/return value would be>
+
+PREDICTED CHANGES:
+- <change 1: file modification, state change, error, etc.>
+- <change 2>
+
+If the tool call would result in an error, predict the error message.
+If the tool call would modify files, predict the diff.
+If the tool call would produce console output, predict the output.
+
+Be specific and concrete. Do not hedge or speculate beyond what the tool would actually do.`
 
 const NEURAL_SCORING_PROMPT = `You are a safety and quality evaluator. Score the following simulated tool execution on a scale of 0.0 to 1.0, where:
 
@@ -38,6 +63,59 @@ const DEFAULT_BLOCK_PATTERNS: RegExp[] = [
 
 const SCORE_REGEX = /SCORE:\s*([\d.]+)/
 const REASONING_REGEX = /REASONING:\s*([\s\S]+)/
+const PREDICTED_CHANGES_HEADER = /PREDICTED CHANGES:\s*\n([\s\S]*?)(?:\n\n|$)/
+const CHANGE_LINE = /^-\s+(.+)$/gm
+
+type SimulateResult = {
+  predictedOutput: string
+  predictedChanges: string[]
+}
+
+const formatToolCall = (toolCall: AgentToolCall): string =>
+  `Tool: ${toolCall.name}\nArguments: ${JSON.stringify(toolCall.arguments, null, 2)}`
+
+export const parsePrediction = (text: string): SimulateResult => {
+  const predictedChanges: string[] = []
+  const changesMatch = text.match(PREDICTED_CHANGES_HEADER)
+  if (changesMatch?.[1]) {
+    const regex = new RegExp(CHANGE_LINE.source, 'gm')
+    for (let match = regex.exec(changesMatch[1]); match !== null; match = regex.exec(changesMatch[1])) {
+      if (match[1]) predictedChanges.push(match[1].trim())
+    }
+  }
+
+  return { predictedOutput: text, predictedChanges }
+}
+
+const simulate = async ({
+  toolCall,
+  history,
+  model,
+  signal,
+}: {
+  toolCall: AgentToolCall
+  history: ChatMessage[]
+  model: Model
+  signal?: AbortSignal
+}): Promise<SimulateResult> => {
+  const effectiveSignal = signal ?? AbortSignal.timeout(30_000)
+
+  const messages = [
+    { role: 'system' as const, content: STATE_TRANSITION_PROMPT },
+    ...history,
+    {
+      role: 'user' as const,
+      content: `Predict the outcome of the following tool call:\n\n${formatToolCall(toolCall)}`,
+    },
+  ]
+
+  const text = await collectModelText(
+    model.reason({ messages, temperature: 0, signal: effectiveSignal }),
+    effectiveSignal,
+  )
+
+  return parsePrediction(text)
+}
 
 const evaluatePrediction = async ({
   simulatedOutput,
