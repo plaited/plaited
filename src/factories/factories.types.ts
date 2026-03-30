@@ -50,3 +50,21 @@ export type CreateGateExecuteFactoryOptions = {
  * @public
  */
 export type GateExecuteFactoryCreator = (options: CreateGateExecuteFactoryOptions) => AgentFactory
+
+/**
+ * Options for creating the default simulation/evaluation factory.
+ *
+ * @public
+ */
+export type CreateSimulationEvaluationFactoryOptions = {
+  model: Model
+  getGoal: () => string
+  getHistory: () => ChatMessage[]
+}
+
+/**
+ * Factory creator that returns the simulation/evaluation behavior.
+ *
+ * @public
+ */
+export type SimulationEvaluationFactoryCreator = (options: CreateSimulationEvaluationFactoryOptions) => AgentFactory
