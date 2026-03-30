@@ -48,10 +48,6 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   'skill-links': skillLinksCli,
   'validate-encoding': validateEncodingCli,
   'typescript-lsp': typescriptLsp,
-  // ACP adapter (long-lived stdio process)
-  acp: async () => {
-    await import('./acp.ts')
-  },
 }
 
 // ============================================================================
@@ -90,11 +86,7 @@ Commands:
     validate-skill, validate-thread, ingest-goal,
     ingest-skill, ingest-rules, discover-skills,
     evaluate-skill, skill-links, validate-encoding,
-    validate-research,
-    typescript-lsp
-
-  ACP (Internal Control Surface):
-    acp [--node <name>]`)
+    validate-research, typescript-lsp`)
   process.exit(command ? 0 : 1)
 }
 
