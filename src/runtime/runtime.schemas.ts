@@ -7,8 +7,6 @@ import {
   MSS_SCALES,
   MSS_STRUCTURES,
   RUNTIME_TAXONOMY,
-  TEAM_ATTEMPT_STATUSES,
-  TEAM_ROUTE_ACTIVITY_KINDS,
 } from './runtime.constants.ts'
 
 /**
@@ -128,28 +126,6 @@ export const SubAgentDescriptorSchema = z.object({
 })
 
 /**
- * Serializable PM descriptor.
- *
- * @public
- */
-export const PmDescriptorSchema = z.object({
-  kind: z.literal(RUNTIME_TAXONOMY[5]),
-  id: z.string(),
-})
-
-/**
- * Serializable team descriptor.
- *
- * @public
- */
-export const TeamDescriptorSchema = z.object({
-  kind: z.literal(RUNTIME_TAXONOMY[4]),
-  id: z.string(),
-  pmId: z.string(),
-  members: z.array(z.union([BehavioralActorDescriptorSchema, SubAgentDescriptorSchema])),
-})
-
-/**
  * Message envelope used by runtime links.
  *
  * @public
@@ -172,105 +148,9 @@ export const LinkActivitySchema = z.object({
   error: z.string().optional(),
 })
 
-/**
- * Observable team route activity.
- *
- * @public
- */
-export const TeamRouteActivitySchema = z.object({
-  kind: z.enum(TEAM_ROUTE_ACTIVITY_KINDS),
-  teamId: z.string(),
-  pmId: z.string(),
-  sourceId: z.string(),
-  targetId: z.string(),
-  eventTypes: z.array(z.string()),
-  linkId: z.string().optional(),
-})
-
-/**
- * Persisted attempt metadata for a local sovereign team DAG.
- *
- * @public
- */
-export const TeamAttemptSchema = z.object({
-  id: z.string(),
-  teamId: z.string(),
-  parentAttemptId: z.string().optional(),
-  branch: z.string().optional(),
-  worktreePath: z.string(),
-  commit: z.string().optional(),
-  status: z.enum(TEAM_ATTEMPT_STATUSES),
-  actorId: z.string().optional(),
-  taskId: z.string().optional(),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
-})
-
-/**
- * Serializable snapshot of a team's local attempt graph.
- *
- * @public
- */
-export const TeamAttemptGraphSchema = z.object({
-  teamId: z.string(),
-  attempts: z.array(TeamAttemptSchema),
-})
-
-/**
- * Queryable promotion candidate derived from the local attempt DAG.
- *
- * @public
- */
-export const TeamPromotionCandidateSchema = z.object({
-  teamId: z.string(),
-  attemptId: z.string(),
-  attempt: TeamAttemptSchema,
-  lineage: z.array(TeamAttemptSchema),
-  childAttemptIds: z.array(z.string()),
-  succeededDescendantIds: z.array(z.string()),
-  depth: z.number().int().nonnegative(),
-  isLeaf: z.boolean(),
-})
-
-/**
- * Persisted PM selection over explicit promotion candidates.
- *
- * @public
- */
-export const TeamWinnerSelectionSchema = z.object({
-  id: z.string(),
-  teamId: z.string(),
-  pmId: z.string(),
-  selectedAttemptId: z.string(),
-  selectedLineageAttemptIds: z.array(z.string()),
-  candidateAttemptIds: z.array(z.string()),
-  rationale: z.string().optional(),
-  createdAt: z.string().datetime(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
-})
-
-/**
- * Serializable history of PM winner selections for a team.
- *
- * @public
- */
-export const TeamWinnerSelectionHistorySchema = z.object({
-  teamId: z.string(),
-  selections: z.array(TeamWinnerSelectionSchema),
-})
-
 export type RuntimeContract = z.infer<typeof RuntimeContractSchema>
 export type MssObject = z.infer<typeof MssObjectSchema>
 export type RuntimeArtifact = z.infer<typeof RuntimeArtifactSchema>
 export type BehavioralActorDescriptor = z.infer<typeof BehavioralActorDescriptorSchema>
 export type SubAgentDescriptor = z.infer<typeof SubAgentDescriptorSchema>
-export type PmDescriptor = z.infer<typeof PmDescriptorSchema>
-export type TeamDescriptor = z.infer<typeof TeamDescriptorSchema>
 export type LinkActivity = z.infer<typeof LinkActivitySchema>
-export type TeamRouteActivity = z.infer<typeof TeamRouteActivitySchema>
-export type TeamAttempt = z.infer<typeof TeamAttemptSchema>
-export type TeamAttemptGraph = z.infer<typeof TeamAttemptGraphSchema>
-export type TeamPromotionCandidate = z.infer<typeof TeamPromotionCandidateSchema>
-export type TeamWinnerSelection = z.infer<typeof TeamWinnerSelectionSchema>
-export type TeamWinnerSelectionHistory = z.infer<typeof TeamWinnerSelectionHistorySchema>
