@@ -1,9 +1,9 @@
 import { afterAll, describe, expect, test } from 'bun:test'
-import { createA2AClient } from '../create-a2a-client.ts'
 import { AGENT_CARD_PATH } from '../a2a.constants.ts'
 import type { AgentCard, Message, Task, TaskPushNotificationConfig } from '../a2a.schemas.ts'
-import { createA2AHandler } from '../create-a2a-handler.ts'
 import type { A2AOperationHandlers, StreamEvent } from '../a2a.types.ts'
+import { createA2AClient } from '../create-a2a-client.ts'
+import { createA2AHandlers } from '../create-a2a-handlers.ts'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -33,7 +33,7 @@ const createTestServer = (
   handlers: A2AOperationHandlers,
   authenticate?: (req: Request) => Promise<string | undefined>,
 ) => {
-  const { routes } = createA2AHandler({ card: testCard, handlers, authenticate })
+  const routes = createA2AHandlers({ card: testCard, handlers, authenticate })
   const server = Bun.serve({ port: 0, routes })
   const url = `http://localhost:${server.port}`
   return { server, url }
@@ -153,7 +153,7 @@ describe('Dynamic Agent Card', () => {
 
   test('setup', () => {
     skillCount = 0
-    const { routes } = createA2AHandler({
+    const routes = createA2AHandlers({
       card: () => ({
         ...testCard,
         skills: Array.from({ length: skillCount }, (_, i) => ({

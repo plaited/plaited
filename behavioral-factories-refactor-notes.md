@@ -39,36 +39,28 @@ The refactor has already made several concrete architecture moves:
   - simulation/evaluation
 - the old distillation adapter path in `src/improve` was removed because
   `dev-research/evolutionary-agent/program.md` is replacing that direction
+- `src/modnet` has now been deleted entirely
 
-The main remaining direct blocker for deleting `create-agent-loop.ts` is now
-`src/modnet/create-node.ts` plus the remaining legacy tests that still import
-the old loop directly.
+The main remaining direct blockers for deleting `create-agent-loop.ts` are now:
 
-Current `create-node.ts` findings:
-
-- `create-node.ts` still depends on the old loop surface for:
-  - `trigger`
-  - `subscribe`
-  - `destroy`
-  - optional `heartbeat`
-- widening `create-agent.ts` to restore those affordances is not the right
-  move
-- `useSnapshot` is sufficient to replace the current `subscribe` usages in
-  `create-node.ts` because selected events and their `detail` payloads are
-  observable through behavioral snapshots
-- that means proactive push fanout and A2A one-shot waits can be rewritten in
-  BP-native terms without changing the agreed `create-agent.ts` contract
-- the true remaining blocker is not subscription but missing factory coverage:
+- the remaining legacy tests that still import it directly
+- the missing promoted factories for:
   - task intake
   - context assembly
   - history/message emission
   - memory
   - proactive cycle orchestration
 
-So `create-node.ts` should not drive new agent-core APIs. It should either:
+The deleted `create-node.ts` review still established an important point:
 
-- wait until those remaining loop surfaces are extracted into factories, or
-- be dissolved into bootstrap composition once those factories exist
+- widening `create-agent.ts` to restore old loop affordances is not the right
+  move
+- `useSnapshot` is sufficient to replace old subscribe-style observation
+  paths because selected events and their `detail` payloads are observable
+  through behavioral snapshots
+
+So the rest of the refactor should continue by promoting the remaining loop
+surfaces into factories rather than widening the new agent core.
 
 ## Stable Foundations
 
@@ -168,6 +160,25 @@ It is not the PM runtime or sub-agent runtime.
 
 Dynamic Bun route reloading via `server.reload()` is relevant for future route
 provisioning.
+
+### `src/a2a`
+
+Should remain a protocol and transport library.
+
+It is currently a cleaner standalone surface than the removed `modnet` layer
+and should not be deleted simply because orchestration is moving into
+factories.
+
+The intended split is:
+
+- `src/a2a` owns protocol schemas, clients, HTTP bindings, and WebSocket
+  bindings
+- `src/bootstrap` exposes A2A only for the top-level agent
+- top-level factories own A2A behavior and Agent Card projection
+- internal agents and modules must not communicate through A2A directly
+
+This keeps A2A as a single external control point and prevents internal
+factories from casually exfiltrating data outside the node.
 
 ### `src/ui`
 

@@ -85,6 +85,9 @@ Factories should own most actual behavior, including:
 - rollout behavior
 - working-memory behavior
 - durable-memory behavior
+- bootstrap/top-level node composition behavior
+- top-level A2A behavior
+- server-facing notification and projection behavior
 
 Factories should still prefer BP-native coordination patterns.
 `async` `useFeedback` handlers are acceptable and expected when they are doing
@@ -107,8 +110,8 @@ Successful experiments should not only demonstrate a behavior. They should also
 improve the architecture by:
 
 - removing or shrinking hardcoded factory-like logic from `src/agent`
-- replacing transitional bootstrap compositions such as `src/modnet/create-node.ts`
-  with top-level executable factories
+- replacing transitional bootstrap compositions with top-level executable
+  factories
 - promoting accepted executable behavior into `src/factories`
 - leaving the core agent engine smaller and more generic than before
 
@@ -250,6 +253,30 @@ This lane should assume an agent lifecycle shaped roughly like this:
 Heartbeat should be considered part of the core engine even if no current
 factory listens to it. Factories may attach behavior to that pulse later, and
 may also adjust its timing through explicit control surfaces.
+
+## Bootstrap And A2A Boundary
+
+This lane should now assume:
+
+- `src/a2a` remains a protocol and transport library
+- `src/bootstrap` exposes A2A only for the top-level agent
+- A2A behavior itself should be implemented by top-level factories
+- internal agents and modules must not communicate through A2A directly
+
+The purpose of this boundary is to keep external communication under one
+explicit control point so that internal factories and modules do not
+accidentally exfiltrate data outside the node.
+
+This means the lane should research and refine factories for:
+
+- top-level A2A request handling
+- top-level Agent Card projection
+- A2A extension-aware behavior
+- bootstrap-time composition of the initial agent and server
+
+`src/a2a` should not absorb BP orchestration concerns.
+`src/bootstrap` should not become a new rich runtime ontology.
+Those layers should stay thin while top-level factories own the behavior.
 
 ## What This Lane Should Discover
 

@@ -51,8 +51,8 @@ const sseResponse = (iterable: AsyncIterable<unknown>, id: string | number, cont
  * Creates A2A route handlers for composition with `Bun.serve()`.
  *
  * @remarks
- * Returns a `{ routes }` object that the caller merges into their
- * `Bun.serve({ routes })` configuration — the same composition pattern
+ * Returns a `routes` object that the caller merges into their
+ * `Bun.serve({ routes: {...handlers} })` configuration — the same composition pattern
  * as `createServer` in `src/server/`.
  *
  * Two routes are produced:
@@ -67,11 +67,11 @@ const sseResponse = (iterable: AsyncIterable<unknown>, id: string | number, cont
  *
  * @public
  */
-export const createA2AHandler = ({ card, handlers, authenticate }: CreateA2AHandlerOptions) => {
+export const createA2AHandlers = ({ card, handlers, authenticate }: CreateA2AHandlerOptions) => {
   /** Resolve the Agent Card — supports both static value and dynamic getter */
   const resolveCard = typeof card === 'function' ? card : () => card
 
-  const routes = {
+  return {
     [AGENT_CARD_PATH]: () => Response.json(resolveCard()),
 
     '/a2a': async (req: Request) => {
@@ -221,6 +221,4 @@ export const createA2AHandler = ({ card, handlers, authenticate }: CreateA2AHand
       }
     },
   }
-
-  return { routes }
 }
