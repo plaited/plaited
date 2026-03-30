@@ -22,7 +22,6 @@ import { evaluateSkillCli } from './tools/skill-evaluate.ts'
 import { skillLinksCli } from './tools/skill-links.ts'
 import { validateSkill } from './tools/skill-validate.ts'
 import { typescriptLsp } from './tools/typescript-lsp.ts'
-import { validateThreadCli } from './tools/validate-thread.ts'
 
 // ============================================================================
 // Command Registry
@@ -38,7 +37,6 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   // Development tools
   'validate-skill': validateSkill,
   'validate-research': validateResearchCli,
-  'validate-thread': validateThreadCli,
   'ingest-goal': ingestGoalCli,
   'ingest-skill': ingestSkillCli,
   'ingest-rules': ingestRulesCli,
@@ -81,7 +79,7 @@ Commands:
     read-file, write-file, edit-file, list-files, bash
 
   Development:
-    validate-skill, validate-thread, ingest-goal,
+    validate-skill, ingest-goal,
     ingest-skill, ingest-rules, discover-skills,
     evaluate-skill, skill-links,
     validate-research, typescript-lsp`)
