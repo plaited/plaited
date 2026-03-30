@@ -94,15 +94,15 @@ The CLI resolves file paths to functions, then delegates to `runTrial`:
 
 ```bash
 # Basic trial
-plaited-improve trial '{"adapterPath":"./adapter.ts","promptsPath":"prompts.jsonl","k":5}'
+plaited eval '{"adapterPath":"./adapter.ts","promptsPath":"prompts.jsonl","k":5}'
 
 # With grader and progress
-plaited-improve trial '{"adapterPath":"./adapter.ts","promptsPath":"prompts.jsonl","k":10,"graderPath":"./grader.ts","concurrency":4,"progress":true}'
+plaited eval '{"adapterPath":"./adapter.ts","promptsPath":"prompts.jsonl","k":10,"graderPath":"./grader.ts","concurrency":4,"progress":true}'
 
 # Schema discovery
-plaited-improve trial --schema input
-plaited-improve trial --schema output
-plaited-improve trial --help
+plaited eval --schema input
+plaited eval --schema output
+plaited eval --help
 ```
 
 ## Input Format (prompts.jsonl)
@@ -204,8 +204,8 @@ import {
   AdapterResultSchema,
   GraderResultSchema,
   PromptCaseSchema,
-  TrialInputSchema,
-  TrialOutputSchema,
+  EvalInputSchema,
+  EvalOutputSchema,
   TrialResultSchema,
 } from './src/improve.ts'
 import * as z from 'zod'

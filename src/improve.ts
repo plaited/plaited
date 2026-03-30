@@ -1,4 +1,13 @@
 export {
+  calculatePassAtK,
+  calculatePassExpK,
+  EvalInputSchema,
+  EvalOutputSchema,
+  evalCli,
+  runTrial,
+  type TrialConfig,
+} from './improve/eval.ts'
+export {
   commitExperiment,
   discardExperiment,
   type ExperimentEntry,
@@ -6,7 +15,6 @@ export {
   loadExperiments,
   logExperiment,
 } from './improve/git-experiment.ts'
-
 export {
   type EvaluationTarget,
   EvaluationTargetSchema,
@@ -100,15 +108,6 @@ export {
   type TrialResult,
   TrialResultSchema,
 } from './improve/trial.schemas.ts'
-export {
-  calculatePassAtK,
-  calculatePassExpK,
-  runTrial,
-  type TrialConfig,
-  TrialInputSchema,
-  TrialOutputSchema,
-  trialCli,
-} from './improve/trial.ts'
 export {
   loadAdapter,
   loadGrader,

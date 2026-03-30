@@ -730,11 +730,11 @@ export { executeLsp }
 export const typescriptLspCli = async (args: string[]) => {
   if (args.includes('--help') || args.includes('-h')) {
     // biome-ignore lint/suspicious/noConsole: CLI output
-    console.log(`plaited typescript-lsp
+    console.log(`typescript-lsp skill
 Unified TypeScript LSP tool — type-aware codebase analysis
 
-Usage: plaited typescript-lsp '<json>' [options]
-       echo '<json>' | plaited typescript-lsp
+Usage: bun skills/typescript-lsp/scripts/run.ts '<json>' [options]
+       echo '<json>' | bun skills/typescript-lsp/scripts/run.ts
 
 Input (JSON):
   file         string              Path to TypeScript/JavaScript file

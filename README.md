@@ -415,14 +415,13 @@ The repo ships an agent-facing CLI toolbox:
 - `plaited list-files`
 - `plaited bash`
 - `plaited validate-skill`
-- `plaited validate-thread`
-- `plaited ingest-goal`
 - `plaited ingest-skill`
-- `plaited ingest-rules`
 - `plaited discover-skills`
 - `plaited evaluate-skill`
-- `plaited validate-research`
-- `plaited typescript-lsp`
+- `plaited search`
+- `plaited skill-links`
+- `plaited eval`
+- `plaited training-score`
 
 See:
 - [cli.ts](/Users/eirby/Workspace/plaited/src/cli.ts)

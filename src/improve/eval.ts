@@ -273,11 +273,11 @@ export const runTrial = async (config: TrialConfig): Promise<TrialResult[]> => {
 // ============================================================================
 
 /**
- * CLI input schema for the trial command.
+ * CLI input schema for the eval command.
  *
  * @public
  */
-export const TrialInputSchema = z.object({
+export const EvalInputSchema = z.object({
   adapterPath: z.string().describe('Path to adapter script (.ts/.js module or executable)'),
   promptsPath: z.string().optional().describe('Path to prompts.jsonl'),
   outputPath: z.string().optional().describe('Output file (default: stdout)'),
@@ -293,10 +293,10 @@ export const TrialInputSchema = z.object({
 })
 
 /** CLI output schema (array of TrialResult) */
-export const TrialOutputSchema = z.array(TrialResultSchema)
+export const EvalOutputSchema = z.array(TrialResultSchema)
 
 /**
- * CLI handler for the trial command.
+ * CLI handler for the eval command.
  *
  * @remarks
  * Uses `parseCli` for input parsing, then resolves paths → functions
@@ -305,10 +305,10 @@ export const TrialOutputSchema = z.array(TrialResultSchema)
  *
  * @public
  */
-export const trialCli = async (args: string[]): Promise<void> => {
-  const input = await parseCli(args, TrialInputSchema, {
-    name: 'trial',
-    outputSchema: TrialOutputSchema,
+export const evalCli = async (args: string[]): Promise<void> => {
+  const input = await parseCli(args, EvalInputSchema, {
+    name: 'eval',
+    outputSchema: EvalOutputSchema,
   })
 
   // Resolve adapter path → function

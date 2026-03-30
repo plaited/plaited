@@ -30,10 +30,10 @@ Type-aware codebase analysis for TypeScript/JavaScript files. Use over Grep/Glob
 Single command with JSON input. All operations share one LSP session (one server start).
 
 ```bash
-plaited typescript-lsp '<json>'
-echo '<json>' | plaited typescript-lsp
-plaited typescript-lsp --schema input    # JSON Schema for input
-plaited typescript-lsp --schema output   # JSON Schema for output
+bun skills/typescript-lsp/scripts/run.ts '<json>'
+echo '<json>' | bun skills/typescript-lsp/scripts/run.ts
+bun skills/typescript-lsp/scripts/run.ts --schema input    # JSON Schema for input
+bun skills/typescript-lsp/scripts/run.ts --schema output   # JSON Schema for output
 ```
 
 ## Input Format
@@ -106,31 +106,31 @@ Failed operations include an `error` field instead of `data`. Other operations s
 ### Understand a file
 
 ```bash
-plaited typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "exports"}]}'
+bun skills/typescript-lsp/scripts/run.ts '{"file": "src/utils/parser.ts", "operations": [{"type": "exports"}]}'
 ```
 
 ### Check type before using an API
 
 ```bash
-plaited typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "hover", "line": 42, "character": 10}]}'
+bun skills/typescript-lsp/scripts/run.ts '{"file": "src/utils/parser.ts", "operations": [{"type": "hover", "line": 42, "character": 10}]}'
 ```
 
 ### Find all references before refactoring
 
 ```bash
-plaited typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "references", "line": 42, "character": 10}]}'
+bun skills/typescript-lsp/scripts/run.ts '{"file": "src/utils/parser.ts", "operations": [{"type": "references", "line": 42, "character": 10}]}'
 ```
 
 ### Batch: exports + hover + references in one session
 
 ```bash
-plaited typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "exports"}, {"type": "hover", "line": 10, "character": 13}, {"type": "references", "line": 10, "character": 13}]}'
+bun skills/typescript-lsp/scripts/run.ts '{"file": "src/utils/parser.ts", "operations": [{"type": "exports"}, {"type": "hover", "line": 10, "character": 13}, {"type": "references", "line": 10, "character": 13}]}'
 ```
 
 ### Search workspace for a symbol
 
 ```bash
-plaited typescript-lsp '{"file": "src/app.ts", "operations": [{"type": "find", "query": "parseConfig"}]}'
+bun skills/typescript-lsp/scripts/run.ts '{"file": "src/app.ts", "operations": [{"type": "find", "query": "parseConfig"}]}'
 ```
 
 ## Exit Codes

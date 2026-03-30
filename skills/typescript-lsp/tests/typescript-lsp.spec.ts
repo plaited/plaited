@@ -9,7 +9,7 @@ import {
   resolveFilePath,
 } from '../scripts/typescript-lsp.ts'
 
-const cliPath = join(import.meta.dir, '..', '..', '..', 'bin', 'plaited.ts')
+const cliPath = join(import.meta.dir, '..', 'scripts', 'run.ts')
 const fixtureFile = join(import.meta.dir, 'fixtures', 'sample.ts')
 const rootUri = `file://${process.cwd()}`
 const testUri = `file://${fixtureFile}`
@@ -484,7 +484,7 @@ describe('executeLsp', () => {
 
 describe('CLI', () => {
   test('--schema input outputs JSON Schema', async () => {
-    const result = await Bun.$`bun ${cliPath} typescript-lsp --schema input`.quiet()
+    const result = await Bun.$`bun ${cliPath} --schema input`.quiet()
     const schema = JSON.parse(result.text())
 
     expect(schema.type).toBe('object')
@@ -493,7 +493,7 @@ describe('CLI', () => {
   })
 
   test('--schema output outputs JSON Schema', async () => {
-    const result = await Bun.$`bun ${cliPath} typescript-lsp --schema output`.quiet()
+    const result = await Bun.$`bun ${cliPath} --schema output`.quiet()
     const schema = JSON.parse(result.text())
 
     expect(schema.type).toBe('object')
@@ -502,7 +502,7 @@ describe('CLI', () => {
   })
 
   test('--help exits 0', async () => {
-    const proc = Bun.spawn(['bun', cliPath, 'typescript-lsp', '--help'], {
+    const proc = Bun.spawn(['bun', cliPath, '--help'], {
       stderr: 'pipe',
       stdout: 'pipe',
     })
@@ -516,7 +516,7 @@ describe('CLI', () => {
       file: fixtureFile,
       operations: [{ type: 'symbols' }],
     })
-    const result = await Bun.$`bun ${cliPath} typescript-lsp ${input}`.quiet()
+    const result = await Bun.$`bun ${cliPath} ${input}`.quiet()
     const output = JSON.parse(result.text())
 
     expect(output.file).toBe(fixtureFile)
@@ -531,7 +531,7 @@ describe('CLI', () => {
       operations: [{ type: 'hover' }],
     })
 
-    const proc = Bun.spawn(['bun', cliPath, 'typescript-lsp', input], {
+    const proc = Bun.spawn(['bun', cliPath, input], {
       stderr: 'pipe',
       stdout: 'pipe',
     })
@@ -541,7 +541,7 @@ describe('CLI', () => {
   })
 
   test('exits with code 2 on invalid input', async () => {
-    const proc = Bun.spawn(['bun', cliPath, 'typescript-lsp', '{"bad": true}'], {
+    const proc = Bun.spawn(['bun', cliPath, '{"bad": true}'], {
       stderr: 'pipe',
       stdout: 'pipe',
     })

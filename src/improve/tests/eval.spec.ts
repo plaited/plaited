@@ -1,5 +1,5 @@
 /**
- * Tests for the trial runner.
+ * Tests for the eval command and trial runner.
  *
  * @remarks
  * Covers: runTrial (k=1, k=3), pass@k math, grading, concurrency,
@@ -10,9 +10,9 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdir, stat, unlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import * as z from 'zod'
+import { calculatePassAtK, calculatePassExpK, EvalInputSchema, EvalOutputSchema, runTrial } from '../eval.ts'
 import type { Adapter, Grader, GraderResult, PromptCase } from '../trial.schemas.ts'
 import { GraderResultSchema, GradingDimensionsSchema, TrialEntrySchema, TrialResultSchema } from '../trial.schemas.ts'
-import { calculatePassAtK, calculatePassExpK, runTrial, TrialInputSchema, TrialOutputSchema } from '../trial.ts'
 import {
   createWorkspaceDir,
   createWriteMutex,
@@ -529,7 +529,7 @@ describe('concurrency', () => {
 
 describe('CLI contract', () => {
   test('--schema input emits JSON Schema', () => {
-    const schema = z.toJSONSchema(TrialInputSchema)
+    const schema = z.toJSONSchema(EvalInputSchema)
     expect(schema.type).toBe('object')
     expect(schema.properties).toBeDefined()
     // Check key fields exist
@@ -541,12 +541,12 @@ describe('CLI contract', () => {
   })
 
   test('--schema output emits JSON Schema', () => {
-    const schema = z.toJSONSchema(TrialOutputSchema)
+    const schema = z.toJSONSchema(EvalOutputSchema)
     expect(schema.type).toBe('array')
   })
 
-  test('TrialInputSchema validates correct input', () => {
-    const result = TrialInputSchema.safeParse({
+  test('EvalInputSchema validates correct input', () => {
+    const result = EvalInputSchema.safeParse({
       adapterPath: './adapter.ts',
       promptsPath: './prompts.jsonl',
       k: 5,
@@ -554,15 +554,15 @@ describe('CLI contract', () => {
     expect(result.success).toBe(true)
   })
 
-  test('TrialInputSchema rejects missing adapterPath', () => {
-    const result = TrialInputSchema.safeParse({
+  test('EvalInputSchema rejects missing adapterPath', () => {
+    const result = EvalInputSchema.safeParse({
       promptsPath: './prompts.jsonl',
     })
     expect(result.success).toBe(false)
   })
 
-  test('TrialInputSchema applies defaults', () => {
-    const result = TrialInputSchema.parse({
+  test('EvalInputSchema applies defaults', () => {
+    const result = EvalInputSchema.parse({
       adapterPath: './adapter.ts',
     })
     expect(result.k).toBe(1)

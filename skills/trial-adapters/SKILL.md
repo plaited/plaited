@@ -92,7 +92,7 @@ type AdapterResult = {
 `src/improve` loads adapters via `loadAdapter()`:
 
 ```typescript
-import { loadAdapter } from './src/improve/trial.ts'
+import { loadAdapter } from './src/improve.ts'
 
 // TS module: imports and extracts 'adapt' export
 const adapter = await loadAdapter('./my-adapter.ts')
@@ -242,7 +242,7 @@ export const adapt: Adapter = async ({ prompt, cwd }) => {
 
 ```bash
 # CLI: path-based loading
-plaited-improve trial '{"adapterPath":"./my-adapter.ts","promptsPath":"prompts.jsonl","k":5}'
+plaited eval '{"adapterPath":"./my-adapter.ts","promptsPath":"prompts.jsonl","k":5}'
 
 # Library: function-based (primary)
 import { runTrial } from './src/improve.ts'

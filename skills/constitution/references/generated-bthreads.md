@@ -26,7 +26,7 @@ Layer 1: TypeScript Type Check (bun --bun tsc --noEmit)
   │  CATCHES: wrong types, missing fields, bad imports, structural errors
   │
   ▼
-Layer 2: LSP Static Analysis (plaited typescript-lsp)
+Layer 2: LSP Static Analysis (typescript-lsp skill)
   │  No imports outside allowed modules (behavioral types, agent constants)
   │  Exported symbols match expected factory shape
   │  No side effects in factory (no fetch, no fs, no Bun.$)
@@ -40,7 +40,7 @@ Layer 3: Generated Test Execution (bun test)
   │  CATCHES: behavioral errors, wrong blocking logic, infinite loops
   │
   ▼
-Layer 4: Trial/Grader Evaluation (plaited-improve trial)
+Layer 4: Trial/Grader Evaluation (plaited eval)
   │  Run k=10 attempts of "generate bThread for goal X"
   │  Grader: does generated thread pass tsc + bun test?
   │  pass@k = capability, pass^k = reliability
