@@ -30,7 +30,6 @@ import type {
   UpdateFactoriesDetail,
   UpdateFactoriesErrorDetail,
 } from './agent.schemas.ts'
-import type { HeartbeatHandle } from './proactive.ts'
 
 /**
  * Initial heartbeat configuration for an agent.
@@ -772,8 +771,6 @@ export type AgentNode = {
   subscribe: (handlers: DefaultHandlers) => Disconnect
   snapshot: (listener: SnapshotListener) => Disconnect
   destroy: () => void
-  /** Heartbeat handle for runtime interval control (present when proactive mode is enabled) */
-  heartbeat?: HeartbeatHandle
 }
 
 // ============================================================================
