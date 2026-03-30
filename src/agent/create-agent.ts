@@ -72,6 +72,8 @@ const installFactory = async ({
  */
 export const createAgent = async ({
   id: _id,
+  cwd: _cwd = process.cwd(),
+  env: _env = {},
   factories = [],
   restrictedTriggers = [],
   heartbeat,

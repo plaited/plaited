@@ -166,6 +166,7 @@ export default function worktreeGuardExtension(pi: ExtensionAPI) {
 
       const result = await searchHypergraph(parsed, {
         workspace: ctx.cwd,
+        env: {},
         signal: signal ?? AbortSignal.timeout(10_000),
       })
 

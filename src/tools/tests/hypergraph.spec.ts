@@ -40,6 +40,7 @@ const FIXTURES_DIR = resolve(import.meta.dir, 'fixtures/hypergraph')
 
 const ctx: ToolContext = {
   workspace: resolve(import.meta.dir, 'fixtures'),
+  env: {},
   signal: AbortSignal.timeout(30_000),
 }
 

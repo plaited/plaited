@@ -1,8 +1,9 @@
 import { extname, relative, resolve } from 'node:path'
 import { $ } from 'bun'
-import { RISK_TAG } from '../agent/agent.constants.ts'
-import type { ToolHandler } from '../agent/agent.types.ts'
-import { ensureTool, makeCli } from './cli.utils.ts'
+import { ensureTool, makeCli } from '../tools/cli.utils.ts'
+import { truncateHead, truncateTail } from '../tools/truncate.ts'
+import { RISK_TAG } from './agent.constants.ts'
+import type { ToolHandler } from './agent.types.ts'
 import {
   BashConfigSchema,
   EditFileConfigSchema,
@@ -11,7 +12,6 @@ import {
   ReadFileConfigSchema,
   WriteFileConfigSchema,
 } from './crud.schemas.ts'
-import { truncateHead, truncateTail } from './truncate.ts'
 
 // ============================================================================
 // Constants
@@ -38,29 +38,15 @@ const LOADER_MAP: Record<string, 'ts' | 'tsx' | 'js' | 'jsx'> = {
   '.jsx': 'jsx',
 }
 
-/** Pattern matching the start of a top-level export declaration. */
 const EXPORT_DECL_RE =
   /^export\s+(?:default\s+)?(?:const|let|var|function|class|type|interface|enum|abstract|async\s+function)\s+/m
 
-/**
- * Normalize whitespace: trim trailing whitespace per line.
- * This handles the common case where a model produces old_string
- * with slightly different trailing spaces/tabs.
- */
 const normalize = (s: string) =>
   s
     .split('\n')
     .map((l) => l.trimEnd())
     .join('\n')
 
-/**
- * Find the source range of an exported symbol by name.
- *
- * @remarks
- * Uses `Bun.Transpiler.scan()` to verify the symbol exists as an export,
- * then locates its declaration via regex. Returns the byte offset range
- * from the declaration start to the next top-level export (or EOF).
- */
 const findSymbolRange = (content: string, symbol: string, ext: string): { start: number; end: number } | undefined => {
   const loader = LOADER_MAP[ext]
   if (!loader) return undefined
@@ -69,7 +55,6 @@ const findSymbolRange = (content: string, symbol: string, ext: string): { start:
   const { exports } = transpiler.scan(content)
   if (!exports.includes(symbol)) return undefined
 
-  // Build regex to find this specific export declaration
   const escaped = symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const symbolRe = new RegExp(
     `^export\\s+(?:default\\s+)?(?:const|let|var|function|class|type|interface|enum|abstract\\s+class|async\\s+function)\\s+${escaped}\\b`,
@@ -79,8 +64,6 @@ const findSymbolRange = (content: string, symbol: string, ext: string): { start:
   if (!match) return undefined
 
   const start = match.index
-
-  // Find the next top-level export declaration after this one
   const rest = content.slice(start + match[0].length)
   const nextExport = EXPORT_DECL_RE.exec(rest)
   const end = nextExport ? start + match[0].length + nextExport.index : content.length
@@ -88,86 +71,6 @@ const findSymbolRange = (content: string, symbol: string, ext: string): { start:
   return { start, end }
 }
 
-/**
- * Find `oldString` in `content`, applying fallback strategies:
- * 1. Symbol-scoped exact match (if `symbol` provided)
- * 2. Full-file exact match
- * 3. Whitespace-normalized match (trimEnd per line)
- *
- * Returns `{ index, length }` of the match in the original content,
- * or throws with a descriptive error.
- */
-const findEditTarget = (
-  content: string,
-  oldString: string,
-  path: string,
-  symbol?: string,
-): { index: number; length: number } => {
-  const ext = extname(path)
-
-  // Strategy 1: symbol-scoped search
-  if (symbol) {
-    const range = findSymbolRange(content, symbol, ext)
-    if (!range) {
-      throw new Error(`Symbol '${symbol}' not found as export in ${path}`)
-    }
-    const scoped = content.slice(range.start, range.end)
-    const idx = scoped.indexOf(oldString)
-    if (idx !== -1) {
-      const secondIdx = scoped.indexOf(oldString, idx + 1)
-      if (secondIdx !== -1) {
-        throw new Error(`old_string is not unique within symbol '${symbol}' in ${path}`)
-      }
-      return { index: range.start + idx, length: oldString.length }
-    }
-    // Symbol found but exact match failed — try normalized within range
-    const normScoped = normalize(scoped)
-    const normOld = normalize(oldString)
-    const normIdx = normScoped.indexOf(normOld)
-    if (normIdx !== -1) {
-      const secondNormIdx = normScoped.indexOf(normOld, normIdx + 1)
-      if (secondNormIdx !== -1) {
-        throw new Error(`old_string is not unique (after normalization) within symbol '${symbol}' in ${path}`)
-      }
-      return mapNormalizedMatch(range.start, scoped, normIdx, normOld.length)
-    }
-    throw new Error(`old_string not found within symbol '${symbol}' in ${path}`)
-  }
-
-  // Strategy 2: full-file exact match
-  const firstIdx = content.indexOf(oldString)
-  if (firstIdx !== -1) {
-    const secondIdx = content.indexOf(oldString, firstIdx + 1)
-    if (secondIdx !== -1) {
-      throw new Error(`old_string is not unique in ${path} (found at positions ${firstIdx} and ${secondIdx})`)
-    }
-    return { index: firstIdx, length: oldString.length }
-  }
-
-  // Strategy 3: whitespace-normalized match
-  const normContent = normalize(content)
-  const normOld = normalize(oldString)
-  const normIdx = normContent.indexOf(normOld)
-  if (normIdx !== -1) {
-    const secondNormIdx = normContent.indexOf(normOld, normIdx + 1)
-    if (secondNormIdx !== -1) {
-      throw new Error(`old_string is not unique in ${path} (found after whitespace normalization)`)
-    }
-    return mapNormalizedMatch(0, content, normIdx, normOld.length)
-  }
-
-  throw new Error(`old_string not found in ${path}`)
-}
-
-/**
- * Map a match found in normalized text back to the original content.
- *
- * @remarks
- * Since normalization only does `trimEnd()` per line, line structure and
- * within-line column positions are preserved. We find which line/column
- * the normalized match starts and ends at, then convert those coordinates
- * back to original byte offsets using original line lengths.
- */
 const mapNormalizedMatch = (
   baseOffset: number,
   originalSlice: string,
@@ -177,7 +80,6 @@ const mapNormalizedMatch = (
   const origLines = originalSlice.split('\n')
   const normEnd = normMatchIndex + normMatchLength
 
-  // Find (line, col) in normalized space for both start and end
   let normPos = 0
   let startLine = 0
   let startCol = 0
@@ -202,17 +104,15 @@ const mapNormalizedMatch = (
       break
     }
 
-    normPos += trimmedLen + 1 // +1 for the \n separator
+    normPos += trimmedLen + 1
   }
 
-  // Convert (line, col) → byte offset in original text
   const toOrigOffset = (line: number, col: number): number => {
     let offset = 0
     for (let i = 0; i < line; i++) {
-      offset += origLines[i]!.length + 1 // full original line + \n
+      offset += origLines[i]!.length + 1
     }
     const trimmedLen = origLines[line]!.trimEnd().length
-    // If col lands on the \n (col == trimmedLen), map to original \n position
     return offset + (col >= trimmedLen ? origLines[line]!.length : col)
   }
 
@@ -222,10 +122,64 @@ const mapNormalizedMatch = (
   return { index: baseOffset + origStart, length: origEnd - origStart }
 }
 
-/**
- * Validate that updated content still parses (JS/TS files only).
- * Uses Bun.Transpiler.scan() which throws on syntax errors.
- */
+const findEditTarget = (
+  content: string,
+  oldString: string,
+  path: string,
+  symbol?: string,
+): { index: number; length: number } => {
+  const ext = extname(path)
+
+  if (symbol) {
+    const range = findSymbolRange(content, symbol, ext)
+    if (!range) {
+      throw new Error(`Symbol '${symbol}' not found as export in ${path}`)
+    }
+    const scoped = content.slice(range.start, range.end)
+    const idx = scoped.indexOf(oldString)
+    if (idx !== -1) {
+      const secondIdx = scoped.indexOf(oldString, idx + 1)
+      if (secondIdx !== -1) {
+        throw new Error(`old_string is not unique within symbol '${symbol}' in ${path}`)
+      }
+      return { index: range.start + idx, length: oldString.length }
+    }
+    const normScoped = normalize(scoped)
+    const normOld = normalize(oldString)
+    const normIdx = normScoped.indexOf(normOld)
+    if (normIdx !== -1) {
+      const secondNormIdx = normScoped.indexOf(normOld, normIdx + 1)
+      if (secondNormIdx !== -1) {
+        throw new Error(`old_string is not unique (after normalization) within symbol '${symbol}' in ${path}`)
+      }
+      return mapNormalizedMatch(range.start, scoped, normIdx, normOld.length)
+    }
+    throw new Error(`old_string not found within symbol '${symbol}' in ${path}`)
+  }
+
+  const firstIdx = content.indexOf(oldString)
+  if (firstIdx !== -1) {
+    const secondIdx = content.indexOf(oldString, firstIdx + 1)
+    if (secondIdx !== -1) {
+      throw new Error(`old_string is not unique in ${path} (found at positions ${firstIdx} and ${secondIdx})`)
+    }
+    return { index: firstIdx, length: oldString.length }
+  }
+
+  const normContent = normalize(content)
+  const normOld = normalize(oldString)
+  const normIdx = normContent.indexOf(normOld)
+  if (normIdx !== -1) {
+    const secondNormIdx = normContent.indexOf(normOld, normIdx + 1)
+    if (secondNormIdx !== -1) {
+      throw new Error(`old_string is not unique in ${path} (found after whitespace normalization)`)
+    }
+    return mapNormalizedMatch(0, content, normIdx, normOld.length)
+  }
+
+  throw new Error(`old_string not found in ${path}`)
+}
+
 const validateSyntax = (content: string, path: string, ext: string): void => {
   const loader = LOADER_MAP[ext]
   if (!loader) return
@@ -237,76 +191,35 @@ const validateSyntax = (content: string, path: string, ext: string): void => {
   }
 }
 
-// ============================================================================
-// External Binary Dependencies — fail fast at module load
-// ============================================================================
-
 const RG_PATH = ensureTool('rg')
 
-// ============================================================================
-// Risk Tag Registry — static declarations per built-in tool
-// ============================================================================
-
-/**
- * Static risk tag declarations for built-in tools.
- *
- * @remarks
- * Gate bThread predicates inspect these tags to determine routing:
- * - `workspace`-only → execute directly (safe path)
- * - Empty tags → default-deny, routes to Simulate + Judge
- *
- * @public
- */
-export const BUILT_IN_RISK_TAGS: Record<string, string[]> = {
+export const AGENT_CRUD_RISK_TAGS: Record<string, string[]> = {
   read_file: [RISK_TAG.workspace],
   write_file: [RISK_TAG.workspace],
   edit_file: [RISK_TAG.workspace],
   list_files: [RISK_TAG.workspace],
   grep: [RISK_TAG.workspace],
-  bash: [], // empty → default-deny, routes to Simulate + Judge
+  bash: [],
 }
 
-// ============================================================================
-// Tool Handlers
-// ============================================================================
-
-/**
- * Read a file's contents with truncation and binary detection.
- *
- * @remarks
- * Three possible return shapes based on MIME type:
- * - `text` — file content with truncation metadata
- * - `image` — metadata only (attachment point for Vision model)
- * - `binary` — metadata only (no binary content in context)
- *
- * Supports `offset` (line-based, 0-indexed) and `limit` (line count)
- * for paginated reads of large files.
- *
- * @public
- */
 export const readFile: ToolHandler = async (args, ctx) => {
   const path = args.path as string
   const offset = args.offset as number | undefined
   const limit = args.limit as number | undefined
   const resolved = resolve(ctx.workspace, path)
   const file = Bun.file(resolved)
-
   const size = file.size
   const mime = file.type
 
-  // Image files: metadata only (Vision model attachment point)
   if (isImageMime(mime)) {
     return { type: 'image', path, mimeType: mime, size }
   }
 
-  // Non-text binary files: metadata only
   if (!isTextMime(mime)) {
     return { type: 'binary', path, mimeType: mime, size }
   }
 
-  // Text file: read, apply offset/limit, then truncate
   const text = await file.text()
-
   let content = text
   if (offset !== undefined || limit !== undefined) {
     const lines = text.split('\n')
@@ -315,15 +228,9 @@ export const readFile: ToolHandler = async (args, ctx) => {
     content = lines.slice(start, end).join('\n')
   }
 
-  const result = truncateHead(content)
-  return { type: 'text', path, ...result }
+  return { type: 'text', path, ...truncateHead(content) }
 }
 
-/**
- * Write content to a file, creating parent directories as needed.
- *
- * @public
- */
 export const writeFile: ToolHandler = async (args, ctx) => {
   const path = args.path as string
   const content = args.content as string
@@ -332,19 +239,6 @@ export const writeFile: ToolHandler = async (args, ctx) => {
   return { written: path, bytes: content.length }
 }
 
-/**
- * Replace a unique string in a file with new content.
- *
- * @remarks
- * Match strategy (in order):
- * 1. If `symbol` provided → scan() to verify export, search within symbol range
- * 2. Exact substring match (existing behavior)
- * 3. Whitespace-normalized match (trimEnd per line) as fallback
- *
- * After a successful edit on JS/TS files, validates syntax via scan().
- *
- * @public
- */
 export const editFile: ToolHandler = async (args, ctx) => {
   const path = args.path as string
   const oldString = args.old_string as string
@@ -354,10 +248,9 @@ export const editFile: ToolHandler = async (args, ctx) => {
 
   const content = await Bun.file(resolved).text()
   const { index, length } = findEditTarget(content, oldString, path, symbol)
-
   const updated = content.slice(0, index) + newString + content.slice(index + length)
-
   const ext = extname(path)
+
   if (TRANSPILABLE_EXTS.has(ext)) {
     validateSyntax(updated, path, ext)
   }
@@ -366,22 +259,13 @@ export const editFile: ToolHandler = async (args, ctx) => {
   return { edited: path, bytes: updated.length }
 }
 
-/**
- * List files and directories matching a glob pattern.
- *
- * @remarks
- * Returns entries enriched with file size and MIME type.
- * Results are capped at `limit` entries (default 1000) to prevent
- * unbounded output in large repositories.
- *
- * @public
- */
 export const listFiles: ToolHandler = async (args, ctx) => {
   const pattern = (args.pattern as string) ?? '**/*'
   const limit = (args.limit as number) ?? DEFAULT_LIST_LIMIT
   const glob = new Bun.Glob(pattern)
   const entries: Array<{ path: string; type: 'file' | 'directory'; size?: number; mimeType?: string }> = []
   let totalEntries = 0
+
   for await (const path of glob.scan({ cwd: ctx.workspace, onlyFiles: false })) {
     totalEntries++
     if (entries.length < limit) {
@@ -391,6 +275,7 @@ export const listFiles: ToolHandler = async (args, ctx) => {
       entries.push(isFile ? { path, type: 'file', size: ref.size, mimeType: ref.type } : { path, type: 'directory' })
     }
   }
+
   return {
     entries,
     truncated: totalEntries > limit,
@@ -399,17 +284,6 @@ export const listFiles: ToolHandler = async (args, ctx) => {
   }
 }
 
-/**
- * Search file contents using ripgrep with structured output.
- *
- * @remarks
- * Wraps `rg --json` and parses the JSONL output natively with `Bun.JSONL.parse()`.
- * Tagged `[workspace]` so read-only searches skip the simulate+judge pipeline.
- *
- * Uses the `rg` binary path resolved at module load time via `ensureTool('rg')`.
- *
- * @public
- */
 export const grep: ToolHandler = async (args, ctx) => {
   const pattern = args.pattern as string
   const searchPath = args.path ? resolve(ctx.workspace, args.path as string) : ctx.workspace
@@ -417,7 +291,6 @@ export const grep: ToolHandler = async (args, ctx) => {
 
   if (ctx.signal.aborted) throw new Error('Aborted')
 
-  // Build rg arguments
   const rgArgs = ['--json']
   if (args.ignoreCase) rgArgs.push('--ignore-case')
   if (args.literal) rgArgs.push('--fixed-strings')
@@ -426,7 +299,6 @@ export const grep: ToolHandler = async (args, ctx) => {
 
   const result = await $`${RG_PATH} ${rgArgs} ${pattern} ${searchPath}`.nothrow().quiet()
 
-  // rg exits 1 when no matches found — not an error
   if (result.exitCode !== 0 && result.exitCode !== 1) {
     throw new Error(result.stderr.toString().trim() || `rg exited with code ${result.exitCode}`)
   }
@@ -434,7 +306,6 @@ export const grep: ToolHandler = async (args, ctx) => {
   const stdout = result.stdout.toString()
   if (!stdout.trim()) return { matches: [], totalMatches: 0, truncated: false }
 
-  // Parse rg JSONL output — collect matches with optional context lines
   type GrepMatch = {
     path: string
     line: number
@@ -444,7 +315,6 @@ export const grep: ToolHandler = async (args, ctx) => {
 
   const matches: GrepMatch[] = []
   let totalMatches = 0
-  // Track context lines for the current match group
   let pendingBefore: string[] = []
   let lastMatch: GrepMatch | undefined
 
@@ -455,12 +325,10 @@ export const grep: ToolHandler = async (args, ctx) => {
       const lineNumber = record.data.line_number as number
 
       if (lastMatch && lineNumber > lastMatch.line) {
-        // Context after the last match
         lastMatch.context ??= {}
         lastMatch.context.after ??= []
         lastMatch.context.after.push(lineText)
       } else {
-        // Context before the next match
         pendingBefore.push(lineText)
       }
     } else if (record.type === 'match') {
@@ -470,7 +338,6 @@ export const grep: ToolHandler = async (args, ctx) => {
       const pathData = record.data.path as { text: string }
       const matchPath = relative(ctx.workspace, pathData.text)
       const lineText = ((record.data.lines as { text: string }).text ?? '').replace(/\n$/, '')
-
       const match: GrepMatch = {
         path: matchPath,
         line: record.data.line_number as number,
@@ -485,7 +352,6 @@ export const grep: ToolHandler = async (args, ctx) => {
       matches.push(match)
       lastMatch = match
     } else if (record.type === 'begin') {
-      // Reset context accumulation at file boundaries
       pendingBefore = []
       lastMatch = undefined
     }
@@ -494,25 +360,6 @@ export const grep: ToolHandler = async (args, ctx) => {
   return { matches, totalMatches, truncated: totalMatches > limit }
 }
 
-/**
- * Execute a shell command via Bun Shell.
- *
- * @remarks
- * Output is truncated from the tail (last N lines kept) since the
- * most recent output is usually the most relevant — build errors,
- * test results, final status lines.
- *
- * Uses `Bun.$` (not `/bin/sh`) for sandboxing:
- * - `.cwd(workspace)` locks working directory
- * - `.nothrow()` captures exit code without throwing
- * - `.quiet()` captures stdout/stderr as Buffers
- * - `{ raw: command }` passes the command string to Bun Shell's parser
- *
- * Constitution bThreads inspect the command at the Gate (Layer 1) before
- * execution reaches this handler.
- *
- * @public
- */
 export const bash: ToolHandler = async (args, ctx) => {
   const command = args.command as string
   if (ctx.signal.aborted) throw new Error('Aborted')
@@ -522,19 +369,11 @@ export const bash: ToolHandler = async (args, ctx) => {
   if (result.exitCode !== 0) {
     throw new Error(result.stderr.toString().trim() || `Command exited with code ${result.exitCode}`)
   }
-  const output = result.stdout.toString().trim()
-  return truncateTail(output)
+
+  return truncateTail(result.stdout.toString().trim())
 }
 
-/**
- * Built-in handler registry keyed by tool name.
- *
- * @remarks
- * Used by BP dispatch to look up handlers for `execute` events.
- *
- * @public
- */
-export const builtInHandlers: Record<string, ToolHandler> = {
+export const agentCrudHandlers: Record<string, ToolHandler> = {
   read_file: readFile,
   write_file: writeFile,
   edit_file: editFile,
@@ -542,10 +381,6 @@ export const builtInHandlers: Record<string, ToolHandler> = {
   grep,
   bash,
 }
-
-// ============================================================================
-// CLI Handlers (CLI tool pattern — thin wrappers over library handlers)
-// ============================================================================
 
 export const readFileCli = makeCli(readFile, ReadFileConfigSchema, 'read-file')
 export const writeFileCli = makeCli(writeFile, WriteFileConfigSchema, 'write-file')

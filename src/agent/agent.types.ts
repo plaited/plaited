@@ -76,6 +76,8 @@ export type AgentFactory = (
  */
 export type CreateAgentOptions = {
   id: string
+  cwd?: string
+  env?: Record<string, string>
   factories?: AgentFactory[]
   restrictedTriggers?: string[]
   heartbeat?: AgentHeartbeatConfig
@@ -284,6 +286,7 @@ export type Voice = {
  */
 export type ToolContext = {
   workspace: string
+  env: Record<string, string>
   signal: AbortSignal
 }
 
@@ -323,7 +326,8 @@ export type ToolExecutor = (toolCall: AgentToolCall, signal: AbortSignal) => Pro
  * @public
  */
 export type CreateLocalExecutorOptions = {
-  workspace: string
+  cwd: string
+  env?: Record<string, string>
   handlers: Record<string, ToolHandler>
 }
 

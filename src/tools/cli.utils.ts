@@ -11,6 +11,11 @@
 import * as z from 'zod'
 import type { ToolContext, ToolHandler } from '../agent/agent.types.ts'
 
+const getProcessEnv = (): Record<string, string> =>
+  Object.fromEntries(
+    Object.entries(process.env).filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
+  )
+
 // ============================================================================
 // External Binary Check
 // ============================================================================
@@ -182,7 +187,7 @@ export const makeCli =
       process.exit(2)
     }
 
-    const ctx: ToolContext = { workspace, signal: AbortSignal.timeout(timeout) }
+    const ctx: ToolContext = { workspace, env: getProcessEnv(), signal: AbortSignal.timeout(timeout) }
     try {
       const output = await handler(parsed.data as Record<string, unknown>, ctx)
       // biome-ignore lint/suspicious/noConsole: CLI stdout output

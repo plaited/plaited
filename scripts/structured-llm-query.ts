@@ -1,7 +1,7 @@
 import { isAbsolute, join, normalize } from 'node:path'
 import { z } from 'zod'
-import { ReadFileConfigSchema } from '../src/tools/crud.schemas.ts'
-import { readFile } from '../src/tools/crud.ts'
+import { ReadFileConfigSchema } from '../src/agent/crud.schemas.ts'
+import { readFile } from '../src/agent/crud.ts'
 import { HypergraphQuerySchema } from '../src/tools/hypergraph.schemas.ts'
 import { search as searchHypergraph } from '../src/tools/hypergraph.ts'
 import { extractFirstJsonObject, extractTaggedJsonObject } from './json-extract.ts'
@@ -136,6 +136,7 @@ const executeReadTool = async ({
 
   return readFile(parsed, {
     workspace: workspaceRoot,
+    env: {},
     signal: AbortSignal.timeout(5000),
   })
 }
@@ -168,6 +169,7 @@ const executeHypergraphTool = async ({
 
   return searchHypergraph(parsed, {
     workspace: workspaceRoot,
+    env: {},
     signal: AbortSignal.timeout(10_000),
   })
 }

@@ -974,7 +974,7 @@ export const searchToolDefinition: ToolDefinition = {
  */
 export const searchCli = async (args: string[]): Promise<void> => {
   const input = await parseCli(args, HypergraphQuerySchema, { name: 'search' })
-  const ctx = { workspace: process.cwd(), signal: AbortSignal.timeout(300_000) }
+  const ctx = { workspace: process.cwd(), env: {}, signal: AbortSignal.timeout(300_000) }
   try {
     const output = await search(input as Record<string, unknown>, ctx)
     // biome-ignore lint/suspicious/noConsole: CLI stdout output

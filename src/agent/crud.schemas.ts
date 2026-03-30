@@ -1,5 +1,5 @@
 import * as z from 'zod'
-import { TruncationResultSchema } from './truncate.ts'
+import { TruncationResultSchema } from '../tools/truncate.ts'
 
 // ============================================================================
 // Input Schemas

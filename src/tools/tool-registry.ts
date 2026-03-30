@@ -1,14 +1,12 @@
 /**
- * Unified tool registry — aggregates handlers, risk tags, and definitions
- * from all tool modules for agent dispatch.
+ * Unified tool registry for optional tool modules.
  *
  * @remarks
- * The agent loop imports from this module to resolve tool names to
- * implementations. Each tool module exports its own handler, risk tags,
- * and ToolDefinition; this registry merges them into a single lookup.
+ * Agent-core CRUD capability now lives under `src/agent`. This registry
+ * covers the remaining optional tool modules that may be exposed to
+ * factory-owned execution paths.
  *
  * Tool modules:
- * - `crud.ts` — file I/O and shell execution
  * - `typescript-lsp.ts` — LSP-based codebase analysis
  * - `hypergraph.ts` — hypergraph memory queries (JSON-LD + WASM)
  * - `embed-search.ts` — semantic embedding search over hypergraph memory
@@ -26,7 +24,6 @@
 import type { ToolDefinition } from '../agent/agent.schemas.ts'
 import type { ToolHandler } from '../agent/agent.types.ts'
 import { analyzeImageRiskTags, analyzeImageToolDefinition, createAnalyzeImageHandler } from './analyze-image.ts'
-import { BUILT_IN_RISK_TAGS, builtInHandlers } from './crud.ts'
 import { createEmbedSearchHandler, embedSearchRiskTags, embedSearchToolDefinition } from './embed-search.ts'
 import { search, searchRiskTags, searchToolDefinition } from './hypergraph.ts'
 import { getSkillLinks, skillLinksRiskTags, skillLinksToolDefinition } from './skill-links.ts'
@@ -53,7 +50,6 @@ import { validateEncoding, validateEncodingRiskTags, validateEncodingToolDefinit
  * @public
  */
 export const toolHandlers: Record<string, ToolHandler> = {
-  ...builtInHandlers,
   lsp: lspHandler,
   search,
   skill_links: getSkillLinks,
@@ -78,7 +74,6 @@ export const toolHandlers: Record<string, ToolHandler> = {
  * @public
  */
 export const toolRiskTags: Record<string, string[]> = {
-  ...BUILT_IN_RISK_TAGS,
   lsp: lspRiskTags,
   search: searchRiskTags,
   skill_links: skillLinksRiskTags,

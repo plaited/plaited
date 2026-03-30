@@ -12,7 +12,7 @@
  */
 
 // Agent tools (CRUD)
-import { bashCli, editFileCli, listFilesCli, readFileCli, writeFileCli } from './tools/crud.ts'
+import { bashCli, editFileCli, listFilesCli, readFileCli, writeFileCli } from './agent/crud.ts'
 import { ingestGoalCli } from './tools/ingest-goal.ts'
 import { ingestRulesCli } from './tools/ingest-rules.ts'
 import { ingestSkillCli } from './tools/ingest-skill.ts'

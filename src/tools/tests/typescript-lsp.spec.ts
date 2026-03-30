@@ -508,7 +508,7 @@ describe('lspRiskTags', () => {
 
 describe('lspHandler', () => {
   test('executes LSP operations via ToolHandler interface', async () => {
-    const ctx: ToolContext = { workspace: process.cwd(), signal: new AbortController().signal }
+    const ctx: ToolContext = { workspace: process.cwd(), env: {}, signal: new AbortController().signal }
     const result = (await lspHandler({ file: fixtureFile, operations: [{ type: 'symbols' }] }, ctx)) as LspOutput
     expect(result.file).toBe(fixtureFile)
     expect(result.results).toHaveLength(1)
@@ -517,7 +517,7 @@ describe('lspHandler', () => {
   })
 
   test('throws when signal is already aborted', async () => {
-    const ctx: ToolContext = { workspace: process.cwd(), signal: AbortSignal.abort() }
+    const ctx: ToolContext = { workspace: process.cwd(), env: {}, signal: AbortSignal.abort() }
     expect(lspHandler({ file: fixtureFile, operations: [{ type: 'symbols' }] }, ctx)).rejects.toThrow('Aborted')
   })
 })
