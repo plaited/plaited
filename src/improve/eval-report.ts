@@ -1,4 +1,4 @@
-import type { TrajectoryRichness, TrialEntry, TrialResult } from './trial.schemas.ts'
+import type { TrajectoryRichness, TrialEntry, TrialResult } from './eval.schemas.ts'
 
 const average = (values: number[]): number | undefined => {
   if (values.length === 0) {
@@ -137,7 +137,7 @@ type TrialThemeAccumulator = TrialThemeSummary & {
   scoreValues: number[]
 }
 
-export const summarizeTrialResults = (results: TrialResult[]): TrialRunSummary => {
+export const summarizeEvalResults = (results: TrialResult[]): TrialRunSummary => {
   const promptSummaries = results
     .map((result): TrialPromptSummary => {
       const scores = result.trials
@@ -296,7 +296,7 @@ const formatNumber = (value: number | undefined): string => {
   return value.toFixed(3)
 }
 
-export const formatTrialSummary = (summary: TrialRunSummary): string => {
+export const formatEvalSummary = (summary: TrialRunSummary): string => {
   const lines = [
     '# Trial Summary',
     '',

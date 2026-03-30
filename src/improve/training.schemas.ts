@@ -6,16 +6,16 @@
  * from agent and trial modules; adds training-specific scoring schemas.
  *
  * `DecisionStepSchema` imported from `src/agent/agent.schemas.ts` (canonical source).
- * `GradingDimensionsSchema` imported from `src/improve/trial.schemas.ts` (canonical source).
+ * `GradingDimensionsSchema` imported from `src/improve/eval.schemas.ts` (canonical source).
  *
  * @packageDocumentation
  */
 
 import * as z from 'zod'
-import { GradingDimensionsSchema, TrajectoryRichnessSchema } from './trial.schemas.ts'
+import { GradingDimensionsSchema, TrajectoryRichnessSchema } from './eval.schemas.ts'
 
 export { type DecisionStep, DecisionStepSchema } from '../agent/agent.schemas.ts'
-export { type GradingDimensions, GradingDimensionsSchema } from './trial.schemas.ts'
+export { type GradingDimensions, GradingDimensionsSchema } from './eval.schemas.ts'
 
 // ============================================================================
 // Training Score

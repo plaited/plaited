@@ -15,12 +15,12 @@ import { basename, dirname, join, relative, resolve } from 'node:path'
 import * as z from 'zod'
 import { parseCli } from '../cli.ts'
 import {
-  formatTrialSummary,
+  formatEvalSummary,
   loadAdapter,
   loadGrader,
   loadPrompts,
   runTrial,
-  summarizeTrialResults,
+  summarizeEvalResults,
   type TrialRunSummary,
 } from '../improve.ts'
 import { findSkillEvaluationSurface } from './skill.utils.ts'
@@ -254,7 +254,7 @@ const writeScenarioArtifacts = async ({
   run: SkillEvaluationRunArtifacts
 }): Promise<void> => {
   await Bun.write(run.summaryJsonPath, `${JSON.stringify(run.summary, null, 2)}\n`)
-  await Bun.write(run.summaryPath, formatTrialSummary(run.summary))
+  await Bun.write(run.summaryPath, formatEvalSummary(run.summary))
   await Bun.write(
     join(scenarioDir, 'run.json'),
     `${JSON.stringify(
@@ -561,7 +561,7 @@ const createScenarioRun = async ({
     progress,
   })
 
-  const summary = summarizeTrialResults(results)
+  const summary = summarizeEvalResults(results)
   const run: SkillEvaluationRunArtifacts = {
     label,
     cwd,

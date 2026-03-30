@@ -10,9 +10,9 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdir, stat, unlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import * as z from 'zod'
+import type { Adapter, Grader, GraderResult, PromptCase } from '../eval.schemas.ts'
+import { GraderResultSchema, GradingDimensionsSchema, TrialEntrySchema, TrialResultSchema } from '../eval.schemas.ts'
 import { calculatePassAtK, calculatePassExpK, EvalInputSchema, EvalOutputSchema, runTrial } from '../eval.ts'
-import type { Adapter, Grader, GraderResult, PromptCase } from '../trial.schemas.ts'
-import { GraderResultSchema, GradingDimensionsSchema, TrialEntrySchema, TrialResultSchema } from '../trial.schemas.ts'
 import {
   createWorkspaceDir,
   createWriteMutex,
@@ -24,7 +24,7 @@ import {
   resolvePath,
   runWorkerPool,
   withMetaVerification,
-} from '../trial.utils.ts'
+} from '../eval.utils.ts'
 
 // ============================================================================
 // Test Fixtures
@@ -1001,7 +1001,7 @@ describe('loadPolyglot', () => {
       })`,
     )
 
-    const { loadAdapter } = await import('../trial.utils.ts')
+    const { loadAdapter } = await import('../eval.utils.ts')
     const adapter = await loadAdapter(adapterPath)
     const result = await adapter({ prompt: 'hello' })
     expect(result.output).toBe('hello')
@@ -1017,7 +1017,7 @@ describe('loadPolyglot', () => {
       })`,
     )
 
-    const { loadGrader } = await import('../trial.utils.ts')
+    const { loadGrader } = await import('../eval.utils.ts')
     const grader = await loadGrader(graderPath)
     const result = await grader({ input: 'test', output: 'hello' })
     expect(result.pass).toBe(true)
@@ -1034,7 +1034,7 @@ describe('loadPolyglot', () => {
       })`,
     )
 
-    const { loadVerifier } = await import('../trial.utils.ts')
+    const { loadVerifier } = await import('../eval.utils.ts')
     const verifier = await loadVerifier(verifierPath)
     const result = await verifier({ pass: true, score: 1, reasoning: 'ok' })
     expect(result.confidence).toBe(0.95)
@@ -1045,12 +1045,12 @@ describe('loadPolyglot', () => {
     const badPath = tempFile('bad-module.ts')
     await Bun.write(badPath, 'export const wrong = () => {}')
 
-    const { loadAdapter } = await import('../trial.utils.ts')
+    const { loadAdapter } = await import('../eval.utils.ts')
     await expect(loadAdapter(badPath)).rejects.toThrow("Module must export a 'adapt' function")
   })
 
   test('rejects non-existent file', async () => {
-    const { loadAdapter } = await import('../trial.utils.ts')
+    const { loadAdapter } = await import('../eval.utils.ts')
     await expect(loadAdapter('/nonexistent/adapter.ts')).rejects.toThrow('File not found')
   })
 })

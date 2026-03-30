@@ -9,7 +9,6 @@
  */
 
 import { mkdir, rm } from 'node:fs/promises'
-import { MetaVerificationSchema } from './training.schemas.ts'
 import type {
   Adapter,
   CaptureEvidence,
@@ -18,8 +17,9 @@ import type {
   PromptCase,
   TrajectoryRichness,
   TrialResult,
-} from './trial.schemas.ts'
-import { AdapterResultSchema, GraderResultSchema, PromptCaseSchema, type TrajectoryStep } from './trial.schemas.ts'
+} from './eval.schemas.ts'
+import { AdapterResultSchema, GraderResultSchema, PromptCaseSchema, type TrajectoryStep } from './eval.schemas.ts'
+import { MetaVerificationSchema } from './training.schemas.ts'
 
 // ============================================================================
 // Path Resolution

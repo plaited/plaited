@@ -1,4 +1,35 @@
 export {
+  DEFAULT_K,
+  DEFAULT_TIMEOUT,
+} from './improve/eval.constants.ts'
+export {
+  type Adapter,
+  type AdapterInput,
+  AdapterInputSchema,
+  type AdapterResult,
+  AdapterResultSchema,
+  type CaptureEvidence,
+  CaptureEvidenceSchema,
+  type CaptureSnippet,
+  CaptureSnippetSchema,
+  type Grader,
+  type GraderResult,
+  GraderResultSchema,
+  type GradingDimensions,
+  type PromptCase,
+  PromptCaseSchema,
+  type Timing,
+  TimingSchema,
+  type TrajectoryRichness,
+  TrajectoryRichnessSchema,
+  type TrajectoryStep,
+  TrajectoryStepSchema,
+  type TrialEntry,
+  TrialEntrySchema,
+  type TrialResult,
+  TrialResultSchema,
+} from './improve/eval.schemas.ts'
+export {
   calculatePassAtK,
   calculatePassExpK,
   EvalInputSchema,
@@ -7,6 +38,23 @@ export {
   runTrial,
   type TrialConfig,
 } from './improve/eval.ts'
+export {
+  loadAdapter,
+  loadGrader,
+  loadJsonl,
+  loadPrompts,
+  loadVerifier,
+  persistTrialResults,
+  type Verifier,
+  withMetaVerification,
+} from './improve/eval.utils.ts'
+export {
+  formatEvalSummary,
+  summarizeEvalResults,
+  type TrialPromptSummary,
+  type TrialRunSummary,
+  type TrialThemeSummary,
+} from './improve/eval-report.ts'
 export {
   commitExperiment,
   discardExperiment,
@@ -77,54 +125,6 @@ export {
   trainingScoreCli,
   withStatisticalVerification,
 } from './improve/training.ts'
-export {
-  DEFAULT_K,
-  DEFAULT_TIMEOUT,
-} from './improve/trial.constants.ts'
-export {
-  type Adapter,
-  type AdapterInput,
-  AdapterInputSchema,
-  type AdapterResult,
-  AdapterResultSchema,
-  type CaptureEvidence,
-  CaptureEvidenceSchema,
-  type CaptureSnippet,
-  CaptureSnippetSchema,
-  type Grader,
-  type GraderResult,
-  GraderResultSchema,
-  type GradingDimensions,
-  type PromptCase,
-  PromptCaseSchema,
-  type Timing,
-  TimingSchema,
-  type TrajectoryRichness,
-  TrajectoryRichnessSchema,
-  type TrajectoryStep,
-  TrajectoryStepSchema,
-  type TrialEntry,
-  TrialEntrySchema,
-  type TrialResult,
-  TrialResultSchema,
-} from './improve/trial.schemas.ts'
-export {
-  loadAdapter,
-  loadGrader,
-  loadJsonl,
-  loadPrompts,
-  loadVerifier,
-  persistTrialResults,
-  type Verifier,
-  withMetaVerification,
-} from './improve/trial.utils.ts'
-export {
-  formatTrialSummary,
-  summarizeTrialResults,
-  type TrialPromptSummary,
-  type TrialRunSummary,
-  type TrialThemeSummary,
-} from './improve/trial-report.ts'
 export {
   buildWorkspaceImprovementJudgeInput,
   buildWorkspaceImprovementJudgePrompt,

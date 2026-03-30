@@ -1,6 +1,6 @@
 import * as z from 'zod'
 import { TrajectoryStepSchema } from '../agent/agent.schemas.ts'
-import { GraderResultSchema, PromptCaseSchema, TimingSchema } from './trial.schemas.ts'
+import { GraderResultSchema, PromptCaseSchema, TimingSchema } from './eval.schemas.ts'
 
 export const EvaluationTargetSchema = z.enum(['workspace-improvement', 'trial-result'])
 export type EvaluationTarget = z.infer<typeof EvaluationTargetSchema>

@@ -12,10 +12,9 @@
 
 import * as z from 'zod'
 import { parseCli } from '../cli.ts'
-import { assessTrainingCandidate } from './training.ts'
-import { DEFAULT_K, DEFAULT_TIMEOUT } from './trial.constants.ts'
-import type { Adapter, Grader, PromptCase, TrialEntry, TrialResult } from './trial.schemas.ts'
-import { TrialResultSchema } from './trial.schemas.ts'
+import { DEFAULT_K, DEFAULT_TIMEOUT } from './eval.constants.ts'
+import type { Adapter, Grader, PromptCase, TrialEntry, TrialResult } from './eval.schemas.ts'
+import { TrialResultSchema } from './eval.schemas.ts'
 import {
   createWorkspaceDir,
   createWriteMutex,
@@ -26,7 +25,8 @@ import {
   readStdinPrompts,
   runWorkerPool,
   writeOutput,
-} from './trial.utils.ts'
+} from './eval.utils.ts'
+import { assessTrainingCandidate } from './training.ts'
 
 // ============================================================================
 // Pass@k / Pass^k Calculation

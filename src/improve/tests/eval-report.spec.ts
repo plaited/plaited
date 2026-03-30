@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
-import type { TrialResult } from '../trial.schemas.ts'
-import { formatTrialSummary, summarizeTrialResults } from '../trial-report.ts'
+import type { TrialResult } from '../eval.schemas.ts'
+import { formatEvalSummary, summarizeEvalResults } from '../eval-report.ts'
 
-describe('summarizeTrialResults', () => {
+describe('summarizeEvalResults', () => {
   test('aggregates prompt and theme scores', () => {
     const results: TrialResult[] = [
       {
@@ -79,7 +79,7 @@ describe('summarizeTrialResults', () => {
       },
     ]
 
-    const summary = summarizeTrialResults(results)
+    const summary = summarizeEvalResults(results)
 
     expect(summary.promptCount).toBe(2)
     expect(summary.totalTrials).toBe(3)
@@ -103,9 +103,9 @@ describe('summarizeTrialResults', () => {
   })
 })
 
-describe('formatTrialSummary', () => {
+describe('formatEvalSummary', () => {
   test('renders a readable markdown summary', () => {
-    const output = formatTrialSummary({
+    const output = formatEvalSummary({
       promptCount: 1,
       totalTrials: 2,
       passedTrials: 1,

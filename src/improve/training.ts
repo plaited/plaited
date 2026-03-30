@@ -12,6 +12,15 @@
  */
 
 import { parseCli } from '../cli.ts'
+import type {
+  CaptureEvidence,
+  Grader,
+  GradingDimensions,
+  TrajectoryRichness,
+  TrialEntry,
+  TrialResult,
+} from './eval.schemas.ts'
+import { detectRichness, hasToolErrors } from './eval.utils.ts'
 import {
   type MetaVerification,
   type TrainingCandidateAssessment,
@@ -20,15 +29,6 @@ import {
   TrainingScoreInputSchema,
   TrainingScoreOutputSchema,
 } from './training.schemas.ts'
-import type {
-  CaptureEvidence,
-  Grader,
-  GradingDimensions,
-  TrajectoryRichness,
-  TrialEntry,
-  TrialResult,
-} from './trial.schemas.ts'
-import { detectRichness, hasToolErrors } from './trial.utils.ts'
 
 // ============================================================================
 // Training Weight
@@ -233,7 +233,7 @@ export const collectTrainingCandidates = (results: TrialResult[]): TrainingDataC
  * Meta-verification data is stored in `outcome._metaVerification`.
  *
  * This differs from the verifier-based `withStatisticalVerification` in
- * `trial.utils.ts` — that version runs a separate verifier function once.
+ * `eval.utils.ts` — that version runs a separate verifier function once.
  * This version runs the grader itself k times for statistical analysis.
  *
  * @public

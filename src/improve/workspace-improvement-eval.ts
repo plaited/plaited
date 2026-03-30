@@ -1,11 +1,11 @@
 import * as z from 'zod'
+import type { GraderResult } from './eval.schemas.ts'
 import {
   type WorkspaceImprovementJudgeInput,
   WorkspaceImprovementJudgeInputSchema,
   type WorkspaceImprovementJudgeOutcome,
   WorkspaceImprovementJudgeOutcomeSchema,
 } from './judge-contracts.ts'
-import type { GraderResult } from './trial.schemas.ts'
 
 export const WorkspaceImprovementJudgeResponseSchema = z.object({
   pass: z.boolean(),
