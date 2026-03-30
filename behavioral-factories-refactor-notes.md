@@ -855,14 +855,27 @@ and avoid:
 - promotion logic
 - managed topology defaults
 
-## Immediate Next Refactor Steps
+## Next Session
 
-1. Trim `src/runtime` first:
-   - retain substrate
-   - move/remove policy and domain coupling
-2. Then rewrite `src/agent` around:
-   - `create-agent.ts`
-   - `agent.types.ts`
-   - `agent.schemas.ts`
-   - `agent.constants.ts` only if still generic
-3. Then let factories progressively replace the old hardcoded behavior.
+Current `src/improve` direction is now:
+
+- `eval.ts`
+  - evaluation-only output
+- `judge-contracts.ts`
+  - judge, verifier, self-verification, and retained-output contracts
+- `attempt-evaluation.ts`
+  - judged attempt, meta-verifier, and promotion prompt helpers
+- `research-program.ts`
+  - singular `program.md` loading, scope parsing, and stage logging
+- `evolution.ts`
+  - selection signals, promotion helpers, and retained-artifact collection
+
+The old `training.ts` / `training-score` lane is removed.
+
+Recommended next focus:
+
+1. Continue tooling for `dev-research/evolutionary-agent/program.md`
+2. Review whether `scripts/autoresearch-runner.ts` should stay script-first for
+   now or expose a thinner reusable improve boundary
+3. Revisit `src/agent` / bootstrap only after the evolutionary tooling surface
+   is stable enough to drive agent-led improvement loops
