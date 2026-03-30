@@ -39,9 +39,66 @@ export const UpdateFactoriesErrorDetailSchema = z.object({
   error: z.string(),
 })
 
+const RuntimeSqlParamsSchema = z.union([z.array(z.unknown()), z.record(z.string(), z.unknown())])
+
+export const RuntimeSqlRequestDetailSchema = z.object({
+  requestId: z.string().min(1),
+  sql: z.string().min(1),
+  params: RuntimeSqlParamsSchema.optional(),
+})
+
+export const RuntimeSqlFinalizeDetailSchema = z.object({
+  requestId: z.string().min(1),
+  sql: z.string().min(1),
+})
+
+export const RuntimeSqlRanDetailSchema = z.object({
+  requestId: z.string().min(1),
+  sql: z.string().min(1),
+  changes: z.number().int().nonnegative().optional(),
+  lastInsertRowid: z.union([z.number(), z.string()]).optional(),
+})
+
+export const RuntimeSqlRowDetailSchema = z.object({
+  requestId: z.string().min(1),
+  sql: z.string().min(1),
+  row: z.record(z.string(), z.unknown()).nullable(),
+})
+
+export const RuntimeSqlRowsDetailSchema = z.object({
+  requestId: z.string().min(1),
+  sql: z.string().min(1),
+  rows: z.array(z.record(z.string(), z.unknown())),
+})
+
+export const RuntimeSqlValuesResultDetailSchema = z.object({
+  requestId: z.string().min(1),
+  sql: z.string().min(1),
+  rows: z.array(z.array(z.unknown())),
+})
+
+export const RuntimeSqlFinalizedDetailSchema = z.object({
+  requestId: z.string().min(1),
+  sql: z.string().min(1),
+})
+
+export const RuntimeSqlErrorDetailSchema = z.object({
+  requestId: z.string().min(1),
+  sql: z.string().min(1),
+  error: z.string(),
+})
+
 export type UpdateFactoriesDetail = z.infer<typeof UpdateFactoriesDetailSchema>
 export type FactoriesUpdatedDetail = z.infer<typeof FactoriesUpdatedDetailSchema>
 export type UpdateFactoriesErrorDetail = z.infer<typeof UpdateFactoriesErrorDetailSchema>
+export type RuntimeSqlRequestDetail = z.infer<typeof RuntimeSqlRequestDetailSchema>
+export type RuntimeSqlFinalizeDetail = z.infer<typeof RuntimeSqlFinalizeDetailSchema>
+export type RuntimeSqlRanDetail = z.infer<typeof RuntimeSqlRanDetailSchema>
+export type RuntimeSqlRowDetail = z.infer<typeof RuntimeSqlRowDetailSchema>
+export type RuntimeSqlRowsDetail = z.infer<typeof RuntimeSqlRowsDetailSchema>
+export type RuntimeSqlValuesResultDetail = z.infer<typeof RuntimeSqlValuesResultDetailSchema>
+export type RuntimeSqlFinalizedDetail = z.infer<typeof RuntimeSqlFinalizedDetailSchema>
+export type RuntimeSqlErrorDetail = z.infer<typeof RuntimeSqlErrorDetailSchema>
 
 // ============================================================================
 // Agent Tool Call Schemas

@@ -77,3 +77,19 @@ export type CreateSimulationEvaluationFactoryOptions = {
  * @public
  */
 export type SimulationEvaluationFactoryCreator = (options: CreateSimulationEvaluationFactoryOptions) => AgentFactory
+
+/**
+ * Options for creating a runtime snapshot capture factory.
+ *
+ * @public
+ */
+export type CreateSnapshotContextFactoryOptions = {
+  tableName?: string
+}
+
+/**
+ * Factory creator that records snapshots into runtime SQLite context.
+ *
+ * @public
+ */
+export type SnapshotContextFactoryCreator = (options?: CreateSnapshotContextFactoryOptions) => AgentFactory

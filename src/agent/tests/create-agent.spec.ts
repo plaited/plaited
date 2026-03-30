@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-
+import { createSnapshotContextFactory } from '../../factories/create-snapshot-context-factory.ts'
 import { AGENT_CORE_EVENTS } from '../agent.constants.ts'
 import { createAgent } from '../create-agent.ts'
 import { spawnAgent } from '../spawn-agent.ts'
@@ -83,6 +83,90 @@ describe('createAgent', () => {
     agent.restrictedTrigger({ type: 'fixture_ping' })
 
     expect(seen).toEqual([`updated:${moduleUrl}`, 'fixture_pong'])
+  })
+
+  test('executes runtime SQLite requests through engine handlers', async () => {
+    let resolveRows!: (rows: Array<Record<string, unknown>>) => void
+    const rowsSeen = new Promise<Array<Record<string, unknown>>>((resolve) => {
+      resolveRows = resolve
+    })
+
+    const agent = await createAgent({
+      id: 'agent:sqlite',
+      factories: [
+        () => ({
+          handlers: {
+            [AGENT_CORE_EVENTS.runtime_sql_rows](detail) {
+              resolveRows((detail as { rows: Array<Record<string, unknown>> }).rows)
+            },
+          },
+        }),
+      ],
+    })
+
+    agent.restrictedTrigger({
+      type: AGENT_CORE_EVENTS.runtime_sql_run,
+      detail: {
+        requestId: 'insert-1',
+        sql: 'INSERT INTO runtime_snapshots (snapshot_kind, created_at, payload_json) VALUES (?, ?, ?)',
+        params: ['selection', '2026-03-29T00:00:00.000Z', '{"kind":"selection"}'],
+      },
+    })
+
+    agent.restrictedTrigger({
+      type: AGENT_CORE_EVENTS.runtime_sql_all,
+      detail: {
+        requestId: 'select-1',
+        sql: 'SELECT snapshot_kind, payload_json FROM runtime_snapshots ORDER BY id ASC',
+      },
+    })
+
+    const rows = await rowsSeen
+
+    expect(rows).toHaveLength(1)
+    expect(rows[0]?.snapshot_kind).toBe('selection')
+    expect(rows[0]?.payload_json).toBe('{"kind":"selection"}')
+  })
+
+  test('records snapshots into runtime SQLite through the snapshot context factory', async () => {
+    let resolveRows!: (rows: Array<Record<string, unknown>>) => void
+    const rowsSeen = new Promise<Array<Record<string, unknown>>>((resolve) => {
+      resolveRows = resolve
+    })
+
+    const agent = await createAgent({
+      id: 'agent:snapshots',
+      restrictedTriggers: [AGENT_CORE_EVENTS.agent_disconnect],
+      factories: [
+        createSnapshotContextFactory(),
+        () => ({
+          handlers: {
+            [AGENT_CORE_EVENTS.runtime_sql_rows](detail) {
+              resolveRows((detail as { rows: Array<Record<string, unknown>> }).rows)
+            },
+          },
+        }),
+      ],
+    })
+
+    agent.restrictedTrigger({
+      type: AGENT_CORE_EVENTS.agent_disconnect,
+    })
+
+    await Bun.sleep(0)
+
+    agent.restrictedTrigger({
+      type: AGENT_CORE_EVENTS.runtime_sql_all,
+      detail: {
+        requestId: 'snapshots-1',
+        sql: 'SELECT snapshot_kind, payload_json FROM runtime_snapshots ORDER BY id ASC',
+      },
+    })
+
+    const rows = await rowsSeen
+
+    expect(rows.length).toBeGreaterThan(0)
+    expect(rows.some((row) => row.snapshot_kind === 'restricted_trigger_error')).toBe(true)
   })
 })
 

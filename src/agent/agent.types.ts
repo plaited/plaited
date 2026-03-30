@@ -17,6 +17,14 @@ import type {
   FactoriesUpdatedDetail,
   GateDecision,
   ModelUsage,
+  RuntimeSqlErrorDetail,
+  RuntimeSqlFinalizeDetail,
+  RuntimeSqlFinalizedDetail,
+  RuntimeSqlRanDetail,
+  RuntimeSqlRequestDetail,
+  RuntimeSqlRowDetail,
+  RuntimeSqlRowsDetail,
+  RuntimeSqlValuesResultDetail,
   ToolDefinition,
   ToolResult,
   UpdateFactoriesDetail,
@@ -102,6 +110,21 @@ export type SpawnedAgentHandle = AgentHandle & {
   id: string
   disconnectSnapshot?: Disconnect
 }
+
+export type RuntimeSqlParams = RuntimeSqlRequestDetail['params']
+export type RuntimeSqlRunDetail = RuntimeSqlRequestDetail
+export type RuntimeSqlGetDetail = RuntimeSqlRequestDetail
+export type RuntimeSqlAllDetail = RuntimeSqlRequestDetail
+export type RuntimeSqlValuesDetail = RuntimeSqlRequestDetail
+export type RuntimeSqlIterateDetail = RuntimeSqlRequestDetail
+export type RuntimeSqlFinalizeRequestDetail = RuntimeSqlFinalizeDetail
+export type RuntimeSqlRunResultDetail = RuntimeSqlRanDetail
+export type RuntimeSqlGetResultDetail = RuntimeSqlRowDetail
+export type RuntimeSqlAllResultDetail = RuntimeSqlRowsDetail
+export type RuntimeSqlIterateResultDetail = RuntimeSqlRowsDetail
+export type RuntimeSqlValuesDetailResult = RuntimeSqlValuesResultDetail
+export type RuntimeSqlFinalizeResultDetail = RuntimeSqlFinalizedDetail
+export type RuntimeSqlFailureDetail = RuntimeSqlErrorDetail
 
 // ============================================================================
 // Model Interface — streaming inference (from pi-mono audit decisions)
