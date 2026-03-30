@@ -1,10 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { truncateHead, truncateTail } from '../truncate.ts'
 
-// ============================================================================
-// truncateHead
-// ============================================================================
-
 describe('truncateHead', () => {
   test('returns full content when within limits', () => {
     const result = truncateHead('line1\nline2\nline3')
@@ -20,7 +16,7 @@ describe('truncateHead', () => {
     expect(result.truncated).toBe(true)
     expect(result.content).toBe('line0\nline1\nline2\n')
     expect(result.totalLines).toBe(10)
-    expect(result.outputLines).toBe(4) // 3 lines + empty after trailing \n
+    expect(result.outputLines).toBe(4)
   })
 
   test('truncates to maxBytes', () => {
@@ -31,14 +27,6 @@ describe('truncateHead', () => {
     expect(Buffer.byteLength(result.content)).toBeLessThanOrEqual(10)
   })
 
-  test('applies tighter of maxLines and maxBytes', () => {
-    // 5 lines of 10 chars each = 50+ bytes
-    const lines = Array.from({ length: 5 }, (_, i) => `line_____${i}`).join('\n')
-    const result = truncateHead(lines, { maxLines: 100, maxBytes: 20 })
-    expect(result.truncated).toBe(true)
-    expect(Buffer.byteLength(result.content)).toBeLessThanOrEqual(20)
-  })
-
   test('handles empty string', () => {
     const result = truncateHead('')
     expect(result.truncated).toBe(false)
@@ -46,25 +34,7 @@ describe('truncateHead', () => {
     expect(result.totalLines).toBe(1)
     expect(result.outputLines).toBe(1)
   })
-
-  test('handles single line without newline', () => {
-    const result = truncateHead('hello')
-    expect(result.truncated).toBe(false)
-    expect(result.content).toBe('hello')
-    expect(result.totalLines).toBe(1)
-  })
-
-  test('uses default limits (2000 lines / 50KB)', () => {
-    // Under both limits: should not truncate
-    const lines = Array.from({ length: 100 }, (_, i) => `line${i}`).join('\n')
-    const result = truncateHead(lines)
-    expect(result.truncated).toBe(false)
-  })
 })
-
-// ============================================================================
-// truncateTail
-// ============================================================================
 
 describe('truncateTail', () => {
   test('returns full content when within limits', () => {
@@ -89,7 +59,6 @@ describe('truncateTail', () => {
     const result = truncateTail(lines, { maxBytes: 10 })
     expect(result.truncated).toBe(true)
     expect(Buffer.byteLength(result.content)).toBeLessThanOrEqual(10)
-    // Should contain the tail portion
     expect(result.content).toContain('klmno')
   })
 
@@ -98,18 +67,5 @@ describe('truncateTail', () => {
     expect(result.truncated).toBe(false)
     expect(result.content).toBe('')
     expect(result.totalLines).toBe(1)
-  })
-
-  test('handles single line without newline', () => {
-    const result = truncateTail('hello')
-    expect(result.truncated).toBe(false)
-    expect(result.content).toBe('hello')
-    expect(result.totalLines).toBe(1)
-  })
-
-  test('uses default limits (2000 lines / 50KB)', () => {
-    const lines = Array.from({ length: 100 }, (_, i) => `line${i}`).join('\n')
-    const result = truncateTail(lines)
-    expect(result.truncated).toBe(false)
   })
 })

@@ -1,7 +1,6 @@
 import { extname, relative, resolve } from 'node:path'
 import { $ } from 'bun'
 import { ensureTool, makeCli } from '../tools/cli.utils.ts'
-import { truncateHead, truncateTail } from '../tools/truncate.ts'
 import { RISK_TAG } from './agent.constants.ts'
 import type { ToolHandler } from './agent.types.ts'
 import {
@@ -12,6 +11,7 @@ import {
   ReadFileConfigSchema,
   WriteFileConfigSchema,
 } from './crud.schemas.ts'
+import { truncateHead, truncateTail } from './truncate.ts'
 
 // ============================================================================
 // Constants

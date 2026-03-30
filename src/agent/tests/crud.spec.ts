@@ -2,7 +2,6 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { TruncationResult } from '../../tools/truncate.ts'
 import { RISK_TAG } from '../agent.constants.ts'
 import type { ToolContext } from '../agent.types.ts'
 import {
@@ -15,6 +14,7 @@ import {
   readFile,
   writeFile,
 } from '../crud.ts'
+import type { TruncationResult } from '../truncate.ts'
 
 let workspace: string
 let ctx: ToolContext
