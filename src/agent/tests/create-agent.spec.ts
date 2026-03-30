@@ -1,4 +1,7 @@
 import { describe, expect, test } from 'bun:test'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { createSnapshotContextFactory } from '../../factories/create-snapshot-context-factory.ts'
 import { AGENT_CORE_EVENTS } from '../agent.constants.ts'
 import { createAgent } from '../create-agent.ts'
@@ -167,6 +170,54 @@ describe('createAgent', () => {
 
     expect(rows.length).toBeGreaterThan(0)
     expect(rows.some((row) => row.snapshot_kind === 'restricted_trigger_error')).toBe(true)
+  })
+
+  test('executes built-in CRUD through core tool events using cwd context', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'plaited-agent-tool-'))
+    await Bun.write(`${workspace}/hello.txt`, 'hello from agent')
+
+    let resolveResult!: (result: { result: { output?: unknown } }) => void
+    const resultSeen = new Promise<{ result: { output?: unknown } }>((resolve) => {
+      resolveResult = resolve
+    })
+
+    const agent = await createAgent({
+      id: 'agent:tools',
+      cwd: workspace,
+      factories: [
+        () => ({
+          handlers: {
+            [AGENT_CORE_EVENTS.agent_tool_result](detail) {
+              resolveResult(detail as { result: { output?: unknown } })
+            },
+          },
+        }),
+      ],
+    })
+
+    agent.restrictedTrigger({
+      type: AGENT_CORE_EVENTS.agent_tool_execute,
+      detail: {
+        toolCall: {
+          id: 'tc-1',
+          name: 'read_file',
+          arguments: { path: 'hello.txt' },
+        },
+      },
+    })
+
+    const detail = await resultSeen
+    expect(detail.result.output).toEqual({
+      type: 'text',
+      path: 'hello.txt',
+      content: 'hello from agent',
+      truncated: false,
+      totalBytes: 16,
+      totalLines: 1,
+      outputLines: 1,
+    })
+
+    await rm(workspace, { recursive: true, force: true })
   })
 })
 

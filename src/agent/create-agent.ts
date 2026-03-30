@@ -2,6 +2,9 @@ import { Database, type SQLQueryBindings } from 'bun:sqlite'
 import { behavioral } from '../behavioral/behavioral.ts'
 import { AGENT_CORE_EVENTS } from './agent.constants.ts'
 import {
+  AgentToolErrorDetailSchema,
+  AgentToolExecuteDetailSchema,
+  AgentToolResultDetailSchema,
   FactoriesUpdatedDetailSchema,
   RuntimeSqlErrorDetailSchema,
   RuntimeSqlFinalizeDetailSchema,
@@ -15,6 +18,7 @@ import {
   UpdateFactoriesErrorDetailSchema,
 } from './agent.schemas.ts'
 import type { AgentHandle, CreateAgentOptions } from './agent.types.ts'
+import { createLocalToolExecutor } from './create-local-tool-executor.ts'
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 15 * 60 * 1000
 const RUNTIME_SNAPSHOTS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS runtime_snapshots (
@@ -81,6 +85,7 @@ export const createAgent = async ({
   const { bThreads, trigger, useFeedback, useSnapshot, useRestrictedTrigger } = behavioral()
   const runtimeDb = new Database(':memory:')
   const statementCache = new Map<string, ReturnType<typeof runtimeDb.query>>()
+  const localToolExecutor = createLocalToolExecutor({ cwd: _cwd, env: _env })
 
   runtimeDb.run(RUNTIME_SNAPSHOTS_TABLE_SQL)
 
@@ -120,6 +125,33 @@ export const createAgent = async ({
       }
       statementCache.clear()
       runtimeDb.close(false)
+    },
+    async [AGENT_CORE_EVENTS.agent_tool_execute](detail: unknown) {
+      const parsed = AgentToolExecuteDetailSchema.parse(detail)
+
+      try {
+        const output = await localToolExecutor(parsed.toolCall, AbortSignal.timeout(120_000))
+        trigger({
+          type: AGENT_CORE_EVENTS.agent_tool_result,
+          detail: AgentToolResultDetailSchema.parse({
+            result: {
+              toolCallId: parsed.toolCall.id,
+              name: parsed.toolCall.name,
+              status: 'completed',
+              output,
+            },
+          }),
+        })
+      } catch (error) {
+        trigger({
+          type: AGENT_CORE_EVENTS.agent_tool_error,
+          detail: AgentToolErrorDetailSchema.parse({
+            toolCallId: parsed.toolCall.id,
+            name: parsed.toolCall.name,
+            error: error instanceof Error ? error.message : String(error),
+          }),
+        })
+      }
     },
     [AGENT_CORE_EVENTS.runtime_sql_run](detail: unknown) {
       const parsed = RuntimeSqlRequestDetailSchema.parse(detail)

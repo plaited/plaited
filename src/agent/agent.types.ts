@@ -14,6 +14,9 @@ import type { AGENT_EVENTS } from './agent.constants.ts'
 import type {
   AgentPlan,
   AgentToolCall,
+  AgentToolErrorDetail,
+  AgentToolExecuteDetail,
+  AgentToolResultDetail,
   FactoriesUpdatedDetail,
   GateDecision,
   ModelUsage,
@@ -126,6 +129,9 @@ export type RuntimeSqlIterateResultDetail = RuntimeSqlRowsDetail
 export type RuntimeSqlValuesDetailResult = RuntimeSqlValuesResultDetail
 export type RuntimeSqlFinalizeResultDetail = RuntimeSqlFinalizedDetail
 export type RuntimeSqlFailureDetail = RuntimeSqlErrorDetail
+export type LocalToolExecuteDetail = AgentToolExecuteDetail
+export type LocalToolResultDetail = AgentToolResultDetail
+export type LocalToolErrorDetail = AgentToolErrorDetail
 
 // ============================================================================
 // Model Interface — streaming inference (from pi-mono audit decisions)
@@ -328,7 +334,7 @@ export type ToolExecutor = (toolCall: AgentToolCall, signal: AbortSignal) => Pro
 export type CreateLocalExecutorOptions = {
   cwd: string
   env?: Record<string, string>
-  handlers: Record<string, ToolHandler>
+  handlers?: Record<string, ToolHandler>
 }
 
 /**

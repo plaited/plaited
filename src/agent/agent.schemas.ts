@@ -100,10 +100,6 @@ export type RuntimeSqlValuesResultDetail = z.infer<typeof RuntimeSqlValuesResult
 export type RuntimeSqlFinalizedDetail = z.infer<typeof RuntimeSqlFinalizedDetailSchema>
 export type RuntimeSqlErrorDetail = z.infer<typeof RuntimeSqlErrorDetailSchema>
 
-// ============================================================================
-// Agent Tool Call Schemas
-// ============================================================================
-
 /**
  * A tool call parsed from the model response.
  *
@@ -276,6 +272,24 @@ export const ToolResultSchema = z.object({
 
 /** Tool execution result */
 export type ToolResult = z.infer<typeof ToolResultSchema>
+
+export const AgentToolExecuteDetailSchema = z.object({
+  toolCall: AgentToolCallSchema,
+})
+
+export const AgentToolResultDetailSchema = z.object({
+  result: ToolResultSchema,
+})
+
+export const AgentToolErrorDetailSchema = z.object({
+  toolCallId: z.string().min(1),
+  name: z.string().min(1),
+  error: z.string(),
+})
+
+export type AgentToolExecuteDetail = z.infer<typeof AgentToolExecuteDetailSchema>
+export type AgentToolResultDetail = z.infer<typeof AgentToolResultDetailSchema>
+export type AgentToolErrorDetail = z.infer<typeof AgentToolErrorDetailSchema>
 
 // ============================================================================
 // Gate Decision Schema
