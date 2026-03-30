@@ -1,4 +1,3 @@
-import { createNode } from '../modnet/create-node.ts'
 import type { BootstrapHandle, CreateBootstrapOptions } from './bootstrap.types.ts'
 
 /**
@@ -13,5 +12,6 @@ import type { BootstrapHandle, CreateBootstrapOptions } from './bootstrap.types.
  * @public
  */
 export const createBootstrap = async (options: CreateBootstrapOptions): Promise<BootstrapHandle> => {
-  return createNode(options)
+  void options
+  throw new Error('Bootstrap is being rewritten to replace the removed modnet path.')
 }

@@ -1,15 +1,18 @@
-import type { CreateNodeOptions, NodeHandle } from '../modnet/modnet.types.ts'
-
 /**
- * Options for bootstrapping a Plaited node.
+ * Transitional options for bootstrapping a Plaited node.
+ *
+ * @remarks
+ * The previous `modnet`-backed bootstrap path has been removed. The concrete
+ * bootstrap composition will be rebuilt directly around `create-agent`,
+ * `createServer`, and executable factories.
  *
  * @public
  */
-export type CreateBootstrapOptions = CreateNodeOptions
+export type CreateBootstrapOptions = Record<string, unknown>
 
 /**
- * Handle returned by {@link createBootstrap}.
+ * Transitional handle returned by {@link createBootstrap}.
  *
  * @public
  */
-export type BootstrapHandle = NodeHandle
+export type BootstrapHandle = unknown
