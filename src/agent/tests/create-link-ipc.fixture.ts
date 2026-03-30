@@ -1,4 +1,4 @@
-import { createIpcLinkBridge, createLink } from '../runtime.ts'
+import { createIpcLinkBridge, createLink } from '../create-link.ts'
 
 type FixtureMessage =
   | { type: 'task'; detail: { taskId: string; route: 'parent_to_child' } }

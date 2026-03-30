@@ -61,7 +61,7 @@ provisioned behavior.
 The intended boundary is:
 
 - `src/behavioral` remains the stable BP engine
-- `src/runtime` owns generic participant and event coordination
+- `src/bootstrap` is the setup and install boundary for the initial node
 - `src/server` remains the browser transport adapter and route host
 - `src/ui` remains a render surface plus client-side behavioral runtime
 - `src/agent` becomes a generic agent loop engine
@@ -93,6 +93,8 @@ Successful experiments should not only demonstrate a behavior. They should also
 improve the architecture by:
 
 - removing or shrinking hardcoded factory-like logic from `src/agent`
+- replacing transitional bootstrap compositions such as `src/modnet/create-node.ts`
+  with top-level executable factories
 - promoting accepted executable behavior into `src/factories`
 - leaving the core agent engine smaller and more generic than before
 

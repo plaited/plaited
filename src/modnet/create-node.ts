@@ -21,7 +21,6 @@ import { AGENT_EVENTS } from '../agent/agent.constants.ts'
 import type { MessageDetail } from '../agent/agent.types.ts'
 import { createAgentLoop } from '../agent/create-agent-loop.ts'
 import { UI_ADAPTER_LIFECYCLE_EVENTS } from '../events.ts'
-import { createBehavioralActorRuntime, createManagedTeamRuntime } from '../runtime/runtime.ts'
 import { createServer } from '../server/server.ts'
 import type { ServerHandle } from '../server/server.types.ts'
 import type { CreateNodeOptions, NodeHandle } from './modnet.types.ts'
@@ -134,17 +133,6 @@ const createFailedTask = ({
     },
   }) satisfies Task
 
-const createNodeRuntimeIds = () => {
-  const runtimeId = crypto.randomUUID()
-
-  return {
-    actorId: `node-actor:${runtimeId}`,
-    objectId: `node-object:${runtimeId}`,
-    pmId: `node-pm:${runtimeId}`,
-    teamId: `node-team:${runtimeId}`,
-  }
-}
-
 const waitForAgentMessage = ({
   agent,
   signal,
@@ -219,30 +207,6 @@ export const createNode = async ({
     ...(proactive && { proactive }),
   })
 
-  const runtimeIds = createNodeRuntimeIds()
-  const actor = createBehavioralActorRuntime({
-    kind: 'behavioral_actor',
-    id: runtimeIds.actorId,
-    object: {
-      kind: 'mss_object',
-      id: runtimeIds.objectId,
-      contentType: 'agent',
-      structure: 'object',
-      mechanics: ['track'],
-      boundary: 'ask',
-      scale: 'S2',
-    },
-    trigger: agent.trigger,
-    subscribe: agent.subscribe,
-    snapshot: agent.snapshot,
-    destroy: () => {},
-  })
-  const runtime = createManagedTeamRuntime({
-    actor,
-    pmId: runtimeIds.pmId,
-    teamId: runtimeIds.teamId,
-  })
-
   // ── A2A handler (optional — only when agentCard is provided) ────────────
   let a2aHandler: ReturnType<typeof createA2AHandler> | undefined
 
@@ -293,14 +257,12 @@ export const createNode = async ({
   // ── Destroy ─────────────────────────────────────────────────────────────
   const destroy = () => {
     pushDisconnect()
-    runtime.destroy()
     server.stop(true)
     agent.destroy()
   }
 
   return {
     agent,
-    runtime,
     server,
     ...(a2aHandler && { a2a: a2aHandler }),
     ...(agent.heartbeat && { heartbeat: agent.heartbeat }),

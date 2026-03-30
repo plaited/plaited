@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 
 import { behavioral } from '../../behavioral/behavioral.ts'
-import { LinkActivitySchema, LinkMessageSchema } from '../runtime.schemas.ts'
-import { createIpcLinkBridge, createLink, linkToTrigger, triggerToLink } from '../runtime.ts'
+import { LinkActivitySchema, LinkMessageSchema } from '../../runtime/runtime.schemas.ts'
+import { createIpcLinkBridge, createLink, linkToTrigger, triggerToLink } from '../create-link.ts'
 
 describe('createLink', () => {
   test('accepts the public runtime link envelope in exported schemas', () => {
@@ -262,14 +262,12 @@ describe('triggerToLink', () => {
       received.push(message)
     })
 
-    const actor = {
-      subscribe: useFeedback,
-    }
-
     const disconnect = triggerToLink({
       eventTypes: ['pm_event'],
       link,
-      actor,
+      actor: {
+        subscribe: useFeedback,
+      },
     })
 
     trigger({ type: 'pm_event', detail: { taskId: 'task-1' } })
@@ -295,7 +293,7 @@ describe('triggerToLink', () => {
         return {
           type: event.type,
           detail: {
-            taskId: `${event.detail.taskId}-created`,
+            taskId: `${event.detail.taskId}-mapped`,
           },
         }
       },
@@ -304,14 +302,14 @@ describe('triggerToLink', () => {
     trigger({ type: 'pm_event', detail: { taskId: 'task-1' } })
     disconnect()
 
-    expect(received).toEqual([{ type: 'pm_event', detail: { taskId: 'task-1-created' } }])
+    expect(received).toEqual([{ type: 'pm_event', detail: { taskId: 'task-1-mapped' } }])
   })
 
   test('throws when neither actor.subscribe nor subscribe is provided', () => {
     const link = createLink<{ type: 'pm_event'; detail: { taskId: string } }>()
 
     expect(() =>
-      // @ts-expect-error - runtime guard coverage for invalid call sites
+      // @ts-expect-error - exercising the runtime guard for missing subscription wiring
       triggerToLink({
         eventTypes: ['pm_event'],
         link,

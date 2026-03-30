@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 
-import { createIpcLinkBridge, createLink } from '../runtime.ts'
+import { createIpcLinkBridge, createLink } from '../create-link.ts'
 
 type ParentToChildMessage = { type: 'task'; detail: { taskId: string; route: 'parent_to_child' } }
 type ChildSignalMessage =
@@ -33,7 +33,7 @@ describe('createLink IPC bridge', () => {
       receivedResolve = resolve
     })
 
-    const child = Bun.spawn(['bun', 'src/runtime/tests/create-link-ipc.fixture.ts'], {
+    const child = Bun.spawn(['bun', 'src/agent/tests/create-link-ipc.fixture.ts'], {
       cwd: process.cwd(),
       stdin: 'ignore',
       stdout: 'ignore',
