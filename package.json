@@ -37,7 +37,7 @@
   },
   "scripts": {
     "autoresearch:runner": "bunx varlock run -- bun scripts/autoresearch-runner.ts",
-    "build:wasm": "bunx asc src/tools/graph-algorithms/graph-algorithms.ts --outFile src/tools/hypergraph.wasm --optimize --exportRuntime",
+    "build:wasm": "bunx asc src/tools/graph-algorithms/graph-algorithms.ts --outFile src/hypergraph/hypergraph.wasm --optimize --exportRuntime",
     "check": "bun run check:biome && bun run check:types && bun run check:package",
     "check:biome": "biome check",
     "check:package": "format-package --check",

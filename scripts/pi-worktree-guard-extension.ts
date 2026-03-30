@@ -2,8 +2,7 @@ import { isAbsolute, join, normalize } from 'node:path'
 import type { ExtensionAPI } from '@mariozechner/pi-coding-agent'
 import { createBashTool } from '@mariozechner/pi-coding-agent'
 import { Type } from '@sinclair/typebox'
-import { HypergraphQuerySchema } from '../src/tools/hypergraph.schemas.ts'
-import { search as searchHypergraph } from '../src/tools/hypergraph.ts'
+import { HypergraphQuerySchema, search as searchHypergraph } from '../src/hypergraph.ts'
 
 const DEFAULT_WRITABLE_ROOTS = ['.']
 const NESTED_AUTORESEARCH_PATTERNS = [

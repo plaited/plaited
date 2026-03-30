@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { loadJsonLd } from '../src/tools/hypergraph.ts'
+import { loadJsonLd } from '../src/hypergraph.ts'
 import type { ResearchLaneConfig } from './autoresearch-runner.ts'
 
 export type ProgramRequirement = {

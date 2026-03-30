@@ -13,6 +13,7 @@
 
 // Agent tools (CRUD)
 import { bashCli, editFileCli, listFilesCli, readFileCli, writeFileCli } from './agent/crud.ts'
+import { searchCli } from './hypergraph.ts'
 import { discoverSkillsCli, evaluateSkillCli, ingestSkillCli, skillLinksCli, validateSkillCli } from './skill.ts'
 import { typescriptLsp } from './tools/typescript-lsp.ts'
 
@@ -32,6 +33,7 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   'ingest-skill': ingestSkillCli,
   'discover-skills': discoverSkillsCli,
   'evaluate-skill': evaluateSkillCli,
+  search: searchCli,
   'skill-links': skillLinksCli,
   'typescript-lsp': typescriptLsp,
 }
@@ -70,7 +72,7 @@ Commands:
 
   Development:
     validate-skill, ingest-skill, discover-skills,
-    evaluate-skill, skill-links, typescript-lsp`)
+    evaluate-skill, search, skill-links, typescript-lsp`)
   process.exit(command ? 0 : 1)
 }
 

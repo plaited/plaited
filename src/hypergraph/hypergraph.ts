@@ -21,7 +21,7 @@ import * as z from 'zod'
 import { RISK_TAG } from '../agent/agent.constants.ts'
 import type { ToolDefinition } from '../agent/agent.schemas.ts'
 import type { ToolHandler } from '../agent/agent.types.ts'
-import { parseCli } from './cli.utils.ts'
+import { parseCli } from '../tools/cli.utils.ts'
 import {
   type CausalChainOutputSchema,
   type CheckCyclesOutputSchema,
@@ -983,8 +983,4 @@ export const searchCli = async (args: string[]): Promise<void> => {
     console.error(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }))
     process.exit(1)
   }
-}
-
-if (import.meta.main) {
-  searchCli(process.argv.slice(2))
 }
