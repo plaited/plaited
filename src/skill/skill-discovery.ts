@@ -12,7 +12,7 @@
 
 import { join } from 'node:path'
 import * as z from 'zod'
-import { parseCli } from '../tools/cli.utils.ts'
+import { parseCli } from '../cli/cli.utils.ts'
 import { findSkillDirectories, findSkillEvaluationSurface, findSkillMd, parseFrontmatter } from './skill.utils.ts'
 
 // ============================================================================

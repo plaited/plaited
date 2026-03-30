@@ -1,23 +1,16 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
-import { RISK_TAG } from '../../agent/agent.constants.ts'
-import { ToolDefinitionSchema } from '../../agent/agent.schemas.ts'
-import type { ToolContext } from '../../agent/agent.types.ts'
 import {
   executeLsp,
   flattenSymbols,
   getLanguageId,
   getLoader,
   LspClient,
-  type LspOutput,
-  lspHandler,
-  lspRiskTags,
-  lspToolSchema,
   resolveFilePath,
-} from '../typescript-lsp.ts'
+} from '../scripts/typescript-lsp.ts'
 
-const scriptsDir = join(import.meta.dir, '..')
-const fixtureFile = join(import.meta.dir, 'fixtures/sample.ts')
+const cliPath = join(import.meta.dir, '..', '..', '..', 'bin', 'plaited.ts')
+const fixtureFile = join(import.meta.dir, '..', '..', '..', 'src', 'tools', 'tests', 'fixtures', 'sample.ts')
 const rootUri = `file://${process.cwd()}`
 const testUri = `file://${fixtureFile}`
 
@@ -486,49 +479,12 @@ describe('executeLsp', () => {
 })
 
 // ============================================================================
-// Agent Integration
-// ============================================================================
-
-describe('lspToolSchema', () => {
-  test('validates against ToolDefinitionSchema', () => {
-    const result = ToolDefinitionSchema.safeParse(lspToolSchema)
-    expect(result.success).toBe(true)
-  })
-
-  test('has correct tool name', () => {
-    expect(lspToolSchema.function.name).toBe('lsp')
-  })
-})
-
-describe('lspRiskTags', () => {
-  test('has workspace tag', () => {
-    expect(lspRiskTags).toContain(RISK_TAG.workspace)
-  })
-})
-
-describe('lspHandler', () => {
-  test('executes LSP operations via ToolHandler interface', async () => {
-    const ctx: ToolContext = { workspace: process.cwd(), env: {}, signal: new AbortController().signal }
-    const result = (await lspHandler({ file: fixtureFile, operations: [{ type: 'symbols' }] }, ctx)) as LspOutput
-    expect(result.file).toBe(fixtureFile)
-    expect(result.results).toHaveLength(1)
-    expect(result.results[0]?.type).toBe('symbols')
-    expect(result.results[0]?.data).toBeDefined()
-  })
-
-  test('throws when signal is already aborted', async () => {
-    const ctx: ToolContext = { workspace: process.cwd(), env: {}, signal: AbortSignal.abort() }
-    expect(lspHandler({ file: fixtureFile, operations: [{ type: 'symbols' }] }, ctx)).rejects.toThrow('Aborted')
-  })
-})
-
-// ============================================================================
 // CLI
 // ============================================================================
 
 describe('CLI', () => {
   test('--schema input outputs JSON Schema', async () => {
-    const result = await Bun.$`bun ${scriptsDir}/typescript-lsp.ts --schema input`.quiet()
+    const result = await Bun.$`bun ${cliPath} typescript-lsp --schema input`.quiet()
     const schema = JSON.parse(result.text())
 
     expect(schema.type).toBe('object')
@@ -537,7 +493,7 @@ describe('CLI', () => {
   })
 
   test('--schema output outputs JSON Schema', async () => {
-    const result = await Bun.$`bun ${scriptsDir}/typescript-lsp.ts --schema output`.quiet()
+    const result = await Bun.$`bun ${cliPath} typescript-lsp --schema output`.quiet()
     const schema = JSON.parse(result.text())
 
     expect(schema.type).toBe('object')
@@ -546,7 +502,7 @@ describe('CLI', () => {
   })
 
   test('--help exits 0', async () => {
-    const proc = Bun.spawn(['bun', `${scriptsDir}/typescript-lsp.ts`, '--help'], {
+    const proc = Bun.spawn(['bun', cliPath, 'typescript-lsp', '--help'], {
       stderr: 'pipe',
       stdout: 'pipe',
     })
@@ -560,7 +516,7 @@ describe('CLI', () => {
       file: fixtureFile,
       operations: [{ type: 'symbols' }],
     })
-    const result = await Bun.$`bun ${scriptsDir}/typescript-lsp.ts ${input}`.quiet()
+    const result = await Bun.$`bun ${cliPath} typescript-lsp ${input}`.quiet()
     const output = JSON.parse(result.text())
 
     expect(output.file).toBe(fixtureFile)
@@ -575,7 +531,7 @@ describe('CLI', () => {
       operations: [{ type: 'hover' }],
     })
 
-    const proc = Bun.spawn(['bun', `${scriptsDir}/typescript-lsp.ts`, input], {
+    const proc = Bun.spawn(['bun', cliPath, 'typescript-lsp', input], {
       stderr: 'pipe',
       stdout: 'pipe',
     })
@@ -585,7 +541,7 @@ describe('CLI', () => {
   })
 
   test('exits with code 2 on invalid input', async () => {
-    const proc = Bun.spawn(['bun', `${scriptsDir}/typescript-lsp.ts`, '{"bad": true}'], {
+    const proc = Bun.spawn(['bun', cliPath, 'typescript-lsp', '{"bad": true}'], {
       stderr: 'pipe',
       stdout: 'pipe',
     })

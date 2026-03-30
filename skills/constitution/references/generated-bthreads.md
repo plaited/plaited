@@ -26,7 +26,7 @@ Layer 1: TypeScript Type Check (bun --bun tsc --noEmit)
   │  CATCHES: wrong types, missing fields, bad imports, structural errors
   │
   ▼
-Layer 2: LSP Static Analysis (plaited lsp)
+Layer 2: LSP Static Analysis (plaited typescript-lsp)
   │  No imports outside allowed modules (behavioral types, agent constants)
   │  Exported symbols match expected factory shape
   │  No side effects in factory (no fetch, no fs, no Bun.$)

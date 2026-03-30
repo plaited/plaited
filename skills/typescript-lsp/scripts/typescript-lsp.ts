@@ -1,4 +1,3 @@
-#!/usr/bin/env bun
 /**
  * Unified TypeScript LSP tool.
  *
@@ -11,11 +10,8 @@
 
 import { join } from 'node:path'
 import type { Subprocess } from 'bun'
+import { parseCli } from 'plaited'
 import * as z from 'zod'
-import { RISK_TAG } from '../agent/agent.constants.ts'
-import type { ToolDefinition } from '../agent/agent.schemas.ts'
-import type { ToolContext, ToolHandler } from '../agent/agent.types.ts'
-import { parseCli } from './cli.utils.ts'
 
 // ============================================================================
 // JSON-RPC Types
@@ -49,6 +45,11 @@ type PendingRequest = {
   resolve: (value: unknown) => void
   reject: (error: Error) => void
   timer?: ReturnType<typeof setTimeout>
+}
+
+type LspExecutionContext = {
+  workspace?: string
+  signal?: AbortSignal
 }
 
 // ============================================================================
@@ -650,13 +651,13 @@ export { getLoader }
  * enables abort-based subprocess cancellation via BP interrupt.
  *
  * @param input - File path and operations to perform
- * @param ctx - Optional tool context for workspace root and abort signal
+ * @param ctx - Optional execution context for workspace root and abort signal
  * @returns File path and results array matching operations order
  *
  * @public
  */
-const executeLsp = async (input: LspInput, ctx?: ToolContext): Promise<LspOutput> => {
-  if (ctx?.signal.aborted) throw new Error('Aborted')
+const executeLsp = async (input: LspInput, ctx?: LspExecutionContext): Promise<LspOutput> => {
+  if (ctx?.signal?.aborted) throw new Error('Aborted')
 
   const absolutePath = resolveFilePath(input.file, ctx?.workspace)
   const uri = `file://${absolutePath}`
@@ -680,7 +681,7 @@ const executeLsp = async (input: LspInput, ctx?: ToolContext): Promise<LspOutput
   const onAbort = () => {
     client?.stop().catch(() => {})
   }
-  ctx?.signal.addEventListener('abort', onAbort, { once: true })
+  ctx?.signal?.addEventListener('abort', onAbort, { once: true })
 
   try {
     if (client) {
@@ -709,82 +710,14 @@ const executeLsp = async (input: LspInput, ctx?: ToolContext): Promise<LspOutput
     await client?.stop().catch(() => {})
     throw error
   } finally {
-    ctx?.signal.removeEventListener('abort', onAbort)
+    ctx?.signal?.removeEventListener('abort', onAbort)
   }
 }
 
 export { executeLsp }
 
-// ============================================================================
-// Agent Integration
-// ============================================================================
-
 /**
- * OpenAI function-calling tool definition for the LSP tool.
- *
- * @public
- */
-export const lspToolSchema: ToolDefinition = {
-  type: 'function',
-  function: {
-    name: 'lsp',
-    description:
-      'Execute TypeScript LSP operations for type-aware codebase analysis. Supports hover (type info), references, definition, symbols, exports, workspace symbol search, and scan (fast import/export extraction via Bun.Transpiler — no LSP subprocess). Multiple operations run in a single server session for efficiency.',
-    parameters: {
-      type: 'object',
-      properties: {
-        file: { type: 'string', description: 'Path to TypeScript/JavaScript file' },
-        operations: {
-          type: 'array',
-          description:
-            'Operations to perform: hover/references/definition need line+character, find needs query, symbols/exports/scan need no extra args',
-          items: {
-            type: 'object',
-            properties: {
-              type: {
-                type: 'string',
-                description: 'hover | references | definition | symbols | exports | find | scan',
-              },
-              line: { type: 'number', description: '0-indexed line number' },
-              character: { type: 'number', description: '0-indexed character position' },
-              query: { type: 'string', description: 'Symbol name for find' },
-            },
-            required: ['type'],
-          },
-        },
-      },
-      required: ['file', 'operations'],
-    },
-  },
-}
-
-/**
- * Risk tags for the LSP tool — workspace-only (read-only analysis).
- *
- * @public
- */
-export const lspRiskTags: string[] = [RISK_TAG.workspace]
-
-/**
- * ToolHandler wrapper for agent dispatch.
- *
- * @remarks
- * Parses args with LspInputSchema and delegates to executeLsp.
- * Signal propagation enables abort via BP interrupt → subprocess kill.
- *
- * @public
- */
-export const lspHandler: ToolHandler = async (args, ctx) => {
-  const input = LspInputSchema.parse(args)
-  return executeLsp(input, ctx)
-}
-
-// ============================================================================
-// CLI Handler
-// ============================================================================
-
-/**
- * CLI entry point for the LSP tool.
+ * CLI entry point for the TypeScript LSP skill.
  *
  * @remarks
  * Uses shared `parseCli` for input parsing and schema discovery.
@@ -794,7 +727,7 @@ export const lspHandler: ToolHandler = async (args, ctx) => {
  *
  * @public
  */
-export const typescriptLsp = async (args: string[]) => {
+export const typescriptLspCli = async (args: string[]) => {
   if (args.includes('--help') || args.includes('-h')) {
     // biome-ignore lint/suspicious/noConsole: CLI output
     console.log(`plaited typescript-lsp
@@ -841,5 +774,5 @@ Exit codes:
 }
 
 if (import.meta.main) {
-  await typescriptLsp(Bun.argv.slice(2))
+  await typescriptLspCli(Bun.argv.slice(2))
 }

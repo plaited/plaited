@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-const cliPath = join(import.meta.dir, '..', '..', 'cli.ts')
+const cliPath = join(import.meta.dir, '..', '..', '..', 'bin', 'plaited.ts')
 
 describe('skill-validate', () => {
   let tempDir: string

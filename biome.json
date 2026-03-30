@@ -3,7 +3,7 @@
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!!.bin/*", "!!src/tools/graph-algorithms"]
+    "includes": ["**", "!!.bin/*", "!!src/hypergraph/graph-algorithms"]
   },
   "formatter": {
     "enabled": true,

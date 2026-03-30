@@ -18,10 +18,10 @@ Type-aware codebase analysis for TypeScript/JavaScript files. Use over Grep/Glob
 
 | Task | Tool |
 |------|------|
-| Find all usages of a function/type | `lsp` with `references` |
-| Get type signature + TSDoc | `lsp` with `hover` |
-| Search for a symbol by name | `lsp` with `find` |
-| List file exports | `lsp` with `exports` |
+| Find all usages of a function/type | `typescript-lsp` with `references` |
+| Get type signature + TSDoc | `typescript-lsp` with `hover` |
+| Search for a symbol by name | `typescript-lsp` with `find` |
+| List file exports | `typescript-lsp` with `exports` |
 | Find files by pattern | Glob |
 | Search text content | Grep |
 
@@ -30,10 +30,10 @@ Type-aware codebase analysis for TypeScript/JavaScript files. Use over Grep/Glob
 Single command with JSON input. All operations share one LSP session (one server start).
 
 ```bash
-plaited lsp '<json>'
-echo '<json>' | plaited lsp
-plaited lsp --schema input    # JSON Schema for input
-plaited lsp --schema output   # JSON Schema for output
+plaited typescript-lsp '<json>'
+echo '<json>' | plaited typescript-lsp
+plaited typescript-lsp --schema input    # JSON Schema for input
+plaited typescript-lsp --schema output   # JSON Schema for output
 ```
 
 ## Input Format
@@ -106,31 +106,31 @@ Failed operations include an `error` field instead of `data`. Other operations s
 ### Understand a file
 
 ```bash
-plaited lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "exports"}]}'
+plaited typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "exports"}]}'
 ```
 
 ### Check type before using an API
 
 ```bash
-plaited lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "hover", "line": 42, "character": 10}]}'
+plaited typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "hover", "line": 42, "character": 10}]}'
 ```
 
 ### Find all references before refactoring
 
 ```bash
-plaited lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "references", "line": 42, "character": 10}]}'
+plaited typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "references", "line": 42, "character": 10}]}'
 ```
 
 ### Batch: exports + hover + references in one session
 
 ```bash
-plaited lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "exports"}, {"type": "hover", "line": 10, "character": 13}, {"type": "references", "line": 10, "character": 13}]}'
+plaited typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "exports"}, {"type": "hover", "line": 10, "character": 13}, {"type": "references", "line": 10, "character": 13}]}'
 ```
 
 ### Search workspace for a symbol
 
 ```bash
-plaited lsp '{"file": "src/app.ts", "operations": [{"type": "find", "query": "parseConfig"}]}'
+plaited typescript-lsp '{"file": "src/app.ts", "operations": [{"type": "find", "query": "parseConfig"}]}'
 ```
 
 ## Exit Codes

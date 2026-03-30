@@ -14,13 +14,14 @@
   },
   "homepage": "https://github.com/plaited/plaited/tree/main#readme",
   "bin": {
-    "plaited": "./src/cli.ts",
+    "plaited": "./bin/plaited.ts",
     "plaited-improve": "./src/improve-cli.ts"
   },
   "type": "module",
   "main": "./src/main.ts",
   "exports": {
     ".": "./src/main.ts",
+    "./cli": "./src/cli.ts",
     "./improve": "./src/improve.ts",
     "./mcp": "./src/mcp.ts",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
@@ -37,7 +38,7 @@
   },
   "scripts": {
     "autoresearch:runner": "bunx varlock run -- bun scripts/autoresearch-runner.ts",
-    "build:wasm": "bunx asc src/tools/graph-algorithms/graph-algorithms.ts --outFile src/hypergraph/hypergraph.wasm --optimize --exportRuntime",
+    "build:wasm": "bunx asc src/hypergraph/graph-algorithms/graph-algorithms.ts --outFile src/hypergraph/hypergraph.wasm --optimize --exportRuntime",
     "check": "bun run check:biome && bun run check:types && bun run check:package",
     "check:biome": "biome check",
     "check:package": "format-package --check",

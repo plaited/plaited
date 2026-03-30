@@ -1,5 +1,3 @@
-#!/usr/bin/env bun
-
 /**
  * Agent-facing CLI router for the Plaited toolbox.
  *
@@ -11,11 +9,13 @@
  * @internal
  */
 
+import { typescriptLspCli } from '../skills/typescript-lsp/scripts/run.ts'
 // Agent tools (CRUD)
 import { bashCli, editFileCli, listFilesCli, readFileCli, writeFileCli } from './agent/crud.ts'
 import { searchCli } from './hypergraph.ts'
 import { discoverSkillsCli, evaluateSkillCli, ingestSkillCli, skillLinksCli, validateSkillCli } from './skill.ts'
-import { typescriptLsp } from './tools/typescript-lsp.ts'
+
+export { ensureTool, makeCli, parseCli } from './cli/cli.utils.ts'
 
 // ============================================================================
 // Command Registry
@@ -35,7 +35,7 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   'evaluate-skill': evaluateSkillCli,
   search: searchCli,
   'skill-links': skillLinksCli,
-  'typescript-lsp': typescriptLsp,
+  'typescript-lsp': typescriptLspCli,
 }
 
 // ============================================================================
@@ -57,11 +57,12 @@ const printCommandManifest = () => {
 // Router
 // ============================================================================
 
-const command = Bun.argv[2]
-const args = Bun.argv.slice(3)
+export const runCli = async (argv: string[]): Promise<void> => {
+  const command = argv[2]
+  const args = argv.slice(3)
 
-if (!command || command === '--help' || command === '-h') {
-  console.error(`Usage: plaited <command> [options]
+  if (!command || command === '--help' || command === '-h') {
+    console.error(`Usage: plaited <command> [options]
        plaited <command> --schema     # Discover input schema
        plaited <command> '<json>'    # Structured JSON input
        plaited --schema               # List all commands
@@ -73,22 +74,23 @@ Commands:
   Development:
     validate-skill, ingest-skill, discover-skills,
     evaluate-skill, search, skill-links, typescript-lsp`)
-  process.exit(command ? 0 : 1)
-}
+    process.exit(command ? 0 : 1)
+  }
 
-if (command === '--schema') {
-  printCommandManifest()
-  process.exit(0)
-}
+  if (command === '--schema') {
+    printCommandManifest()
+    process.exit(0)
+  }
 
-const handler = COMMANDS[command]
-if (!handler) {
-  console.error(`Unknown command: ${command}`)
-  console.error(`Run 'plaited --help' to see available commands`)
-  process.exit(1)
-}
+  const handler = COMMANDS[command]
+  if (!handler) {
+    console.error(`Unknown command: ${command}`)
+    console.error(`Run 'plaited --help' to see available commands`)
+    process.exit(1)
+  }
 
-handler(args).catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : String(error))
-  process.exit(1)
-})
+  await handler(args).catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : String(error))
+    process.exit(1)
+  })
+}

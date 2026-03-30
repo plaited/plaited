@@ -11,7 +11,7 @@
  */
 
 import * as z from 'zod'
-import { parseCli } from '../tools/cli.utils.ts'
+import { parseCli } from '../cli/cli.utils.ts'
 import { assessTrainingCandidate } from './training.ts'
 import { DEFAULT_K, DEFAULT_TIMEOUT } from './trial.constants.ts'
 import type { Adapter, Grader, PromptCase, TrialEntry, TrialResult } from './trial.schemas.ts'

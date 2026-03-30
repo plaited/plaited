@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import type { SkillCatalogEntry } from '../skill-discovery.ts'
 import { detectCollisions, discoverSkills } from '../skill-discovery.ts'
 
-const cliPath = join(import.meta.dir, '..', '..', 'cli.ts')
+const cliPath = join(import.meta.dir, '..', '..', '..', 'bin', 'plaited.ts')
 
 describe('skill-discovery', () => {
   let tempDir: string

@@ -13,6 +13,7 @@
 import { realpath } from 'node:fs/promises'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 import * as z from 'zod'
+import { parseCli } from '../cli/cli.utils.ts'
 import {
   formatTrialSummary,
   loadAdapter,
@@ -22,7 +23,6 @@ import {
   summarizeTrialResults,
   type TrialRunSummary,
 } from '../improve.ts'
-import { parseCli } from '../tools/cli.utils.ts'
 import { findSkillEvaluationSurface } from './skill.utils.ts'
 
 type SkillEvaluationMode = 'trigger' | 'output'

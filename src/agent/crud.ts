@@ -1,6 +1,6 @@
 import { extname, relative, resolve } from 'node:path'
 import { $ } from 'bun'
-import { ensureTool, makeCli } from '../tools/cli.utils.ts'
+import { ensureTool, makeCli } from '../cli/cli.utils.ts'
 import { RISK_TAG } from './agent.constants.ts'
 import type { ToolHandler } from './agent.types.ts'
 import {

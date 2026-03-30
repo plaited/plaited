@@ -21,7 +21,7 @@ import * as z from 'zod'
 import { RISK_TAG } from '../agent/agent.constants.ts'
 import type { ToolDefinition } from '../agent/agent.schemas.ts'
 import type { ToolHandler } from '../agent/agent.types.ts'
-import { parseCli } from '../tools/cli.utils.ts'
+import { parseCli } from '../cli/cli.utils.ts'
 import {
   type CausalChainOutputSchema,
   type CheckCyclesOutputSchema,
