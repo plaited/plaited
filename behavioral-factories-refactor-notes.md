@@ -84,12 +84,28 @@ not just an abstract research concept.
 
 The current preferred memory model is:
 
-- canonical memory is git-backed markdown and code
-- git history is part of memory, not just version control
+- canonical authored durable memory is git-backed markdown and code
+- git history is part of durable memory, not just version control
 - commit messages, diffs, touched files, and lineage provide compressed and
   expandable context
-- hypergraph artifacts are optional derived accelerators for retrieval,
-  provenance, and stable symbolic anchors
+- hypergraph is the durable linking and provenance layer across:
+  - commits
+  - markdown
+  - code artifacts
+  - retained memory items
+
+This means:
+
+- markdown, code, and git remain the authored source of truth
+- hypergraph should not replace those authored surfaces
+- but hypergraph is no longer merely optional retrieval sugar
+- it is part of durable memory projection and linking
+
+This should stay distinct from shared runtime context:
+
+- runtime coordination state is transient
+- runtime coordination may be backed by in-memory SQLite
+- durable memory remains commit- and artifact-linked
 
 Default retrieval should begin with:
 
@@ -100,8 +116,9 @@ Default retrieval should begin with:
 - `git diff`
 - targeted commit and path inspection
 
-Hypergraph and similar semantic tooling should accelerate these workflows, not
-replace them as the authored source of truth.
+Hypergraph and similar semantic tooling should accelerate these workflows
+while also serving as the durable semantic and provenance linking layer across
+the authored memory surfaces.
 
 ## Repo Model
 
@@ -604,6 +621,25 @@ Instead:
 - factories request shared-runtime operations through triggered events
 - `create-agent.ts` installs the default handlers
 - handlers use in-memory SQLite internally
+
+## Memory Handler Direction
+
+`src/agent/memory-handlers.ts` should no longer be treated as an agent-core
+surface.
+
+Given the refined durable-memory direction:
+
+- authored durable memory should remain git-backed markdown/code
+- hypergraph should act as the durable linking and provenance layer
+- runtime context should remain separate and transient
+
+the existing memory-handler implementation is now a candidate for deletion.
+
+The likely replacement path is:
+
+- use the behavioral-factories lane to generate a durable-memory factory
+- have that factory project authored memory artifacts plus hypergraph links
+- keep memory logic out of `src/agent`
 
 Writes should emit completion events.
 Reads should emit result events.

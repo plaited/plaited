@@ -170,8 +170,8 @@ Use these inputs with clear precedence:
 
 1. `src/behavioral`, `src/ui`, and stable `src/server` surfaces are the runtime
    foundation.
-2. git-backed markdown, code, and local file history are the primary memory
-   substrate.
+2. git-backed markdown, code, and local file history are the primary authored
+   durable-memory substrate.
 3. behavioral and MSS seed/corpus artifacts are derived semantic inputs that
    can accelerate retrieval, validation, and compilation.
 4. skills are implementation and teaching surfaces, not the final runtime home
@@ -179,9 +179,11 @@ Use these inputs with clear precedence:
 5. if a simpler markdown / yaml / jsonl / archive approach satisfies the lane
    goal better than a graph-heavy approach, prefer the simpler approach.
 
-This lane must not assume that hypergraph persistence is mandatory.
-Hypergraph-style artifacts are optional derived accelerators, not the canonical
-memory substrate. Use them when they materially improve:
+This lane must not treat hypergraph as the primary authored memory surface.
+Markdown, code, and git remain the canonical authored durable-memory
+substrate. Hypergraph should instead be treated as the durable linking and
+provenance layer across those authored surfaces. Use it when it materially
+improves:
 
 - retrieval
 - provenance
@@ -190,8 +192,8 @@ memory substrate. Use them when they materially improve:
 
 ## Memory Strategy
 
-This lane should treat git-backed markdown and code as the default memory
-foundation.
+This lane should treat git-backed markdown and code as the default authored
+durable-memory foundation.
 
 Canonical memory surfaces may include:
 
@@ -205,6 +207,13 @@ Canonical memory surfaces may include:
 - git-backed context packs
 - archive snapshots
 
+Hypergraph should link those authored surfaces durably across:
+
+- commits
+- markdown
+- code artifacts
+- retained memory items
+
 Git is part of the memory model, not just version control. It provides:
 
 - temporal ordering of understanding
@@ -213,10 +222,11 @@ Git is part of the memory model, not just version control. It provides:
 - provenance linking memory back to concrete file changes
 
 Derived semantic artifacts may still exist, but they should serve retrieval,
-validation, provenance, or training rather than becoming mandatory by default.
+validation, provenance, training, and durable linking rather than replacing
+the authored memory surfaces.
 
-Hypergraph tools should be used as accelerators over markdown/code/git memory,
-for example to:
+Hypergraph tools should be used both as accelerators over markdown/code/git
+memory and as the durable semantic/provenance linking layer, for example to:
 
 - rank likely relevant files or artifact groups
 - follow semantic links across retained seed/corpus artifacts
@@ -234,6 +244,13 @@ Default retrieval should begin with:
 
 The lane should only reach for heavier semantic machinery when these simpler
 surfaces are insufficient.
+
+This lane should keep durable memory distinct from runtime coordination state:
+
+- durable memory is commit- and artifact-linked
+- shared runtime context is transient
+- shared runtime context may be backed by in-memory SQLite
+- transient runtime context should not be confused with retained durable memory
 
 ## Agent Lifecycle
 
@@ -387,6 +404,10 @@ They should treat accepted commits as the main boundary for durable memory
 projection. A commit is the durable event boundary, not automatically the final
 summary itself.
 
+They should also project durable links through the hypergraph layer so that
+commits, markdown, code artifacts, and retained memory items stay connected
+through stable provenance.
+
 These factories should deterministically gather the source context for durable
 memory updates, such as:
 
@@ -412,6 +433,11 @@ That means they may:
 
 The minimal graph layer should therefore be commit-derived and reviewable,
 rather than the primary authored memory surface.
+
+The existing `src/agent/memory-handlers.ts` path should be treated as
+transitional debt, not as the target architecture. This lane should be willing
+to replace it entirely with durable-memory factories that use the hypergraph
+tooling as part of memory projection.
 
 ### Rollout Factories
 

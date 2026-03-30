@@ -1,6 +1,15 @@
-import type { ToolDefinition } from '../agent/agent.schemas.ts'
+import type { AgentToolCall, ToolDefinition } from '../agent/agent.schemas.ts'
 import type { AgentFactory, ChatMessage, Model, ToolExecutor } from '../agent/agent.types.ts'
-import type { ConstitutionPredicate } from '../agent/gate.ts'
+
+/**
+ * A named predicate for factory-level tool call validation.
+ *
+ * @public
+ */
+export type ConstitutionPredicate = {
+  name: string
+  check: (toolCall: AgentToolCall) => boolean
+}
 
 /**
  * Context assembled for an inference request.

@@ -6,7 +6,6 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { rmSync } from 'node:fs'
 import { join } from 'node:path'
 import type { SnapshotMessage } from '../../behavioral/behavioral.schemas.ts'
-import type { MemoryHandlers } from '../memory-handlers.ts'
 import { createSnapshotWriter } from '../snapshot-writer.ts'
 
 // ============================================================================
@@ -19,16 +18,16 @@ const MEMORY_DIR = join(TEMP_DIR, '.memory')
 const DECISIONS_DIR = join(MEMORY_DIR, 'sessions', SESSION_ID, 'decisions')
 
 /**
- * Create a mock MemoryHandlers that records tracked decisions.
+ * Create a callback that records tracked decisions.
  */
-const createMockHandlers = (): MemoryHandlers & { tracked: string[] } => {
+const createTrackedDecisions = (): { tracked: string[]; trackDecision: (id: string) => void } => {
   const tracked: string[] = []
   return {
     trackDecision: (id: string) => {
       tracked.push(id)
     },
     tracked,
-  } as MemoryHandlers & { tracked: string[] }
+  }
 }
 
 /**
@@ -77,11 +76,11 @@ afterAll(() => {
 
 describe('createSnapshotWriter', () => {
   test('writes decision vertex on selection snapshot', async () => {
-    const handlers = createMockHandlers()
+    const handlers = createTrackedDecisions()
     const writer = createSnapshotWriter({
       sessionId: SESSION_ID,
       memoryPath: MEMORY_DIR,
-      memoryHandlers: handlers,
+      trackDecision: handlers.trackDecision,
     })
 
     await writer(
@@ -106,11 +105,11 @@ describe('createSnapshotWriter', () => {
   })
 
   test('adds bp: URI prefixes to event and thread names', async () => {
-    const handlers = createMockHandlers()
+    const handlers = createTrackedDecisions()
     const writer = createSnapshotWriter({
       sessionId: 'sess_prefix',
       memoryPath: join(TEMP_DIR, '.memory-prefix'),
-      memoryHandlers: handlers,
+      trackDecision: handlers.trackDecision,
     })
 
     await writer(selectionSnapshot([{ thread: 'taskGate', type: 'task', selected: true, priority: 1 }]))
@@ -124,11 +123,11 @@ describe('createSnapshotWriter', () => {
   })
 
   test('includes blockedBy and interrupts with bp: prefix', async () => {
-    const handlers = createMockHandlers()
+    const handlers = createTrackedDecisions()
     const writer = createSnapshotWriter({
       sessionId: 'sess_block',
       memoryPath: join(TEMP_DIR, '.memory-block'),
-      memoryHandlers: handlers,
+      trackDecision: handlers.trackDecision,
     })
 
     await writer(
@@ -158,11 +157,11 @@ describe('createSnapshotWriter', () => {
   })
 
   test('increments superstep across multiple snapshots', async () => {
-    const handlers = createMockHandlers()
+    const handlers = createTrackedDecisions()
     const writer = createSnapshotWriter({
       sessionId: 'sess_step',
       memoryPath: join(TEMP_DIR, '.memory-step'),
-      memoryHandlers: handlers,
+      trackDecision: handlers.trackDecision,
     })
 
     await writer(selectionSnapshot([{ thread: 't1', type: 'task', selected: true, priority: 0 }]))
@@ -181,11 +180,11 @@ describe('createSnapshotWriter', () => {
   })
 
   test('calls trackDecision with decision @id', async () => {
-    const handlers = createMockHandlers()
+    const handlers = createTrackedDecisions()
     const writer = createSnapshotWriter({
       sessionId: 'sess_track',
       memoryPath: join(TEMP_DIR, '.memory-track'),
-      memoryHandlers: handlers,
+      trackDecision: handlers.trackDecision,
     })
 
     await writer(selectionSnapshot([{ thread: 't1', type: 'task', selected: true, priority: 0 }]))
@@ -195,11 +194,11 @@ describe('createSnapshotWriter', () => {
   })
 
   test('ignores non-selection snapshot messages', async () => {
-    const handlers = createMockHandlers()
+    const handlers = createTrackedDecisions()
     const writer = createSnapshotWriter({
       sessionId: 'sess_ignore',
       memoryPath: join(TEMP_DIR, '.memory-ignore'),
-      memoryHandlers: handlers,
+      trackDecision: handlers.trackDecision,
     })
 
     // Send non-selection messages
@@ -220,11 +219,11 @@ describe('createSnapshotWriter', () => {
   })
 
   test('vertex format matches fixture structure', async () => {
-    const handlers = createMockHandlers()
+    const handlers = createTrackedDecisions()
     const writer = createSnapshotWriter({
       sessionId: 'sess_fixture',
       memoryPath: join(TEMP_DIR, '.memory-fixture'),
-      memoryHandlers: handlers,
+      trackDecision: handlers.trackDecision,
     })
 
     await writer(

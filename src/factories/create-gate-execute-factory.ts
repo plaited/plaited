@@ -10,8 +10,32 @@ import type {
   ToolResultDetail,
 } from '../agent/agent.types.ts'
 import { toToolResult } from '../agent/agent.utils.ts'
-import { composedGateCheck } from '../agent/gate.ts'
-import type { GateExecuteFactoryCreator } from './factories.types.ts'
+import type { ConstitutionPredicate, GateExecuteFactoryCreator } from './factories.types.ts'
+
+type GateRoute = 'execute' | 'simulate' | 'rejected'
+
+type GateCheckResult = {
+  route: GateRoute
+  reason?: string
+}
+
+const composedGateCheck = (
+  { toolCall, tags }: { toolCall: ContextReadyDetail['toolCall']; tags: string[] },
+  constitutionPredicates: ConstitutionPredicate[] = [],
+): GateCheckResult => {
+  for (const predicate of constitutionPredicates) {
+    if (predicate.check(toolCall)) {
+      return { route: 'rejected', reason: `Blocked by ${predicate.name}` }
+    }
+  }
+
+  const tagSet = new Set(tags)
+  if (tagSet.size > 0 && [...tagSet].every((tag) => tag === RISK_TAG.workspace)) {
+    return { route: 'execute' }
+  }
+
+  return { route: 'simulate' }
+}
 
 const routeApprovedToolCall = ({
   trigger,

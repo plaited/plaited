@@ -18,7 +18,6 @@
 import { join } from 'node:path'
 import type { SelectionBid } from '../behavioral/behavioral.schemas.ts'
 import type { SnapshotListener } from '../behavioral/behavioral.types.ts'
-import type { MemoryHandlers } from './memory-handlers.ts'
 
 // ============================================================================
 // Types
@@ -34,8 +33,8 @@ export type SnapshotWriterConfig = {
   sessionId: string
   /** Absolute path to the `.memory/` directory */
   memoryPath: string
-  /** Memory handlers instance (for `trackDecision`) */
-  memoryHandlers: MemoryHandlers
+  /** Callback invoked when a decision vertex is written */
+  trackDecision: (decisionId: string) => void
 }
 
 /**
@@ -114,7 +113,7 @@ const buildDecisionVertex = (sessionId: string, superstep: number, bids: Selecti
 export const createSnapshotWriter = ({
   sessionId,
   memoryPath,
-  memoryHandlers,
+  trackDecision,
 }: SnapshotWriterConfig): SnapshotListener => {
   let superstep = 0
   const decisionsDir = join(memoryPath, 'sessions', sessionId, 'decisions')
@@ -128,6 +127,6 @@ export const createSnapshotWriter = ({
     const filePath = join(decisionsDir, `${superstep}.jsonld`)
 
     await Bun.write(filePath, `${JSON.stringify(vertex, null, 2)}\n`)
-    memoryHandlers.trackDecision(decisionId)
+    trackDecision(decisionId)
   }
 }
