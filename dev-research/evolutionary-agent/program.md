@@ -262,7 +262,9 @@ Current repo tooling already supports part of this program:
 
 - `src/improve` gives:
   - trial-result evaluation
-  - workspace-improvement evaluation
+  - attempt-level judge / meta-verifier / promotion prompt tooling
+  - singular research-program loading and scope checks
+  - selection-signal summaries and retained-artifact helpers
   - judge/meta-verifier contracts
   - promotion selection scaffolding
 
@@ -272,7 +274,8 @@ What still needs improvement to fully support this lane:
 - mutation lineage and recombination support
 - richer long-horizon trajectory capture and replay
 - retrieval/search-specific evaluation dimensions
-- training-data extraction from accepted evolutionary runs
+- verifier outputs that carry richer symbolic/self-verification findings
+- training-data extraction from accepted evolutionary runs as a downstream step
 - stronger support for comparing policy bundles, not just isolated attempts
 
 ## Phases
@@ -318,6 +321,10 @@ loop:
 `trial-runner` remains useful for repeated reliability suites, but it is not the
 center of this lane. The center is `autoresearch` for candidate generation and
 `improve` for evaluation and selection.
+
+Raw eval output should stay evaluation-only. Retention, dataset extraction,
+and later model-tuning inputs should come only after verification and
+selection, not from early eval annotations.
 
 Once stable patterns emerge:
 

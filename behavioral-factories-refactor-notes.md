@@ -345,8 +345,10 @@ results. Factories decide which CLI-backed or built-in capabilities to target.
 
 - LLM-as-judge utilities
 - meta-verification utilities
+- verification contracts and findings
 - structured tool-calling judge helpers
 - promotion/selection helpers
+- retained-artifact extraction helpers
 - reusable evaluation schemas and evidence builders
 
 This would let `scripts/` import stable evaluation utilities from
@@ -366,16 +368,34 @@ Current refinement:
   - pass@k / pass^k aggregates
 - eval results should not carry built-in training or distillation policy
   annotations such as `trainingAssessment`
-- retention/distillation helpers may still exist separately, but they should
-  not define the raw eval output contract
+- the old `training.ts` / `training-score` lane was removed because it pushed
+  distillation policy too early into the improve surface
+- retention/distillation should instead consume selected and retained outputs
+  from the evolutionary lane, not shape the raw eval contract
 
 Near-term focus should shift toward tooling that supports
 `dev-research/evolutionary-agent/program.md` directly:
 
 - package or harness mutation tooling
 - rollout orchestration
+- verification and self-verification tooling
 - judged selection and promotion tooling
 - retained artifact capture for later distillation
+
+Current improve boundary now reflects that direction more clearly:
+
+- `attempt-evaluation.ts`
+  - judged attempt prompts
+  - meta-verifier prompts
+  - promotion prompt helpers
+- `research-program.ts`
+  - singular `program.md` loading
+  - scope parsing/checking
+  - stage logging
+- `evolution.ts`
+  - selection-signal summaries
+  - promotion candidate helpers
+  - retained-artifact collection
 
 ## Behavioral Factories Program Decisions
 

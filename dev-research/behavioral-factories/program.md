@@ -170,12 +170,19 @@ This lane should treat `src/improve` carefully:
 - raw eval outputs should not embed retention or training policy annotations
 - any retention, distillation, or selection-for-training helpers should remain
   separate from the raw eval output contract
+- the old `training.ts` / `training-score` surface has been removed
+- `src/improve` should now bias toward:
+  - `attempt-evaluation.ts`
+  - `research-program.ts`
+  - `evolution.ts`
+  - verifier and self-verifier contracts in `judge-contracts.ts`
 
 For the next stage, this lane should bias toward tooling that supports
 `dev-research/evolutionary-agent/program.md` directly:
 
 - mutation tooling over package or harness surfaces
 - rollout orchestration
+- verification and self-verification
 - judged selection
 - promotion tooling
 - retained artifact capture for later distillation
