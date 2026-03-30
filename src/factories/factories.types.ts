@@ -1,5 +1,6 @@
 import type { ToolDefinition } from '../agent/agent.schemas.ts'
-import type { AgentFactory, ChatMessage, Model } from '../agent/agent.types.ts'
+import type { AgentFactory, ChatMessage, Model, ToolExecutor } from '../agent/agent.types.ts'
+import type { ConstitutionPredicate } from '../agent/gate.ts'
 
 /**
  * Context assembled for an inference request.
@@ -31,3 +32,21 @@ export type CreateInferenceFactoryOptions = {
  * @public
  */
 export type InferenceFactoryCreator = (options: CreateInferenceFactoryOptions) => AgentFactory
+
+/**
+ * Options for creating the default gate/execute factory.
+ *
+ * @public
+ */
+export type CreateGateExecuteFactoryOptions = {
+  tools: ToolDefinition[]
+  toolExecutor: ToolExecutor
+  constitutionPredicates?: ConstitutionPredicate[]
+}
+
+/**
+ * Factory creator that returns the default gate/execute behavior.
+ *
+ * @public
+ */
+export type GateExecuteFactoryCreator = (options: CreateGateExecuteFactoryOptions) => AgentFactory
