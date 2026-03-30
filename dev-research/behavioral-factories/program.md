@@ -62,6 +62,8 @@ The intended boundary is:
 
 - `src/behavioral` remains the stable BP engine
 - `src/bootstrap` is the setup and install boundary for the initial node
+- `bin/plaited.ts` is the centralized package CLI entrypoint
+- `src/cli.ts` should stay a shared CLI helper surface, not a second executable
 - `src/server` remains the browser transport adapter and route host
 - `src/ui` remains a render surface plus client-side behavioral runtime
 - `src/agent` is the generic agent engine
@@ -140,6 +142,16 @@ surface.
 This lane should treat the deletion of `create-agent-loop.ts`, `src/runtime`,
 `src/modnet`, and `src/tools` as accomplished architecture work. Future effort
 should not recreate those layers under new names.
+
+This lane should also assume a single centralized package CLI:
+
+- `plaited` is the only shipped binary
+- the older separate `plaited-improve` surface should stay folded into that
+  centralized router
+- shared CLI parsing and handler helpers belong in `src/cli.ts`
+- shipped skills such as `typescript-lsp` are package artifacts, but should not
+  automatically be treated as top-level `plaited` commands unless explicitly
+  wired into the router
 
 ## Inputs
 

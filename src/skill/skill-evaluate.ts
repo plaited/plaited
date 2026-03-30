@@ -13,7 +13,7 @@
 import { realpath } from 'node:fs/promises'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 import * as z from 'zod'
-import { parseCli } from '../cli/cli.utils.ts'
+import { parseCli } from '../cli.ts'
 import {
   formatTrialSummary,
   loadAdapter,

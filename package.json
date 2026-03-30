@@ -14,8 +14,7 @@
   },
   "homepage": "https://github.com/plaited/plaited/tree/main#readme",
   "bin": {
-    "plaited": "./bin/plaited.ts",
-    "plaited-improve": "./src/improve-cli.ts"
+    "plaited": "./bin/plaited.ts"
   },
   "type": "module",
   "main": "./src/main.ts",

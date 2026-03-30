@@ -10,7 +10,7 @@
 
 import { basename, join, resolve } from 'node:path'
 import * as z from 'zod'
-import { parseCli } from '../cli/cli.utils.ts'
+import { parseCli } from '../cli.ts'
 import { findSkillMd, parseFrontmatter } from './skill.utils.ts'
 
 // ============================================================================
