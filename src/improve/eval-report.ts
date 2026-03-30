@@ -1,4 +1,4 @@
-import type { TrajectoryRichness, TrialEntry, TrialResult } from './eval.schemas.ts'
+import type { TrialEntry, TrialResult } from './eval.schemas.ts'
 
 const average = (values: number[]): number | undefined => {
   if (values.length === 0) {
@@ -59,33 +59,6 @@ const getRetentionLabel = (entry: TrialEntry): string | undefined => {
   return outcome ? getString(outcome.retentionLabel) : undefined
 }
 
-const createRichnessCounts = (): Record<TrajectoryRichness, number> => ({
-  full: 0,
-  minimal: 0,
-  'messages-only': 0,
-})
-
-const countTrainingReasons = (trials: TrialEntry[]): Record<string, number> => {
-  return trials.reduce<Record<string, number>>((counts, trial) => {
-    for (const reason of trial.trainingAssessment?.reasons ?? []) {
-      counts[reason] = (counts[reason] ?? 0) + 1
-    }
-    return counts
-  }, {})
-}
-
-const countRichness = (trials: TrialEntry[]): Record<TrajectoryRichness, number> => {
-  const counts = createRichnessCounts()
-  for (const trial of trials) {
-    const richness = trial.trainingAssessment?.richness
-    if (!richness) {
-      continue
-    }
-    counts[richness] += 1
-  }
-  return counts
-}
-
 export type TrialPromptSummary = {
   id: string
   themeId?: string
@@ -94,12 +67,8 @@ export type TrialPromptSummary = {
   passedTrials: number
   failedTrials: number
   passRate?: number
-  eligibleTrials: number
-  ineligibleTrials: number
   averageScore?: number
   retentionLabels: Record<string, number>
-  trainingReasons: Record<string, number>
-  richness: Record<TrajectoryRichness, number>
 }
 
 export type TrialThemeSummary = {
@@ -109,12 +78,8 @@ export type TrialThemeSummary = {
   passedTrials: number
   failedTrials: number
   passRate?: number
-  eligibleTrials: number
-  ineligibleTrials: number
   averageScore?: number
   retentionLabels: Record<string, number>
-  trainingReasons: Record<string, number>
-  richness: Record<TrajectoryRichness, number>
 }
 
 export type TrialRunSummary = {
@@ -123,12 +88,7 @@ export type TrialRunSummary = {
   passedTrials: number
   failedTrials: number
   passRate?: number
-  eligibleTrials: number
-  ineligibleTrials: number
-  eligibleRate?: number
   averageScore?: number
-  trainingReasons: Record<string, number>
-  richness: Record<TrajectoryRichness, number>
   prompts: TrialPromptSummary[]
   themes: TrialThemeSummary[]
 }
@@ -145,9 +105,6 @@ export const summarizeEvalResults = (results: TrialResult[]): TrialRunSummary =>
         .filter((score): score is number => typeof score === 'number')
 
       const passedTrials = result.trials.filter((trial) => trial.pass === true).length
-      const eligibleTrials = result.trials.filter((trial) => trial.trainingAssessment?.eligible === true).length
-      const trainingReasons = countTrainingReasons(result.trials)
-      const richness = countRichness(result.trials)
       const retentionLabels = result.trials.reduce<Record<string, number>>((labels, trial) => {
         const label = getRetentionLabel(trial)
         if (!label) {
@@ -168,12 +125,8 @@ export const summarizeEvalResults = (results: TrialResult[]): TrialRunSummary =>
         passRate: round(
           result.passRate ?? (result.trials.length > 0 ? passedTrials / result.trials.length : undefined),
         ),
-        eligibleTrials,
-        ineligibleTrials: result.trials.length - eligibleTrials,
         averageScore: round(average(scores)),
         retentionLabels,
-        trainingReasons,
-        richness,
       }
     })
     .sort((left, right) => left.id.localeCompare(right.id))
@@ -191,11 +144,7 @@ export const summarizeEvalResults = (results: TrialResult[]): TrialRunSummary =>
       totalTrials: 0,
       passedTrials: 0,
       failedTrials: 0,
-      eligibleTrials: 0,
-      ineligibleTrials: 0,
       retentionLabels: {},
-      trainingReasons: {},
-      richness: createRichnessCounts(),
       scoreValues: [],
     }
 
@@ -203,18 +152,6 @@ export const summarizeEvalResults = (results: TrialResult[]): TrialRunSummary =>
     existing.totalTrials += result.trials.length
     existing.passedTrials += result.trials.filter((trial) => trial.pass === true).length
     existing.failedTrials = existing.totalTrials - existing.passedTrials
-    existing.eligibleTrials += result.trials.filter((trial) => trial.trainingAssessment?.eligible === true).length
-    existing.ineligibleTrials = existing.totalTrials - existing.eligibleTrials
-
-    for (const trial of result.trials) {
-      for (const reason of trial.trainingAssessment?.reasons ?? []) {
-        existing.trainingReasons[reason] = (existing.trainingReasons[reason] ?? 0) + 1
-      }
-      const richness = trial.trainingAssessment?.richness
-      if (richness) {
-        existing.richness[richness] += 1
-      }
-    }
 
     for (const trial of result.trials) {
       if (typeof trial.score === 'number') {
@@ -238,24 +175,9 @@ export const summarizeEvalResults = (results: TrialResult[]): TrialRunSummary =>
 
   const totalTrials = promptSummaries.reduce((sum, prompt) => sum + prompt.totalTrials, 0)
   const passedTrials = promptSummaries.reduce((sum, prompt) => sum + prompt.passedTrials, 0)
-  const eligibleTrials = promptSummaries.reduce((sum, prompt) => sum + prompt.eligibleTrials, 0)
   const scoreValues = results.flatMap((result) =>
     result.trials.map((trial) => trial.score).filter((score): score is number => typeof score === 'number'),
   )
-  const averageScore = round(average(scoreValues))
-  const trainingReasons = results.reduce<Record<string, number>>((counts, result) => {
-    for (const [reason, count] of Object.entries(countTrainingReasons(result.trials))) {
-      counts[reason] = (counts[reason] ?? 0) + count
-    }
-    return counts
-  }, {})
-  const richness = results.reduce<Record<TrajectoryRichness, number>>((counts, result) => {
-    const promptRichness = countRichness(result.trials)
-    counts.full += promptRichness.full
-    counts.minimal += promptRichness.minimal
-    counts['messages-only'] += promptRichness['messages-only']
-    return counts
-  }, createRichnessCounts())
 
   return {
     promptCount: results.length,
@@ -263,12 +185,7 @@ export const summarizeEvalResults = (results: TrialResult[]): TrialRunSummary =>
     passedTrials,
     failedTrials: totalTrials - passedTrials,
     passRate: round(totalTrials > 0 ? passedTrials / totalTrials : undefined),
-    eligibleTrials,
-    ineligibleTrials: totalTrials - eligibleTrials,
-    eligibleRate: round(totalTrials > 0 ? eligibleTrials / totalTrials : undefined),
-    averageScore,
-    trainingReasons,
-    richness,
+    averageScore: round(average(scoreValues)),
     prompts: promptSummaries,
     themes: [...themeMap.values()]
       .map(({ scoreValues: _scoreValues, ...theme }) => theme)
@@ -285,9 +202,6 @@ const formatLabelCounts = (labels: Record<string, number>): string => {
   return entries.map(([label, count]) => `${label}=${count}`).join(', ')
 }
 
-const formatRichnessCounts = (counts: Record<TrajectoryRichness, number>): string =>
-  `full=${counts.full}, messages-only=${counts['messages-only']}, minimal=${counts.minimal}`
-
 const formatNumber = (value: number | undefined): string => {
   if (value === undefined) {
     return 'n/a'
@@ -298,7 +212,7 @@ const formatNumber = (value: number | undefined): string => {
 
 export const formatEvalSummary = (summary: TrialRunSummary): string => {
   const lines = [
-    '# Trial Summary',
+    '# Eval Summary',
     '',
     '## Overall',
     '',
@@ -307,12 +221,7 @@ export const formatEvalSummary = (summary: TrialRunSummary): string => {
     `- Validation passed trials: ${summary.passedTrials}`,
     `- Validation failed trials: ${summary.failedTrials}`,
     `- Validation pass rate: ${formatNumber(summary.passRate)}`,
-    `- Training-eligible trials: ${summary.eligibleTrials}`,
-    `- Training-ineligible trials: ${summary.ineligibleTrials}`,
-    `- Training eligible rate: ${formatNumber(summary.eligibleRate)}`,
     `- Average score: ${formatNumber(summary.averageScore)}`,
-    `- Training richness: ${formatRichnessCounts(summary.richness)}`,
-    `- Training exclusion reasons: ${formatLabelCounts(summary.trainingReasons)}`,
     '',
     '## By Prompt',
     '',
@@ -320,7 +229,7 @@ export const formatEvalSummary = (summary: TrialRunSummary): string => {
 
   for (const prompt of summary.prompts) {
     lines.push(
-      `- ${prompt.id}: theme=${prompt.themeId ?? 'n/a'}, task=${prompt.taskType ?? 'n/a'}, validation=${prompt.passedTrials}/${prompt.totalTrials} (${formatNumber(prompt.passRate)}), trainingEligible=${prompt.eligibleTrials}/${prompt.totalTrials}, avgScore=${formatNumber(prompt.averageScore)}, richness=${formatRichnessCounts(prompt.richness)}, reasons=${formatLabelCounts(prompt.trainingReasons)}, labels=${formatLabelCounts(prompt.retentionLabels)}`,
+      `- ${prompt.id}: theme=${prompt.themeId ?? 'n/a'}, task=${prompt.taskType ?? 'n/a'}, validation=${prompt.passedTrials}/${prompt.totalTrials} (${formatNumber(prompt.passRate)}), avgScore=${formatNumber(prompt.averageScore)}, labels=${formatLabelCounts(prompt.retentionLabels)}`,
     )
   }
 
@@ -328,7 +237,7 @@ export const formatEvalSummary = (summary: TrialRunSummary): string => {
     lines.push('', '## By Theme', '')
     for (const theme of summary.themes) {
       lines.push(
-        `- ${theme.themeId}: prompts=${theme.promptCount}, validation=${theme.passedTrials}/${theme.totalTrials} (${formatNumber(theme.passRate)}), trainingEligible=${theme.eligibleTrials}/${theme.totalTrials}, avgScore=${formatNumber(theme.averageScore)}, richness=${formatRichnessCounts(theme.richness)}, reasons=${formatLabelCounts(theme.trainingReasons)}, labels=${formatLabelCounts(theme.retentionLabels)}`,
+        `- ${theme.themeId}: prompts=${theme.promptCount}, validation=${theme.passedTrials}/${theme.totalTrials} (${formatNumber(theme.passRate)}), avgScore=${formatNumber(theme.averageScore)}, labels=${formatLabelCounts(theme.retentionLabels)}`,
       )
     }
   }

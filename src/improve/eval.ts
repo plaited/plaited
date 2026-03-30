@@ -26,7 +26,6 @@ import {
   runWorkerPool,
   writeOutput,
 } from './eval.utils.ts'
-import { assessTrainingCandidate } from './training.ts'
 
 // ============================================================================
 // Pass@k / Pass^k Calculation
@@ -179,16 +178,6 @@ export const runTrial = async (config: TrialConfig): Promise<TrialResult[]> => {
           if (graderResult.dimensions) {
             entry.dimensions = graderResult.dimensions
           }
-          entry.trainingAssessment = assessTrainingCandidate({
-            trial: {
-              pass: entry.pass,
-              capture: entry.capture,
-              exitCode: entry.exitCode,
-              timedOut: entry.timedOut,
-              trajectory: entry.trajectory,
-            },
-            dimensions: graderResult.dimensions,
-          })
         }
 
         entries.push(entry)
@@ -232,9 +221,6 @@ export const runTrial = async (config: TrialConfig): Promise<TrialResult[]> => {
       result.passRate = passes / k
       result.passAtK = calculatePassAtK(passes, k)
       result.passExpK = calculatePassExpK(passes, k)
-      const eligible = entries.filter((t) => t.trainingAssessment?.eligible).length
-      result.eligibleForTraining = eligible
-      result.eligibleRate = eligible / k
     }
 
     // Write result immediately (mutex for concurrent writes)

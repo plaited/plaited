@@ -336,7 +336,6 @@ const createAggregateSummary = ({
   const scenarios = runs.map((run) => ({
     label: run.label,
     passRate: run.summary.passRate,
-    eligibleRate: run.summary.eligibleRate,
     averageScore: run.summary.averageScore,
     totalTrials: run.summary.totalTrials,
   }))
@@ -358,10 +357,6 @@ const createAggregateSummary = ({
             passRate:
               withSkill.passRate !== undefined && baselineScenario.passRate !== undefined
                 ? Number((withSkill.passRate - baselineScenario.passRate).toFixed(3))
-                : undefined,
-            eligibleRate:
-              withSkill.eligibleRate !== undefined && baselineScenario.eligibleRate !== undefined
-                ? Number((withSkill.eligibleRate - baselineScenario.eligibleRate).toFixed(3))
                 : undefined,
             averageScore:
               withSkill.averageScore !== undefined && baselineScenario.averageScore !== undefined
@@ -443,17 +438,11 @@ const formatResultsMarkdown = ({
     lines.push(`- Rubric: ${aggregate.rubricPath}`)
   }
 
-  lines.push(
-    '',
-    '## Scenario Summary',
-    '',
-    '| Scenario | Pass Rate | Eligible Rate | Avg Score | Trials |',
-    '|---|---:|---:|---:|---:|',
-  )
+  lines.push('', '## Scenario Summary', '', '| Scenario | Pass Rate | Avg Score | Trials |', '|---|---:|---:|---:|')
 
   for (const scenario of aggregate.scenarios) {
     lines.push(
-      `| ${scenario.label} | ${formatMetric(scenario.passRate)} | ${formatMetric(scenario.eligibleRate)} | ${formatMetric(scenario.averageScore)} | ${scenario.totalTrials} |`,
+      `| ${scenario.label} | ${formatMetric(scenario.passRate)} | ${formatMetric(scenario.averageScore)} | ${scenario.totalTrials} |`,
     )
   }
 
@@ -463,7 +452,6 @@ const formatResultsMarkdown = ({
   if (withSkill && baseline) {
     const deltaLines = [
       formatRunDelta('Pass rate delta', withSkill.summary.passRate, baseline.summary.passRate),
-      formatRunDelta('Eligible rate delta', withSkill.summary.eligibleRate, baseline.summary.eligibleRate),
       formatRunDelta('Average score delta', withSkill.summary.averageScore, baseline.summary.averageScore),
     ].filter((line): line is string => line !== null)
 

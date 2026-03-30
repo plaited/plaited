@@ -25,6 +25,7 @@ import {
   collectTrainingCandidates,
   computeTrainingWeight,
   scoreTrainingDimensions,
+  type TrainingAssessedTrialResult,
   withStatisticalVerification,
 } from '../training.ts'
 
@@ -339,7 +340,7 @@ describe('assessTrainingCapture', () => {
 
 describe('collectTrainingCandidates', () => {
   test('returns only eligible trials with trajectories', () => {
-    const candidates = collectTrainingCandidates([
+    const results: TrainingAssessedTrialResult[] = [
       {
         id: 'kept',
         input: 'Prompt',
@@ -395,7 +396,9 @@ describe('collectTrainingCandidates', () => {
           },
         ],
       },
-    ])
+    ]
+
+    const candidates = collectTrainingCandidates(results)
 
     expect(candidates).toHaveLength(1)
     expect(candidates[0]!.id).toBe('kept')

@@ -221,16 +221,11 @@ describe('runTrial', () => {
     expect(r!.passRate).toBe(1)
     expect(r!.passAtK).toBe(1)
     expect(r!.passExpK).toBe(1)
-    expect(r!.eligibleForTraining).toBe(0)
-    expect(r!.eligibleRate).toBe(0)
     expect(r!.hint).toBe('should pass')
     for (const trial of r!.trials) {
       expect(trial.pass).toBe(true)
       expect(trial.score).toBe(1.0)
       expect(trial.reasoning).toBeDefined()
-      expect(trial.trainingAssessment).toBeDefined()
-      expect(trial.trainingAssessment!.eligible).toBe(false)
-      expect(trial.trainingAssessment!.reasons).toContain('missing_dimensions')
     }
   })
 
@@ -252,11 +247,9 @@ describe('runTrial', () => {
     expect(r!.passAtK!).toBeLessThanOrEqual(1)
     expect(r!.passExpK!).toBeGreaterThanOrEqual(0)
     expect(r!.passExpK!).toBeLessThan(1)
-    expect(r!.eligibleForTraining).toBe(0)
-    expect(r!.eligibleRate).toBe(0)
   })
 
-  test('grader dimensions produce training eligibility metadata', async () => {
+  test('grader dimensions are preserved on the trial entry', async () => {
     const dimensionalGrader: Grader = async () => ({
       pass: true,
       score: 0.95,
@@ -271,16 +264,12 @@ describe('runTrial', () => {
 
     const result = results[0]
     expect(result).toBeDefined()
-    expect(result!.eligibleForTraining).toBe(1)
-    expect(result!.eligibleRate).toBe(1)
     const trial = result!.trials[0]
     expect(trial).toBeDefined()
     expect(trial!.dimensions).toBeDefined()
-    expect(trial!.trainingAssessment).toBeDefined()
-    expect(trial!.trainingAssessment!.eligible).toBe(true)
-    expect(trial!.trainingAssessment!.richness).toBe('full')
-    expect(trial!.trainingAssessment!.weight).toBeCloseTo(0.855, 10)
-    expect(trial!.trainingAssessment!.reasons).toEqual([])
+    expect(trial!.dimensions!.outcome).toBeCloseTo(0.95, 10)
+    expect(trial!.dimensions!.process).toBeCloseTo(0.9, 10)
+    expect(trial!.dimensions!.efficiency).toBeCloseTo(0.8, 10)
   })
 
   test('adapter failure records error entry', async () => {
@@ -344,7 +333,7 @@ describe('runTrial', () => {
     expect(trial!.timing!.outputTokens).toBe(20)
   })
 
-  test('adapter capture evidence can drive training eligibility', async () => {
+  test('adapter capture evidence is preserved on the trial entry', async () => {
     const captureOnlyAdapter: Adapter = async ({ prompt }) => {
       const text = Array.isArray(prompt) ? prompt.join('\n') : prompt
       return {
@@ -375,8 +364,7 @@ describe('runTrial', () => {
 
     const result = results[0]
     expect(result).toBeDefined()
-    expect(result!.eligibleForTraining).toBe(1)
-    expect(result!.trials[0]?.trainingAssessment?.richness).toBe('full')
+    expect(result!.trials[0]?.dimensions?.outcome).toBeCloseTo(0.91, 10)
     expect(result!.trials[0]?.capture?.thoughtCount).toBe(1)
   })
 
@@ -877,24 +865,6 @@ describe('TrialEntrySchema with dimensions', () => {
       duration: 100,
     })
     expect(result.dimensions).toBeUndefined()
-  })
-
-  test('accepts trainingAssessment on TrialEntry', () => {
-    const result = TrialEntrySchema.parse({
-      trialNum: 1,
-      output: 'ok',
-      duration: 10,
-      trainingAssessment: {
-        eligible: true,
-        richness: 'full',
-        score: { outcome: 1, process: 0.9, efficiency: 0.8, overall: 0.9 },
-        weight: 0.9,
-        reasons: [],
-      },
-    })
-
-    expect(result.trainingAssessment).toBeDefined()
-    expect(result.trainingAssessment!.eligible).toBe(true)
   })
 
   test('accepts capture evidence on TrialEntry', () => {

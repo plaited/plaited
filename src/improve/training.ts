@@ -110,6 +110,14 @@ export type TrainingDataCandidate = {
   metadata?: TrialResult['metadata']
 }
 
+export type TrainingAssessedTrialEntry = TrialEntry & {
+  trainingAssessment?: TrainingCandidateAssessment
+}
+
+export type TrainingAssessedTrialResult = Omit<TrialResult, 'trials'> & {
+  trials: TrainingAssessedTrialEntry[]
+}
+
 /**
  * Assess whether a trial should be kept for distillation/training.
  *
@@ -194,7 +202,7 @@ export const assessTrainingCapture = ({
  *
  * @public
  */
-export const collectTrainingCandidates = (results: TrialResult[]): TrainingDataCandidate[] =>
+export const collectTrainingCandidates = (results: TrainingAssessedTrialResult[]): TrainingDataCandidate[] =>
   results.flatMap((result) =>
     result.trials.flatMap((trial) => {
       if (!trial.trainingAssessment?.eligible) return []
