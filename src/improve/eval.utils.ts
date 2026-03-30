@@ -14,12 +14,18 @@ import type {
   CaptureEvidence,
   Grader,
   GraderResult,
+  MetaVerification,
   PromptCase,
   TrajectoryRichness,
   TrialResult,
 } from './eval.schemas.ts'
-import { AdapterResultSchema, GraderResultSchema, PromptCaseSchema, type TrajectoryStep } from './eval.schemas.ts'
-import { MetaVerificationSchema } from './training.schemas.ts'
+import {
+  AdapterResultSchema,
+  GraderResultSchema,
+  MetaVerificationSchema,
+  PromptCaseSchema,
+  type TrajectoryStep,
+} from './eval.schemas.ts'
 
 // ============================================================================
 // Path Resolution
@@ -456,12 +462,6 @@ export const detectRichness = (trajectory: TrajectoryStep[], capture?: CaptureEv
 // ============================================================================
 // Meta-Verification
 // ============================================================================
-
-/** Meta-verification result from a verifier function */
-export type MetaVerification = {
-  confidence: number
-  reasoning?: string
-}
 
 /** Verifier function that scores a grader's output */
 export type Verifier = (result: GraderResult) => Promise<MetaVerification>

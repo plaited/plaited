@@ -235,6 +235,23 @@ export const GraderResultSchema = z.object({
 export type GraderResult = z.infer<typeof GraderResultSchema>
 
 /**
+ * Meta-verification result from a verifier function.
+ *
+ * @remarks
+ * Keeps verifier confidence separate from the raw grader signal while still
+ * allowing downstream selection/promotion tooling to reason about trust.
+ *
+ * @public
+ */
+export const MetaVerificationSchema = z.object({
+  confidence: z.number().min(0).max(1),
+  reasoning: z.string().optional(),
+})
+
+/** Meta-verification type */
+export type MetaVerification = z.infer<typeof MetaVerificationSchema>
+
+/**
  * Grader function — scores agent output.
  *
  * @remarks

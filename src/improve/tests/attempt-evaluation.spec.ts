@@ -1,17 +1,17 @@
 import { describe, expect, test } from 'bun:test'
 import {
-  buildWorkspaceImprovementJudgeInput,
-  buildWorkspaceImprovementJudgePrompt,
-  buildWorkspaceImprovementMetaVerifierPrompt,
-  buildWorkspaceImprovementPromotionPrompt,
-  WorkspaceImprovementJudgeResponseSchema,
-  WorkspaceImprovementMetaVerifierResponseSchema,
-  WorkspaceImprovementPromotionDecisionSchema,
-} from '../workspace-improvement-eval.ts'
+  AttemptJudgeResponseSchema,
+  AttemptMetaVerifierResponseSchema,
+  AttemptPromotionDecisionSchema,
+  buildAttemptJudgeInput,
+  buildAttemptJudgePrompt,
+  buildAttemptMetaVerifierPrompt,
+  buildAttemptPromotionPrompt,
+} from '../attempt-evaluation.ts'
 
-describe('workspace-improvement-eval', () => {
+describe('attempt-evaluation', () => {
   test('builds validated judge input', () => {
-    const input = buildWorkspaceImprovementJudgeInput({
+    const input = buildAttemptJudgeInput({
       evaluationTarget: 'workspace-improvement',
       task: 'Improve the mss-seed lane.',
       candidateOutput: 'Updated seed artifacts.',
@@ -31,7 +31,7 @@ describe('workspace-improvement-eval', () => {
   })
 
   test('builds judge prompt with criteria and patch context', () => {
-    const input = buildWorkspaceImprovementJudgeInput({
+    const input = buildAttemptJudgeInput({
       evaluationTarget: 'workspace-improvement',
       task: 'Improve the mss-corpus lane.',
       candidateOutput: 'Added encoded corpus manifest.',
@@ -46,7 +46,7 @@ describe('workspace-improvement-eval', () => {
       skillCatalog: [{ path: 'skills/mss', description: 'MSS modeling skill.' }],
     })
 
-    const prompt = buildWorkspaceImprovementJudgePrompt({
+    const prompt = buildAttemptJudgePrompt({
       input,
       criteria: 'Prefer source-backed encoded corpus outputs.',
     })
@@ -61,7 +61,7 @@ describe('workspace-improvement-eval', () => {
   })
 
   test('builds meta-verifier prompt from judge result', () => {
-    const input = buildWorkspaceImprovementJudgeInput({
+    const input = buildAttemptJudgeInput({
       evaluationTarget: 'workspace-improvement',
       task: 'Improve the mss-seed lane.',
       candidateOutput: 'Updated seed artifacts.',
@@ -76,7 +76,7 @@ describe('workspace-improvement-eval', () => {
       skillCatalog: [{ path: 'skills/mss', description: 'MSS modeling skill.' }],
     })
 
-    const prompt = buildWorkspaceImprovementMetaVerifierPrompt({
+    const prompt = buildAttemptMetaVerifierPrompt({
       input,
       judgeResult: {
         pass: true,
@@ -97,7 +97,7 @@ describe('workspace-improvement-eval', () => {
 
   test('parses judge and verifier response schemas', () => {
     expect(() =>
-      WorkspaceImprovementJudgeResponseSchema.parse({
+      AttemptJudgeResponseSchema.parse({
         pass: true,
         score: 0.9,
         reasoning: 'Strong bounded change.',
@@ -109,14 +109,14 @@ describe('workspace-improvement-eval', () => {
     ).not.toThrow()
 
     expect(() =>
-      WorkspaceImprovementMetaVerifierResponseSchema.parse({
+      AttemptMetaVerifierResponseSchema.parse({
         confidence: 0.8,
         reasoning: 'Supported by changed files and checks.',
       }),
     ).not.toThrow()
 
     expect(() =>
-      WorkspaceImprovementPromotionDecisionSchema.parse({
+      AttemptPromotionDecisionSchema.parse({
         action: 'promote_one',
         selectedAttempt: 3,
         selectedCommit: 'abc123',
@@ -127,7 +127,7 @@ describe('workspace-improvement-eval', () => {
   })
 
   test('builds promotion prompt with attempt summaries', () => {
-    const prompt = buildWorkspaceImprovementPromotionPrompt({
+    const prompt = buildAttemptPromotionPrompt({
       lane: 'mss-seed',
       program: 'dev-research/mss-seed/program.md',
       attempts: [

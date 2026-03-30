@@ -5,6 +5,47 @@ import { GraderResultSchema, PromptCaseSchema, TimingSchema } from './eval.schem
 export const EvaluationTargetSchema = z.enum(['workspace-improvement', 'trial-result'])
 export type EvaluationTarget = z.infer<typeof EvaluationTargetSchema>
 
+export const VerificationTargetSchema = z.enum(['workspace-improvement', 'trial-result'])
+export type VerificationTarget = z.infer<typeof VerificationTargetSchema>
+
+export const VerificationFindingSeveritySchema = z.enum(['info', 'warning', 'error'])
+export type VerificationFindingSeverity = z.infer<typeof VerificationFindingSeveritySchema>
+
+export const VerificationCheckKindSchema = z.enum(['deterministic', 'symbolic', 'judge', 'meta-verifier', 'human'])
+export type VerificationCheckKind = z.infer<typeof VerificationCheckKindSchema>
+
+export const VerificationFindingSchema = z.object({
+  code: z.string(),
+  severity: VerificationFindingSeveritySchema,
+  message: z.string(),
+  path: z.string().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+})
+export type VerificationFinding = z.infer<typeof VerificationFindingSchema>
+
+export const VerificationCheckSchema = z.object({
+  name: z.string(),
+  kind: VerificationCheckKindSchema,
+  passed: z.boolean(),
+  notes: z.string().optional(),
+  findings: z.array(VerificationFindingSchema).default([]),
+})
+export type VerificationCheck = z.infer<typeof VerificationCheckSchema>
+
+export const VerificationResultSchema = z.object({
+  verificationTarget: VerificationTargetSchema,
+  passed: z.boolean(),
+  confidence: z.number().min(0).max(1).optional(),
+  checks: z.array(VerificationCheckSchema),
+  summary: z.string().optional(),
+})
+export type VerificationResult = z.infer<typeof VerificationResultSchema>
+
+export const SelfVerificationResultSchema = VerificationResultSchema.extend({
+  verifierKind: z.literal('self-verification'),
+})
+export type SelfVerificationResult = z.infer<typeof SelfVerificationResultSchema>
+
 export const RetainedOutputSuitabilityLabelSchema = z.enum([
   'framework-improvement',
   'native-model-distillation',

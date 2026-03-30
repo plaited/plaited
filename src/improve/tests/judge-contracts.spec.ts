@@ -1,9 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  SelfVerificationResultSchema,
   TrialJudgeInputSchema,
   TrialJudgeResultSchema,
   TrialMetaVerifierInputSchema,
   TrialMetaVerifierOutcomeSchema,
+  VerificationResultSchema,
   WorkspaceImprovementJudgeInputSchema,
   WorkspaceImprovementJudgeOutcomeSchema,
   WorkspaceImprovementMetaVerifierOutcomeSchema,
@@ -116,5 +118,47 @@ describe('judge contracts', () => {
 
     expect(judgeOutcome.judgeKind).toBe('workspace-improvement')
     expect(metaOutcome.judgeKind).toBe('workspace-improvement-meta-verifier')
+  })
+
+  test('supports explicit verification and self-verification results', () => {
+    const verification = VerificationResultSchema.parse({
+      verificationTarget: 'workspace-improvement',
+      passed: false,
+      confidence: 0.8,
+      checks: [
+        {
+          name: 'scope',
+          kind: 'deterministic',
+          passed: false,
+          findings: [
+            {
+              code: 'out_of_scope',
+              severity: 'error',
+              message: 'README.md changed outside allowed roots.',
+              path: 'README.md',
+            },
+          ],
+        },
+      ],
+      summary: 'Attempt failed deterministic scope verification.',
+    })
+
+    const selfVerification = SelfVerificationResultSchema.parse({
+      verificationTarget: 'trial-result',
+      verifierKind: 'self-verification',
+      passed: true,
+      confidence: 0.72,
+      checks: [
+        {
+          name: 'consistency',
+          kind: 'meta-verifier',
+          passed: true,
+          findings: [],
+        },
+      ],
+    })
+
+    expect(verification.checks[0]?.findings[0]?.code).toBe('out_of_scope')
+    expect(selfVerification.verifierKind).toBe('self-verification')
   })
 })

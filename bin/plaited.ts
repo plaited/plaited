@@ -18,7 +18,7 @@ import { discoverSkillsCli, evaluateSkillCli, ingestSkillCli, skillLinksCli, val
 
 export { ensureTool, makeCli, parseCli } from '../src/cli.ts'
 
-import { evalCli, trainingScoreCli } from '../src/improve.ts'
+import { evalCli } from '../src/improve.ts'
 
 // ============================================================================
 // Command Registry
@@ -39,7 +39,6 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   search: searchCli,
   'skill-links': skillLinksCli,
   eval: evalCli,
-  'training-score': trainingScoreCli,
 }
 
 // ============================================================================
@@ -77,7 +76,7 @@ Commands:
 
   Development:
     validate-skill, ingest-skill, discover-skills,
-    evaluate-skill, search, skill-links, eval, training-score`)
+    evaluate-skill, search, skill-links, eval`)
     process.exit(command ? 0 : 1)
   }
 

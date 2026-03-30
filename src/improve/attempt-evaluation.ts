@@ -7,7 +7,7 @@ import {
   WorkspaceImprovementJudgeOutcomeSchema,
 } from './judge-contracts.ts'
 
-export const WorkspaceImprovementJudgeResponseSchema = z.object({
+export const AttemptJudgeResponseSchema = z.object({
   pass: z.boolean(),
   score: z.number().min(0).max(1),
   reasoning: z.string(),
@@ -21,16 +21,16 @@ export const WorkspaceImprovementJudgeResponseSchema = z.object({
   outcome: WorkspaceImprovementJudgeOutcomeSchema.optional(),
 })
 
-export type WorkspaceImprovementJudgeResponse = z.infer<typeof WorkspaceImprovementJudgeResponseSchema>
+export type AttemptJudgeResponse = z.infer<typeof AttemptJudgeResponseSchema>
 
-export const WorkspaceImprovementMetaVerifierResponseSchema = z.object({
+export const AttemptMetaVerifierResponseSchema = z.object({
   confidence: z.number().min(0).max(1),
   reasoning: z.string(),
 })
 
-export type WorkspaceImprovementMetaVerifierResponse = z.infer<typeof WorkspaceImprovementMetaVerifierResponseSchema>
+export type AttemptMetaVerifierResponse = z.infer<typeof AttemptMetaVerifierResponseSchema>
 
-export const WorkspaceImprovementPromotionDecisionSchema = z.object({
+export const AttemptPromotionDecisionSchema = z.object({
   action: z.enum(['promote_one', 'manual_review', 'reject_all']),
   selectedAttempt: z.number().int().positive().optional(),
   selectedCommit: z.string().optional(),
@@ -38,9 +38,9 @@ export const WorkspaceImprovementPromotionDecisionSchema = z.object({
   reasoning: z.string(),
 })
 
-export type WorkspaceImprovementPromotionDecision = z.infer<typeof WorkspaceImprovementPromotionDecisionSchema>
+export type AttemptPromotionDecision = z.infer<typeof AttemptPromotionDecisionSchema>
 
-export const buildWorkspaceImprovementJudgeInput = ({
+export const buildAttemptJudgeInput = ({
   task,
   candidateOutput,
   changedFiles,
@@ -73,7 +73,7 @@ const formatChecks = (checks: Record<string, unknown>) =>
     .map(([key, value]) => `- ${key}: ${typeof value === 'string' ? value : JSON.stringify(value)}`)
     .join('\n')
 
-export const buildWorkspaceImprovementJudgePrompt = ({
+export const buildAttemptJudgePrompt = ({
   input,
   criteria,
 }: {
@@ -130,7 +130,7 @@ Return JSON with:
 - dimensions: { outcome?, process?, efficiency? }
 - outcome: { evaluationTarget: "workspace-improvement", judgeKind: "workspace-improvement", rubric?: { architecture?, boundedness?, focus?, quality? } }`
 
-export const buildWorkspaceImprovementMetaVerifierPrompt = ({
+export const buildAttemptMetaVerifierPrompt = ({
   input,
   judgeResult,
   criteria,
@@ -182,7 +182,7 @@ Return JSON with:
 Use high confidence only when the judgment is well-supported by the changed files, checks,
 candidate output, and lane-specific criteria.`
 
-export const buildWorkspaceImprovementPromotionPrompt = ({
+export const buildAttemptPromotionPrompt = ({
   lane,
   program,
   attempts,
@@ -237,4 +237,4 @@ Return JSON with:
 
 Choose "promote_one" only when the selected attempt clearly deserves promotion.`
 
-export const toWorkspaceImprovementJudgeOutcome = (outcome?: WorkspaceImprovementJudgeOutcome) => outcome
+export const toAttemptJudgeOutcome = (outcome?: WorkspaceImprovementJudgeOutcome) => outcome

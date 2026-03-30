@@ -1,38 +1,31 @@
-export type ImprovementAttemptDecision = 'keep' | 'revise' | 'discard'
+export type ResearchDecision = 'keep' | 'revise' | 'discard'
 
-export type ImprovementValidationResult = {
+export type ResearchValidationResult = {
   passed: boolean
   notes: string
   command: string[]
 }
 
-export type ImprovementScopeCheckResult = {
+export type ResearchScopeCheckResult = {
   passed: boolean
   notes: string
   allowedPaths: string[]
 }
 
-export type ImprovementStageLogEntry = {
+export type ResearchStageLogEntry = {
   at: string
   stage: string
   message: string
 }
 
-export type ImprovementProgramDocument = {
-  path: string
-  text: string
-}
-
-export type ImprovementSliceDocument = {
-  id: string
+export type ResearchProgramDocument = {
   path: string
   text: string
   scopePaths: string[]
 }
 
-export type ImprovementProtocolContext = {
-  program: ImprovementProgramDocument
-  slice: ImprovementSliceDocument
+export type ResearchProgramContext = {
+  program: ResearchProgramDocument
   prompt: string
   allowedPaths: string[]
 }
@@ -40,15 +33,6 @@ export type ImprovementProtocolContext = {
 const timestamp = (): string => new Date().toISOString()
 
 const normalizePath = (path: string): string => path.replace(/\\/g, '/')
-
-const getSliceDirectory = (slicePath: string): string => {
-  const normalized = normalizePath(slicePath)
-  const index = normalized.lastIndexOf('/')
-  return index === -1 ? '.' : normalized.slice(0, index)
-}
-
-export const resolveProgramPath = (slicePath: string, explicitProgramPath?: string): string =>
-  explicitProgramPath ?? `${getSliceDirectory(slicePath)}/program.md`
 
 export const requireMarkdown = async (path: string, headings: string[]): Promise<string> => {
   const file = Bun.file(path)
@@ -60,8 +44,8 @@ export const requireMarkdown = async (path: string, headings: string[]): Promise
   return text
 }
 
-export const parseSliceScope = (slice: string): string[] => {
-  const match = slice.match(/## Scope\s*\n([\s\S]*?)(?:\n## |\s*$)/)
+export const parseProgramScope = (program: string): string[] => {
+  const match = program.match(/## (?:Scope|Writable Roots)\s*\n([\s\S]*?)(?:\n## |\s*$)/)
   if (!match) return []
   const section = match[1]
   if (!section) return []
@@ -77,13 +61,13 @@ export const parseSliceScope = (slice: string): string[] => {
       const cleaned = line.replace(/`/g, '')
       return /^[A-Za-z0-9._/-]+\.(md|ts|tsx|js|jsx|json)$/.test(cleaned) || cleaned.endsWith('/') ? [cleaned] : []
     })
-    .map((line) => line.replace(/\*+$/, ''))
-    .map((line) => line.replace(/^\.\//, ''))
+    .map((line) => line.replace(/\*+$/u, ''))
+    .map((line) => line.replace(/^\.\//u, ''))
     .map(normalizePath)
     .filter(Boolean)
 }
 
-export const checkImproveScope = (changedFiles: string[], allowedPaths: string[]): ImprovementScopeCheckResult => {
+export const checkResearchScope = (changedFiles: string[], allowedPaths: string[]): ResearchScopeCheckResult => {
   if (changedFiles.length === 0) {
     return {
       passed: false,
@@ -108,55 +92,39 @@ export const checkImproveScope = (changedFiles: string[], allowedPaths: string[]
   }
 }
 
-export const buildImprovePrompt = (program: string, slice: string): string =>
+export const buildResearchPrompt = (program: string): string =>
   [
     'Execution mode:',
-    '- Use an autoresearch-style workflow for this bounded development slice.',
-    '- The architecture is already decided by the program and slice files below.',
+    '- Use an autoresearch-style workflow for this bounded development program.',
+    '- The architecture is decided by the program file below.',
     '- Make one bounded attempt, run validation, and state whether the result should be kept or revised.',
     '',
     'Program:',
     program,
-    '',
-    'Slice:',
-    slice,
   ].join('\n')
 
-export const loadImprovementProtocolContext = async ({
+export const loadResearchProgramContext = async ({
   defaultAllowedPaths,
   programPath,
-  slicePath,
 }: {
   defaultAllowedPaths: string[]
   programPath: string
-  slicePath: string
-}): Promise<ImprovementProtocolContext> => {
-  const program = await requireMarkdown(programPath, [
-    '## Mission',
-    '## Fixed Architecture',
-    '## Runtime Taxonomy',
-    '## Validation',
-  ])
-  const slice = await requireMarkdown(slicePath, ['# Slice', '## Target', '## Acceptance Criteria'])
-  const scopePaths = parseSliceScope(slice)
+}): Promise<ResearchProgramContext> => {
+  const program = await requireMarkdown(programPath, ['## Mission', '## Fixed Architecture', '## Validation'])
+  const scopePaths = parseProgramScope(program)
 
   return {
     program: {
       path: programPath,
       text: program,
-    },
-    slice: {
-      id: basenameWithoutExt(slicePath),
-      path: slicePath,
-      text: slice,
       scopePaths,
     },
-    prompt: buildImprovePrompt(program, slice),
+    prompt: buildResearchPrompt(program),
     allowedPaths: scopePaths.length > 0 ? scopePaths : defaultAllowedPaths,
   }
 }
 
-export const createStageLogger = (quiet: boolean, stageLog: ImprovementStageLogEntry[]) => {
+export const createStageLogger = (quiet: boolean, stageLog: ResearchStageLogEntry[]) => {
   return (stage: string, message: string) => {
     stageLog.push({
       at: timestamp(),
@@ -167,11 +135,3 @@ export const createStageLogger = (quiet: boolean, stageLog: ImprovementStageLogE
     console.log(`[${stageLog.at(-1)?.at ?? timestamp()}] ${stage} ${message}`)
   }
 }
-
-const basename = (path: string): string => {
-  const normalized = normalizePath(path)
-  const index = normalized.lastIndexOf('/')
-  return index === -1 ? normalized : normalized.slice(index + 1)
-}
-
-const basenameWithoutExt = (path: string): string => basename(path).replace(/\.[^.]+$/, '')

@@ -1,10 +1,10 @@
 import type { Grader } from '../src/improve.ts'
 import {
-  buildWorkspaceImprovementJudgeInput,
-  buildWorkspaceImprovementJudgePrompt,
+  type AttemptJudgeResponse,
+  AttemptJudgeResponseSchema,
+  buildAttemptJudgeInput,
+  buildAttemptJudgePrompt,
   type WorkspaceImprovementJudgeInput,
-  type WorkspaceImprovementJudgeResponse,
-  WorkspaceImprovementJudgeResponseSchema,
 } from '../src/improve.ts'
 import { resolvePrimaryJudgeModel, runStructuredLlmQuery } from './structured-llm-query.ts'
 
@@ -34,7 +34,7 @@ export const buildBehavioralFactoriesJudgeInput = ({
   metadata?: Record<string, unknown>
   task: string
 }): WorkspaceImprovementJudgeInput =>
-  buildWorkspaceImprovementJudgeInput({
+  buildAttemptJudgeInput({
     evaluationTarget: 'workspace-improvement',
     task,
     candidateOutput: output,
@@ -75,13 +75,13 @@ export const grade: Grader = async ({ output, metadata }) => {
     metadata,
     task: 'Evaluate a behavioral-factories autoresearch attempt.',
   })
-  const result = await runStructuredLlmQuery<WorkspaceImprovementJudgeResponse>({
+  const result = await runStructuredLlmQuery<AttemptJudgeResponse>({
     model: resolvePrimaryJudgeModel(),
-    prompt: buildWorkspaceImprovementJudgePrompt({
+    prompt: buildAttemptJudgePrompt({
       input,
       criteria: BEHAVIORAL_FACTORIES_JUDGE_CRITERIA,
     }),
-    schema: WorkspaceImprovementJudgeResponseSchema,
+    schema: AttemptJudgeResponseSchema,
     systemPrompt:
       'You are evaluating a workspace-improvement attempt. Your first job is to find correctness, scope, and evidence problems. Return strict JSON only. Treat the lane program as the contract. Use search on retained seed/corpus JSON-LD artifacts when semantic evidence matters, and use read_file for markdown or source surfaces. Prefer exact artifact paths like dev-research/mss-seed/seed or dev-research/behavioral-corpus/encoded, not broad root queries. Use at most one or two focused tool calls before deciding. Fail attempts unless the changed files, checks, output, and artifact evidence strongly support a bounded behavioral-factories improvement.',
     workspaceReadAccess:

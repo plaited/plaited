@@ -2,12 +2,12 @@
 
 import { isAbsolute, join, resolve } from 'node:path'
 import { $ } from 'bun'
-import type { Grader, GraderResult, Verifier, WorkspaceImprovementPromotionDecision } from '../src/improve.ts'
+import type { AttemptPromotionDecision, Grader, GraderResult, Verifier } from '../src/improve.ts'
 import {
-  buildWorkspaceImprovementPromotionPrompt,
+  AttemptPromotionDecisionSchema,
+  buildAttemptPromotionPrompt,
   loadGrader,
   loadVerifier,
-  WorkspaceImprovementPromotionDecisionSchema,
 } from '../src/improve.ts'
 import { runStructuredLlmQuery } from './structured-llm-query.ts'
 
@@ -865,16 +865,16 @@ export const selectPromotionDecision = async ({
   }
 
   const model = process.env.PLAITED_PROMOTION_MODEL?.trim() || 'z-ai/glm-5'
-  const prompt = buildWorkspaceImprovementPromotionPrompt({
+  const prompt = buildAttemptPromotionPrompt({
     lane: config.key,
     program: config.programPath,
     attempts: candidates.map(({ worktreePath: _, ...candidate }) => candidate),
   })
 
-  const result = await runStructuredLlmQuery<WorkspaceImprovementPromotionDecision>({
+  const result = await runStructuredLlmQuery<AttemptPromotionDecision>({
     model,
     prompt,
-    schema: WorkspaceImprovementPromotionDecisionSchema,
+    schema: AttemptPromotionDecisionSchema,
     systemPrompt:
       'You are selecting a promotion decision across validated workspace-improvement attempts. Be conservative. Prefer manual_review unless one attempt is clearly the best supported choice.',
     workspaceReadAccess: {
