@@ -330,7 +330,6 @@ Instead:
 
 Examples:
 
-- `plaited typescript-lsp`
 - `plaited markdown --get-frontmatter`
 - CLI wrappers over `bash`, `git`, `jq`, and other utilities where appropriate
 
@@ -352,6 +351,31 @@ results. Factories decide which CLI-backed or built-in capabilities to target.
 
 This would let `scripts/` import stable evaluation utilities from
 `plaited/improve` instead of re-implementing too much lane-specific logic.
+
+Current refinement:
+
+- raw `eval.ts` output should remain evaluation-only
+- eval results should carry:
+  - pass/fail
+  - score
+  - dimensions
+  - outcome
+  - timing
+  - trajectory
+  - capture
+  - pass@k / pass^k aggregates
+- eval results should not carry built-in training or distillation policy
+  annotations such as `trainingAssessment`
+- retention/distillation helpers may still exist separately, but they should
+  not define the raw eval output contract
+
+Near-term focus should shift toward tooling that supports
+`dev-research/evolutionary-agent/program.md` directly:
+
+- package or harness mutation tooling
+- rollout orchestration
+- judged selection and promotion tooling
+- retained artifact capture for later distillation
 
 ## Behavioral Factories Program Decisions
 

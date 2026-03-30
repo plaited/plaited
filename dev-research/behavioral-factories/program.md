@@ -69,7 +69,9 @@ The intended boundary is:
 - `src/agent` is the generic agent engine
 - `src/factories` should contain promoted executable factory implementations
 - `src/inference` should contain model/provider-facing integration code
-- `src/skill` should be the export boundary for shipped default skills
+- `src/skill` should be the boundary for skill usage, discovery, validation,
+  ingestion, and related tooling/utilities
+- `skills/*` contains shipped default skills
 - `src/hypergraph` should be the export boundary for durable-memory graph
   querying and graph algorithms
 
@@ -152,6 +154,31 @@ This lane should also assume a single centralized package CLI:
 - shipped skills such as `typescript-lsp` are package artifacts, but should not
   automatically be treated as top-level `plaited` commands unless explicitly
   wired into the router
+
+This lane should treat `src/improve` carefully:
+
+- raw eval outputs should remain evaluation-only
+- eval outputs may include:
+  - pass/fail
+  - score
+  - dimensions
+  - outcome
+  - timing
+  - trajectory
+  - capture
+  - pass@k / pass^k style aggregates
+- raw eval outputs should not embed retention or training policy annotations
+- any retention, distillation, or selection-for-training helpers should remain
+  separate from the raw eval output contract
+
+For the next stage, this lane should bias toward tooling that supports
+`dev-research/evolutionary-agent/program.md` directly:
+
+- mutation tooling over package or harness surfaces
+- rollout orchestration
+- judged selection
+- promotion tooling
+- retained artifact capture for later distillation
 
 ## Inputs
 
