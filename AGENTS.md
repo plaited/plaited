@@ -153,6 +153,8 @@ uv run python -c "import mlx.core as mx; print(mx.default_device())"
 **No index.ts** — rename to feature name.
 **Explicit .ts extensions** — `import { x } from './file.ts'`
 **Re-export at boundaries** — parent `feature.ts` re-exports from `feature/feature.ts`.
+**No internal barrel duplicate** — keep the outer boundary file like `src/feature.ts`, but do not add an extra
+`src/feature/feature.ts` barrel when direct exports from concrete files are clearer.
 **Helpers first** — define helper consts/functions BEFORE their first reference.
 **Direct imports** — import from specific files, not through re-exports within a module.
 

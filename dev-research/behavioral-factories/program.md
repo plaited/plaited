@@ -86,6 +86,20 @@ Factories should own most actual behavior, including:
 - working-memory behavior
 - durable-memory behavior
 
+Factories should still prefer BP-native coordination patterns.
+`async` `useFeedback` handlers are acceptable and expected when they are doing
+bounded side-effect work.
+
+Prefer:
+
+- explicit request/result or request/completion event pairs
+- bThreads that wait, block, and interrupt around those events
+- handlers that stay narrow and side-effect oriented
+
+Be cautious of factories that hide too much orchestration inside one handler,
+especially when that handler relies on imperative branching and internal
+control flow that would be clearer as explicit behavioral event choreography.
+
 This lane should prefer executable TypeScript factory surfaces over
 embedding these behaviors directly into the core agent engine.
 
@@ -435,6 +449,11 @@ Important validation signals include:
 - contract-shape validators
 - context-pack and handoff validators
 - commit and replay target validators
+
+Behavioral anti-pattern validation should explicitly watch for patterns such
+as control-flow-heavy `useFeedback` handlers with imperative branching and
+orchestration logic that would be clearer as explicit behavioral event
+choreography.
 
 Biome is useful not only as a style check, but also because:
 
