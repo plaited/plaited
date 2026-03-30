@@ -421,7 +421,6 @@ The repo ships an agent-facing CLI toolbox:
 - `plaited search`
 - `plaited skill-links`
 - `plaited eval`
-- `plaited training-score`
 
 See:
 - [cli.ts](/Users/eirby/Workspace/plaited/src/cli.ts)
