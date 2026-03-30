@@ -22,7 +22,6 @@ import { evaluateSkillCli } from './tools/skill-evaluate.ts'
 import { skillLinksCli } from './tools/skill-links.ts'
 import { validateSkill } from './tools/skill-validate.ts'
 import { typescriptLsp } from './tools/typescript-lsp.ts'
-import { validateEncodingCli } from './tools/validate-encoding.ts'
 import { validateThreadCli } from './tools/validate-thread.ts'
 
 // ============================================================================
@@ -46,7 +45,6 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   'discover-skills': discoverSkillsCli,
   'evaluate-skill': evaluateSkillCli,
   'skill-links': skillLinksCli,
-  'validate-encoding': validateEncodingCli,
   'typescript-lsp': typescriptLsp,
 }
 
@@ -85,7 +83,7 @@ Commands:
   Development:
     validate-skill, validate-thread, ingest-goal,
     ingest-skill, ingest-rules, discover-skills,
-    evaluate-skill, skill-links, validate-encoding,
+    evaluate-skill, skill-links,
     validate-research, typescript-lsp`)
   process.exit(command ? 0 : 1)
 }
