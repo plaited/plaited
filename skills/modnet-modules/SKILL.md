@@ -71,14 +71,17 @@ The active corpus currently contains 25 prompts across 8 domains:
 
 ## Grading
 
-Use the module grader at `src/tools/module-grader.ts`:
+Use a custom module grader suited to the current improve/trial surface:
 
 ```typescript
-import { createModuleGrader } from '../tools/module-grader.ts'
-
-const grader = createModuleGrader()
-// or with LLM judge:
-const grader = createModuleGrader({ judge: myJudgeFunction })
+const grade = async (candidate) => {
+  // Return outcome / process / efficiency scores for the candidate.
+  return {
+    outcome: 0.8,
+    process: 0.7,
+    efficiency: 0.6,
+  }
+}
 ```
 
 Three-dimension scoring maps to `GradingDimensions`:
@@ -90,7 +93,6 @@ Three-dimension scoring maps to `GradingDimensions`:
 
 ```typescript
 import { runTrial } from '../improve.ts'
-import { grade } from '../tools/module-grader.ts'
 
 const results = await runTrial({
   adapter: myAdapter,

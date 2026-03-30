@@ -10,7 +10,7 @@ import {
 } from '../scripts/typescript-lsp.ts'
 
 const cliPath = join(import.meta.dir, '..', '..', '..', 'bin', 'plaited.ts')
-const fixtureFile = join(import.meta.dir, '..', '..', '..', 'src', 'tools', 'tests', 'fixtures', 'sample.ts')
+const fixtureFile = join(import.meta.dir, 'fixtures', 'sample.ts')
 const rootUri = `file://${process.cwd()}`
 const testUri = `file://${fixtureFile}`
 

@@ -178,7 +178,7 @@ describe('deriveProvenanceEdges', () => {
 // buildSessionSummary
 // ============================================================================
 
-const FIXTURES_DIR = resolve(import.meta.dir, '..', '..', 'tools', 'tests', 'fixtures', 'hypergraph')
+const FIXTURES_DIR = resolve(import.meta.dir, 'fixtures', 'hypergraph')
 
 describe('buildSessionSummary', () => {
   test('aggregates thread types', async () => {

@@ -66,8 +66,8 @@ Test target.
 
 ## Scope
 
-- src/tools/skill-evaluate.ts
-- src/tools/tests/skill-evaluate.spec.ts
+- src/skill/skill-evaluate.ts
+- src/skill/tests/skill-evaluate.spec.ts
 - src/cli.ts
 - README.md
 
@@ -77,8 +77,8 @@ Test target.
 `
 
     expect(parseSliceScope(slice)).toEqual([
-      'src/tools/skill-evaluate.ts',
-      'src/tools/tests/skill-evaluate.spec.ts',
+      'src/skill/skill-evaluate.ts',
+      'src/skill/tests/skill-evaluate.spec.ts',
       'src/cli.ts',
       'README.md',
     ])

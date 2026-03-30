@@ -6,7 +6,7 @@ This file mixes:
 - **current concrete shapes** used by Plaited tooling today
 - **architectural direction** for richer memory graphs
 
-When they differ, the current code in `src/tools/` and `src/agent/` wins.
+When they differ, the current code in `src/hypergraph/`, `src/skill/`, and `src/agent/` wins.
 
 ## Base Context (`@context.jsonld`)
 

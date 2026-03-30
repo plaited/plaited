@@ -36,10 +36,10 @@ import { resolve } from 'node:path'
 import type { ToolContext } from '../../agent/agent.types.ts'
 import { buildIndex, loadJsonLd, search } from '../hypergraph.ts'
 
-const FIXTURES_DIR = resolve(import.meta.dir, '..', '..', 'tools', 'tests', 'fixtures', 'hypergraph')
+const FIXTURES_DIR = resolve(import.meta.dir, 'fixtures', 'hypergraph')
 
 const ctx: ToolContext = {
-  workspace: resolve(import.meta.dir, '..', '..', 'tools', 'tests', 'fixtures'),
+  workspace: resolve(import.meta.dir, 'fixtures'),
   env: {},
   signal: AbortSignal.timeout(30_000),
 }

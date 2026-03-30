@@ -18,7 +18,7 @@ files in a git repo, queryable via grep (text), a domain-agnostic TypeScript
 runtime, and WASM graph algorithms.
 
 This skill mixes two layers:
-- **current Plaited tooling** — what `src/tools/hypergraph.ts` and the ingest
+- **current Plaited tooling** — what `src/hypergraph/hypergraph.ts` and the ingest
   tools actually support today
 - **memory architecture** — the broader `.memory/` conventions and runtime
   lifecycle built around those tools

@@ -21,7 +21,6 @@
   "main": "./src/main.ts",
   "exports": {
     ".": "./src/main.ts",
-    "./cli": "./src/cli.ts",
     "./improve": "./src/improve.ts",
     "./mcp": "./src/mcp.ts",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
