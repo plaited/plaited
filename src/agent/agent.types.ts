@@ -1,12 +1,97 @@
 import type { A2AClient } from '../a2a/a2a.types.ts'
-import type { DefaultHandlers, Disconnect, SnapshotListener, Trigger } from '../behavioral/behavioral.types.ts'
-import type { HeartbeatHandle } from './proactive.ts'
+import type {
+  DefaultHandlers,
+  Disconnect,
+  RulesFunction,
+  SnapshotListener,
+  Trigger,
+  UseSnapshot,
+} from '../behavioral/behavioral.types.ts'
 import type { CONTROLLER_TO_AGENT_EVENTS, UI_ADAPTER_LIFECYCLE_EVENTS } from '../events.ts'
 import type { UIClientConnectedDetail, UIClientDisconnectedDetail, UIClientErrorDetail } from '../server.ts'
 import type { SnapshotEvent, UserActionMessage } from '../ui.ts'
 import type { AGENT_EVENTS } from './agent.constants.ts'
-
 import type { AgentPlan, AgentToolCall, GateDecision, ModelUsage, ToolDefinition, ToolResult } from './agent.schemas.ts'
+import type { HeartbeatHandle } from './proactive.ts'
+
+/**
+ * Initial heartbeat configuration for an agent.
+ *
+ * @public
+ */
+export type AgentHeartbeatConfig = {
+  intervalMs?: number
+}
+
+/**
+ * Executable behavior returned by an installed factory.
+ *
+ * @public
+ */
+export type AgentFactoryInstallResult = {
+  threads?: Record<string, RulesFunction>
+  handlers?: DefaultHandlers
+}
+
+/**
+ * Context given to agent factories at install time.
+ *
+ * @public
+ */
+export type AgentFactoryInstallContext = {
+  trigger: Trigger
+  useSnapshot: UseSnapshot
+}
+
+/**
+ * Executable factory that installs behavioral threads and handlers into an agent.
+ *
+ * @public
+ */
+export type AgentFactory = (
+  context: AgentFactoryInstallContext,
+) => AgentFactoryInstallResult | Promise<AgentFactoryInstallResult>
+
+/**
+ * Minimal create-agent contract for the new core.
+ *
+ * @public
+ */
+export type CreateAgentOptions = {
+  id: string
+  factories?: AgentFactory[]
+  restrictedTriggers?: string[]
+  heartbeat?: AgentHeartbeatConfig
+}
+
+/**
+ * Public handle returned by the new agent core.
+ *
+ * @public
+ */
+export type AgentHandle = {
+  restrictedTrigger: Trigger
+  useSnapshot: UseSnapshot
+}
+
+/**
+ * Spawn helper options for recursively creating agents.
+ *
+ * @public
+ */
+export type SpawnAgentOptions = CreateAgentOptions & {
+  onSnapshot?: SnapshotListener
+}
+
+/**
+ * Return shape for spawn-agent helper.
+ *
+ * @public
+ */
+export type SpawnedAgentHandle = AgentHandle & {
+  id: string
+  disconnectSnapshot?: Disconnect
+}
 
 // ============================================================================
 // Model Interface — streaming inference (from pi-mono audit decisions)

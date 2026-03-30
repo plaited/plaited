@@ -124,3 +124,33 @@ export const BUILT_IN_TOOLS = keyMirror(
  * @public
  */
 export const SIDE_EFFECT_TOOLS = new Set([BUILT_IN_TOOLS.write_file, BUILT_IN_TOOLS.edit_file, BUILT_IN_TOOLS.bash])
+
+/**
+ * Minimal engine-level events for the new agent core.
+ *
+ * @remarks
+ * These are intentionally narrower than the legacy loop event surface.
+ * Factories can build richer orchestration on top of them.
+ *
+ * @public
+ */
+export const AGENT_CORE_EVENTS = keyMirror(
+  'agent_disconnect',
+  'agent_heartbeat',
+  'spawn_agent',
+  'agent_spawned',
+  'spawn_agent_error',
+  'runtime_sql_run',
+  'runtime_sql_get',
+  'runtime_sql_all',
+  'runtime_sql_values',
+  'runtime_sql_iterate',
+  'runtime_sql_finalize',
+  'runtime_sql_ran',
+  'runtime_sql_row',
+  'runtime_sql_rows',
+  'runtime_sql_values_result',
+  'runtime_sql_iterated',
+  'runtime_sql_finalized',
+  'runtime_sql_error',
+)

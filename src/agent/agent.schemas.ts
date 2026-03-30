@@ -2,6 +2,15 @@ import * as z from 'zod'
 import { SelectionBidSchema } from '../behavioral/behavioral.schemas.ts'
 import { RISK_TAG, TOOL_STATUS } from './agent.constants.ts'
 
+/**
+ * Initial heartbeat configuration for the new agent core.
+ *
+ * @public
+ */
+export const AgentHeartbeatConfigSchema = z.object({
+  intervalMs: z.number().int().positive().optional(),
+})
+
 // ============================================================================
 // Agent Tool Call Schemas
 // ============================================================================
