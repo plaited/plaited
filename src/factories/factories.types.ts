@@ -1,5 +1,5 @@
 import type { AgentToolCall, ToolDefinition } from '../agent/agent.schemas.ts'
-import type { AgentFactory, ChatMessage, Model, ToolExecutor } from '../agent/agent.types.ts'
+import type { AgentFactory, ChatMessage, Model } from '../agent/agent.types.ts'
 
 /**
  * A named predicate for factory-level tool call validation.
@@ -49,7 +49,6 @@ export type InferenceFactoryCreator = (options: CreateInferenceFactoryOptions) =
  */
 export type CreateGateExecuteFactoryOptions = {
   tools: ToolDefinition[]
-  toolExecutor: ToolExecutor
   constitutionPredicates?: ConstitutionPredicate[]
 }
 

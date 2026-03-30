@@ -1,4 +1,7 @@
 import { describe, expect, test } from 'bun:test'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 import { AGENT_EVENTS, RISK_TAG } from '../../agent/agent.constants.ts'
 import type { AgentToolCall } from '../../agent/agent.schemas.ts'
@@ -26,15 +29,17 @@ const untaggedTool = {
   },
 }
 
-const createToolCall = (name: string, id = 'tc-1'): AgentToolCall => ({
+const createToolCall = (name: string, id = 'tc-1', arguments_: Record<string, unknown> = {}): AgentToolCall => ({
   id,
   name,
-  arguments: {},
+  arguments: arguments_,
 })
 
 describe('createGateExecuteFactory', () => {
   test('routes workspace-only tools directly to execute and tool_result', async () => {
     const seen: string[] = []
+    const workspace = await mkdtemp(join(tmpdir(), 'gate-execute-'))
+    await Bun.write(join(workspace, 'hello.txt'), 'hello from gate execute')
     let resolveToolResult!: () => void
     const toolResultSeen = new Promise<void>((resolve) => {
       resolveToolResult = resolve
@@ -42,12 +47,10 @@ describe('createGateExecuteFactory', () => {
 
     const agent = await createAgent({
       id: 'agent:test',
+      cwd: workspace,
       factories: [
         createGateExecuteFactory({
           tools: [workspaceTool],
-          async toolExecutor() {
-            return { ok: true }
-          },
         }),
         () => ({
           handlers: {
@@ -69,7 +72,7 @@ describe('createGateExecuteFactory', () => {
 
     agent.restrictedTrigger({
       type: AGENT_EVENTS.context_ready,
-      detail: { toolCall: createToolCall('read_file') },
+      detail: { toolCall: createToolCall('read_file', 'tc-1', { path: 'hello.txt' }) },
     })
 
     await toolResultSeen
@@ -77,6 +80,8 @@ describe('createGateExecuteFactory', () => {
     expect(seen).toContain('gate_approved')
     expect(seen).toContain('execute')
     expect(seen).toContain('tool_result:completed')
+
+    await rm(workspace, { recursive: true, force: true })
   })
 
   test('routes non-workspace tools to simulate_request', async () => {
@@ -91,9 +96,6 @@ describe('createGateExecuteFactory', () => {
       factories: [
         createGateExecuteFactory({
           tools: [untaggedTool],
-          async toolExecutor() {
-            return null
-          },
         }),
         () => ({
           handlers: {
@@ -132,9 +134,6 @@ describe('createGateExecuteFactory', () => {
       factories: [
         createGateExecuteFactory({
           tools: [workspaceTool],
-          async toolExecutor() {
-            return null
-          },
           constitutionPredicates: [
             {
               name: 'no_reads',

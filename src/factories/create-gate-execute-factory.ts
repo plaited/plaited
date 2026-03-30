@@ -1,4 +1,4 @@
-import { AGENT_EVENTS, RISK_TAG } from '../agent/agent.constants.ts'
+import { AGENT_CORE_EVENTS, AGENT_EVENTS, RISK_TAG } from '../agent/agent.constants.ts'
 import type { ToolDefinition } from '../agent/agent.schemas.ts'
 import type {
   ContextReadyDetail,
@@ -84,97 +84,117 @@ const routeApprovedToolCall = ({
  * @public
  */
 export const createGateExecuteFactory: GateExecuteFactoryCreator =
-  ({ tools, toolExecutor, constitutionPredicates = [] }) =>
-  ({ trigger }) => ({
-    handlers: {
-      [AGENT_EVENTS.context_ready](detail: unknown) {
-        const { toolCall } = detail as ContextReadyDetail
-        const tags = (tools.find((tool) => tool.function.name === toolCall.name)?.tags ?? []) as NonNullable<
-          ToolDefinition['tags']
-        >
-        const result = composedGateCheck({ toolCall, tags }, constitutionPredicates)
+  ({ tools, constitutionPredicates = [] }) =>
+  ({ trigger }) => {
+    const startedAtByToolCallId = new Map<string, number>()
 
-        if (result.route === 'rejected') {
+    return {
+      handlers: {
+        [AGENT_EVENTS.context_ready](detail: unknown) {
+          const { toolCall } = detail as ContextReadyDetail
+          const tags = (tools.find((tool) => tool.function.name === toolCall.name)?.tags ?? []) as NonNullable<
+            ToolDefinition['tags']
+          >
+          const result = composedGateCheck({ toolCall, tags }, constitutionPredicates)
+
+          if (result.route === 'rejected') {
+            trigger({
+              type: AGENT_EVENTS.gate_rejected,
+              detail: {
+                toolCall,
+                decision: {
+                  approved: false,
+                  tags: tags as GateRejectedDetail['decision']['tags'],
+                  reason: result.reason,
+                },
+              } satisfies GateRejectedDetail,
+            })
+            return
+          }
+
           trigger({
-            type: AGENT_EVENTS.gate_rejected,
+            type: AGENT_EVENTS.gate_approved,
             detail: {
               toolCall,
-              decision: {
-                approved: false,
-                tags: tags as GateRejectedDetail['decision']['tags'],
-                reason: result.reason,
-              },
-            } satisfies GateRejectedDetail,
+              tags,
+            } satisfies GateApprovedDetail,
           })
-          return
-        }
+        },
 
-        trigger({
-          type: AGENT_EVENTS.gate_approved,
-          detail: {
-            toolCall,
-            tags,
-          } satisfies GateApprovedDetail,
-        })
-      },
+        [AGENT_EVENTS.gate_approved](detail: unknown) {
+          routeApprovedToolCall({
+            trigger,
+            detail: detail as GateApprovedDetail,
+          })
+        },
 
-      [AGENT_EVENTS.gate_approved](detail: unknown) {
-        routeApprovedToolCall({
-          trigger,
-          detail: detail as GateApprovedDetail,
-        })
-      },
+        [AGENT_EVENTS.eval_approved](detail: unknown) {
+          const approved = detail as EvalApprovedDetail
+          trigger({
+            type: AGENT_EVENTS.execute,
+            detail: {
+              toolCall: approved.toolCall,
+              tags: approved.tags,
+            } satisfies ExecuteDetail,
+          })
+        },
 
-      [AGENT_EVENTS.eval_approved](detail: unknown) {
-        const approved = detail as EvalApprovedDetail
-        trigger({
-          type: AGENT_EVENTS.execute,
-          detail: {
-            toolCall: approved.toolCall,
-            tags: approved.tags,
-          } satisfies ExecuteDetail,
-        })
-      },
+        [AGENT_EVENTS.eval_rejected](detail: unknown) {
+          const rejected = detail as EvalRejectedDetail
+          trigger({
+            type: AGENT_EVENTS.message,
+            detail: {
+              content: `Eval rejected: ${rejected.reason}`,
+            },
+          })
+        },
 
-      [AGENT_EVENTS.eval_rejected](detail: unknown) {
-        const rejected = detail as EvalRejectedDetail
-        trigger({
-          type: AGENT_EVENTS.message,
-          detail: {
-            content: `Eval rejected: ${rejected.reason}`,
-          },
-        })
-      },
+        [AGENT_EVENTS.execute](detail: unknown) {
+          const execute = detail as ExecuteDetail
+          startedAtByToolCallId.set(execute.toolCall.id, Date.now())
+          trigger({
+            type: AGENT_CORE_EVENTS.agent_tool_execute,
+            detail: {
+              toolCall: execute.toolCall,
+            },
+          })
+        },
 
-      async [AGENT_EVENTS.execute](detail: unknown) {
-        const execute = detail as ExecuteDetail
-        const startedAt = Date.now()
+        [AGENT_CORE_EVENTS.agent_tool_result](detail: unknown) {
+          const resultDetail = detail as { result: { toolCallId: string; name: string; output?: unknown } }
+          const startedAt = startedAtByToolCallId.get(resultDetail.result.toolCallId) ?? Date.now()
+          startedAtByToolCallId.delete(resultDetail.result.toolCallId)
+          const toolCall = {
+            id: resultDetail.result.toolCallId,
+            name: resultDetail.result.name,
+            arguments: {},
+          }
 
-        try {
-          const output = await toolExecutor(execute.toolCall, AbortSignal.timeout(120_000))
           trigger({
             type: AGENT_EVENTS.tool_result,
             detail: {
-              result: toToolResult(
-                execute.toolCall,
-                {
-                  toolCallId: execute.toolCall.id,
-                  name: execute.toolCall.name,
-                  status: 'completed',
-                  output,
-                },
-                Date.now() - startedAt,
-              ),
+              result: toToolResult(toolCall, resultDetail.result, Date.now() - startedAt),
             } satisfies ToolResultDetail,
           })
-        } catch (error) {
+        },
+
+        [AGENT_CORE_EVENTS.agent_tool_error](detail: unknown) {
+          const errorDetail = detail as { toolCallId: string; name: string; error: string }
+          const startedAt = startedAtByToolCallId.get(errorDetail.toolCallId) ?? Date.now()
+          startedAtByToolCallId.delete(errorDetail.toolCallId)
+          const toolCall = {
+            id: errorDetail.toolCallId,
+            name: errorDetail.name,
+            arguments: {},
+          }
+
           trigger({
             type: AGENT_EVENTS.tool_result,
             detail: {
-              result: toToolResult(execute.toolCall, error, Date.now() - startedAt),
+              result: toToolResult(toolCall, new Error(errorDetail.error), Date.now() - startedAt),
             } satisfies ToolResultDetail,
           })
-        }
+        },
       },
-    },
-  })
+    }
+  }
