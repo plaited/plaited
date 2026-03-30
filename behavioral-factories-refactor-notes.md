@@ -23,6 +23,8 @@ The refactor has already made several concrete architecture moves:
   - `agent.constants.ts`
 - `create-agent.ts` currently accepts:
   - `id`
+  - `cwd`
+  - optional `env`
   - `factories`
   - `restrictedTriggers`
   - `heartbeat`
@@ -33,12 +35,21 @@ The refactor has already made several concrete architecture moves:
   `update_factories`
 - `create-agent.ts` now owns runtime in-memory SQLite handlers for
   statement-oriented runtime context operations
+- `create-agent.ts` now owns built-in local execution capability for:
+  - file reads and writes
+  - file edits and listing
+  - shell execution
+  through agent-core tool events scoped by agent `cwd` and `env`
 - `src/factories` now exists as a real promotion target
 - the first promoted factories are in place:
   - inference
   - gate/execute
   - simulation/evaluation
   - snapshot-context capture
+- `src/skill` now exists as the module boundary for shipped skill exports
+- `src/hypergraph` now exists as the module boundary for durable-memory graph
+  querying and graph algorithms
+- `src/tools` has now been deleted entirely
 - the old distillation adapter path in `src/improve` was removed because
   `dev-research/evolutionary-agent/program.md` is replacing that direction
 - `src/modnet` has now been deleted entirely
@@ -62,8 +73,8 @@ The main remaining work is:
 - continuing to shrink `src/agent` toward the true minimal core
 - replacing stale legacy docs/tests that still mention removed layers
 - refining `src/bootstrap`
+- installing shipped default skills from bootstrap
 - promoting more top-level behavior into factories, especially:
-  - bootstrap-node composition
   - A2A behavior for the top-level agent
   - durable-memory promotion
   - message/history/task intake shaping where needed
@@ -175,6 +186,8 @@ The surviving direction is now:
 
 - `src/bootstrap` for setup/install/startup
 - `src/agent` for agent-to-agent primitives and orchestration surfaces
+- `src/skill` for shipped default skills and skill exports
+- `src/hypergraph` for durable-memory graph querying and algorithms
 
 The old PM/team/sub-agent runtime modeling should not be reintroduced as a
 core layer.
@@ -235,6 +248,7 @@ The engine should own:
 - heartbeat/pulse
 - handler/thread registration
 - runtime SQLite substrate
+- built-in local execution capability scoped by agent `cwd` and `env`
 - safe execution boundaries
 
 The engine should not own concrete:
@@ -258,6 +272,29 @@ This is the right home for accepted executable:
 - rollout factories
 - validation factories
 - proactive factories
+
+### `src/skill`
+
+Shipped default skills should live in `skills/*` and be exported through
+`src/skill`.
+
+This means:
+
+- bootstrap should install the shipped default skills
+- factories and agents should consume skill behavior through the skill system
+- skill scripts should import framework surfaces through `plaited/*`
+  boundaries, not repo-relative `src/` paths
+
+### `src/hypergraph`
+
+Hypergraph is no longer a `src/tools` concern.
+
+It should remain a dedicated module boundary for:
+
+- JSON-LD hypergraph loading and indexing
+- search and reachability queries
+- graph algorithms and WASM acceleration
+- durable-memory provenance and linking support
 
 ## Provisioned Extension Points
 
@@ -582,6 +619,8 @@ The current intended `create-agent.ts` contract is small.
 ### Input
 
 - `id`
+- `cwd`
+- optional `env`
 - `factories`
 - `restrictedTriggers`
 - `heartbeat`

@@ -67,6 +67,9 @@ The intended boundary is:
 - `src/agent` is the generic agent engine
 - `src/factories` should contain promoted executable factory implementations
 - `src/inference` should contain model/provider-facing integration code
+- `src/skill` should be the export boundary for shipped default skills
+- `src/hypergraph` should be the export boundary for durable-memory graph
+  querying and graph algorithms
 
 The agent engine should own only stable mechanics such as:
 
@@ -75,6 +78,7 @@ The agent engine should own only stable mechanics such as:
 - thread and handler registration
 - restricted trigger boundaries
 - runtime SQLite substrate for transient shared runtime context
+- built-in local execution capability scoped by agent `cwd` and `env`
 - safe execution boundaries
 
 Factories should own most actual behavior, including:
@@ -89,6 +93,7 @@ Factories should own most actual behavior, including:
 - bootstrap/top-level node composition behavior
 - top-level A2A behavior
 - server-facing notification and projection behavior
+- skill installation and skill-aware behavior
 
 Factories should still prefer BP-native coordination patterns.
 `async` `useFeedback` handlers are acceptable and expected when they are doing
@@ -120,6 +125,8 @@ The intended `create-agent` direction is minimal:
 
 - input:
   - `id`
+  - `cwd`
+  - optional `env`
   - `factories`
   - `restrictedTriggers`
   - `heartbeat`
@@ -131,8 +138,8 @@ Disconnect should be modeled as an event, not as the primary imperative return
 surface.
 
 This lane should treat the deletion of `create-agent-loop.ts`, `src/runtime`,
-and `src/modnet` as accomplished architecture work. Future effort should not
-recreate those layers under new names.
+`src/modnet`, and `src/tools` as accomplished architecture work. Future effort
+should not recreate those layers under new names.
 
 ## Inputs
 
@@ -156,6 +163,8 @@ Primary lane inputs:
 - `src/factories/`
 - `src/inference/`
 - `src/agent/`
+- `src/skill/`
+- `src/hypergraph/`
 - `src/server/`
 
 Supporting implementation and memory-shaping surfaces:
@@ -182,6 +191,8 @@ Use these inputs with clear precedence:
    can accelerate retrieval, validation, and compilation.
 4. skills are implementation and teaching surfaces, not the final runtime home
    of the system.
+   Default shipped skills are still first-class package artifacts and should be
+   installed from bootstrap rather than reintroduced as ad hoc tool modules.
 5. if a simpler markdown / yaml / jsonl / archive approach satisfies the lane
    goal better than a graph-heavy approach, prefer the simpler approach.
 
@@ -284,6 +295,7 @@ This lane should now assume:
 
 - `src/a2a` remains a protocol and transport library
 - `src/bootstrap` exposes A2A only for the top-level agent
+- `src/bootstrap` installs shipped default skills for the top-level agent
 - A2A behavior itself should be implemented by top-level factories
 - internal agents and modules must not communicate through A2A directly
 
