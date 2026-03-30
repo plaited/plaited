@@ -103,9 +103,9 @@ The intended `create-agent` direction is minimal:
   - `factories`
   - `restrictedTriggers`
   - `heartbeat`
-  - optional initial snapshot listener
 - output:
   - restricted trigger as the main public action surface
+  - `useSnapshot`
 
 Disconnect should be modeled as an event, not as the primary imperative return
 surface.
