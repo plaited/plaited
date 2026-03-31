@@ -127,7 +127,7 @@ are not instrumented.
 
 Each generation should look like:
 
-1. define a current agent package
+1. define a current Plaited node variant
 2. mutate one or more surfaces
 3. run many task rollouts in parallel
 4. score outcomes
@@ -146,7 +146,7 @@ past sessions:
 
 Concretely, this means:
 
-1. mutate an agent package or lane-local policy surface
+1. mutate a Plaited node variant or a lane-local policy surface
 2. generate candidate attempts with `autoresearch-runner`
 3. run deterministic validation inside each attempt
 4. evaluate surviving attempts with `src/improve`
@@ -154,11 +154,18 @@ Concretely, this means:
 6. promote only accepted attempts
 7. extract retained trajectories, patches, summaries, and accepted commits for future distillation
 
-## Agent Package
+## Unit Of Mutation
 
-An agent package should be treated as the unit of mutation.
+The unit of mutation should not be assumed to be a separate packaged artifact.
 
-It may include:
+For now, this lane should treat a bounded Plaited node variant as the unit of
+mutation.
+
+That means the evolving surface is a reviewable subset of the shipped Plaited
+system and its install/runtime behavior, not a second standalone product
+format.
+
+The mutated surface may include:
 
 - system prompt
 - tool registry and policy
@@ -169,7 +176,16 @@ It may include:
 - self-critique rubric
 - retrieval rules
 - symbolic thread bundle
+- bootstrap-owned install or default-configuration behavior
+- top-level node composition behavior
 - optional small learned adapter
+
+This lane should stay compatible with the broader repo direction:
+
+- `plaited` remains the shipped package CLI
+- `src/bootstrap` remains the install/setup boundary for the node
+- evolutionary work should improve that shipped node and its defaults rather
+  than implicitly defining a separate runtime product
 
 ## Search and Retrieval Principle
 
@@ -270,7 +286,7 @@ Current repo tooling already supports part of this program:
 
 What still needs improvement to fully support this lane:
 
-- explicit agent-package schemas
+- explicit mutation-target or variant schemas once the target surface is stable
 - mutation lineage and recombination support
 - richer long-horizon trajectory capture and replay
 - retrieval/search-specific evaluation dimensions
@@ -367,7 +383,7 @@ This lane is successful when the agent becomes measurably better at:
 
 Over time, this lane should produce:
 
-- an evolvable agent package format
+- an evolvable Plaited node variant model or equally clear mutation contract
 - a task and eval suite
 - a trajectory corpus
 - symbolic behavioral thread corpora
