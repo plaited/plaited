@@ -50,6 +50,7 @@ The useful transfer is:
 
 - explicit search / open / find style primitives
 - replayable trajectories
+- recorded tool-mediated execution paths
 - offline or partially cached corpora where possible
 - analysis of where retrieval succeeds or fails
 - separating corpus bootstrapping from multi-turn trajectory synthesis
@@ -152,7 +153,7 @@ Concretely, this means:
 4. evaluate surviving attempts with `src/improve`
 5. use optional meta-verification when selection confidence matters
 6. promote only accepted attempts
-7. extract retained trajectories, patches, summaries, and accepted commits for future distillation
+7. extract retained trajectories, tool traces, patches, summaries, and accepted commits for future distillation
 
 ## Unit Of Mutation
 
@@ -211,6 +212,29 @@ The system should learn when to:
 One of the main long-horizon goals is to push this retrieval policy from ad hoc
 rules into a stable and learnable part of the harness.
 
+## Tool Recording And Replay
+
+This lane should allow the agent to use tools to do real work while still
+preserving enough structure to understand and replay how it reached important
+states.
+
+The goal is not strict global idempotence once external APIs and mutable systems
+are involved. The goal is tool-assisted, recordable, replayable evolution.
+
+That means the lane should bias toward:
+
+- structured tool events instead of opaque side effects
+- captured request/result context for important external reads
+- explicit recording of external writes, targets, and outcomes
+- replay modes that can read from captured artifacts instead of always calling
+  live tools again
+- evaluation and promotion that can inspect the tool-mediated path, not just
+  the final answer
+
+Replay should focus on auditability and selection confidence.
+It does not need to mean re-executing every side effect against live external
+systems.
+
 ## Symbolic Behavioral Threads
 
 Behavioral threads are part of the training substrate.
@@ -237,6 +261,7 @@ Evaluation should be layered.
 
 - task completion
 - tool-call correctness
+- tool-trace completeness
 - citation presence
 - syntax / schema validity
 - latency
@@ -289,6 +314,7 @@ What still needs improvement to fully support this lane:
 - explicit mutation-target or variant schemas once the target surface is stable
 - mutation lineage and recombination support
 - richer long-horizon trajectory capture and replay
+- stronger structured tool-trace capture and replay support
 - retrieval/search-specific evaluation dimensions
 - verifier outputs that carry richer symbolic/self-verification findings
 - training-data extraction from accepted evolutionary runs as a downstream step
@@ -332,6 +358,7 @@ loop:
 - accepted attempt commits
 - judged and meta-verified summaries
 - retained trajectories and repair traces
+- retained tool traces and replayable execution artifacts
 - durable policy artifacts that should become skills, memory, or runtime defaults
 
 `trial-runner` remains useful for repeated reliability suites, but it is not the
@@ -362,6 +389,7 @@ Run as a continuous background research lane with:
 - use durable attempt directories or worktrees
 - never rely on opaque in-memory fanout alone
 - log trajectories and final scores
+- log important tool-mediated steps and retained replay artifacts
 - preserve failed attempts for analysis
 - treat hallucination reductions as a first-class objective
 - separate harness improvements from model improvements in analysis
@@ -386,6 +414,7 @@ Over time, this lane should produce:
 - an evolvable Plaited node variant model or equally clear mutation contract
 - a task and eval suite
 - a trajectory corpus
+- a replayable tool-trace corpus
 - symbolic behavioral thread corpora
 - improved harness defaults
 - distilled adapters or local policies where justified
