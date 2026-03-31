@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  AttemptEvaluationRecordSchema,
   AttemptJudgeResponseSchema,
   AttemptMetaVerifierResponseSchema,
   AttemptPromotionDecisionSchema,
@@ -7,6 +8,7 @@ import {
   buildAttemptJudgePrompt,
   buildAttemptMetaVerifierPrompt,
   buildAttemptPromotionPrompt,
+  getAttemptMetaVerification,
 } from '../attempt-evaluation.ts'
 
 describe('attempt-evaluation', () => {
@@ -148,5 +150,22 @@ describe('attempt-evaluation', () => {
     expect(prompt).toContain('Attempt 2')
     expect(prompt).toContain('abc123')
     expect(prompt).toContain('manual review')
+  })
+
+  test('reads top-level meta-verification from attempt evaluation records', () => {
+    const evaluation = AttemptEvaluationRecordSchema.parse({
+      attempt: 1,
+      pass: true,
+      score: 0.9,
+      metaVerification: {
+        confidence: 0.82,
+        reasoning: 'top-level field',
+      },
+    })
+
+    expect(getAttemptMetaVerification(evaluation)).toEqual({
+      confidence: 0.82,
+      reasoning: 'top-level field',
+    })
   })
 })

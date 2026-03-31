@@ -279,7 +279,7 @@ describe('autoresearch-runner', () => {
         pass: true,
         score: 0.82,
         reasoning: 'good',
-        outcome: { metaVerification: { confidence: 0.7 } },
+        metaVerification: { confidence: 0.7 },
       })}\n`,
     )
     await Bun.write(
@@ -289,7 +289,7 @@ describe('autoresearch-runner', () => {
         pass: true,
         score: 0.91,
         reasoning: 'better',
-        outcome: { metaVerification: { confidence: 0.86 } },
+        metaVerification: { confidence: 0.86 },
       })}\n`,
     )
 

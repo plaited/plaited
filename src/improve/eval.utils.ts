@@ -471,8 +471,8 @@ export type Verifier = (result: GraderResult) => Promise<MetaVerification>
  *
  * @remarks
  * The verifier scores the grader's own output, producing a confidence
- * signal and optional reasoning. The result is stored in
- * `outcome._metaVerification` on the grader result, allowing downstream
+ * signal and optional reasoning. The result is stored in the optional
+ * top-level `metaVerification` field on the grader result, allowing downstream
  * consumers to filter or weight results by grader confidence.
  *
  * This catches hallucinated scores, inconsistent reasoning, and
@@ -480,7 +480,7 @@ export type Verifier = (result: GraderResult) => Promise<MetaVerification>
  *
  * @param grader - The grader function to wrap
  * @param verifier - Function that evaluates the grader's output
- * @returns Wrapped grader that includes meta-verification in outcome
+ * @returns Wrapped grader that includes meta-verification on the result
  *
  * @public
  */
@@ -490,10 +490,7 @@ export const withMetaVerification = (grader: Grader, verifier: Verifier): Grader
     const verification = await verifier(result)
     return {
       ...result,
-      outcome: {
-        ...result.outcome,
-        _metaVerification: verification,
-      },
+      metaVerification: verification,
     }
   }
 }

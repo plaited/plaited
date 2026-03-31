@@ -4,8 +4,10 @@ import { isAbsolute, join, resolve } from 'node:path'
 import { $ } from 'bun'
 import type { AttemptPromotionDecision, Grader, GraderResult, Verifier } from '../src/improve.ts'
 import {
+  AttemptEvaluationRecordSchema,
   AttemptPromotionDecisionSchema,
   buildAttemptPromotionPrompt,
+  getAttemptMetaVerification,
   loadGrader,
   loadVerifier,
 } from '../src/improve.ts'
@@ -509,7 +511,7 @@ const readAttemptEvaluation = async (runDir: string, attempt: number): Promise<A
     return null
   }
 
-  return (await file.json()) as AttemptEvaluationRecord
+  return AttemptEvaluationRecordSchema.parse(await file.json())
 }
 
 const readContextText = async ({
@@ -735,10 +737,7 @@ const evaluateAttempts = async ({
 
         graded = {
           ...graded,
-          outcome: {
-            ...graded.outcome,
-            _metaVerification: verification,
-          },
+          metaVerification: verification,
         }
       }
 
@@ -846,13 +845,7 @@ export const selectPromotionDecision = async ({
       commit: result.attemptCommit,
       pass: evaluation.pass,
       score: evaluation.score,
-      confidence:
-        typeof evaluation.outcome?.metaVerification === 'object' &&
-        evaluation.outcome?.metaVerification &&
-        'confidence' in evaluation.outcome.metaVerification &&
-        typeof evaluation.outcome.metaVerification.confidence === 'number'
-          ? evaluation.outcome.metaVerification.confidence
-          : undefined,
+      confidence: getAttemptMetaVerification(evaluation)?.confidence,
       changedFiles: result.changedPaths,
       diffStat: result.diffStat,
       reasoning: evaluation.reasoning,

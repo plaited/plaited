@@ -229,6 +229,13 @@ export const GraderResultSchema = z.object({
   outcome: z.record(z.string(), z.unknown()).optional(),
   /** Optional multi-dimensional scores */
   dimensions: GradingDimensionsSchema.optional(),
+  /** Optional verifier confidence over the grader result */
+  metaVerification: z
+    .object({
+      confidence: z.number().min(0).max(1),
+      reasoning: z.string().optional(),
+    })
+    .optional(),
 })
 
 /** Grader result type */
@@ -305,6 +312,8 @@ export const TrialEntrySchema = z.object({
   outcome: z.record(z.string(), z.unknown()).optional(),
   /** Multi-dimensional grading scores (if grader provides them) */
   dimensions: GradingDimensionsSchema.optional(),
+  /** Optional verifier confidence over the grader result */
+  metaVerification: MetaVerificationSchema.optional(),
 })
 
 /** Trial entry type */

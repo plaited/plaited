@@ -1,5 +1,5 @@
 import * as z from 'zod'
-import type { GraderResult } from './eval.schemas.ts'
+import { type GraderResult, GradingDimensionsSchema, MetaVerificationSchema } from './eval.schemas.ts'
 import {
   type WorkspaceImprovementJudgeInput,
   WorkspaceImprovementJudgeInputSchema,
@@ -30,6 +30,20 @@ export const AttemptMetaVerifierResponseSchema = z.object({
 
 export type AttemptMetaVerifierResponse = z.infer<typeof AttemptMetaVerifierResponseSchema>
 
+export const AttemptEvaluationOutcomeSchema = z.record(z.string(), z.unknown())
+
+export const AttemptEvaluationRecordSchema = z.object({
+  attempt: z.number().int().positive(),
+  pass: z.boolean(),
+  score: z.number().min(0).max(1),
+  reasoning: z.string().optional(),
+  outcome: AttemptEvaluationOutcomeSchema.optional(),
+  dimensions: GradingDimensionsSchema.optional(),
+  metaVerification: MetaVerificationSchema.optional(),
+})
+
+export type AttemptEvaluationRecord = z.infer<typeof AttemptEvaluationRecordSchema>
+
 export const AttemptPromotionDecisionSchema = z.object({
   action: z.enum(['promote_one', 'manual_review', 'reject_all']),
   selectedAttempt: z.number().int().positive().optional(),
@@ -39,6 +53,9 @@ export const AttemptPromotionDecisionSchema = z.object({
 })
 
 export type AttemptPromotionDecision = z.infer<typeof AttemptPromotionDecisionSchema>
+
+export const getAttemptMetaVerification = (evaluation: AttemptEvaluationRecord | GraderResult) =>
+  evaluation.metaVerification ? MetaVerificationSchema.parse(evaluation.metaVerification) : undefined
 
 export const buildAttemptJudgeInput = ({
   task,

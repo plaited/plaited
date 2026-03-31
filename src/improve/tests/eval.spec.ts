@@ -892,7 +892,7 @@ describe('TrialEntrySchema with dimensions', () => {
 // ============================================================================
 
 describe('withMetaVerification', () => {
-  test('wraps grader and adds _metaVerification to outcome', async () => {
+  test('wraps grader and adds metaVerification to the result', async () => {
     const baseGrader: Grader = async ({ output }) => ({
       pass: output.length > 0,
       score: output.length > 0 ? 1.0 : 0.0,
@@ -910,8 +910,7 @@ describe('withMetaVerification', () => {
     expect(result.pass).toBe(true)
     expect(result.score).toBe(1.0)
     expect(result.reasoning).toBe('Output is non-empty')
-    expect(result.outcome).toBeDefined()
-    expect(result.outcome!._metaVerification).toEqual({
+    expect(result.metaVerification).toEqual({
       confidence: 0.95,
       reasoning: 'Score consistent with reasoning',
     })
@@ -931,7 +930,7 @@ describe('withMetaVerification', () => {
 
     expect(result.outcome!.matchType).toBe('exact')
     expect(result.outcome!.details).toBe('perfect match')
-    expect(result.outcome!._metaVerification).toEqual({ confidence: 0.99 })
+    expect(result.metaVerification).toEqual({ confidence: 0.99 })
   })
 
   test('creates outcome when base grader returns none', async () => {
@@ -948,8 +947,7 @@ describe('withMetaVerification', () => {
     const wrapped = withMetaVerification(baseGrader, verifier)
     const result = await wrapped({ input: 'test', output: '' })
 
-    expect(result.outcome).toBeDefined()
-    expect(result.outcome!._metaVerification).toEqual({
+    expect(result.metaVerification).toEqual({
       confidence: 0.5,
       reasoning: 'Low confidence on failure',
     })
