@@ -1,5 +1,7 @@
 import * as z from 'zod'
 import { SelectionBidSchema } from '../behavioral/behavioral.schemas.ts'
+import { type DefaultHandlers, isRulesFunction, type RulesFunction } from '../behavioral.ts'
+import { isTypeOf, trueTypeOf } from '../utils.ts'
 import { RISK_TAG, TOOL_STATUS } from './agent.constants.ts'
 
 /**
@@ -20,85 +22,7 @@ export const UpdateFactoriesDetailSchema = z.object({
   module: z.string().min(1),
 })
 
-/**
- * Runtime factory update success payload for the new agent core.
- *
- * @public
- */
-export const FactoriesUpdatedDetailSchema = z.object({
-  module: z.string().min(1),
-})
-
-/**
- * Runtime factory update error payload for the new agent core.
- *
- * @public
- */
-export const UpdateFactoriesErrorDetailSchema = z.object({
-  module: z.string().min(1),
-  error: z.string(),
-})
-
-const RuntimeSqlParamsSchema = z.union([z.array(z.unknown()), z.record(z.string(), z.unknown())])
-
-export const RuntimeSqlRequestDetailSchema = z.object({
-  requestId: z.string().min(1),
-  sql: z.string().min(1),
-  params: RuntimeSqlParamsSchema.optional(),
-})
-
-export const RuntimeSqlFinalizeDetailSchema = z.object({
-  requestId: z.string().min(1),
-  sql: z.string().min(1),
-})
-
-export const RuntimeSqlRanDetailSchema = z.object({
-  requestId: z.string().min(1),
-  sql: z.string().min(1),
-  changes: z.number().int().nonnegative().optional(),
-  lastInsertRowid: z.union([z.number(), z.string()]).optional(),
-})
-
-export const RuntimeSqlRowDetailSchema = z.object({
-  requestId: z.string().min(1),
-  sql: z.string().min(1),
-  row: z.record(z.string(), z.unknown()).nullable(),
-})
-
-export const RuntimeSqlRowsDetailSchema = z.object({
-  requestId: z.string().min(1),
-  sql: z.string().min(1),
-  rows: z.array(z.record(z.string(), z.unknown())),
-})
-
-export const RuntimeSqlValuesResultDetailSchema = z.object({
-  requestId: z.string().min(1),
-  sql: z.string().min(1),
-  rows: z.array(z.array(z.unknown())),
-})
-
-export const RuntimeSqlFinalizedDetailSchema = z.object({
-  requestId: z.string().min(1),
-  sql: z.string().min(1),
-})
-
-export const RuntimeSqlErrorDetailSchema = z.object({
-  requestId: z.string().min(1),
-  sql: z.string().min(1),
-  error: z.string(),
-})
-
 export type UpdateFactoriesDetail = z.infer<typeof UpdateFactoriesDetailSchema>
-export type FactoriesUpdatedDetail = z.infer<typeof FactoriesUpdatedDetailSchema>
-export type UpdateFactoriesErrorDetail = z.infer<typeof UpdateFactoriesErrorDetailSchema>
-export type RuntimeSqlRequestDetail = z.infer<typeof RuntimeSqlRequestDetailSchema>
-export type RuntimeSqlFinalizeDetail = z.infer<typeof RuntimeSqlFinalizeDetailSchema>
-export type RuntimeSqlRanDetail = z.infer<typeof RuntimeSqlRanDetailSchema>
-export type RuntimeSqlRowDetail = z.infer<typeof RuntimeSqlRowDetailSchema>
-export type RuntimeSqlRowsDetail = z.infer<typeof RuntimeSqlRowsDetailSchema>
-export type RuntimeSqlValuesResultDetail = z.infer<typeof RuntimeSqlValuesResultDetailSchema>
-export type RuntimeSqlFinalizedDetail = z.infer<typeof RuntimeSqlFinalizedDetailSchema>
-export type RuntimeSqlErrorDetail = z.infer<typeof RuntimeSqlErrorDetailSchema>
 
 /**
  * A tool call parsed from the model response.
@@ -273,23 +197,15 @@ export const ToolResultSchema = z.object({
 /** Tool execution result */
 export type ToolResult = z.infer<typeof ToolResultSchema>
 
-export const AgentToolExecuteDetailSchema = z.object({
-  toolCall: AgentToolCallSchema,
-})
-
 export const AgentToolResultDetailSchema = z.object({
-  result: ToolResultSchema,
+  result: z.object({
+    name: z.string().min(1),
+    status: z.enum(toolStatusValues),
+    output: z.unknown().optional(),
+  }),
 })
 
-export const AgentToolErrorDetailSchema = z.object({
-  toolCallId: z.string().min(1),
-  name: z.string().min(1),
-  error: z.string(),
-})
-
-export type AgentToolExecuteDetail = z.infer<typeof AgentToolExecuteDetailSchema>
 export type AgentToolResultDetail = z.infer<typeof AgentToolResultDetailSchema>
-export type AgentToolErrorDetail = z.infer<typeof AgentToolErrorDetailSchema>
 
 // ============================================================================
 // Gate Decision Schema
@@ -403,3 +319,27 @@ export const AgentConfigSchema = z.object({
 
 /** Agent configuration */
 export type AgentConfig = z.infer<typeof AgentConfigSchema>
+
+export const FactoryResultSchema = z.object({
+  threads: z.record(z.string(), z.custom<RulesFunction>(isRulesFunction)).optional(),
+  handlers: z
+    .custom<DefaultHandlers>((obj) => {
+      const isObject = isTypeOf<Record<string, unknown>>(obj, 'object')
+      if (!isObject) return false
+      for (const val of Object.values(obj)) {
+        if (trueTypeOf(val) === 'function' || trueTypeOf(val) === 'asyncfunction') continue
+        return false
+      }
+      return true
+    })
+    .optional(),
+})
+
+export type FactoryResult = z.infer<typeof FactoryResultSchema>
+
+export const UpdateFactoryModuleSchema = z.object({
+  default: z.custom<(...args: unknown[]) => FactoryResult>((val) => trueTypeOf(val) === 'function'),
+})
+
+/** @public */
+export type UpdateFactoryModule = z.infer<typeof UpdateFactoryModuleSchema>

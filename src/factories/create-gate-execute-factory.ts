@@ -1,5 +1,5 @@
 import { AGENT_CORE_EVENTS, AGENT_EVENTS, RISK_TAG } from '../agent/agent.constants.ts'
-import type { ToolDefinition } from '../agent/agent.schemas.ts'
+import type { AgentToolCall, ToolDefinition } from '../agent/agent.schemas.ts'
 import type {
   ContextReadyDetail,
   EvalApprovedDetail,
@@ -65,6 +65,15 @@ const routeApprovedToolCall = ({
   })
 }
 
+const CORE_TOOL_EVENTS = new Set<string>([
+  AGENT_CORE_EVENTS.read_file,
+  AGENT_CORE_EVENTS.write_file,
+  AGENT_CORE_EVENTS.edit_file,
+  AGENT_CORE_EVENTS.list_files,
+  AGENT_CORE_EVENTS.grep,
+  AGENT_CORE_EVENTS.bash,
+])
+
 /**
  * Creates the default gate/execute factory promoted out of the legacy loop.
  *
@@ -85,8 +94,33 @@ const routeApprovedToolCall = ({
  */
 export const createGateExecuteFactory: GateExecuteFactoryCreator =
   ({ tools, constitutionPredicates = [] }) =>
-  ({ trigger }) => {
+  ({ trigger, useSnapshot }) => {
     const startedAtByToolCallId = new Map<string, number>()
+    const pendingToolCallsByName = new Map<string, AgentToolCall[]>()
+
+    useSnapshot((snapshot) => {
+      if (snapshot.kind !== 'feedback_error') return
+      if (!CORE_TOOL_EVENTS.has(snapshot.type)) return
+
+      const pending = pendingToolCallsByName.get(snapshot.type) ?? []
+      const toolCall = pending.shift()
+      if (pending.length > 0) {
+        pendingToolCallsByName.set(snapshot.type, pending)
+      } else {
+        pendingToolCallsByName.delete(snapshot.type)
+      }
+      if (!toolCall) return
+
+      const startedAt = startedAtByToolCallId.get(toolCall.id) ?? Date.now()
+      startedAtByToolCallId.delete(toolCall.id)
+
+      trigger({
+        type: AGENT_EVENTS.tool_result,
+        detail: {
+          result: toToolResult(toolCall, new Error(snapshot.error), Date.now() - startedAt),
+        } satisfies ToolResultDetail,
+      })
+    })
 
     return {
       handlers: {
@@ -152,46 +186,54 @@ export const createGateExecuteFactory: GateExecuteFactoryCreator =
         [AGENT_EVENTS.execute](detail: unknown) {
           const execute = detail as ExecuteDetail
           startedAtByToolCallId.set(execute.toolCall.id, Date.now())
+          const pending = pendingToolCallsByName.get(execute.toolCall.name) ?? []
+          pending.push(execute.toolCall)
+          pendingToolCallsByName.set(execute.toolCall.name, pending)
+
+          if (!CORE_TOOL_EVENTS.has(execute.toolCall.name)) {
+            startedAtByToolCallId.delete(execute.toolCall.id)
+            trigger({
+              type: AGENT_EVENTS.tool_result,
+              detail: {
+                result: toToolResult(
+                  execute.toolCall,
+                  new Error(`Unknown built-in tool: ${execute.toolCall.name}`),
+                  Date.now() - (startedAtByToolCallId.get(execute.toolCall.id) ?? Date.now()),
+                ),
+              } satisfies ToolResultDetail,
+            })
+            return
+          }
+
           trigger({
-            type: AGENT_CORE_EVENTS.agent_tool_execute,
-            detail: {
-              toolCall: execute.toolCall,
-            },
+            type: execute.toolCall.name,
+            detail: execute.toolCall.arguments,
           })
         },
 
         [AGENT_CORE_EVENTS.agent_tool_result](detail: unknown) {
-          const resultDetail = detail as { result: { toolCallId: string; name: string; output?: unknown } }
-          const startedAt = startedAtByToolCallId.get(resultDetail.result.toolCallId) ?? Date.now()
-          startedAtByToolCallId.delete(resultDetail.result.toolCallId)
-          const toolCall = {
-            id: resultDetail.result.toolCallId,
-            name: resultDetail.result.name,
-            arguments: {},
+          const resultDetail = detail as { result: { name: string; output?: unknown } }
+          const pending = pendingToolCallsByName.get(resultDetail.result.name) ?? []
+          const toolCall = pending.shift()
+          if (pending.length > 0) {
+            pendingToolCallsByName.set(resultDetail.result.name, pending)
+          } else {
+            pendingToolCallsByName.delete(resultDetail.result.name)
           }
+          if (!toolCall) return
+          const startedAt = startedAtByToolCallId.get(toolCall.id) ?? Date.now()
+          startedAtByToolCallId.delete(toolCall.id)
 
           trigger({
             type: AGENT_EVENTS.tool_result,
             detail: {
-              result: toToolResult(toolCall, resultDetail.result, Date.now() - startedAt),
-            } satisfies ToolResultDetail,
-          })
-        },
-
-        [AGENT_CORE_EVENTS.agent_tool_error](detail: unknown) {
-          const errorDetail = detail as { toolCallId: string; name: string; error: string }
-          const startedAt = startedAtByToolCallId.get(errorDetail.toolCallId) ?? Date.now()
-          startedAtByToolCallId.delete(errorDetail.toolCallId)
-          const toolCall = {
-            id: errorDetail.toolCallId,
-            name: errorDetail.name,
-            arguments: {},
-          }
-
-          trigger({
-            type: AGENT_EVENTS.tool_result,
-            detail: {
-              result: toToolResult(toolCall, new Error(errorDetail.error), Date.now() - startedAt),
+              result: {
+                toolCallId: toolCall.id,
+                name: toolCall.name,
+                status: 'completed',
+                output: resultDetail.result.output,
+                duration: Date.now() - startedAt,
+              },
             } satisfies ToolResultDetail,
           })
         },

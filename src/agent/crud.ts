@@ -1,17 +1,17 @@
 import { extname, relative, resolve } from 'node:path'
 import { $ } from 'bun'
-import { ensureTool, makeCli } from '../cli.ts'
+import type { z } from 'zod'
+import { ensureTool } from '../cli.ts'
 import { RISK_TAG } from './agent.constants.ts'
-import type { ToolHandler } from './agent.types.ts'
-import {
-  BashConfigSchema,
+import type { ToolContext, ToolHandler } from './agent.types.ts'
+import type {
   EditFileConfigSchema,
   GrepConfigSchema,
   ListFilesConfigSchema,
   ReadFileConfigSchema,
   WriteFileConfigSchema,
 } from './crud.schemas.ts'
-import { truncateHead, truncateTail } from './truncate.ts'
+import { truncateHead } from './truncate.ts'
 
 // ============================================================================
 // Constants
@@ -193,6 +193,17 @@ const validateSyntax = (content: string, path: string, ext: string): void => {
 
 const RG_PATH = ensureTool('rg')
 
+type ReadFileArgs = z.infer<typeof ReadFileConfigSchema>
+type WriteFileArgs = z.infer<typeof WriteFileConfigSchema>
+type EditFileArgs = z.infer<typeof EditFileConfigSchema>
+type ListFilesArgs = z.infer<typeof ListFilesConfigSchema>
+type GrepArgs = z.infer<typeof GrepConfigSchema>
+
+const withToolSignal = (ctx: ToolContext, timeout: number | undefined): AbortSignal => {
+  if (timeout === undefined) return ctx.signal
+  return AbortSignal.any([ctx.signal, AbortSignal.timeout(timeout)])
+}
+
 export const AGENT_CRUD_RISK_TAGS: Record<string, string[]> = {
   read_file: [RISK_TAG.workspace],
   write_file: [RISK_TAG.workspace],
@@ -202,11 +213,9 @@ export const AGENT_CRUD_RISK_TAGS: Record<string, string[]> = {
   bash: [],
 }
 
-export const readFile: ToolHandler = async (args, ctx) => {
-  const path = args.path as string
-  const offset = args.offset as number | undefined
-  const limit = args.limit as number | undefined
-  const resolved = resolve(ctx.workspace, path)
+export const readFile: ToolHandler<ReadFileArgs> = async (args, ctx) => {
+  const { path, offset, limit } = args
+  const resolved = resolve(ctx.cwd, path)
   const file = Bun.file(resolved)
   const size = file.size
   const mime = file.type
@@ -231,20 +240,16 @@ export const readFile: ToolHandler = async (args, ctx) => {
   return { type: 'text', path, ...truncateHead(content) }
 }
 
-export const writeFile: ToolHandler = async (args, ctx) => {
-  const path = args.path as string
-  const content = args.content as string
-  const resolved = resolve(ctx.workspace, path)
+export const writeFile: ToolHandler<WriteFileArgs> = async (args, ctx) => {
+  const { path, content } = args
+  const resolved = resolve(ctx.cwd, path)
   await Bun.write(resolved, content)
   return { written: path, bytes: content.length }
 }
 
-export const editFile: ToolHandler = async (args, ctx) => {
-  const path = args.path as string
-  const oldString = args.old_string as string
-  const newString = args.new_string as string
-  const symbol = args.symbol as string | undefined
-  const resolved = resolve(ctx.workspace, path)
+export const editFile: ToolHandler<EditFileArgs> = async (args, ctx) => {
+  const { path, old_string: oldString, new_string: newString, symbol } = args
+  const resolved = resolve(ctx.cwd, path)
 
   const content = await Bun.file(resolved).text()
   const { index, length } = findEditTarget(content, oldString, path, symbol)
@@ -259,17 +264,17 @@ export const editFile: ToolHandler = async (args, ctx) => {
   return { edited: path, bytes: updated.length }
 }
 
-export const listFiles: ToolHandler = async (args, ctx) => {
-  const pattern = (args.pattern as string) ?? '**/*'
-  const limit = (args.limit as number) ?? DEFAULT_LIST_LIMIT
+export const listFiles: ToolHandler<ListFilesArgs> = async (args, ctx) => {
+  const pattern = args.pattern ?? '**/*'
+  const limit = args.limit ?? DEFAULT_LIST_LIMIT
   const glob = new Bun.Glob(pattern)
   const entries: Array<{ path: string; type: 'file' | 'directory'; size?: number; mimeType?: string }> = []
   let totalEntries = 0
 
-  for await (const path of glob.scan({ cwd: ctx.workspace, onlyFiles: false })) {
+  for await (const path of glob.scan({ cwd: ctx.cwd, onlyFiles: false })) {
     totalEntries++
     if (entries.length < limit) {
-      const resolved = resolve(ctx.workspace, path)
+      const resolved = resolve(ctx.cwd, path)
       const ref = Bun.file(resolved)
       const isFile = await ref.exists()
       entries.push(isFile ? { path, type: 'file', size: ref.size, mimeType: ref.type } : { path, type: 'directory' })
@@ -284,18 +289,19 @@ export const listFiles: ToolHandler = async (args, ctx) => {
   }
 }
 
-export const grep: ToolHandler = async (args, ctx) => {
-  const pattern = args.pattern as string
-  const searchPath = args.path ? resolve(ctx.workspace, args.path as string) : ctx.workspace
-  const limit = (args.limit as number | undefined) ?? 100
+export const grep: ToolHandler<GrepArgs> = async (args, ctx) => {
+  const { pattern } = args
+  const searchPath = args.path ? resolve(ctx.cwd, args.path) : ctx.cwd
+  const limit = args.limit ?? 100
+  const signal = withToolSignal(ctx, args.timeout)
 
-  if (ctx.signal.aborted) throw new Error('Aborted')
+  if (signal.aborted) throw new Error('Aborted')
 
   const rgArgs = ['--json']
   if (args.ignoreCase) rgArgs.push('--ignore-case')
   if (args.literal) rgArgs.push('--fixed-strings')
-  if (args.glob) rgArgs.push('--glob', args.glob as string)
-  if (args.context != null) rgArgs.push('--context', String(args.context as number))
+  if (args.glob) rgArgs.push('--glob', args.glob)
+  if (args.context != null) rgArgs.push('--context', String(args.context))
 
   const result = await $`${RG_PATH} ${rgArgs} ${pattern} ${searchPath}`.nothrow().quiet()
 
@@ -336,7 +342,7 @@ export const grep: ToolHandler = async (args, ctx) => {
       if (matches.length >= limit) continue
 
       const pathData = record.data.path as { text: string }
-      const matchPath = relative(ctx.workspace, pathData.text)
+      const matchPath = relative(ctx.cwd, pathData.text)
       const lineText = ((record.data.lines as { text: string }).text ?? '').replace(/\n$/, '')
       const match: GrepMatch = {
         path: matchPath,
@@ -359,32 +365,3 @@ export const grep: ToolHandler = async (args, ctx) => {
 
   return { matches, totalMatches, truncated: totalMatches > limit }
 }
-
-export const bash: ToolHandler = async (args, ctx) => {
-  const command = args.command as string
-  if (ctx.signal.aborted) throw new Error('Aborted')
-
-  const result = await $`${{ raw: command }}`.cwd(ctx.workspace).nothrow().quiet()
-
-  if (result.exitCode !== 0) {
-    throw new Error(result.stderr.toString().trim() || `Command exited with code ${result.exitCode}`)
-  }
-
-  return truncateTail(result.stdout.toString().trim())
-}
-
-export const agentCrudHandlers: Record<string, ToolHandler> = {
-  read_file: readFile,
-  write_file: writeFile,
-  edit_file: editFile,
-  list_files: listFiles,
-  grep,
-  bash,
-}
-
-export const readFileCli = makeCli(readFile, ReadFileConfigSchema, 'read-file')
-export const writeFileCli = makeCli(writeFile, WriteFileConfigSchema, 'write-file')
-export const editFileCli = makeCli(editFile, EditFileConfigSchema, 'edit-file')
-export const listFilesCli = makeCli(listFiles, ListFilesConfigSchema, 'list-files')
-export const grepCli = makeCli(grep, GrepConfigSchema, 'grep')
-export const bashCli = makeCli(bash, BashConfigSchema, 'bash')

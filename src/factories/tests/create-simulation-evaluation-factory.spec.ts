@@ -102,7 +102,7 @@ describe('simulation prompt behavior', () => {
       ],
     })
 
-    agent.restrictedTrigger({
+    agent.trigger({
       type: AGENT_EVENTS.simulate_request,
       detail: {
         toolCall,
@@ -143,7 +143,7 @@ describe('simulation prompt behavior', () => {
       ],
     })
 
-    agent.restrictedTrigger({
+    agent.trigger({
       type: AGENT_EVENTS.simulate_request,
       detail: {
         toolCall,
@@ -201,7 +201,7 @@ describe('simulation prompt behavior', () => {
       ],
     })
 
-    agent.restrictedTrigger({
+    agent.trigger({
       type: AGENT_EVENTS.simulate_request,
       detail: {
         toolCall,
@@ -240,7 +240,7 @@ describe('simulation prompt behavior', () => {
       ],
     })
 
-    agent.restrictedTrigger({
+    agent.trigger({
       type: AGENT_EVENTS.simulate_request,
       detail: {
         toolCall,
@@ -277,7 +277,7 @@ describe('simulation prompt behavior', () => {
       ],
     })
 
-    agent.restrictedTrigger({
+    agent.trigger({
       type: AGENT_EVENTS.simulate_request,
       detail: {
         toolCall: {
@@ -343,7 +343,7 @@ describe('createSimulationEvaluationFactory', () => {
       ],
     })
 
-    agent.restrictedTrigger({
+    agent.trigger({
       type: AGENT_EVENTS.simulate_request,
       detail: {
         toolCall: createToolCall('read_file'),
@@ -392,7 +392,7 @@ describe('createSimulationEvaluationFactory', () => {
       ],
     })
 
-    agent.restrictedTrigger({
+    agent.trigger({
       type: AGENT_EVENTS.simulate_request,
       detail: {
         toolCall: createToolCall('bash'),

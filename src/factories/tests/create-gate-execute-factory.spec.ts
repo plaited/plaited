@@ -70,7 +70,7 @@ describe('createGateExecuteFactory', () => {
       ],
     })
 
-    agent.restrictedTrigger({
+    agent.trigger({
       type: AGENT_EVENTS.context_ready,
       detail: { toolCall: createToolCall('read_file', 'tc-1', { path: 'hello.txt' }) },
     })
@@ -111,7 +111,7 @@ describe('createGateExecuteFactory', () => {
       ],
     })
 
-    agent.restrictedTrigger({
+    agent.trigger({
       type: AGENT_EVENTS.context_ready,
       detail: { toolCall: createToolCall('bash') },
     })
@@ -155,7 +155,7 @@ describe('createGateExecuteFactory', () => {
       ],
     })
 
-    agent.restrictedTrigger({
+    agent.trigger({
       type: AGENT_EVENTS.context_ready,
       detail: { toolCall: createToolCall('read_file') },
     })

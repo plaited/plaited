@@ -52,7 +52,7 @@ describe('createInferenceFactory', () => {
       ],
     })
 
-    agent.restrictedTrigger({ type: AGENT_EVENTS.invoke_inference })
+    agent.trigger({ type: AGENT_EVENTS.invoke_inference })
     await modelResponseSeen
 
     expect(seen).toEqual(['thinking:thinking', 'text:hello', 'text: world', 'response:hello world'])
@@ -91,7 +91,7 @@ describe('createInferenceFactory', () => {
       ],
     })
 
-    agent.restrictedTrigger({ type: AGENT_EVENTS.invoke_inference })
+    agent.trigger({ type: AGENT_EVENTS.invoke_inference })
     await messageSeen
 
     expect(seen).toEqual(['Inference error: bad upstream'])

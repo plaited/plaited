@@ -1,63 +1,23 @@
-import { Database, type SQLQueryBindings } from 'bun:sqlite'
-import { behavioral } from '../behavioral/behavioral.ts'
+import { $ } from 'bun'
+import type { infer as Infer, ZodTypeAny } from 'zod'
+import type { Disconnect } from '../behavioral.ts'
+import { behavioral, bSync, bThread } from '../behavioral.ts'
 import { AGENT_CORE_EVENTS } from './agent.constants.ts'
 import {
-  AgentToolErrorDetailSchema,
-  AgentToolExecuteDetailSchema,
   AgentToolResultDetailSchema,
-  FactoriesUpdatedDetailSchema,
-  RuntimeSqlErrorDetailSchema,
-  RuntimeSqlFinalizeDetailSchema,
-  RuntimeSqlFinalizedDetailSchema,
-  RuntimeSqlRanDetailSchema,
-  RuntimeSqlRequestDetailSchema,
-  RuntimeSqlRowDetailSchema,
-  RuntimeSqlRowsDetailSchema,
-  RuntimeSqlValuesResultDetailSchema,
+  FactoryResultSchema,
   UpdateFactoriesDetailSchema,
-  UpdateFactoriesErrorDetailSchema,
+  UpdateFactoryModuleSchema,
 } from './agent.schemas.ts'
-import type { AgentHandle, CreateAgentOptions } from './agent.types.ts'
-import { createLocalToolExecutor } from './create-local-tool-executor.ts'
+import type { AgentHandle, CreateAgentOptions, SchemaViolationHandler, Signal, Signals } from './agent.types.ts'
+import { BashConfigSchema } from './crud.schemas.ts'
+import { editFile, grep, listFiles, readFile, writeFile } from './crud.ts'
+import { truncateTail } from './truncate.ts'
+import { useSignal } from './use-signal.ts'
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 15 * 60 * 1000
-const RUNTIME_SNAPSHOTS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS runtime_snapshots (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  snapshot_kind TEXT NOT NULL,
-  created_at TEXT NOT NULL,
-  payload_json TEXT NOT NULL
-)`
 
-type NamedStatementBindings = Record<string, SQLQueryBindings>
-type NamedStatement = {
-  run: (params: NamedStatementBindings) => { changes?: number; lastInsertRowid?: unknown }
-  get: (params: NamedStatementBindings) => unknown
-  all: (params: NamedStatementBindings) => unknown[]
-  values: (params: NamedStatementBindings) => unknown[][]
-  iterate: (params: NamedStatementBindings) => Iterable<unknown>
-}
-
-const installFactory = async ({
-  factory,
-  bThreads,
-  trigger,
-  useFeedback,
-  useSnapshot,
-}: {
-  factory: NonNullable<CreateAgentOptions['factories']>[number]
-  bThreads: ReturnType<typeof behavioral>['bThreads']
-  trigger: ReturnType<typeof behavioral>['trigger']
-  useFeedback: ReturnType<typeof behavioral>['useFeedback']
-  useSnapshot: ReturnType<typeof behavioral>['useSnapshot']
-}) => {
-  const installed = await factory({ trigger, useSnapshot })
-  if (installed.threads && Object.keys(installed.threads).length > 0) {
-    bThreads.set(installed.threads)
-  }
-  if (installed.handlers) {
-    useFeedback(installed.handlers)
-  }
-}
+const DEFAULT_TOOL_TIMEOUT_MS = 120_000
 
 /**
  * Creates the minimal agent core around the behavioral engine.
@@ -76,35 +36,77 @@ const installFactory = async ({
  */
 export const createAgent = async ({
   id: _id,
-  cwd: _cwd = process.cwd(),
-  env: _env = {},
+  cwd = process.cwd(),
+  env = {},
   factories = [],
   restrictedTriggers = [],
   heartbeat,
 }: CreateAgentOptions): Promise<AgentHandle> => {
   const { bThreads, trigger, useFeedback, useSnapshot, useRestrictedTrigger } = behavioral()
-  const runtimeDb = new Database(':memory:')
-  const statementCache = new Map<string, ReturnType<typeof runtimeDb.query>>()
-  const localToolExecutor = createLocalToolExecutor({ cwd: _cwd, env: _env })
 
-  runtimeDb.run(RUNTIME_SNAPSHOTS_TABLE_SQL)
+  const restrictedTrigger = useRestrictedTrigger(
+    ...restrictedTriggers,
+    AGENT_CORE_EVENTS.set_signal,
+    AGENT_CORE_EVENTS.heartbeat,
+  )
 
-  const getStatement = (sql: string) => {
-    let statement = statementCache.get(sql)
-    if (!statement) {
-      statement = runtimeDb.query(sql)
-      statementCache.set(sql, statement)
-    }
-    return statement
+  const disconnectSet = new Set<Disconnect>()
+
+  const signalMap = new Map<string, Signal>()
+
+  const onSchemaViolation: SchemaViolationHandler = (detail) =>
+    trigger({ type: AGENT_CORE_EVENTS.signal_schema_violation, detail })
+
+  const setSignals = <TSchema extends ZodTypeAny>({
+    key,
+    schema,
+    value,
+    readOnly,
+  }: {
+    key: string
+    schema: TSchema
+    value?: Infer<TSchema>
+    readOnly: boolean
+  }) => {
+    const signal = useSignal({
+      key,
+      schema,
+      value,
+      readOnly,
+      onSchemaViolation,
+    })
+    trigger({ type: AGENT_CORE_EVENTS.set_signal, detail: signal[0] })
+    return signal[1]
   }
 
-  const emitSqlError = ({ requestId, sql, error }: { requestId: string; sql: string; error: unknown }) => {
+  const signals: Signals = {
+    set: setSignals,
+    get: signalMap.get,
+    has: signalMap.has,
+  }
+  for (const factory of factories) {
+    const { threads, handlers } = factory({
+      trigger: restrictedTrigger,
+      disconnectSet,
+      signals,
+      useSnapshot,
+    })
+    threads && bThreads.set(threads)
+    handlers && disconnectSet.add(useFeedback(handlers))
+  }
+
+  const createToolSignal = (timeout: number | undefined) => AbortSignal.timeout(timeout ?? DEFAULT_TOOL_TIMEOUT_MS)
+  const createPassiveSignal = () => new AbortController().signal
+
+  const emitToolResult = ({ name, output }: { name: string; output: unknown }) => {
     trigger({
-      type: AGENT_CORE_EVENTS.runtime_sql_error,
-      detail: RuntimeSqlErrorDetailSchema.parse({
-        requestId,
-        sql,
-        error: error instanceof Error ? error.message : String(error),
+      type: AGENT_CORE_EVENTS.agent_tool_result,
+      detail: AgentToolResultDetailSchema.parse({
+        result: {
+          name,
+          status: 'completed',
+          output,
+        },
       }),
     })
   }
@@ -112,226 +114,83 @@ export const createAgent = async ({
   const heartbeatIntervalMs = heartbeat?.intervalMs ?? DEFAULT_HEARTBEAT_INTERVAL_MS
   const heartbeatTimer = setInterval(() => {
     trigger({
-      type: AGENT_CORE_EVENTS.agent_heartbeat,
+      type: AGENT_CORE_EVENTS.heartbeat,
       detail: { intervalMs: heartbeatIntervalMs },
     })
   }, heartbeatIntervalMs)
 
+  bThreads.set({
+    onSignalSet: bThread(
+      [bSync({ block: ({ type, detail }) => type === AGENT_CORE_EVENTS.set_signal && signalMap.has(detail) })],
+      true,
+    ),
+  })
+
   useFeedback({
     [AGENT_CORE_EVENTS.agent_disconnect]() {
       clearInterval(heartbeatTimer)
-      for (const statement of statementCache.values()) {
-        statement.finalize()
+      for (const disconnect of disconnectSet) {
+        void disconnect()
       }
-      statementCache.clear()
-      runtimeDb.close(false)
-    },
-    async [AGENT_CORE_EVENTS.agent_tool_execute](detail: unknown) {
-      const parsed = AgentToolExecuteDetailSchema.parse(detail)
-
-      try {
-        const output = await localToolExecutor(parsed.toolCall, AbortSignal.timeout(120_000))
-        trigger({
-          type: AGENT_CORE_EVENTS.agent_tool_result,
-          detail: AgentToolResultDetailSchema.parse({
-            result: {
-              toolCallId: parsed.toolCall.id,
-              name: parsed.toolCall.name,
-              status: 'completed',
-              output,
-            },
-          }),
-        })
-      } catch (error) {
-        trigger({
-          type: AGENT_CORE_EVENTS.agent_tool_error,
-          detail: AgentToolErrorDetailSchema.parse({
-            toolCallId: parsed.toolCall.id,
-            name: parsed.toolCall.name,
-            error: error instanceof Error ? error.message : String(error),
-          }),
-        })
-      }
-    },
-    [AGENT_CORE_EVENTS.runtime_sql_run](detail: unknown) {
-      const parsed = RuntimeSqlRequestDetailSchema.parse(detail)
-      try {
-        const statement = getStatement(parsed.sql)
-        const result = Array.isArray(parsed.params)
-          ? statement.run(...(parsed.params as SQLQueryBindings[]))
-          : parsed.params
-            ? (statement as unknown as NamedStatement).run(parsed.params as NamedStatementBindings)
-            : statement.run()
-        trigger({
-          type: AGENT_CORE_EVENTS.runtime_sql_ran,
-          detail: RuntimeSqlRanDetailSchema.parse({
-            requestId: parsed.requestId,
-            sql: parsed.sql,
-            changes: typeof result.changes === 'number' ? result.changes : undefined,
-            lastInsertRowid: result.lastInsertRowid === undefined ? undefined : String(result.lastInsertRowid),
-          }),
-        })
-      } catch (error) {
-        emitSqlError({ requestId: parsed.requestId, sql: parsed.sql, error })
-      }
-    },
-    [AGENT_CORE_EVENTS.runtime_sql_get](detail: unknown) {
-      const parsed = RuntimeSqlRequestDetailSchema.parse(detail)
-      try {
-        const statement = getStatement(parsed.sql)
-        const row = (
-          Array.isArray(parsed.params)
-            ? statement.get(...(parsed.params as SQLQueryBindings[]))
-            : parsed.params
-              ? (statement as unknown as NamedStatement).get(parsed.params as NamedStatementBindings)
-              : statement.get()
-        ) as Record<string, unknown> | null
-        trigger({
-          type: AGENT_CORE_EVENTS.runtime_sql_row,
-          detail: RuntimeSqlRowDetailSchema.parse({
-            requestId: parsed.requestId,
-            sql: parsed.sql,
-            row,
-          }),
-        })
-      } catch (error) {
-        emitSqlError({ requestId: parsed.requestId, sql: parsed.sql, error })
-      }
-    },
-    [AGENT_CORE_EVENTS.runtime_sql_all](detail: unknown) {
-      const parsed = RuntimeSqlRequestDetailSchema.parse(detail)
-      try {
-        const statement = getStatement(parsed.sql)
-        const rows = (
-          Array.isArray(parsed.params)
-            ? statement.all(...(parsed.params as SQLQueryBindings[]))
-            : parsed.params
-              ? (statement as unknown as NamedStatement).all(parsed.params as NamedStatementBindings)
-              : statement.all()
-        ) as Record<string, unknown>[]
-        trigger({
-          type: AGENT_CORE_EVENTS.runtime_sql_rows,
-          detail: RuntimeSqlRowsDetailSchema.parse({
-            requestId: parsed.requestId,
-            sql: parsed.sql,
-            rows,
-          }),
-        })
-      } catch (error) {
-        emitSqlError({ requestId: parsed.requestId, sql: parsed.sql, error })
-      }
-    },
-    [AGENT_CORE_EVENTS.runtime_sql_values](detail: unknown) {
-      const parsed = RuntimeSqlRequestDetailSchema.parse(detail)
-      try {
-        const statement = getStatement(parsed.sql)
-        const rows = Array.isArray(parsed.params)
-          ? statement.values(...(parsed.params as SQLQueryBindings[]))
-          : parsed.params
-            ? (statement as unknown as NamedStatement).values(parsed.params as NamedStatementBindings)
-            : statement.values()
-        trigger({
-          type: AGENT_CORE_EVENTS.runtime_sql_values_result,
-          detail: RuntimeSqlValuesResultDetailSchema.parse({
-            requestId: parsed.requestId,
-            sql: parsed.sql,
-            rows,
-          }),
-        })
-      } catch (error) {
-        emitSqlError({ requestId: parsed.requestId, sql: parsed.sql, error })
-      }
-    },
-    [AGENT_CORE_EVENTS.runtime_sql_iterate](detail: unknown) {
-      const parsed = RuntimeSqlRequestDetailSchema.parse(detail)
-      try {
-        const statement = getStatement(parsed.sql)
-        const rows = Array.from(
-          Array.isArray(parsed.params)
-            ? statement.iterate(...(parsed.params as SQLQueryBindings[]))
-            : parsed.params
-              ? (statement as unknown as NamedStatement).iterate(parsed.params as NamedStatementBindings)
-              : statement.iterate(),
-        ) as Record<string, unknown>[]
-        trigger({
-          type: AGENT_CORE_EVENTS.runtime_sql_iterated,
-          detail: RuntimeSqlRowsDetailSchema.parse({
-            requestId: parsed.requestId,
-            sql: parsed.sql,
-            rows,
-          }),
-        })
-      } catch (error) {
-        emitSqlError({ requestId: parsed.requestId, sql: parsed.sql, error })
-      }
-    },
-    [AGENT_CORE_EVENTS.runtime_sql_finalize](detail: unknown) {
-      const parsed = RuntimeSqlFinalizeDetailSchema.parse(detail)
-      try {
-        const statement = statementCache.get(parsed.sql)
-        if (statement) {
-          statement.finalize()
-          statementCache.delete(parsed.sql)
-        }
-        trigger({
-          type: AGENT_CORE_EVENTS.runtime_sql_finalized,
-          detail: RuntimeSqlFinalizedDetailSchema.parse({
-            requestId: parsed.requestId,
-            sql: parsed.sql,
-          }),
-        })
-      } catch (error) {
-        emitSqlError({ requestId: parsed.requestId, sql: parsed.sql, error })
-      }
+      disconnectSet.clear()
     },
     async [AGENT_CORE_EVENTS.update_factories](detail: unknown) {
       const parsed = UpdateFactoriesDetailSchema.parse(detail)
-
-      try {
-        const imported = await import(parsed.module)
-        const factory = imported.default
-
-        if (typeof factory !== 'function') {
-          throw new Error('Factory module default export must be a function')
-        }
-
-        await installFactory({
-          factory,
-          bThreads,
-          trigger,
-          useFeedback,
+      const module = await import(parsed.module)
+      const { default: factory } = UpdateFactoryModuleSchema.parse(module)
+      const { threads, handlers } = FactoryResultSchema.parse(
+        factory({
+          trigger: restrictedTrigger,
           useSnapshot,
-        })
-
-        trigger({
-          type: AGENT_CORE_EVENTS.factories_updated,
-          detail: FactoriesUpdatedDetailSchema.parse({ module: parsed.module }),
-        })
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        trigger({
-          type: AGENT_CORE_EVENTS.update_factories_error,
-          detail: UpdateFactoriesErrorDetailSchema.parse({
-            module: parsed.module,
-            error: message,
-          }),
-        })
+          disconnectSet,
+          signals,
+        }),
+      )
+      threads && bThreads.set(threads)
+      handlers && disconnectSet.add(useFeedback(handlers))
+    },
+    async [AGENT_CORE_EVENTS.read_file](detail: Parameters<typeof readFile>[0]) {
+      const output = await readFile(detail, {
+        env,
+        cwd,
+        signal: createPassiveSignal(),
+      })
+      emitToolResult({ name: AGENT_CORE_EVENTS.read_file, output })
+    },
+    async [AGENT_CORE_EVENTS.write_file](detail: Parameters<typeof writeFile>[0]) {
+      const output = await writeFile(detail, { env, cwd, signal: createPassiveSignal() })
+      emitToolResult({ name: AGENT_CORE_EVENTS.write_file, output })
+    },
+    async [AGENT_CORE_EVENTS.edit_file](detail: Parameters<typeof editFile>[0]) {
+      const output = await editFile(detail, { env, cwd, signal: createPassiveSignal() })
+      emitToolResult({ name: AGENT_CORE_EVENTS.edit_file, output })
+    },
+    async [AGENT_CORE_EVENTS.list_files](detail: Parameters<typeof listFiles>[0]) {
+      const output = await listFiles(detail, { env, cwd, signal: createPassiveSignal() })
+      emitToolResult({ name: AGENT_CORE_EVENTS.list_files, output })
+    },
+    async [AGENT_CORE_EVENTS.grep]({ timeout, ...detail }: Parameters<typeof grep>[0]) {
+      const output = await grep({ ...detail, timeout }, { env, cwd, signal: createToolSignal(timeout) })
+      emitToolResult({ name: AGENT_CORE_EVENTS.grep, output })
+    },
+    async [AGENT_CORE_EVENTS.bash](detail: { command: string; timeout?: number }) {
+      const { command, timeout } = BashConfigSchema.parse(detail)
+      const signal = createToolSignal(timeout)
+      signal.throwIfAborted()
+      const result = await $`${{ raw: command }}`.cwd(cwd).env(env).nothrow().quiet()
+      signal.throwIfAborted()
+      if (result.exitCode !== 0) {
+        throw new Error(result.stderr.toString().trim() || `Command exited with code ${result.exitCode}`)
       }
+      emitToolResult({
+        name: AGENT_CORE_EVENTS.bash,
+        output: truncateTail(result.stdout.toString().trim()),
+      })
     },
   })
 
-  for (const factory of factories) {
-    await installFactory({
-      factory,
-      bThreads,
-      trigger,
-      useFeedback,
-      useSnapshot,
-    })
-  }
-
   return {
-    restrictedTrigger: useRestrictedTrigger(...restrictedTriggers),
+    trigger: restrictedTrigger,
     useSnapshot,
   }
 }

@@ -4,24 +4,14 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RISK_TAG } from '../agent.constants.ts'
 import type { ToolContext } from '../agent.types.ts'
-import {
-  AGENT_CRUD_RISK_TAGS,
-  agentCrudHandlers,
-  bash,
-  editFile,
-  grep,
-  listFiles,
-  readFile,
-  writeFile,
-} from '../crud.ts'
-import type { TruncationResult } from '../truncate.ts'
+import { AGENT_CRUD_RISK_TAGS, editFile, grep, listFiles, readFile, writeFile } from '../crud.ts'
 
 let workspace: string
 let ctx: ToolContext
 
 beforeAll(async () => {
   workspace = await mkdtemp(join(tmpdir(), 'crud-test-'))
-  ctx = { workspace, env: {}, signal: new AbortController().signal }
+  ctx = { cwd: workspace, env: {}, signal: new AbortController().signal }
   await Bun.write(join(workspace, 'hello.txt'), 'Hello, world!')
   await Bun.write(join(workspace, 'src/app.ts'), 'export const app = true')
   await Bun.write(join(workspace, 'unique.txt'), 'line one\nline two\nline three')
@@ -245,18 +235,7 @@ describe('grep', () => {
   test('respects abort signal', async () => {
     const aborted = new AbortController()
     aborted.abort()
-    expect(grep({ pattern: 'test' }, { workspace, env: {}, signal: aborted.signal })).rejects.toThrow('Aborted')
-  })
-})
-
-describe('bash', () => {
-  test('executes shell commands', async () => {
-    const result = (await bash({ command: 'echo hello' }, ctx)) as TruncationResult
-    expect(result.content).toContain('hello')
-  })
-
-  test('throws on non-zero exit', async () => {
-    expect(bash({ command: 'ls /nonexistent_dir_12345' }, ctx)).rejects.toThrow()
+    expect(grep({ pattern: 'test' }, { cwd: workspace, env: {}, signal: aborted.signal })).rejects.toThrow('Aborted')
   })
 })
 
@@ -271,16 +250,5 @@ describe('AGENT_CRUD_RISK_TAGS', () => {
 
   test('keeps bash default-deny', () => {
     expect(AGENT_CRUD_RISK_TAGS.bash).toEqual([])
-  })
-})
-
-describe('agentCrudHandlers', () => {
-  test('exposes the built-in CRUD handlers', () => {
-    expect(agentCrudHandlers.read_file).toBeDefined()
-    expect(agentCrudHandlers.write_file).toBeDefined()
-    expect(agentCrudHandlers.edit_file).toBeDefined()
-    expect(agentCrudHandlers.list_files).toBeDefined()
-    expect(agentCrudHandlers.grep).toBeDefined()
-    expect(agentCrudHandlers.bash).toBeDefined()
   })
 })

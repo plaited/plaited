@@ -30,16 +30,18 @@ export const ListFilesConfigSchema = z.object({
 
 export const BashConfigSchema = z.object({
   command: z.string().describe('The shell command to execute'),
+  timeout: z.number().optional().describe('Optional timeout in milliseconds'),
 })
 
 export const GrepConfigSchema = z.object({
   pattern: z.string().describe('Regex or literal search pattern'),
-  path: z.string().optional().describe('Directory or file to search (default: workspace root)'),
+  path: z.string().optional().describe('Directory or file to search (default: cwd root)'),
   glob: z.string().optional().describe('Filter files by glob pattern (e.g. "*.ts")'),
   ignoreCase: z.boolean().optional().describe('Case-insensitive search'),
   literal: z.boolean().optional().describe('Treat pattern as literal string, not regex'),
   context: z.number().optional().describe('Lines of context before and after each match'),
   limit: z.number().optional().describe('Maximum number of matches to return (default: 100)'),
+  timeout: z.number().optional().describe('Optional timeout in milliseconds'),
 })
 
 // ============================================================================

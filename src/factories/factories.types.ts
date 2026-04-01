@@ -1,5 +1,5 @@
 import type { AgentToolCall, ToolDefinition } from '../agent/agent.schemas.ts'
-import type { AgentFactory, ChatMessage, Model } from '../agent/agent.types.ts'
+import type { ChatMessage, Factory, Model } from '../agent/agent.types.ts'
 
 /**
  * A named predicate for factory-level tool call validation.
@@ -40,7 +40,7 @@ export type CreateInferenceFactoryOptions = {
  *
  * @public
  */
-export type InferenceFactoryCreator = (options: CreateInferenceFactoryOptions) => AgentFactory
+export type InferenceFactoryCreator = (options: CreateInferenceFactoryOptions) => Factory
 
 /**
  * Options for creating the default gate/execute factory.
@@ -57,7 +57,7 @@ export type CreateGateExecuteFactoryOptions = {
  *
  * @public
  */
-export type GateExecuteFactoryCreator = (options: CreateGateExecuteFactoryOptions) => AgentFactory
+export type GateExecuteFactoryCreator = (options: CreateGateExecuteFactoryOptions) => Factory
 
 /**
  * Options for creating the default simulation/evaluation factory.
@@ -75,7 +75,7 @@ export type CreateSimulationEvaluationFactoryOptions = {
  *
  * @public
  */
-export type SimulationEvaluationFactoryCreator = (options: CreateSimulationEvaluationFactoryOptions) => AgentFactory
+export type SimulationEvaluationFactoryCreator = (options: CreateSimulationEvaluationFactoryOptions) => Factory
 
 /**
  * Options for creating a runtime snapshot capture factory.
@@ -91,4 +91,4 @@ export type CreateSnapshotContextFactoryOptions = {
  *
  * @public
  */
-export type SnapshotContextFactoryCreator = (options?: CreateSnapshotContextFactoryOptions) => AgentFactory
+export type SnapshotContextFactoryCreator = (options?: CreateSnapshotContextFactoryOptions) => Factory

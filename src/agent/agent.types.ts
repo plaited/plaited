@@ -1,3 +1,4 @@
+import type { infer as Infer, ZodSafeParseError, ZodTypeAny } from 'zod'
 import type { A2AClient } from '../a2a/a2a.types.ts'
 import type {
   DefaultHandlers,
@@ -14,24 +15,12 @@ import type { AGENT_EVENTS } from './agent.constants.ts'
 import type {
   AgentPlan,
   AgentToolCall,
-  AgentToolErrorDetail,
-  AgentToolExecuteDetail,
   AgentToolResultDetail,
-  FactoriesUpdatedDetail,
   GateDecision,
   ModelUsage,
-  RuntimeSqlErrorDetail,
-  RuntimeSqlFinalizeDetail,
-  RuntimeSqlFinalizedDetail,
-  RuntimeSqlRanDetail,
-  RuntimeSqlRequestDetail,
-  RuntimeSqlRowDetail,
-  RuntimeSqlRowsDetail,
-  RuntimeSqlValuesResultDetail,
   ToolDefinition,
   ToolResult,
   UpdateFactoriesDetail,
-  UpdateFactoriesErrorDetail,
 } from './agent.schemas.ts'
 
 /**
@@ -39,38 +28,9 @@ import type {
  *
  * @public
  */
-export type AgentHeartbeatConfig = {
+export type HeartbeatConfig = {
   intervalMs?: number
 }
-
-/**
- * Executable behavior returned by an installed factory.
- *
- * @public
- */
-export type AgentFactoryInstallResult = {
-  threads?: Record<string, RulesFunction>
-  handlers?: DefaultHandlers
-}
-
-/**
- * Context given to agent factories at install time.
- *
- * @public
- */
-export type AgentFactoryInstallContext = {
-  trigger: Trigger
-  useSnapshot: UseSnapshot
-}
-
-/**
- * Executable factory that installs behavioral threads and handlers into an agent.
- *
- * @public
- */
-export type AgentFactory = (
-  context: AgentFactoryInstallContext,
-) => AgentFactoryInstallResult | Promise<AgentFactoryInstallResult>
 
 /**
  * Minimal create-agent contract for the new core.
@@ -81,9 +41,9 @@ export type CreateAgentOptions = {
   id: string
   cwd?: string
   env?: Record<string, string>
-  factories?: AgentFactory[]
+  factories?: Factory[]
   restrictedTriggers?: string[]
-  heartbeat?: AgentHeartbeatConfig
+  heartbeat?: HeartbeatConfig
 }
 
 /**
@@ -92,7 +52,7 @@ export type CreateAgentOptions = {
  * @public
  */
 export type AgentHandle = {
-  restrictedTrigger: Trigger
+  trigger: Trigger
   useSnapshot: UseSnapshot
 }
 
@@ -115,23 +75,58 @@ export type SpawnedAgentHandle = AgentHandle & {
   disconnectSnapshot?: Disconnect
 }
 
-export type RuntimeSqlParams = RuntimeSqlRequestDetail['params']
-export type RuntimeSqlRunDetail = RuntimeSqlRequestDetail
-export type RuntimeSqlGetDetail = RuntimeSqlRequestDetail
-export type RuntimeSqlAllDetail = RuntimeSqlRequestDetail
-export type RuntimeSqlValuesDetail = RuntimeSqlRequestDetail
-export type RuntimeSqlIterateDetail = RuntimeSqlRequestDetail
-export type RuntimeSqlFinalizeRequestDetail = RuntimeSqlFinalizeDetail
-export type RuntimeSqlRunResultDetail = RuntimeSqlRanDetail
-export type RuntimeSqlGetResultDetail = RuntimeSqlRowDetail
-export type RuntimeSqlAllResultDetail = RuntimeSqlRowsDetail
-export type RuntimeSqlIterateResultDetail = RuntimeSqlRowsDetail
-export type RuntimeSqlValuesDetailResult = RuntimeSqlValuesResultDetail
-export type RuntimeSqlFinalizeResultDetail = RuntimeSqlFinalizedDetail
-export type RuntimeSqlFailureDetail = RuntimeSqlErrorDetail
-export type LocalToolExecuteDetail = AgentToolExecuteDetail
+export type Listen = (args: {
+  eventType: string
+  trigger: Trigger
+  getLVC?: boolean
+  disconnectSet: Set<Disconnect>
+}) => Disconnect
+
+export type SchemaViolationHandler<TSchema extends ZodTypeAny = ZodTypeAny> = (args: {
+  key: string
+  schema: TSchema
+  value: unknown
+  violation: ZodSafeParseError<Infer<TSchema>>
+}) => void
+
+export type Signal<TSchema extends ZodTypeAny = ZodTypeAny> = {
+  set?(value?: Infer<TSchema>): void
+  listen: Listen
+  get(): Infer<TSchema> | undefined
+  schema: TSchema
+}
+
+export type Signals = {
+  set: <TSchema extends ZodTypeAny = ZodTypeAny>({
+    key,
+    schema,
+    value,
+    readOnly,
+    onSchemaViolation,
+  }: {
+    key: string
+    schema: TSchema
+    value?: Infer<TSchema>
+    readOnly: boolean
+    onSchemaViolation?: SchemaViolationHandler<TSchema>
+  }) => Signal<TSchema>
+  get: (key: string) => Signal | undefined
+  has: (key: string) => boolean
+}
+
+export type FactoryParams = {
+  trigger: Trigger
+  useSnapshot: UseSnapshot
+  disconnectSet: Set<Disconnect>
+  signals: Signals
+}
+
+export type Factory = (params: FactoryParams) => {
+  threads?: Record<string, RulesFunction>
+  handlers?: DefaultHandlers
+}
+
 export type LocalToolResultDetail = AgentToolResultDetail
-export type LocalToolErrorDetail = AgentToolErrorDetail
 
 // ============================================================================
 // Model Interface — streaming inference (from pi-mono audit decisions)
@@ -291,7 +286,7 @@ export type Voice = {
  * @public
  */
 export type ToolContext = {
-  workspace: string
+  cwd: string
   env: Record<string, string>
   signal: AbortSignal
 }
@@ -300,12 +295,15 @@ export type ToolContext = {
  * A tool implementation that executes a specific tool.
  *
  * @remarks
- * Receives parsed arguments and a workspace context with AbortSignal.
+ * Receives parsed arguments and a cwd-scoped context with AbortSignal.
  * Returned value becomes the `output` field of a `ToolResult`.
  *
  * @public
  */
-export type ToolHandler = (args: Record<string, unknown>, ctx: ToolContext) => Promise<unknown>
+export type ToolHandler<T extends Record<string, unknown> = Record<string, unknown>> = (
+  args: { timeout?: number } & T,
+  ctx: ToolContext,
+) => Promise<unknown>
 
 /**
  * Executes a tool call with transport abstraction.
@@ -754,8 +752,6 @@ export type AgentEventDetails = {
  */
 export type AgentCoreEventDetails = {
   update_factories: UpdateFactoriesDetail
-  factories_updated: FactoriesUpdatedDetail
-  update_factories_error: UpdateFactoriesErrorDetail
 }
 
 // ============================================================================
