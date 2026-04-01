@@ -6,15 +6,13 @@ export const useSignal = <TSchema extends ZodTypeAny = ZodTypeAny>({
   key,
   schema,
   value,
-  readOnly,
   onSchemaViolation,
 }: {
   key: string
   schema: TSchema
   value?: Infer<TSchema>
-  readOnly: boolean
   onSchemaViolation?: SchemaViolationHandler<TSchema>
-}): [string, Signal<TSchema>] => {
+}): Signal<TSchema> => {
   let store: Infer<TSchema> | undefined = value
   const listeners = new Set<(value?: Infer<TSchema>) => void>()
 
@@ -49,13 +47,10 @@ export const useSignal = <TSchema extends ZodTypeAny = ZodTypeAny>({
     return disconnect
   }
 
-  return [
-    key,
-    {
-      get,
-      set: readOnly ? undefined : set,
-      listen,
-      schema,
-    },
-  ]
+  return {
+    get,
+    set,
+    listen,
+    schema,
+  }
 }

@@ -48,6 +48,7 @@ export const createAgent = async ({
     ...restrictedTriggers,
     AGENT_CORE_EVENTS.set_signal,
     AGENT_CORE_EVENTS.heartbeat,
+    AGENT_CORE_EVENTS.signal_schema_violation,
   )
 
   const disconnectSet = new Set<Disconnect>()
@@ -72,11 +73,17 @@ export const createAgent = async ({
       key,
       schema,
       value,
-      readOnly,
       onSchemaViolation,
     })
-    trigger({ type: AGENT_CORE_EVENTS.set_signal, detail: signal[0] })
-    return signal[1]
+    trigger({
+      type: AGENT_CORE_EVENTS.set_signal,
+      detail: {
+        key,
+        signal,
+        readOnly,
+      },
+    })
+    return signal
   }
 
   const signals: Signals = {
@@ -121,7 +128,14 @@ export const createAgent = async ({
 
   bThreads.set({
     onSignalSet: bThread(
-      [bSync({ block: ({ type, detail }) => type === AGENT_CORE_EVENTS.set_signal && signalMap.has(detail) })],
+      [
+        bSync({
+          block: ({ type, detail }) => {
+            if (type !== AGENT_CORE_EVENTS.set_signal) return false
+            return signalMap.has(detail.key)
+          },
+        }),
+      ],
       true,
     ),
   })
@@ -133,6 +147,11 @@ export const createAgent = async ({
         void disconnect()
       }
       disconnectSet.clear()
+    },
+    [AGENT_CORE_EVENTS.set_signal]({ key, signal, readOnly }: { key: string; signal: Signal; readOnly: boolean }) {
+      const { set, ...rest } = signal
+      !readOnly && Object.assign(rest, { set })
+      signalMap.set(key, rest)
     },
     async [AGENT_CORE_EVENTS.update_factories](detail: unknown) {
       const parsed = UpdateFactoriesDetailSchema.parse(detail)
