@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  buildContextPaths,
   buildGeneratorPrompt,
   buildJudgePrompt,
   buildPiPlanPrompt,
@@ -53,6 +54,17 @@ const candidate: GeneratedCandidate = {
 }
 
 describe('modnet Pi workflow prompts', () => {
+  test('buildContextPaths appends bucket review files after defaults', () => {
+    const paths = buildContextPaths({
+      extraPaths: ['dev-research/training-prompts/catalog/buckets/05-education-reference-and-practice.review.md'],
+    })
+
+    expect(paths.at(-1)).toBe(
+      'dev-research/training-prompts/catalog/buckets/05-education-reference-and-practice.review.md',
+    )
+    expect(paths).toContain('dev-research/training-prompts/program.md')
+  })
+
   test('renderContextBundle includes file paths and content', () => {
     const rendered = renderContextBundle(context)
 

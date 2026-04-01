@@ -36,6 +36,7 @@ type WorkerWinner = {
 
 type RoundInput = {
   programPath: string
+  contextPaths: string[]
   reviewDir: string
   queuePromptId: string
   prompt: ReviewPrompt
@@ -125,6 +126,7 @@ const main = async () => {
   for (const workerIndex of workerIndices) {
     const workerInput = {
       programPath: input.programPath,
+      contextPaths: input.contextPaths,
       reviewDir: input.reviewDir,
       prompt: input.prompt,
       mode: input.mode,

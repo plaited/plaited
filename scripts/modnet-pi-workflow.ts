@@ -74,6 +74,11 @@ export const loadContextBundle = async (paths: readonly string[] = DEFAULT_CONTE
   return { documents }
 }
 
+export const buildContextPaths = ({ extraPaths = [] }: { extraPaths?: readonly string[] } = {}) => [
+  ...DEFAULT_CONTEXT_PATHS,
+  ...extraPaths,
+]
+
 export const renderContextBundle = (bundle: ContextBundle): string =>
   bundle.documents
     .map(

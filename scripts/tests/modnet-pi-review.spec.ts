@@ -1,7 +1,27 @@
 import { describe, expect, test } from 'bun:test'
-import { parseSourceInput, parseWinnerInput } from '../modnet-pi-review.ts'
+import { parseCliArgs, parseSourceInput, parseWinnerInput } from '../modnet-pi-review.ts'
 
 describe('modnet pi review input parsing', () => {
+  test('cli args default to the full prompt catalog', () => {
+    expect(parseCliArgs(['bun', 'scripts/modnet-pi-review.ts'])).toEqual({
+      bucket: null,
+      catalogPath: 'dev-research/training-prompts/catalog/prompts.jsonl',
+      bucketReviewPath: null,
+      reviewDir: '.prompts/modnet-review',
+    })
+  })
+
+  test('cli args support selecting a bucket queue', () => {
+    expect(
+      parseCliArgs(['bun', 'scripts/modnet-pi-review.ts', '--bucket', '05-education-reference-and-practice']),
+    ).toEqual({
+      bucket: '05-education-reference-and-practice',
+      catalogPath: 'dev-research/training-prompts/catalog/buckets/05-education-reference-and-practice.jsonl',
+      bucketReviewPath: 'dev-research/training-prompts/catalog/buckets/05-education-reference-and-practice.review.md',
+      reviewDir: '.prompts/modnet-review/05-education-reference-and-practice',
+    })
+  })
+
   test('source menu numbers map to non-refine actions', () => {
     expect(parseSourceInput('1')).toBe('keep')
     expect(parseSourceInput('2')).toBe('remove')

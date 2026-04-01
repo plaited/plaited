@@ -11,6 +11,7 @@ import {
   type RoundManifest,
 } from './modnet-pi-round-state.ts'
 import type { GeneratedCandidate, ReviewPrompt, WorkflowMode } from './modnet-pi-workflow.ts'
+import { buildContextPaths } from './modnet-pi-workflow.ts'
 
 type PromptCatalogRow = {
   id: string
@@ -60,6 +61,7 @@ type RoundWinnerFile = {
 
 type RoundInput = {
   programPath: string
+  contextPaths: string[]
   reviewDir: string
   queuePromptId: string
   prompt: ReviewPrompt
@@ -116,11 +118,8 @@ type WinnerAction =
 const PROGRAM_PATH = join('dev-research', 'training-prompts', 'program.md')
 const CATALOG_DIR = join('dev-research', 'training-prompts', 'catalog')
 const PROMPTS_PATH = join(CATALOG_DIR, 'prompts.jsonl')
-const REVIEW_DIR = process.env.MODNET_REVIEW_DIR ?? join('.prompts', 'modnet-review')
-const ARTIFACTS_DIR = join(REVIEW_DIR, 'artifacts')
-const DECISIONS_PATH = join(REVIEW_DIR, 'decisions.jsonl')
-const ERRORS_PATH = join(REVIEW_DIR, 'errors.jsonl')
-const STATE_PATH = join(REVIEW_DIR, 'state.json')
+const BUCKETS_DIR = join(CATALOG_DIR, 'buckets')
+const BASE_REVIEW_DIR = process.env.MODNET_REVIEW_DIR ?? join('.prompts', 'modnet-review')
 const DEFAULT_RETRY_ATTEMPTS = 3
 const FANOUT_WORKERS = 5
 const ATTEMPTS_PER_WORKER = 15
@@ -134,6 +133,70 @@ const STRATEGY_NOTES = [
   'favor crisp standalone training usefulness over lineage detail',
 ]
 
+type ReviewOptions = {
+  bucket: string | null
+  catalogPath: string
+  bucketReviewPath: string | null
+  reviewDir: string
+}
+
+let activeReviewOptions: ReviewOptions = {
+  bucket: null,
+  catalogPath: PROMPTS_PATH,
+  bucketReviewPath: null,
+  reviewDir: BASE_REVIEW_DIR,
+}
+
+const getArtifactsDir = () => join(activeReviewOptions.reviewDir, 'artifacts')
+const getDecisionsPath = () => join(activeReviewOptions.reviewDir, 'decisions.jsonl')
+const getErrorsPath = () => join(activeReviewOptions.reviewDir, 'errors.jsonl')
+const getStatePath = () => join(activeReviewOptions.reviewDir, 'state.json')
+
+export const parseCliArgs = (argv: string[]): ReviewOptions => {
+  let bucket: string | null = null
+
+  for (let index = 2; index < argv.length; index += 1) {
+    const arg = argv[index]!
+
+    if (arg === '--bucket') {
+      const value = argv[index + 1]
+      if (!value) {
+        throw new Error('Missing value for --bucket')
+      }
+      bucket = value
+      index += 1
+      continue
+    }
+
+    if (arg.startsWith('--bucket=')) {
+      const value = arg.slice('--bucket='.length)
+      if (!value) {
+        throw new Error('Missing value for --bucket')
+      }
+      bucket = value
+      continue
+    }
+
+    throw new Error(`Unknown argument: ${arg}`)
+  }
+
+  if (!bucket) {
+    return {
+      bucket: null,
+      catalogPath: PROMPTS_PATH,
+      bucketReviewPath: null,
+      reviewDir: BASE_REVIEW_DIR,
+    }
+  }
+
+  return {
+    bucket,
+    catalogPath: join(BUCKETS_DIR, `${bucket}.jsonl`),
+    bucketReviewPath: join(BUCKETS_DIR, `${bucket}.review.md`),
+    reviewDir: join(BASE_REVIEW_DIR, bucket),
+  }
+}
+
 const readJsonl = async <T>(path: string): Promise<T[]> => {
   const text = await Bun.file(path).text()
   return text
@@ -144,7 +207,7 @@ const readJsonl = async <T>(path: string): Promise<T[]> => {
 }
 
 const loadPrompts = async (): Promise<ReviewPrompt[]> => {
-  const rows = await readJsonl<PromptCatalogRow>(PROMPTS_PATH)
+  const rows = await readJsonl<PromptCatalogRow>(activeReviewOptions.catalogPath)
   return rows.map((row) => ({
     id: row.id,
     title: row.id,
@@ -157,39 +220,39 @@ const loadPrompts = async (): Promise<ReviewPrompt[]> => {
 }
 
 const ensureReviewDir = async () => {
-  await Bun.$`mkdir -p ${REVIEW_DIR} ${ARTIFACTS_DIR}`.quiet()
+  await Bun.$`mkdir -p ${activeReviewOptions.reviewDir} ${getArtifactsDir()}`.quiet()
 }
 
 const appendDecision = async (row: Record<string, unknown>) => {
   await ensureReviewDir()
-  await appendFile(DECISIONS_PATH, `${JSON.stringify(row)}\n`)
+  await appendFile(getDecisionsPath(), `${JSON.stringify(row)}\n`)
 }
 
 const appendError = async (row: Record<string, unknown>) => {
   await ensureReviewDir()
-  await appendFile(ERRORS_PATH, `${JSON.stringify(row)}\n`)
+  await appendFile(getErrorsPath(), `${JSON.stringify(row)}\n`)
 }
 
 const loadDecisions = async (): Promise<DecisionRow[]> => {
-  if (!(await Bun.file(DECISIONS_PATH).exists())) {
+  if (!(await Bun.file(getDecisionsPath()).exists())) {
     return []
   }
-  return readJsonl<DecisionRow>(DECISIONS_PATH)
+  return readJsonl<DecisionRow>(getDecisionsPath())
 }
 
 const loadState = async (): Promise<ReviewState | null> => {
-  if (!(await Bun.file(STATE_PATH).exists())) {
+  if (!(await Bun.file(getStatePath()).exists())) {
     return null
   }
-  return (await Bun.file(STATE_PATH).json()) as ReviewState
+  return (await Bun.file(getStatePath()).json()) as ReviewState
 }
 
 const writeState = async (state: ReviewState) => {
   await ensureReviewDir()
-  await Bun.write(STATE_PATH, `${JSON.stringify(state, null, 2)}\n`)
+  await Bun.write(getStatePath(), `${JSON.stringify(state, null, 2)}\n`)
 }
 
-const promptArtifactDir = (promptId: string) => join(ARTIFACTS_DIR, promptId)
+const promptArtifactDir = (promptId: string) => join(getArtifactsDir(), promptId)
 const roundDir = (promptId: string, roundNumber: number) =>
   join(promptArtifactDir(promptId), `round-${roundNumber.toString().padStart(2, '0')}`)
 const roundManifestPath = (promptId: string, roundNumber: number) => join(roundDir(promptId, roundNumber), 'round.json')
@@ -265,12 +328,14 @@ const launchRound = async ({
   prompt,
   mode,
   feedback,
+  contextPaths,
   basedOnRoundNumber,
 }: {
   queuePromptId: string
   prompt: ReviewPrompt
   mode: WorkflowMode
   feedback: string
+  contextPaths: string[]
   basedOnRoundNumber?: number
 }) => {
   const roundNumber = await resolveRoundNumber(prompt.id)
@@ -289,7 +354,8 @@ const launchRound = async ({
 
   const inputPayload: RoundInput = {
     programPath: PROGRAM_PATH,
-    reviewDir: REVIEW_DIR,
+    contextPaths,
+    reviewDir: activeReviewOptions.reviewDir,
     queuePromptId,
     prompt,
     mode,
@@ -327,7 +393,7 @@ const launchRound = async ({
 
 const loadAllManifests = async (): Promise<RoundManifest[]> => {
   try {
-    const promptEntries = await readdir(ARTIFACTS_DIR, { withFileTypes: true })
+    const promptEntries = await readdir(getArtifactsDir(), { withFileTypes: true })
     const manifests: RoundManifest[] = []
 
     for (const promptEntry of promptEntries) {
@@ -383,9 +449,11 @@ const loadReadyRound = async (): Promise<ReadyRound | null> => {
 const waitForInputOrReady = async ({
   rl,
   question,
+  reviewDir,
 }: {
   rl: ReturnType<typeof createInterface>
   question: string
+  reviewDir?: string
 }): Promise<WaitResult> => {
   const controller = new AbortController()
   const answerPromise = rl
@@ -412,7 +480,18 @@ const waitForInputOrReady = async ({
       return result
     }
 
+    const previousReviewDir = activeReviewOptions.reviewDir
+    if (reviewDir) {
+      activeReviewOptions = {
+        ...activeReviewOptions,
+        reviewDir,
+      }
+    }
     const ready = await loadReadyRound()
+    activeReviewOptions = {
+      ...activeReviewOptions,
+      reviewDir: previousReviewDir,
+    }
     if (ready) {
       controller.abort()
       await answerPromise
@@ -495,6 +574,7 @@ const promptSourceAction = async (rl: ReturnType<typeof createInterface>): Promi
   const result = await waitForInputOrReady({
     rl,
     question: 'Enter number or refine feedback: ',
+    reviewDir: activeReviewOptions.reviewDir,
   })
   if (result.kind === 'ready') {
     return result.ready
@@ -523,6 +603,7 @@ const promptIdleAction = async (
   const result = await waitForInputOrReady({
     rl,
     question: 'Enter number: ',
+    reviewDir: activeReviewOptions.reviewDir,
   })
   if (result.kind === 'ready') {
     return result.ready
@@ -603,10 +684,12 @@ const handleReadyRound = async ({
   rl,
   manifest,
   winner,
+  contextPaths,
 }: {
   rl: ReturnType<typeof createInterface>
   manifest: RoundManifest
   winner: RoundWinnerFile
+  contextPaths: string[]
 }): Promise<'quit' | 'continue'> => {
   printWinner({ manifest, winner })
 
@@ -678,6 +761,7 @@ const handleReadyRound = async ({
       prompt: nextSourcePrompt,
       mode: action === 'derive' ? 'derive' : 'refine',
       feedback,
+      contextPaths,
       basedOnRoundNumber: manifest.roundNumber,
     })
     return 'continue'
@@ -685,6 +769,11 @@ const handleReadyRound = async ({
 }
 
 const main = async () => {
+  activeReviewOptions = parseCliArgs(Bun.argv)
+  const contextPaths = buildContextPaths({
+    extraPaths: activeReviewOptions.bucketReviewPath ? [activeReviewOptions.bucketReviewPath] : [],
+  })
+
   await ensureReviewDir()
   const prompts = await loadPrompts()
   let decisions = await loadDecisions()
@@ -700,6 +789,7 @@ const main = async () => {
         rl,
         manifest: readyRound.manifest,
         winner: readyRound.winner,
+        contextPaths,
       })
       if (result === 'quit') {
         await stopRunningRounds(await loadAllManifests())
@@ -735,6 +825,7 @@ const main = async () => {
           rl,
           manifest: idleAction.manifest,
           winner: idleAction.winner,
+          contextPaths,
         })
         if (result === 'quit') {
           await stopRunningRounds(await loadAllManifests())
@@ -763,6 +854,7 @@ const main = async () => {
         rl,
         manifest: action.manifest,
         winner: action.winner,
+        contextPaths,
       })
       if (result === 'quit') {
         await stopRunningRounds(await loadAllManifests())
@@ -798,6 +890,7 @@ const main = async () => {
       prompt,
       mode: 'refine',
       feedback: action.feedback,
+      contextPaths,
     })
     await appendDecision({
       id: prompt.id,

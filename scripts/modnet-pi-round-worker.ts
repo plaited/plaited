@@ -46,6 +46,7 @@ type WorkerWinner = {
 
 type WorkerInput = {
   programPath: string
+  contextPaths?: string[]
   reviewDir: string
   prompt: ReviewPrompt
   mode?: WorkflowMode
@@ -327,7 +328,7 @@ const main = async () => {
   }
 
   const input = (await Bun.file(inputPath).json()) as WorkerInput
-  const context: ContextBundle = await loadContextBundle()
+  const context: ContextBundle = await loadContextBundle(input.contextPaths)
 
   const manifest = await loadRoundManifest(input.reviewDir, input.prompt.id, input.roundNumber)
   if (!manifest) {
