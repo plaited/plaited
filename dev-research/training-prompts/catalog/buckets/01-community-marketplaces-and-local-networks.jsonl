@@ -1,0 +1,17 @@
+{"id":"farm-stand-s1-item","prompt":"I grow apples. Create a simple listing for my Honeycrisp apples with the price, weight, and where they were grown."}
+{"id":"farm-stand-s2-list","prompt":"Now I want to list all my produce — apples, tomatoes, and herbs — with prices and quantities for each."}
+{"id":"farm-stand-s3-collection","prompt":"Group my produce into categories: fruits, vegetables, and herbs. Each category should be browsable."}
+{"id":"farm-stand-s5-module","prompt":"Build my complete farm stand module. Include my produce collections, my farm name and logo, and a way for customers to contact me."}
+{"id":"farm-stand-s6-join-market","prompt":"I'm at the Saturday market. Connect my stand to the other vendors nearby."}
+{"id":"farm-stand-s6-scale-promotion","prompt":"A clothing vendor and a jewelry maker just arrived at the market."}
+{"id":"farm-stand-disconnect","prompt":"I'm packing up. Remove my stand from the market."}
+{"id":"boundary-private-view","prompt":"Show me my full apple inventory with cost per unit, supplier info, profit margins, and stock counts."}
+{"id":"boundary-supplier-view","prompt":"My supplier wants to see what I have available for wholesale."}
+{"id":"boundary-public-view","prompt":"A customer at the market is browsing my stand from their phone."}
+{"id":"ephemeral-meeting-place","prompt":"I'm at the park and want to see what people around me are reading."}
+{"id":"ephemeral-library-autoconnect","prompt":"I just walked into the library. Connect my reading list automatically."}
+{"id":"public-service-aggregator","prompt":"Build a module that watches nearby public nodes, shows what services they expose, and lets me browse them by type."}
+{"id":"ephemeral-market-aggregator","prompt":"When I arrive at a pop-up market, assemble a live view of the stands around me and remove them when they leave."}
+{"id":"popup-art-exhibition","prompt":"The city parks department wants to show local art on digital screens in the park. Artists connect their portfolios when they're nearby."}
+{"id":"health-overlay-market","prompt":"I'm at the farmer's market. Show me what's available, but overlay my dietary restrictions. I'm diabetic."}
+{"id":"urban-planner-density","prompt":"As a city planner, show me a real-time heatmap of fresh food availability across all active farmer's markets in the metro area."}
