@@ -450,7 +450,7 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
   const useRestrictedTrigger: UseRestrictedTrigger = (...restricted) => {
     const set = new Set(restricted)
     return <T extends BPEvent>(args: T) => {
-      if (set.has(args.type as string)) {
+      if (set.has(args.type)) {
         const message = {
           ...args,
           kind: SNAPSHOT_MESSAGE_KINDS.restricted_trigger_error,
