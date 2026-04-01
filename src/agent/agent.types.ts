@@ -39,7 +39,8 @@ export type HeartbeatConfig = {
  */
 export type CreateAgentOptions = {
   id: string
-  cwd?: string
+  cwd: string
+  workspace: string
   env?: Record<string, string>
   factories?: Factory[]
   restrictedTriggers?: string[]

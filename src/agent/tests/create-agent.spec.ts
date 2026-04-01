@@ -11,6 +11,8 @@ describe('createAgent', () => {
     const seen: string[] = []
     const agent = await createAgent({
       id: 'agent:test',
+      cwd: process.cwd(),
+      workspace: process.cwd(),
       restrictedTriggers: [AGENT_CORE_EVENTS.agent_disconnect],
       factories: [
         () => ({
@@ -33,6 +35,8 @@ describe('createAgent', () => {
     const snapshots: string[] = []
     const agent = await createAgent({
       id: 'agent:test',
+      cwd: process.cwd(),
+      workspace: process.cwd(),
       restrictedTriggers: [AGENT_CORE_EVENTS.agent_disconnect],
     })
 
@@ -47,7 +51,7 @@ describe('createAgent', () => {
 
   test('installs factory modules at runtime through update_factories', async () => {
     const seen: string[] = []
-    const moduleUrl = new URL('./fixtures/update-factories.fixture.ts', import.meta.url).href
+    const modulePath = './src/agent/tests/fixtures/update-factories.fixture.ts'
     let resolvePong!: () => void
     const pongSeen = new Promise<void>((resolve) => {
       resolvePong = resolve
@@ -55,6 +59,8 @@ describe('createAgent', () => {
 
     const agent = await createAgent({
       id: 'agent:test',
+      cwd: process.cwd(),
+      workspace: process.cwd(),
       factories: [
         () => ({
           handlers: {
@@ -69,7 +75,7 @@ describe('createAgent', () => {
 
     agent.trigger({
       type: AGENT_CORE_EVENTS.update_factories,
-      detail: { module: moduleUrl },
+      detail: modulePath,
     })
 
     for (let attempt = 0; attempt < 10 && seen.length === 0; attempt++) {
@@ -94,6 +100,7 @@ describe('createAgent', () => {
     const agent = await createAgent({
       id: 'agent:tools',
       cwd: workspace,
+      workspace,
       factories: [
         () => ({
           handlers: {
@@ -130,6 +137,8 @@ describe('spawnAgent', () => {
     const snapshots: string[] = []
     const spawned = await spawnAgent({
       id: 'agent:spawned',
+      cwd: process.cwd(),
+      workspace: process.cwd(),
       restrictedTriggers: [AGENT_CORE_EVENTS.agent_disconnect],
       onSnapshot(snapshot) {
         snapshots.push(snapshot.kind)

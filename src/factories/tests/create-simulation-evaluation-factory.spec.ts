@@ -10,6 +10,8 @@ import {
   STATE_TRANSITION_PROMPT,
 } from '../create-simulation-evaluation-factory.ts'
 
+const TEST_WORKSPACE = process.cwd()
+
 const createToolCall = (name: string, id = 'tc-1'): AgentToolCall => ({
   id,
   name,
@@ -93,6 +95,8 @@ describe('simulation prompt behavior', () => {
 
     const agent = await createAgent({
       id: 'agent:simulation-prompt',
+      cwd: TEST_WORKSPACE,
+      workspace: TEST_WORKSPACE,
       factories: [
         createSimulationEvaluationFactory({
           model,
@@ -134,6 +138,8 @@ describe('simulation prompt behavior', () => {
 
     const agent = await createAgent({
       id: 'agent:simulation-temp',
+      cwd: TEST_WORKSPACE,
+      workspace: TEST_WORKSPACE,
       factories: [
         createSimulationEvaluationFactory({
           model,
@@ -185,6 +191,8 @@ describe('simulation prompt behavior', () => {
 
     const agent = await createAgent({
       id: 'agent:simulation-chunked',
+      cwd: TEST_WORKSPACE,
+      workspace: TEST_WORKSPACE,
       factories: [
         createSimulationEvaluationFactory({
           model,
@@ -223,6 +231,8 @@ describe('simulation prompt behavior', () => {
 
     const agent = await createAgent({
       id: 'agent:simulation-error',
+      cwd: TEST_WORKSPACE,
+      workspace: TEST_WORKSPACE,
       factories: [
         createSimulationEvaluationFactory({
           model,
@@ -268,6 +278,8 @@ describe('simulation prompt behavior', () => {
 
     const agent = await createAgent({
       id: 'agent:simulation-args',
+      cwd: TEST_WORKSPACE,
+      workspace: TEST_WORKSPACE,
       factories: [
         createSimulationEvaluationFactory({
           model,
@@ -326,6 +338,8 @@ describe('createSimulationEvaluationFactory', () => {
 
     const agent = await createAgent({
       id: 'agent:test',
+      cwd: TEST_WORKSPACE,
+      workspace: TEST_WORKSPACE,
       factories: [
         createSimulationEvaluationFactory({
           model,
@@ -374,6 +388,8 @@ describe('createSimulationEvaluationFactory', () => {
 
     const agent = await createAgent({
       id: 'agent:test',
+      cwd: TEST_WORKSPACE,
+      workspace: TEST_WORKSPACE,
       factories: [
         createSimulationEvaluationFactory({
           model,

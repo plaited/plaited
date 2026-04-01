@@ -5,6 +5,8 @@ import type { Model } from '../../agent/agent.types.ts'
 import { createAgent } from '../../agent/create-agent.ts'
 import { createInferenceFactory } from '../create-inference-factory.ts'
 
+const TEST_WORKSPACE = process.cwd()
+
 describe('createInferenceFactory', () => {
   test('streams deltas and emits model_response through createAgent', async () => {
     const seen: Array<string> = []
@@ -27,6 +29,8 @@ describe('createInferenceFactory', () => {
 
     const agent = await createAgent({
       id: 'agent:test',
+      cwd: TEST_WORKSPACE,
+      workspace: TEST_WORKSPACE,
       factories: [
         createInferenceFactory({
           model,
@@ -73,6 +77,8 @@ describe('createInferenceFactory', () => {
 
     const agent = await createAgent({
       id: 'agent:test',
+      cwd: TEST_WORKSPACE,
+      workspace: TEST_WORKSPACE,
       factories: [
         createInferenceFactory({
           model,

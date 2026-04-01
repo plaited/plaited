@@ -8,6 +8,8 @@ import type { AgentToolCall } from '../../agent/agent.schemas.ts'
 import { createAgent } from '../../agent/create-agent.ts'
 import { createGateExecuteFactory } from '../create-gate-execute-factory.ts'
 
+const TEST_WORKSPACE = process.cwd()
+
 const workspaceTool = {
   type: 'function' as const,
   function: {
@@ -48,6 +50,7 @@ describe('createGateExecuteFactory', () => {
     const agent = await createAgent({
       id: 'agent:test',
       cwd: workspace,
+      workspace: TEST_WORKSPACE,
       factories: [
         createGateExecuteFactory({
           tools: [workspaceTool],
@@ -93,6 +96,8 @@ describe('createGateExecuteFactory', () => {
 
     const agent = await createAgent({
       id: 'agent:test',
+      cwd: TEST_WORKSPACE,
+      workspace: TEST_WORKSPACE,
       factories: [
         createGateExecuteFactory({
           tools: [untaggedTool],
@@ -131,6 +136,8 @@ describe('createGateExecuteFactory', () => {
 
     const agent = await createAgent({
       id: 'agent:test',
+      cwd: TEST_WORKSPACE,
+      workspace: TEST_WORKSPACE,
       factories: [
         createGateExecuteFactory({
           tools: [workspaceTool],

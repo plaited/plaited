@@ -18,9 +18,7 @@ export const AgentHeartbeatConfigSchema = z.object({
  *
  * @public
  */
-export const UpdateFactoriesDetailSchema = z.object({
-  module: z.string().min(1),
-})
+export const UpdateFactoriesDetailSchema = z.string().min(1)
 
 export type UpdateFactoriesDetail = z.infer<typeof UpdateFactoriesDetailSchema>
 

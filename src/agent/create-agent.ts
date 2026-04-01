@@ -1,14 +1,12 @@
+import { isAbsolute, resolve, sep } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { $ } from 'bun'
 import type { infer as Infer, ZodTypeAny } from 'zod'
 import type { Disconnect } from '../behavioral.ts'
 import { behavioral, bSync, bThread } from '../behavioral.ts'
+import { isTypeOf } from '../utils.ts'
 import { AGENT_CORE_EVENTS } from './agent.constants.ts'
-import {
-  AgentToolResultDetailSchema,
-  FactoryResultSchema,
-  UpdateFactoriesDetailSchema,
-  UpdateFactoryModuleSchema,
-} from './agent.schemas.ts'
+import { AgentToolResultDetailSchema, FactoryResultSchema, UpdateFactoryModuleSchema } from './agent.schemas.ts'
 import type { AgentHandle, CreateAgentOptions, SchemaViolationHandler, Signal, Signals } from './agent.types.ts'
 import { BashConfigSchema } from './crud.schemas.ts'
 import { editFile, grep, listFiles, readFile, writeFile } from './crud.ts'
@@ -36,7 +34,8 @@ const DEFAULT_TOOL_TIMEOUT_MS = 120_000
  */
 export const createAgent = async ({
   id: _id,
-  cwd = process.cwd(),
+  cwd,
+  workspace,
   env = {},
   factories = [],
   restrictedTriggers = [],
@@ -54,6 +53,8 @@ export const createAgent = async ({
   const disconnectSet = new Set<Disconnect>()
 
   const signalMap = new Map<string, Signal>()
+
+  const resolveFactoryPath = (detail: string) => (isAbsolute(detail) ? detail : resolve(workspace, detail))
 
   const onSchemaViolation: SchemaViolationHandler = (detail) =>
     trigger({ type: AGENT_CORE_EVENTS.signal_schema_violation, detail })
@@ -138,6 +139,20 @@ export const createAgent = async ({
       ],
       true,
     ),
+    onUpdateFactories: bThread(
+      [
+        bSync({
+          block: ({ type, detail }) => {
+            if (type !== AGENT_CORE_EVENTS.update_factories) return false
+            if (!isTypeOf<string>(detail, 'string')) return true
+            if (!/\.tsx?$/.test(detail)) return true
+            const path = resolveFactoryPath(detail)
+            return !path.startsWith(`${workspace}${sep}`)
+          },
+        }),
+      ],
+      true,
+    ),
   })
 
   useFeedback({
@@ -153,10 +168,9 @@ export const createAgent = async ({
       !readOnly && Object.assign(rest, { set })
       signalMap.set(key, rest)
     },
-    async [AGENT_CORE_EVENTS.update_factories](detail: unknown) {
-      const parsed = UpdateFactoriesDetailSchema.parse(detail)
-      const module = await import(parsed.module)
-      const { default: factory } = UpdateFactoryModuleSchema.parse(module)
+    async [AGENT_CORE_EVENTS.update_factories](detail: string) {
+      const modules = await import(pathToFileURL(resolveFactoryPath(detail)).href)
+      const { default: factory } = UpdateFactoryModuleSchema.parse(modules)
       const { threads, handlers } = FactoryResultSchema.parse(
         factory({
           trigger: restrictedTrigger,
