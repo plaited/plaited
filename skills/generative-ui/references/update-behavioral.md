@@ -76,7 +76,7 @@ z.object({
 **Factory return value** (`UpdateBehavioralResultSchema`):
 ```typescript
 z.object({
-  threads: z.record(z.string(), z.custom<RulesFunction>(isRulesFunction)).optional(),
+  threads: z.record(z.string(), z.custom<ReturnType<BSync>>(isBehavioralRule)).optional(),
   handlers: z.custom<DefaultHandlers>(/* validates all values are functions */).optional(),
 })
 ```

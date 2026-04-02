@@ -20,11 +20,11 @@ export const SNAPSHOT_MESSAGE_KINDS = keyMirror(
 )
 
 /**
- * Brand identifier stamped onto `RulesFunction` objects.
+ * Brand identifier stamped onto `ReturnType<BSync>` objects.
  *
  * @remarks
- * Used by `isRulesFunction` to distinguish generator-based b-threads
- * from plain generator functions at runtime.
+ * Used by `isBehavioralRule` to distinguish branded behavioral rule steps
+ * from arbitrary functions at runtime.
  *
  * @internal
  */

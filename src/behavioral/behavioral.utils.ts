@@ -5,7 +5,7 @@
  */
 import { isTypeOf } from '../utils.ts'
 import { RULES_FUNCTION_IDENTIFIER } from './behavioral.constants.ts'
-import type { BPEvent, BSync, BThread, RulesFunction } from './behavioral.types.ts'
+import type { BPEvent, BSync, BThread } from './behavioral.types.ts'
 
 /**
  * Creates an event template function that randomly selects from provided events.
@@ -48,8 +48,8 @@ export const useRandomEvent =
  * into b-threads, often for testing or simulating scenarios where the exact order
  * of operations is not fixed or needs to be varied.
  *
- * @param syncs Rest parameter of `RulesFunction` objects representing the synchronization points to shuffle.
- * @returns A new array containing the same `RulesFunction` objects but in a randomized order.
+ * @param syncs Rest parameter of `ReturnType<BSync>` objects representing the synchronization points to shuffle.
+ * @returns A new array containing the same `ReturnType<BSync>` objects but in a randomized order.
  *
  * @remarks
  * - Uses Fisher-Yates shuffle for uniform distribution
@@ -60,7 +60,7 @@ export const useRandomEvent =
  * @see {@link useRandomEvent} for selecting random events
  * @see {@link bThread} for creating behavioral threads
  */
-export const shuffleSyncs = (...syncs: RulesFunction[]) => {
+export const shuffleSyncs = (...syncs: ReturnType<BSync>[]) => {
   /**
    * @internal
    * Fisher-Yates shuffle implementation working backwards through array.
@@ -112,11 +112,12 @@ export const isBPEvent = (data: unknown): data is BPEvent => {
 
 /**
  * Creates a behavioral thread (b-thread) by combining a sequence of synchronization rules.
- * A b-thread is a generator function that defines a strand of behavior within a `bProgram`.
+ * A b-thread is a branded behavioral rule returned by `bThread()` that defines a strand of
+ * behavior within a `bProgram`.
  *
- * @param rules An array of `RulesFunction`s defining the sequential steps of the thread.
+ * @param rules An array of `ReturnType<BSync>`s defining the sequential steps of the thread.
  * @param repeat Controls if and how the thread repeats its sequence.
- * @returns A `RulesFunction` representing the complete b-thread.
+ * @returns A `ReturnType<BSync>` representing the complete b-thread.
  *
  * @remarks
  * - Rules are executed sequentially
@@ -124,7 +125,7 @@ export const isBPEvent = (data: unknown): data is BPEvent => {
  * - Threads can be interrupted mid-sequence
  *
  * @see {@link bSync} for creating individual rules
- * @see {@link RulesFunction} for the generator type
+ * @see {@link ReturnType<BSync>} for the branded rule type
  */
 export const bThread: BThread = (rules, repeat) => {
   return Object.assign(
@@ -148,18 +149,18 @@ export const bThread: BThread = (rules, repeat) => {
 }
 
 /**
- * Type guard that checks whether an unknown value is a `RulesFunction` (b-thread or b-sync).
+ * Type guard that checks whether an unknown value is a `ReturnType<BSync>` (b-thread or b-sync).
  *
  * @remarks
- * Returns `true` only for generator functions branded with `RULES_FUNCTION_IDENTIFIER`.
- * Plain generator functions created outside `bThread`/`bSync` return `false`.
+ * Returns `true` only for branded rule functions created by `bThread`/`bSync`.
+ * Arbitrary functions or raw generator functions return `false`.
  *
  * @param obj - The value to test
- * @returns `true` if `obj` is a branded `RulesFunction`
+ * @returns `true` if `obj` is a branded `ReturnType<BSync>`
  *
  * @public
  */
-export const isRulesFunction = (obj: unknown): obj is RulesFunction =>
+export const isBehavioralRule = (obj: unknown): obj is ReturnType<BSync> =>
   isTypeOf<object>(obj, 'generatorfunction') && '$' in obj && obj.$ === RULES_FUNCTION_IDENTIFIER
 
 /**
@@ -167,10 +168,10 @@ export const isRulesFunction = (obj: unknown): obj is RulesFunction =>
  * This is the fundamental building block for constructing b-threads.
  *
  * @param syncPoint The `Idioms` object defining the synchronization behavior.
- * @returns A `RulesFunction` that yields the `syncPoint` once.
+ * @returns A `ReturnType<BSync>` that represents a single synchronization step.
  *
  * @remarks
- * - Each `bSync` creates a single-yield generator
+ * - Each `bSync` creates one branded behavioral rule step
  * - Can be composed with `bThread` for sequences
  * - Supports all idioms: request, waitFor, block, interrupt
  *

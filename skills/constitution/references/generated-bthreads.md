@@ -20,7 +20,7 @@ Agent generates .ts file
   │
   ▼
 Layer 1: TypeScript Type Check (bun --bun tsc --noEmit)
-  │  RulesFunction must yield Idioms (branded 🪢)
+  │   ReturnType<BSync> must yield Idioms (branded 🪢)
   │  bSync params must match { request?, waitFor?, block?, interrupt? }
   │  Factory return type must match { threads?, handlers? }
   │  CATCHES: wrong types, missing fields, bad imports, structural errors

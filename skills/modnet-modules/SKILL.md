@@ -29,7 +29,7 @@ The authoritative prompt-review corpus is:
 
 - `dev-research/training-prompts/catalog/prompts.jsonl`
 
-That catalog is the live source used by the modnet prompt-review workflow (`pi:review`).
+That catalog is the live source used by the modnet prompt-review workflow.
 
 Do not treat this skill as owning a separate prompt corpus. The prompt source of truth is the training-prompts catalog.
 

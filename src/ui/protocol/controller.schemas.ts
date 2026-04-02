@@ -1,9 +1,9 @@
 import * as z from 'zod'
 
 import {
+  type BSync,
   type DefaultHandlers,
-  isRulesFunction,
-  type RulesFunction,
+  isBehavioralRule,
   SnapshotMessageSchema,
   type Trigger,
 } from '../../behavioral.ts'
@@ -211,7 +211,7 @@ export type ControllerHandlers = {
  * @public
  */
 export const UpdateBehavioralResultSchema = z.object({
-  threads: z.record(z.string(), z.custom<RulesFunction>(isRulesFunction)).optional(),
+  threads: z.record(z.string(), z.custom<ReturnType<BSync>>(isBehavioralRule)).optional(),
   handlers: z
     .custom<DefaultHandlers>((obj) => {
       const isObject = isTypeOf<Record<string, unknown>>(obj, 'object')

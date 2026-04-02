@@ -40,7 +40,7 @@ export const verify: Verifier = async (result: GraderResult) => {
     }),
     schema: AttemptMetaVerifierResponseSchema,
     systemPrompt:
-      'You are meta-verifying a workspace-improvement judgment. Return strict JSON only. Be skeptical. Treat the lane program as the contract. Use search on retained seed/corpus JSON-LD artifacts when semantic evidence matters, and use read_file for markdown or source surfaces. Prefer exact artifact paths like dev-research/mss-seed/seed or dev-research/behavioral-corpus/encoded, not broad root queries. Use at most one or two focused tool calls before deciding. Lower confidence unless the judgment is clearly supported by the changed files, checks, output, reasoning, and artifact evidence.',
+      'You are meta-verifying a workspace-improvement judgment. Return strict JSON only. Be skeptical. Treat the lane program as the contract. Use read_file for markdown, source, and retained artifact surfaces when semantic evidence matters. Prefer exact artifact paths like dev-research/mss-seed/seed or dev-research/behavioral-corpus/encoded, not broad root queries. Use at most one or two focused tool calls before deciding. Lower confidence unless the judgment is clearly supported by the changed files, checks, output, reasoning, and artifact evidence.',
     workspaceReadAccess: workspaceRoot
       ? {
           workspaceRoot,
@@ -54,7 +54,6 @@ export const verify: Verifier = async (result: GraderResult) => {
             'scripts/behavioral-factories.ts',
             'skills/behavioral-core',
             'skills/constitution',
-            'skills/hypergraph-memory',
             'skills/mss',
             'skills/modnet-node',
             'skills/modnet-modules',

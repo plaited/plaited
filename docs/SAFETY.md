@@ -123,9 +123,9 @@ The OS-level enforcement mechanism is pluggable and deployment-specific:
 
 **Git-versioned workspace** provides a universal rollback layer — not a security boundary, but a recoverability mechanism. The entire node workspace is git-tracked (`.gitignore` excludes `modules/`), so destructive workspace operations can be reverted.
 
-### Layer 3 — Hypergraph Recovery (Audit & Replay)
+### Layer 3 — Snapshot Recovery (Audit & Replay)
 
-The hypergraph memory (populated via `useSnapshot`) records every BP decision as JSON-LD files in git. If all five prior layers fail:
+The snapshot and git-backed audit trail records BP decisions and retained artifacts. If all five prior layers fail:
 
 - **Complete audit trail** — every event selection, every blocked candidate, every gate rejection
 - **Replay capability** — rebuild state from JSON-LD decision files
@@ -145,7 +145,7 @@ Each layer operates on a different level of the stack and uses a different mecha
 | 5a | Application | Deterministic BP block predicates on simulated output | Patterns not in predicate set |
 | 5b | Application | Model scores simulated state | Inaccurate scoring (neural) |
 | 2 | Operating system | Pluggable sandbox | Backend-specific escape |
-| 3 | Data layer | Append-only JSON-LD + git | Log corruption or data loss |
+| 3 | Data layer | Snapshots, retained artifacts, and git | Log corruption or data loss |
 
 No single attack vector compromises more than one layer.
 

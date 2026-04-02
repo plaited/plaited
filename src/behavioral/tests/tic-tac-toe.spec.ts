@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { behavioral, bSync, bThread, type RulesFunction } from 'plaited'
+import { type BSync, behavioral, bSync, bThread } from 'plaited'
 
 /** Represents all possible winning combinations of squares in Tic-Tac-Toe. */
 const winConditions = [
@@ -103,7 +103,7 @@ test('take turns', () => {
  * Each thread waits for any player ('X' or 'O') to take its specific square,
  * then blocks any further attempts to take that same square.
  */
-const squaresTaken: Record<string, RulesFunction> = {}
+const squaresTaken: Record<string, ReturnType<BSync>> = {}
 for (const square of squares) {
   squaresTaken[`(${square}) taken`] = bThread([
     // Wait for an event (X or O) targeting this specific square.
@@ -168,7 +168,7 @@ type Winner = { player: 'X' | 'O'; squares: number[] }
  * @returns A record of b-threads, one for each potential winning line for the player.
  */
 const detectWins = (player: 'X' | 'O') =>
-  winConditions.reduce((acc: Record<string, RulesFunction>, squares) => {
+  winConditions.reduce((acc: Record<string, ReturnType<BSync>>, squares) => {
     acc[`${player}Wins (${squares})`] = bThread([
       // Wait for the player to take the first square of this winning line.
       bSync({
@@ -287,7 +287,7 @@ test('stop game', () => {
  * Each thread requests to take a specific square ('O' move) and repeats indefinitely.
  * These act as low-priority suggestions for O's moves.
  */
-const defaultMoves: Record<string, RulesFunction> = {}
+const defaultMoves: Record<string, ReturnType<BSync>> = {}
 for (const square of squares) {
   defaultMoves[`defaultMoves(${square})`] = bThread(
     [
@@ -396,7 +396,7 @@ test('start at center', () => {
  * @returns A record of b-threads, one for each potential winning line, designed to block X.
  */
 const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
-  const bThreads: Record<string, RulesFunction> = {}
+  const bThreads: Record<string, ReturnType<BSync>> = {}
   for (const win of winConditions) {
     bThreads[`StopXWin(${win})`] = bThread([
       // Wait for X to take the first square in this line.

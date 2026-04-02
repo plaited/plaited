@@ -16,7 +16,7 @@ It intentionally diverges from the generated `index.json` snapshot for the full 
 
 This bucket already contained a coherent operator-facing story. The pass keeps the full set and mainly rewrites for cleaner user voice and clearer MSS-style boundedness.
 
-This modernization pass also adds smaller recursive prompts for item cards, vendor summaries, connection toggles, category switching, and boundary controls so `pi:review` can work downward toward lower-scale modules inside the same market-network domain.
+This modernization pass also adds smaller recursive prompts for item cards, vendor summaries, connection toggles, category switching, and boundary controls so prompt review can work downward toward lower-scale modules inside the same market-network domain.
 
 ## Retention Criteria
 

@@ -11,9 +11,6 @@
  * @internal
  */
 
-// Agent tools (CRUD)
-import { bashCli, editFileCli, listFilesCli, readFileCli, writeFileCli } from '../src/agent/crud.ts'
-import { searchCli } from '../src/hypergraph.ts'
 import { discoverSkillsCli, evaluateSkillCli, ingestSkillCli, skillLinksCli, validateSkillCli } from '../src/skill.ts'
 
 export { ensureTool, makeCli, parseCli } from '../src/cli.ts'
@@ -25,18 +22,11 @@ import { evalCli } from '../src/improve.ts'
 // ============================================================================
 
 const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
-  // Agent tools (CRUD)
-  'read-file': readFileCli,
-  'write-file': writeFileCli,
-  'edit-file': editFileCli,
-  'list-files': listFilesCli,
-  bash: bashCli,
   // Development tools
   'validate-skill': validateSkillCli,
   'ingest-skill': ingestSkillCli,
   'discover-skills': discoverSkillsCli,
   'evaluate-skill': evaluateSkillCli,
-  search: searchCli,
   'skill-links': skillLinksCli,
   eval: evalCli,
 }
@@ -71,12 +61,8 @@ export const runCli = async (argv: string[]): Promise<void> => {
        plaited --schema               # List all commands
 
 Commands:
-  Agent Tools:
-    read-file, write-file, edit-file, list-files, bash
-
-  Development:
     validate-skill, ingest-skill, discover-skills,
-    evaluate-skill, search, skill-links, eval`)
+    evaluate-skill, skill-links, eval`)
     process.exit(command ? 0 : 1)
   }
 

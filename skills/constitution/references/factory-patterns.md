@@ -17,7 +17,7 @@ All governance, goal, and workflow factories share one type signature:
 
 ```typescript
 type GovernanceFactory = {
-  (trigger: Trigger): { threads?: Record<string, RulesFunction>; handlers?: DefaultHandlers }
+  (trigger: Trigger): { threads?: Record<string,  ReturnType<BSync>>; handlers?: DefaultHandlers }
   $: typeof GOVERNANCE_FACTORY_IDENTIFIER  // '🏛️'
   name: string
   layer: 'mac' | 'dac'
@@ -29,7 +29,7 @@ A `createGovernanceFactory` helper brands the function and validates the return 
 | Brand | Meaning |
 |-------|---------|
 | `🦄` | Templates |
-| `🪢` | RulesFunction |
+| `🪢` |  ReturnType<BSync> |
 | `🎛️` | ControllerTemplate |
 | `🎨` | DecoratorTemplate |
 | `🏛️` | GovernanceFactory (constitution) |

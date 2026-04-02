@@ -20,7 +20,7 @@ The framework provides:
 
 - **Interfaces** for four model roles (Model, Indexer, Vision, Voice)
 - **BP orchestration** for the agent loop, safety constraints, and context assembly
-- **Memory via hypergraph** — BP decisions and tool results as git-versioned JSON-LD files (see `HYPERGRAPH-MEMORY.md`)
+- **Memory via snapshots, git, and retained artifacts** — observable BP execution plus git-backed files and commit history
 - **A constitution** encoding Structural-IA and Modnet concepts as bThreads + skills (see `skills/constitution/`)
 
 The framework is **not prescriptive** about inference backend. Consumers choose how to serve models — vLLM, llama.cpp, Ollama, cloud APIs, or any OpenAI-compatible endpoint. All three backends support separating `<think>` reasoning from response content at the server level. Code ships via npm (`plaited`). Base-trained models ship via Hugging Face ([huggingface.co/plaited](https://huggingface.co/plaited)).
@@ -63,7 +63,7 @@ All four interfaces are backend-agnostic — implementations can target MLX (App
 | Role | Interface | Reference Model | Params | Function |
 |---|---|---|---|---|
 | **Reasoning** | `Model` | Falcon-H1R 7B (Mamba/SSM hybrid) | 7B | Reasons in `<think>` blocks. Produces structured tool calls. Fine-tuned via distillation from frontier agents. |
-| **Embedding** | `Indexer` *(deferred)* | EmbeddingGemma (Gemma 3 300M base) | 300M | 768-dim embeddings (Matryoshka truncation to 512/256/128). Semantic similarity for hypergraph search. 2K token context. 100+ languages. |
+| **Embedding** | `Indexer` *(deferred)* | EmbeddingGemma (Gemma 3 300M base) | 300M | 768-dim embeddings (Matryoshka truncation to 512/256/128). Semantic similarity for retrieval and ranking. 2K token context. 100+ languages. |
 | **Vision** | `Vision` *(deferred)* | Qwen 2.5 VL 7B | 7B | Image/video to structured description. Object localization, OCR, visual grounding. 29 languages. |
 | **Speech output** | `Voice` *(deferred)* | Qwen3-TTS | ~2B | Text to speech. Voice cloning, voice design, streaming. Multilingual. |
 
@@ -156,7 +156,7 @@ The framework is not prescriptive about deployment:
 
 The pluggable model interfaces make tier selection a deployment decision, not an architectural one. A consumer can start API-backed, move to cloud, and eventually self-host — swapping model implementations without changing bThreads, tools, or application logic.
 
-**Workspace backup** is deployment infrastructure, not framework concern. The framework provides the hypergraph memory for agent state recovery. Workspace-level backup varies by tier.
+**Workspace backup** is deployment infrastructure, not framework concern. The framework provides snapshots, git history, and retained artifacts for agent state recovery. Workspace-level backup varies by tier.
 
 ## Companion Docs
 

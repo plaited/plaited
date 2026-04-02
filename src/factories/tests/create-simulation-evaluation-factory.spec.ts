@@ -12,10 +12,14 @@ import {
 
 const TEST_WORKSPACE = process.cwd()
 
-const createToolCall = (name: string, id = 'tc-1'): AgentToolCall => ({
+const createToolCall = <TName extends AgentToolCall['name']>(
+  name: TName,
+  id = 'tc-1',
+  arguments_: Extract<AgentToolCall, { name: TName }>['arguments'],
+): Extract<AgentToolCall, { name: TName }> => ({
   id,
   name,
-  arguments: {},
+  arguments: arguments_,
 })
 
 const createErrorModel = (errorMsg: string): Model => ({
@@ -360,7 +364,7 @@ describe('createSimulationEvaluationFactory', () => {
     agent.trigger({
       type: AGENT_EVENTS.simulate_request,
       detail: {
-        toolCall: createToolCall('read_file'),
+        toolCall: createToolCall('read_file', 'tc-1', { path: 'src/main.ts' }),
         tags: ['workspace'],
       },
     })
@@ -411,7 +415,7 @@ describe('createSimulationEvaluationFactory', () => {
     agent.trigger({
       type: AGENT_EVENTS.simulate_request,
       detail: {
-        toolCall: createToolCall('bash'),
+        toolCall: createToolCall('bash', 'tc-1', { path: 'worker.ts', args: [] }),
         tags: [],
       },
     })

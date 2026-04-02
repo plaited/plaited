@@ -11,7 +11,6 @@ import {
   isAllowedPath,
   MAX_ATTEMPT_RETRIES,
   normalizeScriptPath,
-  PI_WORKTREE_GUARD_EXTENSION_PATH,
   parseRunArgs,
   readChangedPaths,
   resolveLaneSkills,
@@ -56,7 +55,6 @@ describe('autoresearch-runner', () => {
       expect(resolveLaneSkills(config)).toEqual([
         'skills/behavioral-core',
         'skills/constitution',
-        'skills/hypergraph-memory',
         'skills/mss',
         'skills/generative-ui',
         'skills/agent-loop',
@@ -121,11 +119,7 @@ describe('autoresearch-runner', () => {
     expect(runDir).toContain('/tmp/plaited-worktree/.prompts/autoresearch-runner/behavioral-factories/')
   })
 
-  test('uses the Pi worktree guard extension', () => {
-    expect(PI_WORKTREE_GUARD_EXTENSION_PATH).toBe('scripts/pi-worktree-guard-extension.ts')
-  })
-
-  test('passes the canonical repo root and extension into the Pi command', async () => {
+  test('passes the canonical repo root into the Pi command', async () => {
     const config = await getLaneConfig('scripts/behavioral-factories.ts')
 
     const command = await buildPiCommand({
@@ -135,8 +129,6 @@ describe('autoresearch-runner', () => {
       workspaceRoot: process.cwd(),
     })
 
-    expect(command).toContain('--extension')
-    expect(command).toContain(`${process.cwd()}/scripts/pi-worktree-guard-extension.ts`)
     expect(command).toContain('--path')
     expect(command).toContain(process.cwd())
   })

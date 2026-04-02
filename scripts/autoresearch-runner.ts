@@ -108,7 +108,6 @@ const isValidEvaluationRecord = (
   value != null && typeof value.pass === 'boolean' && typeof value.score === 'number' && Number.isFinite(value.score)
 
 export const MAX_ATTEMPT_RETRIES = 2
-export const PI_WORKTREE_GUARD_EXTENSION_PATH = 'scripts/pi-worktree-guard-extension.ts'
 export const EVALUATION_STAGE_TIMEOUT_MS = 120_000
 const MAX_EVALUATION_PROGRAM_CHARS = 12_000
 const MAX_EVALUATION_FILE_CHARS = 6_000
@@ -358,8 +357,6 @@ export const buildPiCommand = async ({
     '--model',
     config.model ?? 'openrouter/minimax/minimax-m2.7',
     '--no-skills',
-    '--extension',
-    resolveWorkspacePath({ workspaceRoot: repoRoot, path: PI_WORKTREE_GUARD_EXTENSION_PATH }),
   ]
 
   for (const skill of resolveLaneSkills(config)) {

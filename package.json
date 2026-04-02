@@ -42,8 +42,6 @@
     "check:package": "format-package --check",
     "check:types": "tsc --noEmit",
     "check:write": "biome check --write && format-package --write",
-    "pi": "bunx varlock run -- bunx pi --model openrouter/minimax/minimax-m2.7",
-    "pi:review": "bunx varlock run -- bun scripts/modnet-pi-review.ts",
     "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .hooks || true",
     "research:behavioral-factories": "bunx varlock run -- bun scripts/autoresearch-runner.ts scripts/behavioral-factories.ts run",
     "test": "bun test"

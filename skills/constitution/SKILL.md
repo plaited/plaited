@@ -23,7 +23,7 @@ This skill teaches agents how to author, load, and protect governance factories 
 
 **Factory contract:** All governance/goal/workflow factories share one shape:
 ```typescript
-(trigger: Trigger) => { threads?: Record<string, RulesFunction>; handlers?: DefaultHandlers }
+(trigger: Trigger) => { threads?: Record<string,  ReturnType<BSync>; handlers?: DefaultHandlers }
 ```
 
 **Brands:** `🏛️` constitution, `🎯` goal, `🔄` workflow — same contract, different lifecycle.

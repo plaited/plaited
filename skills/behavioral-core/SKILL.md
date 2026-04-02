@@ -9,7 +9,7 @@ compatibility: Requires bun
 
 ## Purpose
 
-This skill teaches agents how to use Plaited's behavioral programming (BP) paradigm — a coordination mechanism where independent threads synchronize through events. Threads declare what they want (`request`), what they listen for (`waitFor`), and what they prohibit (`block`). The engine selects events that satisfy all threads simultaneously.
+This skill teaches agents how to use Plaited's behavioral programming (BP) paradigm — an embedded TypeScript DSL for coordination where independent threads synchronize through events. Threads declare what they want (`request`), what they listen for (`waitFor`), and what they prohibit (`block`). The engine selects events that satisfy all threads simultaneously.
 
 In this repo, BP is not only for symbolic reasoning. It is used as a general event-driven coordination model across controllers, workflows, agent loops, and rule systems. It is especially well suited to neuro-symbolic control, but that is only one of its uses.
 
@@ -29,6 +29,8 @@ In this repo, BP is not only for symbolic reasoning. It is used as a general eve
 - `bSync({ request?, waitFor?, block?, interrupt? })` — Declare synchronization idioms
 - `useFeedback()` — Register side-effect handlers (sync or async)
 - `useSnapshot()` — Observe every BP engine decision (event selection, blocking)
+
+**Code pattern:** In this repo, authors use the behavioral factory APIs directly. Do not write raw generator functions or raw `yield` statements in repo code; express behavior with `bThread()` and `bSync()`, and treat generator mechanics as behavioral-core implementation detail.
 
 **Testing:** BP logic is tested with Bun tests (`*.spec.ts`), not browser stories. See `src/behavioral/tests/` for examples.
 
@@ -75,7 +77,7 @@ In this repo, BP is not only for symbolic reasoning. It is used as a general eve
 
 ### Behavioral Programs Foundation
 
-**[behavioral-programs.md](references/behavioral-programs.md)** — Conceptual BP foundation document. Use this when the embedded agent needs the general paradigm:
+**[behavioral-programs.md](references/behavioral-programs.md)** — Conceptual BP foundation document. Use this when the embedded agent needs the general paradigm and the embedded DSL model:
 - what behavioral programming is
 - synchronization idioms (`request`, `waitFor`, `block`, `interrupt`)
 - thread composition and lifecycle

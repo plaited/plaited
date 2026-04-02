@@ -7,8 +7,8 @@ This file is the standing context root for the modnet prompt review workflow.
 The workflow is human-in-the-loop:
 
 - the human reviews prompts and decides what should happen next
-- the CLI orchestrates fanout, judging, persistence, and resume
-- Pi is used to create strategy variability for generator attempts
+- local tooling orchestrates fanout, judging, persistence, and resume
+- generator attempts may vary by strategy note or decomposition approach
 - `glm-5` generates candidate prompts
 - `m2.5` judges those candidates with a fixed rubric
 
@@ -34,10 +34,9 @@ Each row is minimal:
 
 ## Shared Context
 
-The CLI loads this file together with selected skills references and
+The local tooling loads this file together with selected skills references and
 passes that same shared context to:
 
-- Pi when it creates per-worker strategy briefs
 - `glm-5` when it generates a candidate
 - `m2.5` when it judges a candidate
 
@@ -68,9 +67,9 @@ The human may:
 - ask for another refinement round
 - ask for lower-scale derivation after approval
 
-### CLI
+### Local Tooling
 
-The CLI is the control plane.
+The local tooling is the control plane.
 
 It is responsible for:
 
@@ -83,14 +82,6 @@ It is responsible for:
 
 This runtime must not rely on Codex as a participant.
 
-### Pi
-
-Pi is not the generator and not the judge.
-
-Pi is used to create per-worker strategy variation. For each worker, Pi receives
-the shared context, the source prompt, and any human feedback, then returns a
-short strategy brief for the generator.
-
 ### Generator
 
 `glm-5` is the generator.
@@ -100,7 +91,7 @@ It receives:
 - the shared context
 - the source prompt
 - any human feedback
-- the Pi-produced strategy brief
+- any local strategy note for that attempt
 
 It returns one candidate prompt plus MSS tags.
 

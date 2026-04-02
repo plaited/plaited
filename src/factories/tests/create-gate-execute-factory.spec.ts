@@ -31,9 +31,13 @@ const untaggedTool = {
   },
 }
 
-const createToolCall = (name: string, id = 'tc-1', arguments_: Record<string, unknown> = {}): AgentToolCall => ({
+const createToolCall = <TName extends AgentToolCall['name']>(
+  toolCall: TName,
+  id = 'tc-1',
+  arguments_: Extract<AgentToolCall, { name: TName }>['arguments'],
+): Extract<AgentToolCall, { name: TName }> => ({
   id,
-  name,
+  name: toolCall,
   arguments: arguments_,
 })
 
@@ -118,7 +122,7 @@ describe('createGateExecuteFactory', () => {
 
     agent.trigger({
       type: AGENT_EVENTS.context_ready,
-      detail: { toolCall: createToolCall('bash') },
+      detail: { toolCall: createToolCall('bash', 'tc-1', { path: 'worker.ts', args: [] }) },
     })
 
     await simulateSeen
@@ -164,7 +168,7 @@ describe('createGateExecuteFactory', () => {
 
     agent.trigger({
       type: AGENT_EVENTS.context_ready,
-      detail: { toolCall: createToolCall('read_file') },
+      detail: { toolCall: createToolCall('read_file', 'tc-1', { path: 'hello.txt' }) },
     })
 
     await rejectedSeen

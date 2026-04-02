@@ -273,8 +273,8 @@ describe('UpdateBehavioralResultSchema', () => {
     ).toThrow()
   })
 
-  test('rejects threads with plain functions (not RulesFunction)', () => {
-    // A plain function without the RulesFunction shape is rejected
+  test('rejects threads with plain functions (not ReturnType<BSync>)', () => {
+    // A plain function without the ReturnType<BSync> shape is rejected
     expect(() =>
       UpdateBehavioralResultSchema.parse({
         threads: { myThread: () => {} },
@@ -282,13 +282,13 @@ describe('UpdateBehavioralResultSchema', () => {
     ).toThrow()
   })
 
-  test('accepts threads with real bThread/bSync output (generator function with $ identifier)', () => {
-    const rulesFunction = Object.assign(function* () {}, { $: '🪢' } as const)
+  test('accepts threads with branded behavioral rules returned by bThread/bSync', () => {
+    const behavioralRule = Object.assign(function* () {}, { $: '🪢' } as const)
     const result = UpdateBehavioralResultSchema.parse({
-      threads: { myThread: rulesFunction },
+      threads: { myThread: behavioralRule },
     })
     expect(result.threads).toBeDefined()
-    expect(result.threads!.myThread).toBe(rulesFunction)
+    expect(result.threads!.myThread).toBe(behavioralRule)
   })
 })
 

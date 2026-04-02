@@ -59,7 +59,7 @@ export type BPEventTemplate = () => BPEvent
 export type BPListener = string | ((args: BPEvent) => boolean)
 
 /**
- * Represents a synchronization statement within a b-thread's generator function.
+ * Represents a synchronization statement yielded by a behavioral rule step.
  * This is the core mechanism through which b-threads communicate their behavioral intentions
  * to the behavioral program scheduler at each step of execution.
  *
@@ -73,7 +73,7 @@ export type BPListener = string | ((args: BPEvent) => boolean)
  * - Blocked events have precedence over requested events
  * - Interrupts cause thread termination
  *
- * @see {@link RulesFunction} for usage in generator functions
+ * @see {@link ReturnType<BSync>} for usage in behavioral rule steps
  * @see {@link bSync} for creating single synchronization points
  */
 export type Idioms = {
@@ -88,35 +88,13 @@ export type Idioms = {
 }
 
 /**
- * A generator function defining the behavior of a b-thread.
- * This is the fundamental unit of behavior in the BP (Behavioral Programming) paradigm,
- * representing a sequential process that can synchronize with other b-threads.
- *
- * @returns A Generator that yields `Idioms` objects at synchronization points.
- *
- * @remarks
- * The execution flow:
- * 1. Thread yields an `Idioms` object to declare intentions
- * 2. Generator pauses, transferring control to scheduler
- * 3. Scheduler selects an event based on all threads' declarations
- * 4. Thread resumes when a matching event occurs
- *
- * @see {@link bThread} for creating threads from rules
- * @see {@link Idioms} for synchronization declarations
- */
-export type RulesFunction = {
-  (): Generator<Idioms, void, undefined>
-  $: typeof RULES_FUNCTION_IDENTIFIER
-}
-
-/**
- * A factory function that creates a single synchronization step (a `RulesFunction`) for a b-thread.
+ * A factory function that creates a single synchronization step (a `ReturnType<BSync>`) for a b-thread.
  * This is a helper type that corresponds to the `bSync` function implementation, which creates
- * a generator function that yields exactly one synchronization point.
+ * one branded behavioral rule step.
  *
  * @template T The type of the event detail payload relevant to this synchronization point.
  * @param arg The `Idioms<T>` object defining the synchronization behavior (request, waitFor, block, interrupt).
- * @returns A `RulesFunction` (generator function) that yields the provided `Idioms` object once and completes.
+ * @returns A `ReturnType<BSync>` that yields the provided `Idioms` object once and completes.
  *
  * @see bSync The implementation of this type that creates reusable synchronization steps.
  */
@@ -126,21 +104,21 @@ export type BSync = (arg: Idioms) => {
 }
 
 /**
- * A factory function that constructs a complete b-thread (`RulesFunction`) by composing multiple synchronization steps.
+ * A factory function that constructs a complete b-thread (`ReturnType<BSync>`) by composing multiple synchronization steps.
  * This is a helper type that corresponds to the `bThread` function implementation, which allows
  * for modular composition of b-thread behavior.
  *
- * @param rules An array of `RulesFunction`s, typically created using `bSync`, defining the sequence of steps for the thread.
+ * @param rules An array of `ReturnType<BSync>`s, typically created using `bSync`, defining the sequence of steps for the thread.
  * @param repeat Optional configuration (`Repeat`) to control if and how the thread repeats its sequence of rules.
- * @returns A `RulesFunction` representing the combined behavior of the provided rules, potentially repeating.
+ * @returns A `ReturnType<BSync>` representing the combined behavior of the provided rules, potentially repeating.
  *
  * @see bThread The implementation of this type that composes multiple synchronization steps into a single b-thread.
  */
-export type BThread = (rules: RulesFunction[], repeat?: Repeat) => RulesFunction
+export type BThread = (rules: ReturnType<BSync>[], repeat?: Repeat) => ReturnType<BSync>
 
 /**
  * @internal
- * Represents a b-thread that is currently executing its generator function.
+ * Represents a b-thread that is currently executing its current rule sequence.
  *
  * These are threads that are active and running between synchronization points.
  * Running threads are those that have been moved from the 'pending' state after an event
@@ -151,7 +129,7 @@ export type RunningBid = {
   trigger?: true
   /** The priority level of the thread, used for resolving conflicts when multiple threads request events. Lower numbers = higher priority. */
   priority: number
-  /** The generator iterator representing the thread's execution state. Holds the current position in the thread's execution flow. */
+  /** Internal iterator representing the thread's execution state. Holds the current position in the rule sequence. */
   generator: IterableIterator<Idioms>
 }
 
@@ -330,7 +308,7 @@ export type UseSnapshot = (listener: SnapshotListener) => Disconnect
  * - Use the `interrupt` idiom to explicitly terminate threads
  * - Status reflects current execution state
  *
- * @see {@link RulesFunction} for thread implementation
+ * @see {@link ReturnType<BSync>} for thread implementation
  * @see {@link bThread} for creating threads
  */
 export type BThreads = {
@@ -348,12 +326,12 @@ export type BThreads = {
    * This prevents accidental thread replacement, which violates behavioral programming's additive composition principle.
    *
    * @param threads - An object mapping thread identifiers (string keys) to their implementation
-   *                 as `RulesFunction` generator functions.
+   *                 as branded rule functions returned by `bSync()` or `bThread()`.
    *
    * @remarks
    * To terminate a thread, use the `interrupt` idiom in the thread's configuration, or wait for the thread to complete naturally.
    */
-  set: (threads: Record<string, RulesFunction>) => void
+  set: (threads: Record<string, ReturnType<BSync>>) => void
 }
 
 /**

@@ -1,6 +1,6 @@
 # Behavioral Programming: Foundations
 
-Behavioral Programming (BP) is a general coordination mechanism for managing concurrent behaviors through event-driven synchronization. This document covers BP as a **foundational paradigm**, independent of UI concerns.
+Behavioral Programming (BP) is a general coordination mechanism for managing concurrent behaviors through event-driven synchronization. In Plaited, it is exposed as an embedded TypeScript DSL built from `behavioral()`, `bThread()`, `bSync()`, predicates, and event templates. This document covers BP as a **foundational paradigm**, independent of UI concerns.
 
 This document is intentionally **conceptual**:
 - what BP is
@@ -88,7 +88,7 @@ trigger({ type: 'click' })
 
 ## Core Synchronization Idioms
 
-BP threads coordinate using four synchronization idioms provided to each `yield` statement via `bSync()`:
+BP threads coordinate through four synchronization idioms expressed with `bSync()` steps:
 
 ### `request` - Propose Events
 
@@ -102,10 +102,11 @@ bSync({ request: { type: 'submit' } })
 bSync({ request: { type: 'add', detail: { value: 42 } } })
 
 // Dynamic request using template function
-bSync({ request: ({ counter }) => ({ type: 'update', detail: { count: counter + 1 } }) })
+let counter = 0
+bSync({ request: () => ({ type: 'update', detail: { count: counter + 1 } }) })
 ```
 
-**Template function** receives current state as first argument, enabling dynamic event generation.
+**Template function** is a zero-argument closure. In Plaited it reads host-language state through closure capture, not through engine-injected arguments.
 
 ### `waitFor` - Pause Until Matching Event
 
@@ -160,22 +161,20 @@ Terminates the thread when a matching event is selected:
 ```typescript
 bThread([
   bSync({ request: { type: 'poll' } }),
-  bSync({ waitFor: 'response' }),
-  // Repeat polling...
-], true, {
-  interrupt: 'cancel' // Terminate this thread if 'cancel' event occurs
-})
+  bSync({ waitFor: 'response', interrupt: 'cancel' }),
+  // Repeat polling until interrupted...
+], true)
 ```
 
 **Use cases**: Cleanup, cancellation, timeout handling.
 
 ## Thread Composition with bThread/bSync
 
-Threads are composed using generator functions wrapped by `bThread()` and yielding `bSync()` synchronization points.
+Threads are authored with the behavioral factory functions. In repo code, use `bThread()` and `bSync()` directly rather than writing raw generator functions or raw `yield` statements. Internally, the runtime composes these factory-returned rule steps into the scheduler.
 
 ### `bSync` - Single Synchronization Point
 
-Creates a single synchronization point (one `yield`):
+Creates a single synchronization point:
 
 ```typescript
 import { bSync } from 'plaited'
@@ -190,7 +189,7 @@ const syncPoint2 = bSync({
 })
 ```
 
-**Important**: `bSync()` returns a `BSync` object that will be yielded inside a generator function, not a generator itself.
+**Important**: `bSync()` is an authoring primitive, not a cue to hand-write scheduler internals. Callers define coordination with `bSync()` and `bThread()`; the runtime handles the generator mechanics.
 
 ### `bThread` - Sequence Composition
 
@@ -225,32 +224,27 @@ const conditionalThread = bThread([
 - `true`: Repeat indefinitely
 - `() => boolean`: Repeat while predicate returns true
 
-### Generator Function Mechanics
+### Runtime Mechanics
 
-Under the hood, `bThread` uses generator functions:
+Internally, `bThread` is implemented with generator mechanics and delegates into each `bSync()` step. This is runtime detail, not the recommended authoring style:
 
 ```typescript
 // What bThread creates internally:
 function* threadGenerator() {
-  // Pause at first sync point
-  yield bSync({ request: { type: 'event1' } })
-
-  // Pause at second sync point
-  yield bSync({ waitFor: 'event2' })
-
-  // Pause at third sync point
-  yield bSync({ request: { type: 'event3' } })
+  yield* bSync({ request: { type: 'event1' } })()
+  yield* bSync({ waitFor: 'event2' })()
+  yield* bSync({ request: { type: 'event3' } })()
 }
 ```
 
 **Pause/Resume Flow**:
-1. Thread yields `bSync` → becomes **pending**
+1. A `bSync()` step is executed by the runtime and yields an `Idioms` object to the scheduler → thread becomes **pending**
 2. SELECT phase chooses event
 3. Threads waiting for selected event resume → become **running**
-4. Running threads execute until next `yield`
+4. Running threads advance until the next synchronization point
 5. Cycle repeats
 
-**IMPORTANT**: Never expose raw `yield` statements in your code. Always use `bThread()` and `bSync()` factory functions.
+**IMPORTANT**: In repo code, do not write raw generator functions or raw `yield` statements. Always express behavior with the behavioral factory functions `bThread()` and `bSync()`. Treat generator mechanics as runtime-level implementation detail.
 
 ## ⭐ Event Selection Strategy (KEY CAPABILITY 1)
 
@@ -405,7 +399,7 @@ const enforceTurns = bThread([
 ], true)
 
 // Rule 2: Prevent taking occupied squares (one thread per square)
-const squaresTaken: Record<string, RulesFunction> = {}
+const squaresTaken: Record<string, ReturnType<typeof bThread>> = {}
 for (const square of squares) {
   squaresTaken[`square_${square}`] = bThread([
     bSync({ waitFor: ({ detail }) => square === detail.square }),
@@ -415,7 +409,7 @@ for (const square of squares) {
 
 // Rule 3: Detect wins for each player
 const detectWins = (player: 'X' | 'O') => {
-  const threads: Record<string, RulesFunction> = {}
+  const threads: Record<string, ReturnType<typeof bThread>> = {}
 
   for (const [idx, condition] of winConditions.entries()) {
     threads[`${player}_win_${idx}`] = bThread([

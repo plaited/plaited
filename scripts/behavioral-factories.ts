@@ -1,5 +1,4 @@
 import { join } from 'node:path'
-import { loadJsonLd } from '../src/hypergraph.ts'
 import type { ResearchLaneConfig } from './autoresearch-runner.ts'
 
 export type ProgramRequirement = {
@@ -59,12 +58,7 @@ export const RESEARCH_LANE_CONFIG = {
     BEHAVIORAL_SEED_PATH,
     BEHAVIORAL_CORPUS_ENCODED_PATH,
   ],
-  skills: [
-    join('skills', 'behavioral-core'),
-    join('skills', 'constitution'),
-    join('skills', 'hypergraph-memory'),
-    join('skills', 'mss'),
-  ],
+  skills: [join('skills', 'behavioral-core'), join('skills', 'constitution'), join('skills', 'mss')],
   optionalSkillsByTag: {
     ui: [join('skills', 'generative-ui')],
     'agent-loop': [join('skills', 'agent-loop')],
@@ -88,11 +82,9 @@ export const RESEARCH_LANE_CONFIG = {
 export const BEHAVIORAL_FACTORIES_REQUIREMENTS: readonly ProgramRequirement[] = [
   { label: 'Behavioral core skill', path: join('skills', 'behavioral-core', 'SKILL.md') },
   { label: 'Constitution skill', path: join('skills', 'constitution', 'SKILL.md') },
-  { label: 'Hypergraph memory skill', path: join('skills', 'hypergraph-memory', 'SKILL.md') },
   { label: 'MSS skill', path: join('skills', 'mss', 'SKILL.md') },
   { label: 'Modnet node skill', path: join('skills', 'modnet-node', 'SKILL.md') },
   { label: 'Modnet modules skill', path: join('skills', 'modnet-modules', 'SKILL.md') },
-  { label: 'Hypergraph tool', path: join('src', 'tools', 'hypergraph.ts') },
   { label: 'Behavioral runtime surface', path: join('src', 'behavioral', 'behavioral.ts') },
   { label: 'Factories runtime surface', path: join('src', 'agent', 'factories.ts') },
   { label: 'Governance runtime surface', path: join('src', 'agent', 'governance.ts') },
@@ -286,12 +278,24 @@ const countFiles = async (dirPath: string): Promise<number> => {
   return Array.fromAsync(new Bun.Glob('*').scan({ cwd: dirPath })).then((entries) => entries.length)
 }
 
+const loadJsonLdDocuments = async (dirPath: string): Promise<JsonLdNode[]> => {
+  const paths = await Array.fromAsync(new Bun.Glob('*.jsonld').scan({ cwd: dirPath }))
+  const documents = await Promise.all(
+    paths.map(async (path) => {
+      const value = await Bun.file(join(dirPath, path)).json()
+      return isRecord(value) ? (value as JsonLdNode) : null
+    }),
+  )
+
+  return documents.filter((document): document is JsonLdNode => document !== null)
+}
+
 const loadNodes = async (dirPath: string): Promise<JsonLdNode[]> => {
   if (!(await pathExists(dirPath))) {
     return []
   }
 
-  const documents = (await loadJsonLd(dirPath).catch(() => [])) as JsonLdNode[]
+  const documents = await loadJsonLdDocuments(dirPath).catch(() => [])
   return documents.flatMap((document) => collectJsonLdNodes(document))
 }
 
