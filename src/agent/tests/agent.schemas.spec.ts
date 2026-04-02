@@ -1,16 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 import {
-  AgentConfigSchema,
-  AgentPlanSchema,
   AgentPlanStepSchema,
   AgentToolCallSchema,
   DecisionStepSchema,
-  GateDecisionSchema,
   ModelUsageSchema,
-  RISK_TAG,
   TOOL_STATUS,
   ToolDefinitionSchema,
-  ToolResultSchema,
   TrajectoryStepSchema,
 } from 'plaited'
 
@@ -54,19 +49,7 @@ describe('AgentToolCallSchema', () => {
   })
 })
 
-describe('AgentPlanSchema', () => {
-  test('validates a plan with steps and dependencies', () => {
-    const result = AgentPlanSchema.parse({
-      goal: 'Refactor module',
-      steps: [
-        { id: 's1', intent: 'Read files', tools: ['read_file'] },
-        { id: 's2', intent: 'Write changes', tools: ['write_file'], depends: ['s1'] },
-      ],
-    })
-    expect(result.steps).toHaveLength(2)
-    expect(result.steps[1]!.depends).toEqual(['s1'])
-  })
-
+describe('AgentPlanStepSchema', () => {
   test('defaults depends to undefined when omitted', () => {
     const result = AgentPlanStepSchema.parse({
       id: 's1',
@@ -225,92 +208,6 @@ describe('DecisionStepSchema', () => {
   })
 })
 
-describe('ToolResultSchema', () => {
-  test('validates a completed result', () => {
-    const result = ToolResultSchema.parse({
-      toolCallId: 'tc-1',
-      name: 'read_file',
-      status: TOOL_STATUS.completed,
-      output: 'file contents',
-      duration: 100,
-    })
-    expect(result.status).toBe('completed')
-  })
-
-  test('validates a failed result with error', () => {
-    const result = ToolResultSchema.parse({
-      toolCallId: 'tc-2',
-      name: 'write_file',
-      status: TOOL_STATUS.failed,
-      error: 'Permission denied',
-    })
-    expect(result.status).toBe('failed')
-    expect(result.error).toBe('Permission denied')
-  })
-
-  test('validates a pending result', () => {
-    const result = ToolResultSchema.parse({
-      toolCallId: 'tc-3',
-      name: 'bash',
-      status: TOOL_STATUS.pending,
-    })
-    expect(result.status).toBe('pending')
-  })
-
-  test('rejects invalid status', () => {
-    expect(() =>
-      ToolResultSchema.parse({
-        toolCallId: 'tc-1',
-        name: 'read_file',
-        status: 'running',
-      }),
-    ).toThrow()
-  })
-})
-
-describe('GateDecisionSchema', () => {
-  test('validates an approved decision with workspace tag', () => {
-    const result = GateDecisionSchema.parse({
-      approved: true,
-      tags: [RISK_TAG.workspace],
-    })
-    expect(result.approved).toBe(true)
-    expect(result.tags).toEqual(['workspace'])
-  })
-
-  test('validates a rejected decision with reason', () => {
-    const result = GateDecisionSchema.parse({
-      approved: false,
-      tags: [RISK_TAG.outbound, RISK_TAG.external_audience],
-      reason: 'Sending data to external service requires approval',
-    })
-    expect(result.approved).toBe(false)
-    expect(result.tags).toHaveLength(2)
-  })
-
-  test('defaults tags to empty array when omitted', () => {
-    const result = GateDecisionSchema.parse({ approved: true })
-    expect(result.tags).toEqual([])
-  })
-
-  test('accepts multiple composable tags', () => {
-    const result = GateDecisionSchema.parse({
-      approved: true,
-      tags: [RISK_TAG.crosses_boundary, RISK_TAG.inbound, RISK_TAG.irreversible],
-    })
-    expect(result.tags).toHaveLength(3)
-  })
-
-  test('rejects invalid tag values', () => {
-    expect(() =>
-      GateDecisionSchema.parse({
-        approved: true,
-        tags: ['nonexistent_tag'],
-      }),
-    ).toThrow()
-  })
-})
-
 describe('ToolDefinitionSchema', () => {
   test('validates a complete tool definition', () => {
     const result = ToolDefinitionSchema.parse({
@@ -344,39 +241,5 @@ describe('ModelUsageSchema', () => {
     const result = ModelUsageSchema.parse({ inputTokens: 1500, outputTokens: 300 })
     expect(result.inputTokens).toBe(1500)
     expect(result.outputTokens).toBe(300)
-  })
-})
-
-describe('AgentConfigSchema', () => {
-  test('provides defaults for maxIterations and temperature', () => {
-    const result = AgentConfigSchema.parse({})
-    expect(result.maxIterations).toBe(50)
-    expect(result.temperature).toBe(0)
-  })
-
-  test('accepts custom values', () => {
-    const result = AgentConfigSchema.parse({
-      systemPrompt: 'You are a helpful agent',
-      maxIterations: 100,
-      temperature: 0.7,
-    })
-    expect(result.systemPrompt).toBe('You are a helpful agent')
-    expect(result.maxIterations).toBe(100)
-    expect(result.temperature).toBe(0.7)
-  })
-})
-
-describe('RISK_TAG', () => {
-  test('contains all expected tag values', () => {
-    expect(RISK_TAG.workspace).toBe('workspace')
-    expect(RISK_TAG.crosses_boundary).toBe('crosses_boundary')
-    expect(RISK_TAG.inbound).toBe('inbound')
-    expect(RISK_TAG.outbound).toBe('outbound')
-    expect(RISK_TAG.irreversible).toBe('irreversible')
-    expect(RISK_TAG.external_audience).toBe('external_audience')
-  })
-
-  test('has exactly 6 tags', () => {
-    expect(Object.keys(RISK_TAG)).toHaveLength(6)
   })
 })

@@ -47,14 +47,14 @@ Keep it bounded.
 
 ## Scope
 
-- Keep work inside \`src/agent/\`, \`src/factories/\`, and \`skills/\`.
+- Keep work inside \`src/agent/\` and \`skills/\`.
 
 ## Validation
 
 - Works.
 `
 
-    expect(parseProgramScope(program)).toEqual(['src/agent/', 'src/factories/', 'skills/'])
+    expect(parseProgramScope(program)).toEqual(['src/agent/', 'skills/'])
   })
 
   test('loads program and allowed paths as a reusable context', async () => {

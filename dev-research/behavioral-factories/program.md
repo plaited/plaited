@@ -70,7 +70,6 @@ The intended boundary is:
 - `src/server` remains the browser transport adapter and route host
 - `src/ui` remains a render surface plus client-side behavioral runtime
 - `src/agent` is the generic agent engine
-- `src/factories` should contain promoted executable factory implementations
 - `src/skill` should be the boundary for skill usage, discovery, validation,
   ingestion, and related tooling/utilities
 - `skills/*` contains shipped default skills
@@ -124,7 +123,8 @@ improve the architecture by:
 - removing or shrinking hardcoded factory-like logic from `src/agent`
 - replacing transitional bootstrap compositions with top-level executable
   factories
-- promoting accepted executable behavior into `src/factories`
+- preserving accepted factory ideas and patterns in skills and docs until
+  fresh default factories are rebuilt against the new agent core
 - leaving the core agent engine smaller and more generic than before
 
 The intended `create-agent` direction is minimal:
@@ -228,7 +228,6 @@ Primary lane inputs:
 - `skills/project-isolation/SKILL.md`
 - `src/behavioral/behavioral.ts`
 - `src/ui/`
-- `src/factories/`
 - `src/agent/`
 - `src/skill/`
 - `src/server/`
@@ -661,7 +660,8 @@ This lane should treat architectural cleanup as part of successful promotion.
 A strong promoted result should usually:
 
 - replace or shrink a hardcoded behavior in `src/agent`
-- create or improve executable TypeScript factories in `src/factories`
+- create or improve executable TypeScript factory patterns through skills,
+  notes, and reviewable artifacts
 - preserve or improve validation coverage
 - make the resulting architecture easier to inspect and extend
 
@@ -708,7 +708,6 @@ Only write within:
 - `dev-research/behavioral-factories`
 - `scripts/behavioral-factories.ts`
 - lane-local grader and verifier surfaces when explicitly needed
-- `src/factories`
 - `src/agent` when simplifying or removing hardcoded paths during promotion-oriented work
 
 Expected lane-local outputs may include:
@@ -740,7 +739,7 @@ This lane should produce deterministic, reviewable outputs such as:
 - validation rule sets
 - retained artifact schemas
 - training-ready summaries of successful behavioral and MSS patterns
-- executable TypeScript factories ready for promotion into `src/factories`
+- executable TypeScript factory patterns ready for collaborative reimplementation
 - cleanup plans or patches that remove superseded hardcoded agent behavior
 
 These outputs may be represented as:

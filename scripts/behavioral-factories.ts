@@ -86,7 +86,6 @@ export const BEHAVIORAL_FACTORIES_REQUIREMENTS: readonly ProgramRequirement[] = 
   { label: 'Modnet node skill', path: join('skills', 'modnet-node', 'SKILL.md') },
   { label: 'Modnet modules skill', path: join('skills', 'modnet-modules', 'SKILL.md') },
   { label: 'Behavioral runtime surface', path: join('src', 'behavioral', 'behavioral.ts') },
-  { label: 'Factories runtime surface', path: join('src', 'agent', 'factories.ts') },
   { label: 'Governance runtime surface', path: join('src', 'agent', 'governance.ts') },
   { label: 'MSS seed artifacts', path: MSS_SEED_PATH },
   { label: 'MSS corpus artifacts', path: MSS_CORPUS_ENCODED_PATH },
