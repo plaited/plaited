@@ -1,23 +1,6 @@
 import type { infer as Infer, ZodSafeParseError, ZodTypeAny } from 'zod'
-import type { A2AClient } from '../a2a/a2a.types.ts'
 import type { BSync, DefaultHandlers, Disconnect, Trigger, UseSnapshot } from '../behavioral/behavioral.types.ts'
-import type {
-  AgentPlan,
-  AgentToolCall,
-  GateDecision,
-  ModelUsage,
-  RequestBashDetail,
-  RequestDeleteFileDetail,
-  RequestGlobFilesDetail,
-  RequestGrepDetail,
-  RequestPrimaryInferenceDetail,
-  RequestReadFileDetail,
-  RequestTtsInferenceDetail,
-  RequestVisionInferenceDetail,
-  RequestWriteFileDetail,
-  ToolDefinition,
-  ToolResult,
-} from './agent.schemas.ts'
+import type { AgentToolCall, ModelUsage, ToolDefinition } from './agent.schemas.ts'
 
 /**
  * Initial heartbeat configuration for an agent.
@@ -54,12 +37,7 @@ export type AgentHandle = {
   useSnapshot: UseSnapshot
 }
 
-export type Listen = (args: {
-  eventType: string
-  trigger: Trigger
-  getLVC?: boolean
-  disconnectSet: Set<Disconnect>
-}) => Disconnect
+export type Listen = (eventType: string | (() => void), getLVC?: boolean) => Disconnect
 
 export type SchemaViolationHandler<TSchema extends ZodTypeAny = ZodTypeAny> = (args: {
   key: string
@@ -73,6 +51,14 @@ export type Signal<TSchema extends ZodTypeAny = ZodTypeAny> = {
   listen: Listen
   get(): Infer<TSchema> | undefined
   schema: TSchema
+}
+
+export type Computed = <T>(
+  compute: () => T,
+  deps: Signal[],
+) => {
+  get: () => T
+  listen: Listen
 }
 
 export type Signals = {
@@ -96,28 +82,14 @@ export type Signals = {
 export type FactoryParams = {
   trigger: Trigger
   useSnapshot: UseSnapshot
-  disconnectSet: Set<Disconnect>
   signals: Signals
+  computed: Computed
 }
 
 export type Factory = (params: FactoryParams) => {
   threads?: Record<string, ReturnType<BSync>>
   handlers?: DefaultHandlers
 }
-
-export type CoreRequestPrimaryInferenceDetail = RequestPrimaryInferenceDetail
-export type CoreRequestVisionInferenceDetail = RequestVisionInferenceDetail
-export type CoreRequestTtsInferenceDetail = RequestTtsInferenceDetail
-export type CoreRequestBashDetail = RequestBashDetail
-export type CoreRequestDeleteFileDetail = RequestDeleteFileDetail
-export type CoreRequestGlobFilesDetail = RequestGlobFilesDetail
-export type CoreRequestGrepDetail = RequestGrepDetail
-export type CoreRequestReadFileDetail = RequestReadFileDetail
-export type CoreRequestWriteFileDetail = RequestWriteFileDetail
-
-// ============================================================================
-// Model Interface — streaming inference (from pi-mono audit decisions)
-// ============================================================================
 
 /**
  * A single message in the OpenAI chat format.
@@ -131,83 +103,12 @@ export type ChatMessage = {
   tool_call_id?: string
 }
 
-/**
- * A chunk from the model inference stream.
- *
- * @remarks
- * Returned by `Model.reason()` as `AsyncIterable<ModelDelta>`.
- * The inference handler consumes these privately and triggers
- * BP events per chunk for progressive UI rendering.
- *
- * - `thinking_delta` — reasoning/CoT content
- * - `text_delta` — user-facing response content
- * - `toolcall_delta` — partial tool call (accumulated privately by handler)
- * - `done` — stream complete, includes final `ModelResponse` with usage
- * - `error` — inference error (may be retryable)
- *
- * @public
- */
-export type ModelDelta =
-  | { type: 'thinking_delta'; content: string }
-  | { type: 'text_delta'; content: string }
-  | { type: 'toolcall_delta'; id: string; name?: string; arguments?: string }
-  | { type: 'done'; response: ModelResponse }
-  | { type: 'error'; error: string }
-
-/**
- * Final response metadata from a completed inference stream.
- *
- * @public
- */
-export type ModelResponse = {
-  usage: ModelUsage
-}
-
-/**
- * Primary model interface — reasoning and tool calling.
- *
- * @remarks
- * Returns `AsyncIterable<ModelDelta>` for streaming. The inference handler
- * consumes the stream, accumulates tool call arguments privately, and
- * triggers BP events per chunk for progressive UI. On `done`, the handler
- * triggers `model_response` with the complete `ParsedModelResponse`.
- *
- * OpenAI-compatible API is the wire format — llama.cpp, vLLM, Ollama
- * all support `/v1/chat/completions` with `stream: true`.
- *
- * @public
- */
-export type Model = {
-  reason: (args: {
-    messages: ChatMessage[]
-    tools?: ToolDefinition[]
-    temperature?: number
-    signal: AbortSignal
-  }) => AsyncIterable<ModelDelta>
-}
-
 export type PrimaryInferenceModel = (args: {
   messages: ChatMessage[]
   tools?: ToolDefinition[]
   temperature?: number
   timeout?: number
 }) => Promise<ModelResponseDetail>
-
-/**
- * Embedding model interface — text to vector.
- *
- * @remarks
- * Tool-backing interface: the reasoning model invokes semantic search
- * via an `embed_search` tool call; the tool executor delegates to this
- * interface. Implementations swap freely across MLX, vLLM, and cloud APIs.
- *
- * Reference model: EmbeddingGemma (Gemma 3 300M base).
- *
- * @public
- */
-export type Indexer = {
-  embed: (text: string) => Promise<Float32Array>
-}
 
 /**
  * Structured response from the vision model.
@@ -217,23 +118,6 @@ export type Indexer = {
 export type VisionResponse = {
   description: string
   metadata?: Record<string, unknown>
-}
-
-/**
- * Vision model interface — image to structured description.
- *
- * @remarks
- * Tool-backing interface: the reasoning model invokes image analysis
- * via an `analyze_image` tool call; the tool executor delegates to this
- * interface. Implementations swap freely across MLX (`mlx-vlm`), vLLM,
- * and cloud APIs.
- *
- * Reference model: Qwen 2.5 VL 7B.
- *
- * @public
- */
-export type Vision = {
-  analyze: (image: Uint8Array, prompt: string) => Promise<VisionResponse>
 }
 
 /**
@@ -248,23 +132,6 @@ export type VoiceResponse = {
   sampleRate: number
   /** Audio duration in seconds */
   duration: number
-}
-
-/**
- * Voice model interface — text to speech audio.
- *
- * @remarks
- * Tool-backing interface: the reasoning model invokes speech synthesis
- * via a `speak` tool call; the tool executor delegates to this interface.
- * Implementations swap freely across MLX (`mlx-audio`), vLLM (`vLLM-Omni`),
- * and cloud APIs.
- *
- * Reference model: Qwen3-TTS 1.7B VoiceDesign.
- *
- * @public
- */
-export type Voice = {
-  speak: (text: string, options?: { voice?: string; language?: string }) => Promise<VoiceResponse>
 }
 
 export type AgentModels = {
@@ -306,54 +173,6 @@ export type ToolHandler<T extends Record<string, unknown> = Record<string, unkno
 ) => Promise<unknown>
 
 /**
- * Executes a tool call with transport abstraction.
- *
- * @remarks
- * The pluggability seam for local and A2A tool execution.
- * Local executor calls handlers directly. Remote executors serialize
- * tool calls over the wire. Same tool code runs everywhere.
- *
- * @public
- */
-export type ToolExecutor = (toolCall: AgentToolCall, signal: AbortSignal) => Promise<unknown>
-
-// ============================================================================
-// Executor Factory Options — transport-specific configuration
-// ============================================================================
-
-/**
- * Options for {@link createLocalExecutor}.
- *
- * @remarks
- * The default executor — calls ToolHandler functions directly in-process.
- *
- * @public
- */
-export type CreateLocalExecutorOptions = {
-  cwd: string
-  env?: Record<string, string>
-  handlers?: Record<string, ToolHandler>
-}
-
-/**
- * Options for {@link createA2AExecutor}.
- *
- * @remarks
- * Sends tool calls as A2A `DataPart` messages to a remote agent node.
- * The remote agent executes the tool and returns the result as a task artifact.
- *
- * @public
- */
-export type CreateA2AExecutorOptions = {
-  client: A2AClient
-  taskTimeout?: number
-}
-
-// ============================================================================
-// Parsed Model Response
-// ============================================================================
-
-/**
  * Structured output extracted from a completed model inference.
  *
  * @remarks
@@ -369,19 +188,6 @@ export type ParsedModelResponse = {
   message: string | null
 }
 
-// ============================================================================
-// Agent Event Details — documents the event vocabulary and detail shapes
-// ============================================================================
-
-/**
- * Detail payload for the `task` event.
- *
- * @public
- */
-export type TaskDetail = {
-  prompt: string
-}
-
 /**
  * Detail payload for the `model_response` event.
  *
@@ -390,303 +196,4 @@ export type TaskDetail = {
 export type ModelResponseDetail = {
   parsed: ParsedModelResponse
   usage: ModelUsage
-}
-
-/**
- * Detail payload for the `context_ready` event (per-tool-call gate dispatch).
- *
- * @public
- */
-export type ContextReadyDetail = {
-  toolCall: AgentToolCall
-}
-
-/**
- * Detail payload for the `gate_rejected` event.
- *
- * @public
- */
-export type GateRejectedDetail = {
-  toolCall: AgentToolCall
-  decision: GateDecision
-}
-
-/**
- * Detail payload for the `gate_approved` event.
- *
- * @public
- */
-export type GateApprovedDetail = {
-  toolCall: AgentToolCall
-  tags: string[]
-}
-
-/**
- * Detail payload for the `execute` event.
- *
- * @public
- */
-export type ExecuteDetail = {
-  toolCall: AgentToolCall
-  tags: string[]
-}
-
-/**
- * Detail payload for the `tool_result` event.
- *
- * @public
- */
-export type ToolResultDetail = {
-  result: ToolResult
-}
-
-/**
- * Detail payload for the `tool_progress` event.
- *
- * @public
- */
-export type ToolProgressDetail = {
-  toolCallId: string
-  progress: unknown
-}
-
-/**
- * Detail payload for the `save_plan` event.
- *
- * @public
- */
-export type SavePlanDetail = {
-  plan: AgentPlan
-  toolCallId?: string
-}
-
-/**
- * Detail payload for the `plan_saved` event.
- *
- * @public
- */
-export type PlanSavedDetail = {
-  plan: AgentPlan
-}
-
-/**
- * Detail payload for the `simulate_request` event.
- *
- * @public
- */
-export type SimulateRequestDetail = {
-  toolCall: AgentToolCall
-  tags: string[]
-}
-
-/**
- * Detail payload for the `simulation_result` event.
- *
- * @public
- */
-export type SimulationResultDetail = {
-  toolCall: AgentToolCall
-  prediction: string
-  tags: string[]
-}
-
-/**
- * Detail payload for the `eval_approved` event.
- *
- * @public
- */
-export type EvalApprovedDetail = {
-  toolCall: AgentToolCall
-  tags: string[]
-  score?: number
-}
-
-/**
- * Detail payload for the `eval_rejected` event.
- *
- * @public
- */
-export type EvalRejectedDetail = {
-  toolCall: AgentToolCall
-  reason: string
-  score?: number
-}
-
-/**
- * Detail payload for the `message` event.
- *
- * @public
- */
-export type MessageDetail = {
-  content: string
-  /** Origin of the message cycle: 'proactive' for tick-triggered, 'reactive' (default) for user-triggered. */
-  source?: 'reactive' | 'proactive'
-}
-
-/**
- * Detail payload for the `thinking_delta` event.
- *
- * @public
- */
-export type ThinkingDeltaDetail = {
-  content: string
-}
-
-/**
- * Detail payload for the `text_delta` event.
- *
- * @public
- */
-export type TextDeltaDetail = {
-  content: string
-}
-
-/**
- * Detail payload for the `inference_error` event.
- *
- * @public
- */
-export type InferenceErrorDetail = {
-  error: string
-  retryable: boolean
-}
-
-// ============================================================================
-// Proactive — Sensor Factory contract (Prompt 11 adds reference implementations)
-// ============================================================================
-
-/**
- * A snapshot persisted between sensor sweeps for diff comparison.
- *
- * @public
- */
-export type SensorSnapshot = {
-  timestamp: string
-  data: unknown
-}
-
-/**
- * Contract for a pluggable sensor.
- *
- * @remarks
- * Sensors are read-only observers — they read state, diff against the last
- * snapshot, and report deltas. The framework coordinates execution via
- * `createSensorBatchThread`. Concrete implementations (git, filesystem, HTTP)
- * are generation targets, not framework code.
- *
- * @public
- */
-export type SensorFactory = {
-  /** Human-readable sensor name (used in `sensor_delta` events) */
-  name: string
-  /** Read current state. Receives AbortSignal for timeout control. */
-  read: (signal: AbortSignal) => Promise<unknown>
-  /** Compare current state to previous snapshot. Returns delta or null (no change). */
-  diff: (current: unknown, previous: SensorSnapshot | null) => unknown | null
-  /** Path for snapshot persistence (relative to `.memory/sensors/`) */
-  snapshotPath: string
-}
-
-// ============================================================================
-// Proactive Heartbeat Event Details — tick, sensor_delta, sensor_sweep, sleep, snapshot_committed
-// ============================================================================
-
-/**
- * Detail payload for the `tick` event (periodic heartbeat).
- *
- * @public
- */
-export type TickDetail = {
-  tickNumber: number
-  timestamp: string
-}
-
-/**
- * Detail payload for the `sensor_delta` event (single sensor change).
- *
- * @public
- */
-export type SensorDeltaDetail = {
-  sensor: string
-  delta: unknown
-}
-
-/**
- * Detail payload for the `sensor_sweep` event (batched sensor deltas).
- *
- * @public
- */
-export type SensorSweepDetail = {
-  deltas: SensorDeltaDetail[]
-}
-
-/**
- * Detail payload for the `sleep` event (idle after no deltas detected).
- *
- * @public
- */
-export type SleepDetail = {
-  durationMs: number
-}
-
-/**
- * Detail payload for the `snapshot_committed` event (git commit captured).
- *
- * @public
- */
-export type SnapshotCommittedDetail = {
-  sha: string
-  modulePath: string
-}
-
-// ============================================================================
-// Memory Lifecycle Event Details — commit_snapshot, consolidate, defrag
-// ============================================================================
-
-/**
- * Detail payload for the `commit_snapshot` event.
- *
- * @remarks
- * Requested by the `sideEffectCommit` bThread after a side-effect-producing
- * `tool_result` (write_file, delete_file, bash). The handler commits both the
- * code change and all pending `.memory/` decision files to the module's git repo.
- *
- * @public
- */
-export type CommitSnapshotDetail = {
-  /** Absolute path to the module root being committed */
-  modulePath: string
-  /** The tool_result that triggered this commit */
-  toolResult: ToolResult
-}
-
-/**
- * Detail payload for the `consolidate` event.
- *
- * @remarks
- * Requested by the `sessionClose` bThread at session end.
- * Archives individual decision `.jsonld` files into `decisions.jsonl`,
- * writes `meta.jsonld` with summary + embedding, then commits.
- *
- * @public
- */
-export type ConsolidateDetail = {
-  /** Session ID being consolidated */
-  sessionId: string
-  /** Absolute path to the module's `.memory/` directory */
-  memoryPath: string
-}
-
-/**
- * Detail payload for the `defrag` event.
- *
- * @remarks
- * Requested by `defragSchedule` bThread after N session completions.
- * Archives old sessions out of the working tree via `git archive`.
- *
- * @public
- */
-export type DefragDetail = {
-  /** Absolute path to the module's `.memory/` directory */
-  memoryPath: string
 }

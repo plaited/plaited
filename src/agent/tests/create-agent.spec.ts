@@ -130,11 +130,7 @@ describe('createAgent', () => {
             schema: ReadFileResultSchema,
             readOnly: false,
           })
-          readSignal.listen({
-            eventType: 'read_result_ready',
-            trigger: () => resolveRead(),
-            disconnectSet: new Set(),
-          })
+          readSignal.listen(() => resolveRead())
 
           return {}
         },
@@ -186,11 +182,7 @@ describe('createAgent', () => {
             schema: BashResultSchema,
             readOnly: false,
           })
-          bashSignal.listen({
-            eventType: 'bash_result_ready',
-            trigger: () => resolveBash(),
-            disconnectSet: new Set(),
-          })
+          bashSignal.listen(() => resolveBash())
 
           return {}
         },
@@ -237,11 +229,7 @@ describe('createAgent', () => {
             schema: WriteFileResultSchema,
             readOnly: false,
           })
-          writeSignal.listen({
-            eventType: 'write_result_ready',
-            trigger: () => resolveWrite(),
-            disconnectSet: new Set(),
-          })
+          writeSignal.listen(() => resolveWrite())
 
           return {}
         },
@@ -289,11 +277,7 @@ describe('createAgent', () => {
             schema: DeleteFileResultSchema,
             readOnly: false,
           })
-          deleteSignal.listen({
-            eventType: 'delete_result_ready',
-            trigger: () => resolveDelete(),
-            disconnectSet: new Set(),
-          })
+          deleteSignal.listen(() => resolveDelete())
 
           return {}
         },
@@ -415,11 +399,7 @@ describe('createAgent', () => {
             schema: GrepResultSchema,
             readOnly: false,
           })
-          grepSignal.listen({
-            eventType: 'grep_result_ready',
-            trigger: () => resolveGrep(),
-            disconnectSet: new Set(),
-          })
+          grepSignal.listen(() => resolveGrep())
 
           return {}
         },
@@ -484,11 +464,7 @@ describe('createAgent', () => {
             schema: GlobFilesResultSchema,
             readOnly: false,
           })
-          globSignal.listen({
-            eventType: 'glob_result_ready',
-            trigger: () => resolveGlob(),
-            disconnectSet: new Set(),
-          })
+          globSignal.listen(() => resolveGlob())
 
           return {}
         },

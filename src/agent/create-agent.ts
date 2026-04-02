@@ -9,33 +9,28 @@ import { AGENT_CORE_EVENTS } from './agent.constants.ts'
 import {
   FactoryResultSchema,
   GrepOutputSchema,
+  type RequestBashDetail,
   RequestBashDetailSchema,
+  type RequestDeleteFileDetail,
   RequestDeleteFileDetailSchema,
+  type RequestGlobFilesDetail,
   RequestGlobFilesDetailSchema,
+  type RequestGrepDetail,
   RequestGrepDetailSchema,
+  type RequestPrimaryInferenceDetail,
   RequestPrimaryInferenceDetailSchema,
+  type RequestReadFileDetail,
   RequestReadFileDetailSchema,
+  type RequestTtsInferenceDetail,
   RequestTtsInferenceDetailSchema,
+  type RequestVisionInferenceDetail,
   RequestVisionInferenceDetailSchema,
+  type RequestWriteFileDetail,
   RequestWriteFileDetailSchema,
   UpdateFactoryModuleSchema,
 } from './agent.schemas.ts'
-import type {
-  AgentHandle,
-  CoreRequestBashDetail,
-  CoreRequestDeleteFileDetail,
-  CoreRequestGlobFilesDetail,
-  CoreRequestGrepDetail,
-  CoreRequestPrimaryInferenceDetail,
-  CoreRequestReadFileDetail,
-  CoreRequestTtsInferenceDetail,
-  CoreRequestVisionInferenceDetail,
-  CoreRequestWriteFileDetail,
-  CreateAgentOptions,
-  SchemaViolationHandler,
-  Signal,
-  Signals,
-} from './agent.types.ts'
+import type { AgentHandle, CreateAgentOptions, SchemaViolationHandler, Signal, Signals } from './agent.types.ts'
+import { useComputed } from './use-computed.ts'
 import { useSignal } from './use-signal.ts'
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 15 * 60 * 1000
@@ -85,6 +80,7 @@ export const createAgent = async ({
   const disconnectSet = new Set<Disconnect>()
 
   const signalMap = new Map<string, Signal>()
+  const computed = useComputed(disconnectSet, restrictedTrigger)
 
   const resolveWorkspacePath = (detail: string) => (isAbsolute(detail) ? detail : resolve(workspace, detail))
   const resolveCwdPath = (detail: string) => resolve(cwd, detail)
@@ -108,6 +104,8 @@ export const createAgent = async ({
       schema,
       value,
       onSchemaViolation,
+      disconnectSet,
+      trigger: restrictedTrigger,
     })
     trigger({
       type: AGENT_CORE_EVENTS.set_signal,
@@ -128,9 +126,9 @@ export const createAgent = async ({
   for (const factory of factories) {
     const { threads, handlers } = factory({
       trigger: restrictedTrigger,
-      disconnectSet,
       signals,
       useSnapshot,
+      computed,
     })
     threads && bThreads.set(threads)
     handlers && disconnectSet.add(useFeedback(handlers))
@@ -272,17 +270,17 @@ export const createAgent = async ({
       !readOnly && Object.assign(rest, { set })
       signalMap.set(key, rest)
     },
-    async [AGENT_CORE_EVENTS.request_inference_primary](detail: CoreRequestPrimaryInferenceDetail) {
+    async [AGENT_CORE_EVENTS.request_inference_primary](detail: RequestPrimaryInferenceDetail) {
       const { input, signal } = RequestPrimaryInferenceDetailSchema.parse(detail)
       const output = await models.primary(input)
       signal.set?.({ input, output })
     },
-    async [AGENT_CORE_EVENTS.request_inference_vision](detail: CoreRequestVisionInferenceDetail) {
+    async [AGENT_CORE_EVENTS.request_inference_vision](detail: RequestVisionInferenceDetail) {
       const { input, signal } = RequestVisionInferenceDetailSchema.parse(detail)
       const output = await models.vision(input)
       signal.set?.({ input, output })
     },
-    async [AGENT_CORE_EVENTS.request_inference_tts](detail: CoreRequestTtsInferenceDetail) {
+    async [AGENT_CORE_EVENTS.request_inference_tts](detail: RequestTtsInferenceDetail) {
       const { input, signal } = RequestTtsInferenceDetailSchema.parse(detail)
       const output = await models.tts(input)
       signal.set?.({ input, output })
@@ -294,36 +292,36 @@ export const createAgent = async ({
         factory({
           trigger: restrictedTrigger,
           useSnapshot,
-          disconnectSet,
           signals,
+          computed,
         }),
       )
       threads && bThreads.set(threads)
       handlers && disconnectSet.add(useFeedback(handlers))
     },
-    async [AGENT_CORE_EVENTS.read_file](detail: CoreRequestReadFileDetail) {
+    async [AGENT_CORE_EVENTS.read_file](detail: RequestReadFileDetail) {
       const { input, signal } = RequestReadFileDetailSchema.parse(detail)
       const resolved = resolveCwdPath(input)
       signal.set?.({ input, output: Bun.file(resolved) })
     },
-    async [AGENT_CORE_EVENTS.delete_file](detail: CoreRequestDeleteFileDetail) {
+    async [AGENT_CORE_EVENTS.delete_file](detail: RequestDeleteFileDetail) {
       const { input, signal } = RequestDeleteFileDetailSchema.parse(detail)
       const resolved = resolveCwdPath(input)
       await Bun.file(resolved).delete()
       signal.set?.({ input, output: true })
     },
-    async [AGENT_CORE_EVENTS.write_file](detail: CoreRequestWriteFileDetail) {
+    async [AGENT_CORE_EVENTS.write_file](detail: RequestWriteFileDetail) {
       const { input, signal } = RequestWriteFileDetailSchema.parse(detail)
       const resolved = resolveCwdPath(input.path)
       const output = await Bun.write(resolved, input.content)
       signal.set?.({ input, output })
     },
-    async [AGENT_CORE_EVENTS.glob_files](detail: CoreRequestGlobFilesDetail) {
+    async [AGENT_CORE_EVENTS.glob_files](detail: RequestGlobFilesDetail) {
       const { input, signal } = RequestGlobFilesDetailSchema.parse(detail)
       const output = await Array.fromAsync(glob(input.pattern, { exclude: input.exclude, cwd }))
       signal.set?.({ input, output })
     },
-    async [AGENT_CORE_EVENTS.grep](detail: CoreRequestGrepDetail) {
+    async [AGENT_CORE_EVENTS.grep](detail: RequestGrepDetail) {
       const { input, signal } = RequestGrepDetailSchema.parse(detail)
       const { timeout, ...request } = input
       const proc = Bun.spawn(['bun', fileURLToPath(import.meta.resolve('./grep-worker.ts')), JSON.stringify(request)], {
@@ -353,7 +351,7 @@ export const createAgent = async ({
             })
       signal.set?.({ input, output })
     },
-    async [AGENT_CORE_EVENTS.bash](detail: CoreRequestBashDetail) {
+    async [AGENT_CORE_EVENTS.bash](detail: RequestBashDetail) {
       const { input, signal } = RequestBashDetailSchema.parse(detail)
       const proc = Bun.spawn(['bun', resolveWorkspacePath(input.path), ...input.args], {
         cwd,

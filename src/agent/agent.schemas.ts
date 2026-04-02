@@ -2,8 +2,7 @@ import * as z from 'zod'
 import { SelectionBidSchema } from '../behavioral/behavioral.schemas.ts'
 import { type BSync, type DefaultHandlers, isBehavioralRule } from '../behavioral.ts'
 import { isTypeOf, trueTypeOf } from '../utils.ts'
-import { RISK_TAG, TOOL_STATUS } from './agent.constants.ts'
-import type { Signal } from './agent.types.ts'
+import type { Factory, Signal } from './agent.types.ts'
 
 /**
  * Initial heartbeat configuration for the new agent core.
@@ -13,13 +12,6 @@ import type { Signal } from './agent.types.ts'
 export const AgentHeartbeatConfigSchema = z.object({
   intervalMs: z.number().int().positive().optional(),
 })
-
-/**
- * Runtime factory update request for the new agent core.
- *
- * @public
- */
-export const UpdateFactoriesDetailSchema = z.string().min(1)
 
 // ============================================================================
 // Plan Schemas
@@ -39,19 +31,6 @@ export const AgentPlanStepSchema = z.object({
 
 /** Single plan step */
 export type AgentPlanStep = z.infer<typeof AgentPlanStepSchema>
-
-/**
- * A plan proposed by the model for multi-step task execution.
- *
- * @public
- */
-export const AgentPlanSchema = z.object({
-  goal: z.string(),
-  steps: z.array(AgentPlanStepSchema),
-})
-
-/** Agent plan */
-export type AgentPlan = z.infer<typeof AgentPlanSchema>
 
 // ============================================================================
 // Trajectory Step Schemas (canonical source — eval harness imports these)
@@ -152,59 +131,6 @@ export const TrajectoryStepSchema = z.discriminatedUnion('type', [
 
 /** Trajectory step type */
 export type TrajectoryStep = z.infer<typeof TrajectoryStepSchema>
-
-// ============================================================================
-// Tool Result Schema
-// ============================================================================
-
-const toolStatusValues = Object.values(TOOL_STATUS)
-
-/**
- * Result of a tool execution.
- *
- * @public
- */
-export const ToolResultSchema = z.object({
-  toolCallId: z.string(),
-  name: z.string(),
-  status: z.enum(toolStatusValues),
-  output: z.unknown().optional(),
-  error: z.string().optional(),
-  duration: z.number().optional(),
-})
-
-/** Tool execution result */
-export type ToolResult = z.infer<typeof ToolResultSchema>
-
-// ============================================================================
-// Gate Decision Schema
-// ============================================================================
-
-const riskTagValues = Object.values(RISK_TAG)
-
-/**
- * Gate evaluation decision for a proposed tool call.
- *
- * @remarks
- * Produced by gate bThread block predicates. The `tags` array contains
- * composable risk tags (see `RISK_TAG`) that determine routing:
- *
- * - Empty/unknown tags → Simulate + Judge (default-deny, prove it's safe)
- * - `workspace`-only → Execute directly (declared safe)
- * - Any boundary/irreversible/audience tags → Simulate + Judge
- *
- * Tags are declared by tool/wrapper definitions, not inferred at runtime.
- *
- * @public
- */
-export const GateDecisionSchema = z.object({
-  approved: z.boolean(),
-  tags: z.array(z.enum(riskTagValues)).default([]),
-  reason: z.string().optional(),
-})
-
-/** Gate decision */
-export type GateDecision = z.infer<typeof GateDecisionSchema>
 
 // ============================================================================
 // Tool Definition Schema (OpenAI function-calling format)
@@ -597,45 +523,30 @@ export const DeleteFileResultSchema = createSignalResultSchema(z.string(), Delet
 // Agent Config Schema
 // ============================================================================
 
-/**
- * Configuration for creating an agent loop.
- *
- * @remarks
- * The `Model` interface is passed separately — config controls behavior,
- * not connection details.
- *
- * @public
- */
-export const AgentConfigSchema = z.object({
-  tools: z.array(ToolDefinitionSchema).optional(),
-  systemPrompt: z.string().optional(),
-  maxIterations: z.number().default(50),
-  temperature: z.number().default(0),
-})
-
-/** Agent configuration */
-export type AgentConfig = z.infer<typeof AgentConfigSchema>
-
-export const FactoryResultSchema = z.object({
-  threads: z.record(z.string(), z.custom<ReturnType<BSync>>(isBehavioralRule)).optional(),
-  handlers: z
-    .custom<DefaultHandlers>((obj) => {
-      const isObject = isTypeOf<Record<string, unknown>>(obj, 'object')
-      if (!isObject) return false
-      for (const val of Object.values(obj)) {
-        if (trueTypeOf(val) === 'function' || trueTypeOf(val) === 'asyncfunction') continue
-        return false
-      }
-      return true
-    })
-    .optional(),
-})
+export const FactoryResultSchema = z
+  .object({
+    threads: z.record(z.string(), z.custom<ReturnType<BSync>>(isBehavioralRule)).optional(),
+    handlers: z
+      .custom<DefaultHandlers>((obj) => {
+        const isObject = isTypeOf<Record<string, unknown>>(obj, 'object')
+        if (!isObject) return false
+        for (const val of Object.values(obj)) {
+          if (trueTypeOf(val) === 'function' || trueTypeOf(val) === 'asyncfunction') continue
+          return false
+        }
+        return true
+      })
+      .optional(),
+  })
+  .strict()
 
 export type FactoryResult = z.infer<typeof FactoryResultSchema>
 
-export const UpdateFactoryModuleSchema = z.object({
-  default: z.custom<(...args: unknown[]) => FactoryResult>((val) => trueTypeOf(val) === 'function'),
-})
+export const UpdateFactoryModuleSchema = z
+  .object({
+    default: z.custom<Factory>((value) => trueTypeOf(value) === 'function'),
+  })
+  .strict()
 
 /** @public */
 export type UpdateFactoryModule = z.infer<typeof UpdateFactoryModuleSchema>

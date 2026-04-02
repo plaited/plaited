@@ -1,46 +1,48 @@
 import type { Disconnect, Trigger } from '../behavioral/behavioral.types.ts'
-import type { Listen, Signal } from './agent.types.ts'
+import { isTypeOf } from '../utils.ts'
+import type { Computed, Listen, Signal } from './agent.types.ts'
 
 export const useComputed =
-  (disconnectSet: Set<Disconnect>) =>
+  (disconnectSet: Set<Disconnect>, trigger: Trigger): Computed =>
   <T>(compute: () => T, deps: Signal[]) => {
     let store: T
+    let hasStore = false
     const listeners = new Set<(value?: T) => void>()
     const disconnectDeps: Disconnect[] = []
 
     const get = () => {
-      if (!store) store = compute()
+      if (!hasStore) {
+        store = compute()
+        hasStore = true
+      }
       return store
     }
 
-    const update: Trigger = (..._) => {
+    const update = () => {
       store = compute()
+      hasStore = true
       for (const cb of listeners) cb(store)
     }
 
-    const listen: Listen = ({ eventType, trigger, getLVC = false, disconnectSet: listenerDisconnectSet }) => {
+    const listen: Listen = (eventType, getLVC) => {
       if (!listeners.size) {
-        disconnectDeps.push(
-          ...deps.map((dep) =>
-            dep.listen({
-              eventType: 'update',
-              trigger: update,
-              disconnectSet,
-            }),
-          ),
-        )
+        disconnectDeps.push(...deps.map((dep) => dep.listen(update)))
       }
 
-      const cb = (detail?: T) => trigger({ type: eventType, detail })
+      const cb = (detail?: T) =>
+        isTypeOf<string>(eventType, 'string') ? trigger({ type: eventType, detail }) : eventType()
       getLVC && cb(get())
       listeners.add(cb)
 
       const disconnect = () => {
         listeners.delete(cb)
-        if (!listeners.size) for (const dep of disconnectDeps) void dep()
+        if (!listeners.size) {
+          for (const dep of disconnectDeps) void dep()
+          disconnectDeps.length = 0
+        }
       }
 
-      listenerDisconnectSet.add(disconnect)
+      disconnectSet.add(disconnect)
       return disconnect
     }
 
