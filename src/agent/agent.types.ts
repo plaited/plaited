@@ -1,21 +1,9 @@
 import type { infer as Infer, ZodSafeParseError, ZodTypeAny } from 'zod'
 import type { A2AClient } from '../a2a/a2a.types.ts'
-import type {
-  BSync,
-  DefaultHandlers,
-  Disconnect,
-  SnapshotListener,
-  Trigger,
-  UseSnapshot,
-} from '../behavioral/behavioral.types.ts'
-import type { CONTROLLER_TO_AGENT_EVENTS, UI_ADAPTER_LIFECYCLE_EVENTS } from '../events.ts'
-import type { UIClientConnectedDetail, UIClientDisconnectedDetail, UIClientErrorDetail } from '../server.ts'
-import type { SnapshotEvent, UserActionMessage } from '../ui.ts'
-import type { AGENT_EVENTS } from './agent.constants.ts'
+import type { BSync, DefaultHandlers, Disconnect, Trigger, UseSnapshot } from '../behavioral/behavioral.types.ts'
 import type {
   AgentPlan,
   AgentToolCall,
-  AgentToolResultDetail,
   GateDecision,
   ModelUsage,
   RequestBashDetail,
@@ -29,7 +17,6 @@ import type {
   RequestWriteFileDetail,
   ToolDefinition,
   ToolResult,
-  UpdateFactoriesDetail,
 } from './agent.schemas.ts'
 
 /**
@@ -65,25 +52,6 @@ export type CreateAgentOptions = {
 export type AgentHandle = {
   trigger: Trigger
   useSnapshot: UseSnapshot
-}
-
-/**
- * Spawn helper options for recursively creating agents.
- *
- * @public
- */
-export type SpawnAgentOptions = CreateAgentOptions & {
-  onSnapshot?: SnapshotListener
-}
-
-/**
- * Return shape for spawn-agent helper.
- *
- * @public
- */
-export type SpawnedAgentHandle = AgentHandle & {
-  id: string
-  disconnectSnapshot?: Disconnect
 }
 
 export type Listen = (args: {
@@ -136,8 +104,6 @@ export type Factory = (params: FactoryParams) => {
   threads?: Record<string, ReturnType<BSync>>
   handlers?: DefaultHandlers
 }
-
-export type LocalToolResultDetail = AgentToolResultDetail
 
 export type CoreRequestPrimaryInferenceDetail = RequestPrimaryInferenceDetail
 export type CoreRequestVisionInferenceDetail = RequestVisionInferenceDetail
@@ -724,109 +690,3 @@ export type DefragDetail = {
   /** Absolute path to the module's `.memory/` directory */
   memoryPath: string
 }
-
-/**
- * Documents the full event vocabulary and expected detail shapes.
- *
- * @remarks
- * Covers UI adapter events (`UI_ADAPTER_LIFECYCLE_EVENTS`, `CONTROLLER_TO_AGENT_EVENTS`) with
- * concrete detail types from their respective modules, and pipeline events
- * (`AGENT_EVENTS`) with agent-owned detail types.
- *
- * Not used as a generic parameter — `behavioral()` is unparameterized and handlers
- * self-validate with Zod where needed. Kept as a reference type for documentation
- * and test authoring.
- *
- * @public
- */
-export type AgentEventDetails = {
-  // ── UI adapter events ──────────────────────────────────────────────
-  [UI_ADAPTER_LIFECYCLE_EVENTS.client_connected]: UIClientConnectedDetail
-  [UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected]: UIClientDisconnectedDetail
-  [UI_ADAPTER_LIFECYCLE_EVENTS.client_error]: UIClientErrorDetail
-  [CONTROLLER_TO_AGENT_EVENTS.user_action]: UserActionMessage['detail']
-  [CONTROLLER_TO_AGENT_EVENTS.snapshot]: SnapshotEvent['detail']
-  // ── Pipeline events ───────────────────────────────────────────────
-  [AGENT_EVENTS.task]: TaskDetail
-  [AGENT_EVENTS.context_ready]: ContextReadyDetail
-  [AGENT_EVENTS.invoke_inference]: undefined
-  [AGENT_EVENTS.model_response]: ModelResponseDetail
-  [AGENT_EVENTS.gate_rejected]: GateRejectedDetail
-  [AGENT_EVENTS.gate_approved]: GateApprovedDetail
-  [AGENT_EVENTS.simulate_request]: SimulateRequestDetail
-  [AGENT_EVENTS.simulation_result]: SimulationResultDetail
-  [AGENT_EVENTS.eval_approved]: EvalApprovedDetail
-  [AGENT_EVENTS.eval_rejected]: EvalRejectedDetail
-  [AGENT_EVENTS.execute]: ExecuteDetail
-  [AGENT_EVENTS.tool_result]: ToolResultDetail
-  [AGENT_EVENTS.tool_progress]: ToolProgressDetail
-  [AGENT_EVENTS.save_plan]: SavePlanDetail
-  [AGENT_EVENTS.plan_saved]: PlanSavedDetail
-  [AGENT_EVENTS.message]: MessageDetail
-  [AGENT_EVENTS.loop_complete]: undefined
-  [AGENT_EVENTS.thinking_delta]: ThinkingDeltaDetail
-  [AGENT_EVENTS.text_delta]: TextDeltaDetail
-  [AGENT_EVENTS.inference_error]: InferenceErrorDetail
-  // ── Proactive heartbeat events ─────────────────────────────────────
-  [AGENT_EVENTS.tick]: TickDetail
-  [AGENT_EVENTS.sensor_delta]: SensorDeltaDetail
-  [AGENT_EVENTS.sensor_sweep]: SensorSweepDetail
-  [AGENT_EVENTS.sleep]: SleepDetail
-  [AGENT_EVENTS.snapshot_committed]: SnapshotCommittedDetail
-  // ── Memory lifecycle events ────────────────────────────────────────
-  [AGENT_EVENTS.commit_snapshot]: CommitSnapshotDetail
-  [AGENT_EVENTS.consolidate]: ConsolidateDetail
-  [AGENT_EVENTS.defrag]: DefragDetail
-}
-
-/**
- * Event details for the new agent core surface.
- *
- * @public
- */
-export type AgentCoreEventDetails = {
-  update_factories: UpdateFactoriesDetail
-}
-
-// ============================================================================
-// Agent Node — public return type (adapter-facing BP primitives)
-// ============================================================================
-
-/**
- * Legacy adapter-facing agent handle retained during the refactor.
- *
- * @remarks
- * Exposes BP primitives for adapter consumption while remaining legacy
- * surfaces are trimmed away.
- *
- * - `trigger` — restricted to `task`, `client_connected`, `disconnected`
- * - `subscribe` — register fire-and-forget event handlers, returns disconnect
- * - `snapshot` — observe BP engine decisions (selection, blocking, interrupts)
- * - `destroy` — tear down all subscriptions
- *
- * @public
- */
-export type AgentNode = {
-  trigger: Trigger
-  subscribe: (handlers: DefaultHandlers) => Disconnect
-  snapshot: (listener: SnapshotListener) => Disconnect
-  destroy: () => void
-}
-
-// ============================================================================
-// Diagnostic Entry — non-selection snapshot messages
-// ============================================================================
-
-/**
- * A diagnostic entry captured from non-selection snapshot messages.
- *
- * @remarks
- * Stored in an in-memory ring buffer. Includes feedback handler errors,
- * restricted trigger rejections, and duplicate thread warnings.
- *
- * @public
- */
-export type DiagnosticEntry =
-  | { kind: 'feedback_error'; type: string; detail?: unknown; error: string; timestamp: number }
-  | { kind: 'restricted_trigger_error'; type: string; detail?: unknown; error: string; timestamp: number }
-  | { kind: 'bthreads_warning'; thread: string; warning: string; timestamp: number }

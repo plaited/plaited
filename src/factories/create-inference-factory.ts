@@ -1,6 +1,6 @@
 import { AGENT_CORE_EVENTS, AGENT_EVENTS } from '../agent/agent.constants.ts'
 import type { ModelDelta, ModelResponseDetail } from '../agent/agent.types.ts'
-import { parseModelResponse } from '../agent/agent.utils.ts'
+import { parseModelResponse } from '../agent/openai-compat.ts'
 import type { InferenceFactoryCreator } from './factories.types.ts'
 
 const DEFAULT_TIMEOUT_MS = 120_000

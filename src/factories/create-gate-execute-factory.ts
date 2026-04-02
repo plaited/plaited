@@ -1,6 +1,6 @@
 import * as z from 'zod'
 import { AGENT_CORE_EVENTS, AGENT_EVENTS, RISK_TAG } from '../agent/agent.constants.ts'
-import type { AgentToolCall, ToolDefinition } from '../agent/agent.schemas.ts'
+import { type AgentToolCall, type ToolDefinition, ToolResultSchema } from '../agent/agent.schemas.ts'
 import type {
   ContextReadyDetail,
   EvalApprovedDetail,
@@ -10,7 +10,6 @@ import type {
   GateRejectedDetail,
   ToolResultDetail,
 } from '../agent/agent.types.ts'
-import { toToolResult } from '../agent/agent.utils.ts'
 import type { ConstitutionPredicate, GateExecuteFactoryCreator } from './factories.types.ts'
 
 type GateRoute = 'execute' | 'simulate' | 'rejected'
@@ -83,6 +82,28 @@ const toCoreToolRequest = ({ name, arguments: args }: { name: string; arguments:
     default:
       return args
   }
+}
+
+const toToolResult = (toolCall: AgentToolCall, outcome: unknown, duration?: number) => {
+  const base = {
+    toolCallId: toolCall.id,
+    name: toolCall.name,
+    ...(duration !== undefined ? { duration } : {}),
+  }
+
+  if (outcome instanceof Error) {
+    return ToolResultSchema.parse({
+      ...base,
+      status: 'failed',
+      error: outcome.message,
+    })
+  }
+
+  return ToolResultSchema.parse({
+    ...base,
+    status: 'completed',
+    output: outcome,
+  })
 }
 
 /**

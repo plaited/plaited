@@ -7,7 +7,6 @@ import type {
   SimulateRequestDetail,
   SimulationResultDetail,
 } from '../agent/agent.types.ts'
-import { collectModelText } from '../agent/agent.utils.ts'
 import type { SimulationEvaluationFactoryCreator } from './factories.types.ts'
 
 export const STATE_TRANSITION_PROMPT = `You are a simulation engine. Given the conversation context and a proposed tool call, predict ONLY the state changes that would occur if this tool call were executed.
@@ -69,6 +68,25 @@ const CHANGE_LINE = /^-\s+(.+)$/gm
 type SimulateResult = {
   predictedOutput: string
   predictedChanges: string[]
+}
+
+const collectModelText = async (
+  stream: AsyncIterable<{ type: string; content?: string; error?: string }>,
+  signal?: AbortSignal,
+) => {
+  let text = ''
+
+  for await (const delta of stream) {
+    signal?.throwIfAborted()
+    if (delta.type === 'error') {
+      throw new Error(delta.error ?? 'Unknown model error')
+    }
+    if (delta.type === 'text_delta' && delta.content) {
+      text += delta.content
+    }
+  }
+
+  return text
 }
 
 const formatToolCall = (toolCall: AgentToolCall): string =>

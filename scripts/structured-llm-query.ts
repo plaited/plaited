@@ -1,7 +1,6 @@
 import { isAbsolute, join, normalize } from 'node:path'
 import { z } from 'zod'
 import { ReadFileConfigSchema } from '../src/agent/agent.schemas.ts'
-import { truncateHead } from '../src/agent/truncate.ts'
 import { extractFirstJsonObject, extractTaggedJsonObject } from './json-extract.ts'
 import { buildOpenRouterHeaders, extractOpenRouterText } from './openrouter-adapter.ts'
 
@@ -12,6 +11,35 @@ const DEFAULT_VALIDATION_RETRIES = 2
 const DEFAULT_REQUEST_TIMEOUT_MS = 60_000
 const DEFAULT_JSON_SYSTEM_PROMPT =
   'Return only a single JSON object that satisfies the user request. Do not include markdown fences or commentary.'
+const MAX_STRUCTURED_READ_BYTES = 32_000
+
+const countLines = (value: string) => value.split('\n').length
+
+const truncateStructuredReadText = (value: string) => {
+  const totalBytes = Buffer.byteLength(value)
+  const totalLines = countLines(value)
+  if (totalBytes <= MAX_STRUCTURED_READ_BYTES) {
+    return {
+      content: value,
+      totalBytes,
+      totalLines,
+      truncated: false,
+    }
+  }
+
+  let end = value.length
+  while (end > 0 && Buffer.byteLength(value.slice(0, end)) > MAX_STRUCTURED_READ_BYTES) {
+    end -= 1
+  }
+
+  const content = value.slice(0, end)
+  return {
+    content,
+    totalBytes,
+    totalLines,
+    truncated: true,
+  }
+}
 
 const StructuredReadFileOutputSchema = z.discriminatedUnion('type', [
   z.object({
@@ -166,7 +194,7 @@ const executeReadTool = async ({
   }
 
   const text = await file.text()
-  return StructuredReadFileOutputSchema.parse({ type: 'text', path: parsed.path, ...truncateHead(text) })
+  return StructuredReadFileOutputSchema.parse({ type: 'text', path: parsed.path, ...truncateStructuredReadText(text) })
 }
 
 export const runStructuredLlmQuery = async <T>({

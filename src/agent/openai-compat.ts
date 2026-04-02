@@ -1,6 +1,80 @@
-import type { ModelUsage, ToolDefinition } from './agent.schemas.ts'
-import type { ModelResponseDetail, PrimaryInferenceModel } from './agent.types.ts'
-import { parseModelResponse } from './agent.utils.ts'
+import { type AgentToolCall, AgentToolCallSchema, type ModelUsage, type ToolDefinition } from './agent.schemas.ts'
+import type { ModelResponseDetail, ParsedModelResponse, PrimaryInferenceModel } from './agent.types.ts'
+
+// ============================================================================
+// parseModelResponse — extract thinking, tool calls, and message from response
+// ============================================================================
+
+const THINK_TAG_REGEX = /^<think>([\s\S]*?)<\/think>\s*/
+
+/**
+ * Extracts structured data from a raw model response.
+ *
+ * @remarks
+ * Handles two thinking formats:
+ * 1. `reasoning_content` field (vLLM/MLX extension) — preferred
+ * 2. `<think>...</think>` XML tags in content — fallback
+ *
+ * Tool call arguments are JSON-parsed from string form.
+ * Used by the inference handler to construct `ParsedModelResponse`
+ * from accumulated `ModelDelta` chunks on the `done` event.
+ *
+ * @param response - Raw inference response (OpenAI-compatible format)
+ * @returns Parsed response with thinking, tool calls, and message
+ *
+ * @public
+ */
+export const parseModelResponse = (response: {
+  choices: Array<{ message: { content?: string | null; tool_calls?: unknown[]; reasoning_content?: string | null } }>
+}): ParsedModelResponse => {
+  const msg = response.choices[0]?.message
+  if (!msg) return { thinking: null, toolCalls: [], message: null }
+
+  // Extract thinking: prefer reasoning_content, fall back to <think> tags
+  let thinking: string | null = msg.reasoning_content ?? null
+  let content = msg.content ?? null
+
+  if (!thinking && content) {
+    const match = content.match(THINK_TAG_REGEX)
+    if (match) {
+      thinking = match[1]?.trim() ?? null
+      content = content.slice(match[0].length) || null
+    }
+  }
+
+  // Parse tool calls
+  const toolCalls: AgentToolCall[] = []
+  if (msg.tool_calls && Array.isArray(msg.tool_calls)) {
+    for (const tc of msg.tool_calls) {
+      const raw = tc as { id?: string; function?: { name?: string; arguments?: string } }
+      if (raw.id && raw.function?.name) {
+        let args: Record<string, unknown> = {}
+        if (typeof raw.function.arguments === 'string') {
+          try {
+            args = JSON.parse(raw.function.arguments)
+          } catch {
+            args = { _raw: raw.function.arguments }
+          }
+        } else if (raw.function.arguments && typeof raw.function.arguments === 'object') {
+          args = raw.function.arguments as Record<string, unknown>
+        }
+        const parsedToolCall = AgentToolCallSchema.safeParse({
+          id: raw.id,
+          name: raw.function.name,
+          arguments: args,
+        })
+        if (parsedToolCall.success) {
+          toolCalls.push(parsedToolCall.data)
+        }
+      }
+    }
+  }
+
+  // Remaining content is the user-facing message
+  const message = content?.trim() || null
+
+  return { thinking, toolCalls, message }
+}
 
 /**
  * Configuration for an OpenAI-compatible inference backend.

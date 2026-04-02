@@ -21,8 +21,6 @@ export const AgentHeartbeatConfigSchema = z.object({
  */
 export const UpdateFactoriesDetailSchema = z.string().min(1)
 
-export type UpdateFactoriesDetail = z.infer<typeof UpdateFactoriesDetailSchema>
-
 // ============================================================================
 // Plan Schemas
 // ============================================================================
@@ -177,16 +175,6 @@ export const ToolResultSchema = z.object({
 
 /** Tool execution result */
 export type ToolResult = z.infer<typeof ToolResultSchema>
-
-export const AgentToolResultDetailSchema = z.object({
-  result: z.object({
-    name: z.string().min(1),
-    status: z.enum(toolStatusValues),
-    output: z.unknown().optional(),
-  }),
-})
-
-export type AgentToolResultDetail = z.infer<typeof AgentToolResultDetailSchema>
 
 // ============================================================================
 // Gate Decision Schema

@@ -13,7 +13,6 @@ import {
   WriteFileResultSchema,
 } from '../agent.schemas.ts'
 import { createAgent } from '../create-agent.ts'
-import { spawnAgent } from '../spawn-agent.ts'
 
 const TEST_MODELS = {
   primary: async () => ({
@@ -509,27 +508,5 @@ describe('createAgent', () => {
     expect(globSignal?.get()?.output.sort()).toEqual(['a.ts', 'b.ts'])
 
     await rm(workspace, { recursive: true, force: true })
-  })
-})
-
-describe('spawnAgent', () => {
-  test('attaches an optional snapshot listener for the spawner', async () => {
-    const snapshots: string[] = []
-    const spawned = await spawnAgent({
-      id: 'agent:spawned',
-      cwd: process.cwd(),
-      workspace: process.cwd(),
-      models: TEST_MODELS,
-      restrictedTriggers: [AGENT_CORE_EVENTS.agent_disconnect],
-      onSnapshot(snapshot) {
-        snapshots.push(snapshot.kind)
-      },
-    })
-
-    spawned.trigger({ type: AGENT_CORE_EVENTS.agent_disconnect })
-
-    expect(spawned.id).toBe('agent:spawned')
-    expect(typeof spawned.disconnectSnapshot).toBe('function')
-    expect(snapshots).toContain('restricted_trigger_error')
   })
 })
