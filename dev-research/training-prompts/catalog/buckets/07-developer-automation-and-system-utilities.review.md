@@ -9,6 +9,8 @@ This review file describes the curated state for bucket `07`.
 
 - Original rows: 115
 - Retained and rewritten: 26
+- Derived lower-scale prompts added: 5
+- Current rows in curated bucket: 31
 - Removed from this bucket: 89
 
 ## Retention Criteria
@@ -31,5 +33,6 @@ Removed prompts when they were primarily:
 
 ## Notes
 
-A few removed rows still look salvageable for the broader corpus, but not for this utility bucket.
-Examples: `hypercard_mortgage-payment-calculator-demo`, `hypercard_chartoid_2`, `hypercard_sound-machine`, and `hypercard_hyperkeys-music--sound`.
+This pass keeps the existing curation direction but modernizes the remaining utility wording where needed and adds smaller prompts for reusable utility surfaces such as shortcut cards, command lists, search filters, startup bundles, and ACP connection profiles.
+
+A few removed rows still look salvageable for the broader corpus, but not for this utility bucket. Examples: `hypercard_mortgage-payment-calculator-demo`, `hypercard_chartoid_2`, `hypercard_sound-machine`, and `hypercard_hyperkeys-music--sound`.
