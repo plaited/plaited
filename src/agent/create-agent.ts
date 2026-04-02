@@ -179,7 +179,7 @@ export const createAgent = async ({
             if (type !== AGENT_CORE_EVENTS.read_file) return false
             const parsed = RequestReadFileDetailSchema.safeParse(detail)
             if (!parsed.success) return true
-            const resolved = resolveCwdPath(parsed.data.request)
+            const resolved = resolveCwdPath(parsed.data.input)
             return !resolved.startsWith(`${cwd}${sep}`)
           },
         }),
@@ -193,7 +193,7 @@ export const createAgent = async ({
             if (type !== AGENT_CORE_EVENTS.write_file) return false
             const parsed = RequestWriteFileDetailSchema.safeParse(detail)
             if (!parsed.success) return true
-            const resolved = resolveCwdPath(parsed.data.request.path)
+            const resolved = resolveCwdPath(parsed.data.input.path)
             return !resolved.startsWith(`${cwd}${sep}`)
           },
         }),
@@ -207,7 +207,7 @@ export const createAgent = async ({
             if (type !== AGENT_CORE_EVENTS.delete_file) return false
             const parsed = RequestDeleteFileDetailSchema.safeParse(detail)
             if (!parsed.success) return true
-            const resolved = resolveCwdPath(parsed.data.request)
+            const resolved = resolveCwdPath(parsed.data.input)
             return !resolved.startsWith(`${cwd}${sep}`)
           },
         }),
@@ -221,7 +221,7 @@ export const createAgent = async ({
             if (type !== AGENT_CORE_EVENTS.glob_files) return false
             const parsed = RequestGlobFilesDetailSchema.safeParse(detail)
             if (!parsed.success) return true
-            const { pattern, exclude = [] } = parsed.data.request
+            const { pattern, exclude = [] } = parsed.data.input
             return [pattern, ...exclude].some((entry) => entry.startsWith('/') || entry.includes('..'))
           },
         }),
@@ -235,8 +235,8 @@ export const createAgent = async ({
             if (type !== AGENT_CORE_EVENTS.grep) return false
             const parsed = RequestGrepDetailSchema.safeParse(detail)
             if (!parsed.success) return true
-            if (!parsed.data.request.path) return false
-            const resolved = resolveCwdPath(parsed.data.request.path)
+            if (!parsed.data.input.path) return false
+            const resolved = resolveCwdPath(parsed.data.input.path)
             return !resolved.startsWith(`${cwd}${sep}`)
           },
         }),
@@ -250,7 +250,7 @@ export const createAgent = async ({
             if (type !== AGENT_CORE_EVENTS.bash) return false
             const parsed = RequestBashDetailSchema.safeParse(detail)
             if (!parsed.success) return true
-            const resolved = resolveWorkspacePath(parsed.data.request.path)
+            const resolved = resolveWorkspacePath(parsed.data.input.path)
             return !resolved.startsWith(`${workspace}${sep}`)
           },
         }),
@@ -273,19 +273,19 @@ export const createAgent = async ({
       signalMap.set(key, rest)
     },
     async [AGENT_CORE_EVENTS.request_inference_primary](detail: CoreRequestPrimaryInferenceDetail) {
-      const { request, signal } = RequestPrimaryInferenceDetailSchema.parse(detail)
-      const res = await models?.primary?.(request)
-      signal.set?.(res)
+      const { input, signal } = RequestPrimaryInferenceDetailSchema.parse(detail)
+      const output = await models.primary(input)
+      signal.set?.({ input, output })
     },
     async [AGENT_CORE_EVENTS.request_inference_vision](detail: CoreRequestVisionInferenceDetail) {
-      const { request, signal } = RequestVisionInferenceDetailSchema.parse(detail)
-      const res = await models?.vision?.(request)
-      signal.set?.(res)
+      const { input, signal } = RequestVisionInferenceDetailSchema.parse(detail)
+      const output = await models.vision(input)
+      signal.set?.({ input, output })
     },
     async [AGENT_CORE_EVENTS.request_inference_tts](detail: CoreRequestTtsInferenceDetail) {
-      const { request, signal } = RequestTtsInferenceDetailSchema.parse(detail)
-      const res = await models?.tts?.(request)
-      signal.set?.(res)
+      const { input, signal } = RequestTtsInferenceDetailSchema.parse(detail)
+      const output = await models.tts(input)
+      signal.set?.({ input, output })
     },
     async [AGENT_CORE_EVENTS.update_factories](detail: string) {
       const modules = await import(pathToFileURL(resolveWorkspacePath(detail)).href)
@@ -302,38 +302,30 @@ export const createAgent = async ({
       handlers && disconnectSet.add(useFeedback(handlers))
     },
     async [AGENT_CORE_EVENTS.read_file](detail: CoreRequestReadFileDetail) {
-      const { request, signal } = RequestReadFileDetailSchema.parse(detail)
-      const resolved = resolveCwdPath(request)
-      signal.set?.({ path: request, file: Bun.file(resolved) })
+      const { input, signal } = RequestReadFileDetailSchema.parse(detail)
+      const resolved = resolveCwdPath(input)
+      signal.set?.({ input, output: Bun.file(resolved) })
     },
     async [AGENT_CORE_EVENTS.delete_file](detail: CoreRequestDeleteFileDetail) {
-      const { request, signal } = RequestDeleteFileDetailSchema.parse(detail)
-      const resolved = resolveCwdPath(request)
+      const { input, signal } = RequestDeleteFileDetailSchema.parse(detail)
+      const resolved = resolveCwdPath(input)
       await Bun.file(resolved).delete()
-      signal.set?.({ path: request })
+      signal.set?.({ input, output: true })
     },
     async [AGENT_CORE_EVENTS.write_file](detail: CoreRequestWriteFileDetail) {
-      const {
-        request: { path, content },
-        signal,
-      } = RequestWriteFileDetailSchema.parse(detail)
-      const resolved = resolveCwdPath(path)
-      const bytes = await Bun.write(resolved, content)
-      signal.set?.({ path, bytes })
+      const { input, signal } = RequestWriteFileDetailSchema.parse(detail)
+      const resolved = resolveCwdPath(input.path)
+      const output = await Bun.write(resolved, input.content)
+      signal.set?.({ input, output })
     },
     async [AGENT_CORE_EVENTS.glob_files](detail: CoreRequestGlobFilesDetail) {
-      const {
-        request: { pattern, exclude },
-        signal,
-      } = RequestGlobFilesDetailSchema.parse(detail)
-      const files = await Array.fromAsync(glob(pattern, { exclude, cwd }))
-      signal.set?.(files)
+      const { input, signal } = RequestGlobFilesDetailSchema.parse(detail)
+      const output = await Array.fromAsync(glob(input.pattern, { exclude: input.exclude, cwd }))
+      signal.set?.({ input, output })
     },
     async [AGENT_CORE_EVENTS.grep](detail: CoreRequestGrepDetail) {
-      const {
-        request: { timeout, ...request },
-        signal,
-      } = RequestGrepDetailSchema.parse(detail)
+      const { input, signal } = RequestGrepDetailSchema.parse(detail)
+      const { timeout, ...request } = input
       const proc = Bun.spawn(['bun', fileURLToPath(import.meta.resolve('./grep-worker.ts')), JSON.stringify(request)], {
         cwd,
         env: runtimeEnv,
@@ -346,23 +338,27 @@ export const createAgent = async ({
         new Response(proc.stdout).text(),
         new Response(proc.stderr).text(),
       ])
-
-      if (exitCode !== 0) {
-        throw new Error(stderr.trim() || `grep worker exited with code ${exitCode}`)
-      }
-
-      const output = GrepOutputSchema.parse(JSON.parse(stdout))
-      signal.set?.(output)
+      const output =
+        exitCode === 0
+          ? GrepOutputSchema.parse({
+              status: 'completed',
+              ...JSON.parse(stdout),
+              exitCode: 0,
+            })
+          : GrepOutputSchema.parse({
+              status: 'failed',
+              error: stderr.trim() || `grep worker exited with code ${exitCode}`,
+              exitCode,
+              stderr: stderr.trim() || undefined,
+            })
+      signal.set?.({ input, output })
     },
     async [AGENT_CORE_EVENTS.bash](detail: CoreRequestBashDetail) {
-      const {
-        request: { path, args, timeout },
-        signal,
-      } = RequestBashDetailSchema.parse(detail)
-      const proc = Bun.spawn(['bun', resolveWorkspacePath(path), ...args], {
+      const { input, signal } = RequestBashDetailSchema.parse(detail)
+      const proc = Bun.spawn(['bun', resolveWorkspacePath(input.path), ...input.args], {
         cwd,
         env: runtimeEnv,
-        signal: createToolSignal(timeout),
+        signal: createToolSignal(input.timeout),
         stdout: 'pipe',
         stderr: 'pipe',
       })
@@ -374,15 +370,21 @@ export const createAgent = async ({
       signal.set?.(
         exitCode === 0
           ? {
-              status: 'completed',
-              output: stdout.trim(),
-              exitCode: 0,
+              input,
+              output: {
+                status: 'completed',
+                output: stdout,
+                exitCode: 0,
+              },
             }
           : {
-              status: 'failed',
-              error: stderr.trim() || `Command exited with code ${exitCode}`,
-              exitCode,
-              stderr: stderr.trim() || undefined,
+              input,
+              output: {
+                status: 'failed',
+                error: stderr.trim() || `Command exited with code ${exitCode}`,
+                exitCode,
+                stderr: stderr.trim() || undefined,
+              },
             },
       )
     },

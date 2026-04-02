@@ -1,6 +1,6 @@
 import { isAbsolute, join, normalize } from 'node:path'
 import { z } from 'zod'
-import { ReadFileConfigSchema, ReadFileOutputSchema } from '../src/agent/agent.schemas.ts'
+import { ReadFileConfigSchema } from '../src/agent/agent.schemas.ts'
 import { truncateHead } from '../src/agent/truncate.ts'
 import { extractFirstJsonObject, extractTaggedJsonObject } from './json-extract.ts'
 import { buildOpenRouterHeaders, extractOpenRouterText } from './openrouter-adapter.ts'
@@ -12,6 +12,29 @@ const DEFAULT_VALIDATION_RETRIES = 2
 const DEFAULT_REQUEST_TIMEOUT_MS = 60_000
 const DEFAULT_JSON_SYSTEM_PROMPT =
   'Return only a single JSON object that satisfies the user request. Do not include markdown fences or commentary.'
+
+const StructuredReadFileOutputSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('text'),
+    path: z.string(),
+    content: z.string(),
+    totalBytes: z.number(),
+    totalLines: z.number(),
+    truncated: z.boolean(),
+  }),
+  z.object({
+    type: z.literal('image'),
+    path: z.string(),
+    mimeType: z.string(),
+    size: z.number(),
+  }),
+  z.object({
+    type: z.literal('binary'),
+    path: z.string(),
+    mimeType: z.string(),
+    size: z.number(),
+  }),
+])
 
 type OpenRouterResponse = {
   choices?: Array<{
@@ -135,23 +158,15 @@ const executeReadTool = async ({
   const mime = file.type
 
   if (isImageMime(mime)) {
-    return ReadFileOutputSchema.parse({ type: 'image', path: parsed.path, mimeType: mime, size })
+    return StructuredReadFileOutputSchema.parse({ type: 'image', path: parsed.path, mimeType: mime, size })
   }
 
   if (!isTextMime(mime)) {
-    return ReadFileOutputSchema.parse({ type: 'binary', path: parsed.path, mimeType: mime, size })
+    return StructuredReadFileOutputSchema.parse({ type: 'binary', path: parsed.path, mimeType: mime, size })
   }
 
   const text = await file.text()
-  let content = text
-  if (parsed.offset !== undefined || parsed.limit !== undefined) {
-    const lines = text.split('\n')
-    const start = parsed.offset ?? 0
-    const end = parsed.limit !== undefined ? start + parsed.limit : lines.length
-    content = lines.slice(start, end).join('\n')
-  }
-
-  return ReadFileOutputSchema.parse({ type: 'text', path: parsed.path, ...truncateHead(content) })
+  return StructuredReadFileOutputSchema.parse({ type: 'text', path: parsed.path, ...truncateHead(text) })
 }
 
 export const runStructuredLlmQuery = async <T>({

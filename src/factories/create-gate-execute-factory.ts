@@ -266,7 +266,7 @@ export const createGateExecuteFactory: GateExecuteFactoryCreator =
             trigger({
               type: execute.toolCall.name,
               detail: {
-                request: toCoreToolRequest(execute.toolCall),
+                input: toCoreToolRequest(execute.toolCall),
                 signal: resultSignal,
               },
             })

@@ -9,6 +9,14 @@ import { createAgent } from '../../agent/create-agent.ts'
 import { createGateExecuteFactory } from '../create-gate-execute-factory.ts'
 
 const TEST_WORKSPACE = process.cwd()
+const TEST_MODELS = {
+  primary: async () => ({
+    parsed: { thinking: null, toolCalls: [], message: null },
+    usage: { inputTokens: 0, outputTokens: 0 },
+  }),
+  vision: async () => ({ description: '' }),
+  tts: async () => ({ audio: new Uint8Array(), sampleRate: 0, duration: 0 }),
+}
 
 const workspaceTool = {
   type: 'function' as const,
@@ -35,11 +43,12 @@ const createToolCall = <TName extends AgentToolCall['name']>(
   toolCall: TName,
   id = 'tc-1',
   arguments_: Extract<AgentToolCall, { name: TName }>['arguments'],
-): Extract<AgentToolCall, { name: TName }> => ({
-  id,
-  name: toolCall,
-  arguments: arguments_,
-})
+): Extract<AgentToolCall, { name: TName }> =>
+  ({
+    id,
+    name: toolCall,
+    arguments: arguments_,
+  }) as Extract<AgentToolCall, { name: TName }>
 
 describe('createGateExecuteFactory', () => {
   test('routes workspace-only tools directly to execute and tool_result', async () => {
@@ -55,6 +64,7 @@ describe('createGateExecuteFactory', () => {
       id: 'agent:test',
       cwd: workspace,
       workspace: TEST_WORKSPACE,
+      models: TEST_MODELS,
       factories: [
         createGateExecuteFactory({
           tools: [workspaceTool],
@@ -102,6 +112,7 @@ describe('createGateExecuteFactory', () => {
       id: 'agent:test',
       cwd: TEST_WORKSPACE,
       workspace: TEST_WORKSPACE,
+      models: TEST_MODELS,
       factories: [
         createGateExecuteFactory({
           tools: [untaggedTool],
@@ -142,6 +153,7 @@ describe('createGateExecuteFactory', () => {
       id: 'agent:test',
       cwd: TEST_WORKSPACE,
       workspace: TEST_WORKSPACE,
+      models: TEST_MODELS,
       factories: [
         createGateExecuteFactory({
           tools: [workspaceTool],

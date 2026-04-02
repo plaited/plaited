@@ -11,16 +11,25 @@ import {
 } from '../create-simulation-evaluation-factory.ts'
 
 const TEST_WORKSPACE = process.cwd()
+const TEST_MODELS = {
+  primary: async () => ({
+    parsed: { thinking: null, toolCalls: [], message: null },
+    usage: { inputTokens: 0, outputTokens: 0 },
+  }),
+  vision: async () => ({ description: '' }),
+  tts: async () => ({ audio: new Uint8Array(), sampleRate: 0, duration: 0 }),
+}
 
 const createToolCall = <TName extends AgentToolCall['name']>(
   name: TName,
   id = 'tc-1',
   arguments_: Extract<AgentToolCall, { name: TName }>['arguments'],
-): Extract<AgentToolCall, { name: TName }> => ({
-  id,
-  name,
-  arguments: arguments_,
-})
+): Extract<AgentToolCall, { name: TName }> =>
+  ({
+    id,
+    name,
+    arguments: arguments_,
+  }) as Extract<AgentToolCall, { name: TName }>
 
 const createErrorModel = (errorMsg: string): Model => ({
   reason: async function* () {
@@ -101,6 +110,7 @@ describe('simulation prompt behavior', () => {
       id: 'agent:simulation-prompt',
       cwd: TEST_WORKSPACE,
       workspace: TEST_WORKSPACE,
+      models: TEST_MODELS,
       factories: [
         createSimulationEvaluationFactory({
           model,
@@ -144,6 +154,7 @@ describe('simulation prompt behavior', () => {
       id: 'agent:simulation-temp',
       cwd: TEST_WORKSPACE,
       workspace: TEST_WORKSPACE,
+      models: TEST_MODELS,
       factories: [
         createSimulationEvaluationFactory({
           model,
@@ -197,6 +208,7 @@ describe('simulation prompt behavior', () => {
       id: 'agent:simulation-chunked',
       cwd: TEST_WORKSPACE,
       workspace: TEST_WORKSPACE,
+      models: TEST_MODELS,
       factories: [
         createSimulationEvaluationFactory({
           model,
@@ -237,6 +249,7 @@ describe('simulation prompt behavior', () => {
       id: 'agent:simulation-error',
       cwd: TEST_WORKSPACE,
       workspace: TEST_WORKSPACE,
+      models: TEST_MODELS,
       factories: [
         createSimulationEvaluationFactory({
           model,
@@ -284,6 +297,7 @@ describe('simulation prompt behavior', () => {
       id: 'agent:simulation-args',
       cwd: TEST_WORKSPACE,
       workspace: TEST_WORKSPACE,
+      models: TEST_MODELS,
       factories: [
         createSimulationEvaluationFactory({
           model,
@@ -344,6 +358,7 @@ describe('createSimulationEvaluationFactory', () => {
       id: 'agent:test',
       cwd: TEST_WORKSPACE,
       workspace: TEST_WORKSPACE,
+      models: TEST_MODELS,
       factories: [
         createSimulationEvaluationFactory({
           model,
@@ -394,6 +409,7 @@ describe('createSimulationEvaluationFactory', () => {
       id: 'agent:test',
       cwd: TEST_WORKSPACE,
       workspace: TEST_WORKSPACE,
+      models: TEST_MODELS,
       factories: [
         createSimulationEvaluationFactory({
           model,

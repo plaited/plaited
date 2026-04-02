@@ -6,6 +6,14 @@ import { createAgent } from '../../agent/create-agent.ts'
 import { createInferenceFactory } from '../create-inference-factory.ts'
 
 const TEST_WORKSPACE = process.cwd()
+const TEST_MODELS = {
+  primary: async () => ({
+    parsed: { thinking: null, toolCalls: [], message: null },
+    usage: { inputTokens: 0, outputTokens: 0 },
+  }),
+  vision: async () => ({ description: '' }),
+  tts: async () => ({ audio: new Uint8Array(), sampleRate: 0, duration: 0 }),
+}
 
 describe('createInferenceFactory', () => {
   test('streams deltas and emits model_response through createAgent', async () => {
@@ -31,6 +39,7 @@ describe('createInferenceFactory', () => {
       id: 'agent:test',
       cwd: TEST_WORKSPACE,
       workspace: TEST_WORKSPACE,
+      models: TEST_MODELS,
       factories: [
         createInferenceFactory({
           model,
@@ -79,6 +88,7 @@ describe('createInferenceFactory', () => {
       id: 'agent:test',
       cwd: TEST_WORKSPACE,
       workspace: TEST_WORKSPACE,
+      models: TEST_MODELS,
       factories: [
         createInferenceFactory({
           model,

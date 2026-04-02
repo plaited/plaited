@@ -1,9 +1,9 @@
 import type { infer as Infer, ZodSafeParseError, ZodTypeAny } from 'zod'
 import type { A2AClient } from '../a2a/a2a.types.ts'
 import type {
+  BSync,
   DefaultHandlers,
   Disconnect,
-  RulesFunction,
   SnapshotListener,
   Trigger,
   UseSnapshot,
@@ -50,7 +50,7 @@ export type CreateAgentOptions = {
   id: string
   cwd: string
   workspace: string
-  models?: AgentModels
+  models: AgentModels
   env?: Record<string, string>
   factories?: Factory[]
   restrictedTriggers?: string[]
@@ -133,7 +133,7 @@ export type FactoryParams = {
 }
 
 export type Factory = (params: FactoryParams) => {
-  threads?: Record<string, RulesFunction>
+  threads?: Record<string, ReturnType<BSync>>
   handlers?: DefaultHandlers
 }
 
@@ -302,9 +302,9 @@ export type Voice = {
 }
 
 export type AgentModels = {
-  primary?: PrimaryInferenceModel
-  vision?: (args: { image: Uint8Array; prompt: string; timeout?: number }) => Promise<VisionResponse>
-  tts?: (args: { text: string; voice?: string; language?: string; timeout?: number }) => Promise<VoiceResponse>
+  primary: PrimaryInferenceModel
+  vision: (args: { image: Uint8Array; prompt: string; timeout?: number }) => Promise<VisionResponse>
+  tts: (args: { text: string; voice?: string; language?: string; timeout?: number }) => Promise<VoiceResponse>
 }
 
 // ============================================================================

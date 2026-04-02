@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import { createTrajectoryRecorder, parseModelResponse, TOOL_STATUS, toToolResult } from 'plaited'
+import type { AgentToolCall } from '../agent.schemas.ts'
 
 describe('toToolResult', () => {
-  const toolCall = { id: 'tc-1', name: 'read_file', arguments: { path: '/main.ts' } }
+  const toolCall: AgentToolCall = { id: 'tc-1', name: 'read_file', arguments: { path: '/main.ts' } }
 
   test('passes through a valid ToolResult with duration', () => {
     const existing = {
@@ -113,7 +114,7 @@ describe('parseModelResponse', () => {
     expect(result.toolCalls[0]!.arguments).toEqual({ path: '/main.ts' })
   })
 
-  test('handles malformed JSON arguments gracefully', () => {
+  test('drops malformed JSON tool arguments that cannot be normalized', () => {
     const result = parseModelResponse({
       choices: [
         {
@@ -132,8 +133,7 @@ describe('parseModelResponse', () => {
         },
       ],
     })
-    expect(result.toolCalls).toHaveLength(1)
-    expect(result.toolCalls[0]!.arguments).toEqual({ _raw: 'not valid json' })
+    expect(result.toolCalls).toEqual([])
   })
 
   test('handles object arguments (pre-parsed)', () => {
@@ -156,6 +156,28 @@ describe('parseModelResponse', () => {
       ],
     })
     expect(result.toolCalls[0]!.arguments).toEqual({ path: '/out.ts', content: 'hello' })
+  })
+
+  test('drops tool calls whose arguments do not match the built-in schema', () => {
+    const result = parseModelResponse({
+      choices: [
+        {
+          message: {
+            content: null,
+            tool_calls: [
+              {
+                id: 'tc-1',
+                function: {
+                  name: 'glob_files',
+                  arguments: '{"exclude":"not-an-array"}',
+                },
+              },
+            ],
+          },
+        },
+      ],
+    })
+    expect(result.toolCalls).toEqual([])
   })
 
   test('returns empty result for missing choices', () => {
@@ -188,8 +210,7 @@ describe('parseModelResponse', () => {
         },
       ],
     })
-    expect(result.toolCalls).toHaveLength(1)
-    expect(result.toolCalls[0]!.id).toBe('tc-3')
+    expect(result.toolCalls).toEqual([])
   })
 })
 

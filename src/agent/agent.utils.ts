@@ -1,5 +1,11 @@
 import { TOOL_STATUS } from './agent.constants.ts'
-import type { AgentPlanStep, AgentToolCall, ToolResult, TrajectoryStep } from './agent.schemas.ts'
+import {
+  type AgentPlanStep,
+  type AgentToolCall,
+  AgentToolCallSchema,
+  type ToolResult,
+  type TrajectoryStep,
+} from './agent.schemas.ts'
 import type { ModelDelta, ParsedModelResponse } from './agent.types.ts'
 
 // ============================================================================
@@ -127,7 +133,14 @@ export const parseModelResponse = (response: {
         } else if (raw.function.arguments && typeof raw.function.arguments === 'object') {
           args = raw.function.arguments as Record<string, unknown>
         }
-        toolCalls.push({ id: raw.id, name: raw.function.name, arguments: args })
+        const parsedToolCall = AgentToolCallSchema.safeParse({
+          id: raw.id,
+          name: raw.function.name,
+          arguments: args,
+        })
+        if (parsedToolCall.success) {
+          toolCalls.push(parsedToolCall.data)
+        }
       }
     }
   }

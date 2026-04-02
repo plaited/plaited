@@ -19,20 +19,20 @@ describe('AgentToolCallSchema', () => {
     const result = AgentToolCallSchema.parse({
       id: 'tc-1',
       name: 'read_file',
-      arguments: { path: '/src/main.ts' },
+      arguments: { path: 'src/main.ts' },
     })
     expect(result.id).toBe('tc-1')
     expect(result.name).toBe('read_file')
-    expect(result.arguments).toEqual({ path: '/src/main.ts' })
+    expect(result.arguments).toEqual({ path: 'src/main.ts' })
   })
 
-  test('accepts empty arguments', () => {
+  test('validates glob_files arguments', () => {
     const result = AgentToolCallSchema.parse({
       id: 'tc-2',
-      name: 'list_files',
-      arguments: {},
+      name: 'glob_files',
+      arguments: { pattern: '**/*.ts' },
     })
-    expect(result.arguments).toEqual({})
+    expect(result.arguments).toEqual({ pattern: '**/*.ts' })
   })
 
   test('rejects missing id', () => {
@@ -41,6 +41,16 @@ describe('AgentToolCallSchema', () => {
 
   test('rejects missing name', () => {
     expect(() => AgentToolCallSchema.parse({ id: 'tc-1', arguments: {} })).toThrow()
+  })
+
+  test('rejects invalid tool arguments for a known tool', () => {
+    expect(() =>
+      AgentToolCallSchema.parse({
+        id: 'tc-3',
+        name: 'bash',
+        arguments: { path: 'worker.ts', args: 'not-an-array' },
+      }),
+    ).toThrow()
   })
 })
 
