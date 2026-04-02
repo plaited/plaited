@@ -157,6 +157,23 @@ This applies to both:
 - core inference requests
 - core tool execution requests
 
+Modules should currently interface with the agent through the same factory
+surface, not through a separate runtime tier.
+
+The preferred module contract is:
+
+- module code lives inside the workspace repo
+- `update_factories` loads module-provided behavior at runtime
+- a module should export:
+  - `export default [factoryA, factoryB]`
+
+This keeps the module boundary aligned with the current agent direction:
+
+- modules provide executable behavior through factories
+- factories consume core capabilities through signals and snapshots
+- `src/agent/create-agent.ts` remains the execution boundary
+- there is no need for a separate sub-agent or module-runtime layer
+
 The primary-model path should also stay split cleanly:
 
 - model adapters parse tool calls into concrete built-in tool shapes
@@ -241,7 +258,8 @@ Supporting implementation and memory-shaping surfaces:
   - file IO
   - JSONL streaming
   - archive export
-  - SQLite runtime context
+  - optional later indexing or provenance helpers when they materially improve
+    retrieval
 
 ## Input Priority
 
@@ -360,7 +378,7 @@ This lane should now assume:
 - `src/bootstrap` exposes A2A only for the top-level agent
 - `src/bootstrap` installs shipped default skills for the top-level agent
 - A2A behavior itself should be implemented by top-level factories
-- internal agents and modules must not communicate through A2A directly
+- internal modules must not communicate through A2A directly
 
 The purpose of this boundary is to keep external communication under one
 explicit control point so that internal factories and modules do not
@@ -390,7 +408,8 @@ The lane should answer questions such as:
 - how should retained artifacts be summarized and reused?
 - how should git history be compacted and expanded as working memory?
 - how should commit messages and diff metadata be turned into useful context?
-- how should repo boundaries shape delegation and memory isolation?
+- how should workspace boundaries and module directories shape delegation and
+  memory isolation?
 - when should an experiment clean up or replace an older hardcoded path?
 - what deterministic validators best constrain generated behavioral code?
 
@@ -413,7 +432,7 @@ Examples of reasoning-derived signals include:
 - uncertainty markers
 - unsupported claims
 - unresolved dependencies
-- cross-repo implications
+- cross-module implications inside one workspace repo
 - repeated failed retrieval or critique cycles
 
 Orchestration factories should therefore focus on surfaces such as:
@@ -453,7 +472,7 @@ They should focus on deterministic questions such as:
 - what should be summarized vs included verbatim?
 - what constraints and obligations must follow the pack?
 
-They should be especially important for cross-repo or cross-agent handoff,
+They should be especially important for cross-module handoff,
 where a bounded context pack must carry:
 
 - summaries
@@ -469,7 +488,7 @@ Preferred working-memory surfaces include:
 - source-link expansion
 - git-context pack builders
 - diff and snapshot pack builders
-- repo handoff pack builders
+- module handoff pack builders
 - compacted-memory summary builders
 
 YAML should be treated as secondary, mostly for frontmatter extraction or small
@@ -510,7 +529,7 @@ That means they may:
 - write memory decisions
 - summarize accepted work into durable memory
 - project commit metadata into a minimal link/index layer
-- record handoff links between repos, commits, files, and summaries
+- record handoff links between modules, commits, files, and summaries
 - support retrieval ranking and packing
 - prune or compact stale memory
 
@@ -525,7 +544,7 @@ artifact and link/index projection as part of memory projection.
 ### Rollout Factories
 
 Rollout factories should define how multi-step work unfolds across the main
-workspace repo and any bounded repos under `modules/*`.
+workspace repo and bounded module directories within it.
 
 They should be worktree-first, not branch-first.
 
@@ -546,20 +565,22 @@ Their responsibilities include:
 
 Rollout factories should help answer questions such as:
 
-- when should work stay in the current repo vs move to a module repo?
+- when should work stay in the current workspace area vs move into a module
+  directory?
 - when should the agent create one worktree vs several?
 - when should competing worktree attempts be compared or discarded?
 - which accepted or frontier commits should be replayed or expanded?
-- when should work stop, escalate, or hand off to another repo-scoped agent?
+- when should work stop, escalate, or hand off to another module-scoped
+  factory set?
 
 The intended model is:
 
 - the workspace repo is itself a git-backed operating memory surface
-- `modules/*` may be separate git repos with their own histories and worktrees
+- `modules/*` are module directories within that repo
 - OS-level backup handles catastrophic recovery outside the runtime
 
 Rollout factories should therefore optimize local exploration, comparison, and
-checkpointing within these repos rather than assume a traditional GitHub-style
+checkpointing within this repo rather than assume a traditional GitHub-style
 branch or PR workflow.
 
 For autonomous operation, branches should not be part of the normal control
@@ -686,20 +707,20 @@ summary.
 
 ## Repo-Scoped Coordination
 
-This lane should assume Plaited may evolve toward multiple bounded repos or
-repo-like modules coordinated by a PM/orchestrator agent.
+This lane should assume Plaited can remain a single bounded workspace repo with
+module directories coordinated through factory installation.
 
 That means the lane should explore factory patterns for:
 
-- repo selection and routing
-- repo-local context pack construction
-- bounded delegation to repo-scoped worker agents
-- cross-repo merge and escalation
+- module selection and routing
+- module-local context pack construction
+- bounded handoff to module-provided factory sets
+- cross-module merge and escalation
 - memory isolation with explicit transfer rather than implicit global context
 
-Each repo should be treated as a bounded memory domain whose canonical memory
-is its files plus git history. Cross-repo reasoning should prefer explicit
-context packs, summaries, and reviewed handoffs.
+The workspace repo should be treated as the main bounded memory domain whose
+canonical memory is its files plus git history. Cross-module reasoning should
+prefer explicit context packs, summaries, and reviewed handoffs.
 
 ## Writable Surface
 

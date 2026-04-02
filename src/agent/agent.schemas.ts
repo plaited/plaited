@@ -544,7 +544,7 @@ export type FactoryResult = z.infer<typeof FactoryResultSchema>
 
 export const UpdateFactoryModuleSchema = z
   .object({
-    default: z.custom<Factory>((value) => trueTypeOf(value) === 'function'),
+    default: z.array(z.custom<Factory>((value) => trueTypeOf(value) === 'function')).min(1),
   })
   .strict()
 

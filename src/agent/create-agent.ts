@@ -287,17 +287,19 @@ export const createAgent = async ({
     },
     async [AGENT_CORE_EVENTS.update_factories](detail: string) {
       const modules = await import(pathToFileURL(resolveWorkspacePath(detail)).href)
-      const { default: factory } = UpdateFactoryModuleSchema.parse(modules)
-      const { threads, handlers } = FactoryResultSchema.parse(
-        factory({
-          trigger: restrictedTrigger,
-          useSnapshot,
-          signals,
-          computed,
-        }),
-      )
-      threads && bThreads.set(threads)
-      handlers && disconnectSet.add(useFeedback(handlers))
+      const { default: factories } = UpdateFactoryModuleSchema.parse(modules)
+      for (const factory of factories) {
+        const { threads, handlers } = FactoryResultSchema.parse(
+          factory({
+            trigger: restrictedTrigger,
+            useSnapshot,
+            signals,
+            computed,
+          }),
+        )
+        threads && bThreads.set(threads)
+        handlers && disconnectSet.add(useFeedback(handlers))
+      }
     },
     async [AGENT_CORE_EVENTS.read_file](detail: RequestReadFileDetail) {
       const { input, signal } = RequestReadFileDetailSchema.parse(detail)

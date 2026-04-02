@@ -14,4 +14,4 @@ const updateFactoriesFixture = ({ trigger }: FactoryParams) => ({
   },
 })
 
-export default updateFactoriesFixture
+export default [updateFactoriesFixture]
