@@ -103,7 +103,10 @@ This design makes capabilities **observable** (tool calls appear in trajectories
 - **Framework, Not Platform:** Composable primitives. Code via npm, models via Hugging Face. Platforms are built with it, not by it.
 - **Single Tenancy:** 1 User : 1 Agent instance. User data lives on their agent — nowhere else.
 - **Pluggable Models:** Model, Indexer, Vision, and Voice are interfaces. Implementations swap freely across MLX, vLLM, and cloud APIs.
-- **BP-Orchestrated:** The PM's `behavioral()` engine is the central coordinator. Sub-agents run as `Bun.spawn()` processes for crash isolation; the PM's bThreads handle all structural coordination (task lifecycle, batch completion, constitution enforcement). See Runtime Hierarchy below.
+- **BP-Orchestrated:** The PM's `behavioral()` engine is the central
+  coordinator. Its bThreads handle all structural coordination (task
+  lifecycle, batch completion, constitution enforcement). See Runtime
+  Hierarchy below.
 - **Plan-Driven Context:** The model's plan provides the optimization signal for context assembly. Neural produces, symbolic consumes.
 - **Defense in Depth:** Six independent safety layers across three stack levels. See `SAFETY.md`.
 - **Three-Axis Risk Awareness:** Capability × Autonomy × Authority. Risk grows geometrically when all three scale. BP constraints cap each axis independently.
@@ -123,24 +126,22 @@ Each level down is orders of magnitude cheaper but trades isolation for speed. T
 
 | Level | Isolation | Message Cost | Use For |
 |---|---|---|---|
-| `Bun.spawn()` | Full (separate V8 heap) | ~μs (JSC structured clone) | Inference server (persistent), sub-agents (ephemeral), sandboxed bash |
+| `Bun.spawn()` | Full (separate V8 heap) | ~μs (JSC structured clone) | Inference server (persistent), isolated workers, sandboxed bash |
 | `behavioral()` | Logical (separate event space) | ~ns (function call) | PM engine + UI controller (same process, zero-copy via `useRestrictedTrigger`) |
 | `bThread` | None (shared event space) | Event selection eval | Constitution rules, task lifecycle, batch coordination |
 | `bSync` | None (sequential) | Array advance | Individual synchronization points |
 
-**Sub-agents** are `Bun.spawn()` processes, not bThreads. They have their own inference context and optionally their own `behavioral()` engine scoped to their role. The PM coordinates against a `SubAgentHandle` interface:
+**Why `Bun.spawn()` over Workers:** Isolated worker processes are ephemeral
+— spawn, do work, terminate. Bun's Worker API is experimental (particularly
+`worker.terminate()`). `Bun.spawn()` has OS-guaranteed process lifecycle
+(SIGTERM/SIGKILL/exit codes). IPC defaults to `serialization: "advanced"` (JSC
+structured clone — not JSON). When Workers stabilize, swapping is a
+one-interface change.
 
-```typescript
-type SubAgentHandle = {
-  send: Trigger                     // PM → sub-agent (same Trigger type as BP)
-  onMessage(handler: Trigger): void // sub-agent → PM
-  terminate(): Promise<void>
-}
-```
-
-**Why `Bun.spawn()` over Workers:** Sub-agents are ephemeral — spawn, do work, terminate. Bun's Worker API is experimental (particularly `worker.terminate()`). `Bun.spawn()` has OS-guaranteed process lifecycle (SIGTERM/SIGKILL/exit codes). IPC defaults to `serialization: "advanced"` (JSC structured clone — not JSON). When Workers stabilize, swapping is a one-interface change.
-
-**Local inference:** The inference server runs as a persistent `Bun.spawn()` process (Ollama, llama.cpp, vLLM) on the same box. Sub-agents call it via `fetch("http://localhost:PORT")` — async I/O that doesn't block the event loop. GPU/Apple Silicon Metal handles acceleration.
+**Local inference:** The inference server runs as a persistent `Bun.spawn()`
+process (Ollama, llama.cpp, vLLM) on the same box. Local runtimes call it via
+`fetch("http://localhost:PORT")` — async I/O that doesn't block the event
+loop. GPU/Apple Silicon Metal handles acceleration.
 
 **A2A transport:** Bun-native implementation of A2A protocol (no a2a-js dependency). One `Bun.serve()` handles all transports — HTTP+JSON/REST, WebSocket (custom binding), and unix sockets — with native mTLS. See `skills/modnet-node/` [a2a-bindings.md](../skills/modnet-node/references/a2a-bindings.md) for deployment-specific bindings. Implementation in `src/a2a/`.
 

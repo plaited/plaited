@@ -26,7 +26,7 @@ See **[skills/project-isolation/](../skills/project-isolation/SKILL.md)** for:
 - IPC trigger bridge code patterns
 - Tool layer assembly (framework → global → project)
 - Constitution loading at spawn
-- Two levels of Bun.spawn (project subprocess vs sub-agent)
+- Bun.spawn for project-scoped subprocess isolation
 - Cross-project knowledge transfer
 
 ## Cross-References

@@ -4,7 +4,9 @@
 
 ## Overview
 
-The agent loop is a 6-step pipeline orchestrated by a `behavioral()` engine. Sub-agents run as `Bun.spawn()` processes for crash isolation, each with their own inference context. The PM's bThreads handle all structural coordination — task lifecycle, batch completion, constitution enforcement, simulation guards.
+The agent loop is a 6-step pipeline orchestrated by a `behavioral()` engine.
+Its bThreads handle all structural coordination — task lifecycle, batch
+completion, constitution enforcement, and simulation guards.
 
 ```mermaid
 graph LR
@@ -59,4 +61,5 @@ Additional tools come from skills (see `GENOME.md`) and MCP servers (see `PROJEC
 
 ## Implementation Details
 
-For event flow diagrams, BP coordination patterns, selective simulation routing, sub-agent harness, proactive heartbeat, and ACP interface, see `skills/agent-loop/`.
+For event flow diagrams, BP coordination patterns, selective simulation routing,
+proactive heartbeat, and ACP interface, see `skills/agent-loop/`.

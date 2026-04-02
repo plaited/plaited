@@ -123,7 +123,7 @@ The current research split reinforces this doctrine:
 Builds the substrate that modules will rely on:
 - runtime taxonomy
 - links
-- actors, sub-agents, teams
+- actors, links, teams
 - local attempt lineage
 
 Skills consume and operationalize this substrate.

@@ -16,7 +16,6 @@ The refactor has already made several concrete architecture moves:
 - `createLink` and its schemas/types/constants now live fully under `src/agent`
 - `src/agent` now has a minimal core centered on:
   - `create-agent.ts`
-  - `spawn-agent.ts`
   - `agent.types.ts`
   - `agent.schemas.ts`
   - `agent.constants.ts`
@@ -24,7 +23,7 @@ The refactor has already made several concrete architecture moves:
   - `id`
   - `cwd`
   - `workspace`
-  - optional `models`
+  - required `models`
   - optional `env`
   - `factories`
   - `restrictedTriggers`
@@ -40,6 +39,8 @@ The refactor has already made several concrete architecture moves:
   - `request_inference_primary`
   - `request_inference_vision`
   - `request_inference_tts`
+- those inference handlers now write results to factory-provided signals using
+  a uniform `{ input, output }` envelope
 - `create-agent.ts` now owns signal-backed core execution capability for:
   - `read_file`
   - `write_file`
@@ -48,6 +49,8 @@ The refactor has already made several concrete architecture moves:
   - `grep`
   - `bash`
   through agent-core events scoped by agent `cwd` and `workspace`
+- the signal-backed core tool handlers now also use the same `{ input, output }`
+  envelope rather than ad hoc result shapes
 - `src/factories` now exists as a real promotion target
 - the first promoted factories are in place:
   - inference
@@ -201,7 +204,7 @@ The surviving direction is now:
 - `src/agent` for agent-to-agent primitives and orchestration surfaces
 - `src/skill` for shipped default skills and skill exports
 
-The old PM/team/sub-agent runtime modeling should not be reintroduced as a
+The old PM/team hierarchical runtime modeling should not be reintroduced as a
 core layer.
 
 ### `src/server`
@@ -214,7 +217,7 @@ Currently acts as the browser transport adapter:
 - replay buffer
 - server-to-client event bridge
 
-It is not the PM runtime or sub-agent runtime.
+It is not the PM runtime or hierarchical coordination runtime.
 
 Dynamic Bun route reloading via `server.reload()` is relevant for future route
 provisioning.
@@ -526,7 +529,11 @@ The current direction is:
 
 - bootstrap installs `models`
 - `create-agent.ts` exposes explicit core inference request events
-- factories decide when to call those capabilities and where to route results
+- factories decide when to call those capabilities, which signal receives the
+  result, and how to react to the resulting `{ input, output }` envelope
+- primary-model tool calls are parsed into concrete built-in tool shapes and
+  then translated by factories into core trigger payloads with factory-owned
+  signals
 - signals and snapshots remain the shared context and observability surfaces
 
 ### Factory Identity
@@ -583,7 +590,7 @@ For shared runtime context, the preferred direction is:
 ### Server/UI Clarification
 
 `src/server` is currently the browser transport adapter, not the PM runtime or
-sub-agent runtime.
+hierarchical coordination runtime.
 
 `src/ui/protocol/controller.ts` already demonstrates a strong provisioning
 pattern:
@@ -605,7 +612,7 @@ The current intended `create-agent.ts` contract is small.
 - `id`
 - `cwd`
 - `workspace`
-- optional `models`
+- required `models`
 - optional `env`
 - `factories`
 - `restrictedTriggers`
@@ -651,6 +658,8 @@ That gives factories:
 - action via triggered events
 - observation via BP snapshots
 - shared explicit context via signals
+- ownership of signal selection for inference and tool execution
+- a stable bridge from model-emitted tool intents into core handler requests
 
 ## Memory Handler Direction
 
