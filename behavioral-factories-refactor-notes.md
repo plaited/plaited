@@ -14,7 +14,6 @@ The refactor has already made several concrete architecture moves:
 - the root `src/runtime.ts` export was removed
 - the remaining `src/runtime/` directory has now been deleted
 - `createLink` and its schemas/types/constants now live fully under `src/agent`
-- `src/inference` now exists and owns the OpenAI-compatible model adapter
 - `src/agent` now has a minimal core centered on:
   - `create-agent.ts`
   - `spawn-agent.ts`
@@ -24,22 +23,31 @@ The refactor has already made several concrete architecture moves:
 - `create-agent.ts` currently accepts:
   - `id`
   - `cwd`
+  - `workspace`
+  - optional `models`
   - optional `env`
   - `factories`
   - `restrictedTriggers`
   - `heartbeat`
 - `create-agent.ts` currently returns:
-  - `restrictedTrigger`
+  - `trigger`
   - `useSnapshot`
 - `create-agent.ts` now supports runtime factory installation through
   `update_factories`
-- `create-agent.ts` now owns runtime in-memory SQLite handlers for
-  statement-oriented runtime context operations
-- `create-agent.ts` now owns built-in local execution capability for:
-  - file reads and writes
-  - file edits and listing
-  - shell execution
-  through agent-core tool events scoped by agent `cwd` and `env`
+- `create-agent.ts` now owns signal registration and shared signal access for
+  explicit intra-agent context
+- `create-agent.ts` now owns explicit core inference request handlers for:
+  - `request_inference_primary`
+  - `request_inference_vision`
+  - `request_inference_tts`
+- `create-agent.ts` now owns signal-backed core execution capability for:
+  - `read_file`
+  - `write_file`
+  - `delete_file`
+  - `glob_files`
+  - `grep`
+  - `bash`
+  through agent-core events scoped by agent `cwd` and `workspace`
 - `src/factories` now exists as a real promotion target
 - the first promoted factories are in place:
   - inference
@@ -47,8 +55,9 @@ The refactor has already made several concrete architecture moves:
   - simulation/evaluation
   - snapshot-context capture
 - `src/skill` now exists as the module boundary for shipped skill exports
-- `src/hypergraph` now exists as the module boundary for durable-memory graph
-  querying and graph algorithms
+- the legacy `src/inference` boundary has been removed
+- the legacy `src/hypergraph` boundary has been removed
+- the legacy CRUD helper layer under `src/agent` has been removed
 - `src/tools` has now been deleted entirely
 - the old distillation adapter path in `src/improve` was removed because
   `dev-research/evolutionary-agent/program.md` is replacing that direction
@@ -116,23 +125,19 @@ The current preferred memory model is:
 - git history is part of durable memory, not just version control
 - commit messages, diffs, touched files, and lineage provide compressed and
   expandable context
-- hypergraph is the durable linking and provenance layer across:
-  - commits
-  - markdown
-  - code artifacts
-  - retained memory items
+- retained artifacts, snapshot envelopes, and optional later indexing should
+  supply durable linking and provenance when needed
 
 This means:
 
 - markdown, code, and git remain the authored source of truth
-- hypergraph should not replace those authored surfaces
-- but hypergraph is no longer merely optional retrieval sugar
-- it is part of durable memory projection and linking
+- heavier indexing should stay optional and secondary to those authored
+  surfaces
 
 This should stay distinct from shared runtime context:
 
 - runtime coordination state is transient
-- runtime coordination may be backed by in-memory SQLite
+- intra-agent shared runtime context is now signal-based
 - durable memory remains commit- and artifact-linked
 
 Default retrieval should begin with:
@@ -144,9 +149,8 @@ Default retrieval should begin with:
 - `git diff`
 - targeted commit and path inspection
 
-Hypergraph and similar semantic tooling should accelerate these workflows
-while also serving as the durable semantic and provenance linking layer across
-the authored memory surfaces.
+Any later indexing or provenance helpers should accelerate these workflows
+without replacing the authored memory surfaces.
 
 ## Repo Model
 
@@ -162,6 +166,15 @@ This means the same worktree/commit/frontier model should apply:
 
 - in the main workspace repo
 - in repo-scoped modules under `modules/*`
+
+For autonomous operation, branches should not be part of the normal control
+surface:
+
+- repos are the independence boundary
+- worktrees are the active attempt boundary
+- commits are the provenance and promotion unit
+- branches should not be created or managed as part of routine autonomous
+  orchestration
 
 ## Engine vs Policy
 
@@ -187,7 +200,6 @@ The surviving direction is now:
 - `src/bootstrap` for setup/install/startup
 - `src/agent` for agent-to-agent primitives and orchestration surfaces
 - `src/skill` for shipped default skills and skill exports
-- `src/hypergraph` for durable-memory graph querying and algorithms
 
 The old PM/team/sub-agent runtime modeling should not be reintroduced as a
 core layer.
@@ -247,7 +259,8 @@ The engine should own:
 - lifecycle
 - heartbeat/pulse
 - handler/thread registration
-- runtime SQLite substrate
+- signal registration and shared explicit context surfaces
+- installed model capability surfaces
 - built-in local execution capability scoped by agent `cwd` and `env`
 - safe execution boundaries
 
@@ -284,17 +297,6 @@ This means:
 - factories and agents should consume skill behavior through the skill system
 - skill scripts should import framework surfaces through `plaited/*`
   boundaries, not repo-relative `src/` paths
-
-### `src/hypergraph`
-
-Hypergraph is no longer a `src/tools` concern.
-
-It should remain a dedicated module boundary for:
-
-- JSON-LD hypergraph loading and indexing
-- search and reachability queries
-- graph algorithms and WASM acceleration
-- durable-memory provenance and linking support
 
 ## Provisioned Extension Points
 
@@ -333,11 +335,9 @@ Examples:
 - `plaited markdown --get-frontmatter`
 - CLI wrappers over `bash`, `git`, `jq`, and other utilities where appropriate
 
-`src/tools/crud.ts` is a likely default low-level capability surface because it
-is general and substrate-like.
-
-The engine should know only that it can request tool execution and receive tool
-results. Factories decide which CLI-backed or built-in capabilities to target.
+The engine should know only that it can request core capabilities and write
+results into explicit signals. Factories decide which built-in or CLI-backed
+capabilities to target and how to interpret the results.
 
 ## Improve
 
@@ -466,7 +466,8 @@ Commit hooks may also become event sources instead of relying only on generic
 1. Continue reducing the remaining legacy agent surfaces that do not belong in
    the minimal core.
 2. Decide which remaining `src/agent/*` files should move into
-   `src/factories`, `src/inference`, or bootstrap-owned composition.
+   `src/factories`, `src/agent` capability helpers, or bootstrap-owned
+   composition.
 3. Rebuild `src/bootstrap` on top of the reduced agent surface.
 4. Then decide whether proactive and memory surfaces should be promoted next
    or regenerated by the behavioral-factories lane.
@@ -516,16 +517,17 @@ This should become the primary home for accepted:
 Successful experiments should clean up or replace older hardcoded paths in
 `src/agent` and promote real factory implementations into `src/factories`.
 
-### `src/inference`
+### Model Capabilities
 
-Model/provider-facing code should move into `src/inference`.
+Model/provider-facing adaptation can live under `src/agent` when it is part of
+the installed agent capability surface.
 
-At minimum this includes:
+The current direction is:
 
-- `src/agent/openai-compat.ts`
-
-`src/inference` should hold transport/adaptation code for model interfaces
-rather than keeping that logic embedded in `src/agent`.
+- bootstrap installs `models`
+- `create-agent.ts` exposes explicit core inference request events
+- factories decide when to call those capabilities and where to route results
+- signals and snapshots remain the shared context and observability surfaces
 
 ### Factory Identity
 
@@ -574,71 +576,9 @@ For shared runtime context, the preferred direction is:
 - no direct `ctx` object passed into factories
 - no ad hoc shared `Map`/`Set`/counter approach as the main shared-context
   model
-- use dedicated behavioral events and handlers for shared runtime context
-
-### Runtime SQLite Direction
-
-Shared runtime context should likely be backed by in-memory SQLite owned by the
-engine, not by direct factory-owned state.
-
-`create-agent.ts` should install default handlers for runtime SQLite operations.
-
-Factories still only get `trigger`.
-They request context work behaviorally, and handlers perform it.
-
-This preserves BP observability through:
-
-- trigger
-- bThreads
-- handlers
-- useSnapshot
-
-#### Important correction
-
-Factories should not be constrained to manage prepared statement ids manually.
-
-Requiring:
-
-- prepare statement
-- receive statement id
-- reuse statement id in later threads/handlers
-
-would be too rigid for generated behavior.
-
-Instead, factories should be allowed to pass SQL and params directly in their
-behavioral events, while engine-owned handlers:
-
-- prepare/cache statements internally
-- execute them via Bun SQLite
-- emit result events back with correlation ids
-
-#### Preferred SQLite operation model
-
-Mirror Bun's actual statement execution model instead of inventing a generic
-CRUD abstraction.
-
-Useful operations are closer to:
-
-- `run`
-- `get`
-- `all`
-- `values`
-- maybe later `iterate`
-- maybe later `toString`
-- maybe later `finalize`
-
-The initial event model should therefore be statement-oriented, not CRUD-style.
-
-#### Engine-owned lifecycle
-
-The engine should own:
-
-- opening the in-memory database
-- statement caching
-- cleanup/finalization on teardown or disconnect
-- DB configuration such as WAL/file controls when appropriate
-
-Factories should not own DB lifecycle directly.
+- use signals for explicit intra-agent shared context
+- use snapshots as the main observability and replay-facing event surface
+- treat persistence and durable indexing as outside the core agent runtime
 
 ### Server/UI Clarification
 
@@ -664,6 +604,8 @@ The current intended `create-agent.ts` contract is small.
 
 - `id`
 - `cwd`
+- `workspace`
+- optional `models`
 - optional `env`
 - `factories`
 - `restrictedTriggers`
@@ -679,7 +621,7 @@ state.
 
 The most important returned surface is:
 
-- `restrictedTrigger`
+- `trigger`
 - `useSnapshot`
 
 `disconnect` should be modeled as an event rather than an imperative returned
@@ -700,25 +642,15 @@ Factories should continue to act through behavioral mechanisms.
 The current preferred install context is:
 
 - `trigger`
+- `disconnectSet`
+- `signals`
 - `useSnapshot`
 
 That gives factories:
 
 - action via triggered events
 - observation via BP snapshots
-
-This matches the existing `update_behavioral` pattern in the UI controller more
-closely than an object-oriented callback or context API.
-
-## Shared Runtime Context
-
-Shared runtime context should not be passed directly into factories.
-
-Instead:
-
-- factories request shared-runtime operations through triggered events
-- `create-agent.ts` installs the default handlers
-- handlers use in-memory SQLite internally
+- shared explicit context via signals
 
 ## Memory Handler Direction
 
@@ -728,7 +660,7 @@ surface.
 Given the refined durable-memory direction:
 
 - authored durable memory should remain git-backed markdown/code
-- hypergraph should act as the durable linking and provenance layer
+- durable linking should remain secondary and reviewable
 - runtime context should remain separate and transient
 
 the existing memory-handler implementation is now a candidate for deletion.
@@ -736,7 +668,8 @@ the existing memory-handler implementation is now a candidate for deletion.
 The likely replacement path is:
 
 - use the behavioral-factories lane to generate a durable-memory factory
-- have that factory project authored memory artifacts plus hypergraph links
+- have that factory project authored memory artifacts plus explicit retained
+  links or indexes
 - keep memory logic out of `src/agent`
 
 Writes should emit completion events.
@@ -868,7 +801,7 @@ Current `src/improve` direction is now:
 - `research-program.ts`
   - singular `program.md` loading, scope parsing, and stage logging
 - `evolution.ts`
-  - selection signals, promotion helpers, and retained-artifact collection
+- selection signals, promotion helpers, and retained-artifact collection
 
 The old `training.ts` / `training-score` lane is removed.
 

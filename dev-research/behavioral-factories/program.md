@@ -68,12 +68,9 @@ The intended boundary is:
 - `src/ui` remains a render surface plus client-side behavioral runtime
 - `src/agent` is the generic agent engine
 - `src/factories` should contain promoted executable factory implementations
-- `src/inference` should contain model/provider-facing integration code
 - `src/skill` should be the boundary for skill usage, discovery, validation,
   ingestion, and related tooling/utilities
 - `skills/*` contains shipped default skills
-- `src/hypergraph` should be the export boundary for durable-memory graph
-  querying and graph algorithms
 
 The agent engine should own only stable mechanics such as:
 
@@ -81,7 +78,9 @@ The agent engine should own only stable mechanics such as:
 - heartbeat and timing primitives
 - thread and handler registration
 - restricted trigger boundaries
-- runtime SQLite substrate for transient shared runtime context
+- signal registration and shared explicit context surfaces
+- installed model capability surfaces
+- explicit core inference request handlers
 - built-in local execution capability scoped by agent `cwd` and `env`
 - safe execution boundaries
 
@@ -130,12 +129,14 @@ The intended `create-agent` direction is minimal:
 - input:
   - `id`
   - `cwd`
+  - `workspace`
+  - optional `models`
   - optional `env`
   - `factories`
   - `restrictedTriggers`
   - `heartbeat`
 - output:
-  - restricted trigger as the main public action surface
+  - `trigger` as the main public action surface
   - `useSnapshot`
 
 Disconnect should be modeled as an event, not as the primary imperative return
@@ -207,15 +208,12 @@ Primary lane inputs:
 - `src/behavioral/behavioral.ts`
 - `src/ui/`
 - `src/factories/`
-- `src/inference/`
 - `src/agent/`
 - `src/skill/`
-- `src/hypergraph/`
 - `src/server/`
 
 Supporting implementation and memory-shaping surfaces:
 
-- `skills/hypergraph-memory/SKILL.md`
 - Bun runtime docs and relevant local usage patterns for:
   - markdown
   - yaml
@@ -242,11 +240,10 @@ Use these inputs with clear precedence:
 5. if a simpler markdown / yaml / jsonl / archive approach satisfies the lane
    goal better than a graph-heavy approach, prefer the simpler approach.
 
-This lane must not treat hypergraph as the primary authored memory surface.
-Markdown, code, and git remain the canonical authored durable-memory
-substrate. Hypergraph should instead be treated as the durable linking and
-provenance layer across those authored surfaces. Use it when it materially
-improves:
+This lane must not treat any graph-specific layer as the primary authored memory
+surface. Markdown, code, and git remain the canonical authored durable-memory
+substrate. Durable linking and provenance should stay secondary to those
+authored surfaces. Use heavier indexing only when it materially improves:
 
 - retrieval
 - provenance
@@ -270,7 +267,7 @@ Canonical memory surfaces may include:
 - git-backed context packs
 - archive exports
 
-Hypergraph should link those authored surfaces durably across:
+Durable-memory indexing should connect those authored surfaces across:
 
 - commits
 - markdown
@@ -288,8 +285,8 @@ Derived semantic artifacts may still exist, but they should serve retrieval,
 validation, provenance, training, and durable linking rather than replacing
 the authored memory surfaces.
 
-Hypergraph tools should be used both as accelerators over markdown/code/git
-memory and as the durable semantic/provenance linking layer, for example to:
+Durable-memory helpers should be used as accelerators over markdown/code/git
+memory, for example to:
 
 - rank likely relevant files or artifact groups
 - follow semantic links across retained seed/corpus artifacts
@@ -312,8 +309,8 @@ This lane should keep durable memory distinct from runtime coordination state:
 
 - durable memory is commit- and artifact-linked
 - shared runtime context is transient
-- shared runtime context should be treated as engine-owned and may be backed by
-  in-memory SQLite
+- shared runtime context should be treated as engine-owned through signals and
+  snapshots rather than a mandatory runtime SQLite surface
 - transient runtime context should not be confused with retained durable memory
 
 ## Agent Lifecycle
@@ -356,7 +353,7 @@ This means the lane should research and refine factories for:
 - A2A extension-aware behavior
 - bootstrap-time composition of the initial agent and server
 - runtime snapshot capture and promotion
-- durable-memory linking through hypergraph-aware factories
+- durable-memory linking through reviewable memory-aware factories
 
 `src/a2a` should not absorb BP orchestration concerns.
 `src/bootstrap` should not become a new rich runtime ontology.
@@ -471,9 +468,8 @@ They should treat accepted commits as the main boundary for durable memory
 projection. A commit is the durable event boundary, not automatically the final
 summary itself.
 
-They should also project durable links through the hypergraph layer so that
-commits, markdown, code artifacts, and retained memory items stay connected
-through stable provenance.
+They should also project durable links so that commits, markdown, code
+artifacts, and retained memory items stay connected through stable provenance.
 
 These factories should deterministically gather the source context for durable
 memory updates, such as:
@@ -493,7 +489,7 @@ That means they may:
 
 - write memory decisions
 - summarize accepted work into durable memory
-- project commit metadata into a minimal graph/link layer
+- project commit metadata into a minimal link/index layer
 - record handoff links between repos, commits, files, and summaries
 - support retrieval ranking and packing
 - prune or compact stale memory
@@ -503,8 +499,8 @@ rather than the primary authored memory surface.
 
 The existing `src/agent/memory-handlers.ts` path should be treated as
 transitional debt, not as the target architecture. This lane should be willing
-to replace it entirely with durable-memory factories that use the hypergraph
-tooling as part of memory projection.
+to replace it entirely with durable-memory factories that use simpler retained
+artifact and link/index projection as part of memory projection.
 
 ### Rollout Factories
 
@@ -545,6 +541,15 @@ The intended model is:
 Rollout factories should therefore optimize local exploration, comparison, and
 checkpointing within these repos rather than assume a traditional GitHub-style
 branch or PR workflow.
+
+For autonomous operation, branches should not be part of the normal control
+surface:
+
+- repos are the independence boundary
+- worktrees are the active attempt boundary
+- commits are the provenance and promotion unit
+- branches should not be created or managed as part of routine autonomous
+  orchestration
 
 ### Validation Factories
 
@@ -683,7 +688,6 @@ Only write within:
 - `scripts/behavioral-factories.ts`
 - lane-local grader and verifier surfaces when explicitly needed
 - `src/factories`
-- `src/inference`
 - `src/agent` when simplifying or removing hardcoded paths during promotion-oriented work
 
 Expected lane-local outputs may include:
