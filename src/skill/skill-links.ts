@@ -355,7 +355,7 @@ export const buildSkillEncodingSurface = async (rootPath: string): Promise<Skill
 
 export const getSkillLinks: ToolHandler = async (args, ctx) => {
   const input = SkillLinksInputSchema.parse(args)
-  const fullPath = input.path.startsWith('/') ? input.path : resolve(ctx.workspace, input.path)
+  const fullPath = input.path.startsWith('/') ? input.path : resolve(ctx.cwd, input.path)
   return await buildSkillEncodingSurface(fullPath)
 }
 

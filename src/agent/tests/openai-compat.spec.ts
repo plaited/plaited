@@ -12,14 +12,6 @@ afterEach(() => {
   srv?.stop(true)
 })
 
-const collect = async <T>(iter: AsyncIterable<T>) => {
-  const items: T[] = []
-  for await (const item of iter) {
-    items.push(item)
-  }
-  return items
-}
-
 describe('createOpenAICompatModel', () => {
   test('streams text deltas and usage from SSE responses', async () => {
     srv = Bun.serve({
@@ -38,18 +30,15 @@ describe('createOpenAICompatModel', () => {
     })
 
     const model = createOpenAICompatModel({ baseUrl: `http://localhost:${srv.port}/v1`, model: 'test' })
-    const events = await collect(
-      model.reason({
-        messages: [{ role: 'user', content: 'hi' }],
-        signal: AbortSignal.timeout(1_000),
-      }),
-    )
+    const result = await model({
+      messages: [{ role: 'user', content: 'hi' }],
+      timeout: 1_000,
+    })
 
-    expect(events).toEqual([
-      { type: 'text_delta', content: 'Hello' },
-      { type: 'text_delta', content: ' world' },
-      { type: 'done', response: { usage: { inputTokens: 11, outputTokens: 7 } } },
-    ])
+    expect(result).toEqual({
+      parsed: { thinking: null, toolCalls: [], message: 'Hello world' },
+      usage: { inputTokens: 11, outputTokens: 7 },
+    })
   })
 
   test('streams reasoning deltas and tool call deltas', async () => {
@@ -70,22 +59,22 @@ describe('createOpenAICompatModel', () => {
     })
 
     const model = createOpenAICompatModel({ baseUrl: `http://localhost:${srv.port}/v1`, model: 'test' })
-    const events = await collect(
-      model.reason({
-        messages: [{ role: 'user', content: 'hi' }],
-        signal: AbortSignal.timeout(1_000),
-      }),
-    )
+    const result = await model({
+      messages: [{ role: 'user', content: 'hi' }],
+      timeout: 1_000,
+    })
 
-    expect(events).toEqual([
-      { type: 'thinking_delta', content: 'think' },
-      { type: 'toolcall_delta', id: 'tc-1', name: 'read_file', arguments: '{"path":"a' },
-      { type: 'toolcall_delta', id: 'tc-1', arguments: 'bc"}' },
-      { type: 'done', response: { usage: { inputTokens: 3, outputTokens: 5 } } },
-    ])
+    expect(result).toEqual({
+      parsed: {
+        thinking: 'think',
+        toolCalls: [{ id: 'tc-1', name: 'read_file', arguments: { path: 'abc' } }],
+        message: null,
+      },
+      usage: { inputTokens: 3, outputTokens: 5 },
+    })
   })
 
-  test('returns an error delta for non-ok responses', async () => {
+  test('throws for non-ok responses', async () => {
     srv = Bun.serve({
       port: 0,
       fetch() {
@@ -94,17 +83,15 @@ describe('createOpenAICompatModel', () => {
     })
 
     const model = createOpenAICompatModel({ baseUrl: `http://localhost:${srv.port}/v1`, model: 'test' })
-    const events = await collect(
-      model.reason({
+    await expect(
+      model({
         messages: [{ role: 'user', content: 'hi' }],
-        signal: AbortSignal.timeout(1_000),
+        timeout: 1_000,
       }),
-    )
-
-    expect(events).toEqual([{ type: 'error', error: '400: bad request' }])
+    ).rejects.toThrow('400: bad request')
   })
 
-  test('returns an error delta when no response body is available', async () => {
+  test('throws when no response body is available', async () => {
     const originalFetch = globalThis.fetch
     globalThis.fetch = Object.assign(
       async (..._args: Parameters<typeof fetch>) =>
@@ -118,14 +105,12 @@ describe('createOpenAICompatModel', () => {
 
     try {
       const model = createOpenAICompatModel({ baseUrl: 'http://localhost:0/v1', model: 'test' })
-      const events = await collect(
-        model.reason({
+      await expect(
+        model({
           messages: [{ role: 'user', content: 'hi' }],
-          signal: AbortSignal.timeout(1_000),
+          timeout: 1_000,
         }),
-      )
-
-      expect(events).toEqual([{ type: 'error', error: 'No response body' }])
+      ).rejects.toThrow('No response body')
     } finally {
       globalThis.fetch = originalFetch
     }

@@ -1,5 +1,6 @@
-import type { ModelUsage, ToolDefinition } from '../agent/agent.schemas.ts'
-import type { Model, ModelDelta } from '../agent/agent.types.ts'
+import type { ModelUsage, ToolDefinition } from './agent.schemas.ts'
+import type { ModelResponseDetail, PrimaryInferenceModel } from './agent.types.ts'
+import { parseModelResponse } from './agent.utils.ts'
 
 /**
  * Configuration for an OpenAI-compatible inference backend.
@@ -57,13 +58,9 @@ const stripTags = (tools: ToolDefinition[]) => tools.map(({ tags: _, ...rest }) 
  *
  * @public
  */
-export const createOpenAICompatModel = ({
-  baseUrl,
-  apiKey,
-  model,
-  defaultTimeout = DEFAULT_TIMEOUT,
-}: OpenAICompatOptions): Model => ({
-  reason: async function* ({ messages, tools, temperature, signal }) {
+export const createOpenAICompatModel =
+  ({ baseUrl, apiKey, model, defaultTimeout = DEFAULT_TIMEOUT }: OpenAICompatOptions): PrimaryInferenceModel =>
+  async ({ messages, tools, temperature, timeout }) => {
     const url = `${baseUrl.replace(/\/$/, '')}/chat/completions`
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
     if (apiKey) headers.Authorization = `Bearer ${apiKey}`
@@ -77,6 +74,7 @@ export const createOpenAICompatModel = ({
     if (tools?.length) body.tools = stripTags(tools)
     if (temperature !== undefined) body.temperature = temperature
 
+    const signal = AbortSignal.timeout(timeout ?? defaultTimeout)
     let response: Response | undefined
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       signal.throwIfAborted()
@@ -84,7 +82,7 @@ export const createOpenAICompatModel = ({
         method: 'POST',
         headers,
         body: JSON.stringify(body),
-        signal: AbortSignal.any([signal, AbortSignal.timeout(defaultTimeout)]),
+        signal,
       })
       if (response.status !== 429 || attempt === MAX_RETRIES) break
 
@@ -95,13 +93,11 @@ export const createOpenAICompatModel = ({
 
     if (!response?.ok) {
       const text = await response?.text().catch(() => 'unknown error')
-      yield { type: 'error', error: `${response?.status ?? 'unknown'}: ${text}` } as ModelDelta
-      return
+      throw new Error(`${response?.status ?? 'unknown'}: ${text}`)
     }
 
     if (!response.body) {
-      yield { type: 'error', error: 'No response body' } as ModelDelta
-      return
+      throw new Error('No response body')
     }
 
     const reader = response.body.getReader()
@@ -109,6 +105,9 @@ export const createOpenAICompatModel = ({
     let buffer = ''
     const usage: ModelUsage = { inputTokens: 0, outputTokens: 0 }
     const toolCallIds = new Map<number, string>()
+    let thinking = ''
+    let text = ''
+    const toolCalls = new Map<string, { id: string; name: string; arguments: string }>()
 
     try {
       while (true) {
@@ -145,20 +144,29 @@ export const createOpenAICompatModel = ({
             const { delta } = choice
 
             if (delta.reasoning_content) {
-              yield { type: 'thinking_delta', content: delta.reasoning_content }
+              thinking += delta.reasoning_content
             }
             if (delta.content) {
-              yield { type: 'text_delta', content: delta.content }
+              text += delta.content
             }
             if (delta.tool_calls) {
               for (const tc of delta.tool_calls) {
                 if (tc.id) toolCallIds.set(tc.index, tc.id)
                 const id = tc.id ?? toolCallIds.get(tc.index) ?? ''
-                yield {
-                  type: 'toolcall_delta',
-                  id,
-                  ...(tc.function?.name && { name: tc.function.name }),
-                  ...(tc.function?.arguments && { arguments: tc.function.arguments }),
+                const existing = toolCalls.get(id)
+                if (!existing) {
+                  toolCalls.set(id, {
+                    id,
+                    name: tc.function?.name ?? '',
+                    arguments: tc.function?.arguments ?? '',
+                  })
+                  continue
+                }
+                if (tc.function?.name) {
+                  existing.name = tc.function.name
+                }
+                if (tc.function?.arguments) {
+                  existing.arguments += tc.function.arguments
                 }
               }
             }
@@ -170,6 +178,27 @@ export const createOpenAICompatModel = ({
       reader.releaseLock()
     }
 
-    yield { type: 'done', response: { usage } }
-  },
-})
+    return {
+      parsed: parseModelResponse({
+        choices: [
+          {
+            message: {
+              content: text || null,
+              reasoning_content: thinking || null,
+              tool_calls:
+                toolCalls.size > 0
+                  ? [...toolCalls.values()].map((toolCall) => ({
+                      id: toolCall.id,
+                      function: {
+                        name: toolCall.name,
+                        arguments: toolCall.arguments,
+                      },
+                    }))
+                  : undefined,
+            },
+          },
+        ],
+      }),
+      usage,
+    } satisfies ModelResponseDetail
+  }

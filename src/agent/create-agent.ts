@@ -1,16 +1,41 @@
+import { glob } from 'node:fs/promises'
 import { isAbsolute, resolve, sep } from 'node:path'
-import { pathToFileURL } from 'node:url'
-import { $ } from 'bun'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import type { infer as Infer, ZodTypeAny } from 'zod'
 import type { Disconnect } from '../behavioral.ts'
 import { behavioral, bSync, bThread } from '../behavioral.ts'
 import { isTypeOf } from '../utils.ts'
 import { AGENT_CORE_EVENTS } from './agent.constants.ts'
-import { AgentToolResultDetailSchema, FactoryResultSchema, UpdateFactoryModuleSchema } from './agent.schemas.ts'
-import type { AgentHandle, CreateAgentOptions, SchemaViolationHandler, Signal, Signals } from './agent.types.ts'
-import { BashConfigSchema } from './crud.schemas.ts'
-import { editFile, grep, listFiles, readFile, writeFile } from './crud.ts'
-import { truncateTail } from './truncate.ts'
+import {
+  FactoryResultSchema,
+  GrepOutputSchema,
+  RequestBashDetailSchema,
+  RequestDeleteFileDetailSchema,
+  RequestGlobFilesDetailSchema,
+  RequestGrepDetailSchema,
+  RequestPrimaryInferenceDetailSchema,
+  RequestReadFileDetailSchema,
+  RequestTtsInferenceDetailSchema,
+  RequestVisionInferenceDetailSchema,
+  RequestWriteFileDetailSchema,
+  UpdateFactoryModuleSchema,
+} from './agent.schemas.ts'
+import type {
+  AgentHandle,
+  CoreRequestBashDetail,
+  CoreRequestDeleteFileDetail,
+  CoreRequestGlobFilesDetail,
+  CoreRequestGrepDetail,
+  CoreRequestPrimaryInferenceDetail,
+  CoreRequestReadFileDetail,
+  CoreRequestTtsInferenceDetail,
+  CoreRequestVisionInferenceDetail,
+  CoreRequestWriteFileDetail,
+  CreateAgentOptions,
+  SchemaViolationHandler,
+  Signal,
+  Signals,
+} from './agent.types.ts'
 import { useSignal } from './use-signal.ts'
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 15 * 60 * 1000
@@ -36,12 +61,19 @@ export const createAgent = async ({
   id: _id,
   cwd,
   workspace,
+  models,
   env = {},
   factories = [],
   restrictedTriggers = [],
   heartbeat,
 }: CreateAgentOptions): Promise<AgentHandle> => {
   const { bThreads, trigger, useFeedback, useSnapshot, useRestrictedTrigger } = behavioral()
+  const runtimeEnv = Object.entries({ ...process.env, ...env }).reduce<Record<string, string>>((acc, [key, value]) => {
+    if (value !== undefined) {
+      acc[key] = value
+    }
+    return acc
+  }, {})
 
   const restrictedTrigger = useRestrictedTrigger(
     ...restrictedTriggers,
@@ -54,7 +86,8 @@ export const createAgent = async ({
 
   const signalMap = new Map<string, Signal>()
 
-  const resolveFactoryPath = (detail: string) => (isAbsolute(detail) ? detail : resolve(workspace, detail))
+  const resolveWorkspacePath = (detail: string) => (isAbsolute(detail) ? detail : resolve(workspace, detail))
+  const resolveCwdPath = (detail: string) => resolve(cwd, detail)
 
   const onSchemaViolation: SchemaViolationHandler = (detail) =>
     trigger({ type: AGENT_CORE_EVENTS.signal_schema_violation, detail })
@@ -104,20 +137,6 @@ export const createAgent = async ({
   }
 
   const createToolSignal = (timeout: number | undefined) => AbortSignal.timeout(timeout ?? DEFAULT_TOOL_TIMEOUT_MS)
-  const createPassiveSignal = () => new AbortController().signal
-
-  const emitToolResult = ({ name, output }: { name: string; output: unknown }) => {
-    trigger({
-      type: AGENT_CORE_EVENTS.agent_tool_result,
-      detail: AgentToolResultDetailSchema.parse({
-        result: {
-          name,
-          status: 'completed',
-          output,
-        },
-      }),
-    })
-  }
 
   const heartbeatIntervalMs = heartbeat?.intervalMs ?? DEFAULT_HEARTBEAT_INTERVAL_MS
   const heartbeatTimer = setInterval(() => {
@@ -146,8 +165,93 @@ export const createAgent = async ({
             if (type !== AGENT_CORE_EVENTS.update_factories) return false
             if (!isTypeOf<string>(detail, 'string')) return true
             if (!/\.tsx?$/.test(detail)) return true
-            const path = resolveFactoryPath(detail)
+            const path = resolveWorkspacePath(detail)
             return !path.startsWith(`${workspace}${sep}`)
+          },
+        }),
+      ],
+      true,
+    ),
+    onReadFile: bThread(
+      [
+        bSync({
+          block: ({ type, detail }) => {
+            if (type !== AGENT_CORE_EVENTS.read_file) return false
+            const parsed = RequestReadFileDetailSchema.safeParse(detail)
+            if (!parsed.success) return true
+            const resolved = resolveCwdPath(parsed.data.request)
+            return !resolved.startsWith(`${cwd}${sep}`)
+          },
+        }),
+      ],
+      true,
+    ),
+    onWriteFile: bThread(
+      [
+        bSync({
+          block: ({ type, detail }) => {
+            if (type !== AGENT_CORE_EVENTS.write_file) return false
+            const parsed = RequestWriteFileDetailSchema.safeParse(detail)
+            if (!parsed.success) return true
+            const resolved = resolveCwdPath(parsed.data.request.path)
+            return !resolved.startsWith(`${cwd}${sep}`)
+          },
+        }),
+      ],
+      true,
+    ),
+    onDeleteFile: bThread(
+      [
+        bSync({
+          block: ({ type, detail }) => {
+            if (type !== AGENT_CORE_EVENTS.delete_file) return false
+            const parsed = RequestDeleteFileDetailSchema.safeParse(detail)
+            if (!parsed.success) return true
+            const resolved = resolveCwdPath(parsed.data.request)
+            return !resolved.startsWith(`${cwd}${sep}`)
+          },
+        }),
+      ],
+      true,
+    ),
+    onGlob: bThread(
+      [
+        bSync({
+          block: ({ type, detail }) => {
+            if (type !== AGENT_CORE_EVENTS.glob_files) return false
+            const parsed = RequestGlobFilesDetailSchema.safeParse(detail)
+            if (!parsed.success) return true
+            const { pattern, exclude = [] } = parsed.data.request
+            return [pattern, ...exclude].some((entry) => entry.startsWith('/') || entry.includes('..'))
+          },
+        }),
+      ],
+      true,
+    ),
+    onGrep: bThread(
+      [
+        bSync({
+          block: ({ type, detail }) => {
+            if (type !== AGENT_CORE_EVENTS.grep) return false
+            const parsed = RequestGrepDetailSchema.safeParse(detail)
+            if (!parsed.success) return true
+            if (!parsed.data.request.path) return false
+            const resolved = resolveCwdPath(parsed.data.request.path)
+            return !resolved.startsWith(`${cwd}${sep}`)
+          },
+        }),
+      ],
+      true,
+    ),
+    onBash: bThread(
+      [
+        bSync({
+          block: ({ type, detail }) => {
+            if (type !== AGENT_CORE_EVENTS.bash) return false
+            const parsed = RequestBashDetailSchema.safeParse(detail)
+            if (!parsed.success) return true
+            const resolved = resolveWorkspacePath(parsed.data.request.path)
+            return !resolved.startsWith(`${workspace}${sep}`)
           },
         }),
       ],
@@ -168,8 +272,23 @@ export const createAgent = async ({
       !readOnly && Object.assign(rest, { set })
       signalMap.set(key, rest)
     },
+    async [AGENT_CORE_EVENTS.request_inference_primary](detail: CoreRequestPrimaryInferenceDetail) {
+      const { request, signal } = RequestPrimaryInferenceDetailSchema.parse(detail)
+      const res = await models?.primary?.(request)
+      signal.set?.(res)
+    },
+    async [AGENT_CORE_EVENTS.request_inference_vision](detail: CoreRequestVisionInferenceDetail) {
+      const { request, signal } = RequestVisionInferenceDetailSchema.parse(detail)
+      const res = await models?.vision?.(request)
+      signal.set?.(res)
+    },
+    async [AGENT_CORE_EVENTS.request_inference_tts](detail: CoreRequestTtsInferenceDetail) {
+      const { request, signal } = RequestTtsInferenceDetailSchema.parse(detail)
+      const res = await models?.tts?.(request)
+      signal.set?.(res)
+    },
     async [AGENT_CORE_EVENTS.update_factories](detail: string) {
-      const modules = await import(pathToFileURL(resolveFactoryPath(detail)).href)
+      const modules = await import(pathToFileURL(resolveWorkspacePath(detail)).href)
       const { default: factory } = UpdateFactoryModuleSchema.parse(modules)
       const { threads, handlers } = FactoryResultSchema.parse(
         factory({
@@ -182,43 +301,90 @@ export const createAgent = async ({
       threads && bThreads.set(threads)
       handlers && disconnectSet.add(useFeedback(handlers))
     },
-    async [AGENT_CORE_EVENTS.read_file](detail: Parameters<typeof readFile>[0]) {
-      const output = await readFile(detail, {
-        env,
+    async [AGENT_CORE_EVENTS.read_file](detail: CoreRequestReadFileDetail) {
+      const { request, signal } = RequestReadFileDetailSchema.parse(detail)
+      const resolved = resolveCwdPath(request)
+      signal.set?.({ path: request, file: Bun.file(resolved) })
+    },
+    async [AGENT_CORE_EVENTS.delete_file](detail: CoreRequestDeleteFileDetail) {
+      const { request, signal } = RequestDeleteFileDetailSchema.parse(detail)
+      const resolved = resolveCwdPath(request)
+      await Bun.file(resolved).delete()
+      signal.set?.({ path: request })
+    },
+    async [AGENT_CORE_EVENTS.write_file](detail: CoreRequestWriteFileDetail) {
+      const {
+        request: { path, content },
+        signal,
+      } = RequestWriteFileDetailSchema.parse(detail)
+      const resolved = resolveCwdPath(path)
+      const bytes = await Bun.write(resolved, content)
+      signal.set?.({ path, bytes })
+    },
+    async [AGENT_CORE_EVENTS.glob_files](detail: CoreRequestGlobFilesDetail) {
+      const {
+        request: { pattern, exclude },
+        signal,
+      } = RequestGlobFilesDetailSchema.parse(detail)
+      const files = await Array.fromAsync(glob(pattern, { exclude, cwd }))
+      signal.set?.(files)
+    },
+    async [AGENT_CORE_EVENTS.grep](detail: CoreRequestGrepDetail) {
+      const {
+        request: { timeout, ...request },
+        signal,
+      } = RequestGrepDetailSchema.parse(detail)
+      const proc = Bun.spawn(['bun', fileURLToPath(import.meta.resolve('./grep-worker.ts')), JSON.stringify(request)], {
         cwd,
-        signal: createPassiveSignal(),
+        env: runtimeEnv,
+        signal: createToolSignal(timeout),
+        stdout: 'pipe',
+        stderr: 'pipe',
       })
-      emitToolResult({ name: AGENT_CORE_EVENTS.read_file, output })
-    },
-    async [AGENT_CORE_EVENTS.write_file](detail: Parameters<typeof writeFile>[0]) {
-      const output = await writeFile(detail, { env, cwd, signal: createPassiveSignal() })
-      emitToolResult({ name: AGENT_CORE_EVENTS.write_file, output })
-    },
-    async [AGENT_CORE_EVENTS.edit_file](detail: Parameters<typeof editFile>[0]) {
-      const output = await editFile(detail, { env, cwd, signal: createPassiveSignal() })
-      emitToolResult({ name: AGENT_CORE_EVENTS.edit_file, output })
-    },
-    async [AGENT_CORE_EVENTS.list_files](detail: Parameters<typeof listFiles>[0]) {
-      const output = await listFiles(detail, { env, cwd, signal: createPassiveSignal() })
-      emitToolResult({ name: AGENT_CORE_EVENTS.list_files, output })
-    },
-    async [AGENT_CORE_EVENTS.grep]({ timeout, ...detail }: Parameters<typeof grep>[0]) {
-      const output = await grep({ ...detail, timeout }, { env, cwd, signal: createToolSignal(timeout) })
-      emitToolResult({ name: AGENT_CORE_EVENTS.grep, output })
-    },
-    async [AGENT_CORE_EVENTS.bash](detail: { command: string; timeout?: number }) {
-      const { command, timeout } = BashConfigSchema.parse(detail)
-      const signal = createToolSignal(timeout)
-      signal.throwIfAborted()
-      const result = await $`${{ raw: command }}`.cwd(cwd).env(env).nothrow().quiet()
-      signal.throwIfAborted()
-      if (result.exitCode !== 0) {
-        throw new Error(result.stderr.toString().trim() || `Command exited with code ${result.exitCode}`)
+      const [exitCode, stdout, stderr] = await Promise.all([
+        proc.exited,
+        new Response(proc.stdout).text(),
+        new Response(proc.stderr).text(),
+      ])
+
+      if (exitCode !== 0) {
+        throw new Error(stderr.trim() || `grep worker exited with code ${exitCode}`)
       }
-      emitToolResult({
-        name: AGENT_CORE_EVENTS.bash,
-        output: truncateTail(result.stdout.toString().trim()),
+
+      const output = GrepOutputSchema.parse(JSON.parse(stdout))
+      signal.set?.(output)
+    },
+    async [AGENT_CORE_EVENTS.bash](detail: CoreRequestBashDetail) {
+      const {
+        request: { path, args, timeout },
+        signal,
+      } = RequestBashDetailSchema.parse(detail)
+      const proc = Bun.spawn(['bun', resolveWorkspacePath(path), ...args], {
+        cwd,
+        env: runtimeEnv,
+        signal: createToolSignal(timeout),
+        stdout: 'pipe',
+        stderr: 'pipe',
       })
+      const [exitCode, stdout, stderr] = await Promise.all([
+        proc.exited,
+        new Response(proc.stdout).text(),
+        new Response(proc.stderr).text(),
+      ])
+      signal.set?.(
+        exitCode === 0
+          ? {
+              status: 'completed',
+              output: stdout.trim(),
+              exitCode: 0,
+            }
+          : {
+              status: 'failed',
+              error: stderr.trim() || `Command exited with code ${exitCode}`,
+              exitCode,
+              stderr: stderr.trim() || undefined,
+            },
+      )
     },
   })
 

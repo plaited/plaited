@@ -2,7 +2,16 @@ import { describe, expect, test } from 'bun:test'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import * as z from 'zod'
 import { AGENT_CORE_EVENTS } from '../agent.constants.ts'
+import {
+  BashOutputSchema,
+  DeleteFileOutputSchema,
+  GrepOutputSchema,
+  ModelResponseDetailSchema,
+  ReadFileResultSchema,
+  WriteFileOutputSchema,
+} from '../agent.schemas.ts'
 import { createAgent } from '../create-agent.ts'
 import { spawnAgent } from '../spawn-agent.ts'
 
@@ -88,13 +97,14 @@ describe('createAgent', () => {
     expect(seen).toEqual(['fixture_pong'])
   })
 
-  test('executes built-in CRUD through core tool events using cwd context', async () => {
+  test('reads file through a passed signal using cwd context', async () => {
     const workspace = await mkdtemp(join(tmpdir(), 'plaited-agent-tool-'))
     await Bun.write(`${workspace}/hello.txt`, 'hello from agent')
 
-    let resolveResult!: (result: { result: { output?: unknown } }) => void
-    const resultSeen = new Promise<{ result: { output?: unknown } }>((resolve) => {
-      resolveResult = resolve
+    let readSignal: ReturnType<typeof import('../use-signal.ts').useSignal<typeof ReadFileResultSchema>> | undefined
+    let resolveRead!: () => void
+    const readSeen = new Promise<void>((resolve) => {
+      resolveRead = resolve
     })
 
     const agent = await createAgent({
@@ -102,31 +112,366 @@ describe('createAgent', () => {
       cwd: workspace,
       workspace,
       factories: [
-        () => ({
-          handlers: {
-            [AGENT_CORE_EVENTS.agent_tool_result](detail) {
-              resolveResult(detail as { result: { output?: unknown } })
-            },
-          },
-        }),
+        ({ signals }) => {
+          readSignal = signals.set({
+            key: 'read-result',
+            schema: ReadFileResultSchema,
+            readOnly: false,
+          })
+          readSignal.listen({
+            eventType: 'read_result_ready',
+            trigger: () => resolveRead(),
+            disconnectSet: new Set(),
+          })
+
+          return {}
+        },
       ],
     })
 
     agent.trigger({
       type: AGENT_CORE_EVENTS.read_file,
-      detail: { path: 'hello.txt' },
+      detail: { request: 'hello.txt', signal: readSignal },
     })
 
-    const detail = await resultSeen
-    expect(detail.result.output).toEqual({
-      type: 'text',
-      path: 'hello.txt',
-      content: 'hello from agent',
-      truncated: false,
-      totalBytes: 16,
-      totalLines: 1,
-      outputLines: 1,
+    await readSeen
+    expect(readSignal?.get()?.path).toBe('hello.txt')
+    expect(await readSignal?.get()?.file.text()).toBe('hello from agent')
+
+    await rm(workspace, { recursive: true, force: true })
+  })
+
+  test('executes bash through the spawned shell worker using cwd context', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'plaited-agent-bash-'))
+    await Bun.write(
+      `${workspace}/bash-worker.ts`,
+      [
+        "import { $ } from 'bun'",
+        '',
+        "const [value = ''] = Bun.argv.slice(2)",
+        'const result = await $`printf ${value}`.quiet().nothrow()',
+        'if (result.stdout.length > 0) process.stdout.write(result.stdout)',
+        'if (result.stderr.length > 0) process.stderr.write(result.stderr)',
+        'process.exit(result.exitCode)',
+      ].join('\n'),
+    )
+
+    let bashSignal: ReturnType<typeof import('../use-signal.ts').useSignal<typeof BashOutputSchema>> | undefined
+    let resolveBash!: () => void
+    const bashSeen = new Promise<void>((resolve) => {
+      resolveBash = resolve
     })
+
+    const agent = await createAgent({
+      id: 'agent:bash',
+      cwd: workspace,
+      workspace,
+      factories: [
+        ({ signals }) => {
+          bashSignal = signals.set({
+            key: 'bash-result',
+            schema: BashOutputSchema,
+            readOnly: false,
+          })
+          bashSignal.listen({
+            eventType: 'bash_result_ready',
+            trigger: () => resolveBash(),
+            disconnectSet: new Set(),
+          })
+
+          return {}
+        },
+      ],
+    })
+
+    agent.trigger({
+      type: AGENT_CORE_EVENTS.bash,
+      detail: { request: { path: 'bash-worker.ts', args: ['hello-from-bash'] }, signal: bashSignal },
+    })
+
+    await bashSeen
+
+    expect(bashSignal?.get()).toEqual({
+      status: 'completed',
+      output: 'hello-from-bash',
+      exitCode: 0,
+    })
+
+    await rm(workspace, { recursive: true, force: true })
+  })
+
+  test('writes file through a passed signal using cwd context', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'plaited-agent-write-'))
+
+    let writeSignal: ReturnType<typeof import('../use-signal.ts').useSignal<typeof WriteFileOutputSchema>> | undefined
+    let resolveWrite!: () => void
+    const writeSeen = new Promise<void>((resolveWriteSeen) => {
+      resolveWrite = resolveWriteSeen
+    })
+
+    const agent = await createAgent({
+      id: 'agent:write',
+      cwd: workspace,
+      workspace,
+      factories: [
+        ({ signals }) => {
+          writeSignal = signals.set({
+            key: 'write-result',
+            schema: WriteFileOutputSchema,
+            readOnly: false,
+          })
+          writeSignal.listen({
+            eventType: 'write_result_ready',
+            trigger: () => resolveWrite(),
+            disconnectSet: new Set(),
+          })
+
+          return {}
+        },
+      ],
+    })
+
+    agent.trigger({
+      type: AGENT_CORE_EVENTS.write_file,
+      detail: {
+        request: { path: 'nested/output.txt', content: 'written from signal' },
+        signal: writeSignal,
+      },
+    })
+
+    await writeSeen
+
+    expect(writeSignal?.get()).toEqual({
+      path: 'nested/output.txt',
+      bytes: 19,
+    })
+    expect(await Bun.file(join(workspace, 'nested/output.txt')).text()).toBe('written from signal')
+
+    await rm(workspace, { recursive: true, force: true })
+  })
+
+  test('deletes file through a passed signal using cwd context', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'plaited-agent-delete-'))
+    await Bun.write(join(workspace, 'delete-me.txt'), 'gone soon')
+
+    let deleteSignal: ReturnType<typeof import('../use-signal.ts').useSignal<typeof DeleteFileOutputSchema>> | undefined
+    let resolveDelete!: () => void
+    const deleteSeen = new Promise<void>((resolveDeleteSeen) => {
+      resolveDelete = resolveDeleteSeen
+    })
+
+    const agent = await createAgent({
+      id: 'agent:delete',
+      cwd: workspace,
+      workspace,
+      factories: [
+        ({ signals }) => {
+          deleteSignal = signals.set({
+            key: 'delete-result',
+            schema: DeleteFileOutputSchema,
+            readOnly: false,
+          })
+          deleteSignal.listen({
+            eventType: 'delete_result_ready',
+            trigger: () => resolveDelete(),
+            disconnectSet: new Set(),
+          })
+
+          return {}
+        },
+      ],
+    })
+
+    agent.trigger({
+      type: AGENT_CORE_EVENTS.delete_file,
+      detail: {
+        request: 'delete-me.txt',
+        signal: deleteSignal,
+      },
+    })
+
+    await deleteSeen
+
+    expect(deleteSignal?.get()).toEqual({
+      path: 'delete-me.txt',
+    })
+    expect(await Bun.file(join(workspace, 'delete-me.txt')).exists()).toBe(false)
+
+    await rm(workspace, { recursive: true, force: true })
+  })
+
+  test('handles request_inference_primary and writes the result to the provided signal', async () => {
+    let resultSignal:
+      | ReturnType<typeof import('../use-signal.ts').useSignal<typeof ModelResponseDetailSchema>>
+      | undefined
+
+    const agent = await createAgent({
+      id: 'agent:inference',
+      cwd: process.cwd(),
+      workspace: process.cwd(),
+      models: {
+        async primary() {
+          return {
+            parsed: {
+              thinking: 'considering',
+              toolCalls: [],
+              message: 'hello from model',
+            },
+            usage: {
+              inputTokens: 2,
+              outputTokens: 3,
+            },
+          }
+        },
+      },
+      factories: [
+        ({ signals, trigger }) => {
+          resultSignal = signals.set({
+            key: 'inference-result',
+            schema: ModelResponseDetailSchema,
+            readOnly: false,
+          })
+
+          return {
+            handlers: {
+              run_inference() {
+                trigger({
+                  type: AGENT_CORE_EVENTS.request_inference_primary,
+                  detail: {
+                    request: {
+                      messages: [{ role: 'user', content: 'hi' }],
+                    },
+                    signal: resultSignal,
+                  },
+                })
+              },
+            },
+          }
+        },
+      ],
+    })
+
+    agent.trigger({ type: 'run_inference' })
+    await Bun.sleep(10)
+
+    expect(resultSignal?.get()).toEqual({
+      parsed: {
+        thinking: 'considering',
+        toolCalls: [],
+        message: 'hello from model',
+      },
+      usage: {
+        inputTokens: 2,
+        outputTokens: 3,
+      },
+    })
+  })
+
+  test('executes grep through the spawned grep worker using cwd context', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'plaited-agent-grep-'))
+    await Bun.write(join(workspace, 'search-target.ts'), 'const alpha = 1\nconst beta = 2\nconst ALPHA = 3\n')
+
+    let grepSignal: ReturnType<typeof import('../use-signal.ts').useSignal<typeof GrepOutputSchema>> | undefined
+    let resolveGrep!: () => void
+    const grepSeen = new Promise<void>((resolve) => {
+      resolveGrep = resolve
+    })
+
+    const agent = await createAgent({
+      id: 'agent:grep',
+      cwd: workspace,
+      workspace,
+      factories: [
+        ({ signals }) => {
+          grepSignal = signals.set({
+            key: 'grep-result',
+            schema: GrepOutputSchema,
+            readOnly: false,
+          })
+          grepSignal.listen({
+            eventType: 'grep_result_ready',
+            trigger: () => resolveGrep(),
+            disconnectSet: new Set(),
+          })
+
+          return {}
+        },
+      ],
+    })
+
+    agent.trigger({
+      type: AGENT_CORE_EVENTS.grep,
+      detail: {
+        request: { pattern: 'alpha', path: 'search-target.ts', ignoreCase: true },
+        signal: grepSignal,
+      },
+    })
+
+    await grepSeen
+    expect(grepSignal?.get()).toEqual({
+      matches: [
+        {
+          path: 'search-target.ts',
+          line: 1,
+          text: 'const alpha = 1',
+        },
+        {
+          path: 'search-target.ts',
+          line: 3,
+          text: 'const ALPHA = 3',
+        },
+      ],
+      totalMatches: 2,
+      truncated: false,
+    })
+
+    await rm(workspace, { recursive: true, force: true })
+  })
+
+  test('globs files through a passed signal using cwd context', async () => {
+    const workspace = await mkdtemp(join(tmpdir(), 'plaited-agent-glob-'))
+    await Bun.write(join(workspace, 'a.ts'), 'export const a = 1')
+    await Bun.write(join(workspace, 'b.ts'), 'export const b = 2')
+    await Bun.write(join(workspace, 'skip.js'), 'export const skip = true')
+
+    let globSignal: ReturnType<typeof import('../use-signal.ts').useSignal<z.ZodArray<z.ZodString>>> | undefined
+    let resolveGlob!: () => void
+    const globSeen = new Promise<void>((resolve) => {
+      resolveGlob = resolve
+    })
+
+    const agent = await createAgent({
+      id: 'agent:glob',
+      cwd: workspace,
+      workspace,
+      factories: [
+        ({ signals }) => {
+          globSignal = signals.set({
+            key: 'glob-result',
+            schema: z.array(z.string()),
+            readOnly: false,
+          })
+          globSignal.listen({
+            eventType: 'glob_result_ready',
+            trigger: () => resolveGlob(),
+            disconnectSet: new Set(),
+          })
+
+          return {}
+        },
+      ],
+    })
+
+    agent.trigger({
+      type: AGENT_CORE_EVENTS.glob_files,
+      detail: {
+        request: { pattern: '*.ts' },
+        signal: globSignal,
+      },
+    })
+
+    await globSeen
+    expect(globSignal?.get()?.sort()).toEqual(['a.ts', 'b.ts'])
 
     await rm(workspace, { recursive: true, force: true })
   })

@@ -107,10 +107,13 @@ export const TOOL_STATUS = keyMirror('pending', 'completed', 'failed')
  * @public
  */
 export const AGENT_CORE_EVENTS = keyMirror(
+  'request_inference_primary',
+  'request_inference_vision',
+  'request_inference_tts',
   'read_file',
   'write_file',
-  'edit_file',
-  'list_files',
+  'delete_file',
+  'glob_files',
   'grep',
   'bash',
   'agent_disconnect',
@@ -133,6 +136,6 @@ export const AGENT_CORE_EVENTS = keyMirror(
  */
 export const SIDE_EFFECT_TOOL_EVENTS = keyMirror(
   AGENT_CORE_EVENTS.write_file,
-  AGENT_CORE_EVENTS.edit_file,
+  AGENT_CORE_EVENTS.delete_file,
   AGENT_CORE_EVENTS.bash,
 )

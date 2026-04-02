@@ -18,6 +18,15 @@ import type {
   AgentToolResultDetail,
   GateDecision,
   ModelUsage,
+  RequestBashDetail,
+  RequestDeleteFileDetail,
+  RequestGlobFilesDetail,
+  RequestGrepDetail,
+  RequestPrimaryInferenceDetail,
+  RequestReadFileDetail,
+  RequestTtsInferenceDetail,
+  RequestVisionInferenceDetail,
+  RequestWriteFileDetail,
   ToolDefinition,
   ToolResult,
   UpdateFactoriesDetail,
@@ -41,6 +50,7 @@ export type CreateAgentOptions = {
   id: string
   cwd: string
   workspace: string
+  models?: AgentModels
   env?: Record<string, string>
   factories?: Factory[]
   restrictedTriggers?: string[]
@@ -129,6 +139,16 @@ export type Factory = (params: FactoryParams) => {
 
 export type LocalToolResultDetail = AgentToolResultDetail
 
+export type CoreRequestPrimaryInferenceDetail = RequestPrimaryInferenceDetail
+export type CoreRequestVisionInferenceDetail = RequestVisionInferenceDetail
+export type CoreRequestTtsInferenceDetail = RequestTtsInferenceDetail
+export type CoreRequestBashDetail = RequestBashDetail
+export type CoreRequestDeleteFileDetail = RequestDeleteFileDetail
+export type CoreRequestGlobFilesDetail = RequestGlobFilesDetail
+export type CoreRequestGrepDetail = RequestGrepDetail
+export type CoreRequestReadFileDetail = RequestReadFileDetail
+export type CoreRequestWriteFileDetail = RequestWriteFileDetail
+
 // ============================================================================
 // Model Interface — streaming inference (from pi-mono audit decisions)
 // ============================================================================
@@ -199,6 +219,13 @@ export type Model = {
     signal: AbortSignal
   }) => AsyncIterable<ModelDelta>
 }
+
+export type PrimaryInferenceModel = (args: {
+  messages: ChatMessage[]
+  tools?: ToolDefinition[]
+  temperature?: number
+  timeout?: number
+}) => Promise<ModelResponseDetail>
 
 /**
  * Embedding model interface — text to vector.
@@ -272,6 +299,12 @@ export type VoiceResponse = {
  */
 export type Voice = {
   speak: (text: string, options?: { voice?: string; language?: string }) => Promise<VoiceResponse>
+}
+
+export type AgentModels = {
+  primary?: PrimaryInferenceModel
+  vision?: (args: { image: Uint8Array; prompt: string; timeout?: number }) => Promise<VisionResponse>
+  tts?: (args: { text: string; voice?: string; language?: string; timeout?: number }) => Promise<VoiceResponse>
 }
 
 // ============================================================================
@@ -649,7 +682,7 @@ export type SnapshotCommittedDetail = {
  *
  * @remarks
  * Requested by the `sideEffectCommit` bThread after a side-effect-producing
- * `tool_result` (write_file, edit_file, bash). The handler commits both the
+ * `tool_result` (write_file, delete_file, bash). The handler commits both the
  * code change and all pending `.memory/` decision files to the module's git repo.
  *
  * @public

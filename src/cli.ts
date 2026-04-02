@@ -72,10 +72,8 @@ const parseRawCliInput = async (
   if (schemaIdx !== -1) {
     const target = args[schemaIdx + 1]
     if (target === 'output' && options.outputSchema) {
-      // biome-ignore lint/suspicious/noConsole: CLI stdout output
       console.log(JSON.stringify(z.toJSONSchema(options.outputSchema), null, 2))
     } else {
-      // biome-ignore lint/suspicious/noConsole: CLI stdout output
       console.log(JSON.stringify(z.toJSONSchema(schema), null, 2))
     }
     process.exit(0)
@@ -178,7 +176,7 @@ export const makeCli =
 
     // Extract execution context before tool schema validation
     const { cwd: inputCwd, timeout: inputTimeout, ...toolArgs } = raw as Record<string, unknown>
-    const workspace = typeof inputCwd === 'string' ? inputCwd : process.cwd()
+    const cwd = typeof inputCwd === 'string' ? inputCwd : process.cwd()
     const timeout = typeof inputTimeout === 'number' ? inputTimeout : 300_000
 
     const parsed = schema.safeParse(toolArgs)
@@ -187,10 +185,9 @@ export const makeCli =
       process.exit(2)
     }
 
-    const ctx: ToolContext = { workspace, env: getProcessEnv(), signal: AbortSignal.timeout(timeout) }
+    const ctx: ToolContext = { cwd, env: getProcessEnv(), signal: AbortSignal.timeout(timeout) }
     try {
       const output = await handler(parsed.data as Record<string, unknown>, ctx)
-      // biome-ignore lint/suspicious/noConsole: CLI stdout output
       console.log(JSON.stringify(output))
     } catch (error) {
       console.error(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }))

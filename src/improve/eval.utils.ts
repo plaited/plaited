@@ -500,13 +500,13 @@ export const withMetaVerification = (grader: Grader, verifier: Verifier): Grader
 // ============================================================================
 
 /**
- * Persist trial results to the hypergraph memory as JSONL.
+ * Persist trial results to retained memory as JSONL.
  *
  * @remarks
  * Writes `TrialResult[]` as JSONL to `.memory/evals/trial-{timestamp}.jsonl`,
  * and returns its path for callers that want to stage or process it later.
- * Results become queryable via the
- * hypergraph's text layer (`grep -rl`) and structural layer.
+ * Results become queryable via retained artifact text search and downstream
+ * indexing.
  *
  * Only grading results are persisted — generated code artifacts are ephemeral.
  *

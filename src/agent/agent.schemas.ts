@@ -3,6 +3,8 @@ import { SelectionBidSchema } from '../behavioral/behavioral.schemas.ts'
 import { type DefaultHandlers, isRulesFunction, type RulesFunction } from '../behavioral.ts'
 import { isTypeOf, trueTypeOf } from '../utils.ts'
 import { RISK_TAG, TOOL_STATUS } from './agent.constants.ts'
+import type { Signal } from './agent.types.ts'
+import { TruncationResultSchema } from './truncate.ts'
 
 /**
  * Initial heartbeat configuration for the new agent core.
@@ -274,6 +276,95 @@ export const ToolDefinitionSchema = z.object({
 /** OpenAI function-calling tool definition */
 export type ToolDefinition = z.infer<typeof ToolDefinitionSchema>
 
+export const ReadFileConfigSchema = z.object({
+  path: z.string().describe('Relative path to the file'),
+  offset: z.number().optional().describe('Line offset to start reading from (0-indexed)'),
+  limit: z.number().optional().describe('Maximum number of lines to return'),
+})
+
+export const ReadFileOutputSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('text'),
+    path: z.string(),
+    ...TruncationResultSchema.shape,
+  }),
+  z.object({
+    type: z.literal('image'),
+    path: z.string(),
+    mimeType: z.string(),
+    size: z.number(),
+  }),
+  z.object({
+    type: z.literal('binary'),
+    path: z.string(),
+    mimeType: z.string(),
+    size: z.number(),
+  }),
+])
+
+export const GlobFilesConfigSchema = z.object({
+  pattern: z.string().describe('Glob pattern to match'),
+  exclude: z.array(z.string()).optional().describe('Optional exclude glob patterns'),
+})
+
+export const BashConfigSchema = z.object({
+  path: z.string().describe('Workspace-local path to the Bun worker module to execute'),
+  args: z.array(z.string()).describe('Arguments to pass to the worker module'),
+  timeout: z.number().optional().describe('Optional timeout in milliseconds'),
+})
+
+export const GrepConfigSchema = z.object({
+  pattern: z.string().describe('Regex or literal search pattern'),
+  path: z.string().optional().describe('Directory or file to search (default: cwd root)'),
+  glob: z.string().optional().describe('Filter files by glob pattern (e.g. "*.ts")'),
+  ignoreCase: z.boolean().optional().describe('Case-insensitive search'),
+  literal: z.boolean().optional().describe('Treat pattern as literal string, not regex'),
+  context: z.number().optional().describe('Lines of context before and after each match'),
+  limit: z.number().optional().describe('Maximum number of matches to return (default: 100)'),
+  timeout: z.number().optional().describe('Optional timeout in milliseconds'),
+})
+
+export const BashOutputSchema = z.discriminatedUnion('status', [
+  z.object({
+    status: z.literal('completed'),
+    output: z.string(),
+    exitCode: z.literal(0),
+  }),
+  z.object({
+    status: z.literal('failed'),
+    error: z.string(),
+    exitCode: z.number(),
+    stderr: z.string().optional(),
+  }),
+])
+
+export const WriteFileOutputSchema = z.object({
+  path: z.string(),
+  bytes: z.number(),
+})
+
+export const DeleteFileOutputSchema = z.object({
+  path: z.string(),
+})
+
+export const GrepMatchSchema = z.object({
+  path: z.string(),
+  line: z.number(),
+  text: z.string(),
+  context: z
+    .object({
+      before: z.array(z.string()).optional(),
+      after: z.array(z.string()).optional(),
+    })
+    .optional(),
+})
+
+export const GrepOutputSchema = z.object({
+  matches: z.array(GrepMatchSchema),
+  totalMatches: z.number(),
+  truncated: z.boolean(),
+})
+
 // ============================================================================
 // Model Usage Schema
 // ============================================================================
@@ -294,6 +385,166 @@ export const ModelUsageSchema = z.object({
 
 /** Model usage */
 export type ModelUsage = z.infer<typeof ModelUsageSchema>
+
+export const ChatMessageSchema = z.object({
+  role: z.enum(['system', 'user', 'assistant', 'tool']),
+  content: z.string().nullable().optional(),
+  tool_calls: z.array(z.unknown()).optional(),
+  tool_call_id: z.string().optional(),
+})
+
+export type ChatMessageShape = z.infer<typeof ChatMessageSchema>
+
+export const ParsedModelResponseSchema = z.object({
+  thinking: z.string().nullable(),
+  toolCalls: z.array(AgentToolCallSchema),
+  message: z.string().nullable(),
+})
+
+export type ParsedModelResponseShape = z.infer<typeof ParsedModelResponseSchema>
+
+export const ModelResponseDetailSchema = z.object({
+  parsed: ParsedModelResponseSchema,
+  usage: ModelUsageSchema,
+})
+
+export type ModelResponseDetailShape = z.infer<typeof ModelResponseDetailSchema>
+
+export const RequestInferenceRequestSchema = z.object({
+  messages: z.array(ChatMessageSchema),
+  tools: z.array(ToolDefinitionSchema).optional(),
+  temperature: z.number().optional(),
+  timeout: z.number().optional(),
+})
+
+export const VisionResponseSchema = z.object({
+  description: z.string(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+})
+
+export type VisionResponseShape = z.infer<typeof VisionResponseSchema>
+
+export const VoiceResponseSchema = z.object({
+  audio: z.custom<Uint8Array>((value) => value instanceof Uint8Array),
+  sampleRate: z.number(),
+  duration: z.number(),
+})
+
+export type VoiceResponseShape = z.infer<typeof VoiceResponseSchema>
+
+const isSignalWithSetter = (value: unknown) => {
+  if (!isTypeOf<Record<string, unknown>>(value, 'object')) return false
+  return (
+    trueTypeOf(value.get) === 'function' &&
+    trueTypeOf(value.listen) === 'function' &&
+    trueTypeOf(value.set) === 'function'
+  )
+}
+
+const isBunFile = (value: unknown) => {
+  if (value === null || value === undefined) return false
+  const file = value as Record<string, unknown>
+  return (
+    trueTypeOf(file.exists) === 'function' &&
+    trueTypeOf(file.text) === 'function' &&
+    trueTypeOf(file.bytes) === 'function' &&
+    trueTypeOf(file.json) === 'function'
+  )
+}
+
+export const BunFileSchema = z.custom<ReturnType<typeof Bun.file>>(isBunFile)
+
+export const ReadFileResultSchema = z.object({
+  path: z.string(),
+  file: BunFileSchema,
+})
+
+export const RequestPrimaryInferenceDetailSchema = z.object({
+  request: RequestInferenceRequestSchema,
+  signal: z.custom<Signal<typeof ModelResponseDetailSchema>>(isSignalWithSetter),
+})
+
+export type RequestPrimaryInferenceDetail = z.infer<typeof RequestPrimaryInferenceDetailSchema>
+
+export const RequestVisionInferenceDetailSchema = z.object({
+  request: z.object({
+    image: z.custom<Uint8Array>((value) => value instanceof Uint8Array),
+    prompt: z.string(),
+    timeout: z.number().optional(),
+  }),
+  signal: z.custom<Signal<typeof VisionResponseSchema>>(isSignalWithSetter),
+})
+
+export type RequestVisionInferenceDetail = z.infer<typeof RequestVisionInferenceDetailSchema>
+
+export const RequestTtsInferenceDetailSchema = z.object({
+  request: z.object({
+    text: z.string(),
+    voice: z.string().optional(),
+    language: z.string().optional(),
+    timeout: z.number().optional(),
+  }),
+  signal: z.custom<Signal<typeof VoiceResponseSchema>>(isSignalWithSetter),
+})
+
+export type RequestTtsInferenceDetail = z.infer<typeof RequestTtsInferenceDetailSchema>
+
+export const RequestBashDetailSchema = z.object({
+  request: z.object({
+    path: z.string(),
+    args: z.array(z.string()),
+    timeout: z.number().optional(),
+  }),
+  signal: z.custom<Signal<typeof BashOutputSchema>>(isSignalWithSetter),
+})
+
+export type RequestBashDetail = z.infer<typeof RequestBashDetailSchema>
+
+export const RequestWriteFileDetailSchema = z.object({
+  request: z.object({
+    path: z.string(),
+    content: z.custom<Bun.BlobOrStringOrBuffer>((value) => {
+      return (
+        typeof value === 'string' ||
+        value instanceof Blob ||
+        value instanceof ArrayBuffer ||
+        value instanceof SharedArrayBuffer ||
+        ArrayBuffer.isView(value)
+      )
+    }),
+  }),
+  signal: z.custom<Signal<typeof WriteFileOutputSchema>>(isSignalWithSetter),
+})
+
+export type RequestWriteFileDetail = z.infer<typeof RequestWriteFileDetailSchema>
+
+export const RequestReadFileDetailSchema = z.object({
+  request: z.string(),
+  signal: z.custom<Signal<typeof ReadFileResultSchema>>(isSignalWithSetter),
+})
+
+export type RequestReadFileDetail = z.infer<typeof RequestReadFileDetailSchema>
+
+export const RequestGlobFilesDetailSchema = z.object({
+  request: GlobFilesConfigSchema,
+  signal: z.custom<Signal<z.ZodArray<z.ZodString>>>(isSignalWithSetter),
+})
+
+export type RequestGlobFilesDetail = z.infer<typeof RequestGlobFilesDetailSchema>
+
+export const RequestGrepDetailSchema = z.object({
+  request: GrepConfigSchema,
+  signal: z.custom<Signal<typeof GrepOutputSchema>>(isSignalWithSetter),
+})
+
+export type RequestGrepDetail = z.infer<typeof RequestGrepDetailSchema>
+
+export const RequestDeleteFileDetailSchema = z.object({
+  request: z.string(),
+  signal: z.custom<Signal<typeof DeleteFileOutputSchema>>(isSignalWithSetter),
+})
+
+export type RequestDeleteFileDetail = z.infer<typeof RequestDeleteFileDetailSchema>
 
 // ============================================================================
 // Agent Config Schema

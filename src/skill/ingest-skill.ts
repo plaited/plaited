@@ -1,5 +1,5 @@
 /**
- * Ingest a skill directory into a JSON-LD vertex for hypergraph memory.
+ * Ingest a skill directory into a JSON-LD vertex for retained memory.
  *
  * @remarks
  * Reads SKILL.md frontmatter, scans for TypeScript exports and bThread

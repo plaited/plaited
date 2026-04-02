@@ -1,3 +1,4 @@
+import * as z from 'zod'
 import { AGENT_CORE_EVENTS, AGENT_EVENTS, RISK_TAG } from '../agent/agent.constants.ts'
 import type { AgentToolCall, ToolDefinition } from '../agent/agent.schemas.ts'
 import type {
@@ -68,11 +69,21 @@ const routeApprovedToolCall = ({
 const CORE_TOOL_EVENTS = new Set<string>([
   AGENT_CORE_EVENTS.read_file,
   AGENT_CORE_EVENTS.write_file,
-  AGENT_CORE_EVENTS.edit_file,
-  AGENT_CORE_EVENTS.list_files,
+  AGENT_CORE_EVENTS.delete_file,
+  AGENT_CORE_EVENTS.glob_files,
   AGENT_CORE_EVENTS.grep,
   AGENT_CORE_EVENTS.bash,
 ])
+
+const toCoreToolRequest = ({ name, arguments: args }: { name: string; arguments: Record<string, unknown> }) => {
+  switch (name) {
+    case AGENT_CORE_EVENTS.read_file:
+    case AGENT_CORE_EVENTS.delete_file:
+      return args.path
+    default:
+      return args
+  }
+}
 
 /**
  * Creates the default gate/execute factory promoted out of the legacy loop.
@@ -94,7 +105,7 @@ const CORE_TOOL_EVENTS = new Set<string>([
  */
 export const createGateExecuteFactory: GateExecuteFactoryCreator =
   ({ tools, constitutionPredicates = [] }) =>
-  ({ trigger, useSnapshot }) => {
+  ({ trigger, useSnapshot, signals }) => {
     const startedAtByToolCallId = new Map<string, number>()
     const pendingToolCallsByName = new Map<string, AgentToolCall[]>()
 
@@ -201,6 +212,63 @@ export const createGateExecuteFactory: GateExecuteFactoryCreator =
                   Date.now() - (startedAtByToolCallId.get(execute.toolCall.id) ?? Date.now()),
                 ),
               } satisfies ToolResultDetail,
+            })
+            return
+          }
+
+          const signalBackedTools = new Set<string>([
+            AGENT_CORE_EVENTS.read_file,
+            AGENT_CORE_EVENTS.write_file,
+            AGENT_CORE_EVENTS.delete_file,
+            AGENT_CORE_EVENTS.glob_files,
+            AGENT_CORE_EVENTS.grep,
+            AGENT_CORE_EVENTS.bash,
+          ])
+
+          if (signalBackedTools.has(execute.toolCall.name)) {
+            const resultSignal = signals.set({
+              key: `tool-result:${execute.toolCall.id}`,
+              schema: z.unknown(),
+              readOnly: false,
+            })
+
+            resultSignal.listen({
+              eventType: `tool_result_ready:${execute.toolCall.id}`,
+              trigger: () => {
+                const pendingForResult = pendingToolCallsByName.get(execute.toolCall.name) ?? []
+                const toolCall = pendingForResult.shift()
+                if (pendingForResult.length > 0) {
+                  pendingToolCallsByName.set(execute.toolCall.name, pendingForResult)
+                } else {
+                  pendingToolCallsByName.delete(execute.toolCall.name)
+                }
+                if (!toolCall) return
+
+                const startedAt = startedAtByToolCallId.get(toolCall.id) ?? Date.now()
+                startedAtByToolCallId.delete(toolCall.id)
+
+                trigger({
+                  type: AGENT_EVENTS.tool_result,
+                  detail: {
+                    result: {
+                      toolCallId: toolCall.id,
+                      name: toolCall.name,
+                      status: 'completed',
+                      output: resultSignal.get(),
+                      duration: Date.now() - startedAt,
+                    },
+                  } satisfies ToolResultDetail,
+                })
+              },
+              disconnectSet: new Set(),
+            })
+
+            trigger({
+              type: execute.toolCall.name,
+              detail: {
+                request: toCoreToolRequest(execute.toolCall),
+                signal: resultSignal,
+              },
             })
             return
           }

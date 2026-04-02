@@ -125,13 +125,13 @@ describe('parseCli (subprocess)', () => {
 // ============================================================================
 
 describe('makeCli', () => {
-  test('passes cwd as workspace to handler', async () => {
+  test('passes cwd to handler context', async () => {
     const proc = Bun.spawn(
       [
         'bun',
         '-e',
         `import { makeCli } from './src/cli.ts'; import * as z from 'zod';
-        const handler = async (_args, ctx) => ({ workspace: ctx.workspace });
+        const handler = async (_args, ctx) => ({ cwd: ctx.cwd });
         const cli = makeCli(handler, z.object({ value: z.string() }), 'test');
         await cli(['{"value":"hi","cwd":"/tmp/test-workspace"}'])`,
       ],
@@ -139,16 +139,16 @@ describe('makeCli', () => {
     )
     expect(await proc.exited).toBe(0)
     const output = JSON.parse(await new Response(proc.stdout).text())
-    expect(output.workspace).toBe('/tmp/test-workspace')
+    expect(output.cwd).toBe('/tmp/test-workspace')
   })
 
-  test('defaults workspace to process.cwd() when cwd omitted', async () => {
+  test('defaults cwd to process.cwd() when cwd omitted', async () => {
     const proc = Bun.spawn(
       [
         'bun',
         '-e',
         `import { makeCli } from './src/cli.ts'; import * as z from 'zod';
-        const handler = async (_args, ctx) => ({ workspace: ctx.workspace });
+        const handler = async (_args, ctx) => ({ cwd: ctx.cwd });
         const cli = makeCli(handler, z.object({ value: z.string() }), 'test');
         await cli(['{"value":"hi"}'])`,
       ],
@@ -156,7 +156,7 @@ describe('makeCli', () => {
     )
     expect(await proc.exited).toBe(0)
     const output = JSON.parse(await new Response(proc.stdout).text())
-    expect(output.workspace).toBe(process.cwd())
+    expect(output.cwd).toBe(process.cwd())
   })
 
   test('passes custom timeout to AbortSignal', async () => {
