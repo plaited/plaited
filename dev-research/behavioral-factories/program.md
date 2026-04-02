@@ -25,16 +25,19 @@ Everything else is up for change if it better leverages those foundations.
 
 ## Dependency Order
 
-1. `mss-seed` defines compact MSS anchors.
-2. `mss-corpus` encodes MSS and Modnet evidence against those anchors.
-3. `behavioral-seed` defines compact behavioral and constitution anchors.
-4. `behavioral-corpus` encodes behavioral and governance evidence against those
-   anchors.
+1. `skills/mss/SKILL.md` defines the current MSS-facing contract and usage
+   surface.
+2. `skills/constitution/SKILL.md` defines the current governance and rejection
+   surface.
+3. `skills/behavioral-core/SKILL.md` defines the current behavioral-programming
+   contract.
+4. `skills/agent-loop/SKILL.md` defines the current agent event-flow and loop
+   guidance.
 5. `behavioral-factories` compiles and researches the factory architecture that
-   uses those anchors and corpus artifacts to drive agent evolution.
+   uses those contracts to drive agent evolution.
 
-This lane should consume upstream contracts. It should not recreate upstream
-seed or corpus responsibilities.
+This lane should consume the active skill contracts. It should not recreate
+removed seed or corpus lanes under new names.
 
 ## Purpose
 
@@ -130,7 +133,7 @@ The intended `create-agent` direction is minimal:
   - `id`
   - `cwd`
   - `workspace`
-  - optional `models`
+  - required `models`
   - optional `env`
   - `factories`
   - `restrictedTriggers`
@@ -138,6 +141,30 @@ The intended `create-agent` direction is minimal:
 - output:
   - `trigger` as the main public action surface
   - `useSnapshot`
+
+The current signal-backed capability pattern should stay uniform:
+
+- factories trigger core events with:
+  - `input`
+  - `signal`
+- core handlers write back:
+  - `{ input, output }`
+- factories own signal creation and choose how to correlate, retain, retry, or
+  escalate from those results
+
+This applies to both:
+
+- core inference requests
+- core tool execution requests
+
+The primary-model path should also stay split cleanly:
+
+- model adapters parse tool calls into concrete built-in tool shapes
+- factories decide which parsed tool calls to execute
+- factories translate those tool calls into core trigger payloads with
+  factory-owned signals
+- `src/agent/create-agent.ts` remains the execution boundary, not the tool
+  orchestration policy layer
 
 Disconnect should be modeled as an event, not as the primary imperative return
 surface.
@@ -193,18 +220,12 @@ For the next stage, this lane should bias toward tooling that supports
 Primary lane inputs:
 
 - `dev-research/behavioral-factories/program.md`
-- `dev-research/mss-seed/program.md`
-- `dev-research/mss-seed/seed/`
-- `dev-research/mss-corpus/program.md`
-- `dev-research/mss-corpus/encoded/`
-- `dev-research/behavioral-seed/program.md`
-- `dev-research/behavioral-seed/seed/`
-- `dev-research/behavioral-corpus/program.md`
-- `dev-research/behavioral-corpus/encoded/`
 - `dev-research/evolutionary-agent/program.md`
 - `skills/behavioral-core/SKILL.md`
 - `skills/constitution/SKILL.md`
 - `skills/mss/SKILL.md`
+- `skills/agent-loop/SKILL.md`
+- `skills/project-isolation/SKILL.md`
 - `src/behavioral/behavioral.ts`
 - `src/ui/`
 - `src/factories/`
@@ -231,8 +252,8 @@ Use these inputs with clear precedence:
    foundation.
 2. git-backed markdown, code, and local file history are the primary authored
    durable-memory substrate.
-3. behavioral and MSS seed/corpus artifacts are derived semantic inputs that
-   can accelerate retrieval, validation, and compilation.
+3. the active skill contracts are the current semantic inputs that should guide
+   retrieval, validation, and compilation.
 4. skills are implementation and teaching surfaces, not the final runtime home
    of the system.
    Default shipped skills are still first-class package artifacts and should be
