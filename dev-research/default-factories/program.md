@@ -34,6 +34,7 @@ This lane depends on and integrates focused default-factory subprograms such as:
 - `dev-research/mcp-factories/program.md`
 - `dev-research/memory-factories/program.md`
 - `dev-research/search-factories/program.md`
+- `dev-research/verification-factories/program.md`
 - `dev-research/three-axis-factories/program.md`
 - `dev-research/agent-bootstrap/program.md`
 - `dev-research/node-auth-factories/program.md`
@@ -185,6 +186,8 @@ Surfaces where the main value emerges at bundle level:
 - three-axis control + MCP/A2A exposure
 - deployment bootstrap + infrastructure target validation
 - verification + execution routing
+- verification + module-discovery correctness
+- verification + MSS boundary correctness
 - planning + execution routing
 - final default-factory stack composition
 

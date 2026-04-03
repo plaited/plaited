@@ -186,6 +186,29 @@ Later training loop:
 - adapt weights with LoRA, adapters, or other lightweight methods
 - re-evaluate against the same harness and bundle-level tasks
 
+## Retained Training Bundle
+
+Once the default factories are stable, this lane should define a retained
+training bundle for later weight adaptation.
+
+That bundle should prefer trusted structured artifacts over raw trajectories.
+
+Expected bundle components:
+
+- accepted factory and module artifacts
+- verified MSS boundary decisions
+- verified prompt-to-module and prompt-to-factory mappings
+- search-policy and retrieval-policy examples
+- simulation traces
+- verification reports
+- failed-versus-repaired attempt pairs
+- judged promotion comparisons
+- snapshot-derived signal and orchestration traces that are stable enough for
+  reuse
+
+This bundle should be explicitly downstream of verification and promotion, not
+assembled from raw unverified attempt logs.
+
 ## Catalog Role
 
 The prompt buckets under `dev-research/agent-harness-research/catalog/` should
@@ -220,4 +243,5 @@ Over time, this lane should produce:
 - repair and correction corpora
 - intent-to-structure datasets grounded in trusted artifacts
 - search-policy and retrieval-policy datasets grounded in trusted artifacts
+- MSS-boundary and verification-derived datasets grounded in trusted artifacts
 - later LoRA or adapter training inputs once the symbolic layer is stable

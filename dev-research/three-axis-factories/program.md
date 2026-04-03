@@ -47,6 +47,7 @@ It should integrate with:
 - `dev-research/mcp-factories/program.md`
 - `dev-research/a2a-factories/program.md`
 - `dev-research/memory-factories/program.md`
+- `dev-research/verification-factories/program.md`
 
 Those lanes define concrete capability surfaces.
 
