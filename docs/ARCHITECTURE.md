@@ -190,7 +190,6 @@ deployment shape is documented in `INFRASTRUCTURE.md`.
 | `AGENT-LOOP.md` | Minimal core plus factory-composed orchestration model |
 | `INFRASTRUCTURE.md` | Local-first persistence, sandbox execution, sync boundaries |
 | `skills/constitution/` | Governance factories, neuro-symbolic split, MAC/DAC |
-| `TRAINING.md` | Distillation pipeline, training tiers, flywheel |
 | `skills/modnet-node/` | Modnet topology, A2A protocol, identity, access control, and node references |
 | `dev-research/default-factories/program.md` | Active default factory bundle direction |
 | `dev-research/three-axis-factories/program.md` | Cross-cutting capability, autonomy, and authority control |
