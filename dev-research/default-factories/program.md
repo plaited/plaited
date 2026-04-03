@@ -29,11 +29,14 @@ This lane depends on and integrates focused default-factory subprograms such as:
 
 - `dev-research/bash-factories/program.md`
 - `dev-research/skill-factories/program.md`
+- `dev-research/acp-factories/program.md`
 - `dev-research/a2a-factories/program.md`
 - `dev-research/mcp-factories/program.md`
 - `dev-research/memory-factories/program.md`
 - `dev-research/three-axis-factories/program.md`
 - `dev-research/agent-bootstrap/program.md`
+- `dev-research/node-auth-factories/program.md`
+- `dev-research/module-discovery-factories/program.md`
 - future lanes for retrieval, planning, editing, verification, notifications,
   observability, and related default behaviors
 
@@ -62,11 +65,8 @@ Reference skills:
 - `skills/behavioral-core`
 - `skills/code-documentation`
 - `skills/code-patterns`
-- `skills/mss`
+- `skills/modnet-factories`
 - `skills/node-auth`
-- `skills/modnet-node`
-- `skills/constitution` for governance framing only; current runtime contracts
-  still come from `src/agent/*`
 
 Utility skills:
 
