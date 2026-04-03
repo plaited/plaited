@@ -43,7 +43,8 @@ policy and composition:
    question
 3. `skills/behavioral-core/SKILL.md` defines the BP coordination substrate
 4. `skills/node-auth/SKILL.md` defines the current authentication seam
-5. `skills/modnet-node/SKILL.md` defines node-level topology and A2A framing
+5. `skills/modnet-factories/SKILL.md` defines the current modnet/MSS/A2A
+   translation for factory-era agents
 6. This lane hill-climbs the A2A slice and feeds its winning candidates back
    into the default-factories umbrella
 
@@ -93,8 +94,7 @@ Reference skills:
 
 - `skills/behavioral-core`
 - `skills/node-auth`
-- `skills/modnet-node`
-- `skills/constitution`
+- `skills/modnet-factories`
 
 Utility skills:
 
