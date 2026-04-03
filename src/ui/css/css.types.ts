@@ -34,7 +34,6 @@ export type DesignTokenReference = {
  * container queries, layer rules, media queries, supports queries, pseudo-classes,
  * or attribute selectors.
  *
- * @template T The specific CSS property key (e.g., 'color', 'fontSize').
  */
 export type NestedStatements = {
   /** The default value for the CSS property. */
@@ -60,31 +59,31 @@ export type CSSRules = {
 /**
  * Defines a collection of CSS class definitions. Each key represents a class name,
  * and its value is an object containing CSS properties. Properties can have simple values,
- * nested rules defined by `CreateNestedCSS`, or string values (useful for CSS variables).
+ * nested rules defined by {@link NestedStatements}, or token references.
  */
 export type CreateParams = {
   [key: string]: CSSRules
 }
 
 /**
- * Represents the output of css.create() for a single style definition.
- * Contains generated class names and their corresponding stylesheetss.
+ * Represents the output of `createStyles` for a single style definition.
+ * Contains generated class names and their corresponding stylesheets.
  */
 export type ElementStylesObject = {
   /** A single class name or an array of class names. */
   classNames: string[]
-  /** A single CSS stylesheets string or an array of stylesheets strings. */
+  /** Stylesheets generated for the style definition. */
   stylesheets: string[]
 }
 
 /**
- * Represents the output of css.host() for host element styling.
- * Contains only stylesheetss as host elements don't use class names.
+ * Represents the output of `createHostStyles` for host element styling.
+ * Contains only stylesheets because host styles do not produce class names.
  */
 export type HostStylesObject = {
   /** A single class name or an array of class names. */
   classNames?: never
-  /** A single CSS stylesheets string or an array of stylesheets strings. */
+  /** Stylesheets generated for the host style definition. */
   stylesheets: string[]
 }
 
@@ -96,7 +95,7 @@ export type StylesObject = ElementStylesObject | HostStylesObject
 
 /**
  * Maps style definition keys to their generated ElementStylesObject.
- * This is the return type of css.create().
+ * This is the return type of `createStyles`.
  *
  * @template T - The CreateParams type defining the input styles
  */
@@ -105,7 +104,7 @@ export type ClassNames<T extends CreateParams> = {
 }
 
 /**
- * Defines the parameter structure for css.host().
+ * Defines the parameter structure for `createHostStyles`.
  * Extends CSS properties with support for nested statements, custom properties,
  * and compound selectors for conditional host styling.
  */
@@ -121,9 +120,8 @@ export type CreateHostParams = {
 }
 
 /**
- * Defines the parameter structure for css.host().
- * Extends CSS properties with support for nested statements, custom properties,
- * and compound selectors for conditional host styling.
+ * Defines the parameter structure for `createRootStyles`.
+ * Extends CSS properties with support for nested statements and custom properties.
  */
 export type CreateRootParams = {
   [key in keyof CSSProperties]: CSSProperties[key] | DesignTokenReference | NestedStatements
@@ -148,12 +146,7 @@ export type CSSKeyFrames = {
   }
 }
 /**
- * Represents basic style-related properties that can be applied to an element.
- * Allows specifying class names and/or raw CSS stylesheetss. Undefined, null, or false values in arrays are ignored.
- */
-
-/**
- * Represents a keyframe animation function returned by css.keyframes().
+ * Represents a keyframe animation function returned by `createKeyframes`.
  * The function returns the keyframe stylesheets and has an 'id' property
  * for referencing the animation in CSS.
  */
@@ -169,7 +162,7 @@ export type StyleFunctionKeyframe = {
  */
 export type PrimitiveTokenValue = string | number
 
-/** @internal Argument type for CSS function tokens. */
+/** @internal Accepted argument types for CSS function tokens. */
 type FunctionTokenArguments = PrimitiveTokenValue | DesignTokenReference
 
 /**

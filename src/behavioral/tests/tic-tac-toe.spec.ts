@@ -164,8 +164,8 @@ type Winner = { player: 'X' | 'O'; squares: number[] }
  * 2. Waits for the player to take the second square in that line.
  * 3. Waits for the player to take the third square in that line.
  * 4. Requests a 'win' event, declaring the player and the winning line.
- * @param player The player ('X' or 'O') for whom to detect wins.
- * @returns A record of b-threads, one for each potential winning line for the player.
+ * @param player - Player (`'X'` or `'O'`) for whom to detect wins.
+ * @returns Record of b-threads, one for each potential winning line for the player.
  */
 const detectWins = (player: 'X' | 'O') =>
   winConditions.reduce((acc: Record<string, ReturnType<BSync>>, squares) => {
@@ -392,8 +392,8 @@ test('start at center', () => {
  * For each potential winning line:
  * 1. Waits for 'X' to take two squares in that line.
  * 2. Requests an 'O' move to take the remaining empty square in that line, thus blocking 'X'.
- * @param board The current board state (Set of available squares) used to find the blocking square.
- * @returns A record of b-threads, one for each potential winning line, designed to block X.
+ * @param board - Current board state used to find the blocking square.
+ * @returns Record of b-threads, one for each potential winning line, designed to block X.
  */
 const preventCompletionOfLineWithTwoXs = (board: Set<number>) => {
   const bThreads: Record<string, ReturnType<BSync>> = {}

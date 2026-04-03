@@ -18,7 +18,7 @@ export type Repeat = true | (() => boolean)
  * Events are used for communication between b-threads and are the core mechanism
  * through which the behavioral program coordinates execution.
  *
- * @template T The expected type of the `detail` payload. Defaults to `any` for flexibility.
+ * @template T - Expected type of the `detail` payload.
  * @property type - The string identifier for the event, used for matching and dispatching.
  * @property detail - Optional data payload associated with the event.
  *
@@ -34,8 +34,8 @@ export type BPEvent = { type: string; detail?: any }
  * at the exact moment the synchronization point is reached rather than when the b-thread
  * is initially defined.
  *
- * @template T The expected type of the `detail` payload for the generated event.
- * @returns A `BPEvent` object when the function is invoked.
+ * @template T - Expected type of the generated event detail payload.
+ * @returns `BPEvent` generated when the function is invoked.
  *
  * @remarks
  * Event templates are evaluated each time the synchronization point is reached,
@@ -92,9 +92,8 @@ export type Idioms = {
  * This is a helper type that corresponds to the `bSync` function implementation, which creates
  * one branded behavioral rule step.
  *
- * @template T The type of the event detail payload relevant to this synchronization point.
- * @param arg The `Idioms<T>` object defining the synchronization behavior (request, waitFor, block, interrupt).
- * @returns A `ReturnType<BSync>` that yields the provided `Idioms` object once and completes.
+ * @param arg - `Idioms` object defining the synchronization behavior for the step.
+ * @returns Branded behavioral rule that yields the provided `Idioms` object once and completes.
  *
  * @see bSync The implementation of this type that creates reusable synchronization steps.
  */
@@ -108,9 +107,9 @@ export type BSync = (arg: Idioms) => {
  * This is a helper type that corresponds to the `bThread` function implementation, which allows
  * for modular composition of b-thread behavior.
  *
- * @param rules An array of `ReturnType<BSync>`s, typically created using `bSync`, defining the sequence of steps for the thread.
- * @param repeat Optional configuration (`Repeat`) to control if and how the thread repeats its sequence of rules.
- * @returns A `ReturnType<BSync>` representing the combined behavior of the provided rules, potentially repeating.
+ * @param rules - Synchronization steps, typically created with `bSync`, that define the thread sequence.
+ * @param repeat - Optional repetition policy controlling whether the sequence repeats.
+ * @returns Branded behavioral rule representing the composed thread.
  *
  * @see bThread The implementation of this type that composes multiple synchronization steps into a single b-thread.
  */
@@ -169,7 +168,7 @@ export type CandidateBid = {
  * Represents a cleanup function for resource management.
  * Follows the disposable pattern for proper lifecycle management.
  *
- * @returns void or Promise<void> for async cleanup
+ * @returns `void` or `Promise<void>` for asynchronous cleanup.
  *
  * @see {@link UseFeedback} for event handler cleanup
  * @see {@link UseSnapshot} for snapshot listener cleanup
@@ -204,10 +203,10 @@ export type SelectionFormatter = (args: {
  * to feedback handlers. This allows for real-time monitoring, logging, debugging, and analysis
  * of the behavioral program's execution flow.
  *
- * @param msg An array (`SnapshotMessage`) detailing the status of each event candidate during the step,
- *            including which one was selected, which were blocked, thread priorities, and relationships.
- * @returns May return `void` for synchronous listeners or a `Promise<void>` for asynchronous processing.
- *          The return value is not used by the bProgram, so async operations won't block execution.
+ * @param msg - Snapshot describing the candidate events considered during the step, including
+ * selected, blocked, and interrupted relationships.
+ * @returns `void` for synchronous listeners or `Promise<void>` for asynchronous processing. The
+ * return value is ignored by the behavioral program.
  *
  * @see {@link UseSnapshot} for registering snapshot listeners
  * @see {@link SnapshotMessage} for snapshot structure
@@ -245,7 +244,7 @@ export type DefaultHandlers = Record<string, (detail: any) => void | Promise<voi
  * Represents a collection of event handlers for behavioral program feedback.
  * Maps event types to handler functions that process selected events.
  *
- * @template Details Type map for event payloads, enabling type-safe handlers
+ * @template Details - Type map for event payloads, enabling type-safe handlers.
  *
  * @remarks
  * - Supports both sync and async handlers
@@ -264,8 +263,8 @@ export type Handlers<Details extends EventDetails = EventDetails> = {
  * Hook for subscribing to events selected by the behavioral program.
  * Primary mechanism for external systems to react to program state changes.
  *
- * @param handlers Object mapping event types to handler functions
- * @returns Disconnect function for cleanup
+ * @param handlers - Object mapping event types to handler functions.
+ * @returns Disconnect function for cleanup.
  *
  * @remarks
  * - Maintains separation of concerns
@@ -281,8 +280,8 @@ export type UseFeedback<Details extends EventDetails = EventDetails> = (handlers
  * Hook for monitoring internal state transitions of the behavioral program.
  * Provides debugging, visualization, and analysis capabilities.
  *
- * @param listener Callback receiving snapshots after each event selection
- * @returns Disconnect function for cleanup
+ * @param listener - Callback receiving snapshots after each event selection.
+ * @returns Disconnect function for cleanup.
  *
  * @remarks
  * - Called before feedback handlers
@@ -315,8 +314,8 @@ export type BThreads = {
   /**
    * Checks the status of a specific thread.
    *
-   * @param thread - The string identifier of the thread to check.
-   * @returns An object with boolean flags indicating if the thread is `running` and/or `pending`.
+   * @param thread - Thread identifier to check.
+   * @returns Status object indicating whether the thread is `running` and/or `pending`.
    */
   has: (thread: string) => { running: boolean; pending: boolean }
 
@@ -338,7 +337,7 @@ export type BThreads = {
  * Injects external events into the behavioral program.
  * Primary interface for external systems to communicate with the program.
  *
- * @param args BPEvent to trigger with type and optional detail
+ * @param args - Event to trigger, including its `type` and optional `detail`.
  *
  * @remarks
  * - Triggered events have highest priority (0)
@@ -372,7 +371,7 @@ export type UseRestrictedTrigger = (...restricted: string[]) => Trigger
  * Factory function that creates and initializes a new behavioral program instance.
  * Returns an immutable API for thread management, event handling, and state monitoring.
  *
- * @returns Readonly object with core behavioral programming API
+ * @returns Readonly behavioral programming API.
  *
  * @remarks
  * Super-step execution model:

@@ -16,10 +16,8 @@ import type { BPEvent, BSync, BThread } from './behavioral.types.ts'
  * The template function uses JavaScript's built-in `Math.random()` to select an event
  * with uniform distribution across all provided options.
  *
- * @param events Rest parameter of `BPEvent` objects, representing the possible events to choose from.
- *   Can include any number of events, but at least one should be provided to avoid undefined returns.
- * @returns An event template function that randomly selects one of the provided events when called.
- * @throws Will not throw errors, but template function returns `undefined` if no events provided.
+ * @param events - Event candidates to choose from when the returned template is evaluated.
+ * @returns Event template function that selects one of the provided events when called.
  *
  * @remarks
  * **Why template function?**
@@ -48,8 +46,8 @@ export const useRandomEvent =
  * into b-threads, often for testing or simulating scenarios where the exact order
  * of operations is not fixed or needs to be varied.
  *
- * @param syncs Rest parameter of `ReturnType<BSync>` objects representing the synchronization points to shuffle.
- * @returns A new array containing the same `ReturnType<BSync>` objects but in a randomized order.
+ * @param syncs - Synchronization points to shuffle in place.
+ * @returns The provided synchronization points in randomized order.
  *
  * @remarks
  * - Uses Fisher-Yates shuffle for uniform distribution
@@ -97,7 +95,7 @@ export const shuffleSyncs = (...syncs: ReturnType<BSync>[]) => {
  * This is useful for runtime validation of events, especially when receiving data
  * from external sources or when working with dynamically typed values.
  *
- * @param data The value to check against the `BPEvent` structure.
+ * @param data - Value to check against the `BPEvent` structure.
  * @returns `true` if the value is a valid `BPEvent`, `false` otherwise.
  *
  * @see {@link BPEvent} for the structure being validated
@@ -115,8 +113,8 @@ export const isBPEvent = (data: unknown): data is BPEvent => {
  * A b-thread is a branded behavioral rule returned by `bThread()` that defines a strand of
  * behavior within a `bProgram`.
  *
- * @param rules An array of `ReturnType<BSync>`s defining the sequential steps of the thread.
- * @param repeat Controls if and how the thread repeats its sequence.
+ * @param rules - Sequential synchronization steps that define the thread.
+ * @param repeat - Controls if and how the thread repeats its sequence.
  * @returns A `ReturnType<BSync>` representing the complete b-thread.
  *
  * @remarks
@@ -167,8 +165,8 @@ export const isBehavioralRule = (obj: unknown): obj is ReturnType<BSync> =>
  * Creates a single synchronization point for a b-thread.
  * This is the fundamental building block for constructing b-threads.
  *
- * @param syncPoint The `Idioms` object defining the synchronization behavior.
- * @returns A `ReturnType<BSync>` that represents a single synchronization step.
+ * @param syncPoint - `Idioms` object defining the synchronization behavior.
+ * @returns Branded behavioral rule representing a single synchronization step.
  *
  * @remarks
  * - Each `bSync` creates one branded behavioral rule step

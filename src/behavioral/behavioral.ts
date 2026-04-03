@@ -32,7 +32,7 @@ const triggerWaitFor = () => true
  * This function creates a publisher that maintains a set of listeners and provides methods
  * to publish values to all listeners and to subscribe/unsubscribe listeners.
  *
- * @template T The type of values that will be published through this mechanism.
+ * @template T - Type of values published through this mechanism.
  * @returns A publisher function with a `subscribe` method attached.
  */
 const createPublisher = <T>() => {
@@ -58,9 +58,9 @@ const createPublisher = <T>() => {
  * If the input is already an array, it is returned unchanged.
  * If the input is not an array, it is wrapped in an array.
  *
- * @template T The type of elements in the array.
- * @param obj The value to ensure is an array. Defaults to an empty array if undefined.
- * @returns An array containing the input value(s).
+ * @template T - Type of elements in the normalized array.
+ * @param obj - Value to normalize into an array. Defaults to an empty array when omitted.
+ * @returns Array containing the input value or values.
  */
 const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj : [obj])
 
@@ -70,9 +70,9 @@ const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj : [obj])
  *
  * This is used to check if an event matches waitFor, block, or interrupt declarations.
  *
- * @param type The event type to check against.
- * @param detail The event detail payload to check against.
- * @returns A function that takes a BPListener and returns true if it matches the event.
+ * @param type - Event type to check against.
+ * @param detail - Event detail payload to check against.
+ * @returns Predicate that reports whether a `BPListener` matches the event.
  */
 const isListeningFor = ({ type, detail }: CandidateBid) => {
   return (listener: BPListener): boolean =>
@@ -90,9 +90,9 @@ const isListeningFor = ({ type, detail }: CandidateBid) => {
  *
  * This is used to determine if a thread's request was the one selected during event selection.
  *
- * @param selectedEvent The event candidate that was selected.
- * @param event The request from a thread's Idioms to check against the selected event.
- * @returns True if the request matches the selected event, false otherwise.
+ * @param selectedEvent - Event candidate that was selected.
+ * @param event - Request from a thread's `Idioms` to compare against the selected event.
+ * @returns `true` when the request matches the selected event, otherwise `false`.
  */
 const isPendingRequest = (selectedEvent: CandidateBid, event: BPEvent | BPEventTemplate) =>
   isTypeOf<BPEventTemplate>(event, 'function') ? event === selectedEvent?.template : event.type === selectedEvent.type
@@ -161,8 +161,8 @@ const snapshotFormatter: SelectionFormatter = ({ candidates, selectedEvent, pend
  * the BP paradigm. It maintains the state of all active threads, processes their synchronization
  * statements, selects events, and handles the publication of events to external subscribers.
  *
- * @template Details Type map for event payloads, enabling type-safe handlers. Maps event types to their detail payload types.
- * @returns An immutable object (`BProgramAPI`) containing functions to interact with the program.
+ * @template Details - Type map for event payloads, mapping event types to detail payload types.
+ * @returns Immutable API for interacting with the behavioral program.
  *
  * @remarks
  * The execution follows these general steps (super-step):
@@ -309,7 +309,7 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
    * 4. Publishes the selected event to feedback handlers
    * 5. Initiates the next super-step
    *
-   * @param selectedEvent The event candidate that was selected for this step
+   * @param selectedEvent - Event candidate selected for this step.
    */
   function nextStep(selectedEvent: CandidateBid) {
     for (const [thread, bid] of pending) {

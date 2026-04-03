@@ -3,7 +3,7 @@
  * Handles kebab-case, snake_case, spaces, and mixed separators.
  *
  * @param str - String to convert
- * @returns camelCase string
+ * @returns camelCase string.
  *
  * @see {@link kebabCase} for hyphenated format
  * @see {@link pascalCase} for PascalCase format
@@ -38,7 +38,7 @@ export const camelCase = (str: string) => {
  * Handles camelCase, snake_case, spaces, and mixed formats.
  *
  * @param str - String to convert
- * @returns kebab-case string
+ * @returns kebab-case string.
  *
  * @see {@link camelCase} for camelCase format
  * @see {@link pascalCase} for PascalCase format
@@ -80,7 +80,7 @@ export const kebabCase = (str: string) => {
  * Capitalizes first letter of camelCase result.
  *
  * @param str - String to convert
- * @returns PascalCase string
+ * @returns PascalCase string.
  *
  * @see {@link camelCase} for camelCase format
  * @see {@link kebabCase} for kebab-case format

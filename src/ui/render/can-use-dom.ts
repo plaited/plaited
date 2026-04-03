@@ -3,13 +3,13 @@
  * Detects DOM API availability for isomorphic code.
  * Essential for SSR and universal JavaScript applications.
  *
- * @returns true if DOM APIs are available, false otherwise
+ * @returns `true` if DOM APIs are available, otherwise `false`.
  *
  * @remarks
  * Checks for window, document, and createElement.
  * Used to guard DOM operations in universal code.
  *
- * @see {@link createDocumentFragment} for DOM manipulation
+ * @see {@link document.createElement} for the DOM capability being checked
  */
 export const canUseDOM = () => {
   /**

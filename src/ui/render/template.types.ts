@@ -8,7 +8,7 @@ type CrossOrigin = 'anonymous' | 'use-credentials' | ''
  * This object contains the processed HTML strings and associated metadata needed for rendering.
  *
  * @property html - An array of string fragments representing the HTML structure.
- * @property stylesheetss - An array of CSS stylesheets strings collected from this template and its children.
+ * @property stylesheets - CSS stylesheets collected from this template and its children.
  * @property registry - An array of custom element tag names encountered within this template
  * @property $ - A unique symbol (`TEMPLATE_OBJECT_IDENTIFIER`) used as a type guard to identify Plaited template objects.
  */
@@ -1328,7 +1328,7 @@ export type ElementAttributeList = {
  * It combines the base `DetailedHTMLAttributes` (providing standard HTML/ARIA/Plaited attributes)
  * with an optional generic type `T` for template-specific attributes.
  *
- * @template T An optional type extending `DetailedHTMLAttributes` to include custom attributes for a template. Defaults to `DetailedHTMLAttributes`.
+ * @template T - Optional extension of `DetailedHTMLAttributes` for template-specific attributes.
  */
 export type Attrs<T extends DetailedHTMLAttributes = DetailedHTMLAttributes> = DetailedHTMLAttributes & T
 /**
@@ -1336,9 +1336,9 @@ export type Attrs<T extends DetailedHTMLAttributes = DetailedHTMLAttributes> = D
  * A functional template is a function that accepts an `Attrs` object (attributes)
  * and returns a `TemplateObject`.
  *
- * @template T The type of the attributes object accepted by the template, extending `Attrs`. Defaults to `Attrs`.
- * @param attrs The attributes object passed to the template during rendering. Includes standard attributes, Plaited attributes, and custom attributes defined by `T`.
- * @returns A `TemplateObject` representing the template's rendered output.
+ * @template T - Attributes object accepted by the template.
+ * @param attrs - Attributes passed to the template during rendering.
+ * @returns `TemplateObject` representing the template output.
  */
 export type FunctionTemplate<T extends Attrs = Attrs> = (attrs: T & PlaitedAttributes) => TemplateObject
 /**
