@@ -4,7 +4,8 @@
 > factory-composed orchestration model. Cross-references: `ARCHITECTURE.md`
 > (top-level system shape), `INFRASTRUCTURE.md` (deployment/runtime
 > boundaries), `dev-research/default-factories/program.md` (active default
-> factory bundle direction), `skills/constitution/` (governance patterns).
+> factory bundle direction), `skills/modnet-factories/` (modnet/MSS/factory
+> framing).
 
 ## Overview
 
@@ -104,7 +105,7 @@ Likely contributors include:
 - selected skill metadata or body
 - searchable MCP capability results
 - prior verification failures or repair hints
-- governance and constitution constraints
+- governance or verification constraints from installed factories
 
 Different factory bundles may assemble context differently while still using
 the same minimal engine underneath.

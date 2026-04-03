@@ -1,6 +1,6 @@
 ---
 name: node-auth
-description: Generate authentication code for Plaited server nodes. Covers WebAuthn passkeys (sovereign/local), JWT verification (hosted platform), OIDC tokens (enterprise SSO), and dev-mode bypass. Activated when wiring createServer with session validation or setting up node authentication.
+description: Authentication seam for Plaited nodes. Use when wiring the current server auth boundary, choosing among WebAuthn, platform JWT, enterprise OIDC, or dev-mode auth, or supplying auth facts to factory research lanes.
 license: ISC
 compatibility: Requires bun
 ---
@@ -9,15 +9,21 @@ compatibility: Requires bun
 
 ## Purpose
 
-This skill teaches coding agents how to generate authentication code for Plaited server nodes. The framework provides a `validateSession` seam on `createServer` — this skill fills that seam based on the deployment context.
+This skill is a slim implementation-context reference for the current server
+auth seam.
+
+Use it to decide which auth mode applies and how to wire the existing auth
+boundary in code. Treat bundle-level auth policy as research work for
+`dev-research/node-auth-factories/program.md`.
 
 **Use when:**
-- Setting up a new node that needs authentication
-- Wiring `createServer` with `validateSession`
-- A user asks "how do users authenticate to this node?"
-- Generating auth routes for any deployment scenario
+- wiring `createServer` with `validateSession`
+- choosing among sovereign/local, platform, enterprise, or dev auth modes
+- generating or reviewing auth routes for a concrete deployment context
+- supplying stable auth facts to A2A or three-axis factory research
 
-**Not for:** Authentication between agents (that's A2A mTLS — see `skills/modnet-node/` [access-control.md](../modnet-node/references/access-control.md)).
+**Not for:** deciding the full default auth-aware factory bundle. That belongs
+in `dev-research/node-auth-factories/program.md`.
 
 ## The Seam
 
@@ -31,7 +37,9 @@ createServer({
 })
 ```
 
-`validateSession` is required. WebSocket upgrades are rejected with `session_invalid` (401) if it returns `false` for the `sid` cookie value. For dev mode, pass `() => true`.
+`validateSession` is the stable seam. WebSocket upgrades are rejected with
+`session_invalid` (401) if it returns `false` for the `sid` cookie value. For
+dev mode, pass `() => true`.
 
 ## Decision: Deployment Context
 
@@ -83,5 +91,6 @@ These are reference code the agent should **adapt** to the project, not import d
 
 ## Related Skills
 
-- **plaited-ui** — The UI that the authenticated user sees
+- **modnet-factories** — node/A2A/module composition context for current
+  factory-era architecture
 - **behavioral-core** — BP engine the server bridges to

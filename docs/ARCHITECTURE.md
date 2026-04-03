@@ -21,7 +21,8 @@ The framework provides:
 - **Interfaces** for three model roles (Model, Vision, Voice)
 - **A minimal behavioral core** plus factory-composed orchestration
 - **Memory via snapshots, git, and retained artifacts** — observable BP execution plus git-backed files and commit history
-- **A constitution** encoding Structural-IA and Modnet concepts as bThreads + skills (see `skills/constitution/`)
+- **Governance and verification as factory-level directions** rather than a
+  shipped dedicated constitution runtime
 
 The framework is **not prescriptive** about inference backend. Consumers choose how to serve models — vLLM, llama.cpp, Ollama, cloud APIs, or any OpenAI-compatible endpoint. All three backends support separating `<think>` reasoning from response content at the server level. Code ships via npm (`plaited`). Base-trained models ship via Hugging Face ([huggingface.co/plaited](https://huggingface.co/plaited)).
 
@@ -189,8 +190,7 @@ deployment shape is documented in `INFRASTRUCTURE.md`.
 |---|---|
 | `AGENT-LOOP.md` | Minimal core plus factory-composed orchestration model |
 | `INFRASTRUCTURE.md` | Local-first persistence, sandbox execution, sync boundaries |
-| `skills/constitution/` | Governance factories, neuro-symbolic split, MAC/DAC |
-| `skills/modnet-node/` | Modnet topology, A2A protocol, identity, access control, and node references |
+| `skills/modnet-factories/` | Modnet/MSS/A2A translation for current factory-era agents |
 | `dev-research/default-factories/program.md` | Active default factory bundle direction |
 | `dev-research/three-axis-factories/program.md` | Cross-cutting capability, autonomy, and authority control |
 | `dev-research/agent-bootstrap/program.md` | Bootstrap CLI and deployment tooling direction |
