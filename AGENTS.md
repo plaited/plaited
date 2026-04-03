@@ -202,7 +202,8 @@ Expand test coverage when the impact is broad, shared, or uncertain.
 **JSON imports** — `import x from 'file.json' with { type: 'json' }`.
 **@ts-ignore needs description** — `// @ts-ignore - reason here`.
 **Mermaid diagrams only** — no ASCII box-drawing.
-**AgentSkills validation** — `bun plaited validate-skill <path>`.
+**Skills are internal research/runtime surfaces** until the skill factory owns
+their operator story. Do not assume a public `validate-skill` CLI exists.
 
 # Skill Pointers
 

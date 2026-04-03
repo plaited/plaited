@@ -41,6 +41,7 @@
     "check:types": "tsc --noEmit",
     "check:write": "biome check --write && format-package --write",
     "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .hooks || true",
+    "program:factory": "bun scripts/factory-program-runner.ts",
     "test": "bun test"
   },
   "lint-staged": {

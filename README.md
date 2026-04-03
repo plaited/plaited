@@ -83,8 +83,8 @@ Skills are the portable agent-facing extension surface.
 - workspace-installed skills should live under `.agents/skills/`
 - runtime composition still happens through factories
 
-Use the built-in validator for structural checks:
+Factory-program fanout currently runs through the internal runner:
 
 ```bash
-bun run ./bin/plaited.ts validate-skill skills/typescript-lsp
+bun run program:factory run '{"programPath":"dev-research/skill-factories/program.md","attempts":3,"parallel":2}'
 ```
