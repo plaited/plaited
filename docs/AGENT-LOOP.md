@@ -1,6 +1,10 @@
 # The Agent Loop
 
-> **Status: ACTIVE** — High-level overview. Implementation patterns, event vocabulary, and BP coordination details are in `skills/agent-loop/`. Cross-references: `SAFETY.md` (defense layers), `HYPERGRAPH-MEMORY.md` (context assembly, plans as bThreads), `CONSTITUTION.md` (governance enforcement).
+> **Status: ACTIVE** — High-level overview. Implementation patterns, event
+> vocabulary, and BP coordination details are in `skills/agent-loop/`.
+> Cross-references: `SAFETY.md` (defense layers),
+> `dev-research/memory-factories/program.md` (context assembly and memory
+> layering), `CONSTITUTION.md` (governance enforcement).
 
 ## Overview
 

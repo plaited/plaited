@@ -18,7 +18,7 @@ Plaited's agent layer is a **framework** — composable primitives shipped as a 
 
 The framework provides:
 
-- **Interfaces** for four model roles (Model, Indexer, Vision, Voice)
+- **Interfaces** for three model roles (Model, Vision, Voice)
 - **BP orchestration** for the agent loop, safety constraints, and context assembly
 - **Memory via snapshots, git, and retained artifacts** — observable BP execution plus git-backed files and commit history
 - **A constitution** encoding Structural-IA and Modnet concepts as bThreads + skills (see `skills/constitution/`)
@@ -27,7 +27,7 @@ The framework is **not prescriptive** about inference backend. Consumers choose 
 
 ### Pluggable Models
 
-Model, Indexer, Vision, and Voice are interfaces, not implementations:
+Model, Vision, and Voice are interfaces, not implementations:
 
 ```typescript
 type ModelDelta =
@@ -41,10 +41,6 @@ type Model = {
   reason(context: ModelContext, signal?: AbortSignal): AsyncIterable<ModelDelta>
 }
 
-type Indexer = {
-  embed(text: string): Promise<Float32Array>
-}
-
 type Vision = {
   analyze(image: Uint8Array, prompt: string): Promise<VisionResponse>
 }
@@ -56,20 +52,23 @@ type Voice = {
 
 The `AsyncIterable<ModelDelta>` interface works identically whether the backend is a local inference server (Ollama on localhost), a cloud GPU (vLLM), or an API endpoint (OpenRouter). Deltas stream via BP events (`thinking_delta`, `text_delta`) for progressive UI rendering. OpenAI-compatible wire format.
 
-All four interfaces are backend-agnostic — implementations can target MLX (Apple Silicon), vLLM (CUDA/cloud), or any OpenAI-compatible endpoint. Swap the server, not the adapter.
+All three interfaces are backend-agnostic — implementations can target MLX
+(Apple Silicon), vLLM (CUDA/cloud), or any OpenAI-compatible endpoint. Swap
+the server, not the adapter.
 
 ### Reference Model Stack
 
 | Role | Interface | Reference Model | Params | Function |
 |---|---|---|---|---|
 | **Reasoning** | `Model` | Falcon-H1R 7B (Mamba/SSM hybrid) | 7B | Reasons in `<think>` blocks. Produces structured tool calls. Fine-tuned via distillation from frontier agents. |
-| **Embedding** | `Indexer` *(deferred)* | EmbeddingGemma (Gemma 3 300M base) | 300M | 768-dim embeddings (Matryoshka truncation to 512/256/128). Semantic similarity for retrieval and ranking. 2K token context. 100+ languages. |
 | **Vision** | `Vision` *(deferred)* | Qwen 2.5 VL 7B | 7B | Image/video to structured description. Object localization, OCR, visual grounding. 29 languages. |
 | **Speech output** | `Voice` *(deferred)* | Qwen3-TTS | ~2B | Text to speech. Voice cloning, voice design, streaming. Multilingual. |
 
 **Speech input (STT) is a client-side concern.** Browsers provide the Web Speech API, iOS has `SFSpeechRecognizer`, Android has `SpeechRecognizer` — all on-device, free, multilingual. The client transcribes speech to text and sends it to the node as a normal `task` event. The node never processes raw audio input.
 
-**Reference total: ~16.3B parameters across all roles.** In practice, only Model loads at startup (~4.6 GB quantized). Vision, Voice, and Indexer load on-demand when first called, then remain resident. On a 64+ GB machine all four run concurrently; on 18 GB they swap.
+**Reference total: ~16B parameters across all roles.** In practice, only
+Model loads at startup (~4.6 GB quantized). Vision and Voice load on-demand
+when first called, then remain resident.
 
 ### Framework Compatibility
 
@@ -78,7 +77,6 @@ All reference models run on both MLX (Apple Silicon) and vLLM (CUDA/cloud):
 | Model | MLX Package | vLLM Support | Quantized Size |
 |---|---|---|---|
 | Falcon-H1R 7B | mlx-lm | Yes | ~4.6 GB (Q4) |
-| EmbeddingGemma 300M | mlx-community | Yes | ~200 MB (6-bit) |
 | Qwen 2.5 VL 7B | mlx-vlm | Yes (official recipes) | ~4.6 GB (Q4) |
 | Qwen3-TTS ~2B | mlx-audio | Yes (vLLM-Omni) | ~1.5 GB |
 
@@ -86,12 +84,14 @@ When switching hardware, swap the inference server — not the framework code. T
 
 ### Tools over Interfaces
 
-Embedding, vision, and voice are exposed to the reasoning model as **tools** — `ToolDefinition` entries that Falcon H1R invokes via standard `tool_call` events. The typed interfaces (`Indexer`, `Vision`, `Voice`) sit behind the `ToolExecutor`, providing backend abstraction:
+Vision and voice are exposed to the reasoning model as **tools** —
+`ToolDefinition` entries that Falcon H1R invokes via standard `tool_call`
+events. The typed interfaces (`Vision`, `Voice`) sit behind the
+`ToolExecutor`, providing backend abstraction:
 
 ```
 Agent Loop (Falcon H1R)
     │
-    ├─ tool_call: "embed_search"  → ToolExecutor → Indexer.embed()
     ├─ tool_call: "analyze_image" → ToolExecutor → Vision.analyze()
     └─ tool_call: "speak"         → ToolExecutor → Voice.speak()
 ```
@@ -102,7 +102,8 @@ This design makes capabilities **observable** (tool calls appear in trajectories
 
 - **Framework, Not Platform:** Composable primitives. Code via npm, models via Hugging Face. Platforms are built with it, not by it.
 - **Single Tenancy:** 1 User : 1 Agent instance. User data lives on their agent — nowhere else.
-- **Pluggable Models:** Model, Indexer, Vision, and Voice are interfaces. Implementations swap freely across MLX, vLLM, and cloud APIs.
+- **Pluggable Models:** Model, Vision, and Voice are interfaces.
+  Implementations swap freely across MLX, vLLM, and cloud APIs.
 - **BP-Orchestrated:** The PM's `behavioral()` engine is the central
   coordinator. Its bThreads handle all structural coordination (task
   lifecycle, batch completion, constitution enforcement). See Runtime
@@ -143,7 +144,13 @@ process (Ollama, llama.cpp, vLLM) on the same box. Local runtimes call it via
 `fetch("http://localhost:PORT")` — async I/O that doesn't block the event
 loop. GPU/Apple Silicon Metal handles acceleration.
 
-**A2A transport:** Bun-native implementation of A2A protocol (no a2a-js dependency). One `Bun.serve()` handles all transports — HTTP+JSON/REST, WebSocket (custom binding), and unix sockets — with native mTLS. See `skills/modnet-node/` [a2a-bindings.md](../skills/modnet-node/references/a2a-bindings.md) for deployment-specific bindings. Implementation in `src/a2a/`.
+**A2A transport:** Bun-native implementation of A2A protocol (no a2a-js
+dependency). One `Bun.serve()` handles all transports — HTTP+JSON/REST,
+WebSocket (custom binding), and unix sockets — with native mTLS. See
+`skills/modnet-node/`
+[a2a-bindings.md](../skills/modnet-node/references/a2a-bindings.md) for
+deployment-specific bindings. Current factory surface lives under
+`src/factories/a2a-factory/`.
 
 ## Deployment Tiers
 
@@ -157,7 +164,10 @@ The framework is not prescriptive about deployment:
 
 The pluggable model interfaces make tier selection a deployment decision, not an architectural one. A consumer can start API-backed, move to cloud, and eventually self-host — swapping model implementations without changing bThreads, tools, or application logic.
 
-**Workspace backup** is deployment infrastructure, not framework concern. The framework provides snapshots, git history, and retained artifacts for agent state recovery. Workspace-level backup varies by tier.
+**Workspace backup** is deployment infrastructure, not framework concern. The
+framework provides snapshots, git history, and retained artifacts for agent
+state recovery. Workspace-level backup varies by tier. One proposed local-first
+deployment shape is documented in `INFRASTRUCTURE.md`.
 
 ## Companion Docs
 
@@ -165,9 +175,9 @@ The pluggable model interfaces make tier selection a deployment decision, not an
 |---|---|
 | `AGENT-LOOP.md` | 6-step loop overview (impl patterns in `skills/agent-loop/`) |
 | `SAFETY.md` | Three-axis risk, defense in depth (6 layers) |
+| `INFRASTRUCTURE.md` | Local-first persistence, sandbox execution, sync boundaries |
 | `skills/constitution/` | Governance factories, neuro-symbolic split, MAC/DAC |
 | `TRAINING.md` | Distillation pipeline, training tiers, flywheel |
-| `HYPERGRAPH-MEMORY.md` | Git-versioned JSON-LD memory, context assembly, plans as bThreads |
 | `PROJECT-ISOLATION.md` | Multi-project orchestrator, IPC bridge, tool layers |
 | `skills/modnet-node/` | Modnet topology, A2A protocol, identity, access control, and node references |
 | `GENOME.md` | Skills taxonomy (seeds/tools/eval), CONTRACT frontmatter, wave ordering |

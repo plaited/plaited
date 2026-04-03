@@ -1,6 +1,9 @@
 # Skills and Modules
 
-> **Status: ACTIVE** — Doctrine note for how skills and modules relate inside Plaited. Cross-references: `skills/modnet-node/` (node/module topology), `HYPERGRAPH-MEMORY.md` (memory layering), `AGENT-LOOP.md` (runtime execution), `dev-research/` (current program lanes).
+> **Status: ACTIVE** — Doctrine note for how skills and modules relate inside
+> Plaited. Cross-references: `skills/modnet-node/` (node/module topology),
+> `INFRASTRUCTURE.md` (deployment and memory layering), `AGENT-LOOP.md`
+> (runtime execution), `dev-research/` (current program lanes).
 
 ## Summary
 

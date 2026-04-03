@@ -1,6 +1,8 @@
 # Safety & Risk Model
 
-> **Status: ACTIVE** — Extracted from SYSTEM-DESIGN-V3.md. Cross-references: `CONSTITUTION.md` (governance enforcement), `AGENT-LOOP.md` (pipeline stages), `HYPERGRAPH-MEMORY.md` (event log recovery via JSON-LD).
+> **Status: ACTIVE** — Extracted from SYSTEM-DESIGN-V3.md. Cross-references:
+> `CONSTITUTION.md` (governance enforcement), `AGENT-LOOP.md` (pipeline
+> stages), `INFRASTRUCTURE.md` (sandbox and durable state boundaries).
 
 ## Three-Axis Risk Model
 
@@ -51,8 +53,8 @@ graph TD
         SB["Pluggable sandbox backend<br/>restricts subprocess capabilities"]
     end
 
-    subgraph L3["Layer 3: Hypergraph Recovery"]
-        GIT["useSnapshot → JSON-LD decisions<br/>git-versioned audit trail"]
+    subgraph L3["Layer 3: Snapshot Recovery"]
+        GIT["useSnapshot → durable audit trail<br/>git-backed artifacts and logs"]
     end
 
     L0 --> L1 --> L4 --> L5 --> L2 --> L3
@@ -67,7 +69,9 @@ graph TD
 
 ### Layer 0 — BP Context Assembly (Soft Pre-Filter)
 
-BP orchestrates context assembly via the `context_assembly` event (see `HYPERGRAPH-MEMORY.md` § Context Assembly as BP Event). Active constraints are selected based on area-of-effect scoping and injected into the model's context. The model plans *around* constraints rather than into them.
+BP orchestrates context assembly via the `context_assembly` event. Active
+constraints are selected based on area-of-effect scoping and injected into the
+model's context. The model plans *around* constraints rather than into them.
 
 **What it catches:** Most constraint violations, before they're even proposed. The model learns the constraint landscape through experience.
 

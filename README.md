@@ -223,7 +223,7 @@ Current research lanes:
 - [program.md](/Users/eirby/Workspace/plaited/dev-research/modnet/program.md) — inter-node/modnet lane
 - [program.md](/Users/eirby/Workspace/plaited/dev-research/mss-seed/program.md) — compact MSS/Modnet seed ontology lane
 - [program.md](/Users/eirby/Workspace/plaited/dev-research/mss-corpus/program.md) — graph-ready MSS/Modnet corpus lane
-- [program.md](/Users/eirby/Workspace/plaited/dev-research/behavioral-factories/program.md) — downstream factory-compilation lane
+- [program.md](/Users/eirby/Workspace/plaited/dev-research/default-factories/program.md) — default factory bundle lane
 
 ## Development
 
@@ -331,9 +331,6 @@ bun run native-model:compare -- \
   --baseline ./dev-research/native-model/evals/runs/falcon-untuned-baseline \
   --candidate ./dev-research/native-model/evals/runs/<candidate-run>
 
-# Start the local EmbeddingGemma MLX embedding server
-bun run embedding:mlx
-
 # Start the local Qwen3 VL MLX vision-language server
 bun run qwen:vl:mlx
 
@@ -378,10 +375,6 @@ What each command does:
   - reads the tracked promoted adapter path from [`.env.schema`](/Users/eirby/Workspace/plaited/.env.schema)
   - is for local inference/eval loops, not weight updates
   - use `FALCON_DISABLE_ADAPTER=1 bun run falcon:mlx` for an untuned baseline run
-
-- `bun run embedding:mlx`
-  - starts the local MLX embedding server using EmbeddingGemma
-  - is the local embedding backend for `embed_search`
 
 - `bun run qwen:vl:mlx`
   - starts the local MLX vision-language server using Qwen3 VL
@@ -428,8 +421,8 @@ See:
 ## Read Next
 
 - [ARCHITECTURE.md](/Users/eirby/Workspace/plaited/docs/ARCHITECTURE.md)
+- [INFRASTRUCTURE.md](/Users/eirby/Workspace/plaited/docs/INFRASTRUCTURE.md)
 - [modnet-node skill](/Users/eirby/Workspace/plaited/skills/modnet-node/SKILL.md)
-- [HYPERGRAPH-MEMORY.md](/Users/eirby/Workspace/plaited/docs/HYPERGRAPH-MEMORY.md)
 - [constitution skill](/Users/eirby/Workspace/plaited/skills/constitution/SKILL.md)
 
 ## License

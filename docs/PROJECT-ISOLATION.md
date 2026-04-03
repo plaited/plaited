@@ -17,7 +17,7 @@ Logical separation (namespaces, in-process modules) is insufficient: a bug in on
 | **Security boundaries** | Each subprocess runs with its own sandbox profile. Different projects can have different capability restrictions. |
 | **Network proxy** | Subprocesses have no outbound network. All network requests are IPC events to the orchestrator, which proxies after BP gate approval. |
 | **Independent lifecycle** | Projects can be started, stopped, and restarted independently. |
-| **Event log partitioning** | Each subprocess's `useSnapshot` callbacks produce JSON-LD files in project-scoped directories. |
+| **Event log partitioning** | Each subprocess's `useSnapshot` callbacks produce project-scoped logs and artifacts. |
 
 ## Implementation
 
@@ -33,4 +33,4 @@ See **[skills/project-isolation/](../skills/project-isolation/SKILL.md)** for:
 
 - `SAFETY.md` — sandbox Layer 2
 - `CONSTITUTION.md` — constitution loading
-- `HYPERGRAPH-MEMORY.md` — event log partitioning via JSON-LD
+- `INFRASTRUCTURE.md` — durable state and execution boundaries

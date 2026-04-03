@@ -1,6 +1,11 @@
 # Training: Distillation from Frontier Agents
 
-> **Status: ACTIVE** — Design rationale document. Implementation details now live across `src/improve`, `scripts/autoresearch-runner.ts`, and `dev-research/evolutionary-agent/program.md`. Cross-references: `AGENT-LOOP.md` (pipeline context), `HYPERGRAPH-MEMORY.md` (JSON-LD as training source), `skills/constitution/` (flywheel bThread approval).
+> **Status: ACTIVE** — Design rationale document. Implementation details now
+> live across `src/improve`, `scripts/autoresearch-runner.ts`, and
+> `dev-research/evolutionary-agent/program.md`. Cross-references:
+> `AGENT-LOOP.md` (pipeline context),
+> `dev-research/memory-factories/program.md` (durable memory direction),
+> `skills/constitution/` (flywheel bThread approval).
 
 ## Overview
 
