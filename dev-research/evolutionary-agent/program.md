@@ -14,7 +14,7 @@ The goal is not to train a frontier model from scratch. The goal is to:
 - periodically distill stable winning behavior into cleaner defaults, datasets,
   or retained policy artifacts
 
-This lane is intended to run on the MSI machine over long periods.
+This lane is a target workflow spec, not a shipped runner surface.
 
 ## Core Hypothesis
 
@@ -62,7 +62,7 @@ lessons.
 
 The target is a hybrid agent stack with:
 
-- a local base model on MSI
+- a local or self-hosted base model
 - an evolvable harness
 - optional web search and retrieval
 - symbolic behavioral threads
@@ -74,10 +74,10 @@ The target is a hybrid agent stack with:
 
 In repo terms, the intended foundation is:
 
-- `scripts/autoresearch-runner.ts` for candidate generation and durable attempt orchestration
 - `src/improve` for judging, verifier/meta-verification, and promotion selection
 - lane `program.md` files for bounded mutation targets
 - accepted attempt commits and judged outputs as retention and distillation inputs
+- future automation surfaces only when the loop is concrete enough to run and verify
 
 ## What Evolves
 
@@ -148,7 +148,7 @@ past sessions:
 Concretely, this means:
 
 1. mutate a Plaited node variant or a lane-local policy surface
-2. generate candidate attempts with `autoresearch-runner`
+2. generate bounded candidate attempts with durable worktree-backed artifacts
 3. run deterministic validation inside each attempt
 4. evaluate surviving attempts with `src/improve`
 5. use optional meta-verification when selection confidence matters
@@ -295,12 +295,6 @@ Evaluation should be layered.
 
 Current repo tooling already supports part of this program:
 
-- `autoresearch-runner` gives:
-  - worktree-backed attempts
-  - durable status and result artifacts
-  - deterministic validation
-  - resumable evaluation
-
 - `src/improve` gives:
   - trial-result evaluation
   - attempt-level judge / meta-verifier / promotion prompt tooling
@@ -311,6 +305,7 @@ Current repo tooling already supports part of this program:
 
 What still needs improvement to fully support this lane:
 
+- a concrete orchestration surface once repeated evolutionary runs are real
 - explicit mutation-target or variant schemas once the target surface is stable
 - mutation lineage and recombination support
 - richer long-horizon trajectory capture and replay
@@ -362,8 +357,8 @@ loop:
 - durable policy artifacts that should become skills, memory, or runtime defaults
 
 `trial-runner` remains useful for repeated reliability suites, but it is not the
-center of this lane. The center is `autoresearch` for candidate generation and
-`improve` for evaluation and selection.
+center of this lane. The center is bounded candidate generation plus
+`src/improve` for evaluation and selection.
 
 Raw eval output should stay evaluation-only. Retention, dataset extraction,
 and later model-tuning inputs should come only after verification and
@@ -418,4 +413,4 @@ Over time, this lane should produce:
 - symbolic behavioral thread corpora
 - improved harness defaults
 - distilled adapters or local policies where justified
-- a reproducible long-horizon research environment on MSI
+- a reproducible long-horizon research environment

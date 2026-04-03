@@ -12,8 +12,8 @@ Run prompts against an adapter, capture structured results, and optionally grade
 them. The fundamental operation is a **trial**: running k attempts per prompt
 and measuring pass@k reliability.
 
-This is one evaluation mode inside `src/improve`, not the whole internal
-autoresearch architecture.
+This is one evaluation mode inside `src/improve`, not the whole improvement
+workflow.
 
 **The runner executes repeated trials. You provide adapters and graders, and may
 optionally add verifier/meta-verification policy on top.**
@@ -32,7 +32,7 @@ optionally add verifier/meta-verification policy on top.**
 - Comparing agents across configurations (via `compare-trials` skill)
 - Running repeated prompt suites against Pi, Plaited-native, or external adapters
 
-Use `scripts/autoresearch-runner.ts` instead when the question is:
+Use a repo-specific worktree automation surface instead when the question is:
 - mutate workspace state
 - validate candidate attempts
 - judge workspace improvements

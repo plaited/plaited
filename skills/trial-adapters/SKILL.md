@@ -19,7 +19,7 @@ JSON.
 - Integrating external tools or agent runtimes into the public improve surface
 
 This skill is a reusable integration surface. It is not the center of
-Plaited's internal autoresearch architecture.
+Plaited's broader improvement workflow.
 
 ## Adapter Contract
 

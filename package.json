@@ -35,15 +35,12 @@
     "access": "public"
   },
   "scripts": {
-    "autoresearch:runner": "bunx varlock run -- bun scripts/autoresearch-runner.ts",
-    "build:wasm": "bunx asc src/hypergraph/graph-algorithms/graph-algorithms.ts --outFile src/hypergraph/hypergraph.wasm --optimize --exportRuntime",
     "check": "bun run check:biome && bun run check:types && bun run check:package",
     "check:biome": "biome check",
     "check:package": "format-package --check",
     "check:types": "tsc --noEmit",
     "check:write": "biome check --write && format-package --write",
     "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .hooks || true",
-    "research:behavioral-factories": "bunx varlock run -- bun scripts/autoresearch-runner.ts scripts/behavioral-factories.ts run",
     "test": "bun test"
   },
   "lint-staged": {

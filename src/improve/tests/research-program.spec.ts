@@ -75,7 +75,7 @@ Keep it bounded.
 
 ## Scope
 
-- scripts/autoresearch-runner.ts
+- src/bootstrap/bootstrap.ts
 - src/improve/attempt-evaluation.ts
 - README.md
 
@@ -92,12 +92,12 @@ Run checks.
 
     expect(context.program.path).toBe(programPath)
     expect(context.program.scopePaths).toEqual([
-      'scripts/autoresearch-runner.ts',
+      'src/bootstrap/bootstrap.ts',
       'src/improve/attempt-evaluation.ts',
       'README.md',
     ])
     expect(context.allowedPaths).toEqual([
-      'scripts/autoresearch-runner.ts',
+      'src/bootstrap/bootstrap.ts',
       'src/improve/attempt-evaluation.ts',
       'README.md',
     ])
