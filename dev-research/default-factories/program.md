@@ -31,6 +31,7 @@ This lane depends on and integrates focused default-factory subprograms such as:
 - `dev-research/skill-factories/program.md`
 - `dev-research/a2a-factories/program.md`
 - `dev-research/mcp-factories/program.md`
+- `dev-research/memory-factories/program.md`
 - future lanes for retrieval, planning, memory, validation, notifications,
   observability, and related default behaviors
 
