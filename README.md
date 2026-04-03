@@ -43,7 +43,7 @@ Higher-level orchestration belongs in factories.
 - [default-factories/program.md](/Users/eirby/Workspace/plaited/dev-research/default-factories/program.md)
 - [agent-bootstrap/program.md](/Users/eirby/Workspace/plaited/dev-research/agent-bootstrap/program.md)
 - [three-axis-factories/program.md](/Users/eirby/Workspace/plaited/dev-research/three-axis-factories/program.md)
-- [evolutionary-agent/program.md](/Users/eirby/Workspace/plaited/dev-research/evolutionary-agent/program.md)
+- [agent-harness-research/program.md](/Users/eirby/Workspace/plaited/dev-research/agent-harness-research/program.md)
 
 ## Repository Map
 
