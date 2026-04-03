@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
-import { createPeerStore, TRUST_LEVEL } from '../peers.ts'
 import type { AgentCard } from '../a2a.schemas.ts'
 import { signAgentCard } from '../a2a.utils.ts'
+import { createPeerStore, TRUST_LEVEL } from '../peers.ts'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

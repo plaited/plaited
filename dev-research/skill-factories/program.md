@@ -59,7 +59,7 @@ This lane is a focused subprogram under:
 
 It should stay aligned with:
 
-- `dev-research/behavioral-factories/program.md`
+- `src/agent/create-agent.ts`
 
 It is expected to inform the default factory bundle decision, but it should
 remain a bounded surface:

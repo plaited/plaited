@@ -10,12 +10,12 @@
  * @public
  */
 
-export * from './a2a/a2a.constants.ts'
-export * from './a2a/a2a.schemas.ts'
-export type * from './a2a/a2a.types.ts'
-export * from './a2a/a2a.utils.ts'
-export * from './a2a/create-a2a-client.ts'
-export * from './a2a/create-a2a-handlers.ts'
-export * from './a2a/create-a2a-ws-client.ts'
-export * from './a2a/create-a2a-ws-handler.ts'
-export * from './a2a/peers.ts'
+export * from './factories/a2a-factory/a2a.constants.ts'
+export * from './factories/a2a-factory/a2a.schemas.ts'
+export type * from './factories/a2a-factory/a2a.types.ts'
+export * from './factories/a2a-factory/a2a.utils.ts'
+export * from './factories/a2a-factory/create-a2a-client.ts'
+export * from './factories/a2a-factory/create-a2a-handlers.ts'
+export * from './factories/a2a-factory/create-a2a-ws-client.ts'
+export * from './factories/a2a-factory/create-a2a-ws-handler.ts'
+export * from './factories/a2a-factory/peers.ts'

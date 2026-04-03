@@ -1,2 +1,0 @@
-{"input":"Validate skills/validate-skill for AgentSkills compliance.","expect":"Reports structural findings only and does not claim to grade behavior."}
-{"input":"Review whether this skill has a good description trigger.","expect":"Separates evaluation from validation and avoids pretending structural checks answer trigger quality."}
