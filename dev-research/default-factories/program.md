@@ -62,16 +62,24 @@ Reference skills:
 - `skills/behavioral-core`
 - `skills/code-documentation`
 - `skills/code-patterns`
-- `skills/agent-loop`
 - `skills/mss`
 - `skills/node-auth`
 - `skills/modnet-node`
-- `skills/constitution`
-- `skills/proactive-node`
+- `skills/constitution` for governance framing only; current runtime contracts
+  still come from `src/agent/*`
 
 Utility skills:
 
 - `skills/typescript-lsp` for type-aware analysis of TypeScript surfaces
+
+Current heartbeat note:
+
+- `src/agent/create-agent.ts` owns only timer setup and emission of
+  `AGENT_CORE_EVENTS.heartbeat`
+- heartbeat is substrate, not policy
+- default-factory work should decide which installed factories listen to
+  heartbeat, what they poll, how they diff state, and whether they notify,
+  infer, or stay idle
 
 ## Core Hypothesis
 

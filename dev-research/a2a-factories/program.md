@@ -94,7 +94,6 @@ Reference skills:
 - `skills/behavioral-core`
 - `skills/node-auth`
 - `skills/modnet-node`
-- `skills/proactive-node`
 - `skills/constitution`
 
 Utility skills:

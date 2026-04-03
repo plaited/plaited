@@ -571,7 +571,6 @@ The schema hard cap is scale=4. If a "coordination workspace" or "project suite"
 - **mss** — MSS tag definitions, composition rules, valid combinations
 - **node-auth** — User authentication to a node (WebAuthn, JWT, OIDC)
 - **behavioral-core** — BP engine that drives access control and the agent loop
-- **agent-loop** — The 6-step agent pipeline nodes run
 - **constitution** — Governance factories for MAC/DAC rules
 - **plaited-ui** — Server-driven UI the node renders
 - **varlock** — AI-safe environment configuration for node secrets

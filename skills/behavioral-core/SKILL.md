@@ -49,31 +49,17 @@ In this repo, BP is not only for symbolic reasoning. It is used as a general eve
 - Infinite super-step anti-pattern
 - Academic paper concepts (additive composition, scenario classification, pluggable ESM)
 
-### Exploration Tests
+### Grounding Tests
 
-**[agent-patterns.spec.ts](references/agent-patterns.spec.ts)** — 14 validated patterns for agent design:
-- doneGuard blocking, ephemeral blocks, persistent blocks
-- Shared state between handlers and predicates
-- Counter-based completion via events
-- Async handler → trigger chaining
-- Event routing by predicate
-- Additive composition of independent requirements
+The executable grounding for these patterns lives in the real runtime tests:
 
-**[agent-lifecycle.spec.ts](references/agent-lifecycle.spec.ts)** — 5 validated lifecycle patterns:
-- Per-task threads: interrupt + dynamic addition + re-use
-- Mid-sequence interrupt (thread killed wherever it is)
-- `repeat: () => boolean` conditional self-termination
-- Task gate: blocks stale events between tasks
-- Stale async trigger protection
+- `src/behavioral/tests/agent-patterns.spec.ts`
+- `src/behavioral/tests/agent-lifecycle.spec.ts`
+- `src/behavioral/tests/agent-orchestration.spec.ts`
 
-**[agent-orchestration.spec.ts](references/agent-orchestration.spec.ts)** — 10 validated orchestration patterns:
-- Phase-transition routing (taskGate pattern)
-- Queue blocking (one-at-a-time enforcement)
-- useSnapshot for observability and event logging
-- Constitution as additive bThreads (config-driven rules)
-- Runtime rule addition without modifying existing threads
-- Parallel simulation coordination (Set-based guard)
-- Restricted trigger API (useRestrictedTrigger boundary)
+Use those files when you need current repo-grounded BP examples. They are the
+source of truth for validated coordination patterns; this skill should not
+maintain copied test mirrors.
 
 ### Behavioral Programs Foundation
 

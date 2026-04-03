@@ -211,4 +211,4 @@ their operator story. Do not assume a public `validate-skill` CLI exists.
 **BP patterns** — use `behavioral-core` skill when implementing behavioral programs.
 **UI development/testing** — use `plaited-ui` for controller protocol, custom
 elements, SSR, and the three-layer UI test strategy.
-**Agent pipeline** — use `agent-loop` skill when implementing createAgentLoop, wiring handlers, or designing event flow.
+**Agent pipeline** — use `behavioral-core` plus `src/agent/create-agent.ts` and `docs/AGENT-LOOP.md` when implementing factory-owned orchestration or agent event flow.
