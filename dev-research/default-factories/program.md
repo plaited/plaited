@@ -32,7 +32,9 @@ This lane depends on and integrates focused default-factory subprograms such as:
 - `dev-research/a2a-factories/program.md`
 - `dev-research/mcp-factories/program.md`
 - `dev-research/memory-factories/program.md`
-- future lanes for retrieval, planning, memory, validation, notifications,
+- `dev-research/three-axis-factories/program.md`
+- `dev-research/agent-bootstrap/program.md`
+- future lanes for retrieval, planning, editing, verification, notifications,
   observability, and related default behaviors
 
 The broader architectural direction should now be taken directly from:
@@ -95,10 +97,21 @@ Each focused lane should research one bounded surface, for example:
 - local execution
 - retrieval
 - planning
+- editing
 - validation
 - memory
+- three-axis control
+- deployment bootstrap
 - notification and projection
 - observability and artifact handling
+
+Near-term missing lanes that now look concrete are:
+
+- `plan-factory`
+- `edit-factory`
+- `verification-factory`
+- `three-axis-factory`
+- `agent-bootstrap`
 
 Each subprogram should be narrow enough to support parallel mutation and judged
 comparison across many independent attempts.
@@ -145,7 +158,10 @@ Surfaces that can be explored separately but must be integrated early:
 
 - retrieval
 - planning
+- editing
 - validation
+- three-axis control
+- deployment bootstrap
 
 ### Tightly Coupled
 
@@ -153,6 +169,11 @@ Surfaces where the main value emerges at bundle level:
 
 - memory + planning
 - retrieval + validation
+- editing + planning
+- three-axis control + execution routing
+- three-axis control + MCP/A2A exposure
+- deployment bootstrap + infrastructure target validation
+- verification + execution routing
 - planning + execution routing
 - final default-factory stack composition
 

@@ -11,29 +11,17 @@
  * @internal
  */
 
-import {
-  discoverSkillsCli,
-  evaluateSkillCli,
-  ingestSkillCli,
-  skillLinksCli,
-  validateSkillCli,
-} from '../src/markdown.ts'
-
-export { makeCli, parseCli, parseCliRequest } from '../src/utils/cli.ts'
-
+import { bootstrapCli } from '../src/bootstrap.ts'
 import { evalCli } from '../src/improve.ts'
+
+export { makeCli, parseCli, parseCliRequest } from '../src/utils.ts'
 
 // ============================================================================
 // Command Registry
 // ============================================================================
 
 const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
-  // Development tools
-  'validate-skill': validateSkillCli,
-  'ingest-skill': ingestSkillCli,
-  'discover-skills': discoverSkillsCli,
-  'evaluate-skill': evaluateSkillCli,
-  md: skillLinksCli,
+  bootstrap: bootstrapCli,
   eval: evalCli,
 }
 
@@ -67,8 +55,7 @@ export const runCli = async (argv: string[]): Promise<void> => {
        plaited --schema               # List all commands
 
 Commands:
-    validate-skill, ingest-skill, discover-skills,
-    evaluate-skill, md, eval`)
+    bootstrap, eval`)
     process.exit(command ? 0 : 1)
   }
 

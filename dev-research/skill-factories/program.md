@@ -11,10 +11,8 @@ metadata for model-time discovery, and then progressively inject the selected
 skill body and referenced assets into the model context through the existing
 agent core.
 
-The point of this lane is not to recreate the older `SkillTool` surface as a
-top-level monolith. It is to translate the useful behavior from
-`plaited/example-agent` into the current minimal-core + behavioral-factory
-architecture.
+This lane translates the `plaited/example-agent` skill behavior into the
+current minimal-core + behavioral-factory architecture.
 
 ## Why This Lane Exists
 
@@ -98,7 +96,7 @@ Important utility surfaces already present:
 
 ## External Reference Inputs
 
-Use `gh` as the source of truth for the legacy reference implementation:
+Use `gh` as the source of truth for the reference implementation:
 
 - `https://github.com/plaited/example-agent/tree/main/src/tools/SkillTool`
 - `https://github.com/plaited/example-agent/tree/main/src/skills`
@@ -119,8 +117,7 @@ These references matter because they already capture:
 
 ## Core Hypothesis
 
-The best skill-factory design will preserve the current architecture if it
-follows this split:
+The best skill-factory design should follow this split:
 
 - `createAgent()` remains the execution boundary
 - the skill factory owns skill discovery, selection policy, and context
@@ -133,7 +130,6 @@ follows this split:
 Stated differently:
 
 - skills should become agent behavior through factories
-- not through a recreated `src/tools/SkillTool` runtime tier
 
 ## Product Target
 
@@ -246,7 +242,6 @@ This should not collapse into "dump all skills into the prompt and hope."
 
 This lane should not:
 
-- recreate the old slash-command runtime as a separate subsystem
 - make every skill a top-level CLI command
 - bypass the existing core event and signal architecture
 - eagerly load all linked files for every discovered skill
@@ -255,7 +250,7 @@ This lane should not:
 
 ## Key Translation Problem From `example-agent`
 
-The old `example-agent` surfaces mix together several concerns:
+The `example-agent` surfaces mix together several concerns:
 
 - skill discovery
 - skill prompt-budget formatting
@@ -272,8 +267,8 @@ This lane should separate those concerns for Plaited:
 - side effects in handlers
 - built-in IO and execution in the core
 
-The research challenge is not whether `example-agent` is useful. It is how to keep
-its good ideas while removing assumptions from its older runtime model.
+The research challenge is how to keep its good ideas while fitting them to the
+current runtime model.
 
 ## Candidate Factory Responsibilities
 
@@ -341,8 +336,7 @@ This lane should produce:
 - the executable factory at `src/factories/skills-factory/skills-factory.ts`
 - any supporting schemas, constants, and tests under
   `src/factories/skills-factory/`
-- retained notes on which `example-agent` behaviors were preserved, changed, or
-  rejected
+- retained notes on which `example-agent` behaviors were adopted or reshaped
 - a clear recommendation on whether this factory should be included in the
   default shipped bundle
 
@@ -357,5 +351,6 @@ The first implementation pass should bias toward:
 - validation side effects stored in signals
 - existing `read_file` and `bash` core handlers for follow-up execution
 
-This is the narrowest path that still captures the core value of the old
-`SkillTool` / `loadSkillsDir` behavior inside the current Plaited architecture.
+This is the narrowest path that still captures the core value of
+`SkillTool` / `loadSkillsDir` behavior inside the current Plaited
+architecture.

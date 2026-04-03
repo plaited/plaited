@@ -19,7 +19,7 @@ Plaited's agent layer is a **framework** — composable primitives shipped as a 
 The framework provides:
 
 - **Interfaces** for three model roles (Model, Vision, Voice)
-- **BP orchestration** for the agent loop, safety constraints, and context assembly
+- **A minimal behavioral core** plus factory-composed orchestration
 - **Memory via snapshots, git, and retained artifacts** — observable BP execution plus git-backed files and commit history
 - **A constitution** encoding Structural-IA and Modnet concepts as bThreads + skills (see `skills/constitution/`)
 
@@ -70,33 +70,47 @@ the server, not the adapter.
 Model loads at startup (~4.6 GB quantized). Vision and Voice load on-demand
 when first called, then remain resident.
 
-### Framework Compatibility
+### Reference Deployment
 
-All reference models run on both MLX (Apple Silicon) and vLLM (CUDA/cloud):
+The stable boundary is the OpenAI-compatible inference adapter contract, not a
+specific local runtime.
 
-| Model | MLX Package | vLLM Support | Quantized Size |
-|---|---|---|---|
-| Falcon-H1R 7B | mlx-lm | Yes | ~4.6 GB (Q4) |
-| Qwen 2.5 VL 7B | mlx-vlm | Yes (official recipes) | ~4.6 GB (Q4) |
-| Qwen3-TTS ~2B | mlx-audio | Yes (vLLM-Omni) | ~1.5 GB |
+The primary reference lane is:
 
-When switching hardware, swap the inference server — not the framework code. The adapter contract (OpenAI-compatible `/v1/` endpoints) is the stable boundary.
+- MSI-hosted primary model serving through vLLM
+- Bun process as the local orchestrator/runtime
+- optional local or remote OpenAI-compatible providers for other model roles
 
-### Tools over Interfaces
+That keeps training and native-model execution anchored to the MSI + vLLM lane
+while preserving the ability to swap serving backends without changing the
+agent engine or factory contracts.
 
-Vision and voice are exposed to the reasoning model as **tools** —
-`ToolDefinition` entries that Falcon H1R invokes via standard `tool_call`
-events. The typed interfaces (`Vision`, `Voice`) sit behind the
-`ToolExecutor`, providing backend abstraction:
+## Core Shape
 
-```
-Agent Loop (Falcon H1R)
-    │
-    ├─ tool_call: "analyze_image" → ToolExecutor → Vision.analyze()
-    └─ tool_call: "speak"         → ToolExecutor → Voice.speak()
-```
+`src/agent/create-agent.ts` defines a minimal execution substrate, not a full
+top-level loop policy.
 
-This design makes capabilities **observable** (tool calls appear in trajectories for SFT training), **gateable** (BP can block any tool call), and **trainable** (the model learns *when* to invoke each capability, not just *how*).
+The core owns:
+
+- `behavioral()` engine setup
+- restricted trigger boundary
+- signal and computed-signal installation
+- heartbeat emission
+- built-in handlers for:
+  - primary inference
+  - vision inference
+  - speech output inference
+  - `read_file`
+  - `write_file`
+  - `delete_file`
+  - `glob_files`
+  - `grep`
+  - `bash`
+- dynamic factory installation
+
+Planning, context assembly, skill selection, MCP capability projection, A2A
+routing, verification, and higher-level editing behavior should be composed
+through factories.
 
 ## Key Design Principles
 
@@ -104,13 +118,15 @@ This design makes capabilities **observable** (tool calls appear in trajectories
 - **Single Tenancy:** 1 User : 1 Agent instance. User data lives on their agent — nowhere else.
 - **Pluggable Models:** Model, Vision, and Voice are interfaces.
   Implementations swap freely across MLX, vLLM, and cloud APIs.
-- **BP-Orchestrated:** The PM's `behavioral()` engine is the central
-  coordinator. Its bThreads handle all structural coordination (task
-  lifecycle, batch completion, constitution enforcement). See Runtime
-  Hierarchy below.
-- **Plan-Driven Context:** The model's plan provides the optimization signal for context assembly. Neural produces, symbolic consumes.
-- **Defense in Depth:** Six independent safety layers across three stack levels. See `SAFETY.md`.
-- **Three-Axis Risk Awareness:** Capability × Autonomy × Authority. Risk grows geometrically when all three scale. BP constraints cap each axis independently.
+- **Minimal Core, Rich Factories:** `createAgent()` stays narrow; planning,
+  memory, MCP, A2A, verification, and editing policy belong in factories.
+- **Plan-Driven Context:** Plan state should shape context assembly through
+  factory-owned policy rather than a fixed built-in loop stage.
+- **Defense in Depth:** Capability, autonomy, and authority should be narrowed
+  through composed factory policy plus deployment/runtime boundaries.
+- **Three-Axis Risk Awareness:** Capability × Autonomy × Authority. The
+  current core mainly enforces basic authority boundaries; richer risk shaping
+  should come from governance, verification, and execution factories.
 
 ## Runtime Hierarchy
 
@@ -144,13 +160,11 @@ process (Ollama, llama.cpp, vLLM) on the same box. Local runtimes call it via
 `fetch("http://localhost:PORT")` — async I/O that doesn't block the event
 loop. GPU/Apple Silicon Metal handles acceleration.
 
-**A2A transport:** Bun-native implementation of A2A protocol (no a2a-js
-dependency). One `Bun.serve()` handles all transports — HTTP+JSON/REST,
-WebSocket (custom binding), and unix sockets — with native mTLS. See
-`skills/modnet-node/`
-[a2a-bindings.md](../skills/modnet-node/references/a2a-bindings.md) for
-deployment-specific bindings. Current factory surface lives under
-`src/factories/a2a-factory/`.
+**A2A and MCP surfaces:** The repo now has protocol/utilities under
+`src/factories/a2a-factory/` and `src/factories/mcp-factory/`. They should be
+treated as factory-owned capability surfaces rather than fixed core runtime
+layers. A2A covers remote agent exchange and MCP covers remote capability
+discovery/execution.
 
 ## Deployment Tiers
 
@@ -158,7 +172,7 @@ The framework is not prescriptive about deployment:
 
 | Tier | Example | Inference | Training | Trade-off |
 |---|---|---|---|---|
-| **Local** | Mac Mini, DGX Spark | Yes | DGX Spark: full-parameter. Consumer GPU: LoRA only. | Zero ongoing cost. Full data sovereignty. Requires hardware. |
+| **Local** | MSI, Mac Mini, DGX Spark | Yes | MSI / DGX Spark: full-parameter. Consumer GPU: LoRA only. | Zero ongoing cost. Full data sovereignty. Requires hardware. |
 | **Cloud GPU** | RunPod, Lambda, Fly.io | Yes | Full-parameter on 4–8× A100 80GB cluster | Pay monthly. No hardware to maintain. |
 | **API-backed** | MiniMax, OpenRouter | Yes | No (unless provider supports fine-tuning) | Pay per use. No GPU needed. Dreamer/training not available. |
 
@@ -173,14 +187,12 @@ deployment shape is documented in `INFRASTRUCTURE.md`.
 
 | Doc | Scope |
 |---|---|
-| `AGENT-LOOP.md` | 6-step loop overview (impl patterns in `skills/agent-loop/`) |
-| `SAFETY.md` | Three-axis risk, defense in depth (6 layers) |
+| `AGENT-LOOP.md` | Minimal core plus factory-composed orchestration model |
 | `INFRASTRUCTURE.md` | Local-first persistence, sandbox execution, sync boundaries |
 | `skills/constitution/` | Governance factories, neuro-symbolic split, MAC/DAC |
 | `TRAINING.md` | Distillation pipeline, training tiers, flywheel |
-| `PROJECT-ISOLATION.md` | Multi-project orchestrator, IPC bridge, tool layers |
 | `skills/modnet-node/` | Modnet topology, A2A protocol, identity, access control, and node references |
-| `GENOME.md` | Skills taxonomy (seeds/tools/eval), CONTRACT frontmatter, wave ordering |
-| ~~`CRITIQUE-RESPONSE.md`~~ | Removed — gap resolutions folded into `PLAN.md` Part 4 (Design Decisions) |
+| `dev-research/default-factories/program.md` | Active default factory bundle direction |
+| `dev-research/three-axis-factories/program.md` | Cross-cutting capability, autonomy, and authority control |
+| `dev-research/agent-bootstrap/program.md` | Bootstrap CLI and deployment tooling direction |
 | `UI.md` | Generative UI overview (details in `generative-ui` skill) |
-| ~~`BEHAVIORAL-PROGRAMMING.md`~~ | Migrated → `skills/behavioral-core/references/algorithm-reference.md` |

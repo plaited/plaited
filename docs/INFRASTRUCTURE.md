@@ -24,6 +24,10 @@ Plaited stays deployment-agnostic at the framework layer. This document
 describes one concrete infrastructure shape that fits the current agent and
 factory direction.
 
+This document is intended to be validated by the bootstrap CLI surface:
+
+- `plaited bootstrap`
+
 ## Stack
 
 ### Cognitive Layer
@@ -164,11 +168,13 @@ choices into the agent through stable contracts.
    traces.
 2. Define the sandbox execution adapter contract for code, files, and
    capabilities.
-3. Add a memory factory that can write durable records to the persistence
+3. Validate this infrastructure target through the bootstrap CLI and generated
+   deployment scaffold.
+4. Add a memory factory that can write durable records to the persistence
    layer.
-4. Add an execution factory that targets the sandbox rather than assuming host
+5. Add an execution factory that targets the sandbox rather than assuming host
    shell execution.
-5. Add optional replication and restore flows for multi-device continuity.
+6. Add optional replication and restore flows for multi-device continuity.
 
 ## Position
 

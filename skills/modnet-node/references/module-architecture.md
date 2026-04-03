@@ -183,4 +183,6 @@ Modules and projects are distinct concepts with different isolation models:
 | **Scope** | `@node/` scope, workspace:* resolution | Independent, orchestrator-routed |
 | **Lifecycle** | Created/modified by agent as workspace packages | Registered on encounter, independent subprocess |
 
-The orchestrator (see `PROJECT-ISOLATION.md`) manages projects as separate subprocesses. Modules are packages within the node's own workspace — they don't need process isolation because they're the agent's own code.
+The orchestrator manages projects as separate subprocesses. Modules are
+packages within the node's own workspace — they don't need process isolation
+because they're the agent's own code.
