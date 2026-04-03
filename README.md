@@ -52,6 +52,11 @@ Higher-level orchestration belongs in factories.
 - [docs/](/Users/eirby/Workspace/plaited/docs/) — concise design docs
 - [dev-research/](/Users/eirby/Workspace/plaited/dev-research/) — active program specs
 
+Notable skill surfaces:
+
+- [plaited-ui](/Users/eirby/Workspace/plaited/skills/plaited-ui/SKILL.md)
+- [improve-workflows](/Users/eirby/Workspace/plaited/skills/improve-workflows/SKILL.md)
+
 ## Development
 
 Requirements:
