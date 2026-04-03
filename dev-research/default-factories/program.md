@@ -33,6 +33,7 @@ This lane depends on and integrates focused default-factory subprograms such as:
 - `dev-research/a2a-factories/program.md`
 - `dev-research/mcp-factories/program.md`
 - `dev-research/memory-factories/program.md`
+- `dev-research/search-factories/program.md`
 - `dev-research/three-axis-factories/program.md`
 - `dev-research/agent-bootstrap/program.md`
 - `dev-research/node-auth-factories/program.md`
@@ -103,6 +104,7 @@ This lane should treat default-factory research as a two-level system.
 Each focused lane should research one bounded surface, for example:
 
 - local execution
+- search and retrieval orchestration
 - retrieval
 - planning
 - editing
@@ -117,6 +119,7 @@ Near-term missing lanes that now look concrete are:
 
 - `plan-factory`
 - `edit-factory`
+- `search-factory`
 - `verification-factory`
 - `three-axis-factory`
 - `agent-bootstrap`

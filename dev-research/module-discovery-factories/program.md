@@ -75,6 +75,7 @@ Primary local inputs:
 Important research companions:
 
 - `dev-research/default-factories/program.md`
+- `dev-research/search-factories/program.md`
 - `dev-research/skill-factories/program.md`
 - `dev-research/a2a-factories/program.md`
 - `dev-research/three-axis-factories/program.md`

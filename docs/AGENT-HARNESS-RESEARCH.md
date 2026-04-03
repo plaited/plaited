@@ -23,6 +23,7 @@ This is not primarily ES, SFT, or GRPO.
 It is a search-and-selection workflow for discovering:
 
 - default factories
+- search and retrieval policy
 - symbolic interfaces
 - MSS mappings
 - signal conventions
@@ -73,6 +74,8 @@ Likely targets for later LoRA or adapter-style adaptation:
 
 - stable Plaited concepts
 - stable MSS semantics
+- better recognition of when internal or external search is needed
+- better query decomposition and retrieval habits
 - prompt-to-factory mappings
 - prompt-to-module mappings
 - simulation and verification habits

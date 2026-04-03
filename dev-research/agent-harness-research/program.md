@@ -26,6 +26,7 @@ from lack of raw weights alone.
 The first optimization targets should therefore be:
 
 - default factory design
+- search and retrieval orchestration
 - tool policy
 - planning and decomposition policy
 - verification and simulation policy
@@ -124,6 +125,8 @@ Examples:
 
 - prompts and prompt-pack structure
 - factory/module generation policy
+- internal and external search routing
+- search-result compression and citation policy
 - MSS interpretation rules
 - tool-choice policy
 - simulation and verification policy
@@ -142,6 +145,9 @@ Good candidates for later weight adaptation include:
 - stable Plaited framework concepts
 - stable MSS semantics
 - recurring prompt-to-module or prompt-to-factory mappings
+- better recognition of when search is needed
+- better query decomposition and search invocation habits
+- better use of search results to drive module and factory selection
 - recurring simulation and verification habits
 - recurring output formats and symbolic conventions
 
@@ -191,6 +197,7 @@ question becomes:
 
 - can the model infer the right MSS or Plaited structure from user intent?
 - can it choose the right module, card, panel, or factory family?
+- can it decide when internal or external search is needed?
 - can it do so with less repeated framework instruction?
 
 ## Operational Rules
@@ -212,4 +219,5 @@ Over time, this lane should produce:
 - curated snapshot-derived trace assets
 - repair and correction corpora
 - intent-to-structure datasets grounded in trusted artifacts
+- search-policy and retrieval-policy datasets grounded in trusted artifacts
 - later LoRA or adapter training inputs once the symbolic layer is stable

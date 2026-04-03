@@ -59,6 +59,11 @@ It should stay aligned with:
 
 - `src/agent/create-agent.ts`
 
+It should compose with:
+
+- `dev-research/search-factories/program.md`
+- `dev-research/module-discovery-factories/program.md`
+
 It is expected to inform the default factory bundle decision, but it should
 remain a bounded surface:
 
@@ -70,6 +75,9 @@ remain a bounded surface:
 
 This lane should not absorb unrelated planning, memory, notification, or
 general execution-routing policy.
+
+In particular, broader internal/external retrieval orchestration should belong
+to `search-factories`, not to this lane alone.
 
 ## Local Inputs
 
