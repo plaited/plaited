@@ -265,7 +265,7 @@ sub-agent tactic, or autonomy experiment.
 ## Related Skills
 
 - **behavioral-core** — BP algorithm, bThread/bSync patterns, event selection mechanics
-- **generative-ui** — Server-driven UI with controller protocol (render/attrs/update_behavioral)
+- **plaited-ui** — Server-driven UI with controller protocol (render/attrs/update_behavioral)
 - **node-auth** — Authentication for server nodes (WebAuthn, JWT, OIDC)
 - **varlock** — `.env.schema` patterns for sensors and notification channels that need API keys
 - **code-patterns** — Utility function genome (coding conventions)

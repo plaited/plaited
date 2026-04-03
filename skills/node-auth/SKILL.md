@@ -83,5 +83,5 @@ These are reference code the agent should **adapt** to the project, not import d
 
 ## Related Skills
 
-- **generative-ui** — The UI that the authenticated user sees
+- **plaited-ui** — The UI that the authenticated user sees
 - **behavioral-core** — BP engine the server bridges to

@@ -208,6 +208,6 @@ Expand test coverage when the impact is broad, shared, or uncertain.
 
 **TSDoc** — use `code-documentation` skill for conventions when writing/editing TSDoc.
 **BP patterns** — use `behavioral-core` skill when implementing behavioral programs.
-**UI development** — use `generative-ui` skill for controller protocol and custom elements.
-**Testing UI** — use `ui-testing` skill for three-layer test strategy.
+**UI development/testing** — use `plaited-ui` for controller protocol, custom
+elements, SSR, and the three-layer UI test strategy.
 **Agent pipeline** — use `agent-loop` skill when implementing createAgentLoop, wiring handlers, or designing event flow.

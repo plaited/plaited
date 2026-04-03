@@ -358,6 +358,6 @@ Blocked events are NOT queued — they don't fire. However, blocks ARE observabl
 ## Related Skills
 
 - **code-patterns** — Utility function genome (coding conventions)
-- **generative-ui** — Server-driven UI with BP (bElements, templates, controller protocol)
+- **plaited-ui** — Server-driven UI with BP (templates, controller protocol, testing)
 - **typescript-lsp** — Type verification and symbol discovery
 - **code-documentation** — TSDoc standards

@@ -573,7 +573,7 @@ The schema hard cap is scale=4. If a "coordination workspace" or "project suite"
 - **behavioral-core** — BP engine that drives access control and the agent loop
 - **agent-loop** — The 6-step agent pipeline nodes run
 - **constitution** — Governance factories for MAC/DAC rules
-- **generative-ui** — Server-driven UI the node renders
+- **plaited-ui** — Server-driven UI the node renders
 - **varlock** — AI-safe environment configuration for node secrets
 
 ## Related Code

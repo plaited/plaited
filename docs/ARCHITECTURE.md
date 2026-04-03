@@ -194,4 +194,4 @@ deployment shape is documented in `INFRASTRUCTURE.md`.
 | `dev-research/default-factories/program.md` | Active default factory bundle direction |
 | `dev-research/three-axis-factories/program.md` | Cross-cutting capability, autonomy, and authority control |
 | `dev-research/agent-bootstrap/program.md` | Bootstrap CLI and deployment tooling direction |
-| `UI.md` | Generative UI overview (details in `generative-ui` skill) |
+| `skills/plaited-ui/` | Plaited UI runtime, protocol, and testing guidance |

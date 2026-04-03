@@ -424,4 +424,4 @@ See [assets/mss-patterns.jsonl](assets/mss-patterns.jsonl) for machine-readable 
 
 - **modnet-node** — Node architecture, A2A bindings, access control
 - **behavioral-core** — BP patterns for constitution bThreads enforcing MSS rules
-- **generative-ui** — Server-driven UI for rendering MSS-structured modules
+- **plaited-ui** — Server-driven UI for rendering MSS-structured modules
