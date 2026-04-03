@@ -11,7 +11,7 @@
  */
 
 import * as z from 'zod'
-import { parseCli } from '../cli.ts'
+import { parseCli } from '../utils/cli.ts'
 import { DEFAULT_K, DEFAULT_TIMEOUT } from './eval.constants.ts'
 import type { Adapter, Grader, PromptCase, TrialEntry, TrialResult } from './eval.schemas.ts'
 import { TrialResultSchema } from './eval.schemas.ts'

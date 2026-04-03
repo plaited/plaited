@@ -19,7 +19,7 @@ import {
   validateSkillCli,
 } from '../src/markdown.ts'
 
-export { makeCli, parseCli, parseCliRequest } from '../src/cli.ts'
+export { makeCli, parseCli, parseCliRequest } from '../src/utils/cli.ts'
 
 import { evalCli } from '../src/improve.ts'
 
