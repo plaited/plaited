@@ -1,99 +1,91 @@
 /**
- * Shared CLI utilities for the plaited toolbox.
+ * Shared CLI utilities for simple JSON-in / JSON-out commands.
  *
  * @remarks
- * Implements the CLI tool pattern: JSON positional arg or stdin pipe,
- * `--schema input|output` for discovery, `--help` for usage, exit codes 0/1/2.
+ * Supports a stringified JSON positional input or stdin plus:
+ * `--schema <input|output>`, `--dry-run`, and `--help`.
  *
  * @internal
  */
 
 import * as z from 'zod'
-import type { ToolContext, ToolHandler } from './agent.ts'
 
-const getProcessEnv = (): Record<string, string> =>
-  Object.fromEntries(
-    Object.entries(process.env).filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
-  )
-
-// ============================================================================
-// External Binary Check
-// ============================================================================
-
-/**
- * Assert that a required external binary is on PATH.
- *
- * @remarks
- * Call at handler registration time (module load) so missing dependencies
- * surface at startup, not mid-task. Returns the resolved path for logging.
- *
- * @public
- */
-export const ensureTool = (name: string): string => {
-  const path = Bun.which(name)
-  if (!path) throw new Error(`Required tool '${name}' not found on PATH. Install it or add it to your node's setup.`)
-  return path
+export type CliFlags = {
+  dryRun: boolean
 }
 
-// ============================================================================
-// CLI Context Schema (shared execution context for all makeCli tools)
-// ============================================================================
+export type CliOptions = {
+  name: string
+  outputSchema?: z.ZodType
+  help?: string
+}
 
-const CliContextSchema = z.object({
-  cwd: z.string().optional().describe('Working directory (default: process.cwd())'),
-  timeout: z.number().optional().describe('AbortSignal timeout in ms (default: 300000)'),
-})
+export type ParsedCliRequest<TSchema extends z.ZodType> = {
+  input: z.infer<TSchema>
+  flags: CliFlags
+}
 
-// ============================================================================
-// Raw Input Extraction (shared plumbing)
-// ============================================================================
+type CliHandlerConfig<TInputSchema extends z.ZodType, TOutput> = {
+  name: string
+  inputSchema: TInputSchema
+  outputSchema?: z.ZodType<TOutput>
+  help?: string
+  run: (input: z.infer<TInputSchema>, flags: CliFlags) => Promise<TOutput> | TOutput
+}
 
-/**
- * Extract and parse raw JSON from CLI args or stdin.
- *
- * @remarks
- * Handles `--help`, `--schema`, positional JSON arg, and stdin pipe.
- * Calls `process.exit()` on meta flags and bad input — only returns
- * on valid JSON.
- *
- * @internal
- */
-const parseRawCliInput = async (
-  args: string[],
-  schema: z.ZodSchema,
-  options: { name: string; outputSchema?: z.ZodSchema },
-): Promise<unknown> => {
-  if (args.includes('--help') || args.includes('-h')) {
-    console.error(`Usage: plaited ${options.name} '<json>' | --schema input`)
-    process.exit(0)
-  }
+const buildUsage = ({ name, help }: { name: string; help?: string }): string =>
+  [
+    `Usage: plaited ${name} '<json>' [options]`,
+    `       echo '<json>' | plaited ${name}`,
+    '',
+    'Options:',
+    '  --schema <input|output>  Output JSON schema and exit',
+    '  --dry-run                Show request details without running the command',
+    '  -h, --help               Show help',
+    ...(help ? ['', help] : []),
+  ].join('\n')
 
-  const schemaIdx = args.indexOf('--schema')
-  if (schemaIdx !== -1) {
-    const target = args[schemaIdx + 1]
-    if (target === 'output' && options.outputSchema) {
-      console.log(JSON.stringify(z.toJSONSchema(options.outputSchema), null, 2))
-    } else {
-      console.log(JSON.stringify(z.toJSONSchema(schema), null, 2))
+const getSchemaTarget = (args: string[]): 'input' | 'output' | null => {
+  const schemaIndex = args.indexOf('--schema')
+  if (schemaIndex === -1) return null
+
+  const target = args[schemaIndex + 1]
+  if (target === 'input' || target === 'output') return target
+
+  console.error("Invalid value for --schema. Expected 'input' or 'output'.")
+  process.exit(2)
+}
+
+const getPositionalInput = async (args: string[]): Promise<string | undefined> => {
+  const positionals: string[] = []
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index]
+    if (arg === undefined) continue
+
+    if (arg === '--schema') {
+      index += 1
+      continue
     }
-    process.exit(0)
+    if (arg === '--dry-run' || arg === '--help' || arg === '-h') {
+      continue
+    }
+    if (!arg.startsWith('--')) {
+      positionals.push(arg)
+    }
   }
 
-  const positionals = args.filter((arg) => !arg.startsWith('--'))
-  let rawInput: string | undefined
+  if (positionals.length > 0) return positionals[0]?.trim()
 
-  if (positionals.length > 0) {
-    rawInput = positionals[0]
-  } else if (!process.stdin.isTTY) {
-    const stdinData = await Bun.stdin.text()
-    if (stdinData.trim()) rawInput = stdinData.trim()
+  if (!process.stdin.isTTY) {
+    const stdinData = (await Bun.stdin.text()).trim()
+    if (stdinData) return stdinData
   }
 
-  if (!rawInput) {
-    console.error(`Usage: plaited ${options.name} '<json>' | --schema input`)
-    process.exit(2)
-  }
+  return undefined
+}
 
+const parseJsonInput = (rawInput: string): unknown => {
   try {
     return JSON.parse(rawInput)
   } catch {
@@ -102,95 +94,104 @@ const parseRawCliInput = async (
   }
 }
 
-// ============================================================================
-// CLI Input Parser
-// ============================================================================
+const printSchema = (schema: z.ZodType): void => {
+  console.log(JSON.stringify(z.toJSONSchema(schema), null, 2))
+}
 
-/**
- * Parse CLI input following the CLI tool pattern.
- *
- * @remarks
- * - `--help` / `-h`: prints usage, exits 0
- * - `--schema input`: emits input JSON Schema, exits 0
- * - `--schema output`: emits output JSON Schema (if provided), exits 0
- * - First positional arg or stdin pipe: JSON validated with Zod
- * - Exit 2 on bad input
- *
- * @internal
- */
-export const parseCli = async <T extends z.ZodSchema>(
+export const parseCliRequest = async <TSchema extends z.ZodType>(
   args: string[],
-  schema: T,
-  options: { name: string; outputSchema?: z.ZodSchema },
-): Promise<z.infer<T>> => {
-  const raw = await parseRawCliInput(args, schema, options)
-  const parsed = schema.safeParse(raw)
+  schema: TSchema,
+  options: CliOptions,
+): Promise<ParsedCliRequest<TSchema>> => {
+  if (args.includes('--help') || args.includes('-h')) {
+    console.error(buildUsage(options))
+    process.exit(0)
+  }
+
+  const schemaTarget = getSchemaTarget(args)
+  if (schemaTarget === 'input') {
+    printSchema(schema)
+    process.exit(0)
+  }
+  if (schemaTarget === 'output') {
+    if (!options.outputSchema) {
+      console.error('Output schema is not available for this command')
+      process.exit(2)
+    }
+    printSchema(options.outputSchema)
+    process.exit(0)
+  }
+
+  const rawInput = await getPositionalInput(args)
+  if (!rawInput) {
+    console.error(buildUsage(options))
+    process.exit(2)
+  }
+
+  const parsed = schema.safeParse(parseJsonInput(rawInput))
   if (!parsed.success) {
     console.error(JSON.stringify(parsed.error.issues, null, 2))
     process.exit(2)
   }
-  return parsed.data
+
+  return {
+    input: parsed.data,
+    flags: {
+      dryRun: args.includes('--dry-run'),
+    },
+  }
 }
 
-// ============================================================================
-// CLI Handler Factory
-// ============================================================================
+export const parseCli = async <TSchema extends z.ZodType>(
+  args: string[],
+  schema: TSchema,
+  options: CliOptions,
+): Promise<z.infer<TSchema>> => {
+  const { input } = await parseCliRequest(args, schema, options)
+  return input
+}
 
-/**
- * Create a CLI handler that delegates to a ToolHandler.
- *
- * @remarks
- * Extracts `workspace` and `timeout` from JSON input before validating
- * the remaining fields against the tool schema. This keeps execution
- * context explicit rather than relying on `process.cwd()`.
- *
- * - `cwd` — working directory for the tool (default: `process.cwd()`)
- * - `timeout` — AbortSignal timeout in ms (default: `300_000`)
- *
- * @internal
- */
 export const makeCli =
-  (handler: ToolHandler, schema: z.ZodObject<z.ZodRawShape>, name: string) =>
+  <TInputSchema extends z.ZodType, TOutput>({
+    name,
+    inputSchema,
+    outputSchema,
+    help,
+    run,
+  }: CliHandlerConfig<TInputSchema, TOutput>) =>
   async (args: string[]): Promise<void> => {
-    // Handle --help before parseRawCliInput for richer output
-    if (args.includes('--help') || args.includes('-h')) {
-      console.error(
-        [
-          `Usage: plaited ${name} '<json>' | --schema input`,
-          '',
-          'Context (all tools):',
-          '  cwd        string    Working directory (default: process.cwd())',
-          '  timeout    number    AbortSignal timeout in ms (default: 300000)',
-          '',
-          'Options:',
-          '  --schema <input|output>  Print JSON Schema and exit',
-          '  -h, --help               Show this help',
-        ].join('\n'),
+    const { input, flags } = await parseCliRequest(args, inputSchema, {
+      name,
+      outputSchema,
+      help,
+    })
+
+    if (flags.dryRun) {
+      console.log(
+        JSON.stringify(
+          {
+            command: name,
+            input,
+            dryRun: true,
+          },
+          null,
+          2,
+        ),
       )
-      process.exit(0)
+      return
     }
 
-    // Compose CLI schema (tool fields + context fields) for --schema discovery
-    const cliSchema = schema.extend(CliContextSchema.shape)
-    const raw = await parseRawCliInput(args, cliSchema, { name })
+    const result = await run(input, flags)
+    if (outputSchema) {
+      const parsed = outputSchema.safeParse(result)
+      if (!parsed.success) {
+        console.error(JSON.stringify(parsed.error.issues, null, 2))
+        process.exit(1)
+      }
 
-    // Extract execution context before tool schema validation
-    const { cwd: inputCwd, timeout: inputTimeout, ...toolArgs } = raw as Record<string, unknown>
-    const cwd = typeof inputCwd === 'string' ? inputCwd : process.cwd()
-    const timeout = typeof inputTimeout === 'number' ? inputTimeout : 300_000
-
-    const parsed = schema.safeParse(toolArgs)
-    if (!parsed.success) {
-      console.error(JSON.stringify(parsed.error.issues, null, 2))
-      process.exit(2)
+      console.log(JSON.stringify(parsed.data, null, 2))
+      return
     }
 
-    const ctx: ToolContext = { cwd, env: getProcessEnv(), signal: AbortSignal.timeout(timeout) }
-    try {
-      const output = await handler(parsed.data as Record<string, unknown>, ctx)
-      console.log(JSON.stringify(output))
-    } catch (error) {
-      console.error(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }))
-      process.exit(1)
-    }
+    console.log(JSON.stringify(result, null, 2))
   }

@@ -11,9 +11,15 @@
  * @internal
  */
 
-import { discoverSkillsCli, evaluateSkillCli, ingestSkillCli, skillLinksCli, validateSkillCli } from '../src/skill.ts'
+import {
+  discoverSkillsCli,
+  evaluateSkillCli,
+  ingestSkillCli,
+  skillLinksCli,
+  validateSkillCli,
+} from '../src/markdown.ts'
 
-export { ensureTool, makeCli, parseCli } from '../src/cli.ts'
+export { makeCli, parseCli, parseCliRequest } from '../src/cli.ts'
 
 import { evalCli } from '../src/improve.ts'
 
@@ -27,7 +33,7 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   'ingest-skill': ingestSkillCli,
   'discover-skills': discoverSkillsCli,
   'evaluate-skill': evaluateSkillCli,
-  'skill-links': skillLinksCli,
+  md: skillLinksCli,
   eval: evalCli,
 }
 
@@ -62,7 +68,7 @@ export const runCli = async (argv: string[]): Promise<void> => {
 
 Commands:
     validate-skill, ingest-skill, discover-skills,
-    evaluate-skill, skill-links, eval`)
+    evaluate-skill, md, eval`)
     process.exit(command ? 0 : 1)
   }
 

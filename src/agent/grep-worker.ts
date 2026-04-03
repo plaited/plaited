@@ -1,8 +1,11 @@
 import { relative, resolve } from 'node:path'
 import { $ } from 'bun'
-import { ensureTool } from '../cli.ts'
 
-const RG_PATH = ensureTool('rg')
+const RG_PATH = Bun.which('rg')
+
+if (!RG_PATH) {
+  throw new Error("Required tool 'rg' not found on PATH. Install ripgrep to use grep-worker.")
+}
 
 type GrepRequest = {
   pattern: string

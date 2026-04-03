@@ -1,10 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import * as z from 'zod'
-import { parseCli } from '../cli.ts'
-
-// ============================================================================
-// parseCli — in-process (success path only, no process.exit)
-// ============================================================================
+import { parseCli, parseCliRequest } from '../cli.ts'
 
 const TestSchema = z.object({
   name: z.string(),
@@ -23,11 +19,16 @@ describe('parseCli', () => {
   })
 })
 
-// ============================================================================
-// parseCli — subprocess (process.exit paths)
-// ============================================================================
+describe('parseCliRequest', () => {
+  test('captures the dry-run flag alongside parsed input', async () => {
+    const result = await parseCliRequest(['{"name":"test","value":42}', '--dry-run'], TestSchema, { name: 'test-tool' })
 
-describe('parseCli (subprocess)', () => {
+    expect(result.input).toEqual({ name: 'test', value: 42 })
+    expect(result.flags).toEqual({ dryRun: true })
+  })
+})
+
+describe('CLI parsing (subprocess)', () => {
   test('--help exits with code 0', async () => {
     const proc = Bun.spawn(
       [
@@ -37,18 +38,7 @@ describe('parseCli (subprocess)', () => {
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
-    expect(await proc.exited).toBe(0)
-  })
 
-  test('-h exits with code 0', async () => {
-    const proc = Bun.spawn(
-      [
-        'bun',
-        '-e',
-        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['-h'], z.object({}), { name: 'test' })`,
-      ],
-      { stdout: 'pipe', stderr: 'pipe' },
-    )
     expect(await proc.exited).toBe(0)
   })
 
@@ -61,6 +51,7 @@ describe('parseCli (subprocess)', () => {
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
+
     expect(await proc.exited).toBe(0)
     const output = await new Response(proc.stdout).text()
     const schema = JSON.parse(output)
@@ -77,10 +68,37 @@ describe('parseCli (subprocess)', () => {
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
+
     expect(await proc.exited).toBe(0)
     const output = await new Response(proc.stdout).text()
     const schema = JSON.parse(output)
     expect(schema.properties).toHaveProperty('result')
+  })
+
+  test('exits 2 on invalid --schema target', async () => {
+    const proc = Bun.spawn(
+      [
+        'bun',
+        '-e',
+        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['--schema', 'bad'], z.object({}), { name: 'test' })`,
+      ],
+      { stdout: 'pipe', stderr: 'pipe' },
+    )
+
+    expect(await proc.exited).toBe(2)
+  })
+
+  test('exits 2 when output schema is unavailable', async () => {
+    const proc = Bun.spawn(
+      [
+        'bun',
+        '-e',
+        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['--schema', 'output'], z.object({}), { name: 'test' })`,
+      ],
+      { stdout: 'pipe', stderr: 'pipe' },
+    )
+
+    expect(await proc.exited).toBe(2)
   })
 
   test('exits 2 on invalid JSON', async () => {
@@ -92,6 +110,7 @@ describe('parseCli (subprocess)', () => {
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
+
     expect(await proc.exited).toBe(2)
   })
 
@@ -104,10 +123,11 @@ describe('parseCli (subprocess)', () => {
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
+
     expect(await proc.exited).toBe(2)
   })
 
-  test('exits 2 when no input provided', async () => {
+  test('exits 2 when no input is provided', async () => {
     const proc = Bun.spawn(
       [
         'bun',
@@ -116,121 +136,100 @@ describe('parseCli (subprocess)', () => {
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
+
     expect(await proc.exited).toBe(2)
   })
 })
 
-// ============================================================================
-// makeCli — execution context extraction
-// ============================================================================
-
 describe('makeCli', () => {
-  test('passes cwd to handler context', async () => {
+  test('runs the command with parsed input', async () => {
     const proc = Bun.spawn(
       [
         'bun',
         '-e',
         `import { makeCli } from './src/cli.ts'; import * as z from 'zod';
-        const handler = async (_args, ctx) => ({ cwd: ctx.cwd });
-        const cli = makeCli(handler, z.object({ value: z.string() }), 'test');
-        await cli(['{"value":"hi","cwd":"/tmp/test-workspace"}'])`,
-      ],
-      { stdout: 'pipe', stderr: 'pipe' },
-    )
-    expect(await proc.exited).toBe(0)
-    const output = JSON.parse(await new Response(proc.stdout).text())
-    expect(output.cwd).toBe('/tmp/test-workspace')
-  })
-
-  test('defaults cwd to process.cwd() when cwd omitted', async () => {
-    const proc = Bun.spawn(
-      [
-        'bun',
-        '-e',
-        `import { makeCli } from './src/cli.ts'; import * as z from 'zod';
-        const handler = async (_args, ctx) => ({ cwd: ctx.cwd });
-        const cli = makeCli(handler, z.object({ value: z.string() }), 'test');
+        const cli = makeCli({
+          name: 'test',
+          inputSchema: z.object({ value: z.string() }),
+          outputSchema: z.object({ echoed: z.string() }),
+          run: async (input) => ({ echoed: input.value }),
+        });
         await cli(['{"value":"hi"}'])`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
+
     expect(await proc.exited).toBe(0)
     const output = JSON.parse(await new Response(proc.stdout).text())
-    expect(output.cwd).toBe(process.cwd())
+    expect(output).toEqual({ echoed: 'hi' })
   })
 
-  test('passes custom timeout to AbortSignal', async () => {
+  test('shows request details for --dry-run without running the command', async () => {
     const proc = Bun.spawn(
       [
         'bun',
         '-e',
         `import { makeCli } from './src/cli.ts'; import * as z from 'zod';
-        const handler = async (_args, ctx) => ({ aborted: ctx.signal.aborted });
-        const cli = makeCli(handler, z.object({ value: z.string() }), 'test');
-        await cli(['{"value":"hi","timeout":60000}'])`,
+        const cli = makeCli({
+          name: 'test',
+          inputSchema: z.object({ value: z.string() }),
+          run: async () => { throw new Error('should not run') },
+        });
+        await cli(['{"value":"hi"}', '--dry-run'])`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
+
     expect(await proc.exited).toBe(0)
     const output = JSON.parse(await new Response(proc.stdout).text())
-    expect(output.aborted).toBe(false)
+    expect(output).toEqual({
+      command: 'test',
+      input: { value: 'hi' },
+      dryRun: true,
+    })
   })
 
-  test('strips cwd and timeout before passing args to handler', async () => {
+  test('--schema input emits the input schema', async () => {
     const proc = Bun.spawn(
       [
         'bun',
         '-e',
         `import { makeCli } from './src/cli.ts'; import * as z from 'zod';
-        const handler = async (args, _ctx) => args;
-        const cli = makeCli(handler, z.object({ value: z.string() }), 'test');
-        await cli(['{"value":"hi","cwd":"/tmp","timeout":60000}'])`,
-      ],
-      { stdout: 'pipe', stderr: 'pipe' },
-    )
-    expect(await proc.exited).toBe(0)
-    const output = JSON.parse(await new Response(proc.stdout).text())
-    expect(output).toEqual({ value: 'hi' })
-  })
-
-  test('--schema input includes cwd and timeout properties', async () => {
-    const proc = Bun.spawn(
-      [
-        'bun',
-        '-e',
-        `import { makeCli } from './src/cli.ts'; import * as z from 'zod';
-        const handler = async (args, _ctx) => args;
-        const cli = makeCli(handler, z.object({ value: z.string() }), 'test');
+        const cli = makeCli({
+          name: 'test',
+          inputSchema: z.object({ value: z.string() }),
+          run: async (input) => input,
+        });
         await cli(['--schema', 'input'])`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
+
     expect(await proc.exited).toBe(0)
-    const output = await new Response(proc.stdout).text()
-    const schema = JSON.parse(output)
-    expect(schema.properties).toHaveProperty('value')
-    expect(schema.properties).toHaveProperty('cwd')
-    expect(schema.properties).toHaveProperty('timeout')
-    expect(schema.properties.cwd.type).toBe('string')
-    expect(schema.properties.timeout.type).toBe('number')
+    const output = JSON.parse(await new Response(proc.stdout).text())
+    expect(output.properties).toHaveProperty('value')
   })
 
-  test('--help documents cwd and timeout', async () => {
+  test('--help prints the simple flag surface', async () => {
     const proc = Bun.spawn(
       [
         'bun',
         '-e',
         `import { makeCli } from './src/cli.ts'; import * as z from 'zod';
-        const handler = async (args, _ctx) => args;
-        const cli = makeCli(handler, z.object({ value: z.string() }), 'test');
+        const cli = makeCli({
+          name: 'test',
+          inputSchema: z.object({ value: z.string() }),
+          run: async (input) => input,
+        });
         await cli(['--help'])`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
+
     expect(await proc.exited).toBe(0)
     const stderr = await new Response(proc.stderr).text()
-    expect(stderr).toContain('cwd')
-    expect(stderr).toContain('timeout')
-    expect(stderr).toContain('--schema')
+    expect(stderr).toContain('--schema <input|output>')
+    expect(stderr).toContain('--dry-run')
+    expect(stderr).toContain('--help')
   })
 })
