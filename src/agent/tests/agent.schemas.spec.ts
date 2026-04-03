@@ -2,11 +2,15 @@ import { describe, expect, test } from 'bun:test'
 import {
   AgentPlanStepSchema,
   AgentToolCallSchema,
+  bSync,
   DecisionStepSchema,
+  FactoryResultSchema,
   ModelUsageSchema,
+  RequestBashDetailSchema,
   TOOL_STATUS,
   ToolDefinitionSchema,
   TrajectoryStepSchema,
+  UpdateFactoryModuleSchema,
 } from 'plaited'
 
 describe('AgentToolCallSchema', () => {
@@ -241,5 +245,99 @@ describe('ModelUsageSchema', () => {
     const result = ModelUsageSchema.parse({ inputTokens: 1500, outputTokens: 300 })
     expect(result.inputTokens).toBe(1500)
     expect(result.outputTokens).toBe(300)
+  })
+})
+
+describe('RequestBashDetailSchema', () => {
+  test('accepts a writable signal with schema metadata', () => {
+    const signal = {
+      get: () => undefined,
+      listen: () => () => {},
+      set: () => {},
+      schema: { safeParse: () => ({ success: true, data: undefined }) },
+    }
+
+    const result = RequestBashDetailSchema.parse({
+      input: {
+        path: 'worker.ts',
+        args: ['--help'],
+      },
+      signal,
+    })
+
+    expect(typeof result.signal.set).toBe('function')
+    expect(typeof result.signal.listen).toBe('function')
+  })
+
+  test('rejects a signal without schema metadata', () => {
+    expect(() =>
+      RequestBashDetailSchema.parse({
+        input: {
+          path: 'worker.ts',
+          args: [],
+        },
+        signal: {
+          get: () => undefined,
+          listen: () => () => {},
+          set: () => {},
+        },
+      }),
+    ).toThrow()
+  })
+})
+
+describe('FactoryResultSchema', () => {
+  test('accepts function-valued handlers', () => {
+    const result = FactoryResultSchema.parse({
+      handlers: {
+        tool_completed: async () => {},
+      },
+    })
+
+    expect(typeof result.handlers?.tool_completed).toBe('function')
+  })
+
+  test('rejects non-function handlers', () => {
+    expect(() =>
+      FactoryResultSchema.parse({
+        handlers: {
+          tool_completed: 'nope',
+        },
+      }),
+    ).toThrow()
+  })
+
+  test('accepts branded behavioral rules in threads', () => {
+    const thread = bSync({
+      waitFor: 'tick',
+    })
+
+    const result = FactoryResultSchema.parse({
+      threads: {
+        onTick: thread,
+      },
+    })
+
+    expect(result.threads?.onTick).toBe(thread)
+  })
+})
+
+describe('UpdateFactoryModuleSchema', () => {
+  test('accepts factory functions', () => {
+    const factory = () => ({})
+
+    const result = UpdateFactoryModuleSchema.parse({
+      default: [factory],
+    })
+
+    expect(result.default[0]).toBe(factory)
+  })
+
+  test('rejects non-function factories', () => {
+    expect(() =>
+      UpdateFactoryModuleSchema.parse({
+        default: [{}],
+      }),
+    ).toThrow()
   })
 })

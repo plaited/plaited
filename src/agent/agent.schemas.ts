@@ -362,14 +362,34 @@ export const VoiceResponseSchema = z.object({
 
 export type VoiceResponseShape = z.infer<typeof VoiceResponseSchema>
 
-const isSignalWithSetter = (value: unknown) => {
+const isSignalWithSetter = (value: unknown): value is Signal => {
   if (!isTypeOf<Record<string, unknown>>(value, 'object')) return false
   return (
     trueTypeOf(value.get) === 'function' &&
     trueTypeOf(value.listen) === 'function' &&
-    trueTypeOf(value.set) === 'function'
+    trueTypeOf(value.set) === 'function' &&
+    isTypeOf<Record<string, unknown>>(value.schema, 'object')
   )
 }
+
+const isFactory = (value: unknown): value is Factory => trueTypeOf(value) === 'function'
+
+const isDefaultHandlers = (value: unknown): value is DefaultHandlers => {
+  if (!isTypeOf<Record<string, unknown>>(value, 'object')) return false
+  for (const handler of Object.values(value)) {
+    if (trueTypeOf(handler) === 'function' || trueTypeOf(handler) === 'asyncfunction') continue
+    return false
+  }
+  return true
+}
+
+const SignalWithSetterSchema = <TSchema extends z.ZodTypeAny>() => z.custom<Signal<TSchema>>(isSignalWithSetter)
+
+const BehavioralRuleSchema = z.custom<ReturnType<BSync>>(isBehavioralRule)
+
+const DefaultHandlersSchema = z.custom<DefaultHandlers>(isDefaultHandlers)
+
+const FactorySchema = z.custom<Factory>(isFactory)
 
 const isBunFile = (value: unknown) => {
   if (value === null || value === undefined) return false
@@ -427,21 +447,21 @@ export type TtsInferenceResult = z.infer<typeof TtsInferenceResultSchema>
 
 export const RequestPrimaryInferenceDetailSchema = z.object({
   input: RequestInferenceRequestSchema,
-  signal: z.custom<Signal<typeof PrimaryInferenceResultSchema>>(isSignalWithSetter),
+  signal: SignalWithSetterSchema<typeof PrimaryInferenceResultSchema>(),
 })
 
 export type RequestPrimaryInferenceDetail = z.infer<typeof RequestPrimaryInferenceDetailSchema>
 
 export const RequestVisionInferenceDetailSchema = z.object({
   input: VisionInferenceRequestSchema,
-  signal: z.custom<Signal<typeof VisionInferenceResultSchema>>(isSignalWithSetter),
+  signal: SignalWithSetterSchema<typeof VisionInferenceResultSchema>(),
 })
 
 export type RequestVisionInferenceDetail = z.infer<typeof RequestVisionInferenceDetailSchema>
 
 export const RequestTtsInferenceDetailSchema = z.object({
   input: TtsInferenceRequestSchema,
-  signal: z.custom<Signal<typeof TtsInferenceResultSchema>>(isSignalWithSetter),
+  signal: SignalWithSetterSchema<typeof TtsInferenceResultSchema>(),
 })
 
 export type RequestTtsInferenceDetail = z.infer<typeof RequestTtsInferenceDetailSchema>
@@ -450,7 +470,7 @@ export const BashResultSchema = createSignalResultSchema(BashConfigSchema, BashO
 
 export const RequestBashDetailSchema = z.object({
   input: BashConfigSchema,
-  signal: z.custom<Signal<typeof BashResultSchema>>(isSignalWithSetter),
+  signal: SignalWithSetterSchema<typeof BashResultSchema>(),
 })
 
 export type RequestBashDetail = z.infer<typeof RequestBashDetailSchema>
@@ -472,7 +492,7 @@ export const WriteFileOutputSchema = z.number()
 
 export const RequestWriteFileDetailSchema = z.object({
   input: WriteFileInputSchema,
-  signal: z.custom<Signal<typeof WriteFileResultSchema>>(isSignalWithSetter),
+  signal: SignalWithSetterSchema<typeof WriteFileResultSchema>(),
 })
 
 export type RequestWriteFileDetail = z.infer<typeof RequestWriteFileDetailSchema>
@@ -481,7 +501,7 @@ export const WriteFileResultSchema = createSignalResultSchema(WriteFileInputSche
 
 export const RequestReadFileDetailSchema = z.object({
   input: z.string(),
-  signal: z.custom<Signal<typeof ReadFileResultSchema>>(isSignalWithSetter),
+  signal: SignalWithSetterSchema<typeof ReadFileResultSchema>(),
 })
 
 export type RequestReadFileDetail = z.infer<typeof RequestReadFileDetailSchema>
@@ -492,7 +512,7 @@ export const GlobFilesOutputSchema = z.array(z.string())
 
 export const RequestGlobFilesDetailSchema = z.object({
   input: GlobFilesConfigSchema,
-  signal: z.custom<Signal<typeof GlobFilesResultSchema>>(isSignalWithSetter),
+  signal: SignalWithSetterSchema<typeof GlobFilesResultSchema>(),
 })
 
 export type RequestGlobFilesDetail = z.infer<typeof RequestGlobFilesDetailSchema>
@@ -501,7 +521,7 @@ export const GlobFilesResultSchema = createSignalResultSchema(GlobFilesConfigSch
 
 export const RequestGrepDetailSchema = z.object({
   input: GrepConfigSchema,
-  signal: z.custom<Signal<typeof GrepResultSchema>>(isSignalWithSetter),
+  signal: SignalWithSetterSchema<typeof GrepResultSchema>(),
 })
 
 export type RequestGrepDetail = z.infer<typeof RequestGrepDetailSchema>
@@ -512,7 +532,7 @@ export const DeleteFileOutputSchema = z.literal(true)
 
 export const RequestDeleteFileDetailSchema = z.object({
   input: z.string(),
-  signal: z.custom<Signal<typeof DeleteFileResultSchema>>(isSignalWithSetter),
+  signal: SignalWithSetterSchema<typeof DeleteFileResultSchema>(),
 })
 
 export type RequestDeleteFileDetail = z.infer<typeof RequestDeleteFileDetailSchema>
@@ -525,18 +545,8 @@ export const DeleteFileResultSchema = createSignalResultSchema(z.string(), Delet
 
 export const FactoryResultSchema = z
   .object({
-    threads: z.record(z.string(), z.custom<ReturnType<BSync>>(isBehavioralRule)).optional(),
-    handlers: z
-      .custom<DefaultHandlers>((obj) => {
-        const isObject = isTypeOf<Record<string, unknown>>(obj, 'object')
-        if (!isObject) return false
-        for (const val of Object.values(obj)) {
-          if (trueTypeOf(val) === 'function' || trueTypeOf(val) === 'asyncfunction') continue
-          return false
-        }
-        return true
-      })
-      .optional(),
+    threads: z.record(z.string(), BehavioralRuleSchema).optional(),
+    handlers: DefaultHandlersSchema.optional(),
   })
   .strict()
 
@@ -544,7 +554,7 @@ export type FactoryResult = z.infer<typeof FactoryResultSchema>
 
 export const UpdateFactoryModuleSchema = z
   .object({
-    default: z.array(z.custom<Factory>((value) => trueTypeOf(value) === 'function')).min(1),
+    default: z.array(FactorySchema).min(1),
   })
   .strict()
 
