@@ -48,6 +48,11 @@ This lane depends on and integrates focused default-factory subprograms such as:
 - `dev-research/observability-factories/program.md`
 - `dev-research/projection-factories/program.md`
 - `dev-research/workflow-state-factories/program.md`
+- `dev-research/session-persistence-factories/program.md`
+- `dev-research/tool-registry-factories/program.md`
+- `dev-research/permission-audit-factories/program.md`
+- `dev-research/context-assembly-factories/program.md`
+- `dev-research/fanout-factories/program.md`
 - future lanes for retrieval, planning, editing, verification, notifications,
   observability, and related default behaviors
 
@@ -196,14 +201,21 @@ Additional lane candidates implied by the current architecture and the
 
 - `session-persistence-factories` for durable session state, replay, and
   restart semantics beyond bootstrap scaffolding alone
-- `tool-registry-factories` if module-discovery plus skill-factories proves
-  too broad to cleanly own metadata-first tool qualification and pool assembly
-- `permission-audit-factories` if retained approval history, review, and
-  justification replay becomes large enough to deserve a standalone bundle
+- `tool-registry-factories` for metadata-first capability qualification,
+  description search, and bounded tool assembly across MCP, skills, and
+  module-provided surfaces
+- `permission-audit-factories` for durable authority history, MSS-boundary-
+  aware approval retention, revocation, and review in a persistent proactive
+  node
+- `context-assembly-factories` for phase-aware request construction that uses
+  selective retrieval and capability preselection instead of transcript
+  compaction
+- `fanout-factories` for durable multi-attempt worktree-backed or equally
+  observable execution, comparison, and winner selection
 
 These are not product-feature clones. They are candidate behavioral-factory
-families that should be created only if the existing lanes cannot own the
-translated behavior cleanly.
+families that should be created only when the translated behavior deserves
+explicit ownership rather than being buried inside neighboring lanes.
 
 Each subprogram should be narrow enough to support parallel mutation and judged
 comparison across many independent attempts.
