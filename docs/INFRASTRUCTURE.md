@@ -20,6 +20,11 @@ The core idea is to separate three concerns:
 - **Execution layer**: a sandbox for running code and tools
 - **Persistence layer**: a durable, queryable record of the agent's world state
 
+An optional adjacent concern is:
+
+- **Identity / trust layer**: stable node identity, trust claims, and
+  verification services that may be local, self-hosted, or provider-managed
+
 Plaited stays deployment-agnostic at the framework layer. This document
 describes one concrete infrastructure shape that fits the current agent and
 factory direction.
@@ -77,6 +82,33 @@ layer, but it should be treated as a candidate abstraction rather than the
 answer by assumption. The system requirement is a portable node home, not a
 specific storage brand.
 
+### Identity / Trust Layer
+
+The identity / trust layer is an optional adjacent service boundary that
+supports:
+
+- stable node identity independent of the current A2A URL
+- peer trust and trust-state transitions
+- signed trust or capability claims
+- verification of peer-presented identity metadata
+
+One credible direction is:
+
+- A2A remains the node-facing communication protocol
+- a stable cryptographic identity, DID, or equivalent identifies the node
+- signed claims such as VC-like credentials or equivalent signed metadata carry
+  trust, authority, or extension information
+- a local, self-hosted, or provider-managed SSI/trust service may issue,
+  verify, or manage those credentials
+
+The important property is not one mandatory standards stack. The important
+property is that identity remains:
+
+- stable across URL changes
+- portable across hosts
+- separable from the current discovery locator
+- reviewable in trust decisions
+
 ## Execution Layer: Boxer
 
 The execution layer is an isolated runtime, modeled here as Boxer/WasmBox.
@@ -101,6 +133,8 @@ The cleanest deployment model is:
 - node home = the persisted user state
 - host device or server = the thing that launches the package and attaches the
   node home
+- optional trust service = the thing that provisions or verifies node identity
+  and trust claims when that deployment profile requires it
 
 That means the boxed runtime may contain:
 
@@ -127,6 +161,7 @@ The host device or server should own:
 - attaching or mounting the node home
 - transport reachability and host-specific networking
 - discovery-identity attachment and publication hooks
+- identity/trust service attachment and provider configuration when used
 - promotion, export, import, and handoff orchestration
 - any host-native keychain or secure-storage integration
 
@@ -138,6 +173,8 @@ The boxed runtime should own:
 - running the Plaited server and UI protocol surfaces
 - reading and writing the projected node home
 - executing bounded tools and generated code
+- calling the attached trust service or local trust module when it needs peer
+  identity verification, claim verification, or trust-policy inputs
 
 ### Node Home
 
@@ -147,6 +184,8 @@ The node home should own durable state such as:
 - real Git state
 - metadata and recall indexes
 - config, sync state, and recovery state
+- portable identity metadata, peer trust cache, and migration state needed to
+  preserve identity continuity across host or provider changes
 
 ## Discovery Identity
 
@@ -155,16 +194,23 @@ collapsed into the boxed runtime itself.
 
 One credible direction is:
 
-- ENS or DID provides the stable public identity layer
 - A2A Agent Card discovery provides the node-facing discovery contract
+- the current Agent Card URL is the mutable locator, not the stable identity
+- a stable cryptographic identity, DID, or equivalent may provide the stable
+  node identity layer
+- signed trust or capability claims may be carried through VC-like credentials
+  or equivalent signed metadata
 - A2A extensions provide negotiated capability contracts such as MSS support
-- the host provides the concrete publication and reachability hooks
-- factories decide when discovery metadata should be updated or republished
+- the host provides the concrete publication, reachability, and trust-service
+  attachment hooks
+- factories decide when discovery metadata should be updated or republished and
+  how trust claims influence exposure
 
 The intended split is:
 
 - the host resolves or publishes the current reachable discovery target
 - the boxed runtime serves the node-facing discovery and interaction surfaces
+  and uses trust inputs from the attached trust layer
 - factories coordinate policy around:
   - which A2A extensions are declared in the Agent Card
   - which negotiated extensions are active for a given request
@@ -174,6 +220,13 @@ The intended split is:
 
 This keeps discovery identity stable even when the active execution host moves
 between phone, local machine, and server.
+
+It also allows ordinary rebinding behavior:
+
+- the node may change its current URL or subdomain
+- the stable node identity does not need to change
+- known peers can update the stored locator for that identity through existing
+  authenticated communication or, in the worst case, manual reintroduction
 
 For modnet specifically, one credible direction is to treat MSS support as an
 A2A extension contract rather than as an implicit out-of-band assumption.
@@ -210,6 +263,8 @@ storage boundary.
 - the phone stores the user's node home in app-managed durable storage
 - the host attaches that node home to the boxed runtime
 - the agent and server run inside the box against the mounted home
+- the phone may use a local trust module or an attached external trust service
+  when the chosen deployment profile needs one
 
 ### Server-Hosted Node
 
@@ -217,6 +272,19 @@ storage boundary.
 - the server stores the user's node home on durable server storage
 - the host attaches that node home to the boxed runtime
 - the agent and server run inside the box against the mounted home
+- the server may also run or attach a self-hosted trust service such as an
+  SSI/DID/VC service
+
+### Provider-Managed Trust Service
+
+- a provider may host or provision an external trust service for DID, VC, or
+  equivalent trust operations
+- the node still uses A2A as the peer communication protocol
+- the host attaches provider configuration and credentials to the runtime
+- the node home should retain enough portable identity metadata and peer state
+  to avoid hard lock-in to one provider
+- provider-managed trust services are optional deployment profiles, not a
+  mandatory requirement of the framework
 
 ### Phone-To-Server Promotion
 

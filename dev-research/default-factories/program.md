@@ -2,33 +2,76 @@
 
 ## Goal
 
-Determine the default factory bundle that should ship with the Plaited agent.
+Determine the default factory composition for the Plaited agent.
 
-This lane is the umbrella research program for default factory design. It is
-not the place to exhaustively mutate one specific factory surface. Instead, it
-defines the shared architectural target, integration criteria, and promotion
-rules for the focused factory subprograms.
+This lane is the umbrella research program for factory-era agent behavior. It
+does not exist to mutate one narrow factory surface in isolation. It exists to
+decide:
+
+- which factory families belong in the default agent bundle
+- which of those factories must be present at `createAgent()` initialization
+- which should be discovered, selected, or generated later and installed
+  through `AGENT_CORE_EVENTS.update_factories`
+- how the shipped default composition should balance minimal core, reviewable
+  policy, and dynamic extensibility
 
 ## Why This Lane Exists
 
-The current architecture intentionally keeps `src/agent/create-agent.ts`
-minimal and pushes behavior into factories.
+The current architecture intentionally keeps
+`src/agent/create-agent.ts` minimal.
 
-That leaves an open research question:
+The core now owns only a small runtime substrate:
 
-- which factories should become the default installed composition of the agent?
+- behavioral engine setup
+- restricted trigger boundary
+- signal installation
+- heartbeat emission
+- built-in file, grep, bash, and inference handlers
+- installation of factory functions passed in at initialization
+- installation of additional factory modules loaded later through
+  `AGENT_CORE_EVENTS.update_factories`
 
-This is an integration question, not just a collection of isolated local
-optimizations. Several factory surfaces can and should be explored in parallel,
-but the repo still needs one lane that decides what counts as the default
-bundle.
+That means the main default-factory question is no longer:
+
+- "what giant built-in agent should exist?"
+
+It is:
+
+- "what factory composition should ship as the default agent policy layer?"
+
+## Source Of Truth
+
+The current architectural source of truth is:
+
+- `src/agent/create-agent.ts`
+- `src/agent/agent.types.ts`
+- `src/agent/agent.schemas.ts`
+- `src/agent/tests/create-agent.spec.ts`
+
+The most important current runtime facts are:
+
+- `CreateAgentOptions` accepts `factories?: Factory[]`
+- `createAgent()` installs those factories immediately during initialization
+- shipped default factories may be installed through that initial
+  `factories` array
+- `AGENT_CORE_EVENTS.update_factories` is the runtime module-loading path for
+  additional factory bundles
+- `UpdateFactoryModuleSchema` requires a dynamically loaded module to export:
+
+```typescript
+{
+  default: Factory[]
+}
+```
+
+This split is real and should be treated as first-class in factory research.
 
 ## Relationship To Other Lanes
 
-This lane depends on and integrates focused default-factory subprograms such as:
+This lane depends on and integrates focused subprograms such as:
 
-- `dev-research/bash-factories/program.md`
 - `dev-research/skill-factories/program.md`
+- `dev-research/bash-factories/program.md`
 - `dev-research/acp-factories/program.md`
 - `dev-research/a2a-factories/program.md`
 - `dev-research/mcp-factories/program.md`
@@ -36,8 +79,6 @@ This lane depends on and integrates focused default-factory subprograms such as:
 - `dev-research/search-factories/program.md`
 - `dev-research/verification-factories/program.md`
 - `dev-research/three-axis-factories/program.md`
-- `dev-research/agent-bootstrap/program.md`
-- `dev-research/agent-harness-research/program.md`
 - `dev-research/node-auth-factories/program.md`
 - `dev-research/module-discovery-factories/program.md`
 - `dev-research/plan-factories/program.md`
@@ -53,117 +94,101 @@ This lane depends on and integrates focused default-factory subprograms such as:
 - `dev-research/permission-audit-factories/program.md`
 - `dev-research/context-assembly-factories/program.md`
 - `dev-research/fanout-factories/program.md`
-- future lanes for retrieval, planning, editing, verification, notifications,
-  observability, and related default behaviors
+- `dev-research/identity-trust-factories/program.md`
+- `dev-research/agent-bootstrap/program.md`
+- `dev-research/agent-harness-research/program.md`
 
-The broader architectural direction should now be taken directly from:
+## Core Clarification
 
-- `src/agent/create-agent.ts`
-- `src/agent/agent.types.ts`
-- `src/agent/agent.schemas.ts`
+`default-factories` should not assume that every valid factory lane maps to
+the same installation mechanism.
 
-The intended split is:
+A lane can be valid research now even if its winning factories are not all
+meant to be passed into `createAgent()` at startup.
 
-- `default-factories` decides which concrete factory bundle should become the
-  shipped default agent composition
-- focused subprograms hill-climb bounded factory surfaces in parallel
+The default bundle must instead distinguish at least three source classes:
 
-## Behavioral Translation Of External Agent Primitives
+### 1. Bootstrap Defaults
 
-External agent products are useful as input evidence, but their primitives
-must be translated into Plaited's factory-composed behavioral architecture
-rather than copied as direct feature doctrine.
+Factories that should be present when the agent starts because they establish
+baseline policy or are needed before later discovery can work.
 
-The relevant grounding from `plaited/example-agent` includes:
+This is an installation-time category, not a statement about where the code
+lives. A bootstrap default may still be implemented in the package and passed
+directly through `CreateAgentOptions.factories`.
 
-- metadata-bearing tool and permission surfaces in `src/Tool.ts`
-- dynamic pool assembly in `src/utils/toolPool.ts`
-- deferred tool discovery in `src/utils/toolSearch.ts`
-- token-budget parsing in `src/utils/tokenBudget.ts`
-- session event pagination in `src/assistant/sessionHistory.ts`
-- structured control/event transport in `src/cli/structuredIO.ts`
-- permission request callbacks in `src/bridge/bridgePermissionCallbacks.ts`
-- transcript search and compaction behavior in `src/utils/transcriptSearch.ts`
-- retained telemetry events in `src/utils/telemetry/events.ts`
-- large bootstrap/session state seams in `src/bootstrap/state.ts`
+Typical examples may include:
 
-Within Plaited, those should be expressed as behavioral-factory questions:
+- skill discovery or other initial capability catalog surfaces
+- minimal planning / routing scaffolds
+- baseline observability or notification policy
+- factory discovery / qualification logic needed to load later modules
 
-- metadata-first tool registry maps to module qualification, factory discovery,
-  skill activation, and module-generation policy
-- tiered permission systems map to auth-aware authority shaping, approval
-  policy, and execution gating across node-auth, bash, and three-axis lanes
-- session persistence maps to durable retained artifacts, bootstrap profile
-  state, and memory recall rather than one opaque runtime singleton
-- workflow state management maps to behavioral thread bundles, plan routing,
-  and explicit execution-state signals
-- hard token budgeting maps to bounded search, bounded context assembly, and
-  bounded eval loops rather than prompt-only heuristics
-- structured streaming events map to snapshots, signals, and retained runtime
-  traces suitable for replay and distillation
-- system event logging maps to analyzable artifact retention, observable
-  handler relationships, and replayable bundle-eval traces
-- two-level verification maps to local checks plus bundle-level
-  meta-verification
-- dynamic tool pool assembly maps to search-driven, discovery-driven, and
-  auth-aware capability selection
-- transcript compaction maps to memory layering and context projection policy
-- permission audit trail maps to retained approval decisions, trust-state
-  transitions, and verification artifacts
-- constrained agent types map to sharply bounded factory families such as
-  planning, editing, verification, and routing
+These are installed through `CreateAgentOptions.factories`.
 
-The umbrella program should use those translations to decide whether a
-behavior belongs in:
+### 2. Deployment-Provided Factories
 
-- an existing focused lane
-- a missing focused lane that should be created
-- bundle-level composition logic only
+Factories that are not universally shipped as startup defaults, but are
+provided by a specific deployment, node profile, or operator environment.
 
-It should not treat a foreign product primitive as sufficient architectural
-justification on its own.
+Examples may include:
 
-## Inputs
+- deployment-specific auth policy
+- infrastructure or persistence integrations
+- node-publication or hosted-environment policy
+- profile-specific capability surfaces
 
-The current architectural source of truth is:
+Some of these may still be passed at initialization, but they should remain
+distinguishable from globally shipped defaults.
 
-- `src/agent/create-agent.ts`
-- `src/agent/agent.types.ts`
-- `src/agent/agent.schemas.ts`
+### 3. Dynamically Loaded Factories
 
-Reference skills:
+Factories that should be discovered, selected, or generated after startup and
+installed through `AGENT_CORE_EVENTS.update_factories`.
 
-- `skills/behavioral-core`
-- `skills/code-documentation`
-- `skills/code-patterns`
-- `skills/modnet-factories`
-- `skills/node-auth`
+Typical examples may include:
 
-Utility skills:
+- generated modules
+- newly discovered workspace factory modules
+- deployment-added bundles loaded on demand
+- capability expansions triggered by search, discovery, planning, or user
+  actions
 
-- `skills/typescript-lsp` for type-aware analysis of TypeScript surfaces
+This is not a side detail. It is one of the core architectural seams of the
+factory-era agent, but it should not be confused with the question of whether
+a factory is "default" in origin. A factory can be part of the package and
+still be installed either as a bootstrap default or through a later runtime
+load path, depending on composition policy.
 
-Current heartbeat note:
+## What This Lane Owns
 
-- `src/agent/create-agent.ts` owns only timer setup and emission of
-  `AGENT_CORE_EVENTS.heartbeat`
-- heartbeat is substrate, not policy
-- default-factory work should decide which installed factories listen to
-  heartbeat, what they poll, how they diff state, and whether they notify,
-  infer, or stay idle
+This umbrella lane owns the bundle-level questions:
+
+- which factory families belong in the default shipped composition
+- which belong at bootstrap time versus dynamic load time
+- what dependency ordering exists among focused lanes
+- how local winners from separate lanes compose or conflict
+- what bundle-level evals should decide promotion
+
+This lane does not own the detailed hill-climbing of every neighboring
+factory family. That remains the job of the focused subprograms.
 
 ## Core Hypothesis
 
-The best default factory bundle will not be discovered by designing the entire
-agent composition as one monolithic lane.
+The best default agent will come from a layered composition:
 
-Instead:
+- a minimal core in `src/agent/create-agent.ts`
+- a small bootstrap default bundle that makes the runtime usable and capable
+  of further discovery
+- optional deployment-provided factories
+- dynamic factory installation for later capability expansion
 
-- bounded factory surfaces should be explored in parallel
-- each surface should produce candidate factories, evals, and retained evidence
-- this umbrella lane should periodically compose the current best candidates
-- promotion should happen at the bundle level, not only at the local-factory
-  level
+The best shipped result will not come from:
+
+- pushing all behavior back into the core
+- pretending every factory should load at startup
+- treating dynamically loaded factories as an afterthought
+- optimizing each lane locally without bundle-level integration authority
 
 ## Program Structure
 
@@ -171,183 +196,176 @@ This lane should treat default-factory research as a two-level system.
 
 ### 1. Focused Subprograms
 
-Each focused lane should research one bounded surface, for example:
+Each focused lane should own one bounded policy family.
 
-- local execution
-- search and retrieval orchestration
-- retrieval
-- planning
-- editing
-- validation
-- memory
-- three-axis control
-- deployment bootstrap
-- notification and projection
-- observability and artifact handling
+Examples:
 
-Near-term lanes that now look concrete are:
+- `search-factories` owns search orchestration and retrieval policy
+- `plan-factories` owns decomposition and plan-state routing
+- `edit-factories` owns edit strategy and edit-state policy
+- `verification-factories` owns checks, simulation, and repair policy
+- `notification-factories` owns attention routing
+- `observability-factories` owns retained traces and artifacts
+- `module-discovery-factories` owns qualification and load policy
+- `tool-registry-factories` owns compact capability records and selection
+- `context-assembly-factories` owns phase-aware request assembly
+- `identity-trust-factories` owns stable node identity, peer trust, and
+  trust-service integration
 
-- `plan-factories`
-- `edit-factories`
-- `node-home-factories`
-- `node-discovery-factories`
-- `notification-factories`
-- `observability-factories`
-- `projection-factories`
-- `workflow-state-factories`
+Each subprogram should be narrow enough to support parallel mutation and
+judged comparison.
 
-Additional lane candidates implied by the current architecture and the
-`plaited/example-agent` surfaces are:
-
-- `session-persistence-factories` for durable session state, replay, and
-  restart semantics beyond bootstrap scaffolding alone
-- `tool-registry-factories` for metadata-first capability qualification,
-  description search, and bounded tool assembly across MCP, skills, and
-  module-provided surfaces
-- `permission-audit-factories` for durable authority history, MSS-boundary-
-  aware approval retention, revocation, and review in a persistent proactive
-  node
-- `context-assembly-factories` for phase-aware request construction that uses
-  selective retrieval and capability preselection instead of transcript
-  compaction
-- `fanout-factories` for durable multi-attempt worktree-backed or equally
-  observable execution, comparison, and winner selection
-
-These are not product-feature clones. They are candidate behavioral-factory
-families that should be created only when the translated behavior deserves
-explicit ownership rather than being buried inside neighboring lanes.
-
-Each subprogram should be narrow enough to support parallel mutation and judged
-comparison across many independent attempts.
-
-### 2. Integration and Promotion
+### 2. Integration And Promotion
 
 This umbrella lane should:
 
 - define bundle-level evals
-- track dependency edges between subprograms
-- evaluate compatibility between locally winning factory candidates
-- choose what becomes the default shipped bundle
+- classify startup versus dynamic factory roles
+- track dependency edges between lanes
+- judge whether local winners compose cleanly
+- decide what becomes the recommended default shipped bundle
 
-## Parallelism Model
+## Installation Classes
 
-This lane assumes a parallel fanout workflow, including worktree-backed or
-equally durable multi-attempt research and agent-swarm coordination such as an
-`agenthub`-style message-board plus shared git DAG model.
+This lane should explicitly evaluate candidate factories by installation time.
 
-That means:
+### Bootstrap-Time Candidates
 
-- subprograms should be designed so different agents can work on them in
-  parallel
-- retained artifacts should be explicit and durable
-- local winners should be easy to fetch, inspect, compare, and recombine
-- integration runs should be separate from local mutation runs
+Questions:
+
+- does this factory need to exist before any model-driven discovery?
+- does it define baseline routing, safety, or observability?
+- does later dynamic loading depend on it?
+
+### Runtime-Load Candidates
+
+Questions:
+
+- can this capability be deferred until a task or event justifies it?
+- should it be discovered from the workspace or generated on demand?
+- does dynamic installation preserve a cleaner default model surface?
+
+### Hybrid Candidates
+
+Some factory families may split across both layers.
+
+Examples:
+
+- a minimal bootstrap discovery factory plus richer runtime-loaded modules
+- a baseline planning scaffold plus dynamically loaded specialized planners
+- a default observability spine plus task-specific artifact factories
+
+The right unit of promotion is therefore not only:
+
+- "should this lane exist?"
+
+but also:
+
+- "which part of this lane belongs in which layer?"
 
 ## Independence Classes
 
-This lane should classify default-factory surfaces by coupling strength.
+This lane should classify factory surfaces by coupling strength.
 
 ### Mostly Independent
 
 Surfaces that can usually be hill-climbed in parallel first:
 
-- `bash` / local execution
 - notifications
-- progress and artifact observability
-- narrow projection or reporting helpers
+- narrow projection helpers
+- artifact retention patterns
+- bounded skill and search metadata surfaces
 
 ### Moderately Coupled
 
 Surfaces that can be explored separately but must be integrated early:
 
-- retrieval
 - planning
 - editing
-- validation
-- three-axis control
-- deployment bootstrap
-- session persistence
-- observability and artifact handling
+- verification
+- search and retrieval
+- workflow state
+- module discovery
+- tool registry and context assembly
 
 ### Tightly Coupled
 
 Surfaces where the main value emerges at bundle level:
 
-- memory + planning
-- retrieval + validation
-- editing + planning
-- three-axis control + execution routing
-- three-axis control + MCP/A2A exposure
-- deployment bootstrap + infrastructure target validation
-- verification + execution routing
-- verification + module-discovery correctness
-- verification + MSS boundary correctness
-- node-auth + approval policy + audit retention
-- session persistence + memory recall + restart behavior
+- planning + editing + verification
+- search + context assembly + tool registry
+- module discovery + dynamic loading correctness
+- node auth + permission audit + notification policy
 - observability + verification + distillation readiness
-- planning + execution routing
-- final default-factory stack composition
+- session persistence + memory recall + restart behavior
+- final default shipped composition
 
 This classification should guide fanout scheduling and integration cadence.
 
 ## Evaluation Model
 
-This lane should judge both local and bundle-level quality.
+This lane should judge both local quality and bundle quality.
 
 ### Local Success Is Not Enough
 
-A subprogram can produce a strong local candidate that still should not become
-part of the default bundle if it:
+A focused lane can produce a strong local candidate that still should not
+become part of the default bundle if it:
 
-- increases architectural complexity too much
-- depends on assumptions that other default factories reject
-- creates an overly confusing operator surface for the model
-- improves one local metric while harming the overall default agent
+- increases bundle complexity too much
+- depends on assumptions neighboring lanes reject
+- belongs in runtime loading rather than bootstrap defaults
+- makes the default model surface harder to use correctly
 
 ### Bundle-Level Criteria
 
-A default factory bundle should be judged on:
+A default factory composition should be judged on:
 
-- architectural clarity
 - compatibility with the minimal core
+- clarity of bootstrap versus runtime-loading boundaries
 - quality of composition across factories
 - observability and reviewability
-- default-task performance
-- recovery behavior
-- ease of correct usage by the model
+- correctness of dynamic load behavior
+- ease of correct use by the default model
+- recovery behavior under partial failure or blocked work
 
 ## Promotion Rules
 
-Nothing should become the default shipped bundle merely because it won one
-subprogram.
+Nothing should become part of the default shipped composition merely because it
+won one focused lane.
 
-A promotable default bundle must:
+A promotable bundle must:
 
-- preserve the minimal `create-agent` direction
-- compose through the existing factory contract
-- outperform simpler alternatives on judged bundle-level tasks
+- preserve the minimal `createAgent()` direction
+- compose through the current factory contract
+- respect the concrete runtime module export contract
+- justify whether each promoted factory is bootstrap-time, deployment-provided,
+  or runtime-loaded
+- outperform simpler alternatives on bundle-level tasks
 - remain understandable enough for the default model to use reliably
-- preserve a clear engine-versus-policy split
 
 ## Outputs
 
 This lane should produce:
 
-- a map of focused default-factory subprograms
-- bundle-level evals and rubrics
-- integration notes on factory compatibility
-- retained recommended default-factory bundles
-- an explicit recommendation for what should be shipped by default
+- a map of current focused factory subprograms
+- a bundle-level classification of bootstrap, deployment, and dynamic factory
+  roles
+- integration notes on compatibility and dependency order
+- bundle-level evals and promotion rubrics
+- retained recommendations for default shipped compositions
+- an explicit recommendation for what should ship by default now
 
 ## Negative Goal
 
-This lane should not collapse all default-factory research back into one giant
-mutation surface.
+This lane should not:
 
-It should also not let focused subprograms drift into isolated local
-optimization with no integration authority.
+- collapse factory research back into one giant mutation surface
+- treat every valid lane as a startup default
+- leave real current lanes described as future placeholders
+- contradict the runtime distinction between initial factories and
+  `update_factories`-loaded modules
 
 The point of this lane is to hold both truths at once:
 
-- factory research should be parallelizable
-- shipped defaults must still be chosen as a coherent bundle
+- factory research should remain parallelizable
+- shipped defaults must still be chosen as a coherent layered bundle
