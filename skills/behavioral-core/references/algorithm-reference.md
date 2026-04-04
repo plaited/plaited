@@ -111,7 +111,7 @@ Use `repeat=true` for **persistent constraints** that must remain active through
 
 Use `repeat=false` (or omit) for **one-shot sequences** that should terminate:
 
-- Counting N occurrences (e.g., `maxIterations` waits for N `tool_result` events)
+- Counting N occurrences (e.g., a completion thread waits for N `agent_tool_result` events)
 - Per-square occupation tracking (tic-tac-toe `squaresTaken`)
 - Win detection threads that fire once
 
@@ -126,9 +126,9 @@ const stopGame = bThread([
   bSync({ block: ['X', 'O'] }),
 ], true)  // repeat=true: after blocking, loops back to waitFor 'win'
 
-// Agent equivalent: after 'message', block all events forever
+// Agent equivalent: after disconnect, block all events forever
 const doneGuard = bThread([
-  bSync({ waitFor: AGENT_EVENTS.message }),
+  bSync({ waitFor: AGENT_EVENTS.agent_disconnect }),
   bSync({ block: () => true }),  // predicate blocks EVERYTHING
 ], true)
 ```
@@ -140,7 +140,7 @@ const doneGuard = bThread([
 4. With `repeat=true`, after the block sync, it loops back to `waitFor: 'win'`
 5. But since `block` has no `request` or `waitFor`, the thread stays at the block indefinitely
 
-**Why `repeat=true` matters for doneGuard**: If `repeat=false`, the block sync is the last rule. After the blocking generator yields, there's no more code. The generator would return `done: true` on the NEXT advance — but the thread won't advance because it has no `waitFor` or `request` that would match any event. However, `repeat=true` provides defense-in-depth: even if the thread somehow advanced, it would loop back to `waitFor: 'message'` and wait there safely.
+**Why `repeat=true` matters for doneGuard**: If `repeat=false`, the block sync is the last rule. After the blocking generator yields, there's no more code. The generator would return `done: true` on the NEXT advance — but the thread won't advance because it has no `waitFor` or `request` that would match any event. However, `repeat=true` provides defense-in-depth: even if the thread somehow advanced, it would loop back to `waitFor: 'agent_disconnect'` and wait there safely.
 
 ### Ephemeral vs Persistent Blocks
 
@@ -149,30 +149,31 @@ const doneGuard = bThread([
 ```typescript
 // EPHEMERAL: block only exists until 'terminal' is selected
 bSync({
-  block: 'execute',
+  block: AGENT_EVENTS.write_file,
   request: { type: 'terminal' },
 })
-// After 'terminal' fires → thread advances → block on 'execute' gone
+// After 'terminal' fires → thread advances → block on 'write_file' gone
 // If no more rules → thread removed from pending entirely
 ```
 
-This is why `maxIterations` alone is NOT sufficient to permanently block events. It counts N events and requests `message`, but after `message` fires, the thread is done and its block vanishes. The `doneGuard` must take over:
+This is why a terminal request alone is NOT sufficient to permanently block events. It counts N events and requests `agent_disconnect`, but after `agent_disconnect` fires, the thread is done and its block vanishes. The `doneGuard` must take over:
 
 ```typescript
-// maxIterations: counter + trigger (ephemeral block)
-maxIter: bThread([
-  ...Array.from({ length: N }, () => bSync({ waitFor: 'tool_result' })),
-  bSync({ block: 'execute', request: { type: 'message', detail: { content: '...' } } }),
+// completionCounter: counter + trigger (ephemeral block)
+completionCounter: bThread([
+  ...Array.from({ length: N }, () => bSync({ waitFor: AGENT_EVENTS.agent_tool_result })),
+  bSync({ block: AGENT_EVENTS.write_file, request: { type: AGENT_EVENTS.agent_disconnect } }),
 ])
 
-// doneGuard: persistent block (takes over after message fires)
+// doneGuard: persistent block (takes over after disconnect fires)
 doneGuard: bThread([
-  bSync({ waitFor: 'message' }),
+  bSync({ waitFor: AGENT_EVENTS.agent_disconnect }),
   bSync({ block: () => true }),
 ], true)
 ```
 
-The two threads compose additively: maxIterations triggers the `message` event, doneGuard picks it up and blocks everything permanently.
+The two threads compose additively: completionCounter triggers the `agent_disconnect` event,
+doneGuard picks it up and blocks everything permanently.
 
 ### Infinite Super-Step Anti-Pattern
 
@@ -210,18 +211,18 @@ useFeedback({
 
 **Why this works**: `actionPublisher()` (which fires handlers) runs BEFORE `step()` (which re-evaluates predicates). So when a handler modifies shared state, the next `selectNextEvent()` call sees the updated state.
 
-**Agent equivalent**: `simulatingIds` and `simulationPredictions` are shared between handlers and bThread predicates:
+**Agent equivalent**: a pending-write set is shared between handlers and bThread predicates:
 
 ```typescript
 // Handler sets state
-simulatingIds.add(detail.toolCall.id)
+pendingWrites.add(detail.path)
 
 // bThread predicate reads state
-simulationGuard: bThread([
+writeGuard: bThread([
   bSync({
     block: (event) => {
-      if (event.type !== AGENT_EVENTS.execute) return false
-      return simulatingIds.has(event.detail?.toolCall?.id)
+      if (event.type !== AGENT_EVENTS.write_file) return false
+      return pendingWrites.has(event.detail?.input?.path)
     },
   }),
 ], true)
@@ -234,9 +235,9 @@ From the Scaling Up paper: threads can spawn other threads at runtime. In Plaite
 ```typescript
 // Handler acts as dispatcher
 useFeedback({
-  model_response: (detail) => {
-    for (const tc of detail.actionCalls) {
-      trigger({ type: 'proposed_action', detail: { toolCall: tc } })
+  [AGENT_EVENTS.agent_tool_result]: (detail) => {
+    for (const output of detail.output) {
+      trigger({ type: 'indexed_output', detail: output })
       // Each trigger() creates a new b-thread that requests the event
     }
   },
@@ -258,15 +259,14 @@ bThreads.set({
     ...Array.from({ length: 3 }, () =>
       bSync({
         waitFor: (event) =>
-          event.type === 'tool_result' ||
-          event.type === 'gate_rejected' ||
-          event.type === 'eval_rejected',
-        interrupt: ['message'],
+          event.type === AGENT_EVENTS.agent_tool_result ||
+          event.type === AGENT_EVENTS.signal_schema_violation,
+        interrupt: [AGENT_EVENTS.agent_disconnect],
       }),
     ),
     bSync({
-      request: { type: 'invoke_inference' },
-      interrupt: ['message'],
+      request: { type: AGENT_EVENTS.request_inference_primary },
+      interrupt: [AGENT_EVENTS.agent_disconnect],
     }),
   ]),
 })
@@ -293,7 +293,9 @@ const enforceTurns = bThread([
 ], true)
 ```
 
-This is how `simulationGuard` works: it blocks `execute` for specific tool calls until simulation completes, enforcing the order simulate → evaluate → execute.
+The same pattern applies in the current agent core when a coordination thread needs to defer
+`write_file` or `bash` until some prerequisite state is present, such as a signal update or a
+tool result.
 
 ## Execution Trace: Handler → Thread → Handler
 
@@ -318,7 +320,10 @@ flowchart TD
     M -->|No| N["Super-step ends and control returns"]
 ```
 
-**Key insight for async handlers**: When a feedback handler is async (e.g., it `await`s an inference call), the handler starts executing but the super-step continues. The handler's `trigger()` call after the `await` starts a NEW super-step. This is how the agent loop handles async work without blocking the BP engine.
+**Key insight for async handlers**: When a feedback handler is async (e.g., it `await`s an
+inference call), the handler starts executing but the super-step continues. The handler's
+`trigger()` call after the `await` starts a NEW super-step. This is how agent factories handle
+async work without blocking the BP engine.
 
 ## Async Feedback and the BP Loop
 
@@ -331,14 +336,14 @@ sequenceDiagram
     participant H as Async Handler
     participant INF as Inference
 
-    T->>BP: trigger(task)
-    BP->>BP: selectNextEvent → 'task' selected
-    BP->>H: actionPublisher('task') — fire-and-forget
+    T->>BP: trigger(request_inference_primary)
+    BP->>BP: selectNextEvent → request_inference_primary selected
+    BP->>H: actionPublisher(request_inference_primary) — fire-and-forget
     Note over BP: Super-step ends (no more events)
     H->>INF: await inferenceCall()
     Note over H: Waiting for response...
     INF-->>H: response
-    H->>T: trigger(model_response)
+    H->>T: trigger(agent_tool_result)
     T->>BP: New super-step begins
     BP->>BP: selectNextEvent → chain of events...
 ```
@@ -352,12 +357,12 @@ The async handler bridges the synchronous BP world and the asynchronous I/O worl
 The defining property of BP: new behaviors can be added without modifying existing ones.
 
 ```typescript
-// Wave 1: just maxIterations
-bThreads.set({ maxIterations: bThread([...]) })
+// Wave 1: just completion accounting
+bThreads.set({ completionCounter: bThread([...]) })
 
-// Wave 2: add simulation guard — doesn't touch maxIterations
-bThreads.set({ simulationGuard: bThread([...], true) })
-bThreads.set({ symbolicSafetyNet: bThread([...], true) })
+// Wave 2: add a write guard — doesn't touch completionCounter
+bThreads.set({ writeGuard: bThread([...], true) })
+bThreads.set({ disconnectGuard: bThread([...], true) })
 ```
 
 Each bThread is an independent requirement. They compose through the event selection mechanism without knowing about each other.
@@ -367,7 +372,7 @@ Each bThread is an independent requirement. They compose through the event selec
 | Type | Purpose | Agent Equivalent |
 |------|---------|-----------------|
 | **Goal-Scenarios** | Grant reinforcements, drive learning | — (future: reward-based routing) |
-| **Base-Scenarios** | Affect run, no reinforcements | `maxIterations`, `simulationGuard` |
+| **Base-Scenarios** | Affect run, no reinforcements | `completionCounter`, `writeGuard` |
 | **Auxiliary-Scenarios** | Monitor only, don't participate in selection | `useSnapshot` listeners |
 
 ### Pluggable Event Selection Strategies (BPjs, Scaling Up)
@@ -384,8 +389,8 @@ The event selection mechanism is a parameter, not fixed. Plaited uses priority-b
 BP's formal model says b-threads communicate ONLY through events. In practice,
 Plaited also allows runtime state to be observed through local closure state,
 predicate inputs, and other explicit context surfaces. Examples include shared
-maps like `board` in tic-tac-toe or tool-state sets like `simulatingIds` in the
-agent loop.
+maps like `board` in tic-tac-toe or tool-state sets like `pendingWrites` in an
+agent factory.
 
 The COBP paper formalizes this by adding explicit context idioms — `select`
 queries to read context, `update` to change it. This is useful because it makes
@@ -407,13 +412,20 @@ implicitly shared mutable state where possible.
 
 1. **Threads for coordination, handlers for side effects** — bThreads express WHEN and IF; handlers express WHAT. A handler should be a thin side-effect runner, not a decision-maker.
 
-2. **Block instead of `if (done) return`** — The `doneGuard` bThread eliminates all manual done-checking. When `message` fires, the block activates and prevents any further events from being selected.
+2. **Block instead of `if (done) return`** — A `doneGuard` bThread can eliminate manual
+done-checking. When `agent_disconnect` fires, the block activates and prevents any further events
+from being selected.
 
-3. **Events as the only control flow** — Instead of calling `checkComplete()` from multiple handlers, trigger an `invoke_inference` event. The handler for that event does the inference. This makes the control flow visible to `useSnapshot`.
+3. **Events as the only control flow** — Instead of calling coordination helpers from multiple
+handlers, trigger an event such as `request_inference_primary`. The handler for that event does the
+inference. This makes the control flow visible to `useSnapshot`.
 
-4. **Repeat for constraints, finite for sequences** — Persistent safety/coordination threads use `repeat=true`. Counting threads (like `maxIterations`) use finite sequences.
+4. **Repeat for constraints, finite for sequences** — Persistent safety/coordination threads use
+`repeat=true`. Counting threads like `completionCounter` use finite sequences.
 
-5. **Defense-in-depth through additive composition** — `symbolicSafetyNet` is redundant with the symbolic gate check in the `simulation_result` handler. This is by design — the handler check is the primary defense, the bThread is a safety net. Both are independent requirements composed additively.
+5. **Defense-in-depth through additive composition** — a persistent guard thread can be redundant
+with a handler-level validation check. This is by design: the handler check is the primary defense,
+the bThread is a safety net. Both are independent requirements composed additively.
 
 ## References
 

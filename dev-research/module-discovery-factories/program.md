@@ -12,14 +12,14 @@ supports:
 - default factory bundles
 - deployment-provided factories
 - generated module factories
-- runtime loading through `AGENT_CORE_EVENTS.update_factories`
+- runtime loading through `AGENT_EVENTS.update_factories`
 
 ## Why This Lane Exists
 
 The repo already has a concrete runtime loading seam:
 
 - `src/agent/create-agent.ts` dynamically imports a module path on
-  `AGENT_CORE_EVENTS.update_factories`
+  `AGENT_EVENTS.update_factories`
 - `UpdateFactoryModuleSchema` requires `default: Factory[]`
 
 What remains open is everything around that seam:

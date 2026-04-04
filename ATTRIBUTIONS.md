@@ -23,19 +23,18 @@ Concepts that still show up in the repo:
 - **Blocks**
 
 Where that influence is visible now:
-- [docs/Structural-IA.md](/Users/eirby/Workspace/plaited/docs/Structural-IA.md)
-- [docs/CONSTITUTION.md](/Users/eirby/Workspace/plaited/docs/CONSTITUTION.md)
-- [skills/mss/references/structural-ia-distilled.md](/Users/eirby/Workspace/plaited/skills/mss/references/structural-ia-distilled.md)
+- [skills/modnet-factories/references/Structural-IA.md](/Users/eirby/Workspace/plaited/skills/modnet-factories/references/Structural-IA.md)
+- [docs/ARCHITECTURE.md](/Users/eirby/Workspace/plaited/docs/ARCHITECTURE.md)
 
 In Plaited, Structural IA is not just UI vocabulary. It also informs the
-constitution, module composition language, and the bridge between symbolic
-constraints and generated artifacts.
+module composition language, factory-era system framing, and the bridge between
+symbolic constraints and generated artifacts.
 
 ## Modnet and MSS
 
 **Author:** Rachel Jaffe
 **Sources:**
-- [Modnet.md](/Users/eirby/Workspace/plaited/docs/Modnet.md)
+- [Modnet.md](/Users/eirby/Workspace/plaited/skills/modnet-factories/references/Modnet.md)
 - [Past the Internet: The Emergence of the Modnet](https://medium.com/@rjaffe01)
 
 Rachel Jaffe's modnet work is the other major living attribution that should be
@@ -51,17 +50,16 @@ Concepts that still show up in the repo:
 
 Where that influence is visible now:
 - [README.md](/Users/eirby/Workspace/plaited/README.md)
-- [docs/MODNET-IMPLEMENTATION.md](/Users/eirby/Workspace/plaited/docs/MODNET-IMPLEMENTATION.md)
-- [docs/CONSTITUTION.md](/Users/eirby/Workspace/plaited/docs/CONSTITUTION.md)
-- [src/modnet.ts](/Users/eirby/Workspace/plaited/src/modnet.ts)
-- [src/modnet/modnet.schemas.ts](/Users/eirby/Workspace/plaited/src/modnet/modnet.schemas.ts)
-- [skills/mss/SKILL.md](/Users/eirby/Workspace/plaited/skills/mss/SKILL.md)
-- [skills/mss/references/modnet-standards-distilled.md](/Users/eirby/Workspace/plaited/skills/mss/references/modnet-standards-distilled.md)
+- [docs/ARCHITECTURE.md](/Users/eirby/Workspace/plaited/docs/ARCHITECTURE.md)
+- [docs/INFRASTRUCTURE.md](/Users/eirby/Workspace/plaited/docs/INFRASTRUCTURE.md)
+- [docs/AGENT-LOOP.md](/Users/eirby/Workspace/plaited/docs/AGENT-LOOP.md)
+- [skills/modnet-factories/SKILL.md](/Users/eirby/Workspace/plaited/skills/modnet-factories/SKILL.md)
+- [src/factories/a2a-factory/a2a.schemas.ts](/Users/eirby/Workspace/plaited/src/factories/a2a-factory/a2a.schemas.ts)
 
 Plaited does not reproduce the modnet work verbatim. It adapts it into:
 - a Bun-native A2A node architecture
 - MSS metadata on modules and Agent Cards
-- constitution rules that enforce boundary and ownership ideas
+- boundary-aware factory and protocol design
 - a neuro-symbolic runtime where generated modules are constrained by BP and governance
 
 ## Scope Note

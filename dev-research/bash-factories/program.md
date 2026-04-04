@@ -3,7 +3,7 @@
 ## Goal
 
 Research the smallest effective factory architecture around the minimal
-`AGENT_CORE_EVENTS.bash` primitive so the default Plaited agent can use local
+`AGENT_EVENTS.bash` primitive so the default Plaited agent can use local
 execution well without widening the core agent engine.
 
 This lane should not try to recreate a giant shell tool inside `src/agent`.
@@ -64,7 +64,7 @@ In other words:
 This lane should not:
 
 - port another repo's shell tool wholesale into `src/agent`
-- turn `AGENT_CORE_EVENTS.bash` into a generic string-shell surface
+- turn `AGENT_EVENTS.bash` into a generic string-shell surface
 - hardcode broad execution policy into the core
 - assume the first reasonable factory split is the final default
 

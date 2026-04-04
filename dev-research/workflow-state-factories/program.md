@@ -10,7 +10,7 @@ This lane should define how the agent:
 - installs multiple role-specialized factory layers inside one sovereign node
 - coordinates them through behavioral threads, signals, and snapshots
 - supports both startup-installed defaults and runtime-installed dynamic
-  overlays through `AGENT_CORE_EVENTS.update_factories`
+  overlays through `AGENT_EVENTS.update_factories`
 - achieves non-linear planning, editing, verification, and repair without
   process-level teammate orchestration
 
@@ -23,7 +23,7 @@ The repo already has the core execution seam needed for this direction:
 
 - `src/agent/create-agent.ts` installs a `factories` array at init time
 - `src/agent/create-agent.ts` also supports runtime module installation through
-  `AGENT_CORE_EVENTS.update_factories`
+  `AGENT_EVENTS.update_factories`
 - `src/agent/agent.schemas.ts` keeps the runtime loading contract concrete:
   `default: Factory[]`
 - `skills/behavioral-core/SKILL.md` defines the coordination substrate through
@@ -163,7 +163,7 @@ Tradeoff:
 ### 2. Phase-Loaded Dynamic Overlay
 
 A small static kernel ships at startup, then phase-specific factory modules are
-loaded later through `AGENT_CORE_EVENTS.update_factories`.
+loaded later through `AGENT_EVENTS.update_factories`.
 
 Pattern:
 

@@ -11,7 +11,7 @@ decide:
 - which factory families belong in the default agent bundle
 - which of those factories must be present at `createAgent()` initialization
 - which should be discovered, selected, or generated later and installed
-  through `AGENT_CORE_EVENTS.update_factories`
+  through `AGENT_EVENTS.update_factories`
 - how the shipped default composition should balance minimal core, reviewable
   policy, and dynamic extensibility
 
@@ -29,7 +29,7 @@ The core now owns only a small runtime substrate:
 - built-in file, grep, bash, and inference handlers
 - installation of factory functions passed in at initialization
 - installation of additional factory modules loaded later through
-  `AGENT_CORE_EVENTS.update_factories`
+  `AGENT_EVENTS.update_factories`
 
 That means the main default-factory question is no longer:
 
@@ -54,7 +54,7 @@ The most important current runtime facts are:
 - `createAgent()` installs those factories immediately during initialization
 - shipped default factories may be installed through that initial
   `factories` array
-- `AGENT_CORE_EVENTS.update_factories` is the runtime module-loading path for
+- `AGENT_EVENTS.update_factories` is the runtime module-loading path for
   additional factory bundles
 - `UpdateFactoryModuleSchema` requires a dynamically loaded module to export:
 
@@ -144,7 +144,7 @@ distinguishable from globally shipped defaults.
 ### 3. Dynamically Loaded Factories
 
 Factories that should be discovered, selected, or generated after startup and
-installed through `AGENT_CORE_EVENTS.update_factories`.
+installed through `AGENT_EVENTS.update_factories`.
 
 Typical examples may include:
 
