@@ -23,12 +23,12 @@ reviewable.
 
 The current repo already has adjacent ingredients:
 
-- `dev-research/skill-factories/program.md` owns skill discovery and
+- [dev-research/skill-factories/program.md](../skill-factories/program.md) owns skill discovery and
   activation
-- `dev-research/mcp-factories/program.md` owns MCP-backed capability surfaces
-- `dev-research/module-discovery-factories/program.md` owns factory-bearing
+- [dev-research/mcp-factories/program.md](../mcp-factories/program.md) owns MCP-backed capability surfaces
+- [dev-research/module-discovery-factories/program.md](../module-discovery-factories/program.md) owns factory-bearing
   module qualification and load policy
-- `dev-research/search-factories/program.md` owns broader retrieval policy
+- [dev-research/search-factories/program.md](../search-factories/program.md) owns broader retrieval policy
 
 What remains open is the unified registry layer:
 
@@ -46,16 +46,16 @@ MCP, search, and projection without one explicit owner.
 
 This lane sits under:
 
-- `dev-research/default-factories/program.md`
+- [dev-research/default-factories/program.md](../default-factories/program.md)
 
 It should integrate with:
 
-- `dev-research/skill-factories/program.md`
-- `dev-research/mcp-factories/program.md`
-- `dev-research/module-discovery-factories/program.md`
-- `dev-research/search-factories/program.md`
-- `dev-research/context-assembly-factories/program.md`
-- `dev-research/three-axis-factories/program.md`
+- [dev-research/skill-factories/program.md](../skill-factories/program.md)
+- [dev-research/mcp-factories/program.md](../mcp-factories/program.md)
+- [dev-research/module-discovery-factories/program.md](../module-discovery-factories/program.md)
+- [dev-research/search-factories/program.md](../search-factories/program.md)
+- [dev-research/context-assembly-factories/program.md](../context-assembly-factories/program.md)
+- [dev-research/three-axis-factories/program.md](../three-axis-factories/program.md)
 
 The intended split is:
 
@@ -68,7 +68,7 @@ The intended split is:
 
 ## Dependency Order
 
-1. `docs/AGENT-LOOP.md` defines the minimal-core plus factory-composed model
+1. [docs/AGENT-LOOP.md](../../docs/AGENT-LOOP.md) defines the minimal-core plus factory-composed model
 2. adjacent lanes define skills, MCP, modules, search, and three-axis
    constraints
 3. this lane hill-climbs the metadata-first capability registry slice and

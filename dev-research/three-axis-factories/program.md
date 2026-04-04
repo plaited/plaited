@@ -38,16 +38,16 @@ factories without one program integrating them.
 
 This lane sits under:
 
-- `dev-research/default-factories/program.md`
+- [dev-research/default-factories/program.md](../default-factories/program.md)
 
 It should integrate with:
 
-- `dev-research/bash-factories/program.md`
-- `dev-research/skill-factories/program.md`
-- `dev-research/mcp-factories/program.md`
-- `dev-research/a2a-factories/program.md`
-- `dev-research/memory-factories/program.md`
-- `dev-research/verification-factories/program.md`
+- [dev-research/bash-factories/program.md](../bash-factories/program.md)
+- [dev-research/skill-factories/program.md](../skill-factories/program.md)
+- [dev-research/mcp-factories/program.md](../mcp-factories/program.md)
+- [dev-research/a2a-factories/program.md](../a2a-factories/program.md)
+- [dev-research/memory-factories/program.md](../memory-factories/program.md)
+- [dev-research/verification-factories/program.md](../verification-factories/program.md)
 
 Those lanes define concrete capability surfaces.
 
@@ -61,10 +61,10 @@ This lane defines the cross-cutting rules that decide:
 
 ## Dependency Order
 
-1. `src/agent/create-agent.ts` defines the minimal executable core
-2. `src/agent/agent.types.ts` defines the factory contract
-3. `docs/INFRASTRUCTURE.md` defines deployment and sandbox boundaries
-4. `dev-research/default-factories/program.md` defines the default bundle
+1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the minimal executable core
+2. [src/agent/agent.types.ts](../../src/agent/agent.types.ts) defines the factory contract
+3. [docs/INFRASTRUCTURE.md](../../docs/INFRASTRUCTURE.md) defines deployment and sandbox boundaries
+4. [dev-research/default-factories/program.md](../default-factories/program.md) defines the default bundle
    question
 5. this lane hill-climbs the cross-cutting control slice and feeds its winning
    candidates back into the default-factories umbrella
@@ -342,7 +342,7 @@ Hypothesis:
 
 Candidate bundles should be judged on:
 
-- does the design keep `src/agent` minimal?
+- does the design keep [src/agent](../../src/agent) minimal?
 - does it materially narrow capability, autonomy, or authority in practice?
 - is the operator surface reviewable and understandable?
 - does it compose cleanly with bash, skills, MCP, A2A, and memory factories?

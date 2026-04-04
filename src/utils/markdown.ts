@@ -42,6 +42,26 @@ export const parseMarkdownWithFrontmatter = <TSchema extends z.ZodType>(
   }
 }
 
+export const extractMarkdownSection = (markdown: string, headings: string[]): string | null => {
+  const lines = markdown.split(/\r?\n/)
+  const escapedHeadings = headings.map((heading) => heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const headingPattern = new RegExp(`^## (?:${escapedHeadings.join('|')})\\s*$`)
+  const nextHeadingPattern = /^##\s+/
+  const startIndex = lines.findIndex((line) => headingPattern.test(line.trim()))
+
+  if (startIndex === -1) return null
+
+  const sectionLines: string[] = []
+  for (let index = startIndex + 1; index < lines.length; index++) {
+    const line = lines[index]
+    if (line !== undefined && nextHeadingPattern.test(line.trim())) break
+    sectionLines.push(line ?? '')
+  }
+
+  const section = sectionLines.join('\n').trim()
+  return section.length > 0 ? section : null
+}
+
 export const normalizeMarkdownLink = (value: string): string | null => {
   if (
     !value ||

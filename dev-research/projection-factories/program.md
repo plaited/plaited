@@ -41,16 +41,16 @@ hoc summaries from each neighboring factory family.
 
 This lane sits under:
 
-- `dev-research/default-factories/program.md`
+- [dev-research/default-factories/program.md](../default-factories/program.md)
 
 It should integrate with:
 
-- `dev-research/plan-factories/program.md`
-- `dev-research/search-factories/program.md`
-- `dev-research/memory-factories/program.md`
-- `dev-research/verification-factories/program.md`
-- `dev-research/notification-factories/program.md`
-- `dev-research/observability-factories/program.md`
+- [dev-research/plan-factories/program.md](../plan-factories/program.md)
+- [dev-research/search-factories/program.md](../search-factories/program.md)
+- [dev-research/memory-factories/program.md](../memory-factories/program.md)
+- [dev-research/verification-factories/program.md](../verification-factories/program.md)
+- [dev-research/notification-factories/program.md](../notification-factories/program.md)
+- [dev-research/observability-factories/program.md](../observability-factories/program.md)
 
 The intended split is:
 
@@ -60,11 +60,11 @@ The intended split is:
 
 ## Dependency Order
 
-1. `src/agent/create-agent.ts` defines the minimal core
-2. `src/agent/agent.types.ts` defines the shared state and factory seams
-3. `skills/behavioral-core/SKILL.md` defines the runtime signal and snapshot
+1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the minimal core
+2. [src/agent/agent.types.ts](../../src/agent/agent.types.ts) defines the shared state and factory seams
+3. [skills/behavioral-core/SKILL.md](../../skills/behavioral-core/SKILL.md) defines the runtime signal and snapshot
    substrate
-4. `dev-research/default-factories/program.md` defines the bundle question
+4. [dev-research/default-factories/program.md](../default-factories/program.md) defines the bundle question
 5. this lane hill-climbs the projection slice and feeds winners back into the
    default-factories umbrella
 

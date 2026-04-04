@@ -4,6 +4,7 @@ import * as z from 'zod'
 import {
   consumeHtmlRewriteResult,
   extractLocalLinksFromMarkdown,
+  extractMarkdownSection,
   normalizeMarkdownLink,
   parseMarkdownWithFrontmatter,
 } from '../markdown.ts'
@@ -108,6 +109,34 @@ Ignore [docs](https://example.com), [anchor](#top), and <img src="https://exampl
 `)
 
     expect(links).toEqual(['scripts/a.ts', 'scripts/b.ts'])
+  })
+})
+
+describe('extractMarkdownSection', () => {
+  test('returns the requested heading body', () => {
+    const section = extractMarkdownSection(
+      `# Program
+
+## Mission
+
+Ship it.
+
+## Writable Roots
+
+- [agent](../../src/agent/)
+
+## Validation
+
+- Run tests.
+`,
+      ['Writable Roots'],
+    )
+
+    expect(section).toBe('- [agent](../../src/agent/)')
+  })
+
+  test('returns null when the heading is absent', () => {
+    expect(extractMarkdownSection('# Program\n\n## Mission\n\nShip it.\n', ['Scope'])).toBeNull()
   })
 })
 

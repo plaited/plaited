@@ -17,7 +17,7 @@ authentication mode shapes:
 ## Why This Lane Exists
 
 The repo already has a bounded implementation seam for node authentication, and
-`skills/node-auth` captures the current technical modes:
+[skills/node-auth](../../skills/node-auth) captures the current technical modes:
 
 - WebAuthn passkeys for sovereign/local nodes
 - JWT verification for hosted platform edges
@@ -37,11 +37,11 @@ The missing work is policy and composition:
 
 ## Dependency Order
 
-1. `src/agent/create-agent.ts` defines the minimal executable core
-2. `src/agent/agent.types.ts` defines the factory contract
-3. `skills/node-auth/SKILL.md` defines the current auth seam and auth modes
-4. `dev-research/a2a-factories/program.md` defines A2A exposure and routing
-5. `dev-research/three-axis-factories/program.md` defines cross-cutting
+1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the minimal executable core
+2. [src/agent/agent.types.ts](../../src/agent/agent.types.ts) defines the factory contract
+3. [skills/node-auth/SKILL.md](../../skills/node-auth/SKILL.md) defines the current auth seam and auth modes
+4. [dev-research/a2a-factories/program.md](../a2a-factories/program.md) defines A2A exposure and routing
+5. [dev-research/three-axis-factories/program.md](../three-axis-factories/program.md) defines cross-cutting
    authority and autonomy control
 6. This lane hill-climbs the auth slice and feeds winning candidates back into
    the default-factories umbrella
@@ -62,28 +62,28 @@ Instead:
 
 Primary local inputs:
 
-- `skills/node-auth/SKILL.md`
-- `skills/node-auth/references/webauthn-sovereign.md`
-- `skills/node-auth/references/platform-jwt.md`
-- `skills/node-auth/references/oidc-enterprise.md`
-- `skills/node-auth/references/dev-mode.md`
-- `src/server/server.ts`
-- `src/server/server.types.ts`
-- `src/server/server.schemas.ts`
-- `src/agent/create-agent.ts`
-- `src/factories/a2a-factory/`
+- [skills/node-auth/SKILL.md](../../skills/node-auth/SKILL.md)
+- [skills/node-auth/references/webauthn-sovereign.md](../../skills/node-auth/references/webauthn-sovereign.md)
+- [skills/node-auth/references/platform-jwt.md](../../skills/node-auth/references/platform-jwt.md)
+- [skills/node-auth/references/oidc-enterprise.md](../../skills/node-auth/references/oidc-enterprise.md)
+- [skills/node-auth/references/dev-mode.md](../../skills/node-auth/references/dev-mode.md)
+- [src/server/server.ts](../../src/server/server.ts)
+- [src/server/server.types.ts](../../src/server/server.types.ts)
+- [src/server/server.schemas.ts](../../src/server/server.schemas.ts)
+- [src/agent/create-agent.ts](../../src/agent/create-agent.ts)
+- [src/factories/a2a-factory/](../../src/factories/a2a-factory)
 
 Important research companions:
 
-- `dev-research/default-factories/program.md`
-- `dev-research/a2a-factories/program.md`
-- `dev-research/three-axis-factories/program.md`
+- [dev-research/default-factories/program.md](../default-factories/program.md)
+- [dev-research/a2a-factories/program.md](../a2a-factories/program.md)
+- [dev-research/three-axis-factories/program.md](../three-axis-factories/program.md)
 
 Reference skills:
 
-- `skills/node-auth`
-- `skills/behavioral-core`
-- `skills/typescript-lsp`
+- [skills/node-auth](../../skills/node-auth)
+- [skills/behavioral-core](../../skills/behavioral-core)
+- [skills/typescript-lsp](../../skills/typescript-lsp)
 
 ## Product Target
 
@@ -199,7 +199,7 @@ Candidate bundles should be judged on:
 - does the design compose with A2A and three-axis lanes cleanly?
 - are trust and authority distinctions explicit rather than accidental?
 - is the resulting bundle understandable enough to ship by default?
-- does the design avoid widening `src/agent` with deployment-specific auth
+- does the design avoid widening [src/agent](../../src/agent) with deployment-specific auth
   policy?
 
 ## Deliverables
@@ -216,7 +216,7 @@ This lane should produce:
 
 This lane should not:
 
-- replace `skills/node-auth` as the coding seam reference
+- replace [skills/node-auth](../../skills/node-auth) as the coding seam reference
 - hardcode one deployment model as the only valid node shape
 - collapse local auth, peer trust, and platform identity into one concept
-- widen `src/agent/create-agent.ts` with auth-specific policy logic
+- widen [src/agent/create-agent.ts](../../src/agent/create-agent.ts) with auth-specific policy logic

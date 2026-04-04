@@ -41,10 +41,10 @@ export const ProgramRunnerRunInputSchema = z.object({
   validateCommand: z.array(z.string()).optional(),
   defaultAllowedPaths: z.array(z.string()).default([]),
 })
-export type ProgramRunnerRunInput = z.infer<typeof ProgramRunnerRunInputSchema>
+export type ProgramRunnerRunInput = z.input<typeof ProgramRunnerRunInputSchema>
 
 export const ProgramRunnerStatusInputSchema = z.object({
   programPath: z.string(),
   runDir: z.string().optional(),
 })
-export type ProgramRunnerStatusInput = z.infer<typeof ProgramRunnerStatusInputSchema>
+export type ProgramRunnerStatusInput = z.input<typeof ProgramRunnerStatusInputSchema>

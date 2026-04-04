@@ -21,12 +21,12 @@ in-process orchestration model built from factories.
 
 The repo already has the core execution seam needed for this direction:
 
-- `src/agent/create-agent.ts` installs a `factories` array at init time
-- `src/agent/create-agent.ts` also supports runtime module installation through
+- [src/agent/create-agent.ts](../../src/agent/create-agent.ts) installs a `factories` array at init time
+- [src/agent/create-agent.ts](../../src/agent/create-agent.ts) also supports runtime module installation through
   `AGENT_EVENTS.update_factories`
-- `src/agent/agent.schemas.ts` keeps the runtime loading contract concrete:
+- [src/agent/agent.schemas.ts](../../src/agent/agent.schemas.ts) keeps the runtime loading contract concrete:
   `default: Factory[]`
-- `skills/behavioral-core/SKILL.md` defines the coordination substrate through
+- [skills/behavioral-core/SKILL.md](../../skills/behavioral-core/SKILL.md) defines the coordination substrate through
   `bThread`, `bSync`, signals, snapshots, blocking, and interrupts
 
 That means the repo already supports two distinct installation moments:
@@ -50,11 +50,11 @@ larger than projection alone.
 
 `plaited/example-agent` expresses team and tool coordination through:
 
-- `src/tools/TeamCreateTool/TeamCreateTool.ts`
-- `src/utils/swarm/inProcessRunner.ts`
-- `src/utils/swarm/teamHelpers.ts`
-- `src/Tool.ts`
-- `src/utils/toolPool.ts`
+- [src/tools/TeamCreateTool/TeamCreateTool.ts](../../src/tools/TeamCreateTool/TeamCreateTool.ts)
+- [src/utils/swarm/inProcessRunner.ts](../../src/utils/swarm/inProcessRunner.ts)
+- [src/utils/swarm/teamHelpers.ts](../../src/utils/swarm/teamHelpers.ts)
+- [src/Tool.ts](../../src/Tool.ts)
+- [src/utils/toolPool.ts](../../src/utils/toolPool.ts)
 
 Those surfaces are useful comparison points, but Plaited should translate them
 through the factory model instead of copying teammate spawning.
@@ -72,16 +72,16 @@ The relevant translation is:
 
 This lane sits under:
 
-- `dev-research/default-factories/program.md`
+- [dev-research/default-factories/program.md](../default-factories/program.md)
 
 It should integrate with:
 
-- `dev-research/plan-factories/program.md`
-- `dev-research/edit-factories/program.md`
-- `dev-research/verification-factories/program.md`
-- `dev-research/projection-factories/program.md`
-- `dev-research/observability-factories/program.md`
-- `dev-research/module-discovery-factories/program.md`
+- [dev-research/plan-factories/program.md](../plan-factories/program.md)
+- [dev-research/edit-factories/program.md](../edit-factories/program.md)
+- [dev-research/verification-factories/program.md](../verification-factories/program.md)
+- [dev-research/projection-factories/program.md](../projection-factories/program.md)
+- [dev-research/observability-factories/program.md](../observability-factories/program.md)
+- [dev-research/module-discovery-factories/program.md](../module-discovery-factories/program.md)
 
 The intended split is:
 
@@ -94,12 +94,12 @@ The intended split is:
 
 ## Dependency Order
 
-1. `src/agent/create-agent.ts` defines init-time and runtime factory
+1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines init-time and runtime factory
    installation
-2. `src/agent/agent.types.ts` defines the factory contract
-3. `src/agent/agent.schemas.ts` defines the `default: Factory[]` module shape
-4. `skills/behavioral-core/SKILL.md` defines the event coordination substrate
-5. `dev-research/default-factories/program.md` defines the bundle question
+2. [src/agent/agent.types.ts](../../src/agent/agent.types.ts) defines the factory contract
+3. [src/agent/agent.schemas.ts](../../src/agent/agent.schemas.ts) defines the `default: Factory[]` module shape
+4. [skills/behavioral-core/SKILL.md](../../skills/behavioral-core/SKILL.md) defines the event coordination substrate
+5. [dev-research/default-factories/program.md](../default-factories/program.md) defines the bundle question
 6. this lane hill-climbs workflow-state orchestration candidates and feeds the
    winners back into the default-factories umbrella
 

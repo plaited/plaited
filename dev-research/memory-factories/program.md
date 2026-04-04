@@ -36,21 +36,21 @@ What is still missing is the memory policy layer that decides:
   prompt wholesale
 
 This is research work for a focused default factory family, not a reason to
-widen `src/agent/create-agent.ts`.
+widen [src/agent/create-agent.ts](../../src/agent/create-agent.ts).
 
 ## Dependency Order
 
-1. `src/agent/create-agent.ts` defines the minimal core boundary
-2. `src/agent/agent.types.ts` defines the factory, signal, and snapshot seams
-3. `src/behavioral/behavioral.schemas.ts` defines the current `SnapshotMessage`
+1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the minimal core boundary
+2. [src/agent/agent.types.ts](../../src/agent/agent.types.ts) defines the factory, signal, and snapshot seams
+3. [src/behavioral/behavioral.schemas.ts](../../src/behavioral/behavioral.schemas.ts) defines the current `SnapshotMessage`
    surface
-4. `dev-research/default-factories/program.md` defines the umbrella bundle
+4. [dev-research/default-factories/program.md](../default-factories/program.md) defines the umbrella bundle
    question
-5. `skills/behavioral-core/SKILL.md` defines the BP coordination substrate
-6. `skills/code-patterns/SKILL.md` defines preferred utility and state-shaping
+5. [skills/behavioral-core/SKILL.md](../../skills/behavioral-core/SKILL.md) defines the BP coordination substrate
+6. [skills/code-patterns/SKILL.md](../../skills/code-patterns/SKILL.md) defines preferred utility and state-shaping
    patterns
-7. `skills/typescript-lsp/SKILL.md` should be used for type-aware seam analysis
-8. `dev-research/node-home-factories/program.md` should define the durable
+7. [skills/typescript-lsp/SKILL.md](../../skills/typescript-lsp/SKILL.md) should be used for type-aware seam analysis
+8. [dev-research/node-home-factories/program.md](../node-home-factories/program.md) should define the durable
    node-home contract that durable memory writes participate in
 9. this lane hill-climbs the memory slice and feeds its winning candidates back
    into the default-factories umbrella
@@ -346,7 +346,7 @@ This lane should answer questions such as:
 
 Candidate memory bundles should be judged on:
 
-- does the design keep `src/agent` minimal?
+- does the design keep [src/agent](../../src/agent) minimal?
 - does it reduce prompt growth during long-running tasks?
 - does it preserve critical technical detail better than naive compaction?
 - does it keep the active reasoning window stable?
@@ -369,7 +369,7 @@ This lane should produce:
 
 This lane should not:
 
-- widen `src/agent/create-agent.ts` into a memory runtime
+- widen [src/agent/create-agent.ts](../../src/agent/create-agent.ts) into a memory runtime
 - depend on one-shot whole-history compaction as the main mechanism
 - treat durable memory as an opaque database first
 - confuse working-memory state with durable project memory

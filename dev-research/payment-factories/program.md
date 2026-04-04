@@ -14,14 +14,14 @@ This lane should determine how the agent:
 - retains payment evidence suitable for audit, replay, and later model
   adaptation
 
-The target is not a built-in billing subsystem inside `src/agent`. The target
+The target is not a built-in billing subsystem inside [src/agent](../../src/agent). The target
 is a composed factory layer around paid boundaries such as x402 and MPP.
 
 ## Why This Lane Exists
 
 The current architecture already has the right high-level split for this work:
 
-- `src/agent/create-agent.ts` stays a minimal execution core
+- [src/agent/create-agent.ts](../../src/agent/create-agent.ts) stays a minimal execution core
 - three-axis control owns capability/autonomy/authority policy
 - auth-aware node policy owns trusted vs public exposure
 - verification owns explicit checks, simulation, and repair policy
@@ -44,18 +44,18 @@ surface integrating them.
 
 This lane is a focused subprogram under:
 
-- `dev-research/default-factories/program.md`
+- [dev-research/default-factories/program.md](../default-factories/program.md)
 
 It should integrate with:
 
-- `dev-research/three-axis-factories/program.md`
-- `dev-research/node-auth-factories/program.md`
-- `dev-research/verification-factories/program.md`
-- `dev-research/mcp-factories/program.md`
-- `dev-research/a2a-factories/program.md`
-- `dev-research/search-factories/program.md`
-- `dev-research/observability-factories/program.md`
-- `dev-research/projection-factories/program.md`
+- [dev-research/three-axis-factories/program.md](../three-axis-factories/program.md)
+- [dev-research/node-auth-factories/program.md](../node-auth-factories/program.md)
+- [dev-research/verification-factories/program.md](../verification-factories/program.md)
+- [dev-research/mcp-factories/program.md](../mcp-factories/program.md)
+- [dev-research/a2a-factories/program.md](../a2a-factories/program.md)
+- [dev-research/search-factories/program.md](../search-factories/program.md)
+- [dev-research/observability-factories/program.md](../observability-factories/program.md)
+- [dev-research/projection-factories/program.md](../projection-factories/program.md)
 
 The intended split is:
 
@@ -72,13 +72,13 @@ replacement for payment.
 
 ## Dependency Order
 
-1. `src/agent/create-agent.ts` defines the minimal executable core
-2. `src/agent/agent.types.ts` defines the factory contract
-3. `dev-research/three-axis-factories/program.md` defines capability,
+1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the minimal executable core
+2. [src/agent/agent.types.ts](../../src/agent/agent.types.ts) defines the factory contract
+3. [dev-research/three-axis-factories/program.md](../three-axis-factories/program.md) defines capability,
    autonomy, and authority control
-4. `dev-research/node-auth-factories/program.md` defines trust and exposure
+4. [dev-research/node-auth-factories/program.md](../node-auth-factories/program.md) defines trust and exposure
    shaping
-5. `dev-research/verification-factories/program.md` defines reviewable
+5. [dev-research/verification-factories/program.md](../verification-factories/program.md) defines reviewable
    correctness and evidence checks
 6. this lane hill-climbs the payment slice and feeds winning candidates back
    into the default-factories umbrella
@@ -120,7 +120,7 @@ around external boundaries rather than:
 - a prompt-only instruction
 - a hidden SDK call inside one capability adapter
 - a generic billing account feature
-- a core runtime concern in `src/agent`
+- a core runtime concern in [src/agent](../../src/agent)
 
 That means:
 
@@ -333,7 +333,7 @@ Hypothesis:
 
 Candidate bundles should be judged on:
 
-- does the design keep `src/agent` minimal?
+- does the design keep [src/agent](../../src/agent) minimal?
 - does it keep payment protocol mechanics separate from spend policy?
 - is spend authority explicit rather than accidental?
 - are challenge, credential, and receipt artifacts reviewable?
@@ -358,7 +358,7 @@ This lane should produce:
 
 This lane should not:
 
-- widen `src/agent/create-agent.ts` with billing or wallet doctrine
+- widen [src/agent/create-agent.ts](../../src/agent/create-agent.ts) with billing or wallet doctrine
 - treat payment as only a UI checkout concern
 - collapse auth, trust, approval, and payment proof into one concept
 - assume every remote capability should be payable by default

@@ -38,15 +38,15 @@ host plumbing and A2A transport code without an explicit owner.
 
 This lane sits under:
 
-- `dev-research/default-factories/program.md`
+- [dev-research/default-factories/program.md](../default-factories/program.md)
 
 It should integrate with:
 
-- `dev-research/a2a-factories/program.md`
-- `dev-research/node-auth-factories/program.md`
-- `dev-research/node-home-factories/program.md`
-- `dev-research/agent-bootstrap/program.md`
-- `dev-research/notification-factories/program.md`
+- [dev-research/a2a-factories/program.md](../a2a-factories/program.md)
+- [dev-research/node-auth-factories/program.md](../node-auth-factories/program.md)
+- [dev-research/node-home-factories/program.md](../node-home-factories/program.md)
+- [dev-research/agent-bootstrap/program.md](../agent-bootstrap/program.md)
+- [dev-research/notification-factories/program.md](../notification-factories/program.md)
 
 The intended split is:
 
@@ -57,9 +57,9 @@ The intended split is:
 
 ## Dependency Order
 
-1. `docs/INFRASTRUCTURE.md` defines the host / box / node-home split
-2. `src/factories/a2a-factory/` defines the current Agent Card and A2A seams
-3. `dev-research/default-factories/program.md` defines the umbrella bundle
+1. [docs/INFRASTRUCTURE.md](../../docs/INFRASTRUCTURE.md) defines the host / box / node-home split
+2. [src/factories/a2a-factory/](../../src/factories/a2a-factory) defines the current Agent Card and A2A seams
+3. [dev-research/default-factories/program.md](../default-factories/program.md) defines the umbrella bundle
    question
 4. adjacent lanes provide A2A, auth, node-home, and bootstrap constraints
 5. this lane hill-climbs the discovery identity slice and feeds winners back

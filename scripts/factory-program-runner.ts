@@ -1,9 +1,10 @@
 #!/usr/bin/env bun
 
-import type { ProgramRunnerRunInput, ProgramRunnerStatusInput } from '../src/improve/program-runner.types.ts'
 import {
   loadFactoryProgramRun,
+  type ProgramRunnerRunInput,
   ProgramRunnerRunInputSchema,
+  type ProgramRunnerStatusInput,
   ProgramRunnerStatusInputSchema,
   runFactoryProgram,
 } from '../src/improve.ts'

@@ -20,7 +20,7 @@ editing, memory, bootstrap, and execution.
 
 The repo now has a clearer infrastructure split:
 
-- Web/UI protocol lives in `src/ui/` and `src/server/`
+- Web/UI protocol lives in [src/ui/](../../src/ui) and [src/server/](../../src/server)
 - execution can live in a sandbox such as Boxer/WasmBox
 - discovery and transport can be handled separately through modnet surfaces
 
@@ -38,16 +38,16 @@ tools or a storage backend choice instead of an explicit behavioral surface.
 
 This lane sits under:
 
-- `dev-research/default-factories/program.md`
+- [dev-research/default-factories/program.md](../default-factories/program.md)
 
 It should integrate with:
 
-- `dev-research/edit-factories/program.md`
-- `dev-research/memory-factories/program.md`
-- `dev-research/agent-bootstrap/program.md`
-- `dev-research/bash-factories/program.md`
-- `dev-research/observability-factories/program.md`
-- `dev-research/workflow-state-factories/program.md`
+- [dev-research/edit-factories/program.md](../edit-factories/program.md)
+- [dev-research/memory-factories/program.md](../memory-factories/program.md)
+- [dev-research/agent-bootstrap/program.md](../agent-bootstrap/program.md)
+- [dev-research/bash-factories/program.md](../bash-factories/program.md)
+- [dev-research/observability-factories/program.md](../observability-factories/program.md)
+- [dev-research/workflow-state-factories/program.md](../workflow-state-factories/program.md)
 
 The intended split is:
 
@@ -59,10 +59,10 @@ The intended split is:
 
 ## Dependency Order
 
-1. `docs/INFRASTRUCTURE.md` defines the node-home direction
-2. `src/agent/create-agent.ts` defines the minimal core boundary
-3. `src/agent/agent.types.ts` defines the factory contract
-4. `dev-research/default-factories/program.md` defines the umbrella bundle
+1. [docs/INFRASTRUCTURE.md](../../docs/INFRASTRUCTURE.md) defines the node-home direction
+2. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the minimal core boundary
+3. [src/agent/agent.types.ts](../../src/agent/agent.types.ts) defines the factory contract
+4. [dev-research/default-factories/program.md](../default-factories/program.md) defines the umbrella bundle
    question
 5. adjacent lanes provide edit, memory, bootstrap, observability, and workflow
    constraints

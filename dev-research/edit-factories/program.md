@@ -38,16 +38,16 @@ Without this lane, the default agent risks treating all edits as one undifferent
 
 This lane sits under:
 
-- `dev-research/default-factories/program.md`
+- [dev-research/default-factories/program.md](../default-factories/program.md)
 
 It should integrate with:
 
-- `dev-research/plan-factories/program.md`
-- `dev-research/search-factories/program.md`
-- `dev-research/module-discovery-factories/program.md`
-- `dev-research/node-home-factories/program.md`
-- `dev-research/verification-factories/program.md`
-- `dev-research/observability-factories/program.md`
+- [dev-research/plan-factories/program.md](../plan-factories/program.md)
+- [dev-research/search-factories/program.md](../search-factories/program.md)
+- [dev-research/module-discovery-factories/program.md](../module-discovery-factories/program.md)
+- [dev-research/node-home-factories/program.md](../node-home-factories/program.md)
+- [dev-research/verification-factories/program.md](../verification-factories/program.md)
+- [dev-research/observability-factories/program.md](../observability-factories/program.md)
 
 The intended split is:
 
@@ -61,10 +61,10 @@ The intended split is:
 
 ## Dependency Order
 
-1. `src/agent/create-agent.ts` defines the minimal core boundary
-2. `src/agent/agent.types.ts` defines the factory contract
-3. `dev-research/default-factories/program.md` defines the bundle question
-4. `skills/code-patterns/SKILL.md` and `skills/typescript-lsp/SKILL.md`
+1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the minimal core boundary
+2. [src/agent/agent.types.ts](../../src/agent/agent.types.ts) defines the factory contract
+3. [dev-research/default-factories/program.md](../default-factories/program.md) defines the bundle question
+4. [skills/code-patterns/SKILL.md](../../skills/code-patterns/SKILL.md) and [skills/typescript-lsp/SKILL.md](../../skills/typescript-lsp/SKILL.md)
    provide bounded editing and analysis guidance
 5. this lane hill-climbs the editing slice and feeds winners back into the
    default-factories umbrella

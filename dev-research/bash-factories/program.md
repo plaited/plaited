@@ -6,13 +6,13 @@ Research the smallest effective factory architecture around the minimal
 `AGENT_EVENTS.bash` primitive so the default Plaited agent can use local
 execution well without widening the core agent engine.
 
-This lane should not try to recreate a giant shell tool inside `src/agent`.
+This lane should not try to recreate a giant shell tool inside [src/agent](../../src/agent).
 The point is to hill-climb toward the right default factory bundle around a
 thin execution primitive.
 
 ## Why This Lane Exists
 
-`src/agent/create-agent.ts` currently treats `bash` as a minimal capability:
+[src/agent/create-agent.ts](../../src/agent/create-agent.ts) currently treats `bash` as a minimal capability:
 
 - validate that the requested worker path stays inside the workspace
 - spawn `bun <worker> ...args`
@@ -33,12 +33,12 @@ This is research work, not a reason to widen `create-agent.ts`.
 
 ## Dependency Order
 
-1. `src/agent/create-agent.ts` defines the current architectural direction:
+1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the current architectural direction:
    behavior belongs in factories, not in the core agent engine.
-2. `dev-research/default-factories/program.md` defines the umbrella question:
+2. [dev-research/default-factories/program.md](../default-factories/program.md) defines the umbrella question:
    which factory bundle should become the shipped default agent composition?
-3. `skills/behavioral-core/SKILL.md` defines the BP coordination substrate.
-4. `skills/code-patterns/SKILL.md` and related execution-oriented skills may
+3. [skills/behavioral-core/SKILL.md](../../skills/behavioral-core/SKILL.md) defines the BP coordination substrate.
+4. [skills/code-patterns/SKILL.md](../../skills/code-patterns/SKILL.md) and related execution-oriented skills may
    provide reusable worker and validation patterns.
 5. This lane hill-climbs the local-execution subproblem and feeds its winning
    candidates back into the umbrella default-factories lane.
@@ -63,7 +63,7 @@ In other words:
 
 This lane should not:
 
-- port another repo's shell tool wholesale into `src/agent`
+- port another repo's shell tool wholesale into [src/agent](../../src/agent)
 - turn `AGENT_EVENTS.bash` into a generic string-shell surface
 - hardcode broad execution policy into the core
 - assume the first reasonable factory split is the final default
@@ -216,7 +216,7 @@ This lane should produce:
 
 A candidate should be promotable only if it:
 
-- keeps `src/agent/create-agent.ts` minimal
+- keeps [src/agent/create-agent.ts](../../src/agent/create-agent.ts) minimal
 - composes cleanly through the existing factory contract
 - improves default-agent execution quality on judged tasks
 - produces durable and reviewable observability for long-running runs

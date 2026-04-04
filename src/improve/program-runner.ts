@@ -1,11 +1,13 @@
 import { basename, dirname, join, relative, resolve } from 'node:path'
 import {
+  type ProgramRunnerRun,
+  type ProgramRunnerRunInput,
   ProgramRunnerRunInputSchema,
   ProgramRunnerRunSchema,
+  type ProgramRunnerStatusInput,
   ProgramRunnerStatusInputSchema,
 } from './program-runner.schemas.ts'
-import type { ProgramRunnerRun, ProgramRunnerRunInput, ProgramRunnerStatusInput } from './program-runner.types.ts'
-import { parseProgramScope } from './research-program.ts'
+import { parseProgramScope } from './program-scope.ts'
 
 const timestamp = (): string => new Date().toISOString().replaceAll(':', '-').replaceAll('.', '-')
 
@@ -55,9 +57,11 @@ export const getWorkspaceRoot = async (cwd: string): Promise<string> => {
 const loadProgramRunnerContext = async ({
   defaultAllowedPaths,
   programPath,
+  workspaceRoot,
 }: {
   defaultAllowedPaths: string[]
   programPath: string
+  workspaceRoot: string
 }): Promise<{ allowedPaths: string[] }> => {
   const file = Bun.file(programPath)
   if (!(await file.exists())) {
@@ -65,7 +69,11 @@ const loadProgramRunnerContext = async ({
   }
 
   const text = await file.text()
-  const scopePaths = parseProgramScope(text)
+  const scopePaths = await parseProgramScope({
+    programMarkdown: text,
+    programPath,
+    workspaceRoot,
+  })
 
   return {
     allowedPaths: scopePaths.length > 0 ? scopePaths : defaultAllowedPaths,
@@ -309,6 +317,7 @@ export const runFactoryProgram = async (input: ProgramRunnerRunInput): Promise<P
   const context = await loadProgramRunnerContext({
     defaultAllowedPaths: resolved.defaultAllowedPaths,
     programPath: resolved.absoluteProgramPath,
+    workspaceRoot,
   })
   const runDir = buildProgramRunDir({
     programPath: resolved.relativeProgramPath,

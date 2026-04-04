@@ -39,16 +39,16 @@ explicit local-first execution family.
 
 This lane sits under:
 
-- `dev-research/default-factories/program.md`
+- [dev-research/default-factories/program.md](../default-factories/program.md)
 
 It should integrate with:
 
-- `dev-research/plan-factories/program.md`
-- `dev-research/workflow-state-factories/program.md`
-- `dev-research/observability-factories/program.md`
-- `dev-research/node-home-factories/program.md`
-- `dev-research/verification-factories/program.md`
-- `dev-research/session-persistence-factories/program.md`
+- [dev-research/plan-factories/program.md](../plan-factories/program.md)
+- [dev-research/workflow-state-factories/program.md](../workflow-state-factories/program.md)
+- [dev-research/observability-factories/program.md](../observability-factories/program.md)
+- [dev-research/node-home-factories/program.md](../node-home-factories/program.md)
+- [dev-research/verification-factories/program.md](../verification-factories/program.md)
+- [dev-research/session-persistence-factories/program.md](../session-persistence-factories/program.md)
 
 The intended split is:
 
@@ -60,7 +60,7 @@ The intended split is:
 
 ## Dependency Order
 
-1. `dev-research/default-factories/program.md` defines the parallelism model
+1. [dev-research/default-factories/program.md](../default-factories/program.md) defines the parallelism model
 2. adjacent lanes define planning, workflow, observability, and persistence
    constraints
 3. this lane hill-climbs the durable multi-attempt slice and feeds winners

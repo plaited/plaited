@@ -18,7 +18,7 @@ decide:
 ## Why This Lane Exists
 
 The current architecture intentionally keeps
-`src/agent/create-agent.ts` minimal.
+[src/agent/create-agent.ts](../../src/agent/create-agent.ts) minimal.
 
 The core now owns only a small runtime substrate:
 
@@ -43,10 +43,10 @@ It is:
 
 The current architectural source of truth is:
 
-- `src/agent/create-agent.ts`
-- `src/agent/agent.types.ts`
-- `src/agent/agent.schemas.ts`
-- `src/agent/tests/create-agent.spec.ts`
+- [src/agent/create-agent.ts](../../src/agent/create-agent.ts)
+- [src/agent/agent.types.ts](../../src/agent/agent.types.ts)
+- [src/agent/agent.schemas.ts](../../src/agent/agent.schemas.ts)
+- [src/agent/tests/create-agent.spec.ts](../../src/agent/tests/create-agent.spec.ts)
 
 The most important current runtime facts are:
 
@@ -70,33 +70,33 @@ This split is real and should be treated as first-class in factory research.
 
 This lane depends on and integrates focused subprograms such as:
 
-- `dev-research/skill-factories/program.md`
-- `dev-research/bash-factories/program.md`
-- `dev-research/acp-factories/program.md`
-- `dev-research/a2a-factories/program.md`
-- `dev-research/mcp-factories/program.md`
-- `dev-research/memory-factories/program.md`
-- `dev-research/search-factories/program.md`
-- `dev-research/verification-factories/program.md`
-- `dev-research/three-axis-factories/program.md`
-- `dev-research/node-auth-factories/program.md`
-- `dev-research/module-discovery-factories/program.md`
-- `dev-research/plan-factories/program.md`
-- `dev-research/edit-factories/program.md`
-- `dev-research/node-home-factories/program.md`
-- `dev-research/node-discovery-factories/program.md`
-- `dev-research/notification-factories/program.md`
-- `dev-research/observability-factories/program.md`
-- `dev-research/projection-factories/program.md`
-- `dev-research/workflow-state-factories/program.md`
-- `dev-research/session-persistence-factories/program.md`
-- `dev-research/tool-registry-factories/program.md`
-- `dev-research/permission-audit-factories/program.md`
-- `dev-research/context-assembly-factories/program.md`
-- `dev-research/fanout-factories/program.md`
-- `dev-research/identity-trust-factories/program.md`
-- `dev-research/agent-bootstrap/program.md`
-- `dev-research/agent-harness-research/program.md`
+- [dev-research/skill-factories/program.md](../skill-factories/program.md)
+- [dev-research/bash-factories/program.md](../bash-factories/program.md)
+- [dev-research/acp-factories/program.md](../acp-factories/program.md)
+- [dev-research/a2a-factories/program.md](../a2a-factories/program.md)
+- [dev-research/mcp-factories/program.md](../mcp-factories/program.md)
+- [dev-research/memory-factories/program.md](../memory-factories/program.md)
+- [dev-research/search-factories/program.md](../search-factories/program.md)
+- [dev-research/verification-factories/program.md](../verification-factories/program.md)
+- [dev-research/three-axis-factories/program.md](../three-axis-factories/program.md)
+- [dev-research/node-auth-factories/program.md](../node-auth-factories/program.md)
+- [dev-research/module-discovery-factories/program.md](../module-discovery-factories/program.md)
+- [dev-research/plan-factories/program.md](../plan-factories/program.md)
+- [dev-research/edit-factories/program.md](../edit-factories/program.md)
+- [dev-research/node-home-factories/program.md](../node-home-factories/program.md)
+- [dev-research/node-discovery-factories/program.md](../node-discovery-factories/program.md)
+- [dev-research/notification-factories/program.md](../notification-factories/program.md)
+- [dev-research/observability-factories/program.md](../observability-factories/program.md)
+- [dev-research/projection-factories/program.md](../projection-factories/program.md)
+- [dev-research/workflow-state-factories/program.md](../workflow-state-factories/program.md)
+- [dev-research/session-persistence-factories/program.md](../session-persistence-factories/program.md)
+- [dev-research/tool-registry-factories/program.md](../tool-registry-factories/program.md)
+- [dev-research/permission-audit-factories/program.md](../permission-audit-factories/program.md)
+- [dev-research/context-assembly-factories/program.md](../context-assembly-factories/program.md)
+- [dev-research/fanout-factories/program.md](../fanout-factories/program.md)
+- [dev-research/identity-trust-factories/program.md](../identity-trust-factories/program.md)
+- [dev-research/agent-bootstrap/program.md](../agent-bootstrap/program.md)
+- [dev-research/agent-harness-research/program.md](../agent-harness-research/program.md)
 
 ## Core Clarification
 
@@ -177,7 +177,7 @@ factory family. That remains the job of the focused subprograms.
 
 The best default agent will come from a layered composition:
 
-- a minimal core in `src/agent/create-agent.ts`
+- a minimal core in [src/agent/create-agent.ts](../../src/agent/create-agent.ts)
 - a small bootstrap default bundle that makes the runtime usable and capable
   of further discovery
 - optional deployment-provided factories

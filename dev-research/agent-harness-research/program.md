@@ -61,8 +61,8 @@ Those methods may become useful later, but they are downstream of this lane.
 
 The current repo already has the right substrate for this work:
 
-- `src/improve` for bounded attempt evaluation, meta-verification, and
-  promotion selection
+- [src/improve](../../src/improve) for repeated evals, factory-program fanout,
+  and retained run artifacts
 - `dev-research/*/program.md` files for bounded mutation surfaces
 - worktree-backed parallel attempts for durable fanout
 - behavioral snapshots for structured runtime traces
@@ -84,7 +84,7 @@ behavioral layer already exposes structured observable moments.
 
 Relevant surfaces include:
 
-- `src/behavioral/behavioral.schemas.ts`
+- [src/behavioral/behavioral.schemas.ts](../../src/behavioral/behavioral.schemas.ts)
 - `SnapshotMessageSchema`
 - selection snapshots
 - feedback errors
@@ -212,7 +212,7 @@ assembled from raw unverified attempt logs.
 
 ## Catalog Role
 
-The prompt buckets under `dev-research/agent-harness-research/catalog/` should
+The prompt buckets under [dev-research/agent-harness-research/catalog/](catalog) should
 be treated as part of the intent distribution for later evaluation and model
 adaptation.
 

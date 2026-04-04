@@ -23,13 +23,13 @@ profiles while preserving a coherent default model.
 The repo already has adjacent lanes, but none cleanly own this combined
 problem:
 
-- `dev-research/node-auth-factories/program.md` owns local user, platform, and
+- [dev-research/node-auth-factories/program.md](../node-auth-factories/program.md) owns local user, platform, and
   enterprise auth mode as deployment auth context
-- `dev-research/a2a-factories/program.md` owns A2A transport and Agent Card
+- [dev-research/a2a-factories/program.md](../a2a-factories/program.md) owns A2A transport and Agent Card
   behavior
-- `dev-research/permission-audit-factories/program.md` owns durable authority
+- [dev-research/permission-audit-factories/program.md](../permission-audit-factories/program.md) owns durable authority
   and approval audit
-- `dev-research/node-discovery-factories/program.md` owns discovery identity
+- [dev-research/node-discovery-factories/program.md](../node-discovery-factories/program.md) owns discovery identity
   publication policy
 
 What remains open is the missing trust fabric between them:
@@ -48,15 +48,15 @@ auth, discovery, A2A, and audit without one explicit owner.
 
 This lane sits under:
 
-- `dev-research/default-factories/program.md`
+- [dev-research/default-factories/program.md](../default-factories/program.md)
 
 It should integrate with:
 
-- `dev-research/a2a-factories/program.md`
-- `dev-research/node-auth-factories/program.md`
-- `dev-research/node-discovery-factories/program.md`
-- `dev-research/permission-audit-factories/program.md`
-- `dev-research/three-axis-factories/program.md`
+- [dev-research/a2a-factories/program.md](../a2a-factories/program.md)
+- [dev-research/node-auth-factories/program.md](../node-auth-factories/program.md)
+- [dev-research/node-discovery-factories/program.md](../node-discovery-factories/program.md)
+- [dev-research/permission-audit-factories/program.md](../permission-audit-factories/program.md)
+- [dev-research/three-axis-factories/program.md](../three-axis-factories/program.md)
 
 The intended split is:
 
@@ -69,8 +69,8 @@ The intended split is:
 
 ## Dependency Order
 
-1. `docs/INFRASTRUCTURE.md` defines the host / box / home split
-2. `src/factories/a2a-factory/` defines the current A2A and peer trust seams
+1. [docs/INFRASTRUCTURE.md](../../docs/INFRASTRUCTURE.md) defines the host / box / home split
+2. [src/factories/a2a-factory/](../../src/factories/a2a-factory) defines the current A2A and peer trust seams
 3. adjacent lanes define auth, discovery, audit, and three-axis constraints
 4. this lane hill-climbs the identity/trust slice and feeds winners back into
    the default-factories umbrella

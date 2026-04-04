@@ -19,11 +19,11 @@ authority ledger and audit surface for a sovereign persistent runtime.
 
 The repo already has adjacent control and trust directions:
 
-- `dev-research/three-axis-factories/program.md` owns cross-cutting
+- [dev-research/three-axis-factories/program.md](../three-axis-factories/program.md) owns cross-cutting
   capability, autonomy, and authority policy
-- `dev-research/node-auth-factories/program.md` owns auth and trust boundary
+- [dev-research/node-auth-factories/program.md](../node-auth-factories/program.md) owns auth and trust boundary
   shaping
-- `dev-research/observability-factories/program.md` owns richer retained trace
+- [dev-research/observability-factories/program.md](../observability-factories/program.md) owns richer retained trace
   policy
 
 What remains open is the durable audit layer:
@@ -43,16 +43,16 @@ owner.
 
 This lane sits under:
 
-- `dev-research/default-factories/program.md`
+- [dev-research/default-factories/program.md](../default-factories/program.md)
 
 It should integrate with:
 
-- `dev-research/three-axis-factories/program.md`
-- `dev-research/node-auth-factories/program.md`
-- `dev-research/observability-factories/program.md`
-- `dev-research/notification-factories/program.md`
-- `dev-research/a2a-factories/program.md`
-- `dev-research/mcp-factories/program.md`
+- [dev-research/three-axis-factories/program.md](../three-axis-factories/program.md)
+- [dev-research/node-auth-factories/program.md](../node-auth-factories/program.md)
+- [dev-research/observability-factories/program.md](../observability-factories/program.md)
+- [dev-research/notification-factories/program.md](../notification-factories/program.md)
+- [dev-research/a2a-factories/program.md](../a2a-factories/program.md)
+- [dev-research/mcp-factories/program.md](../mcp-factories/program.md)
 
 The intended split is:
 
@@ -64,10 +64,10 @@ The intended split is:
 
 ## Dependency Order
 
-1. `skills/modnet-factories/SKILL.md` defines current MSS and boundary framing
-2. `dev-research/three-axis-factories/program.md` defines autonomy and
+1. [skills/modnet-factories/SKILL.md](../../skills/modnet-factories/SKILL.md) defines current MSS and boundary framing
+2. [dev-research/three-axis-factories/program.md](../three-axis-factories/program.md) defines autonomy and
    authority policy context
-3. `dev-research/node-auth-factories/program.md` defines trust and auth
+3. [dev-research/node-auth-factories/program.md](../node-auth-factories/program.md) defines trust and auth
    constraints
 4. this lane hill-climbs the durable audit slice and feeds winners back into
    the default-factories umbrella

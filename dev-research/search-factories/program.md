@@ -43,15 +43,15 @@ skill-factory, module-discovery-factory, memory-factory, or ad hoc prompts.
 
 This lane is a focused subprogram under:
 
-- `dev-research/default-factories/program.md`
+- [dev-research/default-factories/program.md](../default-factories/program.md)
 
 It should integrate with:
 
-- `dev-research/skill-factories/program.md`
-- `dev-research/module-discovery-factories/program.md`
-- `dev-research/memory-factories/program.md`
-- `dev-research/three-axis-factories/program.md`
-- `dev-research/agent-harness-research/program.md`
+- [dev-research/skill-factories/program.md](../skill-factories/program.md)
+- [dev-research/module-discovery-factories/program.md](../module-discovery-factories/program.md)
+- [dev-research/memory-factories/program.md](../memory-factories/program.md)
+- [dev-research/three-axis-factories/program.md](../three-axis-factories/program.md)
+- [dev-research/agent-harness-research/program.md](../agent-harness-research/program.md)
 
 The intended split is:
 

@@ -45,10 +45,10 @@ control interface for Plaited agents running on a box.
 
 The current runtime contracts still come from:
 
-- `src/agent/create-agent.ts`
-- `src/agent/agent.types.ts`
-- `src/agent/agent.schemas.ts`
-- `src/behavioral/behavioral.ts`
+- [src/agent/create-agent.ts](../../src/agent/create-agent.ts)
+- [src/agent/agent.types.ts](../../src/agent/agent.types.ts)
+- [src/agent/agent.schemas.ts](../../src/agent/agent.schemas.ts)
+- [src/behavioral/behavioral.ts](../../src/behavioral/behavioral.ts)
 
 This lane should treat ACP as a factory-owned operator interface layered on top
 of those files, not as a replacement orchestration core.
@@ -65,7 +65,7 @@ ACP surfaces that look most relevant to this control-plane role:
 - transport choices
 - authentication methods
 
-Relevant ACP documentation discovered through `skills/search-acp-docs`:
+Relevant ACP documentation discovered through [skills/search-acp-docs](../../skills/search-acp-docs):
 
 - `protocol/initialization` and `protocol/schema` for capabilities
 - `protocol/prompt-turn` and `protocol/schema#session/cancel` for prompt-turn

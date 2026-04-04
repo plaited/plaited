@@ -3,7 +3,7 @@
 ## Goal
 
 Research the smallest effective factory architecture around the existing
-`src/factories/a2a-factory/` protocol surfaces so the default Plaited agent can
+[src/factories/a2a-factory/](../../src/factories/a2a-factory) protocol surfaces so the default Plaited agent can
 participate in Agent-to-Agent exchanges without widening the core agent engine.
 
 This lane should not treat A2A as a new runtime layer. It should determine how
@@ -13,7 +13,7 @@ current minimal core.
 ## Why This Lane Exists
 
 The repo already has substantial A2A protocol code under
-`src/factories/a2a-factory/`, including:
+[src/factories/a2a-factory/](../../src/factories/a2a-factory), including:
 
 - schema definitions
 - JSON-RPC request/response utilities
@@ -38,19 +38,19 @@ policy and composition:
 
 ## Dependency Order
 
-1. `src/agent/create-agent.ts` defines the minimal core boundary
-2. `dev-research/default-factories/program.md` defines the umbrella bundle
+1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the minimal core boundary
+2. [dev-research/default-factories/program.md](../default-factories/program.md) defines the umbrella bundle
    question
-3. `skills/behavioral-core/SKILL.md` defines the BP coordination substrate
-4. `skills/node-auth/SKILL.md` defines the current authentication seam
-5. `skills/modnet-factories/SKILL.md` defines the current modnet/MSS/A2A
+3. [skills/behavioral-core/SKILL.md](../../skills/behavioral-core/SKILL.md) defines the BP coordination substrate
+4. [skills/node-auth/SKILL.md](../../skills/node-auth/SKILL.md) defines the current authentication seam
+5. [skills/modnet-factories/SKILL.md](../../skills/modnet-factories/SKILL.md) defines the current modnet/MSS/A2A
    translation for factory-era agents
 6. This lane hill-climbs the A2A slice and feeds its winning candidates back
    into the default-factories umbrella
 
 ## Core Hypothesis
 
-The protocol implementation under `src/factories/a2a-factory/` is already
+The protocol implementation under [src/factories/a2a-factory/](../../src/factories/a2a-factory) is already
 close to the right engine surface.
 
 The missing work is factory-owned composition around that surface:
@@ -64,42 +64,42 @@ The missing work is factory-owned composition around that surface:
 
 In other words:
 
-- protocol mechanics should stay in `src/factories/a2a-factory/`
+- protocol mechanics should stay in [src/factories/a2a-factory/](../../src/factories/a2a-factory)
 - shipped behavior should emerge from judged default-factory composition
-- `src/agent` should not absorb A2A orchestration policy
+- [src/agent](../../src/agent) should not absorb A2A orchestration policy
 
 ## Local Inputs
 
 Primary local inputs:
 
-- `src/factories/a2a-factory/a2a.schemas.ts`
-- `src/factories/a2a-factory/a2a.types.ts`
-- `src/factories/a2a-factory/a2a.constants.ts`
-- `src/factories/a2a-factory/a2a.utils.ts`
-- `src/factories/a2a-factory/create-a2a-handlers.ts`
-- `src/factories/a2a-factory/create-a2a-client.ts`
-- `src/factories/a2a-factory/create-a2a-ws-handler.ts`
-- `src/factories/a2a-factory/create-a2a-ws-client.ts`
-- `src/factories/a2a-factory/peers.ts`
-- `src/agent/create-agent.ts`
+- [src/factories/a2a-factory/a2a.schemas.ts](../../src/factories/a2a-factory/a2a.schemas.ts)
+- [src/factories/a2a-factory/a2a.types.ts](../../src/factories/a2a-factory/a2a.types.ts)
+- [src/factories/a2a-factory/a2a.constants.ts](../../src/factories/a2a-factory/a2a.constants.ts)
+- [src/factories/a2a-factory/a2a.utils.ts](../../src/factories/a2a-factory/a2a.utils.ts)
+- [src/factories/a2a-factory/create-a2a-handlers.ts](../../src/factories/a2a-factory/create-a2a-handlers.ts)
+- [src/factories/a2a-factory/create-a2a-client.ts](../../src/factories/a2a-factory/create-a2a-client.ts)
+- [src/factories/a2a-factory/create-a2a-ws-handler.ts](../../src/factories/a2a-factory/create-a2a-ws-handler.ts)
+- [src/factories/a2a-factory/create-a2a-ws-client.ts](../../src/factories/a2a-factory/create-a2a-ws-client.ts)
+- [src/factories/a2a-factory/peers.ts](../../src/factories/a2a-factory/peers.ts)
+- [src/agent/create-agent.ts](../../src/agent/create-agent.ts)
 
 Important tests:
 
-- `src/factories/a2a-factory/tests/a2a.schemas.spec.ts`
-- `src/factories/a2a-factory/tests/a2a.utils.spec.ts`
-- `src/factories/a2a-factory/tests/client-server.spec.ts`
-- `src/factories/a2a-factory/tests/ws.spec.ts`
-- `src/factories/a2a-factory/tests/peers.spec.ts`
+- [src/factories/a2a-factory/tests/a2a.schemas.spec.ts](../../src/factories/a2a-factory/tests/a2a.schemas.spec.ts)
+- [src/factories/a2a-factory/tests/a2a.utils.spec.ts](../../src/factories/a2a-factory/tests/a2a.utils.spec.ts)
+- [src/factories/a2a-factory/tests/client-server.spec.ts](../../src/factories/a2a-factory/tests/client-server.spec.ts)
+- [src/factories/a2a-factory/tests/ws.spec.ts](../../src/factories/a2a-factory/tests/ws.spec.ts)
+- [src/factories/a2a-factory/tests/peers.spec.ts](../../src/factories/a2a-factory/tests/peers.spec.ts)
 
 Reference skills:
 
-- `skills/behavioral-core`
-- `skills/node-auth`
-- `skills/modnet-factories`
+- [skills/behavioral-core](../../skills/behavioral-core)
+- [skills/node-auth](../../skills/node-auth)
+- [skills/modnet-factories](../../skills/modnet-factories)
 
 Utility skills:
 
-- `skills/typescript-lsp`
+- [skills/typescript-lsp](../../skills/typescript-lsp)
 
 ## Product Target
 
@@ -157,7 +157,7 @@ This lane should avoid burying all orchestration inside one giant handler map.
 This lane should assume the auth seam is factory-owned and may integrate:
 
 - local/node auth rules
-- `skills/node-auth`
+- [skills/node-auth](../../skills/node-auth)
 - future hosted/enterprise edges
 
 The protocol layer should not hardcode one auth regime as the only valid model.
@@ -245,7 +245,7 @@ Hypothesis:
 
 Candidate bundles should be judged on:
 
-- does the design keep `src/agent` minimal?
+- does the design keep [src/agent](../../src/agent) minimal?
 - does it keep protocol code and behavior policy clearly separated?
 - is the resulting remote surface understandable enough to ship by default?
 - are inbound requests observable and reviewable?
@@ -258,7 +258,7 @@ Candidate bundles should be judged on:
 
 This lane should produce:
 
-- candidate factory bundles around `src/factories/a2a-factory/`
+- candidate factory bundles around [src/factories/a2a-factory/](../../src/factories/a2a-factory)
 - integration notes for Agent Card projection, extensions, auth, streaming, and
   peer state
 - tests or eval tasks for default A2A behavior
@@ -270,6 +270,6 @@ This lane should produce:
 This lane should not:
 
 - turn A2A into a replacement for the local behavioral runtime
-- widen `src/agent/create-agent.ts` with transport-specific policy
+- widen [src/agent/create-agent.ts](../../src/agent/create-agent.ts) with transport-specific policy
 - assume every agent must expose every A2A capability by default
 - collapse top-level node behavior and protocol mechanics into one opaque layer

@@ -4,7 +4,7 @@
 
 Define the first default factory for the Plaited agent:
 
-- `src/factories/skills-factory/skills-factory.ts`
+- [src/factories/skills-factory/skills-factory.ts](../../src/factories/skills-factory/skills-factory.ts)
 
 This factory should load local skills from the workspace, expose enough skill
 metadata for model-time discovery, and then progressively inject the selected
@@ -53,16 +53,16 @@ surface for using the repo's own implementation knowledge without expanding
 
 This lane is a focused subprogram under:
 
-- `dev-research/default-factories/program.md`
+- [dev-research/default-factories/program.md](../default-factories/program.md)
 
 It should stay aligned with:
 
-- `src/agent/create-agent.ts`
+- [src/agent/create-agent.ts](../../src/agent/create-agent.ts)
 
 It should compose with:
 
-- `dev-research/search-factories/program.md`
-- `dev-research/module-discovery-factories/program.md`
+- [dev-research/search-factories/program.md](../search-factories/program.md)
+- [dev-research/module-discovery-factories/program.md](../module-discovery-factories/program.md)
 
 It is expected to inform the default factory bundle decision, but it should
 remain a bounded surface:
@@ -83,24 +83,24 @@ to `search-factories`, not to this lane alone.
 
 Primary local inputs:
 
-- `src/factories/skills-factory/skills-factory.ts`
-- `src/factories/skills-factory/skills-factory.utils.ts`
-- `src/factories.ts`
-- `src/agent/create-agent.ts`
-- `src/agent/agent.types.ts`
-- `src/agent/agent.schemas.ts`
-- `src/agent/agent.constants.ts`
-- `src/utils/markdown.ts`
+- [src/factories/skills-factory/skills-factory.ts](../../src/factories/skills-factory/skills-factory.ts)
+- [src/factories/skills-factory/skills-factory.utils.ts](../../src/factories/skills-factory/skills-factory.utils.ts)
+- [src/factories.ts](../../src/factories.ts)
+- [src/agent/create-agent.ts](../../src/agent/create-agent.ts)
+- [src/agent/agent.types.ts](../../src/agent/agent.types.ts)
+- [src/agent/agent.schemas.ts](../../src/agent/agent.schemas.ts)
+- [src/agent/agent.constants.ts](../../src/agent/agent.constants.ts)
+- [src/utils/markdown.ts](../../src/utils/markdown.ts)
 - `skills/`
 
 Important utility surfaces already present:
 
-- `SkillFrontMatterSchema` in `src/factories/skills-factory/skills-factory.utils.ts`
+- `SkillFrontMatterSchema` in [src/factories/skills-factory/skills-factory.utils.ts](../../src/factories/skills-factory/skills-factory.utils.ts)
 - `findSkillDirectories(...)`
 - `isValidSkill(...)`
 - `validateSkillLocalLinks(...)`
-- `parseMarkdownWithFrontmatter(...)` in `src/utils/markdown.ts`
-- `extractLocalLinksFromMarkdown(...)` in `src/utils/markdown.ts`
+- `parseMarkdownWithFrontmatter(...)` in [src/utils/markdown.ts](../../src/utils/markdown.ts)
+- `extractLocalLinksFromMarkdown(...)` in [src/utils/markdown.ts](../../src/utils/markdown.ts)
 
 ## External Reference Inputs
 
@@ -111,9 +111,9 @@ Use `gh` as the source of truth for the reference implementation:
 
 The most relevant reference files are:
 
-- `src/tools/SkillTool/SkillTool.ts`
-- `src/tools/SkillTool/prompt.ts`
-- `src/skills/loadSkillsDir.ts`
+- [src/tools/SkillTool/SkillTool.ts](../../src/tools/SkillTool/SkillTool.ts)
+- [src/tools/SkillTool/prompt.ts](../../src/tools/SkillTool/prompt.ts)
+- [src/skills/loadSkillsDir.ts](../../src/skills/loadSkillsDir.ts)
 
 These references matter because they already capture:
 
@@ -233,7 +233,7 @@ possible:
 - `glob_files`
 - `bash`
 
-That preserves the architecture work already done in `src/agent/create-agent.ts`.
+That preserves the architecture work already done in [src/agent/create-agent.ts](../../src/agent/create-agent.ts).
 
 ### 5. Selection Should Be Model-Assisted But Policy-Owned
 
@@ -341,9 +341,9 @@ The lane should compare at least these design axes:
 
 This lane should produce:
 
-- the executable factory at `src/factories/skills-factory/skills-factory.ts`
+- the executable factory at [src/factories/skills-factory/skills-factory.ts](../../src/factories/skills-factory/skills-factory.ts)
 - any supporting schemas, constants, and tests under
-  `src/factories/skills-factory/`
+  [src/factories/skills-factory/](../../src/factories/skills-factory)
 - retained notes on which `example-agent` behaviors were adopted or reshaped
 - a clear recommendation on whether this factory should be included in the
   default shipped bundle
@@ -355,7 +355,7 @@ The first implementation pass should bias toward:
 - local skills only
 - compact metadata catalog first
 - deferred body loading on selection
-- link extraction through `src/utils/markdown.ts`
+- link extraction through [src/utils/markdown.ts](../../src/utils/markdown.ts)
 - validation side effects stored in signals
 - existing `read_file` and `bash` core handlers for follow-up execution
 

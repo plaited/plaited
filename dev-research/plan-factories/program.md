@@ -18,9 +18,9 @@ that makes planning explicit, reviewable, and composable.
 
 The repo already has strong ingredients for planning:
 
-- a minimal eventful core in `src/agent/create-agent.ts`
-- behavioral thread composition through `skills/behavioral-core`
-- bundle-level research and evaluation through `src/improve`
+- a minimal eventful core in [src/agent/create-agent.ts](../../src/agent/create-agent.ts)
+- behavioral thread composition through [skills/behavioral-core](../../skills/behavioral-core)
+- bundle-level research and evaluation through [src/improve](../../src/improve)
 - focused execution, search, memory, and verification lanes
 
 What remains open is the planning policy layer:
@@ -38,16 +38,16 @@ execution factories, and fully owned by none of them.
 
 This lane sits under:
 
-- `dev-research/default-factories/program.md`
+- [dev-research/default-factories/program.md](../default-factories/program.md)
 
 It should integrate with:
 
-- `dev-research/search-factories/program.md`
-- `dev-research/memory-factories/program.md`
-- `dev-research/edit-factories/program.md`
-- `dev-research/verification-factories/program.md`
-- `dev-research/three-axis-factories/program.md`
-- `dev-research/projection-factories/program.md`
+- [dev-research/search-factories/program.md](../search-factories/program.md)
+- [dev-research/memory-factories/program.md](../memory-factories/program.md)
+- [dev-research/edit-factories/program.md](../edit-factories/program.md)
+- [dev-research/verification-factories/program.md](../verification-factories/program.md)
+- [dev-research/three-axis-factories/program.md](../three-axis-factories/program.md)
+- [dev-research/projection-factories/program.md](../projection-factories/program.md)
 
 The intended split is:
 
@@ -58,10 +58,10 @@ The intended split is:
 
 ## Dependency Order
 
-1. `src/agent/create-agent.ts` defines the minimal executable core
-2. `src/agent/agent.types.ts` defines the factory and signal seams
-3. `skills/behavioral-core/SKILL.md` defines the BP coordination substrate
-4. `dev-research/default-factories/program.md` defines the bundle question
+1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the minimal executable core
+2. [src/agent/agent.types.ts](../../src/agent/agent.types.ts) defines the factory and signal seams
+3. [skills/behavioral-core/SKILL.md](../../skills/behavioral-core/SKILL.md) defines the BP coordination substrate
+4. [dev-research/default-factories/program.md](../default-factories/program.md) defines the bundle question
 5. this lane hill-climbs the planning slice and feeds its winners back into
    the default-factories umbrella
 

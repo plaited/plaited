@@ -18,7 +18,7 @@ supports:
 
 The repo already has a concrete runtime loading seam:
 
-- `src/agent/create-agent.ts` dynamically imports a module path on
+- [src/agent/create-agent.ts](../../src/agent/create-agent.ts) dynamically imports a module path on
   `AGENT_EVENTS.update_factories`
 - `UpdateFactoryModuleSchema` requires `default: Factory[]`
 
@@ -35,12 +35,12 @@ and interpretation policy that can become part of the default factory bundle.
 
 ## Dependency Order
 
-1. `src/agent/create-agent.ts` defines runtime module loading
-2. `src/agent/agent.types.ts` defines the factory contract
-3. `src/agent/agent.schemas.ts` defines the module export schema
-4. `skills/modnet-factories/SKILL.md` defines current MSS/modnet/module
+1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines runtime module loading
+2. [src/agent/agent.types.ts](../../src/agent/agent.types.ts) defines the factory contract
+3. [src/agent/agent.schemas.ts](../../src/agent/agent.schemas.ts) defines the module export schema
+4. [skills/modnet-factories/SKILL.md](../../skills/modnet-factories/SKILL.md) defines current MSS/modnet/module
    semantics for factory-era agents
-5. `dev-research/default-factories/program.md` defines the bundle question
+5. [dev-research/default-factories/program.md](../default-factories/program.md) defines the bundle question
 6. this lane hill-climbs discovery/loading policy and feeds winning candidates
    back into the default-factories umbrella
 
@@ -65,26 +65,26 @@ The missing work is discovery and composition policy:
 
 Primary local inputs:
 
-- `src/agent/create-agent.ts`
-- `src/agent/agent.types.ts`
-- `src/agent/agent.schemas.ts`
-- `src/agent/tests/create-agent.spec.ts`
-- `src/agent/tests/fixtures/update-factories.fixture.ts`
-- `skills/modnet-factories/SKILL.md`
+- [src/agent/create-agent.ts](../../src/agent/create-agent.ts)
+- [src/agent/agent.types.ts](../../src/agent/agent.types.ts)
+- [src/agent/agent.schemas.ts](../../src/agent/agent.schemas.ts)
+- [src/agent/tests/create-agent.spec.ts](../../src/agent/tests/create-agent.spec.ts)
+- [src/agent/tests/fixtures/update-factories.fixture.ts](../../src/agent/tests/fixtures/update-factories.fixture.ts)
+- [skills/modnet-factories/SKILL.md](../../skills/modnet-factories/SKILL.md)
 
 Important research companions:
 
-- `dev-research/default-factories/program.md`
-- `dev-research/search-factories/program.md`
-- `dev-research/skill-factories/program.md`
-- `dev-research/a2a-factories/program.md`
-- `dev-research/three-axis-factories/program.md`
+- [dev-research/default-factories/program.md](../default-factories/program.md)
+- [dev-research/search-factories/program.md](../search-factories/program.md)
+- [dev-research/skill-factories/program.md](../skill-factories/program.md)
+- [dev-research/a2a-factories/program.md](../a2a-factories/program.md)
+- [dev-research/three-axis-factories/program.md](../three-axis-factories/program.md)
 
 Reference skills:
 
-- `skills/modnet-factories`
-- `skills/typescript-lsp`
-- `skills/behavioral-core`
+- [skills/modnet-factories](../../skills/modnet-factories)
+- [skills/typescript-lsp](../../skills/typescript-lsp)
+- [skills/behavioral-core](../../skills/behavioral-core)
 
 ## Product Target
 
@@ -199,7 +199,7 @@ Candidate bundles should be judged on:
 - does MSS improve compositional reasoning without becoming fake doctrine?
 - can the resulting discovery behavior be reviewed and debugged easily?
 - does the design compose with default/deployed/generated factory layers?
-- does it avoid widening `src/agent` with discovery-specific doctrine?
+- does it avoid widening [src/agent](../../src/agent) with discovery-specific doctrine?
 
 ## Deliverables
 
@@ -218,4 +218,4 @@ This lane should not:
 - pretend discovery is solved by one glob alone
 - hide module loading behind doctrine that contradicts runtime code
 - replace the explicit `default: Factory[]` export contract with vague prose
-- widen `src/agent/create-agent.ts` with large discovery orchestration logic
+- widen [src/agent/create-agent.ts](../../src/agent/create-agent.ts) with large discovery orchestration logic

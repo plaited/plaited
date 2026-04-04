@@ -23,9 +23,9 @@ The repo already has pieces of the correctness story:
 
 - schema validation
 - bounded workspace authority
-- judged selection and meta-verification in `src/improve`
+- repeated evals and factory-program validation in [src/improve](../../src/improve)
 - behavioral snapshots and observable traces
-- MSS and boundary semantics through `skills/modnet-factories`
+- MSS and boundary semantics through [skills/modnet-factories](../../skills/modnet-factories)
 
 What is missing is one dedicated lane that owns the broader question:
 
@@ -50,15 +50,15 @@ fully owned by none.
 
 This lane is a focused subprogram under:
 
-- `dev-research/default-factories/program.md`
+- [dev-research/default-factories/program.md](../default-factories/program.md)
 
 It should integrate with:
 
-- `dev-research/three-axis-factories/program.md`
-- `dev-research/module-discovery-factories/program.md`
-- `dev-research/search-factories/program.md`
-- `dev-research/skill-factories/program.md`
-- `dev-research/agent-harness-research/program.md`
+- [dev-research/three-axis-factories/program.md](../three-axis-factories/program.md)
+- [dev-research/module-discovery-factories/program.md](../module-discovery-factories/program.md)
+- [dev-research/search-factories/program.md](../search-factories/program.md)
+- [dev-research/skill-factories/program.md](../skill-factories/program.md)
+- [dev-research/agent-harness-research/program.md](../agent-harness-research/program.md)
 
 The intended split is:
 

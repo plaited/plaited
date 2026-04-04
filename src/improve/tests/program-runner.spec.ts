@@ -102,21 +102,28 @@ describe('runFactoryProgram', () => {
 ## Goal
 
 Test fanout.
+
+## Writable Roots
+
+- [bootstrap](../../src/bootstrap/bootstrap.ts)
+- [improve](../../src/improve/)
 `,
     )
 
     const cwd = process.cwd()
     process.chdir(root)
     try {
-      const runResult = await runFactoryProgram({
+      const runInput = {
         programPath: 'dev-research/skill-factories/program.md',
         attempts: 2,
         parallel: 2,
         validateCommand: ['bun', '-e', "await Bun.write('validated.txt', 'ok')"],
-      })
+      }
+      const runResult = await runFactoryProgram(runInput)
 
       expect(runResult.attempts).toHaveLength(2)
       expect(runResult.attempts.every((attempt) => attempt.status === 'succeeded')).toBe(true)
+      expect(runResult.allowedPaths).toEqual(['src/bootstrap/bootstrap.ts', 'src/improve/'])
       expect(await Bun.file(join(runResult.runDir, 'run.json')).exists()).toBe(true)
       expect(await Bun.file(join(runResult.attempts[0]!.artifactDir, 'status.json')).exists()).toBe(true)
       expect(await Bun.file(join(runResult.attempts[0]!.worktreePath, 'validated.txt')).exists()).toBe(true)

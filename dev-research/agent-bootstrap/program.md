@@ -28,7 +28,7 @@ creates the expected deployment layout directly.
 
 This lane exists to validate:
 
-- `docs/INFRASTRUCTURE.md`
+- [docs/INFRASTRUCTURE.md](../../docs/INFRASTRUCTURE.md)
 - the OpenAI-compatible adapter boundary
 - the MSI + vLLM reference lane
 - Boxer-style execution assumptions
@@ -62,8 +62,8 @@ The bootstrap command should be the stable operator entrypoint.
 
 That means:
 
-- `bin/plaited.ts` stays thin
-- `src/bootstrap/` owns schemas and implementation
+- [bin/plaited.ts](../../bin/plaited.ts) stays thin
+- [src/bootstrap/](../../src/bootstrap) owns schemas and implementation
 - bootstrap behavior is testable without shell-only glue
 
 ### 2. Skill Sits On Top Of The CLI
@@ -109,7 +109,7 @@ This lane should answer:
 
 This lane should produce:
 
-- `src/bootstrap/` implementation
+- [src/bootstrap/](../../src/bootstrap) implementation
 - `plaited bootstrap`
 - a published `bootstrap-plaited-agent` skill
 - tests covering the bootstrap scaffold

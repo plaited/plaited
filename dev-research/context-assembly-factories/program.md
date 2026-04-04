@@ -22,13 +22,13 @@ intentional context construction.
 
 The repo already has strong adjacent lanes:
 
-- `dev-research/memory-factories/program.md` owns retained recall and
+- [dev-research/memory-factories/program.md](../memory-factories/program.md) owns retained recall and
   consolidation
-- `dev-research/projection-factories/program.md` owns concise live summaries
-- `dev-research/search-factories/program.md` owns retrieval orchestration
-- `dev-research/tool-registry-factories/program.md` owns metadata-first
+- [dev-research/projection-factories/program.md](../projection-factories/program.md) owns concise live summaries
+- [dev-research/search-factories/program.md](../search-factories/program.md) owns retrieval orchestration
+- [dev-research/tool-registry-factories/program.md](../tool-registry-factories/program.md) owns metadata-first
   capability selection
-- `dev-research/plan-factories/program.md` owns decomposition and phase-state
+- [dev-research/plan-factories/program.md](../plan-factories/program.md) owns decomposition and phase-state
   policy
 
 What remains open is the assembly layer that combines them:
@@ -46,16 +46,16 @@ projection, search, and capability selection without one explicit owner.
 
 This lane sits under:
 
-- `dev-research/default-factories/program.md`
+- [dev-research/default-factories/program.md](../default-factories/program.md)
 
 It should integrate with:
 
-- `dev-research/memory-factories/program.md`
-- `dev-research/projection-factories/program.md`
-- `dev-research/search-factories/program.md`
-- `dev-research/tool-registry-factories/program.md`
-- `dev-research/plan-factories/program.md`
-- `dev-research/workflow-state-factories/program.md`
+- [dev-research/memory-factories/program.md](../memory-factories/program.md)
+- [dev-research/projection-factories/program.md](../projection-factories/program.md)
+- [dev-research/search-factories/program.md](../search-factories/program.md)
+- [dev-research/tool-registry-factories/program.md](../tool-registry-factories/program.md)
+- [dev-research/plan-factories/program.md](../plan-factories/program.md)
+- [dev-research/workflow-state-factories/program.md](../workflow-state-factories/program.md)
 
 The intended split is:
 
@@ -68,7 +68,7 @@ The intended split is:
 
 ## Dependency Order
 
-1. `docs/AGENT-LOOP.md` defines context assembly as a factory responsibility
+1. [docs/AGENT-LOOP.md](../../docs/AGENT-LOOP.md) defines context assembly as a factory responsibility
 2. adjacent lanes define memory, projection, search, planning, and capability
    selection constraints
 3. this lane hill-climbs the request-assembly slice and feeds winners back

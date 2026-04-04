@@ -32,15 +32,15 @@ either remain underspecified or leak into unrelated factories.
 
 This lane sits under:
 
-- `dev-research/default-factories/program.md`
+- [dev-research/default-factories/program.md](../default-factories/program.md)
 
 It should integrate with:
 
-- `dev-research/observability-factories/program.md`
-- `dev-research/projection-factories/program.md`
-- `dev-research/three-axis-factories/program.md`
-- `dev-research/node-auth-factories/program.md`
-- `dev-research/plan-factories/program.md`
+- [dev-research/observability-factories/program.md](../observability-factories/program.md)
+- [dev-research/projection-factories/program.md](../projection-factories/program.md)
+- [dev-research/three-axis-factories/program.md](../three-axis-factories/program.md)
+- [dev-research/node-auth-factories/program.md](../node-auth-factories/program.md)
+- [dev-research/plan-factories/program.md](../plan-factories/program.md)
 
 The intended split is:
 
@@ -50,10 +50,10 @@ The intended split is:
 
 ## Dependency Order
 
-1. `src/agent/create-agent.ts` defines the minimal eventful core
-2. `skills/behavioral-core/SKILL.md` defines the BP substrate for event
+1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the minimal eventful core
+2. [skills/behavioral-core/SKILL.md](../../skills/behavioral-core/SKILL.md) defines the BP substrate for event
    routing and additive policy
-3. `dev-research/default-factories/program.md` defines the bundle question
+3. [dev-research/default-factories/program.md](../default-factories/program.md) defines the bundle question
 4. this lane hill-climbs the notification slice and feeds winners back into
    the default-factories umbrella
 

@@ -3,7 +3,7 @@
 ## Goal
 
 Research the smallest effective factory architecture around the existing
-`src/factories/mcp-factory/` utilities so the default Plaited agent can use
+[src/factories/mcp-factory/](../../src/factories/mcp-factory) utilities so the default Plaited agent can use
 remote MCP servers as bounded discovery and execution surfaces without widening
 the core agent engine.
 
@@ -13,7 +13,7 @@ behavior rather than just a raw SDK wrapper.
 ## Why This Lane Exists
 
 The repo already contains working MCP building blocks under
-`src/factories/mcp-factory/`, including:
+[src/factories/mcp-factory/](../../src/factories/mcp-factory), including:
 
 - manifest schemas
 - remote manifest fetch and normalization
@@ -39,18 +39,18 @@ policy around:
 
 ## Dependency Order
 
-1. `src/agent/create-agent.ts` defines the minimal core boundary
-2. `dev-research/default-factories/program.md` defines the umbrella bundle
+1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the minimal core boundary
+2. [dev-research/default-factories/program.md](../default-factories/program.md) defines the umbrella bundle
    question
-3. `skills/add-mcp/SKILL.md` defines MCP integration patterns
-4. `skills/add-remote-mcp/SKILL.md` defines remote MCP wrapper patterns
-5. `skills/search-mcp-docs/SKILL.md` defines MCP protocol/source lookup
+3. [skills/add-mcp/SKILL.md](../../skills/add-mcp/SKILL.md) defines MCP integration patterns
+4. [skills/add-remote-mcp/SKILL.md](../../skills/add-remote-mcp/SKILL.md) defines remote MCP wrapper patterns
+5. [skills/search-mcp-docs/SKILL.md](../../skills/search-mcp-docs/SKILL.md) defines MCP protocol/source lookup
 6. This lane hill-climbs the MCP slice and feeds its winning candidates back
    into the default-factories umbrella
 
 ## Core Hypothesis
 
-The protocol/client code under `src/factories/mcp-factory/` is already near the
+The protocol/client code under [src/factories/mcp-factory/](../../src/factories/mcp-factory) is already near the
 right engine layer.
 
 The missing work is factory-owned composition:
@@ -63,30 +63,30 @@ The missing work is factory-owned composition:
 
 In other words:
 
-- MCP transport/session mechanics should stay in `src/factories/mcp-factory/`
+- MCP transport/session mechanics should stay in [src/factories/mcp-factory/](../../src/factories/mcp-factory)
 - default-agent behavior should emerge from judged factory composition
-- `src/agent` should not absorb MCP orchestration policy
+- [src/agent](../../src/agent) should not absorb MCP orchestration policy
 
 ## Local Inputs
 
 Primary local inputs:
 
-- `src/factories/mcp-factory/mcp.schemas.ts`
-- `src/factories/mcp-factory/mcp.utils.ts`
-- `src/factories/mcp-factory/tests/mcp.manifest.spec.ts`
-- `src/factories/mcp-factory/tests/mcp.spec.ts`
-- `src/agent/create-agent.ts`
+- [src/factories/mcp-factory/mcp.schemas.ts](../../src/factories/mcp-factory/mcp.schemas.ts)
+- [src/factories/mcp-factory/mcp.utils.ts](../../src/factories/mcp-factory/mcp.utils.ts)
+- [src/factories/mcp-factory/tests/mcp.manifest.spec.ts](../../src/factories/mcp-factory/tests/mcp.manifest.spec.ts)
+- [src/factories/mcp-factory/tests/mcp.spec.ts](../../src/factories/mcp-factory/tests/mcp.spec.ts)
+- [src/agent/create-agent.ts](../../src/agent/create-agent.ts)
 
 Reference skills:
 
-- `skills/add-mcp`
-- `skills/add-remote-mcp`
-- `skills/search-mcp-docs`
-- `skills/search-agent-skills`
+- [skills/add-mcp](../../skills/add-mcp)
+- [skills/add-remote-mcp](../../skills/add-remote-mcp)
+- [skills/search-mcp-docs](../../skills/search-mcp-docs)
+- [skills/search-agent-skills](../../skills/search-agent-skills)
 
 Utility skills:
 
-- `skills/typescript-lsp`
+- [skills/typescript-lsp](../../skills/typescript-lsp)
 
 ## Product Target
 
@@ -214,7 +214,7 @@ Hypothesis:
 
 Candidate bundles should be judged on:
 
-- does the design keep `src/agent` minimal?
+- does the design keep [src/agent](../../src/agent) minimal?
 - does it separate MCP mechanics from usage policy?
 - can the model discover the right remote capability without excessive prompt
   cost?
@@ -227,7 +227,7 @@ Candidate bundles should be judged on:
 
 This lane should produce:
 
-- candidate factory bundles around `src/factories/mcp-factory/`
+- candidate factory bundles around [src/factories/mcp-factory/](../../src/factories/mcp-factory)
 - integration notes for manifests, sessions, auth, and capability projection
 - tests or eval tasks for default MCP behavior
 - a recommendation for whether and how MCP should be included in the default
@@ -237,7 +237,7 @@ This lane should produce:
 
 This lane should not:
 
-- widen `src/agent/create-agent.ts` with MCP-specific orchestration logic
+- widen [src/agent/create-agent.ts](../../src/agent/create-agent.ts) with MCP-specific orchestration logic
 - assume all remote MCP servers are equivalent or equally trusted
 - collapse discovery, auth, sessioning, and execution into one opaque helper
 - treat MCP as a substitute for the local factory/runtime architecture

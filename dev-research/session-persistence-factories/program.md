@@ -21,12 +21,12 @@ for explicit session continuity in a long-lived agent.
 
 The current architecture already has the right boundaries for this work:
 
-- `src/agent/create-agent.ts` stays minimal and eventful
-- `dev-research/node-home-factories/program.md` owns durable node-home and
+- [src/agent/create-agent.ts](../../src/agent/create-agent.ts) stays minimal and eventful
+- [dev-research/node-home-factories/program.md](../node-home-factories/program.md) owns durable node-home and
   promotion semantics
-- `dev-research/memory-factories/program.md` owns longer-horizon recall and
+- [dev-research/memory-factories/program.md](../memory-factories/program.md) owns longer-horizon recall and
   consolidation
-- `dev-research/observability-factories/program.md` owns richer retained
+- [dev-research/observability-factories/program.md](../observability-factories/program.md) owns richer retained
   traces
 
 What remains open is the middle layer:
@@ -44,15 +44,15 @@ node-home, observability, and ad hoc runtime code.
 
 This lane sits under:
 
-- `dev-research/default-factories/program.md`
+- [dev-research/default-factories/program.md](../default-factories/program.md)
 
 It should integrate with:
 
-- `dev-research/node-home-factories/program.md`
-- `dev-research/memory-factories/program.md`
-- `dev-research/observability-factories/program.md`
-- `dev-research/projection-factories/program.md`
-- `dev-research/fanout-factories/program.md`
+- [dev-research/node-home-factories/program.md](../node-home-factories/program.md)
+- [dev-research/memory-factories/program.md](../memory-factories/program.md)
+- [dev-research/observability-factories/program.md](../observability-factories/program.md)
+- [dev-research/projection-factories/program.md](../projection-factories/program.md)
+- [dev-research/fanout-factories/program.md](../fanout-factories/program.md)
 
 The intended split is:
 
@@ -65,8 +65,8 @@ The intended split is:
 
 ## Dependency Order
 
-1. `src/agent/create-agent.ts` defines the minimal core
-2. `docs/AGENT-LOOP.md` defines factory-composed orchestration
+1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the minimal core
+2. [docs/AGENT-LOOP.md](../../docs/AGENT-LOOP.md) defines factory-composed orchestration
 3. adjacent lanes define node-home, memory, observability, and projection
    constraints
 4. this lane hill-climbs the session continuity slice and feeds winners back
