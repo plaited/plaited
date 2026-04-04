@@ -31,7 +31,8 @@ This lane exists to validate:
 - `docs/INFRASTRUCTURE.md`
 - the OpenAI-compatible adapter boundary
 - the MSI + vLLM reference lane
-- AgentFS/Boxer-style deployment assumptions
+- Boxer-style execution assumptions
+- node-home persistence and promotion assumptions
 
 ## Product Target
 
@@ -48,7 +49,10 @@ The first shipped bootstrap surface should:
    - local-first
    - offline-private
    - hosted-node
-6. remain simple enough for both humans and coding agents to use directly
+6. make persistence and promotion choices reviewable, including:
+   - persistence factory selection
+   - export/import/handoff configuration
+7. remain simple enough for both humans and coding agents to use directly
 
 ## Required Architectural Properties
 

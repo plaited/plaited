@@ -37,8 +37,16 @@ This lane depends on and integrates focused default-factory subprograms such as:
 - `dev-research/verification-factories/program.md`
 - `dev-research/three-axis-factories/program.md`
 - `dev-research/agent-bootstrap/program.md`
+- `dev-research/agent-harness-research/program.md`
 - `dev-research/node-auth-factories/program.md`
 - `dev-research/module-discovery-factories/program.md`
+- `dev-research/plan-factories/program.md`
+- `dev-research/edit-factories/program.md`
+- `dev-research/node-home-factories/program.md`
+- `dev-research/notification-factories/program.md`
+- `dev-research/observability-factories/program.md`
+- `dev-research/projection-factories/program.md`
+- `dev-research/workflow-state-factories/program.md`
 - future lanes for retrieval, planning, editing, verification, notifications,
   observability, and related default behaviors
 
@@ -53,6 +61,61 @@ The intended split is:
 - `default-factories` decides which concrete factory bundle should become the
   shipped default agent composition
 - focused subprograms hill-climb bounded factory surfaces in parallel
+
+## Behavioral Translation Of External Agent Primitives
+
+External agent products are useful as input evidence, but their primitives
+must be translated into Plaited's factory-composed behavioral architecture
+rather than copied as direct feature doctrine.
+
+The relevant grounding from `plaited/example-agent` includes:
+
+- metadata-bearing tool and permission surfaces in `src/Tool.ts`
+- dynamic pool assembly in `src/utils/toolPool.ts`
+- deferred tool discovery in `src/utils/toolSearch.ts`
+- token-budget parsing in `src/utils/tokenBudget.ts`
+- session event pagination in `src/assistant/sessionHistory.ts`
+- structured control/event transport in `src/cli/structuredIO.ts`
+- permission request callbacks in `src/bridge/bridgePermissionCallbacks.ts`
+- transcript search and compaction behavior in `src/utils/transcriptSearch.ts`
+- retained telemetry events in `src/utils/telemetry/events.ts`
+- large bootstrap/session state seams in `src/bootstrap/state.ts`
+
+Within Plaited, those should be expressed as behavioral-factory questions:
+
+- metadata-first tool registry maps to module qualification, factory discovery,
+  skill activation, and module-generation policy
+- tiered permission systems map to auth-aware authority shaping, approval
+  policy, and execution gating across node-auth, bash, and three-axis lanes
+- session persistence maps to durable retained artifacts, bootstrap profile
+  state, and memory recall rather than one opaque runtime singleton
+- workflow state management maps to behavioral thread bundles, plan routing,
+  and explicit execution-state signals
+- hard token budgeting maps to bounded search, bounded context assembly, and
+  bounded eval loops rather than prompt-only heuristics
+- structured streaming events map to snapshots, signals, and retained runtime
+  traces suitable for replay and distillation
+- system event logging maps to analyzable artifact retention, observable
+  handler relationships, and replayable bundle-eval traces
+- two-level verification maps to local checks plus bundle-level
+  meta-verification
+- dynamic tool pool assembly maps to search-driven, discovery-driven, and
+  auth-aware capability selection
+- transcript compaction maps to memory layering and context projection policy
+- permission audit trail maps to retained approval decisions, trust-state
+  transitions, and verification artifacts
+- constrained agent types map to sharply bounded factory families such as
+  planning, editing, verification, and routing
+
+The umbrella program should use those translations to decide whether a
+behavior belongs in:
+
+- an existing focused lane
+- a missing focused lane that should be created
+- bundle-level composition logic only
+
+It should not treat a foreign product primitive as sufficient architectural
+justification on its own.
 
 ## Inputs
 
@@ -116,14 +179,29 @@ Each focused lane should research one bounded surface, for example:
 - notification and projection
 - observability and artifact handling
 
-Near-term missing lanes that now look concrete are:
+Near-term lanes that now look concrete are:
 
-- `plan-factory`
-- `edit-factory`
-- `search-factory`
-- `verification-factory`
-- `three-axis-factory`
-- `agent-bootstrap`
+- `plan-factories`
+- `edit-factories`
+- `node-home-factories`
+- `notification-factories`
+- `observability-factories`
+- `projection-factories`
+- `workflow-state-factories`
+
+Additional lane candidates implied by the current architecture and the
+`plaited/example-agent` surfaces are:
+
+- `session-persistence-factories` for durable session state, replay, and
+  restart semantics beyond bootstrap scaffolding alone
+- `tool-registry-factories` if module-discovery plus skill-factories proves
+  too broad to cleanly own metadata-first tool qualification and pool assembly
+- `permission-audit-factories` if retained approval history, review, and
+  justification replay becomes large enough to deserve a standalone bundle
+
+These are not product-feature clones. They are candidate behavioral-factory
+families that should be created only if the existing lanes cannot own the
+translated behavior cleanly.
 
 Each subprogram should be narrow enough to support parallel mutation and judged
 comparison across many independent attempts.
@@ -174,6 +252,8 @@ Surfaces that can be explored separately but must be integrated early:
 - validation
 - three-axis control
 - deployment bootstrap
+- session persistence
+- observability and artifact handling
 
 ### Tightly Coupled
 
@@ -188,6 +268,9 @@ Surfaces where the main value emerges at bundle level:
 - verification + execution routing
 - verification + module-discovery correctness
 - verification + MSS boundary correctness
+- node-auth + approval policy + audit retention
+- session persistence + memory recall + restart behavior
+- observability + verification + distillation readiness
 - planning + execution routing
 - final default-factory stack composition
 

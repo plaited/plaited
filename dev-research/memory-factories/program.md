@@ -50,7 +50,9 @@ widen `src/agent/create-agent.ts`.
 6. `skills/code-patterns/SKILL.md` defines preferred utility and state-shaping
    patterns
 7. `skills/typescript-lsp/SKILL.md` should be used for type-aware seam analysis
-8. this lane hill-climbs the memory slice and feeds its winning candidates back
+8. `dev-research/node-home-factories/program.md` should define the durable
+   node-home contract that durable memory writes participate in
+9. this lane hill-climbs the memory slice and feeds its winning candidates back
    into the default-factories umbrella
 
 ## Core Hypothesis
