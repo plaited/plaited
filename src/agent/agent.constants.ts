@@ -1,13 +1,6 @@
 import { keyMirror } from '../utils.ts'
 
 /**
- * Status of a tool call within the trajectory.
- *
- * @public
- */
-export const TOOL_STATUS = keyMirror('pending', 'completed', 'failed')
-
-/**
  * Minimal engine-level events for the new agent core.
  *
  * @remarks
@@ -33,15 +26,3 @@ export const AGENT_EVENTS = keyMirror(
   'signal_schema_violation',
   'set_signal',
 )
-
-/**
- * Subset of built-in tools that produce side effects (code changes).
- *
- * @remarks
- * Used by the `sideEffectCommit` bThread to determine when a `tool_result`
- * should trigger a git commit. Each commit bundles the code change with all
- * pending decision `.jsonld` files in `.memory/` since the last commit.
- *
- * @public
- */
-export const SIDE_EFFECT_TOOL_EVENTS = keyMirror(AGENT_EVENTS.write_file, AGENT_EVENTS.delete_file, AGENT_EVENTS.bash)

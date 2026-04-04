@@ -7,7 +7,6 @@ import {
   FactoryResultSchema,
   ModelUsageSchema,
   RequestBashDetailSchema,
-  TOOL_STATUS,
   ToolDefinitionSchema,
   TrajectoryStepSchema,
   UpdateFactoryModuleSchema,
@@ -87,7 +86,7 @@ describe('TrajectoryStepSchema', () => {
     const result = TrajectoryStepSchema.parse({
       type: 'tool_call',
       name: 'read_file',
-      status: TOOL_STATUS.completed,
+      status: 'completed',
       input: { path: '/main.ts' },
       output: 'file contents',
       duration: 42,
