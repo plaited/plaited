@@ -11,7 +11,8 @@ This lane should define how the agent:
 - verifies structural and behavioral constraints
 - checks MSS-aware module and boundary correctness
 - routes failed proposals into repair paths
-- produces retained verification artifacts suitable for later distillation
+- produces retained verification artifacts suitable for later model
+  adaptation
 
 The first shipped verification factory should treat verification as a composed
 factory layer, not as scattered ad hoc checks.
@@ -200,7 +201,8 @@ This lane should answer:
 - how should MSS boundary correctness be represented?
 - what verification state should live in signals?
 - how should failed verification route into repair attempts?
-- which verification artifacts are reliable enough for later distillation?
+- which verification artifacts are reliable enough for a retained training
+  corpus?
 
 ## Deliverables
 

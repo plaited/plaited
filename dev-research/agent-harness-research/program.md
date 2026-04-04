@@ -15,8 +15,9 @@ optimization. The goal is to:
 - use those retained artifacts later for weight adaptation only after the
   symbolic architecture is stable
 
-This lane is a workflow spec for search, promotion, and later distillation. It
-is not a claim that the first optimization target should be the model weights.
+This lane is a workflow spec for search, promotion, and later model
+adaptation. It is not a claim that the first optimization target should be the
+model weights.
 
 ## Core Position
 
@@ -46,7 +47,7 @@ This lane is:
 - symbolic architecture search
 - behavioral-policy search
 - structured trace retention
-- later distillation preparation
+- later model-adaptation preparation
 
 This lane is not primarily:
 
@@ -74,7 +75,7 @@ This lane should assume the research workflow is:
 3. validate and judge the survivors
 4. promote local winners
 5. run bundle-level composition checks where needed
-6. retain only trusted artifacts and traces for later distillation
+6. retain only trusted artifacts and traces for later weight adaptation
 
 ## Why Snapshots And Signals Matter
 

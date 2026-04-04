@@ -223,5 +223,5 @@ This lane should produce:
 - candidate search factory bundles
 - eval tasks for internal and external search routing
 - integration notes with skill-factory and module-discovery-factory
-- retained search traces suitable for later distillation
+- retained search traces suitable for a later training corpus
 - a recommendation for what should ship in the default search bundle

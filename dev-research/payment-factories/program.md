@@ -11,7 +11,8 @@ This lane should determine how the agent:
 - negotiates machine-readable payment requirements
 - decides when payment is allowed, denied, or requires approval
 - executes payment-bearing requests through explicit policy
-- retains payment evidence suitable for audit, replay, and later distillation
+- retains payment evidence suitable for audit, replay, and later model
+  adaptation
 
 The target is not a built-in billing subsystem inside `src/agent`. The target
 is a composed factory layer around paid boundaries such as x402 and MPP.

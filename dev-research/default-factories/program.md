@@ -296,7 +296,7 @@ Surfaces where the main value emerges at bundle level:
 - search + context assembly + tool registry
 - module discovery + dynamic loading correctness
 - node auth + permission audit + notification policy
-- observability + verification + distillation readiness
+- observability + verification + model-adaptation readiness
 - session persistence + memory recall + restart behavior
 - final default shipped composition
 

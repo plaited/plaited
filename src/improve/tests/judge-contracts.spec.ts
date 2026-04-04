@@ -55,7 +55,7 @@ describe('judge contracts', () => {
         evaluationTarget: 'trial-result',
         judgeKind: 'trial-result',
         retainedOutput: {
-          suitable: ['native-model-distillation', 'ui-module-generation-corpus'],
+          suitable: ['model-adaptation-corpus', 'ui-module-generation-corpus'],
           unsuitable: ['framework-improvement'],
           notes: 'Good for producer behavior, not for repo mutation.',
         },
@@ -84,13 +84,13 @@ describe('judge contracts', () => {
       verifierKind: 'trial-meta-verifier',
       trustLabel: 'trusted',
       retainedOutput: {
-        suitable: ['native-model-distillation'],
+        suitable: ['model-adaptation-corpus'],
         unsuitable: ['constitution-governance-corpus'],
-        notes: 'Retain for native-model curation, not governance examples.',
+        notes: 'Retain for later model adaptation curation, not governance examples.',
       },
     })
 
-    expect(metaInput.judgeResult.outcome?.retainedOutput?.suitable).toContain('native-model-distillation')
+    expect(metaInput.judgeResult.outcome?.retainedOutput?.suitable).toContain('model-adaptation-corpus')
     expect(metaOutcome.trustLabel).toBe('trusted')
   })
 

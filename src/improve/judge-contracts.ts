@@ -48,7 +48,7 @@ export type SelfVerificationResult = z.infer<typeof SelfVerificationResultSchema
 
 export const RetainedOutputSuitabilityLabelSchema = z.enum([
   'framework-improvement',
-  'native-model-distillation',
+  'model-adaptation-corpus',
   'ui-module-generation-corpus',
   'constitution-governance-corpus',
 ])

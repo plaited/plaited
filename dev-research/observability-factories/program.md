@@ -9,7 +9,7 @@ This lane should define how the agent:
 
 - retains structured runtime traces
 - emits analyzable artifact records for execution and coordination
-- supports replay, inspection, and later distillation
+- supports replay, inspection, and later model adaptation
 - exposes enough observability without turning the runtime into opaque logging
   sprawl
 
@@ -30,7 +30,8 @@ What remains open is observability policy:
 - what should be retained
 - at what granularity
 - in what artifact formats
-- which traces should feed later verification, replay, or distillation
+- which traces should feed later verification, replay, or retained training
+  corpora
 
 Without this lane, trace retention risks being partially owned by bash,
 verification, memory, and harness workflows without a coherent default story.
@@ -82,7 +83,7 @@ The first shipped observability factory bundle should support:
    - inspection
    - replay
    - judged comparison
-   - later training or distillation
+   - later training or model adaptation
 4. keeping artifact formats durable and reviewable by default
 5. exposing enough status for operators without requiring deep log spelunking
 
@@ -114,7 +115,7 @@ The traces retained here should be usable by:
 
 - verification and repair flows
 - memory reflection and recall
-- eval and distillation workflows
+- eval and model-adaptation workflows
 
 ## Research Questions
 
@@ -124,7 +125,7 @@ This lane should answer:
 - which artifacts should be append-only versus rebuildable?
 - how should trace retention differ for local runtime versus eval runtime?
 - what is the minimum viable replay surface?
-- which trace classes help later distillation most?
+- which trace classes contribute most to a retained training corpus?
 
 ## Candidate Factory Hypotheses
 
