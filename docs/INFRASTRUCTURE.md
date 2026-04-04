@@ -126,6 +126,7 @@ The host device or server should own:
 - launching and stopping the boxed runtime
 - attaching or mounting the node home
 - transport reachability and host-specific networking
+- discovery-identity attachment and publication hooks
 - promotion, export, import, and handoff orchestration
 - any host-native keychain or secure-storage integration
 
@@ -146,6 +147,41 @@ The node home should own durable state such as:
 - real Git state
 - metadata and recall indexes
 - config, sync state, and recovery state
+
+## Discovery Identity
+
+Discovery identity should be treated as adjacent to infrastructure, but not
+collapsed into the boxed runtime itself.
+
+One credible direction is:
+
+- ENS or DID provides the stable public identity layer
+- A2A Agent Card discovery provides the node-facing discovery contract
+- A2A extensions provide negotiated capability contracts such as MSS support
+- the host provides the concrete publication and reachability hooks
+- factories decide when discovery metadata should be updated or republished
+
+The intended split is:
+
+- the host resolves or publishes the current reachable discovery target
+- the boxed runtime serves the node-facing discovery and interaction surfaces
+- factories coordinate policy around:
+  - which A2A extensions are declared in the Agent Card
+  - which negotiated extensions are active for a given request
+  - when a public discovery record should change
+  - when promotion or handoff should trigger republishing
+  - how public Agent Card data differs from authenticated/private details
+
+This keeps discovery identity stable even when the active execution host moves
+between phone, local machine, and server.
+
+For modnet specifically, one credible direction is to treat MSS support as an
+A2A extension contract rather than as an implicit out-of-band assumption.
+Under that model:
+
+- Agent Cards declare MSS extension support
+- clients negotiate MSS activation through normal A2A extension mechanisms
+- extension-specific MSS semantics ride on top of the base A2A contract
 
 ## Attachment Model
 

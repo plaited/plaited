@@ -43,6 +43,7 @@ This lane depends on and integrates focused default-factory subprograms such as:
 - `dev-research/plan-factories/program.md`
 - `dev-research/edit-factories/program.md`
 - `dev-research/node-home-factories/program.md`
+- `dev-research/node-discovery-factories/program.md`
 - `dev-research/notification-factories/program.md`
 - `dev-research/observability-factories/program.md`
 - `dev-research/projection-factories/program.md`
@@ -184,6 +185,7 @@ Near-term lanes that now look concrete are:
 - `plan-factories`
 - `edit-factories`
 - `node-home-factories`
+- `node-discovery-factories`
 - `notification-factories`
 - `observability-factories`
 - `projection-factories`

@@ -57,6 +57,7 @@ The missing work is factory-owned composition around that surface:
 
 - inbound request handling policy
 - Agent Card projection policy
+- extension declaration and negotiation policy
 - outbound peer/session policy
 - push/stream lifecycle policy
 - auth and trust boundaries
@@ -133,6 +134,8 @@ protocol-oriented.
 The factory layer should own:
 
 - what card is presented
+- what A2A extensions are declared
+- how request-level extension negotiation is handled
 - which operations are enabled
 - how tasks/messages map onto local behavior
 - what auth is required
@@ -168,8 +171,18 @@ Relevant policy questions include:
 
 - which skills become card-declared skills
 - which interfaces are exposed by default
+- which A2A extensions should be declared in the Agent Card
+- when an extension should be marked required versus optional
 - when authenticated extended cards should be enabled
 - how push notification support should be advertised
+
+For modnet, this lane should treat MSS support as a likely A2A extension
+contract. That means the research surface includes:
+
+- how MSS support is declared in the Agent Card
+- how clients negotiate MSS activation for a request
+- what MSS-specific semantics belong in extension metadata rather than base A2A
+- how MSS-aware and MSS-unaware peers interoperate safely
 
 ## Research Questions
 
@@ -178,11 +191,14 @@ This lane should answer questions such as:
 - what is the smallest default A2A factory bundle that yields a useful remote
   node surface?
 - should card projection be its own factory or bundled with inbound routing?
+- should MSS support be modeled as an A2A extension in the default bundle?
 - how should inbound A2A requests map onto local agent tasks and snapshots?
 - what peer registry/state is sufficient for outbound coordination?
 - what should be exposed by default versus only through authenticated or
   optional surfaces?
 - how much streaming and push support belongs in the first default bundle?
+- how should Agent Card extension declarations and `A2A-Extensions`
+  negotiation be represented locally?
 
 ## Candidate Factory Hypotheses
 
@@ -235,6 +251,7 @@ Candidate bundles should be judged on:
 - are inbound requests observable and reviewable?
 - is the auth/trust model explicit rather than accidental?
 - does card projection stay consistent with real capabilities?
+- does extension negotiation stay explicit and interoperable?
 - can the model or operator reason about peer state without hidden machinery?
 
 ## Deliverables
@@ -242,7 +259,8 @@ Candidate bundles should be judged on:
 This lane should produce:
 
 - candidate factory bundles around `src/factories/a2a-factory/`
-- integration notes for Agent Card projection, auth, streaming, and peer state
+- integration notes for Agent Card projection, extensions, auth, streaming, and
+  peer state
 - tests or eval tasks for default A2A behavior
 - a recommendation for whether and how A2A should be included in the default
   shipped bundle
