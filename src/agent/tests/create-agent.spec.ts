@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { AGENT_CORE_EVENTS } from '../agent.constants.ts'
+import { AGENT_EVENTS } from '../agent.constants.ts'
 import {
   BashResultSchema,
   DeleteFileResultSchema,
@@ -31,7 +31,7 @@ describe('createAgent', () => {
       cwd: process.cwd(),
       workspace: process.cwd(),
       models: TEST_MODELS,
-      restrictedTriggers: [AGENT_CORE_EVENTS.agent_disconnect],
+      restrictedTriggers: [AGENT_EVENTS.agent_disconnect],
       factories: [
         () => ({
           handlers: {
@@ -56,14 +56,14 @@ describe('createAgent', () => {
       cwd: process.cwd(),
       workspace: process.cwd(),
       models: TEST_MODELS,
-      restrictedTriggers: [AGENT_CORE_EVENTS.agent_disconnect],
+      restrictedTriggers: [AGENT_EVENTS.agent_disconnect],
     })
 
     agent.useSnapshot((snapshot) => {
       snapshots.push(snapshot.kind)
     })
 
-    agent.trigger({ type: AGENT_CORE_EVENTS.agent_disconnect })
+    agent.trigger({ type: AGENT_EVENTS.agent_disconnect })
 
     expect(snapshots).toContain('restricted_trigger_error')
   })
@@ -94,7 +94,7 @@ describe('createAgent', () => {
     })
 
     agent.trigger({
-      type: AGENT_CORE_EVENTS.update_factories,
+      type: AGENT_EVENTS.update_factories,
       detail: modulePath,
     })
 
@@ -138,7 +138,7 @@ describe('createAgent', () => {
     })
 
     agent.trigger({
-      type: AGENT_CORE_EVENTS.read_file,
+      type: AGENT_EVENTS.read_file,
       detail: { input: 'hello.txt', signal: readSignal },
     })
 
@@ -190,7 +190,7 @@ describe('createAgent', () => {
     })
 
     agent.trigger({
-      type: AGENT_CORE_EVENTS.bash,
+      type: AGENT_EVENTS.bash,
       detail: { input: { path: 'bash-worker.ts', args: ['hello-from-bash'] }, signal: bashSignal },
     })
 
@@ -237,7 +237,7 @@ describe('createAgent', () => {
     })
 
     agent.trigger({
-      type: AGENT_CORE_EVENTS.write_file,
+      type: AGENT_EVENTS.write_file,
       detail: {
         input: { path: 'nested/output.txt', content: 'written from signal' },
         signal: writeSignal,
@@ -285,7 +285,7 @@ describe('createAgent', () => {
     })
 
     agent.trigger({
-      type: AGENT_CORE_EVENTS.delete_file,
+      type: AGENT_EVENTS.delete_file,
       detail: {
         input: 'delete-me.txt',
         signal: deleteSignal,
@@ -341,7 +341,7 @@ describe('createAgent', () => {
             handlers: {
               run_inference() {
                 trigger({
-                  type: AGENT_CORE_EVENTS.request_inference_primary,
+                  type: AGENT_EVENTS.request_inference_primary,
                   detail: {
                     input: {
                       messages: [{ role: 'user', content: 'hi' }],
@@ -407,7 +407,7 @@ describe('createAgent', () => {
     })
 
     agent.trigger({
-      type: AGENT_CORE_EVENTS.grep,
+      type: AGENT_EVENTS.grep,
       detail: {
         input: { pattern: 'alpha', path: 'search-target.ts', ignoreCase: true },
         signal: grepSignal,
@@ -472,7 +472,7 @@ describe('createAgent', () => {
     })
 
     agent.trigger({
-      type: AGENT_CORE_EVENTS.glob_files,
+      type: AGENT_EVENTS.glob_files,
       detail: {
         input: { pattern: '*.ts' },
         signal: globSignal,

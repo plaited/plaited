@@ -5,7 +5,7 @@ import type { infer as Infer, ZodTypeAny } from 'zod'
 import type { Disconnect } from '../behavioral.ts'
 import { behavioral, bSync, bThread } from '../behavioral.ts'
 import { isTypeOf } from '../utils.ts'
-import { AGENT_CORE_EVENTS } from './agent.constants.ts'
+import { AGENT_EVENTS } from './agent.constants.ts'
 import {
   FactoryResultSchema,
   GrepOutputSchema,
@@ -72,9 +72,9 @@ export const createAgent = async ({
 
   const restrictedTrigger = useRestrictedTrigger(
     ...restrictedTriggers,
-    AGENT_CORE_EVENTS.set_signal,
-    AGENT_CORE_EVENTS.heartbeat,
-    AGENT_CORE_EVENTS.signal_schema_violation,
+    AGENT_EVENTS.set_signal,
+    AGENT_EVENTS.heartbeat,
+    AGENT_EVENTS.signal_schema_violation,
   )
 
   const disconnectSet = new Set<Disconnect>()
@@ -86,7 +86,7 @@ export const createAgent = async ({
   const resolveCwdPath = (detail: string) => resolve(cwd, detail)
 
   const onSchemaViolation: SchemaViolationHandler = (detail) =>
-    trigger({ type: AGENT_CORE_EVENTS.signal_schema_violation, detail })
+    trigger({ type: AGENT_EVENTS.signal_schema_violation, detail })
 
   const setSignals = <TSchema extends ZodTypeAny>({
     key,
@@ -108,7 +108,7 @@ export const createAgent = async ({
       trigger: restrictedTrigger,
     })
     trigger({
-      type: AGENT_CORE_EVENTS.set_signal,
+      type: AGENT_EVENTS.set_signal,
       detail: {
         key,
         signal,
@@ -139,7 +139,7 @@ export const createAgent = async ({
   const heartbeatIntervalMs = heartbeat?.intervalMs ?? DEFAULT_HEARTBEAT_INTERVAL_MS
   const heartbeatTimer = setInterval(() => {
     trigger({
-      type: AGENT_CORE_EVENTS.heartbeat,
+      type: AGENT_EVENTS.heartbeat,
       detail: { intervalMs: heartbeatIntervalMs },
     })
   }, heartbeatIntervalMs)
@@ -149,7 +149,7 @@ export const createAgent = async ({
       [
         bSync({
           block: ({ type, detail }) => {
-            if (type !== AGENT_CORE_EVENTS.set_signal) return false
+            if (type !== AGENT_EVENTS.set_signal) return false
             return signalMap.has(detail.key)
           },
         }),
@@ -160,7 +160,7 @@ export const createAgent = async ({
       [
         bSync({
           block: ({ type, detail }) => {
-            if (type !== AGENT_CORE_EVENTS.update_factories) return false
+            if (type !== AGENT_EVENTS.update_factories) return false
             if (!isTypeOf<string>(detail, 'string')) return true
             if (!/\.tsx?$/.test(detail)) return true
             const path = resolveWorkspacePath(detail)
@@ -174,7 +174,7 @@ export const createAgent = async ({
       [
         bSync({
           block: ({ type, detail }) => {
-            if (type !== AGENT_CORE_EVENTS.read_file) return false
+            if (type !== AGENT_EVENTS.read_file) return false
             const parsed = RequestReadFileDetailSchema.safeParse(detail)
             if (!parsed.success) return true
             const resolved = resolveCwdPath(parsed.data.input)
@@ -188,7 +188,7 @@ export const createAgent = async ({
       [
         bSync({
           block: ({ type, detail }) => {
-            if (type !== AGENT_CORE_EVENTS.write_file) return false
+            if (type !== AGENT_EVENTS.write_file) return false
             const parsed = RequestWriteFileDetailSchema.safeParse(detail)
             if (!parsed.success) return true
             const resolved = resolveCwdPath(parsed.data.input.path)
@@ -202,7 +202,7 @@ export const createAgent = async ({
       [
         bSync({
           block: ({ type, detail }) => {
-            if (type !== AGENT_CORE_EVENTS.delete_file) return false
+            if (type !== AGENT_EVENTS.delete_file) return false
             const parsed = RequestDeleteFileDetailSchema.safeParse(detail)
             if (!parsed.success) return true
             const resolved = resolveCwdPath(parsed.data.input)
@@ -216,7 +216,7 @@ export const createAgent = async ({
       [
         bSync({
           block: ({ type, detail }) => {
-            if (type !== AGENT_CORE_EVENTS.glob_files) return false
+            if (type !== AGENT_EVENTS.glob_files) return false
             const parsed = RequestGlobFilesDetailSchema.safeParse(detail)
             if (!parsed.success) return true
             const { pattern, exclude = [] } = parsed.data.input
@@ -230,7 +230,7 @@ export const createAgent = async ({
       [
         bSync({
           block: ({ type, detail }) => {
-            if (type !== AGENT_CORE_EVENTS.grep) return false
+            if (type !== AGENT_EVENTS.grep) return false
             const parsed = RequestGrepDetailSchema.safeParse(detail)
             if (!parsed.success) return true
             if (!parsed.data.input.path) return false
@@ -245,7 +245,7 @@ export const createAgent = async ({
       [
         bSync({
           block: ({ type, detail }) => {
-            if (type !== AGENT_CORE_EVENTS.bash) return false
+            if (type !== AGENT_EVENTS.bash) return false
             const parsed = RequestBashDetailSchema.safeParse(detail)
             if (!parsed.success) return true
             const resolved = resolveWorkspacePath(parsed.data.input.path)
@@ -258,34 +258,34 @@ export const createAgent = async ({
   })
 
   useFeedback({
-    [AGENT_CORE_EVENTS.agent_disconnect]() {
+    [AGENT_EVENTS.agent_disconnect]() {
       clearInterval(heartbeatTimer)
       for (const disconnect of disconnectSet) {
         void disconnect()
       }
       disconnectSet.clear()
     },
-    [AGENT_CORE_EVENTS.set_signal]({ key, signal, readOnly }: { key: string; signal: Signal; readOnly: boolean }) {
+    [AGENT_EVENTS.set_signal]({ key, signal, readOnly }: { key: string; signal: Signal; readOnly: boolean }) {
       const { set, ...rest } = signal
       !readOnly && Object.assign(rest, { set })
       signalMap.set(key, rest)
     },
-    async [AGENT_CORE_EVENTS.request_inference_primary](detail: RequestPrimaryInferenceDetail) {
+    async [AGENT_EVENTS.request_inference_primary](detail: RequestPrimaryInferenceDetail) {
       const { input, signal } = RequestPrimaryInferenceDetailSchema.parse(detail)
       const output = await models.primary(input)
       signal.set?.({ input, output })
     },
-    async [AGENT_CORE_EVENTS.request_inference_vision](detail: RequestVisionInferenceDetail) {
+    async [AGENT_EVENTS.request_inference_vision](detail: RequestVisionInferenceDetail) {
       const { input, signal } = RequestVisionInferenceDetailSchema.parse(detail)
       const output = await models.vision(input)
       signal.set?.({ input, output })
     },
-    async [AGENT_CORE_EVENTS.request_inference_tts](detail: RequestTtsInferenceDetail) {
+    async [AGENT_EVENTS.request_inference_tts](detail: RequestTtsInferenceDetail) {
       const { input, signal } = RequestTtsInferenceDetailSchema.parse(detail)
       const output = await models.tts(input)
       signal.set?.({ input, output })
     },
-    async [AGENT_CORE_EVENTS.update_factories](detail: string) {
+    async [AGENT_EVENTS.update_factories](detail: string) {
       const modules = await import(pathToFileURL(resolveWorkspacePath(detail)).href)
       const { default: factories } = UpdateFactoryModuleSchema.parse(modules)
       for (const factory of factories) {
@@ -301,29 +301,29 @@ export const createAgent = async ({
         handlers && disconnectSet.add(useFeedback(handlers))
       }
     },
-    async [AGENT_CORE_EVENTS.read_file](detail: RequestReadFileDetail) {
+    async [AGENT_EVENTS.read_file](detail: RequestReadFileDetail) {
       const { input, signal } = RequestReadFileDetailSchema.parse(detail)
       const resolved = resolveCwdPath(input)
       signal.set?.({ input, output: Bun.file(resolved) })
     },
-    async [AGENT_CORE_EVENTS.delete_file](detail: RequestDeleteFileDetail) {
+    async [AGENT_EVENTS.delete_file](detail: RequestDeleteFileDetail) {
       const { input, signal } = RequestDeleteFileDetailSchema.parse(detail)
       const resolved = resolveCwdPath(input)
       await Bun.file(resolved).delete()
       signal.set?.({ input, output: true })
     },
-    async [AGENT_CORE_EVENTS.write_file](detail: RequestWriteFileDetail) {
+    async [AGENT_EVENTS.write_file](detail: RequestWriteFileDetail) {
       const { input, signal } = RequestWriteFileDetailSchema.parse(detail)
       const resolved = resolveCwdPath(input.path)
       const output = await Bun.write(resolved, input.content)
       signal.set?.({ input, output })
     },
-    async [AGENT_CORE_EVENTS.glob_files](detail: RequestGlobFilesDetail) {
+    async [AGENT_EVENTS.glob_files](detail: RequestGlobFilesDetail) {
       const { input, signal } = RequestGlobFilesDetailSchema.parse(detail)
       const output = await Array.fromAsync(glob(input.pattern, { exclude: input.exclude, cwd }))
       signal.set?.({ input, output })
     },
-    async [AGENT_CORE_EVENTS.grep](detail: RequestGrepDetail) {
+    async [AGENT_EVENTS.grep](detail: RequestGrepDetail) {
       const { input, signal } = RequestGrepDetailSchema.parse(detail)
       const { timeout, ...request } = input
       const proc = Bun.spawn(['bun', fileURLToPath(import.meta.resolve('./grep-worker.ts')), JSON.stringify(request)], {
@@ -353,7 +353,7 @@ export const createAgent = async ({
             })
       signal.set?.({ input, output })
     },
-    async [AGENT_CORE_EVENTS.bash](detail: RequestBashDetail) {
+    async [AGENT_EVENTS.bash](detail: RequestBashDetail) {
       const { input, signal } = RequestBashDetailSchema.parse(detail)
       const proc = Bun.spawn(['bun', resolveWorkspacePath(input.path), ...input.args], {
         cwd,
