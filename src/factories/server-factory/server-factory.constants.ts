@@ -62,6 +62,9 @@ export const SERVER_FACTORY_SIGNAL_KEYS = {
   status: 'server.status',
 } as const
 
+/** Internal owner label used when reporting baseline route conflicts. */
+export const SERVER_FACTORY_BASELINE_ROUTE_OWNER = '__server_factory_baseline__' as const
+
 /**
  * Default Content-Security-Policy header value for server-generated responses.
  *

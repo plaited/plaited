@@ -47,10 +47,18 @@ type ModelReview = {
   reasoning: string
 }
 
+type PromotionResult = {
+  changedPaths: string[]
+  decision: 'accept' | 'defer' | 'reject'
+  reasoning: string
+  validation: string[]
+}
+
 type LaneSummary = {
   judge?: ModelReview
   lane: string
   metaVerifier?: ModelReview
+  promotion?: PromotionResult
   programPath: string
   runDir: string
   succeededAttempts: number
@@ -90,6 +98,20 @@ type OpenRouterResponse = {
       content?: string
     }
   }>
+}
+
+type ReviewArtifact = {
+  model: string
+  prompt: string
+  rawContent: string
+  review: ModelReview
+  system: string
+}
+
+type PromotionArtifact = {
+  prompt: string
+  rawContent: string
+  result: PromotionResult
 }
 
 const DEFAULT_PROGRAM_PHASES: ProgramPhase[] = [
@@ -515,6 +537,86 @@ const extractJsonObject = (content: string): string => {
   return fenced?.[1]?.trim() || trimmed
 }
 
+export const normalizeReviewDecision = (decision: string | null | undefined): ModelReview['decision'] | null => {
+  const normalized = decision?.trim().toLowerCase()
+  if (!normalized) {
+    return null
+  }
+
+  if (normalized === 'accept' || normalized === 'accepted' || normalized === 'promote' || normalized === 'promoted') {
+    return 'accept'
+  }
+
+  if (normalized === 'defer' || normalized === 'deferred') {
+    return 'defer'
+  }
+
+  if (normalized === 'reject' || normalized === 'rejected') {
+    return 'reject'
+  }
+
+  return null
+}
+
+export const normalizePromotionDecision = (decision: string | null | undefined): PromotionResult['decision'] | null =>
+  normalizeReviewDecision(decision)
+
+export const parseModelReview = (content: string, model: string): ModelReview => {
+  const parsed = JSON.parse(extractJsonObject(content)) as Partial<ModelReview> & { decision?: string }
+  const decision = normalizeReviewDecision(parsed.decision)
+  if (!decision) {
+    throw new Error(`Invalid review decision from model ${model}: ${content}`)
+  }
+  if (!parsed.reasoning) {
+    throw new Error(`Missing review reasoning from model ${model}: ${content}`)
+  }
+
+  return {
+    decision,
+    reasoning: parsed.reasoning,
+  }
+}
+
+export const parsePromotionResult = (content: string): PromotionResult => {
+  const parsed = JSON.parse(extractJsonObject(content)) as Partial<PromotionResult> & {
+    decision?: string
+    changedPaths?: unknown
+    validation?: unknown
+  }
+  const decision = normalizePromotionDecision(parsed.decision)
+  if (!decision) {
+    throw new Error(`Invalid promotion decision: ${content}`)
+  }
+  if (!parsed.reasoning) {
+    throw new Error(`Missing promotion reasoning: ${content}`)
+  }
+
+  return {
+    decision,
+    reasoning: parsed.reasoning,
+    changedPaths: Array.isArray(parsed.changedPaths)
+      ? parsed.changedPaths.filter((value): value is string => typeof value === 'string')
+      : [],
+    validation: Array.isArray(parsed.validation)
+      ? parsed.validation.filter((value): value is string => typeof value === 'string')
+      : [],
+  }
+}
+
+const writeReviewArtifacts = async ({
+  artifact,
+  outputDir,
+  prefix,
+}: {
+  artifact: ReviewArtifact
+  outputDir: string
+  prefix: 'judge' | 'meta-verifier'
+}) => {
+  await Bun.write(join(outputDir, `${prefix}.prompt.txt`), `${artifact.system}\n\n${artifact.prompt}\n`)
+  await Bun.write(join(outputDir, `${prefix}.raw.txt`), `${artifact.rawContent}\n`)
+  await Bun.write(join(outputDir, `${prefix}.json`), toJson(artifact))
+}
+
 const callOpenRouterReview = async ({
   logger,
   model,
@@ -525,7 +627,7 @@ const callOpenRouterReview = async ({
   model: string
   prompt: string
   system: string
-}): Promise<ModelReview> => {
+}): Promise<ReviewArtifact> => {
   const apiKey = process.env.OPENROUTER_API_KEY
   if (!apiKey) {
     throw new Error('OPENROUTER_API_KEY is required for judge and meta-verifier reviews')
@@ -570,17 +672,12 @@ const callOpenRouterReview = async ({
         throw new Error(`OpenRouter review returned no content for model ${model}`)
       }
 
-      const parsed = JSON.parse(extractJsonObject(content)) as Partial<ModelReview>
-      if (parsed.decision !== 'accept' && parsed.decision !== 'defer' && parsed.decision !== 'reject') {
-        throw new Error(`Invalid review decision from model ${model}: ${content}`)
-      }
-      if (!parsed.reasoning) {
-        throw new Error(`Missing review reasoning from model ${model}: ${content}`)
-      }
-
       return {
-        decision: parsed.decision,
-        reasoning: parsed.reasoning,
+        model,
+        prompt,
+        rawContent: content,
+        review: parseModelReview(content, model),
+        system,
       }
     } catch (error) {
       if (attempt < maxAttempts) {
@@ -683,14 +780,42 @@ export const buildJudgePrompt = async ({
   run: ProgramRunRecord
 }): Promise<string> => JSON.stringify(await buildJudgePayload({ programPath, run }), null, 2)
 
+export const buildJudgeInstruction = (judgePrompt: string): string =>
+  [
+    'Judge whether this program-runner result should be accepted, deferred, or rejected.',
+    'Return JSON only with keys decision and reasoning.',
+    'decision must be exactly one of: accept, defer, reject.',
+    'Prefer defer when validation passed but the evidence is still incomplete.',
+    'The executionPlan is the planner-approved target. Evaluate whether the worker substantially executed that plan within lane constraints.',
+    judgePrompt,
+  ].join('\n\n')
+
+export const buildMetaVerifierPrompt = ({
+  judge,
+  evidence,
+}: {
+  judge: ModelReview
+  evidence: Awaited<ReturnType<typeof buildJudgePayload>>
+}): string =>
+  JSON.stringify(
+    {
+      judge,
+      evidence,
+    },
+    null,
+    2,
+  )
+
 const createLaneSummary = ({
   judge,
   metaVerifier,
+  promotion,
   programPath,
   run,
 }: {
   judge?: ModelReview
   metaVerifier?: ModelReview
+  promotion?: PromotionResult
   programPath: string
   run: ProgramRunRecord
 }): LaneSummary => ({
@@ -701,7 +826,155 @@ const createLaneSummary = ({
   totalAttempts: run.attempts.length,
   judge,
   metaVerifier,
+  promotion,
 })
+
+const getProgramReviewArtifactDir = ({ outputDir, programPath }: { outputDir: string; programPath: string }) =>
+  join(outputDir, basename(dirname(programPath)))
+
+export const selectPromotionAttempt = (run: ProgramRunRecord): ProgramRunAttempt | null =>
+  [...run.attempts].reverse().find((attempt) => attempt.status === 'succeeded') ?? null
+
+const buildPromotionContext = async ({
+  judge,
+  metaVerifier,
+  programPath,
+  run,
+}: {
+  judge?: ModelReview
+  metaVerifier?: ModelReview
+  programPath: string
+  run: ProgramRunRecord
+}) => {
+  const candidateAttempt = selectPromotionAttempt(run)
+  if (!candidateAttempt) {
+    return {
+      candidateAttempt: null,
+      judge,
+      metaVerifier,
+      lane: run.lane,
+      programPath,
+      runDir: run.runDir,
+    }
+  }
+
+  return {
+    candidateAttempt: {
+      attempt: candidateAttempt.attempt,
+      artifactDir: candidateAttempt.artifactDir,
+      worktreePath: candidateAttempt.worktreePath,
+      changedPaths: candidateAttempt.changedPaths ?? [],
+      outOfScopePaths: candidateAttempt.outOfScopePaths ?? [],
+      repoOutOfScopePaths: candidateAttempt.repoOutOfScopePaths ?? [],
+      diffStat: await getAttemptDiffSummary(candidateAttempt),
+      workerExitCode: candidateAttempt.workerExitCode ?? null,
+      formatExitCode: candidateAttempt.formatExitCode ?? null,
+      typecheckExitCode: candidateAttempt.typecheckExitCode ?? null,
+      targetedTestsExitCode: candidateAttempt.targetedTestsExitCode ?? null,
+      validateExitCode: candidateAttempt.validateExitCode ?? null,
+      workerProgress: await readAttemptArtifactExcerpt({
+        attempt: candidateAttempt,
+        fileName: 'worker.progress.log',
+      }),
+      targetedTestsStderr: await readAttemptArtifactExcerpt({
+        attempt: candidateAttempt,
+        fileName: 'targeted-tests.stderr.log',
+      }),
+    },
+    judge,
+    metaVerifier,
+    lane: run.lane,
+    programPath,
+    runDir: run.runDir,
+  }
+}
+
+export const buildPromotionPrompt = async ({
+  judge,
+  metaVerifier,
+  programPath,
+  run,
+}: {
+  judge?: ModelReview
+  metaVerifier?: ModelReview
+  programPath: string
+  run: ProgramRunRecord
+}): Promise<string> => {
+  const context = await buildPromotionContext({
+    judge,
+    metaVerifier,
+    programPath,
+    run,
+  })
+
+  return [
+    'Read AGENTS.md and git log first.',
+    'You are the final promotion gate for an autonomous factory-program run.',
+    'Review findings first. Do not assume the generated patch is safe.',
+    'Judge and meta-verifier outputs are advisory only; you make the final accept/defer/reject decision.',
+    'If the candidate is unsafe or incomplete, make no code changes and return defer or reject with clear reasoning.',
+    'If the candidate is promotable, port the lane-local changes from the attempt worktree into the main workspace, fixing any issues you find while staying within the lane scope.',
+    'After promoting code, run area-appropriate validation in the main workspace. At minimum require bun --bun tsc --noEmit and targeted tests for the changed surface.',
+    'Never revert unrelated user changes.',
+    'Return JSON only with keys decision, reasoning, changedPaths, validation.',
+    'decision must be exactly one of: accept, defer, reject.',
+    '',
+    JSON.stringify(context, null, 2),
+  ].join('\n')
+}
+
+const writePromotionArtifacts = async ({ artifact, outputDir }: { artifact: PromotionArtifact; outputDir: string }) => {
+  await Bun.write(join(outputDir, 'promotion.prompt.txt'), `${artifact.prompt}\n`)
+  await Bun.write(join(outputDir, 'promotion.raw.txt'), `${artifact.rawContent}\n`)
+  await Bun.write(join(outputDir, 'promotion.json'), toJson(artifact))
+}
+
+const runCodexPromotion = async ({
+  programArtifactDir,
+  programPath,
+  run,
+  workspaceRoot,
+  judge,
+  metaVerifier,
+}: {
+  programArtifactDir: string
+  programPath: string
+  run: ProgramRunRecord
+  workspaceRoot: string
+  judge?: ModelReview
+  metaVerifier?: ModelReview
+}): Promise<PromotionArtifact> => {
+  const prompt = await buildPromotionPrompt({
+    judge,
+    metaVerifier,
+    programPath,
+    run,
+  })
+
+  const lastMessagePath = join(programArtifactDir, 'promotion.last-message.txt')
+  const stdoutPath = join(programArtifactDir, 'promotion.stdout.log')
+  const stderrPath = join(programArtifactDir, 'promotion.stderr.log')
+
+  const result = await runCommand({
+    args: ['codex', '-a', 'never', 'exec', '-s', 'workspace-write', '-C', workspaceRoot, '-o', lastMessagePath, '-'],
+    cwd: workspaceRoot,
+    stdin: prompt,
+  })
+
+  await Bun.write(stdoutPath, result.stdout)
+  await Bun.write(stderrPath, result.stderr)
+
+  if (result.exitCode !== 0) {
+    throw new Error(result.stderr.trim() || result.stdout.trim() || `Codex promotion failed for ${programPath}`)
+  }
+
+  const lastMessage = await Bun.file(lastMessagePath).text()
+  return {
+    prompt,
+    rawContent: lastMessage,
+    result: parsePromotionResult(lastMessage),
+  }
+}
 
 const main = async () => {
   const input = await parseInput()
@@ -844,39 +1117,103 @@ const main = async () => {
       run,
     })
     const judgePrompt = JSON.stringify(judgePayload, null, 2)
+    const programArtifactDir = getProgramReviewArtifactDir({ outputDir, programPath })
+    await mkdir(programArtifactDir, { recursive: true })
 
-    const judge = await callOpenRouterReview({
+    const judgePromptText = buildJudgeInstruction(judgePrompt)
+    const judgeArtifact = await callOpenRouterReview({
       logger,
       model: process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'minimax/minimax-m2.7',
       system:
-        'You are a strict judge for autonomous factory-program attempts. Return JSON with keys decision and reasoning only.',
-      prompt: [
-        'Judge whether this program-runner result should be promoted, deferred, or rejected.',
-        'Prefer defer when validation passed but the evidence is still incomplete.',
-        'The executionPlan is the planner-approved target. Evaluate whether the worker substantially executed that plan within lane constraints.',
-        judgePrompt,
-      ].join('\n\n'),
+        'You are a strict judge for autonomous factory-program attempts. Return JSON only with keys decision and reasoning. decision must be exactly one of: accept, defer, reject.',
+      prompt: judgePromptText,
     })
+    await writeReviewArtifacts({
+      artifact: judgeArtifact,
+      outputDir: programArtifactDir,
+      prefix: 'judge',
+    })
+    const judge = judgeArtifact.review
     await logger.write(`judge-finished program=${programPath} decision=${judge.decision}`)
 
-    const metaVerifier = await callOpenRouterReview({
+    const metaVerifierPrompt = buildMetaVerifierPrompt({
+      judge,
+      evidence: judgePayload,
+    })
+    const metaVerifierArtifact = await callOpenRouterReview({
       logger,
       model: process.env.PLAITED_META_VERIFIER_MODEL ?? 'deepseek/deepseek-v3.2',
-      system: 'You verify a prior judge result. Return JSON with keys decision and reasoning only.',
-      prompt: JSON.stringify(
-        {
-          judge,
-          evidence: judgePayload,
-        },
-        null,
-        2,
-      ),
+      system:
+        'You verify a prior judge result. Return JSON only with keys decision and reasoning. decision must be exactly one of: accept, defer, reject.',
+      prompt: metaVerifierPrompt,
     })
+    await writeReviewArtifacts({
+      artifact: metaVerifierArtifact,
+      outputDir: programArtifactDir,
+      prefix: 'meta-verifier',
+    })
+    const metaVerifier = metaVerifierArtifact.review
     await logger.write(`meta-verifier-finished program=${programPath} decision=${metaVerifier.decision}`)
+
+    let promotion: PromotionResult
+    const promotionAttempt = selectPromotionAttempt(run)
+    if (promotionAttempt) {
+      try {
+        const promotionArtifact = await runCodexPromotion({
+          programArtifactDir,
+          programPath,
+          run,
+          workspaceRoot,
+          judge,
+          metaVerifier,
+        })
+        await writePromotionArtifacts({
+          artifact: promotionArtifact,
+          outputDir: programArtifactDir,
+        })
+        promotion = promotionArtifact.result
+        await logger.write(`promotion-finished program=${programPath} decision=${promotion.decision}`)
+      } catch (error) {
+        promotion = {
+          decision: 'defer',
+          reasoning: error instanceof Error ? error.message : String(error),
+          changedPaths: [],
+          validation: [],
+        }
+        await Bun.write(
+          join(programArtifactDir, 'promotion.json'),
+          toJson({
+            prompt: null,
+            rawContent: null,
+            result: promotion,
+          }),
+        )
+        await logger.write(
+          `promotion-failed program=${programPath} error=${JSON.stringify(error instanceof Error ? error.message : String(error))}`,
+        )
+      }
+    } else {
+      promotion = {
+        decision: 'defer',
+        reasoning: 'No succeeded attempt is available for Codex promotion review.',
+        changedPaths: [],
+        validation: [],
+      }
+      await Bun.write(
+        join(programArtifactDir, 'promotion.json'),
+        toJson({
+          prompt: null,
+          rawContent: null,
+          result: promotion,
+        }),
+      )
+      await logger.write(`promotion-skipped program=${programPath} reason=${JSON.stringify(promotion.reasoning)}`)
+    }
 
     const summary = createLaneSummary({
       judge,
       metaVerifier,
+      promotion,
       programPath,
       run,
     })

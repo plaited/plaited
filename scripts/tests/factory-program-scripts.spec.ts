@@ -2,7 +2,17 @@ import { describe, expect, test } from 'bun:test'
 import { mkdir, mkdtemp } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createValidationPlan } from '../factory-validate.ts'
-import { buildJudgePrompt, resolvePrograms } from '../run-factory-programs.ts'
+import {
+  buildJudgeInstruction,
+  buildJudgePrompt,
+  buildMetaVerifierPrompt,
+  buildPromotionPrompt,
+  normalizeReviewDecision,
+  parseModelReview,
+  parsePromotionResult,
+  resolvePrograms,
+  selectPromotionAttempt,
+} from '../run-factory-programs.ts'
 import { buildPiWorkerPrompt } from '../run-pi-factory-worker.ts'
 
 describe('buildPiWorkerPrompt', () => {
@@ -108,6 +118,156 @@ describe('buildJudgePrompt', () => {
   })
 })
 
+describe('review parsing', () => {
+  test('normalizes review decision synonyms', () => {
+    expect(normalizeReviewDecision('promote')).toBe('accept')
+    expect(normalizeReviewDecision('promoted')).toBe('accept')
+    expect(normalizeReviewDecision('deferred')).toBe('defer')
+    expect(normalizeReviewDecision('rejected')).toBe('reject')
+  })
+
+  test('parses fenced review json with non-canonical decision labels', () => {
+    const review = parseModelReview(
+      '```json\n{"decision":"promoted","reasoning":"all checks passed"}\n```',
+      'test-model',
+    )
+
+    expect(review).toEqual({
+      decision: 'accept',
+      reasoning: 'all checks passed',
+    })
+  })
+
+  test('rejects unknown review decisions', () => {
+    expect(() => parseModelReview('{"decision":"ship-it","reasoning":"nope"}', 'test-model')).toThrow(
+      'Invalid review decision',
+    )
+  })
+})
+
+describe('review prompts', () => {
+  test('uses canonical judge decision language', () => {
+    const prompt = buildJudgeInstruction('{"lane":"server-factory"}')
+
+    expect(prompt).toContain('accepted, deferred, or rejected')
+    expect(prompt).toContain('decision must be exactly one of: accept, defer, reject')
+  })
+
+  test('builds meta-verifier prompt from judge and evidence', () => {
+    const prompt = buildMetaVerifierPrompt({
+      judge: {
+        decision: 'defer',
+        reasoning: 'needs more evidence',
+      },
+      evidence: {
+        lane: 'server-factory',
+        programPath: 'dev-research/server-factory/program.md',
+        executionPlan: '# plan',
+        programMarkdown: '# program',
+        attempts: [],
+      },
+    })
+
+    expect(prompt).toContain('"decision": "defer"')
+    expect(prompt).toContain('"lane": "server-factory"')
+  })
+})
+
+describe('promotion parsing', () => {
+  test('parses promotion result json', () => {
+    const result = parsePromotionResult(
+      '{"decision":"accept","reasoning":"ported cleanly","changedPaths":["src/factories.ts"],"validation":["tsc ok"]}',
+    )
+
+    expect(result).toEqual({
+      decision: 'accept',
+      reasoning: 'ported cleanly',
+      changedPaths: ['src/factories.ts'],
+      validation: ['tsc ok'],
+    })
+  })
+
+  test('normalizes non-canonical promotion decisions', () => {
+    const result = parsePromotionResult('{"decision":"promoted","reasoning":"ported cleanly"}')
+
+    expect(result.decision).toBe('accept')
+  })
+})
+
+describe('promotion helpers', () => {
+  test('selects the latest succeeded attempt for promotion', () => {
+    const attempt = selectPromotionAttempt({
+      lane: 'server-factory',
+      programPath: 'dev-research/server-factory/program.md',
+      runDir: '/tmp/run',
+      attempts: [
+        {
+          attempt: 1,
+          artifactDir: '/tmp/a1',
+          status: 'failed',
+          worktreePath: '/tmp/w1',
+        },
+        {
+          attempt: 2,
+          artifactDir: '/tmp/a2',
+          status: 'succeeded',
+          worktreePath: '/tmp/w2',
+        },
+        {
+          attempt: 3,
+          artifactDir: '/tmp/a3',
+          status: 'succeeded',
+          worktreePath: '/tmp/w3',
+        },
+      ],
+    })
+
+    expect(attempt?.attempt).toBe(3)
+  })
+
+  test('builds a promotion prompt with advisory reviews and candidate attempt context', async () => {
+    const artifactDir = await mkdtemp('/tmp/factory-program-promotion-artifacts-')
+    const runDir = await mkdtemp('/tmp/factory-program-promotion-run-')
+    const worktreePath = await mkdtemp('/tmp/factory-program-promotion-worktree-')
+    await Bun.write(join(artifactDir, 'worker.progress.log'), 'progress line\n')
+    await Bun.write(join(artifactDir, 'targeted-tests.stderr.log'), 'tests stderr line\n')
+    await Bun.write(join(artifactDir, 'diff-summary.txt'), 'M src/factories/server-factory/server-factory.ts\n')
+
+    const prompt = await buildPromotionPrompt({
+      judge: {
+        decision: 'accept',
+        reasoning: 'looks promising',
+      },
+      metaVerifier: {
+        decision: 'defer',
+        reasoning: 'double-check runtime semantics',
+      },
+      programPath: 'dev-research/server-factory/program.md',
+      run: {
+        lane: 'server-factory',
+        programPath: 'dev-research/server-factory/program.md',
+        runDir,
+        attempts: [
+          {
+            attempt: 1,
+            artifactDir,
+            status: 'succeeded',
+            worktreePath,
+            changedPaths: ['src/factories/server-factory/server-factory.ts'],
+          },
+        ],
+      },
+    })
+
+    expect(prompt).toContain('final promotion gate')
+    expect(prompt).toContain('advisory only')
+    expect(prompt).toContain('"decision": "accept"')
+    expect(prompt).toContain('"decision": "defer"')
+    expect(prompt).toContain('"attempt": 1')
+    expect(prompt).toContain('"changedPaths": [')
+  })
+})
+
 describe('createValidationPlan', () => {
   test('maps targeted tests for known lanes', async () => {
     const plan = await createValidationPlan({
@@ -133,10 +293,12 @@ describe('createValidationPlan', () => {
 
     expect(plan.reason).toContain("targeted tests mapped and inferred for lane 'plan-factories'")
     expect(plan.inferredTestFiles).toContain('src/factories/server-factory/tests/server-factory.spec.ts')
+    expect(plan.inferredTestFiles).toContain('src/factories/server-factory/tests/server-factory.utils.spec.ts')
     expect(plan.commands).toContainEqual([
       'bun',
       'test',
       'src/factories/server-factory/tests/server-factory.spec.ts',
+      'src/factories/server-factory/tests/server-factory.utils.spec.ts',
       'src/factories/server-factory/tests/server.spec.ts',
     ])
   })
