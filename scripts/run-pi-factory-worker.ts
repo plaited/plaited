@@ -126,6 +126,33 @@ const appendArtifactLog = async ({
   await Bun.write(path, `${current}[${new Date().toISOString()}] ${message}\n`)
 }
 
+const truncateForLog = (value: string, maxChars = 1_000): string =>
+  value.length <= maxChars ? value : `${value.slice(0, maxChars)}...[truncated ${value.length - maxChars} chars]`
+
+const summarizeToolResult = (result: unknown): string => {
+  if (!result || typeof result !== 'object') {
+    return String(result)
+  }
+
+  const candidate = result as {
+    content?: Array<{ type?: string; text?: string }>
+    details?: unknown
+  }
+
+  const textParts = Array.isArray(candidate.content)
+    ? candidate.content
+        .filter((item) => item?.type === 'text' && typeof item.text === 'string' && item.text.trim().length > 0)
+        .map((item) => item.text!.trim())
+    : []
+
+  const details = candidate.details ? ` details=${truncateForLog(JSON.stringify(candidate.details))}` : ''
+  if (textParts.length === 0) {
+    return truncateForLog(JSON.stringify(result))
+  }
+
+  return `${truncateForLog(textParts.join(' | '))}${details}`
+}
+
 const resolveExecutionTimeoutMs = (): number => {
   const raw = Number(process.env.PLAITED_EXECUTION_TIMEOUT_MS ?? DEFAULT_EXECUTION_TIMEOUT_MS)
   return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_EXECUTION_TIMEOUT_MS
@@ -275,8 +302,20 @@ const runSdkAttempt = async ({
       return
     }
 
+    if (event.type === 'tool_execution_update') {
+      const update = summarizeToolResult(event.partialResult)
+      stderrChunks.push(`[tool:update] ${event.toolName} ${update}\n`)
+      return
+    }
+
     if (event.type === 'tool_execution_end') {
-      stderrChunks.push(`[tool:end] ${event.toolName} error=${event.isError}\n`)
+      const resultSummary = summarizeToolResult(event.result)
+      stderrChunks.push(`[tool:end] ${event.toolName} error=${event.isError} result=${resultSummary}\n`)
+      void appendArtifactLog({
+        artifactDir,
+        fileName: 'worker.progress.log',
+        message: `tool-end tool=${event.toolName} error=${event.isError} result=${JSON.stringify(resultSummary)}`,
+      })
       return
     }
 
