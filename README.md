@@ -55,7 +55,7 @@ Higher-level orchestration belongs in factories.
 Notable skill surfaces:
 
 - [plaited-ui](/Users/eirby/Workspace/plaited/skills/plaited-ui/SKILL.md)
-- [improve-workflows](/Users/eirby/Workspace/plaited/skills/improve-workflows/SKILL.md)
+- [autoresearch-workflows](/Users/eirby/Workspace/plaited/skills/autoresearch-workflows/SKILL.md)
 
 ## Development
 
