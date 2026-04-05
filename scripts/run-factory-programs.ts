@@ -226,6 +226,9 @@ const buildProgramRunDir = ({ programPath, workspaceRoot }: { programPath: strin
   resolve(workspaceRoot, '.worktrees', 'factory-program-runner', basename(dirname(programPath)), timestamp())
 
 const getExecutionPlanPath = (runDir: string) => join(runDir, 'execution-plan.md')
+const MAX_ARTIFACT_EXCERPT_CHARS = 4_000
+const MAX_CHANGED_FILE_EXCERPT_CHARS = 2_500
+const MAX_CHANGED_FILE_EXCERPTS = 8
 
 const buildPlannerPrompt = async ({ programPath }: { programPath: string }) => {
   const programMarkdown = await Bun.file(resolve(programPath)).text()
@@ -329,7 +332,14 @@ const createPlannedRunInput = ({
     '--retry-guidance',
     '{{run_dir}}/retry-guidance.md',
   ],
-  validateCommand: ['bun', 'scripts/factory-validate.ts', '--program', '{{program}}'],
+  validateCommand: [
+    'bun',
+    'scripts/factory-validate.ts',
+    '--program',
+    '{{program}}',
+    '--changed-paths-file',
+    '{{artifact_dir}}/changed-paths.json',
+  ],
 })
 
 const callProgramRunner = async ({
@@ -430,7 +440,7 @@ const getAttemptDiffSummary = async (attempt: ProgramRunAttempt) => {
 const readAttemptArtifactExcerpt = async ({
   attempt,
   fileName,
-  maxChars = 2_000,
+  maxChars = MAX_ARTIFACT_EXCERPT_CHARS,
 }: {
   attempt: ProgramRunAttempt
   fileName: string
@@ -456,8 +466,8 @@ const readAttemptArtifactExcerpt = async ({
 
 const readChangedFileExcerpts = async ({
   attempt,
-  maxCharsPerFile = 1_500,
-  maxFiles = 5,
+  maxCharsPerFile = MAX_CHANGED_FILE_EXCERPT_CHARS,
+  maxFiles = MAX_CHANGED_FILE_EXCERPTS,
 }: {
   attempt: ProgramRunAttempt
   maxCharsPerFile?: number
@@ -489,6 +499,16 @@ const readChangedFileExcerpts = async ({
   )
 
   return excerpts
+}
+
+const extractJsonObject = (content: string): string => {
+  const trimmed = content.trim()
+  if (!trimmed.startsWith('```')) {
+    return trimmed
+  }
+
+  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i)
+  return fenced?.[1]?.trim() || trimmed
 }
 
 const callOpenRouterReview = async ({
@@ -546,7 +566,7 @@ const callOpenRouterReview = async ({
         throw new Error(`OpenRouter review returned no content for model ${model}`)
       }
 
-      const parsed = JSON.parse(content) as Partial<ModelReview>
+      const parsed = JSON.parse(extractJsonObject(content)) as Partial<ModelReview>
       if (parsed.decision !== 'accept' && parsed.decision !== 'defer' && parsed.decision !== 'reject') {
         throw new Error(`Invalid review decision from model ${model}: ${content}`)
       }
@@ -583,6 +603,9 @@ const buildJudgePayload = async ({ programPath, run }: { programPath: string; ru
       attempt: attempt.attempt,
       status: attempt.status,
       workerExitCode: attempt.workerExitCode ?? null,
+      formatExitCode: attempt.formatExitCode ?? null,
+      typecheckExitCode: attempt.typecheckExitCode ?? null,
+      targetedTestsExitCode: attempt.targetedTestsExitCode ?? null,
       validateExitCode: attempt.validateExitCode ?? null,
       error: attempt.error ?? null,
       changedPaths: attempt.changedPaths ?? [],
@@ -702,8 +725,8 @@ const main = async () => {
     toJson({
       planner: process.env.PLAITED_AUTORESEARCH_PLANNER ?? 'codex',
       executionProvider: process.env.PLAITED_EXECUTION_PROVIDER ?? 'openrouter',
-      executionModel: process.env.PLAITED_EXECUTION_MODEL ?? 'google/gemma-4-31b-it',
-      executionFallbackModel: process.env.PLAITED_EXECUTION_FALLBACK_MODEL ?? 'google/gemma-4-31b-it',
+      executionModel: process.env.PLAITED_EXECUTION_MODEL ?? 'google/gemma-4-26b-a4b-it',
+      executionFallbackModel: process.env.PLAITED_EXECUTION_FALLBACK_MODEL ?? 'google/gemma-4-26b-a4b-it',
       judgeModel: process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'minimax/minimax-m2.7',
       metaVerifierModel: process.env.PLAITED_META_VERIFIER_MODEL ?? 'deepseek/deepseek-v3.2',
       attempts,
@@ -715,7 +738,7 @@ const main = async () => {
   await logger.write(`orchestration-start outputDir=${outputDir}`)
   await logger.write(`planner=${process.env.PLAITED_AUTORESEARCH_PLANNER ?? 'codex'}`)
   await logger.write(
-    `execution=${process.env.PLAITED_EXECUTION_PROVIDER ?? 'openrouter'}:${process.env.PLAITED_EXECUTION_MODEL ?? 'google/gemma-4-31b-it'}`,
+    `execution=${process.env.PLAITED_EXECUTION_PROVIDER ?? 'openrouter'}:${process.env.PLAITED_EXECUTION_MODEL ?? 'google/gemma-4-26b-a4b-it'}`,
   )
   await logger.write(`judge=${process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'minimax/minimax-m2.7'}`)
   await logger.write(`meta-verifier=${process.env.PLAITED_META_VERIFIER_MODEL ?? 'deepseek/deepseek-v3.2'}`)

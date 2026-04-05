@@ -11,6 +11,7 @@ import {
   ModelRegistry,
   SessionManager,
 } from '@mariozechner/pi-coding-agent'
+import { parseProgramScope } from '../src/cli/program-runner/program-scope.ts'
 
 type WorkerArgs = {
   artifactDir: string
@@ -70,11 +71,15 @@ const parseArgs = (argv: string[]): WorkerArgs => {
 }
 
 export const buildPiWorkerPrompt = ({
+  allowedPaths,
+  programMarkdown,
   planMarkdown,
   planner,
   programPath,
   retryGuidance,
 }: {
+  allowedPaths: string[]
+  programMarkdown: string
   planMarkdown: string
   planner: string
   programPath: string
@@ -87,15 +92,24 @@ export const buildPiWorkerPrompt = ({
     `You are the execution worker for lane '${lane}'. The planning/orchestration authority is '${planner}'.`,
     'Treat the plan below as the primary task definition. Do not replace it with a fresh plan unless repository reality forces a minimal adjustment.',
     'Use the lane program for constraints and writable roots, not for open-ended replanning.',
-    'Stay inside the lane writable roots declared by the program and do not mutate unrelated files.',
+    'Do not restate the plan. Inspect only the files named in the plan or clearly required adjacent files, then move into concrete edits quickly.',
+    'Make at least one concrete code edit once you have enough context to do so safely.',
+    'Stay inside the explicit writable roots listed below and do not mutate unrelated files.',
     'Use the repo instructions from @AGENTS.md and verify the current code before editing.',
+    'Use relevant repo skills when they materially help execution. If external documentation or web research is needed, prefer the repo search skills and you.com-backed skill paths available in this environment.',
     'Before finishing, make sure the generated code passes formatting, type checking, and targeted tests for the affected files or lane surface. Do not run an unrelated full test suite.',
     'Make the strongest concrete implementation attempt you can in this worktree, then stop.',
     ...(retryGuidance ? ['', 'Retry guidance:', retryGuidance] : []),
     '',
+    'Writable roots:',
+    ...allowedPaths.map((path) => `- ${path}`),
+    '',
+    'Lane program:',
+    programMarkdown,
+    '',
     'Execution plan:',
     planMarkdown,
-  ].join(' ')
+  ].join('\n')
 }
 
 const appendArtifactLog = async ({
@@ -366,13 +380,21 @@ const runSdkAttempt = async ({
 const main = async () => {
   const { artifactDir, planPath, programPath, retryGuidancePath } = parseArgs(Bun.argv)
   const resolvedProgramPath = resolve(programPath)
+  const programMarkdown = (await Bun.file(resolvedProgramPath).text()).trim()
   const planMarkdown = (await Bun.file(planPath).text()).trim()
   const retryGuidance =
     retryGuidancePath && (await Bun.file(retryGuidancePath).exists())
       ? (await Bun.file(retryGuidancePath).text()).trim() || undefined
       : undefined
   const cwd = process.cwd()
+  const allowedPaths = await parseProgramScope({
+    programMarkdown,
+    programPath: resolvedProgramPath,
+    workspaceRoot: cwd,
+  })
   const prompt = buildPiWorkerPrompt({
+    allowedPaths,
+    programMarkdown,
     planMarkdown,
     planner: process.env.PLAITED_AUTORESEARCH_PLANNER ?? 'codex',
     programPath: relative(cwd, resolvedProgramPath) || resolvedProgramPath,
@@ -380,7 +402,7 @@ const main = async () => {
   })
 
   const provider = process.env.PLAITED_EXECUTION_PROVIDER ?? 'openrouter'
-  const primaryModel = process.env.PLAITED_EXECUTION_MODEL ?? 'google/gemma-4-31b-it'
+  const primaryModel = process.env.PLAITED_EXECUTION_MODEL ?? 'google/gemma-4-26b-a4b-it'
   const fallbackModel = process.env.PLAITED_EXECUTION_FALLBACK_MODEL
   const thinking = resolveThinkingLevel()
 
@@ -393,6 +415,7 @@ const main = async () => {
         primaryModel,
         fallbackModel: fallbackModel ?? null,
         thinking,
+        allowedPaths,
         retryGuidancePath: retryGuidancePath ?? null,
         planPath,
         programPath: resolvedProgramPath,

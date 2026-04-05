@@ -8,6 +8,8 @@ import { buildPiWorkerPrompt } from '../run-pi-factory-worker.ts'
 describe('buildPiWorkerPrompt', () => {
   test('includes planner authority, program reference, and execution plan', () => {
     const prompt = buildPiWorkerPrompt({
+      allowedPaths: ['src/factories/', 'src/factories.ts'],
+      programMarkdown: '# Default Factories\n\n## Scope\n- [../../src/factories/](../../src/factories/)\n',
       planMarkdown: '1. Edit src/factories.ts\n2. Run bun test',
       planner: 'codex',
       programPath: 'dev-research/default-factories/program.md',
@@ -18,6 +20,9 @@ describe('buildPiWorkerPrompt', () => {
     expect(prompt).toContain('@dev-research/default-factories/program.md')
     expect(prompt).toContain('Retry guidance:')
     expect(prompt).toContain('Only touch src/factories.ts')
+    expect(prompt).toContain('Writable roots:')
+    expect(prompt).toContain('src/factories/')
+    expect(prompt).toContain('Lane program:')
     expect(prompt).toContain('Execution plan:')
     expect(prompt).toContain('Edit src/factories.ts')
   })
@@ -72,6 +77,9 @@ describe('buildJudgePrompt', () => {
             status: 'succeeded',
             worktreePath,
             workerExitCode: 0,
+            formatExitCode: 0,
+            typecheckExitCode: 0,
+            targetedTestsExitCode: 0,
             validateExitCode: 0,
             changedPaths: ['src/factories.ts'],
           },
@@ -86,6 +94,9 @@ describe('buildJudgePrompt', () => {
     expect(prompt).toContain('"workerStdout": "worker stdout line"')
     expect(prompt).toContain('"workerStderr": "worker stderr line"')
     expect(prompt).toContain('"workerProgress": "progress line"')
+    expect(prompt).toContain('"formatExitCode": 0')
+    expect(prompt).toContain('"typecheckExitCode": 0')
+    expect(prompt).toContain('"targetedTestsExitCode": 0')
     expect(prompt).toContain('"validateStderr": "validate stderr line"')
     expect(prompt).toContain('"formatStdout": "format stdout line"')
     expect(prompt).toContain('"typecheckStderr": "typecheck stderr line"')
@@ -98,8 +109,11 @@ describe('buildJudgePrompt', () => {
 })
 
 describe('createValidationPlan', () => {
-  test('maps targeted tests for known lanes', () => {
-    const plan = createValidationPlan('dev-research/server-factory/program.md')
+  test('maps targeted tests for known lanes', async () => {
+    const plan = await createValidationPlan({
+      changedPaths: [],
+      programPath: 'dev-research/server-factory/program.md',
+    })
 
     expect(plan.reason).toContain("targeted tests mapped for lane 'server-factory'")
     expect(plan.commands).toContainEqual(['bun', '--bun', 'tsc', '--noEmit'])
@@ -111,15 +125,37 @@ describe('createValidationPlan', () => {
     ])
   })
 
-  test('falls back to typecheck-only for unmapped lanes', () => {
-    const plan = createValidationPlan('dev-research/plan-factories/program.md')
+  test('infers factory-local tests from changed paths', async () => {
+    const plan = await createValidationPlan({
+      changedPaths: ['src/factories/server-factory/server-factory.ts'],
+      programPath: 'dev-research/plan-factories/program.md',
+    })
 
-    expect(plan.reason).toContain("no explicit targeted tests mapped for lane 'plan-factories'")
+    expect(plan.reason).toContain("targeted tests mapped and inferred for lane 'plan-factories'")
+    expect(plan.inferredTestFiles).toContain('src/factories/server-factory/tests/server-factory.spec.ts')
+    expect(plan.commands).toContainEqual([
+      'bun',
+      'test',
+      'src/factories/server-factory/tests/server-factory.spec.ts',
+      'src/factories/server-factory/tests/server.spec.ts',
+    ])
+  })
+
+  test('falls back to typecheck-only when no tests can be inferred', async () => {
+    const plan = await createValidationPlan({
+      changedPaths: ['src/factories/default-factory-bundle/default-factory-bundle.ts'],
+      programPath: 'dev-research/plan-factories/program.md',
+    })
+
+    expect(plan.reason).toContain("no targeted tests inferred for lane 'plan-factories'")
     expect(plan.commands).toEqual([['bun', '--bun', 'tsc', '--noEmit']])
   })
 
-  test('covers bootstrap tests for default-factories lane', () => {
-    const plan = createValidationPlan('dev-research/default-factories/program.md')
+  test('covers bootstrap tests for default-factories lane', async () => {
+    const plan = await createValidationPlan({
+      changedPaths: [],
+      programPath: 'dev-research/default-factories/program.md',
+    })
 
     expect(plan.commands).toContainEqual([
       'bun',
