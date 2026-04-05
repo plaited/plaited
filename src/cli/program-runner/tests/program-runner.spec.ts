@@ -11,6 +11,7 @@ import {
   runFactoryProgram,
   substituteProgramRunnerCommand,
 } from '../program-runner.ts'
+import { parseProgramScope } from '../program-scope.ts'
 
 const tempDirs: string[] = []
 
@@ -85,6 +86,26 @@ describe('program-runner helpers', () => {
     })
 
     expect(runDir.startsWith('/tmp/repo/.worktrees/factory-program-runner/skill-factories/')).toBe(true)
+  })
+
+  test('falls back to factory writable roots for factory lanes without explicit links', async () => {
+    const scopedPaths = await parseProgramScope({
+      programMarkdown: '# Default Factories\n\n## Goal\n\nTest lane.\n',
+      programPath: '/tmp/repo/dev-research/default-factories/program.md',
+      workspaceRoot: '/tmp/repo',
+    })
+
+    expect(scopedPaths).toEqual(['src/factories/', 'src/factories.ts'])
+  })
+
+  test('falls back to factory writable roots when scope section has no links', async () => {
+    const scopedPaths = await parseProgramScope({
+      programMarkdown: '# ACP Factories\n\n## Scope\n\nResearch only.\n',
+      programPath: '/tmp/repo/dev-research/acp-factories/program.md',
+      workspaceRoot: '/tmp/repo',
+    })
+
+    expect(scopedPaths).toEqual(['src/factories/', 'src/factories.ts'])
   })
 })
 

@@ -12,13 +12,14 @@
  */
 
 import { bootstrapCli } from '../src/bootstrap.ts'
-import { evalCli, programRunnerCli } from '../src/cli.ts'
+import { autoresearchCli, evalCli, programRunnerCli } from '../src/cli.ts'
 
 // ============================================================================
 // Command Registry
 // ============================================================================
 
 const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
+  autoresearch: autoresearchCli,
   bootstrap: bootstrapCli,
   eval: evalCli,
   'program-runner': programRunnerCli,
@@ -54,7 +55,7 @@ export const runCli = async (argv: string[]): Promise<void> => {
        plaited --schema               # List all commands
 
 Commands:
-    bootstrap, eval, program-runner`)
+    autoresearch, bootstrap, eval, program-runner`)
     process.exit(command ? 0 : 1)
   }
 

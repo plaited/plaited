@@ -4,6 +4,13 @@
 
 Determine the default factory composition for the Plaited agent.
 
+## Writable Roots
+
+Program-runner attempts for this lane should only edit:
+
+- [src/factories/](../../src/factories/)
+- [src/factories.ts](../../src/factories.ts)
+
 This lane is the umbrella research program for factory-era agent behavior. It
 does not exist to mutate one narrow factory surface in isolation. It exists to
 decide:
