@@ -441,7 +441,7 @@ const main = async () => {
   })
 
   const provider = process.env.PLAITED_EXECUTION_PROVIDER ?? 'openrouter'
-  const primaryModel = process.env.PLAITED_EXECUTION_MODEL ?? 'google/gemma-4-26b-a4b-it'
+  const primaryModel = process.env.PLAITED_EXECUTION_MODEL ?? 'qwen/qwen3.6-plus:free'
   const fallbackModel = process.env.PLAITED_EXECUTION_FALLBACK_MODEL
   const thinking = resolveThinkingLevel()
 

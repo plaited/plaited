@@ -729,8 +729,8 @@ const main = async () => {
     toJson({
       planner: process.env.PLAITED_AUTORESEARCH_PLANNER ?? 'codex',
       executionProvider: process.env.PLAITED_EXECUTION_PROVIDER ?? 'openrouter',
-      executionModel: process.env.PLAITED_EXECUTION_MODEL ?? 'google/gemma-4-26b-a4b-it',
-      executionFallbackModel: process.env.PLAITED_EXECUTION_FALLBACK_MODEL ?? 'google/gemma-4-26b-a4b-it',
+      executionModel: process.env.PLAITED_EXECUTION_MODEL ?? 'qwen/qwen3.6-plus:free',
+      executionFallbackModel: process.env.PLAITED_EXECUTION_FALLBACK_MODEL ?? 'qwen/qwen3.6-plus:free',
       judgeModel: process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'minimax/minimax-m2.7',
       metaVerifierModel: process.env.PLAITED_META_VERIFIER_MODEL ?? 'deepseek/deepseek-v3.2',
       attempts,
@@ -742,7 +742,7 @@ const main = async () => {
   await logger.write(`orchestration-start outputDir=${outputDir}`)
   await logger.write(`planner=${process.env.PLAITED_AUTORESEARCH_PLANNER ?? 'codex'}`)
   await logger.write(
-    `execution=${process.env.PLAITED_EXECUTION_PROVIDER ?? 'openrouter'}:${process.env.PLAITED_EXECUTION_MODEL ?? 'google/gemma-4-26b-a4b-it'}`,
+    `execution=${process.env.PLAITED_EXECUTION_PROVIDER ?? 'openrouter'}:${process.env.PLAITED_EXECUTION_MODEL ?? 'qwen/qwen3.6-plus:free'}`,
   )
   await logger.write(`judge=${process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'minimax/minimax-m2.7'}`)
   await logger.write(`meta-verifier=${process.env.PLAITED_META_VERIFIER_MODEL ?? 'deepseek/deepseek-v3.2'}`)
