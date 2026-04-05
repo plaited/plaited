@@ -128,8 +128,12 @@ export const buildProgramRunDir = ({
   rootDir?: string
   workspaceRoot: string
 }): string => {
+  if (rootDir) {
+    return resolve(rootDir)
+  }
+
   const lane = getProgramLane(programPath)
-  const runsRoot = rootDir ? resolve(rootDir) : join(workspaceRoot, '.worktrees', 'factory-program-runner', lane)
+  const runsRoot = join(workspaceRoot, '.worktrees', 'factory-program-runner', lane)
   return join(runsRoot, timestamp())
 }
 
