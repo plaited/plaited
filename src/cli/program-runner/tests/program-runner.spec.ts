@@ -38,7 +38,45 @@ const initRepo = async (root: string) => {
   await run(['git', 'config', 'user.email', 'test@example.com'], root)
   await run(['git', 'config', 'user.name', 'Test User'], root)
   await Bun.write(join(root, 'README.md'), '# test\n')
-  await run(['git', 'add', 'README.md'], root)
+  await Bun.$`mkdir -p ${join(root, 'src')}`.quiet()
+  await Bun.$`mkdir -p ${join(root, 'node_modules', '.bin')}`.quiet()
+  await Bun.write(
+    join(root, 'package.json'),
+    JSON.stringify(
+      {
+        name: 'program-runner-fixture',
+        private: true,
+        scripts: {
+          tsc: 'tsc',
+        },
+      },
+      null,
+      2,
+    ),
+  )
+  await Bun.write(
+    join(root, 'tsconfig.json'),
+    JSON.stringify(
+      {
+        compilerOptions: {
+          target: 'ES2022',
+          module: 'ESNext',
+          moduleResolution: 'Bundler',
+          strict: true,
+          noEmit: true,
+        },
+        include: ['src/**/*.ts'],
+      },
+      null,
+      2,
+    ),
+  )
+  await Bun.write(join(root, 'node_modules', '.bin', 'biome'), '#!/bin/sh\nexit 0\n')
+  await Bun.write(join(root, 'node_modules', '.bin', 'tsc'), '#!/bin/sh\nexit 0\n')
+  await Bun.$`chmod +x ${join(root, 'node_modules', '.bin', 'biome')}`.quiet()
+  await Bun.$`chmod +x ${join(root, 'node_modules', '.bin', 'tsc')}`.quiet()
+  await Bun.write(join(root, 'src', 'index.ts'), 'export const fixture = true\n')
+  await run(['git', 'add', 'README.md', 'package.json', 'tsconfig.json', 'src/index.ts'], root)
   await run(['git', 'commit', '-m', 'init'], root)
 }
 
@@ -148,6 +186,8 @@ Test fanout.
       expect(await Bun.file(join(runResult.runDir, 'run.json')).exists()).toBe(true)
       expect(await Bun.file(join(runResult.attempts[0]!.artifactDir, 'status.json')).exists()).toBe(true)
       expect(await Bun.file(join(runResult.attempts[0]!.worktreePath, 'validated.txt')).exists()).toBe(true)
+      expect(await Bun.file(join(runResult.attempts[0]!.artifactDir, 'typecheck.stdout.log')).exists()).toBe(true)
+      expect(await Bun.file(join(runResult.attempts[0]!.artifactDir, 'targeted-tests.stdout.log')).exists()).toBe(true)
       expect(await Bun.file(join(runResult.attempts[0]!.artifactDir, 'changed-paths.json')).exists()).toBe(false)
 
       const loaded = await loadFactoryProgramRun({
@@ -200,6 +240,7 @@ Test fanout.
       await expect(
         Bun.file(join(runResult.attempts[0]!.artifactDir, 'out-of-scope-paths.json')).json(),
       ).resolves.toEqual(['src/bootstrap/bootstrap.ts'])
+      expect(await Bun.file(join(runResult.runDir, 'retry-guidance.md')).text()).toContain('src/bootstrap/bootstrap.ts')
     } finally {
       process.chdir(cwd)
     }

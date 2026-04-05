@@ -14,7 +14,9 @@ import {
 
 type WorkerArgs = {
   artifactDir: string
+  planPath: string
   programPath: string
+  retryGuidancePath?: string
 }
 
 type WorkerRunResult = {
@@ -29,6 +31,8 @@ const THINKING_LEVELS: ThinkingLevel[] = ['off', 'minimal', 'low', 'medium', 'hi
 const parseArgs = (argv: string[]): WorkerArgs => {
   let programPath: string | undefined
   let artifactDir: string | undefined
+  let planPath: string | undefined
+  let retryGuidancePath: string | undefined
 
   for (let index = 2; index < argv.length; index += 1) {
     const arg = argv[index]
@@ -40,29 +44,57 @@ const parseArgs = (argv: string[]): WorkerArgs => {
     if (arg === '--artifact-dir') {
       artifactDir = argv[index + 1]
       index += 1
+      continue
+    }
+    if (arg === '--plan') {
+      planPath = argv[index + 1]
+      index += 1
+      continue
+    }
+    if (arg === '--retry-guidance') {
+      retryGuidancePath = argv[index + 1]
+      index += 1
     }
   }
 
-  if (!programPath || !artifactDir) {
-    throw new Error('Usage: bun scripts/run-pi-factory-worker.ts --program <path> --artifact-dir <dir>')
+  if (!programPath || !artifactDir || !planPath) {
+    throw new Error('Usage: bun scripts/run-pi-factory-worker.ts --program <path> --artifact-dir <dir> --plan <path>')
   }
 
   return {
     artifactDir: resolve(artifactDir),
+    planPath: resolve(planPath),
     programPath,
+    retryGuidancePath: retryGuidancePath ? resolve(retryGuidancePath) : undefined,
   }
 }
 
-export const buildPiWorkerPrompt = ({ planner, programPath }: { planner: string; programPath: string }): string => {
+export const buildPiWorkerPrompt = ({
+  planMarkdown,
+  planner,
+  programPath,
+  retryGuidance,
+}: {
+  planMarkdown: string
+  planner: string
+  programPath: string
+  retryGuidance?: string
+}): string => {
   const lane = basename(dirname(programPath))
 
   return [
-    `Execute the research lane defined in @${programPath}.`,
+    `Execute the approved plan for @${programPath}.`,
     `You are the execution worker for lane '${lane}'. The planning/orchestration authority is '${planner}'.`,
-    'Read the lane program carefully before changing code.',
+    'Treat the plan below as the primary task definition. Do not replace it with a fresh plan unless repository reality forces a minimal adjustment.',
+    'Use the lane program for constraints and writable roots, not for open-ended replanning.',
     'Stay inside the lane writable roots declared by the program and do not mutate unrelated files.',
     'Use the repo instructions from @AGENTS.md and verify the current code before editing.',
+    'Before finishing, make sure the generated code passes formatting, type checking, and targeted tests for the affected files or lane surface. Do not run an unrelated full test suite.',
     'Make the strongest concrete implementation attempt you can in this worktree, then stop.',
+    ...(retryGuidance ? ['', 'Retry guidance:', retryGuidance] : []),
+    '',
+    'Execution plan:',
+    planMarkdown,
   ].join(' ')
 }
 
@@ -332,12 +364,19 @@ const runSdkAttempt = async ({
 }
 
 const main = async () => {
-  const { artifactDir, programPath } = parseArgs(Bun.argv)
+  const { artifactDir, planPath, programPath, retryGuidancePath } = parseArgs(Bun.argv)
   const resolvedProgramPath = resolve(programPath)
+  const planMarkdown = (await Bun.file(planPath).text()).trim()
+  const retryGuidance =
+    retryGuidancePath && (await Bun.file(retryGuidancePath).exists())
+      ? (await Bun.file(retryGuidancePath).text()).trim() || undefined
+      : undefined
   const cwd = process.cwd()
   const prompt = buildPiWorkerPrompt({
+    planMarkdown,
     planner: process.env.PLAITED_AUTORESEARCH_PLANNER ?? 'codex',
     programPath: relative(cwd, resolvedProgramPath) || resolvedProgramPath,
+    retryGuidance,
   })
 
   const provider = process.env.PLAITED_EXECUTION_PROVIDER ?? 'openrouter'
@@ -354,6 +393,8 @@ const main = async () => {
         primaryModel,
         fallbackModel: fallbackModel ?? null,
         thinking,
+        retryGuidancePath: retryGuidancePath ?? null,
+        planPath,
         programPath: resolvedProgramPath,
         prompt,
       },

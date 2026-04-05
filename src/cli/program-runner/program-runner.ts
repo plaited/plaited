@@ -18,6 +18,13 @@ const toJson = (value: unknown): string => JSON.stringify(value, null, 2)
 const matchesAllowedPath = ({ allowedPath, path }: { allowedPath: string; path: string }): boolean =>
   allowedPath.endsWith('/') ? path.startsWith(allowedPath) : path === allowedPath
 
+const getRetryGuidancePath = (runDir: string): string => join(runDir, 'retry-guidance.md')
+
+const isInsideRunDir = ({ path, runDir, workspaceRoot }: { path: string; runDir: string; workspaceRoot: string }) => {
+  const relativeRunDir = normalizePath(relative(workspaceRoot, runDir))
+  return path === relativeRunDir || path.startsWith(`${relativeRunDir}/`)
+}
+
 const runCommand = async ({
   args,
   cwd,
@@ -183,6 +190,7 @@ export const substituteProgramRunnerCommand = ({
   artifactDir,
   command,
   programPath,
+  retryGuidancePath,
   runDir,
   worktreePath,
 }: {
@@ -190,6 +198,7 @@ export const substituteProgramRunnerCommand = ({
   artifactDir: string
   command: string[]
   programPath: string
+  retryGuidancePath?: string
   runDir: string
   worktreePath: string
 }): string[] => {
@@ -197,6 +206,7 @@ export const substituteProgramRunnerCommand = ({
     '{{attempt}}': String(attempt),
     '{{artifact_dir}}': artifactDir,
     '{{program}}': programPath,
+    '{{retry_guidance}}': retryGuidancePath ?? '',
     '{{run_dir}}': runDir,
     '{{worktree}}': worktreePath,
   }
@@ -213,6 +223,25 @@ export const substituteProgramRunnerCommand = ({
 const writeAttemptStatus = async ({ attemptDir, run }: { attemptDir: string; run: ProgramRunnerRun }) => {
   await Bun.write(join(attemptDir, 'status.json'), toJson(ProgramRunnerRunSchema.parse(run)))
 }
+
+const buildScopeViolationGuidance = ({
+  disallowedPaths,
+  allowedPaths,
+}: {
+  disallowedPaths: string[]
+  allowedPaths: string[]
+}) =>
+  [
+    'Previous attempt failed because it touched files outside the allowed writable roots.',
+    '',
+    'Disallowed paths:',
+    ...disallowedPaths.map((path) => `- ${path}`),
+    '',
+    'Allowed writable roots:',
+    ...allowedPaths.map((path) => `- ${path}`),
+    '',
+    'Retry with a narrower edit set. Only modify files inside the allowed writable roots.',
+  ].join('\n')
 
 const getChangedPaths = async ({ cwd }: { cwd: string }): Promise<string[]> => {
   const [trackedResult, untrackedResult] = await Promise.all([
@@ -271,6 +300,51 @@ const summarizeAttemptChanges = async ({ cwd }: { cwd: string }): Promise<string
   return sections.join('\n\n')
 }
 
+const getExistingChangedPaths = async ({
+  changedPaths,
+  cwd,
+}: {
+  changedPaths: string[]
+  cwd: string
+}): Promise<string[]> => {
+  const existing: string[] = []
+  for (const changedPath of changedPaths) {
+    if (await Bun.file(join(cwd, changedPath)).exists()) {
+      existing.push(changedPath)
+    }
+  }
+  return existing
+}
+
+const runValidationStep = async ({
+  args,
+  attempt,
+  cwd,
+  name,
+}: {
+  args: string[]
+  attempt: ProgramRunnerRun['attempts'][number]
+  cwd: string
+  name: 'format' | 'typecheck' | 'targeted-tests'
+}) => {
+  const result = await runCommand({
+    args,
+    cwd,
+  })
+
+  await Bun.write(join(attempt.artifactDir, `${name}.stdout.log`), result.stdout)
+  await Bun.write(join(attempt.artifactDir, `${name}.stderr.log`), result.stderr)
+
+  if (name === 'format') attempt.formatExitCode = result.exitCode
+  if (name === 'typecheck') attempt.typecheckExitCode = result.exitCode
+  if (name === 'targeted-tests') {
+    attempt.targetedTestsExitCode = result.exitCode
+    attempt.validateExitCode = result.exitCode
+  }
+
+  return result
+}
+
 const createAttemptRecord = ({
   allowedPaths,
   attempt,
@@ -319,6 +393,7 @@ const ensureAttemptWorktree = async ({
 const executeAttempt = async ({
   attempt,
   baseRef,
+  baselineWorkspaceChangedPaths,
   programPath,
   runDir,
   validateCommand,
@@ -327,6 +402,7 @@ const executeAttempt = async ({
 }: {
   attempt: ProgramRunnerRun['attempts'][number]
   baseRef: string
+  baselineWorkspaceChangedPaths: string[]
   programPath: string
   runDir: string
   validateCommand?: string[]
@@ -349,6 +425,7 @@ const executeAttempt = async ({
       artifactDir: attempt.artifactDir,
       command: workerCommand,
       programPath,
+      retryGuidancePath: getRetryGuidancePath(runDir),
       runDir,
       worktreePath: attempt.worktreePath,
     })
@@ -373,6 +450,12 @@ const executeAttempt = async ({
     const outOfScopePaths = changedPaths.filter(
       (path) => !attempt.allowedPaths.some((allowedPath) => matchesAllowedPath({ allowedPath, path })),
     )
+    const workspaceChangedPaths = await getChangedPaths({
+      cwd: workspaceRoot,
+    })
+    const repoOutOfScopePaths = workspaceChangedPaths.filter(
+      (path) => !baselineWorkspaceChangedPaths.includes(path) && !isInsideRunDir({ path, runDir, workspaceRoot }),
+    )
     const changeSummary = await summarizeAttemptChanges({
       cwd: attempt.worktreePath,
     })
@@ -381,17 +464,72 @@ const executeAttempt = async ({
     if (outOfScopePaths.length > 0) {
       attempt.outOfScopePaths = outOfScopePaths
     }
+    if (repoOutOfScopePaths.length > 0) {
+      attempt.repoOutOfScopePaths = repoOutOfScopePaths
+    }
 
     await Bun.write(join(attempt.artifactDir, 'changed-paths.json'), toJson(changedPaths))
     await Bun.write(join(attempt.artifactDir, 'diff-summary.txt'), changeSummary.length > 0 ? `${changeSummary}\n` : '')
 
     if (outOfScopePaths.length > 0) {
       await Bun.write(join(attempt.artifactDir, 'out-of-scope-paths.json'), toJson(outOfScopePaths))
+      const guidance = buildScopeViolationGuidance({
+        disallowedPaths: outOfScopePaths,
+        allowedPaths: attempt.allowedPaths,
+      })
+      await Bun.write(getRetryGuidancePath(runDir), `${guidance}\n`)
       attempt.status = 'failed'
       attempt.error = `Worker changed paths outside writable roots: ${outOfScopePaths.join(', ')}`
       attempt.finishedAt = new Date().toISOString()
       return
     }
+
+    if (repoOutOfScopePaths.length > 0) {
+      await Bun.write(join(attempt.artifactDir, 'repo-out-of-scope-paths.json'), toJson(repoOutOfScopePaths))
+      const guidance = buildScopeViolationGuidance({
+        disallowedPaths: repoOutOfScopePaths,
+        allowedPaths: attempt.allowedPaths,
+      })
+      await Bun.write(getRetryGuidancePath(runDir), `${guidance}\n`)
+      attempt.status = 'failed'
+      attempt.error = `Worker changed files in the main workspace: ${repoOutOfScopePaths.join(', ')}`
+      attempt.finishedAt = new Date().toISOString()
+      return
+    }
+  }
+
+  const changedPaths = attempt.changedPaths ?? []
+  const existingChangedPaths = await getExistingChangedPaths({
+    changedPaths,
+    cwd: attempt.worktreePath,
+  })
+
+  if (existingChangedPaths.length > 0) {
+    const formatResult = await runValidationStep({
+      args: ['bunx', 'biome', 'check', '--write', ...existingChangedPaths],
+      attempt,
+      cwd: attempt.worktreePath,
+      name: 'format',
+    })
+    if (formatResult.exitCode !== 0) {
+      attempt.status = 'failed'
+      attempt.error = formatResult.stderr.trim() || `Format command failed with exit code ${formatResult.exitCode}`
+      attempt.finishedAt = new Date().toISOString()
+      return
+    }
+  }
+
+  const typecheckResult = await runValidationStep({
+    args: ['bun', '--bun', 'tsc', '--noEmit'],
+    attempt,
+    cwd: attempt.worktreePath,
+    name: 'typecheck',
+  })
+  if (typecheckResult.exitCode !== 0) {
+    attempt.status = 'failed'
+    attempt.error = typecheckResult.stderr.trim() || `Typecheck failed with exit code ${typecheckResult.exitCode}`
+    attempt.finishedAt = new Date().toISOString()
+    return
   }
 
   if (validateCommand && validateCommand.length > 0) {
@@ -400,15 +538,17 @@ const executeAttempt = async ({
       artifactDir: attempt.artifactDir,
       command: validateCommand,
       programPath,
+      retryGuidancePath: getRetryGuidancePath(runDir),
       runDir,
       worktreePath: attempt.worktreePath,
     })
     attempt.validateCommand = command
-    const result = await runCommand({
+    const result = await runValidationStep({
       args: command,
+      attempt,
       cwd: attempt.worktreePath,
+      name: 'targeted-tests',
     })
-    attempt.validateExitCode = result.exitCode
     await Bun.write(join(attempt.artifactDir, 'validate.stdout.log'), result.stdout)
     await Bun.write(join(attempt.artifactDir, 'validate.stderr.log'), result.stderr)
     if (result.exitCode !== 0) {
@@ -470,6 +610,9 @@ export const runFactoryProgram = async (input: ProgramRunnerRunInput): Promise<P
     rootDir: parsed.runDir,
     workspaceRoot,
   })
+  const baselineWorkspaceChangedPaths = await getChangedPaths({
+    cwd: workspaceRoot,
+  })
 
   await Bun.$`mkdir -p ${runDir}`.cwd(workspaceRoot).quiet()
 
@@ -502,6 +645,7 @@ export const runFactoryProgram = async (input: ProgramRunnerRunInput): Promise<P
         await executeAttempt({
           attempt,
           baseRef: parsed.baseRef,
+          baselineWorkspaceChangedPaths,
           programPath: resolved.relativeProgramPath,
           runDir,
           validateCommand: parsed.validateCommand,

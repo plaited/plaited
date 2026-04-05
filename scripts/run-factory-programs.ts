@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { mkdir } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 
 type ProgramPhase = {
   name: string
@@ -24,8 +24,12 @@ type ProgramRunAttempt = {
   attempt: number
   changedPaths?: string[]
   error?: string
+  formatExitCode?: number
   outOfScopePaths?: string[]
+  repoOutOfScopePaths?: string[]
   status: 'prepared' | 'running' | 'succeeded' | 'failed'
+  targetedTestsExitCode?: number
+  typecheckExitCode?: number
   validateExitCode?: number
   workerExitCode?: number
   worktreePath: string
@@ -69,6 +73,7 @@ type PlannedRunInput = {
   attempts: number
   parallel: number
   baseRef: string
+  runDir: string
   workerCommand: string[]
   validateCommand: string[]
 }
@@ -183,12 +188,26 @@ const createLogger = (path: string): Logger => ({
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-const runCommand = async ({ args, cwd }: { args: string[]; cwd: string }): Promise<CommandResult> => {
+const runCommand = async ({
+  args,
+  cwd,
+  stdin,
+}: {
+  args: string[]
+  cwd: string
+  stdin?: string
+}): Promise<CommandResult> => {
   const proc = Bun.spawn(args, {
     cwd,
+    stdin: stdin === undefined ? 'ignore' : 'pipe',
     stdout: 'pipe',
     stderr: 'pipe',
   })
+
+  if (stdin !== undefined && proc.stdin) {
+    proc.stdin.write(stdin)
+    proc.stdin.end()
+  }
 
   const [stdout, stderr, exitCode] = await Promise.all([
     new Response(proc.stdout).text(),
@@ -203,21 +222,101 @@ const runCommand = async ({ args, cwd }: { args: string[]; cwd: string }): Promi
   }
 }
 
+const buildProgramRunDir = ({ programPath, workspaceRoot }: { programPath: string; workspaceRoot: string }) =>
+  resolve(workspaceRoot, '.worktrees', 'factory-program-runner', basename(dirname(programPath)), timestamp())
+
+const getExecutionPlanPath = (runDir: string) => join(runDir, 'execution-plan.md')
+
+const buildPlannerPrompt = async ({ programPath }: { programPath: string }) => {
+  const programMarkdown = await Bun.file(resolve(programPath)).text()
+
+  return [
+    'Read AGENTS.md and the provided factory-program lane.',
+    'Produce an execution plan for a separate coding agent to implement in a detached worktree.',
+    'Do not write code. Do not modify files. Plan only.',
+    'Return Markdown only.',
+    'Keep the plan concrete and bounded.',
+    'Include these sections exactly: Objective, Constraints, Execution Steps, Validation, Exit Criteria.',
+    'In Execution Steps, list a short ordered sequence of concrete edits/tests and mention the expected file paths when you can infer them.',
+    'Respect the writable roots declared by the lane program and call them out under Constraints.',
+    'In Validation, require formatting, type checking, and targeted tests for the affected files or lane surface only. Do not propose running a full unrelated test suite.',
+    '',
+    `Lane program: @${programPath}`,
+    '',
+    programMarkdown,
+  ].join('\n')
+}
+
+const generateExecutionPlan = async ({
+  logger,
+  planner,
+  programPath,
+  runDir,
+  workspaceRoot,
+}: {
+  logger: Logger
+  planner: string
+  programPath: string
+  runDir: string
+  workspaceRoot: string
+}) => {
+  await mkdir(runDir, { recursive: true })
+
+  const plannerPrompt = await buildPlannerPrompt({ programPath })
+  const plannerPromptPath = join(runDir, 'planner.prompt.md')
+  const plannerStdoutPath = join(runDir, 'planner.stdout.log')
+  const plannerStderrPath = join(runDir, 'planner.stderr.log')
+  const planPath = getExecutionPlanPath(runDir)
+
+  await Bun.write(plannerPromptPath, `${plannerPrompt}\n`)
+
+  const result = await runCommand({
+    args: [planner, 'exec', '-s', 'read-only', '-a', 'never', '-C', workspaceRoot, '-o', planPath, plannerPrompt],
+    cwd: workspaceRoot,
+  })
+
+  await Bun.write(plannerStdoutPath, result.stdout)
+  await Bun.write(plannerStderrPath, result.stderr)
+
+  if (result.exitCode !== 0) {
+    throw new Error(result.stderr.trim() || result.stdout.trim() || `Planner failed for ${programPath}`)
+  }
+
+  const planFile = Bun.file(planPath)
+  if (!(await planFile.exists())) {
+    throw new Error(`Planner did not produce execution plan for ${programPath}`)
+  }
+
+  const planMarkdown = (await planFile.text()).trim()
+  if (!planMarkdown) {
+    throw new Error(`Planner produced empty execution plan for ${programPath}`)
+  }
+
+  await logger.write(`planner-finished program=${programPath} planPath=${planPath}`)
+  return {
+    planMarkdown,
+    planPath,
+  }
+}
+
 const createPlannedRunInput = ({
   attempts,
   baseRef,
   parallel,
   programPath,
+  runDir,
 }: {
   attempts: number
   baseRef: string
   parallel: number
   programPath: string
+  runDir: string
 }): PlannedRunInput => ({
   programPath,
   attempts,
   parallel,
   baseRef,
+  runDir,
   workerCommand: [
     'bun',
     'scripts/run-pi-factory-worker.ts',
@@ -225,6 +324,10 @@ const createPlannedRunInput = ({
     '{{program}}',
     '--artifact-dir',
     '{{artifact_dir}}',
+    '--plan',
+    '{{run_dir}}/execution-plan.md',
+    '--retry-guidance',
+    '{{run_dir}}/retry-guidance.md',
   ],
   validateCommand: ['bun', 'scripts/factory-validate.ts', '--program', '{{program}}'],
 })
@@ -234,12 +337,14 @@ const callProgramRunner = async ({
   baseRef,
   parallel,
   programPath,
+  runDir,
   workspaceRoot,
 }: {
   attempts: number
   baseRef: string
   parallel: number
   programPath: string
+  runDir: string
   workspaceRoot: string
 }): Promise<ProgramRunRecord> => {
   const input = createPlannedRunInput({
@@ -247,6 +352,7 @@ const callProgramRunner = async ({
     baseRef,
     parallel,
     programPath,
+    runDir,
   })
 
   const result = await runCommand({
@@ -282,6 +388,7 @@ const runPreflight = async ({ workspaceRoot }: { workspaceRoot: string }): Promi
 
   const commands: Array<{ name: string; args: string[] }> = [
     { name: 'bun-version', args: ['bun', '--version'] },
+    { name: 'codex-version', args: ['codex', '--version'] },
     { name: 'git-version', args: ['git', '--version'] },
     { name: 'pi-version', args: ['bunx', 'pi', '--version'] },
     { name: 'typecheck', args: ['bun', '--bun', 'tsc', '--noEmit'] },
@@ -467,14 +574,10 @@ const callOpenRouterReview = async ({
   throw new Error(`OpenRouter review exhausted retries for model ${model}`)
 }
 
-export const buildJudgePrompt = async ({
-  programPath,
-  run,
-}: {
-  programPath: string
-  run: ProgramRunRecord
-}): Promise<string> => {
+const buildJudgePayload = async ({ programPath, run }: { programPath: string; run: ProgramRunRecord }) => {
   const programMarkdown = await Bun.file(resolve(programPath)).text()
+  const executionPlanPath = getExecutionPlanPath(run.runDir)
+  const executionPlan = (await Bun.file(executionPlanPath).exists()) ? await Bun.file(executionPlanPath).text() : null
   const attempts = await Promise.all(
     run.attempts.map(async (attempt) => ({
       attempt: attempt.attempt,
@@ -484,6 +587,7 @@ export const buildJudgePrompt = async ({
       error: attempt.error ?? null,
       changedPaths: attempt.changedPaths ?? [],
       outOfScopePaths: attempt.outOfScopePaths ?? [],
+      repoOutOfScopePaths: attempt.repoOutOfScopePaths ?? [],
       diffStat: await getAttemptDiffSummary(attempt),
       changedFileExcerpts: await readChangedFileExcerpts({
         attempt,
@@ -508,20 +612,49 @@ export const buildJudgePrompt = async ({
         attempt,
         fileName: 'validate.stderr.log',
       }),
+      formatStdout: await readAttemptArtifactExcerpt({
+        attempt,
+        fileName: 'format.stdout.log',
+      }),
+      formatStderr: await readAttemptArtifactExcerpt({
+        attempt,
+        fileName: 'format.stderr.log',
+      }),
+      typecheckStdout: await readAttemptArtifactExcerpt({
+        attempt,
+        fileName: 'typecheck.stdout.log',
+      }),
+      typecheckStderr: await readAttemptArtifactExcerpt({
+        attempt,
+        fileName: 'typecheck.stderr.log',
+      }),
+      targetedTestsStdout: await readAttemptArtifactExcerpt({
+        attempt,
+        fileName: 'targeted-tests.stdout.log',
+      }),
+      targetedTestsStderr: await readAttemptArtifactExcerpt({
+        attempt,
+        fileName: 'targeted-tests.stderr.log',
+      }),
     })),
   )
 
-  return JSON.stringify(
-    {
-      programPath,
-      lane: run.lane,
-      programMarkdown,
-      attempts,
-    },
-    null,
-    2,
-  )
+  return {
+    programPath,
+    lane: run.lane,
+    executionPlan,
+    programMarkdown,
+    attempts,
+  }
 }
+
+export const buildJudgePrompt = async ({
+  programPath,
+  run,
+}: {
+  programPath: string
+  run: ProgramRunRecord
+}): Promise<string> => JSON.stringify(await buildJudgePayload({ programPath, run }), null, 2)
 
 const createLaneSummary = ({
   judge,
@@ -571,8 +704,8 @@ const main = async () => {
       executionProvider: process.env.PLAITED_EXECUTION_PROVIDER ?? 'openrouter',
       executionModel: process.env.PLAITED_EXECUTION_MODEL ?? 'google/gemma-4-31b-it',
       executionFallbackModel: process.env.PLAITED_EXECUTION_FALLBACK_MODEL ?? 'google/gemma-4-31b-it',
-      judgeModel: process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'deepseek/deepseek-v3.2',
-      metaVerifierModel: process.env.PLAITED_META_VERIFIER_MODEL ?? 'minimax/minimax-m2.7',
+      judgeModel: process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'minimax/minimax-m2.7',
+      metaVerifierModel: process.env.PLAITED_META_VERIFIER_MODEL ?? 'deepseek/deepseek-v3.2',
       attempts,
       parallel,
       baseRef,
@@ -584,8 +717,8 @@ const main = async () => {
   await logger.write(
     `execution=${process.env.PLAITED_EXECUTION_PROVIDER ?? 'openrouter'}:${process.env.PLAITED_EXECUTION_MODEL ?? 'google/gemma-4-31b-it'}`,
   )
-  await logger.write(`judge=${process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'deepseek/deepseek-v3.2'}`)
-  await logger.write(`meta-verifier=${process.env.PLAITED_META_VERIFIER_MODEL ?? 'minimax/minimax-m2.7'}`)
+  await logger.write(`judge=${process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'minimax/minimax-m2.7'}`)
+  await logger.write(`meta-verifier=${process.env.PLAITED_META_VERIFIER_MODEL ?? 'deepseek/deepseek-v3.2'}`)
   await logger.write(
     `program-count=${programPaths.length} attempts=${attempts} parallel=${parallel} baseRef=${baseRef}`,
   )
@@ -620,11 +753,19 @@ const main = async () => {
   if (input.dryRun) {
     const plan = programPaths.map((programPath) => ({
       programPath,
+      runDir: buildProgramRunDir({
+        programPath,
+        workspaceRoot,
+      }),
       runInput: createPlannedRunInput({
         attempts,
         baseRef,
         parallel,
         programPath,
+        runDir: buildProgramRunDir({
+          programPath,
+          workspaceRoot,
+        }),
       }),
     }))
     await Bun.write(join(outputDir, 'dry-run-plan.json'), toJson(plan))
@@ -648,28 +789,44 @@ const main = async () => {
 
   for (const programPath of programPaths) {
     await logger.write(`program-start program=${programPath}`)
+    const runDir = buildProgramRunDir({
+      programPath,
+      workspaceRoot,
+    })
+    const planner = process.env.PLAITED_AUTORESEARCH_PLANNER ?? 'codex'
+    await logger.write(`planner-start program=${programPath} planner=${planner}`)
+    await generateExecutionPlan({
+      logger,
+      planner,
+      programPath,
+      runDir,
+      workspaceRoot,
+    })
     const run = await callProgramRunner({
       attempts,
       baseRef,
       parallel,
       programPath,
+      runDir,
       workspaceRoot,
     })
     await logger.write(`program-run-finished program=${programPath} runDir=${run.runDir}`)
 
-    const judgePrompt = await buildJudgePrompt({
+    const judgePayload = await buildJudgePayload({
       programPath,
       run,
     })
+    const judgePrompt = JSON.stringify(judgePayload, null, 2)
 
     const judge = await callOpenRouterReview({
       logger,
-      model: process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'deepseek/deepseek-v3.2',
+      model: process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'minimax/minimax-m2.7',
       system:
         'You are a strict judge for autonomous factory-program attempts. Return JSON with keys decision and reasoning only.',
       prompt: [
         'Judge whether this program-runner result should be promoted, deferred, or rejected.',
         'Prefer defer when validation passed but the evidence is still incomplete.',
+        'The executionPlan is the planner-approved target. Evaluate whether the worker substantially executed that plan within lane constraints.',
         judgePrompt,
       ].join('\n\n'),
     })
@@ -677,12 +834,12 @@ const main = async () => {
 
     const metaVerifier = await callOpenRouterReview({
       logger,
-      model: process.env.PLAITED_META_VERIFIER_MODEL ?? 'minimax/minimax-m2.7',
+      model: process.env.PLAITED_META_VERIFIER_MODEL ?? 'deepseek/deepseek-v3.2',
       system: 'You verify a prior judge result. Return JSON with keys decision and reasoning only.',
       prompt: JSON.stringify(
         {
           judge,
-          run,
+          evidence: judgePayload,
         },
         null,
         2,
