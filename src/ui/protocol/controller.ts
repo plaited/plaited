@@ -20,11 +20,16 @@
  */
 import type { BPEvent, BThreads, Disconnect, Handlers, Trigger, UseFeedback, UseSnapshot } from '../../behavioral.ts'
 import { BPEventSchema } from '../../behavioral.ts'
-import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../events.ts'
+import { AGENT_TO_CONTROLLER_EVENTS } from '../../factories.ts'
 import { ueid } from '../../utils.ts'
 import { DelegatedListener, delegates } from '../dom/delegated-listener.ts'
 import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from '../render/template.constants.ts'
-import { CONTROLLER_ERRORS, SWAP_MODES, WEBSOCKET_LIFECYCLE_EVENTS } from './controller.constants.ts'
+import {
+  CONTROLLER_ERRORS,
+  CONTROLLER_TO_AGENT_EVENTS,
+  SWAP_MODES,
+  WEBSOCKET_LIFECYCLE_EVENTS,
+} from './controller.constants.ts'
 import type { ControllerHandlers, SwapMode } from './controller.schemas.ts'
 import { UpdateBehavioralModuleSchema, UpdateBehavioralResultSchema } from './controller.schemas.ts'
 

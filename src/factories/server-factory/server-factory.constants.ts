@@ -1,17 +1,27 @@
 import { keyMirror } from '../../utils.ts'
 
 /**
- * Error type constants for the server module.
+ * Server-to-controller protocol event keys emitted by the UI adapter layer.
+ *
+ * @public
+ */
+export const AGENT_TO_CONTROLLER_EVENTS = keyMirror('attrs', 'disconnect', 'render', 'update_behavioral')
+
+/**
+ * UI adapter lifecycle event keys emitted around client connection handling.
+ *
+ * @public
+ */
+export const UI_ADAPTER_LIFECYCLE_EVENTS = keyMirror('client_connected', 'client_disconnected', 'client_error')
+
+/**
+ * Server error detail keys emitted with `client_error` and related failure paths.
  *
  * @remarks
- * Used as error detail codes in `UI_ADAPTER_LIFECYCLE_EVENTS.client_error` triggers:
- * - `origin_rejected` — WebSocket upgrade denied due to origin mismatch
- * - `connection_rejected` — WebSocket upgrade denied by the connection auth seam
- * - `upgrade_failed` — WebSocket upgrade call returned false
- * - `malformed_message` — Client sent a message that failed JSON parse or Zod validation
- * - `protocol_missing` — WebSocket upgrade without `Sec-WebSocket-Protocol` header
- * - `not_found` — HTTP request for unmatched path (404)
- * - `internal_error` — Uncaught exception in request handler (500)
+ * `origin_rejected`, `connection_rejected`, and `upgrade_failed` describe
+ * WebSocket handshake failures. `malformed_message` and `protocol_missing`
+ * cover protocol violations from the client. `not_found` and
+ * `internal_error` represent HTTP request handling failures.
  *
  * @public
  */
@@ -26,7 +36,7 @@ export const SERVER_ERRORS = keyMirror(
 )
 
 /**
- * Behavioral event types for the server factory lane.
+ * Behavioral event keys used to drive the server factory lifecycle.
  *
  * @public
  */
@@ -43,7 +53,7 @@ export const SERVER_FACTORY_EVENTS = keyMirror(
 )
 
 /**
- * Default signal keys used by the server factory lane.
+ * Default signal keys written by the server factory state graph.
  *
  * @public
  */
@@ -53,17 +63,13 @@ export const SERVER_FACTORY_SIGNAL_KEYS = {
 } as const
 
 /**
- * Default Content-Security-Policy header value.
+ * Default Content-Security-Policy header value for server-generated responses.
  *
  * @remarks
- * Mitigates two attack vectors (see plaited-ui skill, references/websocket-decisions.md):
- * - `connect-src 'self'` — blocks Cross-Site WebSocket Hijacking (CSWSH)
- * - `script-src 'self'` — prevents injected inline scripts from executing
- * - `style-src 'self' 'unsafe-inline'` — allows SSR-generated inline `<style>` tags
- * - `default-src 'self'` — baseline restriction for all other resource types
- *
- * Callers should include this (or a custom policy) on their own route responses
- * since Bun static routes bypass the `fetch` handler.
+ * The policy allows same-origin document, script, and WebSocket access while
+ * permitting inline styles required by SSR output. Callers must still attach
+ * this header, or a stricter replacement, on routes that bypass the factory's
+ * `fetch` handler such as Bun static routes.
  *
  * @public
  */

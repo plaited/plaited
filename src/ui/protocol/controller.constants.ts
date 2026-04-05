@@ -1,25 +1,33 @@
-import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../events.ts'
+import { AGENT_TO_CONTROLLER_EVENTS } from '../../factories.ts'
 import { keyMirror } from '../../utils.ts'
+
 /**
- * Event type constants for the generative UI controller protocol.
+ * Controller-to-agent protocol event keys emitted from the browser runtime.
+ *
+ * @public
+ */
+export const CONTROLLER_TO_AGENT_EVENTS = keyMirror('user_action', 'snapshot')
+
+/**
+ * WebSocket lifecycle event keys emitted within the controller runtime.
  *
  * @remarks
- * WebSocket-internal lifecycle events for the controller.
- * Cross-module events live in `src/events/` (`UI_ADAPTER_LIFECYCLE_EVENTS`,
- * `AGENT_TO_CONTROLLER_EVENTS`, `CONTROLLER_TO_AGENT_EVENTS`).
+ * These events stay inside the browser-side controller implementation. Shared
+ * protocol events that cross the client/server boundary are defined in
+ * `AGENT_TO_CONTROLLER_EVENTS` and `CONTROLLER_TO_AGENT_EVENTS`.
  *
  * @public
  */
 export const WEBSOCKET_LIFECYCLE_EVENTS = keyMirror('connect', 'retry', 'on_ws_error', 'on_ws_message')
 
 /**
- * Event types blocked from the external `restrictedTrigger`.
+ * Event keys that server-originated messages must not trigger through `restrictedTrigger`.
  *
  * @remarks
- * Server messages arrive via WebSocket, parsed, and dispatched through
- * `restrictedTrigger`. Internal lifecycle events (`connect`, `retry`, etc.)
- * and client-to-server events (`client_connected`, `user_action`, etc.) are
- * in this set to prevent server-side messages from triggering internal state.
+ * The controller dispatches parsed server messages through a restricted
+ * trigger surface. This set excludes browser-local lifecycle events and
+ * controller-to-agent events so inbound messages cannot impersonate internal
+ * state transitions.
  *
  * @public
  */
@@ -34,21 +42,18 @@ export const RESTRICTED_EVENTS = keyMirror(
 )
 
 /**
- * DOM insertion modes for the `render` server message.
+ * Supported DOM insertion modes for `render` protocol messages.
  *
  * @remarks
- * Maps to standard DOM insertion methods:
- * - `innerHTML` — replace all children (default)
- * - `outerHTML` — replace the target element itself
- * - `afterbegin` / `beforeend` — prepend / append inside target
- * - `beforebegin` / `afterend` — insert before / after target
+ * These values align with the insertion positions accepted by the controller's
+ * DOM update path, plus `innerHTML` and `outerHTML` replacement modes.
  *
  * @public
  */
 export const SWAP_MODES = keyMirror('afterbegin', 'afterend', 'beforebegin', 'beforeend', 'innerHTML', 'outerHTML')
 
 /**
- * Error message keys for the controller runtime.
+ * Controller error detail keys emitted for protocol handling failures.
  *
  * @public
  */

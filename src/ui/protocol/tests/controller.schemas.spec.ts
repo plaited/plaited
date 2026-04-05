@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../../events.ts'
-import { SWAP_MODES } from '../controller.constants.ts'
+import { AGENT_TO_CONTROLLER_EVENTS } from '../../../factories.ts'
+import { CONTROLLER_TO_AGENT_EVENTS, SWAP_MODES } from '../controller.constants.ts'
 import {
   AttrsMessageSchema,
   DisconnectMessageSchema,

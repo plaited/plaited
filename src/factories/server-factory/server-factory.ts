@@ -1,11 +1,11 @@
 import { AGENT_EVENTS, type Factory } from '../../agent.ts'
-import { UI_ADAPTER_LIFECYCLE_EVENTS } from '../../events.ts'
 import { ClientMessageSchema } from '../../ui.ts'
 import {
   DEFAULT_CSP,
   SERVER_ERRORS,
   SERVER_FACTORY_EVENTS,
   SERVER_FACTORY_SIGNAL_KEYS,
+  UI_ADAPTER_LIFECYCLE_EVENTS,
 } from './server-factory.constants.ts'
 import {
   type ServerFactoryConfig,

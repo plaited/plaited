@@ -1,6 +1,5 @@
 import { afterAll, describe, expect, test } from 'bun:test'
-import { UI_ADAPTER_LIFECYCLE_EVENTS } from '../../../events.ts'
-import { DEFAULT_CSP, SERVER_ERRORS } from '../server-factory.constants.ts'
+import { DEFAULT_CSP, SERVER_ERRORS, UI_ADAPTER_LIFECYCLE_EVENTS } from '../server-factory.constants.ts'
 import { createServer } from '../server-factory.ts'
 import type { ServerHandle } from '../server-factory.types.ts'
 
