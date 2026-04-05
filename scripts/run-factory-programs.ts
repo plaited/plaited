@@ -1011,6 +1011,7 @@ const runCodexPromotion = async ({
   const result = await runCommand({
     args: ['codex', '-a', 'never', 'exec', '-s', 'workspace-write', '-C', workspaceRoot, '-o', lastMessagePath, '-'],
     cwd: workspaceRoot,
+    env: buildPlannerEnvironment(process.env),
     stdin: prompt,
   })
 
