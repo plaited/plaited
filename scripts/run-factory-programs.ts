@@ -213,19 +213,42 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const DEFAULT_PLANNER_TIMEOUT_MS = Number(process.env.PLAITED_PLANNER_TIMEOUT_MS ?? 180_000)
 
+const PLANNER_ENV_BLOCKLIST = ['HF_TOKEN', 'OPENROUTER_API_KEY', 'OP_SERVICE_ACCOUNT_TOKEN', 'YDC_API_KEY'] as const
+
+export const buildPlannerEnvironment = (env: NodeJS.ProcessEnv): Record<string, string> => {
+  const nextEnv: Record<string, string> = {}
+  for (const [key, value] of Object.entries(env)) {
+    if (value === undefined) {
+      continue
+    }
+    if (PLANNER_ENV_BLOCKLIST.includes(key as (typeof PLANNER_ENV_BLOCKLIST)[number])) {
+      continue
+    }
+    if (key.startsWith('VARLOCK_')) {
+      continue
+    }
+
+    nextEnv[key] = value
+  }
+  return nextEnv
+}
+
 const runCommand = async ({
   args,
   cwd,
+  env,
   stdin,
   timeoutMs,
 }: {
   args: string[]
   cwd: string
+  env?: Record<string, string>
   stdin?: string
   timeoutMs?: number
 }): Promise<CommandResult> => {
   const proc = Bun.spawn(args, {
     cwd,
+    env,
     stdin: stdin === undefined ? 'ignore' : 'pipe',
     stdout: 'pipe',
     stderr: 'pipe',
@@ -321,6 +344,7 @@ const generateExecutionPlan = async ({
   const result = await runCommand({
     args: [planner, '-a', 'never', 'exec', '-s', 'read-only', '-C', workspaceRoot, '-o', planPath, plannerPrompt],
     cwd: workspaceRoot,
+    env: buildPlannerEnvironment(process.env),
     timeoutMs: DEFAULT_PLANNER_TIMEOUT_MS,
   })
 

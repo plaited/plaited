@@ -6,6 +6,7 @@ import {
   buildJudgeInstruction,
   buildJudgePrompt,
   buildMetaVerifierPrompt,
+  buildPlannerEnvironment,
   buildPromotionPrompt,
   normalizeReviewDecision,
   parseModelReview,
@@ -54,6 +55,30 @@ describe('resolvePrograms', () => {
 
     expect(programs).toContain('dev-research/default-factories/program.md')
     expect(programs).toContain('dev-research/agent-bootstrap/program.md')
+  })
+})
+
+describe('buildPlannerEnvironment', () => {
+  test('strips secret and varlock-specific environment keys', () => {
+    const result = buildPlannerEnvironment({
+      HOME: '/tmp/home',
+      OPENROUTER_API_KEY: 'secret',
+      OP_SERVICE_ACCOUNT_TOKEN: 'op-secret',
+      HF_TOKEN: 'hf-secret',
+      YDC_API_KEY: 'ydc-secret',
+      VARLOCK_SESSION_ID: 'abc123',
+      PATH: '/usr/bin',
+      PLAITED_AUTORESEARCH_PLANNER: 'codex',
+    })
+
+    expect(result.HOME).toBe('/tmp/home')
+    expect(result.PATH).toBe('/usr/bin')
+    expect(result.PLAITED_AUTORESEARCH_PLANNER).toBe('codex')
+    expect(result.OPENROUTER_API_KEY).toBeUndefined()
+    expect(result.OP_SERVICE_ACCOUNT_TOKEN).toBeUndefined()
+    expect(result.HF_TOKEN).toBeUndefined()
+    expect(result.YDC_API_KEY).toBeUndefined()
+    expect(result.VARLOCK_SESSION_ID).toBeUndefined()
   })
 })
 
