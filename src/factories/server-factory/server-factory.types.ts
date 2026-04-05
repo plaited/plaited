@@ -4,24 +4,8 @@ import type { Trigger } from '../../behavioral.ts'
 import type { SERVER_ERRORS } from './server-factory.constants.ts'
 import type { WebSocketData } from './server-factory.schemas.ts'
 
-/** Route map type extracted from Bun.serve, parameterized with our WebSocket data. */
-export type ServeRoutes = Bun.Serve.Routes<WebSocketData, string>
-
-export type RouteContributions = Record<string, ServeRoutes>
-
-export type RouteConflictOwner = { kind: 'baseline' } | { kind: 'contribution'; contributorId: string }
-
-export type RouteConflict = {
-  path: string
-  owners: RouteConflictOwner[]
-}
-
-export type RouteMergeResult = { ok: true; routes: ServeRoutes } | { ok: false; conflicts: RouteConflict[] }
-
-export type ServerFactoryInitialConfig = Partial<CreateServerOptions> & {
-  autostart?: boolean
-  routeContributions?: RouteContributions
-}
+/** Route map type extracted from Bun.serve, parameterized with our WebSocket data */
+type ServeRoutes = Bun.Serve.Routes<WebSocketData, string>
 
 /**
  * Detail payload for the `client_connected` event.
@@ -181,7 +165,7 @@ export type ServerHandle = {
 export type CreateServerFactoryOptions = {
   configSignalKey?: string
   statusSignalKey?: string
-  initialConfig?: ServerFactoryInitialConfig
+  initialConfig?: Partial<CreateServerOptions> & { autostart?: boolean }
 }
 
 /**

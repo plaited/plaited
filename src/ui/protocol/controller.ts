@@ -20,7 +20,7 @@
  */
 import type { BPEvent, BThreads, Disconnect, Handlers, Trigger, UseFeedback, UseSnapshot } from '../../behavioral.ts'
 import { BPEventSchema } from '../../behavioral.ts'
-import { AGENT_TO_CONTROLLER_EVENTS } from '../../factories/server-factory/server-factory.constants.ts'
+import { AGENT_TO_CONTROLLER_EVENTS } from '../../factories.ts'
 import { ueid } from '../../utils.ts'
 import { DelegatedListener, delegates } from '../dom/delegated-listener.ts'
 import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from '../render/template.constants.ts'

@@ -1,6 +1,5 @@
 import * as z from 'zod'
-import { SERVER_FACTORY_BASELINE_ROUTE_OWNER } from './server-factory.constants.ts'
-import type { AuthenticateConnection, CreateServerOptions, RouteContributions } from './server-factory.types.ts'
+import type { AuthenticateConnection, CreateServerOptions } from './server-factory.types.ts'
 
 /**
  * Schema for contextual data attached to each WebSocket connection.
@@ -48,20 +47,6 @@ const ServeRoutesSchema = z.custom<CreateServerOptions['routes']>(
   (value) => value !== null && typeof value === 'object',
 )
 
-export const RouteContributionsSchema: z.ZodType<RouteContributions> = z
-  .record(z.string(), ServeRoutesSchema)
-  .superRefine((contributions, context) => {
-    if (!(SERVER_FACTORY_BASELINE_ROUTE_OWNER in contributions)) {
-      return
-    }
-
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: `routeContributions cannot use reserved contributor id "${SERVER_FACTORY_BASELINE_ROUTE_OWNER}"`,
-      path: [SERVER_FACTORY_BASELINE_ROUTE_OWNER],
-    })
-  })
-
 const AllowedOriginsSchema = z.custom<Set<string> | undefined>((value) => value === undefined || value instanceof Set)
 
 const AuthenticateConnectionSchema = z.custom<AuthenticateConnection>((value) => typeof value === 'function')
@@ -75,7 +60,6 @@ const TLSOptionsSchema = z.custom<CreateServerOptions['tls']>((_) => true)
  */
 export const ServerFactoryConfigSchema = z.object({
   routes: ServeRoutesSchema.default({}),
-  routeContributions: RouteContributionsSchema.default({}),
   port: z.number().int().nonnegative().default(0),
   tls: TLSOptionsSchema.optional(),
   allowedOrigins: AllowedOriginsSchema.optional(),

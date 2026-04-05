@@ -16,7 +16,6 @@ import {
   type WebSocketData,
 } from './server-factory.schemas.ts'
 import type { CreateServerFactoryOptions, CreateServerOptions, ServerHandle } from './server-factory.types.ts'
-import { formatRouteConflict, mergeRoutes } from './server-factory.utils.ts'
 
 /**
  * Creates a thin I/O server — the transport bridge between
@@ -284,7 +283,6 @@ export const createServerFactory =
         schema: ServerFactoryConfigSchema,
         value: {
           routes: {},
-          routeContributions: {},
           port: 0,
           autostart: true,
           ...initialConfig,
@@ -308,48 +306,28 @@ export const createServerFactory =
       statusSignal.set?.(status)
     }
 
-    const clearLiveServer = (): boolean => {
+    const stopServer = () => {
       if (!liveServer) {
-        return false
+        publishStatus({ state: 'stopped' })
+        return
       }
 
       liveServer.stop(true)
       liveServer = undefined
-      return true
-    }
-
-    const stopServer = () => {
-      clearLiveServer()
       publishStatus({ state: 'stopped' })
       trigger({
         type: SERVER_FACTORY_EVENTS.server_stopped,
       })
     }
 
-    const failStartClosed = (error: string) => {
-      if (clearLiveServer()) {
-        publishStatus({ state: 'stopped' })
-        trigger({
-          type: SERVER_FACTORY_EVENTS.server_stopped,
-        })
-      }
-
-      publishStatus({ state: 'error', error })
-      trigger({
-        type: SERVER_FACTORY_EVENTS.server_error,
-        detail: { message: error },
-      })
-    }
-
     const startServer = () => {
       if (!canStartServer(currentConfig)) {
-        failStartClosed(`Cannot start server without authenticateConnection in signal '${configSignalKey}'`)
-        return
-      }
-
-      const mergeResult = mergeRoutes(currentConfig.routes, currentConfig.routeContributions ?? {})
-      if (!mergeResult.ok) {
-        failStartClosed(`Route conflict: ${mergeResult.conflicts.map(formatRouteConflict).join('; ')}`)
+        const error = `Cannot start server without authenticateConnection in signal '${configSignalKey}'`
+        publishStatus({ state: 'error', error })
+        trigger({
+          type: SERVER_FACTORY_EVENTS.server_error,
+          detail: { message: error },
+        })
         return
       }
 
@@ -358,7 +336,7 @@ export const createServerFactory =
 
       try {
         liveServer = createServer({
-          routes: mergeResult.routes,
+          routes: currentConfig.routes,
           port: currentConfig.port,
           tls: currentConfig.tls,
           allowedOrigins: currentConfig.allowedOrigins,
@@ -375,7 +353,12 @@ export const createServerFactory =
         })
       } catch (error) {
         liveServer = undefined
-        failStartClosed(error instanceof Error ? error.message : String(error))
+        const message = error instanceof Error ? error.message : String(error)
+        publishStatus({ state: 'error', error: message })
+        trigger({
+          type: SERVER_FACTORY_EVENTS.server_error,
+          detail: { message },
+        })
       }
     }
 
