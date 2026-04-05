@@ -90,6 +90,7 @@ type CommandResult = {
   exitCode: number
   stderr: string
   stdout: string
+  timedOut: boolean
 }
 
 type OpenRouterResponse = {
@@ -210,14 +211,18 @@ const createLogger = (path: string): Logger => ({
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
+const DEFAULT_PLANNER_TIMEOUT_MS = Number(process.env.PLAITED_PLANNER_TIMEOUT_MS ?? 180_000)
+
 const runCommand = async ({
   args,
   cwd,
   stdin,
+  timeoutMs,
 }: {
   args: string[]
   cwd: string
   stdin?: string
+  timeoutMs?: number
 }): Promise<CommandResult> => {
   const proc = Bun.spawn(args, {
     cwd,
@@ -225,6 +230,15 @@ const runCommand = async ({
     stdout: 'pipe',
     stderr: 'pipe',
   })
+
+  let timedOut = false
+  const timeout =
+    timeoutMs === undefined
+      ? undefined
+      : setTimeout(() => {
+          timedOut = true
+          proc.kill()
+        }, timeoutMs)
 
   if (stdin !== undefined && proc.stdin) {
     proc.stdin.write(stdin)
@@ -237,10 +251,15 @@ const runCommand = async ({
     proc.exited,
   ])
 
+  if (timeout) {
+    clearTimeout(timeout)
+  }
+
   return {
     exitCode,
     stderr,
     stdout,
+    timedOut,
   }
 }
 
@@ -302,10 +321,20 @@ const generateExecutionPlan = async ({
   const result = await runCommand({
     args: [planner, '-a', 'never', 'exec', '-s', 'read-only', '-C', workspaceRoot, '-o', planPath, plannerPrompt],
     cwd: workspaceRoot,
+    timeoutMs: DEFAULT_PLANNER_TIMEOUT_MS,
   })
 
   await Bun.write(plannerStdoutPath, result.stdout)
   await Bun.write(plannerStderrPath, result.stderr)
+
+  if (result.timedOut) {
+    await logger.write(
+      `planner-timeout program=${programPath} timeoutMs=${DEFAULT_PLANNER_TIMEOUT_MS} stdout=${plannerStdoutPath} stderr=${plannerStderrPath}`,
+    )
+    throw new Error(
+      `Planner timed out after ${DEFAULT_PLANNER_TIMEOUT_MS}ms for ${programPath}. Inspect ${plannerStdoutPath} and ${plannerStderrPath}.`,
+    )
+  }
 
   if (result.exitCode !== 0) {
     throw new Error(result.stderr.trim() || result.stdout.trim() || `Planner failed for ${programPath}`)
