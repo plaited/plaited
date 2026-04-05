@@ -1,4 +1,4 @@
-import { AGENT_TO_CONTROLLER_EVENTS } from '../../factories.ts'
+import { AGENT_TO_CONTROLLER_EVENTS } from '../../factories/server-factory/server-factory.constants.ts'
 import { keyMirror } from '../../utils.ts'
 
 /**

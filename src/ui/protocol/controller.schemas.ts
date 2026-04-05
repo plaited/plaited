@@ -7,7 +7,7 @@ import {
   SnapshotMessageSchema,
   type Trigger,
 } from '../../behavioral.ts'
-import { AGENT_TO_CONTROLLER_EVENTS } from '../../factories.ts'
+import { AGENT_TO_CONTROLLER_EVENTS } from '../../factories/server-factory/server-factory.constants.ts'
 import { isTypeOf, trueTypeOf } from '../../utils.ts'
 import { CONTROLLER_TO_AGENT_EVENTS, SWAP_MODES } from './controller.constants.ts'
 // ─── Server → Client Message Schemas ────────────────────────────────────────
