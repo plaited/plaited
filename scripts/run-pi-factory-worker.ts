@@ -435,7 +435,7 @@ const main = async () => {
     allowedPaths,
     programMarkdown,
     planMarkdown,
-    planner: process.env.PLAITED_AUTORESEARCH_PLANNER ?? 'codex',
+    planner: process.env.PLAITED_AUTORESEARCH_PLANNER ?? 'pi',
     programPath: relative(cwd, resolvedProgramPath) || resolvedProgramPath,
     retryGuidance,
   })
@@ -449,7 +449,7 @@ const main = async () => {
     resolve(artifactDir, 'worker.request.json'),
     `${JSON.stringify(
       {
-        planner: process.env.PLAITED_AUTORESEARCH_PLANNER ?? 'codex',
+        planner: process.env.PLAITED_AUTORESEARCH_PLANNER ?? 'pi',
         provider,
         primaryModel,
         fallbackModel: fallbackModel ?? null,

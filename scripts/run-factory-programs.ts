@@ -110,6 +110,7 @@ type ReviewArtifact = {
 }
 
 type PromotionArtifact = {
+  model: string
   prompt: string
   rawContent: string
   result: PromotionResult
@@ -212,26 +213,8 @@ const createLogger = (path: string): Logger => ({
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const DEFAULT_PLANNER_TIMEOUT_MS = Number(process.env.PLAITED_PLANNER_TIMEOUT_MS ?? 180_000)
-
-const PLANNER_ENV_BLOCKLIST = ['HF_TOKEN', 'OPENROUTER_API_KEY', 'OP_SERVICE_ACCOUNT_TOKEN', 'YDC_API_KEY'] as const
-
-export const buildPlannerEnvironment = (env: NodeJS.ProcessEnv): Record<string, string> => {
-  const nextEnv: Record<string, string> = {}
-  for (const [key, value] of Object.entries(env)) {
-    if (value === undefined) {
-      continue
-    }
-    if (PLANNER_ENV_BLOCKLIST.includes(key as (typeof PLANNER_ENV_BLOCKLIST)[number])) {
-      continue
-    }
-    if (key.startsWith('VARLOCK_')) {
-      continue
-    }
-
-    nextEnv[key] = value
-  }
-  return nextEnv
-}
+const DEFAULT_PI_AGENT_TIMEOUT_MS = Number(process.env.PLAITED_PI_AGENT_TIMEOUT_MS ?? 300_000)
+const PI_AGENT_ENV_BLOCKLIST = ['HF_TOKEN', 'OP_SERVICE_ACCOUNT_TOKEN', 'YDC_API_KEY'] as const
 
 const runCommand = async ({
   args,
@@ -286,6 +269,85 @@ const runCommand = async ({
   }
 }
 
+export const buildPiAgentEnvironment = (env: NodeJS.ProcessEnv): Record<string, string> => {
+  const nextEnv: Record<string, string> = {}
+  for (const [key, value] of Object.entries(env)) {
+    if (value === undefined) {
+      continue
+    }
+    if (PI_AGENT_ENV_BLOCKLIST.includes(key as (typeof PI_AGENT_ENV_BLOCKLIST)[number])) {
+      continue
+    }
+    if (key.startsWith('VARLOCK_')) {
+      continue
+    }
+    nextEnv[key] = value
+  }
+  return nextEnv
+}
+
+export const resolvePlannerKind = (planner: string | undefined): 'pi' => {
+  const normalized = planner?.trim().toLowerCase() ?? 'pi'
+  if (normalized === '' || normalized === 'pi') {
+    return 'pi'
+  }
+
+  throw new Error(`Unsupported planner '${planner}'. Only 'pi' is supported.`)
+}
+
+const runPiOrchestratorAgent = async ({
+  cwd,
+  model,
+  outputFile,
+  promptFile,
+  provider,
+  stderrFile,
+  stdoutFile,
+  thinking,
+  timeoutMs,
+  toolMode,
+}: {
+  cwd: string
+  model: string
+  outputFile: string
+  promptFile: string
+  provider: string
+  stderrFile: string
+  stdoutFile: string
+  thinking: string
+  timeoutMs: number
+  toolMode: 'read-only' | 'workspace-write'
+}) =>
+  runCommand({
+    args: [
+      'bun',
+      'scripts/run-pi-orchestrator-agent.ts',
+      '--cwd',
+      cwd,
+      '--model',
+      model,
+      '--output-file',
+      outputFile,
+      '--prompt-file',
+      promptFile,
+      '--provider',
+      provider,
+      '--stderr-file',
+      stderrFile,
+      '--stdout-file',
+      stdoutFile,
+      '--thinking',
+      thinking,
+      '--timeout-ms',
+      String(timeoutMs),
+      '--tool-mode',
+      toolMode,
+    ],
+    cwd,
+    env: buildPiAgentEnvironment(process.env),
+    timeoutMs: timeoutMs + 5_000,
+  })
+
 const buildProgramRunDir = ({ programPath, workspaceRoot }: { programPath: string; workspaceRoot: string }) =>
   resolve(workspaceRoot, '.worktrees', 'factory-program-runner', basename(dirname(programPath)), timestamp())
 
@@ -320,13 +382,11 @@ const buildPlannerPrompt = async ({ programPath }: { programPath: string }) => {
 
 const generateExecutionPlan = async ({
   logger,
-  planner,
   programPath,
   runDir,
   workspaceRoot,
 }: {
   logger: Logger
-  planner: string
   programPath: string
   runDir: string
   workspaceRoot: string
@@ -341,35 +401,26 @@ const generateExecutionPlan = async ({
 
   await Bun.write(plannerPromptPath, `${plannerPrompt}\n`)
 
-  const result = await runCommand({
-    args: [planner, '-a', 'never', 'exec', '-s', 'read-only', '-C', workspaceRoot, '-o', planPath, plannerPrompt],
+  const planningProvider = process.env.PLAITED_PLANNING_PROVIDER ?? 'openrouter'
+  const planningModel = process.env.PLAITED_PLANNING_MODEL ?? 'xiaomi/mimo-v2-pro'
+  const result = await runPiOrchestratorAgent({
     cwd: workspaceRoot,
-    env: buildPlannerEnvironment(process.env),
+    model: planningModel,
+    outputFile: planPath,
+    promptFile: plannerPromptPath,
+    provider: planningProvider,
+    stderrFile: plannerStderrPath,
+    stdoutFile: plannerStdoutPath,
+    thinking: process.env.PLAITED_PLANNING_THINKING ?? 'high',
     timeoutMs: DEFAULT_PLANNER_TIMEOUT_MS,
+    toolMode: 'read-only',
   })
-
-  await Bun.write(plannerStdoutPath, result.stdout)
-  await Bun.write(plannerStderrPath, result.stderr)
-
-  if (result.timedOut) {
-    await logger.write(
-      `planner-timeout program=${programPath} timeoutMs=${DEFAULT_PLANNER_TIMEOUT_MS} stdout=${plannerStdoutPath} stderr=${plannerStderrPath}`,
-    )
-    throw new Error(
-      `Planner timed out after ${DEFAULT_PLANNER_TIMEOUT_MS}ms for ${programPath}. Inspect ${plannerStdoutPath} and ${plannerStderrPath}.`,
-    )
-  }
 
   if (result.exitCode !== 0) {
     throw new Error(result.stderr.trim() || result.stdout.trim() || `Planner failed for ${programPath}`)
   }
 
-  const planFile = Bun.file(planPath)
-  if (!(await planFile.exists())) {
-    throw new Error(`Planner did not produce execution plan for ${programPath}`)
-  }
-
-  const planMarkdown = (await planFile.text()).trim()
+  const planMarkdown = (await Bun.file(planPath).text()).trim()
   if (!planMarkdown) {
     throw new Error(`Planner produced empty execution plan for ${programPath}`)
   }
@@ -460,10 +511,12 @@ const runPreflight = async ({ workspaceRoot }: { workspaceRoot: string }): Promi
   const checks: PreflightCheck[] = []
   const requiredEnvVars = [
     'OPENROUTER_API_KEY',
+    'PLAITED_PLANNING_MODEL',
     'PLAITED_EXECUTION_MODEL',
     'PLAITED_EXECUTION_FALLBACK_MODEL',
     'PLAITED_PRIMARY_JUDGE_MODEL',
     'PLAITED_META_VERIFIER_MODEL',
+    'PLAITED_PROMOTION_MODEL',
   ]
 
   for (const name of requiredEnvVars) {
@@ -477,9 +530,7 @@ const runPreflight = async ({ workspaceRoot }: { workspaceRoot: string }): Promi
 
   const commands: Array<{ name: string; args: string[] }> = [
     { name: 'bun-version', args: ['bun', '--version'] },
-    { name: 'codex-version', args: ['codex', '--version'] },
     { name: 'git-version', args: ['git', '--version'] },
-    { name: 'pi-version', args: ['bunx', 'pi', '--version'] },
     { name: 'typecheck', args: ['bun', '--bun', 'tsc', '--noEmit'] },
     { name: 'script-tests', args: ['bun', 'test', 'scripts/tests/factory-program-scripts.spec.ts'] },
   ]
@@ -583,11 +634,14 @@ const readChangedFileExcerpts = async ({
 const extractJsonObject = (content: string): string => {
   const trimmed = content.trim()
   if (!trimmed.startsWith('```')) {
-    return trimmed
+    const objectMatch = trimmed.match(/\{[\s\S]*\}/)
+    return objectMatch?.[0]?.trim() || trimmed
   }
 
   const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i)
-  return fenced?.[1]?.trim() || trimmed
+  const unfenced = fenced?.[1]?.trim() || trimmed
+  const objectMatch = unfenced.match(/\{[\s\S]*\}/)
+  return objectMatch?.[0]?.trim() || unfenced
 }
 
 export const normalizeReviewDecision = (decision: string | null | undefined): ModelReview['decision'] | null => {
@@ -982,7 +1036,7 @@ const writePromotionArtifacts = async ({ artifact, outputDir }: { artifact: Prom
   await Bun.write(join(outputDir, 'promotion.json'), toJson(artifact))
 }
 
-const runCodexPromotion = async ({
+const runPiPromotion = async ({
   programArtifactDir,
   programPath,
   run,
@@ -1004,35 +1058,43 @@ const runCodexPromotion = async ({
     run,
   })
 
-  const lastMessagePath = join(programArtifactDir, 'promotion.last-message.txt')
+  const promptPath = join(programArtifactDir, 'promotion.prompt.txt')
+  const rawPath = join(programArtifactDir, 'promotion.raw.txt')
   const stdoutPath = join(programArtifactDir, 'promotion.stdout.log')
   const stderrPath = join(programArtifactDir, 'promotion.stderr.log')
+  const promotionProvider = process.env.PLAITED_PROMOTION_PROVIDER ?? 'openrouter'
+  const promotionModel = process.env.PLAITED_PROMOTION_MODEL ?? 'xiaomi/mimo-v2-pro'
+  await Bun.write(promptPath, `${prompt}\n`)
 
-  const result = await runCommand({
-    args: ['codex', '-a', 'never', 'exec', '-s', 'workspace-write', '-C', workspaceRoot, '-o', lastMessagePath, '-'],
+  const result = await runPiOrchestratorAgent({
     cwd: workspaceRoot,
-    env: buildPlannerEnvironment(process.env),
-    stdin: prompt,
+    model: promotionModel,
+    outputFile: rawPath,
+    promptFile: promptPath,
+    provider: promotionProvider,
+    stderrFile: stderrPath,
+    stdoutFile: stdoutPath,
+    thinking: process.env.PLAITED_PROMOTION_THINKING ?? 'high',
+    timeoutMs: DEFAULT_PI_AGENT_TIMEOUT_MS,
+    toolMode: 'workspace-write',
   })
 
-  await Bun.write(stdoutPath, result.stdout)
-  await Bun.write(stderrPath, result.stderr)
-
   if (result.exitCode !== 0) {
-    throw new Error(result.stderr.trim() || result.stdout.trim() || `Codex promotion failed for ${programPath}`)
+    throw new Error(result.stderr.trim() || result.stdout.trim() || `Pi promotion failed for ${programPath}`)
   }
 
-  const lastMessage = await Bun.file(lastMessagePath).text()
   return {
+    model: promotionModel,
     prompt,
-    rawContent: lastMessage,
-    result: parsePromotionResult(lastMessage),
+    rawContent: await Bun.file(rawPath).text(),
+    result: parsePromotionResult(await Bun.file(rawPath).text()),
   }
 }
 
 const main = async () => {
   const input = await parseInput()
   const workspaceRoot = process.cwd()
+  const planner = resolvePlannerKind(process.env.PLAITED_AUTORESEARCH_PLANNER)
   const attempts = input.attempts ?? Number(process.env.PLAITED_PROGRAM_ATTEMPTS ?? 3)
   const parallel = input.parallel ?? Number(process.env.PLAITED_PROGRAM_PARALLEL ?? 2)
   const baseRef = input.baseRef ?? 'HEAD'
@@ -1054,12 +1116,16 @@ const main = async () => {
   await Bun.write(
     join(outputDir, 'config.json'),
     toJson({
-      planner: process.env.PLAITED_AUTORESEARCH_PLANNER ?? 'codex',
+      planner,
+      planningProvider: process.env.PLAITED_PLANNING_PROVIDER ?? 'openrouter',
+      planningModel: process.env.PLAITED_PLANNING_MODEL ?? 'xiaomi/mimo-v2-pro',
       executionProvider: process.env.PLAITED_EXECUTION_PROVIDER ?? 'openrouter',
       executionModel: process.env.PLAITED_EXECUTION_MODEL ?? 'qwen/qwen3.6-plus:free',
       executionFallbackModel: process.env.PLAITED_EXECUTION_FALLBACK_MODEL ?? 'moonshotai/kimi-k2.5',
       judgeModel: process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'minimax/minimax-m2.7',
       metaVerifierModel: process.env.PLAITED_META_VERIFIER_MODEL ?? 'deepseek/deepseek-v3.2',
+      promotionProvider: process.env.PLAITED_PROMOTION_PROVIDER ?? 'openrouter',
+      promotionModel: process.env.PLAITED_PROMOTION_MODEL ?? 'xiaomi/mimo-v2-pro',
       attempts,
       parallel,
       baseRef,
@@ -1067,12 +1133,18 @@ const main = async () => {
     }),
   )
   await logger.write(`orchestration-start outputDir=${outputDir}`)
-  await logger.write(`planner=${process.env.PLAITED_AUTORESEARCH_PLANNER ?? 'codex'}`)
+  await logger.write(`planner=${planner}`)
+  await logger.write(
+    `planning-model=${process.env.PLAITED_PLANNING_PROVIDER ?? 'openrouter'}:${process.env.PLAITED_PLANNING_MODEL ?? 'xiaomi/mimo-v2-pro'}`,
+  )
   await logger.write(
     `execution=${process.env.PLAITED_EXECUTION_PROVIDER ?? 'openrouter'}:${process.env.PLAITED_EXECUTION_MODEL ?? 'qwen/qwen3.6-plus:free'}`,
   )
   await logger.write(`judge=${process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'minimax/minimax-m2.7'}`)
   await logger.write(`meta-verifier=${process.env.PLAITED_META_VERIFIER_MODEL ?? 'deepseek/deepseek-v3.2'}`)
+  await logger.write(
+    `promotion-model=${process.env.PLAITED_PROMOTION_PROVIDER ?? 'openrouter'}:${process.env.PLAITED_PROMOTION_MODEL ?? 'xiaomi/mimo-v2-pro'}`,
+  )
   await logger.write(
     `program-count=${programPaths.length} attempts=${attempts} parallel=${parallel} baseRef=${baseRef}`,
   )
@@ -1147,11 +1219,9 @@ const main = async () => {
       programPath,
       workspaceRoot,
     })
-    const planner = process.env.PLAITED_AUTORESEARCH_PLANNER ?? 'codex'
     await logger.write(`planner-start program=${programPath} planner=${planner}`)
     await generateExecutionPlan({
       logger,
-      planner,
       programPath,
       runDir,
       workspaceRoot,
@@ -1213,7 +1283,7 @@ const main = async () => {
     const promotionAttempt = selectPromotionAttempt(run)
     if (promotionAttempt) {
       try {
-        const promotionArtifact = await runCodexPromotion({
+        const promotionArtifact = await runPiPromotion({
           programArtifactDir,
           programPath,
           run,
@@ -1249,7 +1319,7 @@ const main = async () => {
     } else {
       promotion = {
         decision: 'defer',
-        reasoning: 'No succeeded attempt is available for Codex promotion review.',
+        reasoning: 'No succeeded attempt is available for Pi promotion review.',
         changedPaths: [],
         validation: [],
       }
@@ -1280,7 +1350,7 @@ const main = async () => {
     await Bun.write(
       summaryPath,
       toJson({
-        planner: process.env.PLAITED_AUTORESEARCH_PLANNER ?? 'codex',
+        planner,
         generatedAt: new Date().toISOString(),
         summaries,
       }),

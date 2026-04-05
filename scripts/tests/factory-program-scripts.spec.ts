@@ -6,15 +6,17 @@ import {
   buildJudgeInstruction,
   buildJudgePrompt,
   buildMetaVerifierPrompt,
-  buildPlannerEnvironment,
+  buildPiAgentEnvironment,
   buildPromotionPrompt,
   normalizeReviewDecision,
   parseModelReview,
   parsePromotionResult,
+  resolvePlannerKind,
   resolvePrograms,
   selectPromotionAttempt,
 } from '../run-factory-programs.ts'
 import { buildPiWorkerPrompt } from '../run-pi-factory-worker.ts'
+import { recordPiSessionEvent, writePiAgentArtifacts } from '../run-pi-orchestrator-agent.ts'
 
 describe('buildPiWorkerPrompt', () => {
   test('includes planner authority, program reference, and execution plan', () => {
@@ -22,12 +24,12 @@ describe('buildPiWorkerPrompt', () => {
       allowedPaths: ['src/factories/', 'src/factories.ts'],
       programMarkdown: '# Default Factories\n\n## Scope\n- [../../src/factories/](../../src/factories/)\n',
       planMarkdown: '1. Edit src/factories.ts\n2. Run bun test',
-      planner: 'codex',
+      planner: 'pi',
       programPath: 'dev-research/default-factories/program.md',
       retryGuidance: 'Only touch src/factories.ts',
     })
 
-    expect(prompt).toContain("planning/orchestration authority is 'codex'")
+    expect(prompt).toContain("planning/orchestration authority is 'pi'")
     expect(prompt).toContain('@dev-research/default-factories/program.md')
     expect(prompt).toContain('Retry guidance:')
     expect(prompt).toContain('Only touch src/factories.ts')
@@ -58,9 +60,9 @@ describe('resolvePrograms', () => {
   })
 })
 
-describe('buildPlannerEnvironment', () => {
-  test('strips secret and varlock-specific environment keys', () => {
-    const result = buildPlannerEnvironment({
+describe('pi orchestration helpers', () => {
+  test('strips unrelated secrets from pi agent subprocess environment', () => {
+    const result = buildPiAgentEnvironment({
       HOME: '/tmp/home',
       OPENROUTER_API_KEY: 'secret',
       OP_SERVICE_ACCOUNT_TOKEN: 'op-secret',
@@ -68,17 +70,75 @@ describe('buildPlannerEnvironment', () => {
       YDC_API_KEY: 'ydc-secret',
       VARLOCK_SESSION_ID: 'abc123',
       PATH: '/usr/bin',
-      PLAITED_AUTORESEARCH_PLANNER: 'codex',
+      PLAITED_AUTORESEARCH_PLANNER: 'pi',
+      PLAITED_PLANNING_MODEL: 'xiaomi/mimo-v2-pro',
     })
 
     expect(result.HOME).toBe('/tmp/home')
     expect(result.PATH).toBe('/usr/bin')
-    expect(result.PLAITED_AUTORESEARCH_PLANNER).toBe('codex')
-    expect(result.OPENROUTER_API_KEY).toBeUndefined()
-    expect(result.OP_SERVICE_ACCOUNT_TOKEN).toBeUndefined()
+    expect(result.OPENROUTER_API_KEY).toBe('secret')
+    expect(result.PLAITED_PLANNING_MODEL).toBe('xiaomi/mimo-v2-pro')
     expect(result.HF_TOKEN).toBeUndefined()
+    expect(result.OP_SERVICE_ACCOUNT_TOKEN).toBeUndefined()
     expect(result.YDC_API_KEY).toBeUndefined()
     expect(result.VARLOCK_SESSION_ID).toBeUndefined()
+  })
+
+  test('rejects unsupported planner selections', () => {
+    expect(resolvePlannerKind(undefined)).toBe('pi')
+    expect(resolvePlannerKind('pi')).toBe('pi')
+    expect(() => resolvePlannerKind('codex')).toThrow("Unsupported planner 'codex'")
+  })
+
+  test('records auto-retry events in wrapper stderr logs', () => {
+    const buffers = {
+      messageChunks: [],
+      stdoutChunks: [],
+      stderrChunks: [],
+    }
+
+    recordPiSessionEvent({
+      buffers,
+      event: {
+        type: 'auto_retry_start',
+        attempt: 2,
+        maxAttempts: 4,
+        errorMessage: 'rate limited',
+      },
+    })
+    recordPiSessionEvent({
+      buffers,
+      event: {
+        type: 'auto_retry_end',
+        success: false,
+        finalError: 'still rate limited',
+      },
+    })
+
+    expect(buffers.stderrChunks.join('')).toContain('[auto-retry:start] attempt=2/4 rate limited')
+    expect(buffers.stderrChunks.join('')).toContain('[auto-retry:end] success=false still rate limited')
+  })
+
+  test('writes wrapper artifacts even when there is only stderr output', async () => {
+    const artifactDir = await mkdtemp('/tmp/pi-orchestrator-agent-artifacts-')
+    const outputFile = join(artifactDir, 'output.txt')
+    const stdoutFile = join(artifactDir, 'stdout.log')
+    const stderrFile = join(artifactDir, 'stderr.log')
+
+    await writePiAgentArtifacts({
+      buffers: {
+        messageChunks: [],
+        stdoutChunks: [],
+        stderrChunks: ['model resolution failed\n'],
+      },
+      outputFile,
+      stdoutFile,
+      stderrFile,
+    })
+
+    expect(await Bun.file(outputFile).text()).toBe('')
+    expect(await Bun.file(stdoutFile).text()).toBe('')
+    expect(await Bun.file(stderrFile).text()).toBe('model resolution failed\n')
   })
 })
 
@@ -216,6 +276,15 @@ describe('promotion parsing', () => {
     const result = parsePromotionResult('{"decision":"promoted","reasoning":"ported cleanly"}')
 
     expect(result.decision).toBe('accept')
+  })
+
+  test('parses promotion json wrapped in prose', () => {
+    const result = parsePromotionResult(
+      'Promotion review complete.\n{"decision":"defer","reasoning":"needs another pass","changedPaths":[],"validation":[]}',
+    )
+
+    expect(result.decision).toBe('defer')
+    expect(result.reasoning).toBe('needs another pass')
   })
 })
 
