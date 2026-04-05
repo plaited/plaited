@@ -730,7 +730,7 @@ const main = async () => {
       planner: process.env.PLAITED_AUTORESEARCH_PLANNER ?? 'codex',
       executionProvider: process.env.PLAITED_EXECUTION_PROVIDER ?? 'openrouter',
       executionModel: process.env.PLAITED_EXECUTION_MODEL ?? 'qwen/qwen3.6-plus:free',
-      executionFallbackModel: process.env.PLAITED_EXECUTION_FALLBACK_MODEL ?? 'qwen/qwen3.6-plus:free',
+      executionFallbackModel: process.env.PLAITED_EXECUTION_FALLBACK_MODEL ?? 'moonshotai/kimi-k2.5',
       judgeModel: process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'minimax/minimax-m2.7',
       metaVerifierModel: process.env.PLAITED_META_VERIFIER_MODEL ?? 'deepseek/deepseek-v3.2',
       attempts,
