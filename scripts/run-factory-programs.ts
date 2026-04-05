@@ -271,7 +271,7 @@ const generateExecutionPlan = async ({
   await Bun.write(plannerPromptPath, `${plannerPrompt}\n`)
 
   const result = await runCommand({
-    args: [planner, 'exec', '-s', 'read-only', '-a', 'never', '-C', workspaceRoot, '-o', planPath, plannerPrompt],
+    args: [planner, '-a', 'never', 'exec', '-s', 'read-only', '-C', workspaceRoot, '-o', planPath, plannerPrompt],
     cwd: workspaceRoot,
   })
 
