@@ -191,38 +191,6 @@ export type AgentModels = {
   tts: (args: { text: string; voice?: string; language?: string; timeout?: number }) => Promise<VoiceResponse>
 }
 
-// ============================================================================
-// Tool Context + Handler
-// ============================================================================
-
-/**
- * Context passed to tool handlers.
- *
- * @remarks
- * `signal` propagates from BP interrupt → AbortSignal → tool subprocess.
- *
- * @public
- */
-export type ToolContext = {
-  cwd: string
-  env: Record<string, string>
-  signal: AbortSignal
-}
-
-/**
- * A tool implementation that executes a specific tool.
- *
- * @remarks
- * Receives parsed arguments and a cwd-scoped context with AbortSignal.
- * Returned value becomes the `output` field of a `ToolResult`.
- *
- * @public
- */
-export type ToolHandler<T extends Record<string, unknown> = Record<string, unknown>> = (
-  args: { timeout?: number } & T,
-  ctx: ToolContext,
-) => Promise<unknown>
-
 /**
  * Structured output extracted from a completed model inference.
  *

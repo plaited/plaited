@@ -14,6 +14,12 @@ export const validateInput = (input: unknown): input is string => {
   return typeof input === 'string'
 }
 
+export const onlyUsedInTests = () => {
+  return 'test-only'
+}
+
+export const unusedValue = 42
+
 export class ConfigManager {
   #config: Config | null = null
 

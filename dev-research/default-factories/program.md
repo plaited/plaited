@@ -56,7 +56,7 @@ The most important current runtime facts are:
   `factories` array
 - `AGENT_EVENTS.update_factories` is the runtime module-loading path for
   additional factory bundles
-- `UpdateFactoryModuleSchema` requires a dynamically loaded module to export:
+- a dynamically loaded factory module must export:
 
 ```typescript
 {

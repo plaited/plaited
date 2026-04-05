@@ -3,14 +3,22 @@ import { join } from 'node:path'
 import {
   executeLsp,
   flattenSymbols,
+  getCandidateUnusedExports,
+  getExportConsumers,
   getLanguageId,
   getLoader,
+  getPublicExports,
+  isTestFile,
   LspClient,
   resolveFilePath,
+  resolveWorkspaceFiles,
+  scanFile,
 } from '../scripts/typescript-lsp.ts'
 
 const cliPath = join(import.meta.dir, '..', 'scripts', 'run.ts')
 const fixtureFile = join(import.meta.dir, 'fixtures', 'sample.ts')
+const fixtureConsumerFile = join(import.meta.dir, '..', 'fixtures', 'sample-consumer.ts')
+const fixtureUsageFile = join(import.meta.dir, '..', 'fixtures', 'tests', 'sample-usage.ts')
 const rootUri = `file://${process.cwd()}`
 const testUri = `file://${fixtureFile}`
 
@@ -262,6 +270,91 @@ describe('getLoader', () => {
   })
 })
 
+describe('workspace audit helpers', () => {
+  test('classifies test files by path convention', () => {
+    expect(isTestFile(fixtureUsageFile)).toBe(true)
+    expect(isTestFile(fixtureConsumerFile)).toBe(false)
+  })
+
+  test('resolves workspace files from explicit file list', () => {
+    const files = resolveWorkspaceFiles({
+      input: {
+        files: [fixtureFile, fixtureConsumerFile],
+        operations: [{ type: 'workspace_scan' }],
+      },
+      base: process.cwd(),
+    })
+
+    expect(files).toEqual([fixtureConsumerFile, fixtureFile].sort())
+  })
+
+  test('scans a file for imports and exports', async () => {
+    const result = await scanFile(fixtureConsumerFile, process.cwd())
+
+    expect(result.file.endsWith('skills/typescript-lsp/fixtures/sample-consumer.ts')).toBe(true)
+    expect(result.imports).toEqual([
+      {
+        kind: 'import-statement',
+        path: '../tests/fixtures/sample.ts',
+      },
+    ])
+    expect(result.exports).toContain('formatConfig')
+  })
+
+  test('lists public exports across files', () => {
+    const results = getPublicExports({
+      absolutePaths: [fixtureFile, fixtureConsumerFile],
+      base: process.cwd(),
+    })
+
+    const sampleExports = results.find((entry) => entry.file.endsWith('sample.ts'))?.exports ?? []
+    expect(sampleExports.some((entry) => entry.name === 'Config')).toBe(true)
+    expect(sampleExports.some((entry) => entry.name === 'parseConfig')).toBe(true)
+  })
+
+  test('finds candidate export consumers and separates prod from test usage', async () => {
+    const results = await getExportConsumers({
+      absolutePaths: [fixtureFile, fixtureConsumerFile, fixtureUsageFile],
+      base: process.cwd(),
+      includeTests: true,
+      query: 'parseConfig',
+    })
+
+    expect(results).toEqual([
+      {
+        file: 'skills/typescript-lsp/tests/fixtures/sample.ts',
+        kind: 'Variable',
+        line: 8,
+        name: 'parseConfig',
+        prodRefs: ['skills/typescript-lsp/fixtures/sample-consumer.ts'],
+        testRefs: ['skills/typescript-lsp/fixtures/tests/sample-usage.ts'],
+      },
+    ])
+  })
+
+  test('finds verified candidate unused exports', async () => {
+    const results = await getCandidateUnusedExports({
+      absolutePaths: [fixtureFile, fixtureConsumerFile, fixtureUsageFile],
+      base: process.cwd(),
+      includeTests: true,
+      query: 'onlyUsedInTests',
+    })
+
+    expect(results).toEqual([
+      {
+        file: 'skills/typescript-lsp/tests/fixtures/sample.ts',
+        kind: 'Variable',
+        line: 16,
+        name: 'onlyUsedInTests',
+        status: 'test_only',
+        prodRefs: [],
+        testRefs: ['skills/typescript-lsp/fixtures/tests/sample-usage.ts'],
+        verified: true,
+      },
+    ])
+  })
+})
+
 describe('flattenSymbols', () => {
   test('flattens top-level symbols', () => {
     const symbols = [
@@ -394,8 +487,7 @@ describe('executeLsp', () => {
     expect(data).toBeDefined()
     expect(Array.isArray(data.imports)).toBe(true)
     expect(Array.isArray(data.exports)).toBe(true)
-    // sample.ts has 3 runtime exports (scan() elides type-only exports like Config)
-    expect(data.exports.length).toBeGreaterThanOrEqual(3)
+    expect(data.exports).toEqual(['ConfigManager', 'onlyUsedInTests', 'parseConfig', 'unusedValue', 'validateInput'])
   })
 
   test('scan-only operations skip LSP server startup', async () => {
@@ -420,6 +512,154 @@ describe('executeLsp', () => {
     expect(result.results[0]?.data).toBeDefined()
     expect(result.results[1]?.type).toBe('symbols')
     expect(result.results[1]?.data).toBeDefined()
+  })
+
+  test('returns workspace scan results across explicit files', async () => {
+    const result = await executeLsp({
+      files: [fixtureFile, fixtureConsumerFile],
+      operations: [{ type: 'workspace_scan', includeTests: true }],
+    })
+
+    expect(result.results).toHaveLength(1)
+    expect(result.results[0]?.type).toBe('workspace_scan')
+    expect(result.results[0]?.data).toEqual([
+      {
+        file: 'skills/typescript-lsp/fixtures/sample-consumer.ts',
+        imports: [
+          {
+            kind: 'import-statement',
+            path: '../tests/fixtures/sample.ts',
+          },
+        ],
+        exports: ['formatConfig'],
+        isTest: false,
+      },
+      {
+        file: 'skills/typescript-lsp/tests/fixtures/sample.ts',
+        imports: [],
+        exports: ['ConfigManager', 'onlyUsedInTests', 'parseConfig', 'unusedValue', 'validateInput'],
+        isTest: true,
+      },
+    ])
+  })
+
+  test('returns public exports across explicit files', async () => {
+    const result = await executeLsp({
+      files: [fixtureFile, fixtureConsumerFile],
+      operations: [{ type: 'public_exports', includeTests: true }],
+    })
+
+    expect(result.results).toHaveLength(1)
+    expect(result.results[0]?.type).toBe('public_exports')
+    expect(result.results[0]?.data).toEqual([
+      {
+        file: 'skills/typescript-lsp/fixtures/sample-consumer.ts',
+        exports: [{ kind: 'Variable', line: 2, name: 'formatConfig' }],
+      },
+      {
+        file: 'skills/typescript-lsp/tests/fixtures/sample.ts',
+        exports: [
+          { kind: 'TypeAlias', line: 3, name: 'Config' },
+          { kind: 'Variable', line: 8, name: 'parseConfig' },
+          { kind: 'Variable', line: 12, name: 'validateInput' },
+          { kind: 'Variable', line: 16, name: 'onlyUsedInTests' },
+          { kind: 'Variable', line: 20, name: 'unusedValue' },
+          { kind: 'Class', line: 22, name: 'ConfigManager' },
+        ],
+      },
+    ])
+  })
+
+  test('returns export consumer audit results', async () => {
+    const result = await executeLsp({
+      files: [fixtureFile, fixtureConsumerFile, fixtureUsageFile],
+      operations: [{ type: 'export_consumers', query: 'parseConfig', includeTests: true }],
+    })
+
+    expect(result.results).toHaveLength(1)
+    expect(result.results[0]?.type).toBe('export_consumers')
+    expect(result.results[0]?.data).toEqual([
+      {
+        file: 'skills/typescript-lsp/tests/fixtures/sample.ts',
+        kind: 'Variable',
+        line: 8,
+        name: 'parseConfig',
+        prodRefs: ['skills/typescript-lsp/fixtures/sample-consumer.ts'],
+        testRefs: ['skills/typescript-lsp/fixtures/tests/sample-usage.ts'],
+      },
+    ])
+  })
+
+  test('returns verified candidate unused exports', async () => {
+    const result = await executeLsp({
+      files: [fixtureFile, fixtureConsumerFile, fixtureUsageFile],
+      operations: [{ type: 'candidate_unused_exports', includeTests: true }],
+    })
+
+    expect(result.results).toHaveLength(1)
+    expect(result.results[0]?.type).toBe('candidate_unused_exports')
+    expect(result.results[0]?.data).toEqual([
+      {
+        file: 'skills/typescript-lsp/fixtures/sample-consumer.ts',
+        kind: 'Variable',
+        line: 2,
+        name: 'formatConfig',
+        status: 'unused',
+        prodRefs: [],
+        testRefs: [],
+        verified: true,
+      },
+      {
+        file: 'skills/typescript-lsp/fixtures/tests/sample-usage.ts',
+        kind: 'Variable',
+        line: 2,
+        name: 'runFixtureUsage',
+        status: 'unused',
+        prodRefs: [],
+        testRefs: [],
+        verified: true,
+      },
+      {
+        file: 'skills/typescript-lsp/tests/fixtures/sample.ts',
+        kind: 'Variable',
+        line: 12,
+        name: 'validateInput',
+        status: 'unused',
+        prodRefs: [],
+        testRefs: [],
+        verified: true,
+      },
+      {
+        file: 'skills/typescript-lsp/tests/fixtures/sample.ts',
+        kind: 'Variable',
+        line: 16,
+        name: 'onlyUsedInTests',
+        status: 'test_only',
+        prodRefs: [],
+        testRefs: ['skills/typescript-lsp/fixtures/tests/sample-usage.ts'],
+        verified: true,
+      },
+      {
+        file: 'skills/typescript-lsp/tests/fixtures/sample.ts',
+        kind: 'Variable',
+        line: 20,
+        name: 'unusedValue',
+        status: 'unused',
+        prodRefs: [],
+        testRefs: [],
+        verified: true,
+      },
+      {
+        file: 'skills/typescript-lsp/tests/fixtures/sample.ts',
+        kind: 'Class',
+        line: 22,
+        name: 'ConfigManager',
+        status: 'unused',
+        prodRefs: [],
+        testRefs: [],
+        verified: true,
+      },
+    ])
   })
 
   test('returns workspace symbols for find', async () => {
@@ -522,6 +762,19 @@ describe('CLI', () => {
     expect(output.file).toBe(fixtureFile)
     expect(output.results).toHaveLength(1)
     expect(output.results[0].type).toBe('symbols')
+    expect(Array.isArray(output.results[0].data)).toBe(true)
+  })
+
+  test('runs workspace audit via JSON positional arg', async () => {
+    const input = JSON.stringify({
+      files: [fixtureFile, fixtureConsumerFile],
+      operations: [{ type: 'workspace_scan', includeTests: true }],
+    })
+    const result = await Bun.$`bun ${cliPath} ${input}`.quiet()
+    const output = JSON.parse(result.text())
+
+    expect(output.file).toBe(fixtureFile)
+    expect(output.results[0].type).toBe('workspace_scan')
     expect(Array.isArray(output.results[0].data)).toBe(true)
   })
 

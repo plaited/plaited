@@ -8,9 +8,10 @@
  * @public
  */
 
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
 import type { Subprocess } from 'bun'
 import { parseCli } from 'plaited/cli'
+import ts from 'typescript'
 import * as z from 'zod'
 
 // ============================================================================
@@ -428,7 +429,19 @@ export type { LspOperation, LspInput, LspResult, LspOutput }
 /** @public */
 const LspOperationSchema = z.object({
   type: z
-    .enum(['hover', 'references', 'definition', 'symbols', 'exports', 'find', 'scan'])
+    .enum([
+      'hover',
+      'references',
+      'definition',
+      'symbols',
+      'exports',
+      'find',
+      'scan',
+      'workspace_scan',
+      'public_exports',
+      'export_consumers',
+      'candidate_unused_exports',
+    ])
     .describe('LSP operation type'),
   line: z.number().optional().describe('Line number (0-indexed) — required for hover, references, definition'),
   character: z
@@ -436,15 +449,28 @@ const LspOperationSchema = z.object({
     .optional()
     .describe('Character position (0-indexed) — required for hover, references, definition'),
   query: z.string().optional().describe('Symbol name or partial name — required for find'),
+  includeTests: z.boolean().optional().describe('Include test files in workspace audit operations'),
 })
 
 /** @public */
-const LspInputSchema = z.object({
-  file: z.string().describe('Path to TypeScript/JavaScript file (also serves as context for workspace operations)'),
-  operations: z
-    .array(LspOperationSchema)
-    .describe('Operations to perform in a single LSP session (one server start, multiple queries)'),
-})
+const LspInputSchema = z
+  .object({
+    file: z.string().optional().describe('Path to TypeScript/JavaScript file for single-file operations'),
+    files: z.array(z.string()).optional().describe('Explicit file list for workspace audit operations'),
+    targets: z.array(z.string()).optional().describe('Glob patterns for workspace audit operations'),
+    operations: z
+      .array(LspOperationSchema)
+      .describe('Operations to perform in a single session (LSP-backed and workspace audit operations)'),
+  })
+  .superRefine((value, ctx) => {
+    if (!value.file && (!value.files || value.files.length === 0) && (!value.targets || value.targets.length === 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'At least one of file, files, or targets is required',
+        path: ['file'],
+      })
+    }
+  })
 
 /** @public */
 const LspOutputSchema = z.object({
@@ -510,6 +536,291 @@ const SYMBOL_KIND_NAMES: Record<number, string> = {
 const resolveFilePath = (filePath: string, base?: string): string => {
   if (filePath.startsWith('/')) return filePath
   return join(base ?? process.cwd(), filePath)
+}
+
+const DEFAULT_SCAN_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx']
+
+const TEST_FILE_PATTERN = /(^|\/)(tests?\/|.*\.(spec|test)\.[jt]sx?$)/
+
+const isTestFile = (filePath: string) => TEST_FILE_PATTERN.test(filePath)
+
+const makeDisplayPath = (absolutePath: string, base: string) => {
+  const relativePath = relative(base, absolutePath)
+  return relativePath === '' ? absolutePath : relativePath
+}
+
+const resolveWorkspaceFiles = ({
+  input,
+  base,
+  includeTests = true,
+}: {
+  input: LspInput
+  base: string
+  includeTests?: boolean
+}) => {
+  const files = new Set<string>()
+
+  for (const filePath of input.files ?? []) {
+    files.add(resolveFilePath(filePath, base))
+  }
+
+  for (const target of input.targets ?? []) {
+    for (const match of ts.sys.readDirectory(base, DEFAULT_SCAN_EXTENSIONS, undefined, [target])) {
+      files.add(resolveFilePath(match, base))
+    }
+  }
+
+  if (files.size === 0 && input.file) {
+    files.add(resolveFilePath(input.file, base))
+  }
+
+  return [...files].filter((filePath) => includeTests || !isTestFile(filePath)).sort()
+}
+
+type WorkspaceScanEntry = {
+  file: string
+  imports: unknown[]
+  exports: string[]
+  isTest: boolean
+}
+
+type PublicExportEntry = {
+  file: string
+  exports: Array<{ name: string; kind: string; line: number }>
+}
+
+type ExportConsumerEntry = {
+  file: string
+  name: string
+  kind: string
+  line: number
+  prodRefs: string[]
+  testRefs: string[]
+}
+
+type CandidateUnusedExportEntry = {
+  file: string
+  name: string
+  kind: string
+  line: number
+  status: 'unused' | 'test_only'
+  prodRefs: string[]
+  testRefs: string[]
+  verified: true
+}
+
+type InternalPublicExportEntry = {
+  absolutePath: string
+  displayPath: string
+  exports: Array<{ name: string; kind: string; line: number; character: number; position: number }>
+}
+
+const scanFile = async (absolutePath: string, base: string): Promise<WorkspaceScanEntry> => {
+  const text = await Bun.file(absolutePath).text()
+  const transpiler = new Bun.Transpiler({ loader: getLoader(absolutePath) })
+  const result = transpiler.scan(text)
+  return {
+    file: makeDisplayPath(absolutePath, base),
+    imports: result.imports,
+    exports: result.exports,
+    isTest: isTestFile(absolutePath),
+  }
+}
+
+const getSymbolKindName = (declaration: ts.Declaration): string => {
+  if (ts.isTypeAliasDeclaration(declaration)) return 'TypeAlias'
+  if (ts.isInterfaceDeclaration(declaration)) return 'Interface'
+  if (ts.isClassDeclaration(declaration)) return 'Class'
+  if (ts.isFunctionDeclaration(declaration)) return 'Function'
+  if (ts.isVariableDeclaration(declaration)) return 'Variable'
+  if (ts.isEnumDeclaration(declaration)) return 'Enum'
+  return ts.SyntaxKind[declaration.kind] ?? 'Unknown'
+}
+
+const getPublicExportsInventory = ({
+  absolutePaths,
+  base,
+}: {
+  absolutePaths: string[]
+  base: string
+}): InternalPublicExportEntry[] => {
+  const program = ts.createProgram(absolutePaths, {
+    allowJs: true,
+    target: ts.ScriptTarget.ESNext,
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+  })
+  const checker = program.getTypeChecker()
+
+  return absolutePaths.map((absolutePath) => {
+    const sourceFile = program.getSourceFile(absolutePath)
+    if (!sourceFile) {
+      return { absolutePath, displayPath: makeDisplayPath(absolutePath, base), exports: [] }
+    }
+
+    const moduleSymbol = checker.getSymbolAtLocation(sourceFile)
+    if (!moduleSymbol) {
+      return { absolutePath, displayPath: makeDisplayPath(absolutePath, base), exports: [] }
+    }
+
+    const exports = checker.getExportsOfModule(moduleSymbol).flatMap((symbol) => {
+      const declaration = symbol.declarations?.[0]
+      if (!declaration) return []
+      const position = sourceFile.getLineAndCharacterOfPosition(declaration.getStart())
+      return [
+        {
+          name: symbol.getName(),
+          kind: getSymbolKindName(declaration),
+          line: position.line,
+          character: position.character,
+          position: declaration.getStart(),
+        },
+      ]
+    })
+
+    return { absolutePath, displayPath: makeDisplayPath(absolutePath, base), exports }
+  })
+}
+
+const getPublicExports = ({ absolutePaths, base }: { absolutePaths: string[]; base: string }): PublicExportEntry[] =>
+  getPublicExportsInventory({ absolutePaths, base }).map((entry) => ({
+    file: entry.displayPath,
+    exports: entry.exports.map(({ character: _character, position: _position, ...rest }) => rest),
+  }))
+
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+const getExportConsumers = async ({
+  absolutePaths,
+  base,
+  includeTests = true,
+  query,
+}: {
+  absolutePaths: string[]
+  base: string
+  includeTests?: boolean
+  query?: string
+}): Promise<ExportConsumerEntry[]> => {
+  const publicExports = getPublicExports({ absolutePaths, base })
+  const texts = new Map<string, string>()
+
+  for (const absolutePath of absolutePaths) {
+    texts.set(absolutePath, await Bun.file(absolutePath).text())
+  }
+
+  const results: ExportConsumerEntry[] = []
+  for (const entry of publicExports) {
+    const absolutePath = resolveFilePath(entry.file, base)
+    for (const exported of entry.exports) {
+      if (query && exported.name !== query) continue
+
+      const pattern = new RegExp(`\\b${escapeRegExp(exported.name)}\\b`)
+      const prodRefs = new Set<string>()
+      const testRefs = new Set<string>()
+
+      for (const [candidatePath, text] of texts) {
+        if (candidatePath === absolutePath) continue
+        if (!includeTests && isTestFile(candidatePath)) continue
+        if (!pattern.test(text)) continue
+
+        const displayPath = makeDisplayPath(candidatePath, base)
+        if (isTestFile(candidatePath)) testRefs.add(displayPath)
+        else prodRefs.add(displayPath)
+      }
+
+      results.push({
+        file: entry.file,
+        name: exported.name,
+        kind: exported.kind,
+        line: exported.line,
+        prodRefs: [...prodRefs].sort(),
+        testRefs: [...testRefs].sort(),
+      })
+    }
+  }
+
+  return results
+}
+
+const getCandidateUnusedExports = async ({
+  absolutePaths,
+  base,
+  includeTests = true,
+  query,
+}: {
+  absolutePaths: string[]
+  base: string
+  includeTests?: boolean
+  query?: string
+}): Promise<CandidateUnusedExportEntry[]> => {
+  const inventory = getPublicExportsInventory({ absolutePaths, base })
+  const fileTexts = new Map<string, string>()
+  for (const absolutePath of absolutePaths) {
+    fileTexts.set(absolutePath, await Bun.file(absolutePath).text())
+  }
+
+  const languageServiceHost: ts.LanguageServiceHost = {
+    getCompilationSettings: () => ({
+      allowJs: true,
+      target: ts.ScriptTarget.ESNext,
+      module: ts.ModuleKind.ESNext,
+      moduleResolution: ts.ModuleResolutionKind.Bundler,
+    }),
+    getScriptFileNames: () => absolutePaths,
+    getScriptVersion: () => '1',
+    getScriptSnapshot: (fileName) => {
+      const text = fileTexts.get(fileName)
+      if (text === undefined) return undefined
+      return ts.ScriptSnapshot.fromString(text)
+    },
+    getCurrentDirectory: () => base,
+    getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(options),
+    fileExists: (fileName) => fileTexts.has(fileName) || ts.sys.fileExists(fileName),
+    readFile: (fileName) => fileTexts.get(fileName) ?? ts.sys.readFile(fileName),
+    readDirectory: ts.sys.readDirectory,
+  }
+  const languageService = ts.createLanguageService(languageServiceHost)
+  const candidates: CandidateUnusedExportEntry[] = []
+
+  for (const entry of inventory) {
+    for (const exported of entry.exports) {
+      if (query && exported.name !== query) continue
+
+      const references = languageService.findReferences(entry.absolutePath, exported.position) ?? []
+      const prodRefs = new Set<string>()
+      const testRefs = new Set<string>()
+
+      for (const referenceGroup of references) {
+        for (const reference of referenceGroup.references) {
+          if (reference.isDefinition) continue
+
+          const referencePath = reference.fileName
+          if (referencePath === entry.absolutePath) continue
+
+          const displayPath = makeDisplayPath(referencePath, base)
+          if (isTestFile(referencePath)) testRefs.add(displayPath)
+          else prodRefs.add(displayPath)
+        }
+      }
+
+      if (prodRefs.size > 0) continue
+      if (!includeTests && testRefs.size > 0) continue
+
+      candidates.push({
+        file: entry.displayPath,
+        name: exported.name,
+        kind: exported.kind,
+        line: exported.line,
+        status: testRefs.size > 0 ? 'test_only' : 'unused',
+        prodRefs: [],
+        testRefs: [...testRefs].sort(),
+        verified: true,
+      })
+    }
+  }
+
+  languageService.dispose()
+  return candidates
 }
 
 /**
@@ -585,12 +896,40 @@ const executeOperation = async (
   text: string,
   op: LspOperation,
   absolutePath: string,
+  input: LspInput,
+  base: string,
 ): Promise<unknown> => {
   switch (op.type) {
     case 'scan': {
       const transpiler = new Bun.Transpiler({ loader: getLoader(absolutePath) })
       const result = transpiler.scan(text)
       return { imports: result.imports, exports: result.exports }
+    }
+    case 'workspace_scan': {
+      const files = resolveWorkspaceFiles({ input, base, includeTests: op.includeTests ?? true })
+      return Promise.all(files.map((filePath) => scanFile(filePath, base)))
+    }
+    case 'public_exports': {
+      const files = resolveWorkspaceFiles({ input, base, includeTests: op.includeTests ?? true })
+      return getPublicExports({ absolutePaths: files, base })
+    }
+    case 'export_consumers': {
+      const files = resolveWorkspaceFiles({ input, base, includeTests: true })
+      return getExportConsumers({
+        absolutePaths: files,
+        base,
+        includeTests: op.includeTests ?? true,
+        query: op.query,
+      })
+    }
+    case 'candidate_unused_exports': {
+      const files = resolveWorkspaceFiles({ input, base, includeTests: true })
+      return getCandidateUnusedExports({
+        absolutePaths: files,
+        base,
+        includeTests: op.includeTests ?? true,
+        query: op.query,
+      })
     }
     case 'hover': {
       if (op.line === undefined || op.character === undefined) {
@@ -634,6 +973,7 @@ const executeOperation = async (
 }
 
 export { getLoader }
+export { isTestFile, resolveWorkspaceFiles, scanFile, getPublicExports, getExportConsumers, getCandidateUnusedExports }
 
 // ============================================================================
 // Library API
@@ -659,7 +999,13 @@ export { getLoader }
 const executeLsp = async (input: LspInput, ctx?: LspExecutionContext): Promise<LspOutput> => {
   if (ctx?.signal?.aborted) throw new Error('Aborted')
 
-  const absolutePath = resolveFilePath(input.file, ctx?.workspace)
+  const base = ctx?.workspace ?? process.cwd()
+  const primaryFile = input.file ?? input.files?.[0] ?? input.targets?.[0]
+  if (!primaryFile) {
+    throw new Error('At least one of file, files, or targets is required')
+  }
+
+  const absolutePath = resolveFilePath(primaryFile, ctx?.workspace)
   const uri = `file://${absolutePath}`
 
   const file = Bun.file(absolutePath)
@@ -670,7 +1016,10 @@ const executeLsp = async (input: LspInput, ctx?: LspExecutionContext): Promise<L
   const text = await file.text()
 
   // If all operations are scan-only, skip LSP server entirely
-  const needsLsp = input.operations.some((op) => op.type !== 'scan')
+  const needsLsp = input.operations.some(
+    (op) =>
+      !['scan', 'workspace_scan', 'public_exports', 'export_consumers', 'candidate_unused_exports'].includes(op.type),
+  )
 
   let client: LspClient | null = null
   if (needsLsp) {
@@ -693,7 +1042,7 @@ const executeLsp = async (input: LspInput, ctx?: LspExecutionContext): Promise<L
 
     for (const op of input.operations) {
       try {
-        const data = await executeOperation(client, uri, text, op, absolutePath)
+        const data = await executeOperation(client, uri, text, op, absolutePath, input, base)
         results.push({ type: op.type, data })
       } catch (error) {
         results.push({ type: op.type, error: error instanceof Error ? error.message : String(error) })
@@ -705,7 +1054,7 @@ const executeLsp = async (input: LspInput, ctx?: LspExecutionContext): Promise<L
       await client.stop()
     }
 
-    return { file: input.file, results }
+    return { file: primaryFile, results }
   } catch (error) {
     await client?.stop().catch(() => {})
     throw error
@@ -737,6 +1086,8 @@ Usage: bun skills/typescript-lsp/scripts/run.ts '<json>' [options]
 
 Input (JSON):
   file         string              Path to TypeScript/JavaScript file
+  files        string[]            Explicit file list for workspace audits
+  targets      string[]            Glob patterns for workspace audits
   operations   LspOperation[]      Operations to perform in one session
 
 Operations:
@@ -747,6 +1098,10 @@ Operations:
   exports      { type: "exports" }                       Exported symbols only
   find         { type: "find", query }                   Search workspace symbols
   scan         { type: "scan" }                          Fast import/export extraction (no LSP)
+  workspace_scan   { type: "workspace_scan" }            Fast import/export scan across files
+  public_exports   { type: "public_exports" }            Compiler-backed export inventory
+  export_consumers { type: "export_consumers", query? }  Candidate export consumer audit
+  candidate_unused_exports { type: "candidate_unused_exports", query? }  TypeScript-verified unused export audit
 
 Options:
   --schema <input|output>  Print JSON Schema and exit

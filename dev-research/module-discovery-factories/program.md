@@ -20,7 +20,7 @@ The repo already has a concrete runtime loading seam:
 
 - [src/agent/create-agent.ts](../../src/agent/create-agent.ts) dynamically imports a module path on
   `AGENT_EVENTS.update_factories`
-- `UpdateFactoryModuleSchema` requires `default: Factory[]`
+- a loadable factory module exports `default: Factory[]`
 
 What remains open is everything around that seam:
 
@@ -37,7 +37,8 @@ and interpretation policy that can become part of the default factory bundle.
 
 1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines runtime module loading
 2. [src/agent/agent.types.ts](../../src/agent/agent.types.ts) defines the factory contract
-3. [src/agent/agent.schemas.ts](../../src/agent/agent.schemas.ts) defines the module export schema
+3. [src/agent/agent.schemas.ts](../../src/agent/agent.schemas.ts) defines the runtime validation used for
+   dynamically loaded factory modules
 4. [skills/modnet-factories/SKILL.md](../../skills/modnet-factories/SKILL.md) defines current MSS/modnet/module
    semantics for factory-era agents
 5. [dev-research/default-factories/program.md](../default-factories/program.md) defines the bundle question
