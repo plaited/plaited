@@ -66,11 +66,6 @@ export const buildPiWorkerPrompt = ({ planner, programPath }: { planner: string;
   ].join(' ')
 }
 
-const buildSdkPrompt = async ({ prompt, programPath }: { prompt: string; programPath: string }): Promise<string> => {
-  const programMarkdown = await Bun.file(programPath).text()
-  return [prompt, '', `Program file: ${programPath}`, '', 'Lane program markdown:', '', programMarkdown].join('\n')
-}
-
 const appendArtifactLog = async ({
   artifactDir,
   fileName,
@@ -126,7 +121,6 @@ const runSdkAttempt = async ({
   artifactDir,
   cwd,
   modelId,
-  programPath,
   prompt,
   provider,
   thinking,
@@ -134,7 +128,6 @@ const runSdkAttempt = async ({
   artifactDir: string
   cwd: string
   modelId: string
-  programPath: string
   prompt: string
   provider: string
   thinking: ThinkingLevel
@@ -193,6 +186,7 @@ const runSdkAttempt = async ({
 
   const stdoutChunks: string[] = []
   const stderrChunks: string[] = []
+  let timedOut = false
   await appendArtifactLog({
     artifactDir,
     fileName: 'worker.progress.log',
@@ -250,18 +244,15 @@ const runSdkAttempt = async ({
     }
   })
 
-  const fullPrompt = await buildSdkPrompt({
-    prompt,
-    programPath,
-  })
   await appendArtifactLog({
     artifactDir,
     fileName: 'worker.progress.log',
-    message: `prompt-built chars=${fullPrompt.length}`,
+    message: `prompt-built chars=${prompt.length}`,
   })
 
   const timeoutMs = resolveExecutionTimeoutMs()
   const timeoutId = setTimeout(() => {
+    timedOut = true
     stderrChunks.push(`[pi-worker] timeout after ${timeoutMs}ms\n`)
     void appendArtifactLog({
       artifactDir,
@@ -277,7 +268,22 @@ const runSdkAttempt = async ({
       fileName: 'worker.progress.log',
       message: 'session-prompt-start',
     })
-    await session.prompt(fullPrompt)
+    await session.prompt(prompt)
+    const errorMessage = session.agent.state.errorMessage
+    if (timedOut || errorMessage) {
+      const failureMessage = errorMessage ?? `Timed out after ${timeoutMs}ms`
+      stderrChunks.push(`${failureMessage}\n`)
+      await appendArtifactLog({
+        artifactDir,
+        fileName: 'worker.progress.log',
+        message: `session-prompt-end success=false error=${JSON.stringify(failureMessage)}`,
+      })
+      return {
+        exitCode: 1,
+        stdout: stdoutChunks.join(''),
+        stderr: stderrChunks.join(''),
+      }
+    }
     await appendArtifactLog({
       artifactDir,
       fileName: 'worker.progress.log',
@@ -313,6 +319,8 @@ const runSdkAttempt = async ({
           provider,
           modelId,
           thinking,
+          timedOut,
+          errorMessage: session.agent.state.errorMessage ?? null,
           skillCount: resourceLoader.getSkills().skills.length,
           agentFiles: resourceLoader.getAgentsFiles().agentsFiles.map((file) => file.path),
         },
@@ -360,7 +368,6 @@ const main = async () => {
     artifactDir,
     cwd,
     modelId: primaryModel,
-    programPath: resolvedProgramPath,
     prompt,
     provider,
     thinking,
@@ -385,7 +392,6 @@ const main = async () => {
     artifactDir,
     cwd,
     modelId: fallbackModel,
-    programPath: resolvedProgramPath,
     prompt,
     provider,
     thinking,
