@@ -47,19 +47,8 @@ yarn.lock
 .zed
 
 
-notes.md
-
 # Git worktrees
 .worktrees/
 
-# SFT distillation artifacts (too large for git — back up externally)
-trajectories/
-training-data/
-.memory/
-dev-research/native-model/evals/runs/
-dev-research/native-model/training/runs/
-
-# Python venv (MLX inference)
-.venv/
-__pycache__/
-.prompts/
+# autoresearch
+.plaited
