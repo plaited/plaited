@@ -21,6 +21,8 @@ export const ProgramRunnerAttemptSchema = z.object({
   worktreePath: z.string(),
   artifactDir: z.string(),
   allowedPaths: z.array(z.string()),
+  changedPaths: z.array(z.string()).optional(),
+  outOfScopePaths: z.array(z.string()).optional(),
   workerCommand: z.array(z.string()).optional(),
   validateCommand: z.array(z.string()).optional(),
   startedAt: z.string().optional(),

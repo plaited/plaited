@@ -62,6 +62,7 @@ const createValidationPlan = (programPath: string): ValidationPlan => {
     'verification-factories': ['src/cli/eval/tests/eval.spec.ts'],
     'default-factories': [
       'src/agent/tests/create-agent.spec.ts',
+      'src/bootstrap/tests/bootstrap.spec.ts',
       'src/cli/program-runner/tests/program-runner.spec.ts',
     ],
   }

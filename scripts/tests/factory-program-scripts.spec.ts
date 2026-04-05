@@ -82,4 +82,16 @@ describe('createValidationPlan', () => {
     expect(plan.reason).toContain("no explicit targeted tests mapped for lane 'plan-factories'")
     expect(plan.commands).toEqual([['bun', '--bun', 'tsc', '--noEmit']])
   })
+
+  test('covers bootstrap tests for default-factories lane', () => {
+    const plan = createValidationPlan('dev-research/default-factories/program.md')
+
+    expect(plan.commands).toContainEqual([
+      'bun',
+      'test',
+      'src/agent/tests/create-agent.spec.ts',
+      'src/bootstrap/tests/bootstrap.spec.ts',
+      'src/cli/program-runner/tests/program-runner.spec.ts',
+    ])
+  })
 })

@@ -148,6 +148,7 @@ Test fanout.
       expect(await Bun.file(join(runResult.runDir, 'run.json')).exists()).toBe(true)
       expect(await Bun.file(join(runResult.attempts[0]!.artifactDir, 'status.json')).exists()).toBe(true)
       expect(await Bun.file(join(runResult.attempts[0]!.worktreePath, 'validated.txt')).exists()).toBe(true)
+      expect(await Bun.file(join(runResult.attempts[0]!.artifactDir, 'changed-paths.json')).exists()).toBe(false)
 
       const loaded = await loadFactoryProgramRun({
         programPath: 'dev-research/skill-factories/program.md',
@@ -163,6 +164,78 @@ Test fanout.
           workspaceRoot: root,
         }),
       ).toEndWith(`/skill-factories/${runResult.runDir.split('/').at(-1)}`)
+    } finally {
+      process.chdir(cwd)
+    }
+  })
+
+  test('fails attempts when the worker edits outside writable roots', async () => {
+    const root = makeTempDir()
+    await initRepo(root)
+
+    const programPath = join(root, 'dev-research', 'default-factories', 'program.md')
+    await Bun.$`mkdir -p ${dirname(programPath)}`.quiet()
+    await Bun.write(
+      programPath,
+      `# Default Factories
+
+## Writable Roots
+
+- [factories](../../src/factories/)
+- [factories.ts](../../src/factories.ts)
+`,
+    )
+
+    const cwd = process.cwd()
+    process.chdir(root)
+    try {
+      const runResult = await runFactoryProgram({
+        programPath: 'dev-research/default-factories/program.md',
+        workerCommand: ['bun', '-e', "await Bun.write('src/bootstrap/bootstrap.ts', 'bad')"],
+      })
+
+      expect(runResult.attempts).toHaveLength(1)
+      expect(runResult.attempts[0]?.status).toBe('failed')
+      expect(runResult.attempts[0]?.outOfScopePaths).toEqual(['src/bootstrap/bootstrap.ts'])
+      await expect(
+        Bun.file(join(runResult.attempts[0]!.artifactDir, 'out-of-scope-paths.json')).json(),
+      ).resolves.toEqual(['src/bootstrap/bootstrap.ts'])
+    } finally {
+      process.chdir(cwd)
+    }
+  })
+
+  test('records in-scope worker edits before validation', async () => {
+    const root = makeTempDir()
+    await initRepo(root)
+
+    const programPath = join(root, 'dev-research', 'default-factories', 'program.md')
+    await Bun.$`mkdir -p ${dirname(programPath)}`.quiet()
+    await Bun.$`mkdir -p ${join(root, 'src', 'factories')}`.quiet()
+    await Bun.write(
+      programPath,
+      `# Default Factories
+
+## Writable Roots
+
+- [factories](../../src/factories/)
+- [factories.ts](../../src/factories.ts)
+`,
+    )
+
+    const cwd = process.cwd()
+    process.chdir(root)
+    try {
+      const runResult = await runFactoryProgram({
+        programPath: 'dev-research/default-factories/program.md',
+        workerCommand: ['bun', '-e', "await Bun.write('src/factories/new-factory.ts', 'export const ok = true\\n')"],
+      })
+
+      expect(runResult.attempts[0]?.status).toBe('succeeded')
+      expect(runResult.attempts[0]?.changedPaths).toEqual(['src/factories/new-factory.ts'])
+      const diffSummary = await Bun.file(join(runResult.attempts[0]!.artifactDir, 'diff-summary.txt')).text()
+      expect(diffSummary).toContain('Untracked files:')
+      expect(diffSummary).toContain('src/factories/new-factory.ts')
     } finally {
       process.chdir(cwd)
     }

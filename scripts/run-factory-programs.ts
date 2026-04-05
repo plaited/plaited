@@ -22,7 +22,9 @@ type OrchestrationInput = {
 type ProgramRunAttempt = {
   artifactDir: string
   attempt: number
+  changedPaths?: string[]
   error?: string
+  outOfScopePaths?: string[]
   status: 'prepared' | 'running' | 'succeeded' | 'failed'
   validateExitCode?: number
   workerExitCode?: number
@@ -302,12 +304,20 @@ const runPreflight = async ({ workspaceRoot }: { workspaceRoot: string }): Promi
 }
 
 const getAttemptDiffSummary = async (attempt: ProgramRunAttempt) => {
-  const result = await runCommand({
-    args: ['git', 'diff', '--stat'],
-    cwd: attempt.worktreePath,
-  })
+  const diffSummaryPath = resolve(attempt.artifactDir, 'diff-summary.txt')
+  const file = Bun.file(diffSummaryPath)
+  if (await file.exists()) {
+    return (await file.text()).trim()
+  }
 
-  return result.exitCode === 0 ? result.stdout.trim() : ''
+  const sections = []
+  if (attempt.changedPaths && attempt.changedPaths.length > 0) {
+    sections.push(['Changed paths:', ...attempt.changedPaths].join('\n'))
+  }
+  if (attempt.outOfScopePaths && attempt.outOfScopePaths.length > 0) {
+    sections.push(['Out of scope paths:', ...attempt.outOfScopePaths].join('\n'))
+  }
+  return sections.join('\n\n')
 }
 
 const callOpenRouterReview = async ({

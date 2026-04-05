@@ -15,6 +15,9 @@ const normalizePath = (value: string): string => value.replaceAll('\\', '/')
 
 const toJson = (value: unknown): string => JSON.stringify(value, null, 2)
 
+const matchesAllowedPath = ({ allowedPath, path }: { allowedPath: string; path: string }): boolean =>
+  allowedPath.endsWith('/') ? path.startsWith(allowedPath) : path === allowedPath
+
 const runCommand = async ({
   args,
   cwd,
@@ -211,6 +214,63 @@ const writeAttemptStatus = async ({ attemptDir, run }: { attemptDir: string; run
   await Bun.write(join(attemptDir, 'status.json'), toJson(ProgramRunnerRunSchema.parse(run)))
 }
 
+const getChangedPaths = async ({ cwd }: { cwd: string }): Promise<string[]> => {
+  const [trackedResult, untrackedResult] = await Promise.all([
+    runCommand({
+      args: ['git', 'diff', '--name-only', 'HEAD', '--'],
+      cwd,
+    }),
+    runCommand({
+      args: ['git', 'ls-files', '--others', '--exclude-standard'],
+      cwd,
+    }),
+  ])
+
+  if (trackedResult.exitCode !== 0) {
+    throw new Error(trackedResult.stderr.trim() || 'Failed to list tracked changes')
+  }
+  if (untrackedResult.exitCode !== 0) {
+    throw new Error(untrackedResult.stderr.trim() || 'Failed to list untracked changes')
+  }
+
+  return [...trackedResult.stdout.split('\n'), ...untrackedResult.stdout.split('\n')]
+    .map((value) => normalizePath(value.trim()))
+    .filter((value) => value.length > 0)
+    .sort()
+}
+
+const summarizeAttemptChanges = async ({ cwd }: { cwd: string }): Promise<string> => {
+  const [diffStatResult, untrackedResult] = await Promise.all([
+    runCommand({
+      args: ['git', 'diff', '--stat', 'HEAD', '--'],
+      cwd,
+    }),
+    runCommand({
+      args: ['git', 'ls-files', '--others', '--exclude-standard'],
+      cwd,
+    }),
+  ])
+
+  if (diffStatResult.exitCode !== 0) {
+    throw new Error(diffStatResult.stderr.trim() || 'Failed to collect diff stat')
+  }
+  if (untrackedResult.exitCode !== 0) {
+    throw new Error(untrackedResult.stderr.trim() || 'Failed to collect untracked files')
+  }
+
+  const sections = [diffStatResult.stdout.trim()].filter((value) => value.length > 0)
+  const untracked = untrackedResult.stdout
+    .split('\n')
+    .map((value) => normalizePath(value.trim()))
+    .filter((value) => value.length > 0)
+
+  if (untracked.length > 0) {
+    sections.push(['Untracked files:', ...untracked].join('\n'))
+  }
+
+  return sections.join('\n\n')
+}
+
 const createAttemptRecord = ({
   allowedPaths,
   attempt,
@@ -303,6 +363,32 @@ const executeAttempt = async ({
     if (result.exitCode !== 0) {
       attempt.status = 'failed'
       attempt.error = result.stderr.trim() || `Worker command failed with exit code ${result.exitCode}`
+      attempt.finishedAt = new Date().toISOString()
+      return
+    }
+
+    const changedPaths = await getChangedPaths({
+      cwd: attempt.worktreePath,
+    })
+    const outOfScopePaths = changedPaths.filter(
+      (path) => !attempt.allowedPaths.some((allowedPath) => matchesAllowedPath({ allowedPath, path })),
+    )
+    const changeSummary = await summarizeAttemptChanges({
+      cwd: attempt.worktreePath,
+    })
+
+    attempt.changedPaths = changedPaths
+    if (outOfScopePaths.length > 0) {
+      attempt.outOfScopePaths = outOfScopePaths
+    }
+
+    await Bun.write(join(attempt.artifactDir, 'changed-paths.json'), toJson(changedPaths))
+    await Bun.write(join(attempt.artifactDir, 'diff-summary.txt'), changeSummary.length > 0 ? `${changeSummary}\n` : '')
+
+    if (outOfScopePaths.length > 0) {
+      await Bun.write(join(attempt.artifactDir, 'out-of-scope-paths.json'), toJson(outOfScopePaths))
+      attempt.status = 'failed'
+      attempt.error = `Worker changed paths outside writable roots: ${outOfScopePaths.join(', ')}`
       attempt.finishedAt = new Date().toISOString()
       return
     }
