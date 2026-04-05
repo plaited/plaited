@@ -2,6 +2,7 @@ export * from './factories/autoresearch-factory/autoresearch-factory.constants.t
 export * from './factories/autoresearch-factory/autoresearch-factory.schemas.ts'
 export * from './factories/autoresearch-factory/autoresearch-factory.ts'
 export type * from './factories/autoresearch-factory/autoresearch-factory.types.ts'
+export * from './factories/default-factory-bundle/default-factory-bundle.ts'
 export * from './factories/server-factory/server-factory.constants.ts'
 export * from './factories/server-factory/server-factory.schemas.ts'
 export * from './factories/server-factory/server-factory.ts'

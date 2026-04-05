@@ -206,6 +206,26 @@ The best shipped result will not come from:
 - treating dynamically loaded factories as an afterthought
 - optimizing each lane locally without bundle-level integration authority
 
+## Current Initial Bundle
+
+The smallest real bootstrap-time bundle should currently contain only:
+
+- `server-factory`
+
+Reasoning:
+
+- it is the only concrete shipped factory lane in `src/factories.ts` that
+  bootstrap directly depends on to start the runtime
+- `autoresearch-factory` and `skills-factory` are still placeholders, not real
+  startup policy surfaces
+- `a2a-factory`, `mcp-factory`, and related utilities are important adjacent
+  surfaces, but they are not yet promoted as bootstrap-installed behavioral
+  factories
+
+Until more factory lanes become concrete and judged at the bundle level,
+bootstrap should consume this minimal bundle rather than inventing broader
+policy inline.
+
 ## Program Structure
 
 This lane should treat default-factory research as a two-level system.

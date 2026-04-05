@@ -1,7 +1,12 @@
 import { mkdir } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { createAgent } from '../agent.ts'
-import { createServerFactory, SERVER_FACTORY_EVENTS, ServerFactoryConfigSchema } from '../factories.ts'
+import {
+  createDefaultBootstrapFactories,
+  DEFAULT_BOOTSTRAP_FACTORY_BUNDLE_ID,
+  SERVER_FACTORY_EVENTS,
+  ServerFactoryConfigSchema,
+} from '../factories.ts'
 import type { BootstrapInput, BootstrapOutput, BootstrapRuntime, BootstrapRuntimeInput } from './bootstrap.types.ts'
 
 const ensureDir = async (path: string): Promise<void> => {
@@ -97,6 +102,7 @@ export const bootstrapAgent = async (input: BootstrapInput): Promise<BootstrapOu
     data: {
       name: input.name,
       profile: input.profile,
+      defaultFactoryBundle: DEFAULT_BOOTSTRAP_FACTORY_BUNDLE_ID,
       targetDir,
       generatedAt: new Date().toISOString(),
     },
@@ -219,7 +225,7 @@ const buildServerConfig = (input: BootstrapRuntimeInput) =>
   })
 
 /**
- * Creates an agent runtime wired with server-factory bootstrap defaults.
+ * Creates an agent runtime wired with the current default bootstrap bundle.
  *
  * @param input - Bootstrap runtime configuration and resolved model/auth seams.
  * @returns Bootstrapped agent handle plus server lifecycle helpers.
@@ -237,7 +243,7 @@ export const createBootstrappedAgent = async (input: BootstrapRuntimeInput): Pro
     models: input.models,
     restrictedTriggers: input.restrictedTriggers,
     heartbeat: input.heartbeat,
-    factories: [createServerFactory({ initialConfig: { autostart: false } }), ...(input.factories ?? [])],
+    factories: [...createDefaultBootstrapFactories(), ...(input.factories ?? [])],
   })
 
   agent.trigger({

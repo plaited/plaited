@@ -94,6 +94,23 @@ This lane should keep the bootstrap surface compatible with:
 The stable dependency is the ability to provide the configured model surfaces,
 not one mandatory hosting platform.
 
+### 5. Bootstrap Consumes Default Factory Policy
+
+Bootstrap should not become the place where default runtime policy is invented.
+
+It should:
+
+- consume the currently selected default bootstrap bundle from
+  [src/factories/](../../src/factories/)
+- emit startup config events for installed lanes
+- fire startup lifecycle events such as server start
+
+It should not:
+
+- decide ad hoc which experimental factories belong in the shipped default
+  composition
+- absorb policy that should remain owned by concrete factory lanes
+
 ## Research Questions
 
 This lane should answer:

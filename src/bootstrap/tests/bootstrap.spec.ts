@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import type { Factory, Signal } from '../../agent.ts'
 import { SERVER_FACTORY_SIGNAL_KEYS } from '../../factories/server-factory/server-factory.constants.ts'
 import type { ServerFactoryStatusSchema } from '../../factories/server-factory/server-factory.schemas.ts'
+import { createDefaultBootstrapFactories, DEFAULT_BOOTSTRAP_FACTORY_BUNDLE_ID } from '../../factories.ts'
 import { bootstrapAgent, createBootstrappedAgent } from '../bootstrap.ts'
 
 const TEST_MODELS = {
@@ -38,6 +39,9 @@ describe('bootstrapAgent', () => {
 
     const bootstrapFile = Bun.file(join(targetDir, '.plaited/config/bootstrap.json'))
     expect(await bootstrapFile.exists()).toBe(true)
+    await expect(bootstrapFile.json()).resolves.toMatchObject({
+      defaultFactoryBundle: DEFAULT_BOOTSTRAP_FACTORY_BUNDLE_ID,
+    })
 
     const modelsFile = Bun.file(join(targetDir, '.plaited/config/models.json'))
     expect(await modelsFile.exists()).toBe(true)
@@ -112,5 +116,10 @@ describe('bootstrapAgent', () => {
     expect(await response.text()).toBe('OK')
 
     runtime.stopServer()
+  })
+
+  test('uses the current minimal default bootstrap bundle', () => {
+    const factories = createDefaultBootstrapFactories()
+    expect(factories).toHaveLength(1)
   })
 })

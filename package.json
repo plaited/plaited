@@ -45,6 +45,9 @@
     "check:types": "tsc --noEmit",
     "check:write": "biome check --write && format-package --write",
     "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .hooks || true",
+    "program:autonomous": "bun scripts/run-factory-programs.ts",
+    "program:autonomous:dryrun": "bun scripts/run-factory-programs.ts '{\"dryRun\":true}'",
+    "program:autonomous:test": "bun scripts/run-factory-programs.ts '{\"test\":true}'",
     "program:factory": "bun run ./bin/plaited.ts program-runner",
     "test": "bun test"
   },
