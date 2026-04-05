@@ -174,6 +174,7 @@ describe('createAgent', () => {
         "import { $ } from 'bun'",
         '',
         "const [value = ''] = Bun.argv.slice(2)",
+        // biome-ignore lint/suspicious/noTemplateCurlyInString: fixture source must contain the literal Bun template expression
         'const result = await $`printf ${value}`.quiet().nothrow()',
         'if (result.stdout.length > 0) process.stdout.write(result.stdout)',
         'if (result.stderr.length > 0) process.stderr.write(result.stderr)',

@@ -11,10 +11,7 @@
  */
 
 import * as z from 'zod'
-import { TrajectoryStepSchema } from '../agent/agent.schemas.ts'
-
-export { TrajectoryStepSchema }
-export type { TrajectoryStep } from '../agent/agent.schemas.ts'
+import { TrajectoryStepSchema } from '../../agent.ts'
 
 // ============================================================================
 // Prompt Case

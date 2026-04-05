@@ -20,7 +20,7 @@ editing, memory, bootstrap, and execution.
 
 The repo now has a clearer infrastructure split:
 
-- Web/UI protocol lives in [src/ui/](../../src/ui) and [src/server/](../../src/server)
+- Web/UI protocol lives in [src/ui/](../../src/ui) and [src/factories/server-factory/](../../src/factories/server-factory)
 - execution can live in a sandbox such as Boxer/WasmBox
 - discovery and transport can be handled separately through modnet surfaces
 

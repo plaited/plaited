@@ -67,9 +67,9 @@ Primary local inputs:
 - [skills/node-auth/references/platform-jwt.md](../../skills/node-auth/references/platform-jwt.md)
 - [skills/node-auth/references/oidc-enterprise.md](../../skills/node-auth/references/oidc-enterprise.md)
 - [skills/node-auth/references/dev-mode.md](../../skills/node-auth/references/dev-mode.md)
-- [src/server/server.ts](../../src/server/server.ts)
-- [src/server/server.types.ts](../../src/server/server.types.ts)
-- [src/server/server.schemas.ts](../../src/server/server.schemas.ts)
+- [src/factories/server-factory/server-factory.ts](../../src/factories/server-factory/server-factory.ts)
+- [src/factories/server-factory/server-factory.types.ts](../../src/factories/server-factory/server-factory.types.ts)
+- [src/factories/server-factory/server-factory.schemas.ts](../../src/factories/server-factory/server-factory.schemas.ts)
 - [src/agent/create-agent.ts](../../src/agent/create-agent.ts)
 - [src/factories/a2a-factory/](../../src/factories/a2a-factory)
 

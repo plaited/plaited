@@ -9,6 +9,7 @@
  */
 
 import { mkdir, rm } from 'node:fs/promises'
+import type { TrajectoryStep } from '../../agent.ts'
 import type {
   Adapter,
   CaptureEvidence,
@@ -19,14 +20,7 @@ import type {
   TrajectoryRichness,
   TrialResult,
 } from './eval.schemas.ts'
-import {
-  AdapterResultSchema,
-  GraderResultSchema,
-  MetaVerificationSchema,
-  PromptCaseSchema,
-  type TrajectoryStep,
-} from './eval.schemas.ts'
-
+import { AdapterResultSchema, GraderResultSchema, MetaVerificationSchema, PromptCaseSchema } from './eval.schemas.ts'
 // ============================================================================
 // Path Resolution
 // ============================================================================
@@ -246,7 +240,6 @@ export const writeOutput = async (line: string, outputPath?: string, append?: bo
       await Bun.write(outputPath, `${line}\n`)
     }
   } else {
-    // biome-ignore lint/suspicious/noConsole: CLI stdout output
     console.log(line)
   }
 }

@@ -53,7 +53,7 @@ const sseResponse = (iterable: AsyncIterable<unknown>, id: string | number, cont
  * @remarks
  * Returns a `routes` object that the caller merges into their
  * `Bun.serve({ routes: {...handlers} })` configuration — the same composition pattern
- * as `createServer` in `src/server/`.
+ * as `createServer` in `src/factories/server-factory/`.
  *
  * Two routes are produced:
  * - `GET /.well-known/agent-card.json` — Agent Card discovery

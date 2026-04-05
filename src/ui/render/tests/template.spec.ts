@@ -1,8 +1,8 @@
 /* eslint-disable no-constant-binary-expression */
 import { expect, test } from 'bun:test'
 import beautify from 'beautify'
-import type { FunctionTemplate, TemplateObject } from 'plaited'
 import { Fragment, h } from 'plaited/jsx-runtime'
+import type { FunctionTemplate, TemplateObject } from 'plaited/ui'
 
 const render = (tpl: TemplateObject) => beautify(tpl.html.join(''), { format: 'html' })
 

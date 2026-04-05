@@ -6,7 +6,7 @@
  * This module provides access to:
  * - **Behavioral Programming**: {@link behavioral}, {@link bThread}, {@link bSync} - Event coordination and synchronization
  *
- * For UI-specific APIs (styling, templates, rendering), import from 'plaited'.
+ * For UI-specific APIs (styling, templates, rendering), import from 'plaited/ui'.
  *
  * @public
  */

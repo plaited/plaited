@@ -2,7 +2,6 @@ import { describe, expect, test } from 'bun:test'
 import {
   AgentPlanStepSchema,
   AgentToolCallSchema,
-  bSync,
   DecisionStepSchema,
   FactoryResultSchema,
   ModelUsageSchema,
@@ -10,7 +9,8 @@ import {
   ToolDefinitionSchema,
   TrajectoryStepSchema,
   UpdateFactoryModuleSchema,
-} from 'plaited'
+} from 'plaited/agent'
+import { bSync } from 'plaited/behavioral'
 
 describe('AgentToolCallSchema', () => {
   test('validates a complete tool call', () => {

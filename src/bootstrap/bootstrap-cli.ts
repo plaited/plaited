@@ -1,4 +1,4 @@
-import { makeCli } from '../utils.ts'
+import { makeCli } from '../cli.ts'
 import { BootstrapInputSchema, BootstrapOutputSchema } from './bootstrap.schemas.ts'
 import { bootstrapAgent } from './bootstrap.ts'
 

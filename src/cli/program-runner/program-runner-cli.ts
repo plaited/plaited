@@ -1,4 +1,4 @@
-import { parseCliRequest } from '../utils.ts'
+import { parseCliRequest } from '../utils/cli.ts'
 import {
   type ProgramRunnerRunInput,
   ProgramRunnerRunInputSchema,

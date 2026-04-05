@@ -265,7 +265,7 @@ bThreads.set({
       }),
     ),
     bSync({
-      request: { type: AGENT_EVENTS.request_inference_primary },
+      request: { type: AGENT_EVENTS.request_inference },
       interrupt: [AGENT_EVENTS.agent_disconnect],
     }),
   ]),
@@ -336,9 +336,9 @@ sequenceDiagram
     participant H as Async Handler
     participant INF as Inference
 
-    T->>BP: trigger(request_inference_primary)
-    BP->>BP: selectNextEvent → request_inference_primary selected
-    BP->>H: actionPublisher(request_inference_primary) — fire-and-forget
+    T->>BP: trigger(request_inference)
+    BP->>BP: selectNextEvent → request_inference selected
+    BP->>H: actionPublisher(request_inference) — fire-and-forget
     Note over BP: Super-step ends (no more events)
     H->>INF: await inferenceCall()
     Note over H: Waiting for response...
@@ -417,7 +417,7 @@ done-checking. When `agent_disconnect` fires, the block activates and prevents a
 from being selected.
 
 3. **Events as the only control flow** — Instead of calling coordination helpers from multiple
-handlers, trigger an event such as `request_inference_primary`. The handler for that event does the
+handlers, trigger an event such as `request_inference`. The handler for that event does the
 inference. This makes the control flow visible to `useSnapshot`.
 
 4. **Repeat for constraints, finite for sequences** — Persistent safety/coordination threads use

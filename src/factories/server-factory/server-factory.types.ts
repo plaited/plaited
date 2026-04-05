@@ -1,14 +1,11 @@
 import type { Server, TLSOptions } from 'bun'
-import type { Trigger } from '../behavioral.ts'
-import type { SERVER_ERRORS } from './server.constants.ts'
-import type { WebSocketData } from './server.schemas.ts'
+import type { Factory } from '../../agent.ts'
+import type { Trigger } from '../../behavioral.ts'
+import type { SERVER_ERRORS } from './server-factory.constants.ts'
+import type { WebSocketData } from './server-factory.schemas.ts'
 
 /** Route map type extracted from Bun.serve, parameterized with our WebSocket data */
 type ServeRoutes = Bun.Serve.Routes<WebSocketData, string>
-
-// ============================================================================
-// UI Adapter Lifecycle Detail Types
-// ============================================================================
 
 /**
  * Detail payload for the `client_connected` event.
@@ -16,16 +13,18 @@ type ServeRoutes = Bun.Serve.Routes<WebSocketData, string>
  * @remarks
  * Triggered when a WebSocket connection is established.
  * `source` is the client identity from the `Sec-WebSocket-Protocol` header.
- * `isReconnect` is true when this session has had a prior WebSocket connection
+ * `isReconnect` is true when this connection has had a prior WebSocket connection
  * during the server's lifetime — enables SSR reconciliation (the BP can
  * push fresh state on reconnect vs skip on first connect).
  *
  * @public
  */
 export type UIClientConnectedDetail = {
-  sessionId: string
+  connectionId: string
   source: string
   isReconnect: boolean
+  principalId?: string
+  deviceId?: string
 }
 
 /**
@@ -39,9 +38,11 @@ export type UIClientConnectedDetail = {
  * @public
  */
 export type UIClientDisconnectedDetail = {
-  sessionId: string
+  connectionId: string
   code: number
   reason: string
+  principalId?: string
+  deviceId?: string
 }
 
 /**
@@ -55,10 +56,22 @@ export type UIClientDisconnectedDetail = {
  */
 export type UIClientErrorDetail = {
   code: (typeof SERVER_ERRORS)[keyof typeof SERVER_ERRORS]
-  sessionId?: string
+  connectionId?: string
   message?: string
   pathname?: string
 }
+
+export type AuthenticatedConnection = {
+  connectionId: string
+  principalId?: string
+  deviceId?: string
+  capabilities?: string[]
+}
+
+export type AuthenticateConnection = (input: {
+  request: Request
+  source: string
+}) => AuthenticatedConnection | Promise<AuthenticatedConnection | null> | null
 
 /**
  * Configuration for the per-topic message replay buffer.
@@ -100,7 +113,7 @@ export type CreateServerOptions = {
   port?: number
   tls?: TLSOptions
   allowedOrigins?: Set<string>
-  validateSession: (sessionId: string) => boolean
+  authenticateConnection: AuthenticateConnection
   wsLimits?: WebSocketLimits
   replayBuffer?: ReplayBufferOptions
   /** Content-Security-Policy header value for server-generated responses.
@@ -133,3 +146,11 @@ export type ServerHandle = {
   /** Stop the server */
   stop: (closeActiveConnections?: boolean) => void
 }
+
+export type CreateServerFactoryOptions = {
+  configSignalKey?: string
+  statusSignalKey?: string
+  initialConfig?: Partial<CreateServerOptions> & { autostart?: boolean }
+}
+
+export type ServerFactory = Factory

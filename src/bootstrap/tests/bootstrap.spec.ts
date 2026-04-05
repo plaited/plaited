@@ -2,7 +2,19 @@ import { describe, expect, test } from 'bun:test'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { bootstrapAgent } from '../bootstrap.ts'
+import type { Factory, Signal } from '../../agent.ts'
+import { SERVER_FACTORY_SIGNAL_KEYS } from '../../factories/server-factory/server-factory.constants.ts'
+import type { ServerFactoryStatusSchema } from '../../factories/server-factory/server-factory.schemas.ts'
+import { bootstrapAgent, createBootstrappedAgent } from '../bootstrap.ts'
+
+const TEST_MODELS = {
+  primary: async () => ({
+    parsed: { thinking: null, toolCalls: [], message: null },
+    usage: { inputTokens: 0, outputTokens: 0 },
+  }),
+  vision: async () => ({ description: '' }),
+  tts: async () => ({ audio: new Uint8Array(), sampleRate: 0, duration: 0 }),
+}
 
 describe('bootstrapAgent', () => {
   test('writes the deployment scaffold', async () => {
@@ -17,6 +29,7 @@ describe('bootstrapAgent', () => {
       memoryProvider: 'agentfs',
       sandboxProvider: 'boxer',
       syncProvider: 'none',
+      serverPort: 0,
       overwrite: false,
     })
 
@@ -43,6 +56,7 @@ describe('bootstrapAgent', () => {
       memoryProvider: 'agentfs',
       sandboxProvider: 'boxer',
       syncProvider: 'none',
+      serverPort: 0,
       overwrite: false,
     })
 
@@ -54,8 +68,49 @@ describe('bootstrapAgent', () => {
         memoryProvider: 'agentfs',
         sandboxProvider: 'boxer',
         syncProvider: 'none',
+        serverPort: 0,
         overwrite: false,
       }),
     ).rejects.toThrow('Refusing to overwrite existing file')
+  })
+
+  test('creates a bootstrapped agent and starts the server through bootstrap orchestration', async () => {
+    const targetDir = await mkdtemp(join(tmpdir(), 'plaited-bootstrap-runtime-'))
+    let statusSignal!: Signal<typeof ServerFactoryStatusSchema>
+
+    const observeFactory: Factory = ({ signals }) => {
+      statusSignal = signals.get(SERVER_FACTORY_SIGNAL_KEYS.status) as Signal<typeof ServerFactoryStatusSchema>
+      return {}
+    }
+
+    const runtime = await createBootstrappedAgent({
+      targetDir,
+      name: 'demo-agent',
+      profile: 'local-first',
+      primaryBaseUrl: 'http://127.0.0.1:8000/v1',
+      primaryModel: 'falcon-h1r-7b',
+      memoryProvider: 'agentfs',
+      sandboxProvider: 'boxer',
+      syncProvider: 'none',
+      serverPort: 0,
+      overwrite: false,
+      models: TEST_MODELS,
+      authenticateConnection: () => ({ connectionId: 'bootstrap-test' }),
+      routes: {
+        '/health': new Response('OK'),
+      },
+      factories: [observeFactory],
+    })
+
+    await Bun.sleep(50)
+
+    const port = statusSignal.get()?.port ?? 0
+    expect(port).toBeGreaterThan(0)
+
+    const response = await fetch(`http://localhost:${port}/health`)
+    expect(response.status).toBe(200)
+    expect(await response.text()).toBe('OK')
+
+    runtime.stopServer()
   })
 })

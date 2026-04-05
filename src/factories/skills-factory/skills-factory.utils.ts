@@ -1,7 +1,7 @@
 import { basename, dirname, normalize, resolve } from 'node:path'
 import { Glob } from 'bun'
 import * as z from 'zod'
-import { extractLocalLinksFromMarkdown, parseMarkdownWithFrontmatter } from '../../utils.ts'
+import { extractLocalLinksFromMarkdown, parseMarkdownWithFrontmatter } from '../../cli.ts'
 
 const skillNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 

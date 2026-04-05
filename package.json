@@ -17,15 +17,17 @@
     "plaited": "./bin/plaited.ts"
   },
   "type": "module",
-  "main": "./src/main.ts",
   "exports": {
-    ".": "./src/main.ts",
-    "./eval": "./src/eval.ts",
-    "./improve": "./src/eval.ts",
-    "./program-runner": "./src/program-runner.ts",
-    "./mcp": "./src/mcp.ts",
+    "./agent": "./src/agent.ts",
+    "./behavioral": "./src/behavioral.ts",
+    "./bootstrap": "./src/bootstrap.ts",
+    "./cli": "./src/cli.ts",
+    "./factories": "./src/factories.ts",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
-    "./jsx-runtime": "./src/jsx-runtime.ts"
+    "./jsx-runtime": "./src/jsx-runtime.ts",
+    "./mcp": "./src/mcp.ts",
+    "./ui": "./src/ui.ts",
+    "./utils": "./src/utils.ts"
   },
   "files": [
     "./.bin/**",

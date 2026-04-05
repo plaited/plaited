@@ -10,7 +10,7 @@
 
 import { join } from 'node:path'
 import type { Subprocess } from 'bun'
-import { parseCli } from 'plaited'
+import { parseCli } from 'plaited/cli'
 import * as z from 'zod'
 
 // ============================================================================
@@ -729,7 +729,6 @@ export { executeLsp }
  */
 export const typescriptLspCli = async (args: string[]) => {
   if (args.includes('--help') || args.includes('-h')) {
-    // biome-ignore lint/suspicious/noConsole: CLI output
     console.log(`typescript-lsp skill
 Unified TypeScript LSP tool — type-aware codebase analysis
 
@@ -764,7 +763,6 @@ Exit codes:
 
   try {
     const result = await executeLsp(input)
-    // biome-ignore lint/suspicious/noConsole: CLI output
     console.log(JSON.stringify(result, null, 2))
     if (result.results.some((r) => r.error)) process.exit(1)
   } catch (error) {

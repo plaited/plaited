@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { isBPEvent } from 'plaited'
+import { isBPEvent } from 'plaited/behavioral'
 
 test('isBPEvent: returns true for valid BPEvent with type only', () => {
   const event = { type: 'test' }

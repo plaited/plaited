@@ -7,7 +7,7 @@ import {
   decorateElements,
   joinStyles,
   type TemplateObject,
-} from 'plaited'
+} from 'plaited/ui'
 
 const render = (template: TemplateObject) => {
   const { render: ssrRender } = createSSR()

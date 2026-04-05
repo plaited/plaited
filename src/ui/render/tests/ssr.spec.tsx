@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
-import { createHostStyles, createSSR, createStyles } from 'plaited'
 import { h } from 'plaited/jsx-runtime'
+import { createHostStyles, createSSR, createStyles } from 'plaited/ui'
 
 test('createSSR: Replaces :host{ with :root{ for SSR', () => {
   const hostStyles = createHostStyles({

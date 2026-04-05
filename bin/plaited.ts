@@ -12,10 +12,7 @@
  */
 
 import { bootstrapCli } from '../src/bootstrap.ts'
-import { evalCli } from '../src/eval.ts'
-import { programRunnerCli } from '../src/program-runner.ts'
-
-export { makeCli, parseCli, parseCliRequest } from '../src/utils.ts'
+import { evalCli, programRunnerCli } from '../src/cli.ts'
 
 // ============================================================================
 // Command Registry

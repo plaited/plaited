@@ -47,7 +47,6 @@ const main = async () => {
 
   for (const content of result.content) {
     if (content.type === 'text' && content.text) {
-      // biome-ignore lint/suspicious/noConsole: CLI stdout output
       console.log(content.text)
     }
   }

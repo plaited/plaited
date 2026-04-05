@@ -1,10 +1,8 @@
 import { afterAll, describe, expect, test } from 'bun:test'
-import { UI_ADAPTER_LIFECYCLE_EVENTS } from '../../events.ts'
-import { DEFAULT_CSP, SERVER_ERRORS } from '../server.constants.ts'
-import { createServer } from '../server.ts'
-import type { ServerHandle } from '../server.types.ts'
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
+import { UI_ADAPTER_LIFECYCLE_EVENTS } from '../../../events.ts'
+import { DEFAULT_CSP, SERVER_ERRORS } from '../server-factory.constants.ts'
+import { createServer } from '../server-factory.ts'
+import type { ServerHandle } from '../server-factory.types.ts'
 
 type TriggeredEvent = { type: string; detail?: unknown }
 
@@ -16,7 +14,13 @@ const createTestServer = (overrides: Partial<Parameters<typeof createServer>[0]>
   const handle = createServer({
     trigger,
     routes: overrides.routes ?? {},
-    validateSession: () => true,
+    authenticateConnection:
+      overrides.authenticateConnection ??
+      (({ request }) => {
+        const cookies = new Bun.CookieMap(request.headers.get('cookie') ?? '')
+        const connectionId = cookies.get('sid')
+        return connectionId ? { connectionId, principalId: 'test-principal' } : null
+      }),
     port: 0,
     ...overrides,
   })
@@ -28,7 +32,6 @@ const httpUrl = (port: number, path: string) => `http://localhost:${port}${path}
 
 const SESSION_COOKIE = 'sid=test-session-id'
 
-/** Open a WebSocket with session cookie, protocol, and optional origin */
 const openWs = (port: number, opts: { cookie?: string; origin?: string; protocol?: string } = {}) => {
   const headers: Record<string, string> = {
     Cookie: opts.cookie ?? SESSION_COOKIE,
@@ -39,26 +42,21 @@ const openWs = (port: number, opts: { cookie?: string; origin?: string; protocol
   return new WebSocket(wsUrl(port), { headers }) as WebSocket
 }
 
-/** Wait for a WebSocket to reach open state */
 const waitForOpen = (ws: WebSocket) =>
   new Promise<void>((resolve, reject) => {
     ws.onopen = () => resolve()
     ws.onerror = (e) => reject(e)
   })
 
-/** Wait for a WebSocket to reach closed state */
 const waitForClose = (ws: WebSocket) =>
   new Promise<void>((resolve) => {
     ws.onclose = () => resolve()
   })
 
-/** Collect a single message from the WebSocket */
 const nextMessage = (ws: WebSocket) =>
   new Promise<unknown>((resolve) => {
     ws.onmessage = (e) => resolve(JSON.parse(String(e.data)))
   })
-
-// ─── Server Setup ─────────────────────────────────────────────────────────────
 
 describe('Server Setup', () => {
   let handle: ServerHandle
@@ -70,9 +68,7 @@ describe('Server Setup', () => {
     const result = createTestServer()
     handle = result
     expect(result.port).toBeGreaterThan(0)
-    // Raw Bun.Server accessible via .server
     expect(typeof handle.server.publish).toBe('function')
-    // ServerHandle API
     expect(typeof handle.send).toBe('function')
     expect(typeof handle.stop).toBe('function')
   })
@@ -98,8 +94,6 @@ describe('Server Setup', () => {
   })
 })
 
-// ─── WebSocket Upgrade ────────────────────────────────────────────────────────
-
 describe('WebSocket Upgrade', () => {
   let port: number
   let handle: ServerHandle
@@ -118,21 +112,22 @@ describe('WebSocket Upgrade', () => {
     triggered = result.triggered
   })
 
-  test('missing session rejects with 401 and triggers error', async () => {
+  test('missing connection identity rejects with 401 and triggers error', async () => {
     const res = await fetch(httpUrl(port, '/ws'), {
       headers: {
         Upgrade: 'websocket',
         Origin: 'http://localhost:3000',
+        'Sec-WebSocket-Protocol': 'document',
       },
     })
     expect(res.status).toBe(401)
     const body = await res.text()
-    expect(body).toBe(SERVER_ERRORS.session_missing)
+    expect(body).toBe(SERVER_ERRORS.connection_rejected)
 
     const errorEvt = triggered.find(
       (e) =>
         e.type === UI_ADAPTER_LIFECYCLE_EVENTS.client_error &&
-        (e.detail as { code: string })?.code === SERVER_ERRORS.session_missing,
+        (e.detail as { code: string })?.code === SERVER_ERRORS.connection_rejected,
     )
     expect(errorEvt).toBeDefined()
   })
@@ -184,7 +179,6 @@ describe('WebSocket Upgrade', () => {
     })
     await waitForOpen(ws)
     expect(ws.readyState).toBe(WebSocket.OPEN)
-    // Bun WebSocket client receives negotiated protocol
     expect(ws.protocol).toBe('document')
     ws.close()
   })
@@ -194,7 +188,6 @@ describe('WebSocket Upgrade', () => {
       headers: {
         Upgrade: 'websocket',
         Cookie: SESSION_COOKIE,
-        // No Origin header
       },
     })
     expect(res.status).toBe(403)
@@ -202,8 +195,6 @@ describe('WebSocket Upgrade', () => {
     expect(body).toBe(SERVER_ERRORS.origin_rejected)
   })
 })
-
-// ─── WebSocket Lifecycle ──────────────────────────────────────────────────────
 
 describe('WebSocket Lifecycle', () => {
   let port: number
@@ -221,15 +212,15 @@ describe('WebSocket Lifecycle', () => {
     triggered = result.triggered
   })
 
-  test('client_connected triggered on open with sessionId, source, and isReconnect', async () => {
+  test('client_connected triggered on open with connectionId, source, and isReconnect', async () => {
     const ws = openWs(port, { protocol: 'document' })
     await waitForOpen(ws)
     await Bun.sleep(50)
 
     const connectEvt = triggered.find((e) => e.type === UI_ADAPTER_LIFECYCLE_EVENTS.client_connected)
     expect(connectEvt).toBeDefined()
-    const detail = connectEvt!.detail as { sessionId: string; source: string; isReconnect: boolean }
-    expect(detail.sessionId).toBe('test-session-id')
+    const detail = connectEvt!.detail as { connectionId: string; source: string; isReconnect: boolean }
+    expect(detail.connectionId).toBe('test-session-id')
     expect(detail.source).toBe('document')
     expect(detail.isReconnect).toBe(false)
     ws.close()
@@ -246,13 +237,13 @@ describe('WebSocket Lifecycle', () => {
       .slice(before)
       .find((e) => e.type === UI_ADAPTER_LIFECYCLE_EVENTS.client_disconnected)
     expect(disconnectEvt).toBeDefined()
-    const detail = disconnectEvt!.detail as { sessionId: string; code: number; reason: string }
-    expect(detail.sessionId).toBe('test-session-id')
+    const detail = disconnectEvt!.detail as { connectionId: string; code: number; reason: string }
+    expect(detail.connectionId).toBe('test-session-id')
     expect(typeof detail.code).toBe('number')
     expect(typeof detail.reason).toBe('string')
   })
 
-  test('document source subscribes to sessionId topic', async () => {
+  test('document source subscribes to connectionId topic', async () => {
     const ws = openWs(port, { protocol: 'document' })
     await waitForOpen(ws)
     await Bun.sleep(50)
@@ -269,7 +260,7 @@ describe('WebSocket Lifecycle', () => {
     ws.close()
   })
 
-  test('island source subscribes to sessionId:tagName topic', async () => {
+  test('island source subscribes to connectionId:tagName topic', async () => {
     const ws = openWs(port, { protocol: 'app-shell' })
     await waitForOpen(ws)
     await Bun.sleep(50)
@@ -285,8 +276,6 @@ describe('WebSocket Lifecycle', () => {
     ws.close()
   })
 })
-
-// ─── SSR Reconciliation ─────────────────────────────────────────────────────
 
 describe('SSR Reconciliation', () => {
   let port: number
@@ -304,7 +293,7 @@ describe('SSR Reconciliation', () => {
     triggered = result.triggered
   })
 
-  test('first connection for a session has isReconnect false', async () => {
+  test('first connection for a connection identity has isReconnect false', async () => {
     const ws = openWs(port, { protocol: 'document' })
     await waitForOpen(ws)
     await Bun.sleep(50)
@@ -318,7 +307,7 @@ describe('SSR Reconciliation', () => {
     await Bun.sleep(50)
   })
 
-  test('subsequent connection for same session has isReconnect true', async () => {
+  test('subsequent connection for same connection identity has isReconnect true', async () => {
     const before = triggered.length
     const ws = openWs(port, { protocol: 'document' })
     await waitForOpen(ws)
@@ -331,9 +320,8 @@ describe('SSR Reconciliation', () => {
     ws.close()
   })
 
-  test('different source on same session still detects reconnection', async () => {
+  test('different source on same connection still detects reconnection', async () => {
     const before = triggered.length
-    // Same session (same cookie) but different source (island vs document)
     const ws = openWs(port, { protocol: 'sidebar-island' })
     await waitForOpen(ws)
     await Bun.sleep(50)
@@ -341,14 +329,11 @@ describe('SSR Reconciliation', () => {
     const connectEvt = triggered.slice(before).find((e) => e.type === UI_ADAPTER_LIFECYCLE_EVENTS.client_connected)
     expect(connectEvt).toBeDefined()
     const detail = connectEvt!.detail as { isReconnect: boolean; source: string }
-    // Same sessionId seen before → isReconnect true regardless of source
     expect(detail.isReconnect).toBe(true)
     expect(detail.source).toBe('sidebar-island')
     ws.close()
   })
 })
-
-// ─── MPA View Transition Replay Buffer ──────────────────────────────────────
 
 describe('MPA View Transition Replay Buffer', () => {
   let port: number
@@ -383,13 +368,11 @@ describe('MPA View Transition Replay Buffer', () => {
   })
 
   test('messages sent during connection gap are replayed on reconnect', async () => {
-    // Previous test closed the connection — no subscribers on this topic
     const msg1 = JSON.stringify({ type: 'render', detail: { target: 'main', html: '<p>buffered-1</p>' } })
     const msg2 = JSON.stringify({ type: 'attrs', detail: { target: 'nav', attr: { class: 'active' } } })
     handle.send('test-session-id', msg1)
     handle.send('test-session-id', msg2)
 
-    // Reconnect — should receive buffered messages
     const ws = openWs(port, { protocol: 'document' })
     const received: unknown[] = []
     ws.onmessage = (e) => received.push(JSON.parse(String(e.data)))
@@ -405,16 +388,13 @@ describe('MPA View Transition Replay Buffer', () => {
   })
 
   test('expired messages are not replayed', async () => {
-    // Send a message while disconnected
     handle.send(
       'test-session-id',
       JSON.stringify({ type: 'render', detail: { target: 'main', html: '<p>expired</p>' } }),
     )
 
-    // Wait for TTL to expire (configured to 2000ms)
     await Bun.sleep(2100)
 
-    // Reconnect — expired message should NOT be replayed
     const ws = openWs(port, { protocol: 'document' })
     const received: unknown[] = []
     ws.onmessage = (e) => received.push(JSON.parse(String(e.data)))
@@ -428,7 +408,6 @@ describe('MPA View Transition Replay Buffer', () => {
   })
 
   test('buffer respects maxSize limit', async () => {
-    // Buffer more than maxSize (5) messages while disconnected
     for (let i = 0; i < 8; i++) {
       handle.send(
         'test-session-id',
@@ -436,7 +415,6 @@ describe('MPA View Transition Replay Buffer', () => {
       )
     }
 
-    // Reconnect — should receive only last 5 messages
     const ws = openWs(port, { protocol: 'document' })
     const received: unknown[] = []
     ws.onmessage = (e) => received.push(JSON.parse(String(e.data)))
@@ -444,13 +422,11 @@ describe('MPA View Transition Replay Buffer', () => {
     await Bun.sleep(100)
 
     expect(received).toHaveLength(5)
-    // First message should be msg-3 (oldest 3 were dropped)
     expect((received[0] as { detail: { html: string } }).detail.html).toBe('<p>msg-3</p>')
     ws.close()
   })
 
   test('island topics buffer independently', async () => {
-    // Buffer messages on two different island topics
     handle.send(
       'test-session-id:app-shell',
       JSON.stringify({ type: 'render', detail: { target: 'header', html: '<h1>Shell</h1>' } }),
@@ -460,21 +436,17 @@ describe('MPA View Transition Replay Buffer', () => {
       JSON.stringify({ type: 'render', detail: { target: 'nav', html: '<nav>Links</nav>' } }),
     )
 
-    // Connect only the app-shell island
     const ws = openWs(port, { protocol: 'app-shell' })
     const received: unknown[] = []
     ws.onmessage = (e) => received.push(JSON.parse(String(e.data)))
     await waitForOpen(ws)
     await Bun.sleep(100)
 
-    // Only app-shell messages should be replayed
     expect(received).toHaveLength(1)
     expect((received[0] as { detail: { html: string } }).detail.html).toBe('<h1>Shell</h1>')
     ws.close()
   })
 })
-
-// ─── Message Forwarding ─────────────────────────────────────────────────────
 
 describe('Message Forwarding', () => {
   let port: number
@@ -572,9 +544,7 @@ describe('Message Forwarding', () => {
   })
 })
 
-// ─── validateSession Rejection ───────────────────────────────────────────────
-
-describe('validateSession Rejection', () => {
+describe('authenticateConnection Rejection', () => {
   let port: number
   let handle: ServerHandle
   let triggered: TriggeredEvent[]
@@ -585,14 +555,19 @@ describe('validateSession Rejection', () => {
 
   test('setup', () => {
     const result = createTestServer({
-      validateSession: (sid) => sid !== 'bad-session',
+      authenticateConnection: ({ request }) => {
+        const cookies = new Bun.CookieMap(request.headers.get('cookie') ?? '')
+        const connectionId = cookies.get('sid')
+        if (!connectionId || connectionId === 'bad-session') return null
+        return { connectionId, principalId: 'test-principal' }
+      },
     })
     handle = result
     port = result.port
     triggered = result.triggered
   })
 
-  test('invalid session returns 401 with session_invalid error', async () => {
+  test('rejected connection returns 401 with connection_rejected error', async () => {
     const res = await fetch(httpUrl(port, '/ws'), {
       headers: {
         Upgrade: 'websocket',
@@ -602,15 +577,14 @@ describe('validateSession Rejection', () => {
     })
     expect(res.status).toBe(401)
     const body = await res.text()
-    expect(body).toBe(SERVER_ERRORS.session_invalid)
+    expect(body).toBe(SERVER_ERRORS.connection_rejected)
 
     const errorEvt = triggered.find(
       (e) =>
         e.type === UI_ADAPTER_LIFECYCLE_EVENTS.client_error &&
-        (e.detail as { code: string })?.code === SERVER_ERRORS.session_invalid,
+        (e.detail as { code: string })?.code === SERVER_ERRORS.connection_rejected,
     )
     expect(errorEvt).toBeDefined()
-    expect((errorEvt!.detail as { sessionId: string }).sessionId).toBe('bad-session')
   })
 
   test('valid session connects successfully', async () => {
@@ -623,8 +597,6 @@ describe('validateSession Rejection', () => {
     ws.close()
   })
 })
-
-// ─── Fetch Fallthrough ──────────────────────────────────────────────────────
 
 describe('Fetch Fallthrough', () => {
   let port: number
@@ -666,8 +638,6 @@ describe('Fetch Fallthrough', () => {
   })
 })
 
-// ─── CSP Security Headers ────────────────────────────────────────────────────
-
 describe('CSP Security Headers', () => {
   test('default CSP header present on 404 response', async () => {
     const result = createTestServer()
@@ -683,7 +653,10 @@ describe('CSP Security Headers', () => {
     afterAll(() => result.stop(true))
 
     const res = await fetch(httpUrl(result.port, '/ws'), {
-      headers: { Upgrade: 'websocket' },
+      headers: {
+        Upgrade: 'websocket',
+        'Sec-WebSocket-Protocol': 'document',
+      },
     })
     expect(res.status).toBe(401)
     expect(res.headers.get('Content-Security-Policy')).toBe(DEFAULT_CSP)

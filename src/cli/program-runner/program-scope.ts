@@ -1,5 +1,5 @@
 import { dirname, relative, resolve } from 'node:path'
-import { extractLocalLinksFromMarkdown, extractMarkdownSection } from '../utils.ts'
+import { extractLocalLinksFromMarkdown, extractMarkdownSection } from '../utils/markdown.ts'
 
 const normalizePath = (value: string): string => value.replaceAll('\\', '/')
 

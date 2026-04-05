@@ -3,7 +3,7 @@
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!!.bin/*", "!!src/hypergraph/graph-algorithms"]
+    "includes": ["**", "!!.bin/*"]
   },
   "formatter": {
     "enabled": true,
@@ -88,7 +88,7 @@
       }
     },
     {
-      "includes": ["src/workshop/**/*", "**/tests/**/*", "scripts/**/*", "src/utils/cli.ts"],
+      "includes": ["**/tests/**/*", "scripts/**/*", "skills/**/*", "src/cli/**/*", "bin/*", "src/**/*-cli.ts"],
       "linter": {
         "rules": {
           "suspicious": {

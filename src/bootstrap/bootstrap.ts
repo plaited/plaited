@@ -1,6 +1,8 @@
 import { mkdir } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
-import type { BootstrapInput, BootstrapOutput } from './bootstrap.types.ts'
+import { createAgent } from '../agent.ts'
+import { createServerFactory, SERVER_FACTORY_EVENTS, ServerFactoryConfigSchema } from '../factories.ts'
+import type { BootstrapInput, BootstrapOutput, BootstrapRuntime, BootstrapRuntimeInput } from './bootstrap.types.ts'
 
 const ensureDir = async (path: string): Promise<void> => {
   await mkdir(path, { recursive: true })
@@ -126,6 +128,11 @@ export const bootstrapAgent = async (input: BootstrapInput): Promise<BootstrapOu
       sync: {
         provider: input.syncProvider,
       },
+      server: {
+        port: input.serverPort,
+        allowedOrigins: input.serverAllowedOrigins ?? null,
+        csp: input.serverCsp ?? null,
+      },
     },
   })
 
@@ -190,5 +197,52 @@ export const bootstrapAgent = async (input: BootstrapInput): Promise<BootstrapOu
       sandboxProvider: input.sandboxProvider,
       syncProvider: input.syncProvider,
     }),
+  }
+}
+
+const buildServerConfig = (input: BootstrapRuntimeInput) =>
+  ServerFactoryConfigSchema.parse({
+    routes: input.routes ?? {},
+    port: input.serverPort,
+    allowedOrigins: input.serverAllowedOrigins ? new Set(input.serverAllowedOrigins) : undefined,
+    authenticateConnection: input.authenticateConnection,
+    csp: input.serverCsp,
+    autostart: false,
+  })
+
+export const createBootstrappedAgent = async (input: BootstrapRuntimeInput): Promise<BootstrapRuntime> => {
+  const workspace = resolve(input.workspace ?? input.targetDir)
+  const cwd = resolve(input.cwd ?? workspace)
+
+  const agent = await createAgent({
+    id: input.name,
+    cwd,
+    workspace,
+    models: input.models,
+    restrictedTriggers: input.restrictedTriggers,
+    heartbeat: input.heartbeat,
+    factories: [createServerFactory({ initialConfig: { autostart: false } }), ...(input.factories ?? [])],
+  })
+
+  agent.trigger({
+    type: SERVER_FACTORY_EVENTS.server_set_config,
+    detail: buildServerConfig(input),
+  })
+
+  if (input.autostartServer !== false) {
+    agent.trigger({ type: SERVER_FACTORY_EVENTS.server_start })
+  }
+
+  return {
+    agent,
+    startServer: () => {
+      agent.trigger({ type: SERVER_FACTORY_EVENTS.server_start })
+    },
+    stopServer: () => {
+      agent.trigger({ type: SERVER_FACTORY_EVENTS.server_stop })
+    },
+    reloadServer: () => {
+      agent.trigger({ type: SERVER_FACTORY_EVENTS.server_reload })
+    },
   }
 }

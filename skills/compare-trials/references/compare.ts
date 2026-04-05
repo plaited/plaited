@@ -188,7 +188,6 @@ const main = async () => {
 
   const report = compare(baseline, challenger)
 
-  // biome-ignore lint/suspicious/noConsole: CLI stdout output
   console.log(JSON.stringify(report, null, 2))
 }
 

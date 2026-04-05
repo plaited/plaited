@@ -21,6 +21,12 @@ export const BootstrapInputSchema = z.object({
   memoryProvider: BootstrapMemoryProviderSchema.default('agentfs').describe('Durable memory substrate'),
   sandboxProvider: BootstrapSandboxProviderSchema.default('boxer').describe('Execution sandbox provider'),
   syncProvider: BootstrapSyncProviderSchema.default('none').describe('Optional sync provider'),
+  serverPort: z.number().int().nonnegative().default(0).describe('Initial port for the server-factory lane'),
+  serverAllowedOrigins: z.array(z.string()).optional().describe('Optional allowed origins for the server-factory lane'),
+  serverCsp: z
+    .union([z.string(), z.literal(false)])
+    .optional()
+    .describe('Optional CSP override for the server-factory lane'),
   overwrite: z.boolean().default(false).describe('Allow overwriting existing bootstrap files'),
 })
 

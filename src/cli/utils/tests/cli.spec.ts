@@ -34,7 +34,7 @@ describe('CLI parsing (subprocess)', () => {
       [
         'bun',
         '-e',
-        `import { parseCli } from './src/utils/cli.ts'; import * as z from 'zod'; await parseCli(['--help'], z.object({}), { name: 'test' })`,
+        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['--help'], z.object({}), { name: 'test' })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -47,7 +47,7 @@ describe('CLI parsing (subprocess)', () => {
       [
         'bun',
         '-e',
-        `import { parseCli } from './src/utils/cli.ts'; import * as z from 'zod'; await parseCli(['--schema', 'input'], z.object({ name: z.string() }), { name: 'test' })`,
+        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['--schema', 'input'], z.object({ name: z.string() }), { name: 'test' })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -64,7 +64,7 @@ describe('CLI parsing (subprocess)', () => {
       [
         'bun',
         '-e',
-        `import { parseCli } from './src/utils/cli.ts'; import * as z from 'zod'; await parseCli(['--schema', 'output'], z.object({ input: z.string() }), { name: 'test', outputSchema: z.object({ result: z.number() }) })`,
+        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['--schema', 'output'], z.object({ input: z.string() }), { name: 'test', outputSchema: z.object({ result: z.number() }) })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -80,7 +80,7 @@ describe('CLI parsing (subprocess)', () => {
       [
         'bun',
         '-e',
-        `import { parseCli } from './src/utils/cli.ts'; import * as z from 'zod'; await parseCli(['--schema', 'bad'], z.object({}), { name: 'test' })`,
+        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['--schema', 'bad'], z.object({}), { name: 'test' })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -93,7 +93,7 @@ describe('CLI parsing (subprocess)', () => {
       [
         'bun',
         '-e',
-        `import { parseCli } from './src/utils/cli.ts'; import * as z from 'zod'; await parseCli(['--schema', 'output'], z.object({}), { name: 'test' })`,
+        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['--schema', 'output'], z.object({}), { name: 'test' })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -106,7 +106,7 @@ describe('CLI parsing (subprocess)', () => {
       [
         'bun',
         '-e',
-        `import { parseCli } from './src/utils/cli.ts'; import * as z from 'zod'; await parseCli(['not-json'], z.object({}), { name: 'test' })`,
+        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['not-json'], z.object({}), { name: 'test' })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -119,7 +119,7 @@ describe('CLI parsing (subprocess)', () => {
       [
         'bun',
         '-e',
-        `import { parseCli } from './src/utils/cli.ts'; import * as z from 'zod'; await parseCli(['{"bad":true}'], z.object({ name: z.string() }), { name: 'test' })`,
+        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['{"bad":true}'], z.object({ name: z.string() }), { name: 'test' })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -132,7 +132,7 @@ describe('CLI parsing (subprocess)', () => {
       [
         'bun',
         '-e',
-        `import { parseCli } from './src/utils/cli.ts'; import * as z from 'zod'; await parseCli([], z.object({}), { name: 'test' })`,
+        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli([], z.object({}), { name: 'test' })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -147,7 +147,7 @@ describe('makeCli', () => {
       [
         'bun',
         '-e',
-        `import { makeCli } from './src/utils/cli.ts'; import * as z from 'zod';
+        `import { makeCli } from './src/cli.ts'; import * as z from 'zod';
         const cli = makeCli({
           name: 'test',
           inputSchema: z.object({ value: z.string() }),
@@ -169,7 +169,7 @@ describe('makeCli', () => {
       [
         'bun',
         '-e',
-        `import { makeCli } from './src/utils/cli.ts'; import * as z from 'zod';
+        `import { makeCli } from './src/cli.ts'; import * as z from 'zod';
         const cli = makeCli({
           name: 'test',
           inputSchema: z.object({ value: z.string() }),
@@ -194,7 +194,7 @@ describe('makeCli', () => {
       [
         'bun',
         '-e',
-        `import { makeCli } from './src/utils/cli.ts'; import * as z from 'zod';
+        `import { makeCli } from './src/cli.ts'; import * as z from 'zod';
         const cli = makeCli({
           name: 'test',
           inputSchema: z.object({ value: z.string() }),
@@ -215,7 +215,7 @@ describe('makeCli', () => {
       [
         'bun',
         '-e',
-        `import { makeCli } from './src/utils/cli.ts'; import * as z from 'zod';
+        `import { makeCli } from './src/cli.ts'; import * as z from 'zod';
         const cli = makeCli({
           name: 'test',
           inputSchema: z.object({ value: z.string() }),
