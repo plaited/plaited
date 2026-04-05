@@ -199,18 +199,59 @@ const appendJsonl = async ({ path, row }: { path: string; row: unknown }) => {
   await Bun.write(path, `${current}${JSON.stringify(row)}\n`)
 }
 
-const createLogger = (path: string): Logger => ({
-  path,
-  write: async (message) => {
-    const line = `[${new Date().toISOString()}] ${message}`
-    console.log(line)
-    const file = Bun.file(path)
-    const current = (await file.exists()) ? await file.text() : ''
-    await Bun.write(path, `${current}${line}\n`)
-  },
-})
+const createLogger = (path: string): Logger => {
+  let writeQueue = Promise.resolve()
+
+  return {
+    path,
+    write: async (message) => {
+      const line = `[${new Date().toISOString()}] ${message}`
+      console.log(line)
+      writeQueue = writeQueue.then(async () => {
+        const file = Bun.file(path)
+        const current = (await file.exists()) ? await file.text() : ''
+        await Bun.write(path, `${current}${line}\n`)
+      })
+      await writeQueue
+    },
+  }
+}
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+export const runWithConcurrencyLimit = async <TItem, TResult>({
+  items,
+  limit,
+  worker,
+}: {
+  items: TItem[]
+  limit: number
+  worker: (item: TItem, index: number) => Promise<TResult>
+}): Promise<TResult[]> => {
+  const concurrency = Math.max(1, Math.floor(limit))
+  const results = new Array<TResult>(items.length)
+  let nextIndex = 0
+
+  const runWorker = async () => {
+    while (true) {
+      const currentIndex = nextIndex
+      nextIndex += 1
+      if (currentIndex >= items.length) {
+        return
+      }
+      const item = items[currentIndex]
+      if (item === undefined) {
+        return
+      }
+
+      results[currentIndex] = await worker(item, currentIndex)
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, async () => runWorker()))
+
+  return results
+}
 
 const DEFAULT_PLANNER_TIMEOUT_MS = Number(process.env.PLAITED_PLANNER_TIMEOUT_MS ?? 180_000)
 const DEFAULT_PI_AGENT_TIMEOUT_MS = Number(process.env.PLAITED_PI_AGENT_TIMEOUT_MS ?? 300_000)
@@ -1091,6 +1132,162 @@ const runPiPromotion = async ({
   }
 }
 
+const runProgramLane = async ({
+  attempts,
+  baseRef,
+  logger,
+  outputDir,
+  parallel,
+  planner,
+  programPath,
+  recordSummary,
+  workspaceRoot,
+}: {
+  attempts: number
+  baseRef: string
+  logger: Logger
+  outputDir: string
+  parallel: number
+  planner: 'pi'
+  programPath: string
+  recordSummary: (summary: LaneSummary) => Promise<void>
+  workspaceRoot: string
+}): Promise<LaneSummary> => {
+  await logger.write(`program-start program=${programPath}`)
+  const runDir = buildProgramRunDir({
+    programPath,
+    workspaceRoot,
+  })
+  await logger.write(`planner-start program=${programPath} planner=${planner}`)
+  await generateExecutionPlan({
+    logger,
+    programPath,
+    runDir,
+    workspaceRoot,
+  })
+  const run = await callProgramRunner({
+    attempts,
+    baseRef,
+    parallel,
+    programPath,
+    runDir,
+    workspaceRoot,
+  })
+  await logger.write(`program-run-finished program=${programPath} runDir=${run.runDir}`)
+
+  const judgePayload = await buildJudgePayload({
+    programPath,
+    run,
+  })
+  const judgePrompt = JSON.stringify(judgePayload, null, 2)
+  const programArtifactDir = getProgramReviewArtifactDir({ outputDir, programPath })
+  await mkdir(programArtifactDir, { recursive: true })
+
+  const judgePromptText = buildJudgeInstruction(judgePrompt)
+  const judgeArtifact = await callOpenRouterReview({
+    logger,
+    model: process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'minimax/minimax-m2.7',
+    system:
+      'You are a strict judge for autonomous factory-program attempts. Return JSON only with keys decision and reasoning. decision must be exactly one of: accept, defer, reject.',
+    prompt: judgePromptText,
+  })
+  await writeReviewArtifacts({
+    artifact: judgeArtifact,
+    outputDir: programArtifactDir,
+    prefix: 'judge',
+  })
+  const judge = judgeArtifact.review
+  await logger.write(`judge-finished program=${programPath} decision=${judge.decision}`)
+
+  const metaVerifierPrompt = buildMetaVerifierPrompt({
+    judge,
+    evidence: judgePayload,
+  })
+  const metaVerifierArtifact = await callOpenRouterReview({
+    logger,
+    model: process.env.PLAITED_META_VERIFIER_MODEL ?? 'deepseek/deepseek-v3.2',
+    system:
+      'You verify a prior judge result. Return JSON only with keys decision and reasoning. decision must be exactly one of: accept, defer, reject.',
+    prompt: metaVerifierPrompt,
+  })
+  await writeReviewArtifacts({
+    artifact: metaVerifierArtifact,
+    outputDir: programArtifactDir,
+    prefix: 'meta-verifier',
+  })
+  const metaVerifier = metaVerifierArtifact.review
+  await logger.write(`meta-verifier-finished program=${programPath} decision=${metaVerifier.decision}`)
+
+  let promotion: PromotionResult
+  const promotionAttempt = selectPromotionAttempt(run)
+  if (promotionAttempt) {
+    try {
+      const promotionArtifact = await runPiPromotion({
+        programArtifactDir,
+        programPath,
+        run,
+        workspaceRoot,
+        judge,
+        metaVerifier,
+      })
+      await writePromotionArtifacts({
+        artifact: promotionArtifact,
+        outputDir: programArtifactDir,
+      })
+      promotion = promotionArtifact.result
+      await logger.write(`promotion-finished program=${programPath} decision=${promotion.decision}`)
+    } catch (error) {
+      promotion = {
+        decision: 'defer',
+        reasoning: error instanceof Error ? error.message : String(error),
+        changedPaths: [],
+        validation: [],
+      }
+      await Bun.write(
+        join(programArtifactDir, 'promotion.json'),
+        toJson({
+          prompt: null,
+          rawContent: null,
+          result: promotion,
+        }),
+      )
+      await logger.write(
+        `promotion-failed program=${programPath} error=${JSON.stringify(error instanceof Error ? error.message : String(error))}`,
+      )
+    }
+  } else {
+    promotion = {
+      decision: 'defer',
+      reasoning: 'No succeeded attempt is available for Pi promotion review.',
+      changedPaths: [],
+      validation: [],
+    }
+    await Bun.write(
+      join(programArtifactDir, 'promotion.json'),
+      toJson({
+        prompt: null,
+        rawContent: null,
+        result: promotion,
+      }),
+    )
+    await logger.write(`promotion-skipped program=${programPath} reason=${JSON.stringify(promotion.reasoning)}`)
+  }
+
+  const summary = createLaneSummary({
+    judge,
+    metaVerifier,
+    promotion,
+    programPath,
+    run,
+  })
+  await recordSummary(summary)
+  await logger.write(
+    `program-summary program=${programPath} succeededAttempts=${summary.succeededAttempts}/${summary.totalAttempts}`,
+  )
+
+  return summary
+}
+
 const main = async () => {
   const input = await parseInput()
   const workspaceRoot = process.cwd()
@@ -1112,6 +1309,7 @@ const main = async () => {
   const summaryPath = join(outputDir, 'summary.json')
   const rowsPath = join(outputDir, 'runs.jsonl')
   const summaries: LaneSummary[] = []
+  let summaryWriteQueue = Promise.resolve()
 
   await Bun.write(
     join(outputDir, 'config.json'),
@@ -1213,152 +1411,41 @@ const main = async () => {
     return
   }
 
-  for (const programPath of programPaths) {
-    await logger.write(`program-start program=${programPath}`)
-    const runDir = buildProgramRunDir({
-      programPath,
-      workspaceRoot,
-    })
-    await logger.write(`planner-start program=${programPath} planner=${planner}`)
-    await generateExecutionPlan({
-      logger,
-      programPath,
-      runDir,
-      workspaceRoot,
-    })
-    const run = await callProgramRunner({
-      attempts,
-      baseRef,
-      parallel,
-      programPath,
-      runDir,
-      workspaceRoot,
-    })
-    await logger.write(`program-run-finished program=${programPath} runDir=${run.runDir}`)
-
-    const judgePayload = await buildJudgePayload({
-      programPath,
-      run,
-    })
-    const judgePrompt = JSON.stringify(judgePayload, null, 2)
-    const programArtifactDir = getProgramReviewArtifactDir({ outputDir, programPath })
-    await mkdir(programArtifactDir, { recursive: true })
-
-    const judgePromptText = buildJudgeInstruction(judgePrompt)
-    const judgeArtifact = await callOpenRouterReview({
-      logger,
-      model: process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'minimax/minimax-m2.7',
-      system:
-        'You are a strict judge for autonomous factory-program attempts. Return JSON only with keys decision and reasoning. decision must be exactly one of: accept, defer, reject.',
-      prompt: judgePromptText,
-    })
-    await writeReviewArtifacts({
-      artifact: judgeArtifact,
-      outputDir: programArtifactDir,
-      prefix: 'judge',
-    })
-    const judge = judgeArtifact.review
-    await logger.write(`judge-finished program=${programPath} decision=${judge.decision}`)
-
-    const metaVerifierPrompt = buildMetaVerifierPrompt({
-      judge,
-      evidence: judgePayload,
-    })
-    const metaVerifierArtifact = await callOpenRouterReview({
-      logger,
-      model: process.env.PLAITED_META_VERIFIER_MODEL ?? 'deepseek/deepseek-v3.2',
-      system:
-        'You verify a prior judge result. Return JSON only with keys decision and reasoning. decision must be exactly one of: accept, defer, reject.',
-      prompt: metaVerifierPrompt,
-    })
-    await writeReviewArtifacts({
-      artifact: metaVerifierArtifact,
-      outputDir: programArtifactDir,
-      prefix: 'meta-verifier',
-    })
-    const metaVerifier = metaVerifierArtifact.review
-    await logger.write(`meta-verifier-finished program=${programPath} decision=${metaVerifier.decision}`)
-
-    let promotion: PromotionResult
-    const promotionAttempt = selectPromotionAttempt(run)
-    if (promotionAttempt) {
-      try {
-        const promotionArtifact = await runPiPromotion({
-          programArtifactDir,
-          programPath,
-          run,
-          workspaceRoot,
-          judge,
-          metaVerifier,
-        })
-        await writePromotionArtifacts({
-          artifact: promotionArtifact,
-          outputDir: programArtifactDir,
-        })
-        promotion = promotionArtifact.result
-        await logger.write(`promotion-finished program=${programPath} decision=${promotion.decision}`)
-      } catch (error) {
-        promotion = {
-          decision: 'defer',
-          reasoning: error instanceof Error ? error.message : String(error),
-          changedPaths: [],
-          validation: [],
-        }
-        await Bun.write(
-          join(programArtifactDir, 'promotion.json'),
-          toJson({
-            prompt: null,
-            rawContent: null,
-            result: promotion,
-          }),
-        )
-        await logger.write(
-          `promotion-failed program=${programPath} error=${JSON.stringify(error instanceof Error ? error.message : String(error))}`,
-        )
-      }
-    } else {
-      promotion = {
-        decision: 'defer',
-        reasoning: 'No succeeded attempt is available for Pi promotion review.',
-        changedPaths: [],
-        validation: [],
-      }
+  const recordSummary = async (summary: LaneSummary) => {
+    summaryWriteQueue = summaryWriteQueue.then(async () => {
+      summaries.push(summary)
+      await appendJsonl({
+        path: rowsPath,
+        row: summary,
+      })
       await Bun.write(
-        join(programArtifactDir, 'promotion.json'),
+        summaryPath,
         toJson({
-          prompt: null,
-          rawContent: null,
-          result: promotion,
+          planner,
+          generatedAt: new Date().toISOString(),
+          summaries,
         }),
       )
-      await logger.write(`promotion-skipped program=${programPath} reason=${JSON.stringify(promotion.reasoning)}`)
-    }
-
-    const summary = createLaneSummary({
-      judge,
-      metaVerifier,
-      promotion,
-      programPath,
-      run,
     })
-    summaries.push(summary)
-
-    await appendJsonl({
-      path: rowsPath,
-      row: summary,
-    })
-    await Bun.write(
-      summaryPath,
-      toJson({
-        planner,
-        generatedAt: new Date().toISOString(),
-        summaries,
-      }),
-    )
-    await logger.write(
-      `program-summary program=${programPath} succeededAttempts=${summary.succeededAttempts}/${summary.totalAttempts}`,
-    )
+    await summaryWriteQueue
   }
+
+  await runWithConcurrencyLimit({
+    items: programPaths,
+    limit: parallel,
+    worker: (programPath) =>
+      runProgramLane({
+        attempts,
+        baseRef,
+        logger,
+        outputDir,
+        parallel,
+        planner,
+        programPath,
+        recordSummary,
+        workspaceRoot,
+      }),
+  })
 
   await logger.write('orchestration-finished')
 

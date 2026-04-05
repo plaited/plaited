@@ -13,6 +13,7 @@ import {
   parsePromotionResult,
   resolvePlannerKind,
   resolvePrograms,
+  runWithConcurrencyLimit,
   selectPromotionAttempt,
 } from '../run-factory-programs.ts'
 import { buildPiWorkerPrompt } from '../run-pi-factory-worker.ts'
@@ -61,6 +62,45 @@ describe('resolvePrograms', () => {
 
     expect(programs).toContain('dev-research/default-factories/program.md')
     expect(programs).toContain('dev-research/agent-bootstrap/program.md')
+  })
+})
+
+describe('runWithConcurrencyLimit', () => {
+  test('runs multiple program lanes concurrently up to the configured limit', async () => {
+    const started: number[] = []
+    const released: number[] = []
+    const resolvers = new Map<number, () => void>()
+    let active = 0
+    let maxActive = 0
+
+    const runPromise = runWithConcurrencyLimit({
+      items: [1, 2, 3],
+      limit: 2,
+      worker: async (item) => {
+        started.push(item)
+        active += 1
+        maxActive = Math.max(maxActive, active)
+        await new Promise<void>((resolve) => {
+          resolvers.set(item, resolve)
+        })
+        released.push(item)
+        active -= 1
+        return item * 10
+      },
+    })
+
+    await Bun.sleep(20)
+    expect(started).toEqual([1, 2])
+    expect(maxActive).toBe(2)
+
+    resolvers.get(1)?.()
+    await Bun.sleep(20)
+    expect(started).toEqual([1, 2, 3])
+
+    resolvers.get(2)?.()
+    resolvers.get(3)?.()
+    expect(await runPromise).toEqual([10, 20, 30])
+    expect(released).toEqual([1, 2, 3])
   })
 })
 
