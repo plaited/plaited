@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'bun:test'
+import { mkdir, mkdtemp } from 'node:fs/promises'
+import { join } from 'node:path'
 import { createValidationPlan } from '../factory-validate.ts'
 import { buildJudgePrompt, resolvePrograms } from '../run-factory-programs.ts'
 import { buildPiWorkerPrompt } from '../run-pi-factory-worker.ts'
@@ -35,8 +37,17 @@ describe('resolvePrograms', () => {
 })
 
 describe('buildJudgePrompt', () => {
-  test('includes attempt summaries and program markdown', async () => {
-    const worktreePath = process.cwd()
+  test('includes attempt summaries, artifacts, and program markdown', async () => {
+    const worktreePath = await mkdtemp('/tmp/factory-program-worktree-')
+    const artifactDir = await mkdtemp('/tmp/factory-program-scripts-')
+    await mkdir(join(worktreePath, 'src'), { recursive: true })
+    await mkdir(artifactDir, { recursive: true })
+    await Bun.write(join(artifactDir, 'pi.stdout.log'), 'worker stdout line\n')
+    await Bun.write(join(artifactDir, 'pi.stderr.log'), 'worker stderr line\n')
+    await Bun.write(join(artifactDir, 'worker.progress.log'), 'progress line\n')
+    await Bun.write(join(artifactDir, 'validate.stderr.log'), 'validate stderr line\n')
+    await Bun.write(join(worktreePath, 'src', 'factories.ts'), 'export const generated = true\n')
+
     const prompt = await buildJudgePrompt({
       programPath: 'dev-research/default-factories/program.md',
       run: {
@@ -46,11 +57,12 @@ describe('buildJudgePrompt', () => {
         attempts: [
           {
             attempt: 1,
-            artifactDir: '/tmp/run/attempt-01',
+            artifactDir,
             status: 'succeeded',
             worktreePath,
             workerExitCode: 0,
             validateExitCode: 0,
+            changedPaths: ['src/factories.ts'],
           },
         ],
       },
@@ -59,6 +71,14 @@ describe('buildJudgePrompt', () => {
     expect(prompt).toContain('"lane": "default-factories"')
     expect(prompt).toContain('"attempt": 1')
     expect(prompt).toContain('Default Factories')
+    expect(prompt).toContain('"workerStdout": "worker stdout line"')
+    expect(prompt).toContain('"workerStderr": "worker stderr line"')
+    expect(prompt).toContain('"workerProgress": "progress line"')
+    expect(prompt).toContain('"validateStderr": "validate stderr line"')
+    expect(prompt).toContain('"changedPaths": [')
+    expect(prompt).toContain('"changedFileExcerpts": [')
+    expect(prompt).toContain('"path": "src/factories.ts"')
+    expect(prompt).toContain('export const generated = true')
   })
 })
 

@@ -320,6 +320,70 @@ const getAttemptDiffSummary = async (attempt: ProgramRunAttempt) => {
   return sections.join('\n\n')
 }
 
+const readAttemptArtifactExcerpt = async ({
+  attempt,
+  fileName,
+  maxChars = 2_000,
+}: {
+  attempt: ProgramRunAttempt
+  fileName: string
+  maxChars?: number
+}) => {
+  const path = resolve(attempt.artifactDir, fileName)
+  const file = Bun.file(path)
+  if (!(await file.exists())) {
+    return null
+  }
+
+  const text = (await file.text()).trim()
+  if (!text) {
+    return null
+  }
+
+  if (text.length <= maxChars) {
+    return text
+  }
+
+  return `${text.slice(0, maxChars)}\n...[truncated ${text.length - maxChars} chars]`
+}
+
+const readChangedFileExcerpts = async ({
+  attempt,
+  maxCharsPerFile = 1_500,
+  maxFiles = 5,
+}: {
+  attempt: ProgramRunAttempt
+  maxCharsPerFile?: number
+  maxFiles?: number
+}) => {
+  const changedPaths = attempt.changedPaths ?? []
+  const excerpts = await Promise.all(
+    changedPaths.slice(0, maxFiles).map(async (relativePath) => {
+      const path = resolve(attempt.worktreePath, relativePath)
+      const file = Bun.file(path)
+      if (!(await file.exists())) {
+        return {
+          path: relativePath,
+          content: '[missing from worktree]',
+        }
+      }
+
+      const text = await file.text()
+      const content =
+        text.length <= maxCharsPerFile
+          ? text
+          : `${text.slice(0, maxCharsPerFile)}\n...[truncated ${text.length - maxCharsPerFile} chars]`
+
+      return {
+        path: relativePath,
+        content,
+      }
+    }),
+  )
+
+  return excerpts
+}
+
 const callOpenRouterReview = async ({
   logger,
   model,
@@ -418,7 +482,32 @@ export const buildJudgePrompt = async ({
       workerExitCode: attempt.workerExitCode ?? null,
       validateExitCode: attempt.validateExitCode ?? null,
       error: attempt.error ?? null,
+      changedPaths: attempt.changedPaths ?? [],
+      outOfScopePaths: attempt.outOfScopePaths ?? [],
       diffStat: await getAttemptDiffSummary(attempt),
+      changedFileExcerpts: await readChangedFileExcerpts({
+        attempt,
+      }),
+      workerStdout: await readAttemptArtifactExcerpt({
+        attempt,
+        fileName: 'pi.stdout.log',
+      }),
+      workerStderr: await readAttemptArtifactExcerpt({
+        attempt,
+        fileName: 'pi.stderr.log',
+      }),
+      workerProgress: await readAttemptArtifactExcerpt({
+        attempt,
+        fileName: 'worker.progress.log',
+      }),
+      validateStdout: await readAttemptArtifactExcerpt({
+        attempt,
+        fileName: 'validate.stdout.log',
+      }),
+      validateStderr: await readAttemptArtifactExcerpt({
+        attempt,
+        fileName: 'validate.stderr.log',
+      }),
     })),
   )
 
@@ -482,8 +571,8 @@ const main = async () => {
       executionProvider: process.env.PLAITED_EXECUTION_PROVIDER ?? 'openrouter',
       executionModel: process.env.PLAITED_EXECUTION_MODEL ?? 'google/gemma-4-31b-it',
       executionFallbackModel: process.env.PLAITED_EXECUTION_FALLBACK_MODEL ?? 'google/gemma-4-31b-it',
-      judgeModel: process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'z-ai/glm-5',
-      metaVerifierModel: process.env.PLAITED_META_VERIFIER_MODEL ?? 'minimax/minimax-m2.5',
+      judgeModel: process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'deepseek/deepseek-v3.2',
+      metaVerifierModel: process.env.PLAITED_META_VERIFIER_MODEL ?? 'minimax/minimax-m2.7',
       attempts,
       parallel,
       baseRef,
@@ -495,8 +584,8 @@ const main = async () => {
   await logger.write(
     `execution=${process.env.PLAITED_EXECUTION_PROVIDER ?? 'openrouter'}:${process.env.PLAITED_EXECUTION_MODEL ?? 'google/gemma-4-31b-it'}`,
   )
-  await logger.write(`judge=${process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'z-ai/glm-5'}`)
-  await logger.write(`meta-verifier=${process.env.PLAITED_META_VERIFIER_MODEL ?? 'minimax/minimax-m2.5'}`)
+  await logger.write(`judge=${process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'deepseek/deepseek-v3.2'}`)
+  await logger.write(`meta-verifier=${process.env.PLAITED_META_VERIFIER_MODEL ?? 'minimax/minimax-m2.7'}`)
   await logger.write(
     `program-count=${programPaths.length} attempts=${attempts} parallel=${parallel} baseRef=${baseRef}`,
   )
@@ -575,7 +664,7 @@ const main = async () => {
 
     const judge = await callOpenRouterReview({
       logger,
-      model: process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'z-ai/glm-5',
+      model: process.env.PLAITED_PRIMARY_JUDGE_MODEL ?? 'deepseek/deepseek-v3.2',
       system:
         'You are a strict judge for autonomous factory-program attempts. Return JSON with keys decision and reasoning only.',
       prompt: [
@@ -588,7 +677,7 @@ const main = async () => {
 
     const metaVerifier = await callOpenRouterReview({
       logger,
-      model: process.env.PLAITED_META_VERIFIER_MODEL ?? 'minimax/minimax-m2.5',
+      model: process.env.PLAITED_META_VERIFIER_MODEL ?? 'minimax/minimax-m2.7',
       system: 'You verify a prior judge result. Return JSON with keys decision and reasoning only.',
       prompt: JSON.stringify(
         {
