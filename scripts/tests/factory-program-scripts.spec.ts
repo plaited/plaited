@@ -38,6 +38,10 @@ describe('buildPiWorkerPrompt', () => {
     expect(prompt).toContain('Lane program:')
     expect(prompt).toContain('Execution plan:')
     expect(prompt).toContain('Edit src/factories.ts')
+    expect(prompt).toContain(
+      'After the first substantive edit, run the narrow formatting, type checking, and targeted test commands',
+    )
+    expect(prompt).toContain('Do not claim validation succeeded unless you actually ran the commands in this worktree')
   })
 })
 
