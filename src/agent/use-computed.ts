@@ -2,6 +2,15 @@ import type { Disconnect, Trigger } from '../behavioral/behavioral.types.ts'
 import { isTypeOf } from '../utils.ts'
 import type { Computed, Listen, Signal } from './agent.types.ts'
 
+/**
+ * Creates computed signals backed by one or more source signals.
+ *
+ * @param disconnectSet - Shared disconnect registry for the owning agent scope.
+ * @param trigger - Behavioral trigger used when listeners subscribe by event name.
+ * @returns Factory that derives lazily-computed readonly signals from dependencies.
+ *
+ * @public
+ */
 export const useComputed =
   (disconnectSet: Set<Disconnect>, trigger: Trigger): Computed =>
   <T>(compute: () => T, deps: Signal[]) => {

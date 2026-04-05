@@ -6,6 +6,17 @@ const normalizePath = (value: string): string => value.replaceAll('\\', '/')
 const ensureDirectorySuffix = (path: string, originalLink: string): string =>
   originalLink.endsWith('/') && !path.endsWith('/') ? `${path}/` : path
 
+/**
+ * Parses writable program scope entries from a program markdown document.
+ *
+ * @param options - Program markdown and path resolution inputs.
+ * @param options.programMarkdown - Full program markdown source.
+ * @param options.programPath - Absolute path to the program markdown file.
+ * @param options.workspaceRoot - Absolute workspace root used to relativize links.
+ * @returns Workspace-relative paths declared under the program scope section.
+ *
+ * @public
+ */
 export const parseProgramScope = async ({
   programMarkdown,
   programPath,

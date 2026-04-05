@@ -171,21 +171,25 @@ export const ToolDefinitionSchema = z.object({
 /** OpenAI function-calling tool definition */
 export type ToolDefinition = z.infer<typeof ToolDefinitionSchema>
 
+/** @public */
 export const ReadFileConfigSchema = z.object({
   path: z.string().describe('Relative path to the file'),
 })
 
+/** @public */
 export const GlobFilesConfigSchema = z.object({
   pattern: z.string().describe('Glob pattern to match'),
   exclude: z.array(z.string()).optional().describe('Optional exclude glob patterns'),
 })
 
+/** @public */
 export const BashConfigSchema = z.object({
   path: z.string().describe('Workspace-local path to the Bun worker module to execute'),
   args: z.array(z.string()).describe('Arguments to pass to the worker module'),
   timeout: z.number().optional().describe('Optional timeout in milliseconds'),
 })
 
+/** @public */
 export const GrepConfigSchema = z.object({
   pattern: z.string().describe('Regex or literal search pattern'),
   path: z.string().optional().describe('Directory or file to search (default: cwd root)'),
@@ -197,6 +201,7 @@ export const GrepConfigSchema = z.object({
   timeout: z.number().optional().describe('Optional timeout in milliseconds'),
 })
 
+/** @public */
 export const BashOutputSchema = z.discriminatedUnion('status', [
   z.object({
     status: z.literal('completed'),
@@ -211,6 +216,7 @@ export const BashOutputSchema = z.discriminatedUnion('status', [
   }),
 ])
 
+/** @public */
 export const GrepMatchSchema = z.object({
   path: z.string(),
   line: z.number(),
@@ -223,6 +229,7 @@ export const GrepMatchSchema = z.object({
     .optional(),
 })
 
+/** @public */
 export const GrepOutputSchema = z.discriminatedUnion('status', [
   z.object({
     status: z.literal('completed'),
@@ -316,6 +323,7 @@ export const ModelUsageSchema = z.object({
 /** Model usage */
 export type ModelUsage = z.infer<typeof ModelUsageSchema>
 
+/** @public */
 export const ChatMessageSchema = z.object({
   role: z.enum(['system', 'user', 'assistant', 'tool']),
   content: z.string().nullable().optional(),
@@ -323,23 +331,29 @@ export const ChatMessageSchema = z.object({
   tool_call_id: z.string().optional(),
 })
 
+/** @public */
 export type ChatMessageShape = z.infer<typeof ChatMessageSchema>
 
+/** @public */
 export const ParsedModelResponseSchema = z.object({
   thinking: z.string().nullable(),
   toolCalls: z.array(AgentToolCallSchema),
   message: z.string().nullable(),
 })
 
+/** @public */
 export type ParsedModelResponseShape = z.infer<typeof ParsedModelResponseSchema>
 
+/** @public */
 export const ModelResponseDetailSchema = z.object({
   parsed: ParsedModelResponseSchema,
   usage: ModelUsageSchema,
 })
 
+/** @public */
 export type ModelResponseDetailShape = z.infer<typeof ModelResponseDetailSchema>
 
+/** @public */
 export const RequestInferenceRequestSchema = z.object({
   messages: z.array(ChatMessageSchema),
   tools: z.array(ToolDefinitionSchema).optional(),
@@ -347,12 +361,14 @@ export const RequestInferenceRequestSchema = z.object({
   timeout: z.number().optional(),
 })
 
+/** @public */
 export const VoiceResponseSchema = z.object({
   audio: z.custom<Uint8Array>((value) => value instanceof Uint8Array),
   sampleRate: z.number(),
   duration: z.number(),
 })
 
+/** @public */
 export type VoiceResponseShape = z.infer<typeof VoiceResponseSchema>
 
 const isSignalWithSetter = (value: unknown): value is Signal => {
@@ -395,10 +411,13 @@ const isBunFile = (value: unknown) => {
   )
 }
 
+/** @public */
 export const BunFileSchema = z.custom<ReturnType<typeof Bun.file>>(isBunFile)
 
+/** @public */
 export const ReadFileOutputSchema = BunFileSchema
 
+/** @public */
 export type ReadFileOutput = z.infer<typeof ReadFileOutputSchema>
 
 const createSignalResultSchema = <TInput extends z.ZodTypeAny, TOutput extends z.ZodTypeAny>(
@@ -410,13 +429,16 @@ const createSignalResultSchema = <TInput extends z.ZodTypeAny, TOutput extends z
     output,
   })
 
+/** @public */
 export const PrimaryInferenceResultSchema = createSignalResultSchema(
   RequestInferenceRequestSchema,
   ModelResponseDetailSchema,
 )
 
+/** @public */
 export type PrimaryInferenceResult = z.infer<typeof PrimaryInferenceResultSchema>
 
+/** @public */
 export const TtsInferenceRequestSchema = z.object({
   text: z.string(),
   voice: z.string().optional(),
@@ -424,31 +446,40 @@ export const TtsInferenceRequestSchema = z.object({
   timeout: z.number().optional(),
 })
 
+/** @public */
 export const TtsInferenceResultSchema = createSignalResultSchema(TtsInferenceRequestSchema, VoiceResponseSchema)
 
+/** @public */
 export type TtsInferenceResult = z.infer<typeof TtsInferenceResultSchema>
 
+/** @public */
 export const RequestPrimaryInferenceDetailSchema = z.object({
   input: RequestInferenceRequestSchema,
   signal: SignalWithSetterSchema<typeof PrimaryInferenceResultSchema>(),
 })
 
+/** @public */
 export type RequestPrimaryInferenceDetail = z.infer<typeof RequestPrimaryInferenceDetailSchema>
 
+/** @public */
 export const RequestTtsInferenceDetailSchema = z.object({
   input: TtsInferenceRequestSchema,
   signal: SignalWithSetterSchema<typeof TtsInferenceResultSchema>(),
 })
 
+/** @public */
 export type RequestTtsInferenceDetail = z.infer<typeof RequestTtsInferenceDetailSchema>
 
+/** @public */
 export const BashResultSchema = createSignalResultSchema(BashConfigSchema, BashOutputSchema)
 
+/** @public */
 export const RequestBashDetailSchema = z.object({
   input: BashConfigSchema,
   signal: SignalWithSetterSchema<typeof BashResultSchema>(),
 })
 
+/** @public */
 export type RequestBashDetail = z.infer<typeof RequestBashDetailSchema>
 
 const WriteFileInputSchema = z.object({
@@ -464,61 +495,80 @@ const WriteFileInputSchema = z.object({
   }),
 })
 
+/** @public */
 export const WriteFileOutputSchema = z.number()
 
+/** @public */
 export const RequestWriteFileDetailSchema = z.object({
   input: WriteFileInputSchema,
   signal: SignalWithSetterSchema<typeof WriteFileResultSchema>(),
 })
 
+/** @public */
 export type RequestWriteFileDetail = z.infer<typeof RequestWriteFileDetailSchema>
 
+/** @public */
 export const WriteFileResultSchema = createSignalResultSchema(WriteFileInputSchema, WriteFileOutputSchema)
 
+/** @public */
 export const RequestReadFileDetailSchema = z.object({
   input: z.string(),
   signal: SignalWithSetterSchema<typeof ReadFileResultSchema>(),
 })
 
+/** @public */
 export type RequestReadFileDetail = z.infer<typeof RequestReadFileDetailSchema>
 
+/** @public */
 export const ReadFileResultSchema = createSignalResultSchema(z.string(), ReadFileOutputSchema)
 
+/** @public */
 export const GlobFilesOutputSchema = z.array(z.string())
 
+/** @public */
 export const RequestGlobFilesDetailSchema = z.object({
   input: GlobFilesConfigSchema,
   signal: SignalWithSetterSchema<typeof GlobFilesResultSchema>(),
 })
 
+/** @public */
 export type RequestGlobFilesDetail = z.infer<typeof RequestGlobFilesDetailSchema>
 
+/** @public */
 export const GlobFilesResultSchema = createSignalResultSchema(GlobFilesConfigSchema, GlobFilesOutputSchema)
 
+/** @public */
 export const RequestGrepDetailSchema = z.object({
   input: GrepConfigSchema,
   signal: SignalWithSetterSchema<typeof GrepResultSchema>(),
 })
 
+/** @public */
 export type RequestGrepDetail = z.infer<typeof RequestGrepDetailSchema>
 
+/** @public */
 export const GrepResultSchema = createSignalResultSchema(GrepConfigSchema, GrepOutputSchema)
 
+/** @public */
 export const DeleteFileOutputSchema = z.literal(true)
 
+/** @public */
 export const RequestDeleteFileDetailSchema = z.object({
   input: z.string(),
   signal: SignalWithSetterSchema<typeof DeleteFileResultSchema>(),
 })
 
+/** @public */
 export type RequestDeleteFileDetail = z.infer<typeof RequestDeleteFileDetailSchema>
 
+/** @public */
 export const DeleteFileResultSchema = createSignalResultSchema(z.string(), DeleteFileOutputSchema)
 
 // ============================================================================
 // Agent Config Schema
 // ============================================================================
 
+/** @public */
 export const FactoryResultSchema = z
   .object({
     threads: z.record(z.string(), BehavioralRuleSchema).optional(),
@@ -526,8 +576,10 @@ export const FactoryResultSchema = z
   })
   .strict()
 
+/** @public */
 export type FactoryResult = z.infer<typeof FactoryResultSchema>
 
+/** @public */
 export const UpdateFactoryModuleSchema = z
   .object({
     default: z.array(FactorySchema).min(1),

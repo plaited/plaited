@@ -5,6 +5,11 @@ import { extractLocalLinksFromMarkdown, parseMarkdownWithFrontmatter } from '../
 
 const skillNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
+/**
+ * Zod schema for skill markdown frontmatter.
+ *
+ * @public
+ */
 export const SkillFrontMatterSchema = z.object({
   name: z
     .string()
@@ -18,8 +23,14 @@ export const SkillFrontMatterSchema = z.object({
   metadata: z.record(z.string(), z.string()).optional(),
 })
 
+/** @public */
 export type SkillFrontMatter = z.infer<typeof SkillFrontMatterSchema>
 
+/**
+ * Result of validating local markdown links within a skill.
+ *
+ * @public
+ */
 export type SkillLinkValidation = {
   present: string[]
   missing: string[]
@@ -38,6 +49,14 @@ const formatSkillValidationError = (error: unknown): string => {
   return `Invalid skill frontmatter: ${String(error)}`
 }
 
+/**
+ * Validates local markdown links referenced from a skill body.
+ *
+ * @param options - Skill directory and markdown body to validate.
+ * @returns Lists of links that resolve and links that are missing.
+ *
+ * @public
+ */
 export const validateSkillLocalLinks = async ({
   skillDir,
   markdownBody,
@@ -66,6 +85,15 @@ export const validateSkillLocalLinks = async ({
   }
 }
 
+/**
+ * Validates a `SKILL.md` file against the expected frontmatter contract.
+ *
+ * @param markdown - Full markdown source for the skill file.
+ * @param options - Optional path information used to validate the directory name.
+ * @returns `true` when the markdown parses and matches the expected skill name.
+ *
+ * @public
+ */
 export const isValidSkill = (
   markdown: string,
   options?: {
@@ -97,8 +125,21 @@ export const isValidSkill = (
   return true
 }
 
+/**
+ * Glob used to discover `SKILL.md` files under workspace skill directories.
+ *
+ * @public
+ */
 export const skillsGlobPattern = '**/skills/*/SKILL.md'
 
+/**
+ * Finds absolute skill directory paths under a workspace root.
+ *
+ * @param rootDir - Root directory to scan for `SKILL.md` files.
+ * @returns Sorted list of absolute skill directory paths.
+ *
+ * @public
+ */
 export const findSkillDirectories = async (rootDir: string): Promise<string[]> => {
   const skillDirs: string[] = []
   const glob = new Glob(skillsGlobPattern)

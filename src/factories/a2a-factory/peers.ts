@@ -54,6 +54,7 @@ export const KnownPeerSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
 })
 
+/** @public */
 export type KnownPeer = z.infer<typeof KnownPeerSchema>
 
 /**

@@ -10,16 +10,41 @@
 
 import * as z from 'zod'
 
+/**
+ * Parsed CLI flags shared by JSON-in / JSON-out commands.
+ *
+ * @property dryRun - When true, print the resolved request instead of executing it.
+ *
+ * @public
+ */
 export type CliFlags = {
   dryRun: boolean
 }
 
+/**
+ * Options used when parsing a JSON-backed CLI request.
+ *
+ * @property name - Command name rendered in generated usage output.
+ * @property outputSchema - Optional output schema used for `--schema output` and result validation.
+ * @property help - Optional additional help text appended to the usage block.
+ *
+ * @public
+ */
 export type CliOptions = {
   name: string
   outputSchema?: z.ZodType
   help?: string
 }
 
+/**
+ * Parsed CLI request data returned by `parseCliRequest`.
+ *
+ * @template TSchema - Input schema used to validate the request body.
+ * @property input - Parsed input payload.
+ * @property flags - Parsed CLI flags.
+ *
+ * @public
+ */
 export type ParsedCliRequest<TSchema extends z.ZodType> = {
   input: z.infer<TSchema>
   flags: CliFlags
@@ -98,6 +123,17 @@ const printSchema = (schema: z.ZodType): void => {
   console.log(JSON.stringify(z.toJSONSchema(schema), null, 2))
 }
 
+/**
+ * Parses and validates a JSON CLI request with shared flag handling.
+ *
+ * @template TSchema - Input schema used to validate the request payload.
+ * @param args - Raw command-line arguments after the command name.
+ * @param schema - Zod schema used to validate the input payload.
+ * @param options - Command metadata used for usage text and output validation.
+ * @returns Parsed request input plus shared CLI flags.
+ *
+ * @public
+ */
 export const parseCliRequest = async <TSchema extends z.ZodType>(
   args: string[],
   schema: TSchema,
@@ -142,6 +178,17 @@ export const parseCliRequest = async <TSchema extends z.ZodType>(
   }
 }
 
+/**
+ * Parses and validates a JSON CLI request, returning only the input payload.
+ *
+ * @template TSchema - Input schema used to validate the request payload.
+ * @param args - Raw command-line arguments after the command name.
+ * @param schema - Zod schema used to validate the input payload.
+ * @param options - Command metadata used for usage text and output validation.
+ * @returns Parsed CLI input.
+ *
+ * @public
+ */
 export const parseCli = async <TSchema extends z.ZodType>(
   args: string[],
   schema: TSchema,
@@ -151,6 +198,16 @@ export const parseCli = async <TSchema extends z.ZodType>(
   return input
 }
 
+/**
+ * Creates a JSON-in / JSON-out CLI handler with shared parsing and validation.
+ *
+ * @template TInputSchema - Input schema type for the command.
+ * @template TOutput - Output type produced by the command handler.
+ * @param config - Command metadata, validation schemas, and execution callback.
+ * @returns CLI handler that parses input, optionally validates output, and prints JSON.
+ *
+ * @public
+ */
 export const makeCli =
   <TInputSchema extends z.ZodType, TOutput>({
     name,

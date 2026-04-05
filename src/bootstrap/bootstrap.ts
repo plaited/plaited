@@ -63,6 +63,14 @@ const getNextSteps = ({
   return steps
 }
 
+/**
+ * Writes a bootstrapped `.plaited/` deployment scaffold to disk.
+ *
+ * @param input - Bootstrap CLI input describing the target layout and providers.
+ * @returns Summary of created files and recommended follow-up steps.
+ *
+ * @public
+ */
 export const bootstrapAgent = async (input: BootstrapInput): Promise<BootstrapOutput> => {
   const targetDir = resolve(input.targetDir)
   const plaitedDir = join(targetDir, '.plaited')
@@ -210,6 +218,14 @@ const buildServerConfig = (input: BootstrapRuntimeInput) =>
     autostart: false,
   })
 
+/**
+ * Creates an agent runtime wired with server-factory bootstrap defaults.
+ *
+ * @param input - Bootstrap runtime configuration and resolved model/auth seams.
+ * @returns Bootstrapped agent handle plus server lifecycle helpers.
+ *
+ * @public
+ */
 export const createBootstrappedAgent = async (input: BootstrapRuntimeInput): Promise<BootstrapRuntime> => {
   const workspace = resolve(input.workspace ?? input.targetDir)
   const cwd = resolve(input.cwd ?? workspace)

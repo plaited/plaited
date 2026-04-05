@@ -61,6 +61,11 @@ export type UIClientErrorDetail = {
   pathname?: string
 }
 
+/**
+ * Authenticated connection metadata returned by the auth seam.
+ *
+ * @public
+ */
 export type AuthenticatedConnection = {
   connectionId: string
   principalId?: string
@@ -68,6 +73,11 @@ export type AuthenticatedConnection = {
   capabilities?: string[]
 }
 
+/**
+ * Authentication seam used during WebSocket upgrade handling.
+ *
+ * @public
+ */
 export type AuthenticateConnection = (input: {
   request: Request
   source: string
@@ -147,10 +157,20 @@ export type ServerHandle = {
   stop: (closeActiveConnections?: boolean) => void
 }
 
+/**
+ * Options for creating the server factory wrapper.
+ *
+ * @public
+ */
 export type CreateServerFactoryOptions = {
   configSignalKey?: string
   statusSignalKey?: string
   initialConfig?: Partial<CreateServerOptions> & { autostart?: boolean }
 }
 
+/**
+ * Factory signature for the server factory lane.
+ *
+ * @public
+ */
 export type ServerFactory = Factory

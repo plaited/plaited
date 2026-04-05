@@ -4,6 +4,14 @@ import type * as z from 'zod'
 
 const frontmatterRegex = /^---\s*[\r\n]([\s\S]*?)[\r\n]---\s*/
 
+/**
+ * Consumes an `HTMLRewriter` result so link extraction side effects are applied.
+ *
+ * @param result - Rewriter output in any supported body format.
+ * @returns Promise that resolves after the transformed body has been fully consumed.
+ *
+ * @public
+ */
 export const consumeHtmlRewriteResult = async (result: string | Response | Blob | ArrayBufferLike): Promise<void> => {
   if (typeof result === 'string') return
   if (result instanceof Response) {
@@ -17,6 +25,17 @@ export const consumeHtmlRewriteResult = async (result: string | Response | Blob 
   void new TextDecoder().decode(new Uint8Array(result))
 }
 
+/**
+ * Parses YAML frontmatter from a markdown document and validates it with Zod.
+ *
+ * @template TSchema - Schema used to validate the frontmatter object.
+ * @param markdown - Markdown source containing YAML frontmatter.
+ * @param schema - Zod schema used to parse the frontmatter block.
+ * @param options - Optional parsing controls.
+ * @returns Parsed frontmatter plus the remaining markdown body.
+ *
+ * @public
+ */
 export const parseMarkdownWithFrontmatter = <TSchema extends z.ZodType>(
   markdown: string,
   schema: TSchema,
@@ -42,6 +61,15 @@ export const parseMarkdownWithFrontmatter = <TSchema extends z.ZodType>(
   }
 }
 
+/**
+ * Extracts the body of the first matching level-two markdown section.
+ *
+ * @param markdown - Full markdown source to scan.
+ * @param headings - Accepted section headings without the `##` prefix.
+ * @returns Trimmed section body, or `null` when no matching section exists.
+ *
+ * @public
+ */
 export const extractMarkdownSection = (markdown: string, headings: string[]): string | null => {
   const lines = markdown.split(/\r?\n/)
   const escapedHeadings = headings.map((heading) => heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
@@ -62,6 +90,14 @@ export const extractMarkdownSection = (markdown: string, headings: string[]): st
   return section.length > 0 ? section : null
 }
 
+/**
+ * Normalizes a markdown link target when it points to a local workspace path.
+ *
+ * @param value - Raw markdown link target.
+ * @returns Normalized local path, or `null` for external and fragment-only links.
+ *
+ * @public
+ */
 export const normalizeMarkdownLink = (value: string): string | null => {
   if (
     !value ||
@@ -78,6 +114,14 @@ export const normalizeMarkdownLink = (value: string): string | null => {
   return normalize(path)
 }
 
+/**
+ * Extracts normalized local links from a markdown document body.
+ *
+ * @param markdownBody - Markdown body to inspect.
+ * @returns Sorted list of unique local link targets referenced by anchors or images.
+ *
+ * @public
+ */
 export const extractLocalLinksFromMarkdown = async (markdownBody: string): Promise<string[]> => {
   const links = new Set<string>()
   const html = Bun.markdown.html(markdownBody)

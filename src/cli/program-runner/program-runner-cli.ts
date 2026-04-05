@@ -36,6 +36,14 @@ const statusProgramCommand = async (args: string[]) => {
   console.log(JSON.stringify(result, null, 2))
 }
 
+/**
+ * Runs the `program-runner` CLI command surface.
+ *
+ * @param args - Command-line arguments after `program-runner`.
+ * @returns Promise that resolves when the selected subcommand exits.
+ *
+ * @public
+ */
 export const programRunnerCli = async (args: string[]): Promise<void> => {
   const command = args[0]
   const commandArgs = args.slice(1)

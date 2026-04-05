@@ -1,13 +1,38 @@
 import * as z from 'zod'
 
+/**
+ * Zod schema for bootstrap deployment profiles.
+ *
+ * @public
+ */
 export const BootstrapProfileSchema = z.enum(['local-first', 'offline-private', 'hosted-node'])
 
+/**
+ * Zod schema for supported durable memory providers.
+ *
+ * @public
+ */
 export const BootstrapMemoryProviderSchema = z.enum(['agentfs', 'jsonl-sqlite'])
 
+/**
+ * Zod schema for supported sandbox providers.
+ *
+ * @public
+ */
 export const BootstrapSandboxProviderSchema = z.enum(['boxer', 'none'])
 
+/**
+ * Zod schema for supported sync providers.
+ *
+ * @public
+ */
 export const BootstrapSyncProviderSchema = z.enum(['turso', 'none'])
 
+/**
+ * Zod schema for bootstrap command input.
+ *
+ * @public
+ */
 export const BootstrapInputSchema = z.object({
   targetDir: z.string().default('.').describe('Target directory for bootstrap output'),
   name: z.string().default('plaited-agent').describe('Logical name for the bootstrapped agent'),
@@ -30,6 +55,11 @@ export const BootstrapInputSchema = z.object({
   overwrite: z.boolean().default(false).describe('Allow overwriting existing bootstrap files'),
 })
 
+/**
+ * Zod schema for bootstrap command output.
+ *
+ * @public
+ */
 export const BootstrapOutputSchema = z.object({
   name: z.string(),
   targetDir: z.string(),

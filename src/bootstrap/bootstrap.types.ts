@@ -10,13 +10,24 @@ import type {
   BootstrapSyncProviderSchema,
 } from './bootstrap.schemas.ts'
 
+/** @public */
 export type BootstrapProfile = z.infer<typeof BootstrapProfileSchema>
+/** @public */
 export type BootstrapMemoryProvider = z.infer<typeof BootstrapMemoryProviderSchema>
+/** @public */
 export type BootstrapSandboxProvider = z.infer<typeof BootstrapSandboxProviderSchema>
+/** @public */
 export type BootstrapSyncProvider = z.infer<typeof BootstrapSyncProviderSchema>
+/** @public */
 export type BootstrapInput = z.infer<typeof BootstrapInputSchema>
+/** @public */
 export type BootstrapOutput = z.infer<typeof BootstrapOutputSchema>
 
+/**
+ * Runtime input used to bootstrap and start a local Plaited agent instance.
+ *
+ * @public
+ */
 export type BootstrapRuntimeInput = BootstrapInput & {
   models: AgentModels
   authenticateConnection: AuthenticateConnection
@@ -38,6 +49,11 @@ export type BootstrapRuntimeInput = BootstrapInput & {
   autostartServer?: boolean
 }
 
+/**
+ * Runtime handles returned by `createBootstrappedAgent`.
+ *
+ * @public
+ */
 export type BootstrapRuntime = {
   agent: AgentHandle
   startServer: () => void

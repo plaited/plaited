@@ -23,11 +23,21 @@ export const WebSocketDataSchema = z.object({
 /** @public */
 export type WebSocketData = z.infer<typeof WebSocketDataSchema>
 
+/**
+ * Zod schema for replay buffer configuration.
+ *
+ * @public
+ */
 export const ReplayBufferOptionsSchema = z.object({
   maxSize: z.number().int().nonnegative().optional(),
   ttlMs: z.number().int().nonnegative().optional(),
 })
 
+/**
+ * Zod schema for WebSocket connection limits.
+ *
+ * @public
+ */
 export const WebSocketLimitsSchema = z.object({
   idleTimeout: z.number().int().nonnegative().optional(),
   maxPayloadLength: z.number().int().nonnegative().optional(),
@@ -43,6 +53,11 @@ const AuthenticateConnectionSchema = z.custom<AuthenticateConnection>((value) =>
 
 const TLSOptionsSchema = z.custom<CreateServerOptions['tls']>((_) => true)
 
+/**
+ * Zod schema for server factory configuration.
+ *
+ * @public
+ */
 export const ServerFactoryConfigSchema = z.object({
   routes: ServeRoutesSchema.default({}),
   port: z.number().int().nonnegative().default(0),
@@ -55,17 +70,30 @@ export const ServerFactoryConfigSchema = z.object({
   autostart: z.boolean().default(true),
 })
 
+/**
+ * Zod schema for server factory runtime status.
+ *
+ * @public
+ */
 export const ServerFactoryStatusSchema = z.object({
   state: z.enum(['stopped', 'starting', 'running', 'error']),
   port: z.number().int().nonnegative().optional(),
   error: z.string().optional(),
 })
 
+/**
+ * Zod schema for outbound server send requests.
+ *
+ * @public
+ */
 export const ServerSendDetailSchema = z.object({
   topic: z.string(),
   data: z.string(),
 })
 
+/** @public */
 export type ServerFactoryConfig = z.infer<typeof ServerFactoryConfigSchema>
+/** @public */
 export type ServerFactoryStatus = z.infer<typeof ServerFactoryStatusSchema>
+/** @public */
 export type ServerSendDetail = z.infer<typeof ServerSendDetailSchema>

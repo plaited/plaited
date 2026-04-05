@@ -2,6 +2,11 @@ import { makeCli } from '../cli.ts'
 import { BootstrapInputSchema, BootstrapOutputSchema } from './bootstrap.schemas.ts'
 import { bootstrapAgent } from './bootstrap.ts'
 
+/**
+ * CLI entrypoint for writing a bootstrapped Plaited agent layout to disk.
+ *
+ * @public
+ */
 export const bootstrapCli = makeCli({
   name: 'bootstrap',
   inputSchema: BootstrapInputSchema,

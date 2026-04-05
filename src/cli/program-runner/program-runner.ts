@@ -41,6 +41,14 @@ const runCommand = async ({
   }
 }
 
+/**
+ * Resolves the git workspace root for a command invocation.
+ *
+ * @param cwd - Working directory used to run `git rev-parse`.
+ * @returns Absolute workspace root path.
+ *
+ * @public
+ */
 export const getWorkspaceRoot = async (cwd: string): Promise<string> => {
   const result = await runCommand({
     args: ['git', 'rev-parse', '--show-toplevel'],
@@ -80,8 +88,27 @@ const loadProgramRunnerContext = async ({
   }
 }
 
+/**
+ * Derives the program lane name from a program markdown path.
+ *
+ * @param programPath - Workspace-relative path to the program markdown file.
+ * @returns Directory name used as the program lane identifier.
+ *
+ * @public
+ */
 export const getProgramLane = (programPath: string): string => basename(dirname(programPath))
 
+/**
+ * Builds the directory path for a new program-runner execution.
+ *
+ * @param options - Program path and workspace context.
+ * @param options.programPath - Workspace-relative path to the program markdown file.
+ * @param options.rootDir - Optional override for the runs root directory.
+ * @param options.workspaceRoot - Absolute workspace root path.
+ * @returns Absolute directory path for the new run.
+ *
+ * @public
+ */
 export const buildProgramRunDir = ({
   programPath,
   rootDir,
@@ -96,6 +123,17 @@ export const buildProgramRunDir = ({
   return join(runsRoot, timestamp())
 }
 
+/**
+ * Resolves absolute and relative defaults for a program-runner invocation.
+ *
+ * @param options - Program path and default allowed path inputs.
+ * @param options.defaultAllowedPaths - Optional fallback writable roots.
+ * @param options.programPath - Program path supplied by the caller.
+ * @param options.workspaceRoot - Absolute workspace root path.
+ * @returns Normalized absolute path, relative path, and default allowed paths.
+ *
+ * @public
+ */
 export const resolveProgramDefaults = ({
   defaultAllowedPaths,
   programPath,
@@ -123,6 +161,20 @@ export const resolveProgramDefaults = ({
   }
 }
 
+/**
+ * Replaces template placeholders in worker or validation commands.
+ *
+ * @param options - Command template inputs.
+ * @param options.attempt - Attempt number being executed.
+ * @param options.artifactDir - Artifact directory for the attempt.
+ * @param options.command - Command template segments.
+ * @param options.programPath - Workspace-relative program path.
+ * @param options.runDir - Run directory for the current execution.
+ * @param options.worktreePath - Worktree path for the current attempt.
+ * @returns Command segments with known placeholders expanded.
+ *
+ * @public
+ */
 export const substituteProgramRunnerCommand = ({
   attempt,
   artifactDir,
@@ -306,6 +358,14 @@ const runWithConcurrency = async ({
   await Promise.all(runners)
 }
 
+/**
+ * Creates a worktree-backed program run and executes its attempts.
+ *
+ * @param input - Program-runner execution input.
+ * @returns Persisted run record with updated attempt status.
+ *
+ * @public
+ */
 export const runFactoryProgram = async (input: ProgramRunnerRunInput): Promise<ProgramRunnerRun> => {
   const parsed = ProgramRunnerRunInputSchema.parse(input)
   const workspaceRoot = await getWorkspaceRoot(process.cwd())
@@ -378,6 +438,16 @@ export const runFactoryProgram = async (input: ProgramRunnerRunInput): Promise<P
   return ProgramRunnerRunSchema.parse(run)
 }
 
+/**
+ * Finds the most recent run directory for a program lane.
+ *
+ * @param options - Program path and workspace context.
+ * @param options.programPath - Workspace-relative path to the program markdown file.
+ * @param options.workspaceRoot - Absolute workspace root path.
+ * @returns Absolute path to the most recent run directory.
+ *
+ * @public
+ */
 export const findLatestProgramRunDir = async ({
   programPath,
   workspaceRoot,
@@ -402,6 +472,14 @@ export const findLatestProgramRunDir = async ({
   return join(runsRoot, latest)
 }
 
+/**
+ * Loads a persisted program-runner run from disk.
+ *
+ * @param input - Status lookup input.
+ * @returns Parsed run record.
+ *
+ * @public
+ */
 export const loadFactoryProgramRun = async (input: ProgramRunnerStatusInput): Promise<ProgramRunnerRun> => {
   const parsed = ProgramRunnerStatusInputSchema.parse(input)
   const workspaceRoot = await getWorkspaceRoot(process.cwd())

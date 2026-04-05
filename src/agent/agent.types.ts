@@ -49,8 +49,20 @@ export type AgentHandle = {
   useSnapshot: UseSnapshot
 }
 
+/**
+ * Listener signature used by signals and computed values.
+ *
+ * @public
+ */
 export type Listen = (eventType: string | (() => void), getLVC?: boolean) => Disconnect
 
+/**
+ * Handler invoked when a signal value fails schema validation.
+ *
+ * @template TSchema - Schema used to validate the signal.
+ *
+ * @public
+ */
 export type SchemaViolationHandler<TSchema extends ZodTypeAny = ZodTypeAny> = (args: {
   key: string
   schema: TSchema
@@ -58,6 +70,13 @@ export type SchemaViolationHandler<TSchema extends ZodTypeAny = ZodTypeAny> = (a
   violation: ZodSafeParseError<Infer<TSchema>>
 }) => void
 
+/**
+ * Mutable schema-aware signal used by the agent runtime.
+ *
+ * @template TSchema - Schema used to validate stored values.
+ *
+ * @public
+ */
 export type Signal<TSchema extends ZodTypeAny = ZodTypeAny> = {
   set?(value?: Infer<TSchema>): void
   listen: Listen
@@ -65,6 +84,11 @@ export type Signal<TSchema extends ZodTypeAny = ZodTypeAny> = {
   schema: TSchema
 }
 
+/**
+ * Factory for readonly computed signals derived from other signals.
+ *
+ * @public
+ */
 export type Computed = <T>(
   compute: () => T,
   deps: Signal[],
@@ -73,6 +97,11 @@ export type Computed = <T>(
   listen: Listen
 }
 
+/**
+ * Signal registry exposed to installed factories.
+ *
+ * @public
+ */
 export type Signals = {
   set: <TSchema extends ZodTypeAny = ZodTypeAny>({
     key,
@@ -91,6 +120,11 @@ export type Signals = {
   has: (key: string) => boolean
 }
 
+/**
+ * Context object passed to installed factories.
+ *
+ * @public
+ */
 export type FactoryParams = {
   /** Restricted trigger surface injected into installed factories. */
   trigger: Trigger
@@ -99,6 +133,11 @@ export type FactoryParams = {
   computed: Computed
 }
 
+/**
+ * Factory signature used to install agent behavior.
+ *
+ * @public
+ */
 export type Factory = (params: FactoryParams) => {
   threads?: Record<string, ReturnType<BSync>>
   handlers?: DefaultHandlers
@@ -116,6 +155,11 @@ export type ChatMessage = {
   tool_call_id?: string
 }
 
+/**
+ * Primary inference function used by the agent runtime.
+ *
+ * @public
+ */
 export type PrimaryInferenceModel = (args: {
   messages: ChatMessage[]
   tools?: ToolDefinition[]
@@ -137,6 +181,11 @@ export type VoiceResponse = {
   duration: number
 }
 
+/**
+ * Model providers configured for an agent instance.
+ *
+ * @public
+ */
 export type AgentModels = {
   primary: PrimaryInferenceModel
   tts: (args: { text: string; voice?: string; language?: string; timeout?: number }) => Promise<VoiceResponse>

@@ -9,7 +9,7 @@ compatibility: Requires bun
 
 ## Purpose
 
-This skill provides TSDoc format templates, type documentation guidelines, and maintenance workflows. Use this when:
+This skill provides both TSDoc policy guidance and an executable audit tool for ongoing maintenance. Use this when:
 - Writing or editing TSDoc comments for any function, type, or module
 - Reviewing documentation quality
 - Creating comprehensive API documentation
@@ -22,8 +22,29 @@ This skill provides TSDoc format templates, type documentation guidelines, and m
 
 ## Quick Reference
 
+- **Audit current coverage**:
+  `bun skills/code-documentation/scripts/run.ts '{"targets":["src/**/*.ts"]}'`
+- **Print JSON schema**:
+  `bun skills/code-documentation/scripts/run.ts --schema input`
 - **Creating TSDoc**: See [workflow.md](references/workflow.md) for the generation workflow
 - **Maintaining TSDoc**: See [maintenance.md](references/maintenance.md) for cleanup and sync guidelines
+
+## CLI
+
+The skill now includes an AST-based audit tool:
+
+```bash
+bun skills/code-documentation/scripts/run.ts '{"targets":["src/**/*.ts","src/**/*.tsx"]}'
+echo '{"targets":["src/agent/create-agent.ts"]}' | bun skills/code-documentation/scripts/run.ts
+```
+
+The CLI reports:
+- `missing-docs` — exported top-level declarations without attached JSDoc/TSDoc
+- `public-exports` — exported declarations with line/kind/documented status
+- `orphaned-docs` — JSDoc blocks not attached to an AST node
+- `doc-coverage` — per-file exported declaration coverage summary
+
+Use the CLI first for inventory, then use `typescript-lsp` plus the reference templates to write or repair the actual comments.
 
 This skill contains detailed templates for:
 - Public API Functions

@@ -5,37 +5,49 @@ import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 import packageJson from '../../../package.json' with { type: 'json' }
 import { McpManifestSchema } from './mcp.schemas.ts'
 
+/** @public */
 export type McpContent = { type: string; text?: string; [key: string]: unknown }
+/** @public */
 export type McpCallToolResult = { content: McpContent[]; isError?: boolean }
+/** @public */
 export type McpTool = { name: string; description?: string; inputSchema: Record<string, unknown> }
+/** @public */
 export type McpPromptArgument = { name: string; description?: string; required?: boolean }
+/** @public */
 export type McpPrompt = { name: string; description?: string; arguments?: McpPromptArgument[] }
+/** @public */
 export type McpPromptMessage = { role: 'user' | 'assistant'; content: McpContent }
+/** @public */
 export type McpResource = {
   uri: string
   name: string
   description?: string
   mimeType?: string
 }
+/** @public */
 export type McpResourceContent = {
   uri: string
   text?: string
   blob?: string
   mimeType?: string
 }
+/** @public */
 export type McpServerCapabilities = {
   tools: McpTool[]
   prompts: McpPrompt[]
   resources: McpResource[]
 }
+/** @public */
 export type McpSessionOptions = {
   timeoutMs?: number
 }
+/** @public */
 export type RemoteMcpOptions = {
   headers?: Record<string, string>
   authProvider?: OAuthClientProvider
   timeoutMs?: number
 }
+/** @public */
 export type McpManifest = {
   server?: {
     name: string
@@ -68,12 +80,22 @@ const createRemoteHeaders = async (options?: RemoteMcpOptions) => {
 const normalizeManifestEntries = <T extends { name: string }>(entries: Record<string, T> | T[]) =>
   Array.isArray(entries) ? entries : Object.values(entries)
 
+/**
+ * Normalizes manifest capability records into array form.
+ *
+ * @public
+ */
 export const normalizeMcpManifestCapabilities = (manifest: McpManifest): McpServerCapabilities => ({
   tools: normalizeManifestEntries(manifest.capabilities.tools),
   prompts: normalizeManifestEntries(manifest.capabilities.prompts),
   resources: normalizeManifestEntries(manifest.capabilities.resources),
 })
 
+/**
+ * Fetches and validates an MCP manifest from a remote endpoint.
+ *
+ * @public
+ */
 export const fetchRemoteMcpManifest = async (url: string, options?: RemoteMcpOptions): Promise<McpManifest | null> => {
   const response = await fetch(url, {
     method: 'GET',
@@ -99,12 +121,18 @@ const getRemoteManifestCapabilities = async (url: string, options?: RemoteMcpOpt
   return manifest ? normalizeMcpManifestCapabilities(manifest) : null
 }
 
+/**
+ * Connects an MCP client to an already-created transport.
+ *
+ * @public
+ */
 export const mcpConnect = async (transport: Transport) => {
   const client = new Client(CLIENT_INFO)
   await client.connect(transport)
   return client
 }
 
+/** @public */
 export type McpSession = {
   listTools: () => Promise<McpTool[]>
   callTool: (name: string, args: Record<string, unknown>) => Promise<McpCallToolResult>
@@ -117,6 +145,11 @@ export type McpSession = {
   [Symbol.asyncDispose]: () => Promise<void>
 }
 
+/**
+ * Creates an MCP session wrapper around a connected transport.
+ *
+ * @public
+ */
 export const createMcpSession = async (transport: Transport, options?: McpSessionOptions): Promise<McpSession> => {
   const timeoutMs = options?.timeoutMs
   const client = new Client(CLIENT_INFO)
@@ -194,20 +227,36 @@ export const createMcpSession = async (transport: Transport, options?: McpSessio
   }
 }
 
+/**
+ * Creates a streamable HTTP transport for a remote MCP endpoint.
+ *
+ * @public
+ */
 export const createRemoteMcpTransport = (url: string, options?: RemoteMcpOptions) =>
   new StreamableHTTPClientTransport(new URL(url), {
     requestInit: options?.headers ? { headers: options.headers } : undefined,
     authProvider: options?.authProvider,
   })
 
+/**
+ * Creates an MCP session for a remote streamable HTTP endpoint.
+ *
+ * @public
+ */
 export const createRemoteMcpSession = async (url: string, options?: RemoteMcpOptions): Promise<McpSession> =>
   createMcpSession(createRemoteMcpTransport(url, options), { timeoutMs: options?.timeoutMs })
 
+/**
+ * Connects an MCP client directly to a remote streamable HTTP endpoint.
+ *
+ * @public
+ */
 export const remoteMcpConnect = async (url: string, options?: RemoteMcpOptions) => {
   const transport = createRemoteMcpTransport(url, options)
   return mcpConnect(transport)
 }
 
+/** @public */
 export const mcpListTools = async (url: string, options?: RemoteMcpOptions): Promise<McpTool[]> => {
   const capabilities = await getRemoteManifestCapabilities(url, options)
   if (capabilities) return capabilities.tools
@@ -219,6 +268,7 @@ export const mcpListTools = async (url: string, options?: RemoteMcpOptions): Pro
   }
 }
 
+/** @public */
 export const mcpCallTool = async (
   url: string,
   toolName: string,
@@ -233,6 +283,7 @@ export const mcpCallTool = async (
   }
 }
 
+/** @public */
 export const mcpListPrompts = async (url: string, options?: RemoteMcpOptions): Promise<McpPrompt[]> => {
   const capabilities = await getRemoteManifestCapabilities(url, options)
   if (capabilities) return capabilities.prompts
@@ -244,6 +295,7 @@ export const mcpListPrompts = async (url: string, options?: RemoteMcpOptions): P
   }
 }
 
+/** @public */
 export const mcpGetPrompt = async (
   url: string,
   name: string,
@@ -258,6 +310,7 @@ export const mcpGetPrompt = async (
   }
 }
 
+/** @public */
 export const mcpListResources = async (url: string, options?: RemoteMcpOptions): Promise<McpResource[]> => {
   const capabilities = await getRemoteManifestCapabilities(url, options)
   if (capabilities) return capabilities.resources
@@ -269,6 +322,7 @@ export const mcpListResources = async (url: string, options?: RemoteMcpOptions):
   }
 }
 
+/** @public */
 export const mcpReadResource = async (
   url: string,
   uri: string,
@@ -282,6 +336,7 @@ export const mcpReadResource = async (
   }
 }
 
+/** @public */
 export const mcpDiscover = async (url: string, options?: RemoteMcpOptions): Promise<McpServerCapabilities> => {
   const capabilities = await getRemoteManifestCapabilities(url, options)
   if (capabilities) return capabilities
