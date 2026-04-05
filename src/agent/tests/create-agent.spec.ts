@@ -19,7 +19,6 @@ const TEST_MODELS = {
     parsed: { thinking: null, toolCalls: [], message: null },
     usage: { inputTokens: 0, outputTokens: 0 },
   }),
-  vision: async () => ({ description: '' }),
   tts: async () => ({ audio: new Uint8Array(), sampleRate: 0, duration: 0 }),
 }
 
@@ -49,23 +48,41 @@ describe('createAgent', () => {
     expect(typeof agent.useSnapshot).toBe('function')
   })
 
-  test('blocks restricted events through the restricted trigger surface', async () => {
+  test('blocks restricted events for installed factories while preserving the public trigger', async () => {
     const snapshots: string[] = []
+    const seen: string[] = []
     const agent = await createAgent({
       id: 'agent:test',
       cwd: process.cwd(),
       workspace: process.cwd(),
       models: TEST_MODELS,
       restrictedTriggers: [AGENT_EVENTS.agent_disconnect],
+      factories: [
+        ({ trigger }) => ({
+          handlers: {
+            attempt_disconnect() {
+              trigger({ type: AGENT_EVENTS.agent_disconnect })
+            },
+            [AGENT_EVENTS.agent_disconnect]() {
+              seen.push('agent_disconnect')
+            },
+          },
+        }),
+      ],
     })
 
     agent.useSnapshot((snapshot) => {
       snapshots.push(snapshot.kind)
     })
 
-    agent.trigger({ type: AGENT_EVENTS.agent_disconnect })
+    agent.trigger({ type: 'attempt_disconnect' })
 
     expect(snapshots).toContain('restricted_trigger_error')
+    expect(seen).toEqual([])
+
+    agent.trigger({ type: AGENT_EVENTS.agent_disconnect })
+
+    expect(seen).toEqual(['agent_disconnect'])
   })
 
   test('installs factory modules at runtime through update_factories', async () => {
@@ -303,7 +320,7 @@ describe('createAgent', () => {
     await rm(workspace, { recursive: true, force: true })
   })
 
-  test('handles request_inference_primary and writes the result to the provided signal', async () => {
+  test('handles request_inference and writes the result to the provided signal', async () => {
     let resultSignal:
       | ReturnType<typeof import('../use-signal.ts').useSignal<typeof PrimaryInferenceResultSchema>>
       | undefined
@@ -326,7 +343,6 @@ describe('createAgent', () => {
             },
           }
         },
-        vision: TEST_MODELS.vision,
         tts: TEST_MODELS.tts,
       },
       factories: [
@@ -341,7 +357,7 @@ describe('createAgent', () => {
             handlers: {
               run_inference() {
                 trigger({
-                  type: AGENT_EVENTS.request_inference_primary,
+                  type: AGENT_EVENTS.request_inference,
                   detail: {
                     input: {
                       messages: [{ role: 'user', content: 'hi' }],

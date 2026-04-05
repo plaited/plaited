@@ -41,9 +41,8 @@ memory, simulation, judge, or context-assembly policy.
 
 The built-in core event surface is:
 
-- `request_inference_primary`
-- `request_inference_vision`
-- `request_inference_tts`
+- `request_inference`
+- `request_tts`
 - `read_file`
 - `write_file`
 - `delete_file`
@@ -125,9 +124,8 @@ end-user tool UX.
 | `glob_files` | Enumerate files by glob |
 | `grep` | Search file content |
 | `bash` | Execute a workspace-local Bun worker |
-| `request_inference_primary` | Call the primary model |
-| `request_inference_vision` | Call the vision model |
-| `request_inference_tts` | Call the speech output model |
+| `request_inference` | Call the primary model |
+| `request_tts` | Call the speech output model |
 
 ### Higher-Level Tools
 

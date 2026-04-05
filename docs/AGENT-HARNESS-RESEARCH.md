@@ -62,7 +62,13 @@ The clean mental model is:
 - the executor model is the researcher
 - the adapted model is the student
 
-These roles may share a model family, but they are conceptually different.
+These roles should preferably stay within one model family even when they run
+at different sizes or on different tiers, but they are conceptually different.
+
+The current starting assumption is that Gemma 4 is the first autoresearch
+model family. Local runs may use smaller or quantized variants, while stronger
+server-backed runs may use larger variants without changing the harness
+contract.
 
 ## Training Later
 

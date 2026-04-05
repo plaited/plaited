@@ -27,7 +27,7 @@ The current agent core already provides:
   - `glob_files`
   - `grep`
   - `bash`
-  - primary / vision / tts inference requests
+  - primary / tts inference requests
 - signal-backed result delivery
 
 What is still missing is the policy layer that makes skills usable to the

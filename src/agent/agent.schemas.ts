@@ -347,13 +347,6 @@ export const RequestInferenceRequestSchema = z.object({
   timeout: z.number().optional(),
 })
 
-export const VisionResponseSchema = z.object({
-  description: z.string(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
-})
-
-export type VisionResponseShape = z.infer<typeof VisionResponseSchema>
-
 export const VoiceResponseSchema = z.object({
   audio: z.custom<Uint8Array>((value) => value instanceof Uint8Array),
   sampleRate: z.number(),
@@ -424,16 +417,6 @@ export const PrimaryInferenceResultSchema = createSignalResultSchema(
 
 export type PrimaryInferenceResult = z.infer<typeof PrimaryInferenceResultSchema>
 
-export const VisionInferenceRequestSchema = z.object({
-  image: z.custom<Uint8Array>((value) => value instanceof Uint8Array),
-  prompt: z.string(),
-  timeout: z.number().optional(),
-})
-
-export const VisionInferenceResultSchema = createSignalResultSchema(VisionInferenceRequestSchema, VisionResponseSchema)
-
-export type VisionInferenceResult = z.infer<typeof VisionInferenceResultSchema>
-
 export const TtsInferenceRequestSchema = z.object({
   text: z.string(),
   voice: z.string().optional(),
@@ -451,13 +434,6 @@ export const RequestPrimaryInferenceDetailSchema = z.object({
 })
 
 export type RequestPrimaryInferenceDetail = z.infer<typeof RequestPrimaryInferenceDetailSchema>
-
-export const RequestVisionInferenceDetailSchema = z.object({
-  input: VisionInferenceRequestSchema,
-  signal: SignalWithSetterSchema<typeof VisionInferenceResultSchema>(),
-})
-
-export type RequestVisionInferenceDetail = z.infer<typeof RequestVisionInferenceDetailSchema>
 
 export const RequestTtsInferenceDetailSchema = z.object({
   input: TtsInferenceRequestSchema,

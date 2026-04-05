@@ -80,6 +80,7 @@ This lane depends on and integrates focused subprograms such as:
 - [dev-research/verification-factories/program.md](../verification-factories/program.md)
 - [dev-research/three-axis-factories/program.md](../three-axis-factories/program.md)
 - [dev-research/node-auth-factories/program.md](../node-auth-factories/program.md)
+- [dev-research/server-factory/program.md](../server-factory/program.md)
 - [dev-research/module-discovery-factories/program.md](../module-discovery-factories/program.md)
 - [dev-research/plan-factories/program.md](../plan-factories/program.md)
 - [dev-research/edit-factories/program.md](../edit-factories/program.md)
@@ -183,6 +184,14 @@ The best default agent will come from a layered composition:
 - optional deployment-provided factories
 - dynamic factory installation for later capability expansion
 
+The current model-family assumption for bundle research should be:
+
+- Gemma 4 is the initial autoresearch model family
+- local and server lanes stay in that same family
+- deployment may change model size, quantization, or hosting lane
+- deployment should not require a separate built-in vision inference surface
+  when the primary model already supports multimodal work
+
 The best shipped result will not come from:
 
 - pushing all behavior back into the core
@@ -211,6 +220,8 @@ Examples:
 - `context-assembly-factories` owns phase-aware request assembly
 - `identity-trust-factories` owns stable node identity, peer trust, and
   trust-service integration
+- `server-factory` owns transport runtime composition, route contribution, and
+  server lifecycle policy
 
 Each subprogram should be narrow enough to support parallel mutation and
 judged comparison.

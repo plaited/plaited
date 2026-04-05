@@ -37,7 +37,7 @@ plaited bootstrap '{"targetDir":".","name":"plaited-agent","profile":"local-firs
 3. Run the real bootstrap command:
 
 ```bash
-plaited bootstrap '{"targetDir":".","name":"plaited-agent","profile":"local-first","primaryBaseUrl":"http://127.0.0.1:8000/v1","primaryModel":"falcon-h1r-7b","memoryProvider":"agentfs","sandboxProvider":"boxer","syncProvider":"none"}'
+plaited bootstrap '{"targetDir":".","name":"plaited-agent","profile":"local-first","primaryBaseUrl":"http://127.0.0.1:8000/v1","primaryModel":"gemma-4-e4b-it","memoryProvider":"agentfs","sandboxProvider":"boxer","syncProvider":"none"}'
 ```
 
 4. Review the generated `.plaited/` files before enabling autonomous behavior.
@@ -57,6 +57,10 @@ Treat those files as the source of truth for deployment setup.
 - Prefer `local-first` unless the task clearly calls for another profile.
 - Treat `primaryBaseUrl` and `primaryModel` as the most important initial
   configuration.
+- Prefer a Gemma 4 family model as the initial primary lane.
+- Keep local and server deployments in the same model family when possible:
+  a smaller or quantized local model, then a larger server-hosted variant when
+  the deployment supports it.
 - Keep sandbox and sync choices explicit and reviewable.
 - Re-run with `overwrite: true` only when you intend to replace the generated
   scaffold.

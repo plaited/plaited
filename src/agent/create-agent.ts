@@ -23,8 +23,6 @@ import {
   RequestReadFileDetailSchema,
   type RequestTtsInferenceDetail,
   RequestTtsInferenceDetailSchema,
-  type RequestVisionInferenceDetail,
-  RequestVisionInferenceDetailSchema,
   type RequestWriteFileDetail,
   RequestWriteFileDetailSchema,
   UpdateFactoryModuleSchema,
@@ -43,7 +41,8 @@ const DEFAULT_TOOL_TIMEOUT_MS = 120_000
  * @remarks
  * The core owns only:
  * - behavioral engine setup
- * - restricted trigger boundary
+ * - a restricted trigger boundary for installed factories
+ * - a full public trigger for outer runtime orchestration
  * - heartbeat pulse
  * - disconnect cleanup
  * - installation of executable factories
@@ -115,13 +114,15 @@ export const createAgent = async ({
         readOnly,
       },
     })
+    const { set, ...rest } = signal
+    signalMap.set(key, readOnly ? rest : Object.assign(rest, { set }))
     return signal
   }
 
   const signals: Signals = {
     set: setSignals,
-    get: signalMap.get,
-    has: signalMap.has,
+    get: (key) => signalMap.get(key),
+    has: (key) => signalMap.has(key),
   }
   for (const factory of factories) {
     const { threads, handlers } = factory({
@@ -270,17 +271,12 @@ export const createAgent = async ({
       !readOnly && Object.assign(rest, { set })
       signalMap.set(key, rest)
     },
-    async [AGENT_EVENTS.request_inference_primary](detail: RequestPrimaryInferenceDetail) {
+    async [AGENT_EVENTS.request_inference](detail: RequestPrimaryInferenceDetail) {
       const { input, signal } = RequestPrimaryInferenceDetailSchema.parse(detail)
       const output = await models.primary(input)
       signal.set?.({ input, output })
     },
-    async [AGENT_EVENTS.request_inference_vision](detail: RequestVisionInferenceDetail) {
-      const { input, signal } = RequestVisionInferenceDetailSchema.parse(detail)
-      const output = await models.vision(input)
-      signal.set?.({ input, output })
-    },
-    async [AGENT_EVENTS.request_inference_tts](detail: RequestTtsInferenceDetail) {
+    async [AGENT_EVENTS.request_tts](detail: RequestTtsInferenceDetail) {
       const { input, signal } = RequestTtsInferenceDetailSchema.parse(detail)
       const output = await models.tts(input)
       signal.set?.({ input, output })
@@ -391,7 +387,7 @@ export const createAgent = async ({
   })
 
   return {
-    trigger: restrictedTrigger,
+    trigger,
     useSnapshot,
   }
 }

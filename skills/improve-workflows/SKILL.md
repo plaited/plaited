@@ -59,6 +59,15 @@ Use `plaited program-runner` when the task is:
 
 This is the current bounded operator surface for factory research programs.
 
+For current autoresearch direction, assume the first model family is Gemma 4.
+Keep evals and program-runner lanes aligned around one cognitive contract across
+tiers:
+
+- local runs may use a smaller or quantized Gemma 4 variant
+- stronger server runs may use a larger Gemma 4 variant
+- avoid splitting logic across separate text and vision model families when the
+  primary model already covers multimodal work
+
 ## Repeated Eval API
 
 Library-first:
@@ -179,10 +188,13 @@ eval.
 Use repeated evals when:
 
 - the thing under test is an adapter/model/agent response
+- you want to compare local versus server-backed variants inside the same model
+  family without changing the adapter contract
 
 Use factory-program fanout when:
 
 - the thing under test is a workspace/program mutation
+- the harness or factory policy is the thing evolving, not the model interface
 
 Use adapters when:
 

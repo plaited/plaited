@@ -10,9 +10,8 @@ import { keyMirror } from '../utils.ts'
  * @public
  */
 export const AGENT_EVENTS = keyMirror(
-  'request_inference_primary',
-  'request_inference_vision',
-  'request_inference_tts',
+  'request_inference',
+  'request_tts',
   'read_file',
   'write_file',
   'delete_file',

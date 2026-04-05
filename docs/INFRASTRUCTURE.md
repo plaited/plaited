@@ -44,6 +44,18 @@ The cognitive layer is the Plaited agent itself:
 - snapshots retain observable execution state
 - the model remains replaceable
 
+The important deployment split is between the local control plane and the
+attached inference plane. A node can keep orchestration, memory, policy, and
+durable state local while routing primary inference to a stronger workstation
+or server lane such as vLLM on MSI / GB10-class hardware when a larger open
+model is the better fit.
+
+The intended policy is one model family across tiers. Local operation can use
+quantized Gemma 4 variants, while attached server hardware can run larger
+Gemma 4 variants for stronger reasoning or multimodal workloads. The routing
+decision should change model size and hosting lane, not the agent's contract or
+overall behavior model.
+
 This layer decides what to do. It does not need direct host-level access to do
 it.
 
@@ -139,8 +151,7 @@ The cleanest deployment model is:
 That means the boxed runtime may contain:
 
 - `createAgent()`
-- the Plaited server surface
-- the UI/controller protocol runtime
+- the server-factory transport lane and UI/controller protocol runtime
 - bounded execution tools and generated code
 
 But the durable node home should remain outside the disposable runtime image
@@ -170,7 +181,7 @@ The host device or server should own:
 The boxed runtime should own:
 
 - running `createAgent()`
-- running the Plaited server and UI protocol surfaces
+- running the server-factory lane plus UI protocol surfaces
 - reading and writing the projected node home
 - executing bounded tools and generated code
 - calling the attached trust service or local trust module when it needs peer

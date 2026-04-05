@@ -10,7 +10,10 @@ Three axioms drive every decision:
 
 2. **Symbolic persists, neural evolves.** Behavioral programs (bThreads) encode safety constraints and domain knowledge as deterministic code. They survive model upgrades, hardware changes, and architecture pivots. The neural layer — whichever model fills the Model role — is replaceable.
 
-3. **Architecture outlives models.** Today's model is Falcon-H1R 7B. Tomorrow's may be different. The interfaces, the constraint engine, the memory taxonomy, and the safety layers are designed to remain stable across model generations.
+3. **Architecture outlives models.** The current reference lane is a
+   Gemma 4 family served through an OpenAI-compatible backend such as vLLM, but
+   the interfaces, the constraint engine, the memory taxonomy, and the safety
+   layers are designed to remain stable across model generations.
 
 ## Overview
 
@@ -18,7 +21,8 @@ Plaited's agent layer is a **framework** — composable primitives shipped as a 
 
 The framework provides:
 
-- **Interfaces** for three model roles (Model, Vision, Voice)
+- **Interfaces** for the primary reasoning model plus optional adjunct model
+  roles such as speech
 - **A minimal behavioral core** plus factory-composed orchestration
 - **Memory via snapshots, git, and retained artifacts** — observable BP execution plus git-backed files and commit history
 - **Governance and verification as factory-level directions** rather than a
@@ -28,7 +32,8 @@ The framework is **not prescriptive** about inference backend. Consumers choose 
 
 ### Pluggable Models
 
-Model, Vision, and Voice are interfaces, not implementations:
+The primary model and any adjunct model roles are interfaces, not
+implementations:
 
 ```typescript
 type ModelDelta =
@@ -42,10 +47,6 @@ type Model = {
   reason(context: ModelContext, signal?: AbortSignal): AsyncIterable<ModelDelta>
 }
 
-type Vision = {
-  analyze(image: Uint8Array, prompt: string): Promise<VisionResponse>
-}
-
 type Voice = {
   speak(text: string, options?: { voice?: string }): Promise<Uint8Array>
 }
@@ -53,23 +54,36 @@ type Voice = {
 
 The `AsyncIterable<ModelDelta>` interface works identically whether the backend is a local inference server (Ollama on localhost), a cloud GPU (vLLM), or an API endpoint (OpenRouter). Deltas stream via BP events (`thinking_delta`, `text_delta`) for progressive UI rendering. OpenAI-compatible wire format.
 
-All three interfaces are backend-agnostic — implementations can target MLX
+The model interfaces are backend-agnostic. Implementations can target MLX
 (Apple Silicon), vLLM (CUDA/cloud), or any OpenAI-compatible endpoint. Swap
 the server, not the adapter.
+
+Multimodal input does not need a dedicated core vision event. When the primary
+model is natively multimodal, image and video handling can ride through the
+primary inference lane or through factory-owned extensions rather than a fixed
+built-in vision primitive.
 
 ### Reference Model Stack
 
 | Role | Interface | Reference Model | Params | Function |
 |---|---|---|---|---|
-| **Reasoning** | `Model` | Falcon-H1R 7B (Mamba/SSM hybrid) | 7B | Reasons in `<think>` blocks. Produces structured tool calls. Fine-tuned via distillation from frontier agents. |
-| **Vision** | `Vision` *(deferred)* | Qwen 2.5 VL 7B | 7B | Image/video to structured description. Object localization, OCR, visual grounding. 29 languages. |
+| **Primary reasoning + tool use** | `Model` | Gemma 4 family via vLLM | E4B / 26B-A4B / 31B | Function calling, structured JSON, long-context reasoning, and local-first or server-hosted deployment depending on hardware. |
 | **Speech output** | `Voice` *(deferred)* | Qwen3-TTS | ~2B | Text to speech. Voice cloning, voice design, streaming. Multilingual. |
 
 **Speech input (STT) is a client-side concern.** Browsers provide the Web Speech API, iOS has `SFSpeechRecognizer`, Android has `SpeechRecognizer` — all on-device, free, multilingual. The client transcribes speech to text and sends it to the node as a normal `task` event. The node never processes raw audio input.
 
-**Reference total: ~16B parameters across all roles.** In practice, only
-Model loads at startup (~4.6 GB quantized). Vision and Voice load on-demand
-when first called, then remain resident.
+The reference point is no longer a fixed 7B starter model. The model family
+should scale with the deployment lane:
+
+- local-by-default quantized Gemma 4 variants for privacy, offline work, and
+  tighter hardware footprints
+- larger Gemma 4 variants when attached GB10 / DGX Spark / workstation-class
+  hardware makes a stronger server-backed lane practical
+
+The design goal is consistency across tiers, not different agent behavior per
+host class. Local and server lanes should stay within the same model family,
+tool-calling contract, and response shape. The server lane is the stronger
+variant of the same cognitive surface, not a separate product.
 
 ### Reference Deployment
 
@@ -78,9 +92,21 @@ specific local runtime.
 
 The primary reference lane is:
 
-- MSI-hosted primary model serving through vLLM
+- Gemma 4 served through vLLM
 - Bun process as the local orchestrator/runtime
-- optional local or remote OpenAI-compatible providers for other model roles
+- a local/server split where the node home and control plane stay local while
+  larger model serving can sit on attached MSI / GB10-class hardware
+- optional local or remote OpenAI-compatible providers for adjunct roles such
+  as speech
+
+Under that split:
+
+- the local lane should prefer a quantized Gemma 4 variant when the goal is
+  privacy, portability, or offline operation
+- the server lane can step up to a larger Gemma 4 variant for harder
+  reasoning, longer-context work, or heavier multimodal workloads
+- escalation between lanes should preserve prompt format, tool semantics, and
+  output structure
 
 That keeps training and native-model execution anchored to the MSI + vLLM lane
 while preserving the ability to swap serving backends without changing the
@@ -99,7 +125,6 @@ The core owns:
 - heartbeat emission
 - built-in handlers for:
   - primary inference
-  - vision inference
   - speech output inference
   - `read_file`
   - `write_file`
@@ -117,8 +142,8 @@ through factories.
 
 - **Framework, Not Platform:** Composable primitives. Code via npm, models via Hugging Face. Platforms are built with it, not by it.
 - **Single Tenancy:** 1 User : 1 Agent instance. User data lives on their agent — nowhere else.
-- **Pluggable Models:** Model, Vision, and Voice are interfaces.
-  Implementations swap freely across MLX, vLLM, and cloud APIs.
+- **Pluggable Models:** The primary model and optional adjunct roles are
+  interfaces. Implementations swap freely across MLX, vLLM, and cloud APIs.
 - **Minimal Core, Rich Factories:** `createAgent()` stays narrow; planning,
   memory, MCP, A2A, verification, and editing policy belong in factories.
 - **Plan-Driven Context:** Plan state should shape context assembly through
@@ -173,7 +198,7 @@ The framework is not prescriptive about deployment:
 
 | Tier | Example | Inference | Training | Trade-off |
 |---|---|---|---|---|
-| **Local** | MSI, Mac Mini, DGX Spark | Yes | MSI / DGX Spark: full-parameter. Consumer GPU: LoRA only. | Zero ongoing cost. Full data sovereignty. Requires hardware. |
+| **Local** | MSI, Mac Mini, DGX Spark | Yes | MSI / DGX Spark: larger Gemma 4-class serving lanes. Consumer GPU: quantized local Gemma 4 variants or LoRA only. | Zero ongoing cost. Full data sovereignty. Requires hardware. |
 | **Cloud GPU** | RunPod, Lambda, Fly.io | Yes | Full-parameter on 4–8× A100 80GB cluster | Pay monthly. No hardware to maintain. |
 | **API-backed** | MiniMax, OpenRouter | Yes | No (unless provider supports fine-tuning) | Pay per use. No GPU needed. Dreamer/training not available. |
 

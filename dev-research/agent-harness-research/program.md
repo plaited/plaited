@@ -39,6 +39,13 @@ Only after those surfaces are stable should recurring semantics be compressed
 into the neural layer through LoRA, adapters, or other lightweight weight
 adaptation.
 
+The current starting assumption for autoresearch is:
+
+- Gemma 4 is the first model family for harness search
+- local runs may use smaller or quantized Gemma 4 variants
+- stronger server-backed runs may use larger Gemma 4 variants
+- both tiers should preserve the same prompt, tool, and output contract
+
 ## What This Lane Is And Is Not
 
 This lane is:
@@ -135,6 +142,11 @@ Examples:
 - signal naming and shared-context conventions
 - memory formatting
 - symbolic behavioral thread bundles
+
+This lane should not assume a separate built-in vision model path for research
+when the primary Gemma 4 lane is already multimodal. If multimodal behavior is
+needed, it should flow through the same primary-model contract that the local
+and server lanes share.
 
 ## What Evolves Later
 

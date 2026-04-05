@@ -30,7 +30,7 @@ This lane exists to validate:
 
 - [docs/INFRASTRUCTURE.md](../../docs/INFRASTRUCTURE.md)
 - the OpenAI-compatible adapter boundary
-- the MSI + vLLM reference lane
+- the single-family Gemma 4 local/server reference lane over vLLM
 - Boxer-style execution assumptions
 - node-home persistence and promotion assumptions
 
@@ -77,6 +77,7 @@ It should not replace the CLI with prompt-only deployment instructions.
 The bootstrap output should make the operator's choices reviewable:
 
 - model endpoints
+- model lane selection for local quantized versus larger server-hosted variants
 - deployment profile
 - memory substrate
 - sandbox substrate

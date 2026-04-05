@@ -14,6 +14,13 @@ export type HeartbeatConfig = {
 /**
  * Minimal create-agent contract for the new core.
  *
+ * @remarks
+ * `restrictedTriggers` applies to the trigger injected into installed
+ * factories, not to the public `AgentHandle.trigger` returned from
+ * `createAgent()`. This keeps factory-owned behavior inside a narrower
+ * authority envelope while preserving a full orchestration entrypoint for
+ * bootstrap and outer runtime control.
+ *
  * @public
  */
 export type CreateAgentOptions = {
@@ -29,6 +36,11 @@ export type CreateAgentOptions = {
 
 /**
  * Public handle returned by the new agent core.
+ *
+ * @remarks
+ * `trigger` is the outer orchestration entrypoint for the runtime. It is not
+ * narrowed by `restrictedTriggers`; installed factories receive a restricted
+ * trigger separately through `FactoryParams`.
  *
  * @public
  */
@@ -80,6 +92,7 @@ export type Signals = {
 }
 
 export type FactoryParams = {
+  /** Restricted trigger surface injected into installed factories. */
   trigger: Trigger
   useSnapshot: UseSnapshot
   signals: Signals
@@ -111,16 +124,6 @@ export type PrimaryInferenceModel = (args: {
 }) => Promise<ModelResponseDetail>
 
 /**
- * Structured response from the vision model.
- *
- * @public
- */
-export type VisionResponse = {
-  description: string
-  metadata?: Record<string, unknown>
-}
-
-/**
  * Structured response from voice synthesis.
  *
  * @public
@@ -136,7 +139,6 @@ export type VoiceResponse = {
 
 export type AgentModels = {
   primary: PrimaryInferenceModel
-  vision: (args: { image: Uint8Array; prompt: string; timeout?: number }) => Promise<VisionResponse>
   tts: (args: { text: string; voice?: string; language?: string; timeout?: number }) => Promise<VoiceResponse>
 }
 
