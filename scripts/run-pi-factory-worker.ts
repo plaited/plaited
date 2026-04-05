@@ -26,7 +26,8 @@ type WorkerRunResult = {
   stdout: string
 }
 
-const DEFAULT_EXECUTION_TIMEOUT_MS = 300_000
+const DEFAULT_PRIMARY_EXECUTION_TIMEOUT_MS = 600_000
+const DEFAULT_FALLBACK_EXECUTION_TIMEOUT_MS = 300_000
 const THINKING_LEVELS: ThinkingLevel[] = ['off', 'minimal', 'low', 'medium', 'high', 'xhigh']
 
 const parseArgs = (argv: string[]): WorkerArgs => {
@@ -153,9 +154,11 @@ const summarizeToolResult = (result: unknown): string => {
   return `${truncateForLog(textParts.join(' | '))}${details}`
 }
 
-const resolveExecutionTimeoutMs = (): number => {
-  const raw = Number(process.env.PLAITED_EXECUTION_TIMEOUT_MS ?? DEFAULT_EXECUTION_TIMEOUT_MS)
-  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_EXECUTION_TIMEOUT_MS
+const resolveExecutionTimeoutMs = ({ fallback }: { fallback: boolean }): number => {
+  const envName = fallback ? 'PLAITED_EXECUTION_FALLBACK_TIMEOUT_MS' : 'PLAITED_EXECUTION_TIMEOUT_MS'
+  const defaultTimeout = fallback ? DEFAULT_FALLBACK_EXECUTION_TIMEOUT_MS : DEFAULT_PRIMARY_EXECUTION_TIMEOUT_MS
+  const raw = Number(process.env[envName] ?? defaultTimeout)
+  return Number.isFinite(raw) && raw > 0 ? raw : defaultTimeout
 }
 
 const resolveThinkingLevel = (): ThinkingLevel => {
@@ -197,6 +200,7 @@ const runSdkAttempt = async ({
   prompt,
   provider,
   thinking,
+  timeoutMs,
 }: {
   artifactDir: string
   cwd: string
@@ -204,6 +208,7 @@ const runSdkAttempt = async ({
   prompt: string
   provider: string
   thinking: ThinkingLevel
+  timeoutMs: number
 }): Promise<WorkerRunResult> => {
   await appendArtifactLog({
     artifactDir,
@@ -335,7 +340,6 @@ const runSdkAttempt = async ({
     message: `prompt-built chars=${prompt.length}`,
   })
 
-  const timeoutMs = resolveExecutionTimeoutMs()
   const timeoutId = setTimeout(() => {
     timedOut = true
     stderrChunks.push(`[pi-worker] timeout after ${timeoutMs}ms\n`)
@@ -444,6 +448,8 @@ const main = async () => {
   const primaryModel = process.env.PLAITED_EXECUTION_MODEL ?? 'qwen/qwen3.6-plus:free'
   const fallbackModel = process.env.PLAITED_EXECUTION_FALLBACK_MODEL
   const thinking = resolveThinkingLevel()
+  const primaryTimeoutMs = resolveExecutionTimeoutMs({ fallback: false })
+  const fallbackTimeoutMs = resolveExecutionTimeoutMs({ fallback: true })
 
   await Bun.write(
     resolve(artifactDir, 'worker.request.json'),
@@ -474,6 +480,7 @@ const main = async () => {
     prompt,
     provider,
     thinking,
+    timeoutMs: primaryTimeoutMs,
   })
 
   await Bun.write(resolve(artifactDir, 'pi.stdout.log'), primaryResult.stdout)
@@ -498,6 +505,7 @@ const main = async () => {
     prompt,
     provider,
     thinking,
+    timeoutMs: fallbackTimeoutMs,
   })
 
   await Bun.write(resolve(artifactDir, 'pi-fallback.stdout.log'), fallbackResult.stdout)
