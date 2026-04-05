@@ -6,27 +6,10 @@ Define the first default factory for the Plaited agent:
 
 - [src/factories/skills-factory/skills-factory.ts](../../src/factories/skills-factory/skills-factory.ts)
 
-This lane should turn the current placeholder factory plus working
-skill-discovery utilities into a real bounded factory surface without
-pretending the full selection/injection policy stack already exists.
-
-Near-term work should bias toward the smallest promotable production slice:
-
-- real behavior in `skills-factory.ts`, not utility-only churn
-- local skill discovery
-- frontmatter and link validation
-- structured catalog state
-- bounded tests around those behaviors
-
-The first slice should make the factory observably non-placeholder. Good first
-slices include:
-
-- loading discovered/validated local skills into signals at factory startup
-- exposing a compact signal-backed skill catalog
-- publishing invalid-skill state for debugging
-
-Defer broader model-time selection, body injection, and follow-up execution
-policy unless that smaller factory-owned catalog/state layer is already real.
+This factory should load local skills from the workspace, expose enough skill
+metadata for model-time discovery, and then progressively inject the selected
+skill body and referenced assets into the model context through the existing
+agent core.
 
 This lane translates the `plaited/example-agent` skill behavior into the
 current minimal-core + behavioral-factory architecture.
@@ -65,27 +48,6 @@ That missing behavior includes:
 This is a natural first default factory because it gives the agent a policy
 surface for using the repo's own implementation knowledge without expanding
 `createAgent()` itself.
-
-## Current Implemented Surface
-
-The current code under
-[src/factories/skills-factory/](../../src/factories/skills-factory/) is much
-narrower than the end-state target:
-
-- [src/factories/skills-factory/skills-factory.ts](../../src/factories/skills-factory/skills-factory.ts)
-  is still a placeholder factory that returns an empty object
-- [src/factories/skills-factory/skills-factory.utils.ts](../../src/factories/skills-factory/skills-factory.utils.ts)
-  already provides real utility behavior for:
-  - frontmatter validation
-  - workspace skill directory discovery
-  - local-link validation
-- existing tests are utility-only:
-  - [src/factories/skills-factory/tests/skills-factory.utils.spec.ts](../../src/factories/skills-factory/tests/skills-factory.utils.spec.ts)
-
-Treat that as the source of truth for planning. A good first attempt on this
-lane should usually turn the placeholder factory into one bounded real factory
-behavior on top of the existing utilities, not jump straight to a full
-behavior-rich skill-selection system and not stop at utility-only expansion.
 
 ## Relationship To Other Lanes
 
@@ -179,7 +141,7 @@ Stated differently:
 
 ## Product Target
 
-The eventual shipped skill factory should support this end-to-end flow:
+The first shipped skill factory should support this end-to-end flow:
 
 1. discover workspace-local skills under `**/skills/*/SKILL.md`
 2. parse and validate frontmatter and body
@@ -204,18 +166,6 @@ to:
 - "I need this linked file / script from that skill"
 
 without adding a second execution system.
-
-The first promotable slice for this lane does not need to deliver the whole
-flow above. It is enough to land concrete factory-era progress such as:
-
-- stronger validated skill records and schemas
-- tighter workspace discovery rules
-- explicit error/state surfaces around invalid skills
-- a minimal non-placeholder factory shape with observable signals
-- focused tests that prove one bounded behavior end to end
-
-The key bar is that the attempt must advance the factory surface itself, not
-only add more helper coverage around existing utilities.
 
 ## Required Architectural Properties
 
@@ -330,7 +280,7 @@ current runtime model.
 
 ## Candidate Factory Responsibilities
 
-The mature factory candidate should likely own:
+The first factory candidate should likely own:
 
 - startup discovery of local skills
 - re-discovery when factories or relevant workspace content change
@@ -347,20 +297,6 @@ Open question:
   message convention, or a BP event emitted by another factory
 
 This lane should answer that experimentally.
-
-For near-term attempts, prefer one bounded responsibility at a time. Good
-examples:
-
-- add missing schemas/types around discovered and invalid skills
-- introduce a minimal signal-backed catalog without full selection policy
-- improve local-link and skill-directory qualification rules when they directly
-  support the factory-owned catalog flow
-- add one narrow integration test from placeholder factory to utility state
-
-Avoid plans that require discovery, selection, injection, linked-file routing,
-and script execution all in one slice.
-Also avoid plans that only add utility helpers or utility-only test files
-without making `skills-factory.ts` more real.
 
 ## Candidate Data Surfaces
 
@@ -405,7 +341,7 @@ The lane should compare at least these design axes:
 
 This lane should produce:
 
-- incremental evolution of the executable factory at [src/factories/skills-factory/skills-factory.ts](../../src/factories/skills-factory/skills-factory.ts)
+- the executable factory at [src/factories/skills-factory/skills-factory.ts](../../src/factories/skills-factory/skills-factory.ts)
 - any supporting schemas, constants, and tests under
   [src/factories/skills-factory/](../../src/factories/skills-factory)
 - retained notes on which `example-agent` behaviors were adopted or reshaped
@@ -418,9 +354,7 @@ The first implementation pass should bias toward:
 
 - local skills only
 - compact metadata catalog first
-- a minimal non-placeholder `skills-factory.ts` that owns signal/state setup
-- utility and schema progress before broad behavioral selection flow
-- deferred body loading on selection only after catalog/state scaffolding exists
+- deferred body loading on selection
 - link extraction through [src/utils/markdown.ts](../../src/utils/markdown.ts)
 - validation side effects stored in signals
 - existing `read_file` and `bash` core handlers for follow-up execution
