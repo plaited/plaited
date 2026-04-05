@@ -23,7 +23,7 @@ Plaited already has the right low-level substrate for observability:
 - snapshots from the behavioral engine
 - signals for shared runtime state
 - durable artifacts through files and git-backed workspaces
-- evaluation and trace retention through [src/improve](../../src/improve)
+- evaluation and trace retention through [src/eval](../../src/eval)
 
 What remains open is observability policy:
 
@@ -62,9 +62,11 @@ The intended split is:
 1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the minimal core
 2. [skills/behavioral-core/SKILL.md](../../skills/behavioral-core/SKILL.md) defines snapshot and event selection
    observability
-3. [src/improve/](../../src/improve) defines retained research and evaluation artifact patterns
-4. [dev-research/default-factories/program.md](../default-factories/program.md) defines the bundle question
-5. this lane hill-climbs the observability slice and feeds winners back into
+3. [src/eval](../../src/eval) defines retained evaluation artifact patterns
+4. [src/program-runner](../../src/program-runner) defines bounded worktree-backed
+   factory-program fanout patterns
+5. [dev-research/default-factories/program.md](../default-factories/program.md) defines the bundle question
+6. this lane hill-climbs the observability slice and feeds winners back into
    the default-factories umbrella
 
 ## Core Hypothesis

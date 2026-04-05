@@ -20,7 +20,9 @@
   "main": "./src/main.ts",
   "exports": {
     ".": "./src/main.ts",
-    "./improve": "./src/improve.ts",
+    "./eval": "./src/eval.ts",
+    "./improve": "./src/eval.ts",
+    "./program-runner": "./src/program-runner.ts",
     "./mcp": "./src/mcp.ts",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
     "./jsx-runtime": "./src/jsx-runtime.ts"
@@ -41,7 +43,7 @@
     "check:types": "tsc --noEmit",
     "check:write": "biome check --write && format-package --write",
     "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .hooks || true",
-    "program:factory": "bun scripts/factory-program-runner.ts",
+    "program:factory": "bun run ./bin/plaited.ts program-runner",
     "test": "bun test"
   },
   "lint-staged": {

@@ -23,7 +23,7 @@ Plaited's shipped runtime is centered on:
 - [create-agent.ts](/Users/eirby/Workspace/plaited/src/agent/create-agent.ts)
 - [behavioral.ts](/Users/eirby/Workspace/plaited/src/behavioral.ts)
 - [bootstrap.ts](/Users/eirby/Workspace/plaited/src/bootstrap.ts)
-- [improve.ts](/Users/eirby/Workspace/plaited/src/improve.ts)
+- [eval.ts](/Users/eirby/Workspace/plaited/src/eval.ts)
 - [ui.ts](/Users/eirby/Workspace/plaited/src/ui.ts)
 
 The core owns:
@@ -88,8 +88,8 @@ Skills are the portable agent-facing extension surface.
 - workspace-installed skills should live under `.agents/skills/`
 - runtime composition still happens through factories
 
-Factory-program fanout currently runs through the internal runner:
+Factory-program fanout currently runs through `plaited program-runner`:
 
 ```bash
-bun run program:factory run '{"programPath":"dev-research/skill-factories/program.md","attempts":3,"parallel":2}'
+plaited program-runner run '{"programPath":"dev-research/skill-factories/program.md","attempts":3,"parallel":2}'
 ```

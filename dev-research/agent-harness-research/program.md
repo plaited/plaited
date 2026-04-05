@@ -61,8 +61,8 @@ Those methods may become useful later, but they are downstream of this lane.
 
 The current repo already has the right substrate for this work:
 
-- [src/improve](../../src/improve) for repeated evals, factory-program fanout,
-  and retained run artifacts
+- [src/eval](../../src/eval) for repeated evals and retained run artifacts
+- [src/program-runner](../../src/program-runner) for factory-program fanout
 - `dev-research/*/program.md` files for bounded mutation surfaces
 - worktree-backed parallel attempts for durable fanout
 - behavioral snapshots for structured runtime traces

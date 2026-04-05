@@ -20,7 +20,7 @@ The repo already has strong ingredients for planning:
 
 - a minimal eventful core in [src/agent/create-agent.ts](../../src/agent/create-agent.ts)
 - behavioral thread composition through [skills/behavioral-core](../../skills/behavioral-core)
-- bundle-level research and evaluation through [src/improve](../../src/improve)
+- bundle-level research and evaluation through [src/eval](../../src/eval)
 - focused execution, search, memory, and verification lanes
 
 What remains open is the planning policy layer:

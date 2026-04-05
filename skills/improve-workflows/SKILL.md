@@ -1,6 +1,6 @@
 ---
 name: improve-workflows
-description: Use `src/improve` for repeated evals, adapter authoring, and factory-program fanout. Covers `runTrial`, improve adapters, graders, meta-verification, and `scripts/factory-program-runner.ts`.
+description: Use `src/eval` for repeated evals and `src/program-runner` for factory-program fanout. Covers `runTrial`, eval adapters, graders, meta-verification, and `plaited program-runner`.
 license: ISC
 ---
 
@@ -13,7 +13,7 @@ This skill is the unified operator guide for Plaited's improve surface.
 Use it when you need to:
 
 - run repeated evals against an agent or adapter
-- write or update `src/improve` adapters
+- write or update `src/eval` adapters
 - add graders or meta-verification to eval flows
 - run bounded factory-program fanout over `dev-research/*/program.md`
 
@@ -50,7 +50,7 @@ They should expose structured output and optionally trajectory/timing evidence.
 
 ### 3. Factory Program Fanout
 
-Use `scripts/factory-program-runner.ts` when the task is:
+Use `plaited program-runner` when the task is:
 
 - mutate workspace state
 - run multiple bounded attempts against a factory program
@@ -64,8 +64,8 @@ This is the current bounded operator surface for factory research programs.
 Library-first:
 
 ```ts
-import { runTrial } from './src/improve.ts'
-import type { Adapter, Grader } from './src/improve.ts'
+import { runTrial } from './src/eval.ts'
+import type { Adapter, Grader } from './src/eval.ts'
 
 const adapter: Adapter = async ({ prompt, cwd }) => {
   const proc = Bun.spawn(['my-agent', '--prompt', String(prompt)], { cwd, stdout: 'pipe' })
@@ -101,7 +101,7 @@ Adapters follow the polyglot stdin/stdout or module-export pattern.
 TypeScript module:
 
 ```ts
-import type { Adapter } from './src/improve.ts'
+import type { Adapter } from './src/eval.ts'
 
 export const adapt: Adapter = async ({ prompt, cwd }) => {
   const text = Array.isArray(prompt) ? prompt.join('\n') : prompt
@@ -144,15 +144,15 @@ Use meta-verification when:
 - results feed promotion or retention decisions
 
 `runTrial()` stays focused on repeated execution; verifier policy sits on top of
-it through `src/improve`.
+it through `src/eval`.
 
 ## Factory Program Fanout
 
 Current operator surface:
 
 ```bash
-bun run program:factory run '{"programPath":"dev-research/skill-factories/program.md","attempts":3,"parallel":2}'
-bun run program:factory status '{"programPath":"dev-research/skill-factories/program.md"}'
+plaited program-runner run '{"programPath":"dev-research/skill-factories/program.md","attempts":3,"parallel":2}'
+plaited program-runner status '{"programPath":"dev-research/skill-factories/program.md"}'
 ```
 
 The runner:
@@ -186,7 +186,7 @@ Use factory-program fanout when:
 
 Use adapters when:
 
-- the runtime being evaluated is not already inside `src/improve`
+- the runtime being evaluated is not already inside `src/eval`
 
 ## Related Skills
 

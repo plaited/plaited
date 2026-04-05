@@ -12,7 +12,8 @@
  */
 
 import { bootstrapCli } from '../src/bootstrap.ts'
-import { evalCli } from '../src/improve.ts'
+import { evalCli } from '../src/eval.ts'
+import { programRunnerCli } from '../src/program-runner.ts'
 
 export { makeCli, parseCli, parseCliRequest } from '../src/utils.ts'
 
@@ -23,6 +24,7 @@ export { makeCli, parseCli, parseCliRequest } from '../src/utils.ts'
 const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   bootstrap: bootstrapCli,
   eval: evalCli,
+  'program-runner': programRunnerCli,
 }
 
 // ============================================================================
@@ -55,7 +57,7 @@ export const runCli = async (argv: string[]): Promise<void> => {
        plaited --schema               # List all commands
 
 Commands:
-    bootstrap, eval`)
+    bootstrap, eval, program-runner`)
     process.exit(command ? 0 : 1)
   }
 

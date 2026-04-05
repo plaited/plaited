@@ -23,7 +23,8 @@ The repo already has pieces of the correctness story:
 
 - schema validation
 - bounded workspace authority
-- repeated evals and factory-program validation in [src/improve](../../src/improve)
+- repeated evals in [src/eval](../../src/eval)
+- factory-program validation in [src/program-runner](../../src/program-runner)
 - behavioral snapshots and observable traces
 - MSS and boundary semantics through [skills/modnet-factories](../../skills/modnet-factories)
 
