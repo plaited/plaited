@@ -189,7 +189,7 @@ After each command, playwright-cli provides a snapshot of the current browser st
 - Page URL: https://example.com/
 - Page Title: Example Domain
 ### Snapshot
-[Snapshot](.playwright-cli/page-2026-02-14T19-22-42-679Z.yml)
+.playwright-cli/page-2026-02-14T19-22-42-679Z.yml
 ```
 
 You can also take a snapshot on demand using `playwright-cli snapshot` command.
@@ -216,11 +216,11 @@ playwright-cli kill-all
 
 ## Local installation
 
-In some cases user might want to install playwright-cli locally. If running globally available `playwright-cli` binary fails, use `npx playwright-cli` to run the commands. For example:
+In some cases the user might want to run `playwright-cli` without a global install. If the global `playwright-cli` binary is unavailable, prefer `bunx playwright-cli`. For example:
 
 ```bash
-npx playwright-cli open https://example.com
-npx playwright-cli click e1
+bunx playwright-cli open https://example.com
+bunx playwright-cli click e1
 ```
 
 ## Example: Form submission

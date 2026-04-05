@@ -43,6 +43,8 @@ separate transport endpoint.
 
 ## Discovery
 
+- Unified CLI for discovery, listing, prompt fetches, resource reads, and session summaries:
+  `bun skills/add-remote-mcp/scripts/run.ts '{"url":"https://bun.com/docs/mcp","operation":{"type":"session-summary"}}'`
 - Full capability discovery and tool listing:
   [references/discovery-template.ts](references/discovery-template.ts)
 - Prompt retrieval:
@@ -108,7 +110,11 @@ allowed-tools: Bash
 ### 5. Validate
 
 ```bash
-plaited validate-skill '{"paths": ["skills/my-skill"]}'
+# Check the generated skill against the AgentSkills spec and repo conventions
+bun run skills/search-agent-skills/scripts/search.ts '{"query":"SKILL.md frontmatter fields scripts references assets conventions"}'
+
+# Or inspect the remote server directly through the unified add-remote-mcp CLI
+bun skills/add-remote-mcp/scripts/run.ts '{"url":"https://bun.com/docs/mcp","operation":{"type":"session-summary"}}'
 ```
 
 ### 6. Test

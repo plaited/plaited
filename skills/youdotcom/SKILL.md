@@ -14,13 +14,6 @@ description: >
 license: MIT
 compatibility: Bun/TypeScript scripts, curl/fetch fallback, any HTTP-capable language
 allowed-tools: Read Write Edit Bash(bun:*) Bash(curl:*)
-assets:
-  - search.input.schema.json
-  - search.output.schema.json
-  - research.input.schema.json
-  - research.output.schema.json
-  - contents.input.schema.json
-  - contents.output.schema.json
 metadata:
   author: youdotcom-oss
   category: sdk-integration
@@ -84,7 +77,7 @@ bunx varlock run -- bun scripts/some-script.ts
 Use the official client first:
 
 ```ts
-import { fetchSearchResults } from '../node_modules/@youdotcom-oss/api/src/main.ts'
+import { fetchSearchResults } from '@youdotcom-oss/api'
 
 const response = await fetchSearchResults({
   searchQuery: {

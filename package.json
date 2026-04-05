@@ -39,6 +39,7 @@
     "access": "public"
   },
   "scripts": {
+    "audit:skills": "bun scripts/skills-audit.ts",
     "check": "bun run check:biome && bun run check:types && bun run check:package",
     "check:biome": "biome check",
     "check:package": "format-package --check",
