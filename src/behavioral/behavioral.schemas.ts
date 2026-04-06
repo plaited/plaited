@@ -13,6 +13,23 @@ import { isBPEvent } from './behavioral.utils.ts'
 export const BPEventSchema = z.custom<BPEvent>(isBPEvent)
 
 /**
+ * Schema for a thread reference used across snapshot attribution fields.
+ *
+ * @remarks
+ * `label` is human-readable. `id` is present when a precise runtime instance
+ * identifier exists (for example, spawned threads).
+ *
+ * @public
+ */
+export const ThreadReferenceSchema = z.object({
+  label: z.string(),
+  id: z.string().optional(),
+})
+
+/** @public */
+export type ThreadReference = z.infer<typeof ThreadReferenceSchema>
+
+/**
  * Schema for a single bid snapshot from the BP engine's event selection step.
  *
  * @remarks
@@ -25,12 +42,8 @@ export const BPEventSchema = z.custom<BPEvent>(isBPEvent)
  * @public
  */
 export const SelectionBidSchema = z.object({
-  /** Thread identifier (stringified Symbol if from an external trigger). */
-  thread: z.string(),
-  /** Runtime thread identifier for spawned threads. */
-  threadId: z.string().optional(),
-  /** Human-readable label for spawned threads. */
-  threadLabel: z.string().optional(),
+  /** Thread reference (stringified Symbol label for external trigger threads). */
+  thread: ThreadReferenceSchema,
   /** Whether this bid originated from an external `trigger()` call. */
   trigger: z.boolean(),
   /** Whether this bid was selected for execution in the current step. */
@@ -41,14 +54,10 @@ export const SelectionBidSchema = z.object({
   detail: z.unknown().optional(),
   /** Priority level — lower numbers indicate higher priority. */
   priority: z.number(),
-  /** Identifier of the thread that blocked this bid, if blocked. */
-  blockedBy: z.string().optional(),
-  /** Runtime thread identifier for the blocking spawned thread, if applicable. */
-  blockedByThreadId: z.string().optional(),
-  /** Identifier of the thread interrupted when this bid is selected. */
-  interrupts: z.string().optional(),
-  /** Runtime thread identifier for the interrupting spawned thread, if applicable. */
-  interruptsThreadId: z.string().optional(),
+  /** Thread reference that blocked this bid, if blocked. */
+  blockedBy: ThreadReferenceSchema.optional(),
+  /** Thread reference interrupted when this bid is selected. */
+  interrupts: ThreadReferenceSchema.optional(),
 })
 
 /** @public */
@@ -108,8 +117,8 @@ export const DeadlockSummarySchema = z.object({
   candidateCount: z.number(),
   blockedCount: z.number(),
   unblockedCount: z.number(),
-  blockerThreads: z.array(z.string()),
-  interruptorThreads: z.array(z.string()),
+  blockers: z.array(ThreadReferenceSchema),
+  interruptors: z.array(ThreadReferenceSchema),
 })
 
 /** @public */

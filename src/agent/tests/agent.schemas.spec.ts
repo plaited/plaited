@@ -3,8 +3,8 @@ import {
   AgentPlanStepSchema,
   AgentToolCallSchema,
   DecisionStepSchema,
-  ModuleResultSchema,
   ModelUsageSchema,
+  ModuleResultSchema,
   RequestBashDetailSchema,
   ToolDefinitionSchema,
   TrajectoryStepSchema,
@@ -119,19 +119,19 @@ describe('TrajectoryStepSchema', () => {
       type: 'decision',
       bids: [
         {
-          thread: 'taskGate',
+          thread: { label: 'taskGate' },
           trigger: false,
           selected: true,
           type: 'task',
           priority: 0,
         },
         {
-          thread: 'noRmRf',
+          thread: { label: 'noRmRf' },
           trigger: false,
           selected: false,
           type: 'execute',
           priority: 1,
-          blockedBy: 'noRmRf',
+          blockedBy: { label: 'noRmRf' },
         },
       ],
       timestamp: Date.now(),
@@ -165,21 +165,21 @@ describe('DecisionStepSchema', () => {
       type: 'decision',
       bids: [
         {
-          thread: 'sim_guard_tc-1',
+          thread: { label: 'sim_guard_tc-1' },
           trigger: false,
           selected: false,
           type: 'execute',
           detail: { toolCall: { id: 'tc-1' } },
           priority: 2,
-          blockedBy: 'sim_guard_tc-1',
-          interrupts: 'batchCompletion',
+          blockedBy: { label: 'sim_guard_tc-1' },
+          interrupts: { label: 'batchCompletion' },
         },
       ],
       timestamp: Date.now(),
       stepId: 'decision-1',
     })
     expect(result.bids).toHaveLength(1)
-    expect(result.bids[0]!.blockedBy).toBe('sim_guard_tc-1')
+    expect(result.bids[0]!.blockedBy).toEqual({ label: 'sim_guard_tc-1' })
     expect(result.stepId).toBe('decision-1')
   })
 
@@ -188,7 +188,7 @@ describe('DecisionStepSchema', () => {
       type: 'decision',
       bids: [
         {
-          thread: 'Symbol(external)',
+          thread: { label: 'Symbol(external)' },
           trigger: true,
           selected: true,
           type: 'task',

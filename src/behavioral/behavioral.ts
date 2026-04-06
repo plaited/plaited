@@ -1,7 +1,7 @@
 import { ueid } from '../utils/ueid.ts'
 import { isTypeOf } from '../utils.ts'
 import { SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
-import type { SelectionBid, SnapshotMessage } from './behavioral.schemas.ts'
+import type { SelectionBid, SnapshotMessage, ThreadReference } from './behavioral.schemas.ts'
 import type {
   Behavioral,
   BPEvent,
@@ -120,29 +120,24 @@ const formatSnapshotBids = ({
   pending: Map<string | symbol, PendingBid>
   selectedEvent?: CandidateBid
 }) => {
-  const resolveThreadSnapshotMeta = (thread: string | symbol) => {
+  const resolveThreadSnapshotMeta = (thread: string | symbol): ThreadReference => {
     if (isTypeOf<symbol>(thread, 'symbol')) {
-      return { thread: thread.toString() }
+      return { label: thread.toString() }
     }
     const label = pending.get(thread)?.label
     if (label) {
       return {
-        thread: label,
-        threadId: thread,
-        threadLabel: label,
+        label,
+        id: thread,
       }
     }
-    return { thread }
+    return { label: thread }
   }
-  const resolveThreadReference = (thread?: string | symbol) => {
+  const resolveThreadReference = (thread?: string | symbol): ThreadReference | undefined => {
     if (!thread) {
       return undefined
     }
-    const meta = resolveThreadSnapshotMeta(thread)
-    return {
-      thread: meta.thread,
-      threadId: 'threadId' in meta ? meta.threadId : undefined,
-    }
+    return resolveThreadSnapshotMeta(thread)
   }
 
   const blockingThreads = [...pending].flatMap(([thread, { block }]) =>
@@ -168,16 +163,14 @@ const formatSnapshotBids = ({
     const blockedByMeta = resolveThreadReference(blockedBy)
     const interruptsMeta = resolveThreadReference(interrupts)
     const message: SelectionBid = {
-      ...threadMeta,
+      thread: threadMeta,
       trigger: bid.trigger ?? false,
       type: bid.type,
       selected: selectedEvent ? isPendingRequest(selectedEvent, bid) : false,
       priority: bid.priority,
       detail: bid.detail,
-      blockedBy: blockedByMeta?.thread,
-      blockedByThreadId: blockedByMeta?.threadId,
-      interrupts: interruptsMeta?.thread,
-      interruptsThreadId: interruptsMeta?.threadId,
+      blockedBy: blockedByMeta,
+      interrupts: interruptsMeta,
     }
     ruleSets.push(message)
   }
@@ -206,14 +199,36 @@ const deadlockSnapshotFormatter = ({
   candidates: CandidateBid[]
   pending: Map<string | symbol, PendingBid>
 }) => {
+  const buildThreadReferences = ({ threads }: { threads: Array<ThreadReference | undefined> }) => {
+    const seenPairs = new Set<string>()
+    const references: ThreadReference[] = []
+
+    for (const thread of threads) {
+      if (!thread) {
+        continue
+      }
+      const dedupeKey = JSON.stringify([thread.label, thread.id ?? null])
+      if (seenPairs.has(dedupeKey)) {
+        continue
+      }
+      seenPairs.add(dedupeKey)
+      references.push(thread)
+    }
+    return references
+  }
+
   const bids = formatSnapshotBids({ candidates, pending }).map((bid) => ({
     ...bid,
     selected: false as const,
     reason: 'blocked' as const,
   }))
-  const blockerThreads = [...new Set(bids.flatMap((bid) => (bid.blockedBy ? [bid.blockedBy] : [])))]
-  const interruptorThreads = [...new Set(bids.flatMap((bid) => (bid.interrupts ? [bid.interrupts] : [])))]
-  const blockedCount = bids.filter((bid) => Boolean(bid.blockedBy)).length
+  const blockers = buildThreadReferences({
+    threads: bids.map((bid) => bid.blockedBy),
+  })
+  const interruptors = buildThreadReferences({
+    threads: bids.map((bid) => bid.interrupts),
+  })
+  const blockedCount = bids.filter((bid) => Boolean(bid.blockedBy?.label)).length
   const unblockedCount = bids.length - blockedCount
 
   return {
@@ -223,8 +238,8 @@ const deadlockSnapshotFormatter = ({
       candidateCount: bids.length,
       blockedCount,
       unblockedCount,
-      blockerThreads,
-      interruptorThreads,
+      blockers,
+      interruptors,
     },
   }
 }

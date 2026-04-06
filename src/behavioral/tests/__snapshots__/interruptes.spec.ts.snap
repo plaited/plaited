@@ -10,7 +10,9 @@ exports[`interrupt should interrupt 1`] = `
         "interrupts": undefined,
         "priority": 0,
         "selected": true,
-        "thread": "Symbol(add)",
+        "thread": {
+          "label": "Symbol(add)",
+        },
         "trigger": true,
         "type": "add",
       },
@@ -25,7 +27,9 @@ exports[`interrupt should interrupt 1`] = `
         "interrupts": undefined,
         "priority": 1,
         "selected": true,
-        "thread": "addHot",
+        "thread": {
+          "label": "addHot",
+        },
         "trigger": false,
         "type": "hot",
       },
@@ -40,7 +44,9 @@ exports[`interrupt should interrupt 1`] = `
         "interrupts": undefined,
         "priority": 0,
         "selected": true,
-        "thread": "Symbol(add)",
+        "thread": {
+          "label": "Symbol(add)",
+        },
         "trigger": true,
         "type": "add",
       },
@@ -55,7 +61,9 @@ exports[`interrupt should interrupt 1`] = `
         "interrupts": undefined,
         "priority": 1,
         "selected": true,
-        "thread": "addHot",
+        "thread": {
+          "label": "addHot",
+        },
         "trigger": false,
         "type": "hot",
       },
@@ -67,10 +75,14 @@ exports[`interrupt should interrupt 1`] = `
       {
         "blockedBy": undefined,
         "detail": undefined,
-        "interrupts": "addHot",
+        "interrupts": {
+          "label": "addHot",
+        },
         "priority": 0,
         "selected": true,
-        "thread": "Symbol(terminate)",
+        "thread": {
+          "label": "Symbol(terminate)",
+        },
         "trigger": true,
         "type": "terminate",
       },
@@ -85,7 +97,9 @@ exports[`interrupt should interrupt 1`] = `
         "interrupts": undefined,
         "priority": 0,
         "selected": true,
-        "thread": "Symbol(add)",
+        "thread": {
+          "label": "Symbol(add)",
+        },
         "trigger": true,
         "type": "add",
       },

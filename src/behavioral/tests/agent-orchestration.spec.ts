@@ -184,13 +184,13 @@ describe('event log via useSnapshot (Wave 4)', () => {
     // but 'safety' blocks it. Snapshot shows the block.
     const lastSelection = snapshots.filter((s) => s.kind === 'selection').at(-1) as {
       kind: string
-      bids: Array<{ type: string; blockedBy?: string }>
+      bids: Array<{ type: string; blockedBy?: { label: string; id?: string } }>
     }
     if (lastSelection) {
       const dangerousBid = lastSelection.bids?.find((b) => b.type === 'dangerous')
       // The dangerous event should show blockedBy: 'safety'
       if (dangerousBid) {
-        expect(dangerousBid.blockedBy).toBe('safety')
+        expect(dangerousBid.blockedBy).toEqual({ label: 'safety' })
       }
     }
   })
@@ -203,13 +203,15 @@ describe('event log via useSnapshot (Wave 4)', () => {
 
     useSnapshot((snapshot) => {
       if (snapshot.kind !== 'selection') return
-      const selection = snapshot as { bids: Array<{ type: string; selected: boolean; blockedBy?: string }> }
+      const selection = snapshot as {
+        bids: Array<{ type: string; selected: boolean; blockedBy?: { label: string; id?: string } }>
+      }
       for (const bid of selection.bids) {
         eventLog.push({
           timestamp: Date.now(),
           event: bid.type,
           selected: bid.selected,
-          blockedBy: bid.blockedBy,
+          blockedBy: bid.blockedBy?.label,
         })
       }
     })

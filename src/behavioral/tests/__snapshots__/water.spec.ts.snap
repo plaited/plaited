@@ -10,7 +10,9 @@ exports[`logging 1`] = `
         "interrupts": undefined,
         "priority": 0,
         "selected": true,
-        "thread": "Symbol(start)",
+        "thread": {
+          "label": "Symbol(start)",
+        },
         "trigger": true,
         "type": "start",
       },
@@ -20,17 +22,23 @@ exports[`logging 1`] = `
         "interrupts": undefined,
         "priority": 1,
         "selected": false,
-        "thread": "addHot",
+        "thread": {
+          "label": "addHot",
+        },
         "trigger": false,
         "type": "hot",
       },
       {
-        "blockedBy": "mixHotCold",
+        "blockedBy": {
+          "label": "mixHotCold",
+        },
         "detail": undefined,
         "interrupts": undefined,
         "priority": 2,
         "selected": false,
-        "thread": "addCold",
+        "thread": {
+          "label": "addCold",
+        },
         "trigger": false,
         "type": "cold",
       },
@@ -45,17 +53,23 @@ exports[`logging 1`] = `
         "interrupts": undefined,
         "priority": 1,
         "selected": true,
-        "thread": "addHot",
+        "thread": {
+          "label": "addHot",
+        },
         "trigger": false,
         "type": "hot",
       },
       {
-        "blockedBy": "mixHotCold",
+        "blockedBy": {
+          "label": "mixHotCold",
+        },
         "detail": undefined,
         "interrupts": undefined,
         "priority": 2,
         "selected": false,
-        "thread": "addCold",
+        "thread": {
+          "label": "addCold",
+        },
         "trigger": false,
         "type": "cold",
       },
@@ -65,12 +79,16 @@ exports[`logging 1`] = `
   {
     "bids": [
       {
-        "blockedBy": "mixHotCold",
+        "blockedBy": {
+          "label": "mixHotCold",
+        },
         "detail": undefined,
         "interrupts": undefined,
         "priority": 1,
         "selected": false,
-        "thread": "addHot",
+        "thread": {
+          "label": "addHot",
+        },
         "trigger": false,
         "type": "hot",
       },
@@ -80,57 +98,9 @@ exports[`logging 1`] = `
         "interrupts": undefined,
         "priority": 2,
         "selected": true,
-        "thread": "addCold",
-        "trigger": false,
-        "type": "cold",
-      },
-    ],
-    "kind": "selection",
-  },
-  {
-    "bids": [
-      {
-        "blockedBy": undefined,
-        "detail": undefined,
-        "interrupts": undefined,
-        "priority": 1,
-        "selected": true,
-        "thread": "addHot",
-        "trigger": false,
-        "type": "hot",
-      },
-      {
-        "blockedBy": "mixHotCold",
-        "detail": undefined,
-        "interrupts": undefined,
-        "priority": 2,
-        "selected": false,
-        "thread": "addCold",
-        "trigger": false,
-        "type": "cold",
-      },
-    ],
-    "kind": "selection",
-  },
-  {
-    "bids": [
-      {
-        "blockedBy": "mixHotCold",
-        "detail": undefined,
-        "interrupts": undefined,
-        "priority": 1,
-        "selected": false,
-        "thread": "addHot",
-        "trigger": false,
-        "type": "hot",
-      },
-      {
-        "blockedBy": undefined,
-        "detail": undefined,
-        "interrupts": undefined,
-        "priority": 2,
-        "selected": true,
-        "thread": "addCold",
+        "thread": {
+          "label": "addCold",
+        },
         "trigger": false,
         "type": "cold",
       },
@@ -145,17 +115,85 @@ exports[`logging 1`] = `
         "interrupts": undefined,
         "priority": 1,
         "selected": true,
-        "thread": "addHot",
+        "thread": {
+          "label": "addHot",
+        },
         "trigger": false,
         "type": "hot",
       },
       {
-        "blockedBy": "mixHotCold",
+        "blockedBy": {
+          "label": "mixHotCold",
+        },
         "detail": undefined,
         "interrupts": undefined,
         "priority": 2,
         "selected": false,
-        "thread": "addCold",
+        "thread": {
+          "label": "addCold",
+        },
+        "trigger": false,
+        "type": "cold",
+      },
+    ],
+    "kind": "selection",
+  },
+  {
+    "bids": [
+      {
+        "blockedBy": {
+          "label": "mixHotCold",
+        },
+        "detail": undefined,
+        "interrupts": undefined,
+        "priority": 1,
+        "selected": false,
+        "thread": {
+          "label": "addHot",
+        },
+        "trigger": false,
+        "type": "hot",
+      },
+      {
+        "blockedBy": undefined,
+        "detail": undefined,
+        "interrupts": undefined,
+        "priority": 2,
+        "selected": true,
+        "thread": {
+          "label": "addCold",
+        },
+        "trigger": false,
+        "type": "cold",
+      },
+    ],
+    "kind": "selection",
+  },
+  {
+    "bids": [
+      {
+        "blockedBy": undefined,
+        "detail": undefined,
+        "interrupts": undefined,
+        "priority": 1,
+        "selected": true,
+        "thread": {
+          "label": "addHot",
+        },
+        "trigger": false,
+        "type": "hot",
+      },
+      {
+        "blockedBy": {
+          "label": "mixHotCold",
+        },
+        "detail": undefined,
+        "interrupts": undefined,
+        "priority": 2,
+        "selected": false,
+        "thread": {
+          "label": "addCold",
+        },
         "trigger": false,
         "type": "cold",
       },
@@ -170,7 +208,9 @@ exports[`logging 1`] = `
         "interrupts": undefined,
         "priority": 2,
         "selected": true,
-        "thread": "addCold",
+        "thread": {
+          "label": "addCold",
+        },
         "trigger": false,
         "type": "cold",
       },

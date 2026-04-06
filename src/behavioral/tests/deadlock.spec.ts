@@ -25,15 +25,15 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
     expect(dangerousBid).toBeDefined()
     expect(dangerousBid!.selected).toBe(false)
     expect(dangerousBid!.reason).toBe('blocked')
-    expect(dangerousBid!.blockedBy).toBe('safety')
-    expect(dangerousBid!.interrupts).toBe('interruptor')
+    expect(dangerousBid!.blockedBy).toEqual({ label: 'safety' })
+    expect(dangerousBid!.interrupts).toEqual({ label: 'interruptor' })
     expect(dangerousBid!.trigger).toBe(true)
     expect(deadlocks[0]!.summary).toEqual({
       candidateCount: 1,
       blockedCount: 1,
       unblockedCount: 0,
-      blockerThreads: ['safety'],
-      interruptorThreads: ['interruptor'],
+      blockers: [{ label: 'safety' }],
+      interruptors: [{ label: 'interruptor' }],
     })
 
     const selectionSnapshots = snapshots.filter((s) => s.kind === SNAPSHOT_MESSAGE_KINDS.selection)
