@@ -27,6 +27,10 @@ export const BPEventSchema = z.custom<BPEvent>(isBPEvent)
 export const SelectionBidSchema = z.object({
   /** Thread identifier (stringified Symbol if from an external trigger). */
   thread: z.string(),
+  /** Runtime thread identifier for spawned threads. */
+  threadId: z.string().optional(),
+  /** Human-readable label for spawned threads. */
+  threadLabel: z.string().optional(),
   /** Whether this bid originated from an external `trigger()` call. */
   trigger: z.boolean(),
   /** Whether this bid was selected for execution in the current step. */
@@ -39,8 +43,12 @@ export const SelectionBidSchema = z.object({
   priority: z.number(),
   /** Identifier of the thread that blocked this bid, if blocked. */
   blockedBy: z.string().optional(),
+  /** Runtime thread identifier for the blocking spawned thread, if applicable. */
+  blockedByThreadId: z.string().optional(),
   /** Identifier of the thread interrupted when this bid is selected. */
   interrupts: z.string().optional(),
+  /** Runtime thread identifier for the interrupting spawned thread, if applicable. */
+  interruptsThreadId: z.string().optional(),
 })
 
 /** @public */

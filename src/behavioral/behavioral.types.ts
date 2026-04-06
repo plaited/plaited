@@ -232,6 +232,8 @@ export type BThreadReplaySafe = (
 export type RunningBid = {
   /** Internal flag indicating if this bid originated from an external trigger. */
   trigger?: true
+  /** Optional human-readable label for spawned thread instances. */
+  label?: string
   /** The priority level of the thread, used for resolving conflicts when multiple threads request events. Lower numbers = higher priority. */
   priority: number
   /** Internal iterator representing the thread's execution state. Holds the current position in the rule sequence. */

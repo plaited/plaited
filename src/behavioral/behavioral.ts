@@ -120,6 +120,31 @@ const formatSnapshotBids = ({
   pending: Map<string | symbol, PendingBid>
   selectedEvent?: CandidateBid
 }) => {
+  const resolveThreadSnapshotMeta = (thread: string | symbol) => {
+    if (isTypeOf<symbol>(thread, 'symbol')) {
+      return { thread: thread.toString() }
+    }
+    const label = pending.get(thread)?.label
+    if (label) {
+      return {
+        thread: label,
+        threadId: thread,
+        threadLabel: label,
+      }
+    }
+    return { thread }
+  }
+  const resolveThreadReference = (thread?: string | symbol) => {
+    if (!thread) {
+      return undefined
+    }
+    const meta = resolveThreadSnapshotMeta(thread)
+    return {
+      thread: meta.thread,
+      threadId: 'threadId' in meta ? meta.threadId : undefined,
+    }
+  }
+
   const blockingThreads = [...pending].flatMap(([thread, { block }]) =>
     block && Array.isArray(block)
       ? block.map((listener) => ({ block: listener, thread }))
@@ -139,16 +164,20 @@ const formatSnapshotBids = ({
   for (const bid of candidates) {
     const blockedBy = blockingThreads.find(({ block }) => isListeningFor(bid)(block))?.thread
     const interrupts = interruptedThreads.find(({ interrupt }) => isListeningFor(bid)(interrupt))?.thread
-    const thread = bid.thread
+    const threadMeta = resolveThreadSnapshotMeta(bid.thread)
+    const blockedByMeta = resolveThreadReference(blockedBy)
+    const interruptsMeta = resolveThreadReference(interrupts)
     const message: SelectionBid = {
-      thread: isTypeOf<symbol>(thread, 'symbol') ? thread?.toString() : thread,
+      ...threadMeta,
       trigger: bid.trigger ?? false,
       type: bid.type,
       selected: selectedEvent ? isPendingRequest(selectedEvent, bid) : false,
       priority: bid.priority,
       detail: bid.detail,
-      blockedBy: isTypeOf<symbol>(blockedBy, 'symbol') ? blockedBy?.toString() : blockedBy,
-      interrupts: isTypeOf<symbol>(interrupts, 'symbol') ? interrupts?.toString() : interrupts,
+      blockedBy: blockedByMeta?.thread,
+      blockedByThreadId: blockedByMeta?.threadId,
+      interrupts: interruptsMeta?.thread,
+      interruptsThreadId: interruptsMeta?.threadId,
     }
     ruleSets.push(message)
   }
@@ -288,12 +317,13 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
    */
   function step() {
     for (const [thread, bid] of running) {
-      const { generator, priority, trigger } = bid
+      const { generator, priority, trigger, label } = bid
       const { value, done } = generator.next()
       !done &&
         pending.set(thread, {
           priority,
           ...(trigger && { trigger }),
+          ...(label && { label }),
           generator,
           ...value,
         })
@@ -470,11 +500,11 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
       }
     },
     spawn: ({ label, thread }) => {
-      void label
       const threadId = ueid('bt_')
       running.set(threadId, {
         priority: running.size + 1,
         generator: thread(),
+        label,
       })
       return threadId
     },
