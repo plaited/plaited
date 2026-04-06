@@ -1,16 +1,14 @@
 import { ueid } from '../utils/ueid.ts'
 import { isTypeOf } from '../utils.ts'
 import { SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
+import { computeFrontier, ensureArray, isListeningFor, isPendingRequest } from './behavioral.frontier.ts'
 import type { SelectionBid, SnapshotMessage, ThreadReference } from './behavioral.schemas.ts'
 import type {
   Behavioral,
   BPEvent,
-  BPEventTemplate,
-  BPListener,
   BThreads,
   CandidateBid,
   EventDetails,
-  Frontier,
   PendingBid,
   RunningBid,
   Trigger,
@@ -18,7 +16,6 @@ import type {
   UseRestrictedTrigger,
   UseSnapshot,
 } from './behavioral.types.ts'
-import { isBPMatchListener } from './behavioral.utils.ts'
 
 /**
  * @internal
@@ -52,57 +49,6 @@ const createPublisher = <T>() => {
   }
   return publisher
 }
-
-/**
- * @internal
- * Utility function to ensure a value is an array.
- *
- * If the input is already an array, it is returned unchanged.
- * If the input is not an array, it is wrapped in an array.
- *
- * @template T - Type of elements in the normalized array.
- * @param obj - Value to normalize into an array. Defaults to an empty array when omitted.
- * @returns Array containing the input value or values.
- */
-const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj : [obj])
-
-/**
- * @internal
- * Creates a checker function to determine if a given BPListener matches a CandidateBid.
- *
- * This is used to check if an event matches waitFor, block, or interrupt declarations.
- *
- * @param type - Event type to check against.
- * @param detail - Event detail payload to check against.
- * @returns Predicate that reports whether a `BPListener` matches the event.
- */
-const isListeningFor = ({ type, detail }: CandidateBid) => {
-  return (listener: BPListener): boolean => {
-    if (isTypeOf<string>(listener, 'string')) {
-      return listener === type
-    }
-    if (isBPMatchListener(listener)) {
-      return listener.type === type && listener.detailSchema.safeParse(detail).success
-    }
-    return listener({
-      detail,
-      type,
-    })
-  }
-}
-
-/**
- * @internal
- * Checks if a pending request (Idiom['request']) matches the selected event candidate.
- *
- * This is used to determine if a thread's request was the one selected during event selection.
- *
- * @param selectedEvent - Event candidate that was selected.
- * @param event - Request from a thread's `Idioms` to compare against the selected event.
- * @returns `true` when the request matches the selected event, otherwise `false`.
- */
-const isPendingRequest = (selectedEvent: CandidateBid, event: BPEvent | BPEventTemplate) =>
-  isTypeOf<BPEventTemplate>(event, 'function') ? event === selectedEvent?.template : event.type === selectedEvent.type
 
 /**
  * @internal
@@ -245,47 +191,6 @@ const deadlockSnapshotFormatter = ({
   }
 }
 
-/**
- * @internal
- * Computes the execution frontier from pending bids.
- *
- * The frontier captures:
- * - all requested candidates
- * - the subset enabled after applying block listeners
- * - a scheduler-facing status classification
- */
-const computeFrontier = ({ pending }: { pending: Map<string | symbol, PendingBid> }): Frontier => {
-  const blocked: BPListener[] = []
-  const candidates: CandidateBid[] = []
-
-  for (const [thread, { request, priority, block, trigger }] of pending) {
-    block && blocked.push(...ensureArray(block))
-    request &&
-      candidates.push({
-        priority,
-        trigger,
-        thread,
-        ...(isTypeOf<BPEventTemplate>(request, 'function') ? { template: request, ...request() } : request),
-      })
-  }
-
-  const enabled: CandidateBid[] = []
-  const length = candidates.length
-  for (let i = 0; i < length; i++) {
-    const candidate = candidates[i]!
-    if (!blocked.some(isListeningFor(candidate))) {
-      enabled.push(candidate)
-    }
-  }
-
-  if (enabled.length > 0) {
-    return { candidates, enabled, status: 'ready' }
-  }
-  if (candidates.length > 0) {
-    return { candidates, enabled, status: 'deadlock' }
-  }
-  return { candidates, enabled, status: 'idle' }
-}
 /**
  * Creates and manages a behavioral program instance, orchestrating the execution of b-threads.
  * This function implements the core logic of the Behavioral Programming execution model (super-steps).
