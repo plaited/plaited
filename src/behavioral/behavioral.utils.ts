@@ -7,7 +7,16 @@
 import * as z from 'zod'
 import { isTypeOf } from '../utils.ts'
 import { RULES_FUNCTION_IDENTIFIER } from './behavioral.constants.ts'
-import type { BPEvent, BPMatchListener, BSync, BSyncVerified, BThread, BThreadVerified } from './behavioral.types.ts'
+import type {
+  BPEvent,
+  BPMatchListener,
+  BSync,
+  BSyncReplaySafe,
+  BSyncVerified,
+  BThread,
+  BThreadReplaySafe,
+  BThreadVerified,
+} from './behavioral.types.ts'
 
 /**
  * Creates an event template function that randomly selects from provided events.
@@ -174,7 +183,8 @@ export const bThread: BThread = (rules, repeat) => {
  *
  * @remarks
  * `bThread` remains execution-permissive.
- * `bThreadVerified` narrows listener authoring to a verifier-safe subset for future replay/explorer tooling.
+ * `bThreadVerified` is listener-safe (string/match listeners only), not fully replay-safe.
+ * Request templates and repeat callbacks remain allowed on this surface.
  * Runtime behavior is intentionally identical to `bThread`.
  */
 export const bThreadVerified: BThreadVerified = (rules, repeat) => {
@@ -182,6 +192,38 @@ export const bThreadVerified: BThreadVerified = (rules, repeat) => {
     repeat
       ? function* () {
           while (isTypeOf<boolean>(repeat, 'boolean') ? repeat : repeat()) {
+            const length = rules.length
+            for (let i = 0; i < length; i++) {
+              yield* rules[i]!()
+            }
+          }
+        }
+      : function* () {
+          const length = rules.length
+          for (let i = 0; i < length; i++) {
+            yield* rules[i]!()
+          }
+        },
+    { $: RULES_FUNCTION_IDENTIFIER } as const,
+  )
+}
+
+/**
+ * Creates a replay-safe behavioral thread by combining synchronization rules.
+ *
+ * @remarks
+ * `bThreadReplaySafe` is stricter than `bThreadVerified`:
+ * - static requests only (no request template callbacks)
+ * - repeat is limited to `true | undefined` (no repeat callbacks)
+ * - interrupt remains the lifetime control mechanism
+ *
+ * Runtime behavior is intentionally identical to `bThread`.
+ */
+export const bThreadReplaySafe: BThreadReplaySafe = (rules, repeat) => {
+  return Object.assign(
+    repeat
+      ? function* () {
+          while (repeat) {
             const length = rules.length
             for (let i = 0; i < length; i++) {
               yield* rules[i]!()
@@ -241,10 +283,26 @@ export const bSync: BSync = (syncPoint) =>
  *
  * @remarks
  * `bSync` remains execution-permissive.
- * `bSyncVerified` narrows listener authoring to a verifier-safe subset for future replay/explorer tooling.
+ * `bSyncVerified` is listener-safe (string/match listeners only), not fully replay-safe.
+ * Request templates remain allowed on this surface.
  * Runtime behavior is intentionally identical to `bSync`.
  */
 export const bSyncVerified: BSyncVerified = (syncPoint) =>
+  Object.assign(
+    function* () {
+      yield syncPoint
+    },
+    { $: RULES_FUNCTION_IDENTIFIER } as const,
+  )
+
+/**
+ * Creates a replay-safe synchronization point for b-threads.
+ *
+ * @remarks
+ * `bSyncReplaySafe` narrows authoring to static request payloads and listener-safe idioms.
+ * Runtime behavior is intentionally identical to `bSync`.
+ */
+export const bSyncReplaySafe: BSyncReplaySafe = (syncPoint) =>
   Object.assign(
     function* () {
       yield syncPoint

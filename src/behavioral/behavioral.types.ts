@@ -75,6 +75,22 @@ export type BPListener = string | BPMatchListener | ((args: BPEvent) => boolean)
 export type VerificationSafeBPListener = string | BPMatchListener
 
 /**
+ * Static request shape for replay-safe authoring idioms.
+ *
+ * @remarks
+ * Replay-safe authoring excludes request templates to avoid dynamic request payload generation.
+ */
+export type ReplaySafeRequest = BPEvent
+
+/**
+ * Repeat policy for replay-safe thread authoring.
+ *
+ * @remarks
+ * Replay-safe authoring only supports explicit `true` repetition or omitted repetition.
+ */
+export type ReplaySafeRepeat = true | undefined
+
+/**
  * Represents a synchronization statement yielded by a behavioral rule step.
  * This is the core mechanism through which b-threads communicate their behavioral intentions
  * to the behavioral program scheduler at each step of execution.
@@ -118,6 +134,24 @@ export type VerificationSafeIdioms = {
 }
 
 /**
+ * Replay-safe synchronization idioms for deterministic authoring workflows.
+ *
+ * @remarks
+ * This surface is stricter than {@link VerificationSafeIdioms}:
+ * - listeners remain verifier-safe (string/match only)
+ * - `request` must be static ({@link ReplaySafeRequest})
+ * - repeat callbacks are disallowed via {@link ReplaySafeRepeat} on `bThreadReplaySafe`
+ *
+ * Interrupt remains the lifetime control mechanism for replay-safe threads.
+ */
+export type ReplaySafeIdioms = {
+  waitFor?: VerificationSafeBPListener | VerificationSafeBPListener[]
+  interrupt?: VerificationSafeBPListener | VerificationSafeBPListener[]
+  request?: ReplaySafeRequest
+  block?: VerificationSafeBPListener | VerificationSafeBPListener[]
+}
+
+/**
  * A factory function that creates a single synchronization step (a `ReturnType<BSync>`) for a b-thread.
  * This is a helper type that corresponds to the `bSync` function implementation, which creates
  * one branded behavioral rule step.
@@ -144,6 +178,17 @@ export type BSyncVerified = (arg: VerificationSafeIdioms) => {
 }
 
 /**
+ * Replay-safe `bSync` authoring signature.
+ *
+ * @remarks
+ * Runtime behavior matches {@link BSync}; this only narrows accepted idioms to {@link ReplaySafeIdioms}.
+ */
+export type BSyncReplaySafe = (arg: ReplaySafeIdioms) => {
+  (): Generator<ReplaySafeIdioms, void, unknown>
+  $: typeof RULES_FUNCTION_IDENTIFIER
+}
+
+/**
  * A factory function that constructs a complete b-thread (`ReturnType<BSync>`) by composing multiple synchronization steps.
  * This is a helper type that corresponds to the `bThread` function implementation, which allows
  * for modular composition of b-thread behavior.
@@ -163,6 +208,18 @@ export type BThread = (rules: ReturnType<BSync>[], repeat?: Repeat) => ReturnTyp
  * Runtime behavior matches {@link BThread}; only rule typing is narrowed through {@link BSyncVerified}.
  */
 export type BThreadVerified = (rules: ReturnType<BSyncVerified>[], repeat?: Repeat) => ReturnType<BSyncVerified>
+
+/**
+ * Replay-safe `bThread` authoring signature.
+ *
+ * @remarks
+ * Runtime behavior matches {@link BThread}; typing narrows rule authoring through {@link BSyncReplaySafe}
+ * and limits repetition to {@link ReplaySafeRepeat} (`true` or omitted).
+ */
+export type BThreadReplaySafe = (
+  rules: ReturnType<BSyncReplaySafe>[],
+  repeat?: ReplaySafeRepeat,
+) => ReturnType<BSyncReplaySafe>
 
 /**
  * @internal
