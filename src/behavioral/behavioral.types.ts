@@ -368,7 +368,7 @@ export type Trigger = <T extends BPEvent>(args: T) => void
 export type UseRestrictedTrigger = (...restricted: string[]) => Trigger
 
 /**
- * Factory that creates and initializes a new behavioral program instance.
+ * Function that creates and initializes a new behavioral program instance.
  * Returns an immutable API for thread management, event handling, and state monitoring.
  *
  * @returns Readonly behavioral programming API.
