@@ -1,12 +1,7 @@
-import { AGENT_TO_CONTROLLER_EVENTS } from '../../factories.ts'
+import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../shared-events.ts'
 import { keyMirror } from '../../utils.ts'
 
-/**
- * Controller-to-agent protocol event keys emitted from the browser runtime.
- *
- * @public
- */
-export const CONTROLLER_TO_AGENT_EVENTS = keyMirror('user_action', 'snapshot')
+export { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS }
 
 /**
  * WebSocket lifecycle event keys emitted within the controller runtime.

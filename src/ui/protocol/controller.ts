@@ -20,16 +20,11 @@
  */
 import type { BPEvent, BThreads, Disconnect, Handlers, Trigger, UseFeedback, UseSnapshot } from '../../behavioral.ts'
 import { BPEventSchema } from '../../behavioral.ts'
-import { AGENT_TO_CONTROLLER_EVENTS } from '../../factories.ts'
+import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../shared-events.ts'
 import { ueid } from '../../utils.ts'
 import { DelegatedListener, delegates } from '../dom/delegated-listener.ts'
 import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from '../render/template.constants.ts'
-import {
-  CONTROLLER_ERRORS,
-  CONTROLLER_TO_AGENT_EVENTS,
-  SWAP_MODES,
-  WEBSOCKET_LIFECYCLE_EVENTS,
-} from './controller.constants.ts'
+import { CONTROLLER_ERRORS, SWAP_MODES, WEBSOCKET_LIFECYCLE_EVENTS } from './controller.constants.ts'
 import type { ControllerHandlers, SwapMode } from './controller.schemas.ts'
 import { UpdateBehavioralModuleSchema, UpdateBehavioralResultSchema } from './controller.schemas.ts'
 
@@ -145,7 +140,7 @@ const updateAttributes = ({
 }
 
 /**
- * Factory for creating the client-side behavioral controller.
+ * Module for creating the client-side behavioral controller.
  *
  * @remarks
  * Wires up WebSocket lifecycle, DOM rendering, and user action forwarding.
@@ -265,9 +260,9 @@ export const controller = ({
       send({ type: CONTROLLER_TO_AGENT_EVENTS.user_action, detail: { id: ueid(), source, msg: type } })
     },
     async [AGENT_TO_CONTROLLER_EVENTS.update_behavioral](detail) {
-      const module = await import(detail)
-      const { default: factory } = UpdateBehavioralModuleSchema.parse(module)
-      const { threads, handlers } = UpdateBehavioralResultSchema.parse(factory(restrictedTrigger))
+      const moduleImports = await import(detail)
+      const { default: behavioralModule } = UpdateBehavioralModuleSchema.parse(moduleImports)
+      const { threads, handlers } = UpdateBehavioralResultSchema.parse(behavioralModule(restrictedTrigger))
       threads && bThreads.set(threads)
       handlers && disconnectSet.add(useFeedback(handlers))
     },
