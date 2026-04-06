@@ -29,7 +29,7 @@ export type Repeat = true | (() => boolean)
 export type BPEvent = { type: string; detail?: any }
 
 /**
- * A factory function that generates a `BPEvent` dynamically.
+ * A callback that generates a `BPEvent` dynamically.
  * Particularly useful within `bSync` definitions when the event details need to be computed
  * at the exact moment the synchronization point is reached rather than when the b-thread
  * is initially defined.
@@ -88,7 +88,7 @@ export type Idioms = {
 }
 
 /**
- * A factory function that creates a single synchronization step (a `ReturnType<BSync>`) for a b-thread.
+ * A callback that creates a single synchronization step (a `ReturnType<BSync>`) for a b-thread.
  * This is a helper type that corresponds to the `bSync` function implementation, which creates
  * one branded behavioral rule step.
  *
@@ -103,9 +103,9 @@ export type BSync = (arg: Idioms) => {
 }
 
 /**
- * A factory function that constructs a complete b-thread (`ReturnType<BSync>`) by composing multiple synchronization steps.
+ * A callback that constructs a complete b-thread (`ReturnType<BSync>`) by composing multiple synchronization steps.
  * This is a helper type that corresponds to the `bThread` function implementation, which allows
- * for modular composition of b-thread behavior.
+ * for compositional assembly of b-thread behavior.
  *
  * @param rules - Synchronization steps, typically created with `bSync`, that define the thread sequence.
  * @param repeat - Optional repetition policy controlling whether the sequence repeats.
@@ -350,7 +350,7 @@ export type BThreads = {
 export type Trigger = <T extends BPEvent>(args: T) => void
 
 /**
- * Factory that creates a {@link Trigger} that blocks a fixed set of restricted event types.
+ * Helper that creates a {@link Trigger} that blocks a fixed set of restricted event types.
  * Events in the restricted set are rejected with a snapshot error and never reach the BP engine.
  * All other events pass through normally.
  *
@@ -368,7 +368,7 @@ export type Trigger = <T extends BPEvent>(args: T) => void
 export type UseRestrictedTrigger = (...restricted: string[]) => Trigger
 
 /**
- * Factory function that creates and initializes a new behavioral program instance.
+ * Factory that creates and initializes a new behavioral program instance.
  * Returns an immutable API for thread management, event handling, and state monitoring.
  *
  * @returns Readonly behavioral programming API.

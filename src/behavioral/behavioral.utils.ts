@@ -1,7 +1,7 @@
 /**
  * @internal
  * Utilities for behavioral programming: randomness, type guards, and thread composition.
- * Provides bThread, bSync factories and helpers for non-deterministic scenarios.
+ * Provides bThread, bSync helpers for non-deterministic scenarios.
  */
 import { isTypeOf } from '../utils.ts'
 import { RULES_FUNCTION_IDENTIFIER } from './behavioral.constants.ts'

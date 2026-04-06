@@ -551,12 +551,12 @@ describe('parallel simulation coordination', () => {
 })
 
 // ============================================================================
-// useBehavioral factory: the session as a reusable BP program
-// Demonstrates how the agent could use the factory pattern for
+// useBehavioral session: a reusable BP program
+// Demonstrates how the agent core could use the behavior pattern for
 // encapsulation with publicEvents as the API whitelist.
 // ============================================================================
 
-describe('useBehavioral agent factory', () => {
+describe('useBehavioral agent orchestration', () => {
   test('publicEvents restrict which events can be triggered externally', () => {
     // This test explores whether the agent loop could be built with
     // useBehavioral, exposing only 'task' and 'destroy' as public events
