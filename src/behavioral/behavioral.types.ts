@@ -437,6 +437,17 @@ export type BThreads = {
    * To terminate a thread, use the `interrupt` idiom in the thread's configuration, or wait for the thread to complete naturally.
    */
   set: (threads: Record<string, ReturnType<BSync>>) => void
+
+  /**
+   * Spawns a new dynamic thread instance with runtime-unique identity.
+   *
+   * Unlike {@link set}, `label` is human-readable metadata and does not participate
+   * in uniqueness checks; each call creates a distinct live thread instance.
+   *
+   * @param args - Spawn arguments containing `label` and `thread`.
+   * @returns Runtime-generated thread id.
+   */
+  spawn: (args: { label: string; thread: ReturnType<BSync> }) => string
 }
 
 /**

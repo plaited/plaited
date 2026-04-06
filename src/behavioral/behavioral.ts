@@ -1,3 +1,4 @@
+import { ueid } from '../utils/ueid.ts'
 import { isTypeOf } from '../utils.ts'
 import { SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
 import type { SelectionBid, SnapshotMessage } from './behavioral.schemas.ts'
@@ -468,6 +469,15 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
         })
       }
     },
+    spawn: ({ label, thread }) => {
+      void label
+      const threadId = ueid('bt_')
+      running.set(threadId, {
+        priority: running.size + 1,
+        generator: thread(),
+      })
+      return threadId
+    },
     has: (thread) => ({
       running: running.has(thread),
       pending: pending.has(thread),
@@ -520,7 +530,7 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
    * predictable API for consumers of the behavioral program.
    */
   return Object.freeze({
-    /** Provides methods to manage behavioral threads (`set`, `has`). */
+    /** Provides methods to manage behavioral threads (`set`, `spawn`, `has`). */
     bThreads,
     /** Function to inject external events into the program. */
     trigger,
