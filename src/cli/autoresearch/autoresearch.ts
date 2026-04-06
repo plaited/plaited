@@ -1,210 +1,202 @@
 import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { TrialResult } from '../eval/eval.schemas.ts'
-import { runTrial } from '../eval/eval.ts'
+import { AutoresearchEvaluateOutputSchema, AutoresearchLaneStateSchema } from './autoresearch.schemas.ts'
 import type {
-  AutoresearchCandidateResult,
-  AutoresearchOutput,
-  AutoresearchTargetHandler,
-  RunAutoresearchConfig,
+  AutoresearchAcceptConfig,
+  AutoresearchEvaluateOutput,
+  AutoresearchExperiment,
+  AutoresearchLaneState,
+  AutoresearchRevertConfig,
+  AutoresearchStatusConfig,
+  EvaluateAutoresearchLaneConfig,
+  InitAutoresearchLaneConfig,
 } from './autoresearch.types.ts'
+import { buildAutoresearchRunId, createInitialLaneState, resolveAutoresearchLaneDir } from './autoresearch.utils.ts'
+import { evaluateFactoryScenarios } from './evaluation/check-invariants.ts'
+import { runFactoryScenarios } from './evaluation/run-factory-scenarios.ts'
 import {
-  buildAutoresearchRunId,
-  loadBaselineResults,
-  normalizeAutoresearchBudget,
-  normalizeAutoresearchPromotion,
-  resolveAutoresearchOutputDir,
-  summarizeTrialResults,
-  writeAutoresearchArtifacts,
-} from './autoresearch.utils.ts'
-import { factoryTargetHandler } from './targets/factory-target.ts'
-import { skillTargetHandler } from './targets/skill-target.ts'
+  captureWritableSnapshot,
+  diffWritableSnapshot,
+  readWritableSnapshotFile,
+  revertWritableSnapshot,
+  writeWritableSnapshotFile,
+} from './state/apply-or-revert-candidate.ts'
 
-const TARGET_HANDLERS: Record<string, AutoresearchTargetHandler> = {
-  skill: skillTargetHandler,
-  factory: factoryTargetHandler,
+const toJson = (value: unknown): string => JSON.stringify(value, null, 2)
+const BASELINE_SNAPSHOT_FILE = 'baseline-snapshot.json'
+
+const writeLaneState = async (laneState: AutoresearchLaneState): Promise<void> => {
+  await Bun.write(join(laneState.laneDir, 'lane.json'), toJson(AutoresearchLaneStateSchema.parse(laneState)))
+  await Bun.write(
+    join(laneState.laneDir, 'experiments.jsonl'),
+    laneState.experiments.map((row) => JSON.stringify(row)).join('\n'),
+  )
 }
 
-const getTargetHandler = (kind: string): AutoresearchTargetHandler => {
-  const handler = TARGET_HANDLERS[kind]
-  if (!handler) {
-    throw new Error(`Unsupported autoresearch target kind: ${kind}`)
+const readLaneState = async (laneDir: string): Promise<AutoresearchLaneState> => {
+  const path = join(laneDir, 'lane.json')
+  const file = Bun.file(path)
+  if (!(await file.exists())) {
+    throw new Error(`Missing autoresearch lane state: ${path}`)
   }
-  return handler
-}
 
-const ensureOutputLayout = async (outputDir: string): Promise<void> => {
-  await mkdir(outputDir, { recursive: true })
-  await mkdir(join(outputDir, 'candidates'), { recursive: true })
-}
-
-const compareCandidateResults = ({
-  baselineResults,
-  candidateResults,
-}: {
-  baselineResults: TrialResult[]
-  candidateResults: TrialResult[]
-}): {
-  passRate?: number
-  passAtK?: number
-  passExpK?: number
-} => {
-  const baselineSummary = summarizeTrialResults(baselineResults)
-  const candidateSummary = summarizeTrialResults(candidateResults)
-
-  return {
-    passRate:
-      candidateSummary.passRate !== undefined && baselineSummary.passRate !== undefined
-        ? candidateSummary.passRate - baselineSummary.passRate
-        : undefined,
-    passAtK:
-      candidateSummary.passAtK !== undefined && baselineSummary.passAtK !== undefined
-        ? candidateSummary.passAtK - baselineSummary.passAtK
-        : undefined,
-    passExpK:
-      candidateSummary.passExpK !== undefined && baselineSummary.passExpK !== undefined
-        ? candidateSummary.passExpK - baselineSummary.passExpK
-        : undefined,
-  }
+  return AutoresearchLaneStateSchema.parse(await file.json())
 }
 
 /**
- * Runs a bounded autoresearch cycle around eval, observation collection, and
- * candidate validation.
+ * Initializes a new autoresearch lane and captures the baseline writable-root
+ * snapshot used for later evaluation diffs.
  *
  * @public
  */
-export const runAutoresearch = async (config: RunAutoresearchConfig): Promise<AutoresearchOutput> => {
-  const {
-    adapter,
-    baselineResultsPath,
-    evidencePaths = [],
-    grader,
-    outputDir: requestedOutputDir,
-    progress = false,
-    prompts,
-    promotion,
-    target,
-    workspaceDir,
-  } = config
-
-  const budget = normalizeAutoresearchBudget(config.budget)
-  const normalizedPromotion = normalizeAutoresearchPromotion(promotion)
+export const initAutoresearchLane = async (config: InitAutoresearchLaneConfig): Promise<AutoresearchLaneState> => {
+  const { outputDir, programPath, target } = config
   const runId = buildAutoresearchRunId(target)
-  const outputDir = resolveAutoresearchOutputDir({
-    outputDir: requestedOutputDir,
+  const laneDir = resolveAutoresearchLaneDir({
+    outputDir,
     runId,
   })
-  const handler = getTargetHandler(target.kind)
 
-  await ensureOutputLayout(outputDir)
+  await mkdir(join(laneDir, 'experiments'), { recursive: true })
 
-  const baselineResults =
-    (await loadBaselineResults(baselineResultsPath)) ??
-    (await runTrial({
-      adapter,
-      prompts,
-      grader,
-      workspaceDir,
-      concurrency: budget.concurrency,
-      progress,
-      outputPath: join(outputDir, 'baseline.jsonl'),
-    }))
-
-  const baselineSummary = summarizeTrialResults(baselineResults)
-  const observations = await handler.collectObservations({
+  const laneState = createInitialLaneState({
+    laneDir,
+    programPath,
+    runId,
     target,
-    evidencePaths,
-    baselineResults,
-  })
-  const proposals = await handler.proposeCandidates({
-    target,
-    observations,
-    outputDir,
-    budget,
   })
 
-  const candidates: AutoresearchCandidateResult[] = []
+  const baselineSnapshot = await captureWritableSnapshot({
+    writableRoots: target.writableRoots ?? [],
+    workspaceRoot: process.cwd(),
+  })
+  await writeWritableSnapshotFile(join(laneDir, BASELINE_SNAPSHOT_FILE), baselineSnapshot)
+  await writeLaneState(laneState)
+  return laneState
+}
 
-  for (const proposal of proposals) {
-    const validation = await handler.validateCandidate({
-      target,
-      candidate: proposal,
-    })
+/**
+ * Evaluates the current workspace state for an autoresearch lane by running the
+ * built-in factory scenario suite and diffing the writable roots against the
+ * lane's baseline snapshot.
+ *
+ * @public
+ */
+export const evaluateAutoresearchLane = async (
+  config: EvaluateAutoresearchLaneConfig,
+): Promise<AutoresearchEvaluateOutput> => {
+  const laneState = await readLaneState(config.laneDir)
+  const iteration = laneState.experiments.length + 1
+  const artifactDir = join(laneState.laneDir, 'experiments', `iteration-${String(iteration).padStart(3, '0')}`)
+  await mkdir(artifactDir, { recursive: true })
 
-    if (!validation.pass) {
-      candidates.push({
-        ...proposal,
-        validation: 'failed',
-      })
-      continue
-    }
+  const baselineSnapshot = await readWritableSnapshotFile(join(laneState.laneDir, BASELINE_SNAPSHOT_FILE))
+  const changedPaths = await diffWritableSnapshot({
+    snapshot: baselineSnapshot,
+    writableRoots: laneState.target.writableRoots ?? [],
+    workspaceRoot: process.cwd(),
+  })
 
-    const candidateResults = await runTrial({
-      adapter,
-      prompts,
-      grader,
-      workspaceDir,
-      concurrency: budget.concurrency,
-      progress,
-    })
+  const scenarios = await runFactoryScenarios({
+    targetId: laneState.target.id,
+  })
+  const evaluation = evaluateFactoryScenarios({
+    scenarios,
+  })
 
-    candidates.push({
-      ...proposal,
-      validation: 'passed',
-      delta: compareCandidateResults({
-        baselineResults,
-        candidateResults,
-      }),
-    })
-  }
-
-  const acceptedCandidate = candidates.find(
-    (candidate) => candidate.validation === 'passed' && (candidate.delta?.passRate ?? 0) > 0,
+  await Bun.write(join(artifactDir, 'evaluation.json'), toJson(evaluation))
+  await Bun.write(join(artifactDir, 'changed-paths.json'), toJson(changedPaths))
+  await Bun.write(join(artifactDir, 'trace.jsonl'), evaluation.snapshots.map((row) => JSON.stringify(row)).join('\n'))
+  await Bun.write(join(artifactDir, 'invariants.json'), toJson(evaluation.invariants))
+  await Bun.write(
+    join(artifactDir, 'transport.json'),
+    toJson(
+      scenarios.map((scenario) => ({
+        id: scenario.id,
+        pass: scenario.pass,
+        transport: scenario.transport,
+      })),
+    ),
+  )
+  await Bun.write(
+    join(artifactDir, 'scenario.json'),
+    toJson(
+      scenarios.map((scenario) => ({
+        id: scenario.id,
+        summary: scenario.summary,
+        invariantIds: scenario.invariants.map((invariant) => invariant.id),
+      })),
+    ),
   )
 
-  const promotionDecision = acceptedCandidate
-    ? {
-        decision: 'accepted' as const,
-        candidateId: acceptedCandidate.id,
-        reasoning: `Candidate ${acceptedCandidate.id} improved passRate over baseline.`,
-      }
-    : {
-        decision: 'deferred' as const,
-        reasoning:
-          candidates.length === 0
-            ? 'No candidates were proposed; retained observations and baseline artifacts only.'
-            : 'No validated candidate improved the measured baseline enough to promote.',
-      }
-
-  if (acceptedCandidate && normalizedPromotion.mode !== 'none') {
-    await handler.applyCandidate({
-      target,
-      candidate: acceptedCandidate,
-      mode: normalizedPromotion.mode,
-    })
+  const experiment: AutoresearchExperiment = {
+    iteration,
+    pass: evaluation.pass,
+    summary: evaluation.summary,
+    score: evaluation.score,
+    changedPaths,
+    artifactDir,
   }
 
-  const result: AutoresearchOutput = {
-    runId,
-    target,
-    baselineSummary,
-    candidates,
-    promotion: promotionDecision,
-  }
+  laneState.experiments.push(experiment)
+  await writeLaneState(laneState)
 
-  await writeAutoresearchArtifacts({
-    outputDir,
-    run: {
-      runId,
-      target,
-      baselineSummary,
-    },
-    baselineResults,
-    observations,
-    candidates,
-    promotion: promotionDecision,
+  return AutoresearchEvaluateOutputSchema.parse({
+    laneDir: laneState.laneDir,
+    iteration,
+    programPath: laneState.programPath,
+    target: laneState.target,
+    pass: evaluation.pass,
+    summary: evaluation.summary,
+    score: evaluation.score,
+    changedPaths,
+    artifactDir,
   })
+}
 
-  return result
+/**
+ * Loads the current state for an autoresearch lane.
+ *
+ * @public
+ */
+export const loadAutoresearchLaneStatus = async (config: AutoresearchStatusConfig): Promise<AutoresearchLaneState> =>
+  readLaneState(config.laneDir)
+
+/**
+ * Promotes the current workspace state into the lane baseline snapshot so later
+ * evaluations diff against the newly accepted state.
+ *
+ * @public
+ */
+export const acceptAutoresearchLane = async (config: AutoresearchAcceptConfig): Promise<AutoresearchLaneState> => {
+  const laneState = await readLaneState(config.laneDir)
+  const snapshot = await captureWritableSnapshot({
+    writableRoots: laneState.target.writableRoots ?? [],
+    workspaceRoot: process.cwd(),
+  })
+  await writeWritableSnapshotFile(join(laneState.laneDir, BASELINE_SNAPSHOT_FILE), snapshot)
+  laneState.lastAcceptedIteration = laneState.experiments.at(-1)?.iteration
+  await writeLaneState(laneState)
+  return laneState
+}
+
+/**
+ * Restores the lane baseline snapshot into the current workspace.
+ *
+ * @public
+ */
+export const revertAutoresearchLane = async (config: AutoresearchRevertConfig): Promise<AutoresearchLaneState> => {
+  const laneState = await readLaneState(config.laneDir)
+  const snapshot = await readWritableSnapshotFile(join(laneState.laneDir, BASELINE_SNAPSHOT_FILE))
+  const changedPaths = await diffWritableSnapshot({
+    snapshot,
+    writableRoots: laneState.target.writableRoots ?? [],
+    workspaceRoot: process.cwd(),
+  })
+  await revertWritableSnapshot({
+    changedPaths,
+    snapshot,
+    workspaceRoot: process.cwd(),
+  })
+  return laneState
 }

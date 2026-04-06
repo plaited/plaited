@@ -1,100 +1,79 @@
-import type { Adapter, Grader, PromptCase, TrialResult } from '../eval/eval.schemas.ts'
-
 /** @public */
-export type AutoresearchTargetKind = 'skill' | 'factory' | 'prompt-pack'
+export type AutoresearchTargetKind = 'factory'
 
 /** @public */
 export type AutoresearchTargetRef = {
   kind: AutoresearchTargetKind
   id: string
   path?: string
+  writableRoots?: string[]
 }
 
 /** @public */
-export type AutoresearchBudget = {
-  maxCandidates?: number
-  maxAttemptsPerCandidate?: number
-  concurrency?: number
-}
-
-/** @public */
-export type AutoresearchPromotion = {
-  mode?: 'none' | 'candidate-only' | 'activate-overlay'
-}
-
-/** @public */
-export type CandidateProposal = {
-  id: string
-  summary: string
-  artifactPath: string
-}
-
-/** @public */
-export type CandidateValidation = {
+export type AutoresearchEvaluation = {
   pass: boolean
-  reasoning: string
+  summary: string
+  score?: number
+  metrics?: Record<string, number>
 }
 
 /** @public */
-export type AutoresearchCandidateResult = CandidateProposal & {
-  validation: 'passed' | 'failed'
-  delta?: {
-    passRate?: number
-    passAtK?: number
-    passExpK?: number
-  }
+export type AutoresearchExperiment = {
+  iteration: number
+  pass: boolean
+  summary: string
+  score?: number
+  changedPaths: string[]
+  artifactDir: string
 }
 
 /** @public */
-export type AutoresearchOutput = {
+export type AutoresearchLaneState = {
   runId: string
+  laneDir: string
+  programPath: string
   target: AutoresearchTargetRef
-  baselineSummary: {
-    passRate?: number
-    passAtK?: number
-    passExpK?: number
-  }
-  candidates: AutoresearchCandidateResult[]
-  promotion: {
-    decision: 'accepted' | 'rejected' | 'deferred'
-    candidateId?: string
-    reasoning: string
-  }
+  initializedAt: string
+  lastAcceptedIteration?: number
+  experiments: AutoresearchExperiment[]
 }
 
 /** @public */
-export type RunAutoresearchConfig = {
+export type InitAutoresearchLaneConfig = {
+  programPath: string
   target: AutoresearchTargetRef
-  adapter: Adapter
-  prompts: PromptCase[]
-  grader?: Grader
   outputDir?: string
-  workspaceDir?: string
-  baselineResultsPath?: string
-  evidencePaths?: string[]
-  budget?: AutoresearchBudget
-  promotion?: AutoresearchPromotion
-  progress?: boolean
 }
 
 /** @public */
-export type AutoresearchTargetHandler = {
-  kind: AutoresearchTargetKind
-  collectObservations(args: {
-    target: AutoresearchTargetRef
-    evidencePaths: string[]
-    baselineResults: TrialResult[]
-  }): Promise<string[]>
-  proposeCandidates(args: {
-    target: AutoresearchTargetRef
-    observations: string[]
-    outputDir: string
-    budget: AutoresearchBudget
-  }): Promise<CandidateProposal[]>
-  validateCandidate(args: { target: AutoresearchTargetRef; candidate: CandidateProposal }): Promise<CandidateValidation>
-  applyCandidate(args: {
-    target: AutoresearchTargetRef
-    candidate: CandidateProposal
-    mode: 'candidate-only' | 'activate-overlay'
-  }): Promise<void>
+export type EvaluateAutoresearchLaneConfig = {
+  laneDir: string
+}
+
+/** @public */
+export type AutoresearchEvaluateOutput = {
+  laneDir: string
+  iteration: number
+  programPath: string
+  target: AutoresearchTargetRef
+  pass: boolean
+  summary: string
+  score?: number
+  changedPaths: string[]
+  artifactDir: string
+}
+
+/** @public */
+export type AutoresearchStatusConfig = {
+  laneDir: string
+}
+
+/** @public */
+export type AutoresearchAcceptConfig = {
+  laneDir: string
+}
+
+/** @public */
+export type AutoresearchRevertConfig = {
+  laneDir: string
 }

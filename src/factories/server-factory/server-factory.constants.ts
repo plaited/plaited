@@ -63,6 +63,14 @@ export const SERVER_FACTORY_SIGNAL_KEYS = {
 } as const
 
 /**
+ * Reserved contributor id representing the baseline route set owned directly by
+ * the server factory.
+ *
+ * @public
+ */
+export const SERVER_FACTORY_BASELINE_ROUTE_OWNER = 'baseline'
+
+/**
  * Default Content-Security-Policy header value for server-generated responses.
  *
  * @remarks

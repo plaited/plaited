@@ -5,7 +5,32 @@ import type { SERVER_ERRORS } from './server-factory.constants.ts'
 import type { WebSocketData } from './server-factory.schemas.ts'
 
 /** Route map type extracted from Bun.serve, parameterized with our WebSocket data */
-type ServeRoutes = Bun.Serve.Routes<WebSocketData, string>
+export type ServeRoutes = Bun.Serve.Routes<WebSocketData, string>
+
+/** @public */
+export type RouteContributions = Record<string, ServeRoutes>
+
+/** @public */
+export type RouteConflictOwner =
+  | { kind: 'baseline' }
+  | {
+      kind: 'contribution'
+      contributorId: string
+    }
+
+/** @public */
+export type RouteMergeResult =
+  | {
+      ok: true
+      routes: ServeRoutes
+    }
+  | {
+      ok: false
+      conflicts: Array<{
+        path: string
+        owners: RouteConflictOwner[]
+      }>
+    }
 
 /**
  * Detail payload for the `client_connected` event.

@@ -1,4 +1,5 @@
 import * as z from 'zod'
+import { SERVER_FACTORY_BASELINE_ROUTE_OWNER } from './server-factory.constants.ts'
 import type { AuthenticateConnection, CreateServerOptions } from './server-factory.types.ts'
 
 /**
@@ -46,6 +47,14 @@ export const WebSocketLimitsSchema = z.object({
 const ServeRoutesSchema = z.custom<CreateServerOptions['routes']>(
   (value) => value !== null && typeof value === 'object',
 )
+const RouteContributionsSchema = z.record(z.string(), ServeRoutesSchema).superRefine((value, ctx) => {
+  if (SERVER_FACTORY_BASELINE_ROUTE_OWNER in value) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `routeContributions must not use reserved contributor id '${SERVER_FACTORY_BASELINE_ROUTE_OWNER}'`,
+    })
+  }
+})
 
 const AllowedOriginsSchema = z.custom<Set<string> | undefined>((value) => value === undefined || value instanceof Set)
 
@@ -60,6 +69,7 @@ const TLSOptionsSchema = z.custom<CreateServerOptions['tls']>((_) => true)
  */
 export const ServerFactoryConfigSchema = z.object({
   routes: ServeRoutesSchema.default({}),
+  routeContributions: RouteContributionsSchema.optional(),
   port: z.number().int().nonnegative().default(0),
   tls: TLSOptionsSchema.optional(),
   allowedOrigins: AllowedOriginsSchema.optional(),
