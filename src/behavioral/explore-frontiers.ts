@@ -9,9 +9,16 @@ type ReplayThreadFactories = Record<string, ReturnType<BSyncReplaySafe>>
 
 type ExploreStrategy = 'dfs' | 'bfs'
 
-type FrontierFinding = {
+type DeadlockFinding = {
   code: 'deadlock'
   history: BPEvent[]
+  status: Frontier['status']
+  candidates: Frontier['candidates']
+  enabled: Frontier['enabled']
+  summary: {
+    candidateCount: number
+    enabledCount: number
+  }
 }
 
 type FrontierSummary = {
@@ -19,9 +26,25 @@ type FrontierSummary = {
   status: Frontier['status']
 }
 
+type ExploreFrontiersReport = {
+  strategy: ExploreStrategy
+  visitedCount: number
+  findingCount: number
+  /**
+   * True only when the explorer encountered at least one `ready` frontier that it did not expand
+   * because `maxDepth` was reached for that history.
+   *
+   * This does not indicate generic incompleteness: `idle`/`deadlock` terminal frontiers keep this false
+   * even when `maxDepth` is set.
+   */
+  truncated: boolean
+  maxDepth?: number
+}
+
 type ExploreFrontiersResult = {
+  report: ExploreFrontiersReport
   visitedHistories: BPEvent[][]
-  findings: FrontierFinding[]
+  findings: DeadlockFinding[]
   frontierSummaries?: FrontierSummary[]
 }
 
@@ -48,6 +71,15 @@ const historyKey = (history: BPEvent[]) => {
 }
 
 const cloneHistory = (history: BPEvent[]) => [...history]
+const cloneCandidates = (candidates: Frontier['candidates']): Frontier['candidates'] =>
+  candidates.map((candidate) => ({
+    thread: candidate.thread,
+    priority: candidate.priority,
+    type: candidate.type,
+    ...(candidate.detail !== undefined && { detail: candidate.detail }),
+    ...(candidate.trigger && { trigger: candidate.trigger }),
+    ...(candidate.template && { template: candidate.template }),
+  }))
 
 /**
  * @internal
@@ -57,8 +89,9 @@ export const exploreFrontiers: ExploreFrontiers = ({ threads, strategy, maxDepth
   const queue: BPEvent[][] = [[]]
   const seenHistories = new Set<string>()
   const visitedHistories: BPEvent[][] = []
-  const findings: FrontierFinding[] = []
+  const findings: DeadlockFinding[] = []
   const frontierSummaries: FrontierSummary[] = []
+  let truncated = false
 
   while (queue.length > 0) {
     const history = strategy === 'bfs' ? queue.shift()! : queue.pop()!
@@ -80,7 +113,19 @@ export const exploreFrontiers: ExploreFrontiers = ({ threads, strategy, maxDepth
     }
 
     if (frontier.status === 'deadlock') {
-      findings.push({ code: 'deadlock', history: cloneHistory(history) })
+      const candidates = cloneCandidates(frontier.candidates)
+      const enabled = cloneCandidates(frontier.enabled)
+      findings.push({
+        code: 'deadlock',
+        history: cloneHistory(history),
+        status: frontier.status,
+        candidates,
+        enabled,
+        summary: {
+          candidateCount: candidates.length,
+          enabledCount: enabled.length,
+        },
+      })
       continue
     }
 
@@ -89,6 +134,8 @@ export const exploreFrontiers: ExploreFrontiers = ({ threads, strategy, maxDepth
     }
 
     if (maxDepth !== undefined && history.length >= maxDepth) {
+      // `truncated` is specifically a depth-cutoff signal for explorable (`ready`) branches.
+      truncated = true
       continue
     }
 
@@ -104,6 +151,13 @@ export const exploreFrontiers: ExploreFrontiers = ({ threads, strategy, maxDepth
   }
 
   return {
+    report: {
+      strategy,
+      visitedCount: visitedHistories.length,
+      findingCount: findings.length,
+      truncated,
+      ...(maxDepth !== undefined && { maxDepth }),
+    },
     visitedHistories,
     findings,
     ...(includeFrontierSummaries ? { frontierSummaries } : {}),
