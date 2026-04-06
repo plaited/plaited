@@ -5,6 +5,7 @@ import { keyMirror } from '../utils.ts'
  *
  * @remarks
  * Use the `kind` field to narrow the union:
+ * - `'deadlock'` — no unblocked candidate could be selected
  * - `'selection'` — event selection snapshot
  * - `'feedback_error'` — handler threw during side-effect execution
  * - `'restricted_trigger_error'` — trigger rejected a restricted event type
@@ -14,6 +15,7 @@ import { keyMirror } from '../utils.ts'
  */
 export const SNAPSHOT_MESSAGE_KINDS = keyMirror(
   'bthreads_warning',
+  'deadlock',
   'feedback_error',
   'restricted_trigger_error',
   'selection',

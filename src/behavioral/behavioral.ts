@@ -11,7 +11,6 @@ import type {
   EventDetails,
   PendingBid,
   RunningBid,
-  SelectionFormatter,
   Trigger,
   UseFeedback,
   UseRestrictedTrigger,
@@ -105,7 +104,15 @@ const isPendingRequest = (selectedEvent: CandidateBid, event: BPEvent | BPEventT
  * which event was selected, and creates a comprehensive view of the current execution step.
  * The resulting array is sorted by priority to show higher priority events first.
  */
-const snapshotFormatter: SelectionFormatter = ({ candidates, selectedEvent, pending }) => {
+const formatSnapshotBids = ({
+  candidates,
+  pending,
+  selectedEvent,
+}: {
+  candidates: CandidateBid[]
+  pending: Map<string | symbol, PendingBid>
+  selectedEvent?: CandidateBid
+}) => {
   const blockingThreads = [...pending].flatMap(([thread, { block }]) =>
     block && Array.isArray(block)
       ? block.map((listener) => ({ block: listener, thread }))
@@ -121,16 +128,7 @@ const snapshotFormatter: SelectionFormatter = ({ candidates, selectedEvent, pend
         : [],
   )
 
-  const ruleSets: {
-    thread: string
-    trigger: boolean
-    selected: boolean
-    type: string
-    detail?: unknown
-    priority: number
-    blockedBy?: string
-    interrupts?: string
-  }[] = []
+  const ruleSets: SelectionBid[] = []
   for (const bid of candidates) {
     const blockedBy = blockingThreads.find(({ block }) => isListeningFor(bid)(block))?.thread
     const interrupts = interruptedThreads.find(({ interrupt }) => isListeningFor(bid)(interrupt))?.thread
@@ -139,7 +137,7 @@ const snapshotFormatter: SelectionFormatter = ({ candidates, selectedEvent, pend
       thread: isTypeOf<symbol>(thread, 'symbol') ? thread?.toString() : thread,
       trigger: bid.trigger ?? false,
       type: bid.type,
-      selected: isPendingRequest(selectedEvent, bid),
+      selected: selectedEvent ? isPendingRequest(selectedEvent, bid) : false,
       priority: bid.priority,
       detail: bid.detail,
       blockedBy: isTypeOf<symbol>(blockedBy, 'symbol') ? blockedBy?.toString() : blockedBy,
@@ -147,9 +145,51 @@ const snapshotFormatter: SelectionFormatter = ({ candidates, selectedEvent, pend
     }
     ruleSets.push(message)
   }
+  return ruleSets.sort((a, b) => a.priority - b.priority)
+}
+
+const snapshotFormatter = ({
+  candidates,
+  selectedEvent,
+  pending,
+}: {
+  candidates: CandidateBid[]
+  selectedEvent: CandidateBid
+  pending: Map<string | symbol, PendingBid>
+}) => {
   return {
     kind: SNAPSHOT_MESSAGE_KINDS.selection,
-    bids: ruleSets.sort((a, b) => a.priority - b.priority),
+    bids: formatSnapshotBids({ candidates, selectedEvent, pending }),
+  }
+}
+
+const deadlockSnapshotFormatter = ({
+  candidates,
+  pending,
+}: {
+  candidates: CandidateBid[]
+  pending: Map<string | symbol, PendingBid>
+}) => {
+  const bids = formatSnapshotBids({ candidates, pending }).map((bid) => ({
+    ...bid,
+    selected: false as const,
+    reason: 'blocked' as const,
+  }))
+  const blockerThreads = [...new Set(bids.flatMap((bid) => (bid.blockedBy ? [bid.blockedBy] : [])))]
+  const interruptorThreads = [...new Set(bids.flatMap((bid) => (bid.interrupts ? [bid.interrupts] : [])))]
+  const blockedCount = bids.filter((bid) => Boolean(bid.blockedBy)).length
+  const unblockedCount = bids.length - blockedCount
+
+  return {
+    kind: SNAPSHOT_MESSAGE_KINDS.deadlock,
+    bids,
+    summary: {
+      candidateCount: bids.length,
+      blockedCount,
+      unblockedCount,
+      blockerThreads,
+      interruptorThreads,
+    },
   }
 }
 /**
@@ -295,6 +335,8 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
     if (selectedEvent) {
       snapshotPublisher(snapshotFormatter({ candidates, selectedEvent, pending }))
       nextStep(selectedEvent)
+    } else if (candidates.length > 0) {
+      snapshotPublisher(deadlockSnapshotFormatter({ candidates, pending }))
     }
   }
 

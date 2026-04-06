@@ -66,6 +66,68 @@ export const SelectionSnapshotSchema = z.object({
 export type SelectionSnapshot = z.infer<typeof SelectionSnapshotSchema>
 
 /**
+ * Schema for classifying why a bid appears in a deadlock snapshot.
+ *
+ * @public
+ */
+export const DeadlockReasonSchema = z.enum(['blocked', 'no_selectable_candidate'])
+
+/** @public */
+export type DeadlockReason = z.infer<typeof DeadlockReasonSchema>
+
+/**
+ * Schema for a bid entry in a deadlock snapshot.
+ *
+ * @remarks
+ * Deadlock bids are always unselected and include a reason code.
+ *
+ * @public
+ */
+export const DeadlockBidSchema = SelectionBidSchema.extend({
+  selected: z.literal(false),
+  reason: DeadlockReasonSchema,
+})
+
+/** @public */
+export type DeadlockBid = z.infer<typeof DeadlockBidSchema>
+
+/**
+ * Schema for top-level deadlock diagnostics aggregated across all bids.
+ *
+ * @public
+ */
+export const DeadlockSummarySchema = z.object({
+  candidateCount: z.number(),
+  blockedCount: z.number(),
+  unblockedCount: z.number(),
+  blockerThreads: z.array(z.string()),
+  interruptorThreads: z.array(z.string()),
+})
+
+/** @public */
+export type DeadlockSummary = z.infer<typeof DeadlockSummarySchema>
+
+/**
+ * Schema for a snapshot emitted when no unblocked candidate can be selected.
+ *
+ * @remarks
+ * Published via {@link UseSnapshot} when at least one request candidate exists
+ * but all candidates are blocked. Consumers narrow by `kind === 'deadlock'`.
+ *
+ * @see {@link SnapshotMessageSchema} for the full discriminated union
+ *
+ * @public
+ */
+export const DeadlockSnapshotSchema = z.object({
+  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.deadlock),
+  bids: z.array(DeadlockBidSchema),
+  summary: DeadlockSummarySchema,
+})
+
+/** @public */
+export type DeadlockSnapshot = z.infer<typeof DeadlockSnapshotSchema>
+
+/**
  * Schema for feedback handler errors published by the BP engine.
  *
  * @remarks
@@ -135,6 +197,7 @@ export type BThreadsWarning = z.infer<typeof BThreadsWarningSchema>
  * Consumers narrow by the `kind` field.
  *
  * @see {@link SelectionSnapshotSchema} for event selection observations
+ * @see {@link DeadlockSnapshotSchema} for blocked-candidate deadlock observations
  * @see {@link FeedbackErrorSchema} for feedback handler errors
  * @see {@link RestrictedTriggerErrorSchema} for restricted trigger rejections
  * @see {@link BThreadsWarningSchema} for duplicate thread warnings
@@ -143,6 +206,7 @@ export type BThreadsWarning = z.infer<typeof BThreadsWarningSchema>
  */
 export const SnapshotMessageSchema = z.discriminatedUnion('kind', [
   BThreadsWarningSchema,
+  DeadlockSnapshotSchema,
   FeedbackErrorSchema,
   RestrictedTriggerErrorSchema,
   SelectionSnapshotSchema,
