@@ -3,9 +3,11 @@
  * Utilities for behavioral programming: randomness, type guards, and thread composition.
  * Provides bThread, bSync factories and helpers for non-deterministic scenarios.
  */
+
+import * as z from 'zod'
 import { isTypeOf } from '../utils.ts'
 import { RULES_FUNCTION_IDENTIFIER } from './behavioral.constants.ts'
-import type { BPEvent, BSync, BThread } from './behavioral.types.ts'
+import type { BPEvent, BPMatchListener, BSync, BThread } from './behavioral.types.ts'
 
 /**
  * Creates an event template function that randomly selects from provided events.
@@ -106,6 +108,27 @@ export const isBPEvent = (data: unknown): data is BPEvent => {
     Object.hasOwn(data, 'type') &&
     isTypeOf<string>(data.type, 'string')
   )
+}
+
+/**
+ * Type guard to check if a value is any Zod schema.
+ *
+ * @param schema - Value to validate.
+ * @returns `true` when `schema` is a Zod schema instance.
+ */
+const isZodSchema = (schema: unknown): schema is z.ZodTypeAny => schema instanceof z.ZodType
+
+/**
+ * Type guard for structured match listeners used in waitFor/block/interrupt idioms.
+ *
+ * @param data - Value to validate as a `BPMatchListener`.
+ * @returns `true` when `data` is a structured match listener.
+ */
+export const isBPMatchListener = (data: unknown): data is BPMatchListener => {
+  if (!isTypeOf<Record<string, unknown>>(data, 'object')) {
+    return false
+  }
+  return data.kind === 'match' && isTypeOf<string>(data.type, 'string') && isZodSchema(data.detailSchema)
 }
 
 /**

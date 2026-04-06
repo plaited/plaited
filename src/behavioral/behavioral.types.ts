@@ -1,3 +1,4 @@
+import type { ZodType } from 'zod'
 import type { RULES_FUNCTION_IDENTIFIER } from './behavioral.constants.ts'
 import type { SelectionSnapshot, SnapshotMessage } from './behavioral.schemas.ts'
 
@@ -51,12 +52,19 @@ export type BPEventTemplate = () => BPEvent
  *
  * It can be one of:
  * 1. A simple `string`: Matches events exactly by their `type` property.
- * 2. A predicate function: Takes an event object and returns `true` if the event matches the desired criteria.
+ * 2. A structured match object: Matches by event `type` and validates `detail` with `detailSchema`.
+ * 3. A predicate function: Takes an event object and returns `true` if the event matches the desired criteria.
  *
  * @see {@link Idioms} for using listeners in synchronization
  * @see {@link bSync} for creating synchronization points
  */
-export type BPListener = string | ((args: BPEvent) => boolean)
+export type BPMatchListener = {
+  kind: 'match'
+  type: string
+  detailSchema: ZodType<unknown>
+}
+
+export type BPListener = string | BPMatchListener | ((args: BPEvent) => boolean)
 
 /**
  * Represents a synchronization statement yielded by a behavioral rule step.

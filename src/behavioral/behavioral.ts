@@ -16,6 +16,7 @@ import type {
   UseRestrictedTrigger,
   UseSnapshot,
 } from './behavioral.types.ts'
+import { isBPMatchListener } from './behavioral.utils.ts'
 
 /**
  * @internal
@@ -74,13 +75,18 @@ const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj : [obj])
  * @returns Predicate that reports whether a `BPListener` matches the event.
  */
 const isListeningFor = ({ type, detail }: CandidateBid) => {
-  return (listener: BPListener): boolean =>
-    isTypeOf<string>(listener, 'string')
-      ? listener === type
-      : listener({
-          detail,
-          type,
-        })
+  return (listener: BPListener): boolean => {
+    if (isTypeOf<string>(listener, 'string')) {
+      return listener === type
+    }
+    if (isBPMatchListener(listener)) {
+      return listener.type === type && listener.detailSchema.safeParse(detail).success
+    }
+    return listener({
+      detail,
+      type,
+    })
+  }
 }
 
 /**
