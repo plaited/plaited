@@ -7,7 +7,7 @@ import { behavioral, bSync, bThread } from '../behavioral.ts'
 import { isTypeOf } from '../utils.ts'
 import { AGENT_EVENTS } from './agent.constants.ts'
 import {
-  FactoryResultSchema,
+  ModuleResultSchema,
   GrepOutputSchema,
   type RequestBashDetail,
   RequestBashDetailSchema,
@@ -25,7 +25,7 @@ import {
   RequestTtsInferenceDetailSchema,
   type RequestWriteFileDetail,
   RequestWriteFileDetailSchema,
-  UpdateFactoryModuleSchema,
+  UpdateModuleModuleSchema,
 } from './agent.schemas.ts'
 import type { AgentHandle, CreateAgentOptions, SchemaViolationHandler, Signal, Signals } from './agent.types.ts'
 import { useComputed } from './use-computed.ts'
@@ -41,13 +41,13 @@ const DEFAULT_TOOL_TIMEOUT_MS = 120_000
  * @remarks
  * The core owns only:
  * - behavioral engine setup
- * - a restricted trigger boundary for installed factories
+ * - a restricted trigger boundary for installed modules
  * - a full public trigger for outer runtime orchestration
  * - heartbeat pulse
  * - disconnect cleanup
- * - installation of executable factories
+ * - installation of executable modules
  *
- * Everything richer should be layered on through factories.
+ * Everything richer should be layered on through modules.
  *
  * @public
  */
@@ -57,7 +57,7 @@ export const createAgent = async ({
   workspace,
   models,
   env = {},
-  factories = [],
+  modules = [],
   restrictedTriggers = [],
   heartbeat,
 }: CreateAgentOptions): Promise<AgentHandle> => {
@@ -124,8 +124,8 @@ export const createAgent = async ({
     get: (key) => signalMap.get(key),
     has: (key) => signalMap.has(key),
   }
-  for (const factory of factories) {
-    const { threads, handlers } = factory({
+  for (const installModule of modules) {
+    const { threads, handlers } = installModule({
       trigger: restrictedTrigger,
       signals,
       useSnapshot,
@@ -157,11 +157,11 @@ export const createAgent = async ({
       ],
       true,
     ),
-    onUpdateFactories: bThread(
+    onUpdateModules: bThread(
       [
         bSync({
           block: ({ type, detail }) => {
-            if (type !== AGENT_EVENTS.update_factories) return false
+            if (type !== AGENT_EVENTS.update_modules) return false
             if (!isTypeOf<string>(detail, 'string')) return true
             if (!/\.tsx?$/.test(detail)) return true
             const path = resolveWorkspacePath(detail)
@@ -281,12 +281,12 @@ export const createAgent = async ({
       const output = await models.tts(input)
       signal.set?.({ input, output })
     },
-    async [AGENT_EVENTS.update_factories](detail: string) {
-      const modules = await import(pathToFileURL(resolveWorkspacePath(detail)).href)
-      const { default: factories } = UpdateFactoryModuleSchema.parse(modules)
-      for (const factory of factories) {
-        const { threads, handlers } = FactoryResultSchema.parse(
-          factory({
+    async [AGENT_EVENTS.update_modules](detail: string) {
+      const moduleImports = await import(pathToFileURL(resolveWorkspacePath(detail)).href)
+      const { default: modulePlugins } = UpdateModuleModuleSchema.parse(moduleImports)
+      for (const modulePlugin of modulePlugins) {
+        const { threads, handlers } = ModuleResultSchema.parse(
+          modulePlugin({
             trigger: restrictedTrigger,
             useSnapshot,
             signals,

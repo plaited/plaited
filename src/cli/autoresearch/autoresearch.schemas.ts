@@ -1,6 +1,6 @@
 import * as z from 'zod'
 
-export const AutoresearchTargetKindSchema = z.enum(['factory'])
+export const AutoresearchTargetKindSchema = z.enum(['module'])
 
 export const AutoresearchTargetRefSchema = z.object({
   kind: AutoresearchTargetKindSchema,

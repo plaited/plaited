@@ -1,6 +1,6 @@
 import type { z } from 'zod'
-import type { AgentHandle, AgentModels, Factory, HeartbeatConfig } from '../agent.ts'
-import type { AuthenticateConnection } from '../factories/server-factory/server-factory.types.ts'
+import type { AgentHandle, AgentModels, Module, HeartbeatConfig } from '../agent.ts'
+import type { AuthenticateConnection } from '../modules/server-module/server-module.types.ts'
 import type {
   BootstrapInputSchema,
   BootstrapMemoryProviderSchema,
@@ -41,7 +41,7 @@ export type BootstrapRuntimeInput = BootstrapInput & {
     },
     string
   >
-  factories?: Factory[]
+  modules?: Module[]
   restrictedTriggers?: string[]
   heartbeat?: HeartbeatConfig
   cwd?: string

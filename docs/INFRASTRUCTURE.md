@@ -27,7 +27,7 @@ An optional adjacent concern is:
 
 Plaited stays deployment-agnostic at the framework layer. This document
 describes one concrete infrastructure shape that fits the current agent and
-factory direction.
+module direction.
 
 This document is intended to be validated by the bootstrap CLI surface:
 
@@ -40,7 +40,7 @@ This document is intended to be validated by the bootstrap CLI surface:
 The cognitive layer is the Plaited agent itself:
 
 - `src/agent/create-agent.ts` provides the minimal execution core
-- factories add memory, tools, transport, and policy
+- modules add memory, tools, transport, and policy
 - snapshots retain observable execution state
 - the model remains replaceable
 
@@ -151,7 +151,7 @@ The cleanest deployment model is:
 That means the boxed runtime may contain:
 
 - `createAgent()`
-- the server-factory transport lane and UI/controller protocol runtime
+- the server-module transport lane and UI/controller protocol runtime
 - bounded execution tools and generated code
 
 But the durable node home should remain outside the disposable runtime image
@@ -181,7 +181,7 @@ The host device or server should own:
 The boxed runtime should own:
 
 - running `createAgent()`
-- running the server-factory lane plus UI protocol surfaces
+- running the server-module lane plus UI protocol surfaces
 - reading and writing the projected node home
 - executing bounded tools and generated code
 - calling the attached trust service or local trust module when it needs peer
@@ -214,7 +214,7 @@ One credible direction is:
 - A2A extensions provide negotiated capability contracts such as MSS support
 - the host provides the concrete publication, reachability, and trust-service
   attachment hooks
-- factories decide when discovery metadata should be updated or republished and
+- modules decide when discovery metadata should be updated or republished and
   how trust claims influence exposure
 
 The intended split is:
@@ -222,7 +222,7 @@ The intended split is:
 - the host resolves or publishes the current reachable discovery target
 - the boxed runtime serves the node-facing discovery and interaction surfaces
   and uses trust inputs from the attached trust layer
-- factories coordinate policy around:
+- modules coordinate policy around:
   - which A2A extensions are declared in the Agent Card
   - which negotiated extensions are active for a given request
   - when a public discovery record should change
@@ -371,18 +371,18 @@ This is stronger than ordinary chat history export. It treats the agent as a
 stateful local program with durable memory and constrained execution, not as a
 stateless API client.
 
-## Relationship To Plaited Factories
+## Relationship To Plaited Modules
 
-This infrastructure sits below the factory layer.
+This infrastructure sits below the module layer.
 
 Likely responsibilities:
 
-- a memory factory manages working, episodic, and durable memory policy
-- a node-home or workspace-persistence factory manages durable file, Git,
+- a memory module manages working, episodic, and durable memory policy
+- a node-home or workspace-persistence module manages durable file, Git,
   checkpoint, export, and recovery policy
-- a bash or execution factory targets the sandbox surface instead of the host
+- a bash or execution module targets the sandbox surface instead of the host
   shell directly
-- A2A and MCP factories expose controlled external coordination and tools
+- A2A and MCP modules expose controlled external coordination and tools
 - snapshots remain the observable event stream feeding memory and audit records
 
 The storage backend and the persistence policy should remain separate concerns.
@@ -391,7 +391,7 @@ The storage backend and the persistence policy should remain separate concerns.
   - native filesystem
   - AgentFS
   - another portable workspace substrate
-- the node-home or workspace-persistence factory decides when durable state
+- the node-home or workspace-persistence module decides when durable state
   changes are materialized and how they are managed over time
   - write and edit policy
   - Git checkpoint and commit policy
@@ -401,7 +401,7 @@ The storage backend and the persistence policy should remain separate concerns.
 
 The framework should not hard-code AgentFS, Boxer, or any specific persistence
 backend into `create-agent`.
-Instead, factories and runtime adapters should project those infrastructure
+Instead, modules and runtime adapters should project those infrastructure
 choices into the agent through stable contracts.
 
 ## Near-Term Roadmap
@@ -412,11 +412,11 @@ choices into the agent through stable contracts.
    capabilities.
 3. Validate this infrastructure target through the bootstrap CLI and generated
    deployment scaffold.
-4. Add a memory factory that can write durable records to the persistence
+4. Add a memory module that can write durable records to the persistence
    layer.
-5. Add a node-home or workspace-persistence factory that governs file writes,
+5. Add a node-home or workspace-persistence module that governs file writes,
    Git persistence, checkpoints, exports, and recovery behavior.
-6. Add an execution factory that targets the sandbox rather than assuming host
+6. Add an execution module that targets the sandbox rather than assuming host
    shell execution.
 7. Add optional replication, promotion, and restore flows for multi-device and
    phone-to-server continuity.

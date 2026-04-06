@@ -170,7 +170,7 @@ bThread([
 
 ## Thread Composition with bThread/bSync
 
-Threads are authored with the behavioral factory functions. In repo code, use `bThread()` and `bSync()` directly rather than writing raw generator functions or raw `yield` statements. Internally, the runtime composes these factory-returned rule steps into the scheduler.
+Threads are authored with the behavioral module functions. In repo code, use `bThread()` and `bSync()` directly rather than writing raw generator functions or raw `yield` statements. Internally, the runtime composes these module-returned rule steps into the scheduler.
 
 ### `bSync` - Single Synchronization Point
 
@@ -244,7 +244,7 @@ function* threadGenerator() {
 4. Running threads advance until the next synchronization point
 5. Cycle repeats
 
-**IMPORTANT**: In repo code, do not write raw generator functions or raw `yield` statements. Always express behavior with the behavioral factory functions `bThread()` and `bSync()`. Treat generator mechanics as runtime-level implementation detail.
+**IMPORTANT**: In repo code, do not write raw generator functions or raw `yield` statements. Always express behavior with the behavioral module functions `bThread()` and `bSync()`. Treat generator mechanics as runtime-level implementation detail.
 
 ## ⭐ Event Selection Strategy (KEY CAPABILITY 1)
 
@@ -1112,11 +1112,11 @@ bThreads.set({
 
 ## Reusable Behavioral Programs with useBehavioral
 
-`useBehavioral` is a factory pattern for creating reusable behavioral program configurations. It encapsulates BP setup, lifecycle management, and provides a clean public API with event filtering.
+`useBehavioral` is a module pattern for creating reusable behavioral program configurations. It encapsulates BP setup, lifecycle management, and provides a clean public API with event filtering.
 
 ### Why Use useBehavioral?
 
-**Factory Pattern Benefits:**
+**Module Pattern Benefits:**
 - Define behavioral program logic once, instantiate multiple times
 - Each init() call creates an isolated behavioral program instance
 - Separates BP definition from execution context
@@ -1153,7 +1153,7 @@ type Context = {
   prefix: string
 }
 
-// Create reusable program factory
+// Create reusable program module
 const createProgram = useBehavioral<Events, Context>({
   // Whitelist public events
   publicEvents: ['PROCESS'],

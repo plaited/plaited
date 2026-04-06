@@ -12,8 +12,8 @@ import type {
   InitAutoresearchLaneConfig,
 } from './autoresearch.types.ts'
 import { buildAutoresearchRunId, createInitialLaneState, resolveAutoresearchLaneDir } from './autoresearch.utils.ts'
-import { evaluateFactoryScenarios } from './evaluation/check-invariants.ts'
-import { runFactoryScenarios } from './evaluation/run-factory-scenarios.ts'
+import { evaluateModuleScenarios } from './evaluation/check-invariants.ts'
+import { runModuleScenarios } from './evaluation/run-module-scenarios.ts'
 import {
   captureWritableSnapshot,
   diffWritableSnapshot,
@@ -77,7 +77,7 @@ export const initAutoresearchLane = async (config: InitAutoresearchLaneConfig): 
 
 /**
  * Evaluates the current workspace state for an autoresearch lane by running the
- * built-in factory scenario suite and diffing the writable roots against the
+ * built-in module scenario suite and diffing the writable roots against the
  * lane's baseline snapshot.
  *
  * @public
@@ -97,10 +97,10 @@ export const evaluateAutoresearchLane = async (
     workspaceRoot: process.cwd(),
   })
 
-  const scenarios = await runFactoryScenarios({
+  const scenarios = await runModuleScenarios({
     targetId: laneState.target.id,
   })
-  const evaluation = evaluateFactoryScenarios({
+  const evaluation = evaluateModuleScenarios({
     scenarios,
   })
 

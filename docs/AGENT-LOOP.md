@@ -1,25 +1,25 @@
 # The Agent Loop
 
 > **Status: ACTIVE** — Architecture note for the minimal agent core and
-> factory-composed orchestration model. Cross-references: `ARCHITECTURE.md`
+> module-composed orchestration model. Cross-references: `ARCHITECTURE.md`
 > (top-level system shape), `INFRASTRUCTURE.md` (deployment/runtime
-> boundaries), `dev-research/default-factories/program.md` (active default
-> factory bundle direction), `skills/modnet-factories/` (modnet/MSS/factory
+> boundaries), `dev-research/default-modules/program.md` (active default
+> module bundle direction), `skills/modnet-modules/` (modnet/MSS/module
 > framing).
 
 ## Overview
 
-Plaited treats the agent loop as a minimal core plus an installed factory
+Plaited treats the agent loop as a minimal core plus an installed module
 bundle.
 
 The current architecture splits the system into:
 
 1. a **minimal core** in `src/agent/create-agent.ts`
-2. a set of **installed factories** that add planning, memory, skills, MCP,
+2. a set of **installed modules** that add planning, memory, skills, MCP,
    A2A, verification, and other orchestration layers
 
 That means the active question is not "what does the built-in loop do?" It is
-"which factory bundle is installed, and what orchestration does that bundle
+"which module bundle is installed, and what orchestration does that bundle
 compose on top of the core?"
 
 ## Minimal Core
@@ -31,7 +31,7 @@ compose on top of the core?"
 - signal and computed-signal installation
 - heartbeat pulse
 - built-in file, grep, bash, and inference handlers
-- dynamic factory installation
+- dynamic module installation
 - snapshot access through `useSnapshot`
 
 The core is intentionally narrow. It does not define a canonical planning,
@@ -50,16 +50,16 @@ The built-in core event surface is:
 - `grep`
 - `bash`
 - `heartbeat`
-- `update_factories`
+- `update_modules`
 - `set_signal`
 - `signal_schema_violation`
 - `agent_disconnect`
 
 These are engine-level primitives. They are not the full user-facing loop.
 
-## Factory-Composed Orchestration
+## Module-Composed Orchestration
 
-Factories receive:
+Modules receive:
 
 - `trigger`
 - `useSnapshot`
@@ -77,23 +77,23 @@ This is where higher-level loop behavior should now live.
 
 Examples:
 
-- a `memory-factory` can assemble retained context from snapshots and durable
+- a `memory-module` can assemble retained context from snapshots and durable
   memory
-- a `plan-factory` can own plan generation, current-plan signals, and
+- a `plan-module` can own plan generation, current-plan signals, and
   re-planning rules
-- a `skills-factory` can expose a searchable catalog of skills and inject a
+- a `skills-module` can expose a searchable catalog of skills and inject a
   selected skill body into model context
-- an `mcp-factory` can expose a searchable remote capability inventory without
+- an `mcp-module` can expose a searchable remote capability inventory without
   stuffing full tool schemas into the prompt
-- an `a2a-factory` can project remote agent capabilities and routing policy
-- a `verification-factory` can run symbolic or neural checks before allowing
+- an `a2a-module` can project remote agent capabilities and routing policy
+- a `verification-module` can run symbolic or neural checks before allowing
   side effects
-- an `edit-factory` can orchestrate `read_file` -> `models.primary` ->
+- an `edit-module` can orchestrate `read_file` -> `models.primary` ->
   `write_file` as a higher-level editing primitive
 
 ## Context Assembly
 
-Context assembly should be treated as a composed factory responsibility, not a
+Context assembly should be treated as a composed module responsibility, not a
 core invariant.
 
 Likely contributors include:
@@ -104,9 +104,9 @@ Likely contributors include:
 - selected skill metadata or body
 - searchable MCP capability results
 - prior verification failures or repair hints
-- governance or verification constraints from installed factories
+- governance or verification constraints from installed modules
 
-Different factory bundles may assemble context differently while still using
+Different module bundles may assemble context differently while still using
 the same minimal engine underneath.
 
 ## Tools
@@ -129,21 +129,21 @@ end-user tool UX.
 
 ### Higher-Level Tools
 
-Higher-level tools should usually be factory-owned compositions.
+Higher-level tools should usually be module-owned compositions.
 
 Examples:
 
 - `edit_file` should be a small orchestration layer rather than a core
   primitive
-- planning tools should come from a `plan-factory`
-- skill selection and activation should come from `skills-factory`
-- MCP discovery and tool routing should come from `mcp-factory`
+- planning tools should come from a `plan-module`
+- skill selection and activation should come from `skills-module`
+- MCP discovery and tool routing should come from `mcp-module`
 
 ## Heartbeat
 
-The heartbeat is a core capability, but its meaning is factory-defined.
+The heartbeat is a core capability, but its meaning is module-defined.
 
-The core emits `heartbeat` on an interval. Factories can use that signal for:
+The core emits `heartbeat` on an interval. Modules can use that signal for:
 
 - proactive sensing
 - background maintenance
@@ -158,7 +158,7 @@ So heartbeat is part of the substrate, not a fixed behavior policy.
 Simulation, judging, and symbolic verification should not be documented as
 mandatory built-in loop phases of the current core.
 
-They fit better as optional factory layers that can:
+They fit better as optional module layers that can:
 
 - inspect snapshots
 - read and write signals
@@ -170,15 +170,15 @@ That direction is compatible with a self-evolving neuro-symbolic stack:
 
 - neural models propose plans, edits, and candidate structures
 - symbolic or deterministic checks verify them
-- retained evidence feeds future factory and model improvement
+- retained evidence feeds future module and model improvement
 
 ## Current Architectural Position
 
 The stable invariant is:
 
 - minimal engine
-- stable factory contract
+- stable module contract
 - behaviorally composed orchestration
-- replaceable factory bundle
+- replaceable module bundle
 
 That is the shape the surrounding docs and research lanes should now reflect.

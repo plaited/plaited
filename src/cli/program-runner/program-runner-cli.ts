@@ -6,7 +6,7 @@ import {
   type ProgramRunnerStatusInput,
   ProgramRunnerStatusInputSchema,
 } from './program-runner.schemas.ts'
-import { loadFactoryProgramRun, runFactoryProgram } from './program-runner.ts'
+import { loadModuleProgramRun, runModuleProgram } from './program-runner.ts'
 
 const buildUsage = () =>
   [
@@ -23,7 +23,7 @@ const runProgramCommand = async (args: string[]) => {
     name: 'program-runner run',
     outputSchema: ProgramRunnerRunSchema,
   })
-  const result = await runFactoryProgram(input as ProgramRunnerRunInput)
+  const result = await runModuleProgram(input as ProgramRunnerRunInput)
   console.log(JSON.stringify(result, null, 2))
 }
 
@@ -32,7 +32,7 @@ const statusProgramCommand = async (args: string[]) => {
     name: 'program-runner status',
     outputSchema: ProgramRunnerRunSchema,
   })
-  const result = await loadFactoryProgramRun(input as ProgramRunnerStatusInput)
+  const result = await loadModuleProgramRun(input as ProgramRunnerStatusInput)
   console.log(JSON.stringify(result, null, 2))
 }
 

@@ -6,9 +6,9 @@ import {
   buildProgramRunDir,
   findLatestProgramRunDir,
   getProgramLane,
-  loadFactoryProgramRun,
+  loadModuleProgramRun,
   resolveProgramDefaults,
-  runFactoryProgram,
+  runModuleProgram,
   substituteProgramRunnerCommand,
 } from '../program-runner.ts'
 import { parseProgramScope } from '../program-scope.ts'
@@ -52,17 +52,17 @@ afterEach(async () => {
 
 describe('program-runner helpers', () => {
   test('derives lane and default allowed paths from program path', () => {
-    expect(getProgramLane('dev-research/skill-factories/program.md')).toBe('skill-factories')
+    expect(getProgramLane('dev-research/skill-modules/program.md')).toBe('skill-modules')
 
     expect(
       resolveProgramDefaults({
-        programPath: 'dev-research/skill-factories/program.md',
+        programPath: 'dev-research/skill-modules/program.md',
         workspaceRoot: '/tmp/repo',
       }),
     ).toEqual({
-      absoluteProgramPath: '/tmp/repo/dev-research/skill-factories/program.md',
-      relativeProgramPath: 'dev-research/skill-factories/program.md',
-      defaultAllowedPaths: ['dev-research/skill-factories/'],
+      absoluteProgramPath: '/tmp/repo/dev-research/skill-modules/program.md',
+      relativeProgramPath: 'dev-research/skill-modules/program.md',
+      defaultAllowedPaths: ['dev-research/skill-modules/'],
     })
   })
 
@@ -72,53 +72,53 @@ describe('program-runner helpers', () => {
         attempt: 2,
         artifactDir: '/tmp/run/attempt-02',
         command: ['echo', '{{attempt}}', '{{worktree}}', '{{program}}'],
-        programPath: 'dev-research/skill-factories/program.md',
+        programPath: 'dev-research/skill-modules/program.md',
         runDir: '/tmp/run',
         worktreePath: '/tmp/run/attempt-02/worktree',
       }),
-    ).toEqual(['echo', '2', '/tmp/run/attempt-02/worktree', 'dev-research/skill-factories/program.md'])
+    ).toEqual(['echo', '2', '/tmp/run/attempt-02/worktree', 'dev-research/skill-modules/program.md'])
   })
 
-  test('builds run directories under the default factory-program root', () => {
+  test('builds run directories under the default module-program root', () => {
     const runDir = buildProgramRunDir({
-      programPath: 'dev-research/skill-factories/program.md',
+      programPath: 'dev-research/skill-modules/program.md',
       workspaceRoot: '/tmp/repo',
     })
 
-    expect(runDir.startsWith('/tmp/repo/.worktrees/factory-program-runner/skill-factories/')).toBe(true)
+    expect(runDir.startsWith('/tmp/repo/.worktrees/module-program-runner/skill-modules/')).toBe(true)
   })
 
-  test('falls back to factory writable roots for factory lanes without explicit links', async () => {
+  test('falls back to module writable roots for module lanes without explicit links', async () => {
     const scopedPaths = await parseProgramScope({
-      programMarkdown: '# Default Factories\n\n## Goal\n\nTest lane.\n',
-      programPath: '/tmp/repo/dev-research/default-factories/program.md',
+      programMarkdown: '# Default Modules\n\n## Goal\n\nTest lane.\n',
+      programPath: '/tmp/repo/dev-research/default-modules/program.md',
       workspaceRoot: '/tmp/repo',
     })
 
-    expect(scopedPaths).toEqual(['src/factories/', 'src/factories.ts'])
+    expect(scopedPaths).toEqual(['src/modules/', 'src/modules.ts'])
   })
 
-  test('falls back to factory writable roots when scope section has no links', async () => {
+  test('falls back to module writable roots when scope section has no links', async () => {
     const scopedPaths = await parseProgramScope({
-      programMarkdown: '# ACP Factories\n\n## Scope\n\nResearch only.\n',
-      programPath: '/tmp/repo/dev-research/acp-factories/program.md',
+      programMarkdown: '# ACP Modules\n\n## Scope\n\nResearch only.\n',
+      programPath: '/tmp/repo/dev-research/acp-modules/program.md',
       workspaceRoot: '/tmp/repo',
     })
 
-    expect(scopedPaths).toEqual(['src/factories/', 'src/factories.ts'])
+    expect(scopedPaths).toEqual(['src/modules/', 'src/modules.ts'])
   })
 })
 
-describe('runFactoryProgram', () => {
+describe('runModuleProgram', () => {
   test('creates worktree-backed attempts and persists run status', async () => {
     const root = makeTempDir()
     await initRepo(root)
 
-    const programPath = join(root, 'dev-research', 'skill-factories', 'program.md')
+    const programPath = join(root, 'dev-research', 'skill-modules', 'program.md')
     await Bun.$`mkdir -p ${dirname(programPath)}`.quiet()
     await Bun.write(
       programPath,
-      `# Skill Factories
+      `# Skill Modules
 
 ## Goal
 
@@ -135,12 +135,12 @@ Test fanout.
     process.chdir(root)
     try {
       const runInput = {
-        programPath: 'dev-research/skill-factories/program.md',
+        programPath: 'dev-research/skill-modules/program.md',
         attempts: 2,
         parallel: 2,
         validateCommand: ['bun', '-e', "await Bun.write('validated.txt', 'ok')"],
       }
-      const runResult = await runFactoryProgram(runInput)
+      const runResult = await runModuleProgram(runInput)
 
       expect(runResult.attempts).toHaveLength(2)
       expect(runResult.attempts.every((attempt) => attempt.status === 'succeeded')).toBe(true)
@@ -149,8 +149,8 @@ Test fanout.
       expect(await Bun.file(join(runResult.attempts[0]!.artifactDir, 'status.json')).exists()).toBe(true)
       expect(await Bun.file(join(runResult.attempts[0]!.worktreePath, 'validated.txt')).exists()).toBe(true)
 
-      const loaded = await loadFactoryProgramRun({
-        programPath: 'dev-research/skill-factories/program.md',
+      const loaded = await loadModuleProgramRun({
+        programPath: 'dev-research/skill-modules/program.md',
         runDir: runResult.runDir,
       })
 
@@ -159,10 +159,10 @@ Test fanout.
 
       expect(
         await findLatestProgramRunDir({
-          programPath: 'dev-research/skill-factories/program.md',
+          programPath: 'dev-research/skill-modules/program.md',
           workspaceRoot: root,
         }),
-      ).toEndWith(`/skill-factories/${runResult.runDir.split('/').at(-1)}`)
+      ).toEndWith(`/skill-modules/${runResult.runDir.split('/').at(-1)}`)
     } finally {
       process.chdir(cwd)
     }

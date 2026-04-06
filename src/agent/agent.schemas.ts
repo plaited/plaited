@@ -2,7 +2,7 @@ import * as z from 'zod'
 import { SelectionBidSchema } from '../behavioral/behavioral.schemas.ts'
 import { type BSync, type DefaultHandlers, isBehavioralRule } from '../behavioral.ts'
 import { isTypeOf, trueTypeOf } from '../utils.ts'
-import type { Factory, Signal } from './agent.types.ts'
+import type { Module, Signal } from './agent.types.ts'
 
 /**
  * Initial heartbeat configuration for the new agent core.
@@ -265,7 +265,7 @@ const DeleteFileToolArgumentsSchema = z.object({
  * @remarks
  * This is intentionally narrower than the generic OpenAI function-calling
  * surface. Tool calls that survive parsing must already match the concrete
- * built-in tool request shapes expected by the factory bridge into the agent
+ * built-in tool request shapes expected by the module bridge into the agent
  * core handlers.
  *
  * @public
@@ -381,7 +381,7 @@ const isSignalWithSetter = (value: unknown): value is Signal => {
   )
 }
 
-const isFactory = (value: unknown): value is Factory => trueTypeOf(value) === 'function'
+const isModule = (value: unknown): value is Module => trueTypeOf(value) === 'function'
 
 const isDefaultHandlers = (value: unknown): value is DefaultHandlers => {
   if (!isTypeOf<Record<string, unknown>>(value, 'object')) return false
@@ -398,7 +398,7 @@ const BehavioralRuleSchema = z.custom<ReturnType<BSync>>(isBehavioralRule)
 
 const DefaultHandlersSchema = z.custom<DefaultHandlers>(isDefaultHandlers)
 
-const FactorySchema = z.custom<Factory>(isFactory)
+const ModuleSchema = z.custom<Module>(isModule)
 
 const isBunFile = (value: unknown) => {
   if (value === null || value === undefined) return false
@@ -569,7 +569,7 @@ export const DeleteFileResultSchema = createSignalResultSchema(z.string(), Delet
 // ============================================================================
 
 /** @public */
-export const FactoryResultSchema = z
+export const ModuleResultSchema = z
   .object({
     threads: z.record(z.string(), BehavioralRuleSchema).optional(),
     handlers: DefaultHandlersSchema.optional(),
@@ -577,14 +577,14 @@ export const FactoryResultSchema = z
   .strict()
 
 /** @public */
-export type FactoryResult = z.infer<typeof FactoryResultSchema>
+export type ModuleResult = z.infer<typeof ModuleResultSchema>
 
 /** @public */
-export const UpdateFactoryModuleSchema = z
+export const UpdateModuleModuleSchema = z
   .object({
-    default: z.array(FactorySchema).min(1),
+    default: z.array(ModuleSchema).min(1),
   })
   .strict()
 
 /** @public */
-export type UpdateFactoryModule = z.infer<typeof UpdateFactoryModuleSchema>
+export type UpdateModuleModule = z.infer<typeof UpdateModuleModuleSchema>

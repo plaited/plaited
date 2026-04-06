@@ -23,18 +23,18 @@ Concepts that still show up in the repo:
 - **Blocks**
 
 Where that influence is visible now:
-- [skills/modnet-factories/references/Structural-IA.md](/Users/eirby/Workspace/plaited/skills/modnet-factories/references/Structural-IA.md)
+- [skills/modnet-modules/references/Structural-IA.md](/Users/eirby/Workspace/plaited/skills/modnet-modules/references/Structural-IA.md)
 - [docs/ARCHITECTURE.md](/Users/eirby/Workspace/plaited/docs/ARCHITECTURE.md)
 
 In Plaited, Structural IA is not just UI vocabulary. It also informs the
-module composition language, factory-era system framing, and the bridge between
+module composition language, module-era system framing, and the bridge between
 symbolic constraints and generated artifacts.
 
 ## Modnet and MSS
 
 **Author:** Rachel Jaffe
 **Sources:**
-- [Modnet.md](/Users/eirby/Workspace/plaited/skills/modnet-factories/references/Modnet.md)
+- [Modnet.md](/Users/eirby/Workspace/plaited/skills/modnet-modules/references/Modnet.md)
 - [Past the Internet: The Emergence of the Modnet](https://medium.com/@rjaffe01)
 
 Rachel Jaffe's modnet work is the other major living attribution that should be
@@ -53,13 +53,13 @@ Where that influence is visible now:
 - [docs/ARCHITECTURE.md](/Users/eirby/Workspace/plaited/docs/ARCHITECTURE.md)
 - [docs/INFRASTRUCTURE.md](/Users/eirby/Workspace/plaited/docs/INFRASTRUCTURE.md)
 - [docs/AGENT-LOOP.md](/Users/eirby/Workspace/plaited/docs/AGENT-LOOP.md)
-- [skills/modnet-factories/SKILL.md](/Users/eirby/Workspace/plaited/skills/modnet-factories/SKILL.md)
-- [src/factories/a2a-factory/a2a.schemas.ts](/Users/eirby/Workspace/plaited/src/factories/a2a-factory/a2a.schemas.ts)
+- [skills/modnet-modules/SKILL.md](/Users/eirby/Workspace/plaited/skills/modnet-modules/SKILL.md)
+- [src/modules/a2a-module/a2a.schemas.ts](/Users/eirby/Workspace/plaited/src/modules/a2a-module/a2a.schemas.ts)
 
 Plaited does not reproduce the modnet work verbatim. It adapts it into:
 - a Bun-native A2A node architecture
 - MSS metadata on modules and Agent Cards
-- boundary-aware factory and protocol design
+- boundary-aware module and protocol design
 - a neuro-symbolic runtime where generated modules are constrained by BP and governance
 
 ## Scope Note

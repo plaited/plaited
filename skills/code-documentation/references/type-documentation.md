@@ -44,7 +44,7 @@ All TypeScript type patterns (complex objects, unions, functions, mapped types, 
 - **Include `@property`** for all properties with: purpose, constraints, and when to use
 - **Document `@template`** parameters with: constraint, purpose, and where it flows
 - **Add `@remarks`** for: validation rules, constraints, common patterns, performance notes
-- **Cross-reference** related types, factory functions, type guards, and Zod schemas using `@see`
+- **Cross-reference** related types, module functions, type guards, and Zod schemas using `@see`
 - **Mark internal types** with `@internal` for non-public APIs
 
 ### Zod Schema Integration
@@ -92,7 +92,7 @@ When types have associated Zod schemas, document validation in `@remarks`:
 
 **Always link:**
 - Related types (subtypes, supertypes)
-- Factory functions that create instances
+- Module functions that create instances
 - Type guards that check instances
 - Validation schemas
 - Consumer functions/classes

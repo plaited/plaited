@@ -23,7 +23,7 @@ const TEST_MODELS = {
 }
 
 describe('createAgent', () => {
-  test('returns the minimal public handle and installs factory handlers', async () => {
+  test('returns the minimal public handle and installs module handlers', async () => {
     const seen: string[] = []
     const agent = await createAgent({
       id: 'agent:test',
@@ -31,7 +31,7 @@ describe('createAgent', () => {
       workspace: process.cwd(),
       models: TEST_MODELS,
       restrictedTriggers: [AGENT_EVENTS.agent_disconnect],
-      factories: [
+      modules: [
         () => ({
           handlers: {
             custom_event() {
@@ -48,7 +48,7 @@ describe('createAgent', () => {
     expect(typeof agent.useSnapshot).toBe('function')
   })
 
-  test('blocks restricted events for installed factories while preserving the public trigger', async () => {
+  test('blocks restricted events for installed modules while preserving the public trigger', async () => {
     const snapshots: string[] = []
     const seen: string[] = []
     const agent = await createAgent({
@@ -57,7 +57,7 @@ describe('createAgent', () => {
       workspace: process.cwd(),
       models: TEST_MODELS,
       restrictedTriggers: [AGENT_EVENTS.agent_disconnect],
-      factories: [
+      modules: [
         ({ trigger }) => ({
           handlers: {
             attempt_disconnect() {
@@ -85,9 +85,9 @@ describe('createAgent', () => {
     expect(seen).toEqual(['agent_disconnect'])
   })
 
-  test('installs factory modules at runtime through update_factories', async () => {
+  test('installs module modules at runtime through update_modules', async () => {
     const seen: string[] = []
-    const modulePath = './src/agent/tests/fixtures/update-factories.fixture.ts'
+    const modulePath = './src/agent/tests/fixtures/update-modules.fixture.ts'
     let resolvePong!: () => void
     const pongSeen = new Promise<void>((resolve) => {
       resolvePong = resolve
@@ -98,7 +98,7 @@ describe('createAgent', () => {
       cwd: process.cwd(),
       workspace: process.cwd(),
       models: TEST_MODELS,
-      factories: [
+      modules: [
         () => ({
           handlers: {
             fixture_pong() {
@@ -111,7 +111,7 @@ describe('createAgent', () => {
     })
 
     agent.trigger({
-      type: AGENT_EVENTS.update_factories,
+      type: AGENT_EVENTS.update_modules,
       detail: modulePath,
     })
 
@@ -140,7 +140,7 @@ describe('createAgent', () => {
       cwd: workspace,
       workspace,
       models: TEST_MODELS,
-      factories: [
+      modules: [
         ({ signals }) => {
           readSignal = signals.set({
             key: 'read-result',
@@ -193,7 +193,7 @@ describe('createAgent', () => {
       cwd: workspace,
       workspace,
       models: TEST_MODELS,
-      factories: [
+      modules: [
         ({ signals }) => {
           bashSignal = signals.set({
             key: 'bash-result',
@@ -240,7 +240,7 @@ describe('createAgent', () => {
       cwd: workspace,
       workspace,
       models: TEST_MODELS,
-      factories: [
+      modules: [
         ({ signals }) => {
           writeSignal = signals.set({
             key: 'write-result',
@@ -288,7 +288,7 @@ describe('createAgent', () => {
       cwd: workspace,
       workspace,
       models: TEST_MODELS,
-      factories: [
+      modules: [
         ({ signals }) => {
           deleteSignal = signals.set({
             key: 'delete-result',
@@ -346,7 +346,7 @@ describe('createAgent', () => {
         },
         tts: TEST_MODELS.tts,
       },
-      factories: [
+      modules: [
         ({ signals, trigger }) => {
           resultSignal = signals.set({
             key: 'inference-result',
@@ -409,7 +409,7 @@ describe('createAgent', () => {
       cwd: workspace,
       workspace,
       models: TEST_MODELS,
-      factories: [
+      modules: [
         ({ signals }) => {
           grepSignal = signals.set({
             key: 'grep-result',
@@ -474,7 +474,7 @@ describe('createAgent', () => {
       cwd: workspace,
       workspace,
       models: TEST_MODELS,
-      factories: [
+      modules: [
         ({ signals }) => {
           globSignal = signals.set({
             key: 'glob-result',

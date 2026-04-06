@@ -12,7 +12,7 @@ The current direction is:
 
 - one agent per workspace
 - a minimal behavioral core in `src/agent`
-- factory-composed behavior for planning, memory, skills, MCP, A2A, and verification
+- module-composed behavior for planning, memory, skills, MCP, A2A, and verification
 - portable skills under `skills/` and workspace installs under `.agents/skills`
 - a bootstrap CLI that turns infrastructure decisions into an executable setup surface
 
@@ -32,17 +32,17 @@ The core owns:
 - signal installation
 - heartbeat and snapshot surfaces
 - built-in file and inference handlers
-- factory installation
+- module installation
 
-Higher-level orchestration belongs in factories.
+Higher-level orchestration belongs in modules.
 
 ## Active Directions
 
 - [AGENT-LOOP.md](/Users/eirby/Workspace/plaited/docs/AGENT-LOOP.md)
 - [INFRASTRUCTURE.md](/Users/eirby/Workspace/plaited/docs/INFRASTRUCTURE.md)
-- [default-factories/program.md](/Users/eirby/Workspace/plaited/dev-research/default-factories/program.md)
+- [default-modules/program.md](/Users/eirby/Workspace/plaited/dev-research/default-modules/program.md)
 - [agent-bootstrap/program.md](/Users/eirby/Workspace/plaited/dev-research/agent-bootstrap/program.md)
-- [three-axis-factories/program.md](/Users/eirby/Workspace/plaited/dev-research/three-axis-factories/program.md)
+- [three-axis-modules/program.md](/Users/eirby/Workspace/plaited/dev-research/three-axis-modules/program.md)
 - [agent-harness-research/program.md](/Users/eirby/Workspace/plaited/dev-research/agent-harness-research/program.md)
 
 ## Repository Map
@@ -86,10 +86,10 @@ Skills are the portable agent-facing extension surface.
 
 - published skills live under [skills/](/Users/eirby/Workspace/plaited/skills/)
 - workspace-installed skills should live under `.agents/skills/`
-- runtime composition still happens through factories
+- runtime composition still happens through modules
 
-Factory-program fanout currently runs through `plaited program-runner`:
+Module-program fanout currently runs through `plaited program-runner`:
 
 ```bash
-plaited program-runner run '{"programPath":"dev-research/skill-factories/program.md","attempts":3,"parallel":2}'
+plaited program-runner run '{"programPath":"dev-research/skill-modules/program.md","attempts":3,"parallel":2}'
 ```

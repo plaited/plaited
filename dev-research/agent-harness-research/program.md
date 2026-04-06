@@ -8,7 +8,7 @@ by evolving its harness before adapting its model weights.
 The goal is not to begin with ES, SFT, GRPO, or broad weight-level
 optimization. The goal is to:
 
-- stabilize the default factory bundle
+- stabilize the default module bundle
 - evolve harness behavior through bounded lane-local search
 - use worktree-backed parallel attempts plus judged promotion
 - retain structured traces, accepted artifacts, and repair evidence
@@ -26,7 +26,7 @@ from lack of raw weights alone.
 
 The first optimization targets should therefore be:
 
-- default factory design
+- default module design
 - search and retrieval orchestration
 - tool policy
 - planning and decomposition policy
@@ -69,7 +69,7 @@ Those methods may become useful later, but they are downstream of this lane.
 The current repo already has the right substrate for this work:
 
 - [src/eval](../../src/eval) for repeated evals and retained run artifacts
-- [src/program-runner](../../src/program-runner) for factory-program fanout
+- [src/program-runner](../../src/program-runner) for module-program fanout
 - `dev-research/*/program.md` files for bounded mutation surfaces
 - worktree-backed parallel attempts for durable fanout
 - behavioral snapshots for structured runtime traces
@@ -132,7 +132,7 @@ The main evolving surface is the harness, not a standalone model-training job.
 Examples:
 
 - prompts and prompt-pack structure
-- factory/module generation policy
+- module/module generation policy
 - internal and external search routing
 - search-result compression and citation policy
 - MSS interpretation rules
@@ -150,17 +150,17 @@ and server lanes share.
 
 ## What Evolves Later
 
-Once the default factories and core symbolic contracts are stable, later work
+Once the default modules and core symbolic contracts are stable, later work
 may adapt the neural layer to internalize recurring Plaited semantics.
 
 Good candidates for later weight adaptation include:
 
 - stable Plaited framework concepts
 - stable MSS semantics
-- recurring prompt-to-module or prompt-to-factory mappings
+- recurring prompt-to-module or prompt-to-module mappings
 - better recognition of when search is needed
 - better query decomposition and search invocation habits
-- better use of search results to drive module and factory selection
+- better use of search results to drive module and module selection
 - recurring simulation and verification habits
 - recurring output formats and symbolic conventions
 
@@ -169,7 +169,7 @@ Bad candidates for later weight adaptation include:
 - rapidly changing implementation details
 - current workspace state
 - current signal values
-- unstable factory bundles
+- unstable module bundles
 - raw unverified trajectories
 
 ## Relationship To Training
@@ -181,7 +181,7 @@ Accepted artifacts should do two jobs:
 
 That means:
 
-- promoted default factories are product outputs
+- promoted default modules are product outputs
 - retained judged traces are future learning substrate
 
 The search loop and the training loop are related but distinct.
@@ -201,16 +201,16 @@ Later training loop:
 
 ## Retained Training Bundle
 
-Once the default factories are stable, this lane should define a retained
+Once the default modules are stable, this lane should define a retained
 training bundle for later weight adaptation.
 
 That bundle should prefer trusted structured artifacts over raw trajectories.
 
 Expected bundle components:
 
-- accepted factory and module artifacts
+- accepted module and module artifacts
 - verified MSS boundary decisions
-- verified prompt-to-module and prompt-to-factory mappings
+- verified prompt-to-module and prompt-to-module mappings
 - search-policy and retrieval-policy examples
 - simulation traces
 - verification reports
@@ -228,11 +228,11 @@ The prompt buckets under [dev-research/agent-harness-research/catalog/](catalog)
 be treated as part of the intent distribution for later evaluation and model
 adaptation.
 
-They are especially useful once the default factory bundle exists and the
+They are especially useful once the default module bundle exists and the
 question becomes:
 
 - can the model infer the right MSS or Plaited structure from user intent?
-- can it choose the right module, card, panel, or factory family?
+- can it choose the right module, card, panel, or module family?
 - can it decide when internal or external search is needed?
 - can it do so with less repeated framework instruction?
 
@@ -250,7 +250,7 @@ question becomes:
 
 Over time, this lane should produce:
 
-- better default factory candidates
+- better default module candidates
 - bundle-level promotion evidence
 - curated snapshot-derived trace assets
 - repair and correction corpora

@@ -32,7 +32,7 @@ User → Control Plane (authenticates) → Node (verifies JWT)
 ## Implementation Pattern
 
 ```typescript
-import { createServerFactory, SERVER_FACTORY_EVENTS } from 'plaited/factories'
+import { createServerModule, SERVER_MODULE_EVENTS } from 'plaited/modules'
 
 // Shared secret between control plane and node
 // Set via environment variable, never hardcoded
@@ -57,10 +57,10 @@ const authenticateConnection = async ({ request }) => {
   }
 }
 
-const serverFactory = createServerFactory()
+const serverModule = createServerModule()
 
 agent.trigger({
-  type: SERVER_FACTORY_EVENTS.server_set_config,
+  type: SERVER_MODULE_EVENTS.server_set_config,
   detail: {
     routes: {},  // No auth routes needed — control plane handles login
     authenticateConnection,

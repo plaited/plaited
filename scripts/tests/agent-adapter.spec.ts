@@ -17,7 +17,7 @@ describe('agent adapter helpers', () => {
       'bun',
       'scripts/agent-adapter.ts',
       '/tmp/lane',
-      'dev-research/server-factory/program.md',
+      'dev-research/server-module/program.md',
       '/tmp/worktree',
       '--max-iterations',
       '2',
@@ -39,13 +39,13 @@ describe('agent adapter helpers', () => {
       command: ['bun', 'runner.ts', '{{lane_dir}}', '{{iteration}}', '{{prompt_file}}', '{{target_id}}'],
       iteration: 3,
       laneDir: '/tmp/lane',
-      programPath: 'dev-research/server-factory/program.md',
+      programPath: 'dev-research/server-module/program.md',
       promptFile: '/tmp/lane/prompt.md',
-      targetId: 'server-factory',
+      targetId: 'server-module',
       worktree: '/tmp/worktree',
     })
 
-    expect(command).toEqual(['bun', 'runner.ts', '/tmp/lane', '3', '/tmp/lane/prompt.md', 'server-factory'])
+    expect(command).toEqual(['bun', 'runner.ts', '/tmp/lane', '3', '/tmp/lane/prompt.md', 'server-module'])
   })
 
   test('builds a prompt with writable-root and experiment guidance', () => {
@@ -54,11 +54,11 @@ describe('agent adapter helpers', () => {
       laneState: {
         runId: 'lane-1',
         laneDir: '/tmp/lane',
-        programPath: 'dev-research/server-factory/program.md',
+        programPath: 'dev-research/server-module/program.md',
         target: {
-          kind: 'factory',
-          id: 'server-factory',
-          writableRoots: ['src/factories/server-factory/'],
+          kind: 'module',
+          id: 'server-module',
+          writableRoots: ['src/modules/server-module/'],
         },
         initializedAt: new Date().toISOString(),
         lastAcceptedIteration: 1,
@@ -68,7 +68,7 @@ describe('agent adapter helpers', () => {
             pass: true,
             summary: 'ok',
             score: 1,
-            changedPaths: ['src/factories/server-factory/server-factory.ts'],
+            changedPaths: ['src/modules/server-module/server-module.ts'],
             artifactDir: '/tmp/lane/experiments/iteration-001',
           },
         ],
@@ -76,7 +76,7 @@ describe('agent adapter helpers', () => {
       programMarkdown: '# Program\n\nDo work.\n',
     })
 
-    expect(prompt).toContain('Only edit files under: src/factories/server-factory/')
+    expect(prompt).toContain('Only edit files under: src/modules/server-module/')
     expect(prompt).toContain('Last accepted iteration: 1')
     expect(prompt).toContain('iteration 1: pass=true score=1 summary=ok')
     expect(prompt).toContain('# Program')
@@ -86,10 +86,10 @@ describe('agent adapter helpers', () => {
     const laneState = {
       runId: 'lane-1',
       laneDir: '/tmp/lane',
-      programPath: 'dev-research/server-factory/program.md',
+      programPath: 'dev-research/server-module/program.md',
       target: {
-        kind: 'factory' as const,
-        id: 'server-factory',
+        kind: 'module' as const,
+        id: 'server-module',
       },
       initializedAt: new Date().toISOString(),
       experiments: [],
@@ -126,7 +126,7 @@ describe('agent adapter helpers', () => {
           pass: true,
           summary: 'ok',
           score: 1,
-          changedPaths: ['src/factories/server-factory/server-factory.ts'],
+          changedPaths: ['src/modules/server-module/server-module.ts'],
           artifactDir: '/tmp/lane/experiments/iteration-001',
         },
         laneState,
@@ -162,10 +162,10 @@ describe('runAgentAdapter', () => {
     const mutableFile = join(mutableRootDir, 'candidate.txt')
 
     await initAutoresearchLane({
-      programPath: 'dev-research/server-factory/program.md',
+      programPath: 'dev-research/server-module/program.md',
       target: {
-        kind: 'factory',
-        id: 'server-factory',
+        kind: 'module',
+        id: 'server-module',
         writableRoots: [mutableRoot],
       },
       outputDir: laneDir,
@@ -173,7 +173,7 @@ describe('runAgentAdapter', () => {
 
     const result = await runAgentAdapter({
       laneDir,
-      programPath: 'dev-research/server-factory/program.md',
+      programPath: 'dev-research/server-module/program.md',
       worktree: process.cwd(),
       maxConsecutiveRejects: 1,
       maxIterations: 1,

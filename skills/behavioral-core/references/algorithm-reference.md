@@ -322,7 +322,7 @@ flowchart TD
 
 **Key insight for async handlers**: When a feedback handler is async (e.g., it `await`s an
 inference call), the handler starts executing but the super-step continues. The handler's
-`trigger()` call after the `await` starts a NEW super-step. This is how agent factories handle
+`trigger()` call after the `await` starts a NEW super-step. This is how agent modules handle
 async work without blocking the BP engine.
 
 ## Async Feedback and the BP Loop
@@ -390,7 +390,7 @@ BP's formal model says b-threads communicate ONLY through events. In practice,
 Plaited also allows runtime state to be observed through local closure state,
 predicate inputs, and other explicit context surfaces. Examples include shared
 maps like `board` in tic-tac-toe or tool-state sets like `pendingWrites` in an
-agent factory.
+agent module.
 
 The COBP paper formalizes this by adding explicit context idioms — `select`
 queries to read context, `update` to change it. This is useful because it makes
@@ -400,11 +400,11 @@ closure state.
 For Plaited, the practical rule should be:
 
 - closures are acceptable for local implementations
-- explicit context inputs are preferred for reusable behavioral factories
+- explicit context inputs are preferred for reusable behavioral modules
 - event flow remains the main coordination mechanism
 
-This matters for the newer factory-oriented direction of the repo. If a
-behavioral factory is meant to be generated, validated, reused, or compiled
+This matters for the newer module-oriented direction of the repo. If a
+behavioral module is meant to be generated, validated, reused, or compiled
 from symbolic state, it should prefer an explicit context contract over
 implicitly shared mutable state where possible.
 

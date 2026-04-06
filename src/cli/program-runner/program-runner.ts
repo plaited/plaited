@@ -119,7 +119,7 @@ export const buildProgramRunDir = ({
   workspaceRoot: string
 }): string => {
   const lane = getProgramLane(programPath)
-  const runsRoot = rootDir ? resolve(rootDir) : join(workspaceRoot, '.worktrees', 'factory-program-runner', lane)
+  const runsRoot = rootDir ? resolve(rootDir) : join(workspaceRoot, '.worktrees', 'module-program-runner', lane)
   return join(runsRoot, timestamp())
 }
 
@@ -366,7 +366,7 @@ const runWithConcurrency = async ({
  *
  * @public
  */
-export const runFactoryProgram = async (input: ProgramRunnerRunInput): Promise<ProgramRunnerRun> => {
+export const runModuleProgram = async (input: ProgramRunnerRunInput): Promise<ProgramRunnerRun> => {
   const parsed = ProgramRunnerRunInputSchema.parse(input)
   const workspaceRoot = await getWorkspaceRoot(process.cwd())
   const resolved = resolveProgramDefaults({
@@ -456,7 +456,7 @@ export const findLatestProgramRunDir = async ({
   workspaceRoot: string
 }): Promise<string> => {
   const lane = getProgramLane(programPath)
-  const runsRoot = join(workspaceRoot, '.worktrees', 'factory-program-runner', lane)
+  const runsRoot = join(workspaceRoot, '.worktrees', 'module-program-runner', lane)
   const directoryCheck = await Bun.$`test -d ${runsRoot}`.nothrow().quiet()
   if (directoryCheck.exitCode !== 0) {
     throw new Error(`No runs found for ${programPath}`)
@@ -480,7 +480,7 @@ export const findLatestProgramRunDir = async ({
  *
  * @public
  */
-export const loadFactoryProgramRun = async (input: ProgramRunnerStatusInput): Promise<ProgramRunnerRun> => {
+export const loadModuleProgramRun = async (input: ProgramRunnerStatusInput): Promise<ProgramRunnerRun> => {
   const parsed = ProgramRunnerStatusInputSchema.parse(input)
   const workspaceRoot = await getWorkspaceRoot(process.cwd())
   const resolved = resolveProgramDefaults({

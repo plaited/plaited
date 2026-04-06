@@ -1,6 +1,6 @@
 ---
 name: autoresearch-workflows
-description: Use Plaited's dev-research operator tooling. Covers `plaited eval`, `plaited compare-trials`, `plaited program-runner`, and `plaited autoresearch`, plus how factory-lane writable roots constrain mutations.
+description: Use Plaited's dev-research operator tooling. Covers `plaited eval`, `plaited compare-trials`, `plaited program-runner`, and `plaited autoresearch`, plus how module-lane writable roots constrain mutations.
 license: ISC
 ---
 
@@ -9,7 +9,7 @@ license: ISC
 ## Purpose
 
 Use this skill when working in `dev-research/` and the task is to evaluate,
-compare, fan out, or hill-climb harness and factory changes through the real
+compare, fan out, or hill-climb harness and module changes through the real
 CLI surfaces.
 
 This is the operator guide for:
@@ -43,7 +43,7 @@ Use `plaited autoresearch` when:
 
 - you want a bounded improvement loop around eval
 - you need observations, candidate artifacts, validation, and promotion state
-- the target surface is currently `skill` or `factory`
+- the target surface is currently `skill` or `module`
 
 ## Dev-Research Workflow
 
@@ -57,10 +57,10 @@ The typical loop is:
 
 ## Program Lane Scope
 
-For factory lanes, `program-runner` writable roots should stay inside:
+For module lanes, `program-runner` writable roots should stay inside:
 
-- `src/factories/`
-- `src/factories.ts`
+- `src/modules/`
+- `src/modules.ts`
 
 Read broadly when the lane requires context, but keep mutations inside the
 declared writable roots from the lane `program.md`.
@@ -82,13 +82,13 @@ plaited compare-trials '{"baselinePath":"baseline.jsonl","challengerPath":"chall
 Run a research lane:
 
 ```bash
-plaited program-runner run '{"programPath":"dev-research/default-factories/program.md","attempts":3,"parallel":2}'
+plaited program-runner run '{"programPath":"dev-research/default-modules/program.md","attempts":3,"parallel":2}'
 ```
 
 Run bounded autoresearch:
 
 ```bash
-plaited autoresearch '{"target":{"kind":"factory","id":"skills-factory"},"adapterPath":"./adapter.ts","promptsPath":"prompts.jsonl","graderPath":"./grader.ts"}'
+plaited autoresearch '{"target":{"kind":"module","id":"skills-module"},"adapterPath":"./adapter.ts","promptsPath":"prompts.jsonl","graderPath":"./grader.ts"}'
 ```
 
 ## Notes

@@ -23,14 +23,14 @@ sequenceDiagram
     WS->>Controller: validated message
     Controller->>Browser: await import(url)
     Browser-->>Controller: module.default
-    Controller->>Controller: factory(restrictedTrigger)
+    Controller->>Controller: module(restrictedTrigger)
     Controller->>Controller: validate return value
     Controller->>BP: merge threads and handlers
 ```
 
 ## Module Contract
 
-The module must default-export a factory that receives `restrictedTrigger` and
+The module must default-export a module that receives `restrictedTrigger` and
 returns:
 
 - optional `threads`
@@ -40,7 +40,7 @@ Both are validated before merging into the client BP engine.
 
 ## Security Model
 
-The factory receives `restrictedTrigger`, not the full trigger surface.
+The module receives `restrictedTrigger`, not the full trigger surface.
 
 Blocked event classes include:
 

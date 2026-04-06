@@ -2,13 +2,13 @@ import { dirname, relative, resolve } from 'node:path'
 import { extractLocalLinksFromMarkdown, extractMarkdownSection } from '../utils/markdown.ts'
 
 const normalizePath = (value: string): string => value.replaceAll('\\', '/')
-const FACTORY_LANE_SCOPE = ['src/factories/', 'src/factories.ts']
-const FACTORY_LANE_PATTERN = /^dev-research\/(?:default-factories|server-factory|[a-z0-9-]*factories)\/program\.md$/
+const MODULE_LANE_SCOPE = ['src/modules/', 'src/modules.ts']
+const MODULE_LANE_PATTERN = /^dev-research\/(?:default-modules|server-module|[a-z0-9-]*modules)\/program\.md$/
 
 const ensureDirectorySuffix = (path: string, originalLink: string): string =>
   originalLink.endsWith('/') && !path.endsWith('/') ? `${path}/` : path
 
-const getFactoryLaneFallbackScope = ({
+const getModuleLaneFallbackScope = ({
   programPath,
   workspaceRoot,
 }: {
@@ -16,7 +16,7 @@ const getFactoryLaneFallbackScope = ({
   workspaceRoot: string
 }): string[] => {
   const relativeProgramPath = normalizePath(relative(workspaceRoot, programPath))
-  return FACTORY_LANE_PATTERN.test(relativeProgramPath) ? FACTORY_LANE_SCOPE : []
+  return MODULE_LANE_PATTERN.test(relativeProgramPath) ? MODULE_LANE_SCOPE : []
 }
 
 /**
@@ -41,7 +41,7 @@ export const parseProgramScope = async ({
 }): Promise<string[]> => {
   const section = extractMarkdownSection(programMarkdown, ['Scope', 'Writable Roots'])
   if (!section) {
-    return getFactoryLaneFallbackScope({
+    return getModuleLaneFallbackScope({
       programPath,
       workspaceRoot,
     })
@@ -62,7 +62,7 @@ export const parseProgramScope = async ({
     return scopedPaths
   }
 
-  return getFactoryLaneFallbackScope({
+  return getModuleLaneFallbackScope({
     programPath,
     workspaceRoot,
   })

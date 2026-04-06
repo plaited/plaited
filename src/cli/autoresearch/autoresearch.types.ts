@@ -1,5 +1,5 @@
 /** @public */
-export type AutoresearchTargetKind = 'factory'
+export type AutoresearchTargetKind = 'module'
 
 /** @public */
 export type AutoresearchTargetRef = {

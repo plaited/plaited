@@ -1,2 +1,2 @@
-export * from './factories/mcp-factory/mcp.schemas.ts'
-export * from './factories/mcp-factory/mcp.utils.ts'
+export * from './modules/mcp-module/mcp.schemas.ts'
+export * from './modules/mcp-module/mcp.utils.ts'

@@ -26,7 +26,7 @@ Pattern A is recommended. The node just verifies tokens, like the JWT pattern.
 ## Implementation Pattern (Gateway-Issued Token)
 
 ```typescript
-import { createServerFactory, SERVER_FACTORY_EVENTS } from 'plaited/factories'
+import { createServerModule, SERVER_MODULE_EVENTS } from 'plaited/modules'
 
 // OIDC discovery endpoint for your IdP
 const ISSUER = Bun.env.OIDC_ISSUER  // e.g., 'https://acme.okta.com'
@@ -53,10 +53,10 @@ const authenticateConnection = async ({ request }) => {
   }
 }
 
-const serverFactory = createServerFactory()
+const serverModule = createServerModule()
 
 agent.trigger({
-  type: SERVER_FACTORY_EVENTS.server_set_config,
+  type: SERVER_MODULE_EVENTS.server_set_config,
   detail: {
     routes: {},
     authenticateConnection,

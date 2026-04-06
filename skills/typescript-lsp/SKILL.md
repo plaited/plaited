@@ -164,7 +164,7 @@ bun skills/typescript-lsp/scripts/run.ts '{"file": "src/main.ts", "targets": ["s
 ### Audit candidate export consumers
 
 ```bash
-bun skills/typescript-lsp/scripts/run.ts '{"file": "src/main.ts", "targets": ["src/agent/**/*.ts"], "operations": [{"type": "export_consumers", "query": "Factory", "includeTests": true}]}'
+bun skills/typescript-lsp/scripts/run.ts '{"file": "src/main.ts", "targets": ["src/agent/**/*.ts"], "operations": [{"type": "export_consumers", "query": "Module", "includeTests": true}]}'
 ```
 
 ### Find verified candidate unused exports

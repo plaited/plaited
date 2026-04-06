@@ -5,7 +5,7 @@ import { keyMirror } from '../utils.ts'
  *
  * @remarks
  * These are intentionally narrower than the legacy loop event surface.
- * Factories can build richer orchestration on top of them.
+ * Modules can build richer orchestration on top of them.
  *
  * @public
  */
@@ -20,7 +20,7 @@ export const AGENT_EVENTS = keyMirror(
   'bash',
   'agent_disconnect',
   'heartbeat',
-  'update_factories',
+  'update_modules',
   'agent_tool_result',
   'signal_schema_violation',
   'set_signal',

@@ -68,7 +68,7 @@ The flow is:
 
 1. server sends a module URL
 2. client `import(url)` loads it
-3. the module's default factory receives `restrictedTrigger`
+3. the module's default module receives `restrictedTrigger`
 4. returned `threads` and `handlers` are validated and merged into the BP engine
 
 Loaded modules can participate in rendering and local coordination, but they
@@ -86,7 +86,7 @@ Use three layers:
 | Layer | Use For | Runner |
 |---|---|---|
 | Pure function | schemas, constants, transforms, CSS utilities | `bun test` |
-| DOM unit | custom element registration, factory return shape, template structure | `bun test` with happy-dom |
+| DOM unit | custom element registration, module return shape, template structure | `bun test` with happy-dom |
 | Real browser | WebSocket roundtrips, swap behavior, dynamic imports, real DOM mutation | `@playwright/cli` |
 
 Rules:

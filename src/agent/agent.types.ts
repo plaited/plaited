@@ -16,8 +16,8 @@ export type HeartbeatConfig = {
  *
  * @remarks
  * `restrictedTriggers` applies to the trigger injected into installed
- * factories, not to the public `AgentHandle.trigger` returned from
- * `createAgent()`. This keeps factory-owned behavior inside a narrower
+ * modules, not to the public `AgentHandle.trigger` returned from
+ * `createAgent()`. This keeps module-owned behavior inside a narrower
  * authority envelope while preserving a full orchestration entrypoint for
  * bootstrap and outer runtime control.
  *
@@ -29,7 +29,7 @@ export type CreateAgentOptions = {
   workspace: string
   models: AgentModels
   env?: Record<string, string>
-  factories?: Factory[]
+  modules?: Module[]
   restrictedTriggers?: string[]
   heartbeat?: HeartbeatConfig
 }
@@ -39,8 +39,8 @@ export type CreateAgentOptions = {
  *
  * @remarks
  * `trigger` is the outer orchestration entrypoint for the runtime. It is not
- * narrowed by `restrictedTriggers`; installed factories receive a restricted
- * trigger separately through `FactoryParams`.
+ * narrowed by `restrictedTriggers`; installed modules receive a restricted
+ * trigger separately through `ModuleParams`.
  *
  * @public
  */
@@ -85,7 +85,7 @@ export type Signal<TSchema extends ZodTypeAny = ZodTypeAny> = {
 }
 
 /**
- * Factory for readonly computed signals derived from other signals.
+ * Module for readonly computed signals derived from other signals.
  *
  * @public
  */
@@ -98,7 +98,7 @@ export type Computed = <T>(
 }
 
 /**
- * Signal registry exposed to installed factories.
+ * Signal registry exposed to installed modules.
  *
  * @public
  */
@@ -121,12 +121,12 @@ export type Signals = {
 }
 
 /**
- * Context object passed to installed factories.
+ * Context object passed to installed modules.
  *
  * @public
  */
-export type FactoryParams = {
-  /** Restricted trigger surface injected into installed factories. */
+export type ModuleParams = {
+  /** Restricted trigger surface injected into installed modules. */
   trigger: Trigger
   useSnapshot: UseSnapshot
   signals: Signals
@@ -134,11 +134,11 @@ export type FactoryParams = {
 }
 
 /**
- * Factory signature used to install agent behavior.
+ * Module signature used to install agent behavior.
  *
  * @public
  */
-export type Factory = (params: FactoryParams) => {
+export type Module = (params: ModuleParams) => {
   threads?: Record<string, ReturnType<BSync>>
   handlers?: DefaultHandlers
 }

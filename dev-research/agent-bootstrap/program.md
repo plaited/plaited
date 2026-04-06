@@ -50,7 +50,7 @@ The first shipped bootstrap surface should:
    - offline-private
    - hosted-node
 6. make persistence and promotion choices reviewable, including:
-   - persistence factory selection
+   - persistence module selection
    - export/import/handoff configuration
 7. remain simple enough for both humans and coding agents to use directly
 
@@ -94,22 +94,22 @@ This lane should keep the bootstrap surface compatible with:
 The stable dependency is the ability to provide the configured model surfaces,
 not one mandatory hosting platform.
 
-### 5. Bootstrap Consumes Default Factory Policy
+### 5. Bootstrap Consumes Default Module Policy
 
 Bootstrap should not become the place where default runtime policy is invented.
 
 It should:
 
 - consume the currently selected default bootstrap bundle from
-  [src/factories/](../../src/factories/)
+  [src/modules/](../../src/modules/)
 - emit startup config events for installed lanes
 - fire startup lifecycle events such as server start
 
 It should not:
 
-- decide ad hoc which experimental factories belong in the shipped default
+- decide ad hoc which experimental modules belong in the shipped default
   composition
-- absorb policy that should remain owned by concrete factory lanes
+- absorb policy that should remain owned by concrete module lanes
 
 ## Research Questions
 
@@ -119,7 +119,7 @@ This lane should answer:
   infrastructure target?
 - what should be generated versus left for later operator configuration?
 - which deployment choices belong in the initial manifest?
-- how should bootstrap interact with default-factory bundle selection?
+- how should bootstrap interact with default-module bundle selection?
 - what should the official published deployment skill teach beyond raw CLI
   usage?
 

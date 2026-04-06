@@ -2,10 +2,10 @@ import { describe, expect, test } from 'bun:test'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { Factory, Signal } from '../../agent.ts'
-import { SERVER_FACTORY_SIGNAL_KEYS } from '../../factories/server-factory/server-factory.constants.ts'
-import type { ServerFactoryStatusSchema } from '../../factories/server-factory/server-factory.schemas.ts'
-import { createDefaultBootstrapFactories, DEFAULT_BOOTSTRAP_FACTORY_BUNDLE_ID } from '../../factories.ts'
+import type { Module, Signal } from '../../agent.ts'
+import { SERVER_MODULE_SIGNAL_KEYS } from '../../modules/server-module/server-module.constants.ts'
+import type { ServerModuleStatusSchema } from '../../modules/server-module/server-module.schemas.ts'
+import { createDefaultBootstrapModules, DEFAULT_BOOTSTRAP_MODULE_BUNDLE_ID } from '../../modules.ts'
 import { bootstrapAgent, createBootstrappedAgent } from '../bootstrap.ts'
 
 const TEST_MODELS = {
@@ -40,7 +40,7 @@ describe('bootstrapAgent', () => {
     const bootstrapFile = Bun.file(join(targetDir, '.plaited/config/bootstrap.json'))
     expect(await bootstrapFile.exists()).toBe(true)
     await expect(bootstrapFile.json()).resolves.toMatchObject({
-      defaultFactoryBundle: DEFAULT_BOOTSTRAP_FACTORY_BUNDLE_ID,
+      defaultModuleBundle: DEFAULT_BOOTSTRAP_MODULE_BUNDLE_ID,
     })
 
     const modelsFile = Bun.file(join(targetDir, '.plaited/config/models.json'))
@@ -80,10 +80,10 @@ describe('bootstrapAgent', () => {
 
   test('creates a bootstrapped agent and starts the server through bootstrap orchestration', async () => {
     const targetDir = await mkdtemp(join(tmpdir(), 'plaited-bootstrap-runtime-'))
-    let statusSignal!: Signal<typeof ServerFactoryStatusSchema>
+    let statusSignal!: Signal<typeof ServerModuleStatusSchema>
 
-    const observeFactory: Factory = ({ signals }) => {
-      statusSignal = signals.get(SERVER_FACTORY_SIGNAL_KEYS.status) as Signal<typeof ServerFactoryStatusSchema>
+    const observeModule: Module = ({ signals }) => {
+      statusSignal = signals.get(SERVER_MODULE_SIGNAL_KEYS.status) as Signal<typeof ServerModuleStatusSchema>
       return {}
     }
 
@@ -103,7 +103,7 @@ describe('bootstrapAgent', () => {
       routes: {
         '/health': new Response('OK'),
       },
-      factories: [observeFactory],
+      modules: [observeModule],
     })
 
     await Bun.sleep(50)
@@ -119,7 +119,7 @@ describe('bootstrapAgent', () => {
   })
 
   test('uses the current minimal default bootstrap bundle', () => {
-    const factories = createDefaultBootstrapFactories()
-    expect(factories).toHaveLength(1)
+    const modules = createDefaultBootstrapModules()
+    expect(modules).toHaveLength(1)
   })
 })

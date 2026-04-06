@@ -29,7 +29,7 @@ Runner:
 Use for:
 
 - custom element registration
-- factory return shape
+- module return shape
 - template output structure
 
 Runner:
@@ -39,7 +39,7 @@ Runner:
 Rules:
 
 - do not append control islands to the DOM in happy-dom
-- keep these tests focused on registration/factory shape, not live transport
+- keep these tests focused on registration/module shape, not live transport
 
 ## Layer 3: Real Browser
 

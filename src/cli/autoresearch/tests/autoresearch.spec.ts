@@ -28,11 +28,11 @@ import { buildAutoresearchRunId, createInitialLaneState } from '../autoresearch.
 describe('autoresearch schemas', () => {
   test('accepts a minimal autoresearch init input', () => {
     const parsed = AutoresearchInitInputSchema.parse({
-      programPath: 'dev-research/server-factory/program.md',
-      target: { kind: 'factory', id: 'server-factory' },
+      programPath: 'dev-research/server-module/program.md',
+      target: { kind: 'module', id: 'server-module' },
     })
 
-    expect(parsed.target.kind).toBe('factory')
+    expect(parsed.target.kind).toBe('module')
   })
 
   test('accepts evaluate and status inputs', () => {
@@ -57,10 +57,10 @@ describe('autoresearch schemas', () => {
 
   test('accepts lane and evaluate outputs', () => {
     const lane = AutoresearchLaneStateSchema.parse({
-      runId: 'factory-server-factory-run',
+      runId: 'module-server-module-run',
       laneDir: '/tmp/lane',
-      programPath: 'dev-research/server-factory/program.md',
-      target: { kind: 'factory', id: 'server-factory' },
+      programPath: 'dev-research/server-module/program.md',
+      target: { kind: 'module', id: 'server-module' },
       initializedAt: new Date().toISOString(),
       lastAcceptedIteration: 1,
       experiments: [],
@@ -68,8 +68,8 @@ describe('autoresearch schemas', () => {
     const evaluate = AutoresearchEvaluateOutputSchema.parse({
       laneDir: '/tmp/lane',
       iteration: 1,
-      programPath: 'dev-research/server-factory/program.md',
-      target: { kind: 'factory', id: 'server-factory' },
+      programPath: 'dev-research/server-module/program.md',
+      target: { kind: 'module', id: 'server-module' },
       pass: true,
       summary: 'ok',
       changedPaths: [],
@@ -84,8 +84,8 @@ describe('autoresearch schemas', () => {
     const input = AutoresearchOrchestratorInputSchema.parse({
       lanes: [
         {
-          programPath: 'dev-research/server-factory/program.md',
-          target: { kind: 'factory', id: 'server-factory' },
+          programPath: 'dev-research/server-module/program.md',
+          target: { kind: 'module', id: 'server-module' },
         },
       ],
       adapterCommand: ['bun', 'scripts/agent-adapter.ts', '{{lane_dir}}'],
@@ -96,7 +96,7 @@ describe('autoresearch schemas', () => {
       parallel: 1,
       lanes: [
         {
-          laneId: 'server-factory',
+          laneId: 'server-module',
           status: 'succeeded',
           worktreePath: '/tmp/worktree',
           laneDir: '/tmp/lane',
@@ -114,17 +114,17 @@ describe('autoresearch schemas', () => {
 
 describe('autoresearch utils', () => {
   test('builds a target-prefixed run id', () => {
-    const runId = buildAutoresearchRunId({ kind: 'factory', id: 'server-factory' })
+    const runId = buildAutoresearchRunId({ kind: 'module', id: 'server-module' })
 
-    expect(runId.startsWith('factory-server-factory-')).toBe(true)
+    expect(runId.startsWith('module-server-module-')).toBe(true)
   })
 
   test('builds initial lane state', () => {
     const state = createInitialLaneState({
       laneDir: '/tmp/lane',
-      programPath: 'dev-research/server-factory/program.md',
-      runId: 'factory-server-factory-run',
-      target: { kind: 'factory', id: 'server-factory' },
+      programPath: 'dev-research/server-module/program.md',
+      runId: 'module-server-module-run',
+      target: { kind: 'module', id: 'server-module' },
     })
 
     expect(AutoresearchLaneStateSchema.parse(state).experiments).toEqual([])
@@ -157,8 +157,8 @@ describe('autoresearch lane flow', () => {
     const mutableFile = join(tempRoot, 'candidate.txt')
 
     const lane = await initAutoresearchLane({
-      programPath: 'dev-research/server-factory/program.md',
-      target: { kind: 'factory', id: 'server-factory', writableRoots: [mutableRoot] },
+      programPath: 'dev-research/server-module/program.md',
+      target: { kind: 'module', id: 'server-module', writableRoots: [mutableRoot] },
       outputDir: tempDir,
     })
 
@@ -191,8 +191,8 @@ describe('autoresearch lane flow', () => {
     const mutableFile = join(tempRoot, 'candidate.txt')
 
     const lane = await initAutoresearchLane({
-      programPath: 'dev-research/server-factory/program.md',
-      target: { kind: 'factory', id: 'server-factory', writableRoots: [mutableRoot] },
+      programPath: 'dev-research/server-module/program.md',
+      target: { kind: 'module', id: 'server-module', writableRoots: [mutableRoot] },
       outputDir: tempDir,
     })
 

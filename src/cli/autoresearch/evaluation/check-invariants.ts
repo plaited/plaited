@@ -1,8 +1,8 @@
 import type { SnapshotMessage } from '../../../behavioral/behavioral.schemas.ts'
 import type { AutoresearchEvaluation } from '../autoresearch.types.ts'
-import type { FactoryScenarioResult } from './run-factory-scenarios.ts'
+import type { ModuleScenarioResult } from './run-module-scenarios.ts'
 
-const flattenSnapshots = (scenarios: FactoryScenarioResult[]): SnapshotMessage[] =>
+const flattenSnapshots = (scenarios: ModuleScenarioResult[]): SnapshotMessage[] =>
   scenarios.flatMap((scenario) => scenario.snapshots)
 
 /**
@@ -11,12 +11,12 @@ const flattenSnapshots = (scenarios: FactoryScenarioResult[]): SnapshotMessage[]
  *
  * @public
  */
-export const evaluateFactoryScenarios = ({
+export const evaluateModuleScenarios = ({
   scenarios,
 }: {
-  scenarios: FactoryScenarioResult[]
+  scenarios: ModuleScenarioResult[]
 }): AutoresearchEvaluation & {
-  invariants: FactoryScenarioResult['invariants']
+  invariants: ModuleScenarioResult['invariants']
   scenarioPassRate: number
   invariantPassRate: number
   snapshots: SnapshotMessage[]
@@ -32,8 +32,8 @@ export const evaluateFactoryScenarios = ({
   return {
     pass,
     summary: pass
-      ? `Factory scenario suite passed ${passedScenarioCount}/${scenarios.length} scenarios with invariantPassRate=${invariantPassRate.toFixed(2)}.`
-      : `Factory scenario suite failed: ${passedScenarioCount}/${scenarios.length} scenarios passed and invariantPassRate=${invariantPassRate.toFixed(2)}.`,
+      ? `Module scenario suite passed ${passedScenarioCount}/${scenarios.length} scenarios with invariantPassRate=${invariantPassRate.toFixed(2)}.`
+      : `Module scenario suite failed: ${passedScenarioCount}/${scenarios.length} scenarios passed and invariantPassRate=${invariantPassRate.toFixed(2)}.`,
     score: scenarioPassRate * 0.7 + invariantPassRate * 0.3,
     metrics: {
       scenarioPassRate,

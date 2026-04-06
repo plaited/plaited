@@ -1,6 +1,6 @@
 ---
 name: node-auth
-description: Authentication seam for Plaited nodes. Use when wiring the current server auth boundary, choosing among WebAuthn, platform JWT, enterprise OIDC, or dev-mode auth, or supplying auth facts to factory research lanes.
+description: Authentication seam for Plaited nodes. Use when wiring the current server auth boundary, choosing among WebAuthn, platform JWT, enterprise OIDC, or dev-mode auth, or supplying auth facts to module research lanes.
 license: ISC
 compatibility: Requires bun
 ---
@@ -14,16 +14,16 @@ auth seam.
 
 Use it to decide which auth mode applies and how to wire the existing auth
 boundary in code. Treat bundle-level auth policy as research work for
-`dev-research/node-auth-factories/program.md`.
+`dev-research/node-auth-modules/program.md`.
 
 **Use when:**
 - wiring `createServer` with `validateSession`
 - choosing among sovereign/local, platform, enterprise, or dev auth modes
 - generating or reviewing auth routes for a concrete deployment context
-- supplying stable auth facts to A2A or three-axis factory research
+- supplying stable auth facts to A2A or three-axis module research
 
-**Not for:** deciding the full default auth-aware factory bundle. That belongs
-in `dev-research/node-auth-factories/program.md`.
+**Not for:** deciding the full default auth-aware module bundle. That belongs
+in `dev-research/node-auth-modules/program.md`.
 
 ## The Seam
 
@@ -69,7 +69,7 @@ type AuthStrategy = {
 Wire into `createServer`:
 
 ```typescript
-const auth = await createAuth(options)  // strategy-specific factory
+const auth = await createAuth(options)  // strategy-specific module
 const server = createServer({
   trigger,
   routes: { ...auth.routes, ...appRoutes },
@@ -91,6 +91,6 @@ These are reference code the agent should **adapt** to the project, not import d
 
 ## Related Skills
 
-- **modnet-factories** — node/A2A/module composition context for current
-  factory-era architecture
+- **modnet-modules** — node/A2A/module composition context for current
+  module-era architecture
 - **behavioral-core** — BP engine the server bridges to

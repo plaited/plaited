@@ -23,9 +23,9 @@ The framework provides:
 
 - **Interfaces** for the primary reasoning model plus optional adjunct model
   roles such as speech
-- **A minimal behavioral core** plus factory-composed orchestration
+- **A minimal behavioral core** plus module-composed orchestration
 - **Memory via snapshots, git, and retained artifacts** — observable BP execution plus git-backed files and commit history
-- **Governance and verification as factory-level directions** rather than a
+- **Governance and verification as module-level directions** rather than a
   shipped dedicated constitution runtime
 
 The framework is **not prescriptive** about inference backend. Consumers choose how to serve models — vLLM, llama.cpp, Ollama, cloud APIs, or any OpenAI-compatible endpoint. All three backends support separating `<think>` reasoning from response content at the server level. Code ships via npm (`plaited`). Base-trained models ship via Hugging Face ([huggingface.co/plaited](https://huggingface.co/plaited)).
@@ -60,7 +60,7 @@ the server, not the adapter.
 
 Multimodal input does not need a dedicated core vision event. When the primary
 model is natively multimodal, image and video handling can ride through the
-primary inference lane or through factory-owned extensions rather than a fixed
+primary inference lane or through module-owned extensions rather than a fixed
 built-in vision primitive.
 
 ### Reference Model Stack
@@ -110,7 +110,7 @@ Under that split:
 
 That keeps training and native-model execution anchored to the MSI + vLLM lane
 while preserving the ability to swap serving backends without changing the
-agent engine or factory contracts.
+agent engine or module contracts.
 
 ## Core Shape
 
@@ -132,11 +132,11 @@ The core owns:
   - `glob_files`
   - `grep`
   - `bash`
-- dynamic factory installation
+- dynamic module installation
 
 Planning, context assembly, skill selection, MCP capability projection, A2A
 routing, verification, and higher-level editing behavior should be composed
-through factories.
+through modules.
 
 ## Key Design Principles
 
@@ -144,15 +144,15 @@ through factories.
 - **Single Tenancy:** 1 User : 1 Agent instance. User data lives on their agent — nowhere else.
 - **Pluggable Models:** The primary model and optional adjunct roles are
   interfaces. Implementations swap freely across MLX, vLLM, and cloud APIs.
-- **Minimal Core, Rich Factories:** `createAgent()` stays narrow; planning,
-  memory, MCP, A2A, verification, and editing policy belong in factories.
+- **Minimal Core, Rich Modules:** `createAgent()` stays narrow; planning,
+  memory, MCP, A2A, verification, and editing policy belong in modules.
 - **Plan-Driven Context:** Plan state should shape context assembly through
-  factory-owned policy rather than a fixed built-in loop stage.
+  module-owned policy rather than a fixed built-in loop stage.
 - **Defense in Depth:** Capability, autonomy, and authority should be narrowed
-  through composed factory policy plus deployment/runtime boundaries.
+  through composed module policy plus deployment/runtime boundaries.
 - **Three-Axis Risk Awareness:** Capability × Autonomy × Authority. The
   current core mainly enforces basic authority boundaries; richer risk shaping
-  should come from governance, verification, and execution factories.
+  should come from governance, verification, and execution modules.
 
 ## Runtime Hierarchy
 
@@ -187,8 +187,8 @@ process (Ollama, llama.cpp, vLLM) on the same box. Local runtimes call it via
 loop. GPU/Apple Silicon Metal handles acceleration.
 
 **A2A and MCP surfaces:** The repo now has protocol/utilities under
-`src/factories/a2a-factory/` and `src/factories/mcp-factory/`. They should be
-treated as factory-owned capability surfaces rather than fixed core runtime
+`src/modules/a2a-module/` and `src/modules/mcp-module/`. They should be
+treated as module-owned capability surfaces rather than fixed core runtime
 layers. A2A covers remote agent exchange and MCP covers remote capability
 discovery/execution.
 
@@ -213,10 +213,10 @@ deployment shape is documented in `INFRASTRUCTURE.md`.
 
 | Doc | Scope |
 |---|---|
-| `AGENT-LOOP.md` | Minimal core plus factory-composed orchestration model |
+| `AGENT-LOOP.md` | Minimal core plus module-composed orchestration model |
 | `INFRASTRUCTURE.md` | Local-first persistence, sandbox execution, sync boundaries |
-| `skills/modnet-factories/` | Modnet/MSS/A2A translation for current factory-era agents |
-| `dev-research/default-factories/program.md` | Active default factory bundle direction |
-| `dev-research/three-axis-factories/program.md` | Cross-cutting capability, autonomy, and authority control |
+| `skills/modnet-modules/` | Modnet/MSS/A2A translation for current module-era agents |
+| `dev-research/default-modules/program.md` | Active default module bundle direction |
+| `dev-research/three-axis-modules/program.md` | Cross-cutting capability, autonomy, and authority control |
 | `dev-research/agent-bootstrap/program.md` | Bootstrap CLI and deployment tooling direction |
 | `skills/plaited-ui/` | Plaited UI runtime, protocol, and testing guidance |

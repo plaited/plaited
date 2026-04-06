@@ -22,7 +22,7 @@
     "./behavioral": "./src/behavioral.ts",
     "./bootstrap": "./src/bootstrap.ts",
     "./cli": "./src/cli.ts",
-    "./factories": "./src/factories.ts",
+    "./modules": "./src/modules.ts",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
     "./jsx-runtime": "./src/jsx-runtime.ts",
     "./mcp": "./src/mcp.ts",
@@ -45,10 +45,10 @@
     "check:types": "tsc --noEmit",
     "check:write": "biome check --write && format-package --write",
     "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .hooks || true",
-    "program:autonomous": "bun scripts/run-factory-programs.ts",
-    "program:autonomous:dryrun": "bun scripts/run-factory-programs.ts '{\"dryRun\":true}'",
-    "program:autonomous:test": "bun scripts/run-factory-programs.ts '{\"test\":true}'",
-    "program:factory": "bun run ./bin/plaited.ts program-runner",
+    "program:autonomous": "bun scripts/run-module-programs.ts",
+    "program:autonomous:dryrun": "bun scripts/run-module-programs.ts '{\"dryRun\":true}'",
+    "program:autonomous:test": "bun scripts/run-module-programs.ts '{\"test\":true}'",
+    "program:module": "bun run ./bin/plaited.ts program-runner",
     "test": "bun test"
   },
   "lint-staged": {

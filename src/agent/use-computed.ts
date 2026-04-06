@@ -7,7 +7,7 @@ import type { Computed, Listen, Signal } from './agent.types.ts'
  *
  * @param disconnectSet - Shared disconnect registry for the owning agent scope.
  * @param trigger - Behavioral trigger used when listeners subscribe by event name.
- * @returns Factory that derives lazily-computed readonly signals from dependencies.
+ * @returns Module that derives lazily-computed readonly signals from dependencies.
  *
  * @public
  */

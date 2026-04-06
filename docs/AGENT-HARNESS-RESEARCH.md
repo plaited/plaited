@@ -13,7 +13,7 @@ The first phase comes before weight adaptation.
 
 The pre-training workflow is:
 
-- parallel lane search over bounded factory or harness objectives
+- parallel lane search over bounded module or harness objectives
 - local promotion of the strongest attempts inside a lane
 - bundle-level promotion across interacting lanes
 - retention of trusted artifacts, snapshots, and judged repair traces
@@ -22,13 +22,13 @@ This is not primarily ES, SFT, or GRPO.
 
 It is a search-and-selection workflow for discovering:
 
-- default factories
+- default modules
 - search and retrieval policy
 - symbolic interfaces
 - MSS mappings
 - signal conventions
 - verification and simulation habits
-- composition rules between factories
+- composition rules between modules
 
 ## Why The Behavioral Runtime Matters
 
@@ -57,7 +57,7 @@ instead of relying on raw transcript dumps.
 
 The clean mental model is:
 
-- factories are the product outputs
+- modules are the product outputs
 - retained research traces are the learning substrate
 - the executor model is the researcher
 - the adapted model is the student
@@ -72,7 +72,7 @@ contract.
 
 ## Training Later
 
-Once the default factory bundle is stable, later weight adaptation can teach
+Once the default module bundle is stable, later weight adaptation can teach
 the model stable Plaited semantics so the harness does not need to resend the
 same basic framework information every time.
 
@@ -82,7 +82,7 @@ Likely targets for later LoRA or adapter-style adaptation:
 - stable MSS semantics
 - better recognition of when internal or external search is needed
 - better query decomposition and retrieval habits
-- prompt-to-factory mappings
+- prompt-to-module mappings
 - prompt-to-module mappings
 - simulation and verification habits
 - expected symbolic output structure
@@ -92,7 +92,7 @@ details.
 
 ## Practical Rule
 
-Factory research precedes model adaptation.
+Module research precedes model adaptation.
 
 First discover the symbolic layer through bounded parallel search and
 bundle-level promotion. Only then use accepted artifacts and structured traces

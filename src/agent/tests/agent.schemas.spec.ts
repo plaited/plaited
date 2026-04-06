@@ -3,12 +3,12 @@ import {
   AgentPlanStepSchema,
   AgentToolCallSchema,
   DecisionStepSchema,
-  FactoryResultSchema,
+  ModuleResultSchema,
   ModelUsageSchema,
   RequestBashDetailSchema,
   ToolDefinitionSchema,
   TrajectoryStepSchema,
-  UpdateFactoryModuleSchema,
+  UpdateModuleModuleSchema,
 } from 'plaited/agent'
 import { bSync } from 'plaited/behavioral'
 
@@ -285,9 +285,9 @@ describe('RequestBashDetailSchema', () => {
   })
 })
 
-describe('FactoryResultSchema', () => {
+describe('ModuleResultSchema', () => {
   test('accepts function-valued handlers', () => {
-    const result = FactoryResultSchema.parse({
+    const result = ModuleResultSchema.parse({
       handlers: {
         tool_completed: async () => {},
       },
@@ -298,7 +298,7 @@ describe('FactoryResultSchema', () => {
 
   test('rejects non-function handlers', () => {
     expect(() =>
-      FactoryResultSchema.parse({
+      ModuleResultSchema.parse({
         handlers: {
           tool_completed: 'nope',
         },
@@ -311,7 +311,7 @@ describe('FactoryResultSchema', () => {
       waitFor: 'tick',
     })
 
-    const result = FactoryResultSchema.parse({
+    const result = ModuleResultSchema.parse({
       threads: {
         onTick: thread,
       },
@@ -321,20 +321,20 @@ describe('FactoryResultSchema', () => {
   })
 })
 
-describe('UpdateFactoryModuleSchema', () => {
-  test('accepts factory functions', () => {
-    const factory = () => ({})
+describe('UpdateModuleModuleSchema', () => {
+  test('accepts module functions', () => {
+    const module = () => ({})
 
-    const result = UpdateFactoryModuleSchema.parse({
-      default: [factory],
+    const result = UpdateModuleModuleSchema.parse({
+      default: [module],
     })
 
-    expect(result.default[0]).toBe(factory)
+    expect(result.default[0]).toBe(module)
   })
 
-  test('rejects non-function factories', () => {
+  test('rejects non-function modules', () => {
     expect(() =>
-      UpdateFactoryModuleSchema.parse({
+      UpdateModuleModuleSchema.parse({
         default: [{}],
       }),
     ).toThrow()

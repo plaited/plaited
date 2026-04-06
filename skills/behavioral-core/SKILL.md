@@ -30,7 +30,7 @@ In this repo, BP is not only for symbolic reasoning. It is used as a general eve
 - `useFeedback()` — Register side-effect handlers (sync or async)
 - `useSnapshot()` — Observe every BP engine decision (event selection, blocking)
 
-**Code pattern:** In this repo, authors use the behavioral factory APIs directly. Do not write raw generator functions or raw `yield` statements in repo code; express behavior with `bThread()` and `bSync()`, and treat generator mechanics as behavioral-core implementation detail.
+**Code pattern:** In this repo, authors use the behavioral module APIs directly. Do not write raw generator functions or raw `yield` statements in repo code; express behavior with `bThread()` and `bSync()`, and treat generator mechanics as behavioral-core implementation detail.
 
 **Testing:** BP logic is tested with Bun tests (`*.spec.ts`), not browser stories. See `src/behavioral/tests/` for examples.
 
