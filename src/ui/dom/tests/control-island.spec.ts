@@ -19,37 +19,37 @@ afterAll(async () => {
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
-describe('controlIsland: factory return value', () => {
+describe('controlIsland: module return value', () => {
   test('returns a ControllerTemplate with .tag property', () => {
-    const Island = controlIsland({ tag: 'test-factory-tag' })
-    expect(Island.tag).toBe('test-factory-tag')
+    const Island = controlIsland({ tag: 'test-module-tag' })
+    expect(Island.tag).toBe('test-module-tag')
   })
 
   test('returns ControllerTemplate with $ identifier', () => {
-    const Island = controlIsland({ tag: 'test-factory-id' })
+    const Island = controlIsland({ tag: 'test-module-id' })
     expect(Island.$).toBe(CONTROLLER_TEMPLATE_IDENTIFIER)
   })
 
   test('returns ControllerTemplate with observedAttributes', () => {
     const Island = controlIsland({
-      tag: 'test-factory-attrs',
+      tag: 'test-module-attrs',
       observedAttributes: ['value', 'label'],
     })
     expect(Island.observedAttributes).toEqual(['value', 'label'])
   })
 
   test('defaults observedAttributes to empty array', () => {
-    const Island = controlIsland({ tag: 'test-factory-default' })
+    const Island = controlIsland({ tag: 'test-module-default' })
     expect(Island.observedAttributes).toEqual([])
   })
 
   test('returned function produces a TemplateObject', () => {
-    const Island = controlIsland({ tag: 'test-factory-tpl' })
+    const Island = controlIsland({ tag: 'test-module-tpl' })
     const tpl = Island({ children: [] })
     expect(tpl.$).toBe(TEMPLATE_OBJECT_IDENTIFIER)
     expect(tpl.html).toBeArray()
     expect(tpl.stylesheets).toBeArray()
-    expect(tpl.registry).toContain('test-factory-tpl')
+    expect(tpl.registry).toContain('test-module-tpl')
   })
 })
 

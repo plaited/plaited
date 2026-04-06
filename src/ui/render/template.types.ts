@@ -4,7 +4,7 @@ import { P_TARGET, P_TRIGGER, type TEMPLATE_OBJECT_IDENTIFIER } from './template
 type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''
 /**
- * Represents the internal structure produced by Plaited's JSX factory (`h` or `createTemplate`).
+ * Represents the internal structure produced by Plaited's JSX module (`h` or `createTemplate`).
  * This object contains the processed HTML strings and associated metadata needed for rendering.
  *
  * @property html - An array of string fragments representing the HTML structure.
@@ -28,7 +28,7 @@ export type Child = number | string | TemplateObject
  */
 export type Children = Child[] | Child
 /**
- * Defines core attributes applicable to all elements processed by Plaited's JSX factory.
+ * Defines core attributes applicable to all elements processed by Plaited's JSX module.
  * Includes standard HTML attributes, ARIA attributes, and Plaited-specific extensions.
  *
  * @property class - Supports standard `string` or an `array` of strings for CSS classes.
