@@ -278,11 +278,11 @@ describe('controller: WebSocket retry', () => {
 // ─── Update behavioral ───────────────────────────────────────────────────────
 
 describe('controller: update_behavioral', () => {
-  test('dynamic import() loads module and module runs', async () => {
+  test('dynamic import() loads module and factory runs', async () => {
     // Navigate to behavioral fixture — server sends update_behavioral after client_connected
     await gotoTest('/behavioral-fixture.html')
 
-    // The module sets window.__behavioralModuleLoaded = true in the module
+    // The module sets window.__behavioralModuleLoaded = true in the factory
     const output = await cli('eval', '() => globalThis.__behavioralModuleLoaded === true')
     const result = parseResult(output)
     expect(result).toContain('true')

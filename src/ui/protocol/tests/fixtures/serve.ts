@@ -47,7 +47,7 @@ if (!moduleResult.success) {
 
 // ─── Static HTML fixtures ─────────────────────────────────────────────────────
 
-// The controlIsland module applies display:contents via CSS class from createStyles.
+// The controlIsland factory applies display:contents via CSS class from createStyles.
 // In raw HTML fixtures (not SSR-rendered), we add the style rule directly.
 // p-target must be on a DESCENDANT of the control island, not the island itself.
 // controller() uses root.querySelector('[p-target="..."]') where root = the custom element,

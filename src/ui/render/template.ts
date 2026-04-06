@@ -78,7 +78,7 @@ type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateO
 /**
  * @internal
  * Creates Plaited template objects from JSX-like calls.
- * Core template module with security-first design and style management.
+ * Core template factory with security-first design and style management.
  *
  * @param _tag - HTML/SVG tag name, custom element tag, or FunctionTemplate
  * @param attrs - Element attributes including children
@@ -95,7 +95,7 @@ type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateO
  * - Script tag protection
  * - Trusted content opt-in
  *
- * @see {@link h} for JSX module alias
+ * @see {@link h} for JSX factory alias
  * @see {@link Fragment} for grouping elements
  */
 export const createTemplate: CreateTemplate = (_tag, attrs) => {
@@ -208,7 +208,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
 
 /**
  * @internal
- * JSX module function alias for createTemplate.
+ * JSX factory function alias for createTemplate.
  * Standard entry point for JSX transformation.
  *
  * @see {@link createTemplate} for implementation details

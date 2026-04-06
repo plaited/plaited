@@ -2,13 +2,13 @@
  * Dynamically imported behavioral module for browser testing.
  * Served at a URL; the controller `import()`s it via update_behavioral.
  *
- * Exports a module that:
- * - Sets window.__behavioralModuleLoaded to confirm the module ran
+ * Exports a factory that:
+ * - Sets window.__behavioralModuleLoaded to confirm the factory ran
  * - Returns threads (via bThread/bSync) and handlers
  */
 import { bSync, bThread } from '../../../../behavioral.ts'
 
-const module = (_trigger: (event: { type: string; detail?: unknown }) => void) => {
+const factory = (_trigger: (event: { type: string; detail?: unknown }) => void) => {
   ;(globalThis as Record<string, unknown>).__behavioralModuleLoaded = true
   return {
     threads: {
@@ -22,4 +22,4 @@ const module = (_trigger: (event: { type: string; detail?: unknown }) => void) =
   }
 }
 
-export default module
+export default factory

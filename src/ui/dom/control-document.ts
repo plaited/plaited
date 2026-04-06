@@ -40,7 +40,7 @@ export type BehavioralDocumentEventDetails = {
 }
 
 /** @public */
-export type PageRevealModule = (trigger: Trigger) => (detail: ViewTransition) => void | Promise<void>
+export type PageRevealFactory = (trigger: Trigger) => (detail: ViewTransition) => void | Promise<void>
 
 const isPageReveal = (event: Event): event is PageRevealEvent => event.type === 'pagereveal'
 const isPageSwap = (event: Event): event is PageSwapEvent => event.type === 'pageswap'
@@ -52,17 +52,17 @@ const isPageSwap = (event: Event): event is PageSwapEvent => event.type === 'pag
  * Creates a BP engine scoped to `document`, wires up the WebSocket controller,
  * and listens for `pageswap`/`pagereveal` view transition events on `window`.
  * The `pageswap` handler always tears down the disconnect set. An optional
- * `onPageReveal` module receives the restricted trigger and returns the handler
+ * `onPageReveal` factory receives the restricted trigger and returns the handler
  * for the `on_pagereveal` event. The restricted trigger enforces the same
  * trust boundary as `update_behavioral` — it cannot fire `render`, `attrs`,
  * or `disconnect`.
  *
  * @param options - Configuration options
- * @param options.onPageReveal - Module that receives restricted trigger and returns the pagereveal handler
+ * @param options.onPageReveal - Factory that receives restricted trigger and returns the pagereveal handler
  *
  * @public
  */
-export const controlDocument = ({ onPageReveal }: { onPageReveal?: PageRevealModule } = {}) => {
+export const controlDocument = ({ onPageReveal }: { onPageReveal?: PageRevealFactory } = {}) => {
   if (canUseDOM()) {
     const { trigger, useFeedback, bThreads, useRestrictedTrigger, useSnapshot } = behavioral()
 
