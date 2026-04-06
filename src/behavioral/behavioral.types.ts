@@ -67,6 +67,14 @@ export type BPMatchListener = {
 export type BPListener = string | BPMatchListener | ((args: BPEvent) => boolean)
 
 /**
+ * Listener subset intended for verifier-safe authoring surfaces.
+ *
+ * @remarks
+ * Unlike {@link BPListener}, this excludes opaque predicate callbacks.
+ */
+export type VerificationSafeBPListener = string | BPMatchListener
+
+/**
  * Represents a synchronization statement yielded by a behavioral rule step.
  * This is the core mechanism through which b-threads communicate their behavioral intentions
  * to the behavioral program scheduler at each step of execution.
@@ -96,6 +104,20 @@ export type Idioms = {
 }
 
 /**
+ * Verifier-safe synchronization idioms for authoring replay/explorer-friendly rules.
+ *
+ * @remarks
+ * Keeps `request` permissive for now and narrows listener-bearing idioms to
+ * {@link VerificationSafeBPListener}.
+ */
+export type VerificationSafeIdioms = {
+  waitFor?: VerificationSafeBPListener | VerificationSafeBPListener[]
+  interrupt?: VerificationSafeBPListener | VerificationSafeBPListener[]
+  request?: BPEvent | BPEventTemplate
+  block?: VerificationSafeBPListener | VerificationSafeBPListener[]
+}
+
+/**
  * A factory function that creates a single synchronization step (a `ReturnType<BSync>`) for a b-thread.
  * This is a helper type that corresponds to the `bSync` function implementation, which creates
  * one branded behavioral rule step.
@@ -111,6 +133,17 @@ export type BSync = (arg: Idioms) => {
 }
 
 /**
+ * Verifier-safe `bSync` authoring signature.
+ *
+ * @remarks
+ * Runtime behavior matches {@link BSync}; only the accepted idiom surface is narrower.
+ */
+export type BSyncVerified = (arg: VerificationSafeIdioms) => {
+  (): Generator<VerificationSafeIdioms, void, unknown>
+  $: typeof RULES_FUNCTION_IDENTIFIER
+}
+
+/**
  * A factory function that constructs a complete b-thread (`ReturnType<BSync>`) by composing multiple synchronization steps.
  * This is a helper type that corresponds to the `bThread` function implementation, which allows
  * for modular composition of b-thread behavior.
@@ -122,6 +155,14 @@ export type BSync = (arg: Idioms) => {
  * @see bThread The implementation of this type that composes multiple synchronization steps into a single b-thread.
  */
 export type BThread = (rules: ReturnType<BSync>[], repeat?: Repeat) => ReturnType<BSync>
+
+/**
+ * Verifier-safe `bThread` authoring signature.
+ *
+ * @remarks
+ * Runtime behavior matches {@link BThread}; only rule typing is narrowed through {@link BSyncVerified}.
+ */
+export type BThreadVerified = (rules: ReturnType<BSyncVerified>[], repeat?: Repeat) => ReturnType<BSyncVerified>
 
 /**
  * @internal

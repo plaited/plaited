@@ -7,7 +7,7 @@
 import * as z from 'zod'
 import { isTypeOf } from '../utils.ts'
 import { RULES_FUNCTION_IDENTIFIER } from './behavioral.constants.ts'
-import type { BPEvent, BPMatchListener, BSync, BThread } from './behavioral.types.ts'
+import type { BPEvent, BPMatchListener, BSync, BSyncVerified, BThread, BThreadVerified } from './behavioral.types.ts'
 
 /**
  * Creates an event template function that randomly selects from provided events.
@@ -170,6 +170,35 @@ export const bThread: BThread = (rules, repeat) => {
 }
 
 /**
+ * Creates a verifier-safe behavioral thread by combining synchronization rules.
+ *
+ * @remarks
+ * `bThread` remains execution-permissive.
+ * `bThreadVerified` narrows listener authoring to a verifier-safe subset for future replay/explorer tooling.
+ * Runtime behavior is intentionally identical to `bThread`.
+ */
+export const bThreadVerified: BThreadVerified = (rules, repeat) => {
+  return Object.assign(
+    repeat
+      ? function* () {
+          while (isTypeOf<boolean>(repeat, 'boolean') ? repeat : repeat()) {
+            const length = rules.length
+            for (let i = 0; i < length; i++) {
+              yield* rules[i]!()
+            }
+          }
+        }
+      : function* () {
+          const length = rules.length
+          for (let i = 0; i < length; i++) {
+            yield* rules[i]!()
+          }
+        },
+    { $: RULES_FUNCTION_IDENTIFIER } as const,
+  )
+}
+
+/**
  * Type guard that checks whether an unknown value is a `ReturnType<BSync>` (b-thread or b-sync).
  *
  * @remarks
@@ -200,6 +229,22 @@ export const isBehavioralRule = (obj: unknown): obj is ReturnType<BSync> =>
  * @see {@link Idioms} for synchronization options
  */
 export const bSync: BSync = (syncPoint) =>
+  Object.assign(
+    function* () {
+      yield syncPoint
+    },
+    { $: RULES_FUNCTION_IDENTIFIER } as const,
+  )
+
+/**
+ * Creates a verifier-safe synchronization point for b-threads.
+ *
+ * @remarks
+ * `bSync` remains execution-permissive.
+ * `bSyncVerified` narrows listener authoring to a verifier-safe subset for future replay/explorer tooling.
+ * Runtime behavior is intentionally identical to `bSync`.
+ */
+export const bSyncVerified: BSyncVerified = (syncPoint) =>
   Object.assign(
     function* () {
       yield syncPoint
