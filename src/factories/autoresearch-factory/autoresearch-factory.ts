@@ -6,3 +6,10 @@ import type { Factory } from '../../agent.ts'
  * @public
  */
 export const autoresearchFactory: Factory = () => ({})
+
+/**
+ * Creates the base autoresearch-factory scaffold.
+ *
+ * @public
+ */
+export const createAutoresearchFactory = (): Factory => autoresearchFactory

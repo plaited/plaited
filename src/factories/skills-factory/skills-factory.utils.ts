@@ -1,7 +1,8 @@
-import { basename, dirname, normalize, resolve } from 'node:path'
+import { basename, dirname, join, normalize, resolve } from 'node:path'
 import { Glob } from 'bun'
 import * as z from 'zod'
 import { extractLocalLinksFromMarkdown, parseMarkdownWithFrontmatter } from '../../cli.ts'
+import { type SkillCatalogEntry, SkillCatalogEntrySchema } from './skills-factory.schemas.ts'
 
 const skillNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
@@ -123,6 +124,69 @@ export const isValidSkill = (
   }
 
   return true
+}
+
+/**
+ * Loads and validates all skills under a root directory.
+ *
+ * @param rootDir - Workspace root to scan.
+ * @returns Valid skill catalog entries plus validation errors for rejected skills.
+ *
+ * @public
+ */
+export const loadSkillCatalog = async (
+  rootDir: string,
+): Promise<{
+  catalog: SkillCatalogEntry[]
+  errors: Array<{ skillPath: string; message: string }>
+}> => {
+  const skillDirs = await findSkillDirectories(rootDir)
+  const catalog: SkillCatalogEntry[] = []
+  const errors: Array<{ skillPath: string; message: string }> = []
+
+  for (const skillDir of skillDirs) {
+    const skillPath = join(skillDir, 'SKILL.md')
+    const file = Bun.file(skillPath)
+    if (!(await file.exists())) continue
+
+    const markdown = await file.text()
+    if (!isValidSkill(markdown, { skillPath })) {
+      errors.push({ skillPath, message: 'Invalid skill markdown' })
+      continue
+    }
+
+    try {
+      const { frontmatter, body } = parseMarkdownWithFrontmatter(markdown, SkillFrontMatterSchema)
+      const localLinks = await validateSkillLocalLinks({
+        skillDir,
+        markdownBody: body,
+      })
+
+      catalog.push(
+        SkillCatalogEntrySchema.parse({
+          name: frontmatter.name,
+          description: frontmatter.description,
+          skillPath,
+          skillDir,
+          license: frontmatter.license,
+          compatibility: frontmatter.compatibility,
+          allowedTools: frontmatter['allowed-tools'],
+          metadata: frontmatter.metadata,
+          localLinks,
+        }),
+      )
+    } catch (error) {
+      errors.push({
+        skillPath,
+        message: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
+  catalog.sort((a, b) => a.name.localeCompare(b.name))
+  errors.sort((a, b) => a.skillPath.localeCompare(b.skillPath))
+
+  return { catalog, errors }
 }
 
 /**
