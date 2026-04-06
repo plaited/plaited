@@ -54,4 +54,36 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
 
     expect(snapshots).toHaveLength(0)
   })
+
+  test('publishes selection snapshot when enabled candidates exist and keeps priority selection behavior', () => {
+    const snapshots: SnapshotMessage[] = []
+    const selected: string[] = []
+    const { bThreads, trigger, useFeedback, useSnapshot } = behavioral()
+
+    useSnapshot((snapshot: SnapshotMessage) => {
+      snapshots.push(snapshot)
+    })
+
+    useFeedback({
+      low: () => {
+        selected.push('low')
+      },
+      high: () => {
+        selected.push('high')
+      },
+    })
+
+    bThreads.set({
+      low: bThread([bSync({ request: { type: 'low' } })]),
+      high: bThread([bSync({ request: { type: 'high' } })]),
+    })
+
+    trigger({ type: 'tick' })
+
+    expect(selected[0]).toBe('low')
+    const deadlocks = snapshots.filter((s): s is DeadlockSnapshot => s.kind === SNAPSHOT_MESSAGE_KINDS.deadlock)
+    expect(deadlocks).toHaveLength(0)
+    const selections = snapshots.filter((s) => s.kind === SNAPSHOT_MESSAGE_KINDS.selection)
+    expect(selections.length).toBeGreaterThan(0)
+  })
 })

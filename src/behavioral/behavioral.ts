@@ -10,6 +10,7 @@ import type {
   BThreads,
   CandidateBid,
   EventDetails,
+  Frontier,
   PendingBid,
   RunningBid,
   Trigger,
@@ -243,6 +244,48 @@ const deadlockSnapshotFormatter = ({
     },
   }
 }
+
+/**
+ * @internal
+ * Computes the execution frontier from pending bids.
+ *
+ * The frontier captures:
+ * - all requested candidates
+ * - the subset enabled after applying block listeners
+ * - a scheduler-facing status classification
+ */
+const computeFrontier = ({ pending }: { pending: Map<string | symbol, PendingBid> }): Frontier => {
+  const blocked: BPListener[] = []
+  const candidates: CandidateBid[] = []
+
+  for (const [thread, { request, priority, block, trigger }] of pending) {
+    block && blocked.push(...ensureArray(block))
+    request &&
+      candidates.push({
+        priority,
+        trigger,
+        thread,
+        ...(isTypeOf<BPEventTemplate>(request, 'function') ? { template: request, ...request() } : request),
+      })
+  }
+
+  const enabled: CandidateBid[] = []
+  const length = candidates.length
+  for (let i = 0; i < length; i++) {
+    const candidate = candidates[i]!
+    if (!blocked.some(isListeningFor(candidate))) {
+      enabled.push(candidate)
+    }
+  }
+
+  if (enabled.length > 0) {
+    return { candidates, enabled, status: 'ready' }
+  }
+  if (candidates.length > 0) {
+    return { candidates, enabled, status: 'deadlock' }
+  }
+  return { candidates, enabled, status: 'idle' }
+}
 /**
  * Creates and manages a behavioral program instance, orchestrating the execution of b-threads.
  * This function implements the core logic of the Behavioral Programming execution model (super-steps).
@@ -360,35 +403,19 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
    * 6. If no event is selected, the super-step ends (program pauses until external trigger)
    */
   function selectNextEvent() {
-    const blocked: BPListener[] = []
-    const candidates: CandidateBid[] = []
-    for (const [thread, { request, priority, block, trigger }] of pending) {
-      block && blocked.push(...ensureArray(block))
-      request &&
-        candidates.push({
-          priority,
-          trigger,
-          thread,
-          ...(isTypeOf<BPEventTemplate>(request, 'function') ? { template: request, ...request() } : request),
-        })
-    }
-    const filteredBids: CandidateBid[] = []
-    const length = candidates.length
-    for (let i = 0; i < length; i++) {
-      const candidate = candidates[i]!
-      if (!blocked.some(isListeningFor(candidate))) {
-        filteredBids.push(candidate)
-      }
-    }
-    /** @internal Priority Queue BPEvent Selection Strategy */
-    const selectedEvent = filteredBids.sort(
-      ({ priority: priorityA }, { priority: priorityB }) => priorityA - priorityB,
-    )[0]
-    if (selectedEvent) {
-      snapshotPublisher(snapshotFormatter({ candidates, selectedEvent, pending }))
+    const frontier = computeFrontier({ pending })
+
+    if (frontier.status === 'ready') {
+      /** @internal Priority Queue BPEvent Selection Strategy */
+      const selectedEvent = frontier.enabled.sort(
+        ({ priority: priorityA }, { priority: priorityB }) => priorityA - priorityB,
+      )[0]!
+      snapshotPublisher(snapshotFormatter({ candidates: frontier.candidates, selectedEvent, pending }))
       nextStep(selectedEvent)
-    } else if (candidates.length > 0) {
-      snapshotPublisher(deadlockSnapshotFormatter({ candidates, pending }))
+      return
+    }
+    if (frontier.status === 'deadlock') {
+      snapshotPublisher(deadlockSnapshotFormatter({ candidates: frontier.candidates, pending }))
     }
   }
 

@@ -273,6 +273,21 @@ export type CandidateBid = {
 }
 
 /**
+ * @internal
+ * Frontier classification for the current pending set.
+ *
+ * This is an execution-oriented shape used by the scheduler to decide whether to:
+ * - select and process an event (`ready`)
+ * - emit a deadlock snapshot (`deadlock`)
+ * - do nothing (`idle`)
+ */
+export type Frontier = {
+  candidates: CandidateBid[]
+  enabled: CandidateBid[]
+  status: 'ready' | 'deadlock' | 'idle'
+}
+
+/**
  * Represents a cleanup function for resource management.
  * Follows the disposable pattern for proper lifecycle management.
  *
