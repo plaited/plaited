@@ -1,4 +1,4 @@
-import type { BPEvent, BSyncReplaySafe, Frontier } from './behavioral.types.ts'
+import type { BSyncReplaySafe, Frontier, ReplayEvent } from './behavioral.types.ts'
 import { replayToFrontier } from './replay-to-frontier.ts'
 
 /**
@@ -11,7 +11,7 @@ type ExploreStrategy = 'dfs' | 'bfs'
 
 type DeadlockFinding = {
   code: 'deadlock'
-  history: BPEvent[]
+  history: ReplayEvent[]
   status: Frontier['status']
   candidates: Frontier['candidates']
   enabled: Frontier['enabled']
@@ -22,7 +22,7 @@ type DeadlockFinding = {
 }
 
 type FrontierSummary = {
-  history: BPEvent[]
+  history: ReplayEvent[]
   status: Frontier['status']
 }
 
@@ -43,7 +43,7 @@ type ExploreFrontiersReport = {
 
 type ExploreFrontiersResult = {
   report: ExploreFrontiersReport
-  visitedHistories: BPEvent[][]
+  visitedHistories: ReplayEvent[][]
   findings: DeadlockFinding[]
   frontierSummaries?: FrontierSummary[]
 }
@@ -55,22 +55,22 @@ type ExploreFrontiers = (args: {
   includeFrontierSummaries?: boolean
 }) => ExploreFrontiersResult
 
-const serializeEvent = ({ type, detail }: BPEvent) => {
+const serializeEvent = ({ type, detail, source }: ReplayEvent) => {
   try {
-    return JSON.stringify([type, detail])
+    return JSON.stringify([type, detail, source])
   } catch {
-    return `${type}:${String(detail)}`
+    return `${type}:${String(detail)}:${String(source)}`
   }
 }
 
-const historyKey = (history: BPEvent[]) => {
+const historyKey = (history: ReplayEvent[]) => {
   if (history.length === 0) {
     return '[]'
   }
   return history.map(serializeEvent).join('|')
 }
 
-const cloneHistory = (history: BPEvent[]) => [...history]
+const cloneHistory = (history: ReplayEvent[]) => [...history]
 const cloneCandidates = (candidates: Frontier['candidates']): Frontier['candidates'] =>
   candidates.map((candidate) => ({
     thread: candidate.thread,
@@ -86,9 +86,9 @@ const cloneCandidates = (candidates: Frontier['candidates']): Frontier['candidat
  * Explores replay-safe history space by repeatedly reconstructing frontiers from event traces.
  */
 export const exploreFrontiers: ExploreFrontiers = ({ threads, strategy, maxDepth, includeFrontierSummaries }) => {
-  const queue: BPEvent[][] = [[]]
+  const queue: ReplayEvent[][] = [[]]
   const seenHistories = new Set<string>()
-  const visitedHistories: BPEvent[][] = []
+  const visitedHistories: ReplayEvent[][] = []
   const findings: DeadlockFinding[] = []
   const frontierSummaries: FrontierSummary[] = []
   let truncated = false
@@ -145,6 +145,7 @@ export const exploreFrontiers: ExploreFrontiers = ({ threads, strategy, maxDepth
         {
           type: candidate.type,
           ...(candidate.detail !== undefined && { detail: candidate.detail }),
+          ...(candidate.trigger === true && { source: 'trigger' as const }),
         },
       ])
     }

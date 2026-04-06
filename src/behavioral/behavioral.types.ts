@@ -52,16 +52,32 @@ export type BPEventTemplate = () => BPEvent
  *
  * It can be one of:
  * 1. A simple `string`: Matches events exactly by their `type` property.
- * 2. A structured match object: Matches by event `type` and validates `detail` with `detailSchema`.
+ * 2. A structured match object: Matches by event `type`, validates source provenance with
+ *    `sourceSchema`, and validates `detail` with `detailSchema`.
  * 3. A predicate function: Takes an event object and returns `true` if the event matches the desired criteria.
  *
  * @see {@link Idioms} for using listeners in synchronization
  * @see {@link bSync} for creating synchronization points
  */
+export type EventSource = 'trigger' | 'request'
+
 export type BPMatchListener = {
   kind: 'match'
   type: string
+  sourceSchema: ZodType<EventSource>
   detailSchema: ZodType<unknown>
+}
+
+/**
+ * Replay event shape used by frontier replay/exploration surfaces.
+ *
+ * @remarks
+ * - Runtime `trigger`/`request` semantics remain unchanged.
+ * - `source` is optional so legacy histories (`{ type, detail }`) continue to replay,
+ *   defaulting to request-origin behavior when omitted.
+ */
+export type ReplayEvent = BPEvent & {
+  source?: EventSource
 }
 
 export type BPListener = string | BPMatchListener | ((args: BPEvent) => boolean)

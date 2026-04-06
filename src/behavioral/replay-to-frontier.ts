@@ -1,5 +1,12 @@
 import { computeFrontier, ensureArray, isListeningFor, isPendingRequest } from './behavioral.frontier.ts'
-import type { BPEvent, BSyncReplaySafe, CandidateBid, Frontier, PendingBid, RunningBid } from './behavioral.types.ts'
+import type {
+  BSyncReplaySafe,
+  CandidateBid,
+  Frontier,
+  PendingBid,
+  ReplayEvent,
+  RunningBid,
+} from './behavioral.types.ts'
 
 /**
  * @internal
@@ -59,7 +66,7 @@ export const replayToFrontier = ({
   threads,
 }: {
   threads: ReplayThreadFactories
-  history: BPEvent[]
+  history: ReplayEvent[]
 }): ReplayToFrontierResult => {
   const pending = new Map<string | symbol, PendingBid>()
 
@@ -80,6 +87,7 @@ export const replayToFrontier = ({
       thread: Symbol(event.type),
       type: event.type,
       detail: event.detail,
+      ...(event.source === 'trigger' && { trigger: true as const }),
     }
     const running = new Map<string | symbol, RunningBid>()
 

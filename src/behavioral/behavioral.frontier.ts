@@ -1,5 +1,13 @@
 import { isTypeOf } from '../utils.ts'
-import type { BPEvent, BPEventTemplate, BPListener, CandidateBid, Frontier, PendingBid } from './behavioral.types.ts'
+import type {
+  BPEvent,
+  BPEventTemplate,
+  BPListener,
+  CandidateBid,
+  EventSource,
+  Frontier,
+  PendingBid,
+} from './behavioral.types.ts'
 import { isBPMatchListener } from './behavioral.utils.ts'
 
 /**
@@ -12,13 +20,18 @@ export const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj :
  * @internal
  * Creates a checker function to determine if a given BPListener matches a CandidateBid.
  */
-export const isListeningFor = ({ type, detail }: CandidateBid) => {
+export const isListeningFor = ({ type, detail, trigger }: CandidateBid) => {
   return (listener: BPListener): boolean => {
     if (isTypeOf<string>(listener, 'string')) {
       return listener === type
     }
     if (isBPMatchListener(listener)) {
-      return listener.type === type && listener.detailSchema.safeParse(detail).success
+      const source: EventSource = trigger === true ? 'trigger' : 'request'
+      return (
+        listener.type === type &&
+        listener.sourceSchema.safeParse(source).success &&
+        listener.detailSchema.safeParse(detail).success
+      )
     }
     return listener({
       detail,

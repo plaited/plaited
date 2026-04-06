@@ -23,6 +23,7 @@ test('bThreadVerified: supports match listener authoring and executes with curre
         waitFor: {
           kind: 'match',
           type: 'task',
+          sourceSchema: z.literal('request'),
           detailSchema: z.object({ id: z.string() }),
         },
       }),
