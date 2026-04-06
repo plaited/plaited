@@ -559,14 +559,9 @@ describe('parallel simulation coordination', () => {
 // ============================================================================
 
 describe('useBehavioral agent factory', () => {
-  test('publicEvents restrict which events can be triggered externally', () => {
-    // This test explores whether the agent loop could be built with
-    // useBehavioral, exposing only 'task' and 'destroy' as public events
+  test('external trigger can drive the same event pipeline used by internal handlers', () => {
     const log: string[] = []
-    const { bThreads, trigger, useFeedback, useRestrictedTrigger } = behavioral()
-
-    // Create restricted trigger — only 'task' and 'destroy' allowed externally
-    const publicTrigger = useRestrictedTrigger('model_response', 'execute', 'tool_result')
+    const { bThreads, trigger, useFeedback } = behavioral()
 
     bThreads.set({
       safety: bThread([bSync({ block: 'forbidden' })], true),
@@ -584,16 +579,11 @@ describe('useBehavioral agent factory', () => {
       },
     })
 
-    // Public trigger allows 'task'
-    publicTrigger({ type: 'task' })
+    // External trigger can drive task entrypoint.
+    trigger({ type: 'task' })
     expect(log).toEqual(['task'])
 
-    // Public trigger blocks internal events
-    publicTrigger({ type: 'model_response' })
-    publicTrigger({ type: 'execute' })
-    expect(log).toEqual(['task']) // internal events rejected
-
-    // Internal trigger (used by handlers) allows everything
+    // Internal events continue to flow through the same engine.
     trigger({ type: 'model_response' })
     trigger({ type: 'execute' })
     expect(log).toEqual(['task', 'model_response', 'execute'])

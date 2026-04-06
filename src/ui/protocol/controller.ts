@@ -20,7 +20,7 @@
  */
 import type { BPEvent, BThreads, Disconnect, Handlers, Trigger, UseFeedback, UseSnapshot } from '../../behavioral.ts'
 import { BPEventSchema } from '../../behavioral.ts'
-import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../shared-events.ts'
+import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../bridge-events.ts'
 import { ueid } from '../../utils.ts'
 import { DelegatedListener, delegates } from '../dom/delegated-listener.ts'
 import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from '../render/template.constants.ts'
@@ -159,7 +159,6 @@ export const controller = ({
   bThreads,
   useFeedback,
   disconnectSet,
-  restrictedTrigger,
   useSnapshot,
 }: {
   trigger: Trigger
@@ -167,7 +166,6 @@ export const controller = ({
   bThreads: BThreads
   useFeedback: UseFeedback
   disconnectSet: Set<Disconnect>
-  restrictedTrigger: Trigger
   useSnapshot: UseSnapshot
 }) => {
   const source = root instanceof HTMLElement ? root.tagName.toLowerCase() : 'document'
@@ -212,7 +210,7 @@ export const controller = ({
     },
     [WEBSOCKET_LIFECYCLE_EVENTS.on_ws_message](evt: MessageEvent) {
       const result = BPEventSchema.parse(JSON.parse(evt.data))
-      restrictedTrigger(result)
+      trigger(result)
     },
     [WEBSOCKET_LIFECYCLE_EVENTS.connect]() {
       socket = new WebSocket(`${self.location.origin.replace(/^http/, 'ws')}/ws`, source)
@@ -262,7 +260,7 @@ export const controller = ({
     async [AGENT_TO_CONTROLLER_EVENTS.update_behavioral](detail) {
       const moduleImports = await import(detail)
       const { default: behavioralModule } = UpdateBehavioralModuleSchema.parse(moduleImports)
-      const { threads, handlers } = UpdateBehavioralResultSchema.parse(behavioralModule(restrictedTrigger))
+      const { threads, handlers } = UpdateBehavioralResultSchema.parse(behavioralModule(trigger))
       threads && bThreads.set(threads)
       handlers && disconnectSet.add(useFeedback(handlers))
     },

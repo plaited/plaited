@@ -30,7 +30,6 @@ describe('createAgent', () => {
       cwd: process.cwd(),
       workspace: process.cwd(),
       models: TEST_MODELS,
-      restrictedTriggers: [AGENT_EVENTS.agent_disconnect],
       modules: [
         () => ({
           handlers: {
@@ -48,7 +47,7 @@ describe('createAgent', () => {
     expect(typeof agent.useSnapshot).toBe('function')
   })
 
-  test('blocks restricted events for installed modules while preserving the public trigger', async () => {
+  test('module handlers and public trigger share the same engine trigger surface', async () => {
     const snapshots: string[] = []
     const seen: string[] = []
     const agent = await createAgent({
@@ -56,7 +55,6 @@ describe('createAgent', () => {
       cwd: process.cwd(),
       workspace: process.cwd(),
       models: TEST_MODELS,
-      restrictedTriggers: [AGENT_EVENTS.agent_disconnect],
       modules: [
         ({ trigger }) => ({
           handlers: {
@@ -77,8 +75,8 @@ describe('createAgent', () => {
 
     agent.trigger({ type: 'attempt_disconnect' })
 
-    expect(snapshots).toContain('restricted_trigger_error')
-    expect(seen).toEqual([])
+    expect(snapshots).toContain('selection')
+    expect(seen).toEqual(['agent_disconnect'])
 
     agent.trigger({ type: AGENT_EVENTS.agent_disconnect })
 

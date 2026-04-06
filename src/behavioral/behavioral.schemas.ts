@@ -167,28 +167,6 @@ export const FeedbackErrorSchema = z.object({
 export type FeedbackError = z.infer<typeof FeedbackErrorSchema>
 
 /**
- * Schema for restricted trigger rejection errors.
- *
- * @remarks
- * Emitted when a restricted trigger rejects an event not in its allowed set.
- * The rejected event never reaches the BP engine.
- * Consumers narrow by `kind === 'restricted_trigger_error'`.
- *
- * @see {@link SnapshotMessageSchema} for the full discriminated union
- *
- * @public
- */
-export const RestrictedTriggerErrorSchema = z.object({
-  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.restricted_trigger_error),
-  type: z.string(),
-  detail: z.unknown().optional(),
-  error: z.string(),
-})
-
-/** @public */
-export type RestrictedTriggerError = z.infer<typeof RestrictedTriggerErrorSchema>
-
-/**
  * Schema for b-thread warnings published by the BP engine.
  *
  * @remarks
@@ -216,7 +194,6 @@ export type BThreadsWarning = z.infer<typeof BThreadsWarningSchema>
  * @see {@link SelectionSnapshotSchema} for event selection observations
  * @see {@link DeadlockSnapshotSchema} for blocked-candidate deadlock observations
  * @see {@link FeedbackErrorSchema} for feedback handler errors
- * @see {@link RestrictedTriggerErrorSchema} for restricted trigger rejections
  * @see {@link BThreadsWarningSchema} for duplicate thread warnings
  *
  * @public
@@ -225,7 +202,6 @@ export const SnapshotMessageSchema = z.discriminatedUnion('kind', [
   BThreadsWarningSchema,
   DeadlockSnapshotSchema,
   FeedbackErrorSchema,
-  RestrictedTriggerErrorSchema,
   SelectionSnapshotSchema,
 ])
 

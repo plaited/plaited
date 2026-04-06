@@ -27,7 +27,7 @@ compose on top of the core?"
 `createAgent()` owns only a small execution substrate:
 
 - `behavioral()` engine setup
-- restricted trigger boundary
+- trigger surface
 - signal and computed-signal installation
 - heartbeat pulse
 - built-in file, grep, bash, and inference handlers

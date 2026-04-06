@@ -2,7 +2,6 @@ import type { BThreads, Disconnect, Trigger, UseFeedback, UseSnapshot } from '..
 import { behavioral } from '../../behavioral.ts'
 import { keyMirror } from '../../utils.ts'
 import { createStyles } from '../css/styles.ts'
-import { RESTRICTED_EVENTS } from '../protocol/controller.constants.ts'
 import { controller } from '../protocol/controller.ts'
 import { canUseDOM } from '../render/can-use-dom.ts'
 import { BOOLEAN_ATTRS } from '../render/template.constants.ts'
@@ -180,18 +179,13 @@ export const controlIsland = ({
         #trigger: Trigger
         #useFeedback: UseFeedback
         #bThreads: BThreads
-        #restrictedTrigger: Trigger
         #useSnapshot: UseSnapshot
         constructor() {
           super()
-          const { trigger, useFeedback, bThreads, useRestrictedTrigger, useSnapshot } = behavioral()
+          const { trigger, useFeedback, bThreads, useSnapshot } = behavioral()
           this.#trigger = trigger
           this.#useFeedback = useFeedback
           this.#bThreads = bThreads
-          this.#restrictedTrigger = useRestrictedTrigger(
-            ...Object.values(RESTRICTED_EVENTS),
-            ...Object.values(ELEMENT_CALLBACKS),
-          )
           this.#useSnapshot = useSnapshot
         }
         attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
@@ -221,7 +215,6 @@ export const controlIsland = ({
             bThreads: this.#bThreads,
             useFeedback: this.#useFeedback,
             disconnectSet: this.#disconnectSet,
-            restrictedTrigger: this.#restrictedTrigger,
             useSnapshot: this.#useSnapshot,
           })
           this.#trigger<OnConnectedMessage>({ type: ELEMENT_CALLBACKS.on_connected })

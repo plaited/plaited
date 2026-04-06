@@ -13,7 +13,6 @@ import type {
   RunningBid,
   Trigger,
   UseFeedback,
-  UseRestrictedTrigger,
   UseSnapshot,
 } from './behavioral.types.ts'
 
@@ -470,36 +469,6 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
 
   /**
    * @internal
-   * Creates a trigger scoped to a fixed set of allowed event types.
-   *
-   * @remarks
-   * Events in the restricted set are rejected with a
-   * `restricted_trigger_error` snapshot message — they never reach the BP engine.
-   * All other events pass through normally.
-   * Uses Set for O(1) lookup. The returned trigger has the same signature
-   * as the unbound {@link Trigger}.
-   *
-   * @param restricted - Event type strings this trigger must reject
-   * @returns A restricted {@link Trigger} function
-   */
-  const useRestrictedTrigger: UseRestrictedTrigger = (...restricted) => {
-    const set = new Set(restricted)
-    return <T extends BPEvent>(args: T) => {
-      if (set.has(args.type)) {
-        const message = {
-          ...args,
-          kind: SNAPSHOT_MESSAGE_KINDS.restricted_trigger_error,
-          error: `Event type "${String(args.type)}" is in the restricted set: [${[...set].join(', ')}]`,
-        }
-        snapshotPublisher(message)
-        return
-      }
-      trigger(args)
-    }
-  }
-
-  /**
-   * @internal
    * Return the frozen public API object.
    *
    * Object.freeze ensures the API surface is immutable, preventing accidental
@@ -515,8 +484,5 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
     useFeedback,
     /** Hook to subscribe to internal state snapshots for monitoring/debugging. */
     useSnapshot,
-
-    /** Factory to create a trigger scoped to a fixed set of allowed event types. */
-    useRestrictedTrigger,
   })
 }

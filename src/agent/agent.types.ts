@@ -15,11 +15,8 @@ export type HeartbeatConfig = {
  * Minimal create-agent contract for the new core.
  *
  * @remarks
- * `restrictedTriggers` applies to the trigger injected into installed
- * modules, not to the public `AgentHandle.trigger` returned from
- * `createAgent()`. This keeps module-owned behavior inside a narrower
- * authority envelope while preserving a full orchestration entrypoint for
- * bootstrap and outer runtime control.
+ * `createAgent()` exposes a single trigger surface shared by installed modules
+ * and the public `AgentHandle`.
  *
  * @public
  */
@@ -30,7 +27,6 @@ export type CreateAgentOptions = {
   models: AgentModels
   env?: Record<string, string>
   modules?: Module[]
-  restrictedTriggers?: string[]
   heartbeat?: HeartbeatConfig
 }
 
@@ -38,9 +34,7 @@ export type CreateAgentOptions = {
  * Public handle returned by the new agent core.
  *
  * @remarks
- * `trigger` is the outer orchestration entrypoint for the runtime. It is not
- * narrowed by `restrictedTriggers`; installed modules receive a restricted
- * trigger separately through `ModuleParams`.
+ * `trigger` is the orchestration entrypoint for the runtime.
  *
  * @public
  */
@@ -126,7 +120,7 @@ export type Signals = {
  * @public
  */
 export type ModuleParams = {
-  /** Restricted trigger surface injected into installed modules. */
+  /** Trigger surface injected into installed modules. */
   trigger: Trigger
   useSnapshot: UseSnapshot
   signals: Signals

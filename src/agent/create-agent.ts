@@ -7,8 +7,8 @@ import { behavioral, bSync, bThread } from '../behavioral.ts'
 import { isTypeOf } from '../utils.ts'
 import { AGENT_EVENTS } from './agent.constants.ts'
 import {
-  ModuleResultSchema,
   GrepOutputSchema,
+  ModuleResultSchema,
   type RequestBashDetail,
   RequestBashDetailSchema,
   type RequestDeleteFileDetail,
@@ -41,8 +41,7 @@ const DEFAULT_TOOL_TIMEOUT_MS = 120_000
  * @remarks
  * The core owns only:
  * - behavioral engine setup
- * - a restricted trigger boundary for installed modules
- * - a full public trigger for outer runtime orchestration
+ * - a trigger surface for runtime orchestration
  * - heartbeat pulse
  * - disconnect cleanup
  * - installation of executable modules
@@ -58,10 +57,9 @@ export const createAgent = async ({
   models,
   env = {},
   modules = [],
-  restrictedTriggers = [],
   heartbeat,
 }: CreateAgentOptions): Promise<AgentHandle> => {
-  const { bThreads, trigger, useFeedback, useSnapshot, useRestrictedTrigger } = behavioral()
+  const { bThreads, trigger, useFeedback, useSnapshot } = behavioral()
   const runtimeEnv = Object.entries({ ...process.env, ...env }).reduce<Record<string, string>>((acc, [key, value]) => {
     if (value !== undefined) {
       acc[key] = value
@@ -69,17 +67,10 @@ export const createAgent = async ({
     return acc
   }, {})
 
-  const restrictedTrigger = useRestrictedTrigger(
-    ...restrictedTriggers,
-    AGENT_EVENTS.set_signal,
-    AGENT_EVENTS.heartbeat,
-    AGENT_EVENTS.signal_schema_violation,
-  )
-
   const disconnectSet = new Set<Disconnect>()
 
   const signalMap = new Map<string, Signal>()
-  const computed = useComputed(disconnectSet, restrictedTrigger)
+  const computed = useComputed(disconnectSet, trigger)
 
   const resolveWorkspacePath = (detail: string) => (isAbsolute(detail) ? detail : resolve(workspace, detail))
   const resolveCwdPath = (detail: string) => resolve(cwd, detail)
@@ -104,7 +95,7 @@ export const createAgent = async ({
       value,
       onSchemaViolation,
       disconnectSet,
-      trigger: restrictedTrigger,
+      trigger,
     })
     trigger({
       type: AGENT_EVENTS.set_signal,
@@ -126,7 +117,7 @@ export const createAgent = async ({
   }
   for (const installModule of modules) {
     const { threads, handlers } = installModule({
-      trigger: restrictedTrigger,
+      trigger,
       signals,
       useSnapshot,
       computed,
@@ -287,7 +278,7 @@ export const createAgent = async ({
       for (const modulePlugin of modulePlugins) {
         const { threads, handlers } = ModuleResultSchema.parse(
           modulePlugin({
-            trigger: restrictedTrigger,
+            trigger,
             useSnapshot,
             signals,
             computed,

@@ -1,6 +1,5 @@
 import { behavioral, type DefaultHandlers, type Disconnect, type Trigger } from '../../behavioral.ts'
 import { keyMirror } from '../../utils.ts'
-import { RESTRICTED_EVENTS } from '../protocol/controller.constants.ts'
 import { controller } from '../protocol/controller.ts'
 import { canUseDOM } from '../render/can-use-dom.ts'
 import { DelegatedListener, delegates } from './delegated-listener.ts'
@@ -52,19 +51,17 @@ const isPageSwap = (event: Event): event is PageSwapEvent => event.type === 'pag
  * Creates a BP engine scoped to `document`, wires up the WebSocket controller,
  * and listens for `pageswap`/`pagereveal` view transition events on `window`.
  * The `pageswap` handler always tears down the disconnect set. An optional
- * `onPageReveal` factory receives the restricted trigger and returns the handler
- * for the `on_pagereveal` event. The restricted trigger enforces the same
- * trust boundary as `update_behavioral` — it cannot fire `render`, `attrs`,
- * or `disconnect`.
+ * `onPageReveal` factory receives the trigger and returns the handler for the
+ * `on_pagereveal` event.
  *
  * @param options - Configuration options
- * @param options.onPageReveal - Factory that receives restricted trigger and returns the pagereveal handler
+ * @param options.onPageReveal - Factory that receives trigger and returns the pagereveal handler
  *
  * @public
  */
 export const controlDocument = ({ onPageReveal }: { onPageReveal?: PageRevealFactory } = {}) => {
   if (canUseDOM()) {
-    const { trigger, useFeedback, bThreads, useRestrictedTrigger, useSnapshot } = behavioral()
+    const { trigger, useFeedback, bThreads, useSnapshot } = behavioral()
 
     const disconnectSet = new Set<Disconnect>()
 
@@ -85,11 +82,6 @@ export const controlDocument = ({ onPageReveal }: { onPageReveal?: PageRevealFac
     window.addEventListener('pagereveal', listener)
     window.addEventListener('pageswap', listener)
 
-    const restrictedTrigger = useRestrictedTrigger(
-      ...Object.values(RESTRICTED_EVENTS),
-      ...Object.values(DOCUMENT_EVENTS),
-    )
-
     const handlers: DefaultHandlers = {
       [DOCUMENT_EVENTS.on_pageswap]() {
         for (const cb of disconnectSet) void cb()
@@ -98,7 +90,7 @@ export const controlDocument = ({ onPageReveal }: { onPageReveal?: PageRevealFac
     }
 
     if (onPageReveal) {
-      handlers[DOCUMENT_EVENTS.on_pagereveal] = onPageReveal(restrictedTrigger)
+      handlers[DOCUMENT_EVENTS.on_pagereveal] = onPageReveal(trigger)
     }
 
     useFeedback(handlers)
@@ -109,7 +101,6 @@ export const controlDocument = ({ onPageReveal }: { onPageReveal?: PageRevealFac
       bThreads,
       useFeedback,
       disconnectSet,
-      restrictedTrigger,
       useSnapshot,
     })
   }

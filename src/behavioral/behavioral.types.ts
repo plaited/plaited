@@ -484,24 +484,6 @@ export type BThreads = {
 export type Trigger = <T extends BPEvent>(args: T) => void
 
 /**
- * Factory that creates a {@link Trigger} that blocks a fixed set of restricted event types.
- * Events in the restricted set are rejected with a snapshot error and never reach the BP engine.
- * All other events pass through normally.
- *
- * @param restricted - Event type strings this trigger must reject
- * @returns A restricted {@link Trigger} function
- *
- * @remarks
- * Uses Set for O(1) lookup. Rejected events produce a `restricted_trigger_error`
- * snapshot message for observability via {@link UseSnapshot}.
- *
- * @see {@link Trigger} for the base trigger type
- *
- * @public
- */
-export type UseRestrictedTrigger = (...restricted: string[]) => Trigger
-
-/**
  * Factory function that creates and initializes a new behavioral program instance.
  * Returns an immutable API for thread management, event handling, and state monitoring.
  *
@@ -520,12 +502,10 @@ export type UseRestrictedTrigger = (...restricted: string[]) => Trigger
  * @see {@link Trigger} for event injection
  * @see {@link UseFeedback} for event handling
  * @see {@link UseSnapshot} for state monitoring
- * @see {@link UseRestrictedTrigger} for scoped triggers
  */
 export type Behavioral = <Details extends EventDetails = EventDetails>() => Readonly<{
   bThreads: BThreads
   trigger: Trigger
   useFeedback: UseFeedback<Details>
   useSnapshot: UseSnapshot
-  useRestrictedTrigger: UseRestrictedTrigger
 }>

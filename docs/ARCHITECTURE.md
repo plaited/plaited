@@ -120,7 +120,7 @@ top-level loop policy.
 The core owns:
 
 - `behavioral()` engine setup
-- restricted trigger boundary
+- trigger surface
 - signal and computed-signal installation
 - heartbeat emission
 - built-in handlers for:
@@ -170,7 +170,7 @@ Each level down is orders of magnitude cheaper but trades isolation for speed. T
 | Level | Isolation | Message Cost | Use For |
 |---|---|---|---|
 | `Bun.spawn()` | Full (separate V8 heap) | ~μs (JSC structured clone) | Inference server (persistent), isolated workers, sandboxed bash |
-| `behavioral()` | Logical (separate event space) | ~ns (function call) | PM engine + UI controller (same process, zero-copy via `useRestrictedTrigger`) |
+| `behavioral()` | Logical (separate event space) | ~ns (function call) | PM engine + UI controller (same process, zero-copy via `trigger`) |
 | `bThread` | None (shared event space) | Event selection eval | Constitution rules, task lifecycle, batch coordination |
 | `bSync` | None (sequential) | Array advance | Individual synchronization points |
 

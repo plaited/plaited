@@ -7,7 +7,7 @@ import {
   SnapshotMessageSchema,
   type Trigger,
 } from '../../behavioral.ts'
-import { AGENT_TO_CONTROLLER_EVENTS } from '../../shared-events.ts'
+import { AGENT_TO_CONTROLLER_EVENTS } from '../../bridge-events.ts'
 import { isTypeOf, trueTypeOf } from '../../utils.ts'
 import { CONTROLLER_TO_AGENT_EVENTS, SWAP_MODES } from './controller.constants.ts'
 // ─── Server → Client Message Schemas ────────────────────────────────────────
@@ -154,7 +154,7 @@ export type UpdateBehavioralMessage = z.infer<typeof UpdateBehavioralMessageSche
  *
  * @remarks
  * The controller forwards all BP engine snapshot observations (selection bids,
- * feedback errors, restricted trigger rejections, b-thread warnings)
+ * feedback errors, b-thread warnings)
  * to the server over WebSocket for server-side observability.
  *
  * @public
