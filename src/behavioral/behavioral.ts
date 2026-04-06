@@ -481,7 +481,7 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
     /** Hook to subscribe to internal state snapshots for monitoring/debugging. */
     useSnapshot,
 
-    /** Helper to create a trigger scoped to a fixed set of allowed event types. */
+    /** Factory to create a trigger scoped to a fixed set of allowed event types. */
     useRestrictedTrigger,
   })
 }
