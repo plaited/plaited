@@ -204,4 +204,98 @@ describe('createAgent', () => {
     await pongSeen
     expect(seen).toEqual(['fixture_pong'])
   })
+
+  test('reports module_warning snapshot when runtime module result parsing fails', async () => {
+    const modulePath = './src/agent/tests/fixtures/update-modules-invalid.fixture.ts'
+    let resolveWarning!: () => void
+    const warningSeen = new Promise<void>((resolve) => {
+      resolveWarning = resolve
+    })
+
+    const agent = await createAgent({
+      id: 'agent:update-modules-invalid',
+      cwd: process.cwd(),
+      workspace: process.cwd(),
+      models: TEST_MODELS,
+    })
+
+    const warnings: Array<{ moduleId: string; lane?: string; code?: string; warning: string }> = []
+    agent.useSnapshot((message) => {
+      if (message.kind !== 'module_warning') {
+        return
+      }
+      warnings.push({
+        moduleId: message.moduleId,
+        lane: message.lane,
+        code: message.code,
+        warning: message.warning,
+      })
+      resolveWarning()
+    })
+
+    agent.trigger({
+      type: AGENT_EVENTS.update_modules,
+      detail: modulePath,
+    })
+
+    await warningSeen
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]).toEqual(
+      expect.objectContaining({
+        moduleId: `update:${modulePath}#0`,
+        lane: `update:${modulePath}`,
+        code: 'module_install_parse_error',
+      }),
+    )
+  })
+
+  test('reports module_warning snapshot when a module id repeats across installs in the same lane', async () => {
+    const modulePath = './src/agent/tests/fixtures/update-modules.fixture.ts'
+    const warnings: Array<{ moduleId: string; lane?: string; code?: string; warning: string }> = []
+    let resolveWarning!: () => void
+    const warningSeen = new Promise<void>((resolve) => {
+      resolveWarning = resolve
+    })
+
+    const agent = await createAgent({
+      id: 'agent:update-modules-duplicate-id',
+      cwd: process.cwd(),
+      workspace: process.cwd(),
+      models: TEST_MODELS,
+    })
+
+    agent.useSnapshot((message) => {
+      if (message.kind !== 'module_warning') {
+        return
+      }
+      warnings.push({
+        moduleId: message.moduleId,
+        lane: message.lane,
+        code: message.code,
+        warning: message.warning,
+      })
+      if (message.code === 'duplicate_module_id') {
+        resolveWarning()
+      }
+    })
+
+    agent.trigger({
+      type: AGENT_EVENTS.update_modules,
+      detail: modulePath,
+    })
+    await Bun.sleep(10)
+    agent.trigger({
+      type: AGENT_EVENTS.update_modules,
+      detail: modulePath,
+    })
+
+    await warningSeen
+    expect(warnings).toContainEqual(
+      expect.objectContaining({
+        moduleId: `update:${modulePath}#0`,
+        lane: `update:${modulePath}`,
+        code: 'duplicate_module_id',
+      }),
+    )
+  })
 })

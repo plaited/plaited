@@ -190,6 +190,26 @@ export const BThreadsWarningSchema = z.object({
 export type BThreadsWarning = z.infer<typeof BThreadsWarningSchema>
 
 /**
+ * Schema for host/runtime module diagnostics published by the BP engine.
+ *
+ * @remarks
+ * Emitted by host/runtime layers (for example, agent module installation paths)
+ * through `reportSnapshot()`. This is intentionally separate from scheduler events.
+ *
+ * @public
+ */
+export const ModuleWarningSchema = z.object({
+  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.module_warning),
+  moduleId: z.string(),
+  lane: z.string().optional(),
+  warning: z.string(),
+  code: z.string().optional(),
+})
+
+/** @public */
+export type ModuleWarning = z.infer<typeof ModuleWarningSchema>
+
+/**
  * Discriminated union schema for all observable moments from the BP engine.
  * Consumers narrow by the `kind` field.
  *
@@ -197,6 +217,7 @@ export type BThreadsWarning = z.infer<typeof BThreadsWarningSchema>
  * @see {@link DeadlockSnapshotSchema} for blocked-candidate deadlock observations
  * @see {@link FeedbackErrorSchema} for feedback handler errors
  * @see {@link BThreadsWarningSchema} for duplicate thread warnings
+ * @see {@link ModuleWarningSchema} for host/runtime module diagnostics
  *
  * @public
  */
@@ -204,6 +225,7 @@ export const SnapshotMessageSchema = z.discriminatedUnion('kind', [
   BThreadsWarningSchema,
   DeadlockSnapshotSchema,
   FeedbackErrorSchema,
+  ModuleWarningSchema,
   SelectionSnapshotSchema,
 ])
 

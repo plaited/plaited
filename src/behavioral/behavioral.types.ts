@@ -433,6 +433,14 @@ export type UseFeedback<Details extends EventDetails = EventDetails> = (handlers
 export type UseSnapshot = (listener: SnapshotListener) => Disconnect
 
 /**
+ * Publishes a structured snapshot message directly to snapshot subscribers.
+ *
+ * @remarks
+ * This does not schedule events or advance the BP engine.
+ */
+export type ReportSnapshot = (message: SnapshotMessage) => void
+
+/**
  * Interface for managing b-threads within a behavioral program.
  * Provides dynamic thread addition and status monitoring.
  *
@@ -526,4 +534,5 @@ export type Behavioral = <Details extends EventDetails = EventDetails>() => Read
   emit: Emit
   useFeedback: UseFeedback<Details>
   useSnapshot: UseSnapshot
+  reportSnapshot: ReportSnapshot
 }>

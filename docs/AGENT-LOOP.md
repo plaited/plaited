@@ -34,6 +34,7 @@ compose on top of the core?"
 - built-in file, grep, bash, and inference handlers
 - dynamic module installation
 - snapshot access through `useSnapshot`
+- host/runtime diagnostic publishing through `reportSnapshot`
 
 The core is intentionally narrow. It does not define a canonical planning,
 memory, simulation, judge, or context-assembly policy.
@@ -72,6 +73,10 @@ From those seams they can install:
 - runtime policy
 
 This is where higher-level loop behavior should now live.
+
+Runtime/module install diagnostics should be published as snapshot messages
+(for example `module_warning`) so they appear in the same observability stream
+as selection/deadlock/feedback snapshots.
 
 Examples:
 

@@ -9,10 +9,17 @@ import { keyMirror } from '../utils.ts'
  * - `'selection'` — event selection snapshot
  * - `'feedback_error'` — handler threw during side-effect execution
  * - `'bthreads_warning'` — duplicate thread identifier detected
+ * - `'module_warning'` — host/runtime module diagnostic
  *
  * @public
  */
-export const SNAPSHOT_MESSAGE_KINDS = keyMirror('bthreads_warning', 'deadlock', 'feedback_error', 'selection')
+export const SNAPSHOT_MESSAGE_KINDS = keyMirror(
+  'bthreads_warning',
+  'deadlock',
+  'feedback_error',
+  'selection',
+  'module_warning',
+)
 
 /**
  * Brand identifier stamped onto `ReturnType<BSync>` objects.

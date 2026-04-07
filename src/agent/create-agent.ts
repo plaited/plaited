@@ -59,7 +59,7 @@ export const createAgent = async ({
   heartbeat,
   contextMemory,
 }: CreateAgentOptions): Promise<AgentHandle> => {
-  const { bThreads, trigger, emit, useFeedback, useSnapshot } = behavioral()
+  const { bThreads, trigger, emit, useFeedback, useSnapshot, reportSnapshot } = behavioral()
   const runtimeEnv = Object.entries({ ...process.env, ...env }).reduce<Record<string, string>>((acc, [key, value]) => {
     if (value !== undefined) {
       acc[key] = value
@@ -93,6 +93,7 @@ export const createAgent = async ({
     getLast: (key: string) => contextMemoryStore.getLast(key),
     getLastBy: (moduleId: string, eventType: string) => contextMemoryStore.getLastBy(moduleId, eventType),
   }
+  const installedModuleIds = new Set<string>()
   const installModules = ({
     installableModules,
     lane,
@@ -105,14 +106,40 @@ export const createAgent = async ({
     }
     for (const [index, installModule] of installableModules.entries()) {
       const moduleId = buildModuleId({ lane, index })
-      const { threads, handlers } = ModuleResultSchema.parse(
-        installModule({
+      if (installedModuleIds.has(moduleId)) {
+        reportSnapshot({
+          kind: 'module_warning',
           moduleId,
-          emit: createModuleEmit(moduleId),
-          useSnapshot,
-          contextMemory: moduleContextMemory,
-        }),
-      )
+          lane,
+          code: 'duplicate_module_id',
+          warning: `Duplicate module id "${moduleId}" detected during install`,
+        })
+      } else {
+        installedModuleIds.add(moduleId)
+      }
+
+      const parsed = (() => {
+        try {
+          return ModuleResultSchema.parse(
+            installModule({
+              moduleId,
+              emit: createModuleEmit(moduleId),
+              useSnapshot,
+              contextMemory: moduleContextMemory,
+            }),
+          )
+        } catch (error) {
+          reportSnapshot({
+            kind: 'module_warning',
+            moduleId,
+            lane,
+            code: 'module_install_parse_error',
+            warning: error instanceof Error ? error.message : String(error),
+          })
+          throw error
+        }
+      })()
+      const { threads, handlers } = parsed
       threads && bThreads.set(threads)
       handlers && disconnectSet.add(useFeedback(handlers))
     }

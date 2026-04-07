@@ -220,6 +220,24 @@ describe('SnapshotEventSchema', () => {
     expect(SnapshotEventSchema.parse(msg)).toEqual(msg)
   })
 
+  test('accepts snapshot with module_warning kind', () => {
+    const msg = {
+      type: CONTROLLER_TO_AGENT_EVENTS.snapshot,
+      detail: {
+        id: 'ghi789',
+        source: 'document',
+        msg: {
+          kind: 'module_warning' as const,
+          moduleId: 'bootstrap#0',
+          lane: 'bootstrap',
+          code: 'module_install_parse_error',
+          warning: 'invalid module result',
+        },
+      },
+    }
+    expect(SnapshotEventSchema.parse(msg)).toEqual(msg)
+  })
+
   test('rejects detail without id', () => {
     expect(() =>
       SnapshotEventSchema.parse({

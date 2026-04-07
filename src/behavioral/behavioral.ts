@@ -12,6 +12,7 @@ import type {
   EventDetails,
   EventSource,
   PendingBid,
+  ReportSnapshot,
   RunningBid,
   Trigger,
   UseFeedback,
@@ -478,6 +479,7 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
    * Delegates directly to the snapshot publisher's subscribe method.
    */
   const useSnapshot: UseSnapshot = (listener) => snapshotPublisher.subscribe(listener)
+  const reportSnapshot: ReportSnapshot = (message) => snapshotPublisher(message)
 
   /**
    * @internal
@@ -498,5 +500,7 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
     useFeedback,
     /** Hook to subscribe to internal state snapshots for monitoring/debugging. */
     useSnapshot,
+    /** Host/runtime seam for publishing structured diagnostics to snapshot subscribers. */
+    reportSnapshot,
   })
 }

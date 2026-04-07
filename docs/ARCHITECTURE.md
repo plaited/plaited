@@ -124,6 +124,7 @@ The core owns:
 - module `emit` ingress surface (provided via module params)
 - event-derived context memory policy (`moduleId:eventType` -> last `detail`)
 - heartbeat emission
+- host/runtime snapshot diagnostics via `reportSnapshot`
 - built-in handlers for:
   - primary inference
   - speech output inference
@@ -143,6 +144,11 @@ Scheduler pumping remains narrow:
 - host `trigger` pumps
 - module `emit` pumps
 - `bThreads.set` and `bThreads.spawn` are non-pumping registration APIs
+
+Host/runtime diagnostics now flow through the same snapshot stream consumed by
+agent observability. The first diagnostic kind is `module_warning`
+(`{ kind, moduleId, lane?, warning, code? }`), emitted through
+`behavioral().reportSnapshot(...)`.
 
 Planning, context assembly, skill selection, MCP capability projection, A2A
 routing, verification, and higher-level editing behavior should be composed
