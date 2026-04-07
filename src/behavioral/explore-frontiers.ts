@@ -77,7 +77,7 @@ const cloneCandidates = (candidates: Frontier['candidates']): Frontier['candidat
     priority: candidate.priority,
     type: candidate.type,
     ...(candidate.detail !== undefined && { detail: candidate.detail }),
-    ...(candidate.trigger && { trigger: candidate.trigger }),
+    source: candidate.source,
     ...(candidate.template && { template: candidate.template }),
   }))
 
@@ -144,8 +144,8 @@ export const exploreFrontiers: ExploreFrontiers = ({ threads, strategy, maxDepth
         ...history,
         {
           type: candidate.type,
+          source: candidate.source,
           ...(candidate.detail !== undefined && { detail: candidate.detail }),
-          ...(candidate.trigger === true && { source: 'trigger' as const }),
         },
       ])
     }

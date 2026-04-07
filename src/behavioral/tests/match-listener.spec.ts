@@ -13,7 +13,7 @@ test('match listener: waitFor resumes thread when type and detail schema match',
         waitFor: {
           kind: 'match',
           type: 'task',
-          sourceSchema: z.enum(['trigger', 'request']),
+          sourceSchema: z.enum(['trigger', 'request', 'emit']),
           detailSchema: z.object({ id: z.string() }),
         },
       }),
@@ -46,7 +46,7 @@ test('match listener: waitFor does not resume when detail schema fails', () => {
         waitFor: {
           kind: 'match',
           type: 'task',
-          sourceSchema: z.enum(['trigger', 'request']),
+          sourceSchema: z.enum(['trigger', 'request', 'emit']),
           detailSchema: z.object({ id: z.string() }),
         },
       }),
@@ -168,7 +168,7 @@ test('match listener: sourceSchema trigger accepts only externally triggered eve
   expect(log).toEqual(['task', 'task', 'ack'])
 })
 
-test('match listener: sourceSchema can accept both trigger and request', () => {
+test('match listener: sourceSchema can accept trigger, request, and emit', () => {
   const log: string[] = []
   const { bThreads, trigger, useFeedback } = behavioral()
 
@@ -179,7 +179,7 @@ test('match listener: sourceSchema can accept both trigger and request', () => {
         waitFor: {
           kind: 'match',
           type: 'task',
-          sourceSchema: z.enum(['trigger', 'request']),
+          sourceSchema: z.enum(['trigger', 'request', 'emit']),
           detailSchema: z.object({ id: z.string() }),
         },
       }),
@@ -199,6 +199,43 @@ test('match listener: sourceSchema can accept both trigger and request', () => {
   trigger({ type: 'kickoff' })
 
   expect(log).toEqual(['task', 'ack'])
+})
+
+test('match listener: sourceSchema emit accepts only emit-origin events', () => {
+  const log: string[] = []
+  const { bThreads, trigger, emit, useFeedback } = behavioral()
+
+  bThreads.set({
+    producer: bThread([bSync({ request: { type: 'task', detail: { id: 'job-1' } } })]),
+    consumer: bThread([
+      bSync({
+        waitFor: {
+          kind: 'match',
+          type: 'task',
+          sourceSchema: z.literal('emit'),
+          detailSchema: z.object({ id: z.string() }),
+        },
+      }),
+      bSync({ request: { type: 'ack' } }),
+    ]),
+  })
+
+  useFeedback({
+    task() {
+      log.push('task')
+    },
+    ack() {
+      log.push('ack')
+    },
+  })
+
+  trigger({ type: 'kickoff' })
+  emit({
+    type: 'task',
+    detail: { id: 'job-1' },
+  })
+
+  expect(log).toEqual(['task', 'task', 'ack'])
 })
 
 test('match listener: block prevents matching requested event from being selected', () => {

@@ -147,8 +147,7 @@ export type ControllerTemplate = FunctionTemplate<ElementAttributeList['controlI
  * @remarks
  * On first call (in a DOM environment), registers the custom element via
  * `customElements.define()`. The element constructor creates a `behavioral()`
- * instance and exposes a `restrictedTrigger` that blocks internal events
- * (`RESTRICTED_EVENTS` + `ELEMENT_CALLBACKS`) from external callers.
+ * instance and uses the host trigger surface for lifecycle/event ingress.
  *
  * Lifecycle callbacks (`connectedCallback`, `attributeChangedCallback`, etc.)
  * are forwarded as typed BP events into the element's behavioral program.

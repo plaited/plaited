@@ -764,7 +764,16 @@ describe('detectRichness', () => {
       detectRichness([
         {
           type: 'decision',
-          bids: [{ thread: { label: 'taskGate' }, trigger: false, selected: true, type: 'task', priority: 0 }],
+          bids: [
+            {
+              thread: { label: 'taskGate' },
+              source: 'request',
+              trigger: false,
+              selected: true,
+              type: 'task',
+              priority: 0,
+            },
+          ],
           timestamp: 0,
         },
         { type: 'message', content: 'hello', timestamp: 0 },

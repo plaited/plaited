@@ -1,5 +1,5 @@
 import type { infer as Infer, ZodSafeParseError, ZodTypeAny } from 'zod'
-import type { BSync, DefaultHandlers, Disconnect, Trigger, UseSnapshot } from '../behavioral/behavioral.types.ts'
+import type { BSync, DefaultHandlers, Disconnect, Emit, Trigger, UseSnapshot } from '../behavioral/behavioral.types.ts'
 import type { AgentToolCall, ModelUsage, ToolDefinition } from './agent.schemas.ts'
 
 /**
@@ -15,8 +15,8 @@ export type HeartbeatConfig = {
  * Minimal create-agent contract for the new core.
  *
  * @remarks
- * `createAgent()` exposes a single trigger surface shared by installed modules
- * and the public `AgentHandle`.
+ * `createAgent()` exposes host `trigger` on the public handle and module
+ * `emit` through `ModuleParams`.
  *
  * @public
  */
@@ -28,6 +28,10 @@ export type CreateAgentOptions = {
   env?: Record<string, string>
   modules?: Module[]
   heartbeat?: HeartbeatConfig
+  contextMemory?: {
+    ttlMs?: number
+    maxKeys?: number
+  }
 }
 
 /**
@@ -120,11 +124,14 @@ export type Signals = {
  * @public
  */
 export type ModuleParams = {
-  /** Trigger surface injected into installed modules. */
-  trigger: Trigger
+  moduleId: string
+  /** Module ingress surface injected into installed modules. */
+  emit: Emit
   useSnapshot: UseSnapshot
-  signals: Signals
-  computed: Computed
+  contextMemory: {
+    getLast: (key: string) => unknown
+    getLastBy: (moduleId: string, eventType: string) => unknown
+  }
 }
 
 /**

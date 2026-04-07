@@ -59,7 +59,7 @@ export type BPEventTemplate = () => BPEvent
  * @see {@link Idioms} for using listeners in synchronization
  * @see {@link bSync} for creating synchronization points
  */
-export type EventSource = 'trigger' | 'request'
+export type EventSource = 'trigger' | 'request' | 'emit'
 
 export type BPMatchListener = {
   kind: 'match'
@@ -72,7 +72,7 @@ export type BPMatchListener = {
  * Replay event shape used by frontier replay/exploration surfaces.
  *
  * @remarks
- * - Runtime `trigger`/`request` semantics remain unchanged.
+ * - Runtime `trigger`/`emit`/`request` semantics remain unchanged.
  * - `source` is optional so legacy histories (`{ type, detail }`) continue to replay,
  *   defaulting to request-origin behavior when omitted.
  */
@@ -246,8 +246,8 @@ export type BThreadReplaySafe = (
  * that matches their `waitFor`, `request`, or `interrupt` declarations has been selected.
  */
 export type RunningBid = {
-  /** Internal flag indicating if this bid originated from an external trigger. */
-  trigger?: true
+  /** Provenance of this bid for source-aware listener matching. */
+  source: EventSource
   /** Optional human-readable label for spawned thread instances. */
   label?: string
   /** The priority level of the thread, used for resolving conflicts when multiple threads request events. Lower numbers = higher priority. */
@@ -282,8 +282,8 @@ export type CandidateBid = {
   type: string
   /** Optional detail payload of the requested event, contains any data associated with this event. */
   detail?: unknown
-  /** Internal flag indicating if this bid originated from an external trigger rather than a thread request. */
-  trigger?: true
+  /** Provenance of this candidate for source-aware listener matching. */
+  source: EventSource
   /** If the request was a template function, this holds the original template function reference for comparison. */
   template?: BPEventTemplate
 }
@@ -498,6 +498,7 @@ export type BThreads = {
  * @see {@link PlaitedTrigger} for enhanced trigger
  */
 export type Trigger = <T extends BPEvent>(args: T) => void
+export type Emit = <T extends BPEvent>(args: T) => void
 
 /**
  * Factory function that creates and initializes a new behavioral program instance.
@@ -522,6 +523,7 @@ export type Trigger = <T extends BPEvent>(args: T) => void
 export type Behavioral = <Details extends EventDetails = EventDetails>() => Readonly<{
   bThreads: BThreads
   trigger: Trigger
+  emit: Emit
   useFeedback: UseFeedback<Details>
   useSnapshot: UseSnapshot
 }>

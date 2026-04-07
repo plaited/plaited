@@ -191,6 +191,7 @@ describe('SnapshotEventSchema', () => {
           bids: [
             {
               thread: { label: 'test' },
+              source: 'request' as const,
               trigger: false,
               selected: true,
               type: 'event',

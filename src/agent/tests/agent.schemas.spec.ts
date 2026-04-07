@@ -120,6 +120,7 @@ describe('TrajectoryStepSchema', () => {
       bids: [
         {
           thread: { label: 'taskGate' },
+          source: 'request',
           trigger: false,
           selected: true,
           type: 'task',
@@ -127,6 +128,7 @@ describe('TrajectoryStepSchema', () => {
         },
         {
           thread: { label: 'noRmRf' },
+          source: 'request',
           trigger: false,
           selected: false,
           type: 'execute',
@@ -166,6 +168,7 @@ describe('DecisionStepSchema', () => {
       bids: [
         {
           thread: { label: 'sim_guard_tc-1' },
+          source: 'request',
           trigger: false,
           selected: false,
           type: 'execute',
@@ -189,6 +192,7 @@ describe('DecisionStepSchema', () => {
       bids: [
         {
           thread: { label: 'Symbol(external)' },
+          source: 'trigger',
           trigger: true,
           selected: true,
           type: 'task',

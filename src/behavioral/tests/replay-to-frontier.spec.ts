@@ -111,4 +111,33 @@ describe('replayToFrontier', () => {
     expect(requestSourceResult.frontier.status).toBe('idle')
     expect(requestSourceResult.frontier.enabled).toHaveLength(0)
   })
+
+  test('replay uses emit source provenance for match listeners', () => {
+    const threads = {
+      consumer: bThreadReplaySafe([
+        bSyncReplaySafe({
+          waitFor: {
+            kind: 'match',
+            type: 'task',
+            sourceSchema: z.literal('emit'),
+            detailSchema: z.object({ id: z.string() }),
+          },
+        }),
+        bSyncReplaySafe({ request: { type: 'ack' } }),
+      ]),
+    }
+
+    const emitSourceResult = replayToFrontier({
+      threads,
+      history: [{ type: 'task', source: 'emit', detail: { id: 'job-1' } }],
+    })
+    expect(emitSourceResult.frontier.enabled.map((candidate) => candidate.type)).toEqual(['ack'])
+
+    const triggerSourceResult = replayToFrontier({
+      threads,
+      history: [{ type: 'task', source: 'trigger', detail: { id: 'job-1' } }],
+    })
+    expect(triggerSourceResult.frontier.status).toBe('idle')
+    expect(triggerSourceResult.frontier.enabled).toHaveLength(0)
+  })
 })

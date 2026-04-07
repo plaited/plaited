@@ -27,8 +27,9 @@ compose on top of the core?"
 `createAgent()` owns only a small execution substrate:
 
 - `behavioral()` engine setup
-- trigger surface
-- signal and computed-signal installation
+- host `trigger` ingress
+- module `emit` ingress
+- event-derived context memory (`moduleId:eventType` -> last detail)
 - heartbeat pulse
 - built-in file, grep, bash, and inference handlers
 - dynamic module installation
@@ -51,8 +52,6 @@ The built-in core event surface is:
 - `bash`
 - `heartbeat`
 - `update_modules`
-- `set_signal`
-- `signal_schema_violation`
 - `agent_disconnect`
 
 These are engine-level primitives. They are not the full user-facing loop.
@@ -61,16 +60,15 @@ These are engine-level primitives. They are not the full user-facing loop.
 
 Modules receive:
 
-- `trigger`
+- `moduleId`
+- `emit`
 - `useSnapshot`
-- `signals`
-- `computed`
+- `contextMemory` (`getLast`, `getLastBy`)
 
 From those seams they can install:
 
 - `bThreads`
 - feedback handlers
-- derived signals
 - runtime policy
 
 This is where higher-level loop behavior should now live.
@@ -79,8 +77,8 @@ Examples:
 
 - a `memory-module` can assemble retained context from snapshots and durable
   memory
-- a `plan-module` can own plan generation, current-plan signals, and
-  re-planning rules
+- a `plan-module` can own plan generation, current-plan state, and re-planning
+  rules
 - a `skills-module` can expose a searchable catalog of skills and inject a
   selected skill body into model context
 - an `mcp-module` can expose a searchable remote capability inventory without
@@ -143,7 +141,7 @@ Examples:
 
 The heartbeat is a core capability, but its meaning is module-defined.
 
-The core emits `heartbeat` on an interval. Modules can use that signal for:
+The core emits `heartbeat` on an interval. Modules can use that event for:
 
 - proactive sensing
 - background maintenance
@@ -161,7 +159,7 @@ mandatory built-in loop phases of the current core.
 They fit better as optional module layers that can:
 
 - inspect snapshots
-- read and write signals
+- read context memory entries and emit new events
 - gate or repair proposed actions
 - retain successful patterns into durable memory
 - feed verified examples into training and distillation workflows
@@ -178,6 +176,8 @@ The stable invariant is:
 
 - minimal engine
 - stable module contract
+- explicit provenance (`trigger | request | emit`)
+- ingress-only pumping (`trigger`, `emit`)
 - behaviorally composed orchestration
 - replaceable module bundle
 

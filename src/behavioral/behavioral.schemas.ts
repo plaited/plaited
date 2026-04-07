@@ -46,6 +46,8 @@ export const SelectionBidSchema = z.object({
   thread: ThreadReferenceSchema,
   /** Whether this bid originated from an external `trigger()` call. */
   trigger: z.boolean(),
+  /** Explicit source provenance for source-aware matching and replay. */
+  source: z.enum(['trigger', 'request', 'emit']),
   /** Whether this bid was selected for execution in the current step. */
   selected: z.boolean(),
   /** The event type being requested or waited for. */

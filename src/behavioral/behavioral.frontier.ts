@@ -1,13 +1,5 @@
 import { isTypeOf } from '../utils.ts'
-import type {
-  BPEvent,
-  BPEventTemplate,
-  BPListener,
-  CandidateBid,
-  EventSource,
-  Frontier,
-  PendingBid,
-} from './behavioral.types.ts'
+import type { BPEvent, BPEventTemplate, BPListener, CandidateBid, Frontier, PendingBid } from './behavioral.types.ts'
 import { isBPMatchListener } from './behavioral.utils.ts'
 
 /**
@@ -20,13 +12,12 @@ export const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj :
  * @internal
  * Creates a checker function to determine if a given BPListener matches a CandidateBid.
  */
-export const isListeningFor = ({ type, detail, trigger }: CandidateBid) => {
+export const isListeningFor = ({ type, detail, source }: CandidateBid) => {
   return (listener: BPListener): boolean => {
     if (isTypeOf<string>(listener, 'string')) {
       return listener === type
     }
     if (isBPMatchListener(listener)) {
-      const source: EventSource = trigger === true ? 'trigger' : 'request'
       return (
         listener.type === type &&
         listener.sourceSchema.safeParse(source).success &&
@@ -60,12 +51,12 @@ export const computeFrontier = ({ pending }: { pending: Map<string | symbol, Pen
   const blocked: BPListener[] = []
   const candidates: CandidateBid[] = []
 
-  for (const [thread, { request, priority, block, trigger }] of pending) {
+  for (const [thread, { request, priority, block, source }] of pending) {
     block && blocked.push(...ensureArray(block))
     request &&
       candidates.push({
         priority,
-        trigger,
+        source,
         thread,
         ...(isTypeOf<BPEventTemplate>(request, 'function') ? { template: request, ...request() } : request),
       })

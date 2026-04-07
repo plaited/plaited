@@ -36,12 +36,12 @@ const advanceRunningToPending = ({
   running: Map<string | symbol, RunningBid>
 }) => {
   for (const [thread, bid] of running) {
-    const { generator, priority, trigger, label } = bid
+    const { generator, priority, source, label } = bid
     const { value, done } = generator.next()
     if (!done) {
       pending.set(thread, {
         priority,
-        ...(trigger && { trigger }),
+        source,
         ...(label && { label }),
         generator,
         ...value,
@@ -75,6 +75,7 @@ export const replayToFrontier = ({
   for (const thread in threads) {
     bootstrapRunning.set(thread, {
       priority,
+      source: 'request',
       generator: threads[thread]!(),
     })
     priority++
@@ -85,9 +86,9 @@ export const replayToFrontier = ({
     const selectedEvent: CandidateBid = {
       priority: 0,
       thread: Symbol(event.type),
+      source: event.source ?? 'request',
       type: event.type,
       detail: event.detail,
-      ...(event.source === 'trigger' && { trigger: true as const }),
     }
     const running = new Map<string | symbol, RunningBid>()
 

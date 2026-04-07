@@ -146,10 +146,7 @@ const updateAttributes = ({
  * Wires up WebSocket lifecycle, DOM rendering, and user action forwarding.
  * The controller creates its own WebSocket connection with exponential backoff reconnection.
  *
- * All events originate internally — WebSocket messages and DOM events both use the
- * internal trigger. The `rendered` acknowledgment is triggered after a render completes.
- * `disconnect` arrives from the server via WebSocket to tear down the controller.
- * No `publicEvents` are defined — the returned trigger rejects all external calls.
+ * WebSocket messages and DOM events both ingress via the host trigger surface.
  *
  * @public
  */

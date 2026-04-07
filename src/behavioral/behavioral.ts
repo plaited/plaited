@@ -8,7 +8,9 @@ import type {
   BPEvent,
   BThreads,
   CandidateBid,
+  Emit,
   EventDetails,
+  EventSource,
   PendingBid,
   RunningBid,
   Trigger,
@@ -110,7 +112,8 @@ const formatSnapshotBids = ({
     const interruptsMeta = resolveThreadReference(interrupts)
     const message: SelectionBid = {
       thread: threadMeta,
-      trigger: bid.trigger ?? false,
+      source: bid.source,
+      trigger: bid.source === 'trigger',
       type: bid.type,
       selected: selectedEvent ? isPendingRequest(selectedEvent, bid) : false,
       priority: bid.priority,
@@ -279,12 +282,12 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
    */
   function step() {
     for (const [thread, bid] of running) {
-      const { generator, priority, trigger, label } = bid
+      const { generator, priority, source, label } = bid
       const { value, done } = generator.next()
       !done &&
         pending.set(thread, {
           priority,
-          ...(trigger && { trigger }),
+          source,
           ...(label && { label }),
           generator,
           ...value,
@@ -352,34 +355,41 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
     running.size && step()
   }
 
-  /**
-   * @internal
-   * Implementation of the public `trigger` function.
-   *
-   * This creates a special temporary thread with highest priority (0) that:
-   * 1. Requests the specified event
-   * 2. Waits for any event (using triggerWaitFor which always returns true)
-   * 3. Terminates after the event is processed
-   *
-   * The thread is identified by a Symbol based on the event type for uniqueness.
-   * Uses queueMicrotask to break synchronous recursion when trigger() is called
-   * from within useFeedback handlers, preventing stack overflow.
-   *
-   * @returns Promise that resolves when the triggered event's super-step completes
-   */
-  const trigger: Trigger = (request) => {
+  const enqueueIngress = ({ event, source }: { event: BPEvent; source: EventSource }) => {
     const thread = function* () {
       yield {
-        request,
+        request: event as BPEvent,
         waitFor: [triggerWaitFor],
       }
     }
-    running.set(Symbol(request.type), {
+    running.set(Symbol(event.type), {
       priority: 0,
-      trigger: true,
+      source,
       generator: thread(),
     })
     running.size && step()
+  }
+
+  /**
+   * @internal
+   * Implementation of the public `trigger` function.
+   */
+  const trigger: Trigger = (request) => {
+    enqueueIngress({
+      event: request,
+      source: 'trigger',
+    })
+  }
+
+  /**
+   * @internal
+   * Implementation of the module ingress `emit` function.
+   */
+  const emit: Emit = (request) => {
+    enqueueIngress({
+      event: request,
+      source: 'emit',
+    })
   }
 
   /**
@@ -441,6 +451,7 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
         }
         running.set(thread, {
           priority: running.size + 1,
+          source: 'request',
           generator: threads[thread]!(),
         })
       }
@@ -449,6 +460,7 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
       const threadId = ueid('bt_')
       running.set(threadId, {
         priority: running.size + 1,
+        source: 'request',
         generator: thread(),
         label,
       })
@@ -480,6 +492,8 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
     bThreads,
     /** Function to inject external events into the program. */
     trigger,
+    /** Function to inject module-origin events into the program. */
+    emit,
     /** Hook to subscribe to selected events with feedback handlers. */
     useFeedback,
     /** Hook to subscribe to internal state snapshots for monitoring/debugging. */

@@ -120,8 +120,9 @@ top-level loop policy.
 The core owns:
 
 - `behavioral()` engine setup
-- trigger surface
-- signal and computed-signal installation
+- host `trigger` ingress surface
+- module `emit` ingress surface (provided via module params)
+- event-derived context memory policy (`moduleId:eventType` -> last `detail`)
 - heartbeat emission
 - built-in handlers for:
   - primary inference
@@ -133,6 +134,15 @@ The core owns:
   - `grep`
   - `bash`
 - dynamic module installation
+
+Behavioral provenance is explicit and source-aware across runtime and replay:
+`trigger | request | emit`.
+
+Scheduler pumping remains narrow:
+
+- host `trigger` pumps
+- module `emit` pumps
+- `bThreads.set` and `bThreads.spawn` are non-pumping registration APIs
 
 Planning, context assembly, skill selection, MCP capability projection, A2A
 routing, verification, and higher-level editing behavior should be composed

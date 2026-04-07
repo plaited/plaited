@@ -22,6 +22,4 @@ export const AGENT_EVENTS = keyMirror(
   'heartbeat',
   'update_modules',
   'agent_tool_result',
-  'signal_schema_violation',
-  'set_signal',
 )

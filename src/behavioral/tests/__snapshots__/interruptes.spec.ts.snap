@@ -10,6 +10,7 @@ exports[`interrupt should interrupt 1`] = `
         "interrupts": undefined,
         "priority": 0,
         "selected": true,
+        "source": "trigger",
         "thread": {
           "label": "Symbol(add)",
         },
@@ -27,6 +28,7 @@ exports[`interrupt should interrupt 1`] = `
         "interrupts": undefined,
         "priority": 1,
         "selected": true,
+        "source": "request",
         "thread": {
           "label": "addHot",
         },
@@ -44,6 +46,7 @@ exports[`interrupt should interrupt 1`] = `
         "interrupts": undefined,
         "priority": 0,
         "selected": true,
+        "source": "trigger",
         "thread": {
           "label": "Symbol(add)",
         },
@@ -61,6 +64,7 @@ exports[`interrupt should interrupt 1`] = `
         "interrupts": undefined,
         "priority": 1,
         "selected": true,
+        "source": "request",
         "thread": {
           "label": "addHot",
         },
@@ -80,6 +84,7 @@ exports[`interrupt should interrupt 1`] = `
         },
         "priority": 0,
         "selected": true,
+        "source": "trigger",
         "thread": {
           "label": "Symbol(terminate)",
         },
@@ -97,6 +102,7 @@ exports[`interrupt should interrupt 1`] = `
         "interrupts": undefined,
         "priority": 0,
         "selected": true,
+        "source": "trigger",
         "thread": {
           "label": "Symbol(add)",
         },

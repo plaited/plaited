@@ -1,9 +1,8 @@
 import { glob } from 'node:fs/promises'
 import { isAbsolute, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import type { infer as Infer, ZodTypeAny } from 'zod'
 import type { Disconnect } from '../behavioral.ts'
-import { behavioral, bSync, bThread } from '../behavioral.ts'
+import { type BPEvent, behavioral, bSync, bThread } from '../behavioral.ts'
 import { isTypeOf } from '../utils.ts'
 import { AGENT_EVENTS } from './agent.constants.ts'
 import {
@@ -27,13 +26,13 @@ import {
   RequestWriteFileDetailSchema,
   UpdateModuleModuleSchema,
 } from './agent.schemas.ts'
-import type { AgentHandle, CreateAgentOptions, SchemaViolationHandler, Signal, Signals } from './agent.types.ts'
-import { useComputed } from './use-computed.ts'
-import { useSignal } from './use-signal.ts'
+import type { AgentHandle, CreateAgentOptions } from './agent.types.ts'
+import { createContextMemory } from './context-memory.ts'
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 15 * 60 * 1000
 
 const DEFAULT_TOOL_TIMEOUT_MS = 120_000
+const DEFAULT_CONTEXT_MEMORY_TTL_MS = 15 * 60 * 1000
 
 /**
  * Creates the minimal agent core around the behavioral engine.
@@ -41,7 +40,7 @@ const DEFAULT_TOOL_TIMEOUT_MS = 120_000
  * @remarks
  * The core owns only:
  * - behavioral engine setup
- * - a trigger surface for runtime orchestration
+ * - host trigger + module emit ingress surfaces
  * - heartbeat pulse
  * - disconnect cleanup
  * - installation of executable modules
@@ -58,8 +57,9 @@ export const createAgent = async ({
   env = {},
   modules = [],
   heartbeat,
+  contextMemory,
 }: CreateAgentOptions): Promise<AgentHandle> => {
-  const { bThreads, trigger, useFeedback, useSnapshot } = behavioral()
+  const { bThreads, trigger, emit, useFeedback, useSnapshot } = behavioral()
   const runtimeEnv = Object.entries({ ...process.env, ...env }).reduce<Record<string, string>>((acc, [key, value]) => {
     if (value !== undefined) {
       acc[key] = value
@@ -68,63 +68,56 @@ export const createAgent = async ({
   }, {})
 
   const disconnectSet = new Set<Disconnect>()
-
-  const signalMap = new Map<string, Signal>()
-  const computed = useComputed(disconnectSet, trigger)
+  const contextMemoryStore = createContextMemory({
+    ttlMs: contextMemory?.ttlMs ?? DEFAULT_CONTEXT_MEMORY_TTL_MS,
+    ...(contextMemory?.maxKeys !== undefined && { maxKeys: contextMemory.maxKeys }),
+  })
+  const contextMemorySweepMs = Math.max(1000, Math.floor((contextMemory?.ttlMs ?? DEFAULT_CONTEXT_MEMORY_TTL_MS) / 2))
+  const contextMemoryTimer = setInterval(() => {
+    contextMemoryStore.pruneExpired()
+  }, contextMemorySweepMs)
 
   const resolveWorkspacePath = (detail: string) => (isAbsolute(detail) ? detail : resolve(workspace, detail))
   const resolveCwdPath = (detail: string) => resolve(cwd, detail)
 
-  const onSchemaViolation: SchemaViolationHandler = (detail) =>
-    trigger({ type: AGENT_EVENTS.signal_schema_violation, detail })
-
-  const setSignals = <TSchema extends ZodTypeAny>({
-    key,
-    schema,
-    value,
-    readOnly,
+  const buildModuleId = ({ lane, index }: { lane: string; index: number }) => `${lane}#${index}`
+  const createModuleEmit = (moduleId: string) => (event: BPEvent) => {
+    contextMemoryStore.record({
+      moduleId,
+      eventType: event.type,
+      detail: event.detail,
+    })
+    emit(event)
+  }
+  const moduleContextMemory = {
+    getLast: (key: string) => contextMemoryStore.getLast(key),
+    getLastBy: (moduleId: string, eventType: string) => contextMemoryStore.getLastBy(moduleId, eventType),
+  }
+  const installModules = ({
+    installableModules,
+    lane,
   }: {
-    key: string
-    schema: TSchema
-    value?: Infer<TSchema>
-    readOnly: boolean
+    installableModules: CreateAgentOptions['modules']
+    lane: string
   }) => {
-    const signal = useSignal({
-      key,
-      schema,
-      value,
-      onSchemaViolation,
-      disconnectSet,
-      trigger,
-    })
-    trigger({
-      type: AGENT_EVENTS.set_signal,
-      detail: {
-        key,
-        signal,
-        readOnly,
-      },
-    })
-    const { set, ...rest } = signal
-    signalMap.set(key, readOnly ? rest : Object.assign(rest, { set }))
-    return signal
+    if (!installableModules) {
+      return
+    }
+    for (const [index, installModule] of installableModules.entries()) {
+      const moduleId = buildModuleId({ lane, index })
+      const { threads, handlers } = ModuleResultSchema.parse(
+        installModule({
+          moduleId,
+          emit: createModuleEmit(moduleId),
+          useSnapshot,
+          contextMemory: moduleContextMemory,
+        }),
+      )
+      threads && bThreads.set(threads)
+      handlers && disconnectSet.add(useFeedback(handlers))
+    }
   }
-
-  const signals: Signals = {
-    set: setSignals,
-    get: (key) => signalMap.get(key),
-    has: (key) => signalMap.has(key),
-  }
-  for (const installModule of modules) {
-    const { threads, handlers } = installModule({
-      trigger,
-      signals,
-      useSnapshot,
-      computed,
-    })
-    threads && bThreads.set(threads)
-    handlers && disconnectSet.add(useFeedback(handlers))
-  }
+  installModules({ installableModules: modules, lane: 'bootstrap' })
 
   const createToolSignal = (timeout: number | undefined) => AbortSignal.timeout(timeout ?? DEFAULT_TOOL_TIMEOUT_MS)
 
@@ -137,17 +130,6 @@ export const createAgent = async ({
   }, heartbeatIntervalMs)
 
   bThreads.set({
-    onSignalSet: bThread(
-      [
-        bSync({
-          block: ({ type, detail }) => {
-            if (type !== AGENT_EVENTS.set_signal) return false
-            return signalMap.has(detail.key)
-          },
-        }),
-      ],
-      true,
-    ),
     onUpdateModules: bThread(
       [
         bSync({
@@ -252,15 +234,11 @@ export const createAgent = async ({
   useFeedback({
     [AGENT_EVENTS.agent_disconnect]() {
       clearInterval(heartbeatTimer)
+      clearInterval(contextMemoryTimer)
       for (const disconnect of disconnectSet) {
         void disconnect()
       }
       disconnectSet.clear()
-    },
-    [AGENT_EVENTS.set_signal]({ key, signal, readOnly }: { key: string; signal: Signal; readOnly: boolean }) {
-      const { set, ...rest } = signal
-      !readOnly && Object.assign(rest, { set })
-      signalMap.set(key, rest)
     },
     async [AGENT_EVENTS.request_inference](detail: RequestPrimaryInferenceDetail) {
       const { input, signal } = RequestPrimaryInferenceDetailSchema.parse(detail)
@@ -275,18 +253,7 @@ export const createAgent = async ({
     async [AGENT_EVENTS.update_modules](detail: string) {
       const moduleImports = await import(pathToFileURL(resolveWorkspacePath(detail)).href)
       const { default: modulePlugins } = UpdateModuleModuleSchema.parse(moduleImports)
-      for (const modulePlugin of modulePlugins) {
-        const { threads, handlers } = ModuleResultSchema.parse(
-          modulePlugin({
-            trigger,
-            useSnapshot,
-            signals,
-            computed,
-          }),
-        )
-        threads && bThreads.set(threads)
-        handlers && disconnectSet.add(useFeedback(handlers))
-      }
+      installModules({ installableModules: modulePlugins, lane: `update:${detail}` })
     },
     async [AGENT_EVENTS.read_file](detail: RequestReadFileDetail) {
       const { input, signal } = RequestReadFileDetailSchema.parse(detail)

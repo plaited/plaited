@@ -22,14 +22,14 @@ describe('exploreFrontiers', () => {
     expect(bfsResult.findings).toContainEqual(
       expect.objectContaining({
         code: 'deadlock',
-        history: [{ type: 'A' }],
+        history: [{ type: 'A', source: 'request' }],
         status: 'deadlock',
       }),
     )
     expect(dfsResult.findings).toContainEqual(
       expect.objectContaining({
         code: 'deadlock',
-        history: [{ type: 'A' }],
+        history: [{ type: 'A', source: 'request' }],
         status: 'deadlock',
         enabled: [],
         summary: { candidateCount: 1, enabledCount: 0 },
@@ -56,8 +56,8 @@ describe('exploreFrontiers', () => {
     })
 
     expect(result.visitedHistories).toContainEqual([])
-    expect(result.visitedHistories).toContainEqual([{ type: 'A' }])
-    expect(result.visitedHistories).toContainEqual([{ type: 'B' }])
+    expect(result.visitedHistories).toContainEqual([{ type: 'A', source: 'request' }])
+    expect(result.visitedHistories).toContainEqual([{ type: 'B', source: 'request' }])
     expect(result.visitedHistories).toHaveLength(3)
     expect(result.report).toEqual({
       strategy: 'bfs',
@@ -101,7 +101,7 @@ describe('exploreFrontiers', () => {
       code: 'deadlock',
       history: [],
       status: 'deadlock',
-      candidates: [{ thread: 'blockedA', priority: 1, type: 'A' }],
+      candidates: [{ thread: 'blockedA', priority: 1, type: 'A', source: 'request' }],
       enabled: [],
       summary: { candidateCount: 1, enabledCount: 0 },
     })
@@ -122,9 +122,9 @@ describe('exploreFrontiers', () => {
 
     expect(result.findings).toContainEqual({
       code: 'deadlock',
-      history: [{ type: 'A' }],
+      history: [{ type: 'A', source: 'request' }],
       status: 'deadlock',
-      candidates: [{ thread: 'chooseB', priority: 2, type: 'B' }],
+      candidates: [{ thread: 'chooseB', priority: 2, type: 'B', source: 'request' }],
       enabled: [],
       summary: { candidateCount: 1, enabledCount: 0 },
     })

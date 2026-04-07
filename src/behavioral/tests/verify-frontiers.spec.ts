@@ -20,7 +20,7 @@ describe('verifyFrontiers', () => {
     expect(result.findings).toContainEqual(
       expect.objectContaining({
         code: 'deadlock',
-        history: [{ type: 'A' }],
+        history: [{ type: 'A', source: 'request' }],
       }),
     )
     expect(result.report.findingCount).toBe(result.findings.length)
