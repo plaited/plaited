@@ -61,7 +61,7 @@ const isPageSwap = (event: Event): event is PageSwapEvent => event.type === 'pag
  */
 export const controlDocument = ({ onPageReveal }: { onPageReveal?: PageRevealFactory } = {}) => {
   if (canUseDOM()) {
-    const { trigger, useFeedback, bThreads, useSnapshot } = behavioral()
+    const { trigger, useFeedback, addBThreads, useSnapshot } = behavioral()
 
     const disconnectSet = new Set<Disconnect>()
 
@@ -98,7 +98,7 @@ export const controlDocument = ({ onPageReveal }: { onPageReveal?: PageRevealFac
     controller({
       root: document,
       trigger,
-      bThreads,
+      addBThreads,
       useFeedback,
       disconnectSet,
       useSnapshot,

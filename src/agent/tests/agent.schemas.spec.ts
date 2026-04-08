@@ -11,6 +11,7 @@ import {
   UpdateModuleModuleSchema,
 } from 'plaited/agent'
 import { bSync } from 'plaited/behavioral'
+import * as z from 'zod'
 
 describe('AgentToolCallSchema', () => {
   test('validates a complete tool call', () => {
@@ -119,21 +120,19 @@ describe('TrajectoryStepSchema', () => {
       type: 'decision',
       bids: [
         {
-          thread: { label: 'taskGate' },
+          thread: { label: 'taskGate', id: 'taskGate' },
           source: 'request',
-          trigger: false,
           selected: true,
           type: 'task',
           priority: 0,
         },
         {
-          thread: { label: 'noRmRf' },
+          thread: { label: 'noRmRf', id: 'noRmRf' },
           source: 'request',
-          trigger: false,
           selected: false,
           type: 'execute',
           priority: 1,
-          blockedBy: { label: 'noRmRf' },
+          blockedBy: { label: 'noRmRf', id: 'noRmRf' },
         },
       ],
       timestamp: Date.now(),
@@ -167,22 +166,21 @@ describe('DecisionStepSchema', () => {
       type: 'decision',
       bids: [
         {
-          thread: { label: 'sim_guard_tc-1' },
+          thread: { label: 'sim_guard_tc-1', id: 'sim_guard_tc-1' },
           source: 'request',
-          trigger: false,
           selected: false,
           type: 'execute',
           detail: { toolCall: { id: 'tc-1' } },
           priority: 2,
-          blockedBy: { label: 'sim_guard_tc-1' },
-          interrupts: { label: 'batchCompletion' },
+          blockedBy: { label: 'sim_guard_tc-1', id: 'sim_guard_tc-1' },
+          interrupts: { label: 'batchCompletion', id: 'batchCompletion' },
         },
       ],
       timestamp: Date.now(),
       stepId: 'decision-1',
     })
     expect(result.bids).toHaveLength(1)
-    expect(result.bids[0]!.blockedBy).toEqual({ label: 'sim_guard_tc-1' })
+    expect(result.bids[0]!.blockedBy).toEqual({ label: 'sim_guard_tc-1', id: 'sim_guard_tc-1' })
     expect(result.stepId).toBe('decision-1')
   })
 
@@ -191,9 +189,8 @@ describe('DecisionStepSchema', () => {
       type: 'decision',
       bids: [
         {
-          thread: { label: 'Symbol(external)' },
+          thread: { label: 'Symbol(external)', id: 'ingress-test' },
           source: 'trigger',
-          trigger: true,
           selected: true,
           type: 'task',
           detail: { content: 'user message' },
@@ -202,7 +199,7 @@ describe('DecisionStepSchema', () => {
       ],
       timestamp: Date.now(),
     })
-    expect(result.bids[0]!.trigger).toBe(true)
+    expect(result.bids[0]!.source).toBe('trigger')
   })
 
   test('rejects missing bids field', () => {
@@ -312,7 +309,12 @@ describe('ModuleResultSchema', () => {
 
   test('accepts branded behavioral rules in threads', () => {
     const thread = bSync({
-      waitFor: 'tick',
+      waitFor: {
+        kind: 'match',
+        type: 'tick',
+        sourceSchema: z.enum(['trigger', 'request', 'emit']),
+        detailSchema: z.unknown(),
+      },
     })
 
     const result = ModuleResultSchema.parse({

@@ -1,6 +1,7 @@
 import { glob } from 'node:fs/promises'
 import { isAbsolute, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import * as z from 'zod'
 import type { Disconnect } from '../behavioral.ts'
 import { type BPEvent, behavioral, bSync, bThread } from '../behavioral.ts'
 import { isTypeOf } from '../utils.ts'
@@ -59,7 +60,7 @@ export const createAgent = async ({
   heartbeat,
   contextMemory,
 }: CreateAgentOptions): Promise<AgentHandle> => {
-  const { bThreads, trigger, emit, useFeedback, useSnapshot, reportSnapshot } = behavioral()
+  const { addBThreads, trigger, emit, useFeedback, useSnapshot, reportSnapshot } = behavioral()
   const runtimeEnv = Object.entries({ ...process.env, ...env }).reduce<Record<string, string>>((acc, [key, value]) => {
     if (value !== undefined) {
       acc[key] = value
@@ -140,13 +141,20 @@ export const createAgent = async ({
         }
       })()
       const { threads, handlers } = parsed
-      threads && bThreads.set(threads)
+      threads && addBThreads(threads)
       handlers && disconnectSet.add(useFeedback(handlers))
     }
   }
   installModules({ installableModules: modules, lane: 'bootstrap' })
 
   const createToolSignal = (timeout: number | undefined) => AbortSignal.timeout(timeout ?? DEFAULT_TOOL_TIMEOUT_MS)
+  const sourceSchema = z.enum(['trigger', 'request', 'emit'])
+  const blockWhen = (args: { type: string; detailSchema: z.ZodType<unknown> }) => ({
+    kind: 'match' as const,
+    type: args.type,
+    sourceSchema,
+    detailSchema: args.detailSchema,
+  })
 
   const heartbeatIntervalMs = heartbeat?.intervalMs ?? DEFAULT_HEARTBEAT_INTERVAL_MS
   const heartbeatTimer = setInterval(() => {
@@ -156,17 +164,19 @@ export const createAgent = async ({
     })
   }, heartbeatIntervalMs)
 
-  bThreads.set({
+  addBThreads({
     onUpdateModules: bThread(
       [
         bSync({
-          block: ({ type, detail }) => {
-            if (type !== AGENT_EVENTS.update_modules) return false
-            if (!isTypeOf<string>(detail, 'string')) return true
-            if (!/\.tsx?$/.test(detail)) return true
-            const path = resolveWorkspacePath(detail)
-            return !path.startsWith(`${workspace}${sep}`)
-          },
+          block: blockWhen({
+            type: AGENT_EVENTS.update_modules,
+            detailSchema: z.unknown().refine((detail) => {
+              if (!isTypeOf<string>(detail, 'string')) return true
+              if (!/\.tsx?$/.test(detail)) return true
+              const path = resolveWorkspacePath(detail)
+              return !path.startsWith(`${workspace}${sep}`)
+            }),
+          }),
         }),
       ],
       true,
@@ -174,13 +184,15 @@ export const createAgent = async ({
     onReadFile: bThread(
       [
         bSync({
-          block: ({ type, detail }) => {
-            if (type !== AGENT_EVENTS.read_file) return false
-            const parsed = RequestReadFileDetailSchema.safeParse(detail)
-            if (!parsed.success) return true
-            const resolved = resolveCwdPath(parsed.data.input)
-            return !resolved.startsWith(`${cwd}${sep}`)
-          },
+          block: blockWhen({
+            type: AGENT_EVENTS.read_file,
+            detailSchema: z.unknown().refine((detail) => {
+              const parsed = RequestReadFileDetailSchema.safeParse(detail)
+              if (!parsed.success) return true
+              const resolved = resolveCwdPath(parsed.data.input)
+              return !resolved.startsWith(`${cwd}${sep}`)
+            }),
+          }),
         }),
       ],
       true,
@@ -188,13 +200,15 @@ export const createAgent = async ({
     onWriteFile: bThread(
       [
         bSync({
-          block: ({ type, detail }) => {
-            if (type !== AGENT_EVENTS.write_file) return false
-            const parsed = RequestWriteFileDetailSchema.safeParse(detail)
-            if (!parsed.success) return true
-            const resolved = resolveCwdPath(parsed.data.input.path)
-            return !resolved.startsWith(`${cwd}${sep}`)
-          },
+          block: blockWhen({
+            type: AGENT_EVENTS.write_file,
+            detailSchema: z.unknown().refine((detail) => {
+              const parsed = RequestWriteFileDetailSchema.safeParse(detail)
+              if (!parsed.success) return true
+              const resolved = resolveCwdPath(parsed.data.input.path)
+              return !resolved.startsWith(`${cwd}${sep}`)
+            }),
+          }),
         }),
       ],
       true,
@@ -202,13 +216,15 @@ export const createAgent = async ({
     onDeleteFile: bThread(
       [
         bSync({
-          block: ({ type, detail }) => {
-            if (type !== AGENT_EVENTS.delete_file) return false
-            const parsed = RequestDeleteFileDetailSchema.safeParse(detail)
-            if (!parsed.success) return true
-            const resolved = resolveCwdPath(parsed.data.input)
-            return !resolved.startsWith(`${cwd}${sep}`)
-          },
+          block: blockWhen({
+            type: AGENT_EVENTS.delete_file,
+            detailSchema: z.unknown().refine((detail) => {
+              const parsed = RequestDeleteFileDetailSchema.safeParse(detail)
+              if (!parsed.success) return true
+              const resolved = resolveCwdPath(parsed.data.input)
+              return !resolved.startsWith(`${cwd}${sep}`)
+            }),
+          }),
         }),
       ],
       true,
@@ -216,13 +232,15 @@ export const createAgent = async ({
     onGlob: bThread(
       [
         bSync({
-          block: ({ type, detail }) => {
-            if (type !== AGENT_EVENTS.glob_files) return false
-            const parsed = RequestGlobFilesDetailSchema.safeParse(detail)
-            if (!parsed.success) return true
-            const { pattern, exclude = [] } = parsed.data.input
-            return [pattern, ...exclude].some((entry) => entry.startsWith('/') || entry.includes('..'))
-          },
+          block: blockWhen({
+            type: AGENT_EVENTS.glob_files,
+            detailSchema: z.unknown().refine((detail) => {
+              const parsed = RequestGlobFilesDetailSchema.safeParse(detail)
+              if (!parsed.success) return true
+              const { pattern, exclude = [] } = parsed.data.input
+              return [pattern, ...exclude].some((entry) => entry.startsWith('/') || entry.includes('..'))
+            }),
+          }),
         }),
       ],
       true,
@@ -230,14 +248,16 @@ export const createAgent = async ({
     onGrep: bThread(
       [
         bSync({
-          block: ({ type, detail }) => {
-            if (type !== AGENT_EVENTS.grep) return false
-            const parsed = RequestGrepDetailSchema.safeParse(detail)
-            if (!parsed.success) return true
-            if (!parsed.data.input.path) return false
-            const resolved = resolveCwdPath(parsed.data.input.path)
-            return !resolved.startsWith(`${cwd}${sep}`)
-          },
+          block: blockWhen({
+            type: AGENT_EVENTS.grep,
+            detailSchema: z.unknown().refine((detail) => {
+              const parsed = RequestGrepDetailSchema.safeParse(detail)
+              if (!parsed.success) return true
+              if (!parsed.data.input.path) return false
+              const resolved = resolveCwdPath(parsed.data.input.path)
+              return !resolved.startsWith(`${cwd}${sep}`)
+            }),
+          }),
         }),
       ],
       true,
@@ -245,13 +265,15 @@ export const createAgent = async ({
     onBash: bThread(
       [
         bSync({
-          block: ({ type, detail }) => {
-            if (type !== AGENT_EVENTS.bash) return false
-            const parsed = RequestBashDetailSchema.safeParse(detail)
-            if (!parsed.success) return true
-            const resolved = resolveWorkspacePath(parsed.data.input.path)
-            return !resolved.startsWith(`${workspace}${sep}`)
-          },
+          block: blockWhen({
+            type: AGENT_EVENTS.bash,
+            detailSchema: z.unknown().refine((detail) => {
+              const parsed = RequestBashDetailSchema.safeParse(detail)
+              if (!parsed.success) return true
+              const resolved = resolveWorkspacePath(parsed.data.input.path)
+              return !resolved.startsWith(`${workspace}${sep}`)
+            }),
+          }),
         }),
       ],
       true,

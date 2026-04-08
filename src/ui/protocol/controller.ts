@@ -18,7 +18,7 @@
  *
  * @public
  */
-import type { BPEvent, BThreads, Disconnect, Handlers, Trigger, UseFeedback, UseSnapshot } from '../../behavioral.ts'
+import type { AddBThreads, BPEvent, Disconnect, Handlers, Trigger, UseFeedback, UseSnapshot } from '../../behavioral.ts'
 import { BPEventSchema } from '../../behavioral.ts'
 import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../bridge-events.ts'
 import { ueid } from '../../utils.ts'
@@ -153,14 +153,14 @@ const updateAttributes = ({
 export const controller = ({
   trigger,
   root,
-  bThreads,
+  addBThreads,
   useFeedback,
   disconnectSet,
   useSnapshot,
 }: {
   trigger: Trigger
   root: Document | Element
-  bThreads: BThreads
+  addBThreads: AddBThreads
   useFeedback: UseFeedback
   disconnectSet: Set<Disconnect>
   useSnapshot: UseSnapshot
@@ -170,6 +170,17 @@ export const controller = ({
   // ─── WebSocket lifecycle ───────────────────────────────────────────
   let socket: WebSocket | undefined
   let retryCount = 0
+  const installedThreadEventTypes = new Set<string>()
+  const registerThreads: AddBThreads = (threads) => {
+    for (const thread of Object.values(threads)) {
+      for (const idiom of thread()) {
+        if (idiom.request?.type) {
+          installedThreadEventTypes.add(idiom.request.type)
+        }
+      }
+    }
+    addBThreads(threads)
+  }
 
   const send = (message: BPEvent) => {
     const fallback = () => {
@@ -246,7 +257,7 @@ export const controller = ({
       }
     },
     [CONTROLLER_TO_AGENT_EVENTS.user_action]({ type, event }) {
-      if (bThreads.has(type)) {
+      if (installedThreadEventTypes.has(type)) {
         trigger({
           type,
           detail: event,
@@ -258,7 +269,7 @@ export const controller = ({
       const moduleImports = await import(detail)
       const { default: behavioralModule } = UpdateBehavioralModuleSchema.parse(moduleImports)
       const { threads, handlers } = UpdateBehavioralResultSchema.parse(behavioralModule(trigger))
-      threads && bThreads.set(threads)
+      threads && registerThreads(threads)
       handlers && disconnectSet.add(useFeedback(handlers))
     },
   }

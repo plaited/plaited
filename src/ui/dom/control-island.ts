@@ -1,4 +1,4 @@
-import type { BThreads, Disconnect, Trigger, UseFeedback, UseSnapshot } from '../../behavioral.ts'
+import type { AddBThreads, Disconnect, Trigger, UseFeedback, UseSnapshot } from '../../behavioral.ts'
 import { behavioral } from '../../behavioral.ts'
 import { keyMirror } from '../../utils.ts'
 import { createStyles } from '../css/styles.ts'
@@ -177,14 +177,14 @@ export const controlIsland = ({
         #disconnectSet = new Set<Disconnect>()
         #trigger: Trigger
         #useFeedback: UseFeedback
-        #bThreads: BThreads
+        #addBThreads: AddBThreads
         #useSnapshot: UseSnapshot
         constructor() {
           super()
-          const { trigger, useFeedback, bThreads, useSnapshot } = behavioral()
+          const { trigger, useFeedback, addBThreads, useSnapshot } = behavioral()
           this.#trigger = trigger
           this.#useFeedback = useFeedback
-          this.#bThreads = bThreads
+          this.#addBThreads = addBThreads
           this.#useSnapshot = useSnapshot
         }
         attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
@@ -211,7 +211,7 @@ export const controlIsland = ({
           controller({
             root: this,
             trigger: this.#trigger,
-            bThreads: this.#bThreads,
+            addBThreads: this.#addBThreads,
             useFeedback: this.#useFeedback,
             disconnectSet: this.#disconnectSet,
             useSnapshot: this.#useSnapshot,
