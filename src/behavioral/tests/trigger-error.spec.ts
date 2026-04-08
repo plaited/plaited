@@ -1,13 +1,14 @@
 import { describe, expect, test } from 'bun:test'
 import { behavioral, bSync, bThread } from 'plaited/behavioral'
+import { onType } from './helpers.ts'
 
 describe('trigger', () => {
   test('routes triggered events into the BP engine', () => {
-    const { bThreads, trigger, useFeedback } = behavioral()
+    const { addBThreads, trigger, useFeedback } = behavioral()
     const received: string[] = []
 
-    bThreads.set({
-      listener: bThread([bSync({ waitFor: 'allowed_event' })]),
+    addBThreads({
+      listener: bThread([bSync({ waitFor: onType('allowed_event') })]),
     })
     useFeedback({
       allowed_event() {
@@ -21,11 +22,11 @@ describe('trigger', () => {
   })
 
   test('preserves detail payload on triggered events', () => {
-    const { bThreads, trigger, useFeedback } = behavioral()
+    const { addBThreads, trigger, useFeedback } = behavioral()
     const received: Array<{ id: number }> = []
 
-    bThreads.set({
-      listener: bThread([bSync({ waitFor: 'payload_event' })]),
+    addBThreads({
+      listener: bThread([bSync({ waitFor: onType('payload_event') })]),
     })
     useFeedback({
       payload_event(detail) {

@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { behavioral, bSync, bThread, type SnapshotMessage } from 'plaited/behavioral'
+import { onType } from './helpers.ts'
 
 describe('reportSnapshot', () => {
   test('publishes custom runtime diagnostics through useSnapshot', () => {
@@ -31,11 +32,11 @@ describe('reportSnapshot', () => {
 
   test('does not alter event selection order', () => {
     const events: string[] = []
-    const { bThreads, trigger, useFeedback, reportSnapshot } = behavioral()
+    const { addBThreads, trigger, useFeedback, reportSnapshot } = behavioral()
 
-    bThreads.set({
+    addBThreads({
       producer: bThread([bSync({ request: { type: 'task' } })]),
-      consumer: bThread([bSync({ waitFor: 'task' }), bSync({ request: { type: 'ack' } })]),
+      consumer: bThread([bSync({ waitFor: onType('task') }), bSync({ request: { type: 'ack' } })]),
     })
 
     useFeedback({

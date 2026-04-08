@@ -1,12 +1,19 @@
 import { describe, expect, test } from 'bun:test'
-import { bSyncReplaySafe, bThreadReplaySafe } from 'plaited/behavioral'
-import { exploreFrontiers } from '../explore-frontiers.ts'
-import { verifyFrontiers } from '../verify-frontiers.ts'
+import { bSync, bThread } from 'plaited/behavioral'
+import * as z from 'zod'
+import { exploreFrontiers, verifyFrontiers } from '../behavioral.frontier.ts'
+
+const onType = (type: string) => ({
+  kind: 'match' as const,
+  type,
+  sourceSchema: z.enum(['trigger', 'request', 'emit']),
+  detailSchema: z.unknown(),
+})
 
 const createDeadlockReachableThreads = () => ({
-  chooseA: bThreadReplaySafe([bSyncReplaySafe({ request: { type: 'A' } })]),
-  chooseB: bThreadReplaySafe([bSyncReplaySafe({ request: { type: 'B' } })]),
-  deadlockAfterA: bThreadReplaySafe([bSyncReplaySafe({ waitFor: 'A' }), bSyncReplaySafe({ block: 'B' })]),
+  chooseA: bThread([bSync({ request: { type: 'A' } })]),
+  chooseB: bThread([bSync({ request: { type: 'B' } })]),
+  deadlockAfterA: bThread([bSync({ waitFor: onType('A') }), bSync({ block: onType('B') })]),
 })
 
 describe('verifyFrontiers', () => {
@@ -30,7 +37,7 @@ describe('verifyFrontiers', () => {
   test('returns truncated when exploration is cut off with no findings', () => {
     const result = verifyFrontiers({
       threads: {
-        producer: bThreadReplaySafe([bSyncReplaySafe({ request: { type: 'tick' } })], true),
+        producer: bThread([bSync({ request: { type: 'tick' } })], true),
       },
       strategy: 'dfs',
       maxDepth: 1,
@@ -50,7 +57,7 @@ describe('verifyFrontiers', () => {
   test('returns verified when exploration completes with no findings', () => {
     const result = verifyFrontiers({
       threads: {
-        watcher: bThreadReplaySafe([bSyncReplaySafe({ waitFor: 'ping' })]),
+        watcher: bThread([bSync({ waitFor: onType('ping') })]),
       },
       strategy: 'bfs',
     })
@@ -76,6 +83,14 @@ describe('verifyFrontiers', () => {
     const result = verifyFrontiers(args)
 
     expect(result.report).toEqual(explorerResult.report)
-    expect(result.findings).toEqual(explorerResult.findings)
+    const normalize = (findings: typeof result.findings) =>
+      findings.map((finding) => ({
+        ...finding,
+        candidates: finding.candidates.map((candidate) => ({
+          ...candidate,
+          thread: '<runtime-id>',
+        })),
+      }))
+    expect(normalize(result.findings)).toEqual(normalize(explorerResult.findings))
   })
 })

@@ -1,22 +1,26 @@
 import { describe, expect, test } from 'bun:test'
-import { bSyncReplaySafe, bThreadReplaySafe } from 'plaited/behavioral'
+import { bSync, bThread } from 'plaited/behavioral'
 import * as z from 'zod'
-import { replayToFrontier } from '../replay-to-frontier.ts'
+import { replayToFrontier } from '../behavioral.frontier.ts'
+
+const onType = (type: string) => ({
+  kind: 'match' as const,
+  type,
+  sourceSchema: z.enum(['trigger', 'request', 'emit']),
+  detailSchema: z.unknown(),
+})
 
 describe('replayToFrontier', () => {
   test('empty history reconstructs the initial frontier', () => {
     const { frontier, pending } = replayToFrontier({
       threads: {
-        producer: bThreadReplaySafe([bSyncReplaySafe({ request: { type: 'task' } })]),
-        consumer: bThreadReplaySafe([
-          bSyncReplaySafe({ waitFor: 'task' }),
-          bSyncReplaySafe({ request: { type: 'ack' } }),
-        ]),
+        producer: bThread([bSync({ request: { type: 'task' } })]),
+        consumer: bThread([bSync({ waitFor: onType('task') }), bSync({ request: { type: 'ack' } })]),
       },
       history: [],
     })
 
-    expect([...pending.keys()]).toEqual(['producer', 'consumer'])
+    expect([...pending.values()].map((bid) => bid.label)).toEqual(['producer', 'consumer'])
     expect(frontier.status).toBe('ready')
     expect(frontier.candidates.map((candidate) => candidate.type)).toEqual(['task'])
   })
@@ -24,20 +28,14 @@ describe('replayToFrontier', () => {
   test('replaying one selected event advances affected threads and reconstructs the next frontier', () => {
     const { frontier, pending } = replayToFrontier({
       threads: {
-        producer: bThreadReplaySafe([bSyncReplaySafe({ request: { type: 'task' } })]),
-        consumer: bThreadReplaySafe([
-          bSyncReplaySafe({ waitFor: 'task' }),
-          bSyncReplaySafe({ request: { type: 'ack' } }),
-        ]),
-        interrupted: bThreadReplaySafe([
-          bSyncReplaySafe({ interrupt: 'task' }),
-          bSyncReplaySafe({ request: { type: 'should_not_happen' } }),
-        ]),
+        producer: bThread([bSync({ request: { type: 'task' } })]),
+        consumer: bThread([bSync({ waitFor: onType('task') }), bSync({ request: { type: 'ack' } })]),
+        interrupted: bThread([bSync({ interrupt: onType('task') }), bSync({ request: { type: 'should_not_happen' } })]),
       },
-      history: [{ type: 'task' }],
+      history: [{ type: 'task', source: 'request' }],
     })
 
-    expect([...pending.keys()]).toEqual(['consumer'])
+    expect([...pending.values()].map((bid) => bid.label)).toEqual(['consumer'])
     expect(frontier.status).toBe('ready')
     expect(frontier.candidates.map((candidate) => candidate.type)).toEqual(['ack'])
     expect(frontier.enabled.map((candidate) => candidate.type)).toEqual(['ack'])
@@ -46,8 +44,8 @@ describe('replayToFrontier', () => {
   test('replayed deadlock state is classified as deadlock', () => {
     const { frontier } = replayToFrontier({
       threads: {
-        blocker: bThreadReplaySafe([bSyncReplaySafe({ block: 'dangerous' })]),
-        producer: bThreadReplaySafe([bSyncReplaySafe({ request: { type: 'dangerous' } })]),
+        blocker: bThread([bSync({ block: onType('dangerous') })]),
+        producer: bThread([bSync({ request: { type: 'dangerous' } })]),
       },
       history: [],
     })
@@ -60,7 +58,7 @@ describe('replayToFrontier', () => {
   test('replayed ready state is classified as ready', () => {
     const { frontier } = replayToFrontier({
       threads: {
-        producer: bThreadReplaySafe([bSyncReplaySafe({ request: { type: 'ping' } })]),
+        producer: bThread([bSync({ request: { type: 'ping' } })]),
       },
       history: [],
     })
@@ -73,7 +71,7 @@ describe('replayToFrontier', () => {
   test('replayed idle state is classified as idle', () => {
     const { frontier } = replayToFrontier({
       threads: {
-        watcher: bThreadReplaySafe([bSyncReplaySafe({ waitFor: 'ping' })]),
+        watcher: bThread([bSync({ waitFor: onType('ping') })]),
       },
       history: [],
     })
@@ -85,8 +83,8 @@ describe('replayToFrontier', () => {
 
   test('replay uses event source provenance for match listeners', () => {
     const threads = {
-      consumer: bThreadReplaySafe([
-        bSyncReplaySafe({
+      consumer: bThread([
+        bSync({
           waitFor: {
             kind: 'match',
             type: 'task',
@@ -94,7 +92,7 @@ describe('replayToFrontier', () => {
             detailSchema: z.object({ id: z.string() }),
           },
         }),
-        bSyncReplaySafe({ request: { type: 'ack' } }),
+        bSync({ request: { type: 'ack' } }),
       ]),
     }
 
@@ -114,8 +112,8 @@ describe('replayToFrontier', () => {
 
   test('replay uses emit source provenance for match listeners', () => {
     const threads = {
-      consumer: bThreadReplaySafe([
-        bSyncReplaySafe({
+      consumer: bThread([
+        bSync({
           waitFor: {
             kind: 'match',
             type: 'task',
@@ -123,7 +121,7 @@ describe('replayToFrontier', () => {
             detailSchema: z.object({ id: z.string() }),
           },
         }),
-        bSyncReplaySafe({ request: { type: 'ack' } }),
+        bSync({ request: { type: 'ack' } }),
       ]),
     }
 

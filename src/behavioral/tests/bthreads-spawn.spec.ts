@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'bun:test'
 import {
-  type BThreadsWarning,
   behavioral,
   bSync,
   bThread,
@@ -8,212 +7,105 @@ import {
   type SelectionSnapshot,
   type SnapshotMessage,
 } from 'plaited/behavioral'
+import * as z from 'zod'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
 
-describe('bThreads.spawn', () => {
-  test('returns distinct ids and same-label spawns do not collide', () => {
-    const { bThreads } = behavioral()
-    const workerThread = bThread([bSync({ waitFor: 'start' })])
+const onType = (type: string) => ({
+  kind: 'match' as const,
+  type,
+  sourceSchema: z.enum(['trigger', 'request', 'emit']),
+  detailSchema: z.unknown(),
+})
 
-    const firstId = bThreads.spawn({ label: 'worker', thread: workerThread })
-    const secondId = bThreads.spawn({ label: 'worker', thread: workerThread })
-
-    expect(firstId).not.toBe(secondId)
-    expect(bThreads.has(firstId)).toEqual({ running: true, pending: false })
-    expect(bThreads.has(secondId)).toEqual({ running: true, pending: false })
-  })
-
-  test('spawned instances with the same label participate independently', () => {
+describe('addBThreads identity attribution', () => {
+  test('independent workers participate and selection snapshots expose thread ids', () => {
+    const snapshots: SnapshotMessage[] = []
     const completions: string[] = []
-    const { bThreads, trigger, useFeedback } = behavioral()
+    const { addBThreads, trigger, useFeedback, useSnapshot } = behavioral()
 
-    const createWorkerThread = () =>
-      bThread([bSync({ waitFor: 'start' }), bSync({ request: () => ({ type: 'done' }) })])
+    useSnapshot((snapshot: SnapshotMessage) => {
+      snapshots.push(snapshot)
+    })
 
-    const firstId = bThreads.spawn({ label: 'worker', thread: createWorkerThread() })
-    const secondId = bThreads.spawn({ label: 'worker', thread: createWorkerThread() })
+    addBThreads({
+      workerA: bThread([bSync({ waitFor: onType('start') }), bSync({ request: { type: 'done_a' } })]),
+      workerB: bThread([bSync({ waitFor: onType('start') }), bSync({ request: { type: 'done_b' } })]),
+    })
 
     useFeedback({
-      done() {
+      done_a() {
+        completions.push('done')
+      },
+      done_b() {
         completions.push('done')
       },
     })
 
     trigger({ type: 'start' })
 
-    expect(firstId).not.toBe(secondId)
     expect(completions).toHaveLength(2)
-    expect(bThreads.has(firstId)).toEqual({ running: false, pending: false })
-    expect(bThreads.has(secondId)).toEqual({ running: false, pending: false })
-  })
-
-  test('spawn snapshots expose label and distinguish same-label instances by id', () => {
-    const snapshots: SnapshotMessage[] = []
-    const { bThreads, trigger, useSnapshot } = behavioral()
-
-    useSnapshot((snapshot: SnapshotMessage) => {
-      snapshots.push(snapshot)
-    })
-
-    const createWorkerThread = () =>
-      bThread([bSync({ waitFor: 'start' }), bSync({ request: () => ({ type: 'done' }) })])
-
-    const firstId = bThreads.spawn({ label: 'worker', thread: createWorkerThread() })
-    const secondId = bThreads.spawn({ label: 'worker', thread: createWorkerThread() })
-
-    trigger({ type: 'start' })
-
     const selectionSnapshots = snapshots.filter(
-      (s): s is SelectionSnapshot => s.kind === SNAPSHOT_MESSAGE_KINDS.selection,
+      (snapshot): snapshot is SelectionSnapshot => snapshot.kind === SNAPSHOT_MESSAGE_KINDS.selection,
     )
-    expect(selectionSnapshots.length).toBeGreaterThan(0)
-
-    const doneBids = selectionSnapshots.flatMap((snapshot) => snapshot.bids).filter((bid) => bid.type === 'done')
-    expect(doneBids.length).toBeGreaterThanOrEqual(2)
-    expect(doneBids.every((bid) => bid.thread.label === 'worker')).toBe(true)
-    const doneThreadIds = new Set(doneBids.map((bid) => bid.thread.id))
-    expect(doneThreadIds).toEqual(new Set([firstId, secondId]))
+    const doneBids = selectionSnapshots
+      .flatMap((snapshot) => snapshot.bids)
+      .filter((bid) => bid.type === 'done_a' || bid.type === 'done_b')
+    expect(new Set(doneBids.map((bid) => bid.thread.label))).toEqual(new Set(['workerA', 'workerB']))
+    expect(doneBids.every((bid) => bid.thread.id.length > 0)).toBe(true)
   })
 
-  test('set thread snapshots remain unchanged and do not include spawned ids', () => {
+  test('set thread snapshots include { label, id } references', () => {
     const snapshots: SnapshotMessage[] = []
-    const { bThreads, trigger, useSnapshot } = behavioral()
+    const { addBThreads, trigger, useSnapshot } = behavioral()
 
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
 
-    bThreads.set({
+    addBThreads({
       singleton: bThread([bSync({ request: { type: 'singleton_done' } })]),
     })
 
     trigger({ type: 'start' })
 
     const selectionSnapshots = snapshots.filter(
-      (s): s is SelectionSnapshot => s.kind === SNAPSHOT_MESSAGE_KINDS.selection,
+      (snapshot): snapshot is SelectionSnapshot => snapshot.kind === SNAPSHOT_MESSAGE_KINDS.selection,
     )
     const singletonBid = selectionSnapshots
       .flatMap((snapshot) => snapshot.bids)
       .find((bid) => bid.type === 'singleton_done')
 
     expect(singletonBid).toBeDefined()
-    expect(singletonBid!.thread).toEqual({ label: 'singleton' })
+    expect(singletonBid!.thread.label).toBe('singleton')
+    expect(singletonBid!.thread.id.length).toBeGreaterThan(0)
   })
 
-  test('set duplicate warnings remain unchanged', () => {
+  test('deadlock refs include labels and ids for blockers and interrupters', () => {
     const snapshots: SnapshotMessage[] = []
-    const { bThreads, useSnapshot } = behavioral()
+    const { addBThreads, trigger, useSnapshot } = behavioral()
+
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
 
-    bThreads.set({
-      singleton: bThread([bSync({ waitFor: 'x' })]),
-    })
-    bThreads.set({
-      singleton: bThread([bSync({ waitFor: 'y' })]),
-    })
-    bThreads.spawn({
-      label: 'singleton',
-      thread: bThread([bSync({ waitFor: 'z' })]),
-    })
-
-    const warnings = snapshots.filter((s): s is BThreadsWarning => s.kind === SNAPSHOT_MESSAGE_KINDS.bthreads_warning)
-    expect(warnings).toHaveLength(1)
-    expect(warnings[0]!.thread).toBe('singleton')
-  })
-
-  test('spawned blocker and interruptor refs include labels and ids', () => {
-    const snapshots: SnapshotMessage[] = []
-    const { bThreads, trigger, useSnapshot } = behavioral()
-    useSnapshot((snapshot: SnapshotMessage) => {
-      snapshots.push(snapshot)
-    })
-
-    const guardId = bThreads.spawn({
-      label: 'guard',
-      thread: bThread([bSync({ block: 'dangerous' })], true),
-    })
-    const watchdogId = bThreads.spawn({
-      label: 'watchdog',
-      thread: bThread([bSync({ interrupt: 'dangerous' })], true),
-    })
-    bThreads.set({
+    addBThreads({
+      guard: bThread([bSync({ block: onType('dangerous') })], true),
+      watchdog: bThread([bSync({ interrupt: onType('dangerous') })], true),
       requester: bThread([bSync({ request: { type: 'dangerous' } })]),
     })
 
     trigger({ type: 'start' })
 
-    const deadlockSnapshot = snapshots.find((s): s is DeadlockSnapshot => s.kind === SNAPSHOT_MESSAGE_KINDS.deadlock)
-    expect(deadlockSnapshot).toBeDefined()
-
-    const dangerousBid = deadlockSnapshot!.bids.find((bid) => bid.type === 'dangerous')
-    expect(dangerousBid).toBeDefined()
-    expect(dangerousBid!.blockedBy).toEqual({ label: 'guard', id: guardId })
-    expect(dangerousBid!.interrupts).toEqual({ label: 'watchdog', id: watchdogId })
-    expect(deadlockSnapshot!.summary.blockers).toEqual([{ label: 'guard', id: guardId }])
-    expect(deadlockSnapshot!.summary.interruptors).toEqual([{ label: 'watchdog', id: watchdogId }])
-  })
-
-  test('same-label spawned blockers remain attributable via blockedBy.id', () => {
-    const snapshots: SnapshotMessage[] = []
-    const { bThreads, trigger, useSnapshot } = behavioral()
-    useSnapshot((snapshot: SnapshotMessage) => {
-      snapshots.push(snapshot)
-    })
-
-    const firstGuardId = bThreads.spawn({
-      label: 'guard',
-      thread: bThread([bSync({ block: 'dangerous' })], true),
-    })
-    const secondGuardId = bThreads.spawn({
-      label: 'guard',
-      thread: bThread([bSync({ block: 'dangerous' })], true),
-    })
-    bThreads.set({
-      requester: bThread([bSync({ request: { type: 'dangerous' } })]),
-    })
-
-    trigger({ type: 'start' })
-
-    const deadlockSnapshot = snapshots.find((s): s is DeadlockSnapshot => s.kind === SNAPSHOT_MESSAGE_KINDS.deadlock)
+    const deadlockSnapshot = snapshots.find(
+      (snapshot): snapshot is DeadlockSnapshot => snapshot.kind === SNAPSHOT_MESSAGE_KINDS.deadlock,
+    )
     expect(deadlockSnapshot).toBeDefined()
 
     const dangerousBid = deadlockSnapshot!.bids.find((bid) => bid.type === 'dangerous')
     expect(dangerousBid).toBeDefined()
     expect(dangerousBid!.blockedBy?.label).toBe('guard')
-    const blockedById = dangerousBid!.blockedBy?.id
-    expect(blockedById).toBeDefined()
-    expect([firstGuardId, secondGuardId]).toContain(blockedById!)
-  })
-
-  test('same-label spawned blockers are deduped by label and distinct by id in deadlock summary', () => {
-    const snapshots: SnapshotMessage[] = []
-    const { bThreads, trigger, useSnapshot } = behavioral()
-    useSnapshot((snapshot: SnapshotMessage) => {
-      snapshots.push(snapshot)
-    })
-
-    const firstGuardId = bThreads.spawn({
-      label: 'guard',
-      thread: bThread([bSync({ block: 'dangerous-a' })], true),
-    })
-    const secondGuardId = bThreads.spawn({
-      label: 'guard',
-      thread: bThread([bSync({ block: 'dangerous-b' })], true),
-    })
-    bThreads.set({
-      requesterA: bThread([bSync({ request: { type: 'dangerous-a' } })]),
-      requesterB: bThread([bSync({ request: { type: 'dangerous-b' } })]),
-    })
-
-    trigger({ type: 'start' })
-
-    const deadlockSnapshot = snapshots.find((s): s is DeadlockSnapshot => s.kind === SNAPSHOT_MESSAGE_KINDS.deadlock)
-    expect(deadlockSnapshot).toBeDefined()
-    expect(deadlockSnapshot!.summary.blockers.map((ref) => ref.label)).toEqual(['guard', 'guard'])
-    expect(new Set(deadlockSnapshot!.summary.blockers.map((ref) => ref.id))).toEqual(
-      new Set([firstGuardId, secondGuardId]),
-    )
+    expect(dangerousBid!.interrupts?.label).toBe('watchdog')
+    expect(deadlockSnapshot!.summary.blockers.map((ref) => ref.label)).toEqual(['guard'])
+    expect(deadlockSnapshot!.summary.interrupters.map((ref) => ref.label)).toEqual(['watchdog'])
   })
 })

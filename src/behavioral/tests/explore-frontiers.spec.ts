@@ -1,11 +1,19 @@
 import { describe, expect, test } from 'bun:test'
-import { bSyncReplaySafe, bThreadReplaySafe } from 'plaited/behavioral'
-import { exploreFrontiers } from '../explore-frontiers.ts'
+import { bSync, bThread } from 'plaited/behavioral'
+import * as z from 'zod'
+import { exploreFrontiers } from '../behavioral.frontier.ts'
+
+const onType = (type: string) => ({
+  kind: 'match' as const,
+  type,
+  sourceSchema: z.enum(['trigger', 'request', 'emit']),
+  detailSchema: z.unknown(),
+})
 
 const createDeadlockReachableThreads = () => ({
-  chooseA: bThreadReplaySafe([bSyncReplaySafe({ request: { type: 'A' } })]),
-  chooseB: bThreadReplaySafe([bSyncReplaySafe({ request: { type: 'B' } })]),
-  deadlockAfterA: bThreadReplaySafe([bSyncReplaySafe({ waitFor: 'A' }), bSyncReplaySafe({ block: 'B' })]),
+  chooseA: bThread([bSync({ request: { type: 'A' } })]),
+  chooseB: bThread([bSync({ request: { type: 'B' } })]),
+  deadlockAfterA: bThread([bSync({ waitFor: onType('A') }), bSync({ block: onType('B') })]),
 })
 
 describe('exploreFrontiers', () => {
@@ -48,8 +56,8 @@ describe('exploreFrontiers', () => {
   test('branches one successor per enabled event', () => {
     const result = exploreFrontiers({
       threads: {
-        chooseA: bThreadReplaySafe([bSyncReplaySafe({ request: { type: 'A' } })]),
-        chooseB: bThreadReplaySafe([bSyncReplaySafe({ request: { type: 'B' } })]),
+        chooseA: bThread([bSync({ request: { type: 'A' } })]),
+        chooseB: bThread([bSync({ request: { type: 'B' } })]),
       },
       strategy: 'bfs',
       maxDepth: 1,
@@ -89,7 +97,7 @@ describe('exploreFrontiers', () => {
   test('maxDepth does not mark truncated for naturally terminal deadlock exploration', () => {
     const result = exploreFrontiers({
       threads: {
-        blockedA: bThreadReplaySafe([bSyncReplaySafe({ request: { type: 'A' }, block: 'A' })]),
+        blockedA: bThread([bSync({ request: { type: 'A' }, block: onType('A') })]),
       },
       strategy: 'bfs',
       maxDepth: 0,
@@ -97,14 +105,23 @@ describe('exploreFrontiers', () => {
 
     expect(result.visitedHistories).toEqual([[]])
     expect(result.findings).toHaveLength(1)
-    expect(result.findings[0]).toEqual({
-      code: 'deadlock',
-      history: [],
-      status: 'deadlock',
-      candidates: [{ thread: 'blockedA', priority: 1, type: 'A', source: 'request' }],
-      enabled: [],
-      summary: { candidateCount: 1, enabledCount: 0 },
-    })
+    expect(result.findings[0]).toEqual(
+      expect.objectContaining({
+        code: 'deadlock',
+        history: [],
+        status: 'deadlock',
+        candidates: [
+          expect.objectContaining({
+            priority: 1,
+            type: 'A',
+            source: 'request',
+          }),
+        ],
+        enabled: [],
+        summary: { candidateCount: 1, enabledCount: 0 },
+      }),
+    )
+    expect(result.findings[0]!.candidates[0]!.thread.startsWith('bt_')).toBe(true)
     expect(result.report).toEqual({
       strategy: 'bfs',
       visitedCount: 1,
@@ -120,20 +137,22 @@ describe('exploreFrontiers', () => {
       strategy: 'bfs',
     })
 
-    expect(result.findings).toContainEqual({
-      code: 'deadlock',
-      history: [{ type: 'A', source: 'request' }],
-      status: 'deadlock',
-      candidates: [{ thread: 'chooseB', priority: 2, type: 'B', source: 'request' }],
-      enabled: [],
-      summary: { candidateCount: 1, enabledCount: 0 },
-    })
+    expect(result.findings).toContainEqual(
+      expect.objectContaining({
+        code: 'deadlock',
+        history: [{ type: 'A', source: 'request' }],
+        status: 'deadlock',
+        candidates: [expect.objectContaining({ priority: 2, type: 'B', source: 'request' })],
+        enabled: [],
+        summary: { candidateCount: 1, enabledCount: 0 },
+      }),
+    )
   })
 
   test('idle branches terminate without findings', () => {
     const result = exploreFrontiers({
       threads: {
-        watcher: bThreadReplaySafe([bSyncReplaySafe({ waitFor: 'ping' })]),
+        watcher: bThread([bSync({ waitFor: onType('ping') })]),
       },
       strategy: 'dfs',
       includeFrontierSummaries: true,

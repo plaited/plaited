@@ -193,7 +193,6 @@ export type ModuleWarning = z.infer<typeof ModuleWarningSchema>
  * @see {@link SelectionSnapshotSchema} for event selection observations
  * @see {@link DeadlockSnapshotSchema} for blocked-candidate deadlock observations
  * @see {@link FeedbackErrorSchema} for feedback handler errors
- * @see {@link BThreadsWarningSchema} for duplicate thread warnings
  * @see {@link ModuleWarningSchema} for host/runtime module diagnostics
  *
  * @public

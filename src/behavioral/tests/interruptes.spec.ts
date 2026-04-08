@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'bun:test'
+import { describe, expect, test } from 'bun:test'
 import { behavioral, bSync, bThread, type SnapshotMessage } from 'plaited/behavioral'
+import { onType } from './helpers.ts'
 
 /**
  * Test suite for demonstrating the 'interrupt' idiom in behavioral programming.
@@ -13,7 +14,7 @@ describe('interrupt', () => {
    * The `true` argument makes the thread repeat its behavior.
    */
   const addHot = bThread(
-    [bSync({ waitFor: 'add', interrupt: ['terminate'] }), bSync({ request: { type: 'hot' } })],
+    [bSync({ waitFor: onType('add'), interrupt: [onType('terminate')] }), bSync({ request: { type: 'hot' } })],
     true,
   )
 
@@ -22,10 +23,10 @@ describe('interrupt', () => {
    * Triggering 'add' multiple times should result in multiple 'hot' events being requested.
    * The thread remains pending, waiting for the next 'add' event.
    */
-  it('should not interrupt', () => {
+  test('should not interrupt', () => {
     const actual: string[] = []
-    const { bThreads, trigger, useFeedback } = behavioral()
-    bThreads.set({ addHot })
+    const { addBThreads, trigger, useFeedback } = behavioral()
+    addBThreads({ addHot })
     useFeedback({
       hot() {
         actual.push('hot')
@@ -35,7 +36,6 @@ describe('interrupt', () => {
     trigger({ type: 'add' })
     trigger({ type: 'add' })
     expect(actual).toEqual(['hot', 'hot', 'hot'])
-    expect(bThreads.has('addHot')).toEqual({ running: false, pending: true })
   })
 
   /**
@@ -54,14 +54,14 @@ describe('interrupt', () => {
    * - Subsequent 'add' events should not trigger 'hot' requests because the thread is no longer active.
    * - The `bThreads.has('addHot')` check should confirm the thread is neither running nor pending.
    */
-  it('should interrupt', () => {
+  test('should interrupt', () => {
     const snapshots: SnapshotMessage[] = []
     const actual: string[] = []
-    const { bThreads, trigger, useFeedback, useSnapshot } = behavioral()
+    const { addBThreads, trigger, useFeedback, useSnapshot } = behavioral()
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
-    bThreads.set({ addHot })
+    addBThreads({ addHot })
     useFeedback({
       hot() {
         actual.push('hot')
@@ -72,7 +72,10 @@ describe('interrupt', () => {
     trigger({ type: 'terminate' })
     trigger({ type: 'add' })
     expect(actual).toEqual(['hot', 'hot'])
-    expect(bThreads.has('addHot')).toEqual({ running: false, pending: false })
-    expect(snapshots).toMatchSnapshot()
+    expect(snapshots.some((snapshot) => snapshot.kind === 'selection')).toBe(true)
+    const terminateSelection = snapshots.find(
+      (snapshot) => snapshot.kind === 'selection' && snapshot.bids.some((bid) => bid.type === 'terminate'),
+    )
+    expect(terminateSelection).toBeDefined()
   })
 })

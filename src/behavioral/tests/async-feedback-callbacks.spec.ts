@@ -10,10 +10,10 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 test('async feedback ELEMENT_CALLBACKS', async () => {
   /** Records the order of execution steps. */
   const actual: string[] = []
-  const { bThreads, trigger, useFeedback } = behavioral()
+  const { addBThreads, trigger, useFeedback } = behavioral()
 
   /** Define behavioral threads using bSync for simplicity. */
-  bThreads.set({
+  addBThreads({
     /** A thread that requests the 'init' event immediately. */
     onInit: bSync({ request: { type: 'init' } }),
     /** A thread that requests the 'afterInit' event immediately. */

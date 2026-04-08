@@ -10,7 +10,7 @@ describe('useSnapshot', () => {
   test('second listener still receives after first disconnects', () => {
     const snapshotsA: SnapshotMessage[] = []
     const snapshotsB: SnapshotMessage[] = []
-    const { bThreads, trigger, useSnapshot } = behavioral()
+    const { addBThreads, trigger, useSnapshot } = behavioral()
 
     const disconnectA = useSnapshot((msg: SnapshotMessage) => {
       snapshotsA.push(msg)
@@ -19,7 +19,7 @@ describe('useSnapshot', () => {
       snapshotsB.push(msg)
     })
 
-    bThreads.set({
+    addBThreads({
       req: bThread([bSync({ request: { type: 'ping' } })]),
     })
 
@@ -35,7 +35,7 @@ describe('useSnapshot', () => {
     disconnectA()
 
     // Set up a new thread and trigger again
-    bThreads.set({
+    addBThreads({
       req2: bThread([bSync({ request: { type: 'pong' } })]),
     })
     trigger({ type: 'go' })
@@ -49,7 +49,7 @@ describe('useSnapshot', () => {
   test('re-subscribing after full disconnect still works', () => {
     const snapshotsA: SnapshotMessage[] = []
     const snapshotsB: SnapshotMessage[] = []
-    const { bThreads, trigger, useSnapshot } = behavioral()
+    const { addBThreads, trigger, useSnapshot } = behavioral()
 
     const disconnectA = useSnapshot((msg: SnapshotMessage) => {
       snapshotsA.push(msg)
@@ -58,7 +58,7 @@ describe('useSnapshot', () => {
       snapshotsB.push(msg)
     })
 
-    bThreads.set({
+    addBThreads({
       req: bThread([bSync({ request: { type: 'ping' } })]),
     })
     trigger({ type: 'start' })
@@ -77,7 +77,7 @@ describe('useSnapshot', () => {
       snapshotsC.push(msg)
     })
 
-    bThreads.set({
+    addBThreads({
       req2: bThread([bSync({ request: { type: 'pong' } })]),
     })
     trigger({ type: 'go' })

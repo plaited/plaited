@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test'
 import type { BPEvent } from 'plaited/behavioral'
 import { bSync, bThread } from 'plaited/behavioral'
+import { onType } from './helpers.ts'
 
 test('bThread: executes rules sequentially', () => {
   const results: string[] = []
@@ -86,36 +87,6 @@ test('bThread: repeats when repeat is true', () => {
   expect(done).toBe(false)
 })
 
-test('bThread: repeats based on function evaluation', () => {
-  const rule1 = bSync({ request: { type: 'event1' } })
-  const rule2 = bSync({ request: { type: 'event2' } })
-
-  let iterations = 0
-  const shouldRepeat = () => {
-    iterations++
-    return iterations < 3 // Repeat 3 times total
-  }
-
-  const thread = bThread([rule1, rule2], shouldRepeat)
-  const gen = thread()
-
-  // First iteration
-  gen.next() // event1
-  gen.next() // event2
-
-  // Second iteration
-  gen.next() // event1
-  gen.next() // event2
-
-  // Third iteration
-  gen.next() // event1
-  gen.next() // event2
-
-  // Should be done now
-  const { done } = gen.next()
-  expect(done).toBe(true)
-})
-
 test('bThread: handles empty rules array', () => {
   const thread = bThread([])
   const gen = thread()
@@ -142,11 +113,14 @@ test('bThread: handles single rule', () => {
 })
 
 test('bThread: supports all idioms in rules', () => {
+  const waitFor = onType('event2')
+  const block = onType('event3')
+  const interrupt = onType('event4')
   const rule1 = bSync({
     request: { type: 'event1' },
-    waitFor: 'event2',
-    block: 'event3',
-    interrupt: 'event4',
+    waitFor,
+    block,
+    interrupt,
   })
 
   const thread = bThread([rule1])
@@ -159,34 +133,9 @@ test('bThread: supports all idioms in rules', () => {
   expect(typeof value!.request).not.toBe('function')
   expect((value!.request as BPEvent).type).toBe('event1')
   expect(value).toHaveProperty('waitFor')
-  expect(value!.waitFor).toBe('event2')
+  expect(value!.waitFor).toEqual(waitFor)
   expect(value).toHaveProperty('block')
-  expect(value!.block).toBe('event3')
+  expect(value!.block).toEqual(block)
   expect(value).toHaveProperty('interrupt')
-  expect(value!.interrupt).toBe('event4')
-})
-
-test('bThread: supports event template functions for dynamic data', () => {
-  let counter = 0
-
-  // Event template function that returns different data each time
-  const template = () => ({ type: 'increment', detail: ++counter })
-
-  const rule1 = bSync({ request: template })
-
-  const thread = bThread([rule1], true) // Repeat to show dynamic evaluation
-  const gen = thread()
-
-  // First iteration - template should NOT be called yet
-  const { value: value1 } = gen.next()
-  expect(value1 && 'request' in value1 && value1.request).toBe(template)
-  expect(value1 && 'request' in value1 && typeof value1.request).toBe('function')
-
-  // Second iteration (repeat) - should still yield the template function
-  const { value: value2 } = gen.next()
-  expect(value2 && 'request' in value2 && value2.request).toBe(template)
-  expect(value2 && 'request' in value2 && typeof value2.request).toBe('function')
-
-  // The template function itself should be yielded, not its result
-  // BP engine will call the template when needed during event selection
+  expect(value!.interrupt).toEqual(interrupt)
 })
