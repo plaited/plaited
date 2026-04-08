@@ -1,17 +1,12 @@
 import type { ZodType } from 'zod'
-import type { RULES_FUNCTION_IDENTIFIER } from './behavioral.constants.ts'
+import type {
+  EVENT_SOURCES,
+  EXPLORE_STRATEGIES,
+  FRONTIER_STATUS,
+  RULES_FUNCTION_IDENTIFIER,
+  VERIFICATION_STATUSES,
+} from './behavioral.constants.ts'
 import type { SelectionSnapshot, SnapshotMessage } from './behavioral.schemas.ts'
-
-/**
- * @internal
- * Defines the repetition behavior for a `bThread`.
- * - `true`: The thread repeats indefinitely.
- * - `function`: A predicate function evaluated before each repetition. The thread repeats if the function returns `true`.
- * - `undefined` or omitted: The thread executes once and terminates.
- *
- * @see {@link bThread} for creating threads with repetition
- */
-export type Repeat = true | (() => boolean)
 
 /**
  * Represents a fundamental unit of communication in behavioral programming.
@@ -29,82 +24,16 @@ export type Repeat = true | (() => boolean)
 // biome-ignore lint/suspicious/noExplicitAny: Event payloads can be of any type, typed at usage site
 export type BPEvent = { type: string; detail?: any }
 
-/**
- * A factory function that generates a `BPEvent` dynamically.
- * Particularly useful within `bSync` definitions when the event details need to be computed
- * at the exact moment the synchronization point is reached rather than when the b-thread
- * is initially defined.
- *
- * @template T - Expected type of the generated event detail payload.
- * @returns `BPEvent` generated when the function is invoked.
- *
- * @remarks
- * Event templates are evaluated each time the synchronization point is reached,
- * ensuring fresh data for each execution cycle.
- *
- * @see {@link BPEvent} for static event definitions
- */
-export type BPEventTemplate = () => BPEvent
+export type ReplayEvent = BPEvent & {
+  source: keyof typeof EVENT_SOURCES
+}
 
-/**
- * Defines how a b-thread listens for or specifies events in `waitFor`, `block`, or `interrupt` idioms.
- * This type provides a flexible way to match events based on simple string identifiers or complex conditions.
- *
- * It can be one of:
- * 1. A simple `string`: Matches events exactly by their `type` property.
- * 2. A structured match object: Matches by event `type`, validates source provenance with
- *    `sourceSchema`, and validates `detail` with `detailSchema`.
- * 3. A predicate function: Takes an event object and returns `true` if the event matches the desired criteria.
- *
- * @see {@link Idioms} for using listeners in synchronization
- * @see {@link bSync} for creating synchronization points
- */
-export type EventSource = 'trigger' | 'request' | 'emit'
-
-export type BPMatchListener = {
+export type BPListener = {
   kind: 'match'
   type: string
-  sourceSchema: ZodType<EventSource>
+  sourceSchema: ZodType<keyof typeof EVENT_SOURCES>
   detailSchema: ZodType<unknown>
 }
-
-/**
- * Replay event shape used by frontier replay/exploration surfaces.
- *
- * @remarks
- * - Runtime `trigger`/`emit`/`request` semantics remain unchanged.
- * - `source` is optional so legacy histories (`{ type, detail }`) continue to replay,
- *   defaulting to request-origin behavior when omitted.
- */
-export type ReplayEvent = BPEvent & {
-  source?: EventSource
-}
-
-export type BPListener = string | BPMatchListener | ((args: BPEvent) => boolean)
-
-/**
- * Listener subset intended for verifier-safe authoring surfaces.
- *
- * @remarks
- * Unlike {@link BPListener}, this excludes opaque predicate callbacks.
- */
-export type VerificationSafeBPListener = string | BPMatchListener
-
-/**
- * Static request shape for replay-safe authoring idioms.
- *
- * @remarks
- * Replay-safe authoring excludes request templates to avoid dynamic request payload generation.
- */
-export type ReplaySafeRequest = BPEvent
-
-/**
- * Repeat policy for replay-safe thread authoring.
- *
- * @remarks
- * Replay-safe authoring only supports explicit `true` repetition or omitted repetition.
- */
-export type ReplaySafeRepeat = true | undefined
 
 /**
  * Represents a synchronization statement yielded by a behavioral rule step.
@@ -130,41 +59,9 @@ export type Idioms = {
   /** Event(s) that will interrupt the thread's execution if selected. */
   interrupt?: BPListener | BPListener[]
   /** An event the thread wishes to request. Can be a static event object or a template function. */
-  request?: BPEvent | BPEventTemplate
+  request?: BPEvent
   /** Event(s) the thread wants to prevent from being selected. */
   block?: BPListener | BPListener[]
-}
-
-/**
- * Verifier-safe synchronization idioms for authoring replay/explorer-friendly rules.
- *
- * @remarks
- * Keeps `request` permissive for now and narrows listener-bearing idioms to
- * {@link VerificationSafeBPListener}.
- */
-export type VerificationSafeIdioms = {
-  waitFor?: VerificationSafeBPListener | VerificationSafeBPListener[]
-  interrupt?: VerificationSafeBPListener | VerificationSafeBPListener[]
-  request?: BPEvent | BPEventTemplate
-  block?: VerificationSafeBPListener | VerificationSafeBPListener[]
-}
-
-/**
- * Replay-safe synchronization idioms for deterministic authoring workflows.
- *
- * @remarks
- * This surface is stricter than {@link VerificationSafeIdioms}:
- * - listeners remain verifier-safe (string/match only)
- * - `request` must be static ({@link ReplaySafeRequest})
- * - repeat callbacks are disallowed via {@link ReplaySafeRepeat} on `bThreadReplaySafe`
- *
- * Interrupt remains the lifetime control mechanism for replay-safe threads.
- */
-export type ReplaySafeIdioms = {
-  waitFor?: VerificationSafeBPListener | VerificationSafeBPListener[]
-  interrupt?: VerificationSafeBPListener | VerificationSafeBPListener[]
-  request?: ReplaySafeRequest
-  block?: VerificationSafeBPListener | VerificationSafeBPListener[]
 }
 
 /**
@@ -183,28 +80,6 @@ export type BSync = (arg: Idioms) => {
 }
 
 /**
- * Verifier-safe `bSync` authoring signature.
- *
- * @remarks
- * Runtime behavior matches {@link BSync}; only the accepted idiom surface is narrower.
- */
-export type BSyncVerified = (arg: VerificationSafeIdioms) => {
-  (): Generator<VerificationSafeIdioms, void, unknown>
-  $: typeof RULES_FUNCTION_IDENTIFIER
-}
-
-/**
- * Replay-safe `bSync` authoring signature.
- *
- * @remarks
- * Runtime behavior matches {@link BSync}; this only narrows accepted idioms to {@link ReplaySafeIdioms}.
- */
-export type BSyncReplaySafe = (arg: ReplaySafeIdioms) => {
-  (): Generator<ReplaySafeIdioms, void, unknown>
-  $: typeof RULES_FUNCTION_IDENTIFIER
-}
-
-/**
  * A factory function that constructs a complete b-thread (`ReturnType<BSync>`) by composing multiple synchronization steps.
  * This is a helper type that corresponds to the `bThread` function implementation, which allows
  * for modular composition of b-thread behavior.
@@ -215,27 +90,7 @@ export type BSyncReplaySafe = (arg: ReplaySafeIdioms) => {
  *
  * @see bThread The implementation of this type that composes multiple synchronization steps into a single b-thread.
  */
-export type BThread = (rules: ReturnType<BSync>[], repeat?: Repeat) => ReturnType<BSync>
-
-/**
- * Verifier-safe `bThread` authoring signature.
- *
- * @remarks
- * Runtime behavior matches {@link BThread}; only rule typing is narrowed through {@link BSyncVerified}.
- */
-export type BThreadVerified = (rules: ReturnType<BSyncVerified>[], repeat?: Repeat) => ReturnType<BSyncVerified>
-
-/**
- * Replay-safe `bThread` authoring signature.
- *
- * @remarks
- * Runtime behavior matches {@link BThread}; typing narrows rule authoring through {@link BSyncReplaySafe}
- * and limits repetition to {@link ReplaySafeRepeat} (`true` or omitted).
- */
-export type BThreadReplaySafe = (
-  rules: ReturnType<BSyncReplaySafe>[],
-  repeat?: ReplaySafeRepeat,
-) => ReturnType<BSyncReplaySafe>
+export type BThread = (rules: ReturnType<BSync>[], repeat?: true) => ReturnType<BSync>
 
 /**
  * @internal
@@ -247,13 +102,14 @@ export type BThreadReplaySafe = (
  */
 export type RunningBid = {
   /** Provenance of this bid for source-aware listener matching. */
-  source: EventSource
+  source: keyof typeof EVENT_SOURCES
   /** Optional human-readable label for spawned thread instances. */
-  label?: string
+  label: string
   /** The priority level of the thread, used for resolving conflicts when multiple threads request events. Lower numbers = higher priority. */
   priority: number
   /** Internal iterator representing the thread's execution state. Holds the current position in the rule sequence. */
   generator: IterableIterator<Idioms>
+  ingress?: true
 }
 
 /**
@@ -274,8 +130,8 @@ export type PendingBid = Idioms & RunningBid
  * This structure holds the metadata needed for this selection process.
  */
 export type CandidateBid = {
-  /** The identifier of the thread proposing the event. String for named threads, Symbol for trigger-originated threads. */
-  thread: string | symbol
+  /** The identifier of the thread proposing the event. String for named threads */
+  thread: string
   /** The priority of the thread proposing the event. Lower numbers indicate higher priority in the selection process. */
   priority: number
   /** The type of the requested event, used for matching against waitFor, block, and interrupt declarations. */
@@ -283,9 +139,9 @@ export type CandidateBid = {
   /** Optional detail payload of the requested event, contains any data associated with this event. */
   detail?: unknown
   /** Provenance of this candidate for source-aware listener matching. */
-  source: EventSource
-  /** If the request was a template function, this holds the original template function reference for comparison. */
-  template?: BPEventTemplate
+  source: keyof typeof EVENT_SOURCES
+
+  ingress?: true
 }
 
 /**
@@ -300,7 +156,16 @@ export type CandidateBid = {
 export type Frontier = {
   candidates: CandidateBid[]
   enabled: CandidateBid[]
-  status: 'ready' | 'deadlock' | 'idle'
+  status: keyof typeof FRONTIER_STATUS
+}
+
+/**
+ * @internal
+ * Reconstructed replay result for downstream explorer slices.
+ */
+export type ReplayToFrontierResult = {
+  pending: Map<string, PendingBid>
+  frontier: Frontier
 }
 
 /**
@@ -326,7 +191,7 @@ export type Disconnect = () => void | Promise<void>
  */
 export type SelectionFormatter = (args: {
   /** Map of threads currently in a pending state (yielded), containing their synchronization declarations. */
-  pending: Map<string | symbol, PendingBid>
+  pending: Map<string, PendingBid>
   /** The event candidate that was selected for execution in the current step. */
   selectedEvent: CandidateBid
   /** All event candidates that were considered for selection in the current step. */
@@ -440,56 +305,9 @@ export type UseSnapshot = (listener: SnapshotListener) => Disconnect
  */
 export type ReportSnapshot = (message: SnapshotMessage) => void
 
-/**
- * Interface for managing b-threads within a behavioral program.
- * Provides dynamic thread addition and status monitoring.
- *
- * @property has - Check thread existence and status (running/pending)
- * @property set - Add threads to the program
- *
- * @remarks
- * - Thread names must be unique
- * - Attempting to add a thread with an existing identifier triggers a console warning and is ignored
- * - Thread replacement is prevented to maintain BP's additive composition principle
- * - Use the `interrupt` idiom to explicitly terminate threads
- * - Status reflects current execution state
- *
- * @see {@link ReturnType<BSync>} for thread implementation
- * @see {@link bThread} for creating threads
- */
-export type BThreads = {
-  /**
-   * Checks the status of a specific thread.
-   *
-   * @param thread - Thread identifier to check.
-   * @returns Status object indicating whether the thread is `running` and/or `pending`.
-   */
-  has: (thread: string) => { running: boolean; pending: boolean }
+export type BThreads = Record<string, ReturnType<BSync>>
 
-  /**
-   * Adds threads to the program.
-   * If a thread with the given identifier already exists, a console warning is issued and the new thread is ignored.
-   * This prevents accidental thread replacement, which violates behavioral programming's additive composition principle.
-   *
-   * @param threads - An object mapping thread identifiers (string keys) to their implementation
-   *                 as branded rule functions returned by `bSync()` or `bThread()`.
-   *
-   * @remarks
-   * To terminate a thread, use the `interrupt` idiom in the thread's configuration, or wait for the thread to complete naturally.
-   */
-  set: (threads: Record<string, ReturnType<BSync>>) => void
-
-  /**
-   * Spawns a new dynamic thread instance with runtime-unique identity.
-   *
-   * Unlike {@link set}, `label` is human-readable metadata and does not participate
-   * in uniqueness checks; each call creates a distinct live thread instance.
-   *
-   * @param args - Spawn arguments containing `label` and `thread`.
-   * @returns Runtime-generated thread id.
-   */
-  spawn: (args: { label: string; thread: ReturnType<BSync> }) => string
-}
+export type AddBThreads = (threads: BThreads) => void
 
 /**
  * Injects external events into the behavioral program.
@@ -506,7 +324,6 @@ export type BThreads = {
  * @see {@link PlaitedTrigger} for enhanced trigger
  */
 export type Trigger = <T extends BPEvent>(args: T) => void
-export type Emit = <T extends BPEvent>(args: T) => void
 
 /**
  * Factory function that creates and initializes a new behavioral program instance.
@@ -529,10 +346,66 @@ export type Emit = <T extends BPEvent>(args: T) => void
  * @see {@link UseSnapshot} for state monitoring
  */
 export type Behavioral = <Details extends EventDetails = EventDetails>() => Readonly<{
-  bThreads: BThreads
+  addBThreads: AddBThreads
   trigger: Trigger
-  emit: Emit
+  emit: Trigger
   useFeedback: UseFeedback<Details>
   useSnapshot: UseSnapshot
   reportSnapshot: ReportSnapshot
 }>
+
+type ExploreStrategy = keyof typeof EXPLORE_STRATEGIES
+
+export type DeadlockFinding = {
+  code: 'deadlock'
+  history: ReplayEvent[]
+  status: Frontier['status']
+  candidates: Frontier['candidates']
+  enabled: Frontier['enabled']
+  summary: {
+    candidateCount: number
+    enabledCount: number
+  }
+}
+
+export type FrontierSummary = {
+  history: ReplayEvent[]
+  status: Frontier['status']
+}
+
+type ExploreFrontiersReport = {
+  strategy: ExploreStrategy
+  visitedCount: number
+  findingCount: number
+  /**
+   * True only when the explorer encountered at least one `ready` frontier that it did not expand
+   * because `maxDepth` was reached for that history.
+   *
+   * This does not indicate generic incompleteness: `idle`/`deadlock` terminal frontiers keep this false
+   * even when `maxDepth` is set.
+   */
+  truncated: boolean
+  maxDepth?: number
+}
+
+type ExploreFrontiersResult = {
+  report: ExploreFrontiersReport
+  visitedHistories: ReplayEvent[][]
+  findings: DeadlockFinding[]
+  frontierSummaries?: FrontierSummary[]
+}
+
+export type ExploreFrontiers = (args: {
+  threads: BThreads
+  strategy: ExploreStrategy
+  maxDepth?: number
+  includeFrontierSummaries?: boolean
+}) => ExploreFrontiersResult
+
+export type ExploreFrontiersArgs = Parameters<ExploreFrontiers>[0]
+
+export type VerifyFrontiersResult = {
+  status: keyof typeof VERIFICATION_STATUSES
+  report: ExploreFrontiersResult['report']
+  findings: ExploreFrontiersResult['findings']
+}

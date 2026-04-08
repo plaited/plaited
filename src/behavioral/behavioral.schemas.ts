@@ -23,7 +23,7 @@ export const BPEventSchema = z.custom<BPEvent>(isBPEvent)
  */
 export const ThreadReferenceSchema = z.object({
   label: z.string(),
-  id: z.string().optional(),
+  id: z.string(),
 })
 
 /** @public */
@@ -44,8 +44,6 @@ export type ThreadReference = z.infer<typeof ThreadReferenceSchema>
 export const SelectionBidSchema = z.object({
   /** Thread reference (stringified Symbol label for external trigger threads). */
   thread: ThreadReferenceSchema,
-  /** Whether this bid originated from an external `trigger()` call. */
-  trigger: z.boolean(),
   /** Explicit source provenance for source-aware matching and replay. */
   source: z.enum(['trigger', 'request', 'emit']),
   /** Whether this bid was selected for execution in the current step. */
@@ -120,7 +118,7 @@ export const DeadlockSummarySchema = z.object({
   blockedCount: z.number(),
   unblockedCount: z.number(),
   blockers: z.array(ThreadReferenceSchema),
-  interruptors: z.array(ThreadReferenceSchema),
+  interrupters: z.array(ThreadReferenceSchema),
 })
 
 /** @public */
@@ -169,27 +167,6 @@ export const FeedbackErrorSchema = z.object({
 export type FeedbackError = z.infer<typeof FeedbackErrorSchema>
 
 /**
- * Schema for b-thread warnings published by the BP engine.
- *
- * @remarks
- * Emitted when `bThreads.set()` attempts to add a thread with an identifier
- * that already exists. The duplicate thread is ignored.
- * Consumers narrow by `kind === 'bthreads_warning'`.
- *
- * @see {@link SnapshotMessageSchema} for the full discriminated union
- *
- * @public
- */
-export const BThreadsWarningSchema = z.object({
-  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.bthreads_warning),
-  thread: z.string(),
-  warning: z.string(),
-})
-
-/** @public */
-export type BThreadsWarning = z.infer<typeof BThreadsWarningSchema>
-
-/**
  * Schema for host/runtime module diagnostics published by the BP engine.
  *
  * @remarks
@@ -222,7 +199,6 @@ export type ModuleWarning = z.infer<typeof ModuleWarningSchema>
  * @public
  */
 export const SnapshotMessageSchema = z.discriminatedUnion('kind', [
-  BThreadsWarningSchema,
   DeadlockSnapshotSchema,
   FeedbackErrorSchema,
   ModuleWarningSchema,

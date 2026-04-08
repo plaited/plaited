@@ -1,81 +1,205 @@
-import { isTypeOf } from '../utils.ts'
-import type { BPEvent, BPEventTemplate, BPListener, CandidateBid, Frontier, PendingBid } from './behavioral.types.ts'
-import { isBPMatchListener } from './behavioral.utils.ts'
+import { ueid } from '../utils.ts'
+import {
+  BTHREAD_ID_PREFIX,
+  EVENT_SOURCES,
+  EXPLORE_STRATEGIES,
+  FRONTIER_STATUS,
+  VERIFICATION_STATUSES,
+} from './behavioral.constants.ts'
+import { advanceRunningToPending, computeFrontier, resumePendingThreadsForSelectedEvent } from './behavioral.shared.ts'
+import type {
+  BSync,
+  BThreads,
+  CandidateBid,
+  DeadlockFinding,
+  ExploreFrontiers,
+  Frontier,
+  FrontierSummary,
+  PendingBid,
+  ReplayEvent,
+  ReplayToFrontierResult,
+  RunningBid,
+  VerifyFrontiersResult,
+} from './behavioral.types.ts'
+
+const serializeEvent = ({ type, detail, source }: ReplayEvent) => {
+  try {
+    return JSON.stringify([type, detail, source])
+  } catch {
+    return `${type}:${String(detail)}:${String(source)}`
+  }
+}
+
+const historyKey = (history: ReplayEvent[]) => {
+  if (history.length === 0) {
+    return '[]'
+  }
+  return history.map(serializeEvent).join('|')
+}
+
+const cloneHistory = (history: ReplayEvent[]) => [...history]
+
+const cloneCandidates = (candidates: Frontier['candidates']): Frontier['candidates'] =>
+  candidates.map((candidate) => ({
+    thread: candidate.thread,
+    priority: candidate.priority,
+    type: candidate.type,
+    ...(candidate.detail !== undefined && { detail: candidate.detail }),
+    source: candidate.source,
+    ...(candidate.ingress && { ingress: candidate.ingress }),
+  }))
 
 /**
  * @internal
- * Utility function to ensure a value is an array.
+ * Reconstructs pending state and frontier from replay-safe thread factories and selected-event history.
  */
-export const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj : [obj])
+export const replayToFrontier = ({
+  history,
+  threads,
+}: {
+  threads: BThreads
+  history: ReplayEvent[]
+}): ReplayToFrontierResult => {
+  const pending = new Map<string, PendingBid>()
 
-/**
- * @internal
- * Creates a checker function to determine if a given BPListener matches a CandidateBid.
- */
-export const isListeningFor = ({ type, detail, source }: CandidateBid) => {
-  return (listener: BPListener): boolean => {
-    if (isTypeOf<string>(listener, 'string')) {
-      return listener === type
-    }
-    if (isBPMatchListener(listener)) {
-      return (
-        listener.type === type &&
-        listener.sourceSchema.safeParse(source).success &&
-        listener.detailSchema.safeParse(detail).success
-      )
-    }
-    return listener({
-      detail,
-      type,
+  const bootstrapRunning = new Map<string, RunningBid>()
+  const spawn = (label: string, thread: ReturnType<BSync>) => {
+    const threadId = ueid(BTHREAD_ID_PREFIX)
+    bootstrapRunning.set(threadId, {
+      priority: bootstrapRunning.size + 1,
+      source: EVENT_SOURCES.request,
+      generator: thread(),
+      label,
     })
+  }
+  for (const [label, thread] of Object.entries(threads)) {
+    spawn(label, thread)
+  }
+
+  advanceRunningToPending(bootstrapRunning, pending)
+
+  for (const event of history) {
+    const ingress = event.source === EVENT_SOURCES.emit || event.source === EVENT_SOURCES.trigger || undefined
+    const selectedEvent: CandidateBid = {
+      priority: 0,
+      thread: event.type,
+      source: event.source ?? EVENT_SOURCES.request,
+      type: event.type,
+      detail: event.detail,
+      ingress,
+    }
+    const running = new Map<string, RunningBid>()
+
+    resumePendingThreadsForSelectedEvent({
+      running,
+      pending,
+      selectedEvent,
+    })
+
+    advanceRunningToPending(running, pending)
+  }
+
+  return {
+    pending,
+    frontier: computeFrontier({ pending }),
   }
 }
 
 /**
  * @internal
- * Checks if a pending request (Idiom['request']) matches the selected event candidate.
+ * Explores replay-safe history space by repeatedly reconstructing frontiers from event traces.
  */
-export const isPendingRequest = (selectedEvent: CandidateBid, event: BPEvent | BPEventTemplate) =>
-  isTypeOf<BPEventTemplate>(event, 'function') ? event === selectedEvent?.template : event.type === selectedEvent.type
+export const exploreFrontiers: ExploreFrontiers = ({ threads, strategy, maxDepth, includeFrontierSummaries }) => {
+  const queue: ReplayEvent[][] = [[]]
+  const seenHistories = new Set<string>()
+  const visitedHistories: ReplayEvent[][] = []
+  const findings: DeadlockFinding[] = []
+  const frontierSummaries: FrontierSummary[] = []
+  let truncated = false
 
-/**
- * @internal
- * Computes the execution frontier from pending bids.
- *
- * The frontier captures:
- * - all requested candidates
- * - the subset enabled after applying block listeners
- * - a scheduler-facing status classification
- */
-export const computeFrontier = ({ pending }: { pending: Map<string | symbol, PendingBid> }): Frontier => {
-  const blocked: BPListener[] = []
-  const candidates: CandidateBid[] = []
+  while (queue.length > 0) {
+    const history = strategy === EXPLORE_STRATEGIES.bfs ? queue.shift()! : queue.pop()!
+    const key = historyKey(history)
+    if (seenHistories.has(key)) {
+      continue
+    }
+    seenHistories.add(key)
 
-  for (const [thread, { request, priority, block, source }] of pending) {
-    block && blocked.push(...ensureArray(block))
-    request &&
-      candidates.push({
-        priority,
-        source,
-        thread,
-        ...(isTypeOf<BPEventTemplate>(request, 'function') ? { template: request, ...request() } : request),
+    visitedHistories.push(cloneHistory(history))
+
+    const { frontier } = replayToFrontier({ threads, history })
+
+    if (includeFrontierSummaries) {
+      frontierSummaries.push({
+        history: cloneHistory(history),
+        status: frontier.status,
       })
-  }
+    }
 
-  const enabled: CandidateBid[] = []
-  const length = candidates.length
-  for (let i = 0; i < length; i++) {
-    const candidate = candidates[i]!
-    if (!blocked.some(isListeningFor(candidate))) {
-      enabled.push(candidate)
+    if (frontier.status === FRONTIER_STATUS.deadlock) {
+      const candidates = cloneCandidates(frontier.candidates)
+      const enabled = cloneCandidates(frontier.enabled)
+      findings.push({
+        code: FRONTIER_STATUS.deadlock,
+        history: cloneHistory(history),
+        status: frontier.status,
+        candidates,
+        enabled,
+        summary: {
+          candidateCount: candidates.length,
+          enabledCount: enabled.length,
+        },
+      })
+      continue
+    }
+
+    if (frontier.status === FRONTIER_STATUS.idle) {
+      continue
+    }
+
+    if (maxDepth !== undefined && history.length >= maxDepth) {
+      truncated = true
+      continue
+    }
+
+    for (const candidate of frontier.enabled) {
+      queue.push([
+        ...history,
+        {
+          type: candidate.type,
+          source: candidate.source,
+          ...(candidate.detail !== undefined && { detail: candidate.detail }),
+        },
+      ])
     }
   }
 
-  if (enabled.length > 0) {
-    return { candidates, enabled, status: 'ready' }
+  return {
+    report: {
+      strategy,
+      visitedCount: visitedHistories.length,
+      findingCount: findings.length,
+      truncated,
+      ...(maxDepth !== undefined && { maxDepth }),
+    },
+    visitedHistories,
+    findings,
+    ...(includeFrontierSummaries ? { frontierSummaries } : {}),
   }
-  if (candidates.length > 0) {
-    return { candidates, enabled, status: 'deadlock' }
+}
+
+/**
+ * @internal
+ * Thin verification layer on top of replay-safe frontier exploration.
+ */
+export const verifyFrontiers = (args: Parameters<ExploreFrontiers>[0]): VerifyFrontiersResult => {
+  const { report, findings } = exploreFrontiers(args)
+
+  if (findings.length > 0) {
+    return { status: VERIFICATION_STATUSES.failed, report, findings }
   }
-  return { candidates, enabled, status: 'idle' }
+  if (report.truncated) {
+    return { status: VERIFICATION_STATUSES.truncated, report, findings }
+  }
+  return { status: VERIFICATION_STATUSES.verified, report, findings }
 }
