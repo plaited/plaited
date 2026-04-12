@@ -272,24 +272,30 @@ describe('createAgent', () => {
   })
 
   test('scopes returned module threads using the declared module name in snapshots', async () => {
-    const planner = useModule('planner', ({ bSync, bThread }) => ({
-      threads: {
-        guard: bThread([
-          bSync({
-            waitFor: {
-              type: 'kickoff',
-              sourceSchema: z.literal('trigger'),
-              detailSchema: z.unknown(),
-            },
-          }),
-          bSync({
-            request: {
-              type: 'planner_ready',
-            },
-          }),
-        ]),
-      },
-    }))
+    const KickoffEventSchema = z.object({
+      type: z.literal('kickoff'),
+      detail: z.undefined(),
+    })
+    const PlannerReadyEventSchema = z.object({
+      type: z.literal('planner_ready'),
+      detail: z.undefined(),
+    })
+    const planner = useModule('planner', ({ external, bSync, bThread }) => {
+      const kickoff = external(KickoffEventSchema)
+      const plannerReady = external(PlannerReadyEventSchema)
+      return {
+        threads: {
+          guard: bThread([
+            bSync({
+              waitFor: kickoff.on(z.literal('trigger')),
+            }),
+            bSync({
+              request: plannerReady.request(),
+            }),
+          ]),
+        },
+      }
+    })
 
     const agent = await createAgent({
       id: 'agent:scoped-static-thread-labels',
@@ -324,21 +330,26 @@ describe('createAgent', () => {
   })
 
   test('scopes handler-added dynamic threads using the declared module name in snapshots', async () => {
-    const planner = useModule('planner', ({ addThreads, bSync, bThread }) => ({
-      handlers: {
-        kickoff() {
-          addThreads({
-            taskGuard: bThread([
-              bSync({
-                request: {
-                  type: 'dynamic_ready',
-                },
-              }),
-            ]),
-          })
+    const DynamicReadyEventSchema = z.object({
+      type: z.literal('dynamic_ready'),
+      detail: z.undefined(),
+    })
+    const planner = useModule('planner', ({ addThreads, external, bSync, bThread }) => {
+      const dynamicReady = external(DynamicReadyEventSchema)
+      return {
+        handlers: {
+          kickoff() {
+            addThreads({
+              taskGuard: bThread([
+                bSync({
+                  request: dynamicReady.request(),
+                }),
+              ]),
+            })
+          },
         },
-      },
-    }))
+      }
+    })
 
     const agent = await createAgent({
       id: 'agent:scoped-dynamic-thread-labels',
@@ -366,10 +377,61 @@ describe('createAgent', () => {
       resolveSelection()
     })
 
-    agent.trigger({ type: 'kickoff' })
+    agent.trigger({ type: 'planner:kickoff' })
 
     await selectionSeen
     expect(selectedLabels).toEqual(['planner:taskGuard'])
+  })
+
+  test('throws during bootstrap install when module bSync request bypasses event refs', async () => {
+    const invalidModule = useModule('planner', ({ bSync, bThread }) => ({
+      threads: {
+        guard: bThread([
+          bSync({
+            request: {
+              type: 'raw',
+            },
+          }),
+        ]),
+      },
+    }))
+
+    await expect(
+      createAgent({
+        id: 'agent:invalid-use-module-bsync-request',
+        cwd: process.cwd(),
+        workspace: process.cwd(),
+        models: TEST_MODELS,
+        modules: [invalidModule],
+      }),
+    ).rejects.toThrow(
+      /request.*local\(schema\)\.request\(\.\.\.\) or external\(schema\[, moduleName\]\)\.request\(\.\.\.\)/,
+    )
+  })
+
+  test('throws during bootstrap install when module returns threads built from canonical imported helpers', async () => {
+    const PlannerReadyEventSchema = z.object({
+      type: z.literal('planner_ready'),
+      detail: z.undefined(),
+    })
+    const invalidModule = useModule('planner', ({ external }) => {
+      const plannerReady = external(PlannerReadyEventSchema)
+      return {
+        threads: {
+          guard: bThread([bSync({ request: plannerReady.request() })]),
+        },
+      }
+    })
+
+    await expect(
+      createAgent({
+        id: 'agent:invalid-use-module-canonical-thread',
+        cwd: process.cwd(),
+        workspace: process.cwd(),
+        models: TEST_MODELS,
+        modules: [invalidModule],
+      }),
+    ).rejects.toThrow(/return threads\["guard"\].*bSync and bThread helpers from useModule callback args/)
   })
 
   test('installs runtime modules through update_modules using emit API', async () => {
