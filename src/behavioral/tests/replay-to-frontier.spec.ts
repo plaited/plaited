@@ -135,4 +135,23 @@ describe('replayToFrontier', () => {
     expect(triggerSourceResult.frontier.status).toBe('idle')
     expect(triggerSourceResult.frontier.enabled).toHaveLength(0)
   })
+
+  test('replay matches request detail structurally when object key insertion order differs', () => {
+    const replayDetail: Record<string, number> = {}
+    replayDetail.b = 2
+    replayDetail.a = 1
+
+    const { frontier } = replayToFrontier({
+      threads: {
+        producer: bThread([
+          bSync({ request: { type: 'task', detail: { a: 1, b: 2 } } }),
+          bSync({ request: { type: 'after_task' } }),
+        ]),
+      },
+      history: [{ type: 'task', source: 'request', detail: replayDetail }],
+    })
+
+    expect(frontier.status).toBe('ready')
+    expect(frontier.enabled.map((candidate) => candidate.type)).toEqual(['after_task'])
+  })
 })

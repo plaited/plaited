@@ -29,7 +29,7 @@ compose on top of the core?"
 - `behavioral()` engine setup
 - host `trigger` ingress
 - module `emit` ingress
-- event-derived context memory (`moduleId:eventType` -> last detail)
+- event-derived context memory (`eventType` -> last selected detail)
 - heartbeat pulse
 - built-in file, grep, bash, and inference handlers
 - dynamic module installation
@@ -63,12 +63,14 @@ Modules receive:
 
 - `moduleId`
 - `emit`
+- `last(listener)`
+- `addThreads(threads)` (scoped by declared module name, fallback `moduleId`)
 - `useSnapshot`
-- `memory` (`get(listener)`)
 
 From those seams they can install:
 
-- `bThreads`
+- static `threads` (installed through the same scoped thread helper)
+- dynamic scoped threads via `addThreads(...)`
 - feedback handlers
 - runtime policy
 

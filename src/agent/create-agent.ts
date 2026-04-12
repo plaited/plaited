@@ -2,7 +2,7 @@ import { glob } from 'node:fs/promises'
 import { isAbsolute, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import * as z from 'zod'
-import type { Disconnect } from '../behavioral.ts'
+import type { AddBThreads, BThreads, Disconnect } from '../behavioral.ts'
 import { type BPEvent, type BPListener, behavioral, bSync, bThread } from '../behavioral.ts'
 import { isTypeOf } from '../utils.ts'
 import { AGENT_EVENTS } from './agent.constants.ts'
@@ -83,6 +83,17 @@ export const createAgent = async ({
   const resolveCwdPath = (detail: string) => resolve(cwd, detail)
 
   const buildModuleId = ({ lane, index }: { lane: string; index: number }) => `${lane}#${index}`
+  const toScopedThreadLabel = ({ scope, label }: { scope: string; label: string }) =>
+    label.startsWith(`${scope}:`) ? label : `${scope}:${label}`
+  const createScopedAddThreads = ({ scope }: { scope: string }): AddBThreads => {
+    return (threads) => {
+      const scopedThreads: BThreads = {}
+      for (const [label, thread] of Object.entries(threads)) {
+        scopedThreads[toScopedThreadLabel({ scope, label })] = thread
+      }
+      addBThreads(scopedThreads)
+    }
+  }
   disconnectSet.add(
     useSnapshot((snapshot) => {
       if (snapshot.kind !== 'selection') {
@@ -103,9 +114,7 @@ export const createAgent = async ({
   const createModuleEmit = () => (event: BPEvent) => {
     emit(event)
   }
-  const moduleMemory = {
-    get: (listener: BPListener) => contextMemoryStore.get(listener),
-  }
+  const moduleLast = (listener: BPListener) => contextMemoryStore.get(listener)
   const installedModuleIds = new Set<string>()
   const installedModuleNames = new Set<string>()
   const installModules = ({
@@ -146,6 +155,8 @@ export const createAgent = async ({
           installedModuleNames.add(declaredModuleName)
         }
       }
+      const moduleScope = declaredModuleName ?? moduleId
+      const addScopedThreads = createScopedAddThreads({ scope: moduleScope })
 
       const parsed = (() => {
         try {
@@ -153,8 +164,9 @@ export const createAgent = async ({
             installModule({
               moduleId,
               emit: createModuleEmit(),
+              last: moduleLast,
+              addThreads: addScopedThreads,
               useSnapshot,
-              memory: moduleMemory,
             }),
           )
         } catch (error) {
@@ -169,7 +181,7 @@ export const createAgent = async ({
         }
       })()
       const { threads, handlers } = parsed
-      threads && addBThreads(threads)
+      threads && addScopedThreads(threads)
       handlers && disconnectSet.add(useFeedback(handlers))
     }
   }

@@ -1,5 +1,6 @@
 import type { infer as Infer, ZodSafeParseError, ZodTypeAny } from 'zod'
 import type {
+  AddBThreads,
   BPListener,
   BSync,
   DefaultHandlers,
@@ -134,10 +135,11 @@ export type ModuleParams = {
   moduleId: string
   /** Module ingress surface injected into installed modules. */
   emit: Trigger
+  /** Replay-safe read of the last selected event detail for a listener. */
+  last: (listener: BPListener) => unknown
+  /** Runtime thread installation surface for module-scoped dynamic threads. */
+  addThreads: AddBThreads
   useSnapshot: UseSnapshot
-  memory: {
-    get: (listener: BPListener) => unknown
-  }
 }
 
 /**

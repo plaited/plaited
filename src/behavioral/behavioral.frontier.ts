@@ -21,6 +21,7 @@ import type {
   RunningBid,
   VerifyFrontiersResult,
 } from './behavioral.types.ts'
+import { deepEqual } from './deep-equal.ts'
 
 const serializeEvent = ({ type, detail, source }: ReplayEvent) => {
   try {
@@ -48,17 +49,6 @@ const cloneCandidates = (candidates: Frontier['candidates']): Frontier['candidat
     source: candidate.source,
     ...(candidate.ingress && { ingress: candidate.ingress }),
   }))
-
-const hasSameDetail = ({ left, right }: { left: unknown; right: unknown }) => {
-  if (Object.is(left, right)) {
-    return true
-  }
-  try {
-    return JSON.stringify(left) === JSON.stringify(right)
-  } catch {
-    return false
-  }
-}
 
 /**
  * @internal
@@ -99,7 +89,7 @@ export const replayToFrontier = ({
                 return (
                   candidate.type === event.type &&
                   candidate.source === event.source &&
-                  hasSameDetail({ left: candidate.detail, right: event.detail })
+                  deepEqual(candidate.detail, event.detail)
                 )
               })
               .sort((a, b) => a.priority - b.priority)[0]

@@ -4,6 +4,7 @@ import type { BPListener } from '../../behavioral/behavioral.types.ts'
 import { bSync, bThread } from '../../behavioral.ts'
 import { AGENT_EVENTS } from '../agent.constants.ts'
 import { createAgent } from '../create-agent.ts'
+import { useModule } from '../use-module.ts'
 
 const TEST_MODELS = {
   primary: async () => ({
@@ -39,13 +40,14 @@ describe('createAgent', () => {
     expect(typeof agent.useSnapshot).toBe('function')
   })
 
-  test('module params remove trigger/signals/computed and provide emit/memory', async () => {
+  test('module params remove trigger/signals/computed and provide emit/last/addThreads', async () => {
     let hasModuleId = false
     let hasTrigger = false
     let hasSignals = false
     let hasComputed = false
     let hasEmit = false
-    let hasMemory = false
+    let hasLast = false
+    let hasAddThreads = false
 
     await createAgent({
       id: 'agent:params',
@@ -58,7 +60,8 @@ describe('createAgent', () => {
           hasSignals = Reflect.has(params as object, 'signals')
           hasComputed = Reflect.has(params as object, 'computed')
           hasEmit = Reflect.has(params as object, 'emit')
-          hasMemory = Reflect.has(params as object, 'memory')
+          hasLast = Reflect.has(params as object, 'last')
+          hasAddThreads = Reflect.has(params as object, 'addThreads')
           hasModuleId = Reflect.has(params as object, 'moduleId')
           return {}
         },
@@ -69,7 +72,8 @@ describe('createAgent', () => {
     expect(hasSignals).toBe(false)
     expect(hasComputed).toBe(false)
     expect(hasEmit).toBe(true)
-    expect(hasMemory).toBe(true)
+    expect(hasLast).toBe(true)
+    expect(hasAddThreads).toBe(true)
     expect(hasModuleId).toBe(true)
   })
 
@@ -100,7 +104,7 @@ describe('createAgent', () => {
     expect(seen).toEqual(['module_event'])
   })
 
-  test('context memory stores selected events and resolves them through memory.get(listener)', async () => {
+  test('context memory stores selected events and resolves them through last(listener)', async () => {
     let getMemory!: (listener: BPListener) => unknown
     const listener = {
       type: 'memory_evt',
@@ -114,8 +118,8 @@ describe('createAgent', () => {
       workspace: process.cwd(),
       models: TEST_MODELS,
       modules: [
-        ({ emit, memory }) => {
-          getMemory = memory.get
+        ({ emit, last }) => {
+          getMemory = last
           return {
             handlers: {
               run_emit_sequence() {
@@ -150,8 +154,8 @@ describe('createAgent', () => {
         ttlMs: 20,
       },
       modules: [
-        ({ emit, memory }) => {
-          getMemory = memory.get
+        ({ emit, last }) => {
+          getMemory = last
           return {
             handlers: {
               run_emit_once() {
@@ -191,8 +195,8 @@ describe('createAgent', () => {
       workspace: process.cwd(),
       models: TEST_MODELS,
       modules: [
-        ({ emit, memory }) => {
-          getMemory = memory.get
+        ({ emit, last }) => {
+          getMemory = last
           return {
             threads: {
               blocker: bThread(
@@ -239,8 +243,8 @@ describe('createAgent', () => {
       workspace: process.cwd(),
       models: TEST_MODELS,
       modules: [
-        ({ memory }) => {
-          getMemory = memory.get
+        ({ last }) => {
+          getMemory = last
           return {
             threads: {
               blockSecond: bThread(
@@ -265,6 +269,107 @@ describe('createAgent', () => {
 
     agent.trigger({ type: 'kickoff' })
     expect(getMemory(listener)).toEqual({ n: 1 })
+  })
+
+  test('scopes returned module threads using the declared module name in snapshots', async () => {
+    const planner = useModule('planner', ({ bSync, bThread }) => ({
+      threads: {
+        guard: bThread([
+          bSync({
+            waitFor: {
+              type: 'kickoff',
+              sourceSchema: z.literal('trigger'),
+              detailSchema: z.unknown(),
+            },
+          }),
+          bSync({
+            request: {
+              type: 'planner_ready',
+            },
+          }),
+        ]),
+      },
+    }))
+
+    const agent = await createAgent({
+      id: 'agent:scoped-static-thread-labels',
+      cwd: process.cwd(),
+      workspace: process.cwd(),
+      models: TEST_MODELS,
+      modules: [planner],
+    })
+
+    let resolveSelection!: () => void
+    const selectionSeen = new Promise<void>((resolve) => {
+      resolveSelection = resolve
+    })
+    const selectedLabels: string[] = []
+
+    agent.useSnapshot((message) => {
+      if (message.kind !== 'selection') {
+        return
+      }
+      const selectedBid = message.bids.find((bid) => bid.selected && bid.type === 'planner_ready')
+      if (!selectedBid) {
+        return
+      }
+      selectedLabels.push(selectedBid.thread.label)
+      resolveSelection()
+    })
+
+    agent.trigger({ type: 'kickoff' })
+
+    await selectionSeen
+    expect(selectedLabels).toEqual(['planner:guard'])
+  })
+
+  test('scopes handler-added dynamic threads using the declared module name in snapshots', async () => {
+    const planner = useModule('planner', ({ addThreads, bSync, bThread }) => ({
+      handlers: {
+        kickoff() {
+          addThreads({
+            taskGuard: bThread([
+              bSync({
+                request: {
+                  type: 'dynamic_ready',
+                },
+              }),
+            ]),
+          })
+        },
+      },
+    }))
+
+    const agent = await createAgent({
+      id: 'agent:scoped-dynamic-thread-labels',
+      cwd: process.cwd(),
+      workspace: process.cwd(),
+      models: TEST_MODELS,
+      modules: [planner],
+    })
+
+    let resolveSelection!: () => void
+    const selectionSeen = new Promise<void>((resolve) => {
+      resolveSelection = resolve
+    })
+    const selectedLabels: string[] = []
+
+    agent.useSnapshot((message) => {
+      if (message.kind !== 'selection') {
+        return
+      }
+      const selectedBid = message.bids.find((bid) => bid.selected && bid.type === 'dynamic_ready')
+      if (!selectedBid) {
+        return
+      }
+      selectedLabels.push(selectedBid.thread.label)
+      resolveSelection()
+    })
+
+    agent.trigger({ type: 'kickoff' })
+
+    await selectionSeen
+    expect(selectedLabels).toEqual(['planner:taskGuard'])
   })
 
   test('installs runtime modules through update_modules using emit API', async () => {

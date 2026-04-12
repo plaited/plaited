@@ -122,7 +122,8 @@ The core owns:
 - `behavioral()` engine setup
 - host `trigger` ingress surface
 - module `emit` ingress surface (provided via module params)
-- event-derived context memory policy (`moduleId:eventType` -> last `detail`)
+- event-derived context memory policy (`eventType` -> last selected `detail`, queried via `last(listener)`)
+- module-scoped dynamic thread installation via `addThreads(...)` (declared name scope, fallback `moduleId`)
 - heartbeat emission
 - host/runtime snapshot diagnostics via `reportSnapshot`
 - built-in handlers for:
