@@ -1,5 +1,5 @@
 import { FRONTIER_STATUS } from './behavioral.constants.ts'
-import type { BPEvent, BPListener, CandidateBid, Frontier, PendingBid, RunningBid } from './behavioral.types.ts'
+import type { BPListener, CandidateBid, Frontier, PendingBid, RunningBid } from './behavioral.types.ts'
 
 /**
  * @internal
@@ -20,12 +20,6 @@ export const isListeningFor = ({ type, detail, source }: CandidateBid) => {
     )
   }
 }
-
-/**
- * @internal
- * Checks if a pending request (Idiom['request']) matches the selected event candidate.
- */
-export const isPendingRequest = (selectedEvent: CandidateBid, event: BPEvent) => event.type === selectedEvent.type
 
 /**
  * @internal
@@ -99,7 +93,7 @@ export const resumePendingThreadsForSelectedEvent = ({
     const { waitFor, request, generator, interrupt, ingress } = bid
     const isInterrupted = ensureArray(interrupt).some(isListeningFor(selectedEvent))
     const isWaitedFor = ensureArray(waitFor).some(isListeningFor(selectedEvent))
-    const hasPendingRequest = request && isPendingRequest(selectedEvent, request)
+    const hasPendingRequest = Boolean(request) && thread === selectedEvent.thread
     isInterrupted && generator.return?.()
     if (hasPendingRequest || isInterrupted || isWaitedFor || ingress) {
       running.set(thread, bid)

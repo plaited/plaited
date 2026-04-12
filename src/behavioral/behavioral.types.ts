@@ -29,7 +29,6 @@ export type ReplayEvent = BPEvent & {
 }
 
 export type BPListener = {
-  kind: 'match'
   type: string
   sourceSchema: ZodType<keyof typeof EVENT_SOURCES>
   detailSchema: ZodType<unknown>

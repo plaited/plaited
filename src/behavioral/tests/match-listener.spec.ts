@@ -12,7 +12,6 @@ test('match listener: waitFor resumes thread when type and detail schema match',
     consumer: bThread([
       bSync({
         waitFor: {
-          kind: 'match',
           type: 'task',
           sourceSchema: z.enum(['trigger', 'request', 'emit']),
           detailSchema: z.object({ id: z.string() }),
@@ -45,7 +44,6 @@ test('match listener: waitFor does not resume when detail schema fails', () => {
     consumer: bThread([
       bSync({
         waitFor: {
-          kind: 'match',
           type: 'task',
           sourceSchema: z.enum(['trigger', 'request', 'emit']),
           detailSchema: z.object({ id: z.string() }),
@@ -78,7 +76,6 @@ test('match listener: type mismatch prevents match when source and detail would 
     consumer: bThread([
       bSync({
         waitFor: {
-          kind: 'match',
           type: 'task',
           sourceSchema: z.literal('request'),
           detailSchema: z.object({ id: z.string() }),
@@ -111,7 +108,6 @@ test('match listener: sourceSchema request accepts only requested events', () =>
     consumer: bThread([
       bSync({
         waitFor: {
-          kind: 'match',
           type: 'task',
           sourceSchema: z.literal('request'),
           detailSchema: z.object({ id: z.string() }),
@@ -144,7 +140,6 @@ test('match listener: sourceSchema trigger accepts only externally triggered eve
     consumer: bThread([
       bSync({
         waitFor: {
-          kind: 'match',
           type: 'task',
           sourceSchema: z.literal('trigger'),
           detailSchema: z.object({ id: z.string() }),
@@ -178,7 +173,6 @@ test('match listener: sourceSchema can accept trigger, request, and emit', () =>
     consumer: bThread([
       bSync({
         waitFor: {
-          kind: 'match',
           type: 'task',
           sourceSchema: z.enum(['trigger', 'request', 'emit']),
           detailSchema: z.object({ id: z.string() }),
@@ -211,7 +205,6 @@ test('match listener: sourceSchema emit accepts only emit-origin events', () => 
     consumer: bThread([
       bSync({
         waitFor: {
-          kind: 'match',
           type: 'task',
           sourceSchema: z.literal('emit'),
           detailSchema: z.object({ id: z.string() }),
@@ -247,7 +240,6 @@ test('match listener: block prevents matching requested event from being selecte
     blocker: bThread([
       bSync({
         block: {
-          kind: 'match',
           type: 'task',
           sourceSchema: z.literal('request'),
           detailSchema: z.object({ id: z.string() }),
@@ -289,7 +281,6 @@ test('match listener: interrupt terminates thread when matching event is selecte
       bSync({
         waitFor: onType('start'),
         interrupt: {
-          kind: 'match',
           type: 'kill',
           sourceSchema: z.literal('request'),
           detailSchema: z.object({ id: z.literal('victim') }),
@@ -344,4 +335,36 @@ test('match listener: detail-schema listeners can express conditional matching',
   trigger({ type: 'kickoff' })
 
   expect(log).toEqual(['task', 'ack'])
+})
+
+test('match listener: non-selected same-type requesters remain pending until their own request is selected', () => {
+  const log: string[] = []
+  const { addBThreads, trigger, useFeedback } = behavioral()
+
+  addBThreads({
+    first: bThread([
+      bSync({ request: { type: 'same', detail: { n: 1 } } }),
+      bSync({ request: { type: 'first_done' } }),
+    ]),
+    second: bThread([
+      bSync({ request: { type: 'same', detail: { n: 2 } } }),
+      bSync({ request: { type: 'second_done' } }),
+    ]),
+  })
+
+  useFeedback({
+    same(detail: { n: number }) {
+      log.push(`same:${detail.n}`)
+    },
+    first_done() {
+      log.push('first_done')
+    },
+    second_done() {
+      log.push('second_done')
+    },
+  })
+
+  trigger({ type: 'kickoff' })
+
+  expect(log).toEqual(['same:1', 'first_done', 'same:2', 'second_done'])
 })

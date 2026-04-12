@@ -26,13 +26,11 @@ let board: Set<number>
 type Square = { square: number }
 const AnySourceSchema = z.enum(['trigger', 'request', 'emit'])
 const onType = (type: string) => ({
-  kind: 'match' as const,
   type,
   sourceSchema: AnySourceSchema,
   detailSchema: z.unknown(),
 })
 const onMove = (player: 'X' | 'O', square?: number) => ({
-  kind: 'match' as const,
   type: player,
   sourceSchema: AnySourceSchema,
   detailSchema:
@@ -41,7 +39,6 @@ const onMove = (player: 'X' | 'O', square?: number) => ({
       : z.object({ square: z.number() }).refine((detail) => detail.square === square),
 })
 const onPlayerMoveIn = (player: 'X' | 'O', lineSquares: number[]) => ({
-  kind: 'match' as const,
   type: player,
   sourceSchema: AnySourceSchema,
   detailSchema: z.object({ square: z.number() }).refine((detail) => lineSquares.includes(detail.square)),

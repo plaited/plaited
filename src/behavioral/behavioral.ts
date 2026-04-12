@@ -11,7 +11,6 @@ import {
   advanceRunningToPending,
   computeFrontier,
   isListeningFor,
-  isPendingRequest,
   resumePendingThreadsForSelectedEvent,
 } from './behavioral.shared.ts'
 import type {
@@ -104,7 +103,7 @@ const formatSnapshotBids = ({
       thread: resolveThreadSnapshotMeta(bid.thread),
       source: bid.source,
       type: bid.type,
-      selected: selectedEvent ? isPendingRequest(selectedEvent, bid) : false,
+      selected: selectedEvent ? selectedEvent.thread === bid.thread : false,
       priority: bid.priority,
       detail: bid.detail,
       blockedBy: resolveThreadReference(blockedBy),

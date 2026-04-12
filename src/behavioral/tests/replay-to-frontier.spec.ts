@@ -4,7 +4,6 @@ import * as z from 'zod'
 import { replayToFrontier } from '../behavioral.frontier.ts'
 
 const onType = (type: string) => ({
-  kind: 'match' as const,
   type,
   sourceSchema: z.enum(['trigger', 'request', 'emit']),
   detailSchema: z.unknown(),
@@ -86,7 +85,6 @@ describe('replayToFrontier', () => {
       consumer: bThread([
         bSync({
           waitFor: {
-            kind: 'match',
             type: 'task',
             sourceSchema: z.literal('trigger'),
             detailSchema: z.object({ id: z.string() }),
@@ -115,7 +113,6 @@ describe('replayToFrontier', () => {
       consumer: bThread([
         bSync({
           waitFor: {
-            kind: 'match',
             type: 'task',
             sourceSchema: z.literal('emit'),
             detailSchema: z.object({ id: z.string() }),

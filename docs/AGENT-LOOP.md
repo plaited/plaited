@@ -64,7 +64,7 @@ Modules receive:
 - `moduleId`
 - `emit`
 - `useSnapshot`
-- `contextMemory` (`getLast`, `getLastBy`)
+- `memory` (`get(listener)`)
 
 From those seams they can install:
 

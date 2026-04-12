@@ -1,10 +1,16 @@
 import { describe, expect, test } from 'bun:test'
-import { behavioral, bSync, bThread, type DeadlockSnapshot, type SnapshotMessage } from 'plaited/behavioral'
+import {
+  behavioral,
+  bSync,
+  bThread,
+  type DeadlockSnapshot,
+  type SelectionSnapshot,
+  type SnapshotMessage,
+} from 'plaited/behavioral'
 import * as z from 'zod'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
 
 const onType = (type: string) => ({
-  kind: 'match' as const,
   type,
   sourceSchema: z.enum(['trigger', 'request', 'emit']),
   detailSchema: z.unknown(),
@@ -92,5 +98,44 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
     expect(deadlocks).toHaveLength(0)
     const selections = snapshots.filter((s) => s.kind === SNAPSHOT_MESSAGE_KINDS.selection)
     expect(selections.length).toBeGreaterThan(0)
+  })
+
+  test('selection snapshot marks only the exact chosen candidate as selected', () => {
+    const snapshots: SnapshotMessage[] = []
+    const { addBThreads, trigger, useSnapshot } = behavioral()
+
+    useSnapshot((snapshot: SnapshotMessage) => {
+      snapshots.push(snapshot)
+    })
+
+    addBThreads({
+      blockSecond: bThread(
+        [
+          bSync({
+            block: {
+              type: 'same_type',
+              sourceSchema: z.literal('request'),
+              detailSchema: z.object({ n: z.literal(2) }),
+            },
+          }),
+        ],
+        true,
+      ),
+      first: bThread([bSync({ request: { type: 'same_type', detail: { n: 1 } } })]),
+      second: bThread([bSync({ request: { type: 'same_type', detail: { n: 2 } } })]),
+    })
+
+    trigger({ type: 'kickoff' })
+
+    const selections = snapshots.filter(
+      (snapshot): snapshot is SelectionSnapshot =>
+        snapshot.kind === SNAPSHOT_MESSAGE_KINDS.selection &&
+        snapshot.bids.some((bid) => bid.type === 'same_type' && bid.selected),
+    )
+    expect(selections).toHaveLength(1)
+    const sameTypeBids = selections[0]!.bids.filter((bid) => bid.type === 'same_type')
+    expect(sameTypeBids).toHaveLength(2)
+    expect(sameTypeBids.filter((bid) => bid.selected)).toHaveLength(1)
+    expect(sameTypeBids.find((bid) => bid.selected)?.detail).toEqual({ n: 1 })
   })
 })

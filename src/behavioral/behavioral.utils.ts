@@ -42,12 +42,7 @@ export const isBPMatchListener = (data: unknown): data is BPListener => {
   if (!isTypeOf<Record<string, unknown>>(data, 'object')) {
     return false
   }
-  return (
-    data.kind === 'match' &&
-    isTypeOf<string>(data.type, 'string') &&
-    isZodSchema(data.sourceSchema) &&
-    isZodSchema(data.detailSchema)
-  )
+  return isTypeOf<string>(data.type, 'string') && isZodSchema(data.sourceSchema) && isZodSchema(data.detailSchema)
 }
 
 /**

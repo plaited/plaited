@@ -1,21 +1,22 @@
+import type { EVENT_SOURCES } from '../behavioral/behavioral.constants.ts'
+import type { BPListener } from '../behavioral/behavioral.types.ts'
+
 export type ContextMemoryPolicy = {
   ttlMs: number
   maxKeys?: number
 }
 
 type ContextMemoryEntry = {
+  source: keyof typeof EVENT_SOURCES
   detail: unknown
   expiresAt: number
 }
 
 export type ContextMemory = {
-  record: (args: { moduleId: string; eventType: string; detail: unknown }) => void
-  getLast: (key: string) => unknown
-  getLastBy: (moduleId: string, eventType: string) => unknown
+  record: (args: { type: string; source: keyof typeof EVENT_SOURCES; detail: unknown }) => void
+  get: (listener: BPListener) => unknown
   pruneExpired: () => void
 }
-
-const createKey = (moduleId: string, eventType: string) => `${moduleId}:${eventType}`
 
 export const createContextMemory = ({ ttlMs, maxKeys }: ContextMemoryPolicy): ContextMemory => {
   const store = new Map<string, ContextMemoryEntry>()
@@ -42,27 +43,33 @@ export const createContextMemory = ({ ttlMs, maxKeys }: ContextMemoryPolicy): Co
     }
   }
 
-  const getLast = (key: string) => {
-    const entry = store.get(key)
+  const get = (listener: BPListener) => {
+    const entry = store.get(listener.type)
     if (!entry) {
       return undefined
     }
     if (entry.expiresAt <= Date.now()) {
-      store.delete(key)
+      store.delete(listener.type)
       return undefined
     }
-    store.delete(key)
-    store.set(key, entry)
-    return entry.detail
+    store.delete(listener.type)
+    store.set(listener.type, entry)
+    const source = listener.sourceSchema.safeParse(entry.source)
+    if (!source.success) {
+      return undefined
+    }
+    const detail = listener.detailSchema.safeParse(entry.detail)
+    if (!detail.success) {
+      return undefined
+    }
+    return detail.data
   }
 
-  const getLastBy = (moduleId: string, eventType: string) => getLast(createKey(moduleId, eventType))
-
-  const record = ({ moduleId, eventType, detail }: { moduleId: string; eventType: string; detail: unknown }) => {
+  const record = ({ type, source, detail }: { type: string; source: keyof typeof EVENT_SOURCES; detail: unknown }) => {
     pruneExpired()
-    const key = createKey(moduleId, eventType)
-    store.delete(key)
-    store.set(key, {
+    store.delete(type)
+    store.set(type, {
+      source,
       detail,
       expiresAt: Date.now() + ttlMs,
     })
@@ -71,8 +78,7 @@ export const createContextMemory = ({ ttlMs, maxKeys }: ContextMemoryPolicy): Co
 
   return {
     record,
-    getLast,
-    getLastBy,
+    get,
     pruneExpired,
   }
 }

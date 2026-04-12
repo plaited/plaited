@@ -1,4 +1,7 @@
 import { describe, expect, test } from 'bun:test'
+import * as z from 'zod'
+import type { BPListener } from '../../behavioral/behavioral.types.ts'
+import { bSync, bThread } from '../../behavioral.ts'
 import { AGENT_EVENTS } from '../agent.constants.ts'
 import { createAgent } from '../create-agent.ts'
 
@@ -36,13 +39,13 @@ describe('createAgent', () => {
     expect(typeof agent.useSnapshot).toBe('function')
   })
 
-  test('module params remove trigger/signals/computed and provide emit/contextMemory', async () => {
+  test('module params remove trigger/signals/computed and provide emit/memory', async () => {
     let hasModuleId = false
     let hasTrigger = false
     let hasSignals = false
     let hasComputed = false
     let hasEmit = false
-    let hasContextMemory = false
+    let hasMemory = false
 
     await createAgent({
       id: 'agent:params',
@@ -55,7 +58,7 @@ describe('createAgent', () => {
           hasSignals = Reflect.has(params as object, 'signals')
           hasComputed = Reflect.has(params as object, 'computed')
           hasEmit = Reflect.has(params as object, 'emit')
-          hasContextMemory = Reflect.has(params as object, 'contextMemory')
+          hasMemory = Reflect.has(params as object, 'memory')
           hasModuleId = Reflect.has(params as object, 'moduleId')
           return {}
         },
@@ -66,7 +69,7 @@ describe('createAgent', () => {
     expect(hasSignals).toBe(false)
     expect(hasComputed).toBe(false)
     expect(hasEmit).toBe(true)
-    expect(hasContextMemory).toBe(true)
+    expect(hasMemory).toBe(true)
     expect(hasModuleId).toBe(true)
   })
 
@@ -97,10 +100,13 @@ describe('createAgent', () => {
     expect(seen).toEqual(['module_event'])
   })
 
-  test('context memory stores last detail by moduleId:eventType and exposes getters', async () => {
-    let getLastBy!: (moduleId: string, eventType: string) => unknown
-    let getLast!: (key: string) => unknown
-    let moduleId = ''
+  test('context memory stores selected events and resolves them through memory.get(listener)', async () => {
+    let getMemory!: (listener: BPListener) => unknown
+    const listener = {
+      type: 'memory_evt',
+      sourceSchema: z.literal('emit'),
+      detailSchema: z.object({ n: z.number() }),
+    }
 
     const agent = await createAgent({
       id: 'agent:context-memory',
@@ -108,10 +114,8 @@ describe('createAgent', () => {
       workspace: process.cwd(),
       models: TEST_MODELS,
       modules: [
-        ({ moduleId: id, emit, contextMemory }) => {
-          moduleId = id
-          getLastBy = contextMemory.getLastBy
-          getLast = contextMemory.getLast
+        ({ emit, memory }) => {
+          getMemory = memory.get
           return {
             handlers: {
               run_emit_sequence() {
@@ -126,13 +130,16 @@ describe('createAgent', () => {
 
     agent.trigger({ type: 'run_emit_sequence' })
 
-    expect(getLastBy(moduleId, 'memory_evt')).toEqual({ n: 2 })
-    expect(getLast(`${moduleId}:memory_evt`)).toEqual({ n: 2 })
+    expect(getMemory(listener)).toEqual({ n: 2 })
   })
 
   test('context memory evicts expired keys with TTL policy', async () => {
-    let getLastBy!: (moduleId: string, eventType: string) => unknown
-    let moduleId = ''
+    let getMemory!: (listener: BPListener) => unknown
+    const listener = {
+      type: 'memory_evt_ttl',
+      sourceSchema: z.literal('emit'),
+      detailSchema: z.object({ active: z.boolean() }),
+    }
 
     const agent = await createAgent({
       id: 'agent:context-memory-ttl',
@@ -143,9 +150,8 @@ describe('createAgent', () => {
         ttlMs: 20,
       },
       modules: [
-        ({ moduleId: id, emit, contextMemory }) => {
-          moduleId = id
-          getLastBy = contextMemory.getLastBy
+        ({ emit, memory }) => {
+          getMemory = memory.get
           return {
             handlers: {
               run_emit_once() {
@@ -159,11 +165,106 @@ describe('createAgent', () => {
 
     agent.trigger({ type: 'run_emit_once' })
 
-    expect(getLastBy(moduleId, 'memory_evt_ttl')).toEqual({ active: true })
+    expect(getMemory(listener)).toEqual({ active: true })
     await Bun.sleep(35)
-    expect(getLastBy(moduleId, 'memory_evt_ttl')).toBeUndefined()
+    expect(getMemory(listener)).toBeUndefined()
 
     agent.trigger({ type: AGENT_EVENTS.agent_disconnect })
+  })
+
+  test('context memory records selected events only, not blocked emit attempts', async () => {
+    let getMemory!: (listener: BPListener) => unknown
+    const blockedListener = {
+      type: 'memory_evt_blocked',
+      sourceSchema: z.literal('emit'),
+      detailSchema: z.object({ blocked: z.literal(true) }),
+    }
+    const selectedListener = {
+      type: 'memory_evt_selected',
+      sourceSchema: z.literal('emit'),
+      detailSchema: z.object({ selected: z.literal(true) }),
+    }
+
+    const agent = await createAgent({
+      id: 'agent:context-memory-selected-only',
+      cwd: process.cwd(),
+      workspace: process.cwd(),
+      models: TEST_MODELS,
+      modules: [
+        ({ emit, memory }) => {
+          getMemory = memory.get
+          return {
+            threads: {
+              blocker: bThread(
+                [
+                  bSync({
+                    block: {
+                      type: 'memory_evt_blocked',
+                      sourceSchema: z.literal('emit'),
+                      detailSchema: z.object({ blocked: z.literal(true) }),
+                    },
+                  }),
+                ],
+                true,
+              ),
+            },
+            handlers: {
+              run_emit_with_blocked_attempt() {
+                emit({ type: 'memory_evt_blocked', detail: { blocked: true } })
+                emit({ type: 'memory_evt_selected', detail: { selected: true } })
+              },
+            },
+          }
+        },
+      ],
+    })
+
+    agent.trigger({ type: 'run_emit_with_blocked_attempt' })
+
+    expect(getMemory(blockedListener)).toBeUndefined()
+    expect(getMemory(selectedListener)).toEqual({ selected: true })
+  })
+
+  test('context memory records the exact selected candidate when multiple bids share a type', async () => {
+    let getMemory!: (listener: BPListener) => unknown
+    const listener = {
+      type: 'same_type',
+      sourceSchema: z.literal('request'),
+      detailSchema: z.object({ n: z.number() }),
+    }
+
+    const agent = await createAgent({
+      id: 'agent:context-memory-exact-selected-candidate',
+      cwd: process.cwd(),
+      workspace: process.cwd(),
+      models: TEST_MODELS,
+      modules: [
+        ({ memory }) => {
+          getMemory = memory.get
+          return {
+            threads: {
+              blockSecond: bThread(
+                [
+                  bSync({
+                    block: {
+                      type: 'same_type',
+                      sourceSchema: z.literal('request'),
+                      detailSchema: z.object({ n: z.literal(2) }),
+                    },
+                  }),
+                ],
+                true,
+              ),
+              first: bThread([bSync({ request: { type: 'same_type', detail: { n: 1 } } })]),
+              second: bThread([bSync({ request: { type: 'same_type', detail: { n: 2 } } })]),
+            },
+          }
+        },
+      ],
+    })
+
+    agent.trigger({ type: 'kickoff' })
+    expect(getMemory(listener)).toEqual({ n: 1 })
   })
 
   test('installs runtime modules through update_modules using emit API', async () => {
@@ -295,6 +396,76 @@ describe('createAgent', () => {
         moduleId: `update:${modulePath}#0`,
         lane: `update:${modulePath}`,
         code: 'duplicate_module_id',
+      }),
+    )
+  })
+
+  test('reports duplicate declared module names and skips installing duplicate named modules', async () => {
+    const modulePath = './src/agent/tests/fixtures/update-modules-duplicate-name-behavior.fixture.ts'
+    const warnings: Array<{ moduleId: string; lane?: string; code?: string; warning: string }> = []
+    const seen: string[] = []
+    let resolveWarning!: () => void
+    const warningSeen = new Promise<void>((resolve) => {
+      resolveWarning = resolve
+    })
+    let resolvePong!: () => void
+    const pongSeen = new Promise<void>((resolve) => {
+      resolvePong = resolve
+    })
+
+    const agent = await createAgent({
+      id: 'agent:update-modules-duplicate-name',
+      cwd: process.cwd(),
+      workspace: process.cwd(),
+      models: TEST_MODELS,
+      modules: [
+        () => ({
+          handlers: {
+            fixture_pong_first() {
+              seen.push('first')
+              resolvePong()
+            },
+            fixture_pong_second() {
+              seen.push('second')
+            },
+          },
+        }),
+      ],
+    })
+
+    agent.useSnapshot((message) => {
+      if (message.kind !== 'module_warning') {
+        return
+      }
+      warnings.push({
+        moduleId: message.moduleId,
+        lane: message.lane,
+        code: message.code,
+        warning: message.warning,
+      })
+      if (message.code === 'duplicate_module_name') {
+        resolveWarning()
+      }
+    })
+
+    agent.trigger({
+      type: AGENT_EVENTS.update_modules,
+      detail: modulePath,
+    })
+    for (let attempt = 0; attempt < 10 && seen.length === 0; attempt++) {
+      await Bun.sleep(10)
+      agent.trigger({ type: 'fixture_ping' })
+    }
+
+    await warningSeen
+    await pongSeen
+
+    expect(seen).toEqual(['first'])
+    expect(warnings).toContainEqual(
+      expect.objectContaining({
+        moduleId: `update:${modulePath}#1`,
+        lane: `update:${modulePath}`,
+        code: 'duplicate_module_name',
       }),
     )
   })

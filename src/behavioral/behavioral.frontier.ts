@@ -49,6 +49,17 @@ const cloneCandidates = (candidates: Frontier['candidates']): Frontier['candidat
     ...(candidate.ingress && { ingress: candidate.ingress }),
   }))
 
+const hasSameDetail = ({ left, right }: { left: unknown; right: unknown }) => {
+  if (Object.is(left, right)) {
+    return true
+  }
+  try {
+    return JSON.stringify(left) === JSON.stringify(right)
+  } catch {
+    return false
+  }
+}
+
 /**
  * @internal
  * Reconstructs pending state and frontier from replay-safe thread factories and selected-event history.
@@ -79,15 +90,38 @@ export const replayToFrontier = ({
   advanceRunningToPending(bootstrapRunning, pending)
 
   for (const event of history) {
-    const ingress = event.source === EVENT_SOURCES.emit || event.source === EVENT_SOURCES.trigger || undefined
-    const selectedEvent: CandidateBid = {
-      priority: 0,
-      thread: event.type,
-      source: event.source ?? EVENT_SOURCES.request,
-      type: event.type,
-      detail: event.detail,
-      ingress,
-    }
+    const selectedEvent: CandidateBid =
+      event.source === EVENT_SOURCES.request
+        ? (() => {
+            const frontier = computeFrontier({ pending })
+            const match = frontier.enabled
+              .filter((candidate) => {
+                return (
+                  candidate.type === event.type &&
+                  candidate.source === event.source &&
+                  hasSameDetail({ left: candidate.detail, right: event.detail })
+                )
+              })
+              .sort((a, b) => a.priority - b.priority)[0]
+            if (match) {
+              return match
+            }
+            return {
+              priority: 0,
+              thread: event.type,
+              source: EVENT_SOURCES.request,
+              type: event.type,
+              detail: event.detail,
+            }
+          })()
+        : {
+            priority: 0,
+            thread: event.type,
+            source: event.source ?? EVENT_SOURCES.request,
+            type: event.type,
+            detail: event.detail,
+            ingress: true,
+          }
     const running = new Map<string, RunningBid>()
 
     resumePendingThreadsForSelectedEvent({

@@ -11,7 +11,6 @@ import * as z from 'zod'
 import { bSync, bThread } from '../../../../behavioral.ts'
 
 const onType = (type: string) => ({
-  kind: 'match' as const,
   type,
   sourceSchema: z.enum(['trigger', 'request', 'emit']),
   detailSchema: z.unknown(),

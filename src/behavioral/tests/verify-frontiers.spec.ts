@@ -4,7 +4,6 @@ import * as z from 'zod'
 import { exploreFrontiers, verifyFrontiers } from '../behavioral.frontier.ts'
 
 const onType = (type: string) => ({
-  kind: 'match' as const,
   type,
   sourceSchema: z.enum(['trigger', 'request', 'emit']),
   detailSchema: z.unknown(),

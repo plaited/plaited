@@ -1,5 +1,12 @@
 import type { infer as Infer, ZodSafeParseError, ZodTypeAny } from 'zod'
-import type { BSync, DefaultHandlers, Disconnect, Trigger, UseSnapshot } from '../behavioral/behavioral.types.ts'
+import type {
+  BPListener,
+  BSync,
+  DefaultHandlers,
+  Disconnect,
+  Trigger,
+  UseSnapshot,
+} from '../behavioral/behavioral.types.ts'
 import type { AgentToolCall, ModelUsage, ToolDefinition } from './agent.schemas.ts'
 
 /**
@@ -128,9 +135,8 @@ export type ModuleParams = {
   /** Module ingress surface injected into installed modules. */
   emit: Trigger
   useSnapshot: UseSnapshot
-  contextMemory: {
-    getLast: (key: string) => unknown
-    getLastBy: (moduleId: string, eventType: string) => unknown
+  memory: {
+    get: (listener: BPListener) => unknown
   }
 }
 

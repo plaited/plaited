@@ -3,7 +3,7 @@ import { isAbsolute, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import * as z from 'zod'
 import type { Disconnect } from '../behavioral.ts'
-import { type BPEvent, behavioral, bSync, bThread } from '../behavioral.ts'
+import { type BPEvent, type BPListener, behavioral, bSync, bThread } from '../behavioral.ts'
 import { isTypeOf } from '../utils.ts'
 import { AGENT_EVENTS } from './agent.constants.ts'
 import {
@@ -29,6 +29,7 @@ import {
 } from './agent.schemas.ts'
 import type { AgentHandle, CreateAgentOptions } from './agent.types.ts'
 import { createContextMemory } from './context-memory.ts'
+import { getDeclaredModuleName } from './use-module.ts'
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 15 * 60 * 1000
 
@@ -82,19 +83,31 @@ export const createAgent = async ({
   const resolveCwdPath = (detail: string) => resolve(cwd, detail)
 
   const buildModuleId = ({ lane, index }: { lane: string; index: number }) => `${lane}#${index}`
-  const createModuleEmit = (moduleId: string) => (event: BPEvent) => {
-    contextMemoryStore.record({
-      moduleId,
-      eventType: event.type,
-      detail: event.detail,
-    })
+  disconnectSet.add(
+    useSnapshot((snapshot) => {
+      if (snapshot.kind !== 'selection') {
+        return
+      }
+      for (const bid of snapshot.bids) {
+        if (!bid.selected) {
+          continue
+        }
+        contextMemoryStore.record({
+          type: bid.type,
+          source: bid.source,
+          detail: bid.detail,
+        })
+      }
+    }),
+  )
+  const createModuleEmit = () => (event: BPEvent) => {
     emit(event)
   }
-  const moduleContextMemory = {
-    getLast: (key: string) => contextMemoryStore.getLast(key),
-    getLastBy: (moduleId: string, eventType: string) => contextMemoryStore.getLastBy(moduleId, eventType),
+  const moduleMemory = {
+    get: (listener: BPListener) => contextMemoryStore.get(listener),
   }
   const installedModuleIds = new Set<string>()
+  const installedModuleNames = new Set<string>()
   const installModules = ({
     installableModules,
     lane,
@@ -107,6 +120,7 @@ export const createAgent = async ({
     }
     for (const [index, installModule] of installableModules.entries()) {
       const moduleId = buildModuleId({ lane, index })
+      const declaredModuleName = getDeclaredModuleName(installModule)
       if (installedModuleIds.has(moduleId)) {
         reportSnapshot({
           kind: 'module_warning',
@@ -118,15 +132,29 @@ export const createAgent = async ({
       } else {
         installedModuleIds.add(moduleId)
       }
+      if (declaredModuleName) {
+        if (installedModuleNames.has(declaredModuleName)) {
+          reportSnapshot({
+            kind: 'module_warning',
+            moduleId,
+            lane,
+            code: 'duplicate_module_name',
+            warning: `Duplicate module name "${declaredModuleName}" detected during install`,
+          })
+          continue
+        } else {
+          installedModuleNames.add(declaredModuleName)
+        }
+      }
 
       const parsed = (() => {
         try {
           return ModuleResultSchema.parse(
             installModule({
               moduleId,
-              emit: createModuleEmit(moduleId),
+              emit: createModuleEmit(),
               useSnapshot,
-              contextMemory: moduleContextMemory,
+              memory: moduleMemory,
             }),
           )
         } catch (error) {
@@ -150,7 +178,6 @@ export const createAgent = async ({
   const createToolSignal = (timeout: number | undefined) => AbortSignal.timeout(timeout ?? DEFAULT_TOOL_TIMEOUT_MS)
   const sourceSchema = z.enum(['trigger', 'request', 'emit'])
   const blockWhen = (args: { type: string; detailSchema: z.ZodType<unknown> }) => ({
-    kind: 'match' as const,
     type: args.type,
     sourceSchema,
     detailSchema: args.detailSchema,

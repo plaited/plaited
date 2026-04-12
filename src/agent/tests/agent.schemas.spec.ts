@@ -310,7 +310,6 @@ describe('ModuleResultSchema', () => {
   test('accepts branded behavioral rules in threads', () => {
     const thread = bSync({
       waitFor: {
-        kind: 'match',
         type: 'tick',
         sourceSchema: z.enum(['trigger', 'request', 'emit']),
         detailSchema: z.unknown(),
