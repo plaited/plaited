@@ -1,11 +1,23 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { createAgent } from '../../../agent/create-agent.ts'
-import { behavioral, isExtension, useInstaller } from '../../../behavioral.ts'
+import {
+  behavioral,
+  EXTENSION_REQUEST_EVENT,
+  isExtension,
+  SNAPSHOT_MESSAGE_KINDS,
+  type SnapshotMessage,
+  useInstaller,
+} from '../../../behavioral.ts'
+import { BRIDGE_UI_CORE_ID } from '../../../bridge-events.ts'
 import { serverModuleExtension } from '../../../modules.ts'
-import { SERVER_MODULE_ERROR_CODES, SERVER_MODULE_EVENTS, toServerModuleEventType } from '../server-module.constants.ts'
+import {
+  SERVER_MODULE_ERROR_CODES,
+  SERVER_MODULE_EVENTS,
+  SERVER_MODULE_ID,
+  toServerModuleEventType,
+} from '../server-module.constants.ts'
 import {
   ClientConnectedDetailSchema,
-  ClientErrorDetailSchema,
   type ServerStartDetail,
   ServerStartedDetailSchema,
 } from '../server-module.schemas.ts'
@@ -14,6 +26,7 @@ import type { AuthenticateConnection } from '../server-module.types.ts'
 type ObservedEvent = { type: string; detail?: unknown }
 type Harness = {
   events: ObservedEvent[]
+  snapshots: SnapshotMessage[]
   trigger: (event: { type: string; detail?: unknown }) => void
 }
 
@@ -25,6 +38,9 @@ const connectedEventType = toServerModuleEventType(SERVER_MODULE_EVENTS.client_c
 const clientErrorEventType = toServerModuleEventType(SERVER_MODULE_EVENTS.client_error)
 const serverStartEventType = toServerModuleEventType(SERVER_MODULE_EVENTS.server_start)
 const serverSendEventType = toServerModuleEventType(SERVER_MODULE_EVENTS.server_send)
+const uiCoreExtensionRequestEventType = `${BRIDGE_UI_CORE_ID}:${EXTENSION_REQUEST_EVENT}`
+const uiCoreUserActionEventType = `${BRIDGE_UI_CORE_ID}:user_action`
+const uiCoreSnapshotEventType = `${BRIDGE_UI_CORE_ID}:snapshot`
 
 const cleanupTriggers: Harness['trigger'][] = []
 
@@ -99,8 +115,38 @@ const waitForEvent = async ({
   throw new Error(`Timed out waiting for "${type}"`)
 }
 
+const waitForTransportDiagnostic = async ({
+  snapshots,
+  code,
+  after = 0,
+  timeoutMs = 2_000,
+}: {
+  snapshots: SnapshotMessage[]
+  code: string
+  after?: number
+  timeoutMs?: number
+}) => {
+  const start = Date.now()
+  while (Date.now() - start <= timeoutMs) {
+    const match = snapshots
+      .slice(after)
+      .find(
+        (snapshot) =>
+          snapshot.kind === SNAPSHOT_MESSAGE_KINDS.extension_error &&
+          snapshot.id === SERVER_MODULE_ID &&
+          snapshot.error.includes(`code=${code}`),
+      )
+    if (match && match.kind === SNAPSHOT_MESSAGE_KINDS.extension_error) {
+      return match
+    }
+    await Bun.sleep(10)
+  }
+  throw new Error(`Timed out waiting for extension_error diagnostic with code "${code}"`)
+}
+
 const createHarness = (): Harness => {
   const events: ObservedEvent[] = []
+  const snapshots: SnapshotMessage[] = []
   const { addBThread, trigger, useFeedback, useSnapshot, reportSnapshot } = behavioral()
   const install = useInstaller({
     trigger,
@@ -111,6 +157,9 @@ const createHarness = (): Harness => {
   })
 
   useFeedback(install(serverModuleExtension))
+  useSnapshot((snapshot) => {
+    snapshots.push(snapshot)
+  })
   useFeedback({
     [startedEventType]: (detail: unknown) => {
       events.push({ type: startedEventType, detail })
@@ -124,6 +173,15 @@ const createHarness = (): Harness => {
     [clientErrorEventType]: (detail: unknown) => {
       events.push({ type: clientErrorEventType, detail })
     },
+    [uiCoreExtensionRequestEventType]: (detail: unknown) => {
+      events.push({ type: uiCoreExtensionRequestEventType, detail })
+    },
+    [uiCoreUserActionEventType]: (detail: unknown) => {
+      events.push({ type: uiCoreUserActionEventType, detail })
+    },
+    [uiCoreSnapshotEventType]: (detail: unknown) => {
+      events.push({ type: uiCoreSnapshotEventType, detail })
+    },
     user_action: (detail: unknown) => {
       events.push({ type: 'user_action', detail })
     },
@@ -133,7 +191,7 @@ const createHarness = (): Harness => {
   })
 
   cleanupTriggers.push(trigger)
-  return { events, trigger }
+  return { events, snapshots, trigger }
 }
 
 const startServer = async (harness: Harness, options: Partial<ServerStartDetail> = {}) => {
@@ -221,41 +279,45 @@ describe('server module extension', () => {
     await waitForClose(socket)
   })
 
-  test('malformed JSON and schema-invalid client messages emit scoped client_error without throwing', async () => {
+  test('malformed JSON and schema-invalid client messages emit extension_error diagnostics and not client_error events', async () => {
     const harness = createHarness()
     const started = await startServer(harness)
     const socket = openWs(started.port)
     await waitForOpen(socket)
 
-    const beforeMalformed = harness.events.length
+    const beforeMalformedSnapshots = harness.snapshots.length
+    const beforeMalformedEvents = harness.events.length
     socket.send('not-json')
-    const malformed = await waitForEvent({
-      events: harness.events,
-      type: clientErrorEventType,
-      after: beforeMalformed,
+    const malformedDiagnostic = await waitForTransportDiagnostic({
+      snapshots: harness.snapshots,
+      code: SERVER_MODULE_ERROR_CODES.malformed_message,
+      after: beforeMalformedSnapshots,
     })
-    expect(ClientErrorDetailSchema.parse(malformed.detail).code).toBe(SERVER_MODULE_ERROR_CODES.malformed_message)
+    expect(malformedDiagnostic.error).toContain('code=malformed_message')
+    expect(harness.events.slice(beforeMalformedEvents).some((event) => event.type === clientErrorEventType)).toBe(false)
 
-    const beforeInvalid = harness.events.length
+    const beforeInvalidSnapshots = harness.snapshots.length
+    const beforeInvalidEvents = harness.events.length
     socket.send(
       JSON.stringify({
         type: 'unknown_event',
         detail: { nope: true },
       }),
     )
-    const invalid = await waitForEvent({
-      events: harness.events,
-      type: clientErrorEventType,
-      after: beforeInvalid,
+    const invalidDiagnostic = await waitForTransportDiagnostic({
+      snapshots: harness.snapshots,
+      code: SERVER_MODULE_ERROR_CODES.malformed_message,
+      after: beforeInvalidSnapshots,
     })
-    expect(ClientErrorDetailSchema.parse(invalid.detail).code).toBe(SERVER_MODULE_ERROR_CODES.malformed_message)
+    expect(invalidDiagnostic.error).toContain('code=malformed_message')
+    expect(harness.events.slice(beforeInvalidEvents).some((event) => event.type === clientErrorEventType)).toBe(false)
 
     expect(socket.readyState).toBe(WebSocket.OPEN)
     socket.close()
     await waitForClose(socket)
   })
 
-  test('valid ClientMessageSchema payload is triggered into the engine unchanged', async () => {
+  test('user_action ingress emits the ui_core extension_request_event envelope (no final ui_core:user_action in this runtime)', async () => {
     const harness = createHarness()
     const started = await startServer(harness)
     const socket = openWs(started.port)
@@ -274,10 +336,63 @@ describe('server module extension', () => {
 
     const forwarded = await waitForEvent({
       events: harness.events,
-      type: 'user_action',
+      type: uiCoreExtensionRequestEventType,
       after: before,
     })
-    expect(forwarded.detail).toEqual(payload.detail)
+    expect(forwarded.detail).toEqual(
+      expect.objectContaining({
+        type: 'user_action',
+        detail: payload.detail,
+      }),
+    )
+    expect(harness.events.slice(before).some((event) => event.type === 'user_action')).toBe(false)
+    expect(harness.events.slice(before).some((event) => event.type === uiCoreUserActionEventType)).toBe(false)
+
+    socket.close()
+    await waitForClose(socket)
+  })
+
+  test('snapshot ingress emits the ui_core extension_request_event envelope (no final ui_core:snapshot in this runtime)', async () => {
+    const harness = createHarness()
+    const started = await startServer(harness)
+    const socket = openWs(started.port)
+    await waitForOpen(socket)
+
+    const payload = {
+      type: 'snapshot',
+      detail: {
+        id: 'snap-1',
+        source: 'document',
+        msg: {
+          kind: 'selection',
+          bids: [
+            {
+              thread: { label: 't1' },
+              source: 'request',
+              selected: true,
+              type: 'ui_core:user_action',
+              priority: 1,
+            },
+          ],
+        },
+      },
+    } as const
+    const before = harness.events.length
+    socket.send(JSON.stringify(payload))
+
+    const forwarded = await waitForEvent({
+      events: harness.events,
+      type: uiCoreExtensionRequestEventType,
+      after: before,
+    })
+    expect(forwarded.detail).toEqual(
+      expect.objectContaining({
+        type: 'snapshot',
+        detail: payload.detail,
+      }),
+    )
+    expect(harness.events.slice(before).some((event) => event.type === 'snapshot')).toBe(false)
+    expect(harness.events.slice(before).some((event) => event.type === uiCoreSnapshotEventType)).toBe(false)
 
     socket.close()
     await waitForClose(socket)

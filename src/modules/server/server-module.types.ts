@@ -1,5 +1,6 @@
 import type { Server, TLSOptions } from 'bun'
 import type { Trigger } from '../../behavioral.ts'
+import type { ClientMessage } from '../../ui.ts'
 import type { SERVER_MODULE_ERROR_CODES } from './server-module.constants.ts'
 import type { ReplayBufferOptions, WebSocketData, WebSocketLimits } from './server-module.schemas.ts'
 
@@ -19,6 +20,13 @@ export type AuthenticateConnection = (input: {
 
 export type CreateServerOptions = {
   trigger: Trigger
+  onClientMessage: (message: ClientMessage) => void
+  reportTransportError: (detail: {
+    code: ServerModuleErrorCode
+    connectionId?: string
+    message?: string
+    pathname?: string
+  }) => void
   routes: ServeRoutes
   port?: number
   tls?: TLSOptions

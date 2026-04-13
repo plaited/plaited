@@ -1,6 +1,7 @@
+import { BRIDGE_SERVER_MODULE_ID } from '../../bridge-events.ts'
 import { keyMirror } from '../../utils.ts'
 
-export const SERVER_MODULE_ID = 'server_module'
+export const SERVER_MODULE_ID = BRIDGE_SERVER_MODULE_ID
 
 export const SERVER_MODULE_EVENTS = keyMirror(
   'server_start',

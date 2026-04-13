@@ -1,10 +1,10 @@
-import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../bridge-events.ts'
+import { AGENT_TO_CONTROLLER_EVENTS, BRIDGE_UI_CORE_ID, CONTROLLER_TO_AGENT_EVENTS } from '../../bridge-events.ts'
 import { keyMirror } from '../../utils.ts'
 
 export { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS }
 
 /** Stable extension id for the document-level UI runtime core. */
-export const UI_CORE = 'ui_core'
+export const UI_CORE = BRIDGE_UI_CORE_ID
 
 /**
  * Event keys emitted and handled by the UI core extension.

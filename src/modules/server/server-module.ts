@@ -1,4 +1,6 @@
-import { notSchema, useExtension } from '../../behavioral.ts'
+import * as z from 'zod'
+import { notSchema, SNAPSHOT_MESSAGE_KINDS, useExtension } from '../../behavioral.ts'
+import { BRIDGE_UI_CORE_ID } from '../../bridge-events.ts'
 import { ClientMessageSchema } from '../../ui.ts'
 import {
   DEFAULT_CSP,
@@ -6,12 +8,10 @@ import {
   SERVER_MODULE_EVENTS,
   SERVER_MODULE_ID,
   SERVER_MODULE_WEBSOCKET_PATH,
-  toServerModuleEventType,
 } from './server-module.constants.ts'
 import {
   ClientConnectedDetailSchema,
   ClientDisconnectedDetailSchema,
-  ClientErrorDetailSchema,
   ServerErrorDetailSchema,
   type ServerSendDetail,
   ServerSendDetailSchema,
@@ -25,18 +25,20 @@ import {
 } from './server-module.schemas.ts'
 import type { CreateServerOptions, ServerHandle } from './server-module.types.ts'
 
-const createScopedEvent = <TEvent extends string>(event: TEvent, detail?: unknown) =>
+const createModuleEvent = <TEvent extends string>(event: TEvent, detail?: unknown) =>
   detail === undefined
     ? {
-        type: toServerModuleEventType(event),
+        type: event,
       }
     : {
-        type: toServerModuleEventType(event),
+        type: event,
         detail,
       }
 
 const createServer = ({
   trigger,
+  onClientMessage,
+  reportTransportError,
   routes,
   port = 0,
   tls,
@@ -57,9 +59,6 @@ const createServer = ({
           },
         })
       : new Response(body, init)
-
-  const emitClientError = (detail: unknown) =>
-    trigger(createScopedEvent(SERVER_MODULE_EVENTS.client_error, ClientErrorDetailSchema.parse(detail)))
 
   const topicConnections = new Map<string, number>()
   const knownConnections = new Set<string>()
@@ -99,7 +98,7 @@ const createServer = ({
         const isReconnect = knownConnections.has(connectionId)
         knownConnections.add(connectionId)
         trigger(
-          createScopedEvent(
+          createModuleEvent(
             SERVER_MODULE_EVENTS.client_connected,
             ClientConnectedDetailSchema.parse({
               connectionId,
@@ -112,12 +111,33 @@ const createServer = ({
         )
       },
       message(ws, message) {
+        let payload: unknown
         try {
-          const event = ClientMessageSchema.parse(JSON.parse(String(message)))
-          trigger(event)
+          payload = JSON.parse(String(message))
         } catch (error) {
-          emitClientError({
+          reportTransportError({
             code: SERVER_MODULE_ERROR_CODES.malformed_message,
+            connectionId: ws.data.connectionId,
+            message: error instanceof Error ? error.message : String(error),
+          })
+          return
+        }
+
+        const parsed = ClientMessageSchema.safeParse(payload)
+        if (!parsed.success) {
+          reportTransportError({
+            code: SERVER_MODULE_ERROR_CODES.malformed_message,
+            connectionId: ws.data.connectionId,
+            message: parsed.error.message,
+          })
+          return
+        }
+
+        try {
+          onClientMessage(parsed.data)
+        } catch (error) {
+          reportTransportError({
+            code: SERVER_MODULE_ERROR_CODES.internal_error,
             connectionId: ws.data.connectionId,
             message: error instanceof Error ? error.message : String(error),
           })
@@ -154,7 +174,7 @@ const createServer = ({
         }
 
         trigger(
-          createScopedEvent(
+          createModuleEvent(
             SERVER_MODULE_EVENTS.client_disconnected,
             ClientDisconnectedDetailSchema.parse({
               connectionId,
@@ -173,7 +193,7 @@ const createServer = ({
 
       if (isWebSocketUpgrade) {
         if (url.pathname !== SERVER_MODULE_WEBSOCKET_PATH) {
-          emitClientError({
+          reportTransportError({
             code: SERVER_MODULE_ERROR_CODES.not_found,
             pathname: url.pathname,
           })
@@ -183,7 +203,7 @@ const createServer = ({
         if (allowedOrigins) {
           const origin = request.headers.get('origin')
           if (!origin || !allowedOrigins.has(origin)) {
-            emitClientError({
+            reportTransportError({
               code: SERVER_MODULE_ERROR_CODES.origin_rejected,
             })
             return securedResponse(SERVER_MODULE_ERROR_CODES.origin_rejected, { status: 403 })
@@ -192,7 +212,7 @@ const createServer = ({
 
         const source = request.headers.get('sec-websocket-protocol')
         if (!source) {
-          emitClientError({
+          reportTransportError({
             code: SERVER_MODULE_ERROR_CODES.protocol_missing,
           })
           return securedResponse(SERVER_MODULE_ERROR_CODES.protocol_missing, { status: 400 })
@@ -203,7 +223,7 @@ const createServer = ({
           source,
         })
         if (!authenticated) {
-          emitClientError({
+          reportTransportError({
             code: SERVER_MODULE_ERROR_CODES.connection_rejected,
           })
           return securedResponse(SERVER_MODULE_ERROR_CODES.connection_rejected, { status: 401 })
@@ -225,21 +245,21 @@ const createServer = ({
           return undefined
         }
 
-        emitClientError({
+        reportTransportError({
           code: SERVER_MODULE_ERROR_CODES.upgrade_failed,
           connectionId: authenticated.connectionId,
         })
         return securedResponse(SERVER_MODULE_ERROR_CODES.upgrade_failed, { status: 400 })
       }
 
-      emitClientError({
+      reportTransportError({
         code: SERVER_MODULE_ERROR_CODES.not_found,
         pathname: url.pathname,
       })
       return securedResponse('Not Found', { status: 404 })
     },
     error(error) {
-      emitClientError({
+      reportTransportError({
         code: SERVER_MODULE_ERROR_CODES.internal_error,
         message: error.message,
       })
@@ -281,128 +301,166 @@ const createServer = ({
   }
 }
 
-export const serverModuleExtension = useExtension(SERVER_MODULE_ID, ({ bThread, bSync, trigger }) => {
-  let liveServer: ServerHandle | null = null
+export const serverModuleExtension = useExtension(
+  SERVER_MODULE_ID,
+  ({ bThread, bSync, extensions, trigger, reportSnapshot }) => {
+    let liveServer: ServerHandle | null = null
 
-  const emitServerStopped = (port?: number) =>
-    trigger(
-      createScopedEvent(
-        SERVER_MODULE_EVENTS.server_stopped,
-        ServerStoppedDetailSchema.parse({
-          ...(port !== undefined && { port }),
-        }),
-      ),
-    )
+    const reportTransportError: CreateServerOptions['reportTransportError'] = ({
+      code,
+      connectionId,
+      message,
+      pathname,
+    }) => {
+      const details = [
+        `code=${code}`,
+        ...(connectionId ? [`connectionId=${connectionId}`] : []),
+        ...(pathname ? [`pathname=${pathname}`] : []),
+        ...(message ? [`message=${message}`] : []),
+      ].join(', ')
 
-  const emitServerError = (detail: unknown) =>
-    trigger(createScopedEvent(SERVER_MODULE_EVENTS.server_error, ServerErrorDetailSchema.parse(detail)))
-
-  const stopServer = (detail?: ServerStopDetail) => {
-    const closeActiveConnections = detail?.closeActiveConnections ?? true
-    const activePort = liveServer?.port
-    if (liveServer) {
-      liveServer.stop(closeActiveConnections)
-      liveServer = null
-    }
-    emitServerStopped(activePort)
-  }
-
-  const startServer = (detail: ServerStartDetail) => {
-    if (liveServer) {
-      stopServer({
-        closeActiveConnections: true,
+      reportSnapshot({
+        kind: SNAPSHOT_MESSAGE_KINDS.extension_error,
+        id: SERVER_MODULE_ID,
+        error: `WebSocket transport diagnostic (${details})`,
       })
     }
 
-    try {
-      liveServer = createServer({
-        trigger,
-        ...detail,
+    const forwardClientMessage: CreateServerOptions['onClientMessage'] = (message) => {
+      // This module emits a ui_core request envelope. Final ui_core:* events
+      // require a ui_core extension to be installed in the same runtime.
+      const { requestEvent } = extensions.request({
+        extension: BRIDGE_UI_CORE_ID,
+        type: message.type,
+        detail: message.detail,
+        purpose: `server_module websocket ingress: ${message.type}`,
+        detailSchema: z.unknown(),
       })
+      trigger(requestEvent)
+    }
+
+    const emitServerStopped = (port?: number) =>
       trigger(
-        createScopedEvent(
-          SERVER_MODULE_EVENTS.server_started,
-          ServerStartedDetailSchema.parse({
-            port: liveServer.port,
+        createModuleEvent(
+          SERVER_MODULE_EVENTS.server_stopped,
+          ServerStoppedDetailSchema.parse({
+            ...(port !== undefined && { port }),
           }),
         ),
       )
-    } catch (error) {
-      liveServer = null
-      emitServerError({
-        code: SERVER_MODULE_ERROR_CODES.internal_error,
-        message: error instanceof Error ? error.message : String(error),
-      })
+
+    const emitServerError = (detail: unknown) =>
+      trigger(createModuleEvent(SERVER_MODULE_EVENTS.server_error, ServerErrorDetailSchema.parse(detail)))
+
+    const stopServer = (detail?: ServerStopDetail) => {
+      const closeActiveConnections = detail?.closeActiveConnections ?? true
+      const activePort = liveServer?.port
+      if (liveServer) {
+        liveServer.stop(closeActiveConnections)
+        liveServer = null
+      }
+      emitServerStopped(activePort)
     }
-  }
 
-  bThread({
-    label: 'validateServerStart',
-    rules: [
-      bSync({
-        block: {
-          type: SERVER_MODULE_EVENTS.server_start,
-          detailSchema: notSchema(ServerStartDetailSchema),
-        },
-      }),
-    ],
-    repeat: true,
-  })
-
-  bThread({
-    label: 'validateServerStop',
-    rules: [
-      bSync({
-        block: {
-          type: SERVER_MODULE_EVENTS.server_stop,
-          detailSchema: notSchema(ServerStopDetailSchema),
-        },
-      }),
-    ],
-    repeat: true,
-  })
-
-  bThread({
-    label: 'validateServerSend',
-    rules: [
-      bSync({
-        block: {
-          type: SERVER_MODULE_EVENTS.server_send,
-          detailSchema: notSchema(ServerSendDetailSchema),
-        },
-      }),
-    ],
-    repeat: true,
-  })
-
-  return {
-    [SERVER_MODULE_EVENTS.server_start](detail: ServerStartDetail) {
-      const parsed = ServerStartDetailSchema.safeParse(detail)
-      if (!parsed.success) {
-        return
-      }
-      startServer(parsed.data)
-    },
-    [SERVER_MODULE_EVENTS.server_stop](detail: ServerStopDetail) {
-      const parsed = ServerStopDetailSchema.safeParse(detail)
-      if (!parsed.success) {
-        return
-      }
-      stopServer(parsed.data)
-    },
-    [SERVER_MODULE_EVENTS.server_send](detail: ServerSendDetail) {
-      const parsed = ServerSendDetailSchema.safeParse(detail)
-      if (!parsed.success) {
-        return
-      }
-      if (!liveServer) {
-        emitServerError({
-          code: SERVER_MODULE_ERROR_CODES.server_not_running,
-          message: 'Cannot send server message because no server is currently running.',
+    const startServer = (detail: ServerStartDetail) => {
+      if (liveServer) {
+        stopServer({
+          closeActiveConnections: true,
         })
-        return
       }
-      liveServer.send(parsed.data.topic, parsed.data.data)
-    },
-  }
-})
+
+      try {
+        liveServer = createServer({
+          trigger,
+          onClientMessage: forwardClientMessage,
+          reportTransportError,
+          ...detail,
+        })
+        trigger(
+          createModuleEvent(
+            SERVER_MODULE_EVENTS.server_started,
+            ServerStartedDetailSchema.parse({
+              port: liveServer.port,
+            }),
+          ),
+        )
+      } catch (error) {
+        liveServer = null
+        emitServerError({
+          code: SERVER_MODULE_ERROR_CODES.internal_error,
+          message: error instanceof Error ? error.message : String(error),
+        })
+      }
+    }
+
+    bThread({
+      label: 'validateServerStart',
+      rules: [
+        bSync({
+          block: {
+            type: SERVER_MODULE_EVENTS.server_start,
+            detailSchema: notSchema(ServerStartDetailSchema),
+          },
+        }),
+      ],
+      repeat: true,
+    })
+
+    bThread({
+      label: 'validateServerStop',
+      rules: [
+        bSync({
+          block: {
+            type: SERVER_MODULE_EVENTS.server_stop,
+            detailSchema: notSchema(ServerStopDetailSchema),
+          },
+        }),
+      ],
+      repeat: true,
+    })
+
+    bThread({
+      label: 'validateServerSend',
+      rules: [
+        bSync({
+          block: {
+            type: SERVER_MODULE_EVENTS.server_send,
+            detailSchema: notSchema(ServerSendDetailSchema),
+          },
+        }),
+      ],
+      repeat: true,
+    })
+
+    return {
+      [SERVER_MODULE_EVENTS.server_start](detail: ServerStartDetail) {
+        const parsed = ServerStartDetailSchema.safeParse(detail)
+        if (!parsed.success) {
+          return
+        }
+        startServer(parsed.data)
+      },
+      [SERVER_MODULE_EVENTS.server_stop](detail: ServerStopDetail) {
+        const parsed = ServerStopDetailSchema.safeParse(detail)
+        if (!parsed.success) {
+          return
+        }
+        stopServer(parsed.data)
+      },
+      [SERVER_MODULE_EVENTS.server_send](detail: ServerSendDetail) {
+        const parsed = ServerSendDetailSchema.safeParse(detail)
+        if (!parsed.success) {
+          return
+        }
+        if (!liveServer) {
+          emitServerError({
+            code: SERVER_MODULE_ERROR_CODES.server_not_running,
+            message: 'Cannot send server message because no server is currently running.',
+          })
+          return
+        }
+        liveServer.send(parsed.data.topic, parsed.data.data)
+      },
+    }
+  },
+)

@@ -10,6 +10,7 @@ import {
 import { createMemoryEntryDetailSchema, createMemoryResponseDetailSchema, notSchema } from './behavioral.schemas.ts'
 import { bSync as _bsync, bThread as _bThread } from './behavioral.shared.ts'
 import type {
+  BPEvent,
   BPListener,
   BSync,
   ContextMemoryEntry,
@@ -30,7 +31,7 @@ import type {
 
 export const useInstaller = ({
   reportSnapshot,
-  trigger,
+  trigger: hostTrigger,
   useSnapshot,
   addBThread,
   ttlMs,
@@ -39,7 +40,8 @@ export const useInstaller = ({
   const BExtensions = new Set<string>()
   return (extension: Extension): DefaultHandlers => {
     const SCOPE_BYPASS_MARKER: unique symbol = Symbol('plaited.scope_bypass')
-    type ScopeBypassListener = BPListener & { [SCOPE_BYPASS_MARKER]: true }
+    type ScopeBypassValue = BPListener | BPEvent
+    type ScopeBypassMarked<T extends ScopeBypassValue> = T & { [SCOPE_BYPASS_MARKER]: true }
 
     try {
       if (extension?.$ !== EXTENSION_FUNCTION_IDENTIFIER) {
@@ -120,12 +122,51 @@ export const useInstaller = ({
         memory_subscribe: `${extensionId}:${EXTENSION_MEMORY_EVENTS.memory_subscribe}`,
         [EXTENSION_REQUEST_EVENT]: `${extensionId}:${EXTENSION_REQUEST_EVENT}`,
       }
+      const markScopeBypass = <T extends ScopeBypassValue>(value: T): ScopeBypassMarked<T> =>
+        Object.assign(value, { [SCOPE_BYPASS_MARKER]: true as const }) as ScopeBypassMarked<T>
+      const hasScopeBypass = <T extends ScopeBypassValue>(value: T): value is ScopeBypassMarked<T> =>
+        (value as ScopeBypassMarked<T>)[SCOPE_BYPASS_MARKER] === true
+      const toScopedType = (type: string, bypass?: boolean) => {
+        if (bypass) {
+          return type
+        }
+        return `${extensionId}:${type}`
+      }
+      const toScopedEvent = (event: BPEvent): BPEvent | undefined => {
+        const scopedType = toScopedType(event.type, hasScopeBypass(event))
+        return {
+          ...event,
+          type: scopedType,
+        }
+      }
+      const toScopedListener = (listener: BPListener): BPListener | undefined => {
+        const scopedType = toScopedType(listener.type, hasScopeBypass(listener))
+        return {
+          ...listener,
+          type: scopedType,
+        }
+      }
+      const toScopedListeners = (listener: BPListener | BPListener[] | undefined) => {
+        if (!listener) {
+          return undefined
+        }
+        if (!Array.isArray(listener)) {
+          return toScopedListener(listener)
+        }
+        const scoped = listener
+          .map((candidate) => toScopedListener(candidate))
+          .filter((candidate): candidate is BPListener => Boolean(candidate))
+        if (scoped.length === 0) {
+          return undefined
+        }
+        return scoped
+      }
 
       const createMemoryRequest: CreateMemoryRequest = ({ extension, purpose, detailSchema, event }) => {
         const id = ueid('mem_')
         const transactionEventType = createTransactionEventType(id)
 
-        const requestEvent: MemoryRequestEvent = {
+        const requestEvent = markScopeBypass<MemoryRequestEvent>({
           type: toExtensionEventType({ extension, event: EXTENSION_MEMORY_EVENTS.memory_request }),
           detail: {
             id,
@@ -133,23 +174,23 @@ export const useInstaller = ({
             event,
             purpose,
           },
-        }
+        })
 
-        const blockListener: BPListener = {
+        const blockListener = markScopeBypass<BPListener>({
           type: DEFAULT_EVENTS.memory_response,
           detailSchema: createMemoryResponseDetailSchema({
             id,
             detailSchema: notSchema(detailSchema),
           }),
-        }
+        })
 
-        const transactionListener: BPListener = {
+        const transactionListener = markScopeBypass<BPListener>({
           type: DEFAULT_EVENTS.memory_response,
           detailSchema: createMemoryResponseDetailSchema({
             id,
             detailSchema,
           }),
-        }
+        })
 
         bThread({
           label: transactionEventType,
@@ -172,31 +213,33 @@ export const useInstaller = ({
       const createExtensionRequest: CreateExtensionRequest = ({ extension, type, purpose, detailSchema, detail }) => {
         const id = ueid('mem_')
         const transactionEventType = createTransactionEventType(id)
+        const targetExtension = extension
+        const sourceExtension = extensionId
 
-        const extensionListener: BPListener = {
-          type: toExtensionEventType({ extension, event: type }),
+        const extensionListener = markScopeBypass<BPListener>({
+          type: toExtensionEventType({ extension: targetExtension, event: type }),
           detailSchema: createMemoryEntryDetailSchema(detailSchema),
-        }
+        })
 
-        const requestEvent: ExtensionRequestEvent = {
-          type: toExtensionEventType({ extension, event: EXTENSION_REQUEST_EVENT }),
+        const requestEvent = markScopeBypass<ExtensionRequestEvent>({
+          type: toExtensionEventType({ extension: targetExtension, event: EXTENSION_REQUEST_EVENT }),
           detail: {
             id,
-            extension: extensionId,
+            extension: sourceExtension,
             type,
             detail,
             purpose,
             listener: extensionListener,
           },
-        }
+        })
 
-        const transactionListener: BPListener = {
+        const transactionListener = markScopeBypass<BPListener>({
           type: DEFAULT_EVENTS.memory_response,
           detailSchema: createMemoryResponseDetailSchema({
             id,
             detailSchema,
           }),
-        }
+        })
 
         return {
           requestEvent,
@@ -209,20 +252,20 @@ export const useInstaller = ({
         const id = ueid('mem_')
         const transactionEventType = createTransactionEventType(id)
 
-        const extensionListener: BPListener = {
+        const extensionListener = markScopeBypass<BPListener>({
           type: toExtensionEventType({ extension, event }),
           detailSchema: createMemoryEntryDetailSchema(detailSchema),
-        }
+        })
 
-        const transactionListener: BPListener = {
+        const transactionListener = markScopeBypass<BPListener>({
           type: transactionEventType,
           detailSchema: createMemoryResponseDetailSchema({
             id,
             detailSchema,
           }),
-        }
+        })
 
-        const subscribeEvent: MemorySubscribeEvent = {
+        const subscribeEvent = markScopeBypass<MemorySubscribeEvent>({
           type: toExtensionEventType({ extension, event: EXTENSION_MEMORY_EVENTS.memory_subscribe }),
           detail: {
             id,
@@ -230,11 +273,11 @@ export const useInstaller = ({
             listener: extensionListener,
             purpose,
           },
-        }
+        })
 
-        const disconnectEvent: MemoryDisconnectEvent = {
+        const disconnectEvent = markScopeBypass<MemoryDisconnectEvent>({
           type: `${DEFAULT_EVENTS.memory_disconnect}__${id}`,
-        }
+        })
 
         return {
           subscribeEvent,
@@ -245,11 +288,10 @@ export const useInstaller = ({
       }
 
       const createExtensionBlock: CreateExtensionBlock = ({ extension, event, detailSchema }) => {
-        return {
+        return markScopeBypass({
           type: toExtensionEventType({ extension, event }),
           detailSchema,
-          [SCOPE_BYPASS_MARKER]: true,
-        } satisfies ScopeBypassListener
+        })
       }
 
       const memory = {
@@ -271,44 +313,38 @@ export const useInstaller = ({
         return addBThread(label, thread)
       }
 
-      const toScopedType = (type: string) => (type.includes(':') ? type : `${extensionId}:${type}`)
-      const hasScopeBypass = (listener: BPListener): listener is ScopeBypassListener =>
-        (listener as ScopeBypassListener)[SCOPE_BYPASS_MARKER] === true
-      const toScopedListener = (listener: BPListener): BPListener => ({
-        ...(hasScopeBypass(listener) ? listener : { ...listener, type: toScopedType(listener.type) }),
-      })
-      const toScopedListeners = (listener?: BPListener | BPListener[]) => {
-        if (!listener) {
-          return listener
-        }
-        return Array.isArray(listener) ? listener.map(toScopedListener) : toScopedListener(listener)
-      }
-
-      const bSync: BSync = ({ request, ...rest }) =>
+      const bSync: BSync = ({ request, waitFor, block, interrupt }) =>
         Object.assign(function* () {
+          const scopedWaitFor = toScopedListeners(waitFor)
+          const scopedBlock = toScopedListeners(block)
+          const scopedInterrupt = toScopedListeners(interrupt)
           const scopedRest = {
-            ...rest,
-            ...(rest.waitFor && { waitFor: toScopedListeners(rest.waitFor) }),
-            ...(rest.block && { block: toScopedListeners(rest.block) }),
-            ...(rest.interrupt && { interrupt: toScopedListeners(rest.interrupt) }),
+            ...(scopedWaitFor && { waitFor: scopedWaitFor }),
+            ...(scopedBlock && { block: scopedBlock }),
+            ...(scopedInterrupt && { interrupt: scopedInterrupt }),
           }
-          if (!request) {
-            yield scopedRest
-            return
-          }
-          yield Object.assign(scopedRest, {
-            request: {
-              type: toScopedType(request.type),
-              detail: request.detail,
-            },
-          })
+          const scopedRequest = request ? toScopedEvent(request) : undefined
+          yield scopedRequest
+            ? {
+                ...scopedRest,
+                request: scopedRequest,
+              }
+            : scopedRest
         })
+      const extensionTrigger: ExtensionParams['trigger'] = (event) => {
+        const scopedEvent = toScopedEvent(event)
+        if (!scopedEvent) {
+          return
+        }
+        hostTrigger(scopedEvent)
+      }
 
       const handlers = extension({
         useSnapshot,
+        reportSnapshot,
         bThread,
         bSync,
-        trigger,
+        trigger: extensionTrigger,
         DEFAULT_EVENTS,
         memory,
         extensions,
@@ -325,11 +361,11 @@ export const useInstaller = ({
           id,
           type,
           detail,
-          extension,
+          extension: sourceExtension,
           listener,
         }: ExtensionRequestEvent['detail']) {
           bThread({
-            label: `${extension}:${EXTENSION_REQUEST_EVENT}__${id}`,
+            label: `${sourceExtension}:${EXTENSION_REQUEST_EVENT}__${id}`,
             rules: [
               _bsync({
                 waitFor: listener,
@@ -340,14 +376,15 @@ export const useInstaller = ({
                   detail: {
                     id,
                     event: listener.type,
-                    extension,
+                    extension: sourceExtension,
                   },
                 },
               }),
             ],
           })
-          trigger({
-            type: toScopedType(type),
+          const scopedType = toScopedType(type)
+          hostTrigger({
+            type: scopedType,
             detail,
           })
         },
@@ -377,7 +414,7 @@ export const useInstaller = ({
           })
         },
         [DEFAULT_EVENTS.memory_response]({ id, ...detail }: ContextMemoryResponse) {
-          trigger({
+          hostTrigger({
             type: createTransactionEventType(id),
             detail,
           })
@@ -395,7 +432,7 @@ export const useInstaller = ({
             ...entry,
             id,
           }
-          trigger({
+          hostTrigger({
             type: toExtensionEventType({ extension, event: EXTENSION_MEMORY_EVENTS.memory_response }),
             detail,
           })

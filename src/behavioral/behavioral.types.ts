@@ -365,7 +365,9 @@ export type ExtensionRequestEvent = {
   type: `${string}:${typeof EXTENSION_REQUEST_EVENT}`
   detail: {
     id: string
+    /** Source extension id that initiated this request. */
     extension: string
+    /** Target extension-local event type to trigger after request routing. */
     type: string
     detail: unknown
     purpose?: string
@@ -381,8 +383,8 @@ export type ExtensionRequestRef = {
 
 export type CreateExtensionRequest = (
   params: {
+    /** Target extension id that should receive the request envelope. */
     extension: string
-    event: string
     purpose?: string
     detailSchema: ZodType<unknown>
   } & BPEvent,
@@ -446,6 +448,7 @@ export type ExtensionParams = {
   bSync: BSync
   bThread: (params: { label: string; rules: ReturnType<BSync>[]; repeat?: true }) => void
   trigger: Trigger
+  reportSnapshot: ReportSnapshot
   useSnapshot: UseSnapshot
   DEFAULT_EVENTS: ExtensionDefaultEvents
 }

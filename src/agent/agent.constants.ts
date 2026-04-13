@@ -1,3 +1,4 @@
+import { BRIDGE_AGENT_CORE_ID } from '../bridge-events.ts'
 import { keyMirror } from '../utils.ts'
 
 /**
@@ -19,4 +20,4 @@ export const AGENT_CORE_EVENTS = keyMirror(
   'update_modules',
 )
 
-export const AGENT_CORE = 'agent_core'
+export const AGENT_CORE = BRIDGE_AGENT_CORE_ID
