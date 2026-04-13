@@ -47,6 +47,8 @@ type ExtensionParams = {
     has: (key: string) => boolean
     get: CreateMemoryRequest
     request: CreateExtensionRequest
+    block: CreateExtensionBlock
+    subscribe: CreateMemorySubscribe
     subsciribe: CreateMemorySubscribe
   }
   bSync: BSync
@@ -166,21 +168,19 @@ type CreateMemorySubscribe = (params: {
   detailSchema: z.ZodType
 }) => MemorySubscribeRef
 
+type CreateExtensionBlock = (params: { extension: string; event: string; detailSchema: z.ZodType }) => BPListener
+
 const sync: BSync = (syncPoint) =>
   function* () {
     yield syncPoint
   }
 
-export const useModuleInstaller = ({
-  reportSnapshot,
-  trigger,
-  useSnapshot,
-  addBThread,
-  ttlMs,
-  maxKeys,
-}: UseInstaller) => {
+export const useInstaller = ({ reportSnapshot, trigger, useSnapshot, addBThread, ttlMs, maxKeys }: UseInstaller) => {
   const BExtensions = new Set<string>()
   return (extension: Extension): DefaultHandlers => {
+    const SCOPE_BYPASS_MARKER: unique symbol = Symbol('plaited.scope_bypass')
+    type ScopeBypassListener = BPListener & { [SCOPE_BYPASS_MARKER]: true }
+
     try {
       if (extension?.$ !== RULES_FUNCTION_IDENTIFIER) {
         const receivedBrand = (extension as { $?: unknown } | undefined)?.$
@@ -392,6 +392,14 @@ export const useModuleInstaller = ({
         }
       }
 
+      const createExtensionBlock: CreateExtensionBlock = ({ extension, event, detailSchema }) => {
+        return {
+          type: `${extension}:${event}`,
+          detailSchema,
+          [SCOPE_BYPASS_MARKER]: true,
+        } satisfies ScopeBypassListener
+      }
+
       const memory = {
         has: (key: string) => contextMemory.has(key),
         get: (key: string) => contextMemory.get(key),
@@ -401,6 +409,8 @@ export const useModuleInstaller = ({
         has: (key: string) => BExtensions.has(key),
         get: createMemoryRequest,
         request: createExtensionRequest,
+        block: createExtensionBlock,
+        subscribe: createMemorySubscriber,
         subsciribe: createMemorySubscriber,
       }
 
@@ -425,16 +435,38 @@ export const useModuleInstaller = ({
         )
         return addBThread(label, thread)
       }
+
+      const toScopedType = (type: string) => (type.includes(':') ? type : `${extensionId}:${type}`)
+      const hasScopeBypass = (listener: BPListener): listener is ScopeBypassListener =>
+        (listener as ScopeBypassListener)[SCOPE_BYPASS_MARKER] === true
+      const toScopedListener = (listener: BPListener): BPListener => ({
+        ...(hasScopeBypass(listener) ? listener : { ...listener, type: toScopedType(listener.type) }),
+      })
+      const toScopedListeners = (listener?: BPListener | BPListener[]) => {
+        if (!listener) {
+          return listener
+        }
+        return Array.isArray(listener) ? listener.map(toScopedListener) : toScopedListener(listener)
+      }
+
       const bSync: BSync = ({ request, ...rest }) =>
         Object.assign(function* () {
-          yield request
-            ? Object.assign(rest, {
-                request: {
-                  type: `${extensionId}:${request.type}`,
-                  detail: request.detail,
-                },
-              })
-            : rest
+          const scopedRest = {
+            ...rest,
+            ...(rest.waitFor && { waitFor: toScopedListeners(rest.waitFor) }),
+            ...(rest.block && { block: toScopedListeners(rest.block) }),
+            ...(rest.interrupt && { interrupt: toScopedListeners(rest.interrupt) }),
+          }
+          if (!request) {
+            yield scopedRest
+            return
+          }
+          yield Object.assign(scopedRest, {
+            request: {
+              type: toScopedType(request.type),
+              detail: request.detail,
+            },
+          })
         })
 
       const handlers = extension({
@@ -454,7 +486,7 @@ export const useModuleInstaller = ({
 
       return {
         ...mappedHandlers,
-        [DEFAULT_EVENTS.extension_request_event]({
+        [DEFAULT_EVENTS[EXTENSION_REQUEST_EVENT]]({
           id,
           type,
           detail,
@@ -480,7 +512,7 @@ export const useModuleInstaller = ({
             ],
           })
           trigger({
-            type: `${extensionId}:${type}`,
+            type: toScopedType(type),
             detail,
           })
         },
