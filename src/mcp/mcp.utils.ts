@@ -2,7 +2,7 @@ import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
-import packageJson from '../../../package.json' with { type: 'json' }
+import packageJson from '../../package.json' with { type: 'json' }
 import { McpManifestSchema } from './mcp.schemas.ts'
 
 /** @public */
