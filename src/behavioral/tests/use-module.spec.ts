@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import * as z from 'zod'
-import { bSync, bThread } from '../../behavioral.ts'
-import { getDeclaredModuleName, useModule } from '../use-module.ts'
+import { bSync, bThread } from '../behavioral.utils.ts'
+import { getDeclaredModuleName, useModule } from '../use-module.old.ts'
 
 const createModuleParams = () => ({
   moduleId: 'bootstrap#0',

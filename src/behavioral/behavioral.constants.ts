@@ -12,7 +12,7 @@ import { keyMirror } from '../utils.ts'
  *
  * @public
  */
-export const SNAPSHOT_MESSAGE_KINDS = keyMirror('deadlock', 'feedback_error', 'selection', 'module_warning')
+export const SNAPSHOT_MESSAGE_KINDS = keyMirror('deadlock', 'feedback_error', 'selection', 'extension_error')
 
 /**
  * Brand identifier stamped onto `ReturnType<BSync>` objects.
@@ -49,3 +49,13 @@ export const INGRESS_ID_PREFIX = 'ing_'
 export const EXPLORE_STRATEGIES = keyMirror('dfs', 'bfs')
 
 export const VERIFICATION_STATUSES = keyMirror('verified', 'failed', 'truncated')
+
+export const EXTENSION_MEMORY_EVENTS = keyMirror(
+  'memory_disconnect',
+  'memory_request',
+  'memory_response',
+  'memory_subscribe',
+  'memory_transaction',
+)
+
+export const EXTENSION_REQUEST_EVENT = 'extension_request_event' as const

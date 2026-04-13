@@ -278,13 +278,63 @@ describe('controller: WebSocket retry', () => {
 // ─── Update behavioral ───────────────────────────────────────────────────────
 
 describe('controller: update_behavioral', () => {
-  test('dynamic import() loads module and factory runs', async () => {
-    // Navigate to behavioral fixture — server sends update_behavioral after client_connected
+  test('dynamic import() loads useUIModule module without raw trigger factory usage', async () => {
+    // Navigate to behavioral fixture — server sends update_behavioral after client_connected.
+    // The imported module is authored with useUIModule() and includes a repeating bThread.
     await gotoTest('/behavioral-fixture.html')
 
-    // The module sets window.__behavioralModuleLoaded = true in the factory
+    // The module sets window.__behavioralModuleLoaded = true in the module callback.
     const output = await cli('eval', '() => globalThis.__behavioralModuleLoaded === true')
     const result = parseResult(output)
     expect(result).toContain('true')
+  }, 30000)
+
+  test('p-trigger action routes locally via explicit action metadata exactly once per click', async () => {
+    await gotoTest('/behavioral-fixture.html')
+
+    const before = await cli('eval', '() => globalThis.__handlerCallCount ?? 0')
+    expect(parseResult(before)).toContain('0')
+
+    await cli('eval', "() => { document.getElementById('behavioral-module-btn')?.click(); return 'clicked-1'; }")
+    await new Promise((r) => setTimeout(r, 1500))
+    const afterFirst = await cli('eval', '() => globalThis.__handlerCallCount ?? 0')
+    expect(parseResult(afterFirst)).toContain('1')
+  }, 30000)
+
+  test('p-trigger parsing preserves colon-scoped action type suffixes', async () => {
+    await gotoTest('/behavioral-fixture.html')
+
+    const before = await cli('eval', '() => globalThis.__scopedHandlerCallCount ?? 0')
+    expect(parseResult(before)).toContain('0')
+
+    await cli('eval', "() => { document.getElementById('behavioral-scoped-module-btn')?.click(); return 'clicked-1'; }")
+    await new Promise((r) => setTimeout(r, 1500))
+    const afterFirst = await cli('eval', '() => globalThis.__scopedHandlerCallCount ?? 0')
+    expect(parseResult(afterFirst)).toContain('1')
+  }, 30000)
+
+  test('legacy raw update_behavioral modules still work only through explicit compatibility actions metadata', async () => {
+    await gotoTest('/behavioral-legacy-fixture.html')
+
+    const loaded = await cli('eval', '() => globalThis.__legacyBehavioralModuleLoaded === true')
+    expect(parseResult(loaded)).toContain('true')
+
+    const before = await cli('eval', '() => globalThis.__legacyHandlerCallCount ?? 0')
+    expect(parseResult(before)).toContain('0')
+
+    await cli('eval', "() => { document.getElementById('legacy-module-btn')?.click(); return 'clicked-1'; }")
+    await new Promise((r) => setTimeout(r, 1500))
+    const afterFirst = await cli('eval', '() => globalThis.__legacyHandlerCallCount ?? 0')
+    expect(parseResult(afterFirst)).toContain('1')
+
+    const output = await cli('eval', '() => globalThis.__legacyHandlerCalled === true')
+    const result = parseResult(output)
+    expect(result).toContain('true')
+
+    const hasLegacyWarning = fixture.snapshotMessages.some((message) => {
+      const detail = (message.detail ?? {}) as { msg?: { kind?: string; code?: string } }
+      return detail.msg?.kind === 'module_warning' && detail.msg?.code === 'legacy_ui_module_compat'
+    })
+    expect(hasLegacyWarning).toBe(true)
   }, 30000)
 })

@@ -1,15 +1,15 @@
-import type { Module, Signal } from '../../../agent/agent.types.ts'
-import { createAgent } from '../../../agent/create-agent.ts'
-import type { SnapshotMessage } from '../../../behavioral/behavioral.schemas.ts'
 import {
   SERVER_MODULE_EVENTS,
   SERVER_MODULE_SIGNAL_KEYS,
-} from '../../../modules/server-module/server-module.constants.ts'
+} from '../../../.archive-modules/server-module/server-module.constants.ts'
 import {
   ServerModuleConfigSchema,
   type ServerModuleStatusSchema,
-} from '../../../modules/server-module/server-module.schemas.ts'
-import { createServerModule } from '../../../modules/server-module/server-module.ts'
+} from '../../../.archive-modules/server-module/server-module.schemas.ts'
+import { createServerModule } from '../../../.archive-modules/server-module/server-module.ts'
+import type { Module, Signal } from '../../../agent/agent.types.ts'
+import { createAgent } from '../../../agent/create-agent.ts'
+import type { SnapshotMessage } from '../../../behavioral/behavioral.schemas.ts'
 
 const TEST_MODELS = {
   primary: async () => ({

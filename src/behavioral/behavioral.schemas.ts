@@ -175,16 +175,14 @@ export type FeedbackError = z.infer<typeof FeedbackErrorSchema>
  *
  * @public
  */
-export const ModuleWarningSchema = z.object({
-  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.module_warning),
-  moduleId: z.string(),
-  lane: z.string().optional(),
-  warning: z.string(),
-  code: z.string().optional(),
+export const ExtensionErrorSchema = z.object({
+  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.extension_error),
+  id: z.string().optional(),
+  error: z.string(),
 })
 
 /** @public */
-export type ModuleWarning = z.infer<typeof ModuleWarningSchema>
+export type ExtensionError = z.infer<typeof ExtensionErrorSchema>
 
 /**
  * Discriminated union schema for all observable moments from the BP engine.
@@ -193,14 +191,14 @@ export type ModuleWarning = z.infer<typeof ModuleWarningSchema>
  * @see {@link SelectionSnapshotSchema} for event selection observations
  * @see {@link DeadlockSnapshotSchema} for blocked-candidate deadlock observations
  * @see {@link FeedbackErrorSchema} for feedback handler errors
- * @see {@link ModuleWarningSchema} for host/runtime module diagnostics
+ * @see {@link ExtensionErrorSchema} for host/runtime module diagnostics
  *
  * @public
  */
 export const SnapshotMessageSchema = z.discriminatedUnion('kind', [
   DeadlockSnapshotSchema,
   FeedbackErrorSchema,
-  ModuleWarningSchema,
+  ExtensionErrorSchema,
   SelectionSnapshotSchema,
 ])
 

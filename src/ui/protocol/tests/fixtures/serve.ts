@@ -16,6 +16,7 @@ const buildResult = await Bun.build({
     join(FIXTURES_DIR, 'control-island.entry.ts'),
     join(FIXTURES_DIR, 'swap-fixture.entry.ts'),
     join(FIXTURES_DIR, 'behavioral-fixture.entry.ts'),
+    join(FIXTURES_DIR, 'behavioral-legacy-fixture.entry.ts'),
     join(FIXTURES_DIR, 'test-elements.entry.ts'),
   ],
   outdir: DIST_DIR,
@@ -32,7 +33,7 @@ if (!buildResult.success) {
 
 // Build the behavioral module separately — served at /modules/ for import()
 const moduleResult = await Bun.build({
-  entrypoints: [join(FIXTURES_DIR, 'behavioral-module.ts')],
+  entrypoints: [join(FIXTURES_DIR, 'behavioral-module.ts'), join(FIXTURES_DIR, 'behavioral-module-legacy.ts')],
   outdir: join(DIST_DIR, 'modules'),
   target: 'browser',
   minify: false,
@@ -91,6 +92,20 @@ const HTML_BEHAVIORAL_FIXTURE = `<!DOCTYPE html>
     <div p-target="main"><p>initial behavioral content</p></div>
   </behavioral-fixture>
   <script type="module" src="/dist/behavioral-fixture.entry.js"></script>
+</body>
+</html>`
+
+const HTML_BEHAVIORAL_LEGACY_FIXTURE = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Behavioral Legacy Module Test</title>
+  <style>behavioral-legacy-fixture { display: contents; }</style>
+</head>
+<body>
+  <behavioral-legacy-fixture>
+    <div p-target="main"><p>initial legacy behavioral content</p></div>
+  </behavioral-legacy-fixture>
+  <script type="module" src="/dist/behavioral-legacy-fixture.entry.js"></script>
 </body>
 </html>`
 
@@ -153,7 +168,16 @@ const BEHAVIORAL_RENDER_MESSAGE = JSON.stringify({
   type: 'render',
   detail: {
     target: 'main',
-    html: '<div id="behavioral-initial">Behavioral fixture loaded</div>',
+    html: '<button id="behavioral-module-btn" p-trigger="click:test_click">Behavioral Action</button><button id="behavioral-scoped-module-btn" p-trigger="click:foo:test_click">Scoped Behavioral Action</button><div id="behavioral-initial">Behavioral fixture loaded</div>',
+    swap: 'innerHTML',
+  },
+})
+
+const BEHAVIORAL_LEGACY_RENDER_MESSAGE = JSON.stringify({
+  type: 'render',
+  detail: {
+    target: 'main',
+    html: '<button id="legacy-module-btn" p-trigger="click:legacy_click">Legacy Action</button><div id="legacy-behavioral-initial">Legacy behavioral fixture loaded</div>',
     swap: 'innerHTML',
   },
 })
@@ -261,14 +285,18 @@ export type FixtureServer = {
   stop: () => Promise<void>
   /** Last user_action message received from the client */
   lastUserAction: Record<string, unknown> | undefined
+  /** Snapshot messages received from the client */
+  snapshotMessages: Record<string, unknown>[]
 }
 
 export const startServer = (port = 0): FixtureServer => {
   const state: {
     lastUserAction: Record<string, unknown> | undefined
+    snapshotMessages: Record<string, unknown>[]
     retryTestConnections: number
   } = {
     lastUserAction: undefined,
+    snapshotMessages: [],
     retryTestConnections: 0,
   }
 
@@ -284,6 +312,9 @@ export const startServer = (port = 0): FixtureServer => {
         headers: { 'Content-Type': 'text/html' },
       }),
       '/behavioral-fixture.html': new Response(HTML_BEHAVIORAL_FIXTURE, {
+        headers: { 'Content-Type': 'text/html' },
+      }),
+      '/behavioral-legacy-fixture.html': new Response(HTML_BEHAVIORAL_LEGACY_FIXTURE, {
         headers: { 'Content-Type': 'text/html' },
       }),
       '/dist/*': async (req) => {
@@ -313,6 +344,15 @@ export const startServer = (port = 0): FixtureServer => {
               JSON.stringify({
                 type: 'update_behavioral',
                 detail: `http://localhost:${server.port}/dist/modules/behavioral-module.js`,
+              }),
+            )
+            break
+          case 'behavioral-legacy-fixture':
+            ws.send(BEHAVIORAL_LEGACY_RENDER_MESSAGE)
+            ws.send(
+              JSON.stringify({
+                type: 'update_behavioral',
+                detail: `http://localhost:${server.port}/dist/modules/behavioral-module-legacy.js`,
               }),
             )
             break
@@ -352,6 +392,9 @@ export const startServer = (port = 0): FixtureServer => {
       },
       message(ws, message) {
         const data = JSON.parse(String(message))
+        if (data.type === 'snapshot') {
+          state.snapshotMessages.push(data)
+        }
         if (data.type === 'user_action') {
           state.lastUserAction = data
           // detail uses { id, source, msg } envelope — msg is the action type string
@@ -411,6 +454,9 @@ export const startServer = (port = 0): FixtureServer => {
     port: server.port!,
     get lastUserAction() {
       return state.lastUserAction
+    },
+    get snapshotMessages() {
+      return state.snapshotMessages
     },
     stop: async () => {
       server.stop(true)

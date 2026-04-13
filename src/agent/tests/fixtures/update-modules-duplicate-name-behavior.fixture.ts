@@ -1,5 +1,5 @@
 import * as z from 'zod'
-import { useModule } from '../../use-module.ts'
+import { useModule } from '../../../behavioral/use-module.old.ts'
 
 const FIXTURE_PING_EVENT = 'fixture_ping'
 const FIRST_PING_SEEN_EVENT = 'fixture_ping_seen_first'

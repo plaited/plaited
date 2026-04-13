@@ -3,7 +3,6 @@ import type {
   EVENT_SOURCES,
   EXPLORE_STRATEGIES,
   FRONTIER_STATUS,
-  RULES_FUNCTION_IDENTIFIER,
   VERIFICATION_STATUSES,
 } from './behavioral.constants.ts'
 import type { SelectionSnapshot, SnapshotMessage } from './behavioral.schemas.ts'
@@ -30,7 +29,6 @@ export type ReplayEvent = BPEvent & {
 
 export type BPListener = {
   type: string
-  sourceSchema: ZodType<keyof typeof EVENT_SOURCES>
   detailSchema: ZodType<unknown>
 }
 
@@ -75,7 +73,6 @@ export type Idioms = {
  */
 export type BSync = (arg: Idioms) => {
   (): Generator<Idioms, void, unknown>
-  $: typeof RULES_FUNCTION_IDENTIFIER
 }
 
 /**
@@ -89,7 +86,7 @@ export type BSync = (arg: Idioms) => {
  *
  * @see bThread The implementation of this type that composes multiple synchronization steps into a single b-thread.
  */
-export type BThread = (rules: ReturnType<BSync>[], repeat?: true) => ReturnType<BSync>
+export type BThread = (params: { rules: ReturnType<BSync>[], repeat?: true, label: string}) => void
 
 /**
  * @internal
@@ -306,7 +303,7 @@ export type ReportSnapshot = (message: SnapshotMessage) => void
 
 export type BThreads = Record<string, ReturnType<BSync>>
 
-export type AddBThreads = (threads: BThreads) => void
+export type AddBThread = (label: string, thread: () => Generator<Idioms, void, unknown>) => void
 
 /**
  * Injects external events into the behavioral program.
@@ -345,9 +342,8 @@ export type Trigger = <T extends BPEvent>(args: T) => void
  * @see {@link UseSnapshot} for state monitoring
  */
 export type Behavioral = <Details extends EventDetails = EventDetails>() => Readonly<{
-  addBThreads: AddBThreads
+  addBThread: AddBThread
   trigger: Trigger
-  emit: Trigger
   useFeedback: UseFeedback<Details>
   useSnapshot: UseSnapshot
   reportSnapshot: ReportSnapshot

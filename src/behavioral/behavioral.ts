@@ -14,7 +14,7 @@ import {
   resumePendingThreadsForSelectedEvent,
 } from './behavioral.shared.ts'
 import type {
-  AddBThreads,
+  AddBThread,
   Behavioral,
   BPEvent,
   BSync,
@@ -367,17 +367,6 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
 
   /**
    * @internal
-   * Implementation of the module ingress `emit` function.
-   */
-  const emit: Trigger = (request) => {
-    enqueueIngress({
-      event: request,
-      source: EVENT_SOURCES.emit,
-    })
-  }
-
-  /**
-   * @internal
    * Implementation of the public `useFeedback` hook.
    *
    * Subscribes the provided handlers to the action publisher, invoking the
@@ -413,7 +402,7 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
     return disconnect
   }
 
-  const spawn = (label: string, thread: ReturnType<BSync>) => {
+  const addBThread:AddBThread = (label: string, thread: ReturnType<BSync>) => {
     const threadId = ueid(BTHREAD_ID_PREFIX)
     running.set(threadId, {
       priority: running.size + 1,
@@ -421,16 +410,6 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
       generator: thread(),
       label,
     })
-  }
-  /**
-   * @internal
-   * Implementation of the public `bThreads` utility.
-   *
-   * This provides methods to add/replace threads and check thread status.
-   * The implementation ensures proper thread initialization and state tracking.
-   */
-  const addBThreads: AddBThreads = (threads) => {
-    for (const [label, thread] of Object.entries(threads)) spawn(label, thread)
   }
   /**
    * @internal
@@ -449,12 +428,10 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
    * predictable API for consumers of the behavioral program.
    */
   return Object.freeze({
-    /** Add threads to program. */
-    addBThreads,
+    /** Add thread to program. */
+    addBThread,
     /** Function to inject external events into the program. */
     trigger,
-    /** Function to inject module-origin events into the program. */
-    emit,
     /** Hook to subscribe to selected events with feedback handlers. */
     useFeedback,
     /** Hook to subscribe to internal state snapshots for monitoring/debugging. */

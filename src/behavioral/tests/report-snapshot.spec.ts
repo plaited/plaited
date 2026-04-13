@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { behavioral, bSync, bThread, type SnapshotMessage } from 'plaited/behavioral'
+import { behavioral, type SnapshotMessage } from 'plaited/behavioral'
+import { bSync, bThread } from '../behavioral.utils.ts'
 import { onType } from './helpers.ts'
 
 describe('reportSnapshot', () => {

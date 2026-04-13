@@ -1,5 +1,5 @@
 import * as z from 'zod'
-import { McpManifestSchema } from './mcp.schemas.ts'
+import { McpManifestSchema } from '../../mcp/mcp.schemas.ts'
 
 export const McpCapabilityProjectionSchema = z.object({
   serverName: z.string().min(1),

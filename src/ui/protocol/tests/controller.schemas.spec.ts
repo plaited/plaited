@@ -4,6 +4,7 @@ import { CONTROLLER_TO_AGENT_EVENTS, SWAP_MODES } from '../controller.constants.
 import {
   AttrsMessageSchema,
   DisconnectMessageSchema,
+  LegacyUpdateBehavioralResultSchema,
   RenderMessageSchema,
   SnapshotEventSchema,
   SwapModeSchema,
@@ -307,6 +308,25 @@ describe('UpdateBehavioralResultSchema', () => {
     })
     expect(result.threads).toBeDefined()
     expect(result.threads!.myThread).toBe(behavioralRule)
+  })
+
+  test('accepts explicit action metadata for listener-first local routing', () => {
+    const result = UpdateBehavioralResultSchema.parse({
+      actions: ['test_click', 'legacy_click'],
+    })
+    expect(result.actions).toEqual(['test_click', 'legacy_click'])
+  })
+})
+
+describe('LegacyUpdateBehavioralResultSchema', () => {
+  test('accepts legacy compatibility result with actions metadata', () => {
+    const legacy = {
+      actions: ['legacy_click'],
+      handlers: {
+        legacy_apply_click: () => {},
+      },
+    }
+    expect(LegacyUpdateBehavioralResultSchema.parse(legacy)).toEqual(legacy)
   })
 })
 

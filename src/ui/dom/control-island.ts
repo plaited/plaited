@@ -1,4 +1,4 @@
-import type { AddBThreads, Disconnect, Trigger, UseFeedback, UseSnapshot } from '../../behavioral.ts'
+import type { AddBThreads, Disconnect, ReportSnapshot, Trigger, UseFeedback, UseSnapshot } from '../../behavioral.ts'
 import { behavioral } from '../../behavioral.ts'
 import { keyMirror } from '../../utils.ts'
 import { createStyles } from '../css/styles.ts'
@@ -176,16 +176,20 @@ export const controlIsland = ({
         static formAssociated = formAssociated
         #disconnectSet = new Set<Disconnect>()
         #trigger: Trigger
+        #emit: Trigger
         #useFeedback: UseFeedback
         #addBThreads: AddBThreads
         #useSnapshot: UseSnapshot
+        #reportSnapshot: ReportSnapshot
         constructor() {
           super()
-          const { trigger, useFeedback, addBThreads, useSnapshot } = behavioral()
+          const { trigger, emit, useFeedback, addBThreads, useSnapshot, reportSnapshot } = behavioral()
           this.#trigger = trigger
+          this.#emit = emit
           this.#useFeedback = useFeedback
           this.#addBThreads = addBThreads
           this.#useSnapshot = useSnapshot
+          this.#reportSnapshot = reportSnapshot
         }
         attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
           this.#trigger<OnAttributeChangedMessage>({
@@ -211,10 +215,12 @@ export const controlIsland = ({
           controller({
             root: this,
             trigger: this.#trigger,
+            emit: this.#emit,
             addBThreads: this.#addBThreads,
             useFeedback: this.#useFeedback,
             disconnectSet: this.#disconnectSet,
             useSnapshot: this.#useSnapshot,
+            reportSnapshot: this.#reportSnapshot,
           })
           this.#trigger<OnConnectedMessage>({ type: ELEMENT_CALLBACKS.on_connected })
         }

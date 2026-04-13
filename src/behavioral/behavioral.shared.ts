@@ -1,3 +1,4 @@
+import * as z from 'zod'
 import { FRONTIER_STATUS } from './behavioral.constants.ts'
 import type { BPListener, CandidateBid, Frontier, PendingBid, RunningBid } from './behavioral.types.ts'
 
@@ -5,19 +6,15 @@ import type { BPListener, CandidateBid, Frontier, PendingBid, RunningBid } from 
  * @internal
  * Utility function to ensure a value is an array.
  */
-const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj : [obj])
+export const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj : [obj])
 
 /**
  * @internal
  * Creates a checker function to determine if a given BPListener matches a CandidateBid.
  */
-export const isListeningFor = ({ type, detail, source }: CandidateBid) => {
+export const isListeningFor = ({ type, detail }: CandidateBid) => {
   return (listener: BPListener): boolean => {
-    return (
-      listener.type === type &&
-      listener.sourceSchema.safeParse(source).success &&
-      listener.detailSchema.safeParse(detail).success
-    )
+    return listener.type === type && listener.detailSchema.safeParse(detail).success
   }
 }
 
@@ -101,3 +98,6 @@ export const resumePendingThreadsForSelectedEvent = ({
     }
   }
 }
+
+export const notSchema = (schema: z.ZodTypeAny): z.ZodType<unknown> =>
+  z.unknown().refine((value) => !schema.safeParse(value).success)

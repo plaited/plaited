@@ -29,7 +29,6 @@ export type HeartbeatConfig = {
  * @public
  */
 export type CreateAgentOptions = {
-  id: string
   cwd: string
   workspace: string
   models: AgentModels

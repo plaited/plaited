@@ -68,11 +68,12 @@ The flow is:
 
 1. server sends a module URL
 2. client `import(url)` loads it
-3. the module's default module receives `restrictedTrigger`
-4. returned `threads` and `handlers` are validated and merged into the BP engine
+3. preferred: module is authored with `useUIModule(...)` (listener-first helpers)
+4. compatibility: legacy raw factory modules still load with explicit migration warning
+5. returned `threads` / `handlers` / action metadata are validated and merged into the BP engine
 
-Loaded modules can participate in rendering and local coordination, but they
-cannot directly fire blocked client/server lifecycle events.
+Loaded modules participate in local coordination and explicit action routing
+without thread-generator metadata introspection.
 
 See:
 

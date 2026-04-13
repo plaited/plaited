@@ -18,20 +18,16 @@ class MockViewTransition {
   skipTransition() {}
 }
 
-class MockPageRevealEvent extends Event {
-  viewTransition: MockViewTransition
-  constructor() {
-    super('pagereveal')
-    this.viewTransition = new MockViewTransition()
-  }
+const createMockPageRevealEvent = (): Event => {
+  const event = new window.Event('pagereveal') as Event & { viewTransition: MockViewTransition }
+  event.viewTransition = new MockViewTransition()
+  return event
 }
 
-class MockPageSwapEvent extends Event {
-  viewTransition: MockViewTransition
-  constructor() {
-    super('pageswap')
-    this.viewTransition = new MockViewTransition()
-  }
+const createMockPageSwapEvent = (): Event => {
+  const event = new window.Event('pageswap') as Event & { viewTransition: MockViewTransition }
+  event.viewTransition = new MockViewTransition()
+  return event
 }
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
@@ -67,7 +63,7 @@ describe('controlDocument: pageswap event', () => {
     await new Promise((r) => setTimeout(r, 50))
 
     // Dispatch a pageswap event
-    expect(() => window.dispatchEvent(new MockPageSwapEvent())).not.toThrow()
+    expect(() => window.dispatchEvent(createMockPageSwapEvent())).not.toThrow()
   })
 })
 
@@ -81,7 +77,7 @@ describe('controlDocument: pagereveal event', () => {
     controlDocument({ onPageReveal: factory as NonNullable<Parameters<typeof controlDocument>[0]>['onPageReveal'] })
     await new Promise((r) => setTimeout(r, 50))
 
-    window.dispatchEvent(new MockPageRevealEvent())
+    window.dispatchEvent(createMockPageRevealEvent())
     await new Promise((r) => setTimeout(r, 50))
 
     expect(called).toBe(true)
@@ -91,7 +87,7 @@ describe('controlDocument: pagereveal event', () => {
     controlDocument()
     await new Promise((r) => setTimeout(r, 50))
 
-    expect(() => window.dispatchEvent(new MockPageRevealEvent())).not.toThrow()
+    expect(() => window.dispatchEvent(createMockPageRevealEvent())).not.toThrow()
   })
 })
 

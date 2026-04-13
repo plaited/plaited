@@ -1,5 +1,5 @@
 import * as z from 'zod'
-import { keyMirror } from '../../utils.ts'
+import { keyMirror } from '../utils.ts'
 import type { AgentCard } from './a2a.schemas.ts'
 import { verifyAgentCardSignature } from './a2a.utils.ts'
 

@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import * as z from 'zod'
 import type { BPListener } from '../../behavioral/behavioral.types.ts'
+import { useModule } from '../../behavioral/use-module.old.ts'
 import { bSync, bThread } from '../../behavioral.ts'
 import { AGENT_EVENTS } from '../agent.constants.ts'
 import { createAgent } from '../create-agent.ts'
-import { useModule } from '../use-module.ts'
 
 const TEST_MODELS = {
   primary: async () => ({

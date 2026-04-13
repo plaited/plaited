@@ -1,14 +1,9 @@
 import * as z from 'zod'
 
-import {
-  type BSync,
-  type DefaultHandlers,
-  isBehavioralRule,
-  SnapshotMessageSchema,
-  type Trigger,
-} from '../../behavioral.ts'
+import { type BSync, type DefaultHandlers, isBehavioralRule, SnapshotMessageSchema } from '../../behavioral.ts'
 import { AGENT_TO_CONTROLLER_EVENTS } from '../../bridge-events.ts'
 import { isTypeOf, trueTypeOf } from '../../utils.ts'
+import type { UIModule, UIModuleResult } from './use-ui-module.ts'
 import { CONTROLLER_TO_AGENT_EVENTS, SWAP_MODES } from './controller.constants.ts'
 // ─── Server → Client Message Schemas ────────────────────────────────────────
 
@@ -223,10 +218,25 @@ export const UpdateBehavioralResultSchema = z.object({
       return true
     })
     .optional(),
+  actions: z.array(z.string()).optional(),
 })
 
 /** @public */
 export type UpdateBehavioralResult = z.infer<typeof UpdateBehavioralResultSchema>
+
+/**
+ * Schema for return values from legacy update_behavioral module factories.
+ *
+ * @remarks
+ * Legacy modules receive raw `trigger` and may declare explicit `actions` metadata
+ * to opt into local p-trigger routing during compatibility mode.
+ *
+ * @public
+ */
+export const LegacyUpdateBehavioralResultSchema = UpdateBehavioralResultSchema
+
+/** @public */
+export type LegacyUpdateBehavioralResult = z.infer<typeof LegacyUpdateBehavioralResultSchema>
 
 /**
  * Schema for validating dynamically imported behavioral modules.
@@ -234,13 +244,17 @@ export type UpdateBehavioralResult = z.infer<typeof UpdateBehavioralResultSchema
  * @remarks
  * After the client fetches a module URL from an `update_behavioral` message,
  * it `import()`s the module and validates its default export. The default
- * export must be a function that receives {@link Trigger} and returns
- * `{ threads?, handlers? }`.
+ * export must be either:
+ * - a `useUIModule(...)` module function (listener-first contract), or
+ * - a legacy raw factory `(trigger) => { threads?, handlers?, actions? }`
+ *   used temporarily for compatibility.
  *
  * @public
  */
 export const UpdateBehavioralModuleSchema = z.object({
-  default: z.custom<(trigger: Trigger) => UpdateBehavioralResult>((val) => trueTypeOf(val) === 'function'),
+  default: z.custom<UIModule | ((trigger: (event: { type: string; detail?: unknown }) => void) => UIModuleResult)>(
+    (val) => trueTypeOf(val) === 'function',
+  ),
 })
 
 /** @public */

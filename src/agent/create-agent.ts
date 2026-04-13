@@ -2,6 +2,8 @@ import { glob } from 'node:fs/promises'
 import { isAbsolute, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import * as z from 'zod'
+import { createContextMemory } from '../behavioral/context-memory.ts'
+import { getDeclaredModuleName } from '../behavioral/use-module.old.ts'
 import type { AddBThreads, BThreads, Disconnect } from '../behavioral.ts'
 import { type BPEvent, type BPListener, behavioral, bSync, bThread } from '../behavioral.ts'
 import { isTypeOf } from '../utils.ts'
@@ -28,8 +30,6 @@ import {
   UpdateModuleModuleSchema,
 } from './agent.schemas.ts'
 import type { AgentHandle, CreateAgentOptions } from './agent.types.ts'
-import { createContextMemory } from './context-memory.ts'
-import { getDeclaredModuleName } from './use-module.ts'
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 15 * 60 * 1000
 
@@ -52,7 +52,6 @@ const DEFAULT_CONTEXT_MEMORY_TTL_MS = 15 * 60 * 1000
  * @public
  */
 export const createAgent = async ({
-  id: _id,
   cwd,
   workspace,
   models,
