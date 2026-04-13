@@ -69,7 +69,7 @@ Reset style state when the connection or session is torn down.
 - fragments for wrapper-free composition
 - `p-target` for later server-addressable updates
 - `decorateElements` for structural custom elements / shadow DOM
-- `controlIsland` for interactive islands with their own BP/controller surface
+- `controlDocument` for document-level runtime ownership (WebSocket + BP core)
 
 ## Security Model
 

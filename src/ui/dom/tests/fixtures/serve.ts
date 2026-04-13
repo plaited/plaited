@@ -13,10 +13,9 @@ const DIST_DIR = join(FIXTURES_DIR, 'dist')
 // Build entry files for browser consumption
 const buildResult = await Bun.build({
   entrypoints: [
-    join(FIXTURES_DIR, 'control-island.entry.ts'),
+    join(FIXTURES_DIR, 'control-document.entry.ts'),
     join(FIXTURES_DIR, 'swap-fixture.entry.ts'),
     join(FIXTURES_DIR, 'behavioral-fixture.entry.ts'),
-    join(FIXTURES_DIR, 'behavioral-legacy-fixture.entry.ts'),
     join(FIXTURES_DIR, 'test-elements.entry.ts'),
   ],
   outdir: DIST_DIR,
@@ -33,7 +32,7 @@ if (!buildResult.success) {
 
 // Build the behavioral module separately — served at /modules/ for import()
 const moduleResult = await Bun.build({
-  entrypoints: [join(FIXTURES_DIR, 'behavioral-module.ts'), join(FIXTURES_DIR, 'behavioral-module-legacy.ts')],
+  entrypoints: [join(FIXTURES_DIR, 'behavioral-module.ts')],
   outdir: join(DIST_DIR, 'modules'),
   target: 'browser',
   minify: false,
@@ -48,22 +47,19 @@ if (!moduleResult.success) {
 
 // ─── Static HTML fixtures ─────────────────────────────────────────────────────
 
-// The controlIsland factory applies display:contents via CSS class from createStyles.
-// In raw HTML fixtures (not SSR-rendered), we add the style rule directly.
-// p-target must be on a DESCENDANT of the control island, not the island itself.
-// controller() uses root.querySelector('[p-target="..."]') where root = the custom element,
-// and querySelector only searches descendants.
-const HTML_CONTROL_ISLAND = `<!DOCTYPE html>
+// The fixture keeps wrapper tags as source identities (WebSocket subprotocol values)
+// and sets display:contents to preserve layout behavior in static HTML.
+const HTML_CONTROL_DOCUMENT = `<!DOCTYPE html>
 <html>
 <head>
-  <title>Control Island Test</title>
+  <title>Control Document Test</title>
   <style>test-island { display: contents; }</style>
 </head>
 <body>
   <test-island>
     <div p-target="main"><p>initial content</p></div>
   </test-island>
-  <script type="module" src="/dist/control-island.entry.js"></script>
+  <script type="module" src="/dist/control-document.entry.js"></script>
 </body>
 </html>`
 
@@ -95,17 +91,17 @@ const HTML_BEHAVIORAL_FIXTURE = `<!DOCTYPE html>
 </body>
 </html>`
 
-const HTML_BEHAVIORAL_LEGACY_FIXTURE = `<!DOCTYPE html>
+const HTML_BEHAVIORAL_BYPASS_FIXTURE = `<!DOCTYPE html>
 <html>
 <head>
-  <title>Behavioral Legacy Module Test</title>
-  <style>behavioral-legacy-fixture { display: contents; }</style>
+  <title>Behavioral Bypass Fixture Test</title>
+  <style>behavioral-bypass-fixture { display: contents; }</style>
 </head>
 <body>
-  <behavioral-legacy-fixture>
-    <div p-target="main"><p>initial legacy behavioral content</p></div>
-  </behavioral-legacy-fixture>
-  <script type="module" src="/dist/behavioral-legacy-fixture.entry.js"></script>
+  <behavioral-bypass-fixture>
+    <div p-target="main"><p>initial behavioral bypass content</p></div>
+  </behavioral-bypass-fixture>
+  <script type="module" src="/dist/behavioral-fixture.entry.js"></script>
 </body>
 </html>`
 
@@ -173,11 +169,11 @@ const BEHAVIORAL_RENDER_MESSAGE = JSON.stringify({
   },
 })
 
-const BEHAVIORAL_LEGACY_RENDER_MESSAGE = JSON.stringify({
+const BEHAVIORAL_BYPASS_RENDER_MESSAGE = JSON.stringify({
   type: 'render',
   detail: {
     target: 'main',
-    html: '<button id="legacy-module-btn" p-trigger="click:legacy_click">Legacy Action</button><div id="legacy-behavioral-initial">Legacy behavioral fixture loaded</div>',
+    html: '<button id="behavioral-module-btn" p-trigger="click:test_click">Behavioral Action</button><button id="behavioral-scoped-module-btn" p-trigger="click:foo:test_click">Scoped Behavioral Action</button><button id="bypass-probe-btn" p-trigger="click:bypass_probe">Bypass Probe</button><div id="behavioral-initial">Behavioral fixture loaded</div>',
     swap: 'innerHTML',
   },
 })
@@ -305,7 +301,7 @@ export const startServer = (port = 0): FixtureServer => {
     routes: {
       // Static routes exclude '/' so WebSocket upgrades reach the fetch handler
       '/health': new Response('OK'),
-      '/control-island.html': new Response(HTML_CONTROL_ISLAND, {
+      '/control-document.html': new Response(HTML_CONTROL_DOCUMENT, {
         headers: { 'Content-Type': 'text/html' },
       }),
       '/swap-fixture.html': new Response(HTML_SWAP_FIXTURE, {
@@ -314,7 +310,7 @@ export const startServer = (port = 0): FixtureServer => {
       '/behavioral-fixture.html': new Response(HTML_BEHAVIORAL_FIXTURE, {
         headers: { 'Content-Type': 'text/html' },
       }),
-      '/behavioral-legacy-fixture.html': new Response(HTML_BEHAVIORAL_LEGACY_FIXTURE, {
+      '/behavioral-bypass-fixture.html': new Response(HTML_BEHAVIORAL_BYPASS_FIXTURE, {
         headers: { 'Content-Type': 'text/html' },
       }),
       '/dist/*': async (req) => {
@@ -347,12 +343,12 @@ export const startServer = (port = 0): FixtureServer => {
               }),
             )
             break
-          case 'behavioral-legacy-fixture':
-            ws.send(BEHAVIORAL_LEGACY_RENDER_MESSAGE)
+          case 'behavioral-bypass-fixture':
+            ws.send(BEHAVIORAL_BYPASS_RENDER_MESSAGE)
             ws.send(
               JSON.stringify({
                 type: 'update_behavioral',
-                detail: `http://localhost:${server.port}/dist/modules/behavioral-module-legacy.js`,
+                detail: `http://localhost:${server.port}/dist/modules/behavioral-module.js`,
               }),
             )
             break
@@ -398,6 +394,13 @@ export const startServer = (port = 0): FixtureServer => {
         if (data.type === 'user_action') {
           state.lastUserAction = data
           // detail uses { id, source, msg } envelope — msg is the action type string
+          if (data.detail?.msg === 'bypass_probe') {
+            ws.send(
+              JSON.stringify({
+                type: 'behavioral_fixture:apply_test_click',
+              }),
+            )
+          }
           if (data.detail?.msg === 'test_click') {
             ws.send(
               JSON.stringify({

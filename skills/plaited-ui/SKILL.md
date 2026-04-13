@@ -15,7 +15,7 @@ Use it when you need to:
 
 - build or change `src/ui/`
 - work on server-driven rendering through the controller protocol
-- design `controlIsland`, `controlDocument`, or `decorateElements` flows
+- design `controlDocument` or `decorateElements` flows
 - add dynamic client behavior through `update_behavioral`
 - test UI behavior from schema-level checks up through real browser flows
 
@@ -30,7 +30,7 @@ rather than the UI surface itself.
 |---|---|---|
 | Rendering pipeline | `createTemplate` / `h`, `Fragment`, `createSSR` | `references/server-pipeline.md` |
 | CSS system | `createStyles`, `createTokens`, `createHostStyles`, `createKeyframes`, `joinStyles` | `references/css-system.md` |
-| DOM/custom elements | `controlIsland`, `controlDocument`, `decorateElements`, `DelegatedListener` | This skill + `references/server-pipeline.md` |
+| DOM/custom elements | `controlDocument`, `decorateElements`, `DelegatedListener` | This skill + `references/server-pipeline.md` |
 | Controller protocol | `render`, `attrs`, `update_behavioral`, `disconnect`, `user_action`, `snapshot` | `references/update-behavioral.md`, `references/websocket-decisions.md` |
 
 Public UI exports are re-exported through `src/ui.ts`.
@@ -68,12 +68,12 @@ The flow is:
 
 1. server sends a module URL
 2. client `import(url)` loads it
-3. preferred: module is authored with `useUIModule(...)` (listener-first helpers)
-4. compatibility: legacy raw factory modules still load with explicit migration warning
-5. returned `threads` / `handlers` / action metadata are validated and merged into the BP engine
+3. module exports one or more `useExtension(...)` values
+4. client installs each exported extension where `isExtension(value) === true`
+5. unknown server-originated event types are dropped and reported (allowlist inbound wire events only)
 
-Loaded modules participate in local coordination and explicit action routing
-without thread-generator metadata introspection.
+Loaded modules participate in local coordination through the scoped UI core event lane
+(for example `ui_core:user_action`) without direct server-triggered local handler bypass.
 
 See:
 

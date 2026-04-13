@@ -38,8 +38,8 @@ beforeAll(async () => {
 
   // Open browser session (no URL yet — navigate after open)
   await cli('open')
-  // Navigate to the control island fixture
-  await gotoTest('/control-island.html')
+  // Navigate to the base document runtime fixture
+  await gotoTest('/control-document.html')
 }, 30000)
 
 afterAll(async () => {
@@ -51,9 +51,9 @@ afterAll(async () => {
   await fixture.stop()
 }, 30000)
 
-// ─── Control Island: real browser ─────────────────────────────────────────────
+// ─── Document runtime: real browser ───────────────────────────────────────────
 
-describe('controlIsland: real browser', () => {
+describe('controlDocument: real browser', () => {
   test('display:contents computed style', async () => {
     const output = await cli(
       'eval',
@@ -63,10 +63,10 @@ describe('controlIsland: real browser', () => {
     expect(result).toContain('contents')
   })
 
-  test('customElements.get() confirms registration', async () => {
+  test('does not require customElements registration', async () => {
     const output = await cli('eval', "() => !!customElements.get('test-island')")
     const result = parseResult(output)
-    expect(result).toContain('true')
+    expect(result).toContain('false')
   })
 
   test('custom element exists in DOM', async () => {
@@ -101,28 +101,6 @@ describe('controlIsland: real browser', () => {
     )
     const result = parseResult(output)
     expect(result).toContain('false')
-  })
-
-  // ─── Property accessors (from control-island lifecycle) ──────────────────
-
-  test('property setter reflects as attribute', async () => {
-    // test-island has observedAttributes: ['value', 'label']
-    // connectedCallback defines property accessors for these
-    const output = await cli(
-      'eval',
-      "() => { const el = document.querySelector('test-island'); el.value = 'test123'; return el.getAttribute('value'); }",
-    )
-    const result = parseResult(output)
-    expect(result).toContain('test123')
-  })
-
-  test('property getter reads from attribute', async () => {
-    const output = await cli(
-      'eval',
-      "() => { const el = document.querySelector('test-island'); el.setAttribute('label', 'from-attr'); return el.label; }",
-    )
-    const result = parseResult(output)
-    expect(result).toContain('from-attr')
   })
 })
 
@@ -278,9 +256,9 @@ describe('controller: WebSocket retry', () => {
 // ─── Update behavioral ───────────────────────────────────────────────────────
 
 describe('controller: update_behavioral', () => {
-  test('dynamic import() loads useUIModule module without raw trigger factory usage', async () => {
+  test('dynamic import() installs exported useExtension modules', async () => {
     // Navigate to behavioral fixture — server sends update_behavioral after client_connected.
-    // The imported module is authored with useUIModule() and includes a repeating bThread.
+    // The imported module exports a useExtension() module with repeating bThreads.
     await gotoTest('/behavioral-fixture.html')
 
     // The module sets window.__behavioralModuleLoaded = true in the module callback.
@@ -289,7 +267,28 @@ describe('controller: update_behavioral', () => {
     expect(result).toContain('true')
   }, 30000)
 
-  test('p-trigger action routes locally via explicit action metadata exactly once per click', async () => {
+  test('server cannot directly trigger extension-local handlers via arbitrary event type', async () => {
+    await gotoTest('/behavioral-bypass-fixture.html')
+
+    const loaded = await cli('eval', '() => globalThis.__behavioralModuleLoaded === true')
+    expect(parseResult(loaded)).toContain('true')
+
+    const before = await cli('eval', '() => globalThis.__handlerCallCount ?? 0')
+    expect(parseResult(before)).toContain('0')
+
+    await cli('eval', "() => { document.getElementById('bypass-probe-btn')?.click(); return 'probe'; }")
+    await new Promise((r) => setTimeout(r, 1500))
+
+    expect(fixture.lastUserAction).toBeDefined()
+    const detail = (fixture.lastUserAction as Record<string, unknown>).detail as Record<string, unknown>
+    expect(detail.msg).toBe('bypass_probe')
+    expect(detail.source).toBe('behavioral-bypass-fixture')
+
+    const after = await cli('eval', '() => globalThis.__handlerCallCount ?? 0')
+    expect(parseResult(after)).toContain('0')
+  }, 30000)
+
+  test('p-trigger actions can be observed by dynamic extensions via ui_core:user_action', async () => {
     await gotoTest('/behavioral-fixture.html')
 
     const before = await cli('eval', '() => globalThis.__handlerCallCount ?? 0')
@@ -311,30 +310,5 @@ describe('controller: update_behavioral', () => {
     await new Promise((r) => setTimeout(r, 1500))
     const afterFirst = await cli('eval', '() => globalThis.__scopedHandlerCallCount ?? 0')
     expect(parseResult(afterFirst)).toContain('1')
-  }, 30000)
-
-  test('legacy raw update_behavioral modules still work only through explicit compatibility actions metadata', async () => {
-    await gotoTest('/behavioral-legacy-fixture.html')
-
-    const loaded = await cli('eval', '() => globalThis.__legacyBehavioralModuleLoaded === true')
-    expect(parseResult(loaded)).toContain('true')
-
-    const before = await cli('eval', '() => globalThis.__legacyHandlerCallCount ?? 0')
-    expect(parseResult(before)).toContain('0')
-
-    await cli('eval', "() => { document.getElementById('legacy-module-btn')?.click(); return 'clicked-1'; }")
-    await new Promise((r) => setTimeout(r, 1500))
-    const afterFirst = await cli('eval', '() => globalThis.__legacyHandlerCallCount ?? 0')
-    expect(parseResult(afterFirst)).toContain('1')
-
-    const output = await cli('eval', '() => globalThis.__legacyHandlerCalled === true')
-    const result = parseResult(output)
-    expect(result).toContain('true')
-
-    const hasLegacyWarning = fixture.snapshotMessages.some((message) => {
-      const detail = (message.detail ?? {}) as { msg?: { kind?: string; code?: string } }
-      return detail.msg?.kind === 'module_warning' && detail.msg?.code === 'legacy_ui_module_compat'
-    })
-    expect(hasLegacyWarning).toBe(true)
   }, 30000)
 })

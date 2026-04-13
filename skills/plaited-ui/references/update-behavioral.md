@@ -2,12 +2,12 @@
 
 ## Overview
 
-`update_behavioral` is the supported path for loading new client behavior after
-initial page load.
+`update_behavioral` is the wire-compatible server message used to request runtime
+UI extension loading after initial page load.
 
-It exists because scripts inserted through fragment parsing APIs like
-`innerHTML` or `setHTMLUnsafe` are inert. Dynamic client logic must be loaded
-through `import(url)`.
+Scripts inserted through fragment parsing APIs like `innerHTML` or
+`setHTMLUnsafe` are inert. Runtime client logic must be loaded through
+`import(url)`.
 
 ## Flow
 
@@ -15,46 +15,49 @@ through `import(url)`.
 sequenceDiagram
     participant Agent as Server Agent
     participant WS as WebSocket
-    participant Controller as controller()
+    participant Core as controlDocument ui_core
     participant Browser as Browser Runtime
     participant BP as BP Engine
 
     Agent->>WS: update_behavioral with module URL
-    WS->>Controller: validated message
-    Controller->>Browser: await import(url)
-    Browser-->>Controller: module.default
-    Controller->>Controller: install useUIModule(...) OR legacy compat factory
-    Controller->>Controller: validate return value
-    Controller->>BP: merge threads/handlers + declared actions metadata
+    WS->>Core: on_ws_message
+    Core->>Core: map update_behavioral -> update_extension
+    Core->>Browser: await import(url)
+    Browser-->>Core: module exports
+    Core->>Core: install each export where isExtension(value)
+    Core->>BP: register extension handlers/threads via installer
 ```
 
 ## Module Contract
 
-Preferred contract:
+Required contract:
 
-- default export from `useUIModule(name, callback)`
-- callback receives listener-first helpers (`local`, `external`, `action`,
-  wrapped `bSync`, wrapped `bThread`, wrapped `emit`, wrapped `addThreads`)
-- callback returns optional `threads` and optional local-only `handlers`
-- `action(schema)` declarations become explicit local p-trigger routing metadata
+- module exports one or more `useExtension(...)` values
+- installer accepts only branded extension callables (`isExtension(value)`)
+- default export is not special-cased
 
-Legacy compatibility (temporary):
+Not supported in this UI lane:
 
-- raw `(trigger) => { threads?, handlers?, actions? }` module factories still load
-- local p-trigger routing only uses explicit `actions` metadata in this path
+- legacy raw `(trigger) => result` factories
+- `useUIModule(...)` wrapper contracts
+- action metadata side channels for direct local handler dispatch
 
-Both contracts are validated before merging into the client BP engine.
+## Security Notes
 
-Result fields:
+Inbound server-originated WebSocket messages are allowlisted to wire events:
 
-- optional `threads`
-- optional `handlers`
-- optional `actions` (explicit p-trigger local routing interest)
+- `render`
+- `attrs`
+- `disconnect`
+- `update_behavioral` (internally mapped to `update_extension`)
+
+Unsupported inbound event types are dropped and reported through snapshot
+`extension_error` diagnostics. Server messages cannot directly trigger
+extension-local handler event types.
 
 ## Operational Notes
 
-- merge is silent; there is no explicit success acknowledgement
-- observe success through subsequent behavior or snapshots
-- import or schema failures surface through the controller/BP error path
-- legacy compatibility installs emit `module_warning` snapshots to make migration
-  explicit
+- extension install success is observed through behavior or snapshots
+- import/validation failures surface through feedback/snapshot error paths
+- local UI extensions that react to DOM actions should listen to scoped
+  `ui_core:user_action` events and request their own local events

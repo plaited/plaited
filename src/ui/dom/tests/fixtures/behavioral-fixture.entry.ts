@@ -1,13 +1,8 @@
 /**
- * Browser entry point for testing update_behavioral.
- * The server sends an update_behavioral message after client_connected,
- * the controller imports a useUIModule module and registers threads/handlers/actions.
+ * Browser entry point for testing update_behavioral -> update_extension wiring.
  */
-import { controlIsland } from '../../../dom/control-island.ts'
+import { controlDocument } from '../../../dom/control-document.ts'
 
-controlIsland({
-  tag: 'behavioral-fixture',
-  observedAttributes: [],
-})
+controlDocument()
 
 window.dispatchEvent(new CustomEvent('behavioral-fixture-ready'))

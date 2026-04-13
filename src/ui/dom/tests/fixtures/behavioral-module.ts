@@ -1,81 +1,73 @@
 /**
- * Dynamically imported behavioral module for browser testing.
- * Served at a URL; the controller `import()`s it via update_behavioral.
- *
- * Exports a useUIModule module that:
- * - Sets window.__behavioralModuleLoaded to confirm the module callback ran
- * - Declares explicit p-trigger action interest via action(schema)
- * - Routes external action events through a local handler event
- * - Uses a repeating bThread to verify install paths do not iterate generators
+ * Dynamically imported extension fixture for browser testing.
+ * Served at a URL; the UI core `import()`s it via update_extension.
  */
 
 import * as z from 'zod'
-import { useUIModule } from '../../use-ui-module.ts'
+import { useExtension } from '../../../../behavioral.ts'
+import { UI_CORE, UI_CORE_EVENTS } from '../../dom.constants.ts'
 
-const TestClickActionSchema = z.object({
-  type: z.literal('test_click'),
-  detail: z.unknown(),
-})
+const UserActionSchema = (type: string) =>
+  z.object({
+    type: z.literal(type),
+    event: z.unknown(),
+  })
 
-const ApplyClickSchema = z.object({
-  type: z.literal('apply_test_click'),
-  detail: z.unknown(),
-})
-
-const ApplyScopedClickSchema = z.object({
-  type: z.literal('apply_scoped_test_click'),
-  detail: z.unknown(),
-})
-
-const moduleFactory = useUIModule('behavioral_fixture', ({ action, local, bSync, bThread }) => {
-  const testClick = action(TestClickActionSchema)
-  const applyClick = local(ApplyClickSchema)
-  const scopedTestClick = action(TestClickActionSchema, 'foo')
-  const applyScopedClick = local(ApplyScopedClickSchema)
-
+export const behavioralFixtureExtension = useExtension('behavioral_fixture', ({ bSync, bThread, extensions }) => {
   ;(globalThis as Record<string, unknown>).__behavioralModuleLoaded = true
   ;(globalThis as Record<string, unknown>).__handlerCalled = false
   ;(globalThis as Record<string, unknown>).__handlerCallCount = 0
   ;(globalThis as Record<string, unknown>).__scopedHandlerCalled = false
   ;(globalThis as Record<string, unknown>).__scopedHandlerCallCount = 0
+
+  bThread({
+    label: 'onTestClick',
+    rules: [
+      bSync({
+        waitFor: extensions.block({
+          extension: UI_CORE,
+          event: UI_CORE_EVENTS.user_action,
+          detailSchema: UserActionSchema('test_click'),
+        }),
+      }),
+      bSync({
+        request: {
+          type: 'apply_test_click',
+        },
+      }),
+    ],
+    repeat: true,
+  })
+
+  bThread({
+    label: 'onScopedTestClick',
+    rules: [
+      bSync({
+        waitFor: extensions.block({
+          extension: UI_CORE,
+          event: UI_CORE_EVENTS.user_action,
+          detailSchema: UserActionSchema('foo:test_click'),
+        }),
+      }),
+      bSync({
+        request: {
+          type: 'apply_scoped_test_click',
+        },
+      }),
+    ],
+    repeat: true,
+  })
+
   return {
-    threads: {
-      test_thread: bThread(
-        [
-          bSync({
-            waitFor: testClick.on(z.literal('trigger')),
-          }),
-          bSync({
-            request: applyClick.request(),
-          }),
-        ],
-        true,
-      ),
-      scoped_test_thread: bThread(
-        [
-          bSync({
-            waitFor: scopedTestClick.on(z.literal('trigger')),
-          }),
-          bSync({
-            request: applyScopedClick.request(),
-          }),
-        ],
-        true,
-      ),
+    apply_test_click() {
+      ;(globalThis as Record<string, unknown>).__handlerCalled = true
+      ;(globalThis as Record<string, unknown>).__handlerCallCount =
+        Number((globalThis as Record<string, unknown>).__handlerCallCount ?? 0) + 1
     },
-    handlers: {
-      apply_test_click() {
-        ;(globalThis as Record<string, unknown>).__handlerCalled = true
-        ;(globalThis as Record<string, unknown>).__handlerCallCount =
-          Number((globalThis as Record<string, unknown>).__handlerCallCount ?? 0) + 1
-      },
-      apply_scoped_test_click() {
-        ;(globalThis as Record<string, unknown>).__scopedHandlerCalled = true
-        ;(globalThis as Record<string, unknown>).__scopedHandlerCallCount =
-          Number((globalThis as Record<string, unknown>).__scopedHandlerCallCount ?? 0) + 1
-      },
+    apply_scoped_test_click() {
+      ;(globalThis as Record<string, unknown>).__scopedHandlerCalled = true
+      ;(globalThis as Record<string, unknown>).__scopedHandlerCallCount =
+        Number((globalThis as Record<string, unknown>).__scopedHandlerCallCount ?? 0) + 1
     },
   }
 })
-
-export default moduleFactory

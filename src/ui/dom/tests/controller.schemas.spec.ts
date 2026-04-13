@@ -1,16 +1,17 @@
 import { describe, expect, test } from 'bun:test'
+
 import { AGENT_TO_CONTROLLER_EVENTS } from '../../../bridge-events.ts'
-import { CONTROLLER_TO_AGENT_EVENTS, SWAP_MODES } from '../controller.constants.ts'
+import { CONTROLLER_TO_AGENT_EVENTS, SWAP_MODES } from '../dom.constants.ts'
 import {
   AttrsMessageSchema,
   DisconnectMessageSchema,
-  LegacyUpdateBehavioralResultSchema,
   RenderMessageSchema,
   SnapshotEventSchema,
   SwapModeSchema,
-  UpdateBehavioralResultSchema,
+  UpdateBehavioralMessageSchema,
+  UpdateExtensionDetailSchema,
   UserActionMessageSchema,
-} from '../controller.schemas.ts'
+} from '../dom.schemas.ts'
 
 describe('SwapModeSchema', () => {
   test('accepts all valid swap modes', () => {
@@ -179,6 +180,27 @@ describe('DisconnectMessageSchema', () => {
   })
 })
 
+describe('UpdateBehavioralMessageSchema', () => {
+  test('accepts wire update_behavioral messages with http url detail', () => {
+    const message = {
+      type: AGENT_TO_CONTROLLER_EVENTS.update_behavioral,
+      detail: 'http://localhost:3000/behavioral-module.js',
+    }
+    expect(UpdateBehavioralMessageSchema.parse(message)).toEqual(message)
+    expect(UpdateExtensionDetailSchema.parse(message.detail)).toBe(message.detail)
+  })
+
+  test('rejects non-http(s) detail values', () => {
+    expect(() => UpdateExtensionDetailSchema.parse('/tmp/local-module.js')).toThrow()
+    expect(() =>
+      UpdateBehavioralMessageSchema.parse({
+        type: AGENT_TO_CONTROLLER_EVENTS.update_behavioral,
+        detail: 'file:///tmp/local-module.js',
+      }),
+    ).toThrow()
+  })
+})
+
 describe('SnapshotEventSchema', () => {
   test('accepts valid snapshot event with { id, source, msg } envelope', () => {
     const msg = {
@@ -247,66 +269,5 @@ describe('SnapshotEventSchema', () => {
         },
       }),
     ).toThrow()
-  })
-})
-
-describe('UpdateBehavioralResultSchema', () => {
-  test('accepts object with handlers (sync and async functions)', () => {
-    const result = {
-      handlers: {
-        on_click: () => {},
-        on_submit: async () => {},
-      },
-    }
-    expect(UpdateBehavioralResultSchema.parse(result)).toEqual(result)
-  })
-
-  test('accepts empty object (both optional)', () => {
-    expect(UpdateBehavioralResultSchema.parse({})).toEqual({})
-  })
-
-  test('rejects handlers with non-function values', () => {
-    expect(() =>
-      UpdateBehavioralResultSchema.parse({
-        handlers: { on_click: 'not a function' },
-      }),
-    ).toThrow()
-  })
-
-  test('rejects threads with plain functions (not ReturnType<BSync>)', () => {
-    // A plain function without the ReturnType<BSync> shape is rejected
-    expect(() =>
-      UpdateBehavioralResultSchema.parse({
-        threads: { myThread: () => {} },
-      }),
-    ).toThrow()
-  })
-
-  test('accepts threads with branded behavioral rules returned by bThread/bSync', () => {
-    const behavioralRule = Object.assign(function* () {}, { $: '🪢' } as const)
-    const result = UpdateBehavioralResultSchema.parse({
-      threads: { myThread: behavioralRule },
-    })
-    expect(result.threads).toBeDefined()
-    expect(result.threads!.myThread).toBe(behavioralRule)
-  })
-
-  test('accepts explicit action metadata for listener-first local routing', () => {
-    const result = UpdateBehavioralResultSchema.parse({
-      actions: ['test_click', 'legacy_click'],
-    })
-    expect(result.actions).toEqual(['test_click', 'legacy_click'])
-  })
-})
-
-describe('LegacyUpdateBehavioralResultSchema', () => {
-  test('accepts legacy compatibility result with actions metadata', () => {
-    const legacy = {
-      actions: ['legacy_click'],
-      handlers: {
-        legacy_apply_click: () => {},
-      },
-    }
-    expect(LegacyUpdateBehavioralResultSchema.parse(legacy)).toEqual(legacy)
   })
 })

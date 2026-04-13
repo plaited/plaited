@@ -8,7 +8,6 @@
  * - **Styling**: {@link createStyles}, {@link createHostStyles}, {@link createKeyframes}, {@link createTokens}, {@link joinStyles} - CSS-in-JS utilities
  * - **Page Runtime**: {@link controlDocument} - Document-level controller wiring and WebSocket lifecycle
  * - **Decorative DSD**: {@link decorateElements} - Declarative Shadow DOM decoration primitives
- * - **UI Modules**: {@link useUIModule} - Listener-first dynamic client module authoring
  * - **Wire Contracts**: Controller constants and schemas for server ↔ client protocol envelopes
  *
  * @public
@@ -22,7 +21,7 @@ export * from './ui/css/root-styles.ts'
 export * from './ui/css/styles.ts'
 export * from './ui/css/tokens.ts'
 export * from './ui/dom/control-document.ts'
-export * from './ui/dom/controller.schemas.ts'
 export * from './ui/dom/decorate-elements.ts'
+export * from './ui/dom/dom.schemas.ts'
 export * from './ui/render/ssr.ts'
 export type * from './ui/render/template.types.ts'
