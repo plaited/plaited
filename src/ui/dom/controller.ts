@@ -31,25 +31,16 @@ import type {
 import { BPEventSchema } from '../../behavioral.ts'
 import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../bridge-events.ts'
 import { ueid } from '../../utils.ts'
-import { DelegatedListener, delegates } from '../dom/delegated-listener.ts'
 import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from '../render/template.constants.ts'
 import { CONTROLLER_ERRORS, SWAP_MODES, WEBSOCKET_LIFECYCLE_EVENTS } from './controller.constants.ts'
 import type { ControllerHandlers, SwapMode } from './controller.schemas.ts'
-import {
-  LegacyUpdateBehavioralResultSchema,
-  UpdateBehavioralModuleSchema,
-  UpdateBehavioralResultSchema,
-} from './controller.schemas.ts'
-import { isUIModule } from './use-ui-module.ts'
+import { DelegatedListener, delegates } from './delegated-listener.ts'
 
 /** @internal Retry status codes that warrant reconnection attempts. */
 const RETRY_STATUS_CODES = new Set([1006, 1012, 1013])
 
 /** @internal Maximum number of reconnection attempts before giving up. */
 const MAX_RETRIES = 3
-const UPDATE_BEHAVIORAL_MODULE_PREFIX = 'update_behavioral'
-const UI_MODULE_COMPAT_LANE = 'ui'
-const LEGACY_UI_MODULE_WARNING_CODE = 'legacy_ui_module_compat'
 
 /**
  * @internal
@@ -172,16 +163,12 @@ const updateAttributes = ({
  */
 export const controller = ({
   trigger,
-  emit,
   root,
-  addBThreads,
   useFeedback,
   disconnectSet,
   useSnapshot,
-  reportSnapshot,
 }: {
   trigger: Trigger
-  emit: Trigger
   root: Document | Element
   addBThreads: AddBThreads
   useFeedback: UseFeedback
@@ -194,17 +181,7 @@ export const controller = ({
   // ─── WebSocket lifecycle ───────────────────────────────────────────
   let socket: WebSocket | undefined
   let retryCount = 0
-  let moduleIndex = 0
   const installedActionTypes = new Set<string>()
-  const registerActions = (actions?: string[]) => {
-    if (!actions) return
-    for (const action of actions) {
-      const normalized = action.trim()
-      if (normalized.length > 0) {
-        installedActionTypes.add(normalized)
-      }
-    }
-  }
 
   const send = (message: BPEvent) => {
     const fallback = () => {
@@ -288,40 +265,6 @@ export const controller = ({
         })
       }
       send({ type: CONTROLLER_TO_AGENT_EVENTS.user_action, detail: { id: ueid(), source, msg: type } })
-    },
-    async [AGENT_TO_CONTROLLER_EVENTS.update_behavioral](detail) {
-      const moduleImports = await import(detail)
-      const { default: behavioralModule } = UpdateBehavioralModuleSchema.parse(moduleImports)
-      const moduleId = `${UPDATE_BEHAVIORAL_MODULE_PREFIX}#${moduleIndex++}`
-
-      if (isUIModule(behavioralModule)) {
-        const { threads, handlers, actions } = UpdateBehavioralResultSchema.parse(
-          behavioralModule({
-            moduleId,
-            emit,
-            addThreads: addBThreads,
-            useSnapshot,
-          }),
-        )
-        threads && addBThreads(threads)
-        handlers && disconnectSet.add(useFeedback(handlers))
-        registerActions(actions)
-        return
-      }
-
-      reportSnapshot({
-        kind: 'module_warning',
-        moduleId,
-        lane: UI_MODULE_COMPAT_LANE,
-        code: LEGACY_UI_MODULE_WARNING_CODE,
-        warning:
-          'Loaded legacy update_behavioral module factory. Migrate to useUIModule for listener-first module policy.',
-      })
-
-      const { threads, handlers, actions } = LegacyUpdateBehavioralResultSchema.parse(behavioralModule(trigger))
-      threads && addBThreads(threads)
-      handlers && disconnectSet.add(useFeedback(handlers))
-      registerActions(actions)
     },
   }
   disconnectSet.add(useFeedback(handlers))

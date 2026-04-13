@@ -1,7 +1,7 @@
 import { behavioral, type DefaultHandlers, type Disconnect, type Trigger } from '../../behavioral.ts'
 import { keyMirror } from '../../utils.ts'
-import { controller } from '../protocol/controller.ts'
 import { canUseDOM } from '../render/can-use-dom.ts'
+import { controller } from './controller.ts'
 import { DelegatedListener, delegates } from './delegated-listener.ts'
 
 /**
@@ -61,7 +61,7 @@ const isPageSwap = (event: Event): event is PageSwapEvent => event.type === 'pag
  */
 export const controlDocument = ({ onPageReveal }: { onPageReveal?: PageRevealFactory } = {}) => {
   if (canUseDOM()) {
-    const { trigger, emit, useFeedback, addBThreads, useSnapshot, reportSnapshot } = behavioral()
+    const { trigger, useFeedback, addBThreads, useSnapshot, reportSnapshot } = behavioral()
 
     const disconnectSet = new Set<Disconnect>()
 
@@ -98,7 +98,6 @@ export const controlDocument = ({ onPageReveal }: { onPageReveal?: PageRevealFac
     controller({
       root: document,
       trigger,
-      emit,
       addBThreads,
       useFeedback,
       disconnectSet,

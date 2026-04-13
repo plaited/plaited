@@ -8,7 +8,6 @@ import {
   RenderMessageSchema,
   SnapshotEventSchema,
   SwapModeSchema,
-  UpdateBehavioralModuleSchema,
   UpdateBehavioralResultSchema,
   UserActionMessageSchema,
 } from '../controller.schemas.ts'
@@ -220,24 +219,6 @@ describe('SnapshotEventSchema', () => {
     expect(SnapshotEventSchema.parse(msg)).toEqual(msg)
   })
 
-  test('accepts snapshot with module_warning kind', () => {
-    const msg = {
-      type: CONTROLLER_TO_AGENT_EVENTS.snapshot,
-      detail: {
-        id: 'ghi789',
-        source: 'document',
-        msg: {
-          kind: 'module_warning' as const,
-          moduleId: 'bootstrap#0',
-          lane: 'bootstrap',
-          code: 'module_install_parse_error',
-          warning: 'invalid module result',
-        },
-      },
-    }
-    expect(SnapshotEventSchema.parse(msg)).toEqual(msg)
-  })
-
   test('rejects detail without id', () => {
     expect(() =>
       SnapshotEventSchema.parse({
@@ -327,20 +308,5 @@ describe('LegacyUpdateBehavioralResultSchema', () => {
       },
     }
     expect(LegacyUpdateBehavioralResultSchema.parse(legacy)).toEqual(legacy)
-  })
-})
-
-describe('UpdateBehavioralModuleSchema', () => {
-  test('accepts module with default export function', () => {
-    const mod = { default: () => ({ threads: {}, handlers: {} }) }
-    expect(UpdateBehavioralModuleSchema.parse(mod)).toEqual(mod)
-  })
-
-  test('rejects module with non-function default', () => {
-    expect(() => UpdateBehavioralModuleSchema.parse({ default: 'not a function' })).toThrow()
-  })
-
-  test('rejects module without default export', () => {
-    expect(() => UpdateBehavioralModuleSchema.parse({})).toThrow()
   })
 })

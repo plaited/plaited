@@ -6,8 +6,10 @@
  * This module provides access to:
  * - **Rendering**: {@link createSSR} - Server-side rendering with per-connection style deduplication
  * - **Styling**: {@link createStyles}, {@link createHostStyles}, {@link createKeyframes}, {@link createTokens}, {@link joinStyles} - CSS-in-JS utilities
- * - **Controller Protocol**: {@link controller} schemas, constants, and message types for server ↔ client communication
- * - **Custom Elements**: {@link controlIsland}, {@link decorateElements} - Custom element lifecycle coordination
+ * - **Page Runtime**: {@link controlDocument} - Document-level controller wiring and WebSocket lifecycle
+ * - **Decorative DSD**: {@link decorateElements} - Declarative Shadow DOM decoration primitives
+ * - **UI Modules**: {@link useUIModule} - Listener-first dynamic client module authoring
+ * - **Wire Contracts**: Controller constants and schemas for server ↔ client protocol envelopes
  *
  * @public
  */
@@ -20,10 +22,7 @@ export * from './ui/css/root-styles.ts'
 export * from './ui/css/styles.ts'
 export * from './ui/css/tokens.ts'
 export * from './ui/dom/control-document.ts'
-export * from './ui/dom/control-island.ts'
+export * from './ui/dom/controller.schemas.ts'
 export * from './ui/dom/decorate-elements.ts'
-export * from './ui/protocol/controller.constants.ts'
-export * from './ui/protocol/controller.schemas.ts'
-export * from './ui/protocol/use-ui-module.ts'
 export * from './ui/render/ssr.ts'
 export type * from './ui/render/template.types.ts'
