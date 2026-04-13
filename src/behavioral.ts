@@ -14,3 +14,5 @@
 export * from './behavioral/behavioral.schemas.ts'
 export * from './behavioral/behavioral.ts'
 export type * from './behavioral/behavioral.types.ts'
+export * from './behavioral/use-extension.ts'
+export * from './behavioral/use-installer.ts'
