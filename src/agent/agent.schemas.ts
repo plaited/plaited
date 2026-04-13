@@ -8,3 +8,35 @@ export const BashDetailSchema = z.object({
 })
 
 export type BashDetail = z.infer<typeof BashDetailSchema>
+
+const CorrelationIdSchema = z.string().min(1).describe('Conversation/group correlation identifier')
+const RequestIdSchema = z
+  .string()
+  .min(1)
+  .describe('Unique one-shot request identifier for exact approval matching within an agent runtime')
+
+/** @public */
+export const ToolBashRequestDetailSchema = z.object({
+  requestId: RequestIdSchema,
+  correlationId: CorrelationIdSchema,
+  bash: BashDetailSchema,
+})
+
+export type ToolBashRequestDetail = z.infer<typeof ToolBashRequestDetailSchema>
+
+/** @public */
+export const ToolBashApprovedDetailSchema = z.object({
+  requestId: RequestIdSchema,
+  correlationId: CorrelationIdSchema.optional(),
+})
+
+export type ToolBashApprovedDetail = z.infer<typeof ToolBashApprovedDetailSchema>
+
+/** @public */
+export const ToolBashDeniedDetailSchema = z.object({
+  requestId: RequestIdSchema,
+  correlationId: CorrelationIdSchema.optional(),
+  reason: z.string().optional(),
+})
+
+export type ToolBashDeniedDetail = z.infer<typeof ToolBashDeniedDetailSchema>
