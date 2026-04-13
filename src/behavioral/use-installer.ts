@@ -9,15 +9,24 @@ import {
 } from './behavioral.constants.ts'
 import { notSchema } from './behavioral.shared.ts'
 import type {
-  AddBThread,
   BPEvent,
   BPListener,
   BSync,
   BThread,
+  ContextMemoryEntry,
+  ContextMemoryResponse,
+  CreateExtensionBlock,
+  CreateExtensionRequest,
+  CreateMemoryRequest,
+  CreateMemorySubscribe,
   DefaultHandlers,
-  ReportSnapshot,
-  Trigger,
-  UseSnapshot,
+  Extension,
+  ExtensionParams,
+  ExtensionRequestEvent,
+  MemoryDisconnectEvent,
+  MemoryRequestEvent,
+  MemorySubscribeEvent,
+  UseInstaller,
 } from './behavioral.types.ts'
 /**
  * Type guard to check if an unknown value conforms to the `BPEvent` structure.
@@ -38,142 +47,22 @@ export const isBPEvent = (data: unknown): data is BPEvent => {
   )
 }
 
-type ExtensionParams = {
-  memory: {
-    has: (key: string) => boolean
-    get: (key: string) => ContextMemoryEntry | undefined
-  }
-  extensions: {
-    has: (key: string) => boolean
-    get: CreateMemoryRequest
-    request: CreateExtensionRequest
-    block: CreateExtensionBlock
-    subscribe: CreateMemorySubscribe
-    subsciribe: CreateMemorySubscribe
-  }
-  bSync: BSync
-  bThread: BThread
-  trigger: Trigger
-  useSnapshot: UseSnapshot
-  DEFAULT_EVENTS: {
-    readonly memory_disconnect: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_disconnect']}`
-    readonly memory_request: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_request']}`
-    readonly memory_response: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_response']}`
-    readonly memory_subscribe: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_subscribe']}`
-    readonly [EXTENSION_REQUEST_EVENT]: `${string}:${typeof EXTENSION_REQUEST_EVENT}`
-  }
-}
-
-type Extension = {
-  (params: ExtensionParams): DefaultHandlers
-  id: string
-  $: typeof RULES_FUNCTION_IDENTIFIER
-}
-
-type UseInstaller = {
-  reportSnapshot: ReportSnapshot
-  trigger: Trigger
-  useSnapshot: UseSnapshot
-  addBThread: AddBThread
-  ttlMs: number
-  maxKeys?: number
-}
-
-type ContextMemoryEntry = {
-  body: unknown
-  expiresAt: number
-  createdAt: number
-}
-
-type ContextMemoryResponse = {
-  id: string
-  body: unknown
-  expiresAt: number
-  createdAt: number
-}
-
-type MemoryRequestEvent = {
-  type: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_request']}`
-  detail: {
-    id: string
-    extension: string
-    event: string
-    purpose?: string
-  }
-}
-
-type MemoryRequestRef = {
-  requestEvent: MemoryRequestEvent
-  transactionListener: BPListener
-  transactionEventType: string
-}
-type CreateMemoryRequest = (params: {
-  extension: string
-  event: string
-  purpose?: string
-  detailSchema: z.ZodType
-}) => MemoryRequestRef
-
-type ExtensionRequestEvent = {
-  type: `${string}:${typeof EXTENSION_REQUEST_EVENT}`
-  detail: {
-    id: string
-    extension: string
-    type: string
-    detail: unknown
-    purpose?: string
-    listener: BPListener
-  }
-}
-
-type ExtensionRequestRef = {
-  requestEvent: ExtensionRequestEvent
-  transactionListener: BPListener
-  transactionEventType: string
-}
-type CreateExtensionRequest = (
-  params: {
-    extension: string
-    event: string
-    purpose?: string
-    detailSchema: z.ZodType
-  } & BPEvent,
-) => ExtensionRequestRef
-
-type MemorySubscribeEvent = {
-  type: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_subscribe']}`
-  detail: {
-    id: string
-    extension: string
-    listener: BPListener
-    purpose?: string
-  }
-}
-
-type MemoryDisconnectEvent = {
-  type: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_disconnect']}__${string}`
-}
-
-type MemorySubscribeRef = {
-  disconnectEvent: MemoryDisconnectEvent
-  transactionEventType: string
-  transactionListener: BPListener
-  subscribeEvent: MemorySubscribeEvent
-}
-
-type CreateMemorySubscribe = (params: {
-  extension: string
-  event: string
-  purpose?: string
-  detailSchema: z.ZodType
-}) => MemorySubscribeRef
-
-type CreateExtensionBlock = (params: { extension: string; event: string; detailSchema: z.ZodType }) => BPListener
-
 const sync: BSync = (syncPoint) =>
   function* () {
     yield syncPoint
   }
+
+const createMemoryEntryDetailSchema = (detailSchema: z.ZodType) =>
+  z.object({
+    expiresAt: z.number().optional(),
+    createdAt: z.number(),
+    body: detailSchema,
+  })
+
+const createMemoryResponseDetailSchema = ({ id, detailSchema }: { id: string; detailSchema: z.ZodType }) =>
+  createMemoryEntryDetailSchema(detailSchema).extend({
+    id: z.literal(id),
+  })
 
 export const useInstaller = ({ reportSnapshot, trigger, useSnapshot, addBThread, ttlMs, maxKeys }: UseInstaller) => {
   const BExtensions = new Set<string>()
@@ -245,6 +134,14 @@ export const useInstaller = ({ reportSnapshot, trigger, useSnapshot, addBThread,
       })
 
       const TRANSACTION_PREFIX = `${extensionId}:${EXTENSION_MEMORY_EVENTS.memory_transaction}`
+      const toExtensionEventType = <TEvent extends string>({
+        extension,
+        event,
+      }: {
+        extension: string
+        event: TEvent
+      }) => `${extension}:${event}` as `${string}:${TEvent}`
+      const createTransactionEventType = (id: string) => `${TRANSACTION_PREFIX}__${id}`
       const DEFAULT_EVENTS: ExtensionParams['DEFAULT_EVENTS'] = {
         memory_disconnect: `${extensionId}:${EXTENSION_MEMORY_EVENTS.memory_disconnect}`,
         memory_request: `${extensionId}:${EXTENSION_MEMORY_EVENTS.memory_request}`,
@@ -255,10 +152,10 @@ export const useInstaller = ({ reportSnapshot, trigger, useSnapshot, addBThread,
 
       const createMemoryRequest: CreateMemoryRequest = ({ extension, purpose, detailSchema, event }) => {
         const id = ueid('mem_')
-        const transactionEventType = `${extensionId}:${EXTENSION_MEMORY_EVENTS.memory_transaction}__${id}`
+        const transactionEventType = createTransactionEventType(id)
 
         const requestEvent: MemoryRequestEvent = {
-          type: `${extension}:${EXTENSION_MEMORY_EVENTS.memory_request}`,
+          type: toExtensionEventType({ extension, event: EXTENSION_MEMORY_EVENTS.memory_request }),
           detail: {
             id,
             extension: extensionId,
@@ -269,21 +166,17 @@ export const useInstaller = ({ reportSnapshot, trigger, useSnapshot, addBThread,
 
         const blockListener: BPListener = {
           type: DEFAULT_EVENTS.memory_response,
-          detailSchema: z.object({
-            id: z.literal(id),
-            expiresAt: z.number().optional(),
-            createdAt: z.number(),
-            body: notSchema(detailSchema),
+          detailSchema: createMemoryResponseDetailSchema({
+            id,
+            detailSchema: notSchema(detailSchema),
           }),
         }
 
         const transactionListener: BPListener = {
           type: DEFAULT_EVENTS.memory_response,
-          detailSchema: z.object({
-            id: z.literal(id),
-            expiresAt: z.number().optional(),
-            createdAt: z.number(),
-            body: detailSchema,
+          detailSchema: createMemoryResponseDetailSchema({
+            id,
+            detailSchema,
           }),
         }
 
@@ -307,19 +200,15 @@ export const useInstaller = ({ reportSnapshot, trigger, useSnapshot, addBThread,
 
       const createExtensionRequest: CreateExtensionRequest = ({ extension, type, purpose, detailSchema, detail }) => {
         const id = ueid('mem_')
-        const transactionEventType = `${extensionId}:${EXTENSION_MEMORY_EVENTS.memory_transaction}__${id}`
+        const transactionEventType = createTransactionEventType(id)
 
         const extensionListener: BPListener = {
-          type: `${extension}:${type}`,
-          detailSchema: z.object({
-            expiresAt: z.number().optional(),
-            createdAt: z.number(),
-            body: detailSchema,
-          }),
+          type: toExtensionEventType({ extension, event: type }),
+          detailSchema: createMemoryEntryDetailSchema(detailSchema),
         }
 
         const requestEvent: ExtensionRequestEvent = {
-          type: `${extension}:${EXTENSION_REQUEST_EVENT}`,
+          type: toExtensionEventType({ extension, event: EXTENSION_REQUEST_EVENT }),
           detail: {
             id,
             extension: extensionId,
@@ -332,11 +221,9 @@ export const useInstaller = ({ reportSnapshot, trigger, useSnapshot, addBThread,
 
         const transactionListener: BPListener = {
           type: DEFAULT_EVENTS.memory_response,
-          detailSchema: z.object({
-            id: z.literal(id),
-            expiresAt: z.number().optional(),
-            createdAt: z.number(),
-            body: detailSchema,
+          detailSchema: createMemoryResponseDetailSchema({
+            id,
+            detailSchema,
           }),
         }
 
@@ -349,29 +236,23 @@ export const useInstaller = ({ reportSnapshot, trigger, useSnapshot, addBThread,
 
       const createMemorySubscriber: CreateMemorySubscribe = ({ extension, event, purpose, detailSchema }) => {
         const id = ueid('mem_')
-        const transactionEventType = `${extensionId}:${EXTENSION_MEMORY_EVENTS.memory_transaction}__${id}`
+        const transactionEventType = createTransactionEventType(id)
 
         const extensionListener: BPListener = {
-          type: `${extension}:${event}`,
-          detailSchema: z.object({
-            expiresAt: z.number().optional(),
-            createdAt: z.number(),
-            body: detailSchema,
-          }),
+          type: toExtensionEventType({ extension, event }),
+          detailSchema: createMemoryEntryDetailSchema(detailSchema),
         }
 
         const transactionListener: BPListener = {
           type: transactionEventType,
-          detailSchema: z.object({
-            id: z.literal(id),
-            expiresAt: z.number().optional(),
-            createdAt: z.number(),
-            body: detailSchema,
+          detailSchema: createMemoryResponseDetailSchema({
+            id,
+            detailSchema,
           }),
         }
 
         const subscribeEvent: MemorySubscribeEvent = {
-          type: `${extension}:${EXTENSION_MEMORY_EVENTS.memory_subscribe}`,
+          type: toExtensionEventType({ extension, event: EXTENSION_MEMORY_EVENTS.memory_subscribe }),
           detail: {
             id,
             extension,
@@ -394,7 +275,7 @@ export const useInstaller = ({ reportSnapshot, trigger, useSnapshot, addBThread,
 
       const createExtensionBlock: CreateExtensionBlock = ({ extension, event, detailSchema }) => {
         return {
-          type: `${extension}:${event}`,
+          type: toExtensionEventType({ extension, event }),
           detailSchema,
           [SCOPE_BYPASS_MARKER]: true,
         } satisfies ScopeBypassListener
@@ -523,7 +404,7 @@ export const useInstaller = ({ reportSnapshot, trigger, useSnapshot, addBThread,
               sync({
                 waitFor: listener,
                 interrupt: {
-                  type: `${extension}:${EXTENSION_MEMORY_EVENTS.memory_disconnect}__${id}`,
+                  type: `${toExtensionEventType({ extension, event: EXTENSION_MEMORY_EVENTS.memory_disconnect })}__${id}`,
                   detailSchema: z.undefined(),
                 },
               }),
@@ -543,7 +424,7 @@ export const useInstaller = ({ reportSnapshot, trigger, useSnapshot, addBThread,
         },
         [DEFAULT_EVENTS.memory_response]({ id, ...detail }: ContextMemoryResponse) {
           trigger({
-            type: `${TRANSACTION_PREFIX}__${id}`,
+            type: createTransactionEventType(id),
             detail,
           })
         },
@@ -561,7 +442,7 @@ export const useInstaller = ({ reportSnapshot, trigger, useSnapshot, addBThread,
             id,
           }
           trigger({
-            type: `${extension}:${EXTENSION_MEMORY_EVENTS.memory_response}`,
+            type: toExtensionEventType({ extension, event: EXTENSION_MEMORY_EVENTS.memory_response }),
             detail,
           })
         },

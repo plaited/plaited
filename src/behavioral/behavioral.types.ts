@@ -2,7 +2,10 @@ import type { ZodType } from 'zod'
 import type {
   EVENT_SOURCES,
   EXPLORE_STRATEGIES,
+  EXTENSION_MEMORY_EVENTS,
+  EXTENSION_REQUEST_EVENT,
   FRONTIER_STATUS,
+  RULES_FUNCTION_IDENTIFIER,
   VERIFICATION_STATUSES,
 } from './behavioral.constants.ts'
 import type { SelectionSnapshot, SnapshotMessage } from './behavioral.schemas.ts'
@@ -71,9 +74,7 @@ export type Idioms = {
  *
  * @see bSync The implementation of this type that creates reusable synchronization steps.
  */
-export type BSync = (arg: Idioms) => {
-  (): Generator<Idioms, void, unknown>
-}
+export type BSync = (arg: Idioms) => () => Generator<Idioms, void, unknown>
 
 /**
  * A factory function that constructs a complete b-thread (`ReturnType<BSync>`) by composing multiple synchronization steps.
@@ -86,7 +87,7 @@ export type BSync = (arg: Idioms) => {
  *
  * @see bThread The implementation of this type that composes multiple synchronization steps into a single b-thread.
  */
-export type BThread = (params: { rules: ReturnType<BSync>[], repeat?: true, label: string}) => void
+export type BThread = (params: { rules: ReturnType<BSync>[]; repeat?: true; label: string }) => void
 
 /**
  * @internal
@@ -320,6 +321,146 @@ export type AddBThread = (label: string, thread: () => Generator<Idioms, void, u
  * @see {@link PlaitedTrigger} for enhanced trigger
  */
 export type Trigger = <T extends BPEvent>(args: T) => void
+
+export type ContextMemoryEntry = {
+  body: unknown
+  expiresAt: number
+  createdAt: number
+}
+
+export type ContextMemoryResponse = {
+  id: string
+  body: unknown
+  expiresAt: number
+  createdAt: number
+}
+
+export type MemoryRequestEvent = {
+  type: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_request']}`
+  detail: {
+    id: string
+    extension: string
+    event: string
+    purpose?: string
+  }
+}
+
+export type MemoryRequestRef = {
+  requestEvent: MemoryRequestEvent
+  transactionListener: BPListener
+  transactionEventType: string
+}
+
+export type CreateMemoryRequest = (params: {
+  extension: string
+  event: string
+  purpose?: string
+  detailSchema: ZodType<unknown>
+}) => MemoryRequestRef
+
+export type ExtensionRequestEvent = {
+  type: `${string}:${typeof EXTENSION_REQUEST_EVENT}`
+  detail: {
+    id: string
+    extension: string
+    type: string
+    detail: unknown
+    purpose?: string
+    listener: BPListener
+  }
+}
+
+export type ExtensionRequestRef = {
+  requestEvent: ExtensionRequestEvent
+  transactionListener: BPListener
+  transactionEventType: string
+}
+
+export type CreateExtensionRequest = (
+  params: {
+    extension: string
+    event: string
+    purpose?: string
+    detailSchema: ZodType<unknown>
+  } & BPEvent,
+) => ExtensionRequestRef
+
+export type MemorySubscribeEvent = {
+  type: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_subscribe']}`
+  detail: {
+    id: string
+    extension: string
+    listener: BPListener
+    purpose?: string
+  }
+}
+
+export type MemoryDisconnectEvent = {
+  type: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_disconnect']}__${string}`
+}
+
+export type MemorySubscribeRef = {
+  disconnectEvent: MemoryDisconnectEvent
+  transactionEventType: string
+  transactionListener: BPListener
+  subscribeEvent: MemorySubscribeEvent
+}
+
+export type CreateMemorySubscribe = (params: {
+  extension: string
+  event: string
+  purpose?: string
+  detailSchema: ZodType<unknown>
+}) => MemorySubscribeRef
+
+export type CreateExtensionBlock = (params: {
+  extension: string
+  event: string
+  detailSchema: ZodType<unknown>
+}) => BPListener
+
+export type ExtensionDefaultEvents = {
+  readonly memory_disconnect: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_disconnect']}`
+  readonly memory_request: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_request']}`
+  readonly memory_response: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_response']}`
+  readonly memory_subscribe: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_subscribe']}`
+  readonly [EXTENSION_REQUEST_EVENT]: `${string}:${typeof EXTENSION_REQUEST_EVENT}`
+}
+
+export type ExtensionParams = {
+  memory: {
+    has: (key: string) => boolean
+    get: (key: string) => ContextMemoryEntry | undefined
+  }
+  extensions: {
+    has: (key: string) => boolean
+    get: CreateMemoryRequest
+    request: CreateExtensionRequest
+    block: CreateExtensionBlock
+    subscribe: CreateMemorySubscribe
+    subsciribe: CreateMemorySubscribe
+  }
+  bSync: BSync
+  bThread: BThread
+  trigger: Trigger
+  useSnapshot: UseSnapshot
+  DEFAULT_EVENTS: ExtensionDefaultEvents
+}
+
+export type Extension = {
+  (params: ExtensionParams): DefaultHandlers
+  id: string
+  $: typeof RULES_FUNCTION_IDENTIFIER
+}
+
+export type UseInstaller = {
+  reportSnapshot: ReportSnapshot
+  trigger: Trigger
+  useSnapshot: UseSnapshot
+  addBThread: AddBThread
+  ttlMs: number
+  maxKeys?: number
+}
 
 /**
  * Factory function that creates and initializes a new behavioral program instance.

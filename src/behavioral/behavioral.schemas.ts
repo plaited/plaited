@@ -2,7 +2,7 @@ import * as z from 'zod'
 
 import { SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
 import type { BPEvent } from './behavioral.types.ts'
-import { isBPEvent } from './behavioral.utils.ts'
+import { isBPEvent } from './use-installer.ts'
 
 /**
  * Schema for validating BPEvent objects.
