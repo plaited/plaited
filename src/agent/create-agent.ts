@@ -13,7 +13,7 @@ import type { CreateAgentOptions } from './agent.types.ts'
  * @remarks
  * The core owns only:
  * - behavioral engine setup
- * - host trigger + module emit ingress surfaces
+ * - host trigger ingress
  * - heartbeat pulse
  * - disconnect cleanup
  * - installation of executable extensions
