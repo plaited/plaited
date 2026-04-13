@@ -126,6 +126,9 @@ export const bSync: BSync = (syncPoint) =>
     yield syncPoint
   }
 
+export const isBehavioralRule = (value: unknown): value is ReturnType<BSync> =>
+  isTypeOf<(...args: unknown[]) => unknown>(value, 'function')
+
 export const bThread: BThread = (rules, repeat) => {
   const shouldRepeat = repeat === true
   return Object.assign(
