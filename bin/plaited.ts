@@ -11,7 +11,6 @@
  * @internal
  */
 
-import { bootstrapCli } from '../src/bootstrap.ts'
 import {
   autoresearchCli,
   autoresearchOrchestratorCli,
@@ -27,7 +26,6 @@ import {
 const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   autoresearch: autoresearchCli,
   'autoresearch-orchestrator': autoresearchOrchestratorCli,
-  bootstrap: bootstrapCli,
   'compare-trials': compareTrialsCli,
   eval: evalCli,
   'program-runner': programRunnerCli,
@@ -63,7 +61,7 @@ export const runCli = async (argv: string[]): Promise<void> => {
        plaited --schema               # List all commands
 
 Commands:
-    autoresearch, autoresearch-orchestrator, bootstrap, compare-trials, eval, program-runner`)
+    autoresearch, autoresearch-orchestrator, compare-trials, eval, program-runner`)
     process.exit(command ? 0 : 1)
   }
 

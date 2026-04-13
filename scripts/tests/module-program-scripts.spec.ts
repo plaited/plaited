@@ -369,7 +369,7 @@ describe('promotion helpers', () => {
     const worktreePath = await mkdtemp('/tmp/module-program-promotion-worktree-')
     await Bun.write(join(artifactDir, 'worker.progress.log'), 'progress line\n')
     await Bun.write(join(artifactDir, 'targeted-tests.stderr.log'), 'tests stderr line\n')
-    await Bun.write(join(artifactDir, 'diff-summary.txt'), 'M src/modules/server-module/server-module.ts\n')
+    await Bun.write(join(artifactDir, 'diff-summary.txt'), 'M src/modules/server/server-module.ts\n')
 
     const prompt = await buildPromotionPrompt({
       judge: {
@@ -391,7 +391,7 @@ describe('promotion helpers', () => {
             artifactDir,
             status: 'succeeded',
             worktreePath,
-            changedPaths: ['src/modules/server-module/server-module.ts'],
+            changedPaths: ['src/modules/server/server-module.ts'],
           },
         ],
       },
@@ -415,35 +415,23 @@ describe('createValidationPlan', () => {
 
     expect(plan.reason).toContain("targeted tests mapped for lane 'server-module'")
     expect(plan.commands).toContainEqual(['bun', '--bun', 'tsc', '--noEmit'])
-    expect(plan.commands).toContainEqual([
-      'bun',
-      'test',
-      'src/modules/server-module/tests/server-module.spec.ts',
-      'src/modules/server-module/tests/server.spec.ts',
-    ])
+    expect(plan.commands).toContainEqual(['bun', 'test', 'src/modules/server/tests/server-module.spec.ts'])
   })
 
   test('infers module-local tests from changed paths', async () => {
     const plan = await createValidationPlan({
-      changedPaths: ['src/modules/server-module/server-module.ts'],
+      changedPaths: ['src/modules/server/server-module.ts'],
       programPath: 'dev-research/plan-modules/program.md',
     })
 
     expect(plan.reason).toContain("targeted tests mapped and inferred for lane 'plan-modules'")
-    expect(plan.inferredTestFiles).toContain('src/modules/server-module/tests/server-module.spec.ts')
-    expect(plan.inferredTestFiles).toContain('src/modules/server-module/tests/server-module.utils.spec.ts')
-    expect(plan.commands).toContainEqual([
-      'bun',
-      'test',
-      'src/modules/server-module/tests/server-module.spec.ts',
-      'src/modules/server-module/tests/server-module.utils.spec.ts',
-      'src/modules/server-module/tests/server.spec.ts',
-    ])
+    expect(plan.inferredTestFiles).toContain('src/modules/server/tests/server-module.spec.ts')
+    expect(plan.commands).toContainEqual(['bun', 'test', 'src/modules/server/tests/server-module.spec.ts'])
   })
 
   test('falls back to typecheck-only when no tests can be inferred', async () => {
     const plan = await createValidationPlan({
-      changedPaths: ['src/modules/default-module-bundle/default-module-bundle.ts'],
+      changedPaths: ['src/agent/agent.ts'],
       programPath: 'dev-research/plan-modules/program.md',
     })
 
@@ -460,8 +448,7 @@ describe('createValidationPlan', () => {
     expect(plan.commands).toContainEqual([
       'bun',
       'test',
-      'src/agent/tests/create-agent.spec.ts',
-      'src/bootstrap/tests/bootstrap.spec.ts',
+      'src/agent/tests/create-agent-core.spec.ts',
       'src/cli/program-runner/tests/program-runner.spec.ts',
     ])
   })

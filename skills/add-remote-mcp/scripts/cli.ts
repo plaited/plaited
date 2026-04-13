@@ -59,8 +59,8 @@ type SessionSummary = {
   tools: unknown
 }
 
-export { AddRemoteMcpInputSchema, AddRemoteMcpOutputSchema, addRemoteMcpCli, runAddRemoteMcp }
 export type { AddRemoteMcpInput, AddRemoteMcpOutput, SessionSummary }
+export { AddRemoteMcpInputSchema, AddRemoteMcpOutputSchema, addRemoteMcpCli, runAddRemoteMcp }
 
 const getRemoteOptions = (input: AddRemoteMcpInput) =>
   input.timeoutMs === undefined

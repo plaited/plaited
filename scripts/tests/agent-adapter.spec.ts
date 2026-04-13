@@ -58,7 +58,7 @@ describe('agent adapter helpers', () => {
         target: {
           kind: 'module',
           id: 'server-module',
-          writableRoots: ['src/modules/server-module/'],
+          writableRoots: ['src/modules/server/'],
         },
         initializedAt: new Date().toISOString(),
         lastAcceptedIteration: 1,
@@ -68,7 +68,7 @@ describe('agent adapter helpers', () => {
             pass: true,
             summary: 'ok',
             score: 1,
-            changedPaths: ['src/modules/server-module/server-module.ts'],
+            changedPaths: ['src/modules/server/server-module.ts'],
             artifactDir: '/tmp/lane/experiments/iteration-001',
           },
         ],
@@ -76,7 +76,7 @@ describe('agent adapter helpers', () => {
       programMarkdown: '# Program\n\nDo work.\n',
     })
 
-    expect(prompt).toContain('Only edit files under: src/modules/server-module/')
+    expect(prompt).toContain('Only edit files under: src/modules/server/')
     expect(prompt).toContain('Last accepted iteration: 1')
     expect(prompt).toContain('iteration 1: pass=true score=1 summary=ok')
     expect(prompt).toContain('# Program')
@@ -126,7 +126,7 @@ describe('agent adapter helpers', () => {
           pass: true,
           summary: 'ok',
           score: 1,
-          changedPaths: ['src/modules/server-module/server-module.ts'],
+          changedPaths: ['src/modules/server/server-module.ts'],
           artifactDir: '/tmp/lane/experiments/iteration-001',
         },
         laneState,

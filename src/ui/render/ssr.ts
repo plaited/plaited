@@ -57,7 +57,7 @@ const renderTemplates = (sent: Set<string>, templates: TemplateObject[]) => {
   const bodyRegex = /<body\b[^>]*>/i
   const bodyMatch = bodyRegex.exec(str)
   const bodyIndex = bodyMatch ? bodyMatch.index + bodyMatch[0].length : 0
-  const index = headIndex !== -1 ? headIndex : bodyIndex
+  const index = headIndex === -1 ? bodyIndex : headIndex
 
   return str.slice(0, index) + style + str.slice(index)
 }

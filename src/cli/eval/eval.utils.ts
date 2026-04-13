@@ -9,7 +9,6 @@
  */
 
 import { mkdir, rm } from 'node:fs/promises'
-import type { TrajectoryStep } from '../../agent.ts'
 import type {
   Adapter,
   CaptureEvidence,
@@ -18,6 +17,7 @@ import type {
   MetaVerification,
   PromptCase,
   TrajectoryRichness,
+  TrajectoryStep,
   TrialResult,
 } from './eval.schemas.ts'
 import { AdapterResultSchema, GraderResultSchema, MetaVerificationSchema, PromptCaseSchema } from './eval.schemas.ts'

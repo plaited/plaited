@@ -103,24 +103,20 @@ const createValidationPlan = async ({
   const commands: string[][] = [['bun', '--bun', 'tsc', '--noEmit']]
 
   const laneTests: Partial<Record<string, string[]>> = {
-    'server-module': [
-      'src/modules/server-module/tests/server-module.spec.ts',
-      'src/modules/server-module/tests/server.spec.ts',
-    ],
-    'agent-bootstrap': ['src/bootstrap/tests/bootstrap.spec.ts'],
-    'skill-modules': ['src/modules/skills-module/tests/skills-module.utils.spec.ts'],
-    'mcp-modules': ['src/modules/mcp-module/tests/mcp.manifest.spec.ts'],
+    'server-module': ['src/modules/server/tests/server-module.spec.ts'],
+    'agent-bootstrap': ['src/cli/program-runner/tests/program-runner.spec.ts'],
+    'skill-modules': ['scripts/tests/module-program-scripts.spec.ts'],
+    'mcp-modules': ['src/mcp/tests/mcp.manifest.spec.ts'],
     'a2a-modules': [
-      'src/modules/a2a-module/tests/a2a.schemas.spec.ts',
-      'src/modules/a2a-module/tests/a2a.utils.spec.ts',
-      'src/modules/a2a-module/tests/peers.spec.ts',
+      'src/a2a/tests/a2a.schemas.spec.ts',
+      'src/a2a/tests/a2a.utils.spec.ts',
+      'src/a2a/tests/peers.spec.ts',
     ],
     'autoresearch-modules': ['src/cli/autoresearch/tests/autoresearch.spec.ts'],
     'fanout-modules': ['src/cli/program-runner/tests/program-runner.spec.ts'],
     'verification-modules': ['src/cli/eval/tests/eval.spec.ts'],
     'default-modules': [
-      'src/agent/tests/create-agent.spec.ts',
-      'src/bootstrap/tests/bootstrap.spec.ts',
+      'src/agent/tests/create-agent-core.spec.ts',
       'src/cli/program-runner/tests/program-runner.spec.ts',
     ],
   }

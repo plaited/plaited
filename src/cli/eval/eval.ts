@@ -182,7 +182,7 @@ export const runTrial = async (config: TrialConfig): Promise<TrialResult[]> => {
 
         entries.push(entry)
         logProgress(
-          `  Trial ${trialNum}/${k}: ${entry.pass !== undefined ? (entry.pass ? 'PASS' : 'FAIL') : '?'}`,
+          `  Trial ${trialNum}/${k}: ${entry.pass === undefined ? '?' : entry.pass ? 'PASS' : 'FAIL'}`,
           progress,
         )
       } catch (error) {

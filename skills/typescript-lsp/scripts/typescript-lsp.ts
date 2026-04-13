@@ -420,7 +420,7 @@ type LspOutput = {
   results: LspResult[]
 }
 
-export type { LspOperation, LspInput, LspResult, LspOutput }
+export type { LspInput, LspOperation, LspOutput, LspResult }
 
 // ============================================================================
 // Schemas
@@ -485,7 +485,7 @@ const LspOutputSchema = z.object({
     .describe('Results array matching input operations order — each result includes operation-specific data fields'),
 })
 
-export { LspOperationSchema, LspInputSchema, LspOutputSchema }
+export { LspInputSchema, LspOperationSchema, LspOutputSchema }
 
 // ============================================================================
 // Constants
@@ -867,7 +867,7 @@ const flattenSymbols = (symbols: SymbolInfo[], prefix = ''): Array<{ name: strin
   return result
 }
 
-export { resolveFilePath, getLanguageId, flattenSymbols }
+export { flattenSymbols, getLanguageId, resolveFilePath }
 
 // ============================================================================
 // Operation Dispatch
@@ -972,8 +972,15 @@ const executeOperation = async (
   }
 }
 
-export { getLoader }
-export { isTestFile, resolveWorkspaceFiles, scanFile, getPublicExports, getExportConsumers, getCandidateUnusedExports }
+export {
+  getCandidateUnusedExports,
+  getExportConsumers,
+  getLoader,
+  getPublicExports,
+  isTestFile,
+  resolveWorkspaceFiles,
+  scanFile,
+}
 
 // ============================================================================
 // Library API

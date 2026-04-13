@@ -5,13 +5,33 @@
  * Schema-first approach — Zod schemas are the single source of truth,
  * TypeScript types derived via `z.infer<>`.
  *
- * `TrajectoryStepSchema` imported from `src/agent/agent.schemas.ts` (canonical source).
+ * `TrajectoryStepSchema` is defined locally for eval pipeline compatibility.
  *
  * @packageDocumentation
  */
 
 import * as z from 'zod'
-import { TrajectoryStepSchema } from '../../agent.ts'
+
+/**
+ * Minimal trajectory step schema used by eval tooling.
+ *
+ * @remarks
+ * The eval pipeline accepts adapter-defined trajectory rows and only depends on
+ * a small common surface (`type`, optional `status`, optional `timestamp`).
+ * Additional provider-specific fields are preserved via passthrough.
+ *
+ * @public
+ */
+export const TrajectoryStepSchema = z
+  .object({
+    type: z.string(),
+    status: z.string().optional(),
+    timestamp: z.number().optional(),
+  })
+  .passthrough()
+
+/** Trajectory step type */
+export type TrajectoryStep = z.infer<typeof TrajectoryStepSchema>
 
 // ============================================================================
 // Prompt Case

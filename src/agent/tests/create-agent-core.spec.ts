@@ -6,6 +6,7 @@ import { createAgent } from '../create-agent.ts'
 import { createToolBashRequestEvent } from '../tool-bash-request.ts'
 
 const TOOL_BASH_RESULTS_KEY = '__plaitedAgentCoreToolBashResults'
+const TOOL_BASH_CAPTURE_EVENT_TYPE = 'agent_core_tool_bash_result_fixture:tool_bash_result_seen'
 const MAX_TOOL_BASH_OUTPUT_BYTES = 64 * 1024
 
 type SpawnCall = { cmd: string[]; cwd?: string }
@@ -176,6 +177,8 @@ describe('createAgent core extension', () => {
           },
         })
         await Bun.sleep(10)
+        trigger({ type: TOOL_BASH_CAPTURE_EVENT_TYPE })
+        await Bun.sleep(0)
 
         expect(spawnCalls).toHaveLength(1)
         expect(spawnCalls[0]).toEqual({
@@ -237,6 +240,8 @@ describe('createAgent core extension', () => {
           },
         })
         await Bun.sleep(10)
+        trigger({ type: TOOL_BASH_CAPTURE_EVENT_TYPE })
+        await Bun.sleep(0)
 
         expect(readToolBashResults()).toEqual([
           {
@@ -295,6 +300,8 @@ describe('createAgent core extension', () => {
           },
         })
         await Bun.sleep(10)
+        trigger({ type: TOOL_BASH_CAPTURE_EVENT_TYPE })
+        await Bun.sleep(0)
 
         const results = readToolBashResults()
         expect(results).toHaveLength(1)
@@ -352,6 +359,8 @@ describe('createAgent core extension', () => {
           },
         })
         await Bun.sleep(10)
+        trigger({ type: TOOL_BASH_CAPTURE_EVENT_TYPE })
+        await Bun.sleep(0)
 
         expect(spawnCalls).toHaveLength(1)
         expect(spawnCalls[0]).toEqual({

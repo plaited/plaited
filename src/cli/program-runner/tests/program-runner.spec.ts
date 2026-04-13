@@ -126,8 +126,8 @@ Test fanout.
 
 ## Writable Roots
 
-- [bootstrap](../../src/bootstrap/bootstrap.ts)
-- [eval](../../src/eval/)
+- [server-module](../../src/modules/server/server-module.ts)
+- [eval](../../src/cli/eval/)
 `,
     )
 
@@ -144,7 +144,9 @@ Test fanout.
 
       expect(runResult.attempts).toHaveLength(2)
       expect(runResult.attempts.every((attempt) => attempt.status === 'succeeded')).toBe(true)
-      expect(runResult.allowedPaths).toEqual(['src/bootstrap/bootstrap.ts', 'src/eval/'])
+      expect([...runResult.allowedPaths].sort()).toEqual(
+        ['src/modules/server/server-module.ts', 'src/cli/eval/'].sort(),
+      )
       expect(await Bun.file(join(runResult.runDir, 'run.json')).exists()).toBe(true)
       expect(await Bun.file(join(runResult.attempts[0]!.artifactDir, 'status.json')).exists()).toBe(true)
       expect(await Bun.file(join(runResult.attempts[0]!.worktreePath, 'validated.txt')).exists()).toBe(true)
