@@ -12,18 +12,80 @@ import {
 import * as modules from '../modules.ts'
 import { AGENT_CORE, AGENT_CORE_EVENTS } from './agent.constants.ts'
 import {
-  type BashDetail,
-  BashDetailSchema,
   type ToolBashApprovedDetail,
   ToolBashApprovedDetailSchema,
   type ToolBashDeniedDetail,
   ToolBashDeniedDetailSchema,
   type ToolBashRequestDetail,
   ToolBashRequestDetailSchema,
+  type ToolBashResultDetail,
+  ToolBashResultDetailSchema,
 } from './agent.schemas.ts'
 import type { CreateAgentOptions } from './agent.types.ts'
 
 const MAX_CONSUMED_TOOL_BASH_REQUEST_IDS = 10_000
+const MAX_TOOL_BASH_OUTPUT_BYTES = 64 * 1024
+
+type BoundedStreamReadResult = {
+  text: string
+  truncated: boolean
+}
+
+const readStreamToBoundedText = async (
+  stream: ReadableStream<Uint8Array> | null | undefined,
+): Promise<BoundedStreamReadResult> => {
+  if (!stream) {
+    return { text: '', truncated: false }
+  }
+
+  const reader = stream.getReader()
+  const chunks: Uint8Array[] = []
+  const textDecoder = new TextDecoder()
+  let totalBytes = 0
+  let truncated = false
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) {
+        break
+      }
+      if (!value || value.byteLength === 0) {
+        continue
+      }
+
+      const remainingBytes = MAX_TOOL_BASH_OUTPUT_BYTES - totalBytes
+      if (remainingBytes <= 0) {
+        truncated = true
+        continue
+      }
+
+      if (value.byteLength <= remainingBytes) {
+        chunks.push(value)
+        totalBytes += value.byteLength
+        continue
+      }
+
+      chunks.push(value.subarray(0, remainingBytes))
+      totalBytes += remainingBytes
+      truncated = true
+    }
+  } finally {
+    reader.releaseLock()
+  }
+
+  const output = new Uint8Array(totalBytes)
+  let offset = 0
+  for (const chunk of chunks) {
+    output.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+
+  return {
+    text: textDecoder.decode(output),
+    truncated,
+  }
+}
 
 /**
  * Creates the minimal agent core around the behavioral engine.
@@ -77,9 +139,10 @@ export const createAgent = async ({ maxKeys, ttlMs, workspace }: CreateAgentOpti
       label: 'onBash',
       rules: [
         bSync({
+          // Internal execution event only. Extensions should emit tool_bash_request.
           block: {
             type: AGENT_CORE_EVENTS.bash,
-            detailSchema: notSchema(BashDetailSchema),
+            detailSchema: notSchema(ToolBashRequestDetailSchema),
           },
         }),
       ],
@@ -116,6 +179,18 @@ export const createAgent = async ({ maxKeys, ttlMs, workspace }: CreateAgentOpti
           block: {
             type: AGENT_CORE_EVENTS.tool_bash_denied,
             detailSchema: notSchema(ToolBashDeniedDetailSchema),
+          },
+        }),
+      ],
+      repeat: true,
+    })
+    bThread({
+      label: 'onToolBashResult',
+      rules: [
+        bSync({
+          block: {
+            type: AGENT_CORE_EVENTS.tool_bash_result,
+            detailSchema: notSchema(ToolBashResultDetailSchema),
           },
         }),
       ],
@@ -180,7 +255,7 @@ export const createAgent = async ({ maxKeys, ttlMs, workspace }: CreateAgentOpti
             bSync({
               request: {
                 type: AGENT_CORE_EVENTS.bash,
-                detail: detail.bash,
+                detail,
               },
             }),
           ],
@@ -200,12 +275,47 @@ export const createAgent = async ({ maxKeys, ttlMs, workspace }: CreateAgentOpti
         pendingToolBashRequestIds.delete(detail.requestId)
         addConsumedToolBashRequestId(detail.requestId)
       },
-      async [AGENT_CORE_EVENTS.bash](detail: BashDetail) {
-        Bun.spawn(['bun', resolveWorkspacePath(detail.path), ...detail.args], {
-          cwd: workspaceRoot,
-          ...(detail.timeout !== undefined && { signal: AbortSignal.timeout(detail.timeout) }),
-          stdout: 'pipe',
-          stderr: 'pipe',
+      // Internal execution event only. External extension callers should use tool_bash_request.
+      async [AGENT_CORE_EVENTS.bash](detail: ToolBashRequestDetail) {
+        let result: ToolBashResultDetail
+
+        try {
+          const process = Bun.spawn(['bun', resolveWorkspacePath(detail.bash.path), ...detail.bash.args], {
+            cwd: workspaceRoot,
+            ...(detail.bash.timeout !== undefined && { signal: AbortSignal.timeout(detail.bash.timeout) }),
+            stdout: 'pipe',
+            stderr: 'pipe',
+          })
+
+          const [exitCode, stdoutResult, stderrResult] = await Promise.all([
+            process.exited,
+            readStreamToBoundedText(process.stdout),
+            readStreamToBoundedText(process.stderr),
+          ])
+
+          result = ToolBashResultDetailSchema.parse({
+            requestId: detail.requestId,
+            correlationId: detail.correlationId,
+            exitCode,
+            stdout: stdoutResult.text,
+            stderr: stderrResult.text,
+            ...(stdoutResult.truncated && { stdoutTruncated: true }),
+            ...(stderrResult.truncated && { stderrTruncated: true }),
+          })
+        } catch (error) {
+          result = ToolBashResultDetailSchema.parse({
+            requestId: detail.requestId,
+            correlationId: detail.correlationId,
+            exitCode: null,
+            stdout: '',
+            stderr: '',
+            error: error instanceof Error ? error.message : String(error),
+          })
+        }
+
+        trigger({
+          type: `${AGENT_CORE}:${AGENT_CORE_EVENTS.tool_bash_result}`,
+          detail: result,
         })
       },
     }

@@ -40,3 +40,17 @@ export const ToolBashDeniedDetailSchema = z.object({
 })
 
 export type ToolBashDeniedDetail = z.infer<typeof ToolBashDeniedDetailSchema>
+
+/** @public */
+export const ToolBashResultDetailSchema = z.object({
+  requestId: RequestIdSchema,
+  correlationId: CorrelationIdSchema,
+  exitCode: z.number().int().nullable(),
+  stdout: z.string(),
+  stderr: z.string(),
+  stdoutTruncated: z.boolean().optional(),
+  stderrTruncated: z.boolean().optional(),
+  error: z.string().optional(),
+})
+
+export type ToolBashResultDetail = z.infer<typeof ToolBashResultDetailSchema>

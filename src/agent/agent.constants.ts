@@ -15,6 +15,7 @@ export const AGENT_CORE_EVENTS = keyMirror(
   'tool_bash_approved',
   'tool_bash_denied',
   'tool_bash_request',
+  'tool_bash_result',
   'update_modules',
 )
 

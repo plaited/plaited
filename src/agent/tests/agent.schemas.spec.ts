@@ -5,6 +5,7 @@ import {
   ToolBashApprovedDetailSchema,
   ToolBashDeniedDetailSchema,
   ToolBashRequestDetailSchema,
+  ToolBashResultDetailSchema,
 } from '../agent.schemas.ts'
 
 describe('BashDetailSchema', () => {
@@ -112,5 +113,53 @@ describe('ToolBashDeniedDetailSchema', () => {
       correlationId: 'corr-3',
       reason: 'policy_denied',
     })
+  })
+})
+
+describe('ToolBashResultDetailSchema', () => {
+  test('accepts complete result payload', () => {
+    const result = ToolBashResultDetailSchema.parse({
+      requestId: 'req-4',
+      correlationId: 'corr-4',
+      exitCode: 0,
+      stdout: 'ok',
+      stderr: 'warn',
+    })
+
+    expect(result).toEqual({
+      requestId: 'req-4',
+      correlationId: 'corr-4',
+      exitCode: 0,
+      stdout: 'ok',
+      stderr: 'warn',
+    })
+  })
+
+  test('accepts nullable exitCode with error', () => {
+    const result = ToolBashResultDetailSchema.parse({
+      requestId: 'req-5',
+      correlationId: 'corr-5',
+      exitCode: null,
+      stdout: '',
+      stderr: '',
+      stdoutTruncated: true,
+      error: 'spawn failed',
+    })
+
+    expect(result.error).toBe('spawn failed')
+    expect(result.exitCode).toBeNull()
+    expect(result.stdoutTruncated).toBe(true)
+  })
+
+  test('rejects non-integer exitCode values', () => {
+    expect(() =>
+      ToolBashResultDetailSchema.parse({
+        requestId: 'req-6',
+        correlationId: 'corr-6',
+        exitCode: 1.5,
+        stdout: '',
+        stderr: '',
+      }),
+    ).toThrow()
   })
 })
