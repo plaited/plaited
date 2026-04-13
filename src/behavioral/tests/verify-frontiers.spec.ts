@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'bun:test'
-import { bSync, bThread } from 'plaited/behavioral'
 import * as z from 'zod'
 import { exploreFrontiers, verifyFrontiers } from '../behavioral.frontier.ts'
+import { bSync, bThread } from '../behavioral.shared.ts'
 
 const onType = (type: string) => ({
   type,
-  sourceSchema: z.enum(['trigger', 'request', 'emit']),
+  sourceSchema: z.enum(['trigger', 'request']),
   detailSchema: z.unknown(),
 })
 

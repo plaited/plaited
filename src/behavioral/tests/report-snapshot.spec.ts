@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { behavioral, type SnapshotMessage } from 'plaited/behavioral'
-import { bSync, bThread } from '../use-installer.ts'
+import { bSync, bThread } from '../behavioral.shared.ts'
 import { onType } from './helpers.ts'
 
 describe('reportSnapshot', () => {
@@ -13,32 +13,26 @@ describe('reportSnapshot', () => {
     })
 
     reportSnapshot({
-      kind: 'module_warning',
-      moduleId: 'bootstrap#0',
-      lane: 'bootstrap',
-      code: 'duplicate_module_id',
-      warning: 'duplicate module id detected',
+      kind: 'extension_error',
+      id: 'bootstrap#0',
+      error: 'duplicate module id detected',
     })
 
     expect(seen).toEqual([
       {
-        kind: 'module_warning',
-        moduleId: 'bootstrap#0',
-        lane: 'bootstrap',
-        code: 'duplicate_module_id',
-        warning: 'duplicate module id detected',
+        kind: 'extension_error',
+        id: 'bootstrap#0',
+        error: 'duplicate module id detected',
       },
     ])
   })
 
   test('does not alter event selection order', () => {
     const events: string[] = []
-    const { addBThreads, trigger, useFeedback, reportSnapshot } = behavioral()
+    const { addBThread, trigger, useFeedback, reportSnapshot } = behavioral()
 
-    addBThreads({
-      producer: bThread([bSync({ request: { type: 'task' } })]),
-      consumer: bThread([bSync({ waitFor: onType('task') }), bSync({ request: { type: 'ack' } })]),
-    })
+    addBThread('producer', bThread([bSync({ request: { type: 'task' } })]))
+    addBThread('consumer', bThread([bSync({ waitFor: onType('task') }), bSync({ request: { type: 'ack' } })]))
 
     useFeedback({
       task() {
@@ -50,9 +44,9 @@ describe('reportSnapshot', () => {
     })
 
     reportSnapshot({
-      kind: 'module_warning',
-      moduleId: 'bootstrap#0',
-      warning: 'diagnostic only',
+      kind: 'extension_error',
+      id: 'bootstrap#0',
+      error: 'diagnostic only',
     })
     trigger({ type: 'kickoff' })
 

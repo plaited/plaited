@@ -7,12 +7,11 @@ import {
   RULES_FUNCTION_IDENTIFIER,
   SNAPSHOT_MESSAGE_KINDS,
 } from './behavioral.constants.ts'
-import { notSchema } from './behavioral.shared.ts'
+import { createMemoryEntryDetailSchema, createMemoryResponseDetailSchema } from './behavioral.schemas.ts'
+import { bSync as _bsync, bThread as _bThread, notSchema } from './behavioral.shared.ts'
 import type {
-  BPEvent,
   BPListener,
   BSync,
-  BThread,
   ContextMemoryEntry,
   ContextMemoryResponse,
   CreateExtensionBlock,
@@ -28,41 +27,6 @@ import type {
   MemorySubscribeEvent,
   UseInstaller,
 } from './behavioral.types.ts'
-/**
- * Type guard to check if an unknown value conforms to the `BPEvent` structure.
- * Verifies if the value is an object with a `type` property that is a string.
- * This is useful for runtime validation of events, especially when receiving data
- * from external sources or when working with dynamically typed values.
- *
- * @param data - Value to check against the `BPEvent` structure.
- * @returns `true` if the value is a valid `BPEvent`, `false` otherwise.
- *
- * @see {@link BPEvent} for the structure being validated
- */
-export const isBPEvent = (data: unknown): data is BPEvent => {
-  return (
-    isTypeOf<{ [key: string]: unknown }>(data, 'object') &&
-    Object.hasOwn(data, 'type') &&
-    isTypeOf<string>(data.type, 'string')
-  )
-}
-
-const sync: BSync = (syncPoint) =>
-  function* () {
-    yield syncPoint
-  }
-
-const createMemoryEntryDetailSchema = (detailSchema: z.ZodType) =>
-  z.object({
-    expiresAt: z.number().optional(),
-    createdAt: z.number(),
-    body: detailSchema,
-  })
-
-const createMemoryResponseDetailSchema = ({ id, detailSchema }: { id: string; detailSchema: z.ZodType }) =>
-  createMemoryEntryDetailSchema(detailSchema).extend({
-    id: z.literal(id),
-  })
 
 export const useInstaller = ({ reportSnapshot, trigger, useSnapshot, addBThread, ttlMs, maxKeys }: UseInstaller) => {
   const BExtensions = new Set<string>()
@@ -183,7 +147,7 @@ export const useInstaller = ({ reportSnapshot, trigger, useSnapshot, addBThread,
         bThread({
           label: transactionEventType,
           rules: [
-            sync({
+            _bsync({
               block: blockListener,
               interrupt: transactionListener,
             }),
@@ -295,25 +259,8 @@ export const useInstaller = ({ reportSnapshot, trigger, useSnapshot, addBThread,
         subsciribe: createMemorySubscriber,
       }
 
-      const bThread: BThread = ({ label, rules, repeat }) => {
-        const shouldRepeat = repeat === true
-        const thread = Object.assign(
-          shouldRepeat
-            ? function* () {
-                while (shouldRepeat) {
-                  const length = rules.length
-                  for (let i = 0; i < length; i++) {
-                    yield* rules[i]!()
-                  }
-                }
-              }
-            : function* () {
-                const length = rules.length
-                for (let i = 0; i < length; i++) {
-                  yield* rules[i]!()
-                }
-              },
-        )
+      const bThread: ExtensionParams['bThread'] = ({ label, rules, repeat }) => {
+        const thread = _bThread(rules, repeat)
         return addBThread(label, thread)
       }
 
@@ -377,10 +324,10 @@ export const useInstaller = ({ reportSnapshot, trigger, useSnapshot, addBThread,
           bThread({
             label: `${extension}:${EXTENSION_REQUEST_EVENT}__${id}`,
             rules: [
-              sync({
+              _bsync({
                 waitFor: listener,
               }),
-              sync({
+              _bsync({
                 request: {
                   type: DEFAULT_EVENTS.memory_request,
                   detail: {
@@ -401,14 +348,14 @@ export const useInstaller = ({ reportSnapshot, trigger, useSnapshot, addBThread,
           bThread({
             label: `${extension}:${EXTENSION_MEMORY_EVENTS.memory_subscribe}__${id}`,
             rules: [
-              sync({
+              _bsync({
                 waitFor: listener,
                 interrupt: {
                   type: `${toExtensionEventType({ extension, event: EXTENSION_MEMORY_EVENTS.memory_disconnect })}__${id}`,
                   detailSchema: z.undefined(),
                 },
               }),
-              sync({
+              _bsync({
                 request: {
                   type: DEFAULT_EVENTS.memory_request,
                   detail: {

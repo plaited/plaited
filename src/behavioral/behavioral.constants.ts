@@ -8,7 +8,6 @@ import { keyMirror } from '../utils.ts'
  * - `'deadlock'` — no unblocked candidate could be selected
  * - `'selection'` — event selection snapshot
  * - `'feedback_error'` — handler threw during side-effect execution
- * - `'module_warning'` — host/runtime module diagnostic
  *
  * @public
  */
@@ -23,7 +22,7 @@ export const SNAPSHOT_MESSAGE_KINDS = keyMirror('deadlock', 'feedback_error', 's
  *
  * @internal
  */
-export const RULES_FUNCTION_IDENTIFIER = '🪢'
+export const RULES_FUNCTION_IDENTIFIER = '🪢' as const
 
 /**
  * Defines how a b-thread listens for or specifies events in `waitFor`, `block`, or `interrupt` idioms.
@@ -38,7 +37,7 @@ export const RULES_FUNCTION_IDENTIFIER = '🪢'
  * @see {@link Idioms} for using listeners in synchronization
  * @see {@link bSync} for creating synchronization points
  */
-export const EVENT_SOURCES = keyMirror('trigger', 'request', 'emit')
+export const EVENT_SOURCES = keyMirror('trigger', 'request')
 
 export const FRONTIER_STATUS = keyMirror('ready', 'deadlock', 'idle')
 

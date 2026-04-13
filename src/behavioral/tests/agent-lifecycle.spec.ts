@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { behavioral, bSync, bThread } from 'plaited/behavioral'
+import { behavioral } from 'plaited/behavioral'
+import { bSync, bThread } from '../behavioral.shared.ts'
 import { onType, onTypeWhere } from './helpers.ts'
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))

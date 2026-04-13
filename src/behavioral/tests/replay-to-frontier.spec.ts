@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'bun:test'
-import { bSync, bThread } from 'plaited/behavioral'
 import * as z from 'zod'
 import { replayToFrontier } from '../behavioral.frontier.ts'
+import { bSync, bThread } from '../behavioral.shared.ts'
 
 const onType = (type: string) => ({
   type,
-  sourceSchema: z.enum(['trigger', 'request', 'emit']),
+  sourceSchema: z.enum(['trigger', 'request']),
   detailSchema: z.unknown(),
 })
 
@@ -100,21 +100,24 @@ describe('replayToFrontier', () => {
     })
     expect(triggerSourceResult.frontier.enabled.map((candidate) => candidate.type)).toEqual(['ack'])
 
-    const requestSourceResult = replayToFrontier({
-      threads,
-      history: [{ type: 'task', source: 'request', detail: { id: 'job-1' } }],
-    })
-    expect(requestSourceResult.frontier.status).toBe('idle')
-    expect(requestSourceResult.frontier.enabled).toHaveLength(0)
+    expect(() =>
+      replayToFrontier({
+        threads: {
+          consumer: threads.consumer,
+        },
+        history: [{ type: 'task', source: 'request', detail: { id: 'job-1' } }],
+      }),
+    ).toThrowError(/invalid request history event "task"/)
   })
 
-  test('replay uses emit source provenance for match listeners', () => {
+  test('replay uses request source provenance for match listeners', () => {
     const threads = {
+      producer: bThread([bSync({ request: { type: 'task', detail: { id: 'job-1' } } })]),
       consumer: bThread([
         bSync({
           waitFor: {
             type: 'task',
-            sourceSchema: z.literal('emit'),
+            sourceSchema: z.literal('request'),
             detailSchema: z.object({ id: z.string() }),
           },
         }),
@@ -122,18 +125,17 @@ describe('replayToFrontier', () => {
       ]),
     }
 
-    const emitSourceResult = replayToFrontier({
+    const requestSourceResult = replayToFrontier({
       threads,
-      history: [{ type: 'task', source: 'emit', detail: { id: 'job-1' } }],
+      history: [{ type: 'task', source: 'request', detail: { id: 'job-1' } }],
     })
-    expect(emitSourceResult.frontier.enabled.map((candidate) => candidate.type)).toEqual(['ack'])
+    expect(requestSourceResult.frontier.enabled.map((candidate) => candidate.type)).toEqual(['ack'])
 
     const triggerSourceResult = replayToFrontier({
       threads,
       history: [{ type: 'task', source: 'trigger', detail: { id: 'job-1' } }],
     })
-    expect(triggerSourceResult.frontier.status).toBe('idle')
-    expect(triggerSourceResult.frontier.enabled).toHaveLength(0)
+    expect(triggerSourceResult.frontier.enabled.map((candidate) => candidate.type)).toEqual(['task'])
   })
 
   test('replay matches request detail structurally when object key insertion order differs', () => {
@@ -153,5 +155,16 @@ describe('replayToFrontier', () => {
 
     expect(frontier.status).toBe('ready')
     expect(frontier.enabled.map((candidate) => candidate.type)).toEqual(['after_task'])
+  })
+
+  test('throws when request history includes an event that is not enabled at that step', () => {
+    expect(() =>
+      replayToFrontier({
+        threads: {
+          producer: bThread([bSync({ request: { type: 'task' } })]),
+        },
+        history: [{ type: 'missing_task', source: 'request' }],
+      }),
+    ).toThrowError(/invalid request history event "missing_task"/)
   })
 })

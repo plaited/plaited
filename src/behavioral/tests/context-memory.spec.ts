@@ -3,7 +3,7 @@ import * as z from 'zod'
 import { createContextMemory } from '../context-memory.ts'
 
 describe('createContextMemory', () => {
-  const anySource = z.enum(['trigger', 'request', 'emit'])
+  const anySource = z.enum(['trigger', 'request'])
   const onEvent = (type: string) => ({
     type,
     sourceSchema: anySource,
@@ -23,7 +23,7 @@ describe('createContextMemory', () => {
     const memory = createContextMemory({ ttlMs: 15 })
     const listener = onEvent('evt')
 
-    memory.record({ type: 'evt', source: 'emit', detail: { active: true } })
+    memory.record({ type: 'evt', source: 'trigger', detail: { active: true } })
     expect(memory.get(listener)).toEqual({ active: true })
 
     await Bun.sleep(25)
@@ -59,7 +59,7 @@ describe('createContextMemory', () => {
     memory.record({ type: 'evt', source: 'request', detail: { ok: true } })
     expect(memory.get(evtListener)).toEqual({ ok: true })
 
-    memory.record({ type: 'evt', source: 'emit', detail: { ok: true } })
+    memory.record({ type: 'evt', source: 'trigger', detail: { ok: true } })
     expect(memory.get(evtListener)).toBeUndefined()
 
     memory.record({ type: 'evt', source: 'request', detail: { ok: false } })

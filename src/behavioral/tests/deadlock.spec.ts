@@ -1,18 +1,12 @@
 import { describe, expect, test } from 'bun:test'
-import {
-  behavioral,
-  bSync,
-  bThread,
-  type DeadlockSnapshot,
-  type SelectionSnapshot,
-  type SnapshotMessage,
-} from 'plaited/behavioral'
+import { behavioral, type DeadlockSnapshot, type SelectionSnapshot, type SnapshotMessage } from 'plaited/behavioral'
 import * as z from 'zod'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
+import { bSync, bThread } from '../behavioral.shared.ts'
 
 const onType = (type: string) => ({
   type,
-  sourceSchema: z.enum(['trigger', 'request', 'emit']),
+  sourceSchema: z.enum(['trigger', 'request']),
   detailSchema: z.unknown(),
 })
 

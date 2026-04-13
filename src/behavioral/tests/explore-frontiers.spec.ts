@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'bun:test'
-import { bSync, bThread } from 'plaited/behavioral'
 import * as z from 'zod'
 import { exploreFrontiers } from '../behavioral.frontier.ts'
+import { bSync, bThread } from '../behavioral.shared.ts'
 
 const onType = (type: string) => ({
   type,
-  sourceSchema: z.enum(['trigger', 'request', 'emit']),
+  sourceSchema: z.enum(['trigger', 'request']),
   detailSchema: z.unknown(),
 })
 
@@ -166,5 +166,29 @@ describe('exploreFrontiers', () => {
       findingCount: 0,
       truncated: false,
     })
+  })
+
+  test('does not dedupe distinct cyclic-detail histories', () => {
+    const detailA: Record<string, unknown> = { kind: 'A' }
+    detailA.self = detailA
+
+    const detailB: Record<string, unknown> = { kind: 'B' }
+    detailB.self = detailB
+
+    const result = exploreFrontiers({
+      strategy: 'bfs',
+      maxDepth: 1,
+      threads: {
+        first: bThread([bSync({ request: { type: 'same', detail: detailA } })]),
+        second: bThread([bSync({ request: { type: 'same', detail: detailB } })]),
+      },
+    })
+
+    const levelOneKinds = result.visitedHistories
+      .filter((history) => history.length === 1)
+      .map((history) => (history[0]?.detail as { kind?: string } | undefined)?.kind ?? 'unknown')
+      .sort()
+
+    expect(levelOneKinds).toEqual(['A', 'B'])
   })
 })

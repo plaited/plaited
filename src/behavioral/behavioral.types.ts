@@ -32,6 +32,7 @@ export type ReplayEvent = BPEvent & {
 
 export type BPListener = {
   type: string
+  sourceSchema?: ZodType<keyof typeof EVENT_SOURCES>
   detailSchema: ZodType<unknown>
 }
 
@@ -87,7 +88,7 @@ export type BSync = (arg: Idioms) => () => Generator<Idioms, void, unknown>
  *
  * @see bThread The implementation of this type that composes multiple synchronization steps into a single b-thread.
  */
-export type BThread = (params: { rules: ReturnType<BSync>[]; repeat?: true; label: string }) => void
+export type BThread = (rules: ReturnType<BSync>[], repeat?: true) => ReturnType<BSync>
 
 /**
  * @internal
@@ -306,6 +307,8 @@ export type BThreads = Record<string, ReturnType<BSync>>
 
 export type AddBThread = (label: string, thread: () => Generator<Idioms, void, unknown>) => void
 
+export type AddBThreads = (threads: BThreads) => void
+
 /**
  * Injects external events into the behavioral program.
  * Primary interface for external systems to communicate with the program.
@@ -441,7 +444,7 @@ export type ExtensionParams = {
     subsciribe: CreateMemorySubscribe
   }
   bSync: BSync
-  bThread: BThread
+  bThread: (params: { label: string; rules: ReturnType<BSync>[]; repeat?: true }) => void
   trigger: Trigger
   useSnapshot: UseSnapshot
   DEFAULT_EVENTS: ExtensionDefaultEvents
@@ -484,6 +487,7 @@ export type UseInstaller = {
  */
 export type Behavioral = <Details extends EventDetails = EventDetails>() => Readonly<{
   addBThread: AddBThread
+  addBThreads: AddBThreads
   trigger: Trigger
   useFeedback: UseFeedback<Details>
   useSnapshot: UseSnapshot

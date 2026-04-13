@@ -1,8 +1,8 @@
 import * as z from 'zod'
 
 import { SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
+import { isBPEvent } from './behavioral.shared.ts'
 import type { BPEvent } from './behavioral.types.ts'
-import { isBPEvent } from './use-installer.ts'
 
 /**
  * Schema for validating BPEvent objects.
@@ -11,6 +11,32 @@ import { isBPEvent } from './use-installer.ts'
  * @public
  */
 export const BPEventSchema = z.custom<BPEvent>(isBPEvent)
+
+/**
+ * @internal
+ * Shared schema for memory entry detail envelopes.
+ */
+export const createMemoryEntryDetailSchema = (detailSchema: z.ZodType<unknown>) =>
+  z.object({
+    expiresAt: z.number().optional(),
+    createdAt: z.number(),
+    body: detailSchema,
+  })
+
+/**
+ * @internal
+ * Shared schema for memory response envelopes with request id.
+ */
+export const createMemoryResponseDetailSchema = ({
+  id,
+  detailSchema,
+}: {
+  id: string
+  detailSchema: z.ZodType<unknown>
+}) =>
+  createMemoryEntryDetailSchema(detailSchema).extend({
+    id: z.literal(id),
+  })
 
 /**
  * Schema for a thread reference used across snapshot attribution fields.
@@ -23,7 +49,7 @@ export const BPEventSchema = z.custom<BPEvent>(isBPEvent)
  */
 export const ThreadReferenceSchema = z.object({
   label: z.string(),
-  id: z.string(),
+  id: z.string().optional(),
 })
 
 /** @public */
@@ -45,7 +71,7 @@ export const SelectionBidSchema = z.object({
   /** Thread reference (stringified Symbol label for external trigger threads). */
   thread: ThreadReferenceSchema,
   /** Explicit source provenance for source-aware matching and replay. */
-  source: z.enum(['trigger', 'request', 'emit']),
+  source: z.enum(['trigger', 'request']),
   /** Whether this bid was selected for execution in the current step. */
   selected: z.boolean(),
   /** The event type being requested or waited for. */

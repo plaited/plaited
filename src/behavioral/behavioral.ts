@@ -15,9 +15,11 @@ import {
 } from './behavioral.shared.ts'
 import type {
   AddBThread,
+  AddBThreads,
   Behavioral,
   BPEvent,
   BSync,
+  BThreads,
   CandidateBid,
   EventDetails,
   PendingBid,
@@ -402,7 +404,7 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
     return disconnect
   }
 
-  const addBThread:AddBThread = (label: string, thread: ReturnType<BSync>) => {
+  const addBThread: AddBThread = (label: string, thread: ReturnType<BSync>) => {
     const threadId = ueid(BTHREAD_ID_PREFIX)
     running.set(threadId, {
       priority: running.size + 1,
@@ -410,6 +412,11 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
       generator: thread(),
       label,
     })
+  }
+  const addBThreads: AddBThreads = (threads: BThreads) => {
+    for (const [label, thread] of Object.entries(threads)) {
+      addBThread(label, thread)
+    }
   }
   /**
    * @internal
@@ -430,6 +437,8 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
   return Object.freeze({
     /** Add thread to program. */
     addBThread,
+    /** Add many threads to program. */
+    addBThreads,
     /** Function to inject external events into the program. */
     trigger,
     /** Hook to subscribe to selected events with feedback handlers. */

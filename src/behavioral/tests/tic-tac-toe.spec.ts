@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test'
-import { type BSync, behavioral, bSync, bThread } from 'plaited/behavioral'
+import { type BSync, behavioral } from 'plaited/behavioral'
 import * as z from 'zod'
+import { bSync, bThread } from '../behavioral.shared.ts'
 
 /** Represents all possible winning combinations of squares in Tic-Tac-Toe. */
 const winConditions = [
@@ -24,7 +25,7 @@ const squares = [0, 1, 2, 3, 4, 5, 6, 7, 8]
 let board: Set<number>
 /** Type definition for the detail payload of 'X' and 'O' events, indicating the chosen square. */
 type Square = { square: number }
-const AnySourceSchema = z.enum(['trigger', 'request', 'emit'])
+const AnySourceSchema = z.enum(['trigger', 'request'])
 const onType = (type: string) => ({
   type,
   sourceSchema: AnySourceSchema,

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { behavioral, bSync, bThread, type FeedbackError, type SnapshotMessage } from 'plaited/behavioral'
+import { behavioral, type FeedbackError, type SnapshotMessage } from 'plaited/behavioral'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
+import { bSync, bThread } from '../behavioral.shared.ts'
 
 /**
  * Test suite for the FeedbackError snapshot message.

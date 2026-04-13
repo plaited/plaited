@@ -1,6 +1,28 @@
 import * as z from 'zod'
+import { isTypeOf } from '../utils.ts'
 import { FRONTIER_STATUS } from './behavioral.constants.ts'
-import type { BPListener, CandidateBid, Frontier, PendingBid, RunningBid } from './behavioral.types.ts'
+import type {
+  BPEvent,
+  BPListener,
+  BSync,
+  BThread,
+  CandidateBid,
+  Frontier,
+  PendingBid,
+  RunningBid,
+} from './behavioral.types.ts'
+
+/**
+ * @internal
+ * Type guard to check if an unknown value conforms to the `BPEvent` structure.
+ */
+export const isBPEvent = (data: unknown): data is BPEvent => {
+  return (
+    isTypeOf<{ [key: string]: unknown }>(data, 'object') &&
+    Object.hasOwn(data, 'type') &&
+    isTypeOf<string>(data.type, 'string')
+  )
+}
 
 /**
  * @internal
@@ -12,9 +34,10 @@ export const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj :
  * @internal
  * Creates a checker function to determine if a given BPListener matches a CandidateBid.
  */
-export const isListeningFor = ({ type, detail }: CandidateBid) => {
+export const isListeningFor = ({ type, detail, source }: CandidateBid) => {
   return (listener: BPListener): boolean => {
-    return listener.type === type && listener.detailSchema.safeParse(detail).success
+    const sourceMatches = listener.sourceSchema ? listener.sourceSchema.safeParse(source).success : true
+    return listener.type === type && sourceMatches && listener.detailSchema.safeParse(detail).success
   }
 }
 
@@ -101,3 +124,29 @@ export const resumePendingThreadsForSelectedEvent = ({
 
 export const notSchema = (schema: z.ZodTypeAny): z.ZodType<unknown> =>
   z.unknown().refine((value) => !schema.safeParse(value).success)
+
+export const bSync: BSync = (syncPoint) =>
+  function* () {
+    yield syncPoint
+  }
+
+export const bThread: BThread = (rules, repeat) => {
+  const shouldRepeat = repeat === true
+  return Object.assign(
+    shouldRepeat
+      ? function* () {
+          while (shouldRepeat) {
+            const length = rules.length
+            for (let i = 0; i < length; i++) {
+              yield* rules[i]!()
+            }
+          }
+        }
+      : function* () {
+          const length = rules.length
+          for (let i = 0; i < length; i++) {
+            yield* rules[i]!()
+          }
+        },
+  )
+}

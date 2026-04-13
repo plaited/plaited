@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { bSync } from 'plaited/behavioral'
+import { bSync } from '../behavioral.shared.ts'
 import { onType } from './helpers.ts'
 
 test('bSync: creates generator that yields sync point once', () => {

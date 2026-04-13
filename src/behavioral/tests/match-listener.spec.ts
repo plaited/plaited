@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test'
-import { behavioral, bSync, bThread } from 'plaited/behavioral'
+import { behavioral } from 'plaited/behavioral'
 import * as z from 'zod'
+import { bSync, bThread } from '../behavioral.shared.ts'
 import { onType, onTypeWithDetail } from './helpers.ts'
 
 test('match listener: waitFor resumes thread when type and detail schema match', () => {
@@ -13,7 +14,7 @@ test('match listener: waitFor resumes thread when type and detail schema match',
       bSync({
         waitFor: {
           type: 'task',
-          sourceSchema: z.enum(['trigger', 'request', 'emit']),
+          sourceSchema: z.enum(['trigger', 'request']),
           detailSchema: z.object({ id: z.string() }),
         },
       }),
@@ -45,7 +46,7 @@ test('match listener: waitFor does not resume when detail schema fails', () => {
       bSync({
         waitFor: {
           type: 'task',
-          sourceSchema: z.enum(['trigger', 'request', 'emit']),
+          sourceSchema: z.enum(['trigger', 'request']),
           detailSchema: z.object({ id: z.string() }),
         },
       }),
@@ -164,7 +165,7 @@ test('match listener: sourceSchema trigger accepts only externally triggered eve
   expect(log).toEqual(['task', 'task', 'ack'])
 })
 
-test('match listener: sourceSchema can accept trigger, request, and emit', () => {
+test('match listener: sourceSchema can accept trigger and request', () => {
   const log: string[] = []
   const { addBThreads, trigger, useFeedback } = behavioral()
 
@@ -174,7 +175,7 @@ test('match listener: sourceSchema can accept trigger, request, and emit', () =>
       bSync({
         waitFor: {
           type: 'task',
-          sourceSchema: z.enum(['trigger', 'request', 'emit']),
+          sourceSchema: z.enum(['trigger', 'request']),
           detailSchema: z.object({ id: z.string() }),
         },
       }),
@@ -196,9 +197,9 @@ test('match listener: sourceSchema can accept trigger, request, and emit', () =>
   expect(log).toEqual(['task', 'ack'])
 })
 
-test('match listener: sourceSchema emit accepts only emit-origin events', () => {
+test('match listener: sourceSchema request matches request-origin events only', () => {
   const log: string[] = []
-  const { addBThreads, trigger, emit, useFeedback } = behavioral()
+  const { addBThreads, trigger, useFeedback } = behavioral()
 
   addBThreads({
     producer: bThread([bSync({ request: { type: 'task', detail: { id: 'job-1' } } })]),
@@ -206,7 +207,7 @@ test('match listener: sourceSchema emit accepts only emit-origin events', () => 
       bSync({
         waitFor: {
           type: 'task',
-          sourceSchema: z.literal('emit'),
+          sourceSchema: z.literal('request'),
           detailSchema: z.object({ id: z.string() }),
         },
       }),
@@ -224,12 +225,12 @@ test('match listener: sourceSchema emit accepts only emit-origin events', () => 
   })
 
   trigger({ type: 'kickoff' })
-  emit({
+  trigger({
     type: 'task',
     detail: { id: 'job-1' },
   })
 
-  expect(log).toEqual(['task', 'task', 'ack'])
+  expect(log).toEqual(['task', 'ack', 'task'])
 })
 
 test('match listener: block prevents matching requested event from being selected', () => {

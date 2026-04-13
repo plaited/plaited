@@ -23,13 +23,71 @@ import type {
 } from './behavioral.types.ts'
 import { deepEqual } from './deep-equal.ts'
 
-const serializeEvent = ({ type, detail, source }: ReplayEvent) => {
-  try {
-    return JSON.stringify([type, detail, source])
-  } catch {
-    return `${type}:${String(detail)}:${String(source)}`
+const serializeValue = (value: unknown, seen: Map<object, number>): string => {
+  if (value === null) {
+    return 'null'
   }
+  if (value === undefined) {
+    return 'undefined'
+  }
+
+  const type = typeof value
+  if (type === 'string') {
+    return `string:${JSON.stringify(value)}`
+  }
+  if (type === 'number') {
+    return `number:${Number.isNaN(value) ? 'NaN' : String(value)}`
+  }
+  if (type === 'boolean') {
+    return `boolean:${String(value)}`
+  }
+  if (type === 'bigint') {
+    return `bigint:${String(value)}`
+  }
+  if (type === 'symbol') {
+    return `symbol:${String((value as symbol).description ?? '')}`
+  }
+  if (type === 'function') {
+    const fn = value as (...args: unknown[]) => unknown
+    return `function:${fn.name || 'anonymous'}`
+  }
+
+  const objectValue = value as object
+  const seenId = seen.get(objectValue)
+  if (seenId !== undefined) {
+    return `ref:${seenId}`
+  }
+  const nextId = seen.size + 1
+  seen.set(objectValue, nextId)
+
+  if (Array.isArray(value)) {
+    return `array:[${value.map((item) => serializeValue(item, seen)).join(',')}]`
+  }
+  if (value instanceof Date) {
+    return `date:${Number.isNaN(value.getTime()) ? 'invalid' : value.toISOString()}`
+  }
+  if (value instanceof RegExp) {
+    return `regexp:${String(value)}`
+  }
+  if (value instanceof Set) {
+    const items = [...value].map((item) => serializeValue(item, seen)).sort()
+    return `set:{${items.join(',')}}`
+  }
+  if (value instanceof Map) {
+    const entries = [...value]
+      .map(([key, mapValue]) => `${serializeValue(key, seen)}=>${serializeValue(mapValue, seen)}`)
+      .sort()
+    return `map:{${entries.join(',')}}`
+  }
+
+  const record = value as Record<string, unknown>
+  const keys = Object.keys(record).sort()
+  const fields = keys.map((key) => `${JSON.stringify(key)}:${serializeValue(record[key], seen)}`)
+  return `object:{${fields.join(',')}}`
 }
+
+const serializeEvent = ({ type, detail, source }: ReplayEvent) =>
+  `[${JSON.stringify(type)},${JSON.stringify(source)},${serializeValue(detail, new Map<object, number>())}]`
 
 const historyKey = (history: ReplayEvent[]) => {
   if (history.length === 0) {
@@ -79,39 +137,39 @@ export const replayToFrontier = ({
 
   advanceRunningToPending(bootstrapRunning, pending)
 
-  for (const event of history) {
-    const selectedEvent: CandidateBid =
-      event.source === EVENT_SOURCES.request
-        ? (() => {
-            const frontier = computeFrontier({ pending })
-            const match = frontier.enabled
-              .filter((candidate) => {
-                return (
-                  candidate.type === event.type &&
-                  candidate.source === event.source &&
-                  deepEqual(candidate.detail, event.detail)
-                )
-              })
-              .sort((a, b) => a.priority - b.priority)[0]
-            if (match) {
-              return match
-            }
-            return {
-              priority: 0,
-              thread: event.type,
-              source: EVENT_SOURCES.request,
-              type: event.type,
-              detail: event.detail,
-            }
-          })()
-        : {
-            priority: 0,
-            thread: event.type,
-            source: event.source ?? EVENT_SOURCES.request,
-            type: event.type,
-            detail: event.detail,
-            ingress: true,
-          }
+  for (const [eventIndex, event] of history.entries()) {
+    const selectedEvent: CandidateBid = (() => {
+      if (event.source !== EVENT_SOURCES.request) {
+        return {
+          priority: 0,
+          thread: event.type,
+          source: event.source,
+          type: event.type,
+          detail: event.detail,
+          ingress: true,
+        }
+      }
+
+      const frontier = computeFrontier({ pending })
+      const match = frontier.enabled
+        .filter((candidate) => {
+          return (
+            candidate.type === event.type &&
+            candidate.source === event.source &&
+            deepEqual(candidate.detail, event.detail)
+          )
+        })
+        .sort((a, b) => a.priority - b.priority)[0]
+
+      if (match) {
+        return match
+      }
+
+      throw new Error(
+        `replayToFrontier encountered invalid request history event "${event.type}" (${event.source}). ` +
+          `No enabled candidate matched this event detail at step ${eventIndex}.`,
+      )
+    })()
     const running = new Map<string, RunningBid>()
 
     resumePendingThreadsForSelectedEvent({

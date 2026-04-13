@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test'
-import { behavioral, bSync } from 'plaited/behavioral'
+import { behavioral } from 'plaited/behavioral'
+import { bSync } from '../behavioral.shared.ts'
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 

@@ -1,7 +1,7 @@
 import type { BPListener } from 'plaited/behavioral'
 import * as z from 'zod'
 
-const sourceSchema = z.enum(['trigger', 'request', 'emit'])
+const sourceSchema = z.enum(['trigger', 'request'])
 
 export const onType = (type: string): BPListener => ({
   type,
