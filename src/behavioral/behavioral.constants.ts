@@ -43,7 +43,7 @@ export const FRONTIER_STATUS = keyMirror('ready', 'deadlock', 'idle')
 
 export const BTHREAD_ID_PREFIX = 'bt_'
 
-export const INGRESS_ID_PREFIX = 'ing_'
+export const TRIGGER_ID_PREFIX = 'trg_'
 
 export const EXPLORE_STRATEGIES = keyMirror('dfs', 'bfs')
 

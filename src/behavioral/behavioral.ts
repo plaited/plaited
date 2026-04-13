@@ -3,8 +3,8 @@ import {
   BTHREAD_ID_PREFIX,
   EVENT_SOURCES,
   FRONTIER_STATUS,
-  INGRESS_ID_PREFIX,
   SNAPSHOT_MESSAGE_KINDS,
+  TRIGGER_ID_PREFIX,
 } from './behavioral.constants.ts'
 import type { SelectionBid, SnapshotMessage, ThreadReference } from './behavioral.schemas.ts'
 import {
@@ -327,16 +327,20 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
     step()
   }
 
-  const enqueueIngress = ({ event, source }: { event: BPEvent; source: keyof typeof EVENT_SOURCES }) => {
+  /**
+   * @internal
+   * Implementation of the public `trigger` function.
+   */
+  const trigger: Trigger = (event) => {
     const thread = function* () {
       yield {
         request: event,
       }
     }
-    const threadId = ueid(INGRESS_ID_PREFIX)
+    const threadId = ueid(TRIGGER_ID_PREFIX)
     running.set(threadId, {
       priority: 0,
-      source,
+      source: EVENT_SOURCES.trigger,
       generator: thread(),
       ingress: true,
       label: event.type,
@@ -354,17 +358,6 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
      * 5. Proceeds to the event selection phase
      */
     step()
-  }
-
-  /**
-   * @internal
-   * Implementation of the public `trigger` function.
-   */
-  const trigger: Trigger = (request) => {
-    enqueueIngress({
-      event: request,
-      source: EVENT_SOURCES.trigger,
-    })
   }
 
   /**
