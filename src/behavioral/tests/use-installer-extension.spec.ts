@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import * as z from 'zod'
-import { RULES_FUNCTION_IDENTIFIER, SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
+import { EXTENSION_FUNCTION_IDENTIFIER, SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
 import type { SnapshotMessage } from '../behavioral.schemas.ts'
-import { useExtension } from '../use-extension.ts'
+import { isExtension, useExtension } from '../use-extension.ts'
 import { useInstaller } from '../use-installer.ts'
 
 describe('useExtension + useInstaller', () => {
@@ -10,7 +10,17 @@ describe('useExtension + useInstaller', () => {
     const extension = useExtension('alpha', () => ({}))
 
     expect(extension.id).toBe('alpha')
-    expect(extension.$).toBe(RULES_FUNCTION_IDENTIFIER)
+    expect(extension.$).toBe(EXTENSION_FUNCTION_IDENTIFIER)
+  })
+
+  test('isExtension narrows branded extension callables', () => {
+    const extension = useExtension('alpha', () => ({}))
+    const unbranded = Object.assign(() => ({}), { id: 'alpha', $: 'not-an-extension' })
+
+    expect(isExtension(extension)).toBe(true)
+    expect(isExtension(unbranded)).toBe(false)
+    expect(isExtension({ id: 'alpha', $: EXTENSION_FUNCTION_IDENTIFIER })).toBe(false)
+    expect(isExtension(null)).toBe(false)
   })
 
   test('installer accepts useExtension modules and scopes local/external listener semantics', () => {

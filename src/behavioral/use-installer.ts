@@ -2,13 +2,13 @@
 import * as z from 'zod'
 import { isTypeOf, ueid } from '../utils.ts'
 import {
+  EXTENSION_FUNCTION_IDENTIFIER,
   EXTENSION_MEMORY_EVENTS,
   EXTENSION_REQUEST_EVENT,
-  RULES_FUNCTION_IDENTIFIER,
   SNAPSHOT_MESSAGE_KINDS,
 } from './behavioral.constants.ts'
-import { createMemoryEntryDetailSchema, createMemoryResponseDetailSchema } from './behavioral.schemas.ts'
-import { bSync as _bsync, bThread as _bThread, notSchema } from './behavioral.shared.ts'
+import { createMemoryEntryDetailSchema, createMemoryResponseDetailSchema, notSchema } from './behavioral.schemas.ts'
+import { bSync as _bsync, bThread as _bThread } from './behavioral.shared.ts'
 import type {
   BPListener,
   BSync,
@@ -25,20 +25,27 @@ import type {
   MemoryDisconnectEvent,
   MemoryRequestEvent,
   MemorySubscribeEvent,
-  UseInstaller,
+  UseInstallerParams,
 } from './behavioral.types.ts'
 
-export const useInstaller = ({ reportSnapshot, trigger, useSnapshot, addBThread, ttlMs, maxKeys }: UseInstaller) => {
+export const useInstaller = ({
+  reportSnapshot,
+  trigger,
+  useSnapshot,
+  addBThread,
+  ttlMs,
+  maxKeys,
+}: UseInstallerParams) => {
   const BExtensions = new Set<string>()
   return (extension: Extension): DefaultHandlers => {
     const SCOPE_BYPASS_MARKER: unique symbol = Symbol('plaited.scope_bypass')
     type ScopeBypassListener = BPListener & { [SCOPE_BYPASS_MARKER]: true }
 
     try {
-      if (extension?.$ !== RULES_FUNCTION_IDENTIFIER) {
+      if (extension?.$ !== EXTENSION_FUNCTION_IDENTIFIER) {
         const receivedBrand = (extension as { $?: unknown } | undefined)?.$
         throw new Error(
-          `Invalid module: expected module.$ to equal "${RULES_FUNCTION_IDENTIFIER}", received ${String(receivedBrand)}.`,
+          `Invalid module: expected module.$ to equal "${EXTENSION_FUNCTION_IDENTIFIER}", received ${String(receivedBrand)}.`,
         )
       }
       if (!isTypeOf<string>(extension?.id, 'string')) {

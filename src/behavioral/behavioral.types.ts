@@ -2,10 +2,10 @@ import type { ZodType } from 'zod'
 import type {
   EVENT_SOURCES,
   EXPLORE_STRATEGIES,
+  EXTENSION_FUNCTION_IDENTIFIER,
   EXTENSION_MEMORY_EVENTS,
   EXTENSION_REQUEST_EVENT,
   FRONTIER_STATUS,
-  RULES_FUNCTION_IDENTIFIER,
   VERIFICATION_STATUSES,
 } from './behavioral.constants.ts'
 import type { SelectionSnapshot, SnapshotMessage } from './behavioral.schemas.ts'
@@ -453,10 +453,10 @@ export type ExtensionParams = {
 export type Extension = {
   (params: ExtensionParams): DefaultHandlers
   id: string
-  $: typeof RULES_FUNCTION_IDENTIFIER
+  $: typeof EXTENSION_FUNCTION_IDENTIFIER
 }
 
-export type UseInstaller = {
+export type UseInstallerParams = {
   reportSnapshot: ReportSnapshot
   trigger: Trigger
   useSnapshot: UseSnapshot
@@ -464,6 +464,8 @@ export type UseInstaller = {
   ttlMs: number
   maxKeys?: number
 }
+
+export type Installer = (extension: Extension) => DefaultHandlers
 
 /**
  * Factory function that creates and initializes a new behavioral program instance.

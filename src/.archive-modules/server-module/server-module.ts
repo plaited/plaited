@@ -1,4 +1,4 @@
-import { AGENT_EVENTS, type Module } from '../../agent.ts'
+import { AGENT_CORE_EVENTS, type Module } from '../../agent.ts'
 import { ClientMessageSchema } from '../../ui.ts'
 import {
   DEFAULT_CSP,
@@ -396,7 +396,7 @@ export const createServerModule =
           if (!parsed.success || !liveServer) return
           liveServer.send(parsed.data.topic, parsed.data.data)
         },
-        [AGENT_EVENTS.agent_disconnect]() {
+        [AGENT_CORE_EVENTS.agent_disconnect]() {
           stopServer()
         },
       },

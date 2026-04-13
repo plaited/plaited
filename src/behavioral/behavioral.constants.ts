@@ -14,15 +14,15 @@ import { keyMirror } from '../utils.ts'
 export const SNAPSHOT_MESSAGE_KINDS = keyMirror('deadlock', 'feedback_error', 'selection', 'extension_error')
 
 /**
- * Brand identifier stamped onto `ReturnType<BSync>` objects.
+ * Runtime brand attached to `Extension` callables created by `useExtension`.
  *
  * @remarks
- * Used by `isBehavioralRule` to distinguish branded behavioral rule steps
- * from arbitrary functions at runtime.
+ * `useInstaller` validates `extension.$` against this identifier before
+ * installing module handlers.
  *
  * @internal
  */
-export const RULES_FUNCTION_IDENTIFIER = '🪢' as const
+export const EXTENSION_FUNCTION_IDENTIFIER = '🪢' as const
 
 /**
  * Defines how a b-thread listens for or specifies events in `waitFor`, `block`, or `interrupt` idioms.

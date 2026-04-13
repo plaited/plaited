@@ -11,6 +11,7 @@
  * @public
  */
 
+export * from './behavioral/behavioral.constants.ts'
 export * from './behavioral/behavioral.schemas.ts'
 export * from './behavioral/behavioral.ts'
 export type * from './behavioral/behavioral.types.ts'

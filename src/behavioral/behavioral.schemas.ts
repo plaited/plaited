@@ -230,3 +230,6 @@ export const SnapshotMessageSchema = z.discriminatedUnion('kind', [
 
 /** @public */
 export type SnapshotMessage = z.infer<typeof SnapshotMessageSchema>
+
+export const notSchema = (schema: z.ZodTypeAny): z.ZodType<unknown> =>
+  z.unknown().refine((value) => !schema.safeParse(value).success)

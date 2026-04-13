@@ -3,7 +3,7 @@ import * as z from 'zod'
 import type { BPListener } from '../../behavioral/behavioral.types.ts'
 import { useModule } from '../../behavioral/use-module.old.ts'
 import { bSync, bThread } from '../../behavioral.ts'
-import { AGENT_EVENTS } from '../agent.constants.ts'
+import { AGENT_CORE_EVENTS } from '../agent.constants.ts'
 import { createAgent } from '../create-agent.ts'
 
 const TEST_MODELS = {
@@ -173,7 +173,7 @@ describe('createAgent', () => {
     await Bun.sleep(35)
     expect(getMemory(listener)).toBeUndefined()
 
-    agent.trigger({ type: AGENT_EVENTS.agent_disconnect })
+    agent.trigger({ type: AGENT_CORE_EVENTS.agent_disconnect })
   })
 
   test('context memory records selected events only, not blocked emit attempts', async () => {
@@ -460,7 +460,7 @@ describe('createAgent', () => {
     })
 
     agent.trigger({
-      type: AGENT_EVENTS.update_modules,
+      type: AGENT_CORE_EVENTS.update_modules,
       detail: modulePath,
     })
 
@@ -502,7 +502,7 @@ describe('createAgent', () => {
     })
 
     agent.trigger({
-      type: AGENT_EVENTS.update_modules,
+      type: AGENT_CORE_EVENTS.update_modules,
       detail: modulePath,
     })
 
@@ -548,12 +548,12 @@ describe('createAgent', () => {
     })
 
     agent.trigger({
-      type: AGENT_EVENTS.update_modules,
+      type: AGENT_CORE_EVENTS.update_modules,
       detail: modulePath,
     })
     await Bun.sleep(10)
     agent.trigger({
-      type: AGENT_EVENTS.update_modules,
+      type: AGENT_CORE_EVENTS.update_modules,
       detail: modulePath,
     })
 
@@ -616,7 +616,7 @@ describe('createAgent', () => {
     })
 
     agent.trigger({
-      type: AGENT_EVENTS.update_modules,
+      type: AGENT_CORE_EVENTS.update_modules,
       detail: modulePath,
     })
     for (let attempt = 0; attempt < 10 && seen.length === 0; attempt++) {

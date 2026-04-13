@@ -28,18 +28,7 @@ export type HeartbeatConfig = {
  *
  * @public
  */
-export type CreateAgentOptions = {
-  cwd: string
-  workspace: string
-  models: AgentModels
-  env?: Record<string, string>
-  modules?: Module[]
-  heartbeat?: HeartbeatConfig
-  contextMemory?: {
-    ttlMs?: number
-    maxKeys?: number
-  }
-}
+export type CreateAgentOptions = {}
 
 /**
  * Public handle returned by the new agent core.

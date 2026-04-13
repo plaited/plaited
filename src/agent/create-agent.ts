@@ -1,40 +1,17 @@
-import { glob } from 'node:fs/promises'
-import { isAbsolute, resolve, sep } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { isAbsolute, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import * as z from 'zod'
-import { createContextMemory } from '../behavioral/context-memory.ts'
-import { getDeclaredModuleName } from '../behavioral/use-module.old.ts'
-import type { AddBThreads, BThreads, Disconnect } from '../behavioral.ts'
-import { type BPEvent, type BPListener, behavioral, bSync, bThread } from '../behavioral.ts'
-import { isTypeOf } from '../utils.ts'
-import { AGENT_EVENTS } from './agent.constants.ts'
 import {
-  GrepOutputSchema,
-  ModuleResultSchema,
-  type RequestBashDetail,
-  RequestBashDetailSchema,
-  type RequestDeleteFileDetail,
-  RequestDeleteFileDetailSchema,
-  type RequestGlobFilesDetail,
-  RequestGlobFilesDetailSchema,
-  type RequestGrepDetail,
-  RequestGrepDetailSchema,
-  type RequestPrimaryInferenceDetail,
-  RequestPrimaryInferenceDetailSchema,
-  type RequestReadFileDetail,
-  RequestReadFileDetailSchema,
-  type RequestTtsInferenceDetail,
-  RequestTtsInferenceDetailSchema,
-  type RequestWriteFileDetail,
-  RequestWriteFileDetailSchema,
-  UpdateModuleModuleSchema,
-} from './agent.schemas.ts'
-import type { AgentHandle, CreateAgentOptions } from './agent.types.ts'
-
-const DEFAULT_HEARTBEAT_INTERVAL_MS = 15 * 60 * 1000
-
-const DEFAULT_TOOL_TIMEOUT_MS = 120_000
-const DEFAULT_CONTEXT_MEMORY_TTL_MS = 15 * 60 * 1000
+  behavioral,
+  isExtension,
+  notSchema,
+  type UseInstallerParams,
+  useExtension,
+  useInstaller,
+} from '../behavioral.ts'
+import * as modules from '../modules.ts'
+import { AGENT_CORE, AGENT_CORE_EVENTS } from './agent.constants.ts'
+import { type BashDetail, BashDetailSchema } from './agent.schemas.ts'
 
 /**
  * Creates the minimal agent core around the behavioral engine.
@@ -45,394 +22,66 @@ const DEFAULT_CONTEXT_MEMORY_TTL_MS = 15 * 60 * 1000
  * - host trigger + module emit ingress surfaces
  * - heartbeat pulse
  * - disconnect cleanup
- * - installation of executable modules
+ * - installation of executable extensions
  *
- * Everything richer should be layered on through modules.
+ * Everything richer should be layered on through extensions.
  *
  * @public
  */
 export const createAgent = async ({
-  cwd,
+  maxKeys,
+  ttlMs,
   workspace,
-  models,
-  env = {},
-  modules = [],
-  heartbeat,
-  contextMemory,
-}: CreateAgentOptions): Promise<AgentHandle> => {
-  const { addBThreads, trigger, emit, useFeedback, useSnapshot, reportSnapshot } = behavioral()
-  const runtimeEnv = Object.entries({ ...process.env, ...env }).reduce<Record<string, string>>((acc, [key, value]) => {
-    if (value !== undefined) {
-      acc[key] = value
-    }
-    return acc
-  }, {})
-
-  const disconnectSet = new Set<Disconnect>()
-  const contextMemoryStore = createContextMemory({
-    ttlMs: contextMemory?.ttlMs ?? DEFAULT_CONTEXT_MEMORY_TTL_MS,
-    ...(contextMemory?.maxKeys !== undefined && { maxKeys: contextMemory.maxKeys }),
-  })
-  const contextMemorySweepMs = Math.max(1000, Math.floor((contextMemory?.ttlMs ?? DEFAULT_CONTEXT_MEMORY_TTL_MS) / 2))
-  const contextMemoryTimer = setInterval(() => {
-    contextMemoryStore.pruneExpired()
-  }, contextMemorySweepMs)
+}: Pick<UseInstallerParams, 'ttlMs' | 'maxKeys'> & { workspace: string }) => {
+  const { addBThread, trigger, useFeedback, useSnapshot, reportSnapshot } = behavioral()
+  const installer = useInstaller({ trigger, useSnapshot, reportSnapshot, addBThread, ttlMs, maxKeys, useFeedback })
 
   const resolveWorkspacePath = (detail: string) => (isAbsolute(detail) ? detail : resolve(workspace, detail))
-  const resolveCwdPath = (detail: string) => resolve(cwd, detail)
 
-  const buildModuleId = ({ lane, index }: { lane: string; index: number }) => `${lane}#${index}`
-  const toScopedThreadLabel = ({ scope, label }: { scope: string; label: string }) =>
-    label.startsWith(`${scope}:`) ? label : `${scope}:${label}`
-  const createScopedAddThreads = ({ scope }: { scope: string }): AddBThreads => {
-    return (threads) => {
-      const scopedThreads: BThreads = {}
-      for (const [label, thread] of Object.entries(threads)) {
-        scopedThreads[toScopedThreadLabel({ scope, label })] = thread
-      }
-      addBThreads(scopedThreads)
-    }
-  }
-  disconnectSet.add(
-    useSnapshot((snapshot) => {
-      if (snapshot.kind !== 'selection') {
-        return
-      }
-      for (const bid of snapshot.bids) {
-        if (!bid.selected) {
-          continue
-        }
-        contextMemoryStore.record({
-          type: bid.type,
-          source: bid.source,
-          detail: bid.detail,
-        })
-      }
-    }),
-  )
-  const createModuleEmit = () => (event: BPEvent) => {
-    emit(event)
-  }
-  const moduleLast = (listener: BPListener) => contextMemoryStore.get(listener)
-  const installedModuleIds = new Set<string>()
-  const installedModuleNames = new Set<string>()
-  const installModules = ({
-    installableModules,
-    lane,
-  }: {
-    installableModules: CreateAgentOptions['modules']
-    lane: string
-  }) => {
-    if (!installableModules) {
-      return
-    }
-    for (const [index, installModule] of installableModules.entries()) {
-      const moduleId = buildModuleId({ lane, index })
-      const declaredModuleName = getDeclaredModuleName(installModule)
-      if (installedModuleIds.has(moduleId)) {
-        reportSnapshot({
-          kind: 'module_warning',
-          moduleId,
-          lane,
-          code: 'duplicate_module_id',
-          warning: `Duplicate module id "${moduleId}" detected during install`,
-        })
-      } else {
-        installedModuleIds.add(moduleId)
-      }
-      if (declaredModuleName) {
-        if (installedModuleNames.has(declaredModuleName)) {
-          reportSnapshot({
-            kind: 'module_warning',
-            moduleId,
-            lane,
-            code: 'duplicate_module_name',
-            warning: `Duplicate module name "${declaredModuleName}" detected during install`,
-          })
-          continue
-        } else {
-          installedModuleNames.add(declaredModuleName)
-        }
-      }
-      const moduleScope = declaredModuleName ?? moduleId
-      const addScopedThreads = createScopedAddThreads({ scope: moduleScope })
-
-      const parsed = (() => {
-        try {
-          return ModuleResultSchema.parse(
-            installModule({
-              moduleId,
-              emit: createModuleEmit(),
-              last: moduleLast,
-              addThreads: addScopedThreads,
-              useSnapshot,
-            }),
-          )
-        } catch (error) {
-          reportSnapshot({
-            kind: 'module_warning',
-            moduleId,
-            lane,
-            code: 'module_install_parse_error',
-            warning: error instanceof Error ? error.message : String(error),
-          })
-          throw error
-        }
-      })()
-      const { threads, handlers } = parsed
-      threads && addScopedThreads(threads)
-      handlers && disconnectSet.add(useFeedback(handlers))
-    }
-  }
-  installModules({ installableModules: modules, lane: 'bootstrap' })
-
-  const createToolSignal = (timeout: number | undefined) => AbortSignal.timeout(timeout ?? DEFAULT_TOOL_TIMEOUT_MS)
-  const sourceSchema = z.enum(['trigger', 'request', 'emit'])
-  const blockWhen = (args: { type: string; detailSchema: z.ZodType<unknown> }) => ({
-    type: args.type,
-    sourceSchema,
-    detailSchema: args.detailSchema,
-  })
-
-  const heartbeatIntervalMs = heartbeat?.intervalMs ?? DEFAULT_HEARTBEAT_INTERVAL_MS
-  const heartbeatTimer = setInterval(() => {
-    trigger({
-      type: AGENT_EVENTS.heartbeat,
-      detail: { intervalMs: heartbeatIntervalMs },
+  const coreExtension = useExtension(AGENT_CORE, ({ bThread, bSync }) => {
+    bThread({
+      label: 'onBash',
+      rules: [
+        bSync({
+          block: {
+            type: AGENT_CORE_EVENTS.bash,
+            detailSchema: notSchema(BashDetailSchema),
+          },
+        }),
+      ],
+      repeat: true,
     })
-  }, heartbeatIntervalMs)
-
-  addBThreads({
-    onUpdateModules: bThread(
-      [
+    bThread({
+      label: 'onUpdateModules',
+      rules: [
         bSync({
-          block: blockWhen({
-            type: AGENT_EVENTS.update_modules,
-            detailSchema: z.unknown().refine((detail) => {
-              if (!isTypeOf<string>(detail, 'string')) return true
-              if (!/\.tsx?$/.test(detail)) return true
-              const path = resolveWorkspacePath(detail)
-              return !path.startsWith(`${workspace}${sep}`)
-            }),
-          }),
+          block: {
+            type: AGENT_CORE_EVENTS.update_modules,
+            detailSchema: notSchema(z.string()),
+          },
         }),
       ],
-      true,
-    ),
-    onReadFile: bThread(
-      [
-        bSync({
-          block: blockWhen({
-            type: AGENT_EVENTS.read_file,
-            detailSchema: z.unknown().refine((detail) => {
-              const parsed = RequestReadFileDetailSchema.safeParse(detail)
-              if (!parsed.success) return true
-              const resolved = resolveCwdPath(parsed.data.input)
-              return !resolved.startsWith(`${cwd}${sep}`)
-            }),
-          }),
-        }),
-      ],
-      true,
-    ),
-    onWriteFile: bThread(
-      [
-        bSync({
-          block: blockWhen({
-            type: AGENT_EVENTS.write_file,
-            detailSchema: z.unknown().refine((detail) => {
-              const parsed = RequestWriteFileDetailSchema.safeParse(detail)
-              if (!parsed.success) return true
-              const resolved = resolveCwdPath(parsed.data.input.path)
-              return !resolved.startsWith(`${cwd}${sep}`)
-            }),
-          }),
-        }),
-      ],
-      true,
-    ),
-    onDeleteFile: bThread(
-      [
-        bSync({
-          block: blockWhen({
-            type: AGENT_EVENTS.delete_file,
-            detailSchema: z.unknown().refine((detail) => {
-              const parsed = RequestDeleteFileDetailSchema.safeParse(detail)
-              if (!parsed.success) return true
-              const resolved = resolveCwdPath(parsed.data.input)
-              return !resolved.startsWith(`${cwd}${sep}`)
-            }),
-          }),
-        }),
-      ],
-      true,
-    ),
-    onGlob: bThread(
-      [
-        bSync({
-          block: blockWhen({
-            type: AGENT_EVENTS.glob_files,
-            detailSchema: z.unknown().refine((detail) => {
-              const parsed = RequestGlobFilesDetailSchema.safeParse(detail)
-              if (!parsed.success) return true
-              const { pattern, exclude = [] } = parsed.data.input
-              return [pattern, ...exclude].some((entry) => entry.startsWith('/') || entry.includes('..'))
-            }),
-          }),
-        }),
-      ],
-      true,
-    ),
-    onGrep: bThread(
-      [
-        bSync({
-          block: blockWhen({
-            type: AGENT_EVENTS.grep,
-            detailSchema: z.unknown().refine((detail) => {
-              const parsed = RequestGrepDetailSchema.safeParse(detail)
-              if (!parsed.success) return true
-              if (!parsed.data.input.path) return false
-              const resolved = resolveCwdPath(parsed.data.input.path)
-              return !resolved.startsWith(`${cwd}${sep}`)
-            }),
-          }),
-        }),
-      ],
-      true,
-    ),
-    onBash: bThread(
-      [
-        bSync({
-          block: blockWhen({
-            type: AGENT_EVENTS.bash,
-            detailSchema: z.unknown().refine((detail) => {
-              const parsed = RequestBashDetailSchema.safeParse(detail)
-              if (!parsed.success) return true
-              const resolved = resolveWorkspacePath(parsed.data.input.path)
-              return !resolved.startsWith(`${workspace}${sep}`)
-            }),
-          }),
-        }),
-      ],
-      true,
-    ),
+      repeat: true,
+    })
+    return {
+      async [AGENT_CORE_EVENTS.update_modules](detail: string) {
+        const extensions = await import(pathToFileURL(resolveWorkspacePath(detail)).href)
+        for (const extension of extensions) {
+          if (isExtension(extension)) useFeedback(installer(extension))
+        }
+      },
+      async [AGENT_CORE_EVENTS.bash](detail: BashDetail) {
+        const proc = Bun.spawn(['bun', resolveWorkspacePath(detail.path), ...detail.args], {
+          stdout: 'pipe',
+          stderr: 'pipe',
+        })
+      },
+    }
   })
 
-  useFeedback({
-    [AGENT_EVENTS.agent_disconnect]() {
-      clearInterval(heartbeatTimer)
-      clearInterval(contextMemoryTimer)
-      for (const disconnect of disconnectSet) {
-        void disconnect()
-      }
-      disconnectSet.clear()
-    },
-    async [AGENT_EVENTS.request_inference](detail: RequestPrimaryInferenceDetail) {
-      const { input, signal } = RequestPrimaryInferenceDetailSchema.parse(detail)
-      const output = await models.primary(input)
-      signal.set?.({ input, output })
-    },
-    async [AGENT_EVENTS.request_tts](detail: RequestTtsInferenceDetail) {
-      const { input, signal } = RequestTtsInferenceDetailSchema.parse(detail)
-      const output = await models.tts(input)
-      signal.set?.({ input, output })
-    },
-    async [AGENT_EVENTS.update_modules](detail: string) {
-      const moduleImports = await import(pathToFileURL(resolveWorkspacePath(detail)).href)
-      const { default: modulePlugins } = UpdateModuleModuleSchema.parse(moduleImports)
-      installModules({ installableModules: modulePlugins, lane: `update:${detail}` })
-    },
-    async [AGENT_EVENTS.read_file](detail: RequestReadFileDetail) {
-      const { input, signal } = RequestReadFileDetailSchema.parse(detail)
-      const resolved = resolveCwdPath(input)
-      signal.set?.({ input, output: Bun.file(resolved) })
-    },
-    async [AGENT_EVENTS.delete_file](detail: RequestDeleteFileDetail) {
-      const { input, signal } = RequestDeleteFileDetailSchema.parse(detail)
-      const resolved = resolveCwdPath(input)
-      await Bun.file(resolved).delete()
-      signal.set?.({ input, output: true })
-    },
-    async [AGENT_EVENTS.write_file](detail: RequestWriteFileDetail) {
-      const { input, signal } = RequestWriteFileDetailSchema.parse(detail)
-      const resolved = resolveCwdPath(input.path)
-      const output = await Bun.write(resolved, input.content)
-      signal.set?.({ input, output })
-    },
-    async [AGENT_EVENTS.glob_files](detail: RequestGlobFilesDetail) {
-      const { input, signal } = RequestGlobFilesDetailSchema.parse(detail)
-      const output = await Array.fromAsync(glob(input.pattern, { exclude: input.exclude, cwd }))
-      signal.set?.({ input, output })
-    },
-    async [AGENT_EVENTS.grep](detail: RequestGrepDetail) {
-      const { input, signal } = RequestGrepDetailSchema.parse(detail)
-      const { timeout, ...request } = input
-      const proc = Bun.spawn(['bun', fileURLToPath(import.meta.resolve('./grep-worker.ts')), JSON.stringify(request)], {
-        cwd,
-        env: runtimeEnv,
-        signal: createToolSignal(timeout),
-        stdout: 'pipe',
-        stderr: 'pipe',
-      })
-      const [exitCode, stdout, stderr] = await Promise.all([
-        proc.exited,
-        new Response(proc.stdout).text(),
-        new Response(proc.stderr).text(),
-      ])
-      const output =
-        exitCode === 0
-          ? GrepOutputSchema.parse({
-              status: 'completed',
-              ...JSON.parse(stdout),
-              exitCode: 0,
-            })
-          : GrepOutputSchema.parse({
-              status: 'failed',
-              error: stderr.trim() || `grep worker exited with code ${exitCode}`,
-              exitCode,
-              stderr: stderr.trim() || undefined,
-            })
-      signal.set?.({ input, output })
-    },
-    async [AGENT_EVENTS.bash](detail: RequestBashDetail) {
-      const { input, signal } = RequestBashDetailSchema.parse(detail)
-      const proc = Bun.spawn(['bun', resolveWorkspacePath(input.path), ...input.args], {
-        cwd,
-        env: runtimeEnv,
-        signal: createToolSignal(input.timeout),
-        stdout: 'pipe',
-        stderr: 'pipe',
-      })
-      const [exitCode, stdout, stderr] = await Promise.all([
-        proc.exited,
-        new Response(proc.stdout).text(),
-        new Response(proc.stderr).text(),
-      ])
-      signal.set?.(
-        exitCode === 0
-          ? {
-              input,
-              output: {
-                status: 'completed',
-                output: stdout,
-                exitCode: 0,
-              },
-            }
-          : {
-              input,
-              output: {
-                status: 'failed',
-                error: stderr.trim() || `Command exited with code ${exitCode}`,
-                exitCode,
-                stderr: stderr.trim() || undefined,
-              },
-            },
-      )
-    },
-  })
-
-  return {
-    trigger,
-    useSnapshot,
+  for (const extension of [coreExtension, ...Object.values(modules)]) {
+    if (isExtension(extension)) useFeedback(installer(extension))
   }
+
+  return trigger
 }

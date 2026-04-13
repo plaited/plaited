@@ -1,4 +1,3 @@
-import * as z from 'zod'
 import { isTypeOf } from '../utils.ts'
 import { FRONTIER_STATUS } from './behavioral.constants.ts'
 import type {
@@ -121,9 +120,6 @@ export const resumePendingThreadsForSelectedEvent = ({
     }
   }
 }
-
-export const notSchema = (schema: z.ZodTypeAny): z.ZodType<unknown> =>
-  z.unknown().refine((value) => !schema.safeParse(value).success)
 
 export const bSync: BSync = (syncPoint) =>
   function* () {
