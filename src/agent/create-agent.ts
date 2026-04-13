@@ -1,17 +1,11 @@
 import { isAbsolute, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import * as z from 'zod'
-import {
-  behavioral,
-  isExtension,
-  notSchema,
-  type UseInstallerParams,
-  useExtension,
-  useInstaller,
-} from '../behavioral.ts'
+import { behavioral, isExtension, notSchema, useExtension, useInstaller } from '../behavioral.ts'
 import * as modules from '../modules.ts'
 import { AGENT_CORE, AGENT_CORE_EVENTS } from './agent.constants.ts'
 import { type BashDetail, BashDetailSchema } from './agent.schemas.ts'
+import type { CreateAgentOptions } from './agent.types.ts'
 
 /**
  * Creates the minimal agent core around the behavioral engine.
@@ -28,13 +22,9 @@ import { type BashDetail, BashDetailSchema } from './agent.schemas.ts'
  *
  * @public
  */
-export const createAgent = async ({
-  maxKeys,
-  ttlMs,
-  workspace,
-}: Pick<UseInstallerParams, 'ttlMs' | 'maxKeys'> & { workspace: string }) => {
+export const createAgent = async ({ maxKeys, ttlMs, workspace }: CreateAgentOptions) => {
   const { addBThread, trigger, useFeedback, useSnapshot, reportSnapshot } = behavioral()
-  const installer = useInstaller({ trigger, useSnapshot, reportSnapshot, addBThread, ttlMs, maxKeys, useFeedback })
+  const installer = useInstaller({ trigger, useSnapshot, reportSnapshot, addBThread, ttlMs, maxKeys })
 
   const resolveWorkspacePath = (detail: string) => (isAbsolute(detail) ? detail : resolve(workspace, detail))
 
@@ -65,13 +55,13 @@ export const createAgent = async ({
     })
     return {
       async [AGENT_CORE_EVENTS.update_modules](detail: string) {
-        const extensions = await import(pathToFileURL(resolveWorkspacePath(detail)).href)
-        for (const extension of extensions) {
-          if (isExtension(extension)) useFeedback(installer(extension))
+        const moduleExports = await import(pathToFileURL(resolveWorkspacePath(detail)).href)
+        for (const value of Object.values(moduleExports)) {
+          if (isExtension(value)) useFeedback(installer(value))
         }
       },
       async [AGENT_CORE_EVENTS.bash](detail: BashDetail) {
-        const proc = Bun.spawn(['bun', resolveWorkspacePath(detail.path), ...detail.args], {
+        Bun.spawn(['bun', resolveWorkspacePath(detail.path), ...detail.args], {
           stdout: 'pipe',
           stderr: 'pipe',
         })

@@ -1,11 +1,28 @@
-import { type AgentToolCall, AgentToolCallSchema, type ModelUsage, type ToolDefinition } from './agent.schemas.ts'
-import type { ModelResponseDetail, ParsedModelResponse, PrimaryInferenceModel } from './agent.types.ts'
+import type {
+  AgentToolCall,
+  ModelResponseDetail,
+  ModelUsage,
+  ParsedModelResponse,
+  PrimaryInferenceModel,
+  ToolDefinition,
+} from './agent.types.ts'
 
 // ============================================================================
 // parseModelResponse — extract thinking, tool calls, and message from response
 // ============================================================================
 
 const THINK_TAG_REGEX = /^<think>([\s\S]*?)<\/think>\s*/
+
+const parseAgentToolCall = (value: { id: unknown; name: unknown; arguments: unknown }): AgentToolCall | null => {
+  if (typeof value.id !== 'string') return null
+  if (typeof value.name !== 'string') return null
+  if (!value.arguments || typeof value.arguments !== 'object' || Array.isArray(value.arguments)) return null
+  return {
+    id: value.id,
+    name: value.name,
+    arguments: value.arguments as Record<string, unknown>,
+  }
+}
 
 /**
  * Extracts structured data from a raw model response.
@@ -58,13 +75,13 @@ export const parseModelResponse = (response: {
         } else if (raw.function.arguments && typeof raw.function.arguments === 'object') {
           args = raw.function.arguments as Record<string, unknown>
         }
-        const parsedToolCall = AgentToolCallSchema.safeParse({
+        const parsedToolCall = parseAgentToolCall({
           id: raw.id,
           name: raw.function.name,
           arguments: args,
         })
-        if (parsedToolCall.success) {
-          toolCalls.push(parsedToolCall.data)
+        if (parsedToolCall) {
+          toolCalls.push(parsedToolCall)
         }
       }
     }

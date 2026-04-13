@@ -1,6 +1,4 @@
-import type { ModuleParams } from '../../agent.types.ts'
-
-const invalidModule = (_params: ModuleParams) => ({
+const invalidModule = (_params: unknown) => ({
   handlers: {
     bad_handler: 'not-a-function' as never,
   },

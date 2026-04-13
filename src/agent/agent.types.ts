@@ -1,143 +1,48 @@
-import type { infer as Infer, ZodSafeParseError, ZodTypeAny } from 'zod'
-import type {
-  AddBThreads,
-  BPListener,
-  BSync,
-  DefaultHandlers,
-  Disconnect,
-  Trigger,
-  UseSnapshot,
-} from '../behavioral/behavioral.types.ts'
-import type { AgentToolCall, ModelUsage, ToolDefinition } from './agent.schemas.ts'
-
 /**
- * Initial heartbeat configuration for an agent.
+ * Minimal create-agent contract for the current agent core.
  *
  * @public
  */
-export type HeartbeatConfig = {
-  intervalMs?: number
+export type CreateAgentOptions = {
+  workspace: string
+  ttlMs: number
+  maxKeys?: number
 }
 
 /**
- * Minimal create-agent contract for the new core.
- *
- * @remarks
- * `createAgent()` exposes host `trigger` on the public handle and module
- * `emit` through `ModuleParams`.
+ * Structured tool call emitted by model inference.
  *
  * @public
  */
-export type CreateAgentOptions = {}
-
-/**
- * Public handle returned by the new agent core.
- *
- * @remarks
- * `trigger` is the orchestration entrypoint for the runtime.
- *
- * @public
- */
-export type AgentHandle = {
-  trigger: Trigger
-  useSnapshot: UseSnapshot
+export type AgentToolCall = {
+  id: string
+  name: string
+  arguments: Record<string, unknown>
 }
 
 /**
- * Listener signature used by signals and computed values.
+ * Minimal OpenAI-style tool definition used by inference adapters.
  *
  * @public
  */
-export type Listen = (eventType: string | (() => void), getLVC?: boolean) => Disconnect
-
-/**
- * Handler invoked when a signal value fails schema validation.
- *
- * @template TSchema - Schema used to validate the signal.
- *
- * @public
- */
-export type SchemaViolationHandler<TSchema extends ZodTypeAny = ZodTypeAny> = (args: {
-  key: string
-  schema: TSchema
-  value: unknown
-  violation: ZodSafeParseError<Infer<TSchema>>
-}) => void
-
-/**
- * Mutable schema-aware signal used by the agent runtime.
- *
- * @template TSchema - Schema used to validate stored values.
- *
- * @public
- */
-export type Signal<TSchema extends ZodTypeAny = ZodTypeAny> = {
-  set?(value?: Infer<TSchema>): void
-  listen: Listen
-  get(): Infer<TSchema> | undefined
-  schema: TSchema
+export type ToolDefinition = {
+  type: 'function'
+  function: {
+    name: string
+    description?: string
+    parameters?: Record<string, unknown>
+  }
+  tags?: string[]
 }
 
 /**
- * Module for readonly computed signals derived from other signals.
+ * Token accounting payload for model responses.
  *
  * @public
  */
-export type Computed = <T>(
-  compute: () => T,
-  deps: Signal[],
-) => {
-  get: () => T
-  listen: Listen
-}
-
-/**
- * Signal registry exposed to installed modules.
- *
- * @public
- */
-export type Signals = {
-  set: <TSchema extends ZodTypeAny = ZodTypeAny>({
-    key,
-    schema,
-    value,
-    readOnly,
-    onSchemaViolation,
-  }: {
-    key: string
-    schema: TSchema
-    value?: Infer<TSchema>
-    readOnly: boolean
-    onSchemaViolation?: SchemaViolationHandler<TSchema>
-  }) => Signal<TSchema>
-  get: (key: string) => Signal | undefined
-  has: (key: string) => boolean
-}
-
-/**
- * Context object passed to installed modules.
- *
- * @public
- */
-export type ModuleParams = {
-  moduleId: string
-  /** Module ingress surface injected into installed modules. */
-  emit: Trigger
-  /** Replay-safe read of the last selected event detail for a listener. */
-  last: (listener: BPListener) => unknown
-  /** Runtime thread installation surface for module-scoped dynamic threads. */
-  addThreads: AddBThreads
-  useSnapshot: UseSnapshot
-}
-
-/**
- * Module signature used to install agent behavior.
- *
- * @public
- */
-export type Module = (params: ModuleParams) => {
-  threads?: Record<string, ReturnType<BSync>>
-  handlers?: DefaultHandlers
+export type ModelUsage = {
+  inputTokens: number
+  outputTokens: number
 }
 
 /**
