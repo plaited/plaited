@@ -76,8 +76,14 @@ jobs:
           pr_checks="${RUNNER_TEMP}/plaited-pr-checks.txt"
           pr_checks_status="available"
           codeql_json="${RUNNER_TEMP}/plaited-codeql-alerts-open.json"
+          codeql_err="${RUNNER_TEMP}/plaited-codeql-alerts-open.err"
+          codeql_collection_status="available"
           dependabot_json="${RUNNER_TEMP}/plaited-dependabot-alerts-open.json"
+          dependabot_err="${RUNNER_TEMP}/plaited-dependabot-alerts-open.err"
+          dependabot_collection_status="available"
           secret_json="${RUNNER_TEMP}/plaited-secret-scanning-alerts-open.json"
+          secret_err="${RUNNER_TEMP}/plaited-secret-scanning-alerts-open.err"
+          secret_scanning_collection_status="available"
           changed_files="${RUNNER_TEMP}/plaited-pr-changed-files.txt"
 
           gh pr view "${PR_NUMBER}" \
@@ -91,9 +97,36 @@ jobs:
             } > "${pr_checks}"
           fi
 
-          gh api "repos/${GITHUB_REPO}/code-scanning/alerts?state=open&per_page=100" > "${codeql_json}"
-          gh api "repos/${GITHUB_REPO}/dependabot/alerts?state=open&per_page=100" > "${dependabot_json}"
-          gh api "repos/${GITHUB_REPO}/secret-scanning/alerts?state=open&per_page=100&hide_secret=true" > "${secret_json}"
+          format_unavailable_reason() {
+            local err_file="$1"
+            local reason
+            reason="$(tr '\n' ' ' < "${err_file}" | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//' | cut -c1-120)"
+            if [ -z "${reason}" ]; then
+              reason="request failed"
+            fi
+            echo "${reason}"
+          }
+
+          if gh api "repos/${GITHUB_REPO}/code-scanning/alerts?state=open&per_page=100" > "${codeql_json}" 2> "${codeql_err}"; then
+            codeql_collection_status="available"
+          else
+            codeql_collection_status="unavailable ($(format_unavailable_reason "${codeql_err}"))"
+            echo '[]' > "${codeql_json}"
+          fi
+
+          if gh api "repos/${GITHUB_REPO}/dependabot/alerts?state=open&per_page=100" > "${dependabot_json}" 2> "${dependabot_err}"; then
+            dependabot_collection_status="available"
+          else
+            dependabot_collection_status="unavailable ($(format_unavailable_reason "${dependabot_err}"))"
+            echo '[]' > "${dependabot_json}"
+          fi
+
+          if gh api "repos/${GITHUB_REPO}/secret-scanning/alerts?state=open&per_page=100&hide_secret=true" > "${secret_json}" 2> "${secret_err}"; then
+            secret_scanning_collection_status="available"
+          else
+            secret_scanning_collection_status="unavailable ($(format_unavailable_reason "${secret_err}"))"
+            echo '[]' > "${secret_json}"
+          fi
 
           jq -r '.files[].path' "${pr_json}" | sort -u > "${changed_files}"
 
@@ -146,18 +179,22 @@ jobs:
             sed 's/^/- /' "${changed_files}"
             echo
             echo "## PR Checks"
-            echo "- Collection status: ${pr_checks_status}"
+            echo "- PR checks collection status: ${pr_checks_status}"
             echo '```text'
             cat "${pr_checks}"
             echo '```'
             echo
             echo "## Security Facts"
+            echo "- CodeQL collection status: ${codeql_collection_status}"
+            echo "- Dependabot collection status: ${dependabot_collection_status}"
+            echo "- Secret-scanning collection status: ${secret_scanning_collection_status}"
             echo "- CodeQL open alerts total: ${codeql_total}"
             echo "- CodeQL open high/critical alerts total: ${codeql_high_critical_total}"
             echo "- CodeQL open high/critical alerts touching changed files: ${codeql_high_critical_touched}"
             echo "- Dependabot open alerts total: ${dependabot_total}"
             echo "- Dependabot open high/critical alerts total: ${dependabot_high_critical_total}"
             echo "- Secret scanning open alerts total: ${secret_total}"
+            echo "- Unavailable security facts must be treated as residual risk / review finding."
             echo
             echo "## Raw Alert Payloads"
             echo "### CodeQL"
