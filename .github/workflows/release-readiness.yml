@@ -55,7 +55,7 @@ jobs:
           dependabot_collection_status="available"
           secret_file="${work_dir}/secret-scanning-open-alerts.json"
           secret_err_file="${work_dir}/secret-scanning-open-alerts.err"
-          secret_collection_status="available"
+          secret_scanning_collection_status="available"
           default_setup_file="${work_dir}/codeql-default-setup.json"
           body_file="${work_dir}/issue-body.md"
 
@@ -102,9 +102,9 @@ jobs:
           fi
 
           if gh api "repos/${GITHUB_REPO}/secret-scanning/alerts?state=open&per_page=100&hide_secret=true" > "${secret_file}" 2> "${secret_err_file}"; then
-            secret_collection_status="available"
+            secret_scanning_collection_status="available"
           else
-            secret_collection_status="unavailable ($(format_unavailable_reason "${secret_err_file}"))"
+            secret_scanning_collection_status="unavailable ($(format_unavailable_reason "${secret_err_file}"))"
             echo '[]' > "${secret_file}"
           fi
 
@@ -239,8 +239,8 @@ jobs:
           if [ "${dependabot_collection_status}" != "available" ]; then
             p1_items+=("Dependabot collection status is unavailable (${dependabot_collection_status})")
           fi
-          if [ "${secret_collection_status}" != "available" ]; then
-            p1_items+=("secret-scanning collection status is unavailable (${secret_collection_status})")
+          if [ "${secret_scanning_collection_status}" != "available" ]; then
+            p1_items+=("secret-scanning collection status is unavailable (${secret_scanning_collection_status})")
           fi
           if [ "${query_suite}" != "extended" ]; then
             p1_items+=("CodeQL query suite is '${query_suite}', expected 'extended'")
@@ -284,7 +284,7 @@ jobs:
 
           required_human_checks=$'- Confirm release scope and version bump from commit intent.\n- Confirm no undisclosed security exceptions are being accepted.\n- Confirm validation evidence for changed runtime/package surfaces.\n- Confirm post-release main -> dev sync plan (merge commit, no reset/rebase/force-push).'
 
-          validation_summary="Dev checks_collection_status=${checks_collection_status}; codeql_collection_status=${codeql_collection_status}; dependabot_collection_status=${dependabot_collection_status}; secret_scanning_collection_status=${secret_collection_status}; check-runs total=${checks_total}; failures=${checks_failed}; pending=${checks_pending}; neutral_or_skipped=${checks_neutral_or_skipped}."
+          validation_summary="Dev checks_collection_status=${checks_collection_status}; codeql_collection_status=${codeql_collection_status}; dependabot_collection_status=${dependabot_collection_status}; secret_scanning_collection_status=${secret_scanning_collection_status}; check-runs total=${checks_total}; failures=${checks_failed}; pending=${checks_pending}; neutral_or_skipped=${checks_neutral_or_skipped}."
 
           cat > "${body_file}" <<EOF
           ## Release Readiness Snapshot
@@ -315,7 +315,7 @@ jobs:
           security_summary:
             codeql_collection_status: ${codeql_collection_status}
             dependabot_collection_status: ${dependabot_collection_status}
-            secret_scanning_collection_status: ${secret_collection_status}
+            secret_scanning_collection_status: ${secret_scanning_collection_status}
             codeql_open_by_severity: ${codeql_by_severity}
             dependabot_open_by_severity: ${dependabot_by_severity}
             secret_scanning_open_count: ${secret_total}
@@ -338,7 +338,7 @@ jobs:
 
           - CodeQL collection status: \`${codeql_collection_status}\`
           - Dependabot collection status: \`${dependabot_collection_status}\`
-          - Secret-scanning collection status: \`${secret_collection_status}\`
+          - Secret-scanning collection status: \`${secret_scanning_collection_status}\`
           - CodeQL open alerts by severity: \`${codeql_by_severity}\`
           - Dependabot open alerts by severity: \`${dependabot_by_severity}\`
           - Secret-scanning open alert count: \`${secret_total}\`
