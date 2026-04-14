@@ -59,34 +59,34 @@
     ]
   },
   "dependencies": {
-    "@agentclientprotocol/sdk": "^0.18.0",
+    "@agentclientprotocol/sdk": "^0.18.2",
     "@modelcontextprotocol/sdk": "1.29.0",
     "@youdotcom-oss/api": "^0.5.1",
     "zod": "4.3.6"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.10",
+    "@biomejs/biome": "2.4.11",
     "@commitlint/cli": "20.5.0",
     "@commitlint/config-conventional": "20.5.0",
-    "@happy-dom/global-registrator": "^20.8.9",
-    "@mariozechner/pi-coding-agent": "^0.65.0",
+    "@happy-dom/global-registrator": "^20.9.0",
+    "@mariozechner/pi-coding-agent": "^0.65.2",
     "@mermaid-js/mermaid-cli": "11.12.0",
-    "@playwright/cli": "^0.1.5",
+    "@playwright/cli": "^0.1.7",
     "@types/beautify": "0.0.3",
-    "@types/bun": "1.3.11",
-    "@types/node": "25.5.2",
+    "@types/bun": "1.3.12",
+    "@types/node": "25.6.0",
     "@types/sinon": "21.0.1",
-    "@varlock/1password-plugin": "^0.3.2",
-    "assemblyscript": "^0.28.13",
-    "axe-core": "4.11.2",
+    "@varlock/1password-plugin": "^0.3.5",
+    "assemblyscript": "^0.28.14",
+    "axe-core": "4.11.3",
     "beautify": "0.0.8",
     "csstype": "3.2.3",
     "cz-conventional-changelog": "3.3.0",
     "format-package": "7.0.0",
     "lint-staged": "16.4.0",
-    "sinon": "21.0.3",
+    "sinon": "21.1.2",
     "typescript": "6.0.2",
     "typescript-language-server": "5.1.3",
-    "varlock": "^0.7.1"
+    "varlock": "^0.7.4"
   }
 }
