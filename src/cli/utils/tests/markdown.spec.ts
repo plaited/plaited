@@ -54,6 +54,21 @@ description: A test skill
     expect(parsed.body).toBe('')
   })
 
+  test('preserves legacy parsing when closing delimiter is followed by body text on the same line', () => {
+    const parsed = parseMarkdownWithFrontmatter(
+      `---
+name: test-skill
+description: A test skill
+---# Heading
+
+Body content.
+`,
+      TestFrontmatterSchema,
+    )
+
+    expect(parsed.body).toBe('# Heading\n\nBody content.')
+  })
+
   test('throws when frontmatter is missing', () => {
     expect(() => parseMarkdownWithFrontmatter('# No frontmatter', TestFrontmatterSchema)).toThrow(
       'Missing YAML frontmatter',
@@ -70,6 +85,13 @@ description: A test skill
         TestFrontmatterSchema,
       ),
     ).toThrow('Markdown body must not be empty')
+  })
+
+  test('throws on large malformed near-delimiter input without hanging', () => {
+    const repeatedNearDelimiterWhitespace = '\n '.repeat(20_000)
+    const markdown = `---${repeatedNearDelimiterWhitespace}`
+
+    expect(() => parseMarkdownWithFrontmatter(markdown, TestFrontmatterSchema)).toThrow('Missing YAML frontmatter')
   })
 })
 
