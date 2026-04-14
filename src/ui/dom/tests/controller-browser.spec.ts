@@ -8,17 +8,35 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { type FixtureServer, startServer } from './fixtures/serve.ts'
 
-let fixture: FixtureServer
+let fixture: FixtureServer | undefined
 const SESSION = 'ui-test'
+const BROWSER_NOT_OPEN_MESSAGE = `The browser '${SESSION}' is not open`
 
-const cli = async (...args: string[]) => {
+const runCli = async (...args: string[]) => {
   const proc = Bun.spawn(['bunx', '@playwright/cli', `-s=${SESSION}`, ...args], {
     stdout: 'pipe',
     stderr: 'pipe',
   })
-  const text = await new Response(proc.stdout).text()
-  await proc.exited
-  return text.trim()
+  const timeoutId = setTimeout(() => {
+    proc.kill()
+  }, 20_000)
+
+  try {
+    const [stdout, stderr] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()])
+    await proc.exited
+    return `${stdout}${stderr}`.trim()
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
+const cli = async (...args: string[]) => {
+  const first = await runCli(...args)
+  if (first.includes(BROWSER_NOT_OPEN_MESSAGE) && args[0] !== 'open' && args[0] !== 'close') {
+    await runCli('open')
+    return runCli(...args)
+  }
+  return first
 }
 
 const parseResult = (output: string) => {
@@ -27,9 +45,17 @@ const parseResult = (output: string) => {
   return match?.[1]?.trim() ?? output.trim()
 }
 
+const getFixture = (): FixtureServer => {
+  if (!fixture) {
+    throw new Error('Fixture server is not initialized.')
+  }
+  return fixture
+}
+
 /** Navigate to a test page and wait for WebSocket render. */
 const gotoTest = async (path: string, waitMs = 3000) => {
-  await cli('goto', `http://localhost:${fixture.port}${path}`)
+  const activeFixture = getFixture()
+  await cli('goto', `http://localhost:${activeFixture.port}${path}`)
   await new Promise((r) => setTimeout(r, waitMs))
 }
 
@@ -44,11 +70,17 @@ beforeAll(async () => {
 
 afterAll(async () => {
   try {
-    await cli('close')
+    Bun.spawn(['bunx', '@playwright/cli', `-s=${SESSION}`, 'close'], {
+      stdout: 'ignore',
+      stderr: 'ignore',
+    })
   } catch {
     // ignore close errors
   }
-  await fixture.stop()
+  if (fixture) {
+    await fixture.stop()
+    fixture = undefined
+  }
 }, 30000)
 
 // ─── Document runtime: real browser ───────────────────────────────────────────
@@ -231,8 +263,9 @@ describe('controller: user_action', () => {
   }, 30000)
 
   test('server received the user_action message with { id, source, msg } envelope', () => {
-    expect(fixture.lastUserAction).toBeDefined()
-    const detail = (fixture.lastUserAction as Record<string, unknown>).detail as Record<string, unknown>
+    const activeFixture = getFixture()
+    expect(activeFixture.lastUserAction).toBeDefined()
+    const detail = (activeFixture.lastUserAction as Record<string, unknown>).detail as Record<string, unknown>
     expect(detail.msg).toBe('test_click')
     expect(detail.source).toBe('action-test')
     expect(typeof detail.id).toBe('string')
@@ -279,8 +312,9 @@ describe('controller: update_behavioral', () => {
     await cli('eval', "() => { document.getElementById('bypass-probe-btn')?.click(); return 'probe'; }")
     await new Promise((r) => setTimeout(r, 1500))
 
-    expect(fixture.lastUserAction).toBeDefined()
-    const detail = (fixture.lastUserAction as Record<string, unknown>).detail as Record<string, unknown>
+    const activeFixture = getFixture()
+    expect(activeFixture.lastUserAction).toBeDefined()
+    const detail = (activeFixture.lastUserAction as Record<string, unknown>).detail as Record<string, unknown>
     expect(detail.msg).toBe('bypass_probe')
     expect(detail.source).toBe('behavioral-bypass-fixture')
 

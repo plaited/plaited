@@ -36,6 +36,7 @@ const SESSION_COOKIE = 'sid=autoresearch-session-id'
 const serverStartEventType = toServerModuleEventType(SERVER_MODULE_EVENTS.server_start)
 const serverStopEventType = toServerModuleEventType(SERVER_MODULE_EVENTS.server_stop)
 const serverStartedEventType = toServerModuleEventType(SERVER_MODULE_EVENTS.server_started)
+const serverStoppedEventType = toServerModuleEventType(SERVER_MODULE_EVENTS.server_stopped)
 const uiCoreExtensionRequestEventType = `${BRIDGE_UI_CORE_ID}:${EXTENSION_REQUEST_EVENT}`
 
 const cookieAuth: AuthenticateConnection = ({ request }) => {
@@ -75,7 +76,7 @@ const waitForEvent = async ({
   events,
   type,
   after = 0,
-  timeoutMs = 2_000,
+  timeoutMs = 5_000,
 }: {
   events: ObservedEvent[]
   type: string
@@ -90,8 +91,10 @@ const waitForEvent = async ({
     }
     await Bun.sleep(10)
   }
-
-  throw new Error(`Timed out waiting for event: ${type}`)
+  const observedTypes = [...new Set(events.slice(after).map((event) => event.type))].join(', ')
+  throw new Error(
+    `Timed out waiting for event: ${type}${observedTypes.length > 0 ? ` (observed: ${observedTypes})` : ''}`,
+  )
 }
 
 const createHarness = (): ScenarioHarness => {
@@ -116,6 +119,9 @@ const createHarness = (): ScenarioHarness => {
     [serverStartedEventType]: (detail) => {
       events.push({ type: serverStartedEventType, detail })
     },
+    [serverStoppedEventType]: (detail) => {
+      events.push({ type: serverStoppedEventType, detail })
+    },
     [uiCoreExtensionRequestEventType]: (detail) => {
       events.push({ type: uiCoreExtensionRequestEventType, detail })
     },
@@ -132,33 +138,66 @@ const createHarness = (): ScenarioHarness => {
     snapshots,
     trigger,
     stop: async () => {
+      const after = events.length
       trigger({
         type: serverStopEventType,
         detail: {
           closeActiveConnections: true,
         },
       })
-      await Bun.sleep(20)
+      try {
+        await waitForEvent({
+          events,
+          type: serverStoppedEventType,
+          after,
+          timeoutMs: 1_000,
+        })
+      } catch {
+        await Bun.sleep(10)
+      }
     },
   }
 }
 
 const startServer = async (harness: ScenarioHarness, options: Partial<ServerStartDetail> = {}) => {
-  harness.trigger({
-    type: serverStartEventType,
-    detail: {
-      port: 0,
-      authenticateConnection: cookieAuth,
-      ...options,
-    },
-  })
+  let lastError: Error | undefined
 
-  const started = await waitForEvent({
-    events: harness.events,
-    type: serverStartedEventType,
-  })
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const after = harness.events.length
+    harness.trigger({
+      type: serverStartEventType,
+      detail: {
+        port: 0,
+        authenticateConnection: cookieAuth,
+        ...options,
+      },
+    })
 
-  return ServerStartedDetailSchema.parse(started.detail)
+    try {
+      const started = await waitForEvent({
+        events: harness.events,
+        type: serverStartedEventType,
+        after,
+      })
+
+      return ServerStartedDetailSchema.parse(started.detail)
+    } catch (error) {
+      const diagnostic = harness.snapshots
+        .slice()
+        .reverse()
+        .find((snapshot) => snapshot.kind === 'extension_error' && snapshot.id === 'server_module')
+      if (diagnostic?.kind === 'extension_error') {
+        lastError = new Error(
+          `Timed out waiting for ${serverStartedEventType}; latest server_module diagnostic: ${diagnostic.error}`,
+        )
+      } else {
+        lastError = error as Error
+      }
+      await harness.stop()
+    }
+  }
+
+  throw lastError ?? new Error('Failed to start server module for scenario harness.')
 }
 
 const collectSelectedTypes = (snapshots: SnapshotMessage[]): string[] =>

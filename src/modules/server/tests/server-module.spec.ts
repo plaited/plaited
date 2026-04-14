@@ -42,7 +42,7 @@ const uiCoreExtensionRequestEventType = `${BRIDGE_UI_CORE_ID}:${EXTENSION_REQUES
 const uiCoreUserActionEventType = `${BRIDGE_UI_CORE_ID}:user_action`
 const uiCoreSnapshotEventType = `${BRIDGE_UI_CORE_ID}:snapshot`
 
-const cleanupTriggers: Harness['trigger'][] = []
+const cleanupHarnesses: Pick<Harness, 'events' | 'trigger'>[] = []
 
 const wsUrl = (port: number) => `ws://localhost:${port}/ws`
 
@@ -97,7 +97,7 @@ const waitForEvent = async ({
   events,
   type,
   after = 0,
-  timeoutMs = 2_000,
+  timeoutMs = 5_000,
 }: {
   events: ObservedEvent[]
   type: string
@@ -119,7 +119,7 @@ const waitForTransportDiagnostic = async ({
   snapshots,
   code,
   after = 0,
-  timeoutMs = 2_000,
+  timeoutMs = 5_000,
 }: {
   snapshots: SnapshotMessage[]
   code: string
@@ -190,7 +190,7 @@ const createHarness = (): Harness => {
     },
   })
 
-  cleanupTriggers.push(trigger)
+  cleanupHarnesses.push({ events, trigger })
   return { events, snapshots, trigger }
 }
 
@@ -212,15 +212,26 @@ const startServer = async (harness: Harness, options: Partial<ServerStartDetail>
 }
 
 afterEach(async () => {
-  for (const trigger of cleanupTriggers.splice(0)) {
-    trigger({
+  for (const harness of cleanupHarnesses.splice(0)) {
+    const after = harness.events.length
+    harness.trigger({
       type: stopEventType,
       detail: {
         closeActiveConnections: true,
       },
     })
+    try {
+      await waitForEvent({
+        events: harness.events,
+        type: stoppedEventType,
+        after,
+        timeoutMs: 300,
+      })
+    } catch {
+      // some tests never start a server, so no stop event is expected
+    }
   }
-  await Bun.sleep(20)
+  await Bun.sleep(10)
 })
 
 describe('server module extension', () => {

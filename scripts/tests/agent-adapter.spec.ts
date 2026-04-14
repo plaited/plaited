@@ -1,15 +1,29 @@
-import { afterEach, describe, expect, test } from 'bun:test'
+import { afterEach, describe, expect, mock, test } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
-import { initAutoresearchLane, loadAutoresearchLaneStatus } from '../../src/cli/autoresearch/autoresearch.ts'
-import {
+
+mock.module('../../src/cli/autoresearch/evaluation/run-module-scenarios.ts', () => ({
+  runModuleScenarios: async ({ targetId }: { targetId: string }) => [
+    {
+      id: `${targetId}-mock-scenario`,
+      pass: true,
+      summary: 'Mock scenario pass.',
+      snapshots: [],
+      invariants: [{ id: 'mock-invariant', pass: true, reasoning: 'Mock invariant pass.' }],
+      transport: {},
+    },
+  ],
+}))
+
+const { initAutoresearchLane, loadAutoresearchLaneStatus } = await import('../../src/cli/autoresearch/autoresearch.ts')
+const {
   buildAgentStepPrompt,
   parseAgentAdapterArgs,
   runAgentAdapter,
   shouldAcceptAutoresearchEvaluation,
   substituteAgentCommand,
-} from '../agent-adapter.ts'
+} = await import('../agent-adapter.ts')
 
 describe('agent adapter helpers', () => {
   test('parses args and agent command after separator', () => {

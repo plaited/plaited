@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import type { Message, Task, TaskPushNotificationConfig } from '../a2a.schemas.ts'
 import type { A2AOperationHandlers, StreamEvent } from '../a2a.types.ts'
 import { createA2AWebSocketClient } from '../create-a2a-ws-client.ts'
@@ -36,6 +36,40 @@ const waitForOpen = (ws: WebSocket) =>
     ws.onerror = (e) => reject(e)
   })
 
+const startServerWithRetry = async ({
+  factory,
+  attempts = 50,
+}: {
+  factory: () => ReturnType<typeof Bun.serve>
+  attempts?: number
+}): Promise<ReturnType<typeof Bun.serve>> => {
+  let lastError: unknown
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return factory()
+    } catch (error) {
+      lastError = error
+      const message =
+        error instanceof Error ? `${error.message} ${String((error as { code?: unknown }).code ?? '')}` : ''
+      if (!message.includes('EADDRINUSE') && !message.includes('port 0 in use')) {
+        throw error
+      }
+      await Bun.sleep(100)
+    }
+  }
+
+  throw lastError
+}
+
+const stopServer = async (server?: ReturnType<typeof Bun.serve>) => {
+  if (!server) {
+    return
+  }
+  await Promise.resolve(server.stop(true))
+  await Bun.sleep(5)
+}
+
 // ── Basic Operations ──────────────────────────────────────────────────────────
 
 describe('WebSocket A2A', () => {
@@ -67,22 +101,27 @@ describe('WebSocket A2A', () => {
   let server: ReturnType<typeof Bun.serve>
   let wsUrl: string
 
-  test('setup server', () => {
+  beforeAll(async () => {
     const { websocket, handleUpgrade } = createA2AWebSocketHandler({ handlers })
-    server = Bun.serve({
-      port: 0,
-      async fetch(req, srv) {
-        if (req.headers.get('upgrade')?.toLowerCase() === 'websocket') {
-          return handleUpgrade(req, srv.upgrade.bind(srv))
-        }
-        return new Response('Not Found', { status: 404 })
-      },
-      websocket,
+    server = await startServerWithRetry({
+      factory: () =>
+        Bun.serve({
+          port: 0,
+          async fetch(req, srv) {
+            if (req.headers.get('upgrade')?.toLowerCase() === 'websocket') {
+              return handleUpgrade(req, srv.upgrade.bind(srv))
+            }
+            return new Response('Not Found', { status: 404 })
+          },
+          websocket,
+        }),
     })
     wsUrl = `ws://localhost:${server.port}`
-  })
+  }, 30000)
 
-  afterAll(() => server?.stop(true))
+  afterAll(async () => {
+    await stopServer(server)
+  })
 
   test('sendMessage round-trip', async () => {
     const client = createA2AWebSocketClient({ url: wsUrl })
@@ -158,22 +197,27 @@ describe('WebSocket A2A Errors', () => {
   let server: ReturnType<typeof Bun.serve>
   let wsUrl: string
 
-  test('setup server', () => {
+  beforeAll(async () => {
     const { websocket, handleUpgrade } = createA2AWebSocketHandler({ handlers: minimalHandlers })
-    server = Bun.serve({
-      port: 0,
-      async fetch(req, srv) {
-        if (req.headers.get('upgrade')?.toLowerCase() === 'websocket') {
-          return handleUpgrade(req, srv.upgrade.bind(srv))
-        }
-        return new Response('Not Found', { status: 404 })
-      },
-      websocket,
+    server = await startServerWithRetry({
+      factory: () =>
+        Bun.serve({
+          port: 0,
+          async fetch(req, srv) {
+            if (req.headers.get('upgrade')?.toLowerCase() === 'websocket') {
+              return handleUpgrade(req, srv.upgrade.bind(srv))
+            }
+            return new Response('Not Found', { status: 404 })
+          },
+          websocket,
+        }),
     })
     wsUrl = `ws://localhost:${server.port}`
-  })
+  }, 30000)
 
-  afterAll(() => server?.stop(true))
+  afterAll(async () => {
+    await stopServer(server)
+  })
 
   test('unimplemented method returns method_not_found', async () => {
     const client = createA2AWebSocketClient({ url: wsUrl })
@@ -210,7 +254,7 @@ describe('WebSocket A2A Handler Errors', () => {
   let server: ReturnType<typeof Bun.serve>
   let wsUrl: string
 
-  test('setup server', () => {
+  beforeAll(async () => {
     const { websocket, handleUpgrade } = createA2AWebSocketHandler({
       handlers: {
         sendMessage: async () => {
@@ -218,20 +262,25 @@ describe('WebSocket A2A Handler Errors', () => {
         },
       },
     })
-    server = Bun.serve({
-      port: 0,
-      async fetch(req, srv) {
-        if (req.headers.get('upgrade')?.toLowerCase() === 'websocket') {
-          return handleUpgrade(req, srv.upgrade.bind(srv))
-        }
-        return new Response('Not Found', { status: 404 })
-      },
-      websocket,
+    server = await startServerWithRetry({
+      factory: () =>
+        Bun.serve({
+          port: 0,
+          async fetch(req, srv) {
+            if (req.headers.get('upgrade')?.toLowerCase() === 'websocket') {
+              return handleUpgrade(req, srv.upgrade.bind(srv))
+            }
+            return new Response('Not Found', { status: 404 })
+          },
+          websocket,
+        }),
     })
     wsUrl = `ws://localhost:${server.port}`
-  })
+  }, 30000)
 
-  afterAll(() => server?.stop(true))
+  afterAll(async () => {
+    await stopServer(server)
+  })
 
   test('handler exception returns internal error', async () => {
     const client = createA2AWebSocketClient({ url: wsUrl })
@@ -254,24 +303,29 @@ describe('WebSocket A2A Raw Protocol', () => {
   let server: ReturnType<typeof Bun.serve>
   let wsUrl: string
 
-  test('setup server', () => {
+  beforeAll(async () => {
     const { websocket, handleUpgrade } = createA2AWebSocketHandler({
       handlers: { sendMessage: async () => makeTask('task-raw') },
     })
-    server = Bun.serve({
-      port: 0,
-      async fetch(req, srv) {
-        if (req.headers.get('upgrade')?.toLowerCase() === 'websocket') {
-          return handleUpgrade(req, srv.upgrade.bind(srv))
-        }
-        return new Response('Not Found', { status: 404 })
-      },
-      websocket,
+    server = await startServerWithRetry({
+      factory: () =>
+        Bun.serve({
+          port: 0,
+          async fetch(req, srv) {
+            if (req.headers.get('upgrade')?.toLowerCase() === 'websocket') {
+              return handleUpgrade(req, srv.upgrade.bind(srv))
+            }
+            return new Response('Not Found', { status: 404 })
+          },
+          websocket,
+        }),
     })
     wsUrl = `ws://localhost:${server.port}`
-  })
+  }, 30000)
 
-  afterAll(() => server?.stop(true))
+  afterAll(async () => {
+    await stopServer(server)
+  })
 
   test('invalid JSON returns parse error', async () => {
     const ws = new WebSocket(wsUrl)
@@ -348,23 +402,32 @@ describe('WebSocket Push Notification Config', () => {
   let server: ReturnType<typeof Bun.serve>
   let wsUrl: string
 
-  test('setup server', () => {
+  beforeAll(async () => {
     configs.clear()
     const { websocket, handleUpgrade } = createA2AWebSocketHandler({ handlers: pushHandlers })
-    server = Bun.serve({
-      port: 0,
-      async fetch(req, srv) {
-        if (req.headers.get('upgrade')?.toLowerCase() === 'websocket') {
-          return handleUpgrade(req, srv.upgrade.bind(srv))
-        }
-        return new Response('Not Found', { status: 404 })
-      },
-      websocket,
+    server = await startServerWithRetry({
+      factory: () =>
+        Bun.serve({
+          port: 0,
+          async fetch(req, srv) {
+            if (req.headers.get('upgrade')?.toLowerCase() === 'websocket') {
+              return handleUpgrade(req, srv.upgrade.bind(srv))
+            }
+            return new Response('Not Found', { status: 404 })
+          },
+          websocket,
+        }),
     })
     wsUrl = `ws://localhost:${server.port}`
+  }, 30000)
+
+  beforeEach(() => {
+    configs.clear()
   })
 
-  afterAll(() => server?.stop(true))
+  afterAll(async () => {
+    await stopServer(server)
+  })
 
   test('setPushConfig round-trip', async () => {
     const client = createA2AWebSocketClient({ url: wsUrl })
@@ -386,6 +449,12 @@ describe('WebSocket Push Notification Config', () => {
   test('getPushConfig round-trip', async () => {
     const client = createA2AWebSocketClient({ url: wsUrl })
     try {
+      await client.setPushConfig({
+        id: 'task-42',
+        pushNotificationConfig: {
+          url: 'https://example.com/webhook',
+        },
+      })
       const result = await client.getPushConfig({ id: 'task-42' })
       expect(result.id).toBe('task-42')
       expect(result.pushNotificationConfig.url).toBe('https://example.com/webhook')
@@ -397,6 +466,10 @@ describe('WebSocket Push Notification Config', () => {
   test('listPushConfigs round-trip', async () => {
     const client = createA2AWebSocketClient({ url: wsUrl })
     try {
+      await client.setPushConfig({
+        id: 'task-42',
+        pushNotificationConfig: { url: 'https://example.com/webhook' },
+      })
       await client.setPushConfig({
         id: 'task-99',
         pushNotificationConfig: { url: 'https://other.com/hook' },
@@ -411,11 +484,17 @@ describe('WebSocket Push Notification Config', () => {
   test('deletePushConfig round-trip', async () => {
     const client = createA2AWebSocketClient({ url: wsUrl })
     try {
+      await client.setPushConfig({
+        id: 'task-42',
+        pushNotificationConfig: { url: 'https://example.com/webhook' },
+      })
       await client.deletePushConfig({ id: 'task-42' })
       await client.getPushConfig({ id: 'task-42' })
       expect(true).toBe(false)
     } catch (error) {
       expect(error).toBeInstanceOf(Error)
+    } finally {
+      client.disconnect()
     }
   })
 })

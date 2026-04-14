@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import { AGENT_CARD_PATH } from '../a2a.constants.ts'
 import type { AgentCard, Message, Task, TaskPushNotificationConfig } from '../a2a.schemas.ts'
 import type { A2AOperationHandlers, StreamEvent } from '../a2a.types.ts'
@@ -28,15 +28,51 @@ const makeMessage = (id: string, text: string): Message => ({
   parts: [{ kind: 'text', text }],
 })
 
+const startServerWithRetry = async ({
+  factory,
+  attempts = 50,
+}: {
+  factory: () => ReturnType<typeof Bun.serve>
+  attempts?: number
+}): Promise<ReturnType<typeof Bun.serve>> => {
+  let lastError: unknown
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return factory()
+    } catch (error) {
+      lastError = error
+      const message =
+        error instanceof Error ? `${error.message} ${String((error as { code?: unknown }).code ?? '')}` : ''
+      if (!message.includes('EADDRINUSE') && !message.includes('port 0 in use')) {
+        throw error
+      }
+      await Bun.sleep(100)
+    }
+  }
+
+  throw lastError
+}
+
 /** Create a test server with the given handlers */
-const createTestServer = (
+const createTestServer = async (
   handlers: A2AOperationHandlers,
   authenticate?: (req: Request) => Promise<string | undefined>,
 ) => {
   const routes = createA2AHandlers({ card: testCard, handlers, authenticate })
-  const server = Bun.serve({ port: 0, routes })
+  const server = await startServerWithRetry({
+    factory: () => Bun.serve({ port: 0, routes }),
+  })
   const url = `http://localhost:${server.port}`
   return { server, url }
+}
+
+const stopServer = async (server?: ReturnType<typeof Bun.serve>) => {
+  if (!server) {
+    return
+  }
+  await Promise.resolve(server.stop(true))
+  await Bun.sleep(5)
 }
 
 // ── Basic Operations ──────────────────────────────────────────────────────────
@@ -65,13 +101,15 @@ describe('Client-Server Integration', () => {
   let server: ReturnType<typeof Bun.serve>
   let url: string
 
-  test('setup', () => {
-    const result = createTestServer(handlers)
+  beforeAll(async () => {
+    const result = await createTestServer(handlers)
     server = result.server
     url = result.url
-  })
+  }, 30000)
 
-  afterAll(() => server?.stop(true))
+  afterAll(async () => {
+    await stopServer(server)
+  })
 
   test('Agent Card served at well-known URL', async () => {
     const response = await fetch(`${url}${AGENT_CARD_PATH}`)
@@ -151,7 +189,7 @@ describe('Dynamic Agent Card', () => {
   let url: string
   let skillCount: number
 
-  test('setup', () => {
+  beforeAll(async () => {
     skillCount = 0
     const routes = createA2AHandlers({
       card: () => ({
@@ -163,11 +201,15 @@ describe('Dynamic Agent Card', () => {
       }),
       handlers: { sendMessage: async () => makeTask('task-1') },
     })
-    server = Bun.serve({ port: 0, routes })
+    server = await startServerWithRetry({
+      factory: () => Bun.serve({ port: 0, routes }),
+    })
     url = `http://localhost:${server.port}`
-  })
+  }, 30000)
 
-  afterAll(() => server?.stop(true))
+  afterAll(async () => {
+    await stopServer(server)
+  })
 
   test('card reflects runtime state changes', async () => {
     const client = createA2AClient({ url })
@@ -195,13 +237,15 @@ describe('Error Handling', () => {
   let server: ReturnType<typeof Bun.serve>
   let url: string
 
-  test('setup', () => {
-    const result = createTestServer(minimalHandlers)
+  beforeAll(async () => {
+    const result = await createTestServer(minimalHandlers)
     server = result.server
     url = result.url
-  })
+  }, 30000)
 
-  afterAll(() => server?.stop(true))
+  afterAll(async () => {
+    await stopServer(server)
+  })
 
   test('unimplemented method returns method_not_found', async () => {
     const client = createA2AClient({ url })
@@ -284,17 +328,19 @@ describe('Authentication', () => {
   let server: ReturnType<typeof Bun.serve>
   let url: string
 
-  test('setup', () => {
-    const result = createTestServer({ sendMessage: async () => makeTask('task-auth') }, async (req) => {
+  beforeAll(async () => {
+    const result = await createTestServer({ sendMessage: async () => makeTask('task-auth') }, async (req) => {
       const auth = req.headers.get('authorization')
       if (auth !== 'Bearer valid-token') throw new Error('Unauthorized')
       return 'user-1'
     })
     server = result.server
     url = result.url
-  })
+  }, 30000)
 
-  afterAll(() => server?.stop(true))
+  afterAll(async () => {
+    await stopServer(server)
+  })
 
   test('authenticated request succeeds', async () => {
     const client = createA2AClient({
@@ -341,17 +387,19 @@ describe('Handler Errors', () => {
   let server: ReturnType<typeof Bun.serve>
   let url: string
 
-  test('setup', () => {
-    const result = createTestServer({
+  beforeAll(async () => {
+    const result = await createTestServer({
       sendMessage: async () => {
         throw new Error('Handler exploded')
       },
     })
     server = result.server
     url = result.url
-  })
+  }, 30000)
 
-  afterAll(() => server?.stop(true))
+  afterAll(async () => {
+    await stopServer(server)
+  })
 
   test('handler exception returns internal error', async () => {
     const client = createA2AClient({ url })
@@ -399,14 +447,20 @@ describe('Push Notification Config (HTTP)', () => {
   let server: ReturnType<typeof Bun.serve>
   let url: string
 
-  test('setup', () => {
+  beforeAll(async () => {
     configs.clear()
-    const result = createTestServer(pushHandlers)
+    const result = await createTestServer(pushHandlers)
     server = result.server
     url = result.url
+  }, 30000)
+
+  beforeEach(() => {
+    configs.clear()
   })
 
-  afterAll(() => server?.stop(true))
+  afterAll(async () => {
+    await stopServer(server)
+  })
 
   test('setPushConfig round-trip', async () => {
     const client = createA2AClient({ url })
@@ -425,6 +479,12 @@ describe('Push Notification Config (HTTP)', () => {
 
   test('getPushConfig round-trip', async () => {
     const client = createA2AClient({ url })
+    await client.setPushConfig({
+      id: 'task-42',
+      pushNotificationConfig: {
+        url: 'https://example.com/webhook',
+      },
+    })
     const result = await client.getPushConfig({ id: 'task-42' })
     expect(result.id).toBe('task-42')
     expect(result.pushNotificationConfig.url).toBe('https://example.com/webhook')
@@ -433,6 +493,10 @@ describe('Push Notification Config (HTTP)', () => {
 
   test('listPushConfigs round-trip', async () => {
     const client = createA2AClient({ url })
+    await client.setPushConfig({
+      id: 'task-42',
+      pushNotificationConfig: { url: 'https://example.com/webhook' },
+    })
     await client.setPushConfig({
       id: 'task-99',
       pushNotificationConfig: { url: 'https://other.com/hook' },
@@ -444,6 +508,10 @@ describe('Push Notification Config (HTTP)', () => {
 
   test('deletePushConfig round-trip', async () => {
     const client = createA2AClient({ url })
+    await client.setPushConfig({
+      id: 'task-42',
+      pushNotificationConfig: { url: 'https://example.com/webhook' },
+    })
     await client.deletePushConfig({ id: 'task-42' })
     try {
       await client.getPushConfig({ id: 'task-42' })
