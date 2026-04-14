@@ -171,18 +171,33 @@ jobs:
             jq '[.check_runs[] | select((.status // "") == "completed" and ((.conclusion // "") | test("^(neutral|skipped|stale)$")))] | length' "${checks_file}"
           )"
 
+          max_included_pr_lines=40
+          max_included_commit_lines=120
+          max_diff_stat_lines=160
+
           included_pr_lines="$(
-            jq --rawfile shas "${commit_shas_file}" '
+            jq --argjson max_lines "${max_included_pr_lines}" --rawfile shas "${commit_shas_file}" '
               ($shas | split("\n") | map(select(length > 0))) as $shas
-              | [
+              | (
+                [
                   .[]
                   | (.mergeCommit.oid // "") as $merge_oid
                   | select($merge_oid != "" and ($shas | index($merge_oid)))
                 ]
-              | if length == 0 then
+              ) as $matched
+              | if ($matched | length) == 0 then
                   ["- (No merged PRs deterministically matched this range)"]
                 else
-                  map("- #\(.number) \(.title) (\(.url))")
+                  (
+                    ($matched[0:$max_lines] | map("- #\(.number) \(.title) (\(.url))"))
+                    + (
+                      if ($matched | length) > $max_lines then
+                        ["- ... truncated: showing first \($max_lines) of \($matched | length) deterministically matched PRs"]
+                      else
+                        []
+                      end
+                    )
+                  )
                 end
               | .[]
             ' "${prs_file}"
@@ -192,7 +207,22 @@ jobs:
             if [ "${commit_count}" -eq 0 ]; then
               echo "- (No commits ahead of main)"
             else
-              sed 's/^/- /' "${log_file}"
+              awk -v max="${max_included_commit_lines}" 'NR <= max { print "- " $0 }' "${log_file}"
+              if [ "${commit_count}" -gt "${max_included_commit_lines}" ]; then
+                echo "- ... truncated: showing first ${max_included_commit_lines} of ${commit_count} commits from main..dev"
+              fi
+            fi
+          )"
+
+          diff_stat_line_count="$(wc -l < "${diff_stat_file}" | tr -d ' ')"
+          diff_stat_lines="$(
+            if [ "${diff_stat_line_count}" -eq 0 ]; then
+              echo "(No diff-stat entries)"
+            else
+              awk -v max="${max_diff_stat_lines}" 'NR <= max { print $0 }' "${diff_stat_file}"
+              if [ "${diff_stat_line_count}" -gt "${max_diff_stat_lines}" ]; then
+                echo "... truncated: showing first ${max_diff_stat_lines} of ${diff_stat_line_count} diff-stat lines"
+              fi
             fi
           )"
 
@@ -378,7 +408,7 @@ jobs:
           ### Diff Stat
 
           \`\`\`text
-          $(cat "${diff_stat_file}")
+          ${diff_stat_lines}
           \`\`\`
 
           ## Branch Strategy Reminder
