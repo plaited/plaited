@@ -2,7 +2,72 @@ import { normalize } from 'node:path'
 import { YAML } from 'bun'
 import type * as z from 'zod'
 
-const frontmatterRegex = /^---\s*[\r\n]([\s\S]*?)[\r\n]---\s*/
+type ParsedFrontmatterBlock = {
+  frontmatter: string
+  bodyStartIndex: number
+}
+
+const isLineBreakCharacter = (character: string | undefined): boolean => character === '\n' || character === '\r'
+
+const isWhitespaceCharacter = (character: string): boolean => {
+  const charCode = character.charCodeAt(0)
+  if (
+    charCode === 0x20 ||
+    charCode === 0x09 ||
+    charCode === 0x0a ||
+    charCode === 0x0b ||
+    charCode === 0x0c ||
+    charCode === 0x0d
+  ) {
+    return true
+  }
+
+  return character.trim().length === 0
+}
+
+const isWhitespaceAt = (value: string, index: number): boolean => {
+  const character = value[index]
+  return character !== undefined && isWhitespaceCharacter(character)
+}
+
+const parseFrontmatterBlock = (markdown: string): ParsedFrontmatterBlock | null => {
+  if (!markdown.startsWith('---')) return null
+
+  let openingDelimiterScanIndex = 3
+  let lastOpeningLineBreakIndex = -1
+  while (openingDelimiterScanIndex < markdown.length && isWhitespaceAt(markdown, openingDelimiterScanIndex)) {
+    if (isLineBreakCharacter(markdown[openingDelimiterScanIndex])) {
+      lastOpeningLineBreakIndex = openingDelimiterScanIndex
+    }
+    openingDelimiterScanIndex += 1
+  }
+
+  if (lastOpeningLineBreakIndex === -1) {
+    return null
+  }
+
+  const frontmatterStartIndex = lastOpeningLineBreakIndex + 1
+  let frontmatterEndIndex = -1
+
+  for (let index = frontmatterStartIndex; index < markdown.length - 3; index++) {
+    if (!isLineBreakCharacter(markdown[index])) continue
+    if (!markdown.startsWith('---', index + 1)) continue
+    frontmatterEndIndex = index
+    break
+  }
+
+  if (frontmatterEndIndex === -1) return null
+
+  let bodyStartIndex = frontmatterEndIndex + 4
+  while (bodyStartIndex < markdown.length && isWhitespaceAt(markdown, bodyStartIndex)) {
+    bodyStartIndex += 1
+  }
+
+  return {
+    frontmatter: markdown.slice(frontmatterStartIndex, frontmatterEndIndex),
+    bodyStartIndex,
+  }
+}
 
 /**
  * Consumes an `HTMLRewriter` result so link extraction side effects are applied.
@@ -43,13 +108,13 @@ export const parseMarkdownWithFrontmatter = <TSchema extends z.ZodType>(
     requireBody?: boolean
   },
 ): { frontmatter: z.infer<TSchema>; body: string } => {
-  const match = markdown.match(frontmatterRegex)
-  const frontmatter = match?.[1]
+  const parsedFrontmatterBlock = parseFrontmatterBlock(markdown)
+  const frontmatter = parsedFrontmatterBlock?.frontmatter
   if (!frontmatter) {
     throw new Error('Missing YAML frontmatter')
   }
 
-  const body = markdown.slice(match[0].length).trim()
+  const body = markdown.slice(parsedFrontmatterBlock.bodyStartIndex).trim()
   if (options?.requireBody !== false && !body) {
     throw new Error('Markdown body must not be empty')
   }
