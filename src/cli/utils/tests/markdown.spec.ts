@@ -60,6 +60,15 @@ description: A test skill
     )
   })
 
+  test('throws on large malformed frontmatter with many near-delimiter lines', () => {
+    const nearDelimiterLines = Array.from({ length: 20_000 }, () => '--- not-a-delimiter')
+    const markdown = `---
+${nearDelimiterLines.join('\n')}
+# Missing frontmatter delimiter`
+
+    expect(() => parseMarkdownWithFrontmatter(markdown, TestFrontmatterSchema)).toThrow('Missing YAML frontmatter')
+  })
+
   test('throws when the body is required but empty', () => {
     expect(() =>
       parseMarkdownWithFrontmatter(
