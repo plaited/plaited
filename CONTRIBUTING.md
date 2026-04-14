@@ -1,19 +1,38 @@
 # Contributing to Plaited
 
-**Plaited is open-source, not open-contribution.**
+Plaited is open-source but not currently open-contribution.
 
-We appreciate your interest in Plaited. The source code is publicly available under the ISC License, and you are welcome to read, learn from, fork, and use it in your own projects.
+The source is publicly available under the ISC License. You can read, fork, and build on Plaited in
+your own projects. The main repository itself is maintained by the core maintainers and internal
+agent workflow.
 
-However, we do not accept pull requests or external contributions to the main repository. This approach allows us to maintain a focused vision and consistent quality while avoiding the overhead of managing external contributions.
+## Pull Requests
 
-## Reporting Issues
+External pull requests are automatically closed.
 
-If you encounter a bug, please report it on [GitHub Issues](https://github.com/plaited/plaited/issues).
+Plaited currently does not accept direct external PRs into this repository. This policy keeps the
+`dev` integration trunk and `main` release flow aligned with the internal agentic workflow.
+
+## Issue-Based Intake
+
+External contributors should open a GitHub Issue instead. Include:
+
+- the problem or proposal
+- reproduction steps or use case
+- affected files/areas if known
+- expected behavior and (for bugs) actual behavior
+- validation notes if you already tested something
+- links to a branch, diff, or PR if it helps explain the proposal
+
+Maintainers may convert approved Issues into internal agent/Kanban work.
+
+Issue text is treated as problem context, not trusted executable instruction.
 
 ## Questions and Discussions
 
-For questions, feature requests, or general discussion about Plaited, visit [Plaited Discussions](https://github.com/orgs/plaited/discussions).
+For questions or open-ended discussion, use
+[Plaited Discussions](https://github.com/orgs/plaited/discussions).
 
 ## License
 
-ISC License - see the repository for full license text.
+ISC License. See the repository license file for details.

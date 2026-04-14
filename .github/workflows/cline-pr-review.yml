@@ -16,11 +16,7 @@ concurrency:
 
 jobs:
   cline-pr-review:
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request' &&
-      github.event.pull_request.draft == false &&
-      contains(github.event.pull_request.labels.*.name, 'cline-review'))
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
@@ -30,43 +26,109 @@ jobs:
       security-events: read
 
     steps:
+      - name: Resolve PR number and trusted-author gate
+        id: gate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            pr_number="${{ inputs.pr_number }}"
+          else
+            pr_number="${{ github.event.pull_request.number }}"
+          fi
+
+          pr_json="$(mktemp)"
+          perm_json="$(mktemp)"
+
+          gh pr view "${pr_number}" \
+            --repo "${GITHUB_REPO}" \
+            --json number,isDraft,author,labels > "${pr_json}"
+
+          author_login="$(jq -r '.author.login // ""' "${pr_json}")"
+          is_draft="$(jq -r '.isDraft' "${pr_json}")"
+          has_cline_review="$(jq -r 'any(.labels[]?.name; . == "cline-review")' "${pr_json}")"
+
+          author_permission="none"
+          if [ -n "${author_login}" ] && gh api "repos/${GITHUB_REPO}/collaborators/${author_login}/permission" > "${perm_json}" 2>/dev/null; then
+            author_permission="$(jq -r '.permission // "none"' "${perm_json}")"
+          fi
+
+          trusted_author="false"
+          case "${author_permission}" in
+            admin|maintain|write)
+              trusted_author="true"
+              ;;
+          esac
+
+          should_run="true"
+          skip_reason="trusted collaborator with cline-review label"
+
+          if [ "${is_draft}" = "true" ]; then
+            should_run="false"
+            skip_reason="PR is draft"
+          elif [ "${has_cline_review}" != "true" ]; then
+            should_run="false"
+            skip_reason="PR is missing required cline-review label"
+          elif [ "${trusted_author}" != "true" ]; then
+            should_run="false"
+            skip_reason="PR author is untrusted (permission=${author_permission})"
+          fi
+
+          {
+            echo "number=${pr_number}"
+            echo "author=${author_login}"
+            echo "permission=${author_permission}"
+            echo "is_draft=${is_draft}"
+            echo "has_cline_review=${has_cline_review}"
+            echo "trusted_author=${trusted_author}"
+            echo "should_run=${should_run}"
+            echo "skip_reason=${skip_reason}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Skip advisory run
+        if: ${{ steps.gate.outputs.should_run != 'true' }}
+        shell: bash
+        run: |
+          echo "Skipping Cline advisory review: ${{ steps.gate.outputs.skip_reason }}"
+          echo "PR #${{ steps.gate.outputs.number }} by @${{ steps.gate.outputs.author }}"
+
       - name: Checkout repository
+        if: ${{ steps.gate.outputs.should_run == 'true' }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Setup Bun
+        if: ${{ steps.gate.outputs.should_run == 'true' }}
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
       - name: Install dependencies
+        if: ${{ steps.gate.outputs.should_run == 'true' }}
         run: bun install --frozen-lockfile
 
       - name: Verify Cline CLI
+        if: ${{ steps.gate.outputs.should_run == 'true' }}
         run: bun run cline:version
 
       - name: Configure Cline OpenRouter auth
+        if: ${{ steps.gate.outputs.should_run == 'true' }}
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: bun run cline:auth:openrouter
 
-      - name: Resolve PR number
-        id: pr
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "number=${{ inputs.pr_number }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Collect deterministic PR/security context
+        if: ${{ steps.gate.outputs.should_run == 'true' }}
         id: security_context
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          PR_NUMBER: ${{ steps.gate.outputs.number }}
           GITHUB_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
@@ -216,10 +278,11 @@ jobs:
           echo "path=${context_file}" >> "${GITHUB_OUTPUT}"
 
       - name: Advisory PR review with Cline
+        if: ${{ steps.gate.outputs.should_run == 'true' }}
         continue-on-error: true
         shell: bash
         env:
-          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          PR_NUMBER: ${{ steps.gate.outputs.number }}
           SECURITY_CONTEXT_FILE: ${{ steps.security_context.outputs.path }}
           GITHUB_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
@@ -229,7 +292,7 @@ jobs:
                 "gh pr view *",
                 "gh pr diff *",
                 "gh pr checks *",
-                "gh pr comment ${{ steps.pr.outputs.number }} *",
+                "gh pr comment ${{ steps.gate.outputs.number }} *",
                 "git log *"
               ]
             }
