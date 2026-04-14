@@ -176,7 +176,7 @@ jobs:
           max_diff_stat_lines=160
 
           included_pr_lines="$(
-            jq --argjson max_lines "${max_included_pr_lines}" --rawfile shas "${commit_shas_file}" '
+            jq -r --argjson max_lines "${max_included_pr_lines}" --rawfile shas "${commit_shas_file}" '
               ($shas | split("\n") | map(select(length > 0))) as $shas
               | (
                 [
