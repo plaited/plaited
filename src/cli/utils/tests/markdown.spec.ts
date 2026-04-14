@@ -69,6 +69,20 @@ Body content.
     expect(parsed.body).toBe('# Heading\n\nBody content.')
   })
 
+  test('preserves leading indentation after opening delimiter before YAML parsing', () => {
+    expect(() =>
+      parseMarkdownWithFrontmatter(
+        `---
+ name: test-skill
+description: A test skill
+---
+Body content.
+`,
+        TestFrontmatterSchema,
+      ),
+    ).toThrow('YAML Parse error')
+  })
+
   test('throws when frontmatter is missing', () => {
     expect(() => parseMarkdownWithFrontmatter('# No frontmatter', TestFrontmatterSchema)).toThrow(
       'Missing YAML frontmatter',

@@ -33,16 +33,20 @@ const isWhitespaceAt = (value: string, index: number): boolean => {
 const parseFrontmatterBlock = (markdown: string): ParsedFrontmatterBlock | null => {
   if (!markdown.startsWith('---')) return null
 
-  let openingDelimiterEndIndex = 3
-  while (openingDelimiterEndIndex < markdown.length && isWhitespaceAt(markdown, openingDelimiterEndIndex)) {
-    openingDelimiterEndIndex += 1
+  let openingDelimiterScanIndex = 3
+  let lastOpeningLineBreakIndex = -1
+  while (openingDelimiterScanIndex < markdown.length && isWhitespaceAt(markdown, openingDelimiterScanIndex)) {
+    if (isLineBreakCharacter(markdown[openingDelimiterScanIndex])) {
+      lastOpeningLineBreakIndex = openingDelimiterScanIndex
+    }
+    openingDelimiterScanIndex += 1
   }
 
-  if (openingDelimiterEndIndex === 3 || !isLineBreakCharacter(markdown[openingDelimiterEndIndex - 1])) {
+  if (lastOpeningLineBreakIndex === -1) {
     return null
   }
 
-  const frontmatterStartIndex = openingDelimiterEndIndex
+  const frontmatterStartIndex = lastOpeningLineBreakIndex + 1
   let frontmatterEndIndex = -1
 
   for (let index = frontmatterStartIndex; index < markdown.length - 3; index++) {
