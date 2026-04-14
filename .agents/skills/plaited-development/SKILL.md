@@ -72,3 +72,44 @@ promotion.
 - Stop before destructive Git operations.
 - Stop if passing tests would require weakening installer/core contracts.
 - Stop if requested implementation conflicts with verified current code.
+
+## 9. Cline Kanban Pilot Policy
+
+- Install Cline CLI and Kanban as repo-local `devDependencies`; run them through `bun run` scripts,
+  not global installs.
+- Treat Cline CLI as the provider-auth and agent CLI surface for local operator workflows.
+- Cline Kanban may be used as the local orchestration board for Plaited agent work.
+- Keep work card/task-scoped and run tasks in isolated git worktrees.
+- Use Kanban cards across implementation, review, cleanup, and benchmarking slices.
+- Review card diffs before landing any card output.
+- Prefer opening PRs or landing reviewed commits over direct push to `dev`.
+- Keep explicit human approval for promotion from `dev` to `main`.
+- Treat Kanban autonomy as experimental risk: current docs note experimental features that bypass
+  permissions/runtime hooks. Use worktree isolation and review outputs before landing.
+
+## 10. Provider Policy (Cline + OpenRouter)
+
+- OpenRouter is a model provider behind Cline/Kanban, not a direct Plaited repo API dependency in
+  this workflow.
+- Configure OpenRouter in Cline provider settings when needed; do not wire direct OpenRouter API
+  calls into repo tooling.
+- Do not add OpenRouter CI jobs for this repo-local development workflow.
+- Do not add repo-owned OpenRouter scripts in this slice.
+- Do not commit API keys.
+- GitHub repo secret `OPENROUTER_API_KEY` may exist for future Cline/GitHub integrations, but this
+  workflow must not assume direct in-repo OpenRouter API use.
+- Keep local Cline/OpenRouter credentials in local provider config or approved secret management.
+
+## 11. Pi/Fanout Transition Note
+
+- If the Cline Kanban pilot proves reliable, it may replace current `pi`/manual fanout patterns
+  over time.
+- Do not remove or refactor existing `pi`/fanout tooling in this slice.
+- Any replacement decision requires pilot validation of task decomposition, worktree cleanup,
+  review quality, and cost.
+
+## 12. Suggested Pilot Cards
+
+- Reviewer card: run one known recent diff through a review card and verify finding quality.
+- Cleanup card: make a narrow workflow doc/skill cleanup and validate lane hygiene.
+- Benchmark card: compare two OpenRouter-backed Cline reviewer models on the same review prompt.
