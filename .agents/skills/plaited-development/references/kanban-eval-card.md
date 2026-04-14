@@ -39,7 +39,11 @@ Required Repo Instructions
 
 Worktree Expectations
 - Start from a fresh branch/worktree based on `origin/dev`.
-- Execute eval cards in isolated worktrees.
+- For manual worktree creation, prefer `.worktrees/<card-slug>/`.
+- For manual Cline CLI runs, use `cline --cwd .worktrees/<card-slug>`.
+- In Cline Worktrees UI, choose `.worktrees/<card-slug>/` when prompted for a folder path.
+- If running through Cline Kanban, use the tool-managed task worktree path under
+  `~/.cline/worktrees/<task-id>/<workspace-folder-label>/`.
 - Target PRs at `dev` unless explicitly scoped to release/promotion work.
 - Expect squash merge into `dev` for normal card work.
 - Pull/sync `dev` with fast-forward only (`git fetch origin dev` then `git merge --ff-only origin/dev`).
@@ -48,6 +52,7 @@ Worktree Expectations
 - Adopt winning results through a normal PR to `dev`.
 - Do not directly mutate `dev` from eval loops.
 - After merge, trash/delete the card worktree.
+- For Kanban task worktrees, rely on card trash/delete cleanup.
 - Do not continue work on a squash-merged branch.
 
 Validation Expectations

@@ -34,6 +34,12 @@ Do not rely on long-running opaque subagent state as the only record for large f
 **File history** — `git log --oneline -- <path>` to understand why.
 **Branch scope** — `git diff main...HEAD --stat` for current changes.
 **History over stale prose** — code + git history wins. Update the doc.
+**Agent worktrees** — create new manual task worktrees under `.worktrees/<task-slug>/` from
+`origin/dev` unless a task explicitly says otherwise. Use that path with Cline CLI via
+`cline --cwd .worktrees/<task-slug>` or choose it in Cline Worktrees UI when prompted. Cline
+Kanban card worktrees are tool-managed and currently live under `~/.cline/worktrees/...`; do not
+assume Kanban can be configured to use `.worktrees/`. Existing external worktrees may finish in
+place. Worktrees are disposable after merge.
 
 ## Git Commits
 

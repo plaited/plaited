@@ -21,7 +21,14 @@ Required Repo Instructions
 - If no findings, state that explicitly and include residual risks/testing gaps.
 
 Worktree Expectations
-- Use isolated review worktree/session when needed.
+- Read-only review can run without creating a worktree.
+- If a manual review worktree is needed, prefer `.worktrees/<review-slug>/` from `origin/dev`.
+- For manual Cline CLI review sessions, use `cline --cwd .worktrees/<review-slug>`.
+- In Cline Worktrees UI, choose `.worktrees/<review-slug>/` when prompted for a folder path.
+- If review is run as a Cline Kanban card, use the tool-managed task worktree path under
+  `~/.cline/worktrees/<task-id>/<workspace-folder-label>/`.
+- If a Kanban review card creates a task worktree, move the card to trash/delete when review is
+  complete so cleanup runs.
 - Do not modify source files while reviewing.
 
 Validation Expectations

@@ -52,7 +52,15 @@ git merge --ff-only origin/dev
 ## 4. Development Lane
 
 - Cline Kanban is the primary local orchestration lane for Plaited agent work.
-- Each Kanban card should run in its own git worktree.
+- For manual agent-created worktrees, prefer `.worktrees/<card-or-task-slug>/`.
+- Start normal card work from fresh `origin/dev` unless a task explicitly says otherwise.
+- For manual Cline CLI runs, use `cline --cwd .worktrees/<slug>`.
+- In Cline Worktrees UI, choose `.worktrees/<slug>/` when prompted for a folder path.
+- Cline Kanban task worktrees are tool-managed and currently resolve under
+  `~/.cline/worktrees/<task-id>/<workspace-folder-label>/`.
+- Do not force Kanban task worktrees into `.worktrees/` unless a future Kanban release exposes a
+  supported worktree-root configuration.
+- Existing sibling/external worktrees may finish where they are.
 - Keep slices narrow; avoid broad refactors unless explicitly requested.
 - Do not push directly to `main` for normal card work.
 - Fix forward and avoid reverting unrelated user/agent changes.
@@ -63,10 +71,14 @@ git merge --ff-only origin/dev
   `cleanup`, `eval`, and `autoresearch`.
 - Auto-commit and auto-PR are allowed for narrow, scoped cards.
 - Linked/dependent cards are allowed when file boundaries and sequencing are clear.
+- Kanban task worktree placement is currently tool-managed under `~/.cline/worktrees/...`.
+- Do not document `CLINE_DIR` as a Kanban task-worktree placement solution in current policy.
 - Move completed or abandoned cards to trash so ephemeral worktrees are cleaned up.
 - Review card diffs before landing any card output.
 - PRs opened from Kanban work should have the advisory Cline PR review workflow available.
 - Keep human approval for `dev -> main` promotion.
+- Keep branch strategy unchanged for card work: normal PRs target `dev`, squash into `dev`,
+  `main` remains the release branch, and never reset/rebase/force-push `dev`.
 
 ## 5.1 Card Taxonomy
 
