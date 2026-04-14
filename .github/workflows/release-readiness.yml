@@ -174,7 +174,11 @@ jobs:
           included_pr_lines="$(
             jq --rawfile shas "${commit_shas_file}" '
               ($shas | split("\n") | map(select(length > 0))) as $shas
-              | [ .[] | select(.mergeCommit != null and ($shas | index(.mergeCommit.oid))) ]
+              | [
+                  .[]
+                  | (.mergeCommit.oid // "") as $merge_oid
+                  | select($merge_oid != "" and ($shas | index($merge_oid)))
+                ]
               | if length == 0 then
                   ["- (No merged PRs deterministically matched this range)"]
                 else
