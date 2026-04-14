@@ -215,3 +215,5 @@ elements, SSR, and the three-layer UI test strategy.
 **Plaited development workflow** — use the repo-local `plaited-development` skill before
 starting agent-authored feature/fix branches, reviewing agent-authored changes, or preparing
 integration/promotion work.
+**Cline docs** — use the repo-local `search-cline-docs` skill when working with
+Cline, Cline Kanban, Cline MCP setup, or Cline provider configuration.
