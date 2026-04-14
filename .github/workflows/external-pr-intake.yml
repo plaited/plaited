@@ -31,11 +31,17 @@ jobs:
           fi
 
           trusted_author="false"
-          case "${author_permission}" in
-            admin|maintain|write)
-              trusted_author="true"
-              ;;
-          esac
+          if [ "${PR_AUTHOR}" = "dependabot[bot]" ]; then
+            # Keep dependency automation PRs open for normal maintainer review.
+            trusted_author="true"
+            author_permission="bot-exempt"
+          else
+            case "${author_permission}" in
+              admin|maintain|write)
+                trusted_author="true"
+                ;;
+            esac
+          fi
 
           {
             echo "permission=${author_permission}"
