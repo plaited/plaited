@@ -57,6 +57,8 @@ jobs:
           secret_err_file="${work_dir}/secret-scanning-open-alerts.err"
           secret_scanning_collection_status="available"
           default_setup_file="${work_dir}/codeql-default-setup.json"
+          default_setup_err_file="${work_dir}/codeql-default-setup.err"
+          default_setup_collection_status="available"
           body_file="${work_dir}/issue-body.md"
 
           git log --oneline origin/main..origin/dev > "${log_file}"
@@ -108,7 +110,12 @@ jobs:
             echo '[]' > "${secret_file}"
           fi
 
-          gh api "repos/${GITHUB_REPO}/code-scanning/default-setup" > "${default_setup_file}"
+          if gh api "repos/${GITHUB_REPO}/code-scanning/default-setup" > "${default_setup_file}" 2> "${default_setup_err_file}"; then
+            default_setup_collection_status="available"
+          else
+            default_setup_collection_status="unavailable ($(format_unavailable_reason "${default_setup_err_file}"))"
+            echo '{"query_suite":"unknown"}' > "${default_setup_file}"
+          fi
 
           commit_count="$(wc -l < "${log_file}" | tr -d ' ')"
           changed_file_count="$(wc -l < "${changed_files_file}" | tr -d ' ')"
@@ -164,14 +171,33 @@ jobs:
             jq '[.check_runs[] | select((.status // "") == "completed" and ((.conclusion // "") | test("^(neutral|skipped|stale)$")))] | length' "${checks_file}"
           )"
 
+          max_included_pr_lines=40
+          max_included_commit_lines=120
+          max_diff_stat_lines=160
+
           included_pr_lines="$(
-            jq --rawfile shas "${commit_shas_file}" '
+            jq -r --argjson max_lines "${max_included_pr_lines}" --rawfile shas "${commit_shas_file}" '
               ($shas | split("\n") | map(select(length > 0))) as $shas
-              | [ .[] | select(.mergeCommit != null and ($shas | index(.mergeCommit.oid))) ]
-              | if length == 0 then
+              | (
+                [
+                  .[]
+                  | (.mergeCommit.oid // "") as $merge_oid
+                  | select($merge_oid != "" and ($shas | index($merge_oid)))
+                ]
+              ) as $matched
+              | if ($matched | length) == 0 then
                   ["- (No merged PRs deterministically matched this range)"]
                 else
-                  map("- #\(.number) \(.title) (\(.url))")
+                  (
+                    ($matched[0:$max_lines] | map("- #\(.number) \(.title) (\(.url))"))
+                    + (
+                      if ($matched | length) > $max_lines then
+                        ["- ... truncated: showing first \($max_lines) of \($matched | length) deterministically matched PRs"]
+                      else
+                        []
+                      end
+                    )
+                  )
                 end
               | .[]
             ' "${prs_file}"
@@ -181,7 +207,22 @@ jobs:
             if [ "${commit_count}" -eq 0 ]; then
               echo "- (No commits ahead of main)"
             else
-              sed 's/^/- /' "${log_file}"
+              awk -v max="${max_included_commit_lines}" 'NR <= max { print "- " $0 }' "${log_file}"
+              if [ "${commit_count}" -gt "${max_included_commit_lines}" ]; then
+                echo "- ... truncated: showing first ${max_included_commit_lines} of ${commit_count} commits from main..dev"
+              fi
+            fi
+          )"
+
+          diff_stat_line_count="$(wc -l < "${diff_stat_file}" | tr -d ' ')"
+          diff_stat_lines="$(
+            if [ "${diff_stat_line_count}" -eq 0 ]; then
+              echo "(No diff-stat entries)"
+            else
+              awk -v max="${max_diff_stat_lines}" 'NR <= max { print $0 }' "${diff_stat_file}"
+              if [ "${diff_stat_line_count}" -gt "${max_diff_stat_lines}" ]; then
+                echo "... truncated: showing first ${max_diff_stat_lines} of ${diff_stat_line_count} diff-stat lines"
+              fi
             fi
           )"
 
@@ -242,6 +283,9 @@ jobs:
           if [ "${secret_scanning_collection_status}" != "available" ]; then
             p1_items+=("secret-scanning collection status is unavailable (${secret_scanning_collection_status})")
           fi
+          if [ "${default_setup_collection_status}" != "available" ]; then
+            p1_items+=("CodeQL default-setup status is unavailable (${default_setup_collection_status})")
+          fi
           if [ "${query_suite}" != "extended" ]; then
             p1_items+=("CodeQL query suite is '${query_suite}', expected 'extended'")
           fi
@@ -284,7 +328,7 @@ jobs:
 
           required_human_checks=$'- Confirm release scope and version bump from commit intent.\n- Confirm no undisclosed security exceptions are being accepted.\n- Confirm validation evidence for changed runtime/package surfaces.\n- Confirm post-release main -> dev sync plan (merge commit, no reset/rebase/force-push).'
 
-          validation_summary="Dev checks_collection_status=${checks_collection_status}; codeql_collection_status=${codeql_collection_status}; dependabot_collection_status=${dependabot_collection_status}; secret_scanning_collection_status=${secret_scanning_collection_status}; check-runs total=${checks_total}; failures=${checks_failed}; pending=${checks_pending}; neutral_or_skipped=${checks_neutral_or_skipped}."
+          validation_summary="Dev checks_collection_status=${checks_collection_status}; codeql_collection_status=${codeql_collection_status}; dependabot_collection_status=${dependabot_collection_status}; secret_scanning_collection_status=${secret_scanning_collection_status}; default_setup_collection_status=${default_setup_collection_status}; check-runs total=${checks_total}; failures=${checks_failed}; pending=${checks_pending}; neutral_or_skipped=${checks_neutral_or_skipped}."
 
           cat > "${body_file}" <<EOF
           ## Release Readiness Snapshot
@@ -316,6 +360,7 @@ jobs:
             codeql_collection_status: ${codeql_collection_status}
             dependabot_collection_status: ${dependabot_collection_status}
             secret_scanning_collection_status: ${secret_scanning_collection_status}
+            default_setup_collection_status: ${default_setup_collection_status}
             codeql_open_by_severity: ${codeql_by_severity}
             dependabot_open_by_severity: ${dependabot_by_severity}
             secret_scanning_open_count: ${secret_total}
@@ -339,6 +384,7 @@ jobs:
           - CodeQL collection status: \`${codeql_collection_status}\`
           - Dependabot collection status: \`${dependabot_collection_status}\`
           - Secret-scanning collection status: \`${secret_scanning_collection_status}\`
+          - CodeQL default-setup status: \`${default_setup_collection_status}\`
           - CodeQL open alerts by severity: \`${codeql_by_severity}\`
           - Dependabot open alerts by severity: \`${dependabot_by_severity}\`
           - Secret-scanning open alert count: \`${secret_total}\`
@@ -362,7 +408,7 @@ jobs:
           ### Diff Stat
 
           \`\`\`text
-          $(cat "${diff_stat_file}")
+          ${diff_stat_lines}
           \`\`\`
 
           ## Branch Strategy Reminder
