@@ -20,6 +20,9 @@ Required Repo Instructions
 - Follow any nested `AGENTS.md` in touched scope.
 - Follow the repo-local `plaited-development` skill.
 - Keep permissions and secrets posture tight for automation changes.
+- Keep GitHub workflow permissions minimal and scoped to job needs.
+- Do not weaken GitHub security settings/checks without explicit human approval.
+- CodeQL default setup query suite is expected to be `extended` (security-extended equivalent).
 - Preserve branch strategy in GitHub settings/workflows:
   - `main`: linear/squash-only clean release branch.
   - `dev`: integration trunk that allows merge commits for `main -> dev` sync.
@@ -40,7 +43,9 @@ Validation Expectations
 - Run `bun install --frozen-lockfile` if dependencies or lockfile change.
 - Run command smoke tests for changed scripts/workflows where possible, or validate workflow YAML
   and permissions by direct inspection when not executable locally.
-- Perform secret-safety checks for workflows and avoid broad GitHub permissions.
+- Perform secret-safety checks and GitHub security-analysis checks for workflow/settings changes.
+- Avoid broad GitHub permissions and ensure security-related permissions are read-only unless write
+  is explicitly required.
 - Current Cline/OpenRouter path remains Cline-only unless explicitly requested otherwise.
 - Do not re-enable required linear history on `dev` unless the release strategy changes.
 - Do not introduce merge queue requirements yet.

@@ -28,11 +28,15 @@ Validation Expectations
 - Verify validation claims against changed surface.
 - Verify normal card PRs target `dev`.
 - Verify release PRs target `main` only when explicitly scoped.
+- Consume deterministic GitHub security facts when provided (`CodeQL`, `Dependabot`,
+  `secret-scanning`) before making security conclusions.
+- Do not override deterministic security findings by opinion.
 - Flag any reset/rebase/force-push instruction for `dev`.
 - If reviewing release/promotion work, verify a `main -> dev` sync plan exists after squash
   release.
 - If reviewing workflow/settings changes, verify they do not accidentally require linear history on
   `dev`.
+- Flag open high/critical security alerts that touch changed files.
 - Challenge contract bypasses (`installer`/`useExtension` bypasses, raw core event paths).
 - Challenge stale docs, validation overclaims, and lane mismatch.
 - Flag touched-file TypeScript errors mislabeled as existing drift.

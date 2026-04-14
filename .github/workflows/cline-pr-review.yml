@@ -25,8 +25,9 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
+      checks: read
       pull-requests: write
-      issues: read
+      security-events: read
 
     steps:
       - name: Checkout repository
@@ -60,11 +61,129 @@ jobs:
             echo "number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Collect deterministic PR/security context
+        id: security_context
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          GITHUB_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          context_file="${RUNNER_TEMP}/plaited-pr-security-context.md"
+          pr_json="${RUNNER_TEMP}/plaited-pr-view.json"
+          pr_checks="${RUNNER_TEMP}/plaited-pr-checks.txt"
+          pr_checks_status="available"
+          codeql_json="${RUNNER_TEMP}/plaited-codeql-alerts-open.json"
+          dependabot_json="${RUNNER_TEMP}/plaited-dependabot-alerts-open.json"
+          secret_json="${RUNNER_TEMP}/plaited-secret-scanning-alerts-open.json"
+          changed_files="${RUNNER_TEMP}/plaited-pr-changed-files.txt"
+
+          gh pr view "${PR_NUMBER}" \
+            --repo "${GITHUB_REPO}" \
+            --json number,title,state,isDraft,author,baseRefName,headRefName,files,changedFiles,additions,deletions > "${pr_json}"
+          if ! gh pr checks "${PR_NUMBER}" --repo "${GITHUB_REPO}" > "${pr_checks}"; then
+            pr_checks_status="unavailable"
+            {
+              echo "PR checks unavailable: gh pr checks failed for PR #${PR_NUMBER}."
+              echo "Treat this as an unknown checks state and flag it in review findings."
+            } > "${pr_checks}"
+          fi
+
+          gh api "repos/${GITHUB_REPO}/code-scanning/alerts?state=open&per_page=100" > "${codeql_json}"
+          gh api "repos/${GITHUB_REPO}/dependabot/alerts?state=open&per_page=100" > "${dependabot_json}"
+          gh api "repos/${GITHUB_REPO}/secret-scanning/alerts?state=open&per_page=100&hide_secret=true" > "${secret_json}"
+
+          jq -r '.files[].path' "${pr_json}" | sort -u > "${changed_files}"
+
+          codeql_total="$(jq 'length' "${codeql_json}")"
+          codeql_high_critical_total="$(
+            jq '[.[] | select((.rule.security_severity_level // "") | ascii_downcase | test("^(high|critical)$"))] | length' "${codeql_json}"
+          )"
+          codeql_high_critical_touched="$(
+            jq --rawfile changed "${changed_files}" '
+              ($changed | split("\n") | map(select(length > 0))) as $changed_files
+              | [
+                  .[]
+                  | select((.rule.security_severity_level // "") | ascii_downcase | test("^(high|critical)$"))
+                  | select((.most_recent_instance.location.path // "") as $path | $changed_files | index($path))
+                ]
+              | length
+            ' "${codeql_json}"
+          )"
+
+          dependabot_total="$(jq 'length' "${dependabot_json}")"
+          dependabot_high_critical_total="$(
+            jq '[.[] | select((.security_advisory.severity // "") | ascii_downcase | test("^(high|critical)$"))] | length' "${dependabot_json}"
+          )"
+          secret_total="$(jq 'length' "${secret_json}")"
+          secret_safe_summary="$(
+            jq '
+              [ .[] | {
+                  number,
+                  state: (.state // "unknown"),
+                  type: (.secret_type_display_name // .secret_type // "unknown"),
+                  resolution: (.resolution // "none"),
+                  url: (.html_url // .url // "")
+                } ]
+            ' "${secret_json}"
+          )"
+
+          {
+            echo "# Deterministic PR/Security Context"
+            echo
+            echo "- Repository: ${GITHUB_REPO}"
+            echo "- PR number: ${PR_NUMBER}"
+            echo "- Generated at: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+            echo
+            echo "## PR Metadata"
+            echo '```json'
+            jq '{number,title,state,isDraft,author: (.author.login // .author.name // "unknown"),baseRefName,headRefName,changedFiles,additions,deletions}' "${pr_json}"
+            echo '```'
+            echo
+            echo "## Changed Files"
+            sed 's/^/- /' "${changed_files}"
+            echo
+            echo "## PR Checks"
+            echo "- Collection status: ${pr_checks_status}"
+            echo '```text'
+            cat "${pr_checks}"
+            echo '```'
+            echo
+            echo "## Security Facts"
+            echo "- CodeQL open alerts total: ${codeql_total}"
+            echo "- CodeQL open high/critical alerts total: ${codeql_high_critical_total}"
+            echo "- CodeQL open high/critical alerts touching changed files: ${codeql_high_critical_touched}"
+            echo "- Dependabot open alerts total: ${dependabot_total}"
+            echo "- Dependabot open high/critical alerts total: ${dependabot_high_critical_total}"
+            echo "- Secret scanning open alerts total: ${secret_total}"
+            echo
+            echo "## Raw Alert Payloads"
+            echo "### CodeQL"
+            echo '```json'
+            jq '.' "${codeql_json}"
+            echo '```'
+            echo
+            echo "### Dependabot"
+            echo '```json'
+            jq '.' "${dependabot_json}"
+            echo '```'
+            echo
+            echo "## Secret Scanning Safe Summary"
+            echo '```json'
+            echo "${secret_safe_summary}"
+            echo '```'
+          } > "${context_file}"
+
+          echo "path=${context_file}" >> "${GITHUB_OUTPUT}"
+
       - name: Advisory PR review with Cline
         continue-on-error: true
         shell: bash
         env:
           PR_NUMBER: ${{ steps.pr.outputs.number }}
+          SECURITY_CONTEXT_FILE: ${{ steps.security_context.outputs.path }}
           GITHUB_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
           CLINE_COMMAND_PERMISSIONS: |
@@ -92,6 +211,11 @@ jobs:
           - gh pr diff "${PR_NUMBER}"
           - gh pr checks "${PR_NUMBER}"
 
+          Deterministic pre-collected context (authoritative for security facts) is included below.
+          Do not override these deterministic facts by opinion.
+          ${SECURITY_CONTEXT_FILE}
+          $(cat "${SECURITY_CONTEXT_FILE}")
+
           Review rules:
           - Findings-first output is mandatory.
           - Order findings by severity and include file/line references.
@@ -99,6 +223,10 @@ jobs:
           - Keep this advisory and non-blocking; post one comment only (no approval/request-changes review state).
 
           You must check for Plaited-specific risks:
+          - open high/critical CodeQL alerts touching changed files
+          - open high/critical Dependabot alerts relevant to shipped dependencies
+          - any open secret-scanning alert
+          - workflow changes that weaken permissions/security posture
           - installer/useExtension bypasses
           - raw core event bypasses
           - unsupported direct OpenRouter use

@@ -146,6 +146,7 @@ git merge --ff-only origin/dev
 - `dev -> main` release PRs should squash-merge.
 - After squash release, `main -> dev` sync merge commit is required.
 - Do not reset/rebase/force-push `dev` to make release history line up.
+- CodeQL default setup query suite is expected to be `extended` (security-extended equivalent).
 
 ### 10.1 Release-Readiness Agent Output Shape
 
@@ -161,6 +162,12 @@ included_prs_or_commits: string[]
 changed_surfaces: string[]
 validation_summary: string
 main_to_dev_sync_required: true | false
+security_summary:
+  codeql_open_by_severity: Record<string, number>
+  dependabot_open_by_severity: Record<string, number>
+  secret_scanning_open_count: number
+  codeql_query_suite: string
+  blocking_security_items: string[]
 ```
 
 ### 10.2 Decision Rule
@@ -178,6 +185,12 @@ main_to_dev_sync_required: true | false
 - runtime install/import broken
 - core behavioral/agent contracts bypassed
 - destructive GitHub workflow permissions
+- open secret-scanning alert not triaged/dismissed with rationale
+- open critical CodeQL alert
+- open critical Dependabot alert
+- open high/critical CodeQL alert touching shipped changed files
+- open high Dependabot alert in shipped/runtime dependency
+- disabled or missing security checks after workflow/security changes
 - failing touched-file tests
 - tsc failures in touched files
 - release PR would require reset/rebase/force-push of `dev`
@@ -188,6 +201,11 @@ main_to_dev_sync_required: true | false
 - stale skill instructions that affect future agents
 - CI/review workflow silently disabled
 - dependency/lockfile risk
+- open high CodeQL alert on `dev` even when not touched in the release diff
+- open high Dependabot alert in shipped/runtime dependency
+- security checks pending/unknown for release PR readiness
+- dependency/lockfile changes without deterministic dependency/security review
+- CodeQL/security-analysis setting changes without documented rationale
 - broad drift not classified
 - missing `main -> dev` sync plan after squash release
 

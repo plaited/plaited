@@ -24,6 +24,8 @@ Outputs
 - Cost/latency when available.
 - Usability/operator notes.
 - Recommendation.
+- Security-fact capture quality (did the agent correctly identify deterministic
+  `CodeQL`/`Dependabot`/`secret-scanning` facts).
 
 Non-Goals
 - No product implementation.
@@ -52,6 +54,8 @@ Validation Expectations
 - Keep task corpus and rubric stable across baseline/variant runs.
 - Use consistent findings-first criteria across compared runs.
 - Ensure evidence is sufficient to support recommendation confidence.
+- Score whether the evaluated reviewer/tooling flow catches deterministic GitHub security facts
+  and treats them as authoritative.
 
 Summary/Handoff Expectations
 - Report baseline vs variant settings, metric outcomes, and recommendation.
