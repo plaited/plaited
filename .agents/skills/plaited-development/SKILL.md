@@ -6,15 +6,14 @@ description: Repo-local workflow for agent-authored Plaited development, review,
 # plaited-development
 
 Use this skill for agent-authored development work in this repository. Treat root `AGENTS.md` as
-the baseline policy; this skill adds a concise operational workflow for lanes, reviews, and
-promotion.
+baseline policy; this skill adds a concise operational workflow for lanes, reviews, and promotion.
 
 ## 1. Purpose
 
-- Applies only to development in `/Users/eirby/Workspace/plaited`.
-- Repo-local workflow only; it is not public framework documentation or cross-repo policy.
-- Covers agent-authored feature/fix branches, review sessions, integration/promotion work, and
-  scheduled cleanup/gardening.
+- Applies only to development of this repository.
+- Repo-local workflow only; not public framework documentation or cross-repo policy.
+- This is the committed local workflow direction for agent-authored development.
+- Cline CLI is the provider/auth/agent CLI surface in this workflow.
 
 ## 2. When To Use
 
@@ -25,15 +24,25 @@ promotion.
 
 ## 3. Development Lane
 
-- Prefer short-lived implementation branches/worktrees named like `agent/<area>-<short-id>`.
+- Cline Kanban is the primary local orchestration lane for Plaited agent work.
+- Each Kanban card should run in its own git worktree.
+- Keep slices narrow; avoid broad refactors unless explicitly requested.
+- Use `dev` as the integration trunk.
 - Do not push directly to `main`.
-- Do not push directly to `dev` unless you are explicitly in integration mode.
-- Treat `dev` as a temporary integration trunk while broad drift is known; it is not a dumping
-  ground.
+- Local branches/worktrees should pull `dev` with fast-forward only where appropriate.
 - Fix forward and avoid reverting unrelated user/agent changes.
-- Keep slices narrow; do not run broad refactors unless explicitly requested.
 
-## 4. Review Lane
+## 4. Kanban Policy
+
+- Use task-scoped cards for implementation, review, cleanup, and benchmarking.
+- Auto-commit and auto-PR are allowed for narrow, scoped cards.
+- Linked/dependent cards are allowed when file boundaries and sequencing are clear.
+- Move completed or abandoned cards to trash so ephemeral worktrees are cleaned up.
+- Review card diffs before landing any card output.
+- PRs opened from Kanban work should have the advisory Cline PR review workflow available.
+- Keep human approval for `dev -> main` promotion.
+
+## 5. Review Lane
 
 - Report findings first, ordered by severity, with file/line references.
 - Challenge contract bypasses, especially raw module/export paths that bypass
@@ -41,75 +50,67 @@ promotion.
 - Verify changed files and validation/test results before endorsing implementation claims.
 - If no findings exist, say so explicitly and list residual risks/testing gaps.
 
-## 5. Validation Contract
+## 6. Validation Contract
 
 - Run targeted Bun tests for the changed surface.
-- Run `bun --bun tsc --noEmit` when executable code changes, shared types/schemas change, or area
-  impact is broad.
+- Run `biome check --write <affected files>` for touched files.
+- If `package.json` is touched, run `format-package --write package.json`.
+- Run `bun --bun tsc --noEmit` when TypeScript/executable code changes, shared types/schemas
+  change, package/tooling changes affect TS resolution, or area impact is broad.
 - If `tsc` fails from known repo drift, classify failure categories and state whether any failures
   point at touched files.
 - Do not relabel new touched-file failures as existing drift.
-- For docs/chore-only changes, executable validation may be skipped when behavior is unchanged;
-  state that rationale explicitly.
 
-## 6. Summary / Handoff Contract
+### Skill-Specific Validation
 
-- Implementation summaries must include all of: changed files, behavior changed, validation
-  commands/results, known failures/drift, and unrelated untracked files left untouched.
+- Do not treat all skill changes as docs-only.
+- For prose-only `SKILL.md`/reference edits, executable tests may be skipped with rationale, but
+  search validation and formatting must still run.
+- If a skill's `scripts/`, `tests/`, package metadata, command wrappers, or executable examples are
+  touched, run relevant skill tests and/or smoke commands.
+- For MCP/search skills with wrapper scripts, run at least one wrapper smoke check when wrapper
+  code or invocation docs change.
+
+## 7. Provider Policy (Cline + OpenRouter)
+
+- OpenRouter is only used through Cline/Kanban in this workflow.
+- Default provider/model is OpenRouter `minimax/minimax-m2.7`.
+- Local setup should source `OPENROUTER_API_KEY` from Varlock.
+- GitHub workflows may use repo secret `OPENROUTER_API_KEY`.
+- Do not add direct OpenRouter API calls/scripts.
+- Do not add non-Cline OpenRouter CI flows.
+- Do not commit secrets.
+
+## 8. Summary / Handoff Contract
+
+- Summaries must include all of: changed files, behavior changed, validation commands/results,
+  known failures/drift, and unrelated untracked files left untouched.
 - Handoff prompts for follow-on sessions must include mode, scope, files, validation, and explicit
   non-goals.
 
-## 7. Integration / Promotion
+## 9. Integration / Promotion
 
-- Land agent branches through review into `dev` while this workflow is maturing.
+- Land reviewed agent branches through `dev` before mainline promotion.
 - Promote `dev -> main` only through explicit human approval or scheduled human review.
-- Squash/rebase/promotion steps must preserve a clear conventional commit message.
+- Squash/rebase/promotion steps must preserve clear conventional commit messaging.
 - Do not mix cleanup/gardening with feature slices unless explicitly requested.
 
-## 8. Hard Stops
+## 10. Hard Stops
 
 - Stop and ask when unexpected unrelated changes appear.
 - Stop before destructive Git operations.
 - Stop if passing tests would require weakening installer/core contracts.
 - Stop if requested implementation conflicts with verified current code.
 
-## 9. Cline Kanban Pilot Policy
-
-- Install Cline CLI and Kanban as repo-local `devDependencies`; run them through `bun run` scripts,
-  not global installs.
-- Treat Cline CLI as the provider-auth and agent CLI surface for local operator workflows.
-- Cline Kanban may be used as the local orchestration board for Plaited agent work.
-- Keep work card/task-scoped and run tasks in isolated git worktrees.
-- Use Kanban cards across implementation, review, cleanup, and benchmarking slices.
-- Review card diffs before landing any card output.
-- Prefer opening PRs or landing reviewed commits over direct push to `dev`.
-- Keep explicit human approval for promotion from `dev` to `main`.
-- Treat Kanban autonomy as experimental risk: current docs note experimental features that bypass
-  permissions/runtime hooks. Use worktree isolation and review outputs before landing.
-
-## 10. Provider Policy (Cline + OpenRouter)
-
-- OpenRouter is a model provider behind Cline/Kanban, not a direct Plaited repo API dependency in
-  this workflow.
-- Configure OpenRouter in Cline provider settings when needed; do not wire direct OpenRouter API
-  calls into repo tooling.
-- Do not add OpenRouter CI jobs for this repo-local development workflow.
-- Do not add repo-owned OpenRouter scripts in this slice.
-- Do not commit API keys.
-- GitHub repo secret `OPENROUTER_API_KEY` may exist for future Cline/GitHub integrations, but this
-  workflow must not assume direct in-repo OpenRouter API use.
-- Keep local Cline/OpenRouter credentials in local provider config or approved secret management.
-
 ## 11. Pi/Fanout Transition Note
 
-- If the Cline Kanban pilot proves reliable, it may replace current `pi`/manual fanout patterns
-  over time.
+- Existing `pi` and fanout tooling remains in place during this transition.
 - Do not remove or refactor existing `pi`/fanout tooling in this slice.
-- Any replacement decision requires pilot validation of task decomposition, worktree cleanup,
-  review quality, and cost.
+- Any long-term lane replacement decision still requires human review of quality, reliability,
+  cleanup hygiene, and cost.
 
-## 12. Suggested Pilot Cards
+## 12. Card Templates
 
-- Reviewer card: run one known recent diff through a review card and verify finding quality.
-- Cleanup card: make a narrow workflow doc/skill cleanup and validate lane hygiene.
-- Benchmark card: compare two OpenRouter-backed Cline reviewer models on the same review prompt.
+- Use the reference templates in `references/` for copy-pasteable Kanban cards:
+  `kanban-implementation-card.md`, `kanban-review-card.md`,
+  `kanban-cleanup-card.md`, and `kanban-benchmark-card.md`.

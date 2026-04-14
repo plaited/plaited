@@ -44,6 +44,7 @@
     "check:types": "tsc --noEmit",
     "check:write": "biome check --write && format-package --write",
     "cline:auth": "cline auth",
+    "cline:auth:openrouter": "bun scripts/cline-auth-openrouter.ts",
     "cline:version": "cline version",
     "kanban": "kanban",
     "kanban:help": "kanban --help",
