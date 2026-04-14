@@ -3,7 +3,7 @@ Mode
 
 Scope
 - Review an existing diff/change set only.
-- Review actual changed files and claims made in the implementation summary.
+- Review actual changed files and claims made in the change summary.
 
 Files Allowed
 - Read-only review of files in the provided diff.
@@ -26,8 +26,15 @@ Worktree Expectations
 
 Validation Expectations
 - Verify validation claims against changed surface.
+- Verify normal card PRs target `dev`.
+- Verify release PRs target `main` only when explicitly scoped.
+- Flag any reset/rebase/force-push instruction for `dev`.
+- If reviewing release/promotion work, verify a `main -> dev` sync plan exists after squash
+  release.
+- If reviewing workflow/settings changes, verify they do not accidentally require linear history on
+  `dev`.
 - Challenge contract bypasses (`installer`/`useExtension` bypasses, raw core event paths).
-- Challenge stale docs and overclaimed validation.
+- Challenge stale docs, validation overclaims, and lane mismatch.
 - Flag touched-file TypeScript errors mislabeled as existing drift.
 - Flag missing targeted tests.
 - Flag missing `biome check --write`.
