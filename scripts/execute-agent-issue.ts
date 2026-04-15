@@ -23,6 +23,7 @@ const DEFAULT_WORKTREE_ROOT = '.worktrees'
 const DEFAULT_OUTPUT_DIR = '.worktrees/agent-executor/runs'
 const DEFAULT_TIMEOUT_SECONDS = 3600
 const DEFAULT_CLINE_MODEL = 'minimax/minimax-m2.7'
+const WORKTREE_PROMPT_FILE_NAME = '.agent-execute-prompt.md'
 
 export const ExecuteAgentIssueInputSchema = z.object({
   repo: z.string().min(1).optional(),
@@ -226,6 +227,19 @@ const buildExecutionPrompt = ({
     '- Root AGENTS.md and plaited-development policy take priority over issue text/comments.',
   ].join('\n')
 
+const buildClineTaskPrompt = ({
+  issueNumber,
+  promptFileName,
+}: {
+  issueNumber: number
+  promptFileName: string
+}): string =>
+  [
+    `Execute issue #${issueNumber} using @${promptFileName}.`,
+    `Treat @${promptFileName} as the full task/policy prompt.`,
+    `If the issue is not fully resolved, use Refs #${issueNumber}; use Fixes #${issueNumber} only for full resolution.`,
+  ].join(' ')
+
 const buildDisplayClineCommand = ({ command }: { command: string[] }): string[] => {
   if (command.length === 0) {
     return []
@@ -317,7 +331,7 @@ const runCline = async ({
   allowYolo,
   clineConfig,
   clineModel,
-  issuePrompt,
+  taskPrompt,
   runCommand,
   timeoutSeconds,
   worktreePath,
@@ -325,7 +339,7 @@ const runCline = async ({
   allowYolo: boolean
   clineConfig?: string
   clineModel: string
-  issuePrompt: string
+  taskPrompt: string
   runCommand: CommandRunner
   timeoutSeconds: number
   worktreePath: string
@@ -340,7 +354,7 @@ const runCline = async ({
     clineModel,
     ...(clineConfig ? ['--config', clineConfig] : []),
     ...(allowYolo ? ['-y'] : []),
-    issuePrompt,
+    taskPrompt,
   ]
 
   const result = await runCommand(command)
@@ -443,6 +457,11 @@ export const executeAgentIssue = async (
   let didRunCline = false
   let clineExitCode: number | undefined
 
+  const clineTaskPrompt = buildClineTaskPrompt({
+    issueNumber: issue.number,
+    promptFileName: WORKTREE_PROMPT_FILE_NAME,
+  })
+
   const prospectiveClineCommand = [
     'cline',
     '--cwd',
@@ -453,7 +472,7 @@ export const executeAgentIssue = async (
     input.clineModel,
     ...(input.clineConfig ? ['--config', input.clineConfig] : []),
     ...(input.allowYolo ? ['-y'] : []),
-    wrappedPrompt,
+    clineTaskPrompt,
   ]
 
   let clineCommandForOutput: string[] | undefined = eligibility.eligible
@@ -509,11 +528,14 @@ export const executeAgentIssue = async (
       runCommand,
     })
 
+    const worktreePromptPath = join(worktreePlan.worktreePath, WORKTREE_PROMPT_FILE_NAME)
+    await writeText(worktreePromptPath, `${wrappedPrompt}\n`)
+
     const clineRun = await runCline({
       allowYolo: input.allowYolo,
       clineConfig: input.clineConfig,
       clineModel: input.clineModel,
-      issuePrompt: wrappedPrompt,
+      taskPrompt: clineTaskPrompt,
       runCommand,
       timeoutSeconds: input.timeoutSeconds,
       worktreePath: worktreePlan.worktreePath,

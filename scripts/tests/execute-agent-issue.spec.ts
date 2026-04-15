@@ -380,6 +380,12 @@ describe('executeAgentIssue', () => {
     for (const path of expectedFiles) {
       expect(writes.some((write) => write.path === path)).toBe(true)
     }
+    expect(
+      writes.some(
+        (write) =>
+          write.path === '/repo/.worktrees/gh-261-add-issue-backed-cline-execution-command/.agent-execute-prompt.md',
+      ),
+    ).toBe(true)
 
     expect(
       calls.some(
@@ -403,6 +409,8 @@ describe('executeAgentIssue', () => {
     expect(clineCall).toContain('3600')
     expect(clineCall).toContain('--model')
     expect(clineCall).toContain('minimax/minimax-m2.7')
+    expect(clineCall?.some((arg) => arg.includes('@.agent-execute-prompt.md'))).toBe(true)
+    expect(clineCall?.some((arg) => arg.includes('Execution Wrapper (Issue-Backed Plaited Tooling Work)'))).toBe(false)
   })
 
   test('cline missing when non-dry-run fails clearly', async () => {
