@@ -59,11 +59,11 @@ The intended split is:
 
 1. [docs/INFRASTRUCTURE.md](../../docs/INFRASTRUCTURE.md) defines the host / box / node-home split
 2. [src/modules/a2a-module/](../../src/modules/a2a-module) defines the current Agent Card and A2A seams
-3. [dev-research/server-module/program.md](../server-module/program.md) defines the umbrella bundle
-   question
+3. GitHub issue-backed module backlog planning owns cross-lane bundle
+   decisions
 4. adjacent lanes provide A2A, auth, node-home, and bootstrap constraints
 5. this lane hill-climbs the discovery identity slice and feeds winners back
-   into the server-module issue backlog
+   into GitHub issue-backed module backlog planning
 
 ## Core Hypothesis
 

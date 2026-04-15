@@ -41,7 +41,7 @@ Open questions now include:
 4. [dev-research/node-auth-modules/program.md](../node-auth-modules/program.md) defines auth-sensitive policy
 5. [dev-research/agent-bootstrap/program.md](../agent-bootstrap/program.md) defines bootstrap-time deployment input
 6. This lane hill-climbs the transport/runtime slice and feeds winners back
-   into the server-module issue backlog
+   into GitHub issue-backed module backlog planning
 
 ## Core Hypothesis
 
@@ -77,10 +77,10 @@ Primary local inputs:
 
 Important research companions:
 
-- [dev-research/server-module/program.md](../server-module/program.md)
 - [dev-research/node-auth-modules/program.md](../node-auth-modules/program.md)
 - [dev-research/agent-bootstrap/program.md](../agent-bootstrap/program.md)
 - [dev-research/identity-trust-modules/program.md](../identity-trust-modules/program.md)
+- [Issue #258](https://github.com/plaited/plaited/issues/258) for issue-backed eval planning
 
 ## Product Target
 

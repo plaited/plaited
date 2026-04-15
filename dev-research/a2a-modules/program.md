@@ -39,14 +39,14 @@ policy and composition:
 ## Dependency Order
 
 1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the minimal core boundary
-2. [dev-research/server-module/program.md](../server-module/program.md) defines the umbrella bundle
-   question
+2. GitHub issue-backed module backlog planning owns cross-lane bundle
+   decisions
 3. [skills/behavioral-core/SKILL.md](../../skills/behavioral-core/SKILL.md) defines the BP coordination substrate
 4. [skills/node-auth/SKILL.md](../../skills/node-auth/SKILL.md) defines the current authentication seam
 5. [skills/modnet-modules/SKILL.md](../../skills/modnet-modules/SKILL.md) defines the current modnet/MSS/A2A
    translation for module-era agents
 6. This lane hill-climbs the A2A slice and feeds its winning candidates back
-   into the server-module issue backlog
+   into GitHub issue-backed module backlog planning
 
 ## Core Hypothesis
 
