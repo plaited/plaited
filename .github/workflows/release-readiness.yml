@@ -85,7 +85,7 @@ jobs:
           max_check_wait_seconds=180
           check_poll_interval_seconds=15
           checks_waited_seconds=0
-          checks_ignored_release_readiness=0
+          checks_ignored_release_operator=0
 
           gh pr list \
             --repo "${GITHUB_REPO}" \
@@ -103,50 +103,50 @@ jobs:
           }
 
           count_checks() {
-            checks_ignored_release_readiness="$(
+            checks_ignored_release_operator="$(
               jq '
-                def is_release_readiness_self_check:
-                  (.name // "") == "release-readiness"
-                  and (.app.slug // "") == "github-actions";
-                [.check_runs[] | select(is_release_readiness_self_check)] | length
+                def is_release_operator_check:
+                  ((.app.slug // "") == "github-actions")
+                  and (((.name // "") == "release-readiness") or ((.name // "") == "open-release-pr"));
+                [.check_runs[] | select(is_release_operator_check)] | length
               ' "${checks_file}"
             )"
             checks_total="$(
               jq '
-                def is_release_readiness_self_check:
-                  (.name // "") == "release-readiness"
-                  and (.app.slug // "") == "github-actions";
-                [.check_runs[] | select(is_release_readiness_self_check | not)] | length
+                def is_release_operator_check:
+                  ((.app.slug // "") == "github-actions")
+                  and (((.name // "") == "release-readiness") or ((.name // "") == "open-release-pr"));
+                [.check_runs[] | select(is_release_operator_check | not)] | length
               ' "${checks_file}"
             )"
             checks_failed="$(
               jq '
-                def is_release_readiness_self_check:
-                  (.name // "") == "release-readiness"
-                  and (.app.slug // "") == "github-actions";
+                def is_release_operator_check:
+                  ((.app.slug // "") == "github-actions")
+                  and (((.name // "") == "release-readiness") or ((.name // "") == "open-release-pr"));
                 [
                   .check_runs[]
-                  | select(is_release_readiness_self_check | not)
+                  | select(is_release_operator_check | not)
                   | select((.status // "") == "completed" and ((.conclusion // "") | test("^(failure|timed_out|cancelled|action_required)$")))
                 ] | length
               ' "${checks_file}"
             )"
             checks_pending="$(
               jq '
-                def is_release_readiness_self_check:
-                  (.name // "") == "release-readiness"
-                  and (.app.slug // "") == "github-actions";
-                [.check_runs[] | select(is_release_readiness_self_check | not) | select((.status // "") != "completed")] | length
+                def is_release_operator_check:
+                  ((.app.slug // "") == "github-actions")
+                  and (((.name // "") == "release-readiness") or ((.name // "") == "open-release-pr"));
+                [.check_runs[] | select(is_release_operator_check | not) | select((.status // "") != "completed")] | length
               ' "${checks_file}"
             )"
             checks_neutral_or_skipped="$(
               jq '
-                def is_release_readiness_self_check:
-                  (.name // "") == "release-readiness"
-                  and (.app.slug // "") == "github-actions";
+                def is_release_operator_check:
+                  ((.app.slug // "") == "github-actions")
+                  and (((.name // "") == "release-readiness") or ((.name // "") == "open-release-pr"));
                 [
                   .check_runs[]
-                  | select(is_release_readiness_self_check | not)
+                  | select(is_release_operator_check | not)
                   | select((.status // "") == "completed" and ((.conclusion // "") | test("^(neutral|skipped|stale)$")))
                 ] | length
               ' "${checks_file}"
@@ -408,7 +408,7 @@ jobs:
 
           required_human_checks=$'- Confirm release scope and version bump from commit intent.\n- Confirm no undisclosed security exceptions are being accepted.\n- Confirm validation evidence for changed runtime/package surfaces.\n- Confirm post-release main -> dev sync plan (merge commit, no reset/rebase/force-push).'
 
-          validation_summary="Dev checks_collection_status=${checks_collection_status}; dev_sha=${dev_sha}; checks_waited_seconds=${checks_waited_seconds}; max_check_wait_seconds=${max_check_wait_seconds}; check_poll_interval_seconds=${check_poll_interval_seconds}; security_token_source=${security_token_source}; codeql_collection_status=${codeql_collection_status}; dependabot_collection_status=${dependabot_collection_status}; secret_scanning_collection_status=${secret_scanning_collection_status}; default_setup_collection_status=${default_setup_collection_status}; check-runs total=${checks_total}; failures=${checks_failed}; pending=${checks_pending}; neutral_or_skipped=${checks_neutral_or_skipped}; ignored_release_readiness_self_checks=${checks_ignored_release_readiness}."
+          validation_summary="Dev checks_collection_status=${checks_collection_status}; dev_sha=${dev_sha}; checks_waited_seconds=${checks_waited_seconds}; max_check_wait_seconds=${max_check_wait_seconds}; check_poll_interval_seconds=${check_poll_interval_seconds}; security_token_source=${security_token_source}; codeql_collection_status=${codeql_collection_status}; dependabot_collection_status=${dependabot_collection_status}; secret_scanning_collection_status=${secret_scanning_collection_status}; default_setup_collection_status=${default_setup_collection_status}; check-runs total=${checks_total}; failures=${checks_failed}; pending=${checks_pending}; neutral_or_skipped=${checks_neutral_or_skipped}; ignored_release_operator_checks=${checks_ignored_release_operator}."
 
           cat > "${body_file}" <<EOF
           ## Release Readiness Snapshot
@@ -472,11 +472,11 @@ jobs:
           - Waited seconds: \`${checks_waited_seconds}\`
           - Max wait seconds: \`${max_check_wait_seconds}\`
           - Poll interval seconds: \`${check_poll_interval_seconds}\`
-          - Final check-runs total (excluding release-readiness self-check): \`${checks_total}\`
+          - Final check-runs total (excluding release operator checks): \`${checks_total}\`
           - Final failures: \`${checks_failed}\`
           - Final pending: \`${checks_pending}\`
           - Final neutral/skipped/stale: \`${checks_neutral_or_skipped}\`
-          - Ignored release-readiness self-checks: \`${checks_ignored_release_readiness}\`
+          - Ignored release operator checks: \`${checks_ignored_release_operator}\`
 
           ## Deterministic Security Summary
 
