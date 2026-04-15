@@ -38,6 +38,7 @@
     "access": "public"
   },
   "scripts": {
+    "agent:issues:lifecycle": "bun scripts/plan-agent-issue-lifecycle.ts",
     "agent:issues:plan": "bun scripts/ingest-agent-issues.ts",
     "check": "bun run check:biome && bun run check:types && bun run check:package",
     "check:biome": "biome check",
