@@ -49,6 +49,19 @@ git merge --ff-only origin/dev
   land through PRs into `dev`.
 - Direct pushes to `dev` should be explicit integration/admin operations only.
 
+## PR Branch Freshness
+
+- The authoring agent owns keeping its PR branch current with fresh `origin/dev`.
+- Before final handoff, review request, or merge request, update the PR branch from fresh
+  `origin/dev`.
+- Prefer a normal merge/update-branch flow over rebase/force-push for shared PR branches.
+- Do not reset, rebase, or force-push `dev`.
+- If updating from `origin/dev` creates conflicts, the owning agent resolves them in its worktree
+  and reruns affected validation.
+- Do not add a GitHub workflow that mutates active PR branches unless explicitly requested.
+- GitHub should report mergeability/check status; active PR branch mutation belongs to the owning
+  local agent for now.
+
 ## 4. Development Lane
 
 - Cline Kanban is the primary local orchestration lane for Plaited agent work.

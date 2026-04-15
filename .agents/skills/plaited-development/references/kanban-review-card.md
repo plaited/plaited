@@ -31,6 +31,11 @@ Worktree Expectations
   complete so cleanup runs.
 - Do not modify source files while reviewing.
 
+Review freshness
+- Check whether the PR branch is current/mergeable against `dev`.
+- If stale or conflicted, request the owning agent update from fresh `origin/dev`.
+- Do not recommend workflow-based auto-updates unless explicitly requested.
+
 Validation Expectations
 - Verify validation claims against changed surface.
 - Verify normal card PRs target `dev`.
