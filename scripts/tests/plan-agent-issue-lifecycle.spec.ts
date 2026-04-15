@@ -31,9 +31,10 @@ describe('plan-agent-issue-lifecycle CLI (subprocess)', () => {
     expect(await proc.exited).toBe(0)
     const schema = JSON.parse(await new Response(proc.stdout).text())
     expect(schema.type).toBe('object')
-    expect(schema.properties).toHaveProperty('labelsToAdd')
-    expect(schema.properties).toHaveProperty('labelsToRemove')
-    expect(schema.properties).toHaveProperty('comment')
+    expect(schema.properties).toHaveProperty('proposedLabelsToAdd')
+    expect(schema.properties).toHaveProperty('proposedLabelsToRemove')
+    expect(schema.properties).toHaveProperty('proposedComment')
+    expect(schema.properties).toHaveProperty('wouldCloseIssue')
   })
 
   test('--dry-run preserves shared semantics and skips lifecycle planning', async () => {
@@ -136,8 +137,8 @@ describe('transition planning', () => {
       currentLabels: ['agent-ready', 'agent-planning', 'needs-triage'],
     })
 
-    expect(output.labelsToAdd).toEqual(['agent-active'])
-    expect(output.labelsToRemove).toEqual(['needs-triage'])
+    expect(output.proposedLabelsToAdd).toEqual(['agent-active'])
+    expect(output.proposedLabelsToRemove).toEqual(['needs-triage'])
     expect(output.willMutate).toBe(false)
   })
 
@@ -149,9 +150,9 @@ describe('transition planning', () => {
       prUrl: 'https://github.com/plaited/plaited/pull/999',
     })
 
-    expect(output.labelsToAdd).toEqual(['agent-active', 'agent-pr-open'])
-    expect(output.labelsToRemove).toEqual(['needs-triage'])
-    expect(output.comment).toContain('Refs #123')
+    expect(output.proposedLabelsToAdd).toEqual(['agent-active', 'agent-pr-open'])
+    expect(output.proposedLabelsToRemove).toEqual(['needs-triage'])
+    expect(output.proposedComment).toContain('Refs #123')
   })
 
   test('blocked adds agent-needs-human and agent-blocked', async () => {
@@ -162,24 +163,51 @@ describe('transition planning', () => {
       reason: 'Needs maintainer decision on scope',
     })
 
-    expect(output.labelsToAdd).toEqual(['agent-blocked', 'agent-needs-human'])
-    expect(output.labelsToRemove).toEqual([])
-    expect(output.comment).toContain('Needs maintainer decision on scope')
+    expect(output.proposedLabelsToAdd).toEqual(['agent-blocked', 'agent-needs-human'])
+    expect(output.proposedLabelsToRemove).toEqual([])
+    expect(output.proposedComment).toContain('Needs maintainer decision on scope')
   })
 
-  test('completed fully-resolved adds agent-done, removes active/pr/blocker labels, and sets wouldCloseIssue=true', async () => {
+  test('completed full adds agent-done, removes active/pr/blocker labels plus needs-triage, and sets wouldCloseIssue=true', async () => {
     const output = await planAgentIssueLifecycle({
       issue: 123,
       transition: 'completed',
-      currentLabels: ['agent-ready', 'agent-active', 'agent-pr-open', 'agent-blocked', 'agent-needs-human'],
+      currentLabels: [
+        'agent-ready',
+        'agent-active',
+        'agent-pr-open',
+        'agent-blocked',
+        'agent-needs-human',
+        'needs-triage',
+      ],
+      resolution: 'full',
+      prUrl: 'https://github.com/plaited/plaited/pull/999',
+    })
+
+    expect(output.proposedLabelsToAdd).toEqual(['agent-done'])
+    expect(output.proposedLabelsToRemove).toEqual([
+      'agent-active',
+      'agent-blocked',
+      'agent-needs-human',
+      'agent-pr-open',
+      'needs-triage',
+    ])
+    expect(output.wouldCloseIssue).toBe(true)
+    expect(output.closeIssue).toBe(false)
+  })
+
+  test('completed fully-resolved alias is normalized to full', async () => {
+    const output = await planAgentIssueLifecycle({
+      issue: 123,
+      transition: 'completed',
+      currentLabels: ['agent-ready', 'agent-active', 'agent-pr-open'],
       resolution: 'fully-resolved',
       prUrl: 'https://github.com/plaited/plaited/pull/999',
     })
 
-    expect(output.labelsToAdd).toEqual(['agent-done'])
-    expect(output.labelsToRemove).toEqual(['agent-active', 'agent-blocked', 'agent-needs-human', 'agent-pr-open'])
+    expect(output.proposedLabelsToAdd).toEqual(['agent-done'])
     expect(output.wouldCloseIssue).toBe(true)
-    expect(output.closeIssue).toBe(false)
+    expect(output.warnings).toContain('resolution "fully-resolved" is accepted as an alias for "full"')
   })
 
   test('completed partial does not add agent-done, adds agent-needs-human, and does not close', async () => {
@@ -190,14 +218,14 @@ describe('transition planning', () => {
       resolution: 'partial',
     })
 
-    expect(output.labelsToAdd).toEqual(['agent-needs-human'])
-    expect(output.labelsToAdd).not.toContain('agent-done')
-    expect(output.labelsToRemove).toEqual(['agent-active', 'agent-pr-open'])
+    expect(output.proposedLabelsToAdd).toEqual(['agent-needs-human'])
+    expect(output.proposedLabelsToAdd).not.toContain('agent-done')
+    expect(output.proposedLabelsToRemove).toEqual(['agent-active', 'agent-pr-open'])
     expect(output.wouldCloseIssue).toBe(false)
     expect(output.closeIssue).toBe(false)
   })
 
-  test('completed unknown requests maintainer decision', async () => {
+  test('completed unknown requests maintainer decision and warning', async () => {
     const output = await planAgentIssueLifecycle({
       issue: 123,
       transition: 'completed',
@@ -205,9 +233,27 @@ describe('transition planning', () => {
       resolution: 'unknown',
     })
 
-    expect(output.labelsToAdd).toEqual(['agent-needs-human'])
+    expect(output.proposedLabelsToAdd).toEqual(['agent-needs-human'])
     expect(output.wouldCloseIssue).toBe(false)
-    expect(output.comment).toContain('Maintainer decision is required')
+    expect(output.proposedComment).toContain('Maintainer decision is required')
+    expect(output.warnings).toContain(
+      'completed transition requires maintainer resolution classification (full or partial)',
+    )
+  })
+
+  test('completed with omitted resolution is treated as unknown with warning', async () => {
+    const output = await planAgentIssueLifecycle({
+      issue: 123,
+      transition: 'completed',
+      currentLabels: ['agent-ready', 'agent-active'],
+    })
+
+    expect(output.proposedLabelsToAdd).toEqual(['agent-needs-human'])
+    expect(output.wouldCloseIssue).toBe(false)
+    expect(output.warnings).toContain('resolution omitted for completed; treated as unknown')
+    expect(output.warnings).toContain(
+      'completed transition requires maintainer resolution classification (full or partial)',
+    )
   })
 
   test('abandoned removes active/pr-open and adds agent-needs-human', async () => {
@@ -218,8 +264,8 @@ describe('transition planning', () => {
       reason: 'Kanban attempt discarded after review',
     })
 
-    expect(output.labelsToAdd).toEqual(['agent-needs-human'])
-    expect(output.labelsToRemove).toEqual(['agent-active', 'agent-pr-open'])
+    expect(output.proposedLabelsToAdd).toEqual(['agent-needs-human'])
+    expect(output.proposedLabelsToRemove).toEqual(['agent-active', 'agent-pr-open'])
   })
 })
 
@@ -231,10 +277,10 @@ describe('label conflict handling', () => {
       currentLabels: ['agent-ready', 'agent-ready', 'needs-triage', 'needs-triage'],
     })
 
-    expect(output.labelsToAdd).toEqual(['agent-active'])
-    expect(output.labelsToRemove).toEqual(['needs-triage'])
-    expect(new Set(output.labelsToAdd).size).toBe(output.labelsToAdd.length)
-    expect(new Set(output.labelsToRemove).size).toBe(output.labelsToRemove.length)
+    expect(output.proposedLabelsToAdd).toEqual(['agent-active'])
+    expect(output.proposedLabelsToRemove).toEqual(['needs-triage'])
+    expect(new Set(output.proposedLabelsToAdd).size).toBe(output.proposedLabelsToAdd.length)
+    expect(new Set(output.proposedLabelsToRemove).size).toBe(output.proposedLabelsToRemove.length)
   })
 
   test('no label appears in both add/remove', async () => {
@@ -245,8 +291,8 @@ describe('label conflict handling', () => {
       resolution: 'partial',
     })
 
-    for (const label of output.labelsToAdd) {
-      expect(output.labelsToRemove.includes(label)).toBe(false)
+    for (const label of output.proposedLabelsToAdd) {
+      expect(output.proposedLabelsToRemove.includes(label)).toBe(false)
     }
   })
 
@@ -255,12 +301,12 @@ describe('label conflict handling', () => {
       issue: 123,
       transition: 'completed',
       currentLabels: ['agent-ready', 'agent-active', 'card/tooling', 'card/cleanup'],
-      resolution: 'fully-resolved',
+      resolution: 'full',
       prUrl: 'https://github.com/plaited/plaited/pull/999',
     })
 
-    expect(output.labelsToRemove.includes('card/tooling')).toBe(false)
-    expect(output.labelsToRemove.includes('card/cleanup')).toBe(false)
+    expect(output.proposedLabelsToRemove.includes('card/tooling')).toBe(false)
+    expect(output.proposedLabelsToRemove.includes('card/cleanup')).toBe(false)
   })
 
   test('cline-review is never proposed', async () => {
@@ -268,12 +314,12 @@ describe('label conflict handling', () => {
       issue: 123,
       transition: 'completed',
       currentLabels: ['agent-ready', 'agent-active', 'cline-review'],
-      resolution: 'fully-resolved',
+      resolution: 'full',
       prUrl: 'https://github.com/plaited/plaited/pull/999',
     })
 
-    expect(output.labelsToAdd.includes('cline-review')).toBe(false)
-    expect(output.labelsToRemove.includes('cline-review')).toBe(false)
+    expect(output.proposedLabelsToAdd.includes('cline-review')).toBe(false)
+    expect(output.proposedLabelsToRemove.includes('cline-review')).toBe(false)
   })
 })
 
@@ -301,7 +347,7 @@ describe('output schema', () => {
         issue: 123,
         transition: 'completed',
         currentLabels: ['agent-ready', 'agent-active', 'agent-pr-open', 'agent-blocked', 'agent-needs-human'],
-        resolution: 'fully-resolved',
+        resolution: 'full',
         prUrl: 'https://github.com/plaited/plaited/pull/999',
       }),
       planAgentIssueLifecycle({
@@ -327,6 +373,10 @@ describe('output schema', () => {
     for (const output of outputs) {
       const parsed = PlanAgentIssueLifecycleOutputSchema.safeParse(output)
       expect(parsed.success).toBe(true)
+      expect(typeof output.wouldCloseIssue).toBe('boolean')
+      expect(output).toHaveProperty('proposedLabelsToAdd')
+      expect(output).toHaveProperty('proposedLabelsToRemove')
+      expect(output).toHaveProperty('proposedComment')
     }
   })
 })

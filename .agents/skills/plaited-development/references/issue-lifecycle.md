@@ -27,7 +27,8 @@ This reference describes the read-only lifecycle planner command:
 - `currentLabels?: string[]` (preferred for deterministic offline planning)
 - `prUrl?: string`
 - `reason?: string`
-- `resolution?: "fully-resolved" | "partial" | "unknown"`
+- `resolution?: "full" | "partial" | "unknown"`
+  - `"fully-resolved"` is accepted as an alias for `"full"`
 - `commentBody?: string`
 
 ## Output
@@ -35,13 +36,13 @@ This reference describes the read-only lifecycle planner command:
 - `issue: number`
 - `transition: string`
 - `willMutate: false`
-- `labelsToAdd: string[]`
-- `labelsToRemove: string[]`
-- `comment: string`
+- `proposedLabelsToAdd: string[]`
+- `proposedLabelsToRemove: string[]`
+- `proposedComment: string`
 - `warnings: string[]`
 - `requiresApply: true`
 - `closeIssue: false`
-- `wouldCloseIssue?: boolean`
+- `wouldCloseIssue: boolean`
 - `stateSummary: string`
 
 ## Transition Rules
@@ -64,10 +65,10 @@ This reference describes the read-only lifecycle planner command:
 
 ### `completed`
 
-- requires `resolution`
-- `fully-resolved`
+- omitted `resolution` is treated as `unknown` and emits a maintainer-classification warning
+- `full`
   - add `agent-done`
-  - remove `agent-active`, `agent-pr-open`, `agent-blocked`, `agent-needs-human`
+  - remove `agent-active`, `agent-pr-open`, `agent-blocked`, `agent-needs-human`, `needs-triage`
   - `wouldCloseIssue: true`
 - `partial`
   - remove `agent-active`, `agent-pr-open`
@@ -97,6 +98,6 @@ This reference describes the read-only lifecycle planner command:
 bun run agent:issues:lifecycle -- '{"issue":123,"transition":"plan-started","currentLabels":["agent-ready","agent-planning","needs-triage"]}'
 bun run agent:issues:lifecycle -- '{"issue":123,"transition":"pr-opened","currentLabels":["agent-ready"],"prUrl":"https://github.com/plaited/plaited/pull/999"}' --human
 bun run agent:issues:lifecycle -- '{"issue":123,"transition":"blocked","currentLabels":["agent-ready","agent-active"],"reason":"Needs maintainer scope decision"}'
-bun run agent:issues:lifecycle -- '{"issue":123,"transition":"completed","currentLabels":["agent-ready","agent-active","agent-pr-open"],"resolution":"fully-resolved","prUrl":"https://github.com/plaited/plaited/pull/999"}'
+bun run agent:issues:lifecycle -- '{"issue":123,"transition":"completed","currentLabels":["agent-ready","agent-active","agent-pr-open"],"resolution":"full","prUrl":"https://github.com/plaited/plaited/pull/999"}'
 bun run agent:issues:lifecycle -- '{"issue":123,"transition":"abandoned","currentLabels":["agent-ready","agent-active"],"reason":"Kanban attempt discarded after review"}'
 ```

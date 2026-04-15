@@ -2,7 +2,7 @@ import * as z from 'zod'
 import { type CliFlags, makeCli } from '../src/cli/utils/cli.ts'
 
 const TransitionSchema = z.enum(['plan-started', 'pr-opened', 'blocked', 'completed', 'abandoned'])
-const ResolutionSchema = z.enum(['fully-resolved', 'partial', 'unknown'])
+const ResolutionSchema = z.enum(['full', 'fully-resolved', 'partial', 'unknown'])
 
 export type LifecycleTransition = z.infer<typeof TransitionSchema>
 
@@ -34,14 +34,6 @@ export const PlanAgentIssueLifecycleInputSchema = z
       })
     }
 
-    if (input.transition === 'completed' && !input.resolution) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'resolution is required for transition=completed',
-        path: ['resolution'],
-      })
-    }
-
     if (input.transition === 'abandoned' && !input.reason) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
@@ -58,13 +50,13 @@ export const PlanAgentIssueLifecycleOutputSchema = z.object({
   issue: z.number().int().positive(),
   transition: TransitionSchema,
   willMutate: z.literal(false),
-  labelsToAdd: z.array(z.string()),
-  labelsToRemove: z.array(z.string()),
-  comment: z.string(),
+  proposedLabelsToAdd: z.array(z.string()),
+  proposedLabelsToRemove: z.array(z.string()),
+  proposedComment: z.string(),
   warnings: z.array(z.string()),
   requiresApply: z.literal(true),
   closeIssue: z.literal(false),
-  wouldCloseIssue: z.boolean().optional(),
+  wouldCloseIssue: z.boolean(),
   stateSummary: z.string(),
 })
 
@@ -90,8 +82,10 @@ type TransitionPlan = {
   comment: string
   warnings: string[]
   stateSummary: string
-  wouldCloseIssue?: boolean
+  wouldCloseIssue: boolean
 }
+
+type LifecycleResolution = 'full' | 'partial' | 'unknown'
 
 const GITHUB_ISSUE_LABELS_SCHEMA = z.object({
   labels: z.array(
@@ -149,6 +143,18 @@ const appendOperatorNote = ({ baseComment, commentBody }: { baseComment: string;
   }
 
   return `${baseComment}\n\nOperator note:\n${commentBody}`
+}
+
+const normalizeResolution = (resolution: z.infer<typeof ResolutionSchema> | undefined): LifecycleResolution => {
+  if (resolution === 'full' || resolution === 'fully-resolved') {
+    return 'full'
+  }
+
+  if (resolution === 'partial') {
+    return 'partial'
+  }
+
+  return 'unknown'
 }
 
 const trimProcessError = ({ stderr, stdout }: { stderr: string; stdout: string }): string => {
@@ -245,6 +251,7 @@ const planTransition = ({ input }: { input: PlanAgentIssueLifecycleResolvedInput
           commentBody: input.commentBody,
         }),
         warnings: [],
+        wouldCloseIssue: false,
         stateSummary: 'Planning marked as started; issue would become agent-active and clear needs-triage.',
       }
     }
@@ -262,6 +269,7 @@ const planTransition = ({ input }: { input: PlanAgentIssueLifecycleResolvedInput
           commentBody: input.commentBody,
         }),
         warnings: [],
+        wouldCloseIssue: false,
         stateSummary: 'PR is open; issue would be tracked as active with agent-pr-open.',
       }
     }
@@ -279,15 +287,26 @@ const planTransition = ({ input }: { input: PlanAgentIssueLifecycleResolvedInput
           commentBody: input.commentBody,
         }),
         warnings: [],
+        wouldCloseIssue: false,
         stateSummary: 'Issue is blocked and requires maintainer input.',
       }
     }
 
     case 'completed': {
-      if (input.resolution === 'fully-resolved') {
+      const resolution = normalizeResolution(input.resolution)
+
+      if (resolution === 'full') {
+        const warnings: string[] = []
+        if (!input.prUrl) {
+          warnings.push('completed full without prUrl; include prUrl when available')
+        }
+        if (input.resolution === 'fully-resolved') {
+          warnings.push('resolution "fully-resolved" is accepted as an alias for "full"')
+        }
+
         return {
           labelsToAdd: ['agent-done'],
-          labelsToRemove: ['agent-active', 'agent-pr-open', 'agent-blocked', 'agent-needs-human'],
+          labelsToRemove: ['agent-active', 'agent-pr-open', 'agent-blocked', 'agent-needs-human', 'needs-triage'],
           comment: appendOperatorNote({
             baseComment: [
               `Issue #${input.issue} appears fully resolved.`,
@@ -296,13 +315,13 @@ const planTransition = ({ input }: { input: PlanAgentIssueLifecycleResolvedInput
             ].join('\n'),
             commentBody: input.commentBody,
           }),
-          warnings: input.prUrl ? [] : ['completed fully-resolved without prUrl; include prUrl when available'],
+          warnings,
           wouldCloseIssue: true,
           stateSummary: 'Issue appears fully resolved; would mark done and close in apply mode.',
         }
       }
 
-      if (input.resolution === 'partial') {
+      if (resolution === 'partial') {
         return {
           labelsToAdd: ['agent-needs-human'],
           labelsToRemove: ['agent-active', 'agent-pr-open'],
@@ -320,6 +339,11 @@ const planTransition = ({ input }: { input: PlanAgentIssueLifecycleResolvedInput
         }
       }
 
+      const unknownWarnings = ['completed transition requires maintainer resolution classification (full or partial)']
+      if (!input.resolution) {
+        unknownWarnings.unshift('resolution omitted for completed; treated as unknown')
+      }
+
       return {
         labelsToAdd: ['agent-needs-human'],
         labelsToRemove: [],
@@ -330,7 +354,7 @@ const planTransition = ({ input }: { input: PlanAgentIssueLifecycleResolvedInput
           ].join('\n'),
           commentBody: input.commentBody,
         }),
-        warnings: [],
+        warnings: unknownWarnings,
         wouldCloseIssue: false,
         stateSummary: 'Resolution is unknown; maintainer decision is required before closure.',
       }
@@ -349,6 +373,7 @@ const planTransition = ({ input }: { input: PlanAgentIssueLifecycleResolvedInput
           commentBody: input.commentBody,
         }),
         warnings: [],
+        wouldCloseIssue: false,
         stateSummary: 'Current attempt was abandoned; maintainer follow-up is required.',
       }
     }
@@ -448,13 +473,13 @@ export const planAgentIssueLifecycle = async (
     issue: input.issue,
     transition: input.transition,
     willMutate: false,
-    labelsToAdd: mutationPlan.labelsToAdd,
-    labelsToRemove: mutationPlan.labelsToRemove,
-    comment: plan.comment,
+    proposedLabelsToAdd: mutationPlan.labelsToAdd,
+    proposedLabelsToRemove: mutationPlan.labelsToRemove,
+    proposedComment: plan.comment,
     warnings,
     requiresApply: true,
     closeIssue: false,
-    ...(plan.wouldCloseIssue === undefined ? {} : { wouldCloseIssue: plan.wouldCloseIssue }),
+    wouldCloseIssue: plan.wouldCloseIssue,
     stateSummary: plan.stateSummary,
   }
 }
@@ -469,12 +494,12 @@ export const renderPlanAgentIssueLifecycleHuman = ({
   const lines = [
     `Issue: #${output.issue}`,
     `Transition: ${output.transition}`,
-    `Labels to add: ${output.labelsToAdd.length > 0 ? output.labelsToAdd.join(', ') : '(none)'}`,
-    `Labels to remove: ${output.labelsToRemove.length > 0 ? output.labelsToRemove.join(', ') : '(none)'}`,
+    `Labels to add: ${output.proposedLabelsToAdd.length > 0 ? output.proposedLabelsToAdd.join(', ') : '(none)'}`,
+    `Labels to remove: ${output.proposedLabelsToRemove.length > 0 ? output.proposedLabelsToRemove.join(', ') : '(none)'}`,
     `Would close issue: ${output.wouldCloseIssue ? 'yes' : 'no'}`,
     '',
     'Comment preview:',
-    output.comment,
+    output.proposedComment,
   ]
 
   if (output.warnings.length > 0) {
