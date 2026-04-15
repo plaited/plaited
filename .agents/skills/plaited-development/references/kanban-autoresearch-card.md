@@ -69,6 +69,13 @@ Worktree Expectations
 - For Kanban task worktrees, rely on card trash/delete cleanup.
 - Do not continue work on a squash-merged branch.
 
+Before final handoff
+- Fetch `origin/dev`.
+- Update this PR branch from `origin/dev` using a normal merge/update-branch flow.
+- Resolve conflicts in this worktree if they occur.
+- Rerun affected validation after the update.
+- Do not rebase/force-push shared PR branches unless explicitly instructed.
+
 Validation Expectations
 - Run `biome check --write <affected files>` when applicable.
 - Run lane-appropriate targeted checks for the mutated asset surface.
