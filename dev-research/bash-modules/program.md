@@ -35,13 +35,13 @@ This is research work, not a reason to widen `create-agent.ts`.
 
 1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the current architectural direction:
    behavior belongs in modules, not in the core agent engine.
-2. [dev-research/default-modules/program.md](../default-modules/program.md) defines the umbrella question:
+2. [dev-research/server-module/program.md](../server-module/program.md) defines the umbrella question:
    which module bundle should become the shipped default agent composition?
 3. [skills/behavioral-core/SKILL.md](../../skills/behavioral-core/SKILL.md) defines the BP coordination substrate.
 4. [skills/code-patterns/SKILL.md](../../skills/code-patterns/SKILL.md) and related execution-oriented skills may
    provide reusable worker and validation patterns.
 5. This lane hill-climbs the local-execution subproblem and feeds its winning
-   candidates back into the umbrella default-modules lane.
+   candidates back into the issue-backed server-module backlog lane.
 
 ## Core Hypothesis
 
@@ -232,7 +232,7 @@ structure.
 
 The split should be read as:
 
-- `default-modules` is the umbrella lane that decides what concrete bundle
+- `server-module issue backlog` is the umbrella lane that decides what concrete bundle
   should ship by default
 - `bash-modules` researches the bounded local-execution part of that default
   bundle
@@ -242,5 +242,5 @@ This lane should therefore optimize for two things at once:
 - strong local performance on execution-related tasks
 - compatibility with broader default-module integration
 
-Its results should feed into the umbrella default-modules lane rather than
+Its results should feed into the issue-backed server-module backlog lane rather than
 be treated as a complete standalone doctrine for the whole agent.

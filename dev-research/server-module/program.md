@@ -41,7 +41,7 @@ Open questions now include:
 4. [dev-research/node-auth-modules/program.md](../node-auth-modules/program.md) defines auth-sensitive policy
 5. [dev-research/agent-bootstrap/program.md](../agent-bootstrap/program.md) defines bootstrap-time deployment input
 6. This lane hill-climbs the transport/runtime slice and feeds winners back
-   into the default-modules umbrella
+   into the server-module issue backlog
 
 ## Core Hypothesis
 
@@ -77,7 +77,7 @@ Primary local inputs:
 
 Important research companions:
 
-- [dev-research/default-modules/program.md](../default-modules/program.md)
+- [dev-research/server-module/program.md](../server-module/program.md)
 - [dev-research/node-auth-modules/program.md](../node-auth-modules/program.md)
 - [dev-research/agent-bootstrap/program.md](../agent-bootstrap/program.md)
 - [dev-research/identity-trust-modules/program.md](../identity-trust-modules/program.md)
@@ -221,7 +221,7 @@ such as:
 - `transport.json`
 - `invariants.json`
 
-This is important for later autoresearch because deterministic scenario checks
+This is important for later autonomous improvement loops because deterministic scenario checks
 need a fast, reviewable fitness surface before any slower stochastic neural
 evaluation is introduced.
 

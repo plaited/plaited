@@ -41,7 +41,7 @@ hoc summaries from each neighboring module family.
 
 This lane sits under:
 
-- [dev-research/default-modules/program.md](../default-modules/program.md)
+- [dev-research/server-module/program.md](../server-module/program.md)
 
 It should integrate with:
 
@@ -64,9 +64,9 @@ The intended split is:
 2. [src/agent/agent.types.ts](../../src/agent/agent.types.ts) defines the shared state and module seams
 3. [skills/behavioral-core/SKILL.md](../../skills/behavioral-core/SKILL.md) defines the runtime signal and snapshot
    substrate
-4. [dev-research/default-modules/program.md](../default-modules/program.md) defines the bundle question
+4. [dev-research/server-module/program.md](../server-module/program.md) defines the bundle question
 5. this lane hill-climbs the projection slice and feeds winners back into the
-   default-modules umbrella
+   server-module issue backlog
 
 ## Core Hypothesis
 

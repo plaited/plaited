@@ -46,7 +46,7 @@ projection, search, and capability selection without one explicit owner.
 
 This lane sits under:
 
-- [dev-research/default-modules/program.md](../default-modules/program.md)
+- [dev-research/server-module/program.md](../server-module/program.md)
 
 It should integrate with:
 
@@ -72,7 +72,7 @@ The intended split is:
 2. adjacent lanes define memory, projection, search, planning, and capability
    selection constraints
 3. this lane hill-climbs the request-assembly slice and feeds winners back
-   into the default-modules umbrella
+   into the server-module issue backlog
 
 ## Core Hypothesis
 

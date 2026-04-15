@@ -44,7 +44,7 @@ The missing work is policy and composition:
 5. [dev-research/three-axis-modules/program.md](../three-axis-modules/program.md) defines cross-cutting
    authority and autonomy control
 6. This lane hill-climbs the auth slice and feeds winning candidates back into
-   the default-modules umbrella
+   the server-module issue backlog
 
 ## Core Hypothesis
 
@@ -75,7 +75,7 @@ Primary local inputs:
 
 Important research companions:
 
-- [dev-research/default-modules/program.md](../default-modules/program.md)
+- [dev-research/server-module/program.md](../server-module/program.md)
 - [dev-research/a2a-modules/program.md](../a2a-modules/program.md)
 - [dev-research/three-axis-modules/program.md](../three-axis-modules/program.md)
 

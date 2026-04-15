@@ -46,7 +46,7 @@ MCP, search, and projection without one explicit owner.
 
 This lane sits under:
 
-- [dev-research/default-modules/program.md](../default-modules/program.md)
+- [dev-research/server-module/program.md](../server-module/program.md)
 
 It should integrate with:
 
@@ -72,7 +72,7 @@ The intended split is:
 2. adjacent lanes define skills, MCP, modules, search, and three-axis
    constraints
 3. this lane hill-climbs the metadata-first capability registry slice and
-   feeds winners back into the default-modules umbrella
+   feeds winners back into the server-module issue backlog
 
 ## Core Hypothesis
 

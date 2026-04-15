@@ -20,7 +20,7 @@ The repo already has key pieces of the substrate:
 
 - [src/cli/eval/eval.ts](../../src/cli/eval/eval.ts) for repeated execution and
   retained trial results
-- [src/cli/program-runner/program-runner.ts](../../src/cli/program-runner/program-runner.ts)
+- repo-native module-program CLI surface (removed)
   for bounded fanout over candidate attempts
 - behavioral snapshots and signals for runtime observation
 - verification-oriented research under
@@ -45,16 +45,16 @@ The intended split is:
 - `skills-module` owns skill discovery, selection, and activation
 - target modules own their runtime behavior
 - `verification-module` owns correctness checks and promotion constraints
-- `autoresearch-module` owns continual eval, candidate generation triggers,
+- `autonomous-improvement-module` owns continual eval, candidate generation triggers,
   and promotion orchestration
 
 ## Product Target
 
-The first shipped autoresearch module bundle should support:
+The first shipped autonomous-improvement module bundle should support:
 
 1. observing repeated failures from eval, snapshots, and verifier outputs
 2. queueing bounded improvement jobs against an explicit target surface
-3. invoking `src/cli/autoresearch` or equivalent bounded improvement runners
+3. invoking issue-backed card/autonomous-improvement workflow or equivalent bounded improvement runners
 4. writing durable reviewable artifacts under a repo-local hidden directory
 5. recording promotion decisions as explicit state
 6. activating only validated overlays, not silent in-place rewrites
@@ -76,7 +76,7 @@ Later target surfaces may include:
 
 The first durable storage target should be:
 
-- `.plaited/autoresearch/`
+- `.plaited/autonomous-improvement/`
 
 Each run should emit reviewable artifacts such as:
 
@@ -94,7 +94,7 @@ artifact search before any weight-level adaptation.
 That means:
 
 - eval remains a reusable primitive
-- autoresearch becomes the orchestration layer around eval
+- autonomous-improvement becomes the orchestration layer around eval
 - target-specific mutation logic stays behind explicit target handlers
 - promotion remains reviewable and policy-bound
 
@@ -102,7 +102,7 @@ That means:
 
 The first code slice should provide:
 
-- `src/cli/autoresearch/` as the reusable CLI and library surface
-- `src/modules/autoresearch-module/` as the runtime policy seam
+- issue-backed card/autonomous-improvement workflow as the reusable CLI and library surface
+- `src/modules/autonomous-improvement-module/` as the runtime policy seam
 - minimal target handlers for `skill` and `module`
 - candidate artifact creation before autonomous activation

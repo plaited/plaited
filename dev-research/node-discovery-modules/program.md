@@ -38,7 +38,7 @@ host plumbing and A2A transport code without an explicit owner.
 
 This lane sits under:
 
-- [dev-research/default-modules/program.md](../default-modules/program.md)
+- [dev-research/server-module/program.md](../server-module/program.md)
 
 It should integrate with:
 
@@ -59,11 +59,11 @@ The intended split is:
 
 1. [docs/INFRASTRUCTURE.md](../../docs/INFRASTRUCTURE.md) defines the host / box / node-home split
 2. [src/modules/a2a-module/](../../src/modules/a2a-module) defines the current Agent Card and A2A seams
-3. [dev-research/default-modules/program.md](../default-modules/program.md) defines the umbrella bundle
+3. [dev-research/server-module/program.md](../server-module/program.md) defines the umbrella bundle
    question
 4. adjacent lanes provide A2A, auth, node-home, and bootstrap constraints
 5. this lane hill-climbs the discovery identity slice and feeds winners back
-   into the default-modules umbrella
+   into the server-module issue backlog
 
 ## Core Hypothesis
 

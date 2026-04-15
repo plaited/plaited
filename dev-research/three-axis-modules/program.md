@@ -38,7 +38,7 @@ modules without one program integrating them.
 
 This lane sits under:
 
-- [dev-research/default-modules/program.md](../default-modules/program.md)
+- [dev-research/server-module/program.md](../server-module/program.md)
 
 It should integrate with:
 
@@ -64,10 +64,10 @@ This lane defines the cross-cutting rules that decide:
 1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the minimal executable core
 2. [src/agent/agent.types.ts](../../src/agent/agent.types.ts) defines the module contract
 3. [docs/INFRASTRUCTURE.md](../../docs/INFRASTRUCTURE.md) defines deployment and sandbox boundaries
-4. [dev-research/default-modules/program.md](../default-modules/program.md) defines the default bundle
+4. [dev-research/server-module/program.md](../server-module/program.md) defines the default bundle
    question
 5. this lane hill-climbs the cross-cutting control slice and feeds its winning
-   candidates back into the default-modules umbrella
+   candidates back into the server-module issue backlog
 
 ## Core Hypothesis
 

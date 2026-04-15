@@ -24,7 +24,7 @@ The repo already has pieces of the correctness story:
 - schema validation
 - bounded workspace authority
 - repeated evals in [src/eval](../../src/eval)
-- module-program validation in [src/program-runner](../../src/program-runner)
+- module-program validation in repo-native module-program runner CLI surface (removed)
 - behavioral snapshots and observable traces
 - MSS and boundary semantics through [skills/modnet-modules](../../skills/modnet-modules)
 
@@ -51,7 +51,7 @@ fully owned by none.
 
 This lane is a focused subprogram under:
 
-- [dev-research/default-modules/program.md](../default-modules/program.md)
+- [dev-research/server-module/program.md](../server-module/program.md)
 
 It should integrate with:
 

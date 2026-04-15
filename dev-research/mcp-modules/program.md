@@ -40,13 +40,13 @@ policy around:
 ## Dependency Order
 
 1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the minimal core boundary
-2. [dev-research/default-modules/program.md](../default-modules/program.md) defines the umbrella bundle
+2. [dev-research/server-module/program.md](../server-module/program.md) defines the umbrella bundle
    question
 3. [skills/add-mcp/SKILL.md](../../skills/add-mcp/SKILL.md) defines MCP integration patterns
 4. [skills/add-remote-mcp/SKILL.md](../../skills/add-remote-mcp/SKILL.md) defines remote MCP wrapper patterns
 5. [skills/search-mcp-docs/SKILL.md](../../skills/search-mcp-docs/SKILL.md) defines MCP protocol/source lookup
 6. This lane hill-climbs the MCP slice and feeds its winning candidates back
-   into the default-modules umbrella
+   into the server-module issue backlog
 
 ## Core Hypothesis
 

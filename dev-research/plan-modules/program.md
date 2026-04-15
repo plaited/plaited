@@ -38,7 +38,7 @@ execution modules, and fully owned by none of them.
 
 This lane sits under:
 
-- [dev-research/default-modules/program.md](../default-modules/program.md)
+- [dev-research/server-module/program.md](../server-module/program.md)
 
 It should integrate with:
 
@@ -61,9 +61,9 @@ The intended split is:
 1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the minimal executable core
 2. [src/agent/agent.types.ts](../../src/agent/agent.types.ts) defines the module and signal seams
 3. [skills/behavioral-core/SKILL.md](../../skills/behavioral-core/SKILL.md) defines the BP coordination substrate
-4. [dev-research/default-modules/program.md](../default-modules/program.md) defines the bundle question
+4. [dev-research/server-module/program.md](../server-module/program.md) defines the bundle question
 5. this lane hill-climbs the planning slice and feeds its winners back into
-   the default-modules umbrella
+   the server-module issue backlog
 
 ## Core Hypothesis
 

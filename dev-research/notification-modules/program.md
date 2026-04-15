@@ -32,7 +32,7 @@ either remain underspecified or leak into unrelated modules.
 
 This lane sits under:
 
-- [dev-research/default-modules/program.md](../default-modules/program.md)
+- [dev-research/server-module/program.md](../server-module/program.md)
 
 It should integrate with:
 
@@ -53,9 +53,9 @@ The intended split is:
 1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the minimal eventful core
 2. [skills/behavioral-core/SKILL.md](../../skills/behavioral-core/SKILL.md) defines the BP substrate for event
    routing and additive policy
-3. [dev-research/default-modules/program.md](../default-modules/program.md) defines the bundle question
+3. [dev-research/server-module/program.md](../server-module/program.md) defines the bundle question
 4. this lane hill-climbs the notification slice and feeds winners back into
-   the default-modules umbrella
+   the server-module issue backlog
 
 ## Core Hypothesis
 

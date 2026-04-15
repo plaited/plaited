@@ -44,7 +44,7 @@ widen [src/agent/create-agent.ts](../../src/agent/create-agent.ts).
 2. [src/agent/agent.types.ts](../../src/agent/agent.types.ts) defines the module, signal, and snapshot seams
 3. [src/behavioral/behavioral.schemas.ts](../../src/behavioral/behavioral.schemas.ts) defines the current `SnapshotMessage`
    surface
-4. [dev-research/default-modules/program.md](../default-modules/program.md) defines the umbrella bundle
+4. [dev-research/server-module/program.md](../server-module/program.md) defines the umbrella bundle
    question
 5. [skills/behavioral-core/SKILL.md](../../skills/behavioral-core/SKILL.md) defines the BP coordination substrate
 6. [skills/code-patterns/SKILL.md](../../skills/code-patterns/SKILL.md) defines preferred utility and state-shaping
@@ -53,7 +53,7 @@ widen [src/agent/create-agent.ts](../../src/agent/create-agent.ts).
 8. [dev-research/node-home-modules/program.md](../node-home-modules/program.md) should define the durable
    node-home contract that durable memory writes participate in
 9. this lane hill-climbs the memory slice and feeds its winning candidates back
-   into the default-modules umbrella
+   into the server-module issue backlog
 
 ## Core Hypothesis
 
