@@ -88,7 +88,7 @@ describe('autoresearch schemas', () => {
           target: { kind: 'module', id: 'server-module' },
         },
       ],
-      adapterCommand: ['bun', 'scripts/agent-adapter.ts', '{{lane_dir}}'],
+      adapterCommand: ['echo', '{{lane_dir}}'],
     })
     const output = AutoresearchOrchestratorOutputSchema.parse({
       runId: 'autoresearch-orchestrator-run',
@@ -107,7 +107,7 @@ describe('autoresearch schemas', () => {
     })
 
     expect(input.parallel).toBe(1)
-    expect(input.adapterCommand).toEqual(['bun', 'scripts/agent-adapter.ts', '{{lane_dir}}'])
+    expect(input.adapterCommand).toEqual(['echo', '{{lane_dir}}'])
     expect(output.lanes[0]?.status).toBe('succeeded')
   })
 })
