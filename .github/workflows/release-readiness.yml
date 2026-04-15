@@ -22,6 +22,7 @@ jobs:
     timeout-minutes: 30
     env:
       GH_TOKEN: ${{ github.token }}
+      RELEASE_READINESS_GITHUB_TOKEN: ${{ secrets.RELEASE_READINESS_GITHUB_TOKEN }}
       GITHUB_REPO: ${{ github.repository }}
       TITLE: "Release readiness: dev -> main"
 
@@ -60,6 +61,13 @@ jobs:
           default_setup_err_file="${work_dir}/codeql-default-setup.err"
           default_setup_collection_status="available"
           body_file="${work_dir}/issue-body.md"
+          security_token_source="github-token"
+          security_gh_token="${GH_TOKEN}"
+
+          if [ -n "${RELEASE_READINESS_GITHUB_TOKEN:-}" ]; then
+            security_token_source="release-readiness-secret"
+            security_gh_token="${RELEASE_READINESS_GITHUB_TOKEN}"
+          fi
 
           git log --oneline origin/main..origin/dev > "${log_file}"
           git diff --stat origin/main..origin/dev > "${diff_stat_file}"
@@ -89,28 +97,32 @@ jobs:
             echo "${reason}"
           }
 
-          if gh api "repos/${GITHUB_REPO}/code-scanning/alerts?state=open&per_page=100" > "${codeql_file}" 2> "${codeql_err_file}"; then
+          security_api() {
+            GH_TOKEN="${security_gh_token}" gh api "$@"
+          }
+
+          if security_api "repos/${GITHUB_REPO}/code-scanning/alerts?state=open&per_page=100" > "${codeql_file}" 2> "${codeql_err_file}"; then
             codeql_collection_status="available"
           else
             codeql_collection_status="unavailable ($(format_unavailable_reason "${codeql_err_file}"))"
             echo '[]' > "${codeql_file}"
           fi
 
-          if gh api "repos/${GITHUB_REPO}/dependabot/alerts?state=open&per_page=100" > "${dependabot_file}" 2> "${dependabot_err_file}"; then
+          if security_api "repos/${GITHUB_REPO}/dependabot/alerts?state=open&per_page=100" > "${dependabot_file}" 2> "${dependabot_err_file}"; then
             dependabot_collection_status="available"
           else
             dependabot_collection_status="unavailable ($(format_unavailable_reason "${dependabot_err_file}"))"
             echo '[]' > "${dependabot_file}"
           fi
 
-          if gh api "repos/${GITHUB_REPO}/secret-scanning/alerts?state=open&per_page=100&hide_secret=true" > "${secret_file}" 2> "${secret_err_file}"; then
+          if security_api "repos/${GITHUB_REPO}/secret-scanning/alerts?state=open&per_page=100&hide_secret=true" > "${secret_file}" 2> "${secret_err_file}"; then
             secret_scanning_collection_status="available"
           else
             secret_scanning_collection_status="unavailable ($(format_unavailable_reason "${secret_err_file}"))"
             echo '[]' > "${secret_file}"
           fi
 
-          if gh api "repos/${GITHUB_REPO}/code-scanning/default-setup" > "${default_setup_file}" 2> "${default_setup_err_file}"; then
+          if security_api "repos/${GITHUB_REPO}/code-scanning/default-setup" > "${default_setup_file}" 2> "${default_setup_err_file}"; then
             default_setup_collection_status="available"
           else
             default_setup_collection_status="unavailable ($(format_unavailable_reason "${default_setup_err_file}"))"
@@ -328,7 +340,7 @@ jobs:
 
           required_human_checks=$'- Confirm release scope and version bump from commit intent.\n- Confirm no undisclosed security exceptions are being accepted.\n- Confirm validation evidence for changed runtime/package surfaces.\n- Confirm post-release main -> dev sync plan (merge commit, no reset/rebase/force-push).'
 
-          validation_summary="Dev checks_collection_status=${checks_collection_status}; codeql_collection_status=${codeql_collection_status}; dependabot_collection_status=${dependabot_collection_status}; secret_scanning_collection_status=${secret_scanning_collection_status}; default_setup_collection_status=${default_setup_collection_status}; check-runs total=${checks_total}; failures=${checks_failed}; pending=${checks_pending}; neutral_or_skipped=${checks_neutral_or_skipped}."
+          validation_summary="Dev checks_collection_status=${checks_collection_status}; security_token_source=${security_token_source}; codeql_collection_status=${codeql_collection_status}; dependabot_collection_status=${dependabot_collection_status}; secret_scanning_collection_status=${secret_scanning_collection_status}; default_setup_collection_status=${default_setup_collection_status}; check-runs total=${checks_total}; failures=${checks_failed}; pending=${checks_pending}; neutral_or_skipped=${checks_neutral_or_skipped}."
 
           cat > "${body_file}" <<EOF
           ## Release Readiness Snapshot
@@ -357,6 +369,7 @@ jobs:
           validation_summary: ${validation_summary}
           main_to_dev_sync_required: ${main_to_dev_sync_required}
           security_summary:
+            security_token_source: ${security_token_source}
             codeql_collection_status: ${codeql_collection_status}
             dependabot_collection_status: ${dependabot_collection_status}
             secret_scanning_collection_status: ${secret_scanning_collection_status}
@@ -381,6 +394,7 @@ jobs:
 
           ## Deterministic Security Summary
 
+          - Security token source: \`${security_token_source}\`
           - CodeQL collection status: \`${codeql_collection_status}\`
           - Dependabot collection status: \`${dependabot_collection_status}\`
           - Secret-scanning collection status: \`${secret_scanning_collection_status}\`
