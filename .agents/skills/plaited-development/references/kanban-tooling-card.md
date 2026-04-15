@@ -23,6 +23,9 @@ Required Repo Instructions
 - Keep GitHub workflow permissions minimal and scoped to job needs.
 - Do not weaken GitHub security settings/checks without explicit human approval.
 - CodeQL default setup query suite is expected to be `extended` (security-extended equivalent).
+- For issue-backed cards, ingest only after maintainer-applied `agent-ready` plus exactly one
+  card-type label (`card/code`, `card/tooling`, `card/skill-pattern`, `card/skill-executable`,
+  `card/eval`, `card/autoresearch`, or `card/cleanup`).
 - Preserve branch strategy in GitHub settings/workflows:
   - `main`: linear/squash-only clean release branch.
   - `dev`: integration trunk that allows merge commits for `main -> dev` sync.
@@ -38,6 +41,9 @@ Worktree Expectations
 - Expect squash merge into `dev` for normal card work.
 - Pull/sync `dev` with fast-forward only (`git fetch origin dev` then `git merge --ff-only origin/dev`).
 - Keep tooling changes isolated from feature cards.
+- Include GitHub issue linkage in title/branch for issue-backed cards:
+  - title format: `[GH-123] <short task>`
+  - branch format: `agent/gh-123-<short-slug>`
 - After merge, trash/delete the card worktree.
 - For Kanban task worktrees, rely on card trash/delete cleanup.
 - Do not continue work on a squash-merged branch.

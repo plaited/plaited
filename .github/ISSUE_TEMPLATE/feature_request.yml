@@ -1,0 +1,61 @@
+name: Feature request
+description: Propose an enhancement for maintainer triage and possible internal agent execution.
+title: "[Feature] "
+labels:
+  - needs-triage
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: One-sentence summary of the proposal.
+      placeholder: Short feature summary
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Problem or proposal
+      description: What problem should be solved, or what capability should be added.
+      placeholder: Describe the proposal and why it matters.
+    validations:
+      required: true
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use case
+      description: Real-world scenario or workflow this would improve.
+      placeholder: Who needs this, and when.
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected_areas
+    attributes:
+      label: Affected areas/files (if known)
+      description: Paths, modules, workflows, or components likely involved.
+      placeholder: src/... or .github/workflows/... or unknown
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected behavior
+      description: Desired outcome or acceptance criteria.
+    validations:
+      required: true
+
+  - type: textarea
+    id: validation_run
+    attributes:
+      label: Validation already run
+      description: Any experiments, checks, or tests you already performed.
+      placeholder: Commands + observations
+
+  - type: textarea
+    id: links
+    attributes:
+      label: Relevant links (optional)
+      description: Branch, diff, PR, prototype, docs, or related issues.
+      placeholder: https://...
