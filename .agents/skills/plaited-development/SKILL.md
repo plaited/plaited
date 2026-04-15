@@ -404,12 +404,17 @@ security_summary:
 - Stop if passing tests would require weakening installer/core contracts.
 - Stop if requested implementation conflicts with verified current code.
 
-## 12. Pi/Fanout Transition Note
+## 12. Kanban / Issue Transition Note
 
-- Existing `pi` and fanout tooling remains in place during this transition.
-- Do not remove or refactor existing `pi`/fanout tooling in this slice.
-- Any long-term lane replacement decision still requires human review of quality, reliability,
-  cleanup hygiene, and cost.
+- Pi-backed autonomous program scripts are no longer the Plaited development lane.
+- Do not add new `pi` package dependencies, `pi` probe scripts, or Pi-specific orchestration
+  wrappers.
+- Convert remaining `dev-research/*/program.md` work into GitHub Issues and route selected issues
+  through maintainer-applied `agent-ready`, `agent-planning`, and/or `card/*` labels.
+- Use Cline Kanban for local decomposition/execution and GitHub Issues as the durable backlog.
+- If a future lane needs autonomous fanout, model it as `eval`/`autoresearch` card work with
+  explicit artifacts, validation, and issue linkage rather than reviving the removed Pi script
+  layer.
 
 ## 13. Card Templates
 

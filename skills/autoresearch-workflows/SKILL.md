@@ -6,97 +6,56 @@ license: ISC
 
 # Autoresearch Workflows
 
-## Purpose
-
-Use this skill when working in `dev-research/` and the task is to evaluate,
-compare, fan out, or hill-climb harness and module changes through the real
-CLI surfaces.
-
-This is the operator guide for:
+Use this skill when operating `dev-research/` lanes with the official CLI
+surfaces:
 
 - `plaited eval`
 - `plaited compare-trials`
 - `plaited program-runner`
 - `plaited autoresearch`
 
-## Choose The Right Surface
+## Surface Selection
 
-Use `plaited eval` when:
+Choose `plaited eval` when you need repeated execution over prompts with grader
+scoring and JSONL trial output.
 
-- the unit under test is an adapter, model, or agent response
-- you want repeated prompt execution with pass@k-style metrics
-- you want trajectories or capture evidence retained in `TrialResult` output
+Choose `plaited compare-trials` when you already have retained trial files and
+need aggregate and per-prompt deltas.
 
-Use `plaited compare-trials` when:
+Choose `plaited program-runner` when you need bounded fanout attempts from a
+`dev-research/*/program.md` lane with durable attempt artifacts.
 
-- you already have two `TrialResult` JSONL files
-- you need aggregate comparison, confidence intervals, and per-prompt winners
-- you want a reusable comparison surface instead of ad hoc inline scripts
+Choose `plaited autoresearch` when you need a bounded optimization loop around
+adapter/prompts/grader inputs for a declared target surface.
 
-Use `plaited program-runner` when:
+## Standard Operator Loop
 
-- the unit of work is a `dev-research/*/program.md` lane
-- you want multiple bounded attempts in isolated worktrees
-- you need durable attempt artifacts and validation results
+1. Select a lane `program.md` under `dev-research/`.
+2. Run fanout with `plaited program-runner run ...`.
+3. Evaluate retained candidates with `plaited eval ...`.
+4. Compare runs with `plaited compare-trials ...`.
+5. Run `plaited autoresearch ...` when bounded iterative search is required.
 
-Use `plaited autoresearch` when:
+## Mutation Boundaries
 
-- you want a bounded improvement loop around eval
-- you need observations, candidate artifacts, validation, and promotion state
-- the target surface is currently `skill` or `module`
-
-## Dev-Research Workflow
-
-The typical loop is:
-
-1. pick a lane under `dev-research/`
-2. fan out candidate attempts with `plaited program-runner`
-3. measure promising candidates with `plaited eval`
-4. compare retained runs with `plaited compare-trials`
-5. package or revisit candidates through `plaited autoresearch`
-
-## Program Lane Scope
-
-For module lanes, `program-runner` writable roots should stay inside:
-
-- `src/modules/`
-- `src/modules.ts`
-
-Read broadly when the lane requires context, but keep mutations inside the
-declared writable roots from the lane `program.md`.
+- Read as broadly as needed for context.
+- Mutate only within writable roots declared by the active lane.
+- For module lanes, keep edits inside `src/modules/` and `src/modules.ts`
+  unless lane config explicitly widens scope.
 
 ## Command Patterns
 
-Repeated eval:
-
 ```bash
 plaited eval '{"adapterPath":"./adapter.ts","promptsPath":"prompts.jsonl","graderPath":"./grader.ts","k":5,"concurrency":2}'
-```
-
-Compare two retained runs:
-
-```bash
 plaited compare-trials '{"baselinePath":"baseline.jsonl","challengerPath":"challenger.jsonl"}'
-```
-
-Run a research lane:
-
-```bash
 plaited program-runner run '{"programPath":"dev-research/default-modules/program.md","attempts":3,"parallel":2}'
-```
-
-Run bounded autoresearch:
-
-```bash
 plaited autoresearch '{"target":{"kind":"module","id":"skills-module"},"adapterPath":"./adapter.ts","promptsPath":"prompts.jsonl","graderPath":"./grader.ts"}'
 ```
 
-## Notes
+## Operator Expectations
 
-- `eval` is the repeated execution primitive
-- `compare-trials` is the retained-run comparison surface
-- `program-runner` is the lane fanout surface
-- `autoresearch` coordinates bounded improvement around those primitives
-
-Prefer these CLI surfaces over custom one-off scripts unless the analysis is
-truly novel.
+- Prefer these CLI surfaces over ad hoc scripts for repeatable evaluation work.
+- Keep artifacts durable: JSONL outputs, attempt status, diffs, and validation
+  results should remain inspectable while runs are active.
+- Keep concurrency bounded and increase only after stable parse/validation
+  behavior is confirmed.

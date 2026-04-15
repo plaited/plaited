@@ -5,7 +5,6 @@ serial_file_list=$(mktemp)
 all_file_list=$(mktemp)
 parallel_file_list=$(mktemp)
 trap 'rm -f "$serial_file_list" "$all_file_list" "$parallel_file_list"' EXIT
-agent_adapter_spec="scripts/tests/agent-adapter.spec.ts"
 
 rg -F -l 'Bun.serve(' src scripts skills -g '*.spec.ts' | sort -u > "$serial_file_list"
 cat >> "$serial_file_list" <<'LIST'
@@ -15,8 +14,6 @@ src/modules/server/tests/server-module.spec.ts
 src/ui/dom/tests/controller-browser.spec.ts
 LIST
 sort -u -o "$serial_file_list" "$serial_file_list"
-grep -Fvx "$agent_adapter_spec" "$serial_file_list" > "${serial_file_list}.tmp" || true
-mv "${serial_file_list}.tmp" "$serial_file_list"
 
 rg --files -g '*.spec.ts' src scripts skills | sort > "$all_file_list"
 grep -Fvxf "$serial_file_list" "$all_file_list" > "$parallel_file_list" || true
@@ -34,9 +31,6 @@ if [ "$serial_count" -gt 0 ]; then
   done
   exec 3<&-
 fi
-
-echo "[test-runner] isolated serial test: ${agent_adapter_spec}"
-bun test --max-concurrency=1 "$agent_adapter_spec"
 
 echo "[test-runner] parallel batch (${parallel_count} files, max-concurrency=20)"
 if [ "$parallel_count" -gt 0 ]; then
