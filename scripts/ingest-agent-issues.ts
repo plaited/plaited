@@ -394,6 +394,43 @@ const readTemplateHints = async ({
   return hints
 }
 
+const getLongestFenceRun = ({ content, char }: { content: string; char: '`' | '~' }): number => {
+  let longest = 0
+  let current = 0
+
+  for (const next of content) {
+    if (next === char) {
+      current += 1
+      if (current > longest) {
+        longest = current
+      }
+      continue
+    }
+    current = 0
+  }
+
+  return longest
+}
+
+const renderUntrustedMarkdownBlock = ({ content, language = 'md' }: { content: string; language?: string }): string => {
+  const longestBacktickRun = getLongestFenceRun({
+    content,
+    char: '`',
+  })
+  const longestTildeRun = getLongestFenceRun({
+    content,
+    char: '~',
+  })
+
+  const backtickFenceLength = Math.max(3, longestBacktickRun + 1)
+  const tildeFenceLength = Math.max(3, longestTildeRun + 1)
+  const fenceChar = backtickFenceLength <= tildeFenceLength ? '`' : '~'
+  const fenceLength = fenceChar === '`' ? backtickFenceLength : tildeFenceLength
+  const fence = fenceChar.repeat(fenceLength)
+
+  return `${fence}${language}\n${content}\n${fence}`
+}
+
 const renderComments = (comments: GitHubIssue['comments']): string => {
   if (!comments || comments.length === 0) {
     return '- (No comments fetched.)'
@@ -404,7 +441,9 @@ const renderComments = (comments: GitHubIssue['comments']): string => {
     const author = comment.author?.login?.trim() || 'unknown'
     const body = comment.body?.trim() || '(empty comment body)'
     const urlLine = comment.url ? `\nURL: ${comment.url}` : ''
-    renderedComments.push(`- Comment ${index + 1} by @${author}${urlLine}\n~~~md\n${body}\n~~~`)
+    renderedComments.push(
+      `- Comment ${index + 1} by @${author}${urlLine}\n${renderUntrustedMarkdownBlock({ content: body })}`,
+    )
   }
 
   return renderedComments.join('\n')
@@ -496,9 +535,9 @@ export const buildIssuePlanningPrompt = ({
     '## Issue Context (Untrusted Evidence)',
     '',
     '### Body',
-    '~~~md',
-    (issue.body?.trim() || '(No issue body provided.)').trim(),
-    '~~~',
+    renderUntrustedMarkdownBlock({
+      content: (issue.body?.trim() || '(No issue body provided.)').trim(),
+    }),
     '',
     '### Comments',
     renderComments(issue.comments),
@@ -691,8 +730,10 @@ export const renderIngestAgentIssuesHuman = ({
   lines.push('Issues:')
   for (const issue of output.issues) {
     const status = issue.eligible ? 'eligible' : 'ineligible'
+    const hints = issue.cardTaxonomyHints.length > 0 ? ` hints=${issue.cardTaxonomyHints.join(',')}` : ' hints=none'
+    const outputPath = issue.outputPath ? ` output=${issue.outputPath}` : ''
     const reasons = issue.ineligibleReasons.length > 0 ? ` (${issue.ineligibleReasons.join('; ')})` : ''
-    lines.push(`- #${issue.number} ${issue.title} [${status}]${reasons}`)
+    lines.push(`- #${issue.number} ${issue.title} [${status}]${hints}${outputPath}${reasons}`)
   }
 
   return lines.join('\n')
