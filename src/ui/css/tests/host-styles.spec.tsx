@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { createHostStyles } from 'plaited'
+import { createHostStyles } from 'plaited/ui'
 
 test('createHostStyles: supports simple rules', () => {
   const host = createHostStyles({

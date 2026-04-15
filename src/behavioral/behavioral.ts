@@ -1,29 +1,34 @@
-import { isTypeOf } from '../utils.ts'
-import { SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
-import type { SelectionBid, SnapshotMessage } from './behavioral.schemas.ts'
+import { ueid } from '../utils/ueid.ts'
+import {
+  BTHREAD_ID_PREFIX,
+  EVENT_SOURCES,
+  FRONTIER_STATUS,
+  SNAPSHOT_MESSAGE_KINDS,
+  TRIGGER_ID_PREFIX,
+} from './behavioral.constants.ts'
+import type { SelectionBid, SnapshotMessage, ThreadReference } from './behavioral.schemas.ts'
+import {
+  advanceRunningToPending,
+  computeFrontier,
+  isListeningFor,
+  resumePendingThreadsForSelectedEvent,
+} from './behavioral.shared.ts'
 import type {
+  AddBThread,
+  AddBThreads,
   Behavioral,
   BPEvent,
-  BPEventTemplate,
-  BPListener,
+  BSync,
   BThreads,
   CandidateBid,
   EventDetails,
   PendingBid,
+  ReportSnapshot,
   RunningBid,
-  SelectionFormatter,
   Trigger,
   UseFeedback,
-  UseRestrictedTrigger,
   UseSnapshot,
 } from './behavioral.types.ts'
-
-/**
- * @internal
- * A simple listener function that always returns true, used for triggered events.
- * This allows externally triggered events to satisfy the waitFor condition in the trigger thread.
- */
-const triggerWaitFor = () => true
 
 /**
  * @internal
@@ -32,7 +37,7 @@ const triggerWaitFor = () => true
  * This function creates a publisher that maintains a set of listeners and provides methods
  * to publish values to all listeners and to subscribe/unsubscribe listeners.
  *
- * @template T The type of values that will be published through this mechanism.
+ * @template T - Type of values published through this mechanism.
  * @returns A publisher function with a `subscribe` method attached.
  */
 const createPublisher = <T>() => {
@@ -53,59 +58,30 @@ const createPublisher = <T>() => {
 
 /**
  * @internal
- * Utility function to ensure a value is an array.
- *
- * If the input is already an array, it is returned unchanged.
- * If the input is not an array, it is wrapped in an array.
- *
- * @template T The type of elements in the array.
- * @param obj The value to ensure is an array. Defaults to an empty array if undefined.
- * @returns An array containing the input value(s).
- */
-const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj : [obj])
-
-/**
- * @internal
- * Creates a checker function to determine if a given BPListener matches a CandidateBid.
- *
- * This is used to check if an event matches waitFor, block, or interrupt declarations.
- *
- * @param type The event type to check against.
- * @param detail The event detail payload to check against.
- * @returns A function that takes a BPListener and returns true if it matches the event.
- */
-const isListeningFor = ({ type, detail }: CandidateBid) => {
-  return (listener: BPListener): boolean =>
-    isTypeOf<string>(listener, 'string')
-      ? listener === type
-      : listener({
-          detail,
-          type,
-        })
-}
-
-/**
- * @internal
- * Checks if a pending request (Idiom['request']) matches the selected event candidate.
- *
- * This is used to determine if a thread's request was the one selected during event selection.
- *
- * @param selectedEvent The event candidate that was selected.
- * @param event The request from a thread's Idioms to check against the selected event.
- * @returns True if the request matches the selected event, false otherwise.
- */
-const isPendingRequest = (selectedEvent: CandidateBid, event: BPEvent | BPEventTemplate) =>
-  isTypeOf<BPEventTemplate>(event, 'function') ? event === selectedEvent?.template : event.type === selectedEvent.type
-
-/**
- * @internal
  * Formats the current state (pending bids, candidates, selected event) into a SnapshotMessage array.
  *
  * This function analyzes the relationships between threads (blocking, interruption), determines
  * which event was selected, and creates a comprehensive view of the current execution step.
  * The resulting array is sorted by priority to show higher priority events first.
  */
-const snapshotFormatter: SelectionFormatter = ({ candidates, selectedEvent, pending }) => {
+const formatSnapshotBids = ({
+  candidates,
+  pending,
+  selectedEvent,
+}: {
+  candidates: CandidateBid[]
+  pending: Map<string, PendingBid>
+  selectedEvent?: CandidateBid
+}) => {
+  const resolveThreadSnapshotMeta = (id: string): ThreadReference => {
+    const label = pending.get(id)!.label
+    return {
+      label,
+      id,
+    }
+  }
+  const resolveThreadReference = (thread?: string) => (thread ? resolveThreadSnapshotMeta(thread) : undefined)
+
   const blockingThreads = [...pending].flatMap(([thread, { block }]) =>
     block && Array.isArray(block)
       ? block.map((listener) => ({ block: listener, thread }))
@@ -121,37 +97,89 @@ const snapshotFormatter: SelectionFormatter = ({ candidates, selectedEvent, pend
         : [],
   )
 
-  const ruleSets: {
-    thread: string
-    trigger: boolean
-    selected: boolean
-    type: string
-    detail?: unknown
-    priority: number
-    blockedBy?: string
-    interrupts?: string
-  }[] = []
+  const ruleSets: SelectionBid[] = []
   for (const bid of candidates) {
     const blockedBy = blockingThreads.find(({ block }) => isListeningFor(bid)(block))?.thread
     const interrupts = interruptedThreads.find(({ interrupt }) => isListeningFor(bid)(interrupt))?.thread
-    const thread = bid.thread
     const message: SelectionBid = {
-      thread: isTypeOf<symbol>(thread, 'symbol') ? thread?.toString() : thread,
-      trigger: bid.trigger ?? false,
+      thread: resolveThreadSnapshotMeta(bid.thread),
+      source: bid.source,
       type: bid.type,
-      selected: isPendingRequest(selectedEvent, bid),
+      selected: selectedEvent ? selectedEvent.thread === bid.thread : false,
       priority: bid.priority,
       detail: bid.detail,
-      blockedBy: isTypeOf<symbol>(blockedBy, 'symbol') ? blockedBy?.toString() : blockedBy,
-      interrupts: isTypeOf<symbol>(interrupts, 'symbol') ? interrupts?.toString() : interrupts,
+      blockedBy: resolveThreadReference(blockedBy),
+      interrupts: resolveThreadReference(interrupts),
     }
     ruleSets.push(message)
   }
+  return ruleSets.sort((a, b) => a.priority - b.priority)
+}
+
+const snapshotFormatter = ({
+  candidates,
+  selectedEvent,
+  pending,
+}: {
+  candidates: CandidateBid[]
+  selectedEvent: CandidateBid
+  pending: Map<string, PendingBid>
+}) => {
   return {
     kind: SNAPSHOT_MESSAGE_KINDS.selection,
-    bids: ruleSets.sort((a, b) => a.priority - b.priority),
+    bids: formatSnapshotBids({ candidates, selectedEvent, pending }),
   }
 }
+
+const buildThreadReferences = ({ threads }: { threads: Array<ThreadReference | undefined> }) => {
+  const seenPairs = new Set<string>()
+  const references: ThreadReference[] = []
+
+  for (const thread of threads) {
+    if (!thread) {
+      continue
+    }
+    const dedupeKey = JSON.stringify([thread.label, thread.id ?? null])
+    if (seenPairs.has(dedupeKey)) {
+      continue
+    }
+    seenPairs.add(dedupeKey)
+    references.push(thread)
+  }
+  return references
+}
+
+const deadlockSnapshotFormatter = ({
+  candidates,
+  pending,
+}: {
+  candidates: CandidateBid[]
+  pending: Map<string, PendingBid>
+}) => {
+  const bids = formatSnapshotBids({ candidates, pending }).map((bid) => ({
+    ...bid,
+    selected: false as const,
+    reason: 'blocked' as const,
+  }))
+  const blockedCount = bids.filter((bid) => Boolean(bid.blockedBy?.label)).length
+
+  return {
+    kind: SNAPSHOT_MESSAGE_KINDS.deadlock,
+    bids,
+    summary: {
+      candidateCount: bids.length,
+      blockedCount,
+      unblockedCount: bids.length - blockedCount,
+      blockers: buildThreadReferences({
+        threads: bids.map((bid) => bid.blockedBy),
+      }),
+      interrupters: buildThreadReferences({
+        threads: bids.map((bid) => bid.interrupts),
+      }),
+    },
+  }
+}
+
 /**
  * Creates and manages a behavioral program instance, orchestrating the execution of b-threads.
  * This function implements the core logic of the Behavioral Programming execution model (super-steps).
@@ -161,8 +189,8 @@ const snapshotFormatter: SelectionFormatter = ({ candidates, selectedEvent, pend
  * the BP paradigm. It maintains the state of all active threads, processes their synchronization
  * statements, selects events, and handles the publication of events to external subscribers.
  *
- * @template Details Type map for event payloads, enabling type-safe handlers. Maps event types to their detail payload types.
- * @returns An immutable object (`BProgramAPI`) containing functions to interact with the program.
+ * @template Details - Type map for event payloads, mapping event types to detail payload types.
+ * @returns Immutable API for interacting with the behavioral program.
  *
  * @remarks
  * The execution follows these general steps (super-step):
@@ -198,21 +226,21 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
    * @internal
    * Map of threads that have yielded and are waiting for event selection.
    *
-   * Key: threadId (string for named threads, Symbol for trigger-originated threads)
+   * Key: threadId (string for named threads)
    * Value: PendingBid containing the thread's generator and yielded Idioms.
    * These threads have reached a synchronization point and declared their behavioral intentions.
    */
-  const pending = new Map<string | symbol, PendingBid>()
+  const pending = new Map<string, PendingBid>()
 
   /**
    * @internal
    * Map of threads whose generators are ready to run (or have just been triggered).
    *
-   * Key: threadId (string for named threads, Symbol for trigger-originated threads)
+   * Key: threadId (string for named threads)
    * Value: RunningBid containing the thread's generator.
    * These threads are about to execute until they yield at their next synchronization point.
    */
-  const running = new Map<string | symbol, RunningBid>()
+  const running = new Map<string, RunningBid>()
 
   /**
    * @internal
@@ -228,31 +256,11 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
    */
   const snapshotPublisher = createPublisher<SnapshotMessage>()
 
-  /**
-   * @internal
-   * Executes one part of the super-step: advancing running threads to their next yield.
-   *
-   * This function:
-   * 1. Iterates through all running threads
-   * 2. Advances each thread's generator to its next yield point
-   * 3. Captures the yielded Idioms (synchronization declarations)
-   * 4. Moves the thread from 'running' to 'pending' state
-   * 5. Proceeds to the event selection phase
-   */
-  function step() {
-    for (const [thread, bid] of running) {
-      const { generator, priority, trigger } = bid
-      const { value, done } = generator.next()
-      !done &&
-        pending.set(thread, {
-          priority,
-          ...(trigger && { trigger }),
-          generator,
-          ...value,
-        })
-      running.delete(thread)
+  const step = () => {
+    if (running.size) {
+      advanceRunningToPending(running, pending)
+      selectNextEvent()
     }
-    selectNextEvent()
   }
 
   /**
@@ -268,33 +276,19 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
    * 6. If no event is selected, the super-step ends (program pauses until external trigger)
    */
   function selectNextEvent() {
-    const blocked: BPListener[] = []
-    const candidates: CandidateBid[] = []
-    for (const [thread, { request, priority, block, trigger }] of pending) {
-      block && blocked.push(...ensureArray(block))
-      request &&
-        candidates.push({
-          priority,
-          trigger,
-          thread,
-          ...(isTypeOf<BPEventTemplate>(request, 'function') ? { template: request, ...request() } : request),
-        })
-    }
-    const filteredBids: CandidateBid[] = []
-    const length = candidates.length
-    for (let i = 0; i < length; i++) {
-      const candidate = candidates[i]!
-      if (!blocked.some(isListeningFor(candidate))) {
-        filteredBids.push(candidate)
-      }
-    }
-    /** @internal Priority Queue BPEvent Selection Strategy */
-    const selectedEvent = filteredBids.sort(
-      ({ priority: priorityA }, { priority: priorityB }) => priorityA - priorityB,
-    )[0]
-    if (selectedEvent) {
-      snapshotPublisher(snapshotFormatter({ candidates, selectedEvent, pending }))
+    const frontier = computeFrontier({ pending })
+
+    if (frontier.status === FRONTIER_STATUS.ready) {
+      /** @internal Priority Queue BPEvent Selection Strategy */
+      const selectedEvent = frontier.enabled.sort(
+        ({ priority: priorityA }, { priority: priorityB }) => priorityA - priorityB,
+      )[0]!
+      snapshotPublisher(snapshotFormatter({ candidates: frontier.candidates, selectedEvent, pending }))
       nextStep(selectedEvent)
+      return
+    }
+    if (frontier.status === FRONTIER_STATUS.deadlock) {
+      snapshotPublisher(deadlockSnapshotFormatter({ candidates: frontier.candidates, pending }))
     }
   }
 
@@ -309,52 +303,61 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
    * 4. Publishes the selected event to feedback handlers
    * 5. Initiates the next super-step
    *
-   * @param selectedEvent The event candidate that was selected for this step
+   * @param selectedEvent - Event candidate selected for this step.
    */
   function nextStep(selectedEvent: CandidateBid) {
-    for (const [thread, bid] of pending) {
-      const { waitFor, request, generator, interrupt } = bid
-      const isInterrupted = ensureArray(interrupt).some(isListeningFor(selectedEvent))
-      const isWaitedFor = ensureArray(waitFor).some(isListeningFor(selectedEvent))
-      const hasPendingRequest = request && isPendingRequest(selectedEvent, request)
-      isInterrupted && generator.return?.()
-      if (hasPendingRequest || isInterrupted || isWaitedFor) {
-        running.set(thread, bid)
-        pending.delete(thread)
-      }
-    }
+    resumePendingThreadsForSelectedEvent({
+      selectedEvent,
+      running,
+      pending,
+    })
     actionPublisher({ type: selectedEvent.type, detail: selectedEvent.detail })
-    running.size && step()
+
+    /**
+     * @internal
+     * Executes one part of the super-step: advancing running threads to their next yield.
+     *
+     * This function:
+     * 1. Iterates through all running threads
+     * 2. Advances each thread's generator to its next yield point
+     * 3. Captures the yielded Idioms (synchronization declarations)
+     * 4. Moves the thread from 'running' to 'pending' state
+     * 5. Proceeds to the event selection phase
+     */
+    step()
   }
 
   /**
    * @internal
    * Implementation of the public `trigger` function.
-   *
-   * This creates a special temporary thread with highest priority (0) that:
-   * 1. Requests the specified event
-   * 2. Waits for any event (using triggerWaitFor which always returns true)
-   * 3. Terminates after the event is processed
-   *
-   * The thread is identified by a Symbol based on the event type for uniqueness.
-   * Uses queueMicrotask to break synchronous recursion when trigger() is called
-   * from within useFeedback handlers, preventing stack overflow.
-   *
-   * @returns Promise that resolves when the triggered event's super-step completes
    */
-  const trigger: Trigger = (request) => {
+  const trigger: Trigger = (event) => {
     const thread = function* () {
       yield {
-        request,
-        waitFor: [triggerWaitFor],
+        request: event,
       }
     }
-    running.set(Symbol(request.type), {
+    const threadId = ueid(TRIGGER_ID_PREFIX)
+    running.set(threadId, {
       priority: 0,
-      trigger: true,
+      source: EVENT_SOURCES.trigger,
       generator: thread(),
+      ingress: true,
+      label: event.type,
     })
-    running.size && step()
+
+    /**
+     * @internal
+     * Executes one part of the super-step: advancing running threads to their next yield.
+     *
+     * This function:
+     * 1. Iterates through all running threads
+     * 2. Advances each thread's generator to its next yield point
+     * 3. Captures the yielded Idioms (synchronization declarations)
+     * 4. Moves the thread from 'running' to 'pending' state
+     * 5. Proceeds to the event selection phase
+     */
+    step()
   }
 
   /**
@@ -394,74 +397,27 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
     return disconnect
   }
 
-  /**
-   * @internal
-   * Implementation of the public `bThreads` utility.
-   *
-   * This provides methods to add/replace threads and check thread status.
-   * The implementation ensures proper thread initialization and state tracking.
-   */
-  const bThreads: BThreads = {
-    set: (threads) => {
-      for (const thread in threads) {
-        if (running.has(thread) || pending.has(thread)) {
-          const message = {
-            kind: SNAPSHOT_MESSAGE_KINDS.bthreads_warning,
-            thread,
-            warning: `Thread "${thread}" already exists and cannot be replaced. Use the 'interrupt' idiom to terminate threads explicitly.`,
-          }
-          snapshotPublisher(message)
-          console.warn(message)
-          continue
-        }
-        running.set(thread, {
-          priority: running.size + 1,
-          generator: threads[thread]!(),
-        })
-      }
-    },
-    has: (thread) => ({
-      running: running.has(thread),
-      pending: pending.has(thread),
-    }),
+  const addBThread: AddBThread = (label: string, thread: ReturnType<BSync>) => {
+    const threadId = ueid(BTHREAD_ID_PREFIX)
+    running.set(threadId, {
+      priority: running.size + 1,
+      source: EVENT_SOURCES.request,
+      generator: thread(),
+      label,
+    })
   }
-
+  const addBThreads: AddBThreads = (threads: BThreads) => {
+    for (const [label, thread] of Object.entries(threads)) {
+      addBThread(label, thread)
+    }
+  }
   /**
    * @internal
    * Implementation of the public `useSnapshot` hook.
    * Delegates directly to the snapshot publisher's subscribe method.
    */
   const useSnapshot: UseSnapshot = (listener) => snapshotPublisher.subscribe(listener)
-
-  /**
-   * @internal
-   * Creates a trigger scoped to a fixed set of allowed event types.
-   *
-   * @remarks
-   * Events in the restricted set are rejected with a
-   * `restricted_trigger_error` snapshot message — they never reach the BP engine.
-   * All other events pass through normally.
-   * Uses Set for O(1) lookup. The returned trigger has the same signature
-   * as the unbound {@link Trigger}.
-   *
-   * @param restricted - Event type strings this trigger must reject
-   * @returns A restricted {@link Trigger} function
-   */
-  const useRestrictedTrigger: UseRestrictedTrigger = (...restricted) => {
-    const set = new Set(restricted)
-    return <T extends BPEvent>(args: T) => {
-      if (set.has(args.type as string)) {
-        const message = {
-          ...args,
-          kind: SNAPSHOT_MESSAGE_KINDS.restricted_trigger_error,
-          error: `Event type "${String(args.type)}" is in the restricted set: [${[...set].join(', ')}]`,
-        }
-        snapshotPublisher(message)
-        return
-      }
-      trigger(args)
-    }
-  }
+  const reportSnapshot: ReportSnapshot = (message) => snapshotPublisher(message)
 
   /**
    * @internal
@@ -472,16 +428,17 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
    * predictable API for consumers of the behavioral program.
    */
   return Object.freeze({
-    /** Provides methods to manage behavioral threads (`set`, `has`). */
-    bThreads,
+    /** Add thread to program. */
+    addBThread,
+    /** Add many threads to program. */
+    addBThreads,
     /** Function to inject external events into the program. */
     trigger,
     /** Hook to subscribe to selected events with feedback handlers. */
     useFeedback,
     /** Hook to subscribe to internal state snapshots for monitoring/debugging. */
     useSnapshot,
-
-    /** Factory to create a trigger scoped to a fixed set of allowed event types. */
-    useRestrictedTrigger,
+    /** Host/runtime seam for publishing structured diagnostics to snapshot subscribers. */
+    reportSnapshot,
   })
 }

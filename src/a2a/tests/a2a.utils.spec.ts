@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { A2A_ERROR_CODE } from '../a2a.constants.ts'
 import type { AgentCard } from '../a2a.schemas.ts'
 import {
@@ -289,18 +289,18 @@ describe('A2AError', () => {
     expect(error.data).toBe('details')
   })
 
-  test('methodNotFound factory', () => {
+  test('methodNotFound module', () => {
     const error = A2AError.methodNotFound('tasks/cancel')
     expect(error.code).toBe(A2A_ERROR_CODE.method_not_found)
     expect(error.message).toContain('tasks/cancel')
   })
 
-  test('invalidParams factory', () => {
+  test('invalidParams module', () => {
     const error = A2AError.invalidParams('Missing message field')
     expect(error.code).toBe(A2A_ERROR_CODE.invalid_params)
   })
 
-  test('internalError factory', () => {
+  test('internalError module', () => {
     const error = A2AError.internalError('Something broke')
     expect(error.code).toBe(A2A_ERROR_CODE.internal_error)
   })
@@ -309,74 +309,79 @@ describe('A2AError', () => {
 // ── Push Notification Delivery ──────────────────────────────────────────────
 
 describe('sendPushNotification', () => {
+  let originalFetch: typeof fetch
+
+  beforeEach(() => {
+    originalFetch = globalThis.fetch
+  })
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch
+  })
+
   test('posts event to webhook URL', async () => {
     let receivedBody: unknown = null
     let receivedHeaders: Record<string, string> = {}
 
-    const webhookServer = Bun.serve({
-      port: 0,
-      async fetch(req) {
-        receivedHeaders = Object.fromEntries(req.headers.entries())
-        receivedBody = await req.json()
+    globalThis.fetch = Object.assign(
+      async (_input: RequestInfo | URL, init?: RequestInit) => {
+        receivedHeaders = Object.fromEntries(new Headers(init?.headers).entries())
+        const body = init?.body
+        if (typeof body === 'string') {
+          receivedBody = JSON.parse(body)
+        }
         return new Response('OK', { status: 200 })
       },
-    })
+      {
+        preconnect: originalFetch.preconnect.bind(originalFetch),
+      },
+    ) as typeof fetch
 
-    try {
-      const ok = await sendPushNotification(
-        { url: `http://localhost:${webhookServer.port}` },
-        { kind: 'status-update', taskId: 'task-1', status: { state: 'completed' }, final: true },
-      )
-      expect(ok).toBe(true)
-      expect(receivedHeaders['content-type']).toBe('application/json')
-      expect(receivedBody).toHaveProperty('jsonrpc', '2.0')
-      expect(receivedBody).toHaveProperty('result')
-      const result = (receivedBody as { result: unknown }).result as Record<string, unknown>
-      expect(result.kind).toBe('status-update')
-      expect(result.taskId).toBe('task-1')
-    } finally {
-      webhookServer.stop(true)
-    }
+    const ok = await sendPushNotification(
+      { url: 'http://localhost/webhook' },
+      { kind: 'status-update', taskId: 'task-1', status: { state: 'completed' }, final: true },
+    )
+    expect(ok).toBe(true)
+    expect(receivedHeaders['content-type']).toBe('application/json')
+    expect(receivedBody).toHaveProperty('jsonrpc', '2.0')
+    expect(receivedBody).toHaveProperty('result')
+    const result = (receivedBody as { result: unknown }).result as Record<string, unknown>
+    expect(result.kind).toBe('status-update')
+    expect(result.taskId).toBe('task-1')
   })
 
   test('sends Bearer token when configured', async () => {
     let receivedAuth = ''
 
-    const webhookServer = Bun.serve({
-      port: 0,
-      async fetch(req) {
-        receivedAuth = req.headers.get('authorization') ?? ''
+    globalThis.fetch = Object.assign(
+      async (_input: RequestInfo | URL, init?: RequestInit) => {
+        receivedAuth = new Headers(init?.headers).get('authorization') ?? ''
         return new Response('OK', { status: 200 })
       },
-    })
+      {
+        preconnect: originalFetch.preconnect.bind(originalFetch),
+      },
+    ) as typeof fetch
 
-    try {
-      await sendPushNotification(
-        { url: `http://localhost:${webhookServer.port}`, token: 'my-secret-token' },
-        { kind: 'status-update', taskId: 'task-1', status: { state: 'working' }, final: false },
-      )
-      expect(receivedAuth).toBe('Bearer my-secret-token')
-    } finally {
-      webhookServer.stop(true)
-    }
+    await sendPushNotification(
+      { url: 'http://localhost/webhook', token: 'my-secret-token' },
+      { kind: 'status-update', taskId: 'task-1', status: { state: 'working' }, final: false },
+    )
+    expect(receivedAuth).toBe('Bearer my-secret-token')
   })
 
   test('returns false on non-2xx response', async () => {
-    const webhookServer = Bun.serve({
-      port: 0,
-      fetch() {
-        return new Response('Forbidden', { status: 403 })
+    globalThis.fetch = Object.assign(
+      async (_input: RequestInfo | URL, _init?: RequestInit) => new Response('Forbidden', { status: 403 }),
+      {
+        preconnect: originalFetch.preconnect.bind(originalFetch),
       },
-    })
+    ) as typeof fetch
 
-    try {
-      const ok = await sendPushNotification(
-        { url: `http://localhost:${webhookServer.port}` },
-        { kind: 'status-update', taskId: 'task-1', status: { state: 'failed' }, final: true },
-      )
-      expect(ok).toBe(false)
-    } finally {
-      webhookServer.stop(true)
-    }
+    const ok = await sendPushNotification(
+      { url: 'http://localhost/webhook' },
+      { kind: 'status-update', taskId: 'task-1', status: { state: 'failed' }, final: true },
+    )
+    expect(ok).toBe(false)
   })
 })

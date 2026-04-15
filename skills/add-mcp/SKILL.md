@@ -1,6 +1,6 @@
 ---
 name: add-mcp
-description: Transport-agnostic MCP client with session API. Routes by transport type — HTTP (add-remote-mcp), stdio (future), WebSocket (future). Provides connection reuse, timeouts, and Symbol.asyncDispose cleanup.
+description: Transport-agnostic MCP integration patterns. Explains session API, transport choices, and how to use the framework's shared MCP library surface.
 license: ISC
 compatibility: Requires bun and @modelcontextprotocol/sdk
 allowed-tools: Bash Read Write
@@ -8,7 +8,7 @@ allowed-tools: Bash Read Write
 
 # Add MCP
 
-Transport-agnostic MCP client core. Use this skill when integrating any MCP server regardless of transport.
+Transport-agnostic MCP integration guidance. Use this skill when integrating any MCP server regardless of transport.
 
 ## When to use
 
@@ -24,46 +24,38 @@ Transport-agnostic MCP client core. Use this skill when integrating any MCP serv
 | stdio | Direct SDK usage | Future |
 | WebSocket | Direct SDK usage | Future |
 
-For HTTP endpoints, use `add-remote-mcp` which provides URL-based convenience wrappers.
+For HTTP endpoints, use `add-remote-mcp`.
+That skill starts from the remote URL you are given, which is often a discovery/manifest URL
+such as `https://bun.com/docs/mcp`, and then determines whether you can stop at discovery or
+need a separate live transport endpoint for session-style calls.
 
 ## Session API
 
-The session API maintains a single connection for multiple operations:
-
-```typescript
-import { createMcpSession } from '../../add-mcp/scripts/mcp-client.ts'
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-
-const transport = new StreamableHTTPClientTransport(new URL('https://example.com/mcp'))
-await using session = await createMcpSession(transport, { timeoutMs: 30_000 })
-
-const tools = await session.listTools()
-const result = await session.callTool('search', { query: 'test' })
-```
+The session API maintains a single connection for multiple operations.
+See [references/session-template.ts](references/session-template.ts).
 
 `await using` automatically closes the connection when the block exits — no manual cleanup needed.
 
+For remote HTTP servers, only use a session when you have a live transport endpoint.
+Manifest/discovery URLs are valid inputs for discovery and listing, but not necessarily for
+connection reuse or direct tool invocation.
+
 ## One-shot pattern
 
-For single operations, use `mcpConnect` directly:
+For single operations, use `mcpConnect` directly.
+See [references/one-shot-template.ts](references/one-shot-template.ts).
 
-```typescript
-import { mcpConnect } from '../../add-mcp/scripts/mcp-client.ts'
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
+For remote HTTP discovery/list operations, prefer the higher-level helpers in `plaited/mcp`
+such as `mcpDiscover`, `mcpListTools`, `mcpListPrompts`, and `mcpListResources`.
 
-const transport = new StreamableHTTPClientTransport(new URL('https://example.com/mcp'))
-const client = await mcpConnect(transport)
-try {
-  const { tools } = await client.listTools()
-} finally {
-  await client.close()
-}
-```
+## Framework MCP Library
 
-## Scripts
+The framework ships a shared MCP library surface via `plaited/mcp`.
 
-- **`scripts/mcp-client.ts`** — Core library: `mcpConnect`, `createMcpSession`, result types
-- **`scripts/mcp-client.schemas.ts`** — Zod schemas for MCP response validation
+## References
+
+- **`references/session-template.ts`** — Reusable session pattern with `await using`
+- **`references/one-shot-template.ts`** — One-shot client pattern
 
 ## Dependencies
 

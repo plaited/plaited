@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test'
-import { bSync } from 'plaited'
+import { bSync } from '../behavioral.shared.ts'
+import { onType } from './helpers.ts'
 
 test('bSync: creates generator that yields sync point once', () => {
   const syncPoint = { request: { type: 'test' } }
@@ -25,106 +26,73 @@ test('bSync: supports request idiom', () => {
 })
 
 test('bSync: supports waitFor idiom', () => {
-  const sync = bSync({ waitFor: 'event' })
+  const waitFor = onType('event')
+  const sync = bSync({ waitFor })
   const gen = sync()
 
   const { value } = gen.next()
 
-  expect(value && 'waitFor' in value && value.waitFor).toBe('event')
+  expect(value && 'waitFor' in value && value.waitFor).toEqual(waitFor)
 })
 
 test('bSync: supports block idiom', () => {
-  const sync = bSync({ block: 'event' })
+  const block = onType('event')
+  const sync = bSync({ block })
   const gen = sync()
 
   const { value } = gen.next()
 
-  expect(value && 'block' in value && value.block).toBe('event')
+  expect(value && 'block' in value && value.block).toEqual(block)
 })
 
 test('bSync: supports interrupt idiom', () => {
-  const sync = bSync({ interrupt: 'event' })
+  const interrupt = onType('event')
+  const sync = bSync({ interrupt })
   const gen = sync()
 
   const { value } = gen.next()
 
-  expect(value && 'interrupt' in value && value.interrupt).toBe('event')
+  expect(value && 'interrupt' in value && value.interrupt).toEqual(interrupt)
 })
 
 test('bSync: supports multiple idioms together', () => {
+  const waitFor = onType('event2')
+  const block = onType('event3')
   const sync = bSync({
     request: { type: 'event1' },
-    waitFor: 'event2',
-    block: 'event3',
+    waitFor,
+    block,
   })
   const gen = sync()
 
   const { value } = gen.next()
 
   expect(value && 'request' in value && value.request).toEqual({ type: 'event1' })
-  expect(value && 'waitFor' in value && value.waitFor).toBe('event2')
-  expect(value && 'block' in value && value.block).toBe('event3')
+  expect(value && 'waitFor' in value && value.waitFor).toEqual(waitFor)
+  expect(value && 'block' in value && value.block).toEqual(block)
 })
 
-test('bSync: supports predicate functions for waitFor', () => {
-  const predicate = ({ type }: { type: string }) => type === 'target'
-  const sync = bSync({ waitFor: predicate })
+test('bSync: supports detail-schema conditions in listeners', () => {
+  const listener = onType('target')
+  const sync = bSync({ waitFor: listener })
   const gen = sync()
 
   const { value } = gen.next()
 
-  expect(value && 'waitFor' in value && value.waitFor).toBe(predicate)
+  expect(value && 'waitFor' in value && value.waitFor).toEqual(listener)
 })
 
 test('bSync: supports arrays of listeners', () => {
+  const waitFor = [onType('event1'), onType('event2')]
+  const block = [onType('event3'), onType('event4')]
   const sync = bSync({
-    waitFor: ['event1', 'event2'],
-    block: ['event3', 'event4'],
+    waitFor,
+    block,
   })
   const gen = sync()
 
   const { value } = gen.next()
 
-  expect(value && 'waitFor' in value && value.waitFor).toEqual(['event1', 'event2'])
-  expect(value && 'block' in value && value.block).toEqual(['event3', 'event4'])
-})
-
-test('bSync: supports event template functions', () => {
-  const template = () => ({ type: 'dynamic', detail: Date.now() })
-  const sync = bSync({ request: template })
-  const gen = sync()
-
-  const { value } = gen.next()
-
-  // Template function is yielded as-is, not called
-  expect(value && 'request' in value && value.request).toBe(template)
-  expect(value && 'request' in value && typeof value.request).toBe('function')
-})
-
-test('bSync: event template function preserves closure state', () => {
-  let capturedValue = 42
-
-  // Template function captures state from closure
-  const template = () => ({ type: 'process', detail: capturedValue })
-
-  const sync = bSync({ request: template })
-  const gen = sync()
-
-  const { value } = gen.next()
-
-  // Verify template function is yielded
-  expect(value && 'request' in value && typeof value.request).toBe('function')
-
-  // When BP engine calls the template, it should use current closure value
-  if (value && 'request' in value && typeof value.request === 'function') {
-    const result = value.request()
-    expect(result).toEqual({ type: 'process', detail: 42 })
-
-    // Update closure value
-    capturedValue = 99
-
-    // Template should now return updated value
-    const result2 = value.request()
-    expect(result2).toEqual({ type: 'process', detail: 99 })
-  }
+  expect(value && 'waitFor' in value && value.waitFor).toEqual(waitFor)
+  expect(value && 'block' in value && value.block).toEqual(block)
 })

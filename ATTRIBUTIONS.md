@@ -1,97 +1,77 @@
 # Attributions
 
-This document acknowledges the intellectual foundations and external works that have influenced Plaited's design patterns and documentation.
+This document acknowledges the outside work that still has a visible, current
+influence on Plaited's architecture, vocabulary, and research direction.
+
+It is intentionally narrow. Older or weaker influences have been removed so
+this file tracks what is materially present in the repo now, not every source
+that was once referenced during exploration.
 
 ## Structural Information Architecture
 
 **Author:** Rachel Jaffe
-**Source:** [Structural Information Architecture](https://medium.com/@rjaffe01/structural-information-architecture-e7d5de94a211) (Medium, July 2019)
+**Source:** [Structural Information Architecture](https://medium.com/@rjaffe01/structural-information-architecture-e7d5de94a211)
 
-Rachel Jaffe's Structural IA framework provides a provider-agnostic vocabulary for describing UI structures. Her concepts of Objects, Channels, Levers, Loops, and Blocks form the foundation of Plaited's structural vocabulary used in:
+Rachel Jaffe's Structural IA vocabulary remains one of the clearest direct
+inputs into Plaited's structural language.
 
-- `.claude/skills/loom/references/structural/`
+Concepts that still show up in the repo:
+- **Objects**
+- **Channels**
+- **Levers**
+- **Loops**
+- **Blocks**
 
-**Key Concepts Used:**
-- **Objects** - What is conceived as "one"
-- **Channels** - Type contracts for information flow
-- **Levers** - Tools that shape user energy
-- **Loops** - Action → Response cycles
-- **Blocks** - Emergent compositional patterns
+Where that influence is visible now:
+- [skills/modnet-modules/references/Structural-IA.md](/Users/eirby/Workspace/plaited/skills/modnet-modules/references/Structural-IA.md)
+- [docs/ARCHITECTURE.md](/Users/eirby/Workspace/plaited/docs/ARCHITECTURE.md)
 
-## Mise en Mode
+In Plaited, Structural IA is not just UI vocabulary. It also informs the
+module composition language, module-era system framing, and the bridge between
+symbolic constraints and generated artifacts.
 
-**Author:** Donnie D'Amato
-**Source:** [mode.place](https://mode.place/)
+## Modnet and MSS
 
-Donnie D'Amato's Mise en Mode methodology influences Plaited's approach to design token scoping and theming. The framework's concept of "modes" as contextual variations of design decisions informs how tokens and styles are organized.
-
-**Key Concepts Used:**
-- Token scoping by mode/context
-- Semantic color naming patterns
-- Theme variation strategies
-
-**Integration Points:**
-- `.claude/skills/loom/references/patterns/tokens.md`
-- `.claude/skills/loom/references/patterns/styles.md`
-
-## Microinteractions
-
-**Author:** Dan Saffer
-**Source:** [Microinteractions: Designing with Details](https://www.oreilly.com/library/view/microinteractions-designing/9781491945957/) (O'Reilly Media, 2013)
-
-Dan Saffer's seminal work on microinteractions defines the four-part structure: Triggers, Rules, Feedback, and Loops. Plaited combines Saffer's microinteraction model with Rachel Jaffe's Loop and Lever concepts from Structural IA to create a unified pattern for designing interactive behavioral elements.
-
-**Key Concepts Used:**
-- **Triggers** - What initiates the interaction (mapped to Levers)
-- **Rules** - What happens when triggered (bThread logic)
-- **Feedback** - What the user perceives (template updates)
-- **Loops** - Ongoing interaction cycles (mapped to Structural IA Loops)
-
-**Integration Points:**
-- `.claude/skills/plaited-ui-patterns/references/b-element.md` (Microinteractions via Loop + Lever Pattern section)
-
-## Browser as World Model
-
-**Authors:** Yu Gu, Kai Zhang, Yuting Ning, Boyuan Zheng, Boyu Gou, Tianci Xue, Cheng Chang, Sanjari Srivastava, Yanan Xie, Peng Qi, Huan Sun, Yu Su
-**Source:** [WebDreamer: Is Your LLM Secretly a World Model of the Internet?](https://arxiv.org/abs/2411.06559) (arXiv, November 2024)
-
-The WebDreamer paper's insight that LLMs can simulate web interactions influenced Plaited's architecture where the browser serves as the ground truth world model for agent training.
-
-**Key Concepts Used:**
-- **Browser as World** - Stories execute in browser; play() validates exploration
-- **Observation-Action Cycles** - Inspector snapshots feed back to agent
-- **Grounded Rewards** - Assertions provide reward signal for training
-
-**Integration Points:**
-- `.claude/skills/loom/SKILL.md` - Browser as World Model architecture
-- Tiered symbolic analysis with browser as Tier 3 ground truth
-
-## AI-Assisted Design and Generative UI
-
-**Authors:** Jakob Nielsen, Kate Moran, Sarah Gibbons
+**Author:** Rachel Jaffe
 **Sources:**
-- [AI: First New UI Paradigm in 60 Years](https://www.nngroup.com/articles/ai-paradigm/) (Nielsen Norman Group, June 2023)
-- [Generative UI and Outcome-Oriented Design](https://www.nngroup.com/articles/generative-ui/) (Nielsen Norman Group, March 2024)
+- [Modnet.md](/Users/eirby/Workspace/plaited/skills/modnet-modules/references/Modnet.md)
+- [Past the Internet: The Emergence of the Modnet](https://medium.com/@rjaffe01)
 
-These NNGroup articles shaped the loom skill's design-to-agent pipeline and World Agent constraint architecture.
+Rachel Jaffe's modnet work is the other major living attribution that should be
+explicitly credited here. It materially shapes Plaited's node-level and
+module-level worldview.
 
-**Key Concepts Used:**
-- **AI-Assisted Design** - Designers create with AI assistance (loom's "Patterns" phase)
-- **Hybrid UI** - Familiar structures provide cognitive anchoring for generative content
-- **Generative UI** - Interfaces dynamically generated to fit user context
-- **Outcome-Oriented Design** - Define constraints and guardrails, not pixels
+Concepts that still show up in the repo:
+- **modnets** as networks of sovereign, user-owned units
+- **module ownership and transportability**
+- **bridge-code / MSS tags**
+- **boundary-aware exchange**
+- **self-assembling module composition**
 
-**Plaited's Synthesis:**
-Generative UI is constrained by Hybrid UI. Users specify familiar structures via preference profiles. Generated content fills dynamic parts while maintaining structural consistency.
+Where that influence is visible now:
+- [README.md](/Users/eirby/Workspace/plaited/README.md)
+- [docs/ARCHITECTURE.md](/Users/eirby/Workspace/plaited/docs/ARCHITECTURE.md)
+- [docs/INFRASTRUCTURE.md](/Users/eirby/Workspace/plaited/docs/INFRASTRUCTURE.md)
+- [docs/AGENT-LOOP.md](/Users/eirby/Workspace/plaited/docs/AGENT-LOOP.md)
+- [skills/modnet-modules/SKILL.md](/Users/eirby/Workspace/plaited/skills/modnet-modules/SKILL.md)
+- [src/modules/a2a-module/a2a.schemas.ts](/Users/eirby/Workspace/plaited/src/modules/a2a-module/a2a.schemas.ts)
 
-**Integration Points:**
-- `.claude/skills/loom/` - Design-to-agent pipeline
-- World Agent preference constraints
+Plaited does not reproduce the modnet work verbatim. It adapts it into:
+- a Bun-native A2A node architecture
+- MSS metadata on modules and Agent Cards
+- boundary-aware module and protocol design
+- a neuro-symbolic runtime where generated modules are constrained by BP and governance
 
-## Combined Attribution
+## Scope Note
 
-The "Microinteractions via Loop + Lever Pattern" in Plaited's documentation represents a synthesis of:
-- Dan Saffer's microinteraction structure (Triggers, Rules, Feedback, Loops)
-- Rachel Jaffe's Structural IA concepts (Loops, Levers)
+This attribution file is intentionally conservative.
 
-This combination provides a framework for designing behavioral elements that respond to user input with appropriate feedback while maintaining clear structural relationships.
+At the moment, the strongest and clearest influences that are still reflected in
+the active repo are Rachel Jaffe's:
+- Structural Information Architecture
+- modnet / MSS / bridge-code work
+
+Other ideas around generative UI, browser-grounded evaluation, or AI-assisted
+design may still inform experiments or language in places, but they are not as
+foundational or as directly encoded in the current codebase as the two sources
+above.

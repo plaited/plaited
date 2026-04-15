@@ -26,7 +26,7 @@ Pattern A is recommended. The node just verifies tokens, like the JWT pattern.
 ## Implementation Pattern (Gateway-Issued Token)
 
 ```typescript
-import { createServer } from 'plaited'
+import { createServerModule, SERVER_MODULE_EVENTS } from 'plaited/modules'
 
 // OIDC discovery endpoint for your IdP
 const ISSUER = Bun.env.OIDC_ISSUER  // e.g., 'https://acme.okta.com'
@@ -35,19 +35,32 @@ const AUDIENCE = Bun.env.OIDC_AUDIENCE
 // Fetch JWKS from discovery endpoint on startup
 const jwks = await fetchJWKS(`${ISSUER}/.well-known/openid-configuration`)
 
-const validateSession = (sessionId: string): boolean => {
+const authenticateConnection = async ({ request }) => {
   try {
-    const payload = verifyOIDCToken(sessionId, jwks, { issuer: ISSUER, audience: AUDIENCE })
-    return payload !== null
+    const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
+    if (!token) return null
+
+    const payload = verifyOIDCToken(token, jwks, { issuer: ISSUER, audience: AUDIENCE })
+    if (!payload) return null
+
+    return {
+      principalId: payload.sub,
+      connectionId: crypto.randomUUID(),
+      capabilities: ['observe', 'control'],
+    }
   } catch {
-    return false
+    return null
   }
 }
 
-const server = createServer({
-  trigger,
-  routes: {},
-  validateSession,
+const serverModule = createServerModule()
+
+agent.trigger({
+  type: SERVER_MODULE_EVENTS.server_set_config,
+  detail: {
+    routes: {},
+    authenticateConnection,
+  },
 })
 ```
 

@@ -1,11 +1,15 @@
 # Behavioral Programming: Foundations
 
-Behavioral Programming (BP) is a general coordination mechanism for managing concurrent behaviors through event-driven synchronization. This document covers BP as a **foundational paradigm**, independent of UI concerns.
+Behavioral Programming (BP) is a general coordination mechanism for managing concurrent behaviors through event-driven synchronization. In Plaited, it is exposed as an embedded TypeScript DSL built from `behavioral()`, `bThread()`, `bSync()`, predicates, and event templates. This document covers BP as a **foundational paradigm**, independent of UI concerns.
 
-**For UI-specific BP usage**, see:
-- `b-element.md` for integrating BP with custom elements
-- `cross-island-communication.md` for coordinating multiple islands
-- `form-associated-elements.md` for capturing user intent
+This document is intentionally **conceptual**:
+- what BP is
+- how `request`, `waitFor`, `block`, and `interrupt` work
+- how threads compose through event selection
+- where predicates and runtime state fit in broad BP design
+
+For **Plaited-specific execution details and current repo-grounded patterns**, use
+`algorithm-reference.md`.
 
 ## BP Paradigm Overview
 
@@ -84,7 +88,7 @@ trigger({ type: 'click' })
 
 ## Core Synchronization Idioms
 
-BP threads coordinate using four synchronization idioms provided to each `yield` statement via `bSync()`:
+BP threads coordinate through four synchronization idioms expressed with `bSync()` steps:
 
 ### `request` - Propose Events
 
@@ -98,10 +102,11 @@ bSync({ request: { type: 'submit' } })
 bSync({ request: { type: 'add', detail: { value: 42 } } })
 
 // Dynamic request using template function
-bSync({ request: ({ counter }) => ({ type: 'update', detail: { count: counter + 1 } }) })
+let counter = 0
+bSync({ request: () => ({ type: 'update', detail: { count: counter + 1 } }) })
 ```
 
-**Template function** receives current state as first argument, enabling dynamic event generation.
+**Template function** is a zero-argument closure. In Plaited it reads host-language state through closure capture, not through engine-injected arguments.
 
 ### `waitFor` - Pause Until Matching Event
 
@@ -156,25 +161,23 @@ Terminates the thread when a matching event is selected:
 ```typescript
 bThread([
   bSync({ request: { type: 'poll' } }),
-  bSync({ waitFor: 'response' }),
-  // Repeat polling...
-], true, {
-  interrupt: 'cancel' // Terminate this thread if 'cancel' event occurs
-})
+  bSync({ waitFor: 'response', interrupt: 'cancel' }),
+  // Repeat polling until interrupted...
+], true)
 ```
 
 **Use cases**: Cleanup, cancellation, timeout handling.
 
 ## Thread Composition with bThread/bSync
 
-Threads are composed using generator functions wrapped by `bThread()` and yielding `bSync()` synchronization points.
+Threads are authored with the behavioral module functions. In repo code, use `bThread()` and `bSync()` directly rather than writing raw generator functions or raw `yield` statements. Internally, the runtime composes these module-returned rule steps into the scheduler.
 
 ### `bSync` - Single Synchronization Point
 
-Creates a single synchronization point (one `yield`):
+Creates a single synchronization point:
 
 ```typescript
-import { bSync } from 'plaited'
+import { bSync } from 'plaited/behavioral'
 
 // Single sync point with request
 const syncPoint = bSync({ request: { type: 'event1' } })
@@ -186,14 +189,14 @@ const syncPoint2 = bSync({
 })
 ```
 
-**Important**: `bSync()` returns a `BSync` object that will be yielded inside a generator function, not a generator itself.
+**Important**: `bSync()` is an authoring primitive, not a cue to hand-write scheduler internals. Callers define coordination with `bSync()` and `bThread()`; the runtime handles the generator mechanics.
 
 ### `bThread` - Sequence Composition
 
 Composes multiple `bSync` points into a sequential thread:
 
 ```typescript
-import { bThread, bSync } from 'plaited'
+import { bThread, bSync } from 'plaited/behavioral'
 
 // Finite sequence (runs once)
 const oneShotThread = bThread([
@@ -221,32 +224,27 @@ const conditionalThread = bThread([
 - `true`: Repeat indefinitely
 - `() => boolean`: Repeat while predicate returns true
 
-### Generator Function Mechanics
+### Runtime Mechanics
 
-Under the hood, `bThread` uses generator functions:
+Internally, `bThread` is implemented with generator mechanics and delegates into each `bSync()` step. This is runtime detail, not the recommended authoring style:
 
 ```typescript
 // What bThread creates internally:
 function* threadGenerator() {
-  // Pause at first sync point
-  yield bSync({ request: { type: 'event1' } })
-
-  // Pause at second sync point
-  yield bSync({ waitFor: 'event2' })
-
-  // Pause at third sync point
-  yield bSync({ request: { type: 'event3' } })
+  yield* bSync({ request: { type: 'event1' } })()
+  yield* bSync({ waitFor: 'event2' })()
+  yield* bSync({ request: { type: 'event3' } })()
 }
 ```
 
 **Pause/Resume Flow**:
-1. Thread yields `bSync` → becomes **pending**
+1. A `bSync()` step is executed by the runtime and yields an `Idioms` object to the scheduler → thread becomes **pending**
 2. SELECT phase chooses event
 3. Threads waiting for selected event resume → become **running**
-4. Running threads execute until next `yield`
+4. Running threads advance until the next synchronization point
 5. Cycle repeats
 
-**IMPORTANT**: Never expose raw `yield` statements in your code. Always use `bThread()` and `bSync()` factory functions.
+**IMPORTANT**: In repo code, do not write raw generator functions or raw `yield` statements. Always express behavior with the behavioral module functions `bThread()` and `bSync()`. Treat generator mechanics as runtime-level implementation detail.
 
 ## ⭐ Event Selection Strategy (KEY CAPABILITY 1)
 
@@ -381,7 +379,7 @@ bThreads.set({
 A complete Tic-Tac-Toe game demonstrates additive composition:
 
 ```typescript
-import { behavioral, bThread, bSync } from 'plaited'
+import { behavioral, bThread, bSync } from 'plaited/behavioral'
 
 const { trigger, bThreads, useFeedback } = behavioral()
 
@@ -401,7 +399,7 @@ const enforceTurns = bThread([
 ], true)
 
 // Rule 2: Prevent taking occupied squares (one thread per square)
-const squaresTaken: Record<string, RulesFunction> = {}
+const squaresTaken: Record<string, ReturnType<typeof bThread>> = {}
 for (const square of squares) {
   squaresTaken[`square_${square}`] = bThread([
     bSync({ waitFor: ({ detail }) => square === detail.square }),
@@ -411,7 +409,7 @@ for (const square of squares) {
 
 // Rule 3: Detect wins for each player
 const detectWins = (player: 'X' | 'O') => {
-  const threads: Record<string, RulesFunction> = {}
+  const threads: Record<string, ReturnType<typeof bThread>> = {}
 
   for (const [idx, condition] of winConditions.entries()) {
     threads[`${player}_win_${idx}`] = bThread([
@@ -801,7 +799,7 @@ trigger({ type: 'stopPolling' })
 Real-world pattern from test orchestration:
 
 ```typescript
-import { behavioral, bThread, bSync } from 'plaited'
+import { behavioral, bThread, bSync } from 'plaited/behavioral'
 
 const { trigger, bThreads, useFeedback } = behavioral()
 
@@ -1059,7 +1057,7 @@ type SnapshotMessage = Array<{
 ### Observing Program State
 
 ```typescript
-import { behavioral, bThread, bSync } from 'plaited'
+import { behavioral, bThread, bSync } from 'plaited/behavioral'
 
 const { trigger, bThreads, useSnapshot } = behavioral()
 
@@ -1114,11 +1112,11 @@ bThreads.set({
 
 ## Reusable Behavioral Programs with useBehavioral
 
-`useBehavioral` is a factory pattern for creating reusable behavioral program configurations. It encapsulates BP setup, lifecycle management, and provides a clean public API with event filtering.
+`useBehavioral` is a module pattern for creating reusable behavioral program configurations. It encapsulates BP setup, lifecycle management, and provides a clean public API with event filtering.
 
 ### Why Use useBehavioral?
 
-**Factory Pattern Benefits:**
+**Module Pattern Benefits:**
 - Define behavioral program logic once, instantiate multiple times
 - Each init() call creates an isolated behavioral program instance
 - Separates BP definition from execution context
@@ -1142,7 +1140,7 @@ bThreads.set({
 ### Basic Usage
 
 ```typescript
-import { useBehavioral } from 'plaited'
+import { useBehavioral } from 'plaited/behavioral'
 
 // Define events interface for type safety
 type Events = {
@@ -1155,7 +1153,7 @@ type Context = {
   prefix: string
 }
 
-// Create reusable program factory
+// Create reusable program module
 const createProgram = useBehavioral<Events, Context>({
   // Whitelist public events
   publicEvents: ['PROCESS'],
@@ -1465,7 +1463,7 @@ Plaited provides utility functions for randomness, runtime validation, and advan
 Creates an event template function that randomly selects from provided events with uniform probability. The template function is evaluated each time the sync point is reached, ensuring fresh random selection on every iteration.
 
 ```typescript
-import { behavioral, bThread, bSync, useRandomEvent } from 'plaited'
+import { behavioral, bThread, bSync, useRandomEvent } from 'plaited/behavioral'
 
 const { trigger, bThreads, useFeedback } = behavioral()
 
@@ -1522,7 +1520,7 @@ trigger({ type: 'step' }) // Maybe moveRight
 Randomize the order of synchronization points using Fisher-Yates shuffle:
 
 ```typescript
-import { behavioral, bThread, bSync, shuffleSyncs } from 'plaited'
+import { behavioral, bThread, bSync, shuffleSyncs } from 'plaited/behavioral'
 
 const { trigger, bThreads, useFeedback } = behavioral()
 
@@ -1564,7 +1562,7 @@ useFeedback({
 Type guard for validating unknown values as BPEvents:
 
 ```typescript
-import { isBPEvent } from 'plaited'
+import { isBPEvent } from 'plaited/behavioral'
 
 function handleMessage(data: unknown) {
   if (isBPEvent(data)) {
@@ -1601,8 +1599,8 @@ handleMessage({ type: 123 }) // type must be string
 Type guard for identifying enhanced triggers with cleanup support:
 
 ```typescript
-import { isPlaitedTrigger } from 'plaited'
-import type { Trigger, PlaitedTrigger } from 'plaited'
+import { isPlaitedTrigger } from 'plaited/behavioral'
+import type { Trigger, PlaitedTrigger } from 'plaited/behavioral'
 
 function setupCleanup(trigger: Trigger) {
   if (isPlaitedTrigger(trigger)) {
@@ -1630,10 +1628,11 @@ BP is a general coordination mechanism, not limited to UI:
 
 ### Test Orchestration
 
-From `plaited/workshop/use-runner.ts`:
+Use a counting thread to wait for a bounded number of completion events, then
+request the next phase:
 
 ```typescript
-import { behavioral, bThread, bSync } from 'plaited'
+import { behavioral, bThread, bSync } from 'plaited/behavioral'
 
 const { trigger, bThreads, useFeedback } = behavioral()
 
@@ -1854,7 +1853,8 @@ For large systems, avoid monolithic behavioral programs by composing multiple de
 - **Neuro-Symbolic AI**: Separate symbolic reasoning from neural processing
 
 ```typescript
-import { behavioral, bThread, bSync, useBehavioral, useSignal } from 'plaited'
+import { behavioral, bThread, bSync, useBehavioral } from 'plaited/behavioral'
+import { useSignal } from 'plaited/agent'
 
 // ============================================================================
 // Shared Signals for Actor Communication
@@ -2246,6 +2246,5 @@ bThreads.set({
 ```
 
 **Next Steps**:
-- See `b-element.md` for UI integration
-- See `cross-island-communication.md` for coordination patterns
-- See `form-associated-elements.md` for intent capture
+- Use `algorithm-reference.md` for Plaited-specific super-step behavior, handler timing, and current repo-grounded patterns
+- Use this document for conceptual BP framing, idioms, and thread composition

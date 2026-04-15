@@ -117,7 +117,7 @@ const saveStore = async (path: string, owner: OwnerRecord | null): Promise<void>
   await Bun.write(path, JSON.stringify({ owner }, null, 2))
 }
 
-// ── Factory ─────────────────────────────────────────────────────────────────
+// ── Module ─────────────────────────────────────────────────────────────────
 
 /**
  * Creates WebAuthn authentication routes for single-tenant passkey auth.

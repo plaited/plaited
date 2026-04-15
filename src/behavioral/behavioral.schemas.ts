@@ -1,8 +1,8 @@
 import * as z from 'zod'
 
 import { SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
+import { isBPEvent } from './behavioral.shared.ts'
 import type { BPEvent } from './behavioral.types.ts'
-import { isBPEvent } from './behavioral.utils.ts'
 
 /**
  * Schema for validating BPEvent objects.
@@ -11,6 +11,49 @@ import { isBPEvent } from './behavioral.utils.ts'
  * @public
  */
 export const BPEventSchema = z.custom<BPEvent>(isBPEvent)
+
+/**
+ * @internal
+ * Shared schema for memory entry detail envelopes.
+ */
+export const createMemoryEntryDetailSchema = (detailSchema: z.ZodType<unknown>) =>
+  z.object({
+    expiresAt: z.number().optional(),
+    createdAt: z.number(),
+    body: detailSchema,
+  })
+
+/**
+ * @internal
+ * Shared schema for memory response envelopes with request id.
+ */
+export const createMemoryResponseDetailSchema = ({
+  id,
+  detailSchema,
+}: {
+  id: string
+  detailSchema: z.ZodType<unknown>
+}) =>
+  createMemoryEntryDetailSchema(detailSchema).extend({
+    id: z.literal(id),
+  })
+
+/**
+ * Schema for a thread reference used across snapshot attribution fields.
+ *
+ * @remarks
+ * `label` is human-readable. `id` is present when a precise runtime instance
+ * identifier exists (for example, spawned threads).
+ *
+ * @public
+ */
+export const ThreadReferenceSchema = z.object({
+  label: z.string(),
+  id: z.string().optional(),
+})
+
+/** @public */
+export type ThreadReference = z.infer<typeof ThreadReferenceSchema>
 
 /**
  * Schema for a single bid snapshot from the BP engine's event selection step.
@@ -25,10 +68,10 @@ export const BPEventSchema = z.custom<BPEvent>(isBPEvent)
  * @public
  */
 export const SelectionBidSchema = z.object({
-  /** Thread identifier (stringified Symbol if from an external trigger). */
-  thread: z.string(),
-  /** Whether this bid originated from an external `trigger()` call. */
-  trigger: z.boolean(),
+  /** Thread reference (stringified Symbol label for external trigger threads). */
+  thread: ThreadReferenceSchema,
+  /** Explicit source provenance for source-aware matching and replay. */
+  source: z.enum(['trigger', 'request']),
   /** Whether this bid was selected for execution in the current step. */
   selected: z.boolean(),
   /** The event type being requested or waited for. */
@@ -37,10 +80,10 @@ export const SelectionBidSchema = z.object({
   detail: z.unknown().optional(),
   /** Priority level — lower numbers indicate higher priority. */
   priority: z.number(),
-  /** Identifier of the thread that blocked this bid, if blocked. */
-  blockedBy: z.string().optional(),
-  /** Identifier of the thread interrupted when this bid is selected. */
-  interrupts: z.string().optional(),
+  /** Thread reference that blocked this bid, if blocked. */
+  blockedBy: ThreadReferenceSchema.optional(),
+  /** Thread reference interrupted when this bid is selected. */
+  interrupts: ThreadReferenceSchema.optional(),
 })
 
 /** @public */
@@ -66,6 +109,68 @@ export const SelectionSnapshotSchema = z.object({
 export type SelectionSnapshot = z.infer<typeof SelectionSnapshotSchema>
 
 /**
+ * Schema for classifying why a bid appears in a deadlock snapshot.
+ *
+ * @public
+ */
+export const DeadlockReasonSchema = z.enum(['blocked', 'no_selectable_candidate'])
+
+/** @public */
+export type DeadlockReason = z.infer<typeof DeadlockReasonSchema>
+
+/**
+ * Schema for a bid entry in a deadlock snapshot.
+ *
+ * @remarks
+ * Deadlock bids are always unselected and include a reason code.
+ *
+ * @public
+ */
+export const DeadlockBidSchema = SelectionBidSchema.extend({
+  selected: z.literal(false),
+  reason: DeadlockReasonSchema,
+})
+
+/** @public */
+export type DeadlockBid = z.infer<typeof DeadlockBidSchema>
+
+/**
+ * Schema for top-level deadlock diagnostics aggregated across all bids.
+ *
+ * @public
+ */
+export const DeadlockSummarySchema = z.object({
+  candidateCount: z.number(),
+  blockedCount: z.number(),
+  unblockedCount: z.number(),
+  blockers: z.array(ThreadReferenceSchema),
+  interrupters: z.array(ThreadReferenceSchema),
+})
+
+/** @public */
+export type DeadlockSummary = z.infer<typeof DeadlockSummarySchema>
+
+/**
+ * Schema for a snapshot emitted when no unblocked candidate can be selected.
+ *
+ * @remarks
+ * Published via {@link UseSnapshot} when at least one request candidate exists
+ * but all candidates are blocked. Consumers narrow by `kind === 'deadlock'`.
+ *
+ * @see {@link SnapshotMessageSchema} for the full discriminated union
+ *
+ * @public
+ */
+export const DeadlockSnapshotSchema = z.object({
+  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.deadlock),
+  bids: z.array(DeadlockBidSchema),
+  summary: DeadlockSummarySchema,
+})
+
+/** @public */
+export type DeadlockSnapshot = z.infer<typeof DeadlockSnapshotSchema>
+
+/**
  * Schema for feedback handler errors published by the BP engine.
  *
  * @remarks
@@ -88,65 +193,43 @@ export const FeedbackErrorSchema = z.object({
 export type FeedbackError = z.infer<typeof FeedbackErrorSchema>
 
 /**
- * Schema for restricted trigger rejection errors.
+ * Schema for host/runtime module diagnostics published by the BP engine.
  *
  * @remarks
- * Emitted when a restricted trigger rejects an event not in its allowed set.
- * The rejected event never reaches the BP engine.
- * Consumers narrow by `kind === 'restricted_trigger_error'`.
- *
- * @see {@link SnapshotMessageSchema} for the full discriminated union
+ * Emitted by host/runtime layers (for example, agent module installation paths)
+ * through `reportSnapshot()`. This is intentionally separate from scheduler events.
  *
  * @public
  */
-export const RestrictedTriggerErrorSchema = z.object({
-  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.restricted_trigger_error),
-  type: z.string(),
-  detail: z.unknown().optional(),
+export const ExtensionErrorSchema = z.object({
+  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.extension_error),
+  id: z.string().optional(),
   error: z.string(),
 })
 
 /** @public */
-export type RestrictedTriggerError = z.infer<typeof RestrictedTriggerErrorSchema>
-
-/**
- * Schema for b-thread warnings published by the BP engine.
- *
- * @remarks
- * Emitted when `bThreads.set()` attempts to add a thread with an identifier
- * that already exists. The duplicate thread is ignored.
- * Consumers narrow by `kind === 'bthreads_warning'`.
- *
- * @see {@link SnapshotMessageSchema} for the full discriminated union
- *
- * @public
- */
-export const BThreadsWarningSchema = z.object({
-  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.bthreads_warning),
-  thread: z.string(),
-  warning: z.string(),
-})
-
-/** @public */
-export type BThreadsWarning = z.infer<typeof BThreadsWarningSchema>
+export type ExtensionError = z.infer<typeof ExtensionErrorSchema>
 
 /**
  * Discriminated union schema for all observable moments from the BP engine.
  * Consumers narrow by the `kind` field.
  *
  * @see {@link SelectionSnapshotSchema} for event selection observations
+ * @see {@link DeadlockSnapshotSchema} for blocked-candidate deadlock observations
  * @see {@link FeedbackErrorSchema} for feedback handler errors
- * @see {@link RestrictedTriggerErrorSchema} for restricted trigger rejections
- * @see {@link BThreadsWarningSchema} for duplicate thread warnings
+ * @see {@link ExtensionErrorSchema} for host/runtime module diagnostics
  *
  * @public
  */
 export const SnapshotMessageSchema = z.discriminatedUnion('kind', [
-  BThreadsWarningSchema,
+  DeadlockSnapshotSchema,
   FeedbackErrorSchema,
-  RestrictedTriggerErrorSchema,
+  ExtensionErrorSchema,
   SelectionSnapshotSchema,
 ])
 
 /** @public */
 export type SnapshotMessage = z.infer<typeof SnapshotMessageSchema>
+
+export const notSchema = (schema: z.ZodTypeAny): z.ZodType<unknown> =>
+  z.unknown().refine((value) => !schema.safeParse(value).success)

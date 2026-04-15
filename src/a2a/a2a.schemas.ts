@@ -16,6 +16,7 @@ export const TextPartSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
 })
 
+/** @public */
 export type TextPart = z.infer<typeof TextPartSchema>
 
 /**
@@ -51,6 +52,7 @@ export const FilePartSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
 })
 
+/** @public */
 export type FilePart = z.infer<typeof FilePartSchema>
 
 /**
@@ -64,6 +66,7 @@ export const DataPartSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
 })
 
+/** @public */
 export type DataPart = z.infer<typeof DataPartSchema>
 
 /**
@@ -76,6 +79,7 @@ export type DataPart = z.infer<typeof DataPartSchema>
  */
 export const PartSchema = z.discriminatedUnion('kind', [TextPartSchema, FilePartSchema, DataPartSchema])
 
+/** @public */
 export type Part = z.infer<typeof PartSchema>
 
 // ============================================================================
@@ -101,6 +105,7 @@ export const MessageSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
 })
 
+/** @public */
 export type Message = z.infer<typeof MessageSchema>
 
 // ============================================================================
@@ -120,6 +125,7 @@ export const TaskStatusSchema = z.object({
   timestamp: z.string().optional(),
 })
 
+/** @public */
 export type TaskStatus = z.infer<typeof TaskStatusSchema>
 
 /**
@@ -135,6 +141,7 @@ export const ArtifactSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
 })
 
+/** @public */
 export type Artifact = z.infer<typeof ArtifactSchema>
 
 /**
@@ -152,6 +159,7 @@ export const TaskSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
 })
 
+/** @public */
 export type Task = z.infer<typeof TaskSchema>
 
 // ============================================================================
@@ -175,6 +183,7 @@ export const TaskStatusUpdateEventSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
 })
 
+/** @public */
 export type TaskStatusUpdateEvent = z.infer<typeof TaskStatusUpdateEventSchema>
 
 /**
@@ -190,6 +199,7 @@ export const TaskArtifactUpdateEventSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
 })
 
+/** @public */
 export type TaskArtifactUpdateEvent = z.infer<typeof TaskArtifactUpdateEventSchema>
 
 // ============================================================================
@@ -208,6 +218,7 @@ export const ApiKeySecuritySchemeSchema = z.object({
   description: z.string().optional(),
 })
 
+/** @public */
 export const HttpAuthSecuritySchemeSchema = z.object({
   type: z.literal('http'),
   scheme: z.string(),
@@ -215,6 +226,7 @@ export const HttpAuthSecuritySchemeSchema = z.object({
   description: z.string().optional(),
 })
 
+/** @public */
 export const OAuth2FlowSchema = z.object({
   authorizationUrl: z.string().optional(),
   tokenUrl: z.string().optional(),
@@ -222,6 +234,7 @@ export const OAuth2FlowSchema = z.object({
   scopes: z.record(z.string(), z.string()).optional(),
 })
 
+/** @public */
 export const OAuth2SecuritySchemeSchema = z.object({
   type: z.literal('oauth2'),
   flows: z.object({
@@ -233,12 +246,14 @@ export const OAuth2SecuritySchemeSchema = z.object({
   description: z.string().optional(),
 })
 
+/** @public */
 export const OpenIdConnectSecuritySchemeSchema = z.object({
   type: z.literal('openIdConnect'),
   openIdConnectUrl: z.string(),
   description: z.string().optional(),
 })
 
+/** @public */
 export const MutualTlsSecuritySchemeSchema = z.object({
   type: z.literal('mutualTLS'),
   description: z.string().optional(),
@@ -257,6 +272,7 @@ export const SecuritySchemeSchema = z.discriminatedUnion('type', [
   MutualTlsSecuritySchemeSchema,
 ])
 
+/** @public */
 export type SecurityScheme = z.infer<typeof SecuritySchemeSchema>
 
 /**
@@ -272,6 +288,7 @@ export const AgentSkillSchema = z.object({
   examples: z.array(z.string()).optional(),
 })
 
+/** @public */
 export type AgentSkill = z.infer<typeof AgentSkillSchema>
 
 /**
@@ -285,6 +302,7 @@ export const AgentCapabilitiesSchema = z.object({
   stateTransitionHistory: z.boolean().optional(),
 })
 
+/** @public */
 export type AgentCapabilities = z.infer<typeof AgentCapabilitiesSchema>
 
 /**
@@ -297,6 +315,7 @@ export const AgentProviderSchema = z.object({
   url: z.string().optional(),
 })
 
+/** @public */
 export type AgentProvider = z.infer<typeof AgentProviderSchema>
 
 /**
@@ -310,6 +329,7 @@ export const AgentInterfaceSchema = z.object({
   description: z.string().optional(),
 })
 
+/** @public */
 export type AgentInterface = z.infer<typeof AgentInterfaceSchema>
 
 /**
@@ -323,6 +343,7 @@ export const AgentCardSignatureSchema = z.object({
   keyId: z.string().optional(),
 })
 
+/** @public */
 export type AgentCardSignature = z.infer<typeof AgentCardSignatureSchema>
 
 /**
@@ -353,6 +374,7 @@ export const AgentCardSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
 })
 
+/** @public */
 export type AgentCard = z.infer<typeof AgentCardSchema>
 
 // ============================================================================
@@ -370,6 +392,7 @@ export const MessageSendConfigurationSchema = z.object({
   blocking: z.boolean().optional(),
 })
 
+/** @public */
 export type MessageSendConfiguration = z.infer<typeof MessageSendConfigurationSchema>
 
 /**
@@ -382,6 +405,7 @@ export const MessageSendParamsSchema = z.object({
   configuration: MessageSendConfigurationSchema.optional(),
 })
 
+/** @public */
 export type MessageSendParams = z.infer<typeof MessageSendParamsSchema>
 
 /**
@@ -394,6 +418,7 @@ export const TaskQueryParamsSchema = z.object({
   historyLength: z.number().optional(),
 })
 
+/** @public */
 export type TaskQueryParams = z.infer<typeof TaskQueryParamsSchema>
 
 /**
@@ -405,6 +430,7 @@ export const TaskIdParamsSchema = z.object({
   id: z.string(),
 })
 
+/** @public */
 export type TaskIdParams = z.infer<typeof TaskIdParamsSchema>
 
 // ============================================================================
@@ -425,6 +451,7 @@ export const PushNotificationAuthenticationSchema = z.object({
   credentials: z.string().optional(),
 })
 
+/** @public */
 export type PushNotificationAuthentication = z.infer<typeof PushNotificationAuthenticationSchema>
 
 /**
@@ -443,6 +470,7 @@ export const PushNotificationConfigSchema = z.object({
   authentication: PushNotificationAuthenticationSchema.optional(),
 })
 
+/** @public */
 export type PushNotificationConfig = z.infer<typeof PushNotificationConfigSchema>
 
 /**
@@ -459,6 +487,7 @@ export const TaskPushNotificationConfigSchema = z.object({
   pushNotificationConfig: PushNotificationConfigSchema,
 })
 
+/** @public */
 export type TaskPushNotificationConfig = z.infer<typeof TaskPushNotificationConfigSchema>
 
 // ============================================================================
@@ -479,6 +508,7 @@ export const JsonRpcRequestSchema = z.object({
   params: z.unknown().optional(),
 })
 
+/** @public */
 export type JsonRpcRequest = z.infer<typeof JsonRpcRequestSchema>
 
 /**
@@ -492,6 +522,7 @@ export const JsonRpcSuccessResponseSchema = z.object({
   result: z.unknown(),
 })
 
+/** @public */
 export type JsonRpcSuccessResponse = z.infer<typeof JsonRpcSuccessResponseSchema>
 
 /**
@@ -505,6 +536,7 @@ export const JsonRpcErrorDetailSchema = z.object({
   data: z.unknown().optional(),
 })
 
+/** @public */
 export type JsonRpcErrorDetail = z.infer<typeof JsonRpcErrorDetailSchema>
 
 /**
@@ -518,4 +550,5 @@ export const JsonRpcErrorResponseSchema = z.object({
   error: JsonRpcErrorDetailSchema,
 })
 
+/** @public */
 export type JsonRpcErrorResponse = z.infer<typeof JsonRpcErrorResponseSchema>

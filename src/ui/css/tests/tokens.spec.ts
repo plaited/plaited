@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { createHostStyles, createStyles, createTokens } from 'plaited'
+import { createHostStyles, createStyles, createTokens } from 'plaited/ui'
 
 test('createTokens: simple token with $value', () => {
   const { theme } = createTokens('theme', {

@@ -60,10 +60,10 @@ class InvalidAttributeTypeError extends Error implements Error {
   override name = 'invalid_attribute_type'
 }
 
-/** @internal Represents the possible types for a tag in a JSX element: a standard HTML/SVG tag name (string), a custom element tag name (string with hyphen), or a FunctionTemplate. */
+/** @internal Valid tag input for JSX rendering: built-in tag name, custom element tag, or `FunctionTemplate`. */
 type Tag = string | CustomElementTag | FunctionTemplate
 
-/** @internal Utility type to infer the correct attribute type (`Attrs`) based on the provided tag type (`Tag`). It maps standard tags to their detailed attributes, FunctionTemplates to their parameter types, and custom elements/other strings to default detailed attributes. */
+/** @internal Infers the correct attribute type for a given `Tag`. */
 type InferAttrs<T extends Tag> = T extends keyof ElementAttributeList
   ? ElementAttributeList[T]
   : T extends FunctionTemplate
@@ -72,7 +72,7 @@ type InferAttrs<T extends Tag> = T extends keyof ElementAttributeList
       ? DetailedHTMLAttributes
       : Attrs
 
-/** @internal The signature for the core template creation function (`createTemplate`). Ensures type safety between the tag and its attributes. */
+/** @internal Type signature for `createTemplate`, preserving type safety between the tag and its attributes. */
 type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateObject
 
 /**

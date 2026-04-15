@@ -1,16 +1,14 @@
-import type { RULES_FUNCTION_IDENTIFIER } from './behavioral.constants.ts'
+import type { ZodType } from 'zod'
+import type {
+  EVENT_SOURCES,
+  EXPLORE_STRATEGIES,
+  EXTENSION_FUNCTION_IDENTIFIER,
+  EXTENSION_MEMORY_EVENTS,
+  EXTENSION_REQUEST_EVENT,
+  FRONTIER_STATUS,
+  VERIFICATION_STATUSES,
+} from './behavioral.constants.ts'
 import type { SelectionSnapshot, SnapshotMessage } from './behavioral.schemas.ts'
-
-/**
- * @internal
- * Defines the repetition behavior for a `bThread`.
- * - `true`: The thread repeats indefinitely.
- * - `function`: A predicate function evaluated before each repetition. The thread repeats if the function returns `true`.
- * - `undefined` or omitted: The thread executes once and terminates.
- *
- * @see {@link bThread} for creating threads with repetition
- */
-export type Repeat = true | (() => boolean)
 
 /**
  * Represents a fundamental unit of communication in behavioral programming.
@@ -18,7 +16,7 @@ export type Repeat = true | (() => boolean)
  * Events are used for communication between b-threads and are the core mechanism
  * through which the behavioral program coordinates execution.
  *
- * @template T The expected type of the `detail` payload. Defaults to `any` for flexibility.
+ * @template T - Expected type of the `detail` payload.
  * @property type - The string identifier for the event, used for matching and dispatching.
  * @property detail - Optional data payload associated with the event.
  *
@@ -28,38 +26,18 @@ export type Repeat = true | (() => boolean)
 // biome-ignore lint/suspicious/noExplicitAny: Event payloads can be of any type, typed at usage site
 export type BPEvent = { type: string; detail?: any }
 
-/**
- * A factory function that generates a `BPEvent` dynamically.
- * Particularly useful within `bSync` definitions when the event details need to be computed
- * at the exact moment the synchronization point is reached rather than when the b-thread
- * is initially defined.
- *
- * @template T The expected type of the `detail` payload for the generated event.
- * @returns A `BPEvent` object when the function is invoked.
- *
- * @remarks
- * Event templates are evaluated each time the synchronization point is reached,
- * ensuring fresh data for each execution cycle.
- *
- * @see {@link BPEvent} for static event definitions
- */
-export type BPEventTemplate = () => BPEvent
+export type ReplayEvent = BPEvent & {
+  source: keyof typeof EVENT_SOURCES
+}
+
+export type BPListener = {
+  type: string
+  sourceSchema?: ZodType<keyof typeof EVENT_SOURCES>
+  detailSchema: ZodType<unknown>
+}
 
 /**
- * Defines how a b-thread listens for or specifies events in `waitFor`, `block`, or `interrupt` idioms.
- * This type provides a flexible way to match events based on simple string identifiers or complex conditions.
- *
- * It can be one of:
- * 1. A simple `string`: Matches events exactly by their `type` property.
- * 2. A predicate function: Takes an event object and returns `true` if the event matches the desired criteria.
- *
- * @see {@link Idioms} for using listeners in synchronization
- * @see {@link bSync} for creating synchronization points
- */
-export type BPListener = string | ((args: BPEvent) => boolean)
-
-/**
- * Represents a synchronization statement within a b-thread's generator function.
+ * Represents a synchronization statement yielded by a behavioral rule step.
  * This is the core mechanism through which b-threads communicate their behavioral intentions
  * to the behavioral program scheduler at each step of execution.
  *
@@ -73,7 +51,7 @@ export type BPListener = string | ((args: BPEvent) => boolean)
  * - Blocked events have precedence over requested events
  * - Interrupts cause thread termination
  *
- * @see {@link RulesFunction} for usage in generator functions
+ * @see {@link ReturnType<BSync>} for usage in behavioral rule steps
  * @see {@link bSync} for creating single synchronization points
  */
 export type Idioms = {
@@ -82,77 +60,54 @@ export type Idioms = {
   /** Event(s) that will interrupt the thread's execution if selected. */
   interrupt?: BPListener | BPListener[]
   /** An event the thread wishes to request. Can be a static event object or a template function. */
-  request?: BPEvent | BPEventTemplate
+  request?: BPEvent
   /** Event(s) the thread wants to prevent from being selected. */
   block?: BPListener | BPListener[]
 }
 
 /**
- * A generator function defining the behavior of a b-thread.
- * This is the fundamental unit of behavior in the BP (Behavioral Programming) paradigm,
- * representing a sequential process that can synchronize with other b-threads.
- *
- * @returns A Generator that yields `Idioms` objects at synchronization points.
- *
- * @remarks
- * The execution flow:
- * 1. Thread yields an `Idioms` object to declare intentions
- * 2. Generator pauses, transferring control to scheduler
- * 3. Scheduler selects an event based on all threads' declarations
- * 4. Thread resumes when a matching event occurs
- *
- * @see {@link bThread} for creating threads from rules
- * @see {@link Idioms} for synchronization declarations
- */
-export type RulesFunction = {
-  (): Generator<Idioms, void, undefined>
-  $: typeof RULES_FUNCTION_IDENTIFIER
-}
-
-/**
- * A factory function that creates a single synchronization step (a `RulesFunction`) for a b-thread.
+ * A factory function that creates a single synchronization step (a `ReturnType<BSync>`) for a b-thread.
  * This is a helper type that corresponds to the `bSync` function implementation, which creates
- * a generator function that yields exactly one synchronization point.
+ * one branded behavioral rule step.
  *
- * @template T The type of the event detail payload relevant to this synchronization point.
- * @param arg The `Idioms<T>` object defining the synchronization behavior (request, waitFor, block, interrupt).
- * @returns A `RulesFunction` (generator function) that yields the provided `Idioms` object once and completes.
+ * @param arg - `Idioms` object defining the synchronization behavior for the step.
+ * @returns Branded behavioral rule that yields the provided `Idioms` object once and completes.
  *
  * @see bSync The implementation of this type that creates reusable synchronization steps.
  */
-export type BSync = (arg: Idioms) => {
-  (): Generator<Idioms, void, unknown>
-  $: typeof RULES_FUNCTION_IDENTIFIER
-}
+export type BSync = (arg: Idioms) => () => Generator<Idioms, void, unknown>
 
 /**
- * A factory function that constructs a complete b-thread (`RulesFunction`) by composing multiple synchronization steps.
+ * A factory function that constructs a complete b-thread (`ReturnType<BSync>`) by composing multiple synchronization steps.
  * This is a helper type that corresponds to the `bThread` function implementation, which allows
  * for modular composition of b-thread behavior.
  *
- * @param rules An array of `RulesFunction`s, typically created using `bSync`, defining the sequence of steps for the thread.
- * @param repeat Optional configuration (`Repeat`) to control if and how the thread repeats its sequence of rules.
- * @returns A `RulesFunction` representing the combined behavior of the provided rules, potentially repeating.
+ * @param rules - Synchronization steps, typically created with `bSync`, that define the thread sequence.
+ * @param repeat - Optional repetition policy controlling whether the sequence repeats.
+ * @returns Branded behavioral rule representing the composed thread.
  *
  * @see bThread The implementation of this type that composes multiple synchronization steps into a single b-thread.
  */
-export type BThread = (rules: RulesFunction[], repeat?: Repeat) => RulesFunction
+export type BThread = (rules: ReturnType<BSync>[], repeat?: true) => ReturnType<BSync>
 
 /**
  * @internal
- * Represents a b-thread that is currently executing its generator function.
+ * Represents a b-thread that is currently executing its current rule sequence.
  *
  * These are threads that are active and running between synchronization points.
  * Running threads are those that have been moved from the 'pending' state after an event
  * that matches their `waitFor`, `request`, or `interrupt` declarations has been selected.
  */
 export type RunningBid = {
-  /** Internal flag indicating if this bid originated from an external trigger. */
-  trigger?: true
+  /** Provenance of this bid for source-aware listener matching. */
+  source: keyof typeof EVENT_SOURCES
+  /** Optional human-readable label for spawned thread instances. */
+  label: string
   /** The priority level of the thread, used for resolving conflicts when multiple threads request events. Lower numbers = higher priority. */
   priority: number
-  /** The generator iterator representing the thread's execution state. Holds the current position in the thread's execution flow. */
+  /** Internal iterator representing the thread's execution state. Holds the current position in the rule sequence. */
   generator: IterableIterator<Idioms>
+  ingress?: true
 }
 
 /**
@@ -173,25 +128,49 @@ export type PendingBid = Idioms & RunningBid
  * This structure holds the metadata needed for this selection process.
  */
 export type CandidateBid = {
-  /** The identifier of the thread proposing the event. String for named threads, Symbol for trigger-originated threads. */
-  thread: string | symbol
+  /** The identifier of the thread proposing the event. String for named threads */
+  thread: string
   /** The priority of the thread proposing the event. Lower numbers indicate higher priority in the selection process. */
   priority: number
   /** The type of the requested event, used for matching against waitFor, block, and interrupt declarations. */
   type: string
   /** Optional detail payload of the requested event, contains any data associated with this event. */
   detail?: unknown
-  /** Internal flag indicating if this bid originated from an external trigger rather than a thread request. */
-  trigger?: true
-  /** If the request was a template function, this holds the original template function reference for comparison. */
-  template?: BPEventTemplate
+  /** Provenance of this candidate for source-aware listener matching. */
+  source: keyof typeof EVENT_SOURCES
+
+  ingress?: true
+}
+
+/**
+ * @internal
+ * Frontier classification for the current pending set.
+ *
+ * This is an execution-oriented shape used by the scheduler to decide whether to:
+ * - select and process an event (`ready`)
+ * - emit a deadlock snapshot (`deadlock`)
+ * - do nothing (`idle`)
+ */
+export type Frontier = {
+  candidates: CandidateBid[]
+  enabled: CandidateBid[]
+  status: keyof typeof FRONTIER_STATUS
+}
+
+/**
+ * @internal
+ * Reconstructed replay result for downstream explorer slices.
+ */
+export type ReplayToFrontierResult = {
+  pending: Map<string, PendingBid>
+  frontier: Frontier
 }
 
 /**
  * Represents a cleanup function for resource management.
  * Follows the disposable pattern for proper lifecycle management.
  *
- * @returns void or Promise<void> for async cleanup
+ * @returns `void` or `Promise<void>` for asynchronous cleanup.
  *
  * @see {@link UseFeedback} for event handler cleanup
  * @see {@link UseSnapshot} for snapshot listener cleanup
@@ -210,7 +189,7 @@ export type Disconnect = () => void | Promise<void>
  */
 export type SelectionFormatter = (args: {
   /** Map of threads currently in a pending state (yielded), containing their synchronization declarations. */
-  pending: Map<string | symbol, PendingBid>
+  pending: Map<string, PendingBid>
   /** The event candidate that was selected for execution in the current step. */
   selectedEvent: CandidateBid
   /** All event candidates that were considered for selection in the current step. */
@@ -226,10 +205,10 @@ export type SelectionFormatter = (args: {
  * to feedback handlers. This allows for real-time monitoring, logging, debugging, and analysis
  * of the behavioral program's execution flow.
  *
- * @param msg An array (`SnapshotMessage`) detailing the status of each event candidate during the step,
- *            including which one was selected, which were blocked, thread priorities, and relationships.
- * @returns May return `void` for synchronous listeners or a `Promise<void>` for asynchronous processing.
- *          The return value is not used by the bProgram, so async operations won't block execution.
+ * @param msg - Snapshot describing the candidate events considered during the step, including
+ * selected, blocked, and interrupted relationships.
+ * @returns `void` for synchronous listeners or `Promise<void>` for asynchronous processing. The
+ * return value is ignored by the behavioral program.
  *
  * @see {@link UseSnapshot} for registering snapshot listeners
  * @see {@link SnapshotMessage} for snapshot structure
@@ -267,7 +246,7 @@ export type DefaultHandlers = Record<string, (detail: any) => void | Promise<voi
  * Represents a collection of event handlers for behavioral program feedback.
  * Maps event types to handler functions that process selected events.
  *
- * @template Details Type map for event payloads, enabling type-safe handlers
+ * @template Details - Type map for event payloads, enabling type-safe handlers.
  *
  * @remarks
  * - Supports both sync and async handlers
@@ -286,8 +265,8 @@ export type Handlers<Details extends EventDetails = EventDetails> = {
  * Hook for subscribing to events selected by the behavioral program.
  * Primary mechanism for external systems to react to program state changes.
  *
- * @param handlers Object mapping event types to handler functions
- * @returns Disconnect function for cleanup
+ * @param handlers - Object mapping event types to handler functions.
+ * @returns Disconnect function for cleanup.
  *
  * @remarks
  * - Maintains separation of concerns
@@ -303,8 +282,8 @@ export type UseFeedback<Details extends EventDetails = EventDetails> = (handlers
  * Hook for monitoring internal state transitions of the behavioral program.
  * Provides debugging, visualization, and analysis capabilities.
  *
- * @param listener Callback receiving snapshots after each event selection
- * @returns Disconnect function for cleanup
+ * @param listener - Callback receiving snapshots after each event selection.
+ * @returns Disconnect function for cleanup.
  *
  * @remarks
  * - Called before feedback handlers
@@ -317,50 +296,24 @@ export type UseFeedback<Details extends EventDetails = EventDetails> = (handlers
 export type UseSnapshot = (listener: SnapshotListener) => Disconnect
 
 /**
- * Interface for managing b-threads within a behavioral program.
- * Provides dynamic thread addition and status monitoring.
- *
- * @property has - Check thread existence and status (running/pending)
- * @property set - Add threads to the program
+ * Publishes a structured snapshot message directly to snapshot subscribers.
  *
  * @remarks
- * - Thread names must be unique
- * - Attempting to add a thread with an existing identifier triggers a console warning and is ignored
- * - Thread replacement is prevented to maintain BP's additive composition principle
- * - Use the `interrupt` idiom to explicitly terminate threads
- * - Status reflects current execution state
- *
- * @see {@link RulesFunction} for thread implementation
- * @see {@link bThread} for creating threads
+ * This does not schedule events or advance the BP engine.
  */
-export type BThreads = {
-  /**
-   * Checks the status of a specific thread.
-   *
-   * @param thread - The string identifier of the thread to check.
-   * @returns An object with boolean flags indicating if the thread is `running` and/or `pending`.
-   */
-  has: (thread: string) => { running: boolean; pending: boolean }
+export type ReportSnapshot = (message: SnapshotMessage) => void
 
-  /**
-   * Adds threads to the program.
-   * If a thread with the given identifier already exists, a console warning is issued and the new thread is ignored.
-   * This prevents accidental thread replacement, which violates behavioral programming's additive composition principle.
-   *
-   * @param threads - An object mapping thread identifiers (string keys) to their implementation
-   *                 as `RulesFunction` generator functions.
-   *
-   * @remarks
-   * To terminate a thread, use the `interrupt` idiom in the thread's configuration, or wait for the thread to complete naturally.
-   */
-  set: (threads: Record<string, RulesFunction>) => void
-}
+export type BThreads = Record<string, ReturnType<BSync>>
+
+export type AddBThread = (label: string, thread: () => Generator<Idioms, void, unknown>) => void
+
+export type AddBThreads = (threads: BThreads) => void
 
 /**
  * Injects external events into the behavioral program.
  * Primary interface for external systems to communicate with the program.
  *
- * @param args BPEvent to trigger with type and optional detail
+ * @param args - Event to trigger, including its `type` and optional `detail`.
  *
  * @remarks
  * - Triggered events have highest priority (0)
@@ -372,29 +325,156 @@ export type BThreads = {
  */
 export type Trigger = <T extends BPEvent>(args: T) => void
 
-/**
- * Factory that creates a {@link Trigger} that blocks a fixed set of restricted event types.
- * Events in the restricted set are rejected with a snapshot error and never reach the BP engine.
- * All other events pass through normally.
- *
- * @param restricted - Event type strings this trigger must reject
- * @returns A restricted {@link Trigger} function
- *
- * @remarks
- * Uses Set for O(1) lookup. Rejected events produce a `restricted_trigger_error`
- * snapshot message for observability via {@link UseSnapshot}.
- *
- * @see {@link Trigger} for the base trigger type
- *
- * @public
- */
-export type UseRestrictedTrigger = (...restricted: string[]) => Trigger
+export type ContextMemoryEntry = {
+  body: unknown
+  expiresAt: number
+  createdAt: number
+}
+
+export type ContextMemoryResponse = {
+  id: string
+  body: unknown
+  expiresAt: number
+  createdAt: number
+}
+
+export type MemoryRequestEvent = {
+  type: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_request']}`
+  detail: {
+    id: string
+    extension: string
+    event: string
+    purpose?: string
+  }
+}
+
+export type MemoryRequestRef = {
+  requestEvent: MemoryRequestEvent
+  transactionListener: BPListener
+  transactionEventType: string
+}
+
+export type CreateMemoryRequest = (params: {
+  extension: string
+  event: string
+  purpose?: string
+  detailSchema: ZodType<unknown>
+}) => MemoryRequestRef
+
+export type ExtensionRequestEvent = {
+  type: `${string}:${typeof EXTENSION_REQUEST_EVENT}`
+  detail: {
+    id: string
+    /** Source extension id that initiated this request. */
+    extension: string
+    /** Target extension-local event type to trigger after request routing. */
+    type: string
+    detail: unknown
+    purpose?: string
+    listener: BPListener
+  }
+}
+
+export type ExtensionRequestRef = {
+  requestEvent: ExtensionRequestEvent
+  transactionListener: BPListener
+  transactionEventType: string
+}
+
+export type CreateExtensionRequest = (
+  params: {
+    /** Target extension id that should receive the request envelope. */
+    extension: string
+    purpose?: string
+    detailSchema: ZodType<unknown>
+  } & BPEvent,
+) => ExtensionRequestRef
+
+export type MemorySubscribeEvent = {
+  type: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_subscribe']}`
+  detail: {
+    id: string
+    extension: string
+    listener: BPListener
+    purpose?: string
+  }
+}
+
+export type MemoryDisconnectEvent = {
+  type: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_disconnect']}__${string}`
+}
+
+export type MemorySubscribeRef = {
+  disconnectEvent: MemoryDisconnectEvent
+  transactionEventType: string
+  transactionListener: BPListener
+  subscribeEvent: MemorySubscribeEvent
+}
+
+export type CreateMemorySubscribe = (params: {
+  extension: string
+  event: string
+  purpose?: string
+  detailSchema: ZodType<unknown>
+}) => MemorySubscribeRef
+
+export type CreateExtensionBlock = (params: {
+  extension: string
+  event: string
+  detailSchema: ZodType<unknown>
+}) => BPListener
+
+export type ExtensionDefaultEvents = {
+  readonly memory_disconnect: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_disconnect']}`
+  readonly memory_request: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_request']}`
+  readonly memory_response: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_response']}`
+  readonly memory_subscribe: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_subscribe']}`
+  readonly [EXTENSION_REQUEST_EVENT]: `${string}:${typeof EXTENSION_REQUEST_EVENT}`
+}
+
+export type ExtensionParams = {
+  memory: {
+    has: (key: string) => boolean
+    get: (key: string) => ContextMemoryEntry | undefined
+  }
+  extensions: {
+    has: (key: string) => boolean
+    get: CreateMemoryRequest
+    request: CreateExtensionRequest
+    block: CreateExtensionBlock
+    subscribe: CreateMemorySubscribe
+    subsciribe: CreateMemorySubscribe
+  }
+  bSync: BSync
+  bThread: (params: { label: string; rules: ReturnType<BSync>[]; repeat?: true }) => void
+  trigger: Trigger
+  reportSnapshot: ReportSnapshot
+  useSnapshot: UseSnapshot
+  DEFAULT_EVENTS: ExtensionDefaultEvents
+}
+
+export type Extension = {
+  (params: ExtensionParams): DefaultHandlers
+  id: string
+  $: typeof EXTENSION_FUNCTION_IDENTIFIER
+}
+
+export type UseInstallerParams = {
+  reportSnapshot: ReportSnapshot
+  trigger: Trigger
+  useSnapshot: UseSnapshot
+  addBThread: AddBThread
+  ttlMs: number
+  maxKeys?: number
+}
+
+export type Installer = (extension: Extension) => DefaultHandlers
 
 /**
  * Factory function that creates and initializes a new behavioral program instance.
  * Returns an immutable API for thread management, event handling, and state monitoring.
  *
- * @returns Readonly object with core behavioral programming API
+ * @returns Readonly behavioral programming API.
  *
  * @remarks
  * Super-step execution model:
@@ -409,12 +489,68 @@ export type UseRestrictedTrigger = (...restricted: string[]) => Trigger
  * @see {@link Trigger} for event injection
  * @see {@link UseFeedback} for event handling
  * @see {@link UseSnapshot} for state monitoring
- * @see {@link UseRestrictedTrigger} for scoped triggers
  */
 export type Behavioral = <Details extends EventDetails = EventDetails>() => Readonly<{
-  bThreads: BThreads
+  addBThread: AddBThread
+  addBThreads: AddBThreads
   trigger: Trigger
   useFeedback: UseFeedback<Details>
   useSnapshot: UseSnapshot
-  useRestrictedTrigger: UseRestrictedTrigger
+  reportSnapshot: ReportSnapshot
 }>
+
+type ExploreStrategy = keyof typeof EXPLORE_STRATEGIES
+
+export type DeadlockFinding = {
+  code: 'deadlock'
+  history: ReplayEvent[]
+  status: Frontier['status']
+  candidates: Frontier['candidates']
+  enabled: Frontier['enabled']
+  summary: {
+    candidateCount: number
+    enabledCount: number
+  }
+}
+
+export type FrontierSummary = {
+  history: ReplayEvent[]
+  status: Frontier['status']
+}
+
+type ExploreFrontiersReport = {
+  strategy: ExploreStrategy
+  visitedCount: number
+  findingCount: number
+  /**
+   * True only when the explorer encountered at least one `ready` frontier that it did not expand
+   * because `maxDepth` was reached for that history.
+   *
+   * This does not indicate generic incompleteness: `idle`/`deadlock` terminal frontiers keep this false
+   * even when `maxDepth` is set.
+   */
+  truncated: boolean
+  maxDepth?: number
+}
+
+type ExploreFrontiersResult = {
+  report: ExploreFrontiersReport
+  visitedHistories: ReplayEvent[][]
+  findings: DeadlockFinding[]
+  frontierSummaries?: FrontierSummary[]
+}
+
+export type ExploreFrontiers = (args: {
+  threads: BThreads
+  strategy: ExploreStrategy
+  maxDepth?: number
+  includeFrontierSummaries?: boolean
+}) => ExploreFrontiersResult
+
+export type ExploreFrontiersArgs = Parameters<ExploreFrontiers>[0]
+
+export type VerifyFrontiersResult = {
+  status: keyof typeof VERIFICATION_STATUSES
+  report: ExploreFrontiersResult['report']
+  findings: ExploreFrontiersResult['findings']
+}

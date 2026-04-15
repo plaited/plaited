@@ -11,7 +11,7 @@
  * Usage: bun run search.ts '{"query": "your search query"}'
  */
 
-import { mcpCallTool } from '../../add-remote-mcp/scripts/remote-mcp.ts'
+import { mcpCallTool } from 'plaited/mcp'
 
 // ---- Customize these ----
 const MCP_URL = 'https://example.com/mcp'
@@ -47,7 +47,6 @@ const main = async () => {
 
   for (const content of result.content) {
     if (content.type === 'text' && content.text) {
-      // biome-ignore lint/suspicious/noConsole: CLI stdout output
       console.log(content.text)
     }
   }

@@ -10,7 +10,10 @@ Three axioms drive every decision:
 
 2. **Symbolic persists, neural evolves.** Behavioral programs (bThreads) encode safety constraints and domain knowledge as deterministic code. They survive model upgrades, hardware changes, and architecture pivots. The neural layer — whichever model fills the Model role — is replaceable.
 
-3. **Architecture outlives models.** Today's model is Falcon-H1R 7B. Tomorrow's may be different. The interfaces, the constraint engine, the memory taxonomy, and the safety layers are designed to remain stable across model generations.
+3. **Architecture outlives models.** The current reference lane is a
+   Gemma 4 family served through an OpenAI-compatible backend such as vLLM, but
+   the interfaces, the constraint engine, the memory taxonomy, and the safety
+   layers are designed to remain stable across model generations.
 
 ## Overview
 
@@ -18,16 +21,19 @@ Plaited's agent layer is a **framework** — composable primitives shipped as a 
 
 The framework provides:
 
-- **Interfaces** for two model roles (Model, Indexer)
-- **BP orchestration** for the agent loop, safety constraints, and context assembly
-- **Memory via hypergraph** — BP decisions and tool results as git-versioned JSON-LD files (see `HYPERGRAPH-MEMORY.md`)
-- **A constitution** encoding Structural-IA and Modnet concepts as bThreads + skills (see `CONSTITUTION.md`)
+- **Interfaces** for the primary reasoning model plus optional adjunct model
+  roles such as speech
+- **A minimal behavioral core** plus module-composed orchestration
+- **Memory via snapshots, git, and retained artifacts** — observable BP execution plus git-backed files and commit history
+- **Governance and verification as module-level directions** rather than a
+  shipped dedicated constitution runtime
 
 The framework is **not prescriptive** about inference backend. Consumers choose how to serve models — vLLM, llama.cpp, Ollama, cloud APIs, or any OpenAI-compatible endpoint. All three backends support separating `<think>` reasoning from response content at the server level. Code ships via npm (`plaited`). Base-trained models ship via Hugging Face ([huggingface.co/plaited](https://huggingface.co/plaited)).
 
 ### Pluggable Models
 
-The Model and Indexer are interfaces, not implementations:
+The primary model and any adjunct model roles are interfaces, not
+implementations:
 
 ```typescript
 type ModelDelta =
@@ -41,31 +47,129 @@ type Model = {
   reason(context: ModelContext, signal?: AbortSignal): AsyncIterable<ModelDelta>
 }
 
-type Indexer = {
-  embed(text: string): Promise<Float32Array>
+type Voice = {
+  speak(text: string, options?: { voice?: string }): Promise<Uint8Array>
 }
 ```
 
 The `AsyncIterable<ModelDelta>` interface works identically whether the backend is a local inference server (Ollama on localhost), a cloud GPU (vLLM), or an API endpoint (OpenRouter). Deltas stream via BP events (`thinking_delta`, `text_delta`) for progressive UI rendering. OpenAI-compatible wire format.
 
+The model interfaces are backend-agnostic. Implementations can target MLX
+(Apple Silicon), vLLM (CUDA/cloud), or any OpenAI-compatible endpoint. Swap
+the server, not the adapter.
+
+Multimodal input does not need a dedicated core vision event. When the primary
+model is natively multimodal, image and video handling can ride through the
+primary inference lane or through module-owned extensions rather than a fixed
+built-in vision primitive.
+
 ### Reference Model Stack
 
-| Role | Reference Model | Params | Function |
-|---|---|---|---|
-| **Model** | Falcon-H1R 7B (Mamba/SSM hybrid) | 7B | Reasons in `<think>` blocks. Produces structured tool calls. Fine-tuned via distillation from frontier agents. |
-| **Indexer** *(deferred)* | EmbeddingGemma (Gemma 3 300M base) | 300M | 768-dim embeddings (Matryoshka truncation to 512/256/128). Semantic similarity. 2K token context. Not part of the agent loop. |
+| Role | Interface | Reference Model | Params | Function |
+|---|---|---|---|---|
+| **Primary reasoning + tool use** | `Model` | Gemma 4 family via vLLM | E4B / 26B-A4B / 31B | Function calling, structured JSON, long-context reasoning, and local-first or server-hosted deployment depending on hardware. |
+| **Speech output** | `Voice` *(deferred)* | Qwen3-TTS | ~2B | Text to speech. Voice cloning, voice design, streaming. Multilingual. |
 
-**Reference total: ~7B parameters (~14GB at fp16) initially.** The Indexer adds ~300M when semantic search is enabled. Any model satisfying the interface can be substituted — including frontier API models for pay-per-use.
+**Speech input (STT) is a client-side concern.** Browsers provide the Web Speech API, iOS has `SFSpeechRecognizer`, Android has `SpeechRecognizer` — all on-device, free, multilingual. The client transcribes speech to text and sends it to the node as a normal `task` event. The node never processes raw audio input.
+
+The reference point is no longer a fixed 7B starter model. The model family
+should scale with the deployment lane:
+
+- local-by-default quantized Gemma 4 variants for privacy, offline work, and
+  tighter hardware footprints
+- larger Gemma 4 variants when attached GB10 / DGX Spark / workstation-class
+  hardware makes a stronger server-backed lane practical
+
+The design goal is consistency across tiers, not different agent behavior per
+host class. Local and server lanes should stay within the same model family,
+tool-calling contract, and response shape. The server lane is the stronger
+variant of the same cognitive surface, not a separate product.
+
+### Reference Deployment
+
+The stable boundary is the OpenAI-compatible inference adapter contract, not a
+specific local runtime.
+
+The primary reference lane is:
+
+- Gemma 4 served through vLLM
+- Bun process as the local orchestrator/runtime
+- a local/server split where the node home and control plane stay local while
+  larger model serving can sit on attached MSI / GB10-class hardware
+- optional local or remote OpenAI-compatible providers for adjunct roles such
+  as speech
+
+Under that split:
+
+- the local lane should prefer a quantized Gemma 4 variant when the goal is
+  privacy, portability, or offline operation
+- the server lane can step up to a larger Gemma 4 variant for harder
+  reasoning, longer-context work, or heavier multimodal workloads
+- escalation between lanes should preserve prompt format, tool semantics, and
+  output structure
+
+That keeps training and native-model execution anchored to the MSI + vLLM lane
+while preserving the ability to swap serving backends without changing the
+agent engine or module contracts.
+
+## Core Shape
+
+`src/agent/create-agent.ts` defines a minimal execution substrate, not a full
+top-level loop policy.
+
+The core owns:
+
+- `behavioral()` engine setup
+- host `trigger` ingress surface
+- module `emit` ingress surface (provided via module params)
+- event-derived context memory policy (`eventType` -> last selected `detail`, queried via `last(listener)`)
+- module-scoped dynamic thread installation via `addThreads(...)` (declared name scope, fallback `moduleId`)
+- heartbeat emission
+- host/runtime snapshot diagnostics via `reportSnapshot`
+- built-in handlers for:
+  - primary inference
+  - speech output inference
+  - `read_file`
+  - `write_file`
+  - `delete_file`
+  - `glob_files`
+  - `grep`
+  - `bash`
+- dynamic module installation
+
+Behavioral provenance is explicit and source-aware across runtime and replay:
+`trigger | request | emit`.
+
+Scheduler pumping remains narrow:
+
+- host `trigger` pumps
+- module `emit` pumps
+- `bThreads.set` and `bThreads.spawn` are non-pumping registration APIs
+
+Host/runtime diagnostics now flow through the same snapshot stream consumed by
+agent observability. The first diagnostic kind is `module_warning`
+(`{ kind, moduleId, lane?, warning, code? }`), emitted through
+`behavioral().reportSnapshot(...)`.
+
+Planning, context assembly, skill selection, MCP capability projection, A2A
+routing, verification, and higher-level editing behavior should be composed
+through modules.
 
 ## Key Design Principles
 
 - **Framework, Not Platform:** Composable primitives. Code via npm, models via Hugging Face. Platforms are built with it, not by it.
 - **Single Tenancy:** 1 User : 1 Agent instance. User data lives on their agent — nowhere else.
-- **Pluggable Models:** Model and Indexer are interfaces. Implementations swap freely.
-- **BP-Orchestrated:** The PM's `behavioral()` engine is the central coordinator. Sub-agents run as `Bun.spawn()` processes for crash isolation; the PM's bThreads handle all structural coordination (task lifecycle, batch completion, constitution enforcement). See Runtime Hierarchy below.
-- **Plan-Driven Context:** The model's plan provides the optimization signal for context assembly. Neural produces, symbolic consumes.
-- **Defense in Depth:** Six independent safety layers across three stack levels. See `SAFETY.md`.
-- **Three-Axis Risk Awareness:** Capability × Autonomy × Authority. Risk grows geometrically when all three scale. BP constraints cap each axis independently.
+- **Pluggable Models:** The primary model and optional adjunct roles are
+  interfaces. Implementations swap freely across MLX, vLLM, and cloud APIs.
+- **Minimal Core, Rich Modules:** `createAgent()` stays narrow; planning,
+  memory, MCP, A2A, verification, and editing policy belong in modules.
+- **Plan-Driven Context:** Plan state should shape context assembly through
+  module-owned policy rather than a fixed built-in loop stage.
+- **Defense in Depth:** Capability, autonomy, and authority should be narrowed
+  through composed module policy plus deployment/runtime boundaries.
+- **Three-Axis Risk Awareness:** Capability × Autonomy × Authority. The
+  current core mainly enforces basic authority boundaries; richer risk shaping
+  should come from governance, verification, and execution modules.
 
 ## Runtime Hierarchy
 
@@ -82,26 +186,28 @@ Each level down is orders of magnitude cheaper but trades isolation for speed. T
 
 | Level | Isolation | Message Cost | Use For |
 |---|---|---|---|
-| `Bun.spawn()` | Full (separate V8 heap) | ~μs (JSC structured clone) | Inference server (persistent), sub-agents (ephemeral), sandboxed bash |
-| `behavioral()` | Logical (separate event space) | ~ns (function call) | PM engine + UI controller (same process, zero-copy via `useRestrictedTrigger`) |
+| `Bun.spawn()` | Full (separate V8 heap) | ~μs (JSC structured clone) | Inference server (persistent), isolated workers, sandboxed bash |
+| `behavioral()` | Logical (separate event space) | ~ns (function call) | PM engine + UI controller (same process, zero-copy via `trigger`) |
 | `bThread` | None (shared event space) | Event selection eval | Constitution rules, task lifecycle, batch coordination |
 | `bSync` | None (sequential) | Array advance | Individual synchronization points |
 
-**Sub-agents** are `Bun.spawn()` processes, not bThreads. They have their own inference context and optionally their own `behavioral()` engine scoped to their role. The PM coordinates against a `SubAgentHandle` interface:
+**Why `Bun.spawn()` over Workers:** Isolated worker processes are ephemeral
+— spawn, do work, terminate. Bun's Worker API is experimental (particularly
+`worker.terminate()`). `Bun.spawn()` has OS-guaranteed process lifecycle
+(SIGTERM/SIGKILL/exit codes). IPC defaults to `serialization: "advanced"` (JSC
+structured clone — not JSON). When Workers stabilize, swapping is a
+one-interface change.
 
-```typescript
-type SubAgentHandle = {
-  send: Trigger                     // PM → sub-agent (same Trigger type as BP)
-  onMessage(handler: Trigger): void // sub-agent → PM
-  terminate(): Promise<void>
-}
-```
+**Local inference:** The inference server runs as a persistent `Bun.spawn()`
+process (Ollama, llama.cpp, vLLM) on the same box. Local runtimes call it via
+`fetch("http://localhost:PORT")` — async I/O that doesn't block the event
+loop. GPU/Apple Silicon Metal handles acceleration.
 
-**Why `Bun.spawn()` over Workers:** Sub-agents are ephemeral — spawn, do work, terminate. Bun's Worker API is experimental (particularly `worker.terminate()`). `Bun.spawn()` has OS-guaranteed process lifecycle (SIGTERM/SIGKILL/exit codes). IPC defaults to `serialization: "advanced"` (JSC structured clone — not JSON). When Workers stabilize, swapping is a one-interface change.
-
-**Local inference:** The inference server runs as a persistent `Bun.spawn()` process (Ollama, llama.cpp, vLLM) on the same box. Sub-agents call it via `fetch("http://localhost:PORT")` — async I/O that doesn't block the event loop. GPU/Apple Silicon Metal handles acceleration.
-
-**A2A transport:** Bun-native implementation of A2A protocol (no a2a-js dependency). One `Bun.serve()` handles all transports — HTTP+JSON/REST, WebSocket (custom binding), and unix sockets — with native mTLS. See `MODNET-IMPLEMENTATION.md` § A2A Transport Strategy for deployment-specific bindings. Implementation in `src/a2a/`.
+**A2A and MCP surfaces:** The repo now has protocol/utilities under
+`src/modules/a2a-module/` and `src/modules/mcp-module/`. They should be
+treated as module-owned capability surfaces rather than fixed core runtime
+layers. A2A covers remote agent exchange and MCP covers remote capability
+discovery/execution.
 
 ## Deployment Tiers
 
@@ -109,27 +215,25 @@ The framework is not prescriptive about deployment:
 
 | Tier | Example | Inference | Training | Trade-off |
 |---|---|---|---|---|
-| **Local** | Mac Mini, DGX Spark | Yes | DGX Spark: full-parameter. Consumer GPU: LoRA only. | Zero ongoing cost. Full data sovereignty. Requires hardware. |
+| **Local** | MSI, Mac Mini, DGX Spark | Yes | MSI / DGX Spark: larger Gemma 4-class serving lanes. Consumer GPU: quantized local Gemma 4 variants or LoRA only. | Zero ongoing cost. Full data sovereignty. Requires hardware. |
 | **Cloud GPU** | RunPod, Lambda, Fly.io | Yes | Full-parameter on 4–8× A100 80GB cluster | Pay monthly. No hardware to maintain. |
 | **API-backed** | MiniMax, OpenRouter | Yes | No (unless provider supports fine-tuning) | Pay per use. No GPU needed. Dreamer/training not available. |
 
 The pluggable model interfaces make tier selection a deployment decision, not an architectural one. A consumer can start API-backed, move to cloud, and eventually self-host — swapping model implementations without changing bThreads, tools, or application logic.
 
-**Workspace backup** is deployment infrastructure, not framework concern. The framework provides the hypergraph memory for agent state recovery. Workspace-level backup varies by tier.
+**Workspace backup** is deployment infrastructure, not framework concern. The
+framework provides snapshots, git history, and retained artifacts for agent
+state recovery. Workspace-level backup varies by tier. One proposed local-first
+deployment shape is documented in `INFRASTRUCTURE.md`.
 
 ## Companion Docs
 
 | Doc | Scope |
 |---|---|
-| `AGENT-LOOP.md` | 6-step loop, selective simulation, ACP interface |
-| `SAFETY.md` | Three-axis risk, defense in depth (6 layers) |
-| `CONSTITUTION.md` | Governance factories, neuro-symbolic split, MAC/DAC |
-| `TRAINING.md` | Distillation pipeline, training tiers, flywheel |
-| `HYPERGRAPH-MEMORY.md` | Git-versioned JSON-LD memory, context assembly, plans as bThreads |
-| `PROJECT-ISOLATION.md` | Multi-project orchestrator, IPC bridge, tool layers |
-| `MODNET-IMPLEMENTATION.md` | Modnet topology, A2A protocol, identity, access control, payment |
-| `GENOME.md` | Skills taxonomy (seeds/tools/eval), CONTRACT frontmatter, wave ordering |
-| `CRITIQUE-RESPONSE.md` | Gap resolutions, attestation layer, module architecture evolution |
-| `UI.md` | Generative UI rendering pipeline, controller protocol |
-| `WEBSOCKET-ARCHITECTURE.md` | WebSocket server layer design |
-| `BEHAVIORAL-PROGRAMMING.md` | BP paradigm foundation |
+| `AGENT-LOOP.md` | Minimal core plus module-composed orchestration model |
+| `INFRASTRUCTURE.md` | Local-first persistence, sandbox execution, sync boundaries |
+| `skills/modnet-modules/` | Modnet/MSS/A2A translation for current module-era agents |
+| `dev-research/default-modules/program.md` | Active default module bundle direction |
+| `dev-research/three-axis-modules/program.md` | Cross-cutting capability, autonomy, and authority control |
+| `dev-research/agent-bootstrap/program.md` | Bootstrap CLI and deployment tooling direction |
+| `skills/plaited-ui/` | Plaited UI runtime, protocol, and testing guidance |

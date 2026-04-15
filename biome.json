@@ -1,9 +1,9 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.11/schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!!.bin/*", "!!src/tools/graph-algorithms", "!!.claude/worktrees"]
+    "includes": ["**", "!!.bin/*"]
   },
   "formatter": {
     "enabled": true,
@@ -88,7 +88,7 @@
       }
     },
     {
-      "includes": ["src/workshop/**/*", "**/tests/**/*", "src/cli.ts", ".claude/**/*"],
+      "includes": ["**/tests/**/*", "scripts/**/*", "skills/**/*", "src/cli/**/*", "bin/*", "src/**/*-cli.ts"],
       "linter": {
         "rules": {
           "suspicious": {

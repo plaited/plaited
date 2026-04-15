@@ -53,7 +53,7 @@ export type TypeName<T> = {
 
 ## Behavioral Programming Functions
 
-**CRITICAL:** For behavioral programming APIs (bSync, bThread, behavioral, useBehavioral), always use factory functions in documentation - never raw `yield` statements.
+**CRITICAL:** For behavioral programming APIs (bSync, bThread, behavioral, useBehavioral), always use module functions in documentation - never raw `yield` statements.
 
 ```typescript
 /**

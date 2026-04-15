@@ -248,17 +248,17 @@ export class A2AError extends Error {
     return new A2AError(response.error.code, response.error.message, response.error.data)
   }
 
-  /** Convenience factory for method-not-found errors */
+  /** Convenience module for method-not-found errors */
   static methodNotFound(method: string): A2AError {
     return new A2AError(A2A_ERROR_CODE.method_not_found, `Method not found: ${method}`)
   }
 
-  /** Convenience factory for invalid-params errors */
+  /** Convenience module for invalid-params errors */
   static invalidParams(message: string): A2AError {
     return new A2AError(A2A_ERROR_CODE.invalid_params, message)
   }
 
-  /** Convenience factory for internal errors */
+  /** Convenience module for internal errors */
   static internalError(message: string): A2AError {
     return new A2AError(A2A_ERROR_CODE.internal_error, message)
   }

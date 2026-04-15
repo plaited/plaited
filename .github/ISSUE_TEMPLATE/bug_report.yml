@@ -1,0 +1,72 @@
+name: Bug report
+description: Report a bug for maintainer triage and possible internal agent execution.
+title: "[Bug] "
+labels:
+  - needs-triage
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: One-sentence summary of the bug.
+      placeholder: Short bug summary
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What is broken and why it matters.
+      placeholder: Describe the problem and impact.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Steps, inputs, and environment details needed to reproduce.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected_areas
+    attributes:
+      label: Affected areas/files (if known)
+      description: Paths, modules, workflows, or components that appear affected.
+      placeholder: src/... or .github/workflows/... or unknown
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected behavior
+      description: What should happen instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual_behavior
+    attributes:
+      label: Actual behavior
+      description: What happened, including errors or logs.
+    validations:
+      required: true
+
+  - type: textarea
+    id: validation_run
+    attributes:
+      label: Validation already run
+      description: Any checks/tests you already ran and their outcomes.
+      placeholder: Commands + results
+
+  - type: textarea
+    id: links
+    attributes:
+      label: Relevant links (optional)
+      description: Branch, diff, PR, logs, screenshots, or related issues.
+      placeholder: https://...

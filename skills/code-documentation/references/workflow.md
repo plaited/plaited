@@ -3,6 +3,7 @@
 When creating or updating TSDoc comments, follow this systematic exploration process.
 
 **Prerequisite**: Use the **typescript-lsp** skill for type verification throughout this workflow. The `lsp` tool provides accurate type information directly from the TypeScript compiler via a unified JSON interface.
+For larger maintenance passes, start with `bun skills/code-documentation/scripts/run.ts` to inventory missing docs and orphaned blocks before choosing targets.
 
 ## Phase 1: Type & Interface Analysis
 

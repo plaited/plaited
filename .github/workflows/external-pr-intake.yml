@@ -1,0 +1,99 @@
+name: External PR Intake
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  close-untrusted-external-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate PR author trust
+        id: trust
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPO: ${{ github.repository }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+        run: |
+          set -euo pipefail
+
+          perm_json="$(mktemp)"
+          author_permission="none"
+          trusted_author="false"
+
+          if [ "${PR_IS_FORK}" != "true" ] || [ "${PR_HEAD_REPO}" = "${GITHUB_REPO}" ]; then
+            # Same-repo PRs are internal/operator lanes and should never be auto-closed by intake.
+            trusted_author="true"
+            author_permission="same-repo"
+          fi
+
+          if [ "${trusted_author}" != "true" ] && gh api "repos/${GITHUB_REPO}/collaborators/${PR_AUTHOR}/permission" > "${perm_json}" 2>/dev/null; then
+            author_permission="$(jq -r '.permission // "none"' "${perm_json}")"
+          fi
+
+          if [ "${trusted_author}" != "true" ]; then
+            if [ "${PR_AUTHOR}" = "dependabot[bot]" ] || \
+               [ "${PR_AUTHOR}" = "github-actions[bot]" ] || \
+               [ "${PR_AUTHOR}" = "app/github-actions" ]; then
+              # Keep trusted automation PRs open for normal maintainer review.
+              trusted_author="true"
+              author_permission="bot-exempt"
+            else
+              case "${author_permission}" in
+                admin|maintain|write)
+                  trusted_author="true"
+                  ;;
+              esac
+            fi
+          fi
+
+          {
+            echo "permission=${author_permission}"
+            echo "trusted=${trusted_author}"
+            echo "is_fork=${PR_IS_FORK}"
+            echo "head_repo=${PR_HEAD_REPO}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Close untrusted PR with issue guidance
+        if: ${{ steps.trust.outputs.trusted != 'true' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          comment_body="$(cat <<'BODY'
+          Thanks for the contribution. Plaited is open-source but not currently open-contribution.
+
+          We do not accept external pull requests directly. Please open a GitHub Issue instead with:
+
+          - the problem or proposal
+          - reproduction steps or use case
+          - affected files/areas if known
+          - validation notes if you already tested something
+          - a link to your branch or diff if it helps explain the proposal
+
+          Maintainers may label the Issue for internal agent/Kanban execution.
+          BODY
+          )"
+
+          gh pr comment "${PR_NUMBER}" \
+            --repo "${GITHUB_REPO}" \
+            --body "${comment_body}"
+
+          gh pr close "${PR_NUMBER}" --repo "${GITHUB_REPO}"
+
+      - name: Intake note for trusted collaborator PR
+        if: ${{ steps.trust.outputs.trusted == 'true' }}
+        run: |
+          echo "PR author is trusted (permission=${{ steps.trust.outputs.permission }}). Intake workflow took no action."

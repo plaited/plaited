@@ -1,6 +1,6 @@
 ---
 name: behavioral-core
-description: Plaited behavioral programming patterns for event-driven coordination and symbolic reasoning. Use when implementing behavioral programs with behavioral()/useBehavioral, designing rule composition with bThread/bSync, orchestrating workflows or agent loops, or building neuro-symbolic reasoning layers.
+description: Plaited behavioral programming patterns for event-driven coordination, workflow control, and symbolic rule composition. Use when implementing behavioral programs with behavioral(), designing rule composition with bThread/bSync, orchestrating controllers, workflows, or agent loops, or building neuro-symbolic control layers.
 license: ISC
 compatibility: Requires bun
 ---
@@ -9,14 +9,16 @@ compatibility: Requires bun
 
 ## Purpose
 
-This skill teaches agents how to use Plaited's behavioral programming (BP) paradigm — a coordination mechanism where independent threads synchronize through events. BP is the symbolic reasoning layer: threads declare what they want (`request`), what they listen for (`waitFor`), and what they prohibit (`block`). The engine selects events that satisfy all threads simultaneously.
+This skill teaches agents how to use Plaited's behavioral programming (BP) paradigm — an embedded TypeScript DSL for coordination where independent threads synchronize through events. Threads declare what they want (`request`), what they listen for (`waitFor`), and what they prohibit (`block`). The engine selects events that satisfy all threads simultaneously.
+
+In this repo, BP is not only for symbolic reasoning. It is used as a general event-driven coordination model across controllers, workflows, agent loops, and rule systems. It is especially well suited to neuro-symbolic control, but that is only one of its uses.
 
 **Use this when:**
-- Implementing event-driven coordination with `behavioral()` or `useBehavioral`
+- Implementing event-driven coordination with `behavioral()`
 - Designing rule composition with `bThread`/`bSync`
 - Understanding event selection, blocking, and priority
 - Building safety constraints via additive blocking threads
-- Orchestrating agent loops, workflows, or test runners
+- Orchestrating controllers, agent loops, workflows, or test runners
 - Adding runtime rules without modifying existing threads
 
 ## Quick Reference
@@ -25,9 +27,10 @@ This skill teaches agents how to use Plaited's behavioral programming (BP) parad
 - `behavioral()` — Create a behavioral program instance
 - `bThread(rules, repeat?)` — Compose synchronization points into sequences
 - `bSync({ request?, waitFor?, block?, interrupt? })` — Declare synchronization idioms
-- `useBehavioral()` — Factory pattern for reusable BP configurations with `publicEvents` whitelist
 - `useFeedback()` — Register side-effect handlers (sync or async)
 - `useSnapshot()` — Observe every BP engine decision (event selection, blocking)
+
+**Code pattern:** In this repo, authors use the behavioral module APIs directly. Do not write raw generator functions or raw `yield` statements in repo code; express behavior with `bThread()` and `bSync()`, and treat generator mechanics as behavioral-core implementation detail.
 
 **Testing:** BP logic is tested with Bun tests (`*.spec.ts`), not browser stories. See `src/behavioral/tests/` for examples.
 
@@ -46,35 +49,32 @@ This skill teaches agents how to use Plaited's behavioral programming (BP) parad
 - Infinite super-step anti-pattern
 - Academic paper concepts (additive composition, scenario classification, pluggable ESM)
 
-### Exploration Tests
+### Grounding Tests
 
-**[agent-patterns.spec.ts](references/agent-patterns.spec.ts)** — 14 validated patterns for agent design:
-- doneGuard blocking, ephemeral blocks, persistent blocks
-- Shared state between handlers and predicates
-- Counter-based completion (useRunner pattern)
-- Async handler → trigger chaining
-- Event routing by predicate
-- Additive composition of independent requirements
+The executable grounding for these patterns lives in the real runtime tests:
 
-**[agent-lifecycle.spec.ts](references/agent-lifecycle.spec.ts)** — 5 validated lifecycle patterns:
-- Per-task threads: interrupt + dynamic addition + re-use
-- Mid-sequence interrupt (thread killed wherever it is)
-- `repeat: () => boolean` conditional self-termination
-- Task gate: blocks stale events between tasks
-- Stale async trigger protection
+- `src/behavioral/tests/agent-patterns.spec.ts`
+- `src/behavioral/tests/agent-lifecycle.spec.ts`
+- `src/behavioral/tests/agent-orchestration.spec.ts`
 
-**[agent-orchestration.spec.ts](references/agent-orchestration.spec.ts)** — 10 validated orchestration patterns:
-- Phase-transition routing (taskGate pattern)
-- Queue blocking (one-at-a-time enforcement)
-- useSnapshot for observability and event logging
-- Constitution as additive bThreads (config-driven rules)
-- Runtime rule addition without modifying existing threads
-- Parallel simulation coordination (Set-based guard)
-- Restricted trigger API (publicEvents whitelist)
+Use those files when you need current repo-grounded BP examples. They are the
+source of truth for validated coordination patterns; this skill should not
+maintain copied test mirrors.
 
 ### Behavioral Programs Foundation
 
-**[behavioral-programs.md](references/behavioral-programs.md)** — Complete BP paradigm documentation from Plaited source. Covers synchronization idioms, event selection algorithm, useBehavioral factory, non-UI use cases (test orchestration, game logic, workflow coordination), and neuro-symbolic reasoning integration.
+**[behavioral-programs.md](references/behavioral-programs.md)** — Conceptual BP foundation document. Use this when the embedded agent needs the general paradigm and the embedded DSL model:
+- what behavioral programming is
+- synchronization idioms (`request`, `waitFor`, `block`, `interrupt`)
+- thread composition and lifecycle
+- predicate usage and general non-UI coordination patterns
+
+Use `algorithm-reference.md` when the embedded agent needs **Plaited-specific runtime semantics**:
+- super-step timing
+- priority behavior
+- handler ordering
+- persistent vs ephemeral blocks
+- current repo-grounded coordination patterns
 
 ## Key Patterns
 
@@ -177,7 +177,10 @@ useFeedback({
 - Thread name is unique per call → no collisions
 - Observable: `SelectionBid.blockedBy: "sim_guard_tc-1"` and `SelectionBid.interrupts: "sim_guard_tc-1"` in snapshots
 
-**Prefer over shared state pattern.** Persistent threads reading from mutable Sets/Maps create implicit coupling. Per-call threads make lifecycle explicit and observable.
+**Prefer for per-call scoped guards when lifecycle clarity matters.**
+Persistent threads reading from mutable Sets/Maps can still be valid
+coordination patterns, but they create more implicit coupling than a per-call
+thread with explicit interrupt-based teardown.
 
 ### Pattern 5: Snapshot Observability
 
@@ -264,7 +267,13 @@ Events must enter via `trigger()` from handlers or external calls, breaking the 
 
 ### Handler Operation Order: `bThreads.set()` Before `trigger()`
 
-**CRITICAL:** `trigger()` calls `step()` synchronously — the full step/select/nextStep chain runs within the trigger call. `useFeedback` handlers ARE async (fire-and-forget via `void cb(value)`), but thread state transitions are synchronous.
+This is a **general BP rule**. The example below is an **agent-loop-specific
+application**.
+
+**CRITICAL:** `trigger()` calls `step()` synchronously — the full
+step/select/nextStep chain runs within the trigger call. `useFeedback` handlers
+may be sync or async, but the dispatcher does not await them (`void cb(value)`).
+Thread state transitions are still synchronous.
 
 This means `bThreads.set()` MUST come BEFORE any `trigger()` calls in the same handler, or the new thread will miss events that fire during the trigger's synchronous processing:
 
@@ -288,12 +297,21 @@ useFeedback({
 
 **Why it matters:** When `trigger(context_ready)` fires, the BP engine processes it synchronously. If the context_ready handler triggers `gate_rejected`, that also processes synchronously. `batchCompletion` needs to be in the pending set to catch `gate_rejected` as a completion event. If set after trigger, it sits in running with no step() call to advance it.
 
-### Zero-Length batchCompletion is an Anti-Pattern
+### Zero-Length Counting Threads Need an Explicit Fast Path
 
-A `batchCompletion` with zero `waitFor` entries immediately requests its completion event (e.g., `invoke_inference`), creating a re-entry loop before text-only events can fire:
+This is a **general counting-thread rule**. The example below is an
+**agent-loop-specific application**.
+
+A counting thread like `batchCompletion` with zero `waitFor` entries does not
+wait at all. It immediately advances to its terminal `request` (for example,
+`invoke_inference`).
+
+In the agent loop, that is the wrong behavior: the zero-tool case should take
+an explicit fast path instead of re-entering the workflow as though a real batch
+completed:
 
 ```typescript
-// ANTI-PATTERN: zero-length batch immediately requests invoke_inference
+// WRONG FOR THIS FLOW: zero-length batch immediately requests invoke_inference
 bThreads.set({
   batchCompletion: bThread([
     ...Array.from({ length: 0 }, () => bSync({ waitFor: isCompletion })),  // empty!
@@ -310,7 +328,14 @@ if (toolCalls.length > 0) {
 }
 ```
 
+**Rule of thumb:** if the batch size may be zero, branch explicitly outside the
+thread. Do not rely on a zero-length counting thread to "wait for nothing" and
+still preserve the intended control flow.
+
 ### Blocked Events Don't Produce Workflow Events
+
+This is a **general BP rule**. The completion-counting implication below is the
+**agent-loop-specific application**.
 
 Blocked events are NOT queued — they don't fire. However, blocks ARE observable: `SelectionBid.blockedBy` records exactly which thread blocked which event. The event doesn't produce workflow side-effects (handlers don't fire), but the snapshot captures the decision.
 
@@ -319,6 +344,6 @@ Blocked events are NOT queued — they don't fire. However, blocks ARE observabl
 ## Related Skills
 
 - **code-patterns** — Utility function genome (coding conventions)
-- **generative-ui** — Server-driven UI with BP (bElements, templates, controller protocol)
+- **plaited-ui** — Server-driven UI with BP (templates, controller protocol, testing)
 - **typescript-lsp** — Type verification and symbol discovery
 - **code-documentation** — TSDoc standards

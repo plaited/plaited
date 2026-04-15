@@ -1,10 +1,4 @@
-/**
- * Search the Model Context Protocol specification via MCP.
- *
- * Usage: bun run search.ts '{"query": "tools/call request format"}'
- */
-
-import { mcpCallTool } from '../../add-remote-mcp/scripts/remote-mcp.ts'
+import { mcpCallTool } from 'plaited/mcp'
 
 const MCP_URL = 'https://modelcontextprotocol.io/mcp'
 const TOOL_NAME = 'search_model_context_protocol'
@@ -38,7 +32,6 @@ const main = async () => {
 
   for (const content of result.content) {
     if (content.type === 'text' && content.text) {
-      // biome-ignore lint/suspicious/noConsole: CLI stdout output
       console.log(content.text)
     }
   }

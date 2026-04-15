@@ -47,6 +47,10 @@ yarn.lock
 .zed
 
 
-# Claude
-.claude/settings.local.json
-notes.md
+# Git worktrees
+.worktrees/
+
+# autoresearch
+.plaited
+.src/.archive-modules
+docs/hyprotherticcal architecture.md

@@ -1,0 +1,556 @@
+name: Release Readiness
+
+on:
+  schedule:
+    - cron: "23 8 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: read
+  issues: write
+  pull-requests: read
+  security-events: read
+
+concurrency:
+  group: release-readiness
+  cancel-in-progress: true
+
+jobs:
+  release-readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_READINESS_GITHUB_TOKEN: ${{ secrets.RELEASE_READINESS_GITHUB_TOKEN }}
+      GITHUB_REPO: ${{ github.repository }}
+      WORKFLOW_REF_NAME: ${{ github.ref_name }}
+      WORKFLOW_SHA: ${{ github.sha }}
+      WORKFLOW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      TITLE: "Release readiness: dev -> main"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gather deterministic release-readiness context
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          work_dir="${RUNNER_TEMP}/release-readiness"
+          mkdir -p "${work_dir}"
+
+          git fetch --no-tags origin main dev
+
+          log_file="${work_dir}/main-to-dev.log"
+          diff_stat_file="${work_dir}/main-to-dev.diffstat"
+          changed_files_file="${work_dir}/main-to-dev.changed-files"
+          commit_shas_file="${work_dir}/main-to-dev.commit-shas"
+          prs_file="${work_dir}/dev-merged-prs.json"
+          checks_file="${work_dir}/dev-check-runs.json"
+          codeql_file="${work_dir}/codeql-open-alerts.json"
+          codeql_err_file="${work_dir}/codeql-open-alerts.err"
+          codeql_collection_status="available"
+          dependabot_file="${work_dir}/dependabot-open-alerts.json"
+          dependabot_err_file="${work_dir}/dependabot-open-alerts.err"
+          dependabot_collection_status="available"
+          secret_file="${work_dir}/secret-scanning-open-alerts.json"
+          secret_err_file="${work_dir}/secret-scanning-open-alerts.err"
+          secret_scanning_collection_status="available"
+          default_setup_file="${work_dir}/codeql-default-setup.json"
+          default_setup_err_file="${work_dir}/codeql-default-setup.err"
+          default_setup_collection_status="available"
+          body_file="${work_dir}/issue-body.md"
+          security_token_source="github-token"
+          security_gh_token="${GH_TOKEN}"
+          branch_of_record="false"
+
+          if [ "${WORKFLOW_REF_NAME}" = "dev" ]; then
+            branch_of_record="true"
+          fi
+
+          if [ -n "${RELEASE_READINESS_GITHUB_TOKEN:-}" ]; then
+            security_token_source="release-readiness-secret"
+            security_gh_token="${RELEASE_READINESS_GITHUB_TOKEN}"
+          fi
+
+          git log --oneline origin/main..origin/dev > "${log_file}"
+          git diff --stat origin/main..origin/dev > "${diff_stat_file}"
+          git diff --name-only origin/main..origin/dev > "${changed_files_file}"
+          git rev-list origin/main..origin/dev > "${commit_shas_file}"
+          dev_sha="$(git rev-parse origin/dev)"
+          max_check_wait_seconds=180
+          check_poll_interval_seconds=15
+          checks_waited_seconds=0
+          checks_ignored_release_operator=0
+
+          gh pr list \
+            --repo "${GITHUB_REPO}" \
+            --state merged \
+            --base dev \
+            --limit 200 \
+            --json number,title,url,mergedAt,mergeCommit > "${prs_file}"
+
+          collect_checks() {
+            checks_collection_status="available"
+            if ! gh api "repos/${GITHUB_REPO}/commits/${dev_sha}/check-runs?per_page=100" > "${checks_file}"; then
+              checks_collection_status="unknown (check-runs API request failed)"
+              echo '{"check_runs":[]}' > "${checks_file}"
+            fi
+          }
+
+          count_checks() {
+            checks_ignored_release_operator="$(
+              jq '
+                def is_release_operator_check:
+                  ((.app.slug // "") == "github-actions")
+                  and (((.name // "") == "release-readiness") or ((.name // "") == "open-release-pr"));
+                [.check_runs[] | select(is_release_operator_check)] | length
+              ' "${checks_file}"
+            )"
+            checks_total="$(
+              jq '
+                def is_release_operator_check:
+                  ((.app.slug // "") == "github-actions")
+                  and (((.name // "") == "release-readiness") or ((.name // "") == "open-release-pr"));
+                [.check_runs[] | select(is_release_operator_check | not)] | length
+              ' "${checks_file}"
+            )"
+            checks_failed="$(
+              jq '
+                def is_release_operator_check:
+                  ((.app.slug // "") == "github-actions")
+                  and (((.name // "") == "release-readiness") or ((.name // "") == "open-release-pr"));
+                [
+                  .check_runs[]
+                  | select(is_release_operator_check | not)
+                  | select((.status // "") == "completed" and ((.conclusion // "") | test("^(failure|timed_out|cancelled|action_required)$")))
+                ] | length
+              ' "${checks_file}"
+            )"
+            checks_pending="$(
+              jq '
+                def is_release_operator_check:
+                  ((.app.slug // "") == "github-actions")
+                  and (((.name // "") == "release-readiness") or ((.name // "") == "open-release-pr"));
+                [.check_runs[] | select(is_release_operator_check | not) | select((.status // "") != "completed")] | length
+              ' "${checks_file}"
+            )"
+            checks_neutral_or_skipped="$(
+              jq '
+                def is_release_operator_check:
+                  ((.app.slug // "") == "github-actions")
+                  and (((.name // "") == "release-readiness") or ((.name // "") == "open-release-pr"));
+                [
+                  .check_runs[]
+                  | select(is_release_operator_check | not)
+                  | select((.status // "") == "completed" and ((.conclusion // "") | test("^(neutral|skipped|stale)$")))
+                ] | length
+              ' "${checks_file}"
+            )"
+          }
+
+          collect_checks
+          count_checks
+
+          while [ "${checks_collection_status}" = "available" ] && \
+                [ "${checks_pending}" -gt 0 ] && \
+                [ "${checks_failed}" -eq 0 ] && \
+                [ "${checks_waited_seconds}" -lt "${max_check_wait_seconds}" ]; do
+            sleep "${check_poll_interval_seconds}"
+            checks_waited_seconds="$((checks_waited_seconds + check_poll_interval_seconds))"
+            collect_checks
+            count_checks
+          done
+
+          format_unavailable_reason() {
+            local err_file="$1"
+            local reason
+            reason="$(tr '\n' ' ' < "${err_file}" | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//' | cut -c1-120)"
+            if [ -z "${reason}" ]; then
+              reason="request failed"
+            fi
+            echo "${reason}"
+          }
+
+          security_api() {
+            GH_TOKEN="${security_gh_token}" gh api "$@"
+          }
+
+          if security_api "repos/${GITHUB_REPO}/code-scanning/alerts?state=open&per_page=100" > "${codeql_file}" 2> "${codeql_err_file}"; then
+            codeql_collection_status="available"
+          else
+            codeql_collection_status="unavailable ($(format_unavailable_reason "${codeql_err_file}"))"
+            echo '[]' > "${codeql_file}"
+          fi
+
+          if security_api "repos/${GITHUB_REPO}/dependabot/alerts?state=open&per_page=100" > "${dependabot_file}" 2> "${dependabot_err_file}"; then
+            dependabot_collection_status="available"
+          else
+            dependabot_collection_status="unavailable ($(format_unavailable_reason "${dependabot_err_file}"))"
+            echo '[]' > "${dependabot_file}"
+          fi
+
+          if security_api "repos/${GITHUB_REPO}/secret-scanning/alerts?state=open&per_page=100&hide_secret=true" > "${secret_file}" 2> "${secret_err_file}"; then
+            secret_scanning_collection_status="available"
+          else
+            secret_scanning_collection_status="unavailable ($(format_unavailable_reason "${secret_err_file}"))"
+            echo '[]' > "${secret_file}"
+          fi
+
+          if security_api "repos/${GITHUB_REPO}/code-scanning/default-setup" > "${default_setup_file}" 2> "${default_setup_err_file}"; then
+            default_setup_collection_status="available"
+          else
+            default_setup_collection_status="unavailable ($(format_unavailable_reason "${default_setup_err_file}"))"
+            echo '{"query_suite":"unknown"}' > "${default_setup_file}"
+          fi
+
+          commit_count="$(wc -l < "${log_file}" | tr -d ' ')"
+          changed_file_count="$(wc -l < "${changed_files_file}" | tr -d ' ')"
+
+          codeql_total="$(jq 'length' "${codeql_file}")"
+          codeql_high="$(jq '[.[] | select((.rule.security_severity_level // "") | ascii_downcase == "high")] | length' "${codeql_file}")"
+          codeql_critical="$(jq '[.[] | select((.rule.security_severity_level // "") | ascii_downcase == "critical")] | length' "${codeql_file}")"
+          codeql_high_critical_touched="$(
+            jq --rawfile changed "${changed_files_file}" '
+              ($changed | split("\n") | map(select(length > 0))) as $changed_files
+              | [
+                  .[]
+                  | select((.rule.security_severity_level // "") | ascii_downcase | test("^(high|critical)$"))
+                  | select((.most_recent_instance.location.path // "") as $path | $changed_files | index($path))
+                ]
+              | length
+            ' "${codeql_file}"
+          )"
+          codeql_by_severity="$(
+            jq '
+              [ .[] | ((.rule.security_severity_level // "unknown") | ascii_downcase) ]
+              | sort
+              | group_by(.)
+              | map({ key: .[0], value: length })
+              | from_entries
+            ' "${codeql_file}"
+          )"
+
+          dependabot_total="$(jq 'length' "${dependabot_file}")"
+          dependabot_high="$(jq '[.[] | select((.security_advisory.severity // "") | ascii_downcase == "high")] | length' "${dependabot_file}")"
+          dependabot_critical="$(jq '[.[] | select((.security_advisory.severity // "") | ascii_downcase == "critical")] | length' "${dependabot_file}")"
+          dependabot_by_severity="$(
+            jq '
+              [ .[] | ((.security_advisory.severity // "unknown") | ascii_downcase) ]
+              | sort
+              | group_by(.)
+              | map({ key: .[0], value: length })
+              | from_entries
+            ' "${dependabot_file}"
+          )"
+
+          secret_total="$(jq 'length' "${secret_file}")"
+          query_suite="$(jq -r '.query_suite // "unknown"' "${default_setup_file}")"
+
+          max_included_pr_lines=40
+          max_included_commit_lines=120
+          max_diff_stat_lines=160
+
+          included_pr_lines="$(
+            jq -r --argjson max_lines "${max_included_pr_lines}" --rawfile shas "${commit_shas_file}" '
+              ($shas | split("\n") | map(select(length > 0))) as $shas
+              | (
+                [
+                  .[]
+                  | (.mergeCommit.oid // "") as $merge_oid
+                  | select($merge_oid != "" and ($shas | index($merge_oid)))
+                ]
+              ) as $matched
+              | if ($matched | length) == 0 then
+                  ["- (No merged PRs deterministically matched this range)"]
+                else
+                  (
+                    ($matched[0:$max_lines] | map("- #\(.number) \(.title) (\(.url))"))
+                    + (
+                      if ($matched | length) > $max_lines then
+                        ["- ... truncated: showing first \($max_lines) of \($matched | length) deterministically matched PRs"]
+                      else
+                        []
+                      end
+                    )
+                  )
+                end
+              | .[]
+            ' "${prs_file}"
+          )"
+
+          included_commit_lines="$(
+            if [ "${commit_count}" -eq 0 ]; then
+              echo "- (No commits ahead of main)"
+            else
+              awk -v max="${max_included_commit_lines}" 'NR <= max { print "- " $0 }' "${log_file}"
+              if [ "${commit_count}" -gt "${max_included_commit_lines}" ]; then
+                echo "- ... truncated: showing first ${max_included_commit_lines} of ${commit_count} commits from main..dev"
+              fi
+            fi
+          )"
+
+          diff_stat_line_count="$(wc -l < "${diff_stat_file}" | tr -d ' ')"
+          diff_stat_lines="$(
+            if [ "${diff_stat_line_count}" -eq 0 ]; then
+              echo "(No diff-stat entries)"
+            else
+              awk -v max="${max_diff_stat_lines}" 'NR <= max { print $0 }' "${diff_stat_file}"
+              if [ "${diff_stat_line_count}" -gt "${max_diff_stat_lines}" ]; then
+                echo "... truncated: showing first ${max_diff_stat_lines} of ${diff_stat_line_count} diff-stat lines"
+              fi
+            fi
+          )"
+
+          changed_surfaces_lines="$(
+            if [ "${changed_file_count}" -eq 0 ]; then
+              echo "- (No changed files)"
+            else
+              awk -F/ 'NF>0 {print $1}' "${changed_files_file}" | sort | uniq | sed 's/^/- /'
+            fi
+          )"
+
+          main_to_dev_sync_required="false"
+          if [ "${commit_count}" -gt 0 ]; then
+            main_to_dev_sync_required="true"
+          fi
+
+          suggested_version_bump="none"
+          if [ "${commit_count}" -gt 0 ]; then
+            suggested_version_bump="manual (derive from merged commits/PR intent)"
+          fi
+
+          p0_items=()
+          p1_items=()
+
+          if [ "${secret_total}" -gt 0 ]; then
+            p0_items+=("open secret-scanning alerts detected (${secret_total})")
+          fi
+          if [ "${codeql_critical}" -gt 0 ]; then
+            p0_items+=("open critical CodeQL alerts detected (${codeql_critical})")
+          fi
+          if [ "${dependabot_critical}" -gt 0 ]; then
+            p0_items+=("open critical Dependabot alerts detected (${dependabot_critical})")
+          fi
+          if [ "${codeql_high_critical_touched}" -gt 0 ]; then
+            p0_items+=("open high/critical CodeQL alerts touch main..dev changed files (${codeql_high_critical_touched})")
+          fi
+          if [ "${codeql_high}" -gt 0 ]; then
+            p1_items+=("open high CodeQL alerts on dev (${codeql_high})")
+          fi
+          if [ "${dependabot_high}" -gt 0 ]; then
+            p1_items+=("open high Dependabot alerts in dependencies (${dependabot_high})")
+          fi
+          if [ "${checks_failed}" -gt 0 ]; then
+            p1_items+=("dev branch has failing check runs (${checks_failed})")
+          fi
+          if [ "${checks_pending}" -gt 0 ]; then
+            p1_items+=("dev branch has pending check runs after bounded wait (${checks_pending}; waited ${checks_waited_seconds}s/${max_check_wait_seconds}s)")
+          fi
+          if [ "${checks_collection_status}" != "available" ]; then
+            p1_items+=("dev branch checks status is unknown (${checks_collection_status})")
+          fi
+          if [ "${codeql_collection_status}" != "available" ]; then
+            p1_items+=("CodeQL collection status is unavailable (${codeql_collection_status})")
+          fi
+          if [ "${dependabot_collection_status}" != "available" ]; then
+            p1_items+=("Dependabot collection status is unavailable (${dependabot_collection_status})")
+          fi
+          if [ "${secret_scanning_collection_status}" != "available" ]; then
+            p1_items+=("secret-scanning collection status is unavailable (${secret_scanning_collection_status})")
+          fi
+          if [ "${default_setup_collection_status}" != "available" ]; then
+            p1_items+=("CodeQL default-setup status is unavailable (${default_setup_collection_status})")
+          fi
+          if [ "${query_suite}" != "extended" ]; then
+            p1_items+=("CodeQL query suite is '${query_suite}', expected 'extended'")
+          fi
+
+          ready="true"
+          risk_level="none"
+          reason="No P0/P1 blockers detected from deterministic checks."
+          if [ "${#p0_items[@]}" -gt 0 ]; then
+            ready="false"
+            risk_level="P0"
+            reason="P0 blockers are present; do not open a release PR."
+          elif [ "${#p1_items[@]}" -gt 0 ]; then
+            ready="false"
+            risk_level="P1"
+            reason="P1 blockers are present; resolve before opening a release PR."
+          fi
+
+          blocking_lines=""
+          if [ "${#p0_items[@]}" -gt 0 ]; then
+            for item in "${p0_items[@]}"; do
+              blocking_lines="${blocking_lines}- [P0] ${item}"$'\n'
+            done
+          fi
+          if [ "${#p1_items[@]}" -gt 0 ]; then
+            for item in "${p1_items[@]}"; do
+              blocking_lines="${blocking_lines}- [P1] ${item}"$'\n'
+            done
+          fi
+          if [ -z "${blocking_lines}" ]; then
+            blocking_lines="- none"
+          fi
+
+          release_notes_draft="$(
+            if [ "${commit_count}" -eq 0 ]; then
+              echo "No new commits to release from dev to main."
+            else
+              echo "Includes ${commit_count} commits from dev not in main. See deterministic commit list below."
+            fi
+          )"
+
+          required_human_checks=$'- Confirm release scope and version bump from commit intent.\n- Confirm no undisclosed security exceptions are being accepted.\n- Confirm validation evidence for changed runtime/package surfaces.\n- Confirm post-release main -> dev sync plan (merge commit, no reset/rebase/force-push).'
+
+          validation_summary="Dev checks_collection_status=${checks_collection_status}; dev_sha=${dev_sha}; checks_waited_seconds=${checks_waited_seconds}; max_check_wait_seconds=${max_check_wait_seconds}; check_poll_interval_seconds=${check_poll_interval_seconds}; security_token_source=${security_token_source}; codeql_collection_status=${codeql_collection_status}; dependabot_collection_status=${dependabot_collection_status}; secret_scanning_collection_status=${secret_scanning_collection_status}; default_setup_collection_status=${default_setup_collection_status}; check-runs total=${checks_total}; failures=${checks_failed}; pending=${checks_pending}; neutral_or_skipped=${checks_neutral_or_skipped}; ignored_release_operator_checks=${checks_ignored_release_operator}."
+
+          cat > "${body_file}" <<EOF
+          ## Release Readiness Snapshot
+
+          - Generated at: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          - Workflow ref: \`${WORKFLOW_REF_NAME}\`
+          - Workflow SHA: \`${WORKFLOW_SHA}\`
+          - Workflow run: \`${WORKFLOW_RUN_URL}\`
+          - Branch-of-record: \`${branch_of_record}\`
+          - Base comparison: \`main..dev\`
+          - Dev SHA sampled for check-runs: \`${dev_sha}\`
+          - Commit count ahead of main: ${commit_count}
+          - Changed file count ahead of main: ${changed_file_count}
+
+          ## Release-Readiness Output
+
+          \`\`\`yaml
+          ready: ${ready}
+          reason: ${reason}
+          risk_level: ${risk_level}
+          suggested_version_bump: ${suggested_version_bump}
+          release_notes_draft: ${release_notes_draft}
+          required_human_checks:
+          $(echo "${required_human_checks}" | sed 's/^/  /')
+          blocking_items:
+          $(echo "${blocking_lines}" | sed 's/^/  /')
+          included_prs_or_commits:
+          $(echo "${included_commit_lines}" | sed 's/^/  /')
+          changed_surfaces:
+          $(echo "${changed_surfaces_lines}" | sed 's/^/  /')
+          validation_summary: ${validation_summary}
+          main_to_dev_sync_required: ${main_to_dev_sync_required}
+          security_summary:
+            security_token_source: ${security_token_source}
+            codeql_collection_status: ${codeql_collection_status}
+            dependabot_collection_status: ${dependabot_collection_status}
+            secret_scanning_collection_status: ${secret_scanning_collection_status}
+            default_setup_collection_status: ${default_setup_collection_status}
+            codeql_open_by_severity: ${codeql_by_severity}
+            dependabot_open_by_severity: ${dependabot_by_severity}
+            secret_scanning_open_count: ${secret_total}
+            codeql_query_suite: ${query_suite}
+            blocking_security_items:
+          $(echo "${blocking_lines}" | sed 's/^/    /')
+          \`\`\`
+
+          ## P0/P1 Checklist
+
+          - [ ] No open secret-scanning alert (or explicit triage/dismissal rationale documented).
+          - [ ] No open critical CodeQL alert.
+          - [ ] No open critical Dependabot alert.
+          - [ ] No open high/critical CodeQL alert touching shipped changed files.
+          - [ ] No open high Dependabot alert for shipped/runtime dependencies.
+          - [ ] Security checks are complete and not pending/unknown.
+          - [ ] Workflow/security setting changes include explicit rationale and do not weaken posture.
+
+          ## Deterministic Check Summary
+
+          - Dev SHA: \`${dev_sha}\`
+          - Checks collection status: \`${checks_collection_status}\`
+          - Waited seconds: \`${checks_waited_seconds}\`
+          - Max wait seconds: \`${max_check_wait_seconds}\`
+          - Poll interval seconds: \`${check_poll_interval_seconds}\`
+          - Final check-runs total (excluding release operator checks): \`${checks_total}\`
+          - Final failures: \`${checks_failed}\`
+          - Final pending: \`${checks_pending}\`
+          - Final neutral/skipped/stale: \`${checks_neutral_or_skipped}\`
+          - Ignored release operator checks: \`${checks_ignored_release_operator}\`
+
+          ## Deterministic Security Summary
+
+          - Security token source: \`${security_token_source}\`
+          - CodeQL collection status: \`${codeql_collection_status}\`
+          - Dependabot collection status: \`${dependabot_collection_status}\`
+          - Secret-scanning collection status: \`${secret_scanning_collection_status}\`
+          - CodeQL default-setup status: \`${default_setup_collection_status}\`
+          - CodeQL open alerts by severity: \`${codeql_by_severity}\`
+          - Dependabot open alerts by severity: \`${dependabot_by_severity}\`
+          - Secret-scanning open alert count: \`${secret_total}\`
+          - CodeQL query suite: \`${query_suite}\`
+          - Unavailable security facts are treated as residual risk and a P1 blocker.
+          - Blocking security items:
+          ${blocking_lines}
+
+          ## Included PRs (Deterministic Match)
+
+          ${included_pr_lines}
+
+          ## Included Commits (main..dev)
+
+          ${included_commit_lines}
+
+          ## Changed Surfaces
+
+          ${changed_surfaces_lines}
+
+          ### Diff Stat
+
+          \`\`\`text
+          ${diff_stat_lines}
+          \`\`\`
+
+          ## Branch Strategy Reminder
+
+          - Release PR target is \`dev -> main\`.
+          - Release PR should use squash merge.
+          - After squash release, sync \`main -> dev\` with a merge commit.
+          - Never reset/rebase/force-push \`dev\`.
+
+          ## Human Decision
+
+          - [ ] Open release PR
+          - [ ] Hold for P0/P1
+          - [ ] Request fixes
+          - [ ] Accept known risk with rationale
+          EOF
+          sed -i 's/^          //' "${body_file}"
+
+          if [ "${branch_of_record}" = "true" ]; then
+            existing_issue_number="$(
+              gh issue list --repo "${GITHUB_REPO}" --state open --limit 200 --json number,title \
+                | jq -r --arg title "${TITLE}" 'map(select(.title == $title)) | first | .number // empty'
+            )"
+
+            if [ -n "${existing_issue_number}" ]; then
+              gh issue edit "${existing_issue_number}" \
+                --repo "${GITHUB_REPO}" \
+                --title "${TITLE}" \
+                --body-file "${body_file}"
+              echo "Updated issue #${existing_issue_number}"
+            else
+              gh issue create \
+                --repo "${GITHUB_REPO}" \
+                --title "${TITLE}" \
+                --body-file "${body_file}"
+              echo "Created issue: ${TITLE}"
+            fi
+          else
+            {
+              echo "## Release Readiness Preview"
+              echo
+              cat "${body_file}"
+            } | tee -a "${GITHUB_STEP_SUMMARY}"
+            echo "Preview run from ${WORKFLOW_REF_NAME}; canonical release-readiness issue was not updated."
+          fi

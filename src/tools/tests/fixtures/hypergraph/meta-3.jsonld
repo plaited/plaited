@@ -1,9 +1,0 @@
-{
-  "@id": "session/sess_different",
-  "@type": "Session",
-  "summary": "Third session with different embedding for similarity ranking",
-  "embedding": [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2],
-  "threadTypes": ["taskGate", "noRmRf"],
-  "decisionCount": 5,
-  "timestamp": "2026-03-03T12:00:00Z"
-}
