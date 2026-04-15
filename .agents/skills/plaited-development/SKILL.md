@@ -220,13 +220,17 @@ git merge --ff-only origin/dev
 ## 10. Release / Promotion Strategy
 
 - Land reviewed agent branches through `dev` before any promotion work.
-- Release-readiness is issue-first for now:
+- Release-readiness remains issue-first:
   - scheduled/manual agent review covers `main..dev`
   - opens/updates a release-readiness issue
-  - human decides whether to open `dev -> main` PR
-- Later, a workflow may open/update the release PR automatically when readiness packets are
-  trustworthy.
+- Release PR creation/update is handled by the manual `Open Release PR` workflow.
+- The `Open Release PR` workflow must only proceed when the release-readiness issue is current for
+  `origin/dev`, reports branch-of-record `true`, and reports `ready: true`.
+- The `Open Release PR` workflow opens/updates a `dev -> main` PR only; it does not mutate
+  branches.
 - Human approval remains required for `dev -> main`.
+- The `Open Release PR` workflow does not auto-merge.
+- The `Open Release PR` workflow does not publish.
 - Publish remains human-gated or release-environment-gated.
 - `dev -> main` release PRs should squash-merge.
 - After squash release, `main -> dev` sync merge commit is required.
@@ -302,8 +306,12 @@ security_summary:
    - opens/updates a release-readiness issue
    - does not mutate branches
 2. Open-release-PR workflow
-   - human-triggered at first
+   - implemented/manual via `workflow_dispatch`
+   - validates the release-readiness issue is current for `origin/dev`, branch-of-record `true`,
+     and `ready: true`
    - opens/updates `dev -> main` PR
+   - does not auto-merge
+   - does not publish
    - includes readiness packet, release notes draft, validation summary, and `P0`/`P1` checklist
 3. Post-release sync workflow
    - runs after squash merge to `main` or by manual dispatch
