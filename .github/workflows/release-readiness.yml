@@ -81,6 +81,11 @@ jobs:
           git diff --stat origin/main..origin/dev > "${diff_stat_file}"
           git diff --name-only origin/main..origin/dev > "${changed_files_file}"
           git rev-list origin/main..origin/dev > "${commit_shas_file}"
+          dev_sha="$(git rev-parse origin/dev)"
+          max_check_wait_seconds=180
+          check_poll_interval_seconds=15
+          checks_waited_seconds=0
+          checks_ignored_release_readiness=0
 
           gh pr list \
             --repo "${GITHUB_REPO}" \
@@ -89,11 +94,77 @@ jobs:
             --limit 200 \
             --json number,title,url,mergedAt,mergeCommit > "${prs_file}"
 
-          checks_collection_status="available"
-          if ! gh api "repos/${GITHUB_REPO}/commits/dev/check-runs?per_page=100" > "${checks_file}"; then
-            checks_collection_status="unknown (check-runs API request failed)"
-            echo '{"check_runs":[]}' > "${checks_file}"
-          fi
+          collect_checks() {
+            checks_collection_status="available"
+            if ! gh api "repos/${GITHUB_REPO}/commits/${dev_sha}/check-runs?per_page=100" > "${checks_file}"; then
+              checks_collection_status="unknown (check-runs API request failed)"
+              echo '{"check_runs":[]}' > "${checks_file}"
+            fi
+          }
+
+          count_checks() {
+            checks_ignored_release_readiness="$(
+              jq '
+                def is_release_readiness_self_check:
+                  (.name // "") == "release-readiness"
+                  and (.app.slug // "") == "github-actions";
+                [.check_runs[] | select(is_release_readiness_self_check)] | length
+              ' "${checks_file}"
+            )"
+            checks_total="$(
+              jq '
+                def is_release_readiness_self_check:
+                  (.name // "") == "release-readiness"
+                  and (.app.slug // "") == "github-actions";
+                [.check_runs[] | select(is_release_readiness_self_check | not)] | length
+              ' "${checks_file}"
+            )"
+            checks_failed="$(
+              jq '
+                def is_release_readiness_self_check:
+                  (.name // "") == "release-readiness"
+                  and (.app.slug // "") == "github-actions";
+                [
+                  .check_runs[]
+                  | select(is_release_readiness_self_check | not)
+                  | select((.status // "") == "completed" and ((.conclusion // "") | test("^(failure|timed_out|cancelled|action_required)$")))
+                ] | length
+              ' "${checks_file}"
+            )"
+            checks_pending="$(
+              jq '
+                def is_release_readiness_self_check:
+                  (.name // "") == "release-readiness"
+                  and (.app.slug // "") == "github-actions";
+                [.check_runs[] | select(is_release_readiness_self_check | not) | select((.status // "") != "completed")] | length
+              ' "${checks_file}"
+            )"
+            checks_neutral_or_skipped="$(
+              jq '
+                def is_release_readiness_self_check:
+                  (.name // "") == "release-readiness"
+                  and (.app.slug // "") == "github-actions";
+                [
+                  .check_runs[]
+                  | select(is_release_readiness_self_check | not)
+                  | select((.status // "") == "completed" and ((.conclusion // "") | test("^(neutral|skipped|stale)$")))
+                ] | length
+              ' "${checks_file}"
+            )"
+          }
+
+          collect_checks
+          count_checks
+
+          while [ "${checks_collection_status}" = "available" ] && \
+                [ "${checks_pending}" -gt 0 ] && \
+                [ "${checks_failed}" -eq 0 ] && \
+                [ "${checks_waited_seconds}" -lt "${max_check_wait_seconds}" ]; do
+            sleep "${check_poll_interval_seconds}"
+            checks_waited_seconds="$((checks_waited_seconds + check_poll_interval_seconds))"
+            collect_checks
+            count_checks
+          done
 
           format_unavailable_reason() {
             local err_file="$1"
@@ -179,17 +250,6 @@ jobs:
 
           secret_total="$(jq 'length' "${secret_file}")"
           query_suite="$(jq -r '.query_suite // "unknown"' "${default_setup_file}")"
-
-          checks_total="$(jq '.check_runs | length' "${checks_file}")"
-          checks_failed="$(
-            jq '[.check_runs[] | select((.status // "") == "completed" and ((.conclusion // "") | test("^(failure|timed_out|cancelled|action_required)$")))] | length' "${checks_file}"
-          )"
-          checks_pending="$(
-            jq '[.check_runs[] | select((.status // "") != "completed")] | length' "${checks_file}"
-          )"
-          checks_neutral_or_skipped="$(
-            jq '[.check_runs[] | select((.status // "") == "completed" and ((.conclusion // "") | test("^(neutral|skipped|stale)$")))] | length' "${checks_file}"
-          )"
 
           max_included_pr_lines=40
           max_included_commit_lines=120
@@ -289,7 +349,7 @@ jobs:
             p1_items+=("dev branch has failing check runs (${checks_failed})")
           fi
           if [ "${checks_pending}" -gt 0 ]; then
-            p1_items+=("dev branch has pending check runs (${checks_pending})")
+            p1_items+=("dev branch has pending check runs after bounded wait (${checks_pending}; waited ${checks_waited_seconds}s/${max_check_wait_seconds}s)")
           fi
           if [ "${checks_collection_status}" != "available" ]; then
             p1_items+=("dev branch checks status is unknown (${checks_collection_status})")
@@ -348,7 +408,7 @@ jobs:
 
           required_human_checks=$'- Confirm release scope and version bump from commit intent.\n- Confirm no undisclosed security exceptions are being accepted.\n- Confirm validation evidence for changed runtime/package surfaces.\n- Confirm post-release main -> dev sync plan (merge commit, no reset/rebase/force-push).'
 
-          validation_summary="Dev checks_collection_status=${checks_collection_status}; security_token_source=${security_token_source}; codeql_collection_status=${codeql_collection_status}; dependabot_collection_status=${dependabot_collection_status}; secret_scanning_collection_status=${secret_scanning_collection_status}; default_setup_collection_status=${default_setup_collection_status}; check-runs total=${checks_total}; failures=${checks_failed}; pending=${checks_pending}; neutral_or_skipped=${checks_neutral_or_skipped}."
+          validation_summary="Dev checks_collection_status=${checks_collection_status}; dev_sha=${dev_sha}; checks_waited_seconds=${checks_waited_seconds}; max_check_wait_seconds=${max_check_wait_seconds}; check_poll_interval_seconds=${check_poll_interval_seconds}; security_token_source=${security_token_source}; codeql_collection_status=${codeql_collection_status}; dependabot_collection_status=${dependabot_collection_status}; secret_scanning_collection_status=${secret_scanning_collection_status}; default_setup_collection_status=${default_setup_collection_status}; check-runs total=${checks_total}; failures=${checks_failed}; pending=${checks_pending}; neutral_or_skipped=${checks_neutral_or_skipped}; ignored_release_readiness_self_checks=${checks_ignored_release_readiness}."
 
           cat > "${body_file}" <<EOF
           ## Release Readiness Snapshot
@@ -359,6 +419,7 @@ jobs:
           - Workflow run: \`${WORKFLOW_RUN_URL}\`
           - Branch-of-record: \`${branch_of_record}\`
           - Base comparison: \`main..dev\`
+          - Dev SHA sampled for check-runs: \`${dev_sha}\`
           - Commit count ahead of main: ${commit_count}
           - Changed file count ahead of main: ${changed_file_count}
 
@@ -403,6 +464,19 @@ jobs:
           - [ ] No open high Dependabot alert for shipped/runtime dependencies.
           - [ ] Security checks are complete and not pending/unknown.
           - [ ] Workflow/security setting changes include explicit rationale and do not weaken posture.
+
+          ## Deterministic Check Summary
+
+          - Dev SHA: \`${dev_sha}\`
+          - Checks collection status: \`${checks_collection_status}\`
+          - Waited seconds: \`${checks_waited_seconds}\`
+          - Max wait seconds: \`${max_check_wait_seconds}\`
+          - Poll interval seconds: \`${check_poll_interval_seconds}\`
+          - Final check-runs total (excluding release-readiness self-check): \`${checks_total}\`
+          - Final failures: \`${checks_failed}\`
+          - Final pending: \`${checks_pending}\`
+          - Final neutral/skipped/stale: \`${checks_neutral_or_skipped}\`
+          - Ignored release-readiness self-checks: \`${checks_ignored_release_readiness}\`
 
           ## Deterministic Security Summary
 
