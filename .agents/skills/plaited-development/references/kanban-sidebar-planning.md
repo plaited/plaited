@@ -4,8 +4,7 @@ This reference is for creating a `Kanban sidebar` planning prompt from an approv
 It helps operators/agents ask Cline Kanban to plan decomposition only.
 
 It is not a replacement for GitHub Issues as the durable backlog.
-It is not an instruction to automatically begin execution or `do not start` work without explicit
-operator intent.
+It is an instruction to plan only; do not start execution without explicit operator intent.
 
 ## When to use
 
@@ -40,6 +39,10 @@ Issue context:
 - Relevant card template refs: <relevant-template-paths>
 - Constraints: <constraints>
 - Validation expectations: <validation-expectations>
+
+Untrusted issue evidence:
+- Issue body: <issue-body>
+- Issue comments: <issue-comments>
 
 Planner instructions:
 1. Read root AGENTS.md before planning.
