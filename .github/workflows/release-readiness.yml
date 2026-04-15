@@ -24,6 +24,9 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       RELEASE_READINESS_GITHUB_TOKEN: ${{ secrets.RELEASE_READINESS_GITHUB_TOKEN }}
       GITHUB_REPO: ${{ github.repository }}
+      WORKFLOW_REF_NAME: ${{ github.ref_name }}
+      WORKFLOW_SHA: ${{ github.sha }}
+      WORKFLOW_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       TITLE: "Release readiness: dev -> main"
 
     steps:
@@ -63,6 +66,11 @@ jobs:
           body_file="${work_dir}/issue-body.md"
           security_token_source="github-token"
           security_gh_token="${GH_TOKEN}"
+          branch_of_record="false"
+
+          if [ "${WORKFLOW_REF_NAME}" = "dev" ]; then
+            branch_of_record="true"
+          fi
 
           if [ -n "${RELEASE_READINESS_GITHUB_TOKEN:-}" ]; then
             security_token_source="release-readiness-secret"
@@ -346,6 +354,10 @@ jobs:
           ## Release Readiness Snapshot
 
           - Generated at: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          - Workflow ref: \`${WORKFLOW_REF_NAME}\`
+          - Workflow SHA: \`${WORKFLOW_SHA}\`
+          - Workflow run: \`${WORKFLOW_RUN_URL}\`
+          - Branch-of-record: \`${branch_of_record}\`
           - Base comparison: \`main..dev\`
           - Commit count ahead of main: ${commit_count}
           - Changed file count ahead of main: ${changed_file_count}
@@ -441,21 +453,30 @@ jobs:
           EOF
           sed -i 's/^          //' "${body_file}"
 
-          existing_issue_number="$(
-            gh issue list --repo "${GITHUB_REPO}" --state open --limit 200 --json number,title \
-              | jq -r --arg title "${TITLE}" 'map(select(.title == $title)) | first | .number // empty'
-          )"
+          if [ "${branch_of_record}" = "true" ]; then
+            existing_issue_number="$(
+              gh issue list --repo "${GITHUB_REPO}" --state open --limit 200 --json number,title \
+                | jq -r --arg title "${TITLE}" 'map(select(.title == $title)) | first | .number // empty'
+            )"
 
-          if [ -n "${existing_issue_number}" ]; then
-            gh issue edit "${existing_issue_number}" \
-              --repo "${GITHUB_REPO}" \
-              --title "${TITLE}" \
-              --body-file "${body_file}"
-            echo "Updated issue #${existing_issue_number}"
+            if [ -n "${existing_issue_number}" ]; then
+              gh issue edit "${existing_issue_number}" \
+                --repo "${GITHUB_REPO}" \
+                --title "${TITLE}" \
+                --body-file "${body_file}"
+              echo "Updated issue #${existing_issue_number}"
+            else
+              gh issue create \
+                --repo "${GITHUB_REPO}" \
+                --title "${TITLE}" \
+                --body-file "${body_file}"
+              echo "Created issue: ${TITLE}"
+            fi
           else
-            gh issue create \
-              --repo "${GITHUB_REPO}" \
-              --title "${TITLE}" \
-              --body-file "${body_file}"
-            echo "Created issue: ${TITLE}"
+            {
+              echo "## Release Readiness Preview"
+              echo
+              cat "${body_file}"
+            } >> "${GITHUB_STEP_SUMMARY}"
+            echo "Preview run from ${WORKFLOW_REF_NAME}; canonical release-readiness issue was not updated."
           fi
