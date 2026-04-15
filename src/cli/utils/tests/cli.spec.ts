@@ -24,7 +24,14 @@ describe('parseCliRequest', () => {
     const result = await parseCliRequest(['{"name":"test","value":42}', '--dry-run'], TestSchema, { name: 'test-tool' })
 
     expect(result.input).toEqual({ name: 'test', value: 42 })
-    expect(result.flags).toEqual({ dryRun: true })
+    expect(result.flags).toEqual({ dryRun: true, human: false })
+  })
+
+  test('captures the human flag and does not treat it as positional input', async () => {
+    const result = await parseCliRequest(['--human', '{"name":"test","value":42}'], TestSchema, { name: 'test-tool' })
+
+    expect(result.input).toEqual({ name: 'test', value: 42 })
+    expect(result.flags).toEqual({ dryRun: false, human: true })
   })
 })
 
@@ -189,6 +196,51 @@ describe('makeCli', () => {
     })
   })
 
+  test('uses human renderer when --human is provided', async () => {
+    const proc = Bun.spawn(
+      [
+        'bun',
+        '-e',
+        `import { makeCli } from './src/cli.ts'; import * as z from 'zod';
+        const cli = makeCli({
+          name: 'test',
+          inputSchema: z.object({ value: z.string() }),
+          outputSchema: z.object({ echoed: z.string() }),
+          run: async (input) => ({ echoed: input.value }),
+          renderHuman: ({ output }) => \`echoed=\${output.echoed}\`,
+        });
+        await cli(['{"value":"hi"}', '--human'])`,
+      ],
+      { stdout: 'pipe', stderr: 'pipe' },
+    )
+
+    expect(await proc.exited).toBe(0)
+    const stdout = (await new Response(proc.stdout).text()).trim()
+    expect(stdout).toBe('echoed=hi')
+  })
+
+  test('fails clearly when --human is used without a human renderer', async () => {
+    const proc = Bun.spawn(
+      [
+        'bun',
+        '-e',
+        `import { makeCli } from './src/cli.ts'; import * as z from 'zod';
+        const cli = makeCli({
+          name: 'test',
+          inputSchema: z.object({ value: z.string() }),
+          outputSchema: z.object({ echoed: z.string() }),
+          run: async (input) => ({ echoed: input.value }),
+        });
+        await cli(['{"value":"hi"}', '--human'])`,
+      ],
+      { stdout: 'pipe', stderr: 'pipe' },
+    )
+
+    expect(await proc.exited).toBe(2)
+    const stderr = (await new Response(proc.stderr).text()).trim()
+    expect(stderr).toBe('--human is not supported for this command')
+  })
+
   test('--schema input emits the input schema', async () => {
     const proc = Bun.spawn(
       [
@@ -230,6 +282,7 @@ describe('makeCli', () => {
     const stderr = await new Response(proc.stderr).text()
     expect(stderr).toContain('--schema <input|output>')
     expect(stderr).toContain('--dry-run')
+    expect(stderr).toContain('--human')
     expect(stderr).toContain('--help')
   })
 })

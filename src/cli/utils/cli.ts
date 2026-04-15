@@ -3,7 +3,7 @@
  *
  * @remarks
  * Supports a stringified JSON positional input or stdin plus:
- * `--schema <input|output>`, `--dry-run`, and `--help`.
+ * `--schema <input|output>`, `--dry-run`, `--human`, and `--help`.
  *
  * @internal
  */
@@ -14,11 +14,13 @@ import * as z from 'zod'
  * Parsed CLI flags shared by JSON-in / JSON-out commands.
  *
  * @property dryRun - When true, print the resolved request instead of executing it.
+ * @property human - When true, request operator-readable output when supported.
  *
  * @public
  */
 export type CliFlags = {
   dryRun: boolean
+  human: boolean
 }
 
 /**
@@ -56,6 +58,7 @@ type CliHandlerConfig<TInputSchema extends z.ZodType, TOutput> = {
   outputSchema?: z.ZodType<TOutput>
   help?: string
   run: (input: z.infer<TInputSchema>, flags: CliFlags) => Promise<TOutput> | TOutput
+  renderHuman?: (params: { output: TOutput; input: z.infer<TInputSchema>; flags: CliFlags }) => string
 }
 
 const buildUsage = ({ name, help }: { name: string; help?: string }): string =>
@@ -66,6 +69,7 @@ const buildUsage = ({ name, help }: { name: string; help?: string }): string =>
     'Options:',
     '  --schema <input|output>  Output JSON schema and exit',
     '  --dry-run                Show request details without running the command',
+    '  --human                  Render operator-readable output when supported',
     '  -h, --help               Show help',
     ...(help ? ['', help] : []),
   ].join('\n')
@@ -92,7 +96,7 @@ const getPositionalInput = async (args: string[]): Promise<string | undefined> =
       index += 1
       continue
     }
-    if (arg === '--dry-run' || arg === '--help' || arg === '-h') {
+    if (arg === '--dry-run' || arg === '--human' || arg === '--help' || arg === '-h') {
       continue
     }
     if (!arg.startsWith('--')) {
@@ -174,6 +178,7 @@ export const parseCliRequest = async <TSchema extends z.ZodType>(
     input: parsed.data,
     flags: {
       dryRun: args.includes('--dry-run'),
+      human: args.includes('--human'),
     },
   }
 }
@@ -215,6 +220,7 @@ export const makeCli =
     outputSchema,
     help,
     run,
+    renderHuman,
   }: CliHandlerConfig<TInputSchema, TOutput>) =>
   async (args: string[]): Promise<void> => {
     const { input, flags } = await parseCliRequest(args, inputSchema, {
@@ -238,7 +244,9 @@ export const makeCli =
       return
     }
 
-    const result = await run(input, flags)
+    const result = (await run(input, flags)) as TOutput
+    let output = result
+
     if (outputSchema) {
       const parsed = outputSchema.safeParse(result)
       if (!parsed.success) {
@@ -246,9 +254,24 @@ export const makeCli =
         process.exit(1)
       }
 
-      console.log(JSON.stringify(parsed.data, null, 2))
+      output = parsed.data
+    }
+
+    if (flags.human) {
+      if (!renderHuman) {
+        console.error('--human is not supported for this command')
+        process.exit(2)
+      }
+
+      console.log(
+        renderHuman({
+          output,
+          input,
+          flags,
+        }),
+      )
       return
     }
 
-    console.log(JSON.stringify(result, null, 2))
+    console.log(JSON.stringify(output, null, 2))
   }
