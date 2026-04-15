@@ -27,8 +27,7 @@ This reference describes the read-only lifecycle planner command:
 - `currentLabels?: string[]` (preferred for deterministic offline planning)
 - `prUrl?: string`
 - `reason?: string`
-- `resolution?: "full" | "partial" | "unknown"`
-  - `"fully-resolved"` is accepted as an alias for `"full"`
+- `resolution?: "full" | "partial" | "unknown"` (canonical values only)
 - `commentBody?: string`
 
 ## Output

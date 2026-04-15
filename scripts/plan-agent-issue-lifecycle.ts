@@ -2,7 +2,7 @@ import * as z from 'zod'
 import { type CliFlags, makeCli } from '../src/cli/utils/cli.ts'
 
 const TransitionSchema = z.enum(['plan-started', 'pr-opened', 'blocked', 'completed', 'abandoned'])
-const ResolutionSchema = z.enum(['full', 'fully-resolved', 'partial', 'unknown'])
+const ResolutionSchema = z.enum(['full', 'partial', 'unknown'])
 
 export type LifecycleTransition = z.infer<typeof TransitionSchema>
 
@@ -85,8 +85,6 @@ type TransitionPlan = {
   wouldCloseIssue: boolean
 }
 
-type LifecycleResolution = 'full' | 'partial' | 'unknown'
-
 const GITHUB_ISSUE_LABELS_SCHEMA = z.object({
   labels: z.array(
     z.object({
@@ -143,18 +141,6 @@ const appendOperatorNote = ({ baseComment, commentBody }: { baseComment: string;
   }
 
   return `${baseComment}\n\nOperator note:\n${commentBody}`
-}
-
-const normalizeResolution = (resolution: z.infer<typeof ResolutionSchema> | undefined): LifecycleResolution => {
-  if (resolution === 'full' || resolution === 'fully-resolved') {
-    return 'full'
-  }
-
-  if (resolution === 'partial') {
-    return 'partial'
-  }
-
-  return 'unknown'
 }
 
 const trimProcessError = ({ stderr, stdout }: { stderr: string; stdout: string }): string => {
@@ -293,15 +279,12 @@ const planTransition = ({ input }: { input: PlanAgentIssueLifecycleResolvedInput
     }
 
     case 'completed': {
-      const resolution = normalizeResolution(input.resolution)
+      const resolution = input.resolution ?? 'unknown'
 
       if (resolution === 'full') {
         const warnings: string[] = []
         if (!input.prUrl) {
           warnings.push('completed full without prUrl; include prUrl when available')
-        }
-        if (input.resolution === 'fully-resolved') {
-          warnings.push('resolution "fully-resolved" is accepted as an alias for "full"')
         }
 
         return {
