@@ -40,22 +40,20 @@ Higher-level orchestration belongs in modules.
 
 - [AGENT-LOOP.md](/Users/eirby/Workspace/plaited/docs/AGENT-LOOP.md)
 - [INFRASTRUCTURE.md](/Users/eirby/Workspace/plaited/docs/INFRASTRUCTURE.md)
-- [default-modules/program.md](/Users/eirby/Workspace/plaited/dev-research/default-modules/program.md)
-- [agent-bootstrap/program.md](/Users/eirby/Workspace/plaited/dev-research/agent-bootstrap/program.md)
-- [three-axis-modules/program.md](/Users/eirby/Workspace/plaited/dev-research/three-axis-modules/program.md)
-- [agent-harness-research/program.md](/Users/eirby/Workspace/plaited/dev-research/agent-harness-research/program.md)
+- [ARCHITECTURE.md](/Users/eirby/Workspace/plaited/docs/ARCHITECTURE.md)
+- [dev-research/README.md](/Users/eirby/Workspace/plaited/dev-research/README.md)
+- Kernel/eval backlog issues (repo workflow): #258 and #261-#270
 
 ## Repository Map
 
 - [src/](/Users/eirby/Workspace/plaited/src/) — shipped framework code
 - [skills/](/Users/eirby/Workspace/plaited/skills/) — published and reference skills
 - [docs/](/Users/eirby/Workspace/plaited/docs/) — concise design docs
-- [dev-research/](/Users/eirby/Workspace/plaited/dev-research/) — active program specs
+- [dev-research/](/Users/eirby/Workspace/plaited/dev-research/) — retired research tombstone and historical artifacts
 
 Notable skill surfaces:
 
 - [plaited-ui](/Users/eirby/Workspace/plaited/skills/plaited-ui/SKILL.md)
-- [autoresearch-workflows](/Users/eirby/Workspace/plaited/skills/autoresearch-workflows/SKILL.md)
 
 ## Development
 
@@ -88,8 +86,5 @@ Skills are the portable agent-facing extension surface.
 - workspace-installed skills should live under `.agents/skills/`
 - runtime composition still happens through modules
 
-Module-program fanout currently runs through `plaited program-runner`:
-
-```bash
-plaited program-runner run '{"programPath":"dev-research/skill-modules/program.md","attempts":3,"parallel":2}'
-```
+Repo planning intake is GitHub Issue-backed; local execution/decomposition is
+handled in Cline/Kanban after maintainer label-gating and review.
