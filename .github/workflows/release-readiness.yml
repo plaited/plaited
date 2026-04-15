@@ -45,10 +45,14 @@ jobs:
 
           git fetch --no-tags origin main dev
 
-          log_file="${work_dir}/main-to-dev.log"
-          diff_stat_file="${work_dir}/main-to-dev.diffstat"
-          changed_files_file="${work_dir}/main-to-dev.changed-files"
-          commit_shas_file="${work_dir}/main-to-dev.commit-shas"
+          raw_log_file="${work_dir}/raw-main-to-dev.log"
+          raw_diff_stat_file="${work_dir}/raw-main-to-dev.diffstat"
+          raw_changed_files_file="${work_dir}/raw-main-to-dev.changed-files"
+          raw_commit_shas_file="${work_dir}/raw-main-to-dev.commit-shas"
+          effective_log_file="${work_dir}/effective-unreleased.log"
+          effective_diff_stat_file="${work_dir}/effective-unreleased.diffstat"
+          effective_changed_files_file="${work_dir}/effective-unreleased.changed-files"
+          effective_commit_shas_file="${work_dir}/effective-unreleased.commit-shas"
           main_ahead_commit_shas_file="${work_dir}/dev-to-main.commit-shas"
           prs_file="${work_dir}/dev-merged-prs.json"
           checks_file="${work_dir}/dev-check-runs.json"
@@ -78,10 +82,42 @@ jobs:
             security_gh_token="${RELEASE_READINESS_GITHUB_TOKEN}"
           fi
 
-          git log --oneline origin/main..origin/dev > "${log_file}"
-          git diff --stat origin/main..origin/dev > "${diff_stat_file}"
-          git diff --name-only origin/main..origin/dev > "${changed_files_file}"
-          git rev-list origin/main..origin/dev > "${commit_shas_file}"
+          raw_topology_range="origin/main..origin/dev"
+          compare_base_url="${GITHUB_SERVER_URL}/${GITHUB_REPO}"
+          raw_compare_url="${compare_base_url}/compare/main...dev"
+
+          git log --oneline "${raw_topology_range}" > "${raw_log_file}"
+          git diff --stat "${raw_topology_range}" > "${raw_diff_stat_file}"
+          git diff --name-only "${raw_topology_range}" > "${raw_changed_files_file}"
+          git rev-list "${raw_topology_range}" > "${raw_commit_shas_file}"
+
+          latest_post_release_sync_sha="$(git log origin/dev --merges --grep='^chore(release): sync main back to dev$' -n 1 --format='%H')"
+          latest_post_release_sync_subject="(not found)"
+          latest_post_release_sync_found="false"
+          effective_range_fallback="false"
+          effective_range_fallback_reason="none"
+
+          if [ -n "${latest_post_release_sync_sha}" ]; then
+            latest_post_release_sync_found="true"
+            latest_post_release_sync_subject="$(git log -n 1 --format='%s' "${latest_post_release_sync_sha}")"
+            effective_range_base_sha="${latest_post_release_sync_sha}"
+            effective_range_base_subject="${latest_post_release_sync_subject}"
+            effective_range="${latest_post_release_sync_sha}..origin/dev"
+            effective_compare_url="${compare_base_url}/compare/${latest_post_release_sync_sha}...dev"
+          else
+            effective_range_base_sha="origin/main"
+            effective_range_base_subject="fallback to origin/main (no post-release sync commit found)"
+            effective_range="${raw_topology_range}"
+            effective_range_fallback="true"
+            effective_range_fallback_reason="no post-release sync commit found"
+            effective_compare_url="${raw_compare_url}"
+            latest_post_release_sync_sha="none"
+          fi
+
+          git log --oneline "${effective_range}" > "${effective_log_file}"
+          git diff --stat "${effective_range}" > "${effective_diff_stat_file}"
+          git diff --name-only "${effective_range}" > "${effective_changed_files_file}"
+          git rev-list "${effective_range}" > "${effective_commit_shas_file}"
           git rev-list origin/dev..origin/main > "${main_ahead_commit_shas_file}"
           dev_sha="$(git rev-parse origin/dev)"
           max_check_wait_seconds=180
@@ -210,15 +246,17 @@ jobs:
             echo '{"query_suite":"unknown"}' > "${default_setup_file}"
           fi
 
-          commit_count="$(wc -l < "${log_file}" | tr -d ' ')"
-          changed_file_count="$(wc -l < "${changed_files_file}" | tr -d ' ')"
+          raw_commits_not_reachable_from_main="$(wc -l < "${raw_log_file}" | tr -d ' ')"
+          raw_changed_file_count_against_main="$(wc -l < "${raw_changed_files_file}" | tr -d ' ')"
+          effective_commit_count="$(wc -l < "${effective_log_file}" | tr -d ' ')"
+          effective_changed_file_count="$(wc -l < "${effective_changed_files_file}" | tr -d ' ')"
           main_ahead_commit_count="$(wc -l < "${main_ahead_commit_shas_file}" | tr -d ' ')"
 
           codeql_total="$(jq 'length' "${codeql_file}")"
           codeql_high="$(jq '[.[] | select((.rule.security_severity_level // "") | ascii_downcase == "high")] | length' "${codeql_file}")"
           codeql_critical="$(jq '[.[] | select((.rule.security_severity_level // "") | ascii_downcase == "critical")] | length' "${codeql_file}")"
           codeql_high_critical_touched="$(
-            jq --rawfile changed "${changed_files_file}" '
+            jq --rawfile changed "${effective_changed_files_file}" '
               ($changed | split("\n") | map(select(length > 0))) as $changed_files
               | [
                   .[]
@@ -254,12 +292,14 @@ jobs:
           secret_total="$(jq 'length' "${secret_file}")"
           query_suite="$(jq -r '.query_suite // "unknown"' "${default_setup_file}")"
 
-          max_included_pr_lines=40
-          max_included_commit_lines=120
-          max_diff_stat_lines=160
+          max_included_pr_lines=20
+          max_effective_commit_lines=50
+          max_raw_topology_commit_lines=10
+          max_changed_files_lines=50
+          max_diff_stat_lines=120
 
           included_pr_lines="$(
-            jq -r --argjson max_lines "${max_included_pr_lines}" --rawfile shas "${commit_shas_file}" '
+            jq -r --argjson max_lines "${max_included_pr_lines}" --rawfile shas "${effective_commit_shas_file}" '
               ($shas | split("\n") | map(select(length > 0))) as $shas
               | (
                 [
@@ -286,34 +326,55 @@ jobs:
             ' "${prs_file}"
           )"
 
-          included_commit_lines="$(
-            if [ "${commit_count}" -eq 0 ]; then
-              echo "- (No commits ahead of main)"
+          effective_commit_lines="$(
+            if [ "${effective_commit_count}" -eq 0 ]; then
+              echo "- (No effective unreleased commits)"
             else
-              awk -v max="${max_included_commit_lines}" 'NR <= max { print "- " $0 }' "${log_file}"
-              if [ "${commit_count}" -gt "${max_included_commit_lines}" ]; then
-                echo "- ... truncated: showing first ${max_included_commit_lines} of ${commit_count} commits from main..dev"
+              awk -v max="${max_effective_commit_lines}" 'NR <= max { print "- " $0 }' "${effective_log_file}"
+              if [ "${effective_commit_count}" -gt "${max_effective_commit_lines}" ]; then
+                echo "- ... truncated: showing first ${max_effective_commit_lines} of ${effective_commit_count} commits from ${effective_range}"
               fi
             fi
           )"
 
-          diff_stat_line_count="$(wc -l < "${diff_stat_file}" | tr -d ' ')"
-          diff_stat_lines="$(
-            if [ "${diff_stat_line_count}" -eq 0 ]; then
+          raw_topology_commit_diagnostics_lines="$(
+            if [ "${raw_commits_not_reachable_from_main}" -eq 0 ]; then
+              echo "- (No raw commits not reachable from main)"
+            else
+              awk -v max="${max_raw_topology_commit_lines}" 'NR <= max { print "- " $0 }' "${raw_log_file}"
+              if [ "${raw_commits_not_reachable_from_main}" -gt "${max_raw_topology_commit_lines}" ]; then
+                echo "- ... truncated: showing first ${max_raw_topology_commit_lines} of ${raw_commits_not_reachable_from_main} raw topology commits"
+              fi
+            fi
+          )"
+
+          effective_diff_stat_line_count="$(wc -l < "${effective_diff_stat_file}" | tr -d ' ')"
+          effective_diff_stat_lines="$(
+            if [ "${effective_diff_stat_line_count}" -eq 0 ]; then
               echo "(No diff-stat entries)"
             else
-              awk -v max="${max_diff_stat_lines}" 'NR <= max { print $0 }' "${diff_stat_file}"
-              if [ "${diff_stat_line_count}" -gt "${max_diff_stat_lines}" ]; then
-                echo "... truncated: showing first ${max_diff_stat_lines} of ${diff_stat_line_count} diff-stat lines"
+              awk -v max="${max_diff_stat_lines}" 'NR <= max { print $0 }' "${effective_diff_stat_file}"
+              if [ "${effective_diff_stat_line_count}" -gt "${max_diff_stat_lines}" ]; then
+                echo "... truncated: showing first ${max_diff_stat_lines} of ${effective_diff_stat_line_count} diff-stat lines"
               fi
+            fi
+          )"
+
+          effective_changed_files_lines="$(
+            if [ "${effective_changed_file_count}" -eq 0 ]; then
+              echo "- (No changed files)"
+            elif [ "${effective_changed_file_count}" -le "${max_changed_files_lines}" ]; then
+              awk 'NF>0 { print "- " $0 }' "${effective_changed_files_file}"
+            else
+              echo "- (Omitted: ${effective_changed_file_count} files changed; list shown only when count <= ${max_changed_files_lines})"
             fi
           )"
 
           changed_surfaces_lines="$(
-            if [ "${changed_file_count}" -eq 0 ]; then
+            if [ "${effective_changed_file_count}" -eq 0 ]; then
               echo "- (No changed files)"
             else
-              awk -F/ 'NF>0 {print $1}' "${changed_files_file}" | sort | uniq | sed 's/^/- /'
+              awk -F/ 'NF>0 {print $1}' "${effective_changed_files_file}" | sort | uniq | sed 's/^/- /'
             fi
           )"
 
@@ -322,13 +383,13 @@ jobs:
             main_to_dev_sync_required="true"
           fi
 
-          topology_limitation="none"
-          if [ "${commit_count}" -gt 0 ] && [ "${changed_file_count}" -eq 0 ]; then
-            topology_limitation="main..dev commit count can stay high after squash releases; use changed files plus branch SHAs as primary release signal."
+          topology_noise_detected="false"
+          if [ "${raw_commits_not_reachable_from_main}" -gt "${effective_commit_count}" ]; then
+            topology_noise_detected="true"
           fi
 
           suggested_version_bump="none"
-          if [ "${commit_count}" -gt 0 ]; then
+          if [ "${effective_commit_count}" -gt 0 ]; then
             suggested_version_bump="manual (derive from merged commits/PR intent)"
           fi
 
@@ -345,7 +406,7 @@ jobs:
             p0_items+=("open critical Dependabot alerts detected (${dependabot_critical})")
           fi
           if [ "${codeql_high_critical_touched}" -gt 0 ]; then
-            p0_items+=("open high/critical CodeQL alerts touch main..dev changed files (${codeql_high_critical_touched})")
+            p0_items+=("open high/critical CodeQL alerts touch effective-range changed files (${codeql_high_critical_touched})")
           fi
           if [ "${codeql_high}" -gt 0 ]; then
             p1_items+=("open high CodeQL alerts on dev (${codeql_high})")
@@ -407,10 +468,19 @@ jobs:
           fi
 
           release_notes_draft="$(
-            if [ "${commit_count}" -eq 0 ]; then
-              echo "No new commits to release from dev to main."
+            if [ "${effective_commit_count}" -eq 0 ]; then
+              echo "No fresh unreleased commits after the effective post-release sync boundary."
             else
-              echo "Includes ${commit_count} commits from dev not in main. See deterministic commit list below."
+              echo "Includes ${effective_commit_count} effective unreleased commits from ${effective_range}. See bounded deterministic lists below."
+            fi
+          )"
+
+          included_prs_or_commits_summary="$(
+            if [ "${effective_commit_count}" -eq 0 ]; then
+              echo "- No effective unreleased commits after the latest post-release sync boundary."
+            else
+              echo "- Effective commit list below is bounded to ${max_effective_commit_lines} lines."
+              echo "- Deterministically matched merged PR list below is bounded to ${max_included_pr_lines} lines."
             fi
           )"
 
@@ -426,12 +496,55 @@ jobs:
           - Workflow SHA: \`${WORKFLOW_SHA}\`
           - Workflow run: \`${WORKFLOW_RUN_URL}\`
           - Branch-of-record: \`${branch_of_record}\`
-          - Base comparison: \`main..dev\`
+          - Raw topology range: \`${raw_topology_range}\`
+          - Raw topology compare URL: ${raw_compare_url}
+          - Effective compare URL: ${effective_compare_url}
           - Dev SHA sampled for check-runs: \`${dev_sha}\`
-          - Commit count ahead of main: ${commit_count}
           - Main commit count ahead of dev: ${main_ahead_commit_count}
-          - Changed file count ahead of main: ${changed_file_count}
-          - Squash-topology limitation: ${topology_limitation}
+          - Raw commits not reachable from main: ${raw_commits_not_reachable_from_main}
+          - Raw changed file count against main: ${raw_changed_file_count_against_main}
+          - Topology noise detected: ${topology_noise_detected}
+          - main_to_dev_sync_required: ${main_to_dev_sync_required}
+
+          ## Effective Unreleased Range
+
+          Release PRs are squash-merged into main, so raw origin/main..origin/dev can include
+          historical dev commits whose content is already represented by main’s squash commit.
+          Human release review should use the effective unreleased range.
+
+          - Effective range base SHA: \`${effective_range_base_sha}\`
+          - Effective range base subject: \`${effective_range_base_subject}\`
+          - Latest post-release sync commit found: \`${latest_post_release_sync_found}\`
+          - Latest post-release sync SHA: \`${latest_post_release_sync_sha}\`
+          - Latest post-release sync subject: \`${latest_post_release_sync_subject}\`
+          - Effective range: \`${effective_range}\`
+          - Effective compare URL: ${effective_compare_url}
+          - Effective commit count: ${effective_commit_count}
+          - Effective changed file count: ${effective_changed_file_count}
+          - Effective range fallback: \`${effective_range_fallback}\`
+          - Effective range fallback reason: \`${effective_range_fallback_reason}\`
+
+          ### Effective Changed Files (shown when count <= ${max_changed_files_lines})
+
+          ${effective_changed_files_lines}
+
+          ### Effective Diff Stat
+
+          \`\`\`text
+          ${effective_diff_stat_lines}
+          \`\`\`
+
+          ## Raw Topology Diagnostics
+
+          - Raw topology range: \`${raw_topology_range}\`
+          - Raw topology compare URL: ${raw_compare_url}
+          - Raw commits not reachable from main: ${raw_commits_not_reachable_from_main}
+          - Raw changed file count against main: ${raw_changed_file_count_against_main}
+          - Topology noise detected: ${topology_noise_detected}
+
+          ### Raw Topology Commit Diagnostics (max ${max_raw_topology_commit_lines})
+
+          ${raw_topology_commit_diagnostics_lines}
 
           ## Release-Readiness Output
 
@@ -441,17 +554,27 @@ jobs:
           risk_level: ${risk_level}
           suggested_version_bump: ${suggested_version_bump}
           release_notes_draft: ${release_notes_draft}
+          effective_range: ${effective_range}
+          latest_post_release_sync_sha: ${latest_post_release_sync_sha}
+          latest_post_release_sync_found: ${latest_post_release_sync_found}
+          effective_range_fallback: ${effective_range_fallback}
+          effective_range_fallback_reason: ${effective_range_fallback_reason}
+          effective_commit_count: ${effective_commit_count}
+          effective_changed_file_count: ${effective_changed_file_count}
+          raw_topology_range: ${raw_topology_range}
+          raw_commits_not_reachable_from_main: ${raw_commits_not_reachable_from_main}
+          raw_changed_file_count_against_main: ${raw_changed_file_count_against_main}
+          topology_noise_detected: ${topology_noise_detected}
+          main_to_dev_sync_required: ${main_to_dev_sync_required}
           required_human_checks:
           $(echo "${required_human_checks}" | sed 's/^/  /')
           blocking_items:
           $(echo "${blocking_lines}" | sed 's/^/  /')
-          included_prs_or_commits:
-          $(echo "${included_commit_lines}" | sed 's/^/  /')
+          included_prs_or_commits_summary:
+          $(echo "${included_prs_or_commits_summary}" | sed 's/^/  /')
           changed_surfaces:
           $(echo "${changed_surfaces_lines}" | sed 's/^/  /')
-          topology_limitation: ${topology_limitation}
           validation_summary: ${validation_summary}
-          main_to_dev_sync_required: ${main_to_dev_sync_required}
           security_summary:
             security_token_source: ${security_token_source}
             codeql_collection_status: ${codeql_collection_status}
@@ -508,19 +631,13 @@ jobs:
 
           ${included_pr_lines}
 
-          ## Included Commits (main..dev)
+          ## Human-Review Commit List (Effective Unreleased Range)
 
-          ${included_commit_lines}
+          ${effective_commit_lines}
 
           ## Changed Surfaces
 
           ${changed_surfaces_lines}
-
-          ### Diff Stat
-
-          \`\`\`text
-          ${diff_stat_lines}
-          \`\`\`
 
           ## Branch Strategy Reminder
 
@@ -528,7 +645,7 @@ jobs:
           - Release PR should use squash merge.
           - After squash release, sync \`main -> dev\` with a merge commit.
           - Never reset/rebase/force-push \`dev\`.
-          - Topology limitation note: \`${topology_limitation}\`
+          - Raw topology diagnostics remain available, but human review should prioritize the effective unreleased range.
 
           ## Human Decision
 

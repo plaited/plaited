@@ -221,7 +221,9 @@ git merge --ff-only origin/dev
 
 - Land reviewed agent branches through `dev` before any promotion work.
 - Release-readiness remains issue-first:
-  - scheduled/manual agent review covers `main..dev`
+  - scheduled/manual agent review publishes both:
+    - raw topology diagnostics from `origin/main..origin/dev`
+    - effective unreleased range from latest post-release sync boundary
   - opens/updates a release-readiness issue
 - Release PR creation/update is handled by the manual `Open Release PR` workflow.
 - The `Open Release PR` workflow must only proceed when the release-readiness issue is current for
@@ -242,8 +244,14 @@ git merge --ff-only origin/dev
 - If `main -> dev` sync uses a PR, merge it with a merge commit (not squash).
 - Do not reset/rebase/force-push `dev` to make release history line up.
 - CodeQL default setup query suite is expected to be `extended` (security-extended equivalent).
-- Squash-release topology can leave `main..dev` commit history noisy; treat branch SHAs and changed
-  files as primary sync evidence.
+- Release PRs are squash-merged, so raw `origin/main..origin/dev` is topology diagnostics only.
+- After post-release sync, effective unreleased work is measured from the latest
+  `chore(release): sync main back to dev` merge commit to `origin/dev`.
+- Human review should prioritize Effective Unreleased Range, deterministic security summary,
+  deterministic check summary, and recent included PRs.
+- If no post-release sync boundary exists, readiness must fall back conservatively to
+  `origin/main..origin/dev` and explicitly report fallback status/reason.
+- Do not attempt to "fix" squash-topology noise with reset/rebase/force-push.
 
 ### 10.1 Release-Readiness Agent Output Shape
 
@@ -253,9 +261,19 @@ reason: string
 risk_level: P0 | P1 | P2 | none
 suggested_version_bump: string
 release_notes_draft: string
+effective_range: string
+latest_post_release_sync_sha: string
+latest_post_release_sync_found: true | false
+effective_range_fallback: true | false
+effective_commit_count: number
+effective_changed_file_count: number
+raw_topology_range: string
+raw_commits_not_reachable_from_main: number
+raw_changed_file_count_against_main: number
+topology_noise_detected: true | false
 required_human_checks: string[]
 blocking_items: string[]
-included_prs_or_commits: string[]
+included_prs_or_commits_summary: string[]
 changed_surfaces: string[]
 validation_summary: string
 main_to_dev_sync_required: true | false
