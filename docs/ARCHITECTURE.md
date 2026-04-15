@@ -233,7 +233,7 @@ deployment shape is documented in `INFRASTRUCTURE.md`.
 | `AGENT-LOOP.md` | Minimal core plus module-composed orchestration model |
 | `INFRASTRUCTURE.md` | Local-first persistence, sandbox execution, sync boundaries |
 | `skills/modnet-modules/` | Modnet/MSS/A2A translation for current module-era agents |
-| `dev-research/default-modules/program.md` | Active default module bundle direction |
-| `dev-research/three-axis-modules/program.md` | Cross-cutting capability, autonomy, and authority control |
-| `dev-research/agent-bootstrap/program.md` | Bootstrap CLI and deployment tooling direction |
+| `dev-research/README.md` | Tombstone for retired local program lanes with issue-backed backlog links |
+| `https://github.com/plaited/plaited/issues/261` | Cognitive Kernel architecture reference backlog |
+| `https://github.com/plaited/plaited/issues/258` | Reused server-module transport eval backlog |
 | `skills/plaited-ui/` | Plaited UI runtime, protocol, and testing guidance |

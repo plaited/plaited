@@ -14,7 +14,7 @@ auth seam.
 
 Use it to decide which auth mode applies and how to wire the existing auth
 boundary in code. Treat bundle-level auth policy as research work for
-`dev-research/node-auth-modules/program.md`.
+the issue-backed kernel backlog listed in `dev-research/README.md`.
 
 **Use when:**
 - wiring `createServer` with `validateSession`
@@ -23,7 +23,7 @@ boundary in code. Treat bundle-level auth policy as research work for
 - supplying stable auth facts to A2A or three-axis module research
 
 **Not for:** deciding the full default auth-aware module bundle. That belongs
-in `dev-research/node-auth-modules/program.md`.
+in the issue-backed kernel backlog listed in `dev-research/README.md`.
 
 ## The Seam
 
