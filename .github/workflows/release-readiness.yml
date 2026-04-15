@@ -106,27 +106,24 @@ jobs:
             checks_ignored_release_readiness="$(
               jq '
                 def is_release_readiness_self_check:
-                  ((.name // "") | ascii_downcase) == "release-readiness"
-                  or ((.name // "") | test("release[ -]readiness"; "i"))
-                  or ((.details_url // "") | test("/actions/workflows/release-readiness\\.yml"; "i"));
+                  (.name // "") == "release-readiness"
+                  and (.app.slug // "") == "github-actions";
                 [.check_runs[] | select(is_release_readiness_self_check)] | length
               ' "${checks_file}"
             )"
             checks_total="$(
               jq '
                 def is_release_readiness_self_check:
-                  ((.name // "") | ascii_downcase) == "release-readiness"
-                  or ((.name // "") | test("release[ -]readiness"; "i"))
-                  or ((.details_url // "") | test("/actions/workflows/release-readiness\\.yml"; "i"));
+                  (.name // "") == "release-readiness"
+                  and (.app.slug // "") == "github-actions";
                 [.check_runs[] | select(is_release_readiness_self_check | not)] | length
               ' "${checks_file}"
             )"
             checks_failed="$(
               jq '
                 def is_release_readiness_self_check:
-                  ((.name // "") | ascii_downcase) == "release-readiness"
-                  or ((.name // "") | test("release[ -]readiness"; "i"))
-                  or ((.details_url // "") | test("/actions/workflows/release-readiness\\.yml"; "i"));
+                  (.name // "") == "release-readiness"
+                  and (.app.slug // "") == "github-actions";
                 [
                   .check_runs[]
                   | select(is_release_readiness_self_check | not)
@@ -137,18 +134,16 @@ jobs:
             checks_pending="$(
               jq '
                 def is_release_readiness_self_check:
-                  ((.name // "") | ascii_downcase) == "release-readiness"
-                  or ((.name // "") | test("release[ -]readiness"; "i"))
-                  or ((.details_url // "") | test("/actions/workflows/release-readiness\\.yml"; "i"));
+                  (.name // "") == "release-readiness"
+                  and (.app.slug // "") == "github-actions";
                 [.check_runs[] | select(is_release_readiness_self_check | not) | select((.status // "") != "completed")] | length
               ' "${checks_file}"
             )"
             checks_neutral_or_skipped="$(
               jq '
                 def is_release_readiness_self_check:
-                  ((.name // "") | ascii_downcase) == "release-readiness"
-                  or ((.name // "") | test("release[ -]readiness"; "i"))
-                  or ((.details_url // "") | test("/actions/workflows/release-readiness\\.yml"; "i"));
+                  (.name // "") == "release-readiness"
+                  and (.app.slug // "") == "github-actions";
                 [
                   .check_runs[]
                   | select(is_release_readiness_self_check | not)
