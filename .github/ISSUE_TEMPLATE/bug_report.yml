@@ -4,6 +4,14 @@ title: "[Bug] "
 labels:
   - needs-triage
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Maintainers triage all issues and may later apply agent intake labels when work is suitable.
+        `agent-ready`, `agent-planning`, and `card/*` are maintainer-only labels. Do not request or
+        assume these labels on intake issues. This form only auto-applies low-trust triage labels
+        such as `needs-triage`.
+
   - type: input
     id: summary
     attributes:
