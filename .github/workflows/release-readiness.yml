@@ -49,6 +49,7 @@ jobs:
           diff_stat_file="${work_dir}/main-to-dev.diffstat"
           changed_files_file="${work_dir}/main-to-dev.changed-files"
           commit_shas_file="${work_dir}/main-to-dev.commit-shas"
+          main_ahead_commit_shas_file="${work_dir}/dev-to-main.commit-shas"
           prs_file="${work_dir}/dev-merged-prs.json"
           checks_file="${work_dir}/dev-check-runs.json"
           codeql_file="${work_dir}/codeql-open-alerts.json"
@@ -81,6 +82,7 @@ jobs:
           git diff --stat origin/main..origin/dev > "${diff_stat_file}"
           git diff --name-only origin/main..origin/dev > "${changed_files_file}"
           git rev-list origin/main..origin/dev > "${commit_shas_file}"
+          git rev-list origin/dev..origin/main > "${main_ahead_commit_shas_file}"
           dev_sha="$(git rev-parse origin/dev)"
           max_check_wait_seconds=180
           check_poll_interval_seconds=15
@@ -210,6 +212,7 @@ jobs:
 
           commit_count="$(wc -l < "${log_file}" | tr -d ' ')"
           changed_file_count="$(wc -l < "${changed_files_file}" | tr -d ' ')"
+          main_ahead_commit_count="$(wc -l < "${main_ahead_commit_shas_file}" | tr -d ' ')"
 
           codeql_total="$(jq 'length' "${codeql_file}")"
           codeql_high="$(jq '[.[] | select((.rule.security_severity_level // "") | ascii_downcase == "high")] | length' "${codeql_file}")"
@@ -315,8 +318,13 @@ jobs:
           )"
 
           main_to_dev_sync_required="false"
-          if [ "${commit_count}" -gt 0 ]; then
+          if [ "${main_ahead_commit_count}" -gt 0 ]; then
             main_to_dev_sync_required="true"
+          fi
+
+          topology_limitation="none"
+          if [ "${commit_count}" -gt 0 ] && [ "${changed_file_count}" -eq 0 ]; then
+            topology_limitation="main..dev commit count can stay high after squash releases; use changed files plus branch SHAs as primary release signal."
           fi
 
           suggested_version_bump="none"
@@ -421,7 +429,9 @@ jobs:
           - Base comparison: \`main..dev\`
           - Dev SHA sampled for check-runs: \`${dev_sha}\`
           - Commit count ahead of main: ${commit_count}
+          - Main commit count ahead of dev: ${main_ahead_commit_count}
           - Changed file count ahead of main: ${changed_file_count}
+          - Squash-topology limitation: ${topology_limitation}
 
           ## Release-Readiness Output
 
@@ -439,6 +449,7 @@ jobs:
           $(echo "${included_commit_lines}" | sed 's/^/  /')
           changed_surfaces:
           $(echo "${changed_surfaces_lines}" | sed 's/^/  /')
+          topology_limitation: ${topology_limitation}
           validation_summary: ${validation_summary}
           main_to_dev_sync_required: ${main_to_dev_sync_required}
           security_summary:
@@ -517,6 +528,7 @@ jobs:
           - Release PR should use squash merge.
           - After squash release, sync \`main -> dev\` with a merge commit.
           - Never reset/rebase/force-push \`dev\`.
+          - Topology limitation note: \`${topology_limitation}\`
 
           ## Human Decision
 
@@ -528,9 +540,20 @@ jobs:
           sed -i 's/^          //' "${body_file}"
 
           if [ "${branch_of_record}" = "true" ]; then
+            matching_open_issues_json="$(
+              gh issue list --repo "${GITHUB_REPO}" --state open --limit 200 --json number,title,url \
+                | jq -c --arg title "${TITLE}" '[.[] | select(.title == $title) | {number, url}]'
+            )"
+            matching_open_issue_count="$(
+              echo "${matching_open_issues_json}" | jq 'length'
+            )"
+            if [ "${matching_open_issue_count}" -gt 1 ]; then
+              echo "Multiple open readiness issues found for '${TITLE}'. Resolve duplicates first." >&2
+              echo "${matching_open_issues_json}" | jq -r '.[] | "- #\(.number) \(.url)"' >&2
+              exit 1
+            fi
             existing_issue_number="$(
-              gh issue list --repo "${GITHUB_REPO}" --state open --limit 200 --json number,title \
-                | jq -r --arg title "${TITLE}" 'map(select(.title == $title)) | first | .number // empty'
+              echo "${matching_open_issues_json}" | jq -r '.[0].number // empty'
             )"
 
             if [ -n "${existing_issue_number}" ]; then
