@@ -19,7 +19,7 @@ attempt fanout.
 
 The repo already points toward durable fanout expectations:
 
-- default-modules assumes parallel mutation and retained artifacts
+- server-module issue backlog assumes parallel mutation and retained artifacts
 - workflow-state-modules covers in-process role orchestration
 - observability-modules covers retained evidence
 - plan-modules covers decomposition and replanning
@@ -39,7 +39,7 @@ explicit local-first execution family.
 
 This lane sits under:
 
-- [dev-research/default-modules/program.md](../default-modules/program.md)
+- [dev-research/server-module/program.md](../server-module/program.md)
 
 It should integrate with:
 
@@ -60,11 +60,11 @@ The intended split is:
 
 ## Dependency Order
 
-1. [dev-research/default-modules/program.md](../default-modules/program.md) defines the parallelism model
+1. [dev-research/server-module/program.md](../server-module/program.md) defines the parallelism model
 2. adjacent lanes define planning, workflow, observability, and persistence
    constraints
 3. this lane hill-climbs the durable multi-attempt slice and feeds winners
-   back into the default-modules umbrella
+   back into the server-module issue backlog
 
 ## Core Hypothesis
 

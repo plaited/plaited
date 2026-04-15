@@ -44,7 +44,7 @@ node-home, observability, and ad hoc runtime code.
 
 This lane sits under:
 
-- [dev-research/default-modules/program.md](../default-modules/program.md)
+- [dev-research/server-module/program.md](../server-module/program.md)
 
 It should integrate with:
 
@@ -70,7 +70,7 @@ The intended split is:
 3. adjacent lanes define node-home, memory, observability, and projection
    constraints
 4. this lane hill-climbs the session continuity slice and feeds winners back
-   into the default-modules umbrella
+   into the server-module issue backlog
 
 ## Core Hypothesis
 

@@ -43,7 +43,7 @@ owner.
 
 This lane sits under:
 
-- [dev-research/default-modules/program.md](../default-modules/program.md)
+- [dev-research/server-module/program.md](../server-module/program.md)
 
 It should integrate with:
 
@@ -70,7 +70,7 @@ The intended split is:
 3. [dev-research/node-auth-modules/program.md](../node-auth-modules/program.md) defines trust and auth
    constraints
 4. this lane hill-climbs the durable audit slice and feeds winners back into
-   the default-modules umbrella
+   the server-module issue backlog
 
 ## Core Hypothesis
 

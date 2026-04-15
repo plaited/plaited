@@ -44,7 +44,7 @@ surface integrating them.
 
 This lane is a focused subprogram under:
 
-- [dev-research/default-modules/program.md](../default-modules/program.md)
+- [dev-research/server-module/program.md](../server-module/program.md)
 
 It should integrate with:
 
@@ -81,7 +81,7 @@ replacement for payment.
 5. [dev-research/verification-modules/program.md](../verification-modules/program.md) defines reviewable
    correctness and evidence checks
 6. this lane hill-climbs the payment slice and feeds winning candidates back
-   into the default-modules umbrella
+   into the server-module issue backlog
 
 ## External Inputs
 

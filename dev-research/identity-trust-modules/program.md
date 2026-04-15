@@ -48,7 +48,7 @@ auth, discovery, A2A, and audit without one explicit owner.
 
 This lane sits under:
 
-- [dev-research/default-modules/program.md](../default-modules/program.md)
+- [dev-research/server-module/program.md](../server-module/program.md)
 
 It should integrate with:
 
@@ -73,7 +73,7 @@ The intended split is:
 2. [src/modules/a2a-module/](../../src/modules/a2a-module) defines the current A2A and peer trust seams
 3. adjacent lanes define auth, discovery, audit, and three-axis constraints
 4. this lane hill-climbs the identity/trust slice and feeds winners back into
-   the default-modules umbrella
+   the server-module issue backlog
 
 ## Core Hypothesis
 

@@ -40,7 +40,7 @@ verification, memory, and harness workflows without a coherent default story.
 
 This lane sits under:
 
-- [dev-research/default-modules/program.md](../default-modules/program.md)
+- [dev-research/server-module/program.md](../server-module/program.md)
 
 It should integrate with:
 
@@ -63,11 +63,11 @@ The intended split is:
 2. [skills/behavioral-core/SKILL.md](../../skills/behavioral-core/SKILL.md) defines snapshot and event selection
    observability
 3. [src/eval](../../src/eval) defines retained evaluation artifact patterns
-4. [src/program-runner](../../src/program-runner) defines bounded worktree-backed
+4. repo-native module-program runner CLI surface (removed) defines bounded worktree-backed
    module-program fanout patterns
-5. [dev-research/default-modules/program.md](../default-modules/program.md) defines the bundle question
+5. [dev-research/server-module/program.md](../server-module/program.md) defines the bundle question
 6. this lane hill-climbs the observability slice and feeds winners back into
-   the default-modules umbrella
+   the server-module issue backlog
 
 ## Core Hypothesis
 

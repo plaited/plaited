@@ -41,9 +41,9 @@ and interpretation policy that can become part of the default module bundle.
    dynamically loaded module modules
 4. [skills/modnet-modules/SKILL.md](../../skills/modnet-modules/SKILL.md) defines current MSS/modnet/module
    semantics for module-era agents
-5. [dev-research/default-modules/program.md](../default-modules/program.md) defines the bundle question
+5. [dev-research/server-module/program.md](../server-module/program.md) defines the bundle question
 6. this lane hill-climbs discovery/loading policy and feeds winning candidates
-   back into the default-modules umbrella
+   back into the server-module issue backlog
 
 ## Core Hypothesis
 
@@ -75,7 +75,7 @@ Primary local inputs:
 
 Important research companions:
 
-- [dev-research/default-modules/program.md](../default-modules/program.md)
+- [dev-research/server-module/program.md](../server-module/program.md)
 - [dev-research/search-modules/program.md](../search-modules/program.md)
 - [dev-research/skill-modules/program.md](../skill-modules/program.md)
 - [dev-research/a2a-modules/program.md](../a2a-modules/program.md)

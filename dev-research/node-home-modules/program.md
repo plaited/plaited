@@ -38,7 +38,7 @@ tools or a storage backend choice instead of an explicit behavioral surface.
 
 This lane sits under:
 
-- [dev-research/default-modules/program.md](../default-modules/program.md)
+- [dev-research/server-module/program.md](../server-module/program.md)
 
 It should integrate with:
 
@@ -62,12 +62,12 @@ The intended split is:
 1. [docs/INFRASTRUCTURE.md](../../docs/INFRASTRUCTURE.md) defines the node-home direction
 2. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the minimal core boundary
 3. [src/agent/agent.types.ts](../../src/agent/agent.types.ts) defines the module contract
-4. [dev-research/default-modules/program.md](../default-modules/program.md) defines the umbrella bundle
-   question
+4. GitHub issue-backed module backlog planning owns cross-lane bundle
+   decisions
 5. adjacent lanes provide edit, memory, bootstrap, observability, and workflow
    constraints
 6. this lane hill-climbs the persistence and promotion slice and feeds winners
-   back into the default-modules umbrella
+   back into GitHub issue-backed module backlog planning
 
 ## Core Hypothesis
 

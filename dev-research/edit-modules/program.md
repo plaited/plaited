@@ -38,7 +38,7 @@ Without this lane, the default agent risks treating all edits as one undifferent
 
 This lane sits under:
 
-- [dev-research/default-modules/program.md](../default-modules/program.md)
+- [dev-research/server-module/program.md](../server-module/program.md)
 
 It should integrate with:
 
@@ -63,11 +63,11 @@ The intended split is:
 
 1. [src/agent/create-agent.ts](../../src/agent/create-agent.ts) defines the minimal core boundary
 2. [src/agent/agent.types.ts](../../src/agent/agent.types.ts) defines the module contract
-3. [dev-research/default-modules/program.md](../default-modules/program.md) defines the bundle question
+3. [dev-research/server-module/program.md](../server-module/program.md) defines the bundle question
 4. [skills/code-patterns/SKILL.md](../../skills/code-patterns/SKILL.md) and [skills/typescript-lsp/SKILL.md](../../skills/typescript-lsp/SKILL.md)
    provide bounded editing and analysis guidance
 5. this lane hill-climbs the editing slice and feeds winners back into the
-   default-modules umbrella
+   server-module issue backlog
 
 ## Core Hypothesis
 

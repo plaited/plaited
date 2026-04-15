@@ -53,7 +53,7 @@ surface for using the repo's own implementation knowledge without expanding
 
 This lane is a focused subprogram under:
 
-- [dev-research/default-modules/program.md](../default-modules/program.md)
+- [dev-research/server-module/program.md](../server-module/program.md)
 
 It should stay aligned with:
 

@@ -43,7 +43,7 @@ skill-module, module-discovery-module, memory-module, or ad hoc prompts.
 
 This lane is a focused subprogram under:
 
-- [dev-research/default-modules/program.md](../default-modules/program.md)
+- [dev-research/server-module/program.md](../server-module/program.md)
 
 It should integrate with:
 
