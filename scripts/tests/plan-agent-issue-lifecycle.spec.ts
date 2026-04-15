@@ -127,6 +127,21 @@ describe('input validation', () => {
       expect(parsed.error.issues.some((issue) => issue.path.join('.') === 'reason')).toBe(true)
     }
   })
+
+  test('completed rejects legacy full-resolution alias', () => {
+    const legacyAlias = 'fully-' + 'resolved'
+    const parsed = PlanAgentIssueLifecycleInputSchema.safeParse({
+      issue: 123,
+      transition: 'completed',
+      currentLabels: ['agent-ready'],
+      resolution: legacyAlias,
+    })
+
+    expect(parsed.success).toBe(false)
+    if (!parsed.success) {
+      expect(parsed.error.issues.some((issue) => issue.path.join('.') === 'resolution')).toBe(true)
+    }
+  })
 })
 
 describe('transition planning', () => {
@@ -194,20 +209,6 @@ describe('transition planning', () => {
     ])
     expect(output.wouldCloseIssue).toBe(true)
     expect(output.closeIssue).toBe(false)
-  })
-
-  test('completed fully-resolved alias is normalized to full', async () => {
-    const output = await planAgentIssueLifecycle({
-      issue: 123,
-      transition: 'completed',
-      currentLabels: ['agent-ready', 'agent-active', 'agent-pr-open'],
-      resolution: 'fully-resolved',
-      prUrl: 'https://github.com/plaited/plaited/pull/999',
-    })
-
-    expect(output.proposedLabelsToAdd).toEqual(['agent-done'])
-    expect(output.wouldCloseIssue).toBe(true)
-    expect(output.warnings).toContain('resolution "fully-resolved" is accepted as an alias for "full"')
   })
 
   test('completed partial does not add agent-done, adds agent-needs-human, and does not close', async () => {

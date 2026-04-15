@@ -234,7 +234,7 @@ bun run agent:issues:plan -- '{"repo":"plaited/plaited","limit":5}' --human
   - requires `reason`
   - add `agent-needs-human`, `agent-blocked`
 - `completed`
-  - `resolution` supports `full`, `partial`, and `unknown` (`fully-resolved` is accepted as an alias)
+  - canonical `resolution` values are exactly `full`, `partial`, and `unknown`
   - omitted `resolution` is treated as `unknown` and warns that maintainer classification is required
   - `full`: add `agent-done`, remove active/blocker labels and `needs-triage`, model `wouldCloseIssue: true`
   - `partial` and `unknown`: keep issue open, add/keep `agent-needs-human`
