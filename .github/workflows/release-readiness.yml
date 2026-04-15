@@ -477,6 +477,6 @@ jobs:
               echo "## Release Readiness Preview"
               echo
               cat "${body_file}"
-            } >> "${GITHUB_STEP_SUMMARY}"
+            } | tee -a "${GITHUB_STEP_SUMMARY}"
             echo "Preview run from ${WORKFLOW_REF_NAME}; canonical release-readiness issue was not updated."
           fi
