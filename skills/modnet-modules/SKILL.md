@@ -39,7 +39,8 @@ Current source of truth for runtime behavior lives in:
 
 - `src/agent/*`
 - `src/modules/a2a-module/*`
-- active `dev-research/*/program.md` lanes
+- issue-backed kernel backlog context in `dev-research/README.md` and linked
+  GitHub issues
 
 ## Current Translation
 
@@ -267,7 +268,7 @@ Do not assume the repo currently ships:
 - legacy module marketplace or template-registry assumptions
 
 If a proposal needs one of those ideas, treat it as research and route it
-through the relevant `dev-research/*/program.md` lane.
+through the relevant issue from `dev-research/README.md`.
 
 ## When To Read The Source Texts
 

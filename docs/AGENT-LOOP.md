@@ -3,9 +3,8 @@
 > **Status: ACTIVE** — Architecture note for the minimal agent core and
 > module-composed orchestration model. Cross-references: `ARCHITECTURE.md`
 > (top-level system shape), `INFRASTRUCTURE.md` (deployment/runtime
-> boundaries), `dev-research/default-modules/program.md` (active default
-> module bundle direction), `skills/modnet-modules/` (modnet/MSS/module
-> framing).
+> boundaries), `dev-research/README.md` (retired local lanes plus active issue
+> backlog links), `skills/modnet-modules/` (modnet/MSS/module framing).
 
 ## Overview
 

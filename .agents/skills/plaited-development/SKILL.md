@@ -465,8 +465,8 @@ security_summary:
 - Pi-backed autonomous program scripts are no longer the Plaited development lane.
 - Do not add new `pi` package dependencies, `pi` probe scripts, or Pi-specific orchestration
   wrappers.
-- Convert remaining `dev-research/*/program.md` work into GitHub Issues and route selected issues
-  through maintainer-applied `agent-ready`, `agent-planning`, and/or `card/*` labels.
+- Keep `dev-research/README.md` as a tombstone only; route planning through GitHub Issues and
+  maintainer-applied `agent-ready`, `agent-planning`, and/or `card/*` labels.
 - Use Cline Kanban for local decomposition/execution and GitHub Issues as the durable backlog.
 - If a future lane needs autonomous fanout, model it as `eval`/`autoresearch` card work with
   explicit artifacts, validation, and issue linkage rather than reviving the removed Pi script
