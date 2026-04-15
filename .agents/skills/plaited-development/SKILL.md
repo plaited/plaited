@@ -234,8 +234,16 @@ git merge --ff-only origin/dev
 - Publish remains human-gated or release-environment-gated.
 - `dev -> main` release PRs should squash-merge.
 - After squash release, `main -> dev` sync merge commit is required.
+- After every `dev -> main` release merge, immediately run the post-release finalization sequence:
+  - sync `main -> dev` with a merge commit
+  - close or supersede the pre-release readiness issue
+  - run release-readiness again on `dev`
+- Closed historical release-readiness issues must not be treated as the active packet.
+- If `main -> dev` sync uses a PR, merge it with a merge commit (not squash).
 - Do not reset/rebase/force-push `dev` to make release history line up.
 - CodeQL default setup query suite is expected to be `extended` (security-extended equivalent).
+- Squash-release topology can leave `main..dev` commit history noisy; treat branch SHAs and changed
+  files as primary sync evidence.
 
 ### 10.1 Release-Readiness Agent Output Shape
 
@@ -314,11 +322,25 @@ security_summary:
    - does not publish
    - includes readiness packet, release notes draft, validation summary, and `P0`/`P1` checklist
 3. Post-release sync workflow
-   - runs after squash merge to `main` or by manual dispatch
-   - merges `main` back into `dev` with a merge commit
+   - manual `workflow_dispatch` operator workflow
+   - validates current `main`/`dev` refs and emits exact merge-commit instructions
+   - does not auto-push, auto-merge, or publish
+   - sync is executed by the operator locally (or via PR merged with merge commit)
    - never resets/rebases/force-pushes `dev`
 
-### 10.5 Merge Queue Policy
+### 10.5 Post-Release Finalization Checklist
+
+- Merge release PR `dev -> main` with squash merge.
+- Immediately sync `main -> dev` using `git merge --no-ff origin/main` from a fresh `origin/dev`
+  worktree branch.
+- Push sync merge directly to `dev` only when allowed by branch policy; otherwise open a sync PR to
+  `dev` and merge it with a merge commit.
+- Close or supersede the previous readiness issue packet after release merge.
+- Re-run release-readiness on `dev` after the sync merge commit lands on `origin/dev`.
+- Ensure exactly one open issue titled `Release readiness: dev -> main`; duplicates are a blocker.
+- Never reset/rebase/force-push `dev` to reconcile squash topology.
+
+### 10.6 Merge Queue Policy
 
 - Merge queues are deferred.
 - Do not add merge queue requirements yet.
