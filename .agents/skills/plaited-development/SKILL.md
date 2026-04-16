@@ -287,18 +287,22 @@ bun run agent:issues:lifecycle -- '{"apply":true,"repo":"plaited/plaited","issue
 - `agent-active` is allowed for direct execution and indicates active/reserved lifecycle state.
 - Default mode is safe: `dryRun: true`.
 - In dry-run mode the command does not create worktrees, does not run Cline, does not push, and
-  does not mutate GitHub.
+  does not mutate GitHub and does not label PRs.
 - Non-dry-run mode is explicit one-shot execution:
   - creates a fresh issue worktree from `origin/dev`
   - invokes Cline directly in that worktree
+  - defaults to autonomous/headless Cline (`-y`) when `interactiveApproval` is omitted/false
+  - `interactiveApproval:true` is an attended-only escape hatch that runs without `-y` and may block
+    waiting for approvals
+  - `allowYolo` is deprecated and rejected; do not use it
   - does not add cron/polling or autonomous issue scanning
 - Direct executor prompts must require PR template compliance:
   - read `.github/pull_request_template.md`
   - include all required headings
   - include validation results/skipped-check rationale and residual risks
   - complete the Agent Workflow Checklist
-  - apply/request `cline-review`, `agent-ready`, and relevant source issue `card/*` labels
-  - this slice does not add script-side PR label mutation logic
+  - expected labels are `cline-review`, `agent-ready`, and relevant source issue `card/*` labels
+  - executor auto-labels detected PR URLs after successful Cline runs
 - Execution remains repo-local workflow tooling; this is not Plaited runtime/personal-agent UX.
 - Do not add GitHub workflow automation for this flow in the one-shot slice.
 - Direct execution prompts must not include Kanban sidebar planning instructions.
@@ -309,6 +313,7 @@ bun run agent:issues:lifecycle -- '{"apply":true,"repo":"plaited/plaited","issue
 bun run agent:execute -- '{"repo":"plaited/plaited","issue":261}'
 bun run agent:execute -- '{"repo":"plaited/plaited","issue":261,"dryRun":true}' --human
 bun run agent:execute -- '{"repo":"plaited/plaited","issue":261,"dryRun":false}'
+bun run agent:execute -- '{"repo":"plaited/plaited","issue":261,"dryRun":false,"interactiveApproval":true}'
 ```
 
 - Reference: `.agents/skills/plaited-development/references/issue-execution.md`
