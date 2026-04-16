@@ -279,6 +279,13 @@ bun run agent:issues:lifecycle -- '{"issue":123,"transition":"abandoned","curren
   - creates a fresh issue worktree from `origin/dev`
   - invokes Cline directly in that worktree
   - does not add cron/polling or autonomous issue scanning
+- Direct executor prompts must require PR template compliance:
+  - read `.github/pull_request_template.md`
+  - include all required headings
+  - include validation results/skipped-check rationale and residual risks
+  - complete the Agent Workflow Checklist
+  - apply/request `cline-review`, `agent-ready`, and relevant source issue `card/*` labels
+  - this slice does not add script-side PR label mutation logic
 - Execution remains repo-local workflow tooling; this is not Plaited runtime/personal-agent UX.
 - Do not add GitHub workflow automation for this flow in the one-shot slice.
 
