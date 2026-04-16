@@ -513,3 +513,7 @@ security_summary:
   `kanban-review-card.md`, `kanban-cleanup-card.md`, `kanban-eval-card.md`, and
   `kanban-autoresearch-card.md`.
 - Use `references/issue-execution.md` for one-shot direct Cline execution guidance.
+- Use `references/server-module-eval-contract.md` as the repo-workflow eval contract for
+  issue #258 to support future `card/eval` and `card/autoresearch` work.
+- This reference is internal agent-facing workflow guidance, not shipped framework public
+  documentation, and it does not implement the eval runner.
