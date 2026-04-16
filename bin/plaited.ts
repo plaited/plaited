@@ -11,24 +11,15 @@
  * @internal
  */
 
-import {
-  autoresearchCli,
-  autoresearchOrchestratorCli,
-  compareTrialsCli,
-  evalCli,
-  programRunnerCli,
-} from '../src/cli.ts'
+import { compareTrialsCli, evalCli } from '../src/cli.ts'
 
 // ============================================================================
 // Command Registry
 // ============================================================================
 
 const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
-  autoresearch: autoresearchCli,
-  'autoresearch-orchestrator': autoresearchOrchestratorCli,
   'compare-trials': compareTrialsCli,
   eval: evalCli,
-  'program-runner': programRunnerCli,
 }
 
 // ============================================================================
@@ -61,7 +52,7 @@ export const runCli = async (argv: string[]): Promise<void> => {
        plaited --schema               # List all commands
 
 Commands:
-    autoresearch, autoresearch-orchestrator, compare-trials, eval, program-runner`)
+    compare-trials, eval`)
     process.exit(command ? 0 : 1)
   }
 

@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Issue intake policy
+    url: https://github.com/plaited/plaited/blob/dev/CONTRIBUTING.md#issue-based-intake
+    about: Use Bug report and Feature request issues for intake; maintainers triage and apply any agent labels.
   - name: Questions and discussions
     url: https://github.com/orgs/plaited/discussions
-    about: Use Discussions for open-ended questions or conversation.
+    about: Use Discussions for open-ended conversation, not bug/feature intake.
