@@ -3,6 +3,7 @@
  *
  * @remarks
  * Verifies end-to-end compare-trials functionality with minimal test fixtures.
+ * Uses ./bin/plaited.ts directly for repo-local testing.
  */
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
@@ -87,7 +88,7 @@ describe('plaited compare-trials fixture smoke tests', () => {
     )
 
     const result = await Bun.$`
-      bunx plaited compare-trials '{"baselinePath":"${baselinePath}","challengerPath":"${challengerPath}","resamples":100,"confidence":0.8}'
+      bun ./bin/plaited.ts compare-trials '{"baselinePath":"${baselinePath}","challengerPath":"${challengerPath}","resamples":100,"confidence":0.8}'
     `
       .cwd(CLI_PACKAGE_ROOT)
       .nothrow()
@@ -154,7 +155,7 @@ describe('plaited compare-trials fixture smoke tests', () => {
     )
 
     const result = await Bun.$`
-      bunx plaited compare-trials '{"baselinePath":"${baselinePath}","challengerPath":"${challengerPath}"}'
+      bun ./bin/plaited.ts compare-trials '{"baselinePath":"${baselinePath}","challengerPath":"${challengerPath}"}'
     `
       .cwd(CLI_PACKAGE_ROOT)
       .nothrow()

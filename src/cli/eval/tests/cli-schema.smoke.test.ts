@@ -1,22 +1,20 @@
 /**
- * Smoke tests for CLI schema discovery via bunx plaited.
+ * Smoke tests for CLI schema discovery via bun ./bin/plaited.ts.
  *
  * @remarks
  * These tests verify that the package's CLI bin is correctly configured and
  * that schema discovery commands emit valid JSON Schema output.
+ * Uses ./bin/plaited.ts directly for repo-local testing.
  */
 
 import { describe, expect, test } from 'bun:test'
 import { resolve } from 'node:path'
 
-// Use the installed bin path via bunx
-// Since these are smoke tests, we verify the bin exists and the CLI responds
-
 describe('CLI schema discovery smoke tests', () => {
   const CLI_PACKAGE_ROOT = resolve(import.meta.dir, '../../../../')
 
   test('plaited --schema emits command manifest', async () => {
-    const result = await Bun.$`bunx plaited --schema`.cwd(CLI_PACKAGE_ROOT).nothrow()
+    const result = await Bun.$`bun ./bin/plaited.ts --schema`.cwd(CLI_PACKAGE_ROOT).nothrow()
     expect(result.exitCode).toBe(0)
 
     const output = JSON.parse(result.stdout.toString().trim())
@@ -26,7 +24,7 @@ describe('CLI schema discovery smoke tests', () => {
   })
 
   test('plaited eval --schema input emits EvalInputSchema', async () => {
-    const result = await Bun.$`bunx plaited eval --schema input`.cwd(CLI_PACKAGE_ROOT).nothrow()
+    const result = await Bun.$`bun ./bin/plaited.ts eval --schema input`.cwd(CLI_PACKAGE_ROOT).nothrow()
     expect(result.exitCode).toBe(0)
 
     const schema = JSON.parse(result.stdout.toString().trim())
@@ -37,7 +35,7 @@ describe('CLI schema discovery smoke tests', () => {
   })
 
   test('plaited eval --schema output emits EvalOutputSchema', async () => {
-    const result = await Bun.$`bunx plaited eval --schema output`.cwd(CLI_PACKAGE_ROOT).nothrow()
+    const result = await Bun.$`bun ./bin/plaited.ts eval --schema output`.cwd(CLI_PACKAGE_ROOT).nothrow()
     expect(result.exitCode).toBe(0)
 
     const schema = JSON.parse(result.stdout.toString().trim())
@@ -50,7 +48,7 @@ describe('CLI schema discovery smoke tests', () => {
   })
 
   test('plaited compare-trials --schema input emits CompareTrialsInputSchema', async () => {
-    const result = await Bun.$`bunx plaited compare-trials --schema input`.cwd(CLI_PACKAGE_ROOT).nothrow()
+    const result = await Bun.$`bun ./bin/plaited.ts compare-trials --schema input`.cwd(CLI_PACKAGE_ROOT).nothrow()
     expect(result.exitCode).toBe(0)
 
     const schema = JSON.parse(result.stdout.toString().trim())
@@ -61,7 +59,7 @@ describe('CLI schema discovery smoke tests', () => {
   })
 
   test('plaited compare-trials --schema output emits CompareTrialsOutputSchema', async () => {
-    const result = await Bun.$`bunx plaited compare-trials --schema output`.cwd(CLI_PACKAGE_ROOT).nothrow()
+    const result = await Bun.$`bun ./bin/plaited.ts compare-trials --schema output`.cwd(CLI_PACKAGE_ROOT).nothrow()
     expect(result.exitCode).toBe(0)
 
     const schema = JSON.parse(result.stdout.toString().trim())

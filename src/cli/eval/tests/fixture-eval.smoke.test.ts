@@ -4,6 +4,7 @@
  * @remarks
  * These tests create minimal test fixtures (adapter, prompts, grader) and verify
  * that the plaited eval and compare-trials commands work end-to-end.
+ * Uses ./bin/plaited.ts directly for repo-local testing.
  */
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
@@ -51,7 +52,7 @@ describe('plaited eval fixture smoke tests', () => {
     await writeFile(promptsPath, '{"id":"t1","input":"hello"}\n{"id":"t2","input":"world"}\n')
 
     const result = await Bun.$`
-      bunx plaited eval '{"adapterPath":"${adapterPath}","promptsPath":"${promptsPath}","k":1}'
+      bun ./bin/plaited.ts eval '{"adapterPath":"${adapterPath}","promptsPath":"${promptsPath}","k":1}'
     `
       .cwd(CLI_PACKAGE_ROOT)
       .nothrow()
@@ -86,7 +87,7 @@ describe('plaited eval fixture smoke tests', () => {
     await writeFile(promptsPath, '{"id":"g1","input":"test"}\n')
 
     const result = await Bun.$`
-      bunx plaited eval '{"adapterPath":"${adapterPath}","promptsPath":"${promptsPath}","graderPath":"${graderPath}","k":1}'
+      bun ./bin/plaited.ts eval '{"adapterPath":"${adapterPath}","promptsPath":"${promptsPath}","graderPath":"${graderPath}","k":1}'
     `
       .cwd(CLI_PACKAGE_ROOT)
       .nothrow()
@@ -110,7 +111,7 @@ describe('plaited eval fixture smoke tests', () => {
     const outputPath = fixturePath('output.jsonl')
 
     const result = await Bun.$`
-      bunx plaited eval '{"adapterPath":"${adapterPath}","promptsPath":"${promptsPath}","outputPath":"${outputPath}","k":1}'
+      bun ./bin/plaited.ts eval '{"adapterPath":"${adapterPath}","promptsPath":"${promptsPath}","outputPath":"${outputPath}","k":1}'
     `
       .cwd(CLI_PACKAGE_ROOT)
       .nothrow()
