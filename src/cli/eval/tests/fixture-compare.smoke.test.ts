@@ -7,9 +7,9 @@
  */
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { mkdir, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 
 const CLI_PACKAGE_ROOT = resolve(import.meta.dir, '../../../../')
 
@@ -23,9 +23,7 @@ const fixturePath = (name: string): string => {
 }
 
 beforeEach(async () => {
-  // Use crypto.randomUUID() for secure unique directory names (avoids CodeQL temp dir alerts)
-  fixturesDir = resolve(tmpdir(), `plaited-smoke-ct-${crypto.randomUUID()}`)
-  await mkdir(fixturesDir, { recursive: true })
+  fixturesDir = await mkdtemp(join(tmpdir(), 'plaited-smoke-ct-'))
   tempFiles.length = 0
 })
 
