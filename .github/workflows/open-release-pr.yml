@@ -150,8 +150,8 @@ jobs:
             fail_with "Release-readiness issue #${readiness_issue_number} is missing required field: blocking_items contains '- none'."
           fi
           require_fixed '- Branch-of-record: `true`' "Branch-of-record: true"
-          require_fixed '- Base comparison: `main..dev`' "Base comparison: main..dev"
-          require_regex '^main_to_dev_sync_required:[[:space:]]*true$' "main_to_dev_sync_required: true"
+          require_fixed '- Raw topology range: `origin/main..origin/dev`' "Raw topology range: origin/main..origin/dev"
+          require_regex '^main_to_dev_sync_required:[[:space:]]*false$' "main_to_dev_sync_required: false"
           require_regex 'security_token_source:[[:space:]]*release-readiness-secret' "security_token_source: release-readiness-secret"
           require_regex 'CodeQL collection status:[[:space:]]*`?available`?' "CodeQL collection status: available"
           require_regex 'Dependabot collection status:[[:space:]]*`?available`?' "Dependabot collection status: available"
