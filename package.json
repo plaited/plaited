@@ -1,6 +1,6 @@
 {
   "name": "plaited",
-  "version": "7.3.0-next.1",
+  "version": "8.0.0-next.0",
   "license": "ISC",
   "engines": {
     "bun": ">= v1.2.9"
