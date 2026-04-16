@@ -3,11 +3,16 @@ import { type CliFlags, makeCli } from '../src/cli/utils/cli.ts'
 
 const TransitionSchema = z.enum(['plan-started', 'pr-opened', 'blocked', 'completed', 'abandoned'])
 const ResolutionSchema = z.enum(['full', 'partial', 'unknown'])
+const CLOSE_DEFERRED_WARNING = 'issue closing is deferred; close manually after reviewing the applied lifecycle comment'
+const MISSING_AGENT_READY_WARNING = 'current labels do not include agent-ready; maintainer authorization may be missing'
+const APPLY_REQUIRES_AGENT_READY_ERROR =
+  'apply=true requires agent-ready on the live issue before lifecycle mutations can run'
 
 export type LifecycleTransition = z.infer<typeof TransitionSchema>
 
 export const PlanAgentIssueLifecycleInputSchema = z
   .object({
+    apply: z.boolean().default(false),
     repo: z.string().min(1).optional(),
     issue: z.number().int().positive(),
     transition: TransitionSchema,
@@ -41,6 +46,14 @@ export const PlanAgentIssueLifecycleInputSchema = z
         path: ['reason'],
       })
     }
+
+    if (input.apply && !input.repo) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'repo is required when apply=true',
+        path: ['repo'],
+      })
+    }
   })
 
 export type PlanAgentIssueLifecycleInput = z.input<typeof PlanAgentIssueLifecycleInputSchema>
@@ -49,12 +62,17 @@ type PlanAgentIssueLifecycleResolvedInput = z.output<typeof PlanAgentIssueLifecy
 export const PlanAgentIssueLifecycleOutputSchema = z.object({
   issue: z.number().int().positive(),
   transition: TransitionSchema,
-  willMutate: z.literal(false),
+  willMutate: z.boolean(),
+  didMutate: z.boolean(),
+  mutationCommands: z.array(z.array(z.string())).optional(),
+  appliedLabelsToAdd: z.array(z.string()).optional(),
+  appliedLabelsToRemove: z.array(z.string()).optional(),
+  appliedComment: z.string().optional(),
   proposedLabelsToAdd: z.array(z.string()),
   proposedLabelsToRemove: z.array(z.string()),
   proposedComment: z.string(),
   warnings: z.array(z.string()),
-  requiresApply: z.literal(true),
+  requiresApply: z.boolean(),
   closeIssue: z.literal(false),
   wouldCloseIssue: z.boolean(),
   stateSummary: z.string(),
@@ -83,6 +101,12 @@ type TransitionPlan = {
   warnings: string[]
   stateSummary: string
   wouldCloseIssue: boolean
+}
+
+type LabelResolution = {
+  currentLabels: string[]
+  warnings: string[]
+  repo: string | null
 }
 
 const GITHUB_ISSUE_LABELS_SCHEMA = z.object({
@@ -166,7 +190,7 @@ const ensureGhReady = async ({
   which: WhichResolver
 }): Promise<void> => {
   if (!which('gh')) {
-    throw new Error('gh CLI is required when currentLabels is omitted')
+    throw new Error('gh CLI is required when apply=true or currentLabels is omitted')
   }
 
   const authStatus = await runCommand(['gh', 'auth', 'status'])
@@ -282,7 +306,7 @@ const planTransition = ({ input }: { input: PlanAgentIssueLifecycleResolvedInput
       const resolution = input.resolution ?? 'unknown'
 
       if (resolution === 'full') {
-        const warnings: string[] = []
+        const warnings: string[] = [CLOSE_DEFERRED_WARNING]
         if (!input.prUrl) {
           warnings.push('completed full without prUrl; include prUrl when available')
         }
@@ -294,13 +318,13 @@ const planTransition = ({ input }: { input: PlanAgentIssueLifecycleResolvedInput
             baseComment: [
               `Issue #${input.issue} appears fully resolved.`,
               ...(input.prUrl ? [`PR: ${input.prUrl}.`] : []),
-              'Apply mode/future automation can close this issue after maintainer review.',
+              'Issue closing is deferred in this apply slice; close manually after maintainer review.',
             ].join('\n'),
             commentBody: input.commentBody,
           }),
           warnings,
           wouldCloseIssue: true,
-          stateSummary: 'Issue appears fully resolved; would mark done and close in apply mode.',
+          stateSummary: 'Issue appears fully resolved; would mark done while keeping closure deferred.',
         }
       }
 
@@ -371,11 +395,46 @@ const resolveCurrentLabels = async ({
   input: PlanAgentIssueLifecycleResolvedInput
   runCommand: CommandRunner
   which: WhichResolver
-}): Promise<{ currentLabels: string[]; warnings: string[] }> => {
+}): Promise<LabelResolution> => {
+  if (input.apply) {
+    await ensureGhReady({
+      runCommand,
+      which,
+    })
+
+    const repo = input.repo
+    if (!repo) {
+      throw new Error('repo is required when apply=true')
+    }
+
+    const currentLabels = await fetchCurrentLabels({
+      issue: input.issue,
+      repo,
+      runCommand,
+    })
+
+    if (input.currentLabels) {
+      return {
+        currentLabels,
+        warnings: [
+          `apply=true ignored provided currentLabels and fetched labels from gh issue view for ${repo}#${input.issue}`,
+        ],
+        repo,
+      }
+    }
+
+    return {
+      currentLabels,
+      warnings: [`apply=true fetched labels from gh issue view for ${repo}#${input.issue}`],
+      repo,
+    }
+  }
+
   if (input.currentLabels) {
     return {
       currentLabels: normalizeLabels(input.currentLabels),
       warnings: [],
+      repo: input.repo ?? null,
     }
   }
 
@@ -394,6 +453,7 @@ const resolveCurrentLabels = async ({
   return {
     currentLabels,
     warnings: [`currentLabels omitted; fetched labels from gh issue view for ${repo}#${input.issue}`],
+    repo,
   }
 }
 
@@ -419,6 +479,51 @@ const computeLabelMutations = ({
   return {
     labelsToAdd: adds.sort((left, right) => left.localeCompare(right)),
     labelsToRemove: removes.sort((left, right) => left.localeCompare(right)),
+  }
+}
+
+const buildMutationCommands = ({
+  issue,
+  repo,
+  labelsToAdd,
+  labelsToRemove,
+  comment,
+}: {
+  issue: number
+  repo: string
+  labelsToAdd: string[]
+  labelsToRemove: string[]
+  comment: string
+}): string[][] => {
+  const commands: string[][] = []
+
+  for (const label of labelsToAdd) {
+    commands.push(['gh', 'issue', 'edit', `${issue}`, '--repo', repo, '--add-label', label])
+  }
+
+  for (const label of labelsToRemove) {
+    commands.push(['gh', 'issue', 'edit', `${issue}`, '--repo', repo, '--remove-label', label])
+  }
+
+  if (comment.trim().length > 0) {
+    commands.push(['gh', 'issue', 'comment', `${issue}`, '--repo', repo, '--body', comment])
+  }
+
+  return commands
+}
+
+const executeMutationCommands = async ({
+  commands,
+  runCommand,
+}: {
+  commands: string[][]
+  runCommand: CommandRunner
+}): Promise<void> => {
+  for (const command of commands) {
+    const result = await runCommand(command)
+    if (result.exitCode !== 0) {
+      throw new Error(`${command.join(' ')} failed: ${trimProcessError(result)}`)
+    }
   }
 }
 
@@ -448,19 +553,55 @@ export const planAgentIssueLifecycle = async (
 
   const warnings = [...labelResolution.warnings, ...plan.warnings]
 
-  if (!labelResolution.currentLabels.includes('agent-ready')) {
-    warnings.push('current labels do not include agent-ready; maintainer authorization may be missing')
+  const hasAgentReady = labelResolution.currentLabels.includes('agent-ready')
+  if (!hasAgentReady) {
+    warnings.push(MISSING_AGENT_READY_WARNING)
+  }
+
+  if (input.apply && !hasAgentReady) {
+    throw new Error(APPLY_REQUIRES_AGENT_READY_ERROR)
+  }
+
+  const mutationCommands =
+    input.apply && labelResolution.repo
+      ? buildMutationCommands({
+          issue: input.issue,
+          repo: labelResolution.repo,
+          labelsToAdd: mutationPlan.labelsToAdd,
+          labelsToRemove: mutationPlan.labelsToRemove,
+          comment: plan.comment,
+        })
+      : undefined
+
+  let didMutate = false
+
+  if (input.apply) {
+    if (!mutationCommands) {
+      throw new Error('repo is required when apply=true')
+    }
+
+    await executeMutationCommands({
+      commands: mutationCommands,
+      runCommand,
+    })
+
+    didMutate = mutationCommands.length > 0
   }
 
   return {
     issue: input.issue,
     transition: input.transition,
-    willMutate: false,
+    willMutate: input.apply,
+    didMutate,
+    mutationCommands,
+    appliedLabelsToAdd: didMutate ? mutationPlan.labelsToAdd : undefined,
+    appliedLabelsToRemove: didMutate ? mutationPlan.labelsToRemove : undefined,
+    appliedComment: didMutate && plan.comment.trim().length > 0 ? plan.comment : undefined,
     proposedLabelsToAdd: mutationPlan.labelsToAdd,
     proposedLabelsToRemove: mutationPlan.labelsToRemove,
     proposedComment: plan.comment,
     warnings,
-    requiresApply: true,
+    requiresApply: !input.apply,
     closeIssue: false,
     wouldCloseIssue: plan.wouldCloseIssue,
     stateSummary: plan.stateSummary,
@@ -474,16 +615,30 @@ export const renderPlanAgentIssueLifecycleHuman = ({
   input: PlanAgentIssueLifecycleResolvedInput
   flags: CliFlags
 }): string => {
+  const hasComment = output.proposedComment.trim().length > 0
+  const commentApplied = output.appliedComment ? 'yes' : 'no'
+
   const lines = [
     `Issue: #${output.issue}`,
     `Transition: ${output.transition}`,
+    `Apply mode: ${output.willMutate ? 'yes' : 'no'}`,
+    `Will mutate: ${output.willMutate ? 'yes' : 'no'}`,
+    `Did mutate: ${output.didMutate ? 'yes' : 'no'}`,
     `Labels to add: ${output.proposedLabelsToAdd.length > 0 ? output.proposedLabelsToAdd.join(', ') : '(none)'}`,
     `Labels to remove: ${output.proposedLabelsToRemove.length > 0 ? output.proposedLabelsToRemove.join(', ') : '(none)'}`,
+    `${output.willMutate ? 'Comment applied' : 'Comment will be applied'}: ${
+      output.willMutate ? commentApplied : hasComment ? 'yes' : 'no'
+    }`,
     `Would close issue: ${output.wouldCloseIssue ? 'yes' : 'no'}`,
-    '',
-    'Comment preview:',
-    output.proposedComment,
   ]
+
+  if (output.wouldCloseIssue) {
+    lines.push(`Close deferred: ${output.warnings.includes(CLOSE_DEFERRED_WARNING) ? 'yes' : 'no'}`)
+  }
+
+  lines.push('')
+  lines.push('Comment preview:')
+  lines.push(output.proposedComment)
 
   if (output.warnings.length > 0) {
     lines.push('')
