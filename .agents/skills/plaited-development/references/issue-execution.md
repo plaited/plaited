@@ -14,13 +14,14 @@ Use this flow only when all are true:
 - issue has `agent-execute`
 - issue has a planning signal (`agent-planning` or one or more `card/*` labels)
 - issue does not have `agent-blocked`
-- issue does not have `agent-active`
 - issue does not have `agent-pr-open`
+- issue does not have `agent-done`
 
 Important:
 
 - `agent-ready` alone means planning authorization only.
 - direct execution requires `agent-execute`.
+- `agent-active` is allowed for direct execution and indicates active/reserved lifecycle state.
 
 ## Command
 
@@ -68,7 +69,8 @@ Execution wrapper prompts must include:
 - read `.github/pull_request_template.md`
 - use relevant card template references for `card/*` labels
 - use `origin/dev` base and PR target `dev`
-- direct executor run is explicit operator start authorization; avoid Kanban decomposition unless needed
+- direct executor run is explicit operator start authorization
+- do not include Kanban sidebar planning instructions in direct execution prompts
 - do not push directly to `dev`
 - PR body must include all template headings:
   - `## Context`
