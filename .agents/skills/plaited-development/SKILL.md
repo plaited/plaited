@@ -518,6 +518,35 @@ security_summary:
 - Stop before destructive Git operations.
 - Stop if passing tests would require weakening installer/core contracts.
 - Stop if requested implementation conflicts with verified current code.
+- **Stop before creating a PR if you have not read `.github/pull_request_template.md`.**
+- **Stop before creating a PR if you have not verified the branch name matches `agent/gh-{issue-number}-*` (see section 5.5).**
+- **Stop before creating a PR if you have not verified all Agent Workflow Checklist items are checked.**
+
+## 11.1 PR Pre-Flight Checklist
+
+Before opening any PR, verify:
+
+```bash
+# 1. Verify branch naming convention
+git branch --show-current
+# Must match: agent/gh-{issue-number}-*
+
+# 2. Load and review PR template
+cat .github/pull_request_template.md
+# Verify all required headings are present in your PR body
+
+# 3. Verify issue exists and labels are appropriate
+gh issue view {issue-number}
+# Check card/* labels and plan which to apply to PR
+
+# 4. Verify Agent Workflow Checklist is complete
+# All items in section "Agent Workflow Checklist" must be checked before opening
+```
+
+Required PR labels:
+- `cline-review`
+- `agent-ready`
+- Relevant `card/*` labels from the source issue
 
 ## 12. Kanban / Issue Transition Note
 
