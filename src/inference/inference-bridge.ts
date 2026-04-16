@@ -216,7 +216,6 @@ export const createInferenceBridge = (options: InferenceBridgeOptions) => {
       })
 
       outcome = { status: 'error', error: inferenceError }
-      response = { requestId: request.requestId, data: {} }
     }
 
     disconnectSnapshot()
