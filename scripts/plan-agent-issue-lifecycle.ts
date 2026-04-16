@@ -4,6 +4,9 @@ import { type CliFlags, makeCli } from '../src/cli/utils/cli.ts'
 const TransitionSchema = z.enum(['plan-started', 'pr-opened', 'blocked', 'completed', 'abandoned'])
 const ResolutionSchema = z.enum(['full', 'partial', 'unknown'])
 const CLOSE_DEFERRED_WARNING = 'issue closing is deferred; close manually after reviewing the applied lifecycle comment'
+const MISSING_AGENT_READY_WARNING = 'current labels do not include agent-ready; maintainer authorization may be missing'
+const APPLY_REQUIRES_AGENT_READY_ERROR =
+  'apply=true requires agent-ready on the live issue before lifecycle mutations can run'
 
 export type LifecycleTransition = z.infer<typeof TransitionSchema>
 
@@ -550,8 +553,13 @@ export const planAgentIssueLifecycle = async (
 
   const warnings = [...labelResolution.warnings, ...plan.warnings]
 
-  if (!labelResolution.currentLabels.includes('agent-ready')) {
-    warnings.push('current labels do not include agent-ready; maintainer authorization may be missing')
+  const hasAgentReady = labelResolution.currentLabels.includes('agent-ready')
+  if (!hasAgentReady) {
+    warnings.push(MISSING_AGENT_READY_WARNING)
+  }
+
+  if (input.apply && !hasAgentReady) {
+    throw new Error(APPLY_REQUIRES_AGENT_READY_ERROR)
   }
 
   const mutationCommands =

@@ -63,6 +63,7 @@ This reference describes the lifecycle planner/apply command:
   - no `gh issue comment`
 - Apply mode (`apply: true`):
   - requires `repo`
+  - requires live `agent-ready`; otherwise exits with an error before mutation commands
   - always fetches live current labels via `gh issue view` before computing mutations
   - runs mutation commands in order:
     - add labels (`gh issue edit ... --add-label ...`)

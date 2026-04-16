@@ -223,6 +223,7 @@ bun run agent:issues:plan -- '{"repo":"plaited/plaited","limit":5}' --human
 - If `currentLabels` is omitted, the command may read labels via `gh issue view`.
 - In apply mode, the command fetches live labels via `gh issue view` before mutation planning, even
   if `currentLabels` is provided.
+- In apply mode, missing live `agent-ready` is a hard error and mutation commands are not executed.
 - Output reports:
   - `willMutate` (`true` only when `apply: true`)
   - `didMutate` (`true` only after all mutation commands succeed)

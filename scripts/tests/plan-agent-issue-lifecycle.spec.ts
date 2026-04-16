@@ -431,6 +431,37 @@ describe('transition planning', () => {
     expect(commands.some((command) => command[0] === 'gh' && command[2] === 'comment')).toBe(false)
   })
 
+  test('apply=true rejects live issues without agent-ready and does not run mutation commands', async () => {
+    const { runCommand, commands } = createMockRunCommand({
+      issueLabels: ['needs-triage'],
+    })
+
+    await expect(
+      planAgentIssueLifecycle(
+        {
+          issue: 123,
+          transition: 'plan-started',
+          apply: true,
+          repo: 'plaited/plaited',
+        },
+        {
+          runCommand,
+          which: whichGh,
+        },
+      ),
+    ).rejects.toThrow('apply=true requires agent-ready on the live issue before lifecycle mutations can run')
+
+    expect(commands.some((command) => command[0] === 'gh' && command[1] === 'issue' && command[2] === 'view')).toBe(
+      true,
+    )
+    expect(commands.some((command) => command[0] === 'gh' && command[1] === 'issue' && command[2] === 'edit')).toBe(
+      false,
+    )
+    expect(commands.some((command) => command[0] === 'gh' && command[1] === 'issue' && command[2] === 'comment')).toBe(
+      false,
+    )
+  })
+
   test('guardrails still prevent removing protected labels', async () => {
     const output = await planAgentIssueLifecycle({
       issue: 123,
