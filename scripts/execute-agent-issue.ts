@@ -176,20 +176,24 @@ const unique = (items: string[]): string[] => {
 }
 
 const evaluateIssueExecutionEligibility = ({ issue }: { issue: GitHubIssue }): IssueExecutionEligibility => {
+  const labels = normalizeIssueLabels(issue.labels)
+  const labelSet = new Set(labels)
+
   const planningEligibility = evaluateIssueEligibility({
     issue,
-    includeActive: false,
+    includeActive: true,
     includePrOpen: false,
     activeReasonMode: 'execution',
     prOpenReasonMode: 'execution',
   })
 
-  const labels = normalizeIssueLabels(issue.labels)
-  const labelSet = new Set(labels)
   const ineligibleReasons = [...planningEligibility.ineligibleReasons]
 
   if (!labelSet.has('agent-execute')) {
     ineligibleReasons.push('missing agent-execute')
+  }
+  if (labelSet.has('agent-done')) {
+    ineligibleReasons.push('issue is agent-done')
   }
 
   return {
@@ -502,6 +506,7 @@ export const executeAgentIssue = async (
     issue,
     cardTaxonomyHints: eligibility.cardTaxonomyHints,
     templateHints,
+    mode: 'execution',
   })
 
   const wrappedPrompt = buildExecutionPrompt({

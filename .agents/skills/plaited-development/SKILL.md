@@ -282,8 +282,9 @@ bun run agent:issues:lifecycle -- '{"apply":true,"repo":"plaited/plaited","issue
   - `agent-ready`
   - `agent-execute`
   - planning signal (`agent-planning` or one or more `card/*` labels)
-  - absence of `agent-blocked`, `agent-active`, and `agent-pr-open`
+  - absence of `agent-blocked`, `agent-pr-open`, and `agent-done`
 - `agent-ready` alone authorizes planning intake only; it does not execute work.
+- `agent-active` is allowed for direct execution and indicates active/reserved lifecycle state.
 - Default mode is safe: `dryRun: true`.
 - In dry-run mode the command does not create worktrees, does not run Cline, does not push, and
   does not mutate GitHub.
@@ -300,6 +301,7 @@ bun run agent:issues:lifecycle -- '{"apply":true,"repo":"plaited/plaited","issue
   - this slice does not add script-side PR label mutation logic
 - Execution remains repo-local workflow tooling; this is not Plaited runtime/personal-agent UX.
 - Do not add GitHub workflow automation for this flow in the one-shot slice.
+- Direct execution prompts must not include Kanban sidebar planning instructions.
 
 ### Examples
 

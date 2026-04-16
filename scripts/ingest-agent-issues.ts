@@ -466,10 +466,12 @@ export const buildIssuePlanningPrompt = ({
   cardTaxonomyHints,
   issue,
   templateHints,
+  mode = 'planning',
 }: {
   issue: GitHubIssue
   cardTaxonomyHints: CardTaxonomyLabel[]
   templateHints: TemplateHint[]
+  mode?: 'planning' | 'execution'
 }): string => {
   const normalizedLabels = normalizeIssueLabels(issue.labels)
   const branchSlug = slugifyIssueTitle(issue.title)
@@ -493,6 +495,20 @@ export const buildIssuePlanningPrompt = ({
           '- Use Kanban/sidebar planning to choose the best card template(s) during decomposition.',
         ].join('\n')
 
+  const kanbanPlanningSection =
+    mode === 'planning'
+      ? [
+          '',
+          '## Kanban Planning Instruction',
+          '- Use Cline Kanban sidebar planning to break this issue into one or more linked cards.',
+          '- Keep cards small, independently reviewable, and explicitly linked when dependencies exist.',
+          '- If the issue is small, a single card is acceptable.',
+          '- Treat card taxonomy labels as decomposition hints, not one-card constraints.',
+          '- If decomposition deviates from label hints, explain the deviation in the planning notes.',
+          '- Do not start execution unless the local operator explicitly starts cards or Kanban settings intentionally do so.',
+        ]
+      : []
+
   return [
     `# [GH-${issue.number}] ${issue.title}`,
     '',
@@ -503,7 +519,7 @@ export const buildIssuePlanningPrompt = ({
     `- Updated at: ${issue.updatedAt}`,
     '',
     '## Ingestion Mode',
-    '- planning',
+    `- ${mode}`,
     '',
     '## Branch Naming Guidance',
     `- Suggested branch prefix: agent/gh-${issue.number}-${branchSlug}`,
@@ -515,14 +531,7 @@ export const buildIssuePlanningPrompt = ({
     '',
     '## Required Reading',
     ...requiredReading,
-    '',
-    '## Kanban Planning Instruction',
-    '- Use Cline Kanban sidebar planning to break this issue into one or more linked cards.',
-    '- Keep cards small, independently reviewable, and explicitly linked when dependencies exist.',
-    '- If the issue is small, a single card is acceptable.',
-    '- Treat card taxonomy labels as decomposition hints, not one-card constraints.',
-    '- If decomposition deviates from label hints, explain the deviation in the planning notes.',
-    '- Do not start execution unless the local operator explicitly starts cards or Kanban settings intentionally do so.',
+    ...kanbanPlanningSection,
     '',
     '## Trust Boundary',
     '- Maintainer labels authorize ingestion, not correctness.',
