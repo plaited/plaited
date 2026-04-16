@@ -23,7 +23,7 @@ const CardTaxonomyLabelSchema = z.enum([
   'card/cleanup',
 ])
 
-type CardTaxonomyLabel = z.infer<typeof CardTaxonomyLabelSchema>
+export type CardTaxonomyLabel = z.infer<typeof CardTaxonomyLabelSchema>
 
 const PlanningIssueResultSchema = z.object({
   number: z.number().int().positive(),
@@ -84,16 +84,16 @@ const GitHubIssueSchema = z.object({
   comments: z.array(GitHubIssueCommentSchema).optional(),
 })
 
-type GitHubIssue = z.infer<typeof GitHubIssueSchema>
+export type GitHubIssue = z.infer<typeof GitHubIssueSchema>
 
-type CommandResult = {
+export type CommandResult = {
   exitCode: number
   stdout: string
   stderr: string
 }
 
-type CommandRunner = (command: string[]) => Promise<CommandResult>
-type WhichResolver = (command: string) => string | null
+export type CommandRunner = (command: string[]) => Promise<CommandResult>
+export type WhichResolver = (command: string) => string | null
 type TextReader = (path: string) => Promise<string>
 type TextWriter = (path: string, content: string) => Promise<void>
 type DirectoryCreator = (path: string) => Promise<void>
@@ -113,7 +113,7 @@ type IssueEligibility = {
   cardTaxonomyHints: CardTaxonomyLabel[]
 }
 
-type TemplateHint = {
+export type TemplateHint = {
   label: CardTaxonomyLabel
   templatePath: string
   summary: string
@@ -123,7 +123,8 @@ const GH_LIST_FIELDS = 'number,title,body,labels,author,url,updatedAt,state'
 const GH_VIEW_FIELDS = `${GH_LIST_FIELDS},comments`
 const OUTPUT_FILE_SUFFIX = 'planning.md'
 
-const normalizeLabels = (labels: { name: string }[]): string[] => labels.map((label) => label.name.trim().toLowerCase())
+export const normalizeIssueLabels = (labels: { name: string }[]): string[] =>
+  labels.map((label) => label.name.trim().toLowerCase())
 
 const uniqueCardTaxonomyHints = (labels: string[]): CardTaxonomyLabel[] => {
   const hints = new Set<CardTaxonomyLabel>()
@@ -224,7 +225,7 @@ const runGhCommand = async ({ args, runCommand }: { args: string[]; runCommand: 
   return result.stdout
 }
 
-const ensureGhReady = async ({
+export const ensureGhReady = async ({
   runCommand,
   which,
 }: {
@@ -241,7 +242,7 @@ const ensureGhReady = async ({
   }
 }
 
-const resolveDefaultRepo = async ({ runCommand }: { runCommand: CommandRunner }): Promise<string> => {
+export const resolveDefaultRepo = async ({ runCommand }: { runCommand: CommandRunner }): Promise<string> => {
   const output = await runGhCommand({
     args: ['repo', 'view', '--json', 'nameWithOwner', '--jq', '.nameWithOwner'],
     runCommand,
@@ -289,7 +290,7 @@ const fetchIssueList = async ({
   })
 }
 
-const fetchIssueByNumber = async ({
+export const fetchIssueByNumber = async ({
   issueNumber,
   repo,
   runCommand,
@@ -314,12 +315,16 @@ export const evaluateIssueEligibility = ({
   includeActive,
   includePrOpen,
   issue,
+  activeReasonMode = 'planning',
+  prOpenReasonMode = 'planning',
 }: {
   issue: GitHubIssue
   includeActive: boolean
   includePrOpen: boolean
+  activeReasonMode?: 'planning' | 'execution'
+  prOpenReasonMode?: 'planning' | 'execution'
 }): IssueEligibility => {
-  const labels = normalizeLabels(issue.labels)
+  const labels = normalizeIssueLabels(issue.labels)
   const labelSet = new Set(labels)
   const cardTaxonomyHints = uniqueCardTaxonomyHints(labels)
   const ineligibleReasons: string[] = []
@@ -337,10 +342,18 @@ export const evaluateIssueEligibility = ({
     ineligibleReasons.push('issue is agent-blocked')
   }
   if (labelSet.has('agent-active') && !includeActive) {
-    ineligibleReasons.push('issue has agent-active (set includeActive=true to include)')
+    ineligibleReasons.push(
+      activeReasonMode === 'execution'
+        ? 'issue has agent-active'
+        : 'issue has agent-active (set includeActive=true to include)',
+    )
   }
   if (labelSet.has('agent-pr-open') && !includePrOpen) {
-    ineligibleReasons.push('issue has agent-pr-open (set includePrOpen=true to include)')
+    ineligibleReasons.push(
+      prOpenReasonMode === 'execution'
+        ? 'issue has agent-pr-open'
+        : 'issue has agent-pr-open (set includePrOpen=true to include)',
+    )
   }
 
   return {
@@ -360,7 +373,7 @@ const summarizeTemplate = (content: string): string => {
   return firstContentLine ?? 'No summary found in template.'
 }
 
-const readTemplateHints = async ({
+export const readTemplateHints = async ({
   cardTaxonomyHints,
   cwd,
   readText,
@@ -458,7 +471,7 @@ export const buildIssuePlanningPrompt = ({
   cardTaxonomyHints: CardTaxonomyLabel[]
   templateHints: TemplateHint[]
 }): string => {
-  const normalizedLabels = normalizeLabels(issue.labels)
+  const normalizedLabels = normalizeIssueLabels(issue.labels)
   const branchSlug = slugifyIssueTitle(issue.title)
   const requiredReading = [
     '- ./AGENTS.md',
@@ -645,7 +658,7 @@ export const ingestAgentIssues = async (
   const issues: IngestAgentIssuesOutput['issues'] = []
 
   for (const issue of rawIssues) {
-    const labels = normalizeLabels(issue.labels)
+    const labels = normalizeIssueLabels(issue.labels)
     const eligibility = evaluateIssueEligibility({
       issue,
       includeActive: input.includeActive,

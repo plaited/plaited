@@ -137,6 +137,8 @@ git merge --ff-only origin/dev
       - `card/cleanup`
 - Maintainers apply labels manually as authorization/classification boundaries.
 - `agent-ready` is authorization to ingest for planning, not a correctness claim.
+- `agent-ready` alone does not authorize direct execution.
+- `agent-execute` is required for direct Cline execution against a GitHub issue.
 - `agent-planning` requests Kanban/sidebar decomposition planning.
 - `card/*` labels are taxonomy/template hints; they are not one-card constraints.
 - Multiple `card/*` labels are allowed when they describe candidate decomposition lanes.
@@ -258,6 +260,37 @@ bun run agent:issues:lifecycle -- '{"issue":123,"transition":"blocked","currentL
 bun run agent:issues:lifecycle -- '{"issue":123,"transition":"completed","currentLabels":["agent-ready","agent-active","agent-pr-open"],"resolution":"full","prUrl":"https://github.com/plaited/plaited/pull/999"}'
 bun run agent:issues:lifecycle -- '{"issue":123,"transition":"abandoned","currentLabels":["agent-ready","agent-active"],"reason":"Kanban attempt discarded after review"}'
 ```
+
+## 5.9 Issue Execution CLI (One-Shot)
+
+- `agent:execute` is a repo-local operator tooling command that targets one GitHub issue at a
+  time.
+- Direct execution eligibility requires all of:
+  - issue is open
+  - `agent-ready`
+  - `agent-execute`
+  - planning signal (`agent-planning` or one or more `card/*` labels)
+  - absence of `agent-blocked`, `agent-active`, and `agent-pr-open`
+- `agent-ready` alone authorizes planning intake only; it does not execute work.
+- Default mode is safe: `dryRun: true`.
+- In dry-run mode the command does not create worktrees, does not run Cline, does not push, and
+  does not mutate GitHub.
+- Non-dry-run mode is explicit one-shot execution:
+  - creates a fresh issue worktree from `origin/dev`
+  - invokes Cline directly in that worktree
+  - does not add cron/polling or autonomous issue scanning
+- Execution remains repo-local workflow tooling; this is not Plaited runtime/personal-agent UX.
+- Do not add GitHub workflow automation for this flow in the one-shot slice.
+
+### Examples
+
+```bash
+bun run agent:execute -- '{"repo":"plaited/plaited","issue":261}'
+bun run agent:execute -- '{"repo":"plaited/plaited","issue":261,"dryRun":true}' --human
+bun run agent:execute -- '{"repo":"plaited/plaited","issue":261,"dryRun":false}'
+```
+
+- Reference: `.agents/skills/plaited-development/references/issue-execution.md`
 
 ## 6. Review Lane
 
@@ -466,7 +499,7 @@ security_summary:
 - Do not add new `pi` package dependencies, `pi` probe scripts, or Pi-specific orchestration
   wrappers.
 - Keep `dev-research/README.md` as a tombstone only; route planning through GitHub Issues and
-  maintainer-applied `agent-ready`, `agent-planning`, and/or `card/*` labels.
+  maintainer-applied `agent-ready`, `agent-execute`, `agent-planning`, and/or `card/*` labels.
 - Use Cline Kanban for local decomposition/execution and GitHub Issues as the durable backlog.
 - If a future lane needs autonomous fanout, model it as `eval`/`autoresearch` card work with
   explicit artifacts, validation, and issue linkage rather than reviving the removed Pi script
@@ -479,3 +512,4 @@ security_summary:
   `kanban-skill-executable-card.md`, `kanban-tooling-card.md`,
   `kanban-review-card.md`, `kanban-cleanup-card.md`, `kanban-eval-card.md`, and
   `kanban-autoresearch-card.md`.
+- Use `references/issue-execution.md` for one-shot direct Cline execution guidance.
