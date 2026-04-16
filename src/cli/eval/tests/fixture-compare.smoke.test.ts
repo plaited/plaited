@@ -23,7 +23,8 @@ const fixturePath = (name: string): string => {
 }
 
 beforeEach(async () => {
-  fixturesDir = resolve(tmpdir(), `plaited-smoke-ct-${Date.now()}`)
+  // Use crypto.randomUUID() for secure unique directory names (avoids CodeQL temp dir alerts)
+  fixturesDir = resolve(tmpdir(), `plaited-smoke-ct-${crypto.randomUUID()}`)
   await mkdir(fixturesDir, { recursive: true })
   tempFiles.length = 0
 })
