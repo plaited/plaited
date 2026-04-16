@@ -93,6 +93,28 @@ const createRunner = ({
       }
     }
 
+    if (
+      command[0] === 'git' &&
+      command[1] === '-C' &&
+      command[3] === 'rev-parse' &&
+      command[4] === '--git-path' &&
+      command[5] === 'info/exclude'
+    ) {
+      return {
+        exitCode: 0,
+        stdout: `${command[2]}/.git/info/exclude\n`,
+        stderr: '',
+      }
+    }
+
+    if (command[0] === 'git' && command[1] === '-C' && command[3] === 'check-ignore') {
+      return {
+        exitCode: 0,
+        stdout: '',
+        stderr: '',
+      }
+    }
+
     if (command[0] === 'git' && command[1] === 'fetch') {
       return {
         exitCode: 0,
@@ -346,6 +368,7 @@ describe('executeAgentIssue', () => {
           return null
         },
         readText: async () => 'Mode\n- Tooling',
+        readOptionalText: async () => undefined,
         writeText: async (path, content) => {
           writes.push({ path, content })
         },
@@ -386,6 +409,11 @@ describe('executeAgentIssue', () => {
           write.path === '/repo/.worktrees/gh-261-add-issue-backed-cline-execution-command/.agent-execute-prompt.md',
       ),
     ).toBe(true)
+    expect(
+      writes.some(
+        (write) => write.path === '/repo/.worktrees/gh-261-add-issue-backed-cline-execution-command/.git/info/exclude',
+      ),
+    ).toBe(true)
 
     expect(
       calls.some(
@@ -411,6 +439,29 @@ describe('executeAgentIssue', () => {
     expect(clineCall).toContain('minimax/minimax-m2.7')
     expect(clineCall?.some((arg) => arg.includes('@.agent-execute-prompt.md'))).toBe(true)
     expect(clineCall?.some((arg) => arg.includes('Execution Wrapper (Issue-Backed Plaited Tooling Work)'))).toBe(false)
+    expect(
+      calls.some(
+        (command) =>
+          command[0] === 'git' &&
+          command[1] === '-C' &&
+          command[2] === '/repo/.worktrees/gh-261-add-issue-backed-cline-execution-command' &&
+          command[3] === 'rev-parse' &&
+          command[4] === '--git-path' &&
+          command[5] === 'info/exclude',
+      ),
+    ).toBe(true)
+    expect(
+      calls.some(
+        (command) =>
+          command[0] === 'git' &&
+          command[1] === '-C' &&
+          command[2] === '/repo/.worktrees/gh-261-add-issue-backed-cline-execution-command' &&
+          command[3] === 'check-ignore' &&
+          command[4] === '-q' &&
+          command[5] === '--' &&
+          command[6] === '.agent-execute-prompt.md',
+      ),
+    ).toBe(true)
   })
 
   test('cline missing when non-dry-run fails clearly', async () => {
@@ -454,6 +505,7 @@ describe('executeAgentIssue', () => {
         which: (command) =>
           command === 'gh' || command === 'git' || command === 'cline' ? `/usr/bin/${command}` : null,
         readText: async () => 'Mode\n- Tooling',
+        readOptionalText: async () => undefined,
         createDirectory: async () => {},
         writeText: async () => {},
         pathExists: async () => false,
@@ -481,6 +533,7 @@ describe('executeAgentIssue', () => {
         which: (command) =>
           command === 'gh' || command === 'git' || command === 'cline' ? `/usr/bin/${command}` : null,
         readText: async () => 'Mode\n- Tooling',
+        readOptionalText: async () => undefined,
         createDirectory: async () => {},
         writeText: async () => {},
         pathExists: async () => false,

@@ -64,6 +64,7 @@ export type ExecuteAgentIssueOutput = z.infer<typeof ExecuteAgentIssueOutputSche
 
 type TextReader = (path: string) => Promise<string>
 type TextWriter = (path: string, content: string) => Promise<void>
+type OptionalTextReader = (path: string) => Promise<string | undefined>
 type DirectoryCreator = (path: string) => Promise<void>
 type ExistsChecker = (path: string) => Promise<boolean>
 
@@ -71,6 +72,7 @@ type ExecuteAgentIssueDependencies = {
   runCommand?: CommandRunner
   which?: WhichResolver
   readText?: TextReader
+  readOptionalText?: OptionalTextReader
   writeText?: TextWriter
   createDirectory?: DirectoryCreator
   pathExists?: ExistsChecker
@@ -114,6 +116,15 @@ const defaultReadText: TextReader = async (path) => {
 
 const defaultWriteText: TextWriter = async (path, content) => {
   await Bun.write(path, content)
+}
+
+const defaultReadOptionalText: OptionalTextReader = async (path) => {
+  const file = Bun.file(path)
+  if (!(await file.exists())) {
+    return undefined
+  }
+
+  return file.text()
 }
 
 const defaultCreateDirectory: DirectoryCreator = async (path) => {
@@ -327,6 +338,54 @@ const maybeCreateArtifactDir = async ({
   return runDir
 }
 
+const ensureWorktreePromptExcluded = async ({
+  readOptionalText,
+  runCommand,
+  worktreePath,
+  writeText,
+}: {
+  runCommand: CommandRunner
+  readOptionalText: OptionalTextReader
+  writeText: TextWriter
+  worktreePath: string
+}): Promise<void> => {
+  const excludePathResult = await runCommandChecked({
+    args: ['git', '-C', worktreePath, 'rev-parse', '--git-path', 'info/exclude'],
+    runCommand,
+  })
+
+  const rawExcludePath = excludePathResult.stdout.trim()
+  if (!rawExcludePath) {
+    throw new Error(`Could not resolve git info/exclude path for worktree: ${worktreePath}`)
+  }
+
+  const excludePath = rawExcludePath.startsWith('/') ? rawExcludePath : resolve(worktreePath, rawExcludePath)
+  const existingContent = (await readOptionalText(excludePath)) ?? ''
+  const existingLines = existingContent
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+
+  if (!existingLines.includes(WORKTREE_PROMPT_FILE_NAME)) {
+    const prefix =
+      existingContent.length === 0 || existingContent.endsWith('\n') ? existingContent : `${existingContent}\n`
+    await writeText(excludePath, `${prefix}${WORKTREE_PROMPT_FILE_NAME}\n`)
+  }
+
+  const ignoredCheck = await runCommand([
+    'git',
+    '-C',
+    worktreePath,
+    'check-ignore',
+    '-q',
+    '--',
+    WORKTREE_PROMPT_FILE_NAME,
+  ])
+  if (ignoredCheck.exitCode !== 0) {
+    throw new Error(`Failed to protect ${WORKTREE_PROMPT_FILE_NAME} from commits in ${worktreePath}`)
+  }
+}
+
 const runCline = async ({
   allowYolo,
   clineConfig,
@@ -373,6 +432,7 @@ export const executeAgentIssue = async (
   const runCommand = dependencies.runCommand ?? defaultRunCommand
   const which = dependencies.which ?? ((command: string) => Bun.which(command) ?? null)
   const readText = dependencies.readText ?? defaultReadText
+  const readOptionalText = dependencies.readOptionalText ?? defaultReadOptionalText
   const writeText = dependencies.writeText ?? defaultWriteText
   const createDirectory = dependencies.createDirectory ?? defaultCreateDirectory
   const pathExists = dependencies.pathExists ?? defaultPathExists
@@ -530,6 +590,12 @@ export const executeAgentIssue = async (
 
     const worktreePromptPath = join(worktreePlan.worktreePath, WORKTREE_PROMPT_FILE_NAME)
     await writeText(worktreePromptPath, `${wrappedPrompt}\n`)
+    await ensureWorktreePromptExcluded({
+      runCommand,
+      readOptionalText,
+      writeText,
+      worktreePath: worktreePlan.worktreePath,
+    })
 
     const clineRun = await runCline({
       allowYolo: input.allowYolo,
