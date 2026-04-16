@@ -541,5 +541,7 @@ security_summary:
 - Use `references/issue-execution.md` for one-shot direct Cline execution guidance.
 - Use `references/server-module-eval-contract.md` as the repo-workflow eval contract for
   issue #258 to support future `card/eval` and `card/autoresearch` work.
-- This reference is internal agent-facing workflow guidance, not shipped framework public
-  documentation, and it does not implement the eval runner.
+- Use `references/eval-artifact-contract.md` for the external artifact contract used by
+  `plaited eval` and `plaited compare-trials` (issue #281).
+- These references are internal agent-facing workflow guidance, not shipped framework public
+  documentation, and do not implement the eval runners.
