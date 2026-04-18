@@ -36,6 +36,33 @@ export const P_TRIGGER = 'p-trigger'
  * to select the WebSocket topic they connect to.
  */
 export const P_TOPIC = 'p-topic'
+
+/**
+ * Matches site-root JavaScript module paths accepted by bootstrap script tags
+ * and controller module imports.
+ *
+ * @public
+ */
+export const SITE_ROOT_JAVASCRIPT_PATH_PATTERN = /^\/(?!\/)[^\s\\?#]+\.js(?:[?#][^\s\\]*)?$/
+
+/** Pattern for lowercase custom element tags after template tag normalization. */
+export const CUSTOM_ELEMENT_TAG_PATTERN = /^[a-z][.0-9_a-z-]*-[.0-9_a-z-]*$/
+
+/**
+ * Custom element names reserved by the HTML specification and rejected by
+ * `customElements.define()`.
+ */
+export const RESERVED_CUSTOM_ELEMENT_TAGS = new Set([
+  'annotation-xml',
+  'color-profile',
+  'font-face',
+  'font-face-src',
+  'font-face-uri',
+  'font-face-format',
+  'font-face-name',
+  'missing-glyph',
+])
+
 /**
  * A Set containing HTML and SVG tag names that are considered "void elements".
  * Void elements cannot have any content (neither HTML nor text nodes) and are
@@ -147,3 +174,5 @@ export const VALID_PRIMITIVE_CHILDREN = new Set([
  * The emoji value is chosen for console readability and low collision risk.
  */
 export const TEMPLATE_OBJECT_IDENTIFIER = '🦄'
+
+export const CONNECT_PLAITED_ROUTE = '/.plaited/connect.js'

@@ -26,3 +26,5 @@ export const SWAP_MODES = keyMirror('afterbegin', 'afterend', 'beforebegin', 'be
  * @public
  */
 export const CONTROLLER_ERRORS = keyMirror(`${AGENT_TO_CONTROLLER_EVENTS.attrs}_element_not_found`)
+
+export const CONNECT_PLAITED_ROUTE = '/.plaited/connect.js'

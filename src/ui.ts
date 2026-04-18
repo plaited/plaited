@@ -4,7 +4,7 @@
  *
  * @remarks
  * This module provides access to:
- * - **Controller islands**: {@link controlIsland} registers topic-scoped custom elements.
+ * - **Controller runtime**: {@link useController} serves the browser controller bootstrap.
  * - **Wire contracts**: controller schemas validate server commands and browser-to-server messages.
  * - **Rendering**: {@link createSSR} serializes templates with per-connection style deduplication.
  * - **Styling**: style, token, keyframe, host style, root style, and join helpers.
@@ -13,10 +13,9 @@
  * @public
  */
 
-export * from './ui/controller/control-island.ts'
 export * from './ui/controller/controller.schemas.ts'
 export * from './ui/controller/controller.types.ts'
-export * from './ui/controller/decorate-elements.ts'
+export * from './ui/controller/use-controller.ts'
 export type * from './ui/css/css.types.ts'
 export * from './ui/css/host-styles.ts'
 export * from './ui/css/join-styles.ts'
@@ -24,5 +23,6 @@ export * from './ui/css/keyframes.ts'
 export * from './ui/css/root-styles.ts'
 export * from './ui/css/styles.ts'
 export * from './ui/css/tokens.ts'
+export * from './ui/render/decorate-elements.ts'
 export * from './ui/render/ssr.ts'
 export type * from './ui/render/template.types.ts'

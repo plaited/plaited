@@ -1,31 +1,7 @@
 import type { DesignTokenReference, HostStylesObject } from '../css/css.types.ts'
 import { joinStyles } from '../css/join-styles.ts'
-import { createTemplate } from '../render/template.ts'
-import type { Attrs, CustomElementTag, FunctionTemplate, TemplateObject } from '../render/template.types.ts'
-
-/**
- * Brand identifier stamped onto `DecoratorTemplate` function objects.
- *
- * @remarks
- * Used at runtime to distinguish decorator template functions from
- * plain `FunctionTemplate` instances.
- *
- * @public
- */
-export const DECORATOR_TEMPLATE_IDENTIFIER = '🎨' as const
-
-/**
- * A template function branded as a Shadow DOM decorator entry point.
- *
- * @remarks
- * Returned by `decorateElements()`. Carries the `$` brand so consumers
- * can identify it as a decorator template at runtime.
- *
- * @public
- */
-export type DecoratorTemplate = FunctionTemplate & {
-  $: typeof DECORATOR_TEMPLATE_IDENTIFIER
-}
+import { createTemplate } from './template.ts'
+import type { Attrs, CustomElementTag, FunctionTemplate, TemplateObject } from './template.types.ts'
 
 /**
  * Creates a Shadow DOM custom element template from a server-rendered template object.
@@ -60,7 +36,7 @@ export const decorateElements = ({
   cloneable?: boolean
   mode?: 'open' | 'closed'
   hostStyles?: HostStylesObject | DesignTokenReference
-}): DecoratorTemplate => {
+}): FunctionTemplate => {
   const { stylesheets } = joinStyles(hostStyles, { stylesheets: shadowDom.stylesheets ?? [] })
   if (stylesheets.length) {
     const styles = `<style>${[...new Set(stylesheets)].join('')}</style>`
@@ -68,22 +44,18 @@ export const decorateElements = ({
       .replaceAll(/:root\(([^)]+)\)/g, ':host')
     shadowDom.html.unshift(styles)
   }
-  const ft: DecoratorTemplate = ({ children = [], ...attrs }: Attrs) =>
+  const tpl = createTemplate('template', {
+    shadowrootmode: mode,
+    shadowrootdelegatesfocus: delegatesFocus,
+    shadowrootclonable: cloneable,
+    children: {
+      ...shadowDom,
+      stylesheets: [],
+    },
+  })
+  return ({ children = [], ...attrs }: Attrs) =>
     createTemplate(tag, {
       ...attrs,
-      children: [
-        createTemplate('template', {
-          shadowrootmode: mode,
-          shadowrootdelegatesfocus: delegatesFocus,
-          shadowrootclonable: cloneable,
-          children: {
-            ...shadowDom,
-            stylesheets: [],
-          },
-        }),
-        ...(Array.isArray(children) ? children : [children]),
-      ],
+      children: [tpl, ...(Array.isArray(children) ? children : [children])],
     })
-  ft.$ = DECORATOR_TEMPLATE_IDENTIFIER
-  return ft
 }

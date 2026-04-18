@@ -15,7 +15,7 @@ type CrossOrigin = 'anonymous' | 'use-credentials' | ''
 export type TemplateObject = {
   html: string[]
   stylesheets: string[]
-  registry: string[]
+  registry: CustomElementTag[]
   $: typeof TEMPLATE_OBJECT_IDENTIFIER
 }
 /**
@@ -36,7 +36,6 @@ export type Children = Child[] | Child
  * @property p-target - Used to identify elements for targeted updates or interactions (value is usually a string or number).
  * @property p-trigger - Defines declarative event bindings that controller islands forward as BP event types.
  * @property stylesheets - Accepts a CSS string or an array of strings to be associated with the element, hoisted, and deduplicated.
- * @property trusted - If `true`, disables HTML escaping for the element's attributes and children that are not TemplateObject's. Use with extreme caution, only with sanitized or known-safe content.
  * @property style - Accepts a `CSSProperties` object (similar to React) for inline styles.
  */
 export type PlaitedAttributes = {
@@ -46,8 +45,6 @@ export type PlaitedAttributes = {
   [P_TRIGGER]?: Record<string, string>
   stylesheets?: string[]
   classNames?: string[]
-  /** setting trusted to true will disable all escaping security policy measures for this element template */
-  trusted?: boolean
   style?: CSSProperties
 }
 
@@ -765,7 +762,7 @@ type DetailedSlotHTMLAttributes = DetailedHTMLAttributes & {
   name?: string
 }
 
-/** Detailed attributes specific to the `<script>` element. Requires `trusted={true}` to be used. */
+/** Detailed attributes specific to external bootstrap `<script>` elements. */
 type DetailedScriptHTMLAttributes = DetailedHTMLAttributes & {
   async?: boolean
   crossorigin?: CrossOrigin
@@ -1136,10 +1133,8 @@ type DetailedWebViewHTMLAttributes = DetailedHTMLAttributes & {
 }
 
 /** Attributes reserved for Plaited controller island templates. */
-type DetailedControlIslandHTMLAttributes = DetailedHTMLAttributes & {
-  [P_TOPIC]: string
-  stylesheets?: never
-  classNames?: never
+export type DetailedCustomElementHTMLAttributes = DetailedHTMLAttributes & {
+  [P_TOPIC]?: string
 }
 
 /**
@@ -1324,7 +1319,8 @@ export type ElementAttributeList = {
   tspan: DetailedSVGAttributes
   use: DetailedSVGAttributes
   view: DetailedSVGAttributes
-  controlIsland: DetailedControlIslandHTMLAttributes
+  // CustomElement
+  [k: CustomElementTag]: DetailedCustomElementHTMLAttributes
 }
 /**
  * Generic type for template attributes.

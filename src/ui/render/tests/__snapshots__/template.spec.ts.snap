@@ -39,7 +39,7 @@ exports[`createTemplate: Array of templates 1`] = `
 </ul>"
 `;
 
-exports[`createTemplate: Should not throw on script tag with trusted attribute 1`] = `"<script type="module" src="main.js"></script>"`;
+exports[`createTemplate: renders external bootstrap script tags 1`] = `"<script type="module" src="/dist/main.js?v=1#entry"></script>"`;
 
 exports[`createTemplate: Escapes children 1`] = `
 "<div>&lt;script type=&quot;text/javascript&quot;&gt; const hostRegex = /^https?://([^/]+)/.*$/i;
@@ -47,22 +47,6 @@ exports[`createTemplate: Escapes children 1`] = `
     = new WebSocket(/); const reload = () =&gt;{ location.reload(); console.log(&#39;...reloading&#39;);
     }; socket.addEventListener(&#39;message&#39;, reload); console.log(&#39;[plaited]
     listening for file changes&#39;); &lt;/script&gt;</div>"
-`;
-
-exports[`createTemplate: Does not escape children when trusted 1`] = `
-"<div>
-    <script type="text/javascript">
-        const hostRegex = /^https?://([^/]+)/.*$/i;
-        const host = document.URL.replace(hostRegex, '$1');
-        const socket = new WebSocket(/);
-        const reload = () =>{
-          location.reload();
-          console.log('...reloading');
-        };
-        socket.addEventListener('message', reload);
-        console.log('[plaited] listening for file changes');
-    </script>
-</div>"
 `;
 
 exports[`createTemplate: Non declarative shadow DOM template 1`] = `

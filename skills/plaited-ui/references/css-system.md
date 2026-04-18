@@ -35,8 +35,8 @@ In SSR output those selectors are rewritten to `:root{}` and later restored by
 the element/shadow pipeline where needed.
 
 Use host styles with `decorateElements` when styling declarative Shadow DOM
-hosts. `controlIsland` hosts use `display: contents` from their controller
-template so they do not introduce an extra layout box by default.
+hosts. Controller hosts should set their own layout style, commonly
+`display: contents`, when they should not introduce an extra layout box.
 
 ### `createKeyframes`
 

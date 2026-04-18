@@ -16,7 +16,7 @@ The UI model is server-driven and island-scoped:
 
 - the server or agent produces JSX templates
 - `createSSR()` serializes templates into HTML strings
-- `controlIsland(tag)` registers topic-scoped custom elements
+- `useController()` registers topic-scoped custom elements
 - each island connects to `/ws` using its `p-topic` value as the WebSocket subprotocol
 - the server pushes `render`, `attrs`, `import`, and `disconnect` commands
 - the browser sends `ui_event` and `error` messages back to the server
@@ -30,7 +30,7 @@ Public UI exports are re-exported from `src/ui.ts`.
 
 | Area | Files | Primary APIs |
 |---|---|---|
-| Controller islands | `src/ui/controller/control-island.ts` | `controlIsland`, `ControllerTemplate` |
+| Controller runtime | `src/ui/controller/use-controller.ts` | `useController` |
 | Controller protocol | `src/ui/controller/controller.schemas.ts`, `src/ui/controller/controller.types.ts`, `src/bridge-events.ts` | `RenderMessageSchema`, `AttrsMessageSchema`, `ImportModuleSchema`, `ClientMessageSchema`, `ControllerModuleContext` |
 | Controller utilities | `src/ui/controller/delegated-listener.ts`, `src/ui/controller/controller.constants.ts` | `DelegatedListener`, `delegates`, `SWAP_MODES` |
 | Shadow DOM decoration | `src/ui/controller/decorate-elements.ts` | `decorateElements` |
@@ -40,8 +40,8 @@ Public UI exports are re-exported from `src/ui.ts`.
 
 ## Controller Model
 
-`controlIsland(tag)` is the browser runtime boundary. It registers a custom
-element and returns a branded template function for SSR use.
+`useController()` is the browser runtime boundary. It creates a scoped custom
+element registry and returns a function that registers controller element tags.
 
 Controller islands require `p-topic`. The topic becomes the WebSocket
 subprotocol and identifies the server-side conversation for that island.
@@ -64,7 +64,7 @@ Supported event types:
 
 | Type | Detail | Behavior |
 |---|---|---|
-| `render` | `{ target, html, swap? }` | Finds `[p-target="${target}"]` inside the island and applies HTML. Defaults to `innerHTML`. |
+| `render` | `{ target, html, stylesheets, registry, swap? }` | Finds `[p-target="${target}"]` inside the island and applies HTML. Defaults to `innerHTML`. |
 | `attrs` | `{ target, attr }` | Sets, removes, or toggles attributes on the target element. |
 | `import` | site-root `.js` path | Dynamically imports a local controller module and invokes its default export. |
 | `disconnect` | optional | Closes the island WebSocket. |
@@ -175,7 +175,7 @@ Important rules:
 - use `p-target` for server-addressable update points
 - use `p-trigger` instead of inline event handlers
 - `on*` attributes are rejected by the template renderer
-- script tags require `trusted`
+- script tags are limited to site-root external JavaScript `src` values
 - stylesheets are collected during template creation
 - `createSSR()` deduplicates styles per renderer instance
 - `decorateElements()` creates declarative Shadow DOM wrappers

@@ -25,7 +25,8 @@ JSX calls produce template objects, not DOM nodes.
 Key behaviors:
 
 - text children are HTML-escaped by default
-- `trusted={true}` on `<script>` bypasses escaping at SSR time
+- `<script>` tags are limited to site-root external JavaScript `src` values
+- render messages carry required `stylesheets` and custom element `registry` arrays
 - `on*` handlers throw; use `p-trigger`
 - `p-target` marks descendants that controller islands can update
 - `p-trigger` serializes DOM event bindings for controller islands
@@ -72,15 +73,15 @@ Reset style state when the connection or session is torn down.
 - fragments for wrapper-free composition
 - `p-target` for later server-addressable updates
 - `decorateElements` for structural custom elements / shadow DOM
-- `controlIsland` for topic-scoped runtime ownership
+- `useController()` for topic-scoped runtime ownership
 - controller modules for browser-side side effects that cannot be represented as
   pushed HTML or attributes
 
 ## Controller Island Handoff
 
-`controlIsland(tag)` returns a branded template function and, in the browser,
-registers the matching custom element. Use the returned template in SSR when you
-want the host element to carry the correct `display: contents` style collection.
+`useController()` returns a scoped browser registration function. Register
+initial host tags from the entrypoint and pass render-message registries to
+register pushed custom element tags.
 
 At runtime, the island:
 
@@ -100,5 +101,6 @@ At runtime, the island:
 | attribute safety | only primitive attribute values |
 | controller module loading | site-root `.js` import paths only |
 
-`trusted` only affects SSR template escaping. It does not make scripts delivered
-through `render` execute. Use controller module imports for browser-side setup.
+Inline `<script>` content is rejected by the template renderer. Scripts delivered
+through `render` remain inert; use controller module imports for browser-side
+setup.

@@ -113,9 +113,9 @@ afterAll(async () => {
   }
 }, 30000)
 
-// ─── Controller island runtime: real browser ──────────────────────────────────
+// ─── Controller runtime: real browser ─────────────────────────────────────────
 
-describe('controlIsland: real browser', () => {
+describe('useController: real browser', () => {
   test('display:contents computed style', async () => {
     const output = await cli(
       'eval',
@@ -126,9 +126,21 @@ describe('controlIsland: real browser', () => {
   })
 
   test('registers the custom element', async () => {
-    const output = await cli('eval', "() => !!customElements.get('test-island')")
+    const output = await cli(
+      'eval',
+      "() => { const ctor = customElements.get('test-island'); const el = document.querySelector('test-island'); return !!ctor && el instanceof ctor; }",
+    )
     const result = parseResult(output)
     expect(result).toContain('true')
+  })
+
+  test('registers custom elements from render registry', async () => {
+    const output = await cli(
+      'eval',
+      "() => document.getElementById('registered-child')?.customElementRegistry === null",
+    )
+    const result = parseResult(output)
+    expect(result).toContain('false')
   })
 
   test('custom element exists in DOM', async () => {
@@ -237,6 +249,49 @@ describe('controller: declarative shadow DOM', () => {
     const result = parseResult(output)
     expect(result).toContain('shadow content')
   })
+})
+
+// ─── Document stylesheets ────────────────────────────────────────────────────
+
+describe('controller: document stylesheets', () => {
+  test('adopts render stylesheets once per document', async () => {
+    await gotoTest('/test/styles-test')
+
+    const output = await cli(
+      'eval',
+      `() => {
+        const target = document.getElementById('dynamic-style-target')
+        const secondary = document.getElementById('dynamic-style-secondary')
+        const rules = Array.from(document.adoptedStyleSheets)
+          .map((sheet) => Array.from(sheet.cssRules).map((rule) => rule.cssText).join(''))
+          .join('|')
+        return [
+          document.adoptedStyleSheets.length,
+          target ? getComputedStyle(target).color : 'missing',
+          secondary ? getComputedStyle(secondary).backgroundColor : 'missing',
+          rules,
+        ].join('|')
+      }`,
+    )
+    const result = parseResult(output)
+    expect(result).toContain('2|rgb(1, 2, 3)|rgb(4, 5, 6)')
+    expect(result).toContain('.dynamic-style-target')
+    expect(result).toContain('.dynamic-style-secondary')
+  }, 30000)
+
+  test('reports stylesheet adoption errors and continues with valid stylesheets', async () => {
+    const before = getFixture().errors.length
+    await gotoTest('/test/style-error-test')
+
+    const error = await waitFor(() => findError({ after: before, source: 'style-error-test' }))
+    expect(String(error.message.detail)).toContain('fixture stylesheet rejection')
+
+    const output = await cli(
+      'eval',
+      "() => { const target = document.getElementById('style-error-target'); return target ? getComputedStyle(target).color : 'missing'; }",
+    )
+    expect(parseResult(output)).toContain('rgb(7, 8, 9)')
+  }, 30000)
 })
 
 // ─── Attrs handler ────────────────────────────────────────────────────────────

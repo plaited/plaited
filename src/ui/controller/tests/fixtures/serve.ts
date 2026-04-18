@@ -6,29 +6,14 @@
  */
 import { join } from 'node:path'
 import type { ServerWebSocket } from 'bun'
+import { CONNECT_PLAITED_ROUTE } from '../../../render/template.constants.ts'
+import { useController } from '../../use-controller.ts'
 
 const FIXTURES_DIR = import.meta.dir
 const DIST_DIR = join(FIXTURES_DIR, 'dist')
+const controllerRoutes = await useController()
 
-// Build controller fixture entry files for browser consumption.
-const buildResult = await Bun.build({
-  entrypoints: [
-    join(FIXTURES_DIR, 'control-island.entry.ts'),
-    join(FIXTURES_DIR, 'swap-fixture.entry.ts'),
-    join(FIXTURES_DIR, 'module-fixture.entry.ts'),
-    join(FIXTURES_DIR, 'test-elements.entry.ts'),
-  ],
-  outdir: DIST_DIR,
-  target: 'browser',
-  minify: false,
-})
-
-if (!buildResult.success) {
-  for (const log of buildResult.logs) {
-    console.error(log)
-  }
-  throw new Error('Build failed')
-}
+const connectScript = (tags: string[]) => `${CONNECT_PLAITED_ROUTE}?registry=${encodeURIComponent(tags.join(','))}`
 
 // Build the imported controller module separately, served from /modules/.
 const moduleResult = await Bun.build({
@@ -59,7 +44,7 @@ const HTML_CONTROL_ISLAND = `<!DOCTYPE html>
   <test-island p-topic="test-island">
     <div p-target="main"><p>initial content</p></div>
   </test-island>
-  <script type="module" src="/dist/control-island.entry.js"></script>
+  <script type="module" src="${connectScript(['test-island'])}"></script>
 </body>
 </html>`
 
@@ -73,7 +58,7 @@ const HTML_SWAP_FIXTURE = `<!DOCTYPE html>
   <swap-fixture p-topic="swap-fixture">
     <div p-target="main"><p>initial swap content</p></div>
   </swap-fixture>
-  <script type="module" src="/dist/swap-fixture.entry.js"></script>
+  <script type="module" src="${connectScript(['swap-fixture'])}"></script>
 </body>
 </html>`
 
@@ -87,7 +72,7 @@ const HTML_MODULE_FIXTURE = `<!DOCTYPE html>
   <module-fixture p-topic="module-fixture">
     <div p-target="main"><p>initial module content</p></div>
   </module-fixture>
-  <script type="module" src="/dist/module-fixture.entry.js"></script>
+  <script type="module" src="${connectScript(['module-fixture'])}"></script>
 </body>
 </html>`
 
@@ -107,6 +92,12 @@ const TEST_PAGE_CONTENT: Record<string, string> = {
   'retry-test': `
     <div p-target="main"><p>connecting</p></div>
   `,
+  'styles-test': `
+    <div p-target="main"><p>waiting for styles</p></div>
+  `,
+  'style-error-test': `
+    <div p-target="main"><p>waiting for style error</p></div>
+  `,
   'bad-import-test': `
     <div p-target="main"><p>waiting for bad import</p></div>
   `,
@@ -117,6 +108,18 @@ const TEST_PAGE_CONTENT: Record<string, string> = {
 
 const generateTestPage = (tag: string) => {
   const content = TEST_PAGE_CONTENT[tag] ?? '<p>test content</p>'
+  const styleErrorPatch =
+    tag === 'style-error-test'
+      ? `<script>
+  const originalReplace = CSSStyleSheet.prototype.replace
+  CSSStyleSheet.prototype.replace = function(styles) {
+    if (styles.includes('fixture-invalid-stylesheet')) {
+      return Promise.reject(new Error('fixture stylesheet rejection'))
+    }
+    return originalReplace.call(this, styles)
+  }
+  </script>`
+      : ''
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -127,7 +130,8 @@ const generateTestPage = (tag: string) => {
   <${tag} p-topic="${tag}">
     ${content}
   </${tag}>
-  <script type="module" src="/dist/test-elements.entry.js"></script>
+  ${styleErrorPatch}
+  <script type="module" src="${connectScript([tag])}"></script>
 </body>
 </html>`
 }
@@ -138,7 +142,9 @@ const RENDER_MESSAGE = JSON.stringify({
   type: 'render',
   detail: {
     target: 'main',
-    html: '<div id="ws-rendered">Hello from WebSocket</div>',
+    html: '<div id="ws-rendered">Hello from WebSocket</div><registered-child id="registered-child"></registered-child>',
+    stylesheets: [],
+    registry: ['registered-child'],
   },
 })
 
@@ -147,7 +153,9 @@ const DSD_RENDER_MESSAGE = JSON.stringify({
   detail: {
     target: 'main',
     html: '<div id="dsd-host"><template shadowrootmode="open"><style>:host { display: block; }</style><p>shadow content</p></template></div>',
+    stylesheets: [],
     swap: 'innerHTML',
+    registry: [],
   },
 })
 
@@ -156,7 +164,9 @@ const MODULE_RENDER_MESSAGE = JSON.stringify({
   detail: {
     target: 'main',
     html: '<button id="module-p-trigger-btn" data-extra="p-trigger-attr" p-trigger="click:test_click">P-trigger Action</button><button id="module-enhanced-btn" data-extra="module-listener">Module Listener</button><div id="module-initial">Module fixture loaded</div>',
+    stylesheets: [],
     swap: 'innerHTML',
+    registry: [],
   },
 })
 
@@ -167,35 +177,65 @@ const sendSwapTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
   ws.send(
     JSON.stringify({
       type: 'render',
-      detail: { target: 'main', html: '<p id="inner-result">inner replaced</p>', swap: 'innerHTML' },
+      detail: {
+        target: 'main',
+        html: '<p id="inner-result">inner replaced</p>',
+        stylesheets: [],
+        swap: 'innerHTML',
+        registry: [],
+      },
     }),
   )
   // Step 2: afterbegin — prepend inside 'main'
   ws.send(
     JSON.stringify({
       type: 'render',
-      detail: { target: 'main', html: '<span id="afterbegin-result">first</span>', swap: 'afterbegin' },
+      detail: {
+        target: 'main',
+        html: '<span id="afterbegin-result">first</span>',
+        stylesheets: [],
+        swap: 'afterbegin',
+        registry: [],
+      },
     }),
   )
   // Step 3: beforeend — append inside 'main'
   ws.send(
     JSON.stringify({
       type: 'render',
-      detail: { target: 'main', html: '<span id="beforeend-result">last</span>', swap: 'beforeend' },
+      detail: {
+        target: 'main',
+        html: '<span id="beforeend-result">last</span>',
+        stylesheets: [],
+        swap: 'beforeend',
+        registry: [],
+      },
     }),
   )
   // Step 4: afterend — insert after 'main' element
   ws.send(
     JSON.stringify({
       type: 'render',
-      detail: { target: 'main', html: '<span id="afterend-result">after main</span>', swap: 'afterend' },
+      detail: {
+        target: 'main',
+        html: '<span id="afterend-result">after main</span>',
+        stylesheets: [],
+        swap: 'afterend',
+        registry: [],
+      },
     }),
   )
   // Step 5: beforebegin — insert before 'main' element
   ws.send(
     JSON.stringify({
       type: 'render',
-      detail: { target: 'main', html: '<span id="beforebegin-result">before main</span>', swap: 'beforebegin' },
+      detail: {
+        target: 'main',
+        html: '<span id="beforebegin-result">before main</span>',
+        stylesheets: [],
+        swap: 'beforebegin',
+        registry: [],
+      },
     }),
   )
   // Step 6: outerHTML — replace 'outer-target' element itself
@@ -205,7 +245,9 @@ const sendSwapTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
       detail: {
         target: 'outer-target',
         html: '<div id="outer-result" p-target="outer-target">outer replaced</div>',
+        stylesheets: [],
         swap: 'outerHTML',
+        registry: [],
       },
     }),
   )
@@ -249,7 +291,53 @@ const sendActionTestInitialRender = (ws: ServerWebSocket<{ source: string }>) =>
       detail: {
         target: 'main',
         html: '<button id="test-btn" p-trigger="click:test_click">Click me</button>',
+        stylesheets: [],
         swap: 'innerHTML',
+        registry: [],
+      },
+    }),
+  )
+}
+
+const sendStylesTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
+  const primary = '.dynamic-style-target{color:rgb(1, 2, 3);}'
+  const secondary = '.dynamic-style-secondary{background-color:rgb(4, 5, 6);}'
+  ws.send(
+    JSON.stringify({
+      type: 'render',
+      detail: {
+        target: 'main',
+        html: '<div id="dynamic-style-target" class="dynamic-style-target">styled</div><div id="dynamic-style-secondary" class="dynamic-style-secondary">styled secondary</div>',
+        stylesheets: [primary, primary, secondary],
+        swap: 'innerHTML',
+        registry: [],
+      },
+    }),
+  )
+  ws.send(
+    JSON.stringify({
+      type: 'render',
+      detail: {
+        target: 'main',
+        html: '<div id="dynamic-style-target" class="dynamic-style-target">styled again</div><div id="dynamic-style-secondary" class="dynamic-style-secondary">styled secondary again</div>',
+        stylesheets: [primary],
+        swap: 'innerHTML',
+        registry: [],
+      },
+    }),
+  )
+}
+
+const sendStyleErrorTestMessage = (ws: ServerWebSocket<{ source: string }>) => {
+  ws.send(
+    JSON.stringify({
+      type: 'render',
+      detail: {
+        target: 'main',
+        html: '<div id="style-error-target" class="style-error-target">style error target</div>',
+        stylesheets: ['.fixture-invalid-stylesheet{}', '.style-error-target{color:rgb(7, 8, 9);}'],
+        swap: 'innerHTML',
+        registry: [],
       },
     }),
   )
@@ -305,6 +393,7 @@ export const startServer = (port = 0): FixtureServer => {
       '/module-fixture.html': new Response(HTML_MODULE_FIXTURE, {
         headers: { 'Content-Type': 'text/html' },
       }),
+      [CONNECT_PLAITED_ROUTE]: () => controllerRoutes[CONNECT_PLAITED_ROUTE]!.clone(),
       '/dist/*': async (req) => {
         const path = new URL(req.url).pathname
         const file = Bun.file(join(FIXTURES_DIR, path.replace('/dist/', 'dist/')))
@@ -374,13 +463,21 @@ export const startServer = (port = 0): FixtureServer => {
                   detail: {
                     target: 'main',
                     html: '<div id="retry-success">Reconnected!</div>',
+                    stylesheets: [],
                     swap: 'innerHTML',
+                    registry: [],
                   },
                 }),
               )
             }
             break
           }
+          case 'styles-test':
+            sendStylesTestMessages(ws)
+            break
+          case 'style-error-test':
+            sendStyleErrorTestMessage(ws)
+            break
           default:
             ws.send(RENDER_MESSAGE)
         }
@@ -401,7 +498,9 @@ export const startServer = (port = 0): FixtureServer => {
                 detail: {
                   target: 'main',
                   html: '<div id="action-confirmed">Action received</div>',
+                  stylesheets: [],
                   swap: 'innerHTML',
+                  registry: [],
                 },
               }),
             )

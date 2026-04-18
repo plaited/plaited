@@ -96,14 +96,36 @@ test('createTemplate: Should throw with attribute starting with on', () => {
   }).toThrow()
 })
 
-test('createTemplate: should throw on script tag', () => {
+test('createTemplate: rejects script tags without site-root JavaScript src', () => {
   expect(() => {
     h('script', { type: 'module', src: 'main.js' })
   }).toThrow()
+  expect(() => {
+    h('script', { type: 'module', src: '//example.com/main.js' })
+  }).toThrow()
+  expect(() => {
+    h('script', { type: 'module', src: '/dist/main.ts' })
+  }).toThrow()
 })
 
-test('createTemplate: Should not throw on script tag with trusted attribute', () => {
-  expect(render(h('script', { type: 'module', src: 'main.js', trusted: true }))).toMatchSnapshot()
+test('createTemplate: renders external bootstrap script tags', () => {
+  expect(render(h('script', { type: 'module', src: '/dist/main.js?v=1#entry' }))).toMatchSnapshot()
+})
+
+test('createTemplate: tracks custom element tags in registry', () => {
+  expect(h('sample-element', { children: 'sample' }).registry).toEqual(['sample-element'])
+  expect(h('Sample-Element', { children: 'sample' }).registry).toEqual(['sample-element'])
+})
+
+test('createTemplate: rejects invalid custom element tags', () => {
+  expect(() => h('font-face', { children: 'sample' })).toThrow()
+  expect(() => h('sample-&element', { children: 'sample' })).toThrow()
+})
+
+test('createTemplate: rejects inline script content', () => {
+  expect(() => {
+    h('script', { type: 'module', src: '/dist/main.js', children: 'console.log("nope")' })
+  }).toThrow()
 })
 
 test('createTemplate: Escapes children', () => {
@@ -119,21 +141,6 @@ socket.addEventListener('message', reload);
 console.log('[plaited] listening for file changes');
 </script>`
   expect(render(h('div', { children: scriptContent }))).toMatchSnapshot()
-})
-
-test('createTemplate: Does not escape children when trusted', () => {
-  const scriptContent = `<script type="text/javascript">
-const hostRegex = /^https?://([^/]+)/.*$/i;
-const host = document.URL.replace(hostRegex, '$1');
-const socket = new WebSocket(/);
-const reload = () =>{
-  location.reload();
-  console.log('...reloading');
-};
-socket.addEventListener('message', reload);
-console.log('[plaited] listening for file changes');
-</script>`
-  expect(render(h('div', { trusted: true, children: scriptContent }))).toMatchSnapshot()
 })
 
 const Template: FunctionTemplate = (attrs) => h('template', attrs)

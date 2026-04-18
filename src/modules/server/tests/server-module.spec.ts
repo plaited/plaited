@@ -410,6 +410,8 @@ describe('server module extension', () => {
       detail: {
         target: 'main',
         html: '<p>buffered</p>',
+        stylesheets: [],
+        registry: [],
       },
     })
     harness.trigger({

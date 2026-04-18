@@ -1,12 +1,14 @@
 import { describe, expect, test } from 'bun:test'
 
 import { AGENT_TO_CONTROLLER_EVENTS } from '../../../bridge-events.ts'
+import { SITE_ROOT_JAVASCRIPT_PATH_PATTERN } from '../../render/template.constants.ts'
 import { CONTROLLER_TO_AGENT_EVENTS, SWAP_MODES } from '../controller.constants.ts'
 import {
   AttrsMessageSchema,
   ClientMessageSchema,
   ControllerErrorMessageSchema,
   ControllerModuleDefaultSchema,
+  CustomElementTagSchema,
   ImportModuleSchema,
   RenderMessageSchema,
   SwapModeSchema,
@@ -25,11 +27,30 @@ describe('SwapModeSchema', () => {
   })
 })
 
+describe('CustomElementTagSchema', () => {
+  test('accepts valid normalized custom element tags', () => {
+    expect(CustomElementTagSchema.parse('sample-element')).toBe('sample-element')
+    expect(CustomElementTagSchema.parse('sample.element-1')).toBe('sample.element-1')
+  })
+
+  test('rejects invalid custom element tags', () => {
+    expect(() => CustomElementTagSchema.parse('sample')).toThrow()
+    expect(() => CustomElementTagSchema.parse('Sample-element')).toThrow()
+    expect(() => CustomElementTagSchema.parse('font-face')).toThrow()
+  })
+})
+
 describe('RenderMessageSchema', () => {
   test('accepts valid render message with swap', () => {
     const msg = {
       type: AGENT_TO_CONTROLLER_EVENTS.render,
-      detail: { target: 'main', html: '<div>hello</div>', swap: SWAP_MODES.innerHTML },
+      detail: {
+        target: 'main',
+        html: '<div>hello</div>',
+        stylesheets: ['.sample{display:block;}'],
+        swap: SWAP_MODES.innerHTML,
+        registry: ['sample-element' as const],
+      },
     }
     expect(RenderMessageSchema.parse(msg)).toEqual(msg)
   })
@@ -37,7 +58,7 @@ describe('RenderMessageSchema', () => {
   test('accepts render message without swap (optional)', () => {
     const msg = {
       type: AGENT_TO_CONTROLLER_EVENTS.render,
-      detail: { target: 'main', html: '<p>content</p>' },
+      detail: { target: 'main', html: '<p>content</p>', stylesheets: [], registry: [] },
     }
     expect(RenderMessageSchema.parse(msg)).toEqual(msg)
   })
@@ -46,7 +67,7 @@ describe('RenderMessageSchema', () => {
     expect(() =>
       RenderMessageSchema.parse({
         type: 'wrong',
-        detail: { target: 'main', html: '<div/>' },
+        detail: { target: 'main', html: '<div/>', stylesheets: [], registry: [] },
       }),
     ).toThrow()
   })
@@ -55,7 +76,7 @@ describe('RenderMessageSchema', () => {
     expect(() =>
       RenderMessageSchema.parse({
         type: AGENT_TO_CONTROLLER_EVENTS.render,
-        detail: { html: '<div/>' },
+        detail: { html: '<div/>', stylesheets: [], registry: [] },
       }),
     ).toThrow()
   })
@@ -64,7 +85,7 @@ describe('RenderMessageSchema', () => {
     expect(() =>
       RenderMessageSchema.parse({
         type: AGENT_TO_CONTROLLER_EVENTS.render,
-        detail: { target: 'main' },
+        detail: { target: 'main', stylesheets: [], registry: [] },
       }),
     ).toThrow()
   })
@@ -73,7 +94,43 @@ describe('RenderMessageSchema', () => {
     expect(() =>
       RenderMessageSchema.parse({
         type: AGENT_TO_CONTROLLER_EVENTS.render,
-        detail: { target: 'main', html: '<div/>', swap: 'replace' },
+        detail: { target: 'main', html: '<div/>', stylesheets: [], swap: 'replace', registry: [] },
+      }),
+    ).toThrow()
+  })
+
+  test('rejects render messages missing stylesheets', () => {
+    expect(() =>
+      RenderMessageSchema.parse({
+        type: AGENT_TO_CONTROLLER_EVENTS.render,
+        detail: { target: 'main', html: '<div/>', registry: [] },
+      }),
+    ).toThrow()
+  })
+
+  test('rejects render messages with invalid stylesheets', () => {
+    expect(() =>
+      RenderMessageSchema.parse({
+        type: AGENT_TO_CONTROLLER_EVENTS.render,
+        detail: { target: 'main', html: '<div/>', stylesheets: [42], registry: [] },
+      }),
+    ).toThrow()
+  })
+
+  test('rejects render messages missing registry', () => {
+    expect(() =>
+      RenderMessageSchema.parse({
+        type: AGENT_TO_CONTROLLER_EVENTS.render,
+        detail: { target: 'main', html: '<div/>', stylesheets: [] },
+      }),
+    ).toThrow()
+  })
+
+  test('rejects render messages with invalid registry tags', () => {
+    expect(() =>
+      RenderMessageSchema.parse({
+        type: AGENT_TO_CONTROLLER_EVENTS.render,
+        detail: { target: 'main', html: '<div/>', stylesheets: [], registry: ['font-face'] },
       }),
     ).toThrow()
   })
@@ -132,6 +189,13 @@ describe('AttrsMessageSchema', () => {
 })
 
 describe('ImportModuleSchema', () => {
+  test('exports the shared site-root JavaScript path pattern', () => {
+    expect(SITE_ROOT_JAVASCRIPT_PATH_PATTERN.test('/modules/widget.js')).toBe(true)
+    expect(SITE_ROOT_JAVASCRIPT_PATH_PATTERN.test('/modules/widget.js?v=123#entry')).toBe(true)
+    expect(SITE_ROOT_JAVASCRIPT_PATH_PATTERN.test('/modules/widget?file=.js')).toBe(false)
+    expect(SITE_ROOT_JAVASCRIPT_PATH_PATTERN.test('/modules/widget#file=.js')).toBe(false)
+  })
+
   test('accepts import messages with site-root JavaScript path detail', () => {
     const message = {
       type: AGENT_TO_CONTROLLER_EVENTS.import,
@@ -155,6 +219,8 @@ describe('ImportModuleSchema', () => {
     expect(() => ImportModuleSchema.shape.detail.parse('https://example.com/widget.js')).toThrow()
     expect(() => ImportModuleSchema.shape.detail.parse('/modules/widget.ts')).toThrow()
     expect(() => ImportModuleSchema.shape.detail.parse('/modules/widget.js.map')).toThrow()
+    expect(() => ImportModuleSchema.shape.detail.parse('/modules/widget?file=.js')).toThrow()
+    expect(() => ImportModuleSchema.shape.detail.parse('/modules/widget#file=.js')).toThrow()
     expect(() => ImportModuleSchema.shape.detail.parse('/modules/widget.js extra')).toThrow()
     expect(() => ImportModuleSchema.shape.detail.parse('/modules\\widget.js')).toThrow()
     expect(() =>

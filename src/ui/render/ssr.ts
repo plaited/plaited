@@ -16,41 +16,38 @@
  * - Shadow DOM polyfills not included
  */
 import { htmlEscape, isTypeOf } from '../../utils.ts'
-import { TEMPLATE_OBJECT_IDENTIFIER, VALID_PRIMITIVE_CHILDREN } from './template.constants.ts'
-import type { TemplateObject } from './template.types.ts'
+import { CONNECT_PLAITED_ROUTE, TEMPLATE_OBJECT_IDENTIFIER, VALID_PRIMITIVE_CHILDREN } from './template.constants.ts'
+import { createTemplate } from './template.ts'
+import type { CustomElementTag, TemplateObject } from './template.types.ts'
 
-/**
- * @internal
- * Assembles HTML from templates, deduplicating styles against a shared Set.
- * Styles already present in `sent` are skipped — only fresh styles are emitted.
- */
-const renderTemplates = (sent: Set<string>, templates: TemplateObject[]) => {
+export const ssr = (templates: TemplateObject[]) => {
   const arr = []
-  const fresh: string[] = []
+  const adoptedStyleSheets = new Set<string>()
   const length = templates.length
-
+  const registry: CustomElementTag[] = []
   for (let i = 0; i < length; i++) {
     const child = templates[i]
     if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === TEMPLATE_OBJECT_IDENTIFIER) {
       arr.push(...child.html)
       for (const sheet of child.stylesheets) {
-        if (sent.has(sheet)) continue
-        fresh.push(sheet)
-        sent.add(sheet)
+        if (adoptedStyleSheets.has(sheet)) continue
+        adoptedStyleSheets.add(sheet)
       }
+      registry.push(...child.registry)
       continue
     }
     if (!VALID_PRIMITIVE_CHILDREN.has(typeof child)) continue
     const safeChild = htmlEscape(`${child}`)
     arr.push(safeChild)
   }
-
-  const style = fresh.length
-    ? `<style>${fresh
+  const src = `${CONNECT_PLAITED_ROUTE}?registry=${encodeURIComponent([...new Set(registry)].join(','))}`
+  const connect = createTemplate('script', { src, type: 'module', async: true }).html.join('')
+  const pre = adoptedStyleSheets.size
+    ? `<style>${[...adoptedStyleSheets]
         .join('')
         .replaceAll(/:host\{/g, ':root{')
-        .replaceAll(/:host\(([^)]+)\)/g, ':root$1')}</style>`
-    : ''
+        .replaceAll(/:host\(([^)]+)\)/g, ':root$1')}</style>\n${connect}`
+    : connect
   const str = arr.join('')
 
   const headIndex = str.indexOf('</head>')
@@ -59,44 +56,5 @@ const renderTemplates = (sent: Set<string>, templates: TemplateObject[]) => {
   const bodyIndex = bodyMatch ? bodyMatch.index + bodyMatch[0].length : 0
   const index = headIndex === -1 ? bodyIndex : headIndex
 
-  return str.slice(0, index) + style + str.slice(index)
-}
-
-/**
- * Creates a stateful renderer with per-connection style deduplication.
- *
- * @returns Object with `render` and `clearStyles` methods
- *
- * @remarks
- * Use one `createSSR` instance per WebSocket connection. The first
- * `render` call emits all styles; subsequent calls only emit styles not
- * yet sent on this connection. Call `clearStyles` when the connection
- * closes or when you need to re-send all styles.
- *
- * Style injection:
- * - Collects all stylesheets across renders
- * - Deduplicates via persistent Set
- * - Replaces `:host` with `:root` for SSR compatibility
- * - Injects before `</head>` or after `<body>`
- *
- * Security:
- * - Auto-escapes all content
- * - Prevents XSS attacks
- * - Trusted content requires explicit flag
- *
- * @see {@link h} for creating templates
- * @see {@link css} for styling
- *
- * @public
- */
-export const createSSR = () => {
-  const sent = new Set<string>()
-  return {
-    render(...templates: TemplateObject[]) {
-      return renderTemplates(sent, templates)
-    },
-    clearStyles() {
-      sent.clear()
-    },
-  }
+  return str.slice(0, index) + pre + str.slice(index)
 }

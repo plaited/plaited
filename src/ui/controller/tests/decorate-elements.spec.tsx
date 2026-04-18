@@ -1,17 +1,9 @@
 import { expect, test } from 'bun:test'
 import beautify from 'beautify'
-import {
-  createSSR,
-  createStyles,
-  DECORATOR_TEMPLATE_IDENTIFIER,
-  decorateElements,
-  joinStyles,
-  type TemplateObject,
-} from 'plaited/ui'
+import { createStyles, decorateElements, joinStyles, ssr, type TemplateObject } from 'plaited/ui'
 
 const render = (template: TemplateObject) => {
-  const { render: ssrRender } = createSSR()
-  return beautify(ssrRender(template), { format: 'html' })
+  return beautify(ssr([template]).replace(/<script\b[^>]*><\/script>/g, ''), { format: 'html' })
 }
 
 const styles = createStyles({
@@ -44,8 +36,8 @@ const NestedCustomElement = decorateElements({
   ),
 })
 
-test('decorateElements: returns a DecoratorTemplate with $ identifier', () => {
-  expect(NestedCustomElement.$).toBe(DECORATOR_TEMPLATE_IDENTIFIER)
+test('decorateElements: tracks host custom element tags in registry', () => {
+  expect((<NestedCustomElement />).registry).toEqual(['nested-element'])
 })
 
 test('decorateElements: hoists styles from shadow DOM', () => {

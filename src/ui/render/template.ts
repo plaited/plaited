@@ -20,8 +20,11 @@
 import { htmlEscape, isTypeOf, kebabCase, trueTypeOf } from '../../utils.ts'
 import {
   BOOLEAN_ATTRS,
+  CUSTOM_ELEMENT_TAG_PATTERN,
   P_TRIGGER,
   PRIMITIVES,
+  RESERVED_CUSTOM_ELEMENT_TAGS,
+  SITE_ROOT_JAVASCRIPT_PATH_PATTERN,
   TEMPLATE_OBJECT_IDENTIFIER,
   VALID_PRIMITIVE_CHILDREN,
   VOID_TAGS,
@@ -29,7 +32,7 @@ import {
 import type {
   Attrs,
   CustomElementTag,
-  DetailedHTMLAttributes,
+  DetailedCustomElementHTMLAttributes,
   ElementAttributeList,
   FunctionTemplate,
   TemplateObject,
@@ -37,10 +40,10 @@ import type {
 
 /**
  * @internal
- * Error thrown when a script tag is used without the 'trusted' property.
+ * Error thrown when a script tag violates the external bootstrap script policy.
  */
-class UntrustedScriptError extends Error implements Error {
-  override name = 'untrusted_script'
+class ScriptPolicyError extends Error implements Error {
+  override name = 'script_policy'
 }
 
 /**
@@ -60,6 +63,14 @@ class InvalidAttributeTypeError extends Error implements Error {
   override name = 'invalid_attribute_type'
 }
 
+/**
+ * @internal
+ * Error thrown when a hyphenated tag is not a valid custom element tag.
+ */
+class InvalidCustomElementTagError extends Error implements Error {
+  override name = 'invalid_custom_element_tag'
+}
+
 /** @internal Valid tag input for JSX rendering: built-in tag name, custom element tag, or `FunctionTemplate`. */
 type Tag = string | CustomElementTag | FunctionTemplate
 
@@ -69,11 +80,16 @@ type InferAttrs<T extends Tag> = T extends keyof ElementAttributeList
   : T extends FunctionTemplate
     ? Parameters<T>[0]
     : T extends CustomElementTag
-      ? DetailedHTMLAttributes
+      ? DetailedCustomElementHTMLAttributes
       : Attrs
 
 /** @internal Type signature for `createTemplate`, preserving type safety between the tag and its attributes. */
 type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateObject
+
+/** @internal Narrows valid lowercase custom element tag names. */
+export const isCustomElementTag = (tag: string): tag is CustomElementTag => {
+  return CUSTOM_ELEMENT_TAG_PATTERN.test(tag) && !RESERVED_CUSTOM_ELEMENT_TAGS.has(tag)
+}
 
 /**
  * @internal
@@ -84,16 +100,16 @@ type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateO
  * @param attrs - Element attributes including children
  * @returns TemplateObject with HTML, stylesheets, registry, and identifier
  *
- * @throws {UntrustedScriptError} When `<script>` tag used without `trusted={true}`
+ * @throws {ScriptPolicyError} When `<script>` does not use a site-root JavaScript `src`
  * @throws {EventHandlerAttributeError} When `on*` attributes are used (use p-trigger instead)
  * @throws {InvalidAttributeTypeError} When non-primitive attribute values provided
+ * @throws {InvalidCustomElementTagError} When a hyphenated tag is not a valid custom element tag
  *
  * @remarks
  * Security features:
  * - Automatic HTML escaping
  * - No inline event handlers
- * - Script tag protection
- * - Trusted content opt-in
+ * - External site-root script bootstrap only
  *
  * @see {@link h} for JSX factory alias
  * @see {@link Fragment} for grouping elements
@@ -101,25 +117,33 @@ type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateO
 export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const {
     children: _children,
-    trusted,
     stylesheets = [],
     style,
-    'p-trigger': bpTrigger,
+    'p-trigger': pTrigger,
+    'p-topic': _pTopic,
     class: cls,
     classNames,
     for: htmlFor,
     ...attributes
   } = attrs
 
-  const registry: string[] = []
   if (isTypeOf<FunctionTemplate>(_tag, 'function')) {
     return _tag(attrs)
   }
-  const tag = htmlEscape(_tag.toLowerCase().trim())
+  const tag = htmlEscape(_tag.trim().toLowerCase())
+  if (tag.includes('-') && !isCustomElementTag(tag)) {
+    throw new InvalidCustomElementTagError(`Invalid custom element tag: ${tag}`)
+  }
+  const registry: CustomElementTag[] = isCustomElementTag(tag) ? [tag] : []
 
-  // Script tags require an explicit trust boundary.
-  if (tag === 'script' && !trusted) {
-    throw new UntrustedScriptError("Script tag requires 'trusted' property to be set")
+  if (tag === 'script') {
+    if (_children !== undefined) {
+      throw new ScriptPolicyError('Script tags cannot contain inline content')
+    }
+    const src = attributes.src
+    if (typeof src !== 'string' || !SITE_ROOT_JAVASCRIPT_PATH_PATTERN.test(src)) {
+      throw new ScriptPolicyError('Script tags require a site-root JavaScript src')
+    }
   }
   const start = [`<${tag} `]
   // Handle JavaScript-reserved words commonly used in HTML.
@@ -127,8 +151,8 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const classes = new Set(classNames)
   cls && classes.add(htmlEscape(cls))
   if (classes.size) start.push(`class="${[...classes].join(' ')}" `)
-  if (bpTrigger) {
-    const value = Object.entries(bpTrigger)
+  if (pTrigger) {
+    const value = Object.entries(pTrigger)
       .map<string>(([ev, req]) => `${ev}:${req}`)
       .join(' ')
     start.push(`${P_TRIGGER}="${htmlEscape(value)}" `)
@@ -154,7 +178,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     if (!PRIMITIVES.has(trueTypeOf(value))) {
       throw new InvalidAttributeTypeError(`Attribute '${key}' must be a primitive type (string, number, boolean)`)
     }
-    start.push(`${htmlEscape(key)}="${trusted ? value : htmlEscape(value)}" `)
+    start.push(`${htmlEscape(key)}="${htmlEscape(value)}" `)
   }
   if (VOID_TAGS.has(tag)) {
     start.push('/>')
@@ -178,8 +202,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       continue
     }
     if (!VALID_PRIMITIVE_CHILDREN.has(trueTypeOf(child))) continue
-    const str = trusted ? `${child}` : htmlEscape(`${child}`)
-    end.push(str)
+    end.push(htmlEscape(`${child}`))
   }
   end.push(`</${tag}>`)
   return {
@@ -219,7 +242,7 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
   const children = Array.isArray(_children) ? _children.flat() : [_children]
   const html: string[] = []
   const stylesheets: string[] = []
-  const registry: string[] = []
+  const registry: CustomElementTag[] = []
   const length = children.length
   for (let i = 0; i < length; i++) {
     const child = children[i]

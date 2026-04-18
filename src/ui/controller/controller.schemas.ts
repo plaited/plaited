@@ -3,6 +3,12 @@ import * as z from 'zod'
 import { BPEventSchema } from '../../behavioral.ts'
 import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../bridge-events.ts'
 import { isTypeOf } from '../../utils.ts'
+import {
+  CUSTOM_ELEMENT_TAG_PATTERN,
+  RESERVED_CUSTOM_ELEMENT_TAGS,
+  SITE_ROOT_JAVASCRIPT_PATH_PATTERN,
+} from '../render/template.constants.ts'
+import type { CustomElementTag } from '../render/template.types.ts'
 import { SWAP_MODES } from './controller.constants.ts'
 import type { ControllerModuleContext, ControllerModuleDefault } from './controller.types.ts'
 // ─── Server → Client Message Schemas ────────────────────────────────────────
@@ -29,6 +35,19 @@ export const SwapModeSchema = z.enum([
 export type SwapMode = z.infer<typeof SwapModeSchema>
 
 /**
+ * Schema for normalized custom element tag names.
+ *
+ * @public
+ */
+export const CustomElementTagSchema = z.custom<CustomElementTag>(
+  (value) =>
+    isTypeOf<string>(value, 'string') &&
+    CUSTOM_ELEMENT_TAG_PATTERN.test(value) &&
+    !RESERVED_CUSTOM_ELEMENT_TAGS.has(value),
+  'Expected a valid custom element tag',
+)
+
+/**
  * Schema for render messages that insert or replace DOM content.
  *
  * @public
@@ -38,7 +57,9 @@ export const RenderMessageSchema = z.object({
   detail: z.object({
     target: z.string(),
     html: z.string(),
+    stylesheets: z.array(z.string()),
     swap: SwapModeSchema.optional(),
+    registry: z.array(CustomElementTagSchema),
   }),
 })
 
@@ -73,7 +94,7 @@ export type AttrsMessage = z.infer<typeof AttrsMessageSchema>
  */
 export const ImportModuleSchema = z.object({
   type: z.literal(AGENT_TO_CONTROLLER_EVENTS.import),
-  detail: z.string().regex(/^\/(?!\/)[^\s\\]*\.js(?:[?#][^\s\\]*)?$/, 'Expected a site-root absolute JavaScript path'),
+  detail: z.string().regex(SITE_ROOT_JAVASCRIPT_PATH_PATTERN, 'Expected a site-root absolute JavaScript path'),
 })
 
 /** @public */

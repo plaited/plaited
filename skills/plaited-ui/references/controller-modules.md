@@ -21,18 +21,18 @@ Rendered `<script>` tags are inert and are not the code-loading mechanism.
 sequenceDiagram
     participant Agent as Server Agent
     participant WS as WebSocket
-    participant Island as controlIsland
+    participant Controller as useController element
     participant Module as Controller Module
     participant Server as Server Bridge
 
     Agent->>WS: { type: "import", detail: "/modules/widget.js" }
-    WS->>Island: message
-    Island->>Island: ImportModuleSchema.shape.detail.parse(detail)
-    Island->>Module: await import(path)
-    Island->>Island: ControllerModuleDefaultSchema.parse(default)
-    Island->>Module: default({ DelegatedListener, delegates, addDisconnect, trigger })
-    Module-->>Island: setup complete
-    Island->>Server: { type: "ui_event", detail: { type: "import_invoked", detail: path } }
+    WS->>Controller: message
+    Controller->>Controller: ImportModuleSchema.shape.detail.parse(detail)
+    Controller->>Module: await import(path)
+    Controller->>Controller: ControllerModuleDefaultSchema.parse(default)
+    Controller->>Module: default({ DelegatedListener, delegates, addDisconnect, trigger })
+    Module-->>Controller: setup complete
+    Controller->>Server: { type: "ui_event", detail: { type: "import_invoked", detail: path } }
 ```
 
 ## Import Path Contract

@@ -1,21 +1,20 @@
 import { expect, test } from 'bun:test'
 import { h } from 'plaited/jsx-runtime'
-import { createHostStyles, createSSR, createStyles } from 'plaited/ui'
+import { createHostStyles, createStyles, ssr } from 'plaited/ui'
 
-test('createSSR: Replaces :host{ with :root{ for SSR', () => {
+test('ssr: Replaces :host{ with :root{ for SSR', () => {
   const hostStyles = createHostStyles({
     color: 'blue',
     padding: '20px',
   })
 
-  const { render } = createSSR()
-  const rendered = render(<div {...hostStyles}>Host styles test</div>)
+  const rendered = ssr([<div {...hostStyles}>Host styles test</div>])
 
   expect(rendered).not.toContain(':host{')
   expect(rendered).toContain(':root{')
 })
 
-test('createSSR: Replaces :host(<selector>) with :root<selector> for SSR', () => {
+test('ssr: Replaces :host(<selector>) with :root<selector> for SSR', () => {
   const hostStyles = createHostStyles({
     color: {
       $default: 'blue',
@@ -27,8 +26,7 @@ test('createSSR: Replaces :host(<selector>) with :root<selector> for SSR', () =>
     },
   })
 
-  const { render } = createSSR()
-  const rendered = render(<div {...hostStyles}>Host selector styles test</div>)
+  const rendered = ssr([<div {...hostStyles}>Host selector styles test</div>])
 
   expect(rendered).not.toContain(':host(')
   expect(rendered).not.toContain(':host.')
@@ -40,78 +38,66 @@ test('createSSR: Replaces :host(<selector>) with :root<selector> for SSR', () =>
   expect(rendered).toContain(':root:hover')
 })
 
-test('createSSR: deduplicates styles across renders', () => {
+test('ssr: deduplicates repeated styles within a render', () => {
   const stylesA = createStyles({
     box: { color: 'red' },
   })
-  const stylesB = createStyles({
-    card: { color: 'blue' },
-  })
 
-  const { render } = createSSR()
-
-  const first = render(<div {...stylesA.box}>first</div>)
-  expect(first).toContain('<style>')
-
-  // Same styles should not be emitted again
-  const second = render(<div {...stylesA.box}>second</div>)
-  expect(second).not.toContain('<style>')
-
-  // New styles should be emitted
-  const third = render(<div {...stylesB.card}>third</div>)
-  expect(third).toContain('<style>')
+  const rendered = ssr([<div {...stylesA.box}>first</div>, <div {...stylesA.box}>second</div>])
+  expect(rendered).toContain('<style>')
+  expect(rendered.match(/color:red/g)?.length).toBe(1)
 })
 
-test('createSSR: clearStyles resets deduplication', () => {
+test('ssr: injects styles before </head> when present', () => {
   const styles = createStyles({
     box: { color: 'red' },
   })
 
-  const { render, clearStyles } = createSSR()
-
-  const first = render(<div {...styles.box}>first</div>)
-  expect(first).toContain('<style>')
-
-  clearStyles()
-
-  // After clearing, same styles should be emitted again
-  const second = render(<div {...styles.box}>second</div>)
-  expect(second).toContain('<style>')
-})
-
-test('createSSR: injects styles before </head> when present', () => {
-  const styles = createStyles({
-    box: { color: 'red' },
-  })
-
-  const { render } = createSSR()
-  const rendered = render(
+  const rendered = ssr([
     h('html', {
       children: [
         h('head', { children: h('title', { children: 'Test' }) }),
         h('body', { children: h('div', { ...styles.box, children: 'content' }) }),
       ],
     }),
-  )
+  ])
 
   const headClose = rendered.indexOf('</head>')
   const styleTag = rendered.indexOf('<style>')
+  const connectScript = rendered.indexOf('<script')
   expect(styleTag).toBeLessThan(headClose)
+  expect(connectScript).toBeGreaterThan(styleTag)
+  expect(connectScript).toBeLessThan(headClose)
 })
 
-test('createSSR: injects styles after <body> when no </head>', () => {
+test('ssr: injects styles after <body> when no </head>', () => {
   const styles = createStyles({
     box: { color: 'red' },
   })
 
-  const { render } = createSSR()
-  const rendered = render(
+  const rendered = ssr([
     h('body', {
       children: h('div', { ...styles.box, children: 'content' }),
     }),
-  )
+  ])
 
   const bodyOpen = rendered.indexOf('<body>')
   const styleTag = rendered.indexOf('<style>')
+  const connectScript = rendered.indexOf('<script')
   expect(styleTag).toBeGreaterThan(bodyOpen)
+  expect(connectScript).toBeGreaterThan(styleTag)
+})
+
+test('ssr: injects an async module connect script with deduplicated registry tags', () => {
+  const rendered = ssr([
+    h('sample-element', { children: 'first' }),
+    h('sample-element', { children: 'second' }),
+    h('other-element', { children: 'third' }),
+  ])
+
+  expect(rendered).toContain('<script ')
+  expect(rendered).toContain('src="/.plaited/connect.js?registry=sample-element%2Cother-element"')
+  expect(rendered).toContain('type="module"')
+  expect(rendered).toContain('async')
+  expect(rendered).not.toContain(',src=')
 })
