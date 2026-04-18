@@ -117,56 +117,45 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   }
   const tag = htmlEscape(_tag.toLowerCase().trim())
 
-  /** If the tag is script we must explicitly pass trusted */
+  // Script tags require an explicit trust boundary.
   if (tag === 'script' && !trusted) {
     throw new UntrustedScriptError("Script tag requires 'trusted' property to be set")
   }
-  /** Now to create an array to store our node attributes */
   const start = [`<${tag} `]
-  /** handle JS reserved words commonly used in html class & for*/
+  // Handle JavaScript-reserved words commonly used in HTML.
   if (htmlFor) start.push(`for="${htmlEscape(htmlFor)}" `)
   const classes = new Set(classNames)
   cls && classes.add(htmlEscape(cls))
   if (classes.size) start.push(`class="${[...classes].join(' ')}" `)
-  /** if we have bpTrigger attribute wire up formatted correctly*/
   if (bpTrigger) {
     const value = Object.entries(bpTrigger)
       .map<string>(([ev, req]) => `${ev}:${req}`)
       .join(' ')
     start.push(`${P_TRIGGER}="${htmlEscape(value)}" `)
   }
-  /** if we have style add it to element */
   if (style) {
     const value = Object.entries(style)
-      /** convert camelCase style prop into dash-case ones so long as not cssVar */
+      // Convert camelCase style props into dash-case unless they are CSS variables.
       .map<string>(([prop, val]) => `${prop.startsWith('--') ? prop : kebabCase(prop)}:${val};`)
       .join(' ')
     start.push(`style="${htmlEscape(value)}" `)
   }
-  /** next we want to loops through our attributes */
   for (const key in attributes) {
-    /** P1 all events are delegated via the p-trigger attribute so we want
-     * skip on attempts to provide `on` attributes
-     */
+    // Events must be delegated via p-trigger instead of inline handler attributes.
     if (key.startsWith('on')) {
       throw new EventHandlerAttributeError(`Event handler attributes are not allowed: [${key}]`)
     }
-    /** Grab the value from the attribute */
     const value = attributes[key]
-    /** test for and handle boolean attributes */
     if (BOOLEAN_ATTRS.has(key)) {
       value && start.push(`${key} `)
       continue
     }
     if (value == null || value === '') continue
     if (!PRIMITIVES.has(trueTypeOf(value))) {
-      /** P2 typeof attribute is NOT {@type Primitive} then skip and do nothing */
       throw new InvalidAttributeTypeError(`Attribute '${key}' must be a primitive type (string, number, boolean)`)
     }
-    /** handle the rest of the attributes */
     start.push(`${htmlEscape(key)}="${trusted ? value : htmlEscape(value)}" `)
   }
-  /** Our tag is a void tag so we can return it once we apply attributes */
   if (VOID_TAGS.has(tag)) {
     start.push('/>')
     return {
@@ -178,22 +167,17 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   }
   start.push('>')
   const end: string[] = []
-  /** Ensure children is an array */
   const children = Array.isArray(_children) ? _children.flat() : [_children]
-  /** time to append the children to our template if we have em*/
   const length = children.length
   for (let i = 0; i < length; i++) {
     const child = children[i]
-    /** P1 child IS {@type Template}*/
     if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === TEMPLATE_OBJECT_IDENTIFIER) {
       end.push(...child.html)
       stylesheets.unshift(...child.stylesheets)
       registry.push(...child.registry)
       continue
     }
-    /** P2 typeof child is NOT a valid primitive child then skip and do nothing */
     if (!VALID_PRIMITIVE_CHILDREN.has(trueTypeOf(child))) continue
-    /** P3 child IS {@type Primitive} */
     const str = trusted ? `${child}` : htmlEscape(`${child}`)
     end.push(str)
   }

@@ -2,8 +2,8 @@
  * Browser entry point for testing setHTMLUnsafe with declarative shadow DOM.
  * The server sends a render message containing <template shadowrootmode="open">.
  */
-import { controlDocument } from '../../../dom/control-document.ts'
+import { controlIsland } from '../../control-island.ts'
 
-controlDocument()
+controlIsland('swap-fixture')
 
 window.dispatchEvent(new CustomEvent('swap-fixture-ready'))

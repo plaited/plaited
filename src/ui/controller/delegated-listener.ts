@@ -1,17 +1,17 @@
 /**
- * Type-safe event listener class for DOM event delegation.
- * Supports sync/async callbacks with proper typing.
+ * EventListener adapter for delegated controller callbacks.
  *
  * @template T - Event type (MouseEvent, KeyboardEvent, etc.)
  * @implements {EventListener}
  *
  * @remarks
- * - Implements EventListener interface for native DOM compatibility
- * - Supports both synchronous and asynchronous event handlers
- * - Type-safe event handling with TypeScript generics
- * - Used internally by bElement for p-trigger event delegation
+ * Wraps sync or async callbacks in an object accepted by native
+ * `addEventListener`. Controller islands use it for `p-trigger` bindings and
+ * imported modules can reuse it for their own delegated DOM listeners.
  *
  * @see {@link delegates} for the WeakMap storage
+ *
+ * @public
  */
 export class DelegatedListener<T extends Event = Event> {
   callback: (ev: T) => void | Promise<void>
@@ -24,8 +24,12 @@ export class DelegatedListener<T extends Event = Event> {
 }
 
 /**
- * @internal
  * WeakMap for event delegation data.
- * Auto-cleans when elements are removed.
+ *
+ * @remarks
+ * Entries are tied to their event targets and are eligible for garbage
+ * collection when those targets are removed.
+ *
+ * @public
  */
 export const delegates = new WeakMap<EventTarget>()

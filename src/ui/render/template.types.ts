@@ -1,5 +1,5 @@
 import type { CSSProperties } from '../css/css.types.ts'
-import { P_TARGET, P_TRIGGER, type TEMPLATE_OBJECT_IDENTIFIER } from './template.constants.ts'
+import { P_TARGET, P_TOPIC, P_TRIGGER, type TEMPLATE_OBJECT_IDENTIFIER } from './template.constants.ts'
 
 type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''
@@ -34,7 +34,7 @@ export type Children = Child[] | Child
  * @property class - Supports standard `string` or an `array` of strings for CSS classes.
  * @property children - Represents the child elements or content.
  * @property p-target - Used to identify elements for targeted updates or interactions (value is usually a string or number).
- * @property p-trigger - Defines declarative event bindings for behavioral programming integration (maps event names to action types).
+ * @property p-trigger - Defines declarative event bindings that controller islands forward as BP event types.
  * @property stylesheets - Accepts a CSS string or an array of strings to be associated with the element, hoisted, and deduplicated.
  * @property trusted - If `true`, disables HTML escaping for the element's attributes and children that are not TemplateObject's. Use with extreme caution, only with sanitized or known-safe content.
  * @property style - Accepts a `CSSProperties` object (similar to React) for inline styles.
@@ -62,7 +62,6 @@ type AriaAttributes = {
    * presented if they are made.
    */
   'aria-autocomplete'?: 'none' | 'inline' | 'list' | 'both'
-  /** Indicates an element is being modified and that assistive technologies MAY want to wait until the modifications are complete before exposing them to the user. */
   /**
    * Defines a string value that labels the current element, which is intended to be converted into Braille.
    * @see aria-label.
@@ -73,6 +72,7 @@ type AriaAttributes = {
    * @see aria-roledescription.
    */
   'aria-brailleroledescription'?: string
+  /** Indicates an element is being modified and assistive technologies may want to wait before exposing it. */
   'aria-busy'?: Booleanish
   /**
    * Indicates the current "checked" state of checkboxes, radio buttons, and other widgets.
@@ -1135,6 +1135,13 @@ type DetailedWebViewHTMLAttributes = DetailedHTMLAttributes & {
   disableblinkfeatures?: string
 }
 
+/** Attributes reserved for Plaited controller island templates. */
+type DetailedControlIslandHTMLAttributes = DetailedHTMLAttributes & {
+  [P_TOPIC]: string
+  stylesheets?: never
+  classNames?: never
+}
+
 /**
  * A comprehensive mapping of intrinsic HTML and SVG element tag names
  * to their corresponding detailed attribute types (`Detailed*HTMLAttributes` or `DetailedSVGAttributes`).
@@ -1317,6 +1324,7 @@ export type ElementAttributeList = {
   tspan: DetailedSVGAttributes
   use: DetailedSVGAttributes
   view: DetailedSVGAttributes
+  controlIsland: DetailedControlIslandHTMLAttributes
 }
 /**
  * Generic type for template attributes.

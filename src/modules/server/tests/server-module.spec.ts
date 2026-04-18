@@ -8,7 +8,7 @@ import {
   type SnapshotMessage,
   useInstaller,
 } from '../../../behavioral.ts'
-import { BRIDGE_UI_CORE_ID } from '../../../bridge-events.ts'
+import { CONTROLLER_TO_AGENT_EVENTS } from '../../../bridge-events.ts'
 import { serverModuleExtension } from '../../../modules.ts'
 import {
   SERVER_MODULE_ERROR_CODES,
@@ -21,6 +21,7 @@ import {
   type ServerStartDetail,
   ServerStartedDetailSchema,
 } from '../server-module.schemas.ts'
+import { BRIDGE_UI_CORE_ID } from '../server-module.ts'
 import type { AuthenticateConnection } from '../server-module.types.ts'
 
 type ObservedEvent = { type: string; detail?: unknown }
@@ -328,63 +329,18 @@ describe('server module extension', () => {
     await waitForClose(socket)
   })
 
-  test('user_action ingress emits the ui_core extension_request_event envelope (no final ui_core:user_action in this runtime)', async () => {
+  test('ui_event ingress emits the ui_core extension_request_event envelope', async () => {
     const harness = createHarness()
     const started = await startServer(harness)
     const socket = openWs(started.port)
     await waitForOpen(socket)
 
     const payload = {
-      type: 'user_action',
+      type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
       detail: {
-        id: 'action-1',
-        source: 'document',
-        msg: 'click',
-      },
-    } as const
-    const before = harness.events.length
-    socket.send(JSON.stringify(payload))
-
-    const forwarded = await waitForEvent({
-      events: harness.events,
-      type: uiCoreExtensionRequestEventType,
-      after: before,
-    })
-    expect(forwarded.detail).toEqual(
-      expect.objectContaining({
-        type: 'user_action',
-        detail: payload.detail,
-      }),
-    )
-    expect(harness.events.slice(before).some((event) => event.type === 'user_action')).toBe(false)
-    expect(harness.events.slice(before).some((event) => event.type === uiCoreUserActionEventType)).toBe(false)
-
-    socket.close()
-    await waitForClose(socket)
-  })
-
-  test('snapshot ingress emits the ui_core extension_request_event envelope (no final ui_core:snapshot in this runtime)', async () => {
-    const harness = createHarness()
-    const started = await startServer(harness)
-    const socket = openWs(started.port)
-    await waitForOpen(socket)
-
-    const payload = {
-      type: 'snapshot',
-      detail: {
-        id: 'snap-1',
-        source: 'document',
-        msg: {
-          kind: 'selection',
-          bids: [
-            {
-              thread: { label: 't1' },
-              source: 'request',
-              selected: true,
-              type: 'ui_core:user_action',
-              priority: 1,
-            },
-          ],
+        type: 'click',
+        detail: {
+          'p-trigger': 'click:click',
         },
       },
     } as const
@@ -398,11 +354,42 @@ describe('server module extension', () => {
     })
     expect(forwarded.detail).toEqual(
       expect.objectContaining({
-        type: 'snapshot',
+        type: payload.type,
         detail: payload.detail,
       }),
     )
-    expect(harness.events.slice(before).some((event) => event.type === 'snapshot')).toBe(false)
+    expect(harness.events.slice(before).some((event) => event.type === CONTROLLER_TO_AGENT_EVENTS.ui_event)).toBe(false)
+    expect(harness.events.slice(before).some((event) => event.type === uiCoreUserActionEventType)).toBe(false)
+
+    socket.close()
+    await waitForClose(socket)
+  })
+
+  test('error ingress emits the ui_core extension_request_event envelope', async () => {
+    const harness = createHarness()
+    const started = await startServer(harness)
+    const socket = openWs(started.port)
+    await waitForOpen(socket)
+
+    const payload = {
+      type: CONTROLLER_TO_AGENT_EVENTS.error,
+      detail: 'controller import failed',
+    } as const
+    const before = harness.events.length
+    socket.send(JSON.stringify(payload))
+
+    const forwarded = await waitForEvent({
+      events: harness.events,
+      type: uiCoreExtensionRequestEventType,
+      after: before,
+    })
+    expect(forwarded.detail).toEqual(
+      expect.objectContaining({
+        type: payload.type,
+        detail: payload.detail,
+      }),
+    )
+    expect(harness.events.slice(before).some((event) => event.type === CONTROLLER_TO_AGENT_EVENTS.error)).toBe(false)
     expect(harness.events.slice(before).some((event) => event.type === uiCoreSnapshotEventType)).toBe(false)
 
     socket.close()

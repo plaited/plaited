@@ -1,6 +1,5 @@
 import * as z from 'zod'
 import { notSchema, SNAPSHOT_MESSAGE_KINDS, useExtension } from '../../behavioral.ts'
-import { BRIDGE_UI_CORE_ID } from '../../bridge-events.ts'
 import { ClientMessageSchema } from '../../ui.ts'
 import {
   DEFAULT_CSP,
@@ -24,6 +23,8 @@ import {
   type WebSocketData,
 } from './server-module.schemas.ts'
 import type { CreateServerOptions, ServerHandle } from './server-module.types.ts'
+
+export const BRIDGE_UI_CORE_ID = 'ui_core'
 
 const createModuleEvent = <TEvent extends string>(event: TEvent, detail?: unknown) =>
   detail === undefined

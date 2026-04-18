@@ -1,4 +1,4 @@
-/**
+/*
  * @internal
  * @module jsx.constants
  *
@@ -8,7 +8,7 @@
  * @remarks
  * Implementation details:
  * - VOID_TAGS and BOOLEAN_ATTRS align with HTML5 and SVG specs
- * - P_TARGET and P_TRIGGER enable behavioral programming model
+ * - P_TARGET, P_TRIGGER, and P_TOPIC declare controller update and event wiring
  * - Sets provide O(1) lookup performance for validation
  * - TEMPLATE_OBJECT_IDENTIFIER uses emoji for uniqueness
  *
@@ -21,16 +21,21 @@
 
 /**
  * Constant representing the attribute name (`p-target`) used to identify specific elements
- * within a template. This is primarily utilized by client-side logic (e.g., Custom Elements API)
- * to target elements for updates or interactions based on their assigned identifier.
+ * within a controller island for server-pushed render and attribute updates.
  */
 export const P_TARGET = 'p-target'
 /**
  * Constant representing the attribute name (`p-trigger`) used for declarative event binding,
- * connecting DOM events to behavioral program actions. The attribute value typically contains
+ * connecting DOM events to BP events sent by a controller island. Serialized values contain
  * space-separated pairs of `event:action` (e.g., "click:doSomething focus:notify").
  */
 export const P_TRIGGER = 'p-trigger'
+
+/**
+ * Constant representing the attribute name (`p-topic`) used by controller islands
+ * to select the WebSocket topic they connect to.
+ */
+export const P_TOPIC = 'p-topic'
 /**
  * A Set containing HTML and SVG tag names that are considered "void elements".
  * Void elements cannot have any content (neither HTML nor text nodes) and are
@@ -38,11 +43,7 @@ export const P_TRIGGER = 'p-trigger'
  * This set is used during template creation to determine if a closing tag is needed.
  */
 export const VOID_TAGS = new Set([
-  /**
-   * @internal
-   * HTML void elements per HTML5 spec.
-   * These elements have no content model and self-close.
-   */
+  // HTML void elements per HTML5 spec.
   'area',
   'base',
   'br',
@@ -57,11 +58,7 @@ export const VOID_TAGS = new Set([
   'source',
   'track',
   'wbr',
-  /**
-   * @internal
-   * SVG elements that typically self-close.
-   * Not technically "void" in SVG but treated similarly for serialization.
-   */
+  // SVG elements treated as self-closing during serialization.
   'circle',
   'ellipse',
   'line',
@@ -79,10 +76,7 @@ export const VOID_TAGS = new Set([
  * This set includes standard HTML boolean attributes and some specific to environments like Electron (`<webview>`).
  */
 export const BOOLEAN_ATTRS = new Set([
-  /**
-   * @internal
-   * Media and content loading attributes.
-   */
+  // Media and content loading attributes.
   'allowfullscreen',
   'async',
   'autofocus',
@@ -97,10 +91,7 @@ export const BOOLEAN_ATTRS = new Set([
   'muted',
   'nomodule',
   'playsinline',
-  /**
-   * @internal
-   * Form and input state attributes.
-   */
+  // Form and input state attributes.
   'checked',
   'disabled',
   'formnovalidate',
@@ -110,21 +101,14 @@ export const BOOLEAN_ATTRS = new Set([
   'required',
   'reversed',
   'selected',
-  /**
-   * @internal
-   * Accessibility and semantic attributes.
-   */
+  // Accessibility and semantic attributes.
   'inert',
   'ismap',
   'itemscope',
   'open',
   'popover',
   'shadowrootdelegatesfocus',
-  /**
-   * @internal
-   * Electron webview-specific attributes.
-   * These enable/disable security features in Electron apps.
-   */
+  // Electron webview-specific attributes.
   'nodeintegration',
   'nodeintegrationinsubframes',
   'plugins',
@@ -137,11 +121,7 @@ export const BOOLEAN_ATTRS = new Set([
  * Attributes generally must have primitive values unless handled specifically (like `style`, `p-trigger`, etc.).
  */
 export const PRIMITIVES = new Set([
-  /**
-   * @internal
-   * All primitive types that can be attribute values.
-   * Non-primitives require special handling or toString conversion.
-   */
+  // Primitive types that can be attribute values.
   'null',
   'undefined',
   'number',
@@ -154,11 +134,7 @@ export const PRIMITIVES = new Set([
  * Currently, only 'number' and 'string' are allowed; other primitives like `boolean`, `null`, `undefined` are ignored when used as children.
  */
 export const VALID_PRIMITIVE_CHILDREN = new Set([
-  /**
-   * @internal
-   * Only string and number can be rendered as text content.
-   * Other primitives are filtered out during child processing.
-   */
+  // Only string and number can be rendered as text content.
   'number',
   'string',
 ])
@@ -166,11 +142,8 @@ export const VALID_PRIMITIVE_CHILDREN = new Set([
  * A unique string constant used as an identifier (`$`) property on Plaited's internal `TemplateObject`.
  * This allows reliably distinguishing Plaited template objects from plain JavaScript objects during
  * the processing of children in `createTemplate` and `Fragment`.
- */
-/**
- * @internal
- * Emoji chosen for uniqueness and debuggability.
- * Highly unlikely to conflict with user data.
- * Makes template objects visually distinct in console logs.
+ *
+ * @remarks
+ * The emoji value is chosen for console readability and low collision risk.
  */
 export const TEMPLATE_OBJECT_IDENTIFIER = '🦄'

@@ -10,12 +10,12 @@ import type { ServerWebSocket } from 'bun'
 const FIXTURES_DIR = import.meta.dir
 const DIST_DIR = join(FIXTURES_DIR, 'dist')
 
-// Build entry files for browser consumption
+// Build controller fixture entry files for browser consumption.
 const buildResult = await Bun.build({
   entrypoints: [
-    join(FIXTURES_DIR, 'control-document.entry.ts'),
+    join(FIXTURES_DIR, 'control-island.entry.ts'),
     join(FIXTURES_DIR, 'swap-fixture.entry.ts'),
-    join(FIXTURES_DIR, 'behavioral-fixture.entry.ts'),
+    join(FIXTURES_DIR, 'module-fixture.entry.ts'),
     join(FIXTURES_DIR, 'test-elements.entry.ts'),
   ],
   outdir: DIST_DIR,
@@ -30,9 +30,9 @@ if (!buildResult.success) {
   throw new Error('Build failed')
 }
 
-// Build the behavioral module separately — served at /modules/ for import()
+// Build the imported controller module separately, served from /modules/.
 const moduleResult = await Bun.build({
-  entrypoints: [join(FIXTURES_DIR, 'behavioral-module.ts')],
+  entrypoints: [join(FIXTURES_DIR, 'controller-module.ts'), join(FIXTURES_DIR, 'invalid-controller-module.ts')],
   outdir: join(DIST_DIR, 'modules'),
   target: 'browser',
   minify: false,
@@ -49,17 +49,17 @@ if (!moduleResult.success) {
 
 // The fixture keeps wrapper tags as source identities (WebSocket subprotocol values)
 // and sets display:contents to preserve layout behavior in static HTML.
-const HTML_CONTROL_DOCUMENT = `<!DOCTYPE html>
+const HTML_CONTROL_ISLAND = `<!DOCTYPE html>
 <html>
 <head>
-  <title>Control Document Test</title>
+  <title>Control Island Test</title>
   <style>test-island { display: contents; }</style>
 </head>
 <body>
-  <test-island>
+  <test-island p-topic="test-island">
     <div p-target="main"><p>initial content</p></div>
   </test-island>
-  <script type="module" src="/dist/control-document.entry.js"></script>
+  <script type="module" src="/dist/control-island.entry.js"></script>
 </body>
 </html>`
 
@@ -70,38 +70,24 @@ const HTML_SWAP_FIXTURE = `<!DOCTYPE html>
   <style>swap-fixture { display: contents; }</style>
 </head>
 <body>
-  <swap-fixture>
+  <swap-fixture p-topic="swap-fixture">
     <div p-target="main"><p>initial swap content</p></div>
   </swap-fixture>
   <script type="module" src="/dist/swap-fixture.entry.js"></script>
 </body>
 </html>`
 
-const HTML_BEHAVIORAL_FIXTURE = `<!DOCTYPE html>
+const HTML_MODULE_FIXTURE = `<!DOCTYPE html>
 <html>
 <head>
-  <title>Behavioral Module Test</title>
-  <style>behavioral-fixture { display: contents; }</style>
+  <title>Controller Module Test</title>
+  <style>module-fixture { display: contents; }</style>
 </head>
 <body>
-  <behavioral-fixture>
-    <div p-target="main"><p>initial behavioral content</p></div>
-  </behavioral-fixture>
-  <script type="module" src="/dist/behavioral-fixture.entry.js"></script>
-</body>
-</html>`
-
-const HTML_BEHAVIORAL_BYPASS_FIXTURE = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Behavioral Bypass Fixture Test</title>
-  <style>behavioral-bypass-fixture { display: contents; }</style>
-</head>
-<body>
-  <behavioral-bypass-fixture>
-    <div p-target="main"><p>initial behavioral bypass content</p></div>
-  </behavioral-bypass-fixture>
-  <script type="module" src="/dist/behavioral-fixture.entry.js"></script>
+  <module-fixture p-topic="module-fixture">
+    <div p-target="main"><p>initial module content</p></div>
+  </module-fixture>
+  <script type="module" src="/dist/module-fixture.entry.js"></script>
 </body>
 </html>`
 
@@ -121,6 +107,12 @@ const TEST_PAGE_CONTENT: Record<string, string> = {
   'retry-test': `
     <div p-target="main"><p>connecting</p></div>
   `,
+  'bad-import-test': `
+    <div p-target="main"><p>waiting for bad import</p></div>
+  `,
+  'unsupported-event-test': `
+    <div p-target="main"><p>waiting for unsupported event</p></div>
+  `,
 }
 
 const generateTestPage = (tag: string) => {
@@ -132,7 +124,7 @@ const generateTestPage = (tag: string) => {
   <style>${tag} { display: contents; }</style>
 </head>
 <body>
-  <${tag}>
+  <${tag} p-topic="${tag}">
     ${content}
   </${tag}>
   <script type="module" src="/dist/test-elements.entry.js"></script>
@@ -147,7 +139,6 @@ const RENDER_MESSAGE = JSON.stringify({
   detail: {
     target: 'main',
     html: '<div id="ws-rendered">Hello from WebSocket</div>',
-    swap: 'innerHTML',
   },
 })
 
@@ -160,20 +151,11 @@ const DSD_RENDER_MESSAGE = JSON.stringify({
   },
 })
 
-const BEHAVIORAL_RENDER_MESSAGE = JSON.stringify({
+const MODULE_RENDER_MESSAGE = JSON.stringify({
   type: 'render',
   detail: {
     target: 'main',
-    html: '<button id="behavioral-module-btn" p-trigger="click:test_click">Behavioral Action</button><button id="behavioral-scoped-module-btn" p-trigger="click:foo:test_click">Scoped Behavioral Action</button><div id="behavioral-initial">Behavioral fixture loaded</div>',
-    swap: 'innerHTML',
-  },
-})
-
-const BEHAVIORAL_BYPASS_RENDER_MESSAGE = JSON.stringify({
-  type: 'render',
-  detail: {
-    target: 'main',
-    html: '<button id="behavioral-module-btn" p-trigger="click:test_click">Behavioral Action</button><button id="behavioral-scoped-module-btn" p-trigger="click:foo:test_click">Scoped Behavioral Action</button><button id="bypass-probe-btn" p-trigger="click:bypass_probe">Bypass Probe</button><div id="behavioral-initial">Behavioral fixture loaded</div>',
+    html: '<button id="module-p-trigger-btn" data-extra="p-trigger-attr" p-trigger="click:test_click">P-trigger Action</button><button id="module-enhanced-btn" data-extra="module-listener">Module Listener</button><div id="module-initial">Module fixture loaded</div>',
     swap: 'innerHTML',
   },
 })
@@ -275,24 +257,37 @@ const sendActionTestInitialRender = (ws: ServerWebSocket<{ source: string }>) =>
 
 // ─── Server ───────────────────────────────────────────────────────────────────
 
+/**
+ * Handle returned by the controller browser fixture server.
+ */
 export type FixtureServer = {
   server: ReturnType<typeof Bun.serve>
   port: number
   stop: () => Promise<void>
-  /** Last user_action message received from the client */
-  lastUserAction: Record<string, unknown> | undefined
-  /** Snapshot messages received from the client */
-  snapshotMessages: Record<string, unknown>[]
+  /** Last `ui_event` message received from a controller island. */
+  lastUiEvent: { source: string; message: Record<string, unknown> } | undefined
+  /** All `ui_event` messages received from controller islands. */
+  uiEvents: { source: string; message: Record<string, unknown> }[]
+  /** Controller runtime errors received from controller islands. */
+  errors: { source: string; message: Record<string, unknown> }[]
 }
 
+/**
+ * Starts the browser fixture server used by controller integration tests.
+ *
+ * @param port - TCP port to bind, or `0` to let Bun choose an available port.
+ * @returns Fixture server handle with captured client messages and shutdown hook.
+ */
 export const startServer = (port = 0): FixtureServer => {
   const state: {
-    lastUserAction: Record<string, unknown> | undefined
-    snapshotMessages: Record<string, unknown>[]
+    lastUiEvent: { source: string; message: Record<string, unknown> } | undefined
+    uiEvents: { source: string; message: Record<string, unknown> }[]
+    errors: { source: string; message: Record<string, unknown> }[]
     retryTestConnections: number
   } = {
-    lastUserAction: undefined,
-    snapshotMessages: [],
+    lastUiEvent: undefined,
+    uiEvents: [],
+    errors: [],
     retryTestConnections: 0,
   }
 
@@ -301,16 +296,13 @@ export const startServer = (port = 0): FixtureServer => {
     routes: {
       // Static routes exclude '/' so WebSocket upgrades reach the fetch handler
       '/health': new Response('OK'),
-      '/control-document.html': new Response(HTML_CONTROL_DOCUMENT, {
+      '/control-island.html': new Response(HTML_CONTROL_ISLAND, {
         headers: { 'Content-Type': 'text/html' },
       }),
       '/swap-fixture.html': new Response(HTML_SWAP_FIXTURE, {
         headers: { 'Content-Type': 'text/html' },
       }),
-      '/behavioral-fixture.html': new Response(HTML_BEHAVIORAL_FIXTURE, {
-        headers: { 'Content-Type': 'text/html' },
-      }),
-      '/behavioral-bypass-fixture.html': new Response(HTML_BEHAVIORAL_BYPASS_FIXTURE, {
+      '/module-fixture.html': new Response(HTML_MODULE_FIXTURE, {
         headers: { 'Content-Type': 'text/html' },
       }),
       '/dist/*': async (req) => {
@@ -333,22 +325,29 @@ export const startServer = (port = 0): FixtureServer => {
           case 'swap-fixture':
             ws.send(DSD_RENDER_MESSAGE)
             break
-          case 'behavioral-fixture':
-            // Send initial render, then update_behavioral with the module URL
-            ws.send(BEHAVIORAL_RENDER_MESSAGE)
+          case 'module-fixture':
+            // Send initial render, then import the module from a site-root path.
+            ws.send(MODULE_RENDER_MESSAGE)
             ws.send(
               JSON.stringify({
-                type: 'update_behavioral',
-                detail: `http://localhost:${server.port}/dist/modules/behavioral-module.js`,
+                type: 'import',
+                detail: '/dist/modules/controller-module.js',
               }),
             )
             break
-          case 'behavioral-bypass-fixture':
-            ws.send(BEHAVIORAL_BYPASS_RENDER_MESSAGE)
+          case 'bad-import-test':
             ws.send(
               JSON.stringify({
-                type: 'update_behavioral',
-                detail: `http://localhost:${server.port}/dist/modules/behavioral-module.js`,
+                type: 'import',
+                detail: '/dist/modules/invalid-controller-module.js',
+              }),
+            )
+            break
+          case 'unsupported-event-test':
+            ws.send(
+              JSON.stringify({
+                type: 'unsupported_controller_event',
+                detail: { reason: 'fixture' },
               }),
             )
             break
@@ -388,20 +387,14 @@ export const startServer = (port = 0): FixtureServer => {
       },
       message(ws, message) {
         const data = JSON.parse(String(message))
-        if (data.type === 'snapshot') {
-          state.snapshotMessages.push(data)
+        if (data.type === 'error') {
+          state.errors.push({ source: ws.data.source, message: data })
         }
-        if (data.type === 'user_action') {
-          state.lastUserAction = data
-          // detail uses { id, source, msg } envelope — msg is the action type string
-          if (data.detail?.msg === 'bypass_probe') {
-            ws.send(
-              JSON.stringify({
-                type: 'behavioral_fixture:apply_test_click',
-              }),
-            )
-          }
-          if (data.detail?.msg === 'test_click') {
+        if (data.type === 'ui_event') {
+          const event = { source: ws.data.source, message: data }
+          state.lastUiEvent = event
+          state.uiEvents.push(event)
+          if (data.detail?.type === 'test_click') {
             ws.send(
               JSON.stringify({
                 type: 'render',
@@ -455,11 +448,14 @@ export const startServer = (port = 0): FixtureServer => {
   return {
     server,
     port: server.port!,
-    get lastUserAction() {
-      return state.lastUserAction
+    get lastUiEvent() {
+      return state.lastUiEvent
     },
-    get snapshotMessages() {
-      return state.snapshotMessages
+    get uiEvents() {
+      return state.uiEvents
+    },
+    get errors() {
+      return state.errors
     },
     stop: async () => {
       server.stop(true)

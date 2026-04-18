@@ -2,7 +2,7 @@
  * Real browser tests using @playwright/cli.
  * Tests DOM behaviors through actual Chromium with a real WebSocket fixture server.
  *
- * The fixture server (serve.ts) acts as the agent — it responds to client_connected
+ * The fixture server (serve.ts) acts as the agent. It responds to WebSocket opens
  * with scripted WebSocket conversations tailored to each test element tag.
  */
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
@@ -45,11 +45,41 @@ const parseResult = (output: string) => {
   return match?.[1]?.trim() ?? output.trim()
 }
 
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const waitFor = async <T>(read: () => T | undefined, timeoutMs = 5000): Promise<T> => {
+  const deadline = Date.now() + timeoutMs
+  let value = read()
+  while (value === undefined && Date.now() < deadline) {
+    await wait(50)
+    value = read()
+  }
+  if (value === undefined) {
+    throw new Error('Timed out waiting for browser fixture state.')
+  }
+  return value
+}
+
 const getFixture = (): FixtureServer => {
   if (!fixture) {
     throw new Error('Fixture server is not initialized.')
   }
   return fixture
+}
+
+const findUiEvent = ({ after = 0, source, type }: { after?: number; source: string; type: string }) => {
+  return getFixture()
+    .uiEvents.slice(after)
+    .find((event) => {
+      const detail = event.message.detail as Record<string, unknown> | undefined
+      return event.source === source && detail?.type === type
+    })
+}
+
+const findError = ({ after = 0, source }: { after?: number; source: string }) => {
+  return getFixture()
+    .errors.slice(after)
+    .find((error) => error.source === source)
 }
 
 /** Navigate to a test page and wait for WebSocket render. */
@@ -64,8 +94,8 @@ beforeAll(async () => {
 
   // Open browser session (no URL yet — navigate after open)
   await cli('open')
-  // Navigate to the base document runtime fixture
-  await gotoTest('/control-document.html')
+  // Navigate to the base controller island fixture.
+  await gotoTest('/control-island.html')
 }, 30000)
 
 afterAll(async () => {
@@ -83,9 +113,9 @@ afterAll(async () => {
   }
 }, 30000)
 
-// ─── Document runtime: real browser ───────────────────────────────────────────
+// ─── Controller island runtime: real browser ──────────────────────────────────
 
-describe('controlDocument: real browser', () => {
+describe('controlIsland: real browser', () => {
   test('display:contents computed style', async () => {
     const output = await cli(
       'eval',
@@ -95,10 +125,10 @@ describe('controlDocument: real browser', () => {
     expect(result).toContain('contents')
   })
 
-  test('does not require customElements registration', async () => {
+  test('registers the custom element', async () => {
     const output = await cli('eval', "() => !!customElements.get('test-island')")
     const result = parseResult(output)
-    expect(result).toContain('false')
+    expect(result).toContain('true')
   })
 
   test('custom element exists in DOM', async () => {
@@ -114,8 +144,8 @@ describe('controlDocument: real browser', () => {
   })
 
   test('WebSocket roundtrip renders server content into DOM', async () => {
-    // The fixture server responds to client_connected with RENDER_MESSAGE:
-    // { type: 'render', detail: { target: 'main', html: '<div id="ws-rendered">Hello from WebSocket</div>' } }
+    // The fixture server responds to the WebSocket open with a render message that omits
+    // swap, so the controller's default innerHTML swap path is exercised here.
     const output = await cli('eval', "() => document.getElementById('ws-rendered')?.textContent")
     const result = parseResult(output)
     expect(result).toContain('Hello from WebSocket')
@@ -125,7 +155,7 @@ describe('controlDocument: real browser', () => {
     // Scripts inserted via setHTMLUnsafe, innerHTML, or any DOM parsing API are marked
     // "parser-inserted" by the HTML spec and will NOT execute. Only scripts created via
     // document.createElement('script') execute on append.
-    // This confirms that update_behavioral + import(url) is the only path for dynamic
+    // This confirms that controller import messages are the code-loading path for dynamic
     // code loading — inline <script> tags in render messages are inert.
     const output = await cli(
       'eval',
@@ -243,9 +273,9 @@ describe('controller: attrs handler', () => {
   }, 30000)
 })
 
-// ─── User action handler ──────────────────────────────────────────────────────
+// ─── UI event handler ─────────────────────────────────────────────────────────
 
-describe('controller: user_action', () => {
+describe('controller: ui_event', () => {
   test('p-trigger click is captured by server and triggers response render', async () => {
     // Navigate to action-test page — server renders a p-trigger button
     await gotoTest('/test/action-test')
@@ -253,8 +283,8 @@ describe('controller: user_action', () => {
     // Click the p-trigger button
     await cli('eval', "() => { document.getElementById('test-btn')?.click(); return 'clicked'; }")
 
-    // Wait for the roundtrip: click → user_action → server render → DOM update
-    await new Promise((r) => setTimeout(r, 2000))
+    // Wait for the roundtrip: click -> ui_event -> server render -> DOM update
+    await wait(500)
 
     // Server responds with confirmation render
     const output = await cli('eval', "() => document.getElementById('action-confirmed')?.textContent")
@@ -262,13 +292,17 @@ describe('controller: user_action', () => {
     expect(result).toContain('Action received')
   }, 30000)
 
-  test('server received the user_action message with { id, source, msg } envelope', () => {
+  test('server received the ui_event message with the p-trigger BP event envelope', () => {
     const activeFixture = getFixture()
-    expect(activeFixture.lastUserAction).toBeDefined()
-    const detail = (activeFixture.lastUserAction as Record<string, unknown>).detail as Record<string, unknown>
-    expect(detail.msg).toBe('test_click')
-    expect(detail.source).toBe('action-test')
-    expect(typeof detail.id).toBe('string')
+    expect(activeFixture.lastUiEvent).toBeDefined()
+    const event = activeFixture.lastUiEvent!
+    expect(event.source).toBe('action-test')
+    expect(event.message.type).toBe('ui_event')
+    const detail = event.message.detail as Record<string, unknown>
+    expect(detail.type).toBe('test_click')
+    const attrs = detail.detail as Record<string, unknown>
+    expect(attrs.id).toBe('test-btn')
+    expect(attrs['p-trigger']).toBe('click:test_click')
   })
 })
 
@@ -286,63 +320,83 @@ describe('controller: WebSocket retry', () => {
   }, 30000)
 })
 
-// ─── Update behavioral ───────────────────────────────────────────────────────
+// ─── Module imports ───────────────────────────────────────────────────────────
 
-describe('controller: update_behavioral', () => {
-  test('dynamic import() installs exported useExtension modules', async () => {
-    // Navigate to behavioral fixture — server sends update_behavioral after client_connected.
-    // The imported module exports a useExtension() module with repeating bThreads.
-    await gotoTest('/behavioral-fixture.html')
+describe('controller: import', () => {
+  test('dynamic import() invokes default controller module callbacks', async () => {
+    // Navigate to module fixture; the server sends an import command after connection.
+    await gotoTest('/module-fixture.html')
 
-    // The module sets window.__behavioralModuleLoaded = true in the module callback.
-    const output = await cli('eval', '() => globalThis.__behavioralModuleLoaded === true')
+    // The module sets window.__controllerModuleLoaded = true in the default callback.
+    const output = await cli('eval', '() => globalThis.__controllerModuleLoaded === true')
     const result = parseResult(output)
     expect(result).toContain('true')
   }, 30000)
 
-  test('server cannot directly trigger extension-local handlers via arbitrary event type', async () => {
-    await gotoTest('/behavioral-bypass-fixture.html')
+  test('reports import_invoked after the module default callback finishes', async () => {
+    const before = getFixture().uiEvents.length
+    await gotoTest('/module-fixture.html')
 
-    const loaded = await cli('eval', '() => globalThis.__behavioralModuleLoaded === true')
+    const event = await waitFor(() => findUiEvent({ after: before, source: 'module-fixture', type: 'import_invoked' }))
+    const detail = event.message.detail as Record<string, unknown>
+    expect(detail.detail).toBe('/dist/modules/controller-module.js')
+  }, 30000)
+
+  test('p-trigger actions are sent as BP events with an attribute detail map', async () => {
+    const before = getFixture().uiEvents.length
+    await gotoTest('/module-fixture.html')
+
+    await cli('eval', "() => { document.getElementById('module-p-trigger-btn')?.click(); return 'clicked'; }")
+
+    const event = await waitFor(() => findUiEvent({ after: before, source: 'module-fixture', type: 'test_click' }))
+    const detail = event.message.detail as Record<string, unknown>
+    const attrs = detail.detail as Record<string, unknown>
+    expect(attrs.id).toBe('module-p-trigger-btn')
+    expect(attrs['data-extra']).toBe('p-trigger-attr')
+    expect(attrs['p-trigger']).toBe('click:test_click')
+  }, 30000)
+
+  test('imported modules can register delegated listeners and trigger BP events', async () => {
+    const before = getFixture().uiEvents.length
+    await gotoTest('/module-fixture.html')
+
+    await cli('eval', "() => { document.getElementById('module-enhanced-btn')?.click(); return 'clicked'; }")
+
+    const event = await waitFor(() =>
+      findUiEvent({ after: before, source: 'module-fixture', type: 'controller_module_click' }),
+    )
+    const count = await cli('eval', '() => globalThis.__controllerModuleHandlerCallCount ?? 0')
+    expect(parseResult(count)).toContain('1')
+    const detail = event.message.detail as Record<string, unknown>
+    expect(detail.detail).toEqual({ id: 'module-enhanced-btn', 'data-extra': 'module-listener' })
+  }, 30000)
+
+  test('disconnect runs cleanup callbacks registered by imported modules', async () => {
+    await gotoTest('/module-fixture.html')
+
+    const loaded = await cli('eval', '() => globalThis.__controllerModuleLoaded === true')
     expect(parseResult(loaded)).toContain('true')
 
-    const before = await cli('eval', '() => globalThis.__handlerCallCount ?? 0')
-    expect(parseResult(before)).toContain('0')
+    await cli('eval', "() => { document.querySelector('module-fixture')?.remove(); return 'removed'; }")
+    await wait(250)
 
-    await cli('eval', "() => { document.getElementById('bypass-probe-btn')?.click(); return 'probe'; }")
-    await new Promise((r) => setTimeout(r, 1500))
-
-    const activeFixture = getFixture()
-    expect(activeFixture.lastUserAction).toBeDefined()
-    const detail = (activeFixture.lastUserAction as Record<string, unknown>).detail as Record<string, unknown>
-    expect(detail.msg).toBe('bypass_probe')
-    expect(detail.source).toBe('behavioral-bypass-fixture')
-
-    const after = await cli('eval', '() => globalThis.__handlerCallCount ?? 0')
-    expect(parseResult(after)).toContain('0')
+    const afterDisconnect = await cli('eval', '() => globalThis.__controllerModuleLoaded === false')
+    expect(parseResult(afterDisconnect)).toContain('true')
   }, 30000)
 
-  test('p-trigger actions can be observed by dynamic extensions via ui_core:user_action', async () => {
-    await gotoTest('/behavioral-fixture.html')
+  test('invalid imported module default export reports a controller error', async () => {
+    const before = getFixture().errors.length
+    await gotoTest('/test/bad-import-test')
 
-    const before = await cli('eval', '() => globalThis.__handlerCallCount ?? 0')
-    expect(parseResult(before)).toContain('0')
-
-    await cli('eval', "() => { document.getElementById('behavioral-module-btn')?.click(); return 'clicked-1'; }")
-    await new Promise((r) => setTimeout(r, 1500))
-    const afterFirst = await cli('eval', '() => globalThis.__handlerCallCount ?? 0')
-    expect(parseResult(afterFirst)).toContain('1')
+    const error = await waitFor(() => findError({ after: before, source: 'bad-import-test' }))
+    expect(String(error.message.detail)).toContain('Expected imported module default export to be a function')
   }, 30000)
 
-  test('p-trigger parsing preserves colon-scoped action type suffixes', async () => {
-    await gotoTest('/behavioral-fixture.html')
+  test('unsupported server event types report a controller error', async () => {
+    const before = getFixture().errors.length
+    await gotoTest('/test/unsupported-event-test')
 
-    const before = await cli('eval', '() => globalThis.__scopedHandlerCallCount ?? 0')
-    expect(parseResult(before)).toContain('0')
-
-    await cli('eval', "() => { document.getElementById('behavioral-scoped-module-btn')?.click(); return 'clicked-1'; }")
-    await new Promise((r) => setTimeout(r, 1500))
-    const afterFirst = await cli('eval', '() => globalThis.__scopedHandlerCallCount ?? 0')
-    expect(parseResult(afterFirst)).toContain('1')
+    const error = await waitFor(() => findError({ after: before, source: 'unsupported-event-test' }))
+    expect(String(error.message.detail)).toContain('Unsupported controller event type "unsupported_controller_event"')
   }, 30000)
 })
