@@ -2,6 +2,15 @@
 
 Reference document synthesizing the BP paradigm as implemented in `src/behavioral/` — drawn from academic papers, source code analysis, and test exploration.
 
+This document describes the behavioral engine itself. Browser UI controller
+islands do not run this algorithm; they send BPEvent-shaped data over the
+controller protocol, and server/runtime code decides whether to trigger those
+events into a behavioral program.
+
+Examples use an `onType(type)` listener helper equivalent to
+`{ type, detailSchema: z.unknown() }`. Narrower Zod schemas should be used when
+a listener depends on event detail.
+
 ## The Core Algorithm
 
 A behavioral program is a collection of **b-threads** — independent sequential threads of execution that synchronize via a central event arbiter. The algorithm proceeds in **super-steps**:
@@ -56,12 +65,11 @@ That is: requested by at least one thread AND blocked by none.
 Plaited uses a priority queue: lower number = higher priority.
 
 - **Triggered events** (external via `trigger()`) get priority `0` (highest)
-- **Thread requests** get priority based on registration order (`running.size + 1` at `bThreads.set()` time)
+- **Thread requests** get priority based on registration order (`running.size + 1` when `addBThread()` installs the thread)
 - When multiple candidates survive blocking, the lowest-priority-number wins
 
 ```typescript
-// behavioral.ts line 299
-const selectedEvent = filteredBids.sort(
+const selectedEvent = frontier.enabled.sort(
   ({ priority: priorityA }, { priority: priorityB }) => priorityA - priorityB,
 )[0]
 ```
@@ -88,11 +96,10 @@ bThread(rules, repeat)
 
 | Value | Behavior | Generator `done` |
 |-------|----------|-------------------|
-| `false` / omitted | Rules run once, then thread terminates | `true` after last rule |
+| omitted | Rules run once, then thread terminates | `true` after last rule |
 | `true` | Rules wrap in `while(true)`, thread never terminates | Never `true` |
-| `() => boolean` | Rules repeat while function returns `true` | `true` when predicate returns `false` |
 
-**Critical mechanism**: In `step()` (line 252-253):
+**Critical mechanism**: `step()` only keeps threads whose generators are not done:
 
 ```typescript
 const { value, done } = generator.next()
@@ -105,11 +112,11 @@ When `done === true`, the thread is NOT re-added to `pending` — it disappears.
 
 Use `repeat=true` for **persistent constraints** that must remain active throughout the program's lifetime:
 
-- Turn enforcement: `waitFor: 'X', block: 'O'` → `waitFor: 'O', block: 'X'` (tic-tac-toe)
+- Turn enforcement: `waitFor: onType('X'), block: onType('O')` → `waitFor: onType('O'), block: onType('X')` (tic-tac-toe)
 - Safety nets: `waitFor: dangerous_event` → `block: all_events` (stopGame pattern)
 - Continuous validation: pure-blocking predicates that check state every cycle
 
-Use `repeat=false` (or omit) for **one-shot sequences** that should terminate:
+Omit `repeat` for **one-shot sequences** that should terminate:
 
 - Counting N occurrences (e.g., a completion thread waits for N `agent_tool_result` events)
 - Per-square occupation tracking (tic-tac-toe `squaresTaken`)
@@ -122,25 +129,25 @@ Use `repeat=false` (or omit) for **one-shot sequences** that should terminate:
 ```typescript
 // Tic-tac-toe: after 'win', block all moves forever
 const stopGame = bThread([
-  bSync({ waitFor: 'win' }),
-  bSync({ block: ['X', 'O'] }),
+  bSync({ waitFor: onType('win') }),
+  bSync({ block: [onType('X'), onType('O')] }),
 ], true)  // repeat=true: after blocking, loops back to waitFor 'win'
 
-// Agent equivalent: after disconnect, block all events forever
+// Agent equivalent: after disconnect, block the event set that belongs to the task
 const doneGuard = bThread([
-  bSync({ waitFor: AGENT_EVENTS.agent_disconnect }),
-  bSync({ block: () => true }),  // predicate blocks EVERYTHING
+  bSync({ waitFor: onType(AGENT_EVENTS.agent_disconnect) }),
+  bSync({ block: TASK_EVENT_LISTENERS }),
 ], true)
 ```
 
 **How it works**:
-1. Thread starts at `waitFor: 'win'` — dormant, not blocking anything
+1. Thread starts at `waitFor: onType('win')` — dormant, not blocking anything
 2. When `win` is selected → thread advances to `block: ['X', 'O']`
 3. Block is active → all `X` and `O` candidates are filtered out
-4. With `repeat=true`, after the block sync, it loops back to `waitFor: 'win'`
+4. With `repeat=true`, after the block sync, it loops back to `waitFor: onType('win')`
 5. But since `block` has no `request` or `waitFor`, the thread stays at the block indefinitely
 
-**Why `repeat=true` matters for doneGuard**: If `repeat=false`, the block sync is the last rule. After the blocking generator yields, there's no more code. The generator would return `done: true` on the NEXT advance — but the thread won't advance because it has no `waitFor` or `request` that would match any event. However, `repeat=true` provides defense-in-depth: even if the thread somehow advanced, it would loop back to `waitFor: 'agent_disconnect'` and wait there safely.
+**Why `repeat=true` matters for doneGuard**: If `repeat` is omitted, the block sync is the last rule. After the blocking generator yields, there's no more code. The generator would return `done: true` on the NEXT advance — but the thread won't advance because it has no `waitFor` or `request` that would match any event. However, `repeat=true` provides defense-in-depth: even if the thread somehow advanced, it would loop back to `waitFor: onType('agent_disconnect')` and wait there safely.
 
 ### Ephemeral vs Persistent Blocks
 
@@ -149,7 +156,7 @@ const doneGuard = bThread([
 ```typescript
 // EPHEMERAL: block only exists until 'terminal' is selected
 bSync({
-  block: AGENT_EVENTS.write_file,
+  block: onType(AGENT_EVENTS.write_file),
   request: { type: 'terminal' },
 })
 // After 'terminal' fires → thread advances → block on 'write_file' gone
@@ -161,19 +168,19 @@ This is why a terminal request alone is NOT sufficient to permanently block even
 ```typescript
 // completionCounter: counter + trigger (ephemeral block)
 completionCounter: bThread([
-  ...Array.from({ length: N }, () => bSync({ waitFor: AGENT_EVENTS.agent_tool_result })),
-  bSync({ block: AGENT_EVENTS.write_file, request: { type: AGENT_EVENTS.agent_disconnect } }),
+  ...Array.from({ length: N }, () => bSync({ waitFor: onType(AGENT_EVENTS.agent_tool_result) })),
+  bSync({ block: onType(AGENT_EVENTS.write_file), request: { type: AGENT_EVENTS.agent_disconnect } }),
 ])
 
-// doneGuard: persistent block (takes over after disconnect fires)
+// doneGuard: persistent block over the task event set
 doneGuard: bThread([
-  bSync({ waitFor: AGENT_EVENTS.agent_disconnect }),
-  bSync({ block: () => true }),
+  bSync({ waitFor: onType(AGENT_EVENTS.agent_disconnect) }),
+  bSync({ block: TASK_EVENT_LISTENERS }),
 ], true)
 ```
 
 The two threads compose additively: completionCounter triggers the `agent_disconnect` event,
-doneGuard picks it up and blocks everything permanently.
+doneGuard picks it up and blocks task-owned events permanently.
 
 ### Infinite Super-Step Anti-Pattern
 
@@ -193,19 +200,26 @@ In the agent, all events flow from `trigger()` calls in feedback handlers. There
 ### Pattern 2: Shared State with Block Predicates
 
 ```typescript
-// Tic-tac-toe: board is shared between handlers and predicates
-const board = new Map<number, null>()  // tracks occupied squares
+// Board state is shared between handlers and detail-schema predicates
+const occupied = new Set<number>()
+const occupiedMove = {
+  type: 'move',
+  detailSchema: z.custom((detail) => {
+    const parsed = detail as { square?: number } | undefined
+    return typeof parsed?.square === 'number' && occupied.has(parsed.square)
+  }),
+}
 
-bThreads.set({
+addBThreads({
   squaresTaken: bThread([
-    bSync({ waitFor: (e) => board.has(Number(e.type)) }),  // predicate reads board
-    bSync({ block: (e) => board.has(Number(e.type)) }),    // predicate reads board
-  ]),
+    bSync({ block: occupiedMove }),
+  ], true),
 })
 
 useFeedback({
-  X: (detail) => { board.delete(detail.square) },  // handler modifies board
-  O: (detail) => { board.delete(detail.square) },
+  move: (detail) => {
+    occupied.add(detail.square)
+  },
 })
 ```
 
@@ -220,9 +234,12 @@ pendingWrites.add(detail.path)
 // bThread predicate reads state
 writeGuard: bThread([
   bSync({
-    block: (event) => {
-      if (event.type !== AGENT_EVENTS.write_file) return false
-      return pendingWrites.has(event.detail?.input?.path)
+    block: {
+      type: AGENT_EVENTS.write_file,
+      detailSchema: z.custom((detail) => {
+        const parsed = detail as { input?: { path?: string } } | undefined
+        return Boolean(parsed?.input?.path && pendingWrites.has(parsed.input.path))
+      }),
     },
   }),
 ], true)
@@ -254,26 +271,23 @@ runners, batch pipelines, fanout merges, and agent workflow checkpoints.
 
 ```typescript
 // Batch completion pattern: wait for N completions, then continue
-bThreads.set({
+addBThreads({
   batchCompletion: bThread([
     ...Array.from({ length: 3 }, () =>
       bSync({
-        waitFor: (event) =>
-          event.type === AGENT_EVENTS.agent_tool_result ||
-          event.type === AGENT_EVENTS.signal_schema_violation,
-        interrupt: [AGENT_EVENTS.agent_disconnect],
+        waitFor: [onType(AGENT_EVENTS.agent_tool_result), onType(AGENT_EVENTS.signal_schema_violation)],
+        interrupt: onType(AGENT_EVENTS.agent_disconnect),
       }),
     ),
     bSync({
       request: { type: AGENT_EVENTS.request_inference },
-      interrupt: [AGENT_EVENTS.agent_disconnect],
+      interrupt: onType(AGENT_EVENTS.agent_disconnect),
     }),
   ]),
 })
 ```
 
-This pattern is preferable to stale external "runner" references because it is
-grounded in the current repo's coordination style:
+This pattern matches the repo's coordination style:
 
 - count a known number of completions
 - request the next phase only after the batch is done
@@ -288,12 +302,12 @@ Blocking isn't just for safety — it's a coordination mechanism. A thread can b
 ```typescript
 // Enforce turns: X before O, then O before X
 const enforceTurns = bThread([
-  bSync({ waitFor: 'X', block: 'O' }),  // allow X, prevent O
-  bSync({ waitFor: 'O', block: 'X' }),  // allow O, prevent X
+  bSync({ waitFor: onType('X'), block: onType('O') }),  // allow X, prevent O
+  bSync({ waitFor: onType('O'), block: onType('X') }),  // allow O, prevent X
 ], true)
 ```
 
-The same pattern applies in the current agent core when a coordination thread needs to defer
+The same pattern applies when an agent coordination thread needs to defer
 `write_file` or `bash` until some prerequisite state is present, such as a signal update or a
 tool result.
 
@@ -358,11 +372,11 @@ The defining property of BP: new behaviors can be added without modifying existi
 
 ```typescript
 // Wave 1: just completion accounting
-bThreads.set({ completionCounter: bThread([...]) })
+addBThreads({ completionCounter: bThread([...]) })
 
 // Wave 2: add a write guard — doesn't touch completionCounter
-bThreads.set({ writeGuard: bThread([...], true) })
-bThreads.set({ disconnectGuard: bThread([...], true) })
+addBThreads({ writeGuard: bThread([...], true) })
+addBThreads({ disconnectGuard: bThread([...], true) })
 ```
 
 Each bThread is an independent requirement. They compose through the event selection mechanism without knowing about each other.
@@ -371,7 +385,7 @@ Each bThread is an independent requirement. They compose through the event selec
 
 | Type | Purpose | Agent Equivalent |
 |------|---------|-----------------|
-| **Goal-Scenarios** | Grant reinforcements, drive learning | — (future: reward-based routing) |
+| **Goal-Scenarios** | Grant reinforcements, drive learning | Reward-based routing |
 | **Base-Scenarios** | Affect run, no reinforcements | `completionCounter`, `writeGuard` |
 | **Auxiliary-Scenarios** | Monitor only, don't participate in selection | `useSnapshot` listeners |
 
@@ -379,7 +393,7 @@ Each bThread is an independent requirement. They compose through the event selec
 
 The event selection mechanism is a parameter, not fixed. Plaited uses priority-based selection, but the architecture supports alternatives:
 
-- **Priority queue** (current): lowest priority number wins
+- **Priority queue**: lowest priority number wins
 - **Reinforcement learning** (Adaptive BP): Q-values vote for enabled events
 - **Look-ahead** (Smart Play-Out): search future states to avoid deadlocks
 - **Custom** (Scaling Up): programmer-supplied function `f: Γ* × Γ → E`
@@ -408,7 +422,7 @@ behavioral module is meant to be generated, validated, reused, or compiled
 from symbolic state, it should prefer an explicit context contract over
 implicitly shared mutable state where possible.
 
-## Design Principles for the Agent Refactor
+## Design Principles for Agent Coordination
 
 1. **Threads for coordination, handlers for side effects** — bThreads express WHEN and IF; handlers express WHAT. A handler should be a thin side-effect runner, not a decision-maker.
 
