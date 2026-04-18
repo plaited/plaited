@@ -1,118 +1,277 @@
 ---
 name: plaited-ui
-description: Build and test Plaited's server-driven UI stack. Use when working on `src/ui`, the controller protocol, custom elements, dynamic behavioral loading, SSR, or the UI test strategy.
+description: Build and test Plaited's server-driven UI stack. Use when working on `src/ui`, controller islands, controller protocol schemas, SSR templates, CSS helpers, dynamic controller modules, or UI test fixtures.
 license: ISC
-compatibility: Requires bun, @playwright/cli, @happy-dom/global-registrator
+compatibility: Requires bun and @playwright/cli for real browser controller tests
 ---
 
 # Plaited UI
 
 ## Purpose
 
-This skill is the unified entrypoint for Plaited's UI stack.
+Use this skill when changing Plaited's UI runtime, renderer, CSS helpers, custom
+element controllers, browser/server controller protocol, or UI tests.
 
-Use it when you need to:
+The UI model is server-driven and island-scoped:
 
-- build or change `src/ui/`
-- work on server-driven rendering through the controller protocol
-- design `controlDocument` or `decorateElements` flows
-- add dynamic client behavior through `update_behavioral`
-- test UI behavior from schema-level checks up through real browser flows
+- the server or agent produces JSX templates
+- `createSSR()` serializes templates into HTML strings
+- `controlIsland(tag)` registers topic-scoped custom elements
+- each island connects to `/ws` using its `p-topic` value as the WebSocket subprotocol
+- the server pushes `render`, `attrs`, `import`, and `disconnect` commands
+- the browser sends `ui_event` and `error` messages back to the server
 
-**Prerequisite:** use `behavioral-core` when the change depends on BP semantics
-rather than the UI surface itself.
+Use `behavioral-core` only when the task depends on behavioral-programming
+semantics. The browser controller itself should stay small and protocol-shaped.
 
-## Structural Overview
+## Source Map
 
-`src/ui/` is split into four subsystems:
+Public UI exports are re-exported from `src/ui.ts`.
 
-| Subsystem | Key APIs | Primary Reference |
+| Area | Files | Primary APIs |
 |---|---|---|
-| Rendering pipeline | `createTemplate` / `h`, `Fragment`, `createSSR` | `references/server-pipeline.md` |
-| CSS system | `createStyles`, `createTokens`, `createHostStyles`, `createKeyframes`, `joinStyles` | `references/css-system.md` |
-| DOM/custom elements | `controlDocument`, `decorateElements`, `DelegatedListener` | This skill + `references/server-pipeline.md` |
-| Controller protocol | `render`, `attrs`, `update_behavioral`, `disconnect`, `user_action`, `snapshot` | `references/update-behavioral.md`, `references/websocket-decisions.md` |
+| Controller islands | `src/ui/controller/control-island.ts` | `controlIsland`, `ControllerTemplate` |
+| Controller protocol | `src/ui/controller/controller.schemas.ts`, `src/ui/controller/controller.types.ts`, `src/bridge-events.ts` | `RenderMessageSchema`, `AttrsMessageSchema`, `ImportModuleSchema`, `ClientMessageSchema`, `ControllerModuleContext` |
+| Controller utilities | `src/ui/controller/delegated-listener.ts`, `src/ui/controller/controller.constants.ts` | `DelegatedListener`, `delegates`, `SWAP_MODES` |
+| Shadow DOM decoration | `src/ui/controller/decorate-elements.ts` | `decorateElements` |
+| Rendering | `src/ui/render/template.ts`, `src/ui/render/ssr.ts`, `src/ui/render/template.types.ts`, `src/ui/render/template.constants.ts` | `createTemplate`, `h`, `Fragment`, `createSSR`, `P_TARGET`, `P_TRIGGER`, `P_TOPIC` |
+| CSS | `src/ui/css/*.ts` | `createStyles`, `createTokens`, `createHostStyles`, `createRootStyles`, `createKeyframes`, `joinStyles` |
+| Server bridge | `src/modules/server/server-module.ts` | validates `ClientMessageSchema` and forwards client messages |
 
-Public UI exports are re-exported through `src/ui.ts`.
+## Controller Model
 
-## Quick Start
+`controlIsland(tag)` is the browser runtime boundary. It registers a custom
+element and returns a branded template function for SSR use.
 
-1. Start from the protocol and rendering shape, not ad hoc DOM mutation.
-2. Use `p-target` for server-addressable update points.
-3. Use `p-trigger` for browser-to-server event wiring.
-4. Use `update_behavioral` for post-load client logic.
-5. Pick the smallest test layer that matches the change.
+Controller islands require `p-topic`. The topic becomes the WebSocket
+subprotocol and identifies the server-side conversation for that island.
 
-## Rendering Model
+Use these attributes:
 
-Plaited UI is server-driven:
+- `p-topic`: placed on the controller island host; selects the WebSocket topic.
+- `p-target`: placed on descendants that the server can update by `target`.
+- `p-trigger`: placed on descendants that should emit BP-shaped browser events.
 
-- the server/agent produces JSX templates
-- `createSSR()` turns templates into HTML strings
-- the browser controller applies `render` and `attrs` messages
-- BP coordinates client behavior and snapshot reporting
+The controller only queries inside the island for `render` and `attrs` targets.
+Do not make document-global target updates part of this runtime.
+
+## Server To Browser Messages
+
+Messages sent by the server are parsed as BP events first, then narrowed by
+controller schemas.
+
+Supported event types:
+
+| Type | Detail | Behavior |
+|---|---|---|
+| `render` | `{ target, html, swap? }` | Finds `[p-target="${target}"]` inside the island and applies HTML. Defaults to `innerHTML`. |
+| `attrs` | `{ target, attr }` | Sets, removes, or toggles attributes on the target element. |
+| `import` | site-root `.js` path | Dynamically imports a local controller module and invokes its default export. |
+| `disconnect` | optional | Closes the island WebSocket. |
+
+Swap modes are `afterbegin`, `afterend`, `beforebegin`, `beforeend`,
+`innerHTML`, and `outerHTML`.
+
+Rendered HTML is parsed through `template.setHTMLUnsafe()`. Dynamically inserted
+`<script>` tags are inert in browsers; controller modules are the supported
+runtime code-loading path.
+
+Unknown server event types should report a controller `error` message rather
+than silently bypassing the protocol.
+
+## Browser To Server Messages
+
+The browser sends top-level controller client messages:
+
+| Type | Detail | Source |
+|---|---|---|
+| `ui_event` | BP event | `p-trigger` handlers and imported controller modules |
+| `error` | string | controller parse/import/runtime failures |
+
+`p-trigger` values serialize as space-separated `domEvent:eventType` pairs.
+When a matching DOM event fires, the island sends:
+
+```ts
+{
+  type: 'ui_event',
+  detail: {
+    type: eventType,
+    detail: getAttributes(element),
+  },
+}
+```
+
+The detail is an attribute map from the triggering element, not DOM properties.
+This gives the server/agent enough context while keeping the protocol
+serializable.
+
+After a controller module default export finishes, the island emits a BP event
+inside `ui_event`:
+
+```ts
+{
+  type: 'ui_event',
+  detail: {
+    type: 'import_invoked',
+    detail: '/modules/example.js',
+  },
+}
+```
+
+## Controller Modules
+
+Controller modules are loaded through `import` messages and run for side effects.
+The import path must be site-root absolute and end in `.js`; query strings and
+hash fragments are allowed for cache keys and identity changes.
+
+Allowed examples:
+
+- `/modules/search-panel.js`
+- `/modules/search-panel.js?v=42`
+- `/modules/search-panel.js#entry`
+- `/modules/search-panel.js?v=42#entry`
+
+Rejected examples:
+
+- `modules/search-panel.js`
+- `https://example.com/search-panel.js`
+- `//example.com/search-panel.js`
+- `/modules/search-panel.ts`
+- `/modules/search-panel.js.map`
+
+The module must export a default function:
+
+```ts
+import type { ControllerModuleContext } from 'plaited/ui'
+
+export default ({ DelegatedListener, delegates, addDisconnect, trigger }: ControllerModuleContext) => {
+  const button = document.getElementById('save')
+  if (!button) return
+
+  const listener = new DelegatedListener(() => {
+    trigger({ type: 'save_clicked', detail: { id: button.id } })
+  })
+
+  delegates.set(button, listener)
+  button.addEventListener('click', listener)
+  addDisconnect(() => button.removeEventListener('click', listener))
+}
+```
+
+The default export may be synchronous or async. The controller reports
+`import_invoked` after the function resolves.
+
+Imported modules should use `addDisconnect` for cleanup. They may reuse
+`DelegatedListener` and `delegates` for listener lifecycle discipline. They
+should emit BP-shaped events with `trigger`, not open their own controller
+transport.
+
+## Rendering Rules
+
+JSX creates template objects, not DOM nodes.
 
 Important rules:
 
-- JSX produces template objects, not DOM nodes
-- styles are collected at template creation time and deduplicated per connection
-- inline event handlers are not the pattern here; use `p-trigger`
-- dynamically rendered `<script>` tags do not execute
-- `update_behavioral` is the supported path for loading new client logic
+- use `p-target` for server-addressable update points
+- use `p-trigger` instead of inline event handlers
+- `on*` attributes are rejected by the template renderer
+- script tags require `trusted`
+- stylesheets are collected during template creation
+- `createSSR()` deduplicates styles per renderer instance
+- `decorateElements()` creates declarative Shadow DOM wrappers
 
-## Dynamic Behavioral Loading
+Use `createSSR()` per connection or per rendering stream when style
+deduplication matters. Call `clearStyles()` when a connection closes or when the
+server must resend all styles.
 
-`update_behavioral` is the UI system's runtime code-loading boundary.
+## CSS Rules
 
-The flow is:
+Use the existing CSS helpers before adding styling infrastructure:
 
-1. server sends a module URL
-2. client `import(url)` loads it
-3. module exports one or more `useExtension(...)` values
-4. client installs each exported extension where `isExtension(value) === true`
-5. unknown server-originated event types are dropped and reported (allowlist inbound wire events only)
+- `createStyles` for class-producing element styles
+- `createHostStyles` for host styles used by Shadow DOM decorators
+- `createRootStyles` for root-level declarations
+- `createTokens` for design token references
+- `createKeyframes` for animations
+- `joinStyles` to combine style outputs
 
-Loaded modules participate in local coordination through the scoped UI core event lane
-(for example `ui_core:user_action`) without direct server-triggered local handler bypass.
-
-See:
-
-- `references/update-behavioral.md`
-- `references/websocket-decisions.md`
+Do not hand-roll stylesheet concatenation unless the helper APIs cannot express
+the case. Style deduplication depends on the existing stylesheet arrays.
 
 ## Testing Strategy
 
-Use three layers:
+Choose the smallest test layer that proves the change.
 
-| Layer | Use For | Runner |
+| Layer | Use for | Command |
 |---|---|---|
-| Pure function | schemas, constants, transforms, CSS utilities | `bun test` |
-| DOM unit | custom element registration, module return shape, template structure | `bun test` with happy-dom |
-| Real browser | WebSocket roundtrips, swap behavior, dynamic imports, real DOM mutation | `@playwright/cli` |
+| Schema/pure tests | protocol validators, constants, helper behavior | `bun test src/ui/controller/tests/controller.schemas.spec.ts` |
+| DOM/template tests | `decorateElements`, `DelegatedListener`, stable render output | `bun test src/ui/controller/tests/decorate-elements.spec.tsx src/ui/controller/tests/delegated-listener.spec.ts` |
+| Real browser tests | WebSocket lifecycle, swaps, attrs, imports, dynamic DOM behavior | `bun test src/ui/controller/tests/controller-browser.spec.ts` |
+| Typecheck | exported API and cross-module contracts | `bun --bun tsc --noEmit` |
 
-Rules:
+Real browser tests use `@playwright/cli` plus
+`src/ui/controller/tests/fixtures/serve.ts`. Prefer that fixture server over
+mock WebSocket stacks for controller behavior.
 
-- do not append control islands to happy-dom DOM trees
-- use real browser tests for WebSocket and dynamic import behavior
-- prefer fixture servers over brittle mock-WebSocket stacks
-- keep protocol/schema checks in pure tests when possible
+Browser coverage should include:
 
-See `references/testing.md` for the detailed testing patterns.
+- custom element registration
+- WebSocket open and retry behavior
+- all swap modes
+- default `innerHTML` behavior when `swap` is omitted
+- `attrs` string, number, boolean, and null removal behavior
+- `p-trigger` to `ui_event` with attribute-map detail
+- controller module import success
+- `import_invoked`
+- imported delegated listeners
+- cleanup callbacks on disconnect
+- invalid module and unsupported event error paths
 
-## When To Open References
+Keep schema tests exhaustive for protocol edges:
 
-- `references/server-pipeline.md`
-  Use when changing SSR output, template behavior, style injection, or light/shadow DOM handoff.
-- `references/css-system.md`
-  Use when changing styling helpers or token behavior.
-- `references/update-behavioral.md`
-  Use when changing dynamic behavioral loading or its validation/security model.
-- `references/websocket-decisions.md`
-  Use when changing protocol transport, session, replay, CSP, or origin rules.
-- `references/testing.md`
-  Use when adding or revising UI tests.
+- accepted and rejected swap modes
+- required render fields
+- primitive-only attrs
+- site-root JavaScript import paths
+- controller module default callable checks
+- top-level client message discrimination
+
+## Workflow
+
+1. Read code before relying on docs. `src/ui/` and `src/modules/server/` are
+   the source of truth.
+2. Start at the protocol boundary: schemas and event names first, DOM behavior
+   second.
+3. Keep controller changes island-scoped. Avoid document-level behavior unless a
+   specific feature requires it.
+4. Prefer `p-trigger` plus server/agent responses over client-local business
+   logic.
+5. Use controller modules for browser-side side effects that cannot be expressed
+   as pushed HTML or attributes.
+6. Add or update tests in the layer closest to the changed behavior.
+7. Run targeted controller tests and `bun --bun tsc --noEmit` before committing.
+
+## Common Pitfalls
+
+- Do not accept remote import URLs for controller modules.
+- Do not assume imported scripts in rendered HTML execute.
+- Do not query outside the island when handling `render` or `attrs`.
+- Do not attach duplicate listeners in imported modules; use `DelegatedListener`,
+  `delegates`, and `addDisconnect`.
+- Do not commit generated fixture `dist` files; fixture builds write under an
+  ignored `dist` directory.
+
+## Reference Files
+
+Open these when you need deeper context, but verify them against code:
+
+- `references/server-pipeline.md`: SSR/template pipeline details
+- `references/css-system.md`: CSS helper details
+- `references/controller-modules.md`: dynamic controller module import contract
+- `references/testing.md`: UI test layering and browser fixture approach
+- `references/websocket-decisions.md`: transport rationale
 
 ## Related Skills
 
-- `behavioral-core` for BP semantics and thread design
-- `code-documentation` for TSDoc work in `src/ui`
+- `behavioral-core` for BP event semantics and server-side behavioral programs
+- `code-documentation` for TSDoc and public API documentation

@@ -34,6 +34,10 @@ Generates `:host{}` rules for custom elements and shadow-DOM-oriented styling.
 In SSR output those selectors are rewritten to `:root{}` and later restored by
 the element/shadow pipeline where needed.
 
+Use host styles with `decorateElements` when styling declarative Shadow DOM
+hosts. `controlIsland` hosts use `display: contents` from their controller
+template so they do not introduce an extra layout box by default.
+
 ### `createKeyframes`
 
 Generates hashed `@keyframes` names for deduped animation rules.
@@ -44,3 +48,14 @@ Composes multiple stylesheet-bearing values into one collection.
 
 Use it when a component needs to merge host styles, slot styles, and other
 generated CSS surfaces.
+
+## Controller Interactions
+
+Controller `render` messages may include HTML produced by `createSSR()`.
+Stylesheets are still deduplicated by the server-side renderer before the HTML
+is sent. Do not make the browser controller responsible for CSS deduplication.
+
+When a pushed render introduces new `p-trigger` elements, the controller island
+binds those triggers after parsing the HTML fragment. Styling and trigger
+binding are separate concerns: styles travel in rendered HTML, while trigger
+behavior is derived from the serialized `p-trigger` attribute.

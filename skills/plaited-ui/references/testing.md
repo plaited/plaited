@@ -15,8 +15,8 @@ flowchart TB
 
 Use for:
 
-- schema validation
-- constants and enums
+- controller schema validation
+- constants and event names
 - pure transforms
 - CSS helpers
 
@@ -24,22 +24,36 @@ Runner:
 
 - `bun test`
 
+Current controller schema command:
+
+```bash
+bun test src/ui/controller/tests/controller.schemas.spec.ts
+```
+
 ## Layer 2: DOM Unit
 
 Use for:
 
-- custom element registration
-- module return shape
+- `DelegatedListener`
+- decorator template shape
 - template output structure
+- stable Shadow DOM serialization
 
 Runner:
 
-- `bun test` with `@happy-dom/global-registrator`
+- `bun test`
 
 Rules:
 
 - do not append control islands to the DOM in happy-dom
-- keep these tests focused on registration/module shape, not live transport
+- keep these tests focused on pure DOM/template behavior, not live transport
+
+Current focused commands:
+
+```bash
+bun test src/ui/controller/tests/delegated-listener.spec.ts
+bun test src/ui/controller/tests/decorate-elements.spec.tsx
+```
 
 ## Layer 3: Real Browser
 
@@ -49,15 +63,53 @@ Use for:
 - swap modes
 - declarative shadow DOM
 - attribute mutations
-- `p-trigger` action flows
-- dynamic `import()` and behavioral loading
+- `p-trigger` to `ui_event` flows
+- dynamic `import()` and controller module callbacks
+- imported delegated listeners
+- import and unsupported-message errors
+- disconnect cleanup callbacks
 - reconnect/retry behavior
 
 Runner:
 
-- `@playwright/cli`
+- `bun test src/ui/controller/tests/controller-browser.spec.ts`
 
 Use a real fixture server rather than a mocked WebSocket stack.
+The fixture server is `src/ui/controller/tests/fixtures/serve.ts`.
+
+## Controller Browser Fixtures
+
+Source fixtures live in `src/ui/controller/tests/fixtures/`.
+
+Use:
+
+- `control-island.entry.ts` for the base controller island page
+- `test-elements.entry.ts` for dynamic test pages like `swap-test`,
+  `attrs-test`, `action-test`, and retry/error cases
+- `module-fixture.entry.ts` for controller module import behavior
+- `controller-module.ts` for valid side-effect module behavior
+- `invalid-controller-module.ts` for import validation failures
+- `swap-fixture.entry.ts` for declarative Shadow DOM parsing
+
+The fixture server builds these files into an ignored `dist` directory. Do not
+commit generated fixture output.
+
+## Coverage Checklist
+
+Browser tests should cover:
+
+- custom element registration
+- default `innerHTML` behavior when `render.detail.swap` is omitted
+- all six swap modes
+- `attrs` set, remove, boolean, and number values
+- `p-trigger` event serialization with triggering element attributes
+- dynamic import of a valid controller module
+- `import_invoked` after module setup
+- imported module delegated listeners
+- `addDisconnect` cleanup
+- invalid imported module default export
+- unsupported server-originated event type reporting
+- retry after supported WebSocket close codes
 
 ## Anti-Patterns
 
