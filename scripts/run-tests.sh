@@ -9,8 +9,9 @@ trap 'rm -f "$serial_file_list" "$all_file_list" "$parallel_file_list"' EXIT
 rg -F -l 'Bun.serve(' src scripts skills -g '*.spec.ts' | sort -u > "$serial_file_list"
 cat >> "$serial_file_list" <<'LIST'
 src/mcp/tests/mcp.spec.ts
-src/modules/server/tests/server-module.spec.ts
-src/ui/dom/tests/controller-browser.spec.ts
+src/modules/tests/ui-websocket-runtime-actor.spec.ts
+src/modules/tests/inference-websocket-runtime-actor.spec.ts
+src/ui/controller/tests/controller-browser.spec.ts
 LIST
 sort -u -o "$serial_file_list" "$serial_file_list"
 

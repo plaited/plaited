@@ -32,7 +32,10 @@ User → Control Plane (authenticates) → Node (verifies JWT)
 ## Implementation Pattern
 
 ```typescript
-import { createServerModule, SERVER_MODULE_EVENTS } from 'plaited/modules'
+import {
+  toUiWebSocketRuntimeActorEventType,
+  UI_WEBSOCKET_RUNTIME_ACTOR_EVENTS,
+} from 'plaited/modules'
 
 // Shared secret between control plane and node
 // Set via environment variable, never hardcoded
@@ -57,10 +60,8 @@ const authenticateConnection = async ({ request }) => {
   }
 }
 
-const serverModule = createServerModule()
-
 agent.trigger({
-  type: SERVER_MODULE_EVENTS.server_set_config,
+  type: toUiWebSocketRuntimeActorEventType(UI_WEBSOCKET_RUNTIME_ACTOR_EVENTS.server_start),
   detail: {
     routes: {},  // No auth routes needed — control plane handles login
     authenticateConnection,
