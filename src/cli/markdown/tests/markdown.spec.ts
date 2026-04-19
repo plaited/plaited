@@ -159,6 +159,13 @@ Ignore [docs](https://example.com), [anchor](#top), and <img src="https://exampl
       { value: 'scripts/c.ts', text: 'scripts/c.ts' },
     ])
   })
+
+  test('handles html anchor text with repeated unmatched angle brackets', async () => {
+    const angleText = '<'.repeat(2_000)
+    const links = await extractLocalLinksFromMarkdown(`<a href="scripts/run.ts">${angleText}</a>`)
+
+    expect(links).toEqual([{ value: 'scripts/run.ts', text: angleText }])
+  })
 })
 
 describe('markdownLinks', () => {

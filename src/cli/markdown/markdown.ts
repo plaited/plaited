@@ -229,7 +229,33 @@ const extractMarkdownLinkDestination = (value: string): string => {
   return trimmedValue.slice(0, firstWhitespaceIndex)
 }
 
-const stripHtmlTags = (value: string): string => value.replace(/<[^>]*>/g, '')
+const stripHtmlTags = (value: string): string => {
+  const textParts: string[] = []
+  let pendingTag: string[] | null = null
+
+  for (const character of value) {
+    if (pendingTag) {
+      pendingTag.push(character)
+      if (character === '>') {
+        pendingTag = null
+      }
+      continue
+    }
+
+    if (character === '<') {
+      pendingTag = ['<']
+      continue
+    }
+
+    textParts.push(character)
+  }
+
+  if (pendingTag) {
+    textParts.push(...pendingTag)
+  }
+
+  return textParts.join('')
+}
 
 const setLinkTextIfMissing = ({
   linkTextByTarget,
