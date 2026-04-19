@@ -231,3 +231,71 @@ export const SnapshotMessageSchema = z.discriminatedUnion('kind', [
 
 /** @public */
 export type SnapshotMessage = z.infer<typeof SnapshotMessageSchema>
+
+/**
+ * Shared actor kinds for behavioral actor-kernel envelopes.
+ *
+ * @public
+ */
+export const ActorKindSchema = z.enum([
+  'module',
+  'ui',
+  'inference',
+  'mcp',
+  'identity',
+  'stream',
+  'execution',
+  'projection',
+  'supervisor',
+])
+
+/** @public */
+export type ActorKind = z.infer<typeof ActorKindSchema>
+
+/**
+ * Serializable reference to an actor participating in a cross-actor exchange.
+ *
+ * @public
+ */
+export const ActorRefSchema = z.object({
+  id: z.string().min(1),
+  kind: ActorKindSchema,
+  moduleId: z.string().optional(),
+})
+
+/** @public */
+export type ActorRef = z.infer<typeof ActorRefSchema>
+
+/**
+ * Optional envelope metadata for intent and routing classification.
+ *
+ * @public
+ */
+export const ActorEnvelopeMetaSchema = z.object({
+  purpose: z.string().optional(),
+  scale: z.string().optional(),
+  boundary: z.string().optional(),
+})
+
+/** @public */
+export type ActorEnvelopeMeta = z.infer<typeof ActorEnvelopeMetaSchema>
+
+/**
+ * Serializable event envelope observed at actor boundaries.
+ *
+ * @public
+ */
+export const ActorEnvelopeSchema = z.object({
+  id: z.string().min(1),
+  type: z.string().min(1),
+  source: ActorRefSchema,
+  target: ActorRefSchema.optional(),
+  grantId: z.string().optional(),
+  correlationId: z.string().optional(),
+  causationId: z.string().optional(),
+  detail: z.record(z.string(), z.json()).optional(),
+  meta: ActorEnvelopeMetaSchema.optional(),
+})
+
+/** @public */
+export type ActorEnvelope = z.infer<typeof ActorEnvelopeSchema>
