@@ -293,7 +293,7 @@ export const ActorEnvelopeSchema = z.object({
   grantId: z.string().optional(),
   correlationId: z.string().optional(),
   causationId: z.string().optional(),
-  detail: z.record(z.string(), z.unknown()).optional(),
+  detail: z.record(z.string(), z.json()).optional(),
   meta: ActorEnvelopeMetaSchema.optional(),
 })
 

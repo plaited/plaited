@@ -34,4 +34,34 @@ describe('actor kernel schemas', () => {
     expect(required).toEqual(expect.arrayContaining(['id', 'type', 'source']))
     expect(required).toHaveLength(3)
   })
+
+  test('ActorEnvelopeSchema accepts nested JSON detail object values', () => {
+    const parsed = ActorEnvelopeSchema.parse({
+      id: 'env-1',
+      type: 'test_event',
+      source: { id: 'source-1', kind: 'module' },
+      detail: {
+        nested: {
+          ok: true,
+          count: 2,
+          list: ['a', 1, null, { deep: 'value' }],
+        },
+      },
+    })
+
+    expect(parsed.detail?.nested).toBeDefined()
+  })
+
+  test('ActorEnvelopeSchema rejects non-JSON detail values like functions', () => {
+    expect(() =>
+      ActorEnvelopeSchema.parse({
+        id: 'env-2',
+        type: 'test_event',
+        source: { id: 'source-1', kind: 'module' },
+        detail: {
+          fn: () => 'not json',
+        },
+      }),
+    ).toThrow()
+  })
 })
