@@ -38,7 +38,24 @@ const CallFactSchema = z.object({
   location: SourceLocationSchema,
 })
 
+const HelperCallFactSchema = z.object({
+  helperName: z.string().min(1),
+  callee: z.string().min(1),
+  location: SourceLocationSchema,
+})
+
 const HandlerFlowSchema = z.object({
+  name: z.string().min(1),
+  location: SourceLocationSchema,
+  parseCalls: z.array(ParseCallFactSchema),
+  tryCatchBoundaries: z.array(TryCatchBoundaryFactSchema),
+  triggerEventCalls: z.array(TriggerEventFactSchema),
+  reportSnapshotCalls: z.array(CallFactSchema),
+  transportDiagnosticCalls: z.array(CallFactSchema),
+  helperCalls: z.array(HelperCallFactSchema),
+})
+
+const HelperFlowSchema = z.object({
   name: z.string().min(1),
   location: SourceLocationSchema,
   parseCalls: z.array(ParseCallFactSchema),
@@ -52,6 +69,7 @@ const ExtensionFlowSchema = z.object({
   idExpression: z.string().nullable(),
   location: SourceLocationSchema,
   handlers: z.array(HandlerFlowSchema),
+  helpers: z.array(HelperFlowSchema),
 })
 
 const FileFlowSchema = z.object({
@@ -82,6 +100,12 @@ export type SourceLocation = z.infer<typeof SourceLocationSchema>
 export type ModuleFlowRenderOutput = z.infer<typeof ModuleFlowRenderOutputSchema>
 
 type HandlerEntry = {
+  name: string
+  body: ts.Block
+  node: ts.Node
+}
+
+type LocalHelperEntry = {
   name: string
   body: ts.Block
   node: ts.Node
@@ -237,6 +261,51 @@ const getHandlerEntries = (objectLiteral: ts.ObjectLiteralExpression): HandlerEn
   return handlers
 }
 
+const collectLocalHelpers = (callback: ts.ArrowFunction | ts.FunctionExpression): LocalHelperEntry[] => {
+  if (!ts.isBlock(callback.body)) {
+    return []
+  }
+
+  const helpers: LocalHelperEntry[] = []
+
+  for (const statement of callback.body.statements) {
+    if (ts.isFunctionDeclaration(statement) && statement.name && statement.body) {
+      helpers.push({
+        name: statement.name.text,
+        body: statement.body,
+        node: statement.name,
+      })
+      continue
+    }
+
+    if (!ts.isVariableStatement(statement)) {
+      continue
+    }
+
+    for (const declaration of statement.declarationList.declarations) {
+      if (!ts.isIdentifier(declaration.name) || !declaration.initializer) {
+        continue
+      }
+
+      if (!(ts.isArrowFunction(declaration.initializer) || ts.isFunctionExpression(declaration.initializer))) {
+        continue
+      }
+
+      if (!ts.isBlock(declaration.initializer.body)) {
+        continue
+      }
+
+      helpers.push({
+        name: declaration.name.text,
+        body: declaration.initializer.body,
+        node: declaration.name,
+      })
+    }
+  }
+
+  return helpers
+}
+
 const getTriggerCreateEventInfo = ({
   call,
   sourceFile,
@@ -310,13 +379,7 @@ const sortByLocation = <T extends { location: SourceLocation }>(items: T[]): voi
   items.sort((a, b) => compareLocations(a.location, b.location))
 }
 
-const analyzeHandler = ({
-  sourceFile,
-  handler,
-}: {
-  sourceFile: ts.SourceFile
-  handler: HandlerEntry
-}): z.infer<typeof HandlerFlowSchema> => {
+const analyzeBodyFacts = ({ sourceFile, body }: { sourceFile: ts.SourceFile; body: ts.Block }) => {
   const parseCalls: z.infer<typeof ParseCallFactSchema>[] = []
   const tryCatchBoundaries: z.infer<typeof TryCatchBoundaryFactSchema>[] = []
   const triggerEventCalls: z.infer<typeof TriggerEventFactSchema>[] = []
@@ -324,8 +387,8 @@ const analyzeHandler = ({
   const transportDiagnosticCalls: z.infer<typeof CallFactSchema>[] = []
 
   walk({
-    node: handler.body,
-    rootFunction: handler.body,
+    node: body,
+    rootFunction: body,
     skipNestedFunctions: true,
     visitor: (node) => {
       if (ts.isTryStatement(node)) {
@@ -388,13 +451,84 @@ const analyzeHandler = ({
   sortByLocation(transportDiagnosticCalls)
 
   return {
-    name: handler.name,
-    location: toLineColumn(sourceFile, handler.node),
     parseCalls,
     tryCatchBoundaries,
     triggerEventCalls,
     reportSnapshotCalls,
     transportDiagnosticCalls,
+  }
+}
+
+const analyzeHandler = ({
+  sourceFile,
+  handler,
+  helperNames,
+}: {
+  sourceFile: ts.SourceFile
+  handler: HandlerEntry
+  helperNames: Set<string>
+}): z.infer<typeof HandlerFlowSchema> => {
+  const flowFacts = analyzeBodyFacts({
+    sourceFile,
+    body: handler.body,
+  })
+  const helperCalls: z.infer<typeof HelperCallFactSchema>[] = []
+
+  walk({
+    node: handler.body,
+    rootFunction: handler.body,
+    skipNestedFunctions: true,
+    visitor: (node) => {
+      if (!ts.isCallExpression(node)) {
+        return
+      }
+
+      if (ts.isIdentifier(node.expression) && helperNames.has(node.expression.text)) {
+        helperCalls.push({
+          helperName: node.expression.text,
+          callee: node.expression.text,
+          location: toLineColumn(sourceFile, node),
+        })
+      }
+
+      const calleeText = getCalleeText(sourceFile, node)
+      if (ts.isPropertyAccessExpression(node.expression)) {
+        const helperName = node.expression.name.text
+        if (helperNames.has(helperName)) {
+          helperCalls.push({
+            helperName,
+            callee: calleeText,
+            location: toLineColumn(sourceFile, node),
+          })
+        }
+      }
+    },
+  })
+
+  sortByLocation(helperCalls)
+
+  return {
+    name: handler.name,
+    location: toLineColumn(sourceFile, handler.node),
+    ...flowFacts,
+    helperCalls,
+  }
+}
+
+const analyzeHelper = ({
+  sourceFile,
+  helper,
+}: {
+  sourceFile: ts.SourceFile
+  helper: LocalHelperEntry
+}): z.infer<typeof HelperFlowSchema> => {
+  return {
+    name: helper.name,
+    location: toLineColumn(sourceFile, helper.node),
+    ...analyzeBodyFacts({
+      sourceFile,
+      body: helper.body,
+    }),
   }
 }
 
@@ -427,11 +561,30 @@ const analyzeFile = async ({ file }: { file: string }): Promise<z.infer<typeof F
 
       const callback = getUseExtensionCallback(node)
       const handlers: z.infer<typeof HandlerFlowSchema>[] = []
+      const helpers: z.infer<typeof HelperFlowSchema>[] = []
 
       if (callback) {
+        const localHelpers = collectLocalHelpers(callback)
+        const helperNames = new Set(localHelpers.map((helper) => helper.name))
+
+        for (const helper of localHelpers) {
+          helpers.push(
+            analyzeHelper({
+              sourceFile,
+              helper,
+            }),
+          )
+        }
+
         for (const objectLiteral of collectReturnedObjectLiterals(callback)) {
           for (const handler of getHandlerEntries(objectLiteral)) {
-            handlers.push(analyzeHandler({ sourceFile, handler }))
+            handlers.push(
+              analyzeHandler({
+                sourceFile,
+                handler,
+                helperNames,
+              }),
+            )
           }
         }
       }
@@ -443,11 +596,19 @@ const analyzeFile = async ({ file }: { file: string }): Promise<z.infer<typeof F
         }
         return a.name.localeCompare(b.name)
       })
+      helpers.sort((a, b) => {
+        const locationCompare = compareLocations(a.location, b.location)
+        if (locationCompare !== 0) {
+          return locationCompare
+        }
+        return a.name.localeCompare(b.name)
+      })
 
       extensions.push({
         idExpression: node.arguments[0] ? node.arguments[0].getText(sourceFile) : null,
         location: toLineColumn(sourceFile, node),
         handlers,
+        helpers,
       })
     },
   })
@@ -490,6 +651,61 @@ const renderMermaid = ({ graph }: { graph: z.infer<typeof ModuleFlowGraphSchema>
     lines.push(`  ${from} --> ${to}`)
   }
 
+  const renderFlowFacts = ({
+    ownerNode,
+    parseCalls,
+    tryCatchBoundaries,
+    triggerEventCalls,
+    reportSnapshotCalls,
+    transportDiagnosticCalls,
+  }: {
+    ownerNode: string
+    parseCalls: z.infer<typeof ParseCallFactSchema>[]
+    tryCatchBoundaries: z.infer<typeof TryCatchBoundaryFactSchema>[]
+    triggerEventCalls: z.infer<typeof TriggerEventFactSchema>[]
+    reportSnapshotCalls: z.infer<typeof CallFactSchema>[]
+    transportDiagnosticCalls: z.infer<typeof CallFactSchema>[]
+  }) => {
+    for (const parseCall of parseCalls) {
+      const parseNode = addNode(
+        `${parseCall.method} ${parseCall.schema}(${parseCall.argument}) @${formatLocation(parseCall.location)}`,
+      )
+      addEdge(ownerNode, parseNode, 'parse')
+    }
+
+    for (const boundary of tryCatchBoundaries) {
+      const tryNode = addNode(`try @${formatLocation(boundary.tryLocation)}`)
+      addEdge(ownerNode, tryNode, 'try')
+
+      if (boundary.catchLocation) {
+        const catchNode = addNode(`catch @${formatLocation(boundary.catchLocation)}`)
+        addEdge(tryNode, catchNode, 'catch')
+      }
+
+      if (boundary.finallyLocation) {
+        const finallyNode = addNode(`finally @${formatLocation(boundary.finallyLocation)}`)
+        addEdge(tryNode, finallyNode, 'finally')
+      }
+    }
+
+    for (const triggerEvent of triggerEventCalls) {
+      const triggerNode = addNode(
+        `trigger ${triggerEvent.factory}(${triggerEvent.eventName ?? 'unknown'}) @${formatLocation(triggerEvent.location)}`,
+      )
+      addEdge(ownerNode, triggerNode, 'trigger')
+    }
+
+    for (const snapshotCall of reportSnapshotCalls) {
+      const snapshotNode = addNode(`${snapshotCall.callee} @${formatLocation(snapshotCall.location)}`)
+      addEdge(ownerNode, snapshotNode, 'snapshot')
+    }
+
+    for (const transportCall of transportDiagnosticCalls) {
+      const transportNode = addNode(`${transportCall.callee} @${formatLocation(transportCall.location)}`)
+      addEdge(ownerNode, transportNode, 'transport')
+    }
+  }
+
   for (const fileFlow of graph.files) {
     const fileNode = addNode(`file ${fileFlow.file}`)
 
@@ -498,48 +714,41 @@ const renderMermaid = ({ graph }: { graph: z.infer<typeof ModuleFlowGraphSchema>
         `useExtension(${extension.idExpression ?? 'unknown'}) @${formatLocation(extension.location)}`,
       )
       addEdge(fileNode, extensionNode)
+      const helperNodes = new Map<string, string>()
+
+      for (const helper of extension.helpers) {
+        const helperNode = addNode(`helper ${helper.name} @${formatLocation(helper.location)}`)
+        helperNodes.set(helper.name, helperNode)
+        addEdge(extensionNode, helperNode, 'helper')
+        renderFlowFacts({
+          ownerNode: helperNode,
+          parseCalls: helper.parseCalls,
+          tryCatchBoundaries: helper.tryCatchBoundaries,
+          triggerEventCalls: helper.triggerEventCalls,
+          reportSnapshotCalls: helper.reportSnapshotCalls,
+          transportDiagnosticCalls: helper.transportDiagnosticCalls,
+        })
+      }
 
       for (const handler of extension.handlers) {
         const handlerNode = addNode(`handler ${handler.name} @${formatLocation(handler.location)}`)
         addEdge(extensionNode, handlerNode)
+        renderFlowFacts({
+          ownerNode: handlerNode,
+          parseCalls: handler.parseCalls,
+          tryCatchBoundaries: handler.tryCatchBoundaries,
+          triggerEventCalls: handler.triggerEventCalls,
+          reportSnapshotCalls: handler.reportSnapshotCalls,
+          transportDiagnosticCalls: handler.transportDiagnosticCalls,
+        })
 
-        for (const parseCall of handler.parseCalls) {
-          const parseNode = addNode(
-            `${parseCall.method} ${parseCall.schema}(${parseCall.argument}) @${formatLocation(parseCall.location)}`,
-          )
-          addEdge(handlerNode, parseNode, 'parse')
-        }
-
-        for (const boundary of handler.tryCatchBoundaries) {
-          const tryNode = addNode(`try @${formatLocation(boundary.tryLocation)}`)
-          addEdge(handlerNode, tryNode, 'try')
-
-          if (boundary.catchLocation) {
-            const catchNode = addNode(`catch @${formatLocation(boundary.catchLocation)}`)
-            addEdge(tryNode, catchNode, 'catch')
+        for (const helperCall of handler.helperCalls) {
+          const helperNode = helperNodes.get(helperCall.helperName)
+          if (!helperNode) {
+            continue
           }
 
-          if (boundary.finallyLocation) {
-            const finallyNode = addNode(`finally @${formatLocation(boundary.finallyLocation)}`)
-            addEdge(tryNode, finallyNode, 'finally')
-          }
-        }
-
-        for (const triggerEvent of handler.triggerEventCalls) {
-          const triggerNode = addNode(
-            `trigger ${triggerEvent.factory}(${triggerEvent.eventName ?? 'unknown'}) @${formatLocation(triggerEvent.location)}`,
-          )
-          addEdge(handlerNode, triggerNode, 'trigger')
-        }
-
-        for (const snapshotCall of handler.reportSnapshotCalls) {
-          const snapshotNode = addNode(`${snapshotCall.callee} @${formatLocation(snapshotCall.location)}`)
-          addEdge(handlerNode, snapshotNode, 'snapshot')
-        }
-
-        for (const transportCall of handler.transportDiagnosticCalls) {
-          const transportNode = addNode(`${transportCall.callee} @${formatLocation(transportCall.location)}`)
-          addEdge(handlerNode, transportNode, 'transport')
+          addEdge(handlerNode, helperNode, `calls ${helperCall.helperName} @${formatLocation(helperCall.location)}`)
         }
       }
     }

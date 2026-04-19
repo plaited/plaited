@@ -200,6 +200,54 @@ useExtension('loc-actor', ({ trigger }: { trigger: (value: unknown) => void }) =
     expect(transportLocation?.column).toBeGreaterThan(0)
   })
 
+  test('captures helper-mediated actor diagnostics and handler-to-helper edges', async () => {
+    const file = await writeFixture({
+      name: 'helper-mediated-diagnostic.ts',
+      source: `
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = { start: 'start' } as const
+
+useExtension('mod', ({ reportSnapshot }: { reportSnapshot: (detail: unknown) => void }) => {
+  const reportActorDiagnostic = (message: string) => {
+    reportSnapshot({ kind: 'extension_error', error: message })
+  }
+
+  return {
+    [EVENTS.start](detail: unknown) {
+      StartSchema.parse(detail)
+      reportActorDiagnostic('bad')
+    },
+  }
+})
+`,
+    })
+
+    const jsonOutput = await renderModuleFlow({
+      files: [file],
+      format: 'json',
+    })
+
+    const extension = jsonOutput.graph.files[0]?.extensions[0]
+    const handler = extension?.handlers[0]
+    const helper = extension?.helpers.find((candidate) => candidate.name === 'reportActorDiagnostic')
+
+    expect(handler?.reportSnapshotCalls).toEqual([])
+    expect(handler?.helperCalls.some((call) => call.helperName === 'reportActorDiagnostic')).toBe(true)
+    expect(helper?.reportSnapshotCalls.some((call) => call.callee.includes('reportSnapshot'))).toBe(true)
+
+    const mermaidOutput = await renderModuleFlow({
+      files: [file],
+      format: 'mermaid',
+    })
+    if (mermaidOutput.format !== 'mermaid') {
+      throw new Error('Expected mermaid output format')
+    }
+
+    expect(mermaidOutput.mermaid).toContain('helper reportActorDiagnostic')
+    expect(mermaidOutput.mermaid).toContain('calls reportActorDiagnostic')
+    expect(mermaidOutput.mermaid).toContain('reportSnapshot')
+  })
+
   test('cli exits 2 for missing file and invalid input using shared parser behavior', async () => {
     const missingPath = join(tmpdir(), 'does-not-exist-render-module-flow.ts')
 
