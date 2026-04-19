@@ -63,6 +63,7 @@ const HelperFlowSchema = z.object({
   triggerEventCalls: z.array(TriggerEventFactSchema),
   reportSnapshotCalls: z.array(CallFactSchema),
   transportDiagnosticCalls: z.array(CallFactSchema),
+  helperCalls: z.array(HelperCallFactSchema),
 })
 
 const ExtensionFlowSchema = z.object({
@@ -107,7 +108,7 @@ type HandlerEntry = {
 
 type LocalHelperEntry = {
   name: string
-  body: ts.Block
+  body: ts.ConciseBody
   node: ts.Node
 }
 
@@ -291,10 +292,6 @@ const collectLocalHelpers = (callback: ts.ArrowFunction | ts.FunctionExpression)
         continue
       }
 
-      if (!ts.isBlock(declaration.initializer.body)) {
-        continue
-      }
-
       helpers.push({
         name: declaration.name.text,
         body: declaration.initializer.body,
@@ -379,7 +376,7 @@ const sortByLocation = <T extends { location: SourceLocation }>(items: T[]): voi
   items.sort((a, b) => compareLocations(a.location, b.location))
 }
 
-const analyzeBodyFacts = ({ sourceFile, body }: { sourceFile: ts.SourceFile; body: ts.Block }) => {
+const analyzeBodyFacts = ({ sourceFile, body }: { sourceFile: ts.SourceFile; body: ts.ConciseBody }) => {
   const parseCalls: z.infer<typeof ParseCallFactSchema>[] = []
   const tryCatchBoundaries: z.infer<typeof TryCatchBoundaryFactSchema>[] = []
   const triggerEventCalls: z.infer<typeof TriggerEventFactSchema>[] = []
@@ -459,6 +456,64 @@ const analyzeBodyFacts = ({ sourceFile, body }: { sourceFile: ts.SourceFile; bod
   }
 }
 
+const collectHelperCalls = ({
+  sourceFile,
+  body,
+  helperNames,
+  currentHelperName,
+}: {
+  sourceFile: ts.SourceFile
+  body: ts.ConciseBody
+  helperNames: Set<string>
+  currentHelperName?: string
+}) => {
+  const helperCalls: z.infer<typeof HelperCallFactSchema>[] = []
+
+  walk({
+    node: body,
+    rootFunction: body,
+    skipNestedFunctions: true,
+    visitor: (node) => {
+      if (!ts.isCallExpression(node)) {
+        return
+      }
+
+      if (ts.isIdentifier(node.expression) && helperNames.has(node.expression.text)) {
+        if (currentHelperName !== undefined && node.expression.text === currentHelperName) {
+          return
+        }
+
+        helperCalls.push({
+          helperName: node.expression.text,
+          callee: node.expression.text,
+          location: toLineColumn(sourceFile, node),
+        })
+      }
+
+      const calleeText = getCalleeText(sourceFile, node)
+      if (ts.isPropertyAccessExpression(node.expression)) {
+        const helperName = node.expression.name.text
+        if (!helperNames.has(helperName)) {
+          return
+        }
+
+        if (currentHelperName !== undefined && helperName === currentHelperName) {
+          return
+        }
+
+        helperCalls.push({
+          helperName,
+          callee: calleeText,
+          location: toLineColumn(sourceFile, node),
+        })
+      }
+    },
+  })
+
+  sortByLocation(helperCalls)
+  return helperCalls
+}
+
 const analyzeHandler = ({
   sourceFile,
   handler,
@@ -472,40 +527,11 @@ const analyzeHandler = ({
     sourceFile,
     body: handler.body,
   })
-  const helperCalls: z.infer<typeof HelperCallFactSchema>[] = []
-
-  walk({
-    node: handler.body,
-    rootFunction: handler.body,
-    skipNestedFunctions: true,
-    visitor: (node) => {
-      if (!ts.isCallExpression(node)) {
-        return
-      }
-
-      if (ts.isIdentifier(node.expression) && helperNames.has(node.expression.text)) {
-        helperCalls.push({
-          helperName: node.expression.text,
-          callee: node.expression.text,
-          location: toLineColumn(sourceFile, node),
-        })
-      }
-
-      const calleeText = getCalleeText(sourceFile, node)
-      if (ts.isPropertyAccessExpression(node.expression)) {
-        const helperName = node.expression.name.text
-        if (helperNames.has(helperName)) {
-          helperCalls.push({
-            helperName,
-            callee: calleeText,
-            location: toLineColumn(sourceFile, node),
-          })
-        }
-      }
-    },
+  const helperCalls = collectHelperCalls({
+    sourceFile,
+    body: handler.body,
+    helperNames,
   })
-
-  sortByLocation(helperCalls)
 
   return {
     name: handler.name,
@@ -518,9 +544,11 @@ const analyzeHandler = ({
 const analyzeHelper = ({
   sourceFile,
   helper,
+  helperNames,
 }: {
   sourceFile: ts.SourceFile
   helper: LocalHelperEntry
+  helperNames: Set<string>
 }): z.infer<typeof HelperFlowSchema> => {
   return {
     name: helper.name,
@@ -528,6 +556,12 @@ const analyzeHelper = ({
     ...analyzeBodyFacts({
       sourceFile,
       body: helper.body,
+    }),
+    helperCalls: collectHelperCalls({
+      sourceFile,
+      body: helper.body,
+      helperNames,
+      currentHelperName: helper.name,
     }),
   }
 }
@@ -572,6 +606,7 @@ const analyzeFile = async ({ file }: { file: string }): Promise<z.infer<typeof F
             analyzeHelper({
               sourceFile,
               helper,
+              helperNames,
             }),
           )
         }
@@ -720,6 +755,14 @@ const renderMermaid = ({ graph }: { graph: z.infer<typeof ModuleFlowGraphSchema>
         const helperNode = addNode(`helper ${helper.name} @${formatLocation(helper.location)}`)
         helperNodes.set(helper.name, helperNode)
         addEdge(extensionNode, helperNode, 'helper')
+      }
+
+      for (const helper of extension.helpers) {
+        const helperNode = helperNodes.get(helper.name)
+        if (!helperNode) {
+          continue
+        }
+
         renderFlowFacts({
           ownerNode: helperNode,
           parseCalls: helper.parseCalls,
@@ -728,6 +771,19 @@ const renderMermaid = ({ graph }: { graph: z.infer<typeof ModuleFlowGraphSchema>
           reportSnapshotCalls: helper.reportSnapshotCalls,
           transportDiagnosticCalls: helper.transportDiagnosticCalls,
         })
+
+        for (const helperCall of helper.helperCalls) {
+          const targetHelperNode = helperNodes.get(helperCall.helperName)
+          if (!targetHelperNode) {
+            continue
+          }
+
+          addEdge(
+            helperNode,
+            targetHelperNode,
+            `calls ${helperCall.helperName} @${formatLocation(helperCall.location)}`,
+          )
+        }
       }
 
       for (const handler of extension.handlers) {
