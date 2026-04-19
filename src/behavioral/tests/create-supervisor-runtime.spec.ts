@@ -23,6 +23,12 @@ const createEnvelope = (id: string) => ({
 })
 
 describe('createSupervisorRuntime', () => {
+  test('throws when authorityDomainId is an empty string', () => {
+    expect(() => createSupervisorRuntime({ authorityDomainId: '' })).toThrowError(
+      /authorityDomainId to be a non-empty string/,
+    )
+  })
+
   test('accepts valid envelopes and records replay/frontier diagnostics', () => {
     const runtime = createSupervisorRuntime({ authorityDomainId: 'domain:node-local' })
     const seenSnapshots: SnapshotMessage[] = []
@@ -79,6 +85,30 @@ describe('createSupervisorRuntime', () => {
       snapshot.bids.some((bid) => bid.type === SUPERVISOR_RUNTIME_EVENTS.envelopeReceived && bid.source === 'trigger'),
     )
     expect(receivesEnvelopeEvent).toBe(true)
+  })
+
+  test('getter results are deeply cloned and cannot mutate internal history', () => {
+    const runtime = createSupervisorRuntime({ authorityDomainId: 'domain:node-local' })
+    runtime.receiveEnvelope(createEnvelope('env-1'))
+
+    const selectedEnvelopeHistory = runtime.getSelectedEnvelopeHistory()
+    const replayHistory = runtime.getReplayHistory()
+
+    selectedEnvelopeHistory[0]!.detail!.command = 'mutated-selected-history'
+
+    const replayDetail = replayHistory[0]!.detail as {
+      authorityDomainId: string
+      envelope: { detail?: { command?: string } }
+    }
+    replayDetail.envelope.detail!.command = 'mutated-replay-history'
+
+    expect(runtime.getSelectedEnvelopeHistory()[0]!.detail!.command).toBe('run')
+
+    const nextReplayDetail = runtime.getReplayHistory()[0]!.detail as {
+      authorityDomainId: string
+      envelope: { detail?: { command?: string } }
+    }
+    expect(nextReplayDetail.envelope.detail!.command).toBe('run')
   })
 
   test('rejects malformed envelopes and emits validation diagnostics', () => {

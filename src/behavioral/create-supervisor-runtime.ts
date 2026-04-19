@@ -8,6 +8,7 @@ import { behavioral } from './behavioral.ts'
 import type { ReplayEvent, SnapshotListener, UseSnapshot } from './behavioral.types.ts'
 
 const DEFAULT_AUTHORITY_DOMAIN_ID = 'node-local'
+const AuthorityDomainIdSchema = z.string().min(1)
 
 export const SUPERVISOR_RUNTIME_EVENTS = {
   envelopeReceived: 'supervisor:envelope_received',
@@ -43,12 +44,17 @@ const createSupervisorThreads = () => ({
   ),
 })
 
-const cloneReplayHistory = (history: ReplayEvent[]) =>
-  history.map((event) => ({
-    type: event.type,
-    source: event.source,
-    ...(event.detail !== undefined && { detail: event.detail }),
-  }))
+const cloneReplayHistory = (history: ReplayEvent[]) => structuredClone(history)
+
+const cloneEnvelopeHistory = (history: ActorEnvelope[]) => structuredClone(history)
+
+const cloneFrontierDiagnostics = (diagnostics: SupervisorFrontierDiagnostic[]) => structuredClone(diagnostics)
+
+const cloneValidationDiagnostics = (diagnostics: SupervisorValidationDiagnostic[]) => structuredClone(diagnostics)
+
+const cloneDecisionHistory = (decisions: SupervisorDecisionRecord[]) => structuredClone(decisions)
+
+const cloneSnapshots = (snapshots: SnapshotMessage[]) => structuredClone(snapshots)
 
 const formatValidationError = (error: z.ZodError): string =>
   error.issues
@@ -105,8 +111,21 @@ export type SupervisorReceiveResult =
       error: string
     }
 
+const resolveAuthorityDomainId = (authorityDomainId?: string) => {
+  if (authorityDomainId === undefined) {
+    return DEFAULT_AUTHORITY_DOMAIN_ID
+  }
+
+  const parsedAuthorityDomainId = AuthorityDomainIdSchema.safeParse(authorityDomainId)
+  if (!parsedAuthorityDomainId.success) {
+    throw new Error('createSupervisorRuntime requires authorityDomainId to be a non-empty string when provided.')
+  }
+
+  return parsedAuthorityDomainId.data
+}
+
 export const createSupervisorRuntime = (options: CreateSupervisorRuntimeOptions = {}) => {
-  const authorityDomainId = options.authorityDomainId ?? DEFAULT_AUTHORITY_DOMAIN_ID
+  const authorityDomainId = resolveAuthorityDomainId(options.authorityDomainId)
   const replayThreads = createSupervisorThreads()
   const replayHistory: ReplayEvent[] = []
   const selectedEnvelopeHistory: ActorEnvelope[] = []
@@ -225,12 +244,13 @@ export const createSupervisorRuntime = (options: CreateSupervisorRuntimeOptions 
     receiveEnvelope,
     useSnapshot: subscribeSnapshot,
     getReplayHistory: () => cloneReplayHistory(replayHistory),
-    getSelectedEnvelopeHistory: () => [...selectedEnvelopeHistory],
-    getFrontierDiagnostics: () => [...frontierDiagnostics],
-    getValidationDiagnostics: () => [...validationDiagnostics],
-    getDiagnostics: (): SupervisorDiagnostic[] => [...frontierDiagnostics, ...validationDiagnostics],
-    getDecisionHistory: () => [...decisions],
-    getSnapshots: () => [...snapshots],
+    getSelectedEnvelopeHistory: () => cloneEnvelopeHistory(selectedEnvelopeHistory),
+    getFrontierDiagnostics: () => cloneFrontierDiagnostics(frontierDiagnostics),
+    getValidationDiagnostics: () => cloneValidationDiagnostics(validationDiagnostics),
+    getDiagnostics: (): SupervisorDiagnostic[] =>
+      structuredClone<SupervisorDiagnostic[]>([...frontierDiagnostics, ...validationDiagnostics]),
+    getDecisionHistory: () => cloneDecisionHistory(decisions),
+    getSnapshots: () => cloneSnapshots(snapshots),
   })
 }
 
