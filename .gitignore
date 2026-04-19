@@ -53,4 +53,3 @@ yarn.lock
 # autoresearch
 .plaited
 .src/.archive-modules
-docs/hypothetical-architecture.md
