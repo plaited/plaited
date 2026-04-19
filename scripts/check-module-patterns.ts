@@ -535,6 +535,26 @@ const analyzeTriggeredDiagnosticEvents = ({ file, sourceFile, findings, callback
     },
   })
 
+  for (const objectLiteral of collectReturnedObjectLiterals(callback)) {
+    for (const handler of getHandlerEntries(objectLiteral)) {
+      walk({
+        node: handler.body,
+        rootFunction: handler.body,
+        skipNestedFunctions: true,
+        visitor: (node) => {
+          if (!ts.isCatchClause(node)) {
+            return
+          }
+
+          analyzeContext({
+            node: node.block,
+            context: `internal handler ${handler.name} catch block`,
+          })
+        },
+      })
+    }
+  }
+
   for (const helper of collectLocalHelpers(callback)) {
     if (!DIAGNOSTIC_HELPER_NAME_PATTERN.test(helper.name)) {
       continue

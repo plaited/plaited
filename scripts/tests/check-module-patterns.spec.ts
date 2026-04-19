@@ -185,6 +185,35 @@ useExtension('credential-secret-runtime-actor', ({ trigger }: { trigger: (value:
     ).toBe(true)
   })
 
+  test('flags triggered diagnostic event from a returned handler catch block', async () => {
+    const file = await writeFixture({
+      name: 'bad-handler-catch-trigger.ts',
+      source: `
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = {
+  start: 'start',
+  credential_error: 'credential_error',
+} as const
+
+const createActorEvent = (eventName: string) => ({ eventName })
+
+useExtension('credential-secret-runtime-actor', ({ trigger }: { trigger: (value: unknown) => void }) => ({
+  [EVENTS.start](detail: unknown) {
+    try {
+      doWork(detail)
+    } catch {
+      trigger(createActorEvent(EVENTS.credential_error))
+    }
+  },
+}))
+`,
+    })
+
+    const output = await checkModulePatterns({ files: [file] })
+    expect(output.ok).toBe(false)
+    expect(output.findings.some((finding) => finding.ruleId === 'module/no-triggered-diagnostic-event')).toBe(true)
+  })
+
   test('accepts clean internal parse without local recovery', async () => {
     const file = await writeFixture({
       name: 'clean-internal-handler.ts',
