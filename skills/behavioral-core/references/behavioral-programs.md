@@ -101,17 +101,14 @@ const guard = bThread(
 )
 ```
 
-For state-dependent matching, make the schema a custom Zod predicate:
+For malformed-payload guards, keep the schema positive and set
+`detailMatch: 'invalid'` on the blocking listener:
 
 ```typescript
-const blockedIds = new Set<string>()
-
-const blockedExecute = {
+const validateExecute = {
   type: 'execute',
-  detailSchema: z.custom((detail) => {
-    const parsed = z.object({ id: z.string() }).safeParse(detail)
-    return parsed.success && blockedIds.has(parsed.data.id)
-  }),
+  detailSchema: z.object({ id: z.string() }),
+  detailMatch: 'invalid',
 }
 ```
 

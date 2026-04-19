@@ -34,6 +34,7 @@ export type BPListener = {
   type: string
   sourceSchema?: ZodType<keyof typeof EVENT_SOURCES>
   detailSchema: ZodType<unknown>
+  detailMatch?: 'valid' | 'invalid'
 }
 
 /**

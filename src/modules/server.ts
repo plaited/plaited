@@ -1,29 +1,181 @@
+import type { Server, TLSOptions } from 'bun'
 import * as z from 'zod'
-import { notSchema, SNAPSHOT_MESSAGE_KINDS, useExtension } from '../../behavioral.ts'
-import { ClientMessageSchema } from '../../ui.ts'
-import {
-  DEFAULT_CSP,
-  SERVER_MODULE_ERROR_CODES,
-  SERVER_MODULE_EVENTS,
-  SERVER_MODULE_ID,
-  SERVER_MODULE_WEBSOCKET_PATH,
-} from './server-module.constants.ts'
-import {
-  ClientConnectedDetailSchema,
-  ClientDisconnectedDetailSchema,
-  ServerErrorDetailSchema,
-  type ServerSendDetail,
-  ServerSendDetailSchema,
-  type ServerStartDetail,
-  ServerStartDetailSchema,
-  ServerStartedDetailSchema,
-  type ServerStopDetail,
-  ServerStopDetailSchema,
-  ServerStoppedDetailSchema,
-  type WebSocketData,
-} from './server-module.schemas.ts'
-import type { CreateServerOptions, ServerHandle } from './server-module.types.ts'
+import type { Trigger } from '../behavioral.ts'
+import { SNAPSHOT_MESSAGE_KINDS, useExtension } from '../behavioral.ts'
+import type { ClientMessage } from '../ui.ts'
+import { ClientMessageSchema } from '../ui.ts'
+import { keyMirror } from '../utils.ts'
 
+export const SERVER_MODULE_ID = 'server_module'
+
+export const SERVER_MODULE_EVENTS = keyMirror(
+  'server_start',
+  'server_stop',
+  'server_send',
+  'server_started',
+  'server_stopped',
+  'server_error',
+  'client_connected',
+  'client_disconnected',
+  'client_error',
+)
+
+export const SERVER_MODULE_ERROR_CODES = keyMirror(
+  'origin_rejected',
+  'connection_rejected',
+  'upgrade_failed',
+  'malformed_message',
+  'protocol_missing',
+  'not_found',
+  'internal_error',
+  'server_not_running',
+)
+
+export const SERVER_MODULE_WEBSOCKET_PATH = '/ws'
+
+export const DEFAULT_CSP = "default-src 'self'; connect-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'"
+
+export const toServerModuleEventType = <TEvent extends string>(event: TEvent): `${typeof SERVER_MODULE_ID}:${TEvent}` =>
+  `${SERVER_MODULE_ID}:${event}`
+
+export type AuthenticatedConnection = {
+  connectionId: string
+  principalId?: string
+  deviceId?: string
+  capabilities?: string[]
+}
+
+export type AuthenticateConnection = (input: {
+  request: Request
+  source: string
+}) => AuthenticatedConnection | Promise<AuthenticatedConnection | null> | null
+
+export const WebSocketDataSchema = z.object({
+  connectionId: z.string().min(1),
+  source: z.string().min(1),
+  principalId: z.string().optional(),
+  deviceId: z.string().optional(),
+  capabilities: z.array(z.string()).optional(),
+})
+export type WebSocketData = z.infer<typeof WebSocketDataSchema>
+
+export const ReplayBufferOptionsSchema = z.object({
+  maxSize: z.number().int().nonnegative().optional(),
+  ttlMs: z.number().int().nonnegative().optional(),
+})
+export type ReplayBufferOptions = z.infer<typeof ReplayBufferOptionsSchema>
+
+export const WebSocketLimitsSchema = z.object({
+  idleTimeout: z.number().int().nonnegative().optional(),
+  maxPayloadLength: z.number().int().nonnegative().optional(),
+})
+export type WebSocketLimits = z.infer<typeof WebSocketLimitsSchema>
+
+export type ServeRoutes = Bun.Serve.Routes<WebSocketData, string>
+
+export type ServerModuleErrorCode = (typeof SERVER_MODULE_ERROR_CODES)[keyof typeof SERVER_MODULE_ERROR_CODES]
+
+export type CreateServerOptions = {
+  trigger: Trigger
+  onClientMessage: (message: ClientMessage) => void
+  reportTransportError: (detail: {
+    code: ServerModuleErrorCode
+    connectionId?: string
+    message?: string
+    pathname?: string
+  }) => void
+  routes: ServeRoutes
+  port?: number
+  tls?: TLSOptions
+  allowedOrigins?: Set<string>
+  authenticateConnection: AuthenticateConnection
+  wsLimits?: WebSocketLimits
+  replayBuffer?: ReplayBufferOptions
+  csp?: string | false
+}
+
+export type ServerHandle = {
+  readonly server: Server<WebSocketData>
+  readonly port: number
+  send: (topic: string, data: string) => void
+  stop: (closeActiveConnections?: boolean) => void
+}
+
+const ServeRoutesSchema = z.custom<ServeRoutes>((value) => value !== null && typeof value === 'object')
+const AllowedOriginsSchema = z.custom<Set<string> | undefined>((value) => value === undefined || value instanceof Set)
+const AuthenticateConnectionSchema = z.custom<AuthenticateConnection>((value) => typeof value === 'function')
+const TLSOptionsSchema = z.custom<Bun.TLSOptions>((_) => true)
+
+export const ServerStartDetailSchema = z.object({
+  routes: ServeRoutesSchema.default({}),
+  port: z.number().int().nonnegative().default(0),
+  tls: TLSOptionsSchema.optional(),
+  allowedOrigins: AllowedOriginsSchema.optional(),
+  authenticateConnection: AuthenticateConnectionSchema,
+  wsLimits: WebSocketLimitsSchema.optional(),
+  replayBuffer: ReplayBufferOptionsSchema.optional(),
+  csp: z.union([z.string(), z.literal(false)]).optional(),
+})
+export type ServerStartDetail = z.infer<typeof ServerStartDetailSchema>
+
+export const ServerStopDetailSchema = z
+  .object({
+    closeActiveConnections: z.boolean().optional(),
+  })
+  .optional()
+export type ServerStopDetail = z.infer<typeof ServerStopDetailSchema>
+
+export const ServerSendDetailSchema = z.object({
+  topic: z.string().min(1),
+  data: z.string(),
+})
+export type ServerSendDetail = z.infer<typeof ServerSendDetailSchema>
+
+export const ServerStartedDetailSchema = z.object({
+  port: z.number().int().nonnegative(),
+})
+export type ServerStartedDetail = z.infer<typeof ServerStartedDetailSchema>
+
+export const ServerStoppedDetailSchema = z.object({
+  port: z.number().int().nonnegative().optional(),
+})
+export type ServerStoppedDetail = z.infer<typeof ServerStoppedDetailSchema>
+
+const ServerModuleErrorCodeSchema = z.custom<ServerModuleErrorCode>((value) =>
+  Object.values(SERVER_MODULE_ERROR_CODES).includes(value as ServerModuleErrorCode),
+)
+
+export const ServerErrorDetailSchema = z.object({
+  code: ServerModuleErrorCodeSchema,
+  message: z.string().min(1),
+})
+export type ServerErrorDetail = z.infer<typeof ServerErrorDetailSchema>
+
+export const ClientConnectedDetailSchema = z.object({
+  connectionId: z.string().min(1),
+  source: z.string().min(1),
+  isReconnect: z.boolean(),
+  principalId: z.string().optional(),
+  deviceId: z.string().optional(),
+})
+export type ClientConnectedDetail = z.infer<typeof ClientConnectedDetailSchema>
+
+export const ClientDisconnectedDetailSchema = z.object({
+  connectionId: z.string().min(1),
+  code: z.number().int(),
+  reason: z.string(),
+  principalId: z.string().optional(),
+  deviceId: z.string().optional(),
+})
+export type ClientDisconnectedDetail = z.infer<typeof ClientDisconnectedDetailSchema>
+
+export const ClientErrorDetailSchema = z.object({
+  code: ServerModuleErrorCodeSchema,
+  connectionId: z.string().min(1).optional(),
+  message: z.string().optional(),
+  pathname: z.string().optional(),
+})
+export type ClientErrorDetail = z.infer<typeof ClientErrorDetailSchema>
 export const BRIDGE_UI_CORE_ID = 'ui_core'
 
 const createModuleEvent = <TEvent extends string>(event: TEvent, detail?: unknown) =>
@@ -400,7 +552,8 @@ export const serverModuleExtension = useExtension(
         bSync({
           block: {
             type: SERVER_MODULE_EVENTS.server_start,
-            detailSchema: notSchema(ServerStartDetailSchema),
+            detailSchema: ServerStartDetailSchema,
+            detailMatch: 'invalid',
           },
         }),
       ],
@@ -413,7 +566,8 @@ export const serverModuleExtension = useExtension(
         bSync({
           block: {
             type: SERVER_MODULE_EVENTS.server_stop,
-            detailSchema: notSchema(ServerStopDetailSchema),
+            detailSchema: ServerStopDetailSchema,
+            detailMatch: 'invalid',
           },
         }),
       ],
@@ -426,7 +580,8 @@ export const serverModuleExtension = useExtension(
         bSync({
           block: {
             type: SERVER_MODULE_EVENTS.server_send,
-            detailSchema: notSchema(ServerSendDetailSchema),
+            detailSchema: ServerSendDetailSchema,
+            detailMatch: 'invalid',
           },
         }),
       ],

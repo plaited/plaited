@@ -7,7 +7,7 @@ import {
   EXTENSION_REQUEST_EVENT,
   SNAPSHOT_MESSAGE_KINDS,
 } from './behavioral.constants.ts'
-import { createMemoryEntryDetailSchema, createMemoryResponseDetailSchema, notSchema } from './behavioral.schemas.ts'
+import { createMemoryEntryDetailSchema, createMemoryResponseDetailSchema } from './behavioral.schemas.ts'
 import { bSync as _bsync, bThread as _bThread } from './behavioral.shared.ts'
 import type {
   BPEvent,
@@ -180,8 +180,9 @@ export const useInstaller = ({
           type: DEFAULT_EVENTS.memory_response,
           detailSchema: createMemoryResponseDetailSchema({
             id,
-            detailSchema: notSchema(detailSchema),
+            detailSchema,
           }),
+          detailMatch: 'invalid',
         })
 
         const transactionListener = markScopeBypass<BPListener>({

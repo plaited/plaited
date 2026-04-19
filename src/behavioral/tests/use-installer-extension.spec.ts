@@ -31,6 +31,7 @@ describe('useExtension + useInstaller', () => {
     const triggeredEvents: Array<{ type: string; detail?: unknown }> = []
     let didPing = false
     let memoryBody: unknown
+    let memoryTransactionLabel = ''
 
     const install = useInstaller({
       reportSnapshot: (message) => diagnostics.push(message),
@@ -55,6 +56,13 @@ describe('useExtension + useInstaller', () => {
         purpose: 'cross-scope test',
         detailSchema: z.unknown(),
       })
+      const crossScopeMemory = extensions.get({
+        extension: 'beta',
+        event: 'intentional',
+        purpose: 'cross-scope memory test',
+        detailSchema: z.object({ ok: z.boolean() }),
+      })
+      memoryTransactionLabel = crossScopeMemory.transactionEventType
 
       bThread({
         label: 'local_scope',
@@ -100,16 +108,36 @@ describe('useExtension + useInstaller', () => {
 
     const handlers = install(extension)
 
-    expect(addedThreads.map(({ label }) => label)).toEqual(['local_scope', 'raw_scoped_request', 'external_block'])
+    const labels = addedThreads.map(({ label }) => label)
+    expect(labels).toEqual(expect.arrayContaining(['local_scope', 'raw_scoped_request', 'external_block']))
+    expect(labels).toContain(memoryTransactionLabel)
 
-    const localSync = addedThreads[0]!.thread().next().value as { request?: { type?: string } }
+    const localThread = addedThreads.find(({ label }) => label === 'local_scope')
+    const rawScopedThread = addedThreads.find(({ label }) => label === 'raw_scoped_request')
+    const externalBlockThread = addedThreads.find(({ label }) => label === 'external_block')
+    const memoryTransactionThread = addedThreads.find(({ label }) => label === memoryTransactionLabel)
+
+    expect(localThread).toBeDefined()
+    expect(rawScopedThread).toBeDefined()
+    expect(externalBlockThread).toBeDefined()
+    expect(memoryTransactionThread).toBeDefined()
+
+    const localSync = localThread!.thread().next().value as { request?: { type?: string } }
     expect(localSync.request?.type).toBe('alpha:tick')
 
-    const scopedRequestSync = addedThreads[1]!.thread().next().value as { request?: { type?: string } }
+    const scopedRequestSync = rawScopedThread!.thread().next().value as { request?: { type?: string } }
     expect(scopedRequestSync.request?.type).toBe('alpha:beta:local')
 
-    const blockSync = addedThreads[2]!.thread().next().value as { block?: { type?: string } }
+    const blockSync = externalBlockThread!.thread().next().value as { block?: { type?: string } }
     expect(blockSync.block?.type).toBe('peer:danger')
+
+    const memoryTransactionSync = memoryTransactionThread!.thread().next().value as {
+      block?: { type?: string; detailMatch?: string }
+      interrupt?: { type?: string }
+    }
+    expect(memoryTransactionSync.block?.type).toBe('alpha:memory_response')
+    expect(memoryTransactionSync.block?.detailMatch).toBe('invalid')
+    expect(memoryTransactionSync.interrupt?.type).toBe('alpha:memory_response')
 
     handlers['alpha:emit_local']?.(undefined)
     expect(triggeredEvents.at(-1)?.type).toBe('alpha:local')

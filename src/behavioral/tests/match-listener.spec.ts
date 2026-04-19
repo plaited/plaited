@@ -68,6 +68,70 @@ test('match listener: waitFor does not resume when detail schema fails', () => {
   expect(log).toEqual(['task'])
 })
 
+test('match listener: detailMatch invalid resumes thread when detail schema fails', () => {
+  const log: string[] = []
+  const { addBThreads, trigger, useFeedback } = behavioral()
+
+  addBThreads({
+    producer: bThread([bSync({ request: { type: 'task', detail: { id: 101 } } })]),
+    consumer: bThread([
+      bSync({
+        waitFor: {
+          type: 'task',
+          detailSchema: z.object({ id: z.string() }),
+          detailMatch: 'invalid',
+        },
+      }),
+      bSync({ request: { type: 'ack' } }),
+    ]),
+  })
+
+  useFeedback({
+    task() {
+      log.push('task')
+    },
+    ack() {
+      log.push('ack')
+    },
+  })
+
+  trigger({ type: 'kickoff' })
+
+  expect(log).toEqual(['task', 'ack'])
+})
+
+test('match listener: detailMatch invalid does not resume thread when detail schema passes', () => {
+  const log: string[] = []
+  const { addBThreads, trigger, useFeedback } = behavioral()
+
+  addBThreads({
+    producer: bThread([bSync({ request: { type: 'task', detail: { id: 'job-1' } } })]),
+    consumer: bThread([
+      bSync({
+        waitFor: {
+          type: 'task',
+          detailSchema: z.object({ id: z.string() }),
+          detailMatch: 'invalid',
+        },
+      }),
+      bSync({ request: { type: 'ack' } }),
+    ]),
+  })
+
+  useFeedback({
+    task() {
+      log.push('task')
+    },
+    ack() {
+      log.push('ack')
+    },
+  })
+
+  trigger({ type: 'kickoff' })
+
+  expect(log).toEqual(['task'])
+})
+
 test('match listener: type mismatch prevents match when source and detail would pass', () => {
   const log: string[] = []
   const { addBThreads, trigger, useFeedback } = behavioral()

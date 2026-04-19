@@ -85,7 +85,7 @@ A super-step is a chain of internal events that runs to completion before accept
 
 **Key timing**: `actionPublisher()` fires BEFORE `step()`. This means:
 - Sync handlers complete before threads advance
-- Shared state set in handlers IS visible to predicates in the next `selectNextEvent()` call
+- Shared state set in handlers IS visible to listeners in the next `selectNextEvent()` call
 - Async handlers are fire-and-forget (`void cb(value)`) — they do NOT block the super-step
 
 ## The `repeat` Parameter
@@ -114,7 +114,7 @@ Use `repeat=true` for **persistent constraints** that must remain active through
 
 - Turn enforcement: `waitFor: onType('X'), block: onType('O')` → `waitFor: onType('O'), block: onType('X')` (tic-tac-toe)
 - Safety nets: `waitFor: dangerous_event` → `block: all_events` (stopGame pattern)
-- Continuous validation: pure-blocking predicates that check state every cycle
+- Continuous validation: pure-blocking listeners that check state every cycle
 
 Omit `repeat` for **one-shot sequences** that should terminate:
 
@@ -197,17 +197,14 @@ worker: bThread(
 
 In the agent, all events flow from `trigger()` calls in feedback handlers. There are NO continuously-requesting threads. The event chain is broken by async work (inference calls), which returns control from the super-step and starts a new one when the promise resolves.
 
-### Pattern 2: Shared State with Block Predicates
+### Pattern 2: Shared State with Explicit Schemas
 
 ```typescript
-// Board state is shared between handlers and detail-schema predicates
+// Board state is shared between handlers and listener matching
 const occupied = new Set<number>()
 const occupiedMove = {
   type: 'move',
-  detailSchema: z.custom((detail) => {
-    const parsed = detail as { square?: number } | undefined
-    return typeof parsed?.square === 'number' && occupied.has(parsed.square)
-  }),
+  detailSchema: z.object({ square: z.number() }),
 }
 
 addBThreads({
@@ -223,23 +220,22 @@ useFeedback({
 })
 ```
 
-**Why this works**: `actionPublisher()` (which fires handlers) runs BEFORE `step()` (which re-evaluates predicates). So when a handler modifies shared state, the next `selectNextEvent()` call sees the updated state.
+**Why this works**: `actionPublisher()` (which fires handlers) runs BEFORE `step()` (which re-evaluates listeners). So when a handler modifies shared state, the next `selectNextEvent()` call sees the updated state.
 
-**Agent equivalent**: a pending-write set is shared between handlers and bThread predicates:
+**Agent equivalent**: malformed-payload guards use explicit schemas plus
+`detailMatch: 'invalid'`:
 
 ```typescript
-// Handler sets state
-pendingWrites.add(detail.path)
-
-// bThread predicate reads state
 writeGuard: bThread([
   bSync({
     block: {
       type: AGENT_EVENTS.write_file,
-      detailSchema: z.custom((detail) => {
-        const parsed = detail as { input?: { path?: string } } | undefined
-        return Boolean(parsed?.input?.path && pendingWrites.has(parsed.input.path))
+      detailSchema: z.object({
+        input: z.object({
+          path: z.string(),
+        }),
       }),
+      detailMatch: 'invalid',
     },
   }),
 ], true)
@@ -293,7 +289,9 @@ This pattern matches the repo's coordination style:
 - request the next phase only after the batch is done
 - use `interrupt` for clean teardown when the enclosing task ends
 
-**Agent equivalent**: `pendingToolCallCount` reaches 0 → re-invoke inference. Currently done in `checkComplete()` helper, could potentially be expressed as a bThread predicate.
+**Agent equivalent**: `pendingToolCallCount` reaches 0 → re-invoke inference.
+Currently done in `checkComplete()` helper, and can also be modeled with
+explicit wait/count listener rules.
 
 ### Pattern 5: Blocking as Coordination
 
@@ -402,7 +400,7 @@ The event selection mechanism is a parameter, not fixed. Plaited uses priority-b
 
 BP's formal model says b-threads communicate ONLY through events. In practice,
 Plaited also allows runtime state to be observed through local closure state,
-predicate inputs, and other explicit context surfaces. Examples include shared
+listener inputs, and other explicit context surfaces. Examples include shared
 maps like `board` in tic-tac-toe or tool-state sets like `pendingWrites` in an
 agent module.
 

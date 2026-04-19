@@ -1,16 +1,17 @@
 import * as z from 'zod'
 
 import { SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
-import { isBPEvent } from './behavioral.shared.ts'
-import type { BPEvent } from './behavioral.types.ts'
 
 /**
  * Schema for validating BPEvent objects.
- * Uses the framework's `isBPEvent` type guard for runtime validation.
+ * Uses a JSON-Schema-exportable object shape for runtime validation.
  *
  * @public
  */
-export const BPEventSchema = z.custom<BPEvent>(isBPEvent)
+export const BPEventSchema = z.object({
+  type: z.string(),
+  detail: z.unknown().optional(),
+})
 
 /**
  * @internal
@@ -230,6 +231,3 @@ export const SnapshotMessageSchema = z.discriminatedUnion('kind', [
 
 /** @public */
 export type SnapshotMessage = z.infer<typeof SnapshotMessageSchema>
-
-export const notSchema = (schema: z.ZodTypeAny): z.ZodType<unknown> =>
-  z.unknown().refine((value) => !schema.safeParse(value).success)

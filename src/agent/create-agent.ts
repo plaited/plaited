@@ -1,14 +1,7 @@
 import { resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import * as z from 'zod'
-import {
-  behavioral,
-  isExtension,
-  notSchema,
-  SNAPSHOT_MESSAGE_KINDS,
-  useExtension,
-  useInstaller,
-} from '../behavioral.ts'
+import { behavioral, isExtension, SNAPSHOT_MESSAGE_KINDS, useExtension, useInstaller } from '../behavioral.ts'
 import * as modules from '../modules.ts'
 import { AGENT_CORE, AGENT_CORE_EVENTS } from './agent.constants.ts'
 import {
@@ -142,7 +135,8 @@ export const createAgent = async ({ maxKeys, ttlMs, workspace }: CreateAgentOpti
           // Internal execution event only. Extensions should emit tool_bash_request.
           block: {
             type: AGENT_CORE_EVENTS.bash,
-            detailSchema: notSchema(ToolBashRequestDetailSchema),
+            detailSchema: ToolBashRequestDetailSchema,
+            detailMatch: 'invalid',
           },
         }),
       ],
@@ -154,7 +148,8 @@ export const createAgent = async ({ maxKeys, ttlMs, workspace }: CreateAgentOpti
         bSync({
           block: {
             type: AGENT_CORE_EVENTS.tool_bash_request,
-            detailSchema: notSchema(ToolBashRequestDetailSchema),
+            detailSchema: ToolBashRequestDetailSchema,
+            detailMatch: 'invalid',
           },
         }),
       ],
@@ -166,7 +161,8 @@ export const createAgent = async ({ maxKeys, ttlMs, workspace }: CreateAgentOpti
         bSync({
           block: {
             type: AGENT_CORE_EVENTS.tool_bash_approved,
-            detailSchema: notSchema(ToolBashApprovedDetailSchema),
+            detailSchema: ToolBashApprovedDetailSchema,
+            detailMatch: 'invalid',
           },
         }),
       ],
@@ -178,7 +174,8 @@ export const createAgent = async ({ maxKeys, ttlMs, workspace }: CreateAgentOpti
         bSync({
           block: {
             type: AGENT_CORE_EVENTS.tool_bash_denied,
-            detailSchema: notSchema(ToolBashDeniedDetailSchema),
+            detailSchema: ToolBashDeniedDetailSchema,
+            detailMatch: 'invalid',
           },
         }),
       ],
@@ -190,7 +187,8 @@ export const createAgent = async ({ maxKeys, ttlMs, workspace }: CreateAgentOpti
         bSync({
           block: {
             type: AGENT_CORE_EVENTS.tool_bash_result,
-            detailSchema: notSchema(ToolBashResultDetailSchema),
+            detailSchema: ToolBashResultDetailSchema,
+            detailMatch: 'invalid',
           },
         }),
       ],
@@ -202,7 +200,8 @@ export const createAgent = async ({ maxKeys, ttlMs, workspace }: CreateAgentOpti
         bSync({
           block: {
             type: AGENT_CORE_EVENTS.update_modules,
-            detailSchema: notSchema(z.string()),
+            detailSchema: z.string(),
+            detailMatch: 'invalid',
           },
         }),
       ],
