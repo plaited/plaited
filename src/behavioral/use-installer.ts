@@ -410,19 +410,24 @@ export const useInstaller = ({
           })
         },
         [DEFAULT_EVENTS.memory_response](detail: ContextMemoryResponse) {
-          const parsed = createMemoryEntryDetailSchema(z.unknown())
-            .extend({
-              id: z.string(),
+          try {
+            const { id, ...entry } = createMemoryEntryDetailSchema(z.unknown())
+              .extend({
+                id: z.string(),
+              })
+              .parse(detail)
+            hostTrigger({
+              type: createTransactionEventType(id),
+              detail: entry,
             })
-            .safeParse(detail)
-          if (!parsed.success) {
+          } catch (error) {
+            reportSnapshot({
+              kind: SNAPSHOT_MESSAGE_KINDS.extension_error,
+              id: extensionId,
+              error: error instanceof Error ? error.message : String(error),
+            })
             return
           }
-          const { id, ...entry } = parsed.data
-          hostTrigger({
-            type: createTransactionEventType(id),
-            detail: entry,
-          })
         },
         [DEFAULT_EVENTS.memory_request]({ id, event, extension }: MemoryRequestEvent['detail']) {
           const entry = contextMemory.get(event)

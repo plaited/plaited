@@ -375,4 +375,112 @@ describe('useExtension + useInstaller', () => {
     await Bun.sleep(20)
     expect(selected).toEqual(['b_done', 'a_done'])
   })
+
+  test('malformed memory_response reports extension_error and does not trigger a transaction event', async () => {
+    const selected: string[] = []
+    const snapshots: SnapshotMessage[] = []
+    const { addBThread, trigger, useFeedback, useSnapshot, reportSnapshot } = behavioral()
+    const install = useInstaller({
+      reportSnapshot,
+      trigger,
+      useSnapshot,
+      addBThread,
+      ttlMs: 1_000,
+    })
+
+    let requestId = ''
+    let transactionEventType = ''
+
+    const extension = useExtension('alpha', ({ bSync, bThread, extensions }) => {
+      const request = extensions.get({
+        extension: 'beta',
+        event: 'evt',
+        purpose: 'malformed response test',
+        detailSchema: z.object({ ok: z.boolean() }),
+      })
+
+      requestId = request.requestEvent.detail.id
+      transactionEventType = request.transactionEventType
+
+      bThread({
+        label: 'wait_for_transaction',
+        rules: [
+          bSync({
+            waitFor: request.transactionListener,
+          }),
+          bSync({
+            request: { type: 'done' },
+          }),
+        ],
+      })
+
+      return {}
+    })
+
+    useFeedback(install(extension))
+    useSnapshot((snapshot) => {
+      snapshots.push(snapshot)
+    })
+    useFeedback({
+      'alpha:done': () => {
+        selected.push('done')
+      },
+    })
+
+    trigger({ type: 'start' })
+    expect(requestId.length).toBeGreaterThan(0)
+    expect(transactionEventType.length).toBeGreaterThan(0)
+
+    const malformedSnapshotStart = snapshots.length
+    trigger({
+      type: 'alpha:memory_response',
+      detail: {
+        id: requestId,
+        createdAt: 'invalid-created-at',
+        body: { ok: true },
+      },
+    })
+
+    await Bun.sleep(20)
+
+    const malformedSelections = snapshots
+      .slice(malformedSnapshotStart)
+      .filter((snapshot): snapshot is Extract<SnapshotMessage, { kind: 'selection' }> => {
+        return snapshot.kind === SNAPSHOT_MESSAGE_KINDS.selection
+      })
+      .flatMap((snapshot) => snapshot.bids)
+      .filter((bid) => bid.selected)
+      .map((bid) => bid.type)
+
+    expect(malformedSelections).not.toContain(transactionEventType)
+    expect(selected).toEqual([])
+
+    const malformedError = snapshots.slice(malformedSnapshotStart).find((snapshot) => {
+      return snapshot.kind === SNAPSHOT_MESSAGE_KINDS.extension_error && snapshot.id === 'alpha'
+    })
+    expect(malformedError).toBeDefined()
+
+    trigger({
+      type: 'alpha:memory_response',
+      detail: {
+        id: requestId,
+        createdAt: 1,
+        expiresAt: 2,
+        body: { ok: true },
+      },
+    })
+
+    await Bun.sleep(20)
+
+    expect(selected).toEqual(['done'])
+    const selectedTypes = snapshots
+      .filter((snapshot): snapshot is Extract<SnapshotMessage, { kind: 'selection' }> => {
+        return snapshot.kind === SNAPSHOT_MESSAGE_KINDS.selection
+      })
+      .flatMap((snapshot) => snapshot.bids)
+      .filter((bid) => bid.selected)
+      .map((bid) => bid.type)
+
+    expect(selectedTypes).toContain(transactionEventType)
+  })
 })
