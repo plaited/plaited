@@ -139,6 +139,59 @@ describe('createAgent core extension', () => {
     })
   })
 
+  test('malformed tool_bash_request is blocked and valid requests still execute after approval', async () => {
+    await withSpawnSpy(async (spawnCalls) => {
+      const workspace = process.cwd()
+      const trigger = await createAgent({
+        workspace,
+        ttlMs: 1_000,
+      })
+
+      trigger({
+        type: `${AGENT_CORE}:${AGENT_CORE_EVENTS.tool_bash_request}`,
+        detail: {
+          requestId: 7,
+          correlationId: 'corr-invalid',
+          bash: {
+            path: './scripts/worker.ts',
+            args: ['--invalid'],
+          },
+        },
+      } as unknown as { type: string; detail?: unknown })
+      await Bun.sleep(0)
+      expect(spawnCalls).toHaveLength(0)
+
+      trigger({
+        type: `${AGENT_CORE}:${AGENT_CORE_EVENTS.tool_bash_request}`,
+        detail: {
+          requestId: 'req-valid',
+          correlationId: 'corr-valid',
+          bash: {
+            path: './scripts/worker.ts',
+            args: ['--valid'],
+          },
+        },
+      })
+      await Bun.sleep(0)
+      expect(spawnCalls).toHaveLength(0)
+
+      trigger({
+        type: `${AGENT_CORE}:${AGENT_CORE_EVENTS.tool_bash_approved}`,
+        detail: {
+          requestId: 'req-valid',
+          correlationId: 'corr-valid',
+        },
+      })
+      await Bun.sleep(0)
+
+      expect(spawnCalls).toHaveLength(1)
+      expect(spawnCalls[0]).toEqual({
+        cmd: ['bun', resolve(workspace, 'scripts/worker.ts'), '--valid'],
+        cwd: workspace,
+      })
+    })
+  })
+
   test('approved normalized tool-bash request emits tool_bash_result with request identity', async () => {
     await withSpawnSpy(
       async (spawnCalls) => {

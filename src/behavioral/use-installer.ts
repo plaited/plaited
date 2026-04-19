@@ -7,7 +7,7 @@ import {
   EXTENSION_REQUEST_EVENT,
   SNAPSHOT_MESSAGE_KINDS,
 } from './behavioral.constants.ts'
-import { createMemoryEntryDetailSchema, createMemoryResponseDetailSchema, notSchema } from './behavioral.schemas.ts'
+import { createMemoryEntryDetailSchema, createMemoryResponseDetailSchema } from './behavioral.schemas.ts'
 import { bSync as _bsync, bThread as _bThread } from './behavioral.shared.ts'
 import type {
   BPEvent,
@@ -165,6 +165,7 @@ export const useInstaller = ({
       const createMemoryRequest: CreateMemoryRequest = ({ extension, purpose, detailSchema, event }) => {
         const id = ueid('mem_')
         const transactionEventType = createTransactionEventType(id)
+        const transactionDetailSchema = createMemoryEntryDetailSchema(detailSchema)
 
         const requestEvent = markScopeBypass<MemoryRequestEvent>({
           type: toExtensionEventType({ extension, event: EXTENSION_MEMORY_EVENTS.memory_request }),
@@ -177,19 +178,14 @@ export const useInstaller = ({
         })
 
         const blockListener = markScopeBypass<BPListener>({
-          type: DEFAULT_EVENTS.memory_response,
-          detailSchema: createMemoryResponseDetailSchema({
-            id,
-            detailSchema: notSchema(detailSchema),
-          }),
+          type: transactionEventType,
+          detailSchema: transactionDetailSchema,
+          detailMatch: 'invalid',
         })
 
         const transactionListener = markScopeBypass<BPListener>({
-          type: DEFAULT_EVENTS.memory_response,
-          detailSchema: createMemoryResponseDetailSchema({
-            id,
-            detailSchema,
-          }),
+          type: transactionEventType,
+          detailSchema: transactionDetailSchema,
         })
 
         bThread({
@@ -413,10 +409,19 @@ export const useInstaller = ({
             repeat: true,
           })
         },
-        [DEFAULT_EVENTS.memory_response]({ id, ...detail }: ContextMemoryResponse) {
+        [DEFAULT_EVENTS.memory_response](detail: ContextMemoryResponse) {
+          const parsed = createMemoryEntryDetailSchema(z.unknown())
+            .extend({
+              id: z.string(),
+            })
+            .safeParse(detail)
+          if (!parsed.success) {
+            return
+          }
+          const { id, ...entry } = parsed.data
           hostTrigger({
             type: createTransactionEventType(id),
-            detail,
+            detail: entry,
           })
         },
         [DEFAULT_EVENTS.memory_request]({ id, event, extension }: MemoryRequestEvent['detail']) {

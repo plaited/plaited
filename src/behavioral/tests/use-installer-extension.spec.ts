@@ -31,6 +31,7 @@ describe('useExtension + useInstaller', () => {
     const triggeredEvents: Array<{ type: string; detail?: unknown }> = []
     let didPing = false
     let memoryBody: unknown
+    let memoryTransactionLabel = ''
 
     const install = useInstaller({
       reportSnapshot: (message) => diagnostics.push(message),
@@ -55,6 +56,13 @@ describe('useExtension + useInstaller', () => {
         purpose: 'cross-scope test',
         detailSchema: z.unknown(),
       })
+      const crossScopeMemory = extensions.get({
+        extension: 'beta',
+        event: 'intentional',
+        purpose: 'cross-scope memory test',
+        detailSchema: z.object({ ok: z.boolean() }),
+      })
+      memoryTransactionLabel = crossScopeMemory.transactionEventType
 
       bThread({
         label: 'local_scope',
@@ -100,16 +108,36 @@ describe('useExtension + useInstaller', () => {
 
     const handlers = install(extension)
 
-    expect(addedThreads.map(({ label }) => label)).toEqual(['local_scope', 'raw_scoped_request', 'external_block'])
+    const labels = addedThreads.map(({ label }) => label)
+    expect(labels).toEqual(expect.arrayContaining(['local_scope', 'raw_scoped_request', 'external_block']))
+    expect(labels).toContain(memoryTransactionLabel)
 
-    const localSync = addedThreads[0]!.thread().next().value as { request?: { type?: string } }
+    const localThread = addedThreads.find(({ label }) => label === 'local_scope')
+    const rawScopedThread = addedThreads.find(({ label }) => label === 'raw_scoped_request')
+    const externalBlockThread = addedThreads.find(({ label }) => label === 'external_block')
+    const memoryTransactionThread = addedThreads.find(({ label }) => label === memoryTransactionLabel)
+
+    expect(localThread).toBeDefined()
+    expect(rawScopedThread).toBeDefined()
+    expect(externalBlockThread).toBeDefined()
+    expect(memoryTransactionThread).toBeDefined()
+
+    const localSync = localThread!.thread().next().value as { request?: { type?: string } }
     expect(localSync.request?.type).toBe('alpha:tick')
 
-    const scopedRequestSync = addedThreads[1]!.thread().next().value as { request?: { type?: string } }
+    const scopedRequestSync = rawScopedThread!.thread().next().value as { request?: { type?: string } }
     expect(scopedRequestSync.request?.type).toBe('alpha:beta:local')
 
-    const blockSync = addedThreads[2]!.thread().next().value as { block?: { type?: string } }
+    const blockSync = externalBlockThread!.thread().next().value as { block?: { type?: string } }
     expect(blockSync.block?.type).toBe('peer:danger')
+
+    const memoryTransactionSync = memoryTransactionThread!.thread().next().value as {
+      block?: { type?: string; detailMatch?: string }
+      interrupt?: { type?: string }
+    }
+    expect(memoryTransactionSync.block?.type).toBe(memoryTransactionLabel)
+    expect(memoryTransactionSync.block?.detailMatch).toBe('invalid')
+    expect(memoryTransactionSync.interrupt?.type).toBe(memoryTransactionLabel)
 
     handlers['alpha:emit_local']?.(undefined)
     expect(triggeredEvents.at(-1)?.type).toBe('alpha:local')
@@ -250,5 +278,101 @@ describe('useExtension + useInstaller', () => {
         id: 'duplicate',
       }),
     )
+  })
+
+  test('memory request guards allow valid out-of-order responses across concurrent transaction ids', async () => {
+    const selected: string[] = []
+    const { addBThread, trigger, useFeedback, useSnapshot, reportSnapshot } = behavioral()
+    const install = useInstaller({
+      reportSnapshot,
+      trigger,
+      useSnapshot,
+      addBThread,
+      ttlMs: 1_000,
+    })
+
+    let idA = ''
+    let idB = ''
+
+    const extension = useExtension('alpha', ({ bSync, bThread, extensions }) => {
+      const requestA = extensions.get({
+        extension: 'beta',
+        event: 'evt_a',
+        purpose: 'transaction a',
+        detailSchema: z.object({ value: z.literal('A') }),
+      })
+      const requestB = extensions.get({
+        extension: 'beta',
+        event: 'evt_b',
+        purpose: 'transaction b',
+        detailSchema: z.object({ value: z.literal('B') }),
+      })
+
+      idA = requestA.requestEvent.detail.id
+      idB = requestB.requestEvent.detail.id
+
+      bThread({
+        label: 'wait_a',
+        rules: [
+          bSync({
+            waitFor: requestA.transactionListener,
+          }),
+          bSync({
+            request: { type: 'a_done' },
+          }),
+        ],
+      })
+
+      bThread({
+        label: 'wait_b',
+        rules: [
+          bSync({
+            waitFor: requestB.transactionListener,
+          }),
+          bSync({
+            request: { type: 'b_done' },
+          }),
+        ],
+      })
+
+      return {}
+    })
+
+    useFeedback(install(extension))
+    useFeedback({
+      'alpha:a_done': () => {
+        selected.push('a_done')
+      },
+      'alpha:b_done': () => {
+        selected.push('b_done')
+      },
+    })
+
+    trigger({ type: 'start' })
+
+    expect(idA.length).toBeGreaterThan(0)
+    expect(idB.length).toBeGreaterThan(0)
+
+    trigger({
+      type: 'alpha:memory_response',
+      detail: {
+        id: idB,
+        createdAt: 1,
+        expiresAt: 2,
+        body: { value: 'B' },
+      },
+    })
+    trigger({
+      type: 'alpha:memory_response',
+      detail: {
+        id: idA,
+        createdAt: 1,
+        expiresAt: 2,
+        body: { value: 'A' },
+      },
+    })
+
+    await Bun.sleep(20)
+    expect(selected).toEqual(['b_done', 'a_done'])
   })
 })

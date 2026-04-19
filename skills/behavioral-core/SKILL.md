@@ -49,7 +49,7 @@ The browser UI runtime is a protocol boundary, not a behavioral-program host. UI
 - Super-step execution model and handler timing
 - The `repeat` parameter (`true` or omitted)
 - Ephemeral vs persistent blocks
-- Shared state with block predicates
+- Explicit listener schemas and `detailMatch` modes
 - Async feedback and the BP loop
 - Infinite super-step anti-pattern
 - Academic paper concepts (additive composition, scenario classification, pluggable ESM)
@@ -72,7 +72,7 @@ maintain copied test mirrors.
 - what behavioral programming is
 - synchronization idioms (`request`, `waitFor`, `block`, `interrupt`)
 - thread composition and lifecycle
-- predicate usage and general runtime coordination patterns
+- explicit listener schema usage and general runtime coordination patterns
 
 Use `algorithm-reference.md` when the embedded agent needs **Plaited-specific runtime semantics**:
 - super-step timing
@@ -137,9 +137,8 @@ addBThreads({
     bSync({
       block: {
         type: 'execute',
-        detailSchema: z.custom((detail) => {
-          const parsed = detail as { path?: string } | undefined
-          return typeof parsed?.path === 'string' && parsed.path.startsWith('/etc/')
+        detailSchema: z.object({
+          path: z.string().regex(/^\/etc\//),
         }),
       },
     }),
@@ -152,9 +151,8 @@ addBThreads({
     bSync({
       block: {
         type: 'execute',
-        detailSchema: z.custom((detail) => {
-          const parsed = detail as { command?: string } | undefined
-          return typeof parsed?.command === 'string' && parsed.command.includes('rm -rf')
+        detailSchema: z.object({
+          command: z.string().regex(/(^|\\s)rm\\s+-rf(\\s|$)/),
         }),
       },
     }),
@@ -164,9 +162,12 @@ addBThreads({
 
 **Config-driven:** Rules can be loaded from arrays/JSON — each entry becomes a bThread with `repeat: true`.
 
-### Pattern 4: Per-Call Dynamic Threads with Predicate Interrupt
+For malformed payload protection, keep the listener schema positive and add
+`detailMatch: 'invalid'` explicitly on the blocking listener.
 
-Instead of persistent threads reading shared mutable state, each scoped operation gets its own guard thread that self-terminates via predicate interrupt:
+### Pattern 4: Per-Call Dynamic Threads with Explicit ID Schemas
+
+Instead of persistent threads reading shared mutable state, each scoped operation gets its own guard thread that self-terminates via an explicit-schema interrupt:
 
 ```typescript
 useFeedback({
@@ -180,16 +181,18 @@ useFeedback({
         bSync({
           block: {
             type: 'execute',
-            detailSchema: z.custom((detail) => {
-              const parsed = detail as { toolCall?: { id?: string } } | undefined
-              return parsed?.toolCall?.id === id
+            detailSchema: z.object({
+              toolCall: z.object({
+                id: z.literal(id),
+              }),
             }),
           },
           interrupt: {
             type: 'simulation_result',
-            detailSchema: z.custom((detail) => {
-              const parsed = detail as { toolCall?: { id?: string } } | undefined
-              return parsed?.toolCall?.id === id
+            detailSchema: z.object({
+              toolCall: z.object({
+                id: z.literal(id),
+              }),
             }),
           },
         }),
@@ -204,7 +207,7 @@ useFeedback({
 ```
 
 **Key mechanics:**
-- Block and interrupt both use **schema predicates** scoped to a specific ID
+- Block and interrupt both use explicit schemas scoped to a specific ID
 - Thread self-terminates via interrupt — no shared state cleanup needed
 - Thread label is unique per call, which makes snapshots easier to read
 - Observable: `SelectionBid.blockedBy` and `SelectionBid.interrupts` point at the guard thread in snapshots

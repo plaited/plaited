@@ -36,7 +36,9 @@ export const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj :
 export const isListeningFor = ({ type, detail, source }: CandidateBid) => {
   return (listener: BPListener): boolean => {
     const sourceMatches = listener.sourceSchema ? listener.sourceSchema.safeParse(source).success : true
-    return listener.type === type && sourceMatches && listener.detailSchema.safeParse(detail).success
+    const schemaMatches = listener.detailSchema.safeParse(detail).success
+    const detailMatches = listener.detailMatch === 'invalid' ? !schemaMatches : schemaMatches
+    return listener.type === type && sourceMatches && detailMatches
   }
 }
 

@@ -11,18 +11,16 @@ import {
 import { CONTROLLER_TO_AGENT_EVENTS } from '../../../bridge-events.ts'
 import { serverModuleExtension } from '../../../modules.ts'
 import {
+  type AuthenticateConnection,
+  BRIDGE_UI_CORE_ID,
+  ClientConnectedDetailSchema,
   SERVER_MODULE_ERROR_CODES,
   SERVER_MODULE_EVENTS,
   SERVER_MODULE_ID,
-  toServerModuleEventType,
-} from '../server-module.constants.ts'
-import {
-  ClientConnectedDetailSchema,
   type ServerStartDetail,
   ServerStartedDetailSchema,
-} from '../server-module.schemas.ts'
-import { BRIDGE_UI_CORE_ID } from '../server-module.ts'
-import type { AuthenticateConnection } from '../server-module.types.ts'
+  toServerModuleEventType,
+} from '../../server.ts'
 
 type ObservedEvent = { type: string; detail?: unknown }
 type Harness = {
@@ -93,6 +91,17 @@ const nextJsonMessage = (socket: WebSocket) =>
   new Promise<unknown>((resolve) => {
     socket.onmessage = (event) => resolve(JSON.parse(String(event.data)))
   })
+
+const waitForNoMessage = async (socket: WebSocket, timeoutMs = 120) => {
+  let messageSeen = false
+  const onMessage = () => {
+    messageSeen = true
+  }
+  socket.addEventListener('message', onMessage)
+  await Bun.sleep(timeoutMs)
+  socket.removeEventListener('message', onMessage)
+  expect(messageSeen).toBe(false)
+}
 
 const waitForEvent = async ({
   events,
@@ -265,6 +274,56 @@ describe('server module extension', () => {
 
     const response = await fetch(`http://localhost:${started.port}/unknown`)
     expect(response.status).toBe(404)
+  })
+
+  test('schema-invalid server_start and server_send are blocked while valid events still flow', async () => {
+    const harness = createHarness()
+    const beforeInvalidStart = harness.events.length
+
+    harness.trigger({
+      type: serverStartEventType,
+      detail: {
+        port: 0,
+      },
+    } as unknown as { type: string; detail?: unknown })
+
+    await Bun.sleep(50)
+    expect(harness.events.slice(beforeInvalidStart).some((event) => event.type === startedEventType)).toBe(false)
+
+    const started = await startServer(harness)
+    const socket = openWs(started.port)
+    await waitForOpen(socket)
+
+    harness.trigger({
+      type: serverSendEventType,
+      detail: {
+        topic: 'test-session-id',
+        data: 7,
+      },
+    } as unknown as { type: string; detail?: unknown })
+    await waitForNoMessage(socket)
+
+    const validPayload = JSON.stringify({
+      type: 'render',
+      detail: {
+        target: 'main',
+        html: '<p>ok</p>',
+        stylesheets: [],
+        registry: [],
+      },
+    })
+    const validMessage = nextJsonMessage(socket)
+    harness.trigger({
+      type: serverSendEventType,
+      detail: {
+        topic: 'test-session-id',
+        data: validPayload,
+      },
+    })
+    expect(await validMessage).toEqual(JSON.parse(validPayload))
+
+    socket.close()
+    await waitForClose(socket)
   })
 
   test('valid websocket protocol plus auth emits scoped client_connected lifecycle', async () => {
