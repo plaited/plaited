@@ -336,25 +336,19 @@ export const createModuleRuntimeActor = (options: CreateModuleRuntimeActorOption
 
   useFeedback({
     [localIngressEventType](detail: ModuleRuntimeLocalIngressDetail) {
-      const parsedDetail = ModuleRuntimeLocalIngressDetailSchema.safeParse(detail)
-      if (!parsedDetail.success) {
-        return
-      }
+      const parsedDetail = ModuleRuntimeLocalIngressDetailSchema.parse(detail)
 
       trigger({
-        type: parsedDetail.data.localEventType,
-        detail: parsedDetail.data.event.detail,
+        type: parsedDetail.localEventType,
+        detail: parsedDetail.event.detail,
       })
     },
     [outboundIngressEventType](detail: ModuleRuntimeEnvelopeIngressDetail) {
-      const parsedDetail = ModuleRuntimeEnvelopeIngressDetailSchema.safeParse(detail)
-      if (!parsedDetail.success) {
-        return
-      }
+      const parsedDetail = ModuleRuntimeEnvelopeIngressDetailSchema.parse(detail)
 
       const eventDetail = ModuleRuntimeEnvelopeEventDetailSchema.parse({
-        dispatchId: parsedDetail.data.dispatchId,
-        envelope: parsedDetail.data.envelope,
+        dispatchId: parsedDetail.dispatchId,
+        envelope: parsedDetail.envelope,
       })
 
       trigger({
@@ -363,14 +357,11 @@ export const createModuleRuntimeActor = (options: CreateModuleRuntimeActorOption
       })
     },
     [inboundIngressEventType](detail: ModuleRuntimeEnvelopeIngressDetail) {
-      const parsedDetail = ModuleRuntimeEnvelopeIngressDetailSchema.safeParse(detail)
-      if (!parsedDetail.success) {
-        return
-      }
+      const parsedDetail = ModuleRuntimeEnvelopeIngressDetailSchema.parse(detail)
 
       const eventDetail = ModuleRuntimeEnvelopeEventDetailSchema.parse({
-        dispatchId: parsedDetail.data.dispatchId,
-        envelope: parsedDetail.data.envelope,
+        dispatchId: parsedDetail.dispatchId,
+        envelope: parsedDetail.envelope,
       })
 
       trigger({
