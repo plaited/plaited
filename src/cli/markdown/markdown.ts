@@ -190,13 +190,17 @@ export type LocalMarkdownLink = {
   text: string
 }
 
-const MarkdownLinksFromPathInputSchema = z.object({
-  path: z.string().min(1),
-})
+const MarkdownLinksFromPathInputSchema = z
+  .object({
+    path: z.string().min(1),
+  })
+  .strict()
 
-const MarkdownLinksFromTextInputSchema = z.object({
-  markdown: z.string().min(1),
-})
+const MarkdownLinksFromTextInputSchema = z
+  .object({
+    markdown: z.string().min(1),
+  })
+  .strict()
 
 export const MarkdownLinksInputSchema = z.union([MarkdownLinksFromPathInputSchema, MarkdownLinksFromTextInputSchema])
 
@@ -270,15 +274,100 @@ const setLinkTextIfMissing = ({
   linkTextByTarget.set(target, text.trim() || target)
 }
 
+type InlineMarkdownLink = {
+  text: string
+  destination: string
+}
+
+const isEscapedCharacter = (value: string, index: number): boolean => {
+  let slashCount = 0
+  for (let currentIndex = index - 1; currentIndex >= 0 && value[currentIndex] === '\\'; currentIndex -= 1) {
+    slashCount += 1
+  }
+  return slashCount % 2 === 1
+}
+
+const findInlineDestinationEnd = (value: string, startIndex: number): number => {
+  for (let index = startIndex; index < value.length; index += 1) {
+    if (value[index] !== ')' || isEscapedCharacter(value, index)) continue
+    return index
+  }
+  return -1
+}
+
+const extractInlineMarkdownLinks = (markdownBody: string): InlineMarkdownLink[] => {
+  const links: InlineMarkdownLink[] = []
+
+  for (let index = 0; index < markdownBody.length; index += 1) {
+    const character = markdownBody[index]
+    if (character === undefined) continue
+
+    const startsImageLink =
+      character === '!' && markdownBody[index + 1] === '[' && !isEscapedCharacter(markdownBody, index)
+    const startsTextLink = character === '[' && !isEscapedCharacter(markdownBody, index)
+    if (!startsImageLink && !startsTextLink) continue
+
+    const openBracketIndex = startsImageLink ? index + 1 : index
+    let scanIndex = openBracketIndex + 1
+    let bracketDepth = 1
+    let closeBracketIndex = -1
+
+    while (scanIndex < markdownBody.length) {
+      const scanCharacter = markdownBody[scanIndex]
+      if (scanCharacter === undefined) break
+
+      if (scanCharacter === '[' && !isEscapedCharacter(markdownBody, scanIndex)) {
+        bracketDepth += 1
+      } else if (scanCharacter === ']' && !isEscapedCharacter(markdownBody, scanIndex)) {
+        bracketDepth -= 1
+        if (bracketDepth === 0) {
+          closeBracketIndex = scanIndex
+          break
+        }
+      }
+
+      scanIndex += 1
+    }
+
+    if (closeBracketIndex === -1) {
+      index = openBracketIndex
+      continue
+    }
+
+    const openParenIndex = closeBracketIndex + 1
+    if (markdownBody[openParenIndex] !== '(') {
+      index = closeBracketIndex
+      continue
+    }
+
+    const destinationStartIndex = openParenIndex + 1
+    const destinationEndIndex = findInlineDestinationEnd(markdownBody, destinationStartIndex)
+    if (destinationEndIndex === -1) {
+      break
+    }
+
+    const destination = markdownBody.slice(destinationStartIndex, destinationEndIndex)
+    if (destination.trim().length > 0) {
+      links.push({
+        text: markdownBody.slice(openBracketIndex + 1, closeBracketIndex),
+        destination,
+      })
+    }
+
+    index = destinationEndIndex
+  }
+
+  return links
+}
+
 const extractLocalLinkTextByTarget = (markdownBody: string): Map<string, string> => {
   const linkTextByTarget = new Map<string, string>()
-  const markdownInlineLinkPattern = /!?\[([^\]]*?)\]\(([^)]+)\)/g
   const htmlAnchorPattern = /<a\b[^>]*\bhref=(['"])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi
   const htmlImagePattern = /<img\b[^>]*>/gi
 
-  for (const match of markdownBody.matchAll(markdownInlineLinkPattern)) {
-    const text = match[1] ?? ''
-    const destination = match[2] ?? ''
+  for (const link of extractInlineMarkdownLinks(markdownBody)) {
+    const text = link.text
+    const destination = link.destination
     const normalizedTarget = normalizeMarkdownLink(extractMarkdownLinkDestination(destination))
     setLinkTextIfMissing({
       linkTextByTarget,

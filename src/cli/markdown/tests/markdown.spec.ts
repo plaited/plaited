@@ -166,6 +166,25 @@ Ignore [docs](https://example.com), [anchor](#top), and <img src="https://exampl
 
     expect(links).toEqual([{ value: 'scripts/run.ts', text: angleText }])
   })
+
+  test('does not hang on CodeQL reported markdown-inline-link shapes', async () => {
+    const timeoutMs = 2_000
+    const raceWithTimeout = async (markdown: string): Promise<void> => {
+      const links = await Promise.race([
+        extractLocalLinksFromMarkdown(markdown),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('extractLocalLinksFromMarkdown timed out')), timeoutMs),
+        ),
+      ])
+      expect(Array.isArray(links)).toBeTrue()
+    }
+
+    const inputs = ['['.repeat(4_000), '[\\'.repeat(2_000), `[](${'x'.repeat(4_000)}`, '[](('.repeat(2_000)]
+
+    for (const input of inputs) {
+      await raceWithTimeout(input)
+    }
+  })
 })
 
 describe('markdownLinks', () => {
@@ -206,6 +225,18 @@ describe('markdownLinks', () => {
   test('markdown-links CLI handler exits with invalid input', async () => {
     const script = "import { markdownLinksCli } from './src/cli.ts'; await markdownLinksCli(process.argv.slice(1));"
     const input = JSON.stringify({})
+    const result = await Bun.$`bun -e ${script} -- ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
+
+    expect(result.exitCode).toBe(2)
+    expect(result.stderr.toString()).toContain('invalid_union')
+  })
+
+  test('markdown-links CLI handler rejects input containing both path and markdown', async () => {
+    const script = "import { markdownLinksCli } from './src/cli.ts'; await markdownLinksCli(process.argv.slice(1));"
+    const input = JSON.stringify({
+      path: 'skills/typescript-lsp/SKILL.md',
+      markdown: '[x](y.md)',
+    })
     const result = await Bun.$`bun -e ${script} -- ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
 
     expect(result.exitCode).toBe(2)
