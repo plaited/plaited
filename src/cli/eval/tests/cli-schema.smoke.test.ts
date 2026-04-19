@@ -73,4 +73,19 @@ describe('CLI schema discovery smoke tests', () => {
     expect(schema.properties.challenger).toBeDefined()
     expect(schema.properties.summary).toBeDefined()
   })
+
+  test('plaited markdown-links --schema input emits a one-of source contract', async () => {
+    const result = await Bun.$`bun ./bin/plaited.ts markdown-links --schema input`.cwd(CLI_PACKAGE_ROOT).nothrow()
+    expect(result.exitCode).toBe(0)
+
+    const schema = JSON.parse(result.stdout.toString().trim())
+    expect(Array.isArray(schema.anyOf)).toBeTrue()
+    expect(schema.anyOf).toHaveLength(2)
+
+    const pathVariant = schema.anyOf.find((entry: { required?: string[] }) => entry.required?.includes('path'))
+    const markdownVariant = schema.anyOf.find((entry: { required?: string[] }) => entry.required?.includes('markdown'))
+
+    expect(pathVariant).toBeDefined()
+    expect(markdownVariant).toBeDefined()
+  })
 })

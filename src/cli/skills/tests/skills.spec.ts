@@ -31,18 +31,20 @@ const withTempRoot = async (run: (rootDir: string) => Promise<void>): Promise<vo
 
 const writeSkillFile = async ({
   rootDir,
+  skillParentDir = 'skills',
   dirName,
   name,
   description,
   body,
 }: {
   rootDir: string
+  skillParentDir?: string
   dirName: string
   name: string
   description: string
   body: string
 }): Promise<string> => {
-  const skillDir = join(rootDir, 'skills', dirName)
+  const skillDir = join(rootDir, skillParentDir, dirName)
   await Bun.$`mkdir -p ${skillDir}`
   await Bun.write(
     join(skillDir, 'SKILL.md'),
@@ -58,17 +60,19 @@ ${body}
 }
 
 describe('findSkillDirectories', () => {
-  test('finds and sorts skill directories', async () => {
+  test('finds and sorts skill directories, including .agents/skills', async () => {
     await withTempRoot(async (rootDir) => {
       const alpha = join(rootDir, 'nested', 'skills', 'alpha')
+      const local = join(rootDir, '.agents', 'skills', 'local')
       const zeta = join(rootDir, 'skills', 'zeta')
-      await Bun.$`mkdir -p ${alpha} ${zeta}`
+      await Bun.$`mkdir -p ${alpha} ${zeta} ${local}`
       await Bun.write(join(alpha, 'SKILL.md'), '---\nname: alpha\ndescription: Alpha\n---\n\nBody\n')
       await Bun.write(join(zeta, 'SKILL.md'), '---\nname: zeta\ndescription: Zeta\n---\n\nBody\n')
+      await Bun.write(join(local, 'SKILL.md'), '---\nname: local\ndescription: Local\n---\n\nBody\n')
 
       const skillDirs = await findSkillDirectories(rootDir)
 
-      expect(skillDirs).toEqual([alpha, zeta].sort())
+      expect(skillDirs).toEqual([alpha, local, zeta].sort())
     })
   })
 })
@@ -152,6 +156,43 @@ See [setup guide](references/setup.md) and [missing doc](references/missing.md).
 })
 
 describe('loadSkillCatalog', () => {
+  test('includes both skills/* and .agents/skills/* entries from rootDir', async () => {
+    await withTempRoot(async (rootDir) => {
+      await writeSkillFile({
+        rootDir,
+        skillParentDir: 'skills',
+        dirName: 'alpha',
+        name: 'alpha',
+        description: 'Alpha description',
+        body: 'Alpha body.',
+      })
+      await writeSkillFile({
+        rootDir,
+        skillParentDir: '.agents/skills',
+        dirName: 'local',
+        name: 'local',
+        description: 'Local description',
+        body: 'Local body.',
+      })
+
+      const result = await loadSkillCatalog(rootDir)
+
+      expect(result.errors).toEqual([])
+      expect(result.catalog).toEqual([
+        {
+          name: 'alpha',
+          description: 'Alpha description',
+          path: '/skills/alpha/SKILL.md',
+        },
+        {
+          name: 'local',
+          description: 'Local description',
+          path: '/.agents/skills/local/SKILL.md',
+        },
+      ])
+    })
+  })
+
   test('returns valid catalog entries with paths and invalid entries as errors', async () => {
     await withTempRoot(async (rootDir) => {
       await writeSkillFile({
@@ -261,6 +302,47 @@ describe('getSkillInstructionResourceLinks', () => {
 })
 
 describe('skills CLI commands', () => {
+  test('skills-catalog CLI handler includes .agents/skills entries', async () => {
+    await withTempRoot(async (rootDir) => {
+      await writeSkillFile({
+        rootDir,
+        skillParentDir: 'skills',
+        dirName: 'alpha',
+        name: 'alpha',
+        description: 'Alpha description',
+        body: 'Alpha body.',
+      })
+      await writeSkillFile({
+        rootDir,
+        skillParentDir: '.agents/skills',
+        dirName: 'local',
+        name: 'local',
+        description: 'Local description',
+        body: 'Local body.',
+      })
+
+      const script = "import { skillsCatalogCli } from './src/cli.ts'; await skillsCatalogCli(process.argv.slice(1));"
+      const input = JSON.stringify({ rootDir })
+      const result = await Bun.$`bun -e ${script} -- ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
+
+      expect(result.exitCode).toBe(0)
+      const output = JSON.parse(result.stdout.toString().trim())
+      expect(output.errors).toEqual([])
+      expect(output.catalog).toEqual([
+        {
+          name: 'alpha',
+          description: 'Alpha description',
+          path: '/skills/alpha/SKILL.md',
+        },
+        {
+          name: 'local',
+          description: 'Local description',
+          path: '/.agents/skills/local/SKILL.md',
+        },
+      ])
+    })
+  })
+
   test('skillsCatalog returns catalog and validation errors', async () => {
     await withTempRoot(async (rootDir) => {
       await writeSkillFile({

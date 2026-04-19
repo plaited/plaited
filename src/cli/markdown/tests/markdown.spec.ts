@@ -202,7 +202,7 @@ describe('markdownLinks', () => {
     const result = await Bun.$`bun -e ${script} -- ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
 
     expect(result.exitCode).toBe(2)
-    expect(result.stderr.toString()).toContain('Provide exactly one of path or markdown')
+    expect(result.stderr.toString()).toContain('invalid_union')
   })
 })
 

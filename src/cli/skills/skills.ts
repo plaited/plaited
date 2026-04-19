@@ -38,6 +38,7 @@ import {
  * @public
  */
 export const skillsGlobPattern = '**/skills/*/SKILL.md'
+export const repoLocalSkillsGlobPattern = '.agents/skills/*/SKILL.md'
 
 const formatSkillValidationError = (error: unknown): string => {
   if (error instanceof z.ZodError) {
@@ -74,6 +75,9 @@ const toCatalogPath = (rootDir: string, skillPath: string): string => {
   return `/${relativeSkillPath}`
 }
 
+const hasHiddenPathSegment = (path: string): boolean =>
+  path.split('/').some((segment) => segment.length > 0 && segment.startsWith('.'))
+
 /**
  * Finds absolute skill directory paths under a workspace root.
  *
@@ -83,15 +87,22 @@ const toCatalogPath = (rootDir: string, skillPath: string): string => {
  * @public
  */
 export const findSkillDirectories = async (rootDir: string): Promise<SkillDirectoryPaths> => {
-  const skillDirs: SkillDirectoryPaths = []
-  const glob = new Glob(skillsGlobPattern)
+  const absoluteRootDir = resolve(rootDir)
+  const skillDirs = new Set<string>()
+  const primaryGlob = new Glob(skillsGlobPattern)
+  const repoLocalGlob = new Glob(repoLocalSkillsGlobPattern)
 
-  for await (const file of glob.scan({ cwd: rootDir, absolute: true })) {
-    const skillDir = file.replace(/\/SKILL\.md$/i, '')
-    skillDirs.push(skillDir)
+  for await (const file of primaryGlob.scan({ cwd: absoluteRootDir, absolute: true })) {
+    const normalizedRelativePath = relative(absoluteRootDir, file).replace(/\\/g, '/')
+    if (hasHiddenPathSegment(normalizedRelativePath)) continue
+    skillDirs.add(file.replace(/[\\/]SKILL\.md$/i, ''))
   }
 
-  return skillDirs.sort()
+  for await (const file of repoLocalGlob.scan({ cwd: absoluteRootDir, absolute: true, dot: true })) {
+    skillDirs.add(file.replace(/[\\/]SKILL\.md$/i, ''))
+  }
+
+  return [...skillDirs].sort()
 }
 
 /**

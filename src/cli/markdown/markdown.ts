@@ -190,20 +190,15 @@ export type LocalMarkdownLink = {
   text: string
 }
 
-export const MarkdownLinksInputSchema = z
-  .object({
-    path: z.string().min(1).optional(),
-    markdown: z.string().min(1).optional(),
-  })
-  .superRefine((value, context) => {
-    const providedSourceCount = Number(Boolean(value.path)) + Number(Boolean(value.markdown))
-    if (providedSourceCount === 1) return
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Provide exactly one of path or markdown',
-      path: ['path'],
-    })
-  })
+const MarkdownLinksFromPathInputSchema = z.object({
+  path: z.string().min(1),
+})
+
+const MarkdownLinksFromTextInputSchema = z.object({
+  markdown: z.string().min(1),
+})
+
+export const MarkdownLinksInputSchema = z.union([MarkdownLinksFromPathInputSchema, MarkdownLinksFromTextInputSchema])
 
 /** @public */
 export type MarkdownLinksInput = z.infer<typeof MarkdownLinksInputSchema>
@@ -328,15 +323,12 @@ export const extractLocalLinksFromMarkdown = async (markdownBody: string): Promi
   }))
 }
 
-const readMarkdownLinksSource = async ({ path, markdown }: MarkdownLinksInput): Promise<string> => {
-  if (markdown) return markdown
-  if (!path) {
-    throw new Error('Missing markdown source')
-  }
+const readMarkdownLinksSource = async (input: MarkdownLinksInput): Promise<string> => {
+  if ('markdown' in input) return input.markdown
 
-  const file = Bun.file(path)
+  const file = Bun.file(input.path)
   if (!(await file.exists())) {
-    throw new Error(`Markdown file not found: ${path}`)
+    throw new Error(`Markdown file not found: ${input.path}`)
   }
   return file.text()
 }
