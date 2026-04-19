@@ -1,7 +1,7 @@
 import * as z from 'zod'
 
 import { SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
-import { type ActorEnvelope, ActorEnvelopeSchema, BPEventSchema, type SnapshotMessage } from './behavioral.schemas.ts'
+import { type ActorEnvelope, ActorEnvelopeSchema, type SnapshotMessage } from './behavioral.schemas.ts'
 import { bSync, bThread } from './behavioral.shared.ts'
 import { behavioral } from './behavioral.ts'
 import type { BPEvent, SnapshotListener, UseSnapshot } from './behavioral.types.ts'
@@ -11,8 +11,9 @@ const DEFAULT_AUTHORITY_DOMAIN_ID = 'node-local'
 const AuthorityDomainIdSchema = z.string().min(1)
 const ModuleIdSchema = z.string().min(1)
 const DispatchIdSchema = z.string().min(1)
-const LocalEventInputSchema = BPEventSchema.extend({
+const LocalEventInputSchema = z.object({
   type: z.string().min(1),
+  detail: z.json().optional(),
 })
 
 const ModuleRuntimeLocalIngressDetailSchema = z.object({
@@ -44,7 +45,6 @@ export const MODULE_RUNTIME_DIAGNOSTIC_CODES = {
   invalidOutboundEnvelope: 'invalid_outbound_envelope',
   invalidInboundEnvelope: 'invalid_inbound_envelope',
   outboundSourceMismatch: 'outbound_source_mismatch',
-  inboundNotSupervisorApproved: 'inbound_not_supervisor_approved',
   inboundTargetMismatch: 'inbound_target_mismatch',
 } as const
 
@@ -144,7 +144,6 @@ export type ModuleRuntimeInboundEnvelopeResult =
       status: 'rejected'
       code:
         | (typeof MODULE_RUNTIME_DIAGNOSTIC_CODES)['invalidInboundEnvelope']
-        | (typeof MODULE_RUNTIME_DIAGNOSTIC_CODES)['inboundNotSupervisorApproved']
         | (typeof MODULE_RUNTIME_DIAGNOSTIC_CODES)['inboundTargetMismatch']
       error: string
     }
@@ -656,29 +655,6 @@ export const createModuleRuntimeActor = (options: CreateModuleRuntimeActorOption
     }
 
     const inboundEnvelope = parsedEnvelope.data
-
-    if (inboundEnvelope.source.kind !== 'supervisor') {
-      const error =
-        'module inbound envelope rejected: source.kind must be supervisor (supervisor-approved ingress only).'
-
-      addValidationDiagnostic({
-        lane: 'inbound',
-        code: MODULE_RUNTIME_DIAGNOSTIC_CODES.inboundNotSupervisorApproved,
-        error,
-      })
-      addDecision({
-        lane: 'inbound',
-        decision: 'rejected',
-        reason: MODULE_RUNTIME_DIAGNOSTIC_CODES.inboundNotSupervisorApproved,
-        envelopeId: inboundEnvelope.id,
-      })
-
-      return {
-        status: 'rejected',
-        code: MODULE_RUNTIME_DIAGNOSTIC_CODES.inboundNotSupervisorApproved,
-        error,
-      }
-    }
 
     const targetMatchesModule =
       inboundEnvelope.target?.kind === 'module' &&

@@ -31,10 +31,18 @@ const createOutboundEnvelope = ({ id, moduleId }: { id: string; moduleId: string
   },
 })
 
-const createSupervisorEnvelope = ({ id, moduleId }: { id: string; moduleId: string }) => ({
+const createInboundEnvelope = ({
   id,
-  type: 'supervisor:approved_intent',
-  source: {
+  moduleId,
+  source,
+}: {
+  id: string
+  moduleId: string
+  source?: { id: string; kind: 'module' | 'ui' | 'supervisor'; moduleId?: string }
+}) => ({
+  id,
+  type: 'module:handoff',
+  source: source ?? {
     id: 'supervisor:domain:node-local',
     kind: 'supervisor' as const,
   },
@@ -55,6 +63,35 @@ const createSupervisorEnvelope = ({ id, moduleId }: { id: string; moduleId: stri
 describe('createModuleRuntimeActor', () => {
   test('throws when moduleId is an empty string', () => {
     expect(() => createModuleRuntimeActor({ moduleId: '' })).toThrowError(/moduleId to be a non-empty string/)
+  })
+
+  test('rejects non-JSON local event detail values without throwing', () => {
+    const runtime = createModuleRuntimeActor({
+      authorityDomainId: 'domain:node-local',
+      moduleId: 'planner',
+    })
+
+    const result = runtime.triggerLocalEvent({
+      type: 'run',
+      detail: {
+        fn: () => 1,
+      },
+    })
+
+    expect(result.status).toBe('rejected')
+    if (result.status !== 'rejected') {
+      throw new Error('Expected rejected local event result.')
+    }
+
+    expect(result.code).toBe(MODULE_RUNTIME_DIAGNOSTIC_CODES.invalidLocalEvent)
+    expect(result.error).toContain('module local event rejected')
+    expect(runtime.getLocalEventHistory()).toEqual([])
+    expect(runtime.getValidationDiagnostics()).toContainEqual(
+      expect.objectContaining({
+        lane: 'local',
+        code: MODULE_RUNTIME_DIAGNOSTIC_CODES.invalidLocalEvent,
+      }),
+    )
   })
 
   test('module-local blocking is isolated per module actor runtime', () => {
@@ -163,14 +200,14 @@ describe('createModuleRuntimeActor', () => {
     )
   })
 
-  test('accepts only supervisor-approved inbound envelopes targeted to the owning module actor', () => {
+  test('accepts inbound envelopes targeted to the owning module actor', () => {
     const runtime = createModuleRuntimeActor({
       authorityDomainId: 'domain:node-local',
       moduleId: 'planner',
     })
 
     const acceptedResult = runtime.receiveInboundEnvelope(
-      createSupervisorEnvelope({
+      createInboundEnvelope({
         id: 'env-inbound-1',
         moduleId: 'planner',
       }),
@@ -179,25 +216,21 @@ describe('createModuleRuntimeActor', () => {
     expect(acceptedResult.status).toBe('received')
     expect(runtime.getInboundEnvelopeHistory()).toHaveLength(1)
 
-    const rejectedBySource = runtime.receiveInboundEnvelope({
-      ...createSupervisorEnvelope({
+    const acceptedModuleSource = runtime.receiveInboundEnvelope(
+      createInboundEnvelope({
         id: 'env-inbound-2',
         moduleId: 'planner',
+        source: {
+          id: toModuleActorId({ moduleId: 'executor' }),
+          kind: 'module',
+          moduleId: 'executor',
+        },
       }),
-      source: {
-        id: 'ui:controller',
-        kind: 'ui' as const,
-      },
-    })
-
-    expect(rejectedBySource.status).toBe('rejected')
-    if (rejectedBySource.status !== 'rejected') {
-      throw new Error('Expected rejected inbound result for non-supervisor source.')
-    }
-    expect(rejectedBySource.code).toBe(MODULE_RUNTIME_DIAGNOSTIC_CODES.inboundNotSupervisorApproved)
+    )
+    expect(acceptedModuleSource.status).toBe('received')
 
     const rejectedByTarget = runtime.receiveInboundEnvelope({
-      ...createSupervisorEnvelope({
+      ...createInboundEnvelope({
         id: 'env-inbound-3',
         moduleId: 'planner',
       }),
