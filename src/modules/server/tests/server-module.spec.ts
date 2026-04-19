@@ -12,8 +12,10 @@ import { CONTROLLER_TO_AGENT_EVENTS } from '../../../bridge-events.ts'
 import { serverModuleExtension } from '../../../modules.ts'
 import {
   type AuthenticateConnection,
+  BRIDGE_INFERENCE_CORE_ID,
   BRIDGE_UI_CORE_ID,
   ClientConnectedDetailSchema,
+  INFERENCE_WEBSOCKET_MESSAGE_TYPE,
   SERVER_MODULE_ERROR_CODES,
   SERVER_MODULE_EVENTS,
   SERVER_MODULE_ID,
@@ -38,6 +40,7 @@ const clientErrorEventType = toServerModuleEventType(SERVER_MODULE_EVENTS.client
 const serverStartEventType = toServerModuleEventType(SERVER_MODULE_EVENTS.server_start)
 const serverSendEventType = toServerModuleEventType(SERVER_MODULE_EVENTS.server_send)
 const uiCoreExtensionRequestEventType = `${BRIDGE_UI_CORE_ID}:${EXTENSION_REQUEST_EVENT}`
+const inferenceBridgeExtensionRequestEventType = `${BRIDGE_INFERENCE_CORE_ID}:${EXTENSION_REQUEST_EVENT}`
 const uiCoreUserActionEventType = `${BRIDGE_UI_CORE_ID}:user_action`
 const uiCoreSnapshotEventType = `${BRIDGE_UI_CORE_ID}:snapshot`
 
@@ -185,6 +188,9 @@ const createHarness = (): Harness => {
     },
     [uiCoreExtensionRequestEventType]: (detail: unknown) => {
       events.push({ type: uiCoreExtensionRequestEventType, detail })
+    },
+    [inferenceBridgeExtensionRequestEventType]: (detail: unknown) => {
+      events.push({ type: inferenceBridgeExtensionRequestEventType, detail })
     },
     [uiCoreUserActionEventType]: (detail: unknown) => {
       events.push({ type: uiCoreUserActionEventType, detail })
@@ -450,6 +456,86 @@ describe('server module extension', () => {
     )
     expect(harness.events.slice(before).some((event) => event.type === CONTROLLER_TO_AGENT_EVENTS.error)).toBe(false)
     expect(harness.events.slice(before).some((event) => event.type === uiCoreSnapshotEventType)).toBe(false)
+
+    socket.close()
+    await waitForClose(socket)
+  })
+
+  test('inference websocket ingress emits the inference_bridge extension_request_event envelope', async () => {
+    const harness = createHarness()
+    const started = await startServer(harness)
+    const socket = openWs(started.port, { protocol: 'inference' })
+    await waitForOpen(socket)
+
+    const payload = {
+      type: INFERENCE_WEBSOCKET_MESSAGE_TYPE,
+      detail: {
+        id: 'env-inference-1',
+        type: 'inference:response',
+        source: {
+          id: 'inference:runtime',
+          kind: 'inference',
+        },
+        target: {
+          id: 'supervisor:domain:node-local',
+          kind: 'supervisor',
+        },
+        detail: {
+          content: 'model output',
+          confidence: 0.9,
+        },
+        meta: {
+          purpose: 'inference response envelope',
+          boundary: 'domain:node-local',
+        },
+      },
+    } as const
+    const before = harness.events.length
+    socket.send(JSON.stringify(payload))
+
+    const forwarded = await waitForEvent({
+      events: harness.events,
+      type: inferenceBridgeExtensionRequestEventType,
+      after: before,
+    })
+    expect(forwarded.detail).toEqual(
+      expect.objectContaining({
+        type: payload.type,
+        detail: payload.detail,
+      }),
+    )
+    expect(harness.events.slice(before).some((event) => event.type === uiCoreExtensionRequestEventType)).toBe(false)
+
+    socket.close()
+    await waitForClose(socket)
+  })
+
+  test('schema-invalid inference websocket payload emits transport diagnostics and no inference extension request', async () => {
+    const harness = createHarness()
+    const started = await startServer(harness)
+    const socket = openWs(started.port, { protocol: 'inference' })
+    await waitForOpen(socket)
+
+    const beforeSnapshots = harness.snapshots.length
+    const beforeEvents = harness.events.length
+    socket.send(
+      JSON.stringify({
+        type: INFERENCE_WEBSOCKET_MESSAGE_TYPE,
+        detail: {
+          invalid: true,
+        },
+      }),
+    )
+
+    const diagnostic = await waitForTransportDiagnostic({
+      snapshots: harness.snapshots,
+      code: SERVER_MODULE_ERROR_CODES.malformed_message,
+      after: beforeSnapshots,
+    })
+    expect(diagnostic.error).toContain('code=malformed_message')
+    expect(
+      harness.events.slice(beforeEvents).some((event) => event.type === inferenceBridgeExtensionRequestEventType),
+    ).toBe(false)
 
     socket.close()
     await waitForClose(socket)

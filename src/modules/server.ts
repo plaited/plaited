@@ -2,9 +2,14 @@ import type { Server, TLSOptions } from 'bun'
 import * as z from 'zod'
 import type { Trigger } from '../behavioral.ts'
 import { SNAPSHOT_MESSAGE_KINDS, useExtension } from '../behavioral.ts'
-import type { ClientMessage } from '../ui.ts'
-import { ClientMessageSchema } from '../ui.ts'
 import { keyMirror } from '../utils.ts'
+import { parseWebSocketRuntimeRoute, type WebSocketRuntimeRoute } from './server/server-websocket-runtime-actors.ts'
+
+export {
+  BRIDGE_INFERENCE_CORE_ID,
+  BRIDGE_UI_CORE_ID,
+  INFERENCE_WEBSOCKET_MESSAGE_TYPE,
+} from './server/server-websocket-runtime-actors.ts'
 
 export const SERVER_MODULE_ID = 'server_module'
 
@@ -77,7 +82,7 @@ export type ServerModuleErrorCode = (typeof SERVER_MODULE_ERROR_CODES)[keyof typ
 
 export type CreateServerOptions = {
   trigger: Trigger
-  onClientMessage: (message: ClientMessage) => void
+  onWebSocketIngress: (route: WebSocketRuntimeRoute) => void
   reportTransportError: (detail: {
     code: ServerModuleErrorCode
     connectionId?: string
@@ -176,7 +181,6 @@ export const ClientErrorDetailSchema = z.object({
   pathname: z.string().optional(),
 })
 export type ClientErrorDetail = z.infer<typeof ClientErrorDetailSchema>
-export const BRIDGE_UI_CORE_ID = 'ui_core'
 
 const createModuleEvent = <TEvent extends string>(event: TEvent, detail?: unknown) =>
   detail === undefined
@@ -190,7 +194,7 @@ const createModuleEvent = <TEvent extends string>(event: TEvent, detail?: unknow
 
 const createServer = ({
   trigger,
-  onClientMessage,
+  onWebSocketIngress,
   reportTransportError,
   routes,
   port = 0,
@@ -276,18 +280,24 @@ const createServer = ({
           return
         }
 
-        const parsed = ClientMessageSchema.safeParse(payload)
-        if (!parsed.success) {
+        let route: WebSocketRuntimeRoute
+        try {
+          route = parseWebSocketRuntimeRoute({
+            connectionId: ws.data.connectionId,
+            source: ws.data.source,
+            payload,
+          })
+        } catch (error) {
           reportTransportError({
             code: SERVER_MODULE_ERROR_CODES.malformed_message,
             connectionId: ws.data.connectionId,
-            message: parsed.error.message,
+            message: error instanceof Error ? error.message : String(error),
           })
           return
         }
 
         try {
-          onClientMessage(parsed.data)
+          onWebSocketIngress(route)
         } catch (error) {
           reportTransportError({
             code: SERVER_MODULE_ERROR_CODES.internal_error,
@@ -479,15 +489,15 @@ export const serverModuleExtension = useExtension(
       })
     }
 
-    const forwardClientMessage: CreateServerOptions['onClientMessage'] = (message) => {
-      // This module emits a ui_core request envelope. Final ui_core:* events
-      // require a ui_core extension to be installed in the same runtime.
+    const forwardWebSocketIngress: CreateServerOptions['onWebSocketIngress'] = (route) => {
+      // This module emits actor-scoped request envelopes. Final extension-specific
+      // events require the destination extension to be installed in the runtime.
       const { requestEvent } = extensions.request({
-        extension: BRIDGE_UI_CORE_ID,
-        type: message.type,
-        detail: message.detail,
-        purpose: `server_module websocket ingress: ${message.type}`,
-        detailSchema: z.unknown(),
+        extension: route.extensionId,
+        type: route.type,
+        detail: route.detail,
+        purpose: route.purpose,
+        detailSchema: route.detailSchema,
       })
       trigger(requestEvent)
     }
@@ -504,6 +514,14 @@ export const serverModuleExtension = useExtension(
 
     const emitServerError = (detail: unknown) =>
       trigger(createModuleEvent(SERVER_MODULE_EVENTS.server_error, ServerErrorDetailSchema.parse(detail)))
+
+    const reportInternalIngressValidationError = ({ eventType, error }: { eventType: string; error: z.ZodError }) => {
+      reportSnapshot({
+        kind: SNAPSHOT_MESSAGE_KINDS.extension_error,
+        id: `${SERVER_MODULE_ID}:invalid_${eventType}`,
+        error: `server_module internal ingress validation failed (${eventType}): ${error.message}`,
+      })
+    }
 
     const stopServer = (detail?: ServerStopDetail) => {
       const closeActiveConnections = detail?.closeActiveConnections ?? true
@@ -525,7 +543,7 @@ export const serverModuleExtension = useExtension(
       try {
         liveServer = createServer({
           trigger,
-          onClientMessage: forwardClientMessage,
+          onWebSocketIngress: forwardWebSocketIngress,
           reportTransportError,
           ...detail,
         })
@@ -590,24 +608,48 @@ export const serverModuleExtension = useExtension(
 
     return {
       [SERVER_MODULE_EVENTS.server_start](detail: ServerStartDetail) {
-        const parsed = ServerStartDetailSchema.safeParse(detail)
-        if (!parsed.success) {
-          return
+        try {
+          startServer(ServerStartDetailSchema.parse(detail))
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            reportInternalIngressValidationError({
+              eventType: SERVER_MODULE_EVENTS.server_start,
+              error,
+            })
+            return
+          }
+          throw error
         }
-        startServer(parsed.data)
       },
       [SERVER_MODULE_EVENTS.server_stop](detail: ServerStopDetail) {
-        const parsed = ServerStopDetailSchema.safeParse(detail)
-        if (!parsed.success) {
-          return
+        try {
+          stopServer(ServerStopDetailSchema.parse(detail))
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            reportInternalIngressValidationError({
+              eventType: SERVER_MODULE_EVENTS.server_stop,
+              error,
+            })
+            return
+          }
+          throw error
         }
-        stopServer(parsed.data)
       },
       [SERVER_MODULE_EVENTS.server_send](detail: ServerSendDetail) {
-        const parsed = ServerSendDetailSchema.safeParse(detail)
-        if (!parsed.success) {
-          return
+        let parsed: ServerSendDetail
+        try {
+          parsed = ServerSendDetailSchema.parse(detail)
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            reportInternalIngressValidationError({
+              eventType: SERVER_MODULE_EVENTS.server_send,
+              error,
+            })
+            return
+          }
+          throw error
         }
+
         if (!liveServer) {
           emitServerError({
             code: SERVER_MODULE_ERROR_CODES.server_not_running,
@@ -615,7 +657,7 @@ export const serverModuleExtension = useExtension(
           })
           return
         }
-        liveServer.send(parsed.data.topic, parsed.data.data)
+        liveServer.send(parsed.topic, parsed.data)
       },
     }
   },
