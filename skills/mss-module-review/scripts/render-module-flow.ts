@@ -1,7 +1,7 @@
 import { isAbsolute, resolve } from 'node:path'
 import ts from 'typescript'
 import * as z from 'zod'
-import { parseCliRequest } from '../src/cli.ts'
+import { parseCliRequest } from '../../../src/cli.ts'
 
 export const ModuleFlowRenderInputSchema = z.object({
   files: z.array(z.string().min(1)),
@@ -843,11 +843,13 @@ export const renderModuleFlow = async (input: ModuleFlowRenderInput): Promise<Mo
 export const renderModuleFlowCli = async (args: string[]) => {
   try {
     const { input } = await parseCliRequest(args, ModuleFlowRenderInputSchema, {
-      name: 'scripts/render-module-flow.ts',
+      name: 'skills/mss-module-review/scripts/render-module-flow.ts',
       outputSchema: ModuleFlowRenderOutputSchema,
       help:
-        `Examples:\n  bun scripts/render-module-flow.ts '{"files":["src/modules/ui-websocket-runtime-actor.ts"],"format":"json"}'\n` +
-        `  bun scripts/render-module-flow.ts '{"files":["src/modules/ui-websocket-runtime-actor.ts"],"format":"mermaid"}'`,
+        `Examples:\n  bun skills/mss-module-review/scripts/render-module-flow.ts ` +
+        `'{"files":["src/modules/ui-websocket-runtime-actor.ts"],"format":"json"}'\n` +
+        `  bun skills/mss-module-review/scripts/render-module-flow.ts ` +
+        `'{"files":["src/modules/ui-websocket-runtime-actor.ts"],"format":"mermaid"}'`,
     })
 
     const output = await renderModuleFlow(input)

@@ -1,7 +1,7 @@
 import { isAbsolute, resolve } from 'node:path'
 import ts from 'typescript'
 import * as z from 'zod'
-import { parseCliRequest } from '../src/cli.ts'
+import { parseCliRequest } from '../../../src/cli.ts'
 
 export const ModulePatternCheckInputSchema = z.object({
   files: z.array(z.string().min(1)),
@@ -740,9 +740,13 @@ const renderHumanOutput = ({ output }: { output: ModulePatternCheckOutput }) => 
 export const checkModulePatternsCli = async (args: string[]) => {
   try {
     const { input, flags } = await parseCliRequest(args, ModulePatternCheckInputSchema, {
-      name: 'scripts/check-module-patterns.ts',
+      name: 'skills/mss-module-review/scripts/check-module-patterns.ts',
       outputSchema: ModulePatternCheckOutputSchema,
-      help: `Examples:\n  bun scripts/check-module-patterns.ts '{"files":["src/modules/ui-websocket-runtime-actor.ts"]}'\n  bun scripts/check-module-patterns.ts '{"files":["src/modules/ui-websocket-runtime-actor.ts"]}' --human`,
+      help:
+        `Examples:\n  bun skills/mss-module-review/scripts/check-module-patterns.ts ` +
+        `'{"files":["src/modules/ui-websocket-runtime-actor.ts"]}'\n` +
+        `  bun skills/mss-module-review/scripts/check-module-patterns.ts ` +
+        `'{"files":["src/modules/ui-websocket-runtime-actor.ts"]}' --human`,
     })
 
     const output = await checkModulePatterns(input)
