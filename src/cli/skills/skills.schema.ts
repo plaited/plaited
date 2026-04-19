@@ -83,6 +83,18 @@ export const SkillCatalogLoadResultSchema = z.object({
 /** @public */
 export type SkillCatalogLoadResult = z.infer<typeof SkillCatalogLoadResultSchema>
 
+export const SkillsCatalogCliInputSchema = z.object({
+  rootDir: z.string().min(1),
+})
+
+/** @public */
+export type SkillsCatalogCliInput = z.infer<typeof SkillsCatalogCliInputSchema>
+
+export const SkillsCatalogCliOutputSchema = SkillCatalogLoadResultSchema
+
+/** @public */
+export type SkillsCatalogCliOutput = z.infer<typeof SkillsCatalogCliOutputSchema>
+
 export const SkillInstructionsResultSchema = z.string()
 
 /** @public */
@@ -105,6 +117,45 @@ export const SkillInstructionErrorsSchema = z.array(SkillInstructionErrorSchema)
 
 /** @public */
 export type SkillInstructionErrors = z.infer<typeof SkillInstructionErrorsSchema>
+
+export const SkillsValidateCliInputSchema = z.object({
+  skillPath: z.string().min(1),
+})
+
+/** @public */
+export type SkillsValidateCliInput = z.infer<typeof SkillsValidateCliInputSchema>
+
+export const SkillsValidateCliOutputSchema = z.object({
+  ok: z.boolean(),
+  errors: z.array(z.string().min(1)),
+})
+
+/** @public */
+export type SkillsValidateCliOutput = z.infer<typeof SkillsValidateCliOutputSchema>
+
+export const SkillsLinksCliInputSchema = z.object({
+  rootDir: z.string().min(1),
+  path: z.string().min(1),
+})
+
+/** @public */
+export type SkillsLinksCliInput = z.infer<typeof SkillsLinksCliInputSchema>
+
+export const SkillResourceLinksJsonSchema = z.object({
+  present: z.array(SkillResourceLinkSchema),
+  missing: z.array(SkillResourceLinkSchema),
+})
+
+/** @public */
+export type SkillResourceLinksJson = z.infer<typeof SkillResourceLinksJsonSchema>
+
+export const SkillsLinksCliOutputSchema = z.object({
+  links: SkillResourceLinksJsonSchema,
+  errors: SkillInstructionErrorsSchema,
+})
+
+/** @public */
+export type SkillsLinksCliOutput = z.infer<typeof SkillsLinksCliOutputSchema>
 
 export const SkillInstructionResourceLinksResultSchema = z.object({
   links: SkillResourceLinksSchema,

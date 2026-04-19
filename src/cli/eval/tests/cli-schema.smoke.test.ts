@@ -21,6 +21,10 @@ describe('CLI schema discovery smoke tests', () => {
     expect(output.name).toBe('plaited')
     expect(output.commands).toContain('eval')
     expect(output.commands).toContain('compare-trials')
+    expect(output.commands).toContain('skills-catalog')
+    expect(output.commands).toContain('skills-validate')
+    expect(output.commands).toContain('skills-links')
+    expect(output.commands).toContain('markdown-links')
   })
 
   test('plaited eval --schema input emits EvalInputSchema', async () => {

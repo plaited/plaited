@@ -1,6 +1,7 @@
 import { normalize } from 'node:path'
 import { YAML } from 'bun'
-import type * as z from 'zod'
+import * as z from 'zod'
+import { makeCli } from '../utils/cli.ts'
 
 type ParsedFrontmatterBlock = {
   frontmatter: string
@@ -189,6 +190,34 @@ export type LocalMarkdownLink = {
   text: string
 }
 
+export const MarkdownLinksInputSchema = z
+  .object({
+    path: z.string().min(1).optional(),
+    markdown: z.string().min(1).optional(),
+  })
+  .superRefine((value, context) => {
+    const providedSourceCount = Number(Boolean(value.path)) + Number(Boolean(value.markdown))
+    if (providedSourceCount === 1) return
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Provide exactly one of path or markdown',
+      path: ['path'],
+    })
+  })
+
+/** @public */
+export type MarkdownLinksInput = z.infer<typeof MarkdownLinksInputSchema>
+
+export const MarkdownLinksOutputSchema = z.array(
+  z.object({
+    value: z.string().min(1),
+    text: z.string().min(1),
+  }),
+)
+
+/** @public */
+export type MarkdownLinksOutput = z.infer<typeof MarkdownLinksOutputSchema>
+
 const extractMarkdownLinkDestination = (value: string): string => {
   const trimmedValue = value.trim()
   if (!trimmedValue) return trimmedValue
@@ -298,3 +327,38 @@ export const extractLocalLinksFromMarkdown = async (markdownBody: string): Promi
     text: linkTextByTarget.get(value) ?? value,
   }))
 }
+
+const readMarkdownLinksSource = async ({ path, markdown }: MarkdownLinksInput): Promise<string> => {
+  if (markdown) return markdown
+  if (!path) {
+    throw new Error('Missing markdown source')
+  }
+
+  const file = Bun.file(path)
+  if (!(await file.exists())) {
+    throw new Error(`Markdown file not found: ${path}`)
+  }
+  return file.text()
+}
+
+/**
+ * Extracts local markdown links from either file path or raw markdown text.
+ *
+ * @public
+ */
+export const markdownLinks = async (input: MarkdownLinksInput): Promise<MarkdownLinksOutput> => {
+  const markdown = await readMarkdownLinksSource(input)
+  return extractLocalLinksFromMarkdown(markdown)
+}
+
+/**
+ * CLI handler for `markdown-links`.
+ *
+ * @public
+ */
+export const markdownLinksCli = makeCli({
+  name: 'markdown-links',
+  inputSchema: MarkdownLinksInputSchema,
+  outputSchema: MarkdownLinksOutputSchema,
+  run: markdownLinks,
+})

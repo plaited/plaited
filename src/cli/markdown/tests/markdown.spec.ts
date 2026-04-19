@@ -1,13 +1,17 @@
 import { describe, expect, test } from 'bun:test'
 import { Blob } from 'node:buffer'
+import { join, resolve } from 'node:path'
 import * as z from 'zod'
 import {
   consumeHtmlRewriteResult,
   extractLocalLinksFromMarkdown,
   extractMarkdownSection,
+  markdownLinks,
   normalizeMarkdownLink,
   parseMarkdownWithFrontmatter,
 } from '../markdown.ts'
+
+const CLI_PACKAGE_ROOT = resolve(import.meta.dir, '../../../../')
 
 const TestFrontmatterSchema = z.object({
   name: z.string(),
@@ -154,6 +158,51 @@ Ignore [docs](https://example.com), [anchor](#top), and <img src="https://exampl
       { value: 'scripts/b.ts', text: 'b' },
       { value: 'scripts/c.ts', text: 'scripts/c.ts' },
     ])
+  })
+})
+
+describe('markdownLinks', () => {
+  test('extracts links from a markdown file path', async () => {
+    const tempPath = join('/tmp', `plaited-markdown-links-${Date.now()}.md`)
+    await Bun.write(tempPath, '[setup](references/setup.md)\n![diagram](assets/diagram.png)')
+
+    const links = await markdownLinks({ path: tempPath })
+
+    expect(links).toEqual([
+      { value: 'assets/diagram.png', text: 'diagram' },
+      { value: 'references/setup.md', text: 'setup' },
+    ])
+
+    await Bun.$`rm -f ${tempPath}`
+  })
+
+  test('extracts links from raw markdown input', async () => {
+    const links = await markdownLinks({ markdown: '[script](scripts/run.ts#main)' })
+
+    expect(links).toEqual([{ value: 'scripts/run.ts', text: 'script' }])
+  })
+
+  test('throws when the source file does not exist', async () => {
+    const missingPath = join('/tmp', `plaited-markdown-links-missing-${Date.now()}.md`)
+    await expect(markdownLinks({ path: missingPath })).rejects.toThrow(`Markdown file not found: ${missingPath}`)
+  })
+
+  test('markdown-links CLI handler outputs JSON links', async () => {
+    const script = "import { markdownLinksCli } from './src/cli.ts'; await markdownLinksCli(process.argv.slice(1));"
+    const input = JSON.stringify({ markdown: '[setup](references/setup.md)' })
+    const result = await Bun.$`bun -e ${script} -- ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
+
+    expect(result.exitCode).toBe(0)
+    expect(JSON.parse(result.stdout.toString().trim())).toEqual([{ value: 'references/setup.md', text: 'setup' }])
+  })
+
+  test('markdown-links CLI handler exits with invalid input', async () => {
+    const script = "import { markdownLinksCli } from './src/cli.ts'; await markdownLinksCli(process.argv.slice(1));"
+    const input = JSON.stringify({})
+    const result = await Bun.$`bun -e ${script} -- ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
+
+    expect(result.exitCode).toBe(2)
+    expect(result.stderr.toString()).toContain('Provide exactly one of path or markdown')
   })
 })
 

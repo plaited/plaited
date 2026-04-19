@@ -11,7 +11,14 @@
  * @internal
  */
 
-import { compareTrialsCli, evalCli } from '../src/cli.ts'
+import {
+  compareTrialsCli,
+  evalCli,
+  markdownLinksCli,
+  skillsCatalogCli,
+  skillsLinksCli,
+  skillsValidateCli,
+} from '../src/cli.ts'
 
 // ============================================================================
 // Command Registry
@@ -20,6 +27,10 @@ import { compareTrialsCli, evalCli } from '../src/cli.ts'
 const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   'compare-trials': compareTrialsCli,
   eval: evalCli,
+  'markdown-links': markdownLinksCli,
+  'skills-catalog': skillsCatalogCli,
+  'skills-links': skillsLinksCli,
+  'skills-validate': skillsValidateCli,
 }
 
 // ============================================================================
@@ -27,10 +38,11 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
 // ============================================================================
 
 const printCommandManifest = () => {
+  const commandNames = Object.keys(COMMANDS).sort()
   const manifest = {
     name: 'plaited',
     description: 'Agent-facing CLI toolbox for the Plaited framework',
-    commands: Object.keys(COMMANDS).sort(),
+    commands: commandNames,
     usage: "plaited <command> '<json>' | --schema input",
     discovery: 'plaited --schema',
   }
@@ -44,6 +56,7 @@ const printCommandManifest = () => {
 export const runCli = async (argv: string[]): Promise<void> => {
   const command = argv[2]
   const args = argv.slice(3)
+  const commandNames = Object.keys(COMMANDS).sort()
 
   if (!command || command === '--help' || command === '-h') {
     console.error(`Usage: plaited <command> [options]
@@ -52,7 +65,7 @@ export const runCli = async (argv: string[]): Promise<void> => {
        plaited --schema               # List all commands
 
 Commands:
-    compare-trials, eval`)
+    ${commandNames.join(', ')}`)
     process.exit(command ? 0 : 1)
   }
 
