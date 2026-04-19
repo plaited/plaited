@@ -197,14 +197,16 @@ worker: bThread(
 
 In the agent, all events flow from `trigger()` calls in feedback handlers. There are NO continuously-requesting threads. The event chain is broken by async work (inference calls), which returns control from the super-step and starts a new one when the promise resolves.
 
-### Pattern 2: Shared State with Explicit Schemas
+### Pattern 2: Explicit State-Carrying Events
 
 ```typescript
-// Board state is shared between handlers and listener matching
-const occupied = new Set<number>()
+// Occupancy is explicit in event detail.
 const occupiedMove = {
   type: 'move',
-  detailSchema: z.object({ square: z.number() }),
+  detailSchema: z.object({
+    square: z.number(),
+    occupied: z.literal(true),
+  }),
 }
 
 addBThreads({
@@ -212,15 +214,10 @@ addBThreads({
     bSync({ block: occupiedMove }),
   ], true),
 })
-
-useFeedback({
-  move: (detail) => {
-    occupied.add(detail.square)
-  },
-})
 ```
 
-**Why this works**: `actionPublisher()` (which fires handlers) runs BEFORE `step()` (which re-evaluates listeners). So when a handler modifies shared state, the next `selectNextEvent()` call sees the updated state.
+**Why this works**: the listener is explicit and schema-checkable; only events
+that declare `occupied: true` are blocked.
 
 **Agent equivalent**: malformed-payload guards use explicit schemas plus
 `detailMatch: 'invalid'`:
@@ -240,6 +237,10 @@ writeGuard: bThread([
   }),
 ], true)
 ```
+
+For local runtime-only patterns, closure-backed shared state can still be used,
+but that pattern is not recommended for server-agent JSON-Schema-exportable
+listener boundaries.
 
 ### Pattern 3: Dynamic Thread Spawning (Dispatcher/Worker)
 

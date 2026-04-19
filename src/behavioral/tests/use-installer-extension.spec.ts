@@ -135,9 +135,9 @@ describe('useExtension + useInstaller', () => {
       block?: { type?: string; detailMatch?: string }
       interrupt?: { type?: string }
     }
-    expect(memoryTransactionSync.block?.type).toBe('alpha:memory_response')
+    expect(memoryTransactionSync.block?.type).toBe(memoryTransactionLabel)
     expect(memoryTransactionSync.block?.detailMatch).toBe('invalid')
-    expect(memoryTransactionSync.interrupt?.type).toBe('alpha:memory_response')
+    expect(memoryTransactionSync.interrupt?.type).toBe(memoryTransactionLabel)
 
     handlers['alpha:emit_local']?.(undefined)
     expect(triggeredEvents.at(-1)?.type).toBe('alpha:local')
@@ -278,5 +278,101 @@ describe('useExtension + useInstaller', () => {
         id: 'duplicate',
       }),
     )
+  })
+
+  test('memory request guards allow valid out-of-order responses across concurrent transaction ids', async () => {
+    const selected: string[] = []
+    const { addBThread, trigger, useFeedback, useSnapshot, reportSnapshot } = behavioral()
+    const install = useInstaller({
+      reportSnapshot,
+      trigger,
+      useSnapshot,
+      addBThread,
+      ttlMs: 1_000,
+    })
+
+    let idA = ''
+    let idB = ''
+
+    const extension = useExtension('alpha', ({ bSync, bThread, extensions }) => {
+      const requestA = extensions.get({
+        extension: 'beta',
+        event: 'evt_a',
+        purpose: 'transaction a',
+        detailSchema: z.object({ value: z.literal('A') }),
+      })
+      const requestB = extensions.get({
+        extension: 'beta',
+        event: 'evt_b',
+        purpose: 'transaction b',
+        detailSchema: z.object({ value: z.literal('B') }),
+      })
+
+      idA = requestA.requestEvent.detail.id
+      idB = requestB.requestEvent.detail.id
+
+      bThread({
+        label: 'wait_a',
+        rules: [
+          bSync({
+            waitFor: requestA.transactionListener,
+          }),
+          bSync({
+            request: { type: 'a_done' },
+          }),
+        ],
+      })
+
+      bThread({
+        label: 'wait_b',
+        rules: [
+          bSync({
+            waitFor: requestB.transactionListener,
+          }),
+          bSync({
+            request: { type: 'b_done' },
+          }),
+        ],
+      })
+
+      return {}
+    })
+
+    useFeedback(install(extension))
+    useFeedback({
+      'alpha:a_done': () => {
+        selected.push('a_done')
+      },
+      'alpha:b_done': () => {
+        selected.push('b_done')
+      },
+    })
+
+    trigger({ type: 'start' })
+
+    expect(idA.length).toBeGreaterThan(0)
+    expect(idB.length).toBeGreaterThan(0)
+
+    trigger({
+      type: 'alpha:memory_response',
+      detail: {
+        id: idB,
+        createdAt: 1,
+        expiresAt: 2,
+        body: { value: 'B' },
+      },
+    })
+    trigger({
+      type: 'alpha:memory_response',
+      detail: {
+        id: idA,
+        createdAt: 1,
+        expiresAt: 2,
+        body: { value: 'A' },
+      },
+    })
+
+    await Bun.sleep(20)
+    expect(selected).toEqual(['b_done', 'a_done'])
   })
 })
