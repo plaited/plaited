@@ -151,6 +151,60 @@ const waitForTransportDiagnostic = async ({
   throw new Error(`Timed out waiting for extension_error diagnostic with code "${code}"`)
 }
 
+const waitForActorDiagnostic = async ({
+  snapshots,
+  code,
+  after = 0,
+  timeoutMs = 5_000,
+}: {
+  snapshots: SnapshotMessage[]
+  code: string
+  after?: number
+  timeoutMs?: number
+}) => {
+  const start = Date.now()
+  while (Date.now() - start <= timeoutMs) {
+    const match = snapshots
+      .slice(after)
+      .find(
+        (snapshot) =>
+          snapshot.kind === SNAPSHOT_MESSAGE_KINDS.extension_error &&
+          snapshot.id === INFERENCE_WEBSOCKET_RUNTIME_ACTOR_ID &&
+          snapshot.error.includes('runtime actor diagnostic') &&
+          snapshot.error.includes(`code=${code}`),
+      )
+    if (match && match.kind === SNAPSHOT_MESSAGE_KINDS.extension_error) {
+      return match
+    }
+    await Bun.sleep(10)
+  }
+  throw new Error(`Timed out waiting for actor diagnostic with code "${code}"`)
+}
+
+const waitForFeedbackError = async ({
+  snapshots,
+  type,
+  after = 0,
+  timeoutMs = 5_000,
+}: {
+  snapshots: SnapshotMessage[]
+  type: string
+  after?: number
+  timeoutMs?: number
+}) => {
+  const start = Date.now()
+  while (Date.now() - start <= timeoutMs) {
+    const match = snapshots
+      .slice(after)
+      .find((snapshot) => snapshot.kind === SNAPSHOT_MESSAGE_KINDS.feedback_error && snapshot.type === type)
+    if (match && match.kind === SNAPSHOT_MESSAGE_KINDS.feedback_error) {
+      return match
+    }
+    await Bun.sleep(10)
+  }
+  throw new Error(`Timed out waiting for feedback_error snapshot for "${type}"`)
+}
+
 const createHarness = (): Harness => {
   const events: ObservedEvent[] = []
   const snapshots: SnapshotMessage[] = []
@@ -387,7 +441,31 @@ describe('inference websocket runtime actor extension', () => {
     await waitForClose(socket)
   })
 
-  test('invalid envelope_send payload emits control diagnostics', async () => {
+  test('envelope_send without an active server reports actor diagnostics only', async () => {
+    const harness = createHarness()
+    const beforeSnapshots = harness.snapshots.length
+    const beforeEvents = harness.events.length
+
+    harness.trigger({
+      type: envelopeSendEventType,
+      detail: {
+        topic: 'test-session-id:assistant-stream',
+        envelope: createEnvelope({ id: 'env-no-server-1' }),
+      },
+    })
+
+    const actorDiagnostic = await waitForActorDiagnostic({
+      snapshots: harness.snapshots,
+      code: INFERENCE_WEBSOCKET_RUNTIME_ACTOR_ERROR_CODES.server_not_running,
+      after: beforeSnapshots,
+    })
+    expect(actorDiagnostic.error).toContain('code=server_not_running')
+
+    await Bun.sleep(100)
+    expect(harness.events.slice(beforeEvents).some((event) => event.type === clientErrorEventType)).toBe(false)
+  })
+
+  test('invalid internal envelope_send detail surfaces as feedback_error', async () => {
     const harness = createHarness()
     await startServer(harness)
 
@@ -407,22 +485,14 @@ describe('inference websocket runtime actor extension', () => {
       },
     })
 
-    const invalidControlDiagnostic = await waitForTransportDiagnostic({
+    const invalidControlDiagnostic = await waitForFeedbackError({
       snapshots: harness.snapshots,
-      code: INFERENCE_WEBSOCKET_RUNTIME_ACTOR_ERROR_CODES.invalid_control_event,
+      type: envelopeSendEventType,
       after: beforeSnapshot,
     })
-    expect(invalidControlDiagnostic.error).toContain('code=invalid_control_event')
+    expect(invalidControlDiagnostic.error.length).toBeGreaterThan(0)
 
-    const controlClientError = await waitForEvent({
-      events: harness.events,
-      type: clientErrorEventType,
-      after: beforeEvents,
-    })
-    expect(controlClientError.detail).toEqual(
-      expect.objectContaining({
-        code: INFERENCE_WEBSOCKET_RUNTIME_ACTOR_ERROR_CODES.invalid_control_event,
-      }),
-    )
+    await Bun.sleep(100)
+    expect(harness.events.slice(beforeEvents).some((event) => event.type === clientErrorEventType)).toBe(false)
   })
 })

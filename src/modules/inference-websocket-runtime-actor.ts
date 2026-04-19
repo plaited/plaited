@@ -12,7 +12,6 @@ export const INFERENCE_WEBSOCKET_RUNTIME_ACTOR_EVENTS = keyMirror(
   'envelope_send',
   'server_started',
   'server_stopped',
-  'server_error',
   'client_connected',
   'client_disconnected',
   'client_error',
@@ -29,7 +28,6 @@ export const INFERENCE_WEBSOCKET_RUNTIME_ACTOR_ERROR_CODES = keyMirror(
   'not_found',
   'internal_error',
   'server_not_running',
-  'invalid_control_event',
 )
 
 export const INFERENCE_WEBSOCKET_RUNTIME_ACTOR_WEBSOCKET_PATH = '/ws/inference'
@@ -164,12 +162,6 @@ const InferenceWebSocketRuntimeActorErrorCodeSchema = z.custom<InferenceWebSocke
     value as InferenceWebSocketRuntimeActorErrorCode,
   ),
 )
-
-export const InferenceWebSocketServerErrorDetailSchema = z.object({
-  code: InferenceWebSocketRuntimeActorErrorCodeSchema,
-  message: z.string().min(1),
-})
-export type InferenceWebSocketServerErrorDetail = z.infer<typeof InferenceWebSocketServerErrorDetailSchema>
 
 export const InferenceWebSocketClientConnectedDetailSchema = z.object({
   connectionId: z.string().min(1),
@@ -615,13 +607,19 @@ export const inferenceWebSocketRuntimeActorExtension = useExtension(
         ),
       )
 
-    const emitServerError = (detail: unknown) =>
-      trigger(
-        createActorEvent(
-          INFERENCE_WEBSOCKET_RUNTIME_ACTOR_EVENTS.server_error,
-          InferenceWebSocketServerErrorDetailSchema.parse(detail),
-        ),
-      )
+    const reportActorDiagnostic = ({
+      code,
+      message,
+    }: {
+      code: InferenceWebSocketRuntimeActorErrorCode
+      message: string
+    }) => {
+      reportSnapshot({
+        kind: SNAPSHOT_MESSAGE_KINDS.extension_error,
+        id: INFERENCE_WEBSOCKET_RUNTIME_ACTOR_ID,
+        error: `Inference websocket runtime actor diagnostic (code=${code}, message=${message})`,
+      })
+    }
 
     const stopServer = (detail?: InferenceWebSocketServerStopDetail) => {
       const closeActiveConnections = detail?.closeActiveConnections ?? true
@@ -657,7 +655,7 @@ export const inferenceWebSocketRuntimeActorExtension = useExtension(
         )
       } catch (error) {
         liveServer = null
-        emitServerError({
+        reportActorDiagnostic({
           code: INFERENCE_WEBSOCKET_RUNTIME_ACTOR_ERROR_CODES.internal_error,
           message: error instanceof Error ? error.message : String(error),
         })
@@ -666,50 +664,17 @@ export const inferenceWebSocketRuntimeActorExtension = useExtension(
 
     return {
       [INFERENCE_WEBSOCKET_RUNTIME_ACTOR_EVENTS.server_start](detail: unknown) {
-        try {
-          startServer(InferenceWebSocketServerStartDetailSchema.parse(detail))
-        } catch (error) {
-          if (error instanceof z.ZodError) {
-            reportTransportError({
-              code: INFERENCE_WEBSOCKET_RUNTIME_ACTOR_ERROR_CODES.invalid_control_event,
-              message: `server_start rejected: ${formatValidationError(error)}`,
-            })
-            return
-          }
-          throw error
-        }
+        startServer(InferenceWebSocketServerStartDetailSchema.parse(detail))
       },
       [INFERENCE_WEBSOCKET_RUNTIME_ACTOR_EVENTS.server_stop](detail: unknown) {
-        try {
-          stopServer(InferenceWebSocketServerStopDetailSchema.parse(detail))
-        } catch (error) {
-          if (error instanceof z.ZodError) {
-            reportTransportError({
-              code: INFERENCE_WEBSOCKET_RUNTIME_ACTOR_ERROR_CODES.invalid_control_event,
-              message: `server_stop rejected: ${formatValidationError(error)}`,
-            })
-            return
-          }
-          throw error
-        }
+        stopServer(InferenceWebSocketServerStopDetailSchema.parse(detail))
       },
       [INFERENCE_WEBSOCKET_RUNTIME_ACTOR_EVENTS.envelope_send](detail: unknown) {
-        let parsedDetail: InferenceWebSocketEnvelopeSendDetail
-        try {
-          parsedDetail = InferenceWebSocketEnvelopeSendDetailSchema.parse(detail)
-        } catch (error) {
-          if (error instanceof z.ZodError) {
-            reportTransportError({
-              code: INFERENCE_WEBSOCKET_RUNTIME_ACTOR_ERROR_CODES.invalid_control_event,
-              message: `envelope_send rejected: ${formatValidationError(error)}`,
-            })
-            return
-          }
-          throw error
-        }
+        const parsedDetail: InferenceWebSocketEnvelopeSendDetail =
+          InferenceWebSocketEnvelopeSendDetailSchema.parse(detail)
 
         if (!liveServer) {
-          emitServerError({
+          reportActorDiagnostic({
             code: INFERENCE_WEBSOCKET_RUNTIME_ACTOR_ERROR_CODES.server_not_running,
             message:
               'Cannot send inference websocket envelope because no inference websocket runtime actor is running.',

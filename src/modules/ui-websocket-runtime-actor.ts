@@ -16,7 +16,6 @@ export const UI_WEBSOCKET_RUNTIME_ACTOR_EVENTS = keyMirror(
   'server_send',
   'server_started',
   'server_stopped',
-  'server_error',
   'client_connected',
   'client_disconnected',
   'client_error',
@@ -32,7 +31,6 @@ export const UI_WEBSOCKET_RUNTIME_ACTOR_ERROR_CODES = keyMirror(
   'not_found',
   'internal_error',
   'server_not_running',
-  'invalid_control_event',
 )
 
 export const UI_WEBSOCKET_RUNTIME_ACTOR_WEBSOCKET_PATH = '/ws'
@@ -173,12 +171,6 @@ export type UiWebSocketServerStoppedDetail = z.infer<typeof UiWebSocketServerSto
 const UiWebSocketRuntimeActorErrorCodeSchema = z.custom<UiWebSocketRuntimeActorErrorCode>((value) =>
   Object.values(UI_WEBSOCKET_RUNTIME_ACTOR_ERROR_CODES).includes(value as UiWebSocketRuntimeActorErrorCode),
 )
-
-export const UiWebSocketServerErrorDetailSchema = z.object({
-  code: UiWebSocketRuntimeActorErrorCodeSchema,
-  message: z.string().min(1),
-})
-export type UiWebSocketServerErrorDetail = z.infer<typeof UiWebSocketServerErrorDetailSchema>
 
 export const UiWebSocketClientConnectedDetailSchema = z.object({
   connectionId: z.string().min(1),
@@ -616,13 +608,13 @@ export const uiWebSocketRuntimeActorExtension = useExtension(
         ),
       )
 
-    const emitServerError = (detail: unknown) =>
-      trigger(
-        createActorEvent(
-          UI_WEBSOCKET_RUNTIME_ACTOR_EVENTS.server_error,
-          UiWebSocketServerErrorDetailSchema.parse(detail),
-        ),
-      )
+    const reportActorDiagnostic = ({ code, message }: { code: UiWebSocketRuntimeActorErrorCode; message: string }) => {
+      reportSnapshot({
+        kind: SNAPSHOT_MESSAGE_KINDS.extension_error,
+        id: UI_WEBSOCKET_RUNTIME_ACTOR_ID,
+        error: `UI websocket runtime actor diagnostic (code=${code}, message=${message})`,
+      })
+    }
 
     const stopServer = (detail?: UiWebSocketServerStopDetail) => {
       const closeActiveConnections = detail?.closeActiveConnections ?? true
@@ -658,7 +650,7 @@ export const uiWebSocketRuntimeActorExtension = useExtension(
         )
       } catch (error) {
         liveServer = null
-        emitServerError({
+        reportActorDiagnostic({
           code: UI_WEBSOCKET_RUNTIME_ACTOR_ERROR_CODES.internal_error,
           message: error instanceof Error ? error.message : String(error),
         })
@@ -667,50 +659,16 @@ export const uiWebSocketRuntimeActorExtension = useExtension(
 
     return {
       [UI_WEBSOCKET_RUNTIME_ACTOR_EVENTS.server_start](detail: unknown) {
-        try {
-          startServer(UiWebSocketServerStartDetailSchema.parse(detail))
-        } catch (error) {
-          if (error instanceof z.ZodError) {
-            reportTransportError({
-              code: UI_WEBSOCKET_RUNTIME_ACTOR_ERROR_CODES.invalid_control_event,
-              message: `server_start rejected: ${formatValidationError(error)}`,
-            })
-            return
-          }
-          throw error
-        }
+        startServer(UiWebSocketServerStartDetailSchema.parse(detail))
       },
       [UI_WEBSOCKET_RUNTIME_ACTOR_EVENTS.server_stop](detail: unknown) {
-        try {
-          stopServer(UiWebSocketServerStopDetailSchema.parse(detail))
-        } catch (error) {
-          if (error instanceof z.ZodError) {
-            reportTransportError({
-              code: UI_WEBSOCKET_RUNTIME_ACTOR_ERROR_CODES.invalid_control_event,
-              message: `server_stop rejected: ${formatValidationError(error)}`,
-            })
-            return
-          }
-          throw error
-        }
+        stopServer(UiWebSocketServerStopDetailSchema.parse(detail))
       },
       [UI_WEBSOCKET_RUNTIME_ACTOR_EVENTS.server_send](detail: unknown) {
-        let parsedDetail: UiWebSocketServerSendDetail
-        try {
-          parsedDetail = UiWebSocketServerSendDetailSchema.parse(detail)
-        } catch (error) {
-          if (error instanceof z.ZodError) {
-            reportTransportError({
-              code: UI_WEBSOCKET_RUNTIME_ACTOR_ERROR_CODES.invalid_control_event,
-              message: `server_send rejected: ${formatValidationError(error)}`,
-            })
-            return
-          }
-          throw error
-        }
+        const parsedDetail: UiWebSocketServerSendDetail = UiWebSocketServerSendDetailSchema.parse(detail)
 
         if (!liveServer) {
-          emitServerError({
+          reportActorDiagnostic({
             code: UI_WEBSOCKET_RUNTIME_ACTOR_ERROR_CODES.server_not_running,
             message: 'Cannot send UI websocket message because no UI websocket runtime actor is currently running.',
           })
