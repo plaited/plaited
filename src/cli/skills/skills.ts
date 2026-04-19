@@ -1,8 +1,8 @@
 import { basename, dirname, join, normalize, relative, resolve } from 'node:path'
 import { Glob } from 'bun'
 import * as z from 'zod'
-import { extractLocalLinksFromMarkdown, parseMarkdownWithFrontmatter } from '../markdown/markdown.ts'
 import { makeCli } from '../utils/cli.ts'
+import { extractLocalLinksFromMarkdown, parseMarkdownWithFrontmatter } from '../utils/markdown.ts'
 import {
   type SkillCatalogEntry,
   SkillCatalogEntrySchema,
