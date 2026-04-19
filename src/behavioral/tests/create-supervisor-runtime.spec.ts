@@ -161,4 +161,30 @@ describe('createSupervisorRuntime', () => {
       }),
     )
   })
+
+  test('rejects non-JSON envelope detail values without throwing', () => {
+    const runtime = createSupervisorRuntime({ authorityDomainId: 'domain:node-local' })
+
+    const result = runtime.receiveEnvelope({
+      ...createEnvelope('env-bad-json'),
+      detail: {
+        fn: () => 1,
+      },
+    })
+
+    expect(result.status).toBe('rejected')
+    if (result.status !== 'rejected') {
+      throw new Error('Expected rejected supervisor receive result.')
+    }
+    expect(result.code).toBe(SUPERVISOR_DIAGNOSTIC_CODES.invalidEnvelope)
+    expect(result.error).toContain('supervisor envelope rejected')
+    expect(runtime.getReplayHistory()).toEqual([])
+    expect(runtime.getFrontierDiagnostics()).toEqual([])
+    expect(runtime.getValidationDiagnostics()).toContainEqual(
+      expect.objectContaining({
+        kind: 'validation',
+        code: SUPERVISOR_DIAGNOSTIC_CODES.invalidEnvelope,
+      }),
+    )
+  })
 })
