@@ -172,8 +172,13 @@ const collectReturnedObjectLiterals = (
     rootFunction: callback,
     skipNestedFunctions: true,
     visitor: (node) => {
-      if (ts.isReturnStatement(node) && node.expression && ts.isObjectLiteralExpression(node.expression)) {
-        literals.push(node.expression)
+      if (!ts.isReturnStatement(node) || !node.expression) {
+        return
+      }
+
+      const returnExpression = unwrapParenthesizedExpression(node.expression)
+      if (ts.isObjectLiteralExpression(returnExpression)) {
+        literals.push(returnExpression)
       }
     },
   })

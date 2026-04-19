@@ -124,6 +124,31 @@ useExtension('mod', (_ctx) => ({
     expect(output.findings.some((finding) => finding.ruleId === 'module/no-safeparse-in-internal-handler')).toBe(true)
   })
 
+  test('flags internal violations in block-bodied return ({ ... }) handlers', async () => {
+    const file = await writeFixture({
+      name: 'bad-return-parenthesized-object.ts',
+      source: `
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = { start: 'start' } as const
+
+useExtension('mod', (_ctx) => {
+  return ({
+    [EVENTS.start](detail: unknown) {
+      const parsed = StartSchema.safeParse(detail)
+      if (!parsed.success) {
+        return
+      }
+    },
+  })
+})
+`,
+    })
+
+    const output = await checkModulePatterns({ files: [file] })
+    expect(output.ok).toBe(false)
+    expect(output.findings.some((finding) => finding.ruleId === 'module/no-safeparse-in-internal-handler')).toBe(true)
+  })
+
   test('flags transport diagnostics from internal handlers', async () => {
     const file = await writeFixture({
       name: 'bad-transport-internal.ts',
