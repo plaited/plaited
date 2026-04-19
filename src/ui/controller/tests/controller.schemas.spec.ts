@@ -8,7 +8,9 @@ import {
   ClientMessageSchema,
   ControllerErrorMessageSchema,
   ControllerModuleDefaultSchema,
+  ControllerServerMessageSchema,
   CustomElementTagSchema,
+  DisconnectMessageSchema,
   ImportModuleSchema,
   RenderMessageSchema,
   SwapModeSchema,
@@ -229,6 +231,54 @@ describe('ImportModuleSchema', () => {
         detail: 'file:///tmp/local-module.js',
       }),
     ).toThrow()
+  })
+})
+
+describe('DisconnectMessageSchema', () => {
+  test('accepts disconnect messages with or without detail', () => {
+    const withDetail = {
+      type: AGENT_TO_CONTROLLER_EVENTS.disconnect,
+      detail: {
+        reason: 'server_shutdown',
+      },
+    }
+    const withoutDetail = {
+      type: AGENT_TO_CONTROLLER_EVENTS.disconnect,
+    }
+
+    expect(DisconnectMessageSchema.parse(withDetail)).toEqual(withDetail)
+    expect(DisconnectMessageSchema.parse(withoutDetail)).toEqual(withoutDetail)
+  })
+})
+
+describe('ControllerServerMessageSchema', () => {
+  test('accepts all supported server-to-controller event variants', () => {
+    expect(
+      ControllerServerMessageSchema.parse({
+        type: AGENT_TO_CONTROLLER_EVENTS.render,
+        detail: { target: 'main', html: '<p>ok</p>', stylesheets: [], registry: [] },
+      }),
+    ).toBeDefined()
+
+    expect(
+      ControllerServerMessageSchema.parse({
+        type: AGENT_TO_CONTROLLER_EVENTS.attrs,
+        detail: { target: 'main', attr: { class: 'active' } },
+      }),
+    ).toBeDefined()
+
+    expect(
+      ControllerServerMessageSchema.parse({
+        type: AGENT_TO_CONTROLLER_EVENTS.import,
+        detail: '/modules/runtime.js',
+      }),
+    ).toBeDefined()
+
+    expect(
+      ControllerServerMessageSchema.parse({
+        type: AGENT_TO_CONTROLLER_EVENTS.disconnect,
+      }),
+    ).toBeDefined()
   })
 })
 

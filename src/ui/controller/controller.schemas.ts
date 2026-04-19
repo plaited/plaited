@@ -101,6 +101,34 @@ export const ImportModuleSchema = z.object({
 export type ImportModuleMessage = z.infer<typeof ImportModuleSchema>
 
 /**
+ * Schema for disconnect messages sent from server.
+ *
+ * @public
+ */
+export const DisconnectMessageSchema = z.object({
+  type: z.literal(AGENT_TO_CONTROLLER_EVENTS.disconnect),
+  detail: z.unknown().optional(),
+})
+
+/** @public */
+export type DisconnectMessage = z.infer<typeof DisconnectMessageSchema>
+
+/**
+ * Discriminated union schema for all server-to-controller messages.
+ *
+ * @public
+ */
+export const ControllerServerMessageSchema = z.discriminatedUnion('type', [
+  RenderMessageSchema,
+  AttrsMessageSchema,
+  ImportModuleSchema,
+  DisconnectMessageSchema,
+])
+
+/** @public */
+export type ControllerServerMessage = z.infer<typeof ControllerServerMessageSchema>
+
+/**
  * Schema for imported controller module default exports.
  *
  * @remarks

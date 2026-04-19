@@ -12,6 +12,21 @@
  * @public
  */
 
+export type {
+  CreateInferenceWebsocketRuntimeActorOptions,
+  EmitContextRequestEnvelopeInput,
+  EmitInferenceEnvelopeInput,
+  EmitModelResponseEnvelopeInput,
+  EmitToolIntentEnvelopeInput,
+  InferenceWebsocketEmitResult,
+  InferenceWebsocketIngressResult,
+  InferenceWebsocketRuntimeActor,
+  InferenceWebsocketRuntimeValidationDiagnostic,
+} from './create-websocket-runtime-actor.ts'
+export {
+  createInferenceWebsocketRuntimeActor,
+  INFERENCE_WEBSOCKET_RUNTIME_DIAGNOSTIC_CODES,
+} from './create-websocket-runtime-actor.ts'
 // Re-export schemas
 export {
   BPNormalizedSnapshotSchema,

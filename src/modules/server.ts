@@ -3,8 +3,20 @@ import * as z from 'zod'
 import type { Trigger } from '../behavioral.ts'
 import { SNAPSHOT_MESSAGE_KINDS, useExtension } from '../behavioral.ts'
 import type { ClientMessage } from '../ui.ts'
-import { ClientMessageSchema } from '../ui.ts'
 import { keyMirror } from '../utils.ts'
+import { createUiWebsocketRuntimeActor } from './server/create-ui-websocket-runtime-actor.ts'
+
+export type {
+  CreateUiWebsocketRuntimeActorOptions,
+  UiWebsocketEgressResult,
+  UiWebsocketIngressResult,
+  UiWebsocketRuntimeActor,
+  UiWebsocketRuntimeValidationDiagnostic,
+} from './server/create-ui-websocket-runtime-actor.ts'
+export {
+  createUiWebsocketRuntimeActor,
+  UI_WEBSOCKET_RUNTIME_DIAGNOSTIC_CODES,
+} from './server/create-ui-websocket-runtime-actor.ts'
 
 export const SERVER_MODULE_ID = 'server_module'
 
@@ -221,6 +233,11 @@ const createServer = ({
 
   const topicFor = (data: WebSocketData) =>
     data.source === 'document' ? data.connectionId : `${data.connectionId}:${data.source}`
+  const uiWebsocketRuntimeActor = createUiWebsocketRuntimeActor({
+    uiCoreTargetId: BRIDGE_UI_CORE_ID,
+    serverSourceActorId: `module:${SERVER_MODULE_ID}`,
+    serverSourceModuleId: SERVER_MODULE_ID,
+  })
   const hasRoutes = Object.keys(routes).length > 0
 
   const server = Bun.serve({
@@ -264,30 +281,25 @@ const createServer = ({
         )
       },
       message(ws, message) {
-        let payload: unknown
-        try {
-          payload = JSON.parse(String(message))
-        } catch (error) {
-          reportTransportError({
-            code: SERVER_MODULE_ERROR_CODES.malformed_message,
-            connectionId: ws.data.connectionId,
-            message: error instanceof Error ? error.message : String(error),
-          })
-          return
-        }
+        const topic = topicFor(ws.data)
+        const routed = uiWebsocketRuntimeActor.routeIngressMessage({
+          connectionId: ws.data.connectionId,
+          protocol: ws.data.source,
+          topic,
+          rawMessage: String(message),
+        })
 
-        const parsed = ClientMessageSchema.safeParse(payload)
-        if (!parsed.success) {
+        if (routed.status === 'rejected') {
           reportTransportError({
             code: SERVER_MODULE_ERROR_CODES.malformed_message,
             connectionId: ws.data.connectionId,
-            message: parsed.error.message,
+            message: routed.error,
           })
           return
         }
 
         try {
-          onClientMessage(parsed.data)
+          onClientMessage(routed.message)
         } catch (error) {
           reportTransportError({
             code: SERVER_MODULE_ERROR_CODES.internal_error,
@@ -421,9 +433,22 @@ const createServer = ({
   })
 
   const send = (topic: string, data: string) => {
+    const routed = uiWebsocketRuntimeActor.routeEgressMessage({
+      topic,
+      rawMessage: data,
+    })
+    if (routed.status === 'rejected') {
+      reportTransportError({
+        code: SERVER_MODULE_ERROR_CODES.malformed_message,
+        message: routed.error,
+      })
+      return
+    }
+
+    const payload = routed.serialized
     const activeConnections = topicConnections.get(topic) ?? 0
     if (activeConnections > 0) {
-      server.publish(topic, data)
+      server.publish(topic, payload)
       return
     }
     if (maxBufferSize === 0) {
@@ -431,7 +456,7 @@ const createServer = ({
     }
 
     const current = replayBuffers.get(topic) ?? []
-    current.push({ data, timestamp: Date.now() })
+    current.push({ data: payload, timestamp: Date.now() })
     while (current.length > maxBufferSize) {
       current.shift()
     }
@@ -588,24 +613,68 @@ export const serverModuleExtension = useExtension(
       repeat: true,
     })
 
+    const parseBehavioralDetail = <TDetail>({
+      eventType,
+      schema,
+      detail,
+    }: {
+      eventType: string
+      schema: z.ZodType<TDetail>
+      detail: unknown
+    }): TDetail | null => {
+      try {
+        return schema.parse(detail)
+      } catch (error) {
+        if (!(error instanceof z.ZodError)) {
+          throw error
+        }
+
+        const message = error.issues
+          .map((issue) => {
+            const path = issue.path.map((segment) => String(segment)).join('.') || '<root>'
+            return `${path}: ${issue.message}`
+          })
+          .join('; ')
+
+        reportSnapshot({
+          kind: SNAPSHOT_MESSAGE_KINDS.extension_error,
+          id: SERVER_MODULE_ID,
+          error: `Server module event "${eventType}" rejected: ${message}`,
+        })
+        return null
+      }
+    }
+
     return {
       [SERVER_MODULE_EVENTS.server_start](detail: ServerStartDetail) {
-        const parsed = ServerStartDetailSchema.safeParse(detail)
-        if (!parsed.success) {
+        const parsed = parseBehavioralDetail({
+          eventType: SERVER_MODULE_EVENTS.server_start,
+          schema: ServerStartDetailSchema,
+          detail,
+        })
+        if (parsed === null) {
           return
         }
-        startServer(parsed.data)
+        startServer(parsed)
       },
       [SERVER_MODULE_EVENTS.server_stop](detail: ServerStopDetail) {
-        const parsed = ServerStopDetailSchema.safeParse(detail)
-        if (!parsed.success) {
+        const parsed = parseBehavioralDetail({
+          eventType: SERVER_MODULE_EVENTS.server_stop,
+          schema: ServerStopDetailSchema,
+          detail,
+        })
+        if (parsed === null) {
           return
         }
-        stopServer(parsed.data)
+        stopServer(parsed)
       },
       [SERVER_MODULE_EVENTS.server_send](detail: ServerSendDetail) {
-        const parsed = ServerSendDetailSchema.safeParse(detail)
-        if (!parsed.success) {
+        const parsed = parseBehavioralDetail({
+          eventType: SERVER_MODULE_EVENTS.server_send,
+          schema: ServerSendDetailSchema,
+          detail,
+        })
+        if (parsed === null) {
           return
         }
         if (!liveServer) {
@@ -615,7 +684,7 @@ export const serverModuleExtension = useExtension(
           })
           return
         }
-        liveServer.send(parsed.data.topic, parsed.data.data)
+        liveServer.send(parsed.topic, parsed.data)
       },
     }
   },
