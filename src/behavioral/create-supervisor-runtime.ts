@@ -1,0 +1,237 @@
+import * as z from 'zod'
+
+import { EVENT_SOURCES, type FRONTIER_STATUS } from './behavioral.constants.ts'
+import { replayToFrontier } from './behavioral.frontier.ts'
+import { type ActorEnvelope, ActorEnvelopeSchema, type SnapshotMessage } from './behavioral.schemas.ts'
+import { bSync, bThread } from './behavioral.shared.ts'
+import { behavioral } from './behavioral.ts'
+import type { ReplayEvent, SnapshotListener, UseSnapshot } from './behavioral.types.ts'
+
+const DEFAULT_AUTHORITY_DOMAIN_ID = 'node-local'
+
+export const SUPERVISOR_RUNTIME_EVENTS = {
+  envelopeReceived: 'supervisor:envelope_received',
+} as const
+
+export const SUPERVISOR_DIAGNOSTIC_CODES = {
+  invalidEnvelope: 'invalid_envelope',
+} as const
+
+const SupervisorEnvelopeEventDetailSchema = z.object({
+  authorityDomainId: z.string().min(1),
+  envelope: ActorEnvelopeSchema,
+})
+
+type SupervisorEnvelopeEventDetail = z.infer<typeof SupervisorEnvelopeEventDetailSchema>
+
+type SupervisorEventDetails = {
+  [SUPERVISOR_RUNTIME_EVENTS.envelopeReceived]: SupervisorEnvelopeEventDetail
+}
+
+const createSupervisorThreads = () => ({
+  supervisorIngress: bThread(
+    [
+      bSync({
+        waitFor: {
+          type: SUPERVISOR_RUNTIME_EVENTS.envelopeReceived,
+          sourceSchema: z.literal('trigger'),
+          detailSchema: SupervisorEnvelopeEventDetailSchema,
+        },
+      }),
+    ],
+    true,
+  ),
+})
+
+const cloneReplayHistory = (history: ReplayEvent[]) =>
+  history.map((event) => ({
+    type: event.type,
+    source: event.source,
+    ...(event.detail !== undefined && { detail: event.detail }),
+  }))
+
+const formatValidationError = (error: z.ZodError): string =>
+  error.issues
+    .map((issue) => {
+      const path = issue.path.map((segment) => String(segment)).join('.') || '<root>'
+      return `${path}: ${issue.message}`
+    })
+    .join('; ')
+
+export type CreateSupervisorRuntimeOptions = {
+  authorityDomainId?: string
+}
+
+export type SupervisorFrontierDiagnostic = {
+  kind: 'frontier'
+  timestamp: number
+  authorityDomainId: string
+  envelopeId: string
+  frontierStatus: keyof typeof FRONTIER_STATUS
+  candidateCount: number
+  enabledCount: number
+  replayHistory: ReplayEvent[]
+}
+
+export type SupervisorValidationDiagnostic = {
+  kind: 'validation'
+  timestamp: number
+  authorityDomainId: string
+  code: (typeof SUPERVISOR_DIAGNOSTIC_CODES)['invalidEnvelope']
+  error: string
+}
+
+export type SupervisorDiagnostic = SupervisorFrontierDiagnostic | SupervisorValidationDiagnostic
+
+export type SupervisorDecisionRecord = {
+  decision: 'approved' | 'rejected'
+  reason: 'pass_through' | (typeof SUPERVISOR_DIAGNOSTIC_CODES)['invalidEnvelope']
+  timestamp: number
+  authorityDomainId: string
+  envelopeId: string | null
+  frontierStatus?: keyof typeof FRONTIER_STATUS
+}
+
+export type SupervisorReceiveResult =
+  | {
+      status: 'approved'
+      envelope: ActorEnvelope
+      frontierStatus: keyof typeof FRONTIER_STATUS
+      replayHistorySize: number
+    }
+  | {
+      status: 'rejected'
+      code: (typeof SUPERVISOR_DIAGNOSTIC_CODES)['invalidEnvelope']
+      error: string
+    }
+
+export const createSupervisorRuntime = (options: CreateSupervisorRuntimeOptions = {}) => {
+  const authorityDomainId = options.authorityDomainId ?? DEFAULT_AUTHORITY_DOMAIN_ID
+  const replayThreads = createSupervisorThreads()
+  const replayHistory: ReplayEvent[] = []
+  const selectedEnvelopeHistory: ActorEnvelope[] = []
+  const frontierDiagnostics: SupervisorFrontierDiagnostic[] = []
+  const validationDiagnostics: SupervisorValidationDiagnostic[] = []
+  const decisions: SupervisorDecisionRecord[] = []
+  const snapshots: SnapshotMessage[] = []
+
+  const { addBThreads, reportSnapshot, trigger, useFeedback, useSnapshot } = behavioral<SupervisorEventDetails>()
+
+  addBThreads(replayThreads)
+
+  useSnapshot((snapshot) => {
+    snapshots.push(snapshot)
+  })
+
+  useFeedback({
+    [SUPERVISOR_RUNTIME_EVENTS.envelopeReceived](detail) {
+      const event: ReplayEvent = {
+        type: SUPERVISOR_RUNTIME_EVENTS.envelopeReceived,
+        source: EVENT_SOURCES.trigger,
+        detail,
+      }
+
+      replayHistory.push(event)
+      selectedEnvelopeHistory.push(detail.envelope)
+
+      const replay = replayToFrontier({
+        threads: replayThreads,
+        history: replayHistory,
+      })
+
+      const diagnostic: SupervisorFrontierDiagnostic = {
+        kind: 'frontier',
+        timestamp: Date.now(),
+        authorityDomainId,
+        envelopeId: detail.envelope.id,
+        frontierStatus: replay.frontier.status,
+        candidateCount: replay.frontier.candidates.length,
+        enabledCount: replay.frontier.enabled.length,
+        replayHistory: cloneReplayHistory(replayHistory),
+      }
+      frontierDiagnostics.push(diagnostic)
+
+      decisions.push({
+        decision: 'approved',
+        reason: 'pass_through',
+        timestamp: diagnostic.timestamp,
+        authorityDomainId,
+        envelopeId: detail.envelope.id,
+        frontierStatus: diagnostic.frontierStatus,
+      })
+    },
+  })
+
+  const receiveEnvelope = (envelope: unknown): SupervisorReceiveResult => {
+    const parsedEnvelope = ActorEnvelopeSchema.safeParse(envelope)
+    if (!parsedEnvelope.success) {
+      const error = `supervisor envelope rejected: ${formatValidationError(parsedEnvelope.error)}`
+      const timestamp = Date.now()
+
+      reportSnapshot({
+        kind: 'extension_error',
+        id: `${authorityDomainId}:supervisor:invalid_envelope`,
+        error,
+      })
+
+      validationDiagnostics.push({
+        kind: 'validation',
+        timestamp,
+        authorityDomainId,
+        code: SUPERVISOR_DIAGNOSTIC_CODES.invalidEnvelope,
+        error,
+      })
+
+      decisions.push({
+        decision: 'rejected',
+        reason: SUPERVISOR_DIAGNOSTIC_CODES.invalidEnvelope,
+        timestamp,
+        authorityDomainId,
+        envelopeId: null,
+      })
+
+      return {
+        status: 'rejected',
+        code: SUPERVISOR_DIAGNOSTIC_CODES.invalidEnvelope,
+        error,
+      }
+    }
+
+    trigger({
+      type: SUPERVISOR_RUNTIME_EVENTS.envelopeReceived,
+      detail: {
+        authorityDomainId,
+        envelope: parsedEnvelope.data,
+      },
+    })
+
+    const lastDiagnostic = frontierDiagnostics.at(-1)
+    if (!lastDiagnostic) {
+      throw new Error('Supervisor runtime expected a frontier diagnostic after receiving a valid envelope.')
+    }
+
+    return {
+      status: 'approved',
+      envelope: parsedEnvelope.data,
+      frontierStatus: lastDiagnostic.frontierStatus,
+      replayHistorySize: replayHistory.length,
+    }
+  }
+
+  const subscribeSnapshot: UseSnapshot = (listener: SnapshotListener) => useSnapshot(listener)
+
+  return Object.freeze({
+    authorityDomainId,
+    receiveEnvelope,
+    useSnapshot: subscribeSnapshot,
+    getReplayHistory: () => cloneReplayHistory(replayHistory),
+    getSelectedEnvelopeHistory: () => [...selectedEnvelopeHistory],
+    getFrontierDiagnostics: () => [...frontierDiagnostics],
+    getValidationDiagnostics: () => [...validationDiagnostics],
+    getDiagnostics: (): SupervisorDiagnostic[] => [...frontierDiagnostics, ...validationDiagnostics],
+    getDecisionHistory: () => [...decisions],
+    getSnapshots: () => [...snapshots],
+  })
+}
+
+export type SupervisorRuntime = ReturnType<typeof createSupervisorRuntime>
