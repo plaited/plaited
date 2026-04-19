@@ -171,21 +171,27 @@ const resolveAuthorityDomainId = (authorityDomainId?: string) => {
     return DEFAULT_AUTHORITY_DOMAIN_ID
   }
 
-  const parsedAuthorityDomainId = AuthorityDomainIdSchema.safeParse(authorityDomainId)
-  if (!parsedAuthorityDomainId.success) {
-    throw new Error('createModuleRuntimeActor requires authorityDomainId to be a non-empty string when provided.')
-  }
+  try {
+    return AuthorityDomainIdSchema.parse(authorityDomainId)
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throw new Error('createModuleRuntimeActor requires authorityDomainId to be a non-empty string when provided.')
+    }
 
-  return parsedAuthorityDomainId.data
+    throw error
+  }
 }
 
 const resolveModuleId = (moduleId: string) => {
-  const parsedModuleId = ModuleIdSchema.safeParse(moduleId)
-  if (!parsedModuleId.success) {
-    throw new Error('createModuleRuntimeActor requires moduleId to be a non-empty string.')
-  }
+  try {
+    return ModuleIdSchema.parse(moduleId)
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throw new Error('createModuleRuntimeActor requires moduleId to be a non-empty string.')
+    }
 
-  return parsedModuleId.data
+    throw error
+  }
 }
 
 const matchesDispatchId = (detail: unknown, dispatchId: string) => {
@@ -429,13 +435,19 @@ export const createModuleRuntimeActor = (options: CreateModuleRuntimeActorOption
   }
 
   const triggerLocalEvent = (event: unknown): ModuleRuntimeLocalEventResult => {
-    const parsedEvent = LocalEventInputSchema.safeParse(event)
-    if (!parsedEvent.success) {
-      const error = `module local event rejected: ${formatValidationError(parsedEvent.error)}`
+    let parsedEvent: z.infer<typeof LocalEventInputSchema>
+    try {
+      parsedEvent = LocalEventInputSchema.parse(event)
+    } catch (error) {
+      if (!(error instanceof z.ZodError)) {
+        throw error
+      }
+
+      const message = `module local event rejected: ${formatValidationError(error)}`
       addValidationDiagnostic({
         lane: 'local',
         code: MODULE_RUNTIME_DIAGNOSTIC_CODES.invalidLocalEvent,
-        error,
+        error: message,
       })
       addDecision({
         lane: 'local',
@@ -446,14 +458,14 @@ export const createModuleRuntimeActor = (options: CreateModuleRuntimeActorOption
       return {
         status: 'rejected',
         code: MODULE_RUNTIME_DIAGNOSTIC_CODES.invalidLocalEvent,
-        error,
+        error: message,
       }
     }
 
     const dispatchId = nextDispatchId('local')
     const scopedType = toModuleActorLocalEventType({
       moduleId,
-      eventType: parsedEvent.data.type,
+      eventType: parsedEvent.type,
     })
 
     const snapshotStart = snapshots.length
@@ -464,7 +476,7 @@ export const createModuleRuntimeActor = (options: CreateModuleRuntimeActorOption
         dispatchId,
         moduleId,
         localEventType: scopedType,
-        event: parsedEvent.data,
+        event: parsedEvent,
       }),
     })
 
@@ -484,7 +496,7 @@ export const createModuleRuntimeActor = (options: CreateModuleRuntimeActorOption
       localEventHistory.push({
         timestamp: Date.now(),
         scopedType,
-        event: structuredClone(parsedEvent.data),
+        event: structuredClone(parsedEvent),
       })
 
       addDecision({
@@ -496,7 +508,7 @@ export const createModuleRuntimeActor = (options: CreateModuleRuntimeActorOption
 
       return {
         status: 'accepted',
-        event: parsedEvent.data,
+        event: parsedEvent,
         scopedType,
       }
     }
@@ -510,20 +522,26 @@ export const createModuleRuntimeActor = (options: CreateModuleRuntimeActorOption
 
     return {
       status: 'blocked',
-      event: parsedEvent.data,
+      event: parsedEvent,
       scopedType,
       reason: MODULE_RUNTIME_DECISION_REASONS.blockedByModuleFrontier,
     }
   }
 
   const emitOutboundEnvelope = (envelope: unknown): ModuleRuntimeOutboundEnvelopeResult => {
-    const parsedEnvelope = ActorEnvelopeSchema.safeParse(envelope)
-    if (!parsedEnvelope.success) {
-      const error = `module outbound envelope rejected: ${formatValidationError(parsedEnvelope.error)}`
+    let outboundEnvelope: ActorEnvelope
+    try {
+      outboundEnvelope = ActorEnvelopeSchema.parse(envelope)
+    } catch (error) {
+      if (!(error instanceof z.ZodError)) {
+        throw error
+      }
+
+      const message = `module outbound envelope rejected: ${formatValidationError(error)}`
       addValidationDiagnostic({
         lane: 'outbound',
         code: MODULE_RUNTIME_DIAGNOSTIC_CODES.invalidOutboundEnvelope,
-        error,
+        error: message,
       })
       addDecision({
         lane: 'outbound',
@@ -534,11 +552,10 @@ export const createModuleRuntimeActor = (options: CreateModuleRuntimeActorOption
       return {
         status: 'rejected',
         code: MODULE_RUNTIME_DIAGNOSTIC_CODES.invalidOutboundEnvelope,
-        error,
+        error: message,
       }
     }
 
-    const outboundEnvelope = parsedEnvelope.data
     const sourceMatchesModule =
       outboundEnvelope.source.kind === 'module' &&
       outboundEnvelope.source.moduleId === moduleId &&
@@ -624,13 +641,19 @@ export const createModuleRuntimeActor = (options: CreateModuleRuntimeActorOption
   }
 
   const receiveInboundEnvelope = (envelope: unknown): ModuleRuntimeInboundEnvelopeResult => {
-    const parsedEnvelope = ActorEnvelopeSchema.safeParse(envelope)
-    if (!parsedEnvelope.success) {
-      const error = `module inbound envelope rejected: ${formatValidationError(parsedEnvelope.error)}`
+    let inboundEnvelope: ActorEnvelope
+    try {
+      inboundEnvelope = ActorEnvelopeSchema.parse(envelope)
+    } catch (error) {
+      if (!(error instanceof z.ZodError)) {
+        throw error
+      }
+
+      const message = `module inbound envelope rejected: ${formatValidationError(error)}`
       addValidationDiagnostic({
         lane: 'inbound',
         code: MODULE_RUNTIME_DIAGNOSTIC_CODES.invalidInboundEnvelope,
-        error,
+        error: message,
       })
       addDecision({
         lane: 'inbound',
@@ -641,11 +664,9 @@ export const createModuleRuntimeActor = (options: CreateModuleRuntimeActorOption
       return {
         status: 'rejected',
         code: MODULE_RUNTIME_DIAGNOSTIC_CODES.invalidInboundEnvelope,
-        error,
+        error: message,
       }
     }
-
-    const inboundEnvelope = parsedEnvelope.data
 
     const targetMatchesModule =
       inboundEnvelope.target?.kind === 'module' &&
