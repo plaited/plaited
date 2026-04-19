@@ -24,11 +24,12 @@ import * as z from 'zod'
  */
 export const TrajectoryStepSchema = z
   .object({
-    type: z.string(),
-    status: z.string().optional(),
-    timestamp: z.number().optional(),
+    type: z.string().describe('Trajectory event type label emitted by the adapter.'),
+    status: z.string().optional().describe('Optional status value for the trajectory step.'),
+    timestamp: z.number().optional().describe('Optional event timestamp (epoch milliseconds).'),
   })
   .passthrough()
+  .describe('Minimal trajectory event row used by eval output and grading.')
 
 /** Trajectory step type */
 export type TrajectoryStep = z.infer<typeof TrajectoryStepSchema>
@@ -47,20 +48,25 @@ export type TrajectoryStep = z.infer<typeof TrajectoryStepSchema>
  *
  * @public
  */
-export const PromptCaseSchema = z.object({
-  /** Unique identifier for the test case */
-  id: z.string(),
-  /** Prompt text(s) — string for single turn, array for multi-turn */
-  input: z.union([z.string(), z.array(z.string())]),
-  /** Optional grader context hint */
-  hint: z.string().optional(),
-  /** Optional reference solution */
-  reference: z.string().optional(),
-  /** Optional metadata for categorization */
-  metadata: z.record(z.string(), z.unknown()).optional(),
-  /** Optional per-case timeout override in milliseconds */
-  timeout: z.number().optional(),
-})
+export const PromptCaseSchema = z
+  .object({
+    /** Unique identifier for the test case */
+    id: z.string().describe('Unique prompt-case identifier.'),
+    /** Prompt text(s) — string for single turn, array for multi-turn */
+    input: z.union([z.string(), z.array(z.string())]).describe('Single-turn prompt or ordered multi-turn prompts.'),
+    /** Optional grader context hint */
+    hint: z.string().optional().describe('Optional grader hint or rubric context.'),
+    /** Optional reference solution */
+    reference: z.string().optional().describe('Optional reference answer for grader logic.'),
+    /** Optional metadata for categorization */
+    metadata: z
+      .record(z.string(), z.unknown())
+      .optional()
+      .describe('Optional per-case metadata for grouping/filtering.'),
+    /** Optional per-case timeout override in milliseconds */
+    timeout: z.number().optional().describe('Optional per-case timeout override in milliseconds.'),
+  })
+  .describe('Single prompt-case row loaded from prompts JSONL input.')
 
 /** Prompt case type */
 export type PromptCase = z.infer<typeof PromptCaseSchema>
@@ -79,14 +85,16 @@ export type PromptCase = z.infer<typeof PromptCaseSchema>
  *
  * @public
  */
-export const TimingSchema = z.object({
-  /** Adapter-reported total duration in ms */
-  total: z.number().optional(),
-  /** Input tokens consumed */
-  inputTokens: z.number().optional(),
-  /** Output tokens generated */
-  outputTokens: z.number().optional(),
-})
+export const TimingSchema = z
+  .object({
+    /** Adapter-reported total duration in ms */
+    total: z.number().optional().describe('Adapter-reported total duration in milliseconds.'),
+    /** Input tokens consumed */
+    inputTokens: z.number().optional().describe('Input token count, when exposed by the adapter/provider.'),
+    /** Output tokens generated */
+    outputTokens: z.number().optional().describe('Output token count, when exposed by the adapter/provider.'),
+  })
+  .describe('Adapter-reported timing and token telemetry for one run.')
 
 /** Timing type */
 export type Timing = z.infer<typeof TimingSchema>
@@ -103,10 +111,14 @@ export type Timing = z.infer<typeof TimingSchema>
  *
  * @public
  */
-export const CaptureSnippetSchema = z.object({
-  kind: z.enum(['message', 'thought', 'tool_call', 'event', 'stderr', 'stdout', 'usage']),
-  text: z.string(),
-})
+export const CaptureSnippetSchema = z
+  .object({
+    kind: z
+      .enum(['message', 'thought', 'tool_call', 'event', 'stderr', 'stdout', 'usage'])
+      .describe('Snippet class for quick provenance inspection.'),
+    text: z.string().describe('Short snippet text captured from adapter/provider output.'),
+  })
+  .describe('Compact capture snippet retained for trial provenance.')
 
 /** Capture snippet type */
 export type CaptureSnippet = z.infer<typeof CaptureSnippetSchema>
@@ -120,26 +132,33 @@ export type CaptureSnippet = z.infer<typeof CaptureSnippetSchema>
  *
  * @public
  */
-export const CaptureEvidenceSchema = z.object({
-  /** Adapter or capture source identifier */
-  source: z.string(),
-  /** High-level capture format */
-  format: z.enum(['response-only', 'chat-completion', 'jsonl-event-stream', 'mixed']),
-  /** Count of provider-native events seen during the run */
-  eventCount: z.number().int().min(0).optional(),
-  /** Count of captured assistant/user-facing messages */
-  messageCount: z.number().int().min(0).optional(),
-  /** Count of captured reasoning/thought segments */
-  thoughtCount: z.number().int().min(0).optional(),
-  /** Count of captured tool calls or tool-like events */
-  toolCallCount: z.number().int().min(0).optional(),
-  /** Provider-native item/event labels observed during capture */
-  itemTypes: z.array(z.string()).optional(),
-  /** Short evidence snippets for inspection/debugging */
-  snippets: z.array(CaptureSnippetSchema).optional(),
-  /** Additional generic capture metadata */
-  metadata: z.record(z.string(), z.unknown()).optional(),
-})
+export const CaptureEvidenceSchema = z
+  .object({
+    /** Adapter or capture source identifier */
+    source: z.string().describe('Adapter or capture source identifier.'),
+    /** High-level capture format */
+    format: z
+      .enum(['response-only', 'chat-completion', 'jsonl-event-stream', 'mixed'])
+      .describe('High-level capture format used by the adapter.'),
+    /** Count of provider-native events seen during the run */
+    eventCount: z.number().int().min(0).optional().describe('Count of provider-native events seen during execution.'),
+    /** Count of captured assistant/user-facing messages */
+    messageCount: z.number().int().min(0).optional().describe('Count of assistant/user-facing messages captured.'),
+    /** Count of captured reasoning/thought segments */
+    thoughtCount: z.number().int().min(0).optional().describe('Count of reasoning/thought segments captured.'),
+    /** Count of captured tool calls or tool-like events */
+    toolCallCount: z.number().int().min(0).optional().describe('Count of tool calls or tool-like events captured.'),
+    /** Provider-native item/event labels observed during capture */
+    itemTypes: z.array(z.string()).optional().describe('Observed provider-native item or event type labels.'),
+    /** Short evidence snippets for inspection/debugging */
+    snippets: z
+      .array(CaptureSnippetSchema)
+      .optional()
+      .describe('Short snippets retained for debugging and provenance.'),
+    /** Additional generic capture metadata */
+    metadata: z.record(z.string(), z.unknown()).optional().describe('Additional adapter-defined capture metadata.'),
+  })
+  .describe('Model-agnostic capture summary produced by an adapter run.')
 
 /** Capture evidence type */
 export type CaptureEvidence = z.infer<typeof CaptureEvidenceSchema>
@@ -153,14 +172,16 @@ export type CaptureEvidence = z.infer<typeof CaptureEvidenceSchema>
  *
  * @public
  */
-export const AdapterInputSchema = z.object({
-  /** Single or multi-turn prompt */
-  prompt: z.union([z.string(), z.array(z.string())]),
-  /** Working directory for the adapter */
-  cwd: z.string().optional(),
-  /** Optional scenario-specific system prompt override */
-  systemPrompt: z.string().optional(),
-})
+export const AdapterInputSchema = z
+  .object({
+    /** Single or multi-turn prompt */
+    prompt: z.union([z.string(), z.array(z.string())]).describe('Single-turn prompt or ordered multi-turn prompts.'),
+    /** Working directory for the adapter */
+    cwd: z.string().optional().describe('Working directory for adapter execution.'),
+    /** Optional scenario-specific system prompt override */
+    systemPrompt: z.string().optional().describe('Optional system prompt override supplied by the runner.'),
+  })
+  .describe('Input contract passed to an eval adapter.')
 
 /** Adapter input type */
 export type AdapterInput = z.infer<typeof AdapterInputSchema>
@@ -170,20 +191,26 @@ export type AdapterInput = z.infer<typeof AdapterInputSchema>
  *
  * @public
  */
-export const AdapterResultSchema = z.object({
-  /** Final agent response text */
-  output: z.string(),
-  /** Optional structured trajectory */
-  trajectory: z.array(TrajectoryStepSchema).optional(),
-  /** Optional model-agnostic capture evidence */
-  capture: CaptureEvidenceSchema.optional(),
-  /** Optional timing from the adapter */
-  timing: TimingSchema.optional(),
-  /** Process exit code (null if signaled) */
-  exitCode: z.number().nullable().optional(),
-  /** Whether the adapter timed out */
-  timedOut: z.boolean().optional(),
-})
+export const AdapterResultSchema = z
+  .object({
+    /** Final agent response text */
+    output: z.string().describe('Final assistant output string for the trial.'),
+    /** Optional structured trajectory */
+    trajectory: z.array(TrajectoryStepSchema).optional().describe('Optional trajectory rows emitted by the adapter.'),
+    /** Optional model-agnostic capture evidence */
+    capture: CaptureEvidenceSchema.optional().describe('Optional adapter capture summary.'),
+    /** Optional timing from the adapter */
+    timing: TimingSchema.optional().describe('Optional adapter-reported timing/token telemetry.'),
+    /** Process exit code (null if signaled) */
+    exitCode: z
+      .number()
+      .nullable()
+      .optional()
+      .describe('Process exit code; null when signaled/terminated without code.'),
+    /** Whether the adapter timed out */
+    timedOut: z.boolean().optional().describe('Whether adapter execution exceeded the configured timeout.'),
+  })
+  .describe('Adapter execution result consumed by the eval runner.')
 
 /** Adapter result type */
 export type AdapterResult = z.infer<typeof AdapterResultSchema>
@@ -218,14 +245,16 @@ export type Adapter = (input: AdapterInput) => Promise<AdapterResult>
  *
  * @public
  */
-export const GradingDimensionsSchema = z.object({
-  /** Outcome correctness score */
-  outcome: z.number().min(0).max(1).optional(),
-  /** Process quality score */
-  process: z.number().min(0).max(1).optional(),
-  /** Efficiency score */
-  efficiency: z.number().min(0).max(1).optional(),
-})
+export const GradingDimensionsSchema = z
+  .object({
+    /** Outcome correctness score */
+    outcome: z.number().min(0).max(1).optional().describe('Outcome correctness score in [0, 1].'),
+    /** Process quality score */
+    process: z.number().min(0).max(1).optional().describe('Process quality score in [0, 1].'),
+    /** Efficiency score */
+    efficiency: z.number().min(0).max(1).optional().describe('Efficiency score in [0, 1].'),
+  })
+  .describe('Optional multi-dimensional grader scoring breakdown.')
 
 /** Grading dimensions type */
 export type GradingDimensions = z.infer<typeof GradingDimensionsSchema>
@@ -235,25 +264,28 @@ export type GradingDimensions = z.infer<typeof GradingDimensionsSchema>
  *
  * @public
  */
-export const GraderResultSchema = z.object({
-  /** Whether the output passes evaluation criteria */
-  pass: z.boolean(),
-  /** Numeric score from 0.0 to 1.0 */
-  score: z.number().min(0).max(1),
-  /** Optional explanation for the score */
-  reasoning: z.string().optional(),
-  /** Optional structured outcome data */
-  outcome: z.record(z.string(), z.unknown()).optional(),
-  /** Optional multi-dimensional scores */
-  dimensions: GradingDimensionsSchema.optional(),
-  /** Optional verifier confidence over the grader result */
-  metaVerification: z
-    .object({
-      confidence: z.number().min(0).max(1),
-      reasoning: z.string().optional(),
-    })
-    .optional(),
-})
+export const GraderResultSchema = z
+  .object({
+    /** Whether the output passes evaluation criteria */
+    pass: z.boolean().describe('Pass/fail outcome from the grader.'),
+    /** Numeric score from 0.0 to 1.0 */
+    score: z.number().min(0).max(1).describe('Overall grader score in [0, 1].'),
+    /** Optional explanation for the score */
+    reasoning: z.string().optional().describe('Optional explanation for pass/score results.'),
+    /** Optional structured outcome data */
+    outcome: z.record(z.string(), z.unknown()).optional().describe('Optional structured grader output payload.'),
+    /** Optional multi-dimensional scores */
+    dimensions: GradingDimensionsSchema.optional().describe('Optional outcome/process/efficiency breakdown.'),
+    /** Optional verifier confidence over the grader result */
+    metaVerification: z
+      .object({
+        confidence: z.number().min(0).max(1).describe('Verifier confidence in grader correctness, in [0, 1].'),
+        reasoning: z.string().optional().describe('Optional verifier rationale for confidence value.'),
+      })
+      .optional()
+      .describe('Optional verifier assessment over grader output.'),
+  })
+  .describe('Grader output returned for a trial.')
 
 /** Grader result type */
 export type GraderResult = z.infer<typeof GraderResultSchema>
@@ -267,10 +299,12 @@ export type GraderResult = z.infer<typeof GraderResultSchema>
  *
  * @public
  */
-export const MetaVerificationSchema = z.object({
-  confidence: z.number().min(0).max(1),
-  reasoning: z.string().optional(),
-})
+export const MetaVerificationSchema = z
+  .object({
+    confidence: z.number().min(0).max(1).describe('Verifier confidence in grader correctness, in [0, 1].'),
+    reasoning: z.string().optional().describe('Optional verifier rationale.'),
+  })
+  .describe('Verifier confidence payload retained on each trial row.')
 
 /** Meta-verification type */
 export type MetaVerification = z.infer<typeof MetaVerificationSchema>
@@ -302,36 +336,38 @@ export type Grader = (params: {
  *
  * @public
  */
-export const TrialEntrySchema = z.object({
-  /** Trial number (1-indexed) */
-  trialNum: z.number(),
-  /** Agent output for this trial */
-  output: z.string(),
-  /** Full trajectory for this trial */
-  trajectory: z.array(TrajectoryStepSchema).optional(),
-  /** Adapter-reported capture evidence for this trial */
-  capture: CaptureEvidenceSchema.optional(),
-  /** Runner-measured wall-clock duration in ms */
-  duration: z.number(),
-  /** Adapter-reported timing (token counts, adapter-measured duration) */
-  timing: TimingSchema.optional(),
-  /** Process exit code */
-  exitCode: z.number().nullable().optional(),
-  /** Whether the trial timed out */
-  timedOut: z.boolean().optional(),
-  /** Pass/fail (if grader provided) */
-  pass: z.boolean().optional(),
-  /** Numeric score (if grader provided) */
-  score: z.number().optional(),
-  /** Grader reasoning (if grader provided) */
-  reasoning: z.string().optional(),
-  /** Outcome data from grader */
-  outcome: z.record(z.string(), z.unknown()).optional(),
-  /** Multi-dimensional grading scores (if grader provides them) */
-  dimensions: GradingDimensionsSchema.optional(),
-  /** Optional verifier confidence over the grader result */
-  metaVerification: MetaVerificationSchema.optional(),
-})
+export const TrialEntrySchema = z
+  .object({
+    /** Trial number (1-indexed) */
+    trialNum: z.number().describe('Trial index within prompt case (1-indexed).'),
+    /** Agent output for this trial */
+    output: z.string().describe('Final assistant output text for this trial.'),
+    /** Full trajectory for this trial */
+    trajectory: z.array(TrajectoryStepSchema).optional().describe('Optional trajectory rows captured for this trial.'),
+    /** Adapter-reported capture evidence for this trial */
+    capture: CaptureEvidenceSchema.optional().describe('Optional model-agnostic capture evidence for this trial.'),
+    /** Runner-measured wall-clock duration in ms */
+    duration: z.number().describe('Runner-measured wall-clock duration in milliseconds.'),
+    /** Adapter-reported timing (token counts, adapter-measured duration) */
+    timing: TimingSchema.optional().describe('Optional adapter-reported timing and token data.'),
+    /** Process exit code */
+    exitCode: z.number().nullable().optional().describe('Process exit code; null when signaled/terminated.'),
+    /** Whether the trial timed out */
+    timedOut: z.boolean().optional().describe('Whether trial execution hit timeout.'),
+    /** Pass/fail (if grader provided) */
+    pass: z.boolean().optional().describe('Grader pass/fail result when grading is enabled.'),
+    /** Numeric score (if grader provided) */
+    score: z.number().optional().describe('Grader score when grading is enabled.'),
+    /** Grader reasoning (if grader provided) */
+    reasoning: z.string().optional().describe('Optional grader explanation.'),
+    /** Outcome data from grader */
+    outcome: z.record(z.string(), z.unknown()).optional().describe('Optional structured outcome payload from grader.'),
+    /** Multi-dimensional grading scores (if grader provides them) */
+    dimensions: GradingDimensionsSchema.optional().describe('Optional outcome/process/efficiency scores.'),
+    /** Optional verifier confidence over the grader result */
+    metaVerification: MetaVerificationSchema.optional().describe('Optional verifier confidence for grading output.'),
+  })
+  .describe('One trial row for a prompt case execution.')
 
 /** Trial entry type */
 export type TrialEntry = z.infer<typeof TrialEntrySchema>
@@ -349,26 +385,31 @@ export type TrialEntry = z.infer<typeof TrialEntrySchema>
  *
  * @public
  */
-export const TrialResultSchema = z.object({
-  /** Test case identifier */
-  id: z.string(),
-  /** Original prompt input */
-  input: z.union([z.string(), z.array(z.string())]),
-  /** Grader context hint */
-  hint: z.string().optional(),
-  /** Number of trials (k) */
-  k: z.number(),
-  /** Simple pass rate: passes / k (with grader only) */
-  passRate: z.number().optional(),
-  /** pass@k: probability of at least one pass in k samples (with grader only) */
-  passAtK: z.number().optional(),
-  /** pass^k: probability of all k samples passing (with grader only) */
-  passExpK: z.number().optional(),
-  /** Individual trial results */
-  trials: z.array(TrialEntrySchema),
-  /** Metadata (from prompt case + runtime additions) */
-  metadata: z.record(z.string(), z.unknown()).optional(),
-})
+export const TrialResultSchema = z
+  .object({
+    /** Test case identifier */
+    id: z.string().describe('Prompt-case identifier from input prompts JSONL.'),
+    /** Original prompt input */
+    input: z.union([z.string(), z.array(z.string())]).describe('Original single-turn or multi-turn prompt input.'),
+    /** Grader context hint */
+    hint: z.string().optional().describe('Optional grader hint copied from the prompt case.'),
+    /** Number of trials (k) */
+    k: z.number().describe('Number of trials executed for this prompt case.'),
+    /** Simple pass rate: passes / k (with grader only) */
+    passRate: z.number().optional().describe('Passes / k, present when a grader is configured.'),
+    /** pass@k: probability of at least one pass in k samples (with grader only) */
+    passAtK: z.number().optional().describe('Estimated probability of at least one pass in k trials.'),
+    /** pass^k: probability of all k samples passing (with grader only) */
+    passExpK: z.number().optional().describe('Estimated probability of all k trials passing.'),
+    /** Individual trial results */
+    trials: z.array(TrialEntrySchema).describe('Per-trial execution rows for this prompt case.'),
+    /** Metadata (from prompt case + runtime additions) */
+    metadata: z
+      .record(z.string(), z.unknown())
+      .optional()
+      .describe('Prompt metadata plus runtime-added metadata fields.'),
+  })
+  .describe('Unified per-prompt eval output row emitted by the trial runner.')
 
 /** Trial result type */
 export type TrialResult = z.infer<typeof TrialResultSchema>
@@ -382,7 +423,9 @@ export type TrialResult = z.infer<typeof TrialResultSchema>
  *
  * @public
  */
-export const TrajectoryRichnessSchema = z.enum(['full', 'minimal', 'messages-only'])
+export const TrajectoryRichnessSchema = z
+  .enum(['full', 'minimal', 'messages-only'])
+  .describe('Trajectory capture level requested from adapters during eval runs.')
 
 /** Trajectory richness type */
 export type TrajectoryRichness = z.infer<typeof TrajectoryRichnessSchema>

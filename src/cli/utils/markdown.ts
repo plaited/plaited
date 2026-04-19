@@ -1,6 +1,6 @@
 import { normalize } from 'node:path'
 import { YAML } from 'bun'
-import type * as z from 'zod'
+import * as z from 'zod'
 
 type ParsedFrontmatterBlock = {
   frontmatter: string
@@ -127,35 +127,6 @@ export const parseMarkdownWithFrontmatter = <TSchema extends z.ZodType>(
 }
 
 /**
- * Extracts the body of the first matching level-two markdown section.
- *
- * @param markdown - Full markdown source to scan.
- * @param headings - Accepted section headings without the `##` prefix.
- * @returns Trimmed section body, or `null` when no matching section exists.
- *
- * @public
- */
-export const extractMarkdownSection = (markdown: string, headings: string[]): string | null => {
-  const lines = markdown.split(/\r?\n/)
-  const escapedHeadings = headings.map((heading) => heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-  const headingPattern = new RegExp(`^## (?:${escapedHeadings.join('|')})\\s*$`)
-  const nextHeadingPattern = /^##\s+/
-  const startIndex = lines.findIndex((line) => headingPattern.test(line.trim()))
-
-  if (startIndex === -1) return null
-
-  const sectionLines: string[] = []
-  for (let index = startIndex + 1; index < lines.length; index++) {
-    const line = lines[index]
-    if (line !== undefined && nextHeadingPattern.test(line.trim())) break
-    sectionLines.push(line ?? '')
-  }
-
-  const section = sectionLines.join('\n').trim()
-  return section.length > 0 ? section : null
-}
-
-/**
  * Normalizes a markdown link target when it points to a local workspace path.
  *
  * @param value - Raw markdown link target.
@@ -189,6 +160,33 @@ export type LocalMarkdownLink = {
   text: string
 }
 
+const MarkdownLinksFromPathInputSchema = z
+  .object({
+    path: z.string().min(1),
+  })
+  .strict()
+
+const MarkdownLinksFromTextInputSchema = z
+  .object({
+    markdown: z.string().min(1),
+  })
+  .strict()
+
+export const MarkdownLinksInputSchema = z.union([MarkdownLinksFromPathInputSchema, MarkdownLinksFromTextInputSchema])
+
+/** @public */
+export type MarkdownLinksInput = z.infer<typeof MarkdownLinksInputSchema>
+
+export const MarkdownLinksOutputSchema = z.array(
+  z.object({
+    value: z.string().min(1),
+    text: z.string().min(1),
+  }),
+)
+
+/** @public */
+export type MarkdownLinksOutput = z.infer<typeof MarkdownLinksOutputSchema>
+
 const extractMarkdownLinkDestination = (value: string): string => {
   const trimmedValue = value.trim()
   if (!trimmedValue) return trimmedValue
@@ -205,7 +203,33 @@ const extractMarkdownLinkDestination = (value: string): string => {
   return trimmedValue.slice(0, firstWhitespaceIndex)
 }
 
-const stripHtmlTags = (value: string): string => value.replace(/<[^>]*>/g, '')
+const stripHtmlTags = (value: string): string => {
+  const textParts: string[] = []
+  let pendingTag: string[] | null = null
+
+  for (const character of value) {
+    if (pendingTag) {
+      pendingTag.push(character)
+      if (character === '>') {
+        pendingTag = null
+      }
+      continue
+    }
+
+    if (character === '<') {
+      pendingTag = ['<']
+      continue
+    }
+
+    textParts.push(character)
+  }
+
+  if (pendingTag) {
+    textParts.push(...pendingTag)
+  }
+
+  return textParts.join('')
+}
 
 const setLinkTextIfMissing = ({
   linkTextByTarget,
@@ -220,15 +244,103 @@ const setLinkTextIfMissing = ({
   linkTextByTarget.set(target, text.trim() || target)
 }
 
+type InlineMarkdownLink = {
+  text: string
+  destination: string
+}
+
+const isEscapedCharacter = (value: string, index: number): boolean => {
+  let slashCount = 0
+  for (let currentIndex = index - 1; currentIndex >= 0 && value[currentIndex] === '\\'; currentIndex -= 1) {
+    slashCount += 1
+  }
+  return slashCount % 2 === 1
+}
+
+const findInlineDestinationEnd = (value: string, startIndex: number): number => {
+  for (let index = startIndex; index < value.length; index += 1) {
+    const character = value[index]
+    if (character === '\n' || character === '\r') return -1
+    if (value[index] !== ')' || isEscapedCharacter(value, index)) continue
+    return index
+  }
+  return -1
+}
+
+const extractInlineMarkdownLinks = (markdownBody: string): InlineMarkdownLink[] => {
+  const links: InlineMarkdownLink[] = []
+
+  for (let index = 0; index < markdownBody.length; index += 1) {
+    const character = markdownBody[index]
+    if (character === undefined) continue
+
+    const startsImageLink =
+      character === '!' && markdownBody[index + 1] === '[' && !isEscapedCharacter(markdownBody, index)
+    const startsTextLink = character === '[' && !isEscapedCharacter(markdownBody, index)
+    if (!startsImageLink && !startsTextLink) continue
+
+    const openBracketIndex = startsImageLink ? index + 1 : index
+    let scanIndex = openBracketIndex + 1
+    let bracketDepth = 1
+    let closeBracketIndex = -1
+
+    while (scanIndex < markdownBody.length) {
+      const scanCharacter = markdownBody[scanIndex]
+      if (scanCharacter === undefined) break
+
+      if (scanCharacter === '[' && !isEscapedCharacter(markdownBody, scanIndex)) {
+        bracketDepth += 1
+      } else if (scanCharacter === ']' && !isEscapedCharacter(markdownBody, scanIndex)) {
+        bracketDepth -= 1
+        if (bracketDepth === 0) {
+          closeBracketIndex = scanIndex
+          break
+        }
+      }
+
+      scanIndex += 1
+    }
+
+    if (closeBracketIndex === -1) {
+      index = openBracketIndex
+      continue
+    }
+
+    const openParenIndex = closeBracketIndex + 1
+    if (markdownBody[openParenIndex] !== '(') {
+      index = closeBracketIndex
+      continue
+    }
+
+    const destinationStartIndex = openParenIndex + 1
+    const destinationEndIndex = findInlineDestinationEnd(markdownBody, destinationStartIndex)
+    if (destinationEndIndex === -1) {
+      index = openParenIndex
+      continue
+    }
+
+    const destination = markdownBody.slice(destinationStartIndex, destinationEndIndex)
+    if (destination.trim().length > 0) {
+      links.push({
+        text: markdownBody.slice(openBracketIndex + 1, closeBracketIndex),
+        destination,
+      })
+    }
+
+    index = destinationEndIndex
+  }
+
+  return links
+}
+
 const extractLocalLinkTextByTarget = (markdownBody: string): Map<string, string> => {
   const linkTextByTarget = new Map<string, string>()
-  const markdownInlineLinkPattern = /!?\[([^\]]*?)\]\(([^)]+)\)/g
   const htmlAnchorPattern = /<a\b[^>]*\bhref=(['"])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi
   const htmlImagePattern = /<img\b[^>]*>/gi
 
-  for (const match of markdownBody.matchAll(markdownInlineLinkPattern)) {
-    const text = match[1] ?? ''
-    const destination = match[2] ?? ''
+  for (const link of extractInlineMarkdownLinks(markdownBody)) {
+    const text = link.text
+    const destination = link.destination
     const normalizedTarget = normalizeMarkdownLink(extractMarkdownLinkDestination(destination))
     setLinkTextIfMissing({
       linkTextByTarget,
@@ -297,4 +409,24 @@ export const extractLocalLinksFromMarkdown = async (markdownBody: string): Promi
     value,
     text: linkTextByTarget.get(value) ?? value,
   }))
+}
+
+const readMarkdownLinksSource = async (input: MarkdownLinksInput): Promise<string> => {
+  if ('markdown' in input) return input.markdown
+
+  const file = Bun.file(input.path)
+  if (!(await file.exists())) {
+    throw new Error(`Markdown file not found: ${input.path}`)
+  }
+  return file.text()
+}
+
+/**
+ * Extracts local markdown links from either file path or raw markdown text.
+ *
+ * @public
+ */
+export const markdownLinks = async (input: MarkdownLinksInput): Promise<MarkdownLinksOutput> => {
+  const markdown = await readMarkdownLinksSource(input)
+  return extractLocalLinksFromMarkdown(markdown)
 }
