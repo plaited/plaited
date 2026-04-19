@@ -182,6 +182,13 @@ Ignore [docs](https://example.com), [anchor](#top), and <img src="https://exampl
       await raceWithTimeout(input)
     }
   })
+
+  test('continues label recovery after malformed inline destination', async () => {
+    const links = await extractLocalLinksFromMarkdown(`broken []((xxxxxxxxxxxxxxxxxxxx
+[setup](references/setup.md)`)
+
+    expect(links).toEqual([{ value: 'references/setup.md', text: 'setup' }])
+  })
 })
 
 describe('markdownLinks', () => {

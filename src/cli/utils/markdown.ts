@@ -259,6 +259,8 @@ const isEscapedCharacter = (value: string, index: number): boolean => {
 
 const findInlineDestinationEnd = (value: string, startIndex: number): number => {
   for (let index = startIndex; index < value.length; index += 1) {
+    const character = value[index]
+    if (character === '\n' || character === '\r') return -1
     if (value[index] !== ')' || isEscapedCharacter(value, index)) continue
     return index
   }
@@ -313,7 +315,8 @@ const extractInlineMarkdownLinks = (markdownBody: string): InlineMarkdownLink[] 
     const destinationStartIndex = openParenIndex + 1
     const destinationEndIndex = findInlineDestinationEnd(markdownBody, destinationStartIndex)
     if (destinationEndIndex === -1) {
-      break
+      index = openParenIndex
+      continue
     }
 
     const destination = markdownBody.slice(destinationStartIndex, destinationEndIndex)
