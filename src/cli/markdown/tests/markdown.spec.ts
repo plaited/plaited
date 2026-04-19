@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { Blob } from 'node:buffer'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 import * as z from 'zod'
 import {
   consumeHtmlRewriteResult,
@@ -10,8 +10,6 @@ import {
   normalizeMarkdownLink,
   parseMarkdownWithFrontmatter,
 } from '../markdown.ts'
-
-const CLI_PACKAGE_ROOT = resolve(import.meta.dir, '../../../../')
 
 const TestFrontmatterSchema = z.object({
   name: z.string(),
@@ -211,36 +209,6 @@ describe('markdownLinks', () => {
   test('throws when the source file does not exist', async () => {
     const missingPath = join('/tmp', `plaited-markdown-links-missing-${Date.now()}.md`)
     await expect(markdownLinks({ path: missingPath })).rejects.toThrow(`Markdown file not found: ${missingPath}`)
-  })
-
-  test('markdown-links CLI handler outputs JSON links', async () => {
-    const script = "import { markdownLinksCli } from './src/cli.ts'; await markdownLinksCli(process.argv.slice(1));"
-    const input = JSON.stringify({ markdown: '[setup](references/setup.md)' })
-    const result = await Bun.$`bun -e ${script} -- ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
-
-    expect(result.exitCode).toBe(0)
-    expect(JSON.parse(result.stdout.toString().trim())).toEqual([{ value: 'references/setup.md', text: 'setup' }])
-  })
-
-  test('markdown-links CLI handler exits with invalid input', async () => {
-    const script = "import { markdownLinksCli } from './src/cli.ts'; await markdownLinksCli(process.argv.slice(1));"
-    const input = JSON.stringify({})
-    const result = await Bun.$`bun -e ${script} -- ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
-
-    expect(result.exitCode).toBe(2)
-    expect(result.stderr.toString()).toContain('invalid_union')
-  })
-
-  test('markdown-links CLI handler rejects input containing both path and markdown', async () => {
-    const script = "import { markdownLinksCli } from './src/cli.ts'; await markdownLinksCli(process.argv.slice(1));"
-    const input = JSON.stringify({
-      path: 'skills/typescript-lsp/SKILL.md',
-      markdown: '[x](y.md)',
-    })
-    const result = await Bun.$`bun -e ${script} -- ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
-
-    expect(result.exitCode).toBe(2)
-    expect(result.stderr.toString()).toContain('invalid_union')
   })
 })
 

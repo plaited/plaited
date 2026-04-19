@@ -1,7 +1,6 @@
 import { normalize } from 'node:path'
 import { YAML } from 'bun'
 import * as z from 'zod'
-import { makeCli } from '../utils/cli.ts'
 
 type ParsedFrontmatterBlock = {
   frontmatter: string
@@ -457,15 +456,3 @@ export const markdownLinks = async (input: MarkdownLinksInput): Promise<Markdown
   const markdown = await readMarkdownLinksSource(input)
   return extractLocalLinksFromMarkdown(markdown)
 }
-
-/**
- * CLI handler for `markdown-links`.
- *
- * @public
- */
-export const markdownLinksCli = makeCli({
-  name: 'markdown-links',
-  inputSchema: MarkdownLinksInputSchema,
-  outputSchema: MarkdownLinksOutputSchema,
-  run: markdownLinks,
-})
