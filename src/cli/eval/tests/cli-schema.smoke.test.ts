@@ -22,6 +22,8 @@ describe('CLI schema discovery smoke tests', () => {
     expect(output.commands).toContain('eval')
     expect(output.commands).toContain('compare-trials')
     expect(output.commands).toContain('skills-catalog')
+    expect(output.commands).toContain('skills-frontmatter')
+    expect(output.commands).toContain('skills-instructions')
     expect(output.commands).toContain('skills-validate')
     expect(output.commands).toContain('skills-links')
   })

@@ -11,6 +11,8 @@ import {
   type SkillDirectoryPaths,
   type SkillFrontMatter,
   SkillFrontMatterSchema,
+  type SkillFrontmatterLoadResult,
+  SkillFrontmatterResultSchema,
   type SkillInstructionErrors,
   type SkillInstructionResourceLinksLoadResult,
   type SkillInstructionsLoadResult,
@@ -21,6 +23,14 @@ import {
   SkillsCatalogCliInputSchema,
   type SkillsCatalogCliOutput,
   SkillsCatalogCliOutputSchema,
+  type SkillsFrontmatterCliInput,
+  SkillsFrontmatterCliInputSchema,
+  type SkillsFrontmatterCliOutput,
+  SkillsFrontmatterCliOutputSchema,
+  type SkillsInstructionsCliInput,
+  SkillsInstructionsCliInputSchema,
+  type SkillsInstructionsCliOutput,
+  SkillsInstructionsCliOutputSchema,
   type SkillsLinksCliInput,
   SkillsLinksCliInputSchema,
   type SkillsLinksCliOutput,
@@ -29,7 +39,6 @@ import {
   SkillsValidateCliInputSchema,
   type SkillsValidateCliOutput,
   SkillsValidateCliOutputSchema,
-  type SkillValidationStatus,
 } from './skills.schema.ts'
 
 /**
@@ -193,32 +202,6 @@ export const validateSkillLocalLinks = async ({
 }
 
 /**
- * Validates a `SKILL.md` file against the expected frontmatter contract.
- *
- * @param markdown - Full markdown source for the skill file.
- * @param options - Optional path information used to validate the directory name.
- * @returns `true` when the markdown parses and matches the expected skill name.
- *
- * @public
- */
-export const isValidSkill = (
-  markdown: string,
-  options?: {
-    skillPath?: string
-  },
-): SkillValidationStatus => {
-  const validation = validateSkill(markdown, options)
-  if (!validation.ok) {
-    for (const error of validation.errors) {
-      console.error(error)
-    }
-    return false
-  }
-
-  return true
-}
-
-/**
  * Loads and validates all skills under a root directory.
  *
  * @param rootDir - Workspace root to scan.
@@ -279,6 +262,22 @@ export const loadSkillInstructions = async (rootDir: string, path: string): Prom
   try {
     const { body } = parseMarkdownWithFrontmatter(markdown, SkillFrontMatterSchema)
     return body
+  } catch {
+    return
+  }
+}
+
+export const loadSkillFrontmatter = async (rootDir: string, path: string): Promise<SkillFrontmatterLoadResult> => {
+  const skillDir = join(rootDir, path)
+  const skillPath = join(skillDir, 'SKILL.md')
+  const file = Bun.file(skillPath)
+  if (!(await file.exists())) return
+  const markdown = await file.text()
+  if (!validateSkill(markdown, { skillPath }).ok) return
+
+  try {
+    const { frontmatter } = parseMarkdownWithFrontmatter(markdown, SkillFrontmatterResultSchema)
+    return frontmatter
   } catch {
     return
   }
@@ -409,4 +408,94 @@ export const skillsLinksCli = makeCli({
   inputSchema: SkillsLinksCliInputSchema,
   outputSchema: SkillsLinksCliOutputSchema,
   run: skillsLinks,
+})
+
+/**
+ * Loads a single skill's markdown body for CLI usage.
+ *
+ * @public
+ */
+export const skillsInstructions = async ({
+  rootDir,
+  path,
+}: SkillsInstructionsCliInput): Promise<SkillsInstructionsCliOutput> => {
+  const skillPath = join(rootDir, path, 'SKILL.md')
+  const body = await loadSkillInstructions(rootDir, path)
+  if (body !== undefined) {
+    return {
+      body,
+      errors: [],
+    }
+  }
+
+  const file = Bun.file(skillPath)
+  if (!(await file.exists())) {
+    return {
+      body: null,
+      errors: [{ skillPath, message: `Skill markdown not found: ${skillPath}` }],
+    }
+  }
+
+  const validation = validateSkill(await file.text(), { skillPath })
+  return {
+    body: null,
+    errors: validation.errors.map((message) => ({ skillPath, message })),
+  }
+}
+
+/**
+ * CLI handler for `skills-instructions`.
+ *
+ * @public
+ */
+export const skillsInstructionsCli = makeCli({
+  name: 'skills-instructions',
+  inputSchema: SkillsInstructionsCliInputSchema,
+  outputSchema: SkillsInstructionsCliOutputSchema,
+  run: skillsInstructions,
+})
+
+/**
+ * Loads a single skill's parsed frontmatter object for CLI usage.
+ *
+ * @public
+ */
+export const skillsFrontmatter = async ({
+  rootDir,
+  path,
+}: SkillsFrontmatterCliInput): Promise<SkillsFrontmatterCliOutput> => {
+  const skillPath = join(rootDir, path, 'SKILL.md')
+  const frontmatter = await loadSkillFrontmatter(rootDir, path)
+  if (frontmatter !== undefined) {
+    return {
+      frontmatter,
+      errors: [],
+    }
+  }
+
+  const file = Bun.file(skillPath)
+  if (!(await file.exists())) {
+    return {
+      frontmatter: null,
+      errors: [{ skillPath, message: `Skill markdown not found: ${skillPath}` }],
+    }
+  }
+
+  const validation = validateSkill(await file.text(), { skillPath })
+  return {
+    frontmatter: null,
+    errors: validation.errors.map((message) => ({ skillPath, message })),
+  }
+}
+
+/**
+ * CLI handler for `skills-frontmatter`.
+ *
+ * @public
+ */
+export const skillsFrontmatterCli = makeCli({
+  name: 'skills-frontmatter',
+  inputSchema: SkillsFrontmatterCliInputSchema,
+  outputSchema: SkillsFrontmatterCliOutputSchema,
+  run: skillsFrontmatter,
 })

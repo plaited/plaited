@@ -11,7 +11,15 @@
  * @internal
  */
 
-import { compareTrialsCli, evalCli, skillsCatalogCli, skillsLinksCli, skillsValidateCli } from '../src/cli.ts'
+import {
+  compareTrialsCli,
+  evalCli,
+  skillsCatalogCli,
+  skillsFrontmatterCli,
+  skillsInstructionsCli,
+  skillsLinksCli,
+  skillsValidateCli,
+} from '../src/cli.ts'
 
 // ============================================================================
 // Command Registry
@@ -21,6 +29,8 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   'compare-trials': compareTrialsCli,
   eval: evalCli,
   'skills-catalog': skillsCatalogCli,
+  'skills-frontmatter': skillsFrontmatterCli,
+  'skills-instructions': skillsInstructionsCli,
   'skills-links': skillsLinksCli,
   'skills-validate': skillsValidateCli,
 }

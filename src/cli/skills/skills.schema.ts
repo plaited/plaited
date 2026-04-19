@@ -105,6 +105,16 @@ export const SkillInstructionsLoadResultSchema = SkillInstructionsResultSchema.o
 /** @public */
 export type SkillInstructionsLoadResult = z.infer<typeof SkillInstructionsLoadResultSchema>
 
+export const SkillFrontmatterResultSchema = z.record(z.string(), z.unknown())
+
+/** @public */
+export type SkillFrontmatterResult = z.infer<typeof SkillFrontmatterResultSchema>
+
+export const SkillFrontmatterLoadResultSchema = SkillFrontmatterResultSchema.optional()
+
+/** @public */
+export type SkillFrontmatterLoadResult = z.infer<typeof SkillFrontmatterLoadResultSchema>
+
 export const SkillInstructionErrorSchema = z.object({
   skillPath: z.string().min(1),
   message: z.string().min(1),
@@ -156,6 +166,38 @@ export const SkillsLinksCliOutputSchema = z.object({
 
 /** @public */
 export type SkillsLinksCliOutput = z.infer<typeof SkillsLinksCliOutputSchema>
+
+export const SkillsInstructionsCliInputSchema = z.object({
+  rootDir: z.string().min(1),
+  path: z.string().min(1),
+})
+
+/** @public */
+export type SkillsInstructionsCliInput = z.infer<typeof SkillsInstructionsCliInputSchema>
+
+export const SkillsInstructionsCliOutputSchema = z.object({
+  body: z.string().nullable(),
+  errors: SkillInstructionErrorsSchema,
+})
+
+/** @public */
+export type SkillsInstructionsCliOutput = z.infer<typeof SkillsInstructionsCliOutputSchema>
+
+export const SkillsFrontmatterCliInputSchema = z.object({
+  rootDir: z.string().min(1),
+  path: z.string().min(1),
+})
+
+/** @public */
+export type SkillsFrontmatterCliInput = z.infer<typeof SkillsFrontmatterCliInputSchema>
+
+export const SkillsFrontmatterCliOutputSchema = z.object({
+  frontmatter: SkillFrontmatterResultSchema.nullable(),
+  errors: SkillInstructionErrorsSchema,
+})
+
+/** @public */
+export type SkillsFrontmatterCliOutput = z.infer<typeof SkillsFrontmatterCliOutputSchema>
 
 export const SkillInstructionResourceLinksResultSchema = z.object({
   links: SkillResourceLinksSchema,

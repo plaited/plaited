@@ -5,7 +5,6 @@ import * as z from 'zod'
 import {
   consumeHtmlRewriteResult,
   extractLocalLinksFromMarkdown,
-  extractMarkdownSection,
   markdownLinks,
   normalizeMarkdownLink,
   parseMarkdownWithFrontmatter,
@@ -209,34 +208,6 @@ describe('markdownLinks', () => {
   test('throws when the source file does not exist', async () => {
     const missingPath = join('/tmp', `plaited-markdown-links-missing-${Date.now()}.md`)
     await expect(markdownLinks({ path: missingPath })).rejects.toThrow(`Markdown file not found: ${missingPath}`)
-  })
-})
-
-describe('extractMarkdownSection', () => {
-  test('returns the requested heading body', () => {
-    const section = extractMarkdownSection(
-      `# Program
-
-## Mission
-
-Ship it.
-
-## Writable Roots
-
-- [agent](../../src/agent/)
-
-## Validation
-
-- Run tests.
-`,
-      ['Writable Roots'],
-    )
-
-    expect(section).toBe('- [agent](../../src/agent/)')
-  })
-
-  test('returns null when the heading is absent', () => {
-    expect(extractMarkdownSection('# Program\n\n## Mission\n\nShip it.\n', ['Scope'])).toBeNull()
   })
 })
 

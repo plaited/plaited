@@ -3,10 +3,12 @@ import { join, resolve } from 'node:path'
 import {
   findSkillDirectories,
   getSkillInstructionResourceLinks,
-  isValidSkill,
   loadSkillCatalog,
+  loadSkillFrontmatter,
   loadSkillInstructions,
   skillsCatalog,
+  skillsFrontmatter,
+  skillsInstructions,
   skillsLinks,
   skillsValidate,
   validateSkill,
@@ -83,42 +85,6 @@ describe('validateSkill', () => {
       ok: false,
       errors: ['Invalid skill frontmatter: Missing YAML frontmatter'],
     })
-  })
-})
-
-describe('isValidSkill', () => {
-  test('returns true for valid markdown and matching directory name', () => {
-    const markdown = `---
-name: sample-skill
-description: Sample
----
-
-Hello
-`
-    const isValid = isValidSkill(markdown, {
-      skillPath: '/tmp/workspace/skills/sample-skill/SKILL.md',
-    })
-
-    expect(isValid).toBeTrue()
-  })
-
-  test('returns false when directory name does not match skill name', () => {
-    const markdown = `---
-name: sample-skill
-description: Sample
----
-
-Hello
-`
-    const isValid = isValidSkill(markdown, {
-      skillPath: '/tmp/workspace/skills/not-sample/SKILL.md',
-    })
-
-    expect(isValid).toBeFalse()
-  })
-
-  test('returns false for invalid markdown', () => {
-    expect(isValidSkill('# no frontmatter')).toBeFalse()
   })
 })
 
@@ -253,6 +219,41 @@ describe('loadSkillInstructions', () => {
       await Bun.write(join(brokenDir, 'SKILL.md'), '# missing frontmatter')
 
       const invalid = await loadSkillInstructions(rootDir, 'skills/broken')
+      expect(invalid).toBeUndefined()
+    })
+  })
+})
+
+describe('loadSkillFrontmatter', () => {
+  test('returns parsed frontmatter object for a valid skill', async () => {
+    await withTempRoot(async (rootDir) => {
+      await writeSkillFile({
+        rootDir,
+        dirName: 'theta',
+        name: 'theta',
+        description: 'Theta description',
+        body: 'Theta body content.',
+      })
+
+      const frontmatter = await loadSkillFrontmatter(rootDir, 'skills/theta')
+
+      expect(frontmatter).toEqual({
+        name: 'theta',
+        description: 'Theta description',
+      })
+    })
+  })
+
+  test('returns undefined when skill markdown is missing or invalid', async () => {
+    await withTempRoot(async (rootDir) => {
+      const missing = await loadSkillFrontmatter(rootDir, 'skills/does-not-exist')
+      expect(missing).toBeUndefined()
+
+      const brokenDir = join(rootDir, 'skills', 'broken')
+      await Bun.$`mkdir -p ${brokenDir}`
+      await Bun.write(join(brokenDir, 'SKILL.md'), '# missing frontmatter')
+
+      const invalid = await loadSkillFrontmatter(rootDir, 'skills/broken')
       expect(invalid).toBeUndefined()
     })
   })
@@ -395,6 +396,63 @@ describe('skills CLI commands', () => {
     })
   })
 
+  test('skillsInstructions returns body and structured errors', async () => {
+    await withTempRoot(async (rootDir) => {
+      await writeSkillFile({
+        rootDir,
+        dirName: 'epsilon',
+        name: 'epsilon',
+        description: 'Epsilon description',
+        body: 'Epsilon body.',
+      })
+
+      const success = await skillsInstructions({ rootDir, path: 'skills/epsilon' })
+      expect(success).toEqual({
+        body: 'Epsilon body.',
+        errors: [],
+      })
+
+      const missing = await skillsInstructions({ rootDir, path: 'skills/missing' })
+      expect(missing.body).toBeNull()
+      expect(missing.errors).toEqual([
+        {
+          skillPath: join(rootDir, 'skills', 'missing', 'SKILL.md'),
+          message: `Skill markdown not found: ${join(rootDir, 'skills', 'missing', 'SKILL.md')}`,
+        },
+      ])
+    })
+  })
+
+  test('skillsFrontmatter returns frontmatter object and structured errors', async () => {
+    await withTempRoot(async (rootDir) => {
+      await writeSkillFile({
+        rootDir,
+        dirName: 'zeta',
+        name: 'zeta',
+        description: 'Zeta description',
+        body: 'Zeta body.',
+      })
+
+      const success = await skillsFrontmatter({ rootDir, path: 'skills/zeta' })
+      expect(success).toEqual({
+        frontmatter: {
+          name: 'zeta',
+          description: 'Zeta description',
+        },
+        errors: [],
+      })
+
+      const missing = await skillsFrontmatter({ rootDir, path: 'skills/missing' })
+      expect(missing.frontmatter).toBeNull()
+      expect(missing.errors).toEqual([
+        {
+          skillPath: join(rootDir, 'skills', 'missing', 'SKILL.md'),
+          message: `Skill markdown not found: ${join(rootDir, 'skills', 'missing', 'SKILL.md')}`,
+        },
+      ])
+    })
+  })
+
   test('skills-validate CLI handler prints structured JSON output', async () => {
     await withTempRoot(async (rootDir) => {
       const skillDir = await writeSkillFile({
@@ -413,6 +471,57 @@ describe('skills CLI commands', () => {
       expect(result.exitCode).toBe(0)
       const output = JSON.parse(result.stdout.toString().trim())
       expect(output).toEqual({ ok: true, errors: [] })
+    })
+  })
+
+  test('skills-instructions CLI handler prints body output', async () => {
+    await withTempRoot(async (rootDir) => {
+      await writeSkillFile({
+        rootDir,
+        dirName: 'kappa',
+        name: 'kappa',
+        description: 'Kappa description',
+        body: 'Kappa body.',
+      })
+
+      const script =
+        "import { skillsInstructionsCli } from './src/cli.ts'; await skillsInstructionsCli(process.argv.slice(1));"
+      const input = JSON.stringify({ rootDir, path: 'skills/kappa' })
+      const result = await Bun.$`bun -e ${script} -- ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
+
+      expect(result.exitCode).toBe(0)
+      const output = JSON.parse(result.stdout.toString().trim())
+      expect(output).toEqual({
+        body: 'Kappa body.',
+        errors: [],
+      })
+    })
+  })
+
+  test('skills-frontmatter CLI handler prints frontmatter output', async () => {
+    await withTempRoot(async (rootDir) => {
+      await writeSkillFile({
+        rootDir,
+        dirName: 'lambda',
+        name: 'lambda',
+        description: 'Lambda description',
+        body: 'Lambda body.',
+      })
+
+      const script =
+        "import { skillsFrontmatterCli } from './src/cli.ts'; await skillsFrontmatterCli(process.argv.slice(1));"
+      const input = JSON.stringify({ rootDir, path: 'skills/lambda' })
+      const result = await Bun.$`bun -e ${script} -- ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
+
+      expect(result.exitCode).toBe(0)
+      const output = JSON.parse(result.stdout.toString().trim())
+      expect(output).toEqual({
+        frontmatter: {
+          name: 'lambda',
+          description: 'Lambda description',
+        },
+        errors: [],
+      })
     })
   })
 
