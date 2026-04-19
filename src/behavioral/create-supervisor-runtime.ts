@@ -116,12 +116,15 @@ const resolveAuthorityDomainId = (authorityDomainId?: string) => {
     return DEFAULT_AUTHORITY_DOMAIN_ID
   }
 
-  const parsedAuthorityDomainId = AuthorityDomainIdSchema.safeParse(authorityDomainId)
-  if (!parsedAuthorityDomainId.success) {
-    throw new Error('createSupervisorRuntime requires authorityDomainId to be a non-empty string when provided.')
-  }
+  try {
+    return AuthorityDomainIdSchema.parse(authorityDomainId)
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throw new Error('createSupervisorRuntime requires authorityDomainId to be a non-empty string when provided.')
+    }
 
-  return parsedAuthorityDomainId.data
+    throw error
+  }
 }
 
 export const createSupervisorRuntime = (options: CreateSupervisorRuntimeOptions = {}) => {
@@ -182,15 +185,21 @@ export const createSupervisorRuntime = (options: CreateSupervisorRuntimeOptions 
   })
 
   const receiveEnvelope = (envelope: unknown): SupervisorReceiveResult => {
-    const parsedEnvelope = ActorEnvelopeSchema.safeParse(envelope)
-    if (!parsedEnvelope.success) {
-      const error = `supervisor envelope rejected: ${formatValidationError(parsedEnvelope.error)}`
+    let parsedEnvelope: ActorEnvelope
+    try {
+      parsedEnvelope = ActorEnvelopeSchema.parse(envelope)
+    } catch (error) {
+      if (!(error instanceof z.ZodError)) {
+        throw error
+      }
+
+      const message = `supervisor envelope rejected: ${formatValidationError(error)}`
       const timestamp = Date.now()
 
       reportSnapshot({
         kind: 'extension_error',
         id: `${authorityDomainId}:supervisor:invalid_envelope`,
-        error,
+        error: message,
       })
 
       validationDiagnostics.push({
@@ -198,7 +207,7 @@ export const createSupervisorRuntime = (options: CreateSupervisorRuntimeOptions 
         timestamp,
         authorityDomainId,
         code: SUPERVISOR_DIAGNOSTIC_CODES.invalidEnvelope,
-        error,
+        error: message,
       })
 
       decisions.push({
@@ -212,7 +221,7 @@ export const createSupervisorRuntime = (options: CreateSupervisorRuntimeOptions 
       return {
         status: 'rejected',
         code: SUPERVISOR_DIAGNOSTIC_CODES.invalidEnvelope,
-        error,
+        error: message,
       }
     }
 
@@ -220,7 +229,7 @@ export const createSupervisorRuntime = (options: CreateSupervisorRuntimeOptions 
       type: SUPERVISOR_RUNTIME_EVENTS.envelopeReceived,
       detail: {
         authorityDomainId,
-        envelope: parsedEnvelope.data,
+        envelope: parsedEnvelope,
       },
     })
 
@@ -231,7 +240,7 @@ export const createSupervisorRuntime = (options: CreateSupervisorRuntimeOptions 
 
     return {
       status: 'approved',
-      envelope: parsedEnvelope.data,
+      envelope: parsedEnvelope,
       frontierStatus: lastDiagnostic.frontierStatus,
       replayHistorySize: replayHistory.length,
     }
