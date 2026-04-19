@@ -1,10 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 import { Blob } from 'node:buffer'
+import { join } from 'node:path'
 import * as z from 'zod'
 import {
   consumeHtmlRewriteResult,
   extractLocalLinksFromMarkdown,
-  extractMarkdownSection,
+  markdownLinks,
   normalizeMarkdownLink,
   parseMarkdownWithFrontmatter,
 } from '../markdown.ts'
@@ -155,33 +156,65 @@ Ignore [docs](https://example.com), [anchor](#top), and <img src="https://exampl
       { value: 'scripts/c.ts', text: 'scripts/c.ts' },
     ])
   })
-})
 
-describe('extractMarkdownSection', () => {
-  test('returns the requested heading body', () => {
-    const section = extractMarkdownSection(
-      `# Program
+  test('handles html anchor text with repeated unmatched angle brackets', async () => {
+    const angleText = '<'.repeat(2_000)
+    const links = await extractLocalLinksFromMarkdown(`<a href="scripts/run.ts">${angleText}</a>`)
 
-## Mission
-
-Ship it.
-
-## Writable Roots
-
-- [agent](../../src/agent/)
-
-## Validation
-
-- Run tests.
-`,
-      ['Writable Roots'],
-    )
-
-    expect(section).toBe('- [agent](../../src/agent/)')
+    expect(links).toEqual([{ value: 'scripts/run.ts', text: angleText }])
   })
 
-  test('returns null when the heading is absent', () => {
-    expect(extractMarkdownSection('# Program\n\n## Mission\n\nShip it.\n', ['Scope'])).toBeNull()
+  test('does not hang on CodeQL reported markdown-inline-link shapes', async () => {
+    const timeoutMs = 2_000
+    const raceWithTimeout = async (markdown: string): Promise<void> => {
+      const links = await Promise.race([
+        extractLocalLinksFromMarkdown(markdown),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('extractLocalLinksFromMarkdown timed out')), timeoutMs),
+        ),
+      ])
+      expect(Array.isArray(links)).toBeTrue()
+    }
+
+    const inputs = ['['.repeat(4_000), '[\\'.repeat(2_000), `[](${'x'.repeat(4_000)}`, '[](('.repeat(2_000)]
+
+    for (const input of inputs) {
+      await raceWithTimeout(input)
+    }
+  })
+
+  test('continues label recovery after malformed inline destination', async () => {
+    const links = await extractLocalLinksFromMarkdown(`broken []((xxxxxxxxxxxxxxxxxxxx
+[setup](references/setup.md)`)
+
+    expect(links).toEqual([{ value: 'references/setup.md', text: 'setup' }])
+  })
+})
+
+describe('markdownLinks', () => {
+  test('extracts links from a markdown file path', async () => {
+    const tempPath = join('/tmp', `plaited-markdown-links-${Date.now()}.md`)
+    await Bun.write(tempPath, '[setup](references/setup.md)\n![diagram](assets/diagram.png)')
+
+    const links = await markdownLinks({ path: tempPath })
+
+    expect(links).toEqual([
+      { value: 'assets/diagram.png', text: 'diagram' },
+      { value: 'references/setup.md', text: 'setup' },
+    ])
+
+    await Bun.$`rm -f ${tempPath}`
+  })
+
+  test('extracts links from raw markdown input', async () => {
+    const links = await markdownLinks({ markdown: '[script](scripts/run.ts#main)' })
+
+    expect(links).toEqual([{ value: 'scripts/run.ts', text: 'script' }])
+  })
+
+  test('throws when the source file does not exist', async () => {
+    const missingPath = join('/tmp', `plaited-markdown-links-missing-${Date.now()}.md`)
+    await expect(markdownLinks({ path: missingPath })).rejects.toThrow(`Markdown file not found: ${missingPath}`)
   })
 })
 
