@@ -110,8 +110,10 @@ Current source of truth for runtime behavior lives in:
 
 - `src/agent/*`
 - `src/modules/*`
-- issue-backed kernel backlog context in `dev-research/README.md` and linked
-  GitHub issues
+
+Current planning/backlog context lives in:
+
+- `dev-research/README.md` and linked GitHub issues
 
 ## Runtime Contract
 
@@ -188,7 +190,8 @@ Evaluation should ask whether a proposal makes those layers clearer or muddier.
 When judging a candidate module, node surface, or module bundle, ask:
 
 - does the proposal preserve the minimal core / module split?
-- does the module's MSS description match its projected behavior?
+- does the module's MSS description match its module program behavior and
+  approved projections?
 - does the network-facing surface expose grant-scoped projections rather than
   raw internals or automatic inventory?
 - does the design keep boundary, trust, and authority assumptions explicit?
@@ -209,8 +212,8 @@ Do not assume the repo currently ships:
 - `.memory/constitution/` loaders
 - legacy module marketplace or template-registry assumptions
 
-If a proposal needs one of those ideas, treat it as research and route it
-through the relevant issue from `dev-research/README.md`.
+If a proposal needs one of those ideas, treat it as research and open or route
+through a relevant GitHub issue.
 
 ## When To Read The Source Texts
 
