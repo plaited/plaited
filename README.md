@@ -42,7 +42,6 @@ Higher-level orchestration belongs in modules.
 - [INFRASTRUCTURE.md](/Users/eirby/Workspace/plaited/docs/INFRASTRUCTURE.md)
 - [ARCHITECTURE.md](/Users/eirby/Workspace/plaited/docs/ARCHITECTURE.md)
 - [dev-research/README.md](/Users/eirby/Workspace/plaited/dev-research/README.md)
-- Kernel/eval backlog issues (repo workflow): #258 and #261-#270
 
 ## Repository Map
 
@@ -86,5 +85,5 @@ Skills are the portable agent-facing extension surface.
 - workspace-installed skills should live under `.agents/skills/`
 - runtime composition still happens through modules
 
-Repo planning intake is GitHub Issue-backed; local execution/decomposition is
-handled in Cline/Kanban after maintainer label-gating and review.
+Repo planning is prompt-driven and maintainer-reviewed. Agent-authored work should start from
+fresh `origin/dev` worktrees unless the task says otherwise.

@@ -35,10 +35,7 @@ Do not rely on long-running opaque subagent state as the only record for large f
 **Branch scope** — `git diff main...HEAD --stat` for current changes.
 **History over stale prose** — code + git history wins. Update the doc.
 **Agent worktrees** — create new manual task worktrees under `.worktrees/<task-slug>/` from
-`origin/dev` unless a task explicitly says otherwise. Use that path with Cline CLI via
-`cline --cwd .worktrees/<task-slug>` or choose it in Cline Worktrees UI when prompted. Cline
-Kanban card worktrees are tool-managed and currently live under `~/.cline/worktrees/...`; do not
-assume Kanban can be configured to use `.worktrees/`. Existing external worktrees may finish in
+`origin/dev` unless a task explicitly says otherwise. Existing external worktrees may finish in
 place. Worktrees are disposable after merge.
 
 ## Git Commits
@@ -221,5 +218,3 @@ elements, SSR, and the three-layer UI test strategy.
 **Plaited development workflow** — use the repo-local `plaited-development` skill before
 starting agent-authored feature/fix branches, reviewing agent-authored changes, or preparing
 integration/promotion work.
-**Cline docs** — use the repo-local `search-cline-docs` skill when working with
-Cline, Cline Kanban, Cline MCP setup, or Cline provider configuration.

@@ -15,7 +15,7 @@
 {"id":"resume-enhancer","prompt":"Build a local resume editor that helps me compose a polished one-page resume with structured sections and export options."}
 {"id":"hypercard_the-organizer-26-for-1998","prompt":"Create a personal daily work command center with calendar, tasks, contacts, notes, and daily priorities in one place."}
 {"id":"hypercard_fasttab101","prompt":"Build a rapid data-entry table for structured rows like expenses, time logs, or counts, with simple totals and export."}
-{"id":"hypercard_job-searchsit","prompt":"Create a personal job search tracker with one Kanban board, structured application cards, follow-up dates, and local storage."}
+{"id":"hypercard_job-searchsit","prompt":"Create a personal job search tracker with one task board, structured application cards, follow-up dates, and local storage."}
 {"id":"hypercard_customer-tracking-packagerolode","prompt":"Build a small-business customer tracker with contacts, follow-up dates, invoices, and due items in one local workspace."}
 {"id":"hypercard_software-inventory-revision","prompt":"Create a local software inventory tracker for apps, subscriptions, internal modules, and node services with version details, categories, owners, and reports."}
 {"id":"hypercard_grant-writer-20","prompt":"Build a grant-writing workspace with section templates, drafting guidance, a reference directory, and export for the final proposal."}
