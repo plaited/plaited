@@ -5,7 +5,13 @@ description: Deterministic MSS/module actor review gate plus flow evidence gener
 
 # mss-module-review
 
-Use this skill when reviewing or validating agent-authored MSS/module runtime actors.
+Use this skill as a compatibility/review entrypoint when reviewing or validating
+agent-authored MSS/module runtime actors.
+
+Primary ownership now lives in `skills/plaited-context/scripts/module-patterns.ts`
+and `skills/plaited-context/scripts/module-flow.ts`. This skill keeps legacy
+public command paths stable while delegating to the plaited-context
+implementation.
 
 It combines:
 - deterministic module pattern diagnostics
@@ -16,8 +22,10 @@ It combines:
 
 ## Hard Gate vs Review Artifact
 
-- `check-module-patterns.ts` is the hard deterministic gate.
-- `render-module-flow.ts` is required review evidence.
+- `check-module-patterns.ts` remains the hard deterministic gate entrypoint
+  (compatibility wrapper to `plaited-context/module-patterns.ts`).
+- `render-module-flow.ts` remains required review evidence entrypoint
+  (compatibility wrapper to `plaited-context/module-flow.ts`).
 - TypeScript LSP probes are used to resolve ambiguity and verify symbol identity.
 - Generative review is required to catch architectural drift not yet encoded as rules.
 

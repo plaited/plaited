@@ -12,7 +12,8 @@ compatibility: Requires bun
 `plaited-context` is a script-first operational context layer for Plaited. It
 indexes source files, AGENTS operational instructions, wiki/reference docs,
 skills, and findings into SQLite so follow-on work starts from source-grounded
-evidence instead of memory.
+evidence instead of memory. It is also the canonical home for deterministic
+module actor runtime analysis and module flow review evidence.
 
 Use it before:
 
@@ -83,13 +84,34 @@ bun skills/plaited-context/scripts/context.ts '{"task":"review module actor diag
 bun skills/plaited-context/scripts/search.ts '{"query":"useSnapshot reportSnapshot","limit":20}'
 ```
 
-5. Record findings with evidence
+5. Run deterministic module pattern gate (hard gate)
+
+```bash
+bun skills/plaited-context/scripts/module-patterns.ts '{"files":["src/modules/example.ts"]}'
+```
+
+6. Generate module flow review evidence
+
+```bash
+bun skills/plaited-context/scripts/module-flow.ts '{"files":["src/modules/example.ts"],"format":"json"}'
+bun skills/plaited-context/scripts/module-flow.ts '{"files":["src/modules/example.ts"],"format":"mermaid"}'
+```
+
+When flow evidence is sparse or alias-heavy, run TypeScript LSP probes:
+
+```bash
+bun skills/typescript-lsp/scripts/run.ts '{"file":"src/modules/example.ts","operations":[{"type":"symbols"}]}'
+bun skills/typescript-lsp/scripts/run.ts '{"file":"src/modules/example.ts","operations":[{"type":"references","line":120,"character":8}]}'
+bun skills/typescript-lsp/scripts/run.ts '{"file":"src/modules/example.ts","operations":[{"type":"definition","line":120,"character":8}]}'
+```
+
+7. Record findings with evidence
 
 ```bash
 bun skills/plaited-context/scripts/record-finding.ts '{"finding":{"kind":"anti-pattern","status":"candidate","summary":"Internal handlers should not catch ZodError locally.","evidence":[{"path":"src/modules/example.ts","line":100,"symbol":"server_start"}]}}'
 ```
 
-6. Export review JSON
+8. Export review JSON
 
 ```bash
 bun skills/plaited-context/scripts/export-review.ts '{"status":["candidate","validated"],"format":"json"}'
