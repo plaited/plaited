@@ -23,8 +23,8 @@ Concepts that still show up in the repo:
 - **Blocks**
 
 Where that influence is visible now:
-- [skills/plaited-runtime/references/modnet-mss-lineage.md](/Users/eirby/Workspace/plaited/skills/plaited-runtime/references/modnet-mss-lineage.md)
-- [docs/ARCHITECTURE.md](/Users/eirby/Workspace/plaited/docs/ARCHITECTURE.md)
+- [skills/plaited-runtime/references/modnet-mss-lineage.md](skills/plaited-runtime/references/modnet-mss-lineage.md)
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 In Plaited, Structural IA is not just UI vocabulary. It also informs the
 module composition language, module-era system framing, and the bridge between
@@ -34,7 +34,7 @@ symbolic constraints and generated artifacts.
 
 **Author:** Rachel Jaffe
 **Sources:**
-- [modnet-mss-lineage.md](/Users/eirby/Workspace/plaited/skills/plaited-runtime/references/modnet-mss-lineage.md)
+- [modnet-mss-lineage.md](skills/plaited-runtime/references/modnet-mss-lineage.md)
 - [Past the Internet: The Emergence of the Modnet](https://medium.com/@rjaffe01)
 
 Rachel Jaffe's modnet work is the other major living attribution that should be
@@ -49,12 +49,12 @@ Concepts that still show up in the repo:
 - **self-assembling module composition**
 
 Where that influence is visible now:
-- [README.md](/Users/eirby/Workspace/plaited/README.md)
-- [docs/ARCHITECTURE.md](/Users/eirby/Workspace/plaited/docs/ARCHITECTURE.md)
-- [docs/INFRASTRUCTURE.md](/Users/eirby/Workspace/plaited/docs/INFRASTRUCTURE.md)
-- [docs/AGENT-LOOP.md](/Users/eirby/Workspace/plaited/docs/AGENT-LOOP.md)
-- [skills/plaited-runtime/SKILL.md](/Users/eirby/Workspace/plaited/skills/plaited-runtime/SKILL.md)
-- [src/modules/a2a-module/a2a.schemas.ts](/Users/eirby/Workspace/plaited/src/modules/a2a-module/a2a.schemas.ts)
+- [README.md](README.md)
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- [docs/INFRASTRUCTURE.md](docs/INFRASTRUCTURE.md)
+- [docs/AGENT-LOOP.md](docs/AGENT-LOOP.md)
+- [skills/plaited-runtime/SKILL.md](skills/plaited-runtime/SKILL.md)
+- [src/modules/a2a-module/a2a.schemas.ts](src/modules/a2a-module/a2a.schemas.ts)
 
 Plaited does not reproduce the modnet work verbatim. It adapts it into:
 - a Bun-native A2A node architecture
