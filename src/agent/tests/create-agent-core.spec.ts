@@ -139,6 +139,46 @@ describe('createAgent core extension', () => {
     })
   })
 
+  test('tool bash request supports optional workspace-relative cwd mapping', async () => {
+    await withSpawnSpy(async (spawnCalls) => {
+      const workspace = process.cwd()
+      const trigger = await createAgent({
+        workspace,
+        ttlMs: 1_000,
+      })
+
+      trigger({
+        type: `${AGENT_CORE}:${AGENT_CORE_EVENTS.tool_bash_request}`,
+        detail: {
+          requestId: 'req-cwd',
+          correlationId: 'corr-cwd',
+          bash: {
+            path: './scripts/worker.ts',
+            args: ['--cwd'],
+            cwd: './src',
+          },
+        },
+      })
+      await Bun.sleep(0)
+      expect(spawnCalls).toHaveLength(0)
+
+      trigger({
+        type: `${AGENT_CORE}:${AGENT_CORE_EVENTS.tool_bash_approved}`,
+        detail: {
+          requestId: 'req-cwd',
+          correlationId: 'corr-cwd',
+        },
+      })
+      await Bun.sleep(0)
+
+      expect(spawnCalls).toHaveLength(1)
+      expect(spawnCalls[0]).toEqual({
+        cmd: ['bun', resolve(workspace, 'scripts/worker.ts'), '--cwd'],
+        cwd: resolve(workspace, 'src'),
+      })
+    })
+  })
+
   test('malformed tool_bash_request is blocked and valid requests still execute after approval', async () => {
     await withSpawnSpy(async (spawnCalls) => {
       const workspace = process.cwd()

@@ -2,6 +2,11 @@ import { resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import * as z from 'zod'
 import { behavioral, isExtension, SNAPSHOT_MESSAGE_KINDS, useExtension, useInstaller } from '../behavioral.ts'
+import {
+  createExecutionProcessActorExtension,
+  ExecutionProcessRequestDetailSchema,
+  executeExecutionProcessRequest,
+} from '../modules/execution-process-actor.ts'
 import * as modules from '../modules.ts'
 import { AGENT_CORE, AGENT_CORE_EVENTS } from './agent.constants.ts'
 import {
@@ -17,68 +22,6 @@ import {
 import type { CreateAgentOptions } from './agent.types.ts'
 
 const MAX_CONSUMED_TOOL_BASH_REQUEST_IDS = 10_000
-const MAX_TOOL_BASH_OUTPUT_BYTES = 64 * 1024
-
-type BoundedStreamReadResult = {
-  text: string
-  truncated: boolean
-}
-
-const readStreamToBoundedText = async (
-  stream: ReadableStream<Uint8Array> | null | undefined,
-): Promise<BoundedStreamReadResult> => {
-  if (!stream) {
-    return { text: '', truncated: false }
-  }
-
-  const reader = stream.getReader()
-  const chunks: Uint8Array[] = []
-  const textDecoder = new TextDecoder()
-  let totalBytes = 0
-  let truncated = false
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) {
-        break
-      }
-      if (!value || value.byteLength === 0) {
-        continue
-      }
-
-      const remainingBytes = MAX_TOOL_BASH_OUTPUT_BYTES - totalBytes
-      if (remainingBytes <= 0) {
-        truncated = true
-        continue
-      }
-
-      if (value.byteLength <= remainingBytes) {
-        chunks.push(value)
-        totalBytes += value.byteLength
-        continue
-      }
-
-      chunks.push(value.subarray(0, remainingBytes))
-      totalBytes += remainingBytes
-      truncated = true
-    }
-  } finally {
-    reader.releaseLock()
-  }
-
-  const output = new Uint8Array(totalBytes)
-  let offset = 0
-  for (const chunk of chunks) {
-    output.set(chunk, offset)
-    offset += chunk.byteLength
-  }
-
-  return {
-    text: textDecoder.decode(output),
-    truncated,
-  }
-}
 
 /**
  * Creates the minimal agent core around the behavioral engine.
@@ -97,8 +40,10 @@ const readStreamToBoundedText = async (
 export const createAgent = async ({ maxKeys, ttlMs, workspace }: CreateAgentOptions) => {
   const { addBThread, trigger, useFeedback, useSnapshot, reportSnapshot } = behavioral()
   const installer = useInstaller({ trigger, useSnapshot, reportSnapshot, addBThread, ttlMs, maxKeys })
-
   const workspaceRoot = resolve(workspace)
+  const executionProcessActorExtension = createExecutionProcessActorExtension({
+    workspaceRoot,
+  })
   const resolveWorkspacePath = (detail: string) => {
     const resolved = resolve(workspaceRoot, detail)
     if (resolved !== workspaceRoot && !resolved.startsWith(`${workspaceRoot}${sep}`)) {
@@ -276,41 +221,30 @@ export const createAgent = async ({ maxKeys, ttlMs, workspace }: CreateAgentOpti
       },
       // Internal execution event only. External extension callers should use tool_bash_request.
       async [AGENT_CORE_EVENTS.bash](detail: ToolBashRequestDetail) {
-        let result: ToolBashResultDetail
+        const requestDetail = ExecutionProcessRequestDetailSchema.parse({
+          requestId: detail.requestId,
+          correlationId: detail.correlationId,
+          command: 'bun',
+          args: [resolveWorkspacePath(detail.bash.path), ...detail.bash.args],
+          cwd: detail.bash.cwd ?? '.',
+          ...(detail.bash.timeout !== undefined && { timeoutMs: detail.bash.timeout }),
+        })
 
-        try {
-          const process = Bun.spawn(['bun', resolveWorkspacePath(detail.bash.path), ...detail.bash.args], {
-            cwd: workspaceRoot,
-            ...(detail.bash.timeout !== undefined && { signal: AbortSignal.timeout(detail.bash.timeout) }),
-            stdout: 'pipe',
-            stderr: 'pipe',
-          })
+        const executionResultDetail = await executeExecutionProcessRequest({
+          request: requestDetail,
+          workspaceRoot,
+        })
 
-          const [exitCode, stdoutResult, stderrResult] = await Promise.all([
-            process.exited,
-            readStreamToBoundedText(process.stdout),
-            readStreamToBoundedText(process.stderr),
-          ])
-
-          result = ToolBashResultDetailSchema.parse({
-            requestId: detail.requestId,
-            correlationId: detail.correlationId,
-            exitCode,
-            stdout: stdoutResult.text,
-            stderr: stderrResult.text,
-            ...(stdoutResult.truncated && { stdoutTruncated: true }),
-            ...(stderrResult.truncated && { stderrTruncated: true }),
-          })
-        } catch (error) {
-          result = ToolBashResultDetailSchema.parse({
-            requestId: detail.requestId,
-            correlationId: detail.correlationId,
-            exitCode: null,
-            stdout: '',
-            stderr: '',
-            error: error instanceof Error ? error.message : String(error),
-          })
-        }
+        const result: ToolBashResultDetail = ToolBashResultDetailSchema.parse({
+          requestId: executionResultDetail.requestId,
+          correlationId: executionResultDetail.correlationId,
+          exitCode: executionResultDetail.exitCode,
+          stdout: executionResultDetail.stdout,
+          stderr: executionResultDetail.stderr,
+          ...(executionResultDetail.stdoutTruncated && { stdoutTruncated: true }),
+          ...(executionResultDetail.stderrTruncated && { stderrTruncated: true }),
+          ...(executionResultDetail.error !== undefined && { error: executionResultDetail.error }),
+        })
 
         trigger({
           type: `${AGENT_CORE}:${AGENT_CORE_EVENTS.tool_bash_result}`,
@@ -320,7 +254,7 @@ export const createAgent = async ({ maxKeys, ttlMs, workspace }: CreateAgentOpti
     }
   })
 
-  for (const extension of [coreExtension, ...Object.values(modules)]) {
+  for (const extension of [coreExtension, executionProcessActorExtension, ...Object.values(modules)]) {
     if (isExtension(extension)) useFeedback(installer(extension))
   }
 
