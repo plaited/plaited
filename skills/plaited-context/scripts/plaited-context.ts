@@ -1421,6 +1421,7 @@ export const assembleContext = ({
 
   const commandsToRun = isModuleActorReview
     ? [
+        `bun skills/plaited-context/scripts/git-context.ts '{"base":"origin/dev","paths":["<module-files>"],"includeWorktrees":true}'`,
         'bun --bun tsc --noEmit',
         'bun test <targeted-files-or-surface>',
         `bun skills/plaited-context/scripts/module-patterns.ts '{"files":["<module-files>"]}'`,
@@ -1431,17 +1432,28 @@ export const assembleContext = ({
         `bun skills/typescript-lsp/scripts/run.ts '{"file":"<module-file>","operations":[{"type":"definition","line":<line>,"character":<character>}]}'`,
       ]
     : mode === 'review'
-      ? ['bun --bun tsc --noEmit', 'bun test <targeted-files-or-surface>']
-      : mode === 'docs'
+      ? [
+          `bun skills/plaited-context/scripts/git-context.ts '{"base":"origin/dev","paths":["<paths>"]}'`,
+          'bun --bun tsc --noEmit',
+          'bun test <targeted-files-or-surface>',
+        ]
+      : mode === 'implement'
         ? [
-            `bun skills/plaited-context/scripts/scan.ts '{"rootDir":".","include":["AGENTS.md","docs","skills"]}'`,
-            `bun skills/plaited-context/scripts/wiki-context.ts '{"task":"<docs-task>","paths":["docs"],"limit":10}'`,
-          ]
-        : [
+            `bun skills/plaited-context/scripts/git-context.ts '{"base":"origin/dev","paths":["<paths>"]}'`,
             'bun --bun tsc --noEmit',
             'bun test <targeted-files-or-surface>',
             'bun skills/plaited-context/scripts/search.ts',
           ]
+        : mode === 'docs'
+          ? [
+              `bun skills/plaited-context/scripts/scan.ts '{"rootDir":".","include":["AGENTS.md","docs","skills"]}'`,
+              `bun skills/plaited-context/scripts/wiki-context.ts '{"task":"<docs-task>","paths":["docs"],"limit":10}'`,
+            ]
+          : [
+              'bun --bun tsc --noEmit',
+              'bun test <targeted-files-or-surface>',
+              'bun skills/plaited-context/scripts/search.ts',
+            ]
 
   const sourceOfTruth = unique([
     'src/ (code)',

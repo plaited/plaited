@@ -40,6 +40,16 @@ git fetch origin dev
 git merge --ff-only origin/dev
 ```
 
+- Dedicated worktree coding sessions should normally end in a commit for the
+  completed coherent body of work before final handoff.
+- Do not auto-commit review-only work, exploratory work, ignored/local prompt
+  edits, or intentionally partial work unless the maintainer explicitly requests
+  it.
+- Final handoff should include branch, commit SHA, validation run summary, and
+  PR link when a PR is opened.
+- Do not automatically merge worktree branches into `dev`; that remains an
+  explicit integration action.
+
 - `dev -> main` release PRs should squash-merge.
 - After any squash release from `dev -> main`, sync `main` back into `dev` using a merge commit.
 - Never reset/rebase/force-push `dev`.
