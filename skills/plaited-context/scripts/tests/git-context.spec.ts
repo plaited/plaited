@@ -229,6 +229,76 @@ describe('git-context scripts', () => {
     ).rejects.toThrow("Invalid path '../escape.ts': path escapes repository root.")
   })
 
+  test('quotes shell metacharacters in base ref suggested commands', async () => {
+    const rootDir = await createTempGitRepo()
+    const injectedBase = 'origin/dev; echo injected'
+
+    const output = await collectGitHistory({
+      cwd: rootDir,
+      base: injectedBase,
+      paths: [],
+      limit: 1,
+    })
+
+    const mergeBaseSuggestion = output.suggestedNextCommands.find((command) => command.startsWith('git merge-base '))
+    const revParseSuggestion = output.suggestedNextCommands.find((command) => command.startsWith('git rev-parse '))
+
+    expect(mergeBaseSuggestion).toBe("git merge-base HEAD 'origin/dev; echo injected'")
+    expect(mergeBaseSuggestion?.includes('HEAD origin/dev; echo injected')).toBe(false)
+    expect(revParseSuggestion).toBe("git rev-parse --verify 'origin/dev; echo injected^{commit}'")
+    expect(revParseSuggestion?.includes('--verify origin/dev; echo injected^{commit}')).toBe(false)
+  })
+
+  test('quotes path suggestions with spaces in git log command', async () => {
+    const rootDir = await createTempGitRepo()
+    const pathWithSpaces = 'docs/path with space.md'
+
+    const output = await collectGitHistory({
+      cwd: rootDir,
+      base: 'dev',
+      paths: [pathWithSpaces],
+      limit: 1,
+    })
+
+    expect(output.suggestedNextCommands).toContain("git log --oneline -1 -- 'docs/path with space.md'")
+  })
+
+  test('renders git-context git-history suggestion with one quoted JSON argument', async () => {
+    const rootDir = await createTempGitRepo()
+    const base = 'origin/dev; echo injected'
+    const paths = ['docs/path with space.md']
+
+    const output = await assembleGitContext({
+      cwd: rootDir,
+      base,
+      paths,
+      limit: 1,
+      includeWorktrees: false,
+    })
+
+    const historySuggestion = output.suggestedNextCommands.find((command) =>
+      command.startsWith('bun skills/plaited-context/scripts/git-history.ts '),
+    )
+    expect(historySuggestion).toBeDefined()
+
+    const quotedJsonMatch = historySuggestion?.match(
+      /^bun skills\/plaited-context\/scripts\/git-history\.ts ('[^']+')$/,
+    )
+    expect(quotedJsonMatch).toBeDefined()
+
+    const jsonPayload = quotedJsonMatch?.[1]?.slice(1, -1)
+    expect(jsonPayload).toBeDefined()
+
+    const parsedPayload = JSON.parse(jsonPayload ?? '{}') as {
+      base?: string
+      paths?: string[]
+      limit?: number
+    }
+    expect(parsedPayload.base).toBe(base)
+    expect(parsedPayload.paths).toEqual(paths)
+    expect(parsedPayload.limit).toBe(1)
+  })
+
   test('supports schema introspection for git scripts', async () => {
     const gitContextInputSchemaText = (
       await Bun.$`bun skills/plaited-context/scripts/git-context.ts --schema input`.cwd(process.cwd()).quiet()

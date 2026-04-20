@@ -6,6 +6,7 @@ import {
   collectChangedFiles,
   collectCommits,
   collectPathHistory,
+  formatGitCommand,
   GitChangedFileSchema,
   GitCommitSchema,
   GitPathHistoryEntrySchema,
@@ -84,18 +85,21 @@ const buildSuggestedCommands = ({
   paths: string[]
   limit: number
 }): string[] => {
-  const commands: string[] = [`git merge-base HEAD ${base}`, `git log --oneline -${limit}`]
+  const commands: string[] = [
+    formatGitCommand(['merge-base', 'HEAD', base]),
+    formatGitCommand(['log', '--oneline', `-${limit}`]),
+  ]
 
   if (mergeBase) {
-    commands.push(`git log --oneline -${limit} ${mergeBase}..HEAD`)
-    commands.push(`git diff --stat ${mergeBase}...HEAD`)
-    commands.push(`git diff --name-status ${mergeBase}...HEAD`)
+    commands.push(formatGitCommand(['log', '--oneline', `-${limit}`, `${mergeBase}..HEAD`]))
+    commands.push(formatGitCommand(['diff', '--stat', `${mergeBase}...HEAD`]))
+    commands.push(formatGitCommand(['diff', '--name-status', `${mergeBase}...HEAD`]))
   } else {
-    commands.push(`git rev-parse --verify ${base}^{commit}`)
+    commands.push(formatGitCommand(['rev-parse', '--verify', `${base}^{commit}`]))
   }
 
   for (const path of paths) {
-    commands.push(`git log --oneline -${limit} -- ${path}`)
+    commands.push(formatGitCommand(['log', '--oneline', `-${limit}`, '--', path]))
   }
 
   return unique(commands)

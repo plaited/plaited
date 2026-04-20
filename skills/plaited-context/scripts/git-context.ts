@@ -4,6 +4,8 @@ import { makeCli } from '../../../src/cli.ts'
 import {
   buildStructuredCliError,
   collectDirtyState,
+  formatGitCommand,
+  formatShellCommand,
   GitChangedFileSchema,
   GitCommitSchema,
   GitPathHistoryEntrySchema,
@@ -130,12 +132,22 @@ export const assembleGitContext = async (input: GitContextInput): Promise<GitCon
     warnings.push(`Deleted files detected in branch changes: ${deletedCount}.`)
   }
 
+  const historySuggestionInput = {
+    base,
+    paths: history.paths,
+    limit: input.limit,
+  }
+
   const suggestedNextCommands = unique([
-    'git status --short --branch',
-    'git log --oneline -20',
+    formatGitCommand(['status', '--short', '--branch']),
+    formatGitCommand(['log', '--oneline', '-20']),
     ...history.suggestedNextCommands,
     ...(worktreeContext?.suggestedNextCommands ?? []),
-    `bun skills/plaited-context/scripts/git-history.ts '{"base":"${base}","paths":${JSON.stringify(history.paths)},"limit":${input.limit}}'`,
+    formatShellCommand([
+      'bun',
+      'skills/plaited-context/scripts/git-history.ts',
+      JSON.stringify(historySuggestionInput),
+    ]),
   ])
 
   return {

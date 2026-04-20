@@ -16,7 +16,9 @@ const quoteArg = (value: string) => {
   return `'${value.replaceAll("'", "'\\''")}'`
 }
 
-export const formatGitCommand = (args: string[]): string => ['git', ...args].map((arg) => quoteArg(arg)).join(' ')
+export const formatShellCommand = (argv: string[]): string => argv.map((arg) => quoteArg(arg)).join(' ')
+
+export const formatGitCommand = (args: string[]): string => formatShellCommand(['git', ...args])
 
 export class GitCommandError extends Error {
   readonly code = 'GIT_COMMAND_FAILED'
