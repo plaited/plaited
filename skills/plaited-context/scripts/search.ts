@@ -12,7 +12,7 @@ import {
 
 const SearchResultSchema = z
   .object({
-    source: z.enum(['file', 'doc', 'finding', 'rg']).describe('Search source for this result row.'),
+    source: z.enum(['file', 'wiki', 'finding', 'rg']).describe('Search source for this result row.'),
     path: z.string().optional().describe('Optional source file path for the hit.'),
     line: z.number().int().positive().optional().describe('Optional 1-based line number for the hit.'),
     symbol: z.string().optional().describe('Optional symbol associated with the hit.'),

@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS skills (
 CREATE INDEX IF NOT EXISTS idx_skills_name ON skills(name);
 
 CREATE TABLE IF NOT EXISTS docs (
+  -- Stores wiki/reference markdown pages (non-skill, non-AGENTS).
   path TEXT PRIMARY KEY,
   title TEXT,
   body TEXT NOT NULL,

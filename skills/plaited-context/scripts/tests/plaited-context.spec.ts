@@ -6,7 +6,7 @@ import { dirname, join, relative } from 'node:path'
 import { assembleTaskContext } from '../context.ts'
 import { exportReview } from '../export-review.ts'
 import { initDb } from '../init-db.ts'
-import { resolveOperationalContext } from '../plaited-context.ts'
+import { closeContextDatabase, openContextDatabase, resolveOperationalContext } from '../plaited-context.ts'
 import { recordFindingEntry } from '../record-finding.ts'
 import { scanWorkspace } from '../scan.ts'
 import { searchWorkspace } from '../search.ts'
@@ -26,6 +26,28 @@ const createTempWorkspace = async () => {
     path: join(rootDir, 'src/example.ts'),
     content: `export const useBehavioralContext = () => 'behavioral context'
 export const reportSnapshot = () => 'snapshot'
+`,
+  })
+
+  await writeTempFile({
+    path: join(rootDir, 'AGENTS.md'),
+    content: `# Agent Instructions
+
+Root operational guidance.
+`,
+  })
+
+  await writeTempFile({
+    path: join(rootDir, 'src/modules/AGENTS.md'),
+    content: `# Module Agent Instructions
+
+Scoped instructions for src/modules.
+`,
+  })
+
+  await writeTempFile({
+    path: join(rootDir, 'src/modules/example.ts'),
+    content: `export const moduleExample = () => 'module example'
 `,
   })
 
@@ -138,7 +160,7 @@ describe('plaited-context scripts', () => {
       cwd: rootDir,
       rootDir,
       dbPath,
-      include: ['src', 'skills', 'docs'],
+      include: ['AGENTS.md', 'src', 'skills', 'docs'],
       force: true,
     })
 
@@ -146,19 +168,20 @@ describe('plaited-context scripts', () => {
     expect(scanOutput.filesIndexed).toBeGreaterThan(0)
     expect(scanOutput.symbolsIndexed).toBeGreaterThan(0)
     expect(scanOutput.skillsIndexed).toBeGreaterThan(0)
-    expect(scanOutput.docsIndexed).toBeGreaterThan(0)
+    expect(scanOutput.wikiIndexed).toBeGreaterThan(0)
 
     const searchOutput = await searchWorkspace({
       cwd: rootDir,
       dbPath,
-      query: 'behavioral',
-      limit: 5,
+      query: 'Example Doc',
+      limit: 20,
       rootDir,
       fallbackToRipgrep: false,
     })
 
     expect(searchOutput.ok).toBe(true)
     expect(searchOutput.results.length).toBeGreaterThan(0)
+    expect(searchOutput.results.some((row) => row.source === 'wiki')).toBe(true)
 
     const contextOutput = await assembleTaskContext({
       cwd: rootDir,
@@ -292,5 +315,105 @@ describe('plaited-context scripts', () => {
     expect(scanOutput.ok).toBe(true)
     expect(scanOutput.filesIndexed).toBeGreaterThan(0)
     expect(scanOutput.symbolsIndexed).toBeGreaterThan(0)
+  })
+
+  test('scan supports explicit root AGENTS.md include and indexes root instruction scope', async () => {
+    const rootDir = await createTempWorkspace()
+    const dbPath = join(rootDir, '.plaited/context.sqlite')
+
+    await initDb({
+      cwd: rootDir,
+      dbPath,
+    })
+
+    const scanOutput = await scanWorkspace({
+      cwd: rootDir,
+      rootDir,
+      dbPath,
+      include: ['AGENTS.md'],
+      force: true,
+    })
+
+    expect(scanOutput.ok).toBe(true)
+    expect(scanOutput.filesIndexed).toBeGreaterThan(0)
+
+    const db = await openContextDatabase({ dbPath })
+    try {
+      const rootAgentsKind = db.query(`SELECT kind FROM files WHERE path = 'AGENTS.md'`).get() as {
+        kind: string
+      } | null
+      const rootAgentScope = db.query(`SELECT scope_path FROM agent_instructions WHERE path = 'AGENTS.md'`).get() as {
+        scope_path: string
+      } | null
+
+      expect(rootAgentsKind?.kind).toBe('agent-instructions')
+      expect(rootAgentScope?.scope_path).toBe('.')
+    } finally {
+      closeContextDatabase(db)
+    }
+  })
+
+  test('scan supports explicit nested AGENTS.md file includes and indexes nested instruction scope', async () => {
+    const rootDir = await createTempWorkspace()
+    const dbPath = join(rootDir, '.plaited/context.sqlite')
+
+    await initDb({
+      cwd: rootDir,
+      dbPath,
+    })
+
+    const scanOutput = await scanWorkspace({
+      cwd: rootDir,
+      rootDir,
+      dbPath,
+      include: ['src/modules/AGENTS.md'],
+      force: true,
+    })
+
+    expect(scanOutput.ok).toBe(true)
+    expect(scanOutput.filesIndexed).toBeGreaterThan(0)
+
+    const db = await openContextDatabase({ dbPath })
+    try {
+      const nestedAgentScope = db
+        .query(`SELECT scope_path FROM agent_instructions WHERE path = 'src/modules/AGENTS.md'`)
+        .get() as { scope_path: string } | null
+
+      expect(nestedAgentScope?.scope_path).toBe('src/modules')
+    } finally {
+      closeContextDatabase(db)
+    }
+  })
+
+  test('scan supports explicit directory includes and indexes AGENTS.md found under that directory', async () => {
+    const rootDir = await createTempWorkspace()
+    const dbPath = join(rootDir, '.plaited/context.sqlite')
+
+    await initDb({
+      cwd: rootDir,
+      dbPath,
+    })
+
+    const scanOutput = await scanWorkspace({
+      cwd: rootDir,
+      rootDir,
+      dbPath,
+      include: ['src'],
+      force: true,
+    })
+
+    expect(scanOutput.ok).toBe(true)
+    expect(scanOutput.filesIndexed).toBeGreaterThan(0)
+
+    const db = await openContextDatabase({ dbPath })
+    try {
+      const nestedAgentScope = db
+        .query(`SELECT scope_path FROM agent_instructions WHERE path = 'src/modules/AGENTS.md'`)
+        .get() as { scope_path: string } | null
+
+      expect(nestedAgentScope?.scope_path).toBe('src/modules')
+    } finally {
+      closeContextDatabase(db)
+    }
   })
 })

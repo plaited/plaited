@@ -10,14 +10,15 @@ compatibility: Requires bun
 ## Purpose
 
 `plaited-context` is a script-first operational context layer for Plaited. It
-indexes source files, docs, skills, and findings into SQLite so follow-on work
-starts from source-grounded evidence instead of memory.
+indexes source files, AGENTS operational instructions, wiki/reference docs,
+skills, and findings into SQLite so follow-on work starts from source-grounded
+evidence instead of memory.
 
 Use it before:
 
 - implementing a feature or fix
 - reviewing a slice or PR
-- updating docs and checking for stale guidance
+- updating wiki/reference docs and checking for stale guidance
 
 ## Operational Context
 
@@ -64,10 +65,10 @@ Override order for DB path:
 bun skills/plaited-context/scripts/init-db.ts '{"dbPath":".plaited/context.sqlite"}'
 ```
 
-2. Scan and index source/docs/skills
+2. Scan and index source/wiki/skills/AGENTS instructions
 
 ```bash
-bun skills/plaited-context/scripts/scan.ts '{"rootDir":".","include":["src","skills","docs"],"force":false}'
+bun skills/plaited-context/scripts/scan.ts '{"rootDir":".","include":["AGENTS.md","src","skills","docs"],"force":false}'
 ```
 
 3. Assemble task context
@@ -100,6 +101,15 @@ Do not promote guesses into validated findings.
 
 - `candidate` findings may have optional evidence while being triaged.
 - `validated` and `retired` findings must include evidence.
+
+## Source Authority
+
+When sources conflict, prioritize:
+
+1. code in `src/` and other executable sources
+2. `AGENTS.md` operational instructions by scope
+3. skill instructions (`skills/*/SKILL.md`)
+4. wiki/reference docs (for synthesis and background)
 
 ## Script Contracts
 

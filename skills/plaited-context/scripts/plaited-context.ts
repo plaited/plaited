@@ -1,5 +1,5 @@
 import { Database } from 'bun:sqlite'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, stat } from 'node:fs/promises'
 import { basename, dirname, extname, isAbsolute, join, relative, resolve } from 'node:path'
 import { Glob } from 'bun'
 import * as z from 'zod'
@@ -101,7 +101,7 @@ export type FindingInput = z.infer<typeof FindingInputSchema>
 export type FindingEvidenceInput = z.infer<typeof FindingEvidenceSchema>
 
 export type SearchResultEntry = {
-  source: 'file' | 'doc' | 'finding' | 'rg'
+  source: 'file' | 'wiki' | 'finding' | 'rg'
   path?: string
   line?: number
   symbol?: string
@@ -413,7 +413,32 @@ const validateIncludePath = ({ absoluteRoot, includePath }: { absoluteRoot: stri
     throw new Error(`Invalid include path '${includePath}': path escapes rootDir.`)
   }
 
-  const relativeIncludePath = toPosix(relative(absoluteRoot, resolvedIncludePath))
+  return resolvedIncludePath
+}
+
+const getExistingPathType = async (absolutePath: string): Promise<'file' | 'directory' | undefined> => {
+  try {
+    const entry = await stat(absolutePath)
+    if (entry.isFile()) {
+      return 'file'
+    }
+    if (entry.isDirectory()) {
+      return 'directory'
+    }
+    return undefined
+  } catch {
+    return undefined
+  }
+}
+
+const buildIncludeGlobPattern = ({
+  absoluteRoot,
+  absoluteIncludePath,
+}: {
+  absoluteRoot: string
+  absoluteIncludePath: string
+}) => {
+  const relativeIncludePath = toPosix(relative(absoluteRoot, absoluteIncludePath))
   if (relativeIncludePath === '' || relativeIncludePath === '.') {
     return '**/*'
   }
@@ -437,11 +462,24 @@ const collectFilesForIndexing = async ({
       continue
     }
 
-    const globPattern = validateIncludePath({
+    const validatedIncludePath = validateIncludePath({
       absoluteRoot,
       includePath: trimmed,
     })
-    const glob = new Glob(globPattern)
+    const includePathType = await getExistingPathType(validatedIncludePath)
+    if (includePathType === 'file') {
+      if (isSubPath(validatedIncludePath, absoluteRoot) && shouldIndexFile(validatedIncludePath)) {
+        files.add(resolve(validatedIncludePath))
+      }
+      continue
+    }
+
+    const glob = new Glob(
+      buildIncludeGlobPattern({
+        absoluteRoot,
+        absoluteIncludePath: validatedIncludePath,
+      }),
+    )
 
     for await (const foundPath of glob.scan({ cwd: absoluteRoot, absolute: true })) {
       const absoluteFoundPath = resolve(foundPath)
@@ -700,7 +738,7 @@ export const indexWorkspace = async ({
   filesIndexed: number
   symbolsIndexed: number
   skillsIndexed: number
-  docsIndexed: number
+  wikiIndexed: number
 }> => {
   if (force) {
     db.exec('DELETE FROM symbols;')
@@ -770,7 +808,7 @@ export const indexWorkspace = async ({
   let filesIndexed = 0
   let symbolsIndexed = 0
   let skillsIndexed = 0
-  let docsIndexed = 0
+  let wikiIndexed = 0
   const indexedAt = nowIso()
 
   for (const absolutePath of files) {
@@ -831,7 +869,7 @@ export const indexWorkspace = async ({
 
     if (kind === 'wiki') {
       upsertDoc.run(relativePath, parseDocTitle(content) ?? null, content, indexedAt)
-      docsIndexed += 1
+      wikiIndexed += 1
     }
 
     filesIndexed += 1
@@ -841,7 +879,7 @@ export const indexWorkspace = async ({
     filesIndexed,
     symbolsIndexed,
     skillsIndexed,
-    docsIndexed,
+    wikiIndexed,
   }
 }
 
@@ -884,7 +922,7 @@ export const searchContextDatabase = ({
     content: string
   }>
 
-  const docRows = db
+  const wikiRows = db
     .query(
       `SELECT path, body
        FROM docs
@@ -918,8 +956,8 @@ export const searchContextDatabase = ({
       path: row.path,
       snippet: buildSnippet({ text: row.content, query }),
     })),
-    ...docRows.map((row) => ({
-      source: 'doc' as const,
+    ...wikiRows.map((row) => ({
+      source: 'wiki' as const,
       path: row.path,
       snippet: buildSnippet({ text: row.body, query }),
     })),
@@ -1116,7 +1154,7 @@ export const assembleContext = ({
     mode === 'review'
       ? ['bun --bun tsc --noEmit', 'bun test <targeted-files-or-surface>']
       : mode === 'docs'
-        ? ['bun skills/plaited-context/scripts/scan.ts "{"rootDir":".","include":["docs","skills"]}"']
+        ? [`bun skills/plaited-context/scripts/scan.ts '{"rootDir":".","include":["AGENTS.md","docs","skills"]}'`]
         : [
             'bun --bun tsc --noEmit',
             'bun test <targeted-files-or-surface>',
@@ -1129,7 +1167,8 @@ export const assembleContext = ({
     ...skillPaths,
     'src/ (code)',
     'skills/*/SKILL.md (operational skill instructions)',
-    'docs/ (wiki/reference)',
+    'AGENTS.md (operational instructions)',
+    'docs/ (wiki/reference; lower authority than code, AGENTS.md, and skills)',
   ])
 
   const openQuestions: string[] = []

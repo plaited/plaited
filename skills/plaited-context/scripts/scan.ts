@@ -13,7 +13,7 @@ export const ScanInputSchema = OperationalContextOverrideSchema.extend({
   rootDir: z.string().min(1).default('.').describe('Root directory to scan and index.'),
   include: z
     .array(z.string().min(1))
-    .default(['src', 'skills', 'docs'])
+    .default(['AGENTS.md', 'src', 'skills', 'docs'])
     .describe('Relative include paths under rootDir to index.'),
   force: z.boolean().default(false).describe('When true, clears prior index state before indexing.'),
 }).describe('Input contract for scanning and indexing workspace context.')
@@ -25,7 +25,7 @@ export const ScanOutputSchema = z
     filesIndexed: z.number().int().nonnegative().describe('Count of indexed files.'),
     symbolsIndexed: z.number().int().nonnegative().describe('Count of indexed symbols.'),
     skillsIndexed: z.number().int().nonnegative().describe('Count of indexed skills.'),
-    docsIndexed: z.number().int().nonnegative().describe('Count of indexed docs.'),
+    wikiIndexed: z.number().int().nonnegative().describe('Count of indexed wiki/reference documents.'),
   })
   .describe('Output summary for a scan/index run.')
 
@@ -51,7 +51,7 @@ export const scanWorkspace = async (input: ScanInput): Promise<ScanOutput> => {
       filesIndexed: result.filesIndexed,
       symbolsIndexed: result.symbolsIndexed,
       skillsIndexed: result.skillsIndexed,
-      docsIndexed: result.docsIndexed,
+      wikiIndexed: result.wikiIndexed,
     }
   } finally {
     closeContextDatabase(db)
@@ -64,7 +64,7 @@ export const scanCli = makeCli({
   outputSchema: ScanOutputSchema,
   help: [
     'Examples:',
-    `  bun skills/plaited-context/scripts/scan.ts '{"rootDir":".","include":["src","skills","docs"],"force":true}'`,
+    `  bun skills/plaited-context/scripts/scan.ts '{"rootDir":".","include":["AGENTS.md","src","skills","docs"],"force":true}'`,
     `  bun skills/plaited-context/scripts/scan.ts --schema output`,
   ].join('\n'),
   run: scanWorkspace,
