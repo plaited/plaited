@@ -232,6 +232,8 @@ describe('plaited-context scripts', () => {
     expect(exportOutput.findings.length).toBe(1)
     expect(exportOutput.findings[0]?.summary).toContain('reportSnapshot')
     expect(exportOutput.contextRuns.length).toBeGreaterThan(0)
+    expect(exportOutput.wikiContext.ok).toBe(true)
+    expect(Array.isArray(exportOutput.wikiContext.cleanupCandidates)).toBe(true)
   })
 
   test('scan rejects include paths that escape rootDir and does not index outside files', async () => {
@@ -490,5 +492,14 @@ describe('plaited-context scripts', () => {
     expect(agentsIndex).toBeGreaterThan(sourceIndex)
     expect(skillsIndex).toBeGreaterThan(agentsIndex)
     expect(docsIndex).toBeGreaterThan(skillsIndex)
+
+    expect(contextOutput.authorityOrder.map((entry) => entry.authority)).toEqual([
+      'source',
+      'agent-instructions',
+      'skill',
+      'wiki',
+      'other',
+    ])
+    expect(contextOutput.authorityPolicy).toContain('outrank')
   })
 })

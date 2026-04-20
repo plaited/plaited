@@ -28,6 +28,26 @@ export const ContextOutputSchema = z
     knownPatterns: z.array(z.string()).describe('Indexed validated patterns relevant to the task.'),
     knownAntiPatterns: z.array(z.string()).describe('Indexed anti-patterns relevant to the task.'),
     sourceOfTruth: z.array(z.string()).describe('Ordered high-authority references for decisions.'),
+    authorityOrder: z
+      .array(
+        z.object({
+          rank: z
+            .number()
+            .int()
+            .positive()
+            .describe('Authority precedence rank; lower numbers are stronger authority.'),
+          authority: z
+            .enum(['source', 'agent-instructions', 'skill', 'wiki', 'other'])
+            .describe('Authority source category.'),
+          label: z.string().min(1).describe('Short label for this authority layer.'),
+          description: z.string().min(1).describe('Human-readable summary for this authority layer.'),
+        }),
+      )
+      .describe('Explicit source authority precedence for conflict resolution.'),
+    authorityPolicy: z
+      .string()
+      .min(1)
+      .describe('Conflict policy describing why code/AGENTS/skills outrank wiki assertions.'),
     openQuestions: z.array(z.string()).describe('Open questions that need direct source confirmation.'),
   })
   .describe('Output contract for assembled operational task context.')
