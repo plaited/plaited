@@ -462,12 +462,18 @@ const analyzeInternalHandlers = ({ file, sourceFile, findings, callback }: Exten
   }
 }
 
+type LocalHelperEntry = {
+  name: string
+  body: ts.ConciseBody
+  node: ts.Node
+}
+
 const collectLocalHelpers = (callback: ts.ArrowFunction | ts.FunctionExpression) => {
   if (!ts.isBlock(callback.body)) {
-    return [] as Array<{ name: string; body: ts.Block; node: ts.Node }>
+    return [] as LocalHelperEntry[]
   }
 
-  const helpers: Array<{ name: string; body: ts.Block; node: ts.Node }> = []
+  const helpers: LocalHelperEntry[] = []
 
   for (const statement of callback.body.statements) {
     if (ts.isFunctionDeclaration(statement) && statement.name && statement.body) {
@@ -492,14 +498,9 @@ const collectLocalHelpers = (callback: ts.ArrowFunction | ts.FunctionExpression)
         continue
       }
 
-      const functionBody = declaration.initializer.body
-      if (!ts.isBlock(functionBody)) {
-        continue
-      }
-
       helpers.push({
         name: declaration.name.text,
-        body: functionBody,
+        body: declaration.initializer.body,
         node: declaration.name,
       })
     }

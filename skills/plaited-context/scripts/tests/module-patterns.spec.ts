@@ -201,4 +201,64 @@ useExtension('mod', (_ctx) => ({
     expect(result.exitCode).toBe(0)
     expect(result.stdout).toContain('No module pattern findings.')
   })
+
+  test('flags expression-bodied diagnostic helper trigger events', async () => {
+    const file = await writeFixture({
+      name: 'expression-helper-trigger.ts',
+      source: `
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = {
+  start: 'start',
+  server_error: 'server_error',
+} as const
+const createActorEvent = (eventName: string, detail: unknown) => ({ eventName, detail })
+
+useExtension('mod', ({ trigger }: { trigger: (value: unknown) => void }) => {
+  const emitServerError = (detail: unknown) => trigger(createActorEvent(EVENTS.server_error, detail))
+
+  return {
+    [EVENTS.start](detail: unknown) {
+      emitServerError(detail)
+    },
+  }
+})
+`,
+    })
+
+    const output = await checkModulePatterns({ files: [file] })
+    expect(output.ok).toBe(false)
+    expect(output.findings.some((finding) => finding.ruleId === 'module/no-triggered-diagnostic-event')).toBe(true)
+    expect(
+      output.findings.some((finding) =>
+        ['module/no-triggered-diagnostic-event', 'module/prefer-report-snapshot-for-actor-diagnostics'].includes(
+          finding.ruleId,
+        ),
+      ),
+    ).toBe(true)
+  })
+
+  test('does not flag reportSnapshot expression helper with prefer-report-snapshot rule', async () => {
+    const file = await writeFixture({
+      name: 'expression-helper-report-snapshot.ts',
+      source: `
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = { start: 'start' } as const
+
+useExtension('mod', ({ reportSnapshot }: { reportSnapshot: (detail: unknown) => void }) => {
+  const reportServerError = (detail: unknown) => reportSnapshot({ kind: 'extension_error', detail })
+
+  return {
+    [EVENTS.start](detail: unknown) {
+      reportServerError(detail)
+    },
+  }
+})
+`,
+    })
+
+    const output = await checkModulePatterns({ files: [file] })
+    expect(
+      output.findings.some((finding) => finding.ruleId === 'module/prefer-report-snapshot-for-actor-diagnostics'),
+    ).toBe(false)
+  })
 })
