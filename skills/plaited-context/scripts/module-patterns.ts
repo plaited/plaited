@@ -56,6 +56,7 @@ type ExtensionHandlerContext = {
 const DIAGNOSTIC_HELPER_NAME_PATTERN = /(report|emit|error|diagnostic)/i
 const ERROR_HELPER_NAME_PATTERN = /^(emit.*Error|report.*Error)$/i
 const ALLOWED_EVENT_NAME_PATTERN = /(started|stopped|connected|disconnected|received|sent|queued|accepted)/i
+const TRANSPORT_DIAGNOSTIC_HELPER_NAMES = new Set(['reportTransportError', 'emitClientError', 'emitTransportError'])
 const TRANSPORT_BOUNDARY_CALLBACK_NAME_PATTERN = /^reportTransportError$/i
 const TRANSPORT_BOUNDARY_CALLBACK_TYPE_PATTERN = /\breportTransportError\b/
 const BOUNDARY_OBSERVABILITY_EVENT_NAME_PATTERN =
@@ -341,15 +342,20 @@ const catchHandlesZodError = (tryStatement: ts.TryStatement, sourceFile: ts.Sour
   return found
 }
 
-const callHasTransportOrClientErrorName = ({
-  call,
-  sourceFile,
-}: {
-  call: ts.CallExpression
-  sourceFile: ts.SourceFile
-}) => {
-  const calleeText = getCalleeText(sourceFile, call)
-  return /(reportTransportError|emitClientError|emitTransportError|TransportError|ClientError)/.test(calleeText)
+const callHasTransportOrClientErrorName = ({ call }: { call: ts.CallExpression }) => {
+  if (ts.isIdentifier(call.expression)) {
+    return TRANSPORT_DIAGNOSTIC_HELPER_NAMES.has(call.expression.text)
+  }
+
+  if (ts.isPropertyAccessExpression(call.expression)) {
+    return TRANSPORT_DIAGNOSTIC_HELPER_NAMES.has(call.expression.name.text)
+  }
+
+  if (ts.isElementAccessExpression(call.expression) && ts.isStringLiteralLike(call.expression.argumentExpression)) {
+    return TRANSPORT_DIAGNOSTIC_HELPER_NAMES.has(call.expression.argumentExpression.text)
+  }
+
+  return false
 }
 
 const getTriggerCreateEventInfo = ({
@@ -450,7 +456,7 @@ const analyzeInternalHandlers = ({ file, sourceFile, findings, callback }: Exten
               }
             }
 
-            if (callHasTransportOrClientErrorName({ call: node, sourceFile })) {
+            if (callHasTransportOrClientErrorName({ call: node })) {
               addFinding({
                 findings,
                 sourceFile,

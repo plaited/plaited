@@ -121,6 +121,53 @@ useExtension('mod', ({ trigger }: { trigger: (detail: unknown) => void }) => {
     expect(output.mermaid).toContain('client_error')
   })
 
+  test('classifies only explicit transport/client diagnostic helper calls', async () => {
+    const file = await writeFixture({
+      name: 'diagnostic-call-classification.ts',
+      source: `
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = { start: 'start', client_error: 'client_error' } as const
+const createActorEvent = (eventName: string, detail: unknown) => ({ eventName, detail })
+
+useExtension('mod', ({ trigger }: { trigger: (detail: unknown) => void }) => {
+  const emitClientError = (detail: unknown) => trigger(createActorEvent(EVENTS.client_error, detail))
+  const parseClientError = (detail: unknown) => ClientErrorDetailSchema.parse(detail)
+  const reportTransportError = (detail: unknown) => emitClientError(detail)
+
+  return {
+    [EVENTS.start](detail: unknown) {
+      parseClientError(detail)
+      reportTransportError(detail)
+    },
+  }
+})
+`,
+    })
+
+    const output = await renderModuleFlow({
+      files: [file],
+      format: 'json',
+    })
+
+    const extension = output.files[0]?.extensions[0]
+    const emitHelper = extension?.helpers.find((helper) => helper.name === 'emitClientError')
+    const parseHelper = extension?.helpers.find((helper) => helper.name === 'parseClientError')
+    const reportTransportHelper = extension?.helpers.find((helper) => helper.name === 'reportTransportError')
+
+    expect(emitHelper).toBeDefined()
+    expect(emitHelper?.transportDiagnosticCalls).toEqual([])
+    expect(emitHelper?.triggerEventCalls.some((call) => call.eventName === 'client_error')).toBe(true)
+
+    expect(parseHelper).toBeDefined()
+    expect(parseHelper?.parseCalls.some((call) => call.schema === 'ClientErrorDetailSchema')).toBe(true)
+    expect(parseHelper?.transportDiagnosticCalls).toEqual([])
+
+    expect(reportTransportHelper).toBeDefined()
+    expect(
+      reportTransportHelper?.transportDiagnosticCalls.some((call) => call.callee.includes('emitClientError')),
+    ).toBe(true)
+  })
+
   test('records candidate review evidence when record is true', async () => {
     const file = await writeFixture({
       name: 'record-flow.ts',

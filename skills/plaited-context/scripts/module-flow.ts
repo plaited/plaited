@@ -155,8 +155,7 @@ type LocalHelperEntry = {
   node: ts.Node
 }
 
-const TRANSPORT_DIAGNOSTIC_NAME_PATTERN =
-  /(reportTransportError|emitClientError|emitTransportError|TransportError|ClientError)/
+const TRANSPORT_DIAGNOSTIC_HELPER_NAMES = new Set(['reportTransportError', 'emitClientError', 'emitTransportError'])
 
 const toLineColumn = (sourceFile: ts.SourceFile, node: ts.Node): SourceLocation => {
   const start = node.getStart(sourceFile)
@@ -207,6 +206,22 @@ const unwrapParenthesizedExpression = (expression: ts.Expression): ts.Expression
 }
 
 const getCalleeText = (sourceFile: ts.SourceFile, call: ts.CallExpression) => call.expression.getText(sourceFile)
+
+const isTransportDiagnosticHelperCall = (call: ts.CallExpression): boolean => {
+  if (ts.isIdentifier(call.expression)) {
+    return TRANSPORT_DIAGNOSTIC_HELPER_NAMES.has(call.expression.text)
+  }
+
+  if (ts.isPropertyAccessExpression(call.expression)) {
+    return TRANSPORT_DIAGNOSTIC_HELPER_NAMES.has(call.expression.name.text)
+  }
+
+  if (ts.isElementAccessExpression(call.expression) && ts.isStringLiteralLike(call.expression.argumentExpression)) {
+    return TRANSPORT_DIAGNOSTIC_HELPER_NAMES.has(call.expression.argumentExpression.text)
+  }
+
+  return false
+}
 
 const isUseExtensionCall = (node: ts.Node): node is ts.CallExpression => {
   if (!ts.isCallExpression(node)) {
@@ -475,7 +490,7 @@ const analyzeBodyFacts = ({ sourceFile, body }: { sourceFile: ts.SourceFile; bod
         })
       }
 
-      if (TRANSPORT_DIAGNOSTIC_NAME_PATTERN.test(calleeText)) {
+      if (isTransportDiagnosticHelperCall(node)) {
         transportDiagnosticCalls.push({
           callee: calleeText,
           location: toLineColumn(sourceFile, node),

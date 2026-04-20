@@ -311,6 +311,29 @@ useExtension('mod', ({ trigger }: { trigger: (value: unknown) => void }) => {
     ).toBe(true)
   })
 
+  test('does not flag schema parse calls that include ClientError/TransportError in schema name', async () => {
+    const file = await writeFixture({
+      name: 'internal-handler-schema-parse-client-transport-error.ts',
+      source: `
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = { start: 'start' } as const
+
+useExtension('mod', () => ({
+  [EVENTS.start](detail: unknown) {
+    ClientErrorDetailSchema.parse(detail)
+    TransportErrorDetailSchema.parse(detail)
+  },
+}))
+`,
+    })
+
+    const output = await checkModulePatterns({ files: [file] })
+    expect(output.ok).toBe(true)
+    expect(
+      output.findings.some((finding) => finding.ruleId === 'module/no-transport-diagnostic-from-internal-handler'),
+    ).toBe(false)
+  })
+
   test('flags internal handlers that directly trigger synthetic diagnostic events', async () => {
     const file = await writeFixture({
       name: 'internal-handler-direct-trigger.ts',
