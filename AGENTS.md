@@ -199,6 +199,8 @@ Expand test coverage when the impact is broad, shared, or uncertain.
 **Type over interface** — `type User = {` not `interface User {`
 **No any** — use `unknown` with type guards.
 **PascalCase types** — schemas get `Schema` suffix.
+**CLI schema semantics** — any Zod schema exposed through CLI `--schema input|output` must use
+`.describe(...)` on the top-level schema and meaningful fields so agent consumers get semantic context.
 **Arrow functions** — `const fn = () =>` over `function fn()`.
 **Object params >2 args** — `fn({ a, b, c }: { ... })`.
 **Private fields** — `#field` (ES2022) not `private field`.

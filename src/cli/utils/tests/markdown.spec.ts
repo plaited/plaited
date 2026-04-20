@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { Blob } from 'node:buffer'
+import { mkdir, mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import * as z from 'zod'
 import {
@@ -8,6 +10,7 @@ import {
   markdownLinks,
   normalizeMarkdownLink,
   parseMarkdownWithFrontmatter,
+  validateMarkdownLocalLinks,
 } from '../markdown.ts'
 
 const TestFrontmatterSchema = z.object({
@@ -215,6 +218,41 @@ describe('markdownLinks', () => {
   test('throws when the source file does not exist', async () => {
     const missingPath = join('/tmp', `plaited-markdown-links-missing-${Date.now()}.md`)
     await expect(markdownLinks({ path: missingPath })).rejects.toThrow(`Markdown file not found: ${missingPath}`)
+  })
+})
+
+describe('validateMarkdownLocalLinks', () => {
+  test('returns present and missing sets with link value and text', async () => {
+    const baseDir = await mkdtemp(join(tmpdir(), 'plaited-markdown-links-'))
+
+    try {
+      await mkdir(join(baseDir, 'references'), { recursive: true })
+      await mkdir(join(baseDir, 'scripts'), { recursive: true })
+      await Bun.write(join(baseDir, 'references', 'setup.md'), '# setup')
+      await Bun.write(join(baseDir, 'scripts', 'run.ts'), 'export {}\n')
+
+      const links = await validateMarkdownLocalLinks({
+        baseDir,
+        markdownBody: `
+See [setup guide](references/setup.md) and [missing doc](references/missing.md).
+![diagram](assets/diagram.png)
+[](<scripts/run.ts>)
+`,
+      })
+
+      expect(links.present).toBeInstanceOf(Set)
+      expect(links.missing).toBeInstanceOf(Set)
+      expect([...links.present]).toEqual([
+        { value: 'references/setup.md', text: 'setup guide' },
+        { value: 'scripts/run.ts', text: 'scripts/run.ts' },
+      ])
+      expect([...links.missing]).toEqual([
+        { value: 'assets/diagram.png', text: 'diagram' },
+        { value: 'references/missing.md', text: 'missing doc' },
+      ])
+    } finally {
+      await rm(baseDir, { recursive: true, force: true })
+    }
   })
 })
 

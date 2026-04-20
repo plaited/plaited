@@ -1,4 +1,4 @@
-import { normalize } from 'node:path'
+import { normalize, resolve } from 'node:path'
 import { YAML } from 'bun'
 import * as z from 'zod'
 
@@ -158,6 +158,22 @@ export const normalizeMarkdownLink = (value: string): string | null => {
 export type LocalMarkdownLink = {
   value: string
   text: string
+}
+
+/**
+ * Set-based local markdown link validation result.
+ *
+ * @public
+ */
+export type MarkdownLocalLinksValidationResult = {
+  present: Set<LocalMarkdownLink>
+  missing: Set<LocalMarkdownLink>
+}
+
+const sortLocalMarkdownLinks = (left: LocalMarkdownLink, right: LocalMarkdownLink): number => {
+  const valueComparison = left.value.localeCompare(right.value)
+  if (valueComparison !== 0) return valueComparison
+  return left.text.localeCompare(right.text)
 }
 
 const MarkdownLinksFromPathInputSchema = z
@@ -429,4 +445,47 @@ const readMarkdownLinksSource = async (input: MarkdownLinksInput): Promise<strin
 export const markdownLinks = async (input: MarkdownLinksInput): Promise<MarkdownLinksOutput> => {
   const markdown = await readMarkdownLinksSource(input)
   return extractLocalLinksFromMarkdown(markdown)
+}
+
+/**
+ * Validates local markdown links by resolving each link target relative to a base directory.
+ *
+ * @param options - Base directory and markdown body to validate.
+ * @returns Present and missing local link sets with deterministic ordering.
+ *
+ * @public
+ */
+export const validateMarkdownLocalLinks = async ({
+  baseDir,
+  markdownBody,
+}: {
+  baseDir: string
+  markdownBody: string
+}): Promise<MarkdownLocalLinksValidationResult> => {
+  const present = new Map<string, LocalMarkdownLink>()
+  const missing = new Map<string, LocalMarkdownLink>()
+  const links = await extractLocalLinksFromMarkdown(markdownBody)
+
+  for (const link of links) {
+    const absolutePath = resolve(baseDir, link.value)
+    const file = Bun.file(absolutePath)
+    const key = `${link.value}\u0000${link.text}`
+    if (await file.exists()) {
+      present.set(key, {
+        value: link.value,
+        text: link.text || link.value,
+      })
+      continue
+    }
+
+    missing.set(key, {
+      value: link.value,
+      text: link.text || link.value,
+    })
+  }
+
+  return {
+    present: new Set([...present.values()].sort(sortLocalMarkdownLinks)),
+    missing: new Set([...missing.values()].sort(sortLocalMarkdownLinks)),
+  }
 }
