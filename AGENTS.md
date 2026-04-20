@@ -51,6 +51,14 @@ Git operation rather than corruption. Check that no Git process is still running
 stale lock with `rm -f .git/index.lock` before retrying. Avoid starting a new commit while hook
 formatters or other Git operations are still in flight.
 
+## Pull Requests
+
+**Template required** — before opening or editing a PR, read `.github/pull_request_template.md`
+and preserve every required heading exactly.
+**Check after editing** — after opening or editing a PR, run
+`gh pr checks <pr-number> --repo plaited/plaited`.
+**Fix description lint** — if `pr-description-lint` fails, inspect the failing job with
+`gh run view` and update the PR body with `gh pr edit` until the required heading check passes.
 
 ## Code Quality Gate
 
