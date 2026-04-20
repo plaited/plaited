@@ -62,5 +62,5 @@ A minimal async helper showing our conventions for:
 
 ## Related Skills
 
-- **behavioral-core** — Event-driven coordination patterns
+- **plaited-runtime** — Event-driven coordination and runtime doctrine
 - **code-documentation** — TSDoc standards for documenting these patterns

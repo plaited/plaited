@@ -221,10 +221,10 @@ their operator story. Do not assume a public `validate-skill` CLI exists.
 # Skill Pointers
 
 **TSDoc** — use `code-documentation` skill for conventions when writing/editing TSDoc.
-**BP patterns** — use `behavioral-core` skill when implementing behavioral programs.
+**BP patterns** — use `plaited-runtime` skill when implementing behavioral programs.
 **UI development/testing** — use `plaited-ui` for controller protocol, custom
 elements, SSR, and the three-layer UI test strategy.
-**Agent pipeline** — use `behavioral-core` plus `src/agent/create-agent.ts` and `docs/AGENT-LOOP.md` when implementing module-owned orchestration or agent event flow.
+**Agent pipeline** — use `plaited-runtime` plus `src/agent/create-agent.ts` and `docs/AGENT-LOOP.md` when implementing module-owned orchestration or agent event flow.
 **Plaited development workflow** — use the repo-local `plaited-development` skill before
 starting agent-authored feature/fix branches, reviewing agent-authored changes, or preparing
 integration/promotion work.
