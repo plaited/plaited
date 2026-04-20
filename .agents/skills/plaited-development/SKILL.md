@@ -123,6 +123,13 @@ git merge --ff-only origin/dev
 - `src/modules.ts` is the public modules boundary.
 - Core module actors should be single flat files under `src/modules/` unless a newer prompt says
   otherwise.
+- `src/modules/*.ts` files are core runtime module actors, not user-facing module programs.
+- User/developer-authored work should be called module programs until admitted.
+- Projection views are audience-specific governed views, not independent source modules unless
+  separate state/provenance exists.
+- Access requests in module descriptors are asks and review metadata, not grants.
+- Skill/CLI/inference/external-service declarations remain metadata until a later grant policy path
+  explicitly allows them.
 - Do not create nested `src/modules/<feature>/` implementation folders for these slices.
 - Do not preserve legacy module files just to avoid migration when the prompt requires replacement.
 - Review Slice 5 and later work against the exact files and forbidden paths in
