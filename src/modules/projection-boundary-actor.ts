@@ -110,6 +110,68 @@ type EvaluateProjectionRequestParams = {
   descriptorLookup: ReadonlyMap<string, ProjectionDescriptor>
 }
 
+const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value)
+
+const isJsonEqual = (left: unknown, right: unknown): boolean => {
+  if (left === null || right === null) {
+    return left === right
+  }
+
+  const leftType = typeof left
+  const rightType = typeof right
+  if (leftType !== rightType) {
+    return false
+  }
+
+  if (leftType === 'string' || leftType === 'number' || leftType === 'boolean') {
+    return Object.is(left, right)
+  }
+
+  if (Array.isArray(left) || Array.isArray(right)) {
+    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) {
+      return false
+    }
+    return left.every((value, index) => isJsonEqual(value, right[index]))
+  }
+
+  if (isPlainRecord(left) && isPlainRecord(right)) {
+    const leftKeys = Object.keys(left)
+    const rightKeys = Object.keys(right)
+    if (leftKeys.length !== rightKeys.length) {
+      return false
+    }
+
+    return leftKeys.every((key) => Object.hasOwn(right, key) && isJsonEqual(left[key], right[key]))
+  }
+
+  return false
+}
+
+const isScopeCompatible = ({
+  descriptorScope,
+  requestScope,
+}: {
+  descriptorScope: ProjectionScope
+  requestScope: ProjectionScope | undefined
+}) => {
+  if (!requestScope) {
+    return false
+  }
+
+  for (const [scopeKey, descriptorValue] of Object.entries(descriptorScope)) {
+    if (!Object.hasOwn(requestScope, scopeKey)) {
+      return false
+    }
+    const requestValue = requestScope[scopeKey]
+    if (!isJsonEqual(descriptorValue, requestValue)) {
+      return false
+    }
+  }
+
+  return true
+}
+
 const isAudienceMatch = ({
   descriptorAudience,
   requesterAudience,
@@ -160,11 +222,17 @@ const toApprovedShape = ({
 }: {
   descriptorShape: ProjectionShape
   requestedShape: RequestedProjectionShape | undefined
-}): ProjectionShape => ({
-  fields: requestedShape?.fields ?? descriptorShape.fields,
-  facts: requestedShape?.facts ?? descriptorShape.facts,
-  resources: requestedShape?.resources ?? descriptorShape.resources,
-})
+}): ProjectionShape => {
+  if (!requestedShape) {
+    return descriptorShape
+  }
+
+  return {
+    fields: requestedShape.fields ?? [],
+    facts: requestedShape.facts ?? [],
+    resources: requestedShape.resources ?? [],
+  }
+}
 
 const createDecisionDetail = ({
   request,
@@ -237,6 +305,30 @@ export const evaluateProjectionRequest = ({
           projectionId: request.projectionId,
           expectedSourceModuleId: descriptor.sourceModuleId,
           actualSourceModuleId: request.sourceModuleId,
+        }),
+      ],
+    })
+  }
+
+  if (
+    descriptor.scope &&
+    !isScopeCompatible({
+      descriptorScope: descriptor.scope,
+      requestScope: request.scope,
+    })
+  ) {
+    return createDecisionDetail({
+      request,
+      descriptor,
+      decision: 'deny',
+      reason: 'projection-scope-mismatch',
+      requirements: [
+        ProjectionRequirementSchema.parse({
+          kind: 'auth-grant',
+          projectionId: request.projectionId,
+          message: 'Projection request scope does not satisfy descriptor scope.',
+          expectedScope: descriptor.scope,
+          actualScope: request.scope ?? null,
         }),
       ],
     })

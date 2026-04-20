@@ -50,6 +50,31 @@ const ramStandSupplierDescriptor: ProjectionDescriptor = ProjectionDescriptorSch
   },
 })
 
+const ramStandSupplierScopedDescriptor: ProjectionDescriptor = ProjectionDescriptorSchema.parse({
+  projectionId: 'ram-stand-supplier-scoped-v1',
+  sourceModuleId: 'ram-stand',
+  audience: {
+    kind: 'supplier-network',
+    id: 'supplier-network-1',
+  },
+  shape: {
+    fields: ['supplierSku'],
+    facts: ['stock-level'],
+    resources: ['purchase-orders'],
+  },
+  scope: {
+    region: 'us-west',
+    channel: 'supplier-network',
+    controls: {
+      exportClass: 'regulated',
+    },
+  },
+  provenance: {
+    sourceId: 'ram-stand-private-state',
+    sourceModuleId: 'ram-stand',
+  },
+})
+
 const ramStandCustomerDescriptor: ProjectionDescriptor = ProjectionDescriptorSchema.parse({
   projectionId: 'ram-stand-customer-v1',
   sourceModuleId: 'ram-stand',
@@ -197,12 +222,14 @@ const createRamStandRequest = ({
   moduleSharingPolicy = 'all',
   sourceModuleId = 'ram-stand',
   requestedShape,
+  scope,
 }: {
   projectionId?: string
   requester?: ProjectionDescriptor['audience']
   moduleSharingPolicy?: ProjectionRequest['moduleSharingPolicy']
   sourceModuleId?: string
   requestedShape?: ProjectionRequest['requestedShape']
+  scope?: ProjectionRequest['scope']
 } = {}) =>
   ProjectionRequestSchema.parse({
     requestId: `req-${Math.random().toString(36).slice(2)}`,
@@ -212,6 +239,7 @@ const createRamStandRequest = ({
     requester,
     moduleSharingPolicy,
     ...(requestedShape && { requestedShape }),
+    ...(scope && { scope }),
     provenance: {
       sourceId: 'ram-stand-private-state',
       sourceModuleId: 'ram-stand',
@@ -247,6 +275,136 @@ describe('projection boundary actor extension', () => {
       fields: ['supplierSku'],
       facts: ['stock-level'],
       resources: ['purchase-orders'],
+    })
+  })
+
+  test('matching descriptor and request scope allows under module sharing policy all', async () => {
+    const harness = createHarness()
+    registerDescriptor(harness, ramStandSupplierScopedDescriptor)
+
+    const decision = await evaluateRequest({
+      harness,
+      request: createRamStandRequest({
+        projectionId: ramStandSupplierScopedDescriptor.projectionId,
+        requester: ramStandSupplierScopedDescriptor.audience,
+        moduleSharingPolicy: 'all',
+        scope: {
+          region: 'us-west',
+          channel: 'supplier-network',
+          controls: {
+            exportClass: 'regulated',
+          },
+          requestId: 'scope-extra-ok',
+        },
+      }),
+    })
+
+    expect(decision.decision).toBe('allow')
+    expect(decision.reason).toBe('module-sharing-policy-all-approved-projection')
+  })
+
+  test('missing request scope denies when descriptor scope exists', async () => {
+    const harness = createHarness()
+    registerDescriptor(harness, ramStandSupplierScopedDescriptor)
+
+    const decision = await evaluateRequest({
+      harness,
+      request: createRamStandRequest({
+        projectionId: ramStandSupplierScopedDescriptor.projectionId,
+        requester: ramStandSupplierScopedDescriptor.audience,
+        moduleSharingPolicy: 'all',
+      }),
+    })
+
+    expect(decision.decision).toBe('deny')
+    expect(decision.reason).toBe('projection-scope-mismatch')
+    expect(decision.requirements).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'auth-grant',
+          projectionId: ramStandSupplierScopedDescriptor.projectionId,
+          expectedScope: ramStandSupplierScopedDescriptor.scope,
+          actualScope: null,
+        }),
+      ]),
+    )
+  })
+
+  test('mismatched request scope denies when descriptor scope exists', async () => {
+    const harness = createHarness()
+    registerDescriptor(harness, ramStandSupplierScopedDescriptor)
+
+    const mismatchedScope = {
+      region: 'us-east',
+      channel: 'supplier-network',
+      controls: {
+        exportClass: 'regulated',
+      },
+    }
+    const decision = await evaluateRequest({
+      harness,
+      request: createRamStandRequest({
+        projectionId: ramStandSupplierScopedDescriptor.projectionId,
+        requester: ramStandSupplierScopedDescriptor.audience,
+        moduleSharingPolicy: 'all',
+        scope: mismatchedScope,
+      }),
+    })
+
+    expect(decision.decision).toBe('deny')
+    expect(decision.reason).toBe('projection-scope-mismatch')
+    expect(decision.requirements).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'auth-grant',
+          projectionId: ramStandSupplierScopedDescriptor.projectionId,
+          expectedScope: ramStandSupplierScopedDescriptor.scope,
+          actualScope: mismatchedScope,
+        }),
+      ]),
+    )
+  })
+
+  test('module sharing policy all does not bypass scope mismatch', async () => {
+    const harness = createHarness()
+    registerDescriptor(harness, ramStandSupplierScopedDescriptor)
+
+    const decision = await evaluateRequest({
+      harness,
+      request: createRamStandRequest({
+        projectionId: ramStandSupplierScopedDescriptor.projectionId,
+        requester: ramStandSupplierScopedDescriptor.audience,
+        moduleSharingPolicy: 'all',
+        scope: {
+          region: 'us-west',
+          channel: 'supplier-network',
+        },
+      }),
+    })
+
+    expect(decision.decision).toBe('deny')
+    expect(decision.reason).toBe('projection-scope-mismatch')
+  })
+
+  test('partial requested shape with only fields does not inherit descriptor facts or resources', async () => {
+    const harness = createHarness()
+    registerDescriptor(harness, ramStandSupplierDescriptor)
+
+    const decision = await evaluateRequest({
+      harness,
+      request: createRamStandRequest({
+        moduleSharingPolicy: 'all',
+        requestedShape: {
+          fields: ['supplierSku'],
+        },
+      }),
+    })
+
+    expect(decision.decision).toBe('allow')
+    expect(decision.approvedShape).toEqual({
+      fields: ['supplierSku'],
+      facts: [],
+      resources: [],
     })
   })
 
