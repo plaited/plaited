@@ -49,11 +49,19 @@ type ExtensionHandlerContext = {
   sourceFile: ts.SourceFile
   findings: ModulePatternFinding[]
   callback: ts.ArrowFunction | ts.FunctionExpression
+  localHelpers: LocalHelperEntry[]
+  transportBoundaryHelperNames: Set<string>
 }
 
 const DIAGNOSTIC_HELPER_NAME_PATTERN = /(report|emit|error|diagnostic)/i
 const ERROR_HELPER_NAME_PATTERN = /^(emit.*Error|report.*Error)$/i
 const ALLOWED_EVENT_NAME_PATTERN = /(started|stopped|connected|disconnected|received|sent|queued|accepted)/i
+const TRANSPORT_BOUNDARY_CALLBACK_NAME_PATTERN = /^reportTransportError$/i
+const TRANSPORT_BOUNDARY_CALLBACK_TYPE_PATTERN = /\breportTransportError\b/
+const BOUNDARY_OBSERVABILITY_EVENT_NAME_PATTERN =
+  /(client|connection|transport|protocol|ingress|egress|envelope|message|request|response|origin|upgrade|websocket|topic|session|peer|route|path)/i
+const SYNTHETIC_DIAGNOSTIC_EVENT_NAME_PATTERN =
+  /(server_error|runtime_error|actor_error|internal_error|diagnostic|snapshot|feedback)/i
 
 const toLineColumn = (sourceFile: ts.SourceFile, node: ts.Node) => {
   const start = node.getStart(sourceFile)
@@ -468,6 +476,11 @@ type LocalHelperEntry = {
   node: ts.Node
 }
 
+type TransportBoundaryCallbackEntry = {
+  name: string
+  body: ts.ConciseBody
+}
+
 const collectLocalHelpers = (callback: ts.ArrowFunction | ts.FunctionExpression) => {
   if (!ts.isBlock(callback.body)) {
     return [] as LocalHelperEntry[]
@@ -509,8 +522,213 @@ const collectLocalHelpers = (callback: ts.ArrowFunction | ts.FunctionExpression)
   return helpers
 }
 
-const analyzeTriggeredDiagnosticEvents = ({ file, sourceFile, findings, callback }: ExtensionHandlerContext) => {
-  const analyzeContext = ({ node, context }: { node: ts.Node; context: string }) => {
+const getDeclarationTypeText = ({
+  declaration,
+  sourceFile,
+}: {
+  declaration: ts.VariableDeclaration
+  sourceFile: ts.SourceFile
+}): string | null => {
+  const typeNode = declaration.type
+  if (!typeNode) {
+    return null
+  }
+
+  return typeNode.getText(sourceFile)
+}
+
+const hasTransportBoundaryCallbackSignal = ({ name, typeText }: { name: string; typeText: string | null }) => {
+  if (TRANSPORT_BOUNDARY_CALLBACK_NAME_PATTERN.test(name)) {
+    return true
+  }
+
+  if (!typeText) {
+    return false
+  }
+
+  return TRANSPORT_BOUNDARY_CALLBACK_TYPE_PATTERN.test(typeText)
+}
+
+const collectTransportBoundaryCallbacks = ({
+  callback,
+  sourceFile,
+}: {
+  callback: ts.ArrowFunction | ts.FunctionExpression
+  sourceFile: ts.SourceFile
+}): TransportBoundaryCallbackEntry[] => {
+  if (!ts.isBlock(callback.body)) {
+    return []
+  }
+
+  const callbacks: TransportBoundaryCallbackEntry[] = []
+
+  for (const statement of callback.body.statements) {
+    if (ts.isFunctionDeclaration(statement) && statement.name && statement.body) {
+      if (hasTransportBoundaryCallbackSignal({ name: statement.name.text, typeText: null })) {
+        callbacks.push({
+          name: statement.name.text,
+          body: statement.body,
+        })
+      }
+      continue
+    }
+
+    if (!ts.isVariableStatement(statement)) {
+      continue
+    }
+
+    for (const declaration of statement.declarationList.declarations) {
+      if (!ts.isIdentifier(declaration.name) || !declaration.initializer) {
+        continue
+      }
+
+      if (!(ts.isArrowFunction(declaration.initializer) || ts.isFunctionExpression(declaration.initializer))) {
+        continue
+      }
+
+      const typeText = getDeclarationTypeText({
+        declaration,
+        sourceFile,
+      })
+
+      if (
+        hasTransportBoundaryCallbackSignal({
+          name: declaration.name.text,
+          typeText,
+        })
+      ) {
+        callbacks.push({
+          name: declaration.name.text,
+          body: declaration.initializer.body,
+        })
+      }
+    }
+  }
+
+  return callbacks
+}
+
+const collectCalledHelperNames = ({
+  sourceFile,
+  body,
+  helperNameSet,
+}: {
+  sourceFile: ts.SourceFile
+  body: ts.ConciseBody
+  helperNameSet: Set<string>
+}) => {
+  const calls = new Set<string>()
+
+  walk({
+    node: body,
+    rootFunction: body,
+    skipNestedFunctions: true,
+    visitor: (node) => {
+      if (!ts.isCallExpression(node)) {
+        return
+      }
+
+      if (!ts.isIdentifier(node.expression)) {
+        return
+      }
+
+      if (!helperNameSet.has(node.expression.text)) {
+        return
+      }
+
+      calls.add(node.expression.text)
+    },
+  })
+
+  return calls
+}
+
+const collectTransportBoundaryHelperNames = ({
+  callback,
+  sourceFile,
+  localHelpers,
+}: {
+  callback: ts.ArrowFunction | ts.FunctionExpression
+  sourceFile: ts.SourceFile
+  localHelpers: LocalHelperEntry[]
+}) => {
+  const helperByName = new Map(localHelpers.map((helper) => [helper.name, helper]))
+  const helperNameSet = new Set(localHelpers.map((helper) => helper.name))
+  const transportBoundaryHelperNames = new Set<string>()
+  const queue: string[] = []
+
+  const transportBoundaryCallbacks = collectTransportBoundaryCallbacks({
+    callback,
+    sourceFile,
+  })
+
+  for (const boundaryCallback of transportBoundaryCallbacks) {
+    if (helperNameSet.has(boundaryCallback.name) && !transportBoundaryHelperNames.has(boundaryCallback.name)) {
+      transportBoundaryHelperNames.add(boundaryCallback.name)
+      queue.push(boundaryCallback.name)
+    }
+
+    for (const helperName of collectCalledHelperNames({
+      sourceFile,
+      body: boundaryCallback.body,
+      helperNameSet,
+    })) {
+      if (transportBoundaryHelperNames.has(helperName)) {
+        continue
+      }
+      transportBoundaryHelperNames.add(helperName)
+      queue.push(helperName)
+    }
+  }
+
+  while (queue.length > 0) {
+    const helperName = queue.shift()
+    if (!helperName) {
+      continue
+    }
+
+    const helper = helperByName.get(helperName)
+    if (!helper) {
+      continue
+    }
+
+    for (const calledHelperName of collectCalledHelperNames({
+      sourceFile,
+      body: helper.body,
+      helperNameSet,
+    })) {
+      if (transportBoundaryHelperNames.has(calledHelperName)) {
+        continue
+      }
+      transportBoundaryHelperNames.add(calledHelperName)
+      queue.push(calledHelperName)
+    }
+  }
+
+  return transportBoundaryHelperNames
+}
+
+const isBoundaryObservabilityEvent = (eventName: string | null) => {
+  if (!eventName) {
+    return false
+  }
+
+  if (SYNTHETIC_DIAGNOSTIC_EVENT_NAME_PATTERN.test(eventName)) {
+    return false
+  }
+
+  return BOUNDARY_OBSERVABILITY_EVENT_NAME_PATTERN.test(eventName)
+}
+
+const analyzeTriggeredDiagnosticEvents = ({
+  file,
+  sourceFile,
+  findings,
+  callback,
+  localHelpers,
+  transportBoundaryHelperNames,
+}: ExtensionHandlerContext) => {
+  const analyzeContext = ({ node, context, helperName }: { node: ts.Node; context: string; helperName?: string }) => {
     walk({
       node,
       visitor: (current) => {
@@ -524,6 +742,14 @@ const analyzeTriggeredDiagnosticEvents = ({ file, sourceFile, findings, callback
         }
 
         if (isAllowedLifecycleEvent(info.eventName)) {
+          return
+        }
+
+        if (
+          helperName &&
+          transportBoundaryHelperNames.has(helperName) &&
+          isBoundaryObservabilityEvent(info.eventName)
+        ) {
           return
         }
 
@@ -560,25 +786,14 @@ const analyzeTriggeredDiagnosticEvents = ({ file, sourceFile, findings, callback
 
   for (const objectLiteral of collectReturnedObjectLiterals(callback)) {
     for (const handler of getHandlerEntries(objectLiteral)) {
-      walk({
+      analyzeContext({
         node: handler.body,
-        rootFunction: handler.body,
-        skipNestedFunctions: true,
-        visitor: (node) => {
-          if (!ts.isCatchClause(node)) {
-            return
-          }
-
-          analyzeContext({
-            node: node.block,
-            context: `internal handler ${handler.name} catch block`,
-          })
-        },
+        context: `internal handler ${handler.name}`,
       })
     }
   }
 
-  for (const helper of collectLocalHelpers(callback)) {
+  for (const helper of localHelpers) {
     if (!DIAGNOSTIC_HELPER_NAME_PATTERN.test(helper.name)) {
       continue
     }
@@ -586,18 +801,26 @@ const analyzeTriggeredDiagnosticEvents = ({ file, sourceFile, findings, callback
     analyzeContext({
       node: helper.body,
       context: `helper ${helper.name}`,
+      helperName: helper.name,
     })
   }
 }
 
-const analyzeReportSnapshotPreference = ({ file, sourceFile, findings, callback }: ExtensionHandlerContext) => {
-  for (const helper of collectLocalHelpers(callback)) {
+const analyzeReportSnapshotPreference = ({
+  file,
+  sourceFile,
+  findings,
+  localHelpers,
+  transportBoundaryHelperNames,
+}: ExtensionHandlerContext) => {
+  for (const helper of localHelpers) {
     if (!ERROR_HELPER_NAME_PATTERN.test(helper.name)) {
       continue
     }
 
     let hasTriggerCall = false
     let hasReportSnapshotCall = false
+    let hasNonBoundaryTriggerCall = false
 
     walk({
       node: helper.body,
@@ -613,11 +836,27 @@ const analyzeReportSnapshotPreference = ({ file, sourceFile, findings, callback 
 
         if (calleeText === 'trigger' || calleeText.endsWith('.trigger')) {
           hasTriggerCall = true
+
+          const triggerInfo = getTriggerCreateEventInfo({
+            call: node,
+            sourceFile,
+          })
+          const isBoundaryTrigger =
+            transportBoundaryHelperNames.has(helper.name) &&
+            isBoundaryObservabilityEvent(triggerInfo?.eventName ?? null)
+
+          if (!isBoundaryTrigger) {
+            hasNonBoundaryTriggerCall = true
+          }
         }
       },
     })
 
     if (!hasTriggerCall || hasReportSnapshotCall) {
+      continue
+    }
+
+    if (transportBoundaryHelperNames.has(helper.name) && !hasNonBoundaryTriggerCall) {
       continue
     }
 
@@ -656,11 +895,20 @@ const analyzeSourceFile = ({
         return
       }
 
+      const localHelpers = collectLocalHelpers(callback)
+      const transportBoundaryHelperNames = collectTransportBoundaryHelperNames({
+        callback,
+        sourceFile,
+        localHelpers,
+      })
+
       const context: ExtensionHandlerContext = {
         file,
         sourceFile,
         findings,
         callback,
+        localHelpers,
+        transportBoundaryHelperNames,
       }
 
       analyzeInternalHandlers(context)

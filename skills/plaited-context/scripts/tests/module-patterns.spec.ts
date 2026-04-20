@@ -237,6 +237,105 @@ useExtension('mod', ({ trigger }: { trigger: (value: unknown) => void }) => {
     ).toBe(true)
   })
 
+  test('allows boundary observability helper chains from reportTransportError callbacks', async () => {
+    const file = await writeFixture({
+      name: 'boundary-observability-client-error.ts',
+      source: `
+type CreateMockServerOptions = {
+  reportTransportError: (detail: { code: string }) => void
+}
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = {
+  start: 'start',
+  client_error: 'client_error',
+} as const
+const SNAPSHOT_MESSAGE_KINDS = { extension_error: 'extension_error' } as const
+const createActorEvent = (eventName: string, detail: unknown) => ({ eventName, detail })
+
+useExtension(
+  'mod',
+  ({ trigger, reportSnapshot }: { trigger: (value: unknown) => void; reportSnapshot: (value: unknown) => void }) => {
+    const emitClientError = (detail: unknown) => trigger(createActorEvent(EVENTS.client_error, detail))
+
+    const reportTransportError: CreateMockServerOptions['reportTransportError'] = (detail) => {
+      reportSnapshot({
+        kind: SNAPSHOT_MESSAGE_KINDS.extension_error,
+        error: \`transport diagnostic (\${detail.code})\`,
+      })
+      emitClientError(detail)
+    }
+
+    return {
+      [EVENTS.start](detail: unknown) {
+        StartSchema.parse(detail)
+      },
+    }
+  },
+)
+`,
+    })
+
+    const output = await checkModulePatterns({ files: [file] })
+    expect(output.ok).toBe(true)
+    expect(output.findings).toEqual([])
+  })
+
+  test('flags internal handlers that call transport/client diagnostic helpers', async () => {
+    const file = await writeFixture({
+      name: 'internal-handler-calls-transport-helper.ts',
+      source: `
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = {
+  start: 'start',
+  client_error: 'client_error',
+} as const
+const createActorEvent = (eventName: string, detail: unknown) => ({ eventName, detail })
+
+useExtension('mod', ({ trigger }: { trigger: (value: unknown) => void }) => {
+  const emitClientError = (detail: unknown) => trigger(createActorEvent(EVENTS.client_error, detail))
+
+  return {
+    [EVENTS.start](detail: unknown) {
+      StartSchema.parse(detail)
+      emitClientError(detail)
+    },
+  }
+})
+`,
+    })
+
+    const output = await checkModulePatterns({ files: [file] })
+    expect(output.ok).toBe(false)
+    expect(
+      output.findings.some((finding) => finding.ruleId === 'module/no-transport-diagnostic-from-internal-handler'),
+    ).toBe(true)
+  })
+
+  test('flags internal handlers that directly trigger synthetic diagnostic events', async () => {
+    const file = await writeFixture({
+      name: 'internal-handler-direct-trigger.ts',
+      source: `
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = {
+  start: 'start',
+  server_error: 'server_error',
+} as const
+const createActorEvent = (eventName: string, detail: unknown) => ({ eventName, detail })
+
+useExtension('mod', ({ trigger }: { trigger: (value: unknown) => void }) => ({
+  [EVENTS.start](detail: unknown) {
+    StartSchema.parse(detail)
+    trigger(createActorEvent(EVENTS.server_error, detail))
+  },
+}))
+`,
+    })
+
+    const output = await checkModulePatterns({ files: [file] })
+    expect(output.ok).toBe(false)
+    expect(output.findings.some((finding) => finding.ruleId === 'module/no-triggered-diagnostic-event')).toBe(true)
+  })
+
   test('does not flag reportSnapshot expression helper with prefer-report-snapshot rule', async () => {
     const file = await writeFixture({
       name: 'expression-helper-report-snapshot.ts',
@@ -260,5 +359,14 @@ useExtension('mod', ({ reportSnapshot }: { reportSnapshot: (detail: unknown) => 
     expect(
       output.findings.some((finding) => finding.ruleId === 'module/prefer-report-snapshot-for-actor-diagnostics'),
     ).toBe(false)
+  })
+
+  test('passes the current websocket runtime actor files', async () => {
+    const output = await checkModulePatterns({
+      files: ['src/modules/ui-websocket-runtime-actor.ts', 'src/modules/inference-websocket-runtime-actor.ts'],
+    })
+
+    expect(output.ok).toBe(true)
+    expect(output.findings).toEqual([])
   })
 })
