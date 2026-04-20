@@ -4,6 +4,11 @@ import * as z from 'zod'
 export const BashDetailSchema = z.object({
   path: z.string().describe('Workspace-local path to the Bun worker module to execute'),
   args: z.array(z.string()).describe('Arguments to pass to the worker module'),
+  cwd: z
+    .string()
+    .min(1)
+    .optional()
+    .describe('Optional workspace-relative current working directory for process execution'),
   timeout: z.number().optional().describe('Optional timeout in milliseconds'),
 })
 

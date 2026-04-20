@@ -83,6 +83,19 @@ describe('createToolBashRequestEvent', () => {
     expect(parsed).toEqual(event.detail)
   })
 
+  test('preserves optional bash cwd when provided', () => {
+    const event = createToolBashRequestEvent({
+      correlationId: 'corr-cwd',
+      bash: {
+        path: './scripts/worker.ts',
+        args: ['--cwd'],
+        cwd: 'src',
+      },
+    })
+
+    expect(event.detail.bash.cwd).toBe('src')
+  })
+
   test('rejects invalid bash payload', () => {
     expect(() =>
       createToolBashRequestEvent({

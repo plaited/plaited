@@ -30,6 +30,16 @@ describe('BashDetailSchema', () => {
     expect(result.timeout).toBe(5_000)
   })
 
+  test('accepts optional workspace-relative cwd', () => {
+    const result = BashDetailSchema.parse({
+      path: 'scripts/worker.ts',
+      args: [],
+      cwd: 'src',
+    })
+
+    expect(result.cwd).toBe('src')
+  })
+
   test('rejects missing path', () => {
     expect(() => BashDetailSchema.parse({ args: [] })).toThrow()
   })
