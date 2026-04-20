@@ -2,28 +2,45 @@ import { isAbsolute, resolve } from 'node:path'
 import ts from 'typescript'
 import * as z from 'zod'
 import { parseCliRequest } from '../../../src/cli.ts'
+import {
+  closeContextDatabase,
+  type FindingInput,
+  OperationalContextOverrideSchema,
+  openContextDatabase,
+  recordFinding,
+  resolveOperationalContext,
+} from './plaited-context.ts'
 
-export const ModulePatternCheckInputSchema = z.object({
-  files: z.array(z.string().min(1)),
-})
+export const ModulePatternCheckInputSchema = OperationalContextOverrideSchema.extend({
+  files: z.array(z.string().min(1)).min(1).describe('Module actor files to analyze with deterministic pattern checks.'),
+  record: z
+    .boolean()
+    .default(false)
+    .describe('When true, records deterministic findings into plaited-context SQLite DB.'),
+}).describe('Input contract for deterministic module pattern checking.')
 
-export const ModulePatternFindingSchema = z.object({
-  severity: z.enum(['P1', 'P2']),
-  ruleId: z.string().min(1),
-  file: z.string().min(1),
-  line: z.number().int().positive(),
-  column: z.number().int().positive(),
-  message: z.string().min(1),
-  why: z.string().min(1),
-  fix: z.string().min(1),
-})
+export const ModulePatternFindingSchema = z
+  .object({
+    severity: z.enum(['P1', 'P2']).describe('Deterministic rule severity for the finding.'),
+    ruleId: z.string().min(1).describe('Stable deterministic rule identifier.'),
+    file: z.string().min(1).describe('Path of the analyzed module file where the finding was produced.'),
+    line: z.number().int().positive().describe('1-based line for the finding location.'),
+    column: z.number().int().positive().describe('1-based column for the finding location.'),
+    message: z.string().min(1).describe('Short operator-facing finding message.'),
+    why: z.string().min(1).describe('Reason this pattern is considered unsafe or incorrect.'),
+    fix: z.string().min(1).describe('Suggested deterministic remediation guidance.'),
+  })
+  .describe('Single deterministic module-pattern finding.')
 
-export const ModulePatternCheckOutputSchema = z.object({
-  ok: z.boolean(),
-  findings: z.array(ModulePatternFindingSchema),
-})
+export const ModulePatternCheckOutputSchema = z
+  .object({
+    ok: z.boolean().describe('True when no deterministic findings were produced.'),
+    findings: z.array(ModulePatternFindingSchema).describe('Deterministically ordered module-pattern findings.'),
+  })
+  .describe('Output contract for deterministic module pattern checking.')
 
-export type ModulePatternCheckInput = z.infer<typeof ModulePatternCheckInputSchema>
+export type ModulePatternCheckInput = z.input<typeof ModulePatternCheckInputSchema>
+type ParsedModulePatternCheckInput = z.infer<typeof ModulePatternCheckInputSchema>
 export type ModulePatternFinding = z.infer<typeof ModulePatternFindingSchema>
 export type ModulePatternCheckOutput = z.infer<typeof ModulePatternCheckOutputSchema>
 
@@ -32,11 +49,20 @@ type ExtensionHandlerContext = {
   sourceFile: ts.SourceFile
   findings: ModulePatternFinding[]
   callback: ts.ArrowFunction | ts.FunctionExpression
+  localHelpers: LocalHelperEntry[]
+  transportBoundaryHelperNames: Set<string>
 }
 
 const DIAGNOSTIC_HELPER_NAME_PATTERN = /(report|emit|error|diagnostic)/i
 const ERROR_HELPER_NAME_PATTERN = /^(emit.*Error|report.*Error)$/i
 const ALLOWED_EVENT_NAME_PATTERN = /(started|stopped|connected|disconnected|received|sent|queued|accepted)/i
+const TRANSPORT_DIAGNOSTIC_HELPER_NAMES = new Set(['reportTransportError', 'emitClientError', 'emitTransportError'])
+const TRANSPORT_BOUNDARY_CALLBACK_NAME_PATTERN = /^reportTransportError$/i
+const TRANSPORT_BOUNDARY_CALLBACK_TYPE_PATTERN = /\breportTransportError\b/
+const BOUNDARY_OBSERVABILITY_EVENT_NAME_PATTERN =
+  /(client|connection|transport|protocol|ingress|egress|envelope|message|request|response|origin|upgrade|websocket|topic|session|peer|route|path)/i
+const SYNTHETIC_DIAGNOSTIC_EVENT_NAME_PATTERN =
+  /(server_error|runtime_error|actor_error|internal_error|diagnostic|snapshot|feedback)/i
 
 const toLineColumn = (sourceFile: ts.SourceFile, node: ts.Node) => {
   const start = node.getStart(sourceFile)
@@ -316,15 +342,20 @@ const catchHandlesZodError = (tryStatement: ts.TryStatement, sourceFile: ts.Sour
   return found
 }
 
-const callHasTransportOrClientErrorName = ({
-  call,
-  sourceFile,
-}: {
-  call: ts.CallExpression
-  sourceFile: ts.SourceFile
-}) => {
-  const calleeText = getCalleeText(sourceFile, call)
-  return /(reportTransportError|emitClientError|emitTransportError|TransportError|ClientError)/.test(calleeText)
+const callHasTransportOrClientErrorName = ({ call }: { call: ts.CallExpression }) => {
+  if (ts.isIdentifier(call.expression)) {
+    return TRANSPORT_DIAGNOSTIC_HELPER_NAMES.has(call.expression.text)
+  }
+
+  if (ts.isPropertyAccessExpression(call.expression)) {
+    return TRANSPORT_DIAGNOSTIC_HELPER_NAMES.has(call.expression.name.text)
+  }
+
+  if (ts.isElementAccessExpression(call.expression) && ts.isStringLiteralLike(call.expression.argumentExpression)) {
+    return TRANSPORT_DIAGNOSTIC_HELPER_NAMES.has(call.expression.argumentExpression.text)
+  }
+
+  return false
 }
 
 const getTriggerCreateEventInfo = ({
@@ -425,7 +456,7 @@ const analyzeInternalHandlers = ({ file, sourceFile, findings, callback }: Exten
               }
             }
 
-            if (callHasTransportOrClientErrorName({ call: node, sourceFile })) {
+            if (callHasTransportOrClientErrorName({ call: node })) {
               addFinding({
                 findings,
                 sourceFile,
@@ -445,12 +476,23 @@ const analyzeInternalHandlers = ({ file, sourceFile, findings, callback }: Exten
   }
 }
 
+type LocalHelperEntry = {
+  name: string
+  body: ts.ConciseBody
+  node: ts.Node
+}
+
+type TransportBoundaryCallbackEntry = {
+  name: string
+  body: ts.ConciseBody
+}
+
 const collectLocalHelpers = (callback: ts.ArrowFunction | ts.FunctionExpression) => {
   if (!ts.isBlock(callback.body)) {
-    return [] as Array<{ name: string; body: ts.Block; node: ts.Node }>
+    return [] as LocalHelperEntry[]
   }
 
-  const helpers: Array<{ name: string; body: ts.Block; node: ts.Node }> = []
+  const helpers: LocalHelperEntry[] = []
 
   for (const statement of callback.body.statements) {
     if (ts.isFunctionDeclaration(statement) && statement.name && statement.body) {
@@ -475,14 +517,9 @@ const collectLocalHelpers = (callback: ts.ArrowFunction | ts.FunctionExpression)
         continue
       }
 
-      const functionBody = declaration.initializer.body
-      if (!ts.isBlock(functionBody)) {
-        continue
-      }
-
       helpers.push({
         name: declaration.name.text,
-        body: functionBody,
+        body: declaration.initializer.body,
         node: declaration.name,
       })
     }
@@ -491,8 +528,213 @@ const collectLocalHelpers = (callback: ts.ArrowFunction | ts.FunctionExpression)
   return helpers
 }
 
-const analyzeTriggeredDiagnosticEvents = ({ file, sourceFile, findings, callback }: ExtensionHandlerContext) => {
-  const analyzeContext = ({ node, context }: { node: ts.Node; context: string }) => {
+const getDeclarationTypeText = ({
+  declaration,
+  sourceFile,
+}: {
+  declaration: ts.VariableDeclaration
+  sourceFile: ts.SourceFile
+}): string | null => {
+  const typeNode = declaration.type
+  if (!typeNode) {
+    return null
+  }
+
+  return typeNode.getText(sourceFile)
+}
+
+const hasTransportBoundaryCallbackSignal = ({ name, typeText }: { name: string; typeText: string | null }) => {
+  if (TRANSPORT_BOUNDARY_CALLBACK_NAME_PATTERN.test(name)) {
+    return true
+  }
+
+  if (!typeText) {
+    return false
+  }
+
+  return TRANSPORT_BOUNDARY_CALLBACK_TYPE_PATTERN.test(typeText)
+}
+
+const collectTransportBoundaryCallbacks = ({
+  callback,
+  sourceFile,
+}: {
+  callback: ts.ArrowFunction | ts.FunctionExpression
+  sourceFile: ts.SourceFile
+}): TransportBoundaryCallbackEntry[] => {
+  if (!ts.isBlock(callback.body)) {
+    return []
+  }
+
+  const callbacks: TransportBoundaryCallbackEntry[] = []
+
+  for (const statement of callback.body.statements) {
+    if (ts.isFunctionDeclaration(statement) && statement.name && statement.body) {
+      if (hasTransportBoundaryCallbackSignal({ name: statement.name.text, typeText: null })) {
+        callbacks.push({
+          name: statement.name.text,
+          body: statement.body,
+        })
+      }
+      continue
+    }
+
+    if (!ts.isVariableStatement(statement)) {
+      continue
+    }
+
+    for (const declaration of statement.declarationList.declarations) {
+      if (!ts.isIdentifier(declaration.name) || !declaration.initializer) {
+        continue
+      }
+
+      if (!(ts.isArrowFunction(declaration.initializer) || ts.isFunctionExpression(declaration.initializer))) {
+        continue
+      }
+
+      const typeText = getDeclarationTypeText({
+        declaration,
+        sourceFile,
+      })
+
+      if (
+        hasTransportBoundaryCallbackSignal({
+          name: declaration.name.text,
+          typeText,
+        })
+      ) {
+        callbacks.push({
+          name: declaration.name.text,
+          body: declaration.initializer.body,
+        })
+      }
+    }
+  }
+
+  return callbacks
+}
+
+const collectCalledHelperNames = ({
+  sourceFile,
+  body,
+  helperNameSet,
+}: {
+  sourceFile: ts.SourceFile
+  body: ts.ConciseBody
+  helperNameSet: Set<string>
+}) => {
+  const calls = new Set<string>()
+
+  walk({
+    node: body,
+    rootFunction: body,
+    skipNestedFunctions: true,
+    visitor: (node) => {
+      if (!ts.isCallExpression(node)) {
+        return
+      }
+
+      if (!ts.isIdentifier(node.expression)) {
+        return
+      }
+
+      if (!helperNameSet.has(node.expression.text)) {
+        return
+      }
+
+      calls.add(node.expression.text)
+    },
+  })
+
+  return calls
+}
+
+const collectTransportBoundaryHelperNames = ({
+  callback,
+  sourceFile,
+  localHelpers,
+}: {
+  callback: ts.ArrowFunction | ts.FunctionExpression
+  sourceFile: ts.SourceFile
+  localHelpers: LocalHelperEntry[]
+}) => {
+  const helperByName = new Map(localHelpers.map((helper) => [helper.name, helper]))
+  const helperNameSet = new Set(localHelpers.map((helper) => helper.name))
+  const transportBoundaryHelperNames = new Set<string>()
+  const queue: string[] = []
+
+  const transportBoundaryCallbacks = collectTransportBoundaryCallbacks({
+    callback,
+    sourceFile,
+  })
+
+  for (const boundaryCallback of transportBoundaryCallbacks) {
+    if (helperNameSet.has(boundaryCallback.name) && !transportBoundaryHelperNames.has(boundaryCallback.name)) {
+      transportBoundaryHelperNames.add(boundaryCallback.name)
+      queue.push(boundaryCallback.name)
+    }
+
+    for (const helperName of collectCalledHelperNames({
+      sourceFile,
+      body: boundaryCallback.body,
+      helperNameSet,
+    })) {
+      if (transportBoundaryHelperNames.has(helperName)) {
+        continue
+      }
+      transportBoundaryHelperNames.add(helperName)
+      queue.push(helperName)
+    }
+  }
+
+  while (queue.length > 0) {
+    const helperName = queue.shift()
+    if (!helperName) {
+      continue
+    }
+
+    const helper = helperByName.get(helperName)
+    if (!helper) {
+      continue
+    }
+
+    for (const calledHelperName of collectCalledHelperNames({
+      sourceFile,
+      body: helper.body,
+      helperNameSet,
+    })) {
+      if (transportBoundaryHelperNames.has(calledHelperName)) {
+        continue
+      }
+      transportBoundaryHelperNames.add(calledHelperName)
+      queue.push(calledHelperName)
+    }
+  }
+
+  return transportBoundaryHelperNames
+}
+
+const isBoundaryObservabilityEvent = (eventName: string | null) => {
+  if (!eventName) {
+    return false
+  }
+
+  if (SYNTHETIC_DIAGNOSTIC_EVENT_NAME_PATTERN.test(eventName)) {
+    return false
+  }
+
+  return BOUNDARY_OBSERVABILITY_EVENT_NAME_PATTERN.test(eventName)
+}
+
+const analyzeTriggeredDiagnosticEvents = ({
+  file,
+  sourceFile,
+  findings,
+  callback,
+  localHelpers,
+  transportBoundaryHelperNames,
+}: ExtensionHandlerContext) => {
+  const analyzeContext = ({ node, context, helperName }: { node: ts.Node; context: string; helperName?: string }) => {
     walk({
       node,
       visitor: (current) => {
@@ -506,6 +748,14 @@ const analyzeTriggeredDiagnosticEvents = ({ file, sourceFile, findings, callback
         }
 
         if (isAllowedLifecycleEvent(info.eventName)) {
+          return
+        }
+
+        if (
+          helperName &&
+          transportBoundaryHelperNames.has(helperName) &&
+          isBoundaryObservabilityEvent(info.eventName)
+        ) {
           return
         }
 
@@ -542,25 +792,14 @@ const analyzeTriggeredDiagnosticEvents = ({ file, sourceFile, findings, callback
 
   for (const objectLiteral of collectReturnedObjectLiterals(callback)) {
     for (const handler of getHandlerEntries(objectLiteral)) {
-      walk({
+      analyzeContext({
         node: handler.body,
-        rootFunction: handler.body,
-        skipNestedFunctions: true,
-        visitor: (node) => {
-          if (!ts.isCatchClause(node)) {
-            return
-          }
-
-          analyzeContext({
-            node: node.block,
-            context: `internal handler ${handler.name} catch block`,
-          })
-        },
+        context: `internal handler ${handler.name}`,
       })
     }
   }
 
-  for (const helper of collectLocalHelpers(callback)) {
+  for (const helper of localHelpers) {
     if (!DIAGNOSTIC_HELPER_NAME_PATTERN.test(helper.name)) {
       continue
     }
@@ -568,18 +807,26 @@ const analyzeTriggeredDiagnosticEvents = ({ file, sourceFile, findings, callback
     analyzeContext({
       node: helper.body,
       context: `helper ${helper.name}`,
+      helperName: helper.name,
     })
   }
 }
 
-const analyzeReportSnapshotPreference = ({ file, sourceFile, findings, callback }: ExtensionHandlerContext) => {
-  for (const helper of collectLocalHelpers(callback)) {
+const analyzeReportSnapshotPreference = ({
+  file,
+  sourceFile,
+  findings,
+  localHelpers,
+  transportBoundaryHelperNames,
+}: ExtensionHandlerContext) => {
+  for (const helper of localHelpers) {
     if (!ERROR_HELPER_NAME_PATTERN.test(helper.name)) {
       continue
     }
 
     let hasTriggerCall = false
     let hasReportSnapshotCall = false
+    let hasNonBoundaryTriggerCall = false
 
     walk({
       node: helper.body,
@@ -595,11 +842,27 @@ const analyzeReportSnapshotPreference = ({ file, sourceFile, findings, callback 
 
         if (calleeText === 'trigger' || calleeText.endsWith('.trigger')) {
           hasTriggerCall = true
+
+          const triggerInfo = getTriggerCreateEventInfo({
+            call: node,
+            sourceFile,
+          })
+          const isBoundaryTrigger =
+            transportBoundaryHelperNames.has(helper.name) &&
+            isBoundaryObservabilityEvent(triggerInfo?.eventName ?? null)
+
+          if (!isBoundaryTrigger) {
+            hasNonBoundaryTriggerCall = true
+          }
         }
       },
     })
 
     if (!hasTriggerCall || hasReportSnapshotCall) {
+      continue
+    }
+
+    if (transportBoundaryHelperNames.has(helper.name) && !hasNonBoundaryTriggerCall) {
       continue
     }
 
@@ -638,11 +901,20 @@ const analyzeSourceFile = ({
         return
       }
 
+      const localHelpers = collectLocalHelpers(callback)
+      const transportBoundaryHelperNames = collectTransportBoundaryHelperNames({
+        callback,
+        sourceFile,
+        localHelpers,
+      })
+
       const context: ExtensionHandlerContext = {
         file,
         sourceFile,
         findings,
         callback,
+        localHelpers,
+        transportBoundaryHelperNames,
       }
 
       analyzeInternalHandlers(context)
@@ -700,10 +972,52 @@ const readSourceFile = async ({ file }: { file: string }) => {
   return sourceFile
 }
 
+const recordFindings = async ({
+  input,
+  findings,
+}: {
+  input: ParsedModulePatternCheckInput
+  findings: ModulePatternFinding[]
+}) => {
+  if (!input.record || findings.length === 0) {
+    return
+  }
+
+  const context = await resolveOperationalContext(input)
+  const db = await openContextDatabase({ dbPath: context.dbPath })
+
+  try {
+    for (const finding of findings) {
+      const findingInput: FindingInput = {
+        kind: 'anti-pattern',
+        status: 'validated',
+        summary: `${finding.ruleId}: ${finding.message}`,
+        details: [`Severity: ${finding.severity}`, `Why: ${finding.why}`, `Fix: ${finding.fix}`].join('\n'),
+        evidence: [
+          {
+            path: finding.file,
+            line: finding.line,
+            symbol: finding.ruleId,
+            excerpt: finding.message,
+          },
+        ],
+      }
+
+      recordFinding({
+        db,
+        finding: findingInput,
+      })
+    }
+  } finally {
+    closeContextDatabase(db)
+  }
+}
+
 export const checkModulePatterns = async (input: ModulePatternCheckInput): Promise<ModulePatternCheckOutput> => {
+  const parsedInput = ModulePatternCheckInputSchema.parse(input)
   const findings: ModulePatternFinding[] = []
 
-  for (const file of input.files) {
+  for (const file of parsedInput.files) {
     const sourceFile = await readSourceFile({ file })
     analyzeSourceFile({
       file,
@@ -713,6 +1027,10 @@ export const checkModulePatterns = async (input: ModulePatternCheckInput): Promi
   }
 
   sortFindings(findings)
+  await recordFindings({
+    input: parsedInput,
+    findings,
+  })
 
   return {
     ok: findings.length === 0,
@@ -737,16 +1055,17 @@ const renderHumanOutput = ({ output }: { output: ModulePatternCheckOutput }) => 
   return lines.join('\n')
 }
 
-export const checkModulePatternsCli = async (args: string[]) => {
+export const modulePatternsCli = async (args: string[]) => {
   try {
     const { input, flags } = await parseCliRequest(args, ModulePatternCheckInputSchema, {
-      name: 'skills/mss-module-review/scripts/check-module-patterns.ts',
+      name: 'skills/plaited-context/scripts/module-patterns.ts',
       outputSchema: ModulePatternCheckOutputSchema,
-      help:
-        `Examples:\n  bun skills/mss-module-review/scripts/check-module-patterns.ts ` +
-        `'{"files":["src/modules/ui-websocket-runtime-actor.ts"]}'\n` +
-        `  bun skills/mss-module-review/scripts/check-module-patterns.ts ` +
-        `'{"files":["src/modules/ui-websocket-runtime-actor.ts"]}' --human`,
+      help: [
+        'Examples:',
+        `  bun skills/plaited-context/scripts/module-patterns.ts '{"files":["src/modules/ui-websocket-runtime-actor.ts"]}'`,
+        `  bun skills/plaited-context/scripts/module-patterns.ts '{"files":["src/modules/ui-websocket-runtime-actor.ts"],"record":true,"dbPath":".plaited/context.sqlite"}'`,
+        `  bun skills/plaited-context/scripts/module-patterns.ts --schema output`,
+      ].join('\n'),
     })
 
     const output = await checkModulePatterns(input)
@@ -765,5 +1084,5 @@ export const checkModulePatternsCli = async (args: string[]) => {
 }
 
 if (import.meta.main) {
-  await checkModulePatternsCli(Bun.argv.slice(2))
+  await modulePatternsCli(Bun.argv.slice(2))
 }

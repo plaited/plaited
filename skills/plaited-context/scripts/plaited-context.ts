@@ -1150,8 +1150,25 @@ export const assembleContext = ({
     )
     .all() as Array<{ summary: string; status: FindingStatus }>
 
-  const commandsToRun =
-    mode === 'review'
+  const normalizedTask = task.toLowerCase()
+  const normalizedPaths = paths.map((path) => normalizeRelativePath(path))
+  const modulePathInScope = normalizedPaths.some((path) => path === 'src/modules' || path.startsWith('src/modules/'))
+  const moduleTaskHint =
+    /module actor|module runtime|runtime actor|useextension|reportsnapshot|module diagnostics|mss/.test(normalizedTask)
+  const isModuleActorReview = modulePathInScope || moduleTaskHint
+
+  const commandsToRun = isModuleActorReview
+    ? [
+        'bun --bun tsc --noEmit',
+        'bun test <targeted-files-or-surface>',
+        `bun skills/plaited-context/scripts/module-patterns.ts '{"files":["<module-files>"]}'`,
+        `bun skills/plaited-context/scripts/module-flow.ts '{"files":["<module-files>"],"format":"json"}'`,
+        `bun skills/plaited-context/scripts/module-flow.ts '{"files":["<module-files>"],"format":"mermaid"}'`,
+        `bun skills/typescript-lsp/scripts/run.ts '{"file":"<module-file>","operations":[{"type":"symbols"}]}'`,
+        `bun skills/typescript-lsp/scripts/run.ts '{"file":"<module-file>","operations":[{"type":"references","line":<line>,"character":<character>}]}'`,
+        `bun skills/typescript-lsp/scripts/run.ts '{"file":"<module-file>","operations":[{"type":"definition","line":<line>,"character":<character>}]}'`,
+      ]
+    : mode === 'review'
       ? ['bun --bun tsc --noEmit', 'bun test <targeted-files-or-surface>']
       : mode === 'docs'
         ? [`bun skills/plaited-context/scripts/scan.ts '{"rootDir":".","include":["AGENTS.md","docs","skills"]}'`]
@@ -1162,12 +1179,12 @@ export const assembleContext = ({
           ]
 
   const sourceOfTruth = unique([
+    'src/ (code)',
     ...paths,
     ...getRelevantAgentInstructionPaths({ rows: agentInstructionRows, paths }),
-    ...skillPaths,
-    'src/ (code)',
-    'skills/*/SKILL.md (operational skill instructions)',
     'AGENTS.md (operational instructions)',
+    ...skillPaths,
+    'skills/*/SKILL.md (operational skill instructions)',
     'docs/ (wiki/reference; lower authority than code, AGENTS.md, and skills)',
   ])
 

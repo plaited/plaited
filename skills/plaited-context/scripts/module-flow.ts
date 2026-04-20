@@ -2,103 +2,146 @@ import { isAbsolute, resolve } from 'node:path'
 import ts from 'typescript'
 import * as z from 'zod'
 import { parseCliRequest } from '../../../src/cli.ts'
+import {
+  closeContextDatabase,
+  OperationalContextOverrideSchema,
+  openContextDatabase,
+  resolveOperationalContext,
+} from './plaited-context.ts'
 
-export const ModuleFlowRenderInputSchema = z.object({
-  files: z.array(z.string().min(1)),
-  format: z.enum(['json', 'mermaid']).default('json'),
-})
+export const ModuleFlowRenderInputSchema = OperationalContextOverrideSchema.extend({
+  files: z.array(z.string().min(1)).min(1).describe('Module actor files to analyze for runtime/module flow evidence.'),
+  format: z.enum(['json', 'mermaid']).default('json').describe('Output evidence format.'),
+  record: z
+    .boolean()
+    .default(false)
+    .describe('When true, records module-flow evidence findings in plaited-context SQLite DB.'),
+}).describe('Input contract for module flow extraction and review evidence rendering.')
 
-const SourceLocationSchema = z.object({
-  line: z.number().int().positive(),
-  column: z.number().int().positive(),
-})
+const SourceLocationSchema = z
+  .object({
+    line: z.number().int().positive().describe('1-based source line.'),
+    column: z.number().int().positive().describe('1-based source column.'),
+  })
+  .describe('Source location for a flow fact.')
 
-const ParseCallFactSchema = z.object({
-  method: z.enum(['parse', 'safeParse']),
-  schema: z.string().min(1),
-  argument: z.string().min(1),
-  location: SourceLocationSchema,
-})
+const ParseCallFactSchema = z
+  .object({
+    method: z.enum(['parse', 'safeParse']).describe('Parser method used at the call site.'),
+    schema: z.string().min(1).describe('Schema expression used for parse/safeParse.'),
+    argument: z.string().min(1).describe('Argument expression passed to parse/safeParse.'),
+    location: SourceLocationSchema.describe('Source location for the parse call.'),
+  })
+  .describe('Observed parse/safeParse call fact.')
 
-const TryCatchBoundaryFactSchema = z.object({
-  tryLocation: SourceLocationSchema,
-  catchLocation: SourceLocationSchema.nullable(),
-  finallyLocation: SourceLocationSchema.nullable(),
-})
+const TryCatchBoundaryFactSchema = z
+  .object({
+    tryLocation: SourceLocationSchema.describe('Location of the try block.'),
+    catchLocation: SourceLocationSchema.nullable().describe('Location of catch block when present.'),
+    finallyLocation: SourceLocationSchema.nullable().describe('Location of finally block when present.'),
+  })
+  .describe('Observed try/catch/finally boundary fact.')
 
-const TriggerEventFactSchema = z.object({
-  callee: z.string().min(1),
-  factory: z.string().min(1),
-  eventName: z.string().nullable(),
-  location: SourceLocationSchema,
-})
+const TriggerEventFactSchema = z
+  .object({
+    callee: z.string().min(1).describe('Trigger call callee expression.'),
+    factory: z.string().min(1).describe('Event factory expression used inside trigger call.'),
+    eventName: z.string().nullable().describe('Resolved event name expression when identifiable.'),
+    location: SourceLocationSchema.describe('Source location for the trigger(create*Event(...)) call.'),
+  })
+  .describe('Observed trigger(create*Event(...)) fact.')
 
-const CallFactSchema = z.object({
-  callee: z.string().min(1),
-  location: SourceLocationSchema,
-})
+const CallFactSchema = z
+  .object({
+    callee: z.string().min(1).describe('Call expression callee text.'),
+    location: SourceLocationSchema.describe('Source location for this call.'),
+  })
+  .describe('Observed call fact for selected diagnostic surfaces.')
 
-const HelperCallFactSchema = z.object({
-  helperName: z.string().min(1),
-  callee: z.string().min(1),
-  location: SourceLocationSchema,
-})
+const HelperCallFactSchema = z
+  .object({
+    helperName: z.string().min(1).describe('Resolved local helper name targeted by the call.'),
+    callee: z.string().min(1).describe('Original callee expression text.'),
+    location: SourceLocationSchema.describe('Source location for the helper call edge.'),
+  })
+  .describe('Observed handler/helper to helper call edge fact.')
 
-const HandlerFlowSchema = z.object({
-  name: z.string().min(1),
-  location: SourceLocationSchema,
-  parseCalls: z.array(ParseCallFactSchema),
-  tryCatchBoundaries: z.array(TryCatchBoundaryFactSchema),
-  triggerEventCalls: z.array(TriggerEventFactSchema),
-  reportSnapshotCalls: z.array(CallFactSchema),
-  transportDiagnosticCalls: z.array(CallFactSchema),
-  helperCalls: z.array(HelperCallFactSchema),
-})
+const HandlerFlowSchema = z
+  .object({
+    name: z.string().min(1).describe('Handler property/method name.'),
+    location: SourceLocationSchema.describe('Location of the handler declaration.'),
+    parseCalls: z.array(ParseCallFactSchema).describe('parse/safeParse calls inside the handler.'),
+    tryCatchBoundaries: z.array(TryCatchBoundaryFactSchema).describe('try/catch boundaries inside the handler.'),
+    triggerEventCalls: z.array(TriggerEventFactSchema).describe('trigger(create*Event(...)) calls inside the handler.'),
+    reportSnapshotCalls: z.array(CallFactSchema).describe('reportSnapshot-like calls inside the handler.'),
+    transportDiagnosticCalls: z.array(CallFactSchema).describe('transport/client diagnostic calls inside the handler.'),
+    helperCalls: z.array(HelperCallFactSchema).describe('Handler-to-helper call edges.'),
+  })
+  .describe('Flow facts extracted for one returned handler.')
 
-const HelperFlowSchema = z.object({
-  name: z.string().min(1),
-  location: SourceLocationSchema,
-  parseCalls: z.array(ParseCallFactSchema),
-  tryCatchBoundaries: z.array(TryCatchBoundaryFactSchema),
-  triggerEventCalls: z.array(TriggerEventFactSchema),
-  reportSnapshotCalls: z.array(CallFactSchema),
-  transportDiagnosticCalls: z.array(CallFactSchema),
-  helperCalls: z.array(HelperCallFactSchema),
-})
+const HelperFlowSchema = z
+  .object({
+    name: z.string().min(1).describe('Local helper name.'),
+    location: SourceLocationSchema.describe('Location of the helper declaration.'),
+    parseCalls: z.array(ParseCallFactSchema).describe('parse/safeParse calls inside the helper.'),
+    tryCatchBoundaries: z.array(TryCatchBoundaryFactSchema).describe('try/catch boundaries inside the helper.'),
+    triggerEventCalls: z.array(TriggerEventFactSchema).describe('trigger(create*Event(...)) calls inside the helper.'),
+    reportSnapshotCalls: z.array(CallFactSchema).describe('reportSnapshot-like calls inside the helper.'),
+    transportDiagnosticCalls: z.array(CallFactSchema).describe('transport/client diagnostic calls inside the helper.'),
+    helperCalls: z.array(HelperCallFactSchema).describe('Helper-to-helper call edges.'),
+  })
+  .describe('Flow facts extracted for one local helper.')
 
-const ExtensionFlowSchema = z.object({
-  idExpression: z.string().nullable(),
-  location: SourceLocationSchema,
-  handlers: z.array(HandlerFlowSchema),
-  helpers: z.array(HelperFlowSchema),
-})
+const ExtensionFlowSchema = z
+  .object({
+    idExpression: z.string().nullable().describe('Raw expression used as the useExtension id argument.'),
+    location: SourceLocationSchema.describe('Location of the useExtension call.'),
+    handlers: z.array(HandlerFlowSchema).describe('Returned handlers extracted for this extension callback.'),
+    helpers: z.array(HelperFlowSchema).describe('Local helpers extracted for this extension callback.'),
+  })
+  .describe('Flow facts extracted for one useExtension call.')
 
-const FileFlowSchema = z.object({
-  file: z.string().min(1),
-  extensions: z.array(ExtensionFlowSchema),
-})
+const FileFlowSchema = z
+  .object({
+    file: z.string().min(1).describe('Analyzed module file path.'),
+    extensions: z.array(ExtensionFlowSchema).describe('useExtension flow facts extracted from this file.'),
+  })
+  .describe('Flow facts for one analyzed file.')
 
-export const ModuleFlowGraphSchema = z.object({
-  files: z.array(FileFlowSchema),
-})
+export const ModuleFlowGraphSchema = z
+  .object({
+    files: z.array(FileFlowSchema).describe('Flow facts grouped by analyzed file.'),
+  })
+  .describe('Structured module/runtime flow graph facts.')
 
-export const ModuleFlowRenderOutputSchema = z.discriminatedUnion('format', [
-  z.object({
-    ok: z.literal(true),
-    format: z.literal('json'),
-    graph: ModuleFlowGraphSchema,
-  }),
-  z.object({
-    ok: z.literal(true),
-    format: z.literal('mermaid'),
-    graph: ModuleFlowGraphSchema,
-    mermaid: z.string().min(1),
-  }),
-])
+export const ModuleFlowRenderOutputSchema = z
+  .object({
+    ok: z.literal(true).describe('Indicates module flow extraction completed successfully.'),
+    files: z.array(FileFlowSchema).describe('Flow facts grouped by analyzed file.'),
+    graph: ModuleFlowGraphSchema.describe('Graph wrapper for structured flow facts.'),
+    mermaid: z
+      .string()
+      .describe('Deterministic Mermaid flowchart text when format is mermaid; otherwise an empty string.'),
+  })
+  .describe('Output contract for module flow extraction and Mermaid evidence rendering.')
 
-export type ModuleFlowRenderInput = z.infer<typeof ModuleFlowRenderInputSchema>
+export type ModuleFlowRenderInput = z.input<typeof ModuleFlowRenderInputSchema>
+type ParsedModuleFlowRenderInput = z.infer<typeof ModuleFlowRenderInputSchema>
 export type SourceLocation = z.infer<typeof SourceLocationSchema>
 export type ModuleFlowRenderOutput = z.infer<typeof ModuleFlowRenderOutputSchema>
+
+const ModuleFlowFindingDetailsSchema = z
+  .object({
+    source: z.literal('module-flow'),
+    file: z.string().min(1),
+    format: z.enum(['json', 'mermaid']),
+    extensions: z.number().int().nonnegative(),
+    handlers: z.number().int().nonnegative(),
+    helpers: z.number().int().nonnegative(),
+  })
+  .describe('Structured details payload for module-flow evidence findings.')
+
+type ModuleFlowFindingDetails = z.infer<typeof ModuleFlowFindingDetailsSchema>
 
 type HandlerEntry = {
   name: string
@@ -112,8 +155,7 @@ type LocalHelperEntry = {
   node: ts.Node
 }
 
-const TRANSPORT_DIAGNOSTIC_NAME_PATTERN =
-  /(reportTransportError|emitClientError|emitTransportError|TransportError|ClientError)/
+const TRANSPORT_DIAGNOSTIC_HELPER_NAMES = new Set(['reportTransportError', 'emitClientError', 'emitTransportError'])
 
 const toLineColumn = (sourceFile: ts.SourceFile, node: ts.Node): SourceLocation => {
   const start = node.getStart(sourceFile)
@@ -164,6 +206,22 @@ const unwrapParenthesizedExpression = (expression: ts.Expression): ts.Expression
 }
 
 const getCalleeText = (sourceFile: ts.SourceFile, call: ts.CallExpression) => call.expression.getText(sourceFile)
+
+const isTransportDiagnosticHelperCall = (call: ts.CallExpression): boolean => {
+  if (ts.isIdentifier(call.expression)) {
+    return TRANSPORT_DIAGNOSTIC_HELPER_NAMES.has(call.expression.text)
+  }
+
+  if (ts.isPropertyAccessExpression(call.expression)) {
+    return TRANSPORT_DIAGNOSTIC_HELPER_NAMES.has(call.expression.name.text)
+  }
+
+  if (ts.isElementAccessExpression(call.expression) && ts.isStringLiteralLike(call.expression.argumentExpression)) {
+    return TRANSPORT_DIAGNOSTIC_HELPER_NAMES.has(call.expression.argumentExpression.text)
+  }
+
+  return false
+}
 
 const isUseExtensionCall = (node: ts.Node): node is ts.CallExpression => {
   if (!ts.isCallExpression(node)) {
@@ -432,7 +490,7 @@ const analyzeBodyFacts = ({ sourceFile, body }: { sourceFile: ts.SourceFile; bod
         })
       }
 
-      if (TRANSPORT_DIAGNOSTIC_NAME_PATTERN.test(calleeText)) {
+      if (isTransportDiagnosticHelperCall(node)) {
         transportDiagnosticCalls.push({
           callee: calleeText,
           location: toLineColumn(sourceFile, node),
@@ -813,10 +871,146 @@ const renderMermaid = ({ graph }: { graph: z.infer<typeof ModuleFlowGraphSchema>
   return lines.join('\n')
 }
 
+const summarizeFileFlow = (fileFlow: z.infer<typeof FileFlowSchema>) => {
+  const extensionCount = fileFlow.extensions.length
+  const handlerCount = fileFlow.extensions.reduce((count, extension) => count + extension.handlers.length, 0)
+  const helperCount = fileFlow.extensions.reduce((count, extension) => count + extension.helpers.length, 0)
+  return {
+    extensionCount,
+    handlerCount,
+    helperCount,
+  }
+}
+
+const safeParseJson = (value: string): unknown | null => {
+  try {
+    return JSON.parse(value)
+  } catch {
+    return null
+  }
+}
+
+const parseModuleFlowFindingDetails = (details: string | null): ModuleFlowFindingDetails | null => {
+  if (!details) {
+    return null
+  }
+
+  const parsed = ModuleFlowFindingDetailsSchema.safeParse(safeParseJson(details))
+  return parsed.success ? parsed.data : null
+}
+
+const recordFlowEvidence = async ({
+  input,
+  files,
+}: {
+  input: ParsedModuleFlowRenderInput
+  files: z.infer<typeof FileFlowSchema>[]
+}) => {
+  if (!input.record) {
+    return
+  }
+
+  const context = await resolveOperationalContext(input)
+  const db = await openContextDatabase({ dbPath: context.dbPath })
+
+  try {
+    const selectCandidatePatternFindings = db.query(
+      `SELECT id, details
+       FROM findings
+       WHERE kind = 'pattern' AND status = 'candidate'
+       ORDER BY id ASC`,
+    )
+    const insertCandidateFinding = db.query(
+      `INSERT INTO findings (kind, status, summary, details, created_at, updated_at)
+       VALUES ('pattern', 'candidate', ?, ?, ?, ?)`,
+    )
+    const updateFinding = db.query(
+      `UPDATE findings
+       SET summary = ?, details = ?, updated_at = ?
+       WHERE id = ?`,
+    )
+    const retireFinding = db.query(
+      `UPDATE findings
+       SET status = 'retired', updated_at = ?
+       WHERE id = ?`,
+    )
+    const deleteFindingEvidence = db.query(`DELETE FROM finding_evidence WHERE finding_id = ?`)
+    const insertFindingEvidence = db.query(
+      `INSERT INTO finding_evidence (finding_id, path, line, symbol, excerpt, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    )
+
+    for (const fileFlow of files) {
+      const summary = summarizeFileFlow(fileFlow)
+      const primaryLocation = fileFlow.extensions[0]?.location
+
+      const detailPayload: ModuleFlowFindingDetails = {
+        source: 'module-flow',
+        file: fileFlow.file,
+        format: input.format,
+        extensions: summary.extensionCount,
+        handlers: summary.handlerCount,
+        helpers: summary.helperCount,
+      }
+      const detailPayloadText = JSON.stringify(detailPayload, null, 2)
+      const summaryText =
+        `module-flow evidence for ${fileFlow.file}: ` +
+        `${summary.extensionCount} extension(s), ${summary.handlerCount} handler(s), ${summary.helperCount} helper(s)`
+      const evidenceExcerpt = `extensions=${summary.extensionCount}, handlers=${summary.handlerCount}, helpers=${summary.helperCount}`
+
+      const candidateRows = selectCandidatePatternFindings.all() as Array<{
+        id: number
+        details: string | null
+      }>
+      const matchingCandidateIds = candidateRows
+        .filter((row) => {
+          const rowDetails = parseModuleFlowFindingDetails(row.details)
+          if (!rowDetails) {
+            return false
+          }
+
+          return rowDetails.file === detailPayload.file && rowDetails.format === detailPayload.format
+        })
+        .map((row) => row.id)
+
+      const timestamp = new Date().toISOString()
+      const writeEvidenceForFinding = db.transaction((findingId: number) => {
+        deleteFindingEvidence.run(findingId)
+        insertFindingEvidence.run(
+          findingId,
+          fileFlow.file,
+          primaryLocation?.line ?? null,
+          'module-flow',
+          evidenceExcerpt,
+          timestamp,
+        )
+      })
+
+      if (matchingCandidateIds.length === 0) {
+        const inserted = insertCandidateFinding.run(summaryText, detailPayloadText, timestamp, timestamp)
+        const findingId = Number(inserted.lastInsertRowid)
+        writeEvidenceForFinding(findingId)
+        continue
+      }
+
+      const canonicalFindingId = matchingCandidateIds[0] as number
+      updateFinding.run(summaryText, detailPayloadText, timestamp, canonicalFindingId)
+      writeEvidenceForFinding(canonicalFindingId)
+
+      for (const duplicateFindingId of matchingCandidateIds.slice(1)) {
+        retireFinding.run(timestamp, duplicateFindingId)
+      }
+    }
+  } finally {
+    closeContextDatabase(db)
+  }
+}
+
 export const renderModuleFlow = async (input: ModuleFlowRenderInput): Promise<ModuleFlowRenderOutput> => {
+  const parsedInput = ModuleFlowRenderInputSchema.parse(input)
   const files: z.infer<typeof FileFlowSchema>[] = []
 
-  for (const file of input.files) {
+  for (const file of parsedInput.files) {
     files.push(await analyzeFile({ file }))
   }
 
@@ -824,32 +1018,32 @@ export const renderModuleFlow = async (input: ModuleFlowRenderInput): Promise<Mo
     files,
   }
 
-  if (input.format === 'mermaid') {
-    return {
-      ok: true,
-      format: 'mermaid',
-      graph,
-      mermaid: renderMermaid({ graph }),
-    }
-  }
+  const mermaid = parsedInput.format === 'mermaid' ? renderMermaid({ graph }) : ''
+
+  await recordFlowEvidence({
+    input: parsedInput,
+    files,
+  })
 
   return {
     ok: true,
-    format: 'json',
+    files,
     graph,
+    mermaid,
   }
 }
 
-export const renderModuleFlowCli = async (args: string[]) => {
+export const moduleFlowCli = async (args: string[]) => {
   try {
     const { input } = await parseCliRequest(args, ModuleFlowRenderInputSchema, {
-      name: 'skills/mss-module-review/scripts/render-module-flow.ts',
+      name: 'skills/plaited-context/scripts/module-flow.ts',
       outputSchema: ModuleFlowRenderOutputSchema,
-      help:
-        `Examples:\n  bun skills/mss-module-review/scripts/render-module-flow.ts ` +
-        `'{"files":["src/modules/ui-websocket-runtime-actor.ts"],"format":"json"}'\n` +
-        `  bun skills/mss-module-review/scripts/render-module-flow.ts ` +
-        `'{"files":["src/modules/ui-websocket-runtime-actor.ts"],"format":"mermaid"}'`,
+      help: [
+        'Examples:',
+        `  bun skills/plaited-context/scripts/module-flow.ts '{"files":["src/modules/ui-websocket-runtime-actor.ts"],"format":"json"}'`,
+        `  bun skills/plaited-context/scripts/module-flow.ts '{"files":["src/modules/ui-websocket-runtime-actor.ts"],"format":"mermaid"}'`,
+        `  bun skills/plaited-context/scripts/module-flow.ts --schema output`,
+      ].join('\n'),
     })
 
     const output = await renderModuleFlow(input)
@@ -861,5 +1055,5 @@ export const renderModuleFlowCli = async (args: string[]) => {
 }
 
 if (import.meta.main) {
-  await renderModuleFlowCli(Bun.argv.slice(2))
+  await moduleFlowCli(Bun.argv.slice(2))
 }

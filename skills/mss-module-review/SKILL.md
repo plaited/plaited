@@ -1,25 +1,19 @@
 ---
 name: mss-module-review
-description: Deterministic MSS/module actor review gate plus flow evidence generation with TypeScript-LSP-assisted ambiguity checks.
+description: MSS/module architectural review checklist delegating deterministic analysis and flow evidence to plaited-context.
 ---
 
 # mss-module-review
 
-Use this skill when reviewing or validating agent-authored MSS/module runtime actors.
+Use this skill as an MSS/module review checklist and delegation layer.
 
-It combines:
-- deterministic module pattern diagnostics
-- type-aware inspection with `typescript-lsp`
-- module flow graph extraction
-- Mermaid review diagrams
-- generative architectural review
+Deterministic module diagnostics and flow evidence are owned by
+`plaited-context`:
+- `skills/plaited-context/scripts/context.ts`
+- `skills/plaited-context/scripts/module-patterns.ts`
+- `skills/plaited-context/scripts/module-flow.ts`
 
-## Hard Gate vs Review Artifact
-
-- `check-module-patterns.ts` is the hard deterministic gate.
-- `render-module-flow.ts` is required review evidence.
-- TypeScript LSP probes are used to resolve ambiguity and verify symbol identity.
-- Generative review is required to catch architectural drift not yet encoded as rules.
+This skill no longer owns executable module-analysis scripts.
 
 ## Skill Coordination
 
@@ -33,17 +27,23 @@ Notes:
 
 ## Required Review Commands
 
-Run hard gate first:
+Use plaited-context for context assembly:
 
 ```bash
-bun skills/mss-module-review/scripts/check-module-patterns.ts '{"files":["<module-files>"]}'
+bun skills/plaited-context/scripts/context.ts '{"task":"review module actor diagnostics","mode":"review","paths":["<module-files>"]}'
+```
+
+Run hard gate:
+
+```bash
+bun skills/plaited-context/scripts/module-patterns.ts '{"files":["<module-files>"]}'
 ```
 
 Run required review evidence:
 
 ```bash
-bun skills/mss-module-review/scripts/render-module-flow.ts '{"files":["<module-files>"],"format":"json"}'
-bun skills/mss-module-review/scripts/render-module-flow.ts '{"files":["<module-files>"],"format":"mermaid"}'
+bun skills/plaited-context/scripts/module-flow.ts '{"files":["<module-files>"],"format":"json"}'
+bun skills/plaited-context/scripts/module-flow.ts '{"files":["<module-files>"],"format":"mermaid"}'
 ```
 
 When ambiguity exists, run `typescript-lsp` probes:
@@ -53,6 +53,9 @@ bun skills/typescript-lsp/scripts/run.ts '{"file":"<module-file>","operations":[
 bun skills/typescript-lsp/scripts/run.ts '{"file":"<module-file>","operations":[{"type":"references","line":<line>,"character":<character>}]}'
 bun skills/typescript-lsp/scripts/run.ts '{"file":"<module-file>","operations":[{"type":"definition","line":<line>,"character":<character>}]}'
 ```
+
+Optional: include DB recording in plaited-context commands with `"record": true`
+and a configured `"dbPath"` when findings/evidence should be persisted.
 
 ## Review Checklist
 
@@ -78,12 +81,6 @@ Report:
 - TypeScript LSP probes run, if any
 - architectural findings
 - known limitations
-
-## Script Behavior Contract
-
-- Preserve current JSON contracts and exit codes.
-- Preserve `check-module-patterns.ts` as the only hard violation gate.
-- Preserve `render-module-flow.ts` as review artifact output only.
 
 ## Known Limitations
 

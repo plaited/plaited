@@ -1,0 +1,395 @@
+import { afterEach, describe, expect, test } from 'bun:test'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
+
+import { initDb } from '../init-db.ts'
+import { checkModulePatterns, ModulePatternCheckOutputSchema } from '../module-patterns.ts'
+import { closeContextDatabase, openContextDatabase } from '../plaited-context.ts'
+
+const SCRIPT_PATH = new URL('../module-patterns.ts', import.meta.url).pathname
+
+const tempDirs: string[] = []
+
+const writeFixture = async ({ name, source }: { name: string; source: string }) => {
+  const dir = await mkdtemp(join(tmpdir(), 'plaited-context-module-patterns-'))
+  tempDirs.push(dir)
+  const file = join(dir, name)
+  await Bun.write(file, source)
+  return file
+}
+
+const runCli = async (args: string[]) => {
+  const proc = Bun.spawn(['bun', SCRIPT_PATH, ...args], {
+    stdout: 'pipe',
+    stderr: 'pipe',
+  })
+
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+    proc.exited,
+  ])
+
+  return {
+    exitCode,
+    stdout: stdout.trim(),
+    stderr: stderr.trim(),
+  }
+}
+
+afterEach(async () => {
+  await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })))
+})
+
+describe('module-patterns', () => {
+  test('flags zod recovery in returned internal handlers', async () => {
+    const file = await writeFixture({
+      name: 'bad-zod-recovery.ts',
+      source: `
+import * as z from 'zod'
+
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = { start: 'start' } as const
+
+useExtension('mod', (_ctx) => ({
+  [EVENTS.start](detail: unknown) {
+    try {
+      StartSchema.parse(detail)
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return
+      }
+      throw error
+    }
+  },
+}))
+`,
+    })
+
+    const output = await checkModulePatterns({ files: [file] })
+    expect(output.ok).toBe(false)
+    expect(output.findings.some((finding) => finding.ruleId === 'module/no-internal-zod-recovery')).toBe(true)
+  })
+
+  test('accepts strict internal parse without local recovery', async () => {
+    const file = await writeFixture({
+      name: 'clean.ts',
+      source: `
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = { start: 'start' } as const
+
+useExtension('mod', (_ctx) => ({
+  [EVENTS.start](detail: unknown) {
+    StartSchema.parse(detail)
+  },
+}))
+`,
+    })
+
+    const output = await checkModulePatterns({ files: [file] })
+    expect(output.ok).toBe(true)
+    expect(output.findings).toEqual([])
+  })
+
+  test('records deterministic findings to SQLite when record is true', async () => {
+    const file = await writeFixture({
+      name: 'recordable.ts',
+      source: `
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = { start: 'start' } as const
+
+useExtension('mod', (_ctx) => ({
+  [EVENTS.start](detail: unknown) {
+    const parsed = StartSchema.safeParse(detail)
+    if (!parsed.success) {
+      return
+    }
+  },
+}))
+`,
+    })
+
+    const dbPath = join(dirname(file), '.plaited/context.sqlite')
+    await initDb({
+      cwd: dirname(file),
+      dbPath,
+    })
+
+    const output = await checkModulePatterns({
+      cwd: dirname(file),
+      dbPath,
+      files: [file],
+      record: true,
+    })
+
+    expect(output.ok).toBe(false)
+
+    const db = await openContextDatabase({ dbPath })
+    try {
+      const rows = db
+        .query(
+          `SELECT kind, status, summary
+           FROM findings
+           WHERE summary LIKE 'module/no-safeparse-in-internal-handler:%'`,
+        )
+        .all() as Array<{ kind: string; status: string; summary: string }>
+
+      expect(rows.length).toBeGreaterThan(0)
+      expect(rows[0]?.kind).toBe('anti-pattern')
+      expect(rows[0]?.status).toBe('validated')
+    } finally {
+      closeContextDatabase(db)
+    }
+  })
+
+  test('exits 2 for missing file and invalid input', async () => {
+    const missingPath = join(tmpdir(), 'does-not-exist-module-patterns.ts')
+
+    const missingResult = await runCli([JSON.stringify({ files: [missingPath] })])
+    expect(missingResult.exitCode).toBe(2)
+    expect(missingResult.stderr).toContain('Missing file')
+
+    const invalidResult = await runCli(['{"files":42}'])
+    expect(invalidResult.exitCode).toBe(2)
+    expect(invalidResult.stderr.length).toBeGreaterThan(0)
+  })
+
+  test('prints stable JSON output shape and exits 1 when findings exist', async () => {
+    const file = await writeFixture({
+      name: 'json-shape.ts',
+      source: `
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = { start: 'start' } as const
+
+useExtension('mod', (_ctx) => ({
+  [EVENTS.start](detail: unknown) {
+    const parsed = StartSchema.safeParse(detail)
+    if (!parsed.success) {
+      return
+    }
+  },
+}))
+`,
+    })
+
+    const result = await runCli([JSON.stringify({ files: [file] })])
+    expect(result.exitCode).toBe(1)
+
+    const parsed = JSON.parse(result.stdout)
+    const output = ModulePatternCheckOutputSchema.parse(parsed)
+    expect(output.ok).toBe(false)
+    expect(output.findings.length).toBeGreaterThan(0)
+  })
+
+  test('supports --human output for operator readability', async () => {
+    const file = await writeFixture({
+      name: 'human-output-clean.ts',
+      source: `
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = { start: 'start' } as const
+
+useExtension('mod', (_ctx) => ({
+  [EVENTS.start](detail: unknown) {
+    StartSchema.parse(detail)
+  },
+}))
+`,
+    })
+
+    const result = await runCli([JSON.stringify({ files: [file] }), '--human'])
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout).toContain('No module pattern findings.')
+  })
+
+  test('flags expression-bodied diagnostic helper trigger events', async () => {
+    const file = await writeFixture({
+      name: 'expression-helper-trigger.ts',
+      source: `
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = {
+  start: 'start',
+  server_error: 'server_error',
+} as const
+const createActorEvent = (eventName: string, detail: unknown) => ({ eventName, detail })
+
+useExtension('mod', ({ trigger }: { trigger: (value: unknown) => void }) => {
+  const emitServerError = (detail: unknown) => trigger(createActorEvent(EVENTS.server_error, detail))
+
+  return {
+    [EVENTS.start](detail: unknown) {
+      emitServerError(detail)
+    },
+  }
+})
+`,
+    })
+
+    const output = await checkModulePatterns({ files: [file] })
+    expect(output.ok).toBe(false)
+    expect(output.findings.some((finding) => finding.ruleId === 'module/no-triggered-diagnostic-event')).toBe(true)
+    expect(
+      output.findings.some((finding) =>
+        ['module/no-triggered-diagnostic-event', 'module/prefer-report-snapshot-for-actor-diagnostics'].includes(
+          finding.ruleId,
+        ),
+      ),
+    ).toBe(true)
+  })
+
+  test('allows boundary observability helper chains from reportTransportError callbacks', async () => {
+    const file = await writeFixture({
+      name: 'boundary-observability-client-error.ts',
+      source: `
+type CreateMockServerOptions = {
+  reportTransportError: (detail: { code: string }) => void
+}
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = {
+  start: 'start',
+  client_error: 'client_error',
+} as const
+const SNAPSHOT_MESSAGE_KINDS = { extension_error: 'extension_error' } as const
+const createActorEvent = (eventName: string, detail: unknown) => ({ eventName, detail })
+
+useExtension(
+  'mod',
+  ({ trigger, reportSnapshot }: { trigger: (value: unknown) => void; reportSnapshot: (value: unknown) => void }) => {
+    const emitClientError = (detail: unknown) => trigger(createActorEvent(EVENTS.client_error, detail))
+
+    const reportTransportError: CreateMockServerOptions['reportTransportError'] = (detail) => {
+      reportSnapshot({
+        kind: SNAPSHOT_MESSAGE_KINDS.extension_error,
+        error: \`transport diagnostic (\${detail.code})\`,
+      })
+      emitClientError(detail)
+    }
+
+    return {
+      [EVENTS.start](detail: unknown) {
+        StartSchema.parse(detail)
+      },
+    }
+  },
+)
+`,
+    })
+
+    const output = await checkModulePatterns({ files: [file] })
+    expect(output.ok).toBe(true)
+    expect(output.findings).toEqual([])
+  })
+
+  test('flags internal handlers that call transport/client diagnostic helpers', async () => {
+    const file = await writeFixture({
+      name: 'internal-handler-calls-transport-helper.ts',
+      source: `
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = {
+  start: 'start',
+  client_error: 'client_error',
+} as const
+const createActorEvent = (eventName: string, detail: unknown) => ({ eventName, detail })
+
+useExtension('mod', ({ trigger }: { trigger: (value: unknown) => void }) => {
+  const emitClientError = (detail: unknown) => trigger(createActorEvent(EVENTS.client_error, detail))
+
+  return {
+    [EVENTS.start](detail: unknown) {
+      StartSchema.parse(detail)
+      emitClientError(detail)
+    },
+  }
+})
+`,
+    })
+
+    const output = await checkModulePatterns({ files: [file] })
+    expect(output.ok).toBe(false)
+    expect(
+      output.findings.some((finding) => finding.ruleId === 'module/no-transport-diagnostic-from-internal-handler'),
+    ).toBe(true)
+  })
+
+  test('does not flag schema parse calls that include ClientError/TransportError in schema name', async () => {
+    const file = await writeFixture({
+      name: 'internal-handler-schema-parse-client-transport-error.ts',
+      source: `
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = { start: 'start' } as const
+
+useExtension('mod', () => ({
+  [EVENTS.start](detail: unknown) {
+    ClientErrorDetailSchema.parse(detail)
+    TransportErrorDetailSchema.parse(detail)
+  },
+}))
+`,
+    })
+
+    const output = await checkModulePatterns({ files: [file] })
+    expect(output.ok).toBe(true)
+    expect(
+      output.findings.some((finding) => finding.ruleId === 'module/no-transport-diagnostic-from-internal-handler'),
+    ).toBe(false)
+  })
+
+  test('flags internal handlers that directly trigger synthetic diagnostic events', async () => {
+    const file = await writeFixture({
+      name: 'internal-handler-direct-trigger.ts',
+      source: `
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = {
+  start: 'start',
+  server_error: 'server_error',
+} as const
+const createActorEvent = (eventName: string, detail: unknown) => ({ eventName, detail })
+
+useExtension('mod', ({ trigger }: { trigger: (value: unknown) => void }) => ({
+  [EVENTS.start](detail: unknown) {
+    StartSchema.parse(detail)
+    trigger(createActorEvent(EVENTS.server_error, detail))
+  },
+}))
+`,
+    })
+
+    const output = await checkModulePatterns({ files: [file] })
+    expect(output.ok).toBe(false)
+    expect(output.findings.some((finding) => finding.ruleId === 'module/no-triggered-diagnostic-event')).toBe(true)
+  })
+
+  test('does not flag reportSnapshot expression helper with prefer-report-snapshot rule', async () => {
+    const file = await writeFixture({
+      name: 'expression-helper-report-snapshot.ts',
+      source: `
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = { start: 'start' } as const
+
+useExtension('mod', ({ reportSnapshot }: { reportSnapshot: (detail: unknown) => void }) => {
+  const reportServerError = (detail: unknown) => reportSnapshot({ kind: 'extension_error', detail })
+
+  return {
+    [EVENTS.start](detail: unknown) {
+      reportServerError(detail)
+    },
+  }
+})
+`,
+    })
+
+    const output = await checkModulePatterns({ files: [file] })
+    expect(
+      output.findings.some((finding) => finding.ruleId === 'module/prefer-report-snapshot-for-actor-diagnostics'),
+    ).toBe(false)
+  })
+
+  test('passes the current websocket runtime actor files', async () => {
+    const output = await checkModulePatterns({
+      files: ['src/modules/ui-websocket-runtime-actor.ts', 'src/modules/inference-websocket-runtime-actor.ts'],
+    })
+
+    expect(output.ok).toBe(true)
+    expect(output.findings).toEqual([])
+  })
+})

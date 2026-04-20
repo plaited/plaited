@@ -416,4 +416,79 @@ describe('plaited-context scripts', () => {
       closeContextDatabase(db)
     }
   })
+
+  test('context recommends module analysis commands for module actor review tasks', async () => {
+    const rootDir = await createTempWorkspace()
+    const dbPath = join(rootDir, '.plaited/context.sqlite')
+
+    await initDb({
+      cwd: rootDir,
+      dbPath,
+    })
+
+    await scanWorkspace({
+      cwd: rootDir,
+      rootDir,
+      dbPath,
+      include: ['AGENTS.md', 'src', 'skills', 'docs'],
+      force: true,
+    })
+
+    const contextOutput = await assembleTaskContext({
+      cwd: rootDir,
+      dbPath,
+      task: 'review module actor diagnostics',
+      mode: 'review',
+      paths: ['src/modules/example.ts'],
+    })
+
+    expect(contextOutput.commandsToRun).toContain('bun --bun tsc --noEmit')
+    expect(contextOutput.commandsToRun).toContain('bun test <targeted-files-or-surface>')
+    expect(
+      contextOutput.commandsToRun.some((command) =>
+        command.includes('skills/plaited-context/scripts/module-patterns.ts'),
+      ),
+    ).toBe(true)
+    expect(
+      contextOutput.commandsToRun.some(
+        (command) =>
+          command.includes('skills/plaited-context/scripts/module-flow.ts') && command.includes('"format":"json"'),
+      ),
+    ).toBe(true)
+    expect(
+      contextOutput.commandsToRun.some(
+        (command) =>
+          command.includes('skills/plaited-context/scripts/module-flow.ts') && command.includes('"format":"mermaid"'),
+      ),
+    ).toBe(true)
+    expect(
+      contextOutput.commandsToRun.some(
+        (command) => command.includes('skills/typescript-lsp/scripts/run.ts') && command.includes('"type":"symbols"'),
+      ),
+    ).toBe(true)
+    expect(
+      contextOutput.commandsToRun.some(
+        (command) =>
+          command.includes('skills/typescript-lsp/scripts/run.ts') && command.includes('"type":"references"'),
+      ),
+    ).toBe(true)
+    expect(
+      contextOutput.commandsToRun.some(
+        (command) =>
+          command.includes('skills/typescript-lsp/scripts/run.ts') && command.includes('"type":"definition"'),
+      ),
+    ).toBe(true)
+
+    const sourceIndex = contextOutput.sourceOfTruth.indexOf('src/ (code)')
+    const agentsIndex = contextOutput.sourceOfTruth.indexOf('AGENTS.md (operational instructions)')
+    const skillsIndex = contextOutput.sourceOfTruth.indexOf('skills/*/SKILL.md (operational skill instructions)')
+    const docsIndex = contextOutput.sourceOfTruth.indexOf(
+      'docs/ (wiki/reference; lower authority than code, AGENTS.md, and skills)',
+    )
+
+    expect(sourceIndex).toBeGreaterThanOrEqual(0)
+    expect(agentsIndex).toBeGreaterThan(sourceIndex)
+    expect(skillsIndex).toBeGreaterThan(agentsIndex)
+    expect(docsIndex).toBeGreaterThan(skillsIndex)
+  })
 })
