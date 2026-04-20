@@ -20,6 +20,7 @@ Use it before:
 - implementing a feature or fix
 - reviewing a slice or PR
 - updating wiki/reference docs and checking for stale guidance
+- large code, docs, or skill edits that need source-grounded context first
 
 ## Operational Context
 
@@ -78,19 +79,25 @@ bun skills/plaited-context/scripts/scan.ts '{"rootDir":".","include":["AGENTS.md
 bun skills/plaited-context/scripts/context.ts '{"task":"review module actor diagnostics","mode":"review","paths":["src/modules/example.ts"]}'
 ```
 
-4. Run targeted search
+4. Assemble wiki context (relevance + cleanup candidates)
+
+```bash
+bun skills/plaited-context/scripts/wiki-context.ts '{"task":"review runtime module architecture","paths":["src/modules"],"limit":10}'
+```
+
+5. Run targeted search
 
 ```bash
 bun skills/plaited-context/scripts/search.ts '{"query":"useSnapshot reportSnapshot","limit":20}'
 ```
 
-5. Run deterministic module pattern gate (hard gate)
+6. Run deterministic module pattern gate (hard gate)
 
 ```bash
 bun skills/plaited-context/scripts/module-patterns.ts '{"files":["src/modules/example.ts"]}'
 ```
 
-6. Generate module flow review evidence
+7. Generate module flow review evidence
 
 ```bash
 bun skills/plaited-context/scripts/module-flow.ts '{"files":["src/modules/example.ts"],"format":"json"}'
@@ -105,13 +112,13 @@ bun skills/typescript-lsp/scripts/run.ts '{"file":"src/modules/example.ts","oper
 bun skills/typescript-lsp/scripts/run.ts '{"file":"src/modules/example.ts","operations":[{"type":"definition","line":120,"character":8}]}'
 ```
 
-7. Record findings with evidence
+8. Record findings with evidence
 
 ```bash
 bun skills/plaited-context/scripts/record-finding.ts '{"finding":{"kind":"anti-pattern","status":"candidate","summary":"Internal handlers should not catch ZodError locally.","evidence":[{"path":"src/modules/example.ts","line":100,"symbol":"server_start"}]}}'
 ```
 
-8. Export review JSON
+9. Export review JSON
 
 ```bash
 bun skills/plaited-context/scripts/export-review.ts '{"status":["candidate","validated"],"format":"json"}'
@@ -132,6 +139,18 @@ When sources conflict, prioritize:
 2. `AGENTS.md` operational instructions by scope
 3. skill instructions (`skills/*/SKILL.md`)
 4. wiki/reference docs (for synthesis and background)
+5. other indexed text
+
+`AGENTS.md` files are operational instructions, not wiki docs.
+
+Wiki docs are searchable synthesis/reference material and do not outrank code,
+`AGENTS.md`, or applicable skills.
+
+Wiki cleanup candidates are review evidence only; they are not automatic rewrite
+actions.
+
+Use `scan.ts`, `search.ts`, `context.ts`, and `wiki-context.ts` to assemble
+context instead of manually reading broad docs trees.
 
 ## Script Contracts
 

@@ -6,9 +6,11 @@ import * as z from 'zod'
 import {
   findSkillDirectories,
   getSkillInstructionResourceLinks,
+  type LocalMarkdownLink,
   loadSkillCatalog,
   loadSkillFrontmatter,
   loadSkillInstructions,
+  validateMarkdownLocalLinks,
 } from '../../../src/cli.ts'
 
 const DEFAULT_DB_RELATIVE_PATH = '.plaited/context.sqlite'
@@ -112,6 +114,15 @@ export type SearchResultEntry = {
   snippet: string
 }
 
+export type ContextAuthority = 'source' | 'agent-instructions' | 'skill' | 'wiki' | 'other'
+
+export type ContextAuthorityEntry = {
+  rank: number
+  authority: ContextAuthority
+  label: string
+  description: string
+}
+
 export type ContextAssemblyOutput = {
   ok: true
   filesToRead: string[]
@@ -120,6 +131,74 @@ export type ContextAssemblyOutput = {
   knownPatterns: string[]
   knownAntiPatterns: string[]
   sourceOfTruth: string[]
+  authorityOrder: ContextAuthorityEntry[]
+  authorityPolicy: string
+  openQuestions: string[]
+}
+
+export type WikiBrokenLink = {
+  path: string
+  linkValue: string
+  linkText: string
+  targetPath: string | null
+  reason: string
+  authority: 'wiki'
+  provenance: string[]
+}
+
+export type WikiCleanupCandidateKind =
+  | 'broken-local-link'
+  | 'missing-target-file'
+  | 'retired-skill-reference'
+  | 'orphan-page'
+
+export type WikiCleanupCandidate = {
+  path: string
+  kind: WikiCleanupCandidateKind
+  reason: string
+  authority: 'wiki'
+  provenance: string[]
+}
+
+export type WikiContextPage = {
+  path: string
+  title: string
+  reason: string
+  authority: 'wiki'
+  headings: string[]
+  outboundLocalReferences: string[]
+  warnings: string[]
+  provenance: {
+    matchedTerms: string[]
+    matchedIn: Array<'path' | 'title' | 'heading' | 'body' | 'outbound-link' | 'task-path'>
+  }
+}
+
+export type WikiContextAgentInstruction = {
+  path: string
+  scopePath: string
+  authority: 'agent-instructions'
+  reason: string
+  provenance: string[]
+}
+
+export type WikiContextSkill = {
+  name: string
+  path: string
+  authority: 'skill'
+  reason: string
+  provenance: string[]
+}
+
+export type WikiContextOutput = {
+  ok: true
+  wikiPages: WikiContextPage[]
+  agentInstructions: WikiContextAgentInstruction[]
+  skills: WikiContextSkill[]
+  sourceOfTruth: ContextAuthorityEntry[]
+  authorityPolicy: string
+  brokenLinks: WikiBrokenLink[]
+  cleanupCandidates: WikiCleanupCandidate[]
   openQuestions: string[]
 }
 
@@ -140,6 +219,56 @@ type ExportRow = {
   kind: string
   line: number
 }
+
+type DocHeadingRow = {
+  heading: string
+  level: number
+  line: number
+  orderIndex: number
+}
+
+type DocLinkRow = {
+  value: string
+  text: string
+  targetPath: string | null
+  targetExists: boolean
+}
+
+export const CONTEXT_AUTHORITY_ORDER: ContextAuthorityEntry[] = [
+  {
+    rank: 1,
+    authority: 'source',
+    label: 'code',
+    description: 'src/ code and tests',
+  },
+  {
+    rank: 2,
+    authority: 'agent-instructions',
+    label: 'agent-instructions',
+    description: 'AGENTS.md operational instructions by path scope',
+  },
+  {
+    rank: 3,
+    authority: 'skill',
+    label: 'skills',
+    description: 'skills/*/SKILL.md and applicable skill scripts',
+  },
+  {
+    rank: 4,
+    authority: 'wiki',
+    label: 'wiki',
+    description: 'wiki/reference docs',
+  },
+  {
+    rank: 5,
+    authority: 'other',
+    label: 'other',
+    description: 'unclassified indexed text',
+  },
+]
+
+const AUTHORITY_POLICY_TEXT =
+  'When sources conflict, code and tests outrank AGENTS.md, AGENTS.md outranks skills, and skills outrank wiki.'
 
 let cachedSchemaSql: string | undefined
 
@@ -719,9 +848,117 @@ const toAgentInstructionScopePath = (relativePath: string): string => {
   return directory === '.' ? '.' : directory
 }
 
+const inferDocTitle = (relativePath: string): string => {
+  const stem = basename(relativePath, extname(relativePath))
+  const words = stem
+    .replace(/[-_]+/g, ' ')
+    .split(/\s+/)
+    .filter((word) => word.length > 0)
+
+  if (words.length === 0) {
+    return stem || relativePath
+  }
+
+  return words.map((word) => `${word[0]?.toUpperCase() ?? ''}${word.slice(1)}`).join(' ')
+}
+
+const parseMarkdownHeadings = (markdown: string): DocHeadingRow[] => {
+  const headings: DocHeadingRow[] = []
+  const lines = markdown.split(/\r?\n/)
+  let insideFence = false
+  let orderIndex = 0
+
+  for (const [index, rawLine] of lines.entries()) {
+    const line = rawLine.trim()
+    if (line.startsWith('```') || line.startsWith('~~~')) {
+      insideFence = !insideFence
+      continue
+    }
+    if (insideFence) {
+      continue
+    }
+
+    const match = rawLine.match(/^\s{0,3}(#{1,6})\s+(.+?)\s*#*\s*$/)
+    if (!match) {
+      continue
+    }
+
+    const hashes = match[1]
+    const heading = match[2]?.trim()
+    if (!hashes || !heading) {
+      continue
+    }
+
+    headings.push({
+      heading,
+      level: hashes.length,
+      line: index + 1,
+      orderIndex,
+    })
+    orderIndex += 1
+  }
+
+  return headings
+}
+
 const parseDocTitle = (markdown: string): string | undefined => {
-  const heading = markdown.match(/^#\s+(.+)$/m)
-  return heading?.[1]?.trim()
+  const heading = parseMarkdownHeadings(markdown)[0]
+  return heading?.heading
+}
+
+const sortLocalMarkdownLinks = (left: LocalMarkdownLink, right: LocalMarkdownLink): number => {
+  const valueComparison = left.value.localeCompare(right.value)
+  if (valueComparison !== 0) {
+    return valueComparison
+  }
+  return left.text.localeCompare(right.text)
+}
+
+const parseDocLinks = async ({
+  markdownBody,
+  absolutePath,
+  absoluteRoot,
+}: {
+  markdownBody: string
+  absolutePath: string
+  absoluteRoot: string
+}): Promise<DocLinkRow[]> => {
+  const baseDir = dirname(absolutePath)
+  const validation = await validateMarkdownLocalLinks({
+    baseDir,
+    markdownBody,
+  })
+  const present = [...validation.present].sort(sortLocalMarkdownLinks)
+  const missing = [...validation.missing].sort(sortLocalMarkdownLinks)
+  const rows: DocLinkRow[] = []
+
+  for (const link of present) {
+    const absoluteTargetPath = resolve(baseDir, link.value)
+    const normalizedTargetPath = isSubPath(absoluteTargetPath, absoluteRoot)
+      ? toPosix(relative(absoluteRoot, absoluteTargetPath))
+      : null
+    rows.push({
+      value: link.value,
+      text: link.text,
+      targetPath: normalizedTargetPath,
+      targetExists: normalizedTargetPath !== null,
+    })
+  }
+
+  for (const link of missing) {
+    const absoluteTargetPath = resolve(baseDir, link.value)
+    const normalizedTargetPath = isSubPath(absoluteTargetPath, absoluteRoot)
+      ? toPosix(relative(absoluteRoot, absoluteTargetPath))
+      : null
+    rows.push({
+      value: link.value,
+      text: link.text,
+      targetPath: normalizedTargetPath,
+      targetExists: false,
+    })
+  }
+
+  return rows
 }
 
 export const indexWorkspace = async ({
@@ -774,10 +1011,19 @@ export const indexWorkspace = async ({
   const deleteFileAgentInstructions = db.query('DELETE FROM agent_instructions WHERE path = ?')
   const deleteFileSkill = db.query('DELETE FROM skills WHERE path = ?')
   const deleteFileDoc = db.query('DELETE FROM docs WHERE path = ?')
+  const deleteFileDocHeadings = db.query('DELETE FROM doc_headings WHERE path = ?')
+  const deleteFileDocLinks = db.query('DELETE FROM doc_links WHERE path = ?')
 
   const insertSymbol = db.query('INSERT INTO symbols (file_path, name, kind, line) VALUES (?, ?, ?, ?)')
   const insertImport = db.query('INSERT INTO imports (file_path, specifier, line, is_type) VALUES (?, ?, ?, ?)')
   const insertExport = db.query('INSERT INTO exports (file_path, name, kind, line) VALUES (?, ?, ?, ?)')
+  const insertDocHeading = db.query(
+    'INSERT INTO doc_headings (path, heading, level, line, order_index, indexed_at) VALUES (?, ?, ?, ?, ?, ?)',
+  )
+  const insertDocLink = db.query(
+    `INSERT INTO doc_links (path, link_value, link_text, target_path, target_exists, indexed_at)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+  )
   const upsertSkill = db.query(
     `INSERT INTO skills (path, name, description, license, compatibility, indexed_at)
      VALUES (?, ?, ?, ?, ?, ?)
@@ -830,6 +1076,8 @@ export const indexWorkspace = async ({
     deleteFileAgentInstructions.run(relativePath)
     deleteFileSkill.run(relativePath)
     deleteFileDoc.run(relativePath)
+    deleteFileDocHeadings.run(relativePath)
+    deleteFileDocLinks.run(relativePath)
 
     const symbols = parseSymbols(content)
     const imports = parseImports(content)
@@ -868,7 +1116,21 @@ export const indexWorkspace = async ({
     }
 
     if (kind === 'wiki') {
-      upsertDoc.run(relativePath, parseDocTitle(content) ?? null, content, indexedAt)
+      const headings = parseMarkdownHeadings(content)
+      const links = await parseDocLinks({
+        markdownBody: content,
+        absolutePath,
+        absoluteRoot,
+      })
+
+      upsertDoc.run(relativePath, parseDocTitle(content) ?? inferDocTitle(relativePath), content, indexedAt)
+      for (const heading of headings) {
+        insertDocHeading.run(relativePath, heading.heading, heading.level, heading.line, heading.orderIndex, indexedAt)
+      }
+
+      for (const link of links) {
+        insertDocLink.run(relativePath, link.value, link.text, link.targetPath, link.targetExists ? 1 : 0, indexedAt)
+      }
       wikiIndexed += 1
     }
 
@@ -1171,7 +1433,10 @@ export const assembleContext = ({
     : mode === 'review'
       ? ['bun --bun tsc --noEmit', 'bun test <targeted-files-or-surface>']
       : mode === 'docs'
-        ? [`bun skills/plaited-context/scripts/scan.ts '{"rootDir":".","include":["AGENTS.md","docs","skills"]}'`]
+        ? [
+            `bun skills/plaited-context/scripts/scan.ts '{"rootDir":".","include":["AGENTS.md","docs","skills"]}'`,
+            `bun skills/plaited-context/scripts/wiki-context.ts '{"task":"<docs-task>","paths":["docs"],"limit":10}'`,
+          ]
         : [
             'bun --bun tsc --noEmit',
             'bun test <targeted-files-or-surface>',
@@ -1186,6 +1451,7 @@ export const assembleContext = ({
     ...skillPaths,
     'skills/*/SKILL.md (operational skill instructions)',
     'docs/ (wiki/reference; lower authority than code, AGENTS.md, and skills)',
+    'other indexed text (lowest authority)',
   ])
 
   const openQuestions: string[] = []
@@ -1204,6 +1470,473 @@ export const assembleContext = ({
     knownPatterns: findingPatternRows.map((row) => `${row.status}: ${row.summary}`),
     knownAntiPatterns: findingAntiPatternRows.map((row) => `${row.status}: ${row.summary}`),
     sourceOfTruth,
+    authorityOrder: CONTEXT_AUTHORITY_ORDER,
+    authorityPolicy: AUTHORITY_POLICY_TEXT,
+    openQuestions,
+  }
+}
+
+type WikiDocTableRow = {
+  path: string
+  title: string | null
+  body: string
+}
+
+type WikiHeadingTableRow = {
+  path: string
+  heading: string
+}
+
+type WikiLinkTableRow = {
+  path: string
+  link_value: string
+  link_text: string
+  target_path: string | null
+  target_exists: number
+}
+
+type SkillSearchRow = {
+  name: string
+  path: string
+}
+
+type AgentInstructionTableRow = {
+  path: string
+  scope_path: string
+}
+
+type WikiCleanupReport = {
+  brokenLinks: WikiBrokenLink[]
+  cleanupCandidates: WikiCleanupCandidate[]
+  warningsByPath: Map<string, string[]>
+  outboundByPath: Map<string, string[]>
+}
+
+const compareCleanupCandidates = (left: WikiCleanupCandidate, right: WikiCleanupCandidate): number => {
+  const pathComparison = left.path.localeCompare(right.path)
+  if (pathComparison !== 0) {
+    return pathComparison
+  }
+
+  const kindComparison = left.kind.localeCompare(right.kind)
+  if (kindComparison !== 0) {
+    return kindComparison
+  }
+
+  return left.reason.localeCompare(right.reason)
+}
+
+const buildWikiCleanupReport = ({
+  docsRows,
+  linksRows,
+  skillPaths,
+}: {
+  docsRows: WikiDocTableRow[]
+  linksRows: WikiLinkTableRow[]
+  skillPaths: Set<string>
+}): WikiCleanupReport => {
+  const docPaths = new Set(docsRows.map((row) => row.path))
+  const brokenLinks: WikiBrokenLink[] = []
+  const cleanupCandidates: WikiCleanupCandidate[] = []
+  const cleanupCandidateKeys = new Set<string>()
+  const warningsByPath = new Map<string, string[]>()
+  const outboundByPath = new Map<string, Set<string>>()
+  const incomingByPath = new Map<string, number>()
+
+  for (const docPath of docPaths) {
+    incomingByPath.set(docPath, 0)
+    outboundByPath.set(docPath, new Set())
+  }
+
+  for (const row of linksRows) {
+    const outboundSet = outboundByPath.get(row.path) ?? new Set<string>()
+    if (row.target_exists === 1 && row.target_path) {
+      outboundSet.add(row.target_path)
+    }
+    outboundByPath.set(row.path, outboundSet)
+
+    if (row.target_path && docPaths.has(row.target_path)) {
+      incomingByPath.set(row.target_path, (incomingByPath.get(row.target_path) ?? 0) + 1)
+    }
+
+    if (row.target_exists === 1) {
+      continue
+    }
+
+    const isMissingTarget = row.target_path !== null
+    const reason = isMissingTarget
+      ? `Local link target '${row.target_path}' does not exist.`
+      : `Local link '${row.link_value}' cannot be resolved to a workspace path.`
+    brokenLinks.push({
+      path: row.path,
+      linkValue: row.link_value,
+      linkText: row.link_text,
+      targetPath: row.target_path,
+      reason,
+      authority: 'wiki',
+      provenance: ['doc-links'],
+    })
+
+    const kind: WikiCleanupCandidateKind = isMissingTarget ? 'missing-target-file' : 'broken-local-link'
+    const candidateKey = `${row.path}:${kind}:${row.link_value}:${row.target_path ?? '<none>'}`
+    if (cleanupCandidateKeys.has(candidateKey)) {
+      continue
+    }
+
+    cleanupCandidateKeys.add(candidateKey)
+    cleanupCandidates.push({
+      path: row.path,
+      kind,
+      reason,
+      authority: 'wiki',
+      provenance: [
+        `doc-links:${row.path}`,
+        row.target_path ? `missing-target:${row.target_path}` : `link-value:${row.link_value}`,
+      ],
+    })
+    warningsByPath.set(row.path, [...(warningsByPath.get(row.path) ?? []), reason])
+  }
+
+  for (const row of docsRows) {
+    const outgoingCount = outboundByPath.get(row.path)?.size ?? 0
+    const incomingCount = incomingByPath.get(row.path) ?? 0
+    if (outgoingCount === 0 && incomingCount === 0) {
+      const reason = 'Wiki page has no incoming or outgoing local links and may be orphaned.'
+      cleanupCandidates.push({
+        path: row.path,
+        kind: 'orphan-page',
+        reason,
+        authority: 'wiki',
+        provenance: ['doc-links:link-graph'],
+      })
+      warningsByPath.set(row.path, [...(warningsByPath.get(row.path) ?? []), reason])
+    }
+  }
+
+  const skillPathPattern = /\bskills\/[A-Za-z0-9._-]+\/SKILL\.md\b/g
+  for (const row of docsRows) {
+    const mentionedSkillPaths = new Set<string>()
+    for (const match of row.body.matchAll(skillPathPattern)) {
+      const value = match[0]
+      if (!value) {
+        continue
+      }
+      mentionedSkillPaths.add(toPosix(value))
+    }
+
+    for (const skillPath of [...mentionedSkillPaths].sort((left, right) => left.localeCompare(right))) {
+      if (skillPaths.has(skillPath)) {
+        continue
+      }
+
+      const reason = `Referenced skill path '${skillPath}' is not indexed as an active skill.`
+      const candidateKey = `${row.path}:retired-skill-reference:${skillPath}`
+      if (cleanupCandidateKeys.has(candidateKey)) {
+        continue
+      }
+
+      cleanupCandidateKeys.add(candidateKey)
+      cleanupCandidates.push({
+        path: row.path,
+        kind: 'retired-skill-reference',
+        reason,
+        authority: 'wiki',
+        provenance: [`doc-content:${skillPath}`],
+      })
+      warningsByPath.set(row.path, [...(warningsByPath.get(row.path) ?? []), reason])
+    }
+  }
+
+  const normalizedOutboundByPath = new Map<string, string[]>()
+  for (const [path, values] of outboundByPath.entries()) {
+    normalizedOutboundByPath.set(
+      path,
+      [...values].sort((left, right) => left.localeCompare(right)),
+    )
+  }
+
+  const normalizedWarningsByPath = new Map<string, string[]>()
+  for (const [path, warnings] of warningsByPath.entries()) {
+    normalizedWarningsByPath.set(
+      path,
+      [...new Set(warnings)].sort((left, right) => left.localeCompare(right)),
+    )
+  }
+
+  brokenLinks.sort((left, right) => {
+    const pathComparison = left.path.localeCompare(right.path)
+    if (pathComparison !== 0) {
+      return pathComparison
+    }
+    const valueComparison = left.linkValue.localeCompare(right.linkValue)
+    if (valueComparison !== 0) {
+      return valueComparison
+    }
+    return left.linkText.localeCompare(right.linkText)
+  })
+  cleanupCandidates.sort(compareCleanupCandidates)
+
+  return {
+    brokenLinks,
+    cleanupCandidates,
+    warningsByPath: normalizedWarningsByPath,
+    outboundByPath: normalizedOutboundByPath,
+  }
+}
+
+export const assembleWikiContext = ({
+  db,
+  task,
+  paths,
+  limit,
+}: {
+  db: Database
+  task: string
+  paths: string[]
+  limit: number
+}): WikiContextOutput => {
+  const docsRows = db
+    .query(
+      `SELECT path, title, body
+       FROM docs
+       ORDER BY path ASC`,
+    )
+    .all() as WikiDocTableRow[]
+
+  const headingsRows = db
+    .query(
+      `SELECT path, heading
+       FROM doc_headings
+       ORDER BY path ASC, order_index ASC`,
+    )
+    .all() as WikiHeadingTableRow[]
+
+  const linksRows = db
+    .query(
+      `SELECT path, link_value, link_text, target_path, target_exists
+       FROM doc_links
+       ORDER BY path ASC, link_value ASC, link_text ASC`,
+    )
+    .all() as WikiLinkTableRow[]
+
+  const skillPathRows = db
+    .query(
+      `SELECT path
+       FROM files
+       WHERE kind = 'skill'
+       ORDER BY path ASC`,
+    )
+    .all() as Array<{ path: string }>
+  const skillPaths = new Set(skillPathRows.map((row) => row.path))
+
+  const cleanupReport = buildWikiCleanupReport({
+    docsRows,
+    linksRows,
+    skillPaths,
+  })
+
+  const headingsByPath = new Map<string, string[]>()
+  for (const row of headingsRows) {
+    const headings = headingsByPath.get(row.path) ?? []
+    headings.push(row.heading)
+    headingsByPath.set(row.path, headings)
+  }
+
+  const terms = splitQueryTerms(task)
+  const searchTerms = (terms.length > 0 ? terms : [task]).map((term) => term.toLowerCase())
+  const normalizedTaskPaths = paths.map((path) => normalizeRelativePath(path)).filter((path) => path.length > 0)
+
+  const scoredPages = docsRows
+    .map((row) => {
+      const title = row.title?.trim() || inferDocTitle(row.path)
+      const headings = headingsByPath.get(row.path) ?? []
+      const outboundReferences = cleanupReport.outboundByPath.get(row.path) ?? []
+      const matchedTerms = new Set<string>()
+      const matchedIn = new Set<WikiContextPage['provenance']['matchedIn'][number]>()
+      let score = 0
+
+      const normalizedPath = row.path.toLowerCase()
+      const normalizedTitle = title.toLowerCase()
+      const normalizedHeadings = headings.map((heading) => heading.toLowerCase())
+      const normalizedBody = row.body.toLowerCase()
+      const normalizedOutboundReferences = outboundReferences.map((reference) => reference.toLowerCase())
+
+      for (const term of searchTerms) {
+        if (normalizedPath.includes(term)) {
+          matchedTerms.add(term)
+          matchedIn.add('path')
+          score += 3
+        }
+        if (normalizedTitle.includes(term)) {
+          matchedTerms.add(term)
+          matchedIn.add('title')
+          score += 4
+        }
+        if (normalizedHeadings.some((heading) => heading.includes(term))) {
+          matchedTerms.add(term)
+          matchedIn.add('heading')
+          score += 4
+        }
+        if (normalizedBody.includes(term)) {
+          matchedTerms.add(term)
+          matchedIn.add('body')
+          score += 1
+        }
+        if (normalizedOutboundReferences.some((reference) => reference.includes(term))) {
+          matchedTerms.add(term)
+          matchedIn.add('outbound-link')
+          score += 2
+        }
+      }
+
+      for (const taskPath of normalizedTaskPaths) {
+        if (pathScopesOverlap(row.path, taskPath)) {
+          matchedIn.add('task-path')
+          score += 2
+        }
+
+        if (outboundReferences.some((reference) => pathScopesOverlap(reference, taskPath))) {
+          matchedIn.add('task-path')
+          matchedIn.add('outbound-link')
+          score += 5
+        }
+      }
+
+      const warnings = cleanupReport.warningsByPath.get(row.path) ?? []
+      if (warnings.length > 0) {
+        score += 1
+      }
+
+      if (score === 0) {
+        return null
+      }
+
+      const reasonFragments: string[] = []
+      if (matchedIn.has('title') || matchedIn.has('heading')) {
+        reasonFragments.push('matched title/headings')
+      }
+      if (matchedIn.has('path')) {
+        reasonFragments.push('matched document path')
+      }
+      if (matchedIn.has('task-path')) {
+        reasonFragments.push('linked to requested task paths')
+      }
+      if (matchedIn.has('body')) {
+        reasonFragments.push('matched body terms')
+      }
+      if (warnings.length > 0) {
+        reasonFragments.push('contains cleanup warnings')
+      }
+
+      return {
+        page: {
+          path: row.path,
+          title,
+          reason: reasonFragments.join('; ') || 'matched wiki relevance terms',
+          authority: 'wiki' as const,
+          headings,
+          outboundLocalReferences: outboundReferences,
+          warnings,
+          provenance: {
+            matchedTerms: [...matchedTerms].sort((left, right) => left.localeCompare(right)),
+            matchedIn: [...matchedIn].sort((left, right) => left.localeCompare(right)),
+          },
+        },
+        score,
+      }
+    })
+    .filter((entry): entry is { page: WikiContextPage; score: number } => entry !== null)
+    .sort((left, right) => {
+      if (left.score !== right.score) {
+        return right.score - left.score
+      }
+      return left.page.path.localeCompare(right.page.path)
+    })
+
+  const agentInstructionRows = db
+    .query(
+      `SELECT path, scope_path
+       FROM agent_instructions
+       ORDER BY CASE scope_path WHEN '.' THEN 0 ELSE 1 END, LENGTH(scope_path) DESC, path ASC`,
+    )
+    .all() as AgentInstructionTableRow[]
+  const relevantAgentInstructionPaths = new Set(getRelevantAgentInstructionPaths({ rows: agentInstructionRows, paths }))
+  const agentInstructions: WikiContextAgentInstruction[] = agentInstructionRows
+    .filter((row) => relevantAgentInstructionPaths.has(row.path))
+    .map((row) => ({
+      path: row.path,
+      scopePath: row.scope_path,
+      authority: 'agent-instructions',
+      reason:
+        row.scope_path === '.'
+          ? 'Root AGENTS.md applies across the workspace.'
+          : normalizedTaskPaths.length > 0
+            ? 'AGENTS scope overlaps requested paths.'
+            : 'Scoped AGENTS instruction included.',
+      provenance: [`scope:${row.scope_path}`],
+    }))
+
+  const skillMatchByPath = new Map<string, { name: string; path: string; matchedTerms: Set<string> }>()
+  for (const term of searchTerms) {
+    const likePattern = `%${escapeLike(term)}%`
+    const matches = db
+      .query(
+        `SELECT name, path
+         FROM skills
+         WHERE name LIKE ? ESCAPE '\\' COLLATE NOCASE OR description LIKE ? ESCAPE '\\' COLLATE NOCASE
+         ORDER BY name ASC
+         LIMIT 24`,
+      )
+      .all(likePattern, likePattern) as SkillSearchRow[]
+
+    for (const match of matches) {
+      const existing = skillMatchByPath.get(match.path)
+      if (existing) {
+        existing.matchedTerms.add(term)
+        continue
+      }
+
+      skillMatchByPath.set(match.path, {
+        name: match.name,
+        path: match.path,
+        matchedTerms: new Set([term]),
+      })
+    }
+  }
+
+  const skills = [...skillMatchByPath.values()]
+    .sort((left, right) => left.name.localeCompare(right.name) || left.path.localeCompare(right.path))
+    .map(
+      (entry): WikiContextSkill => ({
+        name: entry.name,
+        path: entry.path,
+        authority: 'skill',
+        reason: 'skill metadata matched task terms',
+        provenance: [...entry.matchedTerms].sort((left, right) => left.localeCompare(right)),
+      }),
+    )
+    .slice(0, Math.max(limit, 1))
+
+  const wikiPages = scoredPages.slice(0, Math.max(limit, 1)).map((entry) => entry.page)
+  const openQuestions: string[] = []
+  if (wikiPages.length === 0) {
+    openQuestions.push('No wiki pages matched the task terms. Confirm whether docs/ should be included in scan inputs.')
+  }
+  if (cleanupReport.cleanupCandidates.length > 0) {
+    openQuestions.push(
+      `${cleanupReport.cleanupCandidates.length} wiki cleanup candidates were found; review before relying on wiki assertions.`,
+    )
+  }
+
+  return {
+    ok: true,
+    wikiPages,
+    agentInstructions,
+    skills,
+    sourceOfTruth: CONTEXT_AUTHORITY_ORDER,
+    authorityPolicy: AUTHORITY_POLICY_TEXT,
+    brokenLinks: cleanupReport.brokenLinks,
+    cleanupCandidates: cleanupReport.cleanupCandidates,
     openQuestions,
   }
 }
@@ -1291,9 +2024,15 @@ export const recordContextRun = ({
 export const exportReviewData = ({
   db,
   statuses,
+  wikiTask,
+  wikiPaths,
+  wikiLimit,
 }: {
   db: Database
   statuses: FindingStatus[]
+  wikiTask: string
+  wikiPaths: string[]
+  wikiLimit: number
 }): {
   findings: Array<{
     id: number
@@ -1313,6 +2052,7 @@ export const exportReviewData = ({
     result: ContextAssemblyOutput | null
     createdAt: string
   }>
+  wikiContext: WikiContextOutput
 } => {
   const placeholders = statuses.map(() => '?').join(', ')
 
@@ -1378,6 +2118,13 @@ export const exportReviewData = ({
     created_at: string
   }>
 
+  const wikiContext = assembleWikiContext({
+    db,
+    task: wikiTask,
+    paths: wikiPaths,
+    limit: wikiLimit,
+  })
+
   return {
     findings: findings.map((finding) => ({
       id: finding.id,
@@ -1402,5 +2149,6 @@ export const exportReviewData = ({
         createdAt: row.created_at,
       }
     }),
+    wikiContext,
   }
 }

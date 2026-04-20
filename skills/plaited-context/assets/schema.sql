@@ -73,6 +73,36 @@ CREATE TABLE IF NOT EXISTS docs (
 
 CREATE INDEX IF NOT EXISTS idx_docs_indexed_at ON docs(indexed_at DESC);
 
+CREATE TABLE IF NOT EXISTS doc_headings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  path TEXT NOT NULL,
+  heading TEXT NOT NULL,
+  level INTEGER NOT NULL CHECK (level BETWEEN 1 AND 6),
+  line INTEGER,
+  order_index INTEGER NOT NULL,
+  indexed_at TEXT NOT NULL,
+  FOREIGN KEY (path) REFERENCES docs(path) ON DELETE CASCADE,
+  UNIQUE (path, order_index)
+);
+
+CREATE INDEX IF NOT EXISTS idx_doc_headings_path ON doc_headings(path);
+CREATE INDEX IF NOT EXISTS idx_doc_headings_heading ON doc_headings(heading);
+
+CREATE TABLE IF NOT EXISTS doc_links (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  path TEXT NOT NULL,
+  link_value TEXT NOT NULL,
+  link_text TEXT NOT NULL,
+  target_path TEXT,
+  target_exists INTEGER NOT NULL CHECK (target_exists IN (0, 1)),
+  indexed_at TEXT NOT NULL,
+  FOREIGN KEY (path) REFERENCES docs(path) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_doc_links_path ON doc_links(path);
+CREATE INDEX IF NOT EXISTS idx_doc_links_target_path ON doc_links(target_path);
+CREATE INDEX IF NOT EXISTS idx_doc_links_target_exists ON doc_links(target_exists);
+
 CREATE TABLE IF NOT EXISTS agent_instructions (
   path TEXT PRIMARY KEY,
   scope_path TEXT NOT NULL,
