@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import { initDb } from '../init-db.ts'
 import { closeContextDatabase, openContextDatabase } from '../plaited-context.ts'
 import { scanWorkspace } from '../scan.ts'
@@ -17,6 +17,9 @@ const writeTempFile = async ({ path, content }: { path: string; content: string 
 const createWikiWorkspace = async () => {
   const rootDir = await mkdtemp(join(tmpdir(), 'plaited-context-wiki-'))
   tempDirs.push(rootDir)
+  const outsideDir = await mkdtemp(join(tmpdir(), 'plaited-context-wiki-outside-'))
+  tempDirs.push(outsideDir)
+  const outsideLinkValue = `../../${basename(outsideDir)}/outside.md`
 
   await writeTempFile({
     path: join(rootDir, 'src/modules/runtime.ts'),
@@ -46,6 +49,12 @@ compatibility: Requires bun
   })
 
   await writeTempFile({
+    path: join(outsideDir, 'outside.md'),
+    content: `# Outside File
+`,
+  })
+
+  await writeTempFile({
     path: join(rootDir, 'docs/guide.md'),
     content: `# Runtime Guide
 
@@ -53,6 +62,7 @@ compatibility: Requires bun
 
 Review [runtime module](../src/modules/runtime.ts#main) first.
 Check [missing note](./missing-note.md).
+Check [outside workspace file](${outsideLinkValue}).
 See [example skill](../skills/example-skill/SKILL.md).
 Retired reference: \`skills/retired-skill/SKILL.md\`.
 `,
@@ -74,7 +84,10 @@ No local links here.
 `,
   })
 
-  return rootDir
+  return {
+    rootDir,
+    outsideLinkValue,
+  }
 }
 
 afterEach(async () => {
@@ -83,7 +96,7 @@ afterEach(async () => {
 
 describe('wiki-context assembly', () => {
   test('indexes wiki markdown metadata while keeping AGENTS.md separate', async () => {
-    const rootDir = await createWikiWorkspace()
+    const { rootDir, outsideLinkValue } = await createWikiWorkspace()
     const dbPath = join(rootDir, '.plaited/context.sqlite')
 
     await initDb({ cwd: rootDir, dbPath })
@@ -120,6 +133,11 @@ describe('wiki-context assembly', () => {
       expect(headings).toEqual([{ heading: 'Runtime Guide' }, { heading: 'Module Layout' }])
       expect(links).toEqual([
         {
+          link_value: outsideLinkValue,
+          target_path: null,
+          target_exists: 0,
+        },
+        {
           link_value: '../skills/example-skill/SKILL.md',
           target_path: 'skills/example-skill/SKILL.md',
           target_exists: 1,
@@ -141,7 +159,7 @@ describe('wiki-context assembly', () => {
   })
 
   test('reports deterministic wiki relevance, authority ordering, and cleanup candidates', async () => {
-    const rootDir = await createWikiWorkspace()
+    const { rootDir, outsideLinkValue } = await createWikiWorkspace()
     const dbPath = join(rootDir, '.plaited/context.sqlite')
 
     await initDb({ cwd: rootDir, dbPath })
@@ -171,9 +189,28 @@ describe('wiki-context assembly', () => {
     expect(firstOutput).toEqual(secondOutput)
     expect(firstOutput.wikiPages.some((page) => page.path === 'docs/guide.md')).toBe(true)
     expect(firstOutput.brokenLinks.some((link) => link.path === 'docs/guide.md')).toBe(true)
+    expect(
+      firstOutput.brokenLinks.some(
+        (link) =>
+          link.path === 'docs/guide.md' &&
+          link.linkValue === outsideLinkValue &&
+          link.reason.includes('cannot be resolved to a workspace path'),
+      ),
+    ).toBe(true)
     expect(firstOutput.cleanupCandidates.some((candidate) => candidate.kind === 'missing-target-file')).toBe(true)
+    expect(
+      firstOutput.cleanupCandidates.some(
+        (candidate) =>
+          candidate.path === 'docs/guide.md' &&
+          candidate.kind === 'broken-local-link' &&
+          candidate.reason.includes('cannot be resolved to a workspace path'),
+      ),
+    ).toBe(true)
     expect(firstOutput.cleanupCandidates.some((candidate) => candidate.kind === 'retired-skill-reference')).toBe(true)
     expect(firstOutput.cleanupCandidates.some((candidate) => candidate.kind === 'orphan-page')).toBe(true)
+    const guidePage = firstOutput.wikiPages.find((page) => page.path === 'docs/guide.md')
+    expect(guidePage).toBeDefined()
+    expect(guidePage?.outboundLocalReferences).not.toContain(outsideLinkValue)
     expect(firstOutput.authorityPolicy).toContain('outrank')
     expect(firstOutput.sourceOfTruth.map((entry) => entry.authority)).toEqual([
       'source',

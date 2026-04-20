@@ -941,7 +941,7 @@ const parseDocLinks = async ({
       value: link.value,
       text: link.text,
       targetPath: normalizedTargetPath,
-      targetExists: true,
+      targetExists: normalizedTargetPath !== null,
     })
   }
 
@@ -1550,7 +1550,9 @@ const buildWikiCleanupReport = ({
 
   for (const row of linksRows) {
     const outboundSet = outboundByPath.get(row.path) ?? new Set<string>()
-    outboundSet.add(row.target_path ?? row.link_value)
+    if (row.target_exists === 1 && row.target_path) {
+      outboundSet.add(row.target_path)
+    }
     outboundByPath.set(row.path, outboundSet)
 
     if (row.target_path && docPaths.has(row.target_path)) {
