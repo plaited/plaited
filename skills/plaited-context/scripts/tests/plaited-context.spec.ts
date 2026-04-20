@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 
 import { assembleTaskContext } from '../context.ts'
 import { exportReview } from '../export-review.ts'
@@ -13,20 +13,25 @@ import { searchWorkspace } from '../search.ts'
 
 const tempDirs: string[] = []
 
+const writeTempFile = async ({ path, content }: { path: string; content: string }) => {
+  await mkdir(dirname(path), { recursive: true })
+  await Bun.write(path, content)
+}
+
 const createTempWorkspace = async () => {
   const rootDir = await mkdtemp(join(tmpdir(), 'plaited-context-'))
   tempDirs.push(rootDir)
 
-  await Bun.write(
-    join(rootDir, 'src/example.ts'),
-    `export const useBehavioralContext = () => 'behavioral context'
+  await writeTempFile({
+    path: join(rootDir, 'src/example.ts'),
+    content: `export const useBehavioralContext = () => 'behavioral context'
 export const reportSnapshot = () => 'snapshot'
 `,
-  )
+  })
 
-  await Bun.write(
-    join(rootDir, 'skills/example-skill/SKILL.md'),
-    `---
+  await writeTempFile({
+    path: join(rootDir, 'skills/example-skill/SKILL.md'),
+    content: `---
 name: example-skill
 description: Example skill for behavioral review.
 license: ISC
@@ -35,15 +40,15 @@ compatibility: Requires bun
 
 # Example Skill
 `,
-  )
+  })
 
-  await Bun.write(
-    join(rootDir, 'docs/example.md'),
-    `# Example Doc
+  await writeTempFile({
+    path: join(rootDir, 'docs/example.md'),
+    content: `# Example Doc
 
 Use the behavioral context helper during review.
 `,
-  )
+  })
 
   return rootDir
 }
@@ -61,6 +66,60 @@ describe('plaited-context scripts', () => {
 
     expect(context.dbPath).toBe('/tmp/plaited-context-override.sqlite')
     expect(context.workspaceRoot.length).toBeGreaterThan(0)
+  })
+
+  test('resolveOperationalContext supports explicit packageRoot without forcing repo mode', async () => {
+    const workspaceDir = await mkdtemp(join(tmpdir(), 'plaited-context-workspace-'))
+    tempDirs.push(workspaceDir)
+
+    const packageRoot = join(workspaceDir, 'node_modules/plaited')
+    await mkdir(packageRoot, { recursive: true })
+
+    const context = await resolveOperationalContext({
+      cwd: workspaceDir,
+      packageRoot,
+    })
+
+    expect(context.mode).toBe('package')
+    expect(context.packageRoot).toBe(packageRoot)
+    expect(context.dbPath.startsWith(join(workspaceDir, '.plaited'))).toBe(true)
+    expect(context.dbPath.includes('/node_modules/')).toBe(false)
+  })
+
+  test('resolveOperationalContext does not force repo mode from script location outside repo cwd', async () => {
+    const externalCwd = await mkdtemp(join(tmpdir(), 'plaited-context-external-'))
+    tempDirs.push(externalCwd)
+
+    const workspaceContext = await resolveOperationalContext({
+      cwd: externalCwd,
+    })
+    expect(workspaceContext.mode).toBe('workspace')
+    expect(workspaceContext.repoRoot).toBeUndefined()
+    expect(workspaceContext.dbPath.startsWith(join(externalCwd, '.plaited'))).toBe(true)
+
+    const explicitModeContext = await resolveOperationalContext({
+      cwd: externalCwd,
+      mode: 'repo',
+    })
+    expect(explicitModeContext.mode).toBe('repo')
+
+    const explicitRepoContext = await resolveOperationalContext({
+      cwd: externalCwd,
+      repoRoot: process.cwd(),
+    })
+    expect(explicitRepoContext.mode).toBe('repo')
+    expect(explicitRepoContext.repoRoot).toBeDefined()
+    expect(explicitRepoContext.repoRoot ?? '').toBe(process.cwd())
+  })
+
+  test('resolveOperationalContext keeps repo mode behavior when cwd is inside repo', async () => {
+    const context = await resolveOperationalContext({
+      cwd: process.cwd(),
+    })
+
+    expect(context.mode).toBe('repo')
+    expect(context.repoRoot).toBeDefined()
+    expect(context.workspaceRoot).toBe(context.repoRoot ?? '')
   })
 
   test('indexes workspace and exports recorded findings', async () => {
@@ -150,5 +209,88 @@ describe('plaited-context scripts', () => {
     expect(exportOutput.findings.length).toBe(1)
     expect(exportOutput.findings[0]?.summary).toContain('reportSnapshot')
     expect(exportOutput.contextRuns.length).toBeGreaterThan(0)
+  })
+
+  test('scan rejects include paths that escape rootDir and does not index outside files', async () => {
+    const rootDir = await createTempWorkspace()
+    const dbPath = join(rootDir, '.plaited/context.sqlite')
+    const outsideDir = await mkdtemp(join(tmpdir(), 'plaited-context-outside-'))
+    tempDirs.push(outsideDir)
+    const outsideFilePath = join(outsideDir, 'outside-context-escape.ts')
+    const escapeInclude = relative(rootDir, outsideFilePath)
+    const outsideMarker = 'OUTSIDE_CONTEXT_ESCAPE_MARKER'
+
+    await writeTempFile({
+      path: outsideFilePath,
+      content: `export const outsideMarker = '${outsideMarker}'`,
+    })
+
+    await initDb({
+      cwd: rootDir,
+      dbPath,
+    })
+
+    await expect(
+      scanWorkspace({
+        cwd: rootDir,
+        rootDir,
+        dbPath,
+        include: [escapeInclude],
+        force: true,
+      }),
+    ).rejects.toThrow(`Invalid include path '${escapeInclude}': path escapes rootDir.`)
+
+    const searchOutput = await searchWorkspace({
+      cwd: rootDir,
+      dbPath,
+      query: outsideMarker,
+      limit: 5,
+      rootDir,
+      fallbackToRipgrep: false,
+    })
+
+    expect(searchOutput.results).toHaveLength(0)
+  })
+
+  test('scan rejects absolute include paths', async () => {
+    const rootDir = await createTempWorkspace()
+    const dbPath = join(rootDir, '.plaited/context.sqlite')
+
+    await initDb({
+      cwd: rootDir,
+      dbPath,
+    })
+
+    await expect(
+      scanWorkspace({
+        cwd: rootDir,
+        rootDir,
+        dbPath,
+        include: [join(rootDir, 'src')],
+        force: true,
+      }),
+    ).rejects.toThrow('absolute paths are not allowed')
+  })
+
+  test('scan still indexes valid relative include paths', async () => {
+    const rootDir = await createTempWorkspace()
+    const dbPath = join(rootDir, '.plaited/context.sqlite')
+
+    await initDb({
+      cwd: rootDir,
+      dbPath,
+    })
+
+    const scanOutput = await scanWorkspace({
+      cwd: rootDir,
+      rootDir,
+      dbPath,
+      include: ['./src'],
+      force: true,
+    })
+
+    expect(scanOutput.ok).toBe(true)
+    expect(scanOutput.filesIndexed).toBeGreaterThan(0)
+    expect(scanOutput.symbolsIndexed).toBeGreaterThan(0)
   })
 })

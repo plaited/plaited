@@ -226,31 +226,33 @@ export const resolveOperationalContext = async (
   const explicitWorkspaceRoot = resolveInputPath(cwd, overrides.workspaceRoot)
 
   const scriptPackageRoot = resolve(import.meta.dir, '../../..')
-  const scriptPackageRootIsSourceRepo = await isPlaitedSourceRoot(scriptPackageRoot)
+  const inferredPackageRoot = isInsideNodeModules(scriptPackageRoot) ? scriptPackageRoot : undefined
 
   const detectedRepoRoot = await findUpward({
     start: cwd,
     predicate: isPlaitedSourceRoot,
   })
 
-  const repoRoot =
-    explicitRepoRoot ?? detectedRepoRoot ?? (scriptPackageRootIsSourceRepo ? scriptPackageRoot : undefined)
-
-  const packageRoot = explicitPackageRoot ?? (isInsideNodeModules(scriptPackageRoot) ? scriptPackageRoot : undefined)
+  const repoRoot = explicitRepoRoot ?? detectedRepoRoot
+  const packageRoot = explicitPackageRoot ?? inferredPackageRoot
 
   const mode: OperationalContext['mode'] =
     overrides.mode ??
-    (repoRoot && (isSubPath(cwd, repoRoot) || scriptPackageRootIsSourceRepo)
+    (explicitRepoRoot
       ? 'repo'
-      : packageRoot
-        ? 'package'
-        : 'workspace')
+      : detectedRepoRoot
+        ? 'repo'
+        : explicitPackageRoot
+          ? 'package'
+          : inferredPackageRoot
+            ? 'package'
+            : 'workspace')
 
   let workspaceRoot: string
   if (explicitWorkspaceRoot) {
     workspaceRoot = explicitWorkspaceRoot
-  } else if (mode === 'repo' && repoRoot) {
-    workspaceRoot = repoRoot
+  } else if (mode === 'repo') {
+    workspaceRoot = repoRoot ?? cwd
   } else if (mode === 'package' && packageRoot) {
     workspaceRoot = stripNodeModulesPrefix(packageRoot) ?? (await findWorkspaceRoot(cwd))
   } else {
@@ -365,6 +367,24 @@ const shouldIndexFile = (absolutePath: string): boolean => {
   return TEXT_EXTENSIONS.has(ext)
 }
 
+const validateIncludePath = ({ absoluteRoot, includePath }: { absoluteRoot: string; includePath: string }): string => {
+  if (isAbsolute(includePath)) {
+    throw new Error(`Invalid include path '${includePath}': absolute paths are not allowed.`)
+  }
+
+  const resolvedIncludePath = resolve(absoluteRoot, includePath)
+  if (!isSubPath(resolvedIncludePath, absoluteRoot)) {
+    throw new Error(`Invalid include path '${includePath}': path escapes rootDir.`)
+  }
+
+  const relativeIncludePath = toPosix(relative(absoluteRoot, resolvedIncludePath))
+  if (relativeIncludePath === '' || relativeIncludePath === '.') {
+    return '**/*'
+  }
+
+  return `${relativeIncludePath.replace(/\/+$/, '')}/**/*`
+}
+
 const collectFilesForIndexing = async ({
   rootDir,
   include,
@@ -381,15 +401,23 @@ const collectFilesForIndexing = async ({
       continue
     }
 
-    const normalizedInclude = trimmed.replace(/^\.\//, '').replace(/\/$/, '')
-    const glob = new Glob(`${normalizedInclude}/**/*`)
+    const globPattern = validateIncludePath({
+      absoluteRoot,
+      includePath: trimmed,
+    })
+    const glob = new Glob(globPattern)
 
     for await (const foundPath of glob.scan({ cwd: absoluteRoot, absolute: true })) {
-      if (!shouldIndexFile(foundPath)) {
+      const absoluteFoundPath = resolve(foundPath)
+      if (!isSubPath(absoluteFoundPath, absoluteRoot)) {
         continue
       }
 
-      files.add(resolve(foundPath))
+      if (!shouldIndexFile(absoluteFoundPath)) {
+        continue
+      }
+
+      files.add(absoluteFoundPath)
     }
   }
 
