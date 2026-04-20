@@ -21,12 +21,43 @@ export type ModuleSharingPolicy = z.infer<typeof ModuleSharingPolicySchema>
 export const ProjectionDecisionSchema = z.enum(['allow', 'deny', 'ask'])
 export type ProjectionDecision = z.infer<typeof ProjectionDecisionSchema>
 
-export const ProjectionAudienceSchema = z
-  .object({
-    id: z.string().min(1).optional(),
-    kind: z.string().min(1),
-  })
-  .passthrough()
+export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue }
+
+const isPlainRecord = (value: unknown): value is Record<string, unknown> => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
+
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
+export const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.number().finite(),
+    z.boolean(),
+    z.null(),
+    z.array(JsonValueSchema),
+    z
+      .custom<Record<string, unknown>>((value) => isPlainRecord(value), {
+        message: 'Expected a plain JSON object.',
+      })
+      .pipe(z.record(z.string(), JsonValueSchema)),
+  ]),
+)
+
+const createJsonObjectWithShapeSchema = <TShape extends z.ZodRawShape>(shape: TShape) =>
+  z
+    .custom<Record<string, unknown>>((value) => isPlainRecord(value), {
+      message: 'Expected a plain JSON object.',
+    })
+    .pipe(z.object(shape).catchall(JsonValueSchema))
+
+export const ProjectionAudienceSchema = createJsonObjectWithShapeSchema({
+  id: z.string().min(1).optional(),
+  kind: z.string().min(1),
+})
 export type ProjectionAudience = z.infer<typeof ProjectionAudienceSchema>
 
 export const ProjectionShapeSchema = z.object({
@@ -43,16 +74,18 @@ export const RequestedProjectionShapeSchema = z.object({
 })
 export type RequestedProjectionShape = z.infer<typeof RequestedProjectionShapeSchema>
 
-export const ProjectionScopeSchema = z.record(z.string(), z.unknown())
+export const ProjectionScopeSchema = z
+  .custom<Record<string, unknown>>((value) => isPlainRecord(value), {
+    message: 'Expected a plain JSON object.',
+  })
+  .pipe(z.record(z.string(), JsonValueSchema))
 export type ProjectionScope = z.infer<typeof ProjectionScopeSchema>
 
-export const ProjectionProvenanceSchema = z
-  .object({
-    sourceId: z.string().min(1).optional(),
-    sourceModuleId: z.string().min(1).optional(),
-    lineage: z.array(z.string().min(1)).optional(),
-  })
-  .passthrough()
+export const ProjectionProvenanceSchema = createJsonObjectWithShapeSchema({
+  sourceId: z.string().min(1).optional(),
+  sourceModuleId: z.string().min(1).optional(),
+  lineage: z.array(z.string().min(1)).optional(),
+})
 export type ProjectionProvenance = z.infer<typeof ProjectionProvenanceSchema>
 
 export const ProjectionDescriptorSchema = z.object({
@@ -83,11 +116,9 @@ export const ProjectionRequestSchema = z.object({
 })
 export type ProjectionRequest = z.infer<typeof ProjectionRequestSchema>
 
-export const ProjectionRequirementSchema = z
-  .object({
-    kind: z.string().min(1),
-  })
-  .passthrough()
+export const ProjectionRequirementSchema = createJsonObjectWithShapeSchema({
+  kind: z.string().min(1),
+})
 export type ProjectionRequirement = z.infer<typeof ProjectionRequirementSchema>
 
 export const ProjectionDecisionDetailSchema = z.object({
@@ -109,9 +140,6 @@ type EvaluateProjectionRequestParams = {
   request: ProjectionRequest
   descriptorLookup: ReadonlyMap<string, ProjectionDescriptor>
 }
-
-const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
-  value !== null && typeof value === 'object' && !Array.isArray(value)
 
 const isJsonEqual = (left: unknown, right: unknown): boolean => {
   if (left === null || right === null) {

@@ -4,12 +4,15 @@ import { behavioral, SNAPSHOT_MESSAGE_KINDS, type SnapshotMessage, useInstaller 
 import { projectionBoundaryActorExtension } from '../../modules.ts'
 import {
   PROJECTION_BOUNDARY_ACTOR_EVENTS,
+  ProjectionAudienceSchema,
   type ProjectionDecisionDetail,
   ProjectionDecisionDetailSchema,
   type ProjectionDescriptor,
   ProjectionDescriptorSchema,
+  ProjectionProvenanceSchema,
   type ProjectionRequest,
   ProjectionRequestSchema,
+  ProjectionRequirementSchema,
   toProjectionBoundaryActorEventType,
 } from '../projection-boundary-actor.ts'
 
@@ -67,6 +70,35 @@ const ramStandSupplierScopedDescriptor: ProjectionDescriptor = ProjectionDescrip
     channel: 'supplier-network',
     controls: {
       exportClass: 'regulated',
+    },
+  },
+  provenance: {
+    sourceId: 'ram-stand-private-state',
+    sourceModuleId: 'ram-stand',
+  },
+})
+
+const ramStandSupplierNestedScopeDescriptor: ProjectionDescriptor = ProjectionDescriptorSchema.parse({
+  projectionId: 'ram-stand-supplier-nested-scope-v1',
+  sourceModuleId: 'ram-stand',
+  audience: {
+    kind: 'supplier-network',
+    id: 'supplier-network-1',
+  },
+  shape: {
+    fields: ['supplierSku'],
+    facts: ['stock-level'],
+    resources: ['purchase-orders'],
+  },
+  scope: {
+    region: 'us-west',
+    channel: 'supplier-network',
+    controls: {
+      exportClass: 'regulated',
+      modes: ['bulk', { tier: 2, flags: [true, null, 'ok'] }],
+      limits: {
+        maxOrdersPerDay: 50,
+      },
     },
   },
   provenance: {
@@ -299,6 +331,154 @@ describe('projection boundary actor extension', () => {
       }),
     })
 
+    expect(decision.decision).toBe('allow')
+    expect(decision.reason).toBe('module-sharing-policy-all-approved-projection')
+  })
+
+  test('ProjectionRequestSchema rejects a function inside scope', () => {
+    const parseResult = ProjectionRequestSchema.safeParse({
+      ...createRamStandRequest(),
+      scope: {
+        region: 'us-west',
+        invalidFn: () => 'nope',
+      },
+    })
+
+    expect(parseResult.success).toBe(false)
+  })
+
+  test('ProjectionRequestSchema rejects NaN inside scope', () => {
+    const parseResult = ProjectionRequestSchema.safeParse({
+      ...createRamStandRequest(),
+      scope: {
+        region: 'us-west',
+        invalidNumber: Number.NaN,
+      },
+    })
+
+    expect(parseResult.success).toBe(false)
+  })
+
+  test('ProjectionRequestSchema rejects Infinity inside scope', () => {
+    const parseResult = ProjectionRequestSchema.safeParse({
+      ...createRamStandRequest(),
+      scope: {
+        region: 'us-west',
+        invalidNumber: Number.POSITIVE_INFINITY,
+      },
+    })
+
+    expect(parseResult.success).toBe(false)
+  })
+
+  test('ProjectionRequestSchema rejects a Date inside scope', () => {
+    const parseResult = ProjectionRequestSchema.safeParse({
+      ...createRamStandRequest(),
+      scope: {
+        region: 'us-west',
+        invalidDate: new Date('2026-04-20T00:00:00.000Z'),
+      },
+    })
+
+    expect(parseResult.success).toBe(false)
+  })
+
+  test('provenance extra fields reject a function', () => {
+    const parseResult = ProjectionProvenanceSchema.safeParse({
+      sourceId: 'ram-stand-private-state',
+      sourceModuleId: 'ram-stand',
+      extraFn: () => 'nope',
+    })
+
+    expect(parseResult.success).toBe(false)
+  })
+
+  test('requirement extra fields reject a function', () => {
+    const parseResult = ProjectionRequirementSchema.safeParse({
+      kind: 'auth-grant',
+      extraFn: () => 'nope',
+    })
+
+    expect(parseResult.success).toBe(false)
+  })
+
+  test('audience extra fields reject a function', () => {
+    const parseResult = ProjectionAudienceSchema.safeParse({
+      kind: 'supplier-network',
+      id: 'supplier-network-1',
+      extraFn: () => 'nope',
+    })
+
+    expect(parseResult.success).toBe(false)
+  })
+
+  test('invalid projection request with non-JSON scope emits feedback_error and no projection decision', async () => {
+    const harness = createHarness()
+    registerDescriptor(harness, ramStandSupplierScopedDescriptor)
+    const beforeSnapshots = harness.snapshots.length
+    const beforeEvents = harness.events.length
+
+    const invalidRequest = {
+      ...createRamStandRequest({
+        projectionId: ramStandSupplierScopedDescriptor.projectionId,
+        requester: ramStandSupplierScopedDescriptor.audience,
+      }),
+      scope: {
+        region: 'us-west',
+        channel: 'supplier-network',
+        controls: {
+          exportClass: 'regulated',
+        },
+        invalidFn: () => 'nope',
+      },
+    }
+
+    harness.trigger({
+      type: requestEvaluateEventType,
+      detail: invalidRequest as unknown,
+    })
+
+    const feedbackError = await waitForFeedbackError({
+      snapshots: harness.snapshots,
+      type: requestEvaluateEventType,
+      after: beforeSnapshots,
+    })
+    expect(feedbackError.error).toContain('scope')
+
+    const emittedDecisions = harness.events.slice(beforeEvents).filter((event) => event.type === decisionEventType)
+    expect(emittedDecisions).toHaveLength(0)
+  })
+
+  test('valid nested JSON scope parses and remains compatible for allow decisions', async () => {
+    const harness = createHarness()
+    registerDescriptor(harness, ramStandSupplierNestedScopeDescriptor)
+
+    const request = ProjectionRequestSchema.parse({
+      ...createRamStandRequest({
+        projectionId: ramStandSupplierNestedScopeDescriptor.projectionId,
+        requester: ramStandSupplierNestedScopeDescriptor.audience,
+      }),
+      scope: {
+        region: 'us-west',
+        channel: 'supplier-network',
+        controls: {
+          exportClass: 'regulated',
+          modes: ['bulk', { tier: 2, flags: [true, null, 'ok'] }],
+          limits: {
+            maxOrdersPerDay: 50,
+          },
+        },
+        trace: {
+          attempt: 1,
+          labels: ['slice-6', { state: 'ok' }],
+        },
+      },
+    })
+
+    const decision = await evaluateRequest({
+      harness,
+      request,
+    })
     expect(decision.decision).toBe('allow')
     expect(decision.reason).toBe('module-sharing-policy-all-approved-projection')
   })
