@@ -2,7 +2,7 @@ PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS files (
   path TEXT PRIMARY KEY,
-  kind TEXT NOT NULL CHECK (kind IN ('source', 'skill', 'doc', 'other')),
+  kind TEXT NOT NULL CHECK (kind IN ('source', 'skill', 'agent-instructions', 'wiki', 'config', 'other')),
   ext TEXT NOT NULL,
   size_bytes INTEGER NOT NULL,
   mtime_ms INTEGER NOT NULL,
@@ -71,6 +71,17 @@ CREATE TABLE IF NOT EXISTS docs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_docs_indexed_at ON docs(indexed_at DESC);
+
+CREATE TABLE IF NOT EXISTS agent_instructions (
+  path TEXT PRIMARY KEY,
+  scope_path TEXT NOT NULL,
+  body TEXT NOT NULL,
+  indexed_at TEXT NOT NULL,
+  FOREIGN KEY (path) REFERENCES files(path) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_instructions_scope ON agent_instructions(scope_path);
+CREATE INDEX IF NOT EXISTS idx_agent_instructions_indexed_at ON agent_instructions(indexed_at DESC);
 
 CREATE TABLE IF NOT EXISTS findings (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

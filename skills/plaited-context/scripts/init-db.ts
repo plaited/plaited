@@ -8,14 +8,16 @@ import {
 } from './plaited-context.ts'
 
 export const InitDbInputSchema = OperationalContextOverrideSchema.extend({
-  dbPath: z.string().min(1).optional(),
-})
+  dbPath: z.string().min(1).optional().describe('Optional writable SQLite DB path override.'),
+}).describe('Input contract for initializing the plaited-context SQLite database.')
 
-export const InitDbOutputSchema = z.object({
-  ok: z.literal(true),
-  dbPath: z.string().min(1),
-  created: z.boolean(),
-})
+export const InitDbOutputSchema = z
+  .object({
+    ok: z.literal(true).describe('Indicates successful initialization.'),
+    dbPath: z.string().min(1).describe('Resolved writable SQLite DB path.'),
+    created: z.boolean().describe('True when the database file did not exist before init.'),
+  })
+  .describe('Output contract for database initialization.')
 
 export type InitDbInput = z.infer<typeof InitDbInputSchema>
 export type InitDbOutput = z.infer<typeof InitDbOutputSchema>

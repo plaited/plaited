@@ -10,15 +10,17 @@ import {
 } from './plaited-context.ts'
 
 export const RecordFindingInputSchema = OperationalContextOverrideSchema.extend({
-  finding: FindingInputSchema,
-})
+  finding: FindingInputSchema.describe('Finding payload to insert into the context database.'),
+}).describe('Input contract for recording a finding with optional evidence.')
 
-export const RecordFindingOutputSchema = z.object({
-  ok: z.literal(true),
-  dbPath: z.string().min(1),
-  findingId: z.number().int().positive(),
-  evidenceCount: z.number().int().nonnegative(),
-})
+export const RecordFindingOutputSchema = z
+  .object({
+    ok: z.literal(true).describe('Indicates finding insertion completed successfully.'),
+    dbPath: z.string().min(1).describe('Resolved writable SQLite DB path.'),
+    findingId: z.number().int().positive().describe('Inserted finding row id.'),
+    evidenceCount: z.number().int().nonnegative().describe('Number of evidence rows inserted.'),
+  })
+  .describe('Output contract for recording a finding.')
 
 export type RecordFindingInput = z.infer<typeof RecordFindingInputSchema>
 export type RecordFindingOutput = z.infer<typeof RecordFindingOutputSchema>

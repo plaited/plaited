@@ -10,19 +10,24 @@ import {
 } from './plaited-context.ts'
 
 export const ScanInputSchema = OperationalContextOverrideSchema.extend({
-  rootDir: z.string().min(1).default('.'),
-  include: z.array(z.string().min(1)).default(['src', 'skills', 'docs']),
-  force: z.boolean().default(false),
-})
+  rootDir: z.string().min(1).default('.').describe('Root directory to scan and index.'),
+  include: z
+    .array(z.string().min(1))
+    .default(['src', 'skills', 'docs'])
+    .describe('Relative include paths under rootDir to index.'),
+  force: z.boolean().default(false).describe('When true, clears prior index state before indexing.'),
+}).describe('Input contract for scanning and indexing workspace context.')
 
-export const ScanOutputSchema = z.object({
-  ok: z.literal(true),
-  dbPath: z.string().min(1),
-  filesIndexed: z.number().int().nonnegative(),
-  symbolsIndexed: z.number().int().nonnegative(),
-  skillsIndexed: z.number().int().nonnegative(),
-  docsIndexed: z.number().int().nonnegative(),
-})
+export const ScanOutputSchema = z
+  .object({
+    ok: z.literal(true).describe('Indicates scan completed successfully.'),
+    dbPath: z.string().min(1).describe('Resolved writable SQLite DB path.'),
+    filesIndexed: z.number().int().nonnegative().describe('Count of indexed files.'),
+    symbolsIndexed: z.number().int().nonnegative().describe('Count of indexed symbols.'),
+    skillsIndexed: z.number().int().nonnegative().describe('Count of indexed skills.'),
+    docsIndexed: z.number().int().nonnegative().describe('Count of indexed docs.'),
+  })
+  .describe('Output summary for a scan/index run.')
 
 export type ScanInput = z.infer<typeof ScanInputSchema>
 export type ScanOutput = z.infer<typeof ScanOutputSchema>

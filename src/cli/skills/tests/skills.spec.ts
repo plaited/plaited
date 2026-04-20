@@ -12,7 +12,6 @@ import {
   skillsLinks,
   skillsValidate,
   validateSkill,
-  validateSkillLocalLinks,
 } from '../skills.ts'
 
 const CLI_PACKAGE_ROOT = resolve(import.meta.dir, '../../../../')
@@ -85,39 +84,6 @@ describe('validateSkill', () => {
       ok: false,
       errors: ['Invalid skill frontmatter: Missing YAML frontmatter'],
     })
-  })
-})
-
-describe('validateSkillLocalLinks', () => {
-  test('returns present and missing sets with link value and text', async () => {
-    const uniqueId = `${Date.now()}-${Math.random().toString(16).slice(2)}`
-    const skillDir = join('/tmp', `plaited-skill-links-${uniqueId}`)
-
-    await Bun.$`mkdir -p ${join(skillDir, 'references')} ${join(skillDir, 'scripts')}`
-    await Bun.write(join(skillDir, 'references', 'setup.md'), '# setup')
-    await Bun.write(join(skillDir, 'scripts', 'run.ts'), 'export {}\n')
-
-    const links = await validateSkillLocalLinks({
-      skillDir,
-      markdownBody: `
-See [setup guide](references/setup.md) and [missing doc](references/missing.md).
-![diagram](assets/diagram.png)
-[](<scripts/run.ts>)
-`,
-    })
-
-    expect(links.present).toBeInstanceOf(Set)
-    expect(links.missing).toBeInstanceOf(Set)
-    expect([...links.present]).toEqual([
-      { value: 'references/setup.md', text: 'setup guide' },
-      { value: 'scripts/run.ts', text: 'scripts/run.ts' },
-    ])
-    expect([...links.missing]).toEqual([
-      { value: 'assets/diagram.png', text: 'diagram' },
-      { value: 'references/missing.md', text: 'missing doc' },
-    ])
-
-    await Bun.$`rm -rf ${skillDir}`
   })
 })
 

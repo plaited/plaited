@@ -2,7 +2,7 @@ import { basename, dirname, join, normalize, relative, resolve } from 'node:path
 import { Glob } from 'bun'
 import * as z from 'zod'
 import { makeCli } from '../utils/cli.ts'
-import { extractLocalLinksFromMarkdown, parseMarkdownWithFrontmatter } from '../utils/markdown.ts'
+import { parseMarkdownWithFrontmatter, validateMarkdownLocalLinks } from '../utils/markdown.ts'
 import {
   type SkillCatalogEntry,
   SkillCatalogEntrySchema,
@@ -16,7 +16,6 @@ import {
   type SkillInstructionErrors,
   type SkillInstructionResourceLinksLoadResult,
   type SkillInstructionsLoadResult,
-  type SkillResourceLink,
   type SkillResourceLinks,
   type SkillResourceLinksJson,
   type SkillsCatalogCliInput,
@@ -65,12 +64,6 @@ const formatSkillValidationError = (error: unknown): string => {
 const getExpectedSkillDirectoryName = (skillPath: string): string => {
   const normalizedPath = normalize(skillPath)
   return /SKILL\.md$/i.test(normalizedPath) ? basename(dirname(normalizedPath)) : basename(normalizedPath)
-}
-
-const sortSkillResourceLinks = (left: SkillResourceLink, right: SkillResourceLink): number => {
-  const valueComparison = left.value.localeCompare(right.value)
-  if (valueComparison !== 0) return valueComparison
-  return left.text.localeCompare(right.text)
 }
 
 const toSkillResourceLinksJson = (links: SkillResourceLinks): SkillResourceLinksJson => ({
@@ -155,49 +148,6 @@ export const validateSkill = (
   return {
     ok: true,
     errors: [],
-  }
-}
-
-/**
- * Validates local markdown links referenced from a skill body.
- *
- * @param options - Skill directory and markdown body to validate.
- * @returns Lists of links that resolve and links that are missing.
- *
- * @public
- */
-export const validateSkillLocalLinks = async ({
-  skillDir,
-  markdownBody,
-}: {
-  skillDir: string
-  markdownBody: string
-}): Promise<SkillResourceLinks> => {
-  const present = new Map<string, SkillResourceLink>()
-  const missing = new Map<string, SkillResourceLink>()
-  const links = await extractLocalLinksFromMarkdown(markdownBody)
-
-  for (const link of links) {
-    const absolutePath = resolve(skillDir, link.value)
-    const file = Bun.file(absolutePath)
-    const key = `${link.value}\u0000${link.text}`
-    if (await file.exists()) {
-      present.set(key, {
-        value: link.value,
-        text: link.text || link.value,
-      })
-      continue
-    }
-
-    missing.set(key, {
-      value: link.value,
-      text: link.text || link.value,
-    })
-  }
-
-  return {
-    present: new Set([...present.values()].sort(sortSkillResourceLinks)),
-    missing: new Set([...missing.values()].sort(sortSkillResourceLinks)),
   }
 }
 
@@ -318,8 +268,8 @@ export const getSkillInstructionResourceLinks = async (
       errors,
     }
   }
-  const links = await validateSkillLocalLinks({
-    skillDir,
+  const links = await validateMarkdownLocalLinks({
+    baseDir: skillDir,
     markdownBody: body,
   })
   return { links, errors }

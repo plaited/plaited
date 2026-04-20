@@ -3,21 +3,30 @@ import { mkdir } from 'node:fs/promises'
 import { basename, dirname, extname, isAbsolute, join, relative, resolve } from 'node:path'
 import { Glob } from 'bun'
 import * as z from 'zod'
-import { parseMarkdownWithFrontmatter } from '../../../src/cli.ts'
+import {
+  findSkillDirectories,
+  getSkillInstructionResourceLinks,
+  loadSkillCatalog,
+  loadSkillFrontmatter,
+  loadSkillInstructions,
+} from '../../../src/cli.ts'
 
 const DEFAULT_DB_RELATIVE_PATH = '.plaited/context.sqlite'
 const SCHEMA_SQL_PATH = resolve(import.meta.dir, '../assets/schema.sql')
-const SKILL_FRONTMATTER_SCHEMA = z
-  .object({
-    name: z.string().min(1),
-    description: z.string().min(1),
-    license: z.string().min(1).optional(),
-    compatibility: z.string().min(1).optional(),
-  })
-  .passthrough()
 
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'])
-const TEXT_EXTENSIONS = new Set([...SOURCE_EXTENSIONS, '.md', '.json', '.jsonc', '.yaml', '.yml'])
+const CONFIG_EXTENSIONS = new Set(['.json', '.jsonc', '.yaml', '.yml', '.toml', '.ini', '.cfg', '.conf'])
+const TEXT_EXTENSIONS = new Set([...SOURCE_EXTENSIONS, '.md', ...CONFIG_EXTENSIONS])
+const CONFIG_BASENAMES = new Set([
+  'package.json',
+  'tsconfig.json',
+  'biome.json',
+  'biome.jsonc',
+  'bunfig.toml',
+  '.env',
+  '.env.example',
+  '.env.schema',
+])
 
 const SYMBOL_PATTERNS: Array<{ kind: string; pattern: RegExp }> = [
   { kind: 'function', pattern: /\b(?:export\s+)?(?:default\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/ },
@@ -34,43 +43,55 @@ const EXPORT_DECLARATION_PATTERN =
   /\bexport\s+(?:default\s+)?(?:async\s+)?(function|const|let|var|class|type|interface|enum)\s+([A-Za-z_$][\w$]*)/g
 const EXPORT_NAMED_PATTERN = /\bexport\s*\{([^}]+)\}/g
 
-export const FindingStatusSchema = z.enum(['candidate', 'validated', 'retired'])
-export const FindingKindSchema = z.enum(['pattern', 'anti-pattern', 'stale-doc', 'boundary-rule', 'question'])
+export const FindingStatusSchema = z
+  .enum(['candidate', 'validated', 'retired'])
+  .describe('Lifecycle status for a recorded finding.')
+export const FindingKindSchema = z
+  .enum(['pattern', 'anti-pattern', 'stale-doc', 'boundary-rule', 'question'])
+  .describe('Classification for a recorded finding.')
 
-export const OperationalContextSchema = z.object({
-  mode: z.enum(['repo', 'package', 'workspace']),
-  cwd: z.string(),
-  workspaceRoot: z.string(),
-  repoRoot: z.string().optional(),
-  packageRoot: z.string().optional(),
-  nodeHome: z.string().optional(),
-  dbPath: z.string(),
-})
+export const OperationalContextSchema = z
+  .object({
+    mode: z.enum(['repo', 'package', 'workspace']).describe('Resolved operating mode for context lookup.'),
+    cwd: z.string().describe('Working directory used for resolution and relative paths.'),
+    workspaceRoot: z.string().describe('Resolved workspace root used for local defaults.'),
+    repoRoot: z.string().optional().describe('Resolved Plaited source repo root when operating in repo mode.'),
+    packageRoot: z.string().optional().describe('Resolved installed package root when operating in package mode.'),
+    nodeHome: z.string().optional().describe('Optional node home used for writable local state defaults.'),
+    dbPath: z.string().describe('Resolved writable SQLite database path for plaited-context.'),
+  })
+  .describe('Fully resolved operational context for plaited-context scripts.')
 
-export const OperationalContextOverrideSchema = z.object({
-  mode: OperationalContextSchema.shape.mode.optional(),
-  cwd: z.string().min(1).optional(),
-  workspaceRoot: z.string().min(1).optional(),
-  repoRoot: z.string().min(1).optional(),
-  packageRoot: z.string().min(1).optional(),
-  nodeHome: z.string().min(1).optional(),
-  dbPath: z.string().min(1).optional(),
-})
+export const OperationalContextOverrideSchema = z
+  .object({
+    mode: OperationalContextSchema.shape.mode.optional().describe('Optional explicit mode override.'),
+    cwd: z.string().min(1).optional().describe('Optional working directory override.'),
+    workspaceRoot: z.string().min(1).optional().describe('Optional workspace root override.'),
+    repoRoot: z.string().min(1).optional().describe('Optional explicit repo root override.'),
+    packageRoot: z.string().min(1).optional().describe('Optional explicit package root override.'),
+    nodeHome: z.string().min(1).optional().describe('Optional node home for writable local state.'),
+    dbPath: z.string().min(1).optional().describe('Optional explicit SQLite DB path override.'),
+  })
+  .describe('Optional operational context overrides accepted by all plaited-context scripts.')
 
-export const FindingEvidenceSchema = z.object({
-  path: z.string().min(1),
-  line: z.number().int().positive().optional(),
-  symbol: z.string().min(1).optional(),
-  excerpt: z.string().min(1).optional(),
-})
+export const FindingEvidenceSchema = z
+  .object({
+    path: z.string().min(1).describe('Source file path supporting the finding.'),
+    line: z.number().int().positive().optional().describe('1-based line number for the evidence location.'),
+    symbol: z.string().min(1).optional().describe('Optional symbol name tied to the evidence.'),
+    excerpt: z.string().min(1).optional().describe('Optional short source excerpt for review context.'),
+  })
+  .describe('Source-grounded evidence attached to a finding.')
 
-export const FindingInputSchema = z.object({
-  kind: FindingKindSchema,
-  status: FindingStatusSchema,
-  summary: z.string().min(1),
-  details: z.string().optional(),
-  evidence: z.array(FindingEvidenceSchema).default([]),
-})
+export const FindingInputSchema = z
+  .object({
+    kind: FindingKindSchema.describe('Finding category.'),
+    status: FindingStatusSchema.describe('Initial lifecycle status.'),
+    summary: z.string().min(1).describe('Short reviewer-facing finding statement.'),
+    details: z.string().optional().describe('Optional longer rationale or context.'),
+    evidence: z.array(FindingEvidenceSchema).default([]).describe('Evidence entries supporting the finding.'),
+  })
+  .describe('Finding payload accepted by record-finding script.')
 
 export type OperationalContext = z.infer<typeof OperationalContextSchema>
 export type OperationalContextOverrides = z.infer<typeof OperationalContextOverrideSchema>
@@ -342,17 +363,32 @@ const createLineResolver = (source: string) => {
   }
 }
 
-const classifyFileKind = (relativePath: string): 'source' | 'skill' | 'doc' | 'other' => {
-  if (relativePath.endsWith('/SKILL.md') || relativePath === 'SKILL.md') {
+const classifyFileKind = (
+  relativePath: string,
+): 'source' | 'skill' | 'agent-instructions' | 'wiki' | 'config' | 'other' => {
+  const normalizedPath = toPosix(relativePath)
+  const filename = basename(normalizedPath)
+  const lowerFilename = filename.toLowerCase()
+
+  if (filename === 'AGENTS.md') {
+    return 'agent-instructions'
+  }
+
+  if (filename === 'SKILL.md') {
     return 'skill'
   }
 
-  if (relativePath.endsWith('.md')) {
-    return 'doc'
+  const extension = extname(normalizedPath).toLowerCase()
+  if (SOURCE_EXTENSIONS.has(extension)) {
+    return 'source'
   }
 
-  if (SOURCE_EXTENSIONS.has(extname(relativePath).toLowerCase())) {
-    return 'source'
+  if (extension === '.md') {
+    return 'wiki'
+  }
+
+  if (CONFIG_EXTENSIONS.has(extension) || CONFIG_BASENAMES.has(lowerFilename)) {
+    return 'config'
   }
 
   return 'other'
@@ -579,32 +615,70 @@ const parseExports = (source: string): ExportRow[] => {
   return exports
 }
 
-const parseSkillFrontmatter = ({
-  path,
-  markdown,
-}: {
-  path: string
-  markdown: string
-}): {
+type SkillIndexEntry = {
   name: string
   description: string
-  license?: string
-  compatibility?: string
-} => {
-  try {
-    const { frontmatter } = parseMarkdownWithFrontmatter(markdown, SKILL_FRONTMATTER_SCHEMA)
-    return {
-      name: frontmatter.name,
-      description: frontmatter.description,
-      license: frontmatter.license,
-      compatibility: frontmatter.compatibility,
-    }
-  } catch {
-    return {
-      name: basename(dirname(path)),
-      description: 'Skill frontmatter failed to parse during scan.',
-    }
+  license: string | null
+  compatibility: string | null
+}
+
+const getStringRecordField = (record: Record<string, unknown> | undefined, key: string): string | undefined => {
+  if (!record) {
+    return undefined
   }
+
+  const value = record[key]
+  return typeof value === 'string' && value.trim().length > 0 ? value : undefined
+}
+
+const loadSkillIndex = async ({ rootDir }: { rootDir: string }): Promise<Map<string, SkillIndexEntry>> => {
+  const skillIndex = new Map<string, SkillIndexEntry>()
+  const [skillDirectories, skillCatalog] = await Promise.all([findSkillDirectories(rootDir), loadSkillCatalog(rootDir)])
+  const catalogByPath = new Map(skillCatalog.catalog.map((entry) => [entry.path, entry]))
+
+  for (const skillDirectory of skillDirectories) {
+    const relativeSkillDirectory = toPosix(relative(rootDir, skillDirectory))
+    if (!relativeSkillDirectory || relativeSkillDirectory === '.' || relativeSkillDirectory.startsWith('../')) {
+      continue
+    }
+
+    const relativeSkillPath = toPosix(join(relativeSkillDirectory, 'SKILL.md'))
+    const catalogEntry = catalogByPath.get(`/${relativeSkillPath}`)
+    if (!catalogEntry) {
+      continue
+    }
+
+    const [frontmatter, instructions, linkValidation] = await Promise.all([
+      loadSkillFrontmatter(rootDir, relativeSkillDirectory),
+      loadSkillInstructions(rootDir, relativeSkillDirectory),
+      getSkillInstructionResourceLinks(rootDir, relativeSkillDirectory),
+    ])
+    if (!instructions) {
+      continue
+    }
+    if (!linkValidation || linkValidation.errors.length > 0) {
+      continue
+    }
+
+    skillIndex.set(relativeSkillPath, {
+      name: getStringRecordField(frontmatter, 'name') ?? catalogEntry.name,
+      description: getStringRecordField(frontmatter, 'description') ?? catalogEntry.description,
+      license: getStringRecordField(frontmatter, 'license') ?? null,
+      compatibility: getStringRecordField(frontmatter, 'compatibility') ?? null,
+    })
+  }
+
+  return skillIndex
+}
+
+const toAgentInstructionScopePath = (relativePath: string): string => {
+  const normalizedPath = toPosix(relativePath)
+  if (normalizedPath === 'AGENTS.md') {
+    return '.'
+  }
+
+  const directory = toPosix(dirname(normalizedPath))
+  return directory === '.' ? '.' : directory
 }
 
 const parseDocTitle = (markdown: string): string | undefined => {
@@ -632,13 +706,17 @@ export const indexWorkspace = async ({
     db.exec('DELETE FROM symbols;')
     db.exec('DELETE FROM imports;')
     db.exec('DELETE FROM exports;')
+    db.exec('DELETE FROM agent_instructions;')
     db.exec('DELETE FROM skills;')
     db.exec('DELETE FROM docs;')
     db.exec('DELETE FROM files;')
   }
 
   const absoluteRoot = resolve(rootDir)
-  const files = await collectFilesForIndexing({ rootDir: absoluteRoot, include })
+  const [files, skillIndex] = await Promise.all([
+    collectFilesForIndexing({ rootDir: absoluteRoot, include }),
+    loadSkillIndex({ rootDir: absoluteRoot }),
+  ])
 
   const upsertFile = db.query(
     `INSERT INTO files (path, kind, ext, size_bytes, mtime_ms, content, indexed_at)
@@ -655,6 +733,7 @@ export const indexWorkspace = async ({
   const deleteFileSymbols = db.query('DELETE FROM symbols WHERE file_path = ?')
   const deleteFileImports = db.query('DELETE FROM imports WHERE file_path = ?')
   const deleteFileExports = db.query('DELETE FROM exports WHERE file_path = ?')
+  const deleteFileAgentInstructions = db.query('DELETE FROM agent_instructions WHERE path = ?')
   const deleteFileSkill = db.query('DELETE FROM skills WHERE path = ?')
   const deleteFileDoc = db.query('DELETE FROM docs WHERE path = ?')
 
@@ -676,6 +755,14 @@ export const indexWorkspace = async ({
      VALUES (?, ?, ?, ?)
      ON CONFLICT(path) DO UPDATE SET
        title = excluded.title,
+       body = excluded.body,
+       indexed_at = excluded.indexed_at`,
+  )
+  const upsertAgentInstruction = db.query(
+    `INSERT INTO agent_instructions (path, scope_path, body, indexed_at)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(path) DO UPDATE SET
+       scope_path = excluded.scope_path,
        body = excluded.body,
        indexed_at = excluded.indexed_at`,
   )
@@ -702,6 +789,7 @@ export const indexWorkspace = async ({
     deleteFileSymbols.run(relativePath)
     deleteFileImports.run(relativePath)
     deleteFileExports.run(relativePath)
+    deleteFileAgentInstructions.run(relativePath)
     deleteFileSkill.run(relativePath)
     deleteFileDoc.run(relativePath)
 
@@ -723,23 +811,25 @@ export const indexWorkspace = async ({
     }
 
     if (kind === 'skill') {
-      const skillMeta = parseSkillFrontmatter({
-        path: relativePath,
-        markdown: content,
-      })
-
-      upsertSkill.run(
-        relativePath,
-        skillMeta.name,
-        skillMeta.description,
-        skillMeta.license ?? null,
-        skillMeta.compatibility ?? null,
-        indexedAt,
-      )
-      skillsIndexed += 1
+      const skillMeta = skillIndex.get(relativePath)
+      if (skillMeta) {
+        upsertSkill.run(
+          relativePath,
+          skillMeta.name,
+          skillMeta.description,
+          skillMeta.license,
+          skillMeta.compatibility,
+          indexedAt,
+        )
+        skillsIndexed += 1
+      }
     }
 
-    if (kind === 'doc' || kind === 'skill') {
+    if (kind === 'agent-instructions') {
+      upsertAgentInstruction.run(relativePath, toAgentInstructionScopePath(relativePath), content, indexedAt)
+    }
+
+    if (kind === 'wiki') {
       upsertDoc.run(relativePath, parseDocTitle(content) ?? null, content, indexedAt)
       docsIndexed += 1
     }
@@ -906,6 +996,33 @@ const splitQueryTerms = (task: string): string[] => {
 }
 
 const unique = (items: string[]): string[] => [...new Set(items)]
+const normalizeRelativePath = (value: string): string => toPosix(value).replace(/^\.\//, '').replace(/\/+$/, '')
+const pathScopesOverlap = (left: string, right: string): boolean =>
+  left === right || left.startsWith(`${right}/`) || right.startsWith(`${left}/`)
+
+const getRelevantAgentInstructionPaths = ({
+  rows,
+  paths,
+}: {
+  rows: Array<{ path: string; scope_path: string }>
+  paths: string[]
+}): string[] => {
+  if (paths.length === 0) {
+    return rows.map((row) => row.path)
+  }
+
+  const normalizedTaskPaths = paths.map((path) => normalizeRelativePath(path)).filter((path) => path.length > 0)
+  return rows
+    .filter((row) => {
+      if (row.scope_path === '.') {
+        return true
+      }
+
+      return normalizedTaskPaths.some((path) => pathScopesOverlap(path, normalizeRelativePath(row.scope_path)))
+    })
+    .map((row) => row.path)
+}
+
 const safeParseJson = (value: string): unknown | null => {
   try {
     return JSON.parse(value)
@@ -949,21 +1066,31 @@ export const assembleContext = ({
   }
 
   const skillRows = new Set<string>()
+  const skillPaths = new Set<string>()
   for (const term of searchTerms) {
     const likePattern = `%${escapeLike(term)}%`
     const matches = db
       .query(
-        `SELECT name
+        `SELECT name, path
          FROM skills
          WHERE name LIKE ? ESCAPE '\\' COLLATE NOCASE OR description LIKE ? ESCAPE '\\' COLLATE NOCASE
          ORDER BY name ASC
          LIMIT 8`,
       )
-      .all(likePattern, likePattern) as Array<{ name: string }>
+      .all(likePattern, likePattern) as Array<{ name: string; path: string }>
     for (const match of matches) {
       skillRows.add(match.name)
+      skillPaths.add(match.path)
     }
   }
+
+  const agentInstructionRows = db
+    .query(
+      `SELECT path, scope_path
+       FROM agent_instructions
+       ORDER BY CASE scope_path WHEN '.' THEN 0 ELSE 1 END, LENGTH(scope_path) DESC, path ASC`,
+    )
+    .all() as Array<{ path: string; scope_path: string }>
 
   const findingPatternRows = db
     .query(
@@ -996,7 +1123,14 @@ export const assembleContext = ({
             'bun skills/plaited-context/scripts/search.ts',
           ]
 
-  const sourceOfTruth = unique(['AGENTS.md', ...paths, 'src/', 'skills/', 'docs/'])
+  const sourceOfTruth = unique([
+    ...paths,
+    ...getRelevantAgentInstructionPaths({ rows: agentInstructionRows, paths }),
+    ...skillPaths,
+    'src/ (code)',
+    'skills/*/SKILL.md (operational skill instructions)',
+    'docs/ (wiki/reference)',
+  ])
 
   const openQuestions: string[] = []
   if (filesToRead.size === 0) {
