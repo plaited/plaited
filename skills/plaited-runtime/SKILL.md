@@ -60,7 +60,17 @@ initialized or a `dbPath` is provided for the review run.
 ## Module Actor Boundary Rules
 
 - Core modules under `src/modules` are flat single TypeScript files.
+- `src/modules/*.ts` files are core runtime module actors, not user-facing
+  module programs.
+- User/developer-authored proposals should be called module programs until
+  admitted by runtime policy.
 - Do not create nested module implementation folders under `src/modules`.
+- `src/modules.ts` remains the public modules boundary.
+- Audience-specific projection views are governed projections, not independent
+  source modules unless they own separate state/provenance.
+- Declared access requests in module descriptors are asks, not grants.
+- Skill/CLI/inference/external-service declarations are review metadata until a
+  later grant policy path allows them.
 - External boundary ingress should parse with `.parse(...)` inside `try/catch`
   and publish diagnostics/snapshots.
 - Internal `useExtension(...)` feedback/control handlers parse strictly and

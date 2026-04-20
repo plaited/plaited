@@ -60,7 +60,15 @@ and a configured `"dbPath"` when findings/evidence should be persisted.
 ## Review Checklist
 
 - flat `src/modules/*.ts` file boundary
+- `src/modules/*.ts` means core runtime module actors, not user-facing module
+  programs
+- user/developer-authored proposals remain module programs until admitted
+- `src/modules.ts` remains the public modules boundary
 - forbidden nested module implementation folders
+- projection views are governed audience views of one source module program
+  unless separate state/provenance is explicit
+- declared access requests are asks, not grants, and remain metadata unless a
+  later grant path exists
 - external boundary vs internal `useExtension(...)` feedback/control parsing
 - no internal handler `safeParse(...)` silent drops
 - no internal handler `ZodError` recovery

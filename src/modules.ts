@@ -1,4 +1,5 @@
 export * from './modules/execution-process-actor.ts'
 export * from './modules/inference-websocket-runtime-actor.ts'
+export * from './modules/module-program-admission.ts'
 export * from './modules/projection-boundary-actor.ts'
 export * from './modules/ui-websocket-runtime-actor.ts'
