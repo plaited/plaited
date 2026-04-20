@@ -193,6 +193,9 @@ describe('plaited-context scripts', () => {
 
     expect(contextOutput.ok).toBe(true)
     expect(contextOutput.filesToRead).toContain('src/example.ts')
+    expect(
+      contextOutput.commandsToRun.some((command) => command.includes('skills/plaited-context/scripts/git-context.ts')),
+    ).toBe(true)
 
     const findingOutput = await recordFindingEntry({
       cwd: rootDir,
@@ -447,6 +450,9 @@ describe('plaited-context scripts', () => {
     expect(contextOutput.commandsToRun).toContain('bun --bun tsc --noEmit')
     expect(contextOutput.commandsToRun).toContain('bun test <targeted-files-or-surface>')
     expect(
+      contextOutput.commandsToRun.some((command) => command.includes('skills/plaited-context/scripts/git-context.ts')),
+    ).toBe(true)
+    expect(
       contextOutput.commandsToRun.some((command) =>
         command.includes('skills/plaited-context/scripts/module-patterns.ts'),
       ),
@@ -501,5 +507,39 @@ describe('plaited-context scripts', () => {
       'other',
     ])
     expect(contextOutput.authorityPolicy).toContain('outrank')
+  })
+
+  test('context recommends git-context command for implementation mode', async () => {
+    const rootDir = await createTempWorkspace()
+    const dbPath = join(rootDir, '.plaited/context.sqlite')
+
+    await initDb({
+      cwd: rootDir,
+      dbPath,
+    })
+
+    await scanWorkspace({
+      cwd: rootDir,
+      rootDir,
+      dbPath,
+      include: ['AGENTS.md', 'src', 'skills', 'docs'],
+      force: true,
+    })
+
+    const contextOutput = await assembleTaskContext({
+      cwd: rootDir,
+      dbPath,
+      task: 'implement git context output formatter',
+      mode: 'implement',
+      paths: ['skills/plaited-context'],
+    })
+
+    expect(contextOutput.ok).toBe(true)
+    expect(
+      contextOutput.commandsToRun.some((command) => command.includes('skills/plaited-context/scripts/git-context.ts')),
+    ).toBe(true)
+    expect(contextOutput.commandsToRun).toContain('bun --bun tsc --noEmit')
+    expect(contextOutput.commandsToRun).toContain('bun test <targeted-files-or-surface>')
+    expect(contextOutput.commandsToRun).toContain('bun skills/plaited-context/scripts/search.ts')
   })
 })

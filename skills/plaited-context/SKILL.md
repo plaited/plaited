@@ -19,6 +19,7 @@ Use it before:
 
 - implementing a feature or fix
 - reviewing a slice or PR
+- reviewing agent-authored worktree state before PR handoff
 - updating wiki/reference docs and checking for stale guidance
 - large code, docs, or skill edits that need source-grounded context first
 
@@ -112,13 +113,21 @@ bun skills/typescript-lsp/scripts/run.ts '{"file":"src/modules/example.ts","oper
 bun skills/typescript-lsp/scripts/run.ts '{"file":"src/modules/example.ts","operations":[{"type":"definition","line":120,"character":8}]}'
 ```
 
-8. Record findings with evidence
+8. Assemble local read-only Git context for review/planning evidence
+
+```bash
+bun skills/plaited-context/scripts/git-context.ts '{"base":"origin/dev","paths":["skills/plaited-context"],"includeWorktrees":true}'
+bun skills/plaited-context/scripts/git-history.ts '{"base":"origin/dev","paths":["skills/plaited-context"],"limit":20}'
+bun skills/plaited-context/scripts/git-worktrees.ts '{}'
+```
+
+9. Record findings with evidence
 
 ```bash
 bun skills/plaited-context/scripts/record-finding.ts '{"finding":{"kind":"anti-pattern","status":"candidate","summary":"Internal handlers should not catch ZodError locally.","evidence":[{"path":"src/modules/example.ts","line":100,"symbol":"server_start"}]}}'
 ```
 
-9. Export review JSON
+10. Export review JSON
 
 ```bash
 bun skills/plaited-context/scripts/export-review.ts '{"status":["candidate","validated"],"format":"json"}'
@@ -151,6 +160,21 @@ actions.
 
 Use `scan.ts`, `search.ts`, `context.ts`, and `wiki-context.ts` to assemble
 context instead of manually reading broad docs trees.
+
+## Git Context Scope
+
+Git context in this skill is read-only evidence for review and planning:
+
+- local branch/HEAD/upstream state
+- worktree state and possible stale/prunable branches
+- merge-base, commits since base, changed files since base
+- path-specific recent commit history
+
+Git context augments code/test/skill/wiki context; it does not replace source
+or test evidence and does not override `AGENTS.md`.
+
+Git context commands in this skill do not authorize merge/rebase/reset/stash
+mutation, branch deletion, or worktree removal.
 
 ## Script Contracts
 
