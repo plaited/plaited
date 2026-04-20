@@ -65,6 +65,58 @@ const readToolBashResults = () => {
 }
 
 describe('createAgent core extension', () => {
+  test('direct execution_process_actor request is not installed as an approval bypass', async () => {
+    await withSpawnSpy(async (spawnCalls) => {
+      const workspace = process.cwd()
+      const trigger = await createAgent({
+        workspace,
+        ttlMs: 1_000,
+      })
+
+      trigger({
+        type: 'execution_process_actor:request',
+        detail: {
+          requestId: 'req-direct-bypass',
+          correlationId: 'corr-direct-bypass',
+          command: 'bun',
+          args: ['-e', 'process.stdout.write("bypass")'],
+          cwd: '.',
+        },
+      })
+      await Bun.sleep(0)
+      expect(spawnCalls).toHaveLength(0)
+
+      trigger({
+        type: `${AGENT_CORE}:${AGENT_CORE_EVENTS.tool_bash_request}`,
+        detail: {
+          requestId: 'req-approval-path',
+          correlationId: 'corr-approval-path',
+          bash: {
+            path: './scripts/worker.ts',
+            args: ['--approved'],
+          },
+        },
+      })
+      await Bun.sleep(0)
+      expect(spawnCalls).toHaveLength(0)
+
+      trigger({
+        type: `${AGENT_CORE}:${AGENT_CORE_EVENTS.tool_bash_approved}`,
+        detail: {
+          requestId: 'req-approval-path',
+          correlationId: 'corr-approval-path',
+        },
+      })
+      await Bun.sleep(0)
+
+      expect(spawnCalls).toHaveLength(1)
+      expect(spawnCalls[0]).toEqual({
+        cmd: ['bun', resolve(workspace, 'scripts/worker.ts'), '--approved'],
+        cwd: workspace,
+      })
+    })
+  })
+
   test('update_modules installs named extension exports from a module namespace', async () => {
     const state = globalThis as Record<string, unknown>
     state.__plaitedAgentCoreFixtureSeen = false
@@ -476,6 +528,55 @@ describe('createAgent core extension', () => {
         error: new Error('spawn blew up'),
       },
     )
+  })
+
+  test('legacy mapping/path failures still emit tool_bash_result after approval', async () => {
+    await withSpawnSpy(async (spawnCalls) => {
+      const state = globalThis as Record<string, unknown>
+      state[TOOL_BASH_RESULTS_KEY] = []
+
+      const trigger = await createAgent({
+        workspace: process.cwd(),
+        ttlMs: 1_000,
+      })
+
+      trigger({
+        type: `${AGENT_CORE}:${AGENT_CORE_EVENTS.update_modules}`,
+        detail: './src/agent/tests/fixtures/tool-bash-result-extension.fixture.ts',
+      })
+      await Bun.sleep(10)
+
+      const request = createToolBashRequestEvent({
+        correlationId: 'corr-result-escape',
+        bash: {
+          path: '../escape.ts',
+          args: [],
+        },
+      })
+
+      trigger(request)
+      trigger({
+        type: `${AGENT_CORE}:${AGENT_CORE_EVENTS.tool_bash_approved}`,
+        detail: {
+          requestId: request.detail.requestId,
+          correlationId: request.detail.correlationId,
+        },
+      })
+      await Bun.sleep(10)
+      trigger({ type: TOOL_BASH_CAPTURE_EVENT_TYPE })
+      await Bun.sleep(0)
+
+      expect(spawnCalls).toHaveLength(0)
+      expect(readToolBashResults()).toHaveLength(1)
+      const result = readToolBashResults()[0]
+      expect(result).toBeDefined()
+      expect(result?.requestId).toBe(request.detail.requestId)
+      expect(result?.correlationId).toBe(request.detail.correlationId)
+      expect(result?.exitCode).toBeNull()
+      expect(result?.stdout).toBe('')
+      expect(result?.stderr).toBe('')
+      expect(result?.error).toContain('outside workspace')
+    })
   })
 
   test('duplicate requestId does not create multiple executable gates', async () => {

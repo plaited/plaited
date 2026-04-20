@@ -3,7 +3,6 @@ import { pathToFileURL } from 'node:url'
 import * as z from 'zod'
 import { behavioral, isExtension, SNAPSHOT_MESSAGE_KINDS, useExtension, useInstaller } from '../behavioral.ts'
 import {
-  createExecutionProcessActorExtension,
   ExecutionProcessRequestDetailSchema,
   executeExecutionProcessRequest,
 } from '../modules/execution-process-actor.ts'
@@ -41,9 +40,6 @@ export const createAgent = async ({ maxKeys, ttlMs, workspace }: CreateAgentOpti
   const { addBThread, trigger, useFeedback, useSnapshot, reportSnapshot } = behavioral()
   const installer = useInstaller({ trigger, useSnapshot, reportSnapshot, addBThread, ttlMs, maxKeys })
   const workspaceRoot = resolve(workspace)
-  const executionProcessActorExtension = createExecutionProcessActorExtension({
-    workspaceRoot,
-  })
   const resolveWorkspacePath = (detail: string) => {
     const resolved = resolve(workspaceRoot, detail)
     if (resolved !== workspaceRoot && !resolved.startsWith(`${workspaceRoot}${sep}`)) {
@@ -221,30 +217,42 @@ export const createAgent = async ({ maxKeys, ttlMs, workspace }: CreateAgentOpti
       },
       // Internal execution event only. External extension callers should use tool_bash_request.
       async [AGENT_CORE_EVENTS.bash](detail: ToolBashRequestDetail) {
-        const requestDetail = ExecutionProcessRequestDetailSchema.parse({
-          requestId: detail.requestId,
-          correlationId: detail.correlationId,
-          command: 'bun',
-          args: [resolveWorkspacePath(detail.bash.path), ...detail.bash.args],
-          cwd: detail.bash.cwd ?? '.',
-          ...(detail.bash.timeout !== undefined && { timeoutMs: detail.bash.timeout }),
-        })
+        let result: ToolBashResultDetail
+        try {
+          const requestDetail = ExecutionProcessRequestDetailSchema.parse({
+            requestId: detail.requestId,
+            correlationId: detail.correlationId,
+            command: 'bun',
+            args: [resolveWorkspacePath(detail.bash.path), ...detail.bash.args],
+            cwd: detail.bash.cwd ?? '.',
+            ...(detail.bash.timeout !== undefined && { timeoutMs: detail.bash.timeout }),
+          })
 
-        const executionResultDetail = await executeExecutionProcessRequest({
-          request: requestDetail,
-          workspaceRoot,
-        })
+          const executionResultDetail = await executeExecutionProcessRequest({
+            request: requestDetail,
+            workspaceRoot,
+          })
 
-        const result: ToolBashResultDetail = ToolBashResultDetailSchema.parse({
-          requestId: executionResultDetail.requestId,
-          correlationId: executionResultDetail.correlationId,
-          exitCode: executionResultDetail.exitCode,
-          stdout: executionResultDetail.stdout,
-          stderr: executionResultDetail.stderr,
-          ...(executionResultDetail.stdoutTruncated && { stdoutTruncated: true }),
-          ...(executionResultDetail.stderrTruncated && { stderrTruncated: true }),
-          ...(executionResultDetail.error !== undefined && { error: executionResultDetail.error }),
-        })
+          result = ToolBashResultDetailSchema.parse({
+            requestId: executionResultDetail.requestId,
+            correlationId: executionResultDetail.correlationId,
+            exitCode: executionResultDetail.exitCode,
+            stdout: executionResultDetail.stdout,
+            stderr: executionResultDetail.stderr,
+            ...(executionResultDetail.stdoutTruncated && { stdoutTruncated: true }),
+            ...(executionResultDetail.stderrTruncated && { stderrTruncated: true }),
+            ...(executionResultDetail.error !== undefined && { error: executionResultDetail.error }),
+          })
+        } catch (error) {
+          result = ToolBashResultDetailSchema.parse({
+            requestId: detail.requestId,
+            correlationId: detail.correlationId,
+            exitCode: null,
+            stdout: '',
+            stderr: '',
+            error: error instanceof Error ? error.message : String(error),
+          })
+        }
 
         trigger({
           type: `${AGENT_CORE}:${AGENT_CORE_EVENTS.tool_bash_result}`,
@@ -254,7 +262,7 @@ export const createAgent = async ({ maxKeys, ttlMs, workspace }: CreateAgentOpti
     }
   })
 
-  for (const extension of [coreExtension, executionProcessActorExtension, ...Object.values(modules)]) {
+  for (const extension of [coreExtension, ...Object.values(modules)]) {
     if (isExtension(extension)) useFeedback(installer(extension))
   }
 
