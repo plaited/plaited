@@ -74,6 +74,8 @@ git merge --ff-only origin/dev
   - architectural boundary being protected
   - expected tests and typecheck commands
   - PR target branch
+  - PR template requirement: read `.github/pull_request_template.md`, preserve every required
+    heading exactly, and check `gh pr checks <pr-number> --repo plaited/plaited` after opening
   - review risks to call out in the final handoff
 - For MSS/module slices, prefer explicit flat module files under `src/modules/` when the prompt says
   the slice belongs to the core module surface.
@@ -95,6 +97,11 @@ git merge --ff-only origin/dev
 ## 8. Integration And Promotion
 
 - PRs into `dev` should carry a clear description of scope, validation, and follow-up risks.
+- Before opening or editing a PR, read `.github/pull_request_template.md` and preserve every
+  required heading exactly.
+- After opening or editing a PR, run `gh pr checks <pr-number> --repo plaited/plaited`.
+- If `pr-description-lint` fails, inspect the failing job with `gh run view` and update the PR body
+  with `gh pr edit` until the required heading check passes.
 - Keep `dev` ahead of normal feature work; use fresh branches for redo attempts.
 - Human approval is required for `dev -> main` promotion.
 - Release or promotion automation may be rebuilt later, but no retired workflow should be treated as
