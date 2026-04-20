@@ -11,8 +11,21 @@ export const toModuleProgramAdmissionActorEventType = <TEvent extends string>(
   event: TEvent,
 ): `${typeof MODULE_PROGRAM_ADMISSION_ACTOR_ID}:${TEvent}` => `${MODULE_PROGRAM_ADMISSION_ACTOR_ID}:${event}`
 
+const isPlainRecord = (value: unknown): value is Record<string, unknown> => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
+
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
 const createJsonObjectWithShapeSchema = <TShape extends z.ZodRawShape>(shape: TShape) =>
-  z.object(shape).catchall(JsonValueSchema)
+  z
+    .custom<Record<string, unknown>>((value) => isPlainRecord(value), {
+      message: 'Expected a plain JSON object.',
+    })
+    .pipe(z.object(shape).catchall(JsonValueSchema))
 
 const ModuleProgramAccessModeSchema = z.enum(['read', 'write', 'execute'])
 
@@ -105,7 +118,7 @@ const ProcessExecutionAccessRequestSchema = createJsonObjectWithShapeSchema({
   reason: z.string().min(1).optional(),
 })
 
-export const ModuleProgramAccessRequestSchema = z.discriminatedUnion('kind', [
+export const ModuleProgramAccessRequestSchema = z.union([
   ModuleProjectionReadAccessRequestSchema,
   ModuleReadAccessRequestSchema,
   SkillUseAccessRequestSchema,

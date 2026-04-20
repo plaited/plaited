@@ -6,6 +6,8 @@ import {
   evaluateModuleProgramAdmission,
   MODULE_PROGRAM_ADMISSION_ACTOR_EVENTS,
   ModuleProgramAdmissionDecisionSchema,
+  ModuleProgramAdmissionDiagnosticSchema,
+  ModuleProgramAdmissionRequirementSchema,
   ModuleProgramDescriptorSchema,
   toModuleProgramAdmissionActorEventType,
 } from '../module-program-admission.ts'
@@ -123,6 +125,25 @@ const baseFarmStandDescriptor = ModuleProgramDescriptorSchema.parse({
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T
 
 const createDescriptor = () => clone(baseFarmStandDescriptor)
+
+class NonPlainSource {
+  readonly kind = 'local-file'
+  readonly path = 'src/modules/non-plain-source.ts'
+}
+
+class NonPlainProvenance {
+  readonly createdBy = 'class-instance'
+}
+
+class NonPlainAccessRequest {
+  readonly kind = 'module-projection-read'
+  readonly targetModuleId = 'inventory-hub'
+  readonly projectionId = 'inventory-hub-supplier-v1'
+}
+
+class NonPlainExtraValue {
+  readonly marker = 'non-plain-extra'
+}
 
 const createHarness = (): Harness => {
   const events: ObservedEvent[] = []
@@ -523,6 +544,91 @@ describe('module program admission actor', () => {
         code: 'invalid_descriptor',
       }),
     )
+  })
+
+  test('descriptor with Date provenance is rejected and diagnosed', () => {
+    const descriptor = createDescriptor() as Record<string, unknown>
+    descriptor.provenance = new Date('2026-04-20T00:00:00.000Z')
+
+    const decision = evaluateModuleProgramAdmission({ descriptor })
+
+    expect(decision.decision).toBe('rejected')
+    expect(decision.reason).toBe('invalid-module-program-descriptor')
+    expect(decision.diagnostics[0]).toEqual(
+      expect.objectContaining({
+        severity: 'error',
+        code: 'invalid_descriptor',
+      }),
+    )
+  })
+
+  test('descriptor with class-instance provenance is rejected and diagnosed', () => {
+    const descriptor = createDescriptor() as Record<string, unknown>
+    descriptor.provenance = new NonPlainProvenance()
+
+    const decision = evaluateModuleProgramAdmission({ descriptor })
+
+    expect(decision.decision).toBe('rejected')
+    expect(decision.reason).toBe('invalid-module-program-descriptor')
+    expect(decision.diagnostics[0]).toEqual(
+      expect.objectContaining({
+        severity: 'error',
+        code: 'invalid_descriptor',
+      }),
+    )
+  })
+
+  test('descriptor with class-instance source is rejected and diagnosed', () => {
+    const descriptor = createDescriptor() as Record<string, unknown>
+    descriptor.source = new NonPlainSource()
+
+    const decision = evaluateModuleProgramAdmission({ descriptor })
+
+    expect(decision.decision).toBe('rejected')
+    expect(decision.reason).toBe('invalid-module-program-descriptor')
+    expect(decision.diagnostics[0]).toEqual(
+      expect.objectContaining({
+        severity: 'error',
+        code: 'invalid_descriptor',
+      }),
+    )
+  })
+
+  test('descriptor with class-instance declared access request is rejected and diagnosed', () => {
+    const descriptor = createDescriptor() as Record<string, unknown>
+    descriptor.declaredAccessRequests = [new NonPlainAccessRequest()]
+
+    const decision = evaluateModuleProgramAdmission({ descriptor })
+
+    expect(decision.decision).toBe('rejected')
+    expect(decision.reason).toBe('invalid-module-program-descriptor')
+    expect(decision.diagnostics[0]).toEqual(
+      expect.objectContaining({
+        severity: 'error',
+        code: 'invalid_descriptor',
+      }),
+    )
+  })
+
+  test('admission requirement schema rejects class-instance extra values', () => {
+    const parseResult = ModuleProgramAdmissionRequirementSchema.safeParse({
+      kind: 'access-review',
+      accessKinds: ['cli-use'],
+      extra: new NonPlainExtraValue(),
+    })
+
+    expect(parseResult.success).toBe(false)
+  })
+
+  test('admission diagnostic schema rejects class-instance extra values', () => {
+    const parseResult = ModuleProgramAdmissionDiagnosticSchema.safeParse({
+      severity: 'warning',
+      code: 'access_review_required',
+      message: 'Needs review.',
+      extra: new NonPlainExtraValue(),
+    })
+
+    expect(parseResult.success).toBe(false)
   })
 
   test('admitted descriptor projection data remains compatible with projection boundary schemas', async () => {
