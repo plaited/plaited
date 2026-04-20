@@ -23,7 +23,7 @@ Concepts that still show up in the repo:
 - **Blocks**
 
 Where that influence is visible now:
-- [skills/modnet-modules/references/Structural-IA.md](/Users/eirby/Workspace/plaited/skills/modnet-modules/references/Structural-IA.md)
+- [skills/plaited-runtime/references/modnet-mss-lineage.md](/Users/eirby/Workspace/plaited/skills/plaited-runtime/references/modnet-mss-lineage.md)
 - [docs/ARCHITECTURE.md](/Users/eirby/Workspace/plaited/docs/ARCHITECTURE.md)
 
 In Plaited, Structural IA is not just UI vocabulary. It also informs the
@@ -34,7 +34,7 @@ symbolic constraints and generated artifacts.
 
 **Author:** Rachel Jaffe
 **Sources:**
-- [Modnet.md](/Users/eirby/Workspace/plaited/skills/modnet-modules/references/Modnet.md)
+- [modnet-mss-lineage.md](/Users/eirby/Workspace/plaited/skills/plaited-runtime/references/modnet-mss-lineage.md)
 - [Past the Internet: The Emergence of the Modnet](https://medium.com/@rjaffe01)
 
 Rachel Jaffe's modnet work is the other major living attribution that should be
@@ -53,7 +53,7 @@ Where that influence is visible now:
 - [docs/ARCHITECTURE.md](/Users/eirby/Workspace/plaited/docs/ARCHITECTURE.md)
 - [docs/INFRASTRUCTURE.md](/Users/eirby/Workspace/plaited/docs/INFRASTRUCTURE.md)
 - [docs/AGENT-LOOP.md](/Users/eirby/Workspace/plaited/docs/AGENT-LOOP.md)
-- [skills/modnet-modules/SKILL.md](/Users/eirby/Workspace/plaited/skills/modnet-modules/SKILL.md)
+- [skills/plaited-runtime/SKILL.md](/Users/eirby/Workspace/plaited/skills/plaited-runtime/SKILL.md)
 - [src/modules/a2a-module/a2a.schemas.ts](/Users/eirby/Workspace/plaited/src/modules/a2a-module/a2a.schemas.ts)
 
 Plaited does not reproduce the modnet work verbatim. It adapts it into:

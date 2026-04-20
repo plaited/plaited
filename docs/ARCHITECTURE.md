@@ -232,7 +232,7 @@ deployment shape is documented in `INFRASTRUCTURE.md`.
 |---|---|
 | `AGENT-LOOP.md` | Minimal core plus module-composed orchestration model |
 | `INFRASTRUCTURE.md` | Local-first persistence, sandbox execution, sync boundaries |
-| `skills/modnet-modules/` | Modnet/MSS/A2A translation for current module-era agents |
+| `skills/plaited-runtime/` | Runtime doctrine for behavioral coordination, MSS/module boundaries, and projection rules |
 | `dev-research/README.md` | Tombstone for retired local program lanes with issue-backed backlog links |
 | `https://github.com/plaited/plaited/issues/261` | Cognitive Kernel architecture reference backlog |
 | `https://github.com/plaited/plaited/issues/258` | Reused server-module transport eval backlog |

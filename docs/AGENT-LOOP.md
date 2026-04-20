@@ -4,7 +4,7 @@
 > module-composed orchestration model. Cross-references: `ARCHITECTURE.md`
 > (top-level system shape), `INFRASTRUCTURE.md` (deployment/runtime
 > boundaries), `dev-research/README.md` (retired local lanes plus active issue
-> backlog links), `skills/modnet-modules/` (modnet/MSS/module framing).
+> backlog links), `skills/plaited-runtime/` (runtime doctrine and MSS/module framing).
 
 ## Overview
 

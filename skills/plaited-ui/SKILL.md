@@ -21,7 +21,7 @@ The UI model is server-driven and island-scoped:
 - the server pushes `render`, `attrs`, `import`, and `disconnect` commands
 - the browser sends `ui_event` and `error` messages back to the server
 
-Use `behavioral-core` only when the task depends on behavioral-programming
+Use `plaited-runtime` only when the task depends on behavioral-programming
 semantics. The browser controller itself should stay small and protocol-shaped.
 
 ## Source Map
@@ -273,5 +273,5 @@ Open these when you need deeper context, but verify them against code:
 
 ## Related Skills
 
-- `behavioral-core` for BP event semantics and server-side behavioral programs
+- `plaited-runtime` for BP event semantics and server-side behavioral programs
 - `code-documentation` for TSDoc and public API documentation
