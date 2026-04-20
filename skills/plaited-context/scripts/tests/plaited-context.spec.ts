@@ -442,6 +442,8 @@ describe('plaited-context scripts', () => {
       paths: ['src/modules/example.ts'],
     })
 
+    expect(contextOutput.commandsToRun).toContain('bun --bun tsc --noEmit')
+    expect(contextOutput.commandsToRun).toContain('bun test <targeted-files-or-surface>')
     expect(
       contextOutput.commandsToRun.some((command) =>
         command.includes('skills/plaited-context/scripts/module-patterns.ts'),
@@ -460,7 +462,21 @@ describe('plaited-context scripts', () => {
       ),
     ).toBe(true)
     expect(
-      contextOutput.commandsToRun.some((command) => command.includes('skills/typescript-lsp/scripts/run.ts')),
+      contextOutput.commandsToRun.some(
+        (command) => command.includes('skills/typescript-lsp/scripts/run.ts') && command.includes('"type":"symbols"'),
+      ),
+    ).toBe(true)
+    expect(
+      contextOutput.commandsToRun.some(
+        (command) =>
+          command.includes('skills/typescript-lsp/scripts/run.ts') && command.includes('"type":"references"'),
+      ),
+    ).toBe(true)
+    expect(
+      contextOutput.commandsToRun.some(
+        (command) =>
+          command.includes('skills/typescript-lsp/scripts/run.ts') && command.includes('"type":"definition"'),
+      ),
     ).toBe(true)
 
     const sourceIndex = contextOutput.sourceOfTruth.indexOf('src/ (code)')

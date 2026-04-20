@@ -4,10 +4,8 @@ import * as z from 'zod'
 import { parseCliRequest } from '../../../src/cli.ts'
 import {
   closeContextDatabase,
-  type FindingInput,
   OperationalContextOverrideSchema,
   openContextDatabase,
-  recordFinding,
   resolveOperationalContext,
 } from './plaited-context.ts'
 
@@ -131,6 +129,19 @@ export type ModuleFlowRenderInput = z.input<typeof ModuleFlowRenderInputSchema>
 type ParsedModuleFlowRenderInput = z.infer<typeof ModuleFlowRenderInputSchema>
 export type SourceLocation = z.infer<typeof SourceLocationSchema>
 export type ModuleFlowRenderOutput = z.infer<typeof ModuleFlowRenderOutputSchema>
+
+const ModuleFlowFindingDetailsSchema = z
+  .object({
+    source: z.literal('module-flow'),
+    file: z.string().min(1),
+    format: z.enum(['json', 'mermaid']),
+    extensions: z.number().int().nonnegative(),
+    handlers: z.number().int().nonnegative(),
+    helpers: z.number().int().nonnegative(),
+  })
+  .describe('Structured details payload for module-flow evidence findings.')
+
+type ModuleFlowFindingDetails = z.infer<typeof ModuleFlowFindingDetailsSchema>
 
 type HandlerEntry = {
   name: string
@@ -856,6 +867,23 @@ const summarizeFileFlow = (fileFlow: z.infer<typeof FileFlowSchema>) => {
   }
 }
 
+const safeParseJson = (value: string): unknown | null => {
+  try {
+    return JSON.parse(value)
+  } catch {
+    return null
+  }
+}
+
+const parseModuleFlowFindingDetails = (details: string | null): ModuleFlowFindingDetails | null => {
+  if (!details) {
+    return null
+  }
+
+  const parsed = ModuleFlowFindingDetailsSchema.safeParse(safeParseJson(details))
+  return parsed.success ? parsed.data : null
+}
+
 const recordFlowEvidence = async ({
   input,
   files,
@@ -871,42 +899,92 @@ const recordFlowEvidence = async ({
   const db = await openContextDatabase({ dbPath: context.dbPath })
 
   try {
+    const selectCandidatePatternFindings = db.query(
+      `SELECT id, details
+       FROM findings
+       WHERE kind = 'pattern' AND status = 'candidate'
+       ORDER BY id ASC`,
+    )
+    const insertCandidateFinding = db.query(
+      `INSERT INTO findings (kind, status, summary, details, created_at, updated_at)
+       VALUES ('pattern', 'candidate', ?, ?, ?, ?)`,
+    )
+    const updateFinding = db.query(
+      `UPDATE findings
+       SET summary = ?, details = ?, updated_at = ?
+       WHERE id = ?`,
+    )
+    const retireFinding = db.query(
+      `UPDATE findings
+       SET status = 'retired', updated_at = ?
+       WHERE id = ?`,
+    )
+    const deleteFindingEvidence = db.query(`DELETE FROM finding_evidence WHERE finding_id = ?`)
+    const insertFindingEvidence = db.query(
+      `INSERT INTO finding_evidence (finding_id, path, line, symbol, excerpt, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    )
+
     for (const fileFlow of files) {
       const summary = summarizeFileFlow(fileFlow)
       const primaryLocation = fileFlow.extensions[0]?.location
 
-      const findingInput: FindingInput = {
-        kind: 'pattern',
-        status: 'candidate',
-        summary:
-          `module-flow evidence for ${fileFlow.file}: ` +
-          `${summary.extensionCount} extension(s), ${summary.handlerCount} handler(s), ${summary.helperCount} helper(s)`,
-        details: JSON.stringify(
-          {
-            source: 'module-flow',
-            file: fileFlow.file,
-            format: input.format,
-            extensions: summary.extensionCount,
-            handlers: summary.handlerCount,
-            helpers: summary.helperCount,
-          },
-          null,
-          2,
-        ),
-        evidence: [
-          {
-            path: fileFlow.file,
-            line: primaryLocation?.line,
-            symbol: 'module-flow',
-            excerpt: `extensions=${summary.extensionCount}, handlers=${summary.handlerCount}, helpers=${summary.helperCount}`,
-          },
-        ],
+      const detailPayload: ModuleFlowFindingDetails = {
+        source: 'module-flow',
+        file: fileFlow.file,
+        format: input.format,
+        extensions: summary.extensionCount,
+        handlers: summary.handlerCount,
+        helpers: summary.helperCount,
+      }
+      const detailPayloadText = JSON.stringify(detailPayload, null, 2)
+      const summaryText =
+        `module-flow evidence for ${fileFlow.file}: ` +
+        `${summary.extensionCount} extension(s), ${summary.handlerCount} handler(s), ${summary.helperCount} helper(s)`
+      const evidenceExcerpt = `extensions=${summary.extensionCount}, handlers=${summary.handlerCount}, helpers=${summary.helperCount}`
+
+      const candidateRows = selectCandidatePatternFindings.all() as Array<{
+        id: number
+        details: string | null
+      }>
+      const matchingCandidateIds = candidateRows
+        .filter((row) => {
+          const rowDetails = parseModuleFlowFindingDetails(row.details)
+          if (!rowDetails) {
+            return false
+          }
+
+          return rowDetails.file === detailPayload.file && rowDetails.format === detailPayload.format
+        })
+        .map((row) => row.id)
+
+      const timestamp = new Date().toISOString()
+      const writeEvidenceForFinding = db.transaction((findingId: number) => {
+        deleteFindingEvidence.run(findingId)
+        insertFindingEvidence.run(
+          findingId,
+          fileFlow.file,
+          primaryLocation?.line ?? null,
+          'module-flow',
+          evidenceExcerpt,
+          timestamp,
+        )
+      })
+
+      if (matchingCandidateIds.length === 0) {
+        const inserted = insertCandidateFinding.run(summaryText, detailPayloadText, timestamp, timestamp)
+        const findingId = Number(inserted.lastInsertRowid)
+        writeEvidenceForFinding(findingId)
+        continue
       }
 
-      recordFinding({
-        db,
-        finding: findingInput,
-      })
+      const canonicalFindingId = matchingCandidateIds[0] as number
+      updateFinding.run(summaryText, detailPayloadText, timestamp, canonicalFindingId)
+      writeEvidenceForFinding(canonicalFindingId)
+
+      for (const duplicateFindingId of matchingCandidateIds.slice(1)) {
+        retireFinding.run(timestamp, duplicateFindingId)
+      }
     }
   } finally {
     closeContextDatabase(db)

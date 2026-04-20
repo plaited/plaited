@@ -1159,6 +1159,8 @@ export const assembleContext = ({
 
   const commandsToRun = isModuleActorReview
     ? [
+        'bun --bun tsc --noEmit',
+        'bun test <targeted-files-or-surface>',
         `bun skills/plaited-context/scripts/module-patterns.ts '{"files":["<module-files>"]}'`,
         `bun skills/plaited-context/scripts/module-flow.ts '{"files":["<module-files>"],"format":"json"}'`,
         `bun skills/plaited-context/scripts/module-flow.ts '{"files":["<module-files>"],"format":"mermaid"}'`,

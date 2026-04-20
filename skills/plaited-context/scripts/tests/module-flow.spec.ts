@@ -170,6 +170,83 @@ useExtension('mod', (_ctx) => ({
     }
   })
 
+  test('record:true is idempotent for the same file and format', async () => {
+    const file = await writeFixture({
+      name: 'record-flow-idempotent.ts',
+      source: `
+const useExtension = (_id: string, fn: (ctx: unknown) => unknown) => fn
+const EVENTS = { start: 'start' } as const
+
+useExtension('mod', (_ctx) => ({
+  [EVENTS.start](detail: unknown) {
+    StartSchema.parse(detail)
+  },
+}))
+`,
+    })
+
+    const dbPath = join(dirname(file), '.plaited/context.sqlite')
+    await initDb({
+      cwd: dirname(file),
+      dbPath,
+    })
+
+    await renderModuleFlow({
+      cwd: dirname(file),
+      dbPath,
+      files: [file],
+      format: 'json',
+      record: true,
+    })
+    await renderModuleFlow({
+      cwd: dirname(file),
+      dbPath,
+      files: [file],
+      format: 'json',
+      record: true,
+    })
+
+    const db = await openContextDatabase({ dbPath })
+    try {
+      const candidateRows = db
+        .query(
+          `SELECT id, details
+           FROM findings
+           WHERE kind = 'pattern' AND status = 'candidate'`,
+        )
+        .all() as Array<{ id: number; details: string | null }>
+
+      const matchingRows = candidateRows.filter((row) => {
+        if (!row.details) {
+          return false
+        }
+
+        const details = JSON.parse(row.details) as {
+          source?: string
+          file?: string
+          format?: string
+        }
+        return details.source === 'module-flow' && details.file === file && details.format === 'json'
+      })
+
+      expect(matchingRows).toHaveLength(1)
+      const matchingFindingId = matchingRows[0]?.id
+      expect(matchingFindingId).toBeDefined()
+
+      const evidenceRows = db
+        .query(
+          `SELECT id
+           FROM finding_evidence
+           WHERE finding_id = ?`,
+        )
+        .all(matchingFindingId as number) as Array<{ id: number }>
+
+      expect(evidenceRows).toHaveLength(1)
+    } finally {
+      closeContextDatabase(db)
+    }
+  })
+
   test('cli exits 2 for missing file and invalid input', async () => {
     const missingPath = join(tmpdir(), 'does-not-exist-module-flow.ts')
 
