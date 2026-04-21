@@ -29,9 +29,9 @@ compose on top of the core?"
 - host `trigger` ingress
 - module `emit` ingress
 - event-derived context memory (`eventType` -> last selected detail)
-- heartbeat pulse
-- built-in file, grep, bash, and inference handlers
-- dynamic module installation
+- heartbeat ingress
+- guarded bash execution through the execution process actor
+- actor directory scanning
 - snapshot access through `useSnapshot`
 - host/runtime diagnostic publishing through `reportSnapshot`
 
@@ -42,17 +42,13 @@ memory, simulation, judge, or context-assembly policy.
 
 The built-in core event surface is:
 
-- `request_inference`
-- `request_tts`
-- `read_file`
-- `write_file`
-- `delete_file`
-- `glob_files`
-- `grep`
+- `actors_scan`
 - `bash`
 - `heartbeat`
-- `update_modules`
-- `agent_disconnect`
+- `tool_bash_request`
+- `tool_bash_approved`
+- `tool_bash_denied`
+- `tool_bash_result`
 
 These are engine-level primitives. They are not the full user-facing loop.
 
@@ -122,14 +118,13 @@ end-user tool UX.
 
 | Primitive | Purpose |
 |---|---|
-| `read_file` | Read a workspace file |
-| `write_file` | Write or create a workspace file |
-| `delete_file` | Delete a workspace file |
-| `glob_files` | Enumerate files by glob |
-| `grep` | Search file content |
-| `bash` | Execute a workspace-local Bun worker |
-| `request_inference` | Call the primary model |
-| `request_tts` | Call the speech output model |
+| `actors_scan` | Scan a workspace actor directory and install default actor exports |
+| `heartbeat` | Host-provided pulse for module-owned orchestration |
+| `tool_bash_request` | Request guarded workspace-local process execution |
+| `tool_bash_approved` | Approve a pending guarded process request |
+| `tool_bash_denied` | Deny a pending guarded process request |
+| `tool_bash_result` | Publish process completion, failure, and captured output |
+| `bash` | Internal normalized execution event after approval |
 
 ### Higher-Level Tools
 
@@ -147,7 +142,8 @@ Examples:
 
 The heartbeat is a core capability, but its meaning is module-defined.
 
-The core emits `heartbeat` on an interval. Modules can use that event for:
+The host emits `heartbeat`, for example from `Bun.cron`, by calling the
+`trigger` returned from `createAgent()`. Modules can use that event for:
 
 - proactive sensing
 - background maintenance

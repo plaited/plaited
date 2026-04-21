@@ -124,18 +124,10 @@ The core owns:
 - module `emit` ingress surface (provided via module params)
 - event-derived context memory policy (`eventType` -> last selected `detail`, queried via `last(listener)`)
 - module-scoped dynamic thread installation via `addThreads(...)` (declared name scope, fallback `moduleId`)
-- heartbeat emission
+- heartbeat ingress from the host `trigger`
 - host/runtime snapshot diagnostics via `reportSnapshot`
-- built-in handlers for:
-  - primary inference
-  - speech output inference
-  - `read_file`
-  - `write_file`
-  - `delete_file`
-  - `glob_files`
-  - `grep`
-  - `bash`
-- dynamic module installation
+- guarded process execution through `tool_bash_request` / approval / result events
+- actor directory scanning through `actors_scan`
 
 Behavioral provenance is explicit and source-aware across runtime and replay:
 `trigger | request | emit`.

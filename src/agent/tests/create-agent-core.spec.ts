@@ -64,6 +64,16 @@ const readToolBashResults = () => {
   return Array.isArray(results) ? (results as ToolBashResultDetail[]) : []
 }
 
+const scanActorFixtureDirectory = async (trigger: Awaited<ReturnType<typeof createAgent>>) => {
+  trigger({
+    type: `${AGENT_CORE}:${AGENT_CORE_EVENTS.actors_scan}`,
+    detail: {
+      directory: './src/agent/tests/fixtures/actors',
+    },
+  })
+  await Bun.sleep(10)
+}
+
 describe('createAgent core extension', () => {
   test('direct execution_process_actor request is not installed as an approval bypass', async () => {
     await withSpawnSpy(async (spawnCalls) => {
@@ -117,29 +127,24 @@ describe('createAgent core extension', () => {
     })
   })
 
-  test('update_modules installs named extension exports from a module namespace', async () => {
+  test('actors_scan installs default actor exports from a workspace directory', async () => {
     const state = globalThis as Record<string, unknown>
-    state.__plaitedAgentCoreFixtureSeen = false
+    state.__plaitedAgentCoreDefaultActorSeen = false
 
     const trigger = await createAgent({
       workspace: process.cwd(),
       ttlMs: 1_000,
     })
 
+    await scanActorFixtureDirectory(trigger)
+
     trigger({
-      type: `${AGENT_CORE}:${AGENT_CORE_EVENTS.update_modules}`,
-      detail: './src/agent/tests/fixtures/update-modules-extension.fixture.ts',
+      type: 'agent_core_default_actor_fixture:ping',
     })
 
     await Bun.sleep(10)
 
-    trigger({
-      type: 'agent_core_fixture:ping',
-    })
-
-    await Bun.sleep(10)
-
-    expect(state.__plaitedAgentCoreFixtureSeen).toBe(true)
+    expect(state.__plaitedAgentCoreDefaultActorSeen).toBe(true)
   })
 
   test('tool bash request is deferred until matching approval and maps to executable bash', async () => {
@@ -296,11 +301,7 @@ describe('createAgent core extension', () => {
           ttlMs: 1_000,
         })
 
-        trigger({
-          type: `${AGENT_CORE}:${AGENT_CORE_EVENTS.update_modules}`,
-          detail: './src/agent/tests/fixtures/tool-bash-result-extension.fixture.ts',
-        })
-        await Bun.sleep(10)
+        await scanActorFixtureDirectory(trigger)
 
         const request = createToolBashRequestEvent({
           correlationId: 'corr-result-ok',
@@ -362,11 +363,7 @@ describe('createAgent core extension', () => {
           ttlMs: 1_000,
         })
 
-        trigger({
-          type: `${AGENT_CORE}:${AGENT_CORE_EVENTS.update_modules}`,
-          detail: './src/agent/tests/fixtures/tool-bash-result-extension.fixture.ts',
-        })
-        await Bun.sleep(10)
+        await scanActorFixtureDirectory(trigger)
 
         const request = createToolBashRequestEvent({
           correlationId: 'corr-result-nonzero',
@@ -422,11 +419,7 @@ describe('createAgent core extension', () => {
           ttlMs: 1_000,
         })
 
-        trigger({
-          type: `${AGENT_CORE}:${AGENT_CORE_EVENTS.update_modules}`,
-          detail: './src/agent/tests/fixtures/tool-bash-result-extension.fixture.ts',
-        })
-        await Bun.sleep(10)
+        await scanActorFixtureDirectory(trigger)
 
         const request = createToolBashRequestEvent({
           correlationId: 'corr-result-truncated',
@@ -481,11 +474,7 @@ describe('createAgent core extension', () => {
           ttlMs: 1_000,
         })
 
-        trigger({
-          type: `${AGENT_CORE}:${AGENT_CORE_EVENTS.update_modules}`,
-          detail: './src/agent/tests/fixtures/tool-bash-result-extension.fixture.ts',
-        })
-        await Bun.sleep(10)
+        await scanActorFixtureDirectory(trigger)
 
         const request = createToolBashRequestEvent({
           correlationId: 'corr-result-error',
@@ -540,11 +529,7 @@ describe('createAgent core extension', () => {
         ttlMs: 1_000,
       })
 
-      trigger({
-        type: `${AGENT_CORE}:${AGENT_CORE_EVENTS.update_modules}`,
-        detail: './src/agent/tests/fixtures/tool-bash-result-extension.fixture.ts',
-      })
-      await Bun.sleep(10)
+      await scanActorFixtureDirectory(trigger)
 
       const request = createToolBashRequestEvent({
         correlationId: 'corr-result-escape',

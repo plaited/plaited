@@ -10,13 +10,13 @@ import { keyMirror } from '../utils.ts'
  * @public
  */
 export const AGENT_CORE_EVENTS = keyMirror(
+  'actors_scan',
   'bash',
   'heartbeat',
   'tool_bash_approved',
   'tool_bash_denied',
   'tool_bash_request',
   'tool_bash_result',
-  'update_modules',
 )
 
 export const AGENT_CORE = 'agent_core'
