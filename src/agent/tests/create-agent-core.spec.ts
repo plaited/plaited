@@ -1,9 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import { resolve } from 'node:path'
 import { AGENT_CORE, AGENT_CORE_EVENTS } from '../agent.constants.ts'
-import type { ToolBashResultDetail } from '../agent.schemas.ts'
+import { type BashDetail, ToolBashRequestDetailSchema, type ToolBashResultDetail } from '../agent.schemas.ts'
 import { createAgent } from '../create-agent.ts'
-import { createToolBashRequestEvent } from '../tool-bash-request.ts'
 
 const TOOL_BASH_RESULTS_KEY = '__plaitedAgentCoreToolBashResults'
 const TOOL_BASH_CAPTURE_EVENT_TYPE = 'agent_core_tool_bash_result_fixture:tool_bash_result_seen'
@@ -63,6 +62,15 @@ const readToolBashResults = () => {
   const results = state[TOOL_BASH_RESULTS_KEY]
   return Array.isArray(results) ? (results as ToolBashResultDetail[]) : []
 }
+
+const createToolBashRequestFixtureEvent = ({ correlationId, bash }: { correlationId: string; bash: BashDetail }) => ({
+  type: `${AGENT_CORE}:${AGENT_CORE_EVENTS.tool_bash_request}`,
+  detail: ToolBashRequestDetailSchema.parse({
+    requestId: Bun.randomUUIDv7(),
+    correlationId,
+    bash,
+  }),
+})
 
 const scanActorFixtureDirectory = async (trigger: Awaited<ReturnType<typeof createAgent>>) => {
   trigger({
@@ -303,7 +311,7 @@ describe('createAgent core extension', () => {
 
         await scanActorFixtureDirectory(trigger)
 
-        const request = createToolBashRequestEvent({
+        const request = createToolBashRequestFixtureEvent({
           correlationId: 'corr-result-ok',
           bash: {
             path: './scripts/worker.ts',
@@ -365,7 +373,7 @@ describe('createAgent core extension', () => {
 
         await scanActorFixtureDirectory(trigger)
 
-        const request = createToolBashRequestEvent({
+        const request = createToolBashRequestFixtureEvent({
           correlationId: 'corr-result-nonzero',
           bash: {
             path: './scripts/worker.ts',
@@ -421,7 +429,7 @@ describe('createAgent core extension', () => {
 
         await scanActorFixtureDirectory(trigger)
 
-        const request = createToolBashRequestEvent({
+        const request = createToolBashRequestFixtureEvent({
           correlationId: 'corr-result-truncated',
           bash: {
             path: './scripts/worker.ts',
@@ -476,7 +484,7 @@ describe('createAgent core extension', () => {
 
         await scanActorFixtureDirectory(trigger)
 
-        const request = createToolBashRequestEvent({
+        const request = createToolBashRequestFixtureEvent({
           correlationId: 'corr-result-error',
           bash: {
             path: './scripts/worker.ts',
@@ -531,7 +539,7 @@ describe('createAgent core extension', () => {
 
       await scanActorFixtureDirectory(trigger)
 
-      const request = createToolBashRequestEvent({
+      const request = createToolBashRequestFixtureEvent({
         correlationId: 'corr-result-escape',
         bash: {
           path: '../escape.ts',
