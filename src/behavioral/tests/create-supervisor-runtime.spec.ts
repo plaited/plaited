@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { SnapshotMessage } from 'plaited/behavioral'
 
+import { defineActor } from '../create-module-runtime-actor.ts'
 import {
   createSupervisorRuntime,
   SUPERVISOR_DIAGNOSTIC_CODES,
@@ -23,6 +24,51 @@ const createEnvelope = (id: string) => ({
 })
 
 describe('createSupervisorRuntime', () => {
+  test('onboards defineActor outputs into the supervisor actor registry', async () => {
+    const runtime = createSupervisorRuntime({ authorityDomainId: 'domain:node-local' })
+    let setupActorId = ''
+
+    const result = await runtime.onboardActor(
+      defineActor({
+        id: 'planner',
+        setup(actor) {
+          setupActorId = actor.actorRef.id
+        },
+      }),
+    )
+
+    expect(result.status).toBe('onboarded')
+    if (result.status !== 'onboarded') {
+      throw new Error('Expected actor onboarding to succeed.')
+    }
+    expect(result.actor.moduleId).toBe('planner')
+    expect(setupActorId).toBe('module:planner')
+    expect(runtime.getActorIds()).toEqual(['planner'])
+    expect(runtime.getActor('planner')).toBe(result.actor)
+  })
+
+  test('rejects invalid and duplicate actor onboarding requests', async () => {
+    const runtime = createSupervisorRuntime({ authorityDomainId: 'domain:node-local' })
+    const definition = defineActor({ id: 'planner' })
+
+    const invalid = await runtime.onboardActor({ id: 'planner' })
+    expect(invalid.status).toBe('rejected')
+    if (invalid.status !== 'rejected') {
+      throw new Error('Expected invalid actor onboarding to be rejected.')
+    }
+    expect(invalid.code).toBe(SUPERVISOR_DIAGNOSTIC_CODES.invalidActorDefinition)
+
+    const first = await runtime.onboardActor(definition)
+    expect(first.status).toBe('onboarded')
+
+    const duplicate = await runtime.onboardActor(definition)
+    expect(duplicate.status).toBe('rejected')
+    if (duplicate.status !== 'rejected') {
+      throw new Error('Expected duplicate actor onboarding to be rejected.')
+    }
+    expect(duplicate.code).toBe(SUPERVISOR_DIAGNOSTIC_CODES.duplicateActor)
+  })
+
   test('throws when authorityDomainId is an empty string', () => {
     expect(() => createSupervisorRuntime({ authorityDomainId: '' })).toThrowError(
       /authorityDomainId to be a non-empty string/,

@@ -2,7 +2,14 @@ import { stat } from 'node:fs/promises'
 import { resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import * as z from 'zod'
-import { behavioral, isExtension, useExtension, useInstaller } from '../behavioral.ts'
+import {
+  behavioral,
+  createSupervisorRuntime,
+  isActorDefinition,
+  isExtension,
+  useExtension,
+  useInstaller,
+} from '../behavioral.ts'
 import { createAgentCoreExecutionProcessHandlers } from '../modules/execution-process-actor.ts'
 import * as modules from '../modules.ts'
 import { AGENT_CORE, AGENT_CORE_EVENTS } from './agent.constants.ts'
@@ -36,15 +43,17 @@ const directoryExists = async (path: string) => {
  * - behavioral engine setup
  * - host trigger ingress
  * - disconnect cleanup
- * - installation of executable extensions
+ * - actor onboarding
+ * - temporary installation of executable extensions
  *
- * Everything richer should be layered on through extensions.
+ * Everything richer should be layered on through module runtime actors.
  *
  * @public
  */
 export const createAgent = async ({ maxKeys, ttlMs, workspace }: CreateAgentOptions) => {
   const { addBThread, trigger, useFeedback, useSnapshot, reportSnapshot } = behavioral()
   const installer = useInstaller({ trigger, useSnapshot, reportSnapshot, addBThread, ttlMs, maxKeys })
+  const supervisor = createSupervisorRuntime()
   const workspaceRoot = resolve(workspace)
   const resolveWorkspacePath = (detail: string) => {
     const resolved = resolve(workspaceRoot, detail)
@@ -63,7 +72,12 @@ export const createAgent = async ({ maxKeys, ttlMs, workspace }: CreateAgentOpti
   }
   const installActorFileDefaultExport = async (path: string) => {
     const moduleExports = await import(pathToFileURL(resolveWorkspacePath(path)).href)
-    installExtension((moduleExports as { default?: unknown }).default)
+    const defaultExport = (moduleExports as { default?: unknown }).default
+    if (isActorDefinition(defaultExport)) {
+      await supervisor.onboardActor(defaultExport)
+      return
+    }
+    installExtension(defaultExport)
   }
   const scanActorDirectory = async (directory = DEFAULT_ACTORS_DIRECTORY) => {
     const actorsDirectory = resolveWorkspacePath(directory)

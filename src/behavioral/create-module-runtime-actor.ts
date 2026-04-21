@@ -7,6 +7,7 @@ import { behavioral } from './behavioral.ts'
 import type { BPEvent, SnapshotListener, UseSnapshot } from './behavioral.types.ts'
 
 const DEFAULT_AUTHORITY_DOMAIN_ID = 'node-local'
+const ACTOR_DEFINITION_IDENTIFIER = 'plaited.actor.definition'
 
 const AuthorityDomainIdSchema = z.string().min(1)
 const ModuleIdSchema = z.string().min(1)
@@ -65,6 +66,11 @@ type ModuleRuntimeDecisionReason =
 export type CreateModuleRuntimeActorOptions = {
   authorityDomainId?: string
   moduleId: string
+}
+
+export type DefineActorOptions = {
+  id: string
+  setup?: (runtime: ModuleRuntimeActor) => void | Promise<void>
 }
 
 export type ModuleRuntimeLocalEventRecord = {
@@ -787,3 +793,38 @@ export const createModuleRuntimeActor = (options: CreateModuleRuntimeActorOption
 export type ModuleRuntimeActor = ReturnType<typeof createModuleRuntimeActor>
 
 export type ModuleRuntimeEnvelopeEventDetail = ModuleRuntimeEnvelopeEventPayload
+
+export type ActorDefinition = Readonly<{
+  id: string
+  kind: typeof ACTOR_DEFINITION_IDENTIFIER
+  createRuntime: (options?: { authorityDomainId?: string }) => Promise<ModuleRuntimeActor>
+}>
+
+export const defineActor = ({ id, setup }: DefineActorOptions): ActorDefinition => {
+  const moduleId = resolveModuleId(id)
+
+  return Object.freeze({
+    id: moduleId,
+    kind: ACTOR_DEFINITION_IDENTIFIER,
+    async createRuntime({ authorityDomainId }: { authorityDomainId?: string } = {}) {
+      const runtime = createModuleRuntimeActor({
+        authorityDomainId,
+        moduleId,
+      })
+      await setup?.(runtime)
+      return runtime
+    },
+  })
+}
+
+export const isActorDefinition = (value: unknown): value is ActorDefinition => {
+  if (typeof value !== 'object' || value === null) {
+    return false
+  }
+  const candidate = value as Partial<ActorDefinition>
+  return (
+    candidate.kind === ACTOR_DEFINITION_IDENTIFIER &&
+    typeof candidate.id === 'string' &&
+    typeof candidate.createRuntime === 'function'
+  )
+}

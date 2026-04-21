@@ -127,7 +127,7 @@ The core owns:
 - heartbeat ingress from the host `trigger`
 - host/runtime snapshot diagnostics via `reportSnapshot`
 - guarded process execution through `tool_bash_request` / approval / result events
-- actor directory scanning through `actors_scan`
+- actor directory scanning through `actors_scan` and supervisor onboarding of `defineActor(...)` defaults
 
 Behavioral provenance is explicit and source-aware across runtime and replay:
 `trigger | request | emit`.

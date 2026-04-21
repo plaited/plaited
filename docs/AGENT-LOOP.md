@@ -31,7 +31,7 @@ compose on top of the core?"
 - event-derived context memory (`eventType` -> last selected detail)
 - heartbeat ingress
 - guarded bash execution through the execution process actor
-- actor directory scanning
+- actor directory scanning and supervisor onboarding for `defineActor(...)` defaults
 - snapshot access through `useSnapshot`
 - host/runtime diagnostic publishing through `reportSnapshot`
 
@@ -118,7 +118,7 @@ end-user tool UX.
 
 | Primitive | Purpose |
 |---|---|
-| `actors_scan` | Scan a workspace actor directory and install default actor exports |
+| `actors_scan` | Scan a workspace actor directory and onboard `defineActor(...)` default exports |
 | `heartbeat` | Host-provided pulse for module-owned orchestration |
 | `tool_bash_request` | Request guarded workspace-local process execution |
 | `tool_bash_approved` | Approve a pending guarded process request |

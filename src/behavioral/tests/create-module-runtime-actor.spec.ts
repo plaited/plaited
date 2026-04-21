@@ -4,6 +4,8 @@ import * as z from 'zod'
 import { bSync, bThread } from '../behavioral.shared.ts'
 import {
   createModuleRuntimeActor,
+  defineActor,
+  isActorDefinition,
   MODULE_RUNTIME_DIAGNOSTIC_CODES,
   toModuleActorId,
   toModuleActorLocalEventType,
@@ -61,6 +63,28 @@ const createInboundEnvelope = ({
 })
 
 describe('createModuleRuntimeActor', () => {
+  test('defineActor returns an inert actor definition that creates a configured module runtime', async () => {
+    let setupRuntimeModuleId = ''
+    const definition = defineActor({
+      id: 'planner',
+      setup(runtime) {
+        setupRuntimeModuleId = runtime.moduleId
+      },
+    })
+
+    expect(isActorDefinition(definition)).toBe(true)
+    expect(definition.id).toBe('planner')
+    expect(setupRuntimeModuleId).toBe('')
+
+    const runtime = await definition.createRuntime({
+      authorityDomainId: 'domain:node-local',
+    })
+
+    expect(runtime.moduleId).toBe('planner')
+    expect(runtime.authorityDomainId).toBe('domain:node-local')
+    expect(setupRuntimeModuleId).toBe('planner')
+  })
+
   test('throws when moduleId is an empty string', () => {
     expect(() => createModuleRuntimeActor({ moduleId: '' })).toThrowError(/moduleId to be a non-empty string/)
   })

@@ -6,6 +6,7 @@ import { type ActorEnvelope, ActorEnvelopeSchema, type SnapshotMessage } from '.
 import { bSync, bThread } from './behavioral.shared.ts'
 import { behavioral } from './behavioral.ts'
 import type { ReplayEvent, SnapshotListener, UseSnapshot } from './behavioral.types.ts'
+import { isActorDefinition, type ModuleRuntimeActor } from './create-module-runtime-actor.ts'
 
 const DEFAULT_AUTHORITY_DOMAIN_ID = 'node-local'
 const AuthorityDomainIdSchema = z.string().min(1)
@@ -15,6 +16,9 @@ export const SUPERVISOR_RUNTIME_EVENTS = {
 } as const
 
 export const SUPERVISOR_DIAGNOSTIC_CODES = {
+  actorSetupFailed: 'actor_setup_failed',
+  duplicateActor: 'duplicate_actor',
+  invalidActorDefinition: 'invalid_actor_definition',
   invalidEnvelope: 'invalid_envelope',
 } as const
 
@@ -83,7 +87,7 @@ export type SupervisorValidationDiagnostic = {
   kind: 'validation'
   timestamp: number
   authorityDomainId: string
-  code: (typeof SUPERVISOR_DIAGNOSTIC_CODES)['invalidEnvelope']
+  code: (typeof SUPERVISOR_DIAGNOSTIC_CODES)[keyof typeof SUPERVISOR_DIAGNOSTIC_CODES]
   error: string
 }
 
@@ -91,10 +95,11 @@ export type SupervisorDiagnostic = SupervisorFrontierDiagnostic | SupervisorVali
 
 export type SupervisorDecisionRecord = {
   decision: 'approved' | 'rejected'
-  reason: 'pass_through' | (typeof SUPERVISOR_DIAGNOSTIC_CODES)['invalidEnvelope']
+  reason: 'pass_through' | (typeof SUPERVISOR_DIAGNOSTIC_CODES)[keyof typeof SUPERVISOR_DIAGNOSTIC_CODES]
   timestamp: number
   authorityDomainId: string
   envelopeId: string | null
+  actorId?: string
   frontierStatus?: keyof typeof FRONTIER_STATUS
 }
 
@@ -108,6 +113,20 @@ export type SupervisorReceiveResult =
   | {
       status: 'rejected'
       code: (typeof SUPERVISOR_DIAGNOSTIC_CODES)['invalidEnvelope']
+      error: string
+    }
+
+export type SupervisorOnboardActorResult =
+  | {
+      status: 'onboarded'
+      actor: ModuleRuntimeActor
+    }
+  | {
+      status: 'rejected'
+      code:
+        | (typeof SUPERVISOR_DIAGNOSTIC_CODES)['invalidActorDefinition']
+        | (typeof SUPERVISOR_DIAGNOSTIC_CODES)['duplicateActor']
+        | (typeof SUPERVISOR_DIAGNOSTIC_CODES)['actorSetupFailed']
       error: string
     }
 
@@ -136,6 +155,7 @@ export const createSupervisorRuntime = (options: CreateSupervisorRuntimeOptions 
   const validationDiagnostics: SupervisorValidationDiagnostic[] = []
   const decisions: SupervisorDecisionRecord[] = []
   const snapshots: SnapshotMessage[] = []
+  const actors = new Map<string, ModuleRuntimeActor>()
 
   const { addBThreads, reportSnapshot, trigger, useFeedback, useSnapshot } = behavioral<SupervisorEventDetails>()
 
@@ -183,6 +203,78 @@ export const createSupervisorRuntime = (options: CreateSupervisorRuntimeOptions 
       })
     },
   })
+
+  const rejectActorOnboarding = ({
+    actorId,
+    code,
+    error,
+  }: {
+    actorId?: string
+    code:
+      | (typeof SUPERVISOR_DIAGNOSTIC_CODES)['invalidActorDefinition']
+      | (typeof SUPERVISOR_DIAGNOSTIC_CODES)['duplicateActor']
+      | (typeof SUPERVISOR_DIAGNOSTIC_CODES)['actorSetupFailed']
+    error: string
+  }): Extract<SupervisorOnboardActorResult, { status: 'rejected' }> => {
+    const timestamp = Date.now()
+    reportSnapshot({
+      kind: 'extension_error',
+      id: actorId ? `${authorityDomainId}:supervisor:${actorId}:${code}` : `${authorityDomainId}:supervisor:${code}`,
+      error,
+    })
+    validationDiagnostics.push({
+      kind: 'validation',
+      timestamp,
+      authorityDomainId,
+      code,
+      error,
+    })
+    decisions.push({
+      decision: 'rejected',
+      reason: code,
+      timestamp,
+      authorityDomainId,
+      envelopeId: null,
+      ...(actorId !== undefined && { actorId }),
+    })
+    return {
+      status: 'rejected',
+      code,
+      error,
+    }
+  }
+
+  const onboardActor = async (definition: unknown): Promise<SupervisorOnboardActorResult> => {
+    if (!isActorDefinition(definition)) {
+      return rejectActorOnboarding({
+        code: SUPERVISOR_DIAGNOSTIC_CODES.invalidActorDefinition,
+        error: 'supervisor actor onboarding rejected: expected a defineActor(...) default export.',
+      })
+    }
+
+    if (actors.has(definition.id)) {
+      return rejectActorOnboarding({
+        actorId: definition.id,
+        code: SUPERVISOR_DIAGNOSTIC_CODES.duplicateActor,
+        error: `supervisor actor onboarding rejected: duplicate actor id "${definition.id}".`,
+      })
+    }
+
+    try {
+      const actor = await definition.createRuntime({ authorityDomainId })
+      actors.set(definition.id, actor)
+      return {
+        status: 'onboarded',
+        actor,
+      }
+    } catch (error) {
+      return rejectActorOnboarding({
+        actorId: definition.id,
+        code: SUPERVISOR_DIAGNOSTIC_CODES.actorSetupFailed,
+        error: `supervisor actor onboarding rejected: ${error instanceof Error ? error.message : String(error)}`,
+      })
+    }
+  }
 
   const receiveEnvelope = (envelope: unknown): SupervisorReceiveResult => {
     let parsedEnvelope: ActorEnvelope
@@ -250,8 +342,11 @@ export const createSupervisorRuntime = (options: CreateSupervisorRuntimeOptions 
 
   return Object.freeze({
     authorityDomainId,
+    onboardActor,
     receiveEnvelope,
     useSnapshot: subscribeSnapshot,
+    getActor: (actorId: string) => actors.get(actorId),
+    getActorIds: () => [...actors.keys()].sort(),
     getReplayHistory: () => cloneReplayHistory(replayHistory),
     getSelectedEnvelopeHistory: () => cloneEnvelopeHistory(selectedEnvelopeHistory),
     getFrontierDiagnostics: () => cloneFrontierDiagnostics(frontierDiagnostics),

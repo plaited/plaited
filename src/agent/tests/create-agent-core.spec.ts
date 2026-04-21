@@ -135,7 +135,7 @@ describe('createAgent core extension', () => {
     })
   })
 
-  test('actors_scan installs default actor exports from a workspace directory', async () => {
+  test('actors_scan onboards default actor exports from a workspace directory', async () => {
     const state = globalThis as Record<string, unknown>
     state.__plaitedAgentCoreDefaultActorSeen = false
 
@@ -145,10 +145,6 @@ describe('createAgent core extension', () => {
     })
 
     await scanActorFixtureDirectory(trigger)
-
-    trigger({
-      type: 'agent_core_default_actor_fixture:ping',
-    })
 
     await Bun.sleep(10)
 
