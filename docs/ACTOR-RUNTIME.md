@@ -13,6 +13,7 @@ actual code path instead of the older extension/install model.
 |---|---|
 | `src/behavioral/create-module-runtime-actor.ts` | Defines `defineActor(...)`, creates live module actor runtimes, validates module-local events and envelopes, and records actor-local history/diagnostics. |
 | `src/behavioral/create-supervisor-runtime.ts` | Owns supervisor identity, onboards actor definitions into a registry, validates received envelopes, and records supervisor replay/frontier diagnostics. |
+| `src/behavioral/actor-policy-ledger.ts` | Defines append-only actor policy event schemas and replays them into default-closed actor policy state. |
 | `src/agent/create-agent.ts` | Composition root. Creates the core behavioral engine, creates the supervisor runtime, scans actor files, and onboards `defineActor(...)` defaults. |
 
 `useExtension` and `useInstaller` still exist for temporary compatibility in
@@ -194,6 +195,45 @@ The supervisor has its own internal `behavioral()` instance. Today it validates
 and records envelope intake. It does not yet route approved envelopes to target
 actors.
 
+## Actor Policy Ledger
+
+Actor access starts closed. Policy is represented as append-only ledger events
+that the supervisor replays into actor policy state during onboarding.
+
+Default policy has:
+
+- no projections
+- no grants
+- no public memory
+- no known MSS tags
+
+Supported policy event families currently include:
+
+- `actor.created`
+- `code.promoted`
+- `mss.observed`
+- `projection.proposed`
+- `projection.approved`
+- `grant.approved`
+
+```mermaid
+flowchart TD
+  Ledger["actor policy events"] --> Replay["replayActorPolicyEvents(actorId, events)"]
+  Replay --> State["ActorPolicyState"]
+  State --> Closed["Default closed unless events approve projections/grants"]
+  State --> Supervisor["Supervisor actor policy registry"]
+```
+
+Example JSONL shape:
+
+```jsonl
+{"type":"actor.created","actorId":"farm-stand","codeHash":"hash-a"}
+{"type":"mss.observed","actorId":"farm-stand","tags":{"content":["produce-catalog"],"structure":["projection-ledger"],"mechanics":["inventory-update"],"boundary":["supplier-boundary"],"scale":["market-day"]}}
+{"type":"projection.approved","actorId":"farm-stand","projectionId":"supplier-stock","approvedBy":"human","audience":{"kind":"supplier"}}
+{"type":"grant.approved","actorId":"farm-stand","projectionId":"supplier-stock","approvedBy":"human","audience":{"kind":"supplier","id":"supplier-1"}}
+{"type":"code.promoted","actorId":"farm-stand","codeHash":"hash-b","approvedBy":"human"}
+```
+
 ### Actor Onboarding
 
 `onboardActor(...)` accepts unknown input and requires a `defineActor(...)`
@@ -205,8 +245,9 @@ flowchart TD
   Check -- no --> Invalid["rejected\ninvalid_actor_definition"]
   Check -- yes --> Duplicate{"actor id already registered?"}
   Duplicate -- yes --> Dup["rejected\nduplicate_actor"]
-  Duplicate -- no --> Create["definition.createRuntime({ authorityDomainId })"]
-  Create --> Registry["actors.set(id, runtime)"]
+  Duplicate -- no --> Policy["replay policy events or create default closed policy"]
+  Policy --> Create["definition.createRuntime({ authorityDomainId })"]
+  Create --> Registry["actors.set(id, runtime)\nactorPolicies.set(id, policy)"]
   Registry --> Onboarded["onboarded"]
   Create -. setup throws .-> SetupFailed["rejected\nactor_setup_failed"]
 ```
@@ -294,7 +335,7 @@ Still missing:
 
 - supervisor-owned routing from outbound queues to `receiveEnvelope(...)`
 - delivery of approved envelopes to target actors
-- admission/projection/grant policy inside supervisor decisions
+- projection/grant policy decisions using replayed actor policy state
 - actor descriptor metadata on `defineActor(...)`
 - validation that actor files have only one default export and no named exports
 - removal of the temporary extension fallback in actor scanning

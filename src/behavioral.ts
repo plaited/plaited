@@ -11,6 +11,7 @@
  * @public
  */
 
+export * from './behavioral/actor-policy-ledger.ts'
 export * from './behavioral/behavioral.constants.ts'
 export * from './behavioral/behavioral.schemas.ts'
 export { bSync, bThread, isBehavioralRule } from './behavioral/behavioral.shared.ts'

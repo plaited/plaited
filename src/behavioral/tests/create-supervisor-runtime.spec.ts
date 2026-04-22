@@ -42,9 +42,67 @@ describe('createSupervisorRuntime', () => {
       throw new Error('Expected actor onboarding to succeed.')
     }
     expect(result.actor.moduleId).toBe('planner')
+    expect(result.policy).toEqual({
+      actorId: 'planner',
+      grants: [],
+      mss: {
+        boundary: [],
+        content: [],
+        mechanics: [],
+        scale: [],
+        structure: [],
+      },
+      projections: [],
+    })
     expect(setupActorId).toBe('module:planner')
     expect(runtime.getActorIds()).toEqual(['planner'])
     expect(runtime.getActor('planner')).toBe(result.actor)
+    expect(runtime.getActorPolicy('planner')).toEqual(result.policy)
+  })
+
+  test('onboards actors with replayed policy ledger state', async () => {
+    const runtime = createSupervisorRuntime({ authorityDomainId: 'domain:node-local' })
+
+    const result = await runtime.onboardActor(defineActor({ id: 'farm-stand' }), {
+      policyEvents: [
+        {
+          type: 'mss.observed',
+          actorId: 'farm-stand',
+          tags: {
+            content: ['produce-catalog'],
+            structure: ['projection-ledger'],
+            mechanics: ['inventory-update'],
+            boundary: ['supplier-boundary'],
+            scale: ['market-day'],
+          },
+        },
+        {
+          type: 'projection.approved',
+          actorId: 'farm-stand',
+          projectionId: 'supplier-stock',
+          approvedBy: 'human',
+          audience: {
+            kind: 'supplier',
+          },
+        },
+      ],
+    })
+
+    expect(result.status).toBe('onboarded')
+    if (result.status !== 'onboarded') {
+      throw new Error('Expected actor onboarding to succeed.')
+    }
+    expect(result.policy.projections).toEqual([
+      {
+        actorId: 'farm-stand',
+        approved: true,
+        audience: {
+          kind: 'supplier',
+        },
+        projectionId: 'supplier-stock',
+      },
+    ])
+    expect(runtime.getActorPolicy('farm-stand')).toEqual(result.policy)
   })
 
   test('rejects invalid and duplicate actor onboarding requests', async () => {

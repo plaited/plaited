@@ -1,5 +1,11 @@
 import * as z from 'zod'
 
+import {
+  type ActorPolicyEvent,
+  type ActorPolicyState,
+  createDefaultActorPolicyState,
+  replayActorPolicyEvents,
+} from './actor-policy-ledger.ts'
 import { EVENT_SOURCES, type FRONTIER_STATUS } from './behavioral.constants.ts'
 import { replayToFrontier } from './behavioral.frontier.ts'
 import { type ActorEnvelope, ActorEnvelopeSchema, type SnapshotMessage } from './behavioral.schemas.ts'
@@ -120,6 +126,7 @@ export type SupervisorOnboardActorResult =
   | {
       status: 'onboarded'
       actor: ModuleRuntimeActor
+      policy: ActorPolicyState
     }
   | {
       status: 'rejected'
@@ -146,6 +153,10 @@ const resolveAuthorityDomainId = (authorityDomainId?: string) => {
   }
 }
 
+export type SupervisorOnboardActorOptions = {
+  policyEvents?: ActorPolicyEvent[]
+}
+
 export const createSupervisorRuntime = (options: CreateSupervisorRuntimeOptions = {}) => {
   const authorityDomainId = resolveAuthorityDomainId(options.authorityDomainId)
   const replayThreads = createSupervisorThreads()
@@ -156,6 +167,7 @@ export const createSupervisorRuntime = (options: CreateSupervisorRuntimeOptions 
   const decisions: SupervisorDecisionRecord[] = []
   const snapshots: SnapshotMessage[] = []
   const actors = new Map<string, ModuleRuntimeActor>()
+  const actorPolicies = new Map<string, ActorPolicyState>()
 
   const { addBThreads, reportSnapshot, trigger, useFeedback, useSnapshot } = behavioral<SupervisorEventDetails>()
 
@@ -244,7 +256,10 @@ export const createSupervisorRuntime = (options: CreateSupervisorRuntimeOptions 
     }
   }
 
-  const onboardActor = async (definition: unknown): Promise<SupervisorOnboardActorResult> => {
+  const onboardActor = async (
+    definition: unknown,
+    options: SupervisorOnboardActorOptions = {},
+  ): Promise<SupervisorOnboardActorResult> => {
     if (!isActorDefinition(definition)) {
       return rejectActorOnboarding({
         code: SUPERVISOR_DIAGNOSTIC_CODES.invalidActorDefinition,
@@ -261,11 +276,20 @@ export const createSupervisorRuntime = (options: CreateSupervisorRuntimeOptions 
     }
 
     try {
+      const policy =
+        options.policyEvents === undefined
+          ? createDefaultActorPolicyState(definition.id)
+          : replayActorPolicyEvents({
+              actorId: definition.id,
+              events: options.policyEvents,
+            })
       const actor = await definition.createRuntime({ authorityDomainId })
       actors.set(definition.id, actor)
+      actorPolicies.set(definition.id, policy)
       return {
         status: 'onboarded',
         actor,
+        policy,
       }
     } catch (error) {
       return rejectActorOnboarding({
@@ -347,6 +371,10 @@ export const createSupervisorRuntime = (options: CreateSupervisorRuntimeOptions 
     useSnapshot: subscribeSnapshot,
     getActor: (actorId: string) => actors.get(actorId),
     getActorIds: () => [...actors.keys()].sort(),
+    getActorPolicy: (actorId: string) => {
+      const policy = actorPolicies.get(actorId)
+      return policy ? structuredClone(policy) : undefined
+    },
     getReplayHistory: () => cloneReplayHistory(replayHistory),
     getSelectedEnvelopeHistory: () => cloneEnvelopeHistory(selectedEnvelopeHistory),
     getFrontierDiagnostics: () => cloneFrontierDiagnostics(frontierDiagnostics),
