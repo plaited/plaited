@@ -1,4 +1,7 @@
-# Agent Harness Research
+# Training And Improvement
+
+> Status: architecture direction. This page documents the discovery-first
+> improvement strategy, not an implemented autonomous training loop.
 
 ## Position
 
@@ -65,10 +68,29 @@ The clean mental model is:
 These roles should preferably stay within one model family even when they run
 at different sizes or on different tiers, but they are conceptually different.
 
-The current starting assumption is that Gemma 4 is the first autoresearch
-model family. Local runs may use smaller or quantized variants, while stronger
+Model-family choices are deployment and research decisions, not framework
+contracts. Local runs may use smaller or quantized variants, while stronger
 server-backed runs may use larger variants without changing the harness
 contract.
+
+## Model A / Model B Direction
+
+Plaited's two-model direction should be framed as an architectural direction
+until source proves a complete implementation.
+
+Model A is the search and context assembler. It should use actor-controlled
+tools such as `plaited-context`, source search, git history, You.com research
+adapters, and other approved web research adapters. It assembles evidence,
+prunes noise, and emits structured context with provenance.
+
+Model B is the code, simulation, and trajectory generator. It should operate in
+bounded worktrees and produce candidate changes, simulations, or plans that can
+be evaluated by tests, `tsc`, frontier exploration, eval graders, diff
+summaries, and promotion gates.
+
+The handoff between model A and model B is structured context, not authority.
+Tool calls and side-effect intents still return to Plaited actors for policy
+and execution.
 
 ## Training Later
 
@@ -82,7 +104,6 @@ Likely targets for later LoRA or adapter-style adaptation:
 - stable MSS semantics
 - better recognition of when internal or external search is needed
 - better query decomposition and retrieval habits
-- prompt-to-module mappings
 - prompt-to-module mappings
 - simulation and verification habits
 - expected symbolic output structure

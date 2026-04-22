@@ -207,6 +207,11 @@ Default policy has:
 - no public memory
 - no known MSS tags
 
+Current schemas still include legacy `scale` in MSS tags for compatibility.
+The target experience standard treats `content`, `structure`, `mechanics`, and
+`boundary` as descriptive tags, with scale-like concerns moved to explicit
+fact/resource/service/projection metadata when needed.
+
 Supported policy event families currently include:
 
 - `actor.created`

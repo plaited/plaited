@@ -1,8 +1,8 @@
 # Plaited Agent Infrastructure
 
-> **Status: ACTIVE** — Proposed deployment architecture for local-first,
-> cloud-synced Plaited agents. This document describes an infrastructure target,
-> not a claim that the full stack is already implemented in `src/`.
+> Status: wiki architecture direction for local-first, cloud-synced Plaited
+> agents. This page describes an infrastructure target, not a claim that the
+> full stack is already implemented in `src/`.
 
 ## Goal
 
@@ -47,12 +47,11 @@ The cognitive layer is the Plaited agent itself:
 The important deployment split is between the local control plane and the
 attached inference plane. A node can keep orchestration, memory, policy, and
 durable state local while routing primary inference to a stronger workstation
-or server lane such as vLLM on MSI / GB10-class hardware when a larger open
-model is the better fit.
+or server lane when a larger model is the better fit.
 
-The intended policy is one model family across tiers. Local operation can use
-quantized Gemma 4 variants, while attached server hardware can run larger
-Gemma 4 variants for stronger reasoning or multimodal workloads. The routing
+The intended policy is consistent contracts across tiers. Local operation can
+use smaller or quantized variants, while attached server hardware can run
+larger variants for stronger reasoning or multimodal workloads. The routing
 decision should change model size and hosting lane, not the agent's contract or
 overall behavior model.
 

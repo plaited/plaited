@@ -1,10 +1,8 @@
 # The Agent Loop
 
-> **Status: ACTIVE** — Architecture note for the minimal agent core and
-> module-composed orchestration model. Cross-references: `ARCHITECTURE.md`
-> (top-level system shape), `INFRASTRUCTURE.md` (deployment/runtime
-> boundaries), `dev-research/README.md` (retired local lanes plus active issue
-> backlog links), `skills/plaited-runtime/` (runtime doctrine and MSS/module framing).
+> Status: canonical wiki note for the minimal agent core and module-composed
+> orchestration model. Cross-references: [Architecture](architecture.md),
+> [Infrastructure](infrastructure.md), and `skills/plaited-runtime/`.
 
 ## Overview
 

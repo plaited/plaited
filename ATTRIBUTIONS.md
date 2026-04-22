@@ -24,7 +24,8 @@ Concepts that still show up in the repo:
 
 Where that influence is visible now:
 - [skills/plaited-runtime/references/modnet-mss-lineage.md](skills/plaited-runtime/references/modnet-mss-lineage.md)
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- [docs/wiki/structural-ia-lineage.md](docs/wiki/structural-ia-lineage.md)
+- [docs/wiki/architecture.md](docs/wiki/architecture.md)
 
 In Plaited, Structural IA is not just UI vocabulary. It also informs the
 module composition language, module-era system framing, and the bridge between
@@ -50,15 +51,17 @@ Concepts that still show up in the repo:
 
 Where that influence is visible now:
 - [README.md](README.md)
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- [docs/INFRASTRUCTURE.md](docs/INFRASTRUCTURE.md)
-- [docs/AGENT-LOOP.md](docs/AGENT-LOOP.md)
+- [docs/wiki/architecture.md](docs/wiki/architecture.md)
+- [docs/wiki/infrastructure.md](docs/wiki/infrastructure.md)
+- [docs/wiki/agent-loop.md](docs/wiki/agent-loop.md)
+- [docs/wiki/modnet-translation.md](docs/wiki/modnet-translation.md)
 - [skills/plaited-runtime/SKILL.md](skills/plaited-runtime/SKILL.md)
-- [src/modules/a2a-module/a2a.schemas.ts](src/modules/a2a-module/a2a.schemas.ts)
+- [src/modules/projection-boundary-actor.ts](src/modules/projection-boundary-actor.ts)
+- [src/modules/module-program-admission.ts](src/modules/module-program-admission.ts)
 
 Plaited does not reproduce the modnet work verbatim. It adapts it into:
-- a Bun-native A2A node architecture
-- MSS metadata on modules and Agent Cards
+- actor-owned facts, services, policy, provenance, and local projections
+- transitional MSS metadata on module program descriptors
 - boundary-aware module and protocol design
 - a neuro-symbolic runtime where generated modules are constrained by BP and governance
 

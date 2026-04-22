@@ -1,19 +1,23 @@
-# Plaited Agent — Architecture Overview
+# Architecture
 
-> **Status: ACTIVE** — Top-level architecture overview. Domain-specific details in companion docs.
+> Status: canonical wiki overview. Domain-specific details live in adjacent
+> wiki pages. Source code and tests remain higher authority than this page.
 
 ## First Principles
 
 Three axioms drive every decision:
 
-1. **Decouple reasoning from action.** The inference server separates deliberation (`<think>...</think>` blocks) from final response at the protocol level. The framework consumes this separation — thinking feeds observability and training; the response feeds the tool-call pipeline. The agent never parses raw output to find the boundary.
+1. **Decouple reasoning from action.** When an inference adapter exposes
+   separate reasoning, response, tool-call, or diagnostic channels, Plaited
+   should preserve those channels as structured events. Runtime policy should
+   not depend on scraping raw text to infer authority boundaries.
 
 2. **Symbolic persists, neural evolves.** Behavioral programs (bThreads) encode safety constraints and domain knowledge as deterministic code. They survive model upgrades, hardware changes, and architecture pivots. The neural layer — whichever model fills the Model role — is replaceable.
 
-3. **Architecture outlives models.** The current reference lane is a
-   Gemma 4 family served through an OpenAI-compatible backend such as vLLM, but
-   the interfaces, the constraint engine, the memory taxonomy, and the safety
-   layers are designed to remain stable across model generations.
+3. **Architecture outlives models.** Model families, serving backends, and
+   hardware lanes can change. The stable pieces are the actor contracts,
+   behavioral runtime, provenance, policy boundaries, and context handoff
+   shapes.
 
 ## Overview
 
@@ -22,13 +26,16 @@ Plaited's agent layer is a **framework** — composable primitives shipped as a 
 The framework provides:
 
 - **Interfaces** for the primary reasoning model plus optional adjunct model
-  roles such as speech
+  roles
 - **A minimal behavioral core** plus module-composed orchestration
 - **Memory via snapshots, git, and retained artifacts** — observable BP execution plus git-backed files and commit history
 - **Governance and verification as module-level directions** rather than a
   shipped dedicated constitution runtime
 
-The framework is **not prescriptive** about inference backend. Consumers choose how to serve models — vLLM, llama.cpp, Ollama, cloud APIs, or any OpenAI-compatible endpoint. All three backends support separating `<think>` reasoning from response content at the server level. Code ships via npm (`plaited`). Base-trained models ship via Hugging Face ([huggingface.co/plaited](https://huggingface.co/plaited)).
+The framework is **not prescriptive** about inference backend. Consumers choose
+how to serve models, such as local runtimes, OpenAI-compatible servers, cloud
+APIs, or future neural runtimes. Code ships as framework code; model packaging
+is a deployment and release decision outside the core runtime contract.
 
 ### Pluggable Models
 
@@ -52,65 +59,66 @@ type Voice = {
 }
 ```
 
-The `AsyncIterable<ModelDelta>` interface works identically whether the backend is a local inference server (Ollama on localhost), a cloud GPU (vLLM), or an API endpoint (OpenRouter). Deltas stream via BP events (`thinking_delta`, `text_delta`) for progressive UI rendering. OpenAI-compatible wire format.
+An `AsyncIterable<ModelDelta>`-style adapter can work across local runtimes,
+OpenAI-compatible servers, or API endpoints. Deltas can stream through
+behavioral events for progressive UI rendering and diagnostics.
 
-The model interfaces are backend-agnostic. Implementations can target MLX
-(Apple Silicon), vLLM (CUDA/cloud), or any OpenAI-compatible endpoint. Swap
-the server, not the adapter.
+The model interfaces are backend-agnostic. Implementations can target local
+Apple Silicon runtimes, CUDA/cloud servers, or API endpoints. Swap the server,
+not the actor/runtime contract.
 
 Multimodal input does not need a dedicated core vision event. When the primary
 model is natively multimodal, image and video handling can ride through the
 primary inference lane or through module-owned extensions rather than a fixed
 built-in vision primitive.
 
-### Reference Model Stack
+### Model Roles
 
-| Role | Interface | Reference Model | Params | Function |
-|---|---|---|---|---|
-| **Primary reasoning + tool use** | `Model` | Gemma 4 family via vLLM | E4B / 26B-A4B / 31B | Function calling, structured JSON, long-context reasoning, and local-first or server-hosted deployment depending on hardware. |
-| **Speech output** | `Voice` *(deferred)* | Qwen3-TTS | ~2B | Text to speech. Voice cloning, voice design, streaming. Multilingual. |
+The table below is a role model, not an implementation claim.
+
+| Role | Interface | Function |
+|---|---|---|
+| **Primary reasoning + tool use** | `Model` | Function calling, structured output, long-context reasoning, and local-first or server-hosted deployment depending on hardware. |
+| **Speech output** | `Voice` *(deferred)* | Text to speech when a client or module needs a voice surface. |
 
 **Speech input (STT) is a client-side concern.** Browsers provide the Web Speech API, iOS has `SFSpeechRecognizer`, Android has `SpeechRecognizer` — all on-device, free, multilingual. The client transcribes speech to text and sends it to the node as a normal `task` event. The node never processes raw audio input.
 
-The reference point is no longer a fixed 7B starter model. The model family
+The reference point should not be a fixed small starter model. Model strength
 should scale with the deployment lane:
 
-- local-by-default quantized Gemma 4 variants for privacy, offline work, and
-  tighter hardware footprints
-- larger Gemma 4 variants when attached GB10 / DGX Spark / workstation-class
-  hardware makes a stronger server-backed lane practical
+- local-by-default quantized variants for privacy, offline work, and tighter
+  hardware footprints
+- larger variants when attached workstation or server-class hardware makes a
+  stronger lane practical
 
 The design goal is consistency across tiers, not different agent behavior per
 host class. Local and server lanes should stay within the same model family,
 tool-calling contract, and response shape. The server lane is the stronger
 variant of the same cognitive surface, not a separate product.
 
-### Reference Deployment
+### Reference Deployment Direction
 
-The stable boundary is the OpenAI-compatible inference adapter contract, not a
+The stable boundary is the actor-envelope and model-adapter contract, not a
 specific local runtime.
 
-The primary reference lane is:
+A plausible deployment lane is:
 
-- Gemma 4 served through vLLM
 - Bun process as the local orchestrator/runtime
 - a local/server split where the node home and control plane stay local while
-  larger model serving can sit on attached MSI / GB10-class hardware
-- optional local or remote OpenAI-compatible providers for adjunct roles such
-  as speech
+  larger model serving can sit on attached workstation or server-class hardware
+- optional local or remote providers for adjunct roles such as speech
 
 Under that split:
 
-- the local lane should prefer a quantized Gemma 4 variant when the goal is
-  privacy, portability, or offline operation
-- the server lane can step up to a larger Gemma 4 variant for harder
-  reasoning, longer-context work, or heavier multimodal workloads
+- the local lane should prefer a quantized variant when the goal is privacy,
+  portability, or offline operation
+- the server lane can step up to a larger variant for harder reasoning,
+  longer-context work, or heavier multimodal workloads
 - escalation between lanes should preserve prompt format, tool semantics, and
   output structure
 
-That keeps training and native-model execution anchored to the MSI + vLLM lane
-while preserving the ability to swap serving backends without changing the
-agent engine or module contracts.
+That preserves the ability to swap serving backends without changing the agent
+engine, actor runtime, or module contracts.
 
 ## Core Shape
 
@@ -147,12 +155,38 @@ Planning, context assembly, skill selection, MCP capability projection, A2A
 routing, verification, and higher-level editing behavior should be composed
 through modules.
 
+## Experience Standard
+
+Plaited treats UI as a local projection, not the shared interoperability unit.
+Each user and agent may see a different generated interface over the same
+approved actor exposure.
+
+The cross-node substrate is:
+
+- actor-owned facts and resources
+- actor-owned services and actions
+- runtime policy and grants
+- provenance
+- approved projections
+
+The local substrate is generated UI, device adaptation, accessibility,
+workflow memory, and task-specific layout. Agents may propose facts, services,
+policies, and projections, but actors own state and handlers, and runtime
+policy decides what crosses node boundaries.
+
+The target descriptive MSS vocabulary is four tags: `content`, `structure`,
+`mechanics`, and `boundary`. Historical `scale` is treated as transitional
+compatibility, not target ontology. See `docs/wiki/` for the longer lineage and
+translation notes.
+
 ## Key Design Principles
 
-- **Framework, Not Platform:** Composable primitives. Code via npm, models via Hugging Face. Platforms are built with it, not by it.
+- **Framework, Not Platform:** Composable primitives. Platforms are built with
+  Plaited, not by Plaited.
 - **Single Tenancy:** 1 User : 1 Agent instance. User data lives on their agent — nowhere else.
 - **Pluggable Models:** The primary model and optional adjunct roles are
-  interfaces. Implementations swap freely across MLX, vLLM, and cloud APIs.
+  interfaces. Implementations swap across local runtimes, server runtimes, and
+  cloud APIs.
 - **Minimal Core, Rich Modules:** `createAgent()` stays narrow; planning,
   memory, MCP, A2A, verification, and editing policy belong in modules.
 - **Plan-Driven Context:** Plan state should shape context assembly through
@@ -190,10 +224,12 @@ Each level down is orders of magnitude cheaper but trades isolation for speed. T
 structured clone — not JSON). When Workers stabilize, swapping is a
 one-interface change.
 
-**Local inference:** The inference server runs as a persistent `Bun.spawn()`
-process (Ollama, llama.cpp, vLLM) on the same box. Local runtimes call it via
-`fetch("http://localhost:PORT")` — async I/O that doesn't block the event
-loop. GPU/Apple Silicon Metal handles acceleration.
+**Local inference:** The target same-machine inference bridge is a private
+Unix domain socket carrying a framed `ActorEnvelope` stream. Plaited owns
+policy, tools, permissions, sandboxing, actor routing, and side-effect
+authority. The neural runtime owns model execution and model-internal cache,
+KV, batching, and prefill optimizations. See
+[Local Inference Bridge](local-inference-bridge.md).
 
 **A2A and MCP surfaces:** The repo now has protocol/utilities under
 `src/modules/a2a-module/` and `src/modules/mcp-module/`. They should be
@@ -207,25 +243,25 @@ The framework is not prescriptive about deployment:
 
 | Tier | Example | Inference | Training | Trade-off |
 |---|---|---|---|---|
-| **Local** | MSI, Mac Mini, DGX Spark | Yes | MSI / DGX Spark: larger Gemma 4-class serving lanes. Consumer GPU: quantized local Gemma 4 variants or LoRA only. | Zero ongoing cost. Full data sovereignty. Requires hardware. |
-| **Cloud GPU** | RunPod, Lambda, Fly.io | Yes | Full-parameter on 4–8× A100 80GB cluster | Pay monthly. No hardware to maintain. |
-| **API-backed** | MiniMax, OpenRouter | Yes | No (unless provider supports fine-tuning) | Pay per use. No GPU needed. Dreamer/training not available. |
+| **Local** | Workstation, Mac Mini, attached GPU box | Yes | Hardware-dependent; smaller quantized local variants or larger attached-lane variants. | Zero ongoing cost. Full data sovereignty. Requires hardware. |
+| **Cloud GPU** | Managed or rented GPU host | Yes | Provider- and hardware-dependent. | Pay monthly. No hardware to maintain. |
+| **API-backed** | External model API | Yes | Usually no, unless provider supports fine-tuning. | Pay per use. No GPU needed. Training depends on provider support. |
 
 The pluggable model interfaces make tier selection a deployment decision, not an architectural one. A consumer can start API-backed, move to cloud, and eventually self-host — swapping model implementations without changing bThreads, tools, or application logic.
 
 **Workspace backup** is deployment infrastructure, not framework concern. The
 framework provides snapshots, git history, and retained artifacts for agent
 state recovery. Workspace-level backup varies by tier. One proposed local-first
-deployment shape is documented in `INFRASTRUCTURE.md`.
+deployment shape is documented in [Infrastructure](infrastructure.md).
 
 ## Companion Docs
 
 | Doc | Scope |
 |---|---|
-| `AGENT-LOOP.md` | Minimal core plus module-composed orchestration model |
-| `INFRASTRUCTURE.md` | Local-first persistence, sandbox execution, sync boundaries |
+| [Agent Loop](agent-loop.md) | Minimal core plus module-composed orchestration model |
+| [Actor Runtime](actor-runtime.md) | Current actor runtime implementation notes and gaps |
+| [Local Inference Bridge](local-inference-bridge.md) | Same-machine neural runtime IPC decision |
+| [Infrastructure](infrastructure.md) | Local-first persistence, sandbox execution, sync boundaries |
+| [Training And Improvement](training-and-improvement.md) | Discovery-first symbolic architecture and later model adaptation |
+| [Plaited Experience Standard](plaited-experience-standard.md) | Local projections over actor-owned facts, services, policy, provenance |
 | `skills/plaited-runtime/` | Runtime doctrine for behavioral coordination, MSS/module boundaries, and projection rules |
-| `dev-research/README.md` | Tombstone for retired local program lanes with issue-backed backlog links |
-| `https://github.com/plaited/plaited/issues/261` | Cognitive Kernel architecture reference backlog |
-| `https://github.com/plaited/plaited/issues/258` | Reused server-module transport eval backlog |
-| `skills/plaited-ui/` | Plaited UI runtime, protocol, and testing guidance |

@@ -45,11 +45,16 @@ initialized or a `dbPath` is provided for the review run.
 ## Module / MSS Rules
 
 - MSS defines what may be projected.
+- Target descriptive MSS vocabulary is `content`, `structure`, `mechanics`,
+  and `boundary`; legacy `scale` is compatibility metadata until schemas are
+  migrated.
 - Runtime or supervisor decides whether projection is allowed.
 - Protocol adapters expose approved projections.
 - Protocols are mechanics, not ontology.
 - Preserve source/provenance; do not rewrite source to fake approval.
 - Auth/session/token mechanics are not modnet ontology.
+- UI is a local projection. Cross-node interoperability is facts/resources,
+  services/actions, policy/grants, provenance, and approved projections.
 
 ## Projection Rules
 
@@ -88,7 +93,7 @@ initialized or a `dbPath` is provided for the review run.
 
 ## What Not To Assume
 
-Other than the two-model inference approach and its communication through the
+Other than the two-model inference direction and current source-backed
 inference websocket runtime actor/server, docs and skills are not authoritative
 when they mention event names, module names, actor APIs, server surfaces, or
 runtime contracts that do not exist in current `src/` code or tests.
@@ -96,9 +101,10 @@ runtime contracts that do not exist in current `src/` code or tests.
 Do not promote doc-only names into doctrine unless they exist in source/tests
 or are required by an external spec.
 
-Treat `docs/INFRASTRUCTURE.md` as deployment target material, not implemented
-runtime doctrine. Treat `docs/hypothetical-architecture.md` as non-normative
-research.
+Treat `docs/wiki/infrastructure.md` as deployment target material, not
+implemented runtime doctrine. Treat `docs/wiki/local-inference-bridge.md` as
+the target local inference bridge decision; current source still includes the
+WebSocket inference runtime actor.
 
 ## References
 
