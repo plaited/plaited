@@ -1,18 +1,15 @@
 import { describe, expect, test } from 'bun:test'
-import * as z from 'zod'
 import { exploreFrontiers, verifyFrontiers } from '../behavioral.frontier.ts'
-import { bSync, bThread } from '../behavioral.shared.ts'
+import { sync, thread } from './helpers.ts'
 
 const onType = (type: string) => ({
   type,
-  sourceSchema: z.enum(['trigger', 'request']),
-  detailSchema: z.unknown(),
 })
 
 const createDeadlockReachableThreads = () => ({
-  chooseA: bThread([bSync({ request: { type: 'A' } })]),
-  chooseB: bThread([bSync({ request: { type: 'B' } })]),
-  deadlockAfterA: bThread([bSync({ waitFor: onType('A') }), bSync({ block: onType('B') })]),
+  chooseA: thread([sync({ request: { type: 'A' } })]),
+  chooseB: thread([sync({ request: { type: 'B' } })]),
+  deadlockAfterA: thread([sync({ waitFor: onType('A') }), sync({ block: onType('B') })]),
 })
 
 describe('verifyFrontiers', () => {
@@ -36,7 +33,7 @@ describe('verifyFrontiers', () => {
   test('returns truncated when exploration is cut off with no findings', () => {
     const result = verifyFrontiers({
       threads: {
-        producer: bThread([bSync({ request: { type: 'tick' } })], true),
+        producer: thread([sync({ request: { type: 'tick' } })], true),
       },
       strategy: 'dfs',
       maxDepth: 1,
@@ -56,7 +53,7 @@ describe('verifyFrontiers', () => {
   test('returns verified when exploration completes with no findings', () => {
     const result = verifyFrontiers({
       threads: {
-        watcher: bThread([bSync({ waitFor: onType('ping') })]),
+        watcher: thread([sync({ waitFor: onType('ping') })]),
       },
       strategy: 'bfs',
     })

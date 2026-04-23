@@ -1,12 +1,11 @@
-import type { BPListener } from 'plaited/behavioral'
 import * as z from 'zod'
-
-const sourceSchema = z.enum(['trigger', 'request'])
+import type { BPListener, SnapshotMessage } from '../behavioral.schemas.ts'
+import { sync as baseSync, thread as baseThread } from '../behavioral.shared.ts'
+import { behavioral as createBehavioral } from '../behavioral.ts'
+import type { BThreads, Disconnect, Sync } from '../behavioral.types.ts'
 
 export const onType = (type: string): BPListener => ({
   type,
-  sourceSchema,
-  detailSchema: z.unknown(),
 })
 
 export const onTypeWithDetail = ({
@@ -14,10 +13,9 @@ export const onTypeWithDetail = ({
   detailSchema,
 }: {
   type: string
-  detailSchema: z.ZodType<unknown>
+  detailSchema: z.ZodObject<Record<string, z.ZodType<unknown>>>
 }): BPListener => ({
   type,
-  sourceSchema,
   detailSchema,
 })
 
@@ -29,6 +27,67 @@ export const onTypeWhere = ({
   predicate: (detail: unknown) => boolean
 }): BPListener => ({
   type,
-  sourceSchema,
-  detailSchema: z.unknown().refine(predicate),
+  detailSchema: z.custom<unknown>(predicate) as unknown as z.ZodObject<Record<string, z.ZodType<unknown>>>,
 })
+
+type FeedbackHandlers = Record<string, (detail: never, disconnect: Disconnect) => void | Promise<void>>
+
+export const sync: Sync = baseSync
+
+/**
+ * Test compatibility wrapper preserving legacy `thread(rules, repeat?)` semantics.
+ * Legacy tests use omitted 2nd arg as "run once", and `true` as "repeat forever".
+ */
+export const thread = (rules: ReturnType<Sync>[], repeat?: true) =>
+  repeat ? baseThread(rules) : baseThread(rules, true)
+
+export const behavioral = () => {
+  const runtime = createBehavioral()
+  const snapshotListeners = new Set<(msg: SnapshotMessage) => void | Promise<void>>()
+
+  const addBThread = (label: string, bThread: BThreads[string]) => {
+    runtime.addThread(label, bThread)
+  }
+
+  const addBThreads = (threads: BThreads) => {
+    for (const [label, bThread] of Object.entries(threads)) {
+      addBThread(label, bThread)
+    }
+  }
+
+  const useFeedback = (handlers: FeedbackHandlers): Disconnect => {
+    const disconnects: Disconnect[] = []
+    for (const [type, handler] of Object.entries(handlers)) {
+      disconnects.push(runtime.addHandler(type, handler as (detail: unknown, disconnect: Disconnect) => void))
+    }
+    return () => {
+      for (const disconnect of disconnects) {
+        void disconnect()
+      }
+    }
+  }
+
+  const useSnapshot = (listener: (msg: SnapshotMessage) => void | Promise<void>): Disconnect => {
+    snapshotListeners.add(listener)
+    const disconnectRuntime = runtime.useSnapshot(listener)
+    return () => {
+      snapshotListeners.delete(listener)
+      void disconnectRuntime()
+    }
+  }
+
+  const reportSnapshot = (msg: SnapshotMessage) => {
+    for (const listener of snapshotListeners) {
+      void listener(msg)
+    }
+  }
+
+  return {
+    ...runtime,
+    addBThread,
+    addBThreads,
+    useFeedback,
+    useSnapshot,
+    reportSnapshot,
+  }
+}

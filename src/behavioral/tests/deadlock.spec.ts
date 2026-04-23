@@ -1,13 +1,11 @@
 import { describe, expect, test } from 'bun:test'
-import { behavioral, type DeadlockSnapshot, type SelectionSnapshot, type SnapshotMessage } from 'plaited/behavioral'
 import * as z from 'zod'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
-import { bSync, bThread } from '../behavioral.shared.ts'
+import type { DeadlockSnapshot, SelectionSnapshot, SnapshotMessage } from '../behavioral.schemas.ts'
+import { behavioral, sync, thread } from './helpers.ts'
 
 const onType = (type: string) => ({
   type,
-  sourceSchema: z.enum(['trigger', 'request']),
-  detailSchema: z.unknown(),
 })
 
 describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
@@ -20,8 +18,8 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
     })
 
     addBThreads({
-      safety: bThread([bSync({ block: onType('dangerous') })], true),
-      interruptor: bThread([bSync({ interrupt: onType('dangerous') })], true),
+      safety: thread([sync({ block: onType('dangerous') })], true),
+      interruptor: thread([sync({ interrupt: onType('dangerous') })], true),
     })
 
     trigger({ type: 'dangerous' })
@@ -56,7 +54,7 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
     })
 
     addBThreads({
-      watcher: bThread([bSync({ waitFor: onType('dangerous') })], true),
+      watcher: thread([sync({ waitFor: onType('dangerous') })], true),
     })
 
     expect(snapshots).toHaveLength(0)
@@ -81,8 +79,8 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
     })
 
     addBThreads({
-      low: bThread([bSync({ request: { type: 'low' } })]),
-      high: bThread([bSync({ request: { type: 'high' } })]),
+      low: thread([sync({ request: { type: 'low' } })]),
+      high: thread([sync({ request: { type: 'high' } })]),
     })
 
     trigger({ type: 'tick' })
@@ -103,20 +101,20 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
     })
 
     addBThreads({
-      blockSecond: bThread(
+      blockSecond: thread(
         [
-          bSync({
+          sync({
             block: {
               type: 'same_type',
-              sourceSchema: z.literal('request'),
+              source: 'request',
               detailSchema: z.object({ n: z.literal(2) }),
             },
           }),
         ],
         true,
       ),
-      first: bThread([bSync({ request: { type: 'same_type', detail: { n: 1 } } })]),
-      second: bThread([bSync({ request: { type: 'same_type', detail: { n: 2 } } })]),
+      first: thread([sync({ request: { type: 'same_type', detail: { n: 1 } } })]),
+      second: thread([sync({ request: { type: 'same_type', detail: { n: 2 } } })]),
     })
 
     trigger({ type: 'kickoff' })

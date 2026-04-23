@@ -1,15 +1,7 @@
 import { isTypeOf } from '../utils.ts'
 import { FRONTIER_STATUS } from './behavioral.constants.ts'
-import type {
-  BPEvent,
-  BPListener,
-  BSync,
-  BThread,
-  CandidateBid,
-  Frontier,
-  PendingBid,
-  RunningBid,
-} from './behavioral.types.ts'
+import type { BPEvent, BPListener } from './behavioral.schemas.ts'
+import type { CandidateBid, Frontier, PendingBid, RunningBid, Sync, Thread } from './behavioral.types.ts'
 
 /**
  * @internal
@@ -35,8 +27,8 @@ export const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj :
  */
 export const isListeningFor = ({ type, detail, source }: CandidateBid) => {
   return (listener: BPListener): boolean => {
-    const sourceMatches = listener.sourceSchema ? listener.sourceSchema.safeParse(source).success : true
-    const schemaMatches = listener.detailSchema.safeParse(detail).success
+    const sourceMatches = listener.source ? source === listener.source : true
+    const schemaMatches = listener.detailSchema ? listener.detailSchema.safeParse(detail).success : true
     const detailMatches = listener.detailMatch === 'invalid' ? !schemaMatches : schemaMatches
     return listener.type === type && sourceMatches && detailMatches
   }
@@ -123,31 +115,29 @@ export const resumePendingThreadsForSelectedEvent = ({
   }
 }
 
-export const bSync: BSync = (syncPoint) =>
+export const sync: Sync = (syncPoint) =>
   function* () {
     yield syncPoint
   }
 
-export const isBehavioralRule = (value: unknown): value is ReturnType<BSync> =>
+export const isBehavioralRule = (value: unknown): value is ReturnType<Sync> =>
   isTypeOf<(...args: unknown[]) => unknown>(value, 'function')
 
-export const bThread: BThread = (rules, repeat) => {
-  const shouldRepeat = repeat === true
-  return Object.assign(
-    shouldRepeat
+export const thread: Thread = (rules, once) =>
+  Object.assign(
+    once
       ? function* () {
-          while (shouldRepeat) {
+          const length = rules.length
+          for (let i = 0; i < length; i++) {
+            yield* rules[i]!()
+          }
+        }
+      : function* () {
+          while (true) {
             const length = rules.length
             for (let i = 0; i < length; i++) {
               yield* rules[i]!()
             }
           }
-        }
-      : function* () {
-          const length = rules.length
-          for (let i = 0; i < length; i++) {
-            yield* rules[i]!()
-          }
         },
   )
-}

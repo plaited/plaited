@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { behavioral, type SnapshotMessage } from 'plaited/behavioral'
-import { bSync, bThread } from '../behavioral.shared.ts'
+import type { SnapshotMessage } from '../behavioral.schemas.ts'
+import { behavioral, sync, thread } from './helpers.ts'
 
 /**
  * Test suite for useSnapshot concurrent listener behaviour.
@@ -21,7 +21,7 @@ describe('useSnapshot', () => {
     })
 
     addBThreads({
-      req: bThread([bSync({ request: { type: 'ping' } })]),
+      req: thread([sync({ request: { type: 'ping' } })]),
     })
 
     // Both listeners receive the first selection snapshot
@@ -37,7 +37,7 @@ describe('useSnapshot', () => {
 
     // Set up a new thread and trigger again
     addBThreads({
-      req2: bThread([bSync({ request: { type: 'pong' } })]),
+      req2: thread([sync({ request: { type: 'pong' } })]),
     })
     trigger({ type: 'go' })
 
@@ -60,7 +60,7 @@ describe('useSnapshot', () => {
     })
 
     addBThreads({
-      req: bThread([bSync({ request: { type: 'ping' } })]),
+      req: thread([sync({ request: { type: 'ping' } })]),
     })
     trigger({ type: 'start' })
 
@@ -79,7 +79,7 @@ describe('useSnapshot', () => {
     })
 
     addBThreads({
-      req2: bThread([bSync({ request: { type: 'pong' } })]),
+      req2: thread([sync({ request: { type: 'pong' } })]),
     })
     trigger({ type: 'go' })
 

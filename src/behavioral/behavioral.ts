@@ -6,7 +6,7 @@ import {
   SNAPSHOT_MESSAGE_KINDS,
   TRIGGER_ID_PREFIX,
 } from './behavioral.constants.ts'
-import type { SelectionBid, SnapshotMessage, ThreadReference } from './behavioral.schemas.ts'
+import type { BPEvent, FeedbackError, SelectionBid, SnapshotMessage, ThreadReference } from './behavioral.schemas.ts'
 import {
   advanceRunningToPending,
   computeFrontier,
@@ -14,19 +14,14 @@ import {
   resumePendingThreadsForSelectedEvent,
 } from './behavioral.shared.ts'
 import type {
-  AddBThread,
-  AddBThreads,
+  AddHandler,
+  AddThread,
   Behavioral,
-  BPEvent,
-  BSync,
-  BThreads,
   CandidateBid,
-  EventDetails,
   PendingBid,
-  ReportSnapshot,
   RunningBid,
+  Sync,
   Trigger,
-  UseFeedback,
   UseSnapshot,
 } from './behavioral.types.ts'
 
@@ -221,7 +216,7 @@ const deadlockSnapshotFormatter = ({
  * and threads to run. If no events can be selected (either because all requests are blocked
  * or there are no requests), the program will pause until an external event is triggered.
  */
-export const behavioral: Behavioral = <Details extends EventDetails = EventDetails>() => {
+export const behavioral: Behavioral = () => {
   /**
    * @internal
    * Map of threads that have yielded and are waiting for event selection.
@@ -377,17 +372,17 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
    * The generic type parameter `Details` enables type-safe handler mapping,
    * where each handler receives its correctly-typed detail payload.
    */
-  const useFeedback: UseFeedback<Details> = (handlers) => {
+  const addHandler: AddHandler = (type, handler, once) => {
     const disconnect = actionPublisher.subscribe(async (data: BPEvent) => {
-      const { type, detail } = data
-      if (Object.hasOwn(handlers, type)) {
+      if (data.type === type) {
         try {
-          await handlers[type]!(detail)
+          if (once) disconnect()
+          await handler(data.detail as Parameters<typeof handler>[0], disconnect)
         } catch (error) {
-          const message = {
+          const message: FeedbackError = {
             kind: SNAPSHOT_MESSAGE_KINDS.feedback_error,
             type,
-            detail,
+            detail: data.detail,
             error: error instanceof Error ? error.message : String(error),
           }
           snapshotPublisher(message)
@@ -397,7 +392,7 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
     return disconnect
   }
 
-  const addBThread: AddBThread = (label: string, thread: ReturnType<BSync>) => {
+  const addThread: AddThread = (label: string, thread: ReturnType<Sync>) => {
     const threadId = ueid(BTHREAD_ID_PREFIX)
     running.set(threadId, {
       priority: running.size + 1,
@@ -406,18 +401,12 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
       label,
     })
   }
-  const addBThreads: AddBThreads = (threads: BThreads) => {
-    for (const [label, thread] of Object.entries(threads)) {
-      addBThread(label, thread)
-    }
-  }
   /**
    * @internal
    * Implementation of the public `useSnapshot` hook.
    * Delegates directly to the snapshot publisher's subscribe method.
    */
   const useSnapshot: UseSnapshot = (listener) => snapshotPublisher.subscribe(listener)
-  const reportSnapshot: ReportSnapshot = (message) => snapshotPublisher(message)
 
   /**
    * @internal
@@ -429,16 +418,12 @@ export const behavioral: Behavioral = <Details extends EventDetails = EventDetai
    */
   return Object.freeze({
     /** Add thread to program. */
-    addBThread,
-    /** Add many threads to program. */
-    addBThreads,
+    addThread,
     /** Function to inject external events into the program. */
     trigger,
-    /** Hook to subscribe to selected events with feedback handlers. */
-    useFeedback,
+
+    addHandler,
     /** Hook to subscribe to internal state snapshots for monitoring/debugging. */
     useSnapshot,
-    /** Host/runtime seam for publishing structured diagnostics to snapshot subscribers. */
-    reportSnapshot,
   })
 }

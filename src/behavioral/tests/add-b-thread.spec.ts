@@ -1,8 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { behavioral, type DeadlockSnapshot, type SelectionSnapshot, type SnapshotMessage } from 'plaited/behavioral'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
-import { bSync, bThread } from '../behavioral.shared.ts'
-import { onType } from './helpers.ts'
+import type { DeadlockSnapshot, SelectionSnapshot, SnapshotMessage } from '../behavioral.schemas.ts'
+import { behavioral, onType, sync, thread } from './helpers.ts'
 
 describe('addBThreads', () => {
   test('supports dynamic thread installation from feedback handlers', () => {
@@ -10,14 +9,14 @@ describe('addBThreads', () => {
     const { addBThreads, trigger, useFeedback } = behavioral()
 
     addBThreads({
-      addHotOnce: bSync({ request: { type: 'hot_1' } }),
-      mixHotCold: bThread(
+      addHotOnce: sync({ request: { type: 'hot_1' } }),
+      mixHotCold: thread(
         [
-          bSync({
+          sync({
             waitFor: [onType('hot_1'), onType('hot')],
             block: onType('cold'),
           }),
-          bSync({
+          sync({
             waitFor: onType('cold'),
             block: [onType('hot_1'), onType('hot')],
           }),
@@ -31,8 +30,8 @@ describe('addBThreads', () => {
         actual.push('hot')
         trigger({ type: 'cold' })
         addBThreads({
-          addMoreHot: bThread([bSync({ request: { type: 'hot' } }), bSync({ request: { type: 'hot' } })]),
-          addMoreCold: bThread([bSync({ request: { type: 'cold' } }), bSync({ request: { type: 'cold' } })]),
+          addMoreHot: thread([sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } })]),
+          addMoreCold: thread([sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } })]),
         })
       },
       cold() {
@@ -60,8 +59,8 @@ describe('addBThreads', () => {
     })
 
     addBThreads({
-      workerA: bThread([bSync({ waitFor: onType('start') }), bSync({ request: { type: 'done_a' } })]),
-      workerB: bThread([bSync({ waitFor: onType('start') }), bSync({ request: { type: 'done_b' } })]),
+      workerA: thread([sync({ waitFor: onType('start') }), sync({ request: { type: 'done_a' } })]),
+      workerB: thread([sync({ waitFor: onType('start') }), sync({ request: { type: 'done_b' } })]),
     })
 
     useFeedback({
@@ -96,9 +95,9 @@ describe('addBThreads', () => {
     })
 
     addBThreads({
-      guard: bThread([bSync({ block: onType('dangerous') })], true),
-      watchdog: bThread([bSync({ interrupt: onType('dangerous') })], true),
-      requester: bThread([bSync({ request: { type: 'dangerous' } })]),
+      guard: thread([sync({ block: onType('dangerous') })], true),
+      watchdog: thread([sync({ interrupt: onType('dangerous') })], true),
+      requester: thread([sync({ request: { type: 'dangerous' } })]),
     })
 
     trigger({ type: 'start' })

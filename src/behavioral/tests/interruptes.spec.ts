@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { behavioral, type SnapshotMessage } from 'plaited/behavioral'
-import { bSync, bThread } from '../behavioral.shared.ts'
-import { onType } from './helpers.ts'
+import type { SnapshotMessage } from '../behavioral.schemas.ts'
+import { behavioral, onType, sync, thread } from './helpers.ts'
 
 /**
  * Test suite for demonstrating the 'interrupt' idiom in behavioral programming.
@@ -14,8 +13,8 @@ describe('interrupt', () => {
    * However, this thread can be interrupted by a 'terminate' event while waiting for 'add'.
    * The `true` argument makes the thread repeat its behavior.
    */
-  const addHot = bThread(
-    [bSync({ waitFor: onType('add'), interrupt: [onType('terminate')] }), bSync({ request: { type: 'hot' } })],
+  const addHot = thread(
+    [sync({ waitFor: onType('add'), interrupt: [onType('terminate')] }), sync({ request: { type: 'hot' } })],
     true,
   )
 

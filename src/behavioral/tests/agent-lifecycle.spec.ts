@@ -1,7 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { behavioral } from 'plaited/behavioral'
-import { bSync, bThread } from '../behavioral.shared.ts'
-import { onType, onTypeWhere } from './helpers.ts'
+import { behavioral, onType, onTypeWhere, sync, thread } from './helpers.ts'
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -14,10 +12,10 @@ describe('per-task lifecycle', () => {
       task(detail) {
         log.push(`task:${detail.prompt}`)
         addBThreads({
-          maxIterations: bThread([
-            bSync({ waitFor: onType('tool_result'), interrupt: [onType('message')] }),
-            bSync({ waitFor: onType('tool_result'), interrupt: [onType('message')] }),
-            bSync({ request: { type: 'message', detail: { content: 'Max reached' } }, interrupt: [onType('message')] }),
+          maxIterations: thread([
+            sync({ waitFor: onType('tool_result'), interrupt: [onType('message')] }),
+            sync({ waitFor: onType('tool_result'), interrupt: [onType('message')] }),
+            sync({ request: { type: 'message', detail: { content: 'Max reached' } }, interrupt: [onType('message')] }),
           ]),
         })
       },
@@ -45,11 +43,11 @@ describe('per-task lifecycle', () => {
       task() {
         log.push('task')
         addBThreads({
-          maxIterations: bThread([
-            bSync({ waitFor: onType('tool_result'), interrupt: [onType('message')] }),
-            bSync({ waitFor: onType('tool_result'), interrupt: [onType('message')] }),
-            bSync({ waitFor: onType('tool_result'), interrupt: [onType('message')] }),
-            bSync({ request: { type: 'message', detail: { content: 'Max reached' } } }),
+          maxIterations: thread([
+            sync({ waitFor: onType('tool_result'), interrupt: [onType('message')] }),
+            sync({ waitFor: onType('tool_result'), interrupt: [onType('message')] }),
+            sync({ waitFor: onType('tool_result'), interrupt: [onType('message')] }),
+            sync({ request: { type: 'message', detail: { content: 'Max reached' } } }),
           ]),
         })
       },
@@ -77,9 +75,9 @@ describe('task gate', () => {
     const { addBThreads, trigger, useFeedback } = behavioral()
 
     addBThreads({
-      taskGate: bThread(
+      taskGate: thread(
         [
-          bSync({
+          sync({
             waitFor: onType('task'),
             block: [
               onTypeWhere({ type: 'model_response', predicate: () => taskEvents.has('model_response') }),
@@ -88,7 +86,7 @@ describe('task gate', () => {
               onTypeWhere({ type: 'context_ready', predicate: () => taskEvents.has('context_ready') }),
             ],
           }),
-          bSync({ waitFor: onType('message') }),
+          sync({ waitFor: onType('message') }),
         ],
         true,
       ),
@@ -127,8 +125,8 @@ describe('task gate', () => {
     const { addBThreads, trigger, useFeedback } = behavioral()
 
     addBThreads({
-      taskGate: bThread(
-        [bSync({ waitFor: onType('task'), block: onType('tool_result') }), bSync({ waitFor: onType('message') })],
+      taskGate: thread(
+        [sync({ waitFor: onType('task'), block: onType('tool_result') }), sync({ waitFor: onType('message') })],
         true,
       ),
     })

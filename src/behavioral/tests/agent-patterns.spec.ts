@@ -1,7 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { behavioral } from 'plaited/behavioral'
-import { bSync, bThread } from '../behavioral.shared.ts'
-import { onType, onTypeWhere } from './helpers.ts'
+import { behavioral, onType, onTypeWhere, sync, thread } from './helpers.ts'
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -11,10 +9,7 @@ describe('doneGuard pattern', () => {
     const { addBThreads, trigger, useFeedback } = behavioral()
 
     addBThreads({
-      doneGuard: bThread(
-        [bSync({ waitFor: onType('done') }), bSync({ block: [onType('work'), onType('other')] })],
-        true,
-      ),
+      doneGuard: thread([sync({ waitFor: onType('done') }), sync({ block: [onType('work'), onType('other')] })], true),
     })
 
     useFeedback({
@@ -45,9 +40,9 @@ describe('shared state guard pattern', () => {
     const { addBThreads, trigger, useFeedback } = behavioral()
 
     addBThreads({
-      guard: bThread(
+      guard: thread(
         [
-          bSync({
+          sync({
             block: onTypeWhere({
               type: 'execute',
               predicate: (detail) => {

@@ -1,17 +1,17 @@
 import { expect, test } from 'bun:test'
-import type { BPEvent } from 'plaited/behavioral'
-import { bSync, bThread } from '../behavioral.shared.ts'
+import type { BPEvent } from '../behavioral.schemas.ts'
+import { thread as bThread, sync } from '../behavioral.shared.ts'
 import { onType } from './helpers.ts'
 
 test('bThread: executes rules sequentially', () => {
   const results: string[] = []
 
-  const rule1 = bSync({ request: { type: 'event1' } })
-  const rule2 = bSync({ request: { type: 'event2' } })
-  const rule3 = bSync({ request: { type: 'event3' } })
+  const rule1 = sync({ request: { type: 'event1' } })
+  const rule2 = sync({ request: { type: 'event2' } })
+  const rule3 = sync({ request: { type: 'event3' } })
 
-  const thread = bThread([rule1, rule2, rule3])
-  const gen = thread()
+  const behaviorThread = bThread([rule1, rule2, rule3], true)
+  const gen = behaviorThread()
 
   const { value: value1 } = gen.next()
   if (value1 && 'request' in value1 && value1.request && typeof value1.request !== 'function') {
@@ -31,12 +31,12 @@ test('bThread: executes rules sequentially', () => {
   expect(results).toEqual(['event1', 'event2', 'event3'])
 })
 
-test('bThread: completes after all rules when repeat is false', () => {
-  const rule1 = bSync({ request: { type: 'event1' } })
-  const rule2 = bSync({ request: { type: 'event2' } })
+test('bThread: completes after all rules when once is true', () => {
+  const rule1 = sync({ request: { type: 'event1' } })
+  const rule2 = sync({ request: { type: 'event2' } })
 
-  const thread = bThread([rule1, rule2])
-  const gen = thread()
+  const behaviorThread = bThread([rule1, rule2], true)
+  const gen = behaviorThread()
 
   gen.next() // event1
   gen.next() // event2
@@ -45,12 +45,12 @@ test('bThread: completes after all rules when repeat is false', () => {
   expect(done).toBe(true)
 })
 
-test('bThread: repeats when repeat is true', () => {
-  const rule1 = bSync({ request: { type: 'event1' } })
-  const rule2 = bSync({ request: { type: 'event2' } })
+test('bThread: repeats when once is omitted', () => {
+  const rule1 = sync({ request: { type: 'event1' } })
+  const rule2 = sync({ request: { type: 'event2' } })
 
-  const thread = bThread([rule1, rule2], true)
-  const gen = thread()
+  const behaviorThread = bThread([rule1, rule2])
+  const gen = behaviorThread()
 
   // First iteration
   const { value: value1 } = gen.next()
@@ -88,8 +88,8 @@ test('bThread: repeats when repeat is true', () => {
 })
 
 test('bThread: handles empty rules array', () => {
-  const thread = bThread([])
-  const gen = thread()
+  const behaviorThread = bThread([], true)
+  const gen = behaviorThread()
 
   const { done } = gen.next()
 
@@ -97,10 +97,10 @@ test('bThread: handles empty rules array', () => {
 })
 
 test('bThread: handles single rule', () => {
-  const rule1 = bSync({ request: { type: 'event1' } })
+  const rule1 = sync({ request: { type: 'event1' } })
 
-  const thread = bThread([rule1])
-  const gen = thread()
+  const behaviorThread = bThread([rule1], true)
+  const gen = behaviorThread()
 
   const { value } = gen.next()
   expect(value).toBeDefined()
@@ -116,15 +116,15 @@ test('bThread: supports all idioms in rules', () => {
   const waitFor = onType('event2')
   const block = onType('event3')
   const interrupt = onType('event4')
-  const rule1 = bSync({
+  const rule1 = sync({
     request: { type: 'event1' },
     waitFor,
     block,
     interrupt,
   })
 
-  const thread = bThread([rule1])
-  const gen = thread()
+  const behaviorThread = bThread([rule1], true)
+  const gen = behaviorThread()
 
   const { value } = gen.next()
 

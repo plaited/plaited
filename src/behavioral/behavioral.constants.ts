@@ -14,17 +14,6 @@ import { keyMirror } from '../utils.ts'
 export const SNAPSHOT_MESSAGE_KINDS = keyMirror('deadlock', 'feedback_error', 'selection', 'extension_error')
 
 /**
- * Runtime brand attached to `Extension` callables created by `useExtension`.
- *
- * @remarks
- * `useInstaller` validates `extension.$` against this identifier before
- * installing module handlers.
- *
- * @internal
- */
-export const EXTENSION_FUNCTION_IDENTIFIER = '🪢' as const
-
-/**
  * Defines how a b-thread listens for or specifies events in `waitFor`, `block`, or `interrupt` idioms.
  * This type provides a flexible way to match events based on simple string identifiers or complex conditions.
  *
@@ -48,13 +37,3 @@ export const TRIGGER_ID_PREFIX = 'trg_'
 export const EXPLORE_STRATEGIES = keyMirror('dfs', 'bfs')
 
 export const VERIFICATION_STATUSES = keyMirror('verified', 'failed', 'truncated')
-
-export const EXTENSION_MEMORY_EVENTS = keyMirror(
-  'memory_disconnect',
-  'memory_request',
-  'memory_response',
-  'memory_subscribe',
-  'memory_transaction',
-)
-
-export const EXTENSION_REQUEST_EVENT = 'extension_request_event' as const

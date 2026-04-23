@@ -1,6 +1,5 @@
 import { expect, test } from 'bun:test'
-import { behavioral } from 'plaited/behavioral'
-import { bSync } from '../behavioral.shared.ts'
+import { behavioral, sync } from './helpers.ts'
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -16,9 +15,9 @@ test('async feedback ELEMENT_CALLBACKS', async () => {
   /** Define behavioral threads using bSync for simplicity. */
   addBThreads({
     /** A thread that requests the 'init' event immediately. */
-    onInit: bSync({ request: { type: 'init' } }),
+    onInit: sync({ request: { type: 'init' } }),
     /** A thread that requests the 'afterInit' event immediately. */
-    afterInit: bSync({ request: { type: 'afterInit' } }),
+    afterInit: sync({ request: { type: 'afterInit' } }),
   })
 
   /** Register feedback handlers for specific events. */
@@ -32,7 +31,7 @@ test('async feedback ELEMENT_CALLBACKS', async () => {
       actual.push('init')
       await wait(100) // Simulate async operation
       // Triggering another event from within an async feedback handler.
-      trigger({ type: 'update', detail: 'update' })
+      trigger({ type: 'update', detail: { status: 'update' } })
     },
     /**
      * A synchronous handler for the 'afterInit' event.

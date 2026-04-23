@@ -1,11 +1,10 @@
 import { expect, test } from 'bun:test'
-import { bSync } from '../behavioral.shared.ts'
-import { onType } from './helpers.ts'
+import { onType, sync } from './helpers.ts'
 
 test('bSync: creates generator that yields sync point once', () => {
   const syncPoint = { request: { type: 'test' } }
-  const sync = bSync(syncPoint)
-  const gen = sync()
+  const behaviorSync = sync(syncPoint)
+  const gen = behaviorSync()
 
   const { value, done: done1 } = gen.next()
 
@@ -17,8 +16,8 @@ test('bSync: creates generator that yields sync point once', () => {
 })
 
 test('bSync: supports request idiom', () => {
-  const sync = bSync({ request: { type: 'event' } })
-  const gen = sync()
+  const behaviorSync = sync({ request: { type: 'event' } })
+  const gen = behaviorSync()
 
   const { value } = gen.next()
 
@@ -27,8 +26,8 @@ test('bSync: supports request idiom', () => {
 
 test('bSync: supports waitFor idiom', () => {
   const waitFor = onType('event')
-  const sync = bSync({ waitFor })
-  const gen = sync()
+  const behaviorSync = sync({ waitFor })
+  const gen = behaviorSync()
 
   const { value } = gen.next()
 
@@ -37,8 +36,8 @@ test('bSync: supports waitFor idiom', () => {
 
 test('bSync: supports block idiom', () => {
   const block = onType('event')
-  const sync = bSync({ block })
-  const gen = sync()
+  const behaviorSync = sync({ block })
+  const gen = behaviorSync()
 
   const { value } = gen.next()
 
@@ -47,8 +46,8 @@ test('bSync: supports block idiom', () => {
 
 test('bSync: supports interrupt idiom', () => {
   const interrupt = onType('event')
-  const sync = bSync({ interrupt })
-  const gen = sync()
+  const behaviorSync = sync({ interrupt })
+  const gen = behaviorSync()
 
   const { value } = gen.next()
 
@@ -58,12 +57,12 @@ test('bSync: supports interrupt idiom', () => {
 test('bSync: supports multiple idioms together', () => {
   const waitFor = onType('event2')
   const block = onType('event3')
-  const sync = bSync({
+  const behaviorSync = sync({
     request: { type: 'event1' },
     waitFor,
     block,
   })
-  const gen = sync()
+  const gen = behaviorSync()
 
   const { value } = gen.next()
 
@@ -74,8 +73,8 @@ test('bSync: supports multiple idioms together', () => {
 
 test('bSync: supports detail-schema conditions in listeners', () => {
   const listener = onType('target')
-  const sync = bSync({ waitFor: listener })
-  const gen = sync()
+  const behaviorSync = sync({ waitFor: listener })
+  const gen = behaviorSync()
 
   const { value } = gen.next()
 
@@ -85,11 +84,11 @@ test('bSync: supports detail-schema conditions in listeners', () => {
 test('bSync: supports arrays of listeners', () => {
   const waitFor = [onType('event1'), onType('event2')]
   const block = [onType('event3'), onType('event4')]
-  const sync = bSync({
+  const behaviorSync = sync({
     waitFor,
     block,
   })
-  const gen = sync()
+  const gen = behaviorSync()
 
   const { value } = gen.next()
 

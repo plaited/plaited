@@ -8,7 +8,6 @@ import {
 } from './behavioral.constants.ts'
 import { advanceRunningToPending, computeFrontier, resumePendingThreadsForSelectedEvent } from './behavioral.shared.ts'
 import type {
-  BSync,
   BThreads,
   CandidateBid,
   DeadlockFinding,
@@ -19,6 +18,7 @@ import type {
   ReplayEvent,
   ReplayToFrontierResult,
   RunningBid,
+  Sync,
   VerifyFrontiersResult,
 } from './behavioral.types.ts'
 import { deepEqual } from './deep-equal.ts'
@@ -122,7 +122,7 @@ export const replayToFrontier = ({
   const pending = new Map<string, PendingBid>()
 
   const bootstrapRunning = new Map<string, RunningBid>()
-  const spawn = (label: string, thread: ReturnType<BSync>) => {
+  const spawn = (label: string, thread: ReturnType<Sync>) => {
     const threadId = ueid(BTHREAD_ID_PREFIX)
     bootstrapRunning.set(threadId, {
       priority: bootstrapRunning.size + 1,

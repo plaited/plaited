@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { behavioral, type SnapshotMessage } from 'plaited/behavioral'
-import { bSync, bThread } from '../behavioral.shared.ts'
-import { onType } from './helpers.ts'
+import type { SnapshotMessage } from '../behavioral.schemas.ts'
+import { behavioral, onType, sync, thread } from './helpers.ts'
 
 describe('reportSnapshot', () => {
   test('publishes custom runtime diagnostics through useSnapshot', () => {
@@ -13,15 +12,17 @@ describe('reportSnapshot', () => {
     })
 
     reportSnapshot({
-      kind: 'extension_error',
-      id: 'bootstrap#0',
+      kind: 'feedback_error',
+      type: 'bootstrap',
+      detail: { id: 'bootstrap#0' },
       error: 'duplicate module id detected',
     })
 
     expect(seen).toEqual([
       {
-        kind: 'extension_error',
-        id: 'bootstrap#0',
+        kind: 'feedback_error',
+        type: 'bootstrap',
+        detail: { id: 'bootstrap#0' },
         error: 'duplicate module id detected',
       },
     ])
@@ -31,8 +32,8 @@ describe('reportSnapshot', () => {
     const events: string[] = []
     const { addBThread, trigger, useFeedback, reportSnapshot } = behavioral()
 
-    addBThread('producer', bThread([bSync({ request: { type: 'task' } })]))
-    addBThread('consumer', bThread([bSync({ waitFor: onType('task') }), bSync({ request: { type: 'ack' } })]))
+    addBThread('producer', thread([sync({ request: { type: 'task' } })]))
+    addBThread('consumer', thread([sync({ waitFor: onType('task') }), sync({ request: { type: 'ack' } })]))
 
     useFeedback({
       task() {
@@ -44,8 +45,9 @@ describe('reportSnapshot', () => {
     })
 
     reportSnapshot({
-      kind: 'extension_error',
-      id: 'bootstrap#0',
+      kind: 'feedback_error',
+      type: 'bootstrap',
+      detail: { id: 'bootstrap#0' },
       error: 'diagnostic only',
     })
     trigger({ type: 'kickoff' })

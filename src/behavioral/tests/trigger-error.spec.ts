@@ -1,7 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { behavioral } from 'plaited/behavioral'
-import { bSync, bThread } from '../behavioral.shared.ts'
-import { onType } from './helpers.ts'
+import { behavioral, onType, sync, thread } from './helpers.ts'
 
 describe('trigger', () => {
   test('routes triggered events into the BP engine', () => {
@@ -9,7 +7,7 @@ describe('trigger', () => {
     const received: string[] = []
 
     addBThreads({
-      listener: bThread([bSync({ waitFor: onType('allowed_event') })]),
+      listener: thread([sync({ waitFor: onType('allowed_event') })]),
     })
     useFeedback({
       allowed_event() {
@@ -27,7 +25,7 @@ describe('trigger', () => {
     const received: Array<{ id: number }> = []
 
     addBThreads({
-      listener: bThread([bSync({ waitFor: onType('payload_event') })]),
+      listener: thread([sync({ waitFor: onType('payload_event') })]),
     })
     useFeedback({
       payload_event(detail) {

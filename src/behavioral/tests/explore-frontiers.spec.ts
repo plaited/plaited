@@ -1,18 +1,15 @@
 import { describe, expect, test } from 'bun:test'
-import * as z from 'zod'
 import { exploreFrontiers } from '../behavioral.frontier.ts'
-import { bSync, bThread } from '../behavioral.shared.ts'
+import { sync, thread } from './helpers.ts'
 
 const onType = (type: string) => ({
   type,
-  sourceSchema: z.enum(['trigger', 'request']),
-  detailSchema: z.unknown(),
 })
 
 const createDeadlockReachableThreads = () => ({
-  chooseA: bThread([bSync({ request: { type: 'A' } })]),
-  chooseB: bThread([bSync({ request: { type: 'B' } })]),
-  deadlockAfterA: bThread([bSync({ waitFor: onType('A') }), bSync({ block: onType('B') })]),
+  chooseA: thread([sync({ request: { type: 'A' } })]),
+  chooseB: thread([sync({ request: { type: 'B' } })]),
+  deadlockAfterA: thread([sync({ waitFor: onType('A') }), sync({ block: onType('B') })]),
 })
 
 describe('exploreFrontiers', () => {
@@ -55,8 +52,8 @@ describe('exploreFrontiers', () => {
   test('branches one successor per enabled event', () => {
     const result = exploreFrontiers({
       threads: {
-        chooseA: bThread([bSync({ request: { type: 'A' } })]),
-        chooseB: bThread([bSync({ request: { type: 'B' } })]),
+        chooseA: thread([sync({ request: { type: 'A' } })]),
+        chooseB: thread([sync({ request: { type: 'B' } })]),
       },
       strategy: 'bfs',
       maxDepth: 1,
@@ -96,7 +93,7 @@ describe('exploreFrontiers', () => {
   test('maxDepth does not mark truncated for naturally terminal deadlock exploration', () => {
     const result = exploreFrontiers({
       threads: {
-        blockedA: bThread([bSync({ request: { type: 'A' }, block: onType('A') })]),
+        blockedA: thread([sync({ request: { type: 'A' }, block: onType('A') })]),
       },
       strategy: 'bfs',
       maxDepth: 0,
@@ -151,7 +148,7 @@ describe('exploreFrontiers', () => {
   test('idle branches terminate without findings', () => {
     const result = exploreFrontiers({
       threads: {
-        watcher: bThread([bSync({ waitFor: onType('ping') })]),
+        watcher: thread([sync({ waitFor: onType('ping') })]),
       },
       strategy: 'dfs',
       includeFrontierSummaries: true,
@@ -179,8 +176,8 @@ describe('exploreFrontiers', () => {
       strategy: 'bfs',
       maxDepth: 1,
       threads: {
-        first: bThread([bSync({ request: { type: 'same', detail: detailA } })]),
-        second: bThread([bSync({ request: { type: 'same', detail: detailB } })]),
+        first: thread([sync({ request: { type: 'same', detail: detailA as unknown as Record<string, never> } })]),
+        second: thread([sync({ request: { type: 'same', detail: detailB as unknown as Record<string, never> } })]),
       },
     })
 

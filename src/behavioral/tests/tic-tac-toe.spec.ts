@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
-import { type BSync, behavioral } from 'plaited/behavioral'
 import * as z from 'zod'
-import { bSync, bThread } from '../behavioral.shared.ts'
+import type { Sync } from '../behavioral.types.ts'
+import { behavioral, sync, thread } from './helpers.ts'
 
 /** Represents all possible winning combinations of squares in Tic-Tac-Toe. */
 const winConditions = [
@@ -25,15 +25,11 @@ const squares = [0, 1, 2, 3, 4, 5, 6, 7, 8]
 let board: Set<number>
 /** Type definition for the detail payload of 'X' and 'O' events, indicating the chosen square. */
 type Square = { square: number }
-const AnySourceSchema = z.enum(['trigger', 'request'])
 const onType = (type: string) => ({
   type,
-  sourceSchema: AnySourceSchema,
-  detailSchema: z.unknown(),
 })
 const onMove = (player: 'X' | 'O', square?: number) => ({
   type: player,
-  sourceSchema: AnySourceSchema,
   detailSchema:
     square === undefined
       ? z.object({ square: z.number() })
@@ -41,7 +37,6 @@ const onMove = (player: 'X' | 'O', square?: number) => ({
 })
 const onPlayerMoveIn = (player: 'X' | 'O', lineSquares: number[]) => ({
   type: player,
-  sourceSchema: AnySourceSchema,
   detailSchema: z.object({ square: z.number() }).refine((detail) => lineSquares.includes(detail.square)),
 })
 
@@ -82,8 +77,8 @@ test('taking a square', () => {
  * It waits for 'X', then blocks 'X' while waiting for 'O', and repeats.
  * The `true` argument makes the thread loop indefinitely.
  */
-const enforceTurns = bThread(
-  [bSync({ waitFor: onType('X'), block: onType('O') }), bSync({ waitFor: onType('O'), block: onType('X') })],
+const enforceTurns = thread(
+  [sync({ waitFor: onType('X'), block: onType('O') }), sync({ waitFor: onType('O'), block: onType('X') })],
   true,
 )
 
@@ -127,13 +122,13 @@ test('take turns', () => {
  * Each thread waits for any player ('X' or 'O') to take its specific square,
  * then blocks any further attempts to take that same square.
  */
-const squaresTaken: Record<string, ReturnType<BSync>> = {}
+const squaresTaken: Record<string, ReturnType<Sync>> = {}
 for (const square of squares) {
-  squaresTaken[`(${square}) taken`] = bThread([
+  squaresTaken[`(${square}) taken`] = thread([
     // Wait for an event (X or O) targeting this specific square.
-    bSync({ waitFor: [onMove('X', square), onMove('O', square)] }),
+    sync({ waitFor: [onMove('X', square), onMove('O', square)] }),
     // Once taken, block any future event targeting this square.
-    bSync({ block: [onMove('X', square), onMove('O', square)] }),
+    sync({ block: [onMove('X', square), onMove('O', square)] }),
   ])
 }
 
@@ -192,22 +187,22 @@ type Winner = { player: 'X' | 'O'; squares: number[] }
  * @returns Record of b-threads, one for each potential winning line for the player.
  */
 const detectWins = (player: 'X' | 'O') =>
-  winConditions.reduce((acc: Record<string, ReturnType<BSync>>, squares) => {
-    acc[`${player}Wins (${squares})`] = bThread([
+  winConditions.reduce((acc: Record<string, ReturnType<Sync>>, squares) => {
+    acc[`${player}Wins (${squares})`] = thread([
       // Wait for the player to take the first square of this winning line.
-      bSync({
+      sync({
         waitFor: onPlayerMoveIn(player, squares),
       }),
       // Wait for the player to take the second square of this winning line.
-      bSync({
+      sync({
         waitFor: onPlayerMoveIn(player, squares),
       }),
       // Wait for the player to take the third square of this winning line.
-      bSync({
+      sync({
         waitFor: onPlayerMoveIn(player, squares),
       }),
       // Request a 'win' event if all three squares are taken by the player.
-      bSync({
+      sync({
         request: { type: 'win', detail: { squares, player } },
       }),
     ])
@@ -260,7 +255,7 @@ test('detect winner', () => {
  * A b-thread that stops the game once a 'win' event occurs.
  * It waits for the 'win' event and then blocks any further 'X' or 'O' moves indefinitely.
  */
-const stopGame = bThread([bSync({ waitFor: onType('win') }), bSync({ block: [onType('X'), onType('O')] })], true)
+const stopGame = thread([sync({ waitFor: onType('win') }), sync({ block: [onType('X'), onType('O')] })], true)
 
 /**
  * Test case: Verifies that the `stopGame` thread prevents further moves after a win.
@@ -311,11 +306,11 @@ test('stop game', () => {
  * Each thread requests to take a specific square ('O' move) and repeats indefinitely.
  * These act as low-priority suggestions for O's moves.
  */
-const defaultMoves: Record<string, ReturnType<BSync>> = {}
+const defaultMoves: Record<string, ReturnType<Sync>> = {}
 for (const square of squares) {
-  defaultMoves[`defaultMoves(${square})`] = bThread(
+  defaultMoves[`defaultMoves(${square})`] = thread(
     [
-      bSync({
+      sync({
         request: {
           type: 'O',
           detail: { square },
@@ -367,7 +362,7 @@ test('defaultMoves', () => {
  * A b-sync definition representing a strategy for player 'O' to start by taking the center square (4).
  * This is a single, high-priority request.
  */
-const startAtCenter = bSync({
+const startAtCenter = sync({
   request: {
     type: 'O',
     detail: { square: 4 },
@@ -419,23 +414,23 @@ test('start at center', () => {
  * @returns Record of b-threads, one for each potential winning line, designed to block X.
  */
 const preventCompletionOfLineWithTwoXs = () => {
-  const bThreads: Record<string, ReturnType<BSync>> = {}
+  const bThreads: Record<string, ReturnType<Sync>> = {}
   for (const win of winConditions) {
     const [a, b, c] = win
-    bThreads[`StopXWin(${win})-ab`] = bThread([
-      bSync({ waitFor: onMove('X', a) }),
-      bSync({ waitFor: onMove('X', b) }),
-      bSync({ request: { type: 'O', detail: { square: c } } }),
+    bThreads[`StopXWin(${win})-ab`] = thread([
+      sync({ waitFor: onMove('X', a) }),
+      sync({ waitFor: onMove('X', b) }),
+      sync({ request: { type: 'O', detail: { square: c! } } }),
     ])
-    bThreads[`StopXWin(${win})-ac`] = bThread([
-      bSync({ waitFor: onMove('X', a) }),
-      bSync({ waitFor: onMove('X', c) }),
-      bSync({ request: { type: 'O', detail: { square: b } } }),
+    bThreads[`StopXWin(${win})-ac`] = thread([
+      sync({ waitFor: onMove('X', a) }),
+      sync({ waitFor: onMove('X', c) }),
+      sync({ request: { type: 'O', detail: { square: b! } } }),
     ])
-    bThreads[`StopXWin(${win})-bc`] = bThread([
-      bSync({ waitFor: onMove('X', b) }),
-      bSync({ waitFor: onMove('X', c) }),
-      bSync({ request: { type: 'O', detail: { square: a } } }),
+    bThreads[`StopXWin(${win})-bc`] = thread([
+      sync({ waitFor: onMove('X', b) }),
+      sync({ waitFor: onMove('X', c) }),
+      sync({ request: { type: 'O', detail: { square: a! } } }),
     ])
   }
   return bThreads

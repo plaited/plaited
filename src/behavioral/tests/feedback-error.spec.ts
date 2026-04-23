@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { behavioral, type FeedbackError, type SnapshotMessage } from 'plaited/behavioral'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
-import { bSync, bThread } from '../behavioral.shared.ts'
+import type { FeedbackError, SnapshotMessage } from '../behavioral.schemas.ts'
+import { behavioral, sync, thread } from './helpers.ts'
 
 /**
  * Test suite for the FeedbackError snapshot message.
@@ -16,7 +16,7 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
       snapshots.push(snapshot)
     })
     addBThreads({
-      requestAction: bThread([bSync({ request: { type: 'doWork' } })]),
+      requestAction: thread([sync({ request: { type: 'doWork' } })]),
     })
     useFeedback({
       doWork() {
@@ -44,7 +44,7 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
       snapshots.push(snapshot)
     })
     addBThreads({
-      requestAction: bThread([bSync({ request: { type: 'process', detail: { id: 42 } } })]),
+      requestAction: thread([sync({ request: { type: 'process', detail: { id: 42 } } })]),
     })
     useFeedback({
       process() {
@@ -72,7 +72,7 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
       snapshots.push(snapshot)
     })
     addBThreads({
-      requestAction: bThread([bSync({ request: { type: 'fail' } })]),
+      requestAction: thread([sync({ request: { type: 'fail' } })]),
     })
     useFeedback({
       fail() {
@@ -93,7 +93,7 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
       snapshots.push(snapshot)
     })
     addBThreads({
-      requestAction: bThread([bSync({ request: { type: 'boom' } })]),
+      requestAction: thread([sync({ request: { type: 'boom' } })]),
     })
     useFeedback({
       boom() {
@@ -118,7 +118,7 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
       snapshots.push(snapshot)
     })
     addBThreads({
-      requestAction: bThread([bSync({ request: { type: 'ok' } })]),
+      requestAction: thread([sync({ request: { type: 'ok' } })]),
     })
     useFeedback({
       ok() {

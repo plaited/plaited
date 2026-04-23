@@ -1,14 +1,10 @@
-import type { ZodType } from 'zod'
 import type {
   EVENT_SOURCES,
   EXPLORE_STRATEGIES,
-  EXTENSION_FUNCTION_IDENTIFIER,
-  EXTENSION_MEMORY_EVENTS,
-  EXTENSION_REQUEST_EVENT,
   FRONTIER_STATUS,
   VERIFICATION_STATUSES,
 } from './behavioral.constants.ts'
-import type { SelectionSnapshot, SnapshotMessage } from './behavioral.schemas.ts'
+import type { BPEvent, BPListener, JsonObject, SelectionSnapshot, SnapshotMessage } from './behavioral.schemas.ts'
 
 /**
  * Represents a fundamental unit of communication in behavioral programming.
@@ -20,21 +16,10 @@ import type { SelectionSnapshot, SnapshotMessage } from './behavioral.schemas.ts
  * @property type - The string identifier for the event, used for matching and dispatching.
  * @property detail - Optional data payload associated with the event.
  *
- * @see {@link BPEventTemplate} for dynamic event generation
  * @see {@link Trigger} for injecting events into the program
  */
-// biome-ignore lint/suspicious/noExplicitAny: Event payloads can be of any type, typed at usage site
-export type BPEvent = { type: string; detail?: any }
-
 export type ReplayEvent = BPEvent & {
   source: keyof typeof EVENT_SOURCES
-}
-
-export type BPListener = {
-  type: string
-  sourceSchema?: ZodType<keyof typeof EVENT_SOURCES>
-  detailSchema: ZodType<unknown>
-  detailMatch?: 'valid' | 'invalid'
 }
 
 /**
@@ -66,6 +51,8 @@ export type Idioms = {
   block?: BPListener | BPListener[]
 }
 
+export type RulesFunction = () => Generator<Idioms, void, unknown>
+
 /**
  * A factory function that creates a single synchronization step (a `ReturnType<BSync>`) for a b-thread.
  * This is a helper type that corresponds to the `bSync` function implementation, which creates
@@ -76,7 +63,7 @@ export type Idioms = {
  *
  * @see bSync The implementation of this type that creates reusable synchronization steps.
  */
-export type BSync = (arg: Idioms) => () => Generator<Idioms, void, unknown>
+export type Sync = (arg: Idioms) => RulesFunction
 
 /**
  * A factory function that constructs a complete b-thread (`ReturnType<BSync>`) by composing multiple synchronization steps.
@@ -89,7 +76,7 @@ export type BSync = (arg: Idioms) => () => Generator<Idioms, void, unknown>
  *
  * @see bThread The implementation of this type that composes multiple synchronization steps into a single b-thread.
  */
-export type BThread = (rules: ReturnType<BSync>[], repeat?: true) => ReturnType<BSync>
+export type Thread = (rules: ReturnType<Sync>[], once?: true) => ReturnType<Sync>
 
 /**
  * @internal
@@ -136,7 +123,7 @@ export type CandidateBid = {
   /** The type of the requested event, used for matching against waitFor, block, and interrupt declarations. */
   type: string
   /** Optional detail payload of the requested event, contains any data associated with this event. */
-  detail?: unknown
+  detail?: BPEvent['detail']
   /** Provenance of this candidate for source-aware listener matching. */
   source: keyof typeof EVENT_SOURCES
 
@@ -229,55 +216,13 @@ export type SnapshotListener = (msg: SnapshotMessage) => void | Promise<void>
 // biome-ignore lint/suspicious/noExplicitAny: Default event map allows any detail type, constrained by Handlers<T>
 export type EventDetails = Record<string, any>
 
-/**
- * @internal
- * Defines the basic structure for event handlers used in `useFeedback`.
- *
- * A record where keys are event types (strings) and values are callback functions
- * that handle the event's detail payload when the corresponding event is selected.
- *
- * This type provides a flexible foundation for type-specific handler definitions
- * through the more specialized `Handlers<T>` type. Both synchronous and asynchronous
- * handler functions are supported.
- */
-// biome-ignore lint/suspicious/noExplicitAny: Default handlers accept any detail type, refined by Handlers<T> generic
-export type DefaultHandlers = Record<string, (detail: any) => void | Promise<void>>
+export type Handler<T> = (detail: T, disconnect: Disconnect) => void | Promise<void>
 
-/**
- * Represents a collection of event handlers for behavioral program feedback.
- * Maps event types to handler functions that process selected events.
- *
- * @template Details - Type map for event payloads, enabling type-safe handlers.
- *
- * @remarks
- * - Supports both sync and async handlers
- * - Type-safe when using generics
- * - Handlers are called when events are selected
- *
- * @see {@link UseFeedback} for registering handlers
- * @see {@link BPEvent} for event structure
- */
-export type Handlers<Details extends EventDetails = EventDetails> = {
-  // Create specific handler signatures from the EventPayloadMap
-  [K in keyof Details]: (detail: Details[K]) => void | Promise<void>
-} & DefaultHandlers
-
-/**
- * Hook for subscribing to events selected by the behavioral program.
- * Primary mechanism for external systems to react to program state changes.
- *
- * @param handlers - Object mapping event types to handler functions.
- * @returns Disconnect function for cleanup.
- *
- * @remarks
- * - Maintains separation of concerns
- * - Supports sync and async handlers
- * - Always call disconnect for cleanup
- *
- * @see {@link Handlers} for handler types
- * @see {@link Disconnect} for cleanup
- */
-export type UseFeedback<Details extends EventDetails = EventDetails> = (handlers: Handlers<Details>) => Disconnect
+export type AddHandler = <T extends JsonObject | undefined = undefined>(
+  type: string,
+  handler: Handler<T>,
+  once?: true,
+) => () => void
 
 /**
  * Hook for monitoring internal state transitions of the behavioral program.
@@ -296,19 +241,9 @@ export type UseFeedback<Details extends EventDetails = EventDetails> = (handlers
  */
 export type UseSnapshot = (listener: SnapshotListener) => Disconnect
 
-/**
- * Publishes a structured snapshot message directly to snapshot subscribers.
- *
- * @remarks
- * This does not schedule events or advance the BP engine.
- */
-export type ReportSnapshot = (message: SnapshotMessage) => void
+export type BThreads = Record<string, ReturnType<Sync>>
 
-export type BThreads = Record<string, ReturnType<BSync>>
-
-export type AddBThread = (label: string, thread: () => Generator<Idioms, void, unknown>) => void
-
-export type AddBThreads = (threads: BThreads) => void
+export type AddThread = (label: string, thread: () => Generator<Idioms, void, unknown>) => void
 
 /**
  * Injects external events into the behavioral program.
@@ -325,151 +260,6 @@ export type AddBThreads = (threads: BThreads) => void
  * @see {@link PlaitedTrigger} for enhanced trigger
  */
 export type Trigger = <T extends BPEvent>(args: T) => void
-
-export type ContextMemoryEntry = {
-  body: unknown
-  expiresAt: number
-  createdAt: number
-}
-
-export type ContextMemoryResponse = {
-  id: string
-  body: unknown
-  expiresAt: number
-  createdAt: number
-}
-
-export type MemoryRequestEvent = {
-  type: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_request']}`
-  detail: {
-    id: string
-    extension: string
-    event: string
-    purpose?: string
-  }
-}
-
-export type MemoryRequestRef = {
-  requestEvent: MemoryRequestEvent
-  transactionListener: BPListener
-  transactionEventType: string
-}
-
-export type CreateMemoryRequest = (params: {
-  extension: string
-  event: string
-  purpose?: string
-  detailSchema: ZodType<unknown>
-}) => MemoryRequestRef
-
-export type ExtensionRequestEvent = {
-  type: `${string}:${typeof EXTENSION_REQUEST_EVENT}`
-  detail: {
-    id: string
-    /** Source extension id that initiated this request. */
-    extension: string
-    /** Target extension-local event type to trigger after request routing. */
-    type: string
-    detail: unknown
-    purpose?: string
-    listener: BPListener
-  }
-}
-
-export type ExtensionRequestRef = {
-  requestEvent: ExtensionRequestEvent
-  transactionListener: BPListener
-  transactionEventType: string
-}
-
-export type CreateExtensionRequest = (
-  params: {
-    /** Target extension id that should receive the request envelope. */
-    extension: string
-    purpose?: string
-    detailSchema: ZodType<unknown>
-  } & BPEvent,
-) => ExtensionRequestRef
-
-export type MemorySubscribeEvent = {
-  type: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_subscribe']}`
-  detail: {
-    id: string
-    extension: string
-    listener: BPListener
-    purpose?: string
-  }
-}
-
-export type MemoryDisconnectEvent = {
-  type: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_disconnect']}__${string}`
-}
-
-export type MemorySubscribeRef = {
-  disconnectEvent: MemoryDisconnectEvent
-  transactionEventType: string
-  transactionListener: BPListener
-  subscribeEvent: MemorySubscribeEvent
-}
-
-export type CreateMemorySubscribe = (params: {
-  extension: string
-  event: string
-  purpose?: string
-  detailSchema: ZodType<unknown>
-}) => MemorySubscribeRef
-
-export type CreateExtensionBlock = (params: {
-  extension: string
-  event: string
-  detailSchema: ZodType<unknown>
-}) => BPListener
-
-export type ExtensionDefaultEvents = {
-  readonly memory_disconnect: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_disconnect']}`
-  readonly memory_request: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_request']}`
-  readonly memory_response: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_response']}`
-  readonly memory_subscribe: `${string}:${(typeof EXTENSION_MEMORY_EVENTS)['memory_subscribe']}`
-  readonly [EXTENSION_REQUEST_EVENT]: `${string}:${typeof EXTENSION_REQUEST_EVENT}`
-}
-
-export type ExtensionParams = {
-  memory: {
-    has: (key: string) => boolean
-    get: (key: string) => ContextMemoryEntry | undefined
-  }
-  extensions: {
-    has: (key: string) => boolean
-    get: CreateMemoryRequest
-    request: CreateExtensionRequest
-    block: CreateExtensionBlock
-    subscribe: CreateMemorySubscribe
-    subsciribe: CreateMemorySubscribe
-  }
-  bSync: BSync
-  bThread: (params: { label: string; rules: ReturnType<BSync>[]; repeat?: true }) => void
-  trigger: Trigger
-  reportSnapshot: ReportSnapshot
-  useSnapshot: UseSnapshot
-  DEFAULT_EVENTS: ExtensionDefaultEvents
-}
-
-export type Extension = {
-  (params: ExtensionParams): DefaultHandlers
-  id: string
-  $: typeof EXTENSION_FUNCTION_IDENTIFIER
-}
-
-export type UseInstallerParams = {
-  reportSnapshot: ReportSnapshot
-  trigger: Trigger
-  useSnapshot: UseSnapshot
-  addBThread: AddBThread
-  ttlMs: number
-  maxKeys?: number
-}
-
-export type Installer = (extension: Extension) => DefaultHandlers
 
 /**
  * Factory function that creates and initializes a new behavioral program instance.
@@ -491,13 +281,11 @@ export type Installer = (extension: Extension) => DefaultHandlers
  * @see {@link UseFeedback} for event handling
  * @see {@link UseSnapshot} for state monitoring
  */
-export type Behavioral = <Details extends EventDetails = EventDetails>() => Readonly<{
-  addBThread: AddBThread
-  addBThreads: AddBThreads
+export type Behavioral = () => Readonly<{
+  addThread: AddThread
   trigger: Trigger
-  useFeedback: UseFeedback<Details>
+  addHandler: AddHandler
   useSnapshot: UseSnapshot
-  reportSnapshot: ReportSnapshot
 }>
 
 type ExploreStrategy = keyof typeof EXPLORE_STRATEGIES

@@ -2,6 +2,12 @@ import * as z from 'zod'
 
 import { SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
 
+/** @public */
+export const JsonObjectSchema = z.record(z.string(), z.json())
+
+/** @public */
+export type JsonObject = z.output<typeof JsonObjectSchema>
+
 /**
  * Schema for validating BPEvent objects.
  * Uses a JSON-Schema-exportable object shape for runtime validation.
@@ -10,8 +16,52 @@ import { SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
  */
 export const BPEventSchema = z.object({
   type: z.string(),
-  detail: z.unknown().optional(),
+  detail: JsonObjectSchema.optional(),
 })
+
+export type BPEvent = z.output<typeof BPEventSchema>
+
+export const DetailSchemaSchema = z.instanceof(z.ZodObject) as z.ZodType<
+  z.ZodObject<Record<string, z.ZodType<unknown>>>
+>
+
+export type DetailSchema = z.output<typeof DetailSchemaSchema>
+
+export const BPListenerSchema = z.object({
+  type: z.string(),
+  source: z.enum(['trigger', 'request']).optional(),
+  detailSchema: DetailSchemaSchema.optional(),
+  detailMatch: z.enum(['valid', 'invalid']).optional(),
+})
+
+export type BPListener = z.output<typeof BPListenerSchema>
+
+export const SpecListenerSchema = BPListenerSchema.omit({
+  detailSchema: true,
+}).extend({
+  detailSchema: JsonObjectSchema.optional(),
+})
+
+export type SpecListener = z.output<typeof SpecListenerSchema>
+
+export const SpecIdiomsSchema = z.object({
+  waitFor: z.array(SpecListenerSchema).min(1).optional(),
+  interrupt: z.array(SpecListenerSchema).min(1).optional(),
+  block: z.array(SpecListenerSchema).min(1).optional(),
+  request: BPEventSchema.optional(),
+})
+
+export type SpecIdioms = z.output<typeof SpecIdiomsSchema>
+
+export const SpecSchema = z.object({
+  label: z.string(),
+  thread: z.object({
+    once: z.literal(true).optional(),
+    syncPoints: z.array(SpecIdiomsSchema),
+  }),
+})
+
+export type Spec = z.output<typeof SpecSchema>
 
 /**
  * @internal
@@ -54,7 +104,7 @@ export const ThreadReferenceSchema = z.object({
 })
 
 /** @public */
-export type ThreadReference = z.infer<typeof ThreadReferenceSchema>
+export type ThreadReference = z.output<typeof ThreadReferenceSchema>
 
 /**
  * Schema for a single bid snapshot from the BP engine's event selection step.
@@ -78,7 +128,7 @@ export const SelectionBidSchema = z.object({
   /** The event type being requested or waited for. */
   type: z.string(),
   /** Optional event payload data. */
-  detail: z.unknown().optional(),
+  detail: JsonObjectSchema.optional(),
   /** Priority level — lower numbers indicate higher priority. */
   priority: z.number(),
   /** Thread reference that blocked this bid, if blocked. */
@@ -88,7 +138,7 @@ export const SelectionBidSchema = z.object({
 })
 
 /** @public */
-export type SelectionBid = z.infer<typeof SelectionBidSchema>
+export type SelectionBid = z.output<typeof SelectionBidSchema>
 
 /**
  * Schema for a snapshot of all bids considered during one event selection step.
@@ -107,7 +157,7 @@ export const SelectionSnapshotSchema = z.object({
 })
 
 /** @public */
-export type SelectionSnapshot = z.infer<typeof SelectionSnapshotSchema>
+export type SelectionSnapshot = z.output<typeof SelectionSnapshotSchema>
 
 /**
  * Schema for classifying why a bid appears in a deadlock snapshot.
@@ -117,7 +167,7 @@ export type SelectionSnapshot = z.infer<typeof SelectionSnapshotSchema>
 export const DeadlockReasonSchema = z.enum(['blocked', 'no_selectable_candidate'])
 
 /** @public */
-export type DeadlockReason = z.infer<typeof DeadlockReasonSchema>
+export type DeadlockReason = z.output<typeof DeadlockReasonSchema>
 
 /**
  * Schema for a bid entry in a deadlock snapshot.
@@ -133,7 +183,7 @@ export const DeadlockBidSchema = SelectionBidSchema.extend({
 })
 
 /** @public */
-export type DeadlockBid = z.infer<typeof DeadlockBidSchema>
+export type DeadlockBid = z.output<typeof DeadlockBidSchema>
 
 /**
  * Schema for top-level deadlock diagnostics aggregated across all bids.
@@ -149,7 +199,7 @@ export const DeadlockSummarySchema = z.object({
 })
 
 /** @public */
-export type DeadlockSummary = z.infer<typeof DeadlockSummarySchema>
+export type DeadlockSummary = z.output<typeof DeadlockSummarySchema>
 
 /**
  * Schema for a snapshot emitted when no unblocked candidate can be selected.
@@ -169,7 +219,7 @@ export const DeadlockSnapshotSchema = z.object({
 })
 
 /** @public */
-export type DeadlockSnapshot = z.infer<typeof DeadlockSnapshotSchema>
+export type DeadlockSnapshot = z.output<typeof DeadlockSnapshotSchema>
 
 /**
  * Schema for feedback handler errors published by the BP engine.
@@ -186,30 +236,12 @@ export type DeadlockSnapshot = z.infer<typeof DeadlockSnapshotSchema>
 export const FeedbackErrorSchema = z.object({
   kind: z.literal(SNAPSHOT_MESSAGE_KINDS.feedback_error),
   type: z.string(),
-  detail: z.unknown().optional(),
+  detail: JsonObjectSchema.optional(),
   error: z.string(),
 })
 
 /** @public */
-export type FeedbackError = z.infer<typeof FeedbackErrorSchema>
-
-/**
- * Schema for host/runtime module diagnostics published by the BP engine.
- *
- * @remarks
- * Emitted by host/runtime layers (for example, agent module installation paths)
- * through `reportSnapshot()`. This is intentionally separate from scheduler events.
- *
- * @public
- */
-export const ExtensionErrorSchema = z.object({
-  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.extension_error),
-  id: z.string().optional(),
-  error: z.string(),
-})
-
-/** @public */
-export type ExtensionError = z.infer<typeof ExtensionErrorSchema>
+export type FeedbackError = z.output<typeof FeedbackErrorSchema>
 
 /**
  * Discriminated union schema for all observable moments from the BP engine.
@@ -225,77 +257,8 @@ export type ExtensionError = z.infer<typeof ExtensionErrorSchema>
 export const SnapshotMessageSchema = z.discriminatedUnion('kind', [
   DeadlockSnapshotSchema,
   FeedbackErrorSchema,
-  ExtensionErrorSchema,
   SelectionSnapshotSchema,
 ])
 
 /** @public */
-export type SnapshotMessage = z.infer<typeof SnapshotMessageSchema>
-
-/**
- * Shared actor kinds for behavioral actor-kernel envelopes.
- *
- * @public
- */
-export const ActorKindSchema = z.enum([
-  'module',
-  'ui',
-  'inference',
-  'mcp',
-  'identity',
-  'stream',
-  'execution',
-  'projection',
-  'supervisor',
-])
-
-/** @public */
-export type ActorKind = z.infer<typeof ActorKindSchema>
-
-/**
- * Serializable reference to an actor participating in a cross-actor exchange.
- *
- * @public
- */
-export const ActorRefSchema = z.object({
-  id: z.string().min(1),
-  kind: ActorKindSchema,
-  moduleId: z.string().optional(),
-})
-
-/** @public */
-export type ActorRef = z.infer<typeof ActorRefSchema>
-
-/**
- * Optional envelope metadata for intent and routing classification.
- *
- * @public
- */
-export const ActorEnvelopeMetaSchema = z.object({
-  purpose: z.string().optional(),
-  scale: z.string().optional(),
-  boundary: z.string().optional(),
-})
-
-/** @public */
-export type ActorEnvelopeMeta = z.infer<typeof ActorEnvelopeMetaSchema>
-
-/**
- * Serializable event envelope observed at actor boundaries.
- *
- * @public
- */
-export const ActorEnvelopeSchema = z.object({
-  id: z.string().min(1),
-  type: z.string().min(1),
-  source: ActorRefSchema,
-  target: ActorRefSchema.optional(),
-  grantId: z.string().optional(),
-  correlationId: z.string().optional(),
-  causationId: z.string().optional(),
-  detail: z.record(z.string(), z.json()).optional(),
-  meta: ActorEnvelopeMetaSchema.optional(),
-})
-
-/** @public */
-export type ActorEnvelope = z.infer<typeof ActorEnvelopeSchema>
+export type SnapshotMessage = z.output<typeof SnapshotMessageSchema>

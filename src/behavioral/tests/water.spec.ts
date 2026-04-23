@@ -1,7 +1,6 @@
 import { expect, test } from 'bun:test'
-import { behavioral, type SnapshotMessage } from 'plaited/behavioral'
-import { bSync, bThread } from '../behavioral.shared.ts'
-import { onType } from './helpers.ts'
+import type { SnapshotMessage } from '../behavioral.schemas.ts'
+import { behavioral, onType, sync, thread } from './helpers.ts'
 
 /**
  * Test scenario: Demonstrates a basic behavioral program (`bProgram`).
@@ -23,10 +22,10 @@ test('Add hot water 3 times', () => {
   const actual: string[] = []
   const { addBThreads, trigger, useFeedback } = behavioral()
   addBThreads({
-    addHot: bThread([
-      bSync({ request: { type: 'hot' } }),
-      bSync({ request: { type: 'hot' } }),
-      bSync({ request: { type: 'hot' } }),
+    addHot: thread([
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
     ]),
   })
   useFeedback({
@@ -56,15 +55,15 @@ test('Add hot/cold water 3 times', () => {
   const actual: string[] = []
   const { addBThreads, trigger, useFeedback } = behavioral()
   addBThreads({
-    addHot: bThread([
-      bSync({ request: { type: 'hot' } }),
-      bSync({ request: { type: 'hot' } }),
-      bSync({ request: { type: 'hot' } }),
+    addHot: thread([
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
     ]),
-    addCold: bThread([
-      bSync({ request: { type: 'cold' } }),
-      bSync({ request: { type: 'cold' } }),
-      bSync({ request: { type: 'cold' } }),
+    addCold: thread([
+      sync({ request: { type: 'cold' } }),
+      sync({ request: { type: 'cold' } }),
+      sync({ request: { type: 'cold' } }),
     ]),
   })
   useFeedback({
@@ -89,20 +88,20 @@ test('interleave', () => {
   const actual: string[] = []
   const { addBThreads, trigger, useFeedback } = behavioral()
   addBThreads({
-    addHot: bThread([
-      bSync({ request: { type: 'hot' } }),
-      bSync({ request: { type: 'hot' } }),
-      bSync({ request: { type: 'hot' } }),
+    addHot: thread([
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
     ]),
-    addCold: bThread([
-      bSync({ request: { type: 'cold' } }),
-      bSync({ request: { type: 'cold' } }),
-      bSync({ request: { type: 'cold' } }),
+    addCold: thread([
+      sync({ request: { type: 'cold' } }),
+      sync({ request: { type: 'cold' } }),
+      sync({ request: { type: 'cold' } }),
     ]),
-    mixHotCold: bThread(
+    mixHotCold: thread(
       [
-        bSync({ waitFor: onType('hot'), block: onType('cold') }),
-        bSync({ waitFor: onType('cold'), block: onType('hot') }),
+        sync({ waitFor: onType('hot'), block: onType('cold') }),
+        sync({ waitFor: onType('cold'), block: onType('hot') }),
       ],
       true,
     ),
@@ -134,20 +133,20 @@ test('logging', () => {
     snapshots.push(snapshot)
   })
   addBThreads({
-    addHot: bThread([
-      bSync({ request: { type: 'hot' } }),
-      bSync({ request: { type: 'hot' } }),
-      bSync({ request: { type: 'hot' } }),
+    addHot: thread([
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
+      sync({ request: { type: 'hot' } }),
     ]),
-    addCold: bThread([
-      bSync({ request: { type: 'cold' } }),
-      bSync({ request: { type: 'cold' } }),
-      bSync({ request: { type: 'cold' } }),
+    addCold: thread([
+      sync({ request: { type: 'cold' } }),
+      sync({ request: { type: 'cold' } }),
+      sync({ request: { type: 'cold' } }),
     ]),
-    mixHotCold: bThread(
+    mixHotCold: thread(
       [
-        bSync({ waitFor: onType('hot'), block: onType('cold') }),
-        bSync({ waitFor: onType('cold'), block: onType('hot') }),
+        sync({ waitFor: onType('hot'), block: onType('cold') }),
+        sync({ waitFor: onType('cold'), block: onType('hot') }),
       ],
       true,
     ),

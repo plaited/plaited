@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { behavioral, type SnapshotMessage } from 'plaited/behavioral'
-import { bSync, bThread } from '../behavioral.shared.ts'
-import { onType, onTypeWhere } from './helpers.ts'
+import type { SnapshotMessage } from '../behavioral.schemas.ts'
+import { behavioral, onType, onTypeWhere, sync, thread } from './helpers.ts'
 
 describe('orchestrator routing', () => {
   test('routes tasks to project handlers', () => {
@@ -10,11 +9,8 @@ describe('orchestrator routing', () => {
     const { addBThreads, trigger, useFeedback } = behavioral()
 
     addBThreads({
-      oneAtATime: bThread(
-        [
-          bSync({ waitFor: onType('dispatch') }),
-          bSync({ waitFor: onType('project_result'), block: onType('dispatch') }),
-        ],
+      oneAtATime: thread(
+        [sync({ waitFor: onType('dispatch') }), sync({ waitFor: onType('project_result'), block: onType('dispatch') })],
         true,
       ),
     })
@@ -53,8 +49,8 @@ describe('snapshot observability', () => {
     })
 
     addBThreads({
-      safety: bThread([bSync({ block: onType('dangerous') })], true),
-      requester: bThread([bSync({ request: { type: 'dangerous' } })]),
+      safety: thread([sync({ block: onType('dangerous') })], true),
+      requester: thread([sync({ request: { type: 'dangerous' } })]),
     })
 
     trigger({ type: 'kickoff' })
@@ -70,9 +66,9 @@ describe('additive constitution rules', () => {
     const { addBThreads, trigger, useFeedback } = behavioral()
 
     addBThreads({
-      noEtcWrites: bThread(
+      noEtcWrites: thread(
         [
-          bSync({
+          sync({
             block: onTypeWhere({
               type: 'execute',
               predicate: (detail) => {
@@ -84,9 +80,9 @@ describe('additive constitution rules', () => {
         ],
         true,
       ),
-      noDeleteFile: bThread(
+      noDeleteFile: thread(
         [
-          bSync({
+          sync({
             block: onTypeWhere({
               type: 'execute',
               predicate: (detail) => (detail as { tool?: string } | undefined)?.tool === 'delete_file',
