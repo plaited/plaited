@@ -16,15 +16,15 @@ describe('orchestrator routing', () => {
     })
 
     useFeedback({
-      route(detail) {
+      route(detail: { project: string }) {
         log.push(`route:${detail.project}`)
         trigger({ type: 'dispatch', detail })
       },
-      dispatch(detail) {
+      dispatch(detail: { project: string }) {
         log.push(`dispatch:${detail.project}`)
         handlers.get(detail.project)?.()
       },
-      project_result(detail) {
+      project_result(detail: { project: string }) {
         log.push(`result:${detail.project}`)
       },
     })

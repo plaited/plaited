@@ -79,9 +79,10 @@ describe('counter completion pattern', () => {
 
     useFeedback({
       dispatch(detail) {
-        pendingCount = detail.count
-        log.push(`dispatch:${detail.count}`)
-        for (let i = 0; i < detail.count; i++) {
+        const count = detail.count as number
+        pendingCount = count
+        log.push(`dispatch:${count}`)
+        for (let i = 0; i < count; i++) {
           setTimeout(() => trigger({ type: 'task_done' }), 10 * (i + 1))
         }
       },

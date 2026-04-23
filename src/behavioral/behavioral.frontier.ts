@@ -6,7 +6,6 @@ import {
   FRONTIER_STATUS,
   VERIFICATION_STATUSES,
 } from './behavioral.constants.ts'
-import { advanceRunningToPending, computeFrontier, resumePendingThreadsForSelectedEvent } from './behavioral.shared.ts'
 import type {
   BThreads,
   CandidateBid,
@@ -21,6 +20,7 @@ import type {
   Sync,
   VerifyFrontiersResult,
 } from './behavioral.types.ts'
+import { advanceRunningToPending, computeFrontier, resumePendingThreadsForSelectedEvent } from './behavioral.utils.ts'
 import { deepEqual } from './deep-equal.ts'
 
 const serializeValue = (value: unknown, seen: Map<object, number>): string => {

@@ -1,8 +1,8 @@
 import * as z from 'zod'
-import type { BPListener, SnapshotMessage } from '../behavioral.schemas.ts'
-import { sync as baseSync, thread as baseThread } from '../behavioral.shared.ts'
+import type { BPListener, JsonObject, SnapshotMessage } from '../behavioral.schemas.ts'
 import { behavioral as createBehavioral } from '../behavioral.ts'
 import type { BThreads, Disconnect, Sync } from '../behavioral.types.ts'
+import { sync as baseSync, thread as baseThread } from '../behavioral.utils.ts'
 
 export const onType = (type: string): BPListener => ({
   type,
@@ -30,7 +30,11 @@ export const onTypeWhere = ({
   detailSchema: z.custom<unknown>(predicate) as unknown as z.ZodObject<Record<string, z.ZodType<unknown>>>,
 })
 
-type FeedbackHandlers = Record<string, (detail: never, disconnect: Disconnect) => void | Promise<void>>
+type FeedbackDetail = JsonObject
+type FeedbackHandler = {
+  bivarianceHack(detail: FeedbackDetail, disconnect: Disconnect): void | Promise<void>
+}['bivarianceHack']
+type FeedbackHandlers = Record<string, FeedbackHandler>
 
 export const sync: Sync = baseSync
 

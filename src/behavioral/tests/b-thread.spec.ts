@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import type { BPEvent } from '../behavioral.schemas.ts'
-import { thread as bThread, sync } from '../behavioral.shared.ts'
+import { thread as bThread, sync } from '../behavioral.utils.ts'
 import { onType } from './helpers.ts'
 
 test('bThread: executes rules sequentially', () => {

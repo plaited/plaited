@@ -7,12 +7,6 @@ import {
   TRIGGER_ID_PREFIX,
 } from './behavioral.constants.ts'
 import type { BPEvent, FeedbackError, SelectionBid, SnapshotMessage, ThreadReference } from './behavioral.schemas.ts'
-import {
-  advanceRunningToPending,
-  computeFrontier,
-  isListeningFor,
-  resumePendingThreadsForSelectedEvent,
-} from './behavioral.shared.ts'
 import type {
   AddHandler,
   AddThread,
@@ -24,6 +18,12 @@ import type {
   Trigger,
   UseSnapshot,
 } from './behavioral.types.ts'
+import {
+  advanceRunningToPending,
+  computeFrontier,
+  isListeningFor,
+  resumePendingThreadsForSelectedEvent,
+} from './behavioral.utils.ts'
 
 /**
  * @internal

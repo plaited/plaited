@@ -1,7 +1,7 @@
 import * as z from 'zod'
 import type { BPListener, Spec, SpecIdioms, SpecListener } from './behavioral.schemas.ts'
-import { sync, thread } from './behavioral.shared.ts'
 import type { Idioms, RulesFunction } from './behavioral.types.ts'
+import { sync, thread } from './behavioral.utils.ts'
 
 const specListenerToBPListener = ({ detailSchema, ...listener }: SpecListener): BPListener => ({
   ...listener,
