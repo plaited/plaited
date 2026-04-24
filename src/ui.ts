@@ -15,6 +15,7 @@
 
 export * from './ui/controller/controller.schemas.ts'
 export * from './ui/controller/controller.types.ts'
+export * from './ui/controller/use-mcp-sender.ts'
 export type * from './ui/css/css.types.ts'
 export * from './ui/css/host-styles.ts'
 export * from './ui/css/join-styles.ts'

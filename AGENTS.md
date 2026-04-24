@@ -214,6 +214,9 @@ Expand test coverage when the impact is broad, shared, or uncertain.
 **Private fields** — `#field` (ES2022) not `private field`.
 **JSON imports** — `import x from 'file.json' with { type: 'json' }`.
 **@ts-ignore needs description** — `// @ts-ignore - reason here`.
+**Behavioral handlers:** do not use local `try/catch` for validation or side-effect errors
+inside `addHandler`/feedback handlers unless explicitly converting a known domain failure into a
+normal result event. Let behavioral publish `feedback_error` snapshots for handler failures.
 **Mermaid diagrams only** — no ASCII box-drawing.
 **Skills are internal research/runtime surfaces** until the skill module owns
 their operator story. Do not assume a public `validate-skill` CLI exists.
