@@ -187,6 +187,26 @@ export const UiEventMessageSchema = z.object({
 /** @public */
 export type UiEventMessage = z.infer<typeof UiEventMessageSchema>
 
+const FormSubmitFieldValueSchema = z.union([z.string(), z.array(z.string())])
+
+/**
+ * Schema for form submissions emitted directly by controller islands.
+ *
+ * @public
+ */
+export const FormSubmitMessageSchema = z.object({
+  type: z.literal(CONTROLLER_TO_AGENT_EVENTS.form_submit),
+  detail: z.object({
+    id: z.string().nullable(),
+    action: z.string().nullable(),
+    method: z.string(),
+    data: z.record(z.string(), FormSubmitFieldValueSchema),
+  }),
+})
+
+/** @public */
+export type FormSubmitMessage = z.infer<typeof FormSubmitMessageSchema>
+
 /**
  * Schema for the serializable detail payload carried by controller `error` messages.
  *
@@ -219,7 +239,11 @@ export type ControllerErrorMessage = z.infer<typeof ControllerErrorMessageSchema
  *
  * @public
  */
-export const ClientMessageSchema = z.discriminatedUnion('type', [UiEventMessageSchema, ControllerErrorMessageSchema])
+export const ClientMessageSchema = z.discriminatedUnion('type', [
+  UiEventMessageSchema,
+  FormSubmitMessageSchema,
+  ControllerErrorMessageSchema,
+])
 
 /** @public */
 export type ClientMessage = z.infer<typeof ClientMessageSchema>

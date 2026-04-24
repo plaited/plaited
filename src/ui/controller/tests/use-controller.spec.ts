@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { CONNECT_PLAITED_ROUTE } from '../../render/template.constants.ts'
-import { bundleController } from '../bundle-controller.ts'
+import { bundleController, CONNECT_PLAITED_ROUTE } from './fixtures/bundle-controller.ts'
 
 describe('useController', () => {
   test('builds a compact gzipped controller route without inline source maps', async () => {

@@ -82,6 +82,12 @@ const findError = ({ after = 0, source }: { after?: number; source: string }) =>
     .find((error) => error.source === source)
 }
 
+const findFormSubmit = ({ after = 0, source }: { after?: number; source: string }) => {
+  return getFixture()
+    .formSubmissions.slice(after)
+    .find((submission) => submission.source === source)
+}
+
 /** Navigate to a test page and wait for WebSocket render. */
 const gotoTest = async (path: string, waitMs = 3000) => {
   const activeFixture = getFixture()
@@ -366,6 +372,32 @@ describe('controller: ui_event', () => {
     expect(attrs.id).toBe('test-btn')
     expect(attrs['p-trigger']).toBe('click:test_click')
   })
+})
+
+// ─── Form submit handler ─────────────────────────────────────────────────────
+
+describe('controller: form_submit', () => {
+  test('submitting a form emits a top-level form_submit client message', async () => {
+    const before = getFixture().formSubmissions.length
+    await gotoTest('/test/form-submit-test')
+
+    await cli(
+      'eval',
+      "() => { const form = document.getElementById('controller-form'); if (!(form instanceof HTMLFormElement)) return 'missing'; form.requestSubmit(); return 'submitted'; }",
+    )
+
+    const submission = await waitFor(() => findFormSubmit({ after: before, source: 'form-submit-test' }))
+    expect(submission.message.type).toBe('form_submit')
+    expect(submission.message.detail).toEqual({
+      id: 'controller-form',
+      action: `http://localhost:${getFixture().port}/submit-form`,
+      method: 'post',
+      data: {
+        name: 'Ada',
+        tags: ['ui', 'controller'],
+      },
+    })
+  }, 30000)
 })
 
 // ─── Retry behavior ───────────────────────────────────────────────────────────

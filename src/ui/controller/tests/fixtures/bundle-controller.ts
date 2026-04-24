@@ -1,8 +1,8 @@
-import { CONNECT_PLAITED_ROUTE } from '../render/template.constants.ts'
+export const CONNECT_PLAITED_ROUTE = '/.plaited/connect.js'
 
 export const bundleController = async () => {
   const entry = CONNECT_PLAITED_ROUTE.replace('.js', '.ts')
-  const controllerEntry = Bun.resolveSync('./use-controller.ts', import.meta.dir)
+  const controllerEntry = Bun.resolveSync('../../use-controller.ts', import.meta.dir)
   const { outputs, logs, success } = await Bun.build({
     entrypoints: [entry],
     files: {

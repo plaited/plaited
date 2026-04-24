@@ -10,6 +10,7 @@ import {
   ControllerErrorMessageSchema,
   ControllerModuleDefaultSchema,
   CustomElementTagSchema,
+  FormSubmitMessageSchema,
   ImportModuleSchema,
   RenderMessageSchema,
   ServerMessageEnvelopeSchema,
@@ -321,6 +322,23 @@ describe('ClientMessageSchema', () => {
     expect(ClientMessageSchema.parse(message)).toEqual(message)
   })
 
+  test('accepts controller form submit messages', () => {
+    const message = {
+      type: CONTROLLER_TO_AGENT_EVENTS.form_submit,
+      detail: {
+        id: 'sample-form',
+        action: '/submit',
+        method: 'post',
+        data: {
+          name: 'Ada',
+          tags: ['ui', 'controller'],
+        },
+      },
+    }
+    expect(FormSubmitMessageSchema.parse(message)).toEqual(message)
+    expect(ClientMessageSchema.parse(message)).toEqual(message)
+  })
+
   test('accepts controller error messages sent from browser controller', () => {
     const message = {
       type: CONTROLLER_TO_AGENT_EVENTS.error,
@@ -370,6 +388,19 @@ describe('ClientMessageSchema', () => {
       ClientMessageSchema.parse({
         type: CONTROLLER_TO_AGENT_EVENTS.error,
         detail: { message: 'x', context: ['not', 'an', 'object'] },
+      }),
+    ).toThrow()
+    expect(() =>
+      ClientMessageSchema.parse({
+        type: CONTROLLER_TO_AGENT_EVENTS.form_submit,
+        detail: {
+          id: 'sample-form',
+          action: '/submit',
+          method: 'post',
+          data: {
+            file: { name: 'avatar.png' },
+          },
+        },
       }),
     ).toThrow()
     expect(() =>

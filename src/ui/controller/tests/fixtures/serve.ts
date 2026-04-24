@@ -6,8 +6,7 @@
  */
 import { join } from 'node:path'
 import type { ServerWebSocket } from 'bun'
-import { CONNECT_PLAITED_ROUTE } from '../../../render/template.constants.ts'
-import { bundleController } from '../../bundle-controller.ts'
+import { bundleController, CONNECT_PLAITED_ROUTE } from './bundle-controller.ts'
 
 const FIXTURES_DIR = import.meta.dir
 const DIST_DIR = join(FIXTURES_DIR, 'dist')
@@ -88,6 +87,9 @@ const TEST_PAGE_CONTENT: Record<string, string> = {
   `,
   'action-test': `
     <div p-target="main"><p>waiting for action</p></div>
+  `,
+  'form-submit-test': `
+    <div p-target="main"><p>waiting for form submit</p></div>
   `,
   'retry-test': `
     <div p-target="main"><p>connecting</p></div>
@@ -299,6 +301,21 @@ const sendActionTestInitialRender = (ws: ServerWebSocket<{ source: string }>) =>
   )
 }
 
+const sendFormSubmitInitialRender = (ws: ServerWebSocket<{ source: string }>) => {
+  ws.send(
+    JSON.stringify({
+      type: 'render',
+      detail: {
+        target: 'main',
+        html: '<form id="controller-form" action="/submit-form" method="post"><input name="name" value="Ada"><input name="tags" value="ui"><input name="tags" value="controller"><button id="controller-form-submit" type="submit">Submit</button></form>',
+        stylesheets: [],
+        swap: 'innerHTML',
+        registry: [],
+      },
+    }),
+  )
+}
+
 const sendStylesTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
   const primary = '.dynamic-style-target{color:rgb(1, 2, 3);}'
   const secondary = '.dynamic-style-secondary{background-color:rgb(4, 5, 6);}'
@@ -356,6 +373,8 @@ export type FixtureServer = {
   lastUiEvent: { source: string; message: Record<string, unknown> } | undefined
   /** All `ui_event` messages received from controller islands. */
   uiEvents: { source: string; message: Record<string, unknown> }[]
+  /** Form submit messages received from controller islands. */
+  formSubmissions: { source: string; message: Record<string, unknown> }[]
   /** Controller runtime errors received from controller islands. */
   errors: { source: string; message: Record<string, unknown> }[]
 }
@@ -370,11 +389,13 @@ export const startServer = (port = 0): FixtureServer => {
   const state: {
     lastUiEvent: { source: string; message: Record<string, unknown> } | undefined
     uiEvents: { source: string; message: Record<string, unknown> }[]
+    formSubmissions: { source: string; message: Record<string, unknown> }[]
     errors: { source: string; message: Record<string, unknown> }[]
     retryTestConnections: number
   } = {
     lastUiEvent: undefined,
     uiEvents: [],
+    formSubmissions: [],
     errors: [],
     retryTestConnections: 0,
   }
@@ -449,6 +470,9 @@ export const startServer = (port = 0): FixtureServer => {
           case 'action-test':
             sendActionTestInitialRender(ws)
             break
+          case 'form-submit-test':
+            sendFormSubmitInitialRender(ws)
+            break
           case 'retry-test': {
             state.retryTestConnections++
             if (state.retryTestConnections === 1) {
@@ -506,6 +530,9 @@ export const startServer = (port = 0): FixtureServer => {
             )
           }
         }
+        if (data.type === 'form_submit') {
+          state.formSubmissions.push({ source: ws.data.source, message: data })
+        }
       },
       close(_ws) {
         // nothing on close
@@ -552,6 +579,9 @@ export const startServer = (port = 0): FixtureServer => {
     },
     get uiEvents() {
       return state.uiEvents
+    },
+    get formSubmissions() {
+      return state.formSubmissions
     },
     get errors() {
       return state.errors

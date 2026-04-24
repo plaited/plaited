@@ -1,4 +1,4 @@
-import { type BPEvent, type Disconnect, type JsonObject, JsonObjectSchema, type Trigger } from '../../behavioral.ts'
+import type { BPEvent, Disconnect, JsonObject, Trigger } from '../../behavioral.ts'
 import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../bridge-events.ts'
 import { DelegatedListener, delegates, isTypeOf } from '../../utils.ts'
 import { BOOLEAN_ATTRS, P_CONNECT, P_TARGET, P_TOPIC, P_TRIGGER } from '../render/template.constants.ts'
@@ -12,14 +12,15 @@ import {
 import {
   AttrsMessageSchema,
   type ClientMessage,
-  type ControllerErrorDetail,
   type ControllerErrorMessage,
   ControllerModuleDefaultSchema,
+  type FormSubmitMessage,
   ImportModuleSchema,
   RenderMessageSchema,
   ServerMessageEnvelopeSchema,
   type SwapMode,
 } from './controller.schemas.ts'
+import { normalizeControllerErrorDetail } from './controller-error-detail.ts'
 
 const getAttributes = (element: Element): Record<string, string> => {
   return Object.fromEntries(Array.from(element.attributes, (attr) => [attr.name, attr.value]))
@@ -60,96 +61,24 @@ const stringifyUnknown = (value: unknown): string => {
   }
 }
 
-const readJsonObject = (value: unknown): JsonObject | undefined => {
-  const parsed = JsonObjectSchema.safeParse(value)
-  return parsed.success ? parsed.data : undefined
+type FormSubmitFieldValue = FormSubmitMessage['detail']['data'][string]
+
+const normalizeFormFieldValue = (value: FormDataEntryValue): string => {
+  return value instanceof File ? value.name : value
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return isTypeOf<object>(value, 'object') && value !== null
-}
-
-export const normalizeControllerErrorDetail = ({
-  error,
-  kind,
-  context,
-}: {
-  error: unknown
-  kind?: string
-  context?: JsonObject
-}): ControllerErrorDetail => {
-  const errorRecord = isRecord(error) ? error : undefined
-  const message =
-    error instanceof Error
-      ? error.message
-      : errorRecord && isTypeOf<string>(errorRecord.message, 'string')
-        ? errorRecord.message
-        : stringifyUnknown(error)
-  const mergedContext: JsonObject = {
-    ...(errorRecord ? (readJsonObject(errorRecord.context) ?? {}) : {}),
-    ...(context ?? {}),
-  }
-  if (error instanceof Error && error.name !== 'Error' && !('errorName' in mergedContext)) {
-    mergedContext.errorName = error.name
-  }
-  const normalizedKind =
-    kind ??
-    (errorRecord && isTypeOf<string>(errorRecord.kind, 'string') && errorRecord.kind.length > 0
-      ? errorRecord.kind
-      : undefined)
-  return {
-    message,
-    kind: normalizedKind,
-    context: Object.keys(mergedContext).length > 0 ? mergedContext : undefined,
-  }
-}
-
-export const dispatchControllerError = ({
-  error,
-  kind,
-  context,
-  send,
-  fallbackSend,
-}: {
-  error: unknown
-  kind?: string
-  context?: JsonObject
-  send?: Trigger
-  fallbackSend: (message: ControllerErrorMessage) => void
-}): ControllerErrorMessage => {
-  const message: ControllerErrorMessage = {
-    type: CONTROLLER_TO_AGENT_EVENTS.error,
-    detail: normalizeControllerErrorDetail({ error, kind, context }),
-  }
-  if (!send) {
-    fallbackSend(message)
-    return message
-  }
-  try {
-    send(message)
-    return message
-  } catch (sendError) {
-    const reportingFailure = normalizeControllerErrorDetail({
-      error: sendError,
-      kind: 'injected_send_error',
-      context: {
-        originalKind: message.detail.kind ?? null,
-        originalMessage: message.detail.message,
-      },
-    })
-    const fallbackMessage: ControllerErrorMessage = {
-      ...message,
-      detail: {
-        ...message.detail,
-        context: {
-          ...(message.detail.context ?? {}),
-          reportingFailure,
-        },
-      },
+const buildFormSubmitData = (form: HTMLFormElement): Record<string, FormSubmitFieldValue> => {
+  const data: Record<string, FormSubmitFieldValue> = {}
+  for (const [key, value] of new FormData(form).entries()) {
+    const next = normalizeFormFieldValue(value)
+    const previous = data[key]
+    if (previous === undefined) {
+      data[key] = next
+      continue
     }
-    fallbackSend(fallbackMessage)
-    return fallbackMessage
+    data[key] = Array.isArray(previous) ? [...previous, next] : [previous, next]
   }
+  return data
 }
 
 export const useController = (send?: Trigger) => {
@@ -187,6 +116,20 @@ export const useController = (send?: Trigger) => {
             socketReadyState: target instanceof WebSocket ? target.readyState : null,
           },
         })
+      }
+    })
+    #formListener = new DelegatedListener((event: Event) => {
+      try {
+        const owner = event.composedPath().find((node): node is Controller => node instanceof Controller)
+        if (owner !== this) return
+
+        const form = event.target
+        if (!(form instanceof HTMLFormElement)) return
+
+        event.preventDefault()
+        this.#sendFormSubmit(form)
+      } catch (error) {
+        this.#reportError(error, { kind: 'form_submit_error' })
       }
     })
     #registry = new CustomElementRegistry()
@@ -238,16 +181,30 @@ export const useController = (send?: Trigger) => {
       this.#socket?.addEventListener('open', onOpen)
     }
     #reportError(error: unknown, metadata: ControllerErrorMetadata = {}) {
-      dispatchControllerError({
-        error,
-        kind: metadata.kind,
-        context: metadata.context,
-        send,
-        fallbackSend: (message) => this.#send(message),
-      })
+      const event: ControllerErrorMessage = {
+        type: CONTROLLER_TO_AGENT_EVENTS.error,
+        detail: normalizeControllerErrorDetail({
+          error,
+          kind: metadata.kind,
+          context: metadata.context,
+        }),
+      }
+      send ? send(event) : this.#send(event)
     }
     #trigger(message: BPEvent) {
       const event = { type: CONTROLLER_TO_AGENT_EVENTS.ui_event, detail: message }
+      send ? send(event) : this.#send(event)
+    }
+    #sendFormSubmit(form: HTMLFormElement) {
+      const event: FormSubmitMessage = {
+        type: CONTROLLER_TO_AGENT_EVENTS.form_submit,
+        detail: {
+          id: form.id || null,
+          action: form.action || null,
+          method: form.method || 'get',
+          data: buildFormSubmitData(form),
+        },
+      }
       send ? send(event) : this.#send(event)
     }
     async #importModule(path: string) {
@@ -416,9 +373,12 @@ export const useController = (send?: Trigger) => {
     connectedCallback() {
       this.#socketTopic = this.getAttribute(P_TOPIC)
       this.#address = this.getAttribute(P_CONNECT)
+      delegates.set(this, this.#socketListener)
+      this.addEventListener('submit', this.#formListener)
       this.#connect()
     }
     disconnectedCallback() {
+      this.removeEventListener('submit', this.#formListener)
       for (const cb of this.#disconnectSet) void cb()
       this.#disconnectSet.clear()
       this.#closeSocket(this.#socket)
