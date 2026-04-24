@@ -56,3 +56,13 @@ describe('AddRemoteMcpOutputSchema', () => {
     expect(parsed.operation).toBe('list-tools')
   })
 })
+
+describe('add-remote-mcp docs', () => {
+  test('scope protected servers to the protected skill', async () => {
+    const skill = await Bun.file(`${import.meta.dir}/../SKILL.md`).text()
+
+    expect(skill).toContain('add-protected-remote-mcp')
+    expect(skill).toContain('No secrets in repo')
+    expect(skill).toContain('public or simply-authenticated remote MCP servers')
+  })
+})

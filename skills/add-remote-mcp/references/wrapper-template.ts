@@ -6,7 +6,10 @@
  * 1. Set MCP_URL to the server's endpoint
  * 2. Set TOOL_NAME to the tool to invoke
  * 3. Adjust the input type if the tool takes more than `query`
- * 4. Set AUTH_HEADERS if the server requires authentication
+ * 4. Set AUTH_HEADERS if the server uses simple static headers or bearer-env auth
+ *
+ * For OAuth or rotated refresh-token flows, use skills/add-protected-remote-mcp instead of
+ * hand-building an auth provider in each generated wrapper.
  *
  * Usage: bun run search.ts '{"query": "your search query"}'
  */

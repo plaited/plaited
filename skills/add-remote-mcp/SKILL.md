@@ -8,7 +8,8 @@ allowed-tools: Bash Read Write
 
 # Add Remote MCP
 
-Generate skills from any remote MCP server using the framework's shared `plaited/mcp` library surface.
+Generate skills from public or simply-authenticated remote MCP servers using the framework's shared
+`plaited/mcp` library surface.
 
 Remote MCP URLs often start as discovery URLs that also accept Streamable HTTP MCP traffic.
 For example, `https://bun.com/docs/mcp` is a valid remote MCP URL for discovery, tool listing,
@@ -21,6 +22,11 @@ and direct tool calls.
 - Generating typed wrapper scripts for MCP tools
 - Evaluating MCP prompts for adaptation into skill instructions
 - Downloading or scripting access to MCP resources
+- Working with public endpoints or simple header-auth servers
+
+Use `add-protected-remote-mcp` instead when the server needs OAuth, rotated refresh material, or a
+generic tool-execution wrapper that should resolve secrets from env or Varlock without checked-in
+tokens.
 
 ## URL shapes
 
@@ -138,19 +144,20 @@ const tools = await mcpListTools('https://bun.com/docs/mcp')
 Pass custom headers via options.
 See [references/wrapper-template.ts](references/wrapper-template.ts).
 
-### Tier 3: OAuth 2.1
-
-OAuth requires a programmatic `OAuthClientProvider`.
-See [references/oauth-provider-template.ts](references/oauth-provider-template.ts).
-
 ### Which tier to use
 
 | Scenario | Tier | Example |
 |----------|------|---------|
 | Public doc search | No auth | modelcontextprotocol.io, agentskills.io |
 | SaaS API with API key | Bearer token | You.com, OpenAI |
-| Enterprise SSO / IdP | OAuth 2.1 | Internal services |
-| Agent-to-agent (Modnet) | OAuth client credentials | Node MCP servers |
+| Enterprise SSO / IdP | Use `add-protected-remote-mcp` | Internal services |
+| Agent-to-agent (Modnet) | Use `add-protected-remote-mcp` | Node MCP servers |
+
+### No secrets in repo
+
+- Do not commit JWTs, access tokens, refresh tokens, or client secrets into tracked files.
+- Checked-in config for simple auth may include header names and env var names, but the secret
+  values themselves must come from env or Varlock-injected env vars.
 
 ## References
 
@@ -158,7 +165,6 @@ See [references/oauth-provider-template.ts](references/oauth-provider-template.t
 - **`references/session-template.ts`** — Reusable remote session pattern
 - **`references/prompt-template.ts`** — Prompt retrieval example
 - **`references/resource-template.ts`** — Resource read example
-- **`references/oauth-provider-template.ts`** — OAuth provider seam example
 - **`references/wrapper-template.ts`** — Template for MCP wrapper scripts that import `plaited/mcp`
 
 ## Dependencies
