@@ -6,11 +6,13 @@ import { CONTROLLER_TO_AGENT_EVENTS, SWAP_MODES } from '../controller.constants.
 import {
   AttrsMessageSchema,
   ClientMessageSchema,
+  ControllerErrorDetailSchema,
   ControllerErrorMessageSchema,
   ControllerModuleDefaultSchema,
   CustomElementTagSchema,
   ImportModuleSchema,
   RenderMessageSchema,
+  ServerMessageEnvelopeSchema,
   SwapModeSchema,
   UiEventMessageSchema,
 } from '../controller.schemas.ts'
@@ -232,6 +234,49 @@ describe('ImportModuleSchema', () => {
   })
 })
 
+describe('ServerMessageEnvelopeSchema', () => {
+  test('accepts import-style envelopes with string detail', () => {
+    const message = {
+      type: AGENT_TO_CONTROLLER_EVENTS.import,
+      detail: '/dist/modules/controller-module.js',
+    }
+    expect(ServerMessageEnvelopeSchema.parse(message)).toEqual(message)
+  })
+
+  test('accepts object detail envelopes', () => {
+    const message = {
+      type: AGENT_TO_CONTROLLER_EVENTS.render,
+      detail: {
+        target: 'main',
+        html: '<div/>',
+      },
+    }
+    expect(ServerMessageEnvelopeSchema.parse(message)).toEqual(message)
+  })
+
+  test('accepts missing detail', () => {
+    const message = {
+      type: AGENT_TO_CONTROLLER_EVENTS.disconnect,
+    }
+    expect(ServerMessageEnvelopeSchema.parse(message)).toEqual(message)
+  })
+
+  test('rejects non-object and non-string detail values', () => {
+    expect(() =>
+      ServerMessageEnvelopeSchema.parse({
+        type: AGENT_TO_CONTROLLER_EVENTS.disconnect,
+        detail: 123,
+      }),
+    ).toThrow()
+    expect(() =>
+      ServerMessageEnvelopeSchema.parse({
+        type: AGENT_TO_CONTROLLER_EVENTS.disconnect,
+        detail: true,
+      }),
+    ).toThrow()
+  })
+})
+
 describe('ControllerModuleDefaultSchema', () => {
   test('accepts imported module default functions', () => {
     const setup = () => {}
@@ -256,7 +301,7 @@ describe('ClientMessageSchema', () => {
       detail: {
         type: 'test_click',
         detail: {
-          [Symbol.toStringTag]: 'not serialized',
+          source: 'button',
         },
       },
     }
@@ -269,7 +314,7 @@ describe('ClientMessageSchema', () => {
       type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
       detail: {
         type: CONTROLLER_TO_AGENT_EVENTS.import_invoked,
-        detail: '/dist/modules/controller-module.js',
+        detail: { path: '/dist/modules/controller-module.js' },
       },
     }
     expect(UiEventMessageSchema.parse(message)).toEqual(message)
@@ -279,10 +324,33 @@ describe('ClientMessageSchema', () => {
   test('accepts controller error messages sent from browser controller', () => {
     const message = {
       type: CONTROLLER_TO_AGENT_EVENTS.error,
-      detail: 'failed to import module',
+      detail: {
+        message: 'failed to import module',
+      },
     }
     expect(ControllerErrorMessageSchema.parse(message)).toEqual(message)
     expect(ClientMessageSchema.parse(message)).toEqual(message)
+  })
+
+  test('accepts structured controller error details with kind and context', () => {
+    const detail = {
+      message: 'invalid stylesheet',
+      kind: 'stylesheet_error',
+      context: {
+        stylesheetLength: 44,
+        stylesheetPreview: '.test { color: red; }',
+      },
+    }
+    expect(ControllerErrorDetailSchema.parse(detail)).toEqual(detail)
+    expect(
+      ControllerErrorMessageSchema.parse({
+        type: CONTROLLER_TO_AGENT_EVENTS.error,
+        detail,
+      }),
+    ).toEqual({
+      type: CONTROLLER_TO_AGENT_EVENTS.error,
+      detail,
+    })
   })
 
   test('rejects invalid client message envelopes', () => {
@@ -295,13 +363,28 @@ describe('ClientMessageSchema', () => {
     expect(() =>
       ClientMessageSchema.parse({
         type: CONTROLLER_TO_AGENT_EVENTS.error,
-        detail: { message: 'not a string' },
+        detail: { message: 42 },
+      }),
+    ).toThrow()
+    expect(() =>
+      ClientMessageSchema.parse({
+        type: CONTROLLER_TO_AGENT_EVENTS.error,
+        detail: { message: 'x', context: ['not', 'an', 'object'] },
       }),
     ).toThrow()
     expect(() =>
       ClientMessageSchema.parse({
         type: CONTROLLER_TO_AGENT_EVENTS.import_invoked,
         detail: '/dist/modules/controller-module.js',
+      }),
+    ).toThrow()
+    expect(() =>
+      ClientMessageSchema.parse({
+        type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
+        detail: {
+          type: CONTROLLER_TO_AGENT_EVENTS.import_invoked,
+          detail: '/dist/modules/controller-module.js',
+        },
       }),
     ).toThrow()
   })

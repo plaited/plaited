@@ -1,5 +1,5 @@
 import type { CSSProperties } from '../css/css.types.ts'
-import { P_TARGET, P_TOPIC, P_TRIGGER, type TEMPLATE_OBJECT_IDENTIFIER } from './template.constants.ts'
+import { P_CONNECT, P_TARGET, P_TOPIC, P_TRIGGER, type TEMPLATE_OBJECT_IDENTIFIER } from './template.constants.ts'
 
 type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''
@@ -1135,6 +1135,7 @@ type DetailedWebViewHTMLAttributes = DetailedHTMLAttributes & {
 /** Attributes reserved for Plaited controller island templates. */
 export type DetailedCustomElementHTMLAttributes = DetailedHTMLAttributes & {
   [P_TOPIC]?: string
+  [P_CONNECT]?: string
 }
 
 /**

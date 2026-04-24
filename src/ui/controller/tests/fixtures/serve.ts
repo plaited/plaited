@@ -7,11 +7,11 @@
 import { join } from 'node:path'
 import type { ServerWebSocket } from 'bun'
 import { CONNECT_PLAITED_ROUTE } from '../../../render/template.constants.ts'
-import { useController } from '../../use-controller.ts'
+import { bundleController } from '../../bundle-controller.ts'
 
 const FIXTURES_DIR = import.meta.dir
 const DIST_DIR = join(FIXTURES_DIR, 'dist')
-const controllerRoutes = await useController()
+const controllerRoutes = await bundleController()
 
 const connectScript = (tags: string[]) => `${CONNECT_PLAITED_ROUTE}?registry=${encodeURIComponent(tags.join(','))}`
 

@@ -37,6 +37,8 @@ export const P_TRIGGER = 'p-trigger'
  */
 export const P_TOPIC = 'p-topic'
 
+export const P_CONNECT = 'p-connect'
+
 /**
  * Matches site-root JavaScript module paths accepted by bootstrap script tags
  * and controller module imports.

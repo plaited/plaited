@@ -1,6 +1,6 @@
 import * as z from 'zod'
 
-import { BPEventSchema } from '../../behavioral.ts'
+import { BPEventSchema, JsonObjectSchema } from '../../behavioral.ts'
 import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../bridge-events.ts'
 import { isTypeOf } from '../../utils.ts'
 import {
@@ -101,6 +101,52 @@ export const ImportModuleSchema = z.object({
 export type ImportModuleMessage = z.infer<typeof ImportModuleSchema>
 
 /**
+ * Schema for controller disconnect messages sent from server.
+ *
+ * @public
+ */
+export const DisconnectMessageSchema = z.object({
+  type: z.literal(AGENT_TO_CONTROLLER_EVENTS.disconnect),
+  detail: JsonObjectSchema.optional(),
+})
+
+/** @public */
+export type DisconnectMessage = z.infer<typeof DisconnectMessageSchema>
+
+export const ServerMessageDetailSchema = z.union([ImportModuleSchema.shape.detail, JsonObjectSchema])
+
+/** @public */
+export type ServerMessageDetail = z.infer<typeof ServerMessageDetailSchema>
+
+/**
+ * Schema for raw server message envelopes before event-specific parsing.
+ *
+ * @public
+ */
+export const ServerMessageEnvelopeSchema = z.object({
+  type: z.string(),
+  detail: ServerMessageDetailSchema.optional(),
+})
+
+/** @public */
+export type ServerMessageEnvelope = z.infer<typeof ServerMessageEnvelopeSchema>
+
+/**
+ * Discriminated union schema for all server-to-controller messages.
+ *
+ * @public
+ */
+export const ServerMessageSchema = z.discriminatedUnion('type', [
+  ImportModuleSchema,
+  RenderMessageSchema,
+  AttrsMessageSchema,
+  DisconnectMessageSchema,
+])
+
+/** @public */
+export type ServerMessage = z.infer<typeof ServerMessageSchema>
+
+/**
  * Schema for imported controller module default exports.
  *
  * @remarks
@@ -121,11 +167,39 @@ export const ControllerModuleDefaultSchema = z.custom<ControllerModuleDefault>(
  */
 export const UiEventMessageSchema = z.object({
   type: z.literal(CONTROLLER_TO_AGENT_EVENTS.ui_event),
-  detail: BPEventSchema,
+  detail: BPEventSchema.superRefine((event, ctx) => {
+    if (event.type !== CONTROLLER_TO_AGENT_EVENTS.import_invoked) return
+    const result = z
+      .object({
+        path: ImportModuleSchema.shape.detail,
+      })
+      .safeParse(event.detail)
+    if (result.success) return
+    for (const issue of result.error.issues) {
+      ctx.addIssue({
+        ...issue,
+        path: ['detail', ...issue.path],
+      })
+    }
+  }),
 })
 
 /** @public */
 export type UiEventMessage = z.infer<typeof UiEventMessageSchema>
+
+/**
+ * Schema for the serializable detail payload carried by controller `error` messages.
+ *
+ * @public
+ */
+export const ControllerErrorDetailSchema = z.object({
+  message: z.string(),
+  kind: z.string().optional(),
+  context: JsonObjectSchema.optional(),
+})
+
+/** @public */
+export type ControllerErrorDetail = z.infer<typeof ControllerErrorDetailSchema>
 
 /**
  * Schema for controller runtime errors sent from a controller island to the server.
@@ -134,7 +208,7 @@ export type UiEventMessage = z.infer<typeof UiEventMessageSchema>
  */
 export const ControllerErrorMessageSchema = z.object({
   type: z.literal(CONTROLLER_TO_AGENT_EVENTS.error),
-  detail: z.string(),
+  detail: ControllerErrorDetailSchema,
 })
 
 /** @public */

@@ -1,11 +1,10 @@
 import { describe, expect, test } from 'bun:test'
-
 import { CONNECT_PLAITED_ROUTE } from '../../render/template.constants.ts'
-import { useController } from '../use-controller.ts'
+import { bundleController } from '../bundle-controller.ts'
 
 describe('useController', () => {
   test('builds a compact gzipped controller route without inline source maps', async () => {
-    const routes = await useController()
+    const routes = await bundleController()
     const response = routes[CONNECT_PLAITED_ROUTE]
 
     expect(response).toBeInstanceOf(Response)

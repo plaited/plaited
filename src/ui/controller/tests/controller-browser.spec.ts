@@ -284,7 +284,14 @@ describe('controller: document stylesheets', () => {
     await gotoTest('/test/style-error-test')
 
     const error = await waitFor(() => findError({ after: before, source: 'style-error-test' }))
-    expect(String(error.message.detail)).toContain('fixture stylesheet rejection')
+    const detail = error.message.detail as Record<string, unknown>
+    expect(String(detail.message)).toContain('fixture stylesheet rejection')
+    expect(detail.kind).toBe('stylesheet_error')
+    expect(detail.context).toEqual(
+      expect.objectContaining({
+        stylesheetLength: expect.any(Number),
+      }),
+    )
 
     const output = await cli(
       'eval',
@@ -394,7 +401,7 @@ describe('controller: import', () => {
 
     const event = await waitFor(() => findUiEvent({ after: before, source: 'module-fixture', type: 'import_invoked' }))
     const detail = event.message.detail as Record<string, unknown>
-    expect(detail.detail).toBe('/dist/modules/controller-module.js')
+    expect(detail.detail).toEqual({ path: '/dist/modules/controller-module.js' })
   }, 30000)
 
   test('p-trigger actions are sent as BP events with an attribute detail map', async () => {
@@ -444,7 +451,14 @@ describe('controller: import', () => {
     await gotoTest('/test/bad-import-test')
 
     const error = await waitFor(() => findError({ after: before, source: 'bad-import-test' }))
-    expect(String(error.message.detail)).toContain('Expected imported module default export to be a function')
+    const detail = error.message.detail as Record<string, unknown>
+    expect(String(detail.message)).toContain('Expected imported module default export to be a function')
+    expect(detail.kind).toBe('module_import_error')
+    expect(detail.context).toEqual(
+      expect.objectContaining({
+        path: '/dist/modules/invalid-controller-module.js',
+      }),
+    )
   }, 30000)
 
   test('unsupported server event types report a controller error', async () => {
@@ -452,6 +466,13 @@ describe('controller: import', () => {
     await gotoTest('/test/unsupported-event-test')
 
     const error = await waitFor(() => findError({ after: before, source: 'unsupported-event-test' }))
-    expect(String(error.message.detail)).toContain('Unsupported controller event type "unsupported_controller_event"')
+    const detail = error.message.detail as Record<string, unknown>
+    expect(String(detail.message)).toContain('Unsupported controller event type "unsupported_controller_event"')
+    expect(detail.kind).toBe('server_message_error')
+    expect(detail.context).toEqual(
+      expect.objectContaining({
+        rawMessage: expect.stringContaining('unsupported_controller_event'),
+      }),
+    )
   }, 30000)
 })
