@@ -1,38 +1,18 @@
 /**
- * Zod schemas and types for the trial runner.
+ * Snapshot-native Zod schemas and types for local Plaited eval.
  *
  * @remarks
  * Schema-first approach — Zod schemas are the single source of truth,
  * TypeScript types derived via `z.infer<>`.
  *
- * `TrajectoryStepSchema` is defined locally for eval pipeline compatibility.
+ * Local eval is intentionally grounded in behavioral snapshots and adjacent
+ * runtime events/results from a concrete run.
  *
  * @packageDocumentation
  */
 
 import * as z from 'zod'
-
-/**
- * Minimal trajectory step schema used by eval tooling.
- *
- * @remarks
- * The eval pipeline accepts adapter-defined trajectory rows and only depends on
- * a small common surface (`type`, optional `status`, optional `timestamp`).
- * Additional provider-specific fields are preserved via passthrough.
- *
- * @public
- */
-export const TrajectoryStepSchema = z
-  .object({
-    type: z.string().describe('Trajectory event type label emitted by the adapter.'),
-    status: z.string().optional().describe('Optional status value for the trajectory step.'),
-    timestamp: z.number().optional().describe('Optional event timestamp (epoch milliseconds).'),
-  })
-  .passthrough()
-  .describe('Minimal trajectory event row used by eval output and grading.')
-
-/** Trajectory step type */
-export type TrajectoryStep = z.infer<typeof TrajectoryStepSchema>
+import { BPEventSchema, SnapshotMessageSchema } from '../../behavioral/behavioral.schemas.ts'
 
 // ============================================================================
 // Prompt Case
@@ -100,68 +80,116 @@ export const TimingSchema = z
 export type Timing = z.infer<typeof TimingSchema>
 
 // ============================================================================
-// Capture Evidence
+// Snapshot-Native Trace
 // ============================================================================
 
 /**
- * Lightweight capture snippet for per-trial provenance.
- *
- * @remarks
- * Keeps JSONL output inspectable without embedding full provider-native logs.
+ * Runtime event captured adjacent to behavioral snapshots.
  *
  * @public
  */
-export const CaptureSnippetSchema = z
-  .object({
-    kind: z
-      .enum(['message', 'thought', 'tool_call', 'event', 'stderr', 'stdout', 'usage'])
-      .describe('Snippet class for quick provenance inspection.'),
-    text: z.string().describe('Short snippet text captured from adapter/provider output.'),
-  })
-  .describe('Compact capture snippet retained for trial provenance.')
+export const TraceEventSchema = BPEventSchema.extend({
+  source: z.string().optional().describe('Optional runtime/source provenance label.'),
+  timestamp: z.number().optional().describe('Optional event timestamp (epoch milliseconds).'),
+}).describe('Runtime event row captured during the concrete run.')
 
-/** Capture snippet type */
-export type CaptureSnippet = z.infer<typeof CaptureSnippetSchema>
+/** Trace event type */
+export type TraceEvent = z.infer<typeof TraceEventSchema>
 
 /**
- * Generic adapter-reported evidence about what was captured during a run.
- *
- * @remarks
- * This is intentionally model-agnostic. Adapters can summarize provider-native
- * streams here without promoting provider-specific event formats into `src/`.
+ * Runtime outputs/results captured during the concrete run.
  *
  * @public
  */
-export const CaptureEvidenceSchema = z
+export const RuntimeOutputSchema = z
   .object({
-    /** Adapter or capture source identifier */
-    source: z.string().describe('Adapter or capture source identifier.'),
-    /** High-level capture format */
-    format: z
-      .enum(['response-only', 'chat-completion', 'jsonl-event-stream', 'mixed'])
-      .describe('High-level capture format used by the adapter.'),
-    /** Count of provider-native events seen during the run */
-    eventCount: z.number().int().min(0).optional().describe('Count of provider-native events seen during execution.'),
-    /** Count of captured assistant/user-facing messages */
-    messageCount: z.number().int().min(0).optional().describe('Count of assistant/user-facing messages captured.'),
-    /** Count of captured reasoning/thought segments */
-    thoughtCount: z.number().int().min(0).optional().describe('Count of reasoning/thought segments captured.'),
-    /** Count of captured tool calls or tool-like events */
-    toolCallCount: z.number().int().min(0).optional().describe('Count of tool calls or tool-like events captured.'),
-    /** Provider-native item/event labels observed during capture */
-    itemTypes: z.array(z.string()).optional().describe('Observed provider-native item or event type labels.'),
-    /** Short evidence snippets for inspection/debugging */
-    snippets: z
-      .array(CaptureSnippetSchema)
-      .optional()
-      .describe('Short snippets retained for debugging and provenance.'),
-    /** Additional generic capture metadata */
-    metadata: z.record(z.string(), z.unknown()).optional().describe('Additional adapter-defined capture metadata.'),
+    kind: z.string().describe('Runtime output/result channel label.'),
+    status: z.enum(['ok', 'error']).optional().describe('Optional output status classification.'),
+    type: z.string().optional().describe('Optional event or runtime output type label.'),
+    detail: z.record(z.string(), z.unknown()).optional().describe('Optional structured runtime payload.'),
+    error: z.string().optional().describe('Optional error text associated with this output.'),
+    timestamp: z.number().optional().describe('Optional output timestamp (epoch milliseconds).'),
   })
-  .describe('Model-agnostic capture summary produced by an adapter run.')
+  .describe('Runtime output/result row adjacent to behavioral snapshots.')
 
-/** Capture evidence type */
-export type CaptureEvidence = z.infer<typeof CaptureEvidenceSchema>
+/** Runtime output type */
+export type RuntimeOutput = z.infer<typeof RuntimeOutputSchema>
+
+/**
+ * Snapshot-native local trace for one concrete run.
+ *
+ * @remarks
+ * This is the primary local process truth for eval grading/analysis.
+ *
+ * @public
+ */
+export const PlaitedTraceSchema = z
+  .object({
+    snapshots: z.array(SnapshotMessageSchema).optional().describe('Behavioral snapshot stream from the concrete run.'),
+    selectedEvents: z
+      .array(TraceEventSchema)
+      .optional()
+      .describe('Selected events observed or reconstructed during execution.'),
+    emittedEvents: z.array(TraceEventSchema).optional().describe('Adjacent emitted runtime events, if available.'),
+    runtimeOutputs: z.array(RuntimeOutputSchema).optional().describe('Adjacent runtime outputs/results/errors.'),
+    metadata: z.record(z.string(), z.unknown()).optional().describe('Additional adapter-defined trace metadata.'),
+  })
+  .describe('Snapshot-native process trace captured for one local eval run.')
+
+/** Snapshot-native trace type */
+export type PlaitedTrace = z.infer<typeof PlaitedTraceSchema>
+
+/**
+ * Process trace coverage classification.
+ *
+ * @public
+ */
+export const ProcessTraceCoverageSchema = z
+  .enum(['none', 'snapshots-only', 'events-only', 'snapshots-and-events'])
+  .describe('Coverage level of runtime process trace evidence.')
+
+/** Process trace coverage type */
+export type ProcessTraceCoverage = z.infer<typeof ProcessTraceCoverageSchema>
+
+/**
+ * Snapshot-native process summary metrics for one trial.
+ *
+ * @remarks
+ * Intended for JSONL inspectability and grader consumption without requiring
+ * every grader to re-scan full trace payloads.
+ *
+ * @public
+ */
+export const TrialProcessSummarySchema = z
+  .object({
+    coverage: ProcessTraceCoverageSchema.describe('Coverage level for this trial trace.'),
+    snapshotCount: z.number().int().min(0).describe('Total snapshot messages observed.'),
+    selectionCount: z.number().int().min(0).describe('Selection snapshot count.'),
+    selectedEventCount: z.number().int().min(0).describe('Selected event count from snapshots/events.'),
+    emittedEventCount: z.number().int().min(0).describe('Emitted event count when available.'),
+    deadlockCount: z.number().int().min(0).describe('Deadlock snapshot count.'),
+    feedbackErrorCount: z.number().int().min(0).describe('Feedback error snapshot count.'),
+    runtimeErrorCount: z.number().int().min(0).describe('Runtime error count including runner/runtime errors.'),
+    runtimeOutputCount: z.number().int().min(0).describe('Runtime outputs/results row count.'),
+    runtimeOutputErrorCount: z.number().int().min(0).describe('Runtime output rows classified as errors.'),
+    blockedBidCount: z.number().int().min(0).describe('Count of bids with blocker attribution.'),
+    interruptedBidCount: z.number().int().min(0).describe('Count of bids with interrupter attribution.'),
+    repeatedSelectionCount: z.number().int().min(0).describe('Consecutive same-type selection repeats (loop signal).'),
+    maxConsecutiveSelectionTypeCount: z
+      .number()
+      .int()
+      .min(0)
+      .describe('Maximum consecutive selections of the same event type.'),
+    runnerErrorCount: z.number().int().min(0).describe('Runner-level execution error count.'),
+    runnerTimeoutCount: z.number().int().min(0).describe('Runner timeout count.'),
+    deadlockDetected: z.boolean().describe('True when any deadlock snapshot is present.'),
+    feedbackErrorDetected: z.boolean().describe('True when any feedback error snapshot is present.'),
+    runtimeErrorDetected: z.boolean().describe('True when runtime/runner errors are detected.'),
+  })
+  .describe('Snapshot-native process metrics summary for one trial.')
+
+/** Trial process summary type */
+export type TrialProcessSummary = z.infer<typeof TrialProcessSummarySchema>
 
 // ============================================================================
 // Adapter
@@ -195,10 +223,8 @@ export const AdapterResultSchema = z
   .object({
     /** Final agent response text */
     output: z.string().describe('Final assistant output string for the trial.'),
-    /** Optional structured trajectory */
-    trajectory: z.array(TrajectoryStepSchema).optional().describe('Optional trajectory rows emitted by the adapter.'),
-    /** Optional model-agnostic capture evidence */
-    capture: CaptureEvidenceSchema.optional().describe('Optional adapter capture summary.'),
+    /** Optional snapshot-native trace */
+    trace: PlaitedTraceSchema.optional().describe('Optional snapshot-native trace emitted by the adapter/runtime.'),
     /** Optional timing from the adapter */
     timing: TimingSchema.optional().describe('Optional adapter-reported timing/token telemetry.'),
     /** Process exit code (null if signaled) */
@@ -238,10 +264,10 @@ export type Adapter = (input: AdapterInput) => Promise<AdapterResult>
  * All dimensions are optional — graders report only what they measure.
  *
  * - `outcome`: Did the agent produce the correct result? (0–1)
- * - `process`: Did the agent follow sound reasoning according to
- *   trajectory/capture evidence from this eval lane? (0–1)
+ * - `process`: Did the agent follow sound reasoning? BP snapshots
+ *   provide ground truth for structural process quality. (0–1)
  * - `efficiency`: Resource usage relative to baseline — token count,
- *   tool call count, wall time. (0–1, higher = more efficient)
+ *   runtime output volume, wall time. (0–1, higher = more efficient)
  *
  * @public
  */
@@ -322,7 +348,8 @@ export type Grader = (params: {
   input: string | string[]
   output: string
   hint?: string
-  trajectory?: z.infer<typeof TrajectoryStepSchema>[]
+  trace?: PlaitedTrace
+  process?: TrialProcessSummary
   metadata?: Record<string, unknown>
   cwd?: string
 }) => Promise<GraderResult>
@@ -342,10 +369,10 @@ export const TrialEntrySchema = z
     trialNum: z.number().describe('Trial index within prompt case (1-indexed).'),
     /** Agent output for this trial */
     output: z.string().describe('Final assistant output text for this trial.'),
-    /** Full trajectory for this trial */
-    trajectory: z.array(TrajectoryStepSchema).optional().describe('Optional trajectory rows captured for this trial.'),
-    /** Adapter-reported capture evidence for this trial */
-    capture: CaptureEvidenceSchema.optional().describe('Optional model-agnostic capture evidence for this trial.'),
+    /** Snapshot-native local trace for this trial */
+    trace: PlaitedTraceSchema.optional().describe('Optional snapshot-native trace captured for this trial.'),
+    /** Snapshot-native process summary for this trial */
+    process: TrialProcessSummarySchema.optional().describe('Optional process metrics derived from the trial trace.'),
     /** Runner-measured wall-clock duration in ms */
     duration: z.number().describe('Runner-measured wall-clock duration in milliseconds.'),
     /** Adapter-reported timing (token counts, adapter-measured duration) */
@@ -413,19 +440,3 @@ export const TrialResultSchema = z
 
 /** Trial result type */
 export type TrialResult = z.infer<typeof TrialResultSchema>
-
-// ============================================================================
-// Trajectory Richness
-// ============================================================================
-
-/**
- * Trajectory richness level.
- *
- * @public
- */
-export const TrajectoryRichnessSchema = z
-  .enum(['full', 'minimal', 'messages-only'])
-  .describe('Trajectory capture level requested from adapters during eval runs.')
-
-/** Trajectory richness type */
-export type TrajectoryRichness = z.infer<typeof TrajectoryRichnessSchema>

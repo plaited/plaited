@@ -38,12 +38,8 @@ type FeedbackHandlers = Record<string, FeedbackHandler>
 
 export const sync: Sync = baseSync
 
-/**
- * Test compatibility wrapper preserving legacy `thread(rules, repeat?)` semantics.
- * Legacy tests use omitted 2nd arg as "run once", and `true` as "repeat forever".
- */
-export const thread = (rules: ReturnType<Sync>[], repeat?: true) =>
-  repeat ? baseThread(rules) : baseThread(rules, true)
+/** Test thread helper aligned with runtime semantics: omitted `once` repeats; `true` runs once. */
+export const thread = (rules: ReturnType<Sync>[], once?: true) => baseThread(rules, once)
 
 export const behavioral = () => {
   const runtime = createBehavioral()

@@ -22,11 +22,10 @@ test('Add hot water 3 times', () => {
   const actual: string[] = []
   const { addBThreads, trigger, useFeedback } = behavioral()
   addBThreads({
-    addHot: thread([
-      sync({ request: { type: 'hot' } }),
-      sync({ request: { type: 'hot' } }),
-      sync({ request: { type: 'hot' } }),
-    ]),
+    addHot: thread(
+      [sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } })],
+      true,
+    ),
   })
   useFeedback({
     hot() {
@@ -55,16 +54,14 @@ test('Add hot/cold water 3 times', () => {
   const actual: string[] = []
   const { addBThreads, trigger, useFeedback } = behavioral()
   addBThreads({
-    addHot: thread([
-      sync({ request: { type: 'hot' } }),
-      sync({ request: { type: 'hot' } }),
-      sync({ request: { type: 'hot' } }),
-    ]),
-    addCold: thread([
-      sync({ request: { type: 'cold' } }),
-      sync({ request: { type: 'cold' } }),
-      sync({ request: { type: 'cold' } }),
-    ]),
+    addHot: thread(
+      [sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } })],
+      true,
+    ),
+    addCold: thread(
+      [sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } })],
+      true,
+    ),
   })
   useFeedback({
     hot() {
@@ -88,23 +85,18 @@ test('interleave', () => {
   const actual: string[] = []
   const { addBThreads, trigger, useFeedback } = behavioral()
   addBThreads({
-    addHot: thread([
-      sync({ request: { type: 'hot' } }),
-      sync({ request: { type: 'hot' } }),
-      sync({ request: { type: 'hot' } }),
-    ]),
-    addCold: thread([
-      sync({ request: { type: 'cold' } }),
-      sync({ request: { type: 'cold' } }),
-      sync({ request: { type: 'cold' } }),
-    ]),
-    mixHotCold: thread(
-      [
-        sync({ waitFor: onType('hot'), block: onType('cold') }),
-        sync({ waitFor: onType('cold'), block: onType('hot') }),
-      ],
+    addHot: thread(
+      [sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } })],
       true,
     ),
+    addCold: thread(
+      [sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } })],
+      true,
+    ),
+    mixHotCold: thread([
+      sync({ waitFor: onType('hot'), block: onType('cold') }),
+      sync({ waitFor: onType('cold'), block: onType('hot') }),
+    ]),
   })
   useFeedback({
     hot() {
@@ -133,23 +125,18 @@ test('logging', () => {
     snapshots.push(snapshot)
   })
   addBThreads({
-    addHot: thread([
-      sync({ request: { type: 'hot' } }),
-      sync({ request: { type: 'hot' } }),
-      sync({ request: { type: 'hot' } }),
-    ]),
-    addCold: thread([
-      sync({ request: { type: 'cold' } }),
-      sync({ request: { type: 'cold' } }),
-      sync({ request: { type: 'cold' } }),
-    ]),
-    mixHotCold: thread(
-      [
-        sync({ waitFor: onType('hot'), block: onType('cold') }),
-        sync({ waitFor: onType('cold'), block: onType('hot') }),
-      ],
+    addHot: thread(
+      [sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } })],
       true,
     ),
+    addCold: thread(
+      [sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } })],
+      true,
+    ),
+    mixHotCold: thread([
+      sync({ waitFor: onType('hot'), block: onType('cold') }),
+      sync({ waitFor: onType('cold'), block: onType('hot') }),
+    ]),
   })
   trigger({ type: 'start' })
   const selectionSnapshots = snapshots.filter((snapshot) => snapshot.kind === 'selection')

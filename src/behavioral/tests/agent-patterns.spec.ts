@@ -9,7 +9,7 @@ describe('doneGuard pattern', () => {
     const { addBThreads, trigger, useFeedback } = behavioral()
 
     addBThreads({
-      doneGuard: thread([sync({ waitFor: onType('done') }), sync({ block: [onType('work'), onType('other')] })], true),
+      doneGuard: thread([sync({ waitFor: onType('done') }), sync({ block: [onType('work'), onType('other')] })]),
     })
 
     useFeedback({
@@ -40,20 +40,17 @@ describe('shared state guard pattern', () => {
     const { addBThreads, trigger, useFeedback } = behavioral()
 
     addBThreads({
-      guard: thread(
-        [
-          sync({
-            block: onTypeWhere({
-              type: 'execute',
-              predicate: (detail) => {
-                const parsed = detail as { id?: string } | undefined
-                return Boolean(parsed?.id && blockedIds.has(parsed.id))
-              },
-            }),
+      guard: thread([
+        sync({
+          block: onTypeWhere({
+            type: 'execute',
+            predicate: (detail) => {
+              const parsed = detail as { id?: string } | undefined
+              return Boolean(parsed?.id && blockedIds.has(parsed.id))
+            },
           }),
-        ],
-        true,
-      ),
+        }),
+      ]),
     })
 
     useFeedback({

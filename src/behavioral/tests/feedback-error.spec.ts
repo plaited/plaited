@@ -16,7 +16,7 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
       snapshots.push(snapshot)
     })
     addBThreads({
-      requestAction: thread([sync({ request: { type: 'doWork' } })]),
+      requestAction: thread([sync({ request: { type: 'doWork' } })], true),
     })
     useFeedback({
       doWork() {
@@ -44,7 +44,7 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
       snapshots.push(snapshot)
     })
     addBThreads({
-      requestAction: thread([sync({ request: { type: 'process', detail: { id: 42 } } })]),
+      requestAction: thread([sync({ request: { type: 'process', detail: { id: 42 } } })], true),
     })
     useFeedback({
       process() {
@@ -72,7 +72,7 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
       snapshots.push(snapshot)
     })
     addBThreads({
-      requestAction: thread([sync({ request: { type: 'fail' } })]),
+      requestAction: thread([sync({ request: { type: 'fail' } })], true),
     })
     useFeedback({
       fail() {
@@ -93,7 +93,7 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
       snapshots.push(snapshot)
     })
     addBThreads({
-      requestAction: thread([sync({ request: { type: 'boom' } })]),
+      requestAction: thread([sync({ request: { type: 'boom' } })], true),
     })
     useFeedback({
       boom() {
@@ -118,7 +118,7 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
       snapshots.push(snapshot)
     })
     addBThreads({
-      requestAction: thread([sync({ request: { type: 'ok' } })]),
+      requestAction: thread([sync({ request: { type: 'ok' } })], true),
     })
     useFeedback({
       ok() {

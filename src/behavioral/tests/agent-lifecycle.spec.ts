@@ -12,11 +12,17 @@ describe('per-task lifecycle', () => {
       task(detail) {
         log.push(`task:${detail.prompt}`)
         addBThreads({
-          maxIterations: thread([
-            sync({ waitFor: onType('tool_result'), interrupt: [onType('message')] }),
-            sync({ waitFor: onType('tool_result'), interrupt: [onType('message')] }),
-            sync({ request: { type: 'message', detail: { content: 'Max reached' } }, interrupt: [onType('message')] }),
-          ]),
+          maxIterations: thread(
+            [
+              sync({ waitFor: onType('tool_result'), interrupt: [onType('message')] }),
+              sync({ waitFor: onType('tool_result'), interrupt: [onType('message')] }),
+              sync({
+                request: { type: 'message', detail: { content: 'Max reached' } },
+                interrupt: [onType('message')],
+              }),
+            ],
+            true,
+          ),
         })
       },
       tool_result() {
@@ -43,12 +49,15 @@ describe('per-task lifecycle', () => {
       task() {
         log.push('task')
         addBThreads({
-          maxIterations: thread([
-            sync({ waitFor: onType('tool_result'), interrupt: [onType('message')] }),
-            sync({ waitFor: onType('tool_result'), interrupt: [onType('message')] }),
-            sync({ waitFor: onType('tool_result'), interrupt: [onType('message')] }),
-            sync({ request: { type: 'message', detail: { content: 'Max reached' } } }),
-          ]),
+          maxIterations: thread(
+            [
+              sync({ waitFor: onType('tool_result'), interrupt: [onType('message')] }),
+              sync({ waitFor: onType('tool_result'), interrupt: [onType('message')] }),
+              sync({ waitFor: onType('tool_result'), interrupt: [onType('message')] }),
+              sync({ request: { type: 'message', detail: { content: 'Max reached' } } }),
+            ],
+            true,
+          ),
         })
       },
       tool_result() {
@@ -75,21 +84,18 @@ describe('task gate', () => {
     const { addBThreads, trigger, useFeedback } = behavioral()
 
     addBThreads({
-      taskGate: thread(
-        [
-          sync({
-            waitFor: onType('task'),
-            block: [
-              onTypeWhere({ type: 'model_response', predicate: () => taskEvents.has('model_response') }),
-              onTypeWhere({ type: 'execute', predicate: () => taskEvents.has('execute') }),
-              onTypeWhere({ type: 'tool_result', predicate: () => taskEvents.has('tool_result') }),
-              onTypeWhere({ type: 'context_ready', predicate: () => taskEvents.has('context_ready') }),
-            ],
-          }),
-          sync({ waitFor: onType('message') }),
-        ],
-        true,
-      ),
+      taskGate: thread([
+        sync({
+          waitFor: onType('task'),
+          block: [
+            onTypeWhere({ type: 'model_response', predicate: () => taskEvents.has('model_response') }),
+            onTypeWhere({ type: 'execute', predicate: () => taskEvents.has('execute') }),
+            onTypeWhere({ type: 'tool_result', predicate: () => taskEvents.has('tool_result') }),
+            onTypeWhere({ type: 'context_ready', predicate: () => taskEvents.has('context_ready') }),
+          ],
+        }),
+        sync({ waitFor: onType('message') }),
+      ]),
     })
 
     useFeedback({
@@ -125,10 +131,10 @@ describe('task gate', () => {
     const { addBThreads, trigger, useFeedback } = behavioral()
 
     addBThreads({
-      taskGate: thread(
-        [sync({ waitFor: onType('task'), block: onType('tool_result') }), sync({ waitFor: onType('message') })],
-        true,
-      ),
+      taskGate: thread([
+        sync({ waitFor: onType('task'), block: onType('tool_result') }),
+        sync({ waitFor: onType('message') }),
+      ]),
     })
 
     useFeedback({

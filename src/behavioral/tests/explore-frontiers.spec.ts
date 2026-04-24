@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { exploreFrontiers } from '../behavioral.frontier.ts'
+import { exploreFrontiers } from '../../cli/behavioral-frontier/behavioral-frontier.ts'
 import { sync, thread } from './helpers.ts'
 
 const onType = (type: string) => ({
@@ -7,9 +7,9 @@ const onType = (type: string) => ({
 })
 
 const createDeadlockReachableThreads = () => ({
-  chooseA: thread([sync({ request: { type: 'A' } })]),
-  chooseB: thread([sync({ request: { type: 'B' } })]),
-  deadlockAfterA: thread([sync({ waitFor: onType('A') }), sync({ block: onType('B') })]),
+  chooseA: thread([sync({ request: { type: 'A' } })], true),
+  chooseB: thread([sync({ request: { type: 'B' } })], true),
+  deadlockAfterA: thread([sync({ waitFor: onType('A') }), sync({ block: onType('B') })], true),
 })
 
 describe('exploreFrontiers', () => {
@@ -52,8 +52,8 @@ describe('exploreFrontiers', () => {
   test('branches one successor per enabled event', () => {
     const result = exploreFrontiers({
       threads: {
-        chooseA: thread([sync({ request: { type: 'A' } })]),
-        chooseB: thread([sync({ request: { type: 'B' } })]),
+        chooseA: thread([sync({ request: { type: 'A' } })], true),
+        chooseB: thread([sync({ request: { type: 'B' } })], true),
       },
       strategy: 'bfs',
       maxDepth: 1,
@@ -93,7 +93,7 @@ describe('exploreFrontiers', () => {
   test('maxDepth does not mark truncated for naturally terminal deadlock exploration', () => {
     const result = exploreFrontiers({
       threads: {
-        blockedA: thread([sync({ request: { type: 'A' }, block: onType('A') })]),
+        blockedA: thread([sync({ request: { type: 'A' }, block: onType('A') })], true),
       },
       strategy: 'bfs',
       maxDepth: 0,
@@ -148,7 +148,7 @@ describe('exploreFrontiers', () => {
   test('idle branches terminate without findings', () => {
     const result = exploreFrontiers({
       threads: {
-        watcher: thread([sync({ waitFor: onType('ping') })]),
+        watcher: thread([sync({ waitFor: onType('ping') })], true),
       },
       strategy: 'dfs',
       includeFrontierSummaries: true,
@@ -176,8 +176,11 @@ describe('exploreFrontiers', () => {
       strategy: 'bfs',
       maxDepth: 1,
       threads: {
-        first: thread([sync({ request: { type: 'same', detail: detailA as unknown as Record<string, never> } })]),
-        second: thread([sync({ request: { type: 'same', detail: detailB as unknown as Record<string, never> } })]),
+        first: thread([sync({ request: { type: 'same', detail: detailA as unknown as Record<string, never> } })], true),
+        second: thread(
+          [sync({ request: { type: 'same', detail: detailB as unknown as Record<string, never> } })],
+          true,
+        ),
       },
     })
 

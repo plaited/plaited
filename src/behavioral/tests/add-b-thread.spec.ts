@@ -10,19 +10,16 @@ describe('addBThreads', () => {
 
     addBThreads({
       addHotOnce: sync({ request: { type: 'hot_1' } }),
-      mixHotCold: thread(
-        [
-          sync({
-            waitFor: [onType('hot_1'), onType('hot')],
-            block: onType('cold'),
-          }),
-          sync({
-            waitFor: onType('cold'),
-            block: [onType('hot_1'), onType('hot')],
-          }),
-        ],
-        true,
-      ),
+      mixHotCold: thread([
+        sync({
+          waitFor: [onType('hot_1'), onType('hot')],
+          block: onType('cold'),
+        }),
+        sync({
+          waitFor: onType('cold'),
+          block: [onType('hot_1'), onType('hot')],
+        }),
+      ]),
     })
 
     useFeedback({
@@ -30,8 +27,8 @@ describe('addBThreads', () => {
         actual.push('hot')
         trigger({ type: 'cold' })
         addBThreads({
-          addMoreHot: thread([sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } })]),
-          addMoreCold: thread([sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } })]),
+          addMoreHot: thread([sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } })], true),
+          addMoreCold: thread([sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } })], true),
         })
       },
       cold() {
@@ -59,8 +56,8 @@ describe('addBThreads', () => {
     })
 
     addBThreads({
-      workerA: thread([sync({ waitFor: onType('start') }), sync({ request: { type: 'done_a' } })]),
-      workerB: thread([sync({ waitFor: onType('start') }), sync({ request: { type: 'done_b' } })]),
+      workerA: thread([sync({ waitFor: onType('start') }), sync({ request: { type: 'done_a' } })], true),
+      workerB: thread([sync({ waitFor: onType('start') }), sync({ request: { type: 'done_b' } })], true),
     })
 
     useFeedback({
@@ -95,9 +92,9 @@ describe('addBThreads', () => {
     })
 
     addBThreads({
-      guard: thread([sync({ block: onType('dangerous') })], true),
-      watchdog: thread([sync({ interrupt: onType('dangerous') })], true),
-      requester: thread([sync({ request: { type: 'dangerous' } })]),
+      guard: thread([sync({ block: onType('dangerous') })]),
+      watchdog: thread([sync({ interrupt: onType('dangerous') })]),
+      requester: thread([sync({ request: { type: 'dangerous' } })], true),
     })
 
     trigger({ type: 'start' })

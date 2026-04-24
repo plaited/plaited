@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import * as z from 'zod'
-import { replayToFrontier } from '../behavioral.frontier.ts'
+import { replayToFrontier } from '../../cli/behavioral-frontier/behavioral-frontier.ts'
 import { sync, thread } from './helpers.ts'
 
 const onType = (type: string) => ({
@@ -11,8 +11,8 @@ describe('replayToFrontier', () => {
   test('empty history reconstructs the initial frontier', () => {
     const { frontier, pending } = replayToFrontier({
       threads: {
-        producer: thread([sync({ request: { type: 'task' } })]),
-        consumer: thread([sync({ waitFor: onType('task') }), sync({ request: { type: 'ack' } })]),
+        producer: thread([sync({ request: { type: 'task' } })], true),
+        consumer: thread([sync({ waitFor: onType('task') }), sync({ request: { type: 'ack' } })], true),
       },
       history: [],
     })
@@ -25,9 +25,12 @@ describe('replayToFrontier', () => {
   test('replaying one selected event advances affected threads and reconstructs the next frontier', () => {
     const { frontier, pending } = replayToFrontier({
       threads: {
-        producer: thread([sync({ request: { type: 'task' } })]),
-        consumer: thread([sync({ waitFor: onType('task') }), sync({ request: { type: 'ack' } })]),
-        interrupted: thread([sync({ interrupt: onType('task') }), sync({ request: { type: 'should_not_happen' } })]),
+        producer: thread([sync({ request: { type: 'task' } })], true),
+        consumer: thread([sync({ waitFor: onType('task') }), sync({ request: { type: 'ack' } })], true),
+        interrupted: thread(
+          [sync({ interrupt: onType('task') }), sync({ request: { type: 'should_not_happen' } })],
+          true,
+        ),
       },
       history: [{ type: 'task', source: 'request' }],
     })
@@ -41,8 +44,8 @@ describe('replayToFrontier', () => {
   test('replayed deadlock state is classified as deadlock', () => {
     const { frontier } = replayToFrontier({
       threads: {
-        blocker: thread([sync({ block: onType('dangerous') })]),
-        producer: thread([sync({ request: { type: 'dangerous' } })]),
+        blocker: thread([sync({ block: onType('dangerous') })], true),
+        producer: thread([sync({ request: { type: 'dangerous' } })], true),
       },
       history: [],
     })
@@ -55,7 +58,7 @@ describe('replayToFrontier', () => {
   test('replayed ready state is classified as ready', () => {
     const { frontier } = replayToFrontier({
       threads: {
-        producer: thread([sync({ request: { type: 'ping' } })]),
+        producer: thread([sync({ request: { type: 'ping' } })], true),
       },
       history: [],
     })
@@ -68,7 +71,7 @@ describe('replayToFrontier', () => {
   test('replayed idle state is classified as idle', () => {
     const { frontier } = replayToFrontier({
       threads: {
-        watcher: thread([sync({ waitFor: onType('ping') })]),
+        watcher: thread([sync({ waitFor: onType('ping') })], true),
       },
       history: [],
     })
@@ -80,16 +83,19 @@ describe('replayToFrontier', () => {
 
   test('replay uses event source provenance for match listeners', () => {
     const threads = {
-      consumer: thread([
-        sync({
-          waitFor: {
-            type: 'task',
-            source: 'trigger',
-            detailSchema: z.object({ id: z.string() }),
-          },
-        }),
-        sync({ request: { type: 'ack' } }),
-      ]),
+      consumer: thread(
+        [
+          sync({
+            waitFor: {
+              type: 'task',
+              source: 'trigger',
+              detailSchema: z.object({ id: z.string() }),
+            },
+          }),
+          sync({ request: { type: 'ack' } }),
+        ],
+        true,
+      ),
     }
 
     const triggerSourceResult = replayToFrontier({
@@ -110,17 +116,20 @@ describe('replayToFrontier', () => {
 
   test('replay uses request source provenance for match listeners', () => {
     const threads = {
-      producer: thread([sync({ request: { type: 'task', detail: { id: 'job-1' } } })]),
-      consumer: thread([
-        sync({
-          waitFor: {
-            type: 'task',
-            source: 'request',
-            detailSchema: z.object({ id: z.string() }),
-          },
-        }),
-        sync({ request: { type: 'ack' } }),
-      ]),
+      producer: thread([sync({ request: { type: 'task', detail: { id: 'job-1' } } })], true),
+      consumer: thread(
+        [
+          sync({
+            waitFor: {
+              type: 'task',
+              source: 'request',
+              detailSchema: z.object({ id: z.string() }),
+            },
+          }),
+          sync({ request: { type: 'ack' } }),
+        ],
+        true,
+      ),
     }
 
     const requestSourceResult = replayToFrontier({
@@ -143,10 +152,10 @@ describe('replayToFrontier', () => {
 
     const { frontier } = replayToFrontier({
       threads: {
-        producer: thread([
-          sync({ request: { type: 'task', detail: { a: 1, b: 2 } } }),
-          sync({ request: { type: 'after_task' } }),
-        ]),
+        producer: thread(
+          [sync({ request: { type: 'task', detail: { a: 1, b: 2 } } }), sync({ request: { type: 'after_task' } })],
+          true,
+        ),
       },
       history: [{ type: 'task', source: 'request', detail: replayDetail }],
     })
@@ -159,7 +168,7 @@ describe('replayToFrontier', () => {
     expect(() =>
       replayToFrontier({
         threads: {
-          producer: thread([sync({ request: { type: 'task' } })]),
+          producer: thread([sync({ request: { type: 'task' } })], true),
         },
         history: [{ type: 'missing_task', source: 'request' }],
       }),

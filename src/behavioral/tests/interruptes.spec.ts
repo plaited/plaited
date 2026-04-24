@@ -11,12 +11,12 @@ describe('interrupt', () => {
    * Defines a b-thread 'addHot' that waits for an 'add' event.
    * If the 'add' event occurs, it proceeds to request a 'hot' event.
    * However, this thread can be interrupted by a 'terminate' event while waiting for 'add'.
-   * The `true` argument makes the thread repeat its behavior.
+   * Omitted `once` makes the thread repeat its behavior.
    */
-  const addHot = thread(
-    [sync({ waitFor: onType('add'), interrupt: [onType('terminate')] }), sync({ request: { type: 'hot' } })],
-    true,
-  )
+  const addHot = thread([
+    sync({ waitFor: onType('add'), interrupt: [onType('terminate')] }),
+    sync({ request: { type: 'hot' } }),
+  ])
 
   /**
    * Test case: Ensures the 'addHot' thread functions correctly without interruption.

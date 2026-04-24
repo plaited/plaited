@@ -21,7 +21,7 @@ describe('useSnapshot', () => {
     })
 
     addBThreads({
-      req: thread([sync({ request: { type: 'ping' } })]),
+      req: thread([sync({ request: { type: 'ping' } })], true),
     })
 
     // Both listeners receive the first selection snapshot
@@ -37,7 +37,7 @@ describe('useSnapshot', () => {
 
     // Set up a new thread and trigger again
     addBThreads({
-      req2: thread([sync({ request: { type: 'pong' } })]),
+      req2: thread([sync({ request: { type: 'pong' } })], true),
     })
     trigger({ type: 'go' })
 
@@ -60,7 +60,7 @@ describe('useSnapshot', () => {
     })
 
     addBThreads({
-      req: thread([sync({ request: { type: 'ping' } })]),
+      req: thread([sync({ request: { type: 'ping' } })], true),
     })
     trigger({ type: 'start' })
 
@@ -79,7 +79,7 @@ describe('useSnapshot', () => {
     })
 
     addBThreads({
-      req2: thread([sync({ request: { type: 'pong' } })]),
+      req2: thread([sync({ request: { type: 'pong' } })], true),
     })
     trigger({ type: 'go' })
 

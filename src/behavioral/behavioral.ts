@@ -13,6 +13,7 @@ import type {
   Behavioral,
   CandidateBid,
   PendingBid,
+  ReportError,
   RunningBid,
   Sync,
   Trigger,
@@ -408,6 +409,10 @@ export const behavioral: Behavioral = () => {
    */
   const useSnapshot: UseSnapshot = (listener) => snapshotPublisher.subscribe(listener)
 
+  const reportError: ReportError = (error) => {
+    snapshotPublisher({ kind: SNAPSHOT_MESSAGE_KINDS.runtime_error, error })
+  }
+
   /**
    * @internal
    * Return the frozen public API object.
@@ -425,5 +430,7 @@ export const behavioral: Behavioral = () => {
     addHandler,
     /** Hook to subscribe to internal state snapshots for monitoring/debugging. */
     useSnapshot,
+
+    reportError,
   })
 }

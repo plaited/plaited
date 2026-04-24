@@ -9,10 +9,10 @@ describe('orchestrator routing', () => {
     const { addBThreads, trigger, useFeedback } = behavioral()
 
     addBThreads({
-      oneAtATime: thread(
-        [sync({ waitFor: onType('dispatch') }), sync({ waitFor: onType('project_result'), block: onType('dispatch') })],
-        true,
-      ),
+      oneAtATime: thread([
+        sync({ waitFor: onType('dispatch') }),
+        sync({ waitFor: onType('project_result'), block: onType('dispatch') }),
+      ]),
     })
 
     useFeedback({
@@ -49,8 +49,8 @@ describe('snapshot observability', () => {
     })
 
     addBThreads({
-      safety: thread([sync({ block: onType('dangerous') })], true),
-      requester: thread([sync({ request: { type: 'dangerous' } })]),
+      safety: thread([sync({ block: onType('dangerous') })]),
+      requester: thread([sync({ request: { type: 'dangerous' } })], true),
     })
 
     trigger({ type: 'kickoff' })
@@ -66,31 +66,25 @@ describe('additive constitution rules', () => {
     const { addBThreads, trigger, useFeedback } = behavioral()
 
     addBThreads({
-      noEtcWrites: thread(
-        [
-          sync({
-            block: onTypeWhere({
-              type: 'execute',
-              predicate: (detail) => {
-                const parsed = detail as { tool?: string; path?: string } | undefined
-                return parsed?.tool === 'write_file' && Boolean(parsed.path?.startsWith('/etc/'))
-              },
-            }),
+      noEtcWrites: thread([
+        sync({
+          block: onTypeWhere({
+            type: 'execute',
+            predicate: (detail) => {
+              const parsed = detail as { tool?: string; path?: string } | undefined
+              return parsed?.tool === 'write_file' && Boolean(parsed.path?.startsWith('/etc/'))
+            },
           }),
-        ],
-        true,
-      ),
-      noDeleteFile: thread(
-        [
-          sync({
-            block: onTypeWhere({
-              type: 'execute',
-              predicate: (detail) => (detail as { tool?: string } | undefined)?.tool === 'delete_file',
-            }),
+        }),
+      ]),
+      noDeleteFile: thread([
+        sync({
+          block: onTypeWhere({
+            type: 'execute',
+            predicate: (detail) => (detail as { tool?: string } | undefined)?.tool === 'delete_file',
           }),
-        ],
-        true,
-      ),
+        }),
+      ]),
     })
 
     useFeedback({

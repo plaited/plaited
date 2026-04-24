@@ -243,6 +243,14 @@ export const FeedbackErrorSchema = z.object({
 /** @public */
 export type FeedbackError = z.output<typeof FeedbackErrorSchema>
 
+export const RuntimeErrorSchema = z.object({
+  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.runtime_error),
+  error: z.string(),
+})
+
+/** @public */
+export type RuntimeError = z.infer<typeof RuntimeErrorSchema>
+
 /**
  * Discriminated union schema for all observable moments from the BP engine.
  * Consumers narrow by the `kind` field.
@@ -255,6 +263,7 @@ export type FeedbackError = z.output<typeof FeedbackErrorSchema>
  * @public
  */
 export const SnapshotMessageSchema = z.discriminatedUnion('kind', [
+  RuntimeErrorSchema,
   DeadlockSnapshotSchema,
   FeedbackErrorSchema,
   SelectionSnapshotSchema,

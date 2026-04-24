@@ -75,12 +75,12 @@ test('taking a square', () => {
 /**
  * A b-thread that enforces strict turn-taking between players 'X' and 'O'.
  * It waits for 'X', then blocks 'X' while waiting for 'O', and repeats.
- * The `true` argument makes the thread loop indefinitely.
+ * Omitted `once` makes the thread loop indefinitely.
  */
-const enforceTurns = thread(
-  [sync({ waitFor: onType('X'), block: onType('O') }), sync({ waitFor: onType('O'), block: onType('X') })],
-  true,
-)
+const enforceTurns = thread([
+  sync({ waitFor: onType('X'), block: onType('O') }),
+  sync({ waitFor: onType('O'), block: onType('X') }),
+])
 
 /**
  * Test case: Verifies the `enforceTurns` b-thread correctly manages player turns.
@@ -124,12 +124,15 @@ test('take turns', () => {
  */
 const squaresTaken: Record<string, ReturnType<Sync>> = {}
 for (const square of squares) {
-  squaresTaken[`(${square}) taken`] = thread([
-    // Wait for an event (X or O) targeting this specific square.
-    sync({ waitFor: [onMove('X', square), onMove('O', square)] }),
-    // Once taken, block any future event targeting this square.
-    sync({ block: [onMove('X', square), onMove('O', square)] }),
-  ])
+  squaresTaken[`(${square}) taken`] = thread(
+    [
+      // Wait for an event (X or O) targeting this specific square.
+      sync({ waitFor: [onMove('X', square), onMove('O', square)] }),
+      // Once taken, block any future event targeting this square.
+      sync({ block: [onMove('X', square), onMove('O', square)] }),
+    ],
+    true,
+  )
 }
 
 /**
@@ -188,24 +191,27 @@ type Winner = { player: 'X' | 'O'; squares: number[] }
  */
 const detectWins = (player: 'X' | 'O') =>
   winConditions.reduce((acc: Record<string, ReturnType<Sync>>, squares) => {
-    acc[`${player}Wins (${squares})`] = thread([
-      // Wait for the player to take the first square of this winning line.
-      sync({
-        waitFor: onPlayerMoveIn(player, squares),
-      }),
-      // Wait for the player to take the second square of this winning line.
-      sync({
-        waitFor: onPlayerMoveIn(player, squares),
-      }),
-      // Wait for the player to take the third square of this winning line.
-      sync({
-        waitFor: onPlayerMoveIn(player, squares),
-      }),
-      // Request a 'win' event if all three squares are taken by the player.
-      sync({
-        request: { type: 'win', detail: { squares, player } },
-      }),
-    ])
+    acc[`${player}Wins (${squares})`] = thread(
+      [
+        // Wait for the player to take the first square of this winning line.
+        sync({
+          waitFor: onPlayerMoveIn(player, squares),
+        }),
+        // Wait for the player to take the second square of this winning line.
+        sync({
+          waitFor: onPlayerMoveIn(player, squares),
+        }),
+        // Wait for the player to take the third square of this winning line.
+        sync({
+          waitFor: onPlayerMoveIn(player, squares),
+        }),
+        // Request a 'win' event if all three squares are taken by the player.
+        sync({
+          request: { type: 'win', detail: { squares, player } },
+        }),
+      ],
+      true,
+    )
     return acc
   }, {})
 
@@ -255,7 +261,7 @@ test('detect winner', () => {
  * A b-thread that stops the game once a 'win' event occurs.
  * It waits for the 'win' event and then blocks any further 'X' or 'O' moves indefinitely.
  */
-const stopGame = thread([sync({ waitFor: onType('win') }), sync({ block: [onType('X'), onType('O')] })], true)
+const stopGame = thread([sync({ waitFor: onType('win') }), sync({ block: [onType('X'), onType('O')] })])
 
 /**
  * Test case: Verifies that the `stopGame` thread prevents further moves after a win.
@@ -308,17 +314,14 @@ test('stop game', () => {
  */
 const defaultMoves: Record<string, ReturnType<Sync>> = {}
 for (const square of squares) {
-  defaultMoves[`defaultMoves(${square})`] = thread(
-    [
-      sync({
-        request: {
-          type: 'O',
-          detail: { square },
-        },
-      }),
-    ],
-    true,
-  )
+  defaultMoves[`defaultMoves(${square})`] = thread([
+    sync({
+      request: {
+        type: 'O',
+        detail: { square },
+      },
+    }),
+  ])
 }
 
 /**
@@ -417,21 +420,30 @@ const preventCompletionOfLineWithTwoXs = () => {
   const bThreads: Record<string, ReturnType<Sync>> = {}
   for (const win of winConditions) {
     const [a, b, c] = win
-    bThreads[`StopXWin(${win})-ab`] = thread([
-      sync({ waitFor: onMove('X', a) }),
-      sync({ waitFor: onMove('X', b) }),
-      sync({ request: { type: 'O', detail: { square: c! } } }),
-    ])
-    bThreads[`StopXWin(${win})-ac`] = thread([
-      sync({ waitFor: onMove('X', a) }),
-      sync({ waitFor: onMove('X', c) }),
-      sync({ request: { type: 'O', detail: { square: b! } } }),
-    ])
-    bThreads[`StopXWin(${win})-bc`] = thread([
-      sync({ waitFor: onMove('X', b) }),
-      sync({ waitFor: onMove('X', c) }),
-      sync({ request: { type: 'O', detail: { square: a! } } }),
-    ])
+    bThreads[`StopXWin(${win})-ab`] = thread(
+      [
+        sync({ waitFor: onMove('X', a) }),
+        sync({ waitFor: onMove('X', b) }),
+        sync({ request: { type: 'O', detail: { square: c! } } }),
+      ],
+      true,
+    )
+    bThreads[`StopXWin(${win})-ac`] = thread(
+      [
+        sync({ waitFor: onMove('X', a) }),
+        sync({ waitFor: onMove('X', c) }),
+        sync({ request: { type: 'O', detail: { square: b! } } }),
+      ],
+      true,
+    )
+    bThreads[`StopXWin(${win})-bc`] = thread(
+      [
+        sync({ waitFor: onMove('X', b) }),
+        sync({ waitFor: onMove('X', c) }),
+        sync({ request: { type: 'O', detail: { square: a! } } }),
+      ],
+      true,
+    )
   }
   return bThreads
 }

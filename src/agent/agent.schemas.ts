@@ -1,61 +1,129 @@
 import * as z from 'zod'
+import { SpecSchema } from '../behavioral.ts'
+import { WORKER_EVENTS } from './agent.constants.ts'
 
-/** @public */
-export const BashDetailSchema = z.object({
-  path: z.string().describe('Workspace-local path to the Bun worker module to execute'),
-  args: z.array(z.string()).describe('Arguments to pass to the worker module'),
-  cwd: z
-    .string()
-    .min(1)
-    .optional()
-    .describe('Optional workspace-relative current working directory for process execution'),
-  timeout: z.number().optional().describe('Optional timeout in milliseconds'),
+export const WorkerSetupEventSchema = z.object({
+  type: z.literal(WORKER_EVENTS.setup),
+  detail: z.object({
+    meta: z.object({
+      workerId: z.string(),
+      name: z.string(),
+      description: z.string(),
+      cwd: z.string(),
+    }),
+    socketPath: z.string(),
+    specs: z.array(SpecSchema),
+  }),
 })
 
-export type BashDetail = z.infer<typeof BashDetailSchema>
+export type WorkerSetupEventDetail = z.output<typeof WorkerSetupEventSchema>
 
-const CorrelationIdSchema = z.string().min(1).describe('Conversation/group correlation identifier')
-const RequestIdSchema = z
-  .string()
-  .min(1)
-  .describe('Unique one-shot request identifier for exact approval matching within an agent runtime')
-
-/** @public */
-export const ToolBashRequestDetailSchema = z.object({
-  requestId: RequestIdSchema,
-  correlationId: CorrelationIdSchema,
-  bash: BashDetailSchema,
+export const WorkerGetContextEventSchema = z.object({
+  type: z.literal(WORKER_EVENTS.get_context),
+  detail: SpecSchema,
 })
 
-export type ToolBashRequestDetail = z.infer<typeof ToolBashRequestDetailSchema>
+export type WorkerGetContextEventDetail = z.output<typeof WorkerGetContextEventSchema>
 
-/** @public */
-export const ToolBashApprovedDetailSchema = z.object({
-  requestId: RequestIdSchema,
-  correlationId: CorrelationIdSchema.optional(),
+export const WorkerHeartbeatEventSchema = z.object({
+  type: z.literal(WORKER_EVENTS.heartbeat),
 })
 
-export type ToolBashApprovedDetail = z.infer<typeof ToolBashApprovedDetailSchema>
+export type WorkerHeartbeatEventDetail = z.output<typeof WorkerHeartbeatEventSchema>
 
-/** @public */
-export const ToolBashDeniedDetailSchema = z.object({
-  requestId: RequestIdSchema,
-  correlationId: CorrelationIdSchema.optional(),
-  reason: z.string().optional(),
+export const WorkerPromptEventSchema = z.object({
+  type: z.literal(WORKER_EVENTS.prompt),
+  detail: z.object({
+    prompt: z.string(),
+  }),
 })
 
-export type ToolBashDeniedDetail = z.infer<typeof ToolBashDeniedDetailSchema>
+export type WorkerPromptEventDetail = z.output<typeof WorkerPromptEventSchema>
 
-/** @public */
-export const ToolBashResultDetailSchema = z.object({
-  requestId: RequestIdSchema,
-  correlationId: CorrelationIdSchema,
-  exitCode: z.number().int().nullable(),
-  stdout: z.string(),
-  stderr: z.string(),
-  stdoutTruncated: z.boolean().optional(),
-  stderrTruncated: z.boolean().optional(),
-  error: z.string().optional(),
+export const HarnessMessageSchema = z.discriminatedUnion('type', [
+  WorkerSetupEventSchema,
+  WorkerGetContextEventSchema,
+  WorkerHeartbeatEventSchema,
+  WorkerPromptEventSchema,
+])
+
+export type HarnessMessage = z.output<typeof HarnessMessageSchema>
+
+export const WorkerReadDetailSchema = z.object({
+  planId: z.string(),
+  path: z.string(),
+  encoding: z.enum(['utf8', 'bytes']).optional().default('utf8'),
+  maxBytes: z.number().int().positive().optional(),
 })
 
-export type ToolBashResultDetail = z.infer<typeof ToolBashResultDetailSchema>
+export type WorkerReadDetail = z.output<typeof WorkerReadDetailSchema>
+
+export const WorkerShellDetailSchema = z.object({
+  planId: z.string(),
+  command: z.array(z.string()),
+  timeoutMs: z.number().optional(),
+  maxOutputBytes: z.number().optional(),
+})
+
+export type WorkerShellDetail = z.output<typeof WorkerShellDetailSchema>
+
+export const WorkerUpdateSpecsDetailSchema = z.object({
+  planId: z.string(),
+  specs: z.array(SpecSchema),
+})
+
+export type WorkerUpdateSpecsDetail = z.output<typeof WorkerUpdateSpecsDetailSchema>
+
+export const WorkerWriteDetailSchema = z.object({
+  planId: z.string(),
+  path: z.string(),
+  content: z.string(),
+  encoding: z.enum(['utf8', 'base64']).optional().default('utf8'),
+})
+
+export type WorkerWriteDetail = z.output<typeof WorkerWriteDetailSchema>
+
+const InferenceReadActionSchema = z.object({
+  type: z.literal(WORKER_EVENTS.read),
+  detail: WorkerReadDetailSchema.omit({
+    planId: true,
+  }),
+})
+
+const InferenceShellActionSchema = z.object({
+  type: z.literal(WORKER_EVENTS.shell),
+  detail: WorkerShellDetailSchema.omit({
+    planId: true,
+  }),
+})
+
+const InferenceUpdateSpecsActionSchema = z.object({
+  type: z.literal(WORKER_EVENTS.write),
+  detail: WorkerUpdateSpecsDetailSchema.omit({
+    planId: true,
+  }),
+})
+
+const InferenceWriteActionSchema = z.object({
+  type: z.literal(WORKER_EVENTS.write),
+  detail: WorkerWriteDetailSchema.omit({
+    planId: true,
+  }),
+})
+
+export const InferenceActionSchema = z.discriminatedUnion('type', [
+  InferenceReadActionSchema,
+  InferenceShellActionSchema,
+  InferenceWriteActionSchema,
+  InferenceUpdateSpecsActionSchema,
+])
+
+export const PlanCompleteSchema = z.object({
+  analysis: z.string(),
+  plan: z.string(),
+  actions: z.array(InferenceActionSchema),
+  taskComplete: z.boolean().optional(),
+})
+
+export type PlanComplete = z.output<typeof PlanCompleteSchema>
+export type InferenceAction = z.output<typeof InferenceActionSchema>

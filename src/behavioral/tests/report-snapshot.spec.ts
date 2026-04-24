@@ -32,8 +32,8 @@ describe('reportSnapshot', () => {
     const events: string[] = []
     const { addBThread, trigger, useFeedback, reportSnapshot } = behavioral()
 
-    addBThread('producer', thread([sync({ request: { type: 'task' } })]))
-    addBThread('consumer', thread([sync({ waitFor: onType('task') }), sync({ request: { type: 'ack' } })]))
+    addBThread('producer', thread([sync({ request: { type: 'task' } })], true))
+    addBThread('consumer', thread([sync({ waitFor: onType('task') }), sync({ request: { type: 'ack' } })], true))
 
     useFeedback({
       task() {

@@ -123,4 +123,79 @@ describe('plaited eval fixture smoke tests', () => {
     expect(evalResult.id).toBe('o1')
     expect(evalResult.trials[0].output).toBe('resp: test')
   })
+
+  test('plaited self-eval runs snapshot-native trial shape', async () => {
+    const adapterPath = fixturePath('self-eval-adapter.ts')
+    await writeFile(
+      adapterPath,
+      `export const adapt = async ({ prompt }) => ({
+        output: prompt as string,
+        trace: {
+          snapshots: [
+            {
+              kind: 'runtime_error',
+              error: 'sample',
+            },
+          ],
+        },
+      })`,
+    )
+
+    const promptsPath = fixturePath('self-eval-prompts.jsonl')
+    await writeFile(promptsPath, '{"id":"se1","input":"hello"}\n')
+
+    const result = await Bun.$`
+      bun ./bin/plaited.ts self-eval '{"adapterPath":"${adapterPath}","promptsPath":"${promptsPath}","k":1}'
+    `
+      .cwd(CLI_PACKAGE_ROOT)
+      .nothrow()
+
+    expect(result.exitCode).toBe(0)
+    const lines = result.stdout.toString().trim().split('\n').filter(Boolean)
+    const line0 = lines[0]!
+    const selfEvalResult = JSON.parse(line0)
+    expect(selfEvalResult.id).toBe('se1')
+    expect(selfEvalResult.trials[0].trace.snapshots[0].kind).toBe('runtime_error')
+    expect(selfEvalResult.trials[0].process.runtimeErrorDetected).toBe(true)
+  })
+
+  test('plaited self-eval wires verifierPath and emits metaVerification', async () => {
+    const adapterPath = fixturePath('self-eval-adapter-verified.ts')
+    await writeFile(adapterPath, `export const adapt = async ({ prompt }) => ({ output: prompt as string })`)
+
+    const graderPath = fixturePath('self-eval-grader.ts')
+    await writeFile(
+      graderPath,
+      `export const grade = async ({ output }) => ({
+        pass: output.length > 0,
+        score: output.length > 0 ? 1 : 0,
+      })`,
+    )
+
+    const verifierPath = fixturePath('self-eval-verifier.ts')
+    await writeFile(
+      verifierPath,
+      `export const verify = async ({ score }) => ({
+        confidence: score > 0.5 ? 0.97 : 0.2,
+        reasoning: 'confidence from score',
+      })`,
+    )
+
+    const promptsPath = fixturePath('self-eval-prompts-verified.jsonl')
+    await writeFile(promptsPath, '{"id":"se2","input":"hello"}\n')
+
+    const result = await Bun.$`
+      bun ./bin/plaited.ts self-eval '{"adapterPath":"${adapterPath}","promptsPath":"${promptsPath}","graderPath":"${graderPath}","verifierPath":"${verifierPath}","k":1}'
+    `
+      .cwd(CLI_PACKAGE_ROOT)
+      .nothrow()
+
+    expect(result.exitCode).toBe(0)
+    const lines = result.stdout.toString().trim().split('\n').filter(Boolean)
+    const line0 = lines[0]!
+    const selfEvalResult = JSON.parse(line0)
+    expect(selfEvalResult.id).toBe('se2')
+    expect(selfEvalResult.trials[0].metaVerification.confidence).toBe(0.97)
+    expect(selfEvalResult.trials[0].metaVerification.reasoning).toBe('confidence from score')
+  })
 })

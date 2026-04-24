@@ -1,22 +1,33 @@
 import { keyMirror } from '../utils.ts'
 
-/**
- * Minimal engine-level events for the new agent core.
- *
- * @remarks
- * These are intentionally narrower than the legacy loop event surface.
- * Modules can build richer orchestration on top of them.
- *
- * @public
- */
-export const AGENT_CORE_EVENTS = keyMirror(
-  'actors_scan',
-  'bash',
+export const HARNESS_MESSAGE = 'harness_message'
+
+export const WORKER_MESSAGE = 'worker_message'
+
+export const SOCKET_MESSAGE = 'socket_message'
+
+export const INFERENCE = 'inference'
+
+export const WORKER_EVENTS = keyMirror(
+  'connect_socket',
+  'get_context',
   'heartbeat',
-  'tool_bash_approved',
-  'tool_bash_denied',
-  'tool_bash_request',
-  'tool_bash_result',
+  'prompt',
+  'read',
+  'setup',
+  'shell',
+  'update_specs',
+  'write',
 )
 
-export const AGENT_CORE = 'agent_core'
+export const WORKER_TO_MODEL_MESSAGE_EVENT = keyMirror(
+  `write_response`,
+  'read_response',
+  'shell_response',
+  'update_specs_response',
+)
+
+export const MAX_SOCKET_CONNECT_RETRIES = 3
+
+/** @internal WebSocket close codes that warrant reconnect attempts. */
+export const SOCKET_RETRY_STATUS_CODES = new Set([1006, 1012, 1013])

@@ -7,7 +7,7 @@ describe('trigger', () => {
     const received: string[] = []
 
     addBThreads({
-      listener: thread([sync({ waitFor: onType('allowed_event') })]),
+      listener: thread([sync({ waitFor: onType('allowed_event') })], true),
     })
     useFeedback({
       allowed_event() {
@@ -25,7 +25,7 @@ describe('trigger', () => {
     const received: Array<{ id: number }> = []
 
     addBThreads({
-      listener: thread([sync({ waitFor: onType('payload_event') })]),
+      listener: thread([sync({ waitFor: onType('payload_event') })], true),
     })
     useFeedback({
       payload_event(detail) {

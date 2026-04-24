@@ -1,57 +1,173 @@
 import { mkdir } from 'node:fs/promises'
 import { dirname, isAbsolute, relative, resolve } from 'node:path'
-
-import type { BPEvent } from '../behavioral/behavioral.schemas.ts'
-import { behavioral, sync, thread } from '../behavioral.ts'
-import { AGENT_TO_WORKER_EVENTS, WORKER_EVENTS, WORKER_TO_AGENT_EVENTS } from './agent.constants.ts'
+import { type BPEvent, BPEventSchema, behavioral, sync, thread, useSpec } from '../behavioral.ts'
+import { DelegatedListener, delegates } from '../utils.ts'
 import {
-  type WorkerConnectDetail,
-  WorkerConnectDetailSchema,
+  HARNESS_MESSAGE,
+  INFERENCE,
+  MAX_SOCKET_CONNECT_RETRIES,
+  SOCKET_MESSAGE,
+  SOCKET_RETRY_STATUS_CODES,
+  WORKER_EVENTS,
+  WORKER_MESSAGE,
+  WORKER_TO_MODEL_MESSAGE_EVENT,
+} from './agent.constants.ts'
+import {
+  type HarnessMessage,
+  HarnessMessageSchema,
   type WorkerReadDetail,
   WorkerReadDetailSchema,
-  type WorkerReadResponse,
+  type WorkerSetupEventDetail,
+  WorkerSetupEventSchema,
   type WorkerShellDetail,
   WorkerShellDetailSchema,
-  type WorkerShellResponse,
+  type WorkerUpdateSpecsDetail,
+  WorkerUpdateSpecsDetailSchema,
   type WorkerWriteDetail,
   WorkerWriteDetailSchema,
-  type WorkerWriteResponse,
-} from './worker.schema.ts'
+} from './agent.schemas.ts'
+import type {
+  WorkerReadResponse,
+  WorkerShellResponse,
+  WorkerUpdateSpecsResponse,
+  WorkerWriteResponse,
+} from './agent.types.ts'
 
-const { useSnapshot, trigger, addHandler, addThread } = behavioral()
+let socket: WebSocket | undefined
+let retryCount = 0
 
-const send = (data: BPEvent) => self.postMessage(data)
+const { useSnapshot, trigger, addHandler, addThread, reportError } = behavioral()
 
+const useMessageEvent = (type: typeof SOCKET_MESSAGE | typeof HARNESS_MESSAGE) => {
+  return (message: MessageEvent) => {
+    try {
+      const data = BPEventSchema.parse(JSON.parse(String(message.data)))
+      trigger({
+        type,
+        detail: data,
+      })
+    } catch (error) {
+      reportError(error instanceof Error ? error.message : String(error))
+    }
+  }
+}
+
+const onWsMessage = useMessageEvent(SOCKET_MESSAGE)
+
+const socketListener = new DelegatedListener((event: Event) => {
+  try {
+    const target = event.target
+    if (!(target instanceof WebSocket)) {
+      throw new Error(`WebSocket listener received event without WebSocket target`)
+    }
+    if (target !== socket) return
+    if (event.type === 'open') {
+      retryCount = 0
+      return
+    }
+    if (event instanceof MessageEvent) onWsMessage(event)
+    if (event instanceof CloseEvent && SOCKET_RETRY_STATUS_CODES.has(event.code)) onRetry()
+    if (event.type === 'error') {
+      throw new Error(`WebSocket error on ${target.url} (readyState: ${target.readyState})`)
+    }
+  } catch (error) {
+    reportError(error instanceof Error ? error.message : String(error))
+  }
+})
+
+const closeSocket = () => {
+  const ws = socket
+  socket = undefined
+  if (!ws) return
+  ws.removeEventListener('open', socketListener)
+  ws.removeEventListener('message', socketListener)
+  ws.removeEventListener('error', socketListener)
+  ws.removeEventListener('close', socketListener)
+  if (ws.readyState !== WebSocket.CLOSED && ws.readyState !== WebSocket.CLOSING) ws.close()
+}
+
+const connect = () => {
+  if (!meta?.workerId) return
+  if (socket?.readyState === WebSocket.CONNECTING || socket?.readyState === WebSocket.OPEN) {
+    return
+  }
+  closeSocket()
+  socket = new WebSocket(`ws+unix://${socketPath}`, meta.workerId)
+  delegates.set(socket, socketListener)
+  socket.addEventListener('open', socketListener)
+  socket.addEventListener('message', socketListener)
+  socket.addEventListener('error', socketListener)
+  socket.addEventListener('close', socketListener)
+}
+
+const onRetry = () => {
+  closeSocket()
+  if (retryCount >= MAX_SOCKET_CONNECT_RETRIES) return
+  const maxDelay = Math.min(9_999, 1_000 * 2 ** retryCount)
+  setTimeout(() => connect(), Math.floor(Math.random() * maxDelay))
+  retryCount++
+}
+
+addHandler(WORKER_EVENTS.connect_socket, () => {
+  socket = new WebSocket(`ws+unix://${socketPath}`, meta.workerId)
+})
+
+addHandler<HarnessMessage>(HARNESS_MESSAGE, (detail) => {
+  const event = HarnessMessageSchema.parse(detail)
+  trigger(event)
+})
+
+const sendSocket = (message: { type: string; detail?: unknown }) => {
+  const onOpen = () => {
+    sendSocket(message)
+    socket?.removeEventListener('open', onOpen)
+  }
+  if (socket?.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify(message))
+    return
+  }
+  if (socket?.readyState === WebSocket.CLOSING || socket?.readyState === WebSocket.CLOSED) {
+    closeSocket()
+  }
+  if (!socket) connect()
+  socket?.addEventListener('open', onOpen)
+}
+
+const sendHarness = (data: BPEvent) => self.postMessage(data)
+
+/**
+ * THIS IS WHERE WE'LL NEED TO DO THE MOST FORMATTING OF MESSAGE GOING OUT
+ */
 useSnapshot((detail) => {
-  send({
-    type: WORKER_TO_AGENT_EVENTS.snapshot,
+  sendHarness({
+    type: WORKER_MESSAGE,
+    detail,
+  })
+  sendSocket({
+    type: WORKER_MESSAGE,
     detail,
   })
 })
 
-const messageHandler = ({ data }: { data: BPEvent }) => {
-  trigger(data)
-}
-
 addThread(
-  `on${AGENT_TO_WORKER_EVENTS.connect}`,
+  `Block event until setup`,
   thread(
     [
       sync({
         waitFor: {
-          type: AGENT_TO_WORKER_EVENTS.connect,
-          detailSchema: WorkerConnectDetailSchema,
+          type: WORKER_EVENTS.setup,
+          detailSchema: WorkerSetupEventSchema.shape.detail,
         },
         block: [
-          {
-            type: AGENT_TO_WORKER_EVENTS.connect,
-            detailSchema: WorkerConnectDetailSchema,
-            detailMatch: 'invalid',
-          },
-          { type: WORKER_EVENTS.inference },
+          { type: INFERENCE },
+          { type: WORKER_EVENTS.connect_socket },
+          { type: WORKER_EVENTS.get_context },
+          { type: WORKER_EVENTS.heartbeat },
+          { type: WORKER_EVENTS.prompt },
           { type: WORKER_EVENTS.read },
-          { type: WORKER_EVENTS.write },
           { type: WORKER_EVENTS.shell },
+          { type: WORKER_EVENTS.update_specs },
+          { type: WORKER_EVENTS.write },
         ],
       }),
     ],
@@ -59,15 +175,69 @@ addThread(
   ),
 )
 
-addHandler<WorkerConnectDetail>(AGENT_TO_WORKER_EVENTS.connect, (detail) =>
-  send({
-    type: WORKER_TO_AGENT_EVENTS.connect_response,
-    detail,
-  }),
+addThread(
+  `Block re-setup attempts`,
+  thread(
+    [
+      sync({
+        waitFor: {
+          type: WORKER_EVENTS.setup,
+          detailSchema: WorkerSetupEventSchema.shape.detail,
+        },
+      }),
+      sync({
+        block: {
+          type: WORKER_EVENTS.setup,
+          detailSchema: WorkerSetupEventSchema.shape.detail,
+        },
+      }),
+    ],
+    true,
+  ),
 )
 
+let meta: WorkerSetupEventDetail['detail']['meta']
+let socketPath: string
+
+addHandler<WorkerSetupEventDetail['detail']>(WORKER_EVENTS.setup, (detail) => {
+  meta = detail.meta
+  for (const spec of detail.specs) {
+    addThread(...useSpec(spec))
+  }
+  socketPath = detail.socketPath
+  trigger({ type: WORKER_EVENTS.connect_socket })
+})
+
 addThread(
-  `on${WORKER_EVENTS.shell}`,
+  `Block invalid hhandler messages`,
+  thread([
+    sync({
+      block: {
+        type: WORKER_EVENTS.update_specs,
+        detailSchema: WorkerUpdateSpecsDetailSchema,
+        detailMatch: 'invalid',
+      },
+    }),
+  ]),
+)
+
+addHandler<WorkerUpdateSpecsDetail>(WORKER_EVENTS.update_specs, ({ specs, planId }) => {
+  for (const spec of specs) {
+    addThread(...useSpec(spec))
+  }
+  const detail: WorkerUpdateSpecsResponse = {
+    ok: true,
+    planId,
+  }
+
+  trigger({
+    type: WORKER_TO_MODEL_MESSAGE_EVENT.update_specs_response,
+    detail,
+  })
+})
+
+addThread(
+  `Block invalid shell events`,
   thread([
     sync({
       block: {
@@ -94,58 +264,56 @@ const limitTextBytes = (text: string, maxBytes: number) => {
   }
 }
 
-addHandler<WorkerShellDetail>(
-  WORKER_EVENTS.shell,
-  async ({ cwd, command, id, timeoutMs, maxOutputBytes = 256_000 }) => {
-    const startedAt = Date.now()
+addHandler<WorkerShellDetail>(WORKER_EVENTS.shell, async ({ command, planId, timeoutMs, maxOutputBytes = 256_000 }) => {
+  const startedAt = Date.now()
+  const cwd = meta.cwd
+  const controller = new AbortController()
+  const timeout = timeoutMs && setTimeout(() => controller.abort(), timeoutMs)
 
-    const controller = new AbortController()
-    const timeout = timeoutMs && setTimeout(() => controller.abort(), timeoutMs)
+  const proc = Bun.spawn(command, {
+    cwd: meta.cwd,
+    stdout: 'pipe',
+    stderr: 'pipe',
+    signal: controller.signal,
+  })
 
-    const proc = Bun.spawn(command, {
-      cwd: cwd,
-      stdout: 'pipe',
-      stderr: 'pipe',
-      signal: controller.signal,
-    })
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+    proc.exited,
+  ])
 
-    const [stdout, stderr, exitCode] = await Promise.all([
-      new Response(proc.stdout).text(),
-      new Response(proc.stderr).text(),
-      proc.exited,
-    ])
+  timeout && clearTimeout(timeout)
 
-    timeout && clearTimeout(timeout)
+  const stdoutResult = limitTextBytes(stdout, Math.floor(maxOutputBytes / 2))
+  const stderrResult = limitTextBytes(stderr, maxOutputBytes - Math.floor(maxOutputBytes / 2))
 
-    const stdoutResult = limitTextBytes(stdout, Math.floor(maxOutputBytes / 2))
-    const stderrResult = limitTextBytes(stderr, maxOutputBytes - Math.floor(maxOutputBytes / 2))
+  const detail: WorkerShellResponse = {
+    planId,
+    cwd,
+    ok: exitCode === 0,
+    exitCode,
+    signalCode: null,
+    stdout: stdoutResult.text,
+    stderr: stderrResult.text,
+    stdoutBytes: stdoutResult.originalBytes,
+    stderrBytes: stderrResult.originalBytes,
+    stdoutTruncated: stdoutResult.truncated,
+    stderrTruncated: stderrResult.truncated,
+    stdoutPath: null,
+    stderrPath: null,
+    durationMs: Date.now() - startedAt,
+    timedOut: false,
+  }
 
-    const detail: WorkerShellResponse = {
-      id,
-      ok: exitCode === 0,
-      exitCode,
-      signalCode: null,
-      stdout: stdoutResult.text,
-      stderr: stderrResult.text,
-      stdoutBytes: stdoutResult.originalBytes,
-      stderrBytes: stderrResult.originalBytes,
-      stdoutTruncated: stdoutResult.truncated,
-      stderrTruncated: stderrResult.truncated,
-      stdoutPath: null,
-      stderrPath: null,
-      durationMs: Date.now() - startedAt,
-      timedOut: false,
-    }
-
-    trigger({
-      type: WORKER_EVENTS.shell_response,
-      detail,
-    })
-  },
-)
+  trigger({
+    type: WORKER_TO_MODEL_MESSAGE_EVENT.shell_response,
+    detail,
+  })
+})
 
 addThread(
-  `on${WORKER_EVENTS.read}`,
+  `Block invalid read events`,
   thread([
     sync({
       block: {
@@ -173,7 +341,8 @@ const resolveRelativePathInsideCwd = ({ cwd, path }: { cwd: string; path: string
   throw new Error(`Path escapes cwd: ${path}`)
 }
 
-addHandler<WorkerReadDetail>(WORKER_EVENTS.read, async ({ id, cwd, path, encoding, maxBytes }) => {
+addHandler<WorkerReadDetail>(WORKER_EVENTS.read, async ({ planId, path, encoding, maxBytes }) => {
+  const cwd = meta.cwd
   const target = resolveRelativePathInsideCwd({ cwd, path })
   const file = Bun.file(target)
 
@@ -188,9 +357,9 @@ addHandler<WorkerReadDetail>(WORKER_EVENTS.read, async ({ id, cwd, path, encodin
   const content = encoding === 'bytes' ? Buffer.from(sliced).toString('base64') : new TextDecoder().decode(sliced)
 
   const detail: WorkerReadResponse = {
-    id,
-    ok: true,
+    planId,
     cwd,
+    ok: true,
     path,
     encoding,
     content,
@@ -199,13 +368,13 @@ addHandler<WorkerReadDetail>(WORKER_EVENTS.read, async ({ id, cwd, path, encodin
   }
 
   trigger({
-    type: WORKER_EVENTS.read_response,
+    type: WORKER_TO_MODEL_MESSAGE_EVENT.read_response,
     detail,
   })
 })
 
 addThread(
-  `on${WORKER_EVENTS.write}`,
+  `Block invalid write events`,
   thread([
     sync({
       block: {
@@ -217,7 +386,8 @@ addThread(
   ]),
 )
 
-addHandler<WorkerWriteDetail>(WORKER_EVENTS.write, async ({ id, cwd, path, content, encoding }) => {
+addHandler<WorkerWriteDetail>(WORKER_EVENTS.write, async ({ planId, path, content, encoding }) => {
+  const cwd = meta.cwd
   const root = resolve(cwd)
   const target = resolveRelativePathInsideCwd({ cwd, path })
   const parent = dirname(path)
@@ -227,7 +397,7 @@ addHandler<WorkerWriteDetail>(WORKER_EVENTS.write, async ({ id, cwd, path, conte
   const bytes = await Bun.write(target, data)
 
   const detail: WorkerWriteResponse = {
-    id,
+    planId,
     ok: true,
     cwd,
     path,
@@ -236,11 +406,11 @@ addHandler<WorkerWriteDetail>(WORKER_EVENTS.write, async ({ id, cwd, path, conte
   }
 
   trigger({
-    type: WORKER_EVENTS.write_response,
+    type: WORKER_TO_MODEL_MESSAGE_EVENT.write_response,
     detail,
   })
 })
 
-addHandler(WORKER_EVENTS.inference, (_) => {})
+const onHarnessMessage = useMessageEvent(HARNESS_MESSAGE)
 
-self.addEventListener('message', messageHandler, false)
+self.addEventListener('message', onHarnessMessage)

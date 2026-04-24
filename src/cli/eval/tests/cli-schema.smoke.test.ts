@@ -20,6 +20,7 @@ describe('CLI schema discovery smoke tests', () => {
     const output = JSON.parse(result.stdout.toString().trim())
     expect(output.name).toBe('plaited')
     expect(output.commands).toContain('eval')
+    expect(output.commands).toContain('self-eval')
     expect(output.commands).toContain('compare-trials')
     expect(output.commands).toContain('skills-catalog')
     expect(output.commands).toContain('skills-frontmatter')
@@ -45,6 +46,30 @@ describe('CLI schema discovery smoke tests', () => {
 
     const schema = JSON.parse(result.stdout.toString().trim())
     // EvalOutputSchema is z.array(TrialResultSchema)
+    expect(schema.type).toBe('array')
+    expect(schema.items).toBeDefined()
+    expect(schema.items.type).toBe('object')
+    expect(schema.items.properties.id).toBeDefined()
+    expect(schema.items.properties.trials).toBeDefined()
+  })
+
+  test('plaited self-eval --schema input emits SelfEvalInputSchema', async () => {
+    const result = await Bun.$`bun ./bin/plaited.ts self-eval --schema input`.cwd(CLI_PACKAGE_ROOT).nothrow()
+    expect(result.exitCode).toBe(0)
+
+    const schema = JSON.parse(result.stdout.toString().trim())
+    expect(schema.type).toBe('object')
+    expect(schema.properties).toBeDefined()
+    expect(schema.properties.adapterPath).toBeDefined()
+    expect(schema.properties.promptsPath).toBeDefined()
+    expect(schema.properties.verifierPath).toBeDefined()
+  })
+
+  test('plaited self-eval --schema output emits SelfEvalOutputSchema', async () => {
+    const result = await Bun.$`bun ./bin/plaited.ts self-eval --schema output`.cwd(CLI_PACKAGE_ROOT).nothrow()
+    expect(result.exitCode).toBe(0)
+
+    const schema = JSON.parse(result.stdout.toString().trim())
     expect(schema.type).toBe('array')
     expect(schema.items).toBeDefined()
     expect(schema.items.type).toBe('object')

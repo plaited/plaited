@@ -18,8 +18,8 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
     })
 
     addBThreads({
-      safety: thread([sync({ block: onType('dangerous') })], true),
-      interruptor: thread([sync({ interrupt: onType('dangerous') })], true),
+      safety: thread([sync({ block: onType('dangerous') })]),
+      interruptor: thread([sync({ interrupt: onType('dangerous') })]),
     })
 
     trigger({ type: 'dangerous' })
@@ -54,7 +54,7 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
     })
 
     addBThreads({
-      watcher: thread([sync({ waitFor: onType('dangerous') })], true),
+      watcher: thread([sync({ waitFor: onType('dangerous') })]),
     })
 
     expect(snapshots).toHaveLength(0)
@@ -79,8 +79,8 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
     })
 
     addBThreads({
-      low: thread([sync({ request: { type: 'low' } })]),
-      high: thread([sync({ request: { type: 'high' } })]),
+      low: thread([sync({ request: { type: 'low' } })], true),
+      high: thread([sync({ request: { type: 'high' } })], true),
     })
 
     trigger({ type: 'tick' })
@@ -101,20 +101,17 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
     })
 
     addBThreads({
-      blockSecond: thread(
-        [
-          sync({
-            block: {
-              type: 'same_type',
-              source: 'request',
-              detailSchema: z.object({ n: z.literal(2) }),
-            },
-          }),
-        ],
-        true,
-      ),
-      first: thread([sync({ request: { type: 'same_type', detail: { n: 1 } } })]),
-      second: thread([sync({ request: { type: 'same_type', detail: { n: 2 } } })]),
+      blockSecond: thread([
+        sync({
+          block: {
+            type: 'same_type',
+            source: 'request',
+            detailSchema: z.object({ n: z.literal(2) }),
+          },
+        }),
+      ]),
+      first: thread([sync({ request: { type: 'same_type', detail: { n: 1 } } })], true),
+      second: thread([sync({ request: { type: 'same_type', detail: { n: 2 } } })], true),
     })
 
     trigger({ type: 'kickoff' })
