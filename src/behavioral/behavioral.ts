@@ -13,8 +13,8 @@ import type {
   Behavioral,
   CandidateBid,
   PendingBid,
-  ReportError,
   RunningBid,
+  SnapshotListener,
   Sync,
   Trigger,
   UseSnapshot,
@@ -409,9 +409,7 @@ export const behavioral: Behavioral = () => {
    */
   const useSnapshot: UseSnapshot = (listener) => snapshotPublisher.subscribe(listener)
 
-  const reportError: ReportError = (error) => {
-    snapshotPublisher({ kind: SNAPSHOT_MESSAGE_KINDS.runtime_error, error })
-  }
+  const reportSnapshot: SnapshotListener = (message) => snapshotPublisher(message)
 
   /**
    * @internal
@@ -431,6 +429,6 @@ export const behavioral: Behavioral = () => {
     /** Hook to subscribe to internal state snapshots for monitoring/debugging. */
     useSnapshot,
 
-    reportError,
+    reportSnapshot,
   })
 }

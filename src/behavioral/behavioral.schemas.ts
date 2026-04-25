@@ -251,6 +251,16 @@ export const RuntimeErrorSchema = z.object({
 /** @public */
 export type RuntimeError = z.infer<typeof RuntimeErrorSchema>
 
+export const WorkerSnapshotSchema = z.object({
+  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.worker),
+  workerId: z.string(),
+  sessionId: z.string(),
+  payload: z.record(z.string(), z.unknown()),
+})
+
+/** @public */
+export type WorkerSnapshot = z.infer<typeof WorkerSnapshotSchema>
+
 /**
  * Discriminated union schema for all observable moments from the BP engine.
  * Consumers narrow by the `kind` field.
@@ -267,6 +277,7 @@ export const SnapshotMessageSchema = z.discriminatedUnion('kind', [
   DeadlockSnapshotSchema,
   FeedbackErrorSchema,
   SelectionSnapshotSchema,
+  WorkerSnapshotSchema,
 ])
 
 /** @public */

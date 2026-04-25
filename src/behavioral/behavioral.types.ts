@@ -241,14 +241,6 @@ export type AddHandler = <T extends JsonObject | undefined = undefined>(
  */
 export type UseSnapshot = (listener: SnapshotListener) => Disconnect
 
-/**
- * Publishes a structured snapshot message directly to snapshot subscribers.
- *
- * @remarks
- * This does not schedule events or advance the BP engine.
- */
-export type ReportError = (error: string) => void
-
 export type BThreads = Record<string, ReturnType<Sync>>
 
 export type AddThread = (label: string, thread: () => Generator<Idioms, void, unknown>) => void
@@ -292,7 +284,7 @@ export type Trigger = <T extends BPEvent>(args: T) => void
 export type Behavioral = () => Readonly<{
   addHandler: AddHandler
   addThread: AddThread
-  reportError: ReportError
+  reportSnapshot: SnapshotListener
   trigger: Trigger
   useSnapshot: UseSnapshot
 }>

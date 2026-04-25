@@ -12,7 +12,7 @@
  */
 
 import * as z from 'zod'
-import { BPEventSchema, SnapshotMessageSchema } from '../../behavioral/behavioral.schemas.ts'
+import { BPEventSchema, SnapshotMessageSchema } from '../../behavioral.ts'
 
 // ============================================================================
 // Prompt Case

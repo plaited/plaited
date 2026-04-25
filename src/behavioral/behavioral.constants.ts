@@ -11,7 +11,7 @@ import { keyMirror } from '../utils.ts'
  *
  * @public
  */
-export const SNAPSHOT_MESSAGE_KINDS = keyMirror('deadlock', 'feedback_error', 'selection', 'runtime_error')
+export const SNAPSHOT_MESSAGE_KINDS = keyMirror('deadlock', 'feedback_error', 'selection', 'runtime_error', 'worker')
 
 /**
  * Defines how a b-thread listens for or specifies events in `waitFor`, `block`, or `interrupt` idioms.
