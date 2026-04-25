@@ -198,3 +198,21 @@ Prefer **Contents** when:
 - you want extraction without another search step
 
 Do not use both by default.
+
+## Contents Reliability Notes (Observed April 2026)
+
+When using `contents` on very large single pages (for example full arXiv HTML
+papers), the returned payload can be truncated and end before valid JSON close.
+Treat large single-page extraction as potentially partial unless validated.
+
+Use this operational pattern:
+
+1. fetch known canonical URL with `contents` (for example `.../html/...`)
+2. immediately validate JSON parseability (`jq`, script parse, or schema parse)
+3. if parse fails or payload is partial, rerun `contents` on a compact variant
+   (for arXiv, prefer `https://arxiv.org/abs/<id>`) to recover clean metadata
+4. synthesize using both captures: full-page content for depth, compact page for
+   citation fields and stable provenance
+
+This keeps extraction robust without switching away from the official
+`@youdotcom-oss/api` path.

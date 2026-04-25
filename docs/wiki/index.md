@@ -17,6 +17,8 @@ and UI is generated as a local projection.
 | [Local Inference Bridge](local-inference-bridge.md) | Unix socket framed `ActorEnvelope` stream decision for same-machine neural runtime IPC |
 | [Infrastructure](infrastructure.md) | Local-first node home, sandbox execution, identity, and deployment direction |
 | [Training And Improvement](training-and-improvement.md) | Discovery-first symbolic architecture, model A/model B direction, and later adaptation |
+| [Chroma Context-1](chroma-context-1.md) | External research note on self-editing retrieval subagents and context management |
+| [Embarrassingly Simple Self-Distillation](embarrassingly-simple-self-distillation.md) | External paper note on verifier-free self-distillation for code generation |
 | [Plaited Experience Standard](plaited-experience-standard.md) | Target standard for facts, services, policy, provenance, and local projections |
 | [Modnet Translation](modnet-translation.md) | How Modnet/MSS ideas translate into Plaited actor-era architecture |
 | [Structural IA Lineage](structural-ia-lineage.md) | What remains useful from Structural IA and what does not become runtime doctrine |

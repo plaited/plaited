@@ -221,6 +221,42 @@ normal result event. Let behavioral publish `feedback_error` snapshots for handl
 **Skills are internal research/runtime surfaces** until the skill module owns
 their operator story. Do not assume a public `validate-skill` CLI exists.
 
+## Runtime Wiring Style
+
+Prefer direct callsite wiring when logic is local, stable, and used once.
+
+- Do not add wrapper helpers that only rename or pass through one existing function.
+- Do not replace a short set of direct event registrations with forwarding maps, event lists,
+  or similar indirection unless there is a demonstrated maintenance benefit.
+- Keep runtime boundary code explicit at callsites:
+  - IPC handlers
+  - event emitter wiring
+  - path resolution at security-sensitive boundaries
+  - process/worker lifecycle wiring
+- Prefer tests that exercise the real runtime boundary (process, IPC, event, lifecycle behavior)
+  over helper-only tests that bypass the contract.
+- Small abstractions are justified only when they remove real duplication across multiple
+  callsites, materially improve correctness, encode a real domain concept, or improve testing
+  without hiding the runtime contract.
+
+Preferred:
+```ts
+emitter.on(SESSION_EVENTS.stdout, onStdout);
+const clinePath = resolveRelativePath({ cwd, path: '.cline' });
+process.on('message', (raw) => {
+  const parsed = parseIpcMessage(raw);
+  if (!parsed) return;
+  handleMessage(parsed);
+});
+```
+
+Discouraged:
+```ts
+const resolveClinePath = (cwd: string) => resolveRelativePath({ cwd, path: '.cline' });
+EVENT_FORWARDERS.forEach(({ event, handler }) => emitter.on(event, handler));
+test('parse helper', () => expect(parseMessage(raw)).toEqual(parsed));
+```
+
 # Skill Pointers
 
 **TSDoc** — use `code-documentation` skill for conventions when writing/editing TSDoc.

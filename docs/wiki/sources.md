@@ -35,6 +35,21 @@ The repo previously carried these materials in `docs/Modnet.md` and
 `docs/Structural-IA.md` on `main`. They are treated here as conceptual lineage,
 not as current implementation contracts.
 
+## External Paper Notes
+
+- Ruixiang Zhang, Richard He Bai, Huangjie Zheng, Navdeep Jaitly, Ronan
+  Collobert, Yizhe Zhang, "Embarrassingly Simple Self-Distillation Improves
+  Code Generation" (arXiv:2604.01193, April 1, 2026). Added as
+  `docs/wiki/embarrassingly-simple-self-distillation.md`.
+- Capture method for the note above: You.com `contents` endpoint against
+  `https://arxiv.org/html/2604.01193v1` and `https://arxiv.org/abs/2604.01193`
+  on April 25, 2026.
+- Chroma, "Chroma Context-1: Training a Self-Editing Search Agent"
+  (`https://www.trychroma.com/research/context-1`). Added as
+  `docs/wiki/chroma-context-1.md`.
+- Capture method for the note above: You.com `contents` (metadata capture) plus
+  You.com `research` (source-cited synthesis) on April 25, 2026.
+
 ## Wiki Method
 
 This wiki follows the local-repo version of the LLM-maintained wiki pattern:
