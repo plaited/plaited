@@ -1,4 +1,0 @@
-export * from './agent.ts'
-export * from './behavioral.ts'
-export * from './ui.ts'
-export * from './utils.ts'
