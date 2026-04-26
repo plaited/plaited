@@ -28,3 +28,26 @@ export const WorkerRunEventSchema = z.object({
 })
 
 export type WorkerRunEventDetail = z.output<typeof WorkerRunEventSchema>
+
+export const WorkerResearchOutputChunkSchema = z.object({
+  kind: z.literal('text_chunk'),
+  text: z.string(),
+})
+
+export const WorkerResearchOutputFinalTextSchema = z.object({
+  kind: z.literal('final_text'),
+  text: z.string(),
+})
+
+export const WorkerResearchOutputCompletedSchema = z.object({
+  kind: z.literal('completed'),
+  stopReason: z.string(),
+})
+
+export const WorkerResearchOutputSchema = z.discriminatedUnion('kind', [
+  WorkerResearchOutputChunkSchema,
+  WorkerResearchOutputFinalTextSchema,
+  WorkerResearchOutputCompletedSchema,
+])
+
+export type WorkerResearchOutput = z.output<typeof WorkerResearchOutputSchema>

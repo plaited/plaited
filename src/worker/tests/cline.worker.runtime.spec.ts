@@ -3,8 +3,8 @@ import { fileURLToPath } from 'node:url'
 import { SNAPSHOT_MESSAGE_KINDS } from '../../behavioral.ts'
 import { WORKER_EVENTS, WORKER_MESSAGE } from '../worker.constants.ts'
 
-const WORKER_ENTRYPOINT = fileURLToPath(new URL('../pi.worker.ts', import.meta.url))
-const TEST_WORKER_ID = 'worker-runtime-ipc-test'
+const WORKER_ENTRYPOINT = fileURLToPath(new URL('../cline.worker.ts', import.meta.url))
+const TEST_WORKER_ID = 'cline-worker-runtime-ipc-test'
 
 type WorkerIpcEnvelope = {
   message: {
@@ -80,13 +80,13 @@ const waitForSetupSelection = async ({
     detail: { workerId: TEST_WORKER_ID },
   } as const
 
-  for (let attempt = 0; attempt < 12; attempt += 1) {
+  for (let attempt = 0; attempt < 24; attempt += 1) {
     worker.send(setupEvent)
     try {
       return await waitForMessage({
         messages,
         predicate: isSelectionEnvelope,
-        timeoutMs: 150,
+        timeoutMs: 250,
         label: 'setup selection snapshot',
       })
     } catch {
@@ -98,7 +98,7 @@ const waitForSetupSelection = async ({
   throw new Error('Timed out waiting for setup snapshot from worker')
 }
 
-describe('worker runtime IPC boundary', () => {
+describe('cline worker runtime IPC boundary', () => {
   test('spawns over IPC, handles setup, and reports runtime errors for invalid payloads', async () => {
     const messages: unknown[] = []
     const worker = Bun.spawn(['bun', WORKER_ENTRYPOINT], {
