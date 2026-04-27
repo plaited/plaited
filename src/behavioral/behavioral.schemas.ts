@@ -253,9 +253,7 @@ export type RuntimeError = z.infer<typeof RuntimeErrorSchema>
 
 export const WorkerSnapshotSchema = z.object({
   kind: z.literal(SNAPSHOT_MESSAGE_KINDS.worker),
-  workerId: z.string(),
-  sessionId: z.string(),
-  payload: z.record(z.string(), z.unknown()),
+  response: z.record(z.string(), z.unknown()),
 })
 
 /** @public */
