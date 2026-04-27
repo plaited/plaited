@@ -186,7 +186,7 @@ describe('plaited-context scripts', () => {
     const contextOutput = await assembleTaskContext({
       cwd: rootDir,
       dbPath,
-      task: 'review behavioral module',
+      task: 'review behavioral runtime boundary',
       mode: 'review',
       paths: ['src/example.ts'],
     })

@@ -7,8 +7,7 @@
 - Rewrote core architecture wiki pages with explicit implemented-now vs
   target-direction splits.
 - Marked Modnet and Structural IA content as lineage/non-normative guidance.
-- Added boundary-contract and node-auth skill surfaces and deprecated active
-  `mss-module-review` usage.
+- Added boundary-contract and node-auth skill surfaces.
 - Updated MCP app skills with mandatory lane classification, contract-first
   exposure, entitlement checks, provenance/watermark guidance, and extension
   fallback requirements.

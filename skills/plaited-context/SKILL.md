@@ -120,16 +120,6 @@ bun skills/plaited-context/scripts/record-finding.ts '{"finding":{"kind":"anti-p
 bun skills/plaited-context/scripts/export-review.ts '{"status":["candidate","validated"],"format":"json"}'
 ```
 
-## Deprecated Scripts
-
-`module-patterns.ts` and `module-flow.ts` were removed from active workflow.
-
-Reason:
-
-- they analyzed legacy `useExtension(...)` callback structure
-- that structure is not a current `src/` runtime pattern
-- they did not validate boundary-contract completeness and were misleading as an active boundary review gate
-
 ## Evidence Rule
 
 Do not promote guesses into validated findings.

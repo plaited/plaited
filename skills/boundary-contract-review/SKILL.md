@@ -58,8 +58,6 @@ bun test <targeted-files-or-surface>
 bun skills/typescript-lsp/scripts/run.ts '{"file":"<file>","operations":[{"type":"symbols"}]}'
 ```
 
-Note: legacy `module-patterns` and `module-flow` scripts are deprecated and are not boundary-contract completeness gates.
-
 ## Boundary Review Checklist
 
 1. Contract completeness

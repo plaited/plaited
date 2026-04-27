@@ -11,8 +11,6 @@ bun test <targeted-files-or-surface>
 bun skills/typescript-lsp/scripts/run.ts '{"file":"<boundary-file>","operations":[{"type":"symbols"}]}'
 ```
 
-Legacy note: `module-patterns` and `module-flow` were extension-era analyzers and are no longer active review gates.
-
 ## Boundary Rules
 
 - classify boundaries as private lane or exchange lane

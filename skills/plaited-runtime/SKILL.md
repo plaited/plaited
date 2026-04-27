@@ -33,8 +33,6 @@ bun test <targeted-files-or-surface>
 bun skills/typescript-lsp/scripts/run.ts '{"file":"<boundary-file>","operations":[{"type":"symbols"}]}'
 ```
 
-Legacy `module-patterns` / `module-flow` scripts are deprecated and are not active doctrine gates.
-
 ## Runtime Rules
 
 1. Lane classification
@@ -84,18 +82,11 @@ Legacy `module-patterns` / `module-flow` scripts are deprecated and are not acti
 
 Do not claim runtime handlers, token flows, auth surfaces, or boundary contracts as implemented unless they exist in current `src/` and tests. Mark non-implemented doctrine as target direction.
 
-## Lineage vs Active Doctrine
-
-- active doctrine: dual-lane + BCG + identity-plane/execution-plane split
-- lineage references (Modnet/Structural IA/MSS terms) are non-normative context only
-- legacy `scale` terminology is transitional compatibility context only
-
 ## References
 
 - [references/behavioral-runtime.md](references/behavioral-runtime.md)
 - [references/agent-runtime-notes.md](references/agent-runtime-notes.md)
-- [references/module-actor-boundaries.md](references/module-actor-boundaries.md)
-- [references/modnet-mss-lineage.md](references/modnet-mss-lineage.md)
+- [references/runtime-boundary-review.md](references/runtime-boundary-review.md)
 
 ## Related Skills
 
