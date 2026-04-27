@@ -23,7 +23,8 @@ Plaited's shipped runtime is centered on:
 - [create-agent.ts](/Users/eirby/Workspace/plaited/src/agent/create-agent.ts)
 - [behavioral.ts](/Users/eirby/Workspace/plaited/src/behavioral.ts)
 - [plaited.ts](/Users/eirby/Workspace/plaited/bin/plaited.ts)
-- [eval.ts](/Users/eirby/Workspace/plaited/src/cli/eval/eval.ts)
+- [eval.ts](/Users/eirby/Workspace/plaited/src/eval.ts)
+- [research.cli.ts](/Users/eirby/Workspace/plaited/src/research/research.cli.ts)
 - [ui.ts](/Users/eirby/Workspace/plaited/src/ui.ts)
 
 The core owns:

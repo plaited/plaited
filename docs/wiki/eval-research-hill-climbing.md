@@ -4,7 +4,7 @@
 
 This page documents the current hill-climbing support model implemented in `src/eval/*` and `src/research/*`: what is canonical, what is derived, and how promotion decisions are made today.
 
-Repository note: this doctrine-migration worktree may not include those directories yet. This page is grounded in the current mainline implementations and tests at:
+This page is grounded in the current implementations and tests at:
 
 - `src/eval/eval.schema.ts`
 - `src/eval/eval.process.ts`
