@@ -27,6 +27,20 @@ Each App-enhanced tool keeps normal tool behavior and adds UI metadata:
 3. Resource callback serves Bun-built standalone HTML
 4. Host renders the HTML in a sandboxed iframe
 
+## Mandatory Doctrine Workflow
+
+For every server tool/resource/UI exposure, apply these required steps:
+
+1. Classify each surface as `private lane` or `exchange lane`.
+2. Define the boundary contract before exchange-lane exposure.
+3. Define identity-plane checks and execution-plane enforcement separately.
+4. Add entitlement checks for premium resources/services.
+5. Clarify app-only tools vs model-visible tools under policy.
+6. Add provenance/watermark guidance for premium media outputs.
+7. Include fallback behavior for clients without full extension support.
+
+Trust assertions are not runtime authority by themselves. Verified claims feed policy; execution authority is enforced at runtime boundaries.
+
 ## Step 1: Analyze Existing Tools
 
 Before writing code, inspect the server and classify tools:
@@ -82,7 +96,7 @@ Use relative references so Bun can inline everything local:
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width" />
     <title>Show Map</title>
     <link rel="stylesheet" href="./src/mcp-app.css" />
   </head>

@@ -1,29 +1,20 @@
 # Behavioral Runtime Reference
 
-This reference summarizes the active behavioral runtime doctrine that maps to
-`src/behavioral/*` and behavioral tests.
+Status: active source-backed coordination reference.
 
 ## Runtime Surface
 
-- `behavioral()` creates the coordination runtime.
-- `bThread([...], repeat?)` composes synchronization steps.
-- `bSync({ request, waitFor, block, interrupt })` declares constraints.
-- `useFeedback()` runs side effects after selected events.
-- `useSnapshot()` observes selection/deadlock/feedback diagnostics.
-- `reportSnapshot()` emits runtime/extension diagnostics.
+- `behavioral()` coordination runtime
+- `bThread`, `bSync`, `useFeedback`, `useSnapshot`
+- snapshot diagnostics for selection/deadlock/runtime error conditions
 
-## Prescriptive Patterns
+## Practical Rules
 
-- Keep coordination in threads, effects in feedback handlers.
-- Use additive blocking threads for constraints.
-- Prefer explicit listener schemas; add `detailMatch: 'invalid'` when
-  malformed payloads must be blocked.
-- Add dynamic guard threads before triggering events they must observe.
-- Keep diagnostic observability in snapshots; blocked bids are observable.
+- keep coordination constraints in threads
+- keep side effects in feedback handlers
+- preserve explicit diagnostics for blocked/error conditions
+- avoid silent malformed-payload drops in boundary handlers
 
-## Anti-Patterns
+## Relation To Doctrine
 
-- Raw generator/yield authoring in repo behavioral code.
-- Catching and swallowing internal handler parse errors.
-- Treating blocked events as queued work.
-- Introducing doc-only event names not present in source/tests.
+Behavioral runtime is the local coordination substrate used by both private-lane and exchange-lane policy flows. It is not itself a substitute for contract or auth policy definitions.

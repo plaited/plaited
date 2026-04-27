@@ -38,16 +38,16 @@ Root operational guidance.
   })
 
   await writeTempFile({
-    path: join(rootDir, 'src/modules/AGENTS.md'),
-    content: `# Module Agent Instructions
+    path: join(rootDir, 'src/worker/AGENTS.md'),
+    content: `# Worker Agent Instructions
 
-Scoped instructions for src/modules.
+Scoped instructions for src/worker.
 `,
   })
 
   await writeTempFile({
-    path: join(rootDir, 'src/modules/example.ts'),
-    content: `export const moduleExample = () => 'module example'
+    path: join(rootDir, 'src/worker/example.ts'),
+    content: `export const workerExample = () => 'worker example'
 `,
   })
 
@@ -186,7 +186,7 @@ describe('plaited-context scripts', () => {
     const contextOutput = await assembleTaskContext({
       cwd: rootDir,
       dbPath,
-      task: 'review behavioral module',
+      task: 'review behavioral runtime boundary',
       mode: 'review',
       paths: ['src/example.ts'],
     })
@@ -371,7 +371,7 @@ describe('plaited-context scripts', () => {
       cwd: rootDir,
       rootDir,
       dbPath,
-      include: ['src/modules/AGENTS.md'],
+      include: ['src/worker/AGENTS.md'],
       force: true,
     })
 
@@ -381,10 +381,10 @@ describe('plaited-context scripts', () => {
     const db = await openContextDatabase({ dbPath })
     try {
       const nestedAgentScope = db
-        .query(`SELECT scope_path FROM agent_instructions WHERE path = 'src/modules/AGENTS.md'`)
+        .query(`SELECT scope_path FROM agent_instructions WHERE path = 'src/worker/AGENTS.md'`)
         .get() as { scope_path: string } | null
 
-      expect(nestedAgentScope?.scope_path).toBe('src/modules')
+      expect(nestedAgentScope?.scope_path).toBe('src/worker')
     } finally {
       closeContextDatabase(db)
     }
@@ -413,16 +413,16 @@ describe('plaited-context scripts', () => {
     const db = await openContextDatabase({ dbPath })
     try {
       const nestedAgentScope = db
-        .query(`SELECT scope_path FROM agent_instructions WHERE path = 'src/modules/AGENTS.md'`)
+        .query(`SELECT scope_path FROM agent_instructions WHERE path = 'src/worker/AGENTS.md'`)
         .get() as { scope_path: string } | null
 
-      expect(nestedAgentScope?.scope_path).toBe('src/modules')
+      expect(nestedAgentScope?.scope_path).toBe('src/worker')
     } finally {
       closeContextDatabase(db)
     }
   })
 
-  test('context recommends module analysis commands for module actor review tasks', async () => {
+  test('context recommends boundary review commands for runtime boundary review tasks', async () => {
     const rootDir = await createTempWorkspace()
     const dbPath = join(rootDir, '.plaited/context.sqlite')
 
@@ -442,32 +442,15 @@ describe('plaited-context scripts', () => {
     const contextOutput = await assembleTaskContext({
       cwd: rootDir,
       dbPath,
-      task: 'review module actor diagnostics',
+      task: 'review runtime boundary diagnostics',
       mode: 'review',
-      paths: ['src/modules/example.ts'],
+      paths: ['src/worker/example.ts'],
     })
 
     expect(contextOutput.commandsToRun).toContain('bun --bun tsc --noEmit')
     expect(contextOutput.commandsToRun).toContain('bun test <targeted-files-or-surface>')
     expect(
       contextOutput.commandsToRun.some((command) => command.includes('skills/plaited-context/scripts/git-context.ts')),
-    ).toBe(true)
-    expect(
-      contextOutput.commandsToRun.some((command) =>
-        command.includes('skills/plaited-context/scripts/module-patterns.ts'),
-      ),
-    ).toBe(true)
-    expect(
-      contextOutput.commandsToRun.some(
-        (command) =>
-          command.includes('skills/plaited-context/scripts/module-flow.ts') && command.includes('"format":"json"'),
-      ),
-    ).toBe(true)
-    expect(
-      contextOutput.commandsToRun.some(
-        (command) =>
-          command.includes('skills/plaited-context/scripts/module-flow.ts') && command.includes('"format":"mermaid"'),
-      ),
     ).toBe(true)
     expect(
       contextOutput.commandsToRun.some(

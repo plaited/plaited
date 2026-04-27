@@ -1,120 +1,106 @@
 # Training And Improvement
 
-> Status: architecture direction. This page documents the discovery-first
-> improvement strategy, not an implemented autonomous training loop.
+> Status
+>
+> - Implemented now: Plaited ships behavioral/runtime, eval, and CLI tooling that can support structured experimentation.
+> - Target direction: doctrine-aligned improvement where boundary contracts, identity evidence, and execution authority outcomes become first-class training/evaluation artifacts.
 
-## Position
+## Improvement Strategy
 
-Plaited should improve its agent stack in two phases:
+### Implemented now
 
-1. discover the symbolic architecture
-2. compress stable recurring semantics into the neural layer later
+- Tooling supports evaluation and trace-oriented workflows.
+- No source-backed autonomous doctrine migration loop enforces dual-lane/BCG correctness by default.
 
-The first phase comes before weight adaptation.
+### Target direction
 
-## Discovery First
+- Improve in two phases:
+  1. stabilize symbolic doctrine (dual-lane + BCG + auth split)
+  2. adapt model behavior to that stable doctrine
 
-The pre-training workflow is:
+## Doctrine-Aligned Artifact Focus
 
-- parallel lane search over bounded module or harness objectives
-- local promotion of the strongest attempts inside a lane
-- bundle-level promotion across interacting lanes
-- retention of trusted artifacts, snapshots, and judged repair traces
+### Implemented now
 
-This is not primarily ES, SFT, or GRPO.
+- Existing runtime traces and tests provide baseline evidence.
 
-It is a search-and-selection workflow for discovering:
+### Target direction
 
-- default modules
-- search and retrieval policy
-- symbolic interfaces
-- MSS mappings
-- signal conventions
-- verification and simulation habits
-- composition rules between modules
+Use structured artifacts such as:
 
-## Why The Behavioral Runtime Matters
+- boundary contract drafts and approvals
+- entitlement/provenance policy outcomes
+- identity-plane verification outcomes
+- execution-plane grant/denial outcomes
+- capability-token scope/expiry/delegation failures
+- projection-policy decisions
 
-Plaited's behavioral runtime is part of the data strategy, not only the runtime
-strategy.
+## Identity Plane vs Execution Plane in Evaluation
 
-Important properties:
+### Implemented now
 
-- signals act as shared context
-- signal-driven orchestration is observable
-- `useSnapshot` exposes structured runtime moments
-- `SnapshotMessageSchema` captures selection snapshots and important engine
-  errors
+- The split is doctrine guidance, not a globally enforced eval contract.
 
-Because the runtime already records structured behavioral moments, later
-distillation can prefer:
+### Target direction
 
-- snapshot-derived traces
-- accepted artifacts
-- judged comparisons
-- repair transitions
+- Evaluate identity-plane correctness separately from execution-plane authority.
+- Treat false trust acceptance and false authority issuance as distinct failure classes.
+- Track cross-plane regressions explicitly.
 
-instead of relying on raw transcript dumps.
+## End-to-End Improvement Flow
 
-## Mental Model
+### Implemented now
 
-The clean mental model is:
+1. Use local tooling to run eval/validation workflows.
+2. Inspect outputs and iterate manually.
 
-- modules are the product outputs
-- retained research traces are the learning substrate
-- the executor model is the researcher
-- the adapted model is the student
+### Target direction
 
-These roles should preferably stay within one model family even when they run
-at different sizes or on different tiers, but they are conceptually different.
+1. Generate or curate request sets with identity and entitlement variance.
+2. Validate identity-plane outcomes (verification/revocation/freshness).
+3. Validate execution-plane outcomes (grant/token/scope enforcement).
+4. Score projection-policy correctness (local UI only, exchange contract intact).
+5. Promote doctrine-consistent behavior into default policies/model prompts.
 
-Model-family choices are deployment and research decisions, not framework
-contracts. Local runs may use smaller or quantized variants, while stronger
-server-backed runs may use larger variants without changing the harness
-contract.
+## Threat Model Notes
 
-## Model A / Model B Direction
+### Implemented now
 
-Plaited's two-model direction should be framed as an architectural direction
-until source proves a complete implementation.
+- Doctrine-specific failure taxonomy is not fully encoded in shared tooling.
 
-Model A is the search and context assembler. It should use actor-controlled
-tools such as `plaited-context`, source search, git history, You.com research
-adapters, and other approved web research adapters. It assembles evidence,
-prunes noise, and emits structured context with provenance.
+### Target direction
 
-Model B is the code, simulation, and trajectory generator. It should operate in
-bounded worktrees and produce candidate changes, simulations, or plans that can
-be evaluated by tests, `tsc`, frontier exploration, eval graders, diff
-summaries, and promotion gates.
+- Detect trust-authority conflation (claims accepted as direct authority).
+- Detect over-broad token grants and stale-claim acceptance.
+- Detect provenance/watermark omission for premium content flows.
 
-The handoff between model A and model B is structured context, not authority.
-Tool calls and side-effect intents still return to Plaited actors for policy
-and execution.
+## Example Evaluation Contract
 
-## Training Later
+```yaml
+contractId: eval.boundary.creator.video.v1
+contractType: evaluation
+resource: asset://creator/video/episode-3
+checks:
+  - identityPlane.verification == pass
+  - executionPlane.grant == deny_when_revoked
+  - executionPlane.tokenScope == read_stream_only
+  - projectionPolicy.localOnly == true
+```
 
-Once the default module bundle is stable, later weight adaptation can teach
-the model stable Plaited semantics so the harness does not need to resend the
-same basic framework information every time.
+## Premium Creator Distribution Example
 
-Likely targets for later LoRA or adapter-style adaptation:
+Evaluation should cover premium text/audio/video/game scenarios with:
 
-- stable Plaited concepts
-- stable MSS semantics
-- better recognition of when internal or external search is needed
-- better query decomposition and retrieval habits
-- prompt-to-module mappings
-- simulation and verification habits
-- expected symbolic output structure
+- valid subscriber claim
+- revoked subscriber claim
+- delegated request attempt
+- expired token replay attempt
+- provenance/watermark compliance checks
 
-This should not include volatile runtime state or unstable implementation
-details.
+## Related
 
-## Practical Rule
-
-Module research precedes model adaptation.
-
-First discover the symbolic layer through bounded parallel search and
-bundle-level promotion. Only then use accepted artifacts and structured traces
-to train the neural layer against a stable target.
+- [Architecture](architecture.md)
+- [Boundary Contract Graph](boundary-contract-graph.md)
+- [Node-To-Node Auth](node-to-node-auth.md)
+- [Sources](sources.md)
+- [Boundary Contract Review Skill](../../skills/boundary-contract-review/SKILL.md)

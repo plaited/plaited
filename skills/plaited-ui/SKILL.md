@@ -36,7 +36,7 @@ Public UI exports are re-exported from `src/ui.ts`.
 | Shadow DOM decoration | `src/ui/controller/decorate-elements.ts` | `decorateElements` |
 | Rendering | `src/ui/render/template.ts`, `src/ui/render/ssr.ts`, `src/ui/render/template.types.ts`, `src/ui/render/template.constants.ts` | `createTemplate`, `h`, `Fragment`, `createSSR`, `P_TARGET`, `P_TRIGGER`, `P_TOPIC` |
 | CSS | `src/ui/css/*.ts` | `createStyles`, `createTokens`, `createHostStyles`, `createRootStyles`, `createKeyframes`, `joinStyles` |
-| Server bridge | `src/modules/ui-websocket-runtime-actor.ts` | validates `ClientMessageSchema`, preserves `p-topic` source metadata, and forwards client messages |
+| Server bridge fixtures | `src/ui/controller/tests/fixtures/serve.ts` | test fixture server validating controller protocol surfaces and message flow |
 
 ## Controller Model
 
@@ -238,7 +238,7 @@ Keep schema tests exhaustive for protocol edges:
 
 ## Workflow
 
-1. Read code before relying on docs. `src/ui/` and `src/modules/ui-websocket-runtime-actor.ts` are
+1. Read code before relying on docs. `src/ui/` and controller fixture/runtime files are
    the source of truth.
 2. Start at the protocol boundary: schemas and event names first, DOM behavior
    second.

@@ -215,7 +215,7 @@ export const gitHistoryCli = makeCli({
   outputSchema: GitHistoryOutputSchema,
   help: [
     'Examples:',
-    `  bun skills/plaited-context/scripts/git-history.ts '{"base":"origin/dev","paths":["src/modules"],"limit":20}'`,
+    `  bun skills/plaited-context/scripts/git-history.ts '{"base":"origin/dev","paths":["src/worker"],"limit":20}'`,
     `  bun skills/plaited-context/scripts/git-history.ts --schema output`,
   ].join('\n'),
   run: collectGitHistory,

@@ -32,6 +32,20 @@ The tool's `_meta.ui.resourceUri` must match the resource URI.
 
 Flow: host calls tool -> host resolves `resourceUri` -> server returns bundled HTML -> app renders result.
 
+## Mandatory Doctrine Workflow
+
+For each MCP App surface (tool, resource, UI), apply these required steps:
+
+1. Classify every tool/resource/UI as `private lane` or `exchange lane`.
+2. Define the boundary contract before exposing exchange-lane surfaces.
+3. Define identity-plane checks and execution-plane enforcement separately.
+4. Add entitlement checks for premium resources/services.
+5. Clarify app-only tools vs model-visible tools under policy.
+6. Add provenance/watermark guidance for premium media outputs.
+7. Include fallback behavior for clients without full extension support.
+
+Do not treat trust assertions as direct execution authority. Trust evidence informs policy; execution authority begins after policy approval.
+
 ## Bun Artifact Contract (Use This By Default)
 
 Use explicit, stable paths so tooling and server code stay aligned:
@@ -93,7 +107,7 @@ Add framework packages only if needed (for example `bun add react react-dom`).
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width" />
     <title>Weather Dashboard</title>
     <link rel="stylesheet" href="./src/mcp-app.css" />
   </head>

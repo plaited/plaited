@@ -1,60 +1,37 @@
 # Modnet Translation
 
-> Status: active translation guide. Historical Modnet language is lineage, not
-> current runtime contract.
+> Status: lineage / migration note (non-normative for active doctrine).
 
-## What Changes
+## Why This Page Exists
 
-Original Modnet assumed reusable modules could compose into larger shared
-interfaces through standardized tags, including `scale`. That was a reasonable
-pre-agent framing: interfaces were made from predefined building blocks, and
-interoperability needed a way to know where a block could fit.
+This page preserves how Modnet-era vocabulary maps into the active dual-lane + boundary-contract doctrine.
 
-Plaited changes the interoperability unit. Nodes do not share UI blocks. Nodes
-expose approved facts, resources, services, and projections. Local agents render
-the UI for their users.
+## Translation Summary
 
-## What Scale Was Doing
-
-`scale` carried at least three separate meanings:
-
-- granularity: what size of thing is this?
-- containment: what can it contain or be contained by?
-- blast radius: how broad is the social or coordination context?
-
-Those meanings should not remain collapsed into a single S1-S8 hierarchy.
-
-## Target Translation
-
-| Modnet Concept | Plaited Translation |
+| Legacy Term | Active Doctrine Translation |
 |---|---|
-| Content | Descriptive domain tag plus projectable facts/resources |
-| Structure | Descriptive state organization and relationships |
-| Mechanics | Actor-owned services/actions and interaction loops |
-| Boundary | Runtime policy, projection scopes, grants, audience constraints |
-| Scale | Legacy compatibility; replace with explicit metadata when needed |
+| Modnet shared-interface framing | Exchange-lane boundary contracts over data/resources/services/provenance |
+| Shared UI assumptions | Local projection only; UI is not interoperability unit |
+| `scale` ladder semantics | Transitional compatibility only; replace with explicit audience/scope/granularity metadata |
 
-If granularity or containment matters, put it on the relevant fact, resource,
-service, or projection descriptor. Do not require every actor to fit a universal
-ladder.
+## Current vs Target
 
-## Current Implementation Gap
+### Implemented now
 
-Some current schemas still include `scale` for MSS compatibility:
+- No source-backed global boundary-contract graph engine exists yet.
+- Legacy terms may still appear in historical docs and lineage references.
 
-- `src/modules/module-program-admission.ts`
-- `src/behavioral/actor-policy-ledger.ts`
-- related tests and examples
+### Target direction
 
-Until those schemas migrate, docs should call `scale` transitional rather than
-target doctrine.
+- Active interoperability doctrine is BCG + node-to-node auth + capability-token execution authority.
+- Legacy terms are lineage context, not normative runtime policy.
 
-## Migration Direction
+## Transitional Compatibility Rule
 
-The likely migration is:
+`scale` may be retained only as compatibility metadata when needed for migration. New active doctrine guidance should use explicit contract fields (`audience`, `scope`, `delegation`, `expiry`, `entitlement`, `provenance`) instead of legacy scale semantics.
 
-1. Accept four descriptive tags for new module/program descriptors.
-2. Keep legacy `scale` input temporarily as optional compatibility metadata.
-3. Move useful scale-like information to structured fields such as
-   `granularity`, `containment`, `audienceScope`, or projection `scope`.
-4. Update tests and actor policy replay once compatibility behavior is explicit.
+## Related
+
+- [Dual-Lane HyperNode Model](dual-lane-node-model.md)
+- [Boundary Contract Graph](boundary-contract-graph.md)
+- [Structural IA Lineage](structural-ia-lineage.md)

@@ -52,7 +52,7 @@ export const recordFindingCli = makeCli({
   outputSchema: RecordFindingOutputSchema,
   help: [
     'Examples:',
-    `  bun skills/plaited-context/scripts/record-finding.ts '{"finding":{"kind":"anti-pattern","status":"candidate","summary":"Avoid local ZodError recovery","evidence":[{"path":"src/modules/example.ts","line":100,"symbol":"server_start"}]}}'`,
+    `  bun skills/plaited-context/scripts/record-finding.ts '{"finding":{"kind":"anti-pattern","status":"candidate","summary":"Avoid local ZodError recovery","evidence":[{"path":"src/worker/worker.ts","line":100,"symbol":"startWorker"}]}}'`,
     `  bun skills/plaited-context/scripts/record-finding.ts --schema input`,
   ].join('\n'),
   run: recordFindingEntry,

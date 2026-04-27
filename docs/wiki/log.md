@@ -1,5 +1,17 @@
 # Wiki Log
 
+## 2026-04-26
+
+- Added canonical doctrine pages for dual-lane node model, boundary-contract
+  graph, and node-to-node auth.
+- Rewrote core architecture wiki pages with explicit implemented-now vs
+  target-direction splits.
+- Marked Modnet and Structural IA content as lineage/non-normative guidance.
+- Added boundary-contract and node-auth skill surfaces.
+- Updated MCP app skills with mandatory lane classification, contract-first
+  exposure, entitlement checks, provenance/watermark guidance, and extension
+  fallback requirements.
+
 ## 2026-04-25
 
 - Added an external paper note for arXiv:2604.01193 ("Embarrassingly Simple

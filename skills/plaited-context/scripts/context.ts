@@ -88,7 +88,7 @@ export const contextCli = makeCli({
   outputSchema: ContextOutputSchema,
   help: [
     'Examples:',
-    `  bun skills/plaited-context/scripts/context.ts '{"task":"review module actor diagnostics","mode":"review","paths":["src/modules/example.ts"]}'`,
+    `  bun skills/plaited-context/scripts/context.ts '{"task":"review runtime boundary diagnostics","mode":"review","paths":["src/worker/worker.ts"]}'`,
     `  bun skills/plaited-context/scripts/context.ts --schema output`,
   ].join('\n'),
   run: assembleTaskContext,
