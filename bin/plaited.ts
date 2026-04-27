@@ -13,10 +13,7 @@
 
 import {
   behavioralFrontierCli,
-  compareTrialsCli,
-  evalCli,
   researchCli,
-  selfEvalCli,
   skillsCatalogCli,
   skillsFrontmatterCli,
   skillsInstructionsCli,
@@ -30,10 +27,7 @@ import {
 
 const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   'behavioral-frontier': behavioralFrontierCli,
-  'compare-trials': compareTrialsCli,
-  eval: evalCli,
   research: researchCli,
-  'self-eval': selfEvalCli,
   'skills-catalog': skillsCatalogCli,
   'skills-frontmatter': skillsFrontmatterCli,
   'skills-instructions': skillsInstructionsCli,

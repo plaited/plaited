@@ -1,25 +1,15 @@
 export * from './cli/behavioral-frontier/behavioral-frontier.constants.ts'
 export * from './cli/behavioral-frontier/behavioral-frontier.schemas.ts'
 export * from './cli/behavioral-frontier/behavioral-frontier.ts'
-export * from './cli/compare-trials/compare-trials.schemas.ts'
-export * from './cli/compare-trials/compare-trials.ts'
-export * from './cli/compare-trials/compare-trials.utils.ts'
-export * from './cli/eval/eval.constants.ts'
-export * from './cli/eval/eval.schemas.ts'
-export * from './cli/eval/eval.ts'
-export * from './cli/eval/eval.utils.ts'
-export * as selfEvalSchemas from './cli/self-eval/self-eval.schemas.ts'
-export {
-  runTrial as runSelfEvalTrial,
-  SelfEvalInputSchema,
-  SelfEvalOutputSchema,
-  selfEvalCli,
-} from './cli/self-eval/self-eval.ts'
-export * as selfEvalUtils from './cli/self-eval/self-eval.utils.ts'
 export * from './cli/skills/skills.schema.ts'
 export * from './cli/skills/skills.ts'
 export * from './cli/utils/cli.ts'
 export * from './cli/utils/markdown.ts'
-export * from './researcher/research.constants.ts'
-export * from './researcher/research.schemas.ts'
-export * from './researcher/research.ts'
+export * from './eval/eval.process.ts'
+export * from './eval/eval.schema.ts'
+export * from './research/research.cli.ts'
+export * from './research/research.comparison.utils.ts'
+export * from './research/research.constants.ts'
+export * from './research/research.grading.utils.ts'
+export * from './research/research.schema.ts'
+export * from './research/research.ts'
