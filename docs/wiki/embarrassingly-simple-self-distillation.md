@@ -36,7 +36,7 @@ From the paper abstract and front matter:
   v6.
 - Gains are concentrated on harder coding problems.
 - Improvements generalize across Qwen and Llama families, across 4B, 8B, and
-  30B scales, including instruct and thinking variants.
+  30B parameter sizes, including instruct and thinking variants.
 - The proposed mechanism is a precision-exploration conflict during decoding;
   SSD is claimed to reduce distractor tails where precision matters while
   preserving diversity where exploration matters.

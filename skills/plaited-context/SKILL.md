@@ -13,7 +13,7 @@ compatibility: Requires bun
 indexes source files, AGENTS operational instructions, wiki/reference docs,
 skills, and findings into SQLite so follow-on work starts from source-grounded
 evidence instead of memory. It is also the canonical home for deterministic
-module actor runtime analysis and module flow review evidence.
+runtime boundary analysis and flow review evidence.
 
 Use it before:
 
@@ -77,13 +77,13 @@ bun skills/plaited-context/scripts/scan.ts '{"rootDir":".","include":["AGENTS.md
 3. Assemble task context
 
 ```bash
-bun skills/plaited-context/scripts/context.ts '{"task":"review module actor diagnostics","mode":"review","paths":["src/modules/example.ts"]}'
+bun skills/plaited-context/scripts/context.ts '{"task":"review runtime boundary diagnostics","mode":"review","paths":["src/worker/worker.ts"]}'
 ```
 
 4. Assemble wiki context (relevance + cleanup candidates)
 
 ```bash
-bun skills/plaited-context/scripts/wiki-context.ts '{"task":"review runtime module architecture","paths":["src/modules"],"limit":10}'
+bun skills/plaited-context/scripts/wiki-context.ts '{"task":"review runtime boundary architecture","paths":["src/worker"],"limit":10}'
 ```
 
 5. Run targeted search
@@ -92,25 +92,12 @@ bun skills/plaited-context/scripts/wiki-context.ts '{"task":"review runtime modu
 bun skills/plaited-context/scripts/search.ts '{"query":"useSnapshot reportSnapshot","limit":20}'
 ```
 
-6. Run deterministic module pattern gate (hard gate)
+6. Run TypeScript LSP probes for alias-heavy boundary flows:
 
 ```bash
-bun skills/plaited-context/scripts/module-patterns.ts '{"files":["src/modules/example.ts"]}'
-```
-
-7. Generate module flow review evidence
-
-```bash
-bun skills/plaited-context/scripts/module-flow.ts '{"files":["src/modules/example.ts"],"format":"json"}'
-bun skills/plaited-context/scripts/module-flow.ts '{"files":["src/modules/example.ts"],"format":"mermaid"}'
-```
-
-When flow evidence is sparse or alias-heavy, run TypeScript LSP probes:
-
-```bash
-bun skills/typescript-lsp/scripts/run.ts '{"file":"src/modules/example.ts","operations":[{"type":"symbols"}]}'
-bun skills/typescript-lsp/scripts/run.ts '{"file":"src/modules/example.ts","operations":[{"type":"references","line":120,"character":8}]}'
-bun skills/typescript-lsp/scripts/run.ts '{"file":"src/modules/example.ts","operations":[{"type":"definition","line":120,"character":8}]}'
+bun skills/typescript-lsp/scripts/run.ts '{"file":"src/worker/worker.ts","operations":[{"type":"symbols"}]}'
+bun skills/typescript-lsp/scripts/run.ts '{"file":"src/worker/worker.ts","operations":[{"type":"references","line":120,"character":8}]}'
+bun skills/typescript-lsp/scripts/run.ts '{"file":"src/worker/worker.ts","operations":[{"type":"definition","line":120,"character":8}]}'
 ```
 
 8. Assemble local read-only Git context for review/planning evidence
@@ -121,17 +108,27 @@ bun skills/plaited-context/scripts/git-history.ts '{"base":"origin/dev","paths":
 bun skills/plaited-context/scripts/git-worktrees.ts '{}'
 ```
 
-9. Record findings with evidence
+7. Record findings with evidence
 
 ```bash
-bun skills/plaited-context/scripts/record-finding.ts '{"finding":{"kind":"anti-pattern","status":"candidate","summary":"Internal handlers should not catch ZodError locally.","evidence":[{"path":"src/modules/example.ts","line":100,"symbol":"server_start"}]}}'
+bun skills/plaited-context/scripts/record-finding.ts '{"finding":{"kind":"anti-pattern","status":"candidate","summary":"Internal handlers should not catch ZodError locally.","evidence":[{"path":"src/worker/worker.ts","line":100,"symbol":"startWorker"}]}}'
 ```
 
-10. Export review JSON
+8. Export review JSON
 
 ```bash
 bun skills/plaited-context/scripts/export-review.ts '{"status":["candidate","validated"],"format":"json"}'
 ```
+
+## Deprecated Scripts
+
+`module-patterns.ts` and `module-flow.ts` were removed from active workflow.
+
+Reason:
+
+- they analyzed legacy `useExtension(...)` callback structure
+- that structure is not a current `src/` runtime pattern
+- they did not validate boundary-contract completeness and were misleading as an active boundary review gate
 
 ## Evidence Rule
 

@@ -1,184 +1,115 @@
-# The Agent Loop
+# Agent Loop
 
-> Status: canonical wiki note for the minimal agent core and module-composed
-> orchestration model. Cross-references: [Architecture](architecture.md),
-> [Infrastructure](infrastructure.md), and `skills/plaited-runtime/`.
+> Status
+>
+> - Implemented now: local loop coordination is built from shipped runtime primitives and tool surfaces in `src/`.
+> - Target direction: loop decisions explicitly classify lane, evaluate boundary contracts, and separate identity-plane trust checks from execution-plane authority.
 
-## Overview
+## Loop Baseline
 
-Plaited treats the agent loop as a minimal core plus an installed module
-bundle.
+### Implemented now
 
-The current architecture splits the system into:
+- Event-driven local runtime loop with validation and diagnostics.
+- No source-backed universal exchange-lane contract gate for every loop cycle.
 
-1. a **minimal core** in `src/agent/create-agent.ts`
-2. a set of **installed modules** that add planning, memory, skills, MCP,
-   A2A, verification, and other orchestration layers
+### Target direction
 
-That means the active question is not "what does the built-in loop do?" It is
-"which module bundle is installed, and what orchestration does that bundle
-compose on top of the core?"
+- Every non-local operation in the loop must pass through boundary contract evaluation.
+- Loop state tracks identity evidence outcomes separately from execution grant outcomes.
 
-## Minimal Core
+## Contract-Aware Loop Semantics
 
-`createAgent()` owns only a small execution substrate:
+### Implemented now
 
-- `behavioral()` engine setup
-- host `trigger` ingress
-- module `emit` ingress
-- event-derived context memory (`eventType` -> last selected detail)
-- heartbeat ingress
-- guarded bash execution through the execution process actor
-- actor directory scanning and supervisor onboarding for `defineActor(...)` defaults
-- snapshot access through `useSnapshot`
-- host/runtime diagnostic publishing through `reportSnapshot`
+- Contract semantics are mostly doctrinal and not globally wired into runtime execution.
 
-The core is intentionally narrow. It does not define a canonical planning,
-memory, simulation, judge, or context-assembly policy.
+### Target direction
 
-## Core Surface
+The loop handles:
 
-The built-in core event surface is:
+- lane classification (private vs exchange)
+- contract resolution
+- identity-plane verification
+- execution-plane grant/token issuance
+- scoped execution and denial diagnostics
+- local projection output
 
-- `actors_scan`
-- `bash`
-- `heartbeat`
-- `tool_bash_request`
-- `tool_bash_approved`
-- `tool_bash_denied`
-- `tool_bash_result`
+## Minimum Contract Shape For Loop Decisions
 
-These are engine-level primitives. They are not the full user-facing loop.
+Loop-relevant contracts include:
 
-## Module-Composed Orchestration
+- contract id / contract type
+- producer / consumer identities
+- audience
+- resource or service being exposed
+- allowed actions / scope
+- entitlement requirements
+- provenance requirements
+- expiry / freshness rules
+- delegation rules
+- revocation / status checks
+- diagnostics / failure modes
+- projection policy
+- identity-plane responsibilities
+- execution-plane responsibilities
 
-Modules receive:
+## End-to-End Loop Flow
 
-- `moduleId`
-- `emit`
-- `last(listener)`
-- `addThreads(threads)` (scoped by declared module name, fallback `moduleId`)
-- `useSnapshot`
+### Implemented now
 
-From those seams they can install:
+1. Input enters local runtime.
+2. Validation and handler execution occur.
+3. Diagnostics and local projection output are produced.
 
-- static `threads` (installed through the same scoped thread helper)
-- dynamic scoped threads via `addThreads(...)`
-- feedback handlers
-- runtime policy
+### Target direction
 
-This is where higher-level loop behavior should now live.
+1. Ingress is tagged private lane or exchange lane.
+2. Exchange-lane requests attach identity assertions.
+3. Identity plane verifies DID/VC/VP + status/freshness.
+4. Execution plane evaluates contract policy.
+5. Approved path mints short-lived capability token.
+6. Scoped action executes; denied paths emit diagnostics.
+7. Result is projected locally.
 
-Runtime/module install diagnostics should be published as snapshot messages
-(for example `module_warning`) so they appear in the same observability stream
-as selection/deadlock/feedback snapshots.
+## Threat Model Notes
 
-Examples:
+### Implemented now
 
-- a `memory-module` can assemble retained context from snapshots and durable
-  memory
-- a `plan-module` can own plan generation, current-plan state, and re-planning
-  rules
-- a `skills-module` can expose a searchable catalog of skills and inject a
-  selected skill body into model context
-- an `mcp-module` can expose a searchable remote capability inventory without
-  stuffing full tool schemas into the prompt
-- an `a2a-module` can project remote agent capabilities and routing policy
-- a `verification-module` can run symbolic or neural checks before allowing
-  side effects
-- an `edit-module` can orchestrate `read_file` -> `models.primary` ->
-  `write_file` as a higher-level editing primitive
+- Loop does not yet guarantee doctrine-wide tokenized authority enforcement.
 
-## Context Assembly
+### Target direction
 
-Context assembly should be treated as a composed module responsibility, not a
-core invariant.
+- Prevent trust-claim bypass of policy checks.
+- Prevent scope escalation and stale-token replay.
+- Guarantee explicit denial reasons for malformed ingress and denied execution.
 
-Likely contributors include:
+## Loop Policy Example
 
-- recent task or conversation state
-- retained working and episodic memory
-- current plan state
-- selected skill metadata or body
-- searchable MCP capability results
-- prior verification failures or repair hints
-- governance or verification constraints from installed modules
+```json
+{
+  "contractId": "bcg.creator.live-stream.v1",
+  "lane": "exchange",
+  "requiredEntitlement": "PremiumSubscription",
+  "tokenTtl": "PT2M",
+  "allowDelegation": false,
+  "projectionPolicy": "local-only"
+}
+```
 
-Different module bundles may assemble context differently while still using
-the same minimal engine underneath.
+## Premium Creator Distribution Example
 
-## Tools
+Loop behavior for premium text/audio/video/game delivery:
 
-The core currently provides low-level execution primitives, not a final
-end-user tool UX.
+- exchange request enters with entitlement claims
+- identity checks pass/fail independently of execution checks
+- execution grants short-lived scoped capability token on approval
+- runtime returns result with provenance/watermark obligations
+- client renders local viewing/listening/play UI
 
-### Built-In Primitives
+## Related
 
-| Primitive | Purpose |
-|---|---|
-| `actors_scan` | Scan a workspace actor directory and onboard `defineActor(...)` default exports |
-| `heartbeat` | Host-provided pulse for module-owned orchestration |
-| `tool_bash_request` | Request guarded workspace-local process execution |
-| `tool_bash_approved` | Approve a pending guarded process request |
-| `tool_bash_denied` | Deny a pending guarded process request |
-| `tool_bash_result` | Publish process completion, failure, and captured output |
-| `bash` | Internal normalized execution event after approval |
-
-### Higher-Level Tools
-
-Higher-level tools should usually be module-owned compositions.
-
-Examples:
-
-- `edit_file` should be a small orchestration layer rather than a core
-  primitive
-- planning tools should come from a `plan-module`
-- skill selection and activation should come from `skills-module`
-- MCP discovery and tool routing should come from `mcp-module`
-
-## Heartbeat
-
-The heartbeat is a core capability, but its meaning is module-defined.
-
-The host emits `heartbeat`, for example from `Bun.cron`, by calling the
-`trigger` returned from `createAgent()`. Modules can use that event for:
-
-- proactive sensing
-- background maintenance
-- memory consolidation
-- sync and durability work
-- periodic verification or evaluation tasks
-
-So heartbeat is part of the substrate, not a fixed behavior policy.
-
-## Verification and Evolution
-
-Simulation, judging, and symbolic verification should not be documented as
-mandatory built-in loop phases of the current core.
-
-They fit better as optional module layers that can:
-
-- inspect snapshots
-- read context memory entries and emit new events
-- gate or repair proposed actions
-- retain successful patterns into durable memory
-- feed verified examples into training and distillation workflows
-
-That direction is compatible with a self-evolving neuro-symbolic stack:
-
-- neural models propose plans, edits, and candidate structures
-- symbolic or deterministic checks verify them
-- retained evidence feeds future module and model improvement
-
-## Current Architectural Position
-
-The stable invariant is:
-
-- minimal engine
-- stable module contract
-- explicit provenance (`trigger | request | emit`)
-- ingress-only pumping (`trigger`, `emit`)
-- behaviorally composed orchestration
-- replaceable module bundle
-
-That is the shape the surrounding docs and research lanes should now reflect.
+- [Architecture](architecture.md)
+- [Dual-Lane HyperNode Model](dual-lane-node-model.md)
+- [Node-To-Node Auth](node-to-node-auth.md)
+- [Plaited Runtime Skill](../../skills/plaited-runtime/SKILL.md)
+- [Node Auth Skill](../../skills/node-auth/SKILL.md)

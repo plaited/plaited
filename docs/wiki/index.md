@@ -1,31 +1,42 @@
 # Plaited Wiki
 
-> Status: active architecture wiki. Source code, tests, root `AGENTS.md`, and
-> applicable skills remain higher authority.
+> Status: active doctrine + lineage wiki. Runtime/source authority remains `src/`, tests, root `AGENTS.md`, and applicable skills.
 
-This wiki captures the current Plaited experience standard: users own nodes,
-actors own state and services, runtime policy decides what crosses boundaries,
-and UI is generated as a local projection.
-
-## Pages
+## Canonical Doctrine (Active)
 
 | Page | Scope |
 |---|---|
-| [Architecture](architecture.md) | Framework overview, first principles, runtime hierarchy, and deployment posture |
-| [Agent Loop](agent-loop.md) | Minimal core plus module-composed orchestration |
-| [Actor Runtime](actor-runtime.md) | Current `defineActor`, supervisor runtime, actor policy ledger, diagnostics, and gaps |
-| [Local Inference Bridge](local-inference-bridge.md) | Unix socket framed `ActorEnvelope` stream decision for same-machine neural runtime IPC |
-| [Infrastructure](infrastructure.md) | Local-first node home, sandbox execution, identity, and deployment direction |
-| [Training And Improvement](training-and-improvement.md) | Discovery-first symbolic architecture, model A/model B direction, and later adaptation |
-| [Chroma Context-1](chroma-context-1.md) | External research note on self-editing retrieval subagents and context management |
-| [Embarrassingly Simple Self-Distillation](embarrassingly-simple-self-distillation.md) | External paper note on verifier-free self-distillation for code generation |
-| [Plaited Experience Standard](plaited-experience-standard.md) | Target standard for facts, services, policy, provenance, and local projections |
-| [Modnet Translation](modnet-translation.md) | How Modnet/MSS ideas translate into Plaited actor-era architecture |
-| [Structural IA Lineage](structural-ia-lineage.md) | What remains useful from Structural IA and what does not become runtime doctrine |
-| [Sources](sources.md) | Source references and provenance notes |
+| [Architecture](architecture.md) | Repo-level doctrine split between implemented runtime and target direction |
+| [Dual-Lane HyperNode Model](dual-lane-node-model.md) | Private lane vs exchange lane model and authority split |
+| [Boundary Contract Graph](boundary-contract-graph.md) | Active interoperability doctrine and minimum contract shape |
+| [Node-To-Node Auth](node-to-node-auth.md) | DID/VC/SSI trust plane and capability-token execution plane flow |
+| [Infrastructure](infrastructure.md) | Infrastructure posture for lane classification, auth, and enforcement |
+| [Agent Loop](agent-loop.md) | Loop semantics aligned to contract evaluation and tokenized authority |
+| [Actor Runtime](actor-runtime.md) | Current runtime baseline and target actor-boundary direction |
+| [Training And Improvement](training-and-improvement.md) | Doctrine-aligned eval/improvement path |
+| [Sources](sources.md) | Authority and provenance map for doctrine pages and skills |
+
+## Supporting Active Docs
+
+| Page | Scope |
+|---|---|
+| [Local Inference Bridge](local-inference-bridge.md) | Transport-direction note for local inference boundaries |
+| [Eval + Research Hill-Climbing Model](eval-research-hill-climbing.md) | Current trial-evidence normalization/comparison/promotion guidance |
+
+## Lineage / Non-Normative Docs
+
+| Page | Status |
+|---|---|
+| [Modnet Translation](modnet-translation.md) | Lineage translation guide, non-normative for active runtime doctrine |
+| [Plaited Experience Standard](plaited-experience-standard.md) | Conceptual target framing aligned to active doctrine |
+| [Structural IA Lineage](structural-ia-lineage.md) | Historical lineage context, non-normative |
+| [Chroma Context-1](chroma-context-1.md) | External research note |
+| [Embarrassingly Simple Self-Distillation](embarrassingly-simple-self-distillation.md) | External research note |
 | [Log](log.md) | Wiki maintenance log |
 
-## Authority
+## Related Skills
 
-Use the wiki to orient architectural work. Verify implementation details against
-`src/`, tests, and `skills/plaited-runtime/` before changing runtime code.
+- [plaited-runtime](../../skills/plaited-runtime/SKILL.md)
+- [boundary-contract-review](../../skills/boundary-contract-review/SKILL.md)
+- [node-auth](../../skills/node-auth/SKILL.md)
+- [plaited-context](../../skills/plaited-context/SKILL.md)

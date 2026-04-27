@@ -1414,22 +1414,19 @@ export const assembleContext = ({
 
   const normalizedTask = task.toLowerCase()
   const normalizedPaths = paths.map((path) => normalizeRelativePath(path))
-  const modulePathInScope = normalizedPaths.some((path) => path === 'src/modules' || path.startsWith('src/modules/'))
-  const moduleTaskHint =
-    /module actor|module runtime|runtime actor|useextension|reportsnapshot|module diagnostics|mss/.test(normalizedTask)
-  const isModuleActorReview = modulePathInScope || moduleTaskHint
+  const boundaryPathInScope = normalizedPaths.some((path) => path.startsWith('src/'))
+  const boundaryTaskHint =
+    /runtime boundary|boundary contract|ingress|denial diagnostics|identity plane|execution plane/.test(normalizedTask)
+  const isBoundaryReview = boundaryPathInScope || boundaryTaskHint
 
-  const commandsToRun = isModuleActorReview
+  const commandsToRun = isBoundaryReview
     ? [
-        `bun skills/plaited-context/scripts/git-context.ts '{"base":"origin/dev","paths":["<module-files>"],"includeWorktrees":true}'`,
+        `bun skills/plaited-context/scripts/git-context.ts '{"base":"origin/dev","paths":["<boundary-files>"],"includeWorktrees":true}'`,
         'bun --bun tsc --noEmit',
         'bun test <targeted-files-or-surface>',
-        `bun skills/plaited-context/scripts/module-patterns.ts '{"files":["<module-files>"]}'`,
-        `bun skills/plaited-context/scripts/module-flow.ts '{"files":["<module-files>"],"format":"json"}'`,
-        `bun skills/plaited-context/scripts/module-flow.ts '{"files":["<module-files>"],"format":"mermaid"}'`,
-        `bun skills/typescript-lsp/scripts/run.ts '{"file":"<module-file>","operations":[{"type":"symbols"}]}'`,
-        `bun skills/typescript-lsp/scripts/run.ts '{"file":"<module-file>","operations":[{"type":"references","line":<line>,"character":<character>}]}'`,
-        `bun skills/typescript-lsp/scripts/run.ts '{"file":"<module-file>","operations":[{"type":"definition","line":<line>,"character":<character>}]}'`,
+        `bun skills/typescript-lsp/scripts/run.ts '{"file":"<boundary-file>","operations":[{"type":"symbols"}]}'`,
+        `bun skills/typescript-lsp/scripts/run.ts '{"file":"<boundary-file>","operations":[{"type":"references","line":<line>,"character":<character>}]}'`,
+        `bun skills/typescript-lsp/scripts/run.ts '{"file":"<boundary-file>","operations":[{"type":"definition","line":<line>,"character":<character>}]}'`,
       ]
     : mode === 'review'
       ? [

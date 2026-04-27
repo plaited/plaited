@@ -1,98 +1,62 @@
 # Plaited Experience Standard
 
-> Status: target doctrine. Current source still carries transitional MSS `scale`
-> fields in some schemas; see [Modnet Translation](modnet-translation.md).
+> Status: active conceptual standard aligned to dual-lane + boundary-contract doctrine.
 
 ## Position
 
-Plaited does not treat shared UI as the interoperability unit.
+Plaited treats local projection as a local UX concern, not a shared interoperability contract.
 
-Each user's screen belongs to that user and their local agent. Other nodes see
-approved data, resources, services, and policy-governed projections. Their
-agents may render different interfaces for the same underlying exposure.
+## Current vs Target
 
-The shared substrate is:
+### Implemented now
 
-- actor-owned facts and resources
-- actor-owned services and actions
-- policy and grants
-- provenance
-- runtime-approved projections
+- Local runtime/projection surfaces exist in `src/ui/*` and related runtime code.
+- End-to-end boundary-contract enforcement with capability-token authority is not fully implemented in current source.
 
-The local substrate is:
+### Target direction
 
-- generated UI
-- task-specific layout
-- accessibility and device adaptation
-- user preference and workflow memory
+- Exchange-lane interoperability is defined by boundary contracts over data/resources/services/provenance.
+- Identity-plane verification informs policy.
+- Execution-plane authority is capability-token based after policy approval.
 
 ## Responsibility Split
 
-Agents propose and organize. Actors own and validate. Runtime policy decides
-what crosses node boundaries.
-
 | Layer | Responsibility |
 |---|---|
-| Agent | Extract facts from messy input, propose services, draft policies, generate local UI, keep the authoring model humane |
-| Actor | Own source state, expose service handlers, record provenance, reject invalid or unauthorized operations |
-| Runtime / Supervisor | Validate descriptors, evaluate projection requests, enforce grants, maintain replayable policy state |
-| Human | Approve sensitive sharing, authority changes, destructive actions, and policy escalation |
+| Agent | Propose facts/services/projections from user input |
+| Runtime policy | Evaluate contracts, grants, and enforcement decisions |
+| Identity plane | Verify DID/VC/VP evidence, freshness, and revocation/status |
+| Execution plane | Mint and enforce scoped short-lived capability tokens |
+| Human | Approve sensitive policy transitions and destructive changes |
 
-## Conceptual Model
+## Minimum Contract Requirements
 
-```text
-user intent and messy domain input
-  -> agent-proposed facts/resources/services/policies
-  -> actor-owned state and service handlers
-  -> runtime-governed projections and grants
-  -> local generated UI for each audience/context
-```
+- contract id / contract type
+- producer / consumer identities
+- audience
+- resource or service being exposed
+- allowed actions / scope
+- entitlement requirements
+- provenance requirements
+- expiry / freshness rules
+- delegation rules
+- revocation / status checks
+- diagnostics / failure modes
+- projection policy
+- identity-plane responsibilities
+- execution-plane responsibilities
 
-## Descriptive Vocabulary
+## Premium Creator Distribution Example
 
-The target descriptive tags are:
+Creator-owned premium text/audio/video/game assets use entitlement-aware boundary contracts:
 
-- `content`: what domain the actor is about
-- `structure`: how source state is conceptually organized
-- `mechanics`: what services, actions, loops, or incentives exist
-- `boundary`: what sharing, audience, and policy constraints apply
+- verified claims enter via identity plane
+- execution authority is short-lived capability token issuance
+- outputs include provenance/watermark requirements
+- each client renders local projection UI
 
-These tags help discovery, review, and agent reasoning. They do not grant
-authority. Runtime objects decide what can actually happen.
+## Related
 
-## Runtime Substrate
-
-Facts and resources are projectable state, not tags. Services and actions are
-capabilities, not labels. Policy and grants are enforceable runtime decisions,
-not prose. Provenance attaches to state, projections, grants, and code
-promotion. Projections are approved views over actor-owned state or services.
-
-## Farm Stand Example
-
-A farmer should not have to assemble a farm stand from hand-authored object
-scales. The user can say what is true in ordinary language:
-
-```text
-I have Fuji apples today, $4/lb retail, $2.50/lb wholesale, pickup until 2pm.
-Ask before sharing supplier terms.
-```
-
-The agent may propose:
-
-- facts: inventory, prices, pickup window, location, availability
-- services: reserve item, request wholesale quote, pay invoice, subscribe to restock
-- policies: public retail availability, supplier-only wholesale terms, organizer aggregation
-- provenance: farmer-entered price, agent-normalized item name, last updated time
-- projections: consumer shopping, supplier ordering, organizer logistics, public availability
-
-The actor validates and owns the accepted state. The runtime decides what each
-requester may receive. UI remains local: one person may see a shopping list,
-another a supplier order sheet, another a market map.
-
-## Constraints
-
-Do not let generated UI hide authority. Every cross-node exposure still needs
-declared source, audience, policy, projection shape, and provenance.
-
-Do not treat agent inference as approval. Agents can propose policies and
-interfaces; actors and runtime policy enforce them.
+- [Architecture](architecture.md)
+- [Dual-Lane HyperNode Model](dual-lane-node-model.md)
+- [Node-To-Node Auth](node-to-node-auth.md)

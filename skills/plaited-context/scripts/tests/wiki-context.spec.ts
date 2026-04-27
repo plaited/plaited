@@ -22,8 +22,8 @@ const createWikiWorkspace = async () => {
   const outsideLinkValue = `../../${basename(outsideDir)}/outside.md`
 
   await writeTempFile({
-    path: join(rootDir, 'src/modules/runtime.ts'),
-    content: `export const runtimeModule = () => 'runtime'
+    path: join(rootDir, 'src/worker/runtime.ts'),
+    content: `export const runtimeBoundary = () => 'runtime'
 `,
   })
 
@@ -58,9 +58,9 @@ compatibility: Requires bun
     path: join(rootDir, 'docs/guide.md'),
     content: `# Runtime Guide
 
-## Module Layout
+## Boundary Layout
 
-Review [runtime module](../src/modules/runtime.ts#main) first.
+Review [runtime boundary](../src/worker/runtime.ts#main) first.
 Check [missing note](./missing-note.md).
 Check [outside workspace file](${outsideLinkValue}).
 See [example skill](../skills/example-skill/SKILL.md).
@@ -130,7 +130,7 @@ describe('wiki-context assembly', () => {
       expect(guideFile?.kind).toBe('wiki')
       expect(rootAgentsFile?.kind).toBe('agent-instructions')
       expect(guideDoc?.title).toBe('Runtime Guide')
-      expect(headings).toEqual([{ heading: 'Runtime Guide' }, { heading: 'Module Layout' }])
+      expect(headings).toEqual([{ heading: 'Runtime Guide' }, { heading: 'Boundary Layout' }])
       expect(links).toEqual([
         {
           link_value: outsideLinkValue,
@@ -143,8 +143,8 @@ describe('wiki-context assembly', () => {
           target_exists: 1,
         },
         {
-          link_value: '../src/modules/runtime.ts',
-          target_path: 'src/modules/runtime.ts',
+          link_value: '../src/worker/runtime.ts',
+          target_path: 'src/worker/runtime.ts',
           target_exists: 1,
         },
         {
@@ -174,15 +174,15 @@ describe('wiki-context assembly', () => {
     const firstOutput = await assembleWikiTaskContext({
       cwd: rootDir,
       dbPath,
-      task: 'review runtime module architecture',
-      paths: ['src/modules'],
+      task: 'review runtime boundary architecture',
+      paths: ['src/worker'],
       limit: 10,
     })
     const secondOutput = await assembleWikiTaskContext({
       cwd: rootDir,
       dbPath,
-      task: 'review runtime module architecture',
-      paths: ['src/modules'],
+      task: 'review runtime boundary architecture',
+      paths: ['src/worker'],
       limit: 10,
     })
 

@@ -134,7 +134,7 @@ export const wikiContextCli = makeCli({
   outputSchema: WikiContextOutputSchema,
   help: [
     'Examples:',
-    `  bun skills/plaited-context/scripts/wiki-context.ts '{"task":"review runtime module architecture","paths":["src/modules"],"limit":10}'`,
+    `  bun skills/plaited-context/scripts/wiki-context.ts '{"task":"review runtime boundary architecture","paths":["src/worker"],"limit":10}'`,
     `  bun skills/plaited-context/scripts/wiki-context.ts --schema input`,
     `  bun skills/plaited-context/scripts/wiki-context.ts --schema output`,
   ].join('\n'),

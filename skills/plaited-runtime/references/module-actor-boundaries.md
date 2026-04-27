@@ -1,29 +1,28 @@
-# Module Actor Boundary Reference
+# Runtime Boundary Review Reference
 
-This reference summarizes module actor review doctrine aligned with
-`plaited-context` module analysis and `mss-module-review` checklist guidance.
+Status: active boundary review reference.
 
 ## Required Evidence Workflow
 
 ```bash
-bun skills/plaited-context/scripts/context.ts '{"task":"review module actor diagnostics","mode":"review","paths":["<module-files>"]}'
-bun skills/plaited-context/scripts/module-patterns.ts '{"files":["<module-files>"]}'
-bun skills/plaited-context/scripts/module-flow.ts '{"files":["<module-files>"],"format":"json"}'
-bun skills/plaited-context/scripts/module-flow.ts '{"files":["<module-files>"],"format":"mermaid"}'
+bun skills/plaited-context/scripts/context.ts '{"task":"review boundary contract policy","mode":"review","paths":["<paths>"]}'
+bun --bun tsc --noEmit
+bun test <targeted-files-or-surface>
+bun skills/typescript-lsp/scripts/run.ts '{"file":"<boundary-file>","operations":[{"type":"symbols"}]}'
 ```
 
-Optional recording:
-- add `"record": true` only when DB initialization or explicit `dbPath` is in
-  place.
+Legacy note: `module-patterns` and `module-flow` were extension-era analyzers and are no longer active review gates.
 
 ## Boundary Rules
 
-- Keep core module actors flat in `src/modules/*.ts`.
-- Do not create nested module implementation folders under `src/modules`.
-- External transport ingress parses in `try/catch` and emits transport-level
-  diagnostics plus snapshot observability.
-- Internal `useExtension(...)` handlers parse strictly and do not locally catch
-  `ZodError`.
-- Actor/runtime diagnostics use `reportSnapshot(...)`.
-- Avoid synthetic diagnostic events unless there is a real protocol consumer.
-- Preserve source/provenance in received envelopes/messages.
+- classify boundaries as private lane or exchange lane
+- define boundary contract before exchange-lane exposure
+- separate identity-plane checks from execution-plane enforcement
+- enforce explicit audience/scope/expiry/delegation constraints
+- require observable malformed-ingress and denied-execution diagnostics
+- treat projection policy as local rendering behavior
+
+## Related
+
+- `skills/boundary-contract-review/SKILL.md`
+- `skills/node-auth/SKILL.md`

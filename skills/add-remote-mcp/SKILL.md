@@ -151,7 +151,7 @@ See [references/wrapper-template.ts](references/wrapper-template.ts).
 | Public doc search | No auth | modelcontextprotocol.io, agentskills.io |
 | SaaS API with API key | Bearer token | You.com, OpenAI |
 | Enterprise SSO / IdP | Use `add-protected-remote-mcp` | Internal services |
-| Agent-to-agent (Modnet) | Use `add-protected-remote-mcp` | Node MCP servers |
+| Agent-to-agent protected exchange | Use `add-protected-remote-mcp` | Node MCP servers |
 
 ### No secrets in repo
 
