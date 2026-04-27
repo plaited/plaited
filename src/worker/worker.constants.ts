@@ -1,5 +1,5 @@
 import { keyMirror } from '../utils.ts'
 
-export const WORKER_MESSAGE = 'worker_message'
+export const WORKER_EVENTS = keyMirror('shell', 'write', 'read')
 
-export const WORKER_EVENTS = keyMirror('run', 'setup', 'cancel')
+export const WORKER_PATH = `${import.meta.dir}/worker.ts`

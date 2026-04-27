@@ -1,53 +1,80 @@
 import * as z from 'zod'
 import { WORKER_EVENTS } from './worker.constants.ts'
 
-export const WorkerSetupEventSchema = z.object({
-  type: z.literal(WORKER_EVENTS.setup),
+export const ShellEventSchema = z.object({
+  type: z.literal(WORKER_EVENTS.shell),
   detail: z.object({
-    workerId: z.string(),
-  }),
-})
-
-export type WorkerSetupEventDetail = z.output<typeof WorkerSetupEventSchema>
-
-export const WorkerCancelEventSchema = z.object({
-  type: z.literal(WORKER_EVENTS.cancel),
-  detail: z.object({
-    sessionId: z.string(),
-  }),
-})
-
-export type WorkerCancelEventDetail = z.output<typeof WorkerCancelEventSchema>
-
-export const WorkerRunEventSchema = z.object({
-  type: z.literal(WORKER_EVENTS.run),
-  detail: z.object({
-    prompt: z.string(),
+    id: z.string(),
+    command: z.array(z.string()),
     cwd: z.string(),
+    timeoutMs: z.number().optional(),
+    maxOutputBytes: z.number().optional(),
   }),
 })
 
-export type WorkerRunEventDetail = z.output<typeof WorkerRunEventSchema>
+export type ShellEvent = z.infer<typeof ShellEventSchema>
 
-export const WorkerResearchOutputChunkSchema = z.object({
-  kind: z.literal('text_chunk'),
-  text: z.string(),
+export const ShellResponseSchema = z.object({
+  id: z.string(),
+  exitCode: z.number().int().nullable(),
+  signalCode: z.string().nullable(),
+  stdout: z.string(),
+  stderr: z.string(),
+  stdoutBytes: z.number().int(),
+  stderrBytes: z.number().int(),
+  stdoutTruncated: z.boolean(),
+  stderrTruncated: z.boolean(),
+  stdoutPath: z.string().nullable(),
+  stderrPath: z.string().nullable(),
+  durationMs: z.number(),
+  timedOut: z.boolean(),
 })
 
-export const WorkerResearchOutputFinalTextSchema = z.object({
-  kind: z.literal('final_text'),
-  text: z.string(),
+export type ShellResponse = z.infer<typeof ShellResponseSchema>
+
+export const ReadEventSchema = z.object({
+  type: z.literal(WORKER_EVENTS.read),
+  detail: z.object({
+    id: z.string(),
+    cwd: z.string(),
+    path: z.string(),
+    encoding: z.enum(['utf8', 'bytes']).optional().default('utf8'),
+    maxBytes: z.number().int().positive().optional(),
+  }),
 })
 
-export const WorkerResearchOutputCompletedSchema = z.object({
-  kind: z.literal('completed'),
-  stopReason: z.string(),
+export type ReadEvent = z.infer<typeof ReadEventSchema>
+
+export const ReadResponseSchema = z.object({
+  id: z.string(),
+  cwd: z.string(),
+  path: z.string(),
+  encoding: z.enum(['utf8', 'bytes']),
+  content: z.string(),
+  bytes: z.number().int(),
+  truncated: z.boolean(),
 })
 
-export const WorkerResearchOutputSchema = z.discriminatedUnion('kind', [
-  WorkerResearchOutputChunkSchema,
-  WorkerResearchOutputFinalTextSchema,
-  WorkerResearchOutputCompletedSchema,
-])
+export type ReadResponse = z.infer<typeof ReadResponseSchema>
 
-export type WorkerResearchOutput = z.output<typeof WorkerResearchOutputSchema>
+export const WriteEventSchema = z.object({
+  type: z.literal(WORKER_EVENTS.write),
+  detail: z.object({
+    id: z.string(),
+    cwd: z.string(),
+    path: z.string(),
+    content: z.string(),
+    encoding: z.enum(['utf8', 'base64']).optional().default('utf8'),
+  }),
+})
+
+export type WriteEvent = z.infer<typeof WriteEventSchema>
+
+export const WriteResponseSchema = z.object({
+  id: z.string(),
+  cwd: z.string(),
+  path: z.string(),
+  encoding: z.enum(['utf8', 'base64']),
+  bytes: z.number().int(),
+})
+export type WriteResponse = z.infer<typeof WriteResponseSchema>
