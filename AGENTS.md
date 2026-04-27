@@ -226,6 +226,9 @@ their operator story. Do not assume a public `validate-skill` CLI exists.
 Prefer direct callsite wiring when logic is local, stable, and used once.
 
 - Do not add wrapper helpers that only rename or pass through one existing function.
+- Do not extract one-off shell commands, single-use event handlers, or small runtime checks into
+  local helpers just to "clean up" the callsite. Keep them inline unless the extraction removes
+  real duplication or improves correctness.
 - Do not replace a short set of direct event registrations with forwarding maps, event lists,
   or similar indirection unless there is a demonstrated maintenance benefit.
 - Keep runtime boundary code explicit at callsites:
