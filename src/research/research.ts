@@ -1,9 +1,17 @@
-import { behavioral, sync, thread } from '../behavioral.ts'
+import {
+  behavioral,
+  SNAPSHOT_MESSAGE_KINDS,
+  type SnapshotMessage,
+  SnapshotMessageSchema,
+  sync,
+  thread,
+} from '../behavioral.ts'
+import { type ShellResponse, ShellResponseSchema, WORKER_EVENTS, WORKER_PATH } from '../worker.ts'
 
 import { ANALYST_PORT, CODER_PORT, RESEARCH_EVENTS } from './research.constants.ts'
 import type { AnalystExecuteEvent, ServeEvent } from './research.schema.ts'
 
-const { trigger, addHandler, addThread } = behavioral()
+const { trigger, addHandler, addThread, reportSnapshot } = behavioral()
 
 type Runtimes = {
   analyst?: Bun.Subprocess
@@ -11,6 +19,116 @@ type Runtimes = {
 }
 
 const runtimes: Runtimes = {}
+
+type ResearchWorker = {
+  onmessage: ((event: MessageEvent<unknown>) => void) | null
+  onerror: ((event: ErrorEvent) => void) | null
+  postMessage: (message: unknown) => void
+  terminate: () => void
+}
+
+type SpawnResearchWorker = ({ path, options }: { path: string; options: WorkerOptions }) => ResearchWorker
+
+const spawnResearchWorker: SpawnResearchWorker = ({ path, options }) => new Worker(path, options)
+
+type ExecuteResearchWorkerShellArgs = {
+  command: string[]
+  cwd: string
+  timeoutMs?: number
+  maxOutputBytes?: number
+  onSnapshot?: (snapshot: SnapshotMessage) => void
+  spawnWorker?: SpawnResearchWorker
+}
+
+export const executeResearchWorkerShell = async ({
+  command,
+  cwd,
+  timeoutMs,
+  maxOutputBytes,
+  onSnapshot,
+  spawnWorker = spawnResearchWorker,
+}: ExecuteResearchWorkerShellArgs): Promise<ShellResponse> => {
+  const id = `research-shell-${crypto.randomUUID()}`
+  const worker = spawnWorker({
+    path: WORKER_PATH,
+    options: { type: 'module' },
+  })
+
+  return await new Promise<ShellResponse>((resolve, reject) => {
+    let settled = false
+    const detail: {
+      id: string
+      command: string[]
+      cwd: string
+      timeoutMs?: number
+      maxOutputBytes?: number
+    } = {
+      id,
+      command,
+      cwd,
+    }
+
+    if (timeoutMs !== undefined) {
+      detail.timeoutMs = timeoutMs
+    }
+    if (maxOutputBytes !== undefined) {
+      detail.maxOutputBytes = maxOutputBytes
+    }
+
+    const settle = (callback: () => void) => {
+      if (settled) {
+        return
+      }
+      settled = true
+      worker.onmessage = null
+      worker.onerror = null
+      worker.terminate()
+      callback()
+    }
+
+    worker.onmessage = (event) => {
+      const parsedSnapshot = SnapshotMessageSchema.safeParse(event.data)
+      if (!parsedSnapshot.success) {
+        return
+      }
+
+      const snapshot = parsedSnapshot.data
+      onSnapshot?.(snapshot)
+
+      if (snapshot.kind === SNAPSHOT_MESSAGE_KINDS.runtime_error) {
+        settle(() => {
+          reject(new Error(snapshot.error))
+        })
+        return
+      }
+
+      if (snapshot.kind !== SNAPSHOT_MESSAGE_KINDS.worker) {
+        return
+      }
+
+      const parsedResponse = ShellResponseSchema.safeParse(snapshot.response)
+      if (!parsedResponse.success || parsedResponse.data.id !== id) {
+        return
+      }
+
+      settle(() => {
+        resolve(parsedResponse.data)
+      })
+    }
+
+    worker.onerror = (event) => {
+      const workerError = event.error instanceof Error ? event.error : new Error(event.message)
+      settle(() => {
+        reject(workerError)
+      })
+    }
+
+    worker.postMessage({
+      type: WORKER_EVENTS.shell,
+      detail,
+    })
+  })
+}
 
 addThread(
   `Block event until start`,
@@ -173,54 +291,15 @@ addHandler<ServeEvent['detail']>(RESEARCH_EVENTS.serve, async ({ analyst, coder 
   })
 })
 
-addHandler<AnalystExecuteEvent['detail']>(RESEARCH_EVENTS.execute, async ({ prompt }) => {
-  const proc = Bun.spawn(
-    [
-      'bunx',
-      '--package',
-      '@mariozechner/pi-coding-agent',
-      'pi',
-      '--mode',
-      'json',
-      '--no-session',
-      '--tools',
-      'read,grep,find,ls',
-      prompt,
-    ],
-    {
-      stdout: 'pipe',
-      stderr: 'pipe',
-      stdin: 'ignore',
-    },
-  )
-
-  const decoder = new TextDecoder()
-  let buffer = ''
-
-  for await (const chunk of proc.stdout) {
-    buffer += decoder.decode(chunk, { stream: true })
-
-    while (true) {
-      const newlineIndex = buffer.indexOf('\n')
-      if (newlineIndex === -1) break
-
-      const line = buffer.slice(0, newlineIndex).trim()
-      buffer = buffer.slice(newlineIndex + 1)
-      if (!line) continue
-
-      const event = JSON.parse(line)
-
-      if (event.type === 'message_update') {
-        // stream text deltas / tool events
-      }
-
-      if (event.type === 'message_end') {
-        // candidate final assistant message
-      }
-
-      if (event.type === 'agent_end') {
-        // done
-      }
-    }
-  }
-})
+addHandler<AnalystExecuteEvent['detail']>(
+  RESEARCH_EVENTS.execute,
+  async ({ command, cwd, timeoutMs, maxOutputBytes }) => {
+    await executeResearchWorkerShell({
+      command,
+      cwd,
+      timeoutMs,
+      maxOutputBytes,
+      onSnapshot: reportSnapshot,
+    })
+  },
+)

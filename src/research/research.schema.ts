@@ -15,8 +15,10 @@ export type ServeEvent = z.output<typeof ServeEventSchema>
 export const AnalystExecuteEventSchema = z.object({
   type: z.literal(RESEARCH_EVENTS.execute),
   detail: z.object({
-    prompt: z.string(),
+    command: z.array(z.string()).min(1),
     cwd: z.string(),
+    timeoutMs: z.number().int().positive().optional(),
+    maxOutputBytes: z.number().int().positive().optional(),
   }),
 })
 
