@@ -209,6 +209,9 @@ Expand test coverage when the impact is broad, shared, or uncertain.
 **PascalCase types** — schemas get `Schema` suffix.
 **CLI schema semantics** — any Zod schema exposed through CLI `--schema input|output` must use
 `.describe(...)` on the top-level schema and meaningful fields so agent consumers get semantic context.
+**Avoid `superRefine` for core schema shape** — prefer structural schemas (discriminated unions,
+`oneOf`-equivalent branches, and strict object composition) so constraints are explicit, type narrowing
+is reliable, and JSON-schema replay contracts stay aligned.
 **Arrow functions** — `const fn = () =>` over `function fn()`.
 **Object params >2 args** — `fn({ a, b, c }: { ... })`.
 **Private fields** — `#field` (ES2022) not `private field`.

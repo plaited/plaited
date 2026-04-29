@@ -31,6 +31,12 @@ yarn.lock
 .playwright-cli/
 .playwright/
 
+# Python
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
 ## Apple Junk ##
 **/.DS_Store
 
