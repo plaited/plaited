@@ -1,26 +1,5 @@
-import type {
-  EVENT_SOURCES,
-  EXPLORE_STRATEGIES,
-  FRONTIER_STATUS,
-  VERIFICATION_STATUSES,
-} from './behavioral.constants.ts'
+import type { FRONTIER_STATUS } from './behavioral.constants.ts'
 import type { BPEvent, BPListener, JsonObject, SelectionSnapshot, SnapshotMessage } from './behavioral.schemas.ts'
-
-/**
- * Represents a fundamental unit of communication in behavioral programming.
- * An event consists of a mandatory `type` (string identifier) and an optional `detail` payload.
- * Events are used for communication between b-threads and are the core mechanism
- * through which the behavioral program coordinates execution.
- *
- * @template T - Expected type of the `detail` payload.
- * @property type - The string identifier for the event, used for matching and dispatching.
- * @property detail - Optional data payload associated with the event.
- *
- * @see {@link Trigger} for injecting events into the program
- */
-export type ReplayEvent = BPEvent & {
-  source: keyof typeof EVENT_SOURCES
-}
 
 /**
  * Represents a synchronization statement yielded by a behavioral rule step.
@@ -79,16 +58,18 @@ export type Sync = (arg: Idioms) => RulesFunction
 export type Thread = (rules: ReturnType<Sync>[], once?: true) => ReturnType<Sync>
 
 /**
- * @internal
- * Represents a b-thread that is currently executing its current rule sequence.
- *
- * These are threads that are active and running between synchronization points.
- * Running threads are those that have been moved from the 'pending' state after an event
- * that matches their `waitFor`, `request`, or `interrupt` declarations has been selected.
- */
+  * @internal
+  * Represents a b-thread that is currently executing its current rule
+ sequence.
+  *
+  * These are threads that are active and running between synchronization
+ points.
+  * Running threads are those that have been moved from the 'pending'
+ state after an event
+  * that matches their `waitFor` or `request` declarations has been
+ selected.
+  */
 export type RunningBid = {
-  /** Provenance of this bid for source-aware listener matching. */
-  source: keyof typeof EVENT_SOURCES
   /** Optional human-readable label for spawned thread instances. */
   label: string
   /** The priority level of the thread, used for resolving conflicts when multiple threads request events. Lower numbers = higher priority. */
@@ -116,16 +97,12 @@ export type PendingBid = Idioms & RunningBid
  * This structure holds the metadata needed for this selection process.
  */
 export type CandidateBid = {
-  /** The identifier of the thread proposing the event. String for named threads */
-  thread: string
   /** The priority of the thread proposing the event. Lower numbers indicate higher priority in the selection process. */
   priority: number
   /** The type of the requested event, used for matching against waitFor, block, and interrupt declarations. */
   type: string
   /** Optional detail payload of the requested event, contains any data associated with this event. */
   detail?: BPEvent['detail']
-  /** Provenance of this candidate for source-aware listener matching. */
-  source: keyof typeof EVENT_SOURCES
 
   ingress?: true
 }
@@ -150,7 +127,7 @@ export type Frontier = {
  * Reconstructed replay result for downstream explorer slices.
  */
 export type ReplayToFrontierResult = {
-  pending: Map<string, PendingBid>
+  pending: Set<PendingBid>
   frontier: Frontier
 }
 
@@ -176,8 +153,8 @@ export type Disconnect = () => void | Promise<void>
  * determines which event was selected, and creates a comprehensive view of the current execution step.
  */
 export type SelectionFormatter = (args: {
-  /** Map of threads currently in a pending state (yielded), containing their synchronization declarations. */
-  pending: Map<string, PendingBid>
+  /** Set of threads currently in a pending state (yielded), containing their synchronization declarations. */
+  pending: Set<PendingBid>
   /** The event candidate that was selected for execution in the current step. */
   selectedEvent: CandidateBid
   /** All event candidates that were considered for selection in the current step. */
@@ -288,59 +265,3 @@ export type Behavioral = () => Readonly<{
   trigger: Trigger
   useSnapshot: UseSnapshot
 }>
-
-type ExploreStrategy = keyof typeof EXPLORE_STRATEGIES
-
-export type DeadlockFinding = {
-  code: 'deadlock'
-  history: ReplayEvent[]
-  status: Frontier['status']
-  candidates: Frontier['candidates']
-  enabled: Frontier['enabled']
-  summary: {
-    candidateCount: number
-    enabledCount: number
-  }
-}
-
-export type FrontierSummary = {
-  history: ReplayEvent[]
-  status: Frontier['status']
-}
-
-type ExploreFrontiersReport = {
-  strategy: ExploreStrategy
-  visitedCount: number
-  findingCount: number
-  /**
-   * True only when the explorer encountered at least one `ready` frontier that it did not expand
-   * because `maxDepth` was reached for that history.
-   *
-   * This does not indicate generic incompleteness: `idle`/`deadlock` terminal frontiers keep this false
-   * even when `maxDepth` is set.
-   */
-  truncated: boolean
-  maxDepth?: number
-}
-
-type ExploreFrontiersResult = {
-  report: ExploreFrontiersReport
-  visitedHistories: ReplayEvent[][]
-  findings: DeadlockFinding[]
-  frontierSummaries?: FrontierSummary[]
-}
-
-export type ExploreFrontiers = (args: {
-  threads: BThreads
-  strategy: ExploreStrategy
-  maxDepth?: number
-  includeFrontierSummaries?: boolean
-}) => ExploreFrontiersResult
-
-export type ExploreFrontiersArgs = Parameters<ExploreFrontiers>[0]
-
-export type VerifyFrontiersResult = {
-  status: keyof typeof VERIFICATION_STATUSES
-  report: ExploreFrontiersResult['report']
-  findings: ExploreFrontiersResult['findings']
-}

@@ -2,6 +2,7 @@ import { isTypeOf } from '../utils.ts'
 import { FRONTIER_STATUS } from './behavioral.constants.ts'
 import type { BPEvent, BPListener } from './behavioral.schemas.ts'
 import type { CandidateBid, Frontier, PendingBid, RunningBid, Sync, Thread } from './behavioral.types.ts'
+import { deepEqual } from './deep-equal.ts'
 
 /**
  * @internal
@@ -25,12 +26,11 @@ export const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj :
  * @internal
  * Creates a checker function to determine if a given BPListener matches a CandidateBid.
  */
-export const isListeningFor = ({ type, detail, source }: CandidateBid) => {
+export const isListeningFor = ({ type, detail }: CandidateBid) => {
   return (listener: BPListener): boolean => {
-    const sourceMatches = listener.source ? source === listener.source : true
     const schemaMatches = listener.detailSchema ? listener.detailSchema.safeParse(detail).success : true
     const detailMatches = listener.detailMatch === 'invalid' ? !schemaMatches : schemaMatches
-    return listener.type === type && sourceMatches && detailMatches
+    return listener.type === type && detailMatches
   }
 }
 
@@ -43,17 +43,16 @@ export const isListeningFor = ({ type, detail, source }: CandidateBid) => {
  * - the subset enabled after applying block listeners
  * - a scheduler-facing status classification
  */
-export const computeFrontier = ({ pending }: { pending: Map<string, PendingBid> }): Frontier => {
+export const computeFrontier = ({ pending }: { pending: Set<PendingBid> }): Frontier => {
   const blocked: BPListener[] = []
   const candidates: CandidateBid[] = []
 
-  for (const [thread, { request, priority, block, source }] of pending) {
+  for (const { request, priority, block, ingress } of pending) {
     block && blocked.push(...ensureArray(block))
     request &&
       candidates.push({
         priority,
-        source,
-        thread,
+        ingress,
         ...request,
       })
   }
@@ -76,21 +75,24 @@ export const computeFrontier = ({ pending }: { pending: Map<string, PendingBid> 
   return { candidates, enabled, status: FRONTIER_STATUS.idle }
 }
 
-export const advanceRunningToPending = (running: Map<string, RunningBid>, pending: Map<string, PendingBid>) => {
-  for (const [thread, bid] of running) {
-    const { generator, priority, source, label, ingress } = bid
+export const advanceRunningToPending = (running: Set<RunningBid>, pending: Set<PendingBid>) => {
+  for (const bid of running) {
+    const { generator, priority, label, ingress } = bid
     const { value, done } = generator.next()
     !done &&
-      pending.set(thread, {
+      pending.add({
         priority,
-        source,
         ingress,
         label,
         generator,
         ...value,
       })
-    running.delete(thread)
+    running.delete(bid)
   }
+}
+
+const eventMatchesCandidate = (request: BPEvent, selectedEvent: CandidateBid) => {
+  return request.type === selectedEvent.type && deepEqual(request.detail, selectedEvent.detail)
 }
 
 export const resumePendingThreadsForSelectedEvent = ({
@@ -98,19 +100,23 @@ export const resumePendingThreadsForSelectedEvent = ({
   pending,
   selectedEvent,
 }: {
-  running: Map<string, RunningBid>
-  pending: Map<string, PendingBid>
+  running: Set<RunningBid>
+  pending: Set<PendingBid>
   selectedEvent: CandidateBid
 }) => {
-  for (const [thread, bid] of pending) {
-    const { waitFor, request, generator, interrupt, ingress } = bid
+  for (const bid of pending) {
+    const { waitFor, request, generator, interrupt } = bid
     const isInterrupted = ensureArray(interrupt).some(isListeningFor(selectedEvent))
     const isWaitedFor = ensureArray(waitFor).some(isListeningFor(selectedEvent))
-    const hasPendingRequest = Boolean(request) && thread === selectedEvent.thread
-    isInterrupted && generator.return?.()
-    if (hasPendingRequest || isInterrupted || isWaitedFor || ingress) {
-      running.set(thread, bid)
-      pending.delete(thread)
+    const hasPendingRequest = request && eventMatchesCandidate(request, selectedEvent)
+    if (isInterrupted) {
+      generator.return?.()
+      pending.delete(bid)
+      continue
+    }
+    if (hasPendingRequest || isWaitedFor) {
+      running.add({ ...bid })
+      pending.delete(bid)
     }
   }
 }

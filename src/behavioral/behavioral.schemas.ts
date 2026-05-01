@@ -29,7 +29,6 @@ export type DetailSchema = z.output<typeof DetailSchemaSchema>
 
 export const BPListenerSchema = z.object({
   type: z.string(),
-  source: z.enum(['trigger', 'request']).optional(),
   detailSchema: DetailSchemaSchema.optional(),
   detailMatch: z.enum(['valid', 'invalid']).optional(),
 })
@@ -121,8 +120,8 @@ export type ThreadReference = z.output<typeof ThreadReferenceSchema>
 export const SelectionBidSchema = z.object({
   /** Thread reference (stringified Symbol label for external trigger threads). */
   thread: ThreadReferenceSchema,
-  /** Explicit source provenance for source-aware matching and replay. */
-  source: z.enum(['trigger', 'request']),
+  /** Explicit event provenance matching and replay. */
+  ingress: z.literal(true).optional(),
   /** Whether this bid was selected for execution in the current step. */
   selected: z.boolean(),
   /** The event type being requested or waited for. */
