@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { bundleController, CONNECT_PLAITED_ROUTE } from './fixtures/bundle-controller.ts'
 
-describe('useController', () => {
+describe('Controller bundle', () => {
   test('builds a compact gzipped controller route without inline source maps', async () => {
     const routes = await bundleController()
     const response = routes[CONNECT_PLAITED_ROUTE]

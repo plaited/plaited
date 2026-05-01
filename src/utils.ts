@@ -17,7 +17,6 @@
  */
 
 export * from './utils/case.ts'
-export * from './utils/delegated-listener.ts'
 export * from './utils/escape.ts'
 export * from './utils/is-type-of.ts'
 export * from './utils/key-mirror.ts'

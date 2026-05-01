@@ -1,4 +1,4 @@
-import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../bridge-events.ts'
+import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../shared/shared.constants.ts'
 import { keyMirror } from '../../utils.ts'
 
 export { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS }
@@ -26,5 +26,3 @@ export const SWAP_MODES = keyMirror('afterbegin', 'afterend', 'beforebegin', 'be
  * @public
  */
 export const CONTROLLER_ERRORS = keyMirror(`${AGENT_TO_CONTROLLER_EVENTS.attrs}_element_not_found`)
-
-export const CONNECT_PLAITED_ROUTE = '/.plaited/connect.js'

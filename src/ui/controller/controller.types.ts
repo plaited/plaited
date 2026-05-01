@@ -1,5 +1,5 @@
 import type { Disconnect, Trigger } from '../../behavioral.ts'
-import type { DelegatedListener, delegates } from '../../utils.ts'
+import type { DelegatedListener, delegates } from './delegated-listener.ts'
 /**
  * Runtime context passed to default exports from imported controller modules.
  *
@@ -27,5 +27,3 @@ export type ControllerModuleContext = {
  * @public
  */
 export type ControllerModuleDefault = (context: ControllerModuleContext) => void | Promise<void>
-
-export type BindTriggers = (subtree: DocumentFragment, trigger: Trigger) => void

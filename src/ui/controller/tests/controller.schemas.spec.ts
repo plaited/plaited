@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { AGENT_TO_CONTROLLER_EVENTS } from '../../../bridge-events.ts'
+import { AGENT_TO_CONTROLLER_EVENTS } from '../../../shared/shared.constants.ts'
 import { SITE_ROOT_JAVASCRIPT_PATH_PATTERN } from '../../render/template.constants.ts'
 import { CONTROLLER_TO_AGENT_EVENTS, SWAP_MODES } from '../controller.constants.ts'
 import {

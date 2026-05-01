@@ -4,7 +4,7 @@
  *
  * @remarks
  * This module provides access to:
- * - **Controller runtime**: {@link useController} serves the browser controller bootstrap.
+ * - **Controller runtime**: {@link Controller} serves the browser controller bootstrap.
  * - **Wire contracts**: controller schemas validate server commands and browser-to-server messages.
  * - **Rendering**: {@link createSSR} serializes templates with per-connection style deduplication.
  * - **Styling**: style, token, keyframe, host style, root style, and join helpers.
@@ -14,8 +14,8 @@
  */
 
 export * from './ui/controller/controller.schemas.ts'
+export * from './ui/controller/controller.ts'
 export * from './ui/controller/controller.types.ts'
-export * from './ui/controller/use-mcp-sender.ts'
 export type * from './ui/css/css.types.ts'
 export * from './ui/css/host-styles.ts'
 export * from './ui/css/join-styles.ts'

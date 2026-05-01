@@ -121,7 +121,7 @@ afterAll(async () => {
 
 // ─── Controller runtime: real browser ─────────────────────────────────────────
 
-describe('useController: real browser', () => {
+describe('Controller: real browser', () => {
   test('display:contents computed style', async () => {
     const output = await cli(
       'eval',

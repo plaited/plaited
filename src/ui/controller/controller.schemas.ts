@@ -1,7 +1,7 @@
 import * as z from 'zod'
 
 import { BPEventSchema, JsonObjectSchema } from '../../behavioral.ts'
-import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../bridge-events.ts'
+import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../shared/shared.constants.ts'
 import { isTypeOf } from '../../utils.ts'
 import {
   CUSTOM_ELEMENT_TAG_PATTERN,
