@@ -21,7 +21,7 @@
 | Page | Scope |
 |---|---|
 | [Local Inference Bridge](local-inference-bridge.md) | Transport-direction note for local inference boundaries |
-| [Eval + Research Hill-Climbing Model](eval-research-hill-climbing.md) | Current trial-evidence normalization/comparison/promotion guidance |
+| [Eval Hill-Climbing Model](eval-research-hill-climbing.md) | Current trial grading and baseline/challenger comparison guidance |
 
 ## Lineage / Non-Normative Docs
 

@@ -12,13 +12,17 @@
  */
 
 import {
+  BEHAVIORAL_FRONTIER_COMMAND,
   behavioralFrontierCli,
-  researchCli,
+  EVAL_COMMAND,
+  evalCli,
   skillsCatalogCli,
   skillsFrontmatterCli,
   skillsInstructionsCli,
   skillsLinksCli,
   skillsValidateCli,
+  VLLM_COMMAND,
+  vllmCli,
 } from '../src/cli.ts'
 
 // ============================================================================
@@ -26,8 +30,9 @@ import {
 // ============================================================================
 
 const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
-  'behavioral-frontier': behavioralFrontierCli,
-  research: researchCli,
+  [VLLM_COMMAND]: vllmCli,
+  [BEHAVIORAL_FRONTIER_COMMAND]: behavioralFrontierCli,
+  [EVAL_COMMAND]: evalCli,
   'skills-catalog': skillsCatalogCli,
   'skills-frontmatter': skillsFrontmatterCli,
   'skills-instructions': skillsInstructionsCli,

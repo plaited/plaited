@@ -1,90 +1,149 @@
 ---
 name: plaited-eval
-description: Research-run comparison and promotion CLI guidance for Plaited. Use when comparing baseline vs challenger runs, validating trial-pass evidence coverage, and selecting promotion decisions.
+description: CLI guidance for grading and comparing Plaited trial results with `plaited eval`.
 license: ISC
 compatibility: Requires bun
 ---
 
 # Plaited Eval
 
-CLI guidance for the current eval/research operator surface.
+CLI guidance for `plaited eval` grading and run comparison.
 
 ## When To Use
 
-- Compare two run bundles (`baseline` vs `challenger`)
-- Enforce canonical trial-pass evidence policy before promotion
-- Compute pass-rate/pass@k deltas and promotion decisions
-- Discover `research` command schemas for tooling integration
+- Grade one Plaited trial with deterministic process checks and/or external graders
+- Compare baseline and challenger eval bundles
+- Preserve full snapshot evidence and task/result metadata in the output
+- Integrate command- or JSON-based judge results into the same normalized output shape
 
 ## Command Discovery
 
 ```bash
 bunx plaited --schema
-bunx plaited research --schema input
-bunx plaited research --schema output
+bunx plaited eval --schema input
+bunx plaited eval --schema output
 ```
 
-## Active CLI Surface
+## Grade Mode
 
-`plaited research` is the active comparison/promotion command.
+`mode: "grade"` accepts exactly one trial per invocation plus an ordered grader list.
+
+Key semantics:
+
+- Canonical trial shape is `EvalTrial` with first-class `cwd` and full `snapshots: SnapshotMessage[]`
+- `trial.task` uses `{ id, prompt, metadata? }`
+- `trial.result` uses `{ status, message?, error?, metadata? }`
+- `status: "completed"` requires `result.message`
+- Terminal non-success (`failed`, `timed_out`, `cancelled`) forces overall `pass=false` and `score=0`
+- Applicable graders still run for diagnostics, but cannot override terminal non-success or required failures
+- The eval CLI returns JSON only and does not choose a persistence location
+- Harnesses should persist returned `EvalTrialResult` rows in their own run artifacts
+- Use disposable `cwd` directories or worktrees because command graders may mutate files
+
+Example:
 
 ```bash
-bunx plaited research '{
-  "baseline": {
-    "label": "baseline",
-    "results": [
-      {
-        "id": "p1",
-        "input": "alpha",
-        "trials": [{"trialNum":1,"output":"ok","duration":20,"pass":true,"score":1}]
-      }
-    ]
+bunx plaited eval '{
+  "mode": "grade",
+  "trial": {
+    "id": "trial-1",
+    "cwd": "/tmp/run-1",
+    "task": { "id": "task-1", "prompt": "Solve X" },
+    "result": { "status": "completed", "message": "final answer" },
+    "snapshots": []
   },
-  "challenger": {
-    "label": "challenger",
-    "results": [
-      {
-        "id": "p1",
-        "input": "alpha",
-        "trials": [{"trialNum":1,"output":"ok","duration":18,"pass":true,"score":1}]
-      }
-    ]
-  },
-  "resamples": 1000,
-  "confidence": 0.95,
-  "minPassRateDelta": 0,
-  "minWinDelta": 1
+  "graders": [
+    { "id": "process", "type": "process" },
+    {
+      "id": "judge-json",
+      "type": "json",
+      "result": { "pass": true, "score": 0.9, "reasoning": "meets rubric" }
+    }
+  ]
 }'
 ```
 
-## Canonical Comparison Policy
+## Grader Types
 
-- Canonical evidence is `trials[].pass`
-- Full `trials[].pass` coverage is required for comparability
-- Partial/zero coverage is `insufficient_data`
-- Cached aggregates (`passRate`, `passAtK`, `passExpK`) are derived fields
-- Full trial evidence overrides inconsistent cached aggregates
+### `process`
 
-## Metric Semantics
+Deterministic snapshot/status checks (`runtime_error`, `feedback_error`, `deadlock`, `selection`, `worker`).
 
-- `passRate = passes / k`
-- `passAtK = 1 - (1 - passRate)^k`
-- `passExpK = passRate^k`
+Options:
 
-## Artifact Shape
+- `failOnRuntimeError` (default `true`)
+- `failOnFeedbackError` (default `true`)
+- `failOnDeadlock` (default `true`)
+- `failOnWorkerFailure` (default `true`)
+- `maxSelections`
+- `maxRepeatedSelectionType`
 
-`research` expects run bundles using `ResearchRun` / `ResearchPromptResult` shapes from:
+Worker snapshots fail when response has nonzero `exitCode`, `timedOut: true`, or non-null `signalCode`.
 
-- `src/research/research.schema.ts`
-- `src/research/research.comparison.utils.ts`
-- `src/research/research.grading.utils.ts`
+### `command`
 
-Trial process evidence helpers live in:
+Runs an exact `command: string[]` in `trial.cwd` using `Bun.spawn`.
 
-- `src/eval/eval.schema.ts`
-- `src/eval/eval.process.ts`
+- Commands may mutate `trial.cwd`; no automatic cleanup/reset is performed
+- Graders execute sequentially in declared order
+- Later command graders receive `previousResults` from earlier graders
+- `when: "completed"` skips unless trial status is `completed`
 
-## Related Skills
+Stdin payload (JSON):
 
-- `plaited-eval-adapters`
-- `plaited-context`
+```json
+{
+  "trial": { "...": "EvalTrial" },
+  "grader": { "...": "Current grader config" },
+  "previousResults": [{ "...": "Prior EvalGraderResult rows" }]
+}
+```
+
+Output modes:
+
+- `exit_code` (default): pass iff exit code is 0, score is 1/0
+- `grader_json`: stdout must be normalized grader JSON (`{ pass, score, reasoning?, outcome?, metadata? }`)
+
+If `grader_json` command exits nonzero or stdout is invalid JSON/schema, grader returns failed result with
+captured command outcome (stdout/stderr/exit) and the top-level CLI still succeeds.
+
+### `json`
+
+Passive inline grader result. No command execution and no built-in LLM call.
+Useful when an upstream harness already produced external judge output.
+
+## Compare Mode
+
+`mode: "compare"` consumes eval run bundles:
+
+```json
+{
+  "label": "baseline",
+  "tasks": [
+    {
+      "taskId": "task-1",
+      "metadata": {},
+      "trials": ["EvalTrialResult", "..."]
+    }
+  ]
+}
+```
+
+Semantics:
+
+- Validates `trials[].trial.task.id === taskId` for every task row
+- Does not require equal trial counts between baseline/challenger
+- A task is comparable when both sides have at least one trial
+- Per-task rows include baseline/challenger trial counts
+- Metrics include `passRate` and `avgScore`
+- If `k` is provided and enough trials exist, includes:
+  - `estimatedPassAtK = 1 - (1 - passRate)^k`
+  - `estimatedPassAllK = passRate^k`
+- Output includes baseline metrics, challenger metrics, per-task rows, and summary
+  `baselineWins/challengerWins/ties/insufficientData`
+
+## Deterministic vs Judge Lanes
+
+- Deterministic grading: use `process` graders
+- LLM-as-judge integration: use `command` graders (external tool/model invocation) or `json`
+  graders (precomputed judge result)
