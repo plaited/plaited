@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import * as z from 'zod'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
-import type { DeadlockSnapshot, SelectionSnapshot, SnapshotMessage } from '../behavioral.schemas.ts'
+import type { DeadlockSnapshot, FrontierSnapshot, SelectionSnapshot, SnapshotMessage } from '../behavioral.schemas.ts'
 import { behavioral, sync, thread } from './helpers.ts'
 
 const onType = (type: string) => ({
@@ -24,25 +24,29 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
 
     trigger({ type: 'dangerous' })
 
+    const frontiers = snapshots.filter((s): s is FrontierSnapshot => s.kind === SNAPSHOT_MESSAGE_KINDS.frontier)
+    expect(frontiers).toHaveLength(1)
+    expect(frontiers[0]!.status).toBe('deadlock')
+    expect(frontiers[0]!.candidates).toEqual([
+      {
+        type: 'dangerous',
+        ingress: true,
+        priority: 0,
+      },
+    ])
+    expect(frontiers[0]!.enabled).toEqual([])
+
     const deadlocks = snapshots.filter((s): s is DeadlockSnapshot => s.kind === SNAPSHOT_MESSAGE_KINDS.deadlock)
     expect(deadlocks).toHaveLength(1)
-
-    const dangerousBid = deadlocks[0]!.bids.find((bid) => bid.type === 'dangerous')
-    expect(dangerousBid).toBeDefined()
-    expect(dangerousBid!.selected).toBe(false)
-    expect(dangerousBid!.reason).toBe('blocked')
-    expect(dangerousBid!.blockedBy?.label).toBe('safety')
-    expect(typeof dangerousBid!.blockedBy?.id).toBe('string')
-    expect(dangerousBid!.interrupts?.label).toBe('interruptor')
-    expect(typeof dangerousBid!.interrupts?.id).toBe('string')
-    expect(deadlocks[0]!.summary.candidateCount).toBe(1)
-    expect(deadlocks[0]!.summary.blockedCount).toBe(1)
-    expect(deadlocks[0]!.summary.unblockedCount).toBe(0)
-    expect(deadlocks[0]!.summary.blockers[0]!.label).toBe('safety')
-    expect(deadlocks[0]!.summary.interrupters[0]!.label).toBe('interruptor')
+    expect(deadlocks[0]!.step).toBe(frontiers[0]!.step)
 
     const selectionSnapshots = snapshots.filter((s) => s.kind === SNAPSHOT_MESSAGE_KINDS.selection)
     expect(selectionSnapshots).toHaveLength(0)
+
+    const frontierIndex = snapshots.findIndex((snapshot) => snapshot.kind === SNAPSHOT_MESSAGE_KINDS.frontier)
+    const deadlockIndex = snapshots.findIndex((snapshot) => snapshot.kind === SNAPSHOT_MESSAGE_KINDS.deadlock)
+    expect(frontierIndex).toBeGreaterThanOrEqual(0)
+    expect(deadlockIndex).toBeGreaterThan(frontierIndex)
   })
 
   test('does not publish deadlock snapshot when no candidates exist', () => {
@@ -88,11 +92,22 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
     expect(selected[0]).toBe('low')
     const deadlocks = snapshots.filter((s): s is DeadlockSnapshot => s.kind === SNAPSHOT_MESSAGE_KINDS.deadlock)
     expect(deadlocks).toHaveLength(0)
-    const selections = snapshots.filter((s) => s.kind === SNAPSHOT_MESSAGE_KINDS.selection)
+    const frontiers = snapshots.filter((s): s is FrontierSnapshot => s.kind === SNAPSHOT_MESSAGE_KINDS.frontier)
+    const selections = snapshots.filter((s): s is SelectionSnapshot => s.kind === SNAPSHOT_MESSAGE_KINDS.selection)
+    expect(frontiers.length).toBeGreaterThan(0)
     expect(selections.length).toBeGreaterThan(0)
+    const lowSelection = selections.find((selection) => selection.selected.type === 'low')
+    expect(lowSelection).toBeDefined()
+    expect(lowSelection!.selected.ingress).toBeUndefined()
+    const lowFrontier = frontiers.find((frontier) => frontier.step === lowSelection!.step)
+    expect(lowFrontier).toBeDefined()
+    expect(lowFrontier!.enabled.some((candidate) => candidate.type === 'low')).toBe(true)
+    const frontierIndex = snapshots.findIndex((snapshot) => snapshot.kind === SNAPSHOT_MESSAGE_KINDS.frontier)
+    const selectionIndex = snapshots.findIndex((snapshot) => snapshot.kind === SNAPSHOT_MESSAGE_KINDS.selection)
+    expect(selectionIndex).toBeGreaterThan(frontierIndex)
   })
 
-  test('selection snapshot marks only the exact chosen candidate as selected', () => {
+  test('selection snapshot reports the chosen candidate event', () => {
     const snapshots: SnapshotMessage[] = []
     const { addBThreads, trigger, useSnapshot } = behavioral()
 
@@ -105,7 +120,6 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
         sync({
           block: {
             type: 'same_type',
-            source: 'request',
             detailSchema: z.object({ n: z.literal(2) }),
           },
         }),
@@ -116,15 +130,26 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
 
     trigger({ type: 'kickoff' })
 
-    const selections = snapshots.filter(
-      (snapshot): snapshot is SelectionSnapshot =>
-        snapshot.kind === SNAPSHOT_MESSAGE_KINDS.selection &&
-        snapshot.bids.some((bid) => bid.type === 'same_type' && bid.selected),
+    const frontier = snapshots.find(
+      (snapshot): snapshot is FrontierSnapshot =>
+        snapshot.kind === SNAPSHOT_MESSAGE_KINDS.frontier &&
+        snapshot.status === 'ready' &&
+        snapshot.candidates.some((candidate) => candidate.type === 'same_type'),
     )
-    expect(selections).toHaveLength(1)
-    const sameTypeBids = selections[0]!.bids.filter((bid) => bid.type === 'same_type')
-    expect(sameTypeBids).toHaveLength(2)
-    expect(sameTypeBids.filter((bid) => bid.selected)).toHaveLength(1)
-    expect(sameTypeBids.find((bid) => bid.selected)?.detail).toEqual({ n: 1 })
+    expect(frontier).toBeDefined()
+    expect(frontier!.candidates.filter((candidate) => candidate.type === 'same_type')).toHaveLength(2)
+
+    const selection = snapshots.find(
+      (snapshot): snapshot is SelectionSnapshot =>
+        snapshot.kind === SNAPSHOT_MESSAGE_KINDS.selection && snapshot.selected.type === 'same_type',
+    )
+    expect(selection).toBeDefined()
+    const selectionFrontier = snapshots.find(
+      (snapshot): snapshot is FrontierSnapshot =>
+        snapshot.kind === SNAPSHOT_MESSAGE_KINDS.frontier && snapshot.step === selection!.step,
+    )
+    expect(selectionFrontier).toBeDefined()
+    expect(selectionFrontier!.candidates.some((candidate) => candidate.type === 'same_type')).toBe(true)
+    expect(selection!.selected.detail).toEqual({ n: 1 })
   })
 })

@@ -151,7 +151,6 @@ test('match listener: type mismatch prevents match when source and detail would 
         sync({
           waitFor: {
             type: 'task',
-            source: 'request',
             detailSchema: z.object({ id: z.string() }),
           },
         }),
@@ -186,7 +185,6 @@ test('match listener: sourceSchema request accepts only requested events', () =>
         sync({
           waitFor: {
             type: 'task',
-            source: 'request',
             detailSchema: z.object({ id: z.string() }),
           },
         }),
@@ -210,7 +208,7 @@ test('match listener: sourceSchema request accepts only requested events', () =>
   expect(log).toEqual(['task', 'ack'])
 })
 
-test('match listener: sourceSchema trigger accepts only externally triggered events', () => {
+test('match listener: trigger and requested events both satisfy matching listeners', () => {
   const log: string[] = []
   const { addBThreads, trigger, useFeedback } = behavioral()
 
@@ -221,7 +219,6 @@ test('match listener: sourceSchema trigger accepts only externally triggered eve
         sync({
           waitFor: {
             type: 'task',
-            source: 'trigger',
             detailSchema: z.object({ id: z.string() }),
           },
         }),
@@ -243,7 +240,7 @@ test('match listener: sourceSchema trigger accepts only externally triggered eve
   trigger({ type: 'kickoff' })
   trigger({ type: 'task', detail: { id: 'job-1' } })
 
-  expect(log).toEqual(['task', 'task', 'ack'])
+  expect(log).toEqual(['task', 'ack', 'task'])
 })
 
 test('match listener: sourceSchema can accept trigger and request', () => {
@@ -291,7 +288,6 @@ test('match listener: sourceSchema request matches request-origin events only', 
         sync({
           waitFor: {
             type: 'task',
-            source: 'request',
             detailSchema: z.object({ id: z.string() }),
           },
         }),
@@ -329,7 +325,6 @@ test('match listener: block prevents matching requested event from being selecte
         sync({
           block: {
             type: 'task',
-            source: 'request',
             detailSchema: z.object({ id: z.string() }),
           },
         }),
@@ -373,7 +368,6 @@ test('match listener: interrupt terminates thread when matching event is selecte
           waitFor: onType('start'),
           interrupt: {
             type: 'kill',
-            source: 'request',
             detailSchema: z.object({ id: z.literal('victim') }),
           },
         }),

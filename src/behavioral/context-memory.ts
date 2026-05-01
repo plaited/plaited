@@ -1,19 +1,14 @@
 /**
  * Agent-owned event-detail cache used for listener-scoped context shaping.
  */
-import type { EVENT_SOURCES } from './behavioral.constants.ts'
 import type { BPListener } from './behavioral.schemas.ts'
-
-type MemorySource = keyof typeof EVENT_SOURCES
 
 type MemoryEvent = {
   type: string
-  source: MemorySource
   detail?: unknown
 }
 
 type ContextMemoryRecord = {
-  source: MemorySource
   detail: unknown
   expiresAt: number
   touchedAt: number
@@ -61,10 +56,9 @@ export const createContextMemory = ({ ttlMs, maxKeys }: { ttlMs: number; maxKeys
   }
 
   return {
-    record: ({ type, source, detail }: MemoryEvent) => {
+    record: ({ type, detail }: MemoryEvent) => {
       pruneExpired()
       const entry: ContextMemoryRecord = {
-        source,
         detail,
         expiresAt: Date.now() + ttlMs,
         touchedAt: 0,
@@ -77,9 +71,6 @@ export const createContextMemory = ({ ttlMs, maxKeys }: { ttlMs: number; maxKeys
       pruneExpired()
       const entry = memory.get(listener.type)
       if (!entry) {
-        return undefined
-      }
-      if (listener.source && listener.source !== entry.source) {
         return undefined
       }
 

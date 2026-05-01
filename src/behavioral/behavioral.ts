@@ -1,12 +1,5 @@
-import { ueid } from '../utils/ueid.ts'
-import {
-  BTHREAD_ID_PREFIX,
-  EVENT_SOURCES,
-  FRONTIER_STATUS,
-  SNAPSHOT_MESSAGE_KINDS,
-  TRIGGER_ID_PREFIX,
-} from './behavioral.constants.ts'
-import type { BPEvent, FeedbackError, SelectionBid, SnapshotMessage, ThreadReference } from './behavioral.schemas.ts'
+import { FRONTIER_STATUS, SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
+import type { BPEvent, FeedbackError, SnapshotMessage } from './behavioral.schemas.ts'
 import type {
   AddHandler,
   AddThread,
@@ -19,12 +12,7 @@ import type {
   Trigger,
   UseSnapshot,
 } from './behavioral.types.ts'
-import {
-  advanceRunningToPending,
-  computeFrontier,
-  isListeningFor,
-  resumePendingThreadsForSelectedEvent,
-} from './behavioral.utils.ts'
+import { advanceRunningToPending, computeFrontier, resumePendingThreadsForSelectedEvent } from './behavioral.utils.ts'
 
 /**
  * @internal
@@ -50,130 +38,6 @@ const createPublisher = <T>() => {
     }
   }
   return publisher
-}
-
-/**
- * @internal
- * Formats the current state (pending bids, candidates, selected event) into a SnapshotMessage array.
- *
- * This function analyzes the relationships between threads (blocking, interruption), determines
- * which event was selected, and creates a comprehensive view of the current execution step.
- * The resulting array is sorted by priority to show higher priority events first.
- */
-const formatSnapshotBids = ({
-  candidates,
-  pending,
-  selectedEvent,
-}: {
-  candidates: CandidateBid[]
-  pending: Map<string, PendingBid>
-  selectedEvent?: CandidateBid
-}) => {
-  const resolveThreadSnapshotMeta = (id: string): ThreadReference => {
-    const label = pending.get(id)!.label
-    return {
-      label,
-      id,
-    }
-  }
-  const resolveThreadReference = (thread?: string) => (thread ? resolveThreadSnapshotMeta(thread) : undefined)
-
-  const blockingThreads = [...pending].flatMap(([thread, { block }]) =>
-    block && Array.isArray(block)
-      ? block.map((listener) => ({ block: listener, thread }))
-      : block
-        ? [{ block, thread }]
-        : [],
-  )
-  const interruptedThreads = [...pending].flatMap(([thread, { interrupt }]) =>
-    interrupt && Array.isArray(interrupt)
-      ? interrupt.map((listener) => ({ interrupt: listener, thread }))
-      : interrupt
-        ? [{ interrupt, thread }]
-        : [],
-  )
-
-  const ruleSets: SelectionBid[] = []
-  for (const bid of candidates) {
-    const blockedBy = blockingThreads.find(({ block }) => isListeningFor(bid)(block))?.thread
-    const interrupts = interruptedThreads.find(({ interrupt }) => isListeningFor(bid)(interrupt))?.thread
-    const message: SelectionBid = {
-      thread: resolveThreadSnapshotMeta(bid.thread),
-      source: bid.source,
-      type: bid.type,
-      selected: selectedEvent ? selectedEvent.thread === bid.thread : false,
-      priority: bid.priority,
-      detail: bid.detail,
-      blockedBy: resolveThreadReference(blockedBy),
-      interrupts: resolveThreadReference(interrupts),
-    }
-    ruleSets.push(message)
-  }
-  return ruleSets.sort((a, b) => a.priority - b.priority)
-}
-
-const snapshotFormatter = ({
-  candidates,
-  selectedEvent,
-  pending,
-}: {
-  candidates: CandidateBid[]
-  selectedEvent: CandidateBid
-  pending: Map<string, PendingBid>
-}) => {
-  return {
-    kind: SNAPSHOT_MESSAGE_KINDS.selection,
-    bids: formatSnapshotBids({ candidates, selectedEvent, pending }),
-  }
-}
-
-const buildThreadReferences = ({ threads }: { threads: Array<ThreadReference | undefined> }) => {
-  const seenPairs = new Set<string>()
-  const references: ThreadReference[] = []
-
-  for (const thread of threads) {
-    if (!thread) {
-      continue
-    }
-    const dedupeKey = JSON.stringify([thread.label, thread.id ?? null])
-    if (seenPairs.has(dedupeKey)) {
-      continue
-    }
-    seenPairs.add(dedupeKey)
-    references.push(thread)
-  }
-  return references
-}
-
-const deadlockSnapshotFormatter = ({
-  candidates,
-  pending,
-}: {
-  candidates: CandidateBid[]
-  pending: Map<string, PendingBid>
-}) => {
-  const bids = formatSnapshotBids({ candidates, pending }).map((bid) => ({
-    ...bid,
-    selected: false as const,
-    reason: 'blocked' as const,
-  }))
-  const blockedCount = bids.filter((bid) => Boolean(bid.blockedBy?.label)).length
-
-  return {
-    kind: SNAPSHOT_MESSAGE_KINDS.deadlock,
-    bids,
-    summary: {
-      candidateCount: bids.length,
-      blockedCount,
-      unblockedCount: bids.length - blockedCount,
-      blockers: buildThreadReferences({
-        threads: bids.map((bid) => bid.blockedBy),
-      }),
-      interrupters: buildThreadReferences({
-        threads: bids.map((bid) => bid.interrupts),
-      }),
-    },
-  }
 }
 
 /**
@@ -220,23 +84,21 @@ const deadlockSnapshotFormatter = ({
 export const behavioral: Behavioral = () => {
   /**
    * @internal
-   * Map of threads that have yielded and are waiting for event selection.
+   * Set of threads that have yielded and are waiting for event selection.
    *
-   * Key: threadId (string for named threads)
-   * Value: PendingBid containing the thread's generator and yielded Idioms.
+   * Each entry is a PendingBid containing the thread's generator and yielded idioms.
    * These threads have reached a synchronization point and declared their behavioral intentions.
    */
-  const pending = new Map<string, PendingBid>()
+  const pending = new Set<PendingBid>()
 
   /**
    * @internal
-   * Map of threads whose generators are ready to run (or have just been triggered).
+   * Set of threads whose generators are ready to run (or have just been triggered).
    *
-   * Key: threadId (string for named threads)
-   * Value: RunningBid containing the thread's generator.
+   * Each entry is a RunningBid containing the thread's generator.
    * These threads are about to execute until they yield at their next synchronization point.
    */
-  const running = new Map<string, RunningBid>()
+  const running = new Set<RunningBid>()
 
   /**
    * @internal
@@ -251,6 +113,7 @@ export const behavioral: Behavioral = () => {
    * Always exists — subscribers are added/removed via `useSnapshot` which delegates to `subscribe`.
    */
   const snapshotPublisher = createPublisher<SnapshotMessage>()
+  let stepId = 0
 
   const step = () => {
     if (running.size) {
@@ -272,19 +135,51 @@ export const behavioral: Behavioral = () => {
    * 6. If no event is selected, the super-step ends (program pauses until external trigger)
    */
   function selectNextEvent() {
+    const step = stepId++
     const frontier = computeFrontier({ pending })
+    const candidates = frontier.candidates.map(({ type, detail, ingress, priority }) => ({
+      type,
+      ...(detail === undefined ? {} : { detail }),
+      ...(ingress === undefined ? {} : { ingress }),
+      priority,
+    }))
+    const enabled = frontier.enabled.map(({ type, detail, ingress, priority }) => ({
+      type,
+      ...(detail === undefined ? {} : { detail }),
+      ...(ingress === undefined ? {} : { ingress }),
+      priority,
+    }))
+
+    snapshotPublisher({
+      kind: SNAPSHOT_MESSAGE_KINDS.frontier,
+      step,
+      status: frontier.status,
+      candidates,
+      enabled,
+    })
 
     if (frontier.status === FRONTIER_STATUS.ready) {
       /** @internal Priority Queue BPEvent Selection Strategy */
       const selectedEvent = frontier.enabled.sort(
         ({ priority: priorityA }, { priority: priorityB }) => priorityA - priorityB,
       )[0]!
-      snapshotPublisher(snapshotFormatter({ candidates: frontier.candidates, selectedEvent, pending }))
+      snapshotPublisher({
+        kind: SNAPSHOT_MESSAGE_KINDS.selection,
+        step,
+        selected: {
+          type: selectedEvent.type,
+          ...(selectedEvent.detail === undefined ? {} : { detail: selectedEvent.detail }),
+          ...(selectedEvent.ingress === undefined ? {} : { ingress: selectedEvent.ingress }),
+        },
+      })
       nextStep(selectedEvent)
       return
     }
     if (frontier.status === FRONTIER_STATUS.deadlock) {
-      snapshotPublisher(deadlockSnapshotFormatter({ candidates: frontier.candidates, pending }))
+      snapshotPublisher({
+        kind: SNAPSHOT_MESSAGE_KINDS.deadlock,
+        step,
+      })
     }
   }
 
@@ -333,10 +228,8 @@ export const behavioral: Behavioral = () => {
         request: event,
       }
     }
-    const threadId = ueid(TRIGGER_ID_PREFIX)
-    running.set(threadId, {
+    running.add({
       priority: 0,
-      source: EVENT_SOURCES.trigger,
       generator: thread(),
       ingress: true,
       label: event.type,
@@ -394,10 +287,8 @@ export const behavioral: Behavioral = () => {
   }
 
   const addThread: AddThread = (label: string, thread: ReturnType<Sync>) => {
-    const threadId = ueid(BTHREAD_ID_PREFIX)
-    running.set(threadId, {
+    running.add({
       priority: running.size + 1,
-      source: EVENT_SOURCES.request,
       generator: thread(),
       label,
     })

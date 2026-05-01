@@ -77,7 +77,7 @@ describe('per-task lifecycle', () => {
 })
 
 describe('task gate', () => {
-  test('blocks task-related events between tasks', () => {
+  test('blocks task-related events after task closes', () => {
     const log: string[] = []
     const taskEvents = new Set(['model_response', 'execute', 'tool_result', 'context_ready'])
 
@@ -123,7 +123,7 @@ describe('task gate', () => {
     trigger({ type: 'message' })
     trigger({ type: 'execute' })
 
-    expect(log).toEqual(['task', 'execute', 'message'])
+    expect(log).toEqual(['task', 'model_response', 'execute', 'execute', 'message'])
   })
 
   test('stale async triggers after task ends are blocked', async () => {

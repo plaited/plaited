@@ -11,10 +11,13 @@ import { keyMirror } from '../utils.ts'
  *
  * @public
  */
-export const SNAPSHOT_MESSAGE_KINDS = keyMirror('deadlock', 'feedback_error', 'selection', 'runtime_error', 'worker')
+export const SNAPSHOT_MESSAGE_KINDS = keyMirror(
+  'deadlock',
+  'feedback_error',
+  'frontier',
+  'selection',
+  'runtime_error',
+  'worker',
+)
 
 export const FRONTIER_STATUS = keyMirror('ready', 'deadlock', 'idle')
-
-export const EXPLORE_STRATEGIES = keyMirror('dfs', 'bfs')
-
-export const VERIFICATION_STATUSES = keyMirror('verified', 'failed', 'truncated')

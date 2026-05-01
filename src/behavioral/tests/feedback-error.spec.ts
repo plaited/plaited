@@ -86,7 +86,7 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
     expect(errors[0]!.error).toBe('string error')
   })
 
-  test('selection snapshot precedes feedback-error in message order', () => {
+  test('frontier and selection snapshots precede feedback-error in message order', () => {
     const snapshots: SnapshotMessage[] = []
     const { addBThreads, trigger, useFeedback, useSnapshot } = behavioral()
     useSnapshot((snapshot: SnapshotMessage) => {
@@ -104,10 +104,13 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
 
     expect(snapshots.length).toBeGreaterThanOrEqual(2)
 
-    const selectionIndex = snapshots.findIndex((s) => s.kind === 'selection')
+    const frontierIndex = snapshots.findIndex((s) => s.kind === SNAPSHOT_MESSAGE_KINDS.frontier)
+    const selectionIndex = snapshots.findIndex((s) => s.kind === SNAPSHOT_MESSAGE_KINDS.selection)
     const errorIndex = snapshots.findIndex((s) => s.kind === SNAPSHOT_MESSAGE_KINDS.feedback_error)
+    expect(frontierIndex).not.toBe(-1)
     expect(selectionIndex).not.toBe(-1)
     expect(errorIndex).not.toBe(-1)
+    expect(frontierIndex).toBeLessThan(selectionIndex)
     expect(selectionIndex).toBeLessThan(errorIndex)
   })
 
@@ -129,6 +132,7 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
 
     const errors = snapshots.filter((s) => s.kind === SNAPSHOT_MESSAGE_KINDS.feedback_error)
     expect(errors).toHaveLength(0)
-    expect(snapshots.every((s) => s.kind === 'selection')).toBe(true)
+    expect(snapshots.some((s) => s.kind === SNAPSHOT_MESSAGE_KINDS.frontier)).toBe(true)
+    expect(snapshots.some((s) => s.kind === SNAPSHOT_MESSAGE_KINDS.selection)).toBe(true)
   })
 })

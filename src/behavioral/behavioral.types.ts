@@ -1,5 +1,5 @@
 import type { FRONTIER_STATUS } from './behavioral.constants.ts'
-import type { BPEvent, BPListener, JsonObject, SelectionSnapshot, SnapshotMessage } from './behavioral.schemas.ts'
+import type { BPEvent, BPListener, JsonObject, SnapshotMessage } from './behavioral.schemas.ts'
 
 /**
  * Represents a synchronization statement yielded by a behavioral rule step.
@@ -58,17 +58,14 @@ export type Sync = (arg: Idioms) => RulesFunction
 export type Thread = (rules: ReturnType<Sync>[], once?: true) => ReturnType<Sync>
 
 /**
-  * @internal
-  * Represents a b-thread that is currently executing its current rule
- sequence.
-  *
-  * These are threads that are active and running between synchronization
- points.
-  * Running threads are those that have been moved from the 'pending'
- state after an event
-  * that matches their `waitFor` or `request` declarations has been
- selected.
-  */
+ * @internal
+ * Represents a b-thread that is currently executing its rule sequence.
+ *
+ * These are threads that are active and running between synchronization
+ * points. Running threads are those that have been moved from the
+ * pending state after selecting an event that matches their `waitFor`
+ * or `request` declarations.
+ */
 export type RunningBid = {
   /** Optional human-readable label for spawned thread instances. */
   label: string
@@ -141,25 +138,6 @@ export type ReplayToFrontierResult = {
  * @see {@link UseSnapshot} for snapshot listener cleanup
  */
 export type Disconnect = () => void | Promise<void>
-
-/**
- * @internal
- * A function type responsible for formatting the internal state of the bProgram into a `SnapshotMessage`.
- *
- * This formatter transforms the raw internal program state into a standardized, human-readable format
- * that can be consumed by snapshot listeners, debuggers, and visualization tools.
- *
- * The formatter analyzes the relationships between threads (who blocks whom, who interrupts whom),
- * determines which event was selected, and creates a comprehensive view of the current execution step.
- */
-export type SelectionFormatter = (args: {
-  /** Set of threads currently in a pending state (yielded), containing their synchronization declarations. */
-  pending: Set<PendingBid>
-  /** The event candidate that was selected for execution in the current step. */
-  selectedEvent: CandidateBid
-  /** All event candidates that were considered for selection in the current step. */
-  candidates: CandidateBid[]
-}) => SelectionSnapshot
 
 /**
  * A callback function invoked with a snapshot (`SnapshotMessage`) of the behavioral program's state

@@ -1,4 +1,5 @@
 import { expect, test } from 'bun:test'
+import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
 import type { SnapshotMessage } from '../behavioral.schemas.ts'
 import { behavioral, onType, sync, thread } from './helpers.ts'
 
@@ -139,9 +140,9 @@ test('logging', () => {
     ]),
   })
   trigger({ type: 'start' })
-  const selectionSnapshots = snapshots.filter((snapshot) => snapshot.kind === 'selection')
-  expect(selectionSnapshots.length).toBeGreaterThan(0)
-  const allBids = selectionSnapshots.flatMap((snapshot) => snapshot.bids)
-  expect(allBids.some((bid) => bid.type === 'hot')).toBe(true)
-  expect(allBids.some((bid) => bid.type === 'cold')).toBe(true)
+  const frontierSnapshots = snapshots.filter((snapshot) => snapshot.kind === SNAPSHOT_MESSAGE_KINDS.frontier)
+  expect(frontierSnapshots.length).toBeGreaterThan(0)
+  const allCandidates = frontierSnapshots.flatMap((snapshot) => snapshot.candidates)
+  expect(allCandidates.some((candidate) => candidate.type === 'hot')).toBe(true)
+  expect(allCandidates.some((candidate) => candidate.type === 'cold')).toBe(true)
 })

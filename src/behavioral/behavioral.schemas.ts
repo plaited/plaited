@@ -88,56 +88,33 @@ export const createMemoryResponseDetailSchema = ({
     id: z.literal(id),
   })
 
-/**
- * Schema for a thread reference used across snapshot attribution fields.
- *
- * @remarks
- * `label` is human-readable. `id` is present when a precise runtime instance
- * identifier exists (for example, spawned threads).
- *
- * @public
- */
-export const ThreadReferenceSchema = z.object({
-  label: z.string(),
-  id: z.string().optional(),
-})
-
-/** @public */
-export type ThreadReference = z.output<typeof ThreadReferenceSchema>
-
-/**
- * Schema for a single bid snapshot from the BP engine's event selection step.
- *
- * @remarks
- * Each bid represents a thread's participation in event selection —
- * what it requested, whether it was selected, blocked, or interrupted.
- * Bids are sorted by priority in the containing {@link SelectionSnapshotSchema}.
- *
- * @see {@link SelectionSnapshotSchema} for the containing snapshot
- *
- * @public
- */
-export const SelectionBidSchema = z.object({
-  /** Thread reference (stringified Symbol label for external trigger threads). */
-  thread: ThreadReferenceSchema,
-  /** Explicit event provenance matching and replay. */
+export const SnapshotEventSchema = BPEventSchema.extend({
   ingress: z.literal(true).optional(),
-  /** Whether this bid was selected for execution in the current step. */
-  selected: z.boolean(),
-  /** The event type being requested or waited for. */
-  type: z.string(),
-  /** Optional event payload data. */
-  detail: JsonObjectSchema.optional(),
-  /** Priority level — lower numbers indicate higher priority. */
-  priority: z.number(),
-  /** Thread reference that blocked this bid, if blocked. */
-  blockedBy: ThreadReferenceSchema.optional(),
-  /** Thread reference interrupted when this bid is selected. */
-  interrupts: ThreadReferenceSchema.optional(),
 })
 
 /** @public */
-export type SelectionBid = z.output<typeof SelectionBidSchema>
+export type SnapshotEvent = z.output<typeof SnapshotEventSchema>
+
+export const SnapshotCandidateSchema = z.object({
+  type: z.string(),
+  detail: JsonObjectSchema.optional(),
+  ingress: z.literal(true).optional(),
+  priority: z.number(),
+})
+
+/** @public */
+export type SnapshotCandidate = z.output<typeof SnapshotCandidateSchema>
+
+export const FrontierSnapshotSchema = z.object({
+  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.frontier),
+  step: z.number().int().nonnegative(),
+  status: z.enum(['ready', 'deadlock', 'idle']),
+  candidates: z.array(SnapshotCandidateSchema),
+  enabled: z.array(SnapshotCandidateSchema),
+})
+
+/** @public */
+export type FrontierSnapshot = z.output<typeof FrontierSnapshotSchema>
 
 /**
  * Schema for a snapshot of all bids considered during one event selection step.
@@ -152,53 +129,12 @@ export type SelectionBid = z.output<typeof SelectionBidSchema>
  */
 export const SelectionSnapshotSchema = z.object({
   kind: z.literal(SNAPSHOT_MESSAGE_KINDS.selection),
-  bids: z.array(SelectionBidSchema),
+  step: z.number().int().nonnegative(),
+  selected: SnapshotEventSchema,
 })
 
 /** @public */
 export type SelectionSnapshot = z.output<typeof SelectionSnapshotSchema>
-
-/**
- * Schema for classifying why a bid appears in a deadlock snapshot.
- *
- * @public
- */
-export const DeadlockReasonSchema = z.enum(['blocked', 'no_selectable_candidate'])
-
-/** @public */
-export type DeadlockReason = z.output<typeof DeadlockReasonSchema>
-
-/**
- * Schema for a bid entry in a deadlock snapshot.
- *
- * @remarks
- * Deadlock bids are always unselected and include a reason code.
- *
- * @public
- */
-export const DeadlockBidSchema = SelectionBidSchema.extend({
-  selected: z.literal(false),
-  reason: DeadlockReasonSchema,
-})
-
-/** @public */
-export type DeadlockBid = z.output<typeof DeadlockBidSchema>
-
-/**
- * Schema for top-level deadlock diagnostics aggregated across all bids.
- *
- * @public
- */
-export const DeadlockSummarySchema = z.object({
-  candidateCount: z.number(),
-  blockedCount: z.number(),
-  unblockedCount: z.number(),
-  blockers: z.array(ThreadReferenceSchema),
-  interrupters: z.array(ThreadReferenceSchema),
-})
-
-/** @public */
-export type DeadlockSummary = z.output<typeof DeadlockSummarySchema>
 
 /**
  * Schema for a snapshot emitted when no unblocked candidate can be selected.
@@ -213,8 +149,7 @@ export type DeadlockSummary = z.output<typeof DeadlockSummarySchema>
  */
 export const DeadlockSnapshotSchema = z.object({
   kind: z.literal(SNAPSHOT_MESSAGE_KINDS.deadlock),
-  bids: z.array(DeadlockBidSchema),
-  summary: DeadlockSummarySchema,
+  step: z.number().int().nonnegative(),
 })
 
 /** @public */
@@ -271,6 +206,7 @@ export type WorkerSnapshot = z.infer<typeof WorkerSnapshotSchema>
  */
 export const SnapshotMessageSchema = z.discriminatedUnion('kind', [
   RuntimeErrorSchema,
+  FrontierSnapshotSchema,
   DeadlockSnapshotSchema,
   FeedbackErrorSchema,
   SelectionSnapshotSchema,

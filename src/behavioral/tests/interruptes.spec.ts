@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
 import type { SnapshotMessage } from '../behavioral.schemas.ts'
 import { behavioral, onType, sync, thread } from './helpers.ts'
 
@@ -72,9 +73,9 @@ describe('interrupt', () => {
     trigger({ type: 'terminate' })
     trigger({ type: 'add' })
     expect(actual).toEqual(['hot', 'hot'])
-    expect(snapshots.some((snapshot) => snapshot.kind === 'selection')).toBe(true)
+    expect(snapshots.some((snapshot) => snapshot.kind === SNAPSHOT_MESSAGE_KINDS.selection)).toBe(true)
     const terminateSelection = snapshots.find(
-      (snapshot) => snapshot.kind === 'selection' && snapshot.bids.some((bid) => bid.type === 'terminate'),
+      (snapshot) => snapshot.kind === SNAPSHOT_MESSAGE_KINDS.selection && snapshot.selected.type === 'terminate',
     )
     expect(terminateSelection).toBeDefined()
   })

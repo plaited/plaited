@@ -18,7 +18,6 @@ describe('useSpec', () => {
             waitFor: [
               {
                 type: 'task',
-                source: 'trigger',
                 detailSchema: {
                   type: 'object',
                   properties: {
@@ -52,7 +51,6 @@ describe('useSpec', () => {
     const waitForListeners = second.value?.waitFor
     const waitForListener = Array.isArray(waitForListeners) ? waitForListeners[0] : waitForListeners
     expect(waitForListener?.type).toBe('task')
-    expect(waitForListener?.source).toBe('trigger')
     expect(waitForListener?.detailSchema?.safeParse({ id: 'ok' }).success).toBe(true)
     expect(waitForListener?.detailSchema?.safeParse({ id: 1 }).success).toBe(false)
     expect(second.value?.block).toEqual([{ type: 'cancel' }])

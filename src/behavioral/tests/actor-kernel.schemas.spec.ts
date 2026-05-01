@@ -4,8 +4,11 @@ import * as z from 'zod'
 import {
   BPEventSchema,
   DeadlockSnapshotSchema,
+  FrontierSnapshotSchema,
+  SelectionSnapshotSchema,
+  SnapshotCandidateSchema,
+  SnapshotEventSchema,
   SnapshotMessageSchema,
-  ThreadReferenceSchema,
 } from '../behavioral.schemas.ts'
 
 type JsonSchemaShape = {
@@ -20,56 +23,38 @@ const readRequired = (schema: unknown): string[] => {
 }
 
 describe('actor kernel schemas', () => {
-  test('ThreadReferenceSchema exports JSON Schema with label as required field', () => {
-    const schema = z.toJSONSchema(ThreadReferenceSchema)
+  test('FrontierSnapshotSchema exports JSON Schema with step, status, candidates, and enabled as required fields', () => {
+    const schema = z.toJSONSchema(FrontierSnapshotSchema)
     const required = readRequired(schema)
 
-    expect(required).toEqual(expect.arrayContaining(['label']))
-    expect(required).toHaveLength(1)
+    expect(required).toEqual(expect.arrayContaining(['kind', 'step', 'status', 'candidates', 'enabled']))
   })
 
-  test('DeadlockSnapshotSchema exports JSON Schema with bids and summary as required fields', () => {
+  test('DeadlockSnapshotSchema exports JSON Schema with kind and step as required fields', () => {
     const schema = z.toJSONSchema(DeadlockSnapshotSchema)
     const required = readRequired(schema)
 
-    expect(required).toEqual(expect.arrayContaining(['kind', 'bids', 'summary']))
+    expect(required).toEqual(expect.arrayContaining(['kind', 'step']))
   })
 
-  test('ThreadReferenceSchema accepts optional id for instance-level snapshots', () => {
-    expect(ThreadReferenceSchema.parse({ label: 'worker' })).toEqual({
-      label: 'worker',
+  test('SnapshotEventSchema accepts optional ingress', () => {
+    expect(SnapshotEventSchema.parse({ type: 'worker.done' })).toEqual({
+      type: 'worker.done',
     })
-    expect(ThreadReferenceSchema.parse({ label: 'worker', id: 'bthread:1' })).toEqual({
-      label: 'worker',
-      id: 'bthread:1',
+    expect(SnapshotEventSchema.parse({ type: 'worker.done', ingress: true })).toEqual({
+      type: 'worker.done',
+      ingress: true,
     })
   })
 
-  test('DeadlockSnapshotSchema rejects non-JSON bid detail values like functions', () => {
+  test('SnapshotCandidateSchema rejects non-JSON detail values like functions', () => {
     expect(() =>
-      DeadlockSnapshotSchema.parse({
-        kind: 'deadlock',
-        bids: [
-          {
-            thread: { label: 'producer', id: 'bthread:1' },
-            source: 'request',
-            selected: false,
-            type: 'evt',
-            detail: {
-              fn: () => 'not json',
-            },
-            priority: 1,
-            reason: 'blocked',
-            blockedBy: { label: 'guard', id: 'bthread:2' },
-          },
-        ],
-        summary: {
-          candidateCount: 1,
-          blockedCount: 1,
-          unblockedCount: 0,
-          blockers: [{ label: 'guard', id: 'bthread:2' }],
-          interrupters: [],
+      SnapshotCandidateSchema.parse({
+        type: 'evt',
+        detail: {
+          fn: () => 'not json',
         },
+        priority: 1,
       }),
     ).toThrow()
   })
@@ -85,21 +70,36 @@ describe('actor kernel schemas', () => {
     })
   })
 
-  test('SnapshotMessageSchema rejects non-JSON bid detail values', () => {
+  test('SnapshotMessageSchema rejects non-JSON selected event detail values', () => {
     expect(() =>
       SnapshotMessageSchema.parse({
         kind: 'selection',
-        bids: [
-          {
-            thread: { label: 'worker' },
-            source: 'request',
-            selected: true,
-            type: 'event',
-            detail: () => 'not json',
-            priority: 0,
-          },
-        ],
+        step: 0,
+        selected: {
+          type: 'event',
+          detail: () => 'not json',
+        },
       }),
     ).toThrow()
+  })
+
+  test('SelectionSnapshotSchema accepts selected event payload', () => {
+    expect(
+      SelectionSnapshotSchema.parse({
+        kind: 'selection',
+        step: 3,
+        selected: {
+          type: 'event',
+          detail: { value: 1 },
+        },
+      }),
+    ).toEqual({
+      kind: 'selection',
+      step: 3,
+      selected: {
+        type: 'event',
+        detail: { value: 1 },
+      },
+    })
   })
 })
