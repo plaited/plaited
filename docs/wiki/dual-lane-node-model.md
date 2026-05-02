@@ -136,6 +136,7 @@ Creator publishes text/audio/video/game assets behind entitlement gates:
 - [Boundary Contract Graph](boundary-contract-graph.md)
 - [Node-To-Node Auth](node-to-node-auth.md)
 - [Architecture](architecture.md)
+- [Dynamic Skills Agent Model](dynamic-skills-agent.md)
 - [Infrastructure](infrastructure.md)
 - [Plaited Runtime Skill](../../skills/plaited-runtime/SKILL.md)
 - [Boundary Contract Review Skill](../../skills/boundary-contract-review/SKILL.md)

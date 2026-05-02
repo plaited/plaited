@@ -29,6 +29,7 @@
 - [Dual-Lane HyperNode Model](dual-lane-node-model.md)
 - [Boundary Contract Graph](boundary-contract-graph.md)
 - [Node-To-Node Auth](node-to-node-auth.md)
+- [Dynamic Skills Agent Model](dynamic-skills-agent.md)
 
 These pages are normative doctrine for future architecture decisions.
 
@@ -132,6 +133,7 @@ Every active boundary contract defines at minimum:
 - [Infrastructure](infrastructure.md)
 - [Actor Runtime](actor-runtime.md)
 - [Agent Loop](agent-loop.md)
+- [Dynamic Skills Agent Model](dynamic-skills-agent.md)
 - [Training And Improvement](training-and-improvement.md)
 - [Plaited Runtime Skill](../../skills/plaited-runtime/SKILL.md)
 - [Boundary Contract Review Skill](../../skills/boundary-contract-review/SKILL.md)

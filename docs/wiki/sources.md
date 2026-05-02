@@ -22,6 +22,7 @@
 - [Dual-Lane HyperNode Model](dual-lane-node-model.md)
 - [Boundary Contract Graph](boundary-contract-graph.md)
 - [Node-To-Node Auth](node-to-node-auth.md)
+- [Dynamic Skills Agent Model](dynamic-skills-agent.md)
 
 These are active doctrine targets and must be read as target direction unless directly backed by current `src/` + tests.
 

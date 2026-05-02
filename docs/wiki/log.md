@@ -1,5 +1,13 @@
 # Wiki Log
 
+## 2026-05-02
+
+- Added Dynamic Skills Agent Model doctrine page covering node-vs-skill boundary, envelope shape,
+  capability registry ownership in `src/skills`, and orchestrator target direction.
+- Linked Dynamic Skills Agent Model from index, architecture, dual-lane model, and sources pages.
+- Documented MCP-backed skill generation as a proposal/review/generation target flow without
+  claiming end-to-end runtime implementation.
+
 ## 2026-04-26
 
 - Added canonical doctrine pages for dual-lane node model, boundary-contract
