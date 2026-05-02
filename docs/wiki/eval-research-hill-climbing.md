@@ -9,11 +9,8 @@ are bundled, and how baseline/challenger runs are compared.
 This page is grounded in the current implementations and tests at:
 
 - `src/eval/eval.schemas.ts`
-- `src/eval/eval.process.ts`
-- `src/eval/eval.grading.ts`
-- `src/eval/eval.comparison.ts`
 - `src/eval/eval.ts`
-- `src/eval/tests/*`
+- `src/eval/tests/eval.spec.ts`
 
 ## Current Layering
 
