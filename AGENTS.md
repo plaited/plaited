@@ -178,7 +178,7 @@ uv run python -c "import mlx.core as mx; print(mx.default_device())"
 
 **File organization:**
 - `feature.types.ts` — types only
-- `feature.schemas.ts` — Zod schemas + `z.infer<>` types
+- `feature.schemas.ts` — Zod schemas + `z.output<>` types
 - `feature.constants.ts` — constants
 - `feature.ts` — main implementation
 
@@ -212,6 +212,9 @@ Expand test coverage when the impact is broad, shared, or uncertain.
 **Avoid `superRefine` for core schema shape** — prefer structural schemas (discriminated unions,
 `oneOf`-equivalent branches, and strict object composition) so constraints are explicit, type narrowing
 is reliable, and JSON-schema replay contracts stay aligned.
+**Avoid parallel schema sources** — do not hand-maintain raw JSON-schema objects alongside equivalent
+Zod schemas. Prefer deriving JSON Schema from Zod (`z.toJSONSchema(...)`) unless an external consumer
+requires a specific non-emitted JSON shape.
 **Arrow functions** — `const fn = () =>` over `function fn()`.
 **Object params >2 args** — `fn({ a, b, c }: { ... })`.
 **Private fields** — `#field` (ES2022) not `private field`.

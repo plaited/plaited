@@ -56,7 +56,7 @@
         "useLiteralKeys": "warn"
       }
     },
-    "includes": ["**", "!!**/*.d.ts", "!!.bin/*"]
+    "includes": ["**", "!**/*.md", "!!**/*.d.ts", "!!.bin/*"]
   },
   "javascript": {
     "formatter": {
@@ -101,6 +101,7 @@
   ],
   "assist": {
     "enabled": true,
+    "includes": ["**", "!**/*.md", "!!.bin/*"],
     "actions": { "source": { "organizeImports": "on" } }
   }
 }
