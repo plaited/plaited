@@ -61,8 +61,14 @@ export const SkillMetaSchema = z
     compatibility: z.string().min(1).describe('Optional runtime or tooling compatibility notes.').optional(),
     allowedTools: z.string().min(1).describe('Optional list of allowed tool classes for skill usage.').optional(),
     metadata: z
-      .record(z.string(), z.string())
-      .describe('Optional additional frontmatter key/value metadata.')
+      .object({
+        plaited: z
+          .lazy(() => GeneratedSkillManifestSchema)
+          .describe('Optional generated capability manifest consumed by `skills` registry mode.')
+          .optional(),
+      })
+      .catchall(z.unknown())
+      .describe('Optional additional structured frontmatter metadata.')
       .optional(),
   })
   .describe('Optional metadata fields parsed from skill frontmatter.')
@@ -133,7 +139,7 @@ export const SkillManifestOriginSchema = z
     kind: z.literal('generated').describe('Origin classification for generated skills.'),
     source: SkillManifestOriginSourceSchema.describe('Source metadata used for generation.'),
   })
-  .describe('Generated skill origin block parsed from `plaited.skill.json`.')
+  .describe('Generated skill origin block parsed from SKILL.md frontmatter metadata.')
 
 /** @public */
 export type SkillManifestOrigin = z.infer<typeof SkillManifestOriginSchema>
@@ -201,7 +207,7 @@ export const GeneratedSkillManifestSchema = z
       .min(1)
       .describe('Capability definitions generated for this skill package.'),
   })
-  .describe('Generated skill manifest parsed from `plaited.skill.json`.')
+  .describe('Generated skill manifest parsed from SKILL.md frontmatter metadata.')
 
 /** @public */
 export type GeneratedSkillManifest = z.infer<typeof GeneratedSkillManifestSchema>
@@ -231,7 +237,7 @@ export const SkillRegistryLoadResultSchema = z
       .array(SkillCatalogErrorSchema)
       .describe('Validation or parsing errors for registry inputs that could not be loaded.'),
   })
-  .describe('Capability registry load result for generated skill manifests.')
+  .describe('Capability registry load result for generated skill metadata in SKILL.md frontmatter.')
 
 /** @public */
 export type SkillRegistryLoadResult = z.infer<typeof SkillRegistryLoadResultSchema>
@@ -497,7 +503,16 @@ export const SkillFrontMatterSchema = z
       .describe('Optional runtime/tooling compatibility notes for operators and agents.')
       .optional(),
     'allowed-tools': z.string().min(1).describe('Optional allowlist of tools intended for skill execution.').optional(),
-    metadata: z.record(z.string(), z.string()).describe('Optional arbitrary metadata string map.').optional(),
+    metadata: z
+      .object({
+        plaited: z
+          .lazy(() => GeneratedSkillManifestSchema)
+          .describe('Optional generated capability manifest consumed by `skills` registry mode.')
+          .optional(),
+      })
+      .catchall(z.unknown())
+      .describe('Optional arbitrary metadata object, including plaited skill metadata.')
+      .optional(),
   })
   .describe('Validated YAML frontmatter contract for SKILL.md files.')
 

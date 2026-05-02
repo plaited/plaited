@@ -36,6 +36,7 @@ const writeSkillFile = async ({
   dirName,
   name,
   description,
+  frontmatterExtras,
   body,
 }: {
   rootDir: string
@@ -43,22 +44,35 @@ const writeSkillFile = async ({
   dirName: string
   name: string
   description: string
+  frontmatterExtras?: string
   body: string
 }): Promise<string> => {
   const skillDir = join(rootDir, skillParentDir, dirName)
   await Bun.$`mkdir -p ${skillDir}`
+  const extras = frontmatterExtras ? `${frontmatterExtras.trimEnd()}\n` : ''
   await Bun.write(
     join(skillDir, 'SKILL.md'),
     `---
 name: ${name}
 description: ${description}
----
+${extras}---
 
 ${body}
 `,
   )
   return skillDir
 }
+
+const createPlaitedFrontmatter = (capabilityYaml: string): string => `metadata:
+  plaited:
+    kind: generated-skill
+    origin:
+      kind: generated
+      source:
+        type: remote-mcp
+        url: https://bun.com/docs/mcp
+    capabilities:
+${capabilityYaml}`
 
 describe('findSkillDirectories', () => {
   test('finds and sorts skill directories, including .agents/skills', async () => {
@@ -494,52 +508,28 @@ describe('skills CLI commands', () => {
     expect(result.stderr.toString()).toContain('invalid_union')
   })
 
-  test('skills CLI mode=registry emits generated capability registry entries with namespaced addresses (unified command)', async () => {
+  test('skills CLI mode=registry reads metadata.plaited from SKILL.md frontmatter', async () => {
     await withTempRoot(async (rootDir) => {
       await writeSkillFile({
         rootDir,
         dirName: 'search-bun-docs',
         name: 'search-bun-docs',
         description: 'Search Bun docs through MCP-backed tooling.',
+        frontmatterExtras: createPlaitedFrontmatter(`      - id: docs.search
+        type: cli
+        lane: private
+        phase: context
+        audience: [analyst, coder]
+        actions: [search, read]
+        sideEffects: none
+        handler:
+          type: cli
+          command: scripts/search.ts
+        source:
+          type: remote-mcp
+          tool: search_bun`),
         body: 'Use to search Bun docs.',
       })
-
-      await Bun.write(
-        join(rootDir, 'skills', 'search-bun-docs', 'plaited.skill.json'),
-        JSON.stringify(
-          {
-            kind: 'generated-skill',
-            origin: {
-              kind: 'generated',
-              source: {
-                type: 'remote-mcp',
-                url: 'https://bun.com/docs/mcp',
-              },
-            },
-            capabilities: [
-              {
-                id: 'docs.search',
-                type: 'cli',
-                lane: 'private',
-                phase: 'context',
-                audience: ['analyst', 'coder'],
-                actions: ['search', 'read'],
-                sideEffects: 'none',
-                handler: {
-                  type: 'cli',
-                  command: 'scripts/search.ts',
-                },
-                source: {
-                  type: 'remote-mcp',
-                  tool: 'search_bun',
-                },
-              },
-            ],
-          },
-          null,
-          2,
-        ),
-      )
 
       const input = JSON.stringify({ mode: 'registry', rootDir })
       const result = await Bun.$`bun ./bin/plaited.ts skills ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
@@ -593,45 +583,21 @@ describe('skills CLI commands', () => {
         dirName: 'search-bun-docs',
         name: 'search-bun-docs',
         description: 'Search Bun docs through MCP-backed tooling.',
+        frontmatterExtras: createPlaitedFrontmatter(`      - id: docs.search
+        type: service
+        lane: private
+        phase: context
+        audience: [analyst]
+        actions: [search]
+        sideEffects: none
+        handler:
+          type: cli
+          command: scripts/server.ts
+        source:
+          type: remote-mcp
+          tool: search_bun`),
         body: 'Use to search Bun docs.',
       })
-
-      await Bun.write(
-        join(rootDir, 'skills', 'search-bun-docs', 'plaited.skill.json'),
-        JSON.stringify(
-          {
-            kind: 'generated-skill',
-            origin: {
-              kind: 'generated',
-              source: {
-                type: 'remote-mcp',
-                url: 'https://bun.com/docs/mcp',
-              },
-            },
-            capabilities: [
-              {
-                id: 'docs.search',
-                type: 'service',
-                lane: 'private',
-                phase: 'context',
-                audience: ['analyst'],
-                actions: ['search'],
-                sideEffects: 'none',
-                handler: {
-                  type: 'cli',
-                  command: 'scripts/server.ts',
-                },
-                source: {
-                  type: 'remote-mcp',
-                  tool: 'search_bun',
-                },
-              },
-            ],
-          },
-          null,
-          2,
-        ),
-      )
 
       const input = JSON.stringify({ mode: 'registry', rootDir })
       const result = await Bun.$`bun ./bin/plaited.ts skills ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
@@ -651,45 +617,21 @@ describe('skills CLI commands', () => {
         dirName: 'search-bun-docs',
         name: 'search-bun-docs',
         description: 'Search Bun docs through MCP-backed tooling.',
+        frontmatterExtras: createPlaitedFrontmatter(`      - id: docs.search
+        type: cli
+        lane: privte
+        phase: context
+        audience: []
+        actions: []
+        sideEffects: none
+        handler:
+          type: cli
+          command: ../scripts/search.ts
+        source:
+          type: remote-mcp
+          tool: search_bun`),
         body: 'Use to search Bun docs.',
       })
-
-      await Bun.write(
-        join(rootDir, 'skills', 'search-bun-docs', 'plaited.skill.json'),
-        JSON.stringify(
-          {
-            kind: 'generated-skill',
-            origin: {
-              kind: 'generated',
-              source: {
-                type: 'remote-mcp',
-                url: 'https://bun.com/docs/mcp',
-              },
-            },
-            capabilities: [
-              {
-                id: 'docs.search',
-                type: 'cli',
-                lane: 'privte',
-                phase: 'context',
-                audience: [],
-                actions: [],
-                sideEffects: 'none',
-                handler: {
-                  type: 'cli',
-                  command: '../scripts/search.ts',
-                },
-                source: {
-                  type: 'remote-mcp',
-                  tool: 'search_bun',
-                },
-              },
-            ],
-          },
-          null,
-          2,
-        ),
-      )
 
       const input = JSON.stringify({ mode: 'registry', rootDir })
       const result = await Bun.$`bun ./bin/plaited.ts skills ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
@@ -713,45 +655,21 @@ describe('skills CLI commands', () => {
         dirName: 'search-bun-docs',
         name: 'search-bun-docs',
         description: 'Search Bun docs through MCP-backed tooling.',
+        frontmatterExtras: createPlaitedFrontmatter(`      - id: docs.search
+        type: cli
+        lane: private
+        phase: context
+        audience: [analyst]
+        actions: [search]
+        sideEffects: none
+        handler:
+          type: cli
+          command: scripts/search.ts --flag
+        source:
+          type: remote-mcp
+          tool: search_bun`),
         body: 'Use to search Bun docs.',
       })
-
-      await Bun.write(
-        join(rootDir, 'skills', 'search-bun-docs', 'plaited.skill.json'),
-        JSON.stringify(
-          {
-            kind: 'generated-skill',
-            origin: {
-              kind: 'generated',
-              source: {
-                type: 'remote-mcp',
-                url: 'https://bun.com/docs/mcp',
-              },
-            },
-            capabilities: [
-              {
-                id: 'docs.search',
-                type: 'cli',
-                lane: 'private',
-                phase: 'context',
-                audience: ['analyst'],
-                actions: ['search'],
-                sideEffects: 'none',
-                handler: {
-                  type: 'cli',
-                  command: 'scripts/search.ts --flag',
-                },
-                source: {
-                  type: 'remote-mcp',
-                  tool: 'search_bun',
-                },
-              },
-            ],
-          },
-          null,
-          2,
-        ),
-      )
 
       const input = JSON.stringify({ mode: 'registry', rootDir })
       const result = await Bun.$`bun ./bin/plaited.ts skills ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
@@ -771,45 +689,21 @@ describe('skills CLI commands', () => {
         dirName: 'search-bun-docs',
         name: 'search-bun-docs',
         description: 'Search Bun docs through MCP-backed tooling.',
+        frontmatterExtras: createPlaitedFrontmatter(`      - id: docs.search
+        type: cli
+        lane: private
+        phase: planning
+        audience: [analyst]
+        actions: [search]
+        sideEffects: none
+        handler:
+          type: cli
+          command: scripts/search.ts
+        source:
+          type: remote-mcp
+          tool: search_bun`),
         body: 'Use to search Bun docs.',
       })
-
-      await Bun.write(
-        join(rootDir, 'skills', 'search-bun-docs', 'plaited.skill.json'),
-        JSON.stringify(
-          {
-            kind: 'generated-skill',
-            origin: {
-              kind: 'generated',
-              source: {
-                type: 'remote-mcp',
-                url: 'https://bun.com/docs/mcp',
-              },
-            },
-            capabilities: [
-              {
-                id: 'docs.search',
-                type: 'cli',
-                lane: 'private',
-                phase: 'planning',
-                audience: ['analyst'],
-                actions: ['search'],
-                sideEffects: 'none',
-                handler: {
-                  type: 'cli',
-                  command: 'scripts/search.ts',
-                },
-                source: {
-                  type: 'remote-mcp',
-                  tool: 'search_bun',
-                },
-              },
-            ],
-          },
-          null,
-          2,
-        ),
-      )
 
       const input = JSON.stringify({ mode: 'registry', rootDir })
       const result = await Bun.$`bun ./bin/plaited.ts skills ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
@@ -829,45 +723,21 @@ describe('skills CLI commands', () => {
         dirName: 'search-bun-docs',
         name: 'search-bun-docs',
         description: 'Search Bun docs through MCP-backed tooling.',
+        frontmatterExtras: createPlaitedFrontmatter(`      - id: docs.search
+        type: magic
+        lane: private
+        phase: context
+        audience: [analyst]
+        actions: [search]
+        sideEffects: none
+        handler:
+          type: cli
+          command: scripts/search.ts
+        source:
+          type: remote-mcp
+          tool: search_bun`),
         body: 'Use to search Bun docs.',
       })
-
-      await Bun.write(
-        join(rootDir, 'skills', 'search-bun-docs', 'plaited.skill.json'),
-        JSON.stringify(
-          {
-            kind: 'generated-skill',
-            origin: {
-              kind: 'generated',
-              source: {
-                type: 'remote-mcp',
-                url: 'https://bun.com/docs/mcp',
-              },
-            },
-            capabilities: [
-              {
-                id: 'docs.search',
-                type: 'magic',
-                lane: 'private',
-                phase: 'context',
-                audience: ['analyst'],
-                actions: ['search'],
-                sideEffects: 'none',
-                handler: {
-                  type: 'cli',
-                  command: 'scripts/search.ts',
-                },
-                source: {
-                  type: 'remote-mcp',
-                  tool: 'search_bun',
-                },
-              },
-            ],
-          },
-          null,
-          2,
-        ),
-      )
 
       const input = JSON.stringify({ mode: 'registry', rootDir })
       const result = await Bun.$`bun ./bin/plaited.ts skills ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
@@ -887,45 +757,21 @@ describe('skills CLI commands', () => {
         dirName: 'search-bun-docs',
         name: 'search-bun-docs',
         description: 'Search Bun docs through MCP-backed tooling.',
+        frontmatterExtras: createPlaitedFrontmatter(`      - id: docs.search
+        type: cli
+        lane: private
+        phase: context
+        audience: [analyst]
+        actions: [search]
+        sideEffects: maybe-writes
+        handler:
+          type: cli
+          command: scripts/search.ts
+        source:
+          type: remote-mcp
+          tool: search_bun`),
         body: 'Use to search Bun docs.',
       })
-
-      await Bun.write(
-        join(rootDir, 'skills', 'search-bun-docs', 'plaited.skill.json'),
-        JSON.stringify(
-          {
-            kind: 'generated-skill',
-            origin: {
-              kind: 'generated',
-              source: {
-                type: 'remote-mcp',
-                url: 'https://bun.com/docs/mcp',
-              },
-            },
-            capabilities: [
-              {
-                id: 'docs.search',
-                type: 'cli',
-                lane: 'private',
-                phase: 'context',
-                audience: ['analyst'],
-                actions: ['search'],
-                sideEffects: 'maybe-writes',
-                handler: {
-                  type: 'cli',
-                  command: 'scripts/search.ts',
-                },
-                source: {
-                  type: 'remote-mcp',
-                  tool: 'search_bun',
-                },
-              },
-            ],
-          },
-          null,
-          2,
-        ),
-      )
 
       const input = JSON.stringify({ mode: 'registry', rootDir })
       const result = await Bun.$`bun ./bin/plaited.ts skills ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()

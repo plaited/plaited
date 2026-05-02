@@ -4,7 +4,6 @@ import * as z from 'zod'
 import { makeCli } from '../cli/cli.ts'
 import { parseMarkdownWithFrontmatter, validateMarkdownLocalLinks } from '../cli/markdown.ts'
 import {
-  GeneratedSkillManifestSchema,
   type SkillCatalogEntry,
   SkillCatalogEntrySchema,
   type SkillCatalogError,
@@ -59,7 +58,6 @@ import {
  */
 export const skillsGlobPattern = '**/skills/*/SKILL.md'
 export const repoLocalSkillsGlobPattern = '.agents/skills/*/SKILL.md'
-export const generatedSkillManifestFileName = 'plaited.skill.json'
 export const SKILLS_COMMAND = 'skills'
 
 const formatSkillValidationError = (error: unknown): string => {
@@ -218,10 +216,10 @@ export const loadSkillCatalog = async (rootDir: string): Promise<SkillCatalogLoa
 }
 
 /**
- * Loads generated skill manifests and emits a validated capability registry.
+ * Loads generated skill metadata from SKILL.md frontmatter and emits a validated capability registry.
  *
  * @param rootDir - Workspace root to scan.
- * @returns Registry entries plus validation errors for rejected skills/manifests.
+ * @returns Registry entries plus validation errors for rejected skill frontmatter.
  *
  * @public
  */
@@ -254,14 +252,10 @@ export const loadSkillRegistry = async (rootDir: string): Promise<SkillRegistryL
       continue
     }
 
-    const manifestPath = join(skillDir, generatedSkillManifestFileName)
-    const manifestCatalogPath = toCatalogPath(rootDir, manifestPath)
-    const manifestFile = Bun.file(manifestPath)
-    if (!(await manifestFile.exists())) continue
+    const manifest = frontmatter.metadata?.plaited
+    if (!manifest) continue
 
     try {
-      const manifest = GeneratedSkillManifestSchema.parse(await manifestFile.json())
-
       registry.push(
         SkillRegistryEntrySchema.parse({
           skill: {
@@ -279,13 +273,13 @@ export const loadSkillRegistry = async (rootDir: string): Promise<SkillRegistryL
     } catch (error) {
       const message =
         error instanceof z.ZodError
-          ? error.issues.map((issue) => `${issue.path.join('.') || 'manifest'}: ${issue.message}`).join('; ')
+          ? error.issues.map((issue) => `${issue.path.join('.') || 'metadata.plaited'}: ${issue.message}`).join('; ')
           : error instanceof Error
             ? error.message
             : String(error)
 
       errors.push({
-        path: manifestCatalogPath,
+        path: skillCatalogPath,
         message,
       })
     }
