@@ -1,6 +1,6 @@
 ---
 name: plaited-frontier-analysis
-description: Analyze replay-safe behavioral thread modules with the `behavioral-frontier` CLI. Use when replaying selected event histories, exploring reachable frontiers, or verifying deadlock findings in Plaited behavioral code.
+description: Analyze replay-safe behavioral specs with the `behavioral-frontier` CLI. Use when replaying selected-event snapshots, exploring reachable frontiers, testing supplied trigger events, comparing priority orders, or verifying deadlock findings in Plaited behavioral code.
 license: ISC
 compatibility: Requires bun
 ---
@@ -9,15 +9,17 @@ compatibility: Requires bun
 
 ## Purpose
 
-Use this skill for deterministic analysis of replay-safe behavioral thread
-modules through the `behavioral-frontier` command.
+Use this skill for deterministic analysis of replay-safe behavioral specs
+through the `behavioral-frontier` command.
 
 Use it when you need to:
 
-- replay a known selected-event history and inspect the resulting frontier
+- replay a known selected-event snapshot trace and inspect the resulting frontier
 - explore reachable histories to surface deadlocks
 - verify whether a thread set is deadlock-free within an explored boundary
 - inspect pending-thread summaries and candidate event sets
+- include supplied external trigger events in exploration
+- compare scheduler behavior across spec priority orders
 
 Run `plaited-context` first to gather the relevant files and tests. Use
 `plaited-runtime` when you need current doctrine for behavioral semantics.
@@ -46,25 +48,28 @@ bun ./bin/plaited.ts behavioral-frontier --schema input
 Use `replay` first when you already have a suspected event sequence.
 Use `explore` when you need to find problematic histories.
 Use `verify` when you need a compact pass/fail/truncated result for a thread
-module.
+set.
 
 ## Input Rules
 
-- `modulePath` must point to a replay-safe thread module
-- the module must export a `BThreads` object, a function returning `BThreads`,
-  or an async function returning `BThreads`
-- use `exportName` when the module does not use a default export
-- use `cwd` when `modulePath` or `historyPath` should resolve from a specific
-  base directory
-- in `replay` mode, provide either `history` or `historyPath`, never both
-- history rows use `source: 'trigger' | 'request'`
+- provide exactly one of `specs` or `specPath`
+- `specPath` is JSONL with one behavioral spec object per line
+- use `cwd` when `specPath` should resolve from a specific base directory
+- in `replay` mode, provide `snapshots` when replaying a concrete trace
+- selected snapshots use bid `source: 'trigger' | 'request'`
+- in `explore`/`verify`, use `triggers` to supply external events that may be
+  selected when a pending thread waits for or is interrupted by them
+- use `selectionPolicy: 'scheduler'` when priority order should follow runtime
+  scheduler choice; default `all-enabled` explores every enabled request branch
+- use `priorityOrders` for explicit thread-label orders, or
+  `priorityOrderMode: 'rotations' | 'permutations'` for generated orders
 
 ## Common Workflows
 
 ### Replay One History
 
 ```bash
-bunx plaited behavioral-frontier '{"mode":"replay","modulePath":"src/behavioral/tests/fixtures/replay-safe-threads.ts","history":[{"type":"A","source":"request"}]}'
+bunx plaited behavioral-frontier '{"mode":"replay","specs":[{"label":"chooseA","thread":{"once":true,"syncPoints":[{"request":{"type":"A"}}]}}],"snapshots":[]}'
 ```
 
 Read:
@@ -77,16 +82,16 @@ Read:
 ### Explore Reachable Histories
 
 ```bash
-bunx plaited behavioral-frontier '{"mode":"explore","modulePath":"src/behavioral/tests/fixtures/replay-safe-threads.ts","strategy":"bfs","includeFrontierSummaries":true}'
+bunx plaited behavioral-frontier '{"mode":"explore","specs":[{"label":"watcher","thread":{"once":true,"syncPoints":[{"waitFor":[{"type":"ping"}]},{"request":{"type":"ack"}}]}}],"triggers":[{"type":"ping"}],"strategy":"bfs","includeFrontierSummaries":true}'
 ```
 
 Start with `bfs` unless you have a reason to prefer `dfs`.
 Use `maxDepth` to cap search when the state space is large.
 
-### Verify A Thread Module
+### Verify Priority Orders
 
 ```bash
-bunx plaited behavioral-frontier '{"mode":"verify","modulePath":"src/behavioral/tests/fixtures/replay-safe-threads.ts","strategy":"bfs"}'
+bunx plaited behavioral-frontier '{"mode":"verify","specPath":"./specs.jsonl","strategy":"bfs","selectionPolicy":"scheduler","priorityOrderMode":"rotations"}'
 ```
 
 Interpret status as:
@@ -100,7 +105,10 @@ Interpret status as:
 - `deadlock` frontier status means candidates exist but none are enabled
 - `idle` means no candidate events are currently requested
 - `pendingSummary` shows which threads are waiting, blocking, or requesting
-- `findings[].history` is the reproducible sequence to replay first
+- `findings[].snapshots` is the reproducible sequence to replay first
+- `findings[].priorityOrder` identifies the spec order that produced the
+  finding when priority-order exploration is enabled
+- `priorityResults` summarizes each priority order in `explore`/`verify`
 - `frontierSummaries` are useful when you need broad trace coverage, not just
   terminal findings
 

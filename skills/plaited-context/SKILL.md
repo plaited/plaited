@@ -120,6 +120,21 @@ bun skills/plaited-context/scripts/record-finding.ts '{"finding":{"kind":"anti-p
 bun skills/plaited-context/scripts/export-review.ts '{"status":["candidate","validated"],"format":"json"}'
 ```
 
+## Follow-Up Analysis
+
+`plaited-context` assembles source-grounded context; it does not run
+verification tools by default. When a task mentions behavioral specs,
+frontiers, replay, deadlocks, trigger sequences, or priority-order sensitivity,
+assemble context first, then use `plaited-frontier-analysis` for the
+`behavioral-frontier` CLI workflow.
+
+Useful follow-up commands:
+
+```bash
+bun ./bin/plaited.ts behavioral-frontier --schema input
+bun ./bin/plaited.ts behavioral-frontier '{"mode":"verify","specPath":"./specs.jsonl","strategy":"bfs","selectionPolicy":"scheduler","priorityOrderMode":"rotations"}'
+```
+
 ## Evidence Rule
 
 Do not promote guesses into validated findings.

@@ -65,6 +65,21 @@ Plaited does not reproduce the modnet work verbatim. It adapts it into:
 - boundary-aware module and protocol design
 - a neuro-symbolic runtime where generated modules are constrained by BP and governance
 
+## Matt Pocock Skills
+
+**Author:** Matt Pocock
+**Source:** [mattpocock/skills](https://github.com/mattpocock/skills)
+**License:** [MIT](https://github.com/mattpocock/skills/blob/main/LICENSE),
+copyright (c) 2026 Matt Pocock
+
+Plaited includes adapted skill material from:
+- [TDD](https://github.com/mattpocock/skills/blob/main/skills/engineering/tdd/SKILL.md)
+- [grill-me](https://github.com/mattpocock/skills/blob/main/skills/productivity/grill-me/SKILL.md)
+
+Where that influence is visible now:
+- [skills/tdd/SKILL.md](skills/tdd/SKILL.md)
+- [skills/grill-me/SKILL.md](skills/grill-me/SKILL.md)
+
 ## Scope Note
 
 This attribution file is intentionally conservative.
