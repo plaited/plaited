@@ -9,21 +9,6 @@ const isSafeRelativeCommandPath = (command: string): boolean => {
   return normalized.split('/').every((segment) => segment !== '..' && segment.length > 0)
 }
 
-export const SkillDirectoryPathSchema = z
-  .string()
-  .min(1)
-  .describe('Absolute skill directory path. Each directory contains a SKILL.md file.')
-
-/** @public */
-export type SkillDirectoryPath = z.infer<typeof SkillDirectoryPathSchema>
-
-export const SkillDirectoryPathsSchema = z
-  .array(SkillDirectoryPathSchema)
-  .describe('Sorted absolute skill directory paths discovered under a workspace root.')
-
-/** @public */
-export type SkillDirectoryPaths = z.infer<typeof SkillDirectoryPathsSchema>
-
 /**
  * Compact skill metadata exposed for discovery and selection.
  *
@@ -45,7 +30,7 @@ export type SkillCatalogEntry = z.infer<typeof SkillCatalogEntrySchema>
  *
  * @public
  */
-export const SkillCatalogErrorSchema = z
+const SkillCatalogErrorSchema = z
   .object({
     message: z.string().min(1).describe('Validation or parsing error for the referenced skill markdown file.'),
     path: z.string().min(1).describe('`/`-prefixed SKILL.md path relative to the catalog `rootDir`.'),
@@ -55,64 +40,14 @@ export const SkillCatalogErrorSchema = z
 /** @public */
 export type SkillCatalogError = z.infer<typeof SkillCatalogErrorSchema>
 
-export const SkillMetaSchema = z
-  .object({
-    license: z.string().min(1).describe('Optional license metadata for the skill.').optional(),
-    compatibility: z.string().min(1).describe('Optional runtime or tooling compatibility notes.').optional(),
-    allowedTools: z.string().min(1).describe('Optional list of allowed tool classes for skill usage.').optional(),
-    metadata: z
-      .object({
-        plaited: z
-          .lazy(() => GeneratedSkillManifestSchema)
-          .describe('Optional generated capability manifest consumed by `skills` registry mode.')
-          .optional(),
-      })
-      .catchall(z.unknown())
-      .describe('Optional additional structured frontmatter metadata.')
-      .optional(),
-  })
-  .describe('Optional metadata fields parsed from skill frontmatter.')
-
-/** @public */
-export type SkillMeta = z.infer<typeof SkillMetaSchema>
-
-export const SkillInstructionSchema = z
-  .object({
-    body: z.string().describe('Markdown body content from SKILL.md with frontmatter removed.'),
-  })
-  .describe('Parsed skill instruction content.')
-
-/** @public */
-export type SkillInstruction = z.infer<typeof SkillInstructionSchema>
-
-export const SkillResourceLinkSchema = z
+const SkillResourceLinkSchema = z
   .object({
     value: z.string().min(1).describe('Normalized local link target path.'),
     text: z.string().min(1).describe('Display label resolved from link text or fallback target path.'),
   })
   .describe('Single local resource link referenced by skill instructions.')
 
-/** @public */
-export type SkillResourceLink = z.infer<typeof SkillResourceLinkSchema>
-
-export const SkillResourceLinksSchema = z
-  .object({
-    present: z.set(SkillResourceLinkSchema).describe('Set of local links that resolved to existing files.'),
-    missing: z.set(SkillResourceLinkSchema).describe('Set of local links that did not resolve to files.'),
-  })
-  .describe('Validation result for local resource links referenced by a skill.')
-
-/** @public */
-export type SkillResourceLinks = z.infer<typeof SkillResourceLinksSchema>
-
-export const SkillValidationStatusSchema = z
-  .boolean()
-  .describe('True when skill markdown passes frontmatter validation.')
-
-/** @public */
-export type SkillValidationStatus = z.infer<typeof SkillValidationStatusSchema>
-
-export const SkillCatalogLoadResultSchema = z
+const SkillCatalogLoadResultSchema = z
   .object({
     catalog: z.array(SkillCatalogEntrySchema).describe('Valid skills discovered under the requested root directory.'),
     errors: z
@@ -124,27 +59,21 @@ export const SkillCatalogLoadResultSchema = z
 /** @public */
 export type SkillCatalogLoadResult = z.infer<typeof SkillCatalogLoadResultSchema>
 
-export const SkillManifestOriginSourceSchema = z
+const SkillManifestOriginSourceSchema = z
   .object({
     type: z.string().min(1).describe('Source kind for generated skill provenance, such as `remote-mcp`.'),
     url: z.string().min(1).describe('Source URL used to generate the skill capability package.'),
   })
   .describe('Origin source metadata for a generated skill manifest.')
 
-/** @public */
-export type SkillManifestOriginSource = z.infer<typeof SkillManifestOriginSourceSchema>
-
-export const SkillManifestOriginSchema = z
+const SkillManifestOriginSchema = z
   .object({
     kind: z.literal('generated').describe('Origin classification for generated skills.'),
     source: SkillManifestOriginSourceSchema.describe('Source metadata used for generation.'),
   })
   .describe('Generated skill origin block parsed from SKILL.md frontmatter metadata.')
 
-/** @public */
-export type SkillManifestOrigin = z.infer<typeof SkillManifestOriginSchema>
-
-export const SkillManifestCapabilityHandlerSchema = z
+const SkillManifestCapabilityHandlerSchema = z
   .object({
     type: z.literal('cli').describe('Capability handler kind.'),
     command: z
@@ -158,20 +87,14 @@ export const SkillManifestCapabilityHandlerSchema = z
   })
   .describe('CLI handler metadata for a generated capability.')
 
-/** @public */
-export type SkillManifestCapabilityHandler = z.infer<typeof SkillManifestCapabilityHandlerSchema>
-
-export const SkillManifestCapabilitySourceSchema = z
+const SkillManifestCapabilitySourceSchema = z
   .object({
     type: z.string().min(1).describe('Capability source kind, such as `remote-mcp`.'),
     tool: z.string().min(1).optional().describe('Optional remote tool identifier tied to the capability.'),
   })
   .describe('Source attribution metadata for one generated capability.')
 
-/** @public */
-export type SkillManifestCapabilitySource = z.infer<typeof SkillManifestCapabilitySourceSchema>
-
-export const SkillManifestCapabilitySchema = z
+const SkillManifestCapabilitySchema = z
   .object({
     id: z.string().min(1).describe('Capability identifier inside the skill package.'),
     type: z
@@ -195,10 +118,7 @@ export const SkillManifestCapabilitySchema = z
   })
   .describe('Capability entry from a generated skill manifest.')
 
-/** @public */
-export type SkillManifestCapability = z.infer<typeof SkillManifestCapabilitySchema>
-
-export const GeneratedSkillManifestSchema = z
+const GeneratedSkillManifestSchema = z
   .object({
     kind: z.literal('generated-skill').describe('Manifest kind for generated skill packages.'),
     origin: SkillManifestOriginSchema.describe('Origin metadata for the generated skill package.'),
@@ -209,15 +129,9 @@ export const GeneratedSkillManifestSchema = z
   })
   .describe('Generated skill manifest parsed from SKILL.md frontmatter metadata.')
 
-/** @public */
-export type GeneratedSkillManifest = z.infer<typeof GeneratedSkillManifestSchema>
-
-export const SkillRegistryCapabilitySchema = SkillManifestCapabilitySchema.extend({
+const SkillRegistryCapabilitySchema = SkillManifestCapabilitySchema.extend({
   address: z.string().min(1).describe('Namespaced capability address in `<skill-name>/<capability-id>` form.'),
 }).describe('Capability registry entry enriched with a namespaced address.')
-
-/** @public */
-export type SkillRegistryCapability = z.infer<typeof SkillRegistryCapabilitySchema>
 
 export const SkillRegistryEntrySchema = z
   .object({
@@ -230,7 +144,7 @@ export const SkillRegistryEntrySchema = z
 /** @public */
 export type SkillRegistryEntry = z.infer<typeof SkillRegistryEntrySchema>
 
-export const SkillRegistryLoadResultSchema = z
+const SkillRegistryLoadResultSchema = z
   .object({
     registry: z.array(SkillRegistryEntrySchema).describe('Capability registry entries discovered under rootDir.'),
     errors: z
@@ -242,7 +156,7 @@ export const SkillRegistryLoadResultSchema = z
 /** @public */
 export type SkillRegistryLoadResult = z.infer<typeof SkillRegistryLoadResultSchema>
 
-export const SkillsRegistryCliInputSchema = z
+const SkillsRegistryCliInputSchema = z
   .object({
     rootDir: z.string().min(1).describe('Workspace root directory used to discover skill manifests.'),
   })
@@ -251,12 +165,12 @@ export const SkillsRegistryCliInputSchema = z
 /** @public */
 export type SkillsRegistryCliInput = z.infer<typeof SkillsRegistryCliInputSchema>
 
-export const SkillsRegistryCliOutputSchema = SkillRegistryLoadResultSchema.describe('Output for `skills-registry`.')
+const SkillsRegistryCliOutputSchema = SkillRegistryLoadResultSchema.describe('Output for `skills-registry`.')
 
 /** @public */
 export type SkillsRegistryCliOutput = z.infer<typeof SkillsRegistryCliOutputSchema>
 
-export const SkillsCatalogCliInputSchema = z
+const SkillsCatalogCliInputSchema = z
   .object({
     rootDir: z.string().min(1).describe('Workspace root directory used to discover `skills/*` and `.agents/skills/*`.'),
   })
@@ -265,22 +179,10 @@ export const SkillsCatalogCliInputSchema = z
 /** @public */
 export type SkillsCatalogCliInput = z.infer<typeof SkillsCatalogCliInputSchema>
 
-export const SkillsCatalogCliOutputSchema = SkillCatalogLoadResultSchema.describe('Output for `skills-catalog`.')
+const SkillsCatalogCliOutputSchema = SkillCatalogLoadResultSchema.describe('Output for `skills-catalog`.')
 
 /** @public */
 export type SkillsCatalogCliOutput = z.infer<typeof SkillsCatalogCliOutputSchema>
-
-export const SkillInstructionsResultSchema = z
-  .string()
-  .describe('Raw markdown instruction body from a valid skill SKILL.md file.')
-
-/** @public */
-export type SkillInstructionsResult = z.infer<typeof SkillInstructionsResultSchema>
-
-export const SkillInstructionsLoadResultSchema = SkillInstructionsResultSchema.optional()
-
-/** @public */
-export type SkillInstructionsLoadResult = z.infer<typeof SkillInstructionsLoadResultSchema>
 
 export const SkillFrontmatterResultSchema = z
   .record(z.string(), z.unknown())
@@ -289,20 +191,12 @@ export const SkillFrontmatterResultSchema = z
 /** @public */
 export type SkillFrontmatterResult = z.infer<typeof SkillFrontmatterResultSchema>
 
-export const SkillFrontmatterLoadResultSchema = SkillFrontmatterResultSchema.optional()
-
-/** @public */
-export type SkillFrontmatterLoadResult = z.infer<typeof SkillFrontmatterLoadResultSchema>
-
-export const SkillInstructionErrorSchema = z
+const SkillInstructionErrorSchema = z
   .object({
     skillPath: z.string().min(1).describe('Resolved path to the SKILL.md file that produced the error.'),
     message: z.string().min(1).describe('Validation, parsing, or file-resolution error message.'),
   })
   .describe('Structured error for a specific SKILL.md file.')
-
-/** @public */
-export type SkillInstructionError = z.infer<typeof SkillInstructionErrorSchema>
 
 export const SkillInstructionErrorsSchema = z
   .array(SkillInstructionErrorSchema)
@@ -311,7 +205,7 @@ export const SkillInstructionErrorsSchema = z
 /** @public */
 export type SkillInstructionErrors = z.infer<typeof SkillInstructionErrorsSchema>
 
-export const SkillsValidateCliInputSchema = z
+const SkillsValidateCliInputSchema = z
   .object({
     skillPath: z.string().min(1).describe('Path to a specific SKILL.md file to validate.'),
   })
@@ -320,7 +214,7 @@ export const SkillsValidateCliInputSchema = z
 /** @public */
 export type SkillsValidateCliInput = z.infer<typeof SkillsValidateCliInputSchema>
 
-export const SkillsValidateCliOutputSchema = z
+const SkillsValidateCliOutputSchema = z
   .object({
     ok: z.boolean().describe('True when the target SKILL.md passes frontmatter and directory-name validation.'),
     errors: z.array(z.string().min(1)).describe('Validation error messages. Empty when `ok` is true.'),
@@ -330,7 +224,7 @@ export const SkillsValidateCliOutputSchema = z
 /** @public */
 export type SkillsValidateCliOutput = z.infer<typeof SkillsValidateCliOutputSchema>
 
-export const SkillsLinksCliInputSchema = z
+const SkillsLinksCliInputSchema = z
   .object({
     rootDir: z.string().min(1).describe('Workspace root directory used to resolve the skill directory path.'),
     path: z
@@ -343,7 +237,7 @@ export const SkillsLinksCliInputSchema = z
 /** @public */
 export type SkillsLinksCliInput = z.infer<typeof SkillsLinksCliInputSchema>
 
-export const SkillResourceLinksJsonSchema = z
+const SkillResourceLinksJsonSchema = z
   .object({
     present: z.array(SkillResourceLinkSchema).describe('Resolved local links converted to JSON array output.'),
     missing: z.array(SkillResourceLinkSchema).describe('Missing local links converted to JSON array output.'),
@@ -353,7 +247,7 @@ export const SkillResourceLinksJsonSchema = z
 /** @public */
 export type SkillResourceLinksJson = z.infer<typeof SkillResourceLinksJsonSchema>
 
-export const SkillsLinksCliOutputSchema = z
+const SkillsLinksCliOutputSchema = z
   .object({
     links: SkillResourceLinksJsonSchema.describe('Present and missing local links referenced by the skill body.'),
     errors: SkillInstructionErrorsSchema.describe('Validation errors encountered while loading or parsing the skill.'),
@@ -363,7 +257,7 @@ export const SkillsLinksCliOutputSchema = z
 /** @public */
 export type SkillsLinksCliOutput = z.infer<typeof SkillsLinksCliOutputSchema>
 
-export const SkillsInstructionsCliInputSchema = z
+const SkillsInstructionsCliInputSchema = z
   .object({
     rootDir: z.string().min(1).describe('Workspace root directory used to resolve the skill directory path.'),
     path: z
@@ -376,7 +270,7 @@ export const SkillsInstructionsCliInputSchema = z
 /** @public */
 export type SkillsInstructionsCliInput = z.infer<typeof SkillsInstructionsCliInputSchema>
 
-export const SkillsInstructionsCliOutputSchema = z
+const SkillsInstructionsCliOutputSchema = z
   .object({
     body: z
       .string()
@@ -389,7 +283,7 @@ export const SkillsInstructionsCliOutputSchema = z
 /** @public */
 export type SkillsInstructionsCliOutput = z.infer<typeof SkillsInstructionsCliOutputSchema>
 
-export const SkillsFrontmatterCliInputSchema = z
+const SkillsFrontmatterCliInputSchema = z
   .object({
     rootDir: z.string().min(1).describe('Workspace root directory used to resolve the skill directory path.'),
     path: z
@@ -402,7 +296,7 @@ export const SkillsFrontmatterCliInputSchema = z
 /** @public */
 export type SkillsFrontmatterCliInput = z.infer<typeof SkillsFrontmatterCliInputSchema>
 
-export const SkillsFrontmatterCliOutputSchema = z
+const SkillsFrontmatterCliOutputSchema = z
   .object({
     frontmatter: SkillFrontmatterResultSchema.nullable().describe(
       'Parsed frontmatter object when loaded successfully. Null when the file is missing or invalid.',
@@ -465,21 +359,6 @@ export const SkillsCliOutputSchema = z
 
 /** @public */
 export type SkillsCliOutput = z.infer<typeof SkillsCliOutputSchema>
-
-export const SkillInstructionResourceLinksResultSchema = z
-  .object({
-    links: SkillResourceLinksSchema.describe('Set-based link validation output for internal/library usage.'),
-    errors: SkillInstructionErrorsSchema.describe('Validation errors encountered while loading instructions.'),
-  })
-  .describe('Internal skill resource link load result.')
-
-/** @public */
-export type SkillInstructionResourceLinksResult = z.infer<typeof SkillInstructionResourceLinksResultSchema>
-
-export const SkillInstructionResourceLinksLoadResultSchema = SkillInstructionResourceLinksResultSchema.optional()
-
-/** @public */
-export type SkillInstructionResourceLinksLoadResult = z.infer<typeof SkillInstructionResourceLinksLoadResultSchema>
 
 /**
  * Zod schema for skill markdown frontmatter.

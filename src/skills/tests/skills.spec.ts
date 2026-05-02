@@ -1,18 +1,5 @@
 import { describe, expect, test } from 'bun:test'
 import { join, resolve } from 'node:path'
-import {
-  findSkillDirectories,
-  getSkillInstructionResourceLinks,
-  loadSkillCatalog,
-  loadSkillFrontmatter,
-  loadSkillInstructions,
-  skillsCatalog,
-  skillsFrontmatter,
-  skillsInstructions,
-  skillsLinks,
-  skillsValidate,
-  validateSkill,
-} from '../skills.ts'
 
 const CLI_PACKAGE_ROOT = resolve(import.meta.dir, '../../../')
 
@@ -74,220 +61,15 @@ const createPlaitedFrontmatter = (capabilityYaml: string): string => `metadata:
     capabilities:
 ${capabilityYaml}`
 
-describe('findSkillDirectories', () => {
-  test('finds and sorts skill directories, including .agents/skills', async () => {
-    await withTempRoot(async (rootDir) => {
-      const alpha = join(rootDir, 'nested', 'skills', 'alpha')
-      const local = join(rootDir, '.agents', 'skills', 'local')
-      const zeta = join(rootDir, 'skills', 'zeta')
-      await Bun.$`mkdir -p ${alpha} ${zeta} ${local}`
-      await Bun.write(join(alpha, 'SKILL.md'), '---\nname: alpha\ndescription: Alpha\n---\n\nBody\n')
-      await Bun.write(join(zeta, 'SKILL.md'), '---\nname: zeta\ndescription: Zeta\n---\n\nBody\n')
-      await Bun.write(join(local, 'SKILL.md'), '---\nname: local\ndescription: Local\n---\n\nBody\n')
-
-      const skillDirs = await findSkillDirectories(rootDir)
-
-      expect(skillDirs).toEqual([alpha, local, zeta].sort())
-    })
-  })
-})
-
-describe('validateSkill', () => {
-  test('returns structured errors for invalid markdown', () => {
-    expect(validateSkill('# no frontmatter')).toEqual({
-      ok: false,
-      errors: ['Invalid skill frontmatter: Missing YAML frontmatter'],
-    })
-  })
-})
-
-describe('loadSkillCatalog', () => {
-  test('includes both skills/* and .agents/skills/* entries from rootDir', async () => {
-    await withTempRoot(async (rootDir) => {
-      await writeSkillFile({
-        rootDir,
-        skillParentDir: 'skills',
-        dirName: 'alpha',
-        name: 'alpha',
-        description: 'Alpha description',
-        body: 'Alpha body.',
-      })
-      await writeSkillFile({
-        rootDir,
-        skillParentDir: '.agents/skills',
-        dirName: 'local',
-        name: 'local',
-        description: 'Local description',
-        body: 'Local body.',
-      })
-
-      const result = await loadSkillCatalog(rootDir)
-
-      expect(result.errors).toEqual([])
-      expect(result.catalog).toEqual([
-        {
-          name: 'alpha',
-          description: 'Alpha description',
-          path: '/skills/alpha/SKILL.md',
-        },
-        {
-          name: 'local',
-          description: 'Local description',
-          path: '/.agents/skills/local/SKILL.md',
-        },
-      ])
-    })
-  })
-
-  test('returns valid catalog entries with paths and invalid entries as errors', async () => {
-    await withTempRoot(async (rootDir) => {
-      await writeSkillFile({
-        rootDir,
-        dirName: 'alpha',
-        name: 'alpha',
-        description: 'Alpha description',
-        body: 'Alpha body.',
-      })
-
-      const brokenDir = join(rootDir, 'skills', 'broken')
-      await Bun.$`mkdir -p ${brokenDir}`
-      await Bun.write(join(brokenDir, 'SKILL.md'), '# missing frontmatter')
-
-      const result = await loadSkillCatalog(rootDir)
-
-      expect(result.catalog).toEqual([
-        {
-          name: 'alpha',
-          description: 'Alpha description',
-          path: '/skills/alpha/SKILL.md',
-        },
-      ])
-      expect(result.errors).toEqual([
-        {
-          path: '/skills/broken/SKILL.md',
-          message: 'Invalid skill frontmatter: Missing YAML frontmatter',
-        },
-      ])
-    })
-  })
-})
-
-describe('loadSkillInstructions', () => {
-  test('returns markdown body for a valid skill', async () => {
-    await withTempRoot(async (rootDir) => {
-      await writeSkillFile({
-        rootDir,
-        dirName: 'gamma',
-        name: 'gamma',
-        description: 'Gamma description',
-        body: 'Gamma body content.',
-      })
-
-      const body = await loadSkillInstructions(rootDir, 'skills/gamma')
-
-      expect(body).toBe('Gamma body content.')
-    })
-  })
-
-  test('returns undefined when skill markdown is missing or invalid', async () => {
-    await withTempRoot(async (rootDir) => {
-      const missing = await loadSkillInstructions(rootDir, 'skills/does-not-exist')
-      expect(missing).toBeUndefined()
-
-      const brokenDir = join(rootDir, 'skills', 'broken')
-      await Bun.$`mkdir -p ${brokenDir}`
-      await Bun.write(join(brokenDir, 'SKILL.md'), '# missing frontmatter')
-
-      const invalid = await loadSkillInstructions(rootDir, 'skills/broken')
-      expect(invalid).toBeUndefined()
-    })
-  })
-})
-
-describe('loadSkillFrontmatter', () => {
-  test('returns parsed frontmatter object for a valid skill', async () => {
-    await withTempRoot(async (rootDir) => {
-      await writeSkillFile({
-        rootDir,
-        dirName: 'theta',
-        name: 'theta',
-        description: 'Theta description',
-        body: 'Theta body content.',
-      })
-
-      const frontmatter = await loadSkillFrontmatter(rootDir, 'skills/theta')
-
-      expect(frontmatter).toEqual({
-        name: 'theta',
-        description: 'Theta description',
-      })
-    })
-  })
-
-  test('returns undefined when skill markdown is missing or invalid', async () => {
-    await withTempRoot(async (rootDir) => {
-      const missing = await loadSkillFrontmatter(rootDir, 'skills/does-not-exist')
-      expect(missing).toBeUndefined()
-
-      const brokenDir = join(rootDir, 'skills', 'broken')
-      await Bun.$`mkdir -p ${brokenDir}`
-      await Bun.write(join(brokenDir, 'SKILL.md'), '# missing frontmatter')
-
-      const invalid = await loadSkillFrontmatter(rootDir, 'skills/broken')
-      expect(invalid).toBeUndefined()
-    })
-  })
-})
-
-describe('getSkillInstructionResourceLinks', () => {
-  test('returns links and empty errors for valid skills', async () => {
-    await withTempRoot(async (rootDir) => {
-      const skillDir = await writeSkillFile({
-        rootDir,
-        dirName: 'delta',
-        name: 'delta',
-        description: 'Delta description',
-        body: 'See [setup](references/setup.md) and [missing](references/missing.md).',
-      })
-      await Bun.$`mkdir -p ${join(skillDir, 'references')}`
-      await Bun.write(join(skillDir, 'references', 'setup.md'), '# setup')
-
-      const result = await getSkillInstructionResourceLinks(rootDir, 'skills/delta')
-
-      expect(result).toBeDefined()
-      expect(result?.errors).toEqual([])
-      expect(result ? [...result.links.present] : []).toEqual([{ value: 'references/setup.md', text: 'setup' }])
-      expect(result ? [...result.links.missing] : []).toEqual([{ value: 'references/missing.md', text: 'missing' }])
-    })
-  })
-
-  test('returns validation errors and empty links for invalid skill markdown', async () => {
-    await withTempRoot(async (rootDir) => {
-      const brokenDir = join(rootDir, 'skills', 'broken')
-      await Bun.$`mkdir -p ${brokenDir}`
-      await Bun.write(join(brokenDir, 'SKILL.md'), '# missing frontmatter')
-
-      const result = await getSkillInstructionResourceLinks(rootDir, 'skills/broken')
-
-      expect(result).toBeDefined()
-      expect(result?.errors).toEqual([
-        {
-          skillPath: join(rootDir, 'skills', 'broken', 'SKILL.md'),
-          message: 'Invalid skill frontmatter: Missing YAML frontmatter',
-        },
-      ])
-      expect(result ? [...result.links.present] : []).toEqual([])
-      expect(result ? [...result.links.missing] : []).toEqual([])
-    })
-  })
-})
+const runSkillsCommand = async (input: unknown) =>
+  Bun.$`bun ./bin/plaited.ts skills ${JSON.stringify(input)}`.cwd(CLI_PACKAGE_ROOT).quiet().nothrow()
 
 describe('skills CLI commands', () => {
   test('skills CLI mode=catalog includes .agents/skills entries', async () => {
     await withTempRoot(async (rootDir) => {
       await writeSkillFile({
         rootDir,
-        skillParentDir: 'skills',
+        skillParentDir: 'nested/skills',
         dirName: 'alpha',
         name: 'alpha',
         description: 'Alpha description',
@@ -302,8 +84,7 @@ describe('skills CLI commands', () => {
         body: 'Local body.',
       })
 
-      const input = JSON.stringify({ mode: 'catalog', rootDir })
-      const result = await Bun.$`bun ./bin/plaited.ts skills ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
+      const result = await runSkillsCommand({ mode: 'catalog', rootDir })
 
       expect(result.exitCode).toBe(0)
       const output = JSON.parse(result.stdout.toString().trim())
@@ -312,7 +93,7 @@ describe('skills CLI commands', () => {
         {
           name: 'alpha',
           description: 'Alpha description',
-          path: '/skills/alpha/SKILL.md',
+          path: '/nested/skills/alpha/SKILL.md',
         },
         {
           name: 'local',
@@ -323,7 +104,7 @@ describe('skills CLI commands', () => {
     })
   })
 
-  test('skillsCatalog returns catalog and validation errors', async () => {
+  test('skills CLI mode=catalog returns catalog and validation errors', async () => {
     await withTempRoot(async (rootDir) => {
       await writeSkillFile({
         rootDir,
@@ -337,23 +118,27 @@ describe('skills CLI commands', () => {
       await Bun.$`mkdir -p ${brokenDir}`
       await Bun.write(join(brokenDir, 'SKILL.md'), '# missing frontmatter')
 
-      const result = await skillsCatalog({ rootDir })
+      const result = await runSkillsCommand({ mode: 'catalog', rootDir })
 
-      expect(result.catalog).toHaveLength(1)
-      expect(result.errors).toHaveLength(1)
-      expect(result.errors[0]?.message).toContain('Missing YAML frontmatter')
+      expect(result.exitCode).toBe(0)
+      const output = JSON.parse(result.stdout.toString().trim())
+      expect(output.catalog).toHaveLength(1)
+      expect(output.errors).toHaveLength(1)
+      expect(output.errors[0]?.message).toContain('Missing YAML frontmatter')
     })
   })
 
-  test('skillsValidate returns structured result for missing files', async () => {
+  test('skills CLI mode=validate returns structured result for missing files', async () => {
     const skillPath = join('/tmp', `plaited-missing-skill-${Date.now()}`, 'SKILL.md')
-    const result = await skillsValidate({ skillPath })
+    const result = await runSkillsCommand({ mode: 'validate', skillPath })
 
-    expect(result.ok).toBeFalse()
-    expect(result.errors[0]).toContain('Skill markdown not found')
+    expect(result.exitCode).toBe(0)
+    const output = JSON.parse(result.stdout.toString().trim())
+    expect(output.ok).toBeFalse()
+    expect(output.errors[0]).toContain('Skill markdown not found')
   })
 
-  test('skillsLinks returns JSON arrays instead of sets', async () => {
+  test('skills CLI mode=links returns JSON arrays instead of sets', async () => {
     await withTempRoot(async (rootDir) => {
       const skillDir = await writeSkillFile({
         rootDir,
@@ -365,17 +150,19 @@ describe('skills CLI commands', () => {
       await Bun.$`mkdir -p ${join(skillDir, 'references')}`
       await Bun.write(join(skillDir, 'references', 'setup.md'), '# setup')
 
-      const result = await skillsLinks({ rootDir, path: 'skills/delta' })
+      const result = await runSkillsCommand({ mode: 'links', rootDir, path: 'skills/delta' })
 
-      expect(Array.isArray(result.links.present)).toBeTrue()
-      expect(Array.isArray(result.links.missing)).toBeTrue()
-      expect(result.errors).toEqual([])
-      expect(result.links.present).toEqual([{ value: 'references/setup.md', text: 'setup' }])
-      expect(result.links.missing).toEqual([{ value: 'references/missing.md', text: 'missing' }])
+      expect(result.exitCode).toBe(0)
+      const output = JSON.parse(result.stdout.toString().trim())
+      expect(Array.isArray(output.links.present)).toBeTrue()
+      expect(Array.isArray(output.links.missing)).toBeTrue()
+      expect(output.errors).toEqual([])
+      expect(output.links.present).toEqual([{ value: 'references/setup.md', text: 'setup' }])
+      expect(output.links.missing).toEqual([{ value: 'references/missing.md', text: 'missing' }])
     })
   })
 
-  test('skillsInstructions returns body and structured errors', async () => {
+  test('skills CLI mode=instructions returns body and structured errors', async () => {
     await withTempRoot(async (rootDir) => {
       await writeSkillFile({
         rootDir,
@@ -385,15 +172,18 @@ describe('skills CLI commands', () => {
         body: 'Epsilon body.',
       })
 
-      const success = await skillsInstructions({ rootDir, path: 'skills/epsilon' })
-      expect(success).toEqual({
+      const success = await runSkillsCommand({ mode: 'instructions', rootDir, path: 'skills/epsilon' })
+      expect(success.exitCode).toBe(0)
+      expect(JSON.parse(success.stdout.toString().trim())).toEqual({
         body: 'Epsilon body.',
         errors: [],
       })
 
-      const missing = await skillsInstructions({ rootDir, path: 'skills/missing' })
-      expect(missing.body).toBeNull()
-      expect(missing.errors).toEqual([
+      const missing = await runSkillsCommand({ mode: 'instructions', rootDir, path: 'skills/missing' })
+      expect(missing.exitCode).toBe(0)
+      const output = JSON.parse(missing.stdout.toString().trim())
+      expect(output.body).toBeNull()
+      expect(output.errors).toEqual([
         {
           skillPath: join(rootDir, 'skills', 'missing', 'SKILL.md'),
           message: `Skill markdown not found: ${join(rootDir, 'skills', 'missing', 'SKILL.md')}`,
@@ -402,7 +192,7 @@ describe('skills CLI commands', () => {
     })
   })
 
-  test('skillsFrontmatter returns frontmatter object and structured errors', async () => {
+  test('skills CLI mode=frontmatter returns frontmatter object and structured errors', async () => {
     await withTempRoot(async (rootDir) => {
       await writeSkillFile({
         rootDir,
@@ -412,8 +202,9 @@ describe('skills CLI commands', () => {
         body: 'Zeta body.',
       })
 
-      const success = await skillsFrontmatter({ rootDir, path: 'skills/zeta' })
-      expect(success).toEqual({
+      const success = await runSkillsCommand({ mode: 'frontmatter', rootDir, path: 'skills/zeta' })
+      expect(success.exitCode).toBe(0)
+      expect(JSON.parse(success.stdout.toString().trim())).toEqual({
         frontmatter: {
           name: 'zeta',
           description: 'Zeta description',
@@ -421,9 +212,11 @@ describe('skills CLI commands', () => {
         errors: [],
       })
 
-      const missing = await skillsFrontmatter({ rootDir, path: 'skills/missing' })
-      expect(missing.frontmatter).toBeNull()
-      expect(missing.errors).toEqual([
+      const missing = await runSkillsCommand({ mode: 'frontmatter', rootDir, path: 'skills/missing' })
+      expect(missing.exitCode).toBe(0)
+      const output = JSON.parse(missing.stdout.toString().trim())
+      expect(output.frontmatter).toBeNull()
+      expect(output.errors).toEqual([
         {
           skillPath: join(rootDir, 'skills', 'missing', 'SKILL.md'),
           message: `Skill markdown not found: ${join(rootDir, 'skills', 'missing', 'SKILL.md')}`,
@@ -443,8 +236,7 @@ describe('skills CLI commands', () => {
       })
       const skillPath = join(skillDir, 'SKILL.md')
 
-      const input = JSON.stringify({ mode: 'validate', skillPath })
-      const result = await Bun.$`bun ./bin/plaited.ts skills ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
+      const result = await runSkillsCommand({ mode: 'validate', skillPath })
 
       expect(result.exitCode).toBe(0)
       const output = JSON.parse(result.stdout.toString().trim())
@@ -462,8 +254,7 @@ describe('skills CLI commands', () => {
         body: 'Kappa body.',
       })
 
-      const input = JSON.stringify({ mode: 'instructions', rootDir, path: 'skills/kappa' })
-      const result = await Bun.$`bun ./bin/plaited.ts skills ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
+      const result = await runSkillsCommand({ mode: 'instructions', rootDir, path: 'skills/kappa' })
 
       expect(result.exitCode).toBe(0)
       const output = JSON.parse(result.stdout.toString().trim())
@@ -484,8 +275,7 @@ describe('skills CLI commands', () => {
         body: 'Lambda body.',
       })
 
-      const input = JSON.stringify({ mode: 'frontmatter', rootDir, path: 'skills/lambda' })
-      const result = await Bun.$`bun ./bin/plaited.ts skills ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
+      const result = await runSkillsCommand({ mode: 'frontmatter', rootDir, path: 'skills/lambda' })
 
       expect(result.exitCode).toBe(0)
       const output = JSON.parse(result.stdout.toString().trim())
@@ -500,8 +290,7 @@ describe('skills CLI commands', () => {
   })
 
   test('skills CLI mode=links exits with invalid input', async () => {
-    const input = JSON.stringify({})
-    const result = await Bun.$`bun ./bin/plaited.ts skills ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
+    const result = await runSkillsCommand({})
 
     expect(result.exitCode).toBe(2)
     expect(result.stderr.toString()).toContain('mode')
@@ -531,8 +320,7 @@ describe('skills CLI commands', () => {
         body: 'Use to search Bun docs.',
       })
 
-      const input = JSON.stringify({ mode: 'registry', rootDir })
-      const result = await Bun.$`bun ./bin/plaited.ts skills ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
+      const result = await runSkillsCommand({ mode: 'registry', rootDir })
 
       expect(result.exitCode).toBe(0)
       const output = JSON.parse(result.stdout.toString().trim())
@@ -599,8 +387,7 @@ describe('skills CLI commands', () => {
         body: 'Use to search Bun docs.',
       })
 
-      const input = JSON.stringify({ mode: 'registry', rootDir })
-      const result = await Bun.$`bun ./bin/plaited.ts skills ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
+      const result = await runSkillsCommand({ mode: 'registry', rootDir })
 
       expect(result.exitCode).toBe(0)
       const output = JSON.parse(result.stdout.toString().trim())
@@ -633,8 +420,7 @@ describe('skills CLI commands', () => {
         body: 'Use to search Bun docs.',
       })
 
-      const input = JSON.stringify({ mode: 'registry', rootDir })
-      const result = await Bun.$`bun ./bin/plaited.ts skills ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
+      const result = await runSkillsCommand({ mode: 'registry', rootDir })
 
       expect(result.exitCode).toBe(0)
       const output = JSON.parse(result.stdout.toString().trim())
@@ -671,8 +457,7 @@ describe('skills CLI commands', () => {
         body: 'Use to search Bun docs.',
       })
 
-      const input = JSON.stringify({ mode: 'registry', rootDir })
-      const result = await Bun.$`bun ./bin/plaited.ts skills ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
+      const result = await runSkillsCommand({ mode: 'registry', rootDir })
 
       expect(result.exitCode).toBe(0)
       const output = JSON.parse(result.stdout.toString().trim())
@@ -705,8 +490,7 @@ describe('skills CLI commands', () => {
         body: 'Use to search Bun docs.',
       })
 
-      const input = JSON.stringify({ mode: 'registry', rootDir })
-      const result = await Bun.$`bun ./bin/plaited.ts skills ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
+      const result = await runSkillsCommand({ mode: 'registry', rootDir })
 
       expect(result.exitCode).toBe(0)
       const output = JSON.parse(result.stdout.toString().trim())
@@ -739,8 +523,7 @@ describe('skills CLI commands', () => {
         body: 'Use to search Bun docs.',
       })
 
-      const input = JSON.stringify({ mode: 'registry', rootDir })
-      const result = await Bun.$`bun ./bin/plaited.ts skills ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
+      const result = await runSkillsCommand({ mode: 'registry', rootDir })
 
       expect(result.exitCode).toBe(0)
       const output = JSON.parse(result.stdout.toString().trim())
@@ -773,8 +556,7 @@ describe('skills CLI commands', () => {
         body: 'Use to search Bun docs.',
       })
 
-      const input = JSON.stringify({ mode: 'registry', rootDir })
-      const result = await Bun.$`bun ./bin/plaited.ts skills ${input}`.cwd(CLI_PACKAGE_ROOT).nothrow()
+      const result = await runSkillsCommand({ mode: 'registry', rootDir })
 
       expect(result.exitCode).toBe(0)
       const output = JSON.parse(result.stdout.toString().trim())
