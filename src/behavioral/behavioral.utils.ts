@@ -1,8 +1,7 @@
-import { isTypeOf } from '../utils.ts'
+import { deepEqual, isTypeOf } from '../utils.ts'
 import { FRONTIER_STATUS } from './behavioral.constants.ts'
 import type { BPEvent, BPListener } from './behavioral.schemas.ts'
 import type { CandidateBid, Frontier, PendingBid, RunningBid, Sync, Thread } from './behavioral.types.ts'
-import { deepEqual } from './deep-equal.ts'
 
 /**
  * @internal
