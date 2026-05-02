@@ -63,17 +63,6 @@ install_bun() {
   log "bun install complete"
 }
 
-install_uv() {
-  if have uv; then
-    log "uv already installed: $(command -v uv)"
-    return
-  fi
-
-  log "installing uv"
-  run_installer "https://astral.sh/uv/install.sh"
-  log "uv install complete"
-}
-
 install_deps() {
   local bun_bin
   bun_bin="$(resolve_bun)"
@@ -94,12 +83,11 @@ link_cli() {
 
 usage() {
   cat <<'EOF'
-Usage: scripts/setup.sh [all|bun|uv|deps|link]
+Usage: scripts/setup.sh [all|bun|deps|link]
 
 Commands:
-  all   Install bun and uv if needed, then run bun install and bun link.
+  all   Install bun if needed, then run bun install and bun link.
   bun   Install bun if it is missing.
-  uv    Install uv if it is missing.
   deps  Run bun install in the repo root.
   link  Run bun link in the repo root.
 EOF
@@ -110,15 +98,11 @@ command_name="${1:-all}"
 case "$command_name" in
   all)
     install_bun
-    install_uv
     install_deps
     link_cli
     ;;
   bun)
     install_bun
-    ;;
-  uv)
-    install_uv
     ;;
   deps)
     install_deps

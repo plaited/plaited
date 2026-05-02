@@ -48,7 +48,6 @@
     "setup:bun": "bash scripts/setup.sh bun",
     "setup:deps": "bash scripts/setup.sh deps",
     "setup:link": "bash scripts/setup.sh link",
-    "setup:uv": "bash scripts/setup.sh uv",
     "test": "bun test"
   },
   "lint-staged": {
@@ -60,10 +59,9 @@
     ]
   },
   "dependencies": {
-    "@agentclientprotocol/sdk": "^0.19.2",
-    "@modelcontextprotocol/ext-apps": "^1.7.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@youdotcom-oss/api": "^0.5.2",
+    "openai": "^6.35.0",
     "zod": "4.3.6"
   },
   "devDependencies": {
