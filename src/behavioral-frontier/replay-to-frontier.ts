@@ -1,4 +1,3 @@
-import { deepEqual } from '../behavioral/deep-equal.ts'
 import type {
   CandidateBid,
   PendingBid,
@@ -14,6 +13,7 @@ import {
   resumePendingThreadsForSelectedEvent,
   useSpec,
 } from '../behavioral.ts'
+import { deepEqual } from '../utils/deep-equal.ts'
 
 const matchesSelectedEvent = ({ candidate, selected }: { candidate: CandidateBid; selected: SnapshotEvent }) =>
   candidate.type === selected.type && deepEqual(candidate.detail, selected.detail)

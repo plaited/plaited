@@ -1,4 +1,3 @@
-import { deepEqual } from '../behavioral/deep-equal.ts'
 import type {
   BPEvent,
   Frontier,
@@ -9,6 +8,7 @@ import type {
   Spec,
 } from '../behavioral.ts'
 import { ensureArray, FRONTIER_STATUS, isListeningFor, SNAPSHOT_MESSAGE_KINDS } from '../behavioral.ts'
+import { deepEqual } from '../utils.ts'
 
 import {
   BEHAVIORAL_FRONTIER_SELECTION_POLICIES,

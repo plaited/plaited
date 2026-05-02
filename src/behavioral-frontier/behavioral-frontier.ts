@@ -179,5 +179,3 @@ export const behavioralFrontierCli = makeCli({
   ].join('\n'),
   run: runBehavioralFrontier,
 })
-
-export { replayToFrontier }
