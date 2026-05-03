@@ -8,7 +8,7 @@ Status: active boundary review reference.
 bun skills/plaited-context/scripts/context.ts '{"task":"review boundary contract policy","mode":"review","paths":["<paths>"]}'
 bun --bun tsc --noEmit
 bun test <targeted-files-or-surface>
-bun skills/typescript-lsp/scripts/run.ts '{"file":"<boundary-file>","operations":[{"type":"symbols"}]}'
+bun ./bin/plaited.ts typescript-lsp '{"file":"<boundary-file>","operations":[{"type":"symbols"}]}'
 ```
 
 ## Boundary Rules

@@ -30,7 +30,7 @@ For runtime boundary changes, run deterministic analysis:
 ```bash
 bun --bun tsc --noEmit
 bun test <targeted-files-or-surface>
-bun skills/typescript-lsp/scripts/run.ts '{"file":"<boundary-file>","operations":[{"type":"symbols"}]}'
+bun ./bin/plaited.ts typescript-lsp '{"file":"<boundary-file>","operations":[{"type":"symbols"}]}'
 ```
 
 ## Runtime Rules

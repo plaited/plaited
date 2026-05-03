@@ -22,6 +22,8 @@ import {
   gitCli,
   SKILLS_COMMAND,
   skillsCli,
+  TYPESCRIPT_LSP_COMMAND,
+  typescriptLspCli,
   VLLM_COMMAND,
   vllmCli,
   WIKI_COMMAND,
@@ -40,6 +42,7 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   [GIT_COMMAND]: gitCli,
   [SKILLS_COMMAND]: skillsCli,
   [WIKI_COMMAND]: wikiCli,
+  [TYPESCRIPT_LSP_COMMAND]: typescriptLspCli,
 }
 
 // ============================================================================

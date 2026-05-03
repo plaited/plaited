@@ -22,10 +22,10 @@ Type-aware codebase analysis for TypeScript/JavaScript files. Use over Grep/Glob
 | Get type signature + TSDoc | `typescript-lsp` with `hover` |
 | Search for a symbol by name | `typescript-lsp` with `find` |
 | List file exports | `typescript-lsp` with `exports` |
-| Scan imports/exports across many files | `typescript-lsp` with `workspace_scan` |
-| Inventory public exports across many files | `typescript-lsp` with `public_exports` |
-| Audit candidate export consumers | `typescript-lsp` with `export_consumers` |
-| Find verified candidate unused exports | `typescript-lsp` with `candidate_unused_exports` |
+| Scan imports/exports across many files | `typescript-lsp` with `workspace-scan` |
+| Inventory public exports across many files | `typescript-lsp` with `public-exports` |
+| Audit candidate export consumers | `typescript-lsp` with `export-consumers` |
+| Find verified candidate unused exports | `typescript-lsp` with `candidate-unused-exports` |
 | Find files by pattern | Glob |
 | Search text content | Grep |
 
@@ -34,10 +34,10 @@ Type-aware codebase analysis for TypeScript/JavaScript files. Use over Grep/Glob
 Single command with JSON input. All operations share one LSP session (one server start).
 
 ```bash
-bun skills/typescript-lsp/scripts/run.ts '<json>'
-echo '<json>' | bun skills/typescript-lsp/scripts/run.ts
-bun skills/typescript-lsp/scripts/run.ts --schema input    # JSON Schema for input
-bun skills/typescript-lsp/scripts/run.ts --schema output   # JSON Schema for output
+bun ./bin/plaited.ts typescript-lsp '<json>'
+echo '<json>' | bun ./bin/plaited.ts typescript-lsp
+bun ./bin/plaited.ts typescript-lsp --schema input    # JSON Schema for input
+bun ./bin/plaited.ts typescript-lsp --schema output   # JSON Schema for output
 ```
 
 ## Input Format
@@ -53,16 +53,18 @@ bun skills/typescript-lsp/scripts/run.ts --schema output   # JSON Schema for out
     { "type": "symbols" },
     { "type": "exports" },
     { "type": "find", "query": "parseConfig" },
-    { "type": "workspace_scan", "includeTests": false },
-    { "type": "public_exports", "includeTests": false },
-    { "type": "export_consumers", "query": "parseConfig", "includeTests": true },
-    { "type": "candidate_unused_exports", "includeTests": true }
+    { "type": "workspace-scan", "includeTests": false },
+    { "type": "public-exports", "includeTests": false },
+    { "type": "export-consumers", "query": "parseConfig", "includeTests": true },
+    { "type": "candidate-unused-exports", "includeTests": true }
   ]
 }
 ```
 
 **Fields:**
-- `file` — path to TypeScript/JavaScript file (absolute or relative to cwd)
+- `rootDir` — workspace root for path resolution and relative output paths (defaults to `.`)
+- `ignoreGlobs` — additive ignore globs for workspace operations (`workspace-scan`, `public-exports`, `export-consumers`, `candidate-unused-exports`)
+- `file` — path to TypeScript/JavaScript file (required for `hover`, `references`, `definition`, `symbols`, `exports`, `find`, `scan`)
 - `files` — explicit file list for workspace audit operations
 - `targets` — glob patterns for workspace audit operations
 - `operations` — array of operations to perform in a single session
@@ -78,10 +80,10 @@ bun skills/typescript-lsp/scripts/run.ts --schema output   # JSON Schema for out
 | `exports` | — | Exported symbols only |
 | `find` | `query` | Search workspace symbols by name |
 | `scan` | — | Fast import/export extraction for one file using `Bun.Transpiler.scan()` |
-| `workspace_scan` | `includeTests?` | Fast import/export extraction across `files` or `targets` |
-| `public_exports` | `includeTests?` | Compiler-backed export inventory across `files` or `targets` |
-| `export_consumers` | `query?`, `includeTests?` | Candidate consumer audit for exported symbols across `files` or `targets` |
-| `candidate_unused_exports` | `query?`, `includeTests?` | TypeScript-verified unused export audit with `unused` vs `test_only` status |
+| `workspace-scan` | `includeTests?` | Fast import/export extraction across `files` or `targets` |
+| `public-exports` | `includeTests?` | Compiler-backed export inventory across `files` or `targets` |
+| `export-consumers` | `query?`, `includeTests?` | Candidate consumer audit for exported symbols across `files` or `targets` |
+| `candidate-unused-exports` | `query?`, `includeTests?` | TypeScript-verified unused export audit with `unused` vs `test_only` status |
 
 Positions are 0-indexed.
 
@@ -122,63 +124,63 @@ Failed operations include an `error` field instead of `data`. Other operations s
 ### Understand a file
 
 ```bash
-bun skills/typescript-lsp/scripts/run.ts '{"file": "src/utils/parser.ts", "operations": [{"type": "exports"}]}'
+bun ./bin/plaited.ts typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "exports"}]}'
 ```
 
 ### Check type before using an API
 
 ```bash
-bun skills/typescript-lsp/scripts/run.ts '{"file": "src/utils/parser.ts", "operations": [{"type": "hover", "line": 42, "character": 10}]}'
+bun ./bin/plaited.ts typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "hover", "line": 42, "character": 10}]}'
 ```
 
 ### Find all references before refactoring
 
 ```bash
-bun skills/typescript-lsp/scripts/run.ts '{"file": "src/utils/parser.ts", "operations": [{"type": "references", "line": 42, "character": 10}]}'
+bun ./bin/plaited.ts typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "references", "line": 42, "character": 10}]}'
 ```
 
 ### Batch: exports + hover + references in one session
 
 ```bash
-bun skills/typescript-lsp/scripts/run.ts '{"file": "src/utils/parser.ts", "operations": [{"type": "exports"}, {"type": "hover", "line": 10, "character": 13}, {"type": "references", "line": 10, "character": 13}]}'
+bun ./bin/plaited.ts typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "exports"}, {"type": "hover", "line": 10, "character": 13}, {"type": "references", "line": 10, "character": 13}]}'
 ```
 
 ### Search workspace for a symbol
 
 ```bash
-bun skills/typescript-lsp/scripts/run.ts '{"file": "src/app.ts", "operations": [{"type": "find", "query": "parseConfig"}]}'
+bun ./bin/plaited.ts typescript-lsp '{"file": "src/app.ts", "operations": [{"type": "find", "query": "parseConfig"}]}'
 ```
 
 ### Scan imports and runtime exports across many files
 
 ```bash
-bun skills/typescript-lsp/scripts/run.ts '{"file": "src/main.ts", "targets": ["src/**/*.ts", "src/**/*.tsx"], "operations": [{"type": "workspace_scan", "includeTests": false}]}'
+bun ./bin/plaited.ts typescript-lsp '{"file": "src/main.ts", "targets": ["src/**/*.ts", "src/**/*.tsx"], "operations": [{"type": "workspace-scan", "includeTests": false}]}'
 ```
 
 ### Inventory public exports across many files
 
 ```bash
-bun skills/typescript-lsp/scripts/run.ts '{"file": "src/main.ts", "targets": ["src/**/*.ts", "src/**/*.tsx"], "operations": [{"type": "public_exports", "includeTests": false}]}'
+bun ./bin/plaited.ts typescript-lsp '{"file": "src/main.ts", "targets": ["src/**/*.ts", "src/**/*.tsx"], "operations": [{"type": "public-exports", "includeTests": false}]}'
 ```
 
 ### Audit candidate export consumers
 
 ```bash
-bun skills/typescript-lsp/scripts/run.ts '{"file": "src/main.ts", "targets": ["src/agent/**/*.ts"], "operations": [{"type": "export_consumers", "query": "Module", "includeTests": true}]}'
+bun ./bin/plaited.ts typescript-lsp '{"file": "src/main.ts", "targets": ["src/agent/**/*.ts"], "operations": [{"type": "export-consumers", "query": "Module", "includeTests": true}]}'
 ```
 
 ### Find verified candidate unused exports
 
 ```bash
-bun skills/typescript-lsp/scripts/run.ts '{"file": "src/main.ts", "targets": ["src/agent/**/*.ts"], "operations": [{"type": "candidate_unused_exports", "includeTests": true}]}'
+bun ./bin/plaited.ts typescript-lsp '{"file": "src/main.ts", "targets": ["src/agent/**/*.ts"], "operations": [{"type": "candidate-unused-exports", "includeTests": true}]}'
 ```
 
 ## Notes
 
-- `workspace_scan` is fast and uses `Bun.Transpiler.scan()`. It is best for import/export indexing, not semantic reference truth.
-- `public_exports` uses the TypeScript compiler API, so it includes type-only exports that `scan()` does not report.
-- `export_consumers` is a candidate audit. It classifies matching symbol mentions into production and test files, but it is not a full LSP find-references replacement.
-- `candidate_unused_exports` stays JSON-first for agent consumers. It verifies references over the provided `files` or `targets` set and does not add `summary` or `table` output modes.
+- `workspace-scan` is fast and uses `Bun.Transpiler.scan()`. It is best for import/export indexing, not semantic reference truth.
+- `public-exports` uses the TypeScript compiler API, so it includes type-only exports that `scan()` does not report.
+- `export-consumers` is a candidate audit. It classifies matching symbol mentions into production and test files, but it is not a full LSP find-references replacement.
+- `candidate-unused-exports` stays JSON-first for agent consumers. It verifies references over the provided `files` or `targets` set and does not add `summary` or `table` output modes.
 
 ## Exit Codes
 

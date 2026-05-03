@@ -8,11 +8,11 @@
  * @public
  */
 
-import { join, relative } from 'node:path'
+import { isAbsolute, join, normalize, relative, resolve } from 'node:path'
 import type { Subprocess } from 'bun'
-import { parseCli } from 'plaited/cli'
 import ts from 'typescript'
 import * as z from 'zod'
+import { parseCli } from '../cli/cli.ts'
 
 // ============================================================================
 // JSON-RPC Types
@@ -52,6 +52,18 @@ type LspExecutionContext = {
   workspace?: string
   signal?: AbortSignal
 }
+
+const TYPESCRIPT_LSP_COMMAND = 'typescript-lsp'
+
+const DEFAULT_IGNORE_GLOBS = [
+  '**/.git/**',
+  '**/node_modules/**',
+  '**/dist/**',
+  '**/build/**',
+  '**/coverage/**',
+  '**/tmp/**',
+  '**/temp/**',
+] as const
 
 // ============================================================================
 // LSP Client
@@ -427,50 +439,123 @@ export type { LspInput, LspOperation, LspOutput, LspResult }
 // ============================================================================
 
 /** @public */
-const LspOperationSchema = z.object({
-  type: z
-    .enum([
-      'hover',
-      'references',
-      'definition',
-      'symbols',
-      'exports',
-      'find',
-      'scan',
-      'workspace_scan',
-      'public_exports',
-      'export_consumers',
-      'candidate_unused_exports',
-    ])
-    .describe('LSP operation type'),
-  line: z.number().optional().describe('Line number (0-indexed) — required for hover, references, definition'),
-  character: z
-    .number()
-    .optional()
-    .describe('Character position (0-indexed) — required for hover, references, definition'),
-  query: z.string().optional().describe('Symbol name or partial name — required for find'),
-  includeTests: z.boolean().optional().describe('Include test files in workspace audit operations'),
+const HoverOperationSchema = z.object({
+  type: z.literal('hover').describe('Return type information for a symbol at a source position.'),
+  line: z.number().describe('0-indexed line position in `file`.'),
+  character: z.number().describe('0-indexed character position in `file`.'),
 })
 
+const ReferencesOperationSchema = z.object({
+  type: z.literal('references').describe('Return references to a symbol at a source position.'),
+  line: z.number().describe('0-indexed line position in `file`.'),
+  character: z.number().describe('0-indexed character position in `file`.'),
+})
+
+const DefinitionOperationSchema = z.object({
+  type: z.literal('definition').describe('Return the definition location for a symbol at a source position.'),
+  line: z.number().describe('0-indexed line position in `file`.'),
+  character: z.number().describe('0-indexed character position in `file`.'),
+})
+
+const FindOperationSchema = z.object({
+  type: z.literal('find').describe('Return workspace symbol search results matching `query`.'),
+  query: z.string().min(1).describe('Workspace symbol query text.'),
+})
+
+const SymbolsOperationSchema = z.object({
+  type: z.literal('symbols').describe('Return flattened document symbols for `file`.'),
+})
+
+const ExportsOperationSchema = z.object({
+  type: z.literal('exports').describe('Return top-level exported symbols from `file`.'),
+})
+
+const ScanOperationSchema = z.object({
+  type: z.literal('scan').describe('Return fast Bun transpiler import/export scan for `file`.'),
+})
+
+const WorkspaceScanOperationSchema = z.object({
+  type: z.literal('workspace-scan').describe('Return fast Bun transpiler import/export scan for workspace files.'),
+  includeTests: z.boolean().optional().describe('Include test files in workspace results. Defaults to true.'),
+})
+
+const PublicExportsOperationSchema = z.object({
+  type: z.literal('public-exports').describe('Return compiler-backed public export inventory for workspace files.'),
+  includeTests: z.boolean().optional().describe('Include test files in workspace results. Defaults to true.'),
+})
+
+const ExportConsumersOperationSchema = z.object({
+  type: z.literal('export-consumers').describe('Return candidate consumer paths for exported symbols.'),
+  query: z.string().optional().describe('Optional exported symbol name filter.'),
+  includeTests: z.boolean().optional().describe('Include test files when scanning consumers. Defaults to true.'),
+})
+
+const CandidateUnusedExportsOperationSchema = z.object({
+  type: z
+    .literal('candidate-unused-exports')
+    .describe('Return TypeScript-verified candidate unused exports for workspace files.'),
+  query: z.string().optional().describe('Optional exported symbol name filter.'),
+  includeTests: z
+    .boolean()
+    .optional()
+    .describe('Include test-only references when classifying candidates. Defaults to true.'),
+})
+
+const LspSessionOperationSchema = z.union([
+  HoverOperationSchema,
+  ReferencesOperationSchema,
+  DefinitionOperationSchema,
+  SymbolsOperationSchema,
+  ExportsOperationSchema,
+  FindOperationSchema,
+  ScanOperationSchema,
+])
+
+const WorkspaceOperationSchema = z.union([
+  WorkspaceScanOperationSchema,
+  PublicExportsOperationSchema,
+  ExportConsumersOperationSchema,
+  CandidateUnusedExportsOperationSchema,
+])
+
+const LspOperationSchema = z.union([LspSessionOperationSchema, WorkspaceOperationSchema])
+
 /** @public */
+const LspInputBaseSchema = z.object({
+  rootDir: z.string().default('.').describe('Workspace root directory for file resolution and relative output paths.'),
+  ignoreGlobs: z
+    .array(z.string().min(1))
+    .optional()
+    .describe(
+      `Additional ignore globs for workspace operations. Defaults always include: ${DEFAULT_IGNORE_GLOBS.join(', ')}`,
+    ),
+  files: z.array(z.string().min(1)).optional().describe('Explicit workspace files for workspace operations.'),
+  targets: z.array(z.string().min(1)).optional().describe('Workspace glob targets for workspace operations.'),
+})
+
+const LspSessionInputSchema = LspInputBaseSchema.extend({
+  file: z
+    .string()
+    .min(1)
+    .describe('Path to a TypeScript/JavaScript file. Required for LSP session operations and `scan`.'),
+  operations: z.array(LspSessionOperationSchema).min(1).describe('Operations to execute in a single session.'),
+})
+
+const LspWorkspaceInputByFilesSchema = LspInputBaseSchema.extend({
+  file: z.undefined().optional(),
+  files: z.array(z.string().min(1)).min(1).describe('Explicit workspace files for workspace operations.'),
+  operations: z.array(WorkspaceOperationSchema).min(1).describe('Workspace operations to execute.'),
+})
+
+const LspWorkspaceInputByTargetsSchema = LspInputBaseSchema.extend({
+  file: z.undefined().optional(),
+  targets: z.array(z.string().min(1)).min(1).describe('Glob targets for workspace operations.'),
+  operations: z.array(WorkspaceOperationSchema).min(1).describe('Workspace operations to execute.'),
+})
+
 const LspInputSchema = z
-  .object({
-    file: z.string().optional().describe('Path to TypeScript/JavaScript file for single-file operations'),
-    files: z.array(z.string()).optional().describe('Explicit file list for workspace audit operations'),
-    targets: z.array(z.string()).optional().describe('Glob patterns for workspace audit operations'),
-    operations: z
-      .array(LspOperationSchema)
-      .describe('Operations to perform in a single session (LSP-backed and workspace audit operations)'),
-  })
-  .superRefine((value, ctx) => {
-    if (!value.file && (!value.files || value.files.length === 0) && (!value.targets || value.targets.length === 0)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'At least one of file, files, or targets is required',
-        path: ['file'],
-      })
-    }
-  })
+  .union([LspSessionInputSchema, LspWorkspaceInputByFilesSchema, LspWorkspaceInputByTargetsSchema])
+  .describe('Unified TypeScript LSP request input.')
 
 /** @public */
 const LspOutputSchema = z.object({
@@ -479,6 +564,7 @@ const LspOutputSchema = z.object({
     .array(
       z.object({
         type: z.string().describe('Operation type that was performed'),
+        data: z.unknown().optional().describe('Operation-specific successful output payload.'),
         error: z.string().optional().describe('Error message if the operation failed'),
       }),
     )
@@ -534,8 +620,8 @@ const SYMBOL_KIND_NAMES: Record<number, string> = {
  * @internal
  */
 const resolveFilePath = (filePath: string, base?: string): string => {
-  if (filePath.startsWith('/')) return filePath
-  return join(base ?? process.cwd(), filePath)
+  if (isAbsolute(filePath)) return normalize(filePath)
+  return normalize(join(base ?? process.cwd(), filePath))
 }
 
 const DEFAULT_SCAN_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx']
@@ -544,34 +630,98 @@ const TEST_FILE_PATTERN = /(^|\/)(tests?\/|.*\.(spec|test)\.[jt]sx?$)/
 
 const isTestFile = (filePath: string) => TEST_FILE_PATTERN.test(filePath)
 
+const toPosixPath = (path: string): string => path.replace(/\\/g, '/')
+
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
+
+const resolveUriPath = (uri: string): string | undefined => {
+  if (!uri.startsWith('file://')) return
+
+  try {
+    return normalize(decodeURIComponent(new URL(uri).pathname))
+  } catch {
+    return
+  }
+}
+
 const makeDisplayPath = (absolutePath: string, base: string) => {
-  const relativePath = relative(base, absolutePath)
-  return relativePath === '' ? absolutePath : relativePath
+  const relativePath = toPosixPath(relative(base, absolutePath))
+  if (relativePath === '' || relativePath === '.') return '.'
+  return relativePath.startsWith('..') ? absolutePath : relativePath
+}
+
+const normalizeUriBearingResult = (value: unknown, rootDir: string): unknown => {
+  if (Array.isArray(value)) {
+    return value.map((entry) => normalizeUriBearingResult(entry, rootDir))
+  }
+
+  if (!isRecord(value)) {
+    return value
+  }
+
+  const normalized: Record<string, unknown> = {}
+
+  for (const [key, entry] of Object.entries(value)) {
+    normalized[key] = normalizeUriBearingResult(entry, rootDir)
+  }
+
+  if (typeof value.uri === 'string') {
+    const absolutePath = resolveUriPath(value.uri)
+    if (absolutePath) {
+      normalized.path = makeDisplayPath(absolutePath, rootDir)
+    }
+  }
+
+  if (typeof value.targetUri === 'string') {
+    const absolutePath = resolveUriPath(value.targetUri)
+    if (absolutePath) {
+      normalized.targetPath = makeDisplayPath(absolutePath, rootDir)
+    }
+  }
+
+  return normalized
+}
+
+const isIgnoredPath = ({
+  absolutePath,
+  rootDir,
+  ignoreGlobs,
+}: {
+  absolutePath: string
+  rootDir: string
+  ignoreGlobs: string[]
+}): boolean => {
+  const relativePath = toPosixPath(relative(rootDir, absolutePath))
+  if (relativePath.startsWith('..')) return false
+  return ignoreGlobs.some((pattern) => new Bun.Glob(pattern).match(relativePath))
 }
 
 const resolveWorkspaceFiles = ({
   input,
-  base,
+  rootDir,
   includeTests = true,
 }: {
   input: LspInput
-  base: string
+  rootDir: string
   includeTests?: boolean
 }) => {
+  const ignoreGlobs = [...DEFAULT_IGNORE_GLOBS, ...(input.ignoreGlobs ?? [])]
   const files = new Set<string>()
 
   for (const filePath of input.files ?? []) {
-    files.add(resolveFilePath(filePath, base))
-  }
-
-  for (const target of input.targets ?? []) {
-    for (const match of ts.sys.readDirectory(base, DEFAULT_SCAN_EXTENSIONS, undefined, [target])) {
-      files.add(resolveFilePath(match, base))
+    const absolutePath = resolveFilePath(filePath, rootDir)
+    if (!isIgnoredPath({ absolutePath, rootDir, ignoreGlobs })) {
+      files.add(absolutePath)
     }
   }
 
-  if (files.size === 0 && input.file) {
-    files.add(resolveFilePath(input.file, base))
+  for (const target of input.targets ?? []) {
+    for (const match of ts.sys.readDirectory(rootDir, DEFAULT_SCAN_EXTENSIONS, ignoreGlobs, [target])) {
+      const absolutePath = resolveFilePath(match, rootDir)
+      if (!isIgnoredPath({ absolutePath, rootDir, ignoreGlobs })) {
+        files.add(absolutePath)
+      }
+    }
   }
 
   return [...files].filter((filePath) => includeTests || !isTestFile(filePath)).sort()
@@ -892,69 +1042,80 @@ const getLoader = (path: string): 'tsx' | 'ts' | 'jsx' | 'js' => {
 
 const executeOperation = async (
   client: LspClient | null,
-  uri: string,
-  text: string,
+  uri: string | null,
+  text: string | null,
   op: LspOperation,
-  absolutePath: string,
+  absolutePath: string | null,
   input: LspInput,
-  base: string,
+  rootDir: string,
 ): Promise<unknown> => {
   switch (op.type) {
     case 'scan': {
+      if (!absolutePath || text === null) {
+        throw new Error('scan requires file')
+      }
       const transpiler = new Bun.Transpiler({ loader: getLoader(absolutePath) })
       const result = transpiler.scan(text)
       return { imports: result.imports, exports: result.exports }
     }
-    case 'workspace_scan': {
-      const files = resolveWorkspaceFiles({ input, base, includeTests: op.includeTests ?? true })
-      return Promise.all(files.map((filePath) => scanFile(filePath, base)))
+    case 'workspace-scan': {
+      const files = resolveWorkspaceFiles({ input, rootDir, includeTests: op.includeTests ?? true })
+      return Promise.all(files.map((filePath) => scanFile(filePath, rootDir)))
     }
-    case 'public_exports': {
-      const files = resolveWorkspaceFiles({ input, base, includeTests: op.includeTests ?? true })
-      return getPublicExports({ absolutePaths: files, base })
+    case 'public-exports': {
+      const files = resolveWorkspaceFiles({ input, rootDir, includeTests: op.includeTests ?? true })
+      return getPublicExports({ absolutePaths: files, base: rootDir })
     }
-    case 'export_consumers': {
-      const files = resolveWorkspaceFiles({ input, base, includeTests: true })
+    case 'export-consumers': {
+      const files = resolveWorkspaceFiles({ input, rootDir, includeTests: true })
       return getExportConsumers({
         absolutePaths: files,
-        base,
+        base: rootDir,
         includeTests: op.includeTests ?? true,
         query: op.query,
       })
     }
-    case 'candidate_unused_exports': {
-      const files = resolveWorkspaceFiles({ input, base, includeTests: true })
+    case 'candidate-unused-exports': {
+      const files = resolveWorkspaceFiles({ input, rootDir, includeTests: true })
       return getCandidateUnusedExports({
         absolutePaths: files,
-        base,
+        base: rootDir,
         includeTests: op.includeTests ?? true,
         query: op.query,
       })
     }
     case 'hover': {
-      if (op.line === undefined || op.character === undefined) {
-        throw new Error('hover requires line and character')
+      if (!client || !uri) {
+        throw new Error('hover requires file')
       }
-      return client!.hover(uri, op.line, op.character)
+      return client.hover(uri, op.line, op.character)
     }
     case 'references': {
-      if (op.line === undefined || op.character === undefined) {
-        throw new Error('references requires line and character')
+      if (!client || !uri) {
+        throw new Error('references requires file')
       }
-      return client!.references(uri, op.line, op.character)
+      const references = await client.references(uri, op.line, op.character)
+      return normalizeUriBearingResult(references, rootDir)
     }
     case 'definition': {
-      if (op.line === undefined || op.character === undefined) {
-        throw new Error('definition requires line and character')
+      if (!client || !uri) {
+        throw new Error('definition requires file')
       }
-      return client!.definition(uri, op.line, op.character)
+      const definition = await client.definition(uri, op.line, op.character)
+      return normalizeUriBearingResult(definition, rootDir)
     }
     case 'symbols': {
-      const symbols = (await client!.documentSymbols(uri)) as SymbolInfo[]
+      if (!client || !uri) {
+        throw new Error('symbols requires file')
+      }
+      const symbols = (await client.documentSymbols(uri)) as SymbolInfo[]
       return flattenSymbols(symbols)
     }
     case 'exports': {
-      const symbols = (await client!.documentSymbols(uri)) as SymbolInfo[]
+      if (!client || !uri || text === null) {
+        throw new Error('exports requires file')
+      }
+      const symbols = (await client.documentSymbols(uri)) as SymbolInfo[]
       const all = flattenSymbols(symbols)
       const lines = text.split('\n')
       return all.filter((sym) => {
@@ -964,10 +1125,11 @@ const executeOperation = async (
       })
     }
     case 'find': {
-      if (!op.query) {
-        throw new Error('find requires query')
+      if (!client) {
+        throw new Error('find requires file')
       }
-      return client!.workspaceSymbols(op.query)
+      const symbols = await client.workspaceSymbols(op.query)
+      return normalizeUriBearingResult(symbols, rootDir)
     }
   }
 }
@@ -1006,31 +1168,32 @@ export {
 const executeLsp = async (input: LspInput, ctx?: LspExecutionContext): Promise<LspOutput> => {
   if (ctx?.signal?.aborted) throw new Error('Aborted')
 
-  const base = ctx?.workspace ?? process.cwd()
-  const primaryFile = input.file ?? input.files?.[0] ?? input.targets?.[0]
-  if (!primaryFile) {
-    throw new Error('At least one of file, files, or targets is required')
+  const workspaceBase = ctx?.workspace ?? process.cwd()
+  const rootDir = resolve(workspaceBase, input.rootDir)
+  const primaryFile = input.file ?? input.files?.[0] ?? input.targets?.[0] ?? '.'
+  const absolutePath = input.file ? resolveFilePath(input.file, rootDir) : null
+  const uri = absolutePath ? `file://${absolutePath}` : null
+  let text: string | null = null
+
+  if (absolutePath) {
+    const file = Bun.file(absolutePath)
+    if (!(await file.exists())) {
+      throw new Error(`File not found: ${absolutePath}`)
+    }
+    text = await file.text()
   }
 
-  const absolutePath = resolveFilePath(primaryFile, ctx?.workspace)
-  const uri = `file://${absolutePath}`
-
-  const file = Bun.file(absolutePath)
-  if (!(await file.exists())) {
-    throw new Error(`File not found: ${absolutePath}`)
-  }
-
-  const text = await file.text()
-
-  // If all operations are scan-only, skip LSP server entirely
   const needsLsp = input.operations.some(
-    (op) =>
-      !['scan', 'workspace_scan', 'public_exports', 'export_consumers', 'candidate_unused_exports'].includes(op.type),
+    (op) => !['workspace-scan', 'public-exports', 'export-consumers', 'candidate-unused-exports'].includes(op.type),
   )
+
+  if (needsLsp && !absolutePath) {
+    throw new Error('file is required for LSP session operations')
+  }
 
   let client: LspClient | null = null
   if (needsLsp) {
-    const rootUri = ctx ? `file://${ctx.workspace}` : `file://${process.cwd()}`
+    const rootUri = `file://${rootDir}`
     client = new LspClient({ rootUri })
   }
 
@@ -1042,14 +1205,14 @@ const executeLsp = async (input: LspInput, ctx?: LspExecutionContext): Promise<L
   try {
     if (client) {
       await client.start()
-      client.openDocument(uri, getLanguageId(absolutePath), 1, text)
+      client.openDocument(uri!, getLanguageId(absolutePath!), 1, text ?? '')
     }
 
     const results: LspResult[] = []
 
     for (const op of input.operations) {
       try {
-        const data = await executeOperation(client, uri, text, op, absolutePath, input, base)
+        const data = await executeOperation(client, uri, text, op, absolutePath, input, rootDir)
         results.push({ type: op.type, data })
       } catch (error) {
         results.push({ type: op.type, error: error instanceof Error ? error.message : String(error) })
@@ -1057,11 +1220,11 @@ const executeLsp = async (input: LspInput, ctx?: LspExecutionContext): Promise<L
     }
 
     if (client) {
-      client.closeDocument(uri)
+      client.closeDocument(uri!)
       await client.stop()
     }
 
-    return { file: primaryFile, results }
+    return { file: makeDisplayPath(resolveFilePath(primaryFile, rootDir), rootDir), results }
   } catch (error) {
     await client?.stop().catch(() => {})
     throw error
@@ -1073,7 +1236,7 @@ const executeLsp = async (input: LspInput, ctx?: LspExecutionContext): Promise<L
 export { executeLsp }
 
 /**
- * CLI entry point for the TypeScript LSP skill.
+ * CLI entry point for the TypeScript LSP command.
  *
  * @remarks
  * Uses shared `parseCli` for input parsing and schema discovery.
@@ -1085,14 +1248,16 @@ export { executeLsp }
  */
 export const typescriptLspCli = async (args: string[]) => {
   if (args.includes('--help') || args.includes('-h')) {
-    console.log(`typescript-lsp skill
+    console.log(`typescript-lsp
 Unified TypeScript LSP tool — type-aware codebase analysis
 
-Usage: bun skills/typescript-lsp/scripts/run.ts '<json>' [options]
-       echo '<json>' | bun skills/typescript-lsp/scripts/run.ts
+Usage: bun ./bin/plaited.ts typescript-lsp '<json>' [options]
+       echo '<json>' | bun ./bin/plaited.ts typescript-lsp
 
 Input (JSON):
-  file         string              Path to TypeScript/JavaScript file
+  rootDir      string              Workspace root directory (default ".")
+  ignoreGlobs  string[]            Additional workspace ignore globs
+  file         string              Path to TypeScript/JavaScript file (required for LSP session operations)
   files        string[]            Explicit file list for workspace audits
   targets      string[]            Glob patterns for workspace audits
   operations   LspOperation[]      Operations to perform in one session
@@ -1105,10 +1270,10 @@ Operations:
   exports      { type: "exports" }                       Exported symbols only
   find         { type: "find", query }                   Search workspace symbols
   scan         { type: "scan" }                          Fast import/export extraction (no LSP)
-  workspace_scan   { type: "workspace_scan" }            Fast import/export scan across files
-  public_exports   { type: "public_exports" }            Compiler-backed export inventory
-  export_consumers { type: "export_consumers", query? }  Candidate export consumer audit
-  candidate_unused_exports { type: "candidate_unused_exports", query? }  TypeScript-verified unused export audit
+  workspace-scan      { type: "workspace-scan" }         Fast import/export scan across files
+  public-exports      { type: "public-exports" }         Compiler-backed export inventory
+  export-consumers    { type: "export-consumers", query? } Candidate export consumer audit
+  candidate-unused-exports { type: "candidate-unused-exports", query? } TypeScript-verified unused export audit
 
 Options:
   --schema <input|output>  Print JSON Schema and exit
@@ -1121,7 +1286,7 @@ Exit codes:
     return
   }
 
-  const input = await parseCli(args, LspInputSchema, { name: 'typescript-lsp', outputSchema: LspOutputSchema })
+  const input = await parseCli(args, LspInputSchema, { name: TYPESCRIPT_LSP_COMMAND, outputSchema: LspOutputSchema })
 
   try {
     const result = await executeLsp(input)
@@ -1133,6 +1298,4 @@ Exit codes:
   }
 }
 
-if (import.meta.main) {
-  await typescriptLspCli(Bun.argv.slice(2))
-}
+export { DEFAULT_IGNORE_GLOBS, TYPESCRIPT_LSP_COMMAND }
