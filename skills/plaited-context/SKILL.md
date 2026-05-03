@@ -103,9 +103,9 @@ bun skills/typescript-lsp/scripts/run.ts '{"file":"src/worker/worker.ts","operat
 8. Assemble local read-only Git context for review/planning evidence
 
 ```bash
-bun skills/plaited-context/scripts/git-context.ts '{"base":"origin/dev","paths":["skills/plaited-context"],"includeWorktrees":true}'
-bun skills/plaited-context/scripts/git-history.ts '{"base":"origin/dev","paths":["skills/plaited-context"],"limit":20}'
-bun skills/plaited-context/scripts/git-worktrees.ts '{}'
+bun ./bin/plaited.ts git '{"mode":"context","base":"origin/dev","paths":["skills/plaited-context"],"includeWorktrees":true}'
+bun ./bin/plaited.ts git '{"mode":"history","base":"origin/dev","paths":["skills/plaited-context"],"limit":20}'
+bun ./bin/plaited.ts git '{"mode":"worktrees"}'
 ```
 
 7. Record findings with evidence

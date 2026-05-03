@@ -193,9 +193,7 @@ describe('plaited-context scripts', () => {
 
     expect(contextOutput.ok).toBe(true)
     expect(contextOutput.filesToRead).toContain('src/example.ts')
-    expect(
-      contextOutput.commandsToRun.some((command) => command.includes('skills/plaited-context/scripts/git-context.ts')),
-    ).toBe(true)
+    expect(contextOutput.commandsToRun.some((command) => command.includes('./bin/plaited.ts git'))).toBe(true)
 
     const findingOutput = await recordFindingEntry({
       cwd: rootDir,
@@ -449,9 +447,7 @@ describe('plaited-context scripts', () => {
 
     expect(contextOutput.commandsToRun).toContain('bun --bun tsc --noEmit')
     expect(contextOutput.commandsToRun).toContain('bun test <targeted-files-or-surface>')
-    expect(
-      contextOutput.commandsToRun.some((command) => command.includes('skills/plaited-context/scripts/git-context.ts')),
-    ).toBe(true)
+    expect(contextOutput.commandsToRun.some((command) => command.includes('./bin/plaited.ts git'))).toBe(true)
     expect(
       contextOutput.commandsToRun.some(
         (command) => command.includes('skills/typescript-lsp/scripts/run.ts') && command.includes('"type":"symbols"'),
@@ -518,9 +514,7 @@ describe('plaited-context scripts', () => {
     })
 
     expect(contextOutput.ok).toBe(true)
-    expect(
-      contextOutput.commandsToRun.some((command) => command.includes('skills/plaited-context/scripts/git-context.ts')),
-    ).toBe(true)
+    expect(contextOutput.commandsToRun.some((command) => command.includes('./bin/plaited.ts git'))).toBe(true)
     expect(contextOutput.commandsToRun).toContain('bun --bun tsc --noEmit')
     expect(contextOutput.commandsToRun).toContain('bun test <targeted-files-or-surface>')
     expect(contextOutput.commandsToRun).toContain('bun skills/plaited-context/scripts/search.ts')

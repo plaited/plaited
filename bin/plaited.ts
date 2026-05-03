@@ -18,6 +18,8 @@ import {
   behavioralFrontierCli,
   EVAL_COMMAND,
   evalCli,
+  GIT_COMMAND,
+  gitCli,
   SKILLS_COMMAND,
   skillsCli,
   VLLM_COMMAND,
@@ -33,6 +35,7 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   [VLLM_COMMAND]: vllmCli,
   [BEHAVIORAL_FRONTIER_COMMAND]: behavioralFrontierCli,
   [EVAL_COMMAND]: evalCli,
+  [GIT_COMMAND]: gitCli,
   [SKILLS_COMMAND]: skillsCli,
 }
 
