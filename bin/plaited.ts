@@ -24,6 +24,8 @@ import {
   skillsCli,
   VLLM_COMMAND,
   vllmCli,
+  WIKI_COMMAND,
+  wikiCli,
 } from '../src/cli.ts'
 
 // ============================================================================
@@ -37,6 +39,7 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   [EVAL_COMMAND]: evalCli,
   [GIT_COMMAND]: gitCli,
   [SKILLS_COMMAND]: skillsCli,
+  [WIKI_COMMAND]: wikiCli,
 }
 
 // ============================================================================
