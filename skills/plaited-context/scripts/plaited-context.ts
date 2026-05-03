@@ -1421,7 +1421,7 @@ export const assembleContext = ({
 
   const commandsToRun = isBoundaryReview
     ? [
-        `bun skills/plaited-context/scripts/git-context.ts '{"base":"origin/dev","paths":["<boundary-files>"],"includeWorktrees":true}'`,
+        `bun ./bin/plaited.ts git '{"mode":"context","base":"origin/dev","paths":["<boundary-files>"],"includeWorktrees":true}'`,
         'bun --bun tsc --noEmit',
         'bun test <targeted-files-or-surface>',
         `bun skills/typescript-lsp/scripts/run.ts '{"file":"<boundary-file>","operations":[{"type":"symbols"}]}'`,
@@ -1430,13 +1430,13 @@ export const assembleContext = ({
       ]
     : mode === 'review'
       ? [
-          `bun skills/plaited-context/scripts/git-context.ts '{"base":"origin/dev","paths":["<paths>"]}'`,
+          `bun ./bin/plaited.ts git '{"mode":"context","base":"origin/dev","paths":["<paths>"]}'`,
           'bun --bun tsc --noEmit',
           'bun test <targeted-files-or-surface>',
         ]
       : mode === 'implement'
         ? [
-            `bun skills/plaited-context/scripts/git-context.ts '{"base":"origin/dev","paths":["<paths>"]}'`,
+            `bun ./bin/plaited.ts git '{"mode":"context","base":"origin/dev","paths":["<paths>"]}'`,
             'bun --bun tsc --noEmit',
             'bun test <targeted-files-or-surface>',
             'bun skills/plaited-context/scripts/search.ts',
