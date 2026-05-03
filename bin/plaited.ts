@@ -20,6 +20,8 @@ import {
   skillsCli,
   VLLM_COMMAND,
   vllmCli,
+  WIKI_COMMAND,
+  wikiCli,
 } from '../src/cli.ts'
 
 // ============================================================================
@@ -31,6 +33,7 @@ const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   [BEHAVIORAL_FRONTIER_COMMAND]: behavioralFrontierCli,
   [EVAL_COMMAND]: evalCli,
   [SKILLS_COMMAND]: skillsCli,
+  [WIKI_COMMAND]: wikiCli,
 }
 
 // ============================================================================
