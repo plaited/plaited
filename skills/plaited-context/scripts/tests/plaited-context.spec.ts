@@ -193,7 +193,14 @@ describe('plaited-context scripts', () => {
 
     expect(contextOutput.ok).toBe(true)
     expect(contextOutput.filesToRead).toContain('src/example.ts')
-    expect(contextOutput.commandsToRun.some((command) => command.includes('./bin/plaited.ts git'))).toBe(true)
+    expect(
+      contextOutput.commandsToRun.some(
+        (command) =>
+          command.includes('bun ./bin/plaited.ts git') &&
+          command.includes('"mode":"context"') &&
+          command.includes('"base":"origin/dev"'),
+      ),
+    ).toBe(true)
 
     const findingOutput = await recordFindingEntry({
       cwd: rootDir,
@@ -447,20 +454,35 @@ describe('plaited-context scripts', () => {
 
     expect(contextOutput.commandsToRun).toContain('bun --bun tsc --noEmit')
     expect(contextOutput.commandsToRun).toContain('bun test <targeted-files-or-surface>')
-    expect(contextOutput.commandsToRun.some((command) => command.includes('./bin/plaited.ts git'))).toBe(true)
     expect(
       contextOutput.commandsToRun.some(
-        (command) => command.includes('./bin/plaited.ts typescript-lsp') && command.includes('"type":"symbols"'),
+        (command) =>
+          command.includes('bun ./bin/plaited.ts git') &&
+          command.includes('"mode":"context"') &&
+          command.includes('"includeWorktrees":true'),
       ),
     ).toBe(true)
     expect(
       contextOutput.commandsToRun.some(
-        (command) => command.includes('./bin/plaited.ts typescript-lsp') && command.includes('"type":"references"'),
+        (command) =>
+          command.includes('bun skills/typescript-lsp/scripts/run.ts') && command.includes('"type":"symbols"'),
       ),
     ).toBe(true)
     expect(
       contextOutput.commandsToRun.some(
-        (command) => command.includes('./bin/plaited.ts typescript-lsp') && command.includes('"type":"definition"'),
+        (command) =>
+          command.includes('bun skills/typescript-lsp/scripts/run.ts') && command.includes('"type":"references"'),
+      ),
+    ).toBe(true)
+    expect(
+      contextOutput.commandsToRun.some(
+        (command) =>
+          command.includes('bun skills/typescript-lsp/scripts/run.ts') && command.includes('"type":"definition"'),
+      ),
+    ).toBe(true)
+    expect(
+      contextOutput.commandsToRun.some(
+        (command) => command.includes('bun ./bin/plaited.ts agents') && command.includes('"mode":"relevant"'),
       ),
     ).toBe(true)
 
@@ -486,7 +508,7 @@ describe('plaited-context scripts', () => {
     expect(contextOutput.authorityPolicy).toContain('outrank')
   })
 
-  test('context recommends git-context command for implementation mode', async () => {
+  test('context recommends plaited git and skills commands for implementation mode', async () => {
     const rootDir = await createTempWorkspace()
     const dbPath = join(rootDir, '.plaited/context.sqlite')
 
@@ -512,9 +534,16 @@ describe('plaited-context scripts', () => {
     })
 
     expect(contextOutput.ok).toBe(true)
-    expect(contextOutput.commandsToRun.some((command) => command.includes('./bin/plaited.ts git'))).toBe(true)
+    expect(
+      contextOutput.commandsToRun.some(
+        (command) =>
+          command.includes('bun ./bin/plaited.ts git') &&
+          command.includes('"mode":"context"') &&
+          command.includes('"paths":["<paths>"]'),
+      ),
+    ).toBe(true)
     expect(contextOutput.commandsToRun).toContain('bun --bun tsc --noEmit')
     expect(contextOutput.commandsToRun).toContain('bun test <targeted-files-or-surface>')
-    expect(contextOutput.commandsToRun).toContain('bun skills/plaited-context/scripts/search.ts')
+    expect(contextOutput.commandsToRun.some((command) => command.includes('bun ./bin/plaited.ts skills'))).toBe(true)
   })
 })

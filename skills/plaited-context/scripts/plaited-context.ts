@@ -1422,34 +1422,38 @@ export const assembleContext = ({
   const commandsToRun = isBoundaryReview
     ? [
         `bun ./bin/plaited.ts git '{"mode":"context","base":"origin/dev","paths":["<boundary-files>"],"includeWorktrees":true}'`,
+        `bun ./bin/plaited.ts agents '{"mode":"relevant","rootDir":".","paths":["<boundary-files>"]}'`,
         'bun --bun tsc --noEmit',
         'bun test <targeted-files-or-surface>',
-        `bun ./bin/plaited.ts typescript-lsp '{"file":"<boundary-file>","operations":[{"type":"symbols"}]}'`,
-        `bun ./bin/plaited.ts typescript-lsp '{"file":"<boundary-file>","operations":[{"type":"references","line":<line>,"character":<character>}]}'`,
-        `bun ./bin/plaited.ts typescript-lsp '{"file":"<boundary-file>","operations":[{"type":"definition","line":<line>,"character":<character>}]}'`,
+        `bun skills/typescript-lsp/scripts/run.ts '{"file":"<boundary-file>","operations":[{"type":"symbols"}]}'`,
+        `bun skills/typescript-lsp/scripts/run.ts '{"file":"<boundary-file>","operations":[{"type":"references","line":<line>,"character":<character>}]}'`,
+        `bun skills/typescript-lsp/scripts/run.ts '{"file":"<boundary-file>","operations":[{"type":"definition","line":<line>,"character":<character>}]}'`,
       ]
     : mode === 'review'
       ? [
           `bun ./bin/plaited.ts git '{"mode":"context","base":"origin/dev","paths":["<paths>"]}'`,
+          `bun ./bin/plaited.ts agents '{"mode":"relevant","rootDir":".","paths":["<paths>"]}'`,
           'bun --bun tsc --noEmit',
           'bun test <targeted-files-or-surface>',
         ]
       : mode === 'implement'
         ? [
             `bun ./bin/plaited.ts git '{"mode":"context","base":"origin/dev","paths":["<paths>"]}'`,
+            `bun ./bin/plaited.ts agents '{"mode":"relevant","rootDir":".","paths":["<paths>"]}'`,
+            `bun ./bin/plaited.ts skills '{"mode":"catalog","rootDir":"."}'`,
             'bun --bun tsc --noEmit',
             'bun test <targeted-files-or-surface>',
-            'bun skills/plaited-context/scripts/search.ts',
           ]
         : mode === 'docs'
           ? [
-              `bun skills/plaited-context/scripts/scan.ts '{"rootDir":".","include":["AGENTS.md","docs","skills"]}'`,
-              `bun skills/plaited-context/scripts/wiki-context.ts '{"task":"<docs-task>","paths":["docs"],"limit":10}'`,
+              `bun ./bin/plaited.ts wiki '{"mode":"context","rootDir":".","paths":["docs"],"task":"<docs-task>"}'`,
+              `bun ./bin/plaited.ts wiki '{"mode":"diagnose","rootDir":".","paths":["docs"]}'`,
+              `bun ./bin/plaited.ts skills '{"mode":"catalog","rootDir":"."}'`,
             ]
           : [
               'bun --bun tsc --noEmit',
               'bun test <targeted-files-or-surface>',
-              'bun skills/plaited-context/scripts/search.ts',
+              `bun ./bin/plaited.ts skills '{"mode":"catalog","rootDir":"."}'`,
             ]
 
   const sourceOfTruth = unique([

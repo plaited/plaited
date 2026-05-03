@@ -1,6 +1,6 @@
 ---
 name: plaited-context
-description: SQLite-backed Plaited codebase search and context assembly. Use before implementing, reviewing, or updating docs to gather source-grounded files, symbols, patterns, tests, skills, and prior findings.
+description: Mutable context meta-skill that orchestrates stable plaited CLI evidence tools and owns user-tunable findings persistence/adaptation surfaces.
 license: ISC
 compatibility: Requires bun
 ---
@@ -9,11 +9,9 @@ compatibility: Requires bun
 
 ## Purpose
 
-`plaited-context` is a script-first operational context layer for Plaited. It
-indexes source files, AGENTS operational instructions, wiki/reference docs,
-skills, and findings into SQLite so follow-on work starts from source-grounded
-evidence instead of memory. It is also the canonical home for deterministic
-runtime boundary analysis and flow review evidence.
+`plaited-context` is a mutable meta skill. It orchestrates stable `plaited`
+CLI evidence tools and owns the user-tunable persistence and finding adaptation
+surface for review workflows.
 
 Use it before:
 
@@ -23,102 +21,65 @@ Use it before:
 - updating wiki/reference docs and checking for stale guidance
 - large code, docs, or skill edits that need source-grounded context first
 
-## Operational Context
+## Evidence Producers
 
-The scripts resolve runtime context into one of three modes:
+Use stable `plaited` tools for evidence collection:
 
-- `repo`: running inside the Plaited source repository
-- `package`: running from a `node_modules/plaited` installation
-- `workspace`: running from another workspace context
+- `plaited agents`
+- `plaited git`
+- `plaited wiki`
+- `plaited skills`
+- `skills/typescript-lsp/scripts/run.ts` (stable TypeScript LSP runner)
 
-The resolver reports:
+Examples:
 
-```ts
-type OperationalContext = {
-  mode: 'repo' | 'package' | 'workspace'
-  cwd: string
-  workspaceRoot: string
-  repoRoot?: string
-  packageRoot?: string
-  nodeHome?: string
-  dbPath: string
-}
+```bash
+bun ./bin/plaited.ts agents '{"mode":"relevant","rootDir":".","paths":["src/worker/worker.ts"]}'
+bun ./bin/plaited.ts git '{"mode":"context","base":"origin/dev","paths":["src/worker/worker.ts"],"includeWorktrees":true}'
+bun ./bin/plaited.ts wiki '{"mode":"context","rootDir":".","paths":["docs"],"task":"review runtime boundary architecture"}'
+bun skills/typescript-lsp/scripts/run.ts '{"file":"src/worker/worker.ts","operations":[{"type":"symbols"}]}'
+bun ./bin/plaited.ts skills '{"mode":"catalog","rootDir":"."}'
 ```
 
-Override order for DB path:
+## Mutable Persistence Surface
 
-1. JSON input `dbPath`
-2. `PLAITED_CONTEXT_DB`
-3. default `.plaited/context.sqlite` under resolved workspace/node-home
+This skill owns persistence semantics and remains mutable by user choice:
 
-`PLAITED_NODE_HOME` is respected. Defaults never target writable paths inside
-`node_modules` package files.
+- DB backend choice (SQLite by default, replaceable)
+- `assets/schema.sql` and any local migration/init policy
+- finding row semantics and export semantics
 
-## DB Location Rules
+Do not assume context storage must be pre-created for every task. Create it
+only when findings persistence/export is needed.
 
-- `assets/` is static shipped material only (`schema.sql`, query templates).
-- Writable DB storage is outside skill assets by default.
-- Recommended default DB location: `.plaited/context.sqlite`.
-
-## Script Workflow
-
-1. Initialize DB
+### Optional initialization
 
 ```bash
 bun skills/plaited-context/scripts/init-db.ts '{"dbPath":".plaited/context.sqlite"}'
 ```
 
-2. Scan and index source/wiki/skills/AGENTS instructions
-
-```bash
-bun skills/plaited-context/scripts/scan.ts '{"rootDir":".","include":["AGENTS.md","src","skills","docs"],"force":false}'
-```
-
-3. Assemble task context
-
-```bash
-bun skills/plaited-context/scripts/context.ts '{"task":"review runtime boundary diagnostics","mode":"review","paths":["src/worker/worker.ts"]}'
-```
-
-4. Assemble wiki context (relevance + cleanup candidates)
-
-```bash
-bun skills/plaited-context/scripts/wiki-context.ts '{"task":"review runtime boundary architecture","paths":["src/worker"],"limit":10}'
-```
-
-5. Run targeted search
-
-```bash
-bun skills/plaited-context/scripts/search.ts '{"query":"useSnapshot reportSnapshot","limit":20}'
-```
-
-6. Run TypeScript LSP probes for alias-heavy boundary flows:
-
-```bash
-bun ./bin/plaited.ts typescript-lsp '{"file":"src/worker/worker.ts","operations":[{"type":"symbols"}]}'
-bun ./bin/plaited.ts typescript-lsp '{"file":"src/worker/worker.ts","operations":[{"type":"references","line":120,"character":8}]}'
-bun ./bin/plaited.ts typescript-lsp '{"file":"src/worker/worker.ts","operations":[{"type":"definition","line":120,"character":8}]}'
-```
-
-8. Assemble local read-only Git context for review/planning evidence
-
-```bash
-bun ./bin/plaited.ts git '{"mode":"context","base":"origin/dev","paths":["skills/plaited-context"],"includeWorktrees":true}'
-bun ./bin/plaited.ts git '{"mode":"history","base":"origin/dev","paths":["skills/plaited-context"],"limit":20}'
-bun ./bin/plaited.ts git '{"mode":"worktrees"}'
-```
-
-7. Record findings with evidence
+### Record findings
 
 ```bash
 bun skills/plaited-context/scripts/record-finding.ts '{"finding":{"kind":"anti-pattern","status":"candidate","summary":"Internal handlers should not catch ZodError locally.","evidence":[{"path":"src/worker/worker.ts","line":100,"symbol":"startWorker"}]}}'
 ```
 
-8. Export review JSON
+### Export findings
 
 ```bash
 bun skills/plaited-context/scripts/export-review.ts '{"status":["candidate","validated"],"format":"json"}'
 ```
+
+## Mutable Adaptation Surface
+
+`adapt-findings.ts` is a skill-local best-effort converter for generated tool
+or skill output that does not have a stable canonical envelope yet.
+
+Contract:
+
+- returns `{ ok, findings, warnings }`
+- never writes DB state directly
+- may drop malformed entries with warnings
 
 ## Follow-Up Analysis
 
@@ -180,8 +141,8 @@ mutation, branch deletion, or worktree removal.
 
 ## Script Contracts
 
-All scripts accept one JSON argument and print JSON output. They support schema
-introspection:
+All remaining mutable scripts accept one JSON argument and print JSON output.
+They support schema introspection:
 
 ```bash
 bun skills/plaited-context/scripts/<script>.ts --schema input

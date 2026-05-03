@@ -47,7 +47,9 @@ Every reviewed boundary contract must define:
 Gather source-grounded context first:
 
 ```bash
-bun skills/plaited-context/scripts/context.ts '{"task":"review boundary contract policy","mode":"review","paths":["<paths>"]}'
+bun ./bin/plaited.ts agents '{"mode":"relevant","rootDir":".","paths":["<paths>"]}'
+bun ./bin/plaited.ts git '{"mode":"context","base":"origin/dev","paths":["<paths>"],"includeWorktrees":true}'
+bun ./bin/plaited.ts wiki '{"mode":"context","rootDir":".","paths":["docs"],"task":"review boundary contract policy"}'
 ```
 
 Run targeted checks on touched files when runtime code is involved:

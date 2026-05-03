@@ -5,7 +5,9 @@ Status: active boundary review reference.
 ## Required Evidence Workflow
 
 ```bash
-bun skills/plaited-context/scripts/context.ts '{"task":"review boundary contract policy","mode":"review","paths":["<paths>"]}'
+bun ./bin/plaited.ts agents '{"mode":"relevant","rootDir":".","paths":["<paths>"]}'
+bun ./bin/plaited.ts git '{"mode":"context","base":"origin/dev","paths":["<paths>"],"includeWorktrees":true}'
+bun ./bin/plaited.ts wiki '{"mode":"context","rootDir":".","paths":["docs"],"task":"review boundary contract policy"}'
 bun --bun tsc --noEmit
 bun test <targeted-files-or-surface>
 bun ./bin/plaited.ts typescript-lsp '{"file":"<boundary-file>","operations":[{"type":"symbols"}]}'

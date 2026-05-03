@@ -175,7 +175,7 @@ export const loadSkillCatalog = async (rootDir: string): Promise<SkillCatalogLoa
   return { catalog, errors }
 }
 
-const loadSkillRegistry = async (rootDir: string): Promise<SkillRegistryLoadResult> => {
+export const loadSkillRegistry = async (rootDir: string): Promise<SkillRegistryLoadResult> => {
   const skillDirs = await findSkillDirectories(rootDir)
   const registry: SkillRegistryEntry[] = []
   const errors: SkillCatalogError[] = []

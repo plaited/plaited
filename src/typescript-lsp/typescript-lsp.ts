@@ -542,13 +542,13 @@ const LspSessionInputSchema = LspInputBaseSchema.extend({
 })
 
 const LspWorkspaceInputByFilesSchema = LspInputBaseSchema.extend({
-  file: z.undefined().optional(),
+  file: z.string().optional().describe('Optional file path ignored for workspace operations.'),
   files: z.array(z.string().min(1)).min(1).describe('Explicit workspace files for workspace operations.'),
   operations: z.array(WorkspaceOperationSchema).min(1).describe('Workspace operations to execute.'),
 })
 
 const LspWorkspaceInputByTargetsSchema = LspInputBaseSchema.extend({
-  file: z.undefined().optional(),
+  file: z.string().optional().describe('Optional file path ignored for workspace operations.'),
   targets: z.array(z.string().min(1)).min(1).describe('Glob targets for workspace operations.'),
   operations: z.array(WorkspaceOperationSchema).min(1).describe('Workspace operations to execute.'),
 })
@@ -1170,10 +1170,17 @@ const executeLsp = async (input: LspInput, ctx?: LspExecutionContext): Promise<L
 
   const workspaceBase = ctx?.workspace ?? process.cwd()
   const rootDir = resolve(workspaceBase, input.rootDir)
-  const primaryFile = input.file ?? input.files?.[0] ?? input.targets?.[0] ?? '.'
-  const absolutePath = input.file ? resolveFilePath(input.file, rootDir) : null
+  const needsLsp = input.operations.some(
+    (op) => !['workspace-scan', 'public-exports', 'export-consumers', 'candidate-unused-exports'].includes(op.type),
+  )
+  const primaryFile = needsLsp ? (input.file ?? '.') : (input.files?.[0] ?? input.targets?.[0] ?? '.')
+  const absolutePath = needsLsp && input.file ? resolveFilePath(input.file, rootDir) : null
   const uri = absolutePath ? `file://${absolutePath}` : null
   let text: string | null = null
+
+  if (needsLsp && !absolutePath) {
+    throw new Error('file is required for LSP session operations')
+  }
 
   if (absolutePath) {
     const file = Bun.file(absolutePath)
@@ -1181,14 +1188,6 @@ const executeLsp = async (input: LspInput, ctx?: LspExecutionContext): Promise<L
       throw new Error(`File not found: ${absolutePath}`)
     }
     text = await file.text()
-  }
-
-  const needsLsp = input.operations.some(
-    (op) => !['workspace-scan', 'public-exports', 'export-consumers', 'candidate-unused-exports'].includes(op.type),
-  )
-
-  if (needsLsp && !absolutePath) {
-    throw new Error('file is required for LSP session operations')
   }
 
   let client: LspClient | null = null

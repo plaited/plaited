@@ -96,6 +96,22 @@ describe('typescript-lsp CLI registration and schema', () => {
     expect(output.results[0]?.type).toBe('workspace-scan')
   })
 
+  test('workspace operations ignore optional file when files are provided', async () => {
+    const result = await runTypescriptLsp({
+      file: 'does-not-exist.ts',
+      files: ['src/cli.ts'],
+      operations: [{ type: 'workspace-scan' }],
+    })
+
+    expect(result.exitCode).toBe(0)
+    const output = JSON.parse(result.stdout.trim()) as {
+      results: Array<{ type: string; data?: Array<{ file: string }> }>
+    }
+    expect(output.results[0]?.type).toBe('workspace-scan')
+    const files = output.results[0]?.data?.map((entry) => entry.file) ?? []
+    expect(files).toContain('src/cli.ts')
+  })
+
   test('rejects workspace operations when only file is provided', async () => {
     const result = await runTypescriptLsp({
       file: 'src/cli.ts',
