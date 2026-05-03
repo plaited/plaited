@@ -2,14 +2,12 @@
 
 `plaited-context` keeps SQL templates in this directory as static assets.
 
-Slice 0 ships a schema-first substrate. Runtime scripts currently issue
-parameterized SQL directly in TypeScript while this query catalog is kept for
-future expansion (for example: saved search presets, review exports, and
-finding triage views).
+Runtime scripts currently issue parameterized SQL directly in TypeScript while
+this query catalog stays available for future expansion.
 
-Planned template groups:
+Current persistence focus:
 
-- file/symbol discovery by path, symbol name, and import edge
-- stale-doc candidate discovery from docs-to-source drift
-- review exports grouped by finding status and module boundary
-- context assembly ranking for review/implement/doc modes
+- finding lifecycle storage (`candidate`, `validated`, `retired`)
+- finding evidence rows
+- cached top-level `plaited` evidence payloads
+- review export assembly from persisted findings and cache rows

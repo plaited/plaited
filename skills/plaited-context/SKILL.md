@@ -29,7 +29,7 @@ Use stable `plaited` tools for evidence collection:
 - `plaited git`
 - `plaited wiki`
 - `plaited skills`
-- `skills/typescript-lsp/scripts/run.ts` (stable TypeScript LSP runner)
+- `plaited typescript-lsp`
 
 Examples:
 
@@ -37,7 +37,7 @@ Examples:
 bun ./bin/plaited.ts agents '{"mode":"relevant","rootDir":".","paths":["src/worker/worker.ts"]}'
 bun ./bin/plaited.ts git '{"mode":"context","base":"origin/dev","paths":["src/worker/worker.ts"],"includeWorktrees":true}'
 bun ./bin/plaited.ts wiki '{"mode":"context","rootDir":".","paths":["docs"],"task":"review runtime boundary architecture"}'
-bun skills/typescript-lsp/scripts/run.ts '{"file":"src/worker/worker.ts","operations":[{"type":"symbols"}]}'
+bun ./bin/plaited.ts typescript-lsp '{"file":"src/worker/worker.ts","operations":[{"type":"symbols"}]}'
 bun ./bin/plaited.ts skills '{"mode":"catalog","rootDir":"."}'
 ```
 
@@ -47,7 +47,9 @@ This skill owns persistence semantics and remains mutable by user choice:
 
 - DB backend choice (SQLite by default, replaceable)
 - `assets/schema.sql` and any local migration/init policy
-- finding row semantics and export semantics
+- finding row semantics
+- cached top-level CLI evidence rows
+- export semantics for persisted findings and cache rows
 
 Do not assume context storage must be pre-created for every task. Create it
 only when findings persistence/export is needed.
@@ -70,6 +72,18 @@ bun skills/plaited-context/scripts/record-finding.ts '{"finding":{"kind":"anti-p
 bun skills/plaited-context/scripts/export-review.ts '{"status":["candidate","validated"],"format":"json"}'
 ```
 
+### Cache evidence rows
+
+```bash
+bun skills/plaited-context/scripts/cache-evidence.ts '{"tool":"git","topic":"context","key":"src/worker","command":"bun ./bin/plaited.ts git \"{...}\"","input":{"mode":"context"},"output":{"ok":true},"tags":["review"]}'
+```
+
+### Query cached evidence
+
+```bash
+bun skills/plaited-context/scripts/query-cache.ts '{"tool":"git","topic":"context","limit":10}'
+```
+
 ## Mutable Adaptation Surface
 
 `adapt-findings.ts` is a skill-local best-effort converter for generated tool
@@ -83,11 +97,13 @@ Contract:
 
 ## Follow-Up Analysis
 
-`plaited-context` assembles source-grounded context; it does not run
-verification tools by default. When a task mentions behavioral specs,
-frontiers, replay, deadlocks, trigger sequences, or scheduler-policy
-sensitivity, assemble context first, then use `plaited-frontier-analysis` for the
-`behavioral-frontier` CLI workflow.
+`plaited-context` does not assemble or index repository context directly.
+Collect evidence with top-level `plaited` commands, then cache/query/export
+with the persistence scripts in this skill.
+
+When a task mentions behavioral specs, frontiers, replay, deadlocks, trigger
+sequences, or scheduler-policy sensitivity, use `plaited-frontier-analysis`
+with the `behavioral-frontier` CLI workflow.
 
 Useful follow-up commands:
 
@@ -105,39 +121,20 @@ Do not promote guesses into validated findings.
 
 ## Source Authority
 
-When sources conflict, prioritize:
+When sources conflict in review work, prioritize:
 
 1. code in `src/` and other executable sources
 2. `AGENTS.md` operational instructions by scope
 3. skill instructions (`skills/*/SKILL.md`)
 4. wiki/reference docs (for synthesis and background)
-5. other indexed text
 
 `AGENTS.md` files are operational instructions, not wiki docs.
 
 Wiki docs are searchable synthesis/reference material and do not outrank code,
 `AGENTS.md`, or applicable skills.
 
-Wiki cleanup candidates are review evidence only; they are not automatic rewrite
-actions.
-
-Use `scan.ts`, `search.ts`, `context.ts`, and `wiki-context.ts` to assemble
-context instead of manually reading broad docs trees.
-
-## Git Context Scope
-
-Git context in this skill is read-only evidence for review and planning:
-
-- local branch/HEAD/upstream state
-- worktree state and possible stale/prunable branches
-- merge-base, commits since base, changed files since base
-- path-specific recent commit history
-
-Git context augments code/test/skill/wiki context; it does not replace source
-or test evidence and does not override `AGENTS.md`.
-
-Git context commands in this skill do not authorize merge/rebase/reset/stash
-mutation, branch deletion, or worktree removal.
+Use direct `plaited` evidence commands for collection, then optionally cache
+and query results with `cache-evidence.ts` and `query-cache.ts`.
 
 ## Script Contracts
 
@@ -148,5 +145,14 @@ They support schema introspection:
 bun skills/plaited-context/scripts/<script>.ts --schema input
 bun skills/plaited-context/scripts/<script>.ts --schema output
 ```
+
+Remaining script surfaces:
+
+- `init-db.ts`
+- `adapt-findings.ts`
+- `record-finding.ts`
+- `cache-evidence.ts`
+- `query-cache.ts`
+- `export-review.ts`
 
 JSON exports are intended for PR and human review workflows.

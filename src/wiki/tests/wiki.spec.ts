@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
 const CLI_PACKAGE_ROOT = resolve(import.meta.dir, '../../../')
-const TYPESCRIPT_LSP_RUNNER_COMMAND = 'bun skills/typescript-lsp/scripts/run.ts '
+const TYPESCRIPT_LSP_RUNNER_COMMAND = 'bun ./bin/plaited.ts typescript-lsp '
 
 const findTypescriptLspCommand = (commands: string[]): string | undefined =>
   commands.find((command) => command.startsWith(TYPESCRIPT_LSP_RUNNER_COMMAND))
@@ -142,12 +142,11 @@ See [outside](../../${outsideDir.split('/').pop()}/outside.md).
 
     const payload = parseTypescriptLspCommandPayload(lspCommand)
     expect(payload.file).toBe('src/wiki/wiki.schemas.ts')
-    expect(payload.file).not.toBe('skills/typescript-lsp/scripts/run.ts')
     expect(payload.files).toEqual(['src/wiki/wiki.schemas.ts'])
-    expect(payload.operations).toEqual([{ type: 'workspace_scan' }])
+    expect(payload.operations).toEqual([{ type: 'workspace-scan' }])
     expect(payload.targets).toBeUndefined()
 
-    const lspResult = await Bun.$`bun skills/typescript-lsp/scripts/run.ts ${JSON.stringify(payload)}`
+    const lspResult = await Bun.$`bun ./bin/plaited.ts typescript-lsp ${JSON.stringify(payload)}`
       .cwd(CLI_PACKAGE_ROOT)
       .quiet()
       .nothrow()
@@ -156,7 +155,7 @@ See [outside](../../${outsideDir.split('/').pop()}/outside.md).
     const lspOutput = JSON.parse(lspResult.stdout.toString().trim()) as {
       results: Array<{ type: string; data?: unknown }>
     }
-    const workspaceScanResult = lspOutput.results.find((entry) => entry.type === 'workspace_scan')
+    const workspaceScanResult = lspOutput.results.find((entry) => entry.type === 'workspace-scan')
     expect(workspaceScanResult).toBeDefined()
   })
 

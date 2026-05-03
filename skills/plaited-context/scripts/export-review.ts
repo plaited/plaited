@@ -1,8 +1,8 @@
 import * as z from 'zod'
 import { makeCli } from '../../../src/cli.ts'
+import { readCachedEvidenceRow } from './cache-evidence.ts'
 import {
   closeContextDatabase,
-  exportReviewData,
   FindingKindSchema,
   FindingStatusSchema,
   OperationalContextOverrideSchema,
@@ -32,108 +32,21 @@ const ExportedFindingSchema = z
   })
   .describe('Finding row included in a review export.')
 
-const ExportedContextRunSchema = z
+const ExportedCachedEvidenceSchema = z
   .object({
-    id: z.number().int().positive().describe('Context run row id.'),
-    task: z.string().min(1).describe('Task string used for context assembly.'),
-    mode: z.string().min(1).describe('Context assembly mode used for the run.'),
-    paths: z.array(z.string()).describe('Input paths used by the run.'),
-    result: z.unknown().nullable().describe('Serialized run output snapshot.'),
+    id: z.number().int().positive().describe('Cache row id.'),
+    tool: z.string().min(1).describe('Evidence producer name.'),
+    topic: z.string().min(1).describe('Topic label for this row.'),
+    key: z.string().nullable().describe('Optional deterministic key for keyed cache rows.'),
+    summary: z.string().nullable().describe('Optional reviewer summary text.'),
+    command: z.string().nullable().describe('Optional collection command.'),
+    tags: z.array(z.string()).describe('Tag labels attached to this row.'),
+    input: z.unknown().describe('Cached producer input payload.'),
+    output: z.unknown().describe('Cached producer output payload.'),
     createdAt: z.string().min(1).describe('Creation timestamp in ISO format.'),
+    updatedAt: z.string().min(1).describe('Last update timestamp in ISO format.'),
   })
-  .describe('Recorded context assembly run included in export.')
-
-const ContextAuthorityEntrySchema = z
-  .object({
-    rank: z.number().int().positive().describe('Authority rank where lower is stronger.'),
-    authority: z
-      .enum(['source', 'agent-instructions', 'skill', 'wiki', 'other'])
-      .describe('Authority source classification.'),
-    label: z.string().min(1).describe('Short authority label.'),
-    description: z.string().min(1).describe('Authority explanation.'),
-  })
-  .describe('Single authority ordering entry.')
-
-const WikiBrokenLinkSchema = z
-  .object({
-    path: z.string().min(1).describe('Wiki page that contains the broken local link.'),
-    linkValue: z.string().min(1).describe('Raw markdown link value.'),
-    linkText: z.string().min(1).describe('Extracted display text for the link.'),
-    targetPath: z.string().nullable().describe('Normalized target path when resolvable.'),
-    reason: z.string().min(1).describe('Reason the link is treated as broken.'),
-    authority: z.literal('wiki').describe('Authority category for this warning.'),
-    provenance: z.array(z.string()).describe('Evidence paths used to produce this warning.'),
-  })
-  .describe('Broken wiki local-link evidence row.')
-
-const WikiCleanupCandidateSchema = z
-  .object({
-    path: z.string().min(1).describe('Wiki page path requiring cleanup review.'),
-    kind: z
-      .enum(['broken-local-link', 'missing-target-file', 'retired-skill-reference', 'orphan-page'])
-      .describe('Deterministic cleanup candidate kind.'),
-    reason: z.string().min(1).describe('Cleanup rationale.'),
-    authority: z.literal('wiki').describe('Authority category for this candidate.'),
-    provenance: z.array(z.string()).describe('Evidence references supporting the candidate.'),
-  })
-  .describe('Wiki cleanup candidate for human review.')
-
-const WikiContextPageSchema = z
-  .object({
-    path: z.string().min(1).describe('Wiki page path.'),
-    title: z.string().min(1).describe('Wiki page title (parsed or inferred).'),
-    reason: z.string().min(1).describe('Why this page is relevant to the task.'),
-    authority: z.literal('wiki').describe('Authority category for wiki pages.'),
-    headings: z.array(z.string()).describe('Captured markdown headings.'),
-    outboundLocalReferences: z.array(z.string()).describe('Captured outbound local references.'),
-    warnings: z.array(z.string()).describe('Cleanup warnings related to this page.'),
-    provenance: z
-      .object({
-        matchedTerms: z.array(z.string()).describe('Task terms that matched this page.'),
-        matchedIn: z
-          .array(z.enum(['path', 'title', 'heading', 'body', 'outbound-link', 'task-path']))
-          .describe('Fields where task-term matches were observed.'),
-      })
-      .describe('Deterministic relevance provenance.'),
-  })
-  .describe('Relevant wiki page entry.')
-
-const WikiContextSchema = z
-  .object({
-    ok: z.literal(true).describe('Indicates wiki context assembly completed successfully.'),
-    wikiPages: z.array(WikiContextPageSchema).describe('Relevant wiki pages for the task.'),
-    agentInstructions: z
-      .array(
-        z.object({
-          path: z.string().min(1).describe('AGENTS instruction file path.'),
-          scopePath: z.string().min(1).describe('Scoped path governed by this AGENTS file.'),
-          authority: z.literal('agent-instructions').describe('Authority category.'),
-          reason: z.string().min(1).describe('Reason this AGENTS file is relevant.'),
-          provenance: z.array(z.string()).describe('Deterministic relevance evidence.'),
-        }),
-      )
-      .describe('Relevant AGENTS operational instructions.'),
-    skills: z
-      .array(
-        z.object({
-          name: z.string().min(1).describe('Skill name.'),
-          path: z.string().min(1).describe('Skill path.'),
-          authority: z.literal('skill').describe('Authority category.'),
-          reason: z.string().min(1).describe('Reason this skill is relevant.'),
-          provenance: z.array(z.string()).describe('Deterministic relevance evidence.'),
-        }),
-      )
-      .describe('Relevant skills for this task.'),
-    sourceOfTruth: z.array(ContextAuthorityEntrySchema).describe('Explicit source authority ordering.'),
-    authorityPolicy: z
-      .string()
-      .min(1)
-      .describe('Conflict policy describing why code/AGENTS/skills outrank wiki assertions.'),
-    brokenLinks: z.array(WikiBrokenLinkSchema).describe('Broken wiki local-link evidence.'),
-    cleanupCandidates: z.array(WikiCleanupCandidateSchema).describe('Wiki cleanup candidate evidence.'),
-    openQuestions: z.array(z.string()).describe('Open follow-up questions for reviewers.'),
-  })
-  .describe('Wiki review context export for deterministic human review.')
+  .describe('Cached top-level plaited evidence row included in export.')
 
 export const ExportReviewInputSchema = OperationalContextOverrideSchema.extend({
   status: z
@@ -142,10 +55,8 @@ export const ExportReviewInputSchema = OperationalContextOverrideSchema.extend({
     .default(['candidate', 'validated', 'retired'])
     .describe('Finding statuses to include in the export.'),
   format: z.enum(['json']).default('json').describe('Export format.'),
-  wikiTask: z.string().min(1).default('review repository wiki context').describe('Wiki relevance task prompt.'),
-  wikiPaths: z.array(z.string().min(1)).default([]).describe('Optional task paths for wiki relevance scoping.'),
-  wikiLimit: z.number().int().positive().max(100).default(10).describe('Maximum wiki pages to include in review.'),
-}).describe('Input contract for exporting findings and context runs.')
+  cacheLimit: z.number().int().positive().max(1000).default(100).describe('Maximum cached evidence rows to include.'),
+}).describe('Input contract for exporting persisted findings and cached top-level evidence.')
 
 export const ExportReviewOutputSchema = z
   .object({
@@ -154,8 +65,7 @@ export const ExportReviewOutputSchema = z
     dbPath: z.string().min(1).describe('Resolved writable SQLite DB path.'),
     exportedAt: z.string().min(1).describe('Export timestamp in ISO format.'),
     findings: z.array(ExportedFindingSchema).describe('Exported findings matching selected statuses.'),
-    contextRuns: z.array(ExportedContextRunSchema).describe('Exported context run history.'),
-    wikiContext: WikiContextSchema.describe('Wiki review evidence and relevance context.'),
+    cachedEvidence: z.array(ExportedCachedEvidenceSchema).describe('Exported cached top-level evidence rows.'),
   })
   .describe('Output contract for review export.')
 
@@ -164,29 +74,107 @@ export type ExportReviewOutput = z.infer<typeof ExportReviewOutputSchema>
 
 export const exportReview = async (input: ExportReviewInput): Promise<ExportReviewOutput> => {
   const status = input.status ?? ['candidate', 'validated', 'retired']
-  const wikiTask = input.wikiTask ?? 'review repository wiki context'
-  const wikiPaths = input.wikiPaths ?? []
-  const wikiLimit = input.wikiLimit ?? 10
+  const cacheLimit = input.cacheLimit ?? 100
   const context = await resolveOperationalContext(input)
   const db = await openContextDatabase({ dbPath: context.dbPath })
 
   try {
-    const exported = exportReviewData({
-      db,
-      statuses: status,
-      wikiTask,
-      wikiPaths,
-      wikiLimit,
-    })
+    const placeholders = status.map(() => '?').join(', ')
+    const findings = db
+      .query(
+        `SELECT id, kind, status, summary, details, created_at, updated_at
+         FROM findings
+         WHERE status IN (${placeholders})
+         ORDER BY id ASC`,
+      )
+      .all(...status) as Array<{
+      id: number
+      kind: z.infer<typeof FindingKindSchema>
+      status: z.infer<typeof FindingStatusSchema>
+      summary: string
+      details: string | null
+      created_at: string
+      updated_at: string
+    }>
+
+    const evidenceRows = db
+      .query(
+        `SELECT finding_id, path, line, symbol, excerpt
+         FROM finding_evidence
+         WHERE finding_id IN (${findings.map(() => '?').join(', ') || 'NULL'})
+         ORDER BY id ASC`,
+      )
+      .all(...findings.map((finding) => finding.id)) as Array<{
+      finding_id: number
+      path: string
+      line: number | null
+      symbol: string | null
+      excerpt: string | null
+    }>
+
+    const evidenceByFinding = new Map<number, Array<z.infer<typeof ExportedEvidenceSchema>>>()
+    for (const evidence of evidenceRows) {
+      const collection = evidenceByFinding.get(evidence.finding_id) ?? []
+      collection.push(
+        ExportedEvidenceSchema.parse({
+          path: evidence.path,
+          line: evidence.line ?? undefined,
+          symbol: evidence.symbol ?? undefined,
+          excerpt: evidence.excerpt ?? undefined,
+        }),
+      )
+      evidenceByFinding.set(evidence.finding_id, collection)
+    }
+
+    const cachedEvidenceRows = db
+      .query(
+        `SELECT id,
+                tool,
+                topic,
+                cache_key,
+                summary,
+                command,
+                tags_json,
+                input_json,
+                output_json,
+                created_at,
+                updated_at
+         FROM evidence_cache
+         ORDER BY id DESC
+         LIMIT ?`,
+      )
+      .all(cacheLimit) as Array<{
+      id: number
+      tool: string
+      topic: string
+      cache_key: string | null
+      summary: string | null
+      command: string | null
+      tags_json: string
+      input_json: string
+      output_json: string
+      created_at: string
+      updated_at: string
+    }>
+
+    const cachedEvidence = cachedEvidenceRows.map((row) => readCachedEvidenceRow(row))
 
     return {
       ok: true,
       format: 'json',
       dbPath: context.dbPath,
       exportedAt: new Date().toISOString(),
-      findings: exported.findings,
-      contextRuns: exported.contextRuns,
-      wikiContext: exported.wikiContext,
+      findings: findings.map((finding) => ({
+        id: finding.id,
+        kind: finding.kind,
+        status: finding.status,
+        summary: finding.summary,
+        details: finding.details,
+        createdAt: finding.created_at,
+        updatedAt: finding.updated_at,
+        evidence: evidenceByFinding.get(finding.id) ?? [],
+      })),
+      cachedEvidence,
     }
   } finally {
     closeContextDatabase(db)

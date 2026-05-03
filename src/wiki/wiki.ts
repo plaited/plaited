@@ -16,7 +16,7 @@ const DEFAULT_IGNORE_GLOBS = [
   '**/temp/**',
 ]
 
-const TYPESCRIPT_LSP_SKILL_RUNNER = 'skills/typescript-lsp/scripts/run.ts'
+const TYPESCRIPT_LSP_COMMAND = './bin/plaited.ts typescript-lsp'
 const TYPESCRIPT_LSP_SCAN_FILE_GLOBS = ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx']
 const TYPESCRIPT_TEST_FILE_PATTERN = /(^|\/)(tests?\/|.*\.(spec|test)\.[jt]sx?$)/
 
@@ -496,9 +496,9 @@ const buildSuggestedNextCommands = async ({
     const workspaceScanPayload = JSON.stringify({
       file: selectedLspTargetFile,
       files: [selectedLspTargetFile],
-      operations: [{ type: 'workspace_scan' }],
+      operations: [{ type: 'workspace-scan' }],
     })
-    suggestedCommands.push(`bun ${TYPESCRIPT_LSP_SKILL_RUNNER} ${quoteShellArg(workspaceScanPayload)}`)
+    suggestedCommands.push(`bun ${TYPESCRIPT_LSP_COMMAND} ${quoteShellArg(workspaceScanPayload)}`)
   }
 
   suggestedCommands.push(`bun ./bin/plaited.ts skills '{"mode":"catalog","rootDir":"."}'`)

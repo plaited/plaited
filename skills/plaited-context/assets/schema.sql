@@ -1,119 +1,5 @@
 PRAGMA foreign_keys = ON;
 
-CREATE TABLE IF NOT EXISTS files (
-  path TEXT PRIMARY KEY,
-  kind TEXT NOT NULL CHECK (kind IN ('source', 'skill', 'agent-instructions', 'wiki', 'config', 'other')),
-  ext TEXT NOT NULL,
-  size_bytes INTEGER NOT NULL,
-  mtime_ms INTEGER NOT NULL,
-  content TEXT NOT NULL,
-  indexed_at TEXT NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_files_kind ON files(kind);
-CREATE INDEX IF NOT EXISTS idx_files_indexed_at ON files(indexed_at DESC);
-
-CREATE TABLE IF NOT EXISTS symbols (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  file_path TEXT NOT NULL,
-  name TEXT NOT NULL,
-  kind TEXT NOT NULL,
-  line INTEGER NOT NULL,
-  FOREIGN KEY (file_path) REFERENCES files(path) ON DELETE CASCADE,
-  UNIQUE (file_path, name, kind, line)
-);
-
-CREATE INDEX IF NOT EXISTS idx_symbols_name ON symbols(name);
-CREATE INDEX IF NOT EXISTS idx_symbols_file_path ON symbols(file_path);
-
-CREATE TABLE IF NOT EXISTS imports (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  file_path TEXT NOT NULL,
-  specifier TEXT NOT NULL,
-  line INTEGER NOT NULL,
-  is_type INTEGER NOT NULL DEFAULT 0 CHECK (is_type IN (0, 1)),
-  FOREIGN KEY (file_path) REFERENCES files(path) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS idx_imports_specifier ON imports(specifier);
-CREATE INDEX IF NOT EXISTS idx_imports_file_path ON imports(file_path);
-
-CREATE TABLE IF NOT EXISTS exports (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  file_path TEXT NOT NULL,
-  name TEXT NOT NULL,
-  kind TEXT NOT NULL,
-  line INTEGER NOT NULL,
-  FOREIGN KEY (file_path) REFERENCES files(path) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS idx_exports_name ON exports(name);
-CREATE INDEX IF NOT EXISTS idx_exports_file_path ON exports(file_path);
-
-CREATE TABLE IF NOT EXISTS skills (
-  path TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  description TEXT NOT NULL,
-  license TEXT,
-  compatibility TEXT,
-  indexed_at TEXT NOT NULL,
-  FOREIGN KEY (path) REFERENCES files(path) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS idx_skills_name ON skills(name);
-
-CREATE TABLE IF NOT EXISTS docs (
-  -- Stores wiki/reference markdown pages (non-skill, non-AGENTS).
-  path TEXT PRIMARY KEY,
-  title TEXT,
-  body TEXT NOT NULL,
-  indexed_at TEXT NOT NULL,
-  FOREIGN KEY (path) REFERENCES files(path) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS idx_docs_indexed_at ON docs(indexed_at DESC);
-
-CREATE TABLE IF NOT EXISTS doc_headings (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  path TEXT NOT NULL,
-  heading TEXT NOT NULL,
-  level INTEGER NOT NULL CHECK (level BETWEEN 1 AND 6),
-  line INTEGER,
-  order_index INTEGER NOT NULL,
-  indexed_at TEXT NOT NULL,
-  FOREIGN KEY (path) REFERENCES docs(path) ON DELETE CASCADE,
-  UNIQUE (path, order_index)
-);
-
-CREATE INDEX IF NOT EXISTS idx_doc_headings_path ON doc_headings(path);
-CREATE INDEX IF NOT EXISTS idx_doc_headings_heading ON doc_headings(heading);
-
-CREATE TABLE IF NOT EXISTS doc_links (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  path TEXT NOT NULL,
-  link_value TEXT NOT NULL,
-  link_text TEXT NOT NULL,
-  target_path TEXT,
-  target_exists INTEGER NOT NULL CHECK (target_exists IN (0, 1)),
-  indexed_at TEXT NOT NULL,
-  FOREIGN KEY (path) REFERENCES docs(path) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS idx_doc_links_path ON doc_links(path);
-CREATE INDEX IF NOT EXISTS idx_doc_links_target_path ON doc_links(target_path);
-CREATE INDEX IF NOT EXISTS idx_doc_links_target_exists ON doc_links(target_exists);
-
-CREATE TABLE IF NOT EXISTS agent_instructions (
-  path TEXT PRIMARY KEY,
-  scope_path TEXT NOT NULL,
-  body TEXT NOT NULL,
-  indexed_at TEXT NOT NULL,
-  FOREIGN KEY (path) REFERENCES files(path) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS idx_agent_instructions_scope ON agent_instructions(scope_path);
-CREATE INDEX IF NOT EXISTS idx_agent_instructions_indexed_at ON agent_instructions(indexed_at DESC);
-
 CREATE TABLE IF NOT EXISTS findings (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   kind TEXT NOT NULL CHECK (kind IN ('pattern', 'anti-pattern', 'stale-doc', 'boundary-rule', 'question')),
@@ -141,16 +27,24 @@ CREATE TABLE IF NOT EXISTS finding_evidence (
 CREATE INDEX IF NOT EXISTS idx_finding_evidence_finding_id ON finding_evidence(finding_id);
 CREATE INDEX IF NOT EXISTS idx_finding_evidence_path ON finding_evidence(path);
 
-CREATE TABLE IF NOT EXISTS context_runs (
+CREATE TABLE IF NOT EXISTS evidence_cache (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  task TEXT NOT NULL,
-  mode TEXT NOT NULL,
-  paths_json TEXT NOT NULL,
-  result_json TEXT NOT NULL,
-  created_at TEXT NOT NULL
+  tool TEXT NOT NULL,
+  topic TEXT NOT NULL,
+  cache_key TEXT,
+  summary TEXT,
+  command TEXT,
+  tags_json TEXT NOT NULL DEFAULT '[]',
+  input_json TEXT NOT NULL,
+  output_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_context_runs_created_at ON context_runs(created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_evidence_cache_key ON evidence_cache(tool, topic, cache_key)
+WHERE cache_key IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_evidence_cache_tool_topic ON evidence_cache(tool, topic);
+CREATE INDEX IF NOT EXISTS idx_evidence_cache_created_at ON evidence_cache(created_at DESC);
 
 CREATE TRIGGER IF NOT EXISTS trg_findings_updated_at
 AFTER UPDATE ON findings
@@ -158,6 +52,16 @@ FOR EACH ROW
 WHEN NEW.updated_at = OLD.updated_at
 BEGIN
   UPDATE findings
+  SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+  WHERE id = NEW.id;
+END;
+
+CREATE TRIGGER IF NOT EXISTS trg_evidence_cache_updated_at
+AFTER UPDATE ON evidence_cache
+FOR EACH ROW
+WHEN NEW.updated_at = OLD.updated_at
+BEGIN
+  UPDATE evidence_cache
   SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
   WHERE id = NEW.id;
 END;
