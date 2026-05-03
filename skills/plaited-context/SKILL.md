@@ -85,15 +85,15 @@ Contract:
 
 `plaited-context` assembles source-grounded context; it does not run
 verification tools by default. When a task mentions behavioral specs,
-frontiers, replay, deadlocks, trigger sequences, or priority-order sensitivity,
-assemble context first, then use `plaited-frontier-analysis` for the
+frontiers, replay, deadlocks, trigger sequences, or scheduler-policy
+sensitivity, assemble context first, then use `plaited-frontier-analysis` for the
 `behavioral-frontier` CLI workflow.
 
 Useful follow-up commands:
 
 ```bash
 bun ./bin/plaited.ts behavioral-frontier --schema input
-bun ./bin/plaited.ts behavioral-frontier '{"mode":"verify","specPath":"./specs.jsonl","strategy":"bfs","selectionPolicy":"scheduler","priorityOrderMode":"rotations"}'
+bun ./bin/plaited.ts behavioral-frontier '{"mode":"verify","specPath":"./specs.jsonl","strategy":"bfs","selectionPolicy":"scheduler","maxDepth":8}'
 ```
 
 ## Evidence Rule
