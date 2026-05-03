@@ -43,8 +43,11 @@ place. Worktrees are disposable after merge.
 **Conventional commits** — `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`, `test:`
 **Multi-line messages** for detailed context. **Never --no-verify**.
 **Wrap commit body lines at 100 chars or less** to satisfy commitlint.
-**When a multi-line message is awkward in shell quoting, use a commit message file** rather than
-forcing escaped newlines into `git commit -m`.
+**Prefer a commit message file for multi-line commits** (`git commit -F /tmp/message.txt`) so body
+wrapping is visible before hooks run. Use repeated `-m` flags only for short body lines already
+checked to be 100 chars or less.
+**Do not retry a failed commit with the same message shape** after commitlint rejects it. Rewrite the
+message with wrapped body lines first.
 
 **Git lock recovery:** if `/.git/index.lock` is present, first assume an interrupted or overlapping
 Git operation rather than corruption. Check that no Git process is still running, then remove the
