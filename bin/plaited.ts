@@ -12,6 +12,8 @@
  */
 
 import {
+  AGENTS_COMMAND,
+  agentsCli,
   BEHAVIORAL_FRONTIER_COMMAND,
   behavioralFrontierCli,
   EVAL_COMMAND,
@@ -27,6 +29,7 @@ import {
 // ============================================================================
 
 const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
+  [AGENTS_COMMAND]: agentsCli,
   [VLLM_COMMAND]: vllmCli,
   [BEHAVIORAL_FRONTIER_COMMAND]: behavioralFrontierCli,
   [EVAL_COMMAND]: evalCli,
