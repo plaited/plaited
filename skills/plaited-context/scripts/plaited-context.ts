@@ -1424,9 +1424,9 @@ export const assembleContext = ({
         `bun skills/plaited-context/scripts/git-context.ts '{"base":"origin/dev","paths":["<boundary-files>"],"includeWorktrees":true}'`,
         'bun --bun tsc --noEmit',
         'bun test <targeted-files-or-surface>',
-        `bun skills/typescript-lsp/scripts/run.ts '{"file":"<boundary-file>","operations":[{"type":"symbols"}]}'`,
-        `bun skills/typescript-lsp/scripts/run.ts '{"file":"<boundary-file>","operations":[{"type":"references","line":<line>,"character":<character>}]}'`,
-        `bun skills/typescript-lsp/scripts/run.ts '{"file":"<boundary-file>","operations":[{"type":"definition","line":<line>,"character":<character>}]}'`,
+        `bun ./bin/plaited.ts typescript-lsp '{"file":"<boundary-file>","operations":[{"type":"symbols"}]}'`,
+        `bun ./bin/plaited.ts typescript-lsp '{"file":"<boundary-file>","operations":[{"type":"references","line":<line>,"character":<character>}]}'`,
+        `bun ./bin/plaited.ts typescript-lsp '{"file":"<boundary-file>","operations":[{"type":"definition","line":<line>,"character":<character>}]}'`,
       ]
     : mode === 'review'
       ? [

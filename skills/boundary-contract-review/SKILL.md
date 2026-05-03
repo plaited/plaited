@@ -55,7 +55,7 @@ Run targeted checks on touched files when runtime code is involved:
 ```bash
 bun --bun tsc --noEmit
 bun test <targeted-files-or-surface>
-bun skills/typescript-lsp/scripts/run.ts '{"file":"<file>","operations":[{"type":"symbols"}]}'
+bun ./bin/plaited.ts typescript-lsp '{"file":"<file>","operations":[{"type":"symbols"}]}'
 ```
 
 ## Boundary Review Checklist

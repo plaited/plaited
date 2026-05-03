@@ -454,19 +454,17 @@ describe('plaited-context scripts', () => {
     ).toBe(true)
     expect(
       contextOutput.commandsToRun.some(
-        (command) => command.includes('skills/typescript-lsp/scripts/run.ts') && command.includes('"type":"symbols"'),
+        (command) => command.includes('./bin/plaited.ts typescript-lsp') && command.includes('"type":"symbols"'),
       ),
     ).toBe(true)
     expect(
       contextOutput.commandsToRun.some(
-        (command) =>
-          command.includes('skills/typescript-lsp/scripts/run.ts') && command.includes('"type":"references"'),
+        (command) => command.includes('./bin/plaited.ts typescript-lsp') && command.includes('"type":"references"'),
       ),
     ).toBe(true)
     expect(
       contextOutput.commandsToRun.some(
-        (command) =>
-          command.includes('skills/typescript-lsp/scripts/run.ts') && command.includes('"type":"definition"'),
+        (command) => command.includes('./bin/plaited.ts typescript-lsp') && command.includes('"type":"definition"'),
       ),
     ).toBe(true)
 

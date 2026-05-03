@@ -95,9 +95,9 @@ bun skills/plaited-context/scripts/search.ts '{"query":"useSnapshot reportSnapsh
 6. Run TypeScript LSP probes for alias-heavy boundary flows:
 
 ```bash
-bun skills/typescript-lsp/scripts/run.ts '{"file":"src/worker/worker.ts","operations":[{"type":"symbols"}]}'
-bun skills/typescript-lsp/scripts/run.ts '{"file":"src/worker/worker.ts","operations":[{"type":"references","line":120,"character":8}]}'
-bun skills/typescript-lsp/scripts/run.ts '{"file":"src/worker/worker.ts","operations":[{"type":"definition","line":120,"character":8}]}'
+bun ./bin/plaited.ts typescript-lsp '{"file":"src/worker/worker.ts","operations":[{"type":"symbols"}]}'
+bun ./bin/plaited.ts typescript-lsp '{"file":"src/worker/worker.ts","operations":[{"type":"references","line":120,"character":8}]}'
+bun ./bin/plaited.ts typescript-lsp '{"file":"src/worker/worker.ts","operations":[{"type":"definition","line":120,"character":8}]}'
 ```
 
 8. Assemble local read-only Git context for review/planning evidence
