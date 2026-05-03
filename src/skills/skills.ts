@@ -79,7 +79,7 @@ const toCapabilityAddress = (skillName: string, capabilityId: string): string =>
 const hasHiddenPathSegment = (path: string): boolean =>
   path.split('/').some((segment) => segment.length > 0 && segment.startsWith('.'))
 
-const findSkillDirectories = async (rootDir: string): Promise<string[]> => {
+export const findSkillDirectories = async (rootDir: string): Promise<string[]> => {
   const absoluteRootDir = resolve(rootDir)
   const skillDirs = new Set<string>()
   const primaryGlob = new Glob(skillsGlobPattern)
@@ -133,7 +133,7 @@ const validateSkill = (
   }
 }
 
-const loadSkillCatalog = async (rootDir: string): Promise<SkillCatalogLoadResult> => {
+export const loadSkillCatalog = async (rootDir: string): Promise<SkillCatalogLoadResult> => {
   const skillDirs = await findSkillDirectories(rootDir)
   const catalog: SkillCatalogEntry[] = []
   const errors: SkillCatalogError[] = []
@@ -175,7 +175,7 @@ const loadSkillCatalog = async (rootDir: string): Promise<SkillCatalogLoadResult
   return { catalog, errors }
 }
 
-const loadSkillRegistry = async (rootDir: string): Promise<SkillRegistryLoadResult> => {
+export const loadSkillRegistry = async (rootDir: string): Promise<SkillRegistryLoadResult> => {
   const skillDirs = await findSkillDirectories(rootDir)
   const registry: SkillRegistryEntry[] = []
   const errors: SkillCatalogError[] = []
@@ -243,7 +243,7 @@ const loadSkillRegistry = async (rootDir: string): Promise<SkillRegistryLoadResu
   return { registry, errors }
 }
 
-const loadSkillInstructions = async (rootDir: string, path: string): Promise<string | undefined> => {
+export const loadSkillInstructions = async (rootDir: string, path: string): Promise<string | undefined> => {
   const skillDir = join(rootDir, path)
   const skillPath = join(skillDir, 'SKILL.md')
   const file = Bun.file(skillPath)
@@ -259,7 +259,10 @@ const loadSkillInstructions = async (rootDir: string, path: string): Promise<str
   }
 }
 
-const loadSkillFrontmatter = async (rootDir: string, path: string): Promise<SkillFrontmatterResult | undefined> => {
+export const loadSkillFrontmatter = async (
+  rootDir: string,
+  path: string,
+): Promise<SkillFrontmatterResult | undefined> => {
   const skillDir = join(rootDir, path)
   const skillPath = join(skillDir, 'SKILL.md')
   const file = Bun.file(skillPath)
@@ -275,7 +278,7 @@ const loadSkillFrontmatter = async (rootDir: string, path: string): Promise<Skil
   }
 }
 
-const getSkillInstructionResourceLinks = async (
+export const getSkillInstructionResourceLinks = async (
   rootDir: string,
   path: string,
 ): Promise<SkillInstructionResourceLinksLoadResult> => {

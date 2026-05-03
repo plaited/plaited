@@ -12,14 +12,22 @@
  */
 
 import {
+  AGENTS_COMMAND,
+  agentsCli,
   BEHAVIORAL_FRONTIER_COMMAND,
   behavioralFrontierCli,
   EVAL_COMMAND,
   evalCli,
+  GIT_COMMAND,
+  gitCli,
   SKILLS_COMMAND,
   skillsCli,
+  TYPESCRIPT_LSP_COMMAND,
+  typescriptLspCli,
   VLLM_COMMAND,
   vllmCli,
+  WIKI_COMMAND,
+  wikiCli,
 } from '../src/cli.ts'
 
 // ============================================================================
@@ -27,10 +35,14 @@ import {
 // ============================================================================
 
 const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
+  [AGENTS_COMMAND]: agentsCli,
   [VLLM_COMMAND]: vllmCli,
   [BEHAVIORAL_FRONTIER_COMMAND]: behavioralFrontierCli,
   [EVAL_COMMAND]: evalCli,
+  [GIT_COMMAND]: gitCli,
   [SKILLS_COMMAND]: skillsCli,
+  [WIKI_COMMAND]: wikiCli,
+  [TYPESCRIPT_LSP_COMMAND]: typescriptLspCli,
 }
 
 // ============================================================================

@@ -22,7 +22,9 @@ Use this skill as the active runtime doctrine for docs, design review, and runti
 Run source-grounded context assembly first:
 
 ```bash
-bun skills/plaited-context/scripts/context.ts '{"task":"<task>","mode":"review","paths":["<paths>"]}'
+bun ./bin/plaited.ts agents '{"mode":"relevant","rootDir":".","paths":["<paths>"]}'
+bun ./bin/plaited.ts git '{"mode":"context","base":"origin/dev","paths":["<paths>"],"includeWorktrees":true}'
+bun ./bin/plaited.ts wiki '{"mode":"context","rootDir":".","paths":["docs"],"task":"<task>"}'
 ```
 
 For runtime boundary changes, run deterministic analysis:
