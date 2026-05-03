@@ -1,23 +1,35 @@
-import { afterEach, describe, expect, test } from 'bun:test'
-import { mkdir, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import * as z from 'zod'
+import { describe, expect, test } from 'bun:test'
+import { join, resolve } from 'node:path'
 
-import type { JsonObject, SnapshotMessage, Spec } from '../../behavioral.ts'
-import { BehavioralFrontierInputSchema, BehavioralFrontierOutputSchema } from '../behavioral-frontier.schemas.ts'
-import { runBehavioralFrontier } from '../behavioral-frontier.ts'
+const CLI_PACKAGE_ROOT = resolve(import.meta.dir, '../../../')
 
-const temporaryDirs = new Set<string>()
+const removedSplitImplementationFiles = [
+  'src/behavioral-frontier/explore-frontiers.ts',
+  'src/behavioral-frontier/replay-to-frontier.ts',
+  'src/behavioral-frontier/verify-frontiers.ts',
+]
 
-const writeTempSpecFile = async ({ content }: { content: string }) => {
-  const dir = join(tmpdir(), `behavioral-frontier-${Date.now()}-${Math.random().toString(16).slice(2)}`)
-  temporaryDirs.add(dir)
-  await mkdir(dir, { recursive: true })
-  const specPath = join(dir, 'specs.jsonl')
-  await Bun.write(specPath, content)
-  return specPath
+const createTempRoot = (): string =>
+  join('/tmp', `plaited-behavioral-frontier-tests-${Date.now()}-${Math.random().toString(16).slice(2)}`)
+
+const withTempRoot = async (run: (rootDir: string) => Promise<void>): Promise<void> => {
+  const rootDir = createTempRoot()
+  await Bun.$`mkdir -p ${rootDir}`
+
+  try {
+    await run(rootDir)
+  } finally {
+    await Bun.$`rm -rf ${rootDir}`
+  }
 }
+
+const runPlaitedCommand = async (args: string[]) =>
+  Bun.$`bun ./bin/plaited.ts ${args}`.cwd(CLI_PACKAGE_ROOT).quiet().nothrow()
+
+const runBehavioralFrontierCommand = async (input: unknown) =>
+  Bun.$`bun ./bin/plaited.ts behavioral-frontier ${JSON.stringify(input)}`.cwd(CLI_PACKAGE_ROOT).quiet().nothrow()
+
+const onType = (type: string) => ({ type })
 
 const selectionSnapshot = ({
   step = 0,
@@ -27,9 +39,9 @@ const selectionSnapshot = ({
 }: {
   step?: number
   type: string
-  detail?: JsonObject
+  detail?: Record<string, unknown>
   ingress?: true
-}): SnapshotMessage => ({
+}) => ({
   kind: 'selection',
   step,
   selected: {
@@ -39,24 +51,30 @@ const selectionSnapshot = ({
   },
 })
 
-const replaySpecs: Spec[] = [
-  {
-    label: 'producer',
-    thread: {
-      once: true,
-      syncPoints: [{ request: { type: 'task' } }],
-    },
-  },
-  {
-    label: 'consumer',
-    thread: {
-      once: true,
-      syncPoints: [{ waitFor: [{ type: 'task' }] }, { request: { type: 'ack' } }],
-    },
-  },
-]
+const frontierSnapshot = ({
+  step,
+  status,
+  candidates,
+  enabled,
+}: {
+  step: number
+  status: 'ready' | 'deadlock' | 'idle'
+  candidates: Array<{ priority: number; type: string; detail?: Record<string, unknown>; ingress?: true }>
+  enabled: Array<{ priority: number; type: string; detail?: Record<string, unknown>; ingress?: true }>
+}) => ({
+  kind: 'frontier',
+  step,
+  status,
+  candidates,
+  enabled,
+})
 
-const verifySpecs: Spec[] = [
+const deadlockSnapshot = ({ step }: { step: number }) => ({
+  kind: 'deadlock',
+  step,
+})
+
+const deadlockReachableSpecs = () => [
   {
     label: 'chooseA',
     thread: {
@@ -75,105 +93,432 @@ const verifySpecs: Spec[] = [
     label: 'deadlockAfterA',
     thread: {
       once: true,
-      syncPoints: [{ waitFor: [{ type: 'A' }] }, { block: [{ type: 'B' }] }],
+      syncPoints: [{ waitFor: [onType('A')] }, { block: [onType('B')] }],
     },
   },
 ]
 
-afterEach(async () => {
-  for (const dir of temporaryDirs) {
-    await rm(dir, { recursive: true, force: true })
-  }
-  temporaryDirs.clear()
-})
+const branchingSpecs = () => [
+  {
+    label: 'chooseA',
+    thread: {
+      once: true,
+      syncPoints: [{ request: { type: 'A' } }, { request: { type: 'A1' } }],
+    },
+  },
+  {
+    label: 'chooseB',
+    thread: {
+      once: true,
+      syncPoints: [{ request: { type: 'B' } }, { request: { type: 'B1' } }],
+    },
+  },
+]
 
-describe('runBehavioralFrontier', () => {
-  test('replay returns the direct simple shape', async () => {
-    const output = await runBehavioralFrontier({
+const selectedTypes = (trace: { snapshotMessages: Array<{ kind: string; selected?: { type?: string } }> }) =>
+  trace.snapshotMessages.flatMap((snapshot) =>
+    snapshot.kind === 'selection' && snapshot.selected?.type !== undefined ? [snapshot.selected.type] : [],
+  )
+
+describe('behavioral-frontier CLI', () => {
+  test('keeps behavioral-frontier implementation collapsed into the CLI surface', async () => {
+    const existingFiles = []
+
+    for (const filePath of removedSplitImplementationFiles) {
+      if (await Bun.file(join(CLI_PACKAGE_ROOT, filePath)).exists()) {
+        existingFiles.push(filePath)
+      }
+    }
+
+    expect(existingFiles).toEqual([])
+  })
+
+  test('plaited --schema includes behavioral-frontier', async () => {
+    const result = await runPlaitedCommand(['--schema'])
+
+    expect(result.exitCode).toBe(0)
+    const manifest = JSON.parse(result.stdout.toString().trim())
+    expect(manifest.commands).toContain('behavioral-frontier')
+  })
+
+  test('plaited behavioral-frontier --schema input emits inline and specPath branches', async () => {
+    const result = await runPlaitedCommand(['behavioral-frontier', '--schema', 'input'])
+
+    expect(result.exitCode).toBe(0)
+    const schema = JSON.parse(result.stdout.toString().trim())
+    const branches = schema.anyOf ?? schema.oneOf
+    expect(Array.isArray(branches)).toBe(true)
+    expect(schema.description).toContain('Replay, explore, or verify behavioral frontiers')
+    expect(
+      branches.some(
+        (branch: { properties?: Record<string, unknown>; required?: string[] }) =>
+          branch.required?.includes('specs') === true && branch.properties?.specPath === undefined,
+      ),
+    ).toBe(true)
+    expect(
+      branches.some(
+        (branch: { properties?: Record<string, unknown>; required?: string[] }) =>
+          branch.required?.includes('specPath') === true && branch.properties?.specs === undefined,
+      ),
+    ).toBe(true)
+  })
+
+  test('plaited behavioral-frontier --schema output emits replay explore and verify shapes', async () => {
+    const result = await runPlaitedCommand(['behavioral-frontier', '--schema', 'output'])
+
+    expect(result.exitCode).toBe(0)
+    const schema = JSON.parse(result.stdout.toString().trim())
+    expect(schema.oneOf).toHaveLength(3)
+  })
+
+  test('mode=replay returns the direct frontier shape', async () => {
+    const result = await runBehavioralFrontierCommand({
       mode: 'replay',
-      specs: replaySpecs,
+      specs: [
+        {
+          label: 'producer',
+          thread: {
+            once: true,
+            syncPoints: [{ request: { type: 'task' } }],
+          },
+        },
+        {
+          label: 'consumer',
+          thread: {
+            once: true,
+            syncPoints: [{ waitFor: [onType('task')] }, { request: { type: 'ack' } }],
+          },
+        },
+      ],
       snapshotMessages: [selectionSnapshot({ type: 'task' })],
     })
 
+    expect(result.exitCode).toBe(0)
+    const output = JSON.parse(result.stdout.toString().trim())
     expect(output).toEqual({
       mode: 'replay',
       snapshotMessages: [selectionSnapshot({ type: 'task' })],
-      frontier: {
-        kind: 'frontier',
+      frontier: frontierSnapshot({
         step: 1,
         status: 'ready',
         candidates: [{ priority: 2, type: 'ack' }],
         enabled: [{ priority: 2, type: 'ack' }],
-      },
+      }),
     })
-    expect(() => BehavioralFrontierOutputSchema.parse(output)).not.toThrow()
   })
 
-  test('explore returns the direct simple shape', async () => {
-    const output = await runBehavioralFrontier({
+  test('mode=replay ignores frontier and deadlock snapshots during replay', async () => {
+    const specs = [
+      {
+        label: 'chooseA',
+        thread: {
+          once: true,
+          syncPoints: [{ request: { type: 'A' } }],
+        },
+      },
+      {
+        label: 'watchA',
+        thread: {
+          once: true,
+          syncPoints: [{ waitFor: [onType('A')] }, { request: { type: 'B' } }],
+        },
+      },
+    ]
+    const result = await runBehavioralFrontierCommand({
+      mode: 'replay',
+      specs,
+      snapshotMessages: [
+        frontierSnapshot({
+          step: 0,
+          status: 'ready',
+          candidates: [{ priority: 1, type: 'A' }],
+          enabled: [{ priority: 1, type: 'A' }],
+        }),
+        selectionSnapshot({ step: 0, type: 'A' }),
+        frontierSnapshot({
+          step: 1,
+          status: 'ready',
+          candidates: [{ priority: 2, type: 'B' }],
+          enabled: [{ priority: 2, type: 'B' }],
+        }),
+        deadlockSnapshot({ step: 1 }),
+      ],
+    })
+
+    expect(result.exitCode).toBe(0)
+    const output = JSON.parse(result.stdout.toString().trim())
+    expect(output.frontier).toEqual(
+      frontierSnapshot({
+        step: 1,
+        status: 'ready',
+        candidates: [{ priority: 2, type: 'B' }],
+        enabled: [{ priority: 2, type: 'B' }],
+      }),
+    )
+  })
+
+  test('mode=replay handles ingress selected events', async () => {
+    const result = await runBehavioralFrontierCommand({
+      mode: 'replay',
+      specs: [
+        {
+          label: 'watcher',
+          thread: {
+            once: true,
+            syncPoints: [{ waitFor: [onType('ping')] }, { request: { type: 'pong' } }],
+          },
+        },
+      ],
+      snapshotMessages: [selectionSnapshot({ type: 'ping', ingress: true })],
+    })
+
+    expect(result.exitCode).toBe(0)
+    const output = JSON.parse(result.stdout.toString().trim())
+    expect(output.frontier).toEqual(
+      frontierSnapshot({
+        step: 1,
+        status: 'ready',
+        candidates: [{ priority: 1, type: 'pong' }],
+        enabled: [{ priority: 1, type: 'pong' }],
+      }),
+    )
+  })
+
+  test('mode=replay supports specPath JSONL loading', async () => {
+    await withTempRoot(async (rootDir) => {
+      const specPath = join(rootDir, 'specs.jsonl')
+      await Bun.write(
+        specPath,
+        `${JSON.stringify({
+          label: 'producer',
+          thread: {
+            once: true,
+            syncPoints: [{ request: { type: 'task' } }],
+          },
+        })}\n`,
+      )
+
+      const result = await runBehavioralFrontierCommand({
+        mode: 'replay',
+        specPath,
+      })
+
+      expect(result.exitCode).toBe(0)
+      const output = JSON.parse(result.stdout.toString().trim())
+      expect(output.frontier.enabled).toEqual([{ priority: 1, type: 'task' }])
+    })
+  })
+
+  test('mode=explore appends frontier snapshots to recorded traces', async () => {
+    const result = await runBehavioralFrontierCommand({
       mode: 'explore',
-      specs: verifySpecs,
+      specs: deadlockReachableSpecs(),
       maxDepth: 0,
     })
 
-    expect(output.mode).toBe('explore')
-    if (output.mode !== 'explore') {
-      throw new Error('Expected explore output')
-    }
-    expect(output.traces[0]?.snapshotMessages.at(-1)).toEqual(expect.objectContaining({ kind: 'frontier', step: 0 }))
-    expect(output.report.selectionPolicy).toBe('all-enabled')
+    expect(result.exitCode).toBe(0)
+    const output = JSON.parse(result.stdout.toString().trim())
+    expect(output.traces).toEqual([
+      {
+        snapshotMessages: [
+          frontierSnapshot({
+            step: 0,
+            status: 'ready',
+            candidates: [
+              { priority: 1, type: 'A' },
+              { priority: 2, type: 'B' },
+            ],
+            enabled: [
+              { priority: 1, type: 'A' },
+              { priority: 2, type: 'B' },
+            ],
+          }),
+        ],
+      },
+    ])
   })
 
-  test('verify returns the direct simple shape', async () => {
-    const output = await runBehavioralFrontier({
+  test('mode=explore orders traces breadth-first with bfs strategy', async () => {
+    const result = await runBehavioralFrontierCommand({
+      mode: 'explore',
+      specs: branchingSpecs(),
+      strategy: 'bfs',
+      maxDepth: 2,
+    })
+
+    expect(result.exitCode).toBe(0)
+    const output = JSON.parse(result.stdout.toString().trim())
+    expect(output.traces.map(selectedTypes)).toEqual([
+      [],
+      ['A'],
+      ['B'],
+      ['A', 'B'],
+      ['A', 'A1'],
+      ['B', 'A'],
+      ['B', 'B1'],
+    ])
+  })
+
+  test('mode=explore orders traces depth-first with dfs strategy', async () => {
+    const result = await runBehavioralFrontierCommand({
+      mode: 'explore',
+      specs: branchingSpecs(),
+      strategy: 'dfs',
+      maxDepth: 2,
+    })
+
+    expect(result.exitCode).toBe(0)
+    const output = JSON.parse(result.stdout.toString().trim())
+    expect(output.traces.map(selectedTypes)).toEqual([
+      [],
+      ['B'],
+      ['B', 'B1'],
+      ['B', 'A'],
+      ['A'],
+      ['A', 'A1'],
+      ['A', 'B'],
+    ])
+  })
+
+  test('mode=explore explores supplied trigger events as ingress selections', async () => {
+    const result = await runBehavioralFrontierCommand({
+      mode: 'explore',
+      specs: [
+        {
+          label: 'watcher',
+          thread: {
+            once: true,
+            syncPoints: [{ waitFor: [onType('ping')] }, { request: { type: 'ack' } }],
+          },
+        },
+      ],
+      triggers: [{ type: 'ping' }],
+      maxDepth: 1,
+    })
+
+    expect(result.exitCode).toBe(0)
+    const output = JSON.parse(result.stdout.toString().trim())
+    expect(output.traces).toContainEqual({
+      snapshotMessages: [
+        selectionSnapshot({ step: 0, type: 'ping', ingress: true }),
+        frontierSnapshot({
+          step: 1,
+          status: 'ready',
+          candidates: [{ priority: 1, type: 'ack' }],
+          enabled: [{ priority: 1, type: 'ack' }],
+        }),
+      ],
+    })
+  })
+
+  test('mode=explore maxDepth counts selections instead of total snapshots', async () => {
+    const result = await runBehavioralFrontierCommand({
+      mode: 'explore',
+      specs: deadlockReachableSpecs(),
+      snapshotMessages: [
+        selectionSnapshot({ step: 0, type: 'B' }),
+        frontierSnapshot({
+          step: 1,
+          status: 'idle',
+          candidates: [],
+          enabled: [],
+        }),
+      ],
+      maxDepth: 1,
+    })
+
+    expect(result.exitCode).toBe(0)
+    const output = JSON.parse(result.stdout.toString().trim())
+    expect(output.report).toEqual({
+      strategy: 'bfs',
+      selectionPolicy: 'all-enabled',
+      visitedCount: 1,
+      findingCount: 0,
+      truncated: true,
+      maxDepth: 1,
+    })
+  })
+
+  test('mode=verify returns failed when findings exist', async () => {
+    const result = await runBehavioralFrontierCommand({
       mode: 'verify',
-      specs: verifySpecs,
+      specs: deadlockReachableSpecs(),
     })
 
-    expect(output.mode).toBe('verify')
-    if (output.mode !== 'verify') {
-      throw new Error('Expected verify output')
-    }
+    expect(result.exitCode).toBe(0)
+    const output = JSON.parse(result.stdout.toString().trim())
     expect(output.status).toBe('failed')
-    expect(output.findings[0]?.code).toBe('deadlock')
+    expect(output.findings).toHaveLength(1)
+    expect(output.report.truncated).toBe(false)
   })
 
-  test('invalid direct input throws', async () => {
-    await expect(runBehavioralFrontier({ mode: 'replay' })).rejects.toThrow()
-  })
-
-  test('emitted input schema structurally shows inline-spec and specPath branches', () => {
-    const schema = z.toJSONSchema(BehavioralFrontierInputSchema)
-    const branches = (schema.anyOf ?? schema.oneOf ?? []) as Array<{
-      properties?: Record<string, unknown>
-      required?: string[]
-    }>
-
-    const hasInlineBranch = branches.some(
-      (branch) => branch.required?.includes('specs') && branch.properties?.specPath === undefined,
-    )
-    const hasSpecPathBranch = branches.some(
-      (branch) => branch.required?.includes('specPath') && branch.properties?.specs === undefined,
-    )
-
-    expect(hasInlineBranch).toBe(true)
-    expect(hasSpecPathBranch).toBe(true)
-  })
-
-  test('supports specPath JSONL loading', async () => {
-    const specPath = await writeTempSpecFile({
-      content: `${JSON.stringify(replaySpecs[0])}\n`,
+  test('mode=verify returns truncated when exploration stops at maxDepth with no findings', async () => {
+    const result = await runBehavioralFrontierCommand({
+      mode: 'verify',
+      specs: [
+        {
+          label: 'tick',
+          thread: {
+            syncPoints: [{ request: { type: 'tick' } }],
+          },
+        },
+      ],
+      maxDepth: 0,
     })
 
-    const output = await runBehavioralFrontier({
-      mode: 'replay',
-      specPath,
+    expect(result.exitCode).toBe(0)
+    const output = JSON.parse(result.stdout.toString().trim())
+    expect(output.status).toBe('truncated')
+    expect(output.findings).toEqual([])
+  })
+
+  test('mode=verify returns verified when exploration completes with no findings', async () => {
+    const result = await runBehavioralFrontierCommand({
+      mode: 'verify',
+      specs: [
+        {
+          label: 'watcher',
+          thread: {
+            once: true,
+            syncPoints: [{ waitFor: [onType('ping')] }],
+          },
+        },
+      ],
     })
 
-    expect(output.mode).toBe('replay')
-    if (output.mode !== 'replay') {
-      throw new Error('Expected replay output')
-    }
-    expect(output.frontier.enabled).toEqual([{ priority: 1, type: 'task' }])
+    expect(result.exitCode).toBe(0)
+    const output = JSON.parse(result.stdout.toString().trim())
+    expect(output.status).toBe('verified')
+    expect(output.findings).toEqual([])
+  })
+
+  test('mode=verify returns verified when a trigger can escape an internally deadlocked frontier', async () => {
+    const result = await runBehavioralFrontierCommand({
+      mode: 'verify',
+      specs: [
+        {
+          label: 'requestAck',
+          thread: {
+            once: true,
+            syncPoints: [{ request: { type: 'ack' } }],
+          },
+        },
+        {
+          label: 'blockAckUntilPing',
+          thread: {
+            once: true,
+            syncPoints: [{ block: [onType('ack')], waitFor: [onType('ping')] }],
+          },
+        },
+      ],
+      triggers: [{ type: 'ping' }],
+      maxDepth: 2,
+    })
+
+    expect(result.exitCode).toBe(0)
+    const output = JSON.parse(result.stdout.toString().trim())
+    expect(output.status).toBe('verified')
+    expect(output.findings).toEqual([])
+    expect(output.report.truncated).toBe(false)
   })
 })
