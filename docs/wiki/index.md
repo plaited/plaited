@@ -11,7 +11,6 @@
 | [Boundary Contract Graph](boundary-contract-graph.md) | Active interoperability doctrine and minimum contract shape |
 | [Node-To-Node Auth](node-to-node-auth.md) | DID/VC/SSI trust plane and capability-token execution plane flow |
 | [Infrastructure](infrastructure.md) | Infrastructure posture for lane classification, auth, and enforcement |
-| [Agent Loop](agent-loop.md) | Loop semantics aligned to contract evaluation and tokenized authority |
 | [Dynamic Skills Agent Model](dynamic-skills-agent.md) | Node-contained skill envelopes, capability registry ownership, and orchestrator target direction |
 | [Actor Runtime](actor-runtime.md) | Current runtime baseline and target actor-boundary direction |
 | [Training And Improvement](training-and-improvement.md) | Doctrine-aligned eval/improvement path |

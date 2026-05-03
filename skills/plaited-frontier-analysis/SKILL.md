@@ -26,17 +26,11 @@ Run `plaited-context` first to gather the relevant files and tests. Use
 
 ## Command Surface
 
-Prefer the installed CLI surface:
+Use the symlinked `plaited` command:
 
 ```bash
-bunx plaited behavioral-frontier --schema input
-bunx plaited behavioral-frontier --schema output
-```
-
-Inside this repository, `bin/plaited.ts` is equivalent:
-
-```bash
-bun ./bin/plaited.ts behavioral-frontier --schema input
+plaited behavioral-frontier --schema input
+plaited behavioral-frontier --schema output
 ```
 
 ## When To Use Which Mode
@@ -67,7 +61,7 @@ set.
 ### Replay One History
 
 ```bash
-bunx plaited behavioral-frontier '{"mode":"replay","specs":[{"label":"chooseA","thread":{"once":true,"syncPoints":[{"request":{"type":"A"}}]}}],"snapshotMessages":[]}'
+plaited behavioral-frontier '{"mode":"replay","specs":[{"label":"chooseA","thread":{"once":true,"syncPoints":[{"request":{"type":"A"}}]}}],"snapshotMessages":[]}'
 ```
 
 Read:
@@ -79,7 +73,7 @@ Read:
 ### Explore Reachable Histories
 
 ```bash
-bunx plaited behavioral-frontier '{"mode":"explore","specs":[{"label":"watcher","thread":{"once":true,"syncPoints":[{"waitFor":[{"type":"ping"}]},{"request":{"type":"ack"}}]}}],"triggers":[{"type":"ping"}],"strategy":"bfs","maxDepth":2}'
+plaited behavioral-frontier '{"mode":"explore","specs":[{"label":"watcher","thread":{"once":true,"syncPoints":[{"waitFor":[{"type":"ping"}]},{"request":{"type":"ack"}}]}}],"triggers":[{"type":"ping"}],"strategy":"bfs","maxDepth":2}'
 ```
 
 Start with `bfs` unless you have a reason to prefer `dfs`.
@@ -88,7 +82,7 @@ Use `maxDepth` to cap search when the state space is large.
 ### Verify Scheduler Policy
 
 ```bash
-bunx plaited behavioral-frontier '{"mode":"verify","specPath":"./specs.jsonl","strategy":"bfs","selectionPolicy":"scheduler","maxDepth":8}'
+plaited behavioral-frontier '{"mode":"verify","specPath":"./specs.jsonl","strategy":"bfs","selectionPolicy":"scheduler","maxDepth":8}'
 ```
 
 Interpret status as:

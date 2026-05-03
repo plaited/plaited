@@ -132,7 +132,6 @@ Every active boundary contract defines at minimum:
 
 - [Infrastructure](infrastructure.md)
 - [Actor Runtime](actor-runtime.md)
-- [Agent Loop](agent-loop.md)
 - [Dynamic Skills Agent Model](dynamic-skills-agent.md)
 - [Training And Improvement](training-and-improvement.md)
 - [Plaited Runtime Skill](../../skills/plaited-runtime/SKILL.md)

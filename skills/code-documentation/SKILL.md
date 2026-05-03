@@ -35,7 +35,7 @@ The skill now includes an AST-based audit tool:
 
 ```bash
 bun skills/code-documentation/scripts/run.ts '{"targets":["src/**/*.ts","src/**/*.tsx"]}'
-echo '{"targets":["src/agent/create-agent.ts"]}' | bun skills/code-documentation/scripts/run.ts
+echo '{"targets":["src/agent/agent.ts"]}' | bun skills/code-documentation/scripts/run.ts
 ```
 
 The CLI reports:

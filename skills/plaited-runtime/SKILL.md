@@ -22,9 +22,9 @@ Use this skill as the active runtime doctrine for docs, design review, and runti
 Run source-grounded context assembly first:
 
 ```bash
-bun ./bin/plaited.ts agents '{"mode":"relevant","rootDir":".","paths":["<paths>"]}'
-bun ./bin/plaited.ts git '{"mode":"context","base":"origin/dev","paths":["<paths>"],"includeWorktrees":true}'
-bun ./bin/plaited.ts wiki '{"mode":"context","rootDir":".","paths":["docs"],"task":"<task>"}'
+plaited agents '{"mode":"relevant","rootDir":".","paths":["<paths>"]}'
+plaited git '{"mode":"context","base":"origin/dev","paths":["<paths>"],"includeWorktrees":true}'
+plaited wiki '{"mode":"context","rootDir":".","paths":["docs"],"task":"<task>"}'
 ```
 
 For runtime boundary changes, run deterministic analysis:
@@ -32,7 +32,7 @@ For runtime boundary changes, run deterministic analysis:
 ```bash
 bun --bun tsc --noEmit
 bun test <targeted-files-or-surface>
-bun ./bin/plaited.ts typescript-lsp '{"file":"<boundary-file>","operations":[{"type":"symbols"}]}'
+plaited typescript-lsp '{"file":"<boundary-file>","operations":[{"type":"symbols"}]}'
 ```
 
 ## Runtime Rules

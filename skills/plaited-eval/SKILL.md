@@ -19,9 +19,9 @@ CLI guidance for `plaited eval` grading and run comparison.
 ## Command Discovery
 
 ```bash
-bunx plaited --schema
-bunx plaited eval --schema input
-bunx plaited eval --schema output
+plaited --schema
+plaited eval --schema input
+plaited eval --schema output
 ```
 
 ## Grade Mode
@@ -43,7 +43,7 @@ Key semantics:
 Example:
 
 ```bash
-bunx plaited eval '{
+plaited eval '{
   "mode": "grade",
   "trial": {
     "id": "trial-1",

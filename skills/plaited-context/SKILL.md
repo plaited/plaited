@@ -34,11 +34,11 @@ Use stable `plaited` tools for evidence collection:
 Examples:
 
 ```bash
-bun ./bin/plaited.ts agents '{"mode":"relevant","rootDir":".","paths":["src/worker/worker.ts"]}'
-bun ./bin/plaited.ts git '{"mode":"context","base":"origin/dev","paths":["src/worker/worker.ts"],"includeWorktrees":true}'
-bun ./bin/plaited.ts wiki '{"mode":"context","rootDir":".","paths":["docs"],"task":"review runtime boundary architecture"}'
-bun ./bin/plaited.ts typescript-lsp '{"file":"src/worker/worker.ts","operations":[{"type":"symbols"}]}'
-bun ./bin/plaited.ts skills '{"mode":"catalog","rootDir":"."}'
+plaited agents '{"mode":"relevant","rootDir":".","paths":["src/worker/worker.ts"]}'
+plaited git '{"mode":"context","base":"origin/dev","paths":["src/worker/worker.ts"],"includeWorktrees":true}'
+plaited wiki '{"mode":"context","rootDir":".","paths":["docs"],"task":"review runtime boundary architecture"}'
+plaited typescript-lsp '{"file":"src/worker/worker.ts","operations":[{"type":"symbols"}]}'
+plaited skills '{"mode":"catalog","rootDir":"."}'
 ```
 
 ## Mutable Persistence Surface
@@ -75,7 +75,7 @@ bun skills/plaited-context/scripts/export-review.ts '{"status":["candidate","val
 ### Cache evidence rows
 
 ```bash
-bun skills/plaited-context/scripts/cache-evidence.ts '{"tool":"git","topic":"context","key":"src/worker","command":"bun ./bin/plaited.ts git \"{...}\"","input":{"mode":"context"},"output":{"ok":true},"tags":["review"]}'
+bun skills/plaited-context/scripts/cache-evidence.ts '{"tool":"git","topic":"context","key":"src/worker","command":"plaited git \"{...}\"","input":{"mode":"context"},"output":{"ok":true},"tags":["review"]}'
 ```
 
 ### Query cached evidence
@@ -108,8 +108,8 @@ with the `behavioral-frontier` CLI workflow.
 Useful follow-up commands:
 
 ```bash
-bun ./bin/plaited.ts behavioral-frontier --schema input
-bun ./bin/plaited.ts behavioral-frontier '{"mode":"verify","specPath":"./specs.jsonl","strategy":"bfs","selectionPolicy":"scheduler","maxDepth":8}'
+plaited behavioral-frontier --schema input
+plaited behavioral-frontier '{"mode":"verify","specPath":"./specs.jsonl","strategy":"bfs","selectionPolicy":"scheduler","maxDepth":8}'
 ```
 
 ## Evidence Rule

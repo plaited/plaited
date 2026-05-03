@@ -11,19 +11,10 @@
 **Path:** `Bun.resolveSync()` for modules, `import.meta.dir` for current dir. Keep `node:path` for join/resolve/dirname.
 **Executables:** `Bun.which(cmd)` to check existence. `bunx` not `npx`.
 **When Node.js OK:** readline, node:path, APIs without Bun equivalents.
-**JSONL batch scripts:** for long-running scripts that emit `.jsonl`, stream rows to disk as they complete instead of buffering the full run in memory and writing once at the end. Keep a final summary print, but prefer append-style output for observability and crash recovery.
-**Long-running summaries:** if a batch script runs for minutes or hours, write a rolling sidecar summary file (for example `output.jsonl.summary.json`) as rows complete. Do not keep summary state observable only in stdout.
-**Batch memory discipline:** for high-row-count runners, keep only the minimum rolling counters and write queue in memory. Do not accumulate full result arrays unless the total result set is trivially small.
-**Varlock-backed API calls:** when a repo script needs secrets injected by `varlock`, prefer direct Bun `fetch` or normal process env access inside the script. Avoid nested shell quoting pipelines for authenticated API calls because they are brittle and can masquerade as missing-key failures.
-**You.com scripted integrations:** prefer the official `@youdotcom-oss/api` client before raw `fetch` for Bun scripts. Fall back to manual HTTP only for debugging or when the official client cannot express the needed endpoint behavior.
-**API-bound evaluation matrices:** when a script is evaluating many independent rows against remote model APIs, prefer bounded concurrency instead of sequential execution. Default to a modest concurrency like `5` or `6` unless there is a clear provider-specific reason not to.
-**Concurrency ramping:** for remote-model batch runs, start at a bounded concurrency, observe parse stability / retry behavior / provider throughput, then raise concurrency only after the smaller run is clean. Do not jump straight to the highest plausible parallelism.
-**Throughput bottleneck assumption:** for OpenRouter or other remote-model lanes, assume network/provider latency is the main bottleneck before assuming local CPU or memory is. Optimize script architecture first, then raise concurrency.
-**Fanout observability:** for multi-attempt slice fanout or autoresearch with more than one concurrent attempt, use explicit `git worktree`-backed runs or an equivalent durable attempt directory. Each attempt must write observable artifacts while running:
-  - status/result JSON
-  - changed-file or diff summary
-  - targeted validation result
-Do not rely on long-running opaque subagent state as the only record for large fanout work.
+**Varlock-backed env:** when repo commands need secrets, use `.env.schema` and Varlock-injected
+environment variables. Avoid brittle nested shell quoting for authenticated calls.
+**Web research:** use the `youdotcom` skill for web search, research, and content extraction when
+repo-local evidence is insufficient or current external context is needed.
 
 
 # Workflow
@@ -91,8 +82,9 @@ gate is sufficient.
 
 Broader validation is still area-aware. It does not mean “run unrelated tests.”
 Examples:
-- if only `scripts/` research infrastructure changed, run the relevant `scripts/tests/*`
-  plus any shared `src/` tests that those changes affect
+- if `skills/<name>/scripts` changed, run that skill's tests plus any shared `src/` tests those
+  scripts depend on
+- if a `src/<feature>` CLI command changed, run that feature's tests plus CLI/schema tests as needed
 - if only `src/ui/` changed, run the relevant UI test surfaces
 - if shared code changed and the impact is broad or unclear, expand test coverage until the
   affected surface is credibly covered
@@ -101,43 +93,16 @@ Examples:
 
 ## Directory Boundaries
 
-**`src/`** — Framework code that ships with the node. CLI tools (`src/tools/`), runtime modules, schemas, types.
-**`scripts/`** — Calibration & eval infrastructure: graders, adapters, runners, MLX server launchers. Removed post-distillation.
-**`skills/`** — Implementation patterns + operational tools. Skill assets (prompts, references) live under their skill directory.
+**`src/`** — Framework code that ships with the package: runtime modules, schemas, types, and
+stable CLI-backed features.
+**CLI features** — Prefer a `makeCli` JSON-in/JSON-out command exported through the owning
+`src/<feature>/` module and registered in `bin/plaited.ts`.
+**`scripts/`** — Repo setup and package-maintenance shell glue.
+**`skills/`** — Implementation patterns and skill-local tools. Skill scripts, prompts,
+references, tests, and assets stay under their skill directory.
 
-**Never put graders, eval runners, or adapters in `src/tools/`.** Those are calibration infrastructure, not CLI commands.
-
-## Python Stack
-
-**Use `uv`** for Python environment and dependency management.
-
-**Project boundary:** Python belongs in dedicated subprojects, not the Bun repo root.
-- Good: `dev-research/native-model/training/`
-- Avoid: root-level `pyproject.toml` for the whole repo
-
-**Required files for Python subprojects:**
-- `pyproject.toml`
-- `.python-version`
-- `uv.lock`
-- local `.venv/` (ignored)
-
-**Default Python tools:**
-- **Lint/format:** `ruff`
-- **Tests:** `pytest`
-
-**Default Python workflow:**
-1. `uv sync`
-2. `uv run ruff check .`
-3. `uv run pytest`
-
-**Runtime smoke test first** — before wiring MLX/training/inference commands:
-```bash
-uv run python -c "import mlx.core as mx; print(mx.default_device())"
-```
-
-**Bun wrapper rule:** if a Python training/inference workflow is meant to be run from this repo, expose it through a Bun `scripts/*.ts` wrapper and a `package.json` command. Keep Python as the backend implementation, not the primary operator surface.
-
-**Do not ad hoc `pip install` into the repo root.** Python here supports training/inference workflows, not the shipped framework runtime.
+**Operator surface** — Stable agent/operator features should be discoverable through
+`plaited --schema` and invokable as `plaited <command> '<json>'`.
 
 ## GitHub CLI
 
@@ -153,7 +118,6 @@ uv run python -c "import mlx.core as mx; print(mx.default_device())"
 | `src/` code + types | What the system IS |
 | `git log` | Why it changed |
 | `AGENTS.md` | How to work here (rules) |
-| `dev-research/*/program.md` | Active research programs and execution goals |
 | `docs/*.md` | Design rationale (verify against code) |
 | `skills/` | Implementation patterns + operational tools |
 
@@ -174,8 +138,8 @@ uv run python -c "import mlx.core as mx; print(mx.default_device())"
 
 **File naming:**
 - Shared files use module prefix: `feature.types.ts`, `feature.schemas.ts`, `feature.utils.ts`, `feature.constants.ts`
-- Feature files use dash-case: `create-agent-loop.ts`, `control-island.ts`, `key-mirror.ts`
-- Name the file after its primary export: `createA2AHandler` → `create-a2a-handler.ts`
+- Feature files use dash-case: `resolve-relative-path.ts`, `limit-text-bytes.ts`, `key-mirror.ts`
+- Name the file after its primary export: `resolveRelativePath` → `resolve-relative-path.ts`
 - Main entry uses module name: `behavioral.ts`, `server.ts`, `controller.ts`
 - **Never prefix feature files with the directory name** — the directory already provides context
 
@@ -227,8 +191,8 @@ requires a specific non-emitted JSON shape.
 inside `addHandler`/feedback handlers unless explicitly converting a known domain failure into a
 normal result event. Let behavioral publish `feedback_error` snapshots for handler failures.
 **Mermaid diagrams only** — no ASCII box-drawing.
-**Skills are internal research/runtime surfaces** until the skill module owns
-their operator story. Do not assume a public `validate-skill` CLI exists.
+**Skill checks** — use `plaited skills` for skill discovery, validation, and registry checks. Do
+not invent standalone skill validators unless the repo exposes them.
 
 ## Runtime Wiring Style
 
@@ -254,7 +218,7 @@ Prefer direct callsite wiring when logic is local, stable, and used once.
 Preferred:
 ```ts
 emitter.on(SESSION_EVENTS.stdout, onStdout);
-const clinePath = resolveRelativePath({ cwd, path: '.cline' });
+const contextDbPath = resolveRelativePath({ cwd, path: '.plaited/context.sqlite' });
 process.on('message', (raw) => {
   const parsed = parseIpcMessage(raw);
   if (!parsed) return;
@@ -264,7 +228,8 @@ process.on('message', (raw) => {
 
 Discouraged:
 ```ts
-const resolveClinePath = (cwd: string) => resolveRelativePath({ cwd, path: '.cline' });
+const resolveContextDbPath = (cwd: string) =>
+  resolveRelativePath({ cwd, path: '.plaited/context.sqlite' });
 EVENT_FORWARDERS.forEach(({ event, handler }) => emitter.on(event, handler));
 test('parse helper', () => expect(parseMessage(raw)).toEqual(parsed));
 ```
@@ -275,7 +240,3 @@ test('parse helper', () => expect(parseMessage(raw)).toEqual(parsed));
 **BP patterns** — use `plaited-runtime` skill when implementing behavioral programs.
 **UI development/testing** — use `plaited-ui` for controller protocol, custom
 elements, SSR, and the three-layer UI test strategy.
-**Agent pipeline** — use `plaited-runtime` plus `src/agent/create-agent.ts` and `docs/wiki/agent-loop.md` when implementing module-owned orchestration or agent event flow.
-**Plaited development workflow** — use the repo-local `plaited-development` skill before
-starting agent-authored feature/fix branches, reviewing agent-authored changes, or preparing
-integration/promotion work.

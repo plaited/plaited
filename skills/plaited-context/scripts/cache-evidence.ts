@@ -198,7 +198,7 @@ export const cacheEvidenceCli = makeCli({
   outputSchema: CacheEvidenceOutputSchema,
   help: [
     'Examples:',
-    `  bun skills/plaited-context/scripts/cache-evidence.ts '{"tool":"git","topic":"context","key":"src/worker","command":"bun ./bin/plaited.ts git \\"{...}\\"","input":{"mode":"context"},"output":{"ok":true},"tags":["review"]}'`,
+    `  bun skills/plaited-context/scripts/cache-evidence.ts '{"tool":"git","topic":"context","key":"src/worker","command":"plaited git \\"{...}\\"","input":{"mode":"context"},"output":{"ok":true},"tags":["review"]}'`,
     `  bun skills/plaited-context/scripts/cache-evidence.ts --schema input`,
   ].join('\n'),
   run: cacheEvidence,

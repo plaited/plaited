@@ -1,5 +1,11 @@
 # Wiki Log
 
+## 2026-05-03
+
+- Retired the Agent Loop page while orchestration doctrine is being rebuilt around current
+  behavioral specs, worker runtime, and `src/engines/vllm.ts` command surfaces.
+- Removed Agent Loop links from wiki navigation instead of preserving uncertain doctrine.
+
 ## 2026-05-02
 
 - Added Dynamic Skills Agent Model doctrine page covering node-vs-skill boundary, envelope shape,

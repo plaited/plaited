@@ -34,10 +34,10 @@ Type-aware codebase analysis for TypeScript/JavaScript files. Use over Grep/Glob
 Single command with JSON input. All operations share one LSP session (one server start).
 
 ```bash
-bun ./bin/plaited.ts typescript-lsp '<json>'
-echo '<json>' | bun ./bin/plaited.ts typescript-lsp
-bun ./bin/plaited.ts typescript-lsp --schema input    # JSON Schema for input
-bun ./bin/plaited.ts typescript-lsp --schema output   # JSON Schema for output
+plaited typescript-lsp '<json>'
+echo '<json>' | plaited typescript-lsp
+plaited typescript-lsp --schema input    # JSON Schema for input
+plaited typescript-lsp --schema output   # JSON Schema for output
 ```
 
 ## Input Format
@@ -124,55 +124,55 @@ Failed operations include an `error` field instead of `data`. Other operations s
 ### Understand a file
 
 ```bash
-bun ./bin/plaited.ts typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "exports"}]}'
+plaited typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "exports"}]}'
 ```
 
 ### Check type before using an API
 
 ```bash
-bun ./bin/plaited.ts typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "hover", "line": 42, "character": 10}]}'
+plaited typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "hover", "line": 42, "character": 10}]}'
 ```
 
 ### Find all references before refactoring
 
 ```bash
-bun ./bin/plaited.ts typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "references", "line": 42, "character": 10}]}'
+plaited typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "references", "line": 42, "character": 10}]}'
 ```
 
 ### Batch: exports + hover + references in one session
 
 ```bash
-bun ./bin/plaited.ts typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "exports"}, {"type": "hover", "line": 10, "character": 13}, {"type": "references", "line": 10, "character": 13}]}'
+plaited typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "exports"}, {"type": "hover", "line": 10, "character": 13}, {"type": "references", "line": 10, "character": 13}]}'
 ```
 
 ### Search workspace for a symbol
 
 ```bash
-bun ./bin/plaited.ts typescript-lsp '{"file": "src/app.ts", "operations": [{"type": "find", "query": "parseConfig"}]}'
+plaited typescript-lsp '{"file": "src/app.ts", "operations": [{"type": "find", "query": "parseConfig"}]}'
 ```
 
 ### Scan imports and runtime exports across many files
 
 ```bash
-bun ./bin/plaited.ts typescript-lsp '{"file": "src/main.ts", "targets": ["src/**/*.ts", "src/**/*.tsx"], "operations": [{"type": "workspace-scan", "includeTests": false}]}'
+plaited typescript-lsp '{"file": "src/main.ts", "targets": ["src/**/*.ts", "src/**/*.tsx"], "operations": [{"type": "workspace-scan", "includeTests": false}]}'
 ```
 
 ### Inventory public exports across many files
 
 ```bash
-bun ./bin/plaited.ts typescript-lsp '{"file": "src/main.ts", "targets": ["src/**/*.ts", "src/**/*.tsx"], "operations": [{"type": "public-exports", "includeTests": false}]}'
+plaited typescript-lsp '{"file": "src/main.ts", "targets": ["src/**/*.ts", "src/**/*.tsx"], "operations": [{"type": "public-exports", "includeTests": false}]}'
 ```
 
 ### Audit candidate export consumers
 
 ```bash
-bun ./bin/plaited.ts typescript-lsp '{"file": "src/main.ts", "targets": ["src/agent/**/*.ts"], "operations": [{"type": "export-consumers", "query": "Module", "includeTests": true}]}'
+plaited typescript-lsp '{"file": "src/main.ts", "targets": ["src/agent/**/*.ts"], "operations": [{"type": "export-consumers", "query": "Module", "includeTests": true}]}'
 ```
 
 ### Find verified candidate unused exports
 
 ```bash
-bun ./bin/plaited.ts typescript-lsp '{"file": "src/main.ts", "targets": ["src/agent/**/*.ts"], "operations": [{"type": "candidate-unused-exports", "includeTests": true}]}'
+plaited typescript-lsp '{"file": "src/main.ts", "targets": ["src/agent/**/*.ts"], "operations": [{"type": "candidate-unused-exports", "includeTests": true}]}'
 ```
 
 ## Notes

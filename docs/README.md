@@ -11,7 +11,6 @@ compete as separate sources of truth.
 Use:
 
 - [wiki/architecture.md](wiki/architecture.md) for the framework overview
-- [wiki/agent-loop.md](wiki/agent-loop.md) for minimal core and module-composed orchestration
 - [wiki/actor-runtime.md](wiki/actor-runtime.md) for current actor runtime state and gaps
 - [wiki/local-inference-bridge.md](wiki/local-inference-bridge.md) for the local neural runtime bridge decision
 - [wiki/infrastructure.md](wiki/infrastructure.md) for deployment and node-home direction
