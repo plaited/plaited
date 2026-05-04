@@ -2,6 +2,9 @@ import * as z from 'zod'
 
 import { SnapshotMessageSchema } from '../behavioral/behavioral.schemas.ts'
 import {
+  EVAL_CALIBRATE_FOCUSES,
+  EVAL_CALIBRATE_REVIEW_LABELS,
+  EVAL_CALIBRATE_SNAPSHOT_MODES,
   EVAL_COMMAND_OUTPUTS,
   EVAL_GRADER_TYPES,
   EVAL_GRADER_WHEN,
@@ -11,7 +14,9 @@ import {
 
 const UnknownRecordSchema = z.record(z.string(), z.unknown())
 
-export const EvalModeSchema = z.enum([EVAL_MODES.grade, EVAL_MODES.compare]).describe('Eval CLI execution mode.')
+export const EvalModeSchema = z
+  .enum([EVAL_MODES.grade, EVAL_MODES.compare, EVAL_MODES.calibrate])
+  .describe('Eval CLI execution mode.')
 
 export type EvalMode = z.output<typeof EvalModeSchema>
 
@@ -367,14 +372,217 @@ export const EvalCompareInputSchema = z
 
 export type EvalCompareInput = z.output<typeof EvalCompareInputSchema>
 
+export const EvalCalibrateFocusSchema = z
+  .enum([EVAL_CALIBRATE_FOCUSES.required_failures, EVAL_CALIBRATE_FOCUSES.all_failures, EVAL_CALIBRATE_FOCUSES.all])
+  .describe('Candidate focus strategy for calibrate mode.')
+
+export type EvalCalibrateFocus = z.output<typeof EvalCalibrateFocusSchema>
+
+export const EvalCalibrateSnapshotModeSchema = z
+  .enum([EVAL_CALIBRATE_SNAPSHOT_MODES.diagnostic, EVAL_CALIBRATE_SNAPSHOT_MODES.all])
+  .describe('Snapshot extraction strategy for calibrate samples.')
+
+export type EvalCalibrateSnapshotMode = z.output<typeof EvalCalibrateSnapshotModeSchema>
+
+export const EvalCalibrateInputSchema = z
+  .object({
+    mode: z.literal(EVAL_MODES.calibrate),
+    bundle: EvalRunBundleSchema,
+    focus: EvalCalibrateFocusSchema.optional().default(EVAL_CALIBRATE_FOCUSES.required_failures),
+    sample: z.number().int().min(1).max(1000).optional().default(20),
+    seed: z
+      .union([z.string().min(1), z.number()])
+      .optional()
+      .describe('Optional deterministic sampling seed.'),
+    graderId: z.string().min(1).optional().describe('Optional focused grader id filter.'),
+    snapshotMode: EvalCalibrateSnapshotModeSchema.optional().default(EVAL_CALIBRATE_SNAPSHOT_MODES.diagnostic),
+    maxSnapshotsPerSample: z.number().int().positive().optional().default(8),
+  })
+  .strict()
+  .describe('Eval CLI input for calibrate mode.')
+
+export type EvalCalibrateInput = z.output<typeof EvalCalibrateInputSchema>
+
+const EvalTrialWithoutSnapshotsSchema = EvalTrialSchema.omit({ snapshots: true })
+  .strict()
+  .describe('Trial envelope without snapshot payload.')
+
+export const EvalCalibrateReviewLabelSchema = z
+  .enum([
+    EVAL_CALIBRATE_REVIEW_LABELS.correct_accept,
+    EVAL_CALIBRATE_REVIEW_LABELS.incorrect_accept,
+    EVAL_CALIBRATE_REVIEW_LABELS.correct_reject,
+    EVAL_CALIBRATE_REVIEW_LABELS.incorrect_reject,
+    EVAL_CALIBRATE_REVIEW_LABELS.ambiguous,
+    EVAL_CALIBRATE_REVIEW_LABELS.needs_human,
+  ])
+  .describe('Reviewer adjudication label.')
+
+export type EvalCalibrateReviewLabel = z.output<typeof EvalCalibrateReviewLabelSchema>
+
+export const EvalCalibrateSampleSourceSchema = z
+  .object({
+    bundleLabel: z.string().min(1),
+    taskIndex: z.number().int().nonnegative(),
+    trialIndex: z.number().int().nonnegative(),
+    taskId: z.string().min(1),
+    trialId: z.string().min(1),
+  })
+  .strict()
+  .describe('Pointer to source trial location in the input bundle.')
+
+export type EvalCalibrateSampleSource = z.output<typeof EvalCalibrateSampleSourceSchema>
+
+export const EvalCalibrateFocusedGraderSummarySchema = z
+  .object({
+    graderId: z.string().min(1),
+    executedPassCount: z.number().int().nonnegative(),
+    executedFailCount: z.number().int().nonnegative(),
+    skippedCount: z.number().int().nonnegative(),
+    missingCount: z.number().int().nonnegative(),
+  })
+  .strict()
+  .describe('Focused grader pass/fail/skipped summary for graderId mode.')
+
+export type EvalCalibrateFocusedGraderSummary = z.output<typeof EvalCalibrateFocusedGraderSummarySchema>
+
+export const EvalCalibrateGraderOutcomeSummarySchema = z
+  .object({
+    executedCount: z.number().int().nonnegative(),
+    skippedCount: z.number().int().nonnegative(),
+    requiredExecutedCount: z.number().int().nonnegative(),
+    requiredPassCount: z.number().int().nonnegative(),
+    requiredFailCount: z.number().int().nonnegative(),
+    optionalExecutedCount: z.number().int().nonnegative(),
+    optionalPassCount: z.number().int().nonnegative(),
+    optionalFailCount: z.number().int().nonnegative(),
+  })
+  .strict()
+  .describe('Required/optional and executed/skipped grader-outcome summary.')
+
+export type EvalCalibrateGraderOutcomeSummary = z.output<typeof EvalCalibrateGraderOutcomeSummarySchema>
+
+export const EvalCalibrateReviewPopulationSummarySchema = z
+  .object({
+    trialCount: z.number().int().nonnegative(),
+    completedTrialCount: z.number().int().nonnegative(),
+    nonCompletedTrialCount: z.number().int().nonnegative(),
+    trialPassCount: z.number().int().nonnegative(),
+    trialFailCount: z.number().int().nonnegative(),
+    graderOutcomes: EvalCalibrateGraderOutcomeSummarySchema,
+    focusedGrader: EvalCalibrateFocusedGraderSummarySchema.nullable(),
+  })
+  .strict()
+  .describe('Trial/grader aggregate summary for a calibrate review population.')
+
+export type EvalCalibrateReviewPopulationSummary = z.output<typeof EvalCalibrateReviewPopulationSummarySchema>
+
+export const EvalCalibrateCandidateSummarySchema = z
+  .object({
+    focus: EvalCalibrateFocusSchema,
+    candidateCount: z.number().int().nonnegative(),
+    candidatePassCount: z.number().int().nonnegative(),
+    candidateFailCount: z.number().int().nonnegative(),
+    population: EvalCalibrateReviewPopulationSummarySchema,
+  })
+  .strict()
+  .describe('Summary of the candidate pool before sampling.')
+
+export type EvalCalibrateCandidateSummary = z.output<typeof EvalCalibrateCandidateSummarySchema>
+
+export const EvalCalibrateSampleSummarySchema = z
+  .object({
+    requestedSample: z.number().int().positive(),
+    actualSample: z.number().int().nonnegative(),
+    sampledPassCount: z.number().int().nonnegative(),
+    sampledFailCount: z.number().int().nonnegative(),
+    population: EvalCalibrateReviewPopulationSummarySchema,
+  })
+  .strict()
+  .describe('Summary of selected samples after deterministic sampling.')
+
+export type EvalCalibrateSampleSummary = z.output<typeof EvalCalibrateSampleSummarySchema>
+
+export const EvalCalibrateReviewProtocolSchema = z
+  .object({
+    labels: z.array(EvalCalibrateReviewLabelSchema).min(1),
+    confidenceThreshold: z.number().min(0).max(1),
+    guidance: z.array(z.string().min(1)).min(1),
+    escalationRules: z.array(z.string().min(1)).min(1),
+  })
+  .strict()
+  .describe('Reusable reviewer protocol for grader calibration.')
+
+export type EvalCalibrateReviewProtocol = z.output<typeof EvalCalibrateReviewProtocolSchema>
+
+export const EvalCalibrateReviewResponseContractSchema = z
+  .object({
+    type: z.literal('object'),
+    required: z.array(z.string().min(1)).min(1),
+    properties: z.record(
+      z.string(),
+      z.object({
+        type: z.string().min(1),
+        enum: z.array(z.string()).optional(),
+        minimum: z.number().optional(),
+        maximum: z.number().optional(),
+        minLength: z.number().int().optional(),
+        description: z.string().min(1),
+      }),
+    ),
+    constraints: z.array(z.string().min(1)).min(1),
+  })
+  .strict()
+  .describe('Explicit reviewer response contract for calibrate-mode adjudication.')
+
+export type EvalCalibrateReviewResponseContract = z.output<typeof EvalCalibrateReviewResponseContractSchema>
+
+export const EvalCalibrateSampleSchema = z
+  .object({
+    source: EvalCalibrateSampleSourceSchema,
+    trial: EvalTrialWithoutSnapshotsSchema,
+    process: EvalProcessSummarySchema,
+    graderResults: z.array(EvalGraderResultSchema),
+    focusedGraderResult: EvalGraderResultSchema.nullable(),
+    failedGraders: z.array(EvalGraderResultSchema),
+    failedRequiredGraders: z.array(EvalGraderResultSchema),
+    snapshots: z.array(SnapshotMessageSchema),
+  })
+  .strict()
+  .describe('Calibrate-mode trial sample row with convenience grader fields.')
+
+export type EvalCalibrateSample = z.output<typeof EvalCalibrateSampleSchema>
+
+export const EvalCalibrateOutputSchema = z
+  .object({
+    mode: z.literal(EVAL_MODES.calibrate),
+    focus: EvalCalibrateFocusSchema,
+    sample: z.number().int().positive(),
+    graderId: z.string().min(1).nullable(),
+    snapshotMode: EvalCalibrateSnapshotModeSchema,
+    maxSnapshotsPerSample: z.number().int().positive(),
+    resolvedSeed: z.string().min(1),
+    warnings: z.array(z.string()),
+    reviewProtocol: EvalCalibrateReviewProtocolSchema,
+    reviewResponseContract: EvalCalibrateReviewResponseContractSchema,
+    bundleSummary: EvalCalibrateReviewPopulationSummarySchema,
+    candidateSummary: EvalCalibrateCandidateSummarySchema,
+    sampleSummary: EvalCalibrateSampleSummarySchema,
+    samples: z.array(EvalCalibrateSampleSchema),
+  })
+  .strict()
+  .describe('Calibrate-mode output payload.')
+
+export type EvalCalibrateOutput = z.output<typeof EvalCalibrateOutputSchema>
+
 export const EvalCliInputSchema = z
-  .discriminatedUnion('mode', [EvalGradeInputSchema, EvalCompareInputSchema])
+  .discriminatedUnion('mode', [EvalGradeInputSchema, EvalCompareInputSchema, EvalCalibrateInputSchema])
   .describe('Top-level plaited eval input schema.')
 
 export type EvalCliInput = z.output<typeof EvalCliInputSchema>
 
 export const EvalCliOutputSchema = z
-  .discriminatedUnion('mode', [EvalTrialResultSchema, EvalRunComparisonSchema])
+  .discriminatedUnion('mode', [EvalTrialResultSchema, EvalRunComparisonSchema, EvalCalibrateOutputSchema])
   .describe('Top-level plaited eval output schema.')
 
 export type EvalCliOutput = z.output<typeof EvalCliOutputSchema>

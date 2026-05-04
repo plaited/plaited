@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { join, resolve } from 'node:path'
+import { EvalModeSchema } from '../eval.schemas.ts'
 
 const CLI_PACKAGE_ROOT = resolve(import.meta.dir, '../../../')
 
@@ -64,28 +65,61 @@ const createProcessSummary = () => ({
   workerFailureDetected: false,
 })
 
+const createGraderResult = ({
+  id,
+  pass = true,
+  required = true,
+  skipped = false,
+  when = 'always',
+}: {
+  id: string
+  pass?: boolean
+  required?: boolean
+  skipped?: boolean
+  when?: string
+}) => ({
+  id,
+  type: 'json',
+  required,
+  weight: 1,
+  when,
+  skipped,
+  pass: skipped ? null : pass,
+  score: skipped ? null : pass ? 1 : 0,
+})
+
 const createTrialResult = ({
   cwd,
+  graderResults = [],
   id,
   pass,
+  result,
   score,
+  snapshots,
   taskId,
 }: {
   cwd: string
+  graderResults?: unknown[]
   id: string
   pass: boolean
+  result?: { status: string; message?: string }
   score: number
+  snapshots?: unknown[]
   taskId: string
 }) => ({
   mode: 'grade',
-  trial: createTrial({ cwd, id, taskId }),
+  trial: createTrial({ cwd, id, taskId, result, snapshots }),
   process: createProcessSummary(),
-  graderResults: [],
+  graderResults,
   pass,
   score,
 })
 
 describe('eval CLI', () => {
+  test('EvalModeSchema includes calibrate', () => {
+    expect(EvalModeSchema.safeParse('calibrate').success).toBe(true)
+  })
+
   test('plaited --schema includes eval and excludes research', async () => {
     const result = await runPlaitedCommand(['--schema'])
 
@@ -101,7 +135,7 @@ describe('eval CLI', () => {
     expect(result.exitCode).toBe(0)
     const output = JSON.parse(result.stdout.toString())
     expect(output.description).toContain('Top-level plaited eval input schema')
-    expect(output.oneOf.length).toBe(2)
+    expect(output.oneOf.length).toBe(3)
   })
 
   test('mode=grade rejects empty grader lists at the CLI boundary', async () => {
@@ -535,6 +569,480 @@ describe('eval CLI', () => {
       expect(output.perTask[0].winner).toBe('baseline')
       expect(output.summary.baselineWins).toBe(1)
       expect(output.summary.challengerWins).toBe(0)
+    })
+  })
+
+  test('mode=calibrate fails when graderId does not exist in the bundle', async () => {
+    await withTempRoot(async (rootDir) => {
+      const result = await runEvalCommand({
+        mode: 'calibrate',
+        graderId: 'missing-grader',
+        bundle: {
+          label: 'baseline',
+          tasks: [
+            {
+              taskId: 'task-1',
+              trials: [createTrialResult({ cwd: rootDir, id: 'trial-1', taskId: 'task-1', pass: true, score: 1 })],
+            },
+          ],
+        },
+      })
+
+      expect(result.exitCode).toBe(1)
+      expect(result.stderr.toString()).toContain("graderId 'missing-grader'")
+    })
+  })
+
+  test('mode=calibrate uses deterministic sampling for string and numeric seeds', async () => {
+    await withTempRoot(async (rootDir) => {
+      const input = {
+        mode: 'calibrate',
+        focus: 'all',
+        sample: 3,
+        seed: 'seed-1',
+        bundle: {
+          label: 'baseline',
+          tasks: [
+            {
+              taskId: 'task-a',
+              trials: [
+                createTrialResult({
+                  cwd: rootDir,
+                  id: 'a-1',
+                  taskId: 'task-a',
+                  pass: true,
+                  score: 1,
+                  graderResults: [createGraderResult({ id: 'g' })],
+                }),
+                createTrialResult({
+                  cwd: rootDir,
+                  id: 'a-2',
+                  taskId: 'task-a',
+                  pass: false,
+                  score: 0,
+                  graderResults: [createGraderResult({ id: 'g', pass: false })],
+                }),
+              ],
+            },
+            {
+              taskId: 'task-b',
+              trials: [
+                createTrialResult({
+                  cwd: rootDir,
+                  id: 'b-1',
+                  taskId: 'task-b',
+                  pass: true,
+                  score: 1,
+                  graderResults: [createGraderResult({ id: 'g' })],
+                }),
+                createTrialResult({
+                  cwd: rootDir,
+                  id: 'b-2',
+                  taskId: 'task-b',
+                  pass: false,
+                  score: 0,
+                  graderResults: [createGraderResult({ id: 'g', pass: false })],
+                }),
+              ],
+            },
+          ],
+        },
+      }
+
+      const first = await runEvalCommand(input)
+      const second = await runEvalCommand(input)
+
+      expect(first.exitCode).toBe(0)
+      expect(second.exitCode).toBe(0)
+      const firstOutput = JSON.parse(first.stdout.toString())
+      const secondOutput = JSON.parse(second.stdout.toString())
+      expect(firstOutput.resolvedSeed).toBe('seed-1')
+      expect(secondOutput.resolvedSeed).toBe('seed-1')
+      expect(firstOutput.samples.map((sample: { source: { trialId: string } }) => sample.source.trialId)).toEqual(
+        secondOutput.samples.map((sample: { source: { trialId: string } }) => sample.source.trialId),
+      )
+
+      const numericSeed = await runEvalCommand({
+        ...input,
+        seed: 123,
+      })
+      expect(numericSeed.exitCode).toBe(0)
+      const numericSeedOutput = JSON.parse(numericSeed.stdout.toString())
+      expect(numericSeedOutput.resolvedSeed).toBe('123')
+    })
+  })
+
+  test('mode=calibrate derives default seed from input fields when seed is omitted', async () => {
+    await withTempRoot(async (rootDir) => {
+      const result = await runEvalCommand({
+        mode: 'calibrate',
+        focus: 'all',
+        sample: 3,
+        snapshotMode: 'diagnostic',
+        maxSnapshotsPerSample: 8,
+        bundle: {
+          label: 'baseline',
+          tasks: [
+            {
+              taskId: 'task-a',
+              trials: [
+                createTrialResult({
+                  cwd: rootDir,
+                  id: 'trial-a',
+                  taskId: 'task-a',
+                  pass: true,
+                  score: 1,
+                  graderResults: [createGraderResult({ id: 'g' })],
+                }),
+              ],
+            },
+          ],
+        },
+      })
+
+      expect(result.exitCode).toBe(0)
+      const output = JSON.parse(result.stdout.toString())
+      expect(output.resolvedSeed).toBe('baseline|all|*|3|diagnostic|8')
+    })
+  })
+
+  test('mode=calibrate focus=all balances pass and fail samples with backfill from the larger stratum', async () => {
+    await withTempRoot(async (rootDir) => {
+      const passTrials = Array.from({ length: 7 }, (_, index) =>
+        createTrialResult({
+          cwd: rootDir,
+          id: `pass-${index}`,
+          taskId: 'task-balance',
+          pass: true,
+          score: 1,
+          graderResults: [createGraderResult({ id: 'g' })],
+        }),
+      )
+      const failTrial = createTrialResult({
+        cwd: rootDir,
+        id: 'fail-1',
+        taskId: 'task-balance',
+        pass: false,
+        score: 0,
+        graderResults: [createGraderResult({ id: 'g', pass: false })],
+      })
+
+      const result = await runEvalCommand({
+        mode: 'calibrate',
+        focus: 'all',
+        sample: 5,
+        seed: 'balance-seed',
+        bundle: {
+          label: 'baseline',
+          tasks: [
+            {
+              taskId: 'task-balance',
+              trials: [...passTrials, failTrial],
+            },
+          ],
+        },
+      })
+
+      expect(result.exitCode).toBe(0)
+      const output = JSON.parse(result.stdout.toString())
+      expect(output.candidateSummary.candidateCount).toBe(8)
+      expect(output.sampleSummary.actualSample).toBe(5)
+      expect(output.sampleSummary.sampledFailCount).toBe(1)
+      expect(output.sampleSummary.sampledPassCount).toBe(4)
+    })
+  })
+
+  test('mode=calibrate required_failures only includes completed trials in both graderId branches', async () => {
+    await withTempRoot(async (rootDir) => {
+      const completedRequiredFailure = createTrialResult({
+        cwd: rootDir,
+        id: 'completed-required-failure',
+        taskId: 'task-required',
+        pass: false,
+        score: 0,
+        graderResults: [createGraderResult({ id: 'g', pass: false, required: true })],
+      })
+      const failedRequiredFailure = createTrialResult({
+        cwd: rootDir,
+        id: 'failed-required-failure',
+        taskId: 'task-required',
+        pass: false,
+        score: 0,
+        result: { status: 'failed' },
+        graderResults: [createGraderResult({ id: 'g', pass: false, required: true })],
+      })
+
+      const withoutGraderId = await runEvalCommand({
+        mode: 'calibrate',
+        focus: 'required_failures',
+        sample: 10,
+        bundle: {
+          label: 'baseline',
+          tasks: [{ taskId: 'task-required', trials: [completedRequiredFailure, failedRequiredFailure] }],
+        },
+      })
+
+      expect(withoutGraderId.exitCode).toBe(0)
+      const withoutGraderIdOutput = JSON.parse(withoutGraderId.stdout.toString())
+      expect(withoutGraderIdOutput.candidateSummary.candidateCount).toBe(1)
+      expect(withoutGraderIdOutput.samples[0].source.trialId).toBe('completed-required-failure')
+
+      const withGraderId = await runEvalCommand({
+        mode: 'calibrate',
+        focus: 'required_failures',
+        graderId: 'g',
+        sample: 10,
+        bundle: {
+          label: 'baseline',
+          tasks: [{ taskId: 'task-required', trials: [completedRequiredFailure, failedRequiredFailure] }],
+        },
+      })
+
+      expect(withGraderId.exitCode).toBe(0)
+      const withGraderIdOutput = JSON.parse(withGraderId.stdout.toString())
+      expect(withGraderIdOutput.candidateSummary.candidateCount).toBe(1)
+      expect(withGraderIdOutput.samples[0].source.trialId).toBe('completed-required-failure')
+    })
+  })
+
+  test('mode=calibrate graderId summaries expose focused pass/fail/skipped separately from overall pass/fail', async () => {
+    await withTempRoot(async (rootDir) => {
+      const result = await runEvalCommand({
+        mode: 'calibrate',
+        focus: 'all',
+        graderId: 'focus',
+        sample: 10,
+        bundle: {
+          label: 'baseline',
+          tasks: [
+            {
+              taskId: 'task-focused',
+              trials: [
+                createTrialResult({
+                  cwd: rootDir,
+                  id: 'focused-pass',
+                  taskId: 'task-focused',
+                  pass: true,
+                  score: 1,
+                  graderResults: [createGraderResult({ id: 'focus', pass: true })],
+                }),
+                createTrialResult({
+                  cwd: rootDir,
+                  id: 'focused-fail',
+                  taskId: 'task-focused',
+                  pass: true,
+                  score: 1,
+                  graderResults: [createGraderResult({ id: 'focus', pass: false, required: false })],
+                }),
+                createTrialResult({
+                  cwd: rootDir,
+                  id: 'focused-skipped',
+                  taskId: 'task-focused',
+                  pass: false,
+                  score: 0,
+                  graderResults: [createGraderResult({ id: 'focus', skipped: true })],
+                }),
+                createTrialResult({
+                  cwd: rootDir,
+                  id: 'focused-missing',
+                  taskId: 'task-focused',
+                  pass: true,
+                  score: 1,
+                  graderResults: [createGraderResult({ id: 'other' })],
+                }),
+              ],
+            },
+          ],
+        },
+      })
+
+      expect(result.exitCode).toBe(0)
+      const output = JSON.parse(result.stdout.toString())
+      expect(output.bundleSummary.trialPassCount).toBe(3)
+      expect(output.bundleSummary.trialFailCount).toBe(1)
+      expect(output.bundleSummary.focusedGrader.executedPassCount).toBe(1)
+      expect(output.bundleSummary.focusedGrader.executedFailCount).toBe(1)
+      expect(output.bundleSummary.focusedGrader.skippedCount).toBe(1)
+      expect(output.bundleSummary.focusedGrader.missingCount).toBe(1)
+      expect(output.candidateSummary.candidateCount).toBe(2)
+    })
+  })
+
+  test('mode=calibrate summarizes required and optional grader failures separately', async () => {
+    await withTempRoot(async (rootDir) => {
+      const result = await runEvalCommand({
+        mode: 'calibrate',
+        focus: 'all_failures',
+        sample: 10,
+        bundle: {
+          label: 'baseline',
+          tasks: [
+            {
+              taskId: 'task-summary',
+              trials: [
+                createTrialResult({
+                  cwd: rootDir,
+                  id: 'required-fail',
+                  taskId: 'task-summary',
+                  pass: false,
+                  score: 0,
+                  graderResults: [createGraderResult({ id: 'required', pass: false, required: true })],
+                }),
+                createTrialResult({
+                  cwd: rootDir,
+                  id: 'optional-fail',
+                  taskId: 'task-summary',
+                  pass: false,
+                  score: 0,
+                  graderResults: [createGraderResult({ id: 'optional', pass: false, required: false })],
+                }),
+                createTrialResult({
+                  cwd: rootDir,
+                  id: 'required-skipped',
+                  taskId: 'task-summary',
+                  pass: false,
+                  score: 0,
+                  graderResults: [createGraderResult({ id: 'required-skipped', skipped: true, required: true })],
+                }),
+              ],
+            },
+          ],
+        },
+      })
+
+      expect(result.exitCode).toBe(0)
+      const output = JSON.parse(result.stdout.toString())
+      expect(output.bundleSummary.graderOutcomes.executedCount).toBe(2)
+      expect(output.bundleSummary.graderOutcomes.skippedCount).toBe(1)
+      expect(output.bundleSummary.graderOutcomes.requiredFailCount).toBe(1)
+      expect(output.bundleSummary.graderOutcomes.optionalFailCount).toBe(1)
+    })
+  })
+
+  test('mode=calibrate supports diagnostic and all snapshot modes with source pointers and no duplicated trial snapshots', async () => {
+    await withTempRoot(async (rootDir) => {
+      const snapshots = [
+        {
+          kind: 'selection',
+          step: 0,
+          selected: { type: 'first' },
+        },
+        {
+          kind: 'selection',
+          step: 1,
+          selected: { type: 'second' },
+        },
+        {
+          kind: 'feedback_error',
+          type: 'alpha',
+          error: 'handler failed',
+        },
+        {
+          kind: 'selection',
+          step: 3,
+          selected: { type: 'third' },
+        },
+        {
+          kind: 'runtime_error',
+          error: 'runtime failed',
+        },
+        {
+          kind: 'selection',
+          step: 5,
+          selected: { type: 'fourth' },
+        },
+      ]
+
+      const baseInput = {
+        mode: 'calibrate',
+        focus: 'all',
+        sample: 1,
+        seed: 'snapshot-seed',
+        bundle: {
+          label: 'baseline',
+          tasks: [
+            {
+              taskId: 'task-snapshots',
+              trials: [
+                createTrialResult({
+                  cwd: rootDir,
+                  id: 'snapshot-trial',
+                  taskId: 'task-snapshots',
+                  pass: false,
+                  score: 0,
+                  snapshots,
+                  graderResults: [createGraderResult({ id: 'g', pass: false })],
+                }),
+              ],
+            },
+          ],
+        },
+      }
+
+      const diagnostic = await runEvalCommand({
+        ...baseInput,
+        snapshotMode: 'diagnostic',
+        maxSnapshotsPerSample: 4,
+      })
+
+      expect(diagnostic.exitCode).toBe(0)
+      const diagnosticOutput = JSON.parse(diagnostic.stdout.toString())
+      expect(diagnosticOutput.samples[0].snapshots.length).toBeLessThanOrEqual(4)
+      expect(diagnosticOutput.samples[0].source.bundleLabel).toBe('baseline')
+      expect(diagnosticOutput.samples[0].source.taskIndex).toBe(0)
+      expect(diagnosticOutput.samples[0].source.trialIndex).toBe(0)
+      expect(diagnosticOutput.samples[0].source.taskId).toBe('task-snapshots')
+      expect(diagnosticOutput.samples[0].source.trialId).toBe('snapshot-trial')
+      expect(diagnosticOutput.samples[0].trial.snapshots).toBeUndefined()
+      expect(diagnosticOutput.samples[0].process).toBeDefined()
+
+      const allSnapshots = await runEvalCommand({
+        ...baseInput,
+        snapshotMode: 'all',
+      })
+
+      expect(allSnapshots.exitCode).toBe(0)
+      const allSnapshotsOutput = JSON.parse(allSnapshots.stdout.toString())
+      expect(allSnapshotsOutput.samples[0].snapshots).toHaveLength(snapshots.length)
+      expect(allSnapshotsOutput.warnings.join(' ')).toContain('snapshotMode=all')
+    })
+  })
+
+  test('mode=calibrate output includes review protocol and reviewer response contract', async () => {
+    await withTempRoot(async (rootDir) => {
+      const result = await runEvalCommand({
+        mode: 'calibrate',
+        focus: 'all',
+        sample: 1,
+        bundle: {
+          label: 'baseline',
+          tasks: [
+            {
+              taskId: 'task-review',
+              trials: [
+                createTrialResult({
+                  cwd: rootDir,
+                  id: 'trial-review',
+                  taskId: 'task-review',
+                  pass: true,
+                  score: 1,
+                  graderResults: [createGraderResult({ id: 'g' })],
+                }),
+              ],
+            },
+          ],
+        },
+      })
+
+      expect(result.exitCode).toBe(0)
+      const output = JSON.parse(result.stdout.toString())
+      expect(output.reviewProtocol.confidenceThreshold).toBe(0.75)
+      expect(output.reviewProtocol.labels).toContain('needs_human')
+      expect(output.reviewResponseContract.type).toBe('object')
+      expect(output.reviewResponseContract.required).toContain('label')
+      expect(output.reviewResponseContract.required).toContain('confidence')
+      expect(output.reviewResponseContract.required).toContain('reasoning')
+      expect(output.reviewResponseSchema).toBeUndefined()
     })
   })
 })
