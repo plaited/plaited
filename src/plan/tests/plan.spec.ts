@@ -276,7 +276,7 @@ describe('plan database migrations', () => {
         'red_approval',
         'approved',
         'agent',
-        'codex-5.3',
+        'coder',
         'red test evidence and discovery are sufficient',
         'disc-1',
         '2026-05-05T00:05:00.000Z',
@@ -297,7 +297,7 @@ describe('plan database migrations', () => {
         )
         .get('gate-1')
       expect(gateRow?.actor_type).toBe('agent')
-      expect(gateRow?.actor_id).toBe('codex-5.3')
+      expect(gateRow?.actor_id).toBe('coder')
       expect(gateRow?.reason).toContain('discovery')
       expect(gateRow?.decided_at).toBe('2026-05-05T00:05:00.000Z')
 

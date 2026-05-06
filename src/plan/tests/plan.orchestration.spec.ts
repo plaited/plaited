@@ -76,19 +76,17 @@ describe('work-item orchestration contract', () => {
     expect(hasInterruptionHook).toBeTrue()
   })
 
-  test('declares machine-checkable dual-model role assumptions', () => {
+  test('declares machine-checkable actor roles without concrete model bindings', () => {
     expect(CANONICAL_WORK_ITEM_ORCHESTRATION_CONTRACT.roles).toEqual({
-      implementer: {
+      coder: {
         actorType: 'agent',
-        actorId: 'codex-5.3',
-        modelId: 'codex-5.3',
+        actorId: 'coder',
         description: 'Implementation execution authority for green worktree changes.',
       },
-      gateAuthority: {
+      analyst: {
         actorType: 'agent',
-        actorId: 'gpt-5.5',
-        modelId: 'gpt-5.5',
-        description: 'Reviewer and gate authority for red approval, frontier verification, and merge qualification.',
+        actorId: 'analyst',
+        description: 'Analysis and gate authority for red approval, frontier verification, and merge qualification.',
       },
     })
   })

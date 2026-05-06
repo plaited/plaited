@@ -1,5 +1,6 @@
 import * as z from 'zod'
 
+import { AGENT_RUNTIMES } from '../shared.ts'
 import {
   WORK_ITEM_LIFECYCLE_EVENT_VALUES,
   WORK_ITEM_LIFECYCLE_EVENTS,
@@ -81,10 +82,9 @@ const WorkItemEscalationHookSchema = z.strictObject({
   action: z.literal('escalate_to_gate_authority'),
 })
 
-const WorkItemModelRoleSchema = z.strictObject({
+const WorkItemActorRoleSchema = z.strictObject({
   actorType: z.literal('agent'),
-  actorId: z.string().min(1),
-  modelId: z.string().min(1),
+  actorId: z.enum([AGENT_RUNTIMES.coder, AGENT_RUNTIMES.analyst]),
   description: z.string().min(1),
 })
 
@@ -92,8 +92,12 @@ export const WorkItemOrchestrationContractSchema = z
   .strictObject({
     version: z.literal(1),
     roles: z.strictObject({
-      implementer: WorkItemModelRoleSchema,
-      gateAuthority: WorkItemModelRoleSchema,
+      coder: WorkItemActorRoleSchema.extend({
+        actorId: z.literal(AGENT_RUNTIMES.coder),
+      }),
+      analyst: WorkItemActorRoleSchema.extend({
+        actorId: z.literal(AGENT_RUNTIMES.analyst),
+      }),
     }),
     initialState: WorkItemLifecycleStateIdSchema,
     states: z.array(WorkItemLifecycleStateSchema).min(1),
@@ -327,17 +331,15 @@ const WORK_ITEM_ORCHESTRATION_TRANSITIONS: WorkItemOrchestrationContract['transi
 const CANONICAL_WORK_ITEM_ORCHESTRATION_CONTRACT_UNVALIDATED: WorkItemOrchestrationContract = {
   version: 1,
   roles: {
-    implementer: {
+    coder: {
       actorType: 'agent',
-      actorId: 'codex-5.3',
-      modelId: 'codex-5.3',
+      actorId: AGENT_RUNTIMES.coder,
       description: 'Implementation execution authority for green worktree changes.',
     },
-    gateAuthority: {
+    analyst: {
       actorType: 'agent',
-      actorId: 'gpt-5.5',
-      modelId: 'gpt-5.5',
-      description: 'Reviewer and gate authority for red approval, frontier verification, and merge qualification.',
+      actorId: AGENT_RUNTIMES.analyst,
+      description: 'Analysis and gate authority for red approval, frontier verification, and merge qualification.',
     },
   },
   initialState: WORK_ITEM_LIFECYCLE_STATES.draft,
