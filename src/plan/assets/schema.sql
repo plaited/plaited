@@ -106,8 +106,7 @@ CREATE TABLE IF NOT EXISTS gate_decisions (
   drift_stale_approval_decision_id TEXT REFERENCES gate_decisions(id) ON DELETE SET NULL ON UPDATE CASCADE,
   drift_signature TEXT,
   decided_at TEXT NOT NULL,
-  created_at TEXT NOT NULL,
-  UNIQUE (work_item_id, gate_name, decided_at)
+  created_at TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_gate_decisions_work_item_id ON gate_decisions (work_item_id);
@@ -128,6 +127,7 @@ CREATE INDEX IF NOT EXISTS idx_gate_decision_evidence_cache_refs_gate_decision_i
 
 CREATE TABLE IF NOT EXISTS gate_decision_failures (
   gate_decision_id TEXT NOT NULL REFERENCES gate_decisions(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  failure_sequence INTEGER NOT NULL CHECK (failure_sequence > 0),
   failure_category TEXT NOT NULL CHECK (
     failure_category IN (
       'expected_behavior_fail',
@@ -145,7 +145,7 @@ CREATE TABLE IF NOT EXISTS gate_decision_failures (
   ),
   check_name TEXT NOT NULL,
   detail TEXT NOT NULL,
-  PRIMARY KEY (gate_decision_id, failure_category, check_name)
+  PRIMARY KEY (gate_decision_id, failure_sequence)
 );
 
 CREATE INDEX IF NOT EXISTS idx_gate_decision_failures_gate_decision_id

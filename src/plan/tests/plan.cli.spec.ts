@@ -523,12 +523,14 @@ const seedProjectionFixture = async (): Promise<string> => {
     db.query(
       `INSERT INTO gate_decision_failures (
         gate_decision_id,
+        failure_sequence,
         failure_category,
         check_name,
         detail
-      ) VALUES (?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?)`,
     ).run(
       'gate-red-wip-1',
+      1,
       'expected_behavior_fail',
       'bun test src/plan/tests/plan.cli.spec.ts',
       'failing regression proves the behavior gap',

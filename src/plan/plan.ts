@@ -270,7 +270,7 @@ const readLatestRedGateDecision = ({
        FROM gate_decisions
        WHERE work_item_id = ?
          AND gate_name = 'red_approval'
-       ORDER BY decided_at DESC, created_at DESC
+       ORDER BY decided_at DESC, created_at DESC, id DESC
        LIMIT 1`,
     )
     .get(workItemId)
@@ -364,7 +364,7 @@ const readConsecutiveRedRejectionCount = ({ db, workItemId }: { db: Database; wo
        FROM gate_decisions
        WHERE work_item_id = ?
          AND gate_name = 'red_approval'
-       ORDER BY decided_at DESC, created_at DESC`,
+       ORDER BY decided_at DESC, created_at DESC, id DESC`,
     )
     .all(workItemId)
 
@@ -517,10 +517,11 @@ const persistGateDecision = ({
   const insertFailure = db.query(
     `INSERT INTO gate_decision_failures (
       gate_decision_id,
+      failure_sequence,
       failure_category,
       check_name,
       detail
-    ) VALUES (?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?)`,
   )
 
   const transaction = db.transaction(() => {
@@ -545,8 +546,8 @@ const persistGateDecision = ({
       insertEvidenceRef.run(decisionId, evidenceRef.contextDbPath, evidenceRef.evidenceCacheRowId)
     }
 
-    for (const failure of failures) {
-      insertFailure.run(decisionId, failure.category, failure.checkName, failure.detail)
+    for (const [failureIndex, failure] of failures.entries()) {
+      insertFailure.run(decisionId, failureIndex + 1, failure.category, failure.checkName, failure.detail)
     }
   })
 

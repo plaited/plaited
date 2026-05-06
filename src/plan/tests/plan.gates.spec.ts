@@ -21,7 +21,6 @@ describe('plan gate engine', () => {
 
     try {
       db = await openPlanDatabase({ dbPath })
-
       db.query(
         `INSERT INTO requests (
           id,
@@ -101,7 +100,6 @@ describe('plan gate engine', () => {
 
     try {
       db = await openPlanDatabase({ dbPath })
-
       db.query(
         `INSERT INTO requests (
           id,
@@ -193,7 +191,6 @@ describe('plan gate engine', () => {
 
     try {
       db = await openPlanDatabase({ dbPath })
-
       db.query(
         `INSERT INTO requests (
           id,
@@ -586,6 +583,286 @@ describe('plan gate engine', () => {
     }
   })
 
+  test('persists multiple red gate decisions for the same work item, gate, and decided_at', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
+    const dbPath = join(tempDir, 'plan.sqlite')
+    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+
+    try {
+      db = await openPlanDatabase({ dbPath })
+
+      db.query(
+        `INSERT INTO requests (
+          id,
+          summary,
+          status,
+          requested_by_actor_type,
+          requested_by_actor_id,
+          created_at,
+          updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        'req-duplicate-red-decisions',
+        'duplicate red decision request',
+        'new',
+        'user',
+        'user-duplicate-red-decisions',
+        '2026-05-05T00:00:00.000Z',
+        '2026-05-05T00:00:00.000Z',
+      )
+      db.query(
+        `INSERT INTO work_items (
+          id,
+          request_id,
+          title,
+          status,
+          spec_path,
+          spec_commit_sha,
+          created_at,
+          updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        'item-duplicate-red-decisions',
+        'req-duplicate-red-decisions',
+        'duplicate red decision item',
+        'red_pending',
+        'specs/item-duplicate-red-decisions.spec.json',
+        'sha-duplicate-red-decisions',
+        '2026-05-05T00:00:00.000Z',
+        '2026-05-05T00:00:00.000Z',
+      )
+      db.query(
+        `INSERT INTO discovery_artifacts (
+          id,
+          work_item_id,
+          artifact_version,
+          rules,
+          examples,
+          open_questions,
+          out_of_scope,
+          collected_at,
+          stale_after_at,
+          created_at,
+          updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        'disc-duplicate-red-decisions-1',
+        'item-duplicate-red-decisions',
+        1,
+        JSON.stringify([]),
+        JSON.stringify([]),
+        JSON.stringify([]),
+        JSON.stringify([]),
+        '2026-05-05T00:00:00.000Z',
+        '2026-05-06T00:00:00.000Z',
+        '2026-05-05T00:00:00.000Z',
+        '2026-05-05T00:00:00.000Z',
+      )
+
+      const decidedAt = '2026-05-05T00:01:00.000Z'
+
+      expect(() =>
+        evaluateAndRecordRedApprovalGate({
+          db: db!,
+          decisionId: 'gate-duplicate-red-decision-1',
+          workItemId: 'item-duplicate-red-decisions',
+          actorType: 'agent',
+          actorId: 'codex-5.3',
+          reason: 'first decision at shared timestamp',
+          discoveryArtifactId: 'disc-duplicate-red-decisions-1',
+          decidedAt,
+          failures: [
+            {
+              category: 'expected_behavior_fail',
+              checkName: 'bun test src/plan/tests/plan.gates.spec.ts',
+              detail: 'first failure detail',
+            },
+          ],
+          evidenceRefs: [],
+        }),
+      ).not.toThrow()
+
+      expect(() =>
+        evaluateAndRecordRedApprovalGate({
+          db: db!,
+          decisionId: 'gate-duplicate-red-decision-2',
+          workItemId: 'item-duplicate-red-decisions',
+          actorType: 'agent',
+          actorId: 'codex-5.3',
+          reason: 'second decision at shared timestamp',
+          discoveryArtifactId: 'disc-duplicate-red-decisions-1',
+          decidedAt,
+          failures: [
+            {
+              category: 'missing_impl',
+              checkName: 'bun test src/plan/tests/plan.gates.spec.ts',
+              detail: 'second failure detail',
+            },
+          ],
+          evidenceRefs: [],
+        }),
+      ).not.toThrow()
+
+      const decisionRows = db
+        .query<{ id: string; decision: string; reason: string; decided_at: string }, [string]>(
+          `SELECT id, decision, reason, decided_at
+           FROM gate_decisions
+           WHERE work_item_id = ?
+             AND gate_name = 'red_approval'
+           ORDER BY id ASC`,
+        )
+        .all('item-duplicate-red-decisions')
+      expect(decisionRows).toEqual([
+        {
+          id: 'gate-duplicate-red-decision-1',
+          decision: 'approved',
+          reason: 'first decision at shared timestamp',
+          decided_at: decidedAt,
+        },
+        {
+          id: 'gate-duplicate-red-decision-2',
+          decision: 'approved',
+          reason: 'second decision at shared timestamp',
+          decided_at: decidedAt,
+        },
+      ])
+    } finally {
+      if (db) {
+        closePlanDatabase(db)
+      }
+      await rm(tempDir, { recursive: true, force: true })
+    }
+  })
+
+  test('persists multiple failure rows with the same category and check name when details differ', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
+    const dbPath = join(tempDir, 'plan.sqlite')
+    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+
+    try {
+      db = await openPlanDatabase({ dbPath })
+      db.query(
+        `INSERT INTO requests (
+          id,
+          summary,
+          status,
+          requested_by_actor_type,
+          requested_by_actor_id,
+          created_at,
+          updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        'req-duplicate-failures',
+        'duplicate failure audit request',
+        'new',
+        'user',
+        'user-duplicate-failures',
+        '2026-05-05T00:00:00.000Z',
+        '2026-05-05T00:00:00.000Z',
+      )
+      db.query(
+        `INSERT INTO work_items (
+          id,
+          request_id,
+          title,
+          status,
+          spec_path,
+          spec_commit_sha,
+          created_at,
+          updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        'item-duplicate-failures',
+        'req-duplicate-failures',
+        'duplicate failure item',
+        'red_pending',
+        'specs/item-duplicate-failures.spec.json',
+        'sha-duplicate-failures',
+        '2026-05-05T00:00:00.000Z',
+        '2026-05-05T00:00:00.000Z',
+      )
+      db.query(
+        `INSERT INTO discovery_artifacts (
+          id,
+          work_item_id,
+          artifact_version,
+          rules,
+          examples,
+          open_questions,
+          out_of_scope,
+          collected_at,
+          stale_after_at,
+          created_at,
+          updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        'disc-duplicate-failures-1',
+        'item-duplicate-failures',
+        1,
+        JSON.stringify([]),
+        JSON.stringify([]),
+        JSON.stringify([]),
+        JSON.stringify([]),
+        '2026-05-05T00:00:00.000Z',
+        '2026-05-06T00:00:00.000Z',
+        '2026-05-05T00:00:00.000Z',
+        '2026-05-05T00:00:00.000Z',
+      )
+
+      expect(() =>
+        evaluateAndRecordRedApprovalGate({
+          db: db!,
+          decisionId: 'gate-duplicate-failures-1',
+          workItemId: 'item-duplicate-failures',
+          actorType: 'agent',
+          actorId: 'codex-5.3',
+          reason: 'same failure key should retain both details',
+          discoveryArtifactId: 'disc-duplicate-failures-1',
+          decidedAt: '2026-05-05T00:01:00.000Z',
+          failures: [
+            {
+              category: 'expected_behavior_fail',
+              checkName: 'bun test src/plan/tests/plan.gates.spec.ts',
+              detail: 'first detail',
+            },
+            {
+              category: 'expected_behavior_fail',
+              checkName: 'bun test src/plan/tests/plan.gates.spec.ts',
+              detail: 'second detail',
+            },
+          ],
+          evidenceRefs: [],
+        }),
+      ).not.toThrow()
+
+      const failureRows = db
+        .query<{ failure_category: string; check_name: string; detail: string }, [string]>(
+          `SELECT failure_category, check_name, detail
+           FROM gate_decision_failures
+           WHERE gate_decision_id = ?
+           ORDER BY detail ASC`,
+        )
+        .all('gate-duplicate-failures-1')
+      expect(failureRows).toEqual([
+        {
+          failure_category: 'expected_behavior_fail',
+          check_name: 'bun test src/plan/tests/plan.gates.spec.ts',
+          detail: 'first detail',
+        },
+        {
+          failure_category: 'expected_behavior_fail',
+          check_name: 'bun test src/plan/tests/plan.gates.spec.ts',
+          detail: 'second detail',
+        },
+      ])
+    } finally {
+      if (db) {
+        closePlanDatabase(db)
+      }
+      await rm(tempDir, { recursive: true, force: true })
+    }
+  })
+
   test('revokes stale red approval when discovery or spec drift is detected', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
     const dbPath = join(tempDir, 'plan.sqlite')
@@ -712,6 +989,177 @@ describe('plan gate engine', () => {
       expect(latestRedDecision?.decision).toBe('rejected')
       expect(latestRedDecision?.actor_type).toBe('system')
       expect(latestRedDecision?.reason).toContain('drift')
+    } finally {
+      if (db) {
+        closePlanDatabase(db)
+      }
+      await rm(tempDir, { recursive: true, force: true })
+    }
+  })
+
+  test('does not revoke drift from an older approved red decision when a tied later rejection exists', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
+    const dbPath = join(tempDir, 'plan.sqlite')
+    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+
+    try {
+      db = await openPlanDatabase({ dbPath })
+
+      db.query(
+        `INSERT INTO requests (
+          id,
+          summary,
+          status,
+          requested_by_actor_type,
+          requested_by_actor_id,
+          created_at,
+          updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        'req-latest-red-tie',
+        'latest red tie request',
+        'new',
+        'user',
+        'user-latest-red-tie',
+        '2026-05-05T00:00:00.000Z',
+        '2026-05-05T00:00:00.000Z',
+      )
+      db.query(
+        `INSERT INTO work_items (
+          id,
+          request_id,
+          title,
+          status,
+          spec_path,
+          spec_commit_sha,
+          created_at,
+          updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        'item-latest-red-tie',
+        'req-latest-red-tie',
+        'latest red tie item',
+        'red_pending',
+        'specs/item-latest-red-tie.spec.json',
+        'sha-before-drift',
+        '2026-05-05T00:00:00.000Z',
+        '2026-05-05T00:00:00.000Z',
+      )
+      db.query(
+        `INSERT INTO discovery_artifacts (
+          id,
+          work_item_id,
+          artifact_version,
+          rules,
+          examples,
+          open_questions,
+          out_of_scope,
+          collected_at,
+          stale_after_at,
+          created_at,
+          updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        'disc-latest-red-tie-1',
+        'item-latest-red-tie',
+        1,
+        JSON.stringify([]),
+        JSON.stringify([]),
+        JSON.stringify([]),
+        JSON.stringify([]),
+        '2026-05-05T00:00:00.000Z',
+        '2026-05-06T00:00:00.000Z',
+        '2026-05-05T00:00:00.000Z',
+        '2026-05-05T00:00:00.000Z',
+      )
+
+      db.query(
+        `INSERT INTO gate_decisions (
+          id,
+          work_item_id,
+          gate_name,
+          decision,
+          actor_type,
+          actor_id,
+          reason,
+          discovery_artifact_id,
+          discovery_artifact_updated_at_snapshot,
+          spec_commit_sha,
+          decided_at,
+          created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        'gate-latest-red-tie-1',
+        'item-latest-red-tie',
+        'red_approval',
+        'approved',
+        'agent',
+        'codex-5.3',
+        'older approval in tied timestamp bucket',
+        'disc-latest-red-tie-1',
+        '2026-05-05T00:00:00.000Z',
+        'sha-before-drift',
+        '2026-05-05T00:01:00.000Z',
+        '2026-05-05T00:01:00.000Z',
+      )
+      db.query(
+        `INSERT INTO gate_decisions (
+          id,
+          work_item_id,
+          gate_name,
+          decision,
+          actor_type,
+          actor_id,
+          reason,
+          discovery_artifact_id,
+          discovery_artifact_updated_at_snapshot,
+          spec_commit_sha,
+          decided_at,
+          created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        'gate-latest-red-tie-2',
+        'item-latest-red-tie',
+        'red_approval',
+        'rejected',
+        'agent',
+        'codex-5.3',
+        'later rejection in tied timestamp bucket',
+        'disc-latest-red-tie-1',
+        '2026-05-05T00:00:00.000Z',
+        'sha-before-drift',
+        '2026-05-05T00:01:00.000Z',
+        '2026-05-05T00:01:00.000Z',
+      )
+
+      db.query('UPDATE work_items SET spec_commit_sha = ?, updated_at = ? WHERE id = ?').run(
+        'sha-after-drift',
+        '2026-05-05T00:02:00.000Z',
+        'item-latest-red-tie',
+      )
+
+      const driftResult = revokeStaleRedApprovalOnDrift({
+        db,
+        decisionId: 'gate-latest-red-tie-revoke-1',
+        workItemId: 'item-latest-red-tie',
+        actorType: 'system',
+        actorId: 'gate-engine',
+        decidedAt: '2026-05-05T00:03:00.000Z',
+      })
+
+      expect(driftResult.revoked).toBeFalse()
+      expect(driftResult.reason).toContain('No approved red decision exists')
+
+      const systemRejections = db
+        .query<{ total: number }, []>(
+          `SELECT COUNT(*) AS total
+           FROM gate_decisions
+           WHERE work_item_id = 'item-latest-red-tie'
+             AND gate_name = 'red_approval'
+             AND actor_type = 'system'`,
+        )
+        .get()
+      expect(systemRejections?.total).toBe(0)
     } finally {
       if (db) {
         closePlanDatabase(db)
@@ -1288,6 +1736,130 @@ describe('plan gate engine', () => {
 
       expect(escalation.triggered).toBeTrue()
       expect(escalation.triggers).toEqual(['open_questions_unresolved'])
+    } finally {
+      if (db) {
+        closePlanDatabase(db)
+      }
+      await rm(tempDir, { recursive: true, force: true })
+    }
+  })
+
+  test('does not count older tied red rejections after a tied later approval', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
+    const dbPath = join(tempDir, 'plan.sqlite')
+    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+
+    try {
+      db = await openPlanDatabase({ dbPath })
+
+      db.query(
+        `INSERT INTO requests (
+          id,
+          summary,
+          status,
+          requested_by_actor_type,
+          requested_by_actor_id,
+          created_at,
+          updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        'req-escalate-tie',
+        'escalate tie request',
+        'new',
+        'user',
+        'user-escalate-tie',
+        '2026-05-05T00:00:00.000Z',
+        '2026-05-05T00:00:00.000Z',
+      )
+      db.query(
+        `INSERT INTO work_items (
+          id,
+          request_id,
+          title,
+          status,
+          spec_path,
+          spec_commit_sha,
+          created_at,
+          updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        'item-escalate-tie',
+        'req-escalate-tie',
+        'escalate tie item',
+        'red_pending',
+        'specs/item-escalate-tie.spec.json',
+        'sha-escalate-tie',
+        '2026-05-05T00:00:00.000Z',
+        '2026-05-05T00:00:00.000Z',
+      )
+
+      for (const decision of [
+        {
+          id: 'gate-escalate-tie-1',
+          decision: 'rejected',
+          reason: 'older tied rejection one',
+        },
+        {
+          id: 'gate-escalate-tie-2',
+          decision: 'rejected',
+          reason: 'older tied rejection two',
+        },
+        {
+          id: 'gate-escalate-tie-3',
+          decision: 'approved',
+          reason: 'latest tied approval',
+        },
+      ] as const) {
+        db.query(
+          `INSERT INTO gate_decisions (
+            id,
+            work_item_id,
+            gate_name,
+            decision,
+            actor_type,
+            actor_id,
+            reason,
+            spec_commit_sha,
+            decided_at,
+            created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ).run(
+          decision.id,
+          'item-escalate-tie',
+          'red_approval',
+          decision.decision,
+          'agent',
+          'codex-5.3',
+          decision.reason,
+          'sha-escalate-tie',
+          '2026-05-05T00:01:00.000Z',
+          '2026-05-05T00:01:00.000Z',
+        )
+      }
+
+      const escalation = evaluateAndRecordEscalationDecision({
+        db,
+        workItemId: 'item-escalate-tie',
+        evaluationContext: 'red_approval',
+        dependencyDeadlockCount: 0,
+        riskyImpactScore: 0,
+        actorType: 'agent',
+        actorId: 'codex-5.3',
+        occurredAt: '2026-05-05T00:02:00.000Z',
+      })
+
+      expect(escalation.triggered).toBeFalse()
+      expect(escalation.triggers).toEqual([])
+
+      const eventRows = db
+        .query<{ total: number }, []>(
+          `SELECT COUNT(*) AS total
+           FROM work_item_events
+           WHERE work_item_id = 'item-escalate-tie'
+             AND event_kind = 'escalation_decision_recorded'`,
+        )
+        .get()
+      expect(eventRows?.total).toBe(0)
     } finally {
       if (db) {
         closePlanDatabase(db)
