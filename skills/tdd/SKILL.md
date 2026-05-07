@@ -26,6 +26,8 @@ what the last cycle taught you about the actual behavior and interface.
 - Mock only external boundaries such as remote APIs, time, randomness, or rare filesystem cases.
 - Avoid conditional assertions: assert the branch first, then assert branch-specific values.
 - Test both branches for conditionals, fallbacks, and error paths.
+- Prefer one stable public/runtime interface for each behavior. If the operator contract is a CLI,
+  test the CLI boundary instead of splitting coverage across private helpers or duplicate wrappers.
 - Exercise public interfaces and runtime contracts rather than private helpers.
 - Follow applicable repo skills and `AGENTS.md` rules for the touched area.
 

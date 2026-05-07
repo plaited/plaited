@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS plan_migrations (
+CREATE TABLE IF NOT EXISTS kanban_migrations (
   version INTEGER PRIMARY KEY,
   applied_at TEXT NOT NULL
 );

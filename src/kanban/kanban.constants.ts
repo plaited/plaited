@@ -158,11 +158,19 @@ export const ESCALATION_TRIGGER_ID_VALUES = [
 export const CONSECUTIVE_RED_REJECTION_ESCALATION_THRESHOLD = 2
 export const RISKY_IMPACT_ESCALATION_THRESHOLD = 8
 
-export const PLAN_COMMAND = 'plan'
+export const KANBAN_COMMAND = 'kanban'
 
-export const PLAN_PROJECTION_MODES = {
+export const KANBAN_MODES = {
   board: 'board',
   item: 'item',
   readyQueue: 'ready-queue',
   decisionAudit: 'decision-audit',
+  initDb: 'init-db',
+  recordRedApproval: 'record-red-approval',
+  revokeStaleRedApproval: 'revoke-stale-red-approval',
+  recordFrontierVerification: 'record-frontier-verification',
+  recordMergeSimulation: 'record-merge-simulation',
+  recordEscalation: 'record-escalation',
+  startExecution: 'start-execution',
+  runPostMergeCleanup: 'run-post-merge-cleanup',
 } as const

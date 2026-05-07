@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { closePlanDatabase, openPlanDatabase } from '../plan.ts'
+import { closeKanbanDatabase, openKanbanDatabase } from '../kanban.ts'
 
 const REQUIRED_TABLES = [
   'requests',
@@ -16,14 +16,14 @@ const REQUIRED_TABLES = [
   'work_item_events',
 ]
 
-describe('plan database migrations', () => {
+describe('kanban database migrations', () => {
   test('creates the foundational orchestration tables', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-db-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-db-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       const tableRows = db
         .query<{ name: string }, []>("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
@@ -35,19 +35,19 @@ describe('plan database migrations', () => {
       }
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('enforces FK/index scaffolding and append-only work_item_events', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-db-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-db-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       const fkRows = db
         .query<{ table: string; from: string; to: string }, []>("PRAGMA foreign_key_list('work_items')")
@@ -107,19 +107,19 @@ describe('plan database migrations', () => {
       expect(() => db?.query('DELETE FROM work_item_events WHERE id = ?').run('evt-1')).toThrow()
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('allows parent lifecycle FK actions to apply to work_item_events', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-db-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-db-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -182,19 +182,19 @@ describe('plan database migrations', () => {
       expect(updatedEvent?.work_item_id).toBe('item-update-renamed')
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('stores discovery and gate decision audit records with constraint guards', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-db-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-db-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       const discoveryColumns = db
         .query<{ name: string }, []>("PRAGMA table_info('discovery_artifacts')")
@@ -341,19 +341,19 @@ describe('plan database migrations', () => {
       ).toThrow()
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('rejects malformed discovery artifact timestamps', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-db-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-db-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -435,45 +435,45 @@ describe('plan database migrations', () => {
       ).toThrow()
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('tracks schema migration version idempotently', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-db-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-db-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
 
-    let firstDb: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
-    let secondDb: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    let firstDb: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
+    let secondDb: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      firstDb = await openPlanDatabase({ dbPath })
+      firstDb = await openKanbanDatabase({ dbPath })
       const firstRows = firstDb
         .query<{ version: number; applied_at: string }, []>(
-          'SELECT version, applied_at FROM plan_migrations ORDER BY version ASC',
+          'SELECT version, applied_at FROM kanban_migrations ORDER BY version ASC',
         )
         .all()
       expect(firstRows).toHaveLength(1)
       expect(firstRows[0]?.version).toBe(1)
       expect(firstRows[0]?.applied_at).toContain('T')
 
-      closePlanDatabase(firstDb)
+      closeKanbanDatabase(firstDb)
       firstDb = undefined
 
-      secondDb = await openPlanDatabase({ dbPath })
+      secondDb = await openKanbanDatabase({ dbPath })
       const secondRows = secondDb
-        .query<{ version: number }, []>('SELECT version FROM plan_migrations ORDER BY version ASC')
+        .query<{ version: number }, []>('SELECT version FROM kanban_migrations ORDER BY version ASC')
         .all()
 
       expect(secondRows).toEqual([{ version: 1 }])
     } finally {
       if (firstDb) {
-        closePlanDatabase(firstDb)
+        closeKanbanDatabase(firstDb)
       }
       if (secondDb) {
-        closePlanDatabase(secondDb)
+        closeKanbanDatabase(secondDb)
       }
       await rm(tempDir, { recursive: true, force: true })
     }

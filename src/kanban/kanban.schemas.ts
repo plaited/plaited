@@ -10,7 +10,7 @@ import {
   WORK_ITEM_LIFECYCLE_TERMINAL_STATE_VALUES,
   WORK_ITEM_ORCHESTRATION_GUARD_VALUES,
   WORK_ITEM_ORCHESTRATION_GUARDS,
-} from './plan.constants.ts'
+} from './kanban.constants.ts'
 
 const WorkItemLifecycleStateIdSchema = z.enum(WORK_ITEM_LIFECYCLE_STATE_VALUES)
 

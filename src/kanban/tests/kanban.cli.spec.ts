@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
-import { closePlanDatabase, openPlanDatabase } from '../plan.ts'
+import { closeKanbanDatabase, openKanbanDatabase } from '../kanban.ts'
 
 const CLI_PACKAGE_ROOT = resolve(import.meta.dir, '../../../')
 
@@ -14,13 +14,13 @@ const trackTempPath = (path: string): string => {
   return path
 }
 
-const runPlanCommand = async (input: unknown) =>
-  Bun.$`bun ./bin/plaited.ts plan ${JSON.stringify(input)}`.cwd(CLI_PACKAGE_ROOT).quiet().nothrow()
+const runKanbanCommand = async (input: unknown) =>
+  Bun.$`bun ./bin/plaited.ts kanban ${JSON.stringify(input)}`.cwd(CLI_PACKAGE_ROOT).quiet().nothrow()
 
 const seedProjectionFixture = async (): Promise<string> => {
-  const tempDir = trackTempPath(await mkdtemp(join(tmpdir(), 'plaited-plan-cli-')))
-  const dbPath = join(tempDir, 'plan.sqlite')
-  const db = await openPlanDatabase({ dbPath })
+  const tempDir = trackTempPath(await mkdtemp(join(tmpdir(), 'plaited-kanban-cli-')))
+  const dbPath = join(tempDir, 'kanban.sqlite')
+  const db = await openKanbanDatabase({ dbPath })
 
   try {
     db.query(
@@ -34,11 +34,11 @@ const seedProjectionFixture = async (): Promise<string> => {
         updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
     ).run(
-      'req-plan-cli',
+      'req-kanban-cli',
       'projection request',
       'new',
       'user',
-      'user-plan-cli',
+      'user-kanban-cli',
       '2026-05-05T00:00:00.000Z',
       '2026-05-05T00:00:00.000Z',
     )
@@ -62,7 +62,7 @@ const seedProjectionFixture = async (): Promise<string> => {
 
     insertWorkItem.run(
       'formulated-1',
-      'req-plan-cli',
+      'req-kanban-cli',
       'Formulated item',
       'formulated',
       'specs/formulated-1.json',
@@ -76,7 +76,7 @@ const seedProjectionFixture = async (): Promise<string> => {
     )
     insertWorkItem.run(
       'formulated-blocked-1',
-      'req-plan-cli',
+      'req-kanban-cli',
       'Formulated item with unresolved dependency',
       'formulated',
       'specs/formulated-blocked-1.json',
@@ -90,7 +90,7 @@ const seedProjectionFixture = async (): Promise<string> => {
     )
     insertWorkItem.run(
       'ready-1',
-      'req-plan-cli',
+      'req-kanban-cli',
       'Ready item',
       'red_approved',
       'specs/ready-1.json',
@@ -104,7 +104,7 @@ const seedProjectionFixture = async (): Promise<string> => {
     )
     insertWorkItem.run(
       'dep-blocked',
-      'req-plan-cli',
+      'req-kanban-cli',
       'Blocking dependency',
       'green_pending',
       'specs/dep-blocked.json',
@@ -118,7 +118,7 @@ const seedProjectionFixture = async (): Promise<string> => {
     )
     insertWorkItem.run(
       'blocked-1',
-      'req-plan-cli',
+      'req-kanban-cli',
       'Blocked item',
       'red_approved',
       'specs/blocked-1.json',
@@ -132,7 +132,7 @@ const seedProjectionFixture = async (): Promise<string> => {
     )
     insertWorkItem.run(
       'dep-cleaned',
-      'req-plan-cli',
+      'req-kanban-cli',
       'Completed dependency',
       'cleaned',
       'specs/dep-cleaned.json',
@@ -146,7 +146,7 @@ const seedProjectionFixture = async (): Promise<string> => {
     )
     insertWorkItem.run(
       'wip-1',
-      'req-plan-cli',
+      'req-kanban-cli',
       'Green pending item',
       'green_pending',
       'specs/wip-1.json',
@@ -160,7 +160,7 @@ const seedProjectionFixture = async (): Promise<string> => {
     )
     insertWorkItem.run(
       'merged-1',
-      'req-plan-cli',
+      'req-kanban-cli',
       'Merged item',
       'merged',
       'specs/merged-1.json',
@@ -174,7 +174,7 @@ const seedProjectionFixture = async (): Promise<string> => {
     )
     insertWorkItem.run(
       'cleanup-pending-future-1',
-      'req-plan-cli',
+      'req-kanban-cli',
       'Cleanup pending future item',
       'cleanup_pending',
       'specs/cleanup-pending-future-1.json',
@@ -188,7 +188,7 @@ const seedProjectionFixture = async (): Promise<string> => {
     )
     insertWorkItem.run(
       'cleanup-pending-elapsed-1',
-      'req-plan-cli',
+      'req-kanban-cli',
       'Cleanup pending elapsed item',
       'cleanup_pending',
       'specs/cleanup-pending-elapsed-1.json',
@@ -202,7 +202,7 @@ const seedProjectionFixture = async (): Promise<string> => {
     )
     insertWorkItem.run(
       'stale-red-1',
-      'req-plan-cli',
+      'req-kanban-cli',
       'Stale red approval item',
       'red_approved',
       'specs/stale-red-1.json',
@@ -216,7 +216,7 @@ const seedProjectionFixture = async (): Promise<string> => {
     )
     insertWorkItem.run(
       'revoked-red-1',
-      'req-plan-cli',
+      'req-kanban-cli',
       'Revoked red approval item',
       'red_approved',
       'specs/revoked-red-1.json',
@@ -230,7 +230,7 @@ const seedProjectionFixture = async (): Promise<string> => {
     )
     insertWorkItem.run(
       'missing-artifact-red-1',
-      'req-plan-cli',
+      'req-kanban-cli',
       'Missing artifact red approval item',
       'red_approved',
       'specs/missing-artifact-red-1.json',
@@ -532,20 +532,20 @@ const seedProjectionFixture = async (): Promise<string> => {
       'gate-red-wip-1',
       1,
       'expected_behavior_fail',
-      'bun test src/plan/tests/plan.cli.spec.ts',
+      'bun test src/kanban/tests/kanban.cli.spec.ts',
       'failing regression proves the behavior gap',
     )
   } finally {
-    closePlanDatabase(db)
+    closeKanbanDatabase(db)
   }
 
   return dbPath
 }
 
 const seedStaleMergeProjectionFixture = async (): Promise<string> => {
-  const tempDir = trackTempPath(await mkdtemp(join(tmpdir(), 'plaited-plan-cli-')))
-  const dbPath = join(tempDir, 'plan.sqlite')
-  const db = await openPlanDatabase({ dbPath })
+  const tempDir = trackTempPath(await mkdtemp(join(tmpdir(), 'plaited-kanban-cli-')))
+  const dbPath = join(tempDir, 'kanban.sqlite')
+  const db = await openKanbanDatabase({ dbPath })
 
   try {
     db.query(
@@ -763,7 +763,7 @@ const seedStaleMergeProjectionFixture = async (): Promise<string> => {
       )
     }
   } finally {
-    closePlanDatabase(db)
+    closeKanbanDatabase(db)
   }
 
   return dbPath
@@ -778,15 +778,15 @@ afterEach(async () => {
   }
 })
 
-describe('plan CLI', () => {
-  test('plaited --schema includes plan and plan --schema input exposes projection modes', async () => {
+describe('kanban CLI', () => {
+  test('plaited --schema includes kanban and kanban --schema input exposes projection modes', async () => {
     const manifestResult = await Bun.$`bun ./bin/plaited.ts --schema`.cwd(CLI_PACKAGE_ROOT).quiet().nothrow()
 
     expect(manifestResult.exitCode).toBe(0)
     const manifest = JSON.parse(manifestResult.stdout.toString().trim()) as { commands: string[] }
-    expect(manifest.commands).toContain('plan')
+    expect(manifest.commands).toContain('kanban')
 
-    const inputSchemaResult = await Bun.$`bun ./bin/plaited.ts plan --schema input`
+    const inputSchemaResult = await Bun.$`bun ./bin/plaited.ts kanban --schema input`
       .cwd(CLI_PACKAGE_ROOT)
       .quiet()
       .nothrow()
@@ -797,11 +797,24 @@ describe('plan CLI', () => {
       oneOf?: Array<{ properties?: { mode?: { const?: string }; nowIso?: { type?: string; pattern?: string } } }>
       anyOf?: Array<{ properties?: { mode?: { const?: string }; nowIso?: { type?: string; pattern?: string } } }>
     }
-    expect(inputSchema.description).toContain('agent-facing projection')
+    expect(inputSchema.description).toContain('agent-facing kanban command')
 
     const branches = inputSchema.oneOf ?? inputSchema.anyOf ?? []
     const modes = branches.map((branch) => branch.properties?.mode?.const).filter((value) => value !== undefined)
-    expect(modes).toEqual(['board', 'item', 'ready-queue', 'decision-audit'])
+    expect(modes).toEqual([
+      'board',
+      'item',
+      'ready-queue',
+      'decision-audit',
+      'init-db',
+      'record-red-approval',
+      'revoke-stale-red-approval',
+      'record-frontier-verification',
+      'record-merge-simulation',
+      'record-escalation',
+      'start-execution',
+      'run-post-merge-cleanup',
+    ])
 
     const readyQueueBranch = branches.find((branch) => branch.properties?.mode?.const === 'ready-queue')
     expect(readyQueueBranch?.properties?.nowIso?.type).toBe('string')
@@ -811,7 +824,7 @@ describe('plan CLI', () => {
   test('board mode projects items by state plus blockers and WIP summary', async () => {
     const dbPath = await seedProjectionFixture()
 
-    const result = await runPlanCommand({
+    const result = await runKanbanCommand({
       mode: 'board',
       dbPath,
     })
@@ -893,7 +906,7 @@ describe('plan CLI', () => {
   test('item mode projects state, dependencies, gate status, and execution environment', async () => {
     const dbPath = await seedProjectionFixture()
 
-    const result = await runPlanCommand({
+    const result = await runKanbanCommand({
       mode: 'item',
       dbPath,
       workItemId: 'wip-1',
@@ -955,7 +968,7 @@ describe('plan CLI', () => {
     expect(output.dbPath).toBe(resolve(dbPath))
     expect(output.item).toEqual({
       id: 'wip-1',
-      requestId: 'req-plan-cli',
+      requestId: 'req-kanban-cli',
       title: 'Green pending item',
       status: 'green_pending',
       specPath: 'specs/wip-1.json',
@@ -1007,7 +1020,7 @@ describe('plan CLI', () => {
   test('ready-queue mode projects deterministic next actionable items', async () => {
     const dbPath = await seedProjectionFixture()
 
-    const result = await runPlanCommand({
+    const result = await runKanbanCommand({
       mode: 'ready-queue',
       dbPath,
     })
@@ -1059,7 +1072,7 @@ describe('plan CLI', () => {
   test('projection treats an older artifact version updated after a newer version as the current discovery artifact', async () => {
     const dbPath = await seedProjectionFixture()
 
-    const readyQueueResult = await runPlanCommand({
+    const readyQueueResult = await runKanbanCommand({
       mode: 'ready-queue',
       dbPath,
     })
@@ -1080,7 +1093,7 @@ describe('plan CLI', () => {
       nextEvent: 'start_green_execution',
     })
 
-    const itemResult = await runPlanCommand({
+    const itemResult = await runKanbanCommand({
       mode: 'item',
       dbPath,
       workItemId: 'ready-1',
@@ -1107,7 +1120,7 @@ describe('plan CLI', () => {
 
   test('ready-queue omits execution states that lack required gate provenance', async () => {
     const dbPath = await seedProjectionFixture()
-    const db = await openPlanDatabase({ dbPath })
+    const db = await openKanbanDatabase({ dbPath })
 
     try {
       db.query(
@@ -1123,7 +1136,7 @@ describe('plan CLI', () => {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         'merge-ready-without-gate-1',
-        'req-plan-cli',
+        'req-kanban-cli',
         'Merge ready without gate provenance',
         'merge_ready',
         'specs/merge-ready-without-gate-1.json',
@@ -1132,10 +1145,10 @@ describe('plan CLI', () => {
         '2026-05-05T00:00:09.500Z',
       )
     } finally {
-      closePlanDatabase(db)
+      closeKanbanDatabase(db)
     }
 
-    const result = await runPlanCommand({
+    const result = await runKanbanCommand({
       mode: 'ready-queue',
       dbPath,
     })
@@ -1161,7 +1174,7 @@ describe('plan CLI', () => {
   test('ready-queue includes cleanup completion only when nowIso reaches prune deadline', async () => {
     const dbPath = await seedProjectionFixture()
 
-    const result = await runPlanCommand({
+    const result = await runKanbanCommand({
       mode: 'ready-queue',
       dbPath,
       nowIso: '2026-05-05T00:30:00.000Z',
@@ -1194,7 +1207,7 @@ describe('plan CLI', () => {
   test('ready-queue rejects malformed nowIso values', async () => {
     const dbPath = await seedProjectionFixture()
 
-    const result = await runPlanCommand({
+    const result = await runKanbanCommand({
       mode: 'ready-queue',
       dbPath,
       nowIso: 'zzz',
@@ -1208,7 +1221,7 @@ describe('plan CLI', () => {
   test('ready-queue omits red approvals when discovery artifact identity has drifted', async () => {
     const dbPath = await seedProjectionFixture()
 
-    const readyQueueResult = await runPlanCommand({
+    const readyQueueResult = await runKanbanCommand({
       mode: 'ready-queue',
       dbPath,
     })
@@ -1225,7 +1238,7 @@ describe('plan CLI', () => {
       nextEvent: 'start_green_execution',
     })
 
-    const itemResult = await runPlanCommand({
+    const itemResult = await runKanbanCommand({
       mode: 'item',
       dbPath,
       workItemId: 'stale-red-1',
@@ -1245,7 +1258,7 @@ describe('plan CLI', () => {
   test('ready-queue omits red approvals when no current discovery artifact exists', async () => {
     const dbPath = await seedProjectionFixture()
 
-    const readyQueueResult = await runPlanCommand({
+    const readyQueueResult = await runKanbanCommand({
       mode: 'ready-queue',
       dbPath,
     })
@@ -1262,7 +1275,7 @@ describe('plan CLI', () => {
       nextEvent: 'start_green_execution',
     })
 
-    const itemResult = await runPlanCommand({
+    const itemResult = await runKanbanCommand({
       mode: 'item',
       dbPath,
       workItemId: 'missing-artifact-red-1',
@@ -1282,7 +1295,7 @@ describe('plan CLI', () => {
   test('ready-queue omits formulated items when dependencies are unresolved', async () => {
     const dbPath = await seedProjectionFixture()
 
-    const readyQueueResult = await runPlanCommand({
+    const readyQueueResult = await runKanbanCommand({
       mode: 'ready-queue',
       dbPath,
     })
@@ -1303,7 +1316,7 @@ describe('plan CLI', () => {
       nextEvent: 'request_red_approval',
     })
 
-    const itemResult = await runPlanCommand({
+    const itemResult = await runKanbanCommand({
       mode: 'item',
       dbPath,
       workItemId: 'formulated-blocked-1',
@@ -1323,7 +1336,7 @@ describe('plan CLI', () => {
   test('ready-queue omits red approvals when a later red rejection revokes the approval', async () => {
     const dbPath = await seedProjectionFixture()
 
-    const readyQueueResult = await runPlanCommand({
+    const readyQueueResult = await runKanbanCommand({
       mode: 'ready-queue',
       dbPath,
     })
@@ -1337,7 +1350,7 @@ describe('plan CLI', () => {
     }
     expect(readyQueueOutput.readyItems.some((item) => item.workItemId === 'revoked-red-1')).toBeFalse()
 
-    const itemResult = await runPlanCommand({
+    const itemResult = await runKanbanCommand({
       mode: 'item',
       dbPath,
       workItemId: 'revoked-red-1',
@@ -1363,7 +1376,7 @@ describe('plan CLI', () => {
   test('ready-queue omits review items when latest merge simulation is for a stale spec', async () => {
     const dbPath = await seedStaleMergeProjectionFixture()
 
-    const readyQueueResult = await runPlanCommand({
+    const readyQueueResult = await runKanbanCommand({
       mode: 'ready-queue',
       dbPath,
     })
@@ -1380,7 +1393,7 @@ describe('plan CLI', () => {
       nextEvent: 'mark_merge_ready',
     })
 
-    const itemResult = await runPlanCommand({
+    const itemResult = await runKanbanCommand({
       mode: 'item',
       dbPath,
       workItemId: 'review-stale-merge-1',
@@ -1400,7 +1413,7 @@ describe('plan CLI', () => {
   test('ready-queue omits review items when merge simulation check evidence is missing', async () => {
     const dbPath = await seedStaleMergeProjectionFixture()
 
-    const readyQueueResult = await runPlanCommand({
+    const readyQueueResult = await runKanbanCommand({
       mode: 'ready-queue',
       dbPath,
     })
@@ -1417,7 +1430,7 @@ describe('plan CLI', () => {
       nextEvent: 'mark_merge_ready',
     })
 
-    const itemResult = await runPlanCommand({
+    const itemResult = await runKanbanCommand({
       mode: 'item',
       dbPath,
       workItemId: 'review-missing-merge-evidence-1',
@@ -1437,7 +1450,7 @@ describe('plan CLI', () => {
   test('ready-queue keeps merge simulation gate state when newer non-merge decisions overflow audit history', async () => {
     const dbPath = await seedStaleMergeProjectionFixture()
 
-    const readyQueueResult = await runPlanCommand({
+    const readyQueueResult = await runKanbanCommand({
       mode: 'ready-queue',
       dbPath,
     })
@@ -1455,7 +1468,7 @@ describe('plan CLI', () => {
       ),
     ).toBeTrue()
 
-    const itemResult = await runPlanCommand({
+    const itemResult = await runKanbanCommand({
       mode: 'item',
       dbPath,
       workItemId: 'review-overflow-merge-1',
@@ -1488,7 +1501,7 @@ describe('plan CLI', () => {
   test('decision-audit mode projects gate decisions with evidence references and failures', async () => {
     const dbPath = await seedProjectionFixture()
 
-    const result = await runPlanCommand({
+    const result = await runKanbanCommand({
       mode: 'decision-audit',
       dbPath,
       workItemId: 'wip-1',
@@ -1529,8 +1542,138 @@ describe('plan CLI', () => {
     ])
   })
 
-  test('plan --schema output exposes all projection result modes', async () => {
-    const outputSchemaResult = await Bun.$`bun ./bin/plaited.ts plan --schema output`
+  test('record-red-approval mode persists a gate decision for analyst-to-coder handoff', async () => {
+    const tempDir = trackTempPath(await mkdtemp(join(tmpdir(), 'plaited-kanban-cli-')))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    const db = await openKanbanDatabase({ dbPath })
+
+    try {
+      db.query(
+        `INSERT INTO requests (
+          id,
+          summary,
+          status,
+          requested_by_actor_type,
+          requested_by_actor_id,
+          created_at,
+          updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        'req-red-cli',
+        'red approval cli request',
+        'new',
+        'user',
+        'user-red-cli',
+        '2026-05-05T00:00:00.000Z',
+        '2026-05-05T00:00:00.000Z',
+      )
+      db.query(
+        `INSERT INTO work_items (
+          id,
+          request_id,
+          title,
+          status,
+          spec_path,
+          spec_commit_sha,
+          created_at,
+          updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        'item-red-cli',
+        'req-red-cli',
+        'red approval cli item',
+        'red_pending',
+        'specs/item-red-cli.spec.json',
+        'sha-red-cli',
+        '2026-05-05T00:00:00.000Z',
+        '2026-05-05T00:00:00.000Z',
+      )
+      db.query(
+        `INSERT INTO discovery_artifacts (
+          id,
+          work_item_id,
+          artifact_version,
+          rules,
+          examples,
+          open_questions,
+          out_of_scope,
+          collected_at,
+          stale_after_at,
+          created_at,
+          updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        'disc-red-cli-1',
+        'item-red-cli',
+        1,
+        JSON.stringify([]),
+        JSON.stringify([]),
+        JSON.stringify([]),
+        JSON.stringify([]),
+        '2026-05-05T00:00:00.000Z',
+        '2026-05-06T00:00:00.000Z',
+        '2026-05-05T00:00:00.000Z',
+        '2026-05-05T00:00:00.000Z',
+      )
+    } finally {
+      closeKanbanDatabase(db)
+    }
+
+    const result = await runKanbanCommand({
+      mode: 'record-red-approval',
+      dbPath,
+      decisionId: 'gate-red-cli-1',
+      workItemId: 'item-red-cli',
+      actorType: 'agent',
+      actorId: 'analyst',
+      reason: 'analyst captured failing behavior for coder',
+      discoveryArtifactId: 'disc-red-cli-1',
+      failures: [
+        {
+          category: 'expected_behavior_fail',
+          checkName: 'bun test src/kanban/tests/kanban.cli.spec.ts',
+          detail: 'targeted behavior is not implemented yet',
+        },
+      ],
+      evidenceRefs: [],
+      decidedAt: '2026-05-05T00:01:00.000Z',
+    })
+
+    expect(result.exitCode).toBe(0)
+    const output = JSON.parse(result.stdout.toString().trim()) as {
+      ok: boolean
+      mode: string
+      dbPath: string
+      decision: string
+      reasons: string[]
+    }
+    expect(output).toEqual({
+      ok: true,
+      mode: 'record-red-approval',
+      dbPath: resolve(dbPath),
+      decision: 'approved',
+      reasons: [],
+    })
+
+    const readDb = await openKanbanDatabase({ dbPath })
+    try {
+      const decisionRow = readDb
+        .query<{ decision: string; actor_id: string; reason: string }, [string]>(
+          'SELECT decision, actor_id, reason FROM gate_decisions WHERE id = ?',
+        )
+        .get('gate-red-cli-1')
+      expect(decisionRow).toEqual({
+        decision: 'approved',
+        actor_id: 'analyst',
+        reason: 'analyst captured failing behavior for coder',
+      })
+    } finally {
+      closeKanbanDatabase(readDb)
+    }
+  })
+
+  test('kanban --schema output exposes all result modes', async () => {
+    const outputSchemaResult = await Bun.$`bun ./bin/plaited.ts kanban --schema output`
       .cwd(CLI_PACKAGE_ROOT)
       .quiet()
       .nothrow()
@@ -1541,10 +1684,23 @@ describe('plan CLI', () => {
       oneOf?: Array<{ properties?: { mode?: { const?: string } } }>
       anyOf?: Array<{ properties?: { mode?: { const?: string } } }>
     }
-    expect(outputSchema.description).toContain('agent-facing projection')
+    expect(outputSchema.description).toContain('agent-facing kanban command')
 
     const branches = outputSchema.oneOf ?? outputSchema.anyOf ?? []
     const modes = branches.map((branch) => branch.properties?.mode?.const).filter((value) => value !== undefined)
-    expect(modes).toEqual(['board', 'item', 'ready-queue', 'decision-audit'])
+    expect(modes).toEqual([
+      'board',
+      'item',
+      'ready-queue',
+      'decision-audit',
+      'init-db',
+      'record-red-approval',
+      'revoke-stale-red-approval',
+      'record-frontier-verification',
+      'record-merge-simulation',
+      'record-escalation',
+      'start-execution',
+      'run-post-merge-cleanup',
+    ])
   })
 })

@@ -3,7 +3,12 @@ import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
-import { closePlanDatabase, openPlanDatabase, runWorkItemPostMergeCleanup, startWorkItemExecution } from '../plan.ts'
+import {
+  closeKanbanDatabase,
+  openKanbanDatabase,
+  runWorkItemPostMergeCleanup,
+  startWorkItemExecution,
+} from '../kanban.ts'
 
 const seedWorkItem = ({
   db,
@@ -11,7 +16,7 @@ const seedWorkItem = ({
   title = 'Implement worktree and branch cleanup policy',
   specCommitSha = 'sha-lifecycle',
 }: {
-  db: Awaited<ReturnType<typeof openPlanDatabase>>
+  db: Awaited<ReturnType<typeof openKanbanDatabase>>
   workItemId?: string
   title?: string
   specCommitSha?: string
@@ -68,7 +73,7 @@ const seedApprovedRedDecision = ({
   discoveryArtifactId = 'disc-lifecycle-1',
   discoveryArtifactUpdatedAtSnapshot = '2026-05-05T00:00:10.000Z',
 }: {
-  db: Awaited<ReturnType<typeof openPlanDatabase>>
+  db: Awaited<ReturnType<typeof openKanbanDatabase>>
   workItemId: string
   decisionId?: string
   decidedAt?: string
@@ -116,7 +121,7 @@ const seedDiscoveryArtifact = ({
   collectedAt = '2026-05-05T00:00:10.000Z',
   updatedAt = '2026-05-05T00:00:10.000Z',
 }: {
-  db: Awaited<ReturnType<typeof openPlanDatabase>>
+  db: Awaited<ReturnType<typeof openKanbanDatabase>>
   workItemId: string
   artifactId?: string
   artifactVersion?: number
@@ -164,16 +169,16 @@ const initRepo = async ({ repoPath }: { repoPath: string }) => {
   await Bun.$`git commit -m "base"`.cwd(repoPath).quiet()
 }
 
-describe('plan lifecycle execution environment', () => {
+describe('kanban lifecycle execution environment', () => {
   test('rejects green execution start when dependencies are unresolved before mutating git state', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-lifecycle-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-lifecycle-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
     const repoPath = join(tempDir, 'repo')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
       await initRepo({ repoPath })
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
       seedWorkItem({ db })
       seedDiscoveryArtifact({ db, workItemId: '338' })
       seedApprovedRedDecision({ db, workItemId: '338' })
@@ -232,21 +237,21 @@ describe('plan lifecycle execution environment', () => {
       expect(worktreeGitFileExists).toBeFalse()
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('rejects green execution start when the latest approved red decision is stale', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-lifecycle-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-lifecycle-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
     const repoPath = join(tempDir, 'repo')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
       await initRepo({ repoPath })
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
       seedWorkItem({ db })
       seedDiscoveryArtifact({ db, workItemId: '338' })
       seedApprovedRedDecision({
@@ -280,21 +285,21 @@ describe('plan lifecycle execution environment', () => {
       expect(branchHead.exitCode).not.toBe(0)
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('rejects green execution start when no current discovery artifact exists for the latest approved red decision', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-lifecycle-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-lifecycle-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
     const repoPath = join(tempDir, 'repo')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
       await initRepo({ repoPath })
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
       seedWorkItem({ db })
       seedApprovedRedDecision({
         db,
@@ -323,21 +328,21 @@ describe('plan lifecycle execution environment', () => {
       expect(branchHead.exitCode).not.toBe(0)
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('rejects green execution start when a later red revocation supersedes the approval', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-lifecycle-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-lifecycle-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
     const repoPath = join(tempDir, 'repo')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
       await initRepo({ repoPath })
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
       seedWorkItem({ db })
       seedDiscoveryArtifact({ db, workItemId: '338' })
       seedApprovedRedDecision({
@@ -396,21 +401,21 @@ describe('plan lifecycle execution environment', () => {
       expect(branchHead.exitCode).not.toBe(0)
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('rejects green execution start when latest discovery still has open questions', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-lifecycle-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-lifecycle-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
     const repoPath = join(tempDir, 'repo')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
       await initRepo({ repoPath })
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
       seedWorkItem({ db })
 
       db.query(
@@ -490,21 +495,21 @@ describe('plan lifecycle execution environment', () => {
       expect(branchHead.exitCode).not.toBe(0)
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('treats an older artifact version updated after a newer version as the current discovery artifact', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-lifecycle-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-lifecycle-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
     const repoPath = join(tempDir, 'repo')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
       await initRepo({ repoPath })
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
       seedWorkItem({ db })
       seedDiscoveryArtifact({
         db,
@@ -548,21 +553,21 @@ describe('plan lifecycle execution environment', () => {
       })
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('sanitizes the work-item id segment for git refs and keeps the worktree path under the repo root', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-lifecycle-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-lifecycle-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
     const repoPath = join(tempDir, 'repo')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
       await initRepo({ repoPath })
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
       seedWorkItem({
         db,
         workItemId: '../338 bad/id',
@@ -596,21 +601,21 @@ describe('plan lifecycle execution environment', () => {
       expect(resolve(result.worktreePath).startsWith(`${worktreesRoot}/`)).toBeTrue()
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('creates a deterministic branch and worktree and persists them before green execution', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-lifecycle-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-lifecycle-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
     const repoPath = join(tempDir, 'repo')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
       await initRepo({ repoPath })
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
       seedWorkItem({ db })
       seedDiscoveryArtifact({ db, workItemId: '338' })
       seedApprovedRedDecision({ db, workItemId: '338' })
@@ -678,21 +683,21 @@ describe('plan lifecycle execution environment', () => {
       })
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('does not create branch or worktree when execution state cannot be persisted', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-lifecycle-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-lifecycle-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
     const repoPath = join(tempDir, 'repo')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
       await initRepo({ repoPath })
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
       seedWorkItem({ db })
       seedDiscoveryArtifact({ db, workItemId: '338' })
       seedApprovedRedDecision({ db, workItemId: '338' })
@@ -731,21 +736,21 @@ describe('plan lifecycle execution environment', () => {
       expect(worktreeGitFileExists).toBeFalse()
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('removes the worktree immediately after merge and prunes the branch after the retention TTL', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-lifecycle-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-lifecycle-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
     const repoPath = join(tempDir, 'repo')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
       await initRepo({ repoPath })
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
       seedWorkItem({ db })
       seedDiscoveryArtifact({ db, workItemId: '338' })
       seedApprovedRedDecision({ db, workItemId: '338' })
@@ -879,21 +884,21 @@ describe('plan lifecycle execution environment', () => {
       expect(latestEvents).toEqual([{ event_kind: 'mark_cleaned' }, { event_kind: 'schedule_cleanup' }])
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('persists cleanup_pending on the first cleanup pass even when the persisted prune deadline has already elapsed', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-lifecycle-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-lifecycle-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
     const repoPath = join(tempDir, 'repo')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
       await initRepo({ repoPath })
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
       seedWorkItem({ db })
       seedDiscoveryArtifact({ db, workItemId: '338' })
       seedApprovedRedDecision({ db, workItemId: '338' })
@@ -959,7 +964,7 @@ describe('plan lifecycle execution environment', () => {
       expect(latestEvents).toEqual([{ event_kind: 'schedule_cleanup' }, { event_kind: 'start_green_execution' }])
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }

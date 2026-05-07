@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { CANONICAL_WORK_ITEM_ORCHESTRATION_CONTRACT, WORK_ITEM_LIFECYCLE_STATES } from '../plan.ts'
+import { CANONICAL_WORK_ITEM_ORCHESTRATION_CONTRACT, WORK_ITEM_LIFECYCLE_STATES } from '../kanban.ts'
 
 const REQUIRED_LIFECYCLE_STATES = [
   'draft',

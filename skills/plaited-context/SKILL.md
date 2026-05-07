@@ -27,6 +27,7 @@ Use stable `plaited` tools for evidence collection:
 
 - `plaited agents`
 - `plaited git`
+- `plaited kanban`
 - `plaited wiki`
 - `plaited skills`
 - `plaited typescript-lsp`
@@ -36,6 +37,7 @@ Examples:
 ```bash
 plaited agents '{"mode":"relevant","rootDir":".","paths":["src/worker/worker.ts"]}'
 plaited git '{"mode":"context","base":"origin/dev","paths":["src/worker/worker.ts"],"includeWorktrees":true}'
+plaited kanban '{"mode":"item","dbPath":".plaited/kanban.sqlite","workItemId":"item-123"}'
 plaited wiki '{"mode":"context","rootDir":".","paths":["docs"],"task":"review runtime boundary architecture"}'
 plaited typescript-lsp '{"file":"src/worker/worker.ts","operations":[{"type":"symbols"}]}'
 plaited skills '{"mode":"catalog","rootDir":"."}'
@@ -105,11 +107,15 @@ When a task mentions behavioral specs, frontiers, replay, deadlocks, trigger
 sequences, or scheduler-policy sensitivity, use `plaited-frontier-analysis`
 with the `behavioral-frontier` CLI workflow.
 
+When a task needs durable analyst/coder handoff, board state, ready queues,
+or gate decision audits, use `plaited-kanban` after evidence collection.
+
 Useful follow-up commands:
 
 ```bash
 plaited behavioral-frontier --schema input
 plaited behavioral-frontier '{"mode":"verify","specPath":"./specs.jsonl","strategy":"bfs","selectionPolicy":"scheduler","maxDepth":8}'
+plaited kanban --schema input
 ```
 
 ## Evidence Rule

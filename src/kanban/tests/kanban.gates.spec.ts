@@ -4,23 +4,23 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import {
-  closePlanDatabase,
+  closeKanbanDatabase,
   evaluateAndRecordEscalationDecision,
   evaluateAndRecordFrontierVerificationGate,
   evaluateAndRecordMergeSimulationGate,
   evaluateAndRecordRedApprovalGate,
-  openPlanDatabase,
+  openKanbanDatabase,
   revokeStaleRedApprovalOnDrift,
-} from '../plan.ts'
+} from '../kanban.ts'
 
-describe('plan gate engine', () => {
+describe('kanban gate engine', () => {
   test('rejects red approval with deterministic ownership reason when discovery artifact id is null', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
       db.query(
         `INSERT INTO requests (
           id,
@@ -74,7 +74,7 @@ describe('plan gate engine', () => {
         failures: [
           {
             category: 'expected_behavior_fail',
-            checkName: 'bun test src/plan/tests/plan.gates.spec.ts',
+            checkName: 'bun test src/kanban/tests/kanban.gates.spec.ts',
             detail: 'failing test',
           },
         ],
@@ -87,19 +87,19 @@ describe('plan gate engine', () => {
       ])
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('persists rejected red approval when discovery artifact id does not exist', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
       db.query(
         `INSERT INTO requests (
           id,
@@ -153,7 +153,7 @@ describe('plan gate engine', () => {
         failures: [
           {
             category: 'expected_behavior_fail',
-            checkName: 'bun test src/plan/tests/plan.gates.spec.ts',
+            checkName: 'bun test src/kanban/tests/kanban.gates.spec.ts',
             detail: 'failing test',
           },
         ],
@@ -178,19 +178,19 @@ describe('plan gate engine', () => {
       })
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('rejects red approval when latest discovery artifact has open questions', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
       db.query(
         `INSERT INTO requests (
           id,
@@ -271,7 +271,7 @@ describe('plan gate engine', () => {
         failures: [
           {
             category: 'expected_behavior_fail',
-            checkName: 'bun test src/plan/tests/plan.gates.spec.ts',
+            checkName: 'bun test src/kanban/tests/kanban.gates.spec.ts',
             detail: 'failing test proves behavior gap',
           },
         ],
@@ -282,19 +282,19 @@ describe('plan gate engine', () => {
       expect(decision.reasons).toContain('Red gate requires latest discovery open questions to be resolved.')
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('rejects red approval when discovery artifact belongs to a different work item', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -398,7 +398,7 @@ describe('plan gate engine', () => {
         failures: [
           {
             category: 'expected_behavior_fail',
-            checkName: 'bun test src/plan/tests/plan.gates.spec.ts',
+            checkName: 'bun test src/kanban/tests/kanban.gates.spec.ts',
             detail: 'failing test',
           },
         ],
@@ -411,19 +411,19 @@ describe('plan gate engine', () => {
       )
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('approves red gate only for allowed failure taxonomy and persists audit records', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -505,7 +505,7 @@ describe('plan gate engine', () => {
         failures: [
           {
             category: 'expected_behavior_fail',
-            checkName: 'bun test src/plan/tests/plan.gates.spec.ts',
+            checkName: 'bun test src/kanban/tests/kanban.gates.spec.ts',
             detail: 'new behavior assertion failed',
           },
         ],
@@ -577,19 +577,19 @@ describe('plan gate engine', () => {
       )
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('persists multiple red gate decisions for the same work item, gate, and decided_at', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -674,7 +674,7 @@ describe('plan gate engine', () => {
           failures: [
             {
               category: 'expected_behavior_fail',
-              checkName: 'bun test src/plan/tests/plan.gates.spec.ts',
+              checkName: 'bun test src/kanban/tests/kanban.gates.spec.ts',
               detail: 'first failure detail',
             },
           ],
@@ -695,7 +695,7 @@ describe('plan gate engine', () => {
           failures: [
             {
               category: 'missing_impl',
-              checkName: 'bun test src/plan/tests/plan.gates.spec.ts',
+              checkName: 'bun test src/kanban/tests/kanban.gates.spec.ts',
               detail: 'second failure detail',
             },
           ],
@@ -728,19 +728,19 @@ describe('plan gate engine', () => {
       ])
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('persists multiple failure rows with the same category and check name when details differ', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
       db.query(
         `INSERT INTO requests (
           id,
@@ -822,12 +822,12 @@ describe('plan gate engine', () => {
           failures: [
             {
               category: 'expected_behavior_fail',
-              checkName: 'bun test src/plan/tests/plan.gates.spec.ts',
+              checkName: 'bun test src/kanban/tests/kanban.gates.spec.ts',
               detail: 'first detail',
             },
             {
               category: 'expected_behavior_fail',
-              checkName: 'bun test src/plan/tests/plan.gates.spec.ts',
+              checkName: 'bun test src/kanban/tests/kanban.gates.spec.ts',
               detail: 'second detail',
             },
           ],
@@ -846,30 +846,30 @@ describe('plan gate engine', () => {
       expect(failureRows).toEqual([
         {
           failure_category: 'expected_behavior_fail',
-          check_name: 'bun test src/plan/tests/plan.gates.spec.ts',
+          check_name: 'bun test src/kanban/tests/kanban.gates.spec.ts',
           detail: 'first detail',
         },
         {
           failure_category: 'expected_behavior_fail',
-          check_name: 'bun test src/plan/tests/plan.gates.spec.ts',
+          check_name: 'bun test src/kanban/tests/kanban.gates.spec.ts',
           detail: 'second detail',
         },
       ])
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('revokes stale red approval when discovery or spec drift is detected', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -951,7 +951,7 @@ describe('plan gate engine', () => {
         failures: [
           {
             category: 'missing_impl',
-            checkName: 'bun test src/plan/tests/plan.gates.spec.ts',
+            checkName: 'bun test src/kanban/tests/kanban.gates.spec.ts',
             detail: 'implementation not present yet',
           },
         ],
@@ -991,19 +991,19 @@ describe('plan gate engine', () => {
       expect(latestRedDecision?.reason).toContain('drift')
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('does not revoke drift from an older approved red decision when a tied later rejection exists', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -1162,19 +1162,19 @@ describe('plan gate engine', () => {
       expect(systemRejections?.total).toBe(0)
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('does not duplicate drift revocation when drift basis is unchanged', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -1256,7 +1256,7 @@ describe('plan gate engine', () => {
         failures: [
           {
             category: 'missing_impl',
-            checkName: 'bun test src/plan/tests/plan.gates.spec.ts',
+            checkName: 'bun test src/kanban/tests/kanban.gates.spec.ts',
             detail: 'expected red failure',
           },
         ],
@@ -1339,19 +1339,19 @@ describe('plan gate engine', () => {
       expect(rejectionRows?.total).toBe(1)
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('revokes red approval when the same discovery artifact row is mutated after approval', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -1433,7 +1433,7 @@ describe('plan gate engine', () => {
         failures: [
           {
             category: 'expected_behavior_fail',
-            checkName: 'bun test src/plan/tests/plan.gates.spec.ts',
+            checkName: 'bun test src/kanban/tests/kanban.gates.spec.ts',
             detail: 'red check failure',
           },
         ],
@@ -1459,19 +1459,19 @@ describe('plan gate engine', () => {
       expect(revokeResult.reason).toContain('discovery mutation drift')
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('evaluates deterministic escalation triggers and records authority decisions', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -1641,19 +1641,19 @@ describe('plan gate engine', () => {
       })
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('open questions at formulation gate trigger escalation', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -1738,19 +1738,19 @@ describe('plan gate engine', () => {
       expect(escalation.triggers).toEqual(['open_questions_unresolved'])
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('does not count older tied red rejections after a tied later approval', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -1862,19 +1862,19 @@ describe('plan gate engine', () => {
       expect(eventRows?.total).toBe(0)
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('open questions outside formulation gate do not trigger escalation', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -1959,17 +1959,17 @@ describe('plan gate engine', () => {
       expect(escalation.triggers).toEqual([])
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('records deterministic behavioral-frontier verification gate artifacts and links them to decisions', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
     const specPath = join(tempDir, 'item-frontier.spec.jsonl')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
       await Bun.write(
@@ -1983,7 +1983,7 @@ describe('plan gate engine', () => {
         })}\n`,
       )
 
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -2124,17 +2124,17 @@ describe('plan gate engine', () => {
       })
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('categorizes frontier verification failures and exposes deadlock signal for escalation', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
     const specPath = join(tempDir, 'item-frontier-fail.spec.jsonl')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
       await Bun.write(
@@ -2164,7 +2164,7 @@ describe('plan gate engine', () => {
         ].join('\n')}\n`,
       )
 
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -2263,17 +2263,17 @@ describe('plan gate engine', () => {
       expect(failureRows).toEqual([{ failure_category: 'frontier_deadlock_detected' }])
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('rejects frontier verification with invalid discovery artifact id without FK error and persists rejected decision', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
     const specPath = join(tempDir, 'item-frontier-invalid-artifact.spec.jsonl')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
       await Bun.write(
@@ -2287,7 +2287,7 @@ describe('plan gate engine', () => {
         })}\n`,
       )
 
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -2366,19 +2366,19 @@ describe('plan gate engine', () => {
       })
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('persists multiple frontier precondition failures without gate_decision_failures uniqueness collision', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -2498,17 +2498,17 @@ describe('plan gate engine', () => {
       expect(new Set(failureRows.map((row) => row.check_name)).size).toBe(2)
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('records local merge simulation evidence with required checks and commit refs on success', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
     const repoPath = join(tempDir, 'repo')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
       await mkdir(repoPath, { recursive: true })
@@ -2532,7 +2532,7 @@ describe('plan gate engine', () => {
       await Bun.$`git add .`.cwd(repoPath).quiet()
       await Bun.$`git commit -m "main change"`.cwd(repoPath).quiet()
 
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -2647,7 +2647,7 @@ describe('plan gate engine', () => {
         'check-tests-1',
         'item-merge',
         null,
-        'bun test src/plan/tests/plan.gates.spec.ts',
+        'bun test src/kanban/tests/kanban.gates.spec.ts',
         'tests',
         'passed',
         'frontier_verification',
@@ -2772,17 +2772,17 @@ describe('plan gate engine', () => {
       expect(result.commitRefs.targetHeadSha).toMatch(/^[a-f0-9]{40}$/)
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('rejects merge simulation and persists conflict failure cause when merge cannot be applied cleanly', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
     const repoPath = join(tempDir, 'repo')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
       await mkdir(repoPath, { recursive: true })
@@ -2806,7 +2806,7 @@ describe('plan gate engine', () => {
       await Bun.$`git add .`.cwd(repoPath).quiet()
       await Bun.$`git commit -m "main edit"`.cwd(repoPath).quiet()
 
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -2921,7 +2921,7 @@ describe('plan gate engine', () => {
         'check-pre-merge-1',
         'item-merge-conflict',
         null,
-        'bun test src/plan/tests/plan.gates.spec.ts',
+        'bun test src/kanban/tests/kanban.gates.spec.ts',
         'tests',
         'passed',
         'frontier_verification',
@@ -2971,17 +2971,17 @@ describe('plan gate engine', () => {
       expect(failureRows).toEqual([{ failure_category: 'merge_conflict_detected' }])
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('rejects merge simulation when required checks are stale red_approval checks without merge eligibility', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
     const repoPath = join(tempDir, 'repo')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
       await mkdir(repoPath, { recursive: true })
@@ -3002,7 +3002,7 @@ describe('plan gate engine', () => {
 
       await Bun.$`git checkout main`.cwd(repoPath).quiet()
 
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -3063,7 +3063,7 @@ describe('plan gate engine', () => {
         'check-stale-red-only-1',
         'item-merge-stale-checks',
         null,
-        'bun test src/plan/tests/plan.gates.spec.ts',
+        'bun test src/kanban/tests/kanban.gates.spec.ts',
         'tests',
         'passed',
         'red_approval',
@@ -3104,17 +3104,17 @@ describe('plan gate engine', () => {
       })
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('rejects merge simulation when frontier verification evidence is approved for a stale spec commit sha', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
     const repoPath = join(tempDir, 'repo')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
       await mkdir(repoPath, { recursive: true })
@@ -3138,7 +3138,7 @@ describe('plan gate engine', () => {
       await Bun.$`git add .`.cwd(repoPath).quiet()
       await Bun.$`git commit -m "main change"`.cwd(repoPath).quiet()
 
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -3252,7 +3252,7 @@ describe('plan gate engine', () => {
         'check-tests-stale-spec-1',
         'item-merge-stale-frontier',
         null,
-        'bun test src/plan/tests/plan.gates.spec.ts',
+        'bun test src/kanban/tests/kanban.gates.spec.ts',
         'tests',
         'passed',
         'frontier_verification',
@@ -3324,18 +3324,18 @@ describe('plan gate engine', () => {
       })
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }
   })
 
   test('persists rejected merge simulation decision when worktree setup fails before merge command runs', async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-plan-gates-'))
-    const dbPath = join(tempDir, 'plan.sqlite')
+    const tempDir = await mkdtemp(join(tmpdir(), 'plaited-kanban-gates-'))
+    const dbPath = join(tempDir, 'kanban.sqlite')
     const repoPath = join(tempDir, 'repo')
     const setupFailureWorktreePath = join(tempDir, 'non-empty-sim-worktree')
-    let db: Awaited<ReturnType<typeof openPlanDatabase>> | undefined
+    let db: Awaited<ReturnType<typeof openKanbanDatabase>> | undefined
 
     try {
       await mkdir(repoPath, { recursive: true })
@@ -3358,7 +3358,7 @@ describe('plan gate engine', () => {
 
       await Bun.$`git checkout main`.cwd(repoPath).quiet()
 
-      db = await openPlanDatabase({ dbPath })
+      db = await openKanbanDatabase({ dbPath })
 
       db.query(
         `INSERT INTO requests (
@@ -3471,7 +3471,7 @@ describe('plan gate engine', () => {
         'check-tests-setup-fail-1',
         'item-merge-setup-fail',
         null,
-        'bun test src/plan/tests/plan.gates.spec.ts',
+        'bun test src/kanban/tests/kanban.gates.spec.ts',
         'tests',
         'passed',
         'frontier_verification',
@@ -3532,7 +3532,7 @@ describe('plan gate engine', () => {
       expect(eventRow?.event_kind).toBe('merge_simulation_recorded')
     } finally {
       if (db) {
-        closePlanDatabase(db)
+        closeKanbanDatabase(db)
       }
       await rm(tempDir, { recursive: true, force: true })
     }

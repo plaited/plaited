@@ -9,11 +9,18 @@ import {
   BEHAVIORAL_FRONTIER_VERIFY_STATUSES,
 } from '../behavioral-frontier/behavioral-frontier.constants.ts'
 import { runBehavioralFrontier } from '../behavioral-frontier/behavioral-frontier.ts'
+import { makeCli } from '../cli/cli.ts'
 import { kebabCase } from '../utils.ts'
 
-export * from './plan.constants.ts'
-export * from './plan.schemas.ts'
+export * from './kanban.constants.ts'
+export * from './kanban.schemas.ts'
 
+import {
+  type KanbanCliInput,
+  KanbanCliInputSchema,
+  type KanbanCliOutput,
+  KanbanCliOutputSchema,
+} from './kanban.cli.schemas.ts'
 import {
   APPROVABLE_RED_FAILURE_CATEGORY_VALUES,
   CONSECUTIVE_RED_REJECTION_ESCALATION_THRESHOLD,
@@ -21,27 +28,31 @@ import {
   ESCALATION_TRIGGER_IDS,
   FRONTIER_FAILURE_CATEGORIES,
   type FRONTIER_FAILURE_CATEGORY_VALUES,
+  KANBAN_COMMAND,
+  KANBAN_MODES,
   MERGE_FAILURE_CATEGORIES,
   type MERGE_FAILURE_CATEGORY_VALUES,
   type RED_FAILURE_CATEGORY_VALUES,
   RISKY_IMPACT_ESCALATION_THRESHOLD,
   WORK_ITEM_LIFECYCLE_EVENTS,
+  WORK_ITEM_LIFECYCLE_EXECUTION_STATE_VALUES,
+  WORK_ITEM_LIFECYCLE_STATE_VALUES,
   WORK_ITEM_LIFECYCLE_STATES,
-} from './plan.constants.ts'
+} from './kanban.constants.ts'
 
 const SCHEMA_SQL_PATH = resolve(import.meta.dir, './assets/schema.sql')
-// `src/plan` is currently greenfield: no persisted plan DBs are in active use yet.
+// `src/kanban` is currently greenfield: no persisted kanban DBs are in active use yet.
 // By design, we only stamp the baseline schema version and do not implement backward-compat
 // migrations yet. The first breaking persisted-schema change after adoption must add
 // explicit versioned migration steps.
-const PLAN_SCHEMA_VERSION = 1
+const KANBAN_SCHEMA_VERSION = 1
 
 let cachedSchemaSql: string | undefined
 
 const nowIso = () => new Date().toISOString()
 const approvableRedFailureCategorySet = new Set<string>(APPROVABLE_RED_FAILURE_CATEGORY_VALUES)
 
-export type PlanActorType = 'agent' | 'user' | 'system'
+export type KanbanActorType = 'agent' | 'user' | 'system'
 export type RedFailureCategory = (typeof RED_FAILURE_CATEGORY_VALUES)[number]
 export type FrontierFailureCategory = (typeof FRONTIER_FAILURE_CATEGORY_VALUES)[number]
 export type MergeFailureCategory = (typeof MERGE_FAILURE_CATEGORY_VALUES)[number]
@@ -74,7 +85,7 @@ export type EvaluateAndRecordRedApprovalGateInput = {
   db: Database
   decisionId: string
   workItemId: string
-  actorType: PlanActorType
+  actorType: KanbanActorType
   actorId: string
   reason: string
   discoveryArtifactId: string | null
@@ -476,7 +487,7 @@ const persistGateDecision = ({
   decisionId: string
   workItemId: string
   gateName: GateDecisionName
-  actorType: PlanActorType
+  actorType: KanbanActorType
   actorId: string
   reason: string
   discoveryArtifactId: string | null
@@ -554,19 +565,19 @@ const persistGateDecision = ({
   transaction()
 }
 
-export const openPlanDatabase = async ({ dbPath }: { dbPath: string }): Promise<Database> => {
+export const openKanbanDatabase = async ({ dbPath }: { dbPath: string }): Promise<Database> => {
   await ensureParentDirectory(dbPath)
   const db = new Database(dbPath, { create: true })
   db.exec('PRAGMA foreign_keys = ON;')
   db.exec(await getSchemaSql())
-  db.query('INSERT OR IGNORE INTO plan_migrations (version, applied_at) VALUES (?, ?)').run(
-    PLAN_SCHEMA_VERSION,
+  db.query('INSERT OR IGNORE INTO kanban_migrations (version, applied_at) VALUES (?, ?)').run(
+    KANBAN_SCHEMA_VERSION,
     nowIso(),
   )
   return db
 }
 
-export const closePlanDatabase = (db: Database): void => {
+export const closeKanbanDatabase = (db: Database): void => {
   db.close(false)
 }
 
@@ -584,7 +595,7 @@ const addSecondsToIso = ({ iso, seconds }: { iso: string; seconds: number }): st
 export type StartWorkItemExecutionInput = {
   db: Database
   workItemId: string
-  actorType: PlanActorType
+  actorType: KanbanActorType
   actorId: string
   repoPath: string
   targetRef: string
@@ -746,7 +757,7 @@ export const startWorkItemExecution = async ({
 export type RunWorkItemPostMergeCleanupInput = {
   db: Database
   workItemId: string
-  actorType: PlanActorType
+  actorType: KanbanActorType
   actorId: string
   repoPath: string
   branchRetentionTtlSeconds?: number
@@ -975,7 +986,7 @@ export type EvaluateAndRecordFrontierVerificationGateInput = {
   db: Database
   decisionId: string
   workItemId: string
-  actorType: PlanActorType
+  actorType: KanbanActorType
   actorId: string
   reason: string
   discoveryArtifactId: string | null
@@ -1015,7 +1026,7 @@ export type EvaluateAndRecordMergeSimulationGateInput = {
   db: Database
   decisionId: string
   workItemId: string
-  actorType: PlanActorType
+  actorType: KanbanActorType
   actorId: string
   reason: string
   repoPath: string
@@ -1382,7 +1393,7 @@ export const evaluateAndRecordMergeSimulationGate = async ({
 
   if (failures.length === 0) {
     const resolvedSimulationWorktreePath =
-      simulationWorktreePath ?? (await mkdtemp(join(tmpdir(), 'plaited-plan-merge-sim-')))
+      simulationWorktreePath ?? (await mkdtemp(join(tmpdir(), 'plaited-kanban-merge-sim-')))
     const removeSimulationWorktreePathOnExit = simulationWorktreePath === undefined
     let worktreeAdded = false
     const mergeCommandArgs = ['merge', '--no-commit', '--no-ff', sourceHeadSha!]
@@ -1547,7 +1558,7 @@ export type RevokeStaleRedApprovalOnDriftInput = {
   db: Database
   decisionId: string
   workItemId: string
-  actorType: PlanActorType
+  actorType: KanbanActorType
   actorId: string
   decidedAt?: string
 }
@@ -1662,7 +1673,7 @@ export type EvaluateAndRecordEscalationDecisionInput = {
   evaluationContext: 'formulation' | 'red_approval' | 'frontier_verification' | 'merge_simulation'
   dependencyDeadlockCount: number
   riskyImpactScore: number
-  actorType: PlanActorType
+  actorType: KanbanActorType
   actorId: string
   occurredAt?: string
 }
@@ -1737,3 +1748,886 @@ export const evaluateAndRecordEscalationDecision = ({
     targetAuthority,
   }
 }
+
+type ProjectionWorkItemRow = {
+  id: string
+  title: string
+  status: (typeof WORK_ITEM_LIFECYCLE_STATE_VALUES)[number]
+}
+
+type ProjectionDetailedWorkItemRow = {
+  id: string
+  request_id: string
+  title: string
+  status: (typeof WORK_ITEM_LIFECYCLE_STATE_VALUES)[number]
+  spec_path: string | null
+  spec_commit_sha: string | null
+  execution_branch_ref: string | null
+  execution_worktree_path: string | null
+  execution_target_ref: string | null
+  execution_prepared_at: string | null
+  cleanup_branch_prune_after_at: string | null
+  cleanup_worktree_removed_at: string | null
+  cleanup_branch_pruned_at: string | null
+}
+
+type UnresolvedDependencyRow = {
+  work_item_id: string
+  dependency_id: string
+  dependency_status: (typeof WORK_ITEM_LIFECYCLE_STATE_VALUES)[number]
+}
+
+type DependencyRow = {
+  id: string
+  title: string
+  status: (typeof WORK_ITEM_LIFECYCLE_STATE_VALUES)[number]
+}
+
+type LatestDiscoveryArtifactRow = {
+  id: string
+  collected_at: string
+  updated_at: string
+  open_questions: string
+}
+
+type GateDecisionRow = {
+  id: string
+  work_item_id: string
+  gate_name: 'formulation' | 'red_approval' | 'frontier_verification' | 'merge_simulation'
+  decision: 'approved' | 'rejected'
+  reason: string
+  spec_commit_sha: string | null
+  decided_at: string
+  created_at: string
+}
+
+type LatestRedDecisionRow = {
+  id: string
+  work_item_id: string
+  gate_name: 'red_approval'
+  decision: 'approved' | 'rejected'
+  reason: string
+  discovery_artifact_id: string | null
+  spec_commit_sha: string | null
+  decided_at: string
+  created_at: string
+}
+
+type PassedMergeSimulationCheckRunCountRow = {
+  total: number
+}
+
+type GateDecisionFailureRow = {
+  gate_decision_id: string
+  failure_category: string
+}
+
+type GateDecisionEvidenceRefRow = {
+  gate_decision_id: string
+  context_db_path: string
+  evidence_cache_row_id: number
+}
+
+type ProjectionDecision = {
+  id: string
+  workItemId: string
+  gateName: GateDecisionRow['gate_name']
+  decision: GateDecisionRow['decision']
+  reason: string
+  specCommitSha: string | null
+  decidedAt: string
+  failureCategories: string[]
+  evidenceRefs: Array<{
+    contextDbPath: string
+    evidenceCacheRowId: number
+  }>
+}
+
+type WorkItemContext = {
+  dependencies: Array<{
+    id: string
+    title: string
+    status: (typeof WORK_ITEM_LIFECYCLE_STATE_VALUES)[number]
+    isResolved: boolean
+  }>
+  unresolvedDependencyCount: number
+  openQuestionsCount: number
+  redApprovalIsFresh: boolean
+  mergeGatePassed: boolean
+  latestDecisions: ProjectionDecision[]
+  latestByGate: Map<string, ProjectionDecision>
+}
+
+const openProjectionDatabase = async (dbPath: string): Promise<Database> => {
+  const absoluteDbPath = resolve(dbPath)
+  if (!(await Bun.file(absoluteDbPath).exists())) {
+    throw new Error(`Kanban database does not exist: ${absoluteDbPath}`)
+  }
+
+  const db = new Database(absoluteDbPath)
+  db.exec('PRAGMA foreign_keys = ON;')
+  return db
+}
+
+const executionStateSet = new Set<string>(WORK_ITEM_LIFECYCLE_EXECUTION_STATE_VALUES)
+
+const loadLatestDiscoveryArtifact = ({
+  db,
+  workItemId,
+}: {
+  db: Database
+  workItemId: string
+}): LatestDiscoveryArtifactRow | null =>
+  db
+    .query<LatestDiscoveryArtifactRow, [string]>(
+      `SELECT id, collected_at, updated_at, open_questions
+       FROM discovery_artifacts
+       WHERE work_item_id = ?
+       ORDER BY updated_at DESC, collected_at DESC, artifact_version DESC
+       LIMIT 1`,
+    )
+    .get(workItemId) ?? null
+
+const loadDependencies = ({ db, workItemId }: { db: Database; workItemId: string }): DependencyRow[] =>
+  db
+    .query<DependencyRow, [string]>(
+      `SELECT dependency_work_items.id,
+              dependency_work_items.title,
+              dependency_work_items.status
+       FROM work_item_dependencies
+       INNER JOIN work_items AS dependency_work_items
+         ON dependency_work_items.id = work_item_dependencies.depends_on_work_item_id
+       WHERE work_item_dependencies.work_item_id = ?
+       ORDER BY dependency_work_items.id ASC`,
+    )
+    .all(workItemId)
+
+const loadLatestRedDecision = ({ db, workItemId }: { db: Database; workItemId: string }): LatestRedDecisionRow | null =>
+  db
+    .query<LatestRedDecisionRow, [string]>(
+      `SELECT id, work_item_id, gate_name, decision, reason, discovery_artifact_id, spec_commit_sha, decided_at, created_at
+       FROM gate_decisions
+       WHERE work_item_id = ?
+         AND gate_name = 'red_approval'
+       ORDER BY decided_at DESC, created_at DESC, id DESC
+       LIMIT 1`,
+    )
+    .get(workItemId) ?? null
+
+const loadDecisionRows = ({
+  db,
+  workItemId,
+  limit,
+}: {
+  db: Database
+  workItemId: string
+  limit: number
+}): GateDecisionRow[] =>
+  db
+    .query<GateDecisionRow, [string, number]>(
+      `SELECT id, work_item_id, gate_name, decision, reason, spec_commit_sha, decided_at, created_at
+       FROM gate_decisions
+       WHERE work_item_id = ?
+       ORDER BY decided_at DESC, created_at DESC, id DESC
+       LIMIT ?`,
+    )
+    .all(workItemId, limit)
+
+const loadLatestDecisionRowsByGate = ({ db, workItemId }: { db: Database; workItemId: string }): GateDecisionRow[] =>
+  db
+    .query<GateDecisionRow, [string]>(
+      `SELECT id, work_item_id, gate_name, decision, reason, spec_commit_sha, decided_at, created_at
+       FROM gate_decisions AS gate_decisions
+       WHERE work_item_id = ?
+         AND NOT EXISTS (
+           SELECT 1
+           FROM gate_decisions AS newer_decisions
+           WHERE newer_decisions.work_item_id = gate_decisions.work_item_id
+             AND newer_decisions.gate_name = gate_decisions.gate_name
+             AND (
+               newer_decisions.decided_at > gate_decisions.decided_at
+               OR (
+                 newer_decisions.decided_at = gate_decisions.decided_at
+                 AND newer_decisions.created_at > gate_decisions.created_at
+               )
+               OR (
+                 newer_decisions.decided_at = gate_decisions.decided_at
+                 AND newer_decisions.created_at = gate_decisions.created_at
+                 AND newer_decisions.id > gate_decisions.id
+               )
+             )
+         )
+       ORDER BY decided_at DESC, created_at DESC, id DESC`,
+    )
+    .all(workItemId)
+
+const buildProjectionDecisionDetails = ({
+  db,
+  decisions,
+}: {
+  db: Database
+  decisions: GateDecisionRow[]
+}): ProjectionDecision[] => {
+  const decisionIds = decisions.map((decision) => decision.id)
+  const failuresByDecisionId = new Map<string, string[]>()
+  const evidenceRefsByDecisionId = new Map<string, ProjectionDecision['evidenceRefs']>()
+
+  if (decisionIds.length > 0) {
+    const placeholders = decisionIds.map(() => '?').join(', ')
+    const failureRows = db
+      .query<GateDecisionFailureRow, [...string[]]>(
+        `SELECT gate_decision_id, failure_category
+         FROM gate_decision_failures
+         WHERE gate_decision_id IN (${placeholders})
+         ORDER BY gate_decision_id ASC, failure_category ASC`,
+      )
+      .all(...decisionIds)
+    for (const row of failureRows) {
+      const existing = failuresByDecisionId.get(row.gate_decision_id) ?? []
+      existing.push(row.failure_category)
+      failuresByDecisionId.set(row.gate_decision_id, existing)
+    }
+
+    const evidenceRefRows = db
+      .query<GateDecisionEvidenceRefRow, [...string[]]>(
+        `SELECT gate_decision_id, context_db_path, evidence_cache_row_id
+         FROM gate_decision_evidence_cache_refs
+         WHERE gate_decision_id IN (${placeholders})
+         ORDER BY gate_decision_id ASC, context_db_path ASC, evidence_cache_row_id ASC`,
+      )
+      .all(...decisionIds)
+    for (const row of evidenceRefRows) {
+      const existing = evidenceRefsByDecisionId.get(row.gate_decision_id) ?? []
+      existing.push({
+        contextDbPath: row.context_db_path,
+        evidenceCacheRowId: row.evidence_cache_row_id,
+      })
+      evidenceRefsByDecisionId.set(row.gate_decision_id, existing)
+    }
+  }
+
+  return decisions.map((decision) => ({
+    id: decision.id,
+    workItemId: decision.work_item_id,
+    gateName: decision.gate_name,
+    decision: decision.decision,
+    reason: decision.reason,
+    specCommitSha: decision.spec_commit_sha,
+    decidedAt: decision.decided_at,
+    failureCategories: failuresByDecisionId.get(decision.id) ?? [],
+    evidenceRefs: evidenceRefsByDecisionId.get(decision.id) ?? [],
+  }))
+}
+
+const loadDecisionDetails = ({
+  db,
+  workItemId,
+  limit,
+}: {
+  db: Database
+  workItemId: string
+  limit: number
+}): ProjectionDecision[] =>
+  buildProjectionDecisionDetails({
+    db,
+    decisions: loadDecisionRows({ db, workItemId, limit }),
+  })
+
+const loadLatestDecisionDetailsByGate = ({
+  db,
+  workItemId,
+}: {
+  db: Database
+  workItemId: string
+}): ProjectionDecision[] =>
+  buildProjectionDecisionDetails({
+    db,
+    decisions: loadLatestDecisionRowsByGate({ db, workItemId }),
+  })
+
+const hasPassedMergeSimulationCheckRun = ({
+  db,
+  workItemId,
+  gateDecisionId,
+}: {
+  db: Database
+  workItemId: string
+  gateDecisionId: string
+}): boolean => {
+  const row = db
+    .query<PassedMergeSimulationCheckRunCountRow, [string, string]>(
+      `SELECT COUNT(*) AS total
+       FROM check_runs
+       WHERE work_item_id = ?
+         AND gate_decision_id = ?
+         AND check_type = 'merge_simulation'
+         AND status = 'passed'
+         AND required_gate = 'frontier_verification'`,
+    )
+    .get(workItemId, gateDecisionId)
+
+  return (row?.total ?? 0) > 0
+}
+
+const loadWorkItemContext = ({
+  db,
+  workItemId,
+  specCommitSha,
+}: {
+  db: Database
+  workItemId: string
+  specCommitSha: string | null
+}): WorkItemContext => {
+  const dependencies = loadDependencies({ db, workItemId }).map((dependency) => ({
+    id: dependency.id,
+    title: dependency.title,
+    status: dependency.status,
+    isResolved: dependency.status === 'cleaned',
+  }))
+  const unresolvedDependencyCount = dependencies.filter((dependency) => !dependency.isResolved).length
+  const latestDiscoveryArtifact = loadLatestDiscoveryArtifact({ db, workItemId })
+  const openQuestionsCount = latestDiscoveryArtifact ? JSON.parse(latestDiscoveryArtifact.open_questions).length : 0
+  const latestRedDecision = loadLatestRedDecision({ db, workItemId })
+  const latestDecisions = loadDecisionDetails({ db, workItemId, limit: 20 })
+  const latestGateDecisions = loadLatestDecisionDetailsByGate({ db, workItemId })
+  const latestByGate = new Map<string, ProjectionDecision>()
+  for (const decision of latestGateDecisions) {
+    if (!latestByGate.has(decision.gateName)) {
+      latestByGate.set(decision.gateName, decision)
+    }
+  }
+
+  const latestDiscoveryMutationAt = latestDiscoveryArtifact
+    ? latestDiscoveryArtifact.updated_at > latestDiscoveryArtifact.collected_at
+      ? latestDiscoveryArtifact.updated_at
+      : latestDiscoveryArtifact.collected_at
+    : null
+  const redApprovalIsFresh =
+    latestDiscoveryArtifact !== null &&
+    latestRedDecision?.decision === 'approved' &&
+    latestRedDecision.spec_commit_sha === specCommitSha &&
+    latestRedDecision.discovery_artifact_id === latestDiscoveryArtifact.id &&
+    (latestDiscoveryMutationAt === null || latestDiscoveryMutationAt <= latestRedDecision.decided_at)
+  const latestMergeSimulationDecision = latestByGate.get('merge_simulation')
+  const mergeGatePassed =
+    latestMergeSimulationDecision?.decision === 'approved' &&
+    latestMergeSimulationDecision.specCommitSha === specCommitSha &&
+    hasPassedMergeSimulationCheckRun({
+      db,
+      workItemId,
+      gateDecisionId: latestMergeSimulationDecision.id,
+    })
+
+  return {
+    dependencies,
+    unresolvedDependencyCount,
+    openQuestionsCount,
+    redApprovalIsFresh,
+    mergeGatePassed,
+    latestDecisions,
+    latestByGate,
+  }
+}
+
+const getNextReadyEvent = ({
+  status,
+  context,
+  cleanupBranchPruneAfterAt,
+  nowIso,
+}: {
+  status: (typeof WORK_ITEM_LIFECYCLE_STATE_VALUES)[number]
+  context: WorkItemContext
+  cleanupBranchPruneAfterAt: string | null
+  nowIso?: string
+}): string | null => {
+  switch (status) {
+    case 'draft':
+      return 'submit_discovery'
+    case 'discovery_ready':
+      return context.openQuestionsCount === 0 ? 'complete_formulation' : null
+    case 'formulated':
+      return context.unresolvedDependencyCount === 0 ? 'request_red_approval' : null
+    case 'red_approved':
+      return context.unresolvedDependencyCount === 0 && context.openQuestionsCount === 0 && context.redApprovalIsFresh
+        ? 'start_green_execution'
+        : null
+    case 'green_pending':
+      return context.unresolvedDependencyCount === 0 && context.openQuestionsCount === 0 && context.redApprovalIsFresh
+        ? 'submit_for_review'
+        : null
+    case 'review_pending':
+      return context.unresolvedDependencyCount === 0 && context.mergeGatePassed ? 'mark_merge_ready' : null
+    case 'merge_ready':
+      return context.unresolvedDependencyCount === 0 && context.mergeGatePassed ? 'mark_merged' : null
+    case 'merged':
+      return 'schedule_cleanup'
+    case 'cleanup_pending':
+      return nowIso !== undefined && cleanupBranchPruneAfterAt !== null && nowIso >= cleanupBranchPruneAfterAt
+        ? 'mark_cleaned'
+        : null
+    default:
+      return null
+  }
+}
+
+const loadItemProjection = ({
+  db,
+  dbPath,
+  workItemId,
+}: {
+  db: Database
+  dbPath: string
+  workItemId: string
+}): KanbanCliOutput => {
+  const workItem = db
+    .query<ProjectionDetailedWorkItemRow, [string]>(
+      `SELECT id,
+              request_id,
+              title,
+              status,
+              spec_path,
+              spec_commit_sha,
+              execution_branch_ref,
+              execution_worktree_path,
+              execution_target_ref,
+              execution_prepared_at,
+              cleanup_branch_prune_after_at,
+              cleanup_worktree_removed_at,
+              cleanup_branch_pruned_at
+       FROM work_items
+       WHERE id = ?`,
+    )
+    .get(workItemId)
+
+  if (!workItem) {
+    throw new Error(`Work item does not exist: ${workItemId}`)
+  }
+
+  const context = loadWorkItemContext({
+    db,
+    workItemId,
+    specCommitSha: workItem.spec_commit_sha,
+  })
+
+  const cleanup =
+    workItem.cleanup_branch_prune_after_at || workItem.cleanup_worktree_removed_at || workItem.cleanup_branch_pruned_at
+      ? {
+          branchPruneAfterAt: workItem.cleanup_branch_prune_after_at,
+          worktreeRemovedAt: workItem.cleanup_worktree_removed_at,
+          branchPrunedAt: workItem.cleanup_branch_pruned_at,
+        }
+      : null
+
+  return {
+    ok: true,
+    mode: KANBAN_MODES.item,
+    dbPath,
+    item: {
+      id: workItem.id,
+      requestId: workItem.request_id,
+      title: workItem.title,
+      status: workItem.status,
+      specPath: workItem.spec_path,
+      specCommitSha: workItem.spec_commit_sha,
+      guards: {
+        dependenciesResolved: context.unresolvedDependencyCount === 0,
+        redApprovalIsFresh: context.redApprovalIsFresh,
+        mergeGatePassed: context.mergeGatePassed,
+        openQuestionsResolved: context.openQuestionsCount === 0,
+      },
+      execution:
+        workItem.execution_branch_ref && workItem.execution_worktree_path && workItem.execution_target_ref
+          ? {
+              branchRef: workItem.execution_branch_ref,
+              worktreePath: workItem.execution_worktree_path,
+              targetRef: workItem.execution_target_ref,
+              preparedAt: workItem.execution_prepared_at,
+            }
+          : null,
+      cleanup,
+      dependencies: context.dependencies,
+      gateStatus: {
+        redApproval: context.latestByGate.get('red_approval')
+          ? {
+              latestDecision: context.latestByGate.get('red_approval')!.decision,
+              decidedAt: context.latestByGate.get('red_approval')!.decidedAt,
+            }
+          : null,
+        frontierVerification: context.latestByGate.get('frontier_verification')
+          ? {
+              latestDecision: context.latestByGate.get('frontier_verification')!.decision,
+              decidedAt: context.latestByGate.get('frontier_verification')!.decidedAt,
+            }
+          : null,
+        mergeSimulation: context.latestByGate.get('merge_simulation')
+          ? {
+              latestDecision: context.latestByGate.get('merge_simulation')!.decision,
+              decidedAt: context.latestByGate.get('merge_simulation')!.decidedAt,
+            }
+          : null,
+      },
+      latestDecisions: context.latestDecisions.map(({ workItemId: _workItemId, ...decision }) => decision),
+    },
+  }
+}
+
+const loadReadyQueueProjection = ({
+  db,
+  dbPath,
+  nowIso,
+}: {
+  db: Database
+  dbPath: string
+  nowIso?: string
+}): KanbanCliOutput => {
+  const workItems = db
+    .query<ProjectionDetailedWorkItemRow, []>(
+      `SELECT id,
+              request_id,
+              title,
+              status,
+              spec_path,
+              spec_commit_sha,
+              execution_branch_ref,
+              execution_worktree_path,
+              execution_target_ref,
+              execution_prepared_at,
+              cleanup_branch_prune_after_at,
+              cleanup_worktree_removed_at,
+              cleanup_branch_pruned_at
+       FROM work_items
+       ORDER BY created_at ASC, id ASC`,
+    )
+    .all()
+
+  const readyItems = workItems
+    .map((workItem) => {
+      const context = loadWorkItemContext({
+        db,
+        workItemId: workItem.id,
+        specCommitSha: workItem.spec_commit_sha,
+      })
+      const nextEvent = getNextReadyEvent({
+        status: workItem.status,
+        context,
+        cleanupBranchPruneAfterAt: workItem.cleanup_branch_prune_after_at,
+        nowIso,
+      })
+
+      if (!nextEvent) {
+        return null
+      }
+
+      return {
+        workItemId: workItem.id,
+        title: workItem.title,
+        status: workItem.status,
+        nextEvent,
+      }
+    })
+    .filter((item) => item !== null)
+
+  return {
+    ok: true,
+    mode: KANBAN_MODES.readyQueue,
+    dbPath,
+    readyItems,
+  }
+}
+
+const loadDecisionAuditProjection = ({
+  db,
+  dbPath,
+  workItemId,
+  limit,
+}: {
+  db: Database
+  dbPath: string
+  workItemId?: string
+  limit: number
+}): KanbanCliOutput => {
+  const decisions =
+    workItemId === undefined
+      ? db
+          .query<GateDecisionRow, [number]>(
+            `SELECT id, work_item_id, gate_name, decision, reason, spec_commit_sha, decided_at, created_at
+             FROM gate_decisions
+             ORDER BY decided_at DESC, created_at DESC, id DESC
+             LIMIT ?`,
+          )
+          .all(limit)
+      : db
+          .query<GateDecisionRow, [string, number]>(
+            `SELECT id, work_item_id, gate_name, decision, reason, spec_commit_sha, decided_at, created_at
+             FROM gate_decisions
+             WHERE work_item_id = ?
+             ORDER BY decided_at DESC, created_at DESC, id DESC
+             LIMIT ?`,
+          )
+          .all(workItemId, limit)
+
+  const decisionIds = decisions.map((decision) => decision.id)
+  const failuresByDecisionId = new Map<string, string[]>()
+  const evidenceRefsByDecisionId = new Map<string, ProjectionDecision['evidenceRefs']>()
+
+  if (decisionIds.length > 0) {
+    const placeholders = decisionIds.map(() => '?').join(', ')
+    const failureRows = db
+      .query<GateDecisionFailureRow, [...string[]]>(
+        `SELECT gate_decision_id, failure_category
+         FROM gate_decision_failures
+         WHERE gate_decision_id IN (${placeholders})
+         ORDER BY gate_decision_id ASC, failure_category ASC`,
+      )
+      .all(...decisionIds)
+    for (const row of failureRows) {
+      const existing = failuresByDecisionId.get(row.gate_decision_id) ?? []
+      existing.push(row.failure_category)
+      failuresByDecisionId.set(row.gate_decision_id, existing)
+    }
+
+    const evidenceRefRows = db
+      .query<GateDecisionEvidenceRefRow, [...string[]]>(
+        `SELECT gate_decision_id, context_db_path, evidence_cache_row_id
+         FROM gate_decision_evidence_cache_refs
+         WHERE gate_decision_id IN (${placeholders})
+         ORDER BY gate_decision_id ASC, context_db_path ASC, evidence_cache_row_id ASC`,
+      )
+      .all(...decisionIds)
+    for (const row of evidenceRefRows) {
+      const existing = evidenceRefsByDecisionId.get(row.gate_decision_id) ?? []
+      existing.push({
+        contextDbPath: row.context_db_path,
+        evidenceCacheRowId: row.evidence_cache_row_id,
+      })
+      evidenceRefsByDecisionId.set(row.gate_decision_id, existing)
+    }
+  }
+
+  return {
+    ok: true,
+    mode: KANBAN_MODES.decisionAudit,
+    dbPath,
+    decisions: decisions.map((decision) => ({
+      id: decision.id,
+      workItemId: decision.work_item_id,
+      gateName: decision.gate_name,
+      decision: decision.decision,
+      reason: decision.reason,
+      specCommitSha: decision.spec_commit_sha,
+      decidedAt: decision.decided_at,
+      failureCategories: failuresByDecisionId.get(decision.id) ?? [],
+      evidenceRefs: evidenceRefsByDecisionId.get(decision.id) ?? [],
+    })),
+  }
+}
+
+const loadBoardProjection = ({ db, dbPath }: { db: Database; dbPath: string }): KanbanCliOutput => {
+  const workItems = db
+    .query<ProjectionWorkItemRow, []>(
+      `SELECT id, title, status
+       FROM work_items
+       ORDER BY created_at ASC, id ASC`,
+    )
+    .all()
+
+  const unresolvedDependencyRows = db
+    .query<UnresolvedDependencyRow, [string]>(
+      `SELECT work_item_dependencies.work_item_id,
+              dependency_work_items.id AS dependency_id,
+              dependency_work_items.status AS dependency_status
+       FROM work_item_dependencies
+       INNER JOIN work_items AS dependency_work_items
+         ON dependency_work_items.id = work_item_dependencies.depends_on_work_item_id
+       WHERE dependency_work_items.status <> ?
+       ORDER BY work_item_dependencies.work_item_id ASC, dependency_work_items.id ASC`,
+    )
+    .all('cleaned')
+
+  const unresolvedDependenciesByWorkItem = new Map<string, UnresolvedDependencyRow[]>()
+  for (const row of unresolvedDependencyRows) {
+    const existing = unresolvedDependenciesByWorkItem.get(row.work_item_id) ?? []
+    existing.push(row)
+    unresolvedDependenciesByWorkItem.set(row.work_item_id, existing)
+  }
+
+  const states = WORK_ITEM_LIFECYCLE_STATE_VALUES.map((state) => {
+    const items = workItems
+      .filter((workItem) => workItem.status === state)
+      .sort((left, right) => left.id.localeCompare(right.id))
+      .map((workItem) => ({
+        id: workItem.id,
+        unresolvedDependencyCount: unresolvedDependenciesByWorkItem.get(workItem.id)?.length ?? 0,
+      }))
+
+    return {
+      state,
+      total: items.length,
+      items,
+    }
+  }).filter((bucket) => bucket.total > 0)
+
+  const blockers = workItems
+    .filter((workItem) => (unresolvedDependenciesByWorkItem.get(workItem.id)?.length ?? 0) > 0)
+    .map((workItem) => ({
+      workItemId: workItem.id,
+      unresolvedDependencies: (unresolvedDependenciesByWorkItem.get(workItem.id) ?? []).map((row) => ({
+        id: row.dependency_id,
+        status: row.dependency_status,
+      })),
+    }))
+
+  const wipItems = workItems
+    .filter((workItem) => executionStateSet.has(workItem.status))
+    .sort((left, right) => {
+      const stateComparison =
+        WORK_ITEM_LIFECYCLE_STATE_VALUES.indexOf(left.status) - WORK_ITEM_LIFECYCLE_STATE_VALUES.indexOf(right.status)
+      if (stateComparison !== 0) {
+        return stateComparison
+      }
+
+      return left.id.localeCompare(right.id)
+    })
+    .map((workItem) => ({
+      id: workItem.id,
+      status: workItem.status,
+    }))
+
+  const wip = {
+    total: wipItems.length,
+    byState: WORK_ITEM_LIFECYCLE_STATE_VALUES.map((state) => ({
+      state,
+      total: wipItems.filter((workItem) => workItem.status === state).length,
+    })).filter((entry) => entry.total > 0),
+    items: wipItems,
+  }
+
+  return {
+    ok: true,
+    mode: KANBAN_MODES.board,
+    dbPath,
+    states,
+    blockers,
+    wip,
+  }
+}
+
+const runKanbanRead = async (input: KanbanCliInput): Promise<KanbanCliOutput> => {
+  const dbPath = resolve(input.dbPath)
+  const db = await openProjectionDatabase(dbPath)
+
+  try {
+    switch (input.mode) {
+      case KANBAN_MODES.board:
+        return loadBoardProjection({ db, dbPath })
+      case KANBAN_MODES.item:
+        return loadItemProjection({ db, dbPath, workItemId: input.workItemId })
+      case KANBAN_MODES.readyQueue:
+        return loadReadyQueueProjection({ db, dbPath, nowIso: input.nowIso })
+      case KANBAN_MODES.decisionAudit:
+        return loadDecisionAuditProjection({
+          db,
+          dbPath,
+          workItemId: input.workItemId,
+          limit: input.limit,
+        })
+      default:
+        throw new Error(`Mode "${input.mode}" is not a read projection mode.`)
+    }
+  } finally {
+    db.close(false)
+  }
+}
+
+const runKanbanWrite = async (input: KanbanCliInput): Promise<KanbanCliOutput> => {
+  const dbPath = resolve(input.dbPath)
+  const db = await openKanbanDatabase({ dbPath })
+
+  try {
+    switch (input.mode) {
+      case KANBAN_MODES.initDb:
+        return {
+          ok: true,
+          mode: KANBAN_MODES.initDb,
+          dbPath,
+        }
+      case KANBAN_MODES.recordRedApproval:
+        return {
+          ok: true,
+          mode: KANBAN_MODES.recordRedApproval,
+          dbPath,
+          ...evaluateAndRecordRedApprovalGate({ db, ...input }),
+        }
+      case KANBAN_MODES.revokeStaleRedApproval:
+        return {
+          ok: true,
+          mode: KANBAN_MODES.revokeStaleRedApproval,
+          dbPath,
+          ...revokeStaleRedApprovalOnDrift({ db, ...input }),
+        }
+      case KANBAN_MODES.recordFrontierVerification:
+        return {
+          ok: true,
+          mode: KANBAN_MODES.recordFrontierVerification,
+          dbPath,
+          ...(await evaluateAndRecordFrontierVerificationGate({
+            db,
+            ...input,
+            snapshotMessages: input.snapshotMessages as SnapshotMessage[] | undefined,
+            triggers: input.triggers as BPEvent[] | undefined,
+          })),
+        }
+      case KANBAN_MODES.recordMergeSimulation:
+        return {
+          ok: true,
+          mode: KANBAN_MODES.recordMergeSimulation,
+          dbPath,
+          ...(await evaluateAndRecordMergeSimulationGate({ db, ...input })),
+        }
+      case KANBAN_MODES.recordEscalation:
+        return {
+          ok: true,
+          mode: KANBAN_MODES.recordEscalation,
+          dbPath,
+          ...evaluateAndRecordEscalationDecision({ db, ...input }),
+        }
+      case KANBAN_MODES.startExecution:
+        return {
+          ok: true,
+          mode: KANBAN_MODES.startExecution,
+          dbPath,
+          ...(await startWorkItemExecution({ db, ...input })),
+        }
+      case KANBAN_MODES.runPostMergeCleanup:
+        return {
+          ok: true,
+          mode: KANBAN_MODES.runPostMergeCleanup,
+          dbPath,
+          ...(await runWorkItemPostMergeCleanup({ db, ...input })),
+        }
+      default:
+        throw new Error(`Mode "${input.mode}" is not a write mode.`)
+    }
+  } finally {
+    closeKanbanDatabase(db)
+  }
+}
+
+const runKanbanCommand = async (input: KanbanCliInput): Promise<KanbanCliOutput> => {
+  switch (input.mode) {
+    case KANBAN_MODES.board:
+    case KANBAN_MODES.item:
+    case KANBAN_MODES.readyQueue:
+    case KANBAN_MODES.decisionAudit:
+      return runKanbanRead(input)
+    default:
+      return runKanbanWrite(input)
+  }
+}
+
+export const kanbanCli = makeCli({
+  name: KANBAN_COMMAND,
+  inputSchema: KanbanCliInputSchema,
+  outputSchema: KanbanCliOutputSchema,
+  run: runKanbanCommand,
+})
