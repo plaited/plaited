@@ -38,13 +38,6 @@ CREATE TABLE IF NOT EXISTS work_items (
   ),
   spec_path TEXT,
   spec_commit_sha TEXT,
-  execution_branch_ref TEXT,
-  execution_worktree_path TEXT,
-  execution_target_ref TEXT,
-  execution_prepared_at TEXT,
-  cleanup_branch_prune_after_at TEXT,
-  cleanup_worktree_removed_at TEXT,
-  cleanup_branch_pruned_at TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
@@ -90,89 +83,31 @@ CREATE TABLE IF NOT EXISTS discovery_artifacts (
 CREATE INDEX IF NOT EXISTS idx_discovery_artifacts_work_item_id ON discovery_artifacts (work_item_id);
 CREATE INDEX IF NOT EXISTS idx_discovery_artifacts_stale_after_at ON discovery_artifacts (stale_after_at);
 
-CREATE TABLE IF NOT EXISTS gate_decisions (
+CREATE TABLE IF NOT EXISTS decisions (
   id TEXT PRIMARY KEY,
   work_item_id TEXT NOT NULL REFERENCES work_items(id) ON DELETE CASCADE ON UPDATE CASCADE,
-  gate_name TEXT NOT NULL CHECK (
-    gate_name IN ('formulation', 'red_approval', 'frontier_verification', 'merge_simulation')
-  ),
+  decision_kind TEXT NOT NULL,
   decision TEXT NOT NULL CHECK (decision IN ('approved', 'rejected')),
   actor_type TEXT NOT NULL CHECK (actor_type IN ('agent', 'user', 'system')),
   actor_id TEXT NOT NULL,
   reason TEXT NOT NULL,
-  discovery_artifact_id TEXT REFERENCES discovery_artifacts(id) ON DELETE SET NULL ON UPDATE CASCADE,
-  discovery_artifact_updated_at_snapshot TEXT,
-  spec_commit_sha TEXT,
-  drift_stale_approval_decision_id TEXT REFERENCES gate_decisions(id) ON DELETE SET NULL ON UPDATE CASCADE,
-  drift_signature TEXT,
   decided_at TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_gate_decisions_work_item_id ON gate_decisions (work_item_id);
-CREATE INDEX IF NOT EXISTS idx_gate_decisions_gate_name ON gate_decisions (gate_name);
-CREATE INDEX IF NOT EXISTS idx_gate_decisions_actor_type_actor_id ON gate_decisions (actor_type, actor_id);
-CREATE INDEX IF NOT EXISTS idx_gate_decisions_drift_stale_approval_decision_id
-  ON gate_decisions (drift_stale_approval_decision_id);
+CREATE INDEX IF NOT EXISTS idx_decisions_work_item_id ON decisions (work_item_id);
+CREATE INDEX IF NOT EXISTS idx_decisions_decision_kind ON decisions (decision_kind);
+CREATE INDEX IF NOT EXISTS idx_decisions_actor_type_actor_id ON decisions (actor_type, actor_id);
 
-CREATE TABLE IF NOT EXISTS gate_decision_evidence_cache_refs (
-  gate_decision_id TEXT NOT NULL REFERENCES gate_decisions(id) ON DELETE CASCADE ON UPDATE CASCADE,
+CREATE TABLE IF NOT EXISTS decision_evidence_cache_refs (
+  decision_id TEXT NOT NULL REFERENCES decisions(id) ON DELETE CASCADE ON UPDATE CASCADE,
   context_db_path TEXT NOT NULL,
   evidence_cache_row_id INTEGER NOT NULL CHECK (evidence_cache_row_id > 0),
-  PRIMARY KEY (gate_decision_id, context_db_path, evidence_cache_row_id)
+  PRIMARY KEY (decision_id, context_db_path, evidence_cache_row_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_gate_decision_evidence_cache_refs_gate_decision_id
-  ON gate_decision_evidence_cache_refs (gate_decision_id);
-
-CREATE TABLE IF NOT EXISTS gate_decision_failures (
-  gate_decision_id TEXT NOT NULL REFERENCES gate_decisions(id) ON DELETE CASCADE ON UPDATE CASCADE,
-  failure_sequence INTEGER NOT NULL CHECK (failure_sequence > 0),
-  failure_category TEXT NOT NULL CHECK (
-    failure_category IN (
-      'expected_behavior_fail',
-      'missing_impl',
-      'env_fail',
-      'flaky_fail',
-      'frontier_deadlock_detected',
-      'frontier_truncated',
-      'frontier_execution_error',
-      'required_checks_missing',
-      'required_checks_failed',
-      'merge_conflict_detected',
-      'merge_simulation_execution_error'
-    )
-  ),
-  check_name TEXT NOT NULL,
-  detail TEXT NOT NULL,
-  PRIMARY KEY (gate_decision_id, failure_sequence)
-);
-
-CREATE INDEX IF NOT EXISTS idx_gate_decision_failures_gate_decision_id
-  ON gate_decision_failures (gate_decision_id);
-
-CREATE TABLE IF NOT EXISTS check_runs (
-  id TEXT PRIMARY KEY,
-  work_item_id TEXT NOT NULL REFERENCES work_items(id) ON DELETE CASCADE ON UPDATE CASCADE,
-  gate_decision_id TEXT REFERENCES gate_decisions(id) ON DELETE SET NULL ON UPDATE CASCADE,
-  check_name TEXT NOT NULL,
-  check_type TEXT NOT NULL CHECK (
-    check_type IN ('tests', 'types', 'behavioral_frontier', 'merge_simulation', 'custom')
-  ),
-  status TEXT NOT NULL CHECK (status IN ('queued', 'running', 'passed', 'failed', 'cancelled')),
-  required_gate TEXT NOT NULL CHECK (
-    required_gate IN ('none', 'red_approval', 'frontier_verification')
-  ),
-  started_at TEXT,
-  completed_at TEXT,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  CHECK (completed_at IS NULL OR started_at IS NOT NULL)
-);
-
-CREATE INDEX IF NOT EXISTS idx_check_runs_work_item_id ON check_runs (work_item_id);
-CREATE INDEX IF NOT EXISTS idx_check_runs_status ON check_runs (status);
-CREATE INDEX IF NOT EXISTS idx_check_runs_required_gate ON check_runs (required_gate);
+CREATE INDEX IF NOT EXISTS idx_decision_evidence_cache_refs_decision_id
+  ON decision_evidence_cache_refs (decision_id);
 
 CREATE TABLE IF NOT EXISTS work_item_events (
   id TEXT PRIMARY KEY,

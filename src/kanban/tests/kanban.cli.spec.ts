@@ -1,9 +1,10 @@
+import { Database } from 'bun:sqlite'
 import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
-import { closeKanbanDatabase, openKanbanDatabase } from '../kanban.ts'
+import { KANBAN_COMMAND, KANBAN_MODES, WORK_ITEM_LIFECYCLE_STATES } from '../kanban.constants.ts'
 
 const CLI_PACKAGE_ROOT = resolve(import.meta.dir, '../../../')
 
@@ -17,757 +18,44 @@ const trackTempPath = (path: string): string => {
 const runKanbanCommand = async (input: unknown) =>
   Bun.$`bun ./bin/plaited.ts kanban ${JSON.stringify(input)}`.cwd(CLI_PACKAGE_ROOT).quiet().nothrow()
 
-const seedProjectionFixture = async (): Promise<string> => {
-  const tempDir = trackTempPath(await mkdtemp(join(tmpdir(), 'plaited-kanban-cli-')))
-  const dbPath = join(tempDir, 'kanban.sqlite')
-  const db = await openKanbanDatabase({ dbPath })
+const runRawKanbanCommand = async (rawInput: string) =>
+  Bun.$`bun ./bin/plaited.ts kanban ${rawInput}`.cwd(CLI_PACKAGE_ROOT).quiet().nothrow()
 
-  try {
-    db.query(
-      `INSERT INTO requests (
-        id,
-        summary,
-        status,
-        requested_by_actor_type,
-        requested_by_actor_id,
-        created_at,
-        updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      'req-kanban-cli',
-      'projection request',
-      'new',
-      'user',
-      'user-kanban-cli',
-      '2026-05-05T00:00:00.000Z',
-      '2026-05-05T00:00:00.000Z',
-    )
-
-    const insertWorkItem = db.query(
-      `INSERT INTO work_items (
-        id,
-        request_id,
-        title,
-        status,
-        spec_path,
-        spec_commit_sha,
-        execution_branch_ref,
-        execution_worktree_path,
-        execution_target_ref,
-        execution_prepared_at,
-        created_at,
-        updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-
-    insertWorkItem.run(
-      'formulated-1',
-      'req-kanban-cli',
-      'Formulated item',
-      'formulated',
-      'specs/formulated-1.json',
-      'sha-formulated-1',
-      null,
-      null,
-      null,
-      null,
-      '2026-05-05T00:00:00.000Z',
-      '2026-05-05T00:00:00.000Z',
-    )
-    insertWorkItem.run(
-      'formulated-blocked-1',
-      'req-kanban-cli',
-      'Formulated item with unresolved dependency',
-      'formulated',
-      'specs/formulated-blocked-1.json',
-      'sha-formulated-blocked-1',
-      null,
-      null,
-      null,
-      null,
-      '2026-05-05T00:00:00.500Z',
-      '2026-05-05T00:00:00.500Z',
-    )
-    insertWorkItem.run(
-      'ready-1',
-      'req-kanban-cli',
-      'Ready item',
-      'red_approved',
-      'specs/ready-1.json',
-      'sha-ready-1',
-      null,
-      null,
-      null,
-      null,
-      '2026-05-05T00:00:01.000Z',
-      '2026-05-05T00:00:01.000Z',
-    )
-    insertWorkItem.run(
-      'dep-blocked',
-      'req-kanban-cli',
-      'Blocking dependency',
-      'green_pending',
-      'specs/dep-blocked.json',
-      'sha-dep-blocked',
-      null,
-      null,
-      null,
-      null,
-      '2026-05-05T00:00:02.000Z',
-      '2026-05-05T00:00:02.000Z',
-    )
-    insertWorkItem.run(
-      'blocked-1',
-      'req-kanban-cli',
-      'Blocked item',
-      'red_approved',
-      'specs/blocked-1.json',
-      'sha-blocked-1',
-      null,
-      null,
-      null,
-      null,
-      '2026-05-05T00:00:03.000Z',
-      '2026-05-05T00:00:03.000Z',
-    )
-    insertWorkItem.run(
-      'dep-cleaned',
-      'req-kanban-cli',
-      'Completed dependency',
-      'cleaned',
-      'specs/dep-cleaned.json',
-      'sha-dep-cleaned',
-      null,
-      null,
-      null,
-      null,
-      '2026-05-05T00:00:04.000Z',
-      '2026-05-05T00:00:04.000Z',
-    )
-    insertWorkItem.run(
-      'wip-1',
-      'req-kanban-cli',
-      'Green pending item',
-      'green_pending',
-      'specs/wip-1.json',
-      'sha-wip-1',
-      'item/wip-1-green-pending-item',
-      '/tmp/plaited/.worktrees/wip-1-green-pending-item',
-      'main',
-      '2026-05-05T00:10:00.000Z',
-      '2026-05-05T00:00:05.000Z',
-      '2026-05-05T00:10:00.000Z',
-    )
-    insertWorkItem.run(
-      'merged-1',
-      'req-kanban-cli',
-      'Merged item',
-      'merged',
-      'specs/merged-1.json',
-      'sha-merged-1',
-      'item/merged-1-merged-item',
-      '/tmp/plaited/.worktrees/merged-1-merged-item',
-      'main',
-      '2026-05-05T00:12:00.000Z',
-      '2026-05-05T00:00:06.000Z',
-      '2026-05-05T00:12:00.000Z',
-    )
-    insertWorkItem.run(
-      'cleanup-pending-future-1',
-      'req-kanban-cli',
-      'Cleanup pending future item',
-      'cleanup_pending',
-      'specs/cleanup-pending-future-1.json',
-      'sha-cleanup-pending-future-1',
-      'item/cleanup-pending-future-1-cleanup-pending-item',
-      '/tmp/plaited/.worktrees/cleanup-pending-future-1-cleanup-pending-item',
-      'main',
-      '2026-05-05T00:13:00.000Z',
-      '2026-05-05T00:00:07.000Z',
-      '2026-05-05T00:13:00.000Z',
-    )
-    insertWorkItem.run(
-      'cleanup-pending-elapsed-1',
-      'req-kanban-cli',
-      'Cleanup pending elapsed item',
-      'cleanup_pending',
-      'specs/cleanup-pending-elapsed-1.json',
-      'sha-cleanup-pending-elapsed-1',
-      'item/cleanup-pending-elapsed-1-cleanup-pending-item',
-      '/tmp/plaited/.worktrees/cleanup-pending-elapsed-1-cleanup-pending-item',
-      'main',
-      '2026-05-05T00:14:00.000Z',
-      '2026-05-05T00:00:08.000Z',
-      '2026-05-05T00:14:00.000Z',
-    )
-    insertWorkItem.run(
-      'stale-red-1',
-      'req-kanban-cli',
-      'Stale red approval item',
-      'red_approved',
-      'specs/stale-red-1.json',
-      'sha-stale-red-1',
-      null,
-      null,
-      null,
-      null,
-      '2026-05-05T00:00:09.000Z',
-      '2026-05-05T00:00:09.000Z',
-    )
-    insertWorkItem.run(
-      'revoked-red-1',
-      'req-kanban-cli',
-      'Revoked red approval item',
-      'red_approved',
-      'specs/revoked-red-1.json',
-      'sha-revoked-red-1',
-      null,
-      null,
-      null,
-      null,
-      '2026-05-05T00:00:09.500Z',
-      '2026-05-05T00:00:09.500Z',
-    )
-    insertWorkItem.run(
-      'missing-artifact-red-1',
-      'req-kanban-cli',
-      'Missing artifact red approval item',
-      'red_approved',
-      'specs/missing-artifact-red-1.json',
-      'sha-missing-artifact-red-1',
-      null,
-      null,
-      null,
-      null,
-      '2026-05-05T00:00:09.750Z',
-      '2026-05-05T00:00:09.750Z',
-    )
-
-    db.query(
-      `UPDATE work_items
-       SET cleanup_branch_prune_after_at = ?, cleanup_worktree_removed_at = ?, updated_at = ?
-       WHERE id = ?`,
-    ).run(
-      '2026-05-05T02:00:00.000Z',
-      '2026-05-05T00:13:00.000Z',
-      '2026-05-05T00:13:00.000Z',
-      'cleanup-pending-future-1',
-    )
-    db.query(
-      `UPDATE work_items
-       SET cleanup_branch_prune_after_at = ?, cleanup_worktree_removed_at = ?, updated_at = ?
-       WHERE id = ?`,
-    ).run(
-      '2026-05-05T00:30:00.000Z',
-      '2026-05-05T00:14:00.000Z',
-      '2026-05-05T00:14:00.000Z',
-      'cleanup-pending-elapsed-1',
-    )
-
-    db.query(
-      `INSERT INTO work_item_dependencies (
-        work_item_id,
-        depends_on_work_item_id,
-        created_at
-      ) VALUES (?, ?, ?)`,
-    ).run('blocked-1', 'dep-blocked', '2026-05-05T00:05:00.000Z')
-    db.query(
-      `INSERT INTO work_item_dependencies (
-        work_item_id,
-        depends_on_work_item_id,
-        created_at
-      ) VALUES (?, ?, ?)`,
-    ).run('formulated-blocked-1', 'dep-blocked', '2026-05-05T00:05:30.000Z')
-    db.query(
-      `INSERT INTO work_item_dependencies (
-        work_item_id,
-        depends_on_work_item_id,
-        created_at
-      ) VALUES (?, ?, ?)`,
-    ).run('wip-1', 'dep-cleaned', '2026-05-05T00:06:00.000Z')
-
-    const insertDiscoveryArtifact = db.query(
-      `INSERT INTO discovery_artifacts (
-        id,
-        work_item_id,
-        artifact_version,
-        rules,
-        examples,
-        open_questions,
-        out_of_scope,
-        collected_at,
-        stale_after_at,
-        created_at,
-        updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-
-    insertDiscoveryArtifact.run(
-      'disc-ready-1',
-      'ready-1',
-      1,
-      JSON.stringify([]),
-      JSON.stringify([]),
-      JSON.stringify([]),
-      JSON.stringify([]),
-      '2026-05-05T00:18:00.000Z',
-      '2026-05-06T00:18:00.000Z',
-      '2026-05-05T00:18:00.000Z',
-      '2026-05-05T00:19:30.000Z',
-    )
-    insertDiscoveryArtifact.run(
-      'disc-ready-1-newer-version',
-      'ready-1',
-      2,
-      JSON.stringify([]),
-      JSON.stringify([]),
-      JSON.stringify([{ id: 'ready-1-q1', text: 'Superseded by later update on v1 artifact' }]),
-      JSON.stringify([]),
-      '2026-05-05T00:19:00.000Z',
-      '2026-05-06T00:19:00.000Z',
-      '2026-05-05T00:19:00.000Z',
-      '2026-05-05T00:19:00.000Z',
-    )
-    insertDiscoveryArtifact.run(
-      'disc-blocked-1',
-      'blocked-1',
-      1,
-      JSON.stringify([]),
-      JSON.stringify([]),
-      JSON.stringify([]),
-      JSON.stringify([]),
-      '2026-05-05T00:19:00.000Z',
-      '2026-05-06T00:19:00.000Z',
-      '2026-05-05T00:19:00.000Z',
-      '2026-05-05T00:19:00.000Z',
-    )
-    insertDiscoveryArtifact.run(
-      'disc-wip-1',
-      'wip-1',
-      1,
-      JSON.stringify([]),
-      JSON.stringify([]),
-      JSON.stringify([]),
-      JSON.stringify([]),
-      '2026-05-05T00:21:00.000Z',
-      '2026-05-06T00:21:00.000Z',
-      '2026-05-05T00:21:00.000Z',
-      '2026-05-05T00:21:00.000Z',
-    )
-    insertDiscoveryArtifact.run(
-      'disc-stale-red-1-approved',
-      'stale-red-1',
-      1,
-      JSON.stringify([]),
-      JSON.stringify([]),
-      JSON.stringify([]),
-      JSON.stringify([]),
-      '2026-05-05T00:20:00.000Z',
-      '2026-05-06T00:20:00.000Z',
-      '2026-05-05T00:20:00.000Z',
-      '2026-05-05T00:20:00.000Z',
-    )
-    insertDiscoveryArtifact.run(
-      'disc-stale-red-1-latest',
-      'stale-red-1',
-      2,
-      JSON.stringify([]),
-      JSON.stringify([]),
-      JSON.stringify([]),
-      JSON.stringify([]),
-      '2026-05-05T00:25:00.000Z',
-      '2026-05-06T00:25:00.000Z',
-      '2026-05-05T00:25:00.000Z',
-      '2026-05-05T00:25:00.000Z',
-    )
-
-    const insertDecision = db.query(
-      `INSERT INTO gate_decisions (
-        id,
-        work_item_id,
-        gate_name,
-        decision,
-        actor_type,
-        actor_id,
-        reason,
-        discovery_artifact_id,
-        discovery_artifact_updated_at_snapshot,
-        spec_commit_sha,
-        drift_stale_approval_decision_id,
-        drift_signature,
-        decided_at,
-        created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-
-    insertDecision.run(
-      'gate-red-ready-1',
-      'ready-1',
-      'red_approval',
-      'approved',
-      'agent',
-      'analyst',
-      'ready for implementation',
-      'disc-ready-1',
-      '2026-05-05T00:19:30.000Z',
-      'sha-ready-1',
-      null,
-      null,
-      '2026-05-05T00:20:00.000Z',
-      '2026-05-05T00:20:00.000Z',
-    )
-    insertDecision.run(
-      'gate-red-blocked-1',
-      'blocked-1',
-      'red_approval',
-      'approved',
-      'agent',
-      'analyst',
-      'dependency still pending',
-      'disc-blocked-1',
-      '2026-05-05T00:19:00.000Z',
-      'sha-blocked-1',
-      null,
-      null,
-      '2026-05-05T00:21:00.000Z',
-      '2026-05-05T00:21:00.000Z',
-    )
-    insertDecision.run(
-      'gate-red-wip-1',
-      'wip-1',
-      'red_approval',
-      'approved',
-      'agent',
-      'analyst',
-      'tests demonstrate missing behavior',
-      'disc-wip-1',
-      '2026-05-05T00:21:00.000Z',
-      'sha-wip-1',
-      null,
-      null,
-      '2026-05-05T00:22:00.000Z',
-      '2026-05-05T00:22:00.000Z',
-    )
-    insertDecision.run(
-      'gate-red-stale-red-1',
-      'stale-red-1',
-      'red_approval',
-      'approved',
-      'agent',
-      'analyst',
-      'red approval predates latest discovery artifact',
-      'disc-stale-red-1-approved',
-      '2026-05-05T00:20:00.000Z',
-      'sha-stale-red-1',
-      null,
-      null,
-      '2026-05-05T00:30:00.000Z',
-      '2026-05-05T00:30:00.000Z',
-    )
-    insertDecision.run(
-      'gate-red-revoked-red-1-approved',
-      'revoked-red-1',
-      'red_approval',
-      'approved',
-      'agent',
-      'analyst',
-      'red approval granted before later revocation',
-      null,
-      null,
-      'sha-revoked-red-1',
-      null,
-      null,
-      '2026-05-05T00:31:00.000Z',
-      '2026-05-05T00:31:00.000Z',
-    )
-    insertDecision.run(
-      'gate-red-revoked-red-1-rejected',
-      'revoked-red-1',
-      'red_approval',
-      'rejected',
-      'system',
-      'gate-engine',
-      'Auto-revoked stale red approval after drift.',
-      null,
-      null,
-      'sha-revoked-red-1',
-      'gate-red-revoked-red-1-approved',
-      '{"kind":"drift"}',
-      '2026-05-05T00:32:00.000Z',
-      '2026-05-05T00:32:00.000Z',
-    )
-    insertDecision.run(
-      'gate-red-missing-artifact-red-1',
-      'missing-artifact-red-1',
-      'red_approval',
-      'approved',
-      'agent',
-      'analyst',
-      'legacy approval without a discovery artifact link',
-      null,
-      null,
-      'sha-missing-artifact-red-1',
-      null,
-      null,
-      '2026-05-05T00:33:00.000Z',
-      '2026-05-05T00:33:00.000Z',
-    )
-
-    db.query(
-      `INSERT INTO gate_decision_evidence_cache_refs (
-        gate_decision_id,
-        context_db_path,
-        evidence_cache_row_id
-      ) VALUES (?, ?, ?)`,
-    ).run('gate-red-wip-1', '/tmp/context.sqlite', 7)
-    db.query(
-      `INSERT INTO gate_decision_failures (
-        gate_decision_id,
-        failure_sequence,
-        failure_category,
-        check_name,
-        detail
-      ) VALUES (?, ?, ?, ?, ?)`,
-    ).run(
-      'gate-red-wip-1',
-      1,
-      'expected_behavior_fail',
-      'bun test src/kanban/tests/kanban.cli.spec.ts',
-      'failing regression proves the behavior gap',
-    )
-  } finally {
-    closeKanbanDatabase(db)
-  }
-
-  return dbPath
+const parseOutput = <T>(result: Awaited<ReturnType<typeof runKanbanCommand>>): T => {
+  expect(result.exitCode).toBe(0)
+  return JSON.parse(result.stdout.toString().trim()) as T
 }
 
-const seedStaleMergeProjectionFixture = async (): Promise<string> => {
+const makeDbPath = async (): Promise<string> => {
   const tempDir = trackTempPath(await mkdtemp(join(tmpdir(), 'plaited-kanban-cli-')))
-  const dbPath = join(tempDir, 'kanban.sqlite')
-  const db = await openKanbanDatabase({ dbPath })
-
-  try {
-    db.query(
-      `INSERT INTO requests (
-        id,
-        summary,
-        status,
-        requested_by_actor_type,
-        requested_by_actor_id,
-        created_at,
-        updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      'req-stale-merge-cli',
-      'stale merge projection request',
-      'new',
-      'user',
-      'user-stale-merge-cli',
-      '2026-05-05T00:00:00.000Z',
-      '2026-05-05T00:00:00.000Z',
-    )
-    db.query(
-      `INSERT INTO work_items (
-        id,
-        request_id,
-        title,
-        status,
-        spec_path,
-        spec_commit_sha,
-        created_at,
-        updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      'review-stale-merge-1',
-      'req-stale-merge-cli',
-      'Review item with stale merge simulation',
-      'review_pending',
-      'specs/review-stale-merge-1.json',
-      'new-spec-sha',
-      '2026-05-05T00:00:00.000Z',
-      '2026-05-05T00:10:00.000Z',
-    )
-    db.query(
-      `INSERT INTO work_items (
-        id,
-        request_id,
-        title,
-        status,
-        spec_path,
-        spec_commit_sha,
-        created_at,
-        updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      'review-missing-merge-evidence-1',
-      'req-stale-merge-cli',
-      'Review item missing merge simulation evidence',
-      'review_pending',
-      'specs/review-missing-merge-evidence-1.json',
-      'current-spec-sha',
-      '2026-05-05T00:00:00.000Z',
-      '2026-05-05T00:10:00.000Z',
-    )
-    db.query(
-      `INSERT INTO work_items (
-        id,
-        request_id,
-        title,
-        status,
-        spec_path,
-        spec_commit_sha,
-        created_at,
-        updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      'review-overflow-merge-1',
-      'req-stale-merge-cli',
-      'Review item with overflowed merge simulation audit history',
-      'review_pending',
-      'specs/review-overflow-merge-1.json',
-      'current-spec-sha',
-      '2026-05-05T00:00:00.000Z',
-      '2026-05-05T00:10:00.000Z',
-    )
-    db.query(
-      `INSERT INTO gate_decisions (
-        id,
-        work_item_id,
-        gate_name,
-        decision,
-        actor_type,
-        actor_id,
-        reason,
-        spec_commit_sha,
-        decided_at,
-        created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      'gate-merge-stale-cli-1',
-      'review-stale-merge-1',
-      'merge_simulation',
-      'approved',
-      'agent',
-      'analyst',
-      'merge simulation passed for a previous spec revision',
-      'old-spec-sha',
-      '2026-05-05T00:05:00.000Z',
-      '2026-05-05T00:05:00.000Z',
-    )
-    db.query(
-      `INSERT INTO gate_decisions (
-        id,
-        work_item_id,
-        gate_name,
-        decision,
-        actor_type,
-        actor_id,
-        reason,
-        spec_commit_sha,
-        decided_at,
-        created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      'gate-merge-missing-evidence-cli-1',
-      'review-missing-merge-evidence-1',
-      'merge_simulation',
-      'approved',
-      'agent',
-      'analyst',
-      'merge simulation decision lacks a persisted check run',
-      'current-spec-sha',
-      '2026-05-05T00:05:00.000Z',
-      '2026-05-05T00:05:00.000Z',
-    )
-    db.query(
-      `INSERT INTO gate_decisions (
-        id,
-        work_item_id,
-        gate_name,
-        decision,
-        actor_type,
-        actor_id,
-        reason,
-        spec_commit_sha,
-        decided_at,
-        created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      'gate-merge-overflow-cli-1',
-      'review-overflow-merge-1',
-      'merge_simulation',
-      'approved',
-      'agent',
-      'analyst',
-      'merge simulation remains valid despite later unrelated decisions',
-      'current-spec-sha',
-      '2026-05-05T00:05:00.000Z',
-      '2026-05-05T00:05:00.000Z',
-    )
-    db.query(
-      `INSERT INTO check_runs (
-        id,
-        work_item_id,
-        gate_decision_id,
-        check_name,
-        check_type,
-        status,
-        required_gate,
-        started_at,
-        completed_at,
-        created_at,
-        updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      'check-merge-overflow-cli-1',
-      'review-overflow-merge-1',
-      'gate-merge-overflow-cli-1',
-      'merge simulation replay',
-      'merge_simulation',
-      'passed',
-      'frontier_verification',
-      '2026-05-05T00:05:30.000Z',
-      '2026-05-05T00:05:45.000Z',
-      '2026-05-05T00:05:45.000Z',
-      '2026-05-05T00:05:45.000Z',
-    )
-
-    const insertOverflowDecision = db.query(
-      `INSERT INTO gate_decisions (
-        id,
-        work_item_id,
-        gate_name,
-        decision,
-        actor_type,
-        actor_id,
-        reason,
-        spec_commit_sha,
-        decided_at,
-        created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-    for (let index = 0; index < 21; index += 1) {
-      const minute = `${index + 6}`.padStart(2, '0')
-      insertOverflowDecision.run(
-        `gate-overflow-${index + 1}`,
-        'review-overflow-merge-1',
-        index % 2 === 0 ? 'red_approval' : 'frontier_verification',
-        index % 3 === 0 ? 'rejected' : 'approved',
-        'agent',
-        'analyst',
-        `newer non-merge decision ${index + 1}`,
-        'current-spec-sha',
-        `2026-05-05T00:${minute}:00.000Z`,
-        `2026-05-05T00:${minute}:00.000Z`,
-      )
-    }
-  } finally {
-    closeKanbanDatabase(db)
-  }
-
-  return dbPath
+  return join(tempDir, 'kanban.sqlite')
 }
+
+const createWorkItem = async ({
+  dbPath,
+  workItemId,
+  title,
+  status,
+  createdAt,
+}: {
+  dbPath: string
+  workItemId: string
+  title: string
+  status: (typeof WORK_ITEM_LIFECYCLE_STATES)[keyof typeof WORK_ITEM_LIFECYCLE_STATES]
+  createdAt: string
+}) =>
+  runKanbanCommand({
+    mode: KANBAN_MODES.createWorkItem,
+    dbPath,
+    requestId: 'req-ledger-1',
+    requestSummary: 'simplify kanban ledger',
+    workItemId,
+    title,
+    actorType: 'agent',
+    actorId: 'analyst',
+    status,
+    createdAt,
+  })
 
 afterEach(async () => {
   while (tempPaths.length > 0) {
@@ -779,12 +67,12 @@ afterEach(async () => {
 })
 
 describe('kanban CLI', () => {
-  test('plaited --schema includes kanban and kanban --schema input exposes projection modes', async () => {
+  test('schema exposes simplified ledger modes and omits old policy surfaces', async () => {
     const manifestResult = await Bun.$`bun ./bin/plaited.ts --schema`.cwd(CLI_PACKAGE_ROOT).quiet().nothrow()
 
     expect(manifestResult.exitCode).toBe(0)
     const manifest = JSON.parse(manifestResult.stdout.toString().trim()) as { commands: string[] }
-    expect(manifest.commands).toContain('kanban')
+    expect(manifest.commands).toContain(KANBAN_COMMAND)
 
     const inputSchemaResult = await Bun.$`bun ./bin/plaited.ts kanban --schema input`
       .cwd(CLI_PACKAGE_ROOT)
@@ -794,913 +82,455 @@ describe('kanban CLI', () => {
     expect(inputSchemaResult.exitCode).toBe(0)
     const inputSchema = JSON.parse(inputSchemaResult.stdout.toString().trim()) as {
       description?: string
-      oneOf?: Array<{ properties?: { mode?: { const?: string }; nowIso?: { type?: string; pattern?: string } } }>
-      anyOf?: Array<{ properties?: { mode?: { const?: string }; nowIso?: { type?: string; pattern?: string } } }>
+      oneOf?: Array<{ properties?: { mode?: { const?: string } } }>
+      anyOf?: Array<{ properties?: { mode?: { const?: string } } }>
     }
-    expect(inputSchema.description).toContain('agent-facing kanban command')
+    expect(inputSchema.description).toContain('durable ledger CLI')
 
     const branches = inputSchema.oneOf ?? inputSchema.anyOf ?? []
     const modes = branches.map((branch) => branch.properties?.mode?.const).filter((value) => value !== undefined)
     expect(modes).toEqual([
-      'board',
-      'item',
-      'ready-queue',
-      'decision-audit',
-      'init-db',
-      'record-red-approval',
-      'revoke-stale-red-approval',
-      'record-frontier-verification',
-      'record-merge-simulation',
-      'record-escalation',
-      'start-execution',
-      'run-post-merge-cleanup',
+      KANBAN_MODES.board,
+      KANBAN_MODES.item,
+      KANBAN_MODES.readyQueue,
+      KANBAN_MODES.decisionAudit,
+      KANBAN_MODES.initDb,
+      KANBAN_MODES.createWorkItem,
+      KANBAN_MODES.updateWorkItem,
+      KANBAN_MODES.addDependency,
+      KANBAN_MODES.recordDiscovery,
+      KANBAN_MODES.recordDecision,
+      KANBAN_MODES.recordEvent,
     ])
 
-    const readyQueueBranch = branches.find((branch) => branch.properties?.mode?.const === 'ready-queue')
-    expect(readyQueueBranch?.properties?.nowIso?.type).toBe('string')
-    expect(readyQueueBranch?.properties?.nowIso?.pattern).toBe('^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$')
+    const schemaText = JSON.stringify(inputSchema)
+    expect(schemaText.includes('record-red-approval')).toBeFalse()
+    expect(schemaText.includes('revoke-stale-red-approval')).toBeFalse()
+    expect(schemaText.includes('record-escalation')).toBeFalse()
+    expect(schemaText.includes('frontier')).toBeFalse()
+    expect(schemaText.includes('merge_simulation')).toBeFalse()
+    expect(schemaText.includes('worktree')).toBeFalse()
   })
 
-  test('board mode projects items by state plus blockers and WIP summary', async () => {
-    const dbPath = await seedProjectionFixture()
+  test('create-work-item mode records a request-backed work item through the CLI boundary', async () => {
+    const dbPath = await makeDbPath()
 
-    const result = await runKanbanCommand({
-      mode: 'board',
-      dbPath,
-    })
+    const output = parseOutput<{ mode: string; workItem: { id: string; status: string } }>(
+      await runKanbanCommand({
+        mode: KANBAN_MODES.createWorkItem,
+        dbPath,
+        requestId: 'req-ledger-1',
+        requestSummary: 'simplify kanban ledger',
+        workItemId: 'item-ledger-1',
+        title: 'Create generic kanban writes',
+        actorType: 'agent',
+        actorId: 'analyst',
+        status: WORK_ITEM_LIFECYCLE_STATES.formulated,
+        createdAt: '2026-05-05T00:00:00.000Z',
+      }),
+    )
 
-    expect(result.exitCode).toBe(0)
-    const output = JSON.parse(result.stdout.toString().trim()) as {
-      mode: string
-      dbPath: string
-      states: Array<{
-        state: string
-        total: number
-        items: Array<{ id: string; unresolvedDependencyCount: number }>
-      }>
-      blockers: Array<{
-        workItemId: string
-        unresolvedDependencies: Array<{ id: string; status: string }>
-      }>
-      wip: {
-        total: number
-        byState: Array<{ state: string; total: number }>
-        items: Array<{ id: string; status: string }>
-      }
-    }
+    expect(output.mode).toBe(KANBAN_MODES.createWorkItem)
+    expect(output.workItem).toEqual({ id: 'item-ledger-1', status: WORK_ITEM_LIFECYCLE_STATES.formulated })
+  })
 
-    expect(output.mode).toBe('board')
-    expect(output.dbPath).toBe(resolve(dbPath))
-    expect(output.states).toContainEqual({
-      state: 'formulated',
+  test('generic ledger writes are projected by board, item, ready-queue, and decision-audit modes', async () => {
+    const dbPath = await makeDbPath()
+
+    parseOutput(
+      await createWorkItem({
+        dbPath,
+        workItemId: 'dep-cleaned',
+        title: 'Completed dependency',
+        status: WORK_ITEM_LIFECYCLE_STATES.cleaned,
+        createdAt: '2026-05-05T00:00:00.000Z',
+      }),
+    )
+    parseOutput(
+      await createWorkItem({
+        dbPath,
+        workItemId: 'dep-active',
+        title: 'Active dependency',
+        status: WORK_ITEM_LIFECYCLE_STATES.green_pending,
+        createdAt: '2026-05-05T00:00:01.000Z',
+      }),
+    )
+    parseOutput(
+      await createWorkItem({
+        dbPath,
+        workItemId: 'item-ledger',
+        title: 'Generic ledger item',
+        status: WORK_ITEM_LIFECYCLE_STATES.formulated,
+        createdAt: '2026-05-05T00:00:02.000Z',
+      }),
+    )
+    parseOutput(
+      await createWorkItem({
+        dbPath,
+        workItemId: 'item-with-blocker',
+        title: 'Item with unresolved dependency',
+        status: WORK_ITEM_LIFECYCLE_STATES.red_approved,
+        createdAt: '2026-05-05T00:00:03.000Z',
+      }),
+    )
+    parseOutput(
+      await createWorkItem({
+        dbPath,
+        workItemId: 'blocked-status',
+        title: 'Blocked status item',
+        status: WORK_ITEM_LIFECYCLE_STATES.blocked,
+        createdAt: '2026-05-05T00:00:04.000Z',
+      }),
+    )
+    parseOutput(
+      await createWorkItem({
+        dbPath,
+        workItemId: 'review-no-merge',
+        title: 'Review item without merge policy facts',
+        status: WORK_ITEM_LIFECYCLE_STATES.review_pending,
+        createdAt: '2026-05-05T00:00:05.000Z',
+      }),
+    )
+
+    parseOutput(
+      await runKanbanCommand({
+        mode: KANBAN_MODES.updateWorkItem,
+        dbPath,
+        workItemId: 'item-ledger',
+        status: WORK_ITEM_LIFECYCLE_STATES.review_pending,
+        specPath: 'specs/item-ledger.json',
+        specCommitSha: 'sha-item-ledger',
+        updatedAt: '2026-05-05T00:10:00.000Z',
+      }),
+    )
+    parseOutput(
+      await runKanbanCommand({
+        mode: KANBAN_MODES.addDependency,
+        dbPath,
+        workItemId: 'item-ledger',
+        dependsOnWorkItemId: 'dep-cleaned',
+        createdAt: '2026-05-05T00:11:00.000Z',
+      }),
+    )
+    parseOutput(
+      await runKanbanCommand({
+        mode: KANBAN_MODES.addDependency,
+        dbPath,
+        workItemId: 'item-with-blocker',
+        dependsOnWorkItemId: 'dep-active',
+        createdAt: '2026-05-05T00:12:00.000Z',
+      }),
+    )
+    parseOutput(
+      await runKanbanCommand({
+        mode: KANBAN_MODES.recordDiscovery,
+        dbPath,
+        discoveryId: 'disc-item-ledger-1',
+        workItemId: 'item-ledger',
+        artifactVersion: 1,
+        rules: [{ id: 'rule-1', text: 'record facts only' }],
+        examples: [{ id: 'example-1', text: 'generic writes' }],
+        openQuestions: [],
+        outOfScope: [{ id: 'scope-1', text: 'workflow policy' }],
+        collectedAt: '2026-05-05T00:13:00.000Z',
+        staleAfterAt: '2026-05-06T00:13:00.000Z',
+      }),
+    )
+    parseOutput(
+      await runKanbanCommand({
+        mode: KANBAN_MODES.recordDecision,
+        dbPath,
+        decisionId: 'decision-ledger-1',
+        workItemId: 'item-ledger',
+        decisionKind: 'analyst_handoff',
+        decision: 'approved',
+        actorType: 'agent',
+        actorId: 'analyst',
+        reason: 'facts are ready for the next actor',
+        evidenceRefs: [{ contextDbPath: '.plaited/context.sqlite', evidenceCacheRowId: 7 }],
+        decidedAt: '2026-05-05T00:14:00.000Z',
+      }),
+    )
+    parseOutput(
+      await runKanbanCommand({
+        mode: KANBAN_MODES.recordEvent,
+        dbPath,
+        eventId: 'event-ledger-1',
+        workItemId: 'item-ledger',
+        eventKind: 'status_observed',
+        payload: { source: 'test' },
+        occurredAt: '2026-05-05T00:15:00.000Z',
+      }),
+    )
+
+    const board = parseOutput<{
+      states: Array<{ state: string; total: number; items: Array<{ id: string; unresolvedDependencyCount: number }> }>
+      blockers: Array<{ workItemId: string; unresolvedDependencies: Array<{ id: string; status: string }> }>
+    }>(await runKanbanCommand({ mode: KANBAN_MODES.board, dbPath }))
+    expect(board.states).toContainEqual({
+      state: WORK_ITEM_LIFECYCLE_STATES.review_pending,
+      items: [
+        { id: 'item-ledger', unresolvedDependencyCount: 0 },
+        { id: 'review-no-merge', unresolvedDependencyCount: 0 },
+      ],
       total: 2,
-      items: [
-        { id: 'formulated-1', unresolvedDependencyCount: 0 },
-        { id: 'formulated-blocked-1', unresolvedDependencyCount: 1 },
-      ],
     })
-    expect(output.states).toContainEqual({
-      state: 'red_approved',
-      total: 5,
-      items: [
-        { id: 'blocked-1', unresolvedDependencyCount: 1 },
-        { id: 'missing-artifact-red-1', unresolvedDependencyCount: 0 },
-        { id: 'ready-1', unresolvedDependencyCount: 0 },
-        { id: 'revoked-red-1', unresolvedDependencyCount: 0 },
-        { id: 'stale-red-1', unresolvedDependencyCount: 0 },
-      ],
-    })
-    expect(output.blockers).toEqual([
+    expect(board.blockers).toEqual([
       {
-        workItemId: 'formulated-blocked-1',
-        unresolvedDependencies: [{ id: 'dep-blocked', status: 'green_pending' }],
-      },
-      {
-        workItemId: 'blocked-1',
-        unresolvedDependencies: [{ id: 'dep-blocked', status: 'green_pending' }],
+        workItemId: 'item-with-blocker',
+        unresolvedDependencies: [{ id: 'dep-active', status: WORK_ITEM_LIFECYCLE_STATES.green_pending }],
       },
     ])
-    expect(output.wip).toEqual({
-      total: 10,
-      byState: [
-        { state: 'red_approved', total: 5 },
-        { state: 'green_pending', total: 2 },
-        { state: 'merged', total: 1 },
-        { state: 'cleanup_pending', total: 2 },
-      ],
-      items: [
-        { id: 'blocked-1', status: 'red_approved' },
-        { id: 'missing-artifact-red-1', status: 'red_approved' },
-        { id: 'ready-1', status: 'red_approved' },
-        { id: 'revoked-red-1', status: 'red_approved' },
-        { id: 'stale-red-1', status: 'red_approved' },
-        { id: 'dep-blocked', status: 'green_pending' },
-        { id: 'wip-1', status: 'green_pending' },
-        { id: 'merged-1', status: 'merged' },
-        { id: 'cleanup-pending-elapsed-1', status: 'cleanup_pending' },
-        { id: 'cleanup-pending-future-1', status: 'cleanup_pending' },
-      ],
-    })
-  })
 
-  test('item mode projects state, dependencies, gate status, and execution environment', async () => {
-    const dbPath = await seedProjectionFixture()
-
-    const result = await runKanbanCommand({
-      mode: 'item',
-      dbPath,
-      workItemId: 'wip-1',
-    })
-
-    expect(result.exitCode).toBe(0)
-    const output = JSON.parse(result.stdout.toString().trim()) as {
-      mode: string
-      dbPath: string
-      item: {
-        id: string
-        requestId: string
-        title: string
-        status: string
-        specPath: string | null
-        specCommitSha: string | null
-        guards: {
-          dependenciesResolved: boolean
-          redApprovalIsFresh: boolean
-          mergeGatePassed: boolean
-          openQuestionsResolved: boolean
-        }
-        execution: {
-          branchRef: string
-          worktreePath: string
-          targetRef: string
-          preparedAt: string | null
-        } | null
-        cleanup: {
-          branchPruneAfterAt: string | null
-          worktreeRemovedAt: string | null
-          branchPrunedAt: string | null
-        } | null
-        dependencies: Array<{
-          id: string
-          title: string
-          status: string
-          isResolved: boolean
-        }>
-        gateStatus: {
-          redApproval: { latestDecision: string; decidedAt: string } | null
-          frontierVerification: { latestDecision: string; decidedAt: string } | null
-          mergeSimulation: { latestDecision: string; decidedAt: string } | null
-        }
-        latestDecisions: Array<{
-          id: string
-          gateName: string
-          decision: string
-          reason: string
-          specCommitSha: string | null
-          decidedAt: string
-          failureCategories: string[]
-          evidenceRefs: Array<{ contextDbPath: string; evidenceCacheRowId: number }>
-        }>
+    const item = parseOutput<{
+      item: Record<string, unknown> & {
+        dependencies: Array<{ id: string; title: string; status: string; isResolved: boolean }>
+        latestDiscovery: { id: string; openQuestions: unknown[] }
+        latestDecisions: Array<{ decisionKind: string; evidenceRefs: Array<{ evidenceCacheRowId: number }> }>
+        events: Array<{ id: string; eventKind: string; payload: { source: string }; occurredAt: string }>
       }
-    }
-
-    expect(output.mode).toBe('item')
-    expect(output.dbPath).toBe(resolve(dbPath))
-    expect(output.item).toEqual({
-      id: 'wip-1',
-      requestId: 'req-kanban-cli',
-      title: 'Green pending item',
-      status: 'green_pending',
-      specPath: 'specs/wip-1.json',
-      specCommitSha: 'sha-wip-1',
-      guards: {
-        dependenciesResolved: true,
-        redApprovalIsFresh: true,
-        mergeGatePassed: false,
-        openQuestionsResolved: true,
-      },
-      execution: {
-        branchRef: 'item/wip-1-green-pending-item',
-        worktreePath: '/tmp/plaited/.worktrees/wip-1-green-pending-item',
-        targetRef: 'main',
-        preparedAt: '2026-05-05T00:10:00.000Z',
-      },
-      cleanup: null,
-      dependencies: [
-        {
-          id: 'dep-cleaned',
-          title: 'Completed dependency',
-          status: 'cleaned',
-          isResolved: true,
-        },
-      ],
-      gateStatus: {
-        redApproval: {
-          latestDecision: 'approved',
-          decidedAt: '2026-05-05T00:22:00.000Z',
-        },
-        frontierVerification: null,
-        mergeSimulation: null,
-      },
-      latestDecisions: [
-        {
-          id: 'gate-red-wip-1',
-          gateName: 'red_approval',
-          decision: 'approved',
-          reason: 'tests demonstrate missing behavior',
-          specCommitSha: 'sha-wip-1',
-          decidedAt: '2026-05-05T00:22:00.000Z',
-          failureCategories: ['expected_behavior_fail'],
-          evidenceRefs: [{ contextDbPath: '/tmp/context.sqlite', evidenceCacheRowId: 7 }],
-        },
-      ],
-    })
-  })
-
-  test('ready-queue mode projects deterministic next actionable items', async () => {
-    const dbPath = await seedProjectionFixture()
-
-    const result = await runKanbanCommand({
-      mode: 'ready-queue',
-      dbPath,
-    })
-
-    expect(result.exitCode).toBe(0)
-    const output = JSON.parse(result.stdout.toString().trim()) as {
-      mode: string
-      dbPath: string
-      readyItems: Array<{
-        workItemId: string
-        title: string
-        status: string
-        nextEvent: string
-      }>
-    }
-
-    expect(output.mode).toBe('ready-queue')
-    expect(output.dbPath).toBe(resolve(dbPath))
-    expect(output.readyItems.some((item) => item.nextEvent === 'mark_cleaned')).toBeFalse()
-    expect(output.readyItems).toEqual([
+    }>(await runKanbanCommand({ mode: KANBAN_MODES.item, dbPath, workItemId: 'item-ledger' }))
+    expect(item.item.dependencies).toEqual([
       {
-        workItemId: 'formulated-1',
-        title: 'Formulated item',
-        status: 'formulated',
-        nextEvent: 'request_red_approval',
-      },
-      {
-        workItemId: 'ready-1',
-        title: 'Ready item',
-        status: 'red_approved',
-        nextEvent: 'start_green_execution',
-      },
-      {
-        workItemId: 'wip-1',
-        title: 'Green pending item',
-        status: 'green_pending',
-        nextEvent: 'submit_for_review',
-      },
-      {
-        workItemId: 'merged-1',
-        title: 'Merged item',
-        status: 'merged',
-        nextEvent: 'schedule_cleanup',
+        id: 'dep-cleaned',
+        title: 'Completed dependency',
+        status: WORK_ITEM_LIFECYCLE_STATES.cleaned,
+        isResolved: true,
       },
     ])
-    expect(output.readyItems.some((item) => item.workItemId === 'formulated-blocked-1')).toBeFalse()
-  })
-
-  test('projection treats an older artifact version updated after a newer version as the current discovery artifact', async () => {
-    const dbPath = await seedProjectionFixture()
-
-    const readyQueueResult = await runKanbanCommand({
-      mode: 'ready-queue',
-      dbPath,
+    expect(item.item.latestDiscovery.id).toBe('disc-item-ledger-1')
+    expect(item.item.latestDiscovery.openQuestions).toEqual([])
+    expect(item.item.latestDecisions[0]).toMatchObject({
+      decisionKind: 'analyst_handoff',
+      evidenceRefs: [{ contextDbPath: '.plaited/context.sqlite', evidenceCacheRowId: 7 }],
     })
+    expect(item.item.events).toEqual([
+      {
+        id: 'event-ledger-1',
+        eventKind: 'status_observed',
+        payload: { source: 'test' },
+        occurredAt: '2026-05-05T00:15:00.000Z',
+      },
+    ])
+    expect('guards' in item.item).toBeFalse()
+    expect('execution' in item.item).toBeFalse()
+    expect('cleanup' in item.item).toBeFalse()
+    expect('gateStatus' in item.item).toBeFalse()
 
-    expect(readyQueueResult.exitCode).toBe(0)
-    const readyQueueOutput = JSON.parse(readyQueueResult.stdout.toString().trim()) as {
-      readyItems: Array<{
-        workItemId: string
-        title: string
-        status: string
-        nextEvent: string
-      }>
-    }
-    expect(readyQueueOutput.readyItems).toContainEqual({
-      workItemId: 'ready-1',
-      title: 'Ready item',
-      status: 'red_approved',
-      nextEvent: 'start_green_execution',
-    })
+    const readyQueue = parseOutput<{ readyItems: Array<Record<string, unknown> & { workItemId: string }> }>(
+      await runKanbanCommand({ mode: KANBAN_MODES.readyQueue, dbPath }),
+    )
+    expect(readyQueue.readyItems.map((readyItem) => readyItem.workItemId)).toEqual([
+      'dep-active',
+      'item-ledger',
+      'item-with-blocker',
+      'review-no-merge',
+    ])
+    expect(readyQueue.readyItems.some((readyItem) => 'nextEvent' in readyItem)).toBeFalse()
 
-    const itemResult = await runKanbanCommand({
-      mode: 'item',
-      dbPath,
-      workItemId: 'ready-1',
-    })
-
-    expect(itemResult.exitCode).toBe(0)
-    const itemOutput = JSON.parse(itemResult.stdout.toString().trim()) as {
-      item: {
-        guards: {
-          dependenciesResolved: boolean
-          redApprovalIsFresh: boolean
-          mergeGatePassed: boolean
-          openQuestionsResolved: boolean
-        }
-      }
-    }
-    expect(itemOutput.item.guards).toEqual({
-      dependenciesResolved: true,
-      redApprovalIsFresh: true,
-      mergeGatePassed: false,
-      openQuestionsResolved: true,
-    })
-  })
-
-  test('ready-queue omits execution states that lack required gate provenance', async () => {
-    const dbPath = await seedProjectionFixture()
-    const db = await openKanbanDatabase({ dbPath })
-
-    try {
-      db.query(
-        `INSERT INTO work_items (
-          id,
-          request_id,
-          title,
-          status,
-          spec_path,
-          spec_commit_sha,
-          created_at,
-          updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).run(
-        'merge-ready-without-gate-1',
-        'req-kanban-cli',
-        'Merge ready without gate provenance',
-        'merge_ready',
-        'specs/merge-ready-without-gate-1.json',
-        'sha-merge-ready-without-gate-1',
-        '2026-05-05T00:00:09.500Z',
-        '2026-05-05T00:00:09.500Z',
-      )
-    } finally {
-      closeKanbanDatabase(db)
-    }
-
-    const result = await runKanbanCommand({
-      mode: 'ready-queue',
-      dbPath,
-    })
-
-    expect(result.exitCode).toBe(0)
-    const output = JSON.parse(result.stdout.toString().trim()) as {
-      readyItems: Array<{
-        workItemId: string
-        nextEvent: string
-      }>
-    }
-
-    expect(
-      output.readyItems.some((item) => item.workItemId === 'dep-blocked' && item.nextEvent === 'submit_for_review'),
-    ).toBeFalse()
-    expect(
-      output.readyItems.some(
-        (item) => item.workItemId === 'merge-ready-without-gate-1' && item.nextEvent === 'mark_merged',
-      ),
-    ).toBeFalse()
-  })
-
-  test('ready-queue includes cleanup completion only when nowIso reaches prune deadline', async () => {
-    const dbPath = await seedProjectionFixture()
-
-    const result = await runKanbanCommand({
-      mode: 'ready-queue',
-      dbPath,
-      nowIso: '2026-05-05T00:30:00.000Z',
-    })
-
-    expect(result.exitCode).toBe(0)
-    const output = JSON.parse(result.stdout.toString().trim()) as {
-      readyItems: Array<{
-        workItemId: string
-        title: string
-        status: string
-        nextEvent: string
-      }>
-    }
-
-    expect(output.readyItems).toContainEqual({
-      workItemId: 'cleanup-pending-elapsed-1',
-      title: 'Cleanup pending elapsed item',
-      status: 'cleanup_pending',
-      nextEvent: 'mark_cleaned',
-    })
-    expect(output.readyItems).not.toContainEqual({
-      workItemId: 'cleanup-pending-future-1',
-      title: 'Cleanup pending future item',
-      status: 'cleanup_pending',
-      nextEvent: 'mark_cleaned',
-    })
-  })
-
-  test('ready-queue rejects malformed nowIso values', async () => {
-    const dbPath = await seedProjectionFixture()
-
-    const result = await runKanbanCommand({
-      mode: 'ready-queue',
-      dbPath,
-      nowIso: 'zzz',
-    })
-
-    expect(result.exitCode).toBe(2)
-    const stderr = result.stderr.toString()
-    expect(stderr).toContain('nowIso')
-  })
-
-  test('ready-queue omits red approvals when discovery artifact identity has drifted', async () => {
-    const dbPath = await seedProjectionFixture()
-
-    const readyQueueResult = await runKanbanCommand({
-      mode: 'ready-queue',
-      dbPath,
-    })
-
-    expect(readyQueueResult.exitCode).toBe(0)
-    const readyQueueOutput = JSON.parse(readyQueueResult.stdout.toString().trim()) as {
-      readyItems: Array<{
-        workItemId: string
-        nextEvent: string
-      }>
-    }
-    expect(readyQueueOutput.readyItems).not.toContainEqual({
-      workItemId: 'stale-red-1',
-      nextEvent: 'start_green_execution',
-    })
-
-    const itemResult = await runKanbanCommand({
-      mode: 'item',
-      dbPath,
-      workItemId: 'stale-red-1',
-    })
-
-    expect(itemResult.exitCode).toBe(0)
-    const itemOutput = JSON.parse(itemResult.stdout.toString().trim()) as {
-      item: {
-        guards: {
-          redApprovalIsFresh: boolean
-        }
-      }
-    }
-    expect(itemOutput.item.guards.redApprovalIsFresh).toBeFalse()
-  })
-
-  test('ready-queue omits red approvals when no current discovery artifact exists', async () => {
-    const dbPath = await seedProjectionFixture()
-
-    const readyQueueResult = await runKanbanCommand({
-      mode: 'ready-queue',
-      dbPath,
-    })
-
-    expect(readyQueueResult.exitCode).toBe(0)
-    const readyQueueOutput = JSON.parse(readyQueueResult.stdout.toString().trim()) as {
-      readyItems: Array<{
-        workItemId: string
-        nextEvent: string
-      }>
-    }
-    expect(readyQueueOutput.readyItems).not.toContainEqual({
-      workItemId: 'missing-artifact-red-1',
-      nextEvent: 'start_green_execution',
-    })
-
-    const itemResult = await runKanbanCommand({
-      mode: 'item',
-      dbPath,
-      workItemId: 'missing-artifact-red-1',
-    })
-
-    expect(itemResult.exitCode).toBe(0)
-    const itemOutput = JSON.parse(itemResult.stdout.toString().trim()) as {
-      item: {
-        guards: {
-          redApprovalIsFresh: boolean
-        }
-      }
-    }
-    expect(itemOutput.item.guards.redApprovalIsFresh).toBeFalse()
-  })
-
-  test('ready-queue omits formulated items when dependencies are unresolved', async () => {
-    const dbPath = await seedProjectionFixture()
-
-    const readyQueueResult = await runKanbanCommand({
-      mode: 'ready-queue',
-      dbPath,
-    })
-
-    expect(readyQueueResult.exitCode).toBe(0)
-    const readyQueueOutput = JSON.parse(readyQueueResult.stdout.toString().trim()) as {
-      readyItems: Array<{
-        workItemId: string
-        title: string
-        status: string
-        nextEvent: string
-      }>
-    }
-    expect(readyQueueOutput.readyItems).not.toContainEqual({
-      workItemId: 'formulated-blocked-1',
-      title: 'Formulated item with unresolved dependency',
-      status: 'formulated',
-      nextEvent: 'request_red_approval',
-    })
-
-    const itemResult = await runKanbanCommand({
-      mode: 'item',
-      dbPath,
-      workItemId: 'formulated-blocked-1',
-    })
-
-    expect(itemResult.exitCode).toBe(0)
-    const itemOutput = JSON.parse(itemResult.stdout.toString().trim()) as {
-      item: {
-        guards: {
-          dependenciesResolved: boolean
-        }
-      }
-    }
-    expect(itemOutput.item.guards.dependenciesResolved).toBeFalse()
-  })
-
-  test('ready-queue omits red approvals when a later red rejection revokes the approval', async () => {
-    const dbPath = await seedProjectionFixture()
-
-    const readyQueueResult = await runKanbanCommand({
-      mode: 'ready-queue',
-      dbPath,
-    })
-
-    expect(readyQueueResult.exitCode).toBe(0)
-    const readyQueueOutput = JSON.parse(readyQueueResult.stdout.toString().trim()) as {
-      readyItems: Array<{
-        workItemId: string
-        nextEvent: string
-      }>
-    }
-    expect(readyQueueOutput.readyItems.some((item) => item.workItemId === 'revoked-red-1')).toBeFalse()
-
-    const itemResult = await runKanbanCommand({
-      mode: 'item',
-      dbPath,
-      workItemId: 'revoked-red-1',
-    })
-
-    expect(itemResult.exitCode).toBe(0)
-    const itemOutput = JSON.parse(itemResult.stdout.toString().trim()) as {
-      item: {
-        guards: {
-          redApprovalIsFresh: boolean
-        }
-        gateStatus: {
-          redApproval: {
-            latestDecision: string
-          } | null
-        }
-      }
-    }
-    expect(itemOutput.item.guards.redApprovalIsFresh).toBeFalse()
-    expect(itemOutput.item.gateStatus.redApproval?.latestDecision).toBe('rejected')
-  })
-
-  test('ready-queue omits review items when latest merge simulation is for a stale spec', async () => {
-    const dbPath = await seedStaleMergeProjectionFixture()
-
-    const readyQueueResult = await runKanbanCommand({
-      mode: 'ready-queue',
-      dbPath,
-    })
-
-    expect(readyQueueResult.exitCode).toBe(0)
-    const readyQueueOutput = JSON.parse(readyQueueResult.stdout.toString().trim()) as {
-      readyItems: Array<{
-        workItemId: string
-        nextEvent: string
-      }>
-    }
-    expect(readyQueueOutput.readyItems).not.toContainEqual({
-      workItemId: 'review-stale-merge-1',
-      nextEvent: 'mark_merge_ready',
-    })
-
-    const itemResult = await runKanbanCommand({
-      mode: 'item',
-      dbPath,
-      workItemId: 'review-stale-merge-1',
-    })
-
-    expect(itemResult.exitCode).toBe(0)
-    const itemOutput = JSON.parse(itemResult.stdout.toString().trim()) as {
-      item: {
-        guards: {
-          mergeGatePassed: boolean
-        }
-      }
-    }
-    expect(itemOutput.item.guards.mergeGatePassed).toBeFalse()
-  })
-
-  test('ready-queue omits review items when merge simulation check evidence is missing', async () => {
-    const dbPath = await seedStaleMergeProjectionFixture()
-
-    const readyQueueResult = await runKanbanCommand({
-      mode: 'ready-queue',
-      dbPath,
-    })
-
-    expect(readyQueueResult.exitCode).toBe(0)
-    const readyQueueOutput = JSON.parse(readyQueueResult.stdout.toString().trim()) as {
-      readyItems: Array<{
-        workItemId: string
-        nextEvent: string
-      }>
-    }
-    expect(readyQueueOutput.readyItems).not.toContainEqual({
-      workItemId: 'review-missing-merge-evidence-1',
-      nextEvent: 'mark_merge_ready',
-    })
-
-    const itemResult = await runKanbanCommand({
-      mode: 'item',
-      dbPath,
-      workItemId: 'review-missing-merge-evidence-1',
-    })
-
-    expect(itemResult.exitCode).toBe(0)
-    const itemOutput = JSON.parse(itemResult.stdout.toString().trim()) as {
-      item: {
-        guards: {
-          mergeGatePassed: boolean
-        }
-      }
-    }
-    expect(itemOutput.item.guards.mergeGatePassed).toBeFalse()
-  })
-
-  test('ready-queue keeps merge simulation gate state when newer non-merge decisions overflow audit history', async () => {
-    const dbPath = await seedStaleMergeProjectionFixture()
-
-    const readyQueueResult = await runKanbanCommand({
-      mode: 'ready-queue',
-      dbPath,
-    })
-
-    expect(readyQueueResult.exitCode).toBe(0)
-    const readyQueueOutput = JSON.parse(readyQueueResult.stdout.toString().trim()) as {
-      readyItems: Array<{
-        workItemId: string
-        nextEvent: string
-      }>
-    }
-    expect(
-      readyQueueOutput.readyItems.some(
-        (item) => item.workItemId === 'review-overflow-merge-1' && item.nextEvent === 'mark_merge_ready',
-      ),
-    ).toBeTrue()
-
-    const itemResult = await runKanbanCommand({
-      mode: 'item',
-      dbPath,
-      workItemId: 'review-overflow-merge-1',
-    })
-
-    expect(itemResult.exitCode).toBe(0)
-    const itemOutput = JSON.parse(itemResult.stdout.toString().trim()) as {
-      item: {
-        guards: {
-          mergeGatePassed: boolean
-        }
-        gateStatus: {
-          mergeSimulation: {
-            latestDecision: string
-          } | null
-        }
-        latestDecisions: Array<{
-          id: string
-        }>
-      }
-    }
-
-    expect(itemOutput.item.guards.mergeGatePassed).toBeTrue()
-    expect(itemOutput.item.gateStatus.mergeSimulation).not.toBeNull()
-    expect(itemOutput.item.gateStatus.mergeSimulation?.latestDecision).toBe('approved')
-    expect(itemOutput.item.latestDecisions).toHaveLength(20)
-    expect(itemOutput.item.latestDecisions.some((decision) => decision.id === 'gate-merge-overflow-cli-1')).toBeFalse()
-  })
-
-  test('decision-audit mode projects gate decisions with evidence references and failures', async () => {
-    const dbPath = await seedProjectionFixture()
-
-    const result = await runKanbanCommand({
-      mode: 'decision-audit',
-      dbPath,
-      workItemId: 'wip-1',
-      limit: 10,
-    })
-
-    expect(result.exitCode).toBe(0)
-    const output = JSON.parse(result.stdout.toString().trim()) as {
-      mode: string
-      dbPath: string
+    const audit = parseOutput<{
       decisions: Array<{
         id: string
         workItemId: string
-        gateName: string
+        decisionKind: string
         decision: string
+        actorType: string
+        actorId: string
         reason: string
-        specCommitSha: string | null
         decidedAt: string
-        failureCategories: string[]
         evidenceRefs: Array<{ contextDbPath: string; evidenceCacheRowId: number }>
       }>
-    }
-
-    expect(output.mode).toBe('decision-audit')
-    expect(output.dbPath).toBe(resolve(dbPath))
-    expect(output.decisions).toEqual([
+    }>(await runKanbanCommand({ mode: KANBAN_MODES.decisionAudit, dbPath, workItemId: 'item-ledger', limit: 10 }))
+    expect(audit.decisions).toEqual([
       {
-        id: 'gate-red-wip-1',
-        workItemId: 'wip-1',
-        gateName: 'red_approval',
+        id: 'decision-ledger-1',
+        workItemId: 'item-ledger',
+        decisionKind: 'analyst_handoff',
         decision: 'approved',
-        reason: 'tests demonstrate missing behavior',
-        specCommitSha: 'sha-wip-1',
-        decidedAt: '2026-05-05T00:22:00.000Z',
-        failureCategories: ['expected_behavior_fail'],
-        evidenceRefs: [{ contextDbPath: '/tmp/context.sqlite', evidenceCacheRowId: 7 }],
+        actorType: 'agent',
+        actorId: 'analyst',
+        reason: 'facts are ready for the next actor',
+        decidedAt: '2026-05-05T00:14:00.000Z',
+        evidenceRefs: [{ contextDbPath: '.plaited/context.sqlite', evidenceCacheRowId: 7 }],
       },
     ])
   })
 
-  test('record-red-approval mode persists a gate decision for analyst-to-coder handoff', async () => {
-    const tempDir = trackTempPath(await mkdtemp(join(tmpdir(), 'plaited-kanban-cli-')))
-    const dbPath = join(tempDir, 'kanban.sqlite')
-    const db = await openKanbanDatabase({ dbPath })
+  test('create-work-item preserves existing request metadata when adding another item', async () => {
+    const dbPath = await makeDbPath()
 
+    parseOutput(
+      await runKanbanCommand({
+        mode: KANBAN_MODES.createWorkItem,
+        dbPath,
+        requestId: 'req-preserve',
+        requestSummary: 'original request summary',
+        workItemId: 'item-one',
+        title: 'First item',
+        actorType: 'agent',
+        actorId: 'analyst',
+        createdAt: '2026-05-05T00:00:00.000Z',
+      }),
+    )
+    parseOutput(
+      await runKanbanCommand({
+        mode: KANBAN_MODES.createWorkItem,
+        dbPath,
+        requestId: 'req-preserve',
+        requestSummary: 'different summary that should not overwrite',
+        workItemId: 'item-two',
+        title: 'Second item',
+        actorType: 'agent',
+        actorId: 'coder',
+        createdAt: '2026-05-05T00:01:00.000Z',
+      }),
+    )
+
+    const db = new Database(dbPath)
     try {
-      db.query(
-        `INSERT INTO requests (
-          id,
-          summary,
-          status,
-          requested_by_actor_type,
-          requested_by_actor_id,
-          created_at,
-          updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      ).run(
-        'req-red-cli',
-        'red approval cli request',
-        'new',
-        'user',
-        'user-red-cli',
-        '2026-05-05T00:00:00.000Z',
-        '2026-05-05T00:00:00.000Z',
-      )
-      db.query(
-        `INSERT INTO work_items (
-          id,
-          request_id,
-          title,
-          status,
-          spec_path,
-          spec_commit_sha,
-          created_at,
-          updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).run(
-        'item-red-cli',
-        'req-red-cli',
-        'red approval cli item',
-        'red_pending',
-        'specs/item-red-cli.spec.json',
-        'sha-red-cli',
-        '2026-05-05T00:00:00.000Z',
-        '2026-05-05T00:00:00.000Z',
-      )
-      db.query(
-        `INSERT INTO discovery_artifacts (
-          id,
-          work_item_id,
-          artifact_version,
-          rules,
-          examples,
-          open_questions,
-          out_of_scope,
-          collected_at,
-          stale_after_at,
-          created_at,
-          updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).run(
-        'disc-red-cli-1',
-        'item-red-cli',
-        1,
-        JSON.stringify([]),
-        JSON.stringify([]),
-        JSON.stringify([]),
-        JSON.stringify([]),
-        '2026-05-05T00:00:00.000Z',
-        '2026-05-06T00:00:00.000Z',
-        '2026-05-05T00:00:00.000Z',
-        '2026-05-05T00:00:00.000Z',
-      )
-    } finally {
-      closeKanbanDatabase(db)
-    }
-
-    const result = await runKanbanCommand({
-      mode: 'record-red-approval',
-      dbPath,
-      decisionId: 'gate-red-cli-1',
-      workItemId: 'item-red-cli',
-      actorType: 'agent',
-      actorId: 'analyst',
-      reason: 'analyst captured failing behavior for coder',
-      discoveryArtifactId: 'disc-red-cli-1',
-      failures: [
-        {
-          category: 'expected_behavior_fail',
-          checkName: 'bun test src/kanban/tests/kanban.cli.spec.ts',
-          detail: 'targeted behavior is not implemented yet',
-        },
-      ],
-      evidenceRefs: [],
-      decidedAt: '2026-05-05T00:01:00.000Z',
-    })
-
-    expect(result.exitCode).toBe(0)
-    const output = JSON.parse(result.stdout.toString().trim()) as {
-      ok: boolean
-      mode: string
-      dbPath: string
-      decision: string
-      reasons: string[]
-    }
-    expect(output).toEqual({
-      ok: true,
-      mode: 'record-red-approval',
-      dbPath: resolve(dbPath),
-      decision: 'approved',
-      reasons: [],
-    })
-
-    const readDb = await openKanbanDatabase({ dbPath })
-    try {
-      const decisionRow = readDb
-        .query<{ decision: string; actor_id: string; reason: string }, [string]>(
-          'SELECT decision, actor_id, reason FROM gate_decisions WHERE id = ?',
+      const request = db
+        .query<{ summary: string; requested_by_actor_id: string; updated_at: string }, [string]>(
+          `SELECT summary, requested_by_actor_id, updated_at
+           FROM requests
+           WHERE id = ?`,
         )
-        .get('gate-red-cli-1')
-      expect(decisionRow).toEqual({
-        decision: 'approved',
-        actor_id: 'analyst',
-        reason: 'analyst captured failing behavior for coder',
+        .get('req-preserve')
+      expect(request).toEqual({
+        summary: 'original request summary',
+        requested_by_actor_id: 'analyst',
+        updated_at: '2026-05-05T00:00:00.000Z',
       })
     } finally {
-      closeKanbanDatabase(readDb)
+      db.close(false)
     }
   })
 
-  test('kanban --schema output exposes all result modes', async () => {
-    const outputSchemaResult = await Bun.$`bun ./bin/plaited.ts kanban --schema output`
-      .cwd(CLI_PACKAGE_ROOT)
-      .quiet()
-      .nothrow()
-
-    expect(outputSchemaResult.exitCode).toBe(0)
-    const outputSchema = JSON.parse(outputSchemaResult.stdout.toString().trim()) as {
-      description?: string
-      oneOf?: Array<{ properties?: { mode?: { const?: string } } }>
-      anyOf?: Array<{ properties?: { mode?: { const?: string } } }>
+  test('init-db fails loudly when an existing database has the old policy-heavy schema', async () => {
+    const dbPath = await makeDbPath()
+    const db = new Database(dbPath, { create: true })
+    try {
+      db.run(`
+        CREATE TABLE kanban_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL);
+        INSERT INTO kanban_migrations (version, applied_at) VALUES (1, '2026-05-05T00:00:00.000Z');
+        CREATE TABLE gate_decisions (id TEXT PRIMARY KEY);
+      `)
+    } finally {
+      db.close(false)
     }
-    expect(outputSchema.description).toContain('agent-facing kanban command')
 
-    const branches = outputSchema.oneOf ?? outputSchema.anyOf ?? []
-    const modes = branches.map((branch) => branch.properties?.mode?.const).filter((value) => value !== undefined)
-    expect(modes).toEqual([
-      'board',
-      'item',
-      'ready-queue',
-      'decision-audit',
-      'init-db',
-      'record-red-approval',
-      'revoke-stale-red-approval',
-      'record-frontier-verification',
-      'record-merge-simulation',
-      'record-escalation',
-      'start-execution',
-      'run-post-merge-cleanup',
-    ])
+    const result = await runKanbanCommand({
+      mode: KANBAN_MODES.initDb,
+      dbPath,
+    })
+
+    expect(result.exitCode).toBe(1)
+    expect(result.stderr.toString()).toContain('unsupported kanban schema')
+    expect(result.stderr.toString()).toContain('gate_decisions')
+  })
+
+  test('write modes surface schema, missing-row, foreign-key, and duplicate-id failures', async () => {
+    const dbPath = await makeDbPath()
+
+    const invalidJsonResult = await runRawKanbanCommand('{')
+    expect(invalidJsonResult.exitCode).toBe(2)
+    expect(invalidJsonResult.stderr.toString()).toContain('Invalid JSON input')
+
+    const invalidSchemaResult = await runKanbanCommand({
+      mode: KANBAN_MODES.createWorkItem,
+      dbPath,
+      requestId: 'req-invalid',
+      requestSummary: 'invalid status',
+      workItemId: 'item-invalid',
+      title: 'Invalid status item',
+      actorType: 'agent',
+      actorId: 'analyst',
+      status: 'not_a_status',
+    })
+    expect(invalidSchemaResult.exitCode).toBe(2)
+    expect(invalidSchemaResult.stderr.toString()).toContain('"status"')
+
+    const missingUpdateResult = await runKanbanCommand({
+      mode: KANBAN_MODES.updateWorkItem,
+      dbPath,
+      workItemId: 'missing-item',
+      status: WORK_ITEM_LIFECYCLE_STATES.review_pending,
+    })
+    expect(missingUpdateResult.exitCode).toBe(1)
+    expect(missingUpdateResult.stderr.toString()).toContain('Work item does not exist: missing-item')
+
+    parseOutput(
+      await createWorkItem({
+        dbPath,
+        workItemId: 'item-failure-base',
+        title: 'Failure base item',
+        status: WORK_ITEM_LIFECYCLE_STATES.formulated,
+        createdAt: '2026-05-05T00:00:00.000Z',
+      }),
+    )
+    parseOutput(
+      await createWorkItem({
+        dbPath,
+        workItemId: 'item-failure-dep',
+        title: 'Failure dependency item',
+        status: WORK_ITEM_LIFECYCLE_STATES.cleaned,
+        createdAt: '2026-05-05T00:00:01.000Z',
+      }),
+    )
+
+    const missingDependencyResult = await runKanbanCommand({
+      mode: KANBAN_MODES.addDependency,
+      dbPath,
+      workItemId: 'item-failure-base',
+      dependsOnWorkItemId: 'missing-dependency',
+    })
+    expect(missingDependencyResult.exitCode).toBe(1)
+    expect(missingDependencyResult.stderr.toString()).toContain('FOREIGN KEY constraint failed')
+
+    parseOutput(
+      await runKanbanCommand({
+        mode: KANBAN_MODES.addDependency,
+        dbPath,
+        workItemId: 'item-failure-base',
+        dependsOnWorkItemId: 'item-failure-dep',
+      }),
+    )
+    const duplicateDependencyResult = await runKanbanCommand({
+      mode: KANBAN_MODES.addDependency,
+      dbPath,
+      workItemId: 'item-failure-base',
+      dependsOnWorkItemId: 'item-failure-dep',
+    })
+    expect(duplicateDependencyResult.exitCode).toBe(1)
+    expect(duplicateDependencyResult.stderr.toString()).toContain('UNIQUE constraint failed')
+
+    const decisionInput = {
+      mode: KANBAN_MODES.recordDecision,
+      dbPath,
+      decisionId: 'decision-duplicate',
+      workItemId: 'item-failure-base',
+      decisionKind: 'manual_check',
+      decision: 'approved',
+      actorType: 'agent',
+      actorId: 'analyst',
+      reason: 'first decision wins',
+      evidenceRefs: [],
+    }
+    parseOutput(await runKanbanCommand(decisionInput))
+    const duplicateDecisionResult = await runKanbanCommand(decisionInput)
+    expect(duplicateDecisionResult.exitCode).toBe(1)
+    expect(duplicateDecisionResult.stderr.toString()).toContain('UNIQUE constraint failed')
+
+    const eventInput = {
+      mode: KANBAN_MODES.recordEvent,
+      dbPath,
+      eventId: 'event-duplicate',
+      workItemId: 'item-failure-base',
+      eventKind: 'manual_event',
+      payload: {},
+    }
+    parseOutput(await runKanbanCommand(eventInput))
+    const duplicateEventResult = await runKanbanCommand(eventInput)
+    expect(duplicateEventResult.exitCode).toBe(1)
+    expect(duplicateEventResult.stderr.toString()).toContain('UNIQUE constraint failed')
   })
 })

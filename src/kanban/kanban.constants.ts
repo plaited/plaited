@@ -1,5 +1,8 @@
 import { keyMirror } from '../utils.ts'
 
+/**
+ * Canonical work-item lifecycle state ids used by the durable kanban ledger.
+ */
 export const WORK_ITEM_LIFECYCLE_STATES = keyMirror(
   'draft',
   'discovery_ready',
@@ -16,6 +19,9 @@ export const WORK_ITEM_LIFECYCLE_STATES = keyMirror(
   'rejected',
 )
 
+/**
+ * Ordered lifecycle state values used for schema enums and board projections.
+ */
 export const WORK_ITEM_LIFECYCLE_STATE_VALUES = [
   WORK_ITEM_LIFECYCLE_STATES.draft,
   WORK_ITEM_LIFECYCLE_STATES.discovery_ready,
@@ -32,12 +38,21 @@ export const WORK_ITEM_LIFECYCLE_STATE_VALUES = [
   WORK_ITEM_LIFECYCLE_STATES.rejected,
 ] as const
 
+/**
+ * Terminal lifecycle states where a work item is no longer actionable.
+ */
 export const WORK_ITEM_LIFECYCLE_TERMINAL_STATE_VALUES = [
   WORK_ITEM_LIFECYCLE_STATES.cleaned,
   WORK_ITEM_LIFECYCLE_STATES.rejected,
 ] as const
 
-export const WORK_ITEM_LIFECYCLE_EXECUTION_STATE_VALUES = [
+/**
+ * Lifecycle states included in the simple ready queue projection.
+ */
+export const KANBAN_READY_STATUS_VALUES = [
+  WORK_ITEM_LIFECYCLE_STATES.draft,
+  WORK_ITEM_LIFECYCLE_STATES.discovery_ready,
+  WORK_ITEM_LIFECYCLE_STATES.formulated,
   WORK_ITEM_LIFECYCLE_STATES.red_pending,
   WORK_ITEM_LIFECYCLE_STATES.red_approved,
   WORK_ITEM_LIFECYCLE_STATES.green_pending,
@@ -47,6 +62,9 @@ export const WORK_ITEM_LIFECYCLE_EXECUTION_STATE_VALUES = [
   WORK_ITEM_LIFECYCLE_STATES.cleanup_pending,
 ] as const
 
+/**
+ * Canonical lifecycle event ids that behavioral threads may record as kanban events.
+ */
 export const WORK_ITEM_LIFECYCLE_EVENTS = keyMirror(
   'submit_discovery',
   'complete_formulation',
@@ -66,6 +84,9 @@ export const WORK_ITEM_LIFECYCLE_EVENTS = keyMirror(
   'interrupt_requested',
 )
 
+/**
+ * Ordered lifecycle event values used for schema enums and contract metadata.
+ */
 export const WORK_ITEM_LIFECYCLE_EVENT_VALUES = [
   WORK_ITEM_LIFECYCLE_EVENTS.submit_discovery,
   WORK_ITEM_LIFECYCLE_EVENTS.complete_formulation,
@@ -85,92 +106,24 @@ export const WORK_ITEM_LIFECYCLE_EVENT_VALUES = [
   WORK_ITEM_LIFECYCLE_EVENTS.interrupt_requested,
 ] as const
 
-export const WORK_ITEM_ORCHESTRATION_GUARDS = keyMirror(
-  'dependencies_resolved',
-  'dependencies_unresolved',
-  'red_approval_is_fresh',
-  'open_questions_resolved',
-  'merge_gate_passed',
-)
-
-export const WORK_ITEM_ORCHESTRATION_GUARD_VALUES = [
-  WORK_ITEM_ORCHESTRATION_GUARDS.dependencies_resolved,
-  WORK_ITEM_ORCHESTRATION_GUARDS.dependencies_unresolved,
-  WORK_ITEM_ORCHESTRATION_GUARDS.red_approval_is_fresh,
-  WORK_ITEM_ORCHESTRATION_GUARDS.open_questions_resolved,
-  WORK_ITEM_ORCHESTRATION_GUARDS.merge_gate_passed,
-] as const
-
-export const RED_FAILURE_CATEGORIES = keyMirror('expected_behavior_fail', 'missing_impl', 'env_fail', 'flaky_fail')
-
-export const RED_FAILURE_CATEGORY_VALUES = [
-  RED_FAILURE_CATEGORIES.expected_behavior_fail,
-  RED_FAILURE_CATEGORIES.missing_impl,
-  RED_FAILURE_CATEGORIES.env_fail,
-  RED_FAILURE_CATEGORIES.flaky_fail,
-] as const
-
-export const APPROVABLE_RED_FAILURE_CATEGORY_VALUES = [
-  RED_FAILURE_CATEGORIES.expected_behavior_fail,
-  RED_FAILURE_CATEGORIES.missing_impl,
-] as const
-
-export const FRONTIER_FAILURE_CATEGORIES = keyMirror(
-  'frontier_deadlock_detected',
-  'frontier_truncated',
-  'frontier_execution_error',
-)
-
-export const FRONTIER_FAILURE_CATEGORY_VALUES = [
-  FRONTIER_FAILURE_CATEGORIES.frontier_deadlock_detected,
-  FRONTIER_FAILURE_CATEGORIES.frontier_truncated,
-  FRONTIER_FAILURE_CATEGORIES.frontier_execution_error,
-] as const
-
-export const MERGE_FAILURE_CATEGORIES = keyMirror(
-  'required_checks_missing',
-  'required_checks_failed',
-  'merge_conflict_detected',
-  'merge_simulation_execution_error',
-)
-
-export const MERGE_FAILURE_CATEGORY_VALUES = [
-  MERGE_FAILURE_CATEGORIES.required_checks_missing,
-  MERGE_FAILURE_CATEGORIES.required_checks_failed,
-  MERGE_FAILURE_CATEGORIES.merge_conflict_detected,
-  MERGE_FAILURE_CATEGORIES.merge_simulation_execution_error,
-] as const
-
-export const ESCALATION_TRIGGER_IDS = keyMirror(
-  'open_questions_unresolved',
-  'dependency_deadlock_detected',
-  'consecutive_red_rejections',
-  'risky_impact_threshold_exceeded',
-)
-
-export const ESCALATION_TRIGGER_ID_VALUES = [
-  ESCALATION_TRIGGER_IDS.open_questions_unresolved,
-  ESCALATION_TRIGGER_IDS.dependency_deadlock_detected,
-  ESCALATION_TRIGGER_IDS.consecutive_red_rejections,
-  ESCALATION_TRIGGER_IDS.risky_impact_threshold_exceeded,
-] as const
-
-export const CONSECUTIVE_RED_REJECTION_ESCALATION_THRESHOLD = 2
-export const RISKY_IMPACT_ESCALATION_THRESHOLD = 8
-
+/**
+ * Top-level `plaited` command name for the kanban ledger CLI.
+ */
 export const KANBAN_COMMAND = 'kanban'
 
+/**
+ * Mode ids accepted by the `plaited kanban` JSON CLI contract.
+ */
 export const KANBAN_MODES = {
   board: 'board',
   item: 'item',
   readyQueue: 'ready-queue',
   decisionAudit: 'decision-audit',
   initDb: 'init-db',
-  recordRedApproval: 'record-red-approval',
-  revokeStaleRedApproval: 'revoke-stale-red-approval',
-  recordFrontierVerification: 'record-frontier-verification',
-  recordMergeSimulation: 'record-merge-simulation',
-  recordEscalation: 'record-escalation',
-  startExecution: 'start-execution',
-  runPostMergeCleanup: 'run-post-merge-cleanup',
+  createWorkItem: 'create-work-item',
+  updateWorkItem: 'update-work-item',
+  addDependency: 'add-dependency',
+  recordDiscovery: 'record-discovery',
+  recordDecision: 'record-decision',
+  recordEvent: 'record-event',
 } as const
