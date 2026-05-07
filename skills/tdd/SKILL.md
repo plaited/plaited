@@ -3,6 +3,21 @@ name: tdd
 description: Use test-driven development for behavior-changing feature or fix work, and whenever the user mentions TDD, test-first, red-green-refactor, tracer bullets, integration tests, or public-interface behavior tests. Skip for docs-only, path-only rename, formatting-only, or purely mechanical chores unless explicitly requested.
 license: MIT
 compatibility: Requires bun for Plaited repository validation
+metadata:
+  plaited:
+    kind: skill
+    origin:
+      kind: first-party
+    capabilities:
+      - id: workflow.tdd
+        type: workflow
+        lane: private
+        phase: validation
+        audience: [coder]
+        actions: [design-test, implement, validate]
+        sideEffects: workspace-write
+        source:
+          type: first-party
 ---
 
 # Test-Driven Development

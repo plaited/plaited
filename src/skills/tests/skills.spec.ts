@@ -61,6 +61,14 @@ const createPlaitedFrontmatter = (capabilityYaml: string): string => `metadata:
     capabilities:
 ${capabilityYaml}`
 
+const createFirstPartyPlaitedFrontmatter = (capabilityYaml: string): string => `metadata:
+  plaited:
+    kind: skill
+    origin:
+      kind: first-party
+    capabilities:
+${capabilityYaml}`
+
 const runSkillsCommand = async (input: unknown) =>
   Bun.$`bun ./bin/plaited.ts skills ${JSON.stringify(input)}`.cwd(CLI_PACKAGE_ROOT).quiet().nothrow()
 
@@ -361,6 +369,92 @@ describe('skills CLI commands', () => {
           ],
         },
       ])
+    })
+  })
+
+  test('skills CLI mode=registry reads first-party workflow metadata without a handler', async () => {
+    await withTempRoot(async (rootDir) => {
+      await writeSkillFile({
+        rootDir,
+        dirName: 'grill-me',
+        name: 'grill-me',
+        description: 'Interview the user until a design is resolved.',
+        frontmatterExtras: createFirstPartyPlaitedFrontmatter(`      - id: interview.design
+        type: workflow
+        lane: private
+        phase: analysis
+        audience: [analyst, coder]
+        actions: [question, clarify, decide]
+        sideEffects: none
+        source:
+          type: first-party`),
+        body: 'Ask one question at a time.',
+      })
+
+      const result = await runSkillsCommand({ mode: 'registry', rootDir })
+
+      expect(result.exitCode).toBe(0)
+      const output = JSON.parse(result.stdout.toString().trim())
+      expect(output.errors).toEqual([])
+      expect(output.registry).toEqual([
+        {
+          skill: {
+            name: 'grill-me',
+            description: 'Interview the user until a design is resolved.',
+            path: '/skills/grill-me/SKILL.md',
+          },
+          origin: {
+            kind: 'first-party',
+          },
+          capabilities: [
+            {
+              id: 'interview.design',
+              address: 'grill-me/interview.design',
+              type: 'workflow',
+              lane: 'private',
+              phase: 'analysis',
+              audience: ['analyst', 'coder'],
+              actions: ['question', 'clarify', 'decide'],
+              sideEffects: 'none',
+              source: {
+                type: 'first-party',
+              },
+            },
+          ],
+        },
+      ])
+    })
+  })
+
+  test('skills CLI mode=registry rejects workflow capabilities that declare a handler', async () => {
+    await withTempRoot(async (rootDir) => {
+      await writeSkillFile({
+        rootDir,
+        dirName: 'grill-me',
+        name: 'grill-me',
+        description: 'Interview the user until a design is resolved.',
+        frontmatterExtras: createFirstPartyPlaitedFrontmatter(`      - id: interview.design
+        type: workflow
+        lane: private
+        phase: analysis
+        audience: [analyst]
+        actions: [question]
+        sideEffects: none
+        handler:
+          type: cli
+          command: scripts/run.ts
+        source:
+          type: first-party`),
+        body: 'Ask one question at a time.',
+      })
+
+      const result = await runSkillsCommand({ mode: 'registry', rootDir })
+
+      expect(result.exitCode).toBe(0)
+      const output = JSON.parse(result.stdout.toString().trim())
+      expect(output.registry).toEqual([])
+      expect(output.errors).toHaveLength(1)
+      expect(output.errors[0]?.message).toContain('handler')
     })
   })
 

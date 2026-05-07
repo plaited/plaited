@@ -2,6 +2,21 @@
 name: grill-me
 description: Interview the user relentlessly about a plan or design until reaching shared understanding, resolving each branch of the decision tree. Use when user wants to stress-test a plan, get grilled on their design, or mentions "grill me".
 license: MIT
+metadata:
+  plaited:
+    kind: skill
+    origin:
+      kind: first-party
+    capabilities:
+      - id: interview.design
+        type: workflow
+        lane: private
+        phase: analysis
+        audience: [analyst]
+        actions: [question, clarify, decide]
+        sideEffects: none
+        source:
+          type: first-party
 ---
 
 Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.

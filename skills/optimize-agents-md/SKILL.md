@@ -3,6 +3,21 @@ name: optimize-agents-md
 description: Review and improve AGENTS.md or scoped agent instructions in this repo. Use when asked to compress, clarify, reorganize, or harden agent workflow rules while preserving Plaited-specific operating constraints.
 license: ISC
 compatibility: Requires bun
+metadata:
+  plaited:
+    kind: skill
+    origin:
+      kind: first-party
+    capabilities:
+      - id: workflow.instructions-review
+        type: workflow
+        lane: private
+        phase: analysis
+        audience: [analyst]
+        actions: [review, compress, harden]
+        sideEffects: workspace-write
+        source:
+          type: first-party
 ---
 
 # Optimize AGENTS.md

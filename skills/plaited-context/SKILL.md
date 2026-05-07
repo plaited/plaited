@@ -3,6 +3,57 @@ name: plaited-context
 description: Mutable context meta-skill that orchestrates stable plaited CLI evidence tools and owns user-tunable findings persistence/adaptation surfaces.
 license: ISC
 compatibility: Requires bun
+metadata:
+  plaited:
+    kind: skill
+    origin:
+      kind: first-party
+    capabilities:
+      - id: context.init
+        type: cli
+        lane: private
+        phase: context
+        audience: [analyst]
+        actions: [initialize]
+        sideEffects: workspace-write
+        handler:
+          type: cli
+          command: scripts/init-db.ts
+        source:
+          type: first-party
+      - id: context.record-finding
+        type: cli
+        lane: private
+        phase: analysis
+        audience: [analyst]
+        actions: [record, persist]
+        sideEffects: workspace-write
+        handler:
+          type: cli
+          command: scripts/record-finding.ts
+        source:
+          type: first-party
+      - id: context.query-cache
+        type: cli
+        lane: private
+        phase: context
+        audience: [analyst, coder]
+        actions: [query, read]
+        sideEffects: read-only
+        handler:
+          type: cli
+          command: scripts/query-cache.ts
+        source:
+          type: first-party
+      - id: workflow.context-orchestration
+        type: workflow
+        lane: private
+        phase: context
+        audience: [analyst]
+        actions: [collect, cache, synthesize]
+        sideEffects: workspace-write
+        source:
+          type: first-party
 ---
 
 # plaited-context
@@ -110,12 +161,24 @@ with the `behavioral-frontier` CLI workflow.
 When a task needs durable analyst/coder handoff, board state, ready queues,
 or gate decision audits, use `plaited-kanban` after evidence collection.
 
+When a task mentions dynamic skills, generated skills, capability registries,
+MCP-backed skill generation, or converting external tool surfaces into local
+skills, collect context from the dynamic skills doctrine and skill generation
+surfaces:
+
+- `docs/wiki/dynamic-skills-agent.md`
+- `src/skills/skills.schema.ts`
+- `skills/add-remote-mcp/SKILL.md`
+- `skills/add-protected-remote-mcp/SKILL.md`
+
 Useful follow-up commands:
 
 ```bash
 plaited behavioral-frontier --schema input
 plaited behavioral-frontier '{"mode":"verify","specPath":"./specs.jsonl","strategy":"bfs","selectionPolicy":"scheduler","maxDepth":8}'
 plaited kanban --schema input
+plaited wiki '{"mode":"context","rootDir":".","paths":["docs/wiki","src/skills","skills"],"task":"dynamic skill generation capability registry"}'
+plaited skills '{"mode":"registry","rootDir":"."}'
 ```
 
 ## Evidence Rule

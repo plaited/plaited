@@ -61,17 +61,27 @@ export type SkillCatalogLoadResult = z.infer<typeof SkillCatalogLoadResultSchema
 
 const SkillManifestOriginSourceSchema = z
   .object({
-    type: z.string().min(1).describe('Source kind for generated skill provenance, such as `remote-mcp`.'),
+    type: z.string().min(1).describe('Source kind for skill provenance, such as `remote-mcp`.'),
     url: z.string().min(1).describe('Source URL used to generate the skill capability package.'),
   })
-  .describe('Origin source metadata for a generated skill manifest.')
+  .describe('Origin source metadata for a skill manifest.')
 
-const SkillManifestOriginSchema = z
+const SkillManifestGeneratedOriginSchema = z
   .object({
     kind: z.literal('generated').describe('Origin classification for generated skills.'),
     source: SkillManifestOriginSourceSchema.describe('Source metadata used for generation.'),
   })
   .describe('Generated skill origin block parsed from SKILL.md frontmatter metadata.')
+
+const SkillManifestFirstPartyOriginSchema = z
+  .object({
+    kind: z.literal('first-party').describe('Origin classification for skills shipped with Plaited.'),
+  })
+  .describe('First-party skill origin block parsed from SKILL.md frontmatter metadata.')
+
+const SkillManifestOriginSchema = z
+  .union([SkillManifestGeneratedOriginSchema, SkillManifestFirstPartyOriginSchema])
+  .describe('Skill origin metadata parsed from SKILL.md frontmatter.')
 
 const SkillManifestCapabilityHandlerSchema = z
   .object({
@@ -85,53 +95,69 @@ const SkillManifestCapabilityHandlerSchema = z
       })
       .describe('Executable command path for CLI-backed capabilities.'),
   })
-  .describe('CLI handler metadata for a generated capability.')
+  .describe('CLI handler metadata for a capability.')
 
 const SkillManifestCapabilitySourceSchema = z
   .object({
     type: z.string().min(1).describe('Capability source kind, such as `remote-mcp`.'),
     tool: z.string().min(1).optional().describe('Optional remote tool identifier tied to the capability.'),
   })
-  .describe('Source attribution metadata for one generated capability.')
+  .describe('Source attribution metadata for one capability.')
+
+const SkillManifestCapabilityBaseSchema = z.object({
+  id: z.string().min(1).describe('Capability identifier inside the skill package.'),
+  lane: z.enum(['private', 'exchange']).describe('Runtime lane designation for this capability.'),
+  phase: z
+    .enum(['context', 'analysis', 'execution', 'validation', 'generation'])
+    .describe('Execution phase where this capability is intended to run.'),
+  audience: z.array(z.string().min(1)).min(1).describe('Allowed audience roles for this capability.'),
+  actions: z.array(z.string().min(1)).min(1).describe('Action verbs the capability supports.'),
+  sideEffects: z
+    .enum(['none', 'read-only', 'workspace-write', 'network', 'service', 'external-state'])
+    .describe('Declared side-effect profile for this capability.'),
+  source: SkillManifestCapabilitySourceSchema.describe('Capability source attribution metadata.'),
+})
+
+const SkillManifestCliCapabilitySchema = SkillManifestCapabilityBaseSchema.extend({
+  type: z.literal('cli').describe('CLI-backed capability type.'),
+  handler: SkillManifestCapabilityHandlerSchema.describe('Capability handler runtime metadata.'),
+})
+  .strict()
+  .describe('CLI-backed capability entry from a skill manifest.')
+
+const SkillManifestWorkflowCapabilitySchema = SkillManifestCapabilityBaseSchema.extend({
+  type: z.literal('workflow').describe('Instructional workflow capability type.'),
+})
+  .strict()
+  .describe('Instructional workflow capability entry from a skill manifest.')
 
 const SkillManifestCapabilitySchema = z
-  .object({
-    id: z.string().min(1).describe('Capability identifier inside the skill package.'),
-    type: z
-      .enum(['cli', 'service', 'ui', 'resource', 'workflow', 'behavioral-spec'])
-      .describe('Canonical capability type for generated skills.'),
-    lane: z.enum(['private', 'exchange']).describe('Runtime lane designation for this capability.'),
-    phase: z
-      .enum(['context', 'analysis', 'execution', 'validation', 'generation'])
-      .describe('Execution phase where this capability is intended to run.'),
-    audience: z.array(z.string().min(1)).min(1).describe('Allowed audience roles for this capability.'),
-    actions: z.array(z.string().min(1)).min(1).describe('Action verbs the capability supports.'),
-    sideEffects: z
-      .enum(['none', 'read-only', 'workspace-write', 'network', 'service', 'external-state'])
-      .describe('Declared side-effect profile for this capability.'),
-    handler: SkillManifestCapabilityHandlerSchema.describe('Capability handler runtime metadata.'),
-    source: SkillManifestCapabilitySourceSchema.describe('Capability source attribution metadata.'),
-  })
-  .refine((capability) => capability.type === 'cli', {
-    path: ['type'],
-    message: 'Only `type: "cli"` capabilities are currently supported until non-CLI handler schemas are added.',
-  })
-  .describe('Capability entry from a generated skill manifest.')
+  .discriminatedUnion('type', [SkillManifestCliCapabilitySchema, SkillManifestWorkflowCapabilitySchema])
+  .describe('Capability entry from a skill manifest.')
 
-const GeneratedSkillManifestSchema = z
+const SkillManifestSchema = z
   .object({
-    kind: z.literal('generated-skill').describe('Manifest kind for generated skill packages.'),
-    origin: SkillManifestOriginSchema.describe('Origin metadata for the generated skill package.'),
+    kind: z.enum(['skill', 'generated-skill']).describe('Manifest kind for first-party and generated skill packages.'),
+    origin: SkillManifestOriginSchema.describe('Origin metadata for the skill package.'),
     capabilities: z
       .array(SkillManifestCapabilitySchema)
       .min(1)
-      .describe('Capability definitions generated for this skill package.'),
+      .describe('Capability definitions for this skill package.'),
   })
-  .describe('Generated skill manifest parsed from SKILL.md frontmatter metadata.')
+  .describe('Skill manifest parsed from SKILL.md frontmatter metadata.')
 
-const SkillRegistryCapabilitySchema = SkillManifestCapabilitySchema.extend({
-  address: z.string().min(1).describe('Namespaced capability address in `<skill-name>/<capability-id>` form.'),
-}).describe('Capability registry entry enriched with a namespaced address.')
+const SkillRegistryCapabilityAddressSchema = z
+  .object({
+    address: z.string().min(1).describe('Namespaced capability address in `<skill-name>/<capability-id>` form.'),
+  })
+  .describe('Capability registry address metadata.')
+
+const SkillRegistryCapabilitySchema = z
+  .discriminatedUnion('type', [
+    SkillManifestCliCapabilitySchema.extend(SkillRegistryCapabilityAddressSchema.shape),
+    SkillManifestWorkflowCapabilitySchema.extend(SkillRegistryCapabilityAddressSchema.shape),
+  ])
+  .describe('Capability registry entry enriched with a namespaced address.')
 
 export const SkillRegistryEntrySchema = z
   .object({
@@ -151,7 +177,7 @@ const SkillRegistryLoadResultSchema = z
       .array(SkillCatalogErrorSchema)
       .describe('Validation or parsing errors for registry inputs that could not be loaded.'),
   })
-  .describe('Capability registry load result for generated skill metadata in SKILL.md frontmatter.')
+  .describe('Capability registry load result for skill metadata in SKILL.md frontmatter.')
 
 /** @public */
 export type SkillRegistryLoadResult = z.infer<typeof SkillRegistryLoadResultSchema>
@@ -313,7 +339,7 @@ const SkillsCatalogModeInputSchema = SkillsCatalogCliInputSchema.extend({
 })
 
 const SkillsRegistryModeInputSchema = SkillsRegistryCliInputSchema.extend({
-  mode: z.literal('registry').describe('Runs generated capability registry discovery mode.'),
+  mode: z.literal('registry').describe('Runs skill capability registry discovery mode.'),
 })
 
 const SkillsValidateModeInputSchema = SkillsValidateCliInputSchema.extend({
@@ -385,8 +411,8 @@ export const SkillFrontMatterSchema = z
     metadata: z
       .object({
         plaited: z
-          .lazy(() => GeneratedSkillManifestSchema)
-          .describe('Optional generated capability manifest consumed by `skills` registry mode.')
+          .lazy(() => SkillManifestSchema)
+          .describe('Optional skill capability manifest consumed by `skills` registry mode.')
           .optional(),
       })
       .catchall(z.unknown())

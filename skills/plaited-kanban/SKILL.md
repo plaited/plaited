@@ -3,6 +3,21 @@ name: plaited-kanban
 description: Use Plaited's durable kanban CLI for work-item facts, board inspection, simple ready queues, discoveries, decisions, and event records.
 license: ISC
 compatibility: Requires bun
+metadata:
+  plaited:
+    kind: skill
+    origin:
+      kind: first-party
+    capabilities:
+      - id: workflow.kanban-ledger
+        type: workflow
+        lane: private
+        phase: context
+        audience: [analyst, coder]
+        actions: [record, inspect, handoff]
+        sideEffects: workspace-write
+        source:
+          type: first-party
 ---
 
 # plaited-kanban

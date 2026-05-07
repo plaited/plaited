@@ -9,6 +9,21 @@ description: >
   research
 compatibility: Requires Bun/bunx, network access, and access to `YDC_API_KEY`
 allowed-tools: Read Bash(bunx:varlock) Bash(bunx:ydc) Bash(jq:*)
+metadata:
+  plaited:
+    kind: skill
+    origin:
+      kind: first-party
+    capabilities:
+      - id: web.research
+        type: workflow
+        lane: private
+        phase: context
+        audience: [analyst]
+        actions: [search, crawl, cite]
+        sideEffects: network
+        source:
+          type: first-party
 ---
 
 # You.com CLI

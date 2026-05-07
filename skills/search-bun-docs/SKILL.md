@@ -4,6 +4,28 @@ description: Search the Bun documentation. Use when answering questions about Bu
 license: ISC
 compatibility: Requires bun and network access
 allowed-tools: Bash
+metadata:
+  plaited:
+    kind: generated-skill
+    origin:
+      kind: generated
+      source:
+        type: remote-mcp
+        url: https://bun.com/docs/mcp
+    capabilities:
+      - id: docs.search
+        type: cli
+        lane: private
+        phase: context
+        audience: [analyst]
+        actions: [search, read]
+        sideEffects: network
+        handler:
+          type: cli
+          command: scripts/search.ts
+        source:
+          type: remote-mcp
+          tool: search_bun
 ---
 
 # Search Bun Docs

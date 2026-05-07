@@ -4,6 +4,28 @@ description: Search the AgentSkills specification. Use when creating, validating
 license: ISC
 compatibility: Requires bun and network access
 allowed-tools: Bash
+metadata:
+  plaited:
+    kind: generated-skill
+    origin:
+      kind: generated
+      source:
+        type: remote-mcp
+        url: https://agentskills.io/mcp
+    capabilities:
+      - id: docs.search
+        type: cli
+        lane: private
+        phase: context
+        audience: [analyst]
+        actions: [search, read]
+        sideEffects: network
+        handler:
+          type: cli
+          command: scripts/search.ts
+        source:
+          type: remote-mcp
+          tool: search_agent_skills
 ---
 
 # Search Agent Skills

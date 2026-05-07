@@ -6,6 +6,20 @@ compatibility: Requires bun and typescript-language-server
 allowed-tools: Bash
 metadata:
   file-triggers: "*.ts,*.tsx,*.js,*.jsx"
+  plaited:
+    kind: skill
+    origin:
+      kind: first-party
+    capabilities:
+      - id: code.semantic-analysis
+        type: workflow
+        lane: private
+        phase: analysis
+        audience: [analyst, coder]
+        actions: [hover, references, definition, symbols, exports, audit]
+        sideEffects: read-only
+        source:
+          type: first-party
 ---
 
 # TypeScript LSP Skill

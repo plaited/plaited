@@ -4,6 +4,33 @@ description: Generate MCP-backed skills from remote MCP servers (Streamable HTTP
 license: ISC
 compatibility: Requires bun and network access
 allowed-tools: Bash Read Write
+metadata:
+  plaited:
+    kind: skill
+    origin:
+      kind: first-party
+    capabilities:
+      - id: remote-mcp.inspect
+        type: cli
+        lane: private
+        phase: context
+        audience: [analyst]
+        actions: [discover, list, read]
+        sideEffects: network
+        handler:
+          type: cli
+          command: scripts/run.ts
+        source:
+          type: first-party
+      - id: workflow.remote-mcp-skill
+        type: workflow
+        lane: private
+        phase: generation
+        audience: [coder]
+        actions: [evaluate, scaffold, validate]
+        sideEffects: workspace-write
+        source:
+          type: first-party
 ---
 
 # Add Remote MCP

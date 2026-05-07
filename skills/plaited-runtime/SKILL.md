@@ -3,6 +3,21 @@ name: plaited-runtime
 description: Plaited runtime doctrine for dual-lane node boundaries, boundary contract graph semantics, local projection policy, and identity-plane/execution-plane authority split.
 license: ISC
 compatibility: Requires bun
+metadata:
+  plaited:
+    kind: skill
+    origin:
+      kind: first-party
+    capabilities:
+      - id: doctrine.runtime-boundary
+        type: workflow
+        lane: private
+        phase: analysis
+        audience: [analyst, coder]
+        actions: [review, classify, guide]
+        sideEffects: none
+        source:
+          type: first-party
 ---
 
 # plaited-runtime

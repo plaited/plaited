@@ -3,6 +3,21 @@ name: plaited-ui
 description: Build and test Plaited's server-driven UI stack. Use when working on `src/ui.ts`, `src/controller`, `src/render`, `src/css`, controller islands, controller protocol schemas, SSR templates, CSS helpers, dynamic controller modules, or UI test fixtures.
 license: ISC
 compatibility: Requires bun and @playwright/cli for real browser controller tests
+metadata:
+  plaited:
+    kind: skill
+    origin:
+      kind: first-party
+    capabilities:
+      - id: workflow.ui-development
+        type: workflow
+        lane: private
+        phase: execution
+        audience: [coder]
+        actions: [build, test, review]
+        sideEffects: workspace-write
+        source:
+          type: first-party
 ---
 
 # Plaited UI

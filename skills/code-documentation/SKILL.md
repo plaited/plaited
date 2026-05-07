@@ -3,6 +3,33 @@ name: code-documentation
 description: TSDoc standards for TypeScript/JavaScript code. Automatically invoked when writing, reviewing, or editing any TSDoc comments, code documentation, or API documentation. (project)
 license: ISC
 compatibility: Requires bun
+metadata:
+  plaited:
+    kind: skill
+    origin:
+      kind: first-party
+    capabilities:
+      - id: docs.audit
+        type: cli
+        lane: private
+        phase: validation
+        audience: [analyst]
+        actions: [audit, report]
+        sideEffects: read-only
+        handler:
+          type: cli
+          command: scripts/run.ts
+        source:
+          type: first-party
+      - id: workflow.tsdoc-guidance
+        type: workflow
+        lane: private
+        phase: analysis
+        audience: [analyst, coder]
+        actions: [document, review, maintain]
+        sideEffects: workspace-write
+        source:
+          type: first-party
 ---
 
 # Code Documentation Skill

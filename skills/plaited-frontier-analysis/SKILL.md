@@ -3,6 +3,21 @@ name: plaited-frontier-analysis
 description: Analyze replay-safe behavioral specs with the `behavioral-frontier` CLI. Use when replaying selected-event snapshots, exploring reachable frontiers, testing supplied trigger events, comparing scheduler policies, or verifying deadlock findings in Plaited behavioral code.
 license: ISC
 compatibility: Requires bun
+metadata:
+  plaited:
+    kind: skill
+    origin:
+      kind: first-party
+    capabilities:
+      - id: workflow.frontier-analysis
+        type: workflow
+        lane: private
+        phase: validation
+        audience: [analyst]
+        actions: [analyze, verify, compare]
+        sideEffects: read-only
+        source:
+          type: first-party
 ---
 
 # plaited-frontier-analysis

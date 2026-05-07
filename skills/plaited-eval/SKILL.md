@@ -3,6 +3,21 @@ name: plaited-eval
 description: CLI guidance for grading, comparing, and calibrating Plaited trial results with `plaited eval`.
 license: ISC
 compatibility: Requires bun
+metadata:
+  plaited:
+    kind: skill
+    origin:
+      kind: first-party
+    capabilities:
+      - id: workflow.eval-analysis
+        type: workflow
+        lane: private
+        phase: validation
+        audience: [analyst]
+        actions: [grade, compare, calibrate]
+        sideEffects: read-only
+        source:
+          type: first-party
 ---
 
 # Plaited Eval

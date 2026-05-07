@@ -4,6 +4,21 @@ description: Transport-agnostic MCP integration patterns. Explains session API, 
 license: ISC
 compatibility: Requires bun and @modelcontextprotocol/sdk
 allowed-tools: Bash Read Write
+metadata:
+  plaited:
+    kind: skill
+    origin:
+      kind: first-party
+    capabilities:
+      - id: workflow.mcp-integration
+        type: workflow
+        lane: private
+        phase: analysis
+        audience: [coder]
+        actions: [design, connect, guide]
+        sideEffects: workspace-write
+        source:
+          type: first-party
 ---
 
 # Add MCP

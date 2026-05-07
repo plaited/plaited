@@ -12,6 +12,7 @@
 - A node is the agent runtime boundary.
 - Skills are capability packages inside a node, not independent nodes.
 - Skills can be shipped locally or generated locally.
+- First-party and generated skills can publish `metadata.plaited` manifests for the skills registry.
 
 ### Target direction
 
@@ -32,7 +33,12 @@ Skill envelopes may contain:
 - behavioral spec artifacts
 - tests
 
-Capabilities are the addressable units inside a skill envelope and are emitted as namespaced addresses (for example `<skill-name>/<capability-id>`).
+Capabilities are the addressable units inside a skill envelope and are emitted as namespaced addresses
+(for example `<skill-name>/<capability-id>`).
+
+`metadata.plaited` supports first-party shipped skills and generated skills. CLI-backed capabilities
+declare a skill-local handler path; workflow capabilities describe instructional surfaces that agents
+can select without pretending there is a direct command runner.
 
 ## `src/skills` Ownership
 
@@ -40,8 +46,8 @@ Capabilities are the addressable units inside a skill envelope and are emitted a
 
 - skill discovery under workspace skill directories
 - `SKILL.md` frontmatter validation
-- generated-manifest parsing and validation (`SKILL.md` frontmatter `metadata.plaited`)
-- capability registry emission for CLI consumption
+- skill manifest parsing and validation (`SKILL.md` frontmatter `metadata.plaited`)
+- capability registry emission for CLI-backed and workflow-only capabilities
 
 ### Not in `src/skills`
 

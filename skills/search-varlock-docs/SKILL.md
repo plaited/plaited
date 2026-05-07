@@ -4,6 +4,28 @@ description: Search the Varlock documentation for AI-safe environment configurat
 license: ISC
 compatibility: Requires bun and network access
 allowed-tools: Bash
+metadata:
+  plaited:
+    kind: generated-skill
+    origin:
+      kind: generated
+      source:
+        type: remote-mcp
+        url: https://docs.mcp.varlock.dev/mcp
+    capabilities:
+      - id: docs.search
+        type: cli
+        lane: private
+        phase: context
+        audience: [analyst]
+        actions: [search, read]
+        sideEffects: network
+        handler:
+          type: cli
+          command: scripts/search.ts
+        source:
+          type: remote-mcp
+          tool: varlock docs
 ---
 
 # Search Varlock Docs

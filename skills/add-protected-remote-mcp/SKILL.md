@@ -4,6 +4,21 @@ description: Scaffold protected remote MCP skills for generic tool execution usi
 license: ISC
 compatibility: Requires bun and network access
 allowed-tools: Bash
+metadata:
+  plaited:
+    kind: skill
+    origin:
+      kind: first-party
+    capabilities:
+      - id: workflow.protected-mcp-skill
+        type: workflow
+        lane: private
+        phase: generation
+        audience: [coder]
+        actions: [discover, scaffold, secure]
+        sideEffects: workspace-write
+        source:
+          type: first-party
 ---
 
 # Add Protected Remote MCP

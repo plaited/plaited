@@ -2,6 +2,21 @@
 name: code-patterns
 description: Common code pattern genome for agents. Reference implementations of pure utility functions showing preferred coding style, testing patterns, and TypeScript conventions. Use when writing utility functions, implementing deep equality, async helpers, or similar standalone patterns.
 license: ISC
+metadata:
+  plaited:
+    kind: skill
+    origin:
+      kind: first-party
+    capabilities:
+      - id: guidance.patterns
+        type: workflow
+        lane: private
+        phase: analysis
+        audience: [coder]
+        actions: [read, compare, apply]
+        sideEffects: none
+        source:
+          type: first-party
 ---
 
 # Code Patterns
