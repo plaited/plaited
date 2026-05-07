@@ -14,8 +14,6 @@
 - `src/mcp/*`: MCP schemas/utilities including auth-related schema surfaces.
 - `src/worker/*`: worker runtime boundaries.
 - `skills/plaited-runtime/SKILL.md`: active runtime doctrine guidance.
-- `skills/boundary-contract-review/SKILL.md`: boundary-contract review checklist.
-- `skills/node-auth/SKILL.md`: node-to-node auth doctrine guidance.
 
 ### Target direction
 

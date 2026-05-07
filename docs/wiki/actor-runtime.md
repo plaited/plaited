@@ -111,4 +111,3 @@ At runtime, premium text/audio/video/game delivery should be enforced as:
 - [Boundary Contract Graph](boundary-contract-graph.md)
 - [Node-To-Node Auth](node-to-node-auth.md)
 - [Plaited Runtime Skill](../../skills/plaited-runtime/SKILL.md)
-- [Boundary Contract Review Skill](../../skills/boundary-contract-review/SKILL.md)

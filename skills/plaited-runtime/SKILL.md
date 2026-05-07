@@ -107,7 +107,5 @@ Do not claim runtime handlers, token flows, auth surfaces, or boundary contracts
 
 ## Related Skills
 
-- `boundary-contract-review`
-- `node-auth`
 - `plaited-context`
 - `typescript-lsp`

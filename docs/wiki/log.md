@@ -1,5 +1,10 @@
 # Wiki Log
 
+## 2026-05-07
+
+- Retired the boundary-contract-review and node-auth skill surfaces.
+- Removed wiki references to those skill directories while keeping the canonical doctrine pages.
+
 ## 2026-05-03
 
 - Retired the Agent Loop page while orchestration doctrine is being rebuilt around current

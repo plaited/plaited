@@ -139,5 +139,3 @@ Creator publishes text/audio/video/game assets behind entitlement gates:
 - [Dynamic Skills Agent Model](dynamic-skills-agent.md)
 - [Infrastructure](infrastructure.md)
 - [Plaited Runtime Skill](../../skills/plaited-runtime/SKILL.md)
-- [Boundary Contract Review Skill](../../skills/boundary-contract-review/SKILL.md)
-- [Node Auth Skill](../../skills/node-auth/SKILL.md)

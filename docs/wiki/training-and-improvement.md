@@ -103,4 +103,3 @@ Evaluation should cover premium text/audio/video/game scenarios with:
 - [Boundary Contract Graph](boundary-contract-graph.md)
 - [Node-To-Node Auth](node-to-node-auth.md)
 - [Sources](sources.md)
-- [Boundary Contract Review Skill](../../skills/boundary-contract-review/SKILL.md)

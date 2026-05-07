@@ -134,5 +134,3 @@ For premium text/audio/video/game distribution:
 - [Boundary Contract Graph](boundary-contract-graph.md)
 - [Infrastructure](infrastructure.md)
 - [Sources](sources.md)
-- [Node Auth Skill](../../skills/node-auth/SKILL.md)
-- [Boundary Contract Review Skill](../../skills/boundary-contract-review/SKILL.md)

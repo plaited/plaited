@@ -24,5 +24,5 @@ plaited typescript-lsp '{"file":"<boundary-file>","operations":[{"type":"symbols
 
 ## Related
 
-- `skills/boundary-contract-review/SKILL.md`
-- `skills/node-auth/SKILL.md`
+- `docs/wiki/boundary-contract-graph.md`
+- `docs/wiki/node-to-node-auth.md`

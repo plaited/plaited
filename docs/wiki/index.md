@@ -37,6 +37,4 @@
 ## Related Skills
 
 - [plaited-runtime](../../skills/plaited-runtime/SKILL.md)
-- [boundary-contract-review](../../skills/boundary-contract-review/SKILL.md)
-- [node-auth](../../skills/node-auth/SKILL.md)
 - [plaited-context](../../skills/plaited-context/SKILL.md)

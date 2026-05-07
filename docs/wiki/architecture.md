@@ -135,5 +135,3 @@ Every active boundary contract defines at minimum:
 - [Dynamic Skills Agent Model](dynamic-skills-agent.md)
 - [Training And Improvement](training-and-improvement.md)
 - [Plaited Runtime Skill](../../skills/plaited-runtime/SKILL.md)
-- [Boundary Contract Review Skill](../../skills/boundary-contract-review/SKILL.md)
-- [Node Auth Skill](../../skills/node-auth/SKILL.md)

@@ -119,5 +119,4 @@ Different consumer nodes may render entirely different storefronts or dashboards
 - [Node-To-Node Auth](node-to-node-auth.md)
 - [Infrastructure](infrastructure.md)
 - [Actor Runtime](actor-runtime.md)
-- [Boundary Contract Review Skill](../../skills/boundary-contract-review/SKILL.md)
 - [Plaited Runtime Skill](../../skills/plaited-runtime/SKILL.md)

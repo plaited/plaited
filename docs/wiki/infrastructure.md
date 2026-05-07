@@ -172,4 +172,3 @@ Creator-owned premium text/audio/video/game assets are distributed by exchange-l
 - [Boundary Contract Graph](boundary-contract-graph.md)
 - [Node-To-Node Auth](node-to-node-auth.md)
 - [Plaited Runtime Skill](../../skills/plaited-runtime/SKILL.md)
-- [Node Auth Skill](../../skills/node-auth/SKILL.md)
