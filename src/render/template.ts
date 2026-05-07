@@ -17,7 +17,7 @@
  * @see {@link createStyles} for style creation
  */
 
-import { htmlEscape, isTypeOf, kebabCase, trueTypeOf } from '../../utils.ts'
+import { htmlEscape, isTypeOf, kebabCase, trueTypeOf } from '../utils.ts'
 import {
   BOOLEAN_ATTRS,
   CUSTOM_ELEMENT_TAG_PATTERN,

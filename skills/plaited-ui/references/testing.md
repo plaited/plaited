@@ -27,7 +27,7 @@ Runner:
 Current controller schema command:
 
 ```bash
-bun test src/ui/controller/tests/controller.schemas.spec.ts
+bun test src/controller/tests/controller.schemas.spec.ts
 ```
 
 ## Layer 2: DOM Unit
@@ -51,8 +51,8 @@ Rules:
 Current focused commands:
 
 ```bash
-bun test src/ui/controller/tests/delegated-listener.spec.ts
-bun test src/ui/controller/tests/decorate-elements.spec.tsx
+bun test src/controller/tests/delegated-listener.spec.ts
+bun test src/controller/tests/decorate-elements.spec.tsx
 ```
 
 ## Layer 3: Real Browser
@@ -72,24 +72,21 @@ Use for:
 
 Runner:
 
-- `bun test src/ui/controller/tests/controller-browser.spec.ts`
+- `bun test src/controller/tests/controller-browser.spec.ts`
 
 Use a real fixture server rather than a mocked WebSocket stack.
-The fixture server is `src/ui/controller/tests/fixtures/serve.ts`.
+The fixture server is `src/controller/tests/fixtures/serve.ts`.
 
 ## Controller Browser Fixtures
 
-Source fixtures live in `src/ui/controller/tests/fixtures/`.
+Source fixtures live in `src/controller/tests/fixtures/`.
 
 Use:
 
-- `control-island.entry.ts` for the base controller island page
-- `test-elements.entry.ts` for dynamic test pages like `swap-test`,
-  `attrs-test`, `action-test`, and retry/error cases
-- `module-fixture.entry.ts` for controller module import behavior
+- `serve.ts` for static and dynamic browser fixture pages
+- `bundle-controller.ts` for bundling the browser controller runtime
 - `controller-module.ts` for valid side-effect module behavior
 - `invalid-controller-module.ts` for import validation failures
-- `swap-fixture.entry.ts` for declarative Shadow DOM parsing
 
 The fixture server builds these files into an ignored `dist` directory. Do not
 commit generated fixture output.

@@ -1,14 +1,14 @@
 import * as z from 'zod'
 
-import { BPEventSchema, JsonObjectSchema } from '../../behavioral.ts'
-import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../shared/shared.constants.ts'
-import { isTypeOf } from '../../utils.ts'
+import { BPEventSchema, JsonObjectSchema } from '../behavioral.ts'
 import {
   CUSTOM_ELEMENT_TAG_PATTERN,
   RESERVED_CUSTOM_ELEMENT_TAGS,
   SITE_ROOT_JAVASCRIPT_PATH_PATTERN,
 } from '../render/template.constants.ts'
 import type { CustomElementTag } from '../render/template.types.ts'
+import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../shared/shared.constants.ts'
+import { isTypeOf } from '../utils.ts'
 import { SWAP_MODES } from './controller.constants.ts'
 import type { ControllerModuleContext, ControllerModuleDefault } from './controller.types.ts'
 // ─── Server → Client Message Schemas ────────────────────────────────────────

@@ -9,8 +9,8 @@
 
  */
 
-import { createTemplate, Fragment } from './ui/render/template.ts'
-import type { ElementAttributeList, TemplateObject } from './ui/render/template.types.ts'
+import { createTemplate, Fragment } from './render/template.ts'
+import type { ElementAttributeList, TemplateObject } from './render/template.types.ts'
 
 /**
  * @internal

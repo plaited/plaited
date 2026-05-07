@@ -1,4 +1,4 @@
-import { keyMirror } from '../../utils.ts'
+import { keyMirror } from '../utils.ts'
 
 /**
  * Reserved style object keys handled specially by the CSS builder.

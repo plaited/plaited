@@ -15,7 +15,7 @@
  * - No source maps for debugging generated HTML
  * - Shadow DOM polyfills not included
  */
-import { htmlEscape, isTypeOf } from '../../utils.ts'
+import { htmlEscape, isTypeOf } from '../utils.ts'
 import { CONNECT_PLAITED_ROUTE, TEMPLATE_OBJECT_IDENTIFIER, VALID_PRIMITIVE_CHILDREN } from './template.constants.ts'
 import { createTemplate } from './template.ts'
 import type { CustomElementTag, TemplateObject } from './template.types.ts'

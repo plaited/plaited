@@ -1,6 +1,6 @@
 ---
 name: plaited-ui
-description: Build and test Plaited's server-driven UI stack. Use when working on `src/ui`, controller islands, controller protocol schemas, SSR templates, CSS helpers, dynamic controller modules, or UI test fixtures.
+description: Build and test Plaited's server-driven UI stack. Use when working on `src/ui.ts`, `src/controller`, `src/render`, `src/css`, controller islands, controller protocol schemas, SSR templates, CSS helpers, dynamic controller modules, or UI test fixtures.
 license: ISC
 compatibility: Requires bun and @playwright/cli for real browser controller tests
 ---
@@ -30,18 +30,18 @@ Public UI exports are re-exported from `src/ui.ts`.
 
 | Area | Files | Primary APIs |
 |---|---|---|
-| Controller runtime | `src/ui/controller/use-controller.ts` | `useController` |
-| Controller protocol | `src/ui/controller/controller.schemas.ts`, `src/ui/controller/controller.types.ts`, `src/bridge-events.ts` | `RenderMessageSchema`, `AttrsMessageSchema`, `ImportModuleSchema`, `ClientMessageSchema`, `ControllerModuleContext` |
-| Controller utilities | `src/ui/controller/delegated-listener.ts`, `src/ui/controller/controller.constants.ts` | `DelegatedListener`, `delegates`, `SWAP_MODES` |
-| Shadow DOM decoration | `src/ui/controller/decorate-elements.ts` | `decorateElements` |
-| Rendering | `src/ui/render/template.ts`, `src/ui/render/ssr.ts`, `src/ui/render/template.types.ts`, `src/ui/render/template.constants.ts` | `createTemplate`, `h`, `Fragment`, `createSSR`, `P_TARGET`, `P_TRIGGER`, `P_TOPIC` |
-| CSS | `src/ui/css/*.ts` | `createStyles`, `createTokens`, `createHostStyles`, `createRootStyles`, `createKeyframes`, `joinStyles` |
-| Server bridge fixtures | `src/ui/controller/tests/fixtures/serve.ts` | test fixture server validating controller protocol surfaces and message flow |
+| Controller runtime | `src/controller/controller.ts` | `Controller` |
+| Controller protocol | `src/controller/controller.schemas.ts`, `src/controller/controller.types.ts`, `src/shared/shared.constants.ts` | `RenderMessageSchema`, `AttrsMessageSchema`, `ImportModuleSchema`, `ClientMessageSchema`, `ControllerModuleContext` |
+| Controller utilities | `src/controller/delegated-listener.ts`, `src/controller/controller.constants.ts` | `DelegatedListener`, `delegates`, `SWAP_MODES` |
+| Shadow DOM decoration | `src/render/decorate-elements.ts` | `decorateElements` |
+| Rendering | `src/render/template.ts`, `src/render/ssr.ts`, `src/render/template.types.ts`, `src/render/template.constants.ts` | `createTemplate`, `h`, `Fragment`, `createSSR`, `P_TARGET`, `P_TRIGGER`, `P_TOPIC` |
+| CSS | `src/css/*.ts` | `createStyles`, `createTokens`, `createHostStyles`, `createRootStyles`, `createKeyframes`, `joinStyles` |
+| Server bridge fixtures | `src/controller/tests/fixtures/serve.ts` | test fixture server validating controller protocol surfaces and message flow |
 
 ## Controller Model
 
-`useController()` is the browser runtime boundary. It creates a scoped custom
-element registry and returns a function that registers controller element tags.
+`Controller` is the browser runtime boundary. The bundled controller script
+registers requested controller element tags with this custom element class.
 
 Controller islands require `p-topic`. The topic becomes the WebSocket
 subprotocol and identifies the server-side conversation for that island.
@@ -204,13 +204,13 @@ Choose the smallest test layer that proves the change.
 
 | Layer | Use for | Command |
 |---|---|---|
-| Schema/pure tests | protocol validators, constants, helper behavior | `bun test src/ui/controller/tests/controller.schemas.spec.ts` |
-| DOM/template tests | `decorateElements`, `DelegatedListener`, stable render output | `bun test src/ui/controller/tests/decorate-elements.spec.tsx src/ui/controller/tests/delegated-listener.spec.ts` |
-| Real browser tests | WebSocket lifecycle, swaps, attrs, imports, dynamic DOM behavior | `bun test src/ui/controller/tests/controller-browser.spec.ts` |
+| Schema/pure tests | protocol validators, constants, helper behavior | `bun test src/controller/tests/controller.schemas.spec.ts` |
+| DOM/template tests | `decorateElements`, `DelegatedListener`, stable render output | `bun test src/controller/tests/decorate-elements.spec.tsx src/controller/tests/delegated-listener.spec.ts` |
+| Real browser tests | WebSocket lifecycle, swaps, attrs, imports, dynamic DOM behavior | `bun test src/controller/tests/controller-browser.spec.ts` |
 | Typecheck | exported API and cross-module contracts | `bun --bun tsc --noEmit` |
 
 Real browser tests use `@playwright/cli` plus
-`src/ui/controller/tests/fixtures/serve.ts`. Prefer that fixture server over
+`src/controller/tests/fixtures/serve.ts`. Prefer that fixture server over
 mock WebSocket stacks for controller behavior.
 
 Browser coverage should include:
@@ -238,8 +238,9 @@ Keep schema tests exhaustive for protocol edges:
 
 ## Workflow
 
-1. Read code before relying on docs. `src/ui/` and controller fixture/runtime files are
-   the source of truth.
+1. Read code before relying on docs. `src/ui.ts`, `src/controller/`,
+   `src/render/`, `src/css/`, and controller fixture/runtime files are the
+   source of truth.
 2. Start at the protocol boundary: schemas and event names first, DOM behavior
    second.
 3. Keep controller changes island-scoped. Avoid document-level behavior unless a

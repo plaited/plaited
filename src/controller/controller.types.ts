@@ -1,4 +1,4 @@
-import type { Disconnect, Trigger } from '../../behavioral.ts'
+import type { Disconnect, Trigger } from '../behavioral.ts'
 import type { DelegatedListener, delegates } from './delegated-listener.ts'
 /**
  * Runtime context passed to default exports from imported controller modules.

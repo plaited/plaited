@@ -2,7 +2,7 @@
 
 ## Overview
 
-`src/ui/css/` provides atomic CSS-in-JS helpers that generate stylesheet text at
+`src/css/` provides atomic CSS-in-JS helpers that generate stylesheet text at
 template creation time. Those stylesheets are then deduplicated by `createSSR()`.
 
 ## Utilities

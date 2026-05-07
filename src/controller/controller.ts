@@ -1,8 +1,8 @@
-import type { BPEvent, Disconnect, JsonObject } from '../../behavioral.ts'
-import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../../shared/shared.constants.ts'
-import { isTypeOf } from '../../utils.ts'
+import type { BPEvent, Disconnect, JsonObject } from '../behavioral.ts'
 import { BOOLEAN_ATTRS, P_CONNECT, P_TARGET, P_TOPIC, P_TRIGGER } from '../render/template.constants.ts'
 import type { CustomElementTag } from '../render/template.types.ts'
+import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../shared/shared.constants.ts'
+import { isTypeOf } from '../utils.ts'
 import {
   CONTROLLER_ERRORS,
   SWAP_MODES,
@@ -82,7 +82,10 @@ const buildFormSubmitData = (form: HTMLFormElement): Record<string, FormSubmitFi
   return data
 }
 
-export class Controller extends HTMLElement {
+const ControllerHTMLElement: typeof HTMLElement =
+  globalThis.HTMLElement ?? (class ControllerHTMLElementFallback {} as typeof HTMLElement)
+
+export class Controller extends ControllerHTMLElement {
   static observedAttributes = [P_TOPIC, P_CONNECT]
   #address: string | null = null
   #disconnectSet = new Set<Disconnect>()

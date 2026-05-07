@@ -1,4 +1,4 @@
-import { isTypeOf } from '../../utils.ts'
+import { isTypeOf } from '../utils.ts'
 import { CSS_RESERVED_KEYS } from './css.constants.ts'
 import type { ClassNames, CreateParams, CSSProperties, DesignTokenReference, NestedStatements } from './css.types.ts'
 import { createHash, getRule, isTokenReference } from './css.utils.ts'

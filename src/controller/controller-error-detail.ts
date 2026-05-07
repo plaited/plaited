@@ -1,5 +1,5 @@
-import { type JsonObject, JsonObjectSchema } from '../../behavioral.ts'
-import { isTypeOf } from '../../utils.ts'
+import { type JsonObject, JsonObjectSchema } from '../behavioral.ts'
+import { isTypeOf } from '../utils.ts'
 import type { ControllerErrorDetail } from './controller.schemas.ts'
 
 const stringifyUnknown = (value: unknown): string => {

@@ -21,7 +21,7 @@ Rendered `<script>` tags are inert and are not the code-loading mechanism.
 sequenceDiagram
     participant Agent as Server Agent
     participant WS as WebSocket
-    participant Controller as useController element
+    participant Controller as Controller element
     participant Module as Controller Module
     participant Server as Server Bridge
 
@@ -120,5 +120,5 @@ The controller reports errors through top-level `error` messages when:
 
 Tests for these paths belong in:
 
-- `src/ui/controller/tests/controller.schemas.spec.ts`
-- `src/ui/controller/tests/controller-browser.spec.ts`
+- `src/controller/tests/controller.schemas.spec.ts`
+- `src/controller/tests/controller-browser.spec.ts`
