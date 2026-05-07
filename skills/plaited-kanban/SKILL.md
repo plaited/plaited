@@ -38,6 +38,10 @@ plaited kanban --schema input
 plaited kanban --schema output
 ```
 
+For a new ledger, initialize the database before using read modes. `board`,
+`ready-queue`, `item`, and `decision-audit` inspect an existing database; they
+do not create one.
+
 ## Read Modes
 
 Board overview:
@@ -51,6 +55,10 @@ Simple ready queue:
 ```bash
 plaited kanban '{"mode":"ready-queue","dbPath":".plaited/kanban.sqlite"}'
 ```
+
+The ready queue is a status-only projection for actionable lifecycle states. It
+does not evaluate dependency readiness, next workflow events, gate policy, or
+operator-specific scheduling.
 
 Detailed item projection:
 
@@ -78,9 +86,16 @@ Create or update work-item facts:
 plaited kanban '{"mode":"create-work-item","dbPath":".plaited/kanban.sqlite","requestId":"req-1","requestSummary":"local task","workItemId":"item-123","title":"Implement generic ledger writes","actorType":"agent","actorId":"analyst","status":"formulated"}'
 ```
 
+`create-work-item` preserves existing request metadata. If `requestId` already
+exists, `requestSummary` is not rewritten.
+
 ```bash
 plaited kanban '{"mode":"update-work-item","dbPath":".plaited/kanban.sqlite","workItemId":"item-123","status":"review_pending","specPath":"specs/item-123.json","specCommitSha":"abc123"}'
 ```
+
+Use optional timestamp fields such as `createdAt`, `updatedAt`, `decidedAt`, and
+`occurredAt` when reproducible ledger ordering matters. Otherwise kanban records
+the current time.
 
 Record related facts:
 
@@ -99,6 +114,11 @@ plaited kanban '{"mode":"record-decision","dbPath":".plaited/kanban.sqlite","dec
 ```bash
 plaited kanban '{"mode":"record-event","dbPath":".plaited/kanban.sqlite","workItemId":"item-123","eventKind":"status_observed","payload":{"source":"agent"}}'
 ```
+
+Dependencies, discoveries, decisions, and events are durable facts with unique
+identifiers or uniqueness constraints. Do not blindly retry a failed write with
+the same ID; inspect the existing item or choose a new fact ID when recording a
+distinct fact.
 
 Run behavioral-frontier, git worktree, merge, and cleanup actions through their
 own tools or explicit operator commands. Kanban only stores and projects the
