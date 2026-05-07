@@ -99,5 +99,5 @@ state or skill instructions.
 
 When behavior is unclear, trust the command schemas and implementation:
 
-- `src/kanban/kanban.cli.schemas.ts`
+- `src/kanban/kanban.schemas.ts`
 - `src/kanban/kanban.ts`

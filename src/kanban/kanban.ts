@@ -16,12 +16,6 @@ export * from './kanban.constants.ts'
 export * from './kanban.schemas.ts'
 
 import {
-  type KanbanCliInput,
-  KanbanCliInputSchema,
-  type KanbanCliOutput,
-  KanbanCliOutputSchema,
-} from './kanban.cli.schemas.ts'
-import {
   APPROVABLE_RED_FAILURE_CATEGORY_VALUES,
   CONSECUTIVE_RED_REJECTION_ESCALATION_THRESHOLD,
   type ESCALATION_TRIGGER_ID_VALUES,
@@ -39,6 +33,12 @@ import {
   WORK_ITEM_LIFECYCLE_STATE_VALUES,
   WORK_ITEM_LIFECYCLE_STATES,
 } from './kanban.constants.ts'
+import {
+  type KanbanCliInput,
+  KanbanCliInputSchema,
+  type KanbanCliOutput,
+  KanbanCliOutputSchema,
+} from './kanban.schemas.ts'
 
 const SCHEMA_SQL_PATH = resolve(import.meta.dir, './assets/schema.sql')
 // `src/kanban` is currently greenfield: no persisted kanban DBs are in active use yet.
