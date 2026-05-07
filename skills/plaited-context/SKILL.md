@@ -25,7 +25,7 @@ Use it before:
 
 Use stable `plaited` tools for evidence collection:
 
-- `plaited agents`
+- `plaited agents-md`
 - `plaited git`
 - `plaited kanban`
 - `plaited wiki`
@@ -35,7 +35,7 @@ Use stable `plaited` tools for evidence collection:
 Examples:
 
 ```bash
-plaited agents '{"mode":"relevant","rootDir":".","paths":["src/worker/worker.ts"]}'
+plaited agents-md '{"mode":"relevant","rootDir":".","paths":["src/worker/worker.ts"]}'
 plaited git '{"mode":"context","base":"origin/dev","paths":["src/worker/worker.ts"],"includeWorktrees":true}'
 plaited kanban '{"mode":"item","dbPath":".plaited/kanban.sqlite","workItemId":"item-123"}'
 plaited wiki '{"mode":"context","rootDir":".","paths":["docs"],"task":"review runtime boundary architecture"}'

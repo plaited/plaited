@@ -2,10 +2,10 @@ import { dirname, isAbsolute, relative, resolve } from 'node:path'
 import { Glob } from 'bun'
 import { makeCli } from '../cli/cli.ts'
 import { type LocalMarkdownLink, validateMarkdownLocalLinks } from '../cli/markdown.ts'
-import { AGENTS_COMMAND, AGENTS_DEFAULT_IGNORE_GLOBS, AGENTS_DISCOVERY_GLOB } from './agents.constants.ts'
-import { AgentsCliInputSchema, type AgentsCliOutput, AgentsCliOutputSchema } from './agents.schemas.ts'
+import { AGENTS_MD_COMMAND, AGENTS_MD_DEFAULT_IGNORE_GLOBS, AGENTS_MD_DISCOVERY_GLOB } from './agents-md.constants.ts'
+import { AgentsMdCliInputSchema, type AgentsMdCliOutput, AgentsMdCliOutputSchema } from './agents-md.schemas.ts'
 
-type AgentsEntry = {
+type AgentsMdEntry = {
   path: string
   scope: string
   body: string
@@ -15,14 +15,14 @@ type AgentsEntry = {
   }
 }
 
-type AgentsWarning = {
+type AgentsMdWarning = {
   code: 'missing_local_link'
   path: string
   link: LocalMarkdownLink
   message: string
 }
 
-type DiscoveredAgents = {
+type DiscoveredAgentsMd = {
   path: string
   absolutePath: string
 }
@@ -64,9 +64,9 @@ const discoverAgentsFiles = async ({
 }: {
   rootDir: string
   ignoreGlobs: string[]
-}): Promise<DiscoveredAgents[]> => {
+}): Promise<DiscoveredAgentsMd[]> => {
   const absoluteRootDir = resolve(rootDir)
-  const discovered = new Map<string, DiscoveredAgents>()
+  const discovered = new Map<string, DiscoveredAgentsMd>()
 
   const rootAgentsPath = resolve(absoluteRootDir, 'AGENTS.md')
   const rootAgentsFile = Bun.file(rootAgentsPath)
@@ -77,7 +77,7 @@ const discoverAgentsFiles = async ({
     })
   }
 
-  const agentsGlob = new Glob(AGENTS_DISCOVERY_GLOB)
+  const agentsGlob = new Glob(AGENTS_MD_DISCOVERY_GLOB)
   for await (const file of agentsGlob.scan({ cwd: absoluteRootDir, absolute: true, dot: true })) {
     const relativePath = normalizeRelativePath(relative(absoluteRootDir, file))
     if (!relativePath || isIgnoredPath({ path: relativePath, ignoreGlobs })) continue
@@ -94,8 +94,8 @@ const discoverAgentsFiles = async ({
 const loadAgentsEntry = async ({
   agents,
 }: {
-  agents: DiscoveredAgents
-}): Promise<{ entry: AgentsEntry; warnings: AgentsWarning[] }> => {
+  agents: DiscoveredAgentsMd
+}): Promise<{ entry: AgentsMdEntry; warnings: AgentsMdWarning[] }> => {
   const agentsFile = Bun.file(agents.absolutePath)
   const body = await agentsFile.text()
   const links = await validateMarkdownLocalLinks({
@@ -106,7 +106,7 @@ const loadAgentsEntry = async ({
   const present = [...links.present]
   const missing = [...links.missing]
 
-  const warnings: AgentsWarning[] = missing.map((link) => ({
+  const warnings: AgentsMdWarning[] = missing.map((link) => ({
     code: 'missing_local_link',
     path: agents.path,
     link,
@@ -140,7 +140,7 @@ const getScopeDepth = (scope: string): number => {
   return scope.split('/').filter((segment) => segment.length > 0).length
 }
 
-const sortRelevantEntries = (entries: AgentsEntry[]): AgentsEntry[] =>
+const sortRelevantEntries = (entries: AgentsMdEntry[]): AgentsMdEntry[] =>
   [...entries].sort((left, right) => {
     if (left.scope === '.' && right.scope !== '.') return -1
     if (left.scope !== '.' && right.scope === '.') return 1
@@ -151,10 +151,10 @@ const sortRelevantEntries = (entries: AgentsEntry[]): AgentsEntry[] =>
     return left.path.localeCompare(right.path)
   })
 
-const runAgents = async (input: unknown): Promise<AgentsCliOutput> => {
-  const parsed = AgentsCliInputSchema.parse(input)
+const runAgentsMd = async (input: unknown): Promise<AgentsMdCliOutput> => {
+  const parsed = AgentsMdCliInputSchema.parse(input)
   const rootDir = resolve(parsed.rootDir)
-  const ignoreGlobs = [...AGENTS_DEFAULT_IGNORE_GLOBS, ...parsed.ignoreGlobs]
+  const ignoreGlobs = [...AGENTS_MD_DEFAULT_IGNORE_GLOBS, ...parsed.ignoreGlobs]
   const discovered = await discoverAgentsFiles({ rootDir, ignoreGlobs })
 
   const loaded = await Promise.all(
@@ -211,13 +211,13 @@ const runAgents = async (input: unknown): Promise<AgentsCliOutput> => {
 }
 
 /**
- * CLI handler for `agents`.
+ * CLI handler for `agents-md`.
  *
  * @public
  */
-export const agentsCli = makeCli({
-  name: AGENTS_COMMAND,
-  inputSchema: AgentsCliInputSchema,
-  outputSchema: AgentsCliOutputSchema,
-  run: runAgents,
+export const agentsMdCli = makeCli({
+  name: AGENTS_MD_COMMAND,
+  inputSchema: AgentsMdCliInputSchema,
+  outputSchema: AgentsMdCliOutputSchema,
+  run: runAgentsMd,
 })

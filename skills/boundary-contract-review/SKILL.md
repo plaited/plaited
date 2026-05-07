@@ -47,7 +47,7 @@ Every reviewed boundary contract must define:
 Gather source-grounded context first:
 
 ```bash
-plaited agents '{"mode":"relevant","rootDir":".","paths":["<paths>"]}'
+plaited agents-md '{"mode":"relevant","rootDir":".","paths":["<paths>"]}'
 plaited git '{"mode":"context","base":"origin/dev","paths":["<paths>"],"includeWorktrees":true}'
 plaited wiki '{"mode":"context","rootDir":".","paths":["docs"],"task":"review boundary contract policy"}'
 ```

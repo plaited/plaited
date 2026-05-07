@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path'
 const CLI_PACKAGE_ROOT = resolve(import.meta.dir, '../../../')
 
 const createTempRoot = (): string =>
-  join('/tmp', `plaited-agents-tests-${Date.now()}-${Math.random().toString(16).slice(2)}`)
+  join('/tmp', `plaited-agents-md-tests-${Date.now()}-${Math.random().toString(16).slice(2)}`)
 
 const withTempRoot = async (run: (rootDir: string) => Promise<void>): Promise<void> => {
   const rootDir = createTempRoot()
@@ -34,26 +34,26 @@ const writeAgentsFile = async ({
 const runPlaitedCommand = async (args: string[]) =>
   Bun.$`bun ./bin/plaited.ts ${args}`.cwd(CLI_PACKAGE_ROOT).quiet().nothrow()
 
-const runAgentsCommand = async (input: unknown) =>
-  Bun.$`bun ./bin/plaited.ts agents ${JSON.stringify(input)}`.cwd(CLI_PACKAGE_ROOT).quiet().nothrow()
+const runAgentsMdCommand = async (input: unknown) =>
+  Bun.$`bun ./bin/plaited.ts agents-md ${JSON.stringify(input)}`.cwd(CLI_PACKAGE_ROOT).quiet().nothrow()
 
-describe('agents CLI', () => {
-  test('plaited --schema includes agents', async () => {
+describe('agents-md CLI', () => {
+  test('plaited --schema includes agents-md', async () => {
     const result = await runPlaitedCommand(['--schema'])
 
     expect(result.exitCode).toBe(0)
     const output = JSON.parse(result.stdout.toString().trim())
-    expect(output.commands).toContain('agents')
+    expect(output.commands).toContain('agents-md')
   })
 
-  test('plaited agents --schema input and output expose mode contracts', async () => {
-    const inputResult = await runPlaitedCommand(['agents', '--schema', 'input'])
+  test('plaited agents-md --schema input and output expose mode contracts', async () => {
+    const inputResult = await runPlaitedCommand(['agents-md', '--schema', 'input'])
     expect(inputResult.exitCode).toBe(0)
     const inputSchema = JSON.parse(inputResult.stdout.toString().trim())
     expect(inputSchema.description).toContain('mode-discriminated')
     expect(inputSchema.anyOf ?? inputSchema.oneOf).toHaveLength(2)
 
-    const outputResult = await runPlaitedCommand(['agents', '--schema', 'output'])
+    const outputResult = await runPlaitedCommand(['agents-md', '--schema', 'output'])
     expect(outputResult.exitCode).toBe(0)
     const outputSchema = JSON.parse(outputResult.stdout.toString().trim())
     expect(outputSchema.description).toContain('matching the selected mode')
@@ -66,7 +66,7 @@ describe('agents CLI', () => {
       await writeAgentsFile({ rootDir, relativeDir: 'src', body: '# Source\n\nSource instructions.' })
       await writeAgentsFile({ rootDir, relativeDir: 'docs', body: '# Docs\n\nDocs instructions.' })
 
-      const result = await runAgentsCommand({
+      const result = await runAgentsMdCommand({
         mode: 'relevant',
         rootDir,
         paths: ['src/feature/file.ts'],
@@ -95,7 +95,7 @@ describe('agents CLI', () => {
         body: '# Local\n\nLocal worktree instructions.',
       })
 
-      const result = await runAgentsCommand({
+      const result = await runAgentsMdCommand({
         mode: 'relevant',
         rootDir,
         paths: ['.worktrees/local/src/file.ts'],
@@ -120,7 +120,7 @@ describe('agents CLI', () => {
       await Bun.$`mkdir -p ${join(rootDir, 'docs')}`
       await Bun.write(join(rootDir, 'docs', 'guide.md'), '# Guide')
 
-      const result = await runAgentsCommand({
+      const result = await runAgentsMdCommand({
         mode: 'list',
         rootDir,
       })
@@ -151,7 +151,7 @@ describe('agents CLI', () => {
       await writeAgentsFile({ rootDir, relativeDir: 'node_modules/pkg', body: '# Ignored\n\nIgnored instructions.' })
       await writeAgentsFile({ rootDir, relativeDir: '.worktrees/local', body: '# Worktree\n\nWorktree instructions.' })
 
-      const result = await runAgentsCommand({ mode: 'list', rootDir })
+      const result = await runAgentsMdCommand({ mode: 'list', rootDir })
 
       expect(result.exitCode).toBe(0)
       const output = JSON.parse(result.stdout.toString().trim())
@@ -166,7 +166,7 @@ describe('agents CLI', () => {
     await withTempRoot(async (rootDir) => {
       await writeAgentsFile({ rootDir, body: '# Root\n\nRoot instructions.' })
 
-      const result = await runAgentsCommand({
+      const result = await runAgentsMdCommand({
         mode: 'relevant',
         rootDir,
         paths: ['../outside.ts'],
