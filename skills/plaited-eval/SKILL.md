@@ -9,6 +9,18 @@ metadata:
     origin:
       kind: first-party
     capabilities:
+      - id: eval.grade
+        type: cli
+        lane: private
+        phase: validation
+        audience: [analyst, coder]
+        actions: [grade, compare, calibrate]
+        sideEffects: workspace-write
+        handler:
+          type: cli
+          command: scripts/eval.ts
+        source:
+          type: first-party
       - id: workflow.eval-analysis
         type: workflow
         lane: private

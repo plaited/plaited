@@ -1,5 +1,5 @@
+import { makeCli } from 'plaited/cli'
 import * as z from 'zod'
-import { makeCli } from '../../../src/cli.ts'
 
 const FindingKindSchema = z
   .enum(['pattern', 'anti-pattern', 'stale-doc', 'boundary-rule', 'question'])

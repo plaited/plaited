@@ -73,6 +73,14 @@ const runSkillsCommand = async (input: unknown) =>
   Bun.$`bun ./bin/plaited.ts skills ${JSON.stringify(input)}`.cwd(CLI_PACKAGE_ROOT).quiet().nothrow()
 
 describe('skills CLI commands', () => {
+  test('plaited top-level schema only exposes the skills command', async () => {
+    const result = await Bun.$`bun ./bin/plaited.ts --schema`.cwd(CLI_PACKAGE_ROOT).quiet().nothrow()
+
+    expect(result.exitCode).toBe(0)
+    const output = JSON.parse(result.stdout.toString().trim())
+    expect(output.commands).toEqual(['skills'])
+  })
+
   test('skills CLI mode=catalog includes .agents/skills entries', async () => {
     await withTempRoot(async (rootDir) => {
       await writeSkillFile({
@@ -424,6 +432,46 @@ describe('skills CLI commands', () => {
         },
       ])
     })
+  })
+
+  test('repo registry includes migrated first-party CLI tool skills', async () => {
+    const result = await runSkillsCommand({ mode: 'registry', rootDir: CLI_PACKAGE_ROOT })
+
+    expect(result.exitCode).toBe(0)
+    const output = JSON.parse(result.stdout.toString().trim())
+    expect(output.errors).toEqual([])
+
+    const expectedCapabilities = [
+      ['agents-md', 'context.agents-md', 'scripts/agents-md.ts', 'context', 'read-only'],
+      ['git', 'context.git', 'scripts/git.ts', 'context', 'read-only'],
+      ['plaited-eval', 'eval.grade', 'scripts/eval.ts', 'validation', 'workspace-write'],
+      ['plaited-frontier-analysis', 'behavioral.frontier', 'scripts/behavioral-frontier.ts', 'validation', 'read-only'],
+      ['plaited-kanban', 'kanban.ledger', 'scripts/kanban.ts', 'context', 'workspace-write'],
+      ['typescript-lsp', 'code.typescript-lsp', 'scripts/typescript-lsp.ts', 'analysis', 'read-only'],
+      ['vllm', 'runtime.vllm', 'scripts/vllm.ts', 'execution', 'service'],
+      ['wiki', 'docs.wiki', 'scripts/wiki.ts', 'context', 'read-only'],
+    ] as const
+
+    for (const [skillName, id, command, phase, sideEffects] of expectedCapabilities) {
+      const entry = output.registry.find((registryEntry: { skill: { name: string } }) => {
+        return registryEntry.skill.name === skillName
+      })
+      expect(entry).toBeDefined()
+      expect(entry.capabilities).toContainEqual(
+        expect.objectContaining({
+          id,
+          address: `${skillName}/${id}`,
+          type: 'cli',
+          lane: 'private',
+          phase,
+          sideEffects,
+          handler: {
+            type: 'cli',
+            command,
+          },
+        }),
+      )
+    }
   })
 
   test('skills CLI mode=registry rejects workflow capabilities that declare a handler', async () => {

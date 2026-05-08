@@ -11,6 +11,18 @@ metadata:
     origin:
       kind: first-party
     capabilities:
+      - id: code.typescript-lsp
+        type: cli
+        lane: private
+        phase: analysis
+        audience: [analyst, coder]
+        actions: [hover, references, definition, symbols, exports, audit]
+        sideEffects: read-only
+        handler:
+          type: cli
+          command: scripts/typescript-lsp.ts
+        source:
+          type: first-party
       - id: code.semantic-analysis
         type: workflow
         lane: private

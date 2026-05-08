@@ -9,6 +9,18 @@ metadata:
     origin:
       kind: first-party
     capabilities:
+      - id: behavioral.frontier
+        type: cli
+        lane: private
+        phase: validation
+        audience: [analyst, coder]
+        actions: [replay, explore, verify]
+        sideEffects: read-only
+        handler:
+          type: cli
+          command: scripts/behavioral-frontier.ts
+        source:
+          type: first-party
       - id: workflow.frontier-analysis
         type: workflow
         lane: private

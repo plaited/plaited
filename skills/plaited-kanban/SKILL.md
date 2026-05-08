@@ -9,6 +9,18 @@ metadata:
     origin:
       kind: first-party
     capabilities:
+      - id: kanban.ledger
+        type: cli
+        lane: private
+        phase: context
+        audience: [analyst, coder]
+        actions: [record, inspect, handoff]
+        sideEffects: workspace-write
+        handler:
+          type: cli
+          command: scripts/kanban.ts
+        source:
+          type: first-party
       - id: workflow.kanban-ledger
         type: workflow
         lane: private
@@ -143,5 +155,5 @@ resulting facts.
 
 When behavior is unclear, trust the command schemas and implementation:
 
-- `src/kanban/kanban.schemas.ts`
-- `src/kanban/kanban.ts`
+- `skills/plaited-kanban/scripts/kanban.schemas.ts`
+- `skills/plaited-kanban/scripts/kanban.ts`

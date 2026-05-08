@@ -61,6 +61,12 @@ type CliHandlerConfig<TInputSchema extends z.ZodType, TOutput> = {
   renderHuman?: (params: { output: TOutput; input: z.infer<TInputSchema>; flags: CliFlags }) => string
 }
 
+type CliRouterConfig = {
+  name: string
+  description: string
+  commands: Record<string, (args: string[]) => Promise<void>>
+}
+
 const buildUsage = ({ name, help }: { name: string; help?: string }): string =>
   [
     `Usage: plaited ${name} '<json>' [options]`,
@@ -274,4 +280,52 @@ export const makeCli =
     }
 
     console.log(JSON.stringify(output, null, 2))
+  }
+
+export const makeCliRouter =
+  ({ name, description, commands }: CliRouterConfig) =>
+  async (argv: string[]): Promise<void> => {
+    const command = argv[2]
+    const args = argv.slice(3)
+    const commandNames = Object.keys(commands).sort()
+
+    if (!command || command === '--help' || command === '-h') {
+      console.error(`Usage: ${name} <command> [options]
+       ${name} <command> --schema     # Discover input schema
+       ${name} <command> '<json>'    # Structured JSON input
+       ${name} --schema               # List all commands
+
+Commands:
+    ${commandNames.join(', ')}`)
+      process.exit(command ? 0 : 1)
+    }
+
+    if (command === '--schema') {
+      console.log(
+        JSON.stringify(
+          {
+            name,
+            description,
+            commands: commandNames,
+            usage: `${name} <command> '<json>' | --schema input`,
+            discovery: `${name} --schema`,
+          },
+          null,
+          2,
+        ),
+      )
+      process.exit(0)
+    }
+
+    const handler = commands[command]
+    if (!handler) {
+      console.error(`Unknown command: ${command}`)
+      console.error(`Run '${name} --help' to see available commands`)
+      process.exit(1)
+    }
+
+    await handler(args).catch((error: unknown) => {
+      console.error(error instanceof Error ? error.message : String(error))
+      process.exit(1)
+    })
   }

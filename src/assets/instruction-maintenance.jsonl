@@ -1,0 +1,3 @@
+{"label":"Instruction update observations request proposals","thread":{"syncPoints":[{"waitFor":[{"type":"agent.instruction_update.observed"}]},{"request":{"type":"agent.instruction_update.propose"}}]}}
+{"label":"Approved instruction updates request apply","thread":{"syncPoints":[{"waitFor":[{"type":"agent.instruction_update.approved"}]},{"request":{"type":"agent.instruction_update.apply"}}]}}
+{"label":"Rejected instruction updates request close","thread":{"syncPoints":[{"waitFor":[{"type":"agent.instruction_update.rejected"}]},{"request":{"type":"agent.instruction_update.close"}}]}}
