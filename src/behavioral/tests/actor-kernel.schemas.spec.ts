@@ -83,6 +83,17 @@ describe('actor kernel schemas', () => {
     ).toThrow()
   })
 
+  test('SnapshotMessageSchema rejects worker protocol messages', () => {
+    expect(() =>
+      SnapshotMessageSchema.parse({
+        kind: 'worker',
+        response: {
+          id: 'worker-1',
+        },
+      }),
+    ).toThrow()
+  })
+
   test('SelectionSnapshotSchema accepts selected event payload', () => {
     expect(
       SelectionSnapshotSchema.parse({

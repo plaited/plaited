@@ -49,35 +49,6 @@ type GraderExecutionContext = {
   previousResults: EvalGraderResult[]
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
-
-export const isWorkerSnapshotFailure = (snapshot: SnapshotMessage): boolean => {
-  if (snapshot.kind !== SNAPSHOT_MESSAGE_KINDS.worker) {
-    return false
-  }
-
-  if (!isRecord(snapshot.response)) {
-    return false
-  }
-
-  const exitCode = snapshot.response.exitCode
-  if (typeof exitCode === 'number' && exitCode !== 0) {
-    return true
-  }
-
-  const timedOut = snapshot.response.timedOut
-  if (timedOut === true) {
-    return true
-  }
-
-  const signalCode = snapshot.response.signalCode
-  if (signalCode !== null && signalCode !== undefined) {
-    return true
-  }
-
-  return false
-}
-
 const countSnapshotsByKind = (snapshots: SnapshotMessage[], kind: SnapshotMessage['kind']): number =>
   snapshots.filter((snapshot) => snapshot.kind === kind).length
 
@@ -128,7 +99,6 @@ export const summarizeEvalTrialProcess = (trial: EvalTrial): EvalProcessSummary 
   const feedbackErrorCount = countSnapshotsByKind(snapshots, SNAPSHOT_MESSAGE_KINDS.feedback_error)
   const deadlockCount = countSnapshotsByKind(snapshots, SNAPSHOT_MESSAGE_KINDS.deadlock)
   const selectionCount = countSnapshotsByKind(snapshots, SNAPSHOT_MESSAGE_KINDS.selection)
-  const workerFailureCount = snapshots.filter(isWorkerSnapshotFailure).length
   const { repeatedSelectionCount, maxRepeatedSelectionTypeCount } = countRepeatedSelections(selectedTypes)
 
   return EvalProcessSummarySchema.parse({
@@ -137,13 +107,11 @@ export const summarizeEvalTrialProcess = (trial: EvalTrial): EvalProcessSummary 
     runtimeErrorCount,
     feedbackErrorCount,
     deadlockCount,
-    workerFailureCount,
     repeatedSelectionCount,
     maxRepeatedSelectionTypeCount,
-    runtimeErrorDetected: runtimeErrorCount > 0 || workerFailureCount > 0,
+    runtimeErrorDetected: runtimeErrorCount > 0,
     feedbackErrorDetected: feedbackErrorCount > 0,
     deadlockDetected: deadlockCount > 0,
-    workerFailureDetected: workerFailureCount > 0,
   })
 }
 
@@ -212,9 +180,6 @@ const evaluateProcessGrader = ({
   }
   if ((options.failOnDeadlock ?? true) && process.deadlockDetected) {
     failures.push('deadlocks detected')
-  }
-  if ((options.failOnWorkerFailure ?? true) && process.workerFailureDetected) {
-    failures.push('worker failures detected')
   }
   if (options.maxSelections !== undefined && process.selectionCount > options.maxSelections) {
     failures.push(`selectionCount ${process.selectionCount} exceeds maxSelections ${options.maxSelections}`)
@@ -993,7 +958,7 @@ const isDiagnosticSnapshot = (snapshot: SnapshotMessage): boolean => {
     return true
   }
 
-  return isWorkerSnapshotFailure(snapshot)
+  return false
 }
 
 const selectDiagnosticSnapshots = ({

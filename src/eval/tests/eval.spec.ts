@@ -56,13 +56,11 @@ const createProcessSummary = () => ({
   runtimeErrorCount: 0,
   feedbackErrorCount: 0,
   deadlockCount: 0,
-  workerFailureCount: 0,
   repeatedSelectionCount: 0,
   maxRepeatedSelectionTypeCount: 0,
   runtimeErrorDetected: false,
   feedbackErrorDetected: false,
   deadlockDetected: false,
-  workerFailureDetected: false,
 })
 
 const createGraderResult = ({
@@ -194,15 +192,6 @@ describe('eval CLI', () => {
               kind: 'runtime_error',
               error: 'runtime panic',
             },
-            {
-              kind: 'worker',
-              response: {
-                id: 'worker-1',
-                exitCode: 1,
-                timedOut: false,
-                signalCode: null,
-              },
-            },
           ],
         }),
         graders: [
@@ -216,18 +205,16 @@ describe('eval CLI', () => {
       expect(result.exitCode).toBe(0)
       const output = JSON.parse(result.stdout.toString())
       expect(output.pass).toBe(false)
-      expect(output.process.snapshotCount).toBe(7)
+      expect(output.process.snapshotCount).toBe(6)
       expect(output.process.selectionCount).toBe(3)
       expect(output.process.feedbackErrorCount).toBe(1)
       expect(output.process.deadlockCount).toBe(1)
       expect(output.process.runtimeErrorCount).toBe(1)
-      expect(output.process.workerFailureCount).toBe(1)
       expect(output.process.repeatedSelectionCount).toBe(1)
       expect(output.process.maxRepeatedSelectionTypeCount).toBe(2)
       expect(output.process.feedbackErrorDetected).toBe(true)
       expect(output.process.deadlockDetected).toBe(true)
       expect(output.process.runtimeErrorDetected).toBe(true)
-      expect(output.process.workerFailureDetected).toBe(true)
     })
   })
 

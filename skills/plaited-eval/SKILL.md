@@ -85,18 +85,15 @@ plaited eval '{
 
 ### `process`
 
-Deterministic snapshot/status checks (`runtime_error`, `feedback_error`, `deadlock`, `selection`, `worker`).
+Deterministic snapshot/status checks (`runtime_error`, `feedback_error`, `deadlock`, `selection`).
 
 Options:
 
 - `failOnRuntimeError` (default `true`)
 - `failOnFeedbackError` (default `true`)
 - `failOnDeadlock` (default `true`)
-- `failOnWorkerFailure` (default `true`)
 - `maxSelections`
 - `maxRepeatedSelectionType`
-
-Worker snapshots fail when response has nonzero `exitCode`, `timedOut: true`, or non-null `signalCode`.
 
 ### `command`
 

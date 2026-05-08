@@ -87,7 +87,6 @@ export const EvalProcessSummarySchema = z
     runtimeErrorCount: z.number().int().min(0).describe('Count of runtime_error snapshots.'),
     feedbackErrorCount: z.number().int().min(0).describe('Count of feedback_error snapshots.'),
     deadlockCount: z.number().int().min(0).describe('Count of deadlock snapshots.'),
-    workerFailureCount: z.number().int().min(0).describe('Count of worker snapshots whose response indicates failure.'),
     repeatedSelectionCount: z
       .number()
       .int()
@@ -98,10 +97,9 @@ export const EvalProcessSummarySchema = z
       .int()
       .min(0)
       .describe('Maximum consecutive selections with the same selected event type.'),
-    runtimeErrorDetected: z.boolean().describe('True when runtime_error snapshots or worker failures are present.'),
+    runtimeErrorDetected: z.boolean().describe('True when runtime_error snapshots are present.'),
     feedbackErrorDetected: z.boolean().describe('True when feedback_error snapshots are present.'),
     deadlockDetected: z.boolean().describe('True when deadlock snapshots are present.'),
-    workerFailureDetected: z.boolean().describe('True when worker snapshot failures are present.'),
   })
   .strict()
   .describe('Deterministic process diagnostics derived from trial snapshots.')
@@ -125,11 +123,6 @@ export const EvalProcessGraderOptionsSchema = z
     failOnRuntimeError: z.boolean().optional().default(true).describe('Fail when runtime errors are observed.'),
     failOnFeedbackError: z.boolean().optional().default(true).describe('Fail when feedback errors are observed.'),
     failOnDeadlock: z.boolean().optional().default(true).describe('Fail when deadlocks are observed.'),
-    failOnWorkerFailure: z
-      .boolean()
-      .optional()
-      .default(true)
-      .describe('Fail when worker snapshot failures are observed.'),
     maxSelections: z.number().int().nonnegative().optional().describe('Fail when selectionCount exceeds this value.'),
     maxRepeatedSelectionType: z
       .number()
@@ -184,7 +177,6 @@ export const EvalProcessGraderSchema = EvalGraderBaseSchema.extend({
     failOnRuntimeError: true,
     failOnFeedbackError: true,
     failOnDeadlock: true,
-    failOnWorkerFailure: true,
   }),
 })
   .strict()
