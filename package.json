@@ -59,6 +59,7 @@
     ]
   },
   "dependencies": {
+    "@modelcontextprotocol/ext-apps": "^1.7.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@youdotcom-oss/api": "^0.5.2",
     "openai": "^6.35.0",

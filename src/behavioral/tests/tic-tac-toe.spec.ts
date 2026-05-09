@@ -3,8 +3,10 @@ import * as z from 'zod'
 import type { Sync } from '../behavioral.types.ts'
 import { behavioral, sync, thread } from './helpers.ts'
 
+type WinningLine = [number, number, number]
+
 /** Represents all possible winning combinations of squares in Tic-Tac-Toe. */
-const winConditions = [
+const winConditions: WinningLine[] = [
   //rows
   [0, 1, 2],
   [3, 4, 5],
@@ -30,14 +32,15 @@ const onType = (type: string) => ({
 })
 const onMove = (player: 'X' | 'O', square?: number) => ({
   type: player,
-  detailSchema:
-    square === undefined
-      ? z.object({ square: z.number() })
-      : z.object({ square: z.number() }).refine((detail) => detail.square === square),
+  detailSchema: z.object({
+    square: square === undefined ? z.number() : z.literal(square),
+  }),
 })
-const onPlayerMoveIn = (player: 'X' | 'O', lineSquares: number[]) => ({
+const onPlayerMoveIn = (player: 'X' | 'O', lineSquares: WinningLine) => ({
   type: player,
-  detailSchema: z.object({ square: z.number() }).refine((detail) => lineSquares.includes(detail.square)),
+  detailSchema: z.object({
+    square: z.union([z.literal(lineSquares[0]), z.literal(lineSquares[1]), z.literal(lineSquares[2])]),
+  }),
 })
 
 /**
@@ -424,7 +427,7 @@ const preventCompletionOfLineWithTwoXs = () => {
       [
         sync({ waitFor: onMove('X', a) }),
         sync({ waitFor: onMove('X', b) }),
-        sync({ request: { type: 'O', detail: { square: c! } } }),
+        sync({ request: { type: 'O', detail: { square: c } } }),
       ],
       true,
     )
@@ -432,7 +435,7 @@ const preventCompletionOfLineWithTwoXs = () => {
       [
         sync({ waitFor: onMove('X', a) }),
         sync({ waitFor: onMove('X', c) }),
-        sync({ request: { type: 'O', detail: { square: b! } } }),
+        sync({ request: { type: 'O', detail: { square: b } } }),
       ],
       true,
     )
@@ -440,7 +443,7 @@ const preventCompletionOfLineWithTwoXs = () => {
       [
         sync({ waitFor: onMove('X', b) }),
         sync({ waitFor: onMove('X', c) }),
-        sync({ request: { type: 'O', detail: { square: a! } } }),
+        sync({ request: { type: 'O', detail: { square: a } } }),
       ],
       true,
     )
