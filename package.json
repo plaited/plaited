@@ -24,6 +24,7 @@
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
     "./jsx-runtime": "./src/jsx-runtime.ts",
     "./mcp": "./src/mcp.ts",
+    "./projection": "./src/projection.ts",
     "./ui": "./src/ui.ts",
     "./utils": "./src/utils.ts"
   },
