@@ -185,6 +185,7 @@ export const useController = (send?: Trigger) => {
       this.#socket?.addEventListener('open', onOpen)
     }
     #reportError(error: unknown, metadata: ControllerErrorMetadata = {}) {
+      const topic = this.#getTopic()
       const event: ControllerErrorMessage = {
         type: CONTROLLER_TO_AGENT_EVENTS.error,
         detail: normalizeControllerErrorDetail({
@@ -193,16 +194,34 @@ export const useController = (send?: Trigger) => {
           context: metadata.context,
         }),
       }
+      if (topic) event.detail.topic = topic
       send ? send(event) : this.#send(event)
     }
+    #getTopic() {
+      return this.getAttribute(P_TOPIC) ?? this.#socketTopic ?? undefined
+    }
     #trigger(message: BPEvent) {
-      const event = { type: CONTROLLER_TO_AGENT_EVENTS.ui_event, detail: message }
+      const topic = this.#getTopic()
+      const event = {
+        type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
+        detail: {
+          ...message,
+          ...(topic && {
+            detail: {
+              ...(message.detail ?? {}),
+              topic,
+            },
+          }),
+        },
+      }
       send ? send(event) : this.#send(event)
     }
     #sendFormSubmit(form: HTMLFormElement) {
+      const topic = this.#getTopic()
       const event: FormSubmitMessage = {
         type: CONTROLLER_TO_AGENT_EVENTS.form_submit,
         detail: {
+          ...(topic && { topic }),
           id: form.id || null,
           action: form.action || null,
           method: form.method || 'get',

@@ -301,6 +301,7 @@ describe('ClientMessageSchema', () => {
       detail: {
         type: 'test_click',
         detail: {
+          topic: 'test-topic',
           source: 'button',
         },
       },
@@ -325,6 +326,7 @@ describe('ClientMessageSchema', () => {
     const message = {
       type: CONTROLLER_TO_AGENT_EVENTS.form_submit,
       detail: {
+        topic: 'sample-topic',
         id: 'sample-form',
         action: '/submit',
         method: 'post',
@@ -342,6 +344,7 @@ describe('ClientMessageSchema', () => {
     const message = {
       type: CONTROLLER_TO_AGENT_EVENTS.error,
       detail: {
+        topic: 'sample-topic',
         message: 'failed to import module',
       },
     }

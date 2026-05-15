@@ -371,6 +371,7 @@ describe('controller: ui_event', () => {
     const attrs = detail.detail as Record<string, unknown>
     expect(attrs.id).toBe('test-btn')
     expect(attrs['p-trigger']).toBe('click:test_click')
+    expect(attrs.topic).toBe('action-test')
   })
 })
 
@@ -389,6 +390,7 @@ describe('controller: form_submit', () => {
     const submission = await waitFor(() => findFormSubmit({ after: before, source: 'form-submit-test' }))
     expect(submission.message.type).toBe('form_submit')
     expect(submission.message.detail).toEqual({
+      topic: 'form-submit-test',
       id: 'controller-form',
       action: `http://localhost:${getFixture().port}/submit-form`,
       method: 'post',

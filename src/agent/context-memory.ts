@@ -1,11 +1,14 @@
 /**
  * Agent-owned event-detail cache used for listener-scoped context shaping.
  */
-import type { BPListener } from './behavioral.schemas.ts'
+import type { BPListener } from '../behavioral/behavioral.schemas.ts'
+
+const DEFAULT_CONTEXT_MEMORY_SCOPE = 'default'
 
 type MemoryEvent = {
   type: string
   detail?: unknown
+  scope?: string
 }
 
 type ContextMemoryRecord = {
@@ -13,6 +16,9 @@ type ContextMemoryRecord = {
   expiresAt: number
   touchedAt: number
 }
+
+const getMemoryKey = ({ scope, type }: { scope?: string; type: string }) =>
+  `${scope ?? DEFAULT_CONTEXT_MEMORY_SCOPE}:${type}`
 
 export const createContextMemory = ({ ttlMs, maxKeys }: { ttlMs: number; maxKeys?: number }) => {
   const memory = new Map<string, ContextMemoryRecord>()
@@ -56,7 +62,7 @@ export const createContextMemory = ({ ttlMs, maxKeys }: { ttlMs: number; maxKeys
   }
 
   return {
-    record: ({ type, detail }: MemoryEvent) => {
+    record: ({ type, detail, scope }: MemoryEvent) => {
       pruneExpired()
       const entry: ContextMemoryRecord = {
         detail,
@@ -64,12 +70,12 @@ export const createContextMemory = ({ ttlMs, maxKeys }: { ttlMs: number; maxKeys
         touchedAt: 0,
       }
       touch(entry)
-      memory.set(type, entry)
+      memory.set(getMemoryKey({ scope, type }), entry)
       enforceMaxKeys()
     },
-    get: (listener: BPListener) => {
+    get: ({ listener, scope }: { listener: BPListener; scope?: string }) => {
       pruneExpired()
-      const entry = memory.get(listener.type)
+      const entry = memory.get(getMemoryKey({ scope, type: listener.type }))
       if (!entry) {
         return undefined
       }

@@ -129,6 +129,7 @@ describe('useController', () => {
           detail: {
             id: 'save',
             'p-trigger': 'click:save',
+            topic: 'topic',
           },
         },
       },

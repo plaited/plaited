@@ -197,6 +197,7 @@ const FormSubmitFieldValueSchema = z.union([z.string(), z.array(z.string())])
 export const FormSubmitMessageSchema = z.object({
   type: z.literal(CONTROLLER_TO_AGENT_EVENTS.form_submit),
   detail: z.object({
+    topic: z.string().optional(),
     id: z.string().nullable(),
     action: z.string().nullable(),
     method: z.string(),
@@ -213,6 +214,7 @@ export type FormSubmitMessage = z.infer<typeof FormSubmitMessageSchema>
  * @public
  */
 export const ControllerErrorDetailSchema = z.object({
+  topic: z.string().optional(),
   message: z.string(),
   kind: z.string().optional(),
   context: JsonObjectSchema.optional(),
