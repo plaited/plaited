@@ -169,6 +169,23 @@ describe('Controller: real browser', () => {
     expect(result).toContain('Hello from WebSocket')
   })
 
+  test('WebSocket open emits controller.connected inventory', () => {
+    const event = findUiEvent({ source: 'test-island', type: 'controller.connected' })
+
+    expect(event).toBeDefined()
+    expect(event!.message).toEqual({
+      type: 'ui_event',
+      detail: {
+        type: 'controller.connected',
+        detail: {
+          topic: 'test-island',
+          version: '3',
+          targets: [{ target: 'main', version: '3' }],
+        },
+      },
+    })
+  })
+
   test('setHTMLUnsafe does NOT execute inline scripts (browser limitation)', async () => {
     // Scripts inserted via setHTMLUnsafe, innerHTML, or any DOM parsing API are marked
     // "parser-inserted" by the HTML spec and will NOT execute. Only scripts created via
@@ -435,7 +452,7 @@ describe('controller: import', () => {
 
     const event = await waitFor(() => findUiEvent({ after: before, source: 'module-fixture', type: 'import_invoked' }))
     const detail = event.message.detail as Record<string, unknown>
-    expect(detail.detail).toEqual({ path: '/dist/modules/controller-module.js' })
+    expect(detail.detail).toEqual({ path: '/dist/modules/controller-module.js', topic: 'module-fixture' })
   }, 30000)
 
   test('p-trigger actions are sent as BP events with an attribute detail map', async () => {
@@ -464,7 +481,11 @@ describe('controller: import', () => {
     const count = await cli('eval', '() => globalThis.__controllerModuleHandlerCallCount ?? 0')
     expect(parseResult(count)).toContain('1')
     const detail = event.message.detail as Record<string, unknown>
-    expect(detail.detail).toEqual({ id: 'module-enhanced-btn', 'data-extra': 'module-listener' })
+    expect(detail.detail).toEqual({
+      id: 'module-enhanced-btn',
+      'data-extra': 'module-listener',
+      topic: 'module-fixture',
+    })
   }, 30000)
 
   test('disconnect runs cleanup callbacks registered by imported modules', async () => {

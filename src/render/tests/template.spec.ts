@@ -3,6 +3,7 @@ import { expect, test } from 'bun:test'
 import beautify from 'beautify'
 import { Fragment, h } from 'plaited/jsx-runtime'
 import type { FunctionTemplate, TemplateObject } from 'plaited/ui'
+import { P_TOPIC, P_VERSION } from '../template.constants.ts'
 
 const render = (tpl: TemplateObject) => beautify(tpl.html.join(''), { format: 'html' })
 
@@ -72,6 +73,17 @@ test('createTemplate: p-trigger attribute', () =>
       }),
     ),
   ).toMatchSnapshot())
+
+test('createTemplate: p-version attribute', () => {
+  expect(render(h('div', { [P_VERSION]: '42', children: 'versioned' }))).toMatchSnapshot()
+})
+
+test('createTemplate: p-topic attribute on controller islands', () => {
+  const output = render(h('sample-island', { [P_TOPIC]: 'coding.board', [P_VERSION]: '42' }))
+
+  expect(output).toContain('p-topic="coding.board"')
+  expect(output).toContain('p-version="42"')
+})
 
 test('createTemplate: Array of templates', () =>
   expect(

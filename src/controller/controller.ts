@@ -1,5 +1,5 @@
 import type { BPEvent, Disconnect, JsonObject, Trigger } from '../behavioral.ts'
-import { BOOLEAN_ATTRS, P_CONNECT, P_TARGET, P_TOPIC, P_TRIGGER } from '../render/template.constants.ts'
+import { BOOLEAN_ATTRS, P_CONNECT, P_TARGET, P_TOPIC, P_TRIGGER, P_VERSION } from '../render/template.constants.ts'
 import type { CustomElementTag } from '../render/template.types.ts'
 import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../shared/shared.constants.ts'
 import { isTypeOf } from '../utils.ts'
@@ -82,6 +82,16 @@ const buildFormSubmitData = (form: HTMLFormElement): Record<string, FormSubmitFi
   return data
 }
 
+/**
+ * Minimal advisory projection state for one server-addressable target within a controller island.
+ *
+ * @internal
+ */
+type ControllerTargetInventory = {
+  target: string
+  version: string | null
+}
+
 const ControllerHTMLElement: typeof HTMLElement =
   globalThis.HTMLElement ?? (class ControllerHTMLElementFallback {} as typeof HTMLElement)
 
@@ -102,6 +112,7 @@ export const useController = (send?: Trigger) => {
         if (target !== this.#socket) return
         if (event.type === 'open') {
           this.#retryCount = 0
+          this.#sendConnected()
           return
         }
         if (event instanceof MessageEvent) this.#onWsMessage(event)
@@ -199,6 +210,40 @@ export const useController = (send?: Trigger) => {
     }
     #getTopic() {
       return this.getAttribute(P_TOPIC) ?? this.#socketTopic ?? undefined
+    }
+    /**
+     * Reads the target inventory owned by this controller island, excluding nested controller islands.
+     *
+     * @internal
+     */
+    #getTargetInventory(): ControllerTargetInventory[] {
+      const targets: ControllerTargetInventory[] = []
+      for (const element of this.querySelectorAll(`[${P_TARGET}]`)) {
+        if (element.closest(`[${P_TOPIC}]`) !== this) continue
+        const target = element.getAttribute(P_TARGET)
+        if (!target) continue
+        targets.push({
+          target,
+          version: element.getAttribute(P_VERSION),
+        })
+      }
+      return targets
+    }
+    /**
+     * Reports the island's current advisory projection inventory after a successful socket open.
+     *
+     * @internal
+     */
+    #sendConnected() {
+      const topic = this.#getTopic()
+      this.#trigger({
+        type: 'controller.connected',
+        detail: {
+          ...(topic && { topic }),
+          version: this.getAttribute(P_VERSION),
+          targets: this.#getTargetInventory(),
+        },
+      })
     }
     #trigger(message: BPEvent) {
       const topic = this.#getTopic()

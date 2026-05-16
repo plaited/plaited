@@ -1,5 +1,12 @@
 import type { CSSProperties } from '../css/css.types.ts'
-import { P_CONNECT, P_TARGET, P_TOPIC, P_TRIGGER, type TEMPLATE_OBJECT_IDENTIFIER } from './template.constants.ts'
+import {
+  P_CONNECT,
+  P_TARGET,
+  P_TOPIC,
+  P_TRIGGER,
+  P_VERSION,
+  type TEMPLATE_OBJECT_IDENTIFIER,
+} from './template.constants.ts'
 
 type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''
@@ -34,6 +41,7 @@ export type Children = Child[] | Child
  * @property class - Supports standard `string` or an `array` of strings for CSS classes.
  * @property children - Represents the child elements or content.
  * @property p-target - Used to identify elements for targeted updates or interactions (value is usually a string or number).
+ * @property p-version - Latest server-projected topic version realized by a controller island or target.
  * @property p-trigger - Defines declarative event bindings that controller islands forward as BP event types.
  * @property stylesheets - Accepts a CSS string or an array of strings to be associated with the element, hoisted, and deduplicated.
  * @property style - Accepts a `CSSProperties` object (similar to React) for inline styles.
@@ -42,6 +50,7 @@ export type PlaitedAttributes = {
   class?: string
   children?: Children
   [P_TARGET]?: string | number
+  [P_VERSION]?: string | number
   [P_TRIGGER]?: Record<string, string>
   stylesheets?: string[]
   classNames?: string[]
@@ -1135,6 +1144,7 @@ type DetailedWebViewHTMLAttributes = DetailedHTMLAttributes & {
 /** Attributes reserved for Plaited controller island templates. */
 export type DetailedCustomElementHTMLAttributes = DetailedHTMLAttributes & {
   [P_TOPIC]?: string
+  [P_VERSION]?: string | number
   [P_CONNECT]?: string
 }
 
