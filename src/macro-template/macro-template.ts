@@ -379,7 +379,17 @@ const compileNode = ({
   })
 }
 
-/** @public */
+/**
+ * Compiles a macro template input into a render template object.
+ *
+ * @remarks
+ * Compilation validates the replay-visible macro schema, resolves child
+ * template refs, compiles structured styles, enforces reusable `p-topic`
+ * provenance, and rejects unsafe tags, attributes, triggers, repeat keys, and
+ * template-ref cycles before the renderer receives the template.
+ *
+ * @public
+ */
 export const compileMacroTemplate = (input: CompileMacroTemplateInput): TemplateObject => {
   const parsed = CompileMacroTemplateInputSchema.parse(input)
   const context = createStyleContext({ template: parsed.template, templates: parsed.templates })
@@ -396,7 +406,11 @@ export const compileMacroTemplate = (input: CompileMacroTemplateInput): Template
   return compiled
 }
 
-/** @public */
+/**
+ * Renders a compiled macro template to server-side HTML.
+ *
+ * @public
+ */
 export const renderMacroTemplate = ({ template }: { template: TemplateObject }): string => ssr([template])
 
 const collectDependencyRefs = ({
@@ -438,7 +452,17 @@ const getRawRegistrationIdentity = (event: UiTemplateRegistrationRequestedEvent)
   }
 }
 
-/** @public */
+/**
+ * Validates a macro template registration request and returns its admission event.
+ *
+ * @remarks
+ * Successful validation compiles the template with fixture data, renders it once,
+ * reports dependency refs, and returns the generated style registry. Schema or
+ * compiler failures become repairable validation-failed events that preserve any
+ * raw alias or ref available in the submitted request.
+ *
+ * @public
+ */
 export const validateMacroTemplateRegistration = (
   event: UiTemplateRegistrationRequestedEvent,
 ): UiTemplateValidationEvent => {

@@ -78,12 +78,26 @@ const withRequestMetadata = ({
   }
 }
 
-/** @public */
+/**
+ * Creates an empty UI projection journal state.
+ *
+ * @public
+ */
 export const createUiProjectionState = (): UiProjectionState => ({
   topicViewState: {},
 })
 
-/** @public */
+/**
+ * Replays a projection event into immutable UI projection state.
+ *
+ * @remarks
+ * The reducer validates both state and event through the public schemas. Desired
+ * render, attrs, and page-render requests are version-gated so stale requests do
+ * not replace newer topic state, while delivery and rendered-page events update
+ * the latest diagnostic or page snapshot for their topic.
+ *
+ * @public
+ */
 export const applyUiProjectionEvent = ({
   state,
   event,
@@ -180,7 +194,16 @@ export const applyUiProjectionEvent = ({
   }
 }
 
-/** @public */
+/**
+ * Returns the controller messages that should be replayed for a reconnecting topic.
+ *
+ * @remarks
+ * The returned messages are derived from the intended controller state, not from
+ * the last sent or last error diagnostics, and are copied so callers cannot
+ * mutate the stored projection state.
+ *
+ * @public
+ */
 export const getReconnectControllerMessages = ({
   state,
   topic,
