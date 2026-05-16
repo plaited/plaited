@@ -76,3 +76,5 @@ exports[`Fragment 1`] = `
 `;
 
 exports[`createTemplate: Trims whitespace 1`] = `"<div>trims white-space</div>"`;
+
+exports[`createTemplate: p-version attribute 1`] = `"<div p-version="42">versioned</div>"`;

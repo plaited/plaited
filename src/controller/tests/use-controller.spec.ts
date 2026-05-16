@@ -41,6 +41,31 @@ class FakeWebSocket {
     this.readyState = FakeWebSocket.CLOSED
   }
 
+  serverClose(code: number) {
+    this.readyState = FakeWebSocket.CLOSED
+    const event = new CloseEvent('close', { code })
+    Object.defineProperty(event, 'target', { value: this })
+    for (const listener of this.listeners.get('close') ?? []) {
+      if (typeof listener === 'function') {
+        listener(event)
+      } else {
+        listener.handleEvent(event)
+      }
+    }
+  }
+
+  serverOpen() {
+    const event = new Event('open')
+    Object.defineProperty(event, 'target', { value: this })
+    for (const listener of this.listeners.get('open') ?? []) {
+      if (typeof listener === 'function') {
+        listener(event)
+      } else {
+        listener.handleEvent(event)
+      }
+    }
+  }
+
   serverSend(message: unknown) {
     const event = new MessageEvent('message', { data: JSON.stringify(message) })
     Object.defineProperty(event, 'target', { value: this })
@@ -99,6 +124,147 @@ describe('useController', () => {
     }
     return socket
   }
+
+  test('sends controller.connected inventory when the WebSocket opens', async () => {
+    const { useController } = await import('../controller.ts')
+    const tag = `versioned-controller-${Date.now()}-${Math.random().toString(16).slice(2)}`
+    customElements.define(tag, useController())
+
+    document.body.innerHTML = `<${tag} p-topic="coding.board" p-version="42">
+      <div p-target="main" p-version="42"><p>main content</p></div>
+      <section p-target="cards" p-version="41"><article>card content</article></section>
+    </${tag}>`
+    const socket = getLatestSocket()
+
+    socket.serverOpen()
+
+    expect(socket.sent).toEqual([
+      JSON.stringify({
+        type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
+        detail: {
+          type: 'controller.connected',
+          detail: {
+            topic: 'coding.board',
+            version: '42',
+            targets: [
+              { target: 'main', version: '42' },
+              { target: 'cards', version: '41' },
+            ],
+          },
+        },
+      }),
+    ])
+    expect(socket.sent.join('')).not.toContain('main content')
+    expect(socket.sent.join('')).not.toContain('hash')
+    expect(socket.sent.join('')).not.toContain('module')
+  })
+
+  test('sends controller.connected inventory again after reconnect', async () => {
+    const originalRandom = Math.random
+    Math.random = () => 0
+    try {
+      const { useController } = await import('../controller.ts')
+      const tag = `reconnect-controller-${Date.now()}-${Math.random().toString(16).slice(2)}`
+      customElements.define(tag, useController())
+
+      document.body.innerHTML = `<${tag} p-topic="coding.board" p-version="42">
+        <div p-target="main" p-version="42"></div>
+      </${tag}>`
+      const firstSocket = getLatestSocket()
+      firstSocket.serverOpen()
+      firstSocket.serverClose(1006)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      const secondSocket = getLatestSocket()
+
+      secondSocket.serverOpen()
+
+      const expected = JSON.stringify({
+        type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
+        detail: {
+          type: 'controller.connected',
+          detail: {
+            topic: 'coding.board',
+            version: '42',
+            targets: [{ target: 'main', version: '42' }],
+          },
+        },
+      })
+      expect(firstSocket.sent).toEqual([expected])
+      expect(secondSocket.sent).toEqual([expected])
+    } finally {
+      Math.random = originalRandom
+    }
+  })
+
+  test('reports nested controller inventories independently', async () => {
+    const { useController } = await import('../controller.ts')
+    const outerTag = `outer-controller-${Date.now()}-${Math.random().toString(16).slice(2)}`
+    const innerTag = `inner-controller-${Date.now()}-${Math.random().toString(16).slice(2)}`
+    customElements.define(outerTag, useController())
+    customElements.define(innerTag, useController())
+
+    document.body.innerHTML = `<${outerTag} p-topic="outer.topic" p-version="10">
+      <div p-target="outer-main" p-version="10"></div>
+      <${innerTag} p-topic="inner.topic" p-version="7">
+        <div p-target="inner-main" p-version="7"></div>
+      </${innerTag}>
+    </${outerTag}>`
+    const outerSocket = [...FakeWebSocket.instances].reverse().find((socket) => socket.protocol === 'outer.topic')
+    const innerSocket = [...FakeWebSocket.instances].reverse().find((socket) => socket.protocol === 'inner.topic')
+
+    expect(outerSocket).toBeDefined()
+    expect(innerSocket).toBeDefined()
+    outerSocket!.serverOpen()
+    innerSocket!.serverOpen()
+
+    expect(outerSocket!.sent).toEqual([
+      JSON.stringify({
+        type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
+        detail: {
+          type: 'controller.connected',
+          detail: {
+            topic: 'outer.topic',
+            version: '10',
+            targets: [{ target: 'outer-main', version: '10' }],
+          },
+        },
+      }),
+    ])
+    expect(innerSocket!.sent).toEqual([
+      JSON.stringify({
+        type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
+        detail: {
+          type: 'controller.connected',
+          detail: {
+            topic: 'inner.topic',
+            version: '7',
+            targets: [{ target: 'inner-main', version: '7' }],
+          },
+        },
+      }),
+    ])
+  })
+
+  test('applies p-version attrs updates to controller targets', async () => {
+    const { useController } = await import('../controller.ts')
+    const tag = `attrs-version-controller-${Date.now()}-${Math.random().toString(16).slice(2)}`
+    customElements.define(tag, useController())
+
+    document.body.innerHTML = `<${tag} p-topic="topic">
+      <div p-target="main" p-version="1"></div>
+    </${tag}>`
+    const socket = getLatestSocket()
+
+    socket.serverSend({
+      type: AGENT_TO_CONTROLLER_EVENTS.attrs,
+      detail: {
+        target: 'main',
+        attr: { 'p-version': '2' },
+      },
+    })
+
+    expect(document.querySelector('[p-target="main"]')?.getAttribute('p-version')).toBe('2')
+  })
 
   test('routes rendered trigger events through injected send instead of WebSocket send', async () => {
     const outbound: unknown[] = []

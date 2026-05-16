@@ -40,8 +40,8 @@ const HTML_CONTROL_ISLAND = `<!DOCTYPE html>
   <style>test-island { display: contents; }</style>
 </head>
 <body>
-  <test-island p-topic="test-island">
-    <div p-target="main"><p>initial content</p></div>
+  <test-island p-topic="test-island" p-version="3">
+    <div p-target="main" p-version="3"><p>initial content</p></div>
   </test-island>
   <script type="module" src="${connectScript(['test-island'])}"></script>
 </body>

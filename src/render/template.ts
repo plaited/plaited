@@ -21,6 +21,7 @@ import { htmlEscape, isTypeOf, kebabCase, trueTypeOf } from '../utils.ts'
 import {
   BOOLEAN_ATTRS,
   CUSTOM_ELEMENT_TAG_PATTERN,
+  P_TOPIC,
   P_TRIGGER,
   PRIMITIVES,
   RESERVED_CUSTOM_ELEMENT_TAGS,
@@ -120,7 +121,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     stylesheets = [],
     style,
     'p-trigger': pTrigger,
-    'p-topic': _pTopic,
+    'p-topic': pTopic,
     class: cls,
     classNames,
     for: htmlFor,
@@ -157,6 +158,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       .join(' ')
     start.push(`${P_TRIGGER}="${htmlEscape(value)}" `)
   }
+  if (pTopic) start.push(`${P_TOPIC}="${htmlEscape(pTopic)}" `)
   if (style) {
     const value = Object.entries(style)
       // Convert camelCase style props into dash-case unless they are CSS variables.
