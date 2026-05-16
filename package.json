@@ -23,6 +23,7 @@
     "./cli": "./src/cli.ts",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
     "./jsx-runtime": "./src/jsx-runtime.ts",
+    "./macro-template": "./src/macro-template.ts",
     "./mcp": "./src/mcp.ts",
     "./projection": "./src/projection.ts",
     "./ui": "./src/ui.ts",
