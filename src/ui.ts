@@ -6,6 +6,7 @@
  * This module provides access to:
  * - **Controller runtime**: {@link Controller} serves the browser controller bootstrap.
  * - **Wire contracts**: controller schemas validate server commands and browser-to-server messages.
+ * - **Macro templates**: structured generated UI JSON compiles through the render and CSS primitives.
  * - **Rendering**: {@link createSSR} serializes templates with per-connection style deduplication.
  * - **Styling**: style, token, keyframe, host style, root style, and join helpers.
  * - **Declarative Shadow DOM**: {@link decorateElements} prepares rendered custom elements.
@@ -24,6 +25,7 @@ export * from './css/keyframes.ts'
 export * from './css/root-styles.ts'
 export * from './css/styles.ts'
 export * from './css/tokens.ts'
+export * from './macro-template.ts'
 export * from './render/decorate-elements.ts'
 export * from './render/ssr.ts'
 export type * from './render/template.types.ts'
