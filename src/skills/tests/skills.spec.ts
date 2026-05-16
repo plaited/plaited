@@ -178,6 +178,129 @@ describe('skills CLI commands', () => {
     })
   })
 
+  test('skills CLI mode=envelope validates skill links, referenced markdown links, and handler files', async () => {
+    await withTempRoot(async (rootDir) => {
+      const skillDir = await writeSkillFile({
+        rootDir,
+        dirName: 'theta',
+        name: 'theta',
+        description: 'Theta description',
+        frontmatterExtras: createFirstPartyPlaitedFrontmatter(`      - id: theta.inspect
+        type: cli
+        lane: private
+        phase: context
+        audience: [analyst]
+        actions: [inspect]
+        sideEffects: read-only
+        handler:
+          type: cli
+          command: scripts/inspect.ts
+        source:
+          type: first-party`),
+        body: 'See [guide](references/guide.md) and use ![asset](assets/icon.txt).',
+      })
+      await Bun.$`mkdir -p ${join(skillDir, 'references')}`
+      await Bun.$`mkdir -p ${join(skillDir, 'scripts')}`
+      await Bun.$`mkdir -p ${join(skillDir, 'assets')}`
+      await Bun.write(join(skillDir, 'references', 'guide.md'), 'See [details](details.md).')
+      await Bun.write(join(skillDir, 'references', 'details.md'), 'Done.')
+      await Bun.write(join(skillDir, 'scripts', 'inspect.ts'), 'export {}')
+      await Bun.write(join(skillDir, 'assets', 'icon.txt'), 'icon')
+
+      const result = await runSkillsCommand({ mode: 'envelope', rootDir, path: 'skills/theta' })
+
+      expect(result.exitCode).toBe(0)
+      const output = JSON.parse(result.stdout.toString().trim())
+      expect(output).toEqual({
+        ok: true,
+        errors: [],
+        warnings: [],
+      })
+    })
+  })
+
+  test('skills CLI mode=envelope reports missing second-hop markdown links and handler files', async () => {
+    await withTempRoot(async (rootDir) => {
+      const skillDir = await writeSkillFile({
+        rootDir,
+        dirName: 'iota',
+        name: 'iota',
+        description: 'Iota description',
+        frontmatterExtras: createFirstPartyPlaitedFrontmatter(`      - id: iota.inspect
+        type: cli
+        lane: private
+        phase: context
+        audience: [analyst]
+        actions: [inspect]
+        sideEffects: read-only
+        handler:
+          type: cli
+          command: scripts/missing.ts
+        source:
+          type: first-party`),
+        body: 'See [guide](references/guide.md).',
+      })
+      await Bun.$`mkdir -p ${join(skillDir, 'references')}`
+      await Bun.write(join(skillDir, 'references', 'guide.md'), 'See [missing](missing.md).')
+
+      const result = await runSkillsCommand({ mode: 'envelope', rootDir, path: 'skills/iota' })
+
+      expect(result.exitCode).toBe(0)
+      const output = JSON.parse(result.stdout.toString().trim())
+      expect(output.ok).toBeFalse()
+      expect(output.warnings).toEqual([])
+      expect(output.errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: join(skillDir, 'references', 'guide.md'),
+            message: 'Missing local markdown link: missing.md',
+          }),
+          expect.objectContaining({
+            path: join(skillDir, 'scripts', 'missing.ts'),
+            message: 'Declared CLI handler file not found: scripts/missing.ts',
+          }),
+        ]),
+      )
+    })
+  })
+
+  test('skills CLI mode=envelope enforces markdown traversal cap before reading overflow files', async () => {
+    await withTempRoot(async (rootDir) => {
+      const skillDir = await writeSkillFile({
+        rootDir,
+        dirName: 'kappa',
+        name: 'kappa',
+        description: 'Kappa description',
+        body: 'See [file 1](references/file-001.md).',
+      })
+      const referencesDir = join(skillDir, 'references')
+      await Bun.$`mkdir -p ${referencesDir}`
+
+      for (let index = 1; index < 99; index += 1) {
+        const current = String(index).padStart(3, '0')
+        const next = String(index + 1).padStart(3, '0')
+        await Bun.write(join(referencesDir, `file-${current}.md`), `See [file ${next}](file-${next}.md).`)
+      }
+
+      const overflowPath = join(referencesDir, 'file-100.md')
+      await Bun.write(join(referencesDir, 'file-099.md'), 'See [overflow](file-100.md).')
+      await Bun.write(overflowPath, 'This file should not be read.')
+      await Bun.$`chmod 000 ${overflowPath}`
+
+      const result = await runSkillsCommand({ mode: 'envelope', rootDir, path: 'skills/kappa' })
+
+      expect(result.exitCode).toBe(0)
+      const output = JSON.parse(result.stdout.toString().trim())
+      expect(output.ok).toBeFalse()
+      expect(output.errors).toContainEqual(
+        expect.objectContaining({
+          path: overflowPath,
+          message: 'Envelope markdown link traversal exceeded 100 files.',
+        }),
+      )
+    })
+  })
+
   test('skills CLI mode=instructions returns body and structured errors', async () => {
     await withTempRoot(async (rootDir) => {
       await writeSkillFile({

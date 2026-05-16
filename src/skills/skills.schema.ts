@@ -342,6 +342,41 @@ const SkillsRegistryModeInputSchema = SkillsRegistryCliInputSchema.extend({
   mode: z.literal('registry').describe('Runs skill capability registry discovery mode.'),
 })
 
+const SkillEnvelopeIssueSchema = z
+  .object({
+    path: z.string().min(1).describe('Path to the file or missing file associated with the envelope issue.'),
+    message: z.string().min(1).describe('Human-readable envelope validation issue.'),
+  })
+  .describe('Shallow skill envelope validation issue.')
+
+const SkillsEnvelopeCliInputSchema = z
+  .object({
+    rootDir: z.string().min(1).describe('Workspace root directory used to resolve the skill directory path.'),
+    path: z
+      .string()
+      .min(1)
+      .describe('Skill directory path relative to `rootDir` (for example `skills/typescript-lsp`).'),
+  })
+  .describe('Input for `skills-envelope`.')
+
+/** @public */
+export type SkillsEnvelopeCliInput = z.infer<typeof SkillsEnvelopeCliInputSchema>
+
+const SkillsEnvelopeCliOutputSchema = z
+  .object({
+    ok: z.boolean().describe('True when no envelope validation errors were found.'),
+    errors: z.array(SkillEnvelopeIssueSchema).describe('Envelope validation errors.'),
+    warnings: z.array(SkillEnvelopeIssueSchema).describe('Non-fatal envelope validation warnings.'),
+  })
+  .describe('Output for `skills-envelope`.')
+
+/** @public */
+export type SkillsEnvelopeCliOutput = z.infer<typeof SkillsEnvelopeCliOutputSchema>
+
+const SkillsEnvelopeModeInputSchema = SkillsEnvelopeCliInputSchema.extend({
+  mode: z.literal('envelope').describe('Runs shallow skill envelope validation mode.'),
+})
+
 const SkillsValidateModeInputSchema = SkillsValidateCliInputSchema.extend({
   mode: z.literal('validate').describe('Runs single SKILL.md validation mode.'),
 })
@@ -362,6 +397,7 @@ export const SkillsCliInputSchema = z
   .discriminatedUnion('mode', [
     SkillsCatalogModeInputSchema,
     SkillsRegistryModeInputSchema,
+    SkillsEnvelopeModeInputSchema,
     SkillsValidateModeInputSchema,
     SkillsLinksModeInputSchema,
     SkillsInstructionsModeInputSchema,
@@ -376,6 +412,7 @@ export const SkillsCliOutputSchema = z
   .union([
     SkillsCatalogCliOutputSchema,
     SkillsRegistryCliOutputSchema,
+    SkillsEnvelopeCliOutputSchema,
     SkillsValidateCliOutputSchema,
     SkillsLinksCliOutputSchema,
     SkillsInstructionsCliOutputSchema,

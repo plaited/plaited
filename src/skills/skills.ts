@@ -1,4 +1,4 @@
-import { basename, dirname, join, normalize, relative, resolve } from 'node:path'
+import { basename, dirname, extname, join, normalize, relative, resolve } from 'node:path'
 import { Glob } from 'bun'
 import * as z from 'zod'
 import { makeCli } from '../cli/cli.ts'
@@ -24,6 +24,8 @@ import {
   SkillsCliInputSchema,
   type SkillsCliOutput,
   SkillsCliOutputSchema,
+  type SkillsEnvelopeCliInput,
+  type SkillsEnvelopeCliOutput,
   type SkillsFrontmatterCliInput,
   type SkillsFrontmatterCliOutput,
   type SkillsInstructionsCliInput,
@@ -40,6 +42,8 @@ type SkillInstructionResourceLinksLoadResult =
       errors: SkillInstructionErrors
     }
   | undefined
+
+type SkillEnvelopeIssue = SkillsEnvelopeCliOutput['errors'][number]
 
 const skillsGlobPattern = '**/skills/*/SKILL.md'
 const repoLocalSkillsGlobPattern = '.agents/skills/*/SKILL.md'
@@ -320,6 +324,152 @@ export const getSkillInstructionResourceLinks = async (
   return { links, errors }
 }
 
+const isPathWithinDirectory = (directory: string, path: string): boolean => {
+  const relativePath = relative(directory, path)
+  return relativePath.length === 0 || (!relativePath.startsWith('..') && !relativePath.startsWith('/'))
+}
+
+const isMarkdownPath = (path: string): boolean => {
+  const extension = extname(path).toLowerCase()
+  return extension === '.md' || extension === '.markdown'
+}
+
+const toEnvelopeIssue = ({ path, message }: SkillEnvelopeIssue): SkillEnvelopeIssue => ({ path, message })
+
+const validateEnvelopeMarkdownLinks = async ({
+  skillDir,
+  markdownPath,
+  markdownBody,
+  errors,
+  visited,
+}: {
+  skillDir: string
+  markdownPath: string
+  markdownBody?: string
+  errors: SkillEnvelopeIssue[]
+  visited: Set<string>
+}): Promise<void> => {
+  const resolvedMarkdownPath = resolve(markdownPath)
+  if (visited.has(resolvedMarkdownPath)) return
+  visited.add(resolvedMarkdownPath)
+
+  if (visited.size > 100) {
+    errors.push(
+      toEnvelopeIssue({
+        path: resolvedMarkdownPath,
+        message: 'Envelope markdown link traversal exceeded 100 files.',
+      }),
+    )
+    return
+  }
+
+  const baseDir = dirname(resolvedMarkdownPath)
+  const body = markdownBody ?? (await Bun.file(resolvedMarkdownPath).text())
+  const links = await validateMarkdownLocalLinks({ baseDir, markdownBody: body })
+
+  for (const link of links.missing) {
+    errors.push(
+      toEnvelopeIssue({
+        path: resolvedMarkdownPath,
+        message: `Missing local markdown link: ${link.value}`,
+      }),
+    )
+  }
+
+  for (const link of links.present) {
+    const linkedPath = resolve(baseDir, link.value)
+    if (!isPathWithinDirectory(skillDir, linkedPath)) {
+      errors.push(
+        toEnvelopeIssue({
+          path: resolvedMarkdownPath,
+          message: `Local markdown link escapes skill directory: ${link.value}`,
+        }),
+      )
+      continue
+    }
+
+    if (!isMarkdownPath(linkedPath)) continue
+    await validateEnvelopeMarkdownLinks({
+      skillDir,
+      markdownPath: linkedPath,
+      errors,
+      visited,
+    })
+  }
+}
+
+const validateEnvelopeHandlers = async ({
+  skillDir,
+  frontmatter,
+  errors,
+}: {
+  skillDir: string
+  frontmatter: SkillFrontMatter
+  errors: SkillEnvelopeIssue[]
+}): Promise<void> => {
+  const capabilities = frontmatter.metadata?.plaited?.capabilities ?? []
+
+  for (const capability of capabilities) {
+    if (capability.type !== 'cli') continue
+    const commandPath = resolve(skillDir, capability.handler.command)
+    if (!isPathWithinDirectory(skillDir, commandPath)) {
+      errors.push(
+        toEnvelopeIssue({
+          path: commandPath,
+          message: `Declared CLI handler escapes skill directory: ${capability.handler.command}`,
+        }),
+      )
+      continue
+    }
+
+    if (await Bun.file(commandPath).exists()) continue
+    errors.push(
+      toEnvelopeIssue({
+        path: commandPath,
+        message: `Declared CLI handler file not found: ${capability.handler.command}`,
+      }),
+    )
+  }
+}
+
+const skillsEnvelope = async ({ rootDir, path }: SkillsEnvelopeCliInput): Promise<SkillsEnvelopeCliOutput> => {
+  const skillDir = resolve(rootDir, path)
+  const skillPath = join(skillDir, 'SKILL.md')
+  const file = Bun.file(skillPath)
+  const errors: SkillEnvelopeIssue[] = []
+  const warnings: SkillEnvelopeIssue[] = []
+
+  if (!(await file.exists())) {
+    errors.push(toEnvelopeIssue({ path: skillPath, message: `Skill markdown not found: ${skillPath}` }))
+    return { ok: false, errors, warnings }
+  }
+
+  const markdown = await file.text()
+  const validation = validateSkill(markdown, { skillPath })
+  if (!validation.ok) {
+    for (const message of validation.errors) {
+      errors.push(toEnvelopeIssue({ path: skillPath, message }))
+    }
+    return { ok: false, errors, warnings }
+  }
+
+  const { frontmatter, body } = parseMarkdownWithFrontmatter(markdown, SkillFrontMatterSchema)
+  await validateEnvelopeMarkdownLinks({
+    skillDir,
+    markdownPath: skillPath,
+    markdownBody: body,
+    errors,
+    visited: new Set(),
+  })
+  await validateEnvelopeHandlers({ skillDir, frontmatter, errors })
+
+  return {
+    ok: errors.length === 0,
+    errors,
+    warnings,
+  }
+}
+
 const skillsValidate = async ({ skillPath }: SkillsValidateCliInput): Promise<SkillsValidateCliOutput> => {
   const file = Bun.file(skillPath)
   if (!(await file.exists())) {
@@ -412,6 +562,8 @@ const runSkills = async (input: unknown): Promise<SkillsCliOutput> => {
       return loadSkillCatalog(parsed.rootDir)
     case 'registry':
       return loadSkillRegistry(parsed.rootDir)
+    case 'envelope':
+      return skillsEnvelope(parsed)
     case 'validate':
       return skillsValidate(parsed)
     case 'links':
