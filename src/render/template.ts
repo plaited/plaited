@@ -87,6 +87,14 @@ type InferAttrs<T extends Tag> = T extends keyof ElementAttributeList
 /** @internal Type signature for `createTemplate`, preserving type safety between the tag and its attributes. */
 type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateObject
 
+const normalizeAttributeKeys = (attrs: Record<string, unknown>): Record<string, unknown> => {
+  const normalized: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(attrs)) {
+    normalized[key.toLowerCase()] = value
+  }
+  return normalized
+}
+
 /** @internal Narrows valid lowercase custom element tag names. */
 export const isCustomElementTag = (tag: string): tag is CustomElementTag => {
   return CUSTOM_ELEMENT_TAG_PATTERN.test(tag) && !RESERVED_CUSTOM_ELEMENT_TAGS.has(tag)
@@ -116,6 +124,9 @@ export const isCustomElementTag = (tag: string): tag is CustomElementTag => {
  * @see {@link Fragment} for grouping elements
  */
 export const createTemplate: CreateTemplate = (_tag, attrs) => {
+  if (isTypeOf<FunctionTemplate>(_tag, 'function')) {
+    return _tag(attrs)
+  }
   const {
     children: _children,
     stylesheets = [],
@@ -127,10 +138,8 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     for: htmlFor,
     ...attributes
   } = attrs
+  const normalizedAttributes = normalizeAttributeKeys(attributes)
 
-  if (isTypeOf<FunctionTemplate>(_tag, 'function')) {
-    return _tag(attrs)
-  }
   const tag = htmlEscape(_tag.trim().toLowerCase())
   if (tag.includes('-') && !isCustomElementTag(tag)) {
     throw new InvalidCustomElementTagError(`Invalid custom element tag: ${tag}`)
@@ -141,7 +150,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     if (_children !== undefined) {
       throw new ScriptPolicyError('Script tags cannot contain inline content')
     }
-    const src = attributes.src
+    const src = normalizedAttributes.src
     if (typeof src !== 'string' || !SITE_ROOT_JAVASCRIPT_PATH_PATTERN.test(src)) {
       throw new ScriptPolicyError('Script tags require a site-root JavaScript src')
     }
@@ -166,12 +175,12 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       .join(' ')
     start.push(`style="${htmlEscape(value)}" `)
   }
-  for (const key in attributes) {
+  for (const key in normalizedAttributes) {
     // Events must be delegated via p-trigger instead of inline handler attributes.
     if (key.startsWith('on')) {
       throw new EventHandlerAttributeError(`Event handler attributes are not allowed: [${key}]`)
     }
-    const value = attributes[key]
+    const value = normalizedAttributes[key]
     if (BOOLEAN_ATTRS.has(key)) {
       value && start.push(`${key} `)
       continue
@@ -180,7 +189,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
     if (!PRIMITIVES.has(trueTypeOf(value))) {
       throw new InvalidAttributeTypeError(`Attribute '${key}' must be a primitive type (string, number, boolean)`)
     }
-    start.push(`${htmlEscape(key)}="${htmlEscape(value)}" `)
+    start.push(`${htmlEscape(key)}="${htmlEscape(`${value}`)}" `)
   }
   if (VOID_TAGS.has(tag)) {
     start.push('/>')

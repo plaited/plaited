@@ -108,6 +108,42 @@ test('createTemplate: Should throw with attribute starting with on', () => {
   }).toThrow()
 })
 
+test('createTemplate: rejects mixed-case event handler attributes', () => {
+  expect(() => {
+    h('img', {
+      src: '/avatar.png',
+      OnError: "alert('xss!')",
+    })
+  }).toThrow()
+})
+
+test('createTemplate: serializes HTML attribute keys as lowercase', () => {
+  const output = render(
+    h('div', {
+      'DATA-State': 'open',
+      TABINDEX: 0,
+      children: 'Lowercase attrs',
+    }),
+  )
+
+  expect(output).toContain('data-state="open"')
+  expect(output).toContain('tabindex="0"')
+  expect(output).not.toContain('DATA-State')
+  expect(output).not.toContain('TABINDEX')
+})
+
+test('createTemplate: treats mixed-case style as an HTML attribute', () => {
+  const output = render(
+    h('div', {
+      STYLE: 'color:red',
+      children: 'Style attr',
+    }),
+  )
+
+  expect(output).toContain('style="color:red"')
+  expect(output).not.toContain('0:c;')
+})
+
 test('createTemplate: rejects script tags without site-root JavaScript src', () => {
   expect(() => {
     h('script', { type: 'module', src: 'main.js' })

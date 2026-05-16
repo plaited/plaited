@@ -64,6 +64,18 @@ test('createHostStyles: supports complex rules', () => {
   expect(host).toMatchSnapshot()
 })
 
+test('createHostStyles: treats compound selector default as host default', () => {
+  const host = createHostStyles({
+    color: {
+      $compoundSelectors: {
+        $default: 'red',
+      },
+    },
+  })
+
+  expect(host.stylesheets).toEqual([':host{color:red;}'])
+})
+
 test('createHostStyles: works with JSX via spread operator', () => {
   const host = createHostStyles({
     color: {

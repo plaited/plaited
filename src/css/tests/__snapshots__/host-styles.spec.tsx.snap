@@ -69,7 +69,7 @@ exports[`createHostStyles: works with JSX via spread operator 1`] = `
   "stylesheets": [
     ":host{color:red;}",
     ":host{[part="S1"]{color:blue;}}",
-    ":host($default){color:var(--blue-link);}",
+    ":host{color:var(--blue-link);}",
     ":host(:hover){@media (hover: hover){color:scale(1.1);}}",
     ":host(:active){color:scale(0.9);}",
   ],

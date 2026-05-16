@@ -30,13 +30,12 @@ const upsertControllerMessage = ({
       }
     }
 
-    const attr = Object.fromEntries(Object.entries(merged).filter(([, value]) => value !== null))
-    if (Object.keys(attr).length === 0) return next
+    if (Object.keys(merged).length === 0) return next
     next.push({
       ...message,
       detail: {
         ...message.detail,
-        attr,
+        attr: merged,
       },
     })
     return next

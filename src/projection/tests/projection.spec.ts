@@ -141,6 +141,7 @@ describe('UI projection journal', () => {
           attr: {
             hidden: true,
             'aria-busy': 'true',
+            'data-stale': null,
           },
         },
       },

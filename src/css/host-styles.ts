@@ -111,7 +111,7 @@ export const createHostStyles = (props: CreateHostParams): HostStylesObject => {
           styles,
           prop,
           value,
-          host: `:host(${selector})`,
+          host: selector === CSS_RESERVED_KEYS.$default ? ':host' : `:host(${selector})`,
         })
       }
     }
