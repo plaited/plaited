@@ -2,6 +2,8 @@ import * as z from 'zod'
 
 import type { Behavioral, BPEvent, Disconnect, JsonObject } from '../behavioral.ts'
 import { SNAPSHOT_MESSAGE_KINDS, SpecSchema, useSpec } from '../behavioral.ts'
+import { ValidateGeneratedUiTemplateModuleInputSchema } from '../generated-ui.ts'
+import { UI_PROJECTION_EVENTS } from '../projection.ts'
 import { CONTROLLER_TO_AGENT_EVENTS } from '../shared.ts'
 import type { createContextMemory } from './context-memory.ts'
 
@@ -82,12 +84,51 @@ export const UiCapabilityActionMappingSchema = z.object({
 export type UiCapabilityActionMapping = z.output<typeof UiCapabilityActionMappingSchema>
 
 /**
+ * Validates projection event names accepted by UI capability projection hints.
+ *
+ * @public
+ */
+export const UiCapabilityProjectionEventSchema = z.enum([
+  UI_PROJECTION_EVENTS.ui_render_requested,
+  UI_PROJECTION_EVENTS.ui_attrs_requested,
+  UI_PROJECTION_EVENTS.ui_controller_message_sent,
+  UI_PROJECTION_EVENTS.ui_controller_message_error,
+  UI_PROJECTION_EVENTS.ui_page_render_requested,
+  UI_PROJECTION_EVENTS.ui_page_rendered,
+])
+
+/**
+ * Projection event name accepted by generated UI capability hints.
+ *
+ * @public
+ */
+export type UiCapabilityProjectionEvent = z.output<typeof UiCapabilityProjectionEventSchema>
+
+/**
+ * Validates named generated FunctionTemplate modules carried by a UI capability.
+ *
+ * @public
+ */
+export const UiCapabilityTemplateModulesSchema = z.record(
+  z.string().min(1),
+  ValidateGeneratedUiTemplateModuleInputSchema,
+)
+
+/**
+ * Named generated FunctionTemplate modules attached to a UI capability.
+ *
+ * @public
+ */
+export type UiCapabilityTemplateModules = z.output<typeof UiCapabilityTemplateModulesSchema>
+
+/**
  * Validates the complete generated UI capability binding contract.
  *
  * @remarks
  * Capability bindings declare semantic event schemas, generated Behavioral
- * specs, generic action mappings, template refs, projection hints, and the
- * generic handler surfaces required before activation.
+ * specs, generic action mappings, template refs, generated FunctionTemplate
+ * modules, projection hints, and the generic handler surfaces required before
+ * activation.
  *
  * @public
  */
@@ -97,7 +138,8 @@ export const UiCapabilityBindingSchema = z.object({
   specs: z.array(SpecSchema).default([]),
   actions: z.array(UiCapabilityActionMappingSchema).default([]),
   templateRefs: z.array(z.string().min(1)).default([]),
-  projectionHints: z.record(z.string(), z.json()).default({}),
+  templateModules: UiCapabilityTemplateModulesSchema.default({}),
+  projectionHints: z.partialRecord(UiCapabilityProjectionEventSchema, z.json()).default({}),
   requiredHandlerSurfaces: z.array(z.string().min(1)).default([]),
 })
 

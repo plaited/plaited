@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
 import { AGENT_TO_CONTROLLER_EVENTS } from '../../shared/shared.constants.ts'
+import { UI_PROJECTION_EVENTS } from '../projection.constants.ts'
 import {
   type UiControllerMessageErrorEvent,
   UiControllerMessageErrorEventSchema,
@@ -30,7 +31,7 @@ describe('UI projection journal', () => {
     const next = applyUiProjectionEvent({
       state,
       event: {
-        type: 'ui.render_requested',
+        type: UI_PROJECTION_EVENTS.ui_render_requested,
         detail: {
           topic: 'workspace',
           version: 1,
@@ -73,7 +74,7 @@ describe('UI projection journal', () => {
     const next = applyUiProjectionEvent({
       state,
       event: {
-        type: 'ui.attrs_requested',
+        type: UI_PROJECTION_EVENTS.ui_attrs_requested,
         detail: {
           topic: 'workspace',
           version: 1,
@@ -94,7 +95,7 @@ describe('UI projection journal', () => {
   test('attrs requests merge current intended attrs for reconnect', () => {
     const events: UiProjectionEvent[] = [
       {
-        type: 'ui.attrs_requested',
+        type: UI_PROJECTION_EVENTS.ui_attrs_requested,
         detail: {
           topic: 'workspace',
           version: 1,
@@ -111,7 +112,7 @@ describe('UI projection journal', () => {
         },
       },
       {
-        type: 'ui.attrs_requested',
+        type: UI_PROJECTION_EVENTS.ui_attrs_requested,
         detail: {
           topic: 'workspace',
           version: 2,
@@ -159,7 +160,7 @@ describe('UI projection journal', () => {
       },
     }
     const event: UiControllerMessageSentEvent = {
-      type: 'ui.controller_message_sent',
+      type: UI_PROJECTION_EVENTS.ui_controller_message_sent,
       detail: {
         topic: 'workspace',
         version: 2,
@@ -184,7 +185,7 @@ describe('UI projection journal', () => {
       },
     }
     const event: UiControllerMessageErrorEvent = {
-      type: 'ui.controller_message_error',
+      type: UI_PROJECTION_EVENTS.ui_controller_message_error,
       detail: {
         topic: 'workspace',
         version: 3,
@@ -210,7 +211,7 @@ describe('UI projection journal', () => {
       state: applyUiProjectionEvent({
         state: createUiProjectionState(),
         event: {
-          type: 'ui.render_requested',
+          type: UI_PROJECTION_EVENTS.ui_render_requested,
           detail: {
             topic: 'workspace',
             version: 2,
@@ -222,7 +223,7 @@ describe('UI projection journal', () => {
         },
       }),
       event: {
-        type: 'ui.controller_message_sent',
+        type: UI_PROJECTION_EVENTS.ui_controller_message_sent,
         detail: {
           topic: 'workspace',
           version: 1,
@@ -246,7 +247,7 @@ describe('UI projection journal', () => {
 
   test('page render event carries full HTML', () => {
     const event: UiPageRenderedEvent = {
-      type: 'ui.page_rendered',
+      type: UI_PROJECTION_EVENTS.ui_page_rendered,
       detail: {
         topic: 'workspace',
         version: 3,
@@ -262,7 +263,7 @@ describe('UI projection journal', () => {
 
   test('page render request is journalable with projection inputs', () => {
     const event: UiPageRenderRequestedEvent = {
-      type: 'ui.page_render_requested',
+      type: UI_PROJECTION_EVENTS.ui_page_render_requested,
       detail: {
         topic: 'workspace',
         version: 2,
@@ -297,7 +298,7 @@ describe('UI projection journal', () => {
     }
     const events: UiProjectionEvent[] = [
       {
-        type: 'ui.render_requested',
+        type: UI_PROJECTION_EVENTS.ui_render_requested,
         detail: {
           topic: 'workspace',
           version: 1,
@@ -305,7 +306,7 @@ describe('UI projection journal', () => {
         },
       },
       {
-        type: 'ui.render_requested',
+        type: UI_PROJECTION_EVENTS.ui_render_requested,
         detail: {
           topic: 'workspace',
           version: 2,

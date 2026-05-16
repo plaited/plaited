@@ -1,7 +1,7 @@
 /**
  * Agent-owned event-detail cache used for listener-scoped context shaping.
  */
-import type { BPListener } from '../behavioral/behavioral.schemas.ts'
+import type { BPListener } from '../behavioral.ts'
 
 const DEFAULT_CONTEXT_MEMORY_SCOPE = 'default'
 
@@ -20,6 +20,20 @@ type ContextMemoryRecord = {
 const getMemoryKey = ({ scope, type }: { scope?: string; type: string }) =>
   `${scope ?? DEFAULT_CONTEXT_MEMORY_SCOPE}:${type}`
 
+/**
+ * Creates a scoped in-memory cache for recent event details.
+ *
+ * @param ttlMs - Number of milliseconds to retain each recorded event detail.
+ * @param maxKeys - Optional maximum number of scoped event keys to keep.
+ * @returns Context memory operations for recording, retrieving, and pruning details.
+ *
+ * @remarks
+ * Context memory is owned by the agent layer. Listener lookups respect the
+ * listener detail schema and optional invalid-match semantics before returning
+ * cached detail.
+ *
+ * @public
+ */
 export const createContextMemory = ({ ttlMs, maxKeys }: { ttlMs: number; maxKeys?: number }) => {
   const memory = new Map<string, ContextMemoryRecord>()
   let tick = 0

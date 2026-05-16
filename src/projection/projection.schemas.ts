@@ -1,6 +1,7 @@
 import * as z from 'zod'
 
-import { AttrsMessageSchema, RenderMessageSchema, ServerMessageSchema } from '../controller/controller.schemas.ts'
+import { AttrsMessageSchema, RenderMessageSchema, ServerMessageSchema } from '../ui.ts'
+import { UI_PROJECTION_EVENTS } from './projection.constants.ts'
 
 /**
  * Identifies the upstream content that shaped a UI projection request.
@@ -58,7 +59,7 @@ export type UiProjectionControllerMessage = z.output<typeof UiProjectionControll
  * @public
  */
 export const UiRenderRequestedEventSchema = z.object({
-  type: z.literal('ui.render_requested'),
+  type: z.literal(UI_PROJECTION_EVENTS.ui_render_requested),
   detail: UiProjectionDetailSchema.extend({
     controllerMessage: RenderMessageSchema,
   }),
@@ -77,7 +78,7 @@ export type UiRenderRequestedEvent = z.output<typeof UiRenderRequestedEventSchem
  * @public
  */
 export const UiAttrsRequestedEventSchema = z.object({
-  type: z.literal('ui.attrs_requested'),
+  type: z.literal(UI_PROJECTION_EVENTS.ui_attrs_requested),
   detail: UiProjectionDetailSchema.extend({
     controllerMessage: AttrsMessageSchema,
   }),
@@ -96,7 +97,7 @@ export type UiAttrsRequestedEvent = z.output<typeof UiAttrsRequestedEventSchema>
  * @public
  */
 export const UiControllerMessageSentEventSchema = z.object({
-  type: z.literal('ui.controller_message_sent'),
+  type: z.literal(UI_PROJECTION_EVENTS.ui_controller_message_sent),
   detail: UiProjectionDetailSchema.extend({
     controllerMessage: ServerMessageSchema,
   }),
@@ -115,7 +116,7 @@ export type UiControllerMessageSentEvent = z.output<typeof UiControllerMessageSe
  * @public
  */
 export const UiControllerMessageErrorEventSchema = z.object({
-  type: z.literal('ui.controller_message_error'),
+  type: z.literal(UI_PROJECTION_EVENTS.ui_controller_message_error),
   detail: UiProjectionDetailSchema.extend({
     controllerMessage: ServerMessageSchema,
     error: z.string(),
@@ -135,7 +136,7 @@ export type UiControllerMessageErrorEvent = z.output<typeof UiControllerMessageE
  * @public
  */
 export const UiPageRenderRequestedEventSchema = z.object({
-  type: z.literal('ui.page_render_requested'),
+  type: z.literal(UI_PROJECTION_EVENTS.ui_page_render_requested),
   detail: UiProjectionDetailSchema,
 })
 
@@ -152,7 +153,7 @@ export type UiPageRenderRequestedEvent = z.output<typeof UiPageRenderRequestedEv
  * @public
  */
 export const UiPageRenderedEventSchema = z.object({
-  type: z.literal('ui.page_rendered'),
+  type: z.literal(UI_PROJECTION_EVENTS.ui_page_rendered),
   detail: UiProjectionDetailSchema.extend({
     html: z.string(),
   }),

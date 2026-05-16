@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { behavioral, SNAPSHOT_MESSAGE_KINDS } from '../../behavioral.ts'
+import { UI_PROJECTION_EVENTS } from '../../projection/projection.constants.ts'
 import { CONTROLLER_TO_AGENT_EVENTS } from '../../shared.ts'
 import { createContextMemory } from '../context-memory.ts'
 import {
@@ -155,6 +156,56 @@ describe('UI capability bindings', () => {
         detail: {
           topic: 'board:a',
           cardId: 'card-1',
+        },
+      }),
+    ).toThrow()
+  })
+
+  test('accepts generated template modules and projection hints keyed by projection events', () => {
+    const capability = UiCapabilityBindingSchema.parse({
+      capabilityId: 'workspace-card',
+      templateModules: {
+        card: {
+          entrypoint: '/generated/workspace-card.ts',
+          execution: 'trusted-process-code',
+          files: {
+            '/generated/workspace-card.ts': `
+              import { h, type FunctionTemplate } from 'plaited/ui'
+
+              const WorkspaceCard: FunctionTemplate<{ title: string }> = ({ title }) =>
+                h('section', { children: title })
+
+              export default WorkspaceCard
+            `,
+          },
+          fixtureAttrs: {
+            title: 'Workspace',
+          },
+        },
+      },
+      projectionHints: {
+        [UI_PROJECTION_EVENTS.ui_render_requested]: {
+          template: 'card',
+          target: 'main',
+        },
+      },
+    })
+
+    expect(capability.templateModules.card?.entrypoint).toBe('/generated/workspace-card.ts')
+    expect(capability.projectionHints[UI_PROJECTION_EVENTS.ui_render_requested]).toEqual({
+      template: 'card',
+      target: 'main',
+    })
+  })
+
+  test('rejects projection hints with unknown event names', () => {
+    expect(() =>
+      UiCapabilityBindingSchema.parse({
+        capabilityId: 'workspace-card',
+        projectionHints: {
+          ui_unknown_projection_event: {
+            target: 'main',
+          },
         },
       }),
     ).toThrow()

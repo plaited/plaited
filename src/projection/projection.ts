@@ -1,3 +1,4 @@
+import { UI_PROJECTION_EVENTS } from './projection.constants.ts'
 import {
   type TopicViewState,
   type UiProjectionControllerMessage,
@@ -111,7 +112,7 @@ export const applyUiProjectionEvent = ({
     topic: parsedEvent.detail.topic,
   })
 
-  if (parsedEvent.type === 'ui.controller_message_sent') {
+  if (parsedEvent.type === UI_PROJECTION_EVENTS.ui_controller_message_sent) {
     return {
       topicViewState: {
         ...parsedState.topicViewState,
@@ -126,7 +127,7 @@ export const applyUiProjectionEvent = ({
     }
   }
 
-  if (parsedEvent.type === 'ui.controller_message_error') {
+  if (parsedEvent.type === UI_PROJECTION_EVENTS.ui_controller_message_error) {
     return {
       topicViewState: {
         ...parsedState.topicViewState,
@@ -142,7 +143,7 @@ export const applyUiProjectionEvent = ({
     }
   }
 
-  if (parsedEvent.type === 'ui.page_rendered') {
+  if (parsedEvent.type === UI_PROJECTION_EVENTS.ui_page_rendered) {
     return {
       topicViewState: {
         ...parsedState.topicViewState,
@@ -157,7 +158,7 @@ export const applyUiProjectionEvent = ({
     }
   }
 
-  if (parsedEvent.type === 'ui.page_render_requested') {
+  if (parsedEvent.type === UI_PROJECTION_EVENTS.ui_page_render_requested) {
     if (parsedEvent.detail.version < current.version) return parsedState
     return {
       topicViewState: {
