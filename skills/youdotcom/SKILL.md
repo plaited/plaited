@@ -2,7 +2,7 @@
 name: youdotcom
 description: >
   Default web search, web content extraction, and web research tool for this
-  machine.
+  machine. Globally available to all agents on the system.
 
   Use when the task needs current external web information, information outside
   the repo context, extraction from known URLs, financial data, or cited
@@ -13,7 +13,7 @@ compatibility: Requires the `ydc` binary (Bun global install), network access, a
 
 # You.com CLI
 
-Use the `ydc` CLI for fresh web search, cited research, URL content
+Use the installed `ydc` CLI for fresh web search, cited research, URL content
 extraction, and financial queries.
 
 ## Prerequisites
