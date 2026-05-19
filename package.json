@@ -61,33 +61,34 @@
     ]
   },
   "dependencies": {
-    "@modelcontextprotocol/ext-apps": "^1.7.1",
+    "@agentclientprotocol/sdk": "link:@agentclientprotocol/sdk",
+    "@modelcontextprotocol/ext-apps": "^1.7.2",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@youdotcom-oss/api": "^0.5.2",
-    "openai": "^6.35.0",
-    "zod": "4.3.6"
+    "openai": "^6.38.0",
+    "zod": "4.4.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.13",
-    "@commitlint/cli": "20.5.2",
-    "@commitlint/config-conventional": "20.5.0",
+    "@biomejs/biome": "2.4.15",
+    "@commitlint/cli": "21.0.1",
+    "@commitlint/config-conventional": "21.0.1",
     "@happy-dom/global-registrator": "^20.9.0",
-    "@mermaid-js/mermaid-cli": "11.12.0",
-    "@playwright/cli": "^0.1.9",
+    "@mermaid-js/mermaid-cli": "11.15.0",
+    "@playwright/cli": "^0.1.13",
     "@types/beautify": "0.0.3",
-    "@types/bun": "1.3.13",
-    "@types/node": "25.6.0",
+    "@types/bun": "1.3.14",
+    "@types/node": "25.9.1",
     "@types/sinon": "21.0.1",
-    "@varlock/1password-plugin": "^0.3.5",
-    "axe-core": "4.11.3",
+    "@varlock/1password-plugin": "^1.1.0",
+    "axe-core": "4.11.4",
     "beautify": "0.0.8",
     "csstype": "3.2.3",
     "cz-conventional-changelog": "3.3.0",
     "format-package": "7.0.0",
-    "lint-staged": "16.4.0",
-    "sinon": "21.1.2",
+    "lint-staged": "17.0.5",
+    "sinon": "22.0.0",
     "typescript": "6.0.3",
-    "typescript-language-server": "5.1.3",
-    "varlock": "^0.9.1"
+    "typescript-language-server": "5.2.0",
+    "varlock": "^1.2.0"
   }
 }
