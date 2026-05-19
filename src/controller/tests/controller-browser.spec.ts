@@ -12,6 +12,8 @@ let fixture: FixtureServer | undefined
 const SESSION = 'ui-test'
 const BROWSER_NOT_OPEN_MESSAGE = `The browser '${SESSION}' is not open`
 
+const BROWSER = '--browser=chromium'
+
 const runCli = async (...args: string[]) => {
   const proc = Bun.spawn(['bunx', '@playwright/cli', `-s=${SESSION}`, ...args], {
     stdout: 'pipe',
@@ -33,7 +35,7 @@ const runCli = async (...args: string[]) => {
 const cli = async (...args: string[]) => {
   const first = await runCli(...args)
   if (first.includes(BROWSER_NOT_OPEN_MESSAGE) && args[0] !== 'open' && args[0] !== 'close') {
-    await runCli('open')
+    await runCli('open', BROWSER)
     return runCli(...args)
   }
   return first
@@ -98,8 +100,8 @@ const gotoTest = async (path: string, waitMs = 3000) => {
 beforeAll(async () => {
   fixture = startServer(0)
 
-  // Open browser session (no URL yet — navigate after open)
-  await cli('open')
+  // Open browser session with explicit Chromium browser (not system Chrome)
+  await cli('open', BROWSER)
   // Navigate to the base controller island fixture.
   await gotoTest('/control-island.html')
 }, 30000)
