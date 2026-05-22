@@ -1,6 +1,13 @@
 ---
 name: tdd
-description: Use test-driven development for behavior-changing feature or fix work, and whenever the user mentions TDD, test-first, red-green-refactor, tracer bullets, integration tests, or public-interface behavior tests. Skip for docs-only, path-only rename, formatting-only, or purely mechanical chores unless explicitly requested.
+description: >
+  Test-first for all new or modified runtime code. Invoke before writing any
+  production source file that contains logic (CLI handlers, runtime modules,
+  utilities). Write one test, implement to pass, refactor. Skip for docs-only,
+  re-exports, type-only modules, path-only rename, formatting-only, or purely
+  mechanical chores. Also use whenever the user mentions TDD, test-first,
+  red-green-refactor, tracer bullets, integration tests, or public-interface
+  behavior tests.
 license: MIT
 compatibility: Requires bun for Plaited repository validation
 metadata:
