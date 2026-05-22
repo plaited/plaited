@@ -2,43 +2,8 @@
 name: search-acp-docs
 description: Search and read the Agent Client Protocol documentation. Use when building ACP agents or clients, implementing editor-agent JSON-RPC flows, checking session management, permissions, file access, or MCP server integration details.
 license: ISC
-compatibility: Requires bun and network access
+compatibility: Requires `plaited` CLI and network access
 allowed-tools: Bash
-metadata:
-  plaited:
-    kind: generated-skill
-    origin:
-      kind: generated
-      source:
-        type: remote-mcp
-        url: https://agentclientprotocol.com/mcp
-    capabilities:
-      - id: docs.search
-        type: cli
-        lane: private
-        phase: context
-        audience: [analyst]
-        actions: [search, read]
-        sideEffects: network
-        handler:
-          type: cli
-          command: scripts/search.ts
-        source:
-          type: remote-mcp
-          tool: search_agent_client_protocol
-      - id: docs.query-filesystem
-        type: cli
-        lane: private
-        phase: context
-        audience: [analyst]
-        actions: [list, search, read]
-        sideEffects: network
-        handler:
-          type: cli
-          command: scripts/query-docs.ts
-        source:
-          type: remote-mcp
-          tool: query_docs_filesystem_agent_client_protocol
 ---
 
 # Search ACP Docs
@@ -47,15 +12,17 @@ Query the Agent Client Protocol documentation via MCP.
 
 ## Usage
 
+Search the documentation:
+
 ```bash
-bun run skills/search-acp-docs/scripts/search.ts '{"query": "session prompt lifecycle"}'
-bun run skills/search-acp-docs/scripts/query-docs.ts '{"command": "tree / -L 2"}'
+plaited mcp-client '{"mode":"call-tool","url":"https://agentclientprotocol.com/mcp","tool":"search_agent_client_protocol","args":{"query":"session prompt lifecycle"}}'
 ```
 
-## Available scripts
+Query the remote documentation filesystem:
 
-- [**scripts/search.ts**](scripts/search.ts) — Search the Agent Client Protocol documentation. Takes JSON with a `query` field and prints matching documentation to stdout.
-- [**scripts/query-docs.ts**](scripts/query-docs.ts) — Run a read-only command against the remote documentation filesystem. Takes JSON with a `command` field and prints results to stdout.
+```bash
+plaited mcp-client '{"mode":"call-tool","url":"https://agentclientprotocol.com/mcp","tool":"query_docs_filesystem_agent_client_protocol","args":{"command":"tree / -L 2"}}'
+```
 
 ## When to use
 
@@ -67,9 +34,14 @@ bun run skills/search-acp-docs/scripts/query-docs.ts '{"command": "tree / -L 2"}
 
 ## Workflow
 
-Start with [**scripts/search.ts**](scripts/search.ts) for broad or conceptual questions. Use
-[**scripts/query-docs.ts**](scripts/query-docs.ts) when you need exact keyword matching, docs
+Start with `search_agent_client_protocol` for broad or conceptual questions. Use
+`query_docs_filesystem_agent_client_protocol` when you need exact keyword matching, docs
 structure, OpenAPI inspection, or full page content.
 
 The remote docs filesystem is rooted at `/`, is stateless between calls, and is read-only. Convert
 filesystem paths to URL paths by removing the `.mdx` suffix when referencing pages.
+
+## See also
+
+- `plaited mcp-client --help` — discover all available MCP operations
+- `plaited mcp-client --schema input` — inspect the full input schema

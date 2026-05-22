@@ -2,30 +2,8 @@
 name: search-varlock-docs
 description: Search the Varlock documentation for AI-safe environment configuration. Use when working with .env.schema files, secret providers, leak detection, or understanding how Varlock integrates with node provisioning.
 license: ISC
-compatibility: Requires bun and network access
+compatibility: Requires `plaited` CLI and network access
 allowed-tools: Bash
-metadata:
-  plaited:
-    kind: generated-skill
-    origin:
-      kind: generated
-      source:
-        type: remote-mcp
-        url: https://docs.mcp.varlock.dev/mcp
-    capabilities:
-      - id: docs.search
-        type: cli
-        lane: private
-        phase: context
-        audience: [analyst]
-        actions: [search, read]
-        sideEffects: network
-        handler:
-          type: cli
-          command: scripts/search.ts
-        source:
-          type: remote-mcp
-          tool: varlock docs
 ---
 
 # Search Varlock Docs
@@ -35,12 +13,8 @@ Query the Varlock documentation via MCP.
 ## Usage
 
 ```bash
-bun run skills/search-varlock-docs/scripts/search.ts '{"query": ".env.schema format"}'
+plaited mcp-client '{"mode":"call-tool","url":"https://docs.mcp.varlock.dev/mcp","tool":"varlock docs","args":{"query":".env.schema format"}}'
 ```
-
-## Available scripts
-
-- [**scripts/search.ts**](scripts/search.ts) — Search the Varlock documentation. Takes JSON with a `query` field, prints matching documentation to stdout.
 
 ## When to use
 
@@ -49,3 +23,8 @@ bun run skills/search-varlock-docs/scripts/search.ts '{"query": ".env.schema for
 - Configuring leak detection and prevention
 - Integrating Varlock into node provisioning workflows
 - Learning runtime resolution from multiple sources (local files, env-specific overrides, external secret managers)
+
+## See also
+
+- `plaited mcp-client --help` — discover all available MCP operations
+- `plaited mcp-client --schema input` — inspect the full input schema

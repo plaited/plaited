@@ -2,30 +2,8 @@
 name: search-agent-skills
 description: Search the AgentSkills specification. Use when creating, validating, structuring skills, or understanding the SKILL.md format.
 license: ISC
-compatibility: Requires bun and network access
+compatibility: Requires `plaited` CLI and network access
 allowed-tools: Bash
-metadata:
-  plaited:
-    kind: generated-skill
-    origin:
-      kind: generated
-      source:
-        type: remote-mcp
-        url: https://agentskills.io/mcp
-    capabilities:
-      - id: docs.search
-        type: cli
-        lane: private
-        phase: context
-        audience: [analyst]
-        actions: [search, read]
-        sideEffects: network
-        handler:
-          type: cli
-          command: scripts/search.ts
-        source:
-          type: remote-mcp
-          tool: search_agent_skills
 ---
 
 # Search Agent Skills
@@ -35,12 +13,8 @@ Query the AgentSkills specification via MCP.
 ## Usage
 
 ```bash
-bun run skills/search-agent-skills/scripts/search.ts '{"query": "SKILL.md frontmatter fields"}'
+plaited mcp-client '{"mode":"call-tool","url":"https://agentskills.io/mcp","tool":"search_agent_skills","args":{"query":"SKILL.md frontmatter fields"}}'
 ```
-
-## Available scripts
-
-- [**scripts/search.ts**](scripts/search.ts) — Search the AgentSkills specification. Takes JSON with a `query` field, prints matching documentation to stdout.
 
 ## When to use
 
@@ -48,3 +22,8 @@ bun run skills/search-agent-skills/scripts/search.ts '{"query": "SKILL.md frontm
 - Validating skill directories
 - Understanding scripts/, references/, assets/ conventions
 - Checking AgentSkills client implementation guidance
+
+## See also
+
+- `plaited mcp-client --help` — discover all available MCP operations
+- `plaited mcp-client --schema input` — inspect the full input schema
