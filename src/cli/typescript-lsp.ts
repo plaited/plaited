@@ -1,5 +1,3 @@
-#!/usr/bin/env bun
-
 /**
  * Unified TypeScript LSP tool.
  *
@@ -12,9 +10,9 @@
 
 import { isAbsolute, join, normalize, relative, resolve } from 'node:path'
 import type { Subprocess } from 'bun'
-import { parseCli } from 'plaited/cli'
 import ts from 'typescript'
 import * as z from 'zod'
+import { makeCli } from './cli.ts'
 
 // ============================================================================
 // JSON-RPC Types
@@ -1247,60 +1245,21 @@ export { executeLsp }
  *
  * @public
  */
-export const typescriptLspCli = async (args: string[]) => {
-  if (args.includes('--help') || args.includes('-h')) {
-    console.log(`typescript-lsp
-Unified TypeScript LSP tool — type-aware codebase analysis
-
-Usage: bun run skills/typescript-lsp/scripts/typescript-lsp.ts '<json>' [options]
-       echo '<json>' | bun run skills/typescript-lsp/scripts/typescript-lsp.ts
-
-Input (JSON):
-  rootDir      string              Workspace root directory (default ".")
-  ignoreGlobs  string[]            Additional workspace ignore globs
-  file         string              Path to TypeScript/JavaScript file (required for LSP session operations)
-  files        string[]            Explicit file list for workspace audits
-  targets      string[]            Glob patterns for workspace audits
-  operations   LspOperation[]      Operations to perform in one session
-
-Operations:
-  hover        { type: "hover", line, character }        Type info at position
-  references   { type: "references", line, character }   All references to symbol
-  definition   { type: "definition", line, character }   Go to definition
-  symbols      { type: "symbols" }                       All symbols in file
-  exports      { type: "exports" }                       Exported symbols only
-  find         { type: "find", query }                   Search workspace symbols
-  scan         { type: "scan" }                          Fast import/export extraction (no LSP)
-  workspace-scan      { type: "workspace-scan" }         Fast import/export scan across files
-  public-exports      { type: "public-exports" }         Compiler-backed export inventory
-  export-consumers    { type: "export-consumers", query? } Candidate export consumer audit
-  candidate-unused-exports { type: "candidate-unused-exports", query? } TypeScript-verified unused export audit
-
-Options:
-  --schema <input|output>  Print JSON Schema and exit
-  -h, --help               Show this help
-
-Exit codes:
-  0  Success (or --schema/--help)
-  1  One or more operations failed
-  2  Bad input or tool error`)
-    return
-  }
-
-  const input = await parseCli(args, LspInputSchema, { name: TYPESCRIPT_LSP_COMMAND, outputSchema: LspOutputSchema })
-
-  try {
-    const result = await executeLsp(input)
-    console.log(JSON.stringify(result, null, 2))
-    if (result.results.some((r) => r.error)) process.exit(1)
-  } catch (error) {
-    console.error(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }))
-    process.exit(2)
-  }
-}
-
-export { DEFAULT_IGNORE_GLOBS, TYPESCRIPT_LSP_COMMAND }
-
-if (import.meta.main) {
-  await typescriptLspCli(Bun.argv.slice(2))
-}
+export const lspCli = makeCli({
+  name: TYPESCRIPT_LSP_COMMAND,
+  inputSchema: LspInputSchema,
+  outputSchema: LspOutputSchema,
+  help: [
+    'Type-aware codebase analysis — opens a TS/JS file in typescript-language-server',
+    'and sends one or more JSON-RPC requests in a single session.',
+    '',
+    'Input:',
+    '  file        Path to TypeScript/JavaScript file',
+    '  cwd         Optional working directory (defaults to .)',
+    '  requests    Array of { method, params? } — raw LSP method calls',
+    '',
+    'Example:',
+    '  plaited typescript-lsp \'{"file":"src/index.ts","requests":[{"method":"textDocument/hover","params":{"position":{"line":5,"character":10}}}]}\'',
+  ].join('\n'),
+  run: async (input) => executeLsp(input as LspInput),
+})

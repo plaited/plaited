@@ -14,6 +14,7 @@ import {
   evalCli,
   frontierAnalysisCli,
   gitContextCli,
+  lspCli,
   makeCliRouter,
   markdownCli,
   mcpClientCli,
@@ -33,6 +34,7 @@ export const runCli = makeCliRouter({
     ...gitContextCli,
     ...frontierAnalysisCli,
     ...evalCli,
+    ...lspCli,
   },
 })
 
