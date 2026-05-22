@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { mkdtemp, writeFile } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -38,8 +38,9 @@ describe('lspCli', () => {
     const { exitCode, stderr } = await runCli(null, '--help')
 
     expect(exitCode).toBe(0)
-    expect(stderr).toContain('typescript')
-    expect(stderr).toContain('Input:')
+    expect(stderr).toContain('typescript-lsp')
+    expect(stderr).toContain('execute')
+    expect(stderr).toContain('discover')
     expect(stderr).toContain('requests')
   })
 
@@ -55,25 +56,40 @@ describe('lspCli', () => {
     expect(exitCode).toBe(2)
   })
 
-  test('returns exports for a simple file', async () => {
+  test('returns document symbols for a simple file', async () => {
     const dir = await createTempDir()
     const filePath = join(dir, 'sample.ts')
+    const uri = `file://${filePath}`
     await writeFile(filePath, 'export const x = 1\n')
 
     const { exitCode, stdout } = await runCli({
+      mode: 'execute',
       rootDir: dir,
       file: filePath,
-      operations: [{ type: 'exports' }],
+      requests: [{ method: 'textDocument/documentSymbol', params: { textDocument: { uri } } }],
     })
 
     expect(exitCode).toBe(0)
     const output = JSON.parse(stdout)
+    expect(output.mode).toBe('execute')
     expect(output.file).toBe('sample.ts')
     expect(output.results).toHaveLength(1)
-    expect(output.results[0].type).toBe('exports')
-    expect(output.results[0].data).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'x' })]))
+    expect(output.results[0].method).toBe('textDocument/documentSymbol')
+    expect(output.results[0].result).toBeDefined()
 
     await rm(dir, { recursive: true, force: true })
+  })
+
+  test('discovers server capabilities', async () => {
+    const { exitCode, stdout } = await runCli({ mode: 'discover' })
+
+    expect(exitCode).toBe(0)
+    const output = JSON.parse(stdout)
+    expect(output.mode).toBe('discover')
+    expect(Array.isArray(output.capabilities)).toBe(true)
+    expect(output.capabilities.length).toBeGreaterThan(0)
+    expect(output.capabilities[0].method).toBeString()
+    expect(output.capabilities[0].capability).toBeString()
   })
 
   test('--schema input emits JSON Schema', async () => {
@@ -81,17 +97,24 @@ describe('lspCli', () => {
 
     expect(exitCode).toBe(0)
     const output = JSON.parse(stdout)
-    expect(output.anyOf).toBeDefined()
+    expect(output.oneOf).toBeDefined()
     expect(output.description).toContain('TypeScript')
   })
 
   test('--dry-run prints request details without executing', async () => {
-    const { exitCode, stdout } = await runCli({ file: 'test.ts', operations: [{ type: 'exports' }] }, '--dry-run')
+    const { exitCode, stdout } = await runCli(
+      {
+        mode: 'execute',
+        file: 'test.ts',
+        requests: [{ method: 'textDocument/documentSymbol', params: { textDocument: { uri: 'file://test.ts' } } }],
+      },
+      '--dry-run',
+    )
 
     expect(exitCode).toBe(0)
     const output = JSON.parse(stdout)
     expect(output.command).toBe('typescript-lsp')
     expect(output.dryRun).toBe(true)
-    expect(output.input.operations[0].type).toBe('exports')
+    expect(output.input.requests[0].method).toBe('textDocument/documentSymbol')
   })
 })

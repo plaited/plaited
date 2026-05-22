@@ -1,16 +1,16 @@
 /**
- * Unified TypeScript LSP tool.
+ * TypeScript LSP CLI — JSON-RPC passthrough over typescript-language-server.
  *
  * @remarks
- * Combines the LSP JSON-RPC client and operation dispatch into a single module.
- * Accepts JSON positional arg or stdin pipe. `--schema input|output` for discovery.
+ * Two modes via `mode` discriminant:
+ *   - `execute`: spawn server, open file, send raw JSON-RPC requests, return results
+ *   - `discover`: spawn server, initialize, return supported capabilities (method names)
  *
  * @public
  */
 
-import { isAbsolute, join, normalize, relative, resolve } from 'node:path'
+import { isAbsolute, normalize, relative, resolve } from 'node:path'
 import type { Subprocess } from 'bun'
-import ts from 'typescript'
 import * as z from 'zod'
 import { makeCli } from './cli.ts'
 
@@ -53,17 +53,30 @@ type LspExecutionContext = {
   signal?: AbortSignal
 }
 
-const TYPESCRIPT_LSP_COMMAND = 'typescript-lsp'
+// ============================================================================
+// Capability → Method Mapping
+// ============================================================================
 
-const DEFAULT_IGNORE_GLOBS = [
-  '**/.git/**',
-  '**/node_modules/**',
-  '**/dist/**',
-  '**/build/**',
-  '**/coverage/**',
-  '**/tmp/**',
-  '**/temp/**',
-] as const
+/** @internal */
+const CAPABILITY_TO_METHOD: Record<string, string> = {
+  hoverProvider: 'textDocument/hover',
+  referencesProvider: 'textDocument/references',
+  definitionProvider: 'textDocument/definition',
+  documentSymbolProvider: 'textDocument/documentSymbol',
+  workspaceSymbolProvider: 'workspace/symbol',
+  completionProvider: 'textDocument/completion',
+  signatureHelpProvider: 'textDocument/signatureHelp',
+  implementationProvider: 'textDocument/implementation',
+  typeDefinitionProvider: 'textDocument/typeDefinition',
+  renameProvider: 'textDocument/rename',
+  codeActionProvider: 'textDocument/codeAction',
+  documentFormattingProvider: 'textDocument/formatting',
+  documentHighlightProvider: 'textDocument/documentHighlight',
+  foldingRangeProvider: 'textDocument/foldingRange',
+  inlayHintProvider: 'textDocument/inlayHint',
+  semanticTokensProvider: 'textDocument/semanticTokens',
+  selectionRangeProvider: 'textDocument/selectionRange',
+}
 
 // ============================================================================
 // LSP Client
@@ -74,7 +87,8 @@ const DEFAULT_IGNORE_GLOBS = [
  *
  * @remarks
  * Spawns typescript-language-server as a subprocess and communicates
- * via LSP JSON-RPC protocol over stdio.
+ * via LSP JSON-RPC over stdio. Manages lifecycle: spawn → initialize →
+ * open → request/notify → close → shutdown.
  *
  * @internal
  */
@@ -88,6 +102,7 @@ export class LspClient {
   #rootUri: string
   #serverCommand: string[]
   #requestTimeout: number
+  #capabilities: Record<string, unknown> | null = null
 
   constructor({
     rootUri,
@@ -103,10 +118,15 @@ export class LspClient {
     this.#requestTimeout = requestTimeout
   }
 
+  /**
+   * Server capabilities returned by the `initialize` handshake.
+   */
+  get capabilities(): Record<string, unknown> | null {
+    return this.#capabilities
+  }
+
   async start(): Promise<void> {
-    if (this.#process) {
-      throw new Error('LSP server already running')
-    }
+    if (this.#process) throw new Error('LSP server already running')
 
     this.#process = Bun.spawn(this.#serverCommand, {
       stdin: 'pipe',
@@ -120,14 +140,12 @@ export class LspClient {
 
   async stop(): Promise<void> {
     if (!this.#process) return
-
     try {
       await this.request('shutdown', null)
       this.notify('exit')
     } catch {
-      // Ignore errors during shutdown
+      // Ignore shutdown errors
     }
-
     this.#process.kill()
     this.#process = null
     this.#initialized = false
@@ -138,9 +156,7 @@ export class LspClient {
   }
 
   async request<T = unknown>(method: string, params: unknown): Promise<T> {
-    if (!this.#process) {
-      throw new Error('LSP server not running')
-    }
+    if (!this.#process) throw new Error('LSP server not running')
 
     this.#requestId += 1
     const id = this.#requestId
@@ -156,92 +172,18 @@ export class LspClient {
         this.#pendingRequests.delete(id)
         reject(new Error(`LSP request timeout: ${method} (id=${id})`))
       }, this.#requestTimeout)
-
-      this.#pendingRequests.set(id, {
-        resolve: resolve as (value: unknown) => void,
-        reject,
-        timer,
-      })
+      this.#pendingRequests.set(id, { resolve: resolve as (value: unknown) => void, reject, timer })
       this.#send(request)
     })
   }
 
   notify(method: string, params?: unknown): void {
-    if (!this.#process) {
-      throw new Error('LSP server not running')
-    }
-
-    const notification: JsonRpcNotification = {
-      jsonrpc: '2.0',
-      method,
-      params,
-    }
-
-    this.#send(notification)
-  }
-
-  // LSP Methods
-
-  async hover(uri: string, line: number, character: number): Promise<unknown> {
-    return this.request('textDocument/hover', {
-      textDocument: { uri },
-      position: { line, character },
-    })
-  }
-
-  async definition(uri: string, line: number, character: number): Promise<unknown> {
-    return this.request('textDocument/definition', {
-      textDocument: { uri },
-      position: { line, character },
-    })
-  }
-
-  async references(uri: string, line: number, character: number, includeDeclaration = true): Promise<unknown> {
-    return this.request('textDocument/references', {
-      textDocument: { uri },
-      position: { line, character },
-      context: { includeDeclaration },
-    })
-  }
-
-  async completion(uri: string, line: number, character: number): Promise<unknown> {
-    return this.request('textDocument/completion', {
-      textDocument: { uri },
-      position: { line, character },
-    })
-  }
-
-  async signatureHelp(uri: string, line: number, character: number): Promise<unknown> {
-    return this.request('textDocument/signatureHelp', {
-      textDocument: { uri },
-      position: { line, character },
-    })
-  }
-
-  async documentSymbols(uri: string): Promise<unknown> {
-    return this.request('textDocument/documentSymbol', {
-      textDocument: { uri },
-    })
-  }
-
-  async workspaceSymbols(query: string): Promise<unknown> {
-    return this.request('workspace/symbol', { query })
-  }
-
-  openDocument(uri: string, languageId: string, version: number, text: string): void {
-    this.notify('textDocument/didOpen', {
-      textDocument: { uri, languageId, version, text },
-    })
-  }
-
-  closeDocument(uri: string): void {
-    this.notify('textDocument/didClose', {
-      textDocument: { uri },
-    })
+    if (!this.#process) throw new Error('LSP server not running')
+    this.#send({ jsonrpc: '2.0', method, params })
   }
 
   async #initialize(): Promise<void> {
-    const result = await this.request('initialize', {
+    const result = (await this.request('initialize', {
       processId: process.pid,
       rootUri: this.#rootUri,
       capabilities: {
@@ -249,61 +191,39 @@ export class LspClient {
           hover: { contentFormat: ['markdown', 'plaintext'] },
           definition: { linkSupport: true },
           references: {},
-          completion: {
-            completionItem: {
-              snippetSupport: true,
-              documentationFormat: ['markdown', 'plaintext'],
-            },
-          },
-          signatureHelp: {
-            signatureInformation: {
-              documentationFormat: ['markdown', 'plaintext'],
-            },
-          },
-          documentSymbol: {
-            hierarchicalDocumentSymbolSupport: true,
-          },
+          completion: { completionItem: { snippetSupport: true, documentationFormat: ['markdown', 'plaintext'] } },
+          signatureHelp: { signatureInformation: { documentationFormat: ['markdown', 'plaintext'] } },
+          documentSymbol: { hierarchicalDocumentSymbolSupport: true },
         },
-        workspace: {
-          symbol: { symbolKind: {} },
-        },
+        workspace: { symbol: { symbolKind: {} } },
       },
-    })
+    })) as Record<string, unknown> | undefined
 
     this.notify('initialized', {})
     this.#initialized = true
-
-    return result as Promise<void>
+    this.#capabilities = (result?.capabilities as Record<string, unknown>) ?? null
   }
 
   #send(message: JsonRpcRequest | JsonRpcNotification): void {
     const stdin = this.#process?.stdin
-    if (!stdin || typeof stdin === 'number') {
-      throw new Error('LSP server stdin not available')
-    }
-
+    if (!stdin || typeof stdin === 'number') throw new Error('LSP server stdin not available')
     const content = JSON.stringify(message)
-    const header = `Content-Length: ${Buffer.byteLength(content)}\r\n\r\n`
-
-    stdin.write(header + content)
+    stdin.write(`Content-Length: ${Buffer.byteLength(content)}\r\n\r\n${content}`)
   }
 
   async #readOutput(): Promise<void> {
     const stdout = this.#process?.stdout
     if (!stdout || typeof stdout === 'number') return
-
     const reader = stdout.getReader()
 
     try {
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-
         const newBuffer = new Uint8Array(this.#buffer.length + value.length)
         newBuffer.set(this.#buffer)
         newBuffer.set(value, this.#buffer.length)
         this.#buffer = newBuffer
-
         this.#processBuffer()
       }
     } catch {
@@ -318,15 +238,12 @@ export class LspClient {
       if (this.#contentLength === -1) {
         const headerEndIndex = this.#findHeaderEnd()
         if (headerEndIndex === -1) break
-
         const headerBytes = this.#buffer.slice(0, headerEndIndex)
-        const header = decoder.decode(headerBytes)
-        const match = header.match(/Content-Length: (\d+)/)
+        const match = decoder.decode(headerBytes).match(/Content-Length: (\d+)/)
         if (!match?.[1]) {
           this.#buffer = this.#buffer.slice(headerEndIndex + 4)
           continue
         }
-
         this.#contentLength = parseInt(match[1], 10)
         this.#buffer = this.#buffer.slice(headerEndIndex + 4)
       }
@@ -339,8 +256,7 @@ export class LspClient {
       this.#contentLength = -1
 
       try {
-        const message = JSON.parse(content) as JsonRpcResponse
-        this.#handleMessage(message)
+        this.#handleMessage(JSON.parse(content) as JsonRpcResponse)
       } catch {
         // Skip invalid JSON
       }
@@ -348,13 +264,12 @@ export class LspClient {
   }
 
   #findHeaderEnd(): number {
-    const CRLF = [13, 10, 13, 10] // \r\n\r\n
     for (let i = 0; i <= this.#buffer.length - 4; i++) {
       if (
-        this.#buffer[i] === CRLF[0] &&
-        this.#buffer[i + 1] === CRLF[1] &&
-        this.#buffer[i + 2] === CRLF[2] &&
-        this.#buffer[i + 3] === CRLF[3]
+        this.#buffer[i] === 13 &&
+        this.#buffer[i + 1] === 10 &&
+        this.#buffer[i + 2] === 13 &&
+        this.#buffer[i + 3] === 10
       ) {
         return i
       }
@@ -363,12 +278,10 @@ export class LspClient {
   }
 
   #handleMessage(message: JsonRpcResponse): void {
-    if ('id' in message && message.id !== undefined) {
+    if (message.id !== undefined) {
       const pending = this.#pendingRequests.get(message.id)
       if (pending) {
-        if (pending.timer) {
-          clearTimeout(pending.timer)
-        }
+        clearTimeout(pending.timer)
         this.#pendingRequests.delete(message.id)
         if (message.error) {
           pending.reject(new Error(`LSP Error: ${message.error.message}`))
@@ -377,266 +290,32 @@ export class LspClient {
         }
       }
     }
-    // Notifications and server requests are ignored
   }
-}
-
-// ============================================================================
-// Types
-// ============================================================================
-
-/**
- * Symbol info returned by the LSP textDocument/documentSymbol response.
- *
- * @internal
- */
-type SymbolInfo = {
-  name: string
-  kind: number
-  range: { start: { line: number; character: number }; end: { line: number; character: number } }
-  children?: SymbolInfo[]
-}
-
-/**
- * A single LSP operation to perform.
- *
- * @public
- */
-type LspOperation = z.infer<typeof LspOperationSchema>
-
-/**
- * Input for the unified LSP tool.
- *
- * @public
- */
-type LspInput = z.infer<typeof LspInputSchema>
-
-/**
- * Result of a single LSP operation.
- *
- * @public
- */
-type LspResult = {
-  type: string
-  data?: unknown
-  error?: string
-}
-
-/**
- * Output of the unified LSP tool.
- *
- * @public
- */
-type LspOutput = {
-  file: string
-  results: LspResult[]
-}
-
-export type { LspInput, LspOperation, LspOutput, LspResult }
-
-// ============================================================================
-// Schemas
-// ============================================================================
-
-/** @public */
-const HoverOperationSchema = z.object({
-  type: z.literal('hover').describe('Return type information for a symbol at a source position.'),
-  line: z.number().describe('0-indexed line position in `file`.'),
-  character: z.number().describe('0-indexed character position in `file`.'),
-})
-
-const ReferencesOperationSchema = z.object({
-  type: z.literal('references').describe('Return references to a symbol at a source position.'),
-  line: z.number().describe('0-indexed line position in `file`.'),
-  character: z.number().describe('0-indexed character position in `file`.'),
-})
-
-const DefinitionOperationSchema = z.object({
-  type: z.literal('definition').describe('Return the definition location for a symbol at a source position.'),
-  line: z.number().describe('0-indexed line position in `file`.'),
-  character: z.number().describe('0-indexed character position in `file`.'),
-})
-
-const FindOperationSchema = z.object({
-  type: z.literal('find').describe('Return workspace symbol search results matching `query`.'),
-  query: z.string().min(1).describe('Workspace symbol query text.'),
-})
-
-const SymbolsOperationSchema = z.object({
-  type: z.literal('symbols').describe('Return flattened document symbols for `file`.'),
-})
-
-const ExportsOperationSchema = z.object({
-  type: z.literal('exports').describe('Return top-level exported symbols from `file`.'),
-})
-
-const ScanOperationSchema = z.object({
-  type: z.literal('scan').describe('Return fast Bun transpiler import/export scan for `file`.'),
-})
-
-const WorkspaceScanOperationSchema = z.object({
-  type: z.literal('workspace-scan').describe('Return fast Bun transpiler import/export scan for workspace files.'),
-  includeTests: z.boolean().optional().describe('Include test files in workspace results. Defaults to true.'),
-})
-
-const PublicExportsOperationSchema = z.object({
-  type: z.literal('public-exports').describe('Return compiler-backed public export inventory for workspace files.'),
-  includeTests: z.boolean().optional().describe('Include test files in workspace results. Defaults to true.'),
-})
-
-const ExportConsumersOperationSchema = z.object({
-  type: z.literal('export-consumers').describe('Return candidate consumer paths for exported symbols.'),
-  query: z.string().optional().describe('Optional exported symbol name filter.'),
-  includeTests: z.boolean().optional().describe('Include test files when scanning consumers. Defaults to true.'),
-})
-
-const CandidateUnusedExportsOperationSchema = z.object({
-  type: z
-    .literal('candidate-unused-exports')
-    .describe('Return TypeScript-verified candidate unused exports for workspace files.'),
-  query: z.string().optional().describe('Optional exported symbol name filter.'),
-  includeTests: z
-    .boolean()
-    .optional()
-    .describe('Include test-only references when classifying candidates. Defaults to true.'),
-})
-
-const LspSessionOperationSchema = z.union([
-  HoverOperationSchema,
-  ReferencesOperationSchema,
-  DefinitionOperationSchema,
-  SymbolsOperationSchema,
-  ExportsOperationSchema,
-  FindOperationSchema,
-  ScanOperationSchema,
-])
-
-const WorkspaceOperationSchema = z.union([
-  WorkspaceScanOperationSchema,
-  PublicExportsOperationSchema,
-  ExportConsumersOperationSchema,
-  CandidateUnusedExportsOperationSchema,
-])
-
-const LspOperationSchema = z.union([LspSessionOperationSchema, WorkspaceOperationSchema])
-
-/** @public */
-const LspInputBaseSchema = z.object({
-  rootDir: z.string().default('.').describe('Workspace root directory for file resolution and relative output paths.'),
-  ignoreGlobs: z
-    .array(z.string().min(1))
-    .optional()
-    .describe(
-      `Additional ignore globs for workspace operations. Defaults always include: ${DEFAULT_IGNORE_GLOBS.join(', ')}`,
-    ),
-  files: z.array(z.string().min(1)).optional().describe('Explicit workspace files for workspace operations.'),
-  targets: z.array(z.string().min(1)).optional().describe('Workspace glob targets for workspace operations.'),
-})
-
-const LspSessionInputSchema = LspInputBaseSchema.extend({
-  file: z
-    .string()
-    .min(1)
-    .describe('Path to a TypeScript/JavaScript file. Required for LSP session operations and `scan`.'),
-  operations: z.array(LspSessionOperationSchema).min(1).describe('Operations to execute in a single session.'),
-})
-
-const LspWorkspaceInputByFilesSchema = LspInputBaseSchema.extend({
-  file: z.string().optional().describe('Optional file path ignored for workspace operations.'),
-  files: z.array(z.string().min(1)).min(1).describe('Explicit workspace files for workspace operations.'),
-  operations: z.array(WorkspaceOperationSchema).min(1).describe('Workspace operations to execute.'),
-})
-
-const LspWorkspaceInputByTargetsSchema = LspInputBaseSchema.extend({
-  file: z.string().optional().describe('Optional file path ignored for workspace operations.'),
-  targets: z.array(z.string().min(1)).min(1).describe('Glob targets for workspace operations.'),
-  operations: z.array(WorkspaceOperationSchema).min(1).describe('Workspace operations to execute.'),
-})
-
-const LspInputSchema = z
-  .union([LspSessionInputSchema, LspWorkspaceInputByFilesSchema, LspWorkspaceInputByTargetsSchema])
-  .describe('Unified TypeScript LSP request input.')
-
-/** @public */
-const LspOutputSchema = z.object({
-  file: z.string().describe('Path to the analyzed file'),
-  results: z
-    .array(
-      z.object({
-        type: z.string().describe('Operation type that was performed'),
-        data: z.unknown().optional().describe('Operation-specific successful output payload.'),
-        error: z.string().optional().describe('Error message if the operation failed'),
-      }),
-    )
-    .describe('Results array matching input operations order — each result includes operation-specific data fields'),
-})
-
-export { LspInputSchema, LspOperationSchema, LspOutputSchema }
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-/** @internal */
-const SYMBOL_KIND_NAMES: Record<number, string> = {
-  1: 'File',
-  2: 'Module',
-  3: 'Namespace',
-  4: 'Package',
-  5: 'Class',
-  6: 'Method',
-  7: 'Property',
-  8: 'Field',
-  9: 'Constructor',
-  10: 'Enum',
-  11: 'Interface',
-  12: 'Function',
-  13: 'Variable',
-  14: 'Constant',
-  15: 'String',
-  16: 'Number',
-  17: 'Boolean',
-  18: 'Array',
-  19: 'Object',
-  20: 'Key',
-  21: 'Null',
-  22: 'EnumMember',
-  23: 'Struct',
-  24: 'Event',
-  25: 'Operator',
-  26: 'TypeParameter',
 }
 
 // ============================================================================
 // Helpers
 // ============================================================================
 
-/**
- * Resolve a file path to an absolute path.
- *
- * @param filePath - Absolute or relative file path
- * @returns Absolute file path
- *
- * @internal
- */
+/** @internal */
 const resolveFilePath = (filePath: string, base?: string): string => {
   if (isAbsolute(filePath)) return normalize(filePath)
-  return normalize(join(base ?? process.cwd(), filePath))
+  return normalize(resolve(base ?? process.cwd(), filePath))
 }
 
-const DEFAULT_SCAN_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx']
-
-const TEST_FILE_PATTERN = /(^|\/)(tests?\/|.*\.(spec|test)\.[jt]sx?$)/
-
-const isTestFile = (filePath: string) => TEST_FILE_PATTERN.test(filePath)
-
+/** @internal */
 const toPosixPath = (path: string): string => path.replace(/\\/g, '/')
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
+/** @internal */
+const makeDisplayPath = (absolutePath: string, base: string) => {
+  const relativePath = toPosixPath(relative(base, absolutePath))
+  if (relativePath === '' || relativePath === '.') return '.'
+  return relativePath.startsWith('..') ? absolutePath : relativePath
+}
 
+/** @internal */
 const resolveUriPath = (uri: string): string | undefined => {
   if (!uri.startsWith('file://')) return
-
   try {
     return normalize(decodeURIComponent(new URL(uri).pathname))
   } catch {
@@ -644,23 +323,24 @@ const resolveUriPath = (uri: string): string | undefined => {
   }
 }
 
-const makeDisplayPath = (absolutePath: string, base: string) => {
-  const relativePath = toPosixPath(relative(base, absolutePath))
-  if (relativePath === '' || relativePath === '.') return '.'
-  return relativePath.startsWith('..') ? absolutePath : relativePath
-}
+/** @internal */
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 
+/**
+ * Recursively normalize LSP responses by converting `uri` and `targetUri`
+ * fields to relative paths for agent consumption.
+ *
+ * @internal
+ */
 const normalizeUriBearingResult = (value: unknown, rootDir: string): unknown => {
   if (Array.isArray(value)) {
     return value.map((entry) => normalizeUriBearingResult(entry, rootDir))
   }
-
   if (!isRecord(value)) {
     return value
   }
 
   const normalized: Record<string, unknown> = {}
-
   for (const [key, entry] of Object.entries(value)) {
     normalized[key] = normalizeUriBearingResult(entry, rootDir)
   }
@@ -671,316 +351,16 @@ const normalizeUriBearingResult = (value: unknown, rootDir: string): unknown => 
       normalized.path = makeDisplayPath(absolutePath, rootDir)
     }
   }
-
   if (typeof value.targetUri === 'string') {
     const absolutePath = resolveUriPath(value.targetUri)
     if (absolutePath) {
       normalized.targetPath = makeDisplayPath(absolutePath, rootDir)
     }
   }
-
   return normalized
 }
 
-const isIgnoredPath = ({
-  absolutePath,
-  rootDir,
-  ignoreGlobs,
-}: {
-  absolutePath: string
-  rootDir: string
-  ignoreGlobs: string[]
-}): boolean => {
-  const relativePath = toPosixPath(relative(rootDir, absolutePath))
-  if (relativePath.startsWith('..')) return false
-  return ignoreGlobs.some((pattern) => new Bun.Glob(pattern).match(relativePath))
-}
-
-const resolveWorkspaceFiles = ({
-  input,
-  rootDir,
-  includeTests = true,
-}: {
-  input: LspInput
-  rootDir: string
-  includeTests?: boolean
-}) => {
-  const ignoreGlobs = [...DEFAULT_IGNORE_GLOBS, ...(input.ignoreGlobs ?? [])]
-  const files = new Set<string>()
-
-  for (const filePath of input.files ?? []) {
-    const absolutePath = resolveFilePath(filePath, rootDir)
-    if (!isIgnoredPath({ absolutePath, rootDir, ignoreGlobs })) {
-      files.add(absolutePath)
-    }
-  }
-
-  for (const target of input.targets ?? []) {
-    for (const match of ts.sys.readDirectory(rootDir, DEFAULT_SCAN_EXTENSIONS, ignoreGlobs, [target])) {
-      const absolutePath = resolveFilePath(match, rootDir)
-      if (!isIgnoredPath({ absolutePath, rootDir, ignoreGlobs })) {
-        files.add(absolutePath)
-      }
-    }
-  }
-
-  return [...files].filter((filePath) => includeTests || !isTestFile(filePath)).sort()
-}
-
-type WorkspaceScanEntry = {
-  file: string
-  imports: unknown[]
-  exports: string[]
-  isTest: boolean
-}
-
-type PublicExportEntry = {
-  file: string
-  exports: Array<{ name: string; kind: string; line: number }>
-}
-
-type ExportConsumerEntry = {
-  file: string
-  name: string
-  kind: string
-  line: number
-  prodRefs: string[]
-  testRefs: string[]
-}
-
-type CandidateUnusedExportEntry = {
-  file: string
-  name: string
-  kind: string
-  line: number
-  status: 'unused' | 'test_only'
-  prodRefs: string[]
-  testRefs: string[]
-  verified: true
-}
-
-type InternalPublicExportEntry = {
-  absolutePath: string
-  displayPath: string
-  exports: Array<{ name: string; kind: string; line: number; character: number; position: number }>
-}
-
-const scanFile = async (absolutePath: string, base: string): Promise<WorkspaceScanEntry> => {
-  const text = await Bun.file(absolutePath).text()
-  const transpiler = new Bun.Transpiler({ loader: getLoader(absolutePath) })
-  const result = transpiler.scan(text)
-  return {
-    file: makeDisplayPath(absolutePath, base),
-    imports: result.imports,
-    exports: result.exports,
-    isTest: isTestFile(absolutePath),
-  }
-}
-
-const getSymbolKindName = (declaration: ts.Declaration): string => {
-  if (ts.isTypeAliasDeclaration(declaration)) return 'TypeAlias'
-  if (ts.isInterfaceDeclaration(declaration)) return 'Interface'
-  if (ts.isClassDeclaration(declaration)) return 'Class'
-  if (ts.isFunctionDeclaration(declaration)) return 'Function'
-  if (ts.isVariableDeclaration(declaration)) return 'Variable'
-  if (ts.isEnumDeclaration(declaration)) return 'Enum'
-  return ts.SyntaxKind[declaration.kind] ?? 'Unknown'
-}
-
-const getPublicExportsInventory = ({
-  absolutePaths,
-  base,
-}: {
-  absolutePaths: string[]
-  base: string
-}): InternalPublicExportEntry[] => {
-  const program = ts.createProgram(absolutePaths, {
-    allowJs: true,
-    target: ts.ScriptTarget.ESNext,
-    module: ts.ModuleKind.ESNext,
-    moduleResolution: ts.ModuleResolutionKind.Bundler,
-  })
-  const checker = program.getTypeChecker()
-
-  return absolutePaths.map((absolutePath) => {
-    const sourceFile = program.getSourceFile(absolutePath)
-    if (!sourceFile) {
-      return { absolutePath, displayPath: makeDisplayPath(absolutePath, base), exports: [] }
-    }
-
-    const moduleSymbol = checker.getSymbolAtLocation(sourceFile)
-    if (!moduleSymbol) {
-      return { absolutePath, displayPath: makeDisplayPath(absolutePath, base), exports: [] }
-    }
-
-    const exports = checker.getExportsOfModule(moduleSymbol).flatMap((symbol) => {
-      const declaration = symbol.declarations?.[0]
-      if (!declaration) return []
-      const position = sourceFile.getLineAndCharacterOfPosition(declaration.getStart())
-      return [
-        {
-          name: symbol.getName(),
-          kind: getSymbolKindName(declaration),
-          line: position.line,
-          character: position.character,
-          position: declaration.getStart(),
-        },
-      ]
-    })
-
-    return { absolutePath, displayPath: makeDisplayPath(absolutePath, base), exports }
-  })
-}
-
-const getPublicExports = ({ absolutePaths, base }: { absolutePaths: string[]; base: string }): PublicExportEntry[] =>
-  getPublicExportsInventory({ absolutePaths, base }).map((entry) => ({
-    file: entry.displayPath,
-    exports: entry.exports.map(({ character: _character, position: _position, ...rest }) => rest),
-  }))
-
-const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-
-const getExportConsumers = async ({
-  absolutePaths,
-  base,
-  includeTests = true,
-  query,
-}: {
-  absolutePaths: string[]
-  base: string
-  includeTests?: boolean
-  query?: string
-}): Promise<ExportConsumerEntry[]> => {
-  const publicExports = getPublicExports({ absolutePaths, base })
-  const texts = new Map<string, string>()
-
-  for (const absolutePath of absolutePaths) {
-    texts.set(absolutePath, await Bun.file(absolutePath).text())
-  }
-
-  const results: ExportConsumerEntry[] = []
-  for (const entry of publicExports) {
-    const absolutePath = resolveFilePath(entry.file, base)
-    for (const exported of entry.exports) {
-      if (query && exported.name !== query) continue
-
-      const pattern = new RegExp(`\\b${escapeRegExp(exported.name)}\\b`)
-      const prodRefs = new Set<string>()
-      const testRefs = new Set<string>()
-
-      for (const [candidatePath, text] of texts) {
-        if (candidatePath === absolutePath) continue
-        if (!includeTests && isTestFile(candidatePath)) continue
-        if (!pattern.test(text)) continue
-
-        const displayPath = makeDisplayPath(candidatePath, base)
-        if (isTestFile(candidatePath)) testRefs.add(displayPath)
-        else prodRefs.add(displayPath)
-      }
-
-      results.push({
-        file: entry.file,
-        name: exported.name,
-        kind: exported.kind,
-        line: exported.line,
-        prodRefs: [...prodRefs].sort(),
-        testRefs: [...testRefs].sort(),
-      })
-    }
-  }
-
-  return results
-}
-
-const getCandidateUnusedExports = async ({
-  absolutePaths,
-  base,
-  includeTests = true,
-  query,
-}: {
-  absolutePaths: string[]
-  base: string
-  includeTests?: boolean
-  query?: string
-}): Promise<CandidateUnusedExportEntry[]> => {
-  const inventory = getPublicExportsInventory({ absolutePaths, base })
-  const fileTexts = new Map<string, string>()
-  for (const absolutePath of absolutePaths) {
-    fileTexts.set(absolutePath, await Bun.file(absolutePath).text())
-  }
-
-  const languageServiceHost: ts.LanguageServiceHost = {
-    getCompilationSettings: () => ({
-      allowJs: true,
-      target: ts.ScriptTarget.ESNext,
-      module: ts.ModuleKind.ESNext,
-      moduleResolution: ts.ModuleResolutionKind.Bundler,
-    }),
-    getScriptFileNames: () => absolutePaths,
-    getScriptVersion: () => '1',
-    getScriptSnapshot: (fileName) => {
-      const text = fileTexts.get(fileName)
-      if (text === undefined) return undefined
-      return ts.ScriptSnapshot.fromString(text)
-    },
-    getCurrentDirectory: () => base,
-    getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(options),
-    fileExists: (fileName) => fileTexts.has(fileName) || ts.sys.fileExists(fileName),
-    readFile: (fileName) => fileTexts.get(fileName) ?? ts.sys.readFile(fileName),
-    readDirectory: ts.sys.readDirectory,
-  }
-  const languageService = ts.createLanguageService(languageServiceHost)
-  const candidates: CandidateUnusedExportEntry[] = []
-
-  for (const entry of inventory) {
-    for (const exported of entry.exports) {
-      if (query && exported.name !== query) continue
-
-      const references = languageService.findReferences(entry.absolutePath, exported.position) ?? []
-      const prodRefs = new Set<string>()
-      const testRefs = new Set<string>()
-
-      for (const referenceGroup of references) {
-        for (const reference of referenceGroup.references) {
-          if (reference.isDefinition) continue
-
-          const referencePath = reference.fileName
-          if (referencePath === entry.absolutePath) continue
-
-          const displayPath = makeDisplayPath(referencePath, base)
-          if (isTestFile(referencePath)) testRefs.add(displayPath)
-          else prodRefs.add(displayPath)
-        }
-      }
-
-      if (prodRefs.size > 0) continue
-      if (!includeTests && testRefs.size > 0) continue
-
-      candidates.push({
-        file: entry.displayPath,
-        name: exported.name,
-        kind: exported.kind,
-        line: exported.line,
-        status: testRefs.size > 0 ? 'test_only' : 'unused',
-        prodRefs: [],
-        testRefs: [...testRefs].sort(),
-        verified: true,
-      })
-    }
-  }
-
-  languageService.dispose()
-  return candidates
-}
-
-/**
- * Determine the LSP language ID from a file path extension.
- *
- * @param path - File path with extension
- * @returns LSP language identifier
- *
- * @internal
- */
+/** @internal */
 const getLanguageId = (path: string): string => {
   if (path.endsWith('.tsx')) return 'typescriptreact'
   if (path.endsWith('.ts')) return 'typescript'
@@ -988,244 +368,163 @@ const getLanguageId = (path: string): string => {
   return 'javascript'
 }
 
-/**
- * Flatten hierarchical document symbols into a flat array with dotted names.
- *
- * @remarks
- * Converts nested LSP `DocumentSymbol` responses into a flat list where
- * child symbols are named `Parent.child`. Kind numbers are mapped to
- * human-readable strings.
- *
- * @param symbols - Hierarchical symbol array from documentSymbol response
- * @param prefix - Parent name prefix for nested symbols
- * @returns Flat array of `{ name, kind, line }` entries
- *
- * @internal
- */
-const flattenSymbols = (symbols: SymbolInfo[], prefix = ''): Array<{ name: string; kind: string; line: number }> => {
-  const result: Array<{ name: string; kind: string; line: number }> = []
-  for (const sym of symbols) {
-    result.push({
-      name: prefix ? `${prefix}.${sym.name}` : sym.name,
-      kind: SYMBOL_KIND_NAMES[sym.kind] || `Unknown(${sym.kind})`,
-      line: sym.range.start.line,
-    })
-    if (sym.children) {
-      result.push(...flattenSymbols(sym.children, sym.name))
-    }
-  }
-  return result
-}
-
-export { flattenSymbols, getLanguageId, resolveFilePath }
-
 // ============================================================================
-// Operation Dispatch
+// Schemas
 // ============================================================================
 
-/**
- * Execute a single LSP operation against an open document.
- *
- * @internal
- */
-/**
- * Map file extension to Bun.Transpiler loader for scan().
- *
- * @internal
- */
-const getLoader = (path: string): 'tsx' | 'ts' | 'jsx' | 'js' => {
-  if (path.endsWith('.tsx')) return 'tsx'
-  if (path.endsWith('.ts')) return 'ts'
-  if (path.endsWith('.jsx')) return 'jsx'
-  return 'js'
-}
+/** @public */
+const ExecuteModeSchema = z
+  .object({
+    mode: z.literal('execute').describe('Execute JSON-RPC requests in an LSP session'),
+    file: z.string().min(1).describe('Path to a TypeScript/JavaScript file'),
+    rootDir: z.string().default('.').describe('Workspace root for file:// URI resolution'),
+    requests: z
+      .array(
+        z.object({
+          method: z.string().describe('LSP method name, e.g. textDocument/hover'),
+          params: z.unknown().optional().describe('LSP method params'),
+        }),
+      )
+      .min(1)
+      .describe('JSON-RPC requests to execute in a single session'),
+  })
+  .describe('Execute raw LSP requests against a file in a single server session')
 
-const executeOperation = async (
-  client: LspClient | null,
-  uri: string | null,
-  text: string | null,
-  op: LspOperation,
-  absolutePath: string | null,
-  input: LspInput,
-  rootDir: string,
-): Promise<unknown> => {
-  switch (op.type) {
-    case 'scan': {
-      if (!absolutePath || text === null) {
-        throw new Error('scan requires file')
-      }
-      const transpiler = new Bun.Transpiler({ loader: getLoader(absolutePath) })
-      const result = transpiler.scan(text)
-      return { imports: result.imports, exports: result.exports }
-    }
-    case 'workspace-scan': {
-      const files = resolveWorkspaceFiles({ input, rootDir, includeTests: op.includeTests ?? true })
-      return Promise.all(files.map((filePath) => scanFile(filePath, rootDir)))
-    }
-    case 'public-exports': {
-      const files = resolveWorkspaceFiles({ input, rootDir, includeTests: op.includeTests ?? true })
-      return getPublicExports({ absolutePaths: files, base: rootDir })
-    }
-    case 'export-consumers': {
-      const files = resolveWorkspaceFiles({ input, rootDir, includeTests: true })
-      return getExportConsumers({
-        absolutePaths: files,
-        base: rootDir,
-        includeTests: op.includeTests ?? true,
-        query: op.query,
-      })
-    }
-    case 'candidate-unused-exports': {
-      const files = resolveWorkspaceFiles({ input, rootDir, includeTests: true })
-      return getCandidateUnusedExports({
-        absolutePaths: files,
-        base: rootDir,
-        includeTests: op.includeTests ?? true,
-        query: op.query,
-      })
-    }
-    case 'hover': {
-      if (!client || !uri) {
-        throw new Error('hover requires file')
-      }
-      return client.hover(uri, op.line, op.character)
-    }
-    case 'references': {
-      if (!client || !uri) {
-        throw new Error('references requires file')
-      }
-      const references = await client.references(uri, op.line, op.character)
-      return normalizeUriBearingResult(references, rootDir)
-    }
-    case 'definition': {
-      if (!client || !uri) {
-        throw new Error('definition requires file')
-      }
-      const definition = await client.definition(uri, op.line, op.character)
-      return normalizeUriBearingResult(definition, rootDir)
-    }
-    case 'symbols': {
-      if (!client || !uri) {
-        throw new Error('symbols requires file')
-      }
-      const symbols = (await client.documentSymbols(uri)) as SymbolInfo[]
-      return flattenSymbols(symbols)
-    }
-    case 'exports': {
-      if (!client || !uri || text === null) {
-        throw new Error('exports requires file')
-      }
-      const symbols = (await client.documentSymbols(uri)) as SymbolInfo[]
-      const all = flattenSymbols(symbols)
-      const lines = text.split('\n')
-      return all.filter((sym) => {
-        if (sym.name.includes('.')) return false
-        const line = lines[sym.line]
-        return line?.trimStart().startsWith('export')
-      })
-    }
-    case 'find': {
-      if (!client) {
-        throw new Error('find requires file')
-      }
-      const symbols = await client.workspaceSymbols(op.query)
-      return normalizeUriBearingResult(symbols, rootDir)
-    }
-  }
-}
+/** @public */
+const DiscoverModeSchema = z
+  .object({
+    mode: z.literal('discover').describe('Discover available LSP methods supported by the server'),
+    rootDir: z.string().default('.').describe('Workspace root for file:// URI resolution'),
+  })
+  .describe('Discover LSP server capabilities via initialize handshake')
 
-export {
-  getCandidateUnusedExports,
-  getExportConsumers,
-  getLoader,
-  getPublicExports,
-  isTestFile,
-  resolveWorkspaceFiles,
-  scanFile,
+/** @public */
+const LspInputSchema = z
+  .discriminatedUnion('mode', [ExecuteModeSchema, DiscoverModeSchema])
+  .describe('TypeScript LSP command input')
+
+/** @public */
+const ExecuteOutputSchema = z.object({
+  mode: z.literal('execute'),
+  file: z.string().describe('Relative path to the analyzed file'),
+  results: z
+    .array(
+      z.object({
+        method: z.string().describe('LSP method that was called'),
+        result: z.unknown().optional().describe('Successful response payload'),
+        error: z.string().optional().describe('Error message if the request failed'),
+      }),
+    )
+    .describe('Results array matching input requests order'),
+})
+
+/** @public */
+const DiscoverOutputSchema = z.object({
+  mode: z.literal('discover'),
+  capabilities: z
+    .array(
+      z.object({
+        method: z.string().describe('LSP method name'),
+        capability: z.string().describe('LSP capability flag name (from initialize response)'),
+      }),
+    )
+    .describe('Supported LSP methods from server capabilities'),
+})
+
+/** @public */
+const LspOutputSchema = z
+  .discriminatedUnion('mode', [ExecuteOutputSchema, DiscoverOutputSchema])
+  .describe('TypeScript LSP command output')
+
+export type {
+  /** @public */
+  LspInput,
+  /** @public */
+  LspOutput,
 }
+export { LspInputSchema, LspOutputSchema }
 
 // ============================================================================
-// Library API
+// LspInput / LspOutput types
+// ============================================================================
+
+/** @public */
+type LspInput = z.infer<typeof LspInputSchema>
+
+/** @public */
+type LspOutput = z.infer<typeof LspOutputSchema>
+
+// ============================================================================
+// executeLsp — run requests against a file
 // ============================================================================
 
 /**
- * Execute LSP operations against a TypeScript/JavaScript file.
+ * Execute raw JSON-RPC requests against a TypeScript/JavaScript file.
  *
  * @remarks
  * Starts a `typescript-language-server` subprocess, opens the target file,
- * runs all operations in sequence, then stops the server. Each operation
- * is independent — if one fails, the others still run.
+ * sends each request in sequence, then stops the server. Each request is
+ * independent — if one fails, the others still run.
  *
  * When `ctx` is provided, `workspace` sets the LSP rootUri and `signal`
  * enables abort-based subprocess cancellation via BP interrupt.
  *
- * @param input - File path and operations to perform
+ * @param input - Execute mode input with file and requests
  * @param ctx - Optional execution context for workspace root and abort signal
- * @returns File path and results array matching operations order
+ * @returns File path and results array matching requests order
  *
  * @public
  */
 const executeLsp = async (input: LspInput, ctx?: LspExecutionContext): Promise<LspOutput> => {
+  if (input.mode !== 'execute') {
+    throw new Error('executeLsp requires mode: execute')
+  }
   if (ctx?.signal?.aborted) throw new Error('Aborted')
 
   const workspaceBase = ctx?.workspace ?? process.cwd()
   const rootDir = resolve(workspaceBase, input.rootDir)
-  const needsLsp = input.operations.some(
-    (op) => !['workspace-scan', 'public-exports', 'export-consumers', 'candidate-unused-exports'].includes(op.type),
-  )
-  const primaryFile = needsLsp ? (input.file ?? '.') : (input.files?.[0] ?? input.targets?.[0] ?? '.')
-  const absolutePath = needsLsp && input.file ? resolveFilePath(input.file, rootDir) : null
-  const uri = absolutePath ? `file://${absolutePath}` : null
-  let text: string | null = null
+  const absolutePath = resolveFilePath(input.file, rootDir)
 
-  if (needsLsp && !absolutePath) {
-    throw new Error('file is required for LSP session operations')
+  const file = Bun.file(absolutePath)
+  if (!(await file.exists())) {
+    throw new Error(`File not found: ${absolutePath}`)
   }
+  const text = await file.text()
+  const uri = `file://${absolutePath}`
 
-  if (absolutePath) {
-    const file = Bun.file(absolutePath)
-    if (!(await file.exists())) {
-      throw new Error(`File not found: ${absolutePath}`)
-    }
-    text = await file.text()
-  }
-
-  let client: LspClient | null = null
-  if (needsLsp) {
-    const rootUri = `file://${rootDir}`
-    client = new LspClient({ rootUri })
-  }
+  const rootUri = `file://${rootDir}`
+  const client = new LspClient({ rootUri })
 
   const onAbort = () => {
-    client?.stop().catch(() => {})
+    client.stop().catch(() => {})
   }
   ctx?.signal?.addEventListener('abort', onAbort, { once: true })
 
   try {
-    if (client) {
-      await client.start()
-      client.openDocument(uri!, getLanguageId(absolutePath!), 1, text ?? '')
-    }
+    await client.start()
+    const languageId = getLanguageId(input.file)
+    client.notify('textDocument/didOpen', {
+      textDocument: { uri, languageId, version: 1, text },
+    })
 
-    const results: LspResult[] = []
+    const results: Array<{ method: string; result?: unknown; error?: string }> = []
 
-    for (const op of input.operations) {
+    for (const req of input.requests) {
       try {
-        const data = await executeOperation(client, uri, text, op, absolutePath, input, rootDir)
-        results.push({ type: op.type, data })
+        let data = await client.request(req.method, req.params)
+        data = normalizeUriBearingResult(data, rootDir)
+        results.push({ method: req.method, result: data })
       } catch (error) {
-        results.push({ type: op.type, error: error instanceof Error ? error.message : String(error) })
+        results.push({ method: req.method, error: error instanceof Error ? error.message : String(error) })
       }
     }
 
-    if (client) {
-      client.closeDocument(uri!)
-      await client.stop()
-    }
+    client.notify('textDocument/didClose', { textDocument: { uri } })
+    await client.stop()
 
-    return { file: makeDisplayPath(resolveFilePath(primaryFile, rootDir), rootDir), results }
+    return { mode: 'execute', file: makeDisplayPath(absolutePath, rootDir), results }
   } catch (error) {
-    await client?.stop().catch(() => {})
+    await client.stop().catch(() => {})
     throw error
   } finally {
     ctx?.signal?.removeEventListener('abort', onAbort)
@@ -1234,32 +533,73 @@ const executeLsp = async (input: LspInput, ctx?: LspExecutionContext): Promise<L
 
 export { executeLsp }
 
+// ============================================================================
+// discover — list server capabilities
+// ============================================================================
+
 /**
- * CLI entry point for the TypeScript LSP command.
+ * Discover supported LSP methods by probing the server's initialize handshake.
  *
  * @remarks
- * Uses shared `parseCli` for input parsing and schema discovery.
- * Custom execution handles partial failure exit codes:
- * exit 0 = all operations succeeded, 1 = some operations failed,
- * 2 = bad input or tool error.
+ * Spawns typescript-language-server, performs the initialize handshake,
+ * reads the server capabilities, maps capability flags to LSP method names,
+ * then shuts down.
  *
- * @public
+ * @internal
  */
+const handleDiscover = async (rootDir: string): Promise<LspOutput> => {
+  const rootUri = `file://${resolve(rootDir)}`
+  const client = new LspClient({ rootUri })
+
+  try {
+    await client.start()
+
+    const caps = client.capabilities ?? {}
+    const capabilities = Object.entries(CAPABILITY_TO_METHOD)
+      .filter(([cap]) => Boolean(caps[cap]))
+      .map(([capability, method]) => ({ method, capability }))
+
+    await client.stop()
+
+    return { mode: 'discover', capabilities }
+  } catch (error) {
+    await client.stop().catch(() => {})
+    throw error
+  }
+}
+
+// ============================================================================
+// CLI Entry
+// ============================================================================
+
+/** @public */
 export const lspCli = makeCli({
-  name: TYPESCRIPT_LSP_COMMAND,
+  name: 'typescript-lsp',
   inputSchema: LspInputSchema,
   outputSchema: LspOutputSchema,
   help: [
-    'Type-aware codebase analysis — opens a TS/JS file in typescript-language-server',
-    'and sends one or more JSON-RPC requests in a single session.',
+    'Raw JSON-RPC passthrough over typescript-language-server.',
+    'Two modes via `mode` discriminant:',
     '',
-    'Input:',
-    '  file        Path to TypeScript/JavaScript file',
-    '  cwd         Optional working directory (defaults to .)',
-    '  requests    Array of { method, params? } — raw LSP method calls',
+    '  execute   Open a file and send raw JSON-RPC LSP requests',
+    '  discover  Probe server capabilities and list supported methods',
     '',
-    'Example:',
-    '  plaited typescript-lsp \'{"file":"src/index.ts","requests":[{"method":"textDocument/hover","params":{"position":{"line":5,"character":10}}}]}\'',
+    'Execute mode fields:',
+    '  file      Path to TypeScript/JavaScript file',
+    '  rootDir   Workspace root for URI resolution (default ".")',
+    '  requests  Array of { method, params? } — raw LSP request objects',
+    '',
+    'Discover mode fields:',
+    '  rootDir   Workspace root for URI resolution (default ".")',
+    '',
+    'Examples:',
+    '  plaited typescript-lsp \'{"mode":"execute","file":"src/index.ts","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file://src/index.ts"},"position":{"line":5,"character":10}}}]}\'',
+    '  plaited typescript-lsp \'{"mode":"discover"}\'',
   ].join('\n'),
-  run: async (input) => executeLsp(input as LspInput),
+  run: async (input) => {
+    if (input.mode === 'discover') {
+      return handleDiscover(input.rootDir)
+    }
+    return executeLsp(input)
+  },
 })

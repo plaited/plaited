@@ -1,63 +1,42 @@
 ---
 name: typescript-lsp
-description: Type-aware TypeScript/JavaScript codebase analysis. Provides hover info, references, definitions, symbols, exports, workspace symbol search, and workspace audit operations via a single unified CLI.
+description: Type-aware TypeScript/JavaScript codebase analysis via raw JSON-RPC LSP messages. Provides a generic passthrough over typescript-language-server — supply the method and params, get the server response. Two modes: execute and discover.
 license: ISC
 compatibility: Requires bun and typescript-language-server
 allowed-tools: Bash
-metadata:
-  file-triggers: "*.ts,*.tsx,*.js,*.jsx"
-  plaited:
-    kind: skill
-    origin:
-      kind: first-party
-    capabilities:
-      - id: code.typescript-lsp
-        type: cli
-        lane: private
-        phase: analysis
-        audience: [analyst, coder]
-        actions: [hover, references, definition, symbols, exports, audit]
-        sideEffects: read-only
-        handler:
-          type: cli
-          command: scripts/typescript-lsp.ts
-        source:
-          type: first-party
-      - id: code.semantic-analysis
-        type: workflow
-        lane: private
-        phase: analysis
-        audience: [analyst, coder]
-        actions: [hover, references, definition, symbols, exports, audit]
-        sideEffects: read-only
-        source:
-          type: first-party
 ---
 
 # TypeScript LSP Skill
 
 ## Purpose
 
-Type-aware codebase analysis for TypeScript/JavaScript files. Use over Grep/Glob when you need semantic understanding of symbols, types, imports, exports, references, or a reusable workspace export audit.
+Raw JSON-RPC passthrough over `typescript-language-server`. The CLI manages the server lifecycle (spawn, initialize, open document, send requests, shutdown) while the caller supplies the LSP method and params directly.
+
+Use this when you need semantic understanding of TypeScript/JavaScript code: type info, references, definitions, symbols, or any LSP method supported by the server.
 
 ## When to Use
 
-| Task | Tool |
-|------|------|
-| Find all usages of a function/type | `typescript-lsp` with `references` |
-| Get type signature + TSDoc | `typescript-lsp` with `hover` |
-| Search for a symbol by name | `typescript-lsp` with `find` |
-| List file exports | `typescript-lsp` with `exports` |
-| Scan imports/exports across many files | `typescript-lsp` with `workspace-scan` |
-| Inventory public exports across many files | `typescript-lsp` with `public-exports` |
-| Audit candidate export consumers | `typescript-lsp` with `export-consumers` |
-| Find verified candidate unused exports | `typescript-lsp` with `candidate-unused-exports` |
-| Find files by pattern | Glob |
-| Search text content | Grep |
+| Task | LSP Method |
+|------|-----------|
+| Type signature + TSDoc at position | `textDocument/hover` |
+| Find all references to a symbol | `textDocument/references` |
+| Go to definition of a symbol | `textDocument/definition` |
+| Go to type definition | `textDocument/typeDefinition` |
+| Go to implementation | `textDocument/implementation` |
+| List all symbols in a file | `textDocument/documentSymbol` |
+| Autocomplete at position | `textDocument/completion` |
+| Signature help at position | `textDocument/signatureHelp` |
+| Search workspace by symbol name | `workspace/symbol` |
+| Rename symbol across workspace | `textDocument/rename` |
+| List code actions at position | `textDocument/codeAction` |
+| Format a document | `textDocument/formatting` |
+| Semantic tokens for highlighting | `textDocument/semanticTokens` |
+
+For non-LSP tasks: use **Glob** for file finding, **Grep** for text search.
 
 ## Usage
 
-Single command with JSON input. All operations share one LSP session (one server start).
+Single command with JSON input. Two modes via `mode` discriminant:
 
 ```bash
 plaited typescript-lsp '<json>'
@@ -66,154 +45,160 @@ plaited typescript-lsp --schema input    # JSON Schema for input
 plaited typescript-lsp --schema output   # JSON Schema for output
 ```
 
-## Input Format
+## Modes
+
+### Execute Mode
+
+Open a file and send raw JSON-RPC requests in a single LSP session. The CLI handles `didOpen`/`didClose` lifecycle — you supply the method and params.
 
 ```json
 {
+  "mode": "execute",
   "file": "src/app.ts",
-  "targets": ["src/**/*.ts", "src/**/*.tsx"],
-  "operations": [
-    { "type": "hover", "line": 5, "character": 10 },
-    { "type": "references", "line": 20, "character": 3 },
-    { "type": "definition", "line": 15, "character": 8 },
-    { "type": "symbols" },
-    { "type": "exports" },
-    { "type": "find", "query": "parseConfig" },
-    { "type": "workspace-scan", "includeTests": false },
-    { "type": "public-exports", "includeTests": false },
-    { "type": "export-consumers", "query": "parseConfig", "includeTests": true },
-    { "type": "candidate-unused-exports", "includeTests": true }
+  "rootDir": ".",
+  "requests": [
+    { "method": "textDocument/hover", "params": { "textDocument": { "uri": "file:///abs/path/src/app.ts" }, "position": { "line": 5, "character": 10 } } },
+    { "method": "textDocument/references", "params": { "textDocument": { "uri": "file:///abs/path/src/app.ts" }, "position": { "line": 20, "character": 3 } } }
   ]
 }
 ```
 
 **Fields:**
-- `rootDir` — workspace root for path resolution and relative output paths (defaults to `.`)
-- `ignoreGlobs` — additive ignore globs for workspace operations (`workspace-scan`, `public-exports`, `export-consumers`, `candidate-unused-exports`)
-- `file` — path to TypeScript/JavaScript file (required for `hover`, `references`, `definition`, `symbols`, `exports`, `find`, `scan`)
-- `files` — explicit file list for workspace audit operations
-- `targets` — glob patterns for workspace audit operations
-- `operations` — array of operations to perform in a single session
+- `mode` — must be `"execute"`
+- `file` — path to TypeScript/JavaScript file (required)
+- `rootDir` — workspace root for `file://` URI resolution (defaults to `.`)
+- `requests` — array of raw LSP request objects, each with:
+  - `method` — LSP method name (e.g. `textDocument/hover`, `textDocument/references`)
+  - `params` — method-specific params object (optional; see LSP spec for shape)
 
-**Operation types:**
+**URI construction:** The `params` for methods like `textDocument/hover` require a `textDocument.uri` field. Construct it as `file://<absolute-path-to-file>`. The `file` field is used for the `didOpen` notification; the `params` URIs are what you send.
 
-| Type | Required fields | Description |
-|------|----------------|-------------|
-| `hover` | `line`, `character` | Type info + TSDoc at position |
-| `references` | `line`, `character` | All references to symbol at position |
-| `definition` | `line`, `character` | Go to definition |
-| `symbols` | — | All symbols in the file |
-| `exports` | — | Exported symbols only |
-| `find` | `query` | Search workspace symbols by name |
-| `scan` | — | Fast import/export extraction for one file using `Bun.Transpiler.scan()` |
-| `workspace-scan` | `includeTests?` | Fast import/export extraction across `files` or `targets` |
-| `public-exports` | `includeTests?` | Compiler-backed export inventory across `files` or `targets` |
-| `export-consumers` | `query?`, `includeTests?` | Candidate consumer audit for exported symbols across `files` or `targets` |
-| `candidate-unused-exports` | `query?`, `includeTests?` | TypeScript-verified unused export audit with `unused` vs `test_only` status |
+**Response normalization:** Results that contain `uri` or `targetUri` fields are augmented with relative `path`/`targetPath` fields for agent consumption. The original URIs are preserved.
 
-Positions are 0-indexed.
+### Discover Mode
 
-## Output Format
-
-JSON to stdout. Each result corresponds to the input operation at the same index.
+Probe the server's capabilities and return a list of supported LSP methods. No file required.
 
 ```json
 {
+  "mode": "discover",
+  "rootDir": "."
+}
+```
+
+**Fields:**
+- `mode` — must be `"discover"`
+- `rootDir` — workspace root for `file://` URI resolution (defaults to `.`)
+
+## Output Format
+
+### Execute output
+
+```json
+{
+  "mode": "execute",
   "file": "src/app.ts",
   "results": [
     {
-      "type": "hover",
-      "data": {
+      "method": "textDocument/hover",
+      "result": {
         "contents": { "kind": "markdown", "value": "```typescript\nconst x: number\n```" },
         "range": { "start": { "line": 5, "character": 6 }, "end": { "line": 5, "character": 7 } }
       }
     },
     {
-      "type": "exports",
-      "data": [
-        { "name": "parseConfig", "kind": "Function", "line": 10 },
-        { "name": "Config", "kind": "Variable", "line": 3 }
-      ]
-    },
-    {
-      "type": "hover",
-      "error": "hover requires line and character"
+      "method": "textDocument/references",
+      "error": "Failed to find references: position out of range"
     }
   ]
 }
 ```
 
-Failed operations include an `error` field instead of `data`. Other operations still run.
+Each result corresponds to the request at the same index. Failed requests include an `error` field instead of `result`. Other requests still run.
+
+### Discover output
+
+```json
+{
+  "mode": "discover",
+  "capabilities": [
+    { "method": "textDocument/hover", "capability": "hoverProvider" },
+    { "method": "textDocument/references", "capability": "referencesProvider" },
+    { "method": "textDocument/definition", "capability": "definitionProvider" },
+    { "method": "textDocument/documentSymbol", "capability": "documentSymbolProvider" },
+    { "method": "workspace/symbol", "capability": "workspaceSymbolProvider" }
+  ]
+}
+```
+
+The capabilities array reflects the actual server response — it is not a hardcoded list.
 
 ## Common Workflows
 
-### Understand a file
+### Get type info at position
 
 ```bash
-plaited typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "exports"}]}'
-```
-
-### Check type before using an API
-
-```bash
-plaited typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "hover", "line": 42, "character": 10}]}'
+plaited typescript-lsp '{"mode":"execute","file":"src/utils/parser.ts","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file:///home/user/project/src/utils/parser.ts"},"position":{"line":42,"character":10}}}]}'
 ```
 
 ### Find all references before refactoring
 
 ```bash
-plaited typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "references", "line": 42, "character": 10}]}'
+plaited typescript-lsp '{"mode":"execute","file":"src/utils/parser.ts","requests":[{"method":"textDocument/references","params":{"textDocument":{"uri":"file:///home/user/project/src/utils/parser.ts"},"position":{"line":42,"character":10}}}]}'
 ```
 
-### Batch: exports + hover + references in one session
+### Batch: hover + references + symbols in one session
 
 ```bash
-plaited typescript-lsp '{"file": "src/utils/parser.ts", "operations": [{"type": "exports"}, {"type": "hover", "line": 10, "character": 13}, {"type": "references", "line": 10, "character": 13}]}'
+plaited typescript-lsp '{"mode":"execute","file":"src/utils/parser.ts","requests":[
+  {"method":"textDocument/hover","params":{"textDocument":{"uri":"file:///home/user/project/src/utils/parser.ts"},"position":{"line":10,"character":13}}},
+  {"method":"textDocument/references","params":{"textDocument":{"uri":"file:///home/user/project/src/utils/parser.ts"},"position":{"line":10,"character":13}}},
+  {"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file:///home/user/project/src/utils/parser.ts"}}}
+]}'
 ```
 
-### Search workspace for a symbol
+### Go to definition
 
 ```bash
-plaited typescript-lsp '{"file": "src/app.ts", "operations": [{"type": "find", "query": "parseConfig"}]}'
+plaited typescript-lsp '{"mode":"execute","file":"src/utils/parser.ts","requests":[{"method":"textDocument/definition","params":{"textDocument":{"uri":"file:///home/user/project/src/utils/parser.ts"},"position":{"line":15,"character":8}}}]}'
 ```
 
-### Scan imports and runtime exports across many files
+### Search workspace for a symbol by name
 
 ```bash
-plaited typescript-lsp '{"file": "src/main.ts", "targets": ["src/**/*.ts", "src/**/*.tsx"], "operations": [{"type": "workspace-scan", "includeTests": false}]}'
+plaited typescript-lsp '{"mode":"execute","file":"src/app.ts","requests":[{"method":"workspace/symbol","params":{"query":"parseConfig"}}]}'
 ```
 
-### Inventory public exports across many files
+### List all symbols in a file
 
 ```bash
-plaited typescript-lsp '{"file": "src/main.ts", "targets": ["src/**/*.ts", "src/**/*.tsx"], "operations": [{"type": "public-exports", "includeTests": false}]}'
+plaited typescript-lsp '{"mode":"execute","file":"src/utils/parser.ts","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file:///home/user/project/src/utils/parser.ts"}}}]}'
 ```
 
-### Audit candidate export consumers
+### Discover server capabilities
 
 ```bash
-plaited typescript-lsp '{"file": "src/main.ts", "targets": ["src/agent/**/*.ts"], "operations": [{"type": "export-consumers", "query": "Module", "includeTests": true}]}'
+plaited typescript-lsp '{"mode":"discover"}'
 ```
 
-### Find verified candidate unused exports
-
-```bash
-plaited typescript-lsp '{"file": "src/main.ts", "targets": ["src/agent/**/*.ts"], "operations": [{"type": "candidate-unused-exports", "includeTests": true}]}'
-```
+Use this first if you are unsure which methods the installed `typescript-language-server` supports.
 
 ## Notes
 
-- `workspace-scan` is fast and uses `Bun.Transpiler.scan()`. It is best for import/export indexing, not semantic reference truth.
-- `public-exports` uses the TypeScript compiler API, so it includes type-only exports that `scan()` does not report.
-- `export-consumers` is a candidate audit. It classifies matching symbol mentions into production and test files, but it is not a full LSP find-references replacement.
-- `candidate-unused-exports` stays JSON-first for agent consumers. It verifies references over the provided `files` or `targets` set and does not add `summary` or `table` output modes.
+- All positions are 0-indexed (line 0 = first line, character 0 = first column).
+- The `didOpen`/`didClose` lifecycle is managed automatically. You do not send these notifications.
+- The `initialize` handshake is managed automatically. You do not send this request.
+- Responses with `uri`/`targetUri` fields get augmented with relative `path`/`targetPath` fields for convenience. The original URIs remain unchanged.
+- For a complete reference of LSP method names and their parameter shapes, consult the [LSP Specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/).
+- Use `plaited typescript-lsp --schema input` to see the exact JSON Schema of accepted input.
 
 ## Exit Codes
 
-- `0` — all operations succeeded
-- `1` — one or more operations failed (partial results returned)
+- `0` — all requests succeeded
+- `1` — one or more requests failed (partial results returned)
 - `2` — bad input or tool error
 
 ## Related Skills
 
 - **code-documentation** — TSDoc standards for documentation
+- **typescript-lsp** (this skill) — use `discover` mode first to confirm available methods
