@@ -4,7 +4,7 @@ import { WORKER_COMMAND_TYPES, WORKER_MESSAGE_TYPES } from './worker.constants.t
 export const ExecCommandSchema = z.object({
   type: z.literal(WORKER_COMMAND_TYPES.exec),
   detail: z.object({
-    id: z.string(),
+    topic: z.string(),
     cwd: z.string(),
     runtime: z.enum(['plaited', 'bun']),
     target: z.string(),
@@ -17,7 +17,7 @@ export type ExecCommand = z.infer<typeof ExecCommandSchema>
 export const ExecMessageSchema = z.object({
   type: z.literal(WORKER_MESSAGE_TYPES.exec_result),
   detail: z.object({
-    id: z.string(),
+    topic: z.string(),
     result: z.unknown(),
     durationMs: z.number(),
   }),
@@ -28,7 +28,7 @@ export type ExecMessage = z.infer<typeof ExecMessageSchema>
 export const ReadCommandSchema = z.object({
   type: z.literal(WORKER_COMMAND_TYPES.read),
   detail: z.object({
-    id: z.string(),
+    topic: z.string(),
     cwd: z.string(),
     path: z.string(),
     encoding: z.enum(['utf8', 'bytes']).optional().default('utf8'),
@@ -41,7 +41,7 @@ export type ReadCommand = z.infer<typeof ReadCommandSchema>
 export const ReadMessageSchema = z.object({
   type: z.literal(WORKER_MESSAGE_TYPES.read_result),
   detail: z.object({
-    id: z.string(),
+    topic: z.string(),
     cwd: z.string(),
     path: z.string(),
     encoding: z.enum(['utf8', 'bytes']),
@@ -56,7 +56,7 @@ export type ReadMessage = z.infer<typeof ReadMessageSchema>
 export const WriteCommandSchema = z.object({
   type: z.literal(WORKER_COMMAND_TYPES.write),
   detail: z.object({
-    id: z.string(),
+    topic: z.string(),
     cwd: z.string(),
     path: z.string(),
     content: z.string(),
@@ -69,7 +69,7 @@ export type WriteCommand = z.infer<typeof WriteCommandSchema>
 export const WriteMessageSchema = z.object({
   type: z.literal(WORKER_MESSAGE_TYPES.write_result),
   detail: z.object({
-    id: z.string(),
+    topic: z.string(),
     cwd: z.string(),
     path: z.string(),
     encoding: z.enum(['utf8', 'base64']),

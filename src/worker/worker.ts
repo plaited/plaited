@@ -16,7 +16,7 @@ const postMessageToHost = (message: WorkerMessage) => {
   self.postMessage(message)
 }
 
-const handleExec = async ({ id, cwd, runtime, target, json }: ExecCommand['detail']) => {
+const handleExec = async ({ topic, cwd, runtime, target, json }: ExecCommand['detail']) => {
   const startedAt = Date.now()
 
   const shellCmd = runtime === 'plaited' ? $`plaited ${target} '${json}'`.cwd(cwd) : $`bun ${target} '${json}'`.cwd(cwd)
@@ -25,11 +25,11 @@ const handleExec = async ({ id, cwd, runtime, target, json }: ExecCommand['detai
 
   postMessageToHost({
     type: WORKER_MESSAGE_TYPES.exec_result,
-    detail: { id, result, durationMs: Date.now() - startedAt },
+    detail: { topic, result, durationMs: Date.now() - startedAt },
   })
 }
 
-const handleRead = async ({ id, path, encoding, maxBytes, cwd }: ReadCommand['detail']) => {
+const handleRead = async ({ topic, path, encoding, maxBytes, cwd }: ReadCommand['detail']) => {
   const target = resolveRelativePath({ cwd, path })
   const file = Bun.file(target)
 
@@ -46,7 +46,7 @@ const handleRead = async ({ id, path, encoding, maxBytes, cwd }: ReadCommand['de
   postMessageToHost({
     type: WORKER_MESSAGE_TYPES.read_result,
     detail: {
-      id,
+      topic,
       cwd,
       path,
       encoding,
@@ -57,7 +57,7 @@ const handleRead = async ({ id, path, encoding, maxBytes, cwd }: ReadCommand['de
   })
 }
 
-const handleWrite = async ({ id, path, content, encoding, cwd }: WriteCommand['detail']) => {
+const handleWrite = async ({ topic, path, content, encoding, cwd }: WriteCommand['detail']) => {
   const root = resolve(cwd)
   const target = resolveRelativePath({ cwd, path })
   const parent = dirname(target)
@@ -69,7 +69,7 @@ const handleWrite = async ({ id, path, content, encoding, cwd }: WriteCommand['d
   postMessageToHost({
     type: WORKER_MESSAGE_TYPES.write_result,
     detail: {
-      id,
+      topic,
       cwd,
       path,
       encoding,
