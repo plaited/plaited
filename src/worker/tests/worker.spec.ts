@@ -5,11 +5,11 @@ import { join } from 'node:path'
 
 import { WORKER_COMMAND_TYPES, WORKER_MESSAGE_TYPES } from '../worker.constants.ts'
 import {
+  type ExecMessage,
+  ExecMessageSchema,
   type ReadMessage,
   ReadMessageSchema,
   type RuntimeErrorMessage,
-  type ShellMessage,
-  ShellMessageSchema,
   type WorkerMessage,
   WorkerMessageSchema,
   type WriteMessage,
@@ -48,10 +48,10 @@ const waitForWorkerMessage = <T extends WorkerMessage>({
     worker.addEventListener('message', onMessage)
   })
 
-const isShellResultMessageForId =
+const isExecResultMessageForId =
   (id: string) =>
-  (message: WorkerMessage): message is ShellMessage =>
-    message.type === WORKER_MESSAGE_TYPES.shell_result && message.detail.id === id
+  (message: WorkerMessage): message is ExecMessage =>
+    message.type === WORKER_MESSAGE_TYPES.exec_result && message.detail.id === id
 
 const isReadResultMessageForId =
   (id: string) =>
@@ -66,51 +66,43 @@ const isWriteResultMessageForId =
 const isRuntimeErrorMessage = (message: WorkerMessage): message is RuntimeErrorMessage =>
   message.type === WORKER_MESSAGE_TYPES.runtime_error
 
-const shellEmitScript = ({ stdout, stderr }: { stdout: string; stderr: string }) =>
-  `process.stdout.write(${JSON.stringify(stdout)});process.stderr.write(${JSON.stringify(stderr)});`
-
 describe('worker runtime messages', () => {
-  test('emits shell result messages with byte-budget truncation for stdout/stderr', async () => {
+  test('executes a bun script that outputs JSON and returns the parsed result', async () => {
     const worker = new Worker(new URL('../worker.ts', import.meta.url).href, { type: 'module' })
-    const cwd = process.cwd()
+    const cwd = await mkdtemp(join(tmpdir(), 'worker-exec-'))
 
     try {
-      const stdoutText = 'ABCDEFGHIJ'
-      const stderrText = 'klmnopqrstuv'
-      const maxOutputBytes = 9
-      const stdoutBudget = Math.floor(maxOutputBytes / 2)
-      const stderrBudget = maxOutputBytes - stdoutBudget
+      const scriptPath = join(cwd, 'greet.ts')
+      await Bun.write(
+        scriptPath,
+        `const input = JSON.parse(process.argv[2]);
+console.log(JSON.stringify({ greeting: \`Hello, \${input.name}!\` }));`,
+      )
 
-      const waitForShell = waitForWorkerMessage({
+      const waitForExec = waitForWorkerMessage({
         worker,
-        predicate: isShellResultMessageForId('shell-1'),
+        predicate: isExecResultMessageForId('exec-1'),
       })
 
       worker.postMessage({
-        type: WORKER_COMMAND_TYPES.shell,
+        type: WORKER_COMMAND_TYPES.exec,
         detail: {
-          id: 'shell-1',
+          id: 'exec-1',
           cwd,
-          command: [process.execPath, '-e', shellEmitScript({ stdout: stdoutText, stderr: stderrText })],
-          maxOutputBytes,
+          runtime: 'bun',
+          target: scriptPath,
+          json: JSON.stringify({ name: 'World' }),
         },
       })
 
-      const shellmessage = await waitForShell
-      const { detail } = ShellMessageSchema.parse(shellmessage)
+      const execMessage = await waitForExec
+      const { detail } = ExecMessageSchema.parse(execMessage)
 
-      expect(detail.exitCode).toBe(0)
-      expect(detail.stdoutBytes).toBe(encoder.encode(stdoutText).length)
-      expect(detail.stderrBytes).toBe(encoder.encode(stderrText).length)
-      expect(detail.stdoutTruncated).toBe(true)
-      expect(detail.stderrTruncated).toBe(true)
-      expect(detail.stdout).toBe(stdoutText.slice(0, stdoutBudget))
-      expect(detail.stderr).toBe(stderrText.slice(0, stderrBudget))
-      expect(encoder.encode(detail.stdout).length).toBe(stdoutBudget)
-      expect(encoder.encode(detail.stderr).length).toBe(stderrBudget)
-      expect(detail.timedOut).toBe(false)
+      expect(detail.result).toEqual({ greeting: 'Hello, World!' })
+      expect(typeof detail.durationMs).toBe('number')
     } finally {
       worker.terminate()
+      await rm(cwd, { recursive: true, force: true })
     }
   })
 

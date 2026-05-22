@@ -1,13 +1,12 @@
 import { mkdir } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
-
-import { limitTextBytes } from './limit-text-bytes.ts'
+import { $ } from 'bun'
 
 import { resolveRelativePath } from './resolve-relative-path.ts'
 import { WORKER_COMMAND_TYPES, WORKER_MESSAGE_TYPES } from './worker.constants.ts'
 import {
+  type ExecCommand,
   type ReadCommand,
-  type ShellCommand,
   WorkerCommandSchema,
   type WorkerMessage,
   type WriteCommand,
@@ -17,47 +16,16 @@ const postMessageToHost = (message: WorkerMessage) => {
   self.postMessage(message)
 }
 
-const handleShell = async ({ cwd, command, id, timeoutMs, maxOutputBytes = 256_000 }: ShellCommand['detail']) => {
+const handleExec = async ({ id, cwd, runtime, target, json }: ExecCommand['detail']) => {
   const startedAt = Date.now()
 
-  const controller = new AbortController()
-  const timeout = timeoutMs && setTimeout(() => controller.abort(), timeoutMs)
+  const shellCmd = runtime === 'plaited' ? $`plaited ${target} '${json}'`.cwd(cwd) : $`bun ${target} '${json}'`.cwd(cwd)
 
-  const proc = Bun.spawn(command, {
-    cwd,
-    stdout: 'pipe',
-    stderr: 'pipe',
-    signal: controller.signal,
-  })
-
-  const [stdout, stderr, exitCode] = await Promise.all([
-    new Response(proc.stdout).text(),
-    new Response(proc.stderr).text(),
-    proc.exited,
-  ])
-
-  timeout && clearTimeout(timeout)
-
-  const stdoutResult = limitTextBytes(stdout, Math.floor(maxOutputBytes / 2))
-  const stderrResult = limitTextBytes(stderr, maxOutputBytes - Math.floor(maxOutputBytes / 2))
+  const result = await shellCmd.json()
 
   postMessageToHost({
-    type: WORKER_MESSAGE_TYPES.shell_result,
-    detail: {
-      id,
-      exitCode,
-      signalCode: null,
-      stdout: stdoutResult.text,
-      stderr: stderrResult.text,
-      stdoutBytes: stdoutResult.originalBytes,
-      stderrBytes: stderrResult.originalBytes,
-      stdoutTruncated: stdoutResult.truncated,
-      stderrTruncated: stderrResult.truncated,
-      stdoutPath: null,
-      stderrPath: null,
-      durationMs: Date.now() - startedAt,
-      timedOut: false,
-    },
+    type: WORKER_MESSAGE_TYPES.exec_result,
+    detail: { id, result, durationMs: Date.now() - startedAt },
   })
 }
 
@@ -113,8 +81,8 @@ const handleWrite = async ({ id, path, content, encoding, cwd }: WriteCommand['d
 const dispatchWorkerEvent = async (raw: unknown) => {
   try {
     const { type, detail } = WorkerCommandSchema.parse(raw)
-    type === WORKER_COMMAND_TYPES.shell
-      ? await handleShell(detail)
+    type === WORKER_COMMAND_TYPES.exec
+      ? await handleExec(detail)
       : type === WORKER_COMMAND_TYPES.read
         ? await handleRead(detail)
         : await handleWrite(detail)

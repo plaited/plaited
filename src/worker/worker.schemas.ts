@@ -1,39 +1,29 @@
 import * as z from 'zod'
 import { WORKER_COMMAND_TYPES, WORKER_MESSAGE_TYPES } from './worker.constants.ts'
 
-export const ShellCommandSchema = z.object({
-  type: z.literal(WORKER_COMMAND_TYPES.shell),
+export const ExecCommandSchema = z.object({
+  type: z.literal(WORKER_COMMAND_TYPES.exec),
   detail: z.object({
     id: z.string(),
-    command: z.array(z.string()),
     cwd: z.string(),
-    timeoutMs: z.number().optional(),
-    maxOutputBytes: z.number().optional(),
+    runtime: z.enum(['plaited', 'bun']),
+    target: z.string(),
+    json: z.string(),
   }),
 })
 
-export type ShellCommand = z.infer<typeof ShellCommandSchema>
+export type ExecCommand = z.infer<typeof ExecCommandSchema>
 
-export const ShellMessageSchema = z.object({
-  type: z.literal(WORKER_MESSAGE_TYPES.shell_result),
+export const ExecMessageSchema = z.object({
+  type: z.literal(WORKER_MESSAGE_TYPES.exec_result),
   detail: z.object({
     id: z.string(),
-    exitCode: z.number().int().nullable(),
-    signalCode: z.string().nullable(),
-    stdout: z.string(),
-    stderr: z.string(),
-    stdoutBytes: z.number().int(),
-    stderrBytes: z.number().int(),
-    stdoutTruncated: z.boolean(),
-    stderrTruncated: z.boolean(),
-    stdoutPath: z.string().nullable(),
-    stderrPath: z.string().nullable(),
+    result: z.unknown(),
     durationMs: z.number(),
-    timedOut: z.boolean(),
   }),
 })
 
-export type ShellMessage = z.infer<typeof ShellMessageSchema>
+export type ExecMessage = z.infer<typeof ExecMessageSchema>
 
 export const ReadCommandSchema = z.object({
   type: z.literal(WORKER_COMMAND_TYPES.read),
@@ -99,7 +89,7 @@ export const RuntimeErrorMessageSchema = z.object({
 export type RuntimeErrorMessage = z.infer<typeof RuntimeErrorMessageSchema>
 
 export const WorkerMessageSchema = z.discriminatedUnion('type', [
-  ShellMessageSchema,
+  ExecMessageSchema,
   ReadMessageSchema,
   WriteMessageSchema,
   RuntimeErrorMessageSchema,
@@ -108,7 +98,7 @@ export const WorkerMessageSchema = z.discriminatedUnion('type', [
 export type WorkerMessage = z.infer<typeof WorkerMessageSchema>
 
 export const WorkerCommandSchema = z.discriminatedUnion('type', [
-  ShellCommandSchema,
+  ExecCommandSchema,
   ReadCommandSchema,
   WriteCommandSchema,
 ])
