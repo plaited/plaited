@@ -1,6 +1,11 @@
 ---
 name: code-documentation
-description: TSDoc standards for TypeScript/JavaScript code. Automatically invoked when writing, reviewing, or editing any TSDoc comments, code documentation, or API documentation. (project)
+description: >
+  TSDoc conventions for TypeScript/JavaScript source files. Invoke when
+  writing or modifying any .ts/.tsx source file to apply TSDoc standards to
+  exported declarations (functions, types, modules, interfaces). Also covers
+  audit coverage via plaited code-documentation CLI and provides reference
+  templates for public APIs, internal modules, and complex types.
 license: ISC
 compatibility: Requires `plaited` CLI
 allowed-tools: Bash
