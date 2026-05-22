@@ -219,16 +219,15 @@ export const parseCli = async <TSchema extends z.ZodType>(
  *
  * @public
  */
-export const makeCli =
-  <TInputSchema extends z.ZodType, TOutput>({
-    name,
-    inputSchema,
-    outputSchema,
-    help,
-    run,
-    renderHuman,
-  }: CliHandlerConfig<TInputSchema, TOutput>) =>
-  async (args: string[]): Promise<void> => {
+export const makeCli = <TInputSchema extends z.ZodType, TOutput>({
+  name,
+  inputSchema,
+  outputSchema,
+  help,
+  run,
+  renderHuman,
+}: CliHandlerConfig<TInputSchema, TOutput>) => ({
+  [name]: async (args: string[]): Promise<void> => {
     const { input, flags } = await parseCliRequest(args, inputSchema, {
       name,
       outputSchema,
@@ -280,7 +279,8 @@ export const makeCli =
     }
 
     console.log(JSON.stringify(output, null, 2))
-  }
+  },
+})
 
 export const makeCliRouter =
   ({ name, description, commands }: CliRouterConfig) =>

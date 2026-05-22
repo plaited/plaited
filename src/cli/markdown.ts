@@ -2,6 +2,8 @@ import { normalize, resolve } from 'node:path'
 import { YAML } from 'bun'
 import * as z from 'zod'
 
+import { makeCli } from './cli.ts'
+
 type ParsedFrontmatterBlock = {
   frontmatter: string
   bodyStartIndex: number
@@ -77,7 +79,7 @@ const parseFrontmatterBlock = (markdown: string): ParsedFrontmatterBlock | null 
  *
  * @public
  */
-export const consumeHtmlRewriteResult = async (result: string | Response | Blob | ArrayBufferLike): Promise<void> => {
+const consumeHtmlRewriteResult = async (result: string | Response | Blob | ArrayBufferLike): Promise<void> => {
   if (typeof result === 'string') return
   if (result instanceof Response) {
     await result.text()
@@ -101,7 +103,7 @@ export const consumeHtmlRewriteResult = async (result: string | Response | Blob 
  *
  * @public
  */
-export const parseMarkdownWithFrontmatter = <TSchema extends z.ZodType>(
+const parseMarkdownWithFrontmatter = <TSchema extends z.ZodType>(
   markdown: string,
   schema: TSchema,
   options?: {
@@ -134,7 +136,7 @@ export const parseMarkdownWithFrontmatter = <TSchema extends z.ZodType>(
  *
  * @public
  */
-export const normalizeMarkdownLink = (value: string): string | null => {
+const normalizeMarkdownLink = (value: string): string | null => {
   if (
     !value ||
     value.startsWith('http://') ||
@@ -188,12 +190,12 @@ const MarkdownLinksFromTextInputSchema = z
   })
   .strict()
 
-export const MarkdownLinksInputSchema = z.union([MarkdownLinksFromPathInputSchema, MarkdownLinksFromTextInputSchema])
+const MarkdownLinksInputSchema = z.union([MarkdownLinksFromPathInputSchema, MarkdownLinksFromTextInputSchema])
 
 /** @public */
 export type MarkdownLinksInput = z.infer<typeof MarkdownLinksInputSchema>
 
-export const MarkdownLinksOutputSchema = z.array(
+const MarkdownLinksOutputSchema = z.array(
   z.object({
     value: z.string().min(1),
     text: z.string().min(1),
@@ -401,7 +403,7 @@ const extractLocalLinkTextByTarget = (markdownBody: string): Map<string, string>
  *
  * @public
  */
-export const extractLocalLinksFromMarkdown = async (markdownBody: string): Promise<LocalMarkdownLink[]> => {
+const extractLocalLinksFromMarkdown = async (markdownBody: string): Promise<LocalMarkdownLink[]> => {
   const links = new Set<string>()
   const html = Bun.markdown.html(markdownBody)
   const rewriter = new HTMLRewriter()
@@ -427,26 +429,6 @@ export const extractLocalLinksFromMarkdown = async (markdownBody: string): Promi
   }))
 }
 
-const readMarkdownLinksSource = async (input: MarkdownLinksInput): Promise<string> => {
-  if ('markdown' in input) return input.markdown
-
-  const file = Bun.file(input.path)
-  if (!(await file.exists())) {
-    throw new Error(`Markdown file not found: ${input.path}`)
-  }
-  return file.text()
-}
-
-/**
- * Extracts local markdown links from either file path or raw markdown text.
- *
- * @public
- */
-export const markdownLinks = async (input: MarkdownLinksInput): Promise<MarkdownLinksOutput> => {
-  const markdown = await readMarkdownLinksSource(input)
-  return extractLocalLinksFromMarkdown(markdown)
-}
-
 /**
  * Validates local markdown links by resolving each link target relative to a base directory.
  *
@@ -455,7 +437,7 @@ export const markdownLinks = async (input: MarkdownLinksInput): Promise<Markdown
  *
  * @public
  */
-export const validateMarkdownLocalLinks = async ({
+const validateMarkdownLocalLinks = async ({
   baseDir,
   markdownBody,
 }: {
@@ -489,3 +471,113 @@ export const validateMarkdownLocalLinks = async ({
     missing: new Set([...missing.values()].sort(sortLocalMarkdownLinks)),
   }
 }
+
+const LinksResultSchema = z.array(
+  z.object({
+    value: z.string().min(1),
+    text: z.string().min(1),
+  }),
+)
+
+const ValidateResultSchema = z.object({
+  present: LinksResultSchema,
+  missing: LinksResultSchema,
+})
+
+const FrontmatterResultSchema = z.object({
+  frontmatter: z.record(z.string(), z.unknown()).nullable(),
+  body: z.string().nullable(),
+})
+
+const MarkdownCliInputSchema = z.discriminatedUnion('mode', [
+  z.object({
+    mode: z.literal('extract-links'),
+    markdown: z.string().min(1),
+  }),
+  z.object({
+    mode: z.literal('validate-links'),
+    directory: z.string().min(1),
+    markdownBody: z.string().min(1),
+  }),
+  z.object({
+    mode: z.literal('frontmatter'),
+    markdown: z.string().min(1),
+  }),
+])
+
+const MarkdownCliOutputSchema = z.discriminatedUnion('mode', [
+  z.object({
+    mode: z.literal('extract-links'),
+    result: LinksResultSchema,
+  }),
+  z.object({
+    mode: z.literal('validate-links'),
+    result: ValidateResultSchema,
+  }),
+  z.object({
+    mode: z.literal('frontmatter'),
+    result: FrontmatterResultSchema,
+  }),
+])
+
+const run = async (input: unknown): Promise<z.infer<typeof MarkdownCliOutputSchema>> => {
+  const parsed = MarkdownCliInputSchema.parse(input)
+
+  switch (parsed.mode) {
+    case 'extract-links':
+      return {
+        mode: 'extract-links',
+        result: await extractLocalLinksFromMarkdown(parsed.markdown),
+      }
+    case 'validate-links': {
+      const linkResult = await validateMarkdownLocalLinks({
+        baseDir: parsed.directory,
+        markdownBody: parsed.markdownBody,
+      })
+      return {
+        mode: 'validate-links',
+        result: {
+          present: [...linkResult.present],
+          missing: [...linkResult.missing],
+        },
+      }
+    }
+    case 'frontmatter': {
+      try {
+        const parsedFm = parseMarkdownWithFrontmatter(parsed.markdown, z.record(z.string(), z.unknown()), {
+          requireBody: false,
+        })
+        return {
+          mode: 'frontmatter',
+          result: {
+            frontmatter: parsedFm.frontmatter,
+            body: parsedFm.body || null,
+          },
+        }
+      } catch {
+        return {
+          mode: 'frontmatter',
+          result: {
+            frontmatter: null,
+            body: parsed.markdown,
+          },
+        }
+      }
+    }
+  }
+}
+
+export const markdownCli = makeCli({
+  name: 'markdown',
+  inputSchema: MarkdownCliInputSchema,
+  outputSchema: MarkdownCliOutputSchema,
+  help: [
+    'Extract, validate, and parse links and frontmatter from markdown content.',
+    '',
+    'Modes:',
+    '  extract-links   Extract local file references from markdown text.',
+    '  validate-links  Check that local markdown links resolve to files.',
+    '  frontmatter     Parse YAML frontmatter from markdown text.',
+  ].join('\n'),
+  run,
+})

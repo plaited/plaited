@@ -161,7 +161,7 @@ describe('makeCli', () => {
           outputSchema: z.object({ echoed: z.string() }),
           run: async (input) => ({ echoed: input.value }),
         });
-        await cli(['{"value":"hi"}'])`,
+        await cli.test(['{"value":"hi"}'])`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -182,7 +182,7 @@ describe('makeCli', () => {
           inputSchema: z.object({ value: z.string() }),
           run: async () => { throw new Error('should not run') },
         });
-        await cli(['{"value":"hi"}', '--dry-run'])`,
+        await cli.test(['{"value":"hi"}', '--dry-run'])`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -209,7 +209,7 @@ describe('makeCli', () => {
           run: async (input) => ({ echoed: input.value }),
           renderHuman: ({ output }) => \`echoed=\${output.echoed}\`,
         });
-        await cli(['{"value":"hi"}', '--human'])`,
+        await cli.test(['{"value":"hi"}', '--human'])`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -231,7 +231,7 @@ describe('makeCli', () => {
           outputSchema: z.object({ echoed: z.string() }),
           run: async (input) => ({ echoed: input.value }),
         });
-        await cli(['{"value":"hi"}', '--human'])`,
+        await cli.test(['{"value":"hi"}', '--human'])`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -252,7 +252,7 @@ describe('makeCli', () => {
           inputSchema: z.object({ value: z.string() }),
           run: async (input) => input,
         });
-        await cli(['--schema', 'input'])`,
+        await cli.test(['--schema', 'input'])`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -273,7 +273,7 @@ describe('makeCli', () => {
           inputSchema: z.object({ value: z.string() }),
           run: async (input) => input,
         });
-        await cli(['--help'])`,
+        await cli.test(['--help'])`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )

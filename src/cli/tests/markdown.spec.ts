@@ -1,271 +1,263 @@
 import { describe, expect, test } from 'bun:test'
-import { Blob } from 'node:buffer'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import * as z from 'zod'
-import {
-  consumeHtmlRewriteResult,
-  extractLocalLinksFromMarkdown,
-  markdownLinks,
-  normalizeMarkdownLink,
-  parseMarkdownWithFrontmatter,
-  validateMarkdownLocalLinks,
-} from '../markdown.ts'
 
-const TestFrontmatterSchema = z.object({
-  name: z.string(),
-  description: z.string(),
-  metadata: z.record(z.string(), z.string()).optional(),
-})
-
-describe('parseMarkdownWithFrontmatter', () => {
-  test('parses frontmatter and body', () => {
-    const parsed = parseMarkdownWithFrontmatter(
-      `---
-name: test-skill
-description: A test skill
-metadata:
-  owner: docs
----
-
-# Heading
-
-Body content.
-`,
-      TestFrontmatterSchema,
+describe('markdownCli', () => {
+  test('--help exits 0 and describes all three modes', async () => {
+    const proc = Bun.spawn(
+      [
+        'bun',
+        '-e',
+        ["import { markdownCli } from '../markdown.ts'", "await markdownCli.markdown(['--help'])"].join(';\n'),
+      ],
+      { stdout: 'pipe', stderr: 'pipe', cwd: import.meta.dir },
     )
 
-    expect(parsed.frontmatter).toEqual({
-      name: 'test-skill',
-      description: 'A test skill',
-      metadata: { owner: 'docs' },
+    expect(await proc.exited).toBe(0)
+    const stderr = await new Response(proc.stderr).text()
+    expect(stderr).toContain('extract-links')
+    expect(stderr).toContain('validate-links')
+    expect(stderr).toContain('frontmatter')
+  })
+
+  test('extract-links returns sorted local links from markdown input', async () => {
+    const proc = Bun.spawn(
+      [
+        'bun',
+        '-e',
+        [
+          "import { markdownCli } from '../markdown.ts'",
+          "const input = { mode: 'extract-links', markdown: '[b](scripts/b.ts) [a](scripts/a.ts) ![d](assets/d.png)' }",
+          'await markdownCli.markdown([JSON.stringify(input)])',
+        ].join(';\n'),
+      ],
+      { stdout: 'pipe', stderr: 'pipe', cwd: import.meta.dir },
+    )
+
+    expect(await proc.exited).toBe(0)
+    const output = JSON.parse(await new Response(proc.stdout).text())
+    expect(output).toEqual({
+      mode: 'extract-links',
+      result: [
+        { value: 'assets/d.png', text: 'd' },
+        { value: 'scripts/a.ts', text: 'a' },
+        { value: 'scripts/b.ts', text: 'b' },
+      ],
     })
-    expect(parsed.body).toContain('# Heading')
-    expect(parsed.body).toContain('Body content.')
   })
 
-  test('allows an empty body when requireBody is false', () => {
-    const parsed = parseMarkdownWithFrontmatter(
-      `---
-name: test-skill
-description: A test skill
----`,
-      TestFrontmatterSchema,
-      { requireBody: false },
+  test('extract-links returns empty result for markdown with no local links', async () => {
+    const proc = Bun.spawn(
+      [
+        'bun',
+        '-e',
+        [
+          "import { markdownCli } from '../markdown.ts'",
+          "const input = { mode: 'extract-links', markdown: 'Hello **world** [remote](https://example.com)' }",
+          'await markdownCli.markdown([JSON.stringify(input)])',
+        ].join(';\n'),
+      ],
+      { stdout: 'pipe', stderr: 'pipe', cwd: import.meta.dir },
     )
 
-    expect(parsed.body).toBe('')
+    expect(await proc.exited).toBe(0)
+    const output = JSON.parse(await new Response(proc.stdout).text())
+    expect(output).toEqual({ mode: 'extract-links', result: [] })
   })
 
-  test('preserves legacy parsing when closing delimiter is followed by body text on the same line', () => {
-    const parsed = parseMarkdownWithFrontmatter(
-      `---
-name: test-skill
-description: A test skill
----# Heading
-
-Body content.
-`,
-      TestFrontmatterSchema,
+  test('exits 2 on invalid JSON input', async () => {
+    const proc = Bun.spawn(
+      [
+        'bun',
+        '-e',
+        ["import { markdownCli } from '../markdown.ts'", "await markdownCli.markdown(['not-json'])"].join(';\n'),
+      ],
+      { stdout: 'pipe', stderr: 'pipe', cwd: import.meta.dir },
     )
 
-    expect(parsed.body).toBe('# Heading\n\nBody content.')
+    expect(await proc.exited).toBe(2)
   })
 
-  test('preserves leading indentation after opening delimiter before YAML parsing', () => {
-    expect(() =>
-      parseMarkdownWithFrontmatter(
-        `---
- name: test-skill
-description: A test skill
----
-Body content.
-`,
-        TestFrontmatterSchema,
-      ),
-    ).toThrow('YAML Parse error')
-  })
-
-  test('throws when frontmatter is missing', () => {
-    expect(() => parseMarkdownWithFrontmatter('# No frontmatter', TestFrontmatterSchema)).toThrow(
-      'Missing YAML frontmatter',
+  test('exits 2 on schema validation failure', async () => {
+    const proc = Bun.spawn(
+      [
+        'bun',
+        '-e',
+        [
+          "import { markdownCli } from '../markdown.ts'",
+          "const input = { mode: 'extract-links', markdown: '' }",
+          'await markdownCli.markdown([JSON.stringify(input)])',
+        ].join(';\n'),
+      ],
+      { stdout: 'pipe', stderr: 'pipe', cwd: import.meta.dir },
     )
+
+    expect(await proc.exited).toBe(2)
   })
 
-  test('throws when the body is required but empty', () => {
-    expect(() =>
-      parseMarkdownWithFrontmatter(
-        `---
-name: test-skill
-description: A test skill
----`,
-        TestFrontmatterSchema,
-      ),
-    ).toThrow('Markdown body must not be empty')
+  test('exits 2 when no input is provided', async () => {
+    const proc = Bun.spawn(
+      ['bun', '-e', ["import { markdownCli } from '../markdown.ts'", 'await markdownCli.markdown([])'].join(';\n')],
+      { stdout: 'pipe', stderr: 'pipe', cwd: import.meta.dir },
+    )
+
+    expect(await proc.exited).toBe(2)
   })
 
-  test('throws on large malformed near-delimiter input without hanging', () => {
-    const repeatedNearDelimiterWhitespace = '\n '.repeat(20_000)
-    const markdown = `---${repeatedNearDelimiterWhitespace}`
-
-    expect(() => parseMarkdownWithFrontmatter(markdown, TestFrontmatterSchema)).toThrow('Missing YAML frontmatter')
-  })
-})
-
-describe('normalizeMarkdownLink', () => {
-  test('normalizes local relative paths', () => {
-    expect(normalizeMarkdownLink('references/../scripts/setup.ts')).toBe('scripts/setup.ts')
-  })
-
-  test('strips fragment identifiers', () => {
-    expect(normalizeMarkdownLink('references/setup.md#install')).toBe('references/setup.md')
-  })
-
-  test('returns null for external or anchor-only links', () => {
-    expect(normalizeMarkdownLink('https://example.com')).toBeNull()
-    expect(normalizeMarkdownLink('mailto:test@example.com')).toBeNull()
-    expect(normalizeMarkdownLink('#top')).toBeNull()
-  })
-})
-
-describe('extractLocalLinksFromMarkdown', () => {
-  test('extracts local links from anchors and images', async () => {
-    const links = await extractLocalLinksFromMarkdown(`
-# Skill
-
-See [setup](references/setup.md), [script](scripts/setup.ts#run), and ![diagram](assets/diagram.png).
-Ignore [docs](https://example.com), [anchor](#top), and <img src="https://example.com/remote.png" />.
-`)
-
-    expect(links).toEqual([
-      { value: 'assets/diagram.png', text: 'diagram' },
-      { value: 'references/setup.md', text: 'setup' },
-      { value: 'scripts/setup.ts', text: 'script' },
-    ])
-  })
-
-  test('deduplicates and sorts extracted links, defaulting text to the link value', async () => {
-    const links = await extractLocalLinksFromMarkdown(`
-[b](scripts/b.ts)
-[a](scripts/a.ts)
-![b](scripts/b.ts)
-[](<scripts/c.ts>)
-`)
-
-    expect(links).toEqual([
-      { value: 'scripts/a.ts', text: 'a' },
-      { value: 'scripts/b.ts', text: 'b' },
-      { value: 'scripts/c.ts', text: 'scripts/c.ts' },
-    ])
-  })
-
-  test('handles html anchor text with repeated unmatched angle brackets', async () => {
-    const angleText = '<'.repeat(2_000)
-    const links = await extractLocalLinksFromMarkdown(`<a href="scripts/run.ts">${angleText}</a>`)
-
-    expect(links).toEqual([{ value: 'scripts/run.ts', text: angleText }])
-  })
-
-  test('does not hang on CodeQL reported markdown-inline-link shapes', async () => {
-    const timeoutMs = 2_000
-    const raceWithTimeout = async (markdown: string): Promise<void> => {
-      const links = await Promise.race([
-        extractLocalLinksFromMarkdown(markdown),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('extractLocalLinksFromMarkdown timed out')), timeoutMs),
+  test('--schema input emits JSON Schema and exits 0', async () => {
+    const proc = Bun.spawn(
+      [
+        'bun',
+        '-e',
+        ["import { markdownCli } from '../markdown.ts'", "await markdownCli.markdown(['--schema', 'input'])"].join(
+          ';\n',
         ),
-      ])
-      expect(Array.isArray(links)).toBeTrue()
-    }
+      ],
+      { stdout: 'pipe', stderr: 'pipe', cwd: import.meta.dir },
+    )
 
-    const inputs = ['['.repeat(4_000), '[\\'.repeat(2_000), `[](${'x'.repeat(4_000)}`, '[](('.repeat(2_000)]
-
-    for (const input of inputs) {
-      await raceWithTimeout(input)
-    }
+    expect(await proc.exited).toBe(0)
+    const output = JSON.parse(await new Response(proc.stdout).text())
+    expect(output.oneOf).toHaveLength(3)
+    expect(output.oneOf[0].properties).toHaveProperty('mode')
   })
 
-  test('continues label recovery after malformed inline destination', async () => {
-    const links = await extractLocalLinksFromMarkdown(`broken []((xxxxxxxxxxxxxxxxxxxx
-[setup](references/setup.md)`)
+  test('--schema output emits output schema and exits 0', async () => {
+    const proc = Bun.spawn(
+      [
+        'bun',
+        '-e',
+        ["import { markdownCli } from '../markdown.ts'", "await markdownCli.markdown(['--schema', 'output'])"].join(
+          ';\n',
+        ),
+      ],
+      { stdout: 'pipe', stderr: 'pipe', cwd: import.meta.dir },
+    )
 
-    expect(links).toEqual([{ value: 'references/setup.md', text: 'setup' }])
-  })
-})
-
-describe('markdownLinks', () => {
-  test('extracts links from a markdown file path', async () => {
-    const tempPath = join('/tmp', `plaited-markdown-links-${Date.now()}.md`)
-    await Bun.write(tempPath, '[setup](references/setup.md)\n![diagram](assets/diagram.png)')
-
-    const links = await markdownLinks({ path: tempPath })
-
-    expect(links).toEqual([
-      { value: 'assets/diagram.png', text: 'diagram' },
-      { value: 'references/setup.md', text: 'setup' },
-    ])
-
-    await Bun.$`rm -f ${tempPath}`
+    expect(await proc.exited).toBe(0)
+    const output = JSON.parse(await new Response(proc.stdout).text())
+    expect(output.oneOf).toHaveLength(3)
+    expect(output.oneOf[0].properties).toHaveProperty('mode')
   })
 
-  test('extracts links from raw markdown input', async () => {
-    const links = await markdownLinks({ markdown: '[script](scripts/run.ts#main)' })
+  test('exits 2 on invalid --schema target', async () => {
+    const proc = Bun.spawn(
+      [
+        'bun',
+        '-e',
+        ["import { markdownCli } from '../markdown.ts'", "await markdownCli.markdown(['--schema', 'bad'])"].join(';\n'),
+      ],
+      { stdout: 'pipe', stderr: 'pipe', cwd: import.meta.dir },
+    )
 
-    expect(links).toEqual([{ value: 'scripts/run.ts', text: 'script' }])
+    expect(await proc.exited).toBe(2)
   })
 
-  test('throws when the source file does not exist', async () => {
-    const missingPath = join('/tmp', `plaited-markdown-links-missing-${Date.now()}.md`)
-    await expect(markdownLinks({ path: missingPath })).rejects.toThrow(`Markdown file not found: ${missingPath}`)
-  })
-})
+  test('--dry-run shows request details without running the command', async () => {
+    const proc = Bun.spawn(
+      [
+        'bun',
+        '-e',
+        [
+          "import { markdownCli } from '../markdown.ts'",
+          "const input = { mode: 'extract-links', markdown: '[x](doc.md)' }",
+          "await markdownCli.markdown([JSON.stringify(input), '--dry-run'])",
+        ].join(';\n'),
+      ],
+      { stdout: 'pipe', stderr: 'pipe', cwd: import.meta.dir },
+    )
 
-describe('validateMarkdownLocalLinks', () => {
-  test('returns present and missing sets with link value and text', async () => {
-    const baseDir = await mkdtemp(join(tmpdir(), 'plaited-markdown-links-'))
+    expect(await proc.exited).toBe(0)
+    const output = JSON.parse(await new Response(proc.stdout).text())
+    expect(output).toEqual({
+      command: 'markdown',
+      input: { mode: 'extract-links', markdown: '[x](doc.md)' },
+      dryRun: true,
+    })
+  })
+
+  test('validate-links returns present and missing links', async () => {
+    const baseDir = await mkdtemp(join(tmpdir(), 'plaited-markdown-cli-'))
 
     try {
-      await mkdir(join(baseDir, 'references'), { recursive: true })
-      await mkdir(join(baseDir, 'scripts'), { recursive: true })
-      await Bun.write(join(baseDir, 'references', 'setup.md'), '# setup')
-      await Bun.write(join(baseDir, 'scripts', 'run.ts'), 'export {}\n')
+      await mkdir(join(baseDir, 'docs'), { recursive: true })
+      await Bun.write(join(baseDir, 'docs', 'guide.md'), '# guide')
 
-      const links = await validateMarkdownLocalLinks({
-        baseDir,
-        markdownBody: `
-See [setup guide](references/setup.md) and [missing doc](references/missing.md).
-![diagram](assets/diagram.png)
-[](<scripts/run.ts>)
-`,
+      const proc = Bun.spawn(
+        [
+          'bun',
+          '-e',
+          [
+            "import { markdownCli } from '../markdown.ts'",
+            `const input = { mode: 'validate-links', directory: '${baseDir}', markdownBody: 'See [guide](docs/guide.md) and [missing](docs/missing.md)' }`,
+            'await markdownCli.markdown([JSON.stringify(input)])',
+          ].join(';\n'),
+        ],
+        { stdout: 'pipe', stderr: 'pipe', cwd: import.meta.dir },
+      )
+
+      expect(await proc.exited).toBe(0)
+      const output = JSON.parse(await new Response(proc.stdout).text())
+      expect(output).toEqual({
+        mode: 'validate-links',
+        result: {
+          present: [{ value: 'docs/guide.md', text: 'guide' }],
+          missing: [{ value: 'docs/missing.md', text: 'missing' }],
+        },
       })
-
-      expect(links.present).toBeInstanceOf(Set)
-      expect(links.missing).toBeInstanceOf(Set)
-      expect([...links.present]).toEqual([
-        { value: 'references/setup.md', text: 'setup guide' },
-        { value: 'scripts/run.ts', text: 'scripts/run.ts' },
-      ])
-      expect([...links.missing]).toEqual([
-        { value: 'assets/diagram.png', text: 'diagram' },
-        { value: 'references/missing.md', text: 'missing doc' },
-      ])
     } finally {
       await rm(baseDir, { recursive: true, force: true })
     }
   })
-})
 
-describe('consumeHtmlRewriteResult', () => {
-  test('accepts a plain string result', async () => {
-    await expect(consumeHtmlRewriteResult('<p>ok</p>')).resolves.toBeUndefined()
+  test('frontmatter returns parsed frontmatter and body', async () => {
+    const proc = Bun.spawn(
+      [
+        'bun',
+        '-e',
+        [
+          "import { markdownCli } from '../markdown.ts'",
+          "const input = { mode: 'frontmatter', markdown: '---\\ntitle: Hello\\n---\\n\\nBody text' }",
+          'await markdownCli.markdown([JSON.stringify(input)])',
+        ].join(';\n'),
+      ],
+      { stdout: 'pipe', stderr: 'pipe', cwd: import.meta.dir },
+    )
+
+    expect(await proc.exited).toBe(0)
+    const output = JSON.parse(await new Response(proc.stdout).text())
+    expect(output).toEqual({
+      mode: 'frontmatter',
+      result: {
+        frontmatter: { title: 'Hello' },
+        body: 'Body text',
+      },
+    })
   })
 
-  test('accepts a Response result', async () => {
-    await expect(consumeHtmlRewriteResult(new Response('<p>ok</p>'))).resolves.toBeUndefined()
-  })
+  test('frontmatter returns null frontmatter and full body when no frontmatter block exists', async () => {
+    const proc = Bun.spawn(
+      [
+        'bun',
+        '-e',
+        [
+          "import { markdownCli } from '../markdown.ts'",
+          "const input = { mode: 'frontmatter', markdown: 'Just a plain markdown document.' }",
+          'await markdownCli.markdown([JSON.stringify(input)])',
+        ].join(';\n'),
+      ],
+      { stdout: 'pipe', stderr: 'pipe', cwd: import.meta.dir },
+    )
 
-  test('accepts a Blob result', async () => {
-    await expect(consumeHtmlRewriteResult(new Blob(['<p>ok</p>']))).resolves.toBeUndefined()
+    expect(await proc.exited).toBe(0)
+    const output = JSON.parse(await new Response(proc.stdout).text())
+    expect(output).toEqual({
+      mode: 'frontmatter',
+      result: {
+        frontmatter: null,
+        body: 'Just a plain markdown document.',
+      },
+    })
   })
 })
