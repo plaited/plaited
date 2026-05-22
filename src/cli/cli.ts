@@ -3,7 +3,7 @@
  *
  * @remarks
  * Supports a stringified JSON positional input or stdin plus:
- * `--schema <input|output>`, `--dry-run`, `--human`, and `--help`.
+ * `--schema <input|output>`, `--dry-run`, and `--help`.
  *
  * @internal
  */
@@ -14,28 +14,26 @@ import * as z from 'zod'
  * Parsed CLI flags shared by JSON-in / JSON-out commands.
  *
  * @property dryRun - When true, print the resolved request instead of executing it.
- * @property human - When true, request operator-readable output when supported.
  *
  * @public
  */
 export type CliFlags = {
   dryRun: boolean
-  human: boolean
 }
 
 /**
  * Options used when parsing a JSON-backed CLI request.
  *
  * @property name - Command name rendered in generated usage output.
- * @property outputSchema - Optional output schema used for `--schema output` and result validation.
- * @property help - Optional additional help text appended to the usage block.
+ * @property outputSchema - Output schema used for `--schema output` and result validation.
+ * @property help - Help text appended to the usage block.
  *
  * @public
  */
 export type CliOptions = {
   name: string
-  outputSchema?: z.ZodType
-  help?: string
+  outputSchema: z.ZodType
+  help: string
 }
 
 /**
@@ -55,10 +53,9 @@ export type ParsedCliRequest<TSchema extends z.ZodType> = {
 type CliHandlerConfig<TInputSchema extends z.ZodType, TOutput> = {
   name: string
   inputSchema: TInputSchema
-  outputSchema?: z.ZodType<TOutput>
-  help?: string
+  outputSchema: z.ZodType<TOutput>
+  help: string
   run: (input: z.infer<TInputSchema>, flags: CliFlags) => Promise<TOutput> | TOutput
-  renderHuman?: (params: { output: TOutput; input: z.infer<TInputSchema>; flags: CliFlags }) => string
 }
 
 type CliRouterConfig = {
@@ -67,7 +64,7 @@ type CliRouterConfig = {
   commands: Record<string, (args: string[]) => Promise<void>>
 }
 
-const buildUsage = ({ name, help }: { name: string; help?: string }): string =>
+const buildUsage = ({ name, help }: { name: string; help: string }): string =>
   [
     `Usage: plaited ${name} '<json>' [options]`,
     `       echo '<json>' | plaited ${name}`,
@@ -75,9 +72,9 @@ const buildUsage = ({ name, help }: { name: string; help?: string }): string =>
     'Options:',
     '  --schema <input|output>  Output JSON schema and exit',
     '  --dry-run                Show request details without running the command',
-    '  --human                  Render operator-readable output when supported',
     '  -h, --help               Show help',
-    ...(help ? ['', help] : []),
+    '',
+    help,
   ].join('\n')
 
 const getSchemaTarget = (args: string[]): 'input' | 'output' | null => {
@@ -102,7 +99,7 @@ const getPositionalInput = async (args: string[]): Promise<string | undefined> =
       index += 1
       continue
     }
-    if (arg === '--dry-run' || arg === '--human' || arg === '--help' || arg === '-h') {
+    if (arg === '--dry-run' || arg === '--help' || arg === '-h') {
       continue
     }
     if (!arg.startsWith('--')) {
@@ -160,10 +157,6 @@ export const parseCliRequest = async <TSchema extends z.ZodType>(
     process.exit(0)
   }
   if (schemaTarget === 'output') {
-    if (!options.outputSchema) {
-      console.error('Output schema is not available for this command')
-      process.exit(2)
-    }
     printSchema(options.outputSchema)
     process.exit(0)
   }
@@ -184,7 +177,6 @@ export const parseCliRequest = async <TSchema extends z.ZodType>(
     input: parsed.data,
     flags: {
       dryRun: args.includes('--dry-run'),
-      human: args.includes('--human'),
     },
   }
 }
@@ -215,7 +207,7 @@ export const parseCli = async <TSchema extends z.ZodType>(
  * @template TInputSchema - Input schema type for the command.
  * @template TOutput - Output type produced by the command handler.
  * @param config - Command metadata, validation schemas, and execution callback.
- * @returns CLI handler that parses input, optionally validates output, and prints JSON.
+ * @returns CLI handler that parses input, validates output, and prints JSON.
  *
  * @public
  */
@@ -225,7 +217,6 @@ export const makeCli = <TInputSchema extends z.ZodType, TOutput>({
   outputSchema,
   help,
   run,
-  renderHuman,
 }: CliHandlerConfig<TInputSchema, TOutput>) => ({
   [name]: async (args: string[]): Promise<void> => {
     const { input, flags } = await parseCliRequest(args, inputSchema, {
@@ -250,37 +241,71 @@ export const makeCli = <TInputSchema extends z.ZodType, TOutput>({
     }
 
     const result = (await run(input, flags)) as TOutput
-    let output = result
 
-    if (outputSchema) {
-      const parsed = outputSchema.safeParse(result)
-      if (!parsed.success) {
-        console.error(JSON.stringify(parsed.error.issues, null, 2))
-        process.exit(1)
-      }
-
-      output = parsed.data
+    const parsed = outputSchema.safeParse(result)
+    if (!parsed.success) {
+      console.error(JSON.stringify(parsed.error.issues, null, 2))
+      process.exit(1)
     }
 
-    if (flags.human) {
-      if (!renderHuman) {
-        console.error('--human is not supported for this command')
-        process.exit(2)
-      }
-
-      console.log(
-        renderHuman({
-          output,
-          input,
-          flags,
-        }),
-      )
-      return
-    }
-
-    console.log(JSON.stringify(output, null, 2))
+    console.log(JSON.stringify(parsed.data, null, 2))
   },
 })
+
+/**
+ * Define and execute a self-contained CLI script.
+ *
+ * @remarks
+ * Intended for generated `.ts` scripts invoked directly via `bun <filepath> '<json>'`.
+ * Parses `process.argv`, handles `--help`, `--dry-run`, `--schema`, and runs the handler.
+ * Uses the script filename as the display name in usage text.
+ *
+ * @template TInputSchema - Input schema type for the script.
+ * @template TOutput - Output type produced by the script handler.
+ * @param config - Input schema, output schema, help text, and run handler.
+ *
+ * @public
+ */
+export const defineScript = async <TInputSchema extends z.ZodType, TOutput>({
+  inputSchema,
+  outputSchema,
+  help,
+  run,
+}: Omit<CliHandlerConfig<TInputSchema, TOutput>, 'name'>): Promise<void> => {
+  const scriptName = process.argv[1]?.split('/').pop()?.split('.').shift() ?? 'script'
+  const args = process.argv.slice(2)
+
+  const { input, flags } = await parseCliRequest(args, inputSchema, {
+    name: scriptName,
+    outputSchema,
+    help,
+  })
+
+  if (flags.dryRun) {
+    console.log(
+      JSON.stringify(
+        {
+          script: scriptName,
+          input,
+          dryRun: true,
+        },
+        null,
+        2,
+      ),
+    )
+    return
+  }
+
+  const result = (await run(input, flags)) as TOutput
+
+  const parsed = outputSchema.safeParse(result)
+  if (!parsed.success) {
+    console.error(JSON.stringify(parsed.error.issues, null, 2))
+    process.exit(1)
+  }
+
+  console.log(JSON.stringify(parsed.data, null, 2))
+}
 
 export const makeCliRouter =
   ({ name, description, commands }: CliRouterConfig) =>

@@ -1371,5 +1371,13 @@ export const evalCli = makeCli({
   name: EVAL_COMMAND,
   inputSchema: EvalCliInputSchema,
   outputSchema: EvalCliOutputSchema,
+  help: [
+    'Grade, compare, and calibrate Plaited trial results.',
+    '',
+    'Modes:',
+    '  grade       Evaluate a single trial against expected outcomes',
+    '  compare     Compare two eval runs side-by-side',
+    '  calibrate   Generate calibrated review labels for ambiguous trials',
+  ].join('\n'),
   run: runEval,
 })

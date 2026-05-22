@@ -7,31 +7,30 @@ const TestSchema = z.object({
   value: z.number(),
 })
 
+const testOpts = { name: 'test-tool', outputSchema: z.object({}), help: 'test command' }
+
 describe('parseCli', () => {
   test('parses valid JSON positional arg', async () => {
-    const result = await parseCli(['{"name":"test","value":42}'], TestSchema, { name: 'test-tool' })
+    const result = await parseCli(['{"name":"test","value":42}'], TestSchema, testOpts)
     expect(result).toEqual({ name: 'test', value: 42 })
   })
 
   test('parses JSON with extra whitespace', async () => {
-    const result = await parseCli(['  {"name":"hello","value":1}  '], TestSchema, { name: 'test-tool' })
+    const result = await parseCli(['  {"name":"hello","value":1}  '], TestSchema, testOpts)
     expect(result).toEqual({ name: 'hello', value: 1 })
   })
 })
 
 describe('parseCliRequest', () => {
   test('captures the dry-run flag alongside parsed input', async () => {
-    const result = await parseCliRequest(['{"name":"test","value":42}', '--dry-run'], TestSchema, { name: 'test-tool' })
+    const result = await parseCliRequest(['{"name":"test","value":42}', '--dry-run'], TestSchema, {
+      name: 'test-tool',
+      outputSchema: z.object({}),
+      help: 'test',
+    })
 
     expect(result.input).toEqual({ name: 'test', value: 42 })
-    expect(result.flags).toEqual({ dryRun: true, human: false })
-  })
-
-  test('captures the human flag and does not treat it as positional input', async () => {
-    const result = await parseCliRequest(['--human', '{"name":"test","value":42}'], TestSchema, { name: 'test-tool' })
-
-    expect(result.input).toEqual({ name: 'test', value: 42 })
-    expect(result.flags).toEqual({ dryRun: false, human: true })
+    expect(result.flags).toEqual({ dryRun: true })
   })
 })
 
@@ -41,7 +40,7 @@ describe('CLI parsing (subprocess)', () => {
       [
         'bun',
         '-e',
-        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['--help'], z.object({}), { name: 'test' })`,
+        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['--help'], z.object({}), { name: 'test', outputSchema: z.object({}), help: 'test' })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -54,7 +53,7 @@ describe('CLI parsing (subprocess)', () => {
       [
         'bun',
         '-e',
-        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['--schema', 'input'], z.object({ name: z.string() }), { name: 'test' })`,
+        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['--schema', 'input'], z.object({ name: z.string() }), { name: 'test', outputSchema: z.object({}), help: 'test' })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -71,7 +70,7 @@ describe('CLI parsing (subprocess)', () => {
       [
         'bun',
         '-e',
-        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['--schema', 'output'], z.object({ input: z.string() }), { name: 'test', outputSchema: z.object({ result: z.number() }) })`,
+        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['--schema', 'output'], z.object({ input: z.string() }), { name: 'test', outputSchema: z.object({ result: z.number() }), help: 'test' })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -87,20 +86,7 @@ describe('CLI parsing (subprocess)', () => {
       [
         'bun',
         '-e',
-        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['--schema', 'bad'], z.object({}), { name: 'test' })`,
-      ],
-      { stdout: 'pipe', stderr: 'pipe' },
-    )
-
-    expect(await proc.exited).toBe(2)
-  })
-
-  test('exits 2 when output schema is unavailable', async () => {
-    const proc = Bun.spawn(
-      [
-        'bun',
-        '-e',
-        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['--schema', 'output'], z.object({}), { name: 'test' })`,
+        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['--schema', 'bad'], z.object({}), { name: 'test', outputSchema: z.object({}), help: 'test' })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -113,7 +99,7 @@ describe('CLI parsing (subprocess)', () => {
       [
         'bun',
         '-e',
-        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['not-json'], z.object({}), { name: 'test' })`,
+        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['not-json'], z.object({}), { name: 'test', outputSchema: z.object({}), help: 'test' })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -126,7 +112,7 @@ describe('CLI parsing (subprocess)', () => {
       [
         'bun',
         '-e',
-        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['{"bad":true}'], z.object({ name: z.string() }), { name: 'test' })`,
+        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli(['{"bad":true}'], z.object({ name: z.string() }), { name: 'test', outputSchema: z.object({}), help: 'test' })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -139,7 +125,7 @@ describe('CLI parsing (subprocess)', () => {
       [
         'bun',
         '-e',
-        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli([], z.object({}), { name: 'test' })`,
+        `import { parseCli } from './src/cli.ts'; import * as z from 'zod'; await parseCli([], z.object({}), { name: 'test', outputSchema: z.object({}), help: 'test' })`,
       ],
       { stdout: 'pipe', stderr: 'pipe' },
     )
@@ -159,6 +145,7 @@ describe('makeCli', () => {
           name: 'test',
           inputSchema: z.object({ value: z.string() }),
           outputSchema: z.object({ echoed: z.string() }),
+          help: 'test command',
           run: async (input) => ({ echoed: input.value }),
         });
         await cli.test(['{"value":"hi"}'])`,
@@ -180,6 +167,8 @@ describe('makeCli', () => {
         const cli = makeCli({
           name: 'test',
           inputSchema: z.object({ value: z.string() }),
+          outputSchema: z.object({ echoed: z.string() }),
+          help: 'test command',
           run: async () => { throw new Error('should not run') },
         });
         await cli.test(['{"value":"hi"}', '--dry-run'])`,
@@ -196,51 +185,6 @@ describe('makeCli', () => {
     })
   })
 
-  test('uses human renderer when --human is provided', async () => {
-    const proc = Bun.spawn(
-      [
-        'bun',
-        '-e',
-        `import { makeCli } from './src/cli.ts'; import * as z from 'zod';
-        const cli = makeCli({
-          name: 'test',
-          inputSchema: z.object({ value: z.string() }),
-          outputSchema: z.object({ echoed: z.string() }),
-          run: async (input) => ({ echoed: input.value }),
-          renderHuman: ({ output }) => \`echoed=\${output.echoed}\`,
-        });
-        await cli.test(['{"value":"hi"}', '--human'])`,
-      ],
-      { stdout: 'pipe', stderr: 'pipe' },
-    )
-
-    expect(await proc.exited).toBe(0)
-    const stdout = (await new Response(proc.stdout).text()).trim()
-    expect(stdout).toBe('echoed=hi')
-  })
-
-  test('fails clearly when --human is used without a human renderer', async () => {
-    const proc = Bun.spawn(
-      [
-        'bun',
-        '-e',
-        `import { makeCli } from './src/cli.ts'; import * as z from 'zod';
-        const cli = makeCli({
-          name: 'test',
-          inputSchema: z.object({ value: z.string() }),
-          outputSchema: z.object({ echoed: z.string() }),
-          run: async (input) => ({ echoed: input.value }),
-        });
-        await cli.test(['{"value":"hi"}', '--human'])`,
-      ],
-      { stdout: 'pipe', stderr: 'pipe' },
-    )
-
-    expect(await proc.exited).toBe(2)
-    const stderr = (await new Response(proc.stderr).text()).trim()
-    expect(stderr).toBe('--human is not supported for this command')
-  })
-
   test('--schema input emits the input schema', async () => {
     const proc = Bun.spawn(
       [
@@ -250,6 +194,8 @@ describe('makeCli', () => {
         const cli = makeCli({
           name: 'test',
           inputSchema: z.object({ value: z.string() }),
+          outputSchema: z.object({ echoed: z.string() }),
+          help: 'test command',
           run: async (input) => input,
         });
         await cli.test(['--schema', 'input'])`,
@@ -271,6 +217,8 @@ describe('makeCli', () => {
         const cli = makeCli({
           name: 'test',
           inputSchema: z.object({ value: z.string() }),
+          outputSchema: z.object({ echoed: z.string() }),
+          help: 'test command',
           run: async (input) => input,
         });
         await cli.test(['--help'])`,
@@ -282,7 +230,6 @@ describe('makeCli', () => {
     const stderr = await new Response(proc.stderr).text()
     expect(stderr).toContain('--schema <input|output>')
     expect(stderr).toContain('--dry-run')
-    expect(stderr).toContain('--human')
     expect(stderr).toContain('--help')
   })
 })

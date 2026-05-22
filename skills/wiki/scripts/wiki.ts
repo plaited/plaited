@@ -564,6 +564,15 @@ export const wikiCli = makeCli({
   name: WIKI_COMMAND,
   inputSchema: WikiCliInputSchema,
   outputSchema: WikiCliOutputSchema,
+  help: [
+    'Scan workspace markdown docs for task-relevant context, local link diagnostics,',
+    'and suggested follow-up commands.',
+    '',
+    'Modes:',
+    '  task          Find docs relevant to a task description',
+    '  validate      Validate local markdown links resolve',
+    '  link-report   Report link diagnostics for all markdown files',
+  ].join('\n'),
   run: runWiki,
 })
 
