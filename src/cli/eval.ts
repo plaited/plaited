@@ -1,7 +1,5 @@
-#!/usr/bin/env bun
-
 import { SNAPSHOT_MESSAGE_KINDS, type SnapshotMessage } from 'plaited/behavioral'
-import { makeCli } from 'plaited/cli'
+import { makeCli } from './cli.ts'
 import {
   EVAL_CALIBRATE_FOCUSES,
   EVAL_CALIBRATE_REVIEW_LABELS,
@@ -12,8 +10,6 @@ import {
   EVAL_GRADER_WHEN,
   EVAL_MODES,
   EVAL_TRIAL_STATUSES,
-} from './eval.constants.ts'
-import {
   type EvalCalibrateFocus,
   type EvalCalibrateInput,
   EvalCalibrateOutputSchema,
@@ -44,7 +40,21 @@ import {
   EvalTrialResultSchema,
   type EvalTrialStatus,
 } from './eval.schemas.ts'
-import { limitTextBytes } from './limit-text-bytes.ts'
+
+const limitTextBytes = (text: string, maxBytes: number) => {
+  const bytes = new TextEncoder().encode(text)
+  if (bytes.length <= maxBytes) {
+    return { text, truncated: false, originalBytes: bytes.length }
+  }
+
+  const sliced = bytes.slice(0, maxBytes)
+  const limited = new TextDecoder().decode(sliced)
+  return {
+    text: limited,
+    truncated: true,
+    originalBytes: bytes.length,
+  }
+}
 
 type GraderExecutionContext = {
   trial: EvalTrial
@@ -1363,9 +1373,3 @@ export const evalCli = makeCli({
   outputSchema: EvalCliOutputSchema,
   run: runEval,
 })
-
-export { EVAL_COMMAND }
-
-if (import.meta.main) {
-  await evalCli(Bun.argv.slice(2))
-}

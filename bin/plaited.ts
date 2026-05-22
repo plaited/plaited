@@ -11,6 +11,7 @@
 
 import {
   codeDocumentationCli,
+  evalCli,
   frontierAnalysisCli,
   gitContextCli,
   makeCliRouter,
@@ -31,6 +32,7 @@ export const runCli = makeCliRouter({
     ...codeDocumentationCli,
     ...gitContextCli,
     ...frontierAnalysisCli,
+    ...evalCli,
   },
 })
 

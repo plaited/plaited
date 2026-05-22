@@ -1,38 +1,11 @@
 ---
-name: plaited-eval
-description: CLI guidance for grading, comparing, and calibrating Plaited trial results with `plaited eval`.
+name: eval
+description: Grade, compare, and calibrate Plaited trial results with `plaited eval`.
 license: ISC
 compatibility: Requires bun
-metadata:
-  plaited:
-    kind: skill
-    origin:
-      kind: first-party
-    capabilities:
-      - id: eval.grade
-        type: cli
-        lane: private
-        phase: validation
-        audience: [analyst, coder]
-        actions: [grade, compare, calibrate]
-        sideEffects: workspace-write
-        handler:
-          type: cli
-          command: scripts/eval.ts
-        source:
-          type: first-party
-      - id: workflow.eval-analysis
-        type: workflow
-        lane: private
-        phase: validation
-        audience: [analyst]
-        actions: [grade, compare, calibrate]
-        sideEffects: read-only
-        source:
-          type: first-party
 ---
 
-# Plaited Eval
+# Eval
 
 CLI guidance for `plaited eval` grading, run comparison, and grader calibration.
 
