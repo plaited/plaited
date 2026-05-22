@@ -1,30 +1,25 @@
 /**
- * Agent-owned event-detail cache used for listener-scoped context shaping.
+ * Agent-owned event-detail cache used for listener-topicd context shaping.
  */
-import type { BPListener } from '../behavioral.ts'
+import type { BPEvent, BPListener } from '../behavioral.ts'
 
-const DEFAULT_CONTEXT_MEMORY_SCOPE = 'default'
-
-type MemoryEvent = {
-  type: string
-  detail?: unknown
-  scope?: string
+type MemoryEvent = BPEvent & {
+  topic: string
 }
 
 type ContextMemoryRecord = {
-  detail: unknown
+  detail: BPEvent['detail']
   expiresAt: number
   touchedAt: number
 }
 
-const getMemoryKey = ({ scope, type }: { scope?: string; type: string }) =>
-  `${scope ?? DEFAULT_CONTEXT_MEMORY_SCOPE}:${type}`
+const getMemoryKey = ({ topic, type }: { topic: string; type: string }) => `${topic}:${type}`
 
 /**
- * Creates a scoped in-memory cache for recent event details.
+ * Creates a topicd in-memory cache for recent event details.
  *
  * @param ttlMs - Number of milliseconds to retain each recorded event detail.
- * @param maxKeys - Optional maximum number of scoped event keys to keep.
+ * @param maxKeys - Optional maximum number of topicd event keys to keep.
  * @returns Context memory operations for recording, retrieving, and pruning details.
  *
  * @remarks
@@ -76,7 +71,7 @@ export const createContextMemory = ({ ttlMs, maxKeys }: { ttlMs: number; maxKeys
   }
 
   return {
-    record: ({ type, detail, scope }: MemoryEvent) => {
+    record: ({ type, detail, topic }: MemoryEvent) => {
       pruneExpired()
       const entry: ContextMemoryRecord = {
         detail,
@@ -84,12 +79,12 @@ export const createContextMemory = ({ ttlMs, maxKeys }: { ttlMs: number; maxKeys
         touchedAt: 0,
       }
       touch(entry)
-      memory.set(getMemoryKey({ scope, type }), entry)
+      memory.set(getMemoryKey({ topic, type }), entry)
       enforceMaxKeys()
     },
-    get: ({ listener, scope }: { listener: BPListener; scope?: string }) => {
+    get: ({ listener, topic }: { listener: BPListener; topic: string }) => {
       pruneExpired()
-      const entry = memory.get(getMemoryKey({ scope, type: listener.type }))
+      const entry = memory.get(getMemoryKey({ topic, type: listener.type }))
       if (!entry) {
         return undefined
       }

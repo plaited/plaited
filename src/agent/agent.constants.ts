@@ -8,3 +8,12 @@ export const DEFAULT_POLICY = {
   topK: 64,
   maxCompletionTokens: 1024,
 }
+
+export const UI_PROJECTION_EVENTS = keyMirror(
+  'ui_render_requested',
+  'ui_attrs_requested',
+  'ui_controller_message_sent',
+  'ui_controller_message_error',
+  'ui_page_render_requested',
+  'ui_page_rendered',
+)

@@ -21,52 +21,52 @@ describe('createContextMemory', () => {
   test('stores last selected event detail per event type', () => {
     const memory = createContextMemory({ ttlMs: 10_000 })
 
-    memory.record({ type: 'evt', detail: { n: 1 } })
-    memory.record({ type: 'evt', detail: { n: 2 } })
+    memory.record({ type: 'evt', topic: 'default', detail: { n: 1 } })
+    memory.record({ type: 'evt', topic: 'default', detail: { n: 2 } })
 
-    expect(memory.get({ listener: onEvent({ type: 'evt' }) })).toEqual({ n: 2 })
+    expect(memory.get({ listener: onEvent({ type: 'evt' }), topic: 'default' })).toEqual({ n: 2 })
   })
 
-  test('stores event details independently per scope', () => {
+  test('stores event details independently per topic', () => {
     const memory = createContextMemory({ ttlMs: 10_000 })
     const listener = onEvent({ type: 'evt' })
 
-    memory.record({ type: 'evt', scope: 'topic-a', detail: { topic: 'a' } })
-    memory.record({ type: 'evt', scope: 'topic-b', detail: { topic: 'b' } })
-    memory.record({ type: 'evt', detail: { topic: 'default' } })
+    memory.record({ type: 'evt', topic: 'topic-a', detail: { id: 'a' } })
+    memory.record({ type: 'evt', topic: 'topic-b', detail: { id: 'b' } })
+    memory.record({ type: 'evt', topic: 'default', detail: { id: 'default' } })
 
-    expect(memory.get({ listener, scope: 'topic-a' })).toEqual({ topic: 'a' })
-    expect(memory.get({ listener, scope: 'topic-b' })).toEqual({ topic: 'b' })
-    expect(memory.get({ listener })).toEqual({ topic: 'default' })
+    expect(memory.get({ listener, topic: 'topic-a' })).toEqual({ id: 'a' })
+    expect(memory.get({ listener, topic: 'topic-b' })).toEqual({ id: 'b' })
+    expect(memory.get({ listener, topic: 'default' })).toEqual({ id: 'default' })
   })
 
   test('evicts expired records on read and explicit prune', async () => {
     const memory = createContextMemory({ ttlMs: 15 })
     const listener = onEvent({ type: 'evt' })
 
-    memory.record({ type: 'evt', detail: { active: true } })
-    expect(memory.get({ listener })).toEqual({ active: true })
+    memory.record({ type: 'evt', topic: 't', detail: { active: true } })
+    expect(memory.get({ listener, topic: 't' })).toEqual({ active: true })
 
     await Bun.sleep(25)
-    expect(memory.get({ listener })).toBeUndefined()
+    expect(memory.get({ listener, topic: 't' })).toBeUndefined()
 
-    memory.record({ type: 'evt2', detail: { active: true } })
+    memory.record({ type: 'evt2', topic: 't', detail: { active: true } })
     await Bun.sleep(25)
     memory.pruneExpired()
-    expect(memory.get({ listener: onEvent({ type: 'evt2' }) })).toBeUndefined()
+    expect(memory.get({ listener: onEvent({ type: 'evt2' }), topic: 't' })).toBeUndefined()
   })
 
   test('enforces max key count as deterministic LRU', () => {
     const memory = createContextMemory({ ttlMs: 10_000, maxKeys: 2 })
 
-    memory.record({ type: 'e1', detail: 1 })
-    memory.record({ type: 'e2', detail: 2 })
-    memory.get({ listener: onEvent({ type: 'e1' }) })
-    memory.record({ type: 'e3', detail: 3 })
+    memory.record({ type: 'e1', topic: 't', detail: { value: 1 } })
+    memory.record({ type: 'e2', topic: 't', detail: { value: 2 } })
+    memory.get({ listener: onEvent({ type: 'e1' }), topic: 't' })
+    memory.record({ type: 'e3', topic: 't', detail: { value: 3 } })
 
-    expect(memory.get({ listener: onEvent({ type: 'e1' }) })).toBe(1)
-    expect(memory.get({ listener: onEvent({ type: 'e2' }) })).toBeUndefined()
-    expect(memory.get({ listener: onEvent({ type: 'e3' }) })).toBe(3)
+    expect(memory.get({ listener: onEvent({ type: 'e1' }), topic: 't' })).toEqual({ value: 1 })
+    expect(memory.get({ listener: onEvent({ type: 'e2' }), topic: 't' })).toBeUndefined()
+    expect(memory.get({ listener: onEvent({ type: 'e3' }), topic: 't' })).toEqual({ value: 3 })
   })
 
   test('returns undefined when detail schema validation fails', () => {
@@ -76,11 +76,11 @@ describe('createContextMemory', () => {
       detailSchema: z.object({ ok: z.literal(true) }),
     })
 
-    memory.record({ type: 'evt', detail: { ok: true } })
-    expect(memory.get({ listener })).toEqual({ ok: true })
+    memory.record({ type: 'evt', topic: 't', detail: { ok: true } })
+    expect(memory.get({ listener, topic: 't' })).toEqual({ ok: true })
 
-    memory.record({ type: 'evt', detail: { ok: false } })
-    expect(memory.get({ listener })).toBeUndefined()
+    memory.record({ type: 'evt', topic: 't', detail: { ok: false } })
+    expect(memory.get({ listener, topic: 't' })).toBeUndefined()
   })
 
   test('supports detailMatch invalid listeners', () => {
@@ -91,10 +91,10 @@ describe('createContextMemory', () => {
       detailMatch: 'invalid',
     })
 
-    memory.record({ type: 'evt', detail: { ok: false } })
-    expect(memory.get({ listener })).toEqual({ ok: false })
+    memory.record({ type: 'evt', topic: 't', detail: { ok: false } })
+    expect(memory.get({ listener, topic: 't' })).toEqual({ ok: false })
 
-    memory.record({ type: 'evt', detail: { ok: true } })
-    expect(memory.get({ listener })).toBeUndefined()
+    memory.record({ type: 'evt', topic: 't', detail: { ok: true } })
+    expect(memory.get({ listener, topic: 't' })).toBeUndefined()
   })
 })
