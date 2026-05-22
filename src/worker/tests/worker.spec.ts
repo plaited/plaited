@@ -48,20 +48,20 @@ const waitForWorkerMessage = <T extends WorkerMessage>({
     worker.addEventListener('message', onMessage)
   })
 
-const isExecResultMessageForId =
-  (id: string) =>
+const isExecResultMessageForTopic =
+  (topic: string) =>
   (message: WorkerMessage): message is ExecMessage =>
-    message.type === WORKER_MESSAGE_TYPES.exec_result && message.detail.id === id
+    message.type === WORKER_MESSAGE_TYPES.exec_result && message.detail.topic === topic
 
-const isReadResultMessageForId =
-  (id: string) =>
+const isReadResultMessageForTopic =
+  (topic: string) =>
   (message: WorkerMessage): message is ReadMessage =>
-    message.type === WORKER_MESSAGE_TYPES.read_result && message.detail.id === id
+    message.type === WORKER_MESSAGE_TYPES.read_result && message.detail.topic === topic
 
-const isWriteResultMessageForId =
-  (id: string) =>
+const isWriteResultMessageForTopic =
+  (topic: string) =>
   (message: WorkerMessage): message is WriteMessage =>
-    message.type === WORKER_MESSAGE_TYPES.write_result && message.detail.id === id
+    message.type === WORKER_MESSAGE_TYPES.write_result && message.detail.topic === topic
 
 const isRuntimeErrorMessage = (message: WorkerMessage): message is RuntimeErrorMessage =>
   message.type === WORKER_MESSAGE_TYPES.runtime_error
@@ -81,13 +81,13 @@ console.log(JSON.stringify({ greeting: \`Hello, \${input.name}!\` }));`,
 
       const waitForExec = waitForWorkerMessage({
         worker,
-        predicate: isExecResultMessageForId('exec-1'),
+        predicate: isExecResultMessageForTopic('exec-1'),
       })
 
       worker.postMessage({
         type: WORKER_COMMAND_TYPES.exec,
         detail: {
-          id: 'exec-1',
+          topic: 'exec-1',
           cwd,
           runtime: 'bun',
           target: scriptPath,
@@ -115,13 +115,13 @@ console.log(JSON.stringify({ greeting: \`Hello, \${input.name}!\` }));`,
 
       const waitForWrite = waitForWorkerMessage({
         worker,
-        predicate: isWriteResultMessageForId('write-1'),
+        predicate: isWriteResultMessageForTopic('write-1'),
       })
 
       worker.postMessage({
         type: WORKER_COMMAND_TYPES.write,
         detail: {
-          id: 'write-1',
+          topic: 'write-1',
           cwd,
           path: 'note.txt',
           content,
@@ -136,13 +136,13 @@ console.log(JSON.stringify({ greeting: \`Hello, \${input.name}!\` }));`,
 
       const waitForRead = waitForWorkerMessage({
         worker,
-        predicate: isReadResultMessageForId('read-1'),
+        predicate: isReadResultMessageForTopic('read-1'),
       })
 
       worker.postMessage({
         type: WORKER_COMMAND_TYPES.read,
         detail: {
-          id: 'read-1',
+          topic: 'read-1',
           cwd,
           path: 'note.txt',
           encoding: 'utf8',
@@ -172,13 +172,13 @@ console.log(JSON.stringify({ greeting: \`Hello, \${input.name}!\` }));`,
 
       const waitForRead = waitForWorkerMessage({
         worker,
-        predicate: isReadResultMessageForId('read-bytes-1'),
+        predicate: isReadResultMessageForTopic('read-bytes-1'),
       })
 
       worker.postMessage({
         type: WORKER_COMMAND_TYPES.read,
         detail: {
-          id: 'read-bytes-1',
+          topic: 'read-bytes-1',
           cwd,
           path,
           encoding: 'bytes',
@@ -230,7 +230,7 @@ console.log(JSON.stringify({ greeting: \`Hello, \${input.name}!\` }));`,
       worker.postMessage({
         type: WORKER_COMMAND_TYPES.read,
         detail: {
-          id: 'bad-read-1',
+          topic: 'bad-read-1',
           cwd: process.cwd(),
           path: 'note.txt',
           maxBytes: -1,
@@ -258,7 +258,7 @@ console.log(JSON.stringify({ greeting: \`Hello, \${input.name}!\` }));`,
       worker.postMessage({
         type: WORKER_COMMAND_TYPES.read,
         detail: {
-          id: 'missing-read-1',
+          topic: 'missing-read-1',
           cwd,
           path: 'missing.txt',
         },
