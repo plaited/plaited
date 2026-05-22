@@ -23,9 +23,6 @@
     "./cli": "./src/cli.ts",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
     "./jsx-runtime": "./src/jsx-runtime.ts",
-    "./generated-ui": "./src/generated-ui.ts",
-    "./mcp": "./src/mcp.ts",
-    "./projection": "./src/projection.ts",
     "./ui": "./src/ui.ts",
     "./utils": "./src/utils.ts"
   },
@@ -61,11 +58,10 @@
     ]
   },
   "dependencies": {
-    "@agentclientprotocol/sdk": "link:@agentclientprotocol/sdk",
+    "@earendil-works/pi-coding-agent": "0.75.3",
     "@modelcontextprotocol/ext-apps": "^1.7.2",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@youdotcom-oss/api": "^0.5.2",
-    "openai": "^6.38.0",
     "zod": "4.4.3"
   },
   "devDependencies": {
