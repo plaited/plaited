@@ -10,21 +10,6 @@ description: >
   behavior tests.
 license: MIT
 compatibility: Requires bun for Plaited repository validation
-metadata:
-  plaited:
-    kind: skill
-    origin:
-      kind: first-party
-    capabilities:
-      - id: workflow.tdd
-        type: workflow
-        lane: private
-        phase: validation
-        audience: [coder]
-        actions: [design-test, implement, validate]
-        sideEffects: workspace-write
-        source:
-          type: first-party
 ---
 
 # Test-Driven Development
