@@ -2,34 +2,8 @@
 name: code-documentation
 description: TSDoc standards for TypeScript/JavaScript code. Automatically invoked when writing, reviewing, or editing any TSDoc comments, code documentation, or API documentation. (project)
 license: ISC
-compatibility: Requires bun
-metadata:
-  plaited:
-    kind: skill
-    origin:
-      kind: first-party
-    capabilities:
-      - id: docs.audit
-        type: cli
-        lane: private
-        phase: validation
-        audience: [analyst]
-        actions: [audit, report]
-        sideEffects: read-only
-        handler:
-          type: cli
-          command: scripts/run.ts
-        source:
-          type: first-party
-      - id: workflow.tsdoc-guidance
-        type: workflow
-        lane: private
-        phase: analysis
-        audience: [analyst, coder]
-        actions: [document, review, maintain]
-        sideEffects: workspace-write
-        source:
-          type: first-party
+compatibility: Requires `plaited` CLI
+allowed-tools: Bash
 ---
 
 # Code Documentation Skill
@@ -50,28 +24,30 @@ This skill provides both TSDoc policy guidance and an executable audit tool for 
 ## Quick Reference
 
 - **Audit current coverage**:
-  `bun skills/code-documentation/scripts/run.ts '{"targets":["src/**/*.ts"]}'`
+  `plaited code-documentation '{"targets":["src/**/*.ts"]}'`
 - **Print JSON schema**:
-  `bun skills/code-documentation/scripts/run.ts --schema input`
+  `plaited code-documentation --schema input`
 - **Creating TSDoc**: See [workflow.md](references/workflow.md) for the generation workflow
 - **Maintaining TSDoc**: See [maintenance.md](references/maintenance.md) for cleanup and sync guidelines
 
 ## CLI
 
-The skill now includes an AST-based audit tool:
+AST-based audit tool that runs four operations in a single pass:
 
 ```bash
-bun skills/code-documentation/scripts/run.ts '{"targets":["src/**/*.ts","src/**/*.tsx"]}'
-echo '{"targets":["src/agent/agent.ts"]}' | bun skills/code-documentation/scripts/run.ts
+plaited code-documentation '{"targets":["src/**/*.ts","src/**/*.tsx"]}'
+echo '{"targets":["src/agent/agent.ts"]}' | plaited code-documentation
 ```
 
-The CLI reports:
+Reports:
 - `missing-docs` — exported top-level declarations without attached JSDoc/TSDoc
 - `public-exports` — exported declarations with line/kind/documented status
 - `orphaned-docs` — JSDoc blocks not attached to an AST node
 - `doc-coverage` — per-file exported declaration coverage summary
 
 Use the CLI first for inventory, then use `typescript-lsp` plus the reference templates to write or repair the actual comments.
+
+## Reference templates
 
 This skill contains detailed templates for:
 - Public API Functions
