@@ -9,7 +9,7 @@
  * @internal
  */
 
-import { codeDocumentationCli, makeCliRouter, markdownCli, mcpClientCli } from '../src/cli.ts'
+import { codeDocumentationCli, gitContextCli, makeCliRouter, markdownCli, mcpClientCli } from '../src/cli.ts'
 
 // ============================================================================
 // Command Registry
@@ -22,6 +22,7 @@ export const runCli = makeCliRouter({
     ...markdownCli,
     ...mcpClientCli,
     ...codeDocumentationCli,
+    ...gitContextCli,
   },
 })
 

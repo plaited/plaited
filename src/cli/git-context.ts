@@ -1,33 +1,41 @@
-#!/usr/bin/env bun
+/**
+ * Structured Git context CLI for agent use.
+ *
+ * @remarks
+ * Provides four modes: status, history, worktrees, and context. Returns
+ * structured JSON instead of raw git output so agents can consume results
+ * directly without parsing.
+ *
+ * @internal
+ */
 
 import { stat } from 'node:fs/promises'
 import { isAbsolute, relative, resolve } from 'node:path'
+import * as z from 'zod'
+import { makeCli } from './cli.ts'
 
-import { makeCli } from 'plaited/cli'
-import {
-  BROAD_CHANGED_FILE_THRESHOLD,
-  BROAD_COMMIT_THRESHOLD,
-  GIT_COMMAND,
-  GIT_MODES,
-  MAX_FILE_LIST_ENTRIES,
-} from './git.constants.ts'
-import {
-  type GitChangedFile,
-  GitCliInputSchema,
-  type GitCliOutput,
-  GitCliOutputSchema,
-  type GitCommit,
-  type GitContextInput,
-  type GitContextOutput,
-  type GitHistoryInput,
-  type GitHistoryOutput,
-  type GitPathHistoryEntry,
-  type GitStatusInput,
-  type GitStatusOutput,
-  type GitWorktreeEntry,
-  type GitWorktreesInput,
-  type GitWorktreesOutput,
-} from './git.schemas.ts'
+// ============================================================================
+// Constants
+// ============================================================================
+
+const GIT_COMMAND = 'git-context'
+
+const GIT_MODES = {
+  status: 'status',
+  history: 'history',
+  worktrees: 'worktrees',
+  context: 'context',
+} as const
+
+const DEFAULT_HISTORY_LIMIT = 20
+const MAX_HISTORY_LIMIT = 200
+const MAX_FILE_LIST_ENTRIES = 200
+const BROAD_CHANGED_FILE_THRESHOLD = 80
+const BROAD_COMMIT_THRESHOLD = 40
+
+// ============================================================================
+// Types
+// ============================================================================
 
 type GitResult = {
   stdout: string
@@ -45,6 +53,40 @@ type WorktreeAccumulator = {
   prunableReason: string | null
 }
 
+type GitChangedFile = {
+  status: 'A' | 'C' | 'D' | 'M' | 'R' | 'T' | 'U' | 'X'
+  rawStatus: string
+  path: string
+  oldPath?: string
+}
+
+type GitCommit = {
+  fullSha: string
+  shortSha: string
+  committedAt: string
+  subject: string
+}
+
+type GitPathHistoryEntry = {
+  path: string
+  commits: GitCommit[]
+}
+
+type GitWorktreeEntry = {
+  path: string
+  head: string
+  branch: string | null
+  detached: boolean
+  bare: boolean
+  lockedReason: string | null
+  prunableReason: string | null
+  exists: boolean
+  isCurrent: boolean
+}
+
+// ============================================================================
+// Class
+// ============================================================================
 class GitCommandError extends Error {
   readonly command: string
   readonly exitCode: number
@@ -57,6 +99,179 @@ class GitCommandError extends Error {
     this.stderr = stderr
   }
 }
+
+// ============================================================================
+// Schemas
+// ============================================================================
+
+const GitStatusInputSchema = z
+  .object({
+    mode: z.literal(GIT_MODES.status),
+    cwd: z.string().min(1).optional(),
+  })
+  .strict()
+
+const GitHistoryInputSchema = z
+  .object({
+    mode: z.literal(GIT_MODES.history),
+    cwd: z.string().min(1).optional(),
+    base: z.string().min(1),
+    paths: z.array(z.string().min(1)).default([]),
+    limit: z.number().int().positive().max(MAX_HISTORY_LIMIT).default(DEFAULT_HISTORY_LIMIT),
+  })
+  .strict()
+
+const GitWorktreesInputSchema = z
+  .object({
+    mode: z.literal(GIT_MODES.worktrees),
+    cwd: z.string().min(1).optional(),
+  })
+  .strict()
+
+const GitContextInputSchema = z
+  .object({
+    mode: z.literal(GIT_MODES.context),
+    cwd: z.string().min(1).optional(),
+    base: z.string().min(1),
+    paths: z.array(z.string().min(1)).default([]),
+    limit: z.number().int().positive().max(MAX_HISTORY_LIMIT).default(DEFAULT_HISTORY_LIMIT),
+    includeWorktrees: z.boolean().default(false),
+  })
+  .strict()
+
+const GitCliInputSchema = z
+  .discriminatedUnion('mode', [
+    GitStatusInputSchema,
+    GitHistoryInputSchema,
+    GitWorktreesInputSchema,
+    GitContextInputSchema,
+  ])
+  .describe('Git context CLI input — run git status, history, worktrees, or combined context')
+
+const GitChangedFileSchema = z.object({
+  status: z.enum(['A', 'C', 'D', 'M', 'R', 'T', 'U', 'X']),
+  rawStatus: z.string().min(1),
+  path: z.string().min(1),
+  oldPath: z.string().min(1).optional(),
+})
+
+const GitCommitSchema = z.object({
+  fullSha: z.string().min(1),
+  shortSha: z.string().min(1),
+  committedAt: z.string().min(1),
+  subject: z.string().min(1),
+})
+
+const GitPathHistoryEntrySchema = z.object({
+  path: z.string().min(1),
+  commits: z.array(GitCommitSchema),
+})
+
+const GitWorktreeEntrySchema = z.object({
+  path: z.string().min(1),
+  head: z.string().min(1),
+  branch: z.string().nullable(),
+  detached: z.boolean(),
+  bare: z.boolean(),
+  lockedReason: z.string().nullable(),
+  prunableReason: z.string().nullable(),
+  exists: z.boolean(),
+  isCurrent: z.boolean(),
+})
+
+const GitDirtySummarySchema = z.object({
+  isDirty: z.boolean(),
+  stagedCount: z.number().int().nonnegative(),
+  unstagedCount: z.number().int().nonnegative(),
+  untrackedCount: z.number().int().nonnegative(),
+  stagedFiles: z.array(z.string()),
+  unstagedFiles: z.array(z.string()),
+  untrackedFiles: z.array(z.string()),
+})
+
+const GitStatusOutputSchema = z.object({
+  ok: z.literal(true),
+  mode: z.literal(GIT_MODES.status),
+  repoRoot: z.string().min(1),
+  branch: z.string().nullable(),
+  head: z.string().min(1),
+  upstream: z.string().nullable(),
+  dirty: GitDirtySummarySchema,
+  warnings: z.array(z.string()),
+  suggestedNextCommands: z.array(z.string()),
+})
+
+const GitHistorySummarySchema = z.object({
+  commitCountSinceBase: z.number().int().nonnegative(),
+  changedFileCountSinceBase: z.number().int().nonnegative(),
+  deletedFileCountSinceBase: z.number().int().nonnegative(),
+})
+
+const GitHistoryOutputSchema = z.object({
+  ok: z.literal(true),
+  mode: z.literal(GIT_MODES.history),
+  repoRoot: z.string().min(1),
+  base: z.string().min(1),
+  baseHead: z.string().nullable(),
+  mergeBase: z.string().nullable(),
+  paths: z.array(z.string()),
+  commitsSinceBase: z.array(GitCommitSchema),
+  changedFilesSinceBase: z.array(GitChangedFileSchema),
+  pathHistory: z.array(GitPathHistoryEntrySchema),
+  summary: GitHistorySummarySchema,
+  warnings: z.array(z.string()),
+  suggestedNextCommands: z.array(z.string()),
+})
+
+const GitWorktreesOutputSchema = z.object({
+  ok: z.literal(true),
+  mode: z.literal(GIT_MODES.worktrees),
+  repoRoot: z.string().min(1),
+  currentWorktree: z.string().min(1),
+  worktrees: z.array(GitWorktreeEntrySchema),
+  warnings: z.array(z.string()),
+  suggestedNextCommands: z.array(z.string()),
+})
+
+const GitContextSummarySchema = z.object({
+  commitCountSinceBase: z.number().int().nonnegative(),
+  changedFileCountSinceBase: z.number().int().nonnegative(),
+  deletedFileCountSinceBase: z.number().int().nonnegative(),
+  worktreeCount: z.number().int().nonnegative(),
+})
+
+const GitContextOutputSchema = z.object({
+  ok: z.literal(true),
+  mode: z.literal(GIT_MODES.context),
+  repoRoot: z.string().min(1),
+  branch: z.string().nullable(),
+  head: z.string().min(1),
+  upstream: z.string().nullable(),
+  base: z.string().min(1),
+  baseHead: z.string().nullable(),
+  mergeBase: z.string().nullable(),
+  dirty: GitDirtySummarySchema,
+  commitsSinceBase: z.array(GitCommitSchema),
+  changedFilesSinceBase: z.array(GitChangedFileSchema),
+  pathHistory: z.array(GitPathHistoryEntrySchema),
+  worktrees: z.array(GitWorktreeEntrySchema),
+  summary: GitContextSummarySchema,
+  warnings: z.array(z.string()),
+  suggestedNextCommands: z.array(z.string()),
+})
+
+const GitCliOutputSchema = z
+  .discriminatedUnion('mode', [
+    GitStatusOutputSchema,
+    GitHistoryOutputSchema,
+    GitWorktreesOutputSchema,
+    GitContextOutputSchema,
+  ])
+  .describe('Git context CLI output — one of four mode-specific result shapes')
+
+// ============================================================================
+// Helpers
+// ============================================================================
 
 const toPosix = (value: string): string => value.replace(/\\/g, '/')
 
@@ -562,7 +777,7 @@ const capList = <T>({ entries, label, warnings }: { entries: T[]; label: string;
   return entries.slice(0, MAX_FILE_LIST_ENTRIES)
 }
 
-const collectStatus = async ({ cwd }: { cwd: string }): Promise<GitStatusOutput> => {
+const collectStatus = async ({ cwd }: { cwd: string }): Promise<z.infer<typeof GitStatusOutputSchema>> => {
   const repoRoot = await resolveGitRepoRoot(cwd)
   const [branch, head, upstream, dirtyState] = await Promise.all([
     resolveCurrentBranch({ cwd: repoRoot }),
@@ -656,7 +871,7 @@ const collectHistory = async ({
   base: string
   paths: string[]
   limit: number
-}): Promise<GitHistoryOutput> => {
+}): Promise<z.infer<typeof GitHistoryOutputSchema>> => {
   const repoRoot = await resolveGitRepoRoot(cwd)
   const validatedPaths = resolvePathListWithinRepo({
     repoRoot,
@@ -758,7 +973,7 @@ const collectHistory = async ({
   }
 }
 
-const collectWorktreeContext = async ({ cwd }: { cwd: string }): Promise<GitWorktreesOutput> => {
+const collectWorktreeContext = async ({ cwd }: { cwd: string }): Promise<z.infer<typeof GitWorktreesOutputSchema>> => {
   const repoRoot = await resolveGitRepoRoot(cwd)
   const currentWorktree = repoRoot
 
@@ -793,7 +1008,9 @@ const collectWorktreeContext = async ({ cwd }: { cwd: string }): Promise<GitWork
   }
 }
 
-const collectContext = async (input: GitContextInput): Promise<GitContextOutput> => {
+const collectContext = async (
+  input: z.infer<typeof GitContextInputSchema>,
+): Promise<z.infer<typeof GitContextOutputSchema>> => {
   const cwd = resolve(input.cwd ?? process.cwd())
 
   const [status, history] = await Promise.all([
@@ -833,9 +1050,9 @@ const collectContext = async (input: GitContextInput): Promise<GitContextOutput>
   }
 }
 
-const runGitMode = async (
-  input: GitStatusInput | GitHistoryInput | GitWorktreesInput | GitContextInput,
-): Promise<GitCliOutput> => {
+type GitCliInput = z.infer<typeof GitCliInputSchema>
+
+const runGitMode = async (input: GitCliInput): Promise<z.infer<typeof GitCliOutputSchema>> => {
   const cwd = resolve(input.cwd ?? process.cwd())
 
   switch (input.mode) {
@@ -855,14 +1072,23 @@ const runGitMode = async (
   }
 }
 
-export const gitCli = makeCli({
+export const gitContextCli = makeCli({
   name: GIT_COMMAND,
   inputSchema: GitCliInputSchema,
   outputSchema: GitCliOutputSchema,
+  help: [
+    'Structured git context for agents — returns JSON instead of raw git output.',
+    '',
+    'Modes:',
+    '  status       Branch, HEAD, upstream, staged/unstaged/untracked files',
+    '  history      Merge-base, commits, changed files, per-path history',
+    '  worktrees    Parsed worktree list with lock/prune metadata',
+    '  context      Combined status + history + optional worktrees',
+    '',
+    'Examples:',
+    '  plaited git-context \'{"mode":"status","cwd":"."}\'',
+    '  plaited git-context \'{"mode":"history","cwd":".","base":"main"}\'',
+    '  plaited git-context \'{"mode":"context","cwd":".","base":"main","includeWorktrees":true}\'',
+  ].join('\n'),
   run: runGitMode,
 })
-export { GIT_COMMAND }
-
-if (import.meta.main) {
-  await gitCli(Bun.argv.slice(2))
-}
