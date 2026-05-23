@@ -1,6 +1,6 @@
 ---
 name: typescript-lsp
-description: Type-aware TypeScript/JavaScript codebase analysis via raw JSON-RPC LSP messages. Provides a generic passthrough over typescript-language-server — supply the method and params, get the server response. Two modes: execute and discover.
+description: Type-aware TypeScript/JavaScript codebase analysis via raw JSON-RPC LSP messages. Provides a generic passthrough over typescript-language-server — supply the method and params, get the server response. Two modes execute and discover.
 license: ISC
 compatibility: Requires bun and typescript-language-server
 allowed-tools: Bash
