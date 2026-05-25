@@ -1,4 +1,4 @@
-import type { FRONTIER_STATUS } from './behavioral.constants.ts'
+import type { FRONTIER_STATUS, THREAD_IDENTIFIER } from './behavioral.constants.ts'
 import type { BPEvent, BPListener, JsonObject, SnapshotMessage } from './behavioral.schemas.ts'
 
 /**
@@ -51,11 +51,18 @@ export type Sync = (arg: Idioms) => RulesFunction
  *
  * @param rules - Synchronization steps, typically created with `bSync`, that define the thread sequence.
  * @param repeat - Optional repetition policy controlling whether the sequence repeats.
- * @returns Branded behavioral rule representing the composed thread.
+ * @returns Branded behavioral rule representing the composed thread. The returned function carries a
+ * `{ $: THREAD_IDENTIFIER }` brand property for runtime discrimination via {@link isThread}.
+ *
+ * @remarks
+ * - The `$` brand property is attached via `Object.assign` in the implementation.
+ * - Branded threads can be distinguished from plain rule generators at runtime using {@link isThread}.
  *
  * @see bThread The implementation of this type that composes multiple synchronization steps into a single b-thread.
+ * @see {@link isThread} for the runtime type guard
+ * @see {@link THREAD_IDENTIFIER} for the brand constant
  */
-export type Thread = (rules: ReturnType<Sync>[], once?: true) => ReturnType<Sync>
+export type Thread = (rules: ReturnType<Sync>[], once?: true) => ReturnType<Sync> & { $: typeof THREAD_IDENTIFIER }
 
 /**
  * @internal

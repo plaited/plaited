@@ -1,5 +1,5 @@
 import { deepEqual, isTypeOf } from '../utils.ts'
-import { FRONTIER_STATUS } from './behavioral.constants.ts'
+import { FRONTIER_STATUS, THREAD_IDENTIFIER } from './behavioral.constants.ts'
 import type { BPEvent, BPListener } from './behavioral.schemas.ts'
 import type { CandidateBid, Frontier, PendingBid, RunningBid, Sync, Thread } from './behavioral.types.ts'
 
@@ -125,9 +125,27 @@ export const sync: Sync = (syncPoint) =>
     yield syncPoint
   }
 
-export const isBehavioralRule = (value: unknown): value is ReturnType<Sync> =>
-  isTypeOf<(...args: unknown[]) => unknown>(value, 'function')
-
+/**
+ * Composes multiple synchronization rules into a single behavioral thread generator.
+ *
+ * The returned generator function is branded with `{ $: THREAD_IDENTIFIER }` via
+ * `Object.assign`, enabling runtime discrimination between plain rule generators
+ * and composed thread generators using {@link isThread}.
+ *
+ * @param rules - Array of rule generators (typically created with {@link sync}) to compose.
+ * @param once - When `true`, the thread runs through the rules once and completes.
+ *               When omitted, the thread loops the rules indefinitely.
+ * @returns A branded generator function that yields the idioms from each rule in sequence.
+ *
+ * @remarks
+ * - The `once` flag controls repetition semantics for the behavioral scheduler.
+ * - Empty rule arrays complete immediately (the generator is `done` on first call).
+ * - The brand property `$` is non-enumerable and does not affect iteration behavior.
+ *
+ * @see {@link sync} for creating individual synchronization rules
+ * @see {@link isThread} for the runtime type guard
+ * @see {@link THREAD_IDENTIFIER} for the brand constant
+ */
 export const thread: Thread = (rules, once) =>
   Object.assign(
     once
@@ -145,4 +163,26 @@ export const thread: Thread = (rules, once) =>
             }
           }
         },
+    { $: THREAD_IDENTIFIER },
   )
+
+/**
+ * Runtime type guard that distinguishes behavioral thread generators from plain rule generators.
+ *
+ * Checks that the value is a function bearing the `{ $: THREAD_IDENTIFIER }` brand
+ * attached by the {@link thread} function.
+ *
+ * @param value - Value to test.
+ * @returns `true` if the value is a branded thread generator function.
+ *
+ * @remarks
+ * - Plain generators created directly with {@link sync} will NOT match.
+ * - Only generators created through the {@link thread} compose function carry the brand.
+ *
+ * @see {@link thread} for the function that produces branded generators
+ * @see {@link THREAD_IDENTIFIER} for the brand constant
+ *
+ * @internal
+ */
+export const isThread = (value: unknown): value is ReturnType<Thread> =>
+  isTypeOf<(...args: unknown[]) => unknown>(value, 'function') && '$' in value && value.$ === THREAD_IDENTIFIER
