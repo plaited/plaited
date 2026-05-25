@@ -10,7 +10,7 @@ import {
   FormSubmitMessageSchema,
   ImportModuleSchema,
   RenderMessageSchema,
-  ServerMessageEnvelopeSchema,
+  ServerMessageSchema,
   SwapModeSchema,
   UiEventMessageSchema,
 } from '../controller.schemas.ts'
@@ -45,6 +45,7 @@ describe('RenderMessageSchema', () => {
     const msg = {
       type: AGENT_TO_CONTROLLER_EVENTS.render,
       detail: {
+        version: '1',
         target: 'main',
         html: '<div>hello</div>',
         stylesheets: ['.sample{display:block;}'],
@@ -58,7 +59,7 @@ describe('RenderMessageSchema', () => {
   test('accepts render message without swap (optional)', () => {
     const msg = {
       type: AGENT_TO_CONTROLLER_EVENTS.render,
-      detail: { target: 'main', html: '<p>content</p>', stylesheets: [], registry: [] },
+      detail: { version: '1', target: 'main', html: '<p>content</p>', stylesheets: [], registry: [] },
     }
     expect(RenderMessageSchema.parse(msg)).toEqual(msg)
   })
@@ -67,7 +68,7 @@ describe('RenderMessageSchema', () => {
     expect(() =>
       RenderMessageSchema.parse({
         type: 'wrong',
-        detail: { target: 'main', html: '<div/>', stylesheets: [], registry: [] },
+        detail: { version: '1', target: 'main', html: '<div/>', stylesheets: [], registry: [] },
       }),
     ).toThrow()
   })
@@ -78,7 +79,7 @@ describe('RenderMessageSchema', () => {
         type: AGENT_TO_CONTROLLER_EVENTS.render,
         detail: { html: '<div/>', stylesheets: [], registry: [] },
       }),
-    ).toThrow()
+    ).toThrow('target')
   })
 
   test('rejects render message missing html', () => {
@@ -87,14 +88,14 @@ describe('RenderMessageSchema', () => {
         type: AGENT_TO_CONTROLLER_EVENTS.render,
         detail: { target: 'main', stylesheets: [], registry: [] },
       }),
-    ).toThrow()
+    ).toThrow('html')
   })
 
   test('rejects render message with invalid swap mode', () => {
     expect(() =>
       RenderMessageSchema.parse({
         type: AGENT_TO_CONTROLLER_EVENTS.render,
-        detail: { target: 'main', html: '<div/>', stylesheets: [], swap: 'replace', registry: [] },
+        detail: { version: '1', target: 'main', html: '<div/>', stylesheets: [], swap: 'replace', registry: [] },
       }),
     ).toThrow()
   })
@@ -103,7 +104,7 @@ describe('RenderMessageSchema', () => {
     expect(() =>
       RenderMessageSchema.parse({
         type: AGENT_TO_CONTROLLER_EVENTS.render,
-        detail: { target: 'main', html: '<div/>', registry: [] },
+        detail: { version: '1', target: 'main', html: '<div/>', registry: [] },
       }),
     ).toThrow()
   })
@@ -112,7 +113,7 @@ describe('RenderMessageSchema', () => {
     expect(() =>
       RenderMessageSchema.parse({
         type: AGENT_TO_CONTROLLER_EVENTS.render,
-        detail: { target: 'main', html: '<div/>', stylesheets: [42], registry: [] },
+        detail: { version: '1', target: 'main', html: '<div/>', stylesheets: [42], registry: [] },
       }),
     ).toThrow()
   })
@@ -121,7 +122,7 @@ describe('RenderMessageSchema', () => {
     expect(() =>
       RenderMessageSchema.parse({
         type: AGENT_TO_CONTROLLER_EVENTS.render,
-        detail: { target: 'main', html: '<div/>', stylesheets: [] },
+        detail: { version: '1', target: 'main', html: '<div/>', stylesheets: [] },
       }),
     ).toThrow()
   })
@@ -130,7 +131,7 @@ describe('RenderMessageSchema', () => {
     expect(() =>
       RenderMessageSchema.parse({
         type: AGENT_TO_CONTROLLER_EVENTS.render,
-        detail: { target: 'main', html: '<div/>', stylesheets: [], registry: ['font-face'] },
+        detail: { version: '1', target: 'main', html: '<div/>', stylesheets: [], registry: ['font-face'] },
       }),
     ).toThrow()
   })
@@ -140,7 +141,7 @@ describe('AttrsMessageSchema', () => {
   test('accepts valid attrs message with string value', () => {
     const msg = {
       type: AGENT_TO_CONTROLLER_EVENTS.attrs,
-      detail: { target: 'main', attr: { class: 'active' } },
+      detail: { version: '1', target: 'main', attr: { class: 'active' } },
     }
     expect(AttrsMessageSchema.parse(msg)).toEqual(msg)
   })
@@ -148,7 +149,7 @@ describe('AttrsMessageSchema', () => {
   test('accepts attrs with null value (remove)', () => {
     const msg = {
       type: AGENT_TO_CONTROLLER_EVENTS.attrs,
-      detail: { target: 'main', attr: { class: null } },
+      detail: { version: '1', target: 'main', attr: { class: null } },
     }
     expect(AttrsMessageSchema.parse(msg)).toEqual(msg)
   })
@@ -156,7 +157,7 @@ describe('AttrsMessageSchema', () => {
   test('accepts attrs with number value', () => {
     const msg = {
       type: AGENT_TO_CONTROLLER_EVENTS.attrs,
-      detail: { target: 'main', attr: { tabindex: 0 } },
+      detail: { version: '1', target: 'main', attr: { tabindex: 0 } },
     }
     expect(AttrsMessageSchema.parse(msg)).toEqual(msg)
   })
@@ -164,7 +165,7 @@ describe('AttrsMessageSchema', () => {
   test('accepts attrs with boolean value', () => {
     const msg = {
       type: AGENT_TO_CONTROLLER_EVENTS.attrs,
-      detail: { target: 'main', attr: { disabled: true } },
+      detail: { version: '1', target: 'main', attr: { disabled: true } },
     }
     expect(AttrsMessageSchema.parse(msg)).toEqual(msg)
   })
@@ -173,7 +174,7 @@ describe('AttrsMessageSchema', () => {
     expect(() =>
       AttrsMessageSchema.parse({
         type: 'wrong',
-        detail: { target: 'main', attr: {} },
+        detail: { version: '1', target: 'main', attr: {} },
       }),
     ).toThrow()
   })
@@ -182,7 +183,7 @@ describe('AttrsMessageSchema', () => {
     expect(() =>
       AttrsMessageSchema.parse({
         type: AGENT_TO_CONTROLLER_EVENTS.attrs,
-        detail: { target: 'main', attr: { dataset: { nested: true } } },
+        detail: { version: '1', target: 'main', attr: { dataset: { nested: true } } },
       }),
     ).toThrow()
   })
@@ -199,77 +200,87 @@ describe('ImportModuleSchema', () => {
   test('accepts import messages with site-root JavaScript path detail', () => {
     const message = {
       type: AGENT_TO_CONTROLLER_EVENTS.import,
-      detail: '/dist/modules/controller-module.js',
+      detail: { version: '1', path: '/dist/modules/controller-module.js' },
     }
     expect(ImportModuleSchema.parse(message)).toEqual(message)
-    expect(ImportModuleSchema.shape.detail.parse(message.detail)).toBe(message.detail)
+    expect(ImportModuleSchema.shape.detail.parse(message.detail)).toEqual(message.detail)
   })
 
   test('accepts cache-busting query and hash suffixes', () => {
-    expect(ImportModuleSchema.shape.detail.parse('/modules/widget.js?v=123')).toBe('/modules/widget.js?v=123')
-    expect(ImportModuleSchema.shape.detail.parse('/modules/widget.js#v123')).toBe('/modules/widget.js#v123')
-    expect(ImportModuleSchema.shape.detail.parse('/modules/widget.js?v=123#entry')).toBe(
-      '/modules/widget.js?v=123#entry',
-    )
+    const parsePath = (path: string) => ImportModuleSchema.shape.detail.parse({ version: '1', path })
+    expect(parsePath('/modules/widget.js?v=123')).toEqual({ version: '1', path: '/modules/widget.js?v=123' })
+    expect(parsePath('/modules/widget.js#v123')).toEqual({ version: '1', path: '/modules/widget.js#v123' })
+    expect(parsePath('/modules/widget.js?v=123#entry')).toEqual({
+      version: '1',
+      path: '/modules/widget.js?v=123#entry',
+    })
   })
 
   test('rejects non-root and non-JavaScript import paths', () => {
-    expect(() => ImportModuleSchema.shape.detail.parse('modules/widget.js')).toThrow()
-    expect(() => ImportModuleSchema.shape.detail.parse('//example.com/widget.js')).toThrow()
-    expect(() => ImportModuleSchema.shape.detail.parse('https://example.com/widget.js')).toThrow()
-    expect(() => ImportModuleSchema.shape.detail.parse('/modules/widget.ts')).toThrow()
-    expect(() => ImportModuleSchema.shape.detail.parse('/modules/widget.js.map')).toThrow()
-    expect(() => ImportModuleSchema.shape.detail.parse('/modules/widget?file=.js')).toThrow()
-    expect(() => ImportModuleSchema.shape.detail.parse('/modules/widget#file=.js')).toThrow()
-    expect(() => ImportModuleSchema.shape.detail.parse('/modules/widget.js extra')).toThrow()
-    expect(() => ImportModuleSchema.shape.detail.parse('/modules\\widget.js')).toThrow()
+    const rejectPath = (path: string) => () => ImportModuleSchema.shape.detail.parse({ version: '1', path })
+    expect(rejectPath('modules/widget.js')).toThrow()
+    expect(rejectPath('//example.com/widget.js')).toThrow()
+    expect(rejectPath('https://example.com/widget.js')).toThrow()
+    expect(rejectPath('/modules/widget.ts')).toThrow()
+    expect(rejectPath('/modules/widget.js.map')).toThrow()
+    expect(rejectPath('/modules/widget?file=.js')).toThrow()
+    expect(rejectPath('/modules/widget#file=.js')).toThrow()
+    expect(rejectPath('/modules/widget.js extra')).toThrow()
+    expect(rejectPath('/modules\\widget.js')).toThrow()
     expect(() =>
       ImportModuleSchema.parse({
         type: AGENT_TO_CONTROLLER_EVENTS.import,
-        detail: 'file:///tmp/local-module.js',
+        detail: { version: '1', path: 'file:///tmp/local-module.js' },
       }),
     ).toThrow()
   })
 })
 
-describe('ServerMessageEnvelopeSchema', () => {
-  test('accepts import-style envelopes with string detail', () => {
+describe('ServerMessageSchema', () => {
+  test('accepts valid import messages', () => {
     const message = {
       type: AGENT_TO_CONTROLLER_EVENTS.import,
-      detail: '/dist/modules/controller-module.js',
+      detail: { version: '1', path: '/dist/modules/controller-module.js' },
     }
-    expect(ServerMessageEnvelopeSchema.parse(message)).toEqual(message)
+    expect(ServerMessageSchema.parse(message)).toEqual(message)
   })
 
-  test('accepts object detail envelopes', () => {
+  test('accepts valid render messages', () => {
     const message = {
       type: AGENT_TO_CONTROLLER_EVENTS.render,
       detail: {
+        version: '1',
         target: 'main',
         html: '<div/>',
+        stylesheets: [],
+        registry: [],
       },
     }
-    expect(ServerMessageEnvelopeSchema.parse(message)).toEqual(message)
+    expect(ServerMessageSchema.parse(message)).toEqual(message)
   })
 
-  test('accepts missing detail', () => {
+  test('accepts valid disconnect messages', () => {
     const message = {
       type: AGENT_TO_CONTROLLER_EVENTS.disconnect,
+      detail: { version: '1' },
     }
-    expect(ServerMessageEnvelopeSchema.parse(message)).toEqual(message)
+    expect(ServerMessageSchema.parse(message)).toEqual(message)
   })
 
-  test('rejects non-object and non-string detail values', () => {
+  test('rejects messages with unknown type', () => {
     expect(() =>
-      ServerMessageEnvelopeSchema.parse({
-        type: AGENT_TO_CONTROLLER_EVENTS.disconnect,
-        detail: 123,
+      ServerMessageSchema.parse({
+        type: 'unknown_type',
+        detail: { version: '1' },
       }),
     ).toThrow()
+  })
+
+  test('rejects messages missing version', () => {
     expect(() =>
-      ServerMessageEnvelopeSchema.parse({
-        type: AGENT_TO_CONTROLLER_EVENTS.disconnect,
-        detail: true,
+      ServerMessageSchema.parse({
+        type: AGENT_TO_CONTROLLER_EVENTS.render,
+        detail: { target: 'main', html: '<div/>', stylesheets: [], registry: [] },
       }),
     ).toThrow()
   })

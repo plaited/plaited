@@ -248,6 +248,7 @@ describe('useController', () => {
     socket.serverSend({
       type: AGENT_TO_CONTROLLER_EVENTS.attrs,
       detail: {
+        version: '2',
         target: 'main',
         attr: { 'p-version': '2' },
       },
@@ -268,6 +269,7 @@ describe('useController', () => {
     socket.serverSend({
       type: AGENT_TO_CONTROLLER_EVENTS.render,
       detail: {
+        version: '1',
         target: 'main',
         html: '<button id="save" p-trigger="click:save">Save</button>',
         stylesheets: [],
@@ -282,7 +284,7 @@ describe('useController', () => {
         type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
         detail: {
           topic: 'topic',
-          version: null,
+          version: '1',
           event: {
             type: 'save',
             detail: {
@@ -337,7 +339,7 @@ describe('useController', () => {
 
     socket.serverSend({
       type: 'unknown_server_event',
-      detail: {},
+      detail: { version: '1' },
     })
 
     expect(outbound).toEqual([

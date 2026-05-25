@@ -143,6 +143,7 @@ const generateTestPage = (tag: string) => {
 const RENDER_MESSAGE = JSON.stringify({
   type: 'render',
   detail: {
+    version: '1',
     target: 'main',
     html: '<div id="ws-rendered">Hello from WebSocket</div><registered-child id="registered-child"></registered-child>',
     stylesheets: [],
@@ -153,6 +154,7 @@ const RENDER_MESSAGE = JSON.stringify({
 const DSD_RENDER_MESSAGE = JSON.stringify({
   type: 'render',
   detail: {
+    version: '1',
     target: 'main',
     html: '<div id="dsd-host"><template shadowrootmode="open"><style>:host { display: block; }</style><p>shadow content</p></template></div>',
     stylesheets: [],
@@ -164,6 +166,7 @@ const DSD_RENDER_MESSAGE = JSON.stringify({
 const MODULE_RENDER_MESSAGE = JSON.stringify({
   type: 'render',
   detail: {
+    version: '1',
     target: 'main',
     html: '<button id="module-p-trigger-btn" data-extra="p-trigger-attr" p-trigger="click:test_click">P-trigger Action</button><button id="module-enhanced-btn" data-extra="module-listener">Module Listener</button><div id="module-initial">Module fixture loaded</div>',
     stylesheets: [],
@@ -180,6 +183,7 @@ const sendSwapTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
     JSON.stringify({
       type: 'render',
       detail: {
+        version: '1',
         target: 'main',
         html: '<p id="inner-result">inner replaced</p>',
         stylesheets: [],
@@ -193,6 +197,7 @@ const sendSwapTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
     JSON.stringify({
       type: 'render',
       detail: {
+        version: '1',
         target: 'main',
         html: '<span id="afterbegin-result">first</span>',
         stylesheets: [],
@@ -206,6 +211,7 @@ const sendSwapTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
     JSON.stringify({
       type: 'render',
       detail: {
+        version: '1',
         target: 'main',
         html: '<span id="beforeend-result">last</span>',
         stylesheets: [],
@@ -219,6 +225,7 @@ const sendSwapTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
     JSON.stringify({
       type: 'render',
       detail: {
+        version: '1',
         target: 'main',
         html: '<span id="afterend-result">after main</span>',
         stylesheets: [],
@@ -232,6 +239,7 @@ const sendSwapTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
     JSON.stringify({
       type: 'render',
       detail: {
+        version: '1',
         target: 'main',
         html: '<span id="beforebegin-result">before main</span>',
         stylesheets: [],
@@ -245,6 +253,7 @@ const sendSwapTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
     JSON.stringify({
       type: 'render',
       detail: {
+        version: '1',
         target: 'outer-target',
         html: '<div id="outer-result" p-target="outer-target">outer replaced</div>',
         stylesheets: [],
@@ -260,28 +269,28 @@ const sendAttrsTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
   ws.send(
     JSON.stringify({
       type: 'attrs',
-      detail: { target: 'main', attr: { class: 'active' } },
+      detail: { version: '1', target: 'main', attr: { class: 'active' } },
     }),
   )
   // Remove attribute
   ws.send(
     JSON.stringify({
       type: 'attrs',
-      detail: { target: 'main', attr: { 'data-removable': null } },
+      detail: { version: '1', target: 'main', attr: { 'data-removable': null } },
     }),
   )
   // Set boolean attribute
   ws.send(
     JSON.stringify({
       type: 'attrs',
-      detail: { target: 'main', attr: { disabled: true } },
+      detail: { version: '1', target: 'main', attr: { disabled: true } },
     }),
   )
   // Set number attribute
   ws.send(
     JSON.stringify({
       type: 'attrs',
-      detail: { target: 'main', attr: { 'data-count': 42 } },
+      detail: { version: '1', target: 'main', attr: { 'data-count': 42 } },
     }),
   )
 }
@@ -291,6 +300,7 @@ const sendActionTestInitialRender = (ws: ServerWebSocket<{ source: string }>) =>
     JSON.stringify({
       type: 'render',
       detail: {
+        version: '1',
         target: 'main',
         html: '<button id="test-btn" p-trigger="click:test_click">Click me</button>',
         stylesheets: [],
@@ -306,6 +316,7 @@ const sendFormSubmitInitialRender = (ws: ServerWebSocket<{ source: string }>) =>
     JSON.stringify({
       type: 'render',
       detail: {
+        version: '1',
         target: 'main',
         html: '<form id="controller-form" action="/submit-form" method="post"><input name="name" value="Ada"><input name="tags" value="ui"><input name="tags" value="controller"><button id="controller-form-submit" type="submit">Submit</button></form>',
         stylesheets: [],
@@ -323,6 +334,7 @@ const sendStylesTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
     JSON.stringify({
       type: 'render',
       detail: {
+        version: '1',
         target: 'main',
         html: '<div id="dynamic-style-target" class="dynamic-style-target">styled</div><div id="dynamic-style-secondary" class="dynamic-style-secondary">styled secondary</div>',
         stylesheets: [primary, primary, secondary],
@@ -335,6 +347,7 @@ const sendStylesTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
     JSON.stringify({
       type: 'render',
       detail: {
+        version: '1',
         target: 'main',
         html: '<div id="dynamic-style-target" class="dynamic-style-target">styled again</div><div id="dynamic-style-secondary" class="dynamic-style-secondary">styled secondary again</div>',
         stylesheets: [primary],
@@ -350,6 +363,7 @@ const sendStyleErrorTestMessage = (ws: ServerWebSocket<{ source: string }>) => {
     JSON.stringify({
       type: 'render',
       detail: {
+        version: '1',
         target: 'main',
         html: '<div id="style-error-target" class="style-error-target">style error target</div>',
         stylesheets: ['.fixture-invalid-stylesheet{}', '.style-error-target{color:rgb(7, 8, 9);}'],
@@ -441,7 +455,7 @@ export const startServer = (port = 0): FixtureServer => {
             ws.send(
               JSON.stringify({
                 type: 'import',
-                detail: '/dist/modules/controller-module.js',
+                detail: { version: '1', path: '/dist/modules/controller-module.js' },
               }),
             )
             break
@@ -449,7 +463,7 @@ export const startServer = (port = 0): FixtureServer => {
             ws.send(
               JSON.stringify({
                 type: 'import',
-                detail: '/dist/modules/invalid-controller-module.js',
+                detail: { version: '1', path: '/dist/modules/invalid-controller-module.js' },
               }),
             )
             break
@@ -457,7 +471,7 @@ export const startServer = (port = 0): FixtureServer => {
             ws.send(
               JSON.stringify({
                 type: 'unsupported_controller_event',
-                detail: { reason: 'fixture' },
+                detail: { version: '1', reason: 'fixture' },
               }),
             )
             break
@@ -485,6 +499,7 @@ export const startServer = (port = 0): FixtureServer => {
                 JSON.stringify({
                   type: 'render',
                   detail: {
+                    version: '1',
                     target: 'main',
                     html: '<div id="retry-success">Reconnected!</div>',
                     stylesheets: [],
@@ -520,6 +535,7 @@ export const startServer = (port = 0): FixtureServer => {
               JSON.stringify({
                 type: 'render',
                 detail: {
+                  version: '1',
                   target: 'main',
                   html: '<div id="action-confirmed">Action received</div>',
                   stylesheets: [],

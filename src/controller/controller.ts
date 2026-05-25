@@ -13,10 +13,11 @@ import {
   AttrsMessageSchema,
   type ClientMessage,
   type ControllerErrorMessage,
+  DisconnectMessageSchema,
   type FormSubmitMessage,
   ImportModuleSchema,
   RenderMessageSchema,
-  ServerMessageEnvelopeSchema,
+  ServerMessageSchema,
   type SwapMode,
   type UiEventMessage,
 } from './controller.schemas.ts'
@@ -327,12 +328,16 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
           break
       }
     }
+    #setVersion(version: string) {
+      this.setAttribute(P_VERSION, version)
+    }
     #onWsMessage(message: MessageEvent) {
       try {
-        const { type, detail } = ServerMessageEnvelopeSchema.parse(JSON.parse(String(message.data)))
+        const { type, detail } = ServerMessageSchema.parse(JSON.parse(String(message.data)))
         switch (type) {
           case AGENT_TO_CONTROLLER_EVENTS.import: {
-            const path = ImportModuleSchema.shape.detail.parse(detail)
+            const { path, version } = ImportModuleSchema.shape.detail.parse(detail)
+            this.#setVersion(version)
             void this.#importModule(path).catch((error) =>
               this.#reportError(error, {
                 description: 'Dynamic module import failed to load or parse',
@@ -342,7 +347,9 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
             break
           }
           case AGENT_TO_CONTROLLER_EVENTS.render: {
-            const { target, html, swap, registry, stylesheets } = RenderMessageSchema.shape.detail.parse(detail)
+            const { target, html, swap, registry, stylesheets, version } =
+              RenderMessageSchema.shape.detail.parse(detail)
+            this.#setVersion(version)
             const element = this.querySelector(`[${P_TARGET}="${target}"]`)
             if (!element) return
             void this.#updateDocumentStyles(stylesheets)
@@ -355,7 +362,8 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
             break
           }
           case AGENT_TO_CONTROLLER_EVENTS.attrs: {
-            const { target, attr } = AttrsMessageSchema.shape.detail.parse(detail)
+            const { target, attr, version } = AttrsMessageSchema.shape.detail.parse(detail)
+            this.#setVersion(version)
             const element = this.querySelector(`[${P_TARGET}="${target}"]`)
             if (!element) {
               console.error(CONTROLLER_ERRORS.attrs_element_not_found, target)
@@ -371,6 +379,8 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
             break
           }
           case AGENT_TO_CONTROLLER_EVENTS.disconnect: {
+            const { version } = DisconnectMessageSchema.shape.detail.parse(detail)
+            this.#setVersion(version)
             this.#closeSocket()
             break
           }

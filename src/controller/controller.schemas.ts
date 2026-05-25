@@ -55,6 +55,7 @@ export const CustomElementTagSchema = z.custom<CustomElementTag>(
 export const RenderMessageSchema = z.object({
   type: z.literal(AGENT_TO_CONTROLLER_EVENTS.render),
   detail: z.object({
+    version: z.string(),
     target: z.string(),
     html: z.string(),
     stylesheets: z.array(z.string()),
@@ -74,6 +75,7 @@ export type RenderMessage = z.infer<typeof RenderMessageSchema>
 export const AttrsMessageSchema = z.object({
   type: z.literal(AGENT_TO_CONTROLLER_EVENTS.attrs),
   detail: z.object({
+    version: z.string(),
     target: z.string(),
     attr: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]).nullable()),
   }),
@@ -94,7 +96,10 @@ export type AttrsMessage = z.infer<typeof AttrsMessageSchema>
  */
 export const ImportModuleSchema = z.object({
   type: z.literal(AGENT_TO_CONTROLLER_EVENTS.import),
-  detail: z.string().regex(SITE_ROOT_JAVASCRIPT_PATH_PATTERN, 'Expected a site-root absolute JavaScript path'),
+  detail: z.object({
+    version: z.string(),
+    path: z.string().regex(SITE_ROOT_JAVASCRIPT_PATH_PATTERN, 'Expected a site-root absolute JavaScript path'),
+  }),
 })
 
 /** @public */
@@ -107,29 +112,13 @@ export type ImportModuleMessage = z.infer<typeof ImportModuleSchema>
  */
 export const DisconnectMessageSchema = z.object({
   type: z.literal(AGENT_TO_CONTROLLER_EVENTS.disconnect),
-  detail: JsonObjectSchema.optional(),
+  detail: z.object({
+    version: z.string(),
+  }),
 })
 
 /** @public */
 export type DisconnectMessage = z.infer<typeof DisconnectMessageSchema>
-
-export const ServerMessageDetailSchema = z.union([ImportModuleSchema.shape.detail, JsonObjectSchema])
-
-/** @public */
-export type ServerMessageDetail = z.infer<typeof ServerMessageDetailSchema>
-
-/**
- * Schema for raw server message envelopes before event-specific parsing.
- *
- * @public
- */
-export const ServerMessageEnvelopeSchema = z.object({
-  type: z.string(),
-  detail: ServerMessageDetailSchema.optional(),
-})
-
-/** @public */
-export type ServerMessageEnvelope = z.infer<typeof ServerMessageEnvelopeSchema>
 
 /**
  * Discriminated union schema for all server-to-controller messages.
