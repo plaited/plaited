@@ -22,7 +22,7 @@ const readRequired = (schema: unknown): string[] => {
   return required as string[]
 }
 
-describe('actor kernel schemas', () => {
+describe('behavioral schemas', () => {
   test('FrontierSnapshotSchema exports JSON Schema with step, status, candidates, and enabled as required fields', () => {
     const schema = z.toJSONSchema(FrontierSnapshotSchema)
     const required = readRequired(schema)
