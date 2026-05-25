@@ -188,6 +188,12 @@ export type FormSubmitMessage = z.infer<typeof FormSubmitMessageSchema>
 /**
  * Schema for controller runtime errors sent from a controller island to the server.
  *
+ * @remarks
+ * `description` provides a human-readable category string for agent consumers
+ * (e.g. "CSSStyleSheet replacement or adoption failed") rather than a terse
+ * category literal, since these messages flow back to agent runtimes that benefit
+ * from richer context.
+ *
  * @public
  */
 export const ControllerErrorMessageSchema = z.object({
@@ -196,7 +202,7 @@ export const ControllerErrorMessageSchema = z.object({
     topic: z.string().nullable(),
     version: z.string().nullable(),
     message: z.string(),
-    kind: z.string().optional(),
+    description: z.string().optional(),
     context: JsonObjectSchema.optional(),
   }),
 })

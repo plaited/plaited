@@ -103,7 +103,7 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
       } catch (error) {
         const target = event.target
         this.#reportError(error, {
-          kind: 'socket_listener_error',
+          description: 'Socket listener event handler threw an error',
           context: {
             eventType: event.type,
             socketUrl: target instanceof WebSocket ? target.url : null,
@@ -123,7 +123,7 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
         event.preventDefault()
         this.#sendFormSubmit(form)
       } catch (error) {
-        this.#reportError(error, { kind: 'form_submit_error' })
+        this.#reportError(error, { description: 'Form submit event handler threw an error' })
       }
     })
     #registry = new CustomElementRegistry()
@@ -173,7 +173,7 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
     #reportError(
       error: unknown,
       metadata: {
-        kind?: string
+        description?: string
         context?: JsonObject
       } = {},
     ) {
@@ -182,7 +182,7 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
         detail: {
           ...normalizeControllerErrorDetail({
             error,
-            kind: metadata.kind,
+            description: metadata.description,
             context: metadata.context,
           }),
           topic: this.getAttribute(P_TOPIC),
@@ -237,11 +237,12 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
           delegates,
           addDisconnect: this.#addDisconnect.bind(this),
           trigger: this.#trigger.bind(this),
+          reportError: this.#reportError.bind(this),
         })
         this.#trigger({ type: CONTROLLER_TO_AGENT_EVENTS.import_invoked, detail: { path } })
       } else {
         this.#reportError(new Error(`Module Import Error ${'toString' in setup ? setup.toString() : `${setup}`}`), {
-          kind: 'import_error',
+          description: 'Module import default export was not a function',
         })
       }
     }
@@ -288,7 +289,7 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
         } catch (error) {
           instanceStyles.delete(styles)
           this.#reportError(error, {
-            kind: 'stylesheet_error',
+            description: 'CSSStyleSheet replacement or adoption failed',
             context: {
               stylesheetLength: styles.length,
               stylesheetPreview: styles.slice(0, 120),
@@ -334,7 +335,7 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
             const path = ImportModuleSchema.shape.detail.parse(detail)
             void this.#importModule(path).catch((error) =>
               this.#reportError(error, {
-                kind: 'module_import_error',
+                description: 'Dynamic module import failed to load or parse',
                 context: { path },
               }),
             )
@@ -379,7 +380,7 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
         }
       } catch (error) {
         this.#reportError(error, {
-          kind: 'server_message_error',
+          description: 'Failed to parse or handle server message',
           context: { rawMessage: stringifyUnknown(message.data) },
         })
       }

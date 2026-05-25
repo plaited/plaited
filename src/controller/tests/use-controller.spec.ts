@@ -346,7 +346,7 @@ describe('useController', () => {
         detail: expect.objectContaining({
           topic: 'topic',
           version: null,
-          kind: 'server_message_error',
+          description: 'Failed to parse or handle server message',
         }),
       },
     ])

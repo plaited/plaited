@@ -311,7 +311,7 @@ describe('controller: document stylesheets', () => {
     const error = await waitFor(() => findError({ after: before, source: 'style-error-test' }))
     const detail = error.message.detail as Record<string, unknown>
     expect(String(detail.message)).toContain('fixture stylesheet rejection')
-    expect(detail.kind).toBe('stylesheet_error')
+    expect(detail.description).toBe('CSSStyleSheet replacement or adoption failed')
     expect(detail.context).toEqual(
       expect.objectContaining({
         stylesheetLength: expect.any(Number),
@@ -510,7 +510,7 @@ describe('controller: import', () => {
     const error = await waitFor(() => findError({ after: before, source: 'bad-import-test' }))
     const detail = error.message.detail as Record<string, unknown>
     expect(String(detail.message)).toContain('Expected imported module default export to be a function')
-    expect(detail.kind).toBe('module_import_error')
+    expect(detail.description).toBe('Dynamic module import failed to load or parse')
     expect(detail.context).toEqual(
       expect.objectContaining({
         path: '/dist/modules/invalid-controller-module.js',
@@ -525,7 +525,7 @@ describe('controller: import', () => {
     const error = await waitFor(() => findError({ after: before, source: 'unsupported-event-test' }))
     const detail = error.message.detail as Record<string, unknown>
     expect(String(detail.message)).toContain('Unsupported controller event type "unsupported_controller_event"')
-    expect(detail.kind).toBe('server_message_error')
+    expect(detail.description).toBe('Failed to parse or handle server message')
     expect(detail.context).toEqual(
       expect.objectContaining({
         rawMessage: expect.stringContaining('unsupported_controller_event'),

@@ -342,7 +342,7 @@ describe('ClientMessageSchema', () => {
     expect(ClientMessageSchema.parse(message)).toEqual(message)
   })
 
-  test('accepts structured controller error details with kind and context', () => {
+  test('accepts structured controller error details with description and context', () => {
     expect(
       ControllerErrorMessageSchema.parse({
         type: CONTROLLER_TO_AGENT_EVENTS.error,
@@ -350,7 +350,7 @@ describe('ClientMessageSchema', () => {
           topic: null,
           version: null,
           message: 'invalid stylesheet',
-          kind: 'stylesheet_error',
+          description: 'CSSStyleSheet replacement or adoption failed',
           context: {
             stylesheetLength: 44,
             stylesheetPreview: '.test { color: red; }',
@@ -363,7 +363,7 @@ describe('ClientMessageSchema', () => {
         topic: null,
         version: null,
         message: 'invalid stylesheet',
-        kind: 'stylesheet_error',
+        description: 'CSSStyleSheet replacement or adoption failed',
         context: {
           stylesheetLength: 44,
           stylesheetPreview: '.test { color: red; }',

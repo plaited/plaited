@@ -23,11 +23,11 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
 
 export const normalizeControllerErrorDetail = ({
   error,
-  kind,
+  description,
   context,
 }: {
   error: unknown
-  kind?: string
+  description?: string
   context?: JsonObject
 }): Omit<ControllerErrorMessage['detail'], 'topic' | 'version'> => {
   const errorRecord = isRecord(error) ? error : undefined
@@ -44,14 +44,14 @@ export const normalizeControllerErrorDetail = ({
   if (error instanceof Error && error.name !== 'Error' && !('errorName' in mergedContext)) {
     mergedContext.errorName = error.name
   }
-  const normalizedKind =
-    kind ??
-    (errorRecord && isTypeOf<string>(errorRecord.kind, 'string') && errorRecord.kind.length > 0
-      ? errorRecord.kind
+  const normalizedDescription =
+    description ??
+    (errorRecord && isTypeOf<string>(errorRecord.description, 'string') && errorRecord.description.length > 0
+      ? errorRecord.description
       : undefined)
   return {
     message,
-    kind: normalizedKind,
+    description: normalizedDescription,
     context: Object.keys(mergedContext).length > 0 ? mergedContext : undefined,
   }
 }

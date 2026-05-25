@@ -6,7 +6,7 @@ describe('normalizeControllerErrorDetail', () => {
   test('normalizes controller errors into JSON-safe detail', () => {
     const detail = normalizeControllerErrorDetail({
       error: new Error('failed to parse server message'),
-      kind: 'server_message_error',
+      description: 'Failed to parse or handle server message',
       context: {
         rawMessage: '{"type":"broken"}',
       },
@@ -14,7 +14,7 @@ describe('normalizeControllerErrorDetail', () => {
 
     expect(detail).toEqual({
       message: 'failed to parse server message',
-      kind: 'server_message_error',
+      description: 'Failed to parse or handle server message',
       context: {
         rawMessage: '{"type":"broken"}',
       },
@@ -25,14 +25,14 @@ describe('normalizeControllerErrorDetail', () => {
     const detail = normalizeControllerErrorDetail({
       error: {
         message: 'fixture stylesheet rejection',
-        kind: 'stylesheet_error',
+        description: 'CSSStyleSheet replacement or adoption failed',
         context: { stylesheetLength: 31 },
       },
     })
 
     expect(detail).toEqual({
       message: 'fixture stylesheet rejection',
-      kind: 'stylesheet_error',
+      description: 'CSSStyleSheet replacement or adoption failed',
       context: { stylesheetLength: 31 },
     })
   })
