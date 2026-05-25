@@ -1,13 +1,4 @@
-import type { Disconnect, JsonObject, Trigger } from '../../../behavioral.ts'
-import type { DelegatedListener, delegates } from '../../delegated-listener.ts'
-
-type ControllerModuleContext = {
-  DelegatedListener: typeof DelegatedListener
-  delegates: typeof delegates
-  addDisconnect: (disconnect: Disconnect) => void
-  trigger: Trigger
-  reportError: (error: unknown, metadata?: { description?: string; context?: JsonObject }) => void
-}
+import type { ControllerModuleContext } from '../../controller.types.ts'
 
 export default ({ DelegatedListener, addDisconnect, delegates, trigger }: ControllerModuleContext) => {
   ;(globalThis as Record<string, unknown>).__controllerModuleLoaded = true
