@@ -9,13 +9,15 @@ export const bundleController = async () => {
     entrypoints: [entry],
     files: {
       [entry]: `
-      import { Controller } from ${JSON.stringify(controllerEntry)}
+      import { useController } from ${JSON.stringify(controllerEntry)}
 
       const params = new URL(import.meta.url).searchParams
       const tags = (params.get('registry') ?? '')
         .split(',')
         .map((tag) => tag.trim())
         .filter(Boolean)
+      const address = location.origin.replace(/^http/, 'ws') + '/ws'
+      const Controller = useController({ address })
       for (const tag of tags) {
         if (!customElements.get(tag)) customElements.define(tag, Controller)
       }

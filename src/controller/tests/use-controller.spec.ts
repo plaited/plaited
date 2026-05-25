@@ -113,7 +113,7 @@ describe('useController', () => {
   const defineInjectedController = async (send: Trigger) => {
     const { useController } = await import('../controller.ts')
     const tag = `injected-controller-${Date.now()}-${Math.random().toString(16).slice(2)}`
-    customElements.define(tag, useController(send))
+    customElements.define(tag, useController({ address: 'ws://localhost/ws', send }))
     return tag
   }
 
@@ -125,10 +125,10 @@ describe('useController', () => {
     return socket
   }
 
-  test('sends controller.connected inventory when the WebSocket opens', async () => {
+  test('sends controller_connected when the WebSocket opens', async () => {
     const { useController } = await import('../controller.ts')
     const tag = `versioned-controller-${Date.now()}-${Math.random().toString(16).slice(2)}`
-    customElements.define(tag, useController())
+    customElements.define(tag, useController({ address: 'ws://localhost/ws' }))
 
     document.body.innerHTML = `<${tag} p-topic="coding.board" p-version="42">
       <div p-target="main" p-version="42"><p>main content</p></div>
@@ -142,30 +142,23 @@ describe('useController', () => {
       JSON.stringify({
         type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
         detail: {
-          type: 'controller.connected',
-          detail: {
-            topic: 'coding.board',
-            version: '42',
-            targets: [
-              { target: 'main', version: '42' },
-              { target: 'cards', version: '41' },
-            ],
+          topic: 'coding.board',
+          version: '42',
+          event: {
+            type: CONTROLLER_TO_AGENT_EVENTS.controller_connected,
           },
         },
       }),
     ])
-    expect(socket.sent.join('')).not.toContain('main content')
-    expect(socket.sent.join('')).not.toContain('hash')
-    expect(socket.sent.join('')).not.toContain('module')
   })
 
-  test('sends controller.connected inventory again after reconnect', async () => {
+  test('sends controller_connected again after reconnect', async () => {
     const originalRandom = Math.random
     Math.random = () => 0
     try {
       const { useController } = await import('../controller.ts')
       const tag = `reconnect-controller-${Date.now()}-${Math.random().toString(16).slice(2)}`
-      customElements.define(tag, useController())
+      customElements.define(tag, useController({ address: 'ws://localhost/ws' }))
 
       document.body.innerHTML = `<${tag} p-topic="coding.board" p-version="42">
         <div p-target="main" p-version="42"></div>
@@ -181,11 +174,10 @@ describe('useController', () => {
       const expected = JSON.stringify({
         type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
         detail: {
-          type: 'controller.connected',
-          detail: {
-            topic: 'coding.board',
-            version: '42',
-            targets: [{ target: 'main', version: '42' }],
+          topic: 'coding.board',
+          version: '42',
+          event: {
+            type: CONTROLLER_TO_AGENT_EVENTS.controller_connected,
           },
         },
       })
@@ -196,12 +188,12 @@ describe('useController', () => {
     }
   })
 
-  test('reports nested controller inventories independently', async () => {
+  test('reports nested controller connections independently', async () => {
     const { useController } = await import('../controller.ts')
     const outerTag = `outer-controller-${Date.now()}-${Math.random().toString(16).slice(2)}`
     const innerTag = `inner-controller-${Date.now()}-${Math.random().toString(16).slice(2)}`
-    customElements.define(outerTag, useController())
-    customElements.define(innerTag, useController())
+    customElements.define(outerTag, useController({ address: 'ws://localhost/ws' }))
+    customElements.define(innerTag, useController({ address: 'ws://localhost/ws' }))
 
     document.body.innerHTML = `<${outerTag} p-topic="outer.topic" p-version="10">
       <div p-target="outer-main" p-version="10"></div>
@@ -221,11 +213,10 @@ describe('useController', () => {
       JSON.stringify({
         type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
         detail: {
-          type: 'controller.connected',
-          detail: {
-            topic: 'outer.topic',
-            version: '10',
-            targets: [{ target: 'outer-main', version: '10' }],
+          topic: 'outer.topic',
+          version: '10',
+          event: {
+            type: CONTROLLER_TO_AGENT_EVENTS.controller_connected,
           },
         },
       }),
@@ -234,11 +225,10 @@ describe('useController', () => {
       JSON.stringify({
         type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
         detail: {
-          type: 'controller.connected',
-          detail: {
-            topic: 'inner.topic',
-            version: '7',
-            targets: [{ target: 'inner-main', version: '7' }],
+          topic: 'inner.topic',
+          version: '7',
+          event: {
+            type: CONTROLLER_TO_AGENT_EVENTS.controller_connected,
           },
         },
       }),
@@ -248,7 +238,7 @@ describe('useController', () => {
   test('applies p-version attrs updates to controller targets', async () => {
     const { useController } = await import('../controller.ts')
     const tag = `attrs-version-controller-${Date.now()}-${Math.random().toString(16).slice(2)}`
-    customElements.define(tag, useController())
+    customElements.define(tag, useController({ address: 'ws://localhost/ws' }))
 
     document.body.innerHTML = `<${tag} p-topic="topic">
       <div p-target="main" p-version="1"></div>
@@ -291,11 +281,14 @@ describe('useController', () => {
       {
         type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
         detail: {
-          type: 'save',
-          detail: {
-            id: 'save',
-            'p-trigger': 'click:save',
-            topic: 'topic',
+          topic: 'topic',
+          version: null,
+          event: {
+            type: 'save',
+            detail: {
+              id: 'save',
+              'p-trigger': 'click:save',
+            },
           },
         },
       },
@@ -320,6 +313,8 @@ describe('useController', () => {
       {
         type: CONTROLLER_TO_AGENT_EVENTS.form_submit,
         detail: {
+          topic: null,
+          version: null,
           id: 'profile',
           action: null,
           method: 'post',
@@ -349,6 +344,8 @@ describe('useController', () => {
       {
         type: CONTROLLER_TO_AGENT_EVENTS.error,
         detail: expect.objectContaining({
+          topic: 'topic',
+          version: null,
           kind: 'server_message_error',
         }),
       },

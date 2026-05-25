@@ -5,9 +5,7 @@ import { CONTROLLER_TO_AGENT_EVENTS, SWAP_MODES } from '../controller.constants.
 import {
   AttrsMessageSchema,
   ClientMessageSchema,
-  ControllerErrorDetailSchema,
   ControllerErrorMessageSchema,
-  ControllerModuleDefaultSchema,
   CustomElementTagSchema,
   FormSubmitMessageSchema,
   ImportModuleSchema,
@@ -277,32 +275,18 @@ describe('ServerMessageEnvelopeSchema', () => {
   })
 })
 
-describe('ControllerModuleDefaultSchema', () => {
-  test('accepts imported module default functions', () => {
-    const setup = () => {}
-    expect(ControllerModuleDefaultSchema.parse(setup)).toBe(setup)
-  })
-
-  test('accepts async imported module default functions', () => {
-    const setup = async () => {}
-    expect(ControllerModuleDefaultSchema.parse(setup)).toBe(setup)
-  })
-
-  test('rejects imported modules without default functions', () => {
-    expect(() => ControllerModuleDefaultSchema.parse(undefined)).toThrow()
-    expect(() => ControllerModuleDefaultSchema.parse({})).toThrow()
-  })
-})
-
 describe('ClientMessageSchema', () => {
   test('accepts UI BP event messages sent from browser controller', () => {
     const message = {
       type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
       detail: {
-        type: 'test_click',
-        detail: {
-          topic: 'test-topic',
-          source: 'button',
+        topic: 'test-topic',
+        version: '1',
+        event: {
+          type: 'test_click',
+          detail: {
+            source: 'button',
+          },
         },
       },
     }
@@ -314,8 +298,12 @@ describe('ClientMessageSchema', () => {
     const message = {
       type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
       detail: {
-        type: CONTROLLER_TO_AGENT_EVENTS.import_invoked,
-        detail: { path: '/dist/modules/controller-module.js' },
+        topic: 'test-topic',
+        version: '1',
+        event: {
+          type: CONTROLLER_TO_AGENT_EVENTS.import_invoked,
+          detail: { path: '/dist/modules/controller-module.js' },
+        },
       },
     }
     expect(UiEventMessageSchema.parse(message)).toEqual(message)
@@ -327,6 +315,7 @@ describe('ClientMessageSchema', () => {
       type: CONTROLLER_TO_AGENT_EVENTS.form_submit,
       detail: {
         topic: 'sample-topic',
+        version: '1',
         id: 'sample-form',
         action: '/submit',
         method: 'post',
@@ -345,6 +334,7 @@ describe('ClientMessageSchema', () => {
       type: CONTROLLER_TO_AGENT_EVENTS.error,
       detail: {
         topic: 'sample-topic',
+        version: '1',
         message: 'failed to import module',
       },
     }
@@ -353,23 +343,32 @@ describe('ClientMessageSchema', () => {
   })
 
   test('accepts structured controller error details with kind and context', () => {
-    const detail = {
-      message: 'invalid stylesheet',
-      kind: 'stylesheet_error',
-      context: {
-        stylesheetLength: 44,
-        stylesheetPreview: '.test { color: red; }',
-      },
-    }
-    expect(ControllerErrorDetailSchema.parse(detail)).toEqual(detail)
     expect(
       ControllerErrorMessageSchema.parse({
         type: CONTROLLER_TO_AGENT_EVENTS.error,
-        detail,
+        detail: {
+          topic: null,
+          version: null,
+          message: 'invalid stylesheet',
+          kind: 'stylesheet_error',
+          context: {
+            stylesheetLength: 44,
+            stylesheetPreview: '.test { color: red; }',
+          },
+        },
       }),
     ).toEqual({
       type: CONTROLLER_TO_AGENT_EVENTS.error,
-      detail,
+      detail: {
+        topic: null,
+        version: null,
+        message: 'invalid stylesheet',
+        kind: 'stylesheet_error',
+        context: {
+          stylesheetLength: 44,
+          stylesheetPreview: '.test { color: red; }',
+        },
+      },
     })
   })
 
@@ -383,19 +382,21 @@ describe('ClientMessageSchema', () => {
     expect(() =>
       ClientMessageSchema.parse({
         type: CONTROLLER_TO_AGENT_EVENTS.error,
-        detail: { message: 42 },
+        detail: { topic: null, version: null, message: 42 },
       }),
     ).toThrow()
     expect(() =>
       ClientMessageSchema.parse({
         type: CONTROLLER_TO_AGENT_EVENTS.error,
-        detail: { message: 'x', context: ['not', 'an', 'object'] },
+        detail: { topic: null, version: null, message: 'x', context: ['not', 'an', 'object'] },
       }),
     ).toThrow()
     expect(() =>
       ClientMessageSchema.parse({
         type: CONTROLLER_TO_AGENT_EVENTS.form_submit,
         detail: {
+          topic: null,
+          version: null,
           id: 'sample-form',
           action: '/submit',
           method: 'post',
@@ -415,8 +416,12 @@ describe('ClientMessageSchema', () => {
       ClientMessageSchema.parse({
         type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
         detail: {
-          type: CONTROLLER_TO_AGENT_EVENTS.import_invoked,
-          detail: '/dist/modules/controller-module.js',
+          topic: null,
+          version: null,
+          event: {
+            type: CONTROLLER_TO_AGENT_EVENTS.import_invoked,
+            detail: '/dist/modules/controller-module.js',
+          },
         },
       }),
     ).toThrow()

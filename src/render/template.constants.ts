@@ -43,8 +43,6 @@ export const P_TOPIC = 'p-topic'
  */
 export const P_VERSION = 'p-version'
 
-export const P_CONNECT = 'p-connect'
-
 /**
  * Matches site-root JavaScript module paths accepted by bootstrap script tags
  * and controller module imports.

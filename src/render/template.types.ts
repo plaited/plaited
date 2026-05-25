@@ -1,12 +1,5 @@
 import type { CSSProperties } from '../css/css.types.ts'
-import {
-  P_CONNECT,
-  P_TARGET,
-  P_TOPIC,
-  P_TRIGGER,
-  P_VERSION,
-  type TEMPLATE_OBJECT_IDENTIFIER,
-} from './template.constants.ts'
+import { P_TARGET, P_TOPIC, P_TRIGGER, P_VERSION, type TEMPLATE_OBJECT_IDENTIFIER } from './template.constants.ts'
 
 type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''
@@ -50,7 +43,6 @@ export type PlaitedAttributes = {
   class?: string
   children?: Children
   [P_TARGET]?: string | number
-  [P_VERSION]?: string | number
   [P_TRIGGER]?: Record<string, string>
   stylesheets?: string[]
   classNames?: string[]
@@ -1145,7 +1137,6 @@ type DetailedWebViewHTMLAttributes = DetailedHTMLAttributes & {
 export type DetailedCustomElementHTMLAttributes = DetailedHTMLAttributes & {
   [P_TOPIC]?: string
   [P_VERSION]?: string | number
-  [P_CONNECT]?: string
 }
 
 /**

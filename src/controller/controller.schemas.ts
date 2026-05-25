@@ -10,7 +10,7 @@ import type { CustomElementTag } from '../render/template.types.ts'
 import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../shared/shared.constants.ts'
 import { isTypeOf } from '../utils.ts'
 import { SWAP_MODES } from './controller.constants.ts'
-import type { ControllerModuleContext, ControllerModuleDefault } from './controller.types.ts'
+
 // ─── Server → Client Message Schemas ────────────────────────────────────────
 
 /**
@@ -147,40 +147,16 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
 export type ServerMessage = z.infer<typeof ServerMessageSchema>
 
 /**
- * Schema for imported controller module default exports.
- *
- * @remarks
- * The runtime check only verifies that the default export is callable. The
- * function receives a typed {@link ControllerModuleContext} at invocation time.
- *
- * @public
- */
-export const ControllerModuleDefaultSchema = z.custom<ControllerModuleDefault>(
-  (value) => isTypeOf(value, 'function') || isTypeOf(value, 'asyncfunction'),
-  'Expected imported module default export to be a function',
-)
-
-/**
  * Schema for BP events sent from a controller island to the server.
  *
  * @public
  */
 export const UiEventMessageSchema = z.object({
   type: z.literal(CONTROLLER_TO_AGENT_EVENTS.ui_event),
-  detail: BPEventSchema.superRefine((event, ctx) => {
-    if (event.type !== CONTROLLER_TO_AGENT_EVENTS.import_invoked) return
-    const result = z
-      .object({
-        path: ImportModuleSchema.shape.detail,
-      })
-      .safeParse(event.detail)
-    if (result.success) return
-    for (const issue of result.error.issues) {
-      ctx.addIssue({
-        ...issue,
-        path: ['detail', ...issue.path],
-      })
-    }
+  detail: z.object({
+    topic: z.string().nullable(),
+    version: z.string().nullable(),
+    event: BPEventSchema,
   }),
 })
 
@@ -197,7 +173,8 @@ const FormSubmitFieldValueSchema = z.union([z.string(), z.array(z.string())])
 export const FormSubmitMessageSchema = z.object({
   type: z.literal(CONTROLLER_TO_AGENT_EVENTS.form_submit),
   detail: z.object({
-    topic: z.string().optional(),
+    topic: z.string().nullable(),
+    version: z.string().nullable(),
     id: z.string().nullable(),
     action: z.string().nullable(),
     method: z.string(),
@@ -209,28 +186,19 @@ export const FormSubmitMessageSchema = z.object({
 export type FormSubmitMessage = z.infer<typeof FormSubmitMessageSchema>
 
 /**
- * Schema for the serializable detail payload carried by controller `error` messages.
- *
- * @public
- */
-export const ControllerErrorDetailSchema = z.object({
-  topic: z.string().optional(),
-  message: z.string(),
-  kind: z.string().optional(),
-  context: JsonObjectSchema.optional(),
-})
-
-/** @public */
-export type ControllerErrorDetail = z.infer<typeof ControllerErrorDetailSchema>
-
-/**
  * Schema for controller runtime errors sent from a controller island to the server.
  *
  * @public
  */
 export const ControllerErrorMessageSchema = z.object({
   type: z.literal(CONTROLLER_TO_AGENT_EVENTS.error),
-  detail: ControllerErrorDetailSchema,
+  detail: z.object({
+    topic: z.string().nullable(),
+    version: z.string().nullable(),
+    message: z.string(),
+    kind: z.string().optional(),
+    context: JsonObjectSchema.optional(),
+  }),
 })
 
 /** @public */

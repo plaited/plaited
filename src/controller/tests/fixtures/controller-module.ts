@@ -1,4 +1,12 @@
-import type { ControllerModuleContext } from '../../controller.types.ts'
+import type { Disconnect, Trigger } from '../../../behavioral.ts'
+import type { DelegatedListener, delegates } from '../../delegated-listener.ts'
+
+type ControllerModuleContext = {
+  DelegatedListener: typeof DelegatedListener
+  delegates: typeof delegates
+  addDisconnect: (disconnect: Disconnect) => void
+  trigger: Trigger
+}
 
 export default ({ DelegatedListener, addDisconnect, delegates, trigger }: ControllerModuleContext) => {
   ;(globalThis as Record<string, unknown>).__controllerModuleLoaded = true

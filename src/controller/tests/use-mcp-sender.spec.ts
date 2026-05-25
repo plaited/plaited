@@ -18,7 +18,11 @@ describe('useMcpSender', () => {
     const message = {
       type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
       detail: {
-        type: 'save',
+        topic: null,
+        version: null,
+        event: {
+          type: 'save',
+        },
       },
     }
     send(message)
@@ -64,7 +68,11 @@ describe('useMcpSender', () => {
     const message = {
       type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
       detail: {
-        type: 'save',
+        topic: null,
+        version: null,
+        event: {
+          type: 'save',
+        },
       },
     }
     send(message)
@@ -92,7 +100,11 @@ describe('useMcpSender', () => {
     const message = {
       type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
       detail: {
-        type: 'save',
+        topic: null,
+        version: null,
+        event: {
+          type: 'save',
+        },
       },
     }
     send(message)

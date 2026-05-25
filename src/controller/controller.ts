@@ -1,5 +1,5 @@
 import type { BPEvent, Disconnect, JsonObject, Trigger } from '../behavioral.ts'
-import { BOOLEAN_ATTRS, P_CONNECT, P_TARGET, P_TOPIC, P_TRIGGER, P_VERSION } from '../render/template.constants.ts'
+import { BOOLEAN_ATTRS, P_TARGET, P_TOPIC, P_TRIGGER, P_VERSION } from '../render/template.constants.ts'
 import type { CustomElementTag } from '../render/template.types.ts'
 import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../shared/shared.constants.ts'
 import { isTypeOf } from '../utils.ts'
@@ -13,12 +13,12 @@ import {
   AttrsMessageSchema,
   type ClientMessage,
   type ControllerErrorMessage,
-  ControllerModuleDefaultSchema,
   type FormSubmitMessage,
   ImportModuleSchema,
   RenderMessageSchema,
   ServerMessageEnvelopeSchema,
   type SwapMode,
+  type UiEventMessage,
 } from './controller.schemas.ts'
 import { normalizeControllerErrorDetail } from './controller-error-detail.ts'
 import { DelegatedListener, delegates } from './delegated-listener.ts'
@@ -46,11 +46,6 @@ const updateAttributes = ({
 }
 
 const cssCache = new WeakMap<Document, Set<string>>()
-
-type ControllerErrorMetadata = {
-  kind?: string
-  context?: JsonObject
-}
 
 const stringifyUnknown = (value: unknown): string => {
   if (isTypeOf<string>(value, 'string')) return value
@@ -82,26 +77,11 @@ const buildFormSubmitData = (form: HTMLFormElement): Record<string, FormSubmitFi
   return data
 }
 
-/**
- * Minimal advisory projection state for one server-addressable target within a controller island.
- *
- * @internal
- */
-type ControllerTargetInventory = {
-  target: string
-  version: string | null
-}
-
-const ControllerHTMLElement: typeof HTMLElement =
-  globalThis.HTMLElement ?? (class ControllerHTMLElementFallback {} as typeof HTMLElement)
-
-export const useController = (send?: Trigger) => {
-  class Controller extends ControllerHTMLElement {
-    static observedAttributes = [P_TOPIC, P_CONNECT]
-    #address: string | null = null
+export const useController = ({ address, send }: { address: string; send?: Trigger }) => {
+  class Controller extends HTMLElement {
+    static observedAttributes = [P_TOPIC]
     #disconnectSet = new Set<Disconnect>()
     #socket: WebSocket | undefined
-    #socketTopic: string | null = null
     #retryCount = 0
     #socketListener = new DelegatedListener((event: Event) => {
       try {
@@ -126,7 +106,6 @@ export const useController = (send?: Trigger) => {
           kind: 'socket_listener_error',
           context: {
             eventType: event.type,
-            socketTopic: this.#socketTopic ?? null,
             socketUrl: target instanceof WebSocket ? target.url : null,
             socketReadyState: target instanceof WebSocket ? target.readyState : null,
           },
@@ -150,18 +129,14 @@ export const useController = (send?: Trigger) => {
     #registry = new CustomElementRegistry()
     #register(tags: CustomElementTag[]) {
       for (const tag of tags) {
-        if (!this.#registry.get(tag)) this.#registry.define(tag, useController(send))
+        if (!this.#registry.get(tag)) this.#registry.define(tag, useController({ send, address }))
       }
     }
     #connect() {
       this.#closeSocket(this.#socket)
-      this.#socketTopic = this.getAttribute(P_TOPIC)
-      this.#address = this.getAttribute(P_CONNECT)
-      if (!isTypeOf<string>(this.#socketTopic, 'string')) return
-      this.#socket = new WebSocket(
-        this.#address ?? `${self.location.origin.replace(/^http/, 'ws')}/ws`,
-        this.#socketTopic,
-      )
+      const topic = this.getAttribute(P_TOPIC)
+      if (!isTypeOf<string>(topic, 'string')) return
+      this.#socket = new WebSocket(address, topic)
       delegates.set(this.#socket, this.#socketListener)
       this.#socket.addEventListener('open', this.#socketListener)
       this.#socket.addEventListener('message', this.#socketListener)
@@ -195,39 +170,26 @@ export const useController = (send?: Trigger) => {
       if (!this.#socket) this.#connect()
       this.#socket?.addEventListener('open', onOpen)
     }
-    #reportError(error: unknown, metadata: ControllerErrorMetadata = {}) {
-      const topic = this.#getTopic()
-      const event: ControllerErrorMessage = {
+    #reportError(
+      error: unknown,
+      metadata: {
+        kind?: string
+        context?: JsonObject
+      } = {},
+    ) {
+      const message: ControllerErrorMessage = {
         type: CONTROLLER_TO_AGENT_EVENTS.error,
-        detail: normalizeControllerErrorDetail({
-          error,
-          kind: metadata.kind,
-          context: metadata.context,
-        }),
+        detail: {
+          ...normalizeControllerErrorDetail({
+            error,
+            kind: metadata.kind,
+            context: metadata.context,
+          }),
+          topic: this.getAttribute(P_TOPIC),
+          version: this.getAttribute(P_VERSION),
+        },
       }
-      if (topic) event.detail.topic = topic
-      send ? send(event) : this.#send(event)
-    }
-    #getTopic() {
-      return this.getAttribute(P_TOPIC) ?? this.#socketTopic ?? undefined
-    }
-    /**
-     * Reads the target inventory owned by this controller island, excluding nested controller islands.
-     *
-     * @internal
-     */
-    #getTargetInventory(): ControllerTargetInventory[] {
-      const targets: ControllerTargetInventory[] = []
-      for (const element of this.querySelectorAll(`[${P_TARGET}]`)) {
-        if (element.closest(`[${P_TOPIC}]`) !== this) continue
-        const target = element.getAttribute(P_TARGET)
-        if (!target) continue
-        targets.push({
-          target,
-          version: element.getAttribute(P_VERSION),
-        })
-      }
-      return targets
+      send ? send(message) : this.#send(message)
     }
     /**
      * Reports the island's current advisory projection inventory after a successful socket open.
@@ -235,56 +197,53 @@ export const useController = (send?: Trigger) => {
      * @internal
      */
     #sendConnected() {
-      const topic = this.#getTopic()
       this.#trigger({
-        type: 'controller.connected',
-        detail: {
-          ...(topic && { topic }),
-          version: this.getAttribute(P_VERSION),
-          targets: this.#getTargetInventory(),
-        },
+        type: CONTROLLER_TO_AGENT_EVENTS.controller_connected,
       })
     }
-    #trigger(message: BPEvent) {
-      const topic = this.#getTopic()
-      const event = {
+    #trigger(event: BPEvent) {
+      const message: UiEventMessage = {
         type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
         detail: {
-          ...message,
-          ...(topic && {
-            detail: {
-              ...(message.detail ?? {}),
-              topic,
-            },
-          }),
+          topic: this.getAttribute(P_TOPIC),
+          version: this.getAttribute(P_VERSION),
+          event,
         },
       }
-      send ? send(event) : this.#send(event)
+      send ? send(message) : this.#send(message)
     }
     #sendFormSubmit(form: HTMLFormElement) {
-      const topic = this.#getTopic()
-      const event: FormSubmitMessage = {
+      const message: FormSubmitMessage = {
         type: CONTROLLER_TO_AGENT_EVENTS.form_submit,
         detail: {
-          ...(topic && { topic }),
           id: form.id || null,
           action: form.action || null,
           method: form.method || 'get',
           data: buildFormSubmitData(form),
+          topic: this.getAttribute(P_TOPIC),
+          version: this.getAttribute(P_VERSION),
         },
       }
-      send ? send(event) : this.#send(event)
+      send ? send(message) : this.#send(message)
     }
     async #importModule(path: string) {
-      const modules = await import(path)
-      const setup = ControllerModuleDefaultSchema.parse(modules.default)
-      await setup({
-        DelegatedListener,
-        delegates,
-        addDisconnect: this.#addDisconnect.bind(this),
-        trigger: this.#trigger.bind(this),
-      })
-      this.#trigger({ type: CONTROLLER_TO_AGENT_EVENTS.import_invoked, detail: { path } })
+      const { default: setup } = await import(path)
+      if (
+        isTypeOf<(...args: unknown[]) => unknown>(module, 'function') ||
+        isTypeOf<(...args: unknown[]) => Promise<unknown>>(module, 'asyncfunction')
+      ) {
+        await setup({
+          DelegatedListener,
+          delegates,
+          addDisconnect: this.#addDisconnect.bind(this),
+          trigger: this.#trigger.bind(this),
+        })
+        this.#trigger({ type: CONTROLLER_TO_AGENT_EVENTS.import_invoked, detail: { path } })
+      } else {
+        this.#reportError(new Error(`Module Import Error ${'toString' in setup ? setup.toString() : `${setup}`}`), {
+          kind: 'import_error',
+        })
+      }
     }
     #bindTriggers = (subtree: DocumentFragment) => {
       const elements = subtree.querySelectorAll(`[${P_TRIGGER}]`)
@@ -439,8 +398,6 @@ export const useController = (send?: Trigger) => {
       this.#connect()
     }
     connectedCallback() {
-      this.#socketTopic = this.getAttribute(P_TOPIC)
-      this.#address = this.getAttribute(P_CONNECT)
       delegates.set(this, this.#socketListener)
       this.addEventListener('submit', this.#formListener)
       this.#connect()
@@ -455,5 +412,3 @@ export const useController = (send?: Trigger) => {
 
   return Controller
 }
-
-export const Controller = useController()

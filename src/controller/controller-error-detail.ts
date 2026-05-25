@@ -1,6 +1,6 @@
 import { type JsonObject, JsonObjectSchema } from '../behavioral.ts'
 import { isTypeOf } from '../utils.ts'
-import type { ControllerErrorDetail } from './controller.schemas.ts'
+import type { ControllerErrorMessage } from './controller.schemas.ts'
 
 const stringifyUnknown = (value: unknown): string => {
   if (isTypeOf<string>(value, 'string')) return value
@@ -29,7 +29,7 @@ export const normalizeControllerErrorDetail = ({
   error: unknown
   kind?: string
   context?: JsonObject
-}): ControllerErrorDetail => {
+}): Omit<ControllerErrorMessage['detail'], 'topic' | 'version'> => {
   const errorRecord = isRecord(error) ? error : undefined
   const message =
     error instanceof Error
