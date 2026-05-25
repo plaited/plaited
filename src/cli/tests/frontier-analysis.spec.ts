@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { resolve } from 'node:path'
 
 const runCli = async (input: unknown, ...extraArgs: string[]) => {
   const hasInput = input !== null
@@ -27,12 +28,30 @@ const runCli = async (input: unknown, ...extraArgs: string[]) => {
 }
 
 describe('frontierAnalysisCli', () => {
-  test('--help exits 0 and describes three modes', async () => {
+  test('--help exits 0 and describes thread input, replay, explore, and verify', async () => {
     const { exitCode, stderr } = await runCli(null, '--help')
 
     expect(exitCode).toBe(0)
-    expect(stderr).toContain('Spec input options')
-    expect(stderr).toContain('Replay/explore/verify')
+    expect(stderr).toContain('Thread input options')
+    expect(stderr).toContain('Replay/explore/verify options')
     expect(stderr).toContain('strategy')
+    expect(stderr).toContain('threads')
+  })
+
+  test('replay with thread paths loads threads and replays snapshot messages to the frontier', async () => {
+    const threadPath = resolve(import.meta.dir, 'fixtures/threads.ts')
+    const { exitCode, stdout } = await runCli({
+      mode: 'replay',
+      threads: [threadPath],
+      snapshotMessages: [{ kind: 'selection', step: 0, selected: { type: 'tick' } }],
+    })
+
+    expect(exitCode).toBe(0)
+    const output = JSON.parse(stdout)
+    expect(output.mode).toBe('replay')
+    // tick completes, worker (start) remains pending
+    expect(output.frontier.status).toBe('ready')
+    expect(output.frontier.candidates).toHaveLength(1)
+    expect(output.frontier.candidates[0]!.type).toBe('start')
   })
 })

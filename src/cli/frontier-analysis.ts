@@ -1,6 +1,6 @@
 /**
  * Behavioral frontier analysis CLI for replaying, exploring, and verifying
- * Plaited behavioral specs.
+ * behavioral thread files.
  *
  * @internal
  */
@@ -17,7 +17,7 @@ import type {
   SelectionSnapshot,
   SnapshotEvent,
   SnapshotMessage,
-  Spec,
+  Thread,
 } from 'plaited/behavioral'
 import {
   advanceRunningToPending,
@@ -27,11 +27,10 @@ import {
   FRONTIER_STATUS,
   FrontierSnapshotSchema,
   isListeningFor,
+  isThread,
   resumePendingThreadsForSelectedEvent,
   SNAPSHOT_MESSAGE_KINDS,
   SnapshotMessageSchema,
-  SpecSchema,
-  useSpec,
 } from 'plaited/behavioral'
 import { deepEqual, keyMirror } from 'plaited/utils'
 import * as z from 'zod'
@@ -62,55 +61,30 @@ const ExploreOptionsShape = {
   maxDepth: z.number().int().nonnegative().optional(),
 }
 
-const ReplayInlineInputSchema = z.strictObject({
+const ReplayInputSchema = z.strictObject({
   mode: z.literal(BEHAVIORAL_FRONTIER_MODES.replay),
-  specs: z.array(SpecSchema),
-  snapshotMessages: SnapshotMessagesSchema.optional(),
-})
-
-const ReplaySpecPathInputSchema = z.strictObject({
-  mode: z.literal(BEHAVIORAL_FRONTIER_MODES.replay),
-  specPath: z.string(),
+  threads: z.array(z.string()),
   cwd: z.string().optional(),
   snapshotMessages: SnapshotMessagesSchema.optional(),
 })
 
-const ExploreInlineInputSchema = z.strictObject({
+const ExploreInputSchema = z.strictObject({
   mode: z.literal(BEHAVIORAL_FRONTIER_MODES.explore),
-  specs: z.array(SpecSchema),
-  ...ExploreOptionsShape,
-})
-
-const ExploreSpecPathInputSchema = z.strictObject({
-  mode: z.literal(BEHAVIORAL_FRONTIER_MODES.explore),
-  specPath: z.string(),
+  threads: z.array(z.string()),
   cwd: z.string().optional(),
   ...ExploreOptionsShape,
 })
 
-const VerifyInlineInputSchema = z.strictObject({
+const VerifyInputSchema = z.strictObject({
   mode: z.literal(BEHAVIORAL_FRONTIER_MODES.verify),
-  specs: z.array(SpecSchema),
-  ...ExploreOptionsShape,
-})
-
-const VerifySpecPathInputSchema = z.strictObject({
-  mode: z.literal(BEHAVIORAL_FRONTIER_MODES.verify),
-  specPath: z.string(),
+  threads: z.array(z.string()),
   cwd: z.string().optional(),
   ...ExploreOptionsShape,
 })
 
 const BehavioralFrontierInputSchema = z
-  .union([
-    ReplayInlineInputSchema,
-    ReplaySpecPathInputSchema,
-    ExploreInlineInputSchema,
-    ExploreSpecPathInputSchema,
-    VerifyInlineInputSchema,
-    VerifySpecPathInputSchema,
-  ])
-  .describe('Replay, explore, or verify behavioral frontiers from snapshotMessages plus inline specs or specPath.')
+  .discriminatedUnion('mode', [ReplayInputSchema, ExploreInputSchema, VerifyInputSchema])
+  .describe('Replay, explore, or verify behavioral frontiers from snapshotMessages plus thread file paths.')
 
 type BehavioralFrontierInput = z.infer<typeof BehavioralFrontierInputSchema>
 
@@ -236,21 +210,22 @@ const getSelectedEvents = ({ snapshotMessages }: { snapshotMessages: SnapshotMes
     snapshot.kind === SNAPSHOT_MESSAGE_KINDS.selection ? [snapshot.selected] : [],
   )
 
+type ThreadEntry = [string, ReturnType<Thread>]
+
 export const replayToFrontier = ({
-  specs,
+  threads,
   snapshotMessages,
 }: {
-  specs: Spec[]
+  threads: ThreadEntry[]
   snapshotMessages: SnapshotMessage[]
 }): ReplayToFrontierResult => {
   const pending = new Set<PendingBid>()
   const running = new Set<RunningBid>()
 
-  for (const [index, spec] of specs.entries()) {
-    const [label, thread] = useSpec(spec)
+  for (const [index, [label, threadFn]] of threads.entries()) {
     running.add({
       priority: index + 1,
-      generator: thread(),
+      generator: threadFn(),
       label,
     })
   }
@@ -286,7 +261,7 @@ export const replayToFrontier = ({
 }
 
 export type ExploreFrontiersArgs = {
-  specs: Spec[]
+  threads: ThreadEntry[]
   snapshotMessages?: SnapshotMessage[]
   triggers?: BPEvent[]
   strategy?: 'bfs' | 'dfs'
@@ -379,13 +354,13 @@ const getRequestSuccessors = ({
 const getTriggerSuccessors = ({
   pending,
   snapshotMessages,
-  specs,
+  threads,
   step,
   triggers,
 }: {
   pending: Set<PendingBid>
   snapshotMessages: SnapshotMessage[]
-  specs: Spec[]
+  threads: ThreadEntry[]
   step: number
   triggers: BPEvent[]
 }) => {
@@ -407,7 +382,7 @@ const getTriggerSuccessors = ({
 
     try {
       replayToFrontier({
-        specs,
+        threads,
         snapshotMessages: [...snapshotMessages, selection],
       })
       successors.push(selection)
@@ -418,7 +393,7 @@ const getTriggerSuccessors = ({
 }
 
 export const exploreFrontiers = ({
-  specs,
+  threads,
   snapshotMessages = [],
   triggers = [],
   strategy = BEHAVIORAL_FRONTIER_STRATEGIES.bfs,
@@ -444,7 +419,7 @@ export const exploreFrontiers = ({
     }
     visited.add(key)
 
-    const { frontier, pending: currentPending } = replayToFrontier({ specs, snapshotMessages: current })
+    const { frontier, pending: currentPending } = replayToFrontier({ threads, snapshotMessages: current })
     const step = countSelectionSnapshots({ snapshotMessages: current })
     const frontierSnapshot = createFrontierSnapshot({ frontier, step })
 
@@ -460,7 +435,7 @@ export const exploreFrontiers = ({
     const triggerSuccessors = getTriggerSuccessors({
       pending: currentPending,
       snapshotMessages: current,
-      specs,
+      threads,
       step,
       triggers,
     })
@@ -528,54 +503,43 @@ export const verifyFrontiers = (args: ExploreFrontiersArgs): VerifyFrontiersResu
 const toAbsolutePath = ({ cwd, path }: { cwd?: string; path: string }) =>
   isAbsolute(path) ? path : resolve(cwd ? resolve(cwd) : process.cwd(), path)
 
-const formatIssues = (issues: z.core.$ZodIssue[]) =>
-  issues.map((issue) => `${issue.path.length > 0 ? issue.path.join('.') : '<root>'}: ${issue.message}`).join('; ')
+const loadThreads = async ({ cwd, paths }: { cwd?: string; paths: string[] }): Promise<ThreadEntry[]> => {
+  const threadEntries: ThreadEntry[] = []
 
-const loadSpecsFromJsonl = async ({ cwd, specPath }: { cwd?: string; specPath: string }) => {
-  const resolvedPath = toAbsolutePath({ cwd, path: specPath })
-  const file = Bun.file(resolvedPath)
+  for (const threadPath of paths) {
+    const resolvedPath = toAbsolutePath({ cwd, path: threadPath })
+    const file = Bun.file(resolvedPath)
 
-  if (!(await file.exists())) {
-    throw new Error(`Spec file does not exist: ${resolvedPath}`)
+    if (!(await file.exists())) {
+      throw new Error(`Thread file does not exist: ${resolvedPath}`)
+    }
+
+    const mod = await import(resolvedPath)
+
+    for (const [key, exportValue] of Object.entries(mod)) {
+      if (isThread(exportValue)) {
+        threadEntries.push([key, exportValue])
+      }
+    }
   }
 
-  const raw = await file.text()
-  const specs: Spec[] = []
-
-  for (const [index, line] of raw.split(/\r?\n/).entries()) {
-    const trimmed = line.trim()
-    if (trimmed.length === 0) {
-      continue
-    }
-
-    let parsedJson: unknown
-    try {
-      parsedJson = JSON.parse(trimmed)
-    } catch {
-      throw new Error(`Invalid JSON on specPath line ${index + 1}: ${resolvedPath}`)
-    }
-
-    const parsedSpec = SpecSchema.safeParse(parsedJson)
-    if (!parsedSpec.success) {
-      throw new Error(`Invalid spec at ${resolvedPath}:${index + 1}: ${formatIssues(parsedSpec.error.issues)}`)
-    }
-
-    specs.push(parsedSpec.data)
-  }
-
-  return specs
+  return threadEntries
 }
 
-const loadSpecs = async (input: BehavioralFrontierInput) =>
-  'specs' in input ? input.specs : loadSpecsFromJsonl({ cwd: input.cwd, specPath: input.specPath })
+const assertThreadsNotEmpty = (threads: ThreadEntry[]) => {
+  if (threads.length === 0) {
+    throw new Error('No behavioral thread exports found in the provided thread files.')
+  }
+}
 
 const runReplay = async (
   input: Extract<BehavioralFrontierInput, { mode: 'replay' }>,
 ): Promise<BehavioralFrontierOutput> => {
-  const specs = await loadSpecs(input)
+  const threads = await loadThreads({ cwd: input.cwd, paths: input.threads })
+  assertThreadsNotEmpty(threads)
   const snapshotMessages = input.snapshotMessages ?? []
   const { frontier } = replayToFrontier({
-    specs,
+    threads,
     snapshotMessages,
   })
 
@@ -592,12 +556,13 @@ const runReplay = async (
 const runExplore = async (
   input: Extract<BehavioralFrontierInput, { mode: 'explore' }>,
 ): Promise<BehavioralFrontierOutput> => {
-  const specs = await loadSpecs(input)
+  const threads = await loadThreads({ cwd: input.cwd, paths: input.threads })
+  assertThreadsNotEmpty(threads)
 
   return {
     mode: BEHAVIORAL_FRONTIER_MODES.explore,
     ...exploreFrontiers({
-      specs,
+      threads,
       snapshotMessages: input.snapshotMessages,
       triggers: input.triggers,
       strategy: input.strategy,
@@ -610,12 +575,13 @@ const runExplore = async (
 const runVerify = async (
   input: Extract<BehavioralFrontierInput, { mode: 'verify' }>,
 ): Promise<BehavioralFrontierOutput> => {
-  const specs = await loadSpecs(input)
+  const threads = await loadThreads({ cwd: input.cwd, paths: input.threads })
+  assertThreadsNotEmpty(threads)
 
   return {
     mode: BEHAVIORAL_FRONTIER_MODES.verify,
     ...verifyFrontiers({
-      specs,
+      threads,
       snapshotMessages: input.snapshotMessages,
       triggers: input.triggers,
       strategy: input.strategy,
@@ -645,9 +611,8 @@ export const frontierAnalysisCli = makeCli({
   inputSchema: BehavioralFrontierInputSchema,
   outputSchema: BehavioralFrontierOutputSchema,
   help: [
-    'Spec input options:',
-    '  - specs: inline JSON array of behavioral specs',
-    '  - specPath: JSONL file of behavioral specs (one spec object per line)',
+    'Thread input options:',
+    '  - threads: array of paths to behavioral thread files',
     '',
     'Replay/explore/verify options:',
     '  - snapshotMessages: prior snapshot stream prefix',

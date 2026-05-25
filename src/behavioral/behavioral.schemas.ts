@@ -35,33 +35,6 @@ export const BPListenerSchema = z.object({
 
 export type BPListener = z.output<typeof BPListenerSchema>
 
-export const SpecListenerSchema = BPListenerSchema.omit({
-  detailSchema: true,
-}).extend({
-  detailSchema: JsonObjectSchema.optional(),
-})
-
-export type SpecListener = z.output<typeof SpecListenerSchema>
-
-export const SpecIdiomsSchema = z.object({
-  waitFor: z.array(SpecListenerSchema).min(1).optional(),
-  interrupt: z.array(SpecListenerSchema).min(1).optional(),
-  block: z.array(SpecListenerSchema).min(1).optional(),
-  request: BPEventSchema.optional(),
-})
-
-export type SpecIdioms = z.output<typeof SpecIdiomsSchema>
-
-export const SpecSchema = z.object({
-  label: z.string(),
-  thread: z.object({
-    once: z.literal(true).optional(),
-    syncPoints: z.array(SpecIdiomsSchema),
-  }),
-})
-
-export type Spec = z.output<typeof SpecSchema>
-
 /**
  * @internal
  * Shared schema for memory entry detail envelopes.
