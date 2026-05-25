@@ -88,9 +88,10 @@ console.log(JSON.stringify({ greeting: \`Hello, \${input.name}!\` }));`,
         type: WORKER_COMMAND_TYPES.exec,
         detail: {
           topic: 'exec-1',
+          id: 'exec-1',
           cwd,
-          runtime: 'bun',
-          target: scriptPath,
+          command: 'bun',
+          subCommand: scriptPath,
           json: JSON.stringify({ name: 'World' }),
         },
       })
@@ -98,11 +99,46 @@ console.log(JSON.stringify({ greeting: \`Hello, \${input.name}!\` }));`,
       const execMessage = await waitForExec
       const { detail } = ExecMessageSchema.parse(execMessage)
 
+      expect(detail.id).toBe('exec-1')
+      expect(detail.topic).toBe('exec-1')
       expect(detail.result).toEqual({ greeting: 'Hello, World!' })
       expect(typeof detail.durationMs).toBe('number')
     } finally {
       worker.terminate()
       await rm(cwd, { recursive: true, force: true })
+    }
+  })
+
+  test('executes a raw bun command with args and returns stdout text', async () => {
+    const worker = new Worker(new URL('../worker.ts', import.meta.url).href, { type: 'module' })
+
+    try {
+      const waitForExec = waitForWorkerMessage({
+        worker,
+        predicate: isExecResultMessageForTopic('exec-version'),
+      })
+
+      worker.postMessage({
+        type: WORKER_COMMAND_TYPES.exec,
+        detail: {
+          topic: 'exec-version',
+          id: 'exec-version',
+          cwd: '/tmp',
+          command: 'bun',
+          subCommand: '--version',
+        },
+      })
+
+      const execMessage = await waitForExec
+      const { detail } = ExecMessageSchema.parse(execMessage)
+
+      expect(detail.id).toBe('exec-version')
+      expect(detail.topic).toBe('exec-version')
+      expect(typeof detail.result).toBe('string')
+      expect(detail.result).toContain('1.')
+      expect(typeof detail.durationMs).toBe('number')
+    } finally {
+      worker.terminate()
     }
   })
 
@@ -122,6 +158,7 @@ console.log(JSON.stringify({ greeting: \`Hello, \${input.name}!\` }));`,
         type: WORKER_COMMAND_TYPES.write,
         detail: {
           topic: 'write-1',
+          id: 'write-1',
           cwd,
           path: 'note.txt',
           content,
@@ -131,6 +168,8 @@ console.log(JSON.stringify({ greeting: \`Hello, \${input.name}!\` }));`,
 
       const writeMessage = await waitForWrite
       const { detail } = WriteMessageSchema.parse(writeMessage)
+      expect(detail.id).toBe('write-1')
+      expect(detail.topic).toBe('write-1')
       expect(detail.path).toBe('note.txt')
       expect(detail.bytes).toBe(encoder.encode(content).length)
 
@@ -143,6 +182,7 @@ console.log(JSON.stringify({ greeting: \`Hello, \${input.name}!\` }));`,
         type: WORKER_COMMAND_TYPES.read,
         detail: {
           topic: 'read-1',
+          id: 'read-1',
           cwd,
           path: 'note.txt',
           encoding: 'utf8',
@@ -151,6 +191,8 @@ console.log(JSON.stringify({ greeting: \`Hello, \${input.name}!\` }));`,
 
       const readMessage = await waitForRead
       const { detail: readDetail } = ReadMessageSchema.parse(readMessage)
+      expect(readDetail.id).toBe('read-1')
+      expect(readDetail.topic).toBe('read-1')
       expect(readDetail.path).toBe('note.txt')
       expect(readDetail.encoding).toBe('utf8')
       expect(readDetail.content).toBe(content)
@@ -179,6 +221,7 @@ console.log(JSON.stringify({ greeting: \`Hello, \${input.name}!\` }));`,
         type: WORKER_COMMAND_TYPES.read,
         detail: {
           topic: 'read-bytes-1',
+          id: 'read-bytes-1',
           cwd,
           path,
           encoding: 'bytes',
@@ -189,6 +232,8 @@ console.log(JSON.stringify({ greeting: \`Hello, \${input.name}!\` }));`,
       const readMessage = await waitForRead
       const { detail } = ReadMessageSchema.parse(readMessage)
 
+      expect(detail.id).toBe('read-bytes-1')
+      expect(detail.topic).toBe('read-bytes-1')
       expect(detail.encoding).toBe('bytes')
       expect(detail.bytes).toBe(6)
       expect(detail.truncated).toBe(true)
@@ -231,6 +276,7 @@ console.log(JSON.stringify({ greeting: \`Hello, \${input.name}!\` }));`,
         type: WORKER_COMMAND_TYPES.read,
         detail: {
           topic: 'bad-read-1',
+          id: 'bad-read-1',
           cwd: process.cwd(),
           path: 'note.txt',
           maxBytes: -1,
@@ -259,6 +305,7 @@ console.log(JSON.stringify({ greeting: \`Hello, \${input.name}!\` }));`,
         type: WORKER_COMMAND_TYPES.read,
         detail: {
           topic: 'missing-read-1',
+          id: 'missing-read-1',
           cwd,
           path: 'missing.txt',
         },
