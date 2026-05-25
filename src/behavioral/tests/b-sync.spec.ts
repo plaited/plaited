@@ -1,6 +1,5 @@
 import { expect, test } from 'bun:test'
 import { sync } from '../behavioral.utils.ts'
-import { onType } from './helpers.ts'
 
 test('bSync: creates generator that yields sync point once', () => {
   const syncPoint = { request: { type: 'test' } }
@@ -26,7 +25,7 @@ test('bSync: supports request idiom', () => {
 })
 
 test('bSync: supports waitFor idiom', () => {
-  const waitFor = onType('event')
+  const waitFor = { type: 'event' }
   const behaviorSync = sync({ waitFor })
   const gen = behaviorSync()
 
@@ -36,7 +35,7 @@ test('bSync: supports waitFor idiom', () => {
 })
 
 test('bSync: supports block idiom', () => {
-  const block = onType('event')
+  const block = { type: 'event' }
   const behaviorSync = sync({ block })
   const gen = behaviorSync()
 
@@ -46,7 +45,7 @@ test('bSync: supports block idiom', () => {
 })
 
 test('bSync: supports interrupt idiom', () => {
-  const interrupt = onType('event')
+  const interrupt = { type: 'event' }
   const behaviorSync = sync({ interrupt })
   const gen = behaviorSync()
 
@@ -56,8 +55,8 @@ test('bSync: supports interrupt idiom', () => {
 })
 
 test('bSync: supports multiple idioms together', () => {
-  const waitFor = onType('event2')
-  const block = onType('event3')
+  const waitFor = { type: 'event2' }
+  const block = { type: 'event3' }
   const behaviorSync = sync({
     request: { type: 'event1' },
     waitFor,
@@ -73,7 +72,7 @@ test('bSync: supports multiple idioms together', () => {
 })
 
 test('bSync: supports detail-schema conditions in listeners', () => {
-  const listener = onType('target')
+  const listener = { type: 'target' }
   const behaviorSync = sync({ waitFor: listener })
   const gen = behaviorSync()
 
@@ -83,8 +82,8 @@ test('bSync: supports detail-schema conditions in listeners', () => {
 })
 
 test('bSync: supports arrays of listeners', () => {
-  const waitFor = [onType('event1'), onType('event2')]
-  const block = [onType('event3'), onType('event4')]
+  const waitFor = [{ type: 'event1' }, { type: 'event2' }]
+  const block = [{ type: 'event3' }, { type: 'event4' }]
   const behaviorSync = sync({
     waitFor,
     block,

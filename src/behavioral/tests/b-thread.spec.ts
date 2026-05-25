@@ -1,7 +1,6 @@
 import { expect, test } from 'bun:test'
 import type { BPEvent } from '../behavioral.schemas.ts'
 import { thread as bThread, sync } from '../behavioral.utils.ts'
-import { onType } from './helpers.ts'
 
 test('bThread: executes rules sequentially', () => {
   const results: string[] = []
@@ -113,9 +112,9 @@ test('bThread: handles single rule', () => {
 })
 
 test('bThread: supports all idioms in rules', () => {
-  const waitFor = onType('event2')
-  const block = onType('event3')
-  const interrupt = onType('event4')
+  const waitFor = { type: 'event2' }
+  const block = { type: 'event3' }
+  const interrupt = { type: 'event4' }
   const rule1 = sync({
     request: { type: 'event1' },
     waitFor,

@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test'
 import * as z from 'zod'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
 import type { DeadlockSnapshot, FrontierSnapshot, SelectionSnapshot, SnapshotMessage } from '../behavioral.schemas.ts'
+import { behavioral } from '../behavioral.ts'
 import { sync, thread } from '../behavioral.utils.ts'
-import { behavioral } from './helpers.ts'
 
 const onType = (type: string) => ({
   type,
@@ -12,16 +12,14 @@ const onType = (type: string) => ({
 describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
   test('publishes deadlock snapshot when candidates exist but none are selectable', () => {
     const snapshots: SnapshotMessage[] = []
-    const { addBThreads, trigger, useSnapshot } = behavioral()
+    const { addThread, trigger, useSnapshot } = behavioral()
 
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
 
-    addBThreads({
-      safety: thread([sync({ block: onType('dangerous') })]),
-      interruptor: thread([sync({ interrupt: onType('dangerous') })]),
-    })
+    addThread('safety', thread([sync({ block: onType('dangerous') })]))
+    addThread('interruptor', thread([sync({ interrupt: onType('dangerous') })]))
 
     trigger({ type: 'dangerous' })
 
@@ -52,15 +50,13 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
 
   test('does not publish deadlock snapshot when no candidates exist', () => {
     const snapshots: SnapshotMessage[] = []
-    const { addBThreads, useSnapshot } = behavioral()
+    const { addThread, useSnapshot } = behavioral()
 
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
 
-    addBThreads({
-      watcher: thread([sync({ waitFor: onType('dangerous') })]),
-    })
+    addThread('watcher', thread([sync({ waitFor: onType('dangerous') })]))
 
     expect(snapshots).toHaveLength(0)
   })
@@ -68,25 +64,21 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
   test('publishes selection snapshot when enabled candidates exist and keeps priority selection behavior', () => {
     const snapshots: SnapshotMessage[] = []
     const selected: string[] = []
-    const { addBThreads, trigger, useFeedback, useSnapshot } = behavioral()
+    const { addThread, trigger, addHandler, useSnapshot } = behavioral()
 
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
 
-    useFeedback({
-      low: () => {
-        selected.push('low')
-      },
-      high: () => {
-        selected.push('high')
-      },
+    addHandler('low', () => {
+      selected.push('low')
+    })
+    addHandler('high', () => {
+      selected.push('high')
     })
 
-    addBThreads({
-      low: thread([sync({ request: { type: 'low' } })], true),
-      high: thread([sync({ request: { type: 'high' } })], true),
-    })
+    addThread('low', thread([sync({ request: { type: 'low' } })], true))
+    addThread('high', thread([sync({ request: { type: 'high' } })], true))
 
     trigger({ type: 'tick' })
 
@@ -110,14 +102,15 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
 
   test('selection snapshot reports the chosen candidate event', () => {
     const snapshots: SnapshotMessage[] = []
-    const { addBThreads, trigger, useSnapshot } = behavioral()
+    const { addThread, trigger, useSnapshot } = behavioral()
 
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
 
-    addBThreads({
-      blockSecond: thread([
+    addThread(
+      'blockSecond',
+      thread([
         sync({
           block: {
             type: 'same_type',
@@ -125,9 +118,9 @@ describe(SNAPSHOT_MESSAGE_KINDS.deadlock, () => {
           },
         }),
       ]),
-      first: thread([sync({ request: { type: 'same_type', detail: { n: 1 } } })], true),
-      second: thread([sync({ request: { type: 'same_type', detail: { n: 2 } } })], true),
-    })
+    )
+    addThread('first', thread([sync({ request: { type: 'same_type', detail: { n: 1 } } })], true))
+    addThread('second', thread([sync({ request: { type: 'same_type', detail: { n: 2 } } })], true))
 
     trigger({ type: 'kickoff' })
 

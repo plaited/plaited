@@ -1,8 +1,8 @@
 import { expect, test } from 'bun:test'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
 import type { SnapshotMessage } from '../behavioral.schemas.ts'
+import { behavioral } from '../behavioral.ts'
 import { sync, thread } from '../behavioral.utils.ts'
-import { behavioral, onType } from './helpers.ts'
 
 /**
  * Test scenario: Demonstrates a basic behavioral program (`bProgram`).
@@ -13,7 +13,7 @@ import { behavioral, onType } from './helpers.ts'
  * - A `bProgram` instance is created.
  * - A b-thread named 'addHot' is defined using `bThread` and `bSync`.
  *   - It consists of three steps, each requesting the 'hot' event.
- * - A feedback handler using `useFeedback` is registered to track when 'hot' events are selected.
+ * - A feedback handler using `addHandler` is registered to track when 'hot' events are selected.
  * - The program is initiated by triggering a 'start' event (though any event could start it).
  *
  * Expected Outcome:
@@ -22,17 +22,16 @@ import { behavioral, onType } from './helpers.ts'
  */
 test('Add hot water 3 times', () => {
   const actual: string[] = []
-  const { addBThreads, trigger, useFeedback } = behavioral()
-  addBThreads({
-    addHot: thread(
+  const { addThread, trigger, addHandler } = behavioral()
+  addThread(
+    'addHot',
+    thread(
       [sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } })],
       true,
     ),
-  })
-  useFeedback({
-    hot() {
-      actual.push('hot')
-    },
+  )
+  addHandler('hot', () => {
+    actual.push('hot')
   })
   trigger({ type: 'start' })
   expect(actual).toEqual(['hot', 'hot', 'hot'])
@@ -54,24 +53,26 @@ test('Add hot water 3 times', () => {
  */
 test('Add hot/cold water 3 times', () => {
   const actual: string[] = []
-  const { addBThreads, trigger, useFeedback } = behavioral()
-  addBThreads({
-    addHot: thread(
+  const { addThread, trigger, addHandler } = behavioral()
+  addThread(
+    'addHot',
+    thread(
       [sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } })],
       true,
     ),
-    addCold: thread(
+  )
+  addThread(
+    'addCold',
+    thread(
       [sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } })],
       true,
     ),
+  )
+  addHandler('hot', () => {
+    actual.push('hot')
   })
-  useFeedback({
-    hot() {
-      actual.push('hot')
-    },
-    cold() {
-      actual.push('cold')
-    },
+  addHandler('cold', () => {
+    actual.push('cold')
   })
   trigger({ type: 'start' })
   expect(actual).toEqual(['hot', 'hot', 'hot', 'cold', 'cold', 'cold'])
@@ -85,28 +86,33 @@ test('Add hot/cold water 3 times', () => {
  */
 test('interleave', () => {
   const actual: string[] = []
-  const { addBThreads, trigger, useFeedback } = behavioral()
-  addBThreads({
-    addHot: thread(
+  const { addThread, trigger, addHandler } = behavioral()
+  addThread(
+    'addHot',
+    thread(
       [sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } })],
       true,
     ),
-    addCold: thread(
+  )
+  addThread(
+    'addCold',
+    thread(
       [sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } })],
       true,
     ),
-    mixHotCold: thread([
-      sync({ waitFor: onType('hot'), block: onType('cold') }),
-      sync({ waitFor: onType('cold'), block: onType('hot') }),
+  )
+  addThread(
+    'mixHotCold',
+    thread([
+      sync({ waitFor: { type: 'hot' }, block: { type: 'cold' } }),
+      sync({ waitFor: { type: 'cold' }, block: { type: 'hot' } }),
     ]),
+  )
+  addHandler('hot', () => {
+    actual.push('hot')
   })
-  useFeedback({
-    hot() {
-      actual.push('hot')
-    },
-    cold() {
-      actual.push('cold')
-    },
+  addHandler('cold', () => {
+    actual.push('cold')
   })
   trigger({ type: 'start' })
   expect(actual).toHaveLength(6)
@@ -122,24 +128,31 @@ test('interleave', () => {
  */
 test('logging', () => {
   const snapshots: SnapshotMessage[] = []
-  const { addBThreads, trigger, useSnapshot } = behavioral()
+  const { addThread, trigger, useSnapshot } = behavioral()
   useSnapshot((snapshot: SnapshotMessage) => {
     snapshots.push(snapshot)
   })
-  addBThreads({
-    addHot: thread(
+  addThread(
+    'addHot',
+    thread(
       [sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } }), sync({ request: { type: 'hot' } })],
       true,
     ),
-    addCold: thread(
+  )
+  addThread(
+    'addCold',
+    thread(
       [sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } }), sync({ request: { type: 'cold' } })],
       true,
     ),
-    mixHotCold: thread([
-      sync({ waitFor: onType('hot'), block: onType('cold') }),
-      sync({ waitFor: onType('cold'), block: onType('hot') }),
+  )
+  addThread(
+    'mixHotCold',
+    thread([
+      sync({ waitFor: { type: 'hot' }, block: { type: 'cold' } }),
+      sync({ waitFor: { type: 'cold' }, block: { type: 'hot' } }),
     ]),
-  })
+  )
   trigger({ type: 'start' })
   const frontierSnapshots = snapshots.filter((snapshot) => snapshot.kind === SNAPSHOT_MESSAGE_KINDS.frontier)
   expect(frontierSnapshots.length).toBeGreaterThan(0)

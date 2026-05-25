@@ -1,19 +1,17 @@
 import { describe, expect, test } from 'bun:test'
+import { behavioral } from '../behavioral.ts'
 import { sync, thread } from '../behavioral.utils.ts'
-import { behavioral, onType } from './helpers.ts'
+
+const onType = (type: string) => ({ type })
 
 describe('trigger', () => {
   test('routes triggered events into the BP engine', () => {
-    const { addBThreads, trigger, useFeedback } = behavioral()
+    const { addThread, trigger, addHandler } = behavioral()
     const received: string[] = []
 
-    addBThreads({
-      listener: thread([sync({ waitFor: onType('allowed_event') })], true),
-    })
-    useFeedback({
-      allowed_event() {
-        received.push('allowed_event')
-      },
+    addThread('listener', thread([sync({ waitFor: onType('allowed_event') })], true))
+    addHandler('allowed_event', () => {
+      received.push('allowed_event')
     })
 
     trigger({ type: 'allowed_event' })
@@ -22,16 +20,12 @@ describe('trigger', () => {
   })
 
   test('preserves detail payload on triggered events', () => {
-    const { addBThreads, trigger, useFeedback } = behavioral()
+    const { addThread, trigger, addHandler } = behavioral()
     const received: Array<{ id: number }> = []
 
-    addBThreads({
-      listener: thread([sync({ waitFor: onType('payload_event') })], true),
-    })
-    useFeedback({
-      payload_event(detail) {
-        received.push(detail as { id: number })
-      },
+    addThread('listener', thread([sync({ waitFor: onType('payload_event') })], true))
+    addHandler<{ id: number }>('payload_event', (detail) => {
+      received.push(detail)
     })
 
     trigger({ type: 'payload_event', detail: { id: 99 } })

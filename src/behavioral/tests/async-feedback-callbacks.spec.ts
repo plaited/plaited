@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
+import { behavioral } from '../behavioral.ts'
 import { sync, thread } from '../behavioral.utils.ts'
-import { behavioral } from './helpers.ts'
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -11,43 +11,24 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 test('async feedback ELEMENT_CALLBACKS', async () => {
   /** Records the order of execution steps. */
   const actual: string[] = []
-  const { addBThreads, trigger, useFeedback } = behavioral()
+  const { addThread, trigger, addHandler } = behavioral()
 
   /** Define behavioral threads using bSync for simplicity. */
-  addBThreads({
-    /** A thread that requests the 'init' event immediately. */
-    onInit: thread([sync({ request: { type: 'init' } })], true),
-    /** A thread that requests the 'afterInit' event immediately. */
-    afterInit: thread([sync({ request: { type: 'afterInit' } })], true),
-  })
+  addThread('onInit', thread([sync({ request: { type: 'init' } })], true))
+  addThread('afterInit', thread([sync({ request: { type: 'afterInit' } })], true))
 
   /** Register feedback handlers for specific events. */
-  useFeedback({
-    /**
-     * An asynchronous handler for the 'init' event.
-     * It records its execution, waits for a short period,
-     * and then triggers a new 'update' event.
-     */
-    async init() {
-      actual.push('init')
-      await wait(100) // Simulate async operation
-      // Triggering another event from within an async feedback handler.
-      trigger({ type: 'update', detail: { status: 'update' } })
-    },
-    /**
-     * A synchronous handler for the 'afterInit' event.
-     * It records its execution.
-     */
-    afterInit() {
-      actual.push('afterInit')
-    },
-    /**
-     * A synchronous handler for the 'update' event.
-     * It records its execution.
-     */
-    update() {
-      actual.push('update')
-    },
+  addHandler('init', async () => {
+    actual.push('init')
+    await wait(100)
+
+    trigger({ type: 'update', detail: { status: 'update' } })
+  })
+  addHandler('afterInit', () => {
+    actual.push('afterInit')
+  })
+  addHandler('update', () => {
+    actual.push('update')
   })
 
   /** Trigger the initial 'start' event to begin the test. */

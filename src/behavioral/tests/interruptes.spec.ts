@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
 import type { SnapshotMessage } from '../behavioral.schemas.ts'
+import { behavioral } from '../behavioral.ts'
 import { sync, thread } from '../behavioral.utils.ts'
-import { behavioral, onType } from './helpers.ts'
+
+const onType = (type: string) => ({ type })
 
 /**
  * Test suite for demonstrating the 'interrupt' idiom in behavioral programming.
@@ -27,12 +29,10 @@ describe('interrupt', () => {
    */
   test('should not interrupt', () => {
     const actual: string[] = []
-    const { addBThreads, trigger, useFeedback } = behavioral()
-    addBThreads({ addHot })
-    useFeedback({
-      hot() {
-        actual.push('hot')
-      },
+    const { addThread, trigger, addHandler } = behavioral()
+    addThread('addHot', addHot)
+    addHandler('hot', () => {
+      actual.push('hot')
     })
     trigger({ type: 'add' })
     trigger({ type: 'add' })
@@ -59,15 +59,13 @@ describe('interrupt', () => {
   test('should interrupt', () => {
     const snapshots: SnapshotMessage[] = []
     const actual: string[] = []
-    const { addBThreads, trigger, useFeedback, useSnapshot } = behavioral()
+    const { addThread, trigger, addHandler, useSnapshot } = behavioral()
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
-    addBThreads({ addHot })
-    useFeedback({
-      hot() {
-        actual.push('hot')
-      },
+    addThread('addHot', addHot)
+    addHandler('hot', () => {
+      actual.push('hot')
     })
     trigger({ type: 'add' })
     trigger({ type: 'add' })

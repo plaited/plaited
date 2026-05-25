@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import type { SnapshotMessage } from '../behavioral.schemas.ts'
+import { behavioral } from '../behavioral.ts'
 import { sync, thread } from '../behavioral.utils.ts'
-import { behavioral, onType } from './helpers.ts'
+
+const onType = (type: string) => ({ type })
 
 describe('reportSnapshot', () => {
   test('publishes custom runtime diagnostics through useSnapshot', () => {
@@ -31,18 +33,16 @@ describe('reportSnapshot', () => {
 
   test('does not alter event selection order', () => {
     const events: string[] = []
-    const { addBThread, trigger, useFeedback, reportSnapshot } = behavioral()
+    const { addThread, trigger, addHandler, reportSnapshot } = behavioral()
 
-    addBThread('producer', thread([sync({ request: { type: 'task' } })], true))
-    addBThread('consumer', thread([sync({ waitFor: onType('task') }), sync({ request: { type: 'ack' } })], true))
+    addThread('producer', thread([sync({ request: { type: 'task' } })], true))
+    addThread('consumer', thread([sync({ waitFor: onType('task') }), sync({ request: { type: 'ack' } })], true))
 
-    useFeedback({
-      task() {
-        events.push('task')
-      },
-      ack() {
-        events.push('ack')
-      },
+    addHandler('task', () => {
+      events.push('task')
+    })
+    addHandler('ack', () => {
+      events.push('ack')
     })
 
     reportSnapshot({

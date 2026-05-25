@@ -1,28 +1,24 @@
 import { describe, expect, test } from 'bun:test'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
 import type { FeedbackError, SnapshotMessage } from '../behavioral.schemas.ts'
+import { behavioral } from '../behavioral.ts'
 import { sync, thread } from '../behavioral.utils.ts'
-import { behavioral } from './helpers.ts'
 
 /**
  * Test suite for the FeedbackError snapshot message.
- * When a useFeedback handler throws during side-effect execution,
+ * When a addHandler handler throws during side-effect execution,
  * the error surfaces through useSnapshot as a { kind: SNAPSHOT_MESSAGE_KINDS.feedback_error } message.
  */
 describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
   test('publishes feedback-error when handler throws synchronously', () => {
     const snapshots: SnapshotMessage[] = []
-    const { addBThreads, trigger, useFeedback, useSnapshot } = behavioral()
+    const { addThread, trigger, addHandler, useSnapshot } = behavioral()
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
-    addBThreads({
-      requestAction: thread([sync({ request: { type: 'doWork' } })], true),
-    })
-    useFeedback({
-      doWork() {
-        throw new Error('handler failed')
-      },
+    addThread('requestAction', thread([sync({ request: { type: 'doWork' } })], true))
+    addHandler('doWork', () => {
+      throw new Error('handler failed')
     })
     trigger({ type: 'start' })
 
@@ -40,17 +36,13 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
 
   test('publishes feedback-error with event detail', () => {
     const snapshots: SnapshotMessage[] = []
-    const { addBThreads, trigger, useFeedback, useSnapshot } = behavioral()
+    const { addThread, trigger, addHandler, useSnapshot } = behavioral()
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
-    addBThreads({
-      requestAction: thread([sync({ request: { type: 'process', detail: { id: 42 } } })], true),
-    })
-    useFeedback({
-      process() {
-        throw new TypeError('invalid input')
-      },
+    addThread('requestAction', thread([sync({ request: { type: 'process', detail: { id: 42 } } })], true))
+    addHandler('process', () => {
+      throw new TypeError('invalid input')
     })
     trigger({ type: 'start' })
 
@@ -68,17 +60,13 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
 
   test('stringifies non-Error thrown values', () => {
     const snapshots: SnapshotMessage[] = []
-    const { addBThreads, trigger, useFeedback, useSnapshot } = behavioral()
+    const { addThread, trigger, addHandler, useSnapshot } = behavioral()
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
-    addBThreads({
-      requestAction: thread([sync({ request: { type: 'fail' } })], true),
-    })
-    useFeedback({
-      fail() {
-        throw 'string error'
-      },
+    addThread('requestAction', thread([sync({ request: { type: 'fail' } })], true))
+    addHandler('fail', () => {
+      throw 'string error'
     })
     trigger({ type: 'start' })
 
@@ -89,17 +77,13 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
 
   test('frontier and selection snapshots precede feedback-error in message order', () => {
     const snapshots: SnapshotMessage[] = []
-    const { addBThreads, trigger, useFeedback, useSnapshot } = behavioral()
+    const { addThread, trigger, addHandler, useSnapshot } = behavioral()
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
-    addBThreads({
-      requestAction: thread([sync({ request: { type: 'boom' } })], true),
-    })
-    useFeedback({
-      boom() {
-        throw new Error('exploded')
-      },
+    addThread('requestAction', thread([sync({ request: { type: 'boom' } })], true))
+    addHandler('boom', () => {
+      throw new Error('exploded')
     })
     trigger({ type: 'start' })
 
@@ -117,18 +101,12 @@ describe(SNAPSHOT_MESSAGE_KINDS.feedback_error, () => {
 
   test('no feedback-error when handler succeeds', () => {
     const snapshots: SnapshotMessage[] = []
-    const { addBThreads, trigger, useFeedback, useSnapshot } = behavioral()
+    const { addThread, trigger, addHandler, useSnapshot } = behavioral()
     useSnapshot((snapshot: SnapshotMessage) => {
       snapshots.push(snapshot)
     })
-    addBThreads({
-      requestAction: thread([sync({ request: { type: 'ok' } })], true),
-    })
-    useFeedback({
-      ok() {
-        /* no error */
-      },
-    })
+    addThread('requestAction', thread([sync({ request: { type: 'ok' } })], true))
+    addHandler('ok', () => {})
     trigger({ type: 'start' })
 
     const errors = snapshots.filter((s) => s.kind === SNAPSHOT_MESSAGE_KINDS.feedback_error)

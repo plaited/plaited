@@ -1,8 +1,8 @@
 import { expect, test } from 'bun:test'
 import * as z from 'zod'
+import { behavioral } from '../behavioral.ts'
 import type { Sync } from '../behavioral.types.ts'
 import { sync, thread } from '../behavioral.utils.ts'
-import { behavioral } from './helpers.ts'
 
 type WinningLine = [number, number, number]
 
@@ -46,25 +46,21 @@ const onPlayerMoveIn = (player: 'X' | 'O', lineSquares: WinningLine) => ({
 
 /**
  * Test case: Demonstrates the basic mechanism of taking a square.
- * It sets up a bProgram and uses feedback handlers (`useFeedback`) to update the board state
+ * It sets up a bProgram and uses feedback handlers (`addHandler`) to update the board state
  * when 'X' or 'O' events are triggered. This test verifies that triggering an event
  * correctly modifies the shared `board` state via the feedback mechanism.
  */
 test('taking a square', () => {
   // Create a new bProgram instance.
-  const { useFeedback, trigger } = behavioral()
+  const { addHandler, trigger } = behavioral()
   // Initialize the board with all squares available for this test.
   board = new Set(squares)
   // Register feedback handlers to react to 'X' and 'O' events.
-  useFeedback({
-    /** Feedback handler for the 'X' event. Removes the chosen square from the board. */
-    X({ square }: Square) {
-      board.delete(square)
-    },
-    /** Feedback handler for the 'O' event. Removes the chosen square from the board. */
-    O({ square }: Square) {
-      board.delete(square)
-    },
+  addHandler('X', ({ square }: Square) => {
+    board.delete(square)
+  })
+  addHandler('O', ({ square }: Square) => {
+    board.delete(square)
   })
   // X takes square 1
   trigger({ type: 'X', detail: { square: 1 } })
@@ -93,21 +89,17 @@ const enforceTurns = thread([
  */
 test('take turns', () => {
   // Create a new bProgram instance.
-  const { useFeedback, trigger, addBThreads } = behavioral()
+  const { addHandler, trigger, addThread } = behavioral()
+  addThread('enforceTurns', enforceTurns)
   // Initialize the board.
   board = new Set(squares)
   // Add the turn-enforcing thread.
-  addBThreads({
-    enforceTurns,
-  })
   // Register feedback handlers to update the board.
-  useFeedback({
-    X({ square }: Square) {
-      board.delete(square)
-    },
-    O({ square }: Square) {
-      board.delete(square)
-    },
+  addHandler('X', ({ square }: Square) => {
+    board.delete(square)
+  })
+  addHandler('O', ({ square }: Square) => {
+    board.delete(square)
   })
   // X takes square 1 (valid).
   trigger({ type: 'X', detail: { square: 1 } })
@@ -147,22 +139,20 @@ for (const square of squares) {
  */
 test('squares taken', () => {
   // Create a new bProgram instance.
-  const { useFeedback, trigger, addBThreads } = behavioral()
+  const { addHandler, trigger, addThread } = behavioral()
+  addThread('enforceTurns', enforceTurns)
+  for (const [key, thread] of Object.entries(squaresTaken)) {
+    addThread(key, thread)
+  }
   // Initialize the board.
   board = new Set(squares)
   // Add threads for turn enforcement and preventing taking occupied squares.
-  addBThreads({
-    enforceTurns,
-    ...squaresTaken,
-  })
   // Register feedback handlers.
-  useFeedback({
-    X({ square }: Square) {
-      board.delete(square)
-    },
-    O({ square }: Square) {
-      board.delete(square)
-    },
+  addHandler('X', ({ square }: Square) => {
+    board.delete(square)
+  })
+  addHandler('O', ({ square }: Square) => {
+    board.delete(square)
   })
   // X takes square 1 (valid).
   trigger({ type: 'X', detail: { square: 1 } })
@@ -226,30 +216,31 @@ const detectWins = (player: 'X' | 'O') =>
  */
 test('detect winner', () => {
   // Create a new bProgram instance.
-  const { useFeedback, trigger, addBThreads } = behavioral()
+  const { addHandler, trigger, addThread } = behavioral()
+  addThread('enforceTurns', enforceTurns)
+  for (const [key, thread] of Object.entries(squaresTaken)) {
+    addThread(key, thread)
+  }
+  for (const [key, thread] of Object.entries(detectWins('X'))) {
+    addThread(key, thread)
+  }
+  for (const [key, thread] of Object.entries(detectWins('O'))) {
+    addThread(key, thread)
+  }
   // Initialize the board.
   board = new Set(squares)
   // Add threads for game rules and win detection.
-  addBThreads({
-    enforceTurns,
-    ...squaresTaken,
-    ...detectWins('X'),
-    ...detectWins('O'),
-  })
   /** Stores the winner information when a 'win' event occurs. */
   const winner: Winner | Record<string, unknown> = {}
   // Register feedback handlers, including one for the 'win' event.
-  useFeedback({
-    X({ square }: { square: number }) {
-      board.delete(square)
-    },
-    O({ square }: { square: number }) {
-      board.delete(square)
-    },
-    /** Feedback handler for the 'win' event. Records the winner details. */
-    win(detail: Winner) {
-      Object.assign(winner, detail) // Assign the winner details to the winner variable.
-    },
+  addHandler('X', ({ square }: { square: number }) => {
+    board.delete(square)
+  })
+  addHandler('O', ({ square }: { square: number }) => {
+    board.delete(square)
+  })
+  addHandler('win', (detail: Winner) => {
+    Object.assign(winner, detail)
   })
   // Simulate moves leading to X winning.
   trigger({ type: 'X', detail: { square: 0 } })
@@ -274,29 +265,31 @@ const stopGame = thread([sync({ waitFor: onType('win') }), sync({ block: [onType
  */
 test('stop game', () => {
   // Create a new bProgram instance.
-  const { useFeedback, trigger, addBThreads } = behavioral()
+  const { addHandler, trigger, addThread } = behavioral()
+  addThread('enforceTurns', enforceTurns)
+  for (const [key, thread] of Object.entries(squaresTaken)) {
+    addThread(key, thread)
+  }
+  for (const [key, thread] of Object.entries(detectWins('X'))) {
+    addThread(key, thread)
+  }
+  for (const [key, thread] of Object.entries(detectWins('O'))) {
+    addThread(key, thread)
+  }
+  addThread('stopGame', stopGame)
   // Initialize the board.
   board = new Set(squares)
   // Add all game rule threads, including the one to stop the game on win.
-  addBThreads({
-    enforceTurns,
-    ...squaresTaken,
-    ...detectWins('X'),
-    ...detectWins('O'),
-    stopGame,
-  })
   const winner: Winner | Record<string, unknown> = {}
   // Register feedback handlers.
-  useFeedback({
-    X({ square }: { square: number }) {
-      board.delete(square)
-    },
-    O({ square }: { square: number }) {
-      board.delete(square)
-    },
-    win(detail: Winner) {
-      Object.assign(winner, detail)
-    },
+  addHandler('X', ({ square }: { square: number }) => {
+    board.delete(square)
+  })
+  addHandler('O', ({ square }: { square: number }) => {
+    board.delete(square)
+  })
+  addHandler('win', (detail: Winner) => {
+    Object.assign(winner, detail)
   })
   // Simulate moves leading to X winning.
   trigger({ type: 'X', detail: { square: 0 } })
@@ -336,27 +329,31 @@ for (const square of squares) {
  */
 test('defaultMoves', () => {
   // Create a new bProgram instance.
-  const { useFeedback, trigger, addBThreads } = behavioral()
+  const { addHandler, trigger, addThread } = behavioral()
+  addThread('enforceTurns', enforceTurns)
+  for (const [key, thread] of Object.entries(squaresTaken)) {
+    addThread(key, thread)
+  }
+  for (const [key, thread] of Object.entries(detectWins('X'))) {
+    addThread(key, thread)
+  }
+  for (const [key, thread] of Object.entries(detectWins('O'))) {
+    addThread(key, thread)
+  }
+  addThread('stopGame', stopGame)
+  for (const [key, thread] of Object.entries(defaultMoves)) {
+    addThread(key, thread)
+  }
   // Initialize the board.
   board = new Set(squares)
   // Add game rules and default moves for O.
-  addBThreads({
-    enforceTurns,
-    ...squaresTaken,
-    ...detectWins('X'),
-    ...detectWins('O'),
-    stopGame,
-    ...defaultMoves, // Add the default move threads.
-  })
 
   // Register feedback handlers.
-  useFeedback({
-    X({ square }: { square: number }) {
-      board.delete(square)
-    },
-    O({ square }: { square: number }) {
-      board.delete(square)
-    },
+  addHandler('X', ({ square }: { square: number }) => {
+    board.delete(square)
+  })
+  addHandler('O', ({ square }: { square: number }) => {
+    board.delete(square)
   })
   // X takes square 0.
   trigger({ type: 'X', detail: { square: 0 } })
@@ -388,29 +385,33 @@ const startAtCenter = thread(
  */
 test('start at center', () => {
   // Create a new bProgram instance.
-  const { useFeedback, trigger, addBThreads } = behavioral()
+  const { addHandler, trigger, addThread } = behavioral()
+  addThread('enforceTurns', enforceTurns)
+  for (const [key, thread] of Object.entries(squaresTaken)) {
+    addThread(key, thread)
+  }
+  for (const [key, thread] of Object.entries(detectWins('X'))) {
+    addThread(key, thread)
+  }
+  for (const [key, thread] of Object.entries(detectWins('O'))) {
+    addThread(key, thread)
+  }
+  addThread('stopGame', stopGame)
+  addThread('startAtCenter', startAtCenter)
+  for (const [key, thread] of Object.entries(defaultMoves)) {
+    addThread(key, thread)
+  }
   // Initialize the board.
   board = new Set(squares)
   // Add game rules, the center strategy, and default moves.
   // `startAtCenter` likely has higher priority due to registration order or could be set explicitly.
-  addBThreads({
-    enforceTurns,
-    ...squaresTaken,
-    ...detectWins('X'),
-    ...detectWins('O'),
-    stopGame,
-    startAtCenter, // Add the specific strategy.
-    ...defaultMoves, // Default moves have lower priority.
-  })
 
   // Register feedback handlers.
-  useFeedback({
-    X({ square }: { square: number }) {
-      board.delete(square)
-    },
-    O({ square }: { square: number }) {
-      board.delete(square)
-    },
+  addHandler('X', ({ square }: { square: number }) => {
+    board.delete(square)
+  })
+  addHandler('O', ({ square }: { square: number }) => {
+    board.delete(square)
   })
   // X takes square 0.
   trigger({ type: 'X', detail: { square: 0 } })
@@ -465,30 +466,35 @@ const preventCompletionOfLineWithTwoXs = () => {
  */
 test('prevent completion of line with two Xs', () => {
   // Create a new bProgram instance.
-  const { useFeedback, trigger, addBThreads } = behavioral()
+  const { addHandler, trigger, addThread } = behavioral()
+  addThread('enforceTurns', enforceTurns)
+  for (const [key, thread] of Object.entries(squaresTaken)) {
+    addThread(key, thread)
+  }
+  for (const [key, thread] of Object.entries(detectWins('X'))) {
+    addThread(key, thread)
+  }
+  for (const [key, thread] of Object.entries(detectWins('O'))) {
+    addThread(key, thread)
+  }
+  addThread('stopGame', stopGame)
+  addThread('startAtCenter', startAtCenter)
+  for (const [key, thread] of Object.entries(preventCompletionOfLineWithTwoXs())) {
+    addThread(key, thread)
+  }
   // Initialize the board.
   board = new Set(squares)
   // Add all game rules, including the blocking strategy for O.
-  addBThreads({
-    enforceTurns,
-    ...squaresTaken,
-    ...detectWins('X'),
-    ...detectWins('O'),
-    stopGame,
-    ...preventCompletionOfLineWithTwoXs(), // Add the blocking strategy.
-  })
   const winner: Winner | Record<string, unknown> = {}
   // Register feedback handlers with specific types for clarity.
-  useFeedback({
-    X({ square }: Square) {
-      board.delete(square)
-    },
-    O({ square }: Square) {
-      board.delete(square)
-    },
-    win(detail: Winner) {
-      Object.assign(winner, detail) // Assign the winner details to the winner variable.
-    },
+  addHandler('X', ({ square }: Square) => {
+    board.delete(square)
+  })
+  addHandler('O', ({ square }: Square) => {
+    board.delete(square)
+  })
+  addHandler('win', (detail: Winner) => {
+    Object.assign(winner, detail)
   })
   // Simulate moves:
   trigger({ type: 'X', detail: { square: 2 } })

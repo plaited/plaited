@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { SnapshotMessage } from '../behavioral.schemas.ts'
+import { behavioral } from '../behavioral.ts'
 import { sync, thread } from '../behavioral.utils.ts'
-import { behavioral } from './helpers.ts'
 
 /**
  * Test suite for useSnapshot concurrent listener behaviour.
@@ -12,7 +12,7 @@ describe('useSnapshot', () => {
   test('second listener still receives after first disconnects', () => {
     const snapshotsA: SnapshotMessage[] = []
     const snapshotsB: SnapshotMessage[] = []
-    const { addBThreads, trigger, useSnapshot } = behavioral()
+    const { addThread, trigger, useSnapshot } = behavioral()
 
     const disconnectA = useSnapshot((msg: SnapshotMessage) => {
       snapshotsA.push(msg)
@@ -21,9 +21,7 @@ describe('useSnapshot', () => {
       snapshotsB.push(msg)
     })
 
-    addBThreads({
-      req: thread([sync({ request: { type: 'ping' } })], true),
-    })
+    addThread('req', thread([sync({ request: { type: 'ping' } })], true))
 
     // Both listeners receive the first selection snapshot
     trigger({ type: 'start' })
@@ -37,9 +35,7 @@ describe('useSnapshot', () => {
     disconnectA()
 
     // Set up a new thread and trigger again
-    addBThreads({
-      req2: thread([sync({ request: { type: 'pong' } })], true),
-    })
+    addThread('req2', thread([sync({ request: { type: 'pong' } })], true))
     trigger({ type: 'go' })
 
     // A should not have received any new messages
@@ -51,7 +47,7 @@ describe('useSnapshot', () => {
   test('re-subscribing after full disconnect still works', () => {
     const snapshotsA: SnapshotMessage[] = []
     const snapshotsB: SnapshotMessage[] = []
-    const { addBThreads, trigger, useSnapshot } = behavioral()
+    const { addThread, trigger, useSnapshot } = behavioral()
 
     const disconnectA = useSnapshot((msg: SnapshotMessage) => {
       snapshotsA.push(msg)
@@ -60,9 +56,7 @@ describe('useSnapshot', () => {
       snapshotsB.push(msg)
     })
 
-    addBThreads({
-      req: thread([sync({ request: { type: 'ping' } })], true),
-    })
+    addThread('req', thread([sync({ request: { type: 'ping' } })], true))
     trigger({ type: 'start' })
 
     // Both received
@@ -79,9 +73,7 @@ describe('useSnapshot', () => {
       snapshotsC.push(msg)
     })
 
-    addBThreads({
-      req2: thread([sync({ request: { type: 'pong' } })], true),
-    })
+    addThread('req2', thread([sync({ request: { type: 'pong' } })], true))
     trigger({ type: 'go' })
 
     expect(snapshotsC.length).toBeGreaterThan(0)

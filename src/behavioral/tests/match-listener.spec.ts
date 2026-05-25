@@ -1,15 +1,16 @@
 import { expect, test } from 'bun:test'
 import * as z from 'zod'
+import { behavioral } from '../behavioral.ts'
 import { sync, thread } from '../behavioral.utils.ts'
-import { behavioral, onType, onTypeWithDetail } from './helpers.ts'
 
 test('match listener: waitFor resumes thread when type and detail schema match', () => {
   const log: string[] = []
-  const { addBThreads, trigger, useFeedback } = behavioral()
+  const { addThread, trigger, addHandler } = behavioral()
 
-  addBThreads({
-    producer: thread([sync({ request: { type: 'task', detail: { id: 'job-1' } } })], true),
-    consumer: thread(
+  addThread('producer', thread([sync({ request: { type: 'task', detail: { id: 'job-1' } } })], true))
+  addThread(
+    'consumer',
+    thread(
       [
         sync({
           waitFor: {
@@ -21,15 +22,13 @@ test('match listener: waitFor resumes thread when type and detail schema match',
       ],
       true,
     ),
-  })
+  )
 
-  useFeedback({
-    task() {
-      log.push('task')
-    },
-    ack() {
-      log.push('ack')
-    },
+  addHandler('task', () => {
+    log.push('task')
+  })
+  addHandler('ack', () => {
+    log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -39,11 +38,12 @@ test('match listener: waitFor resumes thread when type and detail schema match',
 
 test('match listener: waitFor does not resume when detail schema fails', () => {
   const log: string[] = []
-  const { addBThreads, trigger, useFeedback } = behavioral()
+  const { addThread, trigger, addHandler } = behavioral()
 
-  addBThreads({
-    producer: thread([sync({ request: { type: 'task', detail: { id: 101 } } })], true),
-    consumer: thread(
+  addThread('producer', thread([sync({ request: { type: 'task', detail: { id: 101 } } })], true))
+  addThread(
+    'consumer',
+    thread(
       [
         sync({
           waitFor: {
@@ -55,15 +55,13 @@ test('match listener: waitFor does not resume when detail schema fails', () => {
       ],
       true,
     ),
-  })
+  )
 
-  useFeedback({
-    task() {
-      log.push('task')
-    },
-    ack() {
-      log.push('ack')
-    },
+  addHandler('task', () => {
+    log.push('task')
+  })
+  addHandler('ack', () => {
+    log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -73,11 +71,12 @@ test('match listener: waitFor does not resume when detail schema fails', () => {
 
 test('match listener: detailMatch invalid resumes thread when detail schema fails', () => {
   const log: string[] = []
-  const { addBThreads, trigger, useFeedback } = behavioral()
+  const { addThread, trigger, addHandler } = behavioral()
 
-  addBThreads({
-    producer: thread([sync({ request: { type: 'task', detail: { id: 101 } } })], true),
-    consumer: thread(
+  addThread('producer', thread([sync({ request: { type: 'task', detail: { id: 101 } } })], true))
+  addThread(
+    'consumer',
+    thread(
       [
         sync({
           waitFor: {
@@ -90,15 +89,13 @@ test('match listener: detailMatch invalid resumes thread when detail schema fail
       ],
       true,
     ),
-  })
+  )
 
-  useFeedback({
-    task() {
-      log.push('task')
-    },
-    ack() {
-      log.push('ack')
-    },
+  addHandler('task', () => {
+    log.push('task')
+  })
+  addHandler('ack', () => {
+    log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -108,11 +105,12 @@ test('match listener: detailMatch invalid resumes thread when detail schema fail
 
 test('match listener: detailMatch invalid does not resume thread when detail schema passes', () => {
   const log: string[] = []
-  const { addBThreads, trigger, useFeedback } = behavioral()
+  const { addThread, trigger, addHandler } = behavioral()
 
-  addBThreads({
-    producer: thread([sync({ request: { type: 'task', detail: { id: 'job-1' } } })], true),
-    consumer: thread(
+  addThread('producer', thread([sync({ request: { type: 'task', detail: { id: 'job-1' } } })], true))
+  addThread(
+    'consumer',
+    thread(
       [
         sync({
           waitFor: {
@@ -125,15 +123,13 @@ test('match listener: detailMatch invalid does not resume thread when detail sch
       ],
       true,
     ),
-  })
+  )
 
-  useFeedback({
-    task() {
-      log.push('task')
-    },
-    ack() {
-      log.push('ack')
-    },
+  addHandler('task', () => {
+    log.push('task')
+  })
+  addHandler('ack', () => {
+    log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -143,11 +139,12 @@ test('match listener: detailMatch invalid does not resume thread when detail sch
 
 test('match listener: type mismatch prevents match when source and detail would pass', () => {
   const log: string[] = []
-  const { addBThreads, trigger, useFeedback } = behavioral()
+  const { addThread, trigger, addHandler } = behavioral()
 
-  addBThreads({
-    producer: thread([sync({ request: { type: 'other', detail: { id: 'job-1' } } })], true),
-    consumer: thread(
+  addThread('producer', thread([sync({ request: { type: 'other', detail: { id: 'job-1' } } })], true))
+  addThread(
+    'consumer',
+    thread(
       [
         sync({
           waitFor: {
@@ -159,15 +156,13 @@ test('match listener: type mismatch prevents match when source and detail would 
       ],
       true,
     ),
-  })
+  )
 
-  useFeedback({
-    other() {
-      log.push('other')
-    },
-    ack() {
-      log.push('ack')
-    },
+  addHandler('other', () => {
+    log.push('other')
+  })
+  addHandler('ack', () => {
+    log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -177,11 +172,12 @@ test('match listener: type mismatch prevents match when source and detail would 
 
 test('match listener: sourceSchema request accepts only requested events', () => {
   const log: string[] = []
-  const { addBThreads, trigger, useFeedback } = behavioral()
+  const { addThread, trigger, addHandler } = behavioral()
 
-  addBThreads({
-    producer: thread([sync({ request: { type: 'task', detail: { id: 'job-1' } } })], true),
-    consumer: thread(
+  addThread('producer', thread([sync({ request: { type: 'task', detail: { id: 'job-1' } } })], true))
+  addThread(
+    'consumer',
+    thread(
       [
         sync({
           waitFor: {
@@ -193,15 +189,13 @@ test('match listener: sourceSchema request accepts only requested events', () =>
       ],
       true,
     ),
-  })
+  )
 
-  useFeedback({
-    task() {
-      log.push('task')
-    },
-    ack() {
-      log.push('ack')
-    },
+  addHandler('task', () => {
+    log.push('task')
+  })
+  addHandler('ack', () => {
+    log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -211,11 +205,12 @@ test('match listener: sourceSchema request accepts only requested events', () =>
 
 test('match listener: trigger and requested events both satisfy matching listeners', () => {
   const log: string[] = []
-  const { addBThreads, trigger, useFeedback } = behavioral()
+  const { addThread, trigger, addHandler } = behavioral()
 
-  addBThreads({
-    producer: thread([sync({ request: { type: 'task', detail: { id: 'job-1' } } })], true),
-    consumer: thread(
+  addThread('producer', thread([sync({ request: { type: 'task', detail: { id: 'job-1' } } })], true))
+  addThread(
+    'consumer',
+    thread(
       [
         sync({
           waitFor: {
@@ -227,15 +222,13 @@ test('match listener: trigger and requested events both satisfy matching listene
       ],
       true,
     ),
-  })
+  )
 
-  useFeedback({
-    task() {
-      log.push('task')
-    },
-    ack() {
-      log.push('ack')
-    },
+  addHandler('task', () => {
+    log.push('task')
+  })
+  addHandler('ack', () => {
+    log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -246,11 +239,12 @@ test('match listener: trigger and requested events both satisfy matching listene
 
 test('match listener: sourceSchema can accept trigger and request', () => {
   const log: string[] = []
-  const { addBThreads, trigger, useFeedback } = behavioral()
+  const { addThread, trigger, addHandler } = behavioral()
 
-  addBThreads({
-    producer: thread([sync({ request: { type: 'task', detail: { id: 'job-1' } } })], true),
-    consumer: thread(
+  addThread('producer', thread([sync({ request: { type: 'task', detail: { id: 'job-1' } } })], true))
+  addThread(
+    'consumer',
+    thread(
       [
         sync({
           waitFor: {
@@ -262,15 +256,13 @@ test('match listener: sourceSchema can accept trigger and request', () => {
       ],
       true,
     ),
-  })
+  )
 
-  useFeedback({
-    task() {
-      log.push('task')
-    },
-    ack() {
-      log.push('ack')
-    },
+  addHandler('task', () => {
+    log.push('task')
+  })
+  addHandler('ack', () => {
+    log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -280,11 +272,12 @@ test('match listener: sourceSchema can accept trigger and request', () => {
 
 test('match listener: sourceSchema request matches request-origin events only', () => {
   const log: string[] = []
-  const { addBThreads, trigger, useFeedback } = behavioral()
+  const { addThread, trigger, addHandler } = behavioral()
 
-  addBThreads({
-    producer: thread([sync({ request: { type: 'task', detail: { id: 'job-1' } } })], true),
-    consumer: thread(
+  addThread('producer', thread([sync({ request: { type: 'task', detail: { id: 'job-1' } } })], true))
+  addThread(
+    'consumer',
+    thread(
       [
         sync({
           waitFor: {
@@ -296,15 +289,13 @@ test('match listener: sourceSchema request matches request-origin events only', 
       ],
       true,
     ),
-  })
+  )
 
-  useFeedback({
-    task() {
-      log.push('task')
-    },
-    ack() {
-      log.push('ack')
-    },
+  addHandler('task', () => {
+    log.push('task')
+  })
+  addHandler('ack', () => {
+    log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -318,10 +309,11 @@ test('match listener: sourceSchema request matches request-origin events only', 
 
 test('match listener: block prevents matching requested event from being selected', () => {
   const log: string[] = []
-  const { addBThreads, trigger, useFeedback } = behavioral()
+  const { addThread, trigger, addHandler } = behavioral()
 
-  addBThreads({
-    blocker: thread(
+  addThread(
+    'blocker',
+    thread(
       [
         sync({
           block: {
@@ -332,25 +324,29 @@ test('match listener: block prevents matching requested event from being selecte
       ],
       true,
     ),
-    taskProducer: thread([sync({ request: { type: 'task', detail: { id: 'job-1' } } })], true),
-    safeProducer: thread([sync({ request: { type: 'safe' } })], true),
-    safeFollower: thread([sync({ waitFor: onType('safe') }), sync({ request: { type: 'safe_ack' } })], true),
-    taskFollower: thread([sync({ waitFor: onType('task') }), sync({ request: { type: 'task_ack' } })], true),
-  })
+  )
+  addThread('taskProducer', thread([sync({ request: { type: 'task', detail: { id: 'job-1' } } })], true))
+  addThread('safeProducer', thread([sync({ request: { type: 'safe' } })], true))
+  addThread(
+    'safeFollower',
+    thread([sync({ waitFor: { type: 'safe' } }), sync({ request: { type: 'safe_ack' } })], true),
+  )
+  addThread(
+    'taskFollower',
+    thread([sync({ waitFor: { type: 'task' } }), sync({ request: { type: 'task_ack' } })], true),
+  )
 
-  useFeedback({
-    task() {
-      log.push('task')
-    },
-    safe() {
-      log.push('safe')
-    },
-    safe_ack() {
-      log.push('safe_ack')
-    },
-    task_ack() {
-      log.push('task_ack')
-    },
+  addHandler('task', () => {
+    log.push('task')
+  })
+  addHandler('safe', () => {
+    log.push('safe')
+  })
+  addHandler('safe_ack', () => {
+    log.push('safe_ack')
+  })
+  addHandler('task_ack', () => {
+    log.push('task_ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -360,13 +356,14 @@ test('match listener: block prevents matching requested event from being selecte
 
 test('match listener: interrupt terminates thread when matching event is selected', () => {
   const log: string[] = []
-  const { addBThreads, trigger, useFeedback } = behavioral()
+  const { addThread, trigger, addHandler } = behavioral()
 
-  addBThreads({
-    interruptedThread: thread(
+  addThread(
+    'interruptedThread',
+    thread(
       [
         sync({
-          waitFor: onType('start'),
+          waitFor: { type: 'start' },
           interrupt: {
             type: 'kill',
             detailSchema: z.object({ id: z.literal('victim') }),
@@ -376,16 +373,14 @@ test('match listener: interrupt terminates thread when matching event is selecte
       ],
       true,
     ),
-    interruptProducer: thread([sync({ request: { type: 'kill', detail: { id: 'victim' } } })], true),
-  })
+  )
+  addThread('interruptProducer', thread([sync({ request: { type: 'kill', detail: { id: 'victim' } } })], true))
 
-  useFeedback({
-    kill() {
-      log.push('kill')
-    },
-    after_start() {
-      log.push('after_start')
-    },
+  addHandler('kill', () => {
+    log.push('kill')
+  })
+  addHandler('after_start', () => {
+    log.push('after_start')
   })
 
   trigger({ type: 'kickoff' })
@@ -396,31 +391,30 @@ test('match listener: interrupt terminates thread when matching event is selecte
 
 test('match listener: detail-schema listeners can express conditional matching', () => {
   const log: string[] = []
-  const { addBThreads, trigger, useFeedback } = behavioral()
+  const { addThread, trigger, addHandler } = behavioral()
 
-  addBThreads({
-    producer: thread([sync({ request: { type: 'task', detail: { ok: true } } })], true),
-    consumer: thread(
+  addThread('producer', thread([sync({ request: { type: 'task', detail: { ok: true } } })], true))
+  addThread(
+    'consumer',
+    thread(
       [
         sync({
-          waitFor: onTypeWithDetail({
+          waitFor: {
             type: 'task',
             detailSchema: z.object({ ok: z.literal(true) }),
-          }),
+          },
         }),
         sync({ request: { type: 'ack' } }),
       ],
       true,
     ),
-  })
+  )
 
-  useFeedback({
-    task() {
-      log.push('task')
-    },
-    ack() {
-      log.push('ack')
-    },
+  addHandler('task', () => {
+    log.push('task')
+  })
+  addHandler('ack', () => {
+    log.push('ack')
   })
 
   trigger({ type: 'kickoff' })
@@ -430,29 +424,25 @@ test('match listener: detail-schema listeners can express conditional matching',
 
 test('match listener: non-selected same-type requesters remain pending until their own request is selected', () => {
   const log: string[] = []
-  const { addBThreads, trigger, useFeedback } = behavioral()
+  const { addThread, trigger, addHandler } = behavioral()
 
-  addBThreads({
-    first: thread(
-      [sync({ request: { type: 'same', detail: { n: 1 } } }), sync({ request: { type: 'first_done' } })],
-      true,
-    ),
-    second: thread(
-      [sync({ request: { type: 'same', detail: { n: 2 } } }), sync({ request: { type: 'second_done' } })],
-      true,
-    ),
+  addThread(
+    'first',
+    thread([sync({ request: { type: 'same', detail: { n: 1 } } }), sync({ request: { type: 'first_done' } })], true),
+  )
+  addThread(
+    'second',
+    thread([sync({ request: { type: 'same', detail: { n: 2 } } }), sync({ request: { type: 'second_done' } })], true),
+  )
+
+  addHandler('same', (detail: { n: number }) => {
+    log.push(`same:${detail.n}`)
   })
-
-  useFeedback({
-    same(detail: { n: number }) {
-      log.push(`same:${detail.n}`)
-    },
-    first_done() {
-      log.push('first_done')
-    },
-    second_done() {
-      log.push('second_done')
-    },
+  addHandler('first_done', () => {
+    log.push('first_done')
+  })
+  addHandler('second_done', () => {
+    log.push('second_done')
   })
 
   trigger({ type: 'kickoff' })
