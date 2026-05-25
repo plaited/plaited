@@ -1,7 +1,8 @@
 import { expect, test } from 'bun:test'
 import * as z from 'zod'
 import type { Sync } from '../behavioral.types.ts'
-import { behavioral, sync, thread } from './helpers.ts'
+import { sync, thread } from '../behavioral.utils.ts'
+import { behavioral } from './helpers.ts'
 
 type WinningLine = [number, number, number]
 
@@ -368,12 +369,17 @@ test('defaultMoves', () => {
  * A b-sync definition representing a strategy for player 'O' to start by taking the center square (4).
  * This is a single, high-priority request.
  */
-const startAtCenter = sync({
-  request: {
-    type: 'O',
-    detail: { square: 4 },
-  },
-})
+const startAtCenter = thread(
+  [
+    sync({
+      request: {
+        type: 'O',
+        detail: { square: 4 },
+      },
+    }),
+  ],
+  true,
+)
 
 /**
  * Test case: Demonstrates overriding default moves with a specific strategy.

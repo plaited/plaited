@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { behavioral, onType, sync, thread } from './helpers.ts'
+import { sync, thread } from '../behavioral.utils.ts'
+import { behavioral, onType } from './helpers.ts'
 
 describe('trigger', () => {
   test('routes triggered events into the BP engine', () => {

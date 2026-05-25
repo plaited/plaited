@@ -185,4 +185,4 @@ export const thread: Thread = (rules, once) =>
  * @internal
  */
 export const isThread = (value: unknown): value is ReturnType<Thread> =>
-  isTypeOf<(...args: unknown[]) => unknown>(value, 'function') && '$' in value && value.$ === THREAD_IDENTIFIER
+  isTypeOf<(...args: unknown[]) => unknown>(value, 'generatorfunction') && '$' in value && value.$ === THREAD_IDENTIFIER

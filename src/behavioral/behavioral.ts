@@ -12,7 +12,12 @@ import type {
   Trigger,
   UseSnapshot,
 } from './behavioral.types.ts'
-import { advanceRunningToPending, computeFrontier, resumePendingThreadsForSelectedEvent } from './behavioral.utils.ts'
+import {
+  advanceRunningToPending,
+  computeFrontier,
+  isThread,
+  resumePendingThreadsForSelectedEvent,
+} from './behavioral.utils.ts'
 
 /**
  * @internal
@@ -287,11 +292,17 @@ export const behavioral: Behavioral = () => {
   }
 
   const addThread: AddThread = (label: string, thread: ReturnType<Sync>) => {
-    running.add({
-      priority: running.size + 1,
-      generator: thread(),
-      label,
-    })
+    isThread(thread)
+      ? running.add({
+          priority: running.size + 1,
+          generator: thread(),
+          label,
+        })
+      : snapshotPublisher({
+          kind: SNAPSHOT_MESSAGE_KINDS.add_thread_error,
+          label,
+          error: `addThread: "${label}" is not a behavioral thread. Use thread() to compose synchronization rules before calling addThread.`,
+        })
   }
   /**
    * @internal

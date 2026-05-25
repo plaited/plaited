@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test'
 import * as z from 'zod'
-import { behavioral, onType, onTypeWithDetail, sync, thread } from './helpers.ts'
+import { sync, thread } from '../behavioral.utils.ts'
+import { behavioral, onType, onTypeWithDetail } from './helpers.ts'
 
 test('match listener: waitFor resumes thread when type and detail schema match', () => {
   const log: string[] = []

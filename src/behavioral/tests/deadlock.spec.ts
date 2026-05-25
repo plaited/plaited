@@ -2,7 +2,8 @@ import { describe, expect, test } from 'bun:test'
 import * as z from 'zod'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
 import type { DeadlockSnapshot, FrontierSnapshot, SelectionSnapshot, SnapshotMessage } from '../behavioral.schemas.ts'
-import { behavioral, sync, thread } from './helpers.ts'
+import { sync, thread } from '../behavioral.utils.ts'
+import { behavioral } from './helpers.ts'
 
 const onType = (type: string) => ({
   type,

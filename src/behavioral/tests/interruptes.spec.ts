@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
 import type { SnapshotMessage } from '../behavioral.schemas.ts'
-import { behavioral, onType, sync, thread } from './helpers.ts'
+import { sync, thread } from '../behavioral.utils.ts'
+import { behavioral, onType } from './helpers.ts'
 
 /**
  * Test suite for demonstrating the 'interrupt' idiom in behavioral programming.

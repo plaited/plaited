@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test'
-import { behavioral, sync } from './helpers.ts'
+import { sync, thread } from '../behavioral.utils.ts'
+import { behavioral } from './helpers.ts'
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -15,9 +16,9 @@ test('async feedback ELEMENT_CALLBACKS', async () => {
   /** Define behavioral threads using bSync for simplicity. */
   addBThreads({
     /** A thread that requests the 'init' event immediately. */
-    onInit: sync({ request: { type: 'init' } }),
+    onInit: thread([sync({ request: { type: 'init' } })], true),
     /** A thread that requests the 'afterInit' event immediately. */
-    afterInit: sync({ request: { type: 'afterInit' } }),
+    afterInit: thread([sync({ request: { type: 'afterInit' } })], true),
   })
 
   /** Register feedback handlers for specific events. */

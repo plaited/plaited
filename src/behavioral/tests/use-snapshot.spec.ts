@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { SnapshotMessage } from '../behavioral.schemas.ts'
-import { behavioral, sync, thread } from './helpers.ts'
+import { sync, thread } from '../behavioral.utils.ts'
+import { behavioral } from './helpers.ts'
 
 /**
  * Test suite for useSnapshot concurrent listener behaviour.

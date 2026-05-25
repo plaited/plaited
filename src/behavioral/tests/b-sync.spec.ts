@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test'
-import { onType, sync } from './helpers.ts'
+import { sync } from '../behavioral.utils.ts'
+import { onType } from './helpers.ts'
 
 test('bSync: creates generator that yields sync point once', () => {
   const syncPoint = { request: { type: 'test' } }

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { SnapshotMessage } from '../behavioral.schemas.ts'
-import { behavioral, onType, onTypeWhere, sync, thread } from './helpers.ts'
+import { sync, thread } from '../behavioral.utils.ts'
+import { behavioral, onType, onTypeWhere } from './helpers.ts'
 
 describe('orchestrator routing', () => {
   test('routes tasks to project handlers', () => {

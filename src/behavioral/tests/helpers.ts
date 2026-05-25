@@ -1,8 +1,7 @@
 import * as z from 'zod'
 import type { BPListener, JsonObject, SnapshotMessage } from '../behavioral.schemas.ts'
 import { behavioral as createBehavioral } from '../behavioral.ts'
-import type { BThreads, Disconnect, Sync } from '../behavioral.types.ts'
-import { sync as baseSync, thread as baseThread } from '../behavioral.utils.ts'
+import type { BThreads, Disconnect } from '../behavioral.types.ts'
 
 export const onType = (type: string): BPListener => ({
   type,
@@ -35,11 +34,6 @@ type FeedbackHandler = {
   bivarianceHack(detail: FeedbackDetail, disconnect: Disconnect): void | Promise<void>
 }['bivarianceHack']
 type FeedbackHandlers = Record<string, FeedbackHandler>
-
-export const sync: Sync = baseSync
-
-/** Test thread helper aligned with runtime semantics: omitted `once` repeats; `true` runs once. */
-export const thread = (rules: ReturnType<Sync>[], once?: true) => baseThread(rules, once)
 
 export const behavioral = () => {
   const runtime = createBehavioral()

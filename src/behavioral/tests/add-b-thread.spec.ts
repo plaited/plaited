@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import { SNAPSHOT_MESSAGE_KINDS } from '../behavioral.constants.ts'
 import type { DeadlockSnapshot, FrontierSnapshot, SelectionSnapshot, SnapshotMessage } from '../behavioral.schemas.ts'
-import { behavioral, onType, sync, thread } from './helpers.ts'
+import { sync, thread } from '../behavioral.utils.ts'
+import { behavioral, onType } from './helpers.ts'
 
 describe('addBThreads', () => {
   test('supports dynamic thread installation from feedback handlers', () => {
@@ -9,7 +10,7 @@ describe('addBThreads', () => {
     const { addBThreads, trigger, useFeedback } = behavioral()
 
     addBThreads({
-      addHotOnce: sync({ request: { type: 'hot_1' } }),
+      addHotOnce: thread([sync({ request: { type: 'hot_1' } })], true),
       mixHotCold: thread([
         sync({
           waitFor: [onType('hot_1'), onType('hot')],

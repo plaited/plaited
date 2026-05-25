@@ -8,10 +8,19 @@ import { keyMirror } from '../utils.ts'
  * - `'deadlock'` — no unblocked candidate could be selected
  * - `'selection'` — event selection snapshot
  * - `'feedback_error'` — handler threw during side-effect execution
+ * - `'add_thread_error'` — non-thread value passed to `addThread`
+ * - `'runtime_error'` — unrecoverable engine error
  *
  * @public
  */
-export const SNAPSHOT_MESSAGE_KINDS = keyMirror('deadlock', 'feedback_error', 'frontier', 'selection', 'runtime_error')
+export const SNAPSHOT_MESSAGE_KINDS = keyMirror(
+  'deadlock',
+  'feedback_error',
+  'frontier',
+  'selection',
+  'runtime_error',
+  'add_thread_error',
+)
 
 /**
  * Discriminant values for the scheduler-facing frontier status.

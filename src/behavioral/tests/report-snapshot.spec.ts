@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { SnapshotMessage } from '../behavioral.schemas.ts'
-import { behavioral, onType, sync, thread } from './helpers.ts'
+import { sync, thread } from '../behavioral.utils.ts'
+import { behavioral, onType } from './helpers.ts'
 
 describe('reportSnapshot', () => {
   test('publishes custom runtime diagnostics through useSnapshot', () => {

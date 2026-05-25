@@ -177,6 +177,31 @@ export const FeedbackErrorSchema = z.object({
 /** @public */
 export type FeedbackError = z.output<typeof FeedbackErrorSchema>
 
+/**
+ * Schema for errors emitted when a non-thread value is passed to `addThread`.
+ *
+ * @remarks
+ * Published via the snapshot publisher when `addThread` receives a value that
+ * does not pass the `isThread` runtime guard. The error message guides consumers
+ * to use `thread()` to compose synchronization rules before registration.
+ *
+ * @see {@link isThread} for the runtime type guard
+ * @see {@link thread} for composing behavioral threads
+ * @see {@link AddThread} for the consumer-facing API
+ *
+ * @public
+ */
+export const AddThreadErrorSchema = z.object({
+  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.add_thread_error),
+  /** Label passed to `addThread`, used to identify which registration failed. */
+  label: z.string(),
+  /** Human-readable error message explaining why the value was rejected. */
+  error: z.string(),
+})
+
+/** @public */
+export type AddThreadError = z.output<typeof AddThreadErrorSchema>
+
 export const RuntimeErrorSchema = z.object({
   kind: z.literal(SNAPSHOT_MESSAGE_KINDS.runtime_error),
   error: z.string(),
@@ -202,6 +227,7 @@ export const SnapshotMessageSchema = z.discriminatedUnion('kind', [
   DeadlockSnapshotSchema,
   FeedbackErrorSchema,
   SelectionSnapshotSchema,
+  AddThreadErrorSchema,
 ])
 
 /** @public */
