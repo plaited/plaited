@@ -12,6 +12,7 @@ import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS, SWAP_MODES } fr
 export const RenderMessageSchema = z.object({
   type: z.literal(AGENT_TO_CONTROLLER_EVENTS.render),
   detail: z.object({
+    topic: z.string(),
     version: z.string(),
     target: z.string(),
     html: z.string(),
@@ -39,6 +40,7 @@ export type RenderMessage = z.infer<typeof RenderMessageSchema>
 export const AttrsMessageSchema = z.object({
   type: z.literal(AGENT_TO_CONTROLLER_EVENTS.attrs),
   detail: z.object({
+    topic: z.string(),
     version: z.string(),
     target: z.string(),
     attr: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]).nullable()),
@@ -61,7 +63,9 @@ export type AttrsMessage = z.infer<typeof AttrsMessageSchema>
 export const ImportModuleMessageSchema = z.object({
   type: z.literal(AGENT_TO_CONTROLLER_EVENTS.import),
   detail: z.object({
+    topic: z.string(),
     version: z.string(),
+    id: z.string(),
     path: z.string().regex(SITE_ROOT_JAVASCRIPT_PATH_PATTERN, 'Expected a site-root absolute JavaScript path'),
   }),
 })
@@ -77,6 +81,7 @@ export type ImportModuleMessage = z.infer<typeof ImportModuleMessageSchema>
 export const DisconnectMessageSchema = z.object({
   type: z.literal(AGENT_TO_CONTROLLER_EVENTS.disconnect),
   detail: z.object({
+    topic: z.string(),
     version: z.string(),
   }),
 })

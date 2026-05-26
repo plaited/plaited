@@ -3,30 +3,15 @@ import * as z from 'zod'
 import { WORKER_COMMAND_TYPES, WORKER_MESSAGE_TYPES } from './worker.constants.ts'
 
 export const ExecDetailSchema = z
-  .union([
-    // Script mode: file path or plaited CLI command, receives JSON arg
-    z
-      .object({
-        topic: z.string(),
-        cwd: z.string(),
-        command: z.enum(['plaited', 'bun']),
-        subCommand: z.string(),
-        json: z.string(),
-        id: z.string(),
-      })
-      .describe('Script execution with JSON input.'),
-    // Raw command mode: bun CLI subcommand with extra args
-    z
-      .object({
-        topic: z.string(),
-        cwd: z.string(),
-        command: z.literal('bun'),
-        subCommand: z.string(),
-        args: z.array(z.string()).optional(),
-        id: z.string(),
-      })
-      .describe('Raw bun CLI command with positional arguments.'),
-  ])
+  .object({
+    topic: z.string(),
+    cwd: z.string(),
+    command: z.string(),
+    subCommand: z.string(),
+    args: z.array(z.string()).optional(),
+    output: z.enum(['json', 'text']),
+    id: z.string(),
+  })
   .describe('Exec command detail — script (json) or raw (args), never both.')
 
 export type ExecDetail = z.infer<typeof ExecDetailSchema>
@@ -43,7 +28,7 @@ export const ExecMessageSchema = z.object({
   detail: z.object({
     topic: z.string(),
     id: z.string(),
-    result: z.unknown(),
+    result: z.union([z.string(), z.json()]),
     durationMs: z.number(),
   }),
 })

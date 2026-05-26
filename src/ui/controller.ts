@@ -12,7 +12,12 @@ import {
   type UiEventMessage,
 } from '../shared/shared.schemas.ts'
 import { isTypeOf } from '../utils.ts'
-import { CONTROLLER_ERRORS, UI_CORE_MAX_RETRIES, UI_CORE_RETRY_STATUS_CODES } from './controller.constants.ts'
+import {
+  CONTROLLER_ERRORS,
+  CONTROLLER_EVENTS,
+  UI_CORE_MAX_RETRIES,
+  UI_CORE_RETRY_STATUS_CODES,
+} from './controller.constants.ts'
 import { normalizeControllerErrorDetail } from './controller-error-detail.ts'
 import { DelegatedListener, delegates } from './delegated-listener.ts'
 import { BOOLEAN_ATTRS, P_TARGET, P_TOPIC, P_TRIGGER, P_VERSION } from './template.constants.ts'
@@ -171,6 +176,12 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
         context?: JsonObject
       } = {},
     ) {
+      const topic = this.getAttribute(P_TOPIC)
+      if (!isTypeOf<string>(topic, 'string')) {
+        console.error(CONTROLLER_ERRORS.missing_topic, 'error report', error)
+        return
+      }
+      const version = this.getAttribute(P_VERSION)
       const message: ControllerErrorMessage = {
         type: CONTROLLER_TO_AGENT_EVENTS.error,
         detail: {
@@ -179,8 +190,8 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
             description: metadata.description,
             context: metadata.context,
           }),
-          topic: this.getAttribute(P_TOPIC),
-          version: this.getAttribute(P_VERSION),
+          topic,
+          version,
         },
       }
       send ? send(message) : this.#send(message)
@@ -192,21 +203,34 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
      */
     #sendConnected() {
       this.#trigger({
-        type: CONTROLLER_TO_AGENT_EVENTS.controller_connected,
+        type: CONTROLLER_EVENTS.controller_connected,
+        detail: { ...getAttributes(this), tagName: this.tagName.toLowerCase() },
       })
     }
     #trigger(event: BPEvent) {
+      const topic = this.getAttribute(P_TOPIC)
+      if (!isTypeOf<string>(topic, 'string')) {
+        console.error(CONTROLLER_ERRORS.missing_topic, 'event trigger', event.type)
+        return
+      }
+      const version = this.getAttribute(P_VERSION)
       const message: UiEventMessage = {
         type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
         detail: {
-          topic: this.getAttribute(P_TOPIC),
-          version: this.getAttribute(P_VERSION),
+          topic,
+          version,
           event,
         },
       }
       send ? send(message) : this.#send(message)
     }
     #sendFormSubmit(form: HTMLFormElement) {
+      const topic = this.getAttribute(P_TOPIC)
+      if (!isTypeOf<string>(topic, 'string')) {
+        console.error(CONTROLLER_ERRORS.missing_topic, 'form submit', form.id)
+        return
+      }
+      const version = this.getAttribute(P_VERSION)
       const message: FormSubmitMessage = {
         type: CONTROLLER_TO_AGENT_EVENTS.form_submit,
         detail: {
@@ -214,17 +238,18 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
           action: form.action || null,
           method: form.method || 'get',
           data: buildFormSubmitData(form),
-          topic: this.getAttribute(P_TOPIC),
-          version: this.getAttribute(P_VERSION),
+          topic,
+          version,
         },
       }
       send ? send(message) : this.#send(message)
     }
-    async #importModule(path: string) {
+    async #importModule(id: string, path: string) {
       const { default: setup } = await import(path)
       if (
-        isTypeOf<(...args: unknown[]) => unknown>(module, 'function') ||
-        isTypeOf<(...args: unknown[]) => Promise<unknown>>(module, 'asyncfunction')
+        this.getAttribute('id') === id &&
+        (isTypeOf<(...args: unknown[]) => unknown>(setup, 'function') ||
+          isTypeOf<(...args: unknown[]) => Promise<unknown>>(setup, 'asyncfunction'))
       ) {
         await setup({
           DelegatedListener,
@@ -233,7 +258,10 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
           trigger: this.#trigger.bind(this),
           reportError: this.#reportError.bind(this),
         })
-        this.#trigger({ type: CONTROLLER_TO_AGENT_EVENTS.import_invoked, detail: { path } })
+        this.#trigger({
+          type: CONTROLLER_EVENTS.import_invoked,
+          detail: { ...getAttributes(this), path, tagName: this.tagName.toLowerCase() },
+        })
       } else {
         this.#reportError(new Error(`Module Import Error ${'toString' in setup ? setup.toString() : `${setup}`}`), {
           description: 'Module import default export was not a function',
@@ -327,11 +355,13 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
     #onWsMessage(message: MessageEvent) {
       try {
         const { type, detail } = ServerMessageSchema.parse(JSON.parse(String(message.data)))
+        const currentTopic = this.getAttribute(P_TOPIC)
+        if (detail.topic !== currentTopic) return
         switch (type) {
           case AGENT_TO_CONTROLLER_EVENTS.import: {
-            const { path, version } = ImportModuleMessageSchema.shape.detail.parse(detail)
+            const { path, version, id } = ImportModuleMessageSchema.shape.detail.parse(detail)
             this.#setVersion(version)
-            void this.#importModule(path).catch((error) =>
+            void this.#importModule(id, path).catch((error) =>
               this.#reportError(error, {
                 description: 'Dynamic module import failed to load or parse',
                 context: { path },

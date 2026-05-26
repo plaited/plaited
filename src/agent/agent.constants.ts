@@ -1,6 +1,6 @@
 import { keyMirror } from '../utils.ts'
 
-export const AGENT_EVENTS = keyMirror('start')
+export const AGENT_EVENTS = keyMirror('start', 'worker_start', 'worker_open', 'worker_terminate', 'worker_close')
 
 export const UI_PROJECTION_EVENTS = keyMirror(
   'ui_render_requested',

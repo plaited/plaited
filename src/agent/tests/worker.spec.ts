@@ -92,7 +92,8 @@ console.log(JSON.stringify({ greeting: \`Hello, \${input.name}!\` }));`,
           cwd,
           command: 'bun',
           subCommand: scriptPath,
-          json: JSON.stringify({ name: 'World' }),
+          args: [JSON.stringify({ name: 'World' })],
+          output: 'json',
         },
       })
 
@@ -126,6 +127,7 @@ console.log(JSON.stringify({ greeting: \`Hello, \${input.name}!\` }));`,
           cwd: '/tmp',
           command: 'bun',
           subCommand: '--version',
+          output: 'text',
         },
       })
 

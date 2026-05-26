@@ -145,7 +145,12 @@ describe('useController', () => {
           topic: 'coding.board',
           version: '42',
           event: {
-            type: CONTROLLER_TO_AGENT_EVENTS.controller_connected,
+            type: 'controller_connected',
+            detail: {
+              'p-topic': 'coding.board',
+              'p-version': '42',
+              tagName: tag,
+            },
           },
         },
       }),
@@ -177,7 +182,12 @@ describe('useController', () => {
           topic: 'coding.board',
           version: '42',
           event: {
-            type: CONTROLLER_TO_AGENT_EVENTS.controller_connected,
+            type: 'controller_connected',
+            detail: {
+              'p-topic': 'coding.board',
+              'p-version': '42',
+              tagName: tag,
+            },
           },
         },
       })
@@ -185,6 +195,57 @@ describe('useController', () => {
       expect(secondSocket.sent).toEqual([expected])
     } finally {
       Math.random = originalRandom
+    }
+  })
+
+  test('ignores server messages with mismatched topic', async () => {
+    const { useController } = await import('../controller.ts')
+    const tag = `mismatch-controller-${Date.now()}-${Math.random().toString(16).slice(2)}`
+    customElements.define(tag, useController({ address: 'ws://localhost/ws' }))
+
+    document.body.innerHTML = `<${tag} p-topic="topic-a">
+      <div p-target="main" p-version="1"></div>
+    </${tag}>`
+    const socket = getLatestSocket()
+
+    socket.serverSend({
+      type: AGENT_TO_CONTROLLER_EVENTS.attrs,
+      detail: {
+        topic: 'topic-b',
+        version: '2',
+        target: 'main',
+        attr: { 'p-version': '2' },
+      },
+    })
+
+    expect(document.querySelector('[p-target="main"]')?.getAttribute('p-version')).toBe('1')
+    expect(socket.sent).toEqual([])
+  })
+
+  test('does not send trigger events after topic attribute is removed', async () => {
+    const errors: unknown[] = []
+    const originalError = console.error
+    console.error = (...args: unknown[]) => errors.push(args)
+    try {
+      const outbound: unknown[] = []
+      const { useController } = await import('../controller.ts')
+      const tag = `topic-removed-controller-${Date.now()}-${Math.random().toString(16).slice(2)}`
+      customElements.define(tag, useController({ address: 'ws://localhost/ws', send: (m) => outbound.push(m) }))
+
+      document.body.innerHTML = `<${tag} p-topic="topic">
+        <form id="profile">
+          <input name="displayName" value="Ada">
+        </form>
+      </${tag}>`
+
+      document.body.firstElementChild?.removeAttribute('p-topic')
+      document.getElementById('profile')?.dispatchEvent(new Event('submit', { bubbles: true, composed: true }))
+
+      expect(outbound).toEqual([])
+      expect(errors.length).toBeGreaterThan(0)
+      expect(errors[0]?.[0]).toContain('topic')
+    } finally {
+      console.error = originalError
     }
   })
 
@@ -216,7 +277,12 @@ describe('useController', () => {
           topic: 'outer.topic',
           version: '10',
           event: {
-            type: CONTROLLER_TO_AGENT_EVENTS.controller_connected,
+            type: 'controller_connected',
+            detail: {
+              'p-topic': 'outer.topic',
+              'p-version': '10',
+              tagName: outerTag,
+            },
           },
         },
       }),
@@ -228,7 +294,12 @@ describe('useController', () => {
           topic: 'inner.topic',
           version: '7',
           event: {
-            type: CONTROLLER_TO_AGENT_EVENTS.controller_connected,
+            type: 'controller_connected',
+            detail: {
+              'p-topic': 'inner.topic',
+              'p-version': '7',
+              tagName: innerTag,
+            },
           },
         },
       }),
@@ -248,6 +319,7 @@ describe('useController', () => {
     socket.serverSend({
       type: AGENT_TO_CONTROLLER_EVENTS.attrs,
       detail: {
+        topic: 'topic',
         version: '2',
         target: 'main',
         attr: { 'p-version': '2' },
@@ -269,11 +341,13 @@ describe('useController', () => {
     socket.serverSend({
       type: AGENT_TO_CONTROLLER_EVENTS.render,
       detail: {
+        topic: 'topic',
         version: '1',
         target: 'main',
         html: '<button id="save" p-trigger="click:save">Save</button>',
         stylesheets: [],
         registry: [],
+        swap: 'innerHTML',
       },
     })
 
@@ -304,7 +378,7 @@ describe('useController', () => {
       outbound.push(message)
     })
 
-    document.body.innerHTML = `<${tag}>
+    document.body.innerHTML = `<${tag} p-topic="form-topic">
       <form id="profile" action="/profile" method="post">
         <input name="displayName" value="Ada">
       </form>
@@ -315,7 +389,7 @@ describe('useController', () => {
       {
         type: CONTROLLER_TO_AGENT_EVENTS.form_submit,
         detail: {
-          topic: null,
+          topic: 'form-topic',
           version: null,
           id: 'profile',
           action: null,

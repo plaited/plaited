@@ -140,7 +140,14 @@ const generateTestPage = (tag: string) => {
 
 // ─── Server message templates ─────────────────────────────────────────────────
 
-const RENDER_MESSAGE = JSON.stringify({
+/** Inject topic from ws.data.source into every server message sent to the controller. */
+const sendMessage = (ws: ServerWebSocket<{ source: string }>, message: Record<string, unknown>) => {
+  const detail = (message.detail ?? {}) as Record<string, unknown>
+  if (!detail.topic) detail.topic = ws.data.source
+  ws.send(JSON.stringify({ ...message, detail }))
+}
+
+const RENDER_MESSAGE = {
   type: 'render',
   detail: {
     version: '1',
@@ -149,9 +156,9 @@ const RENDER_MESSAGE = JSON.stringify({
     stylesheets: [],
     registry: ['registered-child'],
   },
-})
+}
 
-const DSD_RENDER_MESSAGE = JSON.stringify({
+const DSD_RENDER_MESSAGE = {
   type: 'render',
   detail: {
     version: '1',
@@ -161,9 +168,9 @@ const DSD_RENDER_MESSAGE = JSON.stringify({
     swap: 'innerHTML',
     registry: [],
   },
-})
+}
 
-const MODULE_RENDER_MESSAGE = JSON.stringify({
+const MODULE_RENDER_MESSAGE = {
   type: 'render',
   detail: {
     version: '1',
@@ -173,205 +180,162 @@ const MODULE_RENDER_MESSAGE = JSON.stringify({
     swap: 'innerHTML',
     registry: [],
   },
-})
+}
 
 // ─── WebSocket message handlers for test elements ─────────────────────────────
 
 const sendSwapTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
+  const send = (msg: Record<string, unknown>) => sendMessage(ws, msg)
   // Step 1: innerHTML — replace children of 'main'
-  ws.send(
-    JSON.stringify({
-      type: 'render',
-      detail: {
-        version: '1',
-        target: 'main',
-        html: '<p id="inner-result">inner replaced</p>',
-        stylesheets: [],
-        swap: 'innerHTML',
-        registry: [],
-      },
-    }),
-  )
+  send({
+    type: 'render',
+    detail: {
+      version: '1',
+      target: 'main',
+      html: '<p id="inner-result">inner replaced</p>',
+      stylesheets: [],
+      swap: 'innerHTML',
+      registry: [],
+    },
+  })
   // Step 2: afterbegin — prepend inside 'main'
-  ws.send(
-    JSON.stringify({
-      type: 'render',
-      detail: {
-        version: '1',
-        target: 'main',
-        html: '<span id="afterbegin-result">first</span>',
-        stylesheets: [],
-        swap: 'afterbegin',
-        registry: [],
-      },
-    }),
-  )
+  send({
+    type: 'render',
+    detail: {
+      version: '1',
+      target: 'main',
+      html: '<span id="afterbegin-result">first</span>',
+      stylesheets: [],
+      swap: 'afterbegin',
+      registry: [],
+    },
+  })
   // Step 3: beforeend — append inside 'main'
-  ws.send(
-    JSON.stringify({
-      type: 'render',
-      detail: {
-        version: '1',
-        target: 'main',
-        html: '<span id="beforeend-result">last</span>',
-        stylesheets: [],
-        swap: 'beforeend',
-        registry: [],
-      },
-    }),
-  )
+  send({
+    type: 'render',
+    detail: {
+      version: '1',
+      target: 'main',
+      html: '<span id="beforeend-result">last</span>',
+      stylesheets: [],
+      swap: 'beforeend',
+      registry: [],
+    },
+  })
   // Step 4: afterend — insert after 'main' element
-  ws.send(
-    JSON.stringify({
-      type: 'render',
-      detail: {
-        version: '1',
-        target: 'main',
-        html: '<span id="afterend-result">after main</span>',
-        stylesheets: [],
-        swap: 'afterend',
-        registry: [],
-      },
-    }),
-  )
+  send({
+    type: 'render',
+    detail: {
+      version: '1',
+      target: 'main',
+      html: '<span id="afterend-result">after main</span>',
+      stylesheets: [],
+      swap: 'afterend',
+      registry: [],
+    },
+  })
   // Step 5: beforebegin — insert before 'main' element
-  ws.send(
-    JSON.stringify({
-      type: 'render',
-      detail: {
-        version: '1',
-        target: 'main',
-        html: '<span id="beforebegin-result">before main</span>',
-        stylesheets: [],
-        swap: 'beforebegin',
-        registry: [],
-      },
-    }),
-  )
+  send({
+    type: 'render',
+    detail: {
+      version: '1',
+      target: 'main',
+      html: '<span id="beforebegin-result">before main</span>',
+      stylesheets: [],
+      swap: 'beforebegin',
+      registry: [],
+    },
+  })
   // Step 6: outerHTML — replace 'outer-target' element itself
-  ws.send(
-    JSON.stringify({
-      type: 'render',
-      detail: {
-        version: '1',
-        target: 'outer-target',
-        html: '<div id="outer-result" p-target="outer-target">outer replaced</div>',
-        stylesheets: [],
-        swap: 'outerHTML',
-        registry: [],
-      },
-    }),
-  )
+  send({
+    type: 'render',
+    detail: {
+      version: '1',
+      target: 'outer-target',
+      html: '<div id="outer-result" p-target="outer-target">outer replaced</div>',
+      stylesheets: [],
+      swap: 'outerHTML',
+      registry: [],
+    },
+  })
 }
 
 const sendAttrsTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
-  // Set string attribute
-  ws.send(
-    JSON.stringify({
-      type: 'attrs',
-      detail: { version: '1', target: 'main', attr: { class: 'active' } },
-    }),
-  )
-  // Remove attribute
-  ws.send(
-    JSON.stringify({
-      type: 'attrs',
-      detail: { version: '1', target: 'main', attr: { 'data-removable': null } },
-    }),
-  )
-  // Set boolean attribute
-  ws.send(
-    JSON.stringify({
-      type: 'attrs',
-      detail: { version: '1', target: 'main', attr: { disabled: true } },
-    }),
-  )
-  // Set number attribute
-  ws.send(
-    JSON.stringify({
-      type: 'attrs',
-      detail: { version: '1', target: 'main', attr: { 'data-count': 42 } },
-    }),
-  )
+  const send = (msg: Record<string, unknown>) => sendMessage(ws, msg)
+  send({ type: 'attrs', detail: { version: '1', target: 'main', attr: { class: 'active' } } })
+  send({ type: 'attrs', detail: { version: '1', target: 'main', attr: { 'data-removable': null } } })
+  send({ type: 'attrs', detail: { version: '1', target: 'main', attr: { disabled: true } } })
+  send({ type: 'attrs', detail: { version: '1', target: 'main', attr: { 'data-count': 42 } } })
 }
 
 const sendActionTestInitialRender = (ws: ServerWebSocket<{ source: string }>) => {
-  ws.send(
-    JSON.stringify({
-      type: 'render',
-      detail: {
-        version: '1',
-        target: 'main',
-        html: '<button id="test-btn" p-trigger="click:test_click">Click me</button>',
-        stylesheets: [],
-        swap: 'innerHTML',
-        registry: [],
-      },
-    }),
-  )
+  sendMessage(ws, {
+    type: 'render',
+    detail: {
+      version: '1',
+      target: 'main',
+      html: '<button id="test-btn" p-trigger="click:test_click">Click me</button>',
+      stylesheets: [],
+      swap: 'innerHTML',
+      registry: [],
+    },
+  })
 }
 
 const sendFormSubmitInitialRender = (ws: ServerWebSocket<{ source: string }>) => {
-  ws.send(
-    JSON.stringify({
-      type: 'render',
-      detail: {
-        version: '1',
-        target: 'main',
-        html: '<form id="controller-form" action="/submit-form" method="post"><input name="name" value="Ada"><input name="tags" value="ui"><input name="tags" value="controller"><button id="controller-form-submit" type="submit">Submit</button></form>',
-        stylesheets: [],
-        swap: 'innerHTML',
-        registry: [],
-      },
-    }),
-  )
+  sendMessage(ws, {
+    type: 'render',
+    detail: {
+      version: '1',
+      target: 'main',
+      html: '<form id="controller-form" action="/submit-form" method="post"><input name="name" value="Ada"><input name="tags" value="ui"><input name="tags" value="controller"><button id="controller-form-submit" type="submit">Submit</button></form>',
+      stylesheets: [],
+      swap: 'innerHTML',
+      registry: [],
+    },
+  })
 }
 
 const sendStylesTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
+  const send = (msg: Record<string, unknown>) => sendMessage(ws, msg)
   const primary = '.dynamic-style-target{color:rgb(1, 2, 3);}'
   const secondary = '.dynamic-style-secondary{background-color:rgb(4, 5, 6);}'
-  ws.send(
-    JSON.stringify({
-      type: 'render',
-      detail: {
-        version: '1',
-        target: 'main',
-        html: '<div id="dynamic-style-target" class="dynamic-style-target">styled</div><div id="dynamic-style-secondary" class="dynamic-style-secondary">styled secondary</div>',
-        stylesheets: [primary, primary, secondary],
-        swap: 'innerHTML',
-        registry: [],
-      },
-    }),
-  )
-  ws.send(
-    JSON.stringify({
-      type: 'render',
-      detail: {
-        version: '1',
-        target: 'main',
-        html: '<div id="dynamic-style-target" class="dynamic-style-target">styled again</div><div id="dynamic-style-secondary" class="dynamic-style-secondary">styled secondary again</div>',
-        stylesheets: [primary],
-        swap: 'innerHTML',
-        registry: [],
-      },
-    }),
-  )
+  send({
+    type: 'render',
+    detail: {
+      version: '1',
+      target: 'main',
+      html: '<div id="dynamic-style-target" class="dynamic-style-target">styled</div><div id="dynamic-style-secondary" class="dynamic-style-secondary">styled secondary</div>',
+      stylesheets: [primary, primary, secondary],
+      swap: 'innerHTML',
+      registry: [],
+    },
+  })
+  send({
+    type: 'render',
+    detail: {
+      version: '1',
+      target: 'main',
+      html: '<div id="dynamic-style-target" class="dynamic-style-target">styled again</div><div id="dynamic-style-secondary" class="dynamic-style-secondary">styled secondary again</div>',
+      stylesheets: [primary],
+      swap: 'innerHTML',
+      registry: [],
+    },
+  })
 }
 
 const sendStyleErrorTestMessage = (ws: ServerWebSocket<{ source: string }>) => {
-  ws.send(
-    JSON.stringify({
-      type: 'render',
-      detail: {
-        version: '1',
-        target: 'main',
-        html: '<div id="style-error-target" class="style-error-target">style error target</div>',
-        stylesheets: ['.fixture-invalid-stylesheet{}', '.style-error-target{color:rgb(7, 8, 9);}'],
-        swap: 'innerHTML',
-        registry: [],
-      },
-    }),
-  )
+  sendMessage(ws, {
+    type: 'render',
+    detail: {
+      version: '1',
+      target: 'main',
+      html: '<div id="style-error-target" class="style-error-target">style error target</div>',
+      stylesheets: ['.fixture-invalid-stylesheet{}', '.style-error-target{color:rgb(7, 8, 9);}'],
+      swap: 'innerHTML',
+      registry: [],
+    },
+  })
 }
 
 // ─── Server ───────────────────────────────────────────────────────────────────
@@ -447,33 +411,27 @@ export const startServer = (port = 0): FixtureServer => {
         const client = ws.data.source
         switch (client) {
           case 'swap-fixture':
-            ws.send(DSD_RENDER_MESSAGE)
+            sendMessage(ws, DSD_RENDER_MESSAGE)
             break
           case 'module-fixture':
             // Send initial render, then import the module from a site-root path.
-            ws.send(MODULE_RENDER_MESSAGE)
-            ws.send(
-              JSON.stringify({
-                type: 'import',
-                detail: { version: '1', path: '/dist/modules/controller-module.js' },
-              }),
-            )
+            sendMessage(ws, MODULE_RENDER_MESSAGE)
+            sendMessage(ws, {
+              type: 'import',
+              detail: { version: '1', id: ws.data.source, path: '/dist/modules/controller-module.js' },
+            })
             break
           case 'bad-import-test':
-            ws.send(
-              JSON.stringify({
-                type: 'import',
-                detail: { version: '1', path: '/dist/modules/invalid-controller-module.js' },
-              }),
-            )
+            sendMessage(ws, {
+              type: 'import',
+              detail: { version: '1', id: ws.data.source, path: '/dist/modules/invalid-controller-module.js' },
+            })
             break
           case 'unsupported-event-test':
-            ws.send(
-              JSON.stringify({
-                type: 'unsupported_controller_event',
-                detail: { version: '1', reason: 'fixture' },
-              }),
-            )
+            sendMessage(ws, {
+              type: 'unsupported_controller_event',
+              detail: { version: '1', reason: 'fixture' },
+            })
             break
           case 'swap-test':
             sendSwapTestMessages(ws)
@@ -495,19 +453,17 @@ export const startServer = (port = 0): FixtureServer => {
               setTimeout(() => ws.close(1012, 'test retry'), 100)
             } else {
               // Subsequent connections (after retry): send success render
-              ws.send(
-                JSON.stringify({
-                  type: 'render',
-                  detail: {
-                    version: '1',
-                    target: 'main',
-                    html: '<div id="retry-success">Reconnected!</div>',
-                    stylesheets: [],
-                    swap: 'innerHTML',
-                    registry: [],
-                  },
-                }),
-              )
+              sendMessage(ws, {
+                type: 'render',
+                detail: {
+                  version: '1',
+                  target: 'main',
+                  html: '<div id="retry-success">Reconnected!</div>',
+                  stylesheets: [],
+                  swap: 'innerHTML',
+                  registry: [],
+                },
+              })
             }
             break
           }
@@ -518,7 +474,7 @@ export const startServer = (port = 0): FixtureServer => {
             sendStyleErrorTestMessage(ws)
             break
           default:
-            ws.send(RENDER_MESSAGE)
+            sendMessage(ws, RENDER_MESSAGE)
         }
       },
       message(ws, message) {
@@ -531,19 +487,17 @@ export const startServer = (port = 0): FixtureServer => {
           state.lastUiEvent = event
           state.uiEvents.push(event)
           if (data.detail?.type === 'test_click') {
-            ws.send(
-              JSON.stringify({
-                type: 'render',
-                detail: {
-                  version: '1',
-                  target: 'main',
-                  html: '<div id="action-confirmed">Action received</div>',
-                  stylesheets: [],
-                  swap: 'innerHTML',
-                  registry: [],
-                },
-              }),
-            )
+            sendMessage(ws, {
+              type: 'render',
+              detail: {
+                version: '1',
+                target: 'main',
+                html: '<div id="action-confirmed">Action received</div>',
+                stylesheets: [],
+                swap: 'innerHTML',
+                registry: [],
+              },
+            })
           }
         }
         if (data.type === 'form_submit') {

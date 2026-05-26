@@ -14,13 +14,7 @@ export const AGENT_TO_CONTROLLER_EVENTS = keyMirror('attrs', 'disconnect', 'rend
  *
  * @public
  */
-export const CONTROLLER_TO_AGENT_EVENTS = keyMirror(
-  'ui_event',
-  'error',
-  'import_invoked',
-  'form_submit',
-  'controller_connected',
-)
+export const CONTROLLER_TO_AGENT_EVENTS = keyMirror('ui_event', 'error', 'form_submit')
 
 export const AGENT_RUNTIMES = keyMirror('analyst', 'coder')
 

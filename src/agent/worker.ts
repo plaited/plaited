@@ -1,7 +1,7 @@
 import { mkdir } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { $ } from 'bun'
-
+import type { JSONType } from 'zod'
 import { resolveRelativePath } from './resolve-relative-path.ts'
 import { WORKER_COMMAND_TYPES, WORKER_MESSAGE_TYPES } from './worker.constants.ts'
 import {
@@ -18,24 +18,19 @@ const postMessageToHost = (message: WorkerMessage) => {
 
 const handleExec = async (detail: ExecCommand['detail']) => {
   const startedAt = Date.now()
-  const { topic, cwd, id } = detail
-  const isScript = 'json' in detail
-
-  if (isScript) {
-    const { command, subCommand, json } = detail
-    const result = await $`${command} ${subCommand} '${json}'`.cwd(cwd).json()
-    postMessageToHost({
-      type: WORKER_MESSAGE_TYPES.exec_result,
-      detail: { id, topic, result, durationMs: Date.now() - startedAt },
-    })
-    return
+  const { topic, cwd, id, command, subCommand, args, output } = detail
+  let result: JSONType | string
+  if (output === 'json') {
+    result =
+      args && args.length > 0
+        ? ((await $`${command} ${subCommand} ${args}`.cwd(cwd).json()) as JSONType)
+        : ((await $`${command} ${subCommand}`.cwd(cwd).json()) as JSONType)
+  } else {
+    result =
+      args && args.length > 0
+        ? await $`${command} ${subCommand} ${args}`.cwd(cwd).text()
+        : await $`${command} ${subCommand}`.cwd(cwd).text()
   }
-
-  const { subCommand, args } = detail
-  const result =
-    args && args.length > 0
-      ? await $`bun ${subCommand} ${args}`.cwd(cwd).text()
-      : await $`bun ${subCommand}`.cwd(cwd).text()
   postMessageToHost({
     type: WORKER_MESSAGE_TYPES.exec_result,
     detail: { id, topic, result, durationMs: Date.now() - startedAt },
