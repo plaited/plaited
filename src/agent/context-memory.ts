@@ -1,7 +1,8 @@
+import * as z from 'zod'
 /**
  * Agent-owned event-detail cache used for listener-topicd context shaping.
  */
-import type { BPEvent, BPListener } from '../behavioral.ts'
+import type { BPEvent, BPListener, SpecListener } from '../behavioral.ts'
 
 type MemoryEvent = BPEvent & {
   topic: string
@@ -12,6 +13,13 @@ type ContextMemoryRecord = {
   expiresAt: number
   touchedAt: number
 }
+
+const specListenerToBPListener = ({ detailSchema, ...listener }: SpecListener): BPListener => ({
+  ...listener,
+  ...(detailSchema && {
+    detailSchema: z.fromJSONSchema(detailSchema) as BPListener['detailSchema'],
+  }),
+})
 
 const getMemoryKey = ({ topic, type }: { topic: string; type: string }) => `${topic}:${type}`
 
@@ -82,8 +90,9 @@ export const createContextMemory = ({ ttlMs, maxKeys }: { ttlMs: number; maxKeys
       memory.set(getMemoryKey({ topic, type }), entry)
       enforceMaxKeys()
     },
-    get: ({ listener, topic }: { listener: BPListener; topic: string }) => {
+    get: ({ specListener, topic }: { specListener: SpecListener; topic: string }) => {
       pruneExpired()
+      const listener = specListenerToBPListener(specListener)
       const entry = memory.get(getMemoryKey({ topic, type: listener.type }))
       if (!entry) {
         return undefined

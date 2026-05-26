@@ -1,28 +1,21 @@
 import type { BPEvent, Disconnect, JsonObject, Trigger } from '../behavioral.ts'
-import { BOOLEAN_ATTRS, P_TARGET, P_TOPIC, P_TRIGGER, P_VERSION } from '../render/template.constants.ts'
-import type { CustomElementTag } from '../render/template.types.ts'
-import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../shared/shared.constants.ts'
-import { isTypeOf } from '../utils.ts'
-import {
-  CONTROLLER_ERRORS,
-  SWAP_MODES,
-  UI_CORE_MAX_RETRIES,
-  UI_CORE_RETRY_STATUS_CODES,
-} from './controller.constants.ts'
+import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS, SWAP_MODES } from '../shared/shared.constants.ts'
 import {
   AttrsMessageSchema,
   type ClientMessage,
   type ControllerErrorMessage,
   DisconnectMessageSchema,
   type FormSubmitMessage,
-  ImportModuleSchema,
+  ImportModuleMessageSchema,
   RenderMessageSchema,
   ServerMessageSchema,
-  type SwapMode,
   type UiEventMessage,
-} from './controller.schemas.ts'
+} from '../shared/shared.schemas.ts'
+import { isTypeOf } from '../utils.ts'
+import { CONTROLLER_ERRORS, UI_CORE_MAX_RETRIES, UI_CORE_RETRY_STATUS_CODES } from './controller.constants.ts'
 import { normalizeControllerErrorDetail } from './controller-error-detail.ts'
 import { DelegatedListener, delegates } from './delegated-listener.ts'
+import { BOOLEAN_ATTRS, P_TARGET, P_TOPIC, P_TRIGGER, P_VERSION } from './template.constants.ts'
 
 const getAttributes = (element: Element): Record<string, string> => {
   return Object.fromEntries(Array.from(element.attributes, (attr) => [attr.name, attr.value]))
@@ -128,7 +121,7 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
       }
     })
     #registry = new CustomElementRegistry()
-    #register(tags: CustomElementTag[]) {
+    #register(tags: string[]) {
       for (const tag of tags) {
         if (!this.#registry.get(tag)) this.#registry.define(tag, useController({ send, address }))
       }
@@ -299,7 +292,7 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
         }
       }
     }
-    #performSwap({ element, html, swap }: { element: Element; html: string; swap: SwapMode }) {
+    #performSwap({ element, html, swap }: { element: Element; html: string; swap: keyof typeof SWAP_MODES }) {
       const template = document.createElement('template')
       template.setHTMLUnsafe(html)
       const content = template.content
@@ -336,7 +329,7 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
         const { type, detail } = ServerMessageSchema.parse(JSON.parse(String(message.data)))
         switch (type) {
           case AGENT_TO_CONTROLLER_EVENTS.import: {
-            const { path, version } = ImportModuleSchema.shape.detail.parse(detail)
+            const { path, version } = ImportModuleMessageSchema.shape.detail.parse(detail)
             this.#setVersion(version)
             void this.#importModule(path).catch((error) =>
               this.#reportError(error, {

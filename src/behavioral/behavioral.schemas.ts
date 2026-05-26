@@ -35,6 +35,14 @@ export const BPListenerSchema = z.object({
 
 export type BPListener = z.output<typeof BPListenerSchema>
 
+export const SpecListenerSchema = BPListenerSchema.omit({
+  detailSchema: true,
+}).extend({
+  detailSchema: JsonObjectSchema.optional(),
+})
+
+export type SpecListener = z.output<typeof SpecListenerSchema>
+
 /**
  * @internal
  * Shared schema for memory entry detail envelopes.

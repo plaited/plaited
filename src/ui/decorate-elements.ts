@@ -1,5 +1,5 @@
-import type { DesignTokenReference, HostStylesObject } from '../css/css.types.ts'
-import { joinStyles } from '../css/join-styles.ts'
+import type { DesignTokenReference, HostStylesObject } from './css.types.ts'
+import { joinStyles } from './join-styles.ts'
 import { createTemplate } from './template.ts'
 import type { Attrs, CustomElementTag, FunctionTemplate, TemplateObject } from './template.types.ts'
 

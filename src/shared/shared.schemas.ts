@@ -1,51 +1,8 @@
 import * as z from 'zod'
 
 import { BPEventSchema, JsonObjectSchema } from '../behavioral.ts'
-import {
-  CUSTOM_ELEMENT_TAG_PATTERN,
-  RESERVED_CUSTOM_ELEMENT_TAGS,
-  SITE_ROOT_JAVASCRIPT_PATH_PATTERN,
-} from '../render/template.constants.ts'
-import type { CustomElementTag } from '../render/template.types.ts'
-import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../shared/shared.constants.ts'
-import { isTypeOf } from '../utils.ts'
-import { SWAP_MODES } from './controller.constants.ts'
-
-// ─── Server → Client Message Schemas ────────────────────────────────────────
-
-/**
- * Schema for DOM insertion position values.
- *
- * @remarks
- * Maps to the standard `insertAdjacentHTML` positions plus
- * `innerHTML` and `outerHTML` for full content replacement.
- *
- * @public
- */
-export const SwapModeSchema = z.enum([
-  SWAP_MODES.afterbegin,
-  SWAP_MODES.afterend,
-  SWAP_MODES.beforebegin,
-  SWAP_MODES.beforeend,
-  SWAP_MODES.innerHTML,
-  SWAP_MODES.outerHTML,
-])
-
-/** @public */
-export type SwapMode = z.infer<typeof SwapModeSchema>
-
-/**
- * Schema for normalized custom element tag names.
- *
- * @public
- */
-export const CustomElementTagSchema = z.custom<CustomElementTag>(
-  (value) =>
-    isTypeOf<string>(value, 'string') &&
-    CUSTOM_ELEMENT_TAG_PATTERN.test(value) &&
-    !RESERVED_CUSTOM_ELEMENT_TAGS.has(value),
-  'Expected a valid custom element tag',
-)
+import { SITE_ROOT_JAVASCRIPT_PATH_PATTERN } from '../ui/template.constants.ts'
+import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS, SWAP_MODES } from './shared.constants.ts'
 
 /**
  * Schema for render messages that insert or replace DOM content.
@@ -59,8 +16,15 @@ export const RenderMessageSchema = z.object({
     target: z.string(),
     html: z.string(),
     stylesheets: z.array(z.string()),
-    swap: SwapModeSchema.optional(),
-    registry: z.array(CustomElementTagSchema),
+    swap: z.enum([
+      SWAP_MODES.afterbegin,
+      SWAP_MODES.afterend,
+      SWAP_MODES.beforebegin,
+      SWAP_MODES.beforeend,
+      SWAP_MODES.innerHTML,
+      SWAP_MODES.outerHTML,
+    ]),
+    registry: z.array(z.string()),
   }),
 })
 
@@ -94,7 +58,7 @@ export type AttrsMessage = z.infer<typeof AttrsMessageSchema>
  *
  * @public
  */
-export const ImportModuleSchema = z.object({
+export const ImportModuleMessageSchema = z.object({
   type: z.literal(AGENT_TO_CONTROLLER_EVENTS.import),
   detail: z.object({
     version: z.string(),
@@ -103,7 +67,7 @@ export const ImportModuleSchema = z.object({
 })
 
 /** @public */
-export type ImportModuleMessage = z.infer<typeof ImportModuleSchema>
+export type ImportModuleMessage = z.infer<typeof ImportModuleMessageSchema>
 
 /**
  * Schema for controller disconnect messages sent from server.
@@ -126,7 +90,7 @@ export type DisconnectMessage = z.infer<typeof DisconnectMessageSchema>
  * @public
  */
 export const ServerMessageSchema = z.discriminatedUnion('type', [
-  ImportModuleSchema,
+  ImportModuleMessageSchema,
   RenderMessageSchema,
   AttrsMessageSchema,
   DisconnectMessageSchema,

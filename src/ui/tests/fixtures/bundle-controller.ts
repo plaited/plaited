@@ -1,6 +1,6 @@
-export { CONNECT_PLAITED_ROUTE } from '../../../render/template.constants.ts'
+export { CONNECT_PLAITED_ROUTE } from '../../template.constants.ts'
 
-import { CONNECT_PLAITED_ROUTE } from '../../../render/template.constants.ts'
+import { CONNECT_PLAITED_ROUTE } from '../../template.constants.ts'
 
 export const bundleController = async () => {
   const entry = CONNECT_PLAITED_ROUTE.replace('.js', '.ts')

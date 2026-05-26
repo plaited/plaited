@@ -23,3 +23,14 @@ export const CONTROLLER_TO_AGENT_EVENTS = keyMirror(
 )
 
 export const AGENT_RUNTIMES = keyMirror('analyst', 'coder')
+
+/**
+ * Supported DOM insertion modes for `render` protocol messages.
+ *
+ * @remarks
+ * These values align with the insertion positions accepted by the controller's
+ * DOM update path, plus `innerHTML` and `outerHTML` replacement modes.
+ *
+ * @public
+ */
+export const SWAP_MODES = keyMirror('afterbegin', 'afterend', 'beforebegin', 'beforeend', 'innerHTML', 'outerHTML')

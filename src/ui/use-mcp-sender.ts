@@ -1,7 +1,7 @@
 import type { App } from '@modelcontextprotocol/ext-apps'
 
 import type { Trigger } from '../behavioral.ts'
-import { type ClientMessage, ClientMessageSchema } from './controller.schemas.ts'
+import { type ClientMessage, ClientMessageSchema } from '../shared/shared.schemas.ts'
 
 export type UseMcpSenderOptions = {
   app: Pick<App, 'callServerTool'>

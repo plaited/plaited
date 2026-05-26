@@ -1,4 +1,4 @@
-import type { CSSProperties } from '../css/css.types.ts'
+import type { CSSProperties } from './css.types.ts'
 import { P_TARGET, P_TOPIC, P_TRIGGER, P_VERSION, type TEMPLATE_OBJECT_IDENTIFIER } from './template.constants.ts'
 
 type Booleanish = boolean | 'true' | 'false'
