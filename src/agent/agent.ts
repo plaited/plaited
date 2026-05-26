@@ -144,9 +144,9 @@ addHandler(AGENT_EVENTS.worker_terminate, () => {
 })
 
 // Outgoing Worker Message
-addHandler<ExecCommand>(WORKER_COMMAND_TYPES.exec, (detail) => worker.postMessage(detail))
-addHandler<ReadCommand>(WORKER_COMMAND_TYPES.read, (detail) => worker.postMessage(detail))
-addHandler<WriteCommand>(WORKER_COMMAND_TYPES.write, (detail) => worker.postMessage(detail))
+addHandler<ExecCommand['detail']>(WORKER_COMMAND_TYPES.exec, (detail) => worker.postMessage(detail))
+addHandler<ReadCommand['detail']>(WORKER_COMMAND_TYPES.read, (detail) => worker.postMessage(detail))
+addHandler<WriteCommand['detail']>(WORKER_COMMAND_TYPES.write, (detail) => worker.postMessage(detail))
 
 type WebSocketData = {
   topic: string
@@ -185,14 +185,6 @@ const server = Bun.serve<WebSocketData>({
   },
 })
 
-// Incoming UI Message
-addHandler(CONTROLLER_TO_AGENT_EVENTS.controller_connected, () => {})
-addHandler(CONTROLLER_TO_AGENT_EVENTS.error, () => {})
-addHandler(CONTROLLER_TO_AGENT_EVENTS.form_submit, () => {})
-addHandler(CONTROLLER_TO_AGENT_EVENTS.import_invoked, () => {})
-addHandler(CONTROLLER_TO_AGENT_EVENTS.ui_event, () => {})
-
-// Outgoing UI Messages
 addHandler<AttrsMessage['detail']>(AGENT_TO_CONTROLLER_EVENTS.attrs, (detail) => {
   server.publish(detail.topic, JSON.stringify(detail))
 })
