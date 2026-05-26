@@ -99,38 +99,43 @@ plaited mcp-client '{"mode":"list-tools","url":"https://example.com/mcp","auth":
 For servers needing OAuth client credentials, refresh tokens, or secrets injected via Varlock,
 pass the full auth config inline:
 
-#### Bearer token from env or Varlock
+#### Bearer token from env
+
+All secrets resolve from environment variables. Inject them via your secret manager
+(Varlock, 1Password, CI secrets, etc.) before invoking the CLI.
 
 ```bash
-plaited mcp-client '{"mode":"call-tool","url":"https://example.com/mcp","tool":"my_tool","args":{"key":"value"},"auth":{"type":"bearer-env","token":{"envVar":"MY_MCP_ACCESS_TOKEN","storage":{"kind":"varlock-1password","reference":"op://team/service/access-token"}}}}'
+plaited mcp-client '{"mode":"call-tool","url":"https://example.com/mcp","tool":"my_tool","args":{"key":"value"},"auth":{"type":"bearer-env","token":{"envVar":"MY_MCP_ACCESS_TOKEN"}}}'
 ```
 
 #### OAuth client credentials
 
 ```bash
-plaited mcp-client '{"mode":"list-tools","url":"https://example.com/mcp","auth":{"type":"oauth-client-credentials","tokenUrl":"https://issuer.example.com/oauth/token","clientId":{"envVar":"MY_MCP_CLIENT_ID","storage":{"kind":"env"}},"clientSecret":{"envVar":"MY_MCP_CLIENT_SECRET","storage":{"kind":"varlock-1password","reference":"op://team/service/client-secret"}},"scopes":["mcp:tools"]}}'
+plaited mcp-client '{"mode":"list-tools","url":"https://example.com/mcp","auth":{"type":"oauth-client-credentials","tokenUrl":"https://issuer.example.com/oauth/token","clientId":{"envVar":"MY_MCP_CLIENT_ID"},"clientSecret":{"envVar":"MY_MCP_CLIENT_SECRET"},"scopes":["mcp:tools"]}}'
 ```
 
-#### OAuth refresh token
+#### OAuth refresh token with file persistence
+
+By default, rotated refresh tokens are held in memory only. Add `tokenPersistence`
+to survive across CLI invocations. The default path is
+`~/.plaited/mcp/tokens/<host>.json`.
 
 ```bash
-plaited mcp-client '{"mode":"call-tool","url":"https://example.com/mcp","tool":"my_tool","args":{"key":"value"},"auth":{"type":"oauth-refresh-token","tokenUrl":"https://issuer.example.com/oauth/token","clientId":{"envVar":"MY_MCP_CLIENT_ID","storage":{"kind":"env"}},"clientSecret":{"envVar":"MY_MCP_CLIENT_SECRET","storage":{"kind":"varlock-1password"}},"refreshToken":{"envVar":"MY_MCP_REFRESH_TOKEN","storage":{"kind":"varlock-1password"}},"tokenPersistence":{"kind":"system-keychain","key":"com.example.mcp/service"}}}'
+plaited mcp-client '{"mode":"call-tool","url":"https://example.com/mcp","tool":"my_tool","args":{"key":"value"},"auth":{"type":"oauth-refresh-token","tokenUrl":"https://issuer.example.com/oauth/token","clientId":{"envVar":"MY_MCP_CLIENT_ID"},"clientSecret":{"envVar":"MY_MCP_CLIENT_SECRET"},"refreshToken":{"envVar":"MY_MCP_REFRESH_TOKEN"},"tokenPersistence":{"kind":"file"}}}'
 ```
 
-> The `auth` field on every `plaited mcp-client` mode accepts the full
-> `ConfiguredRemoteMcpOptions` surface. Use `plaited mcp-client --schema input` to inspect the
-> complete schema.
+Use `plaited mcp-client --schema input` to inspect the complete schema.
 
 ### Operator rules — no secrets in repo
 
 - Do not commit JWTs, access tokens, refresh tokens, or client secrets into tracked files.
-- Checked-in config may contain auth strategy, env var names, scopes, issuer or token URLs, and
-  storage metadata. The secret values themselves must come from env or Varlock-injected env vars.
-- Pass `tokenPersistence` as metadata for operators — actual refresh-material handling comes from
-  a runtime `refreshMaterialStore`.
+- Checked-in config may contain auth strategy, env var names, scopes, issuer, and token URLs.
+  Secret values themselves must come from environment variables (injected via Varlock,
+  1Password, CI secrets, or your preferred secret manager).
+- With `tokenPersistence: { kind: "file" }`, the rotated refresh token is written to
+  `~/.plaited/mcp/tokens/<host>.json` (same sensitivity as `gcloud` ADC or `aws` SSO cache).
+  Omit `tokenPersistence` to keep everything in-memory (lossy across invocations — the
+  caller re-injects bootstrap secrets each time).
 - Keep access tokens ephemeral and in memory.
-- The CLI's `auth` field only logs the auth type and env var name (never the secret value) under
-  `--dry-run`.
-- Prefer Varlock plus 1Password or plain env injection for stable credentials.
-- If refresh material must survive process restarts, inject a keychain or external store at
-  runtime. Do not default to tracked repo files.
+- Prefer Varlock plus 1Password for injecting initial secrets into the environment.
+  The CLI never writes secrets to any other location.

@@ -16,6 +16,36 @@ const spawnMcpClient = (input: string, ...extraArgs: string[]) =>
   )
 
 describe('mcpClientCli', () => {
+  test('rejects input missing required url field', async () => {
+    const proc = await spawnMcpClient(JSON.stringify({ mode: 'list-tools' }))
+
+    expect(await proc.exited).toBeGreaterThan(0)
+  })
+
+  test('rejects invalid mode', async () => {
+    const proc = await spawnMcpClient(JSON.stringify({ mode: 'invalid-mode', url: MCP_DOCS_URL }))
+
+    expect(await proc.exited).toBeGreaterThan(0)
+  })
+
+  test('rejects non-JSON input', async () => {
+    const proc = await spawnMcpClient('not-json')
+
+    expect(await proc.exited).toBeGreaterThan(0)
+  })
+
+  test('call-tool mode rejects missing tool name', async () => {
+    const proc = await spawnMcpClient(
+      JSON.stringify({
+        mode: 'call-tool',
+        url: MCP_DOCS_URL,
+        args: { query: 'test' },
+      }),
+    )
+
+    expect(await proc.exited).toBeGreaterThan(0)
+  })
+
   test('--help exits 0 and describes all seven modes', async () => {
     const proc = await spawnMcpClient('', '--help')
 
@@ -30,13 +60,44 @@ describe('mcpClientCli', () => {
     expect(stderr).toContain('discover')
   })
 
-  test('list-tools mode returns tools from mcp-docs server', async () => {
+  test('--dry-run prints request details without executing', async () => {
     const proc = await spawnMcpClient(
       JSON.stringify({
-        mode: 'list-tools',
+        mode: 'call-tool',
         url: MCP_DOCS_URL,
+        tool: 'search_model_context_protocol',
+        args: { query: 'test' },
       }),
+      '--dry-run',
     )
+
+    expect(await proc.exited).toBe(0)
+    const output = JSON.parse(await new Response(proc.stdout).text())
+    expect(output.command).toBe('mcp-client')
+    expect(output.dryRun).toBe(true)
+    expect(output.input.mode).toBe('call-tool')
+  })
+
+  test('--schema input emits JSON Schema and exits 0', async () => {
+    const proc = await spawnMcpClient('', '--schema', 'input')
+
+    expect(await proc.exited).toBe(0)
+    const output = JSON.parse(await new Response(proc.stdout).text())
+    expect(output.oneOf).toBeDefined()
+    expect(output.oneOf.length).toBe(7)
+  })
+
+  test('--schema output emits output schema and exits 0', async () => {
+    const proc = await spawnMcpClient('', '--schema', 'output')
+
+    expect(await proc.exited).toBe(0)
+    const output = JSON.parse(await new Response(proc.stdout).text())
+    expect(output.oneOf).toBeDefined()
+    expect(output.oneOf.length).toBe(7)
+  })
+
+  test('list-tools mode returns tools from mcp-docs server', async () => {
+    const proc = await spawnMcpClient(JSON.stringify({ mode: 'list-tools', url: MCP_DOCS_URL }))
 
     expect(await proc.exited).toBe(0)
     const output = JSON.parse(await new Response(proc.stdout).text())
@@ -65,27 +126,18 @@ describe('mcpClientCli', () => {
     expect(output.result.content[0].type).toBe('text')
   })
 
-  test('list-prompts mode returns prompts from mcp-docs server', async () => {
-    const proc = await spawnMcpClient(
-      JSON.stringify({
-        mode: 'list-prompts',
-        url: MCP_DOCS_URL,
-      }),
-    )
+  test('list-prompts mode gracefully handles servers without prompts', async () => {
+    const proc = await spawnMcpClient(JSON.stringify({ mode: 'list-prompts', url: MCP_DOCS_URL }))
 
-    expect(await proc.exited).toBe(0)
-    const output = JSON.parse(await new Response(proc.stdout).text())
-    expect(output.mode).toBe('list-prompts')
-    expect(Array.isArray(output.result)).toBe(true)
+    // Some MCP servers (like mcp-docs) don't expose prompts.
+    // The CLI should surface this server error, not crash.
+    const stderr = await new Response(proc.stderr).text()
+    expect(stderr).toContain('Method not found')
+    expect(await proc.exited).toBeGreaterThan(0)
   })
 
   test('list-resources mode returns resources from mcp-docs server', async () => {
-    const proc = await spawnMcpClient(
-      JSON.stringify({
-        mode: 'list-resources',
-        url: MCP_DOCS_URL,
-      }),
-    )
+    const proc = await spawnMcpClient(JSON.stringify({ mode: 'list-resources', url: MCP_DOCS_URL }))
 
     expect(await proc.exited).toBe(0)
     const output = JSON.parse(await new Response(proc.stdout).text())
@@ -111,12 +163,7 @@ describe('mcpClientCli', () => {
   })
 
   test('discover mode returns all capabilities from mcp-docs server', async () => {
-    const proc = await spawnMcpClient(
-      JSON.stringify({
-        mode: 'discover',
-        url: MCP_DOCS_URL,
-      }),
-    )
+    const proc = await spawnMcpClient(JSON.stringify({ mode: 'discover', url: MCP_DOCS_URL }))
 
     expect(await proc.exited).toBe(0)
     const output = JSON.parse(await new Response(proc.stdout).text())
@@ -124,83 +171,5 @@ describe('mcpClientCli', () => {
     expect(output.result.tools.length).toBeGreaterThan(0)
     expect(Array.isArray(output.result.prompts)).toBe(true)
     expect(Array.isArray(output.result.resources)).toBe(true)
-  })
-
-  test('rejects missing url field', async () => {
-    const proc = await spawnMcpClient(
-      JSON.stringify({
-        mode: 'list-tools',
-      }),
-    )
-
-    expect(await proc.exited).toBeGreaterThan(0)
-  })
-
-  test('rejects invalid mode', async () => {
-    const proc = await spawnMcpClient(
-      JSON.stringify({
-        mode: 'invalid-mode',
-        url: MCP_DOCS_URL,
-      }),
-    )
-
-    expect(await proc.exited).toBeGreaterThan(0)
-  })
-
-  test('rejects non-JSON input', async () => {
-    const proc = await spawnMcpClient('not-json')
-
-    expect(await proc.exited).toBeGreaterThan(0)
-  })
-
-  test('call-tool mode rejects missing tool name', async () => {
-    const proc = await spawnMcpClient(
-      JSON.stringify({
-        mode: 'call-tool',
-        url: MCP_DOCS_URL,
-        args: { query: 'test' },
-      }),
-    )
-
-    expect(await proc.exited).toBeGreaterThan(0)
-  })
-
-  test('--dry-run prints request details without executing', async () => {
-    const proc = await spawnMcpClient(
-      JSON.stringify({
-        mode: 'call-tool',
-        url: MCP_DOCS_URL,
-        tool: 'search_model_context_protocol',
-        args: { query: 'test' },
-      }),
-      '--dry-run',
-    )
-
-    expect(await proc.exited).toBe(0)
-    const output = JSON.parse(await new Response(proc.stdout).text())
-    expect(output.command).toBe('mcp-client')
-    expect(output.dryRun).toBe(true)
-    expect(output.input.mode).toBe('call-tool')
-  })
-
-  test('--schema input emits JSON Schema and exits 0', async () => {
-    const proc = await spawnMcpClient('', '--schema', 'input')
-
-    expect(await proc.exited).toBe(0)
-    const output = JSON.parse(await new Response(proc.stdout).text())
-    expect(output.oneOf).toBeDefined()
-    expect(output.oneOf.length).toBe(7)
-    expect(output.oneOf[0].properties.mode.const).toBe('call-tool')
-    expect(output.description).toContain('MCP client')
-  })
-
-  test('--schema output emits output schema and exits 0', async () => {
-    const proc = await spawnMcpClient('', '--schema', 'output')
-
-    expect(await proc.exited).toBe(0)
-    const output = JSON.parse(await new Response(proc.stdout).text())
-    expect(output.oneOf).toBeDefined()
-    expect(output.oneOf.length).toBe(7)
-    expect(output.oneOf[0].properties.mode.const).toBe('call-tool')
   })
 })

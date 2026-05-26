@@ -8,25 +8,158 @@
  * @internal
  */
 
-import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import type {
-  OAuthClientInformationMixed,
-  OAuthClientMetadata,
-  OAuthTokens,
-} from '@modelcontextprotocol/sdk/shared/auth.js'
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
-import type * as z from 'zod'
-import packageJson from '../../package.json' with { type: 'json' }
+import * as z from 'zod'
 import { makeCli } from './cli.ts'
-import {
-  ConfiguredRemoteMcpOptionsSchema,
-  McpClientInputSchema,
-  McpClientOutputSchema,
-  McpManifestSchema,
-  RemoteMcpAuthConfigSchema,
-} from './mcp-client.schemas.ts'
+
+// ---------------------------------------------------------------------------
+// Zod schemas (inlined — no separate schemas file)
+// ---------------------------------------------------------------------------
+
+const remoteMcpSecretSchema = z.object({
+  envVar: z.string().min(1),
+  optional: z.boolean().optional(),
+  description: z.string().optional(),
+})
+
+const tokenPersistenceSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('file'), path: z.string().optional() }),
+  z.object({ kind: z.literal('env') }),
+])
+
+const authConfigSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('none') }),
+  z.object({
+    type: z.literal('bearer-env'),
+    token: remoteMcpSecretSchema,
+    headerName: z.string().min(1).optional(),
+    prefix: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal('static-headers'),
+    headers: z.record(z.string(), z.string()),
+  }),
+  z.object({
+    type: z.literal('oauth-client-credentials'),
+    issuer: z.string().url().optional(),
+    tokenUrl: z.string().url(),
+    clientId: remoteMcpSecretSchema,
+    clientSecret: remoteMcpSecretSchema.optional(),
+    scopes: z.array(z.string().min(1)).optional(),
+    audience: z.string().min(1).optional(),
+    resource: z.string().min(1).optional(),
+    clientAuthentication: z.enum(['client_secret_basic', 'client_secret_post', 'none']).optional(),
+    tokenPersistence: tokenPersistenceSchema.optional(),
+  }),
+  z.object({
+    type: z.literal('oauth-refresh-token'),
+    issuer: z.string().url().optional(),
+    tokenUrl: z.string().url(),
+    clientId: remoteMcpSecretSchema,
+    clientSecret: remoteMcpSecretSchema.optional(),
+    refreshToken: remoteMcpSecretSchema,
+    scopes: z.array(z.string().min(1)).optional(),
+    audience: z.string().min(1).optional(),
+    resource: z.string().min(1).optional(),
+    clientAuthentication: z.enum(['client_secret_basic', 'client_secret_post', 'none']).optional(),
+    tokenPersistence: tokenPersistenceSchema.optional(),
+  }),
+])
+
+const modeFields = {
+  auth: authConfigSchema.optional(),
+  headers: z.record(z.string(), z.string()).optional(),
+  timeoutMs: z.number().int().positive().optional(),
+  tokenPersistence: tokenPersistenceSchema.optional(),
+} as const
+
+const callToolModeSchema = z
+  .object({
+    mode: z.literal('call-tool'),
+    url: z.string().min(1),
+    tool: z.string().min(1),
+    args: z.record(z.string(), z.unknown()),
+    ...modeFields,
+  })
+  .describe('Call a tool on a remote MCP server')
+
+const listToolsModeSchema = z
+  .object({ mode: z.literal('list-tools'), url: z.string().min(1), ...modeFields })
+  .describe('List available tools from a remote MCP server')
+
+const listPromptsModeSchema = z
+  .object({ mode: z.literal('list-prompts'), url: z.string().min(1), ...modeFields })
+  .describe('List available prompts from a remote MCP server')
+
+const getPromptModeSchema = z
+  .object({
+    mode: z.literal('get-prompt'),
+    url: z.string().min(1),
+    name: z.string().min(1),
+    args: z.record(z.string(), z.string()).optional(),
+    ...modeFields,
+  })
+  .describe('Get a specific prompt from a remote MCP server')
+
+const listResourcesModeSchema = z
+  .object({ mode: z.literal('list-resources'), url: z.string().min(1), ...modeFields })
+  .describe('List available resources from a remote MCP server')
+
+const readResourceModeSchema = z
+  .object({
+    mode: z.literal('read-resource'),
+    url: z.string().min(1),
+    uri: z.string().min(1),
+    ...modeFields,
+  })
+  .describe('Read a resource from a remote MCP server by URI')
+
+const discoverModeSchema = z
+  .object({ mode: z.literal('discover'), url: z.string().min(1), ...modeFields })
+  .describe('Discover all capabilities from a remote MCP server')
+
+const McpClientInputSchema = z
+  .discriminatedUnion('mode', [
+    callToolModeSchema,
+    listToolsModeSchema,
+    listPromptsModeSchema,
+    getPromptModeSchema,
+    listResourcesModeSchema,
+    readResourceModeSchema,
+    discoverModeSchema,
+  ])
+  .describe('MCP client operation to perform')
+
+const McpClientOutputSchema = z
+  .discriminatedUnion('mode', [
+    z.object({
+      mode: z.literal('call-tool'),
+      result: z.object({
+        content: z.array(z.object({ type: z.string(), text: z.string().optional() }).passthrough()),
+        isError: z.boolean().optional(),
+      }),
+    }),
+    z.object({ mode: z.literal('list-tools'), result: z.array(z.any()) }),
+    z.object({ mode: z.literal('list-prompts'), result: z.array(z.any()) }),
+    z.object({ mode: z.literal('get-prompt'), result: z.array(z.any()) }),
+    z.object({ mode: z.literal('list-resources'), result: z.array(z.any()) }),
+    z.object({ mode: z.literal('read-resource'), result: z.array(z.any()) }),
+    z.object({
+      mode: z.literal('discover'),
+      result: z.object({
+        tools: z.array(z.any()),
+        prompts: z.array(z.any()),
+        resources: z.array(z.any()),
+      }),
+    }),
+  ])
+  .describe('MCP client operation result')
+
+// ---------------------------------------------------------------------------
+// Internal types
+// ---------------------------------------------------------------------------
 
 type McpContent = { type: string; text?: string; [key: string]: unknown }
 type McpCallToolResult = { content: McpContent[]; isError?: boolean }
@@ -34,49 +167,21 @@ type McpTool = { name: string; description?: string; inputSchema: Record<string,
 type McpPromptArgument = { name: string; description?: string; required?: boolean }
 type McpPrompt = { name: string; description?: string; arguments?: McpPromptArgument[] }
 type McpPromptMessage = { role: 'user' | 'assistant'; content: McpContent }
-type McpResource = {
-  uri: string
-  name: string
-  description?: string
-  mimeType?: string
-}
-type McpResourceContent = {
-  uri: string
-  text?: string
-  blob?: string
-  mimeType?: string
-}
+type McpResource = { uri: string; name: string; description?: string; mimeType?: string }
+type McpResourceContent = { uri: string; text?: string; blob?: string; mimeType?: string }
 type McpServerCapabilities = {
   tools: McpTool[]
   prompts: McpPrompt[]
   resources: McpResource[]
 }
-type McpSessionOptions = {
-  timeoutMs?: number
-}
-type RemoteMcpOptions = {
-  headers?: Record<string, string>
-  authProvider?: OAuthClientProvider
-  timeoutMs?: number
-}
-type RemoteMcpSecretStorageKind = 'env' | 'varlock-1password' | 'system-keychain' | 'external'
-type RemoteMcpSecretStorage = {
-  kind: RemoteMcpSecretStorageKind
-  reference?: string
-}
 type RemoteMcpSecret = {
   envVar: string
-  storage?: RemoteMcpSecretStorage
   optional?: boolean
   description?: string
 }
-type RemoteMcpTokenPersistenceKind = 'memory' | 'system-keychain' | 'external'
-type RemoteMcpTokenPersistence = {
-  kind: RemoteMcpTokenPersistenceKind
-  key?: string
-  note?: string
-}
+type RemoteMcpTokenPersistence = { kind: 'file'; path?: string } | { kind: 'env' }
 type RemoteMcpOauthClientAuthentication = 'client_secret_basic' | 'client_secret_post' | 'none'
+
 type RemoteMcpAuthConfig =
   | { type: 'none' }
   | {
@@ -114,62 +219,67 @@ type RemoteMcpAuthConfig =
       clientAuthentication?: RemoteMcpOauthClientAuthentication
       tokenPersistence?: RemoteMcpTokenPersistence
     }
-type ConfiguredRemoteMcpOptions = {
+
+type McpSessionOptions = {
   headers?: Record<string, string>
+  authProvider?: import('@modelcontextprotocol/sdk/client/auth.js').OAuthClientProvider
   timeoutMs?: number
-  auth?: RemoteMcpAuthConfig
-}
-type RemoteMcpRefreshMaterial = {
-  refreshToken?: string
-}
-type RemoteMcpRefreshMaterialStore = {
-  load: () => Promise<RemoteMcpRefreshMaterial | undefined> | RemoteMcpRefreshMaterial | undefined
-  save: (material: RemoteMcpRefreshMaterial) => Promise<void> | void
-  clear?: () => Promise<void> | void
-}
-type RemoteMcpSecretResolver = (secret: RemoteMcpSecret) => Promise<string | undefined> | string | undefined
-type ResolveRemoteMcpRuntime = {
-  refreshMaterialStore?: RemoteMcpRefreshMaterialStore
-  secretResolver?: RemoteMcpSecretResolver
-}
-type McpManifest = {
-  server?: {
-    name: string
-    version?: string
-    transport?: string
-  }
-  capabilities: {
-    tools: Record<string, McpTool> | McpTool[]
-    prompts: Record<string, McpPrompt> | McpPrompt[]
-    resources: Record<string, McpResource> | McpResource[]
-  }
 }
 
-const CLIENT_INFO = { name: 'plaited', version: packageJson.version }
+type McpSessionApi = {
+  listTools: () => Promise<McpTool[]>
+  callTool: (name: string, args: Record<string, unknown>) => Promise<McpCallToolResult>
+  listPrompts: () => Promise<McpPrompt[]>
+  getPrompt: (name: string, args?: Record<string, string>) => Promise<McpPromptMessage[]>
+  listResources: () => Promise<McpResource[]>
+  readResource: (uri: string) => Promise<McpResourceContent[]>
+  discover: () => Promise<McpServerCapabilities>
+  [Symbol.asyncDispose]: () => Promise<void>
+}
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
 const DEFAULT_BEARER_PREFIX = 'Bearer'
 const TOKEN_EXPIRY_SKEW_MS = 30_000
+const CLIENT_INFO = { name: 'plaited', version: '0.0.0' }
 
-type InMemoryOAuthTokens = OAuthTokens & { expiresAtMs?: number }
-type OAuthAuthConfig = Extract<RemoteMcpAuthConfig, { type: 'oauth-client-credentials' | 'oauth-refresh-token' }>
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
-const getSecretStorageKind = (secret: RemoteMcpSecret) => secret.storage?.kind ?? 'env'
-
-const getSecretResolutionHint = (secret: RemoteMcpSecret) => {
-  switch (getSecretStorageKind(secret)) {
-    case 'varlock-1password':
-      return 'Inject it into the environment with Varlock/1Password or pass a custom secretResolver.'
-    case 'system-keychain':
-      return 'Expose it as an environment variable or pass a custom secretResolver for keychain access.'
-    case 'external':
-      return 'Expose it as an environment variable or pass a custom secretResolver for your external secret store.'
-    default:
-      return 'Set the environment variable before invoking the MCP wrapper.'
-  }
+const resolveEnvSecret = async (secret: RemoteMcpSecret): Promise<string | undefined> => {
+  const envValue = Bun.env[secret.envVar]
+  if (envValue !== undefined && envValue !== '') return envValue
+  if (secret.optional) return undefined
+  throw new Error(
+    `Missing required env var ${secret.envVar}. Set it before invoking the MCP client, or mark it optional.`,
+  )
 }
+
+const resolveRequiredSecret = async (secret: RemoteMcpSecret, label: string): Promise<string> => {
+  const value = await resolveEnvSecret(secret)
+  if (value) return value
+  throw new Error(`${label} env var ${secret.envVar} resolved to an empty value. Check your environment.`)
+}
+
+const defaultTokenCachePath = (url: string): string => {
+  const home = Bun.env.HOME ?? Bun.env.USERPROFILE ?? '.'
+  const host = new URL(url).hostname
+  return `${home}/.plaited/mcp/tokens/${host}.json`
+}
+
+const encodeBasicAuth = (username: string, password: string) =>
+  Buffer.from(`${username}:${password}`).toString('base64')
 
 const getScopeString = (scopes?: string[]) => (scopes && scopes.length > 0 ? scopes.join(' ') : undefined)
 
-const withExpiry = (tokens: OAuthTokens): InMemoryOAuthTokens => ({
+type InMemoryOAuthTokens = import('@modelcontextprotocol/sdk/shared/auth.js').OAuthTokens & {
+  expiresAtMs?: number
+}
+
+const withExpiry = (tokens: import('@modelcontextprotocol/sdk/shared/auth.js').OAuthTokens): InMemoryOAuthTokens => ({
   ...tokens,
   expiresAtMs: tokens.expires_in === undefined ? undefined : Date.now() + tokens.expires_in * 1000,
 })
@@ -178,246 +288,143 @@ const isAccessTokenFresh = (tokens: InMemoryOAuthTokens | undefined) =>
   Boolean(tokens?.access_token) &&
   (tokens?.expiresAtMs === undefined || tokens.expiresAtMs - Date.now() > TOKEN_EXPIRY_SKEW_MS)
 
-const encodeBasicAuth = (username: string, password: string) =>
-  Buffer.from(`${username}:${password}`).toString('base64')
+// ---------------------------------------------------------------------------
+// Token persistence (file-backed)
+// ---------------------------------------------------------------------------
 
-/**
- * Resolves a declared remote MCP secret from the environment by default.
- *
- * @public
- */
-const resolveRemoteMcpSecret = async (
-  secret: RemoteMcpSecret,
-  runtime?: ResolveRemoteMcpRuntime,
+const readPersistedRefreshToken = async (
+  url: string,
+  persistence?: RemoteMcpTokenPersistence,
 ): Promise<string | undefined> => {
-  const resolvedByRuntime = await runtime?.secretResolver?.(secret)
-  if (resolvedByRuntime !== undefined) {
-    return resolvedByRuntime
-  }
-
-  const envValue = Bun.env[secret.envVar]
-  if (envValue !== undefined && envValue !== '') {
-    return envValue
-  }
-
-  if (secret.optional) {
+  if (!persistence || persistence.kind === 'env') return undefined
+  const path = persistence.path ?? defaultTokenCachePath(url)
+  try {
+    const file = Bun.file(path)
+    if (!(await file.exists())) return undefined
+    const data = (await file.json()) as { refreshToken?: string }
+    return data.refreshToken
+  } catch {
     return undefined
   }
-
-  throw new Error(
-    `Missing remote MCP secret env var ${secret.envVar} (storage: ${getSecretStorageKind(secret)}). ${getSecretResolutionHint(secret)}`,
-  )
 }
 
-const resolveRequiredRemoteMcpSecret = async ({
-  secret,
-  runtime,
-  label,
-}: {
-  secret: RemoteMcpSecret
-  runtime?: ResolveRemoteMcpRuntime
-  label: string
-}) => {
-  const value = await resolveRemoteMcpSecret(secret, runtime)
-  if (value) {
-    return value
-  }
-
-  throw new Error(
-    `Remote MCP ${label} secret ${secret.envVar} resolved to an empty value. Check your env or secret resolver configuration.`,
-  )
+const writePersistedRefreshToken = async (
+  url: string,
+  refreshToken: string | undefined,
+  persistence?: RemoteMcpTokenPersistence,
+): Promise<void> => {
+  if (!persistence || persistence.kind === 'env' || !refreshToken) return
+  const path = persistence.path ?? defaultTokenCachePath(url)
+  await Bun.write(path, JSON.stringify({ refreshToken }, null, 2))
 }
 
-const createBearerHeaderValue = ({ prefix, token }: { prefix?: string; token: string }) =>
-  prefix === '' ? token : `${prefix ?? DEFAULT_BEARER_PREFIX} ${token}`
+// ---------------------------------------------------------------------------
+// OAuth helpers
+// ---------------------------------------------------------------------------
 
-const createOAuthClientMetadata = (auth: OAuthAuthConfig): OAuthClientMetadata => ({
-  redirect_uris: [],
-  grant_types: [auth.type === 'oauth-client-credentials' ? 'client_credentials' : 'refresh_token'],
-  token_endpoint_auth_method: auth.clientAuthentication === 'none' ? undefined : auth.clientAuthentication,
-  client_name: 'plaited remote mcp',
-  scope: getScopeString(auth.scopes),
-})
-
-const createOAuthRequestParams = async ({
-  auth,
-  runtime,
-  refreshToken,
-}: {
-  auth: OAuthAuthConfig
-  runtime?: ResolveRemoteMcpRuntime
-  refreshToken?: string
-}) => {
+const buildOAuthRequest = async (
+  auth: Extract<RemoteMcpAuthConfig, { type: 'oauth-client-credentials' | 'oauth-refresh-token' }>,
+  refreshTokenOverride?: string,
+): Promise<{ headers: Headers; params: URLSearchParams }> => {
   const params = new URLSearchParams()
   const headers = new Headers({
     Accept: 'application/json',
     'Content-Type': 'application/x-www-form-urlencoded',
   })
-  const clientId = await resolveRequiredRemoteMcpSecret({
-    label: 'OAuth client ID',
-    runtime,
-    secret: auth.clientId,
-  })
-  const clientSecret = auth.clientSecret ? await resolveRemoteMcpSecret(auth.clientSecret, runtime) : undefined
-  const clientAuthentication =
-    auth.clientAuthentication ?? (clientSecret ? ('client_secret_basic' as const) : ('none' as const))
 
-  if (auth.type === 'oauth-client-credentials') {
-    params.set('grant_type', 'client_credentials')
-  } else {
-    params.set('grant_type', 'refresh_token')
-    const resolvedRefreshToken =
-      refreshToken ??
-      (await resolveRequiredRemoteMcpSecret({
-        label: 'OAuth refresh token',
-        runtime,
-        secret: auth.refreshToken,
-      }))
+  const clientId = await resolveRequiredSecret(auth.clientId, 'OAuth client ID')
+  const clientSecret = auth.clientSecret ? await resolveEnvSecret(auth.clientSecret) : undefined
+  const clientAuthentication = auth.clientAuthentication ?? (clientSecret ? 'client_secret_basic' : 'none')
 
-    if (!resolvedRefreshToken) {
-      throw new Error('Missing refresh token for remote MCP OAuth refresh-token flow')
-    }
+  params.set('grant_type', auth.type === 'oauth-client-credentials' ? 'client_credentials' : 'refresh_token')
 
-    params.set('refresh_token', resolvedRefreshToken)
+  if (auth.type === 'oauth-refresh-token') {
+    const rt = refreshTokenOverride ?? (await resolveRequiredSecret(auth.refreshToken, 'OAuth refresh token'))
+    if (!rt) throw new Error('Missing refresh token for OAuth refresh-token flow')
+    params.set('refresh_token', rt)
   }
 
   const scope = getScopeString(auth.scopes)
-  if (scope) {
-    params.set('scope', scope)
-  }
-
-  if (auth.audience) {
-    params.set('audience', auth.audience)
-  }
-
-  if (auth.resource) {
-    params.set('resource', auth.resource)
-  }
+  if (scope) params.set('scope', scope)
+  if (auth.audience) params.set('audience', auth.audience)
+  if (auth.resource) params.set('resource', auth.resource)
 
   switch (clientAuthentication) {
     case 'client_secret_basic':
-      if (!clientSecret) {
-        throw new Error('client_secret_basic requires clientSecret for remote MCP OAuth auth')
-      }
-      headers.set('Authorization', `Basic ${encodeBasicAuth(clientId ?? '', clientSecret)}`)
+      if (!clientSecret) throw new Error('client_secret_basic requires clientSecret')
+      headers.set('Authorization', `Basic ${encodeBasicAuth(clientId, clientSecret)}`)
       break
     case 'client_secret_post':
-      params.set('client_id', clientId ?? '')
-      if (clientSecret) {
-        params.set('client_secret', clientSecret)
-      }
+      params.set('client_id', clientId)
+      if (clientSecret) params.set('client_secret', clientSecret)
       break
     case 'none':
-      params.set('client_id', clientId ?? '')
+      params.set('client_id', clientId)
       break
   }
 
-  return { headers, params, clientId, clientSecret }
+  return { headers, params }
 }
 
-const requestOAuthTokens = async ({
-  auth,
-  runtime,
-  refreshToken,
-}: {
-  auth: OAuthAuthConfig
-  runtime?: ResolveRemoteMcpRuntime
-  refreshToken?: string
-}): Promise<OAuthTokens> => {
-  const { headers, params } = await createOAuthRequestParams({ auth, runtime, refreshToken })
+const exchangeOAuthTokens = async (
+  auth: Extract<RemoteMcpAuthConfig, { type: 'oauth-client-credentials' | 'oauth-refresh-token' }>,
+  refreshTokenOverride?: string,
+): Promise<import('@modelcontextprotocol/sdk/shared/auth.js').OAuthTokens> => {
+  const { headers, params } = await buildOAuthRequest(auth, refreshTokenOverride)
   const response = await fetch(auth.tokenUrl, {
-    body: params.toString(),
-    headers,
     method: 'POST',
+    headers,
+    body: params.toString(),
   })
 
   if (!response.ok) {
     const body = await response.text()
-    throw new Error(`Remote MCP OAuth token request failed (${response.status}): ${body}`)
+    throw new Error(`OAuth token request failed (${response.status}): ${body}`)
   }
 
-  const json = (await response.json()) as Partial<OAuthTokens>
+  const json = (await response.json()) as Partial<import('@modelcontextprotocol/sdk/shared/auth.js').OAuthTokens>
   if (!json.access_token || !json.token_type) {
-    throw new Error('Remote MCP OAuth token response did not include access_token and token_type')
+    throw new Error('OAuth token response missing access_token or token_type')
   }
 
-  return json as OAuthTokens
+  return json as import('@modelcontextprotocol/sdk/shared/auth.js').OAuthTokens
 }
 
-/**
- * Creates an SDK-compatible OAuth provider from declarative remote MCP auth config.
- *
- * @public
- */
-const createConfiguredOAuthClientProvider = (
+const createOAuthProvider = (
   auth: Extract<RemoteMcpAuthConfig, { type: 'oauth-client-credentials' | 'oauth-refresh-token' }>,
-  runtime?: ResolveRemoteMcpRuntime,
-): OAuthClientProvider => {
-  const clientMetadata = createOAuthClientMetadata(auth)
+  url: string,
+): import('@modelcontextprotocol/sdk/client/auth.js').OAuthClientProvider => {
   let cachedTokens: InMemoryOAuthTokens | undefined
-  let cachedRefreshMaterial: RemoteMcpRefreshMaterial | undefined
-  let didLoadRefreshMaterial = false
+  let loadedPersisted = false
+  let persistedRefreshToken: string | undefined
 
-  const loadRefreshMaterial = async () => {
-    if (didLoadRefreshMaterial) {
-      return cachedRefreshMaterial
+  const loadRefreshToken = async (): Promise<string | undefined> => {
+    if (auth.type !== 'oauth-refresh-token') return undefined
+    if (!loadedPersisted) {
+      persistedRefreshToken = await readPersistedRefreshToken(url, auth.tokenPersistence)
+      loadedPersisted = true
     }
-
-    cachedRefreshMaterial = await runtime?.refreshMaterialStore?.load()
-    didLoadRefreshMaterial = true
-    return cachedRefreshMaterial
+    return persistedRefreshToken ?? resolveEnvSecret(auth.refreshToken)
   }
 
-  const getRefreshToken = async () => {
-    if (auth.type !== 'oauth-refresh-token') {
-      return undefined
-    }
+  const ensureTokens = async (): Promise<InMemoryOAuthTokens> => {
+    if (isAccessTokenFresh(cachedTokens)) return cachedTokens as InMemoryOAuthTokens
 
-    const storedRefreshToken = (await loadRefreshMaterial())?.refreshToken
-    if (storedRefreshToken) {
-      return storedRefreshToken
-    }
+    const refreshToken = auth.type === 'oauth-refresh-token' ? await loadRefreshToken() : undefined
+    const nextTokens = await exchangeOAuthTokens(auth, refreshToken)
 
-    return resolveRequiredRemoteMcpSecret({
-      label: 'OAuth refresh token',
-      runtime,
-      secret: auth.refreshToken,
-    })
-  }
-
-  const saveRefreshToken = async (refreshToken: string | undefined) => {
-    if (auth.type !== 'oauth-refresh-token' || !refreshToken) {
-      return
-    }
-
-    cachedRefreshMaterial = { refreshToken }
-    didLoadRefreshMaterial = true
-    await runtime?.refreshMaterialStore?.save({ refreshToken })
-  }
-
-  const saveTokens = async (tokens: OAuthTokens) => {
-    const refreshToken =
-      tokens.refresh_token ??
+    const newRefresh =
+      nextTokens.refresh_token ??
       cachedTokens?.refresh_token ??
-      (auth.type === 'oauth-refresh-token' ? await getRefreshToken() : undefined)
-    cachedTokens = withExpiry({
-      ...tokens,
-      ...(refreshToken ? { refresh_token: refreshToken } : {}),
-    })
-    await saveRefreshToken(refreshToken)
-  }
+      (auth.type === 'oauth-refresh-token' ? refreshToken : undefined)
 
-  const ensureTokens = async () => {
-    if (isAccessTokenFresh(cachedTokens)) {
-      return cachedTokens
+    cachedTokens = withExpiry({ ...nextTokens, ...(newRefresh ? { refresh_token: newRefresh } : {}) })
+
+    if (auth.type === 'oauth-refresh-token' && nextTokens.refresh_token) {
+      persistedRefreshToken = nextTokens.refresh_token
+      await writePersistedRefreshToken(url, nextTokens.refresh_token, auth.tokenPersistence)
     }
 
-    const nextTokens = await requestOAuthTokens({
-      auth,
-      runtime,
-      refreshToken: auth.type === 'oauth-refresh-token' ? await getRefreshToken() : undefined,
-    })
-    await saveTokens(nextTokens)
     return cachedTokens
   }
 
@@ -426,194 +433,105 @@ const createConfiguredOAuthClientProvider = (
       return undefined
     },
     get clientMetadata() {
-      return clientMetadata
-    },
-    clientInformation: async (): Promise<OAuthClientInformationMixed | undefined> => {
-      const clientId = await resolveRequiredRemoteMcpSecret({
-        label: 'OAuth client ID',
-        runtime,
-        secret: auth.clientId,
-      })
-      const clientSecret = auth.clientSecret ? await resolveRemoteMcpSecret(auth.clientSecret, runtime) : undefined
       return {
-        client_id: clientId,
-        ...(clientSecret ? { client_secret: clientSecret } : {}),
+        redirect_uris: [],
+        grant_types: [auth.type === 'oauth-client-credentials' ? 'client_credentials' : 'refresh_token'],
+        token_endpoint_auth_method: auth.clientAuthentication === 'none' ? undefined : auth.clientAuthentication,
+        client_name: 'plaited remote mcp',
+        scope: getScopeString(auth.scopes),
       }
     },
-    tokens: async () => ensureTokens(),
-    saveTokens,
+    clientInformation: async (): Promise<
+      import('@modelcontextprotocol/sdk/shared/auth.js').OAuthClientInformationMixed | undefined
+    > => {
+      const clientId = await resolveRequiredSecret(auth.clientId, 'OAuth client ID')
+      const clientSecret = auth.clientSecret ? await resolveEnvSecret(auth.clientSecret) : undefined
+      return { client_id: clientId, ...(clientSecret ? { client_secret: clientSecret } : {}) }
+    },
+    tokens: () => ensureTokens(),
+    saveTokens: async (tokens: import('@modelcontextprotocol/sdk/shared/auth.js').OAuthTokens) => {
+      const newRefresh = tokens.refresh_token ?? cachedTokens?.refresh_token
+      cachedTokens = withExpiry({ ...tokens, ...(newRefresh ? { refresh_token: newRefresh } : {}) })
+      if (auth.type === 'oauth-refresh-token' && tokens.refresh_token) {
+        persistedRefreshToken = tokens.refresh_token
+        await writePersistedRefreshToken(url, tokens.refresh_token, auth.tokenPersistence)
+      }
+    },
     redirectToAuthorization() {
-      throw new Error('Interactive OAuth authorization is not supported for this remote MCP provider')
+      throw new Error('Interactive OAuth authorization not supported')
     },
     saveCodeVerifier() {},
     codeVerifier() {
       return ''
     },
-    invalidateCredentials: async (scope) => {
+    invalidateCredentials: async () => {
       cachedTokens = undefined
-      if ((scope === 'all' || scope === 'tokens') && runtime?.refreshMaterialStore?.clear) {
-        cachedRefreshMaterial = undefined
-        didLoadRefreshMaterial = true
-        await runtime.refreshMaterialStore.clear()
-      }
     },
   }
 }
 
-/**
- * Resolves declarative auth config into transport options for remote MCP helpers.
- *
- * @public
- */
-const resolveRemoteMcpAuthOptions = async (
-  auth: RemoteMcpAuthConfig,
-  runtime?: ResolveRemoteMcpRuntime,
-): Promise<Pick<RemoteMcpOptions, 'authProvider' | 'headers'>> => {
-  const parsed = RemoteMcpAuthConfigSchema.parse(auth) as RemoteMcpAuthConfig
+// ---------------------------------------------------------------------------
+// Auth resolution
+// ---------------------------------------------------------------------------
 
-  switch (parsed.type) {
+const resolveAuth = async (config: RemoteMcpAuthConfig, url: string): Promise<McpSessionOptions> => {
+  switch (config.type) {
     case 'none':
       return {}
     case 'bearer-env': {
-      const token = await resolveRemoteMcpSecret(parsed.token, runtime)
-      return token
-        ? {
-            headers: {
-              [parsed.headerName ?? 'Authorization']: createBearerHeaderValue({ prefix: parsed.prefix, token }),
-            },
-          }
-        : {}
+      const token = await resolveEnvSecret(config.token)
+      if (!token) return {}
+      const prefix = config.prefix ?? DEFAULT_BEARER_PREFIX
+      const headerValue = prefix === '' ? token : `${prefix} ${token}`
+      return { headers: { [config.headerName ?? 'Authorization']: headerValue } }
     }
     case 'static-headers':
-      return { headers: { ...parsed.headers } }
+      return { headers: { ...config.headers } }
     case 'oauth-client-credentials':
     case 'oauth-refresh-token':
-      return {
-        authProvider: createConfiguredOAuthClientProvider(parsed, runtime),
-      }
+      return { authProvider: createOAuthProvider(config, url) }
   }
 }
 
-/**
- * Resolves checked-in remote MCP config into runtime connection options.
- *
- * @public
- */
-const _resolveConfiguredRemoteMcpOptions = async (
-  config: ConfiguredRemoteMcpOptions,
-  runtime?: ResolveRemoteMcpRuntime,
-): Promise<RemoteMcpOptions> => {
-  const parsed = ConfiguredRemoteMcpOptionsSchema.parse(config) as ConfiguredRemoteMcpOptions
-  const authOptions = parsed.auth ? await resolveRemoteMcpAuthOptions(parsed.auth, runtime) : {}
-
-  return {
-    timeoutMs: parsed.timeoutMs,
-    authProvider: authOptions.authProvider,
-    headers: {
-      ...parsed.headers,
-      ...authOptions.headers,
-    },
-  }
-}
-
-const createRemoteHeaders = async (options?: RemoteMcpOptions) => {
-  const headers = new Headers(options?.headers)
-  headers.set('Accept', 'application/json')
-
-  if (options?.authProvider) {
-    const tokens = await options.authProvider.tokens()
-    if (tokens?.access_token) {
-      headers.set('Authorization', `Bearer ${tokens.access_token}`)
+const resolveSessionOptions = async (input: Record<string, unknown>): Promise<McpSessionOptions> => {
+  const options: McpSessionOptions = {}
+  if (input.headers) options.headers = { ...(input.headers as Record<string, string>) }
+  if (input.timeoutMs) options.timeoutMs = input.timeoutMs as number
+  if (input.auth) {
+    const authOptions = await resolveAuth(input.auth as RemoteMcpAuthConfig, input.url as string)
+    if (authOptions.headers) {
+      options.headers = { ...options.headers, ...authOptions.headers }
+    }
+    if (authOptions.authProvider) {
+      options.authProvider = authOptions.authProvider
     }
   }
-
-  return headers
+  return options
 }
 
-const normalizeManifestEntries = <T extends { name: string }>(entries: Record<string, T> | T[]) =>
-  Array.isArray(entries) ? entries : Object.values(entries)
+// ---------------------------------------------------------------------------
+// Session management
+// ---------------------------------------------------------------------------
 
-/**
- * Normalizes manifest capability records into array form.
- *
- * @public
- */
-const normalizeMcpManifestCapabilities = (manifest: McpManifest): McpServerCapabilities => ({
-  tools: normalizeManifestEntries(manifest.capabilities.tools),
-  prompts: normalizeManifestEntries(manifest.capabilities.prompts),
-  resources: normalizeManifestEntries(manifest.capabilities.resources),
-})
-
-/**
- * Fetches and validates an MCP manifest from a remote endpoint.
- *
- * @public
- */
-const fetchRemoteMcpManifest = async (url: string, options?: RemoteMcpOptions): Promise<McpManifest | null> => {
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: await createRemoteHeaders(options),
+const createTransport = (url: string, options: McpSessionOptions): Transport =>
+  new StreamableHTTPClientTransport(new URL(url), {
+    requestInit: options.headers ? { headers: options.headers } : undefined,
+    authProvider: options.authProvider,
   })
 
-  if (!response.ok) {
-    return null
-  }
-
-  const contentType = response.headers.get('content-type') ?? ''
-  if (!contentType.includes('application/json')) {
-    return null
-  }
-
-  const json = await response.json()
-  const result = McpManifestSchema.safeParse(json)
-  return result.success ? (result.data as McpManifest) : null
-}
-
-const getRemoteManifestCapabilities = async (url: string, options?: RemoteMcpOptions) => {
-  const manifest = await fetchRemoteMcpManifest(url, options)
-  return manifest ? normalizeMcpManifestCapabilities(manifest) : null
-}
-
-/**
- * Connects an MCP client to an already-created transport.
- *
- * @public
- */
-const mcpConnect = async (transport: Transport) => {
+const createSession = async (url: string, options: McpSessionOptions): Promise<McpSessionApi> => {
   const client = new Client(CLIENT_INFO)
-  await client.connect(transport)
-  return client
-}
-
-type McpSession = {
-  listTools: () => Promise<McpTool[]>
-  callTool: (name: string, args: Record<string, unknown>) => Promise<McpCallToolResult>
-  listPrompts: () => Promise<McpPrompt[]>
-  getPrompt: (name: string, args?: Record<string, string>) => Promise<McpPromptMessage[]>
-  listResources: () => Promise<McpResource[]>
-  readResource: (uri: string) => Promise<McpResourceContent[]>
-  discover: () => Promise<McpServerCapabilities>
-  close: () => Promise<void>
-  [Symbol.asyncDispose]: () => Promise<void>
-}
-
-/**
- * Creates an MCP session wrapper around a connected transport.
- *
- * @public
- */
-const createMcpSession = async (transport: Transport, options?: McpSessionOptions): Promise<McpSession> => {
-  const timeoutMs = options?.timeoutMs
-  const client = new Client(CLIENT_INFO)
-  await client.connect(transport)
+  await client.connect(createTransport(url, options))
 
   const withTimeout = <T>(fn: () => Promise<T>): Promise<T> => {
-    if (!timeoutMs) return fn()
-    const timeout = AbortSignal.timeout(timeoutMs)
+    if (!options.timeoutMs) return fn()
     return new Promise<T>((resolve, reject) => {
-      timeout.addEventListener('abort', () => reject(new Error(`MCP operation timed out after ${timeoutMs}ms`)), {
-        once: true,
-      })
+      const signal = AbortSignal.timeout(options.timeoutMs!)
+      signal.addEventListener(
+        'abort',
+        () => reject(new Error(`MCP operation timed out after ${options.timeoutMs}ms`)),
+        { once: true },
+      )
       fn().then(resolve, reject)
     })
   }
@@ -622,233 +540,83 @@ const createMcpSession = async (transport: Transport, options?: McpSessionOption
     try {
       await client.close()
     } catch {
-      // Best-effort cleanup
+      /* best-effort */
     }
   }
 
   return {
-    listTools: () =>
-      withTimeout(async () => {
-        const { tools } = await client.listTools()
-        return tools
-      }),
-
+    listTools: () => withTimeout(async () => (await client.listTools()).tools),
     callTool: (name, args) =>
       withTimeout(async () => (await client.callTool({ name, arguments: args })) as McpCallToolResult),
-
-    listPrompts: () =>
-      withTimeout(async () => {
-        const { prompts } = await client.listPrompts()
-        return prompts
-      }),
-
+    listPrompts: () => withTimeout(async () => (await client.listPrompts()).prompts),
     getPrompt: (name, args) =>
-      withTimeout(async () => {
-        const { messages } = await client.getPrompt({ name, arguments: args })
-        return messages as McpPromptMessage[]
-      }),
-
-    listResources: () =>
-      withTimeout(async () => {
-        const { resources } = await client.listResources()
-        return resources
-      }),
-
+      withTimeout(async () => (await client.getPrompt({ name, arguments: args })).messages as McpPromptMessage[]),
+    listResources: () => withTimeout(async () => (await client.listResources()).resources),
     readResource: (uri) =>
-      withTimeout(async () => {
-        const { contents } = await client.readResource({ uri })
-        return contents as McpResourceContent[]
-      }),
-
+      withTimeout(async () => (await client.readResource({ uri })).contents as McpResourceContent[]),
     discover: () =>
       withTimeout(async () => {
-        const [toolsResult, promptsResult, resourcesResult] = await Promise.allSettled([
+        const [tools, prompts, resources] = await Promise.allSettled([
           client.listTools(),
           client.listPrompts(),
           client.listResources(),
         ])
         return {
-          tools: toolsResult.status === 'fulfilled' ? toolsResult.value.tools : [],
-          prompts: promptsResult.status === 'fulfilled' ? promptsResult.value.prompts : [],
-          resources: resourcesResult.status === 'fulfilled' ? resourcesResult.value.resources : [],
+          tools: tools.status === 'fulfilled' ? tools.value.tools : [],
+          prompts: prompts.status === 'fulfilled' ? prompts.value.prompts : [],
+          resources: resources.status === 'fulfilled' ? resources.value.resources : [],
         }
       }),
-
-    close,
     [Symbol.asyncDispose]: close,
   }
 }
 
-/**
- * Creates a streamable HTTP transport for a remote MCP endpoint.
- *
- * @public
- */
-const createRemoteMcpTransport = (url: string, options?: RemoteMcpOptions) =>
-  new StreamableHTTPClientTransport(new URL(url), {
-    requestInit: options?.headers ? { headers: options.headers } : undefined,
-    authProvider: options?.authProvider,
-  })
+// ---------------------------------------------------------------------------
+// Generic MCP fetch helper
+// ---------------------------------------------------------------------------
 
-/**
- * Creates an MCP session for a remote streamable HTTP endpoint.
- *
- * @public
- */
-const createRemoteMcpSession = async (url: string, options?: RemoteMcpOptions): Promise<McpSession> =>
-  createMcpSession(createRemoteMcpTransport(url, options), { timeoutMs: options?.timeoutMs })
-
-/**
- * Connects an MCP client directly to a remote streamable HTTP endpoint.
- *
- * @public
- */
-const _remoteMcpConnect = async (url: string, options?: RemoteMcpOptions) => {
-  const transport = createRemoteMcpTransport(url, options)
-  return mcpConnect(transport)
-}
-
-const mcpListTools = async (url: string, options?: RemoteMcpOptions): Promise<McpTool[]> => {
-  const capabilities = await getRemoteManifestCapabilities(url, options)
-  if (capabilities) return capabilities.tools
-  const session = await createRemoteMcpSession(url, options)
-  try {
-    return await session.listTools()
-  } finally {
-    await session.close()
-  }
-}
-
-const mcpCallTool = async (
+const mcpFetch = async <T>(
   url: string,
-  toolName: string,
-  args: Record<string, unknown>,
-  options?: RemoteMcpOptions,
-): Promise<McpCallToolResult> => {
-  const session = await createRemoteMcpSession(url, options)
+  method: (session: McpSessionApi) => Promise<T>,
+  options: McpSessionOptions,
+): Promise<T> => {
+  const session = await createSession(url, options)
   try {
-    return await session.callTool(toolName, args)
+    return await method(session)
   } finally {
-    await session.close()
+    await session[Symbol.asyncDispose]()
   }
 }
 
-const mcpListPrompts = async (url: string, options?: RemoteMcpOptions): Promise<McpPrompt[]> => {
-  const capabilities = await getRemoteManifestCapabilities(url, options)
-  if (capabilities) return capabilities.prompts
-  const session = await createRemoteMcpSession(url, options)
-  try {
-    return await session.listPrompts()
-  } finally {
-    await session.close()
-  }
-}
-
-const mcpGetPrompt = async (
-  url: string,
-  name: string,
-  args?: Record<string, string>,
-  options?: RemoteMcpOptions,
-): Promise<McpPromptMessage[]> => {
-  const session = await createRemoteMcpSession(url, options)
-  try {
-    return await session.getPrompt(name, args)
-  } finally {
-    await session.close()
-  }
-}
-
-const mcpListResources = async (url: string, options?: RemoteMcpOptions): Promise<McpResource[]> => {
-  const capabilities = await getRemoteManifestCapabilities(url, options)
-  if (capabilities) return capabilities.resources
-  const session = await createRemoteMcpSession(url, options)
-  try {
-    return await session.listResources()
-  } finally {
-    await session.close()
-  }
-}
-
-const mcpReadResource = async (url: string, uri: string, options?: RemoteMcpOptions): Promise<McpResourceContent[]> => {
-  const session = await createRemoteMcpSession(url, options)
-  try {
-    return await session.readResource(uri)
-  } finally {
-    await session.close()
-  }
-}
-
-const mcpDiscover = async (url: string, options?: RemoteMcpOptions): Promise<McpServerCapabilities> => {
-  const capabilities = await getRemoteManifestCapabilities(url, options)
-  if (capabilities) return capabilities
-  const session = await createRemoteMcpSession(url, options)
-  try {
-    return await session.discover()
-  } finally {
-    await session.close()
-  }
-}
+// ---------------------------------------------------------------------------
+// CLI dispatch
+// ---------------------------------------------------------------------------
 
 const run = async (input: unknown): Promise<z.infer<typeof McpClientOutputSchema>> => {
   const parsed = McpClientInputSchema.parse(input)
+  const options = await resolveSessionOptions(parsed as Record<string, unknown>)
 
   switch (parsed.mode) {
     case 'call-tool':
       return {
         mode: 'call-tool',
-        result: await mcpCallTool(parsed.url, parsed.tool, parsed.args, {
-          timeoutMs: parsed.timeoutMs,
-          headers: parsed.headers,
-        }),
+        result: await mcpFetch(parsed.url, (s) => s.callTool(parsed.tool, parsed.args), options),
       }
     case 'list-tools':
-      return {
-        mode: 'list-tools',
-        result: await mcpListTools(parsed.url, {
-          timeoutMs: parsed.timeoutMs,
-          headers: parsed.headers,
-        }),
-      }
+      return { mode: 'list-tools', result: await mcpFetch(parsed.url, (s) => s.listTools(), options) }
     case 'list-prompts':
-      return {
-        mode: 'list-prompts',
-        result: await mcpListPrompts(parsed.url, {
-          timeoutMs: parsed.timeoutMs,
-          headers: parsed.headers,
-        }),
-      }
+      return { mode: 'list-prompts', result: await mcpFetch(parsed.url, (s) => s.listPrompts(), options) }
     case 'get-prompt':
       return {
         mode: 'get-prompt',
-        result: await mcpGetPrompt(parsed.url, parsed.name, parsed.args, {
-          timeoutMs: parsed.timeoutMs,
-          headers: parsed.headers,
-        }),
+        result: await mcpFetch(parsed.url, (s) => s.getPrompt(parsed.name, parsed.args), options),
       }
     case 'list-resources':
-      return {
-        mode: 'list-resources',
-        result: await mcpListResources(parsed.url, {
-          timeoutMs: parsed.timeoutMs,
-          headers: parsed.headers,
-        }),
-      }
+      return { mode: 'list-resources', result: await mcpFetch(parsed.url, (s) => s.listResources(), options) }
     case 'read-resource':
-      return {
-        mode: 'read-resource',
-        result: await mcpReadResource(parsed.url, parsed.uri, {
-          timeoutMs: parsed.timeoutMs,
-          headers: parsed.headers,
-        }),
-      }
+      return { mode: 'read-resource', result: await mcpFetch(parsed.url, (s) => s.readResource(parsed.uri), options) }
     case 'discover':
-      return {
-        mode: 'discover',
-        result: await mcpDiscover(parsed.url, {
-          timeoutMs: parsed.timeoutMs,
-          headers: parsed.headers,
-        }),
-      }
+      return { mode: 'discover', result: await mcpFetch(parsed.url, (s) => s.discover(), options) }
   }
 }
 
@@ -868,7 +636,7 @@ export const mcpClientCli = makeCli({
     '  read-resource    Read a resource from a remote MCP server',
     '  discover         Discover all capabilities from a remote MCP server',
     '',
-    'Each mode accepts the remote URL and optional auth/headers/timeoutMs fields.',
+    'Each mode accepts optional auth, headers, timeoutMs, and tokenPersistence fields.',
   ].join('\n'),
   run,
 })
