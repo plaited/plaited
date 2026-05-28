@@ -48,3 +48,5 @@ export const FRONTIER_STATUS = keyMirror('ready', 'deadlock', 'idle')
  * @internal
  */
 export const THREAD_IDENTIFIER = '🪢' as const
+
+export const IDIOMS = keyMirror('waitFor', 'interrupt', 'request', 'block')
