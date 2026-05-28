@@ -13,7 +13,7 @@
  * - Shadow DOM boundaries
  * - Script injection protection
  *
- * @see {@link Fragment} for grouping without wrappers
+ * @see {@link fragment} for grouping without wrappers
  * @see {@link createStyles} for style creation
  */
 
@@ -21,10 +21,13 @@ import { htmlEscape, isTypeOf, kebabCase, trueTypeOf } from '../utils.ts'
 import {
   BOOLEAN_ATTRS,
   CUSTOM_ELEMENT_TAG_PATTERN,
+  P_SCALE,
   P_TOPIC,
   P_TRIGGER,
   PRIMITIVES,
   RESERVED_CUSTOM_ELEMENT_TAGS,
+  SCALE,
+  SCALE_RANK,
   SITE_ROOT_JAVASCRIPT_PATH_PATTERN,
   TEMPLATE_OBJECT_IDENTIFIER,
   VALID_PRIMITIVE_CHILDREN,
@@ -64,6 +67,10 @@ class InvalidAttributeTypeError extends Error implements Error {
   override name = 'invalid_attribute_type'
 }
 
+class ScaleViolantionError extends Error implements Error {
+  override name = 'scale_violation'
+}
+
 /**
  * @internal
  * Error thrown when a hyphenated tag is not a valid custom element tag.
@@ -84,7 +91,7 @@ type InferAttrs<T extends Tag> = T extends keyof ElementAttributeList
       ? DetailedCustomElementHTMLAttributes
       : Attrs
 
-/** @internal Type signature for `createTemplate`, preserving type safety between the tag and its attributes. */
+/** @internal Type signature for `h`, preserving type safety between the tag and its attributes. */
 type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateObject
 
 const normalizeAttributeKeys = (attrs: Record<string, unknown>): Record<string, unknown> => {
@@ -96,7 +103,7 @@ const normalizeAttributeKeys = (attrs: Record<string, unknown>): Record<string, 
 }
 
 /** @internal Narrows valid lowercase custom element tag names. */
-export const isCustomElementTag = (tag: string): tag is CustomElementTag => {
+const isCustomElementTag = (tag: string): tag is CustomElementTag => {
   return CUSTOM_ELEMENT_TAG_PATTERN.test(tag) && !RESERVED_CUSTOM_ELEMENT_TAGS.has(tag)
 }
 
@@ -121,23 +128,27 @@ export const isCustomElementTag = (tag: string): tag is CustomElementTag => {
  * - External site-root script bootstrap only
  *
  * @see {@link h} for JSX factory alias
- * @see {@link Fragment} for grouping elements
+ * @see {@link fragment} for grouping elements
  */
-export const createTemplate: CreateTemplate = (_tag, attrs) => {
+export const h: CreateTemplate = (_tag, attrs) => {
   if (isTypeOf<FunctionTemplate>(_tag, 'function')) {
     return _tag(attrs)
   }
   const {
     children: _children,
-    stylesheets = [],
+    stylesheets: _stylesheets,
     style,
-    'p-trigger': pTrigger,
-    'p-topic': pTopic,
+    [P_TRIGGER]: pTrigger,
+    [P_TOPIC]: pTopic,
+    [P_SCALE]: pScale = 'rel',
     class: cls,
     classNames,
     for: htmlFor,
     ...attributes
   } = attrs
+
+  let stylesheets = _stylesheets ?? []
+
   const normalizedAttributes = normalizeAttributeKeys(attributes)
 
   const tag = htmlEscape(_tag.trim().toLowerCase())
@@ -197,6 +208,7 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
       html: start,
       stylesheets,
       registry,
+      scale: pScale,
       $: TEMPLATE_OBJECT_IDENTIFIER,
     }
   }
@@ -204,63 +216,67 @@ export const createTemplate: CreateTemplate = (_tag, attrs) => {
   const end: string[] = []
   const children = Array.isArray(_children) ? _children.flat() : [_children]
   const length = children.length
+  let highestChildScale: keyof typeof SCALE = SCALE.rel
   for (let i = 0; i < length; i++) {
     const child = children[i]
     if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === TEMPLATE_OBJECT_IDENTIFIER) {
       end.push(...child.html)
       stylesheets.unshift(...child.stylesheets)
       registry.push(...child.registry)
+      const { scale } = child
+      if (scale !== SCALE.rel) {
+        if (pScale === SCALE.rel) {
+          if (SCALE_RANK[scale] > SCALE_RANK[highestChildScale]) {
+            highestChildScale = scale
+          }
+        } else {
+          if (SCALE_RANK[scale] > SCALE_RANK[pScale]) {
+            throw new ScaleViolantionError(
+              `Cannot nest higher structural order element (${scale}) inside a lower structural boundary container (${pScale}) at tag <${tag}>.`,
+            )
+          }
+        }
+      }
       continue
     }
     if (!VALID_PRIMITIVE_CHILDREN.has(trueTypeOf(child))) continue
     end.push(htmlEscape(`${child}`))
   }
   end.push(`</${tag}>`)
+  if (tag === 'template' && attrs?.shadowrootmode && stylesheets.length) {
+    const styles = `<style>${[...new Set(stylesheets)].join('')}</style>`
+      .replaceAll(/:root\{/g, ':host{')
+      .replaceAll(/:root\(([^)]+)\)/g, ':host')
+    start.push(styles)
+
+    stylesheets = []
+  }
   return {
     html: [...start, ...end],
     stylesheets,
     registry,
     $: TEMPLATE_OBJECT_IDENTIFIER,
+    scale: pScale === SCALE.rel ? highestChildScale : pScale,
   }
 }
 
-/**
- * @internal
- * JSX factory function alias for createTemplate.
- * Standard entry point for JSX transformation.
- *
- * @see {@link createTemplate} for implementation details
- */
-export { createTemplate as h }
-
-/**
- * JSX Fragment for grouping elements without wrapper nodes.
- * Collects child HTML and stylesheets into single template object.
- *
- * @param attrs - Attributes object containing children
- * @returns TemplateObject with combined HTML and stylesheets
- *
- * @remarks
- * Use cases:
- * - Avoid wrapper divs
- * - Return multiple elements
- * - Conditional rendering
- * - List mapping
- *
- * @see {@link createTemplate} for element creation
- */
-export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
+export const fragment = ({ children: _children }: Attrs): TemplateObject => {
   const children = Array.isArray(_children) ? _children.flat() : [_children]
   const html: string[] = []
   const stylesheets: string[] = []
   const registry: CustomElementTag[] = []
   const length = children.length
+  let highestChildScale: keyof typeof SCALE = SCALE.rel
   for (let i = 0; i < length; i++) {
     const child = children[i]
     if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === TEMPLATE_OBJECT_IDENTIFIER) {
       html.push(...child.html)
       stylesheets.push(...child.stylesheets)
       registry.push(...child.registry)
+      const { scale } = child
+      if (SCALE_RANK[scale] > SCALE_RANK[highestChildScale]) {
+        highestChildScale = scale
+      }
     }
     if (!VALID_PRIMITIVE_CHILDREN.has(trueTypeOf(child))) continue
     const safeChild = htmlEscape(`${child}`)
@@ -270,6 +286,7 @@ export const Fragment = ({ children: _children }: Attrs): TemplateObject => {
     html,
     stylesheets,
     registry,
+    scale: highestChildScale,
     $: TEMPLATE_OBJECT_IDENTIFIER,
   }
 }

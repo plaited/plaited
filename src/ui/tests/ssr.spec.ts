@@ -1,6 +1,5 @@
 import { expect, test } from 'bun:test'
-import { h } from 'plaited/jsx-runtime'
-import { createHostStyles, createStyles, ssr } from 'plaited/ui'
+import { createHostStyles, createStyles, h, ssr } from 'plaited/ui'
 
 test('ssr: Replaces :host{ with :root{ for SSR', () => {
   const hostStyles = createHostStyles({
@@ -8,7 +7,7 @@ test('ssr: Replaces :host{ with :root{ for SSR', () => {
     padding: '20px',
   })
 
-  const rendered = ssr([<div {...hostStyles}>Host styles test</div>])
+  const rendered = ssr([h('div', { ...hostStyles, children: 'Host styles test' })])
 
   expect(rendered).not.toContain(':host{')
   expect(rendered).toContain(':root{')
@@ -26,7 +25,7 @@ test('ssr: Replaces :host(<selector>) with :root<selector> for SSR', () => {
     },
   })
 
-  const rendered = ssr([<div {...hostStyles}>Host selector styles test</div>])
+  const rendered = ssr([h('div', { ...hostStyles, children: 'Host selector styles test' })])
 
   expect(rendered).not.toContain(':host(')
   expect(rendered).not.toContain(':host.')
@@ -43,7 +42,10 @@ test('ssr: deduplicates repeated styles within a render', () => {
     box: { color: 'red' },
   })
 
-  const rendered = ssr([<div {...stylesA.box}>first</div>, <div {...stylesA.box}>second</div>])
+  const rendered = ssr([
+    h('div', { ...stylesA.box, children: 'first' }),
+    h('div', { ...stylesA.box, children: 'second' }),
+  ])
   expect(rendered).toContain('<style>')
   expect(rendered.match(/color:red/g)?.length).toBe(1)
 })

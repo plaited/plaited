@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { createStyles } from 'plaited/ui'
+import { createStyles, h } from 'plaited/ui'
 
 test('createStyles: supports simple rules', () => {
   const testStyles = createStyles({
@@ -74,7 +74,7 @@ test('createStyles: supports complex rules', () => {
   expect(testStyles.button).toMatchSnapshot()
 })
 
-test('createStyles: works with JSX via spread operator', () => {
+test('createStyles: works with h via spread operator', () => {
   const testStyles = createStyles({
     button: {
       color: {
@@ -86,5 +86,5 @@ test('createStyles: works with JSX via spread operator', () => {
       },
     },
   })
-  expect(<button {...testStyles.button}></button>).toMatchSnapshot()
+  expect(h('button', testStyles.button)).toMatchSnapshot()
 })

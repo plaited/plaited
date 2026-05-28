@@ -1,56 +1,56 @@
 /* eslint-disable no-constant-binary-expression */
 import { expect, test } from 'bun:test'
 import beautify from 'beautify'
-import { Fragment, h } from 'plaited/jsx-runtime'
 import type { FunctionTemplate, TemplateObject } from 'plaited/ui'
+import { fragment, h } from 'plaited/ui'
 import { P_TOPIC, P_VERSION } from '../template.constants.ts'
 
 const render = (tpl: TemplateObject) => beautify(tpl.html.join(''), { format: 'html' })
 
-test('createTemplate: Self closing - html', () => {
+test('h: Self closing - html', () => {
   expect(render(h('input', { type: 'text' }))).toMatchSnapshot()
 })
 
-test('createTemplate: Self closing - svg', () => {
+test('h: Self closing - svg', () => {
   expect(render(h('polygon', { points: '0,100 50,25 50,75 100,0' }))).toMatchSnapshot()
 })
 
-test('createTemplate: Falsey - undefined', () => {
+test('h: Falsey - undefined', () => {
   expect(render(h('div', { children: undefined }))).toMatchSnapshot()
 })
 
-test('createTemplate: Falsey - null', () => {
+test('h: Falsey - null', () => {
   //@ts-expect-error: children is null
   expect(render(h('div', { children: null }))).toMatchSnapshot()
 })
 
-test('createTemplate: Falsey - false', () => {
+test('h: Falsey - false', () => {
   // @ts-expect-error: test
   expect(render(h('div', { children: false }))).toMatchSnapshot()
 })
 
-test('createTemplate: Not really Falsey - ""', () => {
+test('h: Not really Falsey - ""', () => {
   expect(render(h('div', { children: '' }))).toMatchSnapshot()
 })
 
-test('createTemplate: Not really Falsey - 0', () => {
+test('h: Not really Falsey - 0', () => {
   expect(render(h('div', { children: 0 }))).toMatchSnapshot()
 })
 
-test('createTemplate: Not really Falsey - NaN', () => {
+test('h: Not really Falsey - NaN', () => {
   expect(render(h('div', { children: NaN }))).toMatchSnapshot()
 })
 
-test('createTemplate: Bad template - NaN', () => {
+test('h: Bad template - NaN', () => {
   // @ts-expect-error: test
   expect(render(h('div', { children: { string: 'string' } }))).toMatchSnapshot()
 })
 
-test('createTemplate: Conditional', () => {
+test('h: Conditional', () => {
   expect(render(h('div', { children: true && 'hello' }))).toMatchSnapshot()
 })
 
-test('createTemplate: Style attribute', () => {
+test('h: Style attribute', () => {
   expect(
     render(
       h('div', {
@@ -61,7 +61,7 @@ test('createTemplate: Style attribute', () => {
   ).toMatchSnapshot()
 })
 
-test('createTemplate: p-trigger attribute', () =>
+test('h: p-trigger attribute', () =>
   expect(
     render(
       h('div', {
@@ -74,18 +74,18 @@ test('createTemplate: p-trigger attribute', () =>
     ),
   ).toMatchSnapshot())
 
-test('createTemplate: p-version attribute', () => {
+test('h: p-version attribute', () => {
   expect(render(h('div', { [P_VERSION]: '42', children: 'versioned' }))).toMatchSnapshot()
 })
 
-test('createTemplate: p-topic attribute on controller islands', () => {
+test('h: p-topic attribute on controller islands', () => {
   const output = render(h('sample-island', { [P_TOPIC]: 'coding.board', [P_VERSION]: '42' }))
 
   expect(output).toContain('p-topic="coding.board"')
   expect(output).toContain('p-version="42"')
 })
 
-test('createTemplate: Array of templates', () =>
+test('h: Array of templates', () =>
   expect(
     render(
       h('ul', {
@@ -94,7 +94,7 @@ test('createTemplate: Array of templates', () =>
     ),
   ).toMatchSnapshot())
 
-test('createTemplate: Should throw with attribute starting with on', () => {
+test('h: Should throw with attribute starting with on', () => {
   expect(() => {
     h('div', {
       children: h('template', {
@@ -108,7 +108,7 @@ test('createTemplate: Should throw with attribute starting with on', () => {
   }).toThrow()
 })
 
-test('createTemplate: rejects mixed-case event handler attributes', () => {
+test('h: rejects mixed-case event handler attributes', () => {
   expect(() => {
     h('img', {
       src: '/avatar.png',
@@ -117,7 +117,7 @@ test('createTemplate: rejects mixed-case event handler attributes', () => {
   }).toThrow()
 })
 
-test('createTemplate: serializes HTML attribute keys as lowercase', () => {
+test('h: serializes HTML attribute keys as lowercase', () => {
   const output = render(
     h('div', {
       'DATA-State': 'open',
@@ -132,7 +132,7 @@ test('createTemplate: serializes HTML attribute keys as lowercase', () => {
   expect(output).not.toContain('TABINDEX')
 })
 
-test('createTemplate: treats mixed-case style as an HTML attribute', () => {
+test('h: treats mixed-case style as an HTML attribute', () => {
   const output = render(
     h('div', {
       STYLE: 'color:red',
@@ -144,7 +144,7 @@ test('createTemplate: treats mixed-case style as an HTML attribute', () => {
   expect(output).not.toContain('0:c;')
 })
 
-test('createTemplate: rejects script tags without site-root JavaScript src', () => {
+test('h: rejects script tags without site-root JavaScript src', () => {
   expect(() => {
     h('script', { type: 'module', src: 'main.js' })
   }).toThrow()
@@ -156,27 +156,27 @@ test('createTemplate: rejects script tags without site-root JavaScript src', () 
   }).toThrow()
 })
 
-test('createTemplate: renders external bootstrap script tags', () => {
+test('h: renders external bootstrap script tags', () => {
   expect(render(h('script', { type: 'module', src: '/dist/main.js?v=1#entry' }))).toMatchSnapshot()
 })
 
-test('createTemplate: tracks custom element tags in registry', () => {
+test('h: tracks custom element tags in registry', () => {
   expect(h('sample-element', { children: 'sample' }).registry).toEqual(['sample-element'])
   expect(h('Sample-Element', { children: 'sample' }).registry).toEqual(['sample-element'])
 })
 
-test('createTemplate: rejects invalid custom element tags', () => {
+test('h: rejects invalid custom element tags', () => {
   expect(() => h('font-face', { children: 'sample' })).toThrow()
   expect(() => h('sample-&element', { children: 'sample' })).toThrow()
 })
 
-test('createTemplate: rejects inline script content', () => {
+test('h: rejects inline script content', () => {
   expect(() => {
     h('script', { type: 'module', src: '/dist/main.js', children: 'console.log("nope")' })
   }).toThrow()
 })
 
-test('createTemplate: Escapes children', () => {
+test('h: Escapes children', () => {
   const scriptContent = `<script type="text/javascript">
 const hostRegex = /^https?://([^/]+)/.*$/i;
 const host = document.URL.replace(hostRegex, '$1');
@@ -193,7 +193,7 @@ console.log('[plaited] listening for file changes');
 
 const Template: FunctionTemplate = (attrs) => h('template', attrs)
 
-test('createTemplate: Non declarative shadow DOM template', () => {
+test('h: Non declarative shadow DOM template', () => {
   const List: FunctionTemplate = ({ children }) =>
     h('ul', {
       children: [
@@ -212,10 +212,10 @@ test('createTemplate: Non declarative shadow DOM template', () => {
   ).toMatchSnapshot()
 })
 
-test('Fragment', () => {
+test('fragment', () => {
   expect(
     render(
-      Fragment({
+      fragment({
         children: Array.from(Array(6).keys())
           .reverse()
           .map((n) => h('li', { children: n > 0 ? `In ${n}` : 'Blast Off!!!' })),
@@ -224,7 +224,7 @@ test('Fragment', () => {
   ).toMatchSnapshot()
 })
 
-test('createTemplate: Trims whitespace', () => {
+test('h: Trims whitespace', () => {
   expect(
     render(
       h('div', {

@@ -1,30 +1,32 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
-exports[`createTemplate: Self closing - html 1`] = `"<input type="text" />"`;
+exports[`h: Self closing - html 1`] = `"<input type="text" />"`;
 
-exports[`createTemplate: Self closing - svg 1`] = `"<polygon points="0,100 50,25 50,75 100,0" />"`;
+exports[`h: Self closing - svg 1`] = `"<polygon points="0,100 50,25 50,75 100,0" />"`;
 
-exports[`createTemplate: Falsey - undefined 1`] = `"<div></div>"`;
+exports[`h: Falsey - undefined 1`] = `"<div></div>"`;
 
-exports[`createTemplate: Falsey - null 1`] = `"<div></div>"`;
+exports[`h: Falsey - null 1`] = `"<div></div>"`;
 
-exports[`createTemplate: Falsey - false 1`] = `"<div></div>"`;
+exports[`h: Falsey - false 1`] = `"<div></div>"`;
 
-exports[`createTemplate: Not really Falsey - "" 1`] = `"<div></div>"`;
+exports[`h: Not really Falsey - "" 1`] = `"<div></div>"`;
 
-exports[`createTemplate: Not really Falsey - 0 1`] = `"<div>0</div>"`;
+exports[`h: Not really Falsey - 0 1`] = `"<div>0</div>"`;
 
-exports[`createTemplate: Not really Falsey - NaN 1`] = `"<div>NaN</div>"`;
+exports[`h: Not really Falsey - NaN 1`] = `"<div>NaN</div>"`;
 
-exports[`createTemplate: Bad template - NaN 1`] = `"<div></div>"`;
+exports[`h: Bad template - NaN 1`] = `"<div></div>"`;
 
-exports[`createTemplate: Conditional 1`] = `"<div>hello</div>"`;
+exports[`h: Conditional 1`] = `"<div>hello</div>"`;
 
-exports[`createTemplate: Style attribute 1`] = `"<div style="background-color:blue; margin:12px; --cssVar:red;">styles</div>"`;
+exports[`h: Style attribute 1`] = `"<div style="background-color:blue; margin:12px; --cssVar:red;">styles</div>"`;
 
-exports[`createTemplate: p-trigger attribute 1`] = `"<div p-trigger="click:random focus:thing">triggers</div>"`;
+exports[`h: p-trigger attribute 1`] = `"<div p-trigger="click:random focus:thing">triggers</div>"`;
 
-exports[`createTemplate: Array of templates 1`] = `
+exports[`h: p-version attribute 1`] = `"<div p-version="42">versioned</div>"`;
+
+exports[`h: Array of templates 1`] = `
 "<ul>
     <li>0</li>
     <li>1</li>
@@ -39,9 +41,9 @@ exports[`createTemplate: Array of templates 1`] = `
 </ul>"
 `;
 
-exports[`createTemplate: renders external bootstrap script tags 1`] = `"<script type="module" src="/dist/main.js?v=1#entry"></script>"`;
+exports[`h: renders external bootstrap script tags 1`] = `"<script type="module" src="/dist/main.js?v=1#entry"></script>"`;
 
-exports[`createTemplate: Escapes children 1`] = `
+exports[`h: Escapes children 1`] = `
 "<div>&lt;script type=&quot;text/javascript&quot;&gt; const hostRegex = /^https?://([^/]+)/.*$/i;
     const host = document.URL.replace(hostRegex, &#39;$1&#39;); const socket
     = new WebSocket(/); const reload = () =&gt;{ location.reload(); console.log(&#39;...reloading&#39;);
@@ -49,7 +51,7 @@ exports[`createTemplate: Escapes children 1`] = `
     listening for file changes&#39;); &lt;/script&gt;</div>"
 `;
 
-exports[`createTemplate: Non declarative shadow DOM template 1`] = `
+exports[`h: Non declarative shadow DOM template 1`] = `
 "<ul>
     <template><span>I am a span!!!</span>
     </template>
@@ -66,7 +68,7 @@ exports[`createTemplate: Non declarative shadow DOM template 1`] = `
 </ul>"
 `;
 
-exports[`Fragment 1`] = `
+exports[`fragment 1`] = `
 "<li>In 5</li>
 <li>In 4</li>
 <li>In 3</li>
@@ -75,6 +77,4 @@ exports[`Fragment 1`] = `
 <li>Blast Off!!!</li>"
 `;
 
-exports[`createTemplate: Trims whitespace 1`] = `"<div>trims white-space</div>"`;
-
-exports[`createTemplate: p-version attribute 1`] = `"<div p-version="42">versioned</div>"`;
+exports[`h: Trims whitespace 1`] = `"<div>trims white-space</div>"`;

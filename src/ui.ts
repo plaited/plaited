@@ -9,7 +9,6 @@
  * - **Projection journal**: UI projection events materialize topic-scoped reconnect state.
  * - **Rendering**: {@link createSSR} serializes templates with per-connection style deduplication.
  * - **Styling**: style, token, keyframe, host style, root style, and join helpers.
- * - **Declarative Shadow DOM**: {@link decorateElements} prepares rendered custom elements.
  *
  * @public
  */
@@ -17,7 +16,6 @@
 export * from './ui/controller.ts'
 export * from './ui/controller.types.ts'
 export type * from './ui/css.types.ts'
-export * from './ui/decorate-elements.ts'
 export * from './ui/host-styles.ts'
 export * from './ui/join-styles.ts'
 export * from './ui/keyframes.ts'

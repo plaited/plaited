@@ -1,3 +1,4 @@
+import * as z from 'zod'
 import { behavioral, sync, thread } from '../behavioral.ts'
 import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../shared/shared.constants.ts'
 import type { AttrsMessage, DisconnectMessage, ImportModuleMessage, RenderMessage } from '../shared/shared.schemas.ts'
@@ -27,33 +28,21 @@ import {
 
 const { addHandler, trigger, addThread } = behavioral()
 
-// Default worker threads
-addThread(
-  'prevent worker start before close after intial worker start',
-  thread([
-    sync({
-      waitFor: { type: AGENT_EVENTS.worker_start },
-    }),
-    sync({
-      waitFor: { type: AGENT_EVENTS.worker_close },
-      block: { type: AGENT_EVENTS.start },
-    }),
-  ]),
-)
+const TOPIC = `plaited_${Bun.randomUUIDv7()}`
 
 addThread(
   'prevent sending worker messages before worker open and after close',
   thread([
     sync({
-      waitFor: { type: AGENT_EVENTS.worker_open },
+      waitFor: {
+        type: AGENT_EVENTS.worker_open,
+        detailSchema: z.object({ topic: z.literal(TOPIC) }),
+      },
       block: [
         { type: WORKER_COMMAND_TYPES.exec },
         { type: WORKER_COMMAND_TYPES.read },
         { type: WORKER_COMMAND_TYPES.write },
       ],
-    }),
-    sync({
-      waitFor: { type: AGENT_EVENTS.worker_close },
     }),
   ]),
 )
@@ -63,6 +52,12 @@ addThread(
   thread([
     sync({
       block: [
+        { type: AGENT_EVENTS.worker_open, detailMatch: 'invalid', detailSchema: z.object({ topic: z.literal(TOPIC) }) },
+        {
+          type: AGENT_EVENTS.worker_close,
+          detailMatch: 'invalid',
+          detailSchema: z.object({ topic: z.literal(TOPIC) }),
+        },
         { type: WORKER_COMMAND_TYPES.exec, detailMatch: 'invalid', detailSchema: ExecCommandSchema.shape.detail },
         { type: WORKER_COMMAND_TYPES.read, detailMatch: 'invalid', detailSchema: ReadCommandSchema.shape.detail },
         { type: WORKER_COMMAND_TYPES.write, detailMatch: 'invalid', detailSchema: WriteCommandSchema.shape.detail },
@@ -126,21 +121,16 @@ addThread(
   ]),
 )
 
-let worker: Worker
+const worker = new Worker(new URL('worker.ts', import.meta.url).href)
+worker.addEventListener('open', () => trigger({ type: AGENT_EVENTS.worker_open, detail: { topic: TOPIC } }))
+worker.addEventListener('close', () => trigger({ type: AGENT_EVENTS.worker_close, detail: { topic: TOPIC } }))
 
-const onWorkerOpen = () => trigger({ type: AGENT_EVENTS.worker_open })
-const onWorkerClose = () => trigger({ type: AGENT_EVENTS.worker_close })
-
-addHandler(AGENT_EVENTS.worker_start, () => {
-  worker?.addEventListener('open', onWorkerOpen)
-  worker?.addEventListener('close', onWorkerClose)
-  worker = new Worker(new URL('worker.ts', import.meta.url).href)
-  worker.addEventListener('open', onWorkerOpen)
-  worker.addEventListener('close', onWorkerClose)
+addHandler(AGENT_EVENTS.worker_open, () => {
+  console.log('worker open')
 })
 
-addHandler(AGENT_EVENTS.worker_terminate, () => {
-  worker?.terminate()
+addHandler(AGENT_EVENTS.worker_close, () => {
+  console.log('worker closed')
 })
 
 // Outgoing Worker Message
@@ -185,6 +175,8 @@ const server = Bun.serve<WebSocketData>({
   },
 })
 
+console.log(`server running`)
+
 addHandler<AttrsMessage['detail']>(AGENT_TO_CONTROLLER_EVENTS.attrs, (detail) => {
   server.publish(detail.topic, JSON.stringify(detail))
 })
@@ -196,4 +188,11 @@ addHandler<ImportModuleMessage['detail']>(AGENT_TO_CONTROLLER_EVENTS.import, (de
 })
 addHandler<RenderMessage['detail']>(AGENT_TO_CONTROLLER_EVENTS.render, (detail) => {
   server.publish(detail.topic, JSON.stringify(detail))
+})
+
+process.on('exit', () => {
+  worker.terminate()
+  console.log('worker terminated')
+  void server.stop()
+  console.log('server stopped')
 })

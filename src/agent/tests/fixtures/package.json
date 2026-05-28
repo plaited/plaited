@@ -1,0 +1,5 @@
+{
+  "name": "@plaited/test-fixtures",
+  "type": "module",
+  "exports": "./index.ts"
+}

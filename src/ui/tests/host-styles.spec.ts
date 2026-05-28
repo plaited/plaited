@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { createHostStyles } from 'plaited/ui'
+import { createHostStyles, h } from 'plaited/ui'
 
 test('createHostStyles: supports simple rules', () => {
   const host = createHostStyles({
@@ -76,7 +76,7 @@ test('createHostStyles: treats compound selector default as host default', () =>
   expect(host.stylesheets).toEqual([':host{color:red;}'])
 })
 
-test('createHostStyles: works with JSX via spread operator', () => {
+test('createHostStyles: works with h via spread operator', () => {
   const host = createHostStyles({
     color: {
       $default: 'red',
@@ -90,5 +90,5 @@ test('createHostStyles: works with JSX via spread operator', () => {
       },
     },
   })
-  expect(<button {...host}></button>).toMatchSnapshot()
+  expect(h('button', host)).toMatchSnapshot()
 })

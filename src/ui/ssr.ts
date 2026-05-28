@@ -17,7 +17,7 @@
  */
 import { htmlEscape, isTypeOf } from '../utils.ts'
 import { CONNECT_PLAITED_ROUTE, TEMPLATE_OBJECT_IDENTIFIER, VALID_PRIMITIVE_CHILDREN } from './template.constants.ts'
-import { createTemplate } from './template.ts'
+import { h } from './template.ts'
 import type { CustomElementTag, TemplateObject } from './template.types.ts'
 
 export const ssr = (templates: TemplateObject[]) => {
@@ -41,7 +41,7 @@ export const ssr = (templates: TemplateObject[]) => {
     arr.push(safeChild)
   }
   const src = `${CONNECT_PLAITED_ROUTE}?registry=${encodeURIComponent([...new Set(registry)].join(','))}`
-  const connect = createTemplate('script', { src, type: 'module', async: true }).html.join('')
+  const connect = h('script', { src, type: 'module', async: true }).html.join('')
   const pre = adoptedStyleSheets.size
     ? `<style>${[...adoptedStyleSheets]
         .join('')

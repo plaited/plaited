@@ -1,10 +1,18 @@
 import type { CSSProperties } from './css.types.ts'
-import { P_TARGET, P_TOPIC, P_TRIGGER, P_VERSION, type TEMPLATE_OBJECT_IDENTIFIER } from './template.constants.ts'
+import {
+  P_SCALE,
+  P_TARGET,
+  P_TOPIC,
+  P_TRIGGER,
+  P_VERSION,
+  type SCALE,
+  type TEMPLATE_OBJECT_IDENTIFIER,
+} from './template.constants.ts'
 
 type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''
 /**
- * Represents the internal structure produced by Plaited's JSX factory (`h` or `createTemplate`).
+ * Represents the internal structure produced by Plaited's JSX factory (`h`).
  * This object contains the processed HTML strings and associated metadata needed for rendering.
  *
  * @property html - An array of string fragments representing the HTML structure.
@@ -16,6 +24,7 @@ export type TemplateObject = {
   html: string[]
   stylesheets: string[]
   registry: CustomElementTag[]
+  scale: keyof typeof SCALE
   $: typeof TEMPLATE_OBJECT_IDENTIFIER
 }
 /**
@@ -44,6 +53,7 @@ export type PlaitedAttributes = {
   children?: Children
   [P_TARGET]?: string | number
   [P_TRIGGER]?: Record<string, string>
+  [P_SCALE]?: keyof typeof SCALE
   stylesheets?: string[]
   classNames?: string[]
   style?: CSSProperties
@@ -1342,12 +1352,7 @@ export type Attrs<T extends DetailedHTMLAttributes = DetailedHTMLAttributes> = D
  * @returns `TemplateObject` representing the template output.
  */
 export type FunctionTemplate<T extends Attrs = Attrs> = (attrs: T & PlaitedAttributes) => TemplateObject
-/**
- * Shorthand alias for `FunctionTemplate`.
- *
- * @see FunctionTemplate
- */
-export type FT<T extends Attrs = Attrs> = FunctionTemplate<T>
+
 /**
  * Represents the string pattern for a valid custom element tag name.
  * Custom element names must contain at least one hyphen (`-`).

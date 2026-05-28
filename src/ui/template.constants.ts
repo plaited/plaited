@@ -18,6 +18,7 @@
  * - Electron-specific attributes hardcoded
  * - Case-sensitive attribute matching
  */
+import { keyMirror } from '../utils.ts'
 
 /**
  * Constant representing the attribute name (`p-target`) used to identify specific elements
@@ -42,6 +43,8 @@ export const P_TOPIC = 'p-topic'
  * and targets to report the latest server-projected topic version they realize.
  */
 export const P_VERSION = 'p-version'
+
+export const P_SCALE = 'p-scale'
 
 /**
  * Matches site-root JavaScript module paths accepted by bootstrap script tags
@@ -174,7 +177,7 @@ export const VALID_PRIMITIVE_CHILDREN = new Set([
 /**
  * A unique string constant used as an identifier (`$`) property on Plaited's internal `TemplateObject`.
  * This allows reliably distinguishing Plaited template objects from plain JavaScript objects during
- * the processing of children in `createTemplate` and `Fragment`.
+ * the processing of children in `h` and `fragment`.
  *
  * @remarks
  * The emoji value is chosen for console readability and low collision risk.
@@ -182,3 +185,15 @@ export const VALID_PRIMITIVE_CHILDREN = new Set([
 export const TEMPLATE_OBJECT_IDENTIFIER = '🦄'
 
 export const CONNECT_PLAITED_ROUTE = '/.plaited/connect.js'
+
+export const SCALE = keyMirror('s1', 's2', 's3', 's4', 's5', 's6', 'rel')
+
+export const SCALE_RANK = {
+  [SCALE.s1]: 1,
+  [SCALE.s2]: 2,
+  [SCALE.s3]: 3,
+  [SCALE.s4]: 4,
+  [SCALE.s5]: 5,
+  [SCALE.s6]: 6,
+  [SCALE.rel]: 0,
+} as const

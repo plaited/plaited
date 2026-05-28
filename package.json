@@ -21,8 +21,6 @@
     "./agent": "./src/agent.ts",
     "./behavioral": "./src/behavioral.ts",
     "./cli": "./src/cli.ts",
-    "./jsx-dev-runtime": "./src/jsx-dev-runtime.ts",
-    "./jsx-runtime": "./src/jsx-runtime.ts",
     "./open-responses": "./src/open-responses.ts",
     "./ui": "./src/ui.ts",
     "./utils": "./src/utils.ts"
