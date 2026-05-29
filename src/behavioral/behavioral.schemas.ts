@@ -1,12 +1,6 @@
 import * as z from 'zod'
-
+import { JsonObjectSchema } from '../shared/shared.schemas.ts'
 import { SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
-
-/** @public */
-export const JsonObjectSchema = z.record(z.string(), z.json())
-
-/** @public */
-export type JsonObject = z.output<typeof JsonObjectSchema>
 
 /**
  * Schema for validating BPEvent objects.

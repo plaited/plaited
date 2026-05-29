@@ -197,3 +197,5 @@ export const SCALE_RANK = {
   [SCALE.s6]: 6,
   [SCALE.rel]: 0,
 } as const
+
+export const PLAITED_TEMPLATE_IDENTIFIER = '🧩'

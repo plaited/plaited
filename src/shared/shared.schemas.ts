@@ -1,8 +1,14 @@
 import * as z from 'zod'
 
-import { BPEventSchema, JsonObjectSchema } from '../behavioral.ts'
+import { BPEventSchema } from '../behavioral.ts'
 import { SITE_ROOT_JAVASCRIPT_PATH_PATTERN } from '../ui/template.constants.ts'
 import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS, SWAP_MODES } from './shared.constants.ts'
+
+/** @public */
+export const JsonObjectSchema = z.record(z.string(), z.json())
+
+/** @public */
+export type JsonObject = z.output<typeof JsonObjectSchema>
 
 /**
  * Schema for render messages that insert or replace DOM content.
