@@ -20,12 +20,10 @@
 import { htmlEscape, isTypeOf, kebabCase, trueTypeOf } from '../utils.ts'
 import {
   BOOLEAN_ATTRS,
-  CUSTOM_ELEMENT_TAG_PATTERN,
   P_SCALE,
   P_TOPIC,
   P_TRIGGER,
   PRIMITIVES,
-  RESERVED_CUSTOM_ELEMENT_TAGS,
   SCALE,
   SCALE_RANK,
   SITE_ROOT_JAVASCRIPT_PATH_PATTERN,
@@ -33,13 +31,14 @@ import {
   VALID_PRIMITIVE_CHILDREN,
   VOID_TAGS,
 } from './template.constants.ts'
+import { isCustomElementTag, type TemplateObject } from './template.schemas.ts'
 import type {
   Attrs,
+  Children,
   CustomElementTag,
   DetailedCustomElementHTMLAttributes,
   ElementAttributeList,
-  FunctionTemplate,
-  TemplateObject,
+  PlaitedAttributes,
 } from './template.types.ts'
 
 /**
@@ -67,7 +66,7 @@ class InvalidAttributeTypeError extends Error implements Error {
   override name = 'invalid_attribute_type'
 }
 
-class ScaleViolantionError extends Error implements Error {
+export class ScaleViolantionError extends Error implements Error {
   override name = 'scale_violation'
 }
 
@@ -82,17 +81,57 @@ class InvalidCustomElementTagError extends Error implements Error {
 /** @internal Valid tag input for JSX rendering: built-in tag name, custom element tag, or `FunctionTemplate`. */
 type Tag = string | CustomElementTag | FunctionTemplate
 
+export type FunctionTemplate<T extends Attrs = Attrs> = ({
+  attrs,
+  h,
+  fragment,
+}: {
+  attrs: T & PlaitedAttributes
+  h: CreateTemplate
+  fragment: CreateFragment
+}) => TemplateObject
+
 /** @internal Infers the correct attribute type for a given `Tag`. */
 type InferAttrs<T extends Tag> = T extends keyof ElementAttributeList
   ? ElementAttributeList[T]
   : T extends FunctionTemplate
-    ? Parameters<T>[0]
+    ? Parameters<T>[0]['attrs']
     : T extends CustomElementTag
       ? DetailedCustomElementHTMLAttributes
       : Attrs
 
-/** @internal Type signature for `h`, preserving type safety between the tag and its attributes. */
-type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateObject
+export type CreateFragment = (children: Children) => TemplateObject
+
+export const fragment: CreateFragment = (_children) => {
+  const children = Array.isArray(_children) ? _children.flat() : [_children]
+  const html: string[] = []
+  const stylesheets: string[] = []
+  const registry: string[] = []
+  const length = children.length
+  let highestChildScale: keyof typeof SCALE = SCALE.rel
+  for (let i = 0; i < length; i++) {
+    const child = children[i]
+    if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === TEMPLATE_OBJECT_IDENTIFIER) {
+      html.push(...child.html)
+      stylesheets.push(...child.stylesheets)
+      registry.push(...child.registry)
+      const { scale } = child
+      if (SCALE_RANK[scale] > SCALE_RANK[highestChildScale]) {
+        highestChildScale = scale
+      }
+    }
+    if (!VALID_PRIMITIVE_CHILDREN.has(trueTypeOf(child))) continue
+    const safeChild = htmlEscape(`${child}`)
+    html.push(safeChild)
+  }
+  return {
+    html,
+    stylesheets,
+    registry,
+    scale: highestChildScale,
+    $: TEMPLATE_OBJECT_IDENTIFIER,
+  }
+}
 
 const normalizeAttributeKeys = (attrs: Record<string, unknown>): Record<string, unknown> => {
   const normalized: Record<string, unknown> = {}
@@ -102,10 +141,8 @@ const normalizeAttributeKeys = (attrs: Record<string, unknown>): Record<string, 
   return normalized
 }
 
-/** @internal Narrows valid lowercase custom element tag names. */
-const isCustomElementTag = (tag: string): tag is CustomElementTag => {
-  return CUSTOM_ELEMENT_TAG_PATTERN.test(tag) && !RESERVED_CUSTOM_ELEMENT_TAGS.has(tag)
-}
+/** @internal Type signature for `h`, preserving type safety between the tag and its attributes. */
+export type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateObject
 
 /**
  * @internal
@@ -132,7 +169,7 @@ const isCustomElementTag = (tag: string): tag is CustomElementTag => {
  */
 export const h: CreateTemplate = (_tag, attrs) => {
   if (isTypeOf<FunctionTemplate>(_tag, 'function')) {
-    return _tag(attrs)
+    return _tag({ attrs, h, fragment })
   }
   const {
     children: _children,
@@ -155,7 +192,7 @@ export const h: CreateTemplate = (_tag, attrs) => {
   if (tag.includes('-') && !isCustomElementTag(tag)) {
     throw new InvalidCustomElementTagError(`Invalid custom element tag: ${tag}`)
   }
-  const registry: CustomElementTag[] = isCustomElementTag(tag) ? [tag] : []
+  const registry: string[] = isCustomElementTag(tag) ? [tag] : []
 
   if (tag === 'script') {
     if (_children !== undefined) {
@@ -257,36 +294,5 @@ export const h: CreateTemplate = (_tag, attrs) => {
     registry,
     $: TEMPLATE_OBJECT_IDENTIFIER,
     scale: pScale === SCALE.rel ? highestChildScale : pScale,
-  }
-}
-
-export const fragment = ({ children: _children }: Attrs): TemplateObject => {
-  const children = Array.isArray(_children) ? _children.flat() : [_children]
-  const html: string[] = []
-  const stylesheets: string[] = []
-  const registry: CustomElementTag[] = []
-  const length = children.length
-  let highestChildScale: keyof typeof SCALE = SCALE.rel
-  for (let i = 0; i < length; i++) {
-    const child = children[i]
-    if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === TEMPLATE_OBJECT_IDENTIFIER) {
-      html.push(...child.html)
-      stylesheets.push(...child.stylesheets)
-      registry.push(...child.registry)
-      const { scale } = child
-      if (SCALE_RANK[scale] > SCALE_RANK[highestChildScale]) {
-        highestChildScale = scale
-      }
-    }
-    if (!VALID_PRIMITIVE_CHILDREN.has(trueTypeOf(child))) continue
-    const safeChild = htmlEscape(`${child}`)
-    html.push(safeChild)
-  }
-  return {
-    html,
-    stylesheets,
-    registry,
-    scale: highestChildScale,
-    $: TEMPLATE_OBJECT_IDENTIFIER,
   }
 }

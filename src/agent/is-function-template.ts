@@ -119,12 +119,12 @@ export type FunctionTemplateInfo = {
 // ============================================================================
 
 /**
- * Identifies FunctionTemplate exports from a package.
+ * Identifies FunctionTemplate exports from a package or subpath export.
  *
  * @remarks
  * Accepts a package specifier (e.g. `@plaited/templates`) that resolves via
- * `import.meta.resolve`, or an absolute path to a local package directory
- * (for testing) with a `package.json`.
+ * `import.meta.resolve`. Subpath exports are supported — only files reachable
+ * from the resolved subpath entry point are scanned.
  *
  * Uses `Bun.Transpiler#scan` to walk the import graph from the entry point,
  * then feeds all reachable source files into a single `ts.TypeChecker`.
@@ -146,31 +146,38 @@ export type FunctionTemplateInfo = {
 export const identifyFunctionTemplates = (packageSpecifier: string): FunctionTemplateInfo[] => {
   if (typeof packageSpecifier !== 'string') return []
 
-  let packageRoot: string | undefined
   let entryPath: string
 
-  // Case 1: local directory with a package.json.
+  // Try ESM resolution first (handles package specifiers and subpath exports).
   try {
-    const stat = statSync(packageSpecifier)
-    if (stat.isDirectory() && existsSync(join(packageSpecifier, 'package.json'))) {
-      packageRoot = packageSpecifier
-      const pkgJson = JSON.parse(readFileSync(join(packageSpecifier, 'package.json'), 'utf-8'))
+    const resolved = fileURLToPath(import.meta.resolve(packageSpecifier))
+    // If resolved to a directory, look for the package entry file.
+    if (statSync(resolved).isDirectory()) {
+      const pkgPath = join(resolved, 'package.json')
+      if (!existsSync(pkgPath)) return []
+      const pkgJson = JSON.parse(readFileSync(pkgPath, 'utf-8'))
       const entry = pkgJson.exports ?? pkgJson.main ?? pkgJson.module ?? 'index.ts'
-      entryPath = join(packageRoot, typeof entry === 'string' ? entry : (entry['.'] ?? 'index.ts'))
+      entryPath = join(resolved, typeof entry === 'string' ? entry : (entry['.'] ?? 'index.ts'))
     } else {
-      throw new Error('not a directory')
+      entryPath = resolved
     }
   } catch {
-    // Case 2: package specifier resolved via ESM resolution.
+    // Fallback: local directory with a package.json.
     try {
-      const resolved = fileURLToPath(import.meta.resolve(packageSpecifier))
-      packageRoot = findPackageRoot(resolved)
-      if (!packageRoot) return []
-      entryPath = resolved
+      const stat = statSync(packageSpecifier)
+      if (!stat.isDirectory()) return []
+      const pkgPath = join(packageSpecifier, 'package.json')
+      if (!existsSync(pkgPath)) return []
+      const pkgJson = JSON.parse(readFileSync(pkgPath, 'utf-8'))
+      const entry = pkgJson.exports ?? pkgJson.main ?? pkgJson.module ?? 'index.ts'
+      entryPath = join(packageSpecifier, typeof entry === 'string' ? entry : (entry['.'] ?? 'index.ts'))
     } catch {
       return []
     }
   }
+
+  const packageRoot = findPackageRoot(entryPath)
+  if (!packageRoot) return []
 
   // Collect all reachable source files via transpiler scan.
   const sourceFiles = collectReachableFiles(entryPath, packageRoot)

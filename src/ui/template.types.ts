@@ -1,32 +1,10 @@
 import type { CSSProperties } from './css.types.ts'
-import {
-  P_SCALE,
-  P_TARGET,
-  P_TOPIC,
-  P_TRIGGER,
-  P_VERSION,
-  type SCALE,
-  type TEMPLATE_OBJECT_IDENTIFIER,
-} from './template.constants.ts'
+import { P_SCALE, P_TARGET, P_TOPIC, P_TRIGGER, P_VERSION, type SCALE } from './template.constants.ts'
+import type { TemplateObject } from './template.schemas.ts'
 
 type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''
-/**
- * Represents the internal structure produced by Plaited's JSX factory (`h`).
- * This object contains the processed HTML strings and associated metadata needed for rendering.
- *
- * @property html - An array of string fragments representing the HTML structure.
- * @property stylesheets - CSS stylesheets collected from this template and its children.
- * @property registry - An array of custom element tag names encountered within this template
- * @property $ - A unique symbol (`TEMPLATE_OBJECT_IDENTIFIER`) used as a type guard to identify Plaited template objects.
- */
-export type TemplateObject = {
-  html: string[]
-  stylesheets: string[]
-  registry: CustomElementTag[]
-  scale: keyof typeof SCALE
-  $: typeof TEMPLATE_OBJECT_IDENTIFIER
-}
+
 /**
  * Represents the valid primitive types that can be rendered directly as children within JSX.
  * This includes numbers (which are converted to strings) and strings. TemplateObjects are also valid children for composition.
