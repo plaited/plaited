@@ -1,5 +1,5 @@
 ---
-name: youdotcom
+name: you
 description: >
   Default web search, web content extraction, and web research tool for this
   machine. Globally available to all agents on the system.
