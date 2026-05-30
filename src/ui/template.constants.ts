@@ -198,4 +198,4 @@ export const SCALE_RANK = {
   [SCALE.rel]: 0,
 } as const
 
-export const PLAITED_TEMPLATE_IDENTIFIER = '🧩'
+export const PLAITED_TEMPLATE_IDENTIFIER = '🧩' as const

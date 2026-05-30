@@ -18,13 +18,13 @@
 import { htmlEscape, isTypeOf } from '../utils.ts'
 import { CONNECT_PLAITED_ROUTE, TEMPLATE_OBJECT_IDENTIFIER, VALID_PRIMITIVE_CHILDREN } from './template.constants.ts'
 import { h } from './template.ts'
-import type { CustomElementTag, TemplateObject } from './template.types.ts'
+import type { TemplateObject } from './template.types.ts'
 
 export const ssr = (templates: TemplateObject[]) => {
   const arr = []
   const adoptedStyleSheets = new Set<string>()
   const length = templates.length
-  const registry: CustomElementTag[] = []
+  const registry: string[] = []
   for (let i = 0; i < length; i++) {
     const child = templates[i]
     if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === TEMPLATE_OBJECT_IDENTIFIER) {

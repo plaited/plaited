@@ -13,7 +13,7 @@
 **When Node.js OK:** readline, node:path, APIs without Bun equivalents.
 **Varlock-backed env:** when repo commands need secrets, use `.env.schema` and Varlock-injected
 environment variables. Avoid brittle nested shell quoting for authenticated calls.
-**Web research:** use the `youdotcom` skill for web search, research, and content extraction when
+**Web research:** use the `you` skill for web search, research, and content extraction when
 repo-local evidence is insufficient or current external context is needed.
 
 

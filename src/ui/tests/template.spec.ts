@@ -1,7 +1,7 @@
 /* eslint-disable no-constant-binary-expression */
 import { expect, test } from 'bun:test'
 import beautify from 'beautify'
-import type { FunctionTemplate, TemplateObject } from 'plaited/ui'
+import type { TemplateObject } from 'plaited/ui'
 import { fragment, h } from 'plaited/ui'
 import { P_TOPIC, P_VERSION } from '../template.constants.ts'
 
@@ -191,35 +191,14 @@ console.log('[plaited] listening for file changes');
   expect(render(h('div', { children: scriptContent }))).toMatchSnapshot()
 })
 
-const Template: FunctionTemplate = (attrs) => h('template', attrs)
-
-test('h: Non declarative shadow DOM template', () => {
-  const List: FunctionTemplate = ({ children }) =>
-    h('ul', {
-      children: [
-        Template({ children: h('span', { children: 'I am a span!!!' }) }),
-        //@ts-expect-error: test
-        ...(Array.isArray(children) ? children : [children]),
-      ],
-    })
-
-  expect(
-    render(
-      h(List, {
-        children: Array.from(Array(10).keys()).map((n) => h('li', { children: `item-${n}` })),
-      }),
-    ),
-  ).toMatchSnapshot()
-})
-
 test('fragment', () => {
   expect(
     render(
-      fragment({
-        children: Array.from(Array(6).keys())
+      fragment(
+        Array.from(Array(6).keys())
           .reverse()
           .map((n) => h('li', { children: n > 0 ? `In ${n}` : 'Blast Off!!!' })),
-      }),
+      ),
     ),
   ).toMatchSnapshot()
 })

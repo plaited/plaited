@@ -20,10 +20,12 @@
 import { htmlEscape, isTypeOf, kebabCase, trueTypeOf } from '../utils.ts'
 import {
   BOOLEAN_ATTRS,
+  CUSTOM_ELEMENT_TAG_PATTERN,
   P_SCALE,
   P_TOPIC,
   P_TRIGGER,
   PRIMITIVES,
+  RESERVED_CUSTOM_ELEMENT_TAGS,
   SCALE,
   SCALE_RANK,
   SITE_ROOT_JAVASCRIPT_PATH_PATTERN,
@@ -31,7 +33,6 @@ import {
   VALID_PRIMITIVE_CHILDREN,
   VOID_TAGS,
 } from './template.constants.ts'
-import { isCustomElementTag, type TemplateObject } from './template.schemas.ts'
 import type {
   Attrs,
   Children,
@@ -39,6 +40,7 @@ import type {
   DetailedCustomElementHTMLAttributes,
   ElementAttributeList,
   PlaitedAttributes,
+  TemplateObject,
 } from './template.types.ts'
 
 /**
@@ -86,7 +88,7 @@ export type FunctionTemplate<T extends Attrs = Attrs> = ({
   h,
   fragment,
 }: {
-  attrs: T & PlaitedAttributes
+  attrs?: T & PlaitedAttributes
   h: CreateTemplate
   fragment: CreateFragment
 }) => TemplateObject
@@ -133,6 +135,11 @@ export const fragment: CreateFragment = (_children) => {
   }
 }
 
+/** @internal Narrows valid lowercase custom element tag names. */
+const isCustomElementTag = (tag: string): tag is CustomElementTag => {
+  return CUSTOM_ELEMENT_TAG_PATTERN.test(tag) && !RESERVED_CUSTOM_ELEMENT_TAGS.has(tag)
+}
+
 const normalizeAttributeKeys = (attrs: Record<string, unknown>): Record<string, unknown> => {
   const normalized: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(attrs)) {
@@ -142,7 +149,7 @@ const normalizeAttributeKeys = (attrs: Record<string, unknown>): Record<string, 
 }
 
 /** @internal Type signature for `h`, preserving type safety between the tag and its attributes. */
-export type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => TemplateObject
+export type CreateTemplate = <T extends Tag>(tag: T, attrs?: InferAttrs<T> | Record<string, never>) => TemplateObject
 
 /**
  * @internal
@@ -167,7 +174,7 @@ export type CreateTemplate = <T extends Tag>(tag: T, attrs: InferAttrs<T>) => Te
  * @see {@link h} for JSX factory alias
  * @see {@link fragment} for grouping elements
  */
-export const h: CreateTemplate = (_tag, attrs) => {
+export const h: CreateTemplate = (_tag, attrs = {}) => {
   if (isTypeOf<FunctionTemplate>(_tag, 'function')) {
     return _tag({ attrs, h, fragment })
   }
@@ -205,7 +212,7 @@ export const h: CreateTemplate = (_tag, attrs) => {
   }
   const start = [`<${tag} `]
   // Handle JavaScript-reserved words commonly used in HTML.
-  if (htmlFor) start.push(`for="${htmlEscape(htmlFor)}" `)
+  if (htmlFor) start.push(`for="${htmlEscape(`${htmlFor}`)}" `)
   const classes = new Set(classNames)
   cls && classes.add(htmlEscape(cls))
   if (classes.size) start.push(`class="${[...classes].join(' ')}" `)
@@ -215,7 +222,7 @@ export const h: CreateTemplate = (_tag, attrs) => {
       .join(' ')
     start.push(`${P_TRIGGER}="${htmlEscape(value)}" `)
   }
-  if (pTopic) start.push(`${P_TOPIC}="${htmlEscape(pTopic)}" `)
+  if (pTopic) start.push(`${P_TOPIC}="${htmlEscape(`${pTopic}`)}" `)
   if (style) {
     const value = Object.entries(style)
       // Convert camelCase style props into dash-case unless they are CSS variables.

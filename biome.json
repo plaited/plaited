@@ -88,7 +88,15 @@
       }
     },
     {
-      "includes": ["**/tests/**/*", "scripts/**/*", "skills/**/*", "src/cli/**/*", "bin/*", "src/**/*-cli.ts", "src/agent/agent.ts"],
+      "includes": [
+        "**/tests/**/*",
+        "scripts/**/*",
+        "skills/**/*",
+        "src/cli/**/*",
+        "bin/*",
+        "src/**/*-cli.ts",
+        "src/agent/agent.ts"
+      ],
       "linter": {
         "rules": {
           "suspicious": {

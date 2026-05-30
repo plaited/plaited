@@ -1,21 +1,45 @@
 import type { CSSProperties } from './css.types.ts'
-import { P_SCALE, P_TARGET, P_TOPIC, P_TRIGGER, P_VERSION, type SCALE } from './template.constants.ts'
-import type { TemplateObject } from './template.schemas.ts'
+import {
+  P_SCALE,
+  P_TARGET,
+  P_TOPIC,
+  P_TRIGGER,
+  P_VERSION,
+  type SCALE,
+  type TEMPLATE_OBJECT_IDENTIFIER,
+} from './template.constants.ts'
 
 type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''
 
 /**
- * Represents the valid primitive types that can be rendered directly as children within JSX.
+ * Represents the internal structure produced by Plaited's JSX factory (`h`).
+ * This object contains the processed HTML strings and associated metadata needed for rendering.
+ *
+ * @property html - An array of string fragments representing the HTML structure.
+ * @property stylesheets - CSS stylesheets collected from this template and its children.
+ * @property registry - An array of custom element tag names encountered within this template
+ * @property $ - A unique symbol (`TEMPLATE_OBJECT_IDENTIFIER`) used as a type guard to identify Plaited template objects.
+ */
+export type TemplateObject = {
+  html: string[]
+  stylesheets: string[]
+  registry: string[]
+  scale: keyof typeof SCALE
+  $: typeof TEMPLATE_OBJECT_IDENTIFIER
+}
+
+/**
+ * Represents the valid primitive types that can be rendered directly as children within hyperscript.
  * This includes numbers (which are converted to strings) and strings. TemplateObjects are also valid children for composition.
  */
 export type Child = number | string | TemplateObject
 /**
- * Represents the children prop in JSX. It can be a single valid child (`Child`) or an array of children.
+ * Represents the children prop in hyperscript. It can be a single valid child (`Child`) or an array of children.
  */
 export type Children = Child[] | Child
 /**
- * Defines core attributes applicable to all elements processed by Plaited's JSX factory.
+ * Defines core attributes applicable to all elements processed by Plaited's hyperscript factory.
  * Includes standard HTML attributes, ARIA attributes, and Plaited-specific extensions.
  *
  * @property class - Supports standard `string` or an `array` of strings for CSS classes.
@@ -1130,7 +1154,6 @@ export type DetailedCustomElementHTMLAttributes = DetailedHTMLAttributes & {
 /**
  * A comprehensive mapping of intrinsic HTML and SVG element tag names
  * to their corresponding detailed attribute types (`Detailed*HTMLAttributes` or `DetailedSVGAttributes`).
- * This is used by TypeScript's JSX type checking (`JSX.IntrinsicElements`) to validate attributes passed to elements.
  * It also allows for arbitrary string keys to accommodate custom elements, mapping them to `DetailedHTMLAttributes`.
  */
 export type ElementAttributeList = {
@@ -1320,17 +1343,6 @@ export type ElementAttributeList = {
  * @template T - Optional extension of `DetailedHTMLAttributes` for template-specific attributes.
  */
 export type Attrs<T extends DetailedHTMLAttributes = DetailedHTMLAttributes> = DetailedHTMLAttributes & T
-/**
- * Defines the signature for a Plaited functional template.
- * A functional template is a function that accepts an `Attrs` object (attributes)
- * and returns a `TemplateObject`.
- *
- * @template T - Attributes object accepted by the template.
- * @param attrs - Attributes passed to the template during rendering.
- * @returns `TemplateObject` representing the template output.
- */
-export type FunctionTemplate<T extends Attrs = Attrs> = (attrs: T & PlaitedAttributes) => TemplateObject
-
 /**
  * Represents the string pattern for a valid custom element tag name.
  * Custom element names must contain at least one hyphen (`-`).
