@@ -1,33 +1,23 @@
 import * as z from 'zod'
-import { JsonObjectSchema } from '../shared/shared.schemas.ts'
+import type { BPEvent, JsonObject } from '../shared/shared.schemas.ts'
+import { BPEventSchema, JsonObjectSchema } from '../shared/shared.schemas.ts'
+
+export type { BPEvent, JsonObject }
+export { BPEventSchema }
+
 import { SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
-
-/**
- * Schema for validating BPEvent objects.
- * Uses a JSON-Schema-exportable object shape for runtime validation.
- *
- * @public
- */
-export const BPEventSchema = z.object({
-  type: z.string(),
-  detail: JsonObjectSchema.optional(),
-})
-
-export type BPEvent = z.output<typeof BPEventSchema>
-
-export const DetailSchemaSchema = z.instanceof(z.ZodObject) as z.ZodType<
-  z.ZodObject<Record<string, z.ZodType<unknown>>>
->
-
-export type DetailSchema = z.output<typeof DetailSchemaSchema>
 
 export const BPListenerSchema = z.object({
   type: z.string(),
-  detailSchema: DetailSchemaSchema.optional(),
+  detailSchema: JsonObjectSchema.optional(),
   detailMatch: z.enum(['valid', 'invalid']).optional(),
 })
 
-export type BPListener = z.output<typeof BPListenerSchema>
+export type BPListener = {
+  type: string
+  detailSchema?: z.ZodType<JsonObject>
+  detailMatch?: z.output<typeof BPListenerSchema.shape.detailMatch>
+}
 
 export const SpecListenerSchema = BPListenerSchema.omit({
   detailSchema: true,

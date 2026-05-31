@@ -25,7 +25,7 @@ type BProgram = (args: DefineBehaviorArgs) => void | Promise<void>
 const mapTopic = (topic: string, arr: BPListener[]): BPListener[] =>
   arr.map(({ detailSchema, ...listener }) => ({
     ...listener,
-    detailSchema: detailSchema?.extend({ topic: z.literal(topic) }) ?? z.object({ topic: z.literal(topic) }),
+    detailSchema: detailSchema?.and(z.object({ topic: z.literal(topic) })) ?? z.object({ topic: z.literal(topic) }),
   }))
 
 export type DefineBehavior = (bProgram: BProgram) => {

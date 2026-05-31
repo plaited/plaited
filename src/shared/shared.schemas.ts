@@ -1,6 +1,5 @@
 import * as z from 'zod'
 
-import { BPEventSchema } from '../behavioral.ts'
 import { SITE_ROOT_JAVASCRIPT_PATH_PATTERN } from '../ui/template.constants.ts'
 import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS, SWAP_MODES } from './shared.constants.ts'
 
@@ -9,6 +8,20 @@ export const JsonObjectSchema = z.record(z.string(), z.json())
 
 /** @public */
 export type JsonObject = z.output<typeof JsonObjectSchema>
+
+/**
+ * Schema for validating BPEvent objects.
+ * Uses a JSON-Schema-exportable object shape for runtime validation.
+ *
+ * @public
+ */
+export const BPEventSchema = z.object({
+  type: z.string(),
+  detail: JsonObjectSchema.optional(),
+})
+
+/** @public */
+export type BPEvent = z.output<typeof BPEventSchema>
 
 /**
  * Schema for render messages that insert or replace DOM content.

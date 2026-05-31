@@ -263,9 +263,9 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
           detail: { ...getAttributes(this), path, tagName: this.tagName.toLowerCase() },
         })
       } else {
-        this.#reportError(new Error(`Module Import Error ${'toString' in setup ? setup.toString() : `${setup}`}`), {
-          description: 'Module import default export was not a function',
-        })
+        const exportDesc =
+          setup !== null && typeof setup === 'object' && 'toString' in setup ? setup.toString() : `${setup}`
+        throw new Error(`Module Import Error ${exportDesc}`)
       }
     }
     #bindTriggers = (subtree: DocumentFragment) => {
@@ -354,7 +354,17 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
     }
     #onWsMessage(message: MessageEvent) {
       try {
-        const { type, detail } = ServerMessageSchema.parse(JSON.parse(String(message.data)))
+        const raw = JSON.parse(String(message.data))
+        const parsed = ServerMessageSchema.safeParse(raw)
+        if (!parsed.success) {
+          const zodError = parsed.error
+          const isInvalidType = zodError.issues.length === 1 && zodError.issues[0]?.code === 'invalid_union'
+          if (isInvalidType) {
+            throw new Error(`Unsupported controller event type "${raw.type}"`)
+          }
+          throw zodError
+        }
+        const { type, detail } = parsed.data
         const currentTopic = this.getAttribute(P_TOPIC)
         if (detail.topic !== currentTopic) return
         switch (type) {

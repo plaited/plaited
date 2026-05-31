@@ -74,7 +74,8 @@ const findUiEvent = ({ after = 0, source, type }: { after?: number; source: stri
     .uiEvents.slice(after)
     .find((event) => {
       const detail = event.message.detail as Record<string, unknown> | undefined
-      return event.source === source && detail?.type === type
+      const eventType = (detail?.event as Record<string, unknown> | undefined)?.type
+      return event.source === source && eventType === type
     })
 }
 
@@ -172,17 +173,16 @@ describe('Controller: real browser', () => {
   })
 
   test('WebSocket open emits controller.connected inventory', () => {
-    const event = findUiEvent({ source: 'test-island', type: 'controller.connected' })
+    const event = findUiEvent({ source: 'test-island', type: 'controller_connected' })
 
     expect(event).toBeDefined()
-    expect(event!.message).toEqual({
+    expect(event!.message).toMatchObject({
       type: 'ui_event',
       detail: {
-        type: 'controller.connected',
-        detail: {
-          topic: 'test-island',
-          version: '3',
-          targets: [{ target: 'main', version: '3' }],
+        topic: 'test-island',
+        version: '3',
+        event: {
+          type: 'controller_connected',
         },
       },
     })
@@ -386,11 +386,12 @@ describe('controller: ui_event', () => {
     expect(event.source).toBe('action-test')
     expect(event.message.type).toBe('ui_event')
     const detail = event.message.detail as Record<string, unknown>
-    expect(detail.type).toBe('test_click')
-    const attrs = detail.detail as Record<string, unknown>
+    const bpEvent = detail.event as Record<string, unknown>
+    expect(bpEvent.type).toBe('test_click')
+    const attrs = bpEvent.detail as Record<string, unknown>
     expect(attrs.id).toBe('test-btn')
     expect(attrs['p-trigger']).toBe('click:test_click')
-    expect(attrs.topic).toBe('action-test')
+    expect(detail.topic).toBe('action-test')
   })
 })
 
@@ -410,6 +411,7 @@ describe('controller: form_submit', () => {
     expect(submission.message.type).toBe('form_submit')
     expect(submission.message.detail).toEqual({
       topic: 'form-submit-test',
+      version: '1',
       id: 'controller-form',
       action: `http://localhost:${getFixture().port}/submit-form`,
       method: 'post',
@@ -454,7 +456,8 @@ describe('controller: import', () => {
 
     const event = await waitFor(() => findUiEvent({ after: before, source: 'module-fixture', type: 'import_invoked' }))
     const detail = event.message.detail as Record<string, unknown>
-    expect(detail.detail).toEqual({ path: '/dist/modules/controller-module.js', topic: 'module-fixture' })
+    const bpEvent = detail.event as Record<string, unknown>
+    expect((bpEvent.detail as Record<string, unknown>).path).toBe('/dist/modules/controller-module.js')
   }, 30000)
 
   test('p-trigger actions are sent as BP events with an attribute detail map', async () => {
@@ -465,7 +468,8 @@ describe('controller: import', () => {
 
     const event = await waitFor(() => findUiEvent({ after: before, source: 'module-fixture', type: 'test_click' }))
     const detail = event.message.detail as Record<string, unknown>
-    const attrs = detail.detail as Record<string, unknown>
+    const bpEvent = detail.event as Record<string, unknown>
+    const attrs = bpEvent.detail as Record<string, unknown>
     expect(attrs.id).toBe('module-p-trigger-btn')
     expect(attrs['data-extra']).toBe('p-trigger-attr')
     expect(attrs['p-trigger']).toBe('click:test_click')
@@ -483,11 +487,10 @@ describe('controller: import', () => {
     const count = await cli('eval', '() => globalThis.__controllerModuleHandlerCallCount ?? 0')
     expect(parseResult(count)).toContain('1')
     const detail = event.message.detail as Record<string, unknown>
-    expect(detail.detail).toEqual({
-      id: 'module-enhanced-btn',
-      'data-extra': 'module-listener',
-      topic: 'module-fixture',
-    })
+    const bpEvent = detail.event as Record<string, unknown>
+    const attrs = bpEvent.detail as Record<string, unknown>
+    expect(attrs.id).toBe('module-enhanced-btn')
+    expect(attrs['data-extra']).toBe('module-listener')
   }, 30000)
 
   test('disconnect runs cleanup callbacks registered by imported modules', async () => {
@@ -509,7 +512,7 @@ describe('controller: import', () => {
 
     const error = await waitFor(() => findError({ after: before, source: 'bad-import-test' }))
     const detail = error.message.detail as Record<string, unknown>
-    expect(String(detail.message)).toContain('Expected imported module default export to be a function')
+    expect(String(detail.message)).toContain('Module Import Error')
     expect(detail.description).toBe('Dynamic module import failed to load or parse')
     expect(detail.context).toEqual(
       expect.objectContaining({

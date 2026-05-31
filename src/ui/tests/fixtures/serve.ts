@@ -68,7 +68,7 @@ const HTML_MODULE_FIXTURE = `<!DOCTYPE html>
   <style>module-fixture { display: contents; }</style>
 </head>
 <body>
-  <module-fixture p-topic="module-fixture">
+  <module-fixture id="module-fixture" p-topic="module-fixture">
     <div p-target="main"><p>initial module content</p></div>
   </module-fixture>
   <script type="module" src="${connectScript(['module-fixture'])}"></script>
@@ -154,6 +154,7 @@ const RENDER_MESSAGE = {
     target: 'main',
     html: '<div id="ws-rendered">Hello from WebSocket</div><registered-child id="registered-child"></registered-child>',
     stylesheets: [],
+    swap: 'innerHTML',
     registry: ['registered-child'],
   },
 }
@@ -486,7 +487,7 @@ export const startServer = (port = 0): FixtureServer => {
           const event = { source: ws.data.source, message: data }
           state.lastUiEvent = event
           state.uiEvents.push(event)
-          if (data.detail?.type === 'test_click') {
+          if (data.detail?.event?.type === 'test_click') {
             sendMessage(ws, {
               type: 'render',
               detail: {
