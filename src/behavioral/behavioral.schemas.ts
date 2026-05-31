@@ -1,6 +1,6 @@
 import * as z from 'zod'
-import type { BPEvent, JsonObject } from '../shared/shared.schemas.ts'
-import { BPEventSchema, JsonObjectSchema } from '../shared/shared.schemas.ts'
+import type { BPEvent, JsonObject } from '../shared.ts'
+import { BPEventSchema, JsonObjectSchema } from '../shared.ts'
 
 export type { BPEvent, JsonObject }
 export { BPEventSchema }

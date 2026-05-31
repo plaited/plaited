@@ -1,4 +1,4 @@
-import { SNAPSHOT_MESSAGE_KINDS, type SnapshotMessage } from 'plaited/behavioral'
+import { SNAPSHOT_MESSAGE_KINDS, type SnapshotMessage } from '../behavioral.ts'
 import { makeCli } from './cli.ts'
 import {
   EVAL_CALIBRATE_FOCUSES,

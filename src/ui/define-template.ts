@@ -1,16 +1,16 @@
-import * as z from 'zod'
+import type * as z from 'zod'
+import { JsonObjectSchema } from '../shared.ts'
 import { PLAITED_TEMPLATE_IDENTIFIER, type SCALE, SCALE_RANK } from './template.constants.ts'
 import { type FunctionTemplate, ScaleViolantionError } from './template.ts'
-import type { TemplateObject } from './template.types.ts'
+import type { Attrs, TemplateObject } from './template.types.ts'
 
-type PlaitedTemplate<Attrs extends Record<string, unknown>> = FunctionTemplate<Attrs> & {
+type PlaitedTemplate<T extends Attrs> = FunctionTemplate<T> & {
   $: typeof PLAITED_TEMPLATE_IDENTIFIER
   scale: keyof typeof SCALE
+  inputSchema: typeof JsonObjectSchema
 }
 
-const EmptySchema = z.object({})
-
-export type DefineTemplate = <Schema extends z.ZodType<Record<string, unknown>>>({
+export type DefineTemplate = <Schema extends typeof JsonObjectSchema>({
   template,
   inputSchema,
   scale,
@@ -20,9 +20,9 @@ export type DefineTemplate = <Schema extends z.ZodType<Record<string, unknown>>>
   scale: keyof typeof SCALE
 }) => PlaitedTemplate<z.output<Schema>>
 
-export const defineTemplate: DefineTemplate = ({ template, inputSchema = EmptySchema, scale }) => {
+export const defineTemplate: DefineTemplate = ({ template, inputSchema = JsonObjectSchema, scale }) => {
   const toRet = (params: Parameters<typeof template>[0]): TemplateObject => {
-    inputSchema.parse(params?.attrs ?? {})
+    inputSchema?.parse(params.attrs ?? {})
     const tpl = template(params)
     if (SCALE_RANK[tpl.scale] > SCALE_RANK[scale]) {
       throw new ScaleViolantionError(
@@ -33,5 +33,6 @@ export const defineTemplate: DefineTemplate = ({ template, inputSchema = EmptySc
   }
   toRet.$ = PLAITED_TEMPLATE_IDENTIFIER
   toRet.scale = scale
+  toRet.inputSchema = inputSchema
   return toRet
 }

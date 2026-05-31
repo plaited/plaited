@@ -1,4 +1,4 @@
-import { sync, thread } from 'plaited/behavioral'
+import { sync, thread } from '../../../behavioral.ts'
 
 export const ticker = thread([sync({ request: { type: 'tick' } })], true)
 

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import * as z from 'zod'
-import { JsonObjectSchema } from '../../shared/shared.schemas.ts'
+import { JsonObjectSchema } from '../../shared.ts'
 import { defineTemplate } from '../define-template.ts'
 import { PLAITED_TEMPLATE_IDENTIFIER, TEMPLATE_OBJECT_IDENTIFIER } from '../template.constants.ts'
 import { fragment, h, ScaleViolantionError } from '../template.ts'
@@ -96,7 +96,7 @@ describe('defineTemplate', () => {
   })
 
   test('throws ZodError when constrained schema fields are invalid', () => {
-    const NameSchema = z.object({ name: z.string().min(1) })
+    const NameSchema = z.object({ name: z.string().min(1) }).catchall(z.json())
     const tpl = defineTemplate({
       inputSchema: NameSchema,
       scale: 'rel',

@@ -19,9 +19,7 @@
   "type": "module",
   "exports": {
     "./agent": "./src/agent.ts",
-    "./behavioral": "./src/behavioral.ts",
     "./cli": "./src/cli.ts",
-    "./open-responses": "./src/open-responses.ts",
     "./ui": "./src/ui.ts",
     "./utils": "./src/utils.ts"
   },

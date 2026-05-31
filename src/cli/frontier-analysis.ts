@@ -6,6 +6,7 @@
  */
 
 import { isAbsolute, resolve } from 'node:path'
+import * as z from 'zod'
 import type {
   BPEvent,
   CandidateBid,
@@ -18,7 +19,7 @@ import type {
   SnapshotEvent,
   SnapshotMessage,
   Thread,
-} from 'plaited/behavioral'
+} from '../behavioral.ts'
 import {
   advanceRunningToPending,
   BPEventSchema,
@@ -31,9 +32,8 @@ import {
   resumePendingThreadsForSelectedEvent,
   SNAPSHOT_MESSAGE_KINDS,
   SnapshotMessageSchema,
-} from 'plaited/behavioral'
-import { deepEqual, keyMirror } from 'plaited/utils'
-import * as z from 'zod'
+} from '../behavioral.ts'
+import { deepEqual, keyMirror } from '../utils.ts'
 import { makeCli } from './cli.ts'
 
 const BEHAVIORAL_FRONTIER_MODES = keyMirror('replay', 'explore', 'verify')

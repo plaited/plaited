@@ -1,6 +1,6 @@
-import { SnapshotMessageSchema } from 'plaited/behavioral'
-import { keyMirror } from 'plaited/utils'
 import * as z from 'zod'
+import { SnapshotMessageSchema } from '../behavioral.ts'
+import { keyMirror } from '../utils.ts'
 
 export const EVAL_COMMAND = 'eval'
 
