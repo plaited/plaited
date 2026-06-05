@@ -2,6 +2,7 @@ import { Database } from 'bun:sqlite'
 import { mkdirSync, unlinkSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import type { SnapshotMessage } from '../behavioral.ts'
+import type { AGENT_TO_CONTROLLER_EVENTS } from '../shared/shared.constants.ts'
 import type { AttrsMessage, DisconnectMessage, ImportModuleMessage, RenderMessage } from '../shared/shared.schemas.ts'
 
 const DB_PATH = '.plaited/context.sqlite'
@@ -140,15 +141,13 @@ export const recordSnapshot = (topicId: string, message: SnapshotMessage) => {
     .run(topicId, message.kind, 'step' in message ? message.step : null, JSON.stringify(message))
 }
 
-export type UiEventType = 'render' | 'attrs' | 'import' | 'disconnect'
-
 export const recordUiEvent = ({
   topicId,
   type,
   event,
 }: {
   topicId: string
-  type: UiEventType
+  type: keyof typeof AGENT_TO_CONTROLLER_EVENTS
   event: RenderMessage | AttrsMessage | ImportModuleMessage | DisconnectMessage
 }) => {
   const detail = 'detail' in event ? (event.detail as Record<string, unknown>) : undefined
@@ -208,19 +207,19 @@ export const upsertTopic = ({ id, name, description, memory, user }: UpsertTopic
   }
 }
 
-export type PackageMetadata = {
-  name: string
-  version?: string
-  path: string
-  type: 'workspace' | 'npm'
-  exports: {
-    behaviors?: Array<{ name: string; filePath: string; events?: string[] }>
-    templates?: Array<{ name: string; filePath: string; scale?: string; inputSchema?: string }>
-    skills?: Array<{ name: string; filePath: string; description?: string; tags?: string[]; frontmatter?: unknown }>
-  }
-}
-
-export const upsertPackages = (packages: PackageMetadata[]) => {
+export const upsertPackages = (
+  packages: Array<{
+    name: string
+    version?: string
+    path: string
+    type: 'workspace' | 'npm'
+    exports: {
+      behaviors?: Array<{ name: string; filePath: string; events?: string[] }>
+      templates?: Array<{ name: string; filePath: string; scale?: string; inputSchema?: string }>
+      skills?: Array<{ name: string; filePath: string; description?: string; tags?: string[]; frontmatter?: unknown }>
+    }
+  }>,
+) => {
   const database = getDb()
   database.transaction(() => {
     for (const pkg of packages) {
@@ -303,13 +302,14 @@ export const linkTopicPackage = (topicId: string, packageId: number) => {
     .run(topicId, packageId)
 }
 
-export type SnapshotQueryOptions = {
-  since?: number
-  limit?: number
-  kinds?: Array<'frontier' | 'selection' | 'deadlock' | 'feedback_error'>
-}
-
-export const querySnapshots = (topicId: string, options: SnapshotQueryOptions = {}) => {
+export const querySnapshots = (
+  topicId: string,
+  options: {
+    since?: number
+    limit?: number
+    kinds?: Array<'frontier' | 'selection' | 'deadlock' | 'feedback_error'>
+  } = {},
+) => {
   const database = getDb()
   const conditions = ['topic_id = ?']
   const values: (string | number)[] = [topicId]
