@@ -27,6 +27,7 @@ const getDb = (): Database => {
       created_at INTEGER DEFAULT (unixepoch())
     )
   `)
+
   db.run(`
     CREATE TABLE IF NOT EXISTS packages (
       id INTEGER PRIMARY KEY,
@@ -38,6 +39,7 @@ const getDb = (): Database => {
       last_modified INTEGER
     )
   `)
+
   db.run(`
     CREATE TABLE IF NOT EXISTS package_exports (
       id INTEGER PRIMARY KEY,
@@ -47,6 +49,7 @@ const getDb = (): Database => {
       name TEXT
     )
   `)
+
   db.run(`
     CREATE TABLE IF NOT EXISTS topic_packages (
       topic_id TEXT REFERENCES topics(id),
@@ -55,6 +58,7 @@ const getDb = (): Database => {
       PRIMARY KEY (topic_id, package_id)
     )
   `)
+
   db.run(`
     CREATE TABLE IF NOT EXISTS templates (
       id INTEGER PRIMARY KEY,
@@ -65,6 +69,7 @@ const getDb = (): Database => {
       file_path TEXT
     )
   `)
+
   db.run(`
     CREATE TABLE IF NOT EXISTS behaviors (
       id INTEGER PRIMARY KEY,
@@ -74,6 +79,7 @@ const getDb = (): Database => {
       file_path TEXT
     )
   `)
+
   db.run(`
     CREATE TABLE IF NOT EXISTS skills (
       id INTEGER PRIMARY KEY,
@@ -85,6 +91,7 @@ const getDb = (): Database => {
       file_path TEXT
     )
   `)
+
   db.run(`
     CREATE TABLE IF NOT EXISTS bp_snapshots (
       id INTEGER PRIMARY KEY,
@@ -95,6 +102,7 @@ const getDb = (): Database => {
       created_at INTEGER DEFAULT (unixepoch())
     )
   `)
+
   db.run(`
     CREATE TABLE IF NOT EXISTS ui_events (
       id INTEGER PRIMARY KEY,
@@ -134,11 +142,15 @@ export const recordSnapshot = (topicId: string, message: SnapshotMessage) => {
 
 export type UiEventType = 'render' | 'attrs' | 'import' | 'disconnect'
 
-export const recordUiEvent = (
-  topicId: string,
-  type: UiEventType,
-  event: RenderMessage | AttrsMessage | ImportModuleMessage | DisconnectMessage,
-) => {
+export const recordUiEvent = ({
+  topicId,
+  type,
+  event,
+}: {
+  topicId: string
+  type: UiEventType
+  event: RenderMessage | AttrsMessage | ImportModuleMessage | DisconnectMessage
+}) => {
   const detail = 'detail' in event ? (event.detail as Record<string, unknown>) : undefined
   getDb()
     .query(

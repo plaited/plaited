@@ -78,16 +78,20 @@ describe('db', () => {
   })
 
   test('recordUiEvent stores render event', () => {
-    recordUiEvent('topic-ui', 'render', {
+    recordUiEvent({
+      topicId: 'topic-ui',
       type: 'render',
-      detail: {
-        topic: 'topic-ui',
-        version: 'v1',
-        target: '#app',
-        html: '<div>hello</div>',
-        stylesheets: [],
-        swap: 'innerHTML',
-        registry: ['mod1'],
+      event: {
+        type: 'render',
+        detail: {
+          topic: 'topic-ui',
+          version: 'v1',
+          target: '#app',
+          html: '<div>hello</div>',
+          stylesheets: [],
+          swap: 'innerHTML',
+          registry: ['mod1'],
+        },
       },
     })
 
