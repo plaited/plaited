@@ -11,21 +11,15 @@ export const BPListenerSchema = z.object({
   type: z.string(),
   detailSchema: JsonObjectSchema.optional(),
   detailMatch: z.enum(['valid', 'invalid']).optional(),
+  topic: z.string().optional(),
 })
 
 export type BPListener = {
   type: string
   detailSchema?: z.ZodType<JsonObject>
   detailMatch?: z.output<typeof BPListenerSchema.shape.detailMatch>
+  topic?: string
 }
-
-export const SpecListenerSchema = BPListenerSchema.omit({
-  detailSchema: true,
-}).extend({
-  detailSchema: JsonObjectSchema.optional(),
-})
-
-export type SpecListener = z.output<typeof SpecListenerSchema>
 
 /**
  * @internal
@@ -64,6 +58,7 @@ export const SnapshotCandidateSchema = z.object({
   type: z.string(),
   detail: JsonObjectSchema.optional(),
   ingress: z.literal(true).optional(),
+  topic: z.string().optional(),
   priority: z.number(),
 })
 
@@ -135,6 +130,7 @@ export type DeadlockSnapshot = z.output<typeof DeadlockSnapshotSchema>
 export const FeedbackErrorSchema = z.object({
   kind: z.literal(SNAPSHOT_MESSAGE_KINDS.feedback_error),
   type: z.string(),
+  topic: z.string().optional(),
   detail: JsonObjectSchema.optional(),
   error: z.string(),
 })

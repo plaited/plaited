@@ -81,6 +81,7 @@ export type RunningBid = {
   /** Internal iterator representing the thread's execution state. Holds the current position in the rule sequence. */
   generator: IterableIterator<Idioms>
   ingress?: true
+  topic?: string
 }
 
 /**
@@ -109,6 +110,7 @@ export type CandidateBid = {
   detail?: BPEvent['detail']
 
   ingress?: true
+  topic?: string
 }
 
 /**

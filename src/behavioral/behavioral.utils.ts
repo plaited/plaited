@@ -25,11 +25,12 @@ export const ensureArray = <T>(obj: T | T[] = []) => (Array.isArray(obj) ? obj :
  * @internal
  * Creates a checker function to determine if a given BPListener matches a CandidateBid.
  */
-export const isListeningFor = ({ type, detail }: CandidateBid) => {
+export const isListeningFor = ({ type, detail, topic }: CandidateBid) => {
   return (listener: BPListener): boolean => {
+    const topicMatches = listener.topic ? topic === listener.topic : true
     const schemaMatches = listener.detailSchema ? listener.detailSchema.safeParse(detail).success : true
     const detailMatches = listener.detailMatch === 'invalid' ? !schemaMatches : schemaMatches
-    return listener.type === type && detailMatches
+    return listener.type === type && topicMatches && detailMatches
   }
 }
 
@@ -46,12 +47,13 @@ export const computeFrontier = ({ pending }: { pending: Set<PendingBid> }): Fron
   const blocked: BPListener[] = []
   const candidates: CandidateBid[] = []
 
-  for (const { request, priority, block, ingress } of pending) {
+  for (const { request, priority, block, ingress, topic } of pending) {
     block && blocked.push(...ensureArray(block))
     request &&
       candidates.push({
         priority,
         ingress,
+        topic,
         ...request,
       })
   }
@@ -76,7 +78,7 @@ export const computeFrontier = ({ pending }: { pending: Set<PendingBid> }): Fron
 
 export const advanceRunningToPending = (running: Set<RunningBid>, pending: Set<PendingBid>) => {
   for (const bid of running) {
-    const { generator, priority, label, ingress } = bid
+    const { generator, priority, label, ingress, topic } = bid
     const { value, done } = generator.next()
     !done &&
       pending.add({
@@ -84,6 +86,7 @@ export const advanceRunningToPending = (running: Set<RunningBid>, pending: Set<P
         ingress,
         label,
         generator,
+        topic,
         ...value,
       })
     running.delete(bid)
@@ -91,7 +94,9 @@ export const advanceRunningToPending = (running: Set<RunningBid>, pending: Set<P
 }
 
 const eventMatchesCandidate = (request: BPEvent, selectedEvent: CandidateBid) => {
-  return request.type === selectedEvent.type && deepEqual(request.detail, selectedEvent.detail)
+  if (selectedEvent.type !== request.type) return false
+  if (selectedEvent.topic && selectedEvent.topic !== request.topic) return false
+  return deepEqual(request.detail, selectedEvent.detail)
 }
 
 export const resumePendingThreadsForSelectedEvent = ({

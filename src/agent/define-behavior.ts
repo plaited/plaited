@@ -1,8 +1,6 @@
-import * as z from 'zod'
 import {
   type Behavioral,
   type BPEvent,
-  type BPListener,
   sync as baseSync,
   ensureArray,
   IDIOMS,
@@ -22,12 +20,6 @@ type DefineBehaviorArgs = Omit<ReturnType<Behavioral>, 'useSnapshot'> & {
 
 type BProgram = (args: DefineBehaviorArgs) => void | Promise<void>
 
-const mapTopic = (topic: string, arr: BPListener[]): BPListener[] =>
-  arr.map(({ detailSchema, ...listener }) => ({
-    ...listener,
-    detailSchema: detailSchema?.and(z.object({ topic: z.literal(topic) })) ?? z.object({ topic: z.literal(topic) }),
-  }))
-
 export type DefineBehavior = (bProgram: BProgram) => {
   (args: GetThreadsArgs): Promise<void>
   $: typeof B_PROGRAM_IDENTIFIER
@@ -38,9 +30,9 @@ export const defineBehavior = (bProgram: BProgram) => {
     const trigger: Trigger = ({ type, detail }) => {
       baseTrigger({
         type,
+        topic,
         detail: {
           ...(detail && detail),
-          topic,
         },
       })
     }
@@ -52,15 +44,18 @@ export const defineBehavior = (bProgram: BProgram) => {
           const { type, detail } = idioms[idiom] as BPEvent
           args[idiom] = {
             type: type,
+            topic,
             detail: {
               ...(detail && detail),
-              topic,
             },
           }
           continue
         }
         const value = idioms[idiom]
-        args[idiom] = mapTopic(topic, ensureArray(value))
+        args[idiom] = ensureArray(value).map((listener) => ({
+          ...listener,
+          topic,
+        }))
       }
       return baseSync(args)
     }

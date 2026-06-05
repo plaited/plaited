@@ -46,8 +46,8 @@ describe('defineBehavior', () => {
       .filter((s): s is SelectionSnapshot => s.kind === SNAPSHOT_MESSAGE_KINDS.selection)
       .map((s) => s.selected)
 
-    expect(selected.some((e) => e.type === 'done_a' && e.detail?.topic === 'topic-a')).toBe(true)
-    expect(selected.some((e) => e.type === 'done_b' && e.detail?.topic === 'topic-b')).toBe(true)
+    expect(selected.some((e) => e.type === 'done_a' && e.topic === 'topic-a')).toBe(true)
+    expect(selected.some((e) => e.type === 'done_b' && e.topic === 'topic-b')).toBe(true)
   })
 
   test('topic-scoped events are blocked when same-topic block exists but cross-topic events pass', () => {
@@ -111,7 +111,8 @@ describe('defineBehavior', () => {
 
     const nested = selected.find((s) => s.type === 'nested')
     expect(nested).toBeDefined()
-    expect(nested!.detail).toEqual({ key: 'val', topic: 'my-topic' })
+    expect(nested!.detail).toEqual({ key: 'val' })
+    expect(nested!.topic).toBe('my-topic')
   })
 
   test('wrapped sync scopes waitFor listeners to the topic', () => {
@@ -138,7 +139,7 @@ describe('defineBehavior', () => {
 
     program({ trigger, addThread, addHandler, reportSnapshot, topic: 'my-topic' })
 
-    trigger({ type: 'greeting', detail: { name: 'Alice', topic: 'my-topic' } })
+    trigger({ type: 'greeting', topic: 'my-topic', detail: { name: 'Alice' } })
 
     const selected = snapshots
       .filter((s): s is SelectionSnapshot => s.kind === SNAPSHOT_MESSAGE_KINDS.selection)
@@ -162,7 +163,7 @@ describe('defineBehavior', () => {
 
     program({ trigger, addThread, addHandler, reportSnapshot, topic: 'my-topic' })
 
-    trigger({ type: 'greeting', detail: { topic: 'other-topic' } })
+    trigger({ type: 'greeting', topic: 'other-topic' })
 
     const selected = snapshots
       .filter((s): s is SelectionSnapshot => s.kind === SNAPSHOT_MESSAGE_KINDS.selection)

@@ -175,6 +175,7 @@ export const behavioral: Behavioral = () => {
           type: selectedEvent.type,
           ...(selectedEvent.detail === undefined ? {} : { detail: selectedEvent.detail }),
           ...(selectedEvent.ingress === undefined ? {} : { ingress: selectedEvent.ingress }),
+          ...(selectedEvent.topic === undefined ? {} : { topic: selectedEvent.topic }),
         },
       })
       nextStep(selectedEvent)

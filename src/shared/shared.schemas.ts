@@ -18,6 +18,7 @@ export type JsonObject = z.output<typeof JsonObjectSchema>
 export const BPEventSchema = z.object({
   type: z.string(),
   detail: JsonObjectSchema.optional(),
+  topic: z.string().optional(),
 })
 
 /** @public */
