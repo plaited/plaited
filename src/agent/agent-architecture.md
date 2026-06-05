@@ -92,26 +92,53 @@ All writes are main-thread only. Exposed operations:
 db.ts` lazily opens `.plaited/context.sqlite`, runs `CREATE TABLE IF NOT EXISTS` for all tables, and returns a singleton `Database`.
 ```
 
-## 4. Package Export Contract
+## 4. Package Sourcing Policy
 
-See prior design doc unchanged.
+| Source | Package Name Pattern | `packages.type` |
+|--------|---------------------|-----------------|
+| **npm** | `@plaited/*` only | `'npm'` |
+| **workspace** | Everything else | `'workspace'` |
 
-## 5. File Watch Strategy
+The indexer worker resolves every discovered package against this rule. Only official `@plaited/` scoped packages are trusted to come from the npm registry. All other packages — including agent-generated plugins, user workspace packages, and third-party integrations — must live in the local monorepo workspace and be discovered via `bun.lock` workspace entries.
+
+This constraint prevents the agent from accidentally loading untrusted npm packages as behavioral plugins.
+
+## 5. Package Export Contract
+
+Packages declare exports via `package.json`:
+
+```json
+{
+  "exports": {
+    "./behaviors": "./src/behaviors.ts",
+    "./templates": "./src/templates.ts",
+    "./skills": "./skills/**"
+  }
+}
+```
+
+| Export | Discovery | Validation |
+|--------|-----------|------------|
+| `behaviors` | Single file | `.$ === '🎛️'` (B_PROGRAM_IDENTIFIER) |
+| `templates` | Single file | `.$ === '🧩'` (PLAITED_TEMPLATE_IDENTIFIER), `scale`, `inputSchema` |
+| `skills` | Directory | Each subdir must contain exactly one `SKILL.md`; validate frontmatter against AgentSkills spec |
+
+## 7. File Watch Strategy
 
 Watch target is `bun.lock` only. Rationale unchanged.
 
-## 6. Schema Storage
+## 8. Schema Storage
 
 - **Template `inputSchema`**: Converted to JSON Schema via `z.toJSONSchema()`, stored as `TEXT`. Reconstructed via `z.fromJSONSchema()`.
 - **Behavior `detailSchema`**: Same pattern.
 - **Skill frontmatter**: Stored as JSON `TEXT`.
 - **Topic memory and user fields**: Stored as `TEXT` with `CHECK(length(value) <= limit)` constraints. Updated via behavioral events (`update_topic_memory`, `update_topic_user`).
 
-## 6a. Bounded Topic Memory
+## 9. Bounded Topic Memory
 
 Unchanged from prior design.
 
-## 7. Database Schema
+## 10. Database Schema
 
 ```sql
 -- Topics (projects/contexts)
@@ -207,14 +234,14 @@ CREATE TABLE ui_events (
 );
 ```
 
-## 8. Worker Communication: Pure Push, Agent Controls Sequencing
+## 11. Worker Communication: Pure Push, Agent Controls Sequencing
 
 - **Worker → Agent**: Workers emit minimal events via `postMessage`. Agent handlers convert these to behavioral events (`trigger`).
 - **Agent → Worker**: Agent handlers post structured commands to workers. Workers never read the database or behavioral state directly.
 
 This keeps workers stateless and decoupled from the behavioral event schema.
 
-## 9. Behavioral Lifecycle
+## 12. Behavioral Lifecycle
 
 ```
 Agent generates package
@@ -232,7 +259,7 @@ Behavioral thread triggers `load_packages` → imports behaviors/templates
 Topic now has access to new skills, templates, and behaviors
 ```
 
-## 10. Snapshot Lifecycle and Archiving
+## 13. Snapshot Lifecycle and Archiving
 
 The `bp_snapshots` table records every event selection across all topics.
 
@@ -240,13 +267,13 @@ The `bp_snapshots` table records every event selection across all topics.
 - **Archive threshold**: When the table exceeds a configurable size or age threshold, old rows are moved to Bun archives.
 - **Topic context assembly** queries the live `bp_snapshots` table for recent events. Archived data is not used for runtime context assembly — bounded `memory` and `user` fields serve that role.
 
-## 11. Frontier Analysis
+## 14. Frontier Analysis
 
 - **CLI**: `plaited frontier-analysis` stays available for offline analysis.
 - **Worker**: `frontier-analysis` worker accepts behavior paths + options, returns results. Agent can dispatch analysis reactively (e.g., on deadlock) and handle results as behavioral events.
 - **History replay**: Agent queries `bp_snapshots` for a topic's actual history, passes `snapshotMessages` to the worker for replay.
 
-## 12. Open Questions (Deferred)
+## 15. Open Questions (Deferred)
 
 - **Package `schemas` export**: Revisit if packages need custom DDL.
 - **DuckDB migration**: Revisit if analytical querying needs emerge.
