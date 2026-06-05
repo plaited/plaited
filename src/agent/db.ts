@@ -2,7 +2,8 @@ import { Database } from 'bun:sqlite'
 import { mkdirSync, unlinkSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import type { SnapshotMessage } from '../behavioral.ts'
-import type { AGENT_TO_CONTROLLER_EVENTS } from '../shared/shared.constants.ts'
+// biome-ignore lint: typeof requires runtime value
+import { AGENT_TO_CONTROLLER_EVENTS } from '../shared/shared.constants.ts'
 import type { AttrsMessage, DisconnectMessage, ImportModuleMessage, RenderMessage } from '../shared/shared.schemas.ts'
 
 const DB_PATH = '.plaited/context.sqlite'
