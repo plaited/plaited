@@ -1,4 +1,3 @@
-import * as z from 'zod'
 import { behavioral, sync, thread } from '../behavioral.ts'
 import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../shared/shared.constants.ts'
 import type { AttrsMessage, DisconnectMessage, ImportModuleMessage, RenderMessage } from '../shared/shared.schemas.ts'
@@ -28,7 +27,8 @@ import {
 
 const { addHandler, trigger, addThread } = behavioral()
 
-const TOPIC = `plaited_${Bun.randomUUIDv7()}`
+type Topic = `${string}_${string}`
+const TOPIC: Topic = `plaited_${Bun.randomUUIDv7()}`
 
 addThread(
   'prevent sending worker messages before worker open and after close',
@@ -36,7 +36,7 @@ addThread(
     sync({
       waitFor: {
         type: AGENT_EVENTS.worker_open,
-        detailSchema: z.object({ topic: z.literal(TOPIC) }),
+        topic: TOPIC,
       },
       block: [
         { type: WORKER_COMMAND_TYPES.exec },
@@ -52,11 +52,11 @@ addThread(
   thread([
     sync({
       block: [
-        { type: AGENT_EVENTS.worker_open, detailMatch: 'invalid', detailSchema: z.object({ topic: z.literal(TOPIC) }) },
+        { type: AGENT_EVENTS.worker_open, detailMatch: 'invalid', topic: TOPIC },
         {
           type: AGENT_EVENTS.worker_close,
           detailMatch: 'invalid',
-          detailSchema: z.object({ topic: z.literal(TOPIC) }),
+          topic: TOPIC,
         },
         { type: WORKER_COMMAND_TYPES.exec, detailMatch: 'invalid', detailSchema: ExecCommandSchema.shape.detail },
         { type: WORKER_COMMAND_TYPES.read, detailMatch: 'invalid', detailSchema: ReadCommandSchema.shape.detail },
@@ -122,8 +122,8 @@ addThread(
 )
 
 const worker = new Worker(new URL('worker.ts', import.meta.url).href)
-worker.addEventListener('open', () => trigger({ type: AGENT_EVENTS.worker_open, detail: { topic: TOPIC } }))
-worker.addEventListener('close', () => trigger({ type: AGENT_EVENTS.worker_close, detail: { topic: TOPIC } }))
+worker.addEventListener('open', () => trigger({ type: AGENT_EVENTS.worker_open, topic: TOPIC }))
+worker.addEventListener('close', () => trigger({ type: AGENT_EVENTS.worker_close, topic: TOPIC }))
 
 addHandler(AGENT_EVENTS.worker_open, () => {
   console.log('worker open')

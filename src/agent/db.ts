@@ -168,15 +168,19 @@ export const recordUiEvent = ({
     )
 }
 
-type UpsertTopicArgs = {
+export const upsertTopic = ({
+  id,
+  name,
+  description,
+  memory,
+  user,
+}: {
   id: string
   name?: string
   description?: string
   memory?: string
   user?: string
-}
-
-export const upsertTopic = ({ id, name, description, memory, user }: UpsertTopicArgs) => {
+}) => {
   const database = getDb()
   const exists = database.query('SELECT 1 FROM topics WHERE id = ?').get(id)
 
