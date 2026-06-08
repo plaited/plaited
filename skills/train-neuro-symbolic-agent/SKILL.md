@@ -48,6 +48,101 @@ instructions, then injects those instructions into a prompt for the **executor**
   applies directly — the executor "learns" from examples and instructions
   embedded in its prompt, not from parameter updates.
 
+## Stage 0: SSD Pre-Training (New Default First Step)
+
+Before any verifier-filtered training, we apply **Simple Self-Distillation
+(SSD)** (arXiv:2604.01193v1) to the analyst model. SSD is embarrassingly
+simple: sample from the model at temperature `T_train` with truncation,
+then fine-tune on those raw, unverified samples via standard SFT.
+
+No verifier, no teacher, no RL, no correctness filtering, no executor
+involved. Only the analyst model and a set of problem prompts.
+
+### Why SSD first
+
+The paper shows SSD resolves a **precision-exploration conflict** in LLM
+decoding by reshaping token distributions context-dependently:
+- At **lock** positions (syntax, constraints, structure), SSD suppresses
+  distractor tails that hurt precision
+- At **fork** positions (multiple viable continuations), SSD preserves
+  useful diversity for exploration
+
+For our analyst, this means:
+- **Better baseline reasoning**: the analyst produces more reliable ICL
+  instructions from the start
+- **Better syntax compliance**: the ICLContract JSON schema is more likely
+  to be structurally valid
+- **Better instruction adherence**: the analyst stays on task
+- **Cleaner foundation for Code2LoRA**: repo-specific adapters build on
+  a model whose locks are already sharp and whose forks are already
+  well-calibrated
+
+Critically, SSD requires **no labeled data** — just prompts and the model
+itself. The dataset can be drawn from Plaited agent history, competitive
+programming seeds, or general coding prompts.
+
+### SSD procedure
+
+```
+1. Collect ~10K unique prompts from Plaited agent history or seed datasets
+
+2. For each prompt, sample one solution from the analyst model:
+     y ~ Decode(T_train, top-k, top-p)[p_θ(·|x)]
+
+   Recommended hyperparameters (from paper, validated on 4B–30B models):
+     T_train = 2.0
+     top-k = 10
+     N = 1  (single sample per prompt suffices)
+
+3. No filtering — keep all raw outputs, even gibberish. The paper shows
+   SSD improves even when 62% of outputs contain no extractable code.
+
+4. Fine-tune with standard SFT (cross-entropy) on the resulting pairs:
+     L(θ) = -E_{(x,y)~D_SSD} Σ log p_θ(y_t | x, y_<t)
+
+5. At inference, use a different decoding temperature T_eval:
+     The paper finds T_eff = T_train · T_eval ≈ 1.2 is a good starting point.
+     For T_train=2.0, this gives T_eval ≈ 0.6.
+```
+
+### SSD curriculum placement
+
+```
+New full curriculum:
+
+  SSD stage  →  Stage 0 (bootstrap)  →  Stage 1-5 (verifier-filtered)
+    (no verifier)   (hand-crafted ICL)    (passes L1–L5 chain)
+```
+
+The SSD stage produces a stronger base model at zero labeling cost. Stage 0
+(bootstrap with hand-crafted ICL instructions) then starts from a model that
+already has better syntax compliance and instruction adherence, reducing the
+number of hand-crafted pairs needed.
+
+### Theoretical connection to Code2LoRA
+
+SSD and Code2LoRA are complementary, not redundant:
+
+| Aspect | SSD | Code2LoRA |
+|--------|-----|-----------|
+| Scope | Global — all coding domains | Local — one repo's API surface |
+| Method | Self-distillation (temperature + truncation) | LoRA adaptation |
+| What it changes | Token distribution (locks sharper, forks wider) | Weight matrices (low-rank) |
+| Labeling cost | Zero — self-generated samples | Low — repo-specific pairs |
+| When | One-time per base model | Per repository, at runtime |
+
+SSD solves the **precision-exploration conflict** at the global level.
+Code2LoRA then narrows the surviving forks to repo-specific patterns and
+hardens the repo-specific locks. The result: a compact edge model that is
+simultaneously strong on general coding and exact on local API boundaries.
+
+The paper's theoretical decomposition supports this combination. Equation (4)
+shows SSD produces **support compression** (truncation removes distractor
+tails) and **within-support reshaping** (temperature reweights the surviving
+head). Code2LoRA operates on the already-compressed support — it does not
+need to fight the distractor tail, only to shift probability among the
+surviving viable tokens.
+
 ## The ICL Wire: Analyst → Executor
 
 The analyst does **not** write code or make tool calls. It produces a
@@ -186,6 +281,7 @@ For each task batch:
 
 | Stage | Analyst learns | Verifier threshold | Training signal | Batch size |
 |-------|---------------|-------------------|-----------------|------------|
+| **SSD** | Self-distillation: better reasoning, syntax, instruction adherence | None — self-generated only | SFT on raw samples | ~10K prompts |
 | 0 | Bootstrap: hand-crafted instructions + temperature-sampled outputs | L1 only | SFT | 64–128 |
 | 1 | Single thread, 2-3 sync points | L1+L2 | SFT | 128–256 |
 | 2 | Multi-thread, `waitFor`/`block` coordination | L1+L2 | SFT | 128–256 |
@@ -193,8 +289,10 @@ For each task batch:
 | 4 | Instructions for MCP tool calls + context memory | L1+L2+L3 | SFT | 32–64 |
 | 5 | Full pipeline instructions: specs → code → tests | L1–L5 | SFT | 16–32 |
 
-**Rule of thumb**: Stage 0–1 needs ~500 verified pairs. Stage 3–4
-needs ~3K. Stage 5 needs ~8K before pass rates stabilize.
+**Rule of thumb**: SSD needs ~10K prompts (single sample each). Stage 0–1
+needs ~500 verified pairs. Stage 3–4 needs ~3K. Stage 5 needs ~8K before
+pass rates stabilize. SSD replaces none of the later stages — it produces
+a better starting point for them.
 
 ## Training Data: Snapshot Extraction → Training Pairs
 
@@ -596,6 +694,7 @@ When behavior is unclear, trust the implementation:
 |------|-----------|
 | **IBM: In-Context Learning** | [think/topics/in-context-learning](https://www.ibm.com/think/topics/in-context-learning) — core mechanism: learning from prompt examples without weight updates |
 | **You.com MCP Server** | [docs/build-with-agents/mcp-server](https://you.com/docs/build-with-agents/mcp-server) — MCP search provider for ASP grounding |
+| **SSD (arXiv:2604.01193v1)** | Embarrassingly Simple Self-Distillation — self-generated samples with temperature/truncation, SFT, no verifier. Improves locks (syntax/constraint precision) while preserving forks (diverse exploration). Used as Stage 0 pre-training for the analyst base model. |
 | **Qwen2.5-Coder** | Apache 2.0 permissive small model for analyst role |
 | **BitNet b1.58** | MIT-licensed ternary model, CPU-inference capable |
 | **Unsloth** | Fine-tuning framework for SFT + LoRA |
