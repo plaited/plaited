@@ -5,19 +5,19 @@ import { BPEventSchema, JsonObjectSchema } from '../shared.ts'
 export type { BPEvent, JsonObject }
 export { BPEventSchema }
 
-import { SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
+import { DETAIL_MATCH, SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
 
 export const BPListenerSchema = z.object({
   type: z.string(),
   detailSchema: JsonObjectSchema.optional(),
-  detailMatch: z.enum(['valid', 'invalid']).optional(),
+  detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
   topic: z.string().optional(),
 })
 
 export type BPListener = {
   type: string
   detailSchema?: z.ZodType<JsonObject>
-  detailMatch?: z.output<typeof BPListenerSchema.shape.detailMatch>
+  detailMatch?: keyof typeof DETAIL_MATCH
   topic?: string
 }
 
@@ -163,6 +163,68 @@ export const AddThreadErrorSchema = z.object({
 /** @public */
 export type AddThreadError = z.output<typeof AddThreadErrorSchema>
 
+/**
+ * Schema for the pending thread pool snapshot taken before each frontier computation.
+ *
+ * @remarks
+ * Published at the start of each super-step's event selection phase, before
+ * {@link FrontierSnapshotSchema}. Contains the serialized state of all pending
+ * threads — their labels, priorities, and synchronization intentions — without
+ * collapsing them into candidates.
+ *
+ * Consumers narrow by `kind === 'pending_bids'`.
+ *
+ * @see {@link SnapshotMessageSchema} for the full discriminated union
+ *
+ * @public
+ */
+export const PendingBidsSnapshotSchema = z.object({
+  kind: z.literal(SNAPSHOT_MESSAGE_KINDS.pending_bids),
+  step: z.number().int().nonnegative(),
+  threads: z.array(
+    z.object({
+      label: z.string(),
+      priority: z.number().int(),
+      ingress: z.literal(true).optional(),
+      topic: z.string().optional(),
+      request: BPEventSchema.pick({ type: true, detail: true }).optional(),
+      waitFor: z
+        .array(
+          z.object({
+            type: z.string(),
+            topic: z.string().optional(),
+            detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
+            detailSchema: JsonObjectSchema.optional(),
+          }),
+        )
+        .optional(),
+      block: z
+        .array(
+          z.object({
+            type: z.string(),
+            topic: z.string().optional(),
+            detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
+            detailSchema: JsonObjectSchema.optional(),
+          }),
+        )
+        .optional(),
+      interrupt: z
+        .array(
+          z.object({
+            type: z.string(),
+            topic: z.string().optional(),
+            detailMatch: z.enum(Object.values(DETAIL_MATCH)).optional(),
+            detailSchema: JsonObjectSchema.optional(),
+          }),
+        )
+        .optional(),
+    }),
+  ),
+})
+
+/** @public */
+export type PendingBidsSnapshot = z.output<typeof PendingBidsSnapshotSchema>
+
 export const RuntimeErrorSchema = z.object({
   kind: z.literal(SNAPSHOT_MESSAGE_KINDS.runtime_error),
   error: z.string(),
@@ -189,6 +251,7 @@ export const SnapshotMessageSchema = z.discriminatedUnion('kind', [
   FeedbackErrorSchema,
   SelectionSnapshotSchema,
   AddThreadErrorSchema,
+  PendingBidsSnapshotSchema,
 ])
 
 /** @public */

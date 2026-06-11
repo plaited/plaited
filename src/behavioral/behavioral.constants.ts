@@ -17,6 +17,7 @@ export const SNAPSHOT_MESSAGE_KINDS = keyMirror(
   'deadlock',
   'feedback_error',
   'frontier',
+  'pending_bids',
   'selection',
   'runtime_error',
   'add_thread_error',
@@ -50,3 +51,5 @@ export const FRONTIER_STATUS = keyMirror('ready', 'deadlock', 'idle')
 export const THREAD_IDENTIFIER = '🪢' as const
 
 export const IDIOMS = keyMirror('waitFor', 'interrupt', 'request', 'block')
+
+export const DETAIL_MATCH = keyMirror('valid', 'invalid')

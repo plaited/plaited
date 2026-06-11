@@ -1,5 +1,6 @@
+import * as z from 'zod'
 import { FRONTIER_STATUS, SNAPSHOT_MESSAGE_KINDS } from './behavioral.constants.ts'
-import type { BPEvent, FeedbackError, SnapshotMessage } from './behavioral.schemas.ts'
+import type { BPEvent, BPListener, FeedbackError, JsonObject, SnapshotMessage } from './behavioral.schemas.ts'
 import type {
   AddHandler,
   AddThread,
@@ -15,6 +16,7 @@ import type {
 import {
   advanceRunningToPending,
   computeFrontier,
+  ensureArray,
   isThread,
   resumePendingThreadsForSelectedEvent,
 } from './behavioral.utils.ts'
@@ -29,6 +31,25 @@ import {
  * @template T - Type of values published through this mechanism.
  * @returns A publisher function with a `subscribe` method attached.
  */
+const normalizeListeners = (listener: BPListener | BPListener[]) =>
+  ensureArray(listener).map(({ type, detailSchema, ...rest }) => ({
+    type,
+    ...(detailSchema && { detailSchema: z.toJSONSchema(detailSchema) as JsonObject }),
+    ...rest,
+  }))
+
+/**
+ * @internal
+ * Serializes the pending set into a snapshot-friendly thread list.
+ */
+const serializePending = (pending: Set<PendingBid>) =>
+  Array.from(pending).map(({ waitFor, block, interrupt, generator: _gen, ...rest }) => ({
+    ...rest,
+    ...(waitFor && { waitFor: normalizeListeners(waitFor) }),
+    ...(block && { block: normalizeListeners(block) }),
+    ...(interrupt && { interrupt: normalizeListeners(interrupt) }),
+  }))
+
 const createPublisher = <T>() => {
   const listeners = new Set<(value: T) => void | Promise<void>>()
   function publisher(value: T) {
@@ -141,20 +162,15 @@ export const behavioral: Behavioral = () => {
    */
   function selectNextEvent() {
     const step = stepId++
-    const frontier = computeFrontier({ pending })
-    const candidates = frontier.candidates.map(({ type, detail, ingress, priority }) => ({
-      type,
-      ...(detail === undefined ? {} : { detail }),
-      ...(ingress === undefined ? {} : { ingress }),
-      priority,
-    }))
-    const enabled = frontier.enabled.map(({ type, detail, ingress, priority }) => ({
-      type,
-      ...(detail === undefined ? {} : { detail }),
-      ...(ingress === undefined ? {} : { ingress }),
-      priority,
-    }))
 
+    snapshotPublisher({
+      kind: SNAPSHOT_MESSAGE_KINDS.pending_bids,
+      step,
+      threads: serializePending(pending),
+    })
+
+    const frontier = computeFrontier({ pending })
+    const { enabled, candidates } = frontier
     snapshotPublisher({
       kind: SNAPSHOT_MESSAGE_KINDS.frontier,
       step,
@@ -165,20 +181,15 @@ export const behavioral: Behavioral = () => {
 
     if (frontier.status === FRONTIER_STATUS.ready) {
       /** @internal Priority Queue BPEvent Selection Strategy */
-      const selectedEvent = frontier.enabled.sort(
+      const selected = frontier.enabled.sort(
         ({ priority: priorityA }, { priority: priorityB }) => priorityA - priorityB,
       )[0]!
       snapshotPublisher({
         kind: SNAPSHOT_MESSAGE_KINDS.selection,
         step,
-        selected: {
-          type: selectedEvent.type,
-          ...(selectedEvent.detail === undefined ? {} : { detail: selectedEvent.detail }),
-          ...(selectedEvent.ingress === undefined ? {} : { ingress: selectedEvent.ingress }),
-          ...(selectedEvent.topic === undefined ? {} : { topic: selectedEvent.topic }),
-        },
+        selected,
       })
-      nextStep(selectedEvent)
+      nextStep(selected)
       return
     }
     if (frontier.status === FRONTIER_STATUS.deadlock) {
@@ -208,7 +219,7 @@ export const behavioral: Behavioral = () => {
       running,
       pending,
     })
-    actionPublisher({ type: selectedEvent.type, detail: selectedEvent.detail })
+    actionPublisher({ type: selectedEvent.type, detail: selectedEvent.detail, topic: selectedEvent.topic })
 
     /**
      * @internal

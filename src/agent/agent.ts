@@ -13,6 +13,7 @@ import {
 } from '../shared/shared.schemas.ts'
 import { isTypeOf } from '../utils.ts'
 import { AGENT_EVENTS } from './agent.constants.ts'
+import { recordSnapshot } from './db.ts'
 import { WORKER_COMMAND_TYPES, WORKER_MESSAGE_TYPES } from './worker.constants.ts'
 import type { ExecCommand, ReadCommand, WriteCommand } from './worker.schemas.ts'
 import {
@@ -25,7 +26,8 @@ import {
   WriteMessageSchema,
 } from './worker.schemas.ts'
 
-const { addHandler, trigger, addThread } = behavioral()
+const { addHandler, trigger, addThread, useSnapshot } = behavioral()
+useSnapshot((msg) => recordSnapshot(TOPIC, msg))
 
 type Topic = `${string}_${string}`
 const TOPIC: Topic = `plaited_${Bun.randomUUIDv7()}`

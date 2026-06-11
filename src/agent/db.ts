@@ -2,8 +2,7 @@ import { Database } from 'bun:sqlite'
 import { mkdirSync, unlinkSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import type { SnapshotMessage } from '../behavioral.ts'
-// biome-ignore lint: typeof requires runtime value
-import { AGENT_TO_CONTROLLER_EVENTS } from '../shared/shared.constants.ts'
+import type { AGENT_TO_CONTROLLER_EVENTS } from '../shared/shared.constants.ts'
 import type { AttrsMessage, DisconnectMessage, ImportModuleMessage, RenderMessage } from '../shared/shared.schemas.ts'
 
 const DB_PATH = '.plaited/context.sqlite'
@@ -18,6 +17,8 @@ const getDb = (): Database => {
   if (db) return db
   ensureDbDir()
   db = new Database(getDbPath(), { create: true })
+  db.exec('PRAGMA journal_mode = WAL')
+  db.exec('PRAGMA foreign_keys = ON')
 
   db.run(`
     CREATE TABLE IF NOT EXISTS topics (
@@ -95,13 +96,70 @@ const getDb = (): Database => {
   `)
 
   db.run(`
-    CREATE TABLE IF NOT EXISTS bp_snapshots (
-      id INTEGER PRIMARY KEY,
-      topic_id TEXT REFERENCES topics(id),
-      kind TEXT CHECK(kind IN ('frontier', 'selection', 'deadlock', 'feedback_error')) NOT NULL,
+    CREATE TABLE IF NOT EXISTS topic_event_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      topic_id TEXT NOT NULL REFERENCES topics(id),
       step INTEGER,
-      data TEXT NOT NULL,
+      kind TEXT NOT NULL,
       created_at INTEGER DEFAULT (unixepoch())
+    )
+  `)
+  db.run(`CREATE INDEX IF NOT EXISTS idx_event_log_topic ON topic_event_log(topic_id)`)
+  db.run(`CREATE INDEX IF NOT EXISTS idx_event_log_topic_step ON topic_event_log(topic_id, step)`)
+  db.run(`CREATE INDEX IF NOT EXISTS idx_event_log_topic_kind ON topic_event_log(topic_id, kind)`)
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS event_pending_bids (
+      event_id INTEGER PRIMARY KEY REFERENCES topic_event_log(id),
+      threads TEXT NOT NULL
+    )
+  `)
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS event_frontiers (
+      event_id INTEGER PRIMARY KEY REFERENCES topic_event_log(id),
+      status TEXT NOT NULL,
+      candidates TEXT NOT NULL,
+      enabled TEXT NOT NULL
+    )
+  `)
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS event_selections (
+      event_id INTEGER PRIMARY KEY REFERENCES topic_event_log(id),
+      event_type TEXT NOT NULL,
+      detail TEXT,
+      ingress INTEGER
+    )
+  `)
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS event_deadlocks (
+      event_id INTEGER PRIMARY KEY REFERENCES topic_event_log(id)
+    )
+  `)
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS event_feedback_errors (
+      event_id INTEGER PRIMARY KEY REFERENCES topic_event_log(id),
+      event_type TEXT,
+      detail TEXT,
+      error TEXT NOT NULL
+    )
+  `)
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS event_runtime_errors (
+      event_id INTEGER PRIMARY KEY REFERENCES topic_event_log(id),
+      error TEXT NOT NULL
+    )
+  `)
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS event_add_thread_errors (
+      event_id INTEGER PRIMARY KEY REFERENCES topic_event_log(id),
+      label TEXT NOT NULL,
+      error TEXT NOT NULL
     )
   `)
 
@@ -136,11 +194,307 @@ export const resetDb = () => {
   }
 }
 
-export const recordSnapshot = (topicId: string, message: SnapshotMessage) => {
-  getDb()
-    .query('INSERT INTO bp_snapshots (topic_id, kind, step, data) VALUES (?, ?, ?, ?)')
-    .run(topicId, message.kind, 'step' in message ? message.step : null, JSON.stringify(message))
+// ---------------------------------------------------------------------------
+// PUBLIC: recordSnapshot
+// ---------------------------------------------------------------------------
+
+type PendingBidsMessage = {
+  kind: 'pending_bids'
+  step: number
+  threads: Array<{
+    label: string
+    priority: number
+    ingress?: true
+    topic?: string
+    request?: { type: string; detail?: Record<string, unknown> }
+    waitFor?: Array<{ type: string; topic?: string }>
+    block?: Array<{ type: string; topic?: string }>
+    interrupt?: Array<{ type: string; topic?: string }>
+  }>
 }
+
+type RecordableSnapshot = SnapshotMessage | PendingBidsMessage
+
+export const recordSnapshot = (topicId: string, message: RecordableSnapshot) => {
+  const database = getDb()
+
+  database.transaction(() => {
+    const step = 'step' in message ? message.step : null
+    const row = database
+      .query('INSERT INTO topic_event_log (topic_id, step, kind) VALUES (?, ?, ?) RETURNING id')
+      .get(topicId, step, message.kind) as { id: number }
+    const eventId = row.id
+
+    switch (message.kind) {
+      case 'selection': {
+        database
+          .query('INSERT INTO event_selections (event_id, event_type, detail, ingress) VALUES (?, ?, ?, ?)')
+          .run(
+            eventId,
+            message.selected.type,
+            message.selected.detail === undefined ? null : JSON.stringify(message.selected.detail),
+            message.selected.ingress === undefined ? null : 1,
+          )
+        break
+      }
+      case 'frontier': {
+        database
+          .query('INSERT INTO event_frontiers (event_id, status, candidates, enabled) VALUES (?, ?, ?, ?)')
+          .run(eventId, message.status, JSON.stringify(message.candidates), JSON.stringify(message.enabled))
+        break
+      }
+      case 'deadlock': {
+        database.query('INSERT INTO event_deadlocks (event_id) VALUES (?)').run(eventId)
+        break
+      }
+      case 'feedback_error': {
+        database
+          .query('INSERT INTO event_feedback_errors (event_id, event_type, detail, error) VALUES (?, ?, ?, ?)')
+          .run(
+            eventId,
+            message.type ?? null,
+            message.detail === undefined ? null : JSON.stringify(message.detail),
+            message.error,
+          )
+        break
+      }
+      case 'runtime_error': {
+        database.query('INSERT INTO event_runtime_errors (event_id, error) VALUES (?, ?)').run(eventId, message.error)
+        break
+      }
+      case 'add_thread_error': {
+        database
+          .query('INSERT INTO event_add_thread_errors (event_id, label, error) VALUES (?, ?, ?)')
+          .run(eventId, message.label, message.error)
+        break
+      }
+      case 'pending_bids': {
+        database
+          .query('INSERT INTO event_pending_bids (event_id, threads) VALUES (?, ?)')
+          .run(eventId, JSON.stringify(message.threads))
+        break
+      }
+    }
+  })()
+}
+
+// ---------------------------------------------------------------------------
+// PUBLIC: queryEvents
+// ---------------------------------------------------------------------------
+
+export type TopicEventRow = {
+  seq: number
+  step: number | null
+  kind: string
+  created_at: number
+  event_type?: string | null
+  selected_detail?: Record<string, unknown> | null
+  ingress?: boolean | null
+  status?: string | null
+  candidates?: string | null
+  enabled?: string | null
+  threads?: string | null
+  error?: string | null
+  label?: string | null
+  feedback_detail?: Record<string, unknown> | null
+}
+
+export const queryEvents = ({
+  topic,
+  kind,
+  limit,
+}: {
+  topic: string
+  kind?: string
+  limit?: number
+}): TopicEventRow[] => {
+  const database = getDb()
+
+  if (kind) {
+    return queryByKind(database, topic, kind, limit)
+  }
+
+  // No kind filter: UNION ALL across all detail tables
+  const limitClause = limit === undefined ? '' : `LIMIT ${limit}`
+  const sql = `
+    SELECT l.id AS seq, l.step, l.kind, l.created_at,
+           s.event_type, s.detail AS selected_detail, s.ingress,
+           NULL AS status, NULL AS candidates, NULL AS enabled,
+           NULL AS threads,
+           NULL AS error, NULL AS label,
+           NULL AS feedback_detail
+    FROM topic_event_log l
+    JOIN event_selections s ON s.event_id = l.id
+    WHERE l.topic_id = ?
+    UNION ALL
+    SELECT l.id, l.step, l.kind, l.created_at,
+           NULL, NULL, NULL,
+           f.status, f.candidates, f.enabled,
+           NULL, NULL, NULL, NULL
+    FROM topic_event_log l
+    JOIN event_frontiers f ON f.event_id = l.id
+    WHERE l.topic_id = ?
+    UNION ALL
+    SELECT l.id, l.step, l.kind, l.created_at,
+           NULL, NULL, NULL,
+           NULL, NULL, NULL,
+           NULL, NULL, NULL, NULL
+    FROM topic_event_log l
+    JOIN event_deadlocks d ON d.event_id = l.id
+    WHERE l.topic_id = ?
+    UNION ALL
+    SELECT l.id, l.step, l.kind, l.created_at,
+           fe.event_type, NULL, NULL,
+           NULL, NULL, NULL,
+           NULL, fe.error, NULL, fe.detail AS feedback_detail
+    FROM topic_event_log l
+    JOIN event_feedback_errors fe ON fe.event_id = l.id
+    WHERE l.topic_id = ?
+    UNION ALL
+    SELECT l.id, l.step, l.kind, l.created_at,
+           NULL, NULL, NULL,
+           NULL, NULL, NULL,
+           NULL, re.error, NULL, NULL
+    FROM topic_event_log l
+    JOIN event_runtime_errors re ON re.event_id = l.id
+    WHERE l.topic_id = ?
+    UNION ALL
+    SELECT l.id, l.step, l.kind, l.created_at,
+           NULL, NULL, NULL,
+           NULL, NULL, NULL,
+           NULL, ate.error, ate.label, NULL
+    FROM topic_event_log l
+    JOIN event_add_thread_errors ate ON ate.event_id = l.id
+    WHERE l.topic_id = ?
+    UNION ALL
+    SELECT l.id, l.step, l.kind, l.created_at,
+           NULL, NULL, NULL,
+           NULL, NULL, NULL,
+           pb.threads, NULL, NULL, NULL
+    FROM topic_event_log l
+    JOIN event_pending_bids pb ON pb.event_id = l.id
+    WHERE l.topic_id = ?
+    ORDER BY seq DESC
+    ${limitClause}
+  `
+
+  const rows = database.query(sql).all(topic, topic, topic, topic, topic, topic, topic) as TopicEventRow[]
+
+  return rows.map((row) => {
+    if (row.selected_detail && typeof row.selected_detail === 'string') {
+      row.selected_detail = JSON.parse(row.selected_detail as string) as Record<string, unknown>
+    }
+    if (row.feedback_detail && typeof row.feedback_detail === 'string') {
+      row.feedback_detail = JSON.parse(row.feedback_detail as string) as Record<string, unknown>
+    }
+    return row
+  })
+}
+
+const queryByKind = (database: Database, topic: string, kind: string, limit?: number): TopicEventRow[] => {
+  const limitClause = limit === undefined ? '' : `LIMIT ${limit}`
+
+  switch (kind) {
+    case 'selection': {
+      const sql = `
+        SELECT l.id AS seq, l.step, l.kind, l.created_at,
+               s.event_type, s.detail AS selected_detail, s.ingress
+        FROM topic_event_log l
+        JOIN event_selections s ON s.event_id = l.id
+        WHERE l.topic_id = ?
+        ORDER BY l.id DESC
+        ${limitClause}
+      `
+      const rows = database.query(sql).all(topic) as TopicEventRow[]
+      return rows.map((row) => {
+        if (row.selected_detail && typeof row.selected_detail === 'string') {
+          row.selected_detail = JSON.parse(row.selected_detail as string) as Record<string, unknown>
+        }
+        return row
+      })
+    }
+    case 'pending_bids': {
+      const sql = `
+        SELECT l.id AS seq, l.step, l.kind, l.created_at, pb.threads
+        FROM topic_event_log l
+        JOIN event_pending_bids pb ON pb.event_id = l.id
+        WHERE l.topic_id = ?
+        ORDER BY l.id DESC
+        ${limitClause}
+      `
+      return database.query(sql).all(topic) as TopicEventRow[]
+    }
+    case 'frontier': {
+      const sql = `
+        SELECT l.id AS seq, l.step, l.kind, l.created_at,
+               f.status, f.candidates, f.enabled
+        FROM topic_event_log l
+        JOIN event_frontiers f ON f.event_id = l.id
+        WHERE l.topic_id = ?
+        ORDER BY l.id DESC
+        ${limitClause}
+      `
+      return database.query(sql).all(topic) as TopicEventRow[]
+    }
+    case 'deadlock': {
+      const sql = `
+        SELECT l.id AS seq, l.step, l.kind, l.created_at
+        FROM topic_event_log l
+        JOIN event_deadlocks d ON d.event_id = l.id
+        WHERE l.topic_id = ?
+        ORDER BY l.id DESC
+        ${limitClause}
+      `
+      return database.query(sql).all(topic) as TopicEventRow[]
+    }
+    case 'feedback_error': {
+      const sql = `
+        SELECT l.id AS seq, l.step, l.kind, l.created_at,
+               fe.event_type, fe.detail AS feedback_detail, fe.error
+        FROM topic_event_log l
+        JOIN event_feedback_errors fe ON fe.event_id = l.id
+        WHERE l.topic_id = ?
+        ORDER BY l.id DESC
+        ${limitClause}
+      `
+      const rows = database.query(sql).all(topic) as TopicEventRow[]
+      return rows.map((row) => {
+        if (row.feedback_detail && typeof row.feedback_detail === 'string') {
+          row.feedback_detail = JSON.parse(row.feedback_detail as string) as Record<string, unknown>
+        }
+        return row
+      })
+    }
+    case 'runtime_error': {
+      const sql = `
+        SELECT l.id AS seq, l.step, l.kind, l.created_at, re.error
+        FROM topic_event_log l
+        JOIN event_runtime_errors re ON re.event_id = l.id
+        WHERE l.topic_id = ?
+        ORDER BY l.id DESC
+        ${limitClause}
+      `
+      return database.query(sql).all(topic) as TopicEventRow[]
+    }
+    case 'add_thread_error': {
+      const sql = `
+        SELECT l.id AS seq, l.step, l.kind, l.created_at, ate.label, ate.error
+        FROM topic_event_log l
+        JOIN event_add_thread_errors ate ON ate.event_id = l.id
+        WHERE l.topic_id = ?
+        ORDER BY l.id DESC
+        ${limitClause}
+      `
+      return database.query(sql).all(topic) as TopicEventRow[]
+    }
+    default:
+      return []
+  }
+}
+
+// ---------------------------------------------------------------------------
+// LEGACY (preserved from original db.ts)
+// ---------------------------------------------------------------------------
 
 export const recordUiEvent = ({
   topicId,
@@ -307,34 +661,6 @@ export const linkTopicPackage = (topicId: string, packageId: number) => {
     .run(topicId, packageId)
 }
 
-export const querySnapshots = (
-  topicId: string,
-  options: {
-    since?: number
-    limit?: number
-    kinds?: Array<'frontier' | 'selection' | 'deadlock' | 'feedback_error'>
-  } = {},
-) => {
-  const database = getDb()
-  const conditions = ['topic_id = ?']
-  const values: (string | number)[] = [topicId]
-
-  if (options.since !== undefined) {
-    conditions.push('created_at > ?')
-    values.push(options.since)
-  }
-  if (options.kinds !== undefined && options.kinds.length > 0) {
-    conditions.push(`kind IN (${options.kinds.map(() => '?').join(', ')})`)
-    values.push(...options.kinds)
-  }
-
-  const limitClause = options.limit === undefined ? '' : `LIMIT ${options.limit}`
-  const sql = `SELECT data FROM bp_snapshots WHERE ${conditions.join(' AND ')} ORDER BY created_at DESC ${limitClause}`
-
-  const rows = database.query(sql).all(...values) as Array<{ data: string }>
-  return rows.map((row) => JSON.parse(row.data) as SnapshotMessage)
-}
-
 export const getTopicContext = (id: string): { memory: string | null; user: string | null } | undefined => {
   return (
     (getDb().query('SELECT memory, user FROM topics WHERE id = ?').get(id) as {
@@ -342,21 +668,4 @@ export const getTopicContext = (id: string): { memory: string | null; user: stri
       user: string | null
     } | null) ?? undefined
   )
-}
-
-export const pruneSnapshots = (threshold: { maxAgeMs?: number; maxRows?: number }) => {
-  const database = getDb()
-  if (threshold.maxAgeMs !== undefined) {
-    const cutoff = Math.floor((Date.now() - threshold.maxAgeMs) / 1000)
-    database.query('DELETE FROM bp_snapshots WHERE created_at < ?').run(cutoff)
-  }
-  if (threshold.maxRows !== undefined) {
-    database
-      .query(
-        `DELETE FROM bp_snapshots WHERE id IN (
-          SELECT id FROM bp_snapshots ORDER BY created_at DESC LIMIT -1 OFFSET ?
-        )`,
-      )
-      .run(threshold.maxRows)
-  }
 }
