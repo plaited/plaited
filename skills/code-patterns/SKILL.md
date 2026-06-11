@@ -48,6 +48,29 @@ Import from `'plaited/utils'` instead of reimplementing:
 
 These are pure, tested, and framework-agnostic. Reimplementing them wastes tokens and risks subtle bugs (edge cases in deep comparison, escaped character handling, ID collision probability).
 
+## Type Boundaries — Parse, Don't Cast
+
+When data crosses into your type system from an untyped boundary (JSON.parse, SQL
+results, API responses, event detail payloads, file reads), **use Zod `.parse()` instead
+of `as` casts.**
+
+```ts
+// BAD — cast asserts without checking
+const user = JSON.parse(raw) as User
+
+// GOOD — parse validates and types in one step
+const user = UserSchema.parse(JSON.parse(raw))
+```
+
+`as` casts suppress the type checker without runtime validation. If the actual shape
+diverges from the expected type, a cast silently passes bad data into your system.
+Zod `.parse()` catches mismatches at the boundary immediately and produces a correctly
+typed value. `z.output<typeof MySchema>` gives you the static type for free — no
+separate type declaration needed.
+
+Every external boundary (network, storage, file system, serialization) is a point
+where `unknown` enters. Parse at the boundary, trust the parsed value everywhere else.
+
 ## Patterns
 
 ### Deep Equal
