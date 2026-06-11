@@ -1,9 +1,11 @@
 import { Database } from 'bun:sqlite'
 import { mkdirSync, unlinkSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
-import type { SnapshotMessage } from '../behavioral.ts'
+import * as z from 'zod'
+import type { JsonObject, SnapshotMessage } from '../behavioral.ts'
 import type { AGENT_TO_CONTROLLER_EVENTS } from '../shared/shared.constants.ts'
 import type { AttrsMessage, DisconnectMessage, ImportModuleMessage, RenderMessage } from '../shared/shared.schemas.ts'
+import { JsonObjectSchema } from '../shared.ts'
 
 const DB_PATH = '.plaited/context.sqlite'
 
@@ -206,7 +208,7 @@ type PendingBidsMessage = {
     priority: number
     ingress?: true
     topic?: string
-    request?: { type: string; detail?: Record<string, unknown> }
+    request?: { type: string; detail?: JsonObject }
     waitFor?: Array<{ type: string; topic?: string }>
     block?: Array<{ type: string; topic?: string }>
     interrupt?: Array<{ type: string; topic?: string }>
@@ -282,22 +284,95 @@ export const recordSnapshot = (topicId: string, message: RecordableSnapshot) => 
 // PUBLIC: queryEvents
 // ---------------------------------------------------------------------------
 
-export type TopicEventRow = {
-  seq: number
-  step: number | null
-  kind: string
-  created_at: number
-  event_type?: string | null
-  selected_detail?: Record<string, unknown> | null
-  ingress?: boolean | null
-  status?: string | null
-  candidates?: string | null
-  enabled?: string | null
-  threads?: string | null
-  error?: string | null
-  label?: string | null
-  feedback_detail?: Record<string, unknown> | null
-}
+const parseDetail = (v: unknown): JsonObject | null =>
+  v == null ? null : JsonObjectSchema.parse(JSON.parse(v as string))
+
+const parseIngress = (v: unknown): boolean | null => (v == null ? null : v === 1 || v === true)
+
+const SelectionRowSchema = z
+  .object({
+    seq: z.number(),
+    step: z.number().nullable(),
+    kind: z.literal('selection'),
+    created_at: z.number(),
+    event_type: z.string(),
+    selected_detail: z.string().nullable(),
+    ingress: z.number().nullable(),
+  })
+  .transform(({ selected_detail, ingress, ...rest }) => ({
+    ...rest,
+    selected_detail: parseDetail(selected_detail),
+    ingress: parseIngress(ingress),
+  }))
+
+const DeadlockRowSchema = z.object({
+  seq: z.number(),
+  step: z.number().nullable(),
+  kind: z.literal('deadlock'),
+  created_at: z.number(),
+})
+
+const FrontierRowSchema = z.object({
+  seq: z.number(),
+  step: z.number().nullable(),
+  kind: z.literal('frontier'),
+  created_at: z.number(),
+  status: z.string(),
+  candidates: z.string(),
+  enabled: z.string(),
+})
+
+const FeedbackErrorRowSchema = z
+  .object({
+    seq: z.number(),
+    step: z.number().nullable(),
+    kind: z.literal('feedback_error'),
+    created_at: z.number(),
+    event_type: z.string().nullable(),
+    feedback_detail: z.string().nullable(),
+    error: z.string(),
+  })
+  .transform(({ feedback_detail, ...rest }) => ({
+    ...rest,
+    feedback_detail: parseDetail(feedback_detail),
+  }))
+
+const RuntimeErrorRowSchema = z.object({
+  seq: z.number(),
+  step: z.number().nullable(),
+  kind: z.literal('runtime_error'),
+  created_at: z.number(),
+  error: z.string(),
+})
+
+const AddThreadErrorRowSchema = z.object({
+  seq: z.number(),
+  step: z.number().nullable(),
+  kind: z.literal('add_thread_error'),
+  created_at: z.number(),
+  label: z.string(),
+  error: z.string(),
+})
+
+const PendingBidsRowSchema = z.object({
+  seq: z.number(),
+  step: z.number().nullable(),
+  kind: z.literal('pending_bids'),
+  created_at: z.number(),
+  threads: z.string(),
+})
+
+const TopicEventRowSchema = z.discriminatedUnion('kind', [
+  SelectionRowSchema,
+  DeadlockRowSchema,
+  FrontierRowSchema,
+  FeedbackErrorRowSchema,
+  RuntimeErrorRowSchema,
+  AddThreadErrorRowSchema,
+  PendingBidsRowSchema,
+])
+
+type TopicEventRow = z.output<typeof TopicEventRowSchema>
 
 export const queryEvents = ({
   topic,
@@ -382,17 +457,8 @@ export const queryEvents = ({
     ${limitClause}
   `
 
-  const rows = database.query(sql).all(topic, topic, topic, topic, topic, topic, topic) as TopicEventRow[]
-
-  return rows.map((row) => {
-    if (row.selected_detail && typeof row.selected_detail === 'string') {
-      row.selected_detail = JSON.parse(row.selected_detail as string) as Record<string, unknown>
-    }
-    if (row.feedback_detail && typeof row.feedback_detail === 'string') {
-      row.feedback_detail = JSON.parse(row.feedback_detail as string) as Record<string, unknown>
-    }
-    return row
-  })
+  const raw = database.query(sql).all(topic, topic, topic, topic, topic, topic, topic)
+  return raw.map((row) => TopicEventRowSchema.parse(row))
 }
 
 const queryByKind = (
@@ -428,13 +494,8 @@ const queryByKind = (
         ORDER BY l.id DESC
         ${limitClause}
       `
-      const rows = database.query(sql).all(...params) as TopicEventRow[]
-      return rows.map((row) => {
-        if (row.selected_detail && typeof row.selected_detail === 'string') {
-          row.selected_detail = JSON.parse(row.selected_detail as string) as Record<string, unknown>
-        }
-        return row
-      })
+      const raw = database.query(sql).all(...params)
+      return raw.map((row) => SelectionRowSchema.parse(row))
     }
     case 'pending_bids': {
       const conditions = ['l.topic_id = ?']
@@ -453,7 +514,10 @@ const queryByKind = (
         ORDER BY l.id DESC
         ${limitClause}
       `
-      return database.query(sql).all(...params) as TopicEventRow[]
+      return database
+        .query(sql)
+        .all(...params)
+        .map((row) => PendingBidsRowSchema.parse(row))
     }
     case 'frontier': {
       const sql = `
@@ -465,7 +529,10 @@ const queryByKind = (
         ORDER BY l.id DESC
         ${limitClause}
       `
-      return database.query(sql).all(topic) as TopicEventRow[]
+      return database
+        .query(sql)
+        .all(topic)
+        .map((row) => FrontierRowSchema.parse(row))
     }
     case 'deadlock': {
       const sql = `
@@ -476,7 +543,10 @@ const queryByKind = (
         ORDER BY l.id DESC
         ${limitClause}
       `
-      return database.query(sql).all(topic) as TopicEventRow[]
+      return database
+        .query(sql)
+        .all(topic)
+        .map((row) => DeadlockRowSchema.parse(row))
     }
     case 'feedback_error': {
       const conditions = ['l.topic_id = ?']
@@ -494,13 +564,10 @@ const queryByKind = (
         ORDER BY l.id DESC
         ${limitClause}
       `
-      const rows = database.query(sql).all(...params) as TopicEventRow[]
-      return rows.map((row) => {
-        if (row.feedback_detail && typeof row.feedback_detail === 'string') {
-          row.feedback_detail = JSON.parse(row.feedback_detail as string) as Record<string, unknown>
-        }
-        return row
-      })
+      return database
+        .query(sql)
+        .all(...params)
+        .map((row) => FeedbackErrorRowSchema.parse(row))
     }
     case 'runtime_error': {
       const sql = `
@@ -511,7 +578,10 @@ const queryByKind = (
         ORDER BY l.id DESC
         ${limitClause}
       `
-      return database.query(sql).all(topic) as TopicEventRow[]
+      return database
+        .query(sql)
+        .all(topic)
+        .map((row) => RuntimeErrorRowSchema.parse(row))
     }
     case 'add_thread_error': {
       const conditions = ['l.topic_id = ?']
@@ -528,7 +598,10 @@ const queryByKind = (
         ORDER BY l.id DESC
         ${limitClause}
       `
-      return database.query(sql).all(...params) as TopicEventRow[]
+      return database
+        .query(sql)
+        .all(...params)
+        .map((row) => AddThreadErrorRowSchema.parse(row))
     }
     default:
       return []

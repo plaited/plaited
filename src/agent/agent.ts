@@ -1,4 +1,3 @@
-import type { JsonObject } from '../behavioral.ts'
 import { behavioral, sync, thread } from '../behavioral.ts'
 import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../shared/shared.constants.ts'
 import type { AttrsMessage, DisconnectMessage, ImportModuleMessage, RenderMessage } from '../shared/shared.schemas.ts'
@@ -154,7 +153,7 @@ addHandler(
       label_match: detail.label_match,
       limit: detail.limit,
     })
-    trigger({ type: AGENT_QUERY_EVENTS.result, topic: TOPIC, detail: { events } as unknown as JsonObject })
+    trigger({ type: AGENT_QUERY_EVENTS.result, topic: TOPIC, detail: { events } })
   },
 )
 
