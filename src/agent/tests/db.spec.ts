@@ -190,6 +190,73 @@ describe('db', () => {
       expect(events[1]!.step).toBe(1)
       expect(events[2]!.step).toBe(0)
     })
+
+    test('filters selection by event_type', () => {
+      upsertTopic({ id: 'topic-et' })
+      recordSnapshot('topic-et', { kind: 'selection', step: 0, selected: { type: 'worker_open' } })
+      recordSnapshot('topic-et', { kind: 'selection', step: 1, selected: { type: 'render' } })
+
+      const events = queryEvents({ topic: 'topic-et', kind: 'selection', event_type: 'worker_open' })
+
+      expect(events).toHaveLength(1)
+      expect(events[0]!.event_type).toBe('worker_open')
+    })
+
+    test('filters pending_bids by label_match', () => {
+      upsertTopic({ id: 'topic-lm' })
+      recordSnapshot('topic-lm', {
+        kind: 'pending_bids',
+        step: 0,
+        threads: [{ label: 'worker-thread', priority: 1, request: { type: 'do_work' } }],
+      })
+      recordSnapshot('topic-lm', {
+        kind: 'pending_bids',
+        step: 1,
+        threads: [{ label: 'other-thread', priority: 1, request: { type: 'idle' } }],
+      })
+
+      const events = queryEvents({ topic: 'topic-lm', kind: 'pending_bids', label_match: 'worker' })
+
+      expect(events).toHaveLength(1)
+    })
+
+    test('filters add_thread_error by label_match', () => {
+      upsertTopic({ id: 'topic-lm2' })
+      recordSnapshot('topic-lm2', {
+        kind: 'add_thread_error',
+        label: 'bad-thread',
+        error: 'not valid',
+      })
+      recordSnapshot('topic-lm2', {
+        kind: 'add_thread_error',
+        label: 'good-thread',
+        error: 'other error',
+      })
+
+      const events = queryEvents({ topic: 'topic-lm2', kind: 'add_thread_error', label_match: 'bad' })
+
+      expect(events).toHaveLength(1)
+      expect(events[0]!.label).toBe('bad-thread')
+    })
+
+    test('filters feedback_error by event_type', () => {
+      upsertTopic({ id: 'topic-fe2' })
+      recordSnapshot('topic-fe2', {
+        kind: 'feedback_error',
+        type: 'my_event',
+        error: 'crashed',
+      })
+      recordSnapshot('topic-fe2', {
+        kind: 'feedback_error',
+        type: 'other_event',
+        error: 'also crashed',
+      })
+
+      const events = queryEvents({ topic: 'topic-fe2', kind: 'feedback_error', event_type: 'my_event' })
+
+      expect(events).toHaveLength(1)
+      expect(events[0]!.error).toBe('crashed')
+    })
   })
 
   describe('ui events', () => {

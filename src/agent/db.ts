@@ -302,16 +302,20 @@ export type TopicEventRow = {
 export const queryEvents = ({
   topic,
   kind,
+  event_type,
+  label_match,
   limit,
 }: {
   topic: string
   kind?: string
+  event_type?: string
+  label_match?: string
   limit?: number
 }): TopicEventRow[] => {
   const database = getDb()
 
   if (kind) {
-    return queryByKind(database, topic, kind, limit)
+    return queryByKind(database, topic, kind, { event_type, label_match, limit })
   }
 
   // No kind filter: UNION ALL across all detail tables
@@ -391,21 +395,40 @@ export const queryEvents = ({
   })
 }
 
-const queryByKind = (database: Database, topic: string, kind: string, limit?: number): TopicEventRow[] => {
+const queryByKind = (
+  database: Database,
+  topic: string,
+  kind: string,
+  {
+    event_type,
+    label_match,
+    limit,
+  }: {
+    event_type?: string
+    label_match?: string
+    limit?: number
+  },
+): TopicEventRow[] => {
   const limitClause = limit === undefined ? '' : `LIMIT ${limit}`
 
   switch (kind) {
     case 'selection': {
+      const conditions = ['l.topic_id = ?']
+      const params: (string | number)[] = [topic]
+      if (event_type !== undefined) {
+        conditions.push('s.event_type = ?')
+        params.push(event_type)
+      }
       const sql = `
         SELECT l.id AS seq, l.step, l.kind, l.created_at,
                s.event_type, s.detail AS selected_detail, s.ingress
         FROM topic_event_log l
         JOIN event_selections s ON s.event_id = l.id
-        WHERE l.topic_id = ?
+        WHERE ${conditions.join(' AND ')}
         ORDER BY l.id DESC
         ${limitClause}
       `
-      const rows = database.query(sql).all(topic) as TopicEventRow[]
+      const rows = database.query(sql).all(...params) as TopicEventRow[]
       return rows.map((row) => {
         if (row.selected_detail && typeof row.selected_detail === 'string') {
           row.selected_detail = JSON.parse(row.selected_detail as string) as Record<string, unknown>
@@ -414,15 +437,23 @@ const queryByKind = (database: Database, topic: string, kind: string, limit?: nu
       })
     }
     case 'pending_bids': {
+      const conditions = ['l.topic_id = ?']
+      const params: (string | number)[] = [topic]
+      if (label_match !== undefined) {
+        conditions.push(
+          `EXISTS (SELECT 1 FROM json_each(pb.threads) AS t WHERE json_extract(t.value, '$.label') LIKE ?)`,
+        )
+        params.push(`%${label_match}%`)
+      }
       const sql = `
         SELECT l.id AS seq, l.step, l.kind, l.created_at, pb.threads
         FROM topic_event_log l
         JOIN event_pending_bids pb ON pb.event_id = l.id
-        WHERE l.topic_id = ?
+        WHERE ${conditions.join(' AND ')}
         ORDER BY l.id DESC
         ${limitClause}
       `
-      return database.query(sql).all(topic) as TopicEventRow[]
+      return database.query(sql).all(...params) as TopicEventRow[]
     }
     case 'frontier': {
       const sql = `
@@ -448,16 +479,22 @@ const queryByKind = (database: Database, topic: string, kind: string, limit?: nu
       return database.query(sql).all(topic) as TopicEventRow[]
     }
     case 'feedback_error': {
+      const conditions = ['l.topic_id = ?']
+      const params: (string | number)[] = [topic]
+      if (event_type !== undefined) {
+        conditions.push('fe.event_type = ?')
+        params.push(event_type)
+      }
       const sql = `
         SELECT l.id AS seq, l.step, l.kind, l.created_at,
                fe.event_type, fe.detail AS feedback_detail, fe.error
         FROM topic_event_log l
         JOIN event_feedback_errors fe ON fe.event_id = l.id
-        WHERE l.topic_id = ?
+        WHERE ${conditions.join(' AND ')}
         ORDER BY l.id DESC
         ${limitClause}
       `
-      const rows = database.query(sql).all(topic) as TopicEventRow[]
+      const rows = database.query(sql).all(...params) as TopicEventRow[]
       return rows.map((row) => {
         if (row.feedback_detail && typeof row.feedback_detail === 'string') {
           row.feedback_detail = JSON.parse(row.feedback_detail as string) as Record<string, unknown>
@@ -477,15 +514,21 @@ const queryByKind = (database: Database, topic: string, kind: string, limit?: nu
       return database.query(sql).all(topic) as TopicEventRow[]
     }
     case 'add_thread_error': {
+      const conditions = ['l.topic_id = ?']
+      const params: (string | number)[] = [topic]
+      if (label_match !== undefined) {
+        conditions.push('ate.label LIKE ?')
+        params.push(`%${label_match}%`)
+      }
       const sql = `
         SELECT l.id AS seq, l.step, l.kind, l.created_at, ate.label, ate.error
         FROM topic_event_log l
         JOIN event_add_thread_errors ate ON ate.event_id = l.id
-        WHERE l.topic_id = ?
+        WHERE ${conditions.join(' AND ')}
         ORDER BY l.id DESC
         ${limitClause}
       `
-      return database.query(sql).all(topic) as TopicEventRow[]
+      return database.query(sql).all(...params) as TopicEventRow[]
     }
     default:
       return []

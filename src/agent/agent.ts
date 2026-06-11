@@ -1,3 +1,4 @@
+import type { JsonObject } from '../behavioral.ts'
 import { behavioral, sync, thread } from '../behavioral.ts'
 import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../shared/shared.constants.ts'
 import type { AttrsMessage, DisconnectMessage, ImportModuleMessage, RenderMessage } from '../shared/shared.schemas.ts'
@@ -13,7 +14,7 @@ import {
 } from '../shared/shared.schemas.ts'
 import { isTypeOf } from '../utils.ts'
 import { AGENT_EVENTS } from './agent.constants.ts'
-import { recordSnapshot } from './db.ts'
+import { queryEvents, recordSnapshot } from './db.ts'
 import { WORKER_COMMAND_TYPES, WORKER_MESSAGE_TYPES } from './worker.constants.ts'
 import type { ExecCommand, ReadCommand, WriteCommand } from './worker.schemas.ts'
 import {
@@ -139,6 +140,23 @@ addHandler(AGENT_EVENTS.worker_close, () => {
 addHandler<ExecCommand['detail']>(WORKER_COMMAND_TYPES.exec, (detail) => worker.postMessage(detail))
 addHandler<ReadCommand['detail']>(WORKER_COMMAND_TYPES.read, (detail) => worker.postMessage(detail))
 addHandler<WriteCommand['detail']>(WORKER_COMMAND_TYPES.write, (detail) => worker.postMessage(detail))
+
+// Agent Query Interface
+const AGENT_QUERY_EVENTS = { query: 'query_events', result: 'query_result' } as const
+
+addHandler(
+  AGENT_QUERY_EVENTS.query,
+  (detail: { topic: string; kind?: string; event_type?: string; label_match?: string; limit?: number }) => {
+    const events = queryEvents({
+      topic: detail.topic,
+      kind: detail.kind,
+      event_type: detail.event_type,
+      label_match: detail.label_match,
+      limit: detail.limit,
+    })
+    trigger({ type: AGENT_QUERY_EVENTS.result, topic: TOPIC, detail: { events } as unknown as JsonObject })
+  },
+)
 
 type WebSocketData = {
   topic: string
