@@ -1,6 +1,4 @@
-import type { ControllerModuleContext } from '../../controller.types.ts'
-
-export default ({ DelegatedListener, addDisconnect, delegates, trigger }: ControllerModuleContext) => {
+export default ({ DelegatedListener, addDisconnect, delegates, trigger }: Record<string, unknown>) => {
   ;(globalThis as Record<string, unknown>).__controllerModuleLoaded = true
   ;(globalThis as Record<string, unknown>).__controllerModuleHandlerCallCount = 0
 

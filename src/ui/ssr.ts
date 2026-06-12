@@ -33,7 +33,6 @@ export const ssr = (templates: TemplateObject[]) => {
         if (adoptedStyleSheets.has(sheet)) continue
         adoptedStyleSheets.add(sheet)
       }
-      registry.push(...child.registry)
       continue
     }
     if (!VALID_PRIMITIVE_CHILDREN.has(typeof child)) continue

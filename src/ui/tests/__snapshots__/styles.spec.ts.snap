@@ -99,7 +99,6 @@ exports[`createStyles: works with h via spread operator 1`] = `
     ">",
     "</button>",
   ],
-  "registry": [],
   "scale": "rel",
   "stylesheets": [
     ".cls_2ix8wso{color:var(--blue-link);}",

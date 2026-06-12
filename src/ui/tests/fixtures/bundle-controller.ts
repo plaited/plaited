@@ -12,14 +12,17 @@ export const bundleController = async () => {
       import { useController } from ${JSON.stringify(controllerEntry)}
 
       const params = new URL(import.meta.url).searchParams
-      const tags = (params.get('registry') ?? '')
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter(Boolean)
-      const address = location.origin.replace(/^http/, 'ws') + '/ws'
-      const Controller = useController({ address })
-      for (const tag of tags) {
-        if (!customElements.get(tag)) customElements.define(tag, Controller)
+      const tag = (params.get('registry') ?? '').trim()
+      if (!tag) throw new Error('Controller bundle: missing registry param (tag name)')
+      // Load optional Register modules specified as comma-separated paths
+      const modulePaths = (params.get('modules') ?? '').split(',').map(s => s.trim()).filter(Boolean)
+      const registers = await Promise.all(modulePaths.map(async (path) => {
+        const mod = await import(path)
+        return mod.default
+      }))
+
+      if (!customElements.get(tag)) {
+        useController({ tag, registry: registers })
       }
       `,
     },

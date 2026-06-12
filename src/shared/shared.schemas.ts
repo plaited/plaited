@@ -1,6 +1,5 @@
 import * as z from 'zod'
 
-import { SITE_ROOT_JAVASCRIPT_PATH_PATTERN } from '../ui/template.constants.ts'
 import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS, SWAP_MODES } from './shared.constants.ts'
 
 /** @public */
@@ -32,8 +31,7 @@ export type BPEvent = z.output<typeof BPEventSchema>
 export const RenderMessageSchema = z.object({
   type: z.literal(AGENT_TO_CONTROLLER_EVENTS.render),
   detail: z.object({
-    topic: z.string(),
-    version: z.string(),
+    id: z.string(),
     target: z.string(),
     html: z.string(),
     stylesheets: z.array(z.string()),
@@ -60,8 +58,7 @@ export type RenderMessage = z.infer<typeof RenderMessageSchema>
 export const AttrsMessageSchema = z.object({
   type: z.literal(AGENT_TO_CONTROLLER_EVENTS.attrs),
   detail: z.object({
-    topic: z.string(),
-    version: z.string(),
+    id: z.string(),
     target: z.string(),
     attr: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]).nullable()),
   }),
@@ -71,55 +68,11 @@ export const AttrsMessageSchema = z.object({
 export type AttrsMessage = z.infer<typeof AttrsMessageSchema>
 
 /**
- * Schema for module import messages sent from server.
- *
- * @remarks
- * The detail stays constrained to site-root absolute JavaScript paths so
- * browser `import()` does not accept arbitrary remote URLs. Query strings and
- * hash fragments are allowed for cache keys and module identity changes.
- *
- * @public
- */
-export const ImportModuleMessageSchema = z.object({
-  type: z.literal(AGENT_TO_CONTROLLER_EVENTS.import),
-  detail: z.object({
-    topic: z.string(),
-    version: z.string(),
-    id: z.string(),
-    path: z.string().regex(SITE_ROOT_JAVASCRIPT_PATH_PATTERN, 'Expected a site-root absolute JavaScript path'),
-  }),
-})
-
-/** @public */
-export type ImportModuleMessage = z.infer<typeof ImportModuleMessageSchema>
-
-/**
- * Schema for controller disconnect messages sent from server.
- *
- * @public
- */
-export const DisconnectMessageSchema = z.object({
-  type: z.literal(AGENT_TO_CONTROLLER_EVENTS.disconnect),
-  detail: z.object({
-    topic: z.string(),
-    version: z.string(),
-  }),
-})
-
-/** @public */
-export type DisconnectMessage = z.infer<typeof DisconnectMessageSchema>
-
-/**
  * Discriminated union schema for all server-to-controller messages.
  *
  * @public
  */
-export const ServerMessageSchema = z.discriminatedUnion('type', [
-  ImportModuleMessageSchema,
-  RenderMessageSchema,
-  AttrsMessageSchema,
-  DisconnectMessageSchema,
-])
+export const ServerMessageSchema = z.discriminatedUnion('type', [RenderMessageSchema, AttrsMessageSchema])
 
 /** @public */
 export type ServerMessage = z.infer<typeof ServerMessageSchema>
@@ -132,8 +85,6 @@ export type ServerMessage = z.infer<typeof ServerMessageSchema>
 export const UiEventMessageSchema = z.object({
   type: z.literal(CONTROLLER_TO_AGENT_EVENTS.ui_event),
   detail: z.object({
-    topic: z.string().nullable(),
-    version: z.string().nullable(),
     event: BPEventSchema,
   }),
 })
@@ -151,8 +102,6 @@ const FormSubmitFieldValueSchema = z.union([z.string(), z.array(z.string())])
 export const FormSubmitMessageSchema = z.object({
   type: z.literal(CONTROLLER_TO_AGENT_EVENTS.form_submit),
   detail: z.object({
-    topic: z.string().nullable(),
-    version: z.string().nullable(),
     id: z.string().nullable(),
     action: z.string().nullable(),
     method: z.string(),
@@ -177,8 +126,6 @@ export type FormSubmitMessage = z.infer<typeof FormSubmitMessageSchema>
 export const ControllerErrorMessageSchema = z.object({
   type: z.literal(CONTROLLER_TO_AGENT_EVENTS.error),
   detail: z.object({
-    topic: z.string().nullable(),
-    version: z.string().nullable(),
     message: z.string(),
     description: z.string().optional(),
     context: JsonObjectSchema.optional(),

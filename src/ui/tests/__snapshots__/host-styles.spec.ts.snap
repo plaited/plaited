@@ -65,7 +65,6 @@ exports[`createHostStyles: works with h via spread operator 1`] = `
     ">",
     "</button>",
   ],
-  "registry": [],
   "scale": "rel",
   "stylesheets": [
     ":host{color:red;}",

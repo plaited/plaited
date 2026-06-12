@@ -3,7 +3,6 @@ import { expect, test } from 'bun:test'
 import beautify from 'beautify'
 import type { TemplateObject } from 'plaited/ui'
 import { fragment, h } from 'plaited/ui'
-import { P_TOPIC, P_VERSION } from '../template.constants.ts'
 
 const render = (tpl: TemplateObject) => beautify(tpl.html.join(''), { format: 'html' })
 
@@ -73,17 +72,6 @@ test('h: p-trigger attribute', () =>
       }),
     ),
   ).toMatchSnapshot())
-
-test('h: p-version attribute', () => {
-  expect(render(h('div', { [P_VERSION]: '42', children: 'versioned' }))).toMatchSnapshot()
-})
-
-test('h: p-topic attribute on controller islands', () => {
-  const output = render(h('sample-island', { [P_TOPIC]: 'coding.board', [P_VERSION]: '42' }))
-
-  expect(output).toContain('p-topic="coding.board"')
-  expect(output).toContain('p-version="42"')
-})
 
 test('h: Array of templates', () =>
   expect(
@@ -158,11 +146,6 @@ test('h: rejects script tags without site-root JavaScript src', () => {
 
 test('h: renders external bootstrap script tags', () => {
   expect(render(h('script', { type: 'module', src: '/dist/main.js?v=1#entry' }))).toMatchSnapshot()
-})
-
-test('h: tracks custom element tags in registry', () => {
-  expect(h('sample-element', { children: 'sample' }).registry).toEqual(['sample-element'])
-  expect(h('Sample-Element', { children: 'sample' }).registry).toEqual(['sample-element'])
 })
 
 test('h: rejects invalid custom element tags', () => {

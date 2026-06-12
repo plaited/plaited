@@ -22,7 +22,6 @@ import {
   BOOLEAN_ATTRS,
   CUSTOM_ELEMENT_TAG_PATTERN,
   P_SCALE,
-  P_TOPIC,
   P_TRIGGER,
   PRIMITIVES,
   RESERVED_CUSTOM_ELEMENT_TAGS,
@@ -37,7 +36,7 @@ import type {
   Attrs,
   Children,
   CustomElementTag,
-  DetailedCustomElementHTMLAttributes,
+  DetailedHTMLAttributes,
   ElementAttributeList,
   PlaitedAttributes,
   TemplateObject,
@@ -99,7 +98,7 @@ type InferAttrs<T extends Tag> = T extends keyof ElementAttributeList
   : T extends FunctionTemplate
     ? Parameters<T>[0]['attrs']
     : T extends CustomElementTag
-      ? DetailedCustomElementHTMLAttributes
+      ? DetailedHTMLAttributes
       : Attrs
 
 export type CreateFragment = (children: Children) => TemplateObject
@@ -108,7 +107,6 @@ export const fragment: CreateFragment = (_children) => {
   const children = Array.isArray(_children) ? _children.flat() : [_children]
   const html: string[] = []
   const stylesheets: string[] = []
-  const registry: string[] = []
   const length = children.length
   let highestChildScale: keyof typeof SCALE = SCALE.rel
   for (let i = 0; i < length; i++) {
@@ -116,7 +114,6 @@ export const fragment: CreateFragment = (_children) => {
     if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === TEMPLATE_OBJECT_IDENTIFIER) {
       html.push(...child.html)
       stylesheets.push(...child.stylesheets)
-      registry.push(...child.registry)
       const { scale } = child
       if (SCALE_RANK[scale] > SCALE_RANK[highestChildScale]) {
         highestChildScale = scale
@@ -129,7 +126,6 @@ export const fragment: CreateFragment = (_children) => {
   return {
     html,
     stylesheets,
-    registry,
     scale: highestChildScale,
     $: TEMPLATE_OBJECT_IDENTIFIER,
   }
@@ -158,7 +154,7 @@ export type CreateTemplate = <T extends Tag>(tag: T, attrs?: InferAttrs<T> | Rec
  *
  * @param _tag - HTML/SVG tag name, custom element tag, or FunctionTemplate
  * @param attrs - Element attributes including children
- * @returns TemplateObject with HTML, stylesheets, registry, and identifier
+ * @returns TemplateObject with HTML, stylesheets, and identifier
  *
  * @throws {ScriptPolicyError} When `<script>` does not use a site-root JavaScript `src`
  * @throws {EventHandlerAttributeError} When `on*` attributes are used (use p-trigger instead)
@@ -183,7 +179,6 @@ export const h: CreateTemplate = (_tag, attrs = {}) => {
     stylesheets: _stylesheets,
     style,
     [P_TRIGGER]: pTrigger,
-    [P_TOPIC]: pTopic,
     [P_SCALE]: pScale = 'rel',
     class: cls,
     classNames,
@@ -199,7 +194,6 @@ export const h: CreateTemplate = (_tag, attrs = {}) => {
   if (tag.includes('-') && !isCustomElementTag(tag)) {
     throw new InvalidCustomElementTagError(`Invalid custom element tag: ${tag}`)
   }
-  const registry: string[] = isCustomElementTag(tag) ? [tag] : []
 
   if (tag === 'script') {
     if (_children !== undefined) {
@@ -222,7 +216,6 @@ export const h: CreateTemplate = (_tag, attrs = {}) => {
       .join(' ')
     start.push(`${P_TRIGGER}="${htmlEscape(value)}" `)
   }
-  if (pTopic) start.push(`${P_TOPIC}="${htmlEscape(`${pTopic}`)}" `)
   if (style) {
     const value = Object.entries(style)
       // Convert camelCase style props into dash-case unless they are CSS variables.
@@ -251,7 +244,6 @@ export const h: CreateTemplate = (_tag, attrs = {}) => {
     return {
       html: start,
       stylesheets,
-      registry,
       scale: pScale,
       $: TEMPLATE_OBJECT_IDENTIFIER,
     }
@@ -266,7 +258,6 @@ export const h: CreateTemplate = (_tag, attrs = {}) => {
     if (isTypeOf<Record<string, unknown>>(child, 'object') && child.$ === TEMPLATE_OBJECT_IDENTIFIER) {
       end.push(...child.html)
       stylesheets.unshift(...child.stylesheets)
-      registry.push(...child.registry)
       const { scale } = child
       if (scale !== SCALE.rel) {
         if (pScale === SCALE.rel) {
@@ -298,7 +289,6 @@ export const h: CreateTemplate = (_tag, attrs = {}) => {
   return {
     html: [...start, ...end],
     stylesheets,
-    registry,
     $: TEMPLATE_OBJECT_IDENTIFIER,
     scale: pScale === SCALE.rel ? highestChildScale : pScale,
   }

@@ -1,13 +1,5 @@
 import type { CSSProperties } from './css.types.ts'
-import {
-  P_SCALE,
-  P_TARGET,
-  P_TOPIC,
-  P_TRIGGER,
-  P_VERSION,
-  type SCALE,
-  type TEMPLATE_OBJECT_IDENTIFIER,
-} from './template.constants.ts'
+import { P_SCALE, P_TARGET, P_TRIGGER, type SCALE, type TEMPLATE_OBJECT_IDENTIFIER } from './template.constants.ts'
 
 type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''
@@ -18,13 +10,11 @@ type CrossOrigin = 'anonymous' | 'use-credentials' | ''
  *
  * @property html - An array of string fragments representing the HTML structure.
  * @property stylesheets - CSS stylesheets collected from this template and its children.
- * @property registry - An array of custom element tag names encountered within this template
  * @property $ - A unique symbol (`TEMPLATE_OBJECT_IDENTIFIER`) used as a type guard to identify Plaited template objects.
  */
 export type TemplateObject = {
   html: string[]
   stylesheets: string[]
-  registry: string[]
   scale: keyof typeof SCALE
   $: typeof TEMPLATE_OBJECT_IDENTIFIER
 }
@@ -1145,12 +1135,6 @@ type DetailedWebViewHTMLAttributes = DetailedHTMLAttributes & {
   disableblinkfeatures?: string
 }
 
-/** Attributes reserved for Plaited controller island templates. */
-export type DetailedCustomElementHTMLAttributes = DetailedHTMLAttributes & {
-  [P_TOPIC]?: string
-  [P_VERSION]?: string | number
-}
-
 /**
  * A comprehensive mapping of intrinsic HTML and SVG element tag names
  * to their corresponding detailed attribute types (`Detailed*HTMLAttributes` or `DetailedSVGAttributes`).
@@ -1333,7 +1317,7 @@ export type ElementAttributeList = {
   use: DetailedSVGAttributes
   view: DetailedSVGAttributes
   // CustomElement
-  [k: CustomElementTag]: DetailedCustomElementHTMLAttributes
+  [k: CustomElementTag]: DetailedHTMLAttributes
 }
 /**
  * Generic type for template attributes.

@@ -12,7 +12,7 @@ export const UI_CORE_MAX_RETRIES = 3
  *
  * @public
  */
-export const CONTROLLER_ERRORS = keyMirror(`${AGENT_TO_CONTROLLER_EVENTS.attrs}_element_not_found`, 'missing_topic')
+export const CONTROLLER_ERRORS = keyMirror(`${AGENT_TO_CONTROLLER_EVENTS.attrs}_element_not_found`)
 
 /**
  * Event keys used for messages emitted by the browser controller toward the
@@ -21,3 +21,5 @@ export const CONTROLLER_ERRORS = keyMirror(`${AGENT_TO_CONTROLLER_EVENTS.attrs}_
  * @public
  */
 export const CONTROLLER_EVENTS = keyMirror('import_invoked', 'controller_connected')
+
+export const PAGE_EVENTS = keyMirror('pagehide', 'pagereveal', 'pageshow', 'pageswap')

@@ -55,9 +55,11 @@
       "format-package -w"
     ]
   },
+  "overrides": {
+    "zod": "4.4.3"
+  },
   "dependencies": {
     "@earendil-works/pi-coding-agent": "0.75.3",
-    "@modelcontextprotocol/ext-apps": "^1.7.2",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@youdotcom-oss/api": "^0.5.2",
     "zod": "4.4.3"

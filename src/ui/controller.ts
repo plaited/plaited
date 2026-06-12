@@ -1,12 +1,10 @@
-import type { BPEvent, Disconnect, JsonObject, Trigger } from '../behavioral.ts'
+import type { BPEvent, Disconnect, JsonObject } from '../behavioral.ts'
 import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS, SWAP_MODES } from '../shared/shared.constants.ts'
 import {
   AttrsMessageSchema,
   type ClientMessage,
   type ControllerErrorMessage,
-  DisconnectMessageSchema,
   type FormSubmitMessage,
-  ImportModuleMessageSchema,
   RenderMessageSchema,
   ServerMessageSchema,
   type UiEventMessage,
@@ -15,12 +13,14 @@ import { isTypeOf } from '../utils.ts'
 import {
   CONTROLLER_ERRORS,
   CONTROLLER_EVENTS,
+  PAGE_EVENTS,
   UI_CORE_MAX_RETRIES,
   UI_CORE_RETRY_STATUS_CODES,
 } from './controller.constants.ts'
 import { normalizeControllerErrorDetail } from './controller-error-detail.ts'
 import { DelegatedListener, delegates } from './delegated-listener.ts'
-import { BOOLEAN_ATTRS, P_TARGET, P_TOPIC, P_TRIGGER, P_VERSION } from './template.constants.ts'
+import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from './template.constants.ts'
+import type { CustomElementTag } from './template.types.ts'
 
 const getAttributes = (element: Element): Record<string, string> => {
   return Object.fromEntries(Array.from(element.attributes, (attr) => [attr.name, attr.value]))
@@ -76,9 +76,41 @@ const buildFormSubmitData = (form: HTMLFormElement): Record<string, FormSubmitFi
   return data
 }
 
-export const useController = ({ address, send }: { address: string; send?: Trigger }) => {
+const isPageShow = (event: Event): event is PageTransitionEvent => event.type === PAGE_EVENTS.pageshow
+const isPageHide = (event: Event): event is PageTransitionEvent => event.type === PAGE_EVENTS.pagehide
+const isPageReveal = (event: Event): event is PageRevealEvent => event instanceof PageRevealEvent
+const isPageSwap = (event: Event): event is PageSwapEvent => event instanceof PageSwapEvent
+
+export type Register = (args: {
+  DelegatedListener: typeof DelegatedListener
+  delegates: WeakMap<EventTarget, unknown>
+  addDisconnect: (disconnect: Disconnect) => void
+  trigger: (event: BPEvent) => void
+  reportError: (
+    error: unknown,
+    metadata?: {
+      description?: string
+      context?: JsonObject
+    },
+  ) => void
+}) => void | Promise<void>
+
+export const useController = ({
+  registry = [],
+  tag,
+  onPageReveal,
+  onPageSwap,
+  onPageHide,
+  onPageShow,
+}: {
+  registry?: Register[]
+  tag: CustomElementTag
+  onPageReveal?: (event: PageRevealEvent) => void | Promise<void>
+  onPageSwap?: (event: PageSwapEvent) => void | Promise<void>
+  onPageShow?: (event: PageTransitionEvent) => void | Promise<void>
+  onPageHide?: (event: PageTransitionEvent) => void | Promise<void>
+}) => {
   class Controller extends HTMLElement {
-    static observedAttributes = [P_TOPIC]
     #disconnectSet = new Set<Disconnect>()
     #socket: WebSocket | undefined
     #retryCount = 0
@@ -111,31 +143,9 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
         })
       }
     })
-    #formListener = new DelegatedListener((event: Event) => {
-      try {
-        const owner = event.composedPath().find((node): node is Controller => node instanceof Controller)
-        if (owner !== this) return
-
-        const form = event.target
-        if (!(form instanceof HTMLFormElement)) return
-
-        event.preventDefault()
-        this.#sendFormSubmit(form)
-      } catch (error) {
-        this.#reportError(error, { description: 'Form submit event handler threw an error' })
-      }
-    })
-    #registry = new CustomElementRegistry()
-    #register(tags: string[]) {
-      for (const tag of tags) {
-        if (!this.#registry.get(tag)) this.#registry.define(tag, useController({ send, address }))
-      }
-    }
     #connect() {
       this.#closeSocket(this.#socket)
-      const topic = this.getAttribute(P_TOPIC)
-      if (!isTypeOf<string>(topic, 'string')) return
-      this.#socket = new WebSocket(address, topic)
+      this.#socket = new WebSocket(self.location.href.replace(/^http/, 'ws'))
       delegates.set(this.#socket, this.#socketListener)
       this.#socket.addEventListener('open', this.#socketListener)
       this.#socket.addEventListener('message', this.#socketListener)
@@ -150,9 +160,6 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
       socket.removeEventListener('error', this.#socketListener)
       socket.removeEventListener('close', this.#socketListener)
       if (socket.readyState !== WebSocket.CLOSED && socket.readyState !== WebSocket.CLOSING) socket.close()
-    }
-    #addDisconnect(disconnect: Disconnect) {
-      this.#disconnectSet.add(disconnect)
     }
     #send(message: ClientMessage) {
       const onOpen = () => {
@@ -176,12 +183,6 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
         context?: JsonObject
       } = {},
     ) {
-      const topic = this.getAttribute(P_TOPIC)
-      if (!isTypeOf<string>(topic, 'string')) {
-        console.error(CONTROLLER_ERRORS.missing_topic, 'error report', error)
-        return
-      }
-      const version = this.getAttribute(P_VERSION)
       const message: ControllerErrorMessage = {
         type: CONTROLLER_TO_AGENT_EVENTS.error,
         detail: {
@@ -190,17 +191,10 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
             description: metadata.description,
             context: metadata.context,
           }),
-          topic,
-          version,
         },
       }
-      send ? send(message) : this.#send(message)
+      this.#send(message)
     }
-    /**
-     * Reports the island's current advisory projection inventory after a successful socket open.
-     *
-     * @internal
-     */
     #sendConnected() {
       this.#trigger({
         type: CONTROLLER_EVENTS.controller_connected,
@@ -208,29 +202,15 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
       })
     }
     #trigger(event: BPEvent) {
-      const topic = this.getAttribute(P_TOPIC)
-      if (!isTypeOf<string>(topic, 'string')) {
-        console.error(CONTROLLER_ERRORS.missing_topic, 'event trigger', event.type)
-        return
-      }
-      const version = this.getAttribute(P_VERSION)
       const message: UiEventMessage = {
         type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
         detail: {
-          topic,
-          version,
           event,
         },
       }
-      send ? send(message) : this.#send(message)
+      this.#send(message)
     }
     #sendFormSubmit(form: HTMLFormElement) {
-      const topic = this.getAttribute(P_TOPIC)
-      if (!isTypeOf<string>(topic, 'string')) {
-        console.error(CONTROLLER_ERRORS.missing_topic, 'form submit', form.id)
-        return
-      }
-      const version = this.getAttribute(P_VERSION)
       const message: FormSubmitMessage = {
         type: CONTROLLER_TO_AGENT_EVENTS.form_submit,
         detail: {
@@ -238,35 +218,9 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
           action: form.action || null,
           method: form.method || 'get',
           data: buildFormSubmitData(form),
-          topic,
-          version,
         },
       }
-      send ? send(message) : this.#send(message)
-    }
-    async #importModule(id: string, path: string) {
-      const { default: setup } = await import(path)
-      if (
-        this.getAttribute('id') === id &&
-        (isTypeOf<(...args: unknown[]) => unknown>(setup, 'function') ||
-          isTypeOf<(...args: unknown[]) => Promise<unknown>>(setup, 'asyncfunction'))
-      ) {
-        await setup({
-          DelegatedListener,
-          delegates,
-          addDisconnect: this.#addDisconnect.bind(this),
-          trigger: this.#trigger.bind(this),
-          reportError: this.#reportError.bind(this),
-        })
-        this.#trigger({
-          type: CONTROLLER_EVENTS.import_invoked,
-          detail: { ...getAttributes(this), path, tagName: this.tagName.toLowerCase() },
-        })
-      } else {
-        const exportDesc =
-          setup !== null && typeof setup === 'object' && 'toString' in setup ? setup.toString() : `${setup}`
-        throw new Error(`Module Import Error ${exportDesc}`)
-      }
+      this.#send(message)
     }
     #bindTriggers = (subtree: DocumentFragment) => {
       const elements = subtree.querySelectorAll(`[${P_TRIGGER}]`)
@@ -292,6 +246,21 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
           delegates.set(element, listener)
           element.addEventListener(domEvent, listener)
         }
+      }
+    }
+    #bindForms = (subtree: DocumentFragment) => {
+      const elements = subtree.querySelectorAll('form')
+      for (const element of elements) {
+        const listener = new DelegatedListener((event: Event) => {
+          try {
+            event.preventDefault()
+            this.#sendFormSubmit(element)
+          } catch (error) {
+            this.#reportError(error, { description: 'Form submit event handler threw an error' })
+          }
+        })
+        delegates.set(element, listener)
+        element.addEventListener('submit', listener)
       }
     }
     async #updateDocumentStyles(stylesheets: string[]) {
@@ -324,10 +293,8 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
       const template = document.createElement('template')
       template.setHTMLUnsafe(html)
       const content = template.content
-
-      this.#registry.initialize(content)
       this.#bindTriggers(content)
-
+      this.#bindForms(content)
       switch (swap) {
         case SWAP_MODES.afterbegin:
           element.prepend(content)
@@ -349,9 +316,6 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
           break
       }
     }
-    #setVersion(version: string) {
-      this.setAttribute(P_VERSION, version)
-    }
     #onWsMessage(message: MessageEvent) {
       try {
         const raw = JSON.parse(String(message.data))
@@ -365,28 +329,12 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
           throw zodError
         }
         const { type, detail } = parsed.data
-        const currentTopic = this.getAttribute(P_TOPIC)
-        if (detail.topic !== currentTopic) return
         switch (type) {
-          case AGENT_TO_CONTROLLER_EVENTS.import: {
-            const { path, version, id } = ImportModuleMessageSchema.shape.detail.parse(detail)
-            this.#setVersion(version)
-            void this.#importModule(id, path).catch((error) =>
-              this.#reportError(error, {
-                description: 'Dynamic module import failed to load or parse',
-                context: { path },
-              }),
-            )
-            break
-          }
           case AGENT_TO_CONTROLLER_EVENTS.render: {
-            const { target, html, swap, registry, stylesheets, version } =
-              RenderMessageSchema.shape.detail.parse(detail)
-            this.#setVersion(version)
+            const { target, html, swap, stylesheets } = RenderMessageSchema.shape.detail.parse(detail)
             const element = this.querySelector(`[${P_TARGET}="${target}"]`)
             if (!element) return
             void this.#updateDocumentStyles(stylesheets)
-            this.#register(registry)
             this.#performSwap({
               element,
               html: html,
@@ -395,8 +343,7 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
             break
           }
           case AGENT_TO_CONTROLLER_EVENTS.attrs: {
-            const { target, attr, version } = AttrsMessageSchema.shape.detail.parse(detail)
-            this.#setVersion(version)
+            const { target, attr } = AttrsMessageSchema.shape.detail.parse(detail)
             const element = this.querySelector(`[${P_TARGET}="${target}"]`)
             if (!element) {
               console.error(CONTROLLER_ERRORS.attrs_element_not_found, target)
@@ -410,15 +357,6 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
               })
             }
             break
-          }
-          case AGENT_TO_CONTROLLER_EVENTS.disconnect: {
-            const { version } = DisconnectMessageSchema.shape.detail.parse(detail)
-            this.#setVersion(version)
-            this.#closeSocket()
-            break
-          }
-          default: {
-            throw new Error(`Unsupported controller event type "${type}"`)
           }
         }
       } catch (error) {
@@ -435,24 +373,56 @@ export const useController = ({ address, send }: { address: string; send?: Trigg
       setTimeout(() => this.#connect(), Math.floor(Math.random() * maxDelay))
       this.#retryCount++
     }
-    attributeChangedCallback() {
-      this.#connect()
+    #addDisconnect(disconnect: Disconnect) {
+      this.#disconnectSet.add(disconnect)
     }
-    adoptedCallback() {
-      this.#connect()
+    async #onPageHide(event: PageTransitionEvent) {
+      await onPageHide?.(event)
+    }
+    async #onPageReveal(event: PageRevealEvent) {
+      await onPageReveal?.(event)
+    }
+    async #onPageShow(event: PageTransitionEvent) {
+      await onPageShow?.(event)
+    }
+    async #onPageSwap(event: PageSwapEvent) {
+      await onPageSwap?.(event)
     }
     connectedCallback() {
-      delegates.set(this, this.#socketListener)
-      this.addEventListener('submit', this.#formListener)
+      const listener = new DelegatedListener((event: Event) => {
+        isPageHide(event) && this.#onPageHide(event)
+        isPageReveal(event) && this.#onPageReveal(event)
+        isPageShow(event) && this.#onPageShow(event)
+        isPageSwap(event) && this.#onPageSwap(event)
+      })
+      delegates.set(window, listener)
+      window.addEventListener(PAGE_EVENTS.pagehide, listener)
+      window.addEventListener(PAGE_EVENTS.pagereveal, listener)
+      window.addEventListener(PAGE_EVENTS.pageshow, listener)
+      window.addEventListener(PAGE_EVENTS.pageswap, listener)
       this.#connect()
+      for (const register of registry) {
+        try {
+          void register({
+            DelegatedListener,
+            delegates,
+            addDisconnect: this.#addDisconnect.bind(this),
+            trigger: this.#trigger.bind(this),
+            reportError: this.#reportError.bind(this),
+          })
+        } catch (error) {
+          this.#reportError(error, {
+            description: 'Register callback threw an error',
+            context: { registerType: typeof register },
+          })
+        }
+      }
     }
     disconnectedCallback() {
-      this.removeEventListener('submit', this.#formListener)
       for (const cb of this.#disconnectSet) void cb()
       this.#disconnectSet.clear()
       this.#closeSocket(this.#socket)
     }
   }
-
-  return Controller
+  customElements.define(tag, Controller)
 }

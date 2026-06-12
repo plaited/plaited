@@ -24,8 +24,6 @@ exports[`h: Style attribute 1`] = `"<div style="background-color:blue; margin:12
 
 exports[`h: p-trigger attribute 1`] = `"<div p-trigger="click:random focus:thing">triggers</div>"`;
 
-exports[`h: p-version attribute 1`] = `"<div p-version="42">versioned</div>"`;
-
 exports[`h: Array of templates 1`] = `
 "<ul>
     <li>0</li>
@@ -49,23 +47,6 @@ exports[`h: Escapes children 1`] = `
     = new WebSocket(/); const reload = () =&gt;{ location.reload(); console.log(&#39;...reloading&#39;);
     }; socket.addEventListener(&#39;message&#39;, reload); console.log(&#39;[plaited]
     listening for file changes&#39;); &lt;/script&gt;</div>"
-`;
-
-exports[`h: Non declarative shadow DOM template 1`] = `
-"<ul>
-    <template><span>I am a span!!!</span>
-    </template>
-    <li>item-0</li>
-    <li>item-1</li>
-    <li>item-2</li>
-    <li>item-3</li>
-    <li>item-4</li>
-    <li>item-5</li>
-    <li>item-6</li>
-    <li>item-7</li>
-    <li>item-8</li>
-    <li>item-9</li>
-</ul>"
 `;
 
 exports[`fragment 1`] = `

@@ -90,7 +90,7 @@ test('ssr: injects styles after <body> when no </head>', () => {
   expect(connectScript).toBeGreaterThan(styleTag)
 })
 
-test('ssr: injects an async module connect script with deduplicated registry tags', () => {
+test('ssr: injects an async module connect script with empty registry (tags no longer collected during SSR)', () => {
   const rendered = ssr([
     h('sample-element', { children: 'first' }),
     h('sample-element', { children: 'second' }),
@@ -98,7 +98,7 @@ test('ssr: injects an async module connect script with deduplicated registry tag
   ])
 
   expect(rendered).toContain('<script ')
-  expect(rendered).toContain('src="/.plaited/connect.js?registry=sample-element%2Cother-element"')
+  expect(rendered).toContain('src="/.plaited/connect.js?registry="')
   expect(rendered).toContain('type="module"')
   expect(rendered).toContain('async')
   expect(rendered).not.toContain(',src=')

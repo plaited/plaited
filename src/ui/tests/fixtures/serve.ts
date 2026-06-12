@@ -1,8 +1,11 @@
 /**
  * Fixture server for browser tests.
  * Builds entry files with Bun.build(), serves static HTML/JS,
- * and provides a WebSocket that dispatches test messages on open
- * using the subprotocol as source identity.
+ * and provides a WebSocket that responds to controller connections.
+ *
+ * Source identification: the server maps page request paths to WebSocket
+ * source identities. When a page is served with a known controller tag,
+ * the WebSocket connection on that page's URL is associated with that tag.
  */
 import { join } from 'node:path'
 import type { ServerWebSocket } from 'bun'
@@ -12,7 +15,13 @@ const FIXTURES_DIR = import.meta.dir
 const DIST_DIR = join(FIXTURES_DIR, 'dist')
 const controllerRoutes = await bundleController()
 
-const connectScript = (tags: string[]) => `${CONNECT_PLAITED_ROUTE}?registry=${encodeURIComponent(tags.join(','))}`
+const connectScript = (tags: string[], modules?: string[]) => {
+  let url = `${CONNECT_PLAITED_ROUTE}?registry=${encodeURIComponent(tags.join(','))}`
+  if (modules?.length) {
+    url += `&modules=${encodeURIComponent(modules.join(','))}`
+  }
+  return url
+}
 
 // Build the imported controller module separately, served from /modules/.
 const moduleResult = await Bun.build({
@@ -29,10 +38,20 @@ if (!moduleResult.success) {
   throw new Error('Module build failed')
 }
 
+// ─── Source identity mapping ──────────────────────────────────────────────────
+// Maps page request paths to WebSocket source tags.
+const PATH_TO_SOURCE: Record<string, string> = {}
+
+const registerSource = (path: string, source: string) => {
+  PATH_TO_SOURCE[path] = source
+}
+
+const resolveSource = (path: string): string => {
+  return PATH_TO_SOURCE[path] ?? 'document'
+}
+
 // ─── Static HTML fixtures ─────────────────────────────────────────────────────
 
-// The fixture keeps wrapper tags as source identities (WebSocket subprotocol values)
-// and sets display:contents to preserve layout behavior in static HTML.
 const HTML_CONTROL_ISLAND = `<!DOCTYPE html>
 <html>
 <head>
@@ -40,8 +59,8 @@ const HTML_CONTROL_ISLAND = `<!DOCTYPE html>
   <style>test-island { display: contents; }</style>
 </head>
 <body>
-  <test-island p-topic="test-island" p-version="3">
-    <div p-target="main" p-version="3"><p>initial content</p></div>
+  <test-island>
+    <div p-target="main"><p>initial content</p></div>
   </test-island>
   <script type="module" src="${connectScript(['test-island'])}"></script>
 </body>
@@ -54,7 +73,7 @@ const HTML_SWAP_FIXTURE = `<!DOCTYPE html>
   <style>swap-fixture { display: contents; }</style>
 </head>
 <body>
-  <swap-fixture p-topic="swap-fixture">
+  <swap-fixture>
     <div p-target="main"><p>initial swap content</p></div>
   </swap-fixture>
   <script type="module" src="${connectScript(['swap-fixture'])}"></script>
@@ -68,10 +87,14 @@ const HTML_MODULE_FIXTURE = `<!DOCTYPE html>
   <style>module-fixture { display: contents; }</style>
 </head>
 <body>
-  <module-fixture id="module-fixture" p-topic="module-fixture">
-    <div p-target="main"><p>initial module content</p></div>
+  <module-fixture id="module-fixture">
+    <div p-target="main">
+      <button id="module-p-trigger-btn" data-extra="p-trigger-attr" p-trigger="click:test_click">P-trigger Action</button>
+      <button id="module-enhanced-btn" data-extra="module-listener">Module Listener</button>
+      <div id="module-initial">Module fixture loaded</div>
+    </div>
   </module-fixture>
-  <script type="module" src="${connectScript(['module-fixture'])}"></script>
+  <script type="module" src="${connectScript(['module-fixture'], ['/dist/modules/controller-module.js'])}"></script>
 </body>
 </html>`
 
@@ -110,6 +133,9 @@ const TEST_PAGE_CONTENT: Record<string, string> = {
 
 const generateTestPage = (tag: string) => {
   const content = TEST_PAGE_CONTENT[tag] ?? '<p>test content</p>'
+  const source = tag
+  const testPath = `/test/${tag}`
+  registerSource(testPath, source)
   const styleErrorPatch =
     tag === 'style-error-test'
       ? `<script>
@@ -122,6 +148,11 @@ const generateTestPage = (tag: string) => {
   }
   </script>`
       : ''
+  const moduleScript =
+    tag === 'bad-import-test'
+      ? ` type="module" src="${connectScript([tag], ['/dist/modules/invalid-controller-module.js'])}"`
+      : ` type="module" src="${connectScript([tag])}"`
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -129,54 +160,42 @@ const generateTestPage = (tag: string) => {
   <style>${tag} { display: contents; }</style>
 </head>
 <body>
-  <${tag} p-topic="${tag}">
+  <${tag}>
     ${content}
   </${tag}>
   ${styleErrorPatch}
-  <script type="module" src="${connectScript([tag])}"></script>
+  <script${moduleScript}></script>
 </body>
 </html>`
 }
 
-// ─── Server message templates ─────────────────────────────────────────────────
+// ─── Server message helpers ───────────────────────────────────────────────────
 
-/** Inject topic from ws.data.source into every server message sent to the controller. */
-const sendMessage = (ws: ServerWebSocket<{ source: string }>, message: Record<string, unknown>) => {
-  const detail = (message.detail ?? {}) as Record<string, unknown>
-  if (!detail.topic) detail.topic = ws.data.source
-  ws.send(JSON.stringify({ ...message, detail }))
+/** Send a JSON message to a connected controller island. */
+const send = (ws: ServerWebSocket<{ source: string }>, message: Record<string, unknown>) => {
+  ws.send(JSON.stringify(message))
 }
+
+// ─── Server message templates ─────────────────────────────────────────────────
 
 const RENDER_MESSAGE = {
   type: 'render',
   detail: {
-    version: '1',
+    id: 'render-1',
     target: 'main',
-    html: '<div id="ws-rendered">Hello from WebSocket</div><registered-child id="registered-child"></registered-child>',
-    stylesheets: [],
-    swap: 'innerHTML',
-    registry: ['registered-child'],
-  },
-}
-
-const DSD_RENDER_MESSAGE = {
-  type: 'render',
-  detail: {
-    version: '1',
-    target: 'main',
-    html: '<div id="dsd-host"><template shadowrootmode="open"><style>:host { display: block; }</style><p>shadow content</p></template></div>',
+    html: '<div id="ws-rendered">Hello from WebSocket</div>',
     stylesheets: [],
     swap: 'innerHTML',
     registry: [],
   },
 }
 
-const MODULE_RENDER_MESSAGE = {
+const DSD_RENDER_MESSAGE = {
   type: 'render',
   detail: {
-    version: '1',
+    id: 'render-dsd',
     target: 'main',
-    html: '<button id="module-p-trigger-btn" data-extra="p-trigger-attr" p-trigger="click:test_click">P-trigger Action</button><button id="module-enhanced-btn" data-extra="module-listener">Module Listener</button><div id="module-initial">Module fixture loaded</div>',
+    html: '<div id="dsd-host"><template shadowrootmode="open"><style>:host { display: block; }</style><p>shadow content</p></template></div>',
     stylesheets: [],
     swap: 'innerHTML',
     registry: [],
@@ -186,12 +205,11 @@ const MODULE_RENDER_MESSAGE = {
 // ─── WebSocket message handlers for test elements ─────────────────────────────
 
 const sendSwapTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
-  const send = (msg: Record<string, unknown>) => sendMessage(ws, msg)
   // Step 1: innerHTML — replace children of 'main'
-  send({
+  send(ws, {
     type: 'render',
     detail: {
-      version: '1',
+      id: 'swap-1',
       target: 'main',
       html: '<p id="inner-result">inner replaced</p>',
       stylesheets: [],
@@ -200,10 +218,10 @@ const sendSwapTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
     },
   })
   // Step 2: afterbegin — prepend inside 'main'
-  send({
+  send(ws, {
     type: 'render',
     detail: {
-      version: '1',
+      id: 'swap-2',
       target: 'main',
       html: '<span id="afterbegin-result">first</span>',
       stylesheets: [],
@@ -212,10 +230,10 @@ const sendSwapTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
     },
   })
   // Step 3: beforeend — append inside 'main'
-  send({
+  send(ws, {
     type: 'render',
     detail: {
-      version: '1',
+      id: 'swap-3',
       target: 'main',
       html: '<span id="beforeend-result">last</span>',
       stylesheets: [],
@@ -224,10 +242,10 @@ const sendSwapTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
     },
   })
   // Step 4: afterend — insert after 'main' element
-  send({
+  send(ws, {
     type: 'render',
     detail: {
-      version: '1',
+      id: 'swap-4',
       target: 'main',
       html: '<span id="afterend-result">after main</span>',
       stylesheets: [],
@@ -236,10 +254,10 @@ const sendSwapTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
     },
   })
   // Step 5: beforebegin — insert before 'main' element
-  send({
+  send(ws, {
     type: 'render',
     detail: {
-      version: '1',
+      id: 'swap-5',
       target: 'main',
       html: '<span id="beforebegin-result">before main</span>',
       stylesheets: [],
@@ -248,10 +266,10 @@ const sendSwapTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
     },
   })
   // Step 6: outerHTML — replace 'outer-target' element itself
-  send({
+  send(ws, {
     type: 'render',
     detail: {
-      version: '1',
+      id: 'swap-6',
       target: 'outer-target',
       html: '<div id="outer-result" p-target="outer-target">outer replaced</div>',
       stylesheets: [],
@@ -262,18 +280,17 @@ const sendSwapTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
 }
 
 const sendAttrsTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
-  const send = (msg: Record<string, unknown>) => sendMessage(ws, msg)
-  send({ type: 'attrs', detail: { version: '1', target: 'main', attr: { class: 'active' } } })
-  send({ type: 'attrs', detail: { version: '1', target: 'main', attr: { 'data-removable': null } } })
-  send({ type: 'attrs', detail: { version: '1', target: 'main', attr: { disabled: true } } })
-  send({ type: 'attrs', detail: { version: '1', target: 'main', attr: { 'data-count': 42 } } })
+  send(ws, { type: 'attrs', detail: { id: 'attrs-1', target: 'main', attr: { class: 'active' } } })
+  send(ws, { type: 'attrs', detail: { id: 'attrs-2', target: 'main', attr: { 'data-removable': null } } })
+  send(ws, { type: 'attrs', detail: { id: 'attrs-3', target: 'main', attr: { disabled: true } } })
+  send(ws, { type: 'attrs', detail: { id: 'attrs-4', target: 'main', attr: { 'data-count': 42 } } })
 }
 
 const sendActionTestInitialRender = (ws: ServerWebSocket<{ source: string }>) => {
-  sendMessage(ws, {
+  send(ws, {
     type: 'render',
     detail: {
-      version: '1',
+      id: 'action-render',
       target: 'main',
       html: '<button id="test-btn" p-trigger="click:test_click">Click me</button>',
       stylesheets: [],
@@ -284,10 +301,10 @@ const sendActionTestInitialRender = (ws: ServerWebSocket<{ source: string }>) =>
 }
 
 const sendFormSubmitInitialRender = (ws: ServerWebSocket<{ source: string }>) => {
-  sendMessage(ws, {
+  send(ws, {
     type: 'render',
     detail: {
-      version: '1',
+      id: 'form-render',
       target: 'main',
       html: '<form id="controller-form" action="/submit-form" method="post"><input name="name" value="Ada"><input name="tags" value="ui"><input name="tags" value="controller"><button id="controller-form-submit" type="submit">Submit</button></form>',
       stylesheets: [],
@@ -298,13 +315,12 @@ const sendFormSubmitInitialRender = (ws: ServerWebSocket<{ source: string }>) =>
 }
 
 const sendStylesTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
-  const send = (msg: Record<string, unknown>) => sendMessage(ws, msg)
   const primary = '.dynamic-style-target{color:rgb(1, 2, 3);}'
   const secondary = '.dynamic-style-secondary{background-color:rgb(4, 5, 6);}'
-  send({
+  send(ws, {
     type: 'render',
     detail: {
-      version: '1',
+      id: 'styles-1',
       target: 'main',
       html: '<div id="dynamic-style-target" class="dynamic-style-target">styled</div><div id="dynamic-style-secondary" class="dynamic-style-secondary">styled secondary</div>',
       stylesheets: [primary, primary, secondary],
@@ -312,10 +328,10 @@ const sendStylesTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
       registry: [],
     },
   })
-  send({
+  send(ws, {
     type: 'render',
     detail: {
-      version: '1',
+      id: 'styles-2',
       target: 'main',
       html: '<div id="dynamic-style-target" class="dynamic-style-target">styled again</div><div id="dynamic-style-secondary" class="dynamic-style-secondary">styled secondary again</div>',
       stylesheets: [primary],
@@ -326,10 +342,10 @@ const sendStylesTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
 }
 
 const sendStyleErrorTestMessage = (ws: ServerWebSocket<{ source: string }>) => {
-  sendMessage(ws, {
+  send(ws, {
     type: 'render',
     detail: {
-      version: '1',
+      id: 'style-error',
       target: 'main',
       html: '<div id="style-error-target" class="style-error-target">style error target</div>',
       stylesheets: ['.fixture-invalid-stylesheet{}', '.style-error-target{color:rgb(7, 8, 9);}'],
@@ -379,10 +395,14 @@ export const startServer = (port = 0): FixtureServer => {
     retryTestConnections: 0,
   }
 
+  // Register static fixture paths
+  registerSource('/control-island.html', 'test-island')
+  registerSource('/swap-fixture.html', 'swap-fixture')
+  registerSource('/module-fixture.html', 'module-fixture')
+
   const server = Bun.serve({
     port,
     routes: {
-      // Static routes exclude '/' so WebSocket upgrades reach the fetch handler
       '/health': new Response('OK'),
       '/control-island.html': new Response(HTML_CONTROL_ISLAND, {
         headers: { 'Content-Type': 'text/html' },
@@ -412,26 +432,44 @@ export const startServer = (port = 0): FixtureServer => {
         const client = ws.data.source
         switch (client) {
           case 'swap-fixture':
-            sendMessage(ws, DSD_RENDER_MESSAGE)
+            send(ws, DSD_RENDER_MESSAGE)
             break
           case 'module-fixture':
-            // Send initial render, then import the module from a site-root path.
-            sendMessage(ws, MODULE_RENDER_MESSAGE)
-            sendMessage(ws, {
-              type: 'import',
-              detail: { version: '1', id: ws.data.source, path: '/dist/modules/controller-module.js' },
-            })
+            // The module Register function is loaded via connect.js modules param
+            // and runs during connectedCallback. No render message needed —
+            // buttons are in the initial HTML.
             break
           case 'bad-import-test':
-            sendMessage(ws, {
-              type: 'import',
-              detail: { version: '1', id: ws.data.source, path: '/dist/modules/invalid-controller-module.js' },
+            // The invalid module is loaded as a Register function via connect.js modules param.
+            // It exports a non-function default, so it will fail when the controller tries to
+            // invoke it as a Register. The error is caught and reported.
+            send(ws, {
+              type: 'render',
+              detail: {
+                id: 'bad-import-render',
+                target: 'main',
+                html: '<p>bad import test</p>',
+                stylesheets: [],
+                swap: 'innerHTML',
+                registry: [],
+              },
             })
             break
           case 'unsupported-event-test':
-            sendMessage(ws, {
+            send(ws, {
+              type: 'render',
+              detail: {
+                id: 'unsupported-render',
+                target: 'main',
+                html: '<p>unsupported event test</p>',
+                stylesheets: [],
+                swap: 'innerHTML',
+                registry: [],
+              },
+            })
+            send(ws, {
               type: 'unsupported_controller_event',
-              detail: { version: '1', reason: 'fixture' },
+              detail: { id: 'unsupported', reason: 'fixture' },
             })
             break
           case 'swap-test':
@@ -450,14 +488,13 @@ export const startServer = (port = 0): FixtureServer => {
             state.retryTestConnections++
             if (state.retryTestConnections === 1) {
               // First connection: close with 1012 (Service Restart) to trigger retry
-              // 1006 is reserved and cannot be sent in a Close frame per RFC 6455
               setTimeout(() => ws.close(1012, 'test retry'), 100)
             } else {
               // Subsequent connections (after retry): send success render
-              sendMessage(ws, {
+              send(ws, {
                 type: 'render',
                 detail: {
-                  version: '1',
+                  id: 'retry-success',
                   target: 'main',
                   html: '<div id="retry-success">Reconnected!</div>',
                   stylesheets: [],
@@ -475,7 +512,7 @@ export const startServer = (port = 0): FixtureServer => {
             sendStyleErrorTestMessage(ws)
             break
           default:
-            sendMessage(ws, RENDER_MESSAGE)
+            send(ws, RENDER_MESSAGE)
         }
       },
       message(ws, message) {
@@ -488,10 +525,10 @@ export const startServer = (port = 0): FixtureServer => {
           state.lastUiEvent = event
           state.uiEvents.push(event)
           if (data.detail?.event?.type === 'test_click') {
-            sendMessage(ws, {
+            send(ws, {
               type: 'render',
               detail: {
-                version: '1',
+                id: 'action-confirmed',
                 target: 'main',
                 html: '<div id="action-confirmed">Action received</div>',
                 stylesheets: [],
@@ -510,13 +547,14 @@ export const startServer = (port = 0): FixtureServer => {
       },
     },
     fetch(req, server) {
-      // Upgrade WebSocket requests on any path (client connects to /ws)
+      // Upgrade WebSocket requests on any path.
+      // Source identity is resolved from the request URL path.
       if (req.headers.get('upgrade')?.toLowerCase() === 'websocket') {
-        const source = req.headers.get('sec-websocket-protocol') ?? 'document'
+        const requestUrl = new URL(req.url)
+        const source = requestUrl.searchParams.get('source') || resolveSource(requestUrl.pathname) || 'document'
         if (
           server.upgrade(req, {
             data: { source },
-            headers: { 'Sec-WebSocket-Protocol': source },
           })
         ) {
           return undefined

@@ -32,18 +32,6 @@ export const P_TARGET = 'p-target'
  */
 export const P_TRIGGER = 'p-trigger'
 
-/**
- * Constant representing the attribute name (`p-topic`) used by controller islands
- * to select the WebSocket topic they connect to.
- */
-export const P_TOPIC = 'p-topic'
-
-/**
- * Constant representing the attribute name (`p-version`) used by controller islands
- * and targets to report the latest server-projected topic version they realize.
- */
-export const P_VERSION = 'p-version'
-
 export const P_SCALE = 'p-scale'
 
 /**
