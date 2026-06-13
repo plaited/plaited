@@ -29,7 +29,7 @@ const runCli = async (input: unknown, ...extraArgs: string[]) => {
 }
 
 const createTempDir = async (): Promise<string> => {
-  const dir = await mkdtemp(join(tmpdir(), 'plaited-lsp-'))
+  const dir = await mkdtemp(join(tmpdir(), 'onbraid-lsp-'))
   return dir
 }
 

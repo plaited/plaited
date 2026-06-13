@@ -1086,9 +1086,9 @@ export const gitContextCli = makeCli({
     '  context      Combined status + history + optional worktrees',
     '',
     'Examples:',
-    '  plaited git-context \'{"mode":"status","cwd":"."}\'',
-    '  plaited git-context \'{"mode":"history","cwd":".","base":"main"}\'',
-    '  plaited git-context \'{"mode":"context","cwd":".","base":"main","includeWorktrees":true}\'',
+    '  onbraid git-context \'{"mode":"status","cwd":"."}\'',
+    '  onbraid git-context \'{"mode":"history","cwd":".","base":"main"}\'',
+    '  onbraid git-context \'{"mode":"context","cwd":".","base":"main","includeWorktrees":true}\'',
   ].join('\n'),
   run: runGitMode,
 })

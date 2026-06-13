@@ -2,7 +2,7 @@
  * @internal
  * @module create-template
  *
- * Purpose: JSX template creation system for Plaited with security-first design.
+ * Purpose: JSX template creation system for OnBraid with security-first design.
  * Converts JSX calls into template objects with HTML escaping, event binding, and style management.
  *
  * @remarks
@@ -38,7 +38,7 @@ import type {
   CustomElementTag,
   DetailedHTMLAttributes,
   ElementAttributeList,
-  PlaitedAttributes,
+  OnBraidAttributes,
   TemplateObject,
 } from './template.types.ts'
 
@@ -87,7 +87,7 @@ export type FunctionTemplate<T extends Attrs = Attrs> = ({
   h,
   fragment,
 }: {
-  attrs?: T & PlaitedAttributes
+  attrs?: T & OnBraidAttributes
   h: CreateTemplate
   fragment: CreateFragment
 }) => TemplateObject
@@ -149,7 +149,7 @@ export type CreateTemplate = <T extends Tag>(tag: T, attrs?: InferAttrs<T> | Rec
 
 /**
  * @internal
- * Creates Plaited template objects from JSX-like calls.
+ * Creates OnBraid template objects from JSX-like calls.
  * Core template factory with security-first design and style management.
  *
  * @param _tag - HTML/SVG tag name, custom element tag, or FunctionTemplate

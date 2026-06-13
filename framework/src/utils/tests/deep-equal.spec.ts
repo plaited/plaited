@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { deepEqual } from 'plaited/utils'
+import { deepEqual } from 'onbraid/utils'
 
 test('deepEqual()', () => {
   /** Primitive values */

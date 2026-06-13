@@ -5,12 +5,12 @@ type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''
 
 /**
- * Represents the internal structure produced by Plaited's JSX factory (`h`).
+ * Represents the internal structure produced by OnBraid's JSX factory (`h`).
  * This object contains the processed HTML strings and associated metadata needed for rendering.
  *
  * @property html - An array of string fragments representing the HTML structure.
  * @property stylesheets - CSS stylesheets collected from this template and its children.
- * @property $ - A unique symbol (`TEMPLATE_OBJECT_IDENTIFIER`) used as a type guard to identify Plaited template objects.
+ * @property $ - A unique symbol (`TEMPLATE_OBJECT_IDENTIFIER`) used as a type guard to identify OnBraid template objects.
  */
 export type TemplateObject = {
   html: string[]
@@ -29,8 +29,8 @@ export type Child = number | string | TemplateObject
  */
 export type Children = Child[] | Child
 /**
- * Defines core attributes applicable to all elements processed by Plaited's hyperscript factory.
- * Includes standard HTML attributes, ARIA attributes, and Plaited-specific extensions.
+ * Defines core attributes applicable to all elements processed by OnBraid's hyperscript factory.
+ * Includes standard HTML attributes, ARIA attributes, and OnBraid-specific extensions.
  *
  * @property class - Supports standard `string` or an `array` of strings for CSS classes.
  * @property children - Represents the child elements or content.
@@ -40,7 +40,7 @@ export type Children = Child[] | Child
  * @property stylesheets - Accepts a CSS string or an array of strings to be associated with the element, hoisted, and deduplicated.
  * @property style - Accepts a `CSSProperties` object (similar to React) for inline styles.
  */
-export type PlaitedAttributes = {
+export type OnBraidAttributes = {
   class?: string
   children?: Children
   [P_TARGET]?: string | number
@@ -336,9 +336,9 @@ type AriaRole =
   | 'treegrid'
   | 'treeitem'
 
-/** Base HTML attributes common to most elements, including ARIA attributes and Plaited-specific ones. */
+/** Base HTML attributes common to most elements, including ARIA attributes and OnBraid-specific ones. */
 type HTMLAttributes = AriaAttributes &
-  PlaitedAttributes & {
+  OnBraidAttributes & {
     // Standard HTML Attributes
     accesskey?: string
     autofocus?: boolean
@@ -397,7 +397,7 @@ type HTMLAttributes = AriaAttributes &
   }
 
 /**
- * Represents detailed HTML attributes, including standard HTML, ARIA, Plaited-specific,
+ * Represents detailed HTML attributes, including standard HTML, ARIA, OnBraid-specific,
  * and allowing for any custom `data-*` or other attributes via `Record<string, any>`.
  * This is the base type often extended for specific HTML elements.
  */
@@ -1321,7 +1321,7 @@ export type ElementAttributeList = {
 }
 /**
  * Generic type for template attributes.
- * It combines the base `DetailedHTMLAttributes` (providing standard HTML/ARIA/Plaited attributes)
+ * It combines the base `DetailedHTMLAttributes` (providing standard HTML/ARIA/OnBraid attributes)
  * with an optional generic type `T` for template-specific attributes.
  *
  * @template T - Optional extension of `DetailedHTMLAttributes` for template-specific attributes.

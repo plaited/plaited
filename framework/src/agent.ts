@@ -1,5 +1,5 @@
 /**
- * Agent runtime entry point for Plaited.
+ * Agent runtime entry point for OnBraid.
  *
  * @public
  */

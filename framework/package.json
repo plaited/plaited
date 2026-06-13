@@ -21,13 +21,11 @@
     "./agent": "./src/agent.ts",
     "./cli": "./src/cli.ts",
     "./ui": "./src/ui.ts",
-    "./skills": "./skills/**",
     "./utils": "./src/utils.ts"
   },
   "files": [
     "./.bin/**",
     "./AGENTS.md",
-    "./skills/**",
     "./src/**"
   ],
   "publishConfig": {

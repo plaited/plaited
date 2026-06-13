@@ -91,7 +91,7 @@ export const EvalTrialSchema = z
     metadata: UnknownRecordSchema.optional().describe('Optional top-level trial metadata.'),
   })
   .strict()
-  .describe('Canonical trial row used by plaited eval.')
+  .describe('Canonical trial row used by onbraid eval.')
 
 export type EvalTrial = z.output<typeof EvalTrialSchema>
 
@@ -584,12 +584,12 @@ export type EvalCalibrateOutput = z.output<typeof EvalCalibrateOutputSchema>
 
 export const EvalCliInputSchema = z
   .discriminatedUnion('mode', [EvalGradeInputSchema, EvalCompareInputSchema, EvalCalibrateInputSchema])
-  .describe('Top-level plaited eval input schema.')
+  .describe('Top-level onbraid eval input schema.')
 
 export type EvalCliInput = z.output<typeof EvalCliInputSchema>
 
 export const EvalCliOutputSchema = z
   .discriminatedUnion('mode', [EvalTrialResultSchema, EvalRunComparisonSchema, EvalCalibrateOutputSchema])
-  .describe('Top-level plaited eval output schema.')
+  .describe('Top-level onbraid eval output schema.')
 
 export type EvalCliOutput = z.output<typeof EvalCliOutputSchema>

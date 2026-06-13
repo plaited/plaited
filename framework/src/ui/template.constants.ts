@@ -3,7 +3,7 @@
  * @module jsx.constants
  *
  * Central constants for JSX runtime, template creation, and DOM serialization.
- * Defines Plaited's special attributes and DOM behavior.
+ * Defines OnBraid's special attributes and DOM behavior.
  *
  * @remarks
  * Implementation details:
@@ -163,8 +163,8 @@ export const VALID_PRIMITIVE_CHILDREN = new Set([
   'string',
 ])
 /**
- * A unique string constant used as an identifier (`$`) property on Plaited's internal `TemplateObject`.
- * This allows reliably distinguishing Plaited template objects from plain JavaScript objects during
+ * A unique string constant used as an identifier (`$`) property on OnBraid's internal `TemplateObject`.
+ * This allows reliably distinguishing OnBraid template objects from plain JavaScript objects during
  * the processing of children in `h` and `fragment`.
  *
  * @remarks
@@ -172,7 +172,7 @@ export const VALID_PRIMITIVE_CHILDREN = new Set([
  */
 export const TEMPLATE_OBJECT_IDENTIFIER = '🦄'
 
-export const CONNECT_PLAITED_ROUTE = '/.plaited/connect.js'
+export const CONNECT_ONBRAID_ROUTE = '/.onbraid/connect.js'
 
 export const SCALE = keyMirror('s1', 's2', 's3', 's4', 's5', 's6', 'rel')
 
@@ -186,4 +186,4 @@ export const SCALE_RANK = {
   [SCALE.rel]: 0,
 } as const
 
-export const PLAITED_TEMPLATE_IDENTIFIER = '🧩' as const
+export const ONBRAID_TEMPLATE_IDENTIFIER = '🧩' as const

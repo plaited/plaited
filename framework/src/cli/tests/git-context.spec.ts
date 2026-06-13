@@ -26,10 +26,10 @@ const writeFile = async ({ cwd, path, content }: { cwd: string; path: string; co
 }
 
 const createTempGitRepo = async (): Promise<string> => {
-  const rootDir = trackTempDir(await mkdtemp(join(tmpdir(), 'plaited-git-cli-')))
+  const rootDir = trackTempDir(await mkdtemp(join(tmpdir(), 'onbraid-git-cli-')))
   await runGit({ cwd: rootDir, args: ['init'] })
-  await runGit({ cwd: rootDir, args: ['config', 'user.email', 'plaited-git@example.com'] })
-  await runGit({ cwd: rootDir, args: ['config', 'user.name', 'Plaited Git Test'] })
+  await runGit({ cwd: rootDir, args: ['config', 'user.email', 'onbraid-git@example.com'] })
+  await runGit({ cwd: rootDir, args: ['config', 'user.name', 'OnBraid Git Test'] })
   await runGit({ cwd: rootDir, args: ['checkout', '-b', 'dev'] })
 
   await writeFile({ cwd: rootDir, path: 'README.md', content: '# temp\n' })

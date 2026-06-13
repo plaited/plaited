@@ -9,14 +9,14 @@
  */
 import { join } from 'node:path'
 import type { ServerWebSocket } from 'bun'
-import { bundleController, CONNECT_PLAITED_ROUTE } from './bundle-controller.ts'
+import { bundleController, CONNECT_ONBRAID_ROUTE } from './bundle-controller.ts'
 
 const FIXTURES_DIR = import.meta.dir
 const DIST_DIR = join(FIXTURES_DIR, 'dist')
 const controllerRoutes = await bundleController()
 
 const connectScript = (tags: string[], modules?: string[], agentCardId?: string) => {
-  let url = `${CONNECT_PLAITED_ROUTE}?registry=${encodeURIComponent(tags.join(','))}`
+  let url = `${CONNECT_ONBRAID_ROUTE}?registry=${encodeURIComponent(tags.join(','))}`
   if (modules?.length) {
     url += `&modules=${encodeURIComponent(modules.join(','))}`
   }
@@ -449,7 +449,7 @@ export const startServer = (port = 0): FixtureServer => {
       '/module-fixture.html': new Response(HTML_MODULE_FIXTURE, {
         headers: { 'Content-Type': 'text/html' },
       }),
-      [CONNECT_PLAITED_ROUTE]: () => controllerRoutes[CONNECT_PLAITED_ROUTE]!.clone(),
+      [CONNECT_ONBRAID_ROUTE]: () => controllerRoutes[CONNECT_ONBRAID_ROUTE]!.clone(),
       '/dist/*': async (req) => {
         const path = new URL(req.url).pathname
         const file = Bun.file(join(FIXTURES_DIR, path.replace('/dist/', 'dist/')))

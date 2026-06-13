@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { createStyles, h } from 'plaited/ui'
+import { createStyles, h } from 'onbraid/ui'
 
 test('createStyles: supports simple rules', () => {
   const testStyles = createStyles({

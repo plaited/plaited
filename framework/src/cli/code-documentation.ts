@@ -351,8 +351,8 @@ export const codeDocumentationCli = makeCli({
     '  targets  string[]  File paths or glob patterns to audit (required)',
     '',
     'Examples:',
-    '  plaited code-documentation \'{"targets":["src/**/*.ts"]}\'',
-    '  plaited code-documentation \'{"targets":["src/agent/agent.ts"]}\'',
+    '  onbraid code-documentation \'{"targets":["src/**/*.ts"]}\'',
+    '  onbraid code-documentation \'{"targets":["src/agent/agent.ts"]}\'',
   ].join('\n'),
   run,
 })

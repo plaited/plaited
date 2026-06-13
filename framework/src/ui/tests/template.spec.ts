@@ -1,8 +1,8 @@
 /* eslint-disable no-constant-binary-expression */
 import { expect, test } from 'bun:test'
 import beautify from 'beautify'
-import type { TemplateObject } from 'plaited/ui'
-import { fragment, h } from 'plaited/ui'
+import type { TemplateObject } from 'onbraid/ui'
+import { fragment, h } from 'onbraid/ui'
 
 const render = (tpl: TemplateObject) => beautify(tpl.html.join(''), { format: 'html' })
 
@@ -169,7 +169,7 @@ const reload = () =>{
   console.log('...reloading');
 };
 socket.addEventListener('message', reload);
-console.log('[plaited] listening for file changes');
+console.log('[onbraid] listening for file changes');
 </script>`
   expect(render(h('div', { children: scriptContent }))).toMatchSnapshot()
 })

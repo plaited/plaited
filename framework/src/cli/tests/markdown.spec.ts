@@ -178,7 +178,7 @@ describe('markdownCli', () => {
   })
 
   test('validate-links returns present and missing links', async () => {
-    const baseDir = await mkdtemp(join(tmpdir(), 'plaited-markdown-cli-'))
+    const baseDir = await mkdtemp(join(tmpdir(), 'onbraid-markdown-cli-'))
 
     try {
       await mkdir(join(baseDir, 'docs'), { recursive: true })

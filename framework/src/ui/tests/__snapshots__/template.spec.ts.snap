@@ -45,7 +45,7 @@ exports[`h: Escapes children 1`] = `
 "<div>&lt;script type=&quot;text/javascript&quot;&gt; const hostRegex = /^https?://([^/]+)/.*$/i;
     const host = document.URL.replace(hostRegex, &#39;$1&#39;); const socket
     = new WebSocket(/); const reload = () =&gt;{ location.reload(); console.log(&#39;...reloading&#39;);
-    }; socket.addEventListener(&#39;message&#39;, reload); console.log(&#39;[plaited]
+    }; socket.addEventListener(&#39;message&#39;, reload); console.log(&#39;[onbraid]
     listening for file changes&#39;); &lt;/script&gt;</div>"
 `;
 

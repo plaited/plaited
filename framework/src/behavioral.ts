@@ -1,12 +1,12 @@
 /**
- * Main entry point for the Plaited framework.
+ * Main entry point for the OnBraid framework.
  * Exports the behavioral programming APIs for event coordination and state management.
  *
  * @remarks
  * This module provides access to:
  * - **Behavioral Programming**: {@link behavioral}, {@link bThread}, {@link bSync} - Event coordination and synchronization
  *
- * For UI-specific APIs (styling, templates, rendering), import from 'plaited/ui'.
+ * For UI-specific APIs (styling, templates, rendering), import from 'onbraid/ui'.
  *
  * @public
  */

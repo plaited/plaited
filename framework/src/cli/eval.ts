@@ -1372,7 +1372,7 @@ export const evalCli = makeCli({
   inputSchema: EvalCliInputSchema,
   outputSchema: EvalCliOutputSchema,
   help: [
-    'Grade, compare, and calibrate Plaited trial results.',
+    'Grade, compare, and calibrate OnBraid trial results.',
     '',
     'Modes:',
     '  grade       Evaluate a single trial against expected outcomes',

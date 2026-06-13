@@ -48,7 +48,7 @@ export type ControllerModuleContext = {
  * @example
  * ```ts
  * // my-controller-module.ts
- * import type { ControllerModule } from 'plaited/ui'
+ * import type { ControllerModule } from 'onbraid/ui'
  *
  * const setup: ControllerModule = ({ DelegatedListener, trigger }) => {
  *   const listener = new DelegatedListener(() => {
