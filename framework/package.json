@@ -1,0 +1,74 @@
+{
+  "name": "onbraid",
+  "version": "0.0.1",
+  "license": "ISC",
+  "engines": {
+    "bun": ">= v1.2.9"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plaited/plaited.git"
+  },
+  "bugs": {
+    "url": "https://github.com/plaited/plaited/issues"
+  },
+  "homepage": "https://github.com/plaited/plaited/tree/main#readme",
+  "bin": {
+    "onbraid": "./bin/onbraid.ts"
+  },
+  "type": "module",
+  "exports": {
+    "./agent": "./src/agent.ts",
+    "./cli": "./src/cli.ts",
+    "./ui": "./src/ui.ts",
+    "./skills": "./skills/**",
+    "./utils": "./src/utils.ts"
+  },
+  "files": [
+    "./.bin/**",
+    "./AGENTS.md",
+    "./skills/**",
+    "./src/**"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "check": "bun run check:biome && bun run check:types && bun run check:package",
+    "check:biome": "biome check",
+    "check:package": "format-package --check",
+    "check:types": "tsc --noEmit",
+    "check:write": "biome check --write && format-package --write",
+    "copy:css-types": "bash scripts/copy-css-types.sh",
+    "setup": "bash scripts/setup.sh",
+    "setup:bun": "bash scripts/setup.sh bun",
+    "setup:deps": "bash scripts/setup.sh deps",
+    "setup:link": "bash scripts/setup.sh link",
+    "test": "bun test"
+  },
+  "overrides": {
+    "zod": "4.4.3"
+  },
+  "dependencies": {
+    "@earendil-works/pi-coding-agent": "0.75.3",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@youdotcom-oss/api": "^0.5.2",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.15",
+    "@happy-dom/global-registrator": "^20.9.0",
+    "@mermaid-js/mermaid-cli": "11.15.0",
+    "@playwright/cli": "^0.1.13",
+    "@types/beautify": "0.0.3",
+    "@types/bun": "1.3.14",
+    "@types/node": "25.9.1",
+    "@types/sinon": "21.0.1",
+    "axe-core": "4.11.4",
+    "beautify": "0.0.8",
+    "csstype": "3.2.3",
+    "sinon": "22.0.0",
+    "typescript": "6.0.3",
+    "typescript-language-server": "5.2.0"
+  }
+}
