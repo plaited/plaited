@@ -63,7 +63,7 @@ const HTML_CONTROL_ISLAND = `<!DOCTYPE html>
 </head>
 <body>
   <test-island>
-    <div p-target="main"><p>initial content</p></div>
+    <div o-target="main"><p>initial content</p></div>
   </test-island>
   <script type="module" src="${connectScript(['test-island'])}"></script>
 </body>
@@ -77,7 +77,7 @@ const HTML_SWAP_FIXTURE = `<!DOCTYPE html>
 </head>
 <body>
   <swap-fixture>
-    <div p-target="main"><p>initial swap content</p></div>
+    <div o-target="main"><p>initial swap content</p></div>
   </swap-fixture>
   <script type="module" src="${connectScript(['swap-fixture'])}"></script>
 </body>
@@ -91,8 +91,8 @@ const HTML_MODULE_FIXTURE = `<!DOCTYPE html>
 </head>
 <body>
   <module-fixture id="module-fixture">
-    <div p-target="main">
-      <button id="module-p-trigger-btn" data-extra="p-trigger-attr" p-trigger="click:test_click">P-trigger Action</button>
+    <div o-target="main">
+      <button id="module-o-trigger-btn" data-extra="o-trigger-attr" o-trigger="click:test_click">O-trigger Action</button>
       <button id="module-enhanced-btn" data-extra="module-listener">Module Listener</button>
       <div id="module-initial">Module fixture loaded</div>
     </div>
@@ -105,35 +105,35 @@ const HTML_MODULE_FIXTURE = `<!DOCTYPE html>
 
 const TEST_PAGE_CONTENT: Record<string, string> = {
   'swap-test': `
-    <div p-target="main"><p id="original">original</p></div>
-    <div p-target="outer-target">outer original</div>
+    <div o-target="main"><p id="original">original</p></div>
+    <div o-target="outer-target">outer original</div>
   `,
   'attrs-test': `
-    <div p-target="main" data-removable="old-value"><p>attrs target</p></div>
+    <div o-target="main" data-removable="old-value"><p>attrs target</p></div>
   `,
   'action-test': `
-    <div p-target="main"><p>waiting for action</p></div>
+    <div o-target="main"><p>waiting for action</p></div>
   `,
   'form-submit-test': `
-    <div p-target="main"><p>waiting for form submit</p></div>
+    <div o-target="main"><p>waiting for form submit</p></div>
   `,
   'retry-test': `
-    <div p-target="main"><p>connecting</p></div>
+    <div o-target="main"><p>connecting</p></div>
   `,
   'styles-test': `
-    <div p-target="main"><p>waiting for styles</p></div>
+    <div o-target="main"><p>waiting for styles</p></div>
   `,
   'style-error-test': `
-    <div p-target="main"><p>waiting for style error</p></div>
+    <div o-target="main"><p>waiting for style error</p></div>
   `,
   'bad-import-test': `
-    <div p-target="main"><p>waiting for bad import</p></div>
+    <div o-target="main"><p>waiting for bad import</p></div>
   `,
   'unsupported-event-test': `
-    <div p-target="main"><p>waiting for unsupported event</p></div>
+    <div o-target="main"><p>waiting for unsupported event</p></div>
   `,
   'a2a-test': `
-    <div p-target="main"><p>a2a test</p></div>
+    <div o-target="main"><p>a2a test</p></div>
   `,
 }
 
@@ -298,7 +298,7 @@ const sendSwapTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
     detail: {
       id: 'swap-6',
       target: 'outer-target',
-      html: '<div id="outer-result" p-target="outer-target">outer replaced</div>',
+      html: '<div id="outer-result" o-target="outer-target">outer replaced</div>',
       stylesheets: [],
       swap: 'outerHTML',
       registry: [],
@@ -319,7 +319,7 @@ const sendActionTestInitialRender = (ws: ServerWebSocket<{ source: string }>) =>
     detail: {
       id: 'action-render',
       target: 'main',
-      html: '<button id="test-btn" p-trigger="click:test_click">Click me</button>',
+      html: '<button id="test-btn" o-trigger="click:test_click">Click me</button>',
       stylesheets: [],
       swap: 'innerHTML',
       registry: [],

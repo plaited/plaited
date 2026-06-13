@@ -60,11 +60,11 @@ test('h: Style attribute', () => {
   ).toMatchSnapshot()
 })
 
-test('h: p-trigger attribute', () =>
+test('h: o-trigger attribute', () =>
   expect(
     render(
       h('div', {
-        'p-trigger': {
+        'o-trigger': {
           click: 'random',
           focus: 'thing',
         },

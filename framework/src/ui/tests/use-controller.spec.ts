@@ -130,9 +130,9 @@
 //     const tag = `versioned-controller-${Date.now()}-${Math.random().toString(16).slice(2)}`
 //     customElements.define(tag, useController({ address: 'ws://localhost/ws' }))
 
-//     document.body.innerHTML = `<${tag} p-topic="coding.board" p-version="42">
-//       <div p-target="main" p-version="42"><p>main content</p></div>
-//       <section p-target="cards" p-version="41"><article>card content</article></section>
+//     document.body.innerHTML = `<${tag} o-topic="coding.board" o-version="42">
+//       <div o-target="main" o-version="42"><p>main content</p></div>
+//       <section o-target="cards" o-version="41"><article>card content</article></section>
 //     </${tag}>`
 //     const socket = getLatestSocket()
 
@@ -165,8 +165,8 @@
 //       const tag = `reconnect-controller-${Date.now()}-${Math.random().toString(16).slice(2)}`
 //       customElements.define(tag, useController({ address: 'ws://localhost/ws' }))
 
-//       document.body.innerHTML = `<${tag} p-topic="coding.board" p-version="42">
-//         <div p-target="main" p-version="42"></div>
+//       document.body.innerHTML = `<${tag} o-topic="coding.board" o-version="42">
+//         <div o-target="main" o-version="42"></div>
 //       </${tag}>`
 //       const firstSocket = getLatestSocket()
 //       firstSocket.serverOpen()
@@ -203,8 +203,8 @@
 //     const tag = `mismatch-controller-${Date.now()}-${Math.random().toString(16).slice(2)}`
 //     customElements.define(tag, useController({ address: 'ws://localhost/ws' }))
 
-//     document.body.innerHTML = `<${tag} p-topic="topic-a">
-//       <div p-target="main" p-version="1"></div>
+//     document.body.innerHTML = `<${tag} o-topic="topic-a">
+//       <div o-target="main" o-version="1"></div>
 //     </${tag}>`
 //     const socket = getLatestSocket()
 
@@ -218,7 +218,7 @@
 //       },
 //     })
 
-//     expect(document.querySelector('[p-target="main"]')?.getAttribute('p-version')).toBe('1')
+//     expect(document.querySelector('[o-target="main"]')?.getAttribute('p-version')).toBe('1')
 //     expect(socket.sent).toEqual([])
 //   })
 
@@ -232,7 +232,7 @@
 //       const tag = `topic-removed-controller-${Date.now()}-${Math.random().toString(16).slice(2)}`
 //       customElements.define(tag, useController({ address: 'ws://localhost/ws', send: (m) => outbound.push(m) }))
 
-//       document.body.innerHTML = `<${tag} p-topic="topic">
+//       document.body.innerHTML = `<${tag} o-topic="topic">
 //         <form id="profile">
 //           <input name="displayName" value="Ada">
 //         </form>
@@ -257,10 +257,10 @@
 //     customElements.define(outerTag, useController({ address: 'ws://localhost/ws' }))
 //     customElements.define(innerTag, useController({ address: 'ws://localhost/ws' }))
 
-//     document.body.innerHTML = `<${outerTag} p-topic="outer.topic" p-version="10">
-//       <div p-target="outer-main" p-version="10"></div>
-//       <${innerTag} p-topic="inner.topic" p-version="7">
-//         <div p-target="inner-main" p-version="7"></div>
+//     document.body.innerHTML = `<${outerTag} o-topic="outer.topic" o-version="10">
+//       <div o-target="outer-main" o-version="10"></div>
+//       <${innerTag} o-topic="inner.topic" o-version="7">
+//         <div o-target="inner-main" o-version="7"></div>
 //       </${innerTag}>
 //     </${outerTag}>`
 //     const outerSocket = [...FakeWebSocket.instances].reverse().find((socket) => socket.protocol === 'outer.topic')
@@ -312,8 +312,8 @@
 //     const tag = `attrs-version-controller-${Date.now()}-${Math.random().toString(16).slice(2)}`
 //     customElements.define(tag, useController({ address: 'ws://localhost/ws' }))
 
-//     document.body.innerHTML = `<${tag} p-topic="topic">
-//       <div p-target="main" p-version="1"></div>
+//     document.body.innerHTML = `<${tag} o-topic="topic">
+//       <div o-target="main" o-version="1"></div>
 //     </${tag}>`
 //     const socket = getLatestSocket()
 
@@ -327,7 +327,7 @@
 //       },
 //     })
 
-//     expect(document.querySelector('[p-target="main"]')?.getAttribute('p-version')).toBe('2')
+//     expect(document.querySelector('[o-target="main"]')?.getAttribute('p-version')).toBe('2')
 //   })
 
 //   test('routes rendered trigger events through injected send instead of WebSocket send', async () => {
@@ -336,7 +336,7 @@
 //       outbound.push(message)
 //     })
 
-//     document.body.innerHTML = `<${tag} p-topic="topic"><div p-target="main"></div></${tag}>`
+//     document.body.innerHTML = `<${tag} o-topic="topic"><div o-target="main"></div></${tag}>`
 //     const socket = getLatestSocket()
 
 //     socket.serverSend({
@@ -345,7 +345,7 @@
 //         topic: 'topic',
 //         version: '1',
 //         target: 'main',
-//         html: '<button id="save" p-trigger="click:save">Save</button>',
+//         html: '<button id="save" o-trigger="click:save">Save</button>',
 //         stylesheets: [],
 //         registry: [],
 //         swap: 'innerHTML',
@@ -364,7 +364,7 @@
 //             type: 'save',
 //             detail: {
 //               id: 'save',
-//               'p-trigger': 'click:save',
+//               'o-trigger': 'click:save',
 //             },
 //           },
 //         },
@@ -379,7 +379,7 @@
 //       outbound.push(message)
 //     })
 
-//     document.body.innerHTML = `<${tag} p-topic="form-topic">
+//     document.body.innerHTML = `<${tag} o-topic="form-topic">
 //       <form id="profile" action="/profile" method="post">
 //         <input name="displayName" value="Ada">
 //       </form>
@@ -409,7 +409,7 @@
 //       outbound.push(message)
 //     })
 
-//     document.body.innerHTML = `<${tag} p-topic="topic"><div p-target="main"></div></${tag}>`
+//     document.body.innerHTML = `<${tag} o-topic="topic"><div o-target="main"></div></${tag}>`
 //     const socket = getLatestSocket()
 
 //     socket.serverSend({

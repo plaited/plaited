@@ -149,8 +149,8 @@ describe('Controller: real browser', () => {
     expect(result).toContain('TEST-ISLAND')
   })
 
-  test('p-target attribute is present on descendant', async () => {
-    const output = await cli('eval', "() => document.querySelector('test-island [p-target]')?.getAttribute('p-target')")
+  test('o-target attribute is present on descendant', async () => {
+    const output = await cli('eval', "() => document.querySelector('test-island [o-target]')?.getAttribute('o-target')")
     const result = parseResult(output)
     expect(result).toContain('main')
   })
@@ -203,14 +203,14 @@ describe('controller: swap modes', () => {
     // afterbegin: prepended as first child
     const afterbeginResult = await cli(
       'eval',
-      '() => document.querySelector(\'[p-target="main"]\')?.firstElementChild?.id',
+      '() => document.querySelector(\'[o-target="main"]\')?.firstElementChild?.id',
     )
     expect(parseResult(afterbeginResult)).toContain('afterbegin-result')
 
     // beforeend: appended as last child
     const beforeendResult = await cli(
       'eval',
-      '() => document.querySelector(\'[p-target="main"]\')?.lastElementChild?.id',
+      '() => document.querySelector(\'[o-target="main"]\')?.lastElementChild?.id',
     )
     expect(parseResult(beforeendResult)).toContain('beforeend-result')
 
@@ -308,27 +308,27 @@ describe('controller: attrs handler', () => {
     await gotoTest('/test/attrs-test')
 
     // String attribute: class = 'active'
-    const classResult = await cli('eval', "() => document.querySelector('[p-target=\"main\"]')?.getAttribute('class')")
+    const classResult = await cli('eval', "() => document.querySelector('[o-target=\"main\"]')?.getAttribute('class')")
     expect(parseResult(classResult)).toContain('active')
 
     // Removed attribute: data-removable should be gone
     const removedResult = await cli(
       'eval',
-      "() => document.querySelector('[p-target=\"main\"]')?.hasAttribute('data-removable')",
+      "() => document.querySelector('[o-target=\"main\"]')?.hasAttribute('data-removable')",
     )
     expect(parseResult(removedResult)).toContain('false')
 
     // Boolean attribute: disabled should be present
     const boolResult = await cli(
       'eval',
-      "() => document.querySelector('[p-target=\"main\"]')?.hasAttribute('disabled')",
+      "() => document.querySelector('[o-target=\"main\"]')?.hasAttribute('disabled')",
     )
     expect(parseResult(boolResult)).toContain('true')
 
     // Number attribute: data-count = '42'
     const numResult = await cli(
       'eval',
-      "() => document.querySelector('[p-target=\"main\"]')?.getAttribute('data-count')",
+      "() => document.querySelector('[o-target=\"main\"]')?.getAttribute('data-count')",
     )
     expect(parseResult(numResult)).toContain('42')
   }, 30000)
@@ -337,11 +337,11 @@ describe('controller: attrs handler', () => {
 // ─── UI event handler ─────────────────────────────────────────────────────────
 
 describe('controller: ui_event', () => {
-  test('p-trigger click is captured by server and triggers response render', async () => {
-    // Navigate to action-test page — server renders a p-trigger button
+  test('o-trigger click is captured by server and triggers response render', async () => {
+    // Navigate to action-test page — server renders a o-trigger button
     await gotoTest('/test/action-test')
 
-    // Click the p-trigger button
+    // Click the o-trigger button
     await cli('eval', "() => { document.getElementById('test-btn')?.click(); return 'clicked'; }")
 
     // Wait for the roundtrip: click -> ui_event -> server render -> DOM update
@@ -353,7 +353,7 @@ describe('controller: ui_event', () => {
     expect(result).toContain('Action received')
   }, 30000)
 
-  test('server received the ui_event message with the p-trigger BP event envelope', () => {
+  test('server received the ui_event message with the o-trigger BP event envelope', () => {
     const activeFixture = getFixture()
     expect(activeFixture.lastUiEvent).toBeDefined()
     const event = activeFixture.lastUiEvent!
@@ -364,7 +364,7 @@ describe('controller: ui_event', () => {
     expect(bpEvent.type).toBe('test_click')
     const attrs = bpEvent.detail as Record<string, unknown>
     expect(attrs.id).toBe('test-btn')
-    expect(attrs['p-trigger']).toBe('click:test_click')
+    expect(attrs['o-trigger']).toBe('click:test_click')
   })
 })
 
@@ -429,19 +429,19 @@ describe('controller: module registers', () => {
     expect(event).toBeDefined()
   })
 
-  test('p-trigger actions are sent as BP events with an attribute detail map', async () => {
+  test('o-trigger actions are sent as BP events with an attribute detail map', async () => {
     const before = getFixture().uiEvents.length
     await gotoTest('/module-fixture.html')
 
-    await cli('eval', "() => { document.getElementById('module-p-trigger-btn')?.click(); return 'clicked'; }")
+    await cli('eval', "() => { document.getElementById('module-o-trigger-btn')?.click(); return 'clicked'; }")
 
     const event = await waitFor(() => findUiEvent({ after: before, source: 'module-fixture', type: 'test_click' }))
     const detail = event.message.detail as Record<string, unknown>
     const bpEvent = detail.event as Record<string, unknown>
     const attrs = bpEvent.detail as Record<string, unknown>
-    expect(attrs.id).toBe('module-p-trigger-btn')
-    expect(attrs['data-extra']).toBe('p-trigger-attr')
-    expect(attrs['p-trigger']).toBe('click:test_click')
+    expect(attrs.id).toBe('module-o-trigger-btn')
+    expect(attrs['data-extra']).toBe('o-trigger-attr')
+    expect(attrs['o-trigger']).toBe('click:test_click')
   }, 30000)
 
   test('Register callbacks can use delegated listeners and trigger BP events', async () => {

@@ -22,7 +22,7 @@ exports[`h: Conditional 1`] = `"<div>hello</div>"`;
 
 exports[`h: Style attribute 1`] = `"<div style="background-color:blue; margin:12px; --cssVar:red;">styles</div>"`;
 
-exports[`h: p-trigger attribute 1`] = `"<div p-trigger="click:random focus:thing">triggers</div>"`;
+exports[`h: o-trigger attribute 1`] = `"<div o-trigger="click:random focus:thing">triggers</div>"`;
 
 exports[`h: Array of templates 1`] = `
 "<ul>

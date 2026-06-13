@@ -1,5 +1,5 @@
 import type { CSSProperties } from './css.types.ts'
-import { P_SCALE, P_TARGET, P_TRIGGER, type SCALE, type TEMPLATE_OBJECT_IDENTIFIER } from './template.constants.ts'
+import { O_SCALE, O_TARGET, O_TRIGGER, type SCALE, type TEMPLATE_OBJECT_IDENTIFIER } from './template.constants.ts'
 
 type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''
@@ -34,18 +34,18 @@ export type Children = Child[] | Child
  *
  * @property class - Supports standard `string` or an `array` of strings for CSS classes.
  * @property children - Represents the child elements or content.
- * @property p-target - Used to identify elements for targeted updates or interactions (value is usually a string or number).
+ * @property o-target - Used to identify elements for targeted updates or interactions (value is usually a string or number).
  * @property p-version - Latest server-projected topic version realized by a controller island or target.
- * @property p-trigger - Defines declarative event bindings that controller islands forward as BP event types.
+ * @property o-trigger - Defines declarative event bindings that controller islands forward as BP event types.
  * @property stylesheets - Accepts a CSS string or an array of strings to be associated with the element, hoisted, and deduplicated.
  * @property style - Accepts a `CSSProperties` object (similar to React) for inline styles.
  */
 export type OnBraidAttributes = {
   class?: string
   children?: Children
-  [P_TARGET]?: string | number
-  [P_TRIGGER]?: Record<string, string>
-  [P_SCALE]?: keyof typeof SCALE
+  [O_TARGET]?: string | number
+  [O_TRIGGER]?: Record<string, string>
+  [O_SCALE]?: keyof typeof SCALE
   stylesheets?: string[]
   classNames?: string[]
   style?: CSSProperties

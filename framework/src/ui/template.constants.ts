@@ -8,7 +8,7 @@
  * @remarks
  * Implementation details:
  * - VOID_TAGS and BOOLEAN_ATTRS align with HTML5 and SVG specs
- * - P_TARGET, P_TRIGGER, and P_TOPIC declare controller update and event wiring
+ * - O_TARGET, O_TRIGGER, and O_TOPIC declare controller update and event wiring
  * - Sets provide O(1) lookup performance for validation
  * - TEMPLATE_OBJECT_IDENTIFIER uses emoji for uniqueness
  *
@@ -21,18 +21,18 @@
 import { keyMirror } from '../utils.ts'
 
 /**
- * Constant representing the attribute name (`p-target`) used to identify specific elements
+ * Constant representing the attribute name (`o-target`) used to identify specific elements
  * within a controller island for server-pushed render and attribute updates.
  */
-export const P_TARGET = 'p-target'
+export const O_TARGET = 'o-target'
 /**
- * Constant representing the attribute name (`p-trigger`) used for declarative event binding,
+ * Constant representing the attribute name (`o-trigger`) used for declarative event binding,
  * connecting DOM events to BP events sent by a controller island. Serialized values contain
  * space-separated pairs of `event:action` (e.g., "click:doSomething focus:notify").
  */
-export const P_TRIGGER = 'p-trigger'
+export const O_TRIGGER = 'o-trigger'
 
-export const P_SCALE = 'p-scale'
+export const O_SCALE = 'o-scale'
 
 /**
  * Matches site-root JavaScript module paths accepted by bootstrap script tags
@@ -142,7 +142,7 @@ export const BOOLEAN_ATTRS = new Set([
 /**
  * A Set containing strings representing JavaScript primitive type names, obtained via `typeof` or `trueTypeOf`.
  * This is used internally during template creation to validate the types of values assigned to element attributes.
- * Attributes generally must have primitive values unless handled specifically (like `style`, `p-trigger`, etc.).
+ * Attributes generally must have primitive values unless handled specifically (like `style`, `o-trigger`, etc.).
  */
 export const PRIMITIVES = new Set([
   // Primitive types that can be attribute values.

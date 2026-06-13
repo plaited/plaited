@@ -21,7 +21,7 @@ import {
 } from './controller.constants.ts'
 import { normalizeControllerErrorDetail } from './controller-error-detail.ts'
 import { DelegatedListener, delegates } from './delegated-listener.ts'
-import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from './template.constants.ts'
+import { BOOLEAN_ATTRS, O_TARGET, O_TRIGGER } from './template.constants.ts'
 import type { CustomElementTag } from './template.types.ts'
 
 const getAttributes = (element: Element): Record<string, string> => {
@@ -247,9 +247,9 @@ export const useController = ({
       this.#send(message)
     }
     #bindTriggers = (subtree: DocumentFragment) => {
-      const elements = subtree.querySelectorAll(`[${P_TRIGGER}]`)
+      const elements = subtree.querySelectorAll(`[${O_TRIGGER}]`)
       for (const element of elements) {
-        const raw = element.getAttribute(P_TRIGGER)
+        const raw = element.getAttribute(O_TRIGGER)
         if (!raw) continue
 
         const pairs = raw.split(' ')
@@ -356,7 +356,7 @@ export const useController = ({
         switch (type) {
           case AGENT_TO_CONTROLLER_EVENTS.render: {
             const { target, html, swap, stylesheets } = RenderMessageSchema.shape.detail.parse(detail)
-            const element = this.querySelector(`[${P_TARGET}="${target}"]`)
+            const element = this.querySelector(`[${O_TARGET}="${target}"]`)
             if (!element) return
             void this.#updateDocumentStyles(stylesheets)
             this.#performSwap({
@@ -368,7 +368,7 @@ export const useController = ({
           }
           case AGENT_TO_CONTROLLER_EVENTS.attrs: {
             const { target, attr } = AttrsMessageSchema.shape.detail.parse(detail)
-            const element = this.querySelector(`[${P_TARGET}="${target}"]`)
+            const element = this.querySelector(`[${O_TARGET}="${target}"]`)
             if (!element) {
               console.error(CONTROLLER_ERRORS.attrs_element_not_found, target)
               return
