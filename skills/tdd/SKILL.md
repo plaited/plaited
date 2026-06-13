@@ -25,7 +25,7 @@ Work in vertical red-green-refactor slices:
 Do not write a batch of imagined tests before implementation. Each new test should respond to
 what the last cycle taught you about the actual behavior and interface.
 
-## Plaited Defaults
+## OnBraid Defaults
 
 - Use `bun test` for targeted tests and `bun --bun tsc --noEmit` for the type gate.
 - Use `test`, not `it`, and organize with `describe`.

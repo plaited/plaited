@@ -2,7 +2,7 @@
 
 > Status
 >
-> - Implemented now: Plaited has schema- and snapshot-based validation patterns, but no source-backed graph runtime that enforces boundary contracts as first-class execution objects.
+> - Implemented now: OnBraid has schema- and snapshot-based validation patterns, but no source-backed graph runtime that enforces boundary contracts as first-class execution objects.
 > - Target direction: BCG becomes the active interoperability doctrine for exchange-lane exposure, policy evaluation, grants, and capability-token issuance.
 
 ## Core Concepts
@@ -80,9 +80,9 @@ A BCG edge must define:
 {
   "contractId": "bcg.creator.license.issue.v1",
   "contractType": "service-access",
-  "producer": "did:plaited:creator-node",
-  "consumer": "did:plaited:market-node",
-  "audience": { "kind": "market-partner", "id": "did:plaited:partner-a" },
+  "producer": "did:onbraid:creator-node",
+  "consumer": "did:onbraid:market-node",
+  "audience": { "kind": "market-partner", "id": "did:onbraid:partner-a" },
   "service": { "id": "svc://license/issue", "kind": "license-service" },
   "allowedActions": ["issue_license"],
   "entitlementRequirements": ["vc.type == 'DistributionPartner'"] ,
@@ -119,4 +119,4 @@ Different consumer nodes may render entirely different storefronts or dashboards
 - [Node-To-Node Auth](node-to-node-auth.md)
 - [Infrastructure](infrastructure.md)
 - [Actor Runtime](actor-runtime.md)
-- [Plaited Runtime Skill](../../skills/plaited-runtime/SKILL.md)
+- [OnBraid Runtime Skill](../../skills/onbraid-runtime/SKILL.md)

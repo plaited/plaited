@@ -5,7 +5,7 @@
 
 ## Useful Ideas
 
-Structural IA remains valuable because it asks questions Plaited still needs:
+Structural IA remains valuable because it asks questions OnBraid still needs:
 
 - What is the unit of meaning in this domain?
 - Which relationships matter between objects, people, and systems?
@@ -13,7 +13,7 @@ Structural IA remains valuable because it asks questions Plaited still needs:
 - Which boundaries determine who sees or can act?
 - Which mental maps help humans move through an experience?
 
-The useful shift is from visual reuse to functional analysis. Plaited should
+The useful shift is from visual reuse to functional analysis. OnBraid should
 preserve that shift.
 
 ## Actor-Era Reframing
@@ -24,7 +24,7 @@ The old authoring question was:
 Which reusable UI structure does this module fit into?
 ```
 
-The Plaited question is:
+The OnBraid question is:
 
 ```text
 What actor-owned facts, services, policies, and provenance can support useful
@@ -39,7 +39,7 @@ break ordinary activity into object hierarchies before the system can help.
 Generated UI does not remove the need for legible experiences. Humans still
 need orientation, memory, affordances, and predictable consequences.
 
-Plaited should optimize for:
+OnBraid should optimize for:
 
 - low-effort authoring from ordinary language and artifacts
 - clear local projections tailored to the user's task

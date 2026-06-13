@@ -1,8 +1,8 @@
-# Plaited Docs
+# OnBraid Docs
 
 > Status: tombstone and navigation file.
 
-Durable Plaited architecture documentation now lives in [wiki/index.md](wiki/index.md).
+Durable OnBraid architecture documentation now lives in [wiki/index.md](wiki/index.md).
 
 Top-level architecture notes were moved into focused wiki pages so active
 architecture, lineage, implementation notes, and research direction do not

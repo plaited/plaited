@@ -2,7 +2,7 @@
 
 > Status
 >
-> - Implemented now: `src/skills` discovers skill envelopes, validates `SKILL.md`, parses `metadata.plaited` from frontmatter when present, and emits a validated capability registry via `plaited skills '{"mode":"registry","rootDir":"..."}'`.
+> - Implemented now: `src/skills` discovers skill envelopes, validates `SKILL.md`, parses `metadata.onbraid` from frontmatter when present, and emits a validated capability registry via `onbraid skills '{"mode":"registry","rootDir":"..."}'`.
 > - Target direction: a behavioral orchestrator consumes the capability registry and compiles it into behavioral specs and handlers.
 
 ## Node and Skill Boundary
@@ -12,7 +12,7 @@
 - A node is the agent runtime boundary.
 - Skills are capability packages inside a node, not independent nodes.
 - Skills can be shipped locally or generated locally.
-- First-party and generated skills can publish `metadata.plaited` manifests for the skills registry.
+- First-party and generated skills can publish `metadata.onbraid` manifests for the skills registry.
 
 ### Target direction
 
@@ -25,7 +25,7 @@
 Skill envelopes may contain:
 
 - required `SKILL.md`
-- optional `metadata.plaited` in `SKILL.md` frontmatter
+- optional `metadata.onbraid` in `SKILL.md` frontmatter
 - scripts
 - resources
 - assets
@@ -36,7 +36,7 @@ Skill envelopes may contain:
 Capabilities are the addressable units inside a skill envelope and are emitted as namespaced addresses
 (for example `<skill-name>/<capability-id>`).
 
-`metadata.plaited` supports first-party shipped skills and generated skills. CLI-backed capabilities
+`metadata.onbraid` supports first-party shipped skills and generated skills. CLI-backed capabilities
 declare a skill-local handler path; workflow capabilities describe instructional surfaces that agents
 can select without pretending there is a direct command runner.
 
@@ -46,7 +46,7 @@ can select without pretending there is a direct command runner.
 
 - skill discovery under workspace skill directories
 - `SKILL.md` frontmatter validation
-- skill manifest parsing and validation (`SKILL.md` frontmatter `metadata.plaited`)
+- skill manifest parsing and validation (`SKILL.md` frontmatter `metadata.onbraid`)
 - capability registry emission for CLI-backed and workflow-only capabilities
 
 ### Not in `src/skills`
@@ -70,7 +70,7 @@ Lane labels are metadata until enforced by runtime policy and contract evaluatio
 2. Classify source provenance and authentication requirements.
 3. Propose a curated local skill envelope and capability set.
 4. Require explicit user review/approval.
-5. Generate local wrappers/scripts/tests plus optional `metadata.plaited` in `SKILL.md` frontmatter.
+5. Generate local wrappers/scripts/tests plus optional `metadata.onbraid` in `SKILL.md` frontmatter.
 6. Validate envelope + manifest.
 7. Register capabilities through `src/skills` registry emission.
 
@@ -80,7 +80,7 @@ Normative guardrail: do not mirror all remote MCP tools by default. Generate onl
 
 ### Implemented now
 
-- `plaited skills '{"mode":"registry","rootDir":"..."}'` emits validated capability registry entries from local skill envelopes.
+- `onbraid skills '{"mode":"registry","rootDir":"..."}'` emits validated capability registry entries from local skill envelopes.
 
 ### Target direction
 

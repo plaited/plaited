@@ -76,7 +76,7 @@ link_cli() {
   local bun_bin
   bun_bin="$(resolve_bun)"
 
-  log "linking local plaited CLI"
+  log "linking local onbraid CLI"
   cd "$repo_root"
   "$bun_bin" link
 }

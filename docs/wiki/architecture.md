@@ -9,7 +9,7 @@
 
 ### Implemented now
 
-- Plaited is a framework library with local runtime primitives and tooling.
+- OnBraid is a framework library with local runtime primitives and tooling.
 - Current code does not include a source-backed cross-node contract-graph authority runtime.
 
 ### Target direction
@@ -134,4 +134,4 @@ Every active boundary contract defines at minimum:
 - [Actor Runtime](actor-runtime.md)
 - [Dynamic Skills Agent Model](dynamic-skills-agent.md)
 - [Training And Improvement](training-and-improvement.md)
-- [Plaited Runtime Skill](../../skills/plaited-runtime/SKILL.md)
+- [OnBraid Runtime Skill](../../skills/onbraid-runtime/SKILL.md)

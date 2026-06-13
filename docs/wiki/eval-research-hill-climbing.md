@@ -3,7 +3,7 @@
 ## Why This Exists
 
 This page documents the current hill-climbing support model implemented in
-`src/eval/*`: how single Plaited agent attempts are graded, how graded trials
+`src/eval/*`: how single OnBraid agent attempts are graded, how graded trials
 are bundled, and how baseline/challenger runs are compared.
 
 This page is grounded in the current implementations and tests at:
@@ -26,7 +26,7 @@ Layer 1: trial evidence
 
 Layer 2: grading
 
-- `plaited eval` with `mode: "grade"` grades exactly one trial.
+- `onbraid eval` with `mode: "grade"` grades exactly one trial.
 - Process graders derive deterministic diagnostics from snapshots.
 - Command graders run external checks or judge scripts in `trial.cwd`.
 - JSON graders carry precomputed grader results from an upstream harness.
@@ -35,7 +35,7 @@ Layer 2: grading
 
 Layer 3: comparison
 
-- `plaited eval` with `mode: "compare"` consumes baseline/challenger eval run
+- `onbraid eval` with `mode: "compare"` consumes baseline/challenger eval run
   bundles.
 - Bundles group `EvalTrialResult[]` rows by `taskId`.
 - Each `trials[].trial.task.id` must match the containing `taskId`.
@@ -88,7 +88,7 @@ Why grading and orchestration are separated:
 
 - `src/eval` does not run the agent or choose artifact storage.
 - Harnesses own attempt scheduling, worktree isolation, and persistence.
-- `plaited eval` owns the stable JSON grading/comparison contract.
+- `onbraid eval` owns the stable JSON grading/comparison contract.
 
 ## Current Limits
 
@@ -103,7 +103,7 @@ Current code does not yet provide:
 
 For early hill-climbing operation:
 
-- Treat `plaited eval` as evidence normalization and comparison support, not an
+- Treat `onbraid eval` as evidence normalization and comparison support, not an
   autonomous research orchestrator.
 - Use disposable `cwd` directories because command graders may mutate files.
 - Start with deterministic required graders for type checks, tests, and process

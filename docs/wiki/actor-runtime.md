@@ -89,7 +89,7 @@ Runtime boundaries enforce contracts with these minimum fields:
 ```json
 {
   "contractId": "bcg.creator.asset.download.v1",
-  "audience": { "kind": "purchaser", "id": "did:plaited:user-abc" },
+  "audience": { "kind": "purchaser", "id": "did:onbraid:user-abc" },
   "allowedActions": ["read_download"],
   "executionPlaneResponsibilities": ["evaluate_policy", "mint_capability_token", "enforce_scope"],
   "diagnostics": { "deniedCode": "policy_denied" }
@@ -110,4 +110,4 @@ At runtime, premium text/audio/video/game delivery should be enforced as:
 - [Architecture](architecture.md)
 - [Boundary Contract Graph](boundary-contract-graph.md)
 - [Node-To-Node Auth](node-to-node-auth.md)
-- [Plaited Runtime Skill](../../skills/plaited-runtime/SKILL.md)
+- [OnBraid Runtime Skill](../../skills/onbraid-runtime/SKILL.md)

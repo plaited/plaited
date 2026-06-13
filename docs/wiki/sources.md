@@ -13,7 +13,7 @@
 - `src/ui/*`: local projection/runtime surfaces.
 - `src/mcp/*`: MCP schemas/utilities including auth-related schema surfaces.
 - `src/worker/*`: worker runtime boundaries.
-- `skills/plaited-runtime/SKILL.md`: active runtime doctrine guidance.
+- `skills/onbraid-runtime/SKILL.md`: active runtime doctrine guidance.
 
 ### Target direction
 

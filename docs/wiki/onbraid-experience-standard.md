@@ -1,10 +1,10 @@
-# Plaited Experience Standard
+# OnBraid Experience Standard
 
 > Status: active conceptual standard aligned to dual-lane + boundary-contract doctrine.
 
 ## Position
 
-Plaited treats local projection as a local UX concern, not a shared interoperability contract.
+OnBraid treats local projection as a local UX concern, not a shared interoperability contract.
 
 ## Current vs Target
 

@@ -41,7 +41,7 @@ From the paper abstract and front matter:
   SSD is claimed to reduce distractor tails where precision matters while
   preserving diversity where exploration matters.
 
-## Relevance To Plaited
+## Relevance To OnBraid
 
 This is relevant to [Training And Improvement](training-and-improvement.md)
 because it is a concrete post-training path that:
@@ -50,7 +50,7 @@ because it is a concrete post-training path that:
 - relies on standard SFT infrastructure instead of RL/verifier-heavy loops
 - emphasizes distribution shaping and decoding-aware data generation
 
-This does not replace Plaited's module-first search strategy, but it is a
+This does not replace OnBraid's module-first search strategy, but it is a
 useful adjacent reference for later neural adaptation phases once symbolic
 module behavior is stable.
 

@@ -38,7 +38,7 @@ From the captured source summary:
   substantial gains over its cited base model (`gpt-oss-20b`) across evaluated
   domains.
 
-## Relevance To Plaited
+## Relevance To OnBraid
 
 This is adjacent to [Training And Improvement](training-and-improvement.md)
 because it reinforces:

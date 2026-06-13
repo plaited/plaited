@@ -1,7 +1,7 @@
 ---
 name: train-neuro-symbolic-agent
 description: >
-  Implementation guide for training Plaited's neuro-symbolic ICL analyst. A
+  Implementation guide for training OnBraid's neuro-symbolic ICL analyst. A
   fine-tuned small model generates structured in-context learning (ICL)
   instructions for a larger frozen executor. Training data is extracted from
   topic snapshot JSONLs via metadata-carried ICL contracts. The small model
@@ -14,7 +14,7 @@ compatibility: Requires bun, onbraid CLI, inference worker with model endpoint, 
 
 # Train Neuro-Symbolic Agent
 
-Use this skill when implementing the training pipeline for Plaited's
+Use this skill when implementing the training pipeline for OnBraid's
 ICL analyst. This is a hands-on implementation guide. Every section maps
 to runnable code or a concrete configuration.
 
@@ -27,11 +27,11 @@ weights to load.
 
 | Role | Model | Size | Purpose |
 |------|-------|------|---------|
-| **Analyst** | (fine-tuned small model) | Sub-2B (e.g. Qwen2.5-Coder-1.5B, BitNet b1.58) | Reviews Plaited patterns and objectives; generates structured ICL instructions for the executor |
+| **Analyst** | (fine-tuned small model) | Sub-2B (e.g. Qwen2.5-Coder-1.5B, BitNet b1.58) | Reviews OnBraid patterns and objectives; generates structured ICL instructions for the executor |
 | **Executor** | (frozen large model) | Large (e.g. 26B MoE, dense 30B+) | Receives ICL instructions from analyst; generates behavioral specs, code, and tool calls |
 
 Both models are accessible via OpenAI-compatible HTTP APIs through the same
-inference worker. The Plaited agent calls the **analyst first** to produce
+inference worker. The OnBraid agent calls the **analyst first** to produce
 instructions, then injects those instructions into a prompt for the **executor**.
 
 ### Why this architecture?
@@ -78,13 +78,13 @@ For our analyst, this means:
   well-calibrated
 
 Critically, SSD requires **no labeled data** — just prompts and the model
-itself. The dataset can be drawn from Plaited agent history, competitive
+itself. The dataset can be drawn from OnBraid agent history, competitive
 programming seeds, or general coding prompts.
 
 ### SSD procedure
 
 ```
-1. Collect ~10K unique prompts from Plaited agent history or seed datasets
+1. Collect ~10K unique prompts from OnBraid agent history or seed datasets
 
 2. For each prompt, sample one solution from the analyst model:
      y ~ Decode(T_train, top-k, top-p)[p_θ(·|x)]
@@ -177,7 +177,7 @@ export type ICLContract = z.output<typeof ICLContractSchema>
 **Analyst prompt** (low temperature, deterministic):
 
 ```
-system: You are a Plaited analyst. Given the current Plaited context
+system: You are a OnBraid analyst. Given the current OnBraid context
 (patterns, objectives, prior events), produce concise, structured
 instructions that a coding agent should follow to accomplish the task.
 
@@ -201,7 +201,7 @@ Task: <user_request>
 **Executor prompt** (higher temperature, creative generation):
 
 ```
-system: You are a Plaited coding agent. Follow the analyst's
+system: You are a OnBraid coding agent. Follow the analyst's
 instructions precisely. Generate behavioral specs, ACP payloads, and
 code that satisfy the stated patterns and constraints.
 
@@ -224,7 +224,7 @@ the analyst's ICL payload changes. This is the definition of
 | **Training** | Full SFT + LoRA, cheap (~15 GB peak) | Frozen, never trained |
 | **ICL style** | Evolves with retraining | Sees new style automatically via prompt |
 | **Compute cost** | ~4 GB active, fast | ~52 GB weights, slower but higher quality |
-| **Role** | Understand Plaited semantics | Generate structured code and tool calls |
+| **Role** | Understand OnBraid semantics | Generate structured code and tool calls |
 | **Search** | MCP-grounded (Always-Search Policy) | None — works from ICL alone |
 
 ## Training Method: Analyst SFT + Verifier-Filtered Dataset
@@ -232,7 +232,7 @@ the analyst's ICL payload changes. This is the definition of
 We do **not** use GRPO on the executor. The executor is frozen. Instead:
 
 1. **Collect training pairs**: Run the executor with various analyst
-   prompts (hand-written or inference-sampled), execute through the Plaited
+   prompts (hand-written or inference-sampled), execute through the OnBraid
    verifier chain (L1–L5), keep only passing trajectories.
 
 2. **Label analyst outputs**: For each passing trajectory, pair the
@@ -249,7 +249,7 @@ We do **not** use GRPO on the executor. The executor is frozen. Instead:
 
 ```
 For each task batch:
-  1. Sample K task descriptions from Plaited agent history
+  1. Sample K task descriptions from OnBraid agent history
 
   2. For each task, generate an analyst prompt from topic context:
      (patterns, objectives, prior snapshots, current topic)
@@ -259,7 +259,7 @@ For each task batch:
 
   4. Inject ICL into executor prompt → executor generates specs/code
 
-  5. Run Plaited verifier chain on executor output:
+  5. Run OnBraid verifier chain on executor output:
 
      L1: Structural  → Zod parse
      L2: Symbolic    → behavioral-frontier verify (no deadlock)

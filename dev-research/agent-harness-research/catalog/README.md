@@ -1,6 +1,6 @@
 # Prompt Buckets
 
-Generated from [`prompts.jsonl`](/Users/eirby/Workspace/plaited/dev-research/training-prompts/catalog/prompts.jsonl) by [`bucket-prompts.ts`](/Users/eirby/Workspace/plaited/dev-research/training-prompts/catalog/bucket-prompts.ts).
+Generated from [`prompts.jsonl`](/Users/eirby/Workspace/onbraid/dev-research/training-prompts/catalog/prompts.jsonl) by [`bucket-prompts.ts`](/Users/eirby/Workspace/onbraid/dev-research/training-prompts/catalog/bucket-prompts.ts).
 
 Each prompt is written to exactly one `.jsonl` bucket file in this folder. The bucket names are ordered and intended to be human-browsable first, source-pure second:
 
@@ -17,4 +17,4 @@ Each prompt is written to exactly one `.jsonl` bucket file in this folder. The b
 - `11` legacy HyperCard / Mac repo general bucket for mixed long-tail prompts
 - `12` modern general bucket for ambiguous modern prompts
 
-See [`index.json`](/Users/eirby/Workspace/plaited/dev-research/training-prompts/catalog/buckets/index.json) for current counts.
+See [`index.json`](/Users/eirby/Workspace/onbraid/dev-research/training-prompts/catalog/buckets/index.json) for current counts.

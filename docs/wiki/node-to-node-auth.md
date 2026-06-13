@@ -82,11 +82,11 @@ Auth contracts include:
 ```yaml
 contractId: bcg.creator.download.v1
 contractType: resource-access
-producer: did:plaited:creator-node
-consumer: did:plaited:buyer-node
+producer: did:onbraid:creator-node
+consumer: did:onbraid:buyer-node
 audience:
   kind: purchaser
-  id: did:plaited:buyer-123
+  id: did:onbraid:buyer-123
 resource:
   id: asset://creator/game-pack/dlc-01
   kind: premium-game-asset

@@ -50,7 +50,7 @@ formatters or other Git operations are still in flight.
 **Template required** — before opening or editing a PR, read `.github/pull_request_template.md`
 and preserve every required heading exactly.
 **Check after editing** — after opening or editing a PR, run
-`gh pr checks <pr-number> --repo plaited/plaited`.
+`gh pr checks <pr-number> --repo onbraid/onbraid`.
 **Fix description lint** — if `pr-description-lint` fails, inspect the failing job with
 `gh run view` and update the PR body with `gh pr edit` until the required heading check passes.
 
@@ -96,13 +96,13 @@ Examples:
 **`src/`** — Framework code that ships with the package: runtime modules, schemas, types, and
 stable CLI-backed features.
 **CLI features** — Prefer a `makeCli` JSON-in/JSON-out command exported through the owning
-`src/<feature>/` module and registered in `bin/plaited.ts`.
+`src/<feature>/` module and registered in `bin/onbraid.ts`.
 **`scripts/`** — Repo setup and package-maintenance shell glue.
 **`skills/`** — Implementation patterns and skill-local tools. Skill scripts, prompts,
 references, tests, and assets stay under their skill directory.
 
 **Operator surface** — Stable agent/operator features should be discoverable through
-`plaited --schema` and invokable as `plaited <command> '<json>'`.
+`onbraid --schema` and invokable as `onbraid <command> '<json>'`.
 
 ## GitHub CLI
 
@@ -191,7 +191,7 @@ requires a specific non-emitted JSON shape.
 inside `addHandler`/feedback handlers unless explicitly converting a known domain failure into a
 normal result event. Let behavioral publish `feedback_error` snapshots for handler failures.
 **Mermaid diagrams only** — no ASCII box-drawing.
-**Skill checks** — use `plaited skills` for skill discovery, validation, and registry checks. Do
+**Skill checks** — use `onbraid skills` for skill discovery, validation, and registry checks. Do
 not invent standalone skill validators unless the repo exposes them.
 
 ## Runtime Wiring Style
@@ -218,7 +218,7 @@ Prefer direct callsite wiring when logic is local, stable, and used once.
 Preferred:
 ```ts
 emitter.on(SESSION_EVENTS.stdout, onStdout);
-const contextDbPath = resolveRelativePath({ cwd, path: '.plaited/context.sqlite' });
+const contextDbPath = resolveRelativePath({ cwd, path: '.onbraid/context.sqlite' });
 process.on('message', (raw) => {
   const parsed = parseIpcMessage(raw);
   if (!parsed) return;
@@ -229,7 +229,7 @@ process.on('message', (raw) => {
 Discouraged:
 ```ts
 const resolveContextDbPath = (cwd: string) =>
-  resolveRelativePath({ cwd, path: '.plaited/context.sqlite' });
+  resolveRelativePath({ cwd, path: '.onbraid/context.sqlite' });
 EVENT_FORWARDERS.forEach(({ event, handler }) => emitter.on(event, handler));
 test('parse helper', () => expect(parseMessage(raw)).toEqual(parsed));
 ```
@@ -237,6 +237,6 @@ test('parse helper', () => expect(parseMessage(raw)).toEqual(parsed));
 # Skill Pointers
 
 **TSDoc** — use `code-documentation` skill for conventions when writing/editing TSDoc.
-**BP patterns** — use `plaited-runtime` skill when implementing behavioral programs.
-**UI development/testing** — use `plaited-ui` for controller protocol, custom
+**BP patterns** — use `onbraid-runtime` skill when implementing behavioral programs.
+**UI development/testing** — use `onbraid-ui` for controller protocol, custom
 elements, SSR, and the three-layer UI test strategy.

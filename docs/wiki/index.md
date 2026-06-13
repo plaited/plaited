@@ -1,4 +1,4 @@
-# Plaited Wiki
+# OnBraid Wiki
 
 > Status: active doctrine + lineage wiki. Runtime/source authority remains `src/`, tests, root `AGENTS.md`, and applicable skills.
 
@@ -28,7 +28,7 @@
 | Page | Status |
 |---|---|
 | [Modnet Translation](modnet-translation.md) | Lineage translation guide, non-normative for active runtime doctrine |
-| [Plaited Experience Standard](plaited-experience-standard.md) | Conceptual target framing aligned to active doctrine |
+| [OnBraid Experience Standard](onbraid-experience-standard.md) | Conceptual target framing aligned to active doctrine |
 | [Structural IA Lineage](structural-ia-lineage.md) | Historical lineage context, non-normative |
 | [Chroma Context-1](chroma-context-1.md) | External research note |
 | [Embarrassingly Simple Self-Distillation](embarrassingly-simple-self-distillation.md) | External research note |
@@ -36,5 +36,5 @@
 
 ## Related Skills
 
-- [plaited-runtime](../../skills/plaited-runtime/SKILL.md)
-- [plaited-context](../../skills/plaited-context/SKILL.md)
+- [onbraid-runtime](../../skills/onbraid-runtime/SKILL.md)
+- [onbraid-context](../../skills/onbraid-context/SKILL.md)

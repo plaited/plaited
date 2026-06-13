@@ -18,7 +18,7 @@ the analyst's output (embedded in the executor's prompt) changes.
 ## Analyst Prompt (Deterministic)
 
 ```
-system: You are a Plaited analyst. Given the current Plaited context
+system: You are a OnBraid analyst. Given the current OnBraid context
 (patterns, objectives, prior events, available packages), produce
 concise, structured instructions that a coding agent should follow
 to accomplish the user's task.
@@ -69,7 +69,7 @@ Task: "Add a reactive selector that syncs editor selection state with
 ## Executor Prompt (Creative + Tool-Enabled)
 
 ```
-system: You are a Plaited coding agent. You have access to Plaited
+system: You are a OnBraid coding agent. You have access to OnBraid
 behavioral specs, MCP tools, and ACP protocol. Follow the analyst's
 instructions precisely.
 

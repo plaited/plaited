@@ -7,12 +7,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/plaited/plaited.git"
+    "url": "git+https://github.com/onbraid/onbraid.git"
   },
   "bugs": {
-    "url": "https://github.com/plaited/plaited/issues"
+    "url": "https://github.com/onbraid/onbraid/issues"
   },
-  "homepage": "https://github.com/plaited/plaited/tree/main#readme",
+  "homepage": "https://github.com/onbraid/onbraid/tree/main#readme",
   "bin": {
     "onbraid": "./bin/onbraid.ts"
   },

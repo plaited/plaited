@@ -2,7 +2,7 @@
 
 > Status
 >
-> - Implemented now: Plaited ships behavioral/runtime, eval, and CLI tooling that can support structured experimentation.
+> - Implemented now: OnBraid ships behavioral/runtime, eval, and CLI tooling that can support structured experimentation.
 > - Target direction: doctrine-aligned improvement where boundary contracts, identity evidence, and execution authority outcomes become first-class training/evaluation artifacts.
 
 ## Improvement Strategy

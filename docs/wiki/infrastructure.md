@@ -122,11 +122,11 @@ Infrastructure services must support contract storage, retrieval, and enforcemen
 ```yaml
 contractId: bcg.media.stream.v1
 contractType: resource-access
-producer: did:plaited:creator-node
-consumer: did:plaited:subscriber-node
+producer: did:onbraid:creator-node
+consumer: did:onbraid:subscriber-node
 audience:
   kind: subscriber
-  id: did:plaited:user-42
+  id: did:onbraid:user-42
 resource:
   id: asset://creator/audio/season1/ep2
   kind: premium-audio
@@ -171,4 +171,4 @@ Creator-owned premium text/audio/video/game assets are distributed by exchange-l
 - [Dual-Lane HyperNode Model](dual-lane-node-model.md)
 - [Boundary Contract Graph](boundary-contract-graph.md)
 - [Node-To-Node Auth](node-to-node-auth.md)
-- [Plaited Runtime Skill](../../skills/plaited-runtime/SKILL.md)
+- [OnBraid Runtime Skill](../../skills/onbraid-runtime/SKILL.md)

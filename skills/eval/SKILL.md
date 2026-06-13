@@ -1,6 +1,6 @@
 ---
 name: eval
-description: Grade, compare, and calibrate Plaited trial results with `onbraid eval`.
+description: Grade, compare, and calibrate OnBraid trial results with `onbraid eval`.
 license: ISC
 compatibility: Requires bun
 ---
@@ -11,7 +11,7 @@ CLI guidance for `onbraid eval` grading, run comparison, and grader calibration.
 
 ## When To Use
 
-- Grade one Plaited trial with deterministic process checks and/or external graders
+- Grade one OnBraid trial with deterministic process checks and/or external graders
 - Compare baseline and challenger eval bundles
 - Sample eval bundle rows for grader calibration and human review
 - Preserve full snapshot evidence and task/result metadata in the output

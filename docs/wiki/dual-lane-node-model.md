@@ -2,7 +2,7 @@
 
 > Status
 >
-> - Implemented now: Plaited ships behavioral coordination (`src/behavioral/*`), UI projection primitives (`src/ui/*`), MCP schemas/utils (`src/mcp/*`), and worker/runtime shells (`src/worker/*`). There is no source-backed dual-lane authority runtime yet.
+> - Implemented now: OnBraid ships behavioral coordination (`src/behavioral/*`), UI projection primitives (`src/ui/*`), MCP schemas/utils (`src/mcp/*`), and worker/runtime shells (`src/worker/*`). There is no source-backed dual-lane authority runtime yet.
 > - Target direction: every node runs a **private lane** for local operation and an **exchange lane** for cross-node interoperability under explicit boundary contracts.
 
 ## Core Concepts
@@ -84,11 +84,11 @@ Every boundary contract in this model includes:
 ```yaml
 contractId: bcg.creator.asset.stream.v1
 contractType: resource-access
-producer: did:plaited:creator-node
-consumer: did:plaited:buyer-node
+producer: did:onbraid:creator-node
+consumer: did:onbraid:buyer-node
 audience:
   kind: subscriber
-  id: did:plaited:buyer-account
+  id: did:onbraid:buyer-account
 resource:
   id: asset://creator/premium/video/ep-07
   kind: premium-video
@@ -138,4 +138,4 @@ Creator publishes text/audio/video/game assets behind entitlement gates:
 - [Architecture](architecture.md)
 - [Dynamic Skills Agent Model](dynamic-skills-agent.md)
 - [Infrastructure](infrastructure.md)
-- [Plaited Runtime Skill](../../skills/plaited-runtime/SKILL.md)
+- [OnBraid Runtime Skill](../../skills/onbraid-runtime/SKILL.md)

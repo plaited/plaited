@@ -48,7 +48,7 @@
 - Added the local inference bridge ADR documenting the Unix domain socket
   framed `ActorEnvelope` stream decision.
 - Retired the non-normative hypothetical architecture note.
-- Created the first Plaited architecture wiki scaffold.
+- Created the first OnBraid architecture wiki scaffold.
 - Added target doctrine for actor-owned facts/resources, services/actions,
   policy/grants, provenance, and local projections.
 - Translated Modnet `scale` into transitional compatibility language rather

@@ -4,7 +4,7 @@
 
 ## Problem
 
-Plaited needs a same-machine bridge between runtime coordination and inference execution without turning model execution into an implicit network authority surface.
+OnBraid needs a same-machine bridge between runtime coordination and inference execution without turning model execution into an implicit network authority surface.
 
 ## Current vs Target
 
@@ -17,7 +17,7 @@ Plaited needs a same-machine bridge between runtime coordination and inference e
 
 - same-machine bridge uses a private local IPC lane
 - envelope framing supports streaming, cancellation, diagnostics, and provenance
-- policy and side-effect authority stay in Plaited runtime boundaries
+- policy and side-effect authority stay in OnBraid runtime boundaries
 
 ## Boundary Rule
 
