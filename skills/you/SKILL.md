@@ -15,7 +15,7 @@ compatibility: Requires plaited CLI (mcp-client mode), network access, and YDC_A
 # You.com MCP Server
 
 Use `plaited mcp-client` to connect to You.com's MCP server at
-`https://mcp.you.com` for web search, cited research, URL content
+`https://api.you.com/mcp` for web search, cited research, URL content
 extraction, and financial queries.
 
 ## Prerequisites
@@ -29,7 +29,7 @@ injected before CLI invocations.
 Discover the canonical tool list at runtime:
 
 ```bash
-plaited mcp-client '{"mode":"list-tools","url":"https://mcp.you.com"}'
+plaited mcp-client '{"mode":"list-tools","url":"https://api.you.com/mcp"}'
 ```
 
 Current tools include:
@@ -49,13 +49,13 @@ Each tool uses its own argument shape. Always check before calling:
 # Discover argument schema for a tool
 plaited mcp-client '{
   "mode": "call-tool",
-  "url": "https://mcp.you.com",
+  "url": "https://api.you.com/mcp",
   "tool": "you-search",
   "args": { "query": "_show_schema" }
 }'
 
 # Or inspect via discover:
-plaited mcp-client '{"mode":"discover","url":"https://mcp.you.com"}'
+plaited mcp-client '{"mode":"discover","url":"https://api.you.com/mcp"}'
 ```
 
 > **Warning:** each tool uses its own argument field names. `you-search`
@@ -69,7 +69,7 @@ plaited mcp-client '{"mode":"discover","url":"https://mcp.you.com"}'
 ```bash
 plaited mcp-client '{
   "mode": "call-tool",
-  "url": "https://mcp.you.com",
+  "url": "https://api.you.com/mcp",
   "tool": "you-search",
   "args": { "query": "latest bun release" },
   "auth": { "type": "bearer-env", "token": { "envVar": "YDC_API_KEY" } }
@@ -81,7 +81,7 @@ plaited mcp-client '{
 ```bash
 plaited mcp-client '{
   "mode": "call-tool",
-  "url": "https://mcp.you.com",
+  "url": "https://api.you.com/mcp",
   "tool": "you-research",
   "args": { "input": "latest bun release features" },
   "auth": { "type": "bearer-env", "token": { "envVar": "YDC_API_KEY" } }
@@ -93,7 +93,7 @@ plaited mcp-client '{
 ```bash
 plaited mcp-client '{
   "mode": "call-tool",
-  "url": "https://mcp.you.com",
+  "url": "https://api.you.com/mcp",
   "tool": "you-contents",
   "args": { "urls": ["https://example.com"] },
   "auth": { "type": "bearer-env", "token": { "envVar": "YDC_API_KEY" } }
@@ -105,7 +105,7 @@ plaited mcp-client '{
 ```bash
 plaited mcp-client '{
   "mode": "call-tool",
-  "url": "https://mcp.you.com",
+  "url": "https://api.you.com/mcp",
   "tool": "you-finance",
   "args": { "query": "AAPL price" },
   "auth": { "type": "bearer-env", "token": { "envVar": "YDC_API_KEY" } }
@@ -148,7 +148,7 @@ You.com's MCP server uses Bearer token auth via `YDC_API_KEY`:
 ```bash
 plaited mcp-client '{
   "mode": "call-tool",
-  "url": "https://mcp.you.com",
+  "url": "https://api.you.com/mcp",
   "tool": "you-search",
   "args": { "query": "..." },
   "auth": { "type": "bearer-env", "token": { "envVar": "YDC_API_KEY" } }
@@ -160,3 +160,42 @@ plaited mcp-client '{
 - `YDC_API_KEY` — API key for You.com (already set in this environment)
 - `--dry-run` is not available via mcp-client; use `--schema input` on
   `plaited mcp-client` to inspect the input schema before calling
+
+## Troubleshooting
+
+### "Unable to connect. Is the computer able to access the url?"
+
+If `plaited mcp-client` fails to connect to `https://api.you.com/mcp`, check:
+
+1. **DNS resolution** — does `api.you.com` resolve?
+   ```bash
+   host api.you.com
+   ```
+   If not, You.com's infrastructure may be unreachable from this network.
+
+2. **Endpoint moved** — You.com may have changed their MCP server URL.
+   Try discovering the current endpoint:
+   ```bash
+   # Probe common paths
+   for path in /mcp /v1/mcp /api/mcp; do
+     code=$(curl -s -o /dev/null -w "%{http_code}" "https://api.you.com$path")
+     echo "https://api.you.com$path → $code"
+   done
+   ```
+   A `405` (Method Not Allowed) or `401` (Unauthorized) response means the
+   path exists. A timeout or connection refused means it doesn't.
+
+3. **Auth token** — confirm `YDC_API_KEY` is set and non-empty:
+   ```bash
+   echo "Key length: ${#YDC_API_KEY}"
+   ```
+
+4. **Accept header mismatch** — the MCP server requires
+   `Accept: application/json, text/event-stream`. The `plaited mcp-client`
+   transport handles this automatically. If calling via raw `curl`, include:
+   ```bash
+   curl -H "Accept: application/json, text/event-stream" ...
+   ```
+
+When the URL changes, update every occurrence of the old URL in this skill
+and in any active agent session references.

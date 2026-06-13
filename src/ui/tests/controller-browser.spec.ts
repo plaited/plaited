@@ -505,3 +505,95 @@ describe('controller: module registers', () => {
     )
   }, 30000)
 })
+
+describe('webA2A: real browser', () => {
+  const setupListener = async () => {
+    await cli(
+      'eval',
+      `
+      () => {
+        window.__a2aMessages = []
+        window.__a2aListener = (e) => {
+          try { window.__a2aMessages.push(e.data) } catch {}
+        }
+        window.addEventListener('message', window.__a2aListener)
+      }
+    `,
+    )
+  }
+
+  test('navigates to A2A test page and controller connects', async () => {
+    await gotoTest('/test/a2a-test', 2000)
+  }, 30000)
+
+  test('incoming task/send triggers a2a_task on WebSocket', async () => {
+    await setupListener()
+    const before = getFixture().a2aTasks.length
+    const taskId = 'test-task-1'
+
+    await cli(
+      'eval',
+      `
+      () => {
+        window.postMessage(JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'task/send',
+          id: 1,
+          params: {
+            id: '${taskId}',
+            skill: 'search',
+            message: {
+              role: 'user',
+              parts: [{ data: { query: 'test' } }]
+            }
+          }
+        }), window.origin)
+      }
+    `,
+    )
+
+    const task = await waitFor(() => getFixture().findA2ATask({ after: before, source: 'a2a-test' }))
+    const detail = task.message.detail as Record<string, unknown>
+    expect(detail.taskId).toBe(taskId)
+    expect(detail.skill).toBe('search')
+    expect((detail.message as Record<string, unknown>).role).toBe('user')
+  }, 15000)
+
+  test('task lifecycle produces task/update via postMessage', async () => {
+    await wait(2000)
+
+    const raw = await cli(
+      'eval',
+      `
+      () => {
+        const msgs = window.__a2aMessages ?? []
+        for (let i = msgs.length - 1; i >= 0; i--) {
+          try {
+            const m = JSON.parse(msgs[i])
+            if (m.method === 'task/update') return JSON.stringify(m.params)
+          } catch {}
+        }
+        return 'none'
+      }
+    `,
+    )
+    const result = parseResult(raw)
+    expect(result).toContain('completed')
+  }, 15000)
+
+  test('malformed postMessage does not cause an error', async () => {
+    const before = getFixture().errors.length
+
+    // Non-JSON message
+    await cli('eval', '() => window.postMessage("not json", window.origin)')
+    // Non-task method
+    await cli('eval', '() => window.postMessage(JSON.stringify({jsonrpc: "2.0", method: "nope"}), window.origin)')
+    // Missing params
+    await cli('eval', '() => window.postMessage(JSON.stringify({jsonrpc: "2.0", method: "task/send"}), window.origin)')
+
+    // None should trigger an error — all are silently dropped
+    await wait(1000)
+    const errorsAfter = getFixture().errors.length
+    expect(errorsAfter).toBe(before)
+  }, 10000)
+})

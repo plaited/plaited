@@ -6,7 +6,7 @@ import { keyMirror } from '../utils.ts'
  *
  * @public
  */
-export const AGENT_TO_CONTROLLER_EVENTS = keyMirror('attrs', 'render', 'import')
+export const AGENT_TO_CONTROLLER_EVENTS = keyMirror('attrs', 'render', 'import', 'a2a_result')
 
 /**
  * Event keys used for messages emitted by the browser controller toward the
@@ -14,7 +14,14 @@ export const AGENT_TO_CONTROLLER_EVENTS = keyMirror('attrs', 'render', 'import')
  *
  * @public
  */
-export const CONTROLLER_TO_AGENT_EVENTS = keyMirror('ui_event', 'error', 'form_submit', 'page_reveal', 'page_swap')
+export const CONTROLLER_TO_AGENT_EVENTS = keyMirror(
+  'ui_event',
+  'error',
+  'form_submit',
+  'page_reveal',
+  'page_swap',
+  'a2a_task',
+)
 
 export const AGENT_RUNTIMES = keyMirror('analyst', 'coder')
 

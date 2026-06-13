@@ -1,6 +1,8 @@
 import type { BPEvent, Disconnect, JsonObject } from '../behavioral.ts'
 import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS, SWAP_MODES } from '../shared/shared.constants.ts'
 import {
+  type A2AResultMessage,
+  type A2ATaskMessage,
   AttrsMessageSchema,
   type ClientMessage,
   type ControllerErrorMessage,
@@ -98,22 +100,41 @@ export type Register = (args: {
 export const useController = ({
   registry = [],
   tag,
+  agentCardId,
   onPageReveal,
   onPageSwap,
   onPageHide,
   onPageShow,
 }: {
   registry?: Register[]
-  tag: CustomElementTag
+  /**
+   * Optional id of a `<script type="application/agent+json">` element in
+   * the page HTML. When set, the controller reads the Agent Card from
+   * that script tag during {@linkcode connectedCallback} and registers it
+   * with the Flutter bridge via `agent/card` postMessage.
+   */
+  agentCardId?: string
   onPageReveal?: (event: PageRevealEvent) => void | Promise<void>
   onPageSwap?: (event: PageSwapEvent) => void | Promise<void>
   onPageShow?: (event: PageTransitionEvent) => void | Promise<void>
   onPageHide?: (event: PageTransitionEvent) => void | Promise<void>
+  tag: CustomElementTag
 }) => {
   class Controller extends HTMLElement {
     #disconnectSet = new Set<Disconnect>()
     #socket: WebSocket | undefined
     #retryCount = 0
+    /**
+     * Message handler for incoming JSON-RPC 2.0 messages from the
+     * Flutter bridge. Receives `task/send` requests and routes them
+     * to the behavioral engine as `a2a_task` WebSocket events.
+     */
+    #a2aMessageHandler: ((event: MessageEvent) => void) | undefined
+    /**
+     * The `name` from the page's Agent Card, tracked so the controller
+     * can send `agent/withdraw` on disconnect.
+     */
+    #a2aRegisteredName: string | undefined
     #socketListener = new DelegatedListener((event: Event) => {
       try {
         const target = event.target
@@ -126,7 +147,10 @@ export const useController = ({
           this.#sendConnected()
           return
         }
-        if (event instanceof MessageEvent) this.#onWsMessage(event)
+        if (event instanceof MessageEvent) {
+          this.#onWsMessage(event)
+          return
+        }
         if (event instanceof CloseEvent && UI_CORE_RETRY_STATUS_CODES.has(event.code)) this.#onRetry()
         if (event.type === 'error') {
           throw new Error(`WebSocket error on ${target.url} (readyState: ${target.readyState})`)
@@ -358,6 +382,10 @@ export const useController = ({
             }
             break
           }
+          case AGENT_TO_CONTROLLER_EVENTS.a2a_result: {
+            this.#onA2AResult(detail)
+            break
+          }
         }
       } catch (error) {
         this.#reportError(error, {
@@ -372,6 +400,44 @@ export const useController = ({
       const maxDelay = Math.min(9_999, 1_000 * 2 ** this.#retryCount)
       setTimeout(() => this.#connect(), Math.floor(Math.random() * maxDelay))
       this.#retryCount++
+    }
+    #onA2AResult(detail: A2AResultMessage['detail']) {
+      const { taskId, state, parts } = detail
+      const update: { jsonrpc: string; method: string; params: Record<string, unknown> } = {
+        jsonrpc: '2.0',
+        method: 'task/update',
+        params: { id: taskId, state },
+      }
+      if (parts) {
+        update.params.artifact = { parts }
+      }
+      window.postMessage(JSON.stringify(update), self.origin)
+    }
+    #readAgentCard(): Record<string, unknown> | undefined {
+      if (!agentCardId) return
+      const script = self.document.getElementById(agentCardId)
+      if (!script?.textContent) return
+      try {
+        return JSON.parse(script.textContent)
+      } catch {
+        return
+      }
+    }
+    #registerAgent(card: Record<string, unknown>) {
+      this.#a2aRegisteredName = (card as { name?: string }).name
+      window.postMessage(JSON.stringify({ jsonrpc: '2.0', method: 'agent/card', params: card }), self.origin)
+    }
+    #withdrawAgent() {
+      if (!this.#a2aRegisteredName) return
+      window.postMessage(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'agent/withdraw',
+          params: { name: this.#a2aRegisteredName },
+        }),
+        self.origin,
+      )
+      this.#a2aRegisteredName = undefined
     }
     #addDisconnect(disconnect: Disconnect) {
       this.#disconnectSet.add(disconnect)
@@ -401,6 +467,34 @@ export const useController = ({
       window.addEventListener(PAGE_EVENTS.pageshow, listener)
       window.addEventListener(PAGE_EVENTS.pageswap, listener)
       this.#connect()
+
+      // Set up A2A: listen for incoming tasks from the Flutter bridge
+      this.#a2aMessageHandler = (event: MessageEvent) => {
+        if (event.origin !== self.origin) return
+        if (typeof event.data !== 'string') return
+        try {
+          const msg = JSON.parse(event.data)
+          if (msg?.method === 'task/send' && msg?.params) {
+            const { id, skill, message } = msg.params
+            this.#send({
+              type: CONTROLLER_TO_AGENT_EVENTS.a2a_task,
+              detail: {
+                taskId: id,
+                skill,
+                message: { role: message?.role ?? 'user', parts: message?.parts ?? [{ data: {} }] },
+              },
+            } as A2ATaskMessage)
+          }
+        } catch {
+          // ignore malformed messages
+        }
+      }
+      window.addEventListener('message', this.#a2aMessageHandler)
+
+      // Register agent card with the Flutter bridge
+      const card = this.#readAgentCard()
+      if (card) this.#registerAgent(card)
+
       for (const register of registry) {
         try {
           void register({
@@ -419,6 +513,11 @@ export const useController = ({
       }
     }
     disconnectedCallback() {
+      this.#withdrawAgent()
+      if (this.#a2aMessageHandler) {
+        window.removeEventListener('message', this.#a2aMessageHandler)
+        this.#a2aMessageHandler = undefined
+      }
       for (const cb of this.#disconnectSet) void cb()
       this.#disconnectSet.clear()
       this.#closeSocket(this.#socket)

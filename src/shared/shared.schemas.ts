@@ -68,11 +68,80 @@ export const AttrsMessageSchema = z.object({
 export type AttrsMessage = z.infer<typeof AttrsMessageSchema>
 
 /**
+ * Schema for a single A2A data part.
+ *
+ * @remarks
+ * Each part is structured JSON data. No raw text, no file URLs —
+ * the behavioral engine and page already agree on data shapes
+ * through the protocol.
+ *
+ * @public
+ */
+export const A2APartSchema = z.object({
+  data: JsonObjectSchema,
+})
+
+/** @public */
+export type A2APart = z.infer<typeof A2APartSchema>
+
+/**
+ * Schema for A2A task messages sent from the controller to the
+ * behavioral engine over WebSocket.
+ *
+ * @remarks
+ * Sent when an external peer delegates a goal to this page.
+ * The behavioral engine processes the task and returns results.
+ *
+ * @public
+ */
+export const A2ATaskMessageSchema = z.object({
+  type: z.literal(CONTROLLER_TO_AGENT_EVENTS.a2a_task),
+  detail: z.object({
+    taskId: z.string(),
+    skill: z.string(),
+    message: z.object({
+      role: z.string(),
+      parts: z.array(A2APartSchema).min(1),
+    }),
+  }),
+})
+
+/** @public */
+export type A2ATaskMessage = z.infer<typeof A2ATaskMessageSchema>
+
+/**
+ * Schema for A2A result messages sent from the behavioral engine to
+ * the controller over WebSocket.
+ *
+ * @remarks
+ * Carries the original task ID so the controller can correlate and
+ * forward to the external peer. The `state` field follows the A2A
+ * task lifecycle.
+ *
+ * @public
+ */
+export const A2AResultMessageSchema = z.object({
+  type: z.literal(AGENT_TO_CONTROLLER_EVENTS.a2a_result),
+  detail: z.object({
+    taskId: z.string(),
+    state: z.enum(['submitted', 'working', 'completed', 'failed', 'input-required']),
+    parts: z.array(A2APartSchema).optional(),
+  }),
+})
+
+/** @public */
+export type A2AResultMessage = z.infer<typeof A2AResultMessageSchema>
+
+/**
  * Discriminated union schema for all server-to-controller messages.
  *
  * @public
  */
-export const ServerMessageSchema = z.discriminatedUnion('type', [RenderMessageSchema, AttrsMessageSchema])
+export const ServerMessageSchema = z.discriminatedUnion('type', [
+  RenderMessageSchema,
+  AttrsMessageSchema,
+  A2AResultMessageSchema,
+])
 
 /** @public */
 export type ServerMessage = z.infer<typeof ServerMessageSchema>
@@ -144,6 +213,7 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   UiEventMessageSchema,
   FormSubmitMessageSchema,
   ControllerErrorMessageSchema,
+  A2ATaskMessageSchema,
 ])
 
 /** @public */

@@ -22,7 +22,11 @@ export const bundleController = async () => {
       }))
 
       if (!customElements.get(tag)) {
-        useController({ tag, registry: registers })
+        useController({
+          tag,
+          registry: registers,
+          agentCardId: params.get('agentCardId') ?? undefined,
+        })
       }
       `,
     },

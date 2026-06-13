@@ -15,10 +15,13 @@ const FIXTURES_DIR = import.meta.dir
 const DIST_DIR = join(FIXTURES_DIR, 'dist')
 const controllerRoutes = await bundleController()
 
-const connectScript = (tags: string[], modules?: string[]) => {
+const connectScript = (tags: string[], modules?: string[], agentCardId?: string) => {
   let url = `${CONNECT_PLAITED_ROUTE}?registry=${encodeURIComponent(tags.join(','))}`
   if (modules?.length) {
     url += `&modules=${encodeURIComponent(modules.join(','))}`
+  }
+  if (agentCardId) {
+    url += `&agentCardId=${encodeURIComponent(agentCardId)}`
   }
   return url
 }
@@ -129,6 +132,9 @@ const TEST_PAGE_CONTENT: Record<string, string> = {
   'unsupported-event-test': `
     <div p-target="main"><p>waiting for unsupported event</p></div>
   `,
+  'a2a-test': `
+    <div p-target="main"><p>a2a test</p></div>
+  `,
 }
 
 const generateTestPage = (tag: string) => {
@@ -151,7 +157,27 @@ const generateTestPage = (tag: string) => {
   const moduleScript =
     tag === 'bad-import-test'
       ? ` type="module" src="${connectScript([tag], ['/dist/modules/invalid-controller-module.js'])}"`
-      : ` type="module" src="${connectScript([tag])}"`
+      : tag === 'a2a-test'
+        ? ` type="module" src="${connectScript([tag], undefined, 'agent-card')}"`
+        : ` type="module" src="${connectScript([tag])}"`
+
+  const agentCardTag =
+    tag === 'a2a-test'
+      ? `<script id="agent-card" type="application/agent+json">
+{
+  "name": "A2A Test Agent",
+  "description": "A test agent for webA2A protocol",
+  "version": "1.0.0",
+  "skills": [
+    {
+      "id": "search",
+      "name": "Search",
+      "description": "Search the web for a query"
+    }
+  ]
+}
+</script>`
+      : ''
 
   return `<!DOCTYPE html>
 <html>
@@ -160,6 +186,7 @@ const generateTestPage = (tag: string) => {
   <style>${tag} { display: contents; }</style>
 </head>
 <body>
+  ${agentCardTag}
   <${tag}>
     ${content}
   </${tag}>
@@ -372,6 +399,13 @@ export type FixtureServer = {
   formSubmissions: { source: string; message: Record<string, unknown> }[]
   /** Controller runtime errors received from controller islands. */
   errors: { source: string; message: Record<string, unknown> }[]
+  /** A2A task messages received from controller islands. */
+  a2aTasks: { source: string; message: Record<string, unknown> }[]
+  /** Find an A2A task by source. */
+  findA2ATask: (opts: {
+    after: number
+    source: string
+  }) => { source: string; message: Record<string, unknown> } | undefined
 }
 
 /**
@@ -386,12 +420,14 @@ export const startServer = (port = 0): FixtureServer => {
     uiEvents: { source: string; message: Record<string, unknown> }[]
     formSubmissions: { source: string; message: Record<string, unknown> }[]
     errors: { source: string; message: Record<string, unknown> }[]
+    a2aTasks: { source: string; message: Record<string, unknown> }[]
     retryTestConnections: number
   } = {
     lastUiEvent: undefined,
     uiEvents: [],
     formSubmissions: [],
     errors: [],
+    a2aTasks: [],
     retryTestConnections: 0,
   }
 
@@ -541,6 +577,21 @@ export const startServer = (port = 0): FixtureServer => {
         if (data.type === 'form_submit') {
           state.formSubmissions.push({ source: ws.data.source, message: data })
         }
+        if (data.type === 'a2a_task') {
+          state.a2aTasks.push({ source: ws.data.source, message: data })
+          // Auto-reply with completed result after a brief delay
+          const taskId = (data.detail as Record<string, unknown>)?.taskId as string
+          setTimeout(() => {
+            send(ws, {
+              type: 'a2a_result',
+              detail: {
+                taskId,
+                state: 'completed',
+                parts: [{ data: { result: 'ok' } }],
+              },
+            })
+          }, 500)
+        }
       },
       close(_ws) {
         // nothing on close
@@ -595,6 +646,10 @@ export const startServer = (port = 0): FixtureServer => {
     get errors() {
       return state.errors
     },
+    get a2aTasks() {
+      return state.a2aTasks
+    },
+    findA2ATask: ({ after, source }) => state.a2aTasks.slice(after).find((t) => t.source === source),
     stop: async () => {
       server.stop(true)
     },
