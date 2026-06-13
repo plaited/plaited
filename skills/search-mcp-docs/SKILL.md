@@ -2,7 +2,7 @@
 name: search-mcp-docs
 description: Search the Model Context Protocol specification. Use when implementing MCP clients or servers, understanding the protocol, or checking transport details.
 license: ISC
-compatibility: Requires `plaited` CLI and network access
+compatibility: Requires `onbraid` CLI and network access
 allowed-tools: Bash
 ---
 
@@ -13,13 +13,13 @@ Query the Model Context Protocol specification via MCP.
 ## Usage
 
 ```bash
-plaited mcp-client '{"mode":"call-tool","url":"https://modelcontextprotocol.io/mcp","tool":"search_model_context_protocol","args":{"query":"tools/call request format"}}'
+`onbraid mcp-client '{"mode":"call-tool","url":"https://modelcontextprotocol.io/mcp","tool":"search_model_context_protocol","args":{"query":"tools/call request format"}}'
 ```
 
 Optional `version` parameter for targeting a specific protocol version:
 
 ```bash
-plaited mcp-client '{"mode":"call-tool","url":"https://modelcontextprotocol.io/mcp","tool":"search_model_context_protocol","args":{"query":"Streamable HTTP","version":"2025-11-25"}}'
+`onbraid mcp-client '{"mode":"call-tool","url":"https://modelcontextprotocol.io/mcp","tool":"search_model_context_protocol","args":{"query":"Streamable HTTP","version":"2025-11-25"}}'
 ```
 
 ## When to use
@@ -31,5 +31,5 @@ plaited mcp-client '{"mode":"call-tool","url":"https://modelcontextprotocol.io/m
 
 ## See also
 
-- `plaited mcp-client --help` — discover all available MCP operations
-- `plaited mcp-client --schema input` — inspect the full input schema
+- `onbraid mcp-client --help` — discover all available MCP operations
+- `onbraid mcp-client --schema input` — inspect the full input schema

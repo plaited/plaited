@@ -1,14 +1,14 @@
 ---
 name: add-remote-mcp
-description: Connect to remote HTTP MCP servers — discover capabilities, call tools, scaffold skills, and configure auth from public endpoints through OAuth and Varlock-resolved secrets. Covers CLI (plaited mcp-client) and skill authoring patterns.
+description: Connect to remote HTTP MCP servers — discover capabilities, call tools, scaffold skills, and configure auth from public endpoints through OAuth and Varlock-resolved secrets. Covers CLI (onbraid mcp-client) and skill authoring patterns.
 license: ISC
-compatibility: Requires `plaited` CLI and network access
+compatibility: Requires `onbraid` CLI and network access
 allowed-tools: Bash Read Write
 ---
 
 # Add Remote MCP
 
-Connect to remote HTTP MCP servers via Streamable HTTP transport. Use `plaited mcp-client`
+Connect to remote HTTP MCP servers via Streamable HTTP transport. Use `onbraid mcp-client`
 for all operations — no wrapper scripts needed.
 
 ## When to use
@@ -34,24 +34,24 @@ inspect the advertised capabilities — the provider may publish a separate tran
 
 ## Discovery
 
-Use `plaited mcp-client` for all discovery and inspection. Every operation accepts optional
+Use `onbraid mcp-client` for all discovery and inspection. Every operation accepts optional
 `auth`, `headers`, and `timeoutMs` fields.
 
 ```bash
 # Discover all capabilities
-plaited mcp-client '{"mode":"discover","url":"https://example.com/mcp"}'
+`onbraid mcp-client '{"mode":"discover","url":"https://example.com/mcp"}'
 
 # List tools only
-plaited mcp-client '{"mode":"list-tools","url":"https://example.com/mcp"}'
+`onbraid mcp-client '{"mode":"list-tools","url":"https://example.com/mcp"}'
 
 # List prompts
-plaited mcp-client '{"mode":"list-prompts","url":"https://example.com/mcp"}'
+`onbraid mcp-client '{"mode":"list-prompts","url":"https://example.com/mcp"}'
 
 # List resources
-plaited mcp-client '{"mode":"list-resources","url":"https://example.com/mcp"}'
+`onbraid mcp-client '{"mode":"list-resources","url":"https://example.com/mcp"}'
 ```
 
-See `plaited mcp-client --help` for all 7 modes and `plaited mcp-client --schema input` for
+See `onbraid mcp-client --help` for all 7 modes and `onbraid mcp-client --schema input` for
 the full input schema.
 
 ## Skill documentation pattern
@@ -60,20 +60,20 @@ When authoring a new skill for a remote MCP server, the pattern is:
 
 1. **Discover** the server's capabilities:
    ```bash
-   plaited mcp-client '{"mode":"discover","url":"https://example.com/mcp"}'
+   onbraid mcp-client '{"mode":"discover","url":"https://example.com/mcp"}'
    ```
 2. **Document relevant tools, prompts, and resources** in the skill's `SKILL.md` as inline
    CLI examples:
    ```bash
    # Tool usage
-   plaited mcp-client '{"mode":"call-tool","url":"https://example.com/mcp","tool":"search","args":{"query":"..."}}'
+   onbraid mcp-client '{"mode":"call-tool","url":"https://example.com/mcp","tool":"search","args":{"query":"..."}}'
    ```
 3. **Add auth if needed** (see Authentication section below).
 
 No wrapper scripts needed. The CLI replaces the old pattern of generated `scripts/search.ts`
 files. If the server needs auth, include the `auth` field directly in the example:
 ```bash
-plaited mcp-client '{"mode":"call-tool","url":"https://example.com/mcp","tool":"search","args":{"query":"..."},"auth":{"type":"bearer-env","token":{"envVar":"MY_TOKEN"}}}'
+`onbraid mcp-client '{"mode":"call-tool","url":"https://example.com/mcp","tool":"search","args":{"query":"..."},"auth":{"type":"bearer-env","token":{"envVar":"MY_TOKEN"}}}'
 ```
 
 ## Authentication
@@ -83,7 +83,7 @@ plaited mcp-client '{"mode":"call-tool","url":"https://example.com/mcp","tool":"
 No options needed:
 
 ```bash
-plaited mcp-client '{"mode":"list-tools","url":"https://example.com/mcp"}'
+`onbraid mcp-client '{"mode":"list-tools","url":"https://example.com/mcp"}'
 ```
 
 ### Tier 2: API key / Bearer token
@@ -91,7 +91,7 @@ plaited mcp-client '{"mode":"list-tools","url":"https://example.com/mcp"}'
 Pass the bearer token via an environment variable:
 
 ```bash
-plaited mcp-client '{"mode":"list-tools","url":"https://example.com/mcp","auth":{"type":"bearer-env","token":{"envVar":"MY_API_KEY"}}}'
+`onbraid mcp-client '{"mode":"list-tools","url":"https://example.com/mcp","auth":{"type":"bearer-env","token":{"envVar":"MY_API_KEY"}}}'
 ```
 
 ### Tier 3: Protected endpoints (OAuth, Varlock)
@@ -105,26 +105,26 @@ All secrets resolve from environment variables. Inject them via your secret mana
 (Varlock, 1Password, CI secrets, etc.) before invoking the CLI.
 
 ```bash
-plaited mcp-client '{"mode":"call-tool","url":"https://example.com/mcp","tool":"my_tool","args":{"key":"value"},"auth":{"type":"bearer-env","token":{"envVar":"MY_MCP_ACCESS_TOKEN"}}}'
+`onbraid mcp-client '{"mode":"call-tool","url":"https://example.com/mcp","tool":"my_tool","args":{"key":"value"},"auth":{"type":"bearer-env","token":{"envVar":"MY_MCP_ACCESS_TOKEN"}}}'
 ```
 
 #### OAuth client credentials
 
 ```bash
-plaited mcp-client '{"mode":"list-tools","url":"https://example.com/mcp","auth":{"type":"oauth-client-credentials","tokenUrl":"https://issuer.example.com/oauth/token","clientId":{"envVar":"MY_MCP_CLIENT_ID"},"clientSecret":{"envVar":"MY_MCP_CLIENT_SECRET"},"scopes":["mcp:tools"]}}'
+`onbraid mcp-client '{"mode":"list-tools","url":"https://example.com/mcp","auth":{"type":"oauth-client-credentials","tokenUrl":"https://issuer.example.com/oauth/token","clientId":{"envVar":"MY_MCP_CLIENT_ID"},"clientSecret":{"envVar":"MY_MCP_CLIENT_SECRET"},"scopes":["mcp:tools"]}}'
 ```
 
 #### OAuth refresh token with file persistence
 
 By default, rotated refresh tokens are held in memory only. Add `tokenPersistence`
 to survive across CLI invocations. The default path is
-`~/.plaited/mcp/tokens/<host>.json`.
+`~/.onbraid/mcp/tokens/<host>.json`.
 
 ```bash
-plaited mcp-client '{"mode":"call-tool","url":"https://example.com/mcp","tool":"my_tool","args":{"key":"value"},"auth":{"type":"oauth-refresh-token","tokenUrl":"https://issuer.example.com/oauth/token","clientId":{"envVar":"MY_MCP_CLIENT_ID"},"clientSecret":{"envVar":"MY_MCP_CLIENT_SECRET"},"refreshToken":{"envVar":"MY_MCP_REFRESH_TOKEN"},"tokenPersistence":{"kind":"file"}}}'
+`onbraid mcp-client '{"mode":"call-tool","url":"https://example.com/mcp","tool":"my_tool","args":{"key":"value"},"auth":{"type":"oauth-refresh-token","tokenUrl":"https://issuer.example.com/oauth/token","clientId":{"envVar":"MY_MCP_CLIENT_ID"},"clientSecret":{"envVar":"MY_MCP_CLIENT_SECRET"},"refreshToken":{"envVar":"MY_MCP_REFRESH_TOKEN"},"tokenPersistence":{"kind":"file"}}}'
 ```
 
-Use `plaited mcp-client --schema input` to inspect the complete schema.
+Use `onbraid mcp-client --schema input` to inspect the complete schema.
 
 ### Operator rules — no secrets in repo
 
@@ -133,7 +133,7 @@ Use `plaited mcp-client --schema input` to inspect the complete schema.
   Secret values themselves must come from environment variables (injected via Varlock,
   1Password, CI secrets, or your preferred secret manager).
 - With `tokenPersistence: { kind: "file" }`, the rotated refresh token is written to
-  `~/.plaited/mcp/tokens/<host>.json` (same sensitivity as `gcloud` ADC or `aws` SSO cache).
+  `~/.onbraid/mcp/tokens/<host>.json` (same sensitivity as `gcloud` ADC or `aws` SSO cache).
   Omit `tokenPersistence` to keep everything in-memory (lossy across invocations — the
   caller re-injects bootstrap secrets each time).
 - Keep access tokens ephemeral and in memory.

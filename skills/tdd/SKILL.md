@@ -9,7 +9,7 @@ description: >
   red-green-refactor, tracer bullets, integration tests, or public-interface
   behavior tests.
 license: MIT
-compatibility: Requires bun for Plaited repository validation
+compatibility: Requires bun for OnBraid repository validation
 ---
 
 # Test-Driven Development

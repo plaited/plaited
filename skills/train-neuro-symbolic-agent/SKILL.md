@@ -9,7 +9,7 @@ description: >
   add-remote-mcp). Covers training pipeline, verifier-filtered dataset
   extraction, and ICL wire between analyst and executor.
 license: ISC
-compatibility: Requires bun, plaited CLI, inference worker with model endpoint, Unsloth for SFT
+compatibility: Requires bun, onbraid CLI, inference worker with model endpoint, Unsloth for SFT
 ---
 
 # Train Neuro-Symbolic Agent
@@ -181,7 +181,7 @@ system: You are a Plaited analyst. Given the current Plaited context
 (patterns, objectives, prior events), produce concise, structured
 instructions that a coding agent should follow to accomplish the task.
 
-user: <plaited_context_json>
+user: <onbraid_context_json>
 
 Task: <user_request>
 ```
@@ -376,7 +376,7 @@ export const extractPairs = async (
 ### Layout
 
 ```
-~/.plaited/training/<run>/
+~/.onbraid/training/<run>/
 ├── pairs.jsonl             ← TrainingPair lines extracted from snapshots
 ├── config.json             ← Model, stage, hyperparams
 └── results.jsonl           ← EvalTrialResult lines (post-grade)
@@ -385,7 +385,7 @@ export const extractPairs = async (
 ### Dataset Versioning and Reproducibility
 
 ```
-.plaited/
+.onbraid/
 ├── training/
 │   ├── runs/
 │   │   ├── 2026-06-04T00-00-00-stage-1-analyst/
@@ -397,7 +397,7 @@ export const extractPairs = async (
 
 ## Eval Integration
 
-Training pairs convert to and from `EvalTrial` for use with `plaited eval`:
+Training pairs convert to and from `EvalTrial` for use with `onbraid eval`:
 
 ```
 TrainingPair → EvalTrial:
@@ -427,7 +427,7 @@ Inline `json` graders carry ICL through grading:
 }
 ```
 
-This means `plaited eval calibrate` shows reviewers the exact ICL
+This means `onbraid eval calibrate` shows reviewers the exact ICL
 instructions that produced each trial alongside pass/fail verdicts.
 
 ## Always-Search Policy via MCP
@@ -438,18 +438,18 @@ before generating ICL instructions.
 
 ### Search Provider Setup
 
-Install a search MCP provider via `plaited mcp-client`. The recommendation
+Install a search MCP provider via `onbraid mcp-client`. The recommendation
 is You.com's MCP server:
 
 ```bash
 # Discover available tools
-plaited mcp-client '{"mode":"discover","url":"https://mcp.you.com"}'
+`onbraid mcp-client '{"mode":"discover","url":"https://mcp.you.com"}'
 
 # List search tools
-plaited mcp-client '{"mode":"list-tools","url":"https://mcp.you.com"}'
+`onbraid mcp-client '{"mode":"list-tools","url":"https://mcp.you.com"}'
 
 # Call search
-plaited mcp-client '{
+`onbraid mcp-client '{
   "mode": "call-tool",
   "url": "https://mcp.you.com",
   "tool": "you-search",
@@ -643,12 +643,12 @@ produced passing executor output.
 | Level | Check | Tooling |
 |-------|-------|---------|
 | **L1** | Structural parse | Zod schema validation |
-| **L2** | No deadlock | `plaited frontier-analysis` / frontier-analysis worker |
+| **L2** | No deadlock | `onbraid frontier-analysis` / frontier-analysis worker |
 | **L3** | Runtime correctness | BP engine + snapshot compare + mock MCP |
 | **L4** | Domain-specific | TBD per domain (protocol, schema, etc.) |
 | **L5** | End-to-end | Compile + test (shell worker) |
 
-The verifier maps to `command` graders in `plaited eval grade`, or runs
+The verifier maps to `command` graders in `onbraid eval grade`, or runs
 as behavioral handler calls to existing workers.
 
 ## Model Selection and Licensing
@@ -672,7 +672,7 @@ or fine-tuned, only accessed through the inference worker endpoint.
 - [ ] TrainingPairSchema added — `src/agent/training/training.schemas.ts`
 - [ ] Extractor: `src/agent/training/extract-pairs.ts`
 - [ ] SFT script: `training/train_analyst_sft.py` (Unsloth)
-- [ ] MCP search provider configured via `plaited mcp-client`
+- [ ] MCP search provider configured via `onbraid mcp-client`
 - [ ] Agent wire: analyst first → executor with ICL injection
 - [ ] Model endpoint configured (openresponses.org vLLM)
 

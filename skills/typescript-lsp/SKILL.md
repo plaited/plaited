@@ -39,10 +39,10 @@ For non-LSP tasks: use **Glob** for file finding, **Grep** for text search.
 Single command with JSON input. Two modes via `mode` discriminant:
 
 ```bash
-plaited typescript-lsp '<json>'
-echo '<json>' | plaited typescript-lsp
-plaited typescript-lsp --schema input    # JSON Schema for input
-plaited typescript-lsp --schema output   # JSON Schema for output
+`onbraid typescript-lsp '<json>'
+echo '<json>' | onbraid typescript-lsp
+`onbraid typescript-lsp --schema input    # JSON Schema for input
+`onbraid typescript-lsp --schema output   # JSON Schema for output
 ```
 
 ## Modes
@@ -138,19 +138,19 @@ The capabilities array reflects the actual server response — it is not a hardc
 ### Get type info at position
 
 ```bash
-plaited typescript-lsp '{"mode":"execute","file":"src/utils/parser.ts","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file:///home/user/project/src/utils/parser.ts"},"position":{"line":42,"character":10}}}]}'
+`onbraid typescript-lsp '{"mode":"execute","file":"src/utils/parser.ts","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file:///home/user/project/src/utils/parser.ts"},"position":{"line":42,"character":10}}}]}'
 ```
 
 ### Find all references before refactoring
 
 ```bash
-plaited typescript-lsp '{"mode":"execute","file":"src/utils/parser.ts","requests":[{"method":"textDocument/references","params":{"textDocument":{"uri":"file:///home/user/project/src/utils/parser.ts"},"position":{"line":42,"character":10}}}]}'
+`onbraid typescript-lsp '{"mode":"execute","file":"src/utils/parser.ts","requests":[{"method":"textDocument/references","params":{"textDocument":{"uri":"file:///home/user/project/src/utils/parser.ts"},"position":{"line":42,"character":10}}}]}'
 ```
 
 ### Batch: hover + references + symbols in one session
 
 ```bash
-plaited typescript-lsp '{"mode":"execute","file":"src/utils/parser.ts","requests":[
+`onbraid typescript-lsp '{"mode":"execute","file":"src/utils/parser.ts","requests":[
   {"method":"textDocument/hover","params":{"textDocument":{"uri":"file:///home/user/project/src/utils/parser.ts"},"position":{"line":10,"character":13}}},
   {"method":"textDocument/references","params":{"textDocument":{"uri":"file:///home/user/project/src/utils/parser.ts"},"position":{"line":10,"character":13}}},
   {"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file:///home/user/project/src/utils/parser.ts"}}}
@@ -160,25 +160,25 @@ plaited typescript-lsp '{"mode":"execute","file":"src/utils/parser.ts","requests
 ### Go to definition
 
 ```bash
-plaited typescript-lsp '{"mode":"execute","file":"src/utils/parser.ts","requests":[{"method":"textDocument/definition","params":{"textDocument":{"uri":"file:///home/user/project/src/utils/parser.ts"},"position":{"line":15,"character":8}}}]}'
+`onbraid typescript-lsp '{"mode":"execute","file":"src/utils/parser.ts","requests":[{"method":"textDocument/definition","params":{"textDocument":{"uri":"file:///home/user/project/src/utils/parser.ts"},"position":{"line":15,"character":8}}}]}'
 ```
 
 ### Search workspace for a symbol by name
 
 ```bash
-plaited typescript-lsp '{"mode":"execute","file":"src/app.ts","requests":[{"method":"workspace/symbol","params":{"query":"parseConfig"}}]}'
+`onbraid typescript-lsp '{"mode":"execute","file":"src/app.ts","requests":[{"method":"workspace/symbol","params":{"query":"parseConfig"}}]}'
 ```
 
 ### List all symbols in a file
 
 ```bash
-plaited typescript-lsp '{"mode":"execute","file":"src/utils/parser.ts","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file:///home/user/project/src/utils/parser.ts"}}}]}'
+`onbraid typescript-lsp '{"mode":"execute","file":"src/utils/parser.ts","requests":[{"method":"textDocument/documentSymbol","params":{"textDocument":{"uri":"file:///home/user/project/src/utils/parser.ts"}}}]}'
 ```
 
 ### Discover server capabilities
 
 ```bash
-plaited typescript-lsp '{"mode":"discover"}'
+`onbraid typescript-lsp '{"mode":"discover"}'
 ```
 
 Use this first if you are unsure which methods the installed `typescript-language-server` supports.
@@ -190,7 +190,7 @@ Use this first if you are unsure which methods the installed `typescript-languag
 - The `initialize` handshake is managed automatically. You do not send this request.
 - Responses with `uri`/`targetUri` fields get augmented with relative `path`/`targetPath` fields for convenience. The original URIs remain unchanged.
 - For a complete reference of LSP method names and their parameter shapes, consult the [LSP Specification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/).
-- Use `plaited typescript-lsp --schema input` to see the exact JSON Schema of accepted input.
+- Use `onbraid typescript-lsp --schema input` to see the exact JSON Schema of accepted input.
 
 ## Exit Codes
 

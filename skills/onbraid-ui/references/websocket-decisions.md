@@ -2,7 +2,7 @@
 
 ## Overview
 
-This reference captures the high-level decisions behind Plaited's UI WebSocket
+This reference captures the high-level decisions behind OnBraid's UI WebSocket
 layer.
 
 ## Key Decisions

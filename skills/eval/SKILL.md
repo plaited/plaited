@@ -1,13 +1,13 @@
 ---
 name: eval
-description: Grade, compare, and calibrate Plaited trial results with `plaited eval`.
+description: Grade, compare, and calibrate Plaited trial results with `onbraid eval`.
 license: ISC
 compatibility: Requires bun
 ---
 
 # Eval
 
-CLI guidance for `plaited eval` grading, run comparison, and grader calibration.
+CLI guidance for `onbraid eval` grading, run comparison, and grader calibration.
 
 ## When To Use
 
@@ -20,9 +20,9 @@ CLI guidance for `plaited eval` grading, run comparison, and grader calibration.
 ## Command Discovery
 
 ```bash
-plaited --schema
-plaited eval --schema input
-plaited eval --schema output
+`onbraid --schema
+`onbraid eval --schema input
+`onbraid eval --schema output
 ```
 
 ## Grade Mode
@@ -46,7 +46,7 @@ Key semantics:
 Example:
 
 ```bash
-plaited eval '{
+`onbraid eval '{
   "mode": "grade",
   "trial": {
     "id": "trial-1",
@@ -222,7 +222,7 @@ Use `needsHumanReason` when `label` is `needs_human`.
 Example:
 
 ```bash
-plaited eval '{
+`onbraid eval '{
   "mode": "calibrate",
   "bundle": { "label": "candidate-run", "tasks": [] },
   "focus": "all_failures",

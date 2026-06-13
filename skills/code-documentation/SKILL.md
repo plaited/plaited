@@ -4,10 +4,10 @@ description: >
   TSDoc conventions for TypeScript/JavaScript source files. Invoke when
   writing or modifying any .ts/.tsx source file to apply TSDoc standards to
   exported declarations (functions, types, modules, interfaces). Also covers
-  audit coverage via plaited code-documentation CLI and provides reference
+  audit coverage via onbraid code-documentation CLI and provides reference
   templates for public APIs, internal modules, and complex types.
 license: ISC
-compatibility: Requires `plaited` CLI
+compatibility: Requires `onbraid` CLI
 allowed-tools: Bash
 ---
 
@@ -29,9 +29,9 @@ This skill provides both TSDoc policy guidance and an executable audit tool for 
 ## Quick Reference
 
 - **Audit current coverage**:
-  `plaited code-documentation '{"targets":["src/**/*.ts"]}'`
+  `onbraid code-documentation '{"targets":["src/**/*.ts"]}'`
 - **Print JSON schema**:
-  `plaited code-documentation --schema input`
+  `onbraid code-documentation --schema input`
 - **Creating TSDoc**: See [workflow.md](references/workflow.md) for the generation workflow
 - **Maintaining TSDoc**: See [maintenance.md](references/maintenance.md) for cleanup and sync guidelines
 
@@ -40,8 +40,8 @@ This skill provides both TSDoc policy guidance and an executable audit tool for 
 AST-based audit tool that runs four operations in a single pass:
 
 ```bash
-plaited code-documentation '{"targets":["src/**/*.ts","src/**/*.tsx"]}'
-echo '{"targets":["src/agent/agent.ts"]}' | plaited code-documentation
+`onbraid code-documentation '{"targets":["src/**/*.ts","src/**/*.tsx"]}'
+echo '{"targets":["src/agent/agent.ts"]}' | onbraid code-documentation
 ```
 
 Reports:

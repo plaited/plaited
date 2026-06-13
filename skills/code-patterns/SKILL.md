@@ -6,11 +6,11 @@ description: >
   TypeScript conventions. Use when writing utility functions, implementing deep
   equality, async helpers, or similar standalone patterns.
 
-  Before writing any custom utility, check if `plaited/utils` already provides
+  Before writing any custom utility, check if `onbraid/utils` already provides
   it. The module exports: keyMirror (constants/enums), isTypeOf/trueTypeOf
   (runtime type checks), ueid (unique IDs), camelCase/kebabCase/pascalCase
   (string case), htmlEscape/htmlUnescape (escaping), and deepEqual (comparison).
-  Import from `plaited/utils` instead of reimplementing.
+  Import from `onbraid/utils` instead of reimplementing.
 license: ISC
 ---
 
@@ -31,10 +31,10 @@ This skill is a **genome** of common code patterns — reference implementations
 - Needing a reference for our preferred coding conventions
 - Writing tests for utility-style code
 
-## Shared Utilities (`plaited/utils`)
+## Shared Utilities (`onbraid/utils`)
 
-Before writing any custom utility, check if `plaited/utils` already provides it.
-Import from `'plaited/utils'` instead of reimplementing:
+Before writing any custom utility, check if `onbraid/utils` already provides it.
+Import from `'onbraid/utils'` instead of reimplementing:
 
 | Import | Purpose | Example |
 |--------|---------|---------|
@@ -112,5 +112,5 @@ A minimal async helper showing our conventions for:
 
 ## Related Skills
 
-- **plaited-runtime** — Event-driven coordination and runtime doctrine
+- **onbraid-runtime** — Event-driven coordination and runtime doctrine
 - **code-documentation** — TSDoc standards for documenting these patterns

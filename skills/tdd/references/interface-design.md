@@ -29,5 +29,5 @@ const processOrder = async ({ order, paymentClient }: ProcessOrderOptions) => {
 };
 ```
 
-Avoid one-off wrappers that only rename or pass through another function. In Plaited runtime
+Avoid one-off wrappers that only rename or pass through another function. In OnBraid runtime
 boundary code, explicit callsite wiring is often clearer than indirection.

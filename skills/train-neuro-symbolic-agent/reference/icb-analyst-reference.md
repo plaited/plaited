@@ -24,14 +24,14 @@ concise, structured instructions that a coding agent should follow
 to accomplish the user's task.
 
 user:
-<plaited_context>
+<onbraid_context>
 {
   "patterns": ["editor.selection-change", "state.sync", "ui.render"],
   "objectives": ["Enable reactive state binding for editor topic"],
   "priorEvents": [...],
   "availablePackages": [...]
 }
-</plaited_context>
+</onbraid_context>
 
 Task: "Add a reactive selector that syncs editor selection state with
       the global store when the topic is 'editor:focused'."
