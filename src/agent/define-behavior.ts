@@ -12,7 +12,7 @@ import {
 } from '../behavioral.ts'
 import { B_PROGRAM_IDENTIFIER } from './agent.constants.ts'
 
-type GetThreadsArgs = Omit<ReturnType<Behavioral>, 'useSnapshot'> & { topic: string }
+type InitArgs = Omit<ReturnType<Behavioral>, 'useSnapshot'> & { topic: string; workflow: string; cwd: string }
 type DefineBehaviorArgs = Omit<ReturnType<Behavioral>, 'useSnapshot'> & {
   sync: Sync
   thread: Thread
@@ -21,12 +21,12 @@ type DefineBehaviorArgs = Omit<ReturnType<Behavioral>, 'useSnapshot'> & {
 type BProgram = (args: DefineBehaviorArgs) => void | Promise<void>
 
 export type DefineBehavior = (bProgram: BProgram) => {
-  (args: GetThreadsArgs): Promise<void>
+  (args: InitArgs): Promise<void>
   $: typeof B_PROGRAM_IDENTIFIER
 }
 
 export const defineBehavior = (bProgram: BProgram) => {
-  const getProgram = async ({ trigger: baseTrigger, topic, ...args }: GetThreadsArgs) => {
+  const init = async ({ trigger: baseTrigger, topic, ...args }: InitArgs) => {
     const trigger: Trigger = ({ type, detail }) => {
       baseTrigger({
         type,
@@ -66,6 +66,6 @@ export const defineBehavior = (bProgram: BProgram) => {
       thread,
     })
   }
-  getProgram.$ = B_PROGRAM_IDENTIFIER
-  return getProgram
+  init.$ = B_PROGRAM_IDENTIFIER
+  return init
 }
