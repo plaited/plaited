@@ -1,7 +1,6 @@
 type TemplateObject = {
   html: string[]
   stylesheets: string[]
-  registry: string[]
   scale: string
   $: string
 }
@@ -11,7 +10,6 @@ type FunctionTemplate = (attrs: Record<string, unknown>) => TemplateObject
 const h = (tag: string, _attrs: Record<string, unknown>): TemplateObject => ({
   html: [`<${tag}></${tag}>`],
   stylesheets: [],
-  registry: [],
   scale: 'rel',
   $: '🦄',
 })

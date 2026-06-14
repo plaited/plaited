@@ -125,32 +125,8 @@ afterAll(async () => {
 // ─── Controller runtime: real browser ─────────────────────────────────────────
 
 describe('Controller: real browser', () => {
-  test('display:contents computed style', async () => {
-    const output = await cli(
-      'eval',
-      "() => { const el = document.querySelector('test-island'); return el ? getComputedStyle(el).display : 'not found'; }",
-    )
-    const result = parseResult(output)
-    expect(result).toContain('contents')
-  })
-
-  test('registers the custom element', async () => {
-    const output = await cli(
-      'eval',
-      "() => { const ctor = customElements.get('test-island'); const el = document.querySelector('test-island'); return !!ctor && el instanceof ctor; }",
-    )
-    const result = parseResult(output)
-    expect(result).toContain('true')
-  })
-
-  test('custom element exists in DOM', async () => {
-    const output = await cli('eval', "() => document.querySelector('test-island')?.tagName")
-    const result = parseResult(output)
-    expect(result).toContain('TEST-ISLAND')
-  })
-
-  test('o-target attribute is present on descendant', async () => {
-    const output = await cli('eval', "() => document.querySelector('test-island [o-target]')?.getAttribute('o-target')")
+  test('o-target attribute is present on page elements', async () => {
+    const output = await cli('eval', "() => document.querySelector('[o-target]')?.getAttribute('o-target')")
     const result = parseResult(output)
     expect(result).toContain('main')
   })
@@ -163,7 +139,7 @@ describe('Controller: real browser', () => {
     expect(result).toContain('Hello from WebSocket')
   })
 
-  test('WebSocket open emits controller.connected inventory', () => {
+  test('WebSocket open emits controller.connected with timestamp', () => {
     const event = findUiEvent({ source: 'test-island', type: 'controller_connected' })
 
     expect(event).toBeDefined()
@@ -172,6 +148,9 @@ describe('Controller: real browser', () => {
       detail: {
         event: {
           type: 'controller_connected',
+          detail: {
+            timestamp: expect.any(Number),
+          },
         },
       },
     })
@@ -421,7 +400,7 @@ describe('controller: module registers', () => {
   }, 30000)
 
   test('reports import_invoked after the Register callback finishes', () => {
-    // The Register callback runs during connectedCallback. Since the buttons are in
+    // The Register callback runs during initialization. Since the buttons are in
     // the initial HTML, the callback can bind listeners immediately.
     // The module sets __controllerModuleLoaded on success.
     // Verified by finding the controller_connected event that proves the controller started.
@@ -462,13 +441,17 @@ describe('controller: module registers', () => {
     expect(attrs['data-extra']).toBe('module-listener')
   }, 30000)
 
-  test('disconnect runs cleanup callbacks registered by Register functions', async () => {
+  test('disconnect runs cleanup callbacks when pagehide fires', async () => {
     await gotoTest('/module-fixture.html')
 
     const loaded = await cli('eval', '() => globalThis.__controllerModuleLoaded === true')
     expect(parseResult(loaded)).toContain('true')
 
-    await cli('eval', "() => { document.querySelector('module-fixture')?.remove(); return 'removed'; }")
+    // Dispatch synthetic pagehide event to trigger controller teardown
+    await cli(
+      'eval',
+      "() => { window.dispatchEvent(new PageTransitionEvent('pagehide')); return 'dispatched'; }",
+    )
     await wait(250)
 
     const afterDisconnect = await cli('eval', '() => globalThis.__controllerModuleLoaded === false')

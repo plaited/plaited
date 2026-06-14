@@ -24,7 +24,6 @@ import {
   O_SCALE,
   O_TRIGGER,
   PRIMITIVES,
-  RESERVED_CUSTOM_ELEMENT_TAGS,
   SCALE,
   SCALE_RANK,
   SITE_ROOT_JAVASCRIPT_PATH_PATTERN,
@@ -133,7 +132,7 @@ export const fragment: CreateFragment = (_children) => {
 
 /** @internal Narrows valid lowercase custom element tag names. */
 const isCustomElementTag = (tag: string): tag is CustomElementTag => {
-  return CUSTOM_ELEMENT_TAG_PATTERN.test(tag) && !RESERVED_CUSTOM_ELEMENT_TAGS.has(tag)
+  return CUSTOM_ELEMENT_TAG_PATTERN.test(tag)
 }
 
 const normalizeAttributeKeys = (attrs: Record<string, unknown>): Record<string, unknown> => {

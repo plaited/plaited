@@ -15,15 +15,17 @@ const FIXTURES_DIR = import.meta.dir
 const DIST_DIR = join(FIXTURES_DIR, 'dist')
 const controllerRoutes = await bundleController()
 
-const connectScript = (tags: string[], modules?: string[], agentCardId?: string) => {
-  let url = `${CONNECT_ONBRAID_ROUTE}?registry=${encodeURIComponent(tags.join(','))}`
+const connectScript = (modules?: string[], agentCardId?: string) => {
+  let url = CONNECT_ONBRAID_ROUTE
+  const params = new URLSearchParams()
   if (modules?.length) {
-    url += `&modules=${encodeURIComponent(modules.join(','))}`
+    params.set('modules', modules.join(','))
   }
   if (agentCardId) {
-    url += `&agentCardId=${encodeURIComponent(agentCardId)}`
+    params.set('agentCardId', agentCardId)
   }
-  return url
+  const qs = params.toString()
+  return qs ? `${url}?${qs}` : url
 }
 
 // Build the imported controller module separately, served from /modules/.
@@ -59,13 +61,10 @@ const HTML_CONTROL_ISLAND = `<!DOCTYPE html>
 <html>
 <head>
   <title>Control Island Test</title>
-  <style>test-island { display: contents; }</style>
 </head>
 <body>
-  <test-island>
-    <div o-target="main"><p>initial content</p></div>
-  </test-island>
-  <script type="module" src="${connectScript(['test-island'])}"></script>
+  <div o-target="main"><p>initial content</p></div>
+  <script type="module" src="${connectScript()}"></script>
 </body>
 </html>`
 
@@ -73,13 +72,10 @@ const HTML_SWAP_FIXTURE = `<!DOCTYPE html>
 <html>
 <head>
   <title>Swap Fixture Test</title>
-  <style>swap-fixture { display: contents; }</style>
 </head>
 <body>
-  <swap-fixture>
-    <div o-target="main"><p>initial swap content</p></div>
-  </swap-fixture>
-  <script type="module" src="${connectScript(['swap-fixture'])}"></script>
+  <div o-target="main"><p>initial swap content</p></div>
+  <script type="module" src="${connectScript()}"></script>
 </body>
 </html>`
 
@@ -87,17 +83,14 @@ const HTML_MODULE_FIXTURE = `<!DOCTYPE html>
 <html>
 <head>
   <title>Controller Module Test</title>
-  <style>module-fixture { display: contents; }</style>
 </head>
 <body>
-  <module-fixture id="module-fixture">
-    <div o-target="main">
-      <button id="module-o-trigger-btn" data-extra="o-trigger-attr" o-trigger="click:test_click">O-trigger Action</button>
-      <button id="module-enhanced-btn" data-extra="module-listener">Module Listener</button>
-      <div id="module-initial">Module fixture loaded</div>
-    </div>
-  </module-fixture>
-  <script type="module" src="${connectScript(['module-fixture'], ['/dist/modules/controller-module.js'])}"></script>
+  <div o-target="main">
+    <button id="module-o-trigger-btn" data-extra="o-trigger-attr" o-trigger="click:test_click">O-trigger Action</button>
+    <button id="module-enhanced-btn" data-extra="module-listener">Module Listener</button>
+    <div id="module-initial">Module fixture loaded</div>
+  </div>
+  <script type="module" src="${connectScript(['/dist/modules/controller-module.js'])}"></script>
 </body>
 </html>`
 
@@ -137,13 +130,12 @@ const TEST_PAGE_CONTENT: Record<string, string> = {
   `,
 }
 
-const generateTestPage = (tag: string) => {
-  const content = TEST_PAGE_CONTENT[tag] ?? '<p>test content</p>'
-  const source = tag
-  const testPath = `/test/${tag}`
+const generateTestPage = (source: string) => {
+  const content = TEST_PAGE_CONTENT[source] ?? '<p>test content</p>'
+  const testPath = `/test/${source}`
   registerSource(testPath, source)
   const styleErrorPatch =
-    tag === 'style-error-test'
+    source === 'style-error-test'
       ? `<script>
   const originalReplace = CSSStyleSheet.prototype.replace
   CSSStyleSheet.prototype.replace = function(styles) {
@@ -155,14 +147,14 @@ const generateTestPage = (tag: string) => {
   </script>`
       : ''
   const moduleScript =
-    tag === 'bad-import-test'
-      ? ` type="module" src="${connectScript([tag], ['/dist/modules/invalid-controller-module.js'])}"`
-      : tag === 'a2a-test'
-        ? ` type="module" src="${connectScript([tag], undefined, 'agent-card')}"`
-        : ` type="module" src="${connectScript([tag])}"`
+    source === 'bad-import-test'
+      ? ` type="module" src="${connectScript(['/dist/modules/invalid-controller-module.js'])}"`
+      : source === 'a2a-test'
+        ? ` type="module" src="${connectScript(undefined, 'agent-card')}"`
+        : ` type="module" src="${connectScript()}"`
 
   const agentCardTag =
-    tag === 'a2a-test'
+    source === 'a2a-test'
       ? `<script id="agent-card" type="application/agent+json">
 {
   "name": "A2A Test Agent",
@@ -182,14 +174,11 @@ const generateTestPage = (tag: string) => {
   return `<!DOCTYPE html>
 <html>
 <head>
-  <title>${tag} Test</title>
-  <style>${tag} { display: contents; }</style>
+  <title>${source} Test</title>
 </head>
 <body>
   ${agentCardTag}
-  <${tag}>
-    ${content}
-  </${tag}>
+  ${content}
   ${styleErrorPatch}
   <script${moduleScript}></script>
 </body>
@@ -472,7 +461,7 @@ export const startServer = (port = 0): FixtureServer => {
             break
           case 'module-fixture':
             // The module Register function is loaded via connect.js modules param
-            // and runs during connectedCallback. No render message needed —
+            // and runs during initialization. No render message needed —
             // buttons are in the initial HTML.
             break
           case 'bad-import-test':

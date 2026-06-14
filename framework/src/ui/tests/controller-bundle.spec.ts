@@ -15,8 +15,7 @@ describe('Controller bundle', () => {
     const uncompressed = Bun.gunzipSync(compressed)
     const source = new TextDecoder().decode(uncompressed)
 
-    expect(source).toContain('searchParams')
-    expect(source).toContain('initialize')
+    expect(source).toContain('useController')
     expect(source).not.toContain('sourceMappingURL')
     expect(compressed.byteLength / 1024).toBeLessThan(30)
   })

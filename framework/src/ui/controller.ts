@@ -22,7 +22,6 @@ import {
 import { normalizeControllerErrorDetail } from './controller-error-detail.ts'
 import { DelegatedListener, delegates } from './delegated-listener.ts'
 import { BOOLEAN_ATTRS, O_TARGET, O_TRIGGER } from './template.constants.ts'
-import type { CustomElementTag } from './template.types.ts'
 
 const getAttributes = (element: Element): Record<string, string> => {
   return Object.fromEntries(Array.from(element.attributes, (attr) => [attr.name, attr.value]))
@@ -99,7 +98,6 @@ export type Register = (args: {
 
 export const useController = ({
   registry = [],
-  tag,
   agentCardId,
   onPageReveal,
   onPageSwap,
@@ -110,17 +108,16 @@ export const useController = ({
   /**
    * Optional id of a `<script type="application/agent+json">` element in
    * the page HTML. When set, the controller reads the Agent Card from
-   * that script tag during {@linkcode connectedCallback} and registers it
-   * with the Flutter bridge via `agent/card` postMessage.
+   * that script tag and registers it with the Flutter bridge via
+   * `agent/card` postMessage.
    */
   agentCardId?: string
   onPageReveal?: (event: PageRevealEvent) => void | Promise<void>
   onPageSwap?: (event: PageSwapEvent) => void | Promise<void>
   onPageShow?: (event: PageTransitionEvent) => void | Promise<void>
   onPageHide?: (event: PageTransitionEvent) => void | Promise<void>
-  tag: CustomElementTag
 }) => {
-  class Controller extends HTMLElement {
+  class Controller {
     #disconnectSet = new Set<Disconnect>()
     #socket: WebSocket | undefined
     #retryCount = 0
@@ -222,7 +219,9 @@ export const useController = ({
     #sendConnected() {
       this.#trigger({
         type: CONTROLLER_EVENTS.controller_connected,
-        detail: { ...getAttributes(this), tagName: this.tagName.toLowerCase() },
+        detail: {
+          timestamp: Date.now(),
+        },
       })
     }
     #trigger(event: BPEvent) {
@@ -288,11 +287,10 @@ export const useController = ({
       }
     }
     async #updateDocumentStyles(stylesheets: string[]) {
-      const root = this.ownerDocument
-      let instanceStyles = cssCache.get(root)
+      let instanceStyles = cssCache.get(document)
       if (!instanceStyles) {
         instanceStyles = new Set()
-        cssCache.set(root, instanceStyles)
+        cssCache.set(document, instanceStyles)
       }
       for (const styles of stylesheets) {
         if (instanceStyles.has(styles)) continue
@@ -300,7 +298,7 @@ export const useController = ({
         try {
           const sheet = new CSSStyleSheet()
           const nextSheet = await sheet.replace(styles)
-          root.adoptedStyleSheets = [...root.adoptedStyleSheets, nextSheet]
+          document.adoptedStyleSheets = [...document.adoptedStyleSheets, nextSheet]
         } catch (error) {
           instanceStyles.delete(styles)
           this.#reportError(error, {
@@ -356,7 +354,7 @@ export const useController = ({
         switch (type) {
           case AGENT_TO_CONTROLLER_EVENTS.render: {
             const { target, html, swap, stylesheets } = RenderMessageSchema.shape.detail.parse(detail)
-            const element = this.querySelector(`[${O_TARGET}="${target}"]`)
+            const element = document.querySelector(`[${O_TARGET}="${target}"]`)
             if (!element) return
             void this.#updateDocumentStyles(stylesheets)
             this.#performSwap({
@@ -368,7 +366,7 @@ export const useController = ({
           }
           case AGENT_TO_CONTROLLER_EVENTS.attrs: {
             const { target, attr } = AttrsMessageSchema.shape.detail.parse(detail)
-            const element = this.querySelector(`[${O_TARGET}="${target}"]`)
+            const element = document.querySelector(`[${O_TARGET}="${target}"]`)
             if (!element) {
               console.error(CONTROLLER_ERRORS.attrs_element_not_found, target)
               return
@@ -444,6 +442,7 @@ export const useController = ({
     }
     async #onPageHide(event: PageTransitionEvent) {
       await onPageHide?.(event)
+      this.#disconnect()
     }
     async #onPageReveal(event: PageRevealEvent) {
       await onPageReveal?.(event)
@@ -454,7 +453,7 @@ export const useController = ({
     async #onPageSwap(event: PageSwapEvent) {
       await onPageSwap?.(event)
     }
-    connectedCallback() {
+    connect() {
       const listener = new DelegatedListener((event: Event) => {
         isPageHide(event) && this.#onPageHide(event)
         isPageReveal(event) && this.#onPageReveal(event)
@@ -512,7 +511,7 @@ export const useController = ({
         }
       }
     }
-    disconnectedCallback() {
+    #disconnect() {
       this.#withdrawAgent()
       if (this.#a2aMessageHandler) {
         window.removeEventListener('message', this.#a2aMessageHandler)
@@ -523,5 +522,6 @@ export const useController = ({
       this.#closeSocket(this.#socket)
     }
   }
-  customElements.define(tag, Controller)
+  const controller = new Controller()
+  controller.connect()
 }

@@ -46,21 +46,6 @@ export const SITE_ROOT_JAVASCRIPT_PATH_PATTERN = /^\/(?!\/)[^\s\\?#]+\.js(?:[?#]
 export const CUSTOM_ELEMENT_TAG_PATTERN = /^[a-z][.0-9_a-z-]*-[.0-9_a-z-]*$/
 
 /**
- * Custom element names reserved by the HTML specification and rejected by
- * `customElements.define()`.
- */
-export const RESERVED_CUSTOM_ELEMENT_TAGS = new Set([
-  'annotation-xml',
-  'color-profile',
-  'font-face',
-  'font-face-src',
-  'font-face-uri',
-  'font-face-format',
-  'font-face-name',
-  'missing-glyph',
-])
-
-/**
  * A Set containing HTML and SVG tag names that are considered "void elements".
  * Void elements cannot have any content (neither HTML nor text nodes) and are
  * represented with a self-closing tag in HTML serialization (e.g., `<br />`, `<img src="..." />`).
