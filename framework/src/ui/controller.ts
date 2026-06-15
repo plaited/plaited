@@ -149,8 +149,6 @@ export type AgentCard = {
   name: string
   /** Description of the agent's capabilities. */
   description: string
-  /** Agent version for compatibility checking. */
-  version: string
   /** Organization providing the agent. */
   provider?: {
     organization: string

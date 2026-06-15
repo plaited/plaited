@@ -47,10 +47,9 @@ Standard A2A defines an Agent Card with fields that assume an HTTP-reachable ser
 
 | Field | A2A | Web-A2A | Why |
 |---|---|---|---|
-| `name` | required | required | Agent identity. Can be derived from `<title>` or a `<meta name="agent-name">` tag. |
-| `description` | required | required | What the agent does. Can be derived from `<meta name="description">` or a `<meta name="agent-description">` tag. |
+| `name` | required | required | Agent identity. Can be derived from the page `<title>`. |
+| `description` | required | required | What the agent does. Can be derived from `<meta name="description">`. |
 | `url` | required | **removed** | The agent bridge is not reachable at a URL — the native app talks via postMessage. |
-| `version` | required | required | Compatibility. Can be derived from `<meta name="agent-version">`. |
 | `provider.organization` | optional | optional | Who built it. |
 | `skills` | optional | optional | What tasks the agent can perform. |
 | `documentationUrl` | optional | **removed** | User is on the page — documentation is in the UI. |
@@ -68,7 +67,6 @@ Standard A2A defines an Agent Card with fields that assume an HTTP-reachable ser
 type AgentCard = {
   name: string
   description: string
-  version: string
   provider?: { organization: string }
   skills?: {
     id: string
@@ -80,7 +78,7 @@ type AgentCard = {
 }
 ```
 
-The `name`, `description`, and `version` fields can be provided explicitly to the Controller or derived from the page DOM by reading standard HTML metadata elements.
+The `name` and `description` fields can be derived from the page's `<title>` and `<meta name="description">` tags respectively.
 
 ## Transport
 

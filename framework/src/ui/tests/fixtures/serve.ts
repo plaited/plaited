@@ -18,13 +18,11 @@ const controllerRoutes = await bundleController()
 const DEFAULT_AGENT_CARD = {
   name: 'Test Agent',
   description: 'A test agent for browser fixtures',
-  version: '1.0.0',
 }
 
 const A2A_TEST_AGENT_CARD = {
   name: 'A2A Test Agent',
   description: 'A test agent for webA2A protocol',
-  version: '1.0.0',
   skills: [
     {
       id: 'search',
