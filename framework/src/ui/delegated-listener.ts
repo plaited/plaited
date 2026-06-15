@@ -22,14 +22,3 @@ export class DelegatedListener<T extends Event = Event> {
     void this.callback(evt)
   }
 }
-
-/**
- * WeakMap for event delegation data.
- *
- * @remarks
- * Entries are tied to their event targets and are eligible for garbage
- * collection when those targets are removed.
- *
- * @public
- */
-export const delegates = new WeakMap<EventTarget>()

@@ -9,20 +9,20 @@ export const bundleController = async () => {
     entrypoints: [entry],
     files: {
       [entry]: `
-      import { useController } from ${JSON.stringify(controllerEntry)}
+      import { Controller } from ${JSON.stringify(controllerEntry)}
 
       const params = new URL(import.meta.url).searchParams
-      // Load optional Register modules specified as comma-separated paths
+      const agentCard = JSON.parse(params.get('agentCard') ?? 'null')
+      if (!agentCard) throw new Error('Controller bundle: missing agentCard param')
+      // Load optional modules specified as comma-separated paths
       const modulePaths = (params.get('modules') ?? '').split(',').map(s => s.trim()).filter(Boolean)
-      const registers = await Promise.all(modulePaths.map(async (path) => {
+      const modules = await Promise.all(modulePaths.map(async (path) => {
         const mod = await import(path)
         return mod.default
       }))
 
-      useController({
-        registry: registers,
-        agentCardId: params.get('agentCardId') ?? undefined,
-      })
+      const controller = new Controller({ agentCard, modules })
+      controller.connect()
       `,
     },
     minify: true,

@@ -15,14 +15,33 @@ const FIXTURES_DIR = import.meta.dir
 const DIST_DIR = join(FIXTURES_DIR, 'dist')
 const controllerRoutes = await bundleController()
 
-const connectScript = (modules?: string[], agentCardId?: string) => {
+const DEFAULT_AGENT_CARD = {
+  name: 'Test Agent',
+  description: 'A test agent for browser fixtures',
+  version: '1.0.0',
+}
+
+const A2A_TEST_AGENT_CARD = {
+  name: 'A2A Test Agent',
+  description: 'A test agent for webA2A protocol',
+  version: '1.0.0',
+  skills: [
+    {
+      id: 'search',
+      name: 'Search',
+      description: 'Search the web for a query',
+    },
+  ],
+}
+
+const encodeAgentCard = (card: Record<string, unknown>) => encodeURIComponent(JSON.stringify(card))
+
+const connectScript = (modules?: string[], agentCard?: Record<string, unknown>) => {
   let url = CONNECT_ONBRAID_ROUTE
   const params = new URLSearchParams()
+  params.set('agentCard', encodeAgentCard(agentCard ?? DEFAULT_AGENT_CARD))
   if (modules?.length) {
     params.set('modules', modules.join(','))
-  }
-  if (agentCardId) {
-    params.set('agentCardId', agentCardId)
   }
   const qs = params.toString()
   return qs ? `${url}?${qs}` : url
@@ -146,30 +165,11 @@ const generateTestPage = (source: string) => {
   }
   </script>`
       : ''
+  const card = source === 'a2a-test' ? A2A_TEST_AGENT_CARD : DEFAULT_AGENT_CARD
   const moduleScript =
     source === 'bad-import-test'
       ? ` type="module" src="${connectScript(['/dist/modules/invalid-controller-module.js'])}"`
-      : source === 'a2a-test'
-        ? ` type="module" src="${connectScript(undefined, 'agent-card')}"`
-        : ` type="module" src="${connectScript()}"`
-
-  const agentCardTag =
-    source === 'a2a-test'
-      ? `<script id="agent-card" type="application/agent+json">
-{
-  "name": "A2A Test Agent",
-  "description": "A test agent for webA2A protocol",
-  "version": "1.0.0",
-  "skills": [
-    {
-      "id": "search",
-      "name": "Search",
-      "description": "Search the web for a query"
-    }
-  ]
-}
-</script>`
-      : ''
+      : ` type="module" src="${connectScript(undefined, card)}"`
 
   return `<!DOCTYPE html>
 <html>
@@ -177,7 +177,6 @@ const generateTestPage = (source: string) => {
   <title>${source} Test</title>
 </head>
 <body>
-  ${agentCardTag}
   ${content}
   ${styleErrorPatch}
   <script${moduleScript}></script>

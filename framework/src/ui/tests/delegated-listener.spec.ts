@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { DelegatedListener, delegates } from '../delegated-listener.ts'
+import { DelegatedListener } from '../delegated-listener.ts'
+
+const delegates = new WeakMap<EventTarget, DelegatedListener>()
 
 describe('DelegatedListener', () => {
   test('handleEvent calls callback with the event', () => {

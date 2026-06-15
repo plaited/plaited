@@ -465,10 +465,10 @@ describe('controller: module registers', () => {
     const error = await waitFor(() => findError({ after: before, source: 'bad-import-test' }))
     const detail = error.message.detail as Record<string, unknown>
     expect(String(detail.message)).toContain('not a function')
-    expect(detail.description).toBe('Socket listener event handler threw an error')
+    expect(detail.description).toBe('Register callback threw an error')
     expect(detail.context).toEqual(
       expect.objectContaining({
-        eventType: 'open',
+        registerType: 'undefined',
       }),
     )
   }, 30000)
