@@ -145,59 +145,23 @@ export type ControllerConstructorArgs = {
 }
 
 export type AgentCard = {
-  /** REQUIRED. A human-readable name for the agent. */
+  /** Human-readable name for the agent. */
   name: string
-  /** REQUIRED. A description of the agent's capabilities. */
+  /** Description of the agent's capabilities. */
   description: string
-  /** REQUIRED. The URL of the remote agent's A2A endpoint. */
-  url: string
-  /** REQUIRED. The version of the agent. */
+  /** Agent version for compatibility checking. */
   version: string
-  /** The organization providing the agent. */
+  /** Organization providing the agent. */
   provider?: {
     organization: string
-    url?: string
   }
-  /** URL to the agent's icon. */
-  iconUrl?: string
-  /** URL to the agent's documentation. */
-  documentationUrl?: string
-  /** Supported protocol interfaces in preference order. */
-  supportedInterfaces?: {
-    url: string
-    protocolBinding: string
-    protocolVersion: string
-    tenant?: string
-  }[]
-  /** Declared capabilities. */
-  capabilities?: {
-    streaming?: boolean
-    pushNotifications?: boolean
-    extendedAgentCard?: boolean
-  }
-  /** Security schemes the agent supports. */
-  securitySchemes?: Record<string, unknown>
-  /** Security requirements referencing the schemes. */
-  security?: Record<string, string[]>[]
-  /** Default MIME types the agent can receive. */
-  defaultInputModes?: string[]
-  /** Default MIME types the agent can produce. */
-  defaultOutputModes?: string[]
-  /** Skills the agent can perform. */
+  /** Tasks the agent can perform. */
   skills?: {
     id: string
     name: string
     description: string
     tags?: string[]
     examples?: string[]
-    inputModes?: string[]
-    outputModes?: string[]
-  }[]
-  /** Cryptographic signatures for card verification. */
-  signatures?: {
-    protected: string
-    signature: string
-    header?: Record<string, unknown>
   }[]
 }
 
