@@ -277,6 +277,103 @@ On revisit:
               Agent regenerates content via topic memory
 ```
 
+### Module updates and page reload
+
+Most page updates are handled by `render` and `attrs` messages — HTML swapped into the DOM, attributes updated. No reload needed.
+
+When the agent adds new behavioral features (new event handlers, controller extensions, data flow), the page's entry point module needs to change. The entry point is a single statically-analyzed module that imports `Controller` and registers extensions:
+
+```ts
+// entry.a1b2c3d4.ts — static imports, fully analyzable
+import { Controller } from 'onbraid/ui'
+import { flightSelector } from './extensions/flight-selector.ts'
+import { bookingForm } from './extensions/booking-form.ts'
+
+new Controller({
+  agentCard: { ... },
+  extensions: new Map([
+    ['click:select_flight', flightSelector],
+    ['submit:booking', bookingForm],
+  ]),
+}).connect()
+```
+
+When the agent calls `update_page`, the adapter:
+1. Generates new extension modules
+2. Writes `entry.e5f6g7h8.js` with updated imports
+3. Bumps the page hash in the store
+4. Pushes a WebSocket message to all connected Controllers
+
+The Controller receives a `page_reload` event:
+
+```jsonc
+{ "type": "page_reload", "detail": { "hash": "e5f6g7h8" } }
+```
+
+Two options for the reload mechanism, with different cache tradeoffs:
+
+#### Option A: Hash as a search parameter on the page URL
+
+The hash is embedded in the URL itself, making each version a distinct browser resource:
+
+```
+GET /pages/abc-123?h=a1b2c3d4
+↓ after reload
+GET /pages/abc-123?h=e5f6g7h8
+```
+
+```ts
+// Controller handler
+case AGENT_TO_CONTROLLER_EVENTS.page_reload: {
+  const { hash } = detail
+  if (hash !== currentHash) {
+    location.href = `/pages/${pageId}?h=${hash}`
+  }
+  break
+}
+```
+
+| Pros | Cons |
+|------|------|
+| Browser treats each version as a unique resource — no cache ambiguity | Page URL changes on every module update |
+| Can cache page HTML per version (`Cache-Control: immutable` on versioned URLs) | Bookmarks break between versions |
+| No special cache headers required | Extra search param on every navigation |
+
+#### Option B: The page HTML is never cached, script files are cached indefinitely
+
+The page HTML response sets `Cache-Control: no-store` so every load fetches fresh HTML from the server. Script files are content-addressed and cacheable:
+
+```
+GET /pages/abc-123
+  Response:
+    Cache-Control: no-store
+    <meta name="page-hash" content="a1b2c3d4">
+    <script src="/static/pages/abc-123/entry.a1b2c3d4.js">
+
+GET /static/pages/abc-123/entry.a1b2c3d4.js
+  Response:
+    Cache-Control: public, immutable, max-age=31536000
+```
+
+```ts
+// Controller handler
+case AGENT_TO_CONTROLLER_EVENTS.page_reload: {
+  const { hash } = detail
+  if (hash !== currentHash) {
+    location.href = location.href  // no-store guarantees fresh HTML
+  }
+  break
+}
+```
+
+| Pros | Cons |
+|------|------|
+| Clean URLs — no version parameters | Must set `no-store` on the HTML response |
+| Bookmarks always point to latest version | Slightly more server load per page visit (no HTML caching) |
+| Script files cache aggressively (content-addressed) | Relies on correct Cache-Control headers |
+
+**Either option works with the existing pattern.** The `page_reload` event is the same in both cases — only the Controller's handler implementation differs. The page store holds the hash alongside the entry point content, and the adapter pushes the new hash to all connected clients when the entry point changes.
+
 Page persistence is handled by the topic system in db.ts — each page is a topic with bounded `memory` and `user` fields. On reconnect, the agent reads the topic context and regenerates the page within the guardrails.
 
 ## Mental Model: Topics as genUI Sessions
