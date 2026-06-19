@@ -30,7 +30,7 @@ const { addHandler, trigger, addThread, useSnapshot } = behavioral()
 useSnapshot((msg) => recordSnapshot(TOPIC, msg))
 
 type Topic = `${string}_${string}`
-const TOPIC: Topic = `onbraid_${Bun.randomUUIDv7()}`
+const TOPIC: Topic = `plaited_${Bun.randomUUIDv7()}`
 
 addThread(
   'prevent sending worker messages before worker open and after close',

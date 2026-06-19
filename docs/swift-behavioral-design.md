@@ -53,7 +53,7 @@ natural Swift approach.
 ### Class Design
 
 ```swift
-// Sources/OnBraid/Behavioral/BThread.swift
+// Sources/Plaited/Behavioral/BThread.swift
 
 /// A single behavioral synchronization point.
 struct Idioms: Codable {
@@ -100,7 +100,7 @@ BThread is not directly Codable — **Spec is the serialization boundary**.
 Spec JSON is the shared contract between runtimes:
 
 ```swift
-// Sources/OnBraid/Spec/Spec.swift
+// Sources/Plaited/Spec/Spec.swift
 
 struct Spec: Codable {
     let label: String
@@ -236,7 +236,7 @@ super-step:
 ### Engine Core
 
 ```swift
-// Sources/OnBraid/Behavioral/BehavioralProgram.swift
+// Sources/Plaited/Behavioral/BehavioralProgram.swift
 
 @dynamicMemberLookup
 final class BehavioralProgram: @unchecked Sendable {
@@ -409,7 +409,7 @@ CREATE TABLE handlers (
 ### BProgramStore Protocol
 
 ```swift
-// Sources/OnBraid/Storage/BProgramStore.swift
+// Sources/Plaited/Storage/BProgramStore.swift
 
 protocol BProgramStore {
     func saveThread(_ thread: BThread) async throws
@@ -424,7 +424,7 @@ protocol BProgramStore {
 ### GRDB Implementation
 
 ```swift
-// Sources/OnBraid/Storage/GRDBStore.swift
+// Sources/Plaited/Storage/GRDBStore.swift
 
 import GRDB
 
@@ -525,7 +525,7 @@ At runtime, it's converted to a validator. Swift uses a lightweight
 JSON Schema validation library rather than Zod:
 
 ```swift
-// Sources/OnBraid/Spec/JSONSchemaValidator.swift
+// Sources/Plaited/Spec/JSONSchemaValidator.swift
 
 struct BPListener {
     let type: String
@@ -584,14 +584,14 @@ Each spec can be exposed as an App Intent. The Spec's label and sync point
 descriptions drive the intent schema:
 
 ```swift
-// Sources/OnBraid/Intents/AgentIntent.swift
+// Sources/Plaited/Intents/AgentIntent.swift
 
 import AppIntents
 
 /// Intent generated from a Spec's first sync point.
 struct ExecuteAgentAction: AppIntent {
     static let title: LocalizedStringResource = "Run Agent Action"
-    static let description = "Executes a capability from the OnBraid agent"
+    static let description = "Executes a capability from the Plaited agent"
 
     @Parameter(title: "Action")
     var action: String
@@ -615,7 +615,7 @@ Apple Intelligence supports dynamic intent discovery via `AppIntents` entities.
 The agent's stored specs become discoverable actions:
 
 ```swift
-// Sources/OnBraid/Intents/SpecEntity.swift
+// Sources/Plaited/Intents/SpecEntity.swift
 
 struct SpecEntity: AppEntity {
     let id: String
@@ -684,7 +684,7 @@ Frontier analysis on iOS reads Spec from the SQLite store, reconstructs BThreads
 and replays snapshots. No code execution — purely data-driven.
 
 ```swift
-// Sources/OnBraid/Frontier/FrontierAnalysis.swift
+// Sources/Plaited/Frontier/FrontierAnalysis.swift
 
 func replayToFrontier(
     specs: [Spec],

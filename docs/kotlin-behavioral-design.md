@@ -57,7 +57,7 @@ always the serialization boundary.
 ### Class Design
 
 ```kotlin
-// src/main/kotlin/com/onbraid/behavioral/BThread.kt
+// src/main/kotlin/com/plaited/behavioral/BThread.kt
 
 data class Idioms(
     val request: BPEvent? = null,
@@ -89,7 +89,7 @@ class BThread(
 ### Spec → BThread Conversion
 
 ```kotlin
-// src/main/kotlin/com/onbraid/behavioral/Spec.kt
+// src/main/kotlin/com/plaited/behavioral/Spec.kt
 
 @Serializable
 data class Spec(
@@ -152,7 +152,7 @@ Kotlin uses `com.networknt:json-schema-validator` or `everit-json-schema`
 instead of Zod:
 
 ```kotlin
-// src/main/kotlin/com/onbraid/spec/JSONSchemaValidator.kt
+// src/main/kotlin/com/plaited/spec/JSONSchemaValidator.kt
 
 class JSONSchemaValidator(private val schema: JsonObject) {
     private val jsonSchema: JsonSchema = JsonSchemaFactory.getInstance().getSchema(schema)
@@ -239,7 +239,7 @@ Identical super-step — all runtimes share the same algorithm.
 ### Engine Core
 
 ```kotlin
-// src/main/kotlin/com/onbraid/behavioral/BehavioralProgram.kt
+// src/main/kotlin/com/plaited/behavioral/BehavioralProgram.kt
 
 class BehavioralProgram {
     private val pending = mutableSetOf<PendingBid>()
@@ -363,7 +363,7 @@ Same schema as TypeScript and Swift. Uses SQLDelight or Room.
 ### SQLDelight Schema
 
 ```sql
--- src/main/sqldelight/com/onbraid/db/Agent.sq
+-- src/main/sqldelight/com/plaited/db/Agent.sq
 
 CREATE TABLE threads (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -405,7 +405,7 @@ SELECT * FROM snapshots WHERE kind = ? OR ? IS NULL ORDER BY step ASC LIMIT ?;
 ### BProgramStore Interface
 
 ```kotlin
-// src/main/kotlin/com/onbraid/storage/BProgramStore.kt
+// src/main/kotlin/com/plaited/storage/BProgramStore.kt
 
 interface BProgramStore {
     suspend fun saveThread(thread: BThread)
@@ -420,7 +420,7 @@ interface BProgramStore {
 ### SQLDelight Implementation
 
 ```kotlin
-// src/main/kotlin/com/onbraid/storage/SQLDelightStore.kt
+// src/main/kotlin/com/plaited/storage/SQLDelightStore.kt
 
 class SQLDelightStore(driver: SqlDriver) : BProgramStore {
     private val queries = Database(driver).agentQueries
@@ -530,7 +530,7 @@ Each Spec can be exposed as an AppFunction. The Spec's label and sync point
 descriptions drive the function schema:
 
 ```kotlin
-// src/main/kotlin/com/onbraid/appfunctions/AgentAppFunction.kt
+// src/main/kotlin/com/plaited/appfunctions/AgentAppFunction.kt
 
 import android.app.appfunctions.AppFunction
 import android.app.appfunctions.AppFunctionCallback
@@ -538,7 +538,7 @@ import android.app.appfunctions.AppFunctionManager
 
 class ExecuteAgentAppFunction : AppFunction {
     override val name: String = "execute_agent_action"
-    override val description: String = "Execute an OnBraid agent capability"
+    override val description: String = "Execute an Plaited agent capability"
 
     override val inputSchema: JsonObject = buildJsonObject {
         put("type", "object")
@@ -573,7 +573,7 @@ class ExecuteAgentAppFunction : AppFunction {
 Functions can be registered dynamically from stored specs:
 
 ```kotlin
-// src/main/kotlin/com/onbraid/appfunctions/FunctionRegistry.kt
+// src/main/kotlin/com/plaited/appfunctions/FunctionRegistry.kt
 
 class FunctionRegistry(private val context: Context) {
     private val appFunctionManager = context.getSystemService(AppFunctionManager::class.java)
@@ -616,7 +616,7 @@ Frontier analysis on Android reads Spec from the SQLite store, reconstructs
 BThreads, and replays snapshots. Same approach as Swift — purely data-driven.
 
 ```kotlin
-// src/main/kotlin/com/onbraid/frontier/FrontierAnalysis.kt
+// src/main/kotlin/com/plaited/frontier/FrontierAnalysis.kt
 
 fun replayToFrontier(
     specs: List<Spec>,

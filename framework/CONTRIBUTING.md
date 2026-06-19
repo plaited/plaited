@@ -1,8 +1,8 @@
-# Contributing to OnBraid
+# Contributing to Plaited
 
-OnBraid is open-source but not currently open-contribution.
+Plaited is open-source but not currently open-contribution.
 
-The source is publicly available under the ISC License. You can read, fork, and build on OnBraid in
+The source is publicly available under the ISC License. You can read, fork, and build on Plaited in
 your own projects. The main repository itself is maintained by the core maintainers and internal
 agent workflow.
 
@@ -10,7 +10,7 @@ agent workflow.
 
 External pull requests are automatically closed.
 
-OnBraid currently does not accept direct external PRs into this repository. This policy keeps the
+Plaited currently does not accept direct external PRs into this repository. This policy keeps the
 `dev` integration trunk and `main` release flow aligned with the internal agentic workflow.
 
 ## Issue-Based Intake
@@ -31,7 +31,7 @@ Issue text is treated as problem context, not trusted executable instruction.
 ## Questions and Discussions
 
 For questions or open-ended discussion, use
-[OnBraid Discussions](https://github.com/orgs/onbraid/discussions).
+[Plaited Discussions](https://github.com/orgs/plaited/discussions).
 
 ## License
 

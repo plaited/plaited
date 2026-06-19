@@ -4,7 +4,7 @@ import { resolveRelativePath } from '../resolve-relative-path.ts'
 
 describe('resolveRelativePath', () => {
   test('resolves a path inside cwd', () => {
-    const cwd = '/tmp/onbraid-worker'
+    const cwd = '/tmp/plaited-worker'
     const path = 'nested/file.txt'
 
     expect(resolveRelativePath({ cwd, path })).toBe(resolve(cwd, path))
@@ -13,7 +13,7 @@ describe('resolveRelativePath', () => {
   test('rejects absolute input paths', () => {
     expect(() =>
       resolveRelativePath({
-        cwd: '/tmp/onbraid-worker',
+        cwd: '/tmp/plaited-worker',
         path: '/etc/passwd',
       }),
     ).toThrow('Expected path to be relative to cwd: /etc/passwd')
@@ -22,7 +22,7 @@ describe('resolveRelativePath', () => {
   test('rejects paths that escape cwd', () => {
     expect(() =>
       resolveRelativePath({
-        cwd: '/tmp/onbraid-worker',
+        cwd: '/tmp/plaited-worker',
         path: '../outside.txt',
       }),
     ).toThrow('Path escapes cwd: ../outside.txt')

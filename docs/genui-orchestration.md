@@ -285,7 +285,7 @@ When the agent adds new behavioral features (new event handlers, controller exte
 
 ```ts
 // entry.a1b2c3d4.ts — static imports, fully analyzable
-import { Controller } from 'onbraid/ui'
+import { Controller } from 'plaited/ui'
 import { flightSelector } from './extensions/flight-selector.ts'
 import { bookingForm } from './extensions/booking-form.ts'
 

@@ -1,15 +1,15 @@
 ---
-name: onbraid-ui
-description: Build and test OnBraid's server-driven UI stack. Use when working on `src/ui.ts`, `src/controller`, `src/render`, `src/css`, controller islands, controller protocol schemas, SSR templates, CSS helpers, dynamic controller modules, or UI test fixtures.
+name: plaited-ui
+description: Build and test Plaited's server-driven UI stack. Use when working on `src/ui.ts`, `src/controller`, `src/render`, `src/css`, controller islands, controller protocol schemas, SSR templates, CSS helpers, dynamic controller modules, or UI test fixtures.
 license: ISC
 compatibility: Requires bun and @playwright/cli for real browser controller tests
 ---
 
-# OnBraid UI
+# Plaited UI
 
 ## Purpose
 
-Use this skill when changing OnBraid's UI runtime, renderer, CSS helpers, custom
+Use this skill when changing Plaited's UI runtime, renderer, CSS helpers, custom
 element controllers, browser/server controller protocol, or UI tests.
 
 The UI model is server-driven and island-scoped:
@@ -21,7 +21,7 @@ The UI model is server-driven and island-scoped:
 - the server pushes `render`, `attrs`, `import`, and `disconnect` commands
 - the browser sends `ui_event` and `error` messages back to the server
 
-Use `onbraid-runtime` only when the task depends on behavioral-programming
+Use `plaited-runtime` only when the task depends on behavioral-programming
 semantics. The browser controller itself should stay small and protocol-shaped.
 
 ## Source Map
@@ -142,7 +142,7 @@ Rejected examples:
 The module must export a default function:
 
 ```ts
-import type { ControllerModuleContext } from 'onbraid/ui'
+import type { ControllerModuleContext } from 'plaited/ui'
 
 export default ({ DelegatedListener, delegates, addDisconnect, trigger }: ControllerModuleContext) => {
   const button = document.getElementById('save')
@@ -274,5 +274,5 @@ Open these when you need deeper context, but verify them against code:
 
 ## Related Skills
 
-- `onbraid-runtime` for BP event semantics and server-side behavioral programs
+- `plaited-runtime` for BP event semantics and server-side behavioral programs
 - `code-documentation` for TSDoc and public API documentation

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Controller modules are OnBraid UI's browser-side code-loading boundary.
+Controller modules are Plaited UI's browser-side code-loading boundary.
 
 Use them when pushed HTML and attributes are not enough and the browser needs a
 small side-effect setup step, such as attaching a delegated listener to a
@@ -66,7 +66,7 @@ Rejected paths:
 The module default export must be callable. It may be synchronous or async.
 
 ```ts
-import type { ControllerModuleContext } from 'onbraid/ui'
+import type { ControllerModuleContext } from 'plaited/ui'
 
 export default async ({ DelegatedListener, delegates, addDisconnect, trigger }: ControllerModuleContext) => {
   const element = document.querySelector('[data-enhance="picker"]')

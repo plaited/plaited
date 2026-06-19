@@ -1,11 +1,11 @@
 ---
-name: onbraid-runtime
-description: OnBraid runtime doctrine for dual-lane node boundaries, boundary contract graph semantics, local projection policy, and identity-plane/execution-plane authority split.
+name: plaited-runtime
+description: Plaited runtime doctrine for dual-lane node boundaries, boundary contract graph semantics, local projection policy, and identity-plane/execution-plane authority split.
 license: ISC
 compatibility: Requires bun
 ---
 
-# onbraid-runtime
+# plaited-runtime
 
 Use this skill as the active runtime doctrine for docs, design review, and runtime policy work.
 
@@ -22,9 +22,9 @@ Use this skill as the active runtime doctrine for docs, design review, and runti
 Run source-grounded context assembly first:
 
 ```bash
-`onbraid agents-md '{"mode":"relevant","rootDir":".","paths":["<paths>"]}'
-`onbraid git '{"mode":"context","base":"origin/dev","paths":["<paths>"],"includeWorktrees":true}'
-`onbraid wiki '{"mode":"context","rootDir":".","paths":["docs"],"task":"<task>"}'
+`plaited agents-md '{"mode":"relevant","rootDir":".","paths":["<paths>"]}'
+`plaited git '{"mode":"context","base":"origin/dev","paths":["<paths>"],"includeWorktrees":true}'
+`plaited wiki '{"mode":"context","rootDir":".","paths":["docs"],"task":"<task>"}'
 ```
 
 For runtime boundary changes, run deterministic analysis:
@@ -32,7 +32,7 @@ For runtime boundary changes, run deterministic analysis:
 ```bash
 bun --bun tsc --noEmit
 bun test <targeted-files-or-surface>
-`onbraid typescript-lsp '{"file":"<boundary-file>","operations":[{"type":"symbols"}]}'
+`plaited typescript-lsp '{"file":"<boundary-file>","operations":[{"type":"symbols"}]}'
 ```
 
 ## Runtime Rules
@@ -92,5 +92,5 @@ Do not claim runtime handlers, token flows, auth surfaces, or boundary contracts
 
 ## Related Skills
 
-- `onbraid-context`
+- `plaited-context`
 - `typescript-lsp`

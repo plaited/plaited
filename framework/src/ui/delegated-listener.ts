@@ -6,7 +6,7 @@
  *
  * @remarks
  * Wraps sync or async callbacks in an object accepted by native
- * `addEventListener`. Controller islands use it for `o-trigger` bindings and
+ * `addEventListener`. Controller islands use it for `p-trigger` bindings and
  * imported modules can reuse it for their own delegated DOM listeners.
  *
  * @see {@link delegates} for the WeakMap storage

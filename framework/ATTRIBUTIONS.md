@@ -1,7 +1,7 @@
 # Attributions
 
 This document acknowledges the outside work that still has a visible, current
-influence on OnBraid's architecture, vocabulary, and research direction.
+influence on Plaited's architecture, vocabulary, and research direction.
 
 It is intentionally narrow. Older or weaker influences have been removed so
 this file tracks what is materially present in the repo now, not every source
@@ -13,7 +13,7 @@ that was once referenced during exploration.
 **Source:** [Structural Information Architecture](https://medium.com/@rjaffe01/structural-information-architecture-e7d5de94a211)
 
 Rachel Jaffe's Structural IA vocabulary remains one of the clearest direct
-inputs into OnBraid's structural language.
+inputs into Plaited's structural language.
 
 Concepts that still show up in the repo:
 - **Objects**
@@ -23,11 +23,11 @@ Concepts that still show up in the repo:
 - **Blocks**
 
 Where that influence is visible now:
-- [skills/onbraid-runtime/references/modnet-mss-lineage.md](skills/onbraid-runtime/references/modnet-mss-lineage.md)
+- [skills/plaited-runtime/references/modnet-mss-lineage.md](skills/plaited-runtime/references/modnet-mss-lineage.md)
 - [docs/wiki/structural-ia-lineage.md](docs/wiki/structural-ia-lineage.md)
 - [docs/wiki/architecture.md](docs/wiki/architecture.md)
 
-In OnBraid, Structural IA is not just UI vocabulary. It also informs the
+In Plaited, Structural IA is not just UI vocabulary. It also informs the
 module composition language, module-era system framing, and the bridge between
 symbolic constraints and generated artifacts.
 
@@ -35,11 +35,11 @@ symbolic constraints and generated artifacts.
 
 **Author:** Rachel Jaffe
 **Sources:**
-- [modnet-mss-lineage.md](skills/onbraid-runtime/references/modnet-mss-lineage.md)
+- [modnet-mss-lineage.md](skills/plaited-runtime/references/modnet-mss-lineage.md)
 - [Past the Internet: The Emergence of the Modnet](https://medium.com/@rjaffe01)
 
 Rachel Jaffe's modnet work is the other major living attribution that should be
-explicitly credited here. It materially shapes OnBraid's node-level and
+explicitly credited here. It materially shapes Plaited's node-level and
 module-level worldview.
 
 Concepts that still show up in the repo:
@@ -55,11 +55,11 @@ Where that influence is visible now:
 - [docs/wiki/infrastructure.md](docs/wiki/infrastructure.md)
 - [docs/wiki/agent-loop.md](docs/wiki/agent-loop.md)
 - [docs/wiki/modnet-translation.md](docs/wiki/modnet-translation.md)
-- [skills/onbraid-runtime/SKILL.md](skills/onbraid-runtime/SKILL.md)
+- [skills/plaited-runtime/SKILL.md](skills/plaited-runtime/SKILL.md)
 - [src/modules/projection-boundary-actor.ts](src/modules/projection-boundary-actor.ts)
 - [src/modules/module-program-admission.ts](src/modules/module-program-admission.ts)
 
-OnBraid does not reproduce the modnet work verbatim. It adapts it into:
+Plaited does not reproduce the modnet work verbatim. It adapts it into:
 - actor-owned facts, services, policy, provenance, and local projections
 - transitional MSS metadata on module program descriptors
 - boundary-aware module and protocol design
@@ -72,7 +72,7 @@ OnBraid does not reproduce the modnet work verbatim. It adapts it into:
 **License:** [MIT](https://github.com/mattpocock/skills/blob/main/LICENSE),
 copyright (c) 2026 Matt Pocock
 
-OnBraid includes adapted skill material from:
+Plaited includes adapted skill material from:
 - [TDD](https://github.com/mattpocock/skills/blob/main/skills/engineering/tdd/SKILL.md)
 - [grill-me](https://github.com/mattpocock/skills/blob/main/skills/productivity/grill-me/SKILL.md)
 

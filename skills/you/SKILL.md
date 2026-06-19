@@ -3,24 +3,24 @@ name: you
 description: >
   Default web search, web content extraction, and web research tool for this
   machine. Globally available to all agents on the system. Connects to You.com's
-  MCP server via onbraid mcp-client for web search, research, content extraction,
+  MCP server via plaited mcp-client for web search, research, content extraction,
   and financial queries. Replaces the old ydc binary CLI.
 
   Use when the task needs current external web information, information outside
   the repo context, extraction from known URLs, financial data, or cited
   web-grounded research.
-compatibility: Requires onbraid CLI (mcp-client mode), network access, and YDC_API_KEY
+compatibility: Requires plaited CLI (mcp-client mode), network access, and YDC_API_KEY
 ---
 
 # You.com MCP Server
 
-Use `onbraid mcp-client` to connect to You.com's MCP server at
+Use `plaited mcp-client` to connect to You.com's MCP server at
 `https://api.you.com/mcp` for web search, cited research, URL content
 extraction, and financial queries.
 
 ## Prerequisites
 
-Ensure `onbraid` CLI is available and `YDC_API_KEY` is set in the
+Ensure `plaited` CLI is available and `YDC_API_KEY` is set in the
 environment. For Varlock-managed secrets, ensure `YDC_API_KEY` is
 injected before CLI invocations.
 
@@ -29,7 +29,7 @@ injected before CLI invocations.
 Discover the canonical tool list at runtime:
 
 ```bash
-`onbraid mcp-client '{"mode":"list-tools","url":"https://api.you.com/mcp"}'
+`plaited mcp-client '{"mode":"list-tools","url":"https://api.you.com/mcp"}'
 ```
 
 Current tools include:
@@ -47,7 +47,7 @@ Each tool uses its own argument shape. Always check before calling:
 
 ```bash
 # Discover argument schema for a tool
-`onbraid mcp-client '{
+`plaited mcp-client '{
   "mode": "call-tool",
   "url": "https://api.you.com/mcp",
   "tool": "you-search",
@@ -55,7 +55,7 @@ Each tool uses its own argument shape. Always check before calling:
 }'
 
 # Or inspect via discover:
-`onbraid mcp-client '{"mode":"discover","url":"https://api.you.com/mcp"}'
+`plaited mcp-client '{"mode":"discover","url":"https://api.you.com/mcp"}'
 ```
 
 > **Warning:** each tool uses its own argument field names. `you-search`
@@ -67,7 +67,7 @@ Each tool uses its own argument shape. Always check before calling:
 ### Execute a tool
 
 ```bash
-`onbraid mcp-client '{
+`plaited mcp-client '{
   "mode": "call-tool",
   "url": "https://api.you.com/mcp",
   "tool": "you-search",
@@ -79,7 +79,7 @@ Each tool uses its own argument shape. Always check before calling:
 ### Research with citations
 
 ```bash
-`onbraid mcp-client '{
+`plaited mcp-client '{
   "mode": "call-tool",
   "url": "https://api.you.com/mcp",
   "tool": "you-research",
@@ -91,7 +91,7 @@ Each tool uses its own argument shape. Always check before calling:
 ### Extract content from URLs
 
 ```bash
-`onbraid mcp-client '{
+`plaited mcp-client '{
   "mode": "call-tool",
   "url": "https://api.you.com/mcp",
   "tool": "you-contents",
@@ -103,7 +103,7 @@ Each tool uses its own argument shape. Always check before calling:
 ### Financial data
 
 ```bash
-`onbraid mcp-client '{
+`plaited mcp-client '{
   "mode": "call-tool",
   "url": "https://api.you.com/mcp",
   "tool": "you-finance",
@@ -146,7 +146,7 @@ shape. Quick reference from current tools:
 You.com's MCP server uses Bearer token auth via `YDC_API_KEY`:
 
 ```bash
-`onbraid mcp-client '{
+`plaited mcp-client '{
   "mode": "call-tool",
   "url": "https://api.you.com/mcp",
   "tool": "you-search",
@@ -159,13 +159,13 @@ You.com's MCP server uses Bearer token auth via `YDC_API_KEY`:
 
 - `YDC_API_KEY` — API key for You.com (already set in this environment)
 - `--dry-run` is not available via mcp-client; use `--schema input` on
-  `onbraid mcp-client` to inspect the input schema before calling
+  `plaited mcp-client` to inspect the input schema before calling
 
 ## Troubleshooting
 
 ### "Unable to connect. Is the computer able to access the url?"
 
-If `onbraid mcp-client` fails to connect to `https://api.you.com/mcp`, check:
+If `plaited mcp-client` fails to connect to `https://api.you.com/mcp`, check:
 
 1. **DNS resolution** — does `api.you.com` resolve?
    ```bash
@@ -191,7 +191,7 @@ If `onbraid mcp-client` fails to connect to `https://api.you.com/mcp`, check:
    ```
 
 4. **Accept header mismatch** — the MCP server requires
-   `Accept: application/json, text/event-stream`. The `onbraid mcp-client`
+   `Accept: application/json, text/event-stream`. The `plaited mcp-client`
    transport handles this automatically. If calling via raw `curl`, include:
    ```bash
    curl -H "Accept: application/json, text/event-stream" ...

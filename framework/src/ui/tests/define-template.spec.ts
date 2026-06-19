@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import * as z from 'zod'
 import { JsonObjectSchema } from '../../shared.ts'
 import { defineTemplate } from '../define-template.ts'
-import { ONBRAID_TEMPLATE_IDENTIFIER } from '../template.constants.ts'
+import { PLAITED_TEMPLATE_IDENTIFIER } from '../template.constants.ts'
 import { fragment, h } from '../template.ts'
 
 describe('defineTemplate', () => {
@@ -11,7 +11,7 @@ describe('defineTemplate', () => {
       template: ({ h: _h }) => _h('div'),
     })
     expect(typeof tpl).toBe('function')
-    expect(tpl.$).toBe(ONBRAID_TEMPLATE_IDENTIFIER)
+    expect(tpl.$).toBe(PLAITED_TEMPLATE_IDENTIFIER)
   })
 
   test('returned function delegates to template with attrs, h, fragment', () => {

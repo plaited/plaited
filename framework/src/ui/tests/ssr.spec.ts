@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { createHostStyles, createStyles, h, ssr } from 'onbraid/ui'
+import { createHostStyles, createStyles, h, ssr } from 'plaited/ui'
 
 test('ssr: Replaces :host{ with :root{ for SSR', () => {
   const hostStyles = createHostStyles({
@@ -98,7 +98,7 @@ test('ssr: injects an async module connect script with empty registry (tags no l
   ])
 
   expect(rendered).toContain('<script ')
-  expect(rendered).toContain('src="/.onbraid/connect.js?registry="')
+  expect(rendered).toContain('src="/.plaited/connect.js?registry="')
   expect(rendered).toContain('type="module"')
   expect(rendered).toContain('async')
   expect(rendered).not.toContain(',src=')

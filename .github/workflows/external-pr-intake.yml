@@ -73,7 +73,7 @@ jobs:
           set -euo pipefail
 
           comment_body="$(cat <<'BODY'
-          Thanks for the contribution. OnBraid is open-source but not currently open-contribution.
+          Thanks for the contribution. Plaited is open-source but not currently open-contribution.
 
           We do not accept external pull requests directly. Please open a GitHub Issue instead with:
 

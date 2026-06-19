@@ -9,7 +9,7 @@ description: >
   red-green-refactor, tracer bullets, integration tests, or public-interface
   behavior tests.
 license: MIT
-compatibility: Requires bun for OnBraid repository validation
+compatibility: Requires bun for Plaited repository validation
 ---
 
 # Test-Driven Development
@@ -25,7 +25,7 @@ Work in vertical red-green-refactor slices:
 Do not write a batch of imagined tests before implementation. Each new test should respond to
 what the last cycle taught you about the actual behavior and interface.
 
-## OnBraid Defaults
+## Plaited Defaults
 
 - Use `bun test` for targeted tests and `bun --bun tsc --noEmit` for the type gate.
 - Use `test`, not `it`, and organize with `describe`.

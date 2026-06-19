@@ -2,7 +2,7 @@
 name: bun-runtime
 description: Use Bun for file/script operations — Bun.file, Bun.write, Bun.$ shell, child processes. Do not use Python or Node.js fs for file manipulation, generation, or concatenation.
 license: ISC
-compatibility: Requires `onbraid` CLI and network access
+compatibility: Requires `plaited` CLI and network access
 allowed-tools: Bash
 ---
 
@@ -20,7 +20,7 @@ right tool for the task.
 Query the Bun documentation via MCP for API reference questions:
 
 ```bash
-`onbraid mcp-client '{"mode":"call-tool","url":"https://bun.com/docs/mcp","tool":"search_bun","args":{"query":"Bun.file API"}}'
+`plaited mcp-client '{"mode":"call-tool","url":"https://bun.com/docs/mcp","tool":"search_bun","args":{"query":"Bun.file API"}}'
 ```
 
 > [!CAUTION]
@@ -123,8 +123,8 @@ console.log(result.stdout.toString());
 Use `Bun.which()` to check if a command exists before spawning:
 ```ts
 bun run -e '
-if (Bun.which("onbraid")) {
-  const result = Bun.spawnSync(["onbraid", "skills"]);
+if (Bun.which("plaited")) {
+  const result = Bun.spawnSync(["plaited", "skills"]);
   console.log(result.stdout.toString());
 }
 '
@@ -154,6 +154,6 @@ if (Bun.which("onbraid")) {
 
 ## See also
 
-- `onbraid mcp-client --help` — discover all available MCP operations
-- `onbraid mcp-client --schema input` — inspect the full input schema
+- `plaited mcp-client --help` — discover all available MCP operations
+- `plaited mcp-client --schema input` — inspect the full input schema
 - `AGENTS.md` — section on Bun APIs

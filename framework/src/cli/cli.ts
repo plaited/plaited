@@ -66,8 +66,8 @@ type CliRouterConfig = {
 
 const buildUsage = ({ name, help }: { name: string; help: string }): string =>
   [
-    `Usage: onbraid ${name} '<json>' [options]`,
-    `       echo '<json>' | onbraid ${name}`,
+    `Usage: plaited ${name} '<json>' [options]`,
+    `       echo '<json>' | plaited ${name}`,
     '',
     'Options:',
     '  --schema <input|output>  Output JSON schema and exit',

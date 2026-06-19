@@ -9,7 +9,7 @@
  */
 import { join } from 'node:path'
 import type { ServerWebSocket } from 'bun'
-import { bundleController, CONNECT_ONBRAID_ROUTE } from './bundle-controller.ts'
+import { bundleController, CONNECT_PLAITED_ROUTE } from './bundle-controller.ts'
 
 const FIXTURES_DIR = import.meta.dir
 const DIST_DIR = join(FIXTURES_DIR, 'dist')
@@ -35,7 +35,7 @@ const A2A_TEST_AGENT_CARD = {
 const encodeAgentCard = (card: Record<string, unknown>) => encodeURIComponent(JSON.stringify(card))
 
 const connectScript = (modules?: string[], agentCard?: Record<string, unknown>) => {
-  let url = CONNECT_ONBRAID_ROUTE
+  let url = CONNECT_PLAITED_ROUTE
   const params = new URLSearchParams()
   params.set('agentCard', encodeAgentCard(agentCard ?? DEFAULT_AGENT_CARD))
   if (modules?.length) {
@@ -80,7 +80,7 @@ const HTML_CONTROL_ISLAND = `<!DOCTYPE html>
   <title>Control Island Test</title>
 </head>
 <body>
-  <div o-target="main"><p>initial content</p></div>
+  <div p-target="main"><p>initial content</p></div>
   <script type="module" src="${connectScript()}"></script>
 </body>
 </html>`
@@ -91,7 +91,7 @@ const HTML_SWAP_FIXTURE = `<!DOCTYPE html>
   <title>Swap Fixture Test</title>
 </head>
 <body>
-  <div o-target="main"><p>initial swap content</p></div>
+  <div p-target="main"><p>initial swap content</p></div>
   <script type="module" src="${connectScript()}"></script>
 </body>
 </html>`
@@ -102,8 +102,8 @@ const HTML_MODULE_FIXTURE = `<!DOCTYPE html>
   <title>Controller Module Test</title>
 </head>
 <body>
-  <div o-target="main">
-    <button id="module-o-trigger-btn" data-extra="o-trigger-attr" o-trigger="click:test_click">O-trigger Action</button>
+  <div p-target="main">
+    <button id="module-p-trigger-btn" data-extra="p-trigger-attr" p-trigger="click:test_click">O-trigger Action</button>
     <button id="module-enhanced-btn" data-extra="module-listener">Module Listener</button>
     <div id="module-initial">Module fixture loaded</div>
   </div>
@@ -115,35 +115,35 @@ const HTML_MODULE_FIXTURE = `<!DOCTYPE html>
 
 const TEST_PAGE_CONTENT: Record<string, string> = {
   'swap-test': `
-    <div o-target="main"><p id="original">original</p></div>
-    <div o-target="outer-target">outer original</div>
+    <div p-target="main"><p id="original">original</p></div>
+    <div p-target="outer-target">outer original</div>
   `,
   'attrs-test': `
-    <div o-target="main" data-removable="old-value"><p>attrs target</p></div>
+    <div p-target="main" data-removable="old-value"><p>attrs target</p></div>
   `,
   'action-test': `
-    <div o-target="main"><p>waiting for action</p></div>
+    <div p-target="main"><p>waiting for action</p></div>
   `,
   'form-submit-test': `
-    <div o-target="main"><p>waiting for form submit</p></div>
+    <div p-target="main"><p>waiting for form submit</p></div>
   `,
   'retry-test': `
-    <div o-target="main"><p>connecting</p></div>
+    <div p-target="main"><p>connecting</p></div>
   `,
   'styles-test': `
-    <div o-target="main"><p>waiting for styles</p></div>
+    <div p-target="main"><p>waiting for styles</p></div>
   `,
   'style-error-test': `
-    <div o-target="main"><p>waiting for style error</p></div>
+    <div p-target="main"><p>waiting for style error</p></div>
   `,
   'bad-import-test': `
-    <div o-target="main"><p>waiting for bad import</p></div>
+    <div p-target="main"><p>waiting for bad import</p></div>
   `,
   'unsupported-event-test': `
-    <div o-target="main"><p>waiting for unsupported event</p></div>
+    <div p-target="main"><p>waiting for unsupported event</p></div>
   `,
   'a2a-test': `
-    <div o-target="main"><p>a2a test</p></div>
+    <div p-target="main"><p>a2a test</p></div>
   `,
 }
 
@@ -284,7 +284,7 @@ const sendSwapTestMessages = (ws: ServerWebSocket<{ source: string }>) => {
     detail: {
       id: 'swap-6',
       target: 'outer-target',
-      html: '<div id="outer-result" o-target="outer-target">outer replaced</div>',
+      html: '<div id="outer-result" p-target="outer-target">outer replaced</div>',
       stylesheets: [],
       swap: 'outerHTML',
       registry: [],
@@ -305,7 +305,7 @@ const sendActionTestInitialRender = (ws: ServerWebSocket<{ source: string }>) =>
     detail: {
       id: 'action-render',
       target: 'main',
-      html: '<button id="test-btn" o-trigger="click:test_click">Click me</button>',
+      html: '<button id="test-btn" p-trigger="click:test_click">Click me</button>',
       stylesheets: [],
       swap: 'innerHTML',
       registry: [],
@@ -435,7 +435,7 @@ export const startServer = (port = 0): FixtureServer => {
       '/module-fixture.html': new Response(HTML_MODULE_FIXTURE, {
         headers: { 'Content-Type': 'text/html' },
       }),
-      [CONNECT_ONBRAID_ROUTE]: () => controllerRoutes[CONNECT_ONBRAID_ROUTE]!.clone(),
+      [CONNECT_PLAITED_ROUTE]: () => controllerRoutes[CONNECT_PLAITED_ROUTE]!.clone(),
       '/dist/*': async (req) => {
         const path = new URL(req.url).pathname
         const file = Bun.file(join(FIXTURES_DIR, path.replace('/dist/', 'dist/')))

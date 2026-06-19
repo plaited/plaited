@@ -1,8 +1,8 @@
 ---
 name: frontier-analysis
-description: Analyze replay-safe behavioral specs with the `onbraid frontier-analysis` CLI. Use when replaying selected-event snapshots, exploring reachable frontiers, testing supplied trigger events, comparing scheduler policies, or verifying deadlock findings in OnBraid behavioral code.
+description: Analyze replay-safe behavioral specs with the `plaited frontier-analysis` CLI. Use when replaying selected-event snapshots, exploring reachable frontiers, testing supplied trigger events, comparing scheduler policies, or verifying deadlock findings in Plaited behavioral code.
 license: ISC
-compatibility: Requires `onbraid` CLI
+compatibility: Requires `plaited` CLI
 allowed-tools: Bash Read
 ---
 
@@ -11,7 +11,7 @@ allowed-tools: Bash Read
 ## Purpose
 
 Use this skill for deterministic analysis of replay-safe behavioral specs
-through the `onbraid frontier-analysis` command.
+through the `plaited frontier-analysis` command.
 
 Use it when you need to:
 
@@ -25,8 +25,8 @@ Use it when you need to:
 ## Command Surface
 
 ```bash
-`onbraid frontier-analysis --schema input
-`onbraid frontier-analysis --schema output
+`plaited frontier-analysis --schema input
+`plaited frontier-analysis --schema output
 ```
 
 ## When To Use Which Mode
@@ -56,19 +56,19 @@ Use `verify` when you need a compact pass/fail/truncated result for a thread set
 ### Replay One History
 
 ```bash
-`onbraid frontier-analysis '{"mode":"replay","specs":[{"label":"chooseA","thread":{"once":true,"syncPoints":[{"request":{"type":"A"}}]}}],"snapshotMessages":[]}'
+`plaited frontier-analysis '{"mode":"replay","specs":[{"label":"chooseA","thread":{"once":true,"syncPoints":[{"request":{"type":"A"}}]}}],"snapshotMessages":[]}'
 ```
 
 ### Explore Reachable Histories
 
 ```bash
-`onbraid frontier-analysis '{"mode":"explore","specs":[{"label":"watcher","thread":{"once":true,"syncPoints":[{"waitFor":[{"type":"ping"}]},{"request":{"type":"ack"}}]}}],"triggers":[{"type":"ping"}],"strategy":"bfs","maxDepth":2}'
+`plaited frontier-analysis '{"mode":"explore","specs":[{"label":"watcher","thread":{"once":true,"syncPoints":[{"waitFor":[{"type":"ping"}]},{"request":{"type":"ack"}}]}}],"triggers":[{"type":"ping"}],"strategy":"bfs","maxDepth":2}'
 ```
 
 ### Verify Scheduler Policy
 
 ```bash
-`onbraid frontier-analysis '{"mode":"verify","specPath":"./specs.jsonl","strategy":"bfs","selectionPolicy":"scheduler","maxDepth":8}'
+`plaited frontier-analysis '{"mode":"verify","specPath":"./specs.jsonl","strategy":"bfs","selectionPolicy":"scheduler","maxDepth":8}'
 ```
 
 ## Output Interpretation

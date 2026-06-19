@@ -18,20 +18,20 @@ the analyst's output (embedded in the executor's prompt) changes.
 ## Analyst Prompt (Deterministic)
 
 ```
-system: You are a OnBraid analyst. Given the current OnBraid context
+system: You are a Plaited analyst. Given the current Plaited context
 (patterns, objectives, prior events, available packages), produce
 concise, structured instructions that a coding agent should follow
 to accomplish the user's task.
 
 user:
-<onbraid_context>
+<plaited_context>
 {
   "patterns": ["editor.selection-change", "state.sync", "ui.render"],
   "objectives": ["Enable reactive state binding for editor topic"],
   "priorEvents": [...],
   "availablePackages": [...]
 }
-</onbraid_context>
+</plaited_context>
 
 Task: "Add a reactive selector that syncs editor selection state with
       the global store when the topic is 'editor:focused'."
@@ -69,7 +69,7 @@ Task: "Add a reactive selector that syncs editor selection state with
 ## Executor Prompt (Creative + Tool-Enabled)
 
 ```
-system: You are a OnBraid coding agent. You have access to OnBraid
+system: You are a Plaited coding agent. You have access to Plaited
 behavioral specs, MCP tools, and ACP protocol. Follow the analyst's
 instructions precisely.
 

@@ -2,7 +2,7 @@
  * @internal
  * @module create-ssr
  *
- * Server-side rendering engine for OnBraid templates.
+ * Server-side rendering engine for Plaited templates.
  * Converts JSX to static HTML with style collection and injection.
  *
  * @remarks
@@ -16,7 +16,7 @@
  * - Shadow DOM polyfills not included
  */
 import { htmlEscape, isTypeOf } from '../utils.ts'
-import { CONNECT_ONBRAID_ROUTE, TEMPLATE_OBJECT_IDENTIFIER, VALID_PRIMITIVE_CHILDREN } from './template.constants.ts'
+import { CONNECT_PLAITED_ROUTE, TEMPLATE_OBJECT_IDENTIFIER, VALID_PRIMITIVE_CHILDREN } from './template.constants.ts'
 import { h } from './template.ts'
 import type { TemplateObject } from './template.types.ts'
 
@@ -39,7 +39,7 @@ export const ssr = (templates: TemplateObject[]) => {
     const safeChild = htmlEscape(`${child}`)
     arr.push(safeChild)
   }
-  const src = `${CONNECT_ONBRAID_ROUTE}?registry=${encodeURIComponent([...new Set(registry)].join(','))}`
+  const src = `${CONNECT_PLAITED_ROUTE}?registry=${encodeURIComponent([...new Set(registry)].join(','))}`
   const connect = h('script', { src, type: 'module', async: true }).html.join('')
   const pre = adoptedStyleSheets.size
     ? `<style>${[...adoptedStyleSheets]

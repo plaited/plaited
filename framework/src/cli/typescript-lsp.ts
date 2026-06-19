@@ -593,8 +593,8 @@ export const lspCli = makeCli({
     '  rootDir   Workspace root for URI resolution (default ".")',
     '',
     'Examples:',
-    '  onbraid typescript-lsp \'{"mode":"execute","file":"src/index.ts","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file://src/index.ts"},"position":{"line":5,"character":10}}}]}\'',
-    '  onbraid typescript-lsp \'{"mode":"discover"}\'',
+    '  plaited typescript-lsp \'{"mode":"execute","file":"src/index.ts","requests":[{"method":"textDocument/hover","params":{"textDocument":{"uri":"file://src/index.ts"},"position":{"line":5,"character":10}}}]}\'',
+    '  plaited typescript-lsp \'{"mode":"discover"}\'',
   ].join('\n'),
   run: async (input) => {
     if (input.mode === 'discover') {

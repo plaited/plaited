@@ -2,13 +2,13 @@
  * @internal
  * @module create-template
  *
- * Purpose: JSX template creation system for OnBraid with security-first design.
+ * Purpose: JSX template creation system for Plaited with security-first design.
  * Converts JSX calls into template objects with HTML escaping, event binding, and style management.
  *
  * @remarks
  * Key features:
  * - Automatic HTML escaping
- * - Declarative event system via o-trigger
+ * - Declarative event system via p-trigger
  * - Style hoisting and deduplication
  * - Shadow DOM boundaries
  * - Script injection protection
@@ -21,8 +21,8 @@ import { htmlEscape, isTypeOf, kebabCase, trueTypeOf } from '../utils.ts'
 import {
   BOOLEAN_ATTRS,
   CUSTOM_ELEMENT_TAG_PATTERN,
-  O_SCALE,
-  O_TRIGGER,
+  P_SCALE,
+  P_TRIGGER,
   PRIMITIVES,
   SCALE,
   SCALE_RANK,
@@ -37,7 +37,7 @@ import type {
   CustomElementTag,
   DetailedHTMLAttributes,
   ElementAttributeList,
-  OnBraidAttributes,
+  PlaitedAttributes,
   TemplateObject,
 } from './template.types.ts'
 
@@ -52,7 +52,7 @@ class ScriptPolicyError extends Error implements Error {
 /**
  * @internal
  * Error thrown when on* event handler attributes are used.
- * All events must use the o-trigger declarative event system.
+ * All events must use the p-trigger declarative event system.
  */
 class EventHandlerAttributeError extends Error implements Error {
   override name = 'event_handler_attribute'
@@ -86,7 +86,7 @@ export type FunctionTemplate<T extends Attrs = Attrs> = ({
   h,
   fragment,
 }: {
-  attrs?: T & OnBraidAttributes
+  attrs?: T & PlaitedAttributes
   h: CreateTemplate
   fragment: CreateFragment
 }) => TemplateObject
@@ -148,7 +148,7 @@ export type CreateTemplate = <T extends Tag>(tag: T, attrs?: InferAttrs<T> | Rec
 
 /**
  * @internal
- * Creates OnBraid template objects from JSX-like calls.
+ * Creates Plaited template objects from JSX-like calls.
  * Core template factory with security-first design and style management.
  *
  * @param _tag - HTML/SVG tag name, custom element tag, or FunctionTemplate
@@ -156,7 +156,7 @@ export type CreateTemplate = <T extends Tag>(tag: T, attrs?: InferAttrs<T> | Rec
  * @returns TemplateObject with HTML, stylesheets, and identifier
  *
  * @throws {ScriptPolicyError} When `<script>` does not use a site-root JavaScript `src`
- * @throws {EventHandlerAttributeError} When `on*` attributes are used (use o-trigger instead)
+ * @throws {EventHandlerAttributeError} When `on*` attributes are used (use p-trigger instead)
  * @throws {InvalidAttributeTypeError} When non-primitive attribute values provided
  * @throws {InvalidCustomElementTagError} When a hyphenated tag is not a valid custom element tag
  *
@@ -177,8 +177,8 @@ export const h: CreateTemplate = (_tag, attrs = {}) => {
     children: _children,
     stylesheets: _stylesheets,
     style,
-    [O_TRIGGER]: pTrigger,
-    [O_SCALE]: pScale = 'rel',
+    [P_TRIGGER]: pTrigger,
+    [P_SCALE]: pScale = 'rel',
     class: cls,
     classNames,
     for: htmlFor,
@@ -213,7 +213,7 @@ export const h: CreateTemplate = (_tag, attrs = {}) => {
     const value = Object.entries(pTrigger)
       .map<string>(([ev, req]) => `${ev}:${req}`)
       .join(' ')
-    start.push(`${O_TRIGGER}="${htmlEscape(value)}" `)
+    start.push(`${P_TRIGGER}="${htmlEscape(value)}" `)
   }
   if (style) {
     const value = Object.entries(style)
@@ -223,7 +223,7 @@ export const h: CreateTemplate = (_tag, attrs = {}) => {
     start.push(`style="${htmlEscape(value)}" `)
   }
   for (const key in normalizedAttributes) {
-    // Events must be delegated via o-trigger instead of inline handler attributes.
+    // Events must be delegated via p-trigger instead of inline handler attributes.
     if (key.startsWith('on')) {
       throw new EventHandlerAttributeError(`Event handler attributes are not allowed: [${key}]`)
     }

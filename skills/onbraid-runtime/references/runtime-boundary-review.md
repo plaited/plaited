@@ -5,12 +5,12 @@ Status: active boundary review reference.
 ## Required Evidence Workflow
 
 ```bash
-`onbraid agents-md '{"mode":"relevant","rootDir":".","paths":["<paths>"]}'
-`onbraid git '{"mode":"context","base":"origin/dev","paths":["<paths>"],"includeWorktrees":true}'
-`onbraid wiki '{"mode":"context","rootDir":".","paths":["docs"],"task":"review boundary contract policy"}'
+`plaited agents-md '{"mode":"relevant","rootDir":".","paths":["<paths>"]}'
+`plaited git '{"mode":"context","base":"origin/dev","paths":["<paths>"],"includeWorktrees":true}'
+`plaited wiki '{"mode":"context","rootDir":".","paths":["docs"],"task":"review boundary contract policy"}'
 bun --bun tsc --noEmit
 bun test <targeted-files-or-surface>
-`onbraid typescript-lsp '{"file":"<boundary-file>","operations":[{"type":"symbols"}]}'
+`plaited typescript-lsp '{"file":"<boundary-file>","operations":[{"type":"symbols"}]}'
 ```
 
 ## Boundary Rules

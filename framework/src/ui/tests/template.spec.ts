@@ -1,8 +1,8 @@
 /* eslint-disable no-constant-binary-expression */
 import { expect, test } from 'bun:test'
 import beautify from 'beautify'
-import type { TemplateObject } from 'onbraid/ui'
-import { fragment, h } from 'onbraid/ui'
+import type { TemplateObject } from 'plaited/ui'
+import { fragment, h } from 'plaited/ui'
 
 const render = (tpl: TemplateObject) => beautify(tpl.html.join(''), { format: 'html' })
 
@@ -60,11 +60,11 @@ test('h: Style attribute', () => {
   ).toMatchSnapshot()
 })
 
-test('h: o-trigger attribute', () =>
+test('h: p-trigger attribute', () =>
   expect(
     render(
       h('div', {
-        'o-trigger': {
+        'p-trigger': {
           click: 'random',
           focus: 'thing',
         },
@@ -169,7 +169,7 @@ const reload = () =>{
   console.log('...reloading');
 };
 socket.addEventListener('message', reload);
-console.log('[onbraid] listening for file changes');
+console.log('[plaited] listening for file changes');
 </script>`
   expect(render(h('div', { children: scriptContent }))).toMatchSnapshot()
 })

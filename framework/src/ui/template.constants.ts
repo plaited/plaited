@@ -3,12 +3,12 @@
  * @module jsx.constants
  *
  * Central constants for JSX runtime, template creation, and DOM serialization.
- * Defines OnBraid's special attributes and DOM behavior.
+ * Defines Plaited's special attributes and DOM behavior.
  *
  * @remarks
  * Implementation details:
  * - VOID_TAGS and BOOLEAN_ATTRS align with HTML5 and SVG specs
- * - O_TARGET, O_TRIGGER, and O_TOPIC declare controller update and event wiring
+ * - P_TARGET, P_TRIGGER, and P_TOPIC declare controller update and event wiring
  * - Sets provide O(1) lookup performance for validation
  * - TEMPLATE_OBJECT_IDENTIFIER uses emoji for uniqueness
  *
@@ -21,18 +21,18 @@
 import { keyMirror } from '../utils.ts'
 
 /**
- * Constant representing the attribute name (`o-target`) used to identify specific elements
+ * Constant representing the attribute name (`p-target`) used to identify specific elements
  * within a controller island for server-pushed render and attribute updates.
  */
-export const O_TARGET = 'o-target'
+export const P_TARGET = 'p-target'
 /**
- * Constant representing the attribute name (`o-trigger`) used for declarative event binding,
+ * Constant representing the attribute name (`p-trigger`) used for declarative event binding,
  * connecting DOM events to BP events sent by a controller island. Serialized values contain
  * space-separated pairs of `event:action` (e.g., "click:doSomething focus:notify").
  */
-export const O_TRIGGER = 'o-trigger'
+export const P_TRIGGER = 'p-trigger'
 
-export const O_SCALE = 'o-scale'
+export const P_SCALE = 'p-scale'
 
 /**
  * Matches site-root JavaScript module paths accepted by bootstrap script tags
@@ -127,7 +127,7 @@ export const BOOLEAN_ATTRS = new Set([
 /**
  * A Set containing strings representing JavaScript primitive type names, obtained via `typeof` or `trueTypeOf`.
  * This is used internally during template creation to validate the types of values assigned to element attributes.
- * Attributes generally must have primitive values unless handled specifically (like `style`, `o-trigger`, etc.).
+ * Attributes generally must have primitive values unless handled specifically (like `style`, `p-trigger`, etc.).
  */
 export const PRIMITIVES = new Set([
   // Primitive types that can be attribute values.
@@ -148,8 +148,8 @@ export const VALID_PRIMITIVE_CHILDREN = new Set([
   'string',
 ])
 /**
- * A unique string constant used as an identifier (`$`) property on OnBraid's internal `TemplateObject`.
- * This allows reliably distinguishing OnBraid template objects from plain JavaScript objects during
+ * A unique string constant used as an identifier (`$`) property on Plaited's internal `TemplateObject`.
+ * This allows reliably distinguishing Plaited template objects from plain JavaScript objects during
  * the processing of children in `h` and `fragment`.
  *
  * @remarks
@@ -157,7 +157,7 @@ export const VALID_PRIMITIVE_CHILDREN = new Set([
  */
 export const TEMPLATE_OBJECT_IDENTIFIER = '🦄'
 
-export const CONNECT_ONBRAID_ROUTE = '/.onbraid/connect.js'
+export const CONNECT_PLAITED_ROUTE = '/.plaited/connect.js'
 
 export const SCALE = keyMirror('s1', 's2', 's3', 's4', 's5', 's6', 'rel')
 
@@ -171,4 +171,4 @@ export const SCALE_RANK = {
   [SCALE.rel]: 0,
 } as const
 
-export const ONBRAID_TEMPLATE_IDENTIFIER = '🧩' as const
+export const PLAITED_TEMPLATE_IDENTIFIER = '🧩' as const

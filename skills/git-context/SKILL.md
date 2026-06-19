@@ -2,7 +2,7 @@
 name: git-context
 description: Inspect local Git status, history, worktrees, and branch context through a structured CLI. Returns JSON instead of raw git output.
 license: ISC
-compatibility: Requires `onbraid` CLI and git
+compatibility: Requires `plaited` CLI and git
 ---
 
 # Git Context
@@ -13,8 +13,8 @@ committing work.
 ## Usage
 
 ```bash
-`onbraid git-context --schema input
-`onbraid git-context '{"mode":"context","cwd":".","base":"main"}'
+`plaited git-context --schema input
+`plaited git-context '{"mode":"context","cwd":".","base":"main"}'
 ```
 
 ## Modes

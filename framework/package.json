@@ -1,5 +1,5 @@
 {
-  "name": "onbraid",
+  "name": "plaited",
   "version": "0.0.1",
   "license": "ISC",
   "engines": {
@@ -7,14 +7,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/onbraid/onbraid.git"
+    "url": "git+https://github.com/plaited/plaited.git"
   },
   "bugs": {
-    "url": "https://github.com/onbraid/onbraid/issues"
+    "url": "https://github.com/plaited/plaited/issues"
   },
-  "homepage": "https://github.com/onbraid/onbraid/tree/main#readme",
+  "homepage": "https://github.com/plaited/plaited/tree/main#readme",
   "bin": {
-    "onbraid": "./bin/onbraid.ts"
+    "plaited": "./bin/plaited.ts"
   },
   "type": "module",
   "exports": {

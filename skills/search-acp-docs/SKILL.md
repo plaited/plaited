@@ -2,7 +2,7 @@
 name: search-acp-docs
 description: Search and read the Agent Client Protocol documentation. Use when building ACP agents or clients, implementing editor-agent JSON-RPC flows, checking session management, permissions, file access, or MCP server integration details.
 license: ISC
-compatibility: Requires `onbraid` CLI and network access
+compatibility: Requires `plaited` CLI and network access
 allowed-tools: Bash
 ---
 
@@ -15,13 +15,13 @@ Query the Agent Client Protocol documentation via MCP.
 Search the documentation:
 
 ```bash
-`onbraid mcp-client '{"mode":"call-tool","url":"https://agentclientprotocol.com/mcp","tool":"search_agent_client_protocol","args":{"query":"session prompt lifecycle"}}'
+`plaited mcp-client '{"mode":"call-tool","url":"https://agentclientprotocol.com/mcp","tool":"search_agent_client_protocol","args":{"query":"session prompt lifecycle"}}'
 ```
 
 Query the remote documentation filesystem:
 
 ```bash
-`onbraid mcp-client '{"mode":"call-tool","url":"https://agentclientprotocol.com/mcp","tool":"query_docs_filesystem_agent_client_protocol","args":{"command":"tree / -L 2"}}'
+`plaited mcp-client '{"mode":"call-tool","url":"https://agentclientprotocol.com/mcp","tool":"query_docs_filesystem_agent_client_protocol","args":{"command":"tree / -L 2"}}'
 ```
 
 ## When to use
@@ -43,5 +43,5 @@ filesystem paths to URL paths by removing the `.mdx` suffix when referencing pag
 
 ## See also
 
-- `onbraid mcp-client --help` — discover all available MCP operations
-- `onbraid mcp-client --schema input` — inspect the full input schema
+- `plaited mcp-client --help` — discover all available MCP operations
+- `plaited mcp-client --schema input` — inspect the full input schema

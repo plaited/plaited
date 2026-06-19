@@ -21,7 +21,7 @@ import {
 } from './controller.constants.ts'
 import { normalizeControllerErrorDetail } from './controller-error-detail.ts'
 import { DelegatedListener } from './delegated-listener.ts'
-import { BOOLEAN_ATTRS, O_TARGET, O_TRIGGER } from './template.constants.ts'
+import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from './template.constants.ts'
 
 const delegates = new WeakMap<EventTarget, DelegatedListener>()
 
@@ -56,7 +56,7 @@ export type ControllerExtensionParams<T extends Element = Element> = {
  * @example
  * ```ts
  * // my-controller-module.ts
- * import type { ControllerModule } from 'onbraid/ui'
+ * import type { ControllerModule } from 'plaited/ui'
  *
  * const setup: ControllerModule = ({ DelegatedListener, trigger }) => {
  *   const listener = new DelegatedListener(() => {
@@ -304,9 +304,9 @@ export class Controller {
       this.#send(message)
     }
     #bindTriggers(subtree: DocumentFragment | HTMLBodyElement){
-      const elements = subtree.querySelectorAll(`[${O_TRIGGER}]`)
+      const elements = subtree.querySelectorAll(`[${P_TRIGGER}]`)
       for (const element of elements) {
-        const raw = element.getAttribute(O_TRIGGER)
+        const raw = element.getAttribute(P_TRIGGER)
         if (!raw) continue
 
         const pairs = raw.split(' ')
@@ -422,7 +422,7 @@ export class Controller {
         switch (type) {
           case AGENT_TO_CONTROLLER_EVENTS.render: {
             const { target, html, swap, stylesheets } = RenderMessageSchema.shape.detail.parse(detail)
-            const element = document.querySelector(`[${O_TARGET}="${target}"]`)
+            const element = document.querySelector(`[${P_TARGET}="${target}"]`)
             if (!element) return
             void this.#updateDocumentStyles(stylesheets)
             this.#performSwap({
@@ -434,7 +434,7 @@ export class Controller {
           }
           case AGENT_TO_CONTROLLER_EVENTS.attrs: {
             const { target, attr } = AttrsMessageSchema.shape.detail.parse(detail)
-            const element = document.querySelector(`[${O_TARGET}="${target}"]`)
+            const element = document.querySelector(`[${P_TARGET}="${target}"]`)
             if (!element) {
               console.error(CONTROLLER_ERRORS.attrs_element_not_found, target)
               return

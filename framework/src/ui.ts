@@ -1,5 +1,5 @@
 /**
- * UI entry point for the OnBraid framework.
+ * UI entry point for the Plaited framework.
  * Exports primitives for server-rendered UI, controller islands, and CSS generation.
  *
  * @remarks

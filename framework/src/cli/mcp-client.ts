@@ -243,7 +243,7 @@ type McpSessionApi = {
 
 const DEFAULT_BEARER_PREFIX = 'Bearer'
 const TOKEN_EXPIRY_SKEW_MS = 30_000
-const CLIENT_INFO = { name: 'onbraid', version: '0.0.0' }
+const CLIENT_INFO = { name: 'plaited', version: '0.0.0' }
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -267,7 +267,7 @@ const resolveRequiredSecret = async (secret: RemoteMcpSecret, label: string): Pr
 const defaultTokenCachePath = (url: string): string => {
   const home = Bun.env.HOME ?? Bun.env.USERPROFILE ?? '.'
   const host = new URL(url).hostname
-  return `${home}/.onbraid/mcp/tokens/${host}.json`
+  return `${home}/.plaited/mcp/tokens/${host}.json`
 }
 
 const encodeBasicAuth = (username: string, password: string) =>
@@ -437,7 +437,7 @@ const createOAuthProvider = (
         redirect_uris: [],
         grant_types: [auth.type === 'oauth-client-credentials' ? 'client_credentials' : 'refresh_token'],
         token_endpoint_auth_method: auth.clientAuthentication === 'none' ? undefined : auth.clientAuthentication,
-        client_name: 'onbraid remote mcp',
+        client_name: 'plaited remote mcp',
         scope: getScopeString(auth.scopes),
       }
     },

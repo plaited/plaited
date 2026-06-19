@@ -4,11 +4,11 @@
 
 ## Overview
 
-The agent is a multi-topic behavioral daemon (`src/agent/agent.ts`). Every topic lives as a Git bare repository under `.topics/`. Workflows live in a `.workflows/` bare repo monorepo. Snapshots are append-only JSONL in `~/.onbraid/snapshots/`. Relational data is not stored in a database — relationships are expressed through `devDependencies` in topic `package.json` files and validated through behavioral threads, not schema constraints.
+The agent is a multi-topic behavioral daemon (`src/agent/agent.ts`). Every topic lives as a Git bare repository under `.topics/`. Workflows live in a `.workflows/` bare repo monorepo. Snapshots are append-only JSONL in `~/.plaited/snapshots/`. Relational data is not stored in a database — relationships are expressed through `devDependencies` in topic `package.json` files and validated through behavioral threads, not schema constraints.
 
 Topic context is assembled from three tiers:
 - **Bounded memory**: `MEMORY.md` and `USER.md` in each topic's worktree, enforced by behavioral handlers.
-- **Queryable event log**: `~/.onbraid/snapshots/<topic>.jsonl` records every selected event (frontier, selection, deadlock, feedback_error).
+- **Queryable event log**: `~/.plaited/snapshots/<topic>.jsonl` records every selected event (frontier, selection, deadlock, feedback_error).
 - **Archives**: Cold storage for evicted snapshot lines, kept as Bun archives for portability.
 
 ## 1. Topic Storage: Git Bare Repos
@@ -16,7 +16,7 @@ Topic context is assembled from three tiers:
 ### Directory Layout
 
 ```
-.onbraid/
+.plaited/
 └── snapshots/
     ├── <topic-a>.jsonl
     ├── <topic-a>.kind.idx
@@ -53,8 +53,8 @@ Each topic is a private Bun package with:
   "name": "@topics/<topic-name>",
   "description": "...",
   "devDependencies": {
-    "@onbraid/shell-worker": "link:@onbraid/shell-worker",
-    "@onbraid/frontier-analysis": "link:@onbraid/frontier-analysis"
+    "@plaited/shell-worker": "link:@plaited/shell-worker",
+    "@plaited/frontier-analysis": "link:@plaited/frontier-analysis"
   }
 }
 ```
@@ -69,7 +69,7 @@ All relational queries SQLite served are expressible through:
 - **Topic context**: `Bun.file('.topics/<topic>/main/MEMORY.md').text()`
 - **Package discovery**: In-memory `Map<name, PackageMeta>` built from `packages_changed` events
 - **Topic-package linkage**: `Bun.file('.topics/<topic>/main/package.json').json().devDependencies`
-- **Snapshot querying**: JSONL + `.kind.idx`/`.time.idx` files in `~/.onbraid/snapshots/`
+- **Snapshot querying**: JSONL + `.kind.idx`/`.time.idx` files in `~/.plaited/snapshots/`
 
 `db.ts` and `bun:sqlite` are removed. The dependency on a single-writer database vanishes, and the agent can be a multi-topic daemon without contention.
 
@@ -124,7 +124,7 @@ No database access. No behavioral awareness. Was previously `src/agent/worker.ts
 ### Inference Worker (`src/agent/workers/inference.ts`)
 
 - **Scope**: LLM inference requests + MCP search provider calls.
-- **Behavior**: Receives inference envelopes containing `{ model, messages, iclContract?, searchProvider? }`. Sends requests to model endpoints (e.g. a local vLLM instance at `openresponses.org`). If a `searchProvider` is configured (installed via `onbraid mcp-client` as an MCP search server like You.com's MCP), the worker can perform grounding searches before inference.
+- **Behavior**: Receives inference envelopes containing `{ model, messages, iclContract?, searchProvider? }`. Sends requests to model endpoints (e.g. a local vLLM instance at `openresponses.org`). If a `searchProvider` is configured (installed via `plaited mcp-client` as an MCP search server like You.com's MCP), the worker can perform grounding searches before inference.
 - **Posts**: `{ type: 'inference_result', detail: { model, output, correlationId } }` or `{ type: 'inference_error', detail: { model, error, correlationId } }`
 - **Does not**: Access topic repositories, run shell commands, or trigger behavioral events directly.
 
@@ -151,7 +151,7 @@ Memory and user bounds are not schema constraints — they are enforced by behav
 
 ### `src/agent/snapshot.ts`
 
-Append-only JSONL event log, one file per topic, stored in `~/.onbraid/snapshots/`.
+Append-only JSONL event log, one file per topic, stored in `~/.plaited/snapshots/`.
 
 | Function | Called by | Purpose |
 |----------|-----------|---------|
@@ -167,10 +167,10 @@ No database. The indexes are ephemeral JSON files alongside the JSONL.
 
 | Source | Package Name Pattern | Resolution |
 |--------|---------------------|------------|
-| **npm** | `@onbraid/*` only | npm registry |
+| **npm** | `@plaited/*` only | npm registry |
 | **workflow** | Everything else | `.workflows/` bare repo monorepo via `bun link` |
 
-The indexer worker resolves every discovered package against this rule. Only official `@onbraid/` scoped packages are trusted to come from the npm registry. All other packages — including agent-generated plugins and workflow packages — live in the local `.workflows/` monorepo.
+The indexer worker resolves every discovered package against this rule. Only official `@plaited/` scoped packages are trusted to come from the npm registry. All other packages — including agent-generated plugins and workflow packages — live in the local `.workflows/` monorepo.
 
 This constraint prevents the agent from accidentally loading untrusted npm packages as behavioral plugins.
 
@@ -281,7 +281,7 @@ The SQLite database and its `db.ts` module are deleted. All former tables are re
 | `package_exports` | Runtime `import()` of workflow package exports; validated at link time |
 | `topic_packages` | `devDependencies` in each topic's `package.json` |
 | `templates` / `behaviors` / `skills` | Exported from workflow packages; no metadata cache |
-| `bp_snapshots` | `~/.onbraid/snapshots/<topic>.jsonl` + `.kind.idx` + `.time.idx` |
+| `bp_snapshots` | `~/.plaited/snapshots/<topic>.jsonl` + `.kind.idx` + `.time.idx` |
 | `ui_events` | **Not needed** — UI state derived from behavioral engine on controller connect |
 
 The removal of `ui_events` is intentional. Every behavioral event already flows through the snapshot JSONL. When a controller reconnects, the agent's behavioral thread re-derivs the current UI state (re-renders from topic state) rather than replaying a message log.
@@ -338,10 +338,10 @@ The inference worker connects to an existing vLLM endpoint. Both analyst and exe
 
 ### MCP Search Grounding
 
-When the handler needs fresh external context (Always-Search Policy), the inference worker calls an MCP search provider before inference. Search providers are installed via `onbraid mcp-client` following the `add-remote-mcp` skill. The recommendation is You.com's MCP server:
+When the handler needs fresh external context (Always-Search Policy), the inference worker calls an MCP search provider before inference. Search providers are installed via `plaited mcp-client` following the `add-remote-mcp` skill. The recommendation is You.com's MCP server:
 
 ```bash
-onbraid mcp-client '{"mode":"call-tool","url":"https://mcp.you.com","tool":"you-search","args":{"query":"..."},"auth":{"type":"bearer-env","token":{"envVar":"YDC_API_KEY"}}}'
+plaited mcp-client '{"mode":"call-tool","url":"https://mcp.you.com","tool":"you-search","args":{"query":"..."},"auth":{"type":"bearer-env","token":{"envVar":"YDC_API_KEY"}}}'
 ```
 
 Search results are appended to the inference prompt as `<info>...</info>` blocks. The worker handles context-window bounding.
@@ -375,7 +375,7 @@ export type TrainingPair = z.output<typeof TrainingPairSchema>
 
 ### Extraction: Snapshot Query, Not DB Join
 
-The extraction script (`src/agent/training/extract-pairs.ts`) reads from `~/.onbraid/snapshots/<topic>.jsonl` via `readSnapshotsIndexed()`, filtering for selection snapshots whose detail carries `metadata.iclContract`. No correlation IDs, no custom snapshot types.
+The extraction script (`src/agent/training/extract-pairs.ts`) reads from `~/.plaited/snapshots/<topic>.jsonl` via `readSnapshotsIndexed()`, filtering for selection snapshots whose detail carries `metadata.iclContract`. No correlation IDs, no custom snapshot types.
 
 ### Eval Integration
 
@@ -396,7 +396,7 @@ Inline `json` graders carry the ICL through grading via `result.metadata.iclCont
 ### Layout
 
 ```
-~/.onbraid/training/<run>/
+~/.plaited/training/<run>/
 ├── pairs.jsonl          ← TrainingPair lines
 ├── config.json          ← model, stage, hyperparams
 └── results.jsonl        ← EvalTrialResult lines (post-grade)
@@ -429,14 +429,14 @@ Behavioral thread triggers `load_packages` → imports behaviors/templates
 
 ## 15. Snapshot Lifecycle and Archiving
 
-`~/.onbraid/snapshots/<topic>.jsonl` records every event selection per topic.
+`~/.plaited/snapshots/<topic>.jsonl` records every event selection per topic.
 
 - **Live retention**: Recent snapshots stay in JSONL. `.kind.idx` and `.time.idx` enable fast seek-based reads without parsing every line.
 - **Archive threshold**: When a file exceeds a configurable size or age threshold, old lines are moved to Bun archives and indexes are rebuilt.
 - **Topic context assembly** queries the live JSONL via `readSnapshotsIndexed()`. Archived data is not used for runtime context assembly — bounded `memory` and `user` fields (plus the in-flight behavioral state) serve that role.
 
 ```
-~/.onbraid/snapshots/
+~/.plaited/snapshots/
 ├── foobar.jsonl          ← append-only for foobar topic
 ├── foobar.kind.idx       ← { frontier: [0, 47, ...], selection: [...] }
 ├── foobar.time.idx       ← [ { ts, offset }, ... ]
@@ -448,7 +448,7 @@ Behavioral thread triggers `load_packages` → imports behaviors/templates
 
 ## 16. Frontier Analysis
 
-- **CLI**: `onbraid frontier-analysis` stays available for offline analysis.
+- **CLI**: `plaited frontier-analysis` stays available for offline analysis.
 - **Worker**: `frontier-analysis` worker accepts behavior paths + options, returns results. Agent can dispatch analysis reactively (e.g., on deadlock) and handle results as behavioral events.
 - **History replay**: Agent reads snapshots via `readSnapshotsIndexed()` for a topic's actual history, passes `snapshotMessages` to the worker for replay.
 

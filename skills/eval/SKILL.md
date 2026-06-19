@@ -1,17 +1,17 @@
 ---
 name: eval
-description: Grade, compare, and calibrate OnBraid trial results with `onbraid eval`.
+description: Grade, compare, and calibrate Plaited trial results with `plaited eval`.
 license: ISC
 compatibility: Requires bun
 ---
 
 # Eval
 
-CLI guidance for `onbraid eval` grading, run comparison, and grader calibration.
+CLI guidance for `plaited eval` grading, run comparison, and grader calibration.
 
 ## When To Use
 
-- Grade one OnBraid trial with deterministic process checks and/or external graders
+- Grade one Plaited trial with deterministic process checks and/or external graders
 - Compare baseline and challenger eval bundles
 - Sample eval bundle rows for grader calibration and human review
 - Preserve full snapshot evidence and task/result metadata in the output
@@ -20,9 +20,9 @@ CLI guidance for `onbraid eval` grading, run comparison, and grader calibration.
 ## Command Discovery
 
 ```bash
-`onbraid --schema
-`onbraid eval --schema input
-`onbraid eval --schema output
+`plaited --schema
+`plaited eval --schema input
+`plaited eval --schema output
 ```
 
 ## Grade Mode
@@ -46,7 +46,7 @@ Key semantics:
 Example:
 
 ```bash
-`onbraid eval '{
+`plaited eval '{
   "mode": "grade",
   "trial": {
     "id": "trial-1",
@@ -222,7 +222,7 @@ Use `needsHumanReason` when `label` is `needs_human`.
 Example:
 
 ```bash
-`onbraid eval '{
+`plaited eval '{
   "mode": "calibrate",
   "bundle": { "label": "candidate-run", "tasks": [] },
   "focus": "all_failures",

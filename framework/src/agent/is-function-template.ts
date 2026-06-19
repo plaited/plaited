@@ -122,7 +122,7 @@ export type FunctionTemplateInfo = {
  * Identifies FunctionTemplate exports from a package or subpath export.
  *
  * @remarks
- * Accepts a package specifier (e.g. `@onbraid/templates`) that resolves via
+ * Accepts a package specifier (e.g. `@plaited/templates`) that resolves via
  * `import.meta.resolve`. Subpath exports are supported — only files reachable
  * from the resolved subpath entry point are scanned.
  *

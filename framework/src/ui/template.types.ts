@@ -1,16 +1,16 @@
 import type { CSSProperties } from './css.types.ts'
-import { O_SCALE, O_TARGET, O_TRIGGER, type SCALE, type TEMPLATE_OBJECT_IDENTIFIER } from './template.constants.ts'
+import { P_SCALE, P_TARGET, P_TRIGGER, type SCALE, type TEMPLATE_OBJECT_IDENTIFIER } from './template.constants.ts'
 
 type Booleanish = boolean | 'true' | 'false'
 type CrossOrigin = 'anonymous' | 'use-credentials' | ''
 
 /**
- * Represents the internal structure produced by OnBraid's JSX factory (`h`).
+ * Represents the internal structure produced by Plaited's JSX factory (`h`).
  * This object contains the processed HTML strings and associated metadata needed for rendering.
  *
  * @property html - An array of string fragments representing the HTML structure.
  * @property stylesheets - CSS stylesheets collected from this template and its children.
- * @property $ - A unique symbol (`TEMPLATE_OBJECT_IDENTIFIER`) used as a type guard to identify OnBraid template objects.
+ * @property $ - A unique symbol (`TEMPLATE_OBJECT_IDENTIFIER`) used as a type guard to identify Plaited template objects.
  */
 export type TemplateObject = {
   html: string[]
@@ -29,23 +29,23 @@ export type Child = number | string | TemplateObject
  */
 export type Children = Child[] | Child
 /**
- * Defines core attributes applicable to all elements processed by OnBraid's hyperscript factory.
- * Includes standard HTML attributes, ARIA attributes, and OnBraid-specific extensions.
+ * Defines core attributes applicable to all elements processed by Plaited's hyperscript factory.
+ * Includes standard HTML attributes, ARIA attributes, and Plaited-specific extensions.
  *
  * @property class - Supports standard `string` or an `array` of strings for CSS classes.
  * @property children - Represents the child elements or content.
- * @property o-target - Used to identify elements for targeted updates or interactions (value is usually a string or number).
+ * @property p-target - Used to identify elements for targeted updates or interactions (value is usually a string or number).
  * @property p-version - Latest server-projected topic version realized by a controller island or target.
- * @property o-trigger - Defines declarative event bindings that controller islands forward as BP event types.
+ * @property p-trigger - Defines declarative event bindings that controller islands forward as BP event types.
  * @property stylesheets - Accepts a CSS string or an array of strings to be associated with the element, hoisted, and deduplicated.
  * @property style - Accepts a `CSSProperties` object (similar to React) for inline styles.
  */
-export type OnBraidAttributes = {
+export type PlaitedAttributes = {
   class?: string
   children?: Children
-  [O_TARGET]?: string | number
-  [O_TRIGGER]?: Record<string, string>
-  [O_SCALE]?: keyof typeof SCALE
+  [P_TARGET]?: string | number
+  [P_TRIGGER]?: Record<string, string>
+  [P_SCALE]?: keyof typeof SCALE
   stylesheets?: string[]
   classNames?: string[]
   style?: CSSProperties
@@ -336,9 +336,9 @@ type AriaRole =
   | 'treegrid'
   | 'treeitem'
 
-/** Base HTML attributes common to most elements, including ARIA attributes and OnBraid-specific ones. */
+/** Base HTML attributes common to most elements, including ARIA attributes and Plaited-specific ones. */
 type HTMLAttributes = AriaAttributes &
-  OnBraidAttributes & {
+  PlaitedAttributes & {
     // Standard HTML Attributes
     accesskey?: string
     autofocus?: boolean
@@ -397,7 +397,7 @@ type HTMLAttributes = AriaAttributes &
   }
 
 /**
- * Represents detailed HTML attributes, including standard HTML, ARIA, OnBraid-specific,
+ * Represents detailed HTML attributes, including standard HTML, ARIA, Plaited-specific,
  * and allowing for any custom `data-*` or other attributes via `Record<string, any>`.
  * This is the base type often extended for specific HTML elements.
  */
@@ -1321,7 +1321,7 @@ export type ElementAttributeList = {
 }
 /**
  * Generic type for template attributes.
- * It combines the base `DetailedHTMLAttributes` (providing standard HTML/ARIA/OnBraid attributes)
+ * It combines the base `DetailedHTMLAttributes` (providing standard HTML/ARIA/Plaited attributes)
  * with an optional generic type `T` for template-specific attributes.
  *
  * @template T - Optional extension of `DetailedHTMLAttributes` for template-specific attributes.

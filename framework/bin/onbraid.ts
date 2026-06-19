@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
 
 /**
- * Agent-facing CLI router for OnBraid skill discovery.
+ * Agent-facing CLI router for Plaited skill discovery.
  *
  * @remarks
- * Agents discover skill capabilities via `onbraid skills`.
+ * Agents discover skill capabilities via `plaited skills`.
  *
  * @internal
  */
@@ -25,8 +25,8 @@ import {
 // ============================================================================
 
 export const runCli = makeCliRouter({
-  name: 'onbraid',
-  description: 'Agent-facing skill discovery CLI for the OnBraid framework',
+  name: 'plaited',
+  description: 'Agent-facing skill discovery CLI for the Plaited framework',
   commands: {
     ...markdownCli,
     ...mcpClientCli,

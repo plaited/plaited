@@ -221,7 +221,7 @@ export type AddThread = (label: string, thread: () => Generator<Idioms, void, un
  * - Initiates new execution cycle
  *
  * @see {@link BPEvent} for event structure
- * @see {@link OnBraidTrigger} for enhanced trigger
+ * @see {@link PlaitedTrigger} for enhanced trigger
  */
 export type Trigger = <T extends BPEvent>(args: T) => void
 

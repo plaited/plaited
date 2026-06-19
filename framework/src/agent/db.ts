@@ -7,7 +7,7 @@ import type { AGENT_TO_CONTROLLER_EVENTS } from '../shared/shared.constants.ts'
 import type { AttrsMessage, DisconnectMessage, ImportModuleMessage, RenderMessage } from '../shared/shared.schemas.ts'
 import { JsonObjectSchema } from '../shared.ts'
 
-const DB_PATH = '.onbraid/context.sqlite'
+const DB_PATH = '.plaited/context.sqlite'
 
 let db: Database | undefined
 
