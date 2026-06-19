@@ -8,7 +8,7 @@
  * @remarks
  * Implementation details:
  * - VOID_TAGS and BOOLEAN_ATTRS align with HTML5 and SVG specs
- * - P_TARGET, P_TRIGGER, and P_TOPIC declare controller update and event wiring
+ * - P_TARGET & P_TRIGGER declare controller update and event wiring
  * - Sets provide O(1) lookup performance for validation
  * - TEMPLATE_OBJECT_IDENTIFIER uses emoji for uniqueness
  *

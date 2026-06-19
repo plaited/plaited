@@ -34,7 +34,7 @@ Public UI exports are re-exported from `src/ui.ts`.
 | Controller protocol | `src/controller/controller.schemas.ts`, `src/controller/controller.types.ts`, `src/shared/shared.constants.ts` | `RenderMessageSchema`, `AttrsMessageSchema`, `ImportModuleSchema`, `ClientMessageSchema`, `ControllerModuleContext` |
 | Controller utilities | `src/controller/delegated-listener.ts`, `src/controller/controller.constants.ts` | `DelegatedListener`, `delegates`, `SWAP_MODES` |
 | Shadow DOM decoration | `src/render/decorate-elements.ts` | `decorateElements` |
-| Rendering | `src/render/template.ts`, `src/render/ssr.ts`, `src/render/template.types.ts`, `src/render/template.constants.ts` | `createTemplate`, `h`, `Fragment`, `createSSR`, `P_TARGET`, `P_TRIGGER`, `P_TOPIC` |
+| Rendering | `src/render/template.ts`, `src/render/ssr.ts`, `src/render/template.types.ts`, `src/render/template.constants.ts` | `createTemplate`, `h`, `Fragment`, `createSSR`, `P_TARGET`, `P_TRIGGER` |
 | CSS | `src/css/*.ts` | `createStyles`, `createTokens`, `createHostStyles`, `createRootStyles`, `createKeyframes`, `joinStyles` |
 | Server bridge fixtures | `src/controller/tests/fixtures/serve.ts` | test fixture server validating controller protocol surfaces and message flow |
 
