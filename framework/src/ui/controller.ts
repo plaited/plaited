@@ -35,11 +35,8 @@ const delegates = new WeakMap<EventTarget, DelegatedListener>()
  *
  * @public
  */
-export type ControllerModuleContext = {
-  /** DelegatedListener constructor for wrapping event callbacks. */
-  DelegatedListener: typeof DelegatedListener
-  /** WeakMap for storing delegated listeners keyed by their event targets. */
-  delegates: WeakMap<EventTarget, DelegatedListener>
+export type ControllerExtensionParams<T extends Element = Element> = {
+  element: T
   /** Registers a cleanup callback invoked when the controller disconnects. */
   addDisconnect: (disconnect: Disconnect) => void
   /** Triggers a behavioral event on the controller's topic. */
@@ -73,7 +70,7 @@ export type ControllerModuleContext = {
  *
  * @public
  */
-export type ControllerModule = (context: ControllerModuleContext) => void | Promise<void>
+export type ControllerExtension<T extends Element = Element> = (params: ControllerExtensionParams<T>) => void | Promise<void>
 
 const getAttributes = (element: Element): Record<string, string> => {
   return Object.fromEntries(Array.from(element.attributes, (attr) => [attr.name, attr.value]))
@@ -137,7 +134,7 @@ const isMessage = (event: Event): event is MessageEvent => event instanceof Mess
 
 export type ControllerConstructorArgs = {
   agentCard: AgentCard
-  modules?: ControllerModule[]
+  extensions?: Map<`${string}:${string}`, ControllerExtension>
   onPageReveal?: (event: PageRevealEvent) => void | Promise<void>
   onPageSwap?: (event: PageSwapEvent) => void | Promise<void>
   onPageShow?: (event: PageTransitionEvent) => void | Promise<void>
@@ -166,20 +163,20 @@ export type AgentCard = {
 export class Controller {
   constructor({
       agentCard,
-      modules,
+      extensions,
       onPageReveal,
       onPageSwap,
       onPageHide,
       onPageShow,
   }: ControllerConstructorArgs) {
     this.#agentCard = agentCard
-      this.#modules = modules
+      this.#extensions = extensions
       this.#onPageHide = onPageHide
       this.#onPageReveal = onPageReveal
       this.#onPageShow = onPageShow
       this.#onPageSwap = onPageSwap
     }
-    #modules: ControllerConstructorArgs['modules']
+    #extensions?: Map<string, ControllerExtension>
     /**
      * Agent Card describing this controller's remote agent, provided at
      * construction time. Returned to the Flutter host on `agent/getCard`.
@@ -209,7 +206,7 @@ export class Controller {
           this.#webSocketListener(event)
           return
         }
-        if (event instanceof CloseEvent && UI_CORE_RETRY_STATUS_CODES.has(event.code)) this.#webScoketRetry()
+        if (event instanceof CloseEvent && UI_CORE_RETRY_STATUS_CODES.has(event.code)) this.#webSocketRetry()
         if (event.type === 'error') {
           throw new Error(`WebSocket error on ${target.url} (readyState: ${target.readyState})`)
         }
@@ -314,6 +311,16 @@ export class Controller {
 
         const pairs = raw.split(' ')
         for (const pair of pairs) {
+          if (this.#extensions?.has(pair)) {
+            const extension = this.#extensions.get(pair)!
+            void extension({
+              element,
+              addDisconnect: this.#addDisconnect.bind(this),
+              trigger: this.#trigger.bind(this),
+              reportError: this.#reportError.bind(this),
+            })
+            continue
+          }
           const separator = pair.indexOf(':')
           if (separator <= 0) continue
 
@@ -453,7 +460,7 @@ export class Controller {
         })
       }
     }
-    #webScoketRetry() {
+    #webSocketRetry() {
       this.#closeWebSocket(this.#socket)
       if (this.#retryCount >= UI_CORE_MAX_RETRIES) return
       const maxDelay = Math.min(9_999, 1_000 * 2 ** this.#retryCount)
@@ -518,25 +525,6 @@ export class Controller {
         // ignore malformed messages
       }
     }
-    #connectModules() {
-      if(!this.#modules) return
-      for (const module of this.#modules) {
-        try {
-          void module({
-            DelegatedListener,
-            delegates: new WeakMap<EventTarget>(),
-            addDisconnect: this.#addDisconnect.bind(this),
-            trigger: this.#trigger.bind(this),
-            reportError: this.#reportError.bind(this),
-          })
-        } catch (error) {
-          this.#reportError(error, {
-            description: 'Register callback threw an error',
-            context: { registerType: typeof module },
-          })
-        }
-      }
-    }
     connect() {
       const listener = new DelegatedListener((event: Event) => {
         isPageHide(event) && this.#pageHideListener(event)
@@ -556,7 +544,6 @@ export class Controller {
         this.#bindForms(body)
         this.#bindTriggers(body)
       }
-      this.#connectModules()
     }
     #disconnect() {
       for (const cb of this.#disconnectSet) void cb()

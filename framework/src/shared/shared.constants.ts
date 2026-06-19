@@ -35,3 +35,5 @@ export const AGENT_RUNTIMES = keyMirror('analyst', 'coder')
  * @public
  */
 export const SWAP_MODES = keyMirror('afterbegin', 'afterend', 'beforebegin', 'beforeend', 'innerHTML', 'outerHTML')
+
+export const A2A_METHODSW = keyMirror()

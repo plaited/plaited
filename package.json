@@ -1,8 +1,9 @@
 {
-  "name": "onbraid-workspace",
+  "name": "plaited-workspace",
   "private": true,
   "workspaces": [
-    "framework"
+    "framework",
+    "adapters/*"
   ],
   "scripts": {
     "commit": "cz",
