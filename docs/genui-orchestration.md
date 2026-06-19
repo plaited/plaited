@@ -12,7 +12,7 @@ The architecture is backend-agnostic. Hermes Agent, Cloudflare Agents, and Verce
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  Bun Server                                                      │
+│  Hono (on Bun) Server                                            │
 │                                                                  │
 │  ┌──────────────────────────────────────────────────────┐       │
 │  │  Symbolic Orchestration Layer                          │       │
@@ -71,6 +71,87 @@ Together they form the hill climb: the behavioral program's event schema, constr
 | genUI template catalog (ICL) | Example HTML output the model should produce | Any provider |
 | Skills | Procedural knowledge for rendering approach | Per-agent skill system |
 
+## Web Framework: Hono
+
+The server uses **Hono** on Bun, not raw `Bun.serve`. Hono provides routing, middleware, WebSocket helpers, and auth primitives with ~10-20% performance overhead vs raw Bun (noise compared to agent loops and SQLite I/O). A single Hono server file can be deployed to Bun during development and to Cloudflare Workers in production with no code changes.
+
+### Route layout
+
+```ts
+import { Hono } from 'hono'
+import { createBunWebSocket } from 'hono/bun'
+import { bearerAuth } from 'hono/bearer-auth'
+import { cors } from 'hono/cors'
+
+const app = new Hono()
+
+// Auth — applied to all management routes
+app.use('/api/*', bearerAuth({ token }))
+app.use('/pages/*', cors())
+
+// Static: page store lookup — no dynamic route registration needed.
+// A single catch-all resolves from the page store at runtime.
+// The agent pushes page data, not routes.
+app.get('/pages/:pageId', (c) => {
+  const page = pageStore.get(c.req.param('pageId'))
+  if (!page) return c.notFound()
+  return c.html(page.html)
+})
+
+// REST API for page management
+app.get('/api/pages', ...)      // list all pages
+app.post('/api/pages', ...)     // create page (called by adapter)
+app.delete('/api/pages/:id', ...)
+
+// WebSocket for Controller (Plaited browser runtime)
+app.get('/ws/controller', upgradeWebSocket(...))
+
+// WebSocket for agent adapter (e.g. Hermes TUI gateway)
+app.get('/ws/agent', upgradeWebSocket(...))
+
+// Static: Controller JS, templates
+app.use('/static/*', serveStatic({ root: './dist' }))
+
+// Export for Bun (or swap to Cloudflare Workers export)
+export default { port: 3000, fetch: app.fetch, websocket }
+```
+
+### Why Hono over raw Bun.serve
+
+| Concern | Raw Bun.serve | Hono |
+|---------|---------------|------|
+| Routing | Hand-roll URL parsing per endpoint | Path params, groups, basePath |
+| WebSocket | `server.upgrade()` + manual protocol matching | `createBunWebSocket()` + typed RPC via `hc<WebSocketApp>` |
+| Auth | Write from scratch | Built-in bearer, JWT, basic auth |
+| Validation | Manual Zod parse per handler | `@hono/zod-validator` auto-integration |
+| Rate limiting | Build yourself | `@hono-rate-limiter/hono-rate-limiter` |
+| CORS | Hand-roll headers | Built-in CORS middleware |
+| Portability | Bun-only | Same code runs on CF Workers, Deno, Node |
+| Middleware | Manual chain | `combine()`, `some()`, `every()` |
+| Perf vs raw | Ceiling | ~10-20% slower (agent loop + SQLite dominate) |
+
+### Page routing: static catch-all, not dynamic registration
+
+Hono's default `SmartRouter`/`RegExpRouter` throws if routes are added after the matcher is built. This is intentional for performance. We do not need dynamic route registration — pages are served through a single catch-all that resolves from the page store at runtime:
+
+```
+GET /pages/:pageId
+     │
+     ├── Route is static — declared once at server startup.
+     │
+     └── Handler looks up pageStore.get(pageId)
+           ├── Found → serve page HTML
+           └── Not found → 404
+```
+
+When the agent creates a page via the `create_page` tool, the tool result streams back through the agent gateway as a `tool.complete` event. The adapter receives the event and writes `{ pageId, html, route }` to the page store (a `Map` or the SQLite db.ts). The route handler is already registered — it picks up the new page on the next request without any router mutation.
+
+This pattern is simpler than dynamic route registration:
+- **No router mutation** — stays on `SmartRouter` (fastest). No `TrieRouter` perf tradeoff.
+- **Survives restart** — route exists before any page is created. Reboot, pages still served.
+- **Auth works transparently** — middleware on `GET /pages/:pageId` protects every generated page.
+- **Backend-agnostic** — the same pattern works whether the agent is Hermes, Cloudflare, or Eve.
+
 ## Adapter Packages
 
 Each adapter package sits in `src/adapters/<name>/` and translates the external agent's event format into behavioral events. This keeps the symbolic layer agent-agnostic.
@@ -94,10 +175,9 @@ Connects to a running Hermes instance via the TUI gateway WebSocket. It:
 
 1. Opens a WebSocket to `ws://localhost:<port>` using the TUI gateway protocol
 2. Receives streaming events (`message.delta`, `tool.start`, `tool.complete`, `approval.request`, etc.)
-3. Translates tool results into behavioral events that the symbolic layer processes
-4. Forwards behavioral events back as TUI gateway `prompt.submit` calls
-
-This is **Pattern 2** for page routing: the adapter receives `tool.complete` events from the event stream, extracts page metadata (route, HTML, pageId), and registers the route in the Bun server. No shared filesystem, no HTTP callbacks — the page route is derived from the agent's own output.
+3. For `tool.complete` events from `create_page`: writes page data to the in-memory page store (a `Map` or SQLite-backed cache). The Hono route handler at `GET /pages/:pageId` picks it up on the next request — no dynamic route registration.
+4. Translates other tool results into behavioral events that the symbolic layer processes
+5. Forwards behavioral events back as TUI gateway `prompt.submit` calls
 
 ```
 Hermes Agent
@@ -169,27 +249,30 @@ The plugin exposes the running Hermes session as a web-a2a agent:
 
 This gives the user on-the-go access to the Hermes agent through a mobile WebView.
 
-## Page Routing (Pattern 2)
+## Page Routing
 
-Pages are ephemeral by default — generated HTML is streamed live to the Controller via `render` messages. When the agent calls `create_page`, the tool result returns `{ pageId, route, html }`. The adapter (in the Bun server) receives the `tool.complete` event from the TUI gateway, extracts the metadata, and registers a route.
+Pages are ephemeral by default — generated HTML is streamed live to the Controller via `render` messages. When the agent calls `create_page`, the tool result returns `{ pageId, html }`. The adapter receives the `tool.complete` event from the gateway stream, extracts the metadata, and writes it to the page store (in-memory `Map` or db.ts SQLite cache).
+
+Route registration is **static** — a single Hono catch-all at `GET /pages/:pageId` resolves from the store at runtime. No dynamic route registration.
 
 ```
 Agent calls create_page tool
    │
-   ├── Tool returns { pageId, route, html, stylesheets }
+   ├── Tool returns { pageId, html, stylesheets }
    │
-   ├── TUI gateway streams tool.complete event
+   ├── Gateway streams tool.complete event
    │
-   ├── Adapter receives event, extracts page data
+   ├── Adapter receives event, writes to pageStore.set(pageId, data)
    │
-   └── Bun server registers route at /pages/<pageId>
-         Controller navigates or user bookmarks
+   └── Route handler is already registered:
+         GET /pages/:pageId → pageStore.get(pageId)
 
 On revisit:
-   GET /pages/<pageId>
+   GET /pages/:pageId
         │
-        ├── Bun server serves the Controller with page HTML
-        │
+        ├── Hono catches :pageId param
+        ├── Handler looks up pageStore.get(pageId)
+        ├── Found → serve Controller + page HTML
         └── Controller reconnects to agent via WebSocket
               Agent regenerates content via topic memory
 ```
