@@ -6,7 +6,7 @@ import { keyMirror } from '../utils.ts'
  *
  * @public
  */
-export const AGENT_TO_CONTROLLER_EVENTS = keyMirror('attrs', 'render', 'import', 'a2a_result')
+export const AGENT_TO_CONTROLLER_EVENTS = keyMirror('attrs', 'render', 'dispatch', 'a2a_result')
 
 /**
  * Event keys used for messages emitted by the browser controller toward the
@@ -23,8 +23,6 @@ export const CONTROLLER_TO_AGENT_EVENTS = keyMirror(
   'a2a_task',
 )
 
-export const AGENT_RUNTIMES = keyMirror('analyst', 'coder')
-
 /**
  * Supported DOM insertion modes for `render` protocol messages.
  *
@@ -35,5 +33,3 @@ export const AGENT_RUNTIMES = keyMirror('analyst', 'coder')
  * @public
  */
 export const SWAP_MODES = keyMirror('afterbegin', 'afterend', 'beforebegin', 'beforeend', 'innerHTML', 'outerHTML')
-
-export const A2A_METHODSW = keyMirror()
