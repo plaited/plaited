@@ -387,28 +387,29 @@ describe('controller: WebSocket retry', () => {
   }, 30000)
 })
 
-// ─── Module registers ─────────────────────────────────────────────────────────
+// ─── Controller extensions ────────────────────────────────────────────────────
 
-describe('controller: module registers', () => {
-  test('dynamic import() via connect.js modules param invokes default export as Register callback', async () => {
-    // Navigate to module fixture; the connect.js loads controller-module.js as a Register.
+describe('controller: extensions', () => {
+  test('extension module is loaded via modules param and invoked for matching p-trigger elements', async () => {
+    // Navigate to module fixture; the connect.js loads controller-module.js as an extension.
     await gotoTest('/module-fixture.html')
 
-    const output = await cli('eval', '() => globalThis.__controllerModuleLoaded === true')
+    // Extension is invoked reactively when the matching DOM event fires.
+    // Click the extension button to trigger it.
+    await cli('eval', "() => { document.getElementById('module-ext-btn')?.click(); return 'clicked'; }")
+    await wait(250)
+
+    const output = await cli('eval', '() => globalThis.__extensionInvoked === true')
     const result = parseResult(output)
     expect(result).toContain('true')
   }, 30000)
 
-  test('reports import_invoked after the Register callback finishes', () => {
-    // The Register callback runs during initialization. Since the buttons are in
-    // the initial HTML, the callback can bind listeners immediately.
-    // The module sets __controllerModuleLoaded on success.
-    // Verified by finding the controller_connected event that proves the controller started.
+  test('controller_connected event fires after extension setup', () => {
     const event = findUiEvent({ source: 'module-fixture', type: 'controller_connected' })
     expect(event).toBeDefined()
   })
 
-  test('p-trigger actions are sent as BP events with an attribute detail map', async () => {
+  test('standard p-trigger actions are still sent as BP events alongside extension triggers', async () => {
     const before = getFixture().uiEvents.length
     await gotoTest('/module-fixture.html')
 
@@ -423,28 +424,33 @@ describe('controller: module registers', () => {
     expect(attrs['p-trigger']).toBe('click:test_click')
   }, 30000)
 
-  test('Register callbacks can use delegated listeners and trigger BP events', async () => {
+  test('extension registered listener triggers BP events on click', async () => {
     const before = getFixture().uiEvents.length
     await gotoTest('/module-fixture.html')
 
-    await cli('eval', "() => { document.getElementById('module-enhanced-btn')?.click(); return 'clicked'; }")
+    await cli('eval', "() => { document.getElementById('module-ext-btn')?.click(); return 'clicked'; }")
 
     const event = await waitFor(() =>
-      findUiEvent({ after: before, source: 'module-fixture', type: 'controller_module_click' }),
+      findUiEvent({ after: before, source: 'module-fixture', type: 'extension_action' }),
     )
-    const count = await cli('eval', '() => globalThis.__controllerModuleHandlerCallCount ?? 0')
+    const count = await cli('eval', '() => globalThis.__extensionHandlerCallCount ?? 0')
     expect(parseResult(count)).toContain('1')
     const detail = event.message.detail as Record<string, unknown>
     const bpEvent = detail.event as Record<string, unknown>
     const attrs = bpEvent.detail as Record<string, unknown>
-    expect(attrs.id).toBe('module-enhanced-btn')
-    expect(attrs['data-extra']).toBe('module-listener')
+    expect(attrs.id).toBe('module-ext-btn')
+    expect(attrs['data-extra']).toBe('extension-listener')
   }, 30000)
 
-  test('disconnect runs cleanup callbacks when pagehide fires', async () => {
+  test('disconnect runs extension cleanup callbacks when pagehide fires', async () => {
     await gotoTest('/module-fixture.html')
 
-    const loaded = await cli('eval', '() => globalThis.__controllerModuleLoaded === true')
+    // Extension is invoked reactively when the matching DOM event fires.
+    // Click the extension button to trigger it before testing disconnect.
+    await cli('eval', "() => { document.getElementById('module-ext-btn')?.click(); return 'clicked'; }")
+    await wait(250)
+
+    const loaded = await cli('eval', '() => globalThis.__extensionInvoked === true')
     expect(parseResult(loaded)).toContain('true')
 
     // Dispatch synthetic pagehide event to trigger controller teardown
@@ -454,23 +460,21 @@ describe('controller: module registers', () => {
     )
     await wait(250)
 
-    const afterDisconnect = await cli('eval', '() => globalThis.__controllerModuleLoaded === false')
+    const afterDisconnect = await cli('eval', '() => globalThis.__extensionInvoked === false')
     expect(parseResult(afterDisconnect)).toContain('true')
   }, 30000)
 
-  test('invalid module default export reports a controller error', async () => {
+  test('invalid extension module reports a bundle error', async () => {
     const before = getFixture().errors.length
     await gotoTest('/test/bad-import-test')
 
+    // The invalid module doesn't export a key or default, which causes the
+    // bundle entry code to throw before the controller initializes.
+    // The error is caught and reported through the controller's error handler.
     const error = await waitFor(() => findError({ after: before, source: 'bad-import-test' }))
     const detail = error.message.detail as Record<string, unknown>
-    expect(String(detail.message)).toContain('not a function')
-    expect(detail.description).toBe('Register callback threw an error')
-    expect(detail.context).toEqual(
-      expect.objectContaining({
-        registerType: 'undefined',
-      }),
-    )
+    expect(String(detail.message)).toContain('missing a string key export')
+    expect(detail.description).toBe('Socket listener event handler threw an error')
   }, 30000)
 
   test('unsupported server event types report a controller error', async () => {

@@ -1,29 +1,36 @@
-export default ({ DelegatedListener, addDisconnect, delegates, trigger }: Record<string, unknown>) => {
-  ;(globalThis as Record<string, unknown>).__controllerModuleLoaded = true
-  ;(globalThis as Record<string, unknown>).__controllerModuleHandlerCallCount = 0
+import type { ControllerExtensionParams } from '../../controller.types.ts'
 
-  const target = document.getElementById('module-enhanced-btn')
-  if (!target) return
+/**
+ * Controller extension module for testing the extension feature.
+ *
+ * @remarks
+ * Exports a `key` that maps to a `p-trigger` pair, and a default `ControllerExtension`
+ * function that is invoked inside the controller's delegated listener when a matching
+ * DOM event fires.
+ */
+export const key = 'click:module_enhanced_action'
 
-  const listener = new DelegatedListener(() => {
-    const globals = globalThis as Record<string, unknown>
-    globals.__controllerModuleHandlerCallCount = Number(globals.__controllerModuleHandlerCallCount ?? 0) + 1
-    trigger({
-      type: 'controller_module_click',
-      detail: {
-        id: target.id,
-        'data-extra': target.getAttribute('data-extra'),
-      },
+const extension = ({ event, addDisconnect, trigger }: ControllerExtensionParams<HTMLElement, 'click'>) => {
+  const element = event.currentTarget as HTMLElement
+  const globals = globalThis as Record<string, unknown>
+  globals.__extensionInvoked = true
+  globals.__extensionHandlerCallCount = Number(globals.__extensionHandlerCallCount ?? 0) + 1
+
+  trigger({
+    type: 'extension_action',
+    detail: {
+      id: element.id,
+      'data-extra': element.getAttribute('data-extra'),
+    },
+  })
+
+  // Register disconnect cleanup once per element
+  if (!element.hasAttribute('data-ext-registered')) {
+    element.setAttribute('data-ext-registered', '')
+    addDisconnect(() => {
+      globals.__extensionInvoked = false
     })
-  })
-
-  delegates.set(target, listener)
-  target.addEventListener('click', listener)
-
-  addDisconnect(() => {
-    target.removeEventListener('click', listener)
-  })
-  addDisconnect(() => {
-    ;(globalThis as Record<string, unknown>).__controllerModuleLoaded = false
-  })
+  }
 }
+
+export default extension

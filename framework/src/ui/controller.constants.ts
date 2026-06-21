@@ -20,6 +20,6 @@ export const CONTROLLER_ERRORS = keyMirror(`${AGENT_TO_CONTROLLER_EVENTS.attrs}_
  *
  * @public
  */
-export const CONTROLLER_EVENTS = keyMirror('import_invoked', 'controller_connected')
+export const CONTROLLER_EVENTS = keyMirror('controller_connected')
 
 export const PAGE_EVENTS = keyMirror('pagehide', 'pagereveal', 'pageshow', 'pageswap')

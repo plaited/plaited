@@ -14,7 +14,7 @@
  */
 
 export * from './ui/controller.ts'
-export * from './ui/controller.types.ts'
+export type * from './ui/controller.types.ts'
 export type * from './ui/css.types.ts'
 export * from './ui/define-template.ts'
 export * from './ui/host-styles.ts'

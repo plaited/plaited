@@ -99,12 +99,12 @@ const HTML_SWAP_FIXTURE = `<!DOCTYPE html>
 const HTML_MODULE_FIXTURE = `<!DOCTYPE html>
 <html>
 <head>
-  <title>Controller Module Test</title>
+  <title>Controller Extension Test</title>
 </head>
 <body>
   <div p-target="main">
-    <button id="module-p-trigger-btn" data-extra="p-trigger-attr" p-trigger="click:test_click">O-trigger Action</button>
-    <button id="module-enhanced-btn" data-extra="module-listener">Module Listener</button>
+    <button id="module-p-trigger-btn" data-extra="p-trigger-attr" p-trigger="click:test_click">Standard Trigger Action</button>
+    <button id="module-ext-btn" data-extra="extension-listener" p-trigger="click:module_enhanced_action">Extension Action</button>
     <div id="module-initial">Module fixture loaded</div>
   </div>
   <script type="module" src="${connectScript(['/dist/modules/controller-module.js'])}"></script>

@@ -1,4 +1,4 @@
-import type { BPEvent, Disconnect, JsonObject, Trigger } from '../behavioral.ts'
+import type { BPEvent, Disconnect, JsonObject } from '../behavioral.ts'
 import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS, SWAP_MODES } from '../shared/shared.constants.ts'
 import {
   type A2AResultMessage,
@@ -22,55 +22,14 @@ import {
 import { normalizeControllerErrorDetail } from './controller-error-detail.ts'
 import { DelegatedListener } from './delegated-listener.ts'
 import { BOOLEAN_ATTRS, P_TARGET, P_TRIGGER } from './template.constants.ts'
+import type {
+  AgentCard,
+  ControllerConstructorArgs,
+  ControllerExtension,
+  ControllerExtensionParams,
+} from './controller.types.ts'
 
 const delegates = new WeakMap<EventTarget, DelegatedListener>()
-
-/**
- * Context object passed to imported controller modules.
- *
- * @remarks
- * Provides the primitives a module needs to wire DOM event listeners, trigger
- * behavioral events, register cleanup callbacks, and report runtime errors back
- * to the agent.
- *
- * @public
- */
-export type ControllerExtensionParams<T extends Element = Element> = {
-  element: T
-  /** Registers a cleanup callback invoked when the controller disconnects. */
-  addDisconnect: (disconnect: Disconnect) => void
-  /** Triggers a behavioral event on the controller's topic. */
-  trigger: Trigger
-  /** Reports a runtime error back to the agent with an optional description and context. */
-  reportError: (error: unknown, metadata?: { description?: string; context?: JsonObject }) => void
-}
-
-/**
- * Type for the default export expected from a controller module.
- *
- * @remarks
- * Every controller module loaded via `p-import` must have a default export that
- * matches this signature. The setup function receives controller context
- * primitives and returns nothing (synchronous or promise-based).
- *
- * @example
- * ```ts
- * // my-controller-module.ts
- * import type { ControllerModule } from 'plaited/ui'
- *
- * const setup: ControllerModule = ({ DelegatedListener, trigger }) => {
- *   const listener = new DelegatedListener(() => {
- *     trigger({ type: 'my_event', detail: { key: 'value' } })
- *   })
- *   document.getElementById('btn')?.addEventListener('click', listener)
- * }
- *
- * export default setup
- * ```
- *
- * @public
- */
-export type ControllerExtension<T extends Element = Element> = (params: ControllerExtensionParams<T>) => void | Promise<void>
 
 const getAttributes = (element: Element): Record<string, string> => {
   return Object.fromEntries(Array.from(element.attributes, (attr) => [attr.name, attr.value]))
@@ -132,34 +91,6 @@ const isPageReveal = (event: Event): event is PageRevealEvent => event instanceo
 const isPageSwap = (event: Event): event is PageSwapEvent => event instanceof PageSwapEvent
 const isMessage = (event: Event): event is MessageEvent => event instanceof MessageEvent
 
-export type ControllerConstructorArgs = {
-  agentCard: AgentCard
-  extensions?: Map<`${string}:${string}`, ControllerExtension>
-  onPageReveal?: (event: PageRevealEvent) => void | Promise<void>
-  onPageSwap?: (event: PageSwapEvent) => void | Promise<void>
-  onPageShow?: (event: PageTransitionEvent) => void | Promise<void>
-  onPageHide?: (event: PageTransitionEvent) => void | Promise<void>
-}
-
-export type AgentCard = {
-  /** Human-readable name for the agent. */
-  name: string
-  /** Description of the agent's capabilities. */
-  description: string
-  /** Organization providing the agent. */
-  provider?: {
-    organization: string
-  }
-  /** Tasks the agent can perform. */
-  skills?: {
-    id: string
-    name: string
-    description: string
-    tags?: string[]
-    examples?: string[]
-  }[]
-}
-
 export class Controller {
   constructor({
       agentCard,
@@ -169,7 +100,7 @@ export class Controller {
       onPageHide,
       onPageShow,
   }: ControllerConstructorArgs) {
-    this.#agentCard = agentCard
+      this.#agentCard = agentCard
       this.#extensions = extensions
       this.#onPageHide = onPageHide
       this.#onPageReveal = onPageReveal
@@ -311,16 +242,6 @@ export class Controller {
 
         const pairs = raw.split(' ')
         for (const pair of pairs) {
-          if (this.#extensions?.has(pair)) {
-            const extension = this.#extensions.get(pair)!
-            void extension({
-              element,
-              addDisconnect: this.#addDisconnect.bind(this),
-              trigger: this.#trigger.bind(this),
-              reportError: this.#reportError.bind(this),
-            })
-            continue
-          }
           const separator = pair.indexOf(':')
           if (separator <= 0) continue
 
@@ -328,11 +249,21 @@ export class Controller {
           const type = pair.slice(separator + 1)
           if (!domEvent || !type) continue
 
-          const listener = new DelegatedListener((_: Event) => {
-            this.#trigger({
-              type,
-              detail: getAttributes(element),
-            })
+          const listener = new DelegatedListener((event: Event) => {
+            if (this.#extensions?.has(pair)) {
+              const extension = this.#extensions.get(pair)!
+              void extension({
+                event,
+                addDisconnect: this.#addDisconnect.bind(this),
+                trigger: this.#trigger.bind(this),
+                reportError: this.#reportError.bind(this),
+              })
+            } else {
+              this.#trigger({
+                type,
+                detail: getAttributes(element),
+              })
+            }
           })
           delegates.set(element, listener)
           element.addEventListener(domEvent, listener)
@@ -484,18 +415,38 @@ export class Controller {
       this.#disconnectSet.add(disconnect)
     }
     async #pageHideListener(event: PageTransitionEvent) {
-      await this.#onPageHide?.(event)
+      await this.#onPageHide?.({
+        event,
+        addDisconnect: this.#addDisconnect.bind(this),
+        trigger: this.#trigger.bind(this),
+        reportError: this.#reportError.bind(this),
+      })
       this.#disconnect()
     }
     async #pageRevealListener(event: PageRevealEvent) {
-      await this.#onPageReveal?.(event)
+      await this.#onPageReveal?.({
+        event,
+        addDisconnect: this.#addDisconnect.bind(this),
+        trigger: this.#trigger.bind(this),
+        reportError: this.#reportError.bind(this),
+      })
     }
     async #pageShowListener(event: PageTransitionEvent) {
       this.connect()
-      await this.#onPageShow?.(event)
+      await this.#onPageShow?.({
+        event,
+        addDisconnect: this.#addDisconnect.bind(this),
+        trigger: this.#trigger.bind(this),
+        reportError: this.#reportError.bind(this),
+      })
     }
     async #pageSwapListener(event: PageSwapEvent) {
-      await this.#onPageSwap?.(event)
+      await this.#onPageSwap?.({
+        event,
+        addDisconnect: this.#addDisconnect.bind(this),
+        trigger: this.#trigger.bind(this),
+        reportError: this.#reportError.bind(this),
+      })
     }
     #a2aMessageListener(event: MessageEvent) {
       if (event.origin !== self.origin) return
@@ -527,11 +478,11 @@ export class Controller {
     }
     connect() {
       const listener = new DelegatedListener((event: Event) => {
-        isPageHide(event) && this.#pageHideListener(event)
-        isPageReveal(event) && this.#pageRevealListener(event)
-        isPageShow(event) && this.#pageShowListener(event)
-        isPageSwap(event) && this.#pageSwapListener(event)
-        isMessage(event) && this.#a2aMessageListener(event)
+        isPageHide(event) && void this.#pageHideListener(event)
+        isPageReveal(event) && void this.#pageRevealListener(event)
+        isPageShow(event) && void this.#pageShowListener(event)
+        isPageSwap(event) && void this.#pageSwapListener(event)
+        isMessage(event) && void this.#a2aMessageListener(event)
       })
       delegates.set(window, listener)
       window.addEventListener(PAGE_EVENTS.pagehide, listener)
