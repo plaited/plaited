@@ -30,6 +30,7 @@ import {
   TEMPLATE_OBJECT_IDENTIFIER,
   VALID_PRIMITIVE_CHILDREN,
   VOID_TAGS,
+  FLOW_CONTROL_HELPERS,
 } from './template.constants.ts'
 import type {
   Attrs,
@@ -37,7 +38,6 @@ import type {
   CustomElementTag,
   DetailedHTMLAttributes,
   ElementAttributeList,
-  PlaitedAttributes,
   TemplateObject,
 } from './template.types.ts'
 
@@ -78,24 +78,13 @@ class InvalidCustomElementTagError extends Error implements Error {
   override name = 'invalid_custom_element_tag'
 }
 
-/** @internal Valid tag input for JSX rendering: built-in tag name, custom element tag, or `FunctionTemplate`. */
-type Tag = string | CustomElementTag | FunctionTemplate
+/** @internal Valid tag input for JSX rendering: built-in tag name, custom element tag. */
+type Tag = string | CustomElementTag
 
-export type FunctionTemplate<T extends Attrs = Attrs> = ({
-  attrs,
-  h,
-  fragment,
-}: {
-  attrs?: T & PlaitedAttributes
-  h: CreateTemplate
-  fragment: CreateFragment
-}) => TemplateObject
 
 /** @internal Infers the correct attribute type for a given `Tag`. */
 type InferAttrs<T extends Tag> = T extends keyof ElementAttributeList
   ? ElementAttributeList[T]
-  : T extends FunctionTemplate
-    ? Parameters<T>[0]['attrs']
     : T extends CustomElementTag
       ? DetailedHTMLAttributes
       : Attrs
@@ -170,9 +159,6 @@ export type CreateTemplate = <T extends Tag>(tag: T, attrs?: InferAttrs<T> | Rec
  * @see {@link fragment} for grouping elements
  */
 export const h: CreateTemplate = (_tag, attrs = {}) => {
-  if (isTypeOf<FunctionTemplate>(_tag, 'function')) {
-    return _tag({ attrs, h, fragment })
-  }
   const {
     children: _children,
     stylesheets: _stylesheets,
@@ -292,3 +278,26 @@ export const h: CreateTemplate = (_tag, attrs = {}) => {
     scale: pScale === SCALE.rel ? highestChildScale : pScale,
   }
 }
+
+export const getFlowControlPrefixMarker = (name: keyof typeof FLOW_CONTROL_HELPERS): `<!--? ${keyof typeof FLOW_CONTROL_HELPERS}` => `<!--? ${name}`;
+export const getFlowControlSuffixMarket = (name: Exclude<keyof typeof FLOW_CONTROL_HELPERS, typeof FLOW_CONTROL_HELPERS.val>): `<!--? end-${keyof typeof FLOW_CONTROL_HELPERS} -->` => `<!--? end-${name} -->`
+export const getFlowControlIdMarker = (id: string | number) => `${id} -->`
+
+export const $val = (val: string | number) => `${getFlowControlPrefixMarker(FLOW_CONTROL_HELPERS.val)} ${getFlowControlIdMarker(val)}`
+
+const makeFlowControl = (name: Exclude<keyof typeof FLOW_CONTROL_HELPERS, typeof FLOW_CONTROL_HELPERS.val>) => (id: string, template: TemplateObject): TemplateObject => {
+  const html = [getFlowControlPrefixMarker(name), getFlowControlIdMarker(id), ...template.html, getFlowControlSuffixMarket(name)]
+  return {
+    html,
+    stylesheets:template.stylesheets,
+    scale: template.scale,
+    $: TEMPLATE_OBJECT_IDENTIFIER,
+  }
+}
+
+export const $for = makeFlowControl(FLOW_CONTROL_HELPERS.for)
+export const $switch = makeFlowControl(FLOW_CONTROL_HELPERS.switch)
+export const $case = makeFlowControl(FLOW_CONTROL_HELPERS.case)
+export const $default = makeFlowControl(FLOW_CONTROL_HELPERS.default)
+export const $with= makeFlowControl(FLOW_CONTROL_HELPERS.with)
+export const $slot = makeFlowControl(FLOW_CONTROL_HELPERS.slot)

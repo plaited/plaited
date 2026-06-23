@@ -172,3 +172,13 @@ export const SCALE_RANK = {
 } as const
 
 export const PLAITED_TEMPLATE_IDENTIFIER = '🧩' as const
+
+export const FLOW_CONTROL_HELPERS = keyMirror(
+  'val',
+  'for',
+  'switch',
+  'case',
+  'default',
+  'with',
+  'slot'
+)
