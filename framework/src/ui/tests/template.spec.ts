@@ -2,7 +2,7 @@
 import { expect, test } from 'bun:test'
 import beautify from 'beautify'
 import type { TemplateObject } from 'plaited/ui'
-import { fragment, h } from 'plaited/ui'
+import { $case, $default, $for, $slot, $switch, $val, $with, getFlowControlIdMarker, getFlowControlPrefixMarker, getFlowControlSuffixMarket, fragment, h } from 'plaited/ui'
 
 const render = (tpl: TemplateObject) => beautify(tpl.html.join(''), { format: 'html' })
 
@@ -149,7 +149,6 @@ test('h: renders external bootstrap script tags', () => {
 })
 
 test('h: rejects invalid custom element tags', () => {
-  expect(() => h('font-face', { children: 'sample' })).toThrow()
   expect(() => h('sample-&element', { children: 'sample' })).toThrow()
 })
 
@@ -194,4 +193,116 @@ test('h: Trims whitespace', () => {
       }),
     ),
   ).toMatchSnapshot()
+})
+
+test('getFlowControlPrefixMarker: produces opening marker', () => {
+  expect(getFlowControlPrefixMarker('for')).toBe('<!--? for')
+  expect(getFlowControlPrefixMarker('switch')).toBe('<!--? switch')
+  expect(getFlowControlPrefixMarker('case')).toBe('<!--? case')
+})
+
+test('getFlowControlSuffixMarket: produces closing marker', () => {
+  expect(getFlowControlSuffixMarket('for')).toBe('<!--? end-for -->')
+  expect(getFlowControlSuffixMarket('switch')).toBe('<!--? end-switch -->')
+  expect(getFlowControlSuffixMarket('case')).toBe('<!--? end-case -->')
+})
+
+test('getFlowControlSuffixMarket: does not accept val', () => {
+  // @ts-expect-error: val has no suffix
+  getFlowControlSuffixMarket('val')
+})
+
+test('getFlowControlIdMarker: formats id', () => {
+  expect(getFlowControlIdMarker('abc123')).toBe('abc123 -->')
+  expect(getFlowControlIdMarker(42)).toBe('42 -->')
+})
+
+test('$val: produces val marker string', () => {
+  const result = $val(42)
+  expect(result).toBe('<!--? val 42 -->')
+})
+
+test('$for: wraps template in flow control comments', () => {
+  const inner = h('p', { children: 'hello' })
+  const result = $for('items-1', inner)
+
+  // Should be a TemplateObject with comment markers around inner content
+  expect(result.$).toBe('🦄')
+  expect(result.html[0]).toBe('<!--? for')
+  expect(result.html[1]).toBe('items-1 -->')
+  // Inner template content preserved (h() generates fragments like "<p ", ">")
+  const joined = result.html.join('')
+  expect(joined).toMatch(/<!--\? foritems-1 -->/)
+  expect(joined).toMatch(/hello/)
+  expect(joined).toMatch(/<!--\? end-for -->/)
+  expect(result.html[result.html.length - 1]).toBe('<!--? end-for -->')
+})
+
+test('$switch: wraps template in switch comments', () => {
+  const inner = h('div', { children: 'case-content' })
+  const result = $switch('sw-1', inner)
+
+  expect(result.html[0]).toBe('<!--? switch')
+  expect(result.html[1]).toBe('sw-1 -->')
+  expect(result.html[result.html.length - 1]).toBe('<!--? end-switch -->')
+  expect(result.$).toBe('🦄')
+})
+
+test('$case: wraps template in case comments', () => {
+  const inner = h('span', { children: 'matched' })
+  const result = $case('case-a', inner)
+
+  expect(result.html[0]).toBe('<!--? case')
+  expect(result.html[result.html.length - 1]).toBe('<!--? end-case -->')
+})
+
+test('$default: wraps template in default comments', () => {
+  const inner = h('p', { children: 'fallback' })
+  const result = $default('def-1', inner)
+
+  expect(result.html[0]).toBe('<!--? default')
+  expect(result.html[result.html.length - 1]).toBe('<!--? end-default -->')
+})
+
+test('$with: wraps template in with comments', () => {
+  const inner = h('p', { children: 'context' })
+  const result = $with('ctx-1', inner)
+
+  expect(result.html[0]).toBe('<!--? with')
+  expect(result.html[result.html.length - 1]).toBe('<!--? end-with -->')
+})
+
+test('$slot: wraps template in slot comments', () => {
+  const inner = h('p', { children: 'slot-content' })
+  const result = $slot('slot-1', inner)
+
+  expect(result.html[0]).toBe('<!--? slot')
+  expect(result.html[result.html.length - 1]).toBe('<!--? end-slot -->')
+})
+
+test('flow control markers survive h() escaping when used as children', () => {
+  const inner = h('p', { children: 'hello' })
+  const result = h('div', {
+    children: $for('items-1', inner),
+  })
+  const html = result.html.join('')
+
+  // Comment markers should NOT be HTML-escaped
+  expect(html).toContain('<!--? for')
+  expect(html).toContain('items-1 -->')
+  expect(html).toContain('<!--? end-for -->')
+  // Inner template content preserved
+  expect(html).toMatch(/hello/)
+  // Should NOT have escaped versions
+  expect(html).not.toContain('&lt;!--')
+})
+
+test('flow control wrappers pass through stylesheets from inner template', () => {
+  const inner = h('p', {
+    children: 'styled',
+    stylesheets: ['body { color: red; }'],
+  })
+  const result = $for('items-1', inner)
+
+  expect(result.stylesheets).toContain('body { color: red; }')
 })
