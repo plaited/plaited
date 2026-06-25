@@ -1,6 +1,10 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
-  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
   "files": {
     "ignoreUnknown": false,
     "includes": ["**", "!!.bin/*", "!!dev-research"]
@@ -79,7 +83,7 @@
   },
   "overrides": [
     {
-      "includes": ["**/*.ts", "**/*.tsx"],
+      "includes": ["framework/**/*.ts", "framework/**/*.tsx"],
       "linter": {
         "rules": {
           "complexity": { "noArguments": "error" },
@@ -89,13 +93,13 @@
     },
     {
       "includes": [
-        "**/tests/**/*",
+        "framework/**/tests/**/*",
         "scripts/**/*",
         "skills/**/*",
         "src/cli/**/*",
         "bin/*",
         "src/**/*-cli.ts",
-        "src/agent/agent.ts"
+        "framework/src/agent/agent.ts"
       ],
       "linter": {
         "rules": {

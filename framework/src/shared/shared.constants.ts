@@ -1,27 +1,20 @@
 import { keyMirror } from '../utils.ts'
 
 /**
- * Event keys used for messages emitted by the server/agent toward the browser
+ * Event keys used for messages emitted by the behavioral engine to the browser
  * controller.
  *
  * @public
  */
-export const AGENT_TO_CONTROLLER_EVENTS = keyMirror('attrs', 'render', 'dispatch', 'a2a_result')
+export const SERVER_TO_CONTROLLER_EVENTS = keyMirror('attrs', 'render', 'dispatch_custom_event')
 
 /**
- * Event keys used for messages emitted by the browser controller toward the
+ * Event keys used for messages emitted by the browser controller to the
  * behavioral engine.
  *
  * @public
  */
-export const CONTROLLER_TO_AGENT_EVENTS = keyMirror(
-  'ui_event',
-  'error',
-  'form_submit',
-  'page_reveal',
-  'page_swap',
-  'a2a_task',
-)
+export const CONTROLLER_TO_SERVER_EVENTS = keyMirror('ui_event', 'error', 'form_submit', 'success', 'snapshot')
 
 /**
  * Supported DOM insertion modes for `render` protocol messages.
@@ -33,3 +26,5 @@ export const CONTROLLER_TO_AGENT_EVENTS = keyMirror(
  * @public
  */
 export const SWAP_MODES = keyMirror('afterbegin', 'afterend', 'beforebegin', 'beforeend', 'innerHTML', 'outerHTML')
+
+export const PAGE_EVENTS = keyMirror('pagereveal', 'pageswap', 'pagehide', 'pageshow')

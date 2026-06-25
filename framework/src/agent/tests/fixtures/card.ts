@@ -1,7 +1,6 @@
 type TemplateObject = { html: string[]; stylesheets: string[]; scale: string; $: string }
-type FunctionTemplate = (attrs: Record<string, unknown>) => TemplateObject
 
-export const Card: FunctionTemplate = (_attrs) => ({
+export const Card = (_attrs: Record<string, unknown>): TemplateObject => ({
   html: ['<div class="card"></div>'],
   stylesheets: [],
   scale: 'rel',

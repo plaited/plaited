@@ -10,20 +10,18 @@ type TemplateObject = {
   $: string
 }
 
-type FunctionTemplate = (attrs: Record<string, unknown>) => TemplateObject
-
-export const Box: FunctionTemplate = (_attrs) => ({
+export const Box = (_attrs: Record<string, unknown>): TemplateObject => ({
   html: ['<div></div>'],
   stylesheets: [],
   scale: 'rel',
-  $: '\u{1F984}',
+  $: '🦄',
 })
 
-export const Heading: FunctionTemplate = (_attrs) => ({
+export const Heading = (_attrs: Record<string, unknown>): TemplateObject => ({
   html: ['<h1></h1>'],
   stylesheets: [],
   scale: 'rel',
-  $: '\u{1F984}',
+  $: '🦄',
 })
 
 export const Banner = (_attrs: Record<string, unknown>): TemplateObject => ({

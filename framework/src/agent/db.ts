@@ -3,7 +3,7 @@ import { mkdirSync, unlinkSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import * as z from 'zod'
 import type { JsonObject, SnapshotMessage } from '../behavioral.ts'
-import type { AGENT_TO_CONTROLLER_EVENTS } from '../shared/shared.constants.ts'
+import type { SERVER_TO_CONTROLLER_EVENTS } from '../shared/shared.constants.ts'
 import type { AttrsMessage, DisconnectMessage, ImportModuleMessage, RenderMessage } from '../shared/shared.schemas.ts'
 import { JsonObjectSchema } from '../shared.ts'
 
@@ -618,7 +618,7 @@ export const recordUiEvent = ({
   event,
 }: {
   topicId: string
-  type: keyof typeof AGENT_TO_CONTROLLER_EVENTS
+  type: keyof typeof SERVER_TO_CONTROLLER_EVENTS
   event: RenderMessage | AttrsMessage | ImportModuleMessage | DisconnectMessage
 }) => {
   const detail = 'detail' in event ? (event.detail as Record<string, unknown>) : undefined

@@ -1,6 +1,11 @@
 import * as z from 'zod'
 
-import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS, SWAP_MODES } from './shared.constants.ts'
+import {
+  CONTROLLER_TO_SERVER_EVENTS,
+  PAGE_EVENTS,
+  SERVER_TO_CONTROLLER_EVENTS,
+  SWAP_MODES,
+} from './shared.constants.ts'
 
 /** @public */
 export const JsonObjectSchema = z.object({}).catchall(z.json())
@@ -29,7 +34,7 @@ export type BPEvent = z.output<typeof BPEventSchema>
  * @public
  */
 export const RenderMessageSchema = z.object({
-  type: z.literal(AGENT_TO_CONTROLLER_EVENTS.render),
+  type: z.literal(SERVER_TO_CONTROLLER_EVENTS.render),
   detail: z.object({
     id: z.string(),
     target: z.string(),
@@ -48,7 +53,7 @@ export const RenderMessageSchema = z.object({
 })
 
 /** @public */
-export type RenderMessage = z.infer<typeof RenderMessageSchema>
+export type RenderMessage = z.output<typeof RenderMessageSchema>
 
 /**
  * Schema for attrs messages that update element attributes.
@@ -56,7 +61,7 @@ export type RenderMessage = z.infer<typeof RenderMessageSchema>
  * @public
  */
 export const AttrsMessageSchema = z.object({
-  type: z.literal(AGENT_TO_CONTROLLER_EVENTS.attrs),
+  type: z.literal(SERVER_TO_CONTROLLER_EVENTS.attrs),
   detail: z.object({
     id: z.string(),
     target: z.string(),
@@ -65,72 +70,21 @@ export const AttrsMessageSchema = z.object({
 })
 
 /** @public */
-export type AttrsMessage = z.infer<typeof AttrsMessageSchema>
+export type AttrsMessage = z.output<typeof AttrsMessageSchema>
 
-/**
- * Schema for a single A2A data part.
- *
- * @remarks
- * Each part is structured JSON data. No raw text, no file URLs —
- * the behavioral engine and page already agree on data shapes
- * through the protocol.
- *
- * @public
- */
-export const A2APartSchema = z.object({
-  data: JsonObjectSchema,
-})
-
-/** @public */
-export type A2APart = z.infer<typeof A2APartSchema>
-
-/**
- * Schema for A2A task messages sent from the controller to the
- * behavioral engine over WebSocket.
- *
- * @remarks
- * Sent when an external peer delegates a goal to this page.
- * The behavioral engine processes the task and returns results.
- *
- * @public
- */
-export const A2ATaskMessageSchema = z.object({
-  type: z.literal(CONTROLLER_TO_AGENT_EVENTS.a2a_task),
+export const DispatchCustomEventMessageSchema = z.object({
+  type: z.literal(SERVER_TO_CONTROLLER_EVENTS.dispatch_custom_event),
   detail: z.object({
-    taskId: z.string(),
-    skill: z.string(),
-    message: z.object({
-      role: z.string(),
-      parts: z.array(A2APartSchema).min(1),
-    }),
+    id: z.string(),
+    target: z.string(),
+    event: BPEventSchema,
+    bubbles: z.boolean().optional(),
+    cancelable: z.boolean().optional(),
+    composed: z.boolean().optional(),
   }),
 })
 
-/** @public */
-export type A2ATaskMessage = z.infer<typeof A2ATaskMessageSchema>
-
-/**
- * Schema for A2A result messages sent from the behavioral engine to
- * the controller over WebSocket.
- *
- * @remarks
- * Carries the original task ID so the controller can correlate and
- * forward to the external peer. The `state` field follows the A2A
- * task lifecycle.
- *
- * @public
- */
-export const A2AResultMessageSchema = z.object({
-  type: z.literal(AGENT_TO_CONTROLLER_EVENTS.a2a_result),
-  detail: z.object({
-    taskId: z.string(),
-    state: z.enum(['submitted', 'working', 'completed', 'failed', 'input-required']),
-    parts: z.array(A2APartSchema).optional(),
-  }),
-})
-
-/** @public */
-export type A2AResultMessage = z.infer<typeof A2AResultMessageSchema>
+export type DispatchCustomEventMessage = z.output<typeof DispatchCustomEventMessageSchema>
 
 /**
  * Discriminated union schema for all server-to-controller messages.
@@ -140,11 +94,11 @@ export type A2AResultMessage = z.infer<typeof A2AResultMessageSchema>
 export const ServerMessageSchema = z.discriminatedUnion('type', [
   RenderMessageSchema,
   AttrsMessageSchema,
-  A2AResultMessageSchema,
+  DispatchCustomEventMessageSchema,
 ])
 
 /** @public */
-export type ServerMessage = z.infer<typeof ServerMessageSchema>
+export type ServerMessage = z.output<typeof ServerMessageSchema>
 
 /**
  * Schema for BP events sent from a controller island to the server.
@@ -152,14 +106,15 @@ export type ServerMessage = z.infer<typeof ServerMessageSchema>
  * @public
  */
 export const UiEventMessageSchema = z.object({
-  type: z.literal(CONTROLLER_TO_AGENT_EVENTS.ui_event),
+  type: z.literal(CONTROLLER_TO_SERVER_EVENTS.ui_event),
   detail: z.object({
     event: BPEventSchema,
+    timeStamp: z.number(),
   }),
 })
 
 /** @public */
-export type UiEventMessage = z.infer<typeof UiEventMessageSchema>
+export type UiEventMessage = z.output<typeof UiEventMessageSchema>
 
 const FormSubmitFieldValueSchema = z.union([z.string(), z.array(z.string())])
 
@@ -169,17 +124,17 @@ const FormSubmitFieldValueSchema = z.union([z.string(), z.array(z.string())])
  * @public
  */
 export const FormSubmitMessageSchema = z.object({
-  type: z.literal(CONTROLLER_TO_AGENT_EVENTS.form_submit),
+  type: z.literal(CONTROLLER_TO_SERVER_EVENTS.form_submit),
   detail: z.object({
-    id: z.string().nullable(),
+    name: z.string().nullable(),
+    timeStamp: z.number(),
     action: z.string().nullable(),
-    method: z.string(),
     data: z.record(z.string(), FormSubmitFieldValueSchema),
   }),
 })
 
 /** @public */
-export type FormSubmitMessage = z.infer<typeof FormSubmitMessageSchema>
+export type FormSubmitMessage = z.output<typeof FormSubmitMessageSchema>
 
 /**
  * Schema for controller runtime errors sent from a controller island to the server.
@@ -192,18 +147,42 @@ export type FormSubmitMessage = z.infer<typeof FormSubmitMessageSchema>
  *
  * @public
  */
-export const ControllerErrorMessageSchema = z.object({
-  type: z.literal(CONTROLLER_TO_AGENT_EVENTS.error),
+export const ErrorMessageSchema = z.object({
+  type: z.literal(CONTROLLER_TO_SERVER_EVENTS.error),
   detail: z.object({
-    message: z.string(),
-    description: z.string().optional(),
-    context: JsonObjectSchema.optional(),
+    timeStamp: z.number(),
+    id: z.string().optional(),
+    name: z.string(),
+    error: z.string().optional(),
+    stack: z.string().optional(),
   }),
 })
 
 /** @public */
-export type ControllerErrorMessage = z.infer<typeof ControllerErrorMessageSchema>
+export type ErrorMessage = z.output<typeof ErrorMessageSchema>
 
+export const SuccessMessageSchema = z.object({
+  type: z.literal(CONTROLLER_TO_SERVER_EVENTS.success),
+  detail: z.object({
+    id: z.string(),
+    timeStamp: z.number(),
+  }),
+})
+
+/** @public */
+export type SuccessMessage = z.output<typeof SuccessMessageSchema>
+
+export const PageSnapshotSchema = z.object({
+  type: z.literal(CONTROLLER_TO_SERVER_EVENTS.snapshot),
+  detail: z.object({
+    timeStamp: z.number(),
+    type: z.enum(Object.values(PAGE_EVENTS)),
+    serializedHTML: z.string(),
+    adoptedStyleSheets: z.array(z.string()),
+  }),
+})
+
+export type PageSnapshot = z.output<typeof PageSnapshotSchema>
 /**
  * Discriminated union schema for all controller-to-server messages.
  *
@@ -212,9 +191,10 @@ export type ControllerErrorMessage = z.infer<typeof ControllerErrorMessageSchema
 export const ClientMessageSchema = z.discriminatedUnion('type', [
   UiEventMessageSchema,
   FormSubmitMessageSchema,
-  ControllerErrorMessageSchema,
-  A2ATaskMessageSchema,
+  ErrorMessageSchema,
+  SuccessMessageSchema,
+  PageSnapshotSchema,
 ])
 
 /** @public */
-export type ClientMessage = z.infer<typeof ClientMessageSchema>
+export type ClientMessage = z.output<typeof ClientMessageSchema>

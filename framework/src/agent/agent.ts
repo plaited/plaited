@@ -1,11 +1,11 @@
 import { behavioral, sync, thread } from '../behavioral.ts'
-import { AGENT_TO_CONTROLLER_EVENTS, CONTROLLER_TO_AGENT_EVENTS } from '../shared/shared.constants.ts'
+import { CONTROLLER_TO_SERVER_EVENTS, SERVER_TO_CONTROLLER_EVENTS } from '../shared/shared.constants.ts'
 import type { AttrsMessage, DisconnectMessage, ImportModuleMessage, RenderMessage } from '../shared/shared.schemas.ts'
 import {
   AttrsMessageSchema,
   ClientMessageSchema,
-  ControllerErrorMessageSchema,
   DisconnectMessageSchema,
+  ErrorMessageSchema,
   FormSubmitMessageSchema,
   ImportModuleMessageSchema,
   RenderMessageSchema,
@@ -84,39 +84,39 @@ addThread(
           detailSchema: WriteMessageSchema.shape.detail,
         },
         {
-          type: AGENT_TO_CONTROLLER_EVENTS.attrs,
+          type: SERVER_TO_CONTROLLER_EVENTS.attrs,
           detailMatch: 'invalid',
           detailSchema: AttrsMessageSchema.shape.detail,
         },
         {
-          type: AGENT_TO_CONTROLLER_EVENTS.disconnect,
+          type: SERVER_TO_CONTROLLER_EVENTS.disconnect,
           detailMatch: 'invalid',
           detailSchema: DisconnectMessageSchema.shape.detail,
         },
         {
-          type: AGENT_TO_CONTROLLER_EVENTS.import,
+          type: SERVER_TO_CONTROLLER_EVENTS.import,
           detailMatch: 'invalid',
           detailSchema: ImportModuleMessageSchema.shape.detail,
         },
         {
-          type: AGENT_TO_CONTROLLER_EVENTS.render,
+          type: SERVER_TO_CONTROLLER_EVENTS.render,
           detailMatch: 'invalid',
           detailSchema: RenderMessageSchema.shape.detail,
         },
         {
-          type: CONTROLLER_TO_AGENT_EVENTS.ui_event,
+          type: CONTROLLER_TO_SERVER_EVENTS.ui_event,
           detailMatch: 'invalid',
           detailSchema: UiEventMessageSchema.shape.detail,
         },
         {
-          type: CONTROLLER_TO_AGENT_EVENTS.form_submit,
+          type: CONTROLLER_TO_SERVER_EVENTS.form_submit,
           detailMatch: 'invalid',
           detailSchema: FormSubmitMessageSchema.shape.detail,
         },
         {
-          type: CONTROLLER_TO_AGENT_EVENTS.error,
+          type: CONTROLLER_TO_SERVER_EVENTS.error,
           detailMatch: 'invalid',
-          detailSchema: ControllerErrorMessageSchema.shape.detail,
+          detailSchema: ErrorMessageSchema.shape.detail,
         },
       ],
     }),
@@ -196,16 +196,16 @@ const server = Bun.serve<WebSocketData>({
 
 console.log(`server running`)
 
-addHandler<AttrsMessage['detail']>(AGENT_TO_CONTROLLER_EVENTS.attrs, (detail) => {
+addHandler<AttrsMessage['detail']>(SERVER_TO_CONTROLLER_EVENTS.attrs, (detail) => {
   server.publish(detail.topic, JSON.stringify(detail))
 })
-addHandler<DisconnectMessage['detail']>(AGENT_TO_CONTROLLER_EVENTS.disconnect, (detail) => {
+addHandler<DisconnectMessage['detail']>(SERVER_TO_CONTROLLER_EVENTS.disconnect, (detail) => {
   server.publish(detail.topic, JSON.stringify(detail))
 })
-addHandler<ImportModuleMessage['detail']>(AGENT_TO_CONTROLLER_EVENTS.import, (detail) => {
+addHandler<ImportModuleMessage['detail']>(SERVER_TO_CONTROLLER_EVENTS.import, (detail) => {
   server.publish(detail.topic, JSON.stringify(detail))
 })
-addHandler<RenderMessage['detail']>(AGENT_TO_CONTROLLER_EVENTS.render, (detail) => {
+addHandler<RenderMessage['detail']>(SERVER_TO_CONTROLLER_EVENTS.render, (detail) => {
   server.publish(detail.topic, JSON.stringify(detail))
 })
 

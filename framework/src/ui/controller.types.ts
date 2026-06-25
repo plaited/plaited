@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import type { Disconnect, JsonObject, Trigger } from '../behavioral.ts'
+import type { Disconnect, Trigger } from '../behavioral.ts'
 
 /**
  * Resolves the specific event map for a given concrete event target type.
@@ -38,13 +38,16 @@ import type { Disconnect, JsonObject, Trigger } from '../behavioral.ts'
  * type E = ElementEventMap<Window>             // WindowEventMap
  * ```
  */
-export type ElementEventMap<T extends HTMLElement | Window> =
-  T extends Window ? WindowEventMap :
-  T extends HTMLVideoElement ? HTMLVideoElementEventMap :
-  T extends HTMLMediaElement ? HTMLMediaElementEventMap :
-  T extends HTMLBodyElement ? HTMLBodyElementEventMap :
-  /* fallback – div, span, input, button, form, section, p, h1–h6, a, etc. */
-  HTMLElementEventMap;
+export type ElementEventMap<T extends HTMLElement | Window> = T extends Window
+  ? WindowEventMap
+  : T extends HTMLVideoElement
+    ? HTMLVideoElementEventMap
+    : T extends HTMLMediaElement
+      ? HTMLMediaElementEventMap
+      : T extends HTMLBodyElement
+        ? HTMLBodyElementEventMap
+        : /* fallback – div, span, input, button, form, section, p, h1–h6, a, etc. */
+          HTMLElementEventMap
 
 /**
  * Resolves the event payload type for a given event target and event name.
@@ -89,8 +92,8 @@ export type ElementEventMap<T extends HTMLElement | Window> =
  */
 export type ElementEvent<
   T extends HTMLElement | Window,
-  TEvent extends keyof ElementEventMap<T> = keyof ElementEventMap<T>
-> = ElementEventMap<T>[TEvent];
+  TEvent extends keyof ElementEventMap<T> = keyof ElementEventMap<T>,
+> = ElementEventMap<T>[TEvent]
 
 /**
  * Context object passed to imported controller extensions.
@@ -102,14 +105,15 @@ export type ElementEvent<
  *
  * @public
  */
-export type ControllerExtensionParams<T extends HTMLElement  | Window = HTMLElement,   TEvent extends keyof ElementEventMap<T> = keyof ElementEventMap<T>> = {
+export type ControllerExtensionParams<
+  T extends HTMLElement | Window = HTMLElement,
+  TEvent extends keyof ElementEventMap<T> = keyof ElementEventMap<T>,
+> = {
   event: ElementEvent<T, TEvent>
   /** Registers a cleanup callback invoked when the controller disconnects. */
   addDisconnect: (disconnect: Disconnect) => void
   /** Triggers a behavioral event on the controller's topic. */
   trigger: Trigger
-  /** Reports a runtime error back to the agent with an optional description and context. */
-  reportError: (error: unknown, metadata?: { description?: string; context?: JsonObject }) => void
 }
 
 /**
@@ -140,37 +144,10 @@ export type ControllerExtensionParams<T extends HTMLElement  | Window = HTMLElem
  *
  * @public
  */
-export type ControllerExtension<T extends HTMLElement | Window = HTMLElement,  TEvent extends keyof ElementEventMap<T> = keyof ElementEventMap<T>> = (
-  params: ControllerExtensionParams<T, TEvent>,
-) => void | Promise<void>
-
-/**
- * Agent card describing a controller's remote agent.
- *
- * @remarks
- * Provided to the Controller constructor and returned to the Flutter host on
- * `agent/getCard` requests.
- *
- * @public
- */
-export type AgentCard = {
-  /** Human-readable name for the agent. */
-  name: string
-  /** Description of the agent's capabilities. */
-  description: string
-  /** Organization providing the agent. */
-  provider?: {
-    organization: string
-  }
-  /** Tasks the agent can perform. */
-  skills?: {
-    id: string
-    name: string
-    description: string
-    tags?: string[]
-    examples?: string[]
-  }[]
-}
+export type ControllerExtension<
+  T extends HTMLElement | Window = HTMLElement,
+  TEvent extends keyof ElementEventMap<T> = keyof ElementEventMap<T>,
+> = (params: ControllerExtensionParams<T, TEvent>) => void | Promise<void>
 
 /**
  * Arguments for constructing a {@link Controller}.
@@ -179,7 +156,7 @@ export type AgentCard = {
  */
 export type ControllerConstructorArgs = {
   /** Agent card describing the remote agent. */
-  agentCard: AgentCard
+  agentCardId?: string
   /**
    * Optional map of trigger-pair keys to extension functions.
    * Keys follow the pattern `"<domEvent>:<action>"` (e.g. `"click:my_handler"`)
