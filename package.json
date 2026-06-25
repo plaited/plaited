@@ -5,11 +5,24 @@
     "framework",
     "adapters/*"
   ],
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
+  },
   "scripts": {
+    "check": "cd framework && bun run check",
     "commit": "cz",
-    "prepare": "git config core.hooksPath framework/.hooks",
-    "test": "cd framework && bun test",
-    "check": "cd framework && bun run check"
+    "prepare": "git config core.hooksPath .hooks",
+    "test": "cd framework && bun test"
+  },
+  "lint-staged": {
+    "*.{js,cjs,jsx,tsx,ts}": [
+      "bunx biome check --write"
+    ],
+    "package.json": [
+      "format-package -w"
+    ]
   },
   "devDependencies": {
     "@commitlint/cli": "21.0.1",
@@ -20,18 +33,5 @@
     "lint-staged": "17.0.5",
     "varlock": "^1.2.0",
     "@varlock/1password-plugin": "^1.1.0"
-  },
-  "config": {
-    "commitizen": {
-      "path": "cz-conventional-changelog"
-    }
-  },
-  "lint-staged": {
-    "*.{js,cjs,jsx,tsx,ts}": [
-      "bunx biome check --write"
-    ],
-    "package.json": [
-      "format-package -w"
-    ]
   }
 }

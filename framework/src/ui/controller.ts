@@ -73,12 +73,12 @@ export class Controller {
     this.#onPageShow = onPageShow
     this.#onPageSwap = onPageSwap
   }
+  #agentCardId?: string
   #extensions?: Map<string, ControllerExtension>
   #onPageHide: ControllerConstructorArgs['onPageHide']
   #onPageReveal: ControllerConstructorArgs['onPageReveal']
   #onPageShow: ControllerConstructorArgs['onPageShow']
   #onPageSwap: ControllerConstructorArgs['onPageSwap']
-
   #disconnectSet = new Set<Disconnect>()
   #socket: WebSocket | undefined
   #retryCount = 0
