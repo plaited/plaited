@@ -48,7 +48,6 @@ export const RenderMessageSchema = z.object({
       SWAP_MODES.innerHTML,
       SWAP_MODES.outerHTML,
     ]),
-    registry: z.array(z.string()),
   }),
 })
 

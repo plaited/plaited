@@ -80,6 +80,7 @@ export class Controller {
   #onPageShow: ControllerConstructorArgs['onPageShow']
   #onPageSwap: ControllerConstructorArgs['onPageSwap']
   #disconnectSet = new Set<Disconnect>()
+  #messageQueue: string[] = []
   #socket: WebSocket | undefined
   #retryCount = 0
   #socketListener = new DelegatedListener((event: Event) => {
@@ -148,16 +149,15 @@ export class Controller {
   }
   #send(message: ClientMessage) {
     const onOpen = () => {
-      this.#send(message)
+      for (const msg of this.#messageQueue) this.#socket?.send(msg)
+      this.#messageQueue = []
       this.#socket?.removeEventListener('open', onOpen)
     }
     if (this.#socket?.readyState === WebSocket.OPEN) {
       this.#socket.send(JSON.stringify(message))
       return
     }
-    if (this.#socket?.readyState === WebSocket.CLOSING || this.#socket?.readyState === WebSocket.CLOSED) {
-      this.#closeWebSocket(this.#socket)
-    }
+    this.#messageQueue.push(JSON.stringify(message))
     if (!this.#socket) this.#connectWebSocket()
     this.#socket?.addEventListener('open', onOpen)
   }
@@ -198,17 +198,15 @@ export class Controller {
     for (const element of elements) {
       const raw = element.getAttribute(P_TRIGGER)
       if (!raw) continue
-
-      const pairs = raw.split(' ')
-      for (const pair of pairs) {
+      const handlers = new Map<string, (event: Event) => void>()
+      for (const pair of raw.split(' ')) {
         const separator = pair.indexOf(':')
         if (separator <= 0) continue
 
         const domEvent = pair.slice(0, separator)
         const type = pair.slice(separator + 1)
         if (!domEvent || !type) continue
-
-        const listener = new DelegatedListener((event: Event) => {
+        const handleEvent = (event: Event) => {
           try {
             if (this.#extensions?.has(pair)) {
               const extension = this.#extensions.get(pair)!
@@ -227,43 +225,62 @@ export class Controller {
             const error = err instanceof Error ? err : new TriggerError('trigger error', { cause: err })
             this.#reportError(error)
           }
+        }
+        handlers.set(domEvent, handleEvent)
+      }
+      const listener =
+        delegates.get(element) ??
+        new DelegatedListener((event: Event) => {
+          const type = event.type
+          const handler = handlers.get(type)
+          handler?.(event)
         })
-        delegates.set(element, listener)
-        element.addEventListener(domEvent, listener)
+      delegates.set(element, listener)
+      for (const type of handlers.keys()) {
+        element.addEventListener(type, listener)
       }
     }
   }
   #bindForms(subtree: DocumentFragment | HTMLBodyElement) {
     const elements = subtree.querySelectorAll('form')
     for (const element of elements) {
-      const listener = new DelegatedListener(async (event: Event) => {
-        try {
-          if (!isFormData(event)) return
-          event.preventDefault()
-          const form = event.currentTarget as HTMLFormElement
-          const targetUrl = form?.action ?? window.location.href
-          const formData = new FormData(form)
-          const response = await fetch(targetUrl, {
-            method: 'POST',
-            body: formData,
-          })
-          if (!response.ok) {
-            const errorText = await response.text().catch(() => 'No error body details')
-            throw new FormSubmitError('Form submission failed with status', {
-              cause: {
-                status: response.status,
-                errorText,
-              },
+      const listener =
+        delegates.get(element) ??
+        new DelegatedListener(async (event: Event) => {
+          try {
+            if (!isFormData(event)) return
+            event.preventDefault()
+            const form = event.currentTarget as HTMLFormElement
+            const targetUrl = form?.action ?? window.location.href
+            const formData = new FormData(form)
+            const response = await fetch(targetUrl, {
+              method: 'POST',
+              body: formData,
             })
+            if (!response.ok) {
+              const errorText = await response.text().catch(() => 'No error body details')
+              throw new FormSubmitError('Form submission failed with status', {
+                cause: {
+                  status: response.status,
+                  errorText,
+                },
+              })
+            }
+          } catch (err) {
+            const error =
+              err instanceof Error ? err : new FormSubmitError('Form data event handler threw an error', { cause: err })
+            this.#reportError(error)
           }
-        } catch (err) {
-          const error =
-            err instanceof Error ? err : new FormSubmitError('Form data event handler threw an error', { cause: err })
-          this.#reportError(error)
-        }
-      })
+        })
       delegates.set(element, listener)
       element.addEventListener('submit', listener)
+    }
+  }
+  #bind() {
+    const body = document.querySelector('body')
+    if (body) {
+      this.#bindForms(body)
+      this.#bindTriggers(body)
     }
   }
   async #updateDocumentStyles(stylesheets: string[]) {
@@ -431,29 +448,36 @@ export class Controller {
     })
     this.#sendSnapshot(PAGE_EVENTS.pageswap)
   }
-  connect() {
-    const listener = new DelegatedListener((event: Event) => {
-      try {
-        isPageHide(event) && void this.#pageHideListener(event)
-        isPageReveal(event) && void this.#pageRevealListener(event)
-        isPageShow(event) && void this.#pageShowListener(event)
-        isPageSwap(event) && void this.#pageSwapListener(event)
-      } catch (err) {
-        const error = err instanceof Error ? err : new PageExtensionError('page listener error', { cause: err })
-        this.#reportError(error)
-      }
-    })
-    delegates.set(window, listener)
+  #connectPage() {
+    const listener =
+      delegates.get(window) ??
+      new DelegatedListener((event: Event) => {
+        try {
+          isPageHide(event) && void this.#pageHideListener(event)
+          isPageReveal(event) && void this.#pageRevealListener(event)
+          isPageShow(event) && void this.#pageShowListener(event)
+          isPageSwap(event) && void this.#pageSwapListener(event)
+        } catch (err) {
+          const error = err instanceof Error ? err : new PageExtensionError('page listener error', { cause: err })
+          this.#reportError(error)
+        }
+      })
     window.addEventListener(PAGE_EVENTS.pagehide, listener)
     window.addEventListener(PAGE_EVENTS.pagereveal, listener)
     window.addEventListener(PAGE_EVENTS.pageshow, listener)
     window.addEventListener(PAGE_EVENTS.pageswap, listener)
-    this.#connectWebSocket()
-    const body = document.querySelector('body')
-    if (body) {
-      this.#bindForms(body)
-      this.#bindTriggers(body)
+    const disconnect = () => {
+      window.removeEventListener(PAGE_EVENTS.pagehide, listener)
+      window.removeEventListener(PAGE_EVENTS.pagereveal, listener)
+      window.removeEventListener(PAGE_EVENTS.pageshow, listener)
+      window.removeEventListener(PAGE_EVENTS.pageswap, listener)
     }
+    this.#addDisconnect(disconnect)
+  }
+  connect() {
+    this.#connectPage()
+    this.#connectWebSocket()
+    this.#bind()
   }
   #disconnect() {
     for (const cb of this.#disconnectSet) void cb()
