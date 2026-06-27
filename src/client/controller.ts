@@ -26,7 +26,6 @@ import {
 import type { ControllerConstructorArgs, ControllerExtension } from './controller.types.ts'
 import { DelegatedListener } from './delegated-listener.ts'
 import { BOOLEAN_ATTRS, P_FORM, P_TARGET, P_TRIGGER } from './template.constants.ts'
-import type { WebA2aAgentCard } from './use-post-message.ts'
 
 const delegates = new WeakMap<EventTarget, DelegatedListener>()
 
@@ -77,7 +76,6 @@ export class Controller {
     this.#onPageSwap = onPageSwap
   }
   #agentCardId?: string
-  #agentCard?: WebA2aAgentCard
   #extensions?: Map<string, ControllerExtension>
   #onPageHide: ControllerConstructorArgs['onPageHide']
   #onPageReveal: ControllerConstructorArgs['onPageReveal']
@@ -490,15 +488,11 @@ export class Controller {
   async #applyDefaultStyle() {
     this.#updateDocumentStyles(['@view-transition{navigation:auto;}'])
   }
-  // SHOULD query the document and get the agent card and set this.#agentCard if it's available
-  // SHOULD use the this.#agentCardId for query not every page with a controller is an agent.
-  async #wireAgentCard() {}
   async connect() {
     await this.#applyDefaultStyle()
     this.#connectPage()
     this.#connectWebSocket()
     this.#bind()
-    await this.#wireAgentCard()
   }
   #disconnect() {
     for (const cb of this.#disconnectSet) void cb()
