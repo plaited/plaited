@@ -15,11 +15,8 @@ const FIXTURES_DIR = import.meta.dir
 const DIST_DIR = join(FIXTURES_DIR, 'dist')
 const controllerRoutes = await bundleController()
 
-const DEFAULT_AGENT_CARD_ID = 'test-agent'
-
-const connectScript = (modules?: string[], agentCardId?: string) => {
+const connectScript = (modules?: string[]) => {
   const params = new URLSearchParams()
-  params.set('agentCardId', agentCardId ?? DEFAULT_AGENT_CARD_ID)
   if (modules?.length) params.set('modules', modules.join(','))
   const qs = params.toString()
   return qs ? `${CONNECT_PLAITED_ROUTE}?${qs}` : CONNECT_PLAITED_ROUTE
@@ -65,6 +62,13 @@ const HTML_SWAP_FIXTURE = `<!DOCTYPE html><html><body>
   <script type="module" src="${connectScript()}"></script>
 </body></html>`
 
+const HTML_VIEW_TRANSITION_FIXTURE = `<!DOCTYPE html><html><head>
+  <style>@view-transition{navigation:auto}</style>
+</head><body>
+  <div p-target="main"><p>vt fixture</p></div>
+  <script type="module" src="${connectScript()}"></script>
+</body></html>`
+
 const HTML_MODULE_FIXTURE = `<!DOCTYPE html><html><body>
   <div p-target="main">
     <button id="module-p-trigger-btn" data-extra="p-trigger-attr" p-trigger="click:test_click">Standard Trigger</button>
@@ -107,7 +111,7 @@ const generateTestPage = (source: string) => {
   return `<!DOCTYPE html><html><head><title>${source}</title></head><body>
   ${content}
   ${inline}
-  <script type="module" src="${connectScript(undefined, DEFAULT_AGENT_CARD_ID)}"></script>
+  <script type="module" src="${connectScript()}"></script>
 </body></html>`
 }
 
@@ -236,6 +240,7 @@ export const startServer = (port = 0): FixtureServer => {
 
   registerSource('/control-island.html', 'test-island')
   registerSource('/swap-fixture.html', 'swap-fixture')
+  registerSource('/view-transition-fixture.html', 'vt-fixture')
   registerSource('/module-fixture.html', 'module-fixture')
 
   const server = Bun.serve({
@@ -244,6 +249,9 @@ export const startServer = (port = 0): FixtureServer => {
       '/health': new Response('OK'),
       '/control-island.html': new Response(HTML_CONTROL_ISLAND, { headers: { 'Content-Type': 'text/html' } }),
       '/swap-fixture.html': new Response(HTML_SWAP_FIXTURE, { headers: { 'Content-Type': 'text/html' } }),
+      '/view-transition-fixture.html': new Response(HTML_VIEW_TRANSITION_FIXTURE, {
+        headers: { 'Content-Type': 'text/html' },
+      }),
       '/module-fixture.html': new Response(HTML_MODULE_FIXTURE, { headers: { 'Content-Type': 'text/html' } }),
       [CONNECT_PLAITED_ROUTE]: () => controllerRoutes[CONNECT_PLAITED_ROUTE]!.clone(),
       '/dist/*': async (req) => {

@@ -155,8 +155,6 @@ export type ControllerExtension<
  * @public
  */
 export type ControllerConstructorArgs = {
-  /** Agent card describing the remote agent. */
-  agentCardId?: string
   /**
    * Optional map of trigger-pair keys to extension functions.
    * Keys follow the pattern `"<domEvent>:<action>"` (e.g. `"click:my_handler"`)

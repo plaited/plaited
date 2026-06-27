@@ -4,8 +4,8 @@ export { CONNECT_PLAITED_ROUTE }
 
 /**
  * Bundles the controller runtime into a gzipped module served at the connect
- * route. The bundled module reads `agentCardId` and `modules` query params,
- * loads any extension modules, constructs a {@link Controller}, and connects.
+ * route. The bundled module reads `modules` query params, loads any extension
+ * modules, constructs a {@link Controller}, and connects.
  */
 export const bundleController = async () => {
   const entry = CONNECT_PLAITED_ROUTE.replace('.js', '.ts')
@@ -14,7 +14,6 @@ export const bundleController = async () => {
 import { Controller } from ${JSON.stringify(controllerEntry)}
 
 const params = new URL(import.meta.url).searchParams
-const agentCardId = params.get('agentCardId') ?? 'default-controller'
 
 // Load optional extension modules specified as comma-separated paths.
 // Each module must export:
@@ -40,7 +39,7 @@ const extEntries = await Promise.all(
 )
 const extensions = new Map(extEntries)
 
-const controller = new Controller({ agentCardId, extensions })
+const controller = new Controller({ extensions })
 controller.connect()
 `
   const { outputs, logs, success } = await Bun.build({

@@ -98,6 +98,30 @@ describe('controller: connect & render', () => {
     })
     expect(text).toContain('Hello from WebSocket')
   })
+
+  test('injects the @view-transition fallback when the page ships no such rule', async () => {
+    // control-island.html has no @view-transition style; the controller must add it
+    // (to adoptedStyleSheets, since #updateDocumentStyles uses adopted sheets).
+    await goto('/control-island.html')
+    const hasRule = await waitFor(async () => {
+      const r = await evalJs(
+        "() => String(Array.from(document.styleSheets).concat(document.adoptedStyleSheets).some(s => { try { return Array.from(s.cssRules).some(r => r.cssText.includes('@view-transition')) } catch { return false } }))",
+      )
+      return r?.includes('true') ? true : undefined
+    })
+    expect(hasRule).toBe(true)
+  })
+
+  test('does not duplicate the @view-transition rule when the page already ships one', async () => {
+    // view-transition-fixture.html includes the rule in a <style>; the controller
+    // must detect it and skip re-injecting.
+    await goto('/view-transition-fixture.html')
+    await wait(1000)
+    const count = await evalJs(
+      "() => Array.from(document.styleSheets).concat(document.adoptedStyleSheets).reduce((n, s) => { try { return n + Array.from(s.cssRules).filter(r => r.cssText.includes('@view-transition')).length } catch { return n } }, 0)",
+    )
+    expect(Number(count)).toBe(1)
+  })
 })
 
 // ─── Render swap modes ──────────────────────────────────────────────────────

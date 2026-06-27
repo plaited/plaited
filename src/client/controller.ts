@@ -60,22 +60,13 @@ const isPageSwap = (event: Event): event is PageSwapEvent => event instanceof Pa
 const isSubmit = (event: Event): event is SubmitEvent => event instanceof SubmitEvent
 
 export class Controller {
-  constructor({
-    agentCardId,
-    extensions,
-    onPageReveal,
-    onPageSwap,
-    onPageHide,
-    onPageShow,
-  }: ControllerConstructorArgs) {
-    this.#agentCardId = agentCardId
+  constructor({ extensions, onPageReveal, onPageSwap, onPageHide, onPageShow }: ControllerConstructorArgs) {
     this.#extensions = extensions
     this.#onPageHide = onPageHide
     this.#onPageReveal = onPageReveal
     this.#onPageShow = onPageShow
     this.#onPageSwap = onPageSwap
   }
-  #agentCardId?: string
   #extensions?: Map<string, ControllerExtension>
   #onPageHide: ControllerConstructorArgs['onPageHide']
   #onPageReveal: ControllerConstructorArgs['onPageReveal']
@@ -486,7 +477,14 @@ export class Controller {
     this.#addDisconnect(disconnect)
   }
   async #applyDefaultStyle() {
-    this.#updateDocumentStyles(['@view-transition{navigation:auto;}'])
+    const hasRule = Array.from(document.styleSheets).some((sheet) => {
+      try {
+        return Array.from(sheet.cssRules || []).some((rule) => rule.cssText.includes('@view-transition'))
+      } catch {
+        return false // Skips locked cross-origin stylesheets
+      }
+    })
+    !hasRule && this.#updateDocumentStyles(['@view-transition{navigation:auto;}'])
   }
   async connect() {
     await this.#applyDefaultStyle()
