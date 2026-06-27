@@ -81,7 +81,6 @@ export class Controller {
   #onPageReveal: ControllerConstructorArgs['onPageReveal']
   #onPageShow: ControllerConstructorArgs['onPageShow']
   #onPageSwap: ControllerConstructorArgs['onPageSwap']
-  #navigateDetail?: NavigateMessage['detail']
   #disconnectSet = new Set<Disconnect>()
   #messageQueue: string[] = []
   #socket: WebSocket | undefined
@@ -387,9 +386,7 @@ export class Controller {
     })
     element.dispatchEvent(event)
   }
-  #navigate(detail: NavigateMessage['detail']) {
-    const { url, replace } = detail
-    this.#navigateDetail = detail
+  #navigate({ url, replace }: NavigateMessage['detail']) {
     replace ? window.location.replace(url) : window.location.assign(url)
   }
   #webSocketListener(message: MessageEvent) {
@@ -455,22 +452,6 @@ export class Controller {
     this.#sendSnapshot(PAGE_EVENTS.pageshow)
   }
   async #pageSwapListener(event: PageSwapEvent) {
-    if (navigation.activation && this.#navigateDetail) {
-      const { entry, navigationType } = navigation.activation
-      const dest = entry.url === this.#navigateDetail?.url
-      const { id } = this.#navigateDetail
-      if (dest) {
-        this.#navigateDetail = undefined
-      }
-      if (navigationType === 'replace' || navigationType === 'push')
-        this.#send({
-          type: CONTROLLER_TO_SERVER_EVENTS.success,
-          detail: {
-            timeStamp: Date.now(),
-            id,
-          },
-        })
-    }
     await this.#onPageSwap?.({
       event,
       addDisconnect: this.#addDisconnect.bind(this),
