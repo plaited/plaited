@@ -14,6 +14,63 @@ export const JsonObjectSchema = z.object({}).catchall(z.json())
 export type JsonObject = z.output<typeof JsonObjectSchema>
 
 /**
+ * A2A JSON-RPC 2.0 request envelope.
+ *
+ * @remarks
+ * Envelope only — `params` is left open as a JSON object so method-specific
+ * shapes are validated server-side. The client transport uses this only to
+ * route and correlate requests by `id`/`method`.
+ *
+ * @public
+ */
+export const JsonRpcRequestSchema = z.object({
+  jsonrpc: z.literal('2.0'),
+  id: z.union([z.string(), z.number()]),
+  method: z.string(),
+  params: JsonObjectSchema.optional(),
+})
+
+/** @public */
+export type JsonRpcRequest = z.output<typeof JsonRpcRequestSchema>
+
+/**
+ * A2A JSON-RPC 2.0 error object.
+ *
+ * @public
+ */
+export const JsonRpcErrorSchema = z.object({
+  code: z.number(),
+  message: z.string(),
+  data: z.unknown().optional(),
+})
+
+/** @public */
+export type JsonRpcError = z.output<typeof JsonRpcErrorSchema>
+
+/**
+ * A2A JSON-RPC 2.0 response envelope.
+ *
+ * @remarks
+ * Exactly one of `result` or `error` is present; a response carrying neither
+ * is invalid.
+ *
+ * @public
+ */
+export const JsonRpcResponseSchema = z
+  .object({
+    jsonrpc: z.literal('2.0'),
+    id: z.union([z.string(), z.number()]),
+    result: z.unknown().optional(),
+    error: JsonRpcErrorSchema.optional(),
+  })
+  .refine((value) => value.result !== undefined || value.error !== undefined, {
+    message: 'JSON-RPC response must carry either result or error',
+  })
+
+/** @public */
+export type JsonRpcResponse = z.output<typeof JsonRpcResponseSchema>
+
+/**
  * Schema for validating BPEvent objects.
  * Uses a JSON-Schema-exportable object shape for runtime validation.
  *
