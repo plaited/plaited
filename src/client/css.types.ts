@@ -39,7 +39,7 @@ export type NestedStatements = {
   /** The default value for the CSS property. */
   [CSS_RESERVED_KEYS.$default]?: CSSProperties[keyof CSSProperties] | DesignTokenReference
   /** Rules applied based on container queries, layers, media queries, or supports queries. */
-  [key: `@${'container' | 'layer' | 'media' | 'supports'}${string}`]:
+  [key: `@${'container' | 'layer' | 'media' | 'supports' | 'view-transition'}${string}`]:
     | CSSProperties[keyof CSSProperties]
     | NestedStatements
     | DesignTokenReference
