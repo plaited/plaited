@@ -84,6 +84,7 @@ const TEST_PAGE_CONTENT: Record<string, string> = {
   'form-test': `<div p-target="main"><p>waiting for form</p></div>`,
   'retry-test': `<div p-target="main"><p>connecting</p></div>`,
   'lifecycle-test': `<div p-target="main"><p>lifecycle</p></div>`,
+  'navigate-test': `<div p-target="main"><p>navigate target</p></div>`,
 }
 
 // Inline scripts injected before the connect module, keyed by source tag.
@@ -286,6 +287,9 @@ export const startServer = (port = 0): FixtureServer => {
             break
           case 'form-test':
             sendFormInitialRender(ws)
+            break
+          case 'navigate-test':
+            ws.send(JSON.stringify({ type: 'navigate', detail: { id: 'n1', url: '/test/swap-test' } }))
             break
           case 'retry-test': {
             state.retryConnections++
