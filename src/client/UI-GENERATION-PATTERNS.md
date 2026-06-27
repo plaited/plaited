@@ -119,65 +119,235 @@ HTML + stylesheets + the correct message envelope.
 
 ---
 
-## 3. Pattern: Static Template Registry
+## 3. Pattern: Data-Driven Template Catalog (A2UI-inspired)
 
-Maintain a registry of developer-authored templates. The agent selects from
-this registry by ID — it never creates new template functions.
+> **This section supersedes the original "Static Template Registry" pattern.**
+> Templates are no longer developer-authored `FunctionTemplate`s registered in a
+> code map. They are **data** — persisted as JSONL, referenced by path,
+> materialized server-side through the existing `h`/`fragment`/`$`-helpers and
+> CSS utils. The agent and author operate on JSON; the renderer turns JSON into
+> the same `render`/`attrs` messages the Controller already consumes. This is
+> an htmx-style SSR pipeline: everything below runs **server-side**, the
+> browser only ever receives an HTML string + stylesheets.
 
-```ts
-// template-registry.ts
-import { h, fragment, type TemplateObject } from './template.ts'
-import { SWAP_MODES } from '../shared/shared.constants.ts'
+### 3.1 Why a flat component model
 
-const templateRegistry = {
-  page: PageTemplate,
-  card: CardTemplate,
-  table: TableTemplate,
-  form: FormTemplate,
-  emptyState: EmptyStateTemplate,
-  dashboard: DashboardTemplate,
-  modal: ModalTemplate,
-  toast: ToastTemplate,
-  toolbar: ToolbarTemplate,
-  button: ButtonTemplate,
-  badge: BadgeTemplate,
-  metricCard: MetricCardTemplate,
-} as const
+The authoring format is a **flat list of components with stable IDs and
+> adjacency refs** (borrowed from [A2UI's adjacency-list model](https://a2ui.org/concepts/components/)),
+> not a nested tree. A flat list is easier for an LLM to generate and validate,
+> and it enables surgical updates (one component = one row = one `attrs`
+> delta). The server-side assembler recurses the adjacency list into nested
+> `h()` calls — the flat list is the *persisted* shape; the nested `TemplateObject`
+> is the *materialized* shape.
 
-type TemplateId = keyof typeof templateRegistry
+### 3.2 The four catalogs
+
+Four peer catalogs, each persisted as JSONL (one entry per line, each entry
+> carrying a globally-unique `id` used as the ref path). Materialization order
+> is `tokens` → `keyframes` → `styles` → `components` (each resolves the prior
+> kind's refs).
+
+```txt
+tokens.jsonl      — design tokens (CSS custom properties)
+keyframes.jsonl   — @keyframes animations
+styles.jsonl      — style definitions (hashed classes / :host / :root / @top)
+components.jsonl  — the flat component list (tag + attrs + style refs + children)
 ```
 
-A small adapter converts a plan into the controller's wire format:
+### 3.3 The four kinded refs
 
-```ts
-function renderMessage(args: {
-  id?: string
-  template: TemplateId
-  attrs?: Record<string, unknown>
-  target: string
-  swap?: keyof typeof SWAP_MODES
-}): RenderMessage {
-  const template = templateRegistry[args.template]
-  const tpl = h(template, args.attrs ?? {})
+Every cross-catalog or runtime reference is a kinded `$ref` object,
+> `{$<kind>: "<path>"}`. The kind is **position-constrained and
+> schema-enforceable**: a ref in the wrong position is a schema error caught
+> before materialization, giving the LLM prompt-generate-validate loop a
+> precise, pointable failure.
 
-  return {
-    type: 'render',
-    detail: {
-      id: args.id ?? crypto.randomUUID(),
-      target: args.target,
-      html: tpl.html.join(''),
-      stylesheets: [...new Set(tpl.stylesheets)],
-      swap: args.swap ?? 'innerHTML',
-      registry: [],
-    },
+| Ref | Legal in | Resolves to | Contributes stylesheets |
+|---|---|---|---|
+| `$tokenRef` | CSS property values (token/keyframe/style `props`) | `var(--…)` string | yes (`:root` declaration) |
+| `$keyframeRef` | `animation` / `animation-name` property values | hashed keyframe id string | yes (`@keyframes` rule) |
+| `$styleRef` | a component's `style[]` array | nothing (joined into `class`) | yes (the style's rules) |
+| `$bind` | component `text` / content + `attrs` values | a runtime data value | no |
+
+Paths are unique within a catalog kind; the kind discriminates across
+> catalogs. Every ref resolves to `{ inlineValue: string, stylesheets: string[] }`
+> — tokens inline a `var()`, keyframes inline the hashed id, styles inline
+> nothing (they contribute `classNames` via `joinStyles`), `$bind` inlines a
+> data value with no stylesheets.
+
+### 3.4 The catalog JSON shapes
+
+#### tokens.jsonl
+
+Faithful to `DesignToken` / `FunctionTokenValue`. The non-serializable
+> `DesignTokenReference` (a callable) becomes a **materialized in-memory form**;
+> its serializable persistence form is `{$tokenRef}`.
+
+```jsonc
+{ "id": "color.primary", "$value": "#007bff" }
+{ "id": "color.brand",  "$value": { "$function": "rgb", "$arguments": [0, 123, 255] } }
+{ "id": "color.accent", "$value": { "$tokenRef": "color.primary" } }          // alias
+{ "id": "font.stack",   "$value": [{ "$tokenRef": "font.base" }, "sans-serif"], "$csv": true }
+```
+
+#### keyframes.jsonl
+
+Faithful to `CSSKeyFrames` + `createKeyframes(ident, frames)`. The hashed
+> animation id is **materialized** (not persisted); `ident` is the input to
+> `createHash`.
+
+```jsonc
+{
+  "id": "animation.fadeIn",
+  "ident": "fadeIn",
+  "frames": {
+    "from": { "opacity": 0 },
+    "to":   { "opacity": { "$tokenRef": "opacity.full" } }
   }
 }
 ```
 
-This is the core connective tissue. The agent never writes a file — it writes:
+#### styles.jsonl
 
-```ts
-{ template: 'table', target: 'main', swap: 'innerHTML', attrs: { rows: [...] } }
+Faithful to `CSSRules` / `NestedStatements` (keys `$default`, `:hover`,
+> `&[data-…]`, `@media…` preserved exactly). Property values: literal |
+> `{$tokenRef}` | `{$keyframeRef}`. Produces `ElementStylesObject {classNames, stylesheets}`.
+
+```jsonc
+{
+  "id": "button.base",
+  "props": {
+    "color":  { "$tokenRef": "color.text" },
+    "border": "1px solid transparent",
+    "&[data-variant=primary]": {
+      "$default": { "$tokenRef": "color.accent" },
+      ":hover":   { "$tokenRef": "color.accentStrong" }
+    }
+  }
+}
+```
+
+#### components.jsonl
+
+The flat adjacency list. `style` is an array of `{$styleRef}`. `children` is
+> an array of component `id`s. `attrs` carries plain HTML attrs (`data-*`,
+> `p-trigger`, etc.). `text` is literal or `{$bind}`.
+
+```jsonc
+// reusable base button — carries its base style on the node
+{ "id": "button", "tag": "button", "style": [{ "$styleRef": "button.base" }] }
+
+// primary variant — same base + a variant style + the toggling attribute.
+// There is no PrimaryButton template; "primary" is data-variant + a style ref.
+{
+  "id": "button.primary",
+  "tag": "button",
+  "style": [{ "$styleRef": "button.base" }, { "$styleRef": "button.variant.primary" }],
+  "attrs": { "data-variant": "primary" }
+}
+
+// a view composes them by id
+{
+  "id": "view.dashboard",
+  "tag": "main",
+  "attrs": { "p-target": "main" },
+  "children": ["button.primary", "metrics.table"]
+}
+```
+
+The "template pattern" falls out: a reusable template is a component entry
+> carrying base styles; a variant is the same tag + base style + a variant
+> style + the toggling `data-*` attr; larger views reference either by `id` in
+> `children`.
+
+### 3.5 The server-side render pipeline
+
+Everything below runs in the Bun/Hono server process. The browser never sees
+> catalogs, refs, or `createStyles` — only the resulting HTML string + deduped
+> stylesheets.
+
+```txt
+DB layer (src/server/, in flux — likely DuckDB over the JSONL files)
+    │  query tokens/keyframes/styles/components by id/path
+    ▼
+ref resolver  →  materializes $tokenRef/$keyframeRef/$styleRef
+    │  (createTokens / createKeyframes / createStyles — unchanged utils)
+    ▼
+Proxy/Reflect assembler  →  walks the flat component list, recurses children,
+    │  resolves style/text/attrs refs, calls h()/fragment()/$for/$val/$slot
+    ▼
+TemplateObject  →  ssr()  →  HTML string + deduped stylesheets
+    │
+    ▼
+HTMLRewriter pass  →  inject stable p-target ids, translate action→p-trigger,
+    │  splice into the page shell (streaming post-process)
+    ▼
+render / attrs message  →  WebSocket  →  Controller (setHTMLUnsafe)
+```
+
+`createTokens` / `createKeyframes` / `createStyles` / `h` / `fragment` /
+> `$for` / `$val` / `$switch` / `$slot` / `joinStyles` keep their in-memory
+> output shapes. The refactor adds a **path-ref resolution layer above them**
+> that turns the kinded `$ref` JSON into the callables/objects these utils
+> already consume. The DB layer (how JSONL is queried) is a separate `src/server/`
+> concern independent of these shapes.
+
+### 3.6 Relationship to A2UI / server-as-agent
+
+These shapes are the **shared internal vocabulary** for the server-side agent's
+> own UI decisions. Separately, the Plaited server can also be an **A2A agent**
+> that *receives* A2UI envelopes from other agents and feeds them into the same
+> pipeline: an inbound `updateComponents` becomes a component-catalog write;
+> an inbound `updateDataModel` becomes a `$bind` data-model patch. The
+> behavioral layer (`waitFor`/`request`) routes those inbound agent messages to
+> the projection handlers above. That inter-agent dimension is a separate
+> concern from the catalog shapes locked here.
+
+---
+
+## 3a. CSS Authoring Unification: one `createStyles`, three reserved keys
+
+> **Remove** `createHostStyles` (`host-styles.ts`) and `createRootStyles`
+> (`root-styles.ts`). **Fold** their behavior into `createStyles` via three
+> reserved property keys that select the scoping, while all other keys keep
+> the existing hashed-class behavior.
+
+| Reserved key | Selector emitted | Hashed? | Replaces |
+|---|---|---|---|
+| `$host` | `:host` (and `:host(…)` for compound) | no | `createHostStyles` |
+| `$root` | `:root` | no | `createRootStyles` |
+| `$top` | *(none — top-level, unwrapped)* | no | *(new; replaces ad-hoc `@view-transition` string injection)* |
+
+- `$host` and `$root` behave exactly like the functions they replace: same
+> recursive walk, same token/keyframe `$ref` resolution, same nested
+> `&[…]`/`:hover`/`@media` support — just without hashing, scoped to `:host` /
+> `:root`. They produce `ElementStylesObject` with empty `classNames` and
+> populated `stylesheets`.
+- `$top` emits **top-level at-rules** (`@view-transition`, `@charset`,
+> `@import`, `@namespace`) unwrapped — not nested under any selector. This is
+> the validated home for rules like `@view-transition{navigation:auto}` that
+> CSS requires at the top level, replacing the controller's runtime
+> `#updateDocumentStyles(['@view-transition{…}'])` fallback with a normal
+> style-catalog entry the SSR template ships and `ssr()` adopts. The
+> `@view-transition` literal in `css.types.ts`'s `NestedStatements` key union
+> is retired in favor of `$top` accepting any `@…` key.
+- `HostStylesObject`, `CreateRootParams`, and `CreateHostParams` types are
+> removed; everything is `CreateParams` / `ElementStylesObject`. `joinStyles`
+> already merges across these, so a node composes hashed classes + `$root`
+> declarations + `$top` rules in one call.
+- In the catalog JSON (§3.4 styles.jsonl), `$host` / `$root` / `$top` are
+> legal top-level keys in a style entry's `props` alongside ordinary CSS
+> properties and nested selectors. A single style entry can carry, e.g.:
+
+```jsonc
+{
+  "id": "surface.base",
+  "props": {
+    "$root":  { "--surface-bg": { "$tokenRef": "color.surface" } },
+    "$top":   { "@view-transition": { "navigation": "auto" } },
+    "color":  { "$tokenRef": "color.text" }
+  }
+}
 ```
 
 ---
