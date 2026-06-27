@@ -24,7 +24,7 @@ describe('evalCli', () => {
     const { exitCode, stderr } = await runCli(null, '--help')
 
     expect(exitCode).toBe(0)
-    expect(stderr).toContain('Usage: plaited eval')
+    expect(stderr).toContain('Usage: eval')
     expect(stderr).toContain('--schema')
     expect(stderr).toContain('--dry-run')
   })
