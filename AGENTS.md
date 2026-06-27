@@ -28,6 +28,11 @@ repo-local evidence is insufficient or current external context is needed.
 **Agent worktrees** — create new manual task worktrees under `.worktrees/<task-slug>/` from
 `origin/dev` unless a task explicitly says otherwise. Existing external worktrees may finish in
 place. Worktrees are disposable after merge.
+**Worktree cleanup on merge** — once a worktree's branch is merged into `dev`, remove the
+worktree and delete its branch in the same session: `git worktree remove
+.worktrees/<task-slug> --force` (the `--force` is needed because test runs leave a gitignored
+`__snapshots__/` dir) followed by `git branch -d <branch>`. Do not leave merged worktrees or
+their branches lying around.
 
 ## Git Commits
 
