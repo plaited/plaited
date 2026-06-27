@@ -1089,3 +1089,386 @@ export const ListTemplate = defineTemplate({
 That's it. The agent reads `items` from the DB, selects the `List` template,
 and the render adapter produces the correct WebSocket message. No file
 writes, no arbitrary HTML, no security holes.
+
+---
+
+# Addendum: Evolving Generative UI with A2UI-Inspired Patterns
+
+> The sections above (1–16) describe the current working architecture: the
+> agent emits a `UiProjection`, the server renders it through the template
+> registry into `render`/`attrs` messages, and the browser applies them as
+> HTML over WebSocket. This addendum explores three **independent, composable
+> variants** that borrow data-structure and data-binding ideas from the
+> [A2UI protocol](https://a2ui.org/specification/v1.0-a2ui/) to evolve that
+> architecture — without abandoning HTML-over-WebSocket, the template
+> registry, or the behavioral orchestration layer.
+>
+> A2UI's core contributions we can learn from:
+> - **Structure/data separation**: a UI has a static component structure and a
+>   dynamic data model, updated independently.
+> - **Path-based data binding**: components reference data by JSON Pointer
+>   paths (`/user/name`), not by embedding values.
+> - **Flat, ID-addressed component model**: components are a flat list with
+>   stable IDs and adjacency refs, enabling surgical updates.
+> - **Two-way binding for inputs**: input components mutate a local data model
+>   on every keystroke; the server is only contacted on explicit actions.
+>
+> The browser stays a thin HTML consumer in all three variants. What changes
+> is *what the agent emits*, *how granular the server's updates are*, and
+> *how forms feel*. They are a spectrum: Variant 1 is server-side data
+> vocabulary only; Variant 2 adds server-side update granularity; Variant 3
+> adds client-side form reactivity. Adopt any subset.
+
+---
+
+## Variant 1 — Path-Bound Data Projections (server-side data vocabulary)
+
+**What changes:** the agent no longer emits opaque `attrs` blobs. It emits a
+structured **data model** plus **binding declarations**, and templates bind
+slots to JSON-Pointer paths. The projection handler resolves paths to values
+at render time. The browser is unchanged.
+
+**What it solves:** today, the agent must know each template's exact `attrs`
+shape (`{ rows: [...], title: "..." }`). That couples the agent to template
+internals and makes composing data across templates awkward. A path-bound
+data model gives the agent a **single, flat, composable data vocabulary** it
+can write to, decoupled from any one template's prop names.
+
+### The data model + bindings
+
+```ts
+// The agent emits this instead of opaque attrs:
+type DataProjection = {
+  target: StableTarget
+  swap?: SwapMode
+  // A flat JSON document the agent populates.
+  data: JsonObject
+  // Which template to render, with slots bound to paths in `data`.
+  bindings: {
+    template: TemplateId
+    slots: Record<string, string> // slotName -> JSON Pointer path
+  }
+}
+```
+
+Example agent output:
+
+```json
+{
+  "target": "main",
+  "swap": "innerHTML",
+  "data": {
+    "user": { "name": "Ada", "role": "Admin" },
+    "tasks": [{ "id": "t1", "title": "Ship v8", "status": "active" }]
+  },
+  "bindings": {
+    "template": "dashboard",
+    "slots": {
+      "heading": "/user/name",
+      "role": "/user/role",
+      "rows": "/tasks"
+    }
+  }
+}
+```
+
+### Resolution in the projection handler
+
+```ts
+import { renderMessage } from './agent-adapter/render-adapter.ts'
+
+const resolve = (data: unknown, path: string): unknown => {
+  if (path === '/') return data
+  const parts = path.split('/').filter(Boolean)
+  return parts.reduce<unknown>((acc, key) => {
+    if (acc && typeof acc === 'object') return (acc as Record<string, unknown>)[key]
+    return undefined
+  }, data)
+}
+
+addHandler('ui.project.dashboard', async ({ data, bindings }) => {
+  const resolved = Object.fromEntries(
+    Object.entries(bindings.slots).map(([slot, path]) => [slot, resolve(data, path)]),
+  )
+  socket.send(JSON.stringify(renderMessage({
+    target: 'main',
+    template: bindings.template,
+    attrs: resolved,
+  })))
+})
+```
+
+### Partial data updates map to `attrs`
+
+Because the data model is path-addressed, a **partial update** becomes a
+cheap `attrs` message instead of a full re-render. The agent emits:
+
+```json
+{ "target": "main", "patch": { "path": "/user/name", "value": "Grace" } }
+```
+
+The handler turns it into an `attrs` message against a stable target element
+(see Variant 2 for how that element stays addressable):
+
+```ts
+addHandler('ui.patch', async ({ target, patch }) => {
+  socket.send(JSON.stringify(attrsMessage({
+    target: `${target}__${pathToAttr(patch.path)}`, // e.g. main__user_name
+    attr: { 'data-value': String(patch.value) },
+  })))
+})
+```
+
+### What we borrow from A2UI, what we keep
+
+- **Borrow:** path-addressed data model, structure/data separation, the
+  "agent writes a flat data doc + bindings" mental model.
+- **Keep:** template registry, `h`/`ssr`, `render`/`attrs` wire format,
+  behavioral orchestration, HTML in the browser. No client change.
+
+**Tradeoff:** the agent gains a cleaner data vocabulary and partial updates,
+but templates must declare bindable slots (a small schema discipline). Best
+first step — pure server-side, low risk.
+
+---
+
+## Variant 2 — ID-Addressed Render Deltas (server-side update granularity)
+
+**What changes:** the server maintains a **shadow component tree per
+surface** — a flat list of stable-ID'd components with adjacency refs, like
+A2UI's adjacency-list model. The agent emits **component ops** (add / update
+/ remove by ID). The server diffs against its shadow and sends only the
+minimal `render`/`attrs` delta to the browser. The browser is unchanged.
+
+**What it solves:** today, any data change triggers a full `render` of the
+whole template — the server re-serializes the entire `html` string and the
+browser re-parses/replaces it. For a table of 500 rows, a one-row change
+re-renders all 500. ID-addressed deltas let the server update **just the row
+that changed**, surgically.
+
+### The shadow tree + ops
+
+```ts
+// The server keeps one of these per surface (target), mirroring what's rendered.
+type ShadowNode = {
+  id: string              // stable across updates
+  template: TemplateId
+  attrs: JsonObject
+  children: string[]      // child node IDs (adjacency list)
+}
+
+type ShadowTree = {
+  root: string
+  nodes: Record<string, ShadowNode>
+}
+
+// The agent emits ops, not full projections:
+type ComponentOp =
+  | { op: 'upsert'; surface: StableTarget; node: ShadowNode }
+  | { op: 'remove'; surface: StableTarget; id: string }
+  | { op: 'reorder'; surface: StableTarget; parentId: string; children: string[] }
+```
+
+### The diffing projection handler
+
+```ts
+const shadows = new Map<StableTarget, ShadowTree>()
+
+addHandler('ui.component.upsert', async ({ surface, node }) => {
+  const tree = shadows.get(surface) ?? { root: 'root', nodes: {} }
+  const existed = tree.nodes[node.id]
+  tree.nodes[node.id] = node
+  shadows.set(surface, tree)
+
+  if (!existed) {
+    // New node — render its template and append it to its parent's target slot.
+    const tpl = templateRegistry[node.template]
+    const rendered = h(tpl, node.attrs)
+    socket.send(JSON.stringify({
+      type: 'render',
+      detail: {
+        id: ueid(),
+        target: `${surface}__${node.id}`,        // a stable p-target per node
+        html: rendered.html.join(''),
+        stylesheets: [...new Set(rendered.stylesheets)],
+        swap: 'innerHTML',
+      },
+    }))
+  } else {
+    // Existing node — only its attrs changed; send an attrs delta.
+    socket.send(JSON.stringify(attrsMessage({
+      target: `${surface}__${node.id}`,
+      attr: diffAttrs(existed.attrs, node.attrs),
+    })))
+  }
+})
+```
+
+### Stable per-node targets enable surgery
+
+This is the key adaptation. A2UI resolves components by ID in a client-side
+map; Plaited resolves them by `[p-target]` in the DOM. So each shadow node
+maps to a **stable `p-target` slot** named `<surface>__<nodeId>`. The initial
+`render` of a surface emits a shell with these nested slots; subsequent ops
+target them surgically. A 500-row table becomes 500 stable slots, and a
+one-row update is a single `attrs` (or one-row `render`), not a 500-row
+re-render.
+
+### What we borrow from A2UI, what we keep
+
+- **Borrow:** flat adjacency-list component model, stable IDs, surgical
+  per-component updates, the "structure once, patch incrementally" update
+  discipline.
+- **Keep:** HTML over WebSocket, template registry rendering each node, the
+  browser's `[p-target]` swap mechanism. The shadow tree is server-side
+  bookkeeping; the browser just sees targeted `render`/`attrs`.
+
+**Tradeoff:** the server now owns per-surface shadow state (memory + a diff
+algorithm). In exchange, updates become O(changed) not O(total). Most
+valuable for large lists, dashboards, and collaborative surfaces where
+partial updates dominate. Composes naturally with Variant 1's path-bound
+data (paths resolve into the shadow tree's attrs).
+
+---
+
+## Variant 3 — Two-Way Bound Inputs (client-side form reactivity)
+
+**What changes:** input components (`<input>`, `<select>`, `<textarea>`)
+gain a **client-side data model** they mutate on every keystroke, and
+`p-trigger` actions read from that model on submit — exactly A2UI's
+two-way-binding model, but implemented in Plaited's HTML idiom with a ~50
+line runtime, not a component framework. The server stops receiving
+per-keystroke round-trips and gets a clean, pre-filled action context.
+
+**What it solves:** today, Plaited forms submit the whole form via
+`form_submit` on the `submit` event. There's no live client state for
+inline validation, reactive previews, conditional fields, or "disable submit
+until valid." A2UI's insight — make a local data model the single source of
+truth, sync to server only on action — gives responsive form UX without a
+reactive framework.
+
+### Binding declarations via data attributes
+
+Templates emit a `data-bind` attribute pointing at a JSON-Pointer path in a
+per-surface client data model:
+
+```ts
+import { createStyles } from './styles.ts'
+import { P_TRIGGER } from './template.constants.ts'
+
+const formStyles = createStyles({ field: { display: 'grid', gap: '8px' } })
+
+export const CustomerForm = defineTemplate({
+  inputSchema: z.object({ customer: z.object({ name: z.string(), email: z.string() }).optional() }),
+  template: ({ attrs, h }) => h('form', {
+    [P_TRIGGER]: { submit: 'customer.form.submitted' },
+    'data-surface': 'customer-form',
+    class: formStyles.field,
+    children: [
+      h('label', { children: ['Name', h('input', { 'data-bind': '/customer/name', value: attrs.customer?.name ?? '' })] }),
+      h('label', { children: ['Email', h('input', { 'data-bind': '/customer/email', value: attrs.customer?.email ?? '' })] }),
+      h('button', { type: 'submit', children: 'Save' }),
+    ],
+  }),
+})
+```
+
+### A tiny client binding runtime
+
+Shipped as a controller extension (the existing extension mechanism), not a
+framework:
+
+```ts
+// form-binding.ts — a ControllerExtension registered on 'submit:*'
+const models = new WeakMap<Element, JsonObject>()
+
+export const formBinding: ControllerExtension = ({ event, trigger }) => {
+  const form = (event.target as HTMLElement).closest('form')
+  if (!form) return
+
+  // On first bind, seed the model from any server-prefilled values.
+  if (!models.has(form)) {
+    const model: JsonObject = {}
+    for (const input of form.querySelectorAll<HTMLInputElement>('[data-bind]')) {
+      setPath(model, input.dataset.bind!, input.value)
+      input.addEventListener('input', () => {
+        setPath(model, input.dataset.bind!, input.value)
+        // Local reactivity: update any [data-bind] mirroring the same path.
+        for (const mirror of form.querySelectorAll<HTMLElement>(`[data-bind="${input.dataset.bind}"]`)) {
+          if (mirror !== input && 'textContent' in mirror) mirror.textContent = input.value
+        }
+      })
+    }
+    models.set(form, model)
+  }
+
+  // On submit, the p-trigger action carries the local model — no per-field scrape.
+  trigger({
+    type: 'customer.form.submitted',
+    detail: models.get(form),
+  })
+}
+```
+
+### Server pushes prefill via `attrs`
+
+The server can still drive initial/updated values into the form using the
+existing `attrs` message against the input elements — A2UI's
+"server→client data model update" mapped to Plaited's idiom:
+
+```ts
+socket.send(JSON.stringify(attrsMessage({
+  target: 'customer-form__name',
+  attr: { value: 'Ada' },
+})))
+```
+
+### What we borrow from A2UI, what we keep
+
+- **Borrow:** two-way binding, local data model as source of truth for
+  inputs, server sync only on action, path-addressed bindings.
+- **Keep:** HTML forms, `p-trigger`, the `form_submit`/action bridge,
+  server-side template rendering. The "reactive framework" is one extension
+  file, not a dependency.
+
+**Tradeoff:** this is the only variant that adds client-side behavior (a
+binding runtime). It's opt-in per form (register the extension only where
+you want it), and it stays within Plaited's existing extension mechanism —
+no new client architecture. Most valuable for forms with live validation,
+conditional fields, or preview-as-you-type. It does not change how
+non-input UI renders.
+
+---
+
+## How the three variants compose
+
+They are independent but stack cleanly into a fuller evolution:
+
+| Layer | Baseline (§1–16) | + Variant 1 | + Variant 2 | + Variant 3 |
+|---|---|---|---|---|
+| Agent output | opaque `attrs` | path-bound data model | component ops by ID | (unchanged) |
+| Server update unit | full `render` | full `render` + `attrs` patches | surgical per-ID deltas | (unchanged) |
+| Form UX | submit whole form | (unchanged) | (unchanged) | live two-way bound inputs |
+| Client runtime | none | none | none | small binding extension |
+| Browser protocol | HTML over WS | HTML over WS | HTML over WS | HTML over WS |
+
+A reasonable adoption order: **Variant 1 first** (pure server-side data
+vocabulary, immediate agent-ergonomics win, zero client risk) → **Variant 2**
+where partial-update performance matters (large lists, collaborative
+surfaces) → **Variant 3** where form responsiveness is a product
+requirement. None of them requires the browser to become an A2UI renderer;
+all of them keep HTML over WebSocket and the template registry as the
+rendering engine.
+
+## Relationship to A2A / server-as-agent
+
+These variants are about **how the Plaited server generates and updates UI**.
+Separately, the Plaited server can also be an **A2A agent** that *receives*
+A2UI envelopes from other agents and feeds them into the same projection
+pipeline: an inbound `updateComponents` becomes a Variant 2 component-op;
+an inbound `updateDataModel` becomes a Variant 1 path-patch. The behavioral
+layer (`waitFor`/`request`) routes those inbound agent messages to the
+projection handlers above. That makes the three variants the **shared
+internal vocabulary** for both the local agent's UI decisions and remote
+agents' UI requests — but that inter-agent dimension is a separate concern
+from which (if any) of these three rendering evolutions we adopt.
