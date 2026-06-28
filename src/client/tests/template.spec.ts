@@ -394,3 +394,13 @@ test('h: $styleRef coexists with class/classNames', () => {
   const html = result.html.join('')
   expect(html).toContain('class="btn custom-class"')
 })
+
+test('h: $styleRef in attr value throws InvalidStyleRefPositionError', () => {
+  const registry = { styles: new Map() }
+  expect(() => h('div', { 'data-x': { $styleRef: 'foo' } }, registry)).toThrow(/only legal in the/)
+})
+
+test('h: $bind in style[] throws InvalidBindPositionError', () => {
+  const registry = { data: { foo: 'bar' } }
+  expect(() => h('div', { style: [{ $bind: 'foo' }] }, registry)).toThrow(/not legal in the/)
+})

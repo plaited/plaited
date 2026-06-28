@@ -111,6 +111,17 @@ class UnresolvedBindError extends Error implements Error {
  * @internal
  * Error thrown when a `$bind` appears in an invalid position.
  */
+class InvalidBindPositionError extends Error implements Error {
+  override name = 'invalid_bind_position'
+}
+
+/**
+ * @internal
+ * Error thrown when a `$styleRef` appears outside the `style[]` array.
+ */
+class InvalidStyleRefPositionError extends Error implements Error {
+  override name = 'invalid_style_ref_position'
+}
 
 export type CreateFragment = (children: Children) => TemplateObject
 
@@ -233,15 +244,28 @@ export const h: CreateTemplate = (_tag, attrs = {}, registry?) => {
   let resolvedStyle: CSSProperties | undefined
   if (Array.isArray(style)) {
     // style is an array → treat as StyleRef[]
+    // First, validate no $bind refs in style[] (position check independent of registry)
+    for (const ref of style) {
+      if (ref && typeof ref === 'object') {
+        const refObj = ref as Record<string, unknown>
+        if ('$bind' in refObj) {
+          throw new InvalidBindPositionError('`$bind` is not legal in the `style[]` array')
+        }
+      }
+    }
     if (!registry) throw new MissingRegistryError('$styleRef encountered without a registry')
     if (!registry.styles) throw new MissingRegistryError('$styleRef encountered without registry.styles')
     for (const ref of style) {
-      const refObj = ref as StyleRef
-      if (!refObj || typeof refObj !== 'object' || !('$styleRef' in refObj)) {
+      if (!ref || typeof ref !== 'object') {
         throw new InvalidAttributeTypeError('Expected $styleRef object in style array')
       }
-      const resolved = registry.styles.get(refObj.$styleRef)
-      if (!resolved) throw new UnresolvedStyleRefError(`Unresolved style ref: ${refObj.$styleRef}`)
+      const refObj = ref as Record<string, unknown>
+      if (!('$styleRef' in refObj)) {
+        throw new InvalidAttributeTypeError('Expected $styleRef object in style array')
+      }
+      const styleRef = ref as StyleRef
+      const resolved = registry.styles.get(styleRef.$styleRef)
+      if (!resolved) throw new UnresolvedStyleRefError(`Unresolved style ref: ${styleRef.$styleRef}`)
       for (const cn of resolved.classNames) resolvedClassNames.add(cn)
       stylesheets.push(...resolved.stylesheets)
     }
@@ -250,28 +274,37 @@ export const h: CreateTemplate = (_tag, attrs = {}, registry?) => {
   }
 
   // ── Resolve $bind in attrs values ────────────────────────────────
-  const resolveAttr = (val: unknown): unknown => {
-    if (val && typeof val === 'object' && '$bind' in (val as Record<string, unknown>)) {
-      if (!registry?.data) throw new MissingRegistryError('$bind encountered without a registry')
-      const bindVal = val as Bind
-      const resolved = resolveDataPath(registry.data, bindVal.$bind)
-      if (resolved === undefined) {
-        throw new UnresolvedBindError(`Unresolved bind path: ${bindVal.$bind}`)
+  const resolveAttr = (val: unknown, attrKey: string): unknown => {
+    if (val && typeof val === 'object') {
+      const obj = val as Record<string, unknown>
+      // $styleRef is only legal in the style[] array
+      if ('$styleRef' in obj) {
+        throw new InvalidStyleRefPositionError(
+          `\`$styleRef\` is only legal in the \`style[]\` array, found as \`${attrKey}\``,
+        )
       }
-      return resolved
+      if ('$bind' in obj) {
+        if (!registry?.data) throw new MissingRegistryError('$bind encountered without a registry')
+        const bindVal = val as Bind
+        const resolved = resolveDataPath(registry.data, bindVal.$bind)
+        if (resolved === undefined) {
+          throw new UnresolvedBindError(`Unresolved bind path: ${bindVal.$bind}`)
+        }
+        return resolved
+      }
     }
     return val
   }
 
   const normalizedAttributes: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(attributes)) {
-    normalizedAttributes[key.toLowerCase()] = resolveAttr(value)
+    normalizedAttributes[key.toLowerCase()] = resolveAttr(value, key)
   }
 
   // ── Resolve $bind in children/text ────────────────────────────────
   let resolvedChildren = _children
   if (_children && typeof _children === 'object' && '$bind' in (_children as Record<string, unknown>)) {
-    resolvedChildren = resolveAttr(_children) as Children | undefined
+    resolvedChildren = resolveAttr(_children, 'children') as Children | undefined
   }
 
   const tag = htmlEscape(_tag.trim().toLowerCase())
