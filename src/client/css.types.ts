@@ -1,15 +1,7 @@
 import type { CSS_RESERVED_KEYS } from './css.constants.ts'
-import type * as CSS from './types/css.js'
+import type { CSSProperties } from './css.schemas.ts'
 
-/**
- * Represents CSS properties with string or number values.
- * Extends standard CSS properties to allow for custom properties (e.g., CSS variables).
- *
- * @public
- */
-export type CSSProperties = CSS.Properties & {
-  [key: string]: string | number
-}
+export type { CSSProperties }
 
 /**
  * A callable reference to a CSS custom property created by `createTokens`.
