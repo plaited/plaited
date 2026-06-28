@@ -32,12 +32,10 @@ test('h: Falsey - undefined', () => {
 })
 
 test('h: Falsey - null', () => {
-  //@ts-expect-error: children is null
   expect(render(h('div', { children: null }))).toMatchSnapshot()
 })
 
 test('h: Falsey - false', () => {
-  // @ts-expect-error: test
   expect(render(h('div', { children: false }))).toMatchSnapshot()
 })
 
@@ -54,7 +52,6 @@ test('h: Not really Falsey - NaN', () => {
 })
 
 test('h: Bad template - NaN', () => {
-  // @ts-expect-error: test
   expect(render(h('div', { children: { string: 'string' } }))).toMatchSnapshot()
 })
 
@@ -163,6 +160,24 @@ test('h: renders external bootstrap script tags', () => {
 
 test('h: rejects invalid custom element tags', () => {
   expect(() => h('sample-&element', { children: 'sample' })).toThrow()
+})
+
+test('h: InvalidAttributeError - bad input type enum', () => {
+  expect(() => h('input', { type: 'invalid' })).toThrow(/Invalid attributes for/)
+})
+
+test('h: InvalidAttributeError - bad ARIA live enum', () => {
+  expect(() => h('div', { 'aria-live': 'garbage' })).toThrow(/Invalid attributes for/)
+})
+
+test('h: InvalidAttributeError - bad aria-checked value', () => {
+  expect(() => h('div', { 'aria-checked': 'nope' })).toThrow(/Invalid attributes for/)
+})
+
+test('h: valid attrs pass schema validation unchanged', () => {
+  expect(() => h('input', { type: 'text', placeholder: 'Name', 'aria-label': 'Name input' })).not.toThrow()
+  expect(() => h('button', { disabled: true, type: 'submit', 'aria-busy': 'true' })).not.toThrow()
+  expect(() => h('div', { 'aria-live': 'polite', 'aria-atomic': 'true', role: 'alert' })).not.toThrow()
 })
 
 test('h: rejects inline script content', () => {

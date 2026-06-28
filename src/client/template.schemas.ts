@@ -170,6 +170,18 @@ export const AriaAttributesSchema = z.object({
 /** @public */
 export type AriaAttributes = z.output<typeof AriaAttributesSchema>
 
+// ── Custom element tag ─────────────────────────────────────────────────────
+
+/**
+ * Schema for custom element tag names (must match `${string}-${string}` pattern).
+ *
+ * @public
+ */
+export const customElementTagSchema = z.string().regex(CUSTOM_ELEMENT_TAG_PATTERN)
+
+/** @public */
+export type CustomElementTag = z.output<typeof customElementTagSchema>
+
 // ── ARIA role ──────────────────────────────────────────────────────────────
 
 /**
@@ -252,42 +264,7 @@ export const ariaRoleSchema = z.enum([
 /** @public */
 export type AriaRole = z.output<typeof ariaRoleSchema>
 
-// ── Custom element tag ─────────────────────────────────────────────────────
-
-/**
- * Schema for custom element tag names (must match `${string}-${string}` pattern).
- *
- * @public
- */
-export const customElementTagSchema = z.string().regex(CUSTOM_ELEMENT_TAG_PATTERN)
-
-/** @public */
-export type CustomElementTag = z.output<typeof customElementTagSchema>
-
-// ── Children (id-ref form for catalog JSON) ────────────────────────────────
-
-/**
- * Schema for a child reference in the component catalog.
- * Children are either a single string/number ID ref or an array of ID refs.
- *
- * @public
- */
-export const childRefSchema = z.union([z.string(), z.number()])
-
-/** @public */
-export type ChildRef = z.output<typeof childRefSchema>
-
-/**
- * Schema for a collection of child references.
- *
- * @public
- */
-export const childrenRefsSchema = z.union([childRefSchema, z.array(childRefSchema)])
-
-/** @public */
-export type ChildrenRefs = z.output<typeof childrenRefsSchema>
-
-// ── Plaited-specific attributes ────────────────────────────────────────────
+// ── ARIA role ──────────────────────────────────────────────────────────────
 
 /**
  * Schema for Plaited-specific extension attributes (p-target, p-trigger, etc.).
@@ -1577,70 +1554,3 @@ export const ElementAttributeListSchema = z
 
 /** @public */
 export type ElementAttributeList = z.output<typeof ElementAttributeListSchema>
-
-// ── Component catalog schemas (§3.4 of UI-GENERATION-PATTERNS.md) ─────
-
-/**
- * Schema for a `$styleRef` reference — a closed-enum discriminated ref
- * that appears only within a component's `style[]` array.
- *
- * @public
- */
-export const styleRefSchema = z.object({ $styleRef: z.string() })
-
-/** @public */
-export type StyleRef = z.output<typeof styleRefSchema>
-
-/**
- * Schema for a `$bind` reference — a closed-enum discriminated ref
- * that appears only in `text`/content values or inside `attrs` values.
- *
- * @public
- */
-export const bindSchema = z.object({ $bind: z.string() })
-
-/** @public */
-export type Bind = z.output<typeof bindSchema>
-
-/**
- * Schema for a single component entry in the flat component catalog.
- *
- * @remarks
- * Components are flat adjacency-list nodes (not nested trees):
- * - `id` — globally unique identifier used as the ref path in `children`
- * - `tag` — intrinsic HTML/SVG tag name or custom element tag
- * - `attrs` — plain HTML attributes (including `data-*`, `p-trigger`, etc.)
- * - `style` — array of `$styleRef` references (position-constrained)
- * - `children` — array of component `id` refs (resolved by the assembler)
- * - `text` — literal string/number content or a `$bind` reference
- *
- * Position constraints (structural, not superRefine):
- * - `$styleRef` is only legal as an element of `style[]`
- * - `$bind` is only legal in `text` or `attrs` values
- *
- * Cross-catalog id existence is NOT validated here (resolver's job).
- *
- * @public
- */
-export const componentEntrySchema = z.object({
-  id: z.string(),
-  tag: z.union([ElementAttributeListSchema.keyof(), customElementTagSchema]),
-  attrs: DetailedHtmlAttributesSchema.optional(),
-  style: z.array(styleRefSchema).optional(),
-  children: z.array(z.union([z.string(), z.number()])).optional(),
-  text: z.union([z.string(), z.number(), bindSchema]).optional(),
-})
-
-/** @public */
-export type ComponentEntry = z.output<typeof componentEntrySchema>
-
-/**
- * Schema for a complete component catalog — an ordered array of
- * flat adjacency-list component entries.
- *
- * @public
- */
-export const componentCatalogSchema = z.array(componentEntrySchema)
-
-/** @public */
-export type ComponentCatalog = z.output<typeof componentCatalogSchema>

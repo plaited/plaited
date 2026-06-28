@@ -18,6 +18,7 @@
  */
 
 import { htmlEscape, isTypeOf, kebabCase, trueTypeOf } from '../utils.ts'
+import type { CSSProperties } from './css.types.ts'
 import {
   BOOLEAN_ATTRS,
   CUSTOM_ELEMENT_TAG_PATTERN,
@@ -33,14 +34,8 @@ import {
   VALID_PRIMITIVE_CHILDREN,
   VOID_TAGS,
 } from './template.constants.ts'
-import type {
-  Attrs,
-  Children,
-  CustomElementTag,
-  DetailedHTMLAttributes,
-  ElementAttributeList,
-  TemplateObject,
-} from './template.types.ts'
+import { DetailedHtmlAttributesSchema, ElementAttributeListSchema } from './template.schemas.ts'
+import type { Children, CustomElementTag, TemplateObject } from './template.types.ts'
 
 /**
  * @internal
@@ -79,15 +74,13 @@ class InvalidCustomElementTagError extends Error implements Error {
   override name = 'invalid_custom_element_tag'
 }
 
-/** @internal Valid tag input for JSX rendering: built-in tag name, custom element tag. */
-type Tag = string | CustomElementTag
-
-/** @internal Infers the correct attribute type for a given `Tag`. */
-type InferAttrs<T extends Tag> = T extends keyof ElementAttributeList
-  ? ElementAttributeList[T]
-  : T extends CustomElementTag
-    ? DetailedHTMLAttributes
-    : Attrs
+/**
+ * @internal
+ * Error thrown when schema-based attribute validation fails.
+ */
+class InvalidAttributeError extends Error implements Error {
+  override name = 'invalid_attribute'
+}
 
 export type CreateFragment = (children: Children) => TemplateObject
 
@@ -132,8 +125,27 @@ const normalizeAttributeKeys = (attrs: Record<string, unknown>): Record<string, 
   return normalized
 }
 
-/** @internal Type signature for `h`, preserving type safety between the tag and its attributes. */
-export type CreateTemplate = <T extends Tag>(tag: T, attrs?: InferAttrs<T> | Record<string, never>) => TemplateObject
+/** @internal Type signature for `h`. */
+export type CreateTemplate = (tag: string, attrs?: Record<string, unknown>) => TemplateObject
+
+/**
+ * @internal
+ * Local type for safe destructuring — mirrors the Plaited-specific
+ * properties handled by `h()` before attribute serialization.
+ */
+type PlaitedAttrs = {
+  children?: Children
+  stylesheets?: string[]
+  style?: CSSProperties
+  [P_TRIGGER]?: Record<string, string>
+  [P_SCALE]?: keyof typeof SCALE
+  [P_FORM]?: string
+  class?: string
+  classNames?: string[]
+  for?: string
+  shadowrootmode?: 'open' | 'closed'
+  [key: string]: unknown
+}
 
 /**
  * @internal
@@ -148,6 +160,7 @@ export type CreateTemplate = <T extends Tag>(tag: T, attrs?: InferAttrs<T> | Rec
  * @throws {EventHandlerAttributeError} When `on*` attributes are used (use p-trigger instead)
  * @throws {InvalidAttributeTypeError} When non-primitive attribute values provided
  * @throws {InvalidCustomElementTagError} When a hyphenated tag is not a valid custom element tag
+ * @throws {InvalidAttributeError} When attribute values fail per-tag schema validation
  *
  * @remarks
  * Security features:
@@ -159,6 +172,7 @@ export type CreateTemplate = <T extends Tag>(tag: T, attrs?: InferAttrs<T> | Rec
  * @see {@link fragment} for grouping elements
  */
 export const h: CreateTemplate = (_tag, attrs = {}) => {
+  const safeAttrs = attrs as PlaitedAttrs
   const {
     children: _children,
     stylesheets: _stylesheets,
@@ -170,7 +184,7 @@ export const h: CreateTemplate = (_tag, attrs = {}) => {
     classNames,
     for: htmlFor,
     ...attributes
-  } = attrs
+  } = safeAttrs
 
   let stylesheets = _stylesheets ?? []
 
@@ -190,6 +204,18 @@ export const h: CreateTemplate = (_tag, attrs = {}) => {
       throw new ScriptPolicyError('Script tags require a site-root JavaScript src')
     }
   }
+
+  // Schema-driven attribute validation.
+  const tagSchema =
+    tag in ElementAttributeListSchema.shape
+      ? ElementAttributeListSchema.shape[tag as keyof typeof ElementAttributeListSchema.shape]
+      : DetailedHtmlAttributesSchema
+  const validationResult = tagSchema.safeParse(attrs)
+  if (!validationResult.success) {
+    const issues = validationResult.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')
+    throw new InvalidAttributeError(`Invalid attributes for <${tag}>: ${issues}`)
+  }
+
   const start = [`<${tag} `]
   // Handle JavaScript-reserved words commonly used in HTML.
   if (htmlFor) start.push(`for="${htmlEscape(`${htmlFor}`)}" `)
