@@ -8,6 +8,7 @@
  * then classified into one of three Zod schema shapes.
  */
 
+/// <reference path="../../scripts/types/css-tree.d.ts" />
 import { definitionSyntax } from 'css-tree'
 
 // ============================================================================

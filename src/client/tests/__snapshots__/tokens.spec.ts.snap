@@ -85,8 +85,9 @@ exports[`createTokens: integration with createStyles 1`] = `
 }
 `;
 
-exports[`createTokens: integration with createHostStyles 1`] = `
+exports[`createTokens: integration with $host 1`] = `
 {
+  "classNames": [],
   "stylesheets": [
     ":root{--colors-text:#333;}",
     ":host{color:var(--colors-text);}",
@@ -161,19 +162,6 @@ exports[`createTokens: used as CSS values in styles 3`] = `
     ":root{--sizes-sidebar-width:250px;}",
     ".cls_16fzoeg{width:var(--sizes-sidebar-width);}",
     ".cls_3bs89jn{flex-shrink:0;}",
-  ],
-}
-`;
-
-exports[`createTokens: integration with $host 1`] = `
-{
-  "classNames": [],
-  "stylesheets": [
-    ":root{--colors-text:#333;}",
-    ":host{color:var(--colors-text);}",
-    ":root{--colors-background:#fff;}",
-    ":host{background-color:var(--colors-background);}",
-    ":host{padding:20px;}",
   ],
 }
 `;
