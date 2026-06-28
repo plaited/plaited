@@ -100,7 +100,16 @@ const runCssSchemas = async (input: CssSchemasInput, flags: { dryRun: boolean })
   }
   const cssJson = await cssFile.json()
 
-  const { code, propertyCount, keywordEnumCount } = generateCssSchemas(cssJson)
+  const { code: rawCode, propertyCount, keywordEnumCount } = generateCssSchemas(cssJson)
+
+  // Format through biome to match git pre-commit hook style
+  const tmpFile = path.resolve('/tmp/.css-schemas-tmp.ts')
+  await Bun.$`mkdir -p ${path.dirname(tmpFile)}`.quiet().nothrow()
+  await Bun.write(tmpFile, rawCode)
+  const fmtResult = await Bun.$`bunx biome check --write --unsafe ${tmpFile}`.quiet().nothrow()
+  const code = fmtResult.exitCode === 0 ? await Bun.file(tmpFile).text() : rawCode
+  await Bun.write(tmpFile, '').catch(() => {})
+
   const encoder = new TextEncoder()
   const bytes = encoder.encode(code).length
 
